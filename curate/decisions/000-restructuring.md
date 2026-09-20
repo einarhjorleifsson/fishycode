@@ -481,6 +481,36 @@ Consequences, agreed 2026-09-20:
 
 ---
 
+## RESOLVED: the logger approximation moves downstream of the merge
+
+The user's clarification settled this (2026-09-20): in the afli logger the **timestamp,
+speed and heading are sound — only lon/lat are wrong**. The existing approach keeps the
+logger's own time/speed/heading and supplies lon/lat by interpolating the AIS track onto
+the logger clock. That is right; what was wrong was *where* it happened.
+
+It ran **before** `ais_ping_union.R` and its output was then merged back in as
+`provider = "wacky"`. So the union contained 26.9 M positions interpolated from itself, and
+the step had to be held outside the targets graph to avoid declaring a cycle.
+
+Moving the approximation **after** the merge removes the cycle entirely:
+
+| | Before | After |
+|---|---|---|
+| `ping_union` | 5 sources, 565.9 M rows, incl. `provider = "wacky"` | 4 **measured** sources, ~539.0 M |
+| logger positions | merged in as if measured | `curated/logbook/sensor_gps`, derived downstream |
+| cycle | union ↔ logger, kept out of the graph | none — whole chain declarable |
+| graph | 20 targets | **23 targets, 30 edges, acyclic** |
+
+It also states the model honestly: the logger is logbook sensor data, not an AIS feed.
+`curate/corrections/afli_coords.R` — which recovers lon/lat from the logger's own reading
+with no AIS at all — remains as the measured-but-unadopted alternative, so the two
+derivations can still be compared.
+
+**Consequence for the gate:** `curated/ais/ping` loses 26.9 M non-AIS rows. That is
+intended, and the baseline changes accordingly.
+
+## Superseded — kept for the reasoning
+
 ## Open question: wacky positions inside the AIS ping table
 
 Surfaced while declaring the build graph. A decision for the user, not a refactor to make

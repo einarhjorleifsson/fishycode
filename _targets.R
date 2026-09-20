@@ -154,24 +154,31 @@ list(
   }, format = "file"),
 
 
-  # ── AIS ─────────────────────────────────────────────────────────────────────
-  # NOTE — a bootstrap cycle sits here, deliberately outside the graph.
+  # ── Vessel trail ────────────────────────────────────────────────────────────
+  # The four-layer model: merge measured positions, remove whacky points,
+  # interpolate within trips, derive voyages and tie them to logbook trips.
   #
-  # curate/corrections/afli_coords.R reads staging/ais/ping_union to interpolate
-  # corrected positions for the afli GPS loggers, and writes sensor_GPS — which
-  # ais_ping_union.R then folds back in as provider = "wacky". Union depends on
-  # the correction; the correction depends on the union.
-  #
-  # It is left out rather than declared, on the same principle as overrides/:
-  # a genuine cycle is broken by a person, not pretended away. Run afli_coords
-  # by hand when the recovery needs refreshing, then rebuild ais_ping_union.
-  #
-  # The proper fix is a design decision, not a declaration — see
-  # curate/decisions/000-restructuring.md, "Open question: wacky positions".
+  # The bootstrap cycle that used to sit here is GONE. It existed because the
+  # afli logger's positions were approximated from the merged track BEFORE the
+  # merge, then folded back into it. Deriving them downstream instead
+  # (curate/logbook_sensor_gps.R) breaks it, so the whole chain is now declarable.
 
   tar_target(ais_ping_union, {
     vessel_ais_key
     produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
+  }, format = "file"),
+
+  # L2: whacky-point removal, its own stage rather than fused into trip building
+  tar_target(ais_ping_clean, {
+    ais_ping_tag
+    produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"))
+  }, format = "file"),
+
+  # the logger's positions, approximated from the merged track. Downstream of the
+  # merge, which is what removes the cycle.
+  tar_target(logbook_sensor_gps, {
+    ais_ping_clean; logbook
+    produces("curate/logbook_sensor_gps.R", fd_curated("logbook", "sensor_gps"))
   }, format = "file"),
 
   tar_target(ais_ping_tag, {
@@ -180,7 +187,7 @@ list(
   }, format = "file"),
 
   tar_target(ais_trip, {
-    ais_ping_tag
+    ais_ping_clean
     produces("curate/ais_trip.R",
              fd_curated("ais", "ping"),
              fd_curated("ais", "trip.parquet"))

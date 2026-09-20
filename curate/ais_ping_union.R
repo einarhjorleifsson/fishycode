@@ -63,15 +63,14 @@ astdB <- open_dataset(fd_staging("ais", "astdB")) |>
          speed,
          heading = true_heading, cog)
 
-# wacky ------------------------------------------------------------------------
-# GPS logger positions from the afli `rafr_sjalfvirkir_maelar` table, after
-# AIS-based coordinate recovery (01_afli_siritar.R). These replace the wacky
-# DDMMmm→DMS-misconverted originals and extend coverage for vessels with poor
-# AIS reception from the commercial feeds.
-wacky <-
-  open_dataset(fd_staging("afli", "sensor_GPS.parquet")) |>
-  inner_join(vid |> filter(!is.na(mmsi), !is.na(vid)) |> select(mmsi, vid) |> distinct()) |>
-  select(vid, mmsi, time, lon, lat, speed, heading)
+# NOTE: the afli GPS logger is deliberately NOT merged here.
+# Its timestamps, speeds and headings are sound, but its lon/lat are not - they
+# carry a DDMMmm encoding fault. The approximation that supplies usable
+# positions derives them FROM this merged track, so folding its output back in
+# would be circular: the union would contain positions interpolated from itself.
+# It now happens downstream instead, in curate/logbook_sensor_gps.R, writing
+# curated/logbook/sensor_gps. That is also the honest model - the logger is
+# logbook sensor data, not an AIS feed.
 
 # emodnet ----------------------------------------------------------------------
 # EmodNet snapshot: Iceland-only extract for 2017. Speed is recomputed from
@@ -95,13 +94,12 @@ emn <-
   mutate(time = dplyr::sql("time::TIMESTAMP"))
 
 # bind -------------------------------------------------------------------------
-# Union all five sources; `provider` tag lets downstream users trace each ping
-# back to its origin, which matters for coverage gap analysis.
+# Union the four MEASURED position sources; `provider` traces each ping back to
+# its origin, which matters for coverage gap analysis.
 d <-
   union(stk   |> mutate(provider = "stk"),
         astd  |> mutate(provider = "astd")) |>
   union(astdB |> mutate(provider = "astdB")) |>
-  union(wacky |> mutate(provider = "wacky")) |>
   union(emn   |> mutate(provider = "emodnet"))
 
 # ## add harbour -----------------------------------------------------------------

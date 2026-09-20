@@ -1,25 +1,29 @@
-# ais_trip-setting.R
-# Input:  data/trail2/ — AIS consolidated parquet, with pid harbour tags
-# Output: data/ais_trips.parquet  — trip table (vid, year, trip, t1, t2, hid1, hid2)
-#         data/trail_trips/       — clean pings (whacky removed) with trip column
+# ais_trip.R — L4a of the vessel-trail model: harbour-to-harbour voyages.
 #
-# Trip key: (vid, year, trip) — trips numbered 1..n per vessel per year.
-# Trips spanning a year boundary are split at Dec 31 / Jan 1.
+# Input:  staging/ais/ping_clean   (whacky positions already removed - L2)
+# Output: curated/ais/trip.parquet (vid, year, trip, t1, t2, hid1, hid2, n_pings)
+#         curated/ais/ping         (clean pings carrying their trip number)
 #
-# Algorithm per year:
-#   1. Flag isolated whacky points (whack_fwdbwd, lazy dplyr)
-#   2. Detect harbour/sea state changes → cumsum run_id (lazy dplyr, collected)
-#   3. Bridge harbour runs < MIN_HARBOUR_H between two sea runs (in-memory dplyr)
-#   4. Number sea runs 1..n per vessel → trips with hid1/hid2
-#   5. Join trip IDs back to clean pings via time-range join; write parquet
+# Trip key is (vid, year, trip), numbered 1..n per vessel per year; a voyage
+# spanning New Year is split at the boundary.
+#
+# Per year:
+#   1. Contiguous harbour/sea runs via a cumsum over the pid tag
+#   2. Harbour stays shorter than MIN_HARBOUR_H bridged into the surrounding trip
+#   3. Sea runs numbered per vessel, with departure/arrival harbours attached
+#   4. Trip ids joined back to the pings by time range
+#
+# Whacky-point removal used to happen here. It is now its own stage in
+# curate/ais_ping_clean.R, so the merged ping table is clean in its own right
+# rather than only inside this script.
+#
+# Downstream: curate/link_trip_voyage.R (L4) ties these voyages to logbook trips.
 
 library(duckdbfs)
 library(tidyverse)
-library(ramb)
 
 # -- Parameters ----------------------------------------------------------------
 
-KN_MAX        <- 25   # whacky-point speed threshold (knots)
 MIN_HARBOUR_H <-  4   # harbour dwell < this (hours) → bridged into trip
 MIN_PINGS     <- 10   # trips with fewer pings than this are dropped
 
@@ -29,7 +33,7 @@ VIDS <- NULL
 
 # -- Data ----------------------------------------------------------------------
 
-ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
+ais   <- open_dataset(fd_staging("ais", "ping_clean"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
 # -- Main loop -----------------------------------------------------------------
@@ -44,21 +48,12 @@ for (yr in years) {
     select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, year)
   if (!is.null(VIDS)) base <- filter(base, vid %in% VIDS)
 
-  # -- 1. Whack filter (lazy dplyr) -------------------------------------------
-  flagged <- base |> whack_fwdbwd(kn_max = KN_MAX) |> mutate(whack = ifelse(is.na(whack), FALSE, whack))
-
-  # -- 2. RLE run detection -------------------------------------------------------
-  # Collect clean pings; apply forward pass to remove remaining clusters that
-  # whack_fwdbwd missed (internally slow but geographically wrong tracks).
-  # Then aggregate to one row per contiguous harbour/sea run.
-  clean <- flagged |>
-    filter(!whack) |>
-    select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, year) |>
-    collect() |>
-    whack_forward(kn_max = KN_MAX)
+  # -- 1. RLE run detection ---------------------------------------------------
+  # Whacky-point removal is no longer done here - it is its own stage now, in
+  # curate/ais_ping_clean.R (L2), so staging/ais/ping_clean is already clean.
+  clean <- base |> collect()
 
   runs <- clean |>
-    filter(!whack2) |>
     mutate(in_harbour = !is.na(pid)) |>
     arrange(vid, time) |>
     group_by(vid) |>
@@ -122,8 +117,7 @@ for (yr in years) {
 
   # Use the in-memory clean table (both passes applied) for the ping write
   clean |>
-    filter(!whack2) |>
-    select(-whack2) |>
+
     left_join(trips_yr |> select(vid, trip, t1, t2),
               by = join_by(vid, between(time, t1, t2))) |>
     select(-t1, -t2) |>
