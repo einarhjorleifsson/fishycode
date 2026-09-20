@@ -136,7 +136,7 @@ vessel_ISL <-
 
 # add last year vessel in Hreiðar's dataset (last time updated 2021)
 v <-
-  readxl::read_excel(fd_staging("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")) |>
+  readxl::read_excel(fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")) |>
   janitor::clean_names() |>
   select(vid = skskr_nr,
          year = ar) |>

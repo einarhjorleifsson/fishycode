@@ -87,6 +87,15 @@ list(
     "reference/geo/h3_index.R",
     fd_curated("reference", "area_h3.parquet")), format = "file"),
 
+  # Country codes, maritime identification digits, call-sign prefixes. Declared
+  # late: this script was producing three inputs vessel_ais_key needs while not
+  # being a target at all, so the graph reported ready and would have failed.
+  tar_target(lookups, produces(
+    "reference/lookups.R",
+    fd_staging("aux", "country_codes_ISO3166.parquet"),
+    fd_staging("aux", "maritime_identification_digits.parquet"),
+    fd_staging("aux", "callsign_prefix.parquet")), format = "file"),
+
   tar_target(vessel, produces(
     "reference/vessels/registry.R",
     fd_curated("vessel", "vessel.parquet")), format = "file"),
@@ -94,9 +103,11 @@ list(
   # NOT a registry: a fitted model with residual error (>100-ping threshold,
   # a 2028-12-24 sentinel, 35 vids with overlapping mid periods). Wrong vid
   # assignment is a known error class — see curate/checks/.
-  tar_target(vessel_ais_key, produces(
-    "reference/vessels/ais_key.R",
-    fd_curated("vessel", "vessel_ais_key.parquet")), format = "file"),
+  tar_target(vessel_ais_key, {
+    lookups; vessel
+    produces("reference/vessels/ais_key.R",
+             fd_curated("vessel", "vessel_ais_key.parquet"))
+  }, format = "file"),
 
 
   # ── Source adapters ─────────────────────────────────────────────────────────
