@@ -61,7 +61,33 @@ proposed_method:
     keeps the track continuous, since the wrong choice implies a 741 m jump and
     an immediate jump back. Use AIS only as a fallback for points the track
     cannot resolve.
-  emits: [lon, lat, w_lon, w_lat, basis, disambiguated_by]
+  emits: [lon, lat, w_lon, w_lat, basis, margin_m]
+
+retain_both_methods:
+  decision: 2026-09-20, at the user's request
+  rationale: >-
+    The two derivations are independent estimates of the same thing - one from the
+    vessel's own instrument, one from the shore/satellite AIS network - so keeping
+    both supports analysis of how they differ. It also follows the project rule
+    that a correction adds columns and never overwrites.
+  how_without_reintroducing_the_cycle: >-
+    The two are computed in DIFFERENT places, which is what keeps the DAG acyclic:
+
+      curate/corrections/afli_coords.R   logger only, no AIS input.
+                                         Emits lon/lat (candidate-selected),
+                                         w_lon/w_lat (original wacky), basis,
+                                         margin_m. Depends on nothing downstream,
+                                         so the bootstrap cycle disappears.
+
+      curate/checks/afli_coords_vs_ais.R joins the recovered positions to
+                                         curated/ais/ping and adds lon_ais/lat_ais
+                                         (AIS interpolated onto the logger clock,
+                                         the current method) plus dt_sec and the
+                                         distance between the two estimates.
+                                         Emits curated/check/afli_coords.
+
+    The correction sits upstream of AIS; the comparison sits downstream of both.
+    Nothing is lost and no edge points backwards.
   benefits:
     - keeps the logger's own ~18 m precision instead of an interpolation
     - works without AIS for most points, so pre-AIS years are recoverable
@@ -98,9 +124,19 @@ method_detail:
     heading (skip_stefna) - no external data needed. 44-92% of choices are
     decisive by a margin over 100 m.
   no_ais_required: >-
-    This is why the approach matters beyond precision: it works for vessels and
-    years with no AIS at all, including everything before 2007, which the current
-    AIS-interpolation method returns as NA.
+    Works for vessel-years with no AIS at all, which the AIS-interpolation method
+    returns as NA. Only 3,144 of 31,852 STK mobile ids ever matched to a vessel,
+    so untranspondered boats are the population that gains. NOT yet quantified.
+
+retracted_claim:
+  claim: "recovers everything before 2007, which currently comes back NA"
+  status: WRONG - withdrawn 2026-09-20
+  why: >-
+    Checked the logger tables rather than assuming. They run 2000-2024 but only
+    start in earnest in 2008: sjalfvirkir_maelar has 1,307 pre-2007 rows of
+    27,388,332 (0.0%), rafr_sjalfvirkir_maelar 1,088 of 22,758,786 (0.0%). The
+    GPS loggers were not in place before then, so there is nothing there to
+    recover. The claim came from extrapolating "AIS starts 2007" without looking.
 
 open_question: >-
   If this is adopted, the recovered positions are logbook sensor data and belong
