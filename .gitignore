@@ -1,0 +1,26 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+*.Rproj
+
+_targets/
+_freeze/
+_site/
+/.quarto/
+**/*.quarto_ipynb
+
+# Data never lives in this repo. It lives under $FISHYDATA — see R/paths.R.
+# These patterns are belt-and-braces: the failure being designed out is a
+# 360 GB tree accumulating inside a git repo again.
+data/
+data-raw/
+data-dump/
+*.parquet
+*.gpkg
+*.fgb
+*.pmtiles
+*.rds
+*.zip
+*.html
