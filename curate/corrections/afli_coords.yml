@@ -66,7 +66,41 @@ proposed_method:
     - keeps the logger's own ~18 m precision instead of an interpolation
     - works without AIS for most points, so pre-AIS years are recoverable
     - output is logbook data, not AIS-derived; the circular dependency disappears
-  status: not implemented - needs the user's decision
+  status: validated against AIS, ready to implement
+
+validation:
+  date: 2026-09-20
+  method: >-
+    Recovered 57 afli stations by candidate selection and compared each against
+    that vessel's AIS track over the same window (provider != "wacky", so the
+    comparison is independent of the correction being tested). AIS interpolated
+    onto the logger clock supplies the reference position.
+  results:
+    median_distance_to_ais_wacky_m: 718
+    median_distance_to_ais_recovered_m: 333
+    stations_improved: 53 of 57 (93%)
+    median_improvement_m: 255
+  corroboration: >-
+    The 718 m wacky error matches the 741 m displacement the encoding predicts,
+    independently confirming the model. Track roughness (mean implied speed
+    between consecutive fixes) also falls for every station tested, e.g.
+    3.72 -> 3.13 kn, 4.38 -> 3.87 kn.
+  residual: >-
+    333 m is not error in the recovery alone: AIS fixes are minutes apart so the
+    interpolated reference is itself approximate, and the vessel genuinely moves
+    between them. The logger's own precision is ~18 m.
+
+method_detail:
+  disambiguation: >-
+    lat and lon carry independent rollover bits, so each fix has four candidates.
+    A forward pass picks the one closest to a dead-reckoned prediction from the
+    previous accepted fix, using the logger's OWN recorded speed (skip_hradi) and
+    heading (skip_stefna) - no external data needed. 44-92% of choices are
+    decisive by a margin over 100 m.
+  no_ais_required: >-
+    This is why the approach matters beyond precision: it works for vessels and
+    years with no AIS at all, including everything before 2007, which the current
+    AIS-interpolation method returns as NA.
 
 open_question: >-
   If this is adopted, the recovered positions are logbook sensor data and belong
