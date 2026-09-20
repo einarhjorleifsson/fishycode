@@ -390,6 +390,47 @@ directory rename and, later, symlinks. Each step stands alone if the next never 
 
 ---
 
+## Target architecture for the vessel trail (user's stated intent, 2026-09-20)
+
+Recorded because the code does not currently implement it, and step 8 needs a spec rather
+than a memory.
+
+| Layer | Intent | State in the code |
+|---|---|---|
+| **L1 Merge** | Merge *measured* positions from four peer sources: `stk`, `astd`, `astdB`, logger GPS (`afli` schema) | Present, but merges five (adds `emodnet`) and the logger source is **not measured** — it is AIS interpolated onto logger timestamps. See `curate/corrections/afli_coords.yml`. |
+| **L2 Whacky removal** | Drop implausible positions — speed outliers, mostly from `stk` | Present but **misplaced**: fused into `ais_trip.R`, so the merged table still contains them |
+| **L3 Interpolation** | Interpolate within trips, on top of the merged data | **Missing entirely** — no interpolation anywhere in the AIS chain. `ramb::rb_interpolate()` exists and is unused |
+| **L4 Trip id** | Harbour-to-harbour trip id, **with a join key to the merged logbook data** | Trips exist (717,823) but carry **no logbook join key** |
+
+The end product is L4: a trip identity that joins vessel movement to logbook trips.
+
+### Naming: two different defects share a name
+
+- **whacky point** — an implausible position (speed outlier), mostly `stk`. Handled by
+  `ramb::whack_fwdbwd()` / `rb_whacky_speed()`.
+- **wacky coordinate** — the DDMMmm→seconds encoding fault in the `afli` logger tables.
+
+The repo has used *wacky* and *whacky* interchangeably for both. Fix the vocabulary when L1
+is rebuilt, and rename `provider = "wacky"` to `provider = "logger"`: that source is a
+measurement, and "wacky" was a defect in it that was corrected.
+
+### Sequencing decision
+
+**Fix after the move, not during.** The equivalence gate exists to prove the move changed
+nothing; if the AIS model changes in the same pass, a difference cannot be attributed to
+either. One change at a time.
+
+Consequences, agreed 2026-09-20:
+
+- **Step 6 is scoped to the logbook chain only** (`dictionary` → `gear` → `port` →
+  `afli`/`fs_afladagbok`/`adb` → `logbook` → `lid_map`). That was the stated
+  must-keep-working constraint. The AIS chain is **not** rebuilt for the gate — hours of
+  compute to validate a model we have agreed is wrong.
+- **Step 8 is re-scoped** from "trip reconstruction" to "rebuild the vessel trail on the
+  four-layer intent", with trip reconstruction as its final layer.
+
+---
+
 ## Open question: wacky positions inside the AIS ping table
 
 Surfaced while declaring the build graph. A decision for the user, not a refactor to make
