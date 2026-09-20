@@ -1,3 +1,18 @@
+# h3_index.R — build the H3 resolution-8 lookup used for all AIS spatial tagging.
+#
+# Input:  raw/aux/gebco_2026.tif   <-- MISSING, see below
+#         staging/aux/eusm.fgb, staging/aux/ices_areas_500m-buffer.fgb
+# Output: curated/reference/area_h3.parquet   (26,160,965 cells: h3, depth, bbht, fao)
+#
+# ############################################################################
+# # THIS SCRIPT CANNOT RUN. The GEBCO GeoTIFF is not on this machine - it was
+# # a manual download into ~/Downloads, used once on 2026-05-08, and cleared.
+# # Re-download from https://download.gebco.net, bounding box n89.0 s35.0
+# # w-45.0 e69.0, GeoTIFF, and place it at $FISHYDATA/raw/aux/gebco_2026.tif.
+# # The existing curated/reference/area_h3.parquet is SEEDED, not built.
+# # See curate/decisions/002-missing-gebco-raster.md
+# ############################################################################
+
 library(terra)
 library(tidyverse)
 library(duckdb)
