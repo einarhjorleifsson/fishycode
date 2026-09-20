@@ -556,6 +556,44 @@ does not exist in the legacy store at all.
 
 ---
 
+## Full `targets` build — passed (2026-09-20)
+
+Everything except the AIS chain, built by `tar_make()` from `raw/` with no seeded inputs:
+15 targets, 19m 59s wall clock. This is the first time the graph derived the build order
+itself rather than following an order chosen by hand.
+
+| Table | Rows | vs legacy |
+|---|---|---|
+| `logbook/trip` | 1,815,425 | identical |
+| `logbook/station` | 7,219,248 | identical |
+| `logbook/fishing_sample` | 7,219,248 | identical |
+| `logbook/catch` | 16,741,776 | identical |
+| `logbook/lid_map` | 780,203 | identical |
+| `landing/landings` | 942,984 | identical |
+| `landing/catch` | 3,818,564 | identical |
+| `vessel/vessel` | 7,043 | identical |
+| `vessel/vessel_ais_key` | 31,859 | +7 — explained below |
+
+**The +7 is correct behaviour, not a regression.** All seven are unmatched records
+(`step = NA`); every matching step is identical, and matched rows total 3,144 in both —
+the figure the old `AGENTS.md` recorded. They are mids 154034–154040, and the cause is
+input drift: `raw/ais/stk/mobile.parquet` was dumped **2026-04-27**, while the legacy
+match table was built **2026-04-25**. Seven transponders appeared in those two days. The
+legacy artifact is stale with respect to its own input; the new build is right.
+
+Worth noting *how* that was diagnosed: by comparing file timestamps, because the legacy
+table carries no record of which input version produced it. That is exactly the gap
+`write_curated()`'s manifest closes.
+
+**Idempotency confirmed.** `shapes` rewrote into a directory that already held its
+outputs — the condition that silently doubled every `.fgb` before the `delete_dsn` fix —
+and all counts held: ports 6,019, ICES areas 66, eusm 2,140,649, gebco 9.
+
+**Timings**: `shapes` 14m 40s, `shapes_raw` 10m 34s, `afli` 1m 56s, `lid_map` 1m 40s,
+`vessel_ais_key` 48s; everything else under 25s.
+
+---
+
 ## Verification
 
 - **Equivalence gate (step 5):** rebuilt `trip`/`station`/`fishing_sample`/`catch`/`lid_map`
