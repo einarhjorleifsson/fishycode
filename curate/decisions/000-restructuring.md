@@ -355,10 +355,25 @@ directory rename and, later, symlinks. Each step stands alone if the next never 
       in `ramb` are `letters_only`, `numbers_only`, `str_extract_between_parenthesis`,
       `rb_leaflet_raster`, `rb_cap_value` (which belongs with `ramb`'s existing `rb_cap_*` family).
 
-      Not migrated, so no fork exists in this repo — but `products/exports/buseful_2025-05-05.R`
-      still has a dangling `source("R/ramb_functions.R")`. Recommended follow-up: fold those 5
-      into `ramb` and switch that script to `library(ramb)`. Left out of step 4 to avoid
-      widening its scope.
+      **Resolved (same day).** Investigated properly, fork #2 needed **nothing added to `ramb`**:
+
+      | Function | Disposition |
+      |---|---|
+      | `rb_mmsi_category`, `rb_mmsi_flag`, `rb_mapdeck`, `rb_track_time`, `rb_st_keep` | already in `ramb` — dropped |
+      | `rb_st_remove` | already in `ramb`, and `ramb`'s is *better* (namespaces `sf::st_intersects()`) — dropped |
+      | `rb_cap_value` | verified to produce **identical output** to `ramb`'s existing `rb_cap_winsorize` — a redundant reimplementation, dropped |
+      | `letters_only`, `numbers_only`, `str_extract_between_parenthesis`, `str_extract_dmy_period` | generic string helpers with no caller in migrated code — left in the archive rather than adding unused API surface |
+      | `rb_leaflet_raster` | the **only** function the migrated code actually used (once, in `buseful_2025-05-05.R`). Inlined into that script rather than dragging `leaflet`, `raster` and `viridis` into `ramb` for one ad-hoc caller. |
+
+      Its original called `cap_value()`, which is **defined nowhere** — the function had been
+      broken in the old repo. Replaced with `ramb::rb_cap_winsorize()` on the way in.
+
+      Also checked: `logbooks/astd.R` defines `rb_astd_build_parquet`, but shares only 7 lines
+      with the migrated `dump/ais/astd.R` (69 vs 477 lines) — an early draft, superseded, left
+      in the archive.
+
+      Net effect: both known `ramb` forks are gone, and `ramb` gained three functions while
+      losing none.
 
 - [ ] **5. Two cheap premise tests, in the new repo.**
       - Add `station_type` to `station.parquet` in the `afli` and `fs_afladagbok` adapters.

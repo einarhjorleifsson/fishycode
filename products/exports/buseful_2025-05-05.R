@@ -133,7 +133,30 @@ by_005 |>
                group_by(year) |> 
                summarise(catch = sum(catch_total) / 1e6),
              colour = "red")
-source("R/ramb_functions.R")
+# rb_leaflet_raster was the only thing this script took from the old repo's
+# R/ramb_functions.R, itself a stale fork of {ramb}. Inlined here rather than
+# added to {ramb}: it is a one-off plotting helper for this dated export and
+# would drag leaflet, raster and viridis into the package for a single caller.
+# Its original called cap_value(), which was defined nowhere - the function had
+# been broken. Replaced with ramb::rb_cap_winsorize(), which the old
+# rb_cap_value() duplicated exactly.
+rb_leaflet_raster <- function(g) {
+  r <- g |>
+    dplyr::select(x = lon, y = lat, effort = dt) |>
+    dplyr::mutate(effort = ramb::rb_cap_winsorize(effort, probs = 0.975)) |>
+    raster::rasterFromXYZ()
+  raster::crs(r) <- "epsg:4326"
+  inf <- viridis::inferno(12, alpha = 1, begin = 0, end = 1, direction = -1)
+  pal <- leaflet::colorNumeric(inf, raster::values(r), na.color = "transparent")
+  leaflet::leaflet(options = leaflet::leafletOptions(minZoom = 4, maxZoom = 11)) |>
+    leaflet::addTiles(
+      urlTemplate = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      group = "Image",
+      attribution = 'Data source: <a href="https://www.hafogvatn.is">Marine Research Institute</a>') |>
+    leaflet::setView(-18, 65.2, zoom = 6) |>
+    leaflet::addRasterImage(r, colors = pal, opacity = 1, group = "Humarvarpa",
+                            maxBytes = Inf, project = TRUE)
+}
 by_0005 |> 
   filter(year == 2023,
          metier == "OTB_DEF") |> 
