@@ -143,3 +143,46 @@ open_question: >-
   at curated/logbook/sensor_gps, not inside curated/ais/ping. That removes
   26.8M non-AIS rows from the AIS table and changes the equivalence-gate baseline.
   See curate/decisions/000-restructuring.md, "Open question: wacky positions".
+
+accuracy_measured:
+  date: 2026-09-20
+  note: >-
+    Per POINT, not per station. Earlier figures were per-station medians, which
+    hide the tail: a median cannot see 10% of points being wrong by 742 m.
+  reference: AIS interpolated onto the logger clock, 1,578 points over 57 stations
+  table: |
+                     median   mean    p90   >500m
+      wacky            652    676   1127   67.0%
+      recovered        322    362    795   34.6%
+  reading: >-
+    The share of fixes more than 500 m from the vessel's own AIS track falls from
+    67% to 35%. Not solved - roughly a third of fixes remain well off - but half
+    the error removed. Part of the residual is the reference itself: AIS fixes are
+    minutes apart, so the interpolated position is approximate.
+
+latitude_bias:
+  observed: >-
+    Rollover detected on 29.4% of latitudes against a true rate near 40%
+    (longitude 39.3%, essentially exact). Suspected cause: the wacky value sits
+    ss/9000 degrees north of candidate A, so a seed taken from it leans toward
+    the northerly candidate.
+  attempted_fix: seed the first pass from cand_a(w) - 0.4/150, the expected true value
+  result: FAILED
+  evidence: |
+      rollover rate   latitude 15.3% -> 40.7%   (target ~40%)
+      but distance to AIS, per point:
+        current     median 322  mean 362  p90 795  >500m 34.6%
+        de-biased   median 324  mean 376  p90 802  >500m 36.0%
+      agree on 85.3% of points; where they differ the de-biased choice is closer
+      only 40% of the time
+  conclusion: >-
+    Matching the aggregate rollover rate is not the same as choosing correctly.
+    The de-bias hits the right rate by flipping points roughly at random. Not
+    adopted. It also undercuts the inference that the rate gap implies a specific
+    error count - the rate is off, but correcting the rate does not correct the
+    positions.
+  next_candidate: >-
+    A per-track dynamic program (Viterbi over the four candidate states,
+    minimising total implied movement) rather than a greedy forward pass. A
+    greedy pass commits to each choice on partial information; a DP considers the
+    whole track. Untested.
