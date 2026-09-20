@@ -221,6 +221,27 @@ Near one-to-one magnitude with the trips to be reconstructed — a good feasibil
 with `basis` and a confidence measure, plus improved `T1`/`T2` as *new* columns. Nothing
 existing is mutated, so the must-keep-working constraint holds absolutely and analysts opt in.
 
+**BUILT 2026-09-20** as `curate/link_trip_voyage.R` → `curated/link/trip_voyage.parquet`.
+Matching is by temporal overlap on `vid`, taking the voyage overlapping the logbook trip by
+the most seconds, with the issue-10 `T2` repair applied inside the query — without it the
+1,329,167 afli trips whose `T1 = T2` have a zero-length window and can never match anything.
+
+| Schema | Era | Trips | Linked | Rate |
+|---|---|---|---|---|
+| `afli` | <2007 | 979,339 | 6,152 | 0.6% |
+| `afli` | ≥2007 | 681,532 | **652,587** | **95.8%** |
+| `fs_afladagbok` | ≥2007 | 154,532 | **151,251** | **97.9%** |
+
+Coverage of each logbook trip by its matched voyage: median 0.991, p90 1.0, but p10 0.386 —
+about half the links are near-exact and there is a real tail of partial overlaps.
+Multiple candidate voyages occur for 3.1–3.3% of links, consistent with the 35 vids that
+have overlapping mid periods (issue 9) rather than widespread ambiguity.
+
+**A cross-check fell out of it.** 6,152 `afli` trips dated before 2007 match an AIS voyage.
+AIS did not exist then, so those logbook trips almost certainly carry wrong dates. That is a
+QC signal the linkage produces for nothing, and the first concrete instance of the
+cross-checking the architecture was built for.
+
 **Known limits to record up front:** AIS coverage is partial — only 3,144 of 31,852 STK mids
 matched to a vid, and small vessels may carry no transponder, so reconstruction is partial
 even post-2007. Issue #10's `T2 = pmax(T2, floor_date(T1,"day") + days(1) - seconds(1))`

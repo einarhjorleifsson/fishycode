@@ -201,6 +201,16 @@ list(
              fd_curated("logbook", "catch.parquet"))
   }, format = "file"),
 
+  # L4 of the vessel-trail model: tie logbook trips to AIS harbour-to-harbour
+  # voyages. The deliverable the trail data exists for - AIS voyages carried no
+  # logbook key at all before this. Additive: its own table, improved times as new
+  # columns, curated/logbook/trip.parquet untouched.
+  tar_target(trip_voyage, {
+    logbook; ais_trip
+    produces("curate/link_trip_voyage.R",
+             fd_curated("link", "trip_voyage.parquet"))
+  }, format = "file"),
+
   tar_target(lid_map, {
     logbook; aflagrunnur; gear
     produces("curate/link_lid_map.R",
