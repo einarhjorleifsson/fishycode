@@ -43,7 +43,7 @@ eusm_ices <-
   read_sf(fd_staging("aux", "eusm.gpkg")) |> 
   select(.msfd_bbht = MSFD_BBHT)
 ices <- 
-  read_sf(fd_staging("aux", "ices_areas.gpkg")) |> 
+  read_sf(fd_staging("aux_valid", "ices_areas.gpkg")) |> 
   select(.ices = Area_Full)
 # data includes land
 fao <- 

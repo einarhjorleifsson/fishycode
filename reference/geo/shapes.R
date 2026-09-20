@@ -58,8 +58,8 @@ eusm <-
 eusm |> write_sf(fd_staging("aux", "eusm.gpkg"))
 eusm |> write_sf(fd_staging("aux", "eusm.fgb"))
 # gebco ------------------------------------------------------------------------
-read_sf(fd_staging("aux", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"))
-read_sf(fd_staging("aux", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"))
+read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"))
+read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"))
 # ports ------------------------------------------------------------------------
 ports <-
   read_sf(fd_raw("ports", "ports_all.gpkg")) |>

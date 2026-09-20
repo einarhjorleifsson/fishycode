@@ -24,3 +24,6 @@ data-dump/
 *.rds
 *.zip
 *.html
+
+# machine-local data root; each machine sets its own
+.Renviron

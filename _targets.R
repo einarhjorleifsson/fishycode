@@ -32,8 +32,11 @@ tar_option_set(
 # Helper: source a script, then return the files it is contracted to produce.
 # Declaring the outputs here rather than inside the scripts keeps the contract
 # visible in one place.
+# encoding = "UTF-8" is not optional: the scripts carry Icelandic gear and port
+# names (veidarfaeri, Grasleppunet, ...). Without it a subprocess whose locale is
+# not UTF-8 reads the bytes as Latin-1 and the script fails to parse.
 produces <- function(script, ...) {
-  source(script)
+  source(script, encoding = "UTF-8")
   c(...)
 }
 
@@ -50,21 +53,35 @@ list(
     "reference/gear/mapping.R",
     fd_curated("reference", "gear.parquet")), format = "file"),
 
-  tar_target(port, produces(
-    "reference/ports/harbour_codes.R",
-    fd_curated("reference", "port.parquet")), format = "file"),
+  tar_target(port, {
+    shapes                                  # needs staging/aux/ports.gpkg
+    produces("reference/ports/harbour_codes.R",
+             fd_curated("reference", "port.parquet"))
+  }, format = "file"),
 
   tar_target(harbour, produces(
     "reference/ports/harbours.R",
     fd_curated("reference", "harbour.parquet")), format = "file"),
 
+  # Geometry validation of the raw spatial layers. Its outputs go to
+  # staging/aux_valid/; shapes.R then crops and buffers them into staging/aux/.
+  # The two stages were separate directories in the old tree (data-raw/aux vs
+  # data/aux) and must stay separate, or shapes.R overwrites its own input.
+  tar_target(shapes_raw, produces(
+    "reference/geo/shapes_raw.R",
+    fd_staging("aux_valid", "ices_areas.gpkg"),
+    fd_staging("aux_valid", "gebco.gpkg"),
+    fd_staging("aux_valid", "eusm.gpkg")), format = "file"),
+
   # Port polygons come from the kaenugardr repo as a published artifact
   # (fd_raw("ports", "ports_all.gpkg")); this only crops and buffers them.
-  tar_target(shapes, produces(
-    "reference/geo/shapes.R",
-    fd_staging("aux", "ports.fgb"),
-    fd_staging("aux", "ices_areas_500m-buffer.fgb"),
-    fd_staging("aux", "eusm.fgb")), format = "file"),
+  tar_target(shapes, {
+    shapes_raw
+    produces("reference/geo/shapes.R",
+             fd_staging("aux", "ports.fgb"),
+             fd_staging("aux", "ices_areas_500m-buffer.fgb"),
+             fd_staging("aux", "eusm.fgb"))
+  }, format = "file"),
 
   tar_target(area_h3, produces(
     "reference/geo/h3_index.R",

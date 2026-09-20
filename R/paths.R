@@ -30,8 +30,21 @@ fishydata_root <- function() {
   normalizePath(root, mustWork = TRUE)
 }
 
-fd_path      <- function(...) file.path(fishydata_root(), ...)
+fd_path <- function(...) file.path(fishydata_root(), ...)
+
+# Ensure the containing directory exists, then return the path.
+# Applied to the layers we write to, so a script never fails merely because a
+# parent directory has not been created yet. NOT applied to raw/, which is
+# read-only input: silently creating a directory there would mask a typo in a
+# source path rather than surfacing it.
+.fd_writable <- function(layer, ...) {
+  p <- fd_path(layer, ...)
+  d <- if (grepl("[.][A-Za-z0-9]+$", basename(p))) dirname(p) else p
+  if (!dir.exists(d)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
+  p
+}
+
 fd_raw       <- function(...) fd_path("raw", ...)
-fd_staging   <- function(...) fd_path("staging", ...)
-fd_curated   <- function(...) fd_path("curated", ...)
-fd_published <- function(...) fd_path("published", ...)
+fd_staging   <- function(...) .fd_writable("staging", ...)
+fd_curated   <- function(...) .fd_writable("curated", ...)
+fd_published <- function(...) .fd_writable("published", ...)

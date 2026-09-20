@@ -8,7 +8,7 @@ harbours <-
   rename(hid = hafnarnumer) |>
   arrange(hid)
 ports <-
-  read_sf(fd_curated("reference", "ports.gpkg")) |> st_drop_geometry() |>
+  read_sf(fd_staging("aux", "ports.gpkg")) |> st_drop_geometry() |>
   filter(!str_sub(pid, 1, 2) == "FO") |>
   select(hid, port, pid) |>
   full_join(harbours) |>
