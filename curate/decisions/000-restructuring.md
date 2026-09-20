@@ -403,8 +403,23 @@ union. Confirmed in code at `afli_coords.R:62` and `ais_ping_union.R:72`.
 It sits outside the graph for now, on the same principle as `overrides/` — a genuine cycle
 is broken by a person, not pretended away.
 
-But the cycle is a symptom. **26.8 M of the 565.9 M rows in the AIS ping table are not AIS**:
-they are logbook GPS positions *interpolated from* AIS. The dataset used to derive them
+But the cycle is a symptom of the *method*, not of the data. **26.8 M of the 565.9 M rows
+in the AIS ping table are not AIS**: they are logbook GPS positions whose coordinates the
+current implementation replaces with AIS interpolated onto the logger timestamp.
+
+That method looks wrong. Verified 2026-09-20 on 200,000 synthetic records against the
+documented formula: the wacky encoding is **not uniquely invertible**, but it collapses to
+exactly **two** candidate decodings of the vessel's own GPS reading, separated by a constant
+741 m, and the truth is one of them in 100.00% of cases (60% no-rollover, 40% rollover).
+So AIS is needed only to *choose* between two candidates — not to supply the position.
+
+Choosing instead of replacing would keep the logger's own ~18 m precision rather than an
+interpolation whose quality varies with `dt_sec`, would work without AIS for most points
+(the logger track itself disambiguates: the wrong candidate implies a 741 m jump and an
+immediate jump back), and would make the output logbook data rather than AIS-derived —
+at which point the circular dependency disappears entirely.
+
+Full write-up in `curate/corrections/afli_coords.yml`. The dataset used to derive them
 contains them. Three ways out:
 
 1. **Split the table.** `curated/ais/ping` holds real AIS only (~539 M); recovered GPS lives

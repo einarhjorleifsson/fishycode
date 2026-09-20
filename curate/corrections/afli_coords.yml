@@ -1,0 +1,75 @@
+id: afli_coords
+title: Wacky coordinates in the afli GPS logger tables
+status: implemented_but_wrong_method
+applies_to:
+  - raw/logbooks/afli/sjalfvirkir_maelar.parquet
+  - raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
+affects_rows: ~26,800,000
+implementation: curate/corrections/afli_coords.R
+
+defect:
+  summary: >-
+    Positions were stored as DDMMmm integers, where the last two digits are
+    hundredths of a minute (00-99). Downstream processing decoded them as
+    seconds. Where the hundredths value was >= 60 - impossible as seconds but
+    valid in DDMMmm - the software rolled the minute up and subtracted 60.
+  formula: |
+    x_wacky = dd + mm/60       + dm/3600         if dm <  60
+            = dd + (mm+1)/60   + (dm-60)/3600    if dm >= 60
+  displacement_m: 741
+  affected_share: ~40% of records (those with dm >= 60)
+  documented_in: docs/wacky-tracks_recovery.qmd
+
+recoverability:
+  verified: 2026-09-20, 200000 synthetic records against the documented formula
+  unique_inverse: false
+  finding: >-
+    The encoding is not uniquely invertible - the rollover destroys the
+    information distinguishing (mm, dm>=60) from (mm+1, dm-60). But it collapses
+    to exactly TWO candidate decodings of the vessel's own GPS reading, and the
+    true value is one of them in 100.00% of cases. The candidates are separated
+    by a constant 741 m.
+  candidates: |
+    dd    <- trunc(w); total <- (w - dd) * 3600      # = mm*60 + dm, dm in [0,59]
+    mm    <- floor(total / 60); dm <- total - mm * 60
+    A     <- dd + mm/60       + dm/6000              # no rollover occurred  (~60%)
+    B     <- dd + (mm-1)/60   + (dm+60)/6000         # rollover occurred     (~40%)
+
+current_method:
+  approach: >-
+    Discards the logger coordinate and substitutes a position linearly
+    interpolated from AIS tracks onto the logger timestamp. The original is
+    retained as w_lon/w_lat.
+  emits: [lon, lat, w_lon, w_lat, dt_sec]
+  problems:
+    - >-
+      Throws away precision. The logger records to 0.01 minute (~18 m); an AIS
+      interpolation is only as good as dt_sec, which the script itself flags as
+      a reliability caveat.
+    - >-
+      Yields NA for any vessel with no AIS coverage in that year, so pre-AIS and
+      untranspondered vessels get nothing.
+    - >-
+      Makes the output AIS-derived, which is why it is then folded back into the
+      AIS ping table as provider = "wacky" - a circular dependency that keeps
+      afli_coords outside the targets graph.
+
+proposed_method:
+  approach: >-
+    Choose between candidate A and B rather than replacing the position. The
+    logger track itself should disambiguate most points: pick the candidate that
+    keeps the track continuous, since the wrong choice implies a 741 m jump and
+    an immediate jump back. Use AIS only as a fallback for points the track
+    cannot resolve.
+  emits: [lon, lat, w_lon, w_lat, basis, disambiguated_by]
+  benefits:
+    - keeps the logger's own ~18 m precision instead of an interpolation
+    - works without AIS for most points, so pre-AIS years are recoverable
+    - output is logbook data, not AIS-derived; the circular dependency disappears
+  status: not implemented - needs the user's decision
+
+open_question: >-
+  If this is adopted, the recovered positions are logbook sensor data and belong
+  at curated/logbook/sensor_gps, not inside curated/ais/ping. That removes
+  26.8M non-AIS rows from the AIS table and changes the equivalence-gate baseline.
+  See curate/decisions/000-restructuring.md, "Open question: wacky positions".
