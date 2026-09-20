@@ -43,5 +43,5 @@ request("https://gis.ices.dk/shapefiles/ICES_areas.zip") |>
 unzip(tmp_zip, exdir = tmp_dir)
 
 ices_areas <- read_sf(file.path(tmp_dir, "ICES_Areas_20160601_cut_dense_3857.shp"))
-ices_areas |> write_sf(fd_raw("aux", "ICES_Areas_20160601_cut_dense_3857.gpkg"))
+ices_areas |> write_sf(fd_raw("aux", "ICES_Areas_20160601_cut_dense_3857.gpkg"), delete_dsn = TRUE)
 

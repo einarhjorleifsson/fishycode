@@ -37,8 +37,8 @@ ices_extended <- ices_extended |>
   st_transform(4326) |>
   st_cast("MULTIPOLYGON") |>
   rename(fao = Area_Full)
-ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"))
-ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.fgb"))
+ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"), delete_dsn = TRUE)
+ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.fgb"), delete_dsn = TRUE)
 
 # eusm -------------------------------------------------------------------------
 eusm <-
@@ -55,16 +55,16 @@ eusm <-
   eusm |>
   st_transform(4326) |>
   st_crop(st_bbox(ices_extended))
-eusm |> write_sf(fd_staging("aux", "eusm.gpkg"))
-eusm |> write_sf(fd_staging("aux", "eusm.fgb"))
+eusm |> write_sf(fd_staging("aux", "eusm.gpkg"), delete_dsn = TRUE)
+eusm |> write_sf(fd_staging("aux", "eusm.fgb"), delete_dsn = TRUE)
 # gebco ------------------------------------------------------------------------
-read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"))
-read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"))
+read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"), delete_dsn = TRUE)
+read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"), delete_dsn = TRUE)
 # ports ------------------------------------------------------------------------
 ports <-
   read_sf(fd_raw("ports", "ports_all.gpkg")) |>
   filter(source %in% c("einar", "gfw")) |>
   filter_out(source == "gfw" & (str_starts(pid, "FO") | str_starts(pid, "IS"))) |>
   st_crop(st_bbox(read_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"))))
-ports |> write_sf(fd_staging("aux", "ports.gpkg"))
-ports |> write_sf(fd_staging("aux", "ports.fgb"))
+ports |> write_sf(fd_staging("aux", "ports.gpkg"), delete_dsn = TRUE)
+ports |> write_sf(fd_staging("aux", "ports.fgb"), delete_dsn = TRUE)

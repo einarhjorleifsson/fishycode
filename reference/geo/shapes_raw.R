@@ -11,7 +11,7 @@ ices_areas <-
   st_make_valid()
 ices_areas$geom |> st_is_valid() |> table()
 ices_areas |>
-  write_sf(fd_staging("aux_valid", "ices_areas.gpkg"))
+  write_sf(fd_staging("aux_valid", "ices_areas.gpkg"), delete_dsn = TRUE)
 # gebco ------------------------------------------------------------------------
 gebco <-
   readRDS(fd_raw("aux", "ICES_GEBCO.rds")) |>
@@ -22,7 +22,7 @@ gebco <-
   st_make_valid()
 gebco$geom |> st_is_valid() |> table()
 gebco |>
-  write_sf(fd_staging("aux_valid", "gebco.gpkg"))
+  write_sf(fd_staging("aux_valid", "gebco.gpkg"), delete_dsn = TRUE)
 # eusm -------------------------------------------------------------------------
 eusm <-
   readRDS(fd_raw("aux", "eusm.rds")) |>
@@ -35,4 +35,4 @@ eusm <-
   st_make_valid()
 eusm$geom |> st_is_valid() |> table()
 eusm |>
-  write_sf(fd_staging("aux_valid", "eusm.gpkg"))
+  write_sf(fd_staging("aux_valid", "eusm.gpkg"), delete_dsn = TRUE)

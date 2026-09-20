@@ -507,6 +507,55 @@ and `provider` already separates the rows, so nothing is lost.
 
 ---
 
+## Shapes chain — verified end to end (2026-09-20)
+
+Run after the main gate, because the gate had *seeded* its reference inputs from `legacy/`
+rather than building them. Both stages were executed from `raw/` and compared on substance:
+
+| Layer | Features | Area km² | |
+|---|---|---|---|
+| `ports.gpkg` / `.fgb` | 6,019 | 6,499.2 | identical |
+| `ices_areas_500m-buffer.gpkg` / `.fgb` | 66 | 14,439,705 | identical |
+| `eusm.fgb` | 2,140,649 | 11,477,618 | identical |
+| `gebco.fgb` | 9 | 13,858,337 | identical |
+| `reference/port.parquet` | 143 rows | — | identical |
+
+`port.parquet` matching matters most: it feeds both logbook adapters, so the earlier
+equivalence gate — which used the seeded copy — now stands on a reproducible input.
+
+### Two bugs found, both latent for months
+
+**1. `write_sf()` appends to FlatGeobuf.** GDAL cannot `DeleteLayer` on that driver, so
+writing to an existing `.fgb` *adds* to it. Re-running `shapes.R` silently doubled every
+`.fgb`: ports went 6,019 → 12,038 features, ICES areas 66 → 132, with identical bboxes and
+exactly doubled area. GeoPackage replaces correctly, so the two formats of the same object
+disagreed. All 12 `write_sf()` calls now pass `delete_dsn = TRUE`.
+
+The legacy files were correct only because they were first written into an empty directory.
+This surfaced *only* because the directory had been seeded — a clean-room run would never
+have shown it. Suggests the verification suite should include a **rerun-idempotency check**:
+build twice, confirm the second build matches the first.
+
+*Possible link to known issue #11* (`trail2` has 70 more rows than `trail`): `ais_ping_tag.R`
+spatially joins `staging/aux/ports.fgb`, and a duplicated polygon is an overlapping polygon,
+which is exactly the recorded symptom. Unconfirmed — the count is small for a wholesale
+doubling, so partial duplication would be the mechanism — but it is now testable.
+
+**2. `harbour_codes.R` was pointed at the wrong artifact.** `kaenugardr` publishes two port
+files and they are not interchangeable:
+
+| File | Contents | Used by |
+|---|---|---|
+| `ports_all.gpkg` | 6,019 global ports, `hid` **character** | `shapes.R`, for the AIS harbour join |
+| `ports_iceland_faroe.gpkg` | 159 Iceland+Faroe ports, `hid` **numeric** | `harbour_codes.R`, the harbour crosswalk |
+
+Repointing it at `ports_all.gpkg` during the migration produced 6,003 rows of global ports
+instead of the 143-row Icelandic crosswalk, and failed on a type mismatch first. Like
+`shapes_raw.R`, this script had never run locally — its original input, `data/ports/ports.gpkg`,
+does not exist in the legacy store at all.
+
+---
+
 ## Verification
 
 - **Equivalence gate (step 5):** rebuilt `trip`/`station`/`fishing_sample`/`catch`/`lid_map`
