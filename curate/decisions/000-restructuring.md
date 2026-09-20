@@ -332,8 +332,33 @@ directory rename and, later, symlinks. Each step stands alone if the next never 
       both in this repo and at `_data`; nothing is lost. It does argue for making the archives
       read-only sooner rather than later, so no stray `git checkout` writes into `_data`.
 
-- [ ] **4. Fold the new whack functions into `ramb`** (`whack_fwdbwd`, `whack_forward`,
-      `whack_sequential_fast`); do not migrate the four forked `rb_*` copies.
+- [x] **4. Fold the new whack functions into `ramb`.** `ramb` commit `0032b52`,
+      installed locally (65 exports, up from 62). `R/wacky_points.R` deleted from this repo;
+      `curate/ais_trip.R` and `curate/checks/ais_residual_whacks.R` now `library(ramb)` and
+      pass `kn_max = KN_MAX` explicitly rather than relying on a global leaking into a default.
+
+      Verified before dropping the fork: the four `rb_whacky_*` functions were **byte-identical
+      in executable code** to `ramb`'s, so removing the copies is behaviour-neutral. The fork's
+      roxygen was better and went back into `ramb` (it had replaced a `#' Title` placeholder).
+      Packaging fixes on the way in: `kn_max = KN_MAX` → literal `25` (the global does not exist
+      inside a package), examples no longer `source()` a script or name a private data path,
+      and `dbplyr` + `glue` added to Imports for the lazy SQL path.
+      Functional check: both filters flag a synthetic teleporting ping and nothing else.
+
+      **`ramb` is committed locally but NOT pushed** — that needs your go.
+
+      **Discovered while doing this: a second fork.** `fishydata_2024-2026/R/ramb_functions.R`
+      holds 10 functions, 5 of which are already in `ramb` (`rb_mmsi_category`, `rb_mmsi_flag`,
+      `rb_track_time`, `rb_st_keep`, `rb_st_remove`). Drift checked: three identical, and
+      `rb_st_remove` has drifted in `ramb`'s favour — `ramb` namespaces `sf::st_intersects()`
+      while the fork dropped it. So nothing in the fork is worth keeping. The 5 functions *not*
+      in `ramb` are `letters_only`, `numbers_only`, `str_extract_between_parenthesis`,
+      `rb_leaflet_raster`, `rb_cap_value` (which belongs with `ramb`'s existing `rb_cap_*` family).
+
+      Not migrated, so no fork exists in this repo — but `products/exports/buseful_2025-05-05.R`
+      still has a dangling `source("R/ramb_functions.R")`. Recommended follow-up: fold those 5
+      into `ramb` and switch that script to `library(ramb)`. Left out of step 4 to avoid
+      widening its scope.
 
 - [ ] **5. Two cheap premise tests, in the new repo.**
       - Add `station_type` to `station.parquet` in the `afli` and `fs_afladagbok` adapters.

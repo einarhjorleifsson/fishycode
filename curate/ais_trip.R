@@ -15,7 +15,7 @@
 
 library(duckdbfs)
 library(tidyverse)
-source("R/wacky_points.R")
+library(ramb)
 
 # -- Parameters ----------------------------------------------------------------
 
@@ -45,7 +45,7 @@ for (yr in years) {
   if (!is.null(VIDS)) base <- filter(base, vid %in% VIDS)
 
   # -- 1. Whack filter (lazy dplyr) -------------------------------------------
-  flagged <- base |> whack_fwdbwd() |> mutate(whack = ifelse(is.na(whack), FALSE, whack))
+  flagged <- base |> whack_fwdbwd(kn_max = KN_MAX) |> mutate(whack = ifelse(is.na(whack), FALSE, whack))
 
   # -- 2. RLE run detection -------------------------------------------------------
   # Collect clean pings; apply forward pass to remove remaining clusters that
@@ -55,7 +55,7 @@ for (yr in years) {
     filter(!whack) |>
     select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, year) |>
     collect() |>
-    whack_forward()
+    whack_forward(kn_max = KN_MAX)
 
   runs <- clean |>
     filter(!whack2) |>
