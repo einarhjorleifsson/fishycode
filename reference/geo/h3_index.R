@@ -4,7 +4,7 @@ library(duckdb)
 library(nanoparquet)
 
 # gebco ------------------------------------------------------------------------
-r <- rast("~/Downloads/GEBCO_07_May_2026_8472de0f82f8/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif")
+r <- rast(fd_raw("aux", "gebco_2026.tif"))
 
 # Dump raster to temp parquet — DuckDB reads this without loading into R memory
 pts <- as.data.frame(r, xy = TRUE, na.rm = TRUE) |>

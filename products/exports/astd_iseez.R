@@ -37,7 +37,7 @@ island <-
   read_sf(fd_staging("aux", "shoreline.gpkg")) |> 
   rename(.iceland = on_land)
 ports <-  
-  read_sf("~/stasi/fishydata/data/ports/ports.gpkg") |> 
+  read_sf(fd_staging("aux", "ports.gpkg")) |> 
   select(.pid = pid)
 eusm_ices <- 
   read_sf(fd_staging("aux", "eusm.gpkg")) |> 
@@ -50,7 +50,7 @@ fao <-
   read_sf(fd_raw("aux", "fao.gpkg")) |> 
   select(.fao = fao)
 ## CAFF area -------------------------------------------------------------------
-fil <- "~/stasi/gis/gisland_data/data-raw/misc/CAFF_Boundary_4326.zip"
+fil <- fd_raw("gis", "CAFF_Boundary_4326.zip")
 files <- unzip(fil, list = TRUE)
 unzip(zipfile = fil, exdir = tempdir())
 caff <-
@@ -59,7 +59,7 @@ caff <-
   select(.caff)
 ## Highs seas and EEZ ----------------------------------------------------------
 hs <-
-  read_sf("~/stasi/gis/eez/World_High_Seas_v1_20200826_gpkg/High_Seas_v1.gpkg") |>
+  read_sf(fd_raw("gis", "High_Seas_v1.gpkg")) |>
   st_cast("POLYGON") |>
   mutate(id = 1:n()) |>
   filter(id %in% c(8, 9, 10, 14)) |>
@@ -71,7 +71,7 @@ hs <-
   select(.eez = eez) |>
   rename(geometry = geom)
 eez <-
-  read_sf("~/stasi/gis/eez/EEZ_land_union_v3_202003/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") |>
+  read_sf(fd_raw("gis", "EEZ_Land_v3_202030.shp")) |>
   janitor::clean_names() |>
   filter(pol_type == "Union EEZ and country") |>
   filter(iso_ter1 %in% c("NOR", "FIN", "SWE", "DNK", "USA", "CAN", "GRL", "FRO", "ISL", "RUS",

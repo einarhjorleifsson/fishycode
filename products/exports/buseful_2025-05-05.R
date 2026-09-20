@@ -180,6 +180,6 @@ by_005 |>
 by_0005 |> 
   filter(metier %in% metier_used) |> 
   arrange(year, metier) |> 
-  arrow::write_dataset(path = "~/stasi/fishydata/data/ais/grid",
+  arrow::write_dataset(path = fd_staging("ais", "grid"),
                        format = "parquet",
                        existing_data_behavior = "overwrite")

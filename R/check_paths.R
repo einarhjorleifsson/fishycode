@@ -15,6 +15,7 @@ check_paths <- function(root = ".", verbose = TRUE) {
 
   files <- list.files(root, pattern = "[.]R$", recursive = TRUE, full.names = TRUE)
   files <- files[!grepl("/[.]git/|/renv/", files)]
+  files <- files[basename(files) != "check_paths.R"]   # do not scan our own patterns
 
   findings <- list()
 
@@ -33,7 +34,10 @@ check_paths <- function(root = ".", verbose = TRUE) {
 
     # 2. bare old-style path literals mean the file was missed by the migration
     stale <- unique(unlist(regmatches(
-      x, gregexpr('"(data-dump|data-raw|data)/[^"]*"|"(/heima|/u3)/[^"]*"', x))))
+      x, gregexpr(paste0('"(data-dump|data-raw|data)/[^"]*"',      # old relative layout
+                         '|"(/heima|/u3|/Users|/home)/[^"]*"',      # absolute machine paths
+                         '|"~/[^"]*"'),                            # home-relative
+                  x))))
     for (s in stale) {
       findings[[length(findings) + 1]] <-
         data.frame(file = f, kind = "stale_literal", ref = s)
