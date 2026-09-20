@@ -1,6 +1,6 @@
 id: afli_coords
 title: Wacky coordinates in the afli GPS logger tables
-status: implemented_but_wrong_method
+status: parked - incumbent retained, alternative measured but not adopted
 applies_to:
   - raw/logbooks/afli/sjalfvirkir_maelar.parquet
   - raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
@@ -186,3 +186,25 @@ latitude_bias:
     minimising total implied movement) rather than a greedy forward pass. A
     greedy pass commits to each choice on partial information; a DP considers the
     whole track. Untested.
+
+parked:
+  date: 2026-09-20
+  decision: >-
+    Stop work on the algorithm. The immediate goal is infrastructure, not a
+    better estimator, and two attempts to improve on the greedy forward pass have
+    now been measured and rejected. Revisit later with the dynamic-programming
+    approach.
+  state:
+    incumbent: >-
+      curate/corrections/afli_coords_ais_interp.R - AIS interpolated onto the
+      logger clock. Writes staging/afli/sensor_gps_ais. Carries the bootstrap
+      cycle, so it stays outside the targets graph.
+    alternative: >-
+      curate/corrections/afli_coords.R - candidate selection from the logger's
+      own reading. Writes staging/afli/sensor_gps, 50,147,118 rows, already
+      built. No AIS input, so it could join the graph if adopted.
+  both_retained: >-
+    Deliberately, at the user's request: the two are independent estimates of the
+    same position and the comparison is itself of interest. That is also why the
+    parking costs nothing - the alternative's output exists and can be analysed
+    whenever.
