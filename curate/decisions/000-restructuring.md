@@ -304,16 +304,33 @@ directory rename and, later, symlinks. Each step stands alone if the next never 
       `R/paths.R`, `AGENTS.md` and this record. Verified safe first: the only references to
       the old path were prose in `.qmd` files; no script reads it.
 
-- [ ] **2. Copy code in from both archives.** `logbooks` wins all 8 forked pairs; take each
-      unique `fishydata_2024-2026` contribution (datacall, Norway, Faroe, GFW, ports,
-      `rb_scrape_marinetraffic.R`). Nothing is deleted from either archive. Seed
-      `curate/corrections/` with the ~19 known entries, most as `suspected` — this converts
-      the drifting numbered list in the old `AGENTS.md` into something runnable.
+- [x] **2. Copy code in from both archives.** 93 files, 20,602 lines, under the new naming
+      scheme (commit `bde740b`). Mapping recorded in `001-file-migration.tsv`. Neither
+      archive was modified.
 
-- [ ] **3. Move data to `$FISHYDATA`; symlink the old paths.** Both archives and `data-dump`
-      are on one filesystem (device `16777231`), so each move is an instant rename — no
-      half-copied failure mode, and 339 GiB free would not permit a copy anyway. The symlinks
-      keep the archives runnable during the equivalence gate. Undo: remove symlink, `mv` back.
+- [x] **3. Move data to `$FISHYDATA`; symlink the old paths.** All three moves were
+      instant renames (0.004 s, 0.002 s, 0.002 s for 156 G, 155 G, 49 G). Verified after:
+      `logbooks/data/logbooks/trip.parquet` still reads 1,815,425 rows through its symlink,
+      so the must-keep-working constraint holds.
+
+      **Layout decision made here:** legacy output is parked under `_data/legacy/` so the new
+      pipeline can write to empty `_data/staging` and `_data/curated` without destroying what
+      the equivalence gate compares against. `raw/` is shared — it is immutable input.
+
+      | Was | Now | Symlink left behind |
+      |---|---|---|
+      | `logbooks/data-dump` (156 G) | `_data/raw` | yes |
+      | `logbooks/data-raw` (155 G) | `_data/legacy/staging` | yes |
+      | `logbooks/data` (49 G) | `_data/legacy/curated` | yes |
+
+      Also preserved: `fishydata_2024-2026/data-raw/mmsi/` → `_data/raw/mmsi/` — the
+      Fjarskiptastofa MMSI registry (through 2026-03-09), the one dataset the older archive
+      held that `logbooks` did not. It is a source for the vid-assignment problem.
+
+      **Known consequence:** `logbooks` git now reports 33 tracked scripts as deleted, because
+      they lived inside `data-raw/`/`data-dump/` and git does not follow symlinks. All 33 exist
+      both in this repo and at `_data`; nothing is lost. It does argue for making the archives
+      read-only sooner rather than later, so no stray `git checkout` writes into `_data`.
 
 - [ ] **4. Fold the new whack functions into `ramb`** (`whack_fwdbwd`, `whack_forward`,
       `whack_sequential_fast`); do not migrate the four forked `rb_*` copies.
