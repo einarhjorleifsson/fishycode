@@ -1,0 +1,976 @@
+---
+title: "Quality Control — Electronic Logbook Data"
+subtitle: "Issues identified in the raw data submitted to Fiskistofa"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    code-fold: true
+    theme: flatly
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: params
+# ── Period of interest ─────────────────────────────────────────────────────────
+# Adjust these two dates to run the QC for any period.
+DATE_FROM <- as.Date("2022-01-01")
+DATE_TO   <- as.Date("2022-12-31")
+```
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+library(duckdbfs)
+library(knitr)
+
+# ── Data sources ───────────────────────────────────────────────────────────────
+# Raw logbook tables (data-dump from Fiskistofa)
+trip_raw  <- open_dataset("data-dump/logbooks/fs_afladagbok/ws_veidiferd.parquet") |> collect()
+stat_raw  <- open_dataset("data-dump/logbooks/fs_afladagbok/ws_veidi.parquet")     |> collect()
+catch_raw <- open_dataset("data-dump/logbooks/fs_afladagbok/ws_afli.parquet")      |> collect()
+
+# Port crosswalk: londunarhofn (1–140, hafnarnumer_id) → hid (aflagrunnur port code)
+ports <- open_dataset("data/ports/hafnarnumerakerfid.parquet") |>
+  collect() |>
+  select(hafnarnumer_id, hid) |>
+  drop_na()
+
+# ── Filter to period ───────────────────────────────────────────────────────────
+trip_raw <- trip_raw |>
+  filter(as_date(londunardagur) >= DATE_FROM,
+         as_date(londunardagur) <= DATE_TO)
+
+stat_raw  <- stat_raw  |> filter(veidiferd_id %in% trip_raw$id)
+catch_raw <- catch_raw |> filter(veidi_id     %in% stat_raw$id)
+
+# ── Gear reference table (same code system in both logbooks and landings) ──────
+gear_ref <- tribble(
+  ~gid, ~gear_name,       ~gear_class,
+  1L,   "Skötuselsnet",   "static",
+  2L,   "Þorskfisknet",   "static",
+  3L,   "Grásleppunet",   "static",
+  4L,   "Rauðmaganet",    "static",
+  5L,   "Reknet",         "static",
+  6L,   "Botnvarpa",      "mobile",
+  7L,   "Humarvarpa",     "mobile",
+  8L,   "Rækjuvarpa",     "mobile",
+  9L,   "Flotvarpa",      "mobile",
+  10L,  "Línutrekt",      "static",
+  11L,  "Dragnót",        "mobile",
+  12L,  "Lína",           "static",
+  13L,  "Landbeitt lína", "static",
+  14L,  "Handfæri",       "static",
+  15L,  "Plógur",         "mobile",
+  16L,  "Gildra",         "static",
+  17L,  "Sóknarnet",      "static",
+  19L,  "Síldarnet",      "static",
+  21L,  "Línutrekt",      "static",
+  22L,  "Grálúðunet",     "static",
+  24L,  "HMS",            "static",
+  25L,  "Hringnet",       "mobile"
+)
+
+# ── Duration caps (mirrors gear_caps in 01_fs_afladagbok_convert.R) ───────────
+# cap_m: maximum plausible operation duration in minutes per veidarfaeri_id
+gear_caps <- tribble(
+  ~gid,  ~cap_m,
+     1,  7*24*60,   # Skötuselsnet  GNS
+     2,  7*24*60,   # Þorskfisknet  GNS
+     3,  7*24*60,   # Grásleppunet  GNS
+     4,  7*24*60,   # Rauðmaganet   GNS
+     5,    24*60,   # Reknet        GND
+     6,    12*60,   # Botnvarpa     OTB
+     7,    12*60,   # Humarvarpa    OTB NEP
+     8,    16*60,   # Rækjuvarpa    OTB SHR
+     9,    30*60,   # Flotvarpa     OTM
+    11,     4*60,   # Dragnót       SDN
+    12,    24*60,   # Lína          LLS
+    13,    24*60,   # Landbeitt lína LLS
+    14,    24*60,   # Handfæri      LHM
+    15,    20*60,   # Plógur        DRB
+    16, 20*24*60,   # Gildra        FPO
+    21,    24*60,   # Línutrekt     LLS
+    22,  7*24*60    # Grálúðunet    GNS
+)
+
+# Mobile veidarfaeri_id: overlap check on [upphaf_timi, lok_timi]
+MOBILE_GIDS <- c(6L, 7L, 8L, 9L, 11L, 15L, 25L)
+# Static veidarfaeri_id: overlap check on [milli_timi, lok_timi] (hauling period)
+STATIC_GIDS <- c(1L, 2L, 3L, 4L, 5L, 12L, 13L, 14L, 16L, 19L, 21L, 22L, 24L)
+
+# ── Coordinate conversion helpers (mirrors 01_fs_afladagbok_convert.R) ─────────
+DDM_SOURCES <- c(
+  "FRA TAKTIKAL", "FRA TAKTIKAL - GAFL AUTO",
+  "Marína raun",  "Marína raun - GAFL AUTO", "Marína raun - Skrifstofa VES",
+  "GAFL BÓK UPPFÆRÐ FRÁ TAKTIKAL"
+)
+
+# Normalise a raw integer coordinate to 6-digit form, then convert to decimal degrees.
+# fmt: "ddm" (degrees-decimal-minutes) or "dms" (degrees-minutes-seconds)
+raw_to_dd <- function(raw_int, fmt, is_lon = FALSE) {
+  nx   <- nchar(as.character(abs(raw_int)))
+  norm <- case_when(
+    nx == 6 ~ raw_int,
+    nx == 5 ~ raw_int * 10L,
+    nx == 4 ~ raw_int * 100L,
+    .default = raw_int
+  )
+  a <- abs(norm)
+  dd <- case_when(
+    fmt == "ddm" ~ trunc(a / 10000) + (a %% 10000) / 100 / 60,
+    TRUE ~ trunc(a / 10000) + trunc((a %% 10000) / 100) / 60 + (a %% 100) / 3600
+  )
+  # Longitudes: raw data stores as positive; the convention is west = negative.
+  # Source: x1 values that are stored negative are a data error (double-negation).
+  # The convert script applies -x1 then catches any result >= 10 and negates again.
+  if (is_lon) dd <- -abs(dd) else dd <- abs(dd)
+  dd
+}
+
+# ── Build station table with converted coordinates and durations ───────────────
+stations <- stat_raw |>
+  left_join(trip_raw |> select(id, uppruni), by = c("veidiferd_id" = "id")) |>
+  # Coordinate format classification
+  mutate(
+    ny1    = nchar(as.character(abs(upphaf_breidd))),
+    y1_det = case_when(
+      ny1 == 6 ~ as.numeric(abs(upphaf_breidd)),
+      ny1 == 5 ~ abs(upphaf_breidd) * 10,
+      ny1 == 4 ~ abs(upphaf_breidd) * 100,
+      .default = as.numeric(abs(upphaf_breidd))
+    ),
+    ddm_signal = !is.na(y1_det) & (y1_det %% 100 >= 60)
+  ) |>
+  group_by(veidiferd_id) |>
+  mutate(trip_ddm = any(ddm_signal, na.rm = TRUE)) |>
+  ungroup() |>
+  mutate(
+    coord_fmt = case_when(
+      trip_ddm | uppruni %in% DDM_SOURCES ~ "ddm",
+      .default = "dms"
+    )
+  ) |>
+  # Normalise raw coords to 6-digit integers
+  mutate(
+    nx1 = nchar(as.character(abs(upphaf_lengd))),
+    nx2 = nchar(as.character(abs(lok_lengd))),
+    ny1 = nchar(as.character(abs(upphaf_breidd))),
+    ny2 = nchar(as.character(abs(lok_breidd))),
+    y1n = case_when(ny1==6~upphaf_breidd, ny1==5~upphaf_breidd*10L, ny1==4~upphaf_breidd*100L, .default=upphaf_breidd),
+    x1n = case_when(nx1==6~upphaf_lengd,  nx1==5~upphaf_lengd*10L,  nx1==4~upphaf_lengd*100L,  .default=upphaf_lengd),
+    y2n = case_when(ny2==6~lok_breidd,    ny2==5~lok_breidd*10L,    ny2==4~lok_breidd*100L,    .default=lok_breidd),
+    x2n = case_when(nx2==6~lok_lengd,     nx2==5~lok_lengd*10L,     nx2==4~lok_lengd*100L,     .default=lok_lengd)
+  ) |>
+  # Convert to decimal degrees (longitude stored as positive; negate after conversion)
+  mutate(
+    lat1 = case_when(
+      coord_fmt=="ddm" ~ trunc(abs(y1n)/10000) + (abs(y1n) %% 10000)/100/60,
+      TRUE ~ trunc(abs(y1n)/10000) + trunc((abs(y1n)%%10000)/100)/60 + (abs(y1n)%%100)/3600
+    ),
+    lat2 = case_when(
+      coord_fmt=="ddm" ~ trunc(abs(y2n)/10000) + (abs(y2n) %% 10000)/100/60,
+      TRUE ~ trunc(abs(y2n)/10000) + trunc((abs(y2n)%%10000)/100)/60 + (abs(y2n)%%100)/3600
+    ),
+    # For longitude, the convert script uses -x1 to flip sign, then negates if result >= 10.
+    # A negative raw x1 stored by the provider means the sign was already applied,
+    # leading to a positive result after -x1 → coordinate ends up in eastern hemisphere.
+    lon1_pre = case_when(
+      coord_fmt=="ddm" ~ trunc(abs(x1n)/10000) + (abs(x1n) %% 10000)/100/60,
+      TRUE ~ trunc(abs(x1n)/10000) + trunc((abs(x1n)%%10000)/100)/60 + (abs(x1n)%%100)/3600
+    ),
+    lon2_pre = case_when(
+      coord_fmt=="ddm" ~ trunc(abs(x2n)/10000) + (abs(x2n) %% 10000)/100/60,
+      TRUE ~ trunc(abs(x2n)/10000) + trunc((abs(x2n)%%10000)/100)/60 + (abs(x2n)%%100)/3600
+    ),
+    lon1_na_raw = is.na(upphaf_lengd)  | upphaf_lengd  == 0L,
+    lat1_na_raw = is.na(upphaf_breidd) | upphaf_breidd == 0L,
+    # Sign correction (two-step, mirrors 01_fs_afladagbok_convert.R):
+    # Step 1 — negate all lons (virtually all providers store positive).
+    # Step 2 — records that were already correctly negative become positive after
+    #   step 1; if the result is > 10.75° and lat < 67.66°N they are negated back.
+    #   Records north of 67.66° (Barents/Norwegian Sea) stay as-is after step 1.
+    lon1 = -lon1_pre,
+    lon1 = case_when(lon1 > 10.75 & lat1 < 67.66 ~ -lon1, .default = lon1),
+    lon2 = -lon2_pre,
+    lon2 = case_when(lon2 > 10.75 & lat2 < 67.66 ~ -lon2, .default = lon2)
+  ) |>
+  # Coordinate quality flag (informational; not filtered in pipeline)
+  left_join(gear_ref |> select(gid, gear_name), by = c("veidarfaeri_id" = "gid")) |>
+  mutate(
+    coord_flag = case_when(
+      between(lon1, -1, 1)                                      ~ "meridian",
+      lon1 < -40                                                ~ "west",
+      lon1 < -35 & gear_name != "Flotvarpa"                    ~ "west",
+      lat1 < 62  & gear_name != "Flotvarpa"                    ~ "south",
+      .default = NA_character_
+    )
+  ) |>
+  # Duration from raw timestamps
+  mutate(
+    duration_m = as.numeric(difftime(lok_timi, upphaf_timi, units = "mins")),
+    ts_lok_before_upphaf = !is.na(upphaf_timi) & !is.na(lok_timi) & lok_timi < upphaf_timi,
+    ts_lok_missing       = is.na(lok_timi),
+    ts_upphaf_missing    = is.na(upphaf_timi)
+  )
+```
+
+## Background
+
+This report examines the quality of the raw electronic logbook data received from Fiskistofa (`ws_veidiferd`, `ws_veidi`, `ws_afli` tables) for the period **`r DATE_FROM`** to **`r DATE_TO`**.
+
+The data cover **`r nrow(trip_raw) |> format(big.mark=",")`** fishing trips and **`r nrow(stat_raw) |> format(big.mark=",")`** individual fishing operations (stations). Where relevant, they are compared against the official landings register (`aflagrunnur`) restricted to the same period.
+
+The issues described below correspond directly to the corrections applied in the data processing pipeline (`01_fs_afladagbok_convert.R`). The goal is to quantify how widespread each issue is and which software providers are responsible.
+
+---
+
+## 1 Software providers {#sec-providers}
+
+Each trip record includes a field (`uppruni`) identifying the software system that submitted it. This is the primary diagnostic variable: most systematic data errors are confined to one or a few providers.
+
+```{r}
+#| label: tbl-providers
+#| tbl-cap: "Trips and fishing operations (stations) by software provider in the selected period."
+
+trip_raw |>
+  left_join(
+    stat_raw |> count(veidiferd_id, name = "stations"),
+    by = c("id" = "veidiferd_id")
+  ) |>
+  group_by(`Software provider` = uppruni) |>
+  summarise(
+    Trips    = n(),
+    Stations = sum(stations, na.rm = TRUE),
+    .groups  = "drop"
+  ) |>
+  arrange(desc(Trips)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+```{r}
+#| label: fig-provider-monthly
+#| fig-cap: "Monthly trip counts by software provider (top 8 providers)."
+#| fig-height: 4
+
+top8 <- trip_raw |> count(uppruni) |> slice_max(n, n = 8) |> pull(uppruni)
+
+trip_raw |>
+  filter(uppruni %in% top8) |>
+  mutate(month = floor_date(as_date(londunardagur), "month")) |>
+  count(month, uppruni) |>
+  ggplot(aes(month, n, colour = uppruni)) +
+  geom_line() + geom_point(size = 1.5) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "1 month") +
+  labs(x = NULL, y = "Trips", colour = "Provider") +
+  theme_minimal(base_size = 10) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+---
+
+## 2 Coordinate encoding {#sec-coords}
+
+Fishing positions are stored as raw integers. Two encoding formats exist in the database:
+
+- **DMS** (degrees–minutes–seconds): e.g. `643512` = 64° 35′ 12″ N — the expected format for most providers
+- **DDM** (degrees–decimal-minutes): e.g. `643520` = 64° 35.20′ N — used by some providers, notably Marína and FRA TAKTIKAL
+
+The distinction matters because the same integer can represent a different position depending on which format is assumed. A DMS value of `643580` is impossible (seconds cannot reach 80), which is how DDM records are detected row-by-row.
+
+### 2.1 Format classification
+
+Records are classified as DDM either (a) because their provider is a **known DDM source**, or (b) because at least one station in the trip has a latitude integer whose last two digits are ≥ 60 — an impossible DMS value that indicates DDM encoding. The classification is propagated to all stations in the trip.
+
+```{r}
+#| label: tbl-coord-fmt-by-source
+#| tbl-cap: "Coordinate format classification by software provider. 'DDM (known source)' = provider confirmed to use DDM. 'DDM (row signal)' = detected from impossible DMS value in at least one station of the trip."
+
+stations |>
+  mutate(
+    fmt_label = case_when(
+      uppruni %in% DDM_SOURCES ~ "DDM (known source)",
+      trip_ddm                 ~ "DDM (row signal)",
+      TRUE ~ "DMS"
+    )
+  ) |>
+  count(uppruni, fmt_label) |>
+  pivot_wider(names_from = fmt_label, values_from = n, values_fill = 0L) |>
+  mutate(Total = rowSums(across(where(is.numeric)))) |>
+  arrange(desc(Total)) |>
+  rename(`Software provider` = uppruni) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 2.2 Longitude sign correction
+
+Iceland lies west of the prime meridian; Barents/Norwegian Sea fishing grounds lie east of it. The raw data stores longitude (`upphaf_lengd`) almost universally as a **positive integer**, regardless of hemisphere. The sign convention varies by provider and is not stored explicitly.
+
+The pipeline applies a two-step correction:
+
+1. **Negate all longitudes** — places Iceland records correctly in the western hemisphere.
+2. **Restore already-correct records** — a minority of providers stored the sign correctly (negative). After step 1 these become positive. Records where the result is > 10.75° and `upphaf_breidd` < 67.66°N are negated back. Records north of 67.66°N (Barents/Norwegian Sea demersal trawl) are left positive after step 1.
+
+The map below shows the corrected positions, coloured by the latitude band: Icelandic fishing grounds (62–68°N) and Barents/Norwegian Sea (> 68°N).
+
+```{r}
+#| label: fig-sign-corrected-map
+#| fig-cap: "Fishing positions after longitude sign correction. Icelandic fishing grounds (upphaf_breidd 62–68°N, blue) and Barents/Norwegian Sea (upphaf_breidd > 68°N, orange). Records outside Iceland lat/lon bounds are excluded by the range filter."
+#| fig-height: 5
+
+stations |>
+  filter(!is.na(lon1), !is.na(lat1), between(lon1, -40, 40), between(lat1, 55, 80)) |>
+  mutate(region = case_when(
+    lat1 > 68             ~ "Barents/Norwegian Sea (upphaf_breidd > 68°N)",
+    between(lat1, 62, 68) ~ "Iceland grounds (upphaf_breidd 62–68°N)",
+    TRUE                  ~ "Other"
+  )) |>
+  ggplot(aes(lon1, lat1, colour = region)) +
+  geom_point(size = 0.3, alpha = 0.4) +
+  scale_colour_manual(values = c("Iceland grounds (upphaf_breidd 62–68°N)" = "#2166ac",
+                                 "Barents/Norwegian Sea (upphaf_breidd > 68°N)" = "#d6604d",
+                                 "Other" = "grey70")) +
+  coord_fixed(ratio = 2.2) +
+  labs(x = "upphaf_lengd (corrected)", y = "upphaf_breidd", colour = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom")
+```
+
+### 2.4 Coordinate quality flags
+
+Three categories of suspect positions survive the range filter and are flagged via `coord_flag`. The flag is carried through to the processed data for downstream filtering or QC; no records are silently dropped.
+
+| Flag | Criterion | Likely cause |
+|---|---|---|
+| `meridian` | `upphaf_lengd` converts to lon ±1° | Digit-encoding error: leading degree-zero dropped in integer storage (e.g. raw `9103` → normalised `910300` = 91°03′ instead of `091030` = 9°10.3′) |
+| `west` | lon < −35° (non-OTM) or < −40° (OTM) | Same digit error shifting Iceland positions far into the western Atlantic |
+| `south` | `upphaf_breidd` < 62°N for non-OTM gear | Implausible position for demersal/static gear; OTM pelagic south of Iceland is expected |
+
+```{r}
+#| label: tbl-coord-flag
+#| tbl-cap: "Counts of coord_flag by category and uppruni (providers with at least one flagged record)."
+
+stations |>
+  filter(!is.na(coord_flag)) |>
+  count(`uppruni` = uppruni, `coord_flag` = coord_flag) |>
+  pivot_wider(names_from = coord_flag, values_from = n, values_fill = 0L) |>
+  mutate(Total = rowSums(across(where(is.numeric)))) |>
+  arrange(desc(Total)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+```{r}
+#| label: fig-coord-flag-map
+#| fig-cap: "Flagged positions overlaid on the main Iceland fishing grounds. Grey = unflagged; colours = coord_flag category."
+#| fig-height: 5
+
+stations |>
+  filter(!is.na(lon1), !is.na(lat1), between(lon1, -60, 10), between(lat1, 55, 72)) |>
+  arrange(!is.na(coord_flag)) |>
+  ggplot(aes(lon1, lat1, colour = coord_flag)) +
+  geom_point(size = 0.3, alpha = 0.5) +
+  scale_colour_manual(
+    values = c("meridian" = "#e6550d", "west" = "#756bb1", "south" = "#31a354"),
+    na.value = "grey85",
+    labels = c("meridian" = "meridian (upphaf_lengd ≈ 0)",
+               "west"     = "west (upphaf_lengd too far W)",
+               "south"    = "south (upphaf_breidd < 62°N)")
+  ) +
+  coord_fixed(ratio = 2.2) +
+  labs(x = "upphaf_lengd (corrected)", y = "upphaf_breidd", colour = "coord_flag") +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom")
+```
+
+### 2.3 Missing or zero coordinates
+
+Raw coordinates stored as zero or `NA` cannot be converted and will result in missing positions in the processed data.
+
+```{r}
+#| label: tbl-missing-coords
+#| tbl-cap: "Fishing stations with missing or zero start-position coordinates."
+
+stations |>
+  group_by(`Software provider` = uppruni) |>
+  summarise(
+    `Total stations`  = n(),
+    `Missing lat`     = sum(lat1_na_raw),
+    `Missing lon`     = sum(lon1_na_raw),
+    .groups = "drop"
+  ) |>
+  filter(`Missing lat` > 0 | `Missing lon` > 0) |>
+  arrange(desc(`Missing lat`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+---
+
+## 3 Event timing {#sec-timing}
+
+Each fishing operation in `ws_veidi` has two mandatory timestamps:
+
+| Raw column | Meaning |
+|---|---|
+| `upphaf_timi` | **Start of active fishing** — gear fully deployed |
+| `lok_timi` | **End of active fishing** — retrieval starts |
+
+The difference `lok_timi − upphaf_timi` gives the duration of the fishing operation. For static gear (gillnets, longlines, jigs, traps) a third timestamp `milli_timi` marks the start of hauling; the full soak time is `lok_timi − upphaf_timi`.
+
+### 3.1 Missing end timestamp
+
+`lok_timi` is missing for a portion of records. These operations have no calculable duration.
+
+```{r}
+#| label: tbl-lok-missing
+#| tbl-cap: "Fishing operations with missing lok_timi (end timestamp), by provider and gear type."
+
+stations |>
+  filter(ts_lok_missing) |>
+  count(`uppruni` = uppruni,
+        `veidarfaeri_id` = coalesce(gear_name, paste0("code ", veidarfaeri_id)),
+        name = "Missing lok_timi") |>
+  arrange(desc(`Missing lok_timi`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 3.2 End timestamp before start timestamp
+
+`lok_timi < upphaf_timi` implies a negative duration — a clear recording error.
+
+```{r}
+#| label: tbl-ts-reversed
+#| tbl-cap: "Fishing operations where lok_timi is earlier than upphaf_timi."
+
+stations |>
+  filter(ts_lok_before_upphaf) |>
+  count(`uppruni` = uppruni,
+        `veidarfaeri_id` = coalesce(gear_name, paste0("code ", veidarfaeri_id)),
+        name = "lok_timi before upphaf_timi") |>
+  arrange(desc(`lok_timi before upphaf_timi`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 3.3 Duration distribution by gear
+
+The plot below shows the distribution of operation duration (hours) by gear type, using only operations with positive, non-missing duration. Vertical dashed lines mark the per-gear caps applied in the pipeline; values beyond those caps are replaced with the cap.
+
+```{r}
+#| label: fig-duration-dist
+#| fig-cap: "Distribution of fishing operation duration (hours) by gear type. Dashed line = pipeline duration cap."
+#| fig-height: 7
+
+stations |>
+  filter(!is.na(duration_m), duration_m > 0) |>
+  mutate(duration_h = duration_m / 60) |>
+  filter(!is.na(gear_name)) |>
+  left_join(gear_caps |> mutate(cap_h = cap_m / 60), by = c("veidarfaeri_id" = "gid")) |>
+  ggplot(aes(duration_h)) +
+  geom_histogram(bins = 40) +
+  geom_vline(aes(xintercept = cap_h), linetype = "dashed",
+             colour = "firebrick", na.rm = TRUE) +
+  facet_wrap(~gear_name, scales = "free") +
+  labs(x = "Duration (hours)", y = "Operations",
+       caption = "Red dashed line = cap_m / 60 from gear_caps") +
+  theme_minimal(base_size = 9)
+```
+
+```{r}
+#| label: tbl-duration-summary
+#| tbl-cap: "Summary of duration issues by gear type. 'Zero/negative' counts operations where lok_timi ≤ upphaf_timi. 'Would be capped' counts operations whose raw duration exceeds the per-gear pipeline cap."
+
+stations |>
+  filter(!ts_lok_missing) |>
+  left_join(gear_caps, by = c("veidarfaeri_id" = "gid")) |>
+  group_by(`veidarfaeri_id` = coalesce(gear_name, paste0("code ", veidarfaeri_id))) |>
+  summarise(
+    `Total`          = n(),
+    `Zero/negative`  = sum(!is.na(duration_m) & duration_m <= 0),
+    `Would be capped`= sum(!is.na(duration_m) & !is.na(cap_m) & duration_m > cap_m),
+    `Median (hrs)`   = round(median(duration_m[duration_m > 0], na.rm=TRUE) / 60, 1),
+    .groups = "drop"
+  ) |>
+  arrange(desc(`Total`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 3.4 Duration vs expected caps
+
+Operation duration is compared against the gear-specific caps defined in the processing pipeline (`gear_caps` in `01_fs_afladagbok_convert.R`). Durations exceeding the cap are replaced with the cap in the pipeline; the table below quantifies how many records are affected per `veidarfaeri_id`.
+
+```{r}
+#| label: tbl-duration-caps
+#| tbl-cap: "Operations whose duration (lok_timi − upphaf_timi) exceeds the per-gear cap. Cap values are in minutes as defined in gear_caps."
+
+stations |>
+  filter(!ts_lok_missing, !is.na(duration_m), duration_m > 0) |>
+  left_join(gear_caps, by = c("veidarfaeri_id" = "gid")) |>
+  filter(!is.na(cap_m)) |>
+  group_by(
+    `veidarfaeri_id` = veidarfaeri_id,
+    `veidarfaeri`    = coalesce(gear_name, paste0("code ", veidarfaeri_id)),
+    `cap (h)`        = round(cap_m / 60)
+  ) |>
+  summarise(
+    `Total`        = n(),
+    `Exceeds cap`  = sum(duration_m > cap_m),
+    `% exceeds`    = round(100 * mean(duration_m > cap_m), 1),
+    `Max obs (h)`  = round(max(duration_m) / 60, 1),
+    .groups = "drop"
+  ) |>
+  filter(`Exceeds cap` > 0) |>
+  arrange(desc(`Exceeds cap`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 3.5 Temporal overlap within vessel
+
+A vessel cannot be in two places simultaneously. For **mobile gear** the active period is `[upphaf_timi, lok_timi]` (tow start to tow end); two operations on the same vessel should not overlap. For **static gear** the hauling period is `[milli_timi, lok_timi]` (hauling start to hauling end); overlapping hauls are implausible.
+
+Overlap is detected by sorting each vessel's operations chronologically and checking whether the previous operation's end time is later than the current operation's start time.
+
+```{r}
+#| label: overlap-setup
+
+stations_vid <- stations |>
+  left_join(trip_raw |> select(id, skipnr), by = c("veidiferd_id" = "id"))
+
+# Mobile: overlap on [upphaf_timi, lok_timi]
+overlap_mobile <- stations_vid |>
+  filter(veidarfaeri_id %in% MOBILE_GIDS,
+         !is.na(upphaf_timi), !is.na(lok_timi)) |>
+  arrange(skipnr, upphaf_timi) |>
+  group_by(skipnr) |>
+  mutate(
+    prev_end     = lag(lok_timi),
+    overlap_m    = as.numeric(difftime(prev_end, upphaf_timi, units = "mins")),
+    has_overlap  = !is.na(overlap_m) & overlap_m > 0
+  ) |>
+  ungroup()
+
+# Static: overlap on [milli_timi, lok_timi] (hauling period)
+overlap_static <- stations_vid |>
+  filter(veidarfaeri_id %in% STATIC_GIDS,
+         !is.na(milli_timi), !is.na(lok_timi)) |>
+  arrange(skipnr, milli_timi) |>
+  group_by(skipnr) |>
+  mutate(
+    prev_end     = lag(lok_timi),
+    overlap_m    = as.numeric(difftime(prev_end, milli_timi, units = "mins")),
+    has_overlap  = !is.na(overlap_m) & overlap_m > 0
+  ) |>
+  ungroup()
+```
+
+```{r}
+#| label: tbl-overlap-summary
+#| tbl-cap: "Temporal overlap counts by gear class. Mobile: upphaf_timi of one operation falls before lok_timi of the previous operation on the same vessel (skipnr). Static: milli_timi of one haul falls before lok_timi of the previous haul."
+
+bind_rows(
+  overlap_mobile |>
+    group_by(`veidarfaeri_id` = veidarfaeri_id,
+             `veidarfaeri`    = coalesce(gear_name, paste0("code ", veidarfaeri_id)),
+             `Overlap check`  = "upphaf_timi / lok_timi") |>
+    summarise(`Operations checked` = n(),
+              `With overlap`       = sum(has_overlap),
+              `% overlap`          = round(100 * mean(has_overlap), 2),
+              .groups = "drop"),
+  overlap_static |>
+    group_by(`veidarfaeri_id` = veidarfaeri_id,
+             `veidarfaeri`    = coalesce(gear_name, paste0("code ", veidarfaeri_id)),
+             `Overlap check`  = "milli_timi / lok_timi") |>
+    summarise(`Operations checked` = n(),
+              `With overlap`       = sum(has_overlap),
+              `% overlap`          = round(100 * mean(has_overlap), 2),
+              .groups = "drop")
+) |>
+  filter(`With overlap` > 0) |>
+  arrange(desc(`With overlap`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+```{r}
+#| label: fig-overlap-distribution
+#| fig-cap: "Distribution of overlap magnitude (minutes) for operations flagged with temporal overlap, by gear class."
+#| fig-height: 4
+
+bind_rows(
+  overlap_mobile |> filter(has_overlap) |>
+    mutate(class = "Mobile (upphaf_timi / lok_timi)"),
+  overlap_static |> filter(has_overlap) |>
+    mutate(class = "Static (milli_timi / lok_timi)")
+) |>
+  ggplot(aes(overlap_m)) +
+  geom_histogram(bins = 40) +
+  facet_wrap(~class, scales = "free") +
+  labs(x = "Overlap (minutes)", y = "Operations") +
+  theme_minimal(base_size = 11)
+```
+
+---
+
+## 4 Logbook–landings matching {#sec-matching}
+
+Every logbook trip should correspond to a landing record in the official landings register (`aflagrunnur`). Matching is performed on three keys: **vessel ID** (`skipnr` in logbooks = `skip_numer` in landings), **landing date** (`londunardagur` = `as_date(londun_hefst)`), and **landing port** (after crosswalk to a common port code).
+
+The landings register is filtered to the same period (`r DATE_FROM` – `r DATE_TO`) so that unmatched logbook trips are not confounded by landings falling outside the period.
+
+```{r}
+#| label: matching-setup
+
+land_raw <- open_dataset("data-dump/landings/agf/aflagrunnur.parquet") |>
+  filter(londun_hefst >= DATE_FROM, londun_hefst <= DATE_TO) |>
+  select(londun_id, vid = skip_numer, date = londun_hefst, hid_land = hafnarnumer, gid_land = veidarfaeri) |>
+  collect() |>
+  mutate(date = as_date(date))
+
+# One landing record per (londun_id); collapse to distinct landing events
+land_events <- land_raw |>
+  distinct(londun_id, vid, date, hid_land)
+
+# Trip keys from logbook raw
+trip_keys <- trip_raw |>
+  left_join(ports |> rename(hid_trip = hid), by = c("londunarhofn" = "hafnarnumer_id")) |>
+  select(tid = id, vid = skipnr, date = londunardagur, hid_trip, uppruni) |>
+  mutate(date = as_date(date))
+
+# Exact match: vid + date + port
+exact <- trip_keys |>
+  inner_join(land_events, by = c("vid", "date", "hid_trip" = "hid_land")) |>
+  distinct(tid, .keep_all = TRUE) |>
+  mutate(match_type = "exact (vid + date + port)")
+
+unmatched1 <- trip_keys |> filter(!tid %in% exact$tid)
+
+# Relax port
+vid_date <- unmatched1 |>
+  inner_join(land_events |> distinct(vid, date, londun_id), by = c("vid", "date")) |>
+  group_by(tid) |> filter(n_distinct(londun_id) == 1) |> slice(1) |> ungroup() |>
+  mutate(match_type = "vid + date (port relaxed)")
+
+unmatched2 <- unmatched1 |> filter(!tid %in% vid_date$tid)
+
+# Relax date ±1
+land_pm1 <- land_events |> distinct(vid, date, londun_id)
+vid_date_pm1 <- unmatched2 |>
+  inner_join(land_pm1, by = "vid") |>
+  filter(abs(as.numeric(date.x - date.y)) <= 1) |>
+  group_by(tid) |> filter(n_distinct(londun_id) == 1) |> slice(1) |> ungroup() |>
+  mutate(match_type = "vid + date ±1 day")
+
+unmatched3 <- unmatched2 |> filter(!tid %in% vid_date_pm1$tid)
+
+# Combine
+all_matched <- bind_rows(exact, vid_date, vid_date_pm1)
+
+match_summary <- trip_keys |>
+  left_join(all_matched |> select(tid, match_type), by = "tid") |>
+  mutate(match_type = replace_na(match_type, "Unmatched"))
+```
+
+### 4.1 Overall match rate
+
+```{r}
+#| label: tbl-match-rate
+#| tbl-cap: "Logbook trip matching to landings register, by match step."
+
+match_summary |>
+  count(match_type, name = "Trips") |>
+  mutate(`%` = round(100 * Trips / sum(Trips), 1)) |>
+  arrange(desc(Trips)) |>
+  rename(`Match step` = match_type) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 4.2 Unmatched trips by provider
+
+```{r}
+#| label: tbl-unmatched-by-provider
+#| tbl-cap: "Match rate by software provider."
+
+match_summary |>
+  group_by(`Software provider` = uppruni) |>
+  summarise(
+    `Trips`          = n(),
+    `Matched`        = sum(match_type != "Unmatched"),
+    `Unmatched`      = sum(match_type == "Unmatched"),
+    `Match rate (%)`  = round(100 * mean(match_type != "Unmatched"), 1),
+    .groups = "drop"
+  ) |>
+  arrange(desc(Trips)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 4.3 Unmatched trips by month
+
+```{r}
+#| label: fig-unmatch-monthly
+#| fig-cap: "Monthly count of unmatched logbook trips. Grey bars = total trips; red bars = unmatched."
+#| fig-height: 3.5
+
+match_summary |>
+  mutate(month = floor_date(date, "month")) |>
+  group_by(month) |>
+  summarise(total = n(), unmatched = sum(match_type == "Unmatched"), .groups = "drop") |>
+  ggplot(aes(month)) +
+  geom_col(aes(y = total),     fill = "grey80") +
+  geom_col(aes(y = unmatched), fill = "firebrick") +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "1 month") +
+  labs(x = NULL, y = "Trips",
+       caption = "Grey = all trips; red = unmatched") +
+  theme_minimal(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+---
+
+## 5 Landing records without a logbook trip {#sec-land-coverage}
+
+The landings register (`aflagrunnur`) is treated as the reference dataset — it captures every landed catch event regardless of whether a logbook was submitted. This section asks the complementary question to @sec-matching: **for how many landing events is there no corresponding logbook trip?**
+
+A landing event is defined as a distinct combination of `skip_numer` (vessel) and `as_date(londun_hefst)` (landing date). A logbook trip is considered to cover a landing event if it matches on `skipnr` + `londunardagur` (exact date) or `skipnr` + `londunardagur ± 1 day`.
+
+```{r}
+#| label: land-coverage-setup
+
+# Landing events in period: one row per distinct vessel × date
+land_events_cov <- land_raw |>
+  distinct(vid, date)
+
+# Logbook trips: vessel × date (allow ±1 day)
+trip_dates <- trip_keys |>
+  select(vid, date)
+
+# For each landing event, check if any logbook trip falls within ±1 day
+land_covered <- land_events_cov |>
+  left_join(
+    trip_dates |> mutate(has_lb = TRUE),
+    by = "vid"
+  ) |>
+  group_by(vid, date = date.x) |>
+  summarise(
+    covered = any(has_lb & abs(as.integer(date.x - date.y)) <= 1, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+### 5.1 Overall coverage
+
+```{r}
+#| label: tbl-land-coverage
+#| tbl-cap: "Landing events (distinct skip_numer × as_date(londun_hefst)) by logbook coverage."
+
+land_covered |>
+  count(covered) |>
+  mutate(
+    Status  = if_else(covered, "Logbook trip found (±1 day)", "No logbook trip"),
+    `%` = round(100 * n / sum(n), 1)
+  ) |>
+  select(Status, `Landing events` = n, `%`) |>
+  arrange(desc(`Landing events`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+### 5.2 Uncovered landings by month
+
+```{r}
+#| label: fig-land-coverage-monthly
+#| fig-cap: "Monthly count of landing events (skip_numer × as_date(londun_hefst)). Grey = covered by a logbook trip; red = no logbook trip found."
+#| fig-height: 3.5
+
+land_covered |>
+  mutate(month = floor_date(date, "month")) |>
+  count(month, covered) |>
+  ggplot(aes(month, n, fill = covered)) +
+  geom_col() +
+  scale_fill_manual(values = c("TRUE" = "grey70", "FALSE" = "firebrick"),
+                    labels = c("TRUE" = "Logbook found", "FALSE" = "No logbook")) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "1 month") +
+  labs(x = NULL, y = "Landing events (londun_hefst)", fill = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        legend.position = "bottom")
+```
+
+### 5.3 Uncovered landings by gear
+
+```{r}
+#| label: tbl-land-coverage-gear
+#| tbl-cap: "Landing events without a matching logbook trip, by gear code (veidarfaeri) in the landings register."
+
+land_raw |>
+  distinct(vid, date, gid_land) |>
+  left_join(land_covered, by = c("vid", "date")) |>
+  filter(!covered) |>
+  left_join(gear_ref |> select(gid, gear_name), by = c("gid_land" = "gid")) |>
+  count(`veidarfaeri` = coalesce(gear_name, paste0("code ", gid_land)),
+        name = "Landing events without logbook") |>
+  arrange(desc(`Landing events without logbook`)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+---
+
+## 6 Gear codes {#sec-gear}
+
+The gear code (`veidarfaeri_id` in the logbook, `veidarfaeri` in the landings register) uses the **same numerical system** in both databases. For trips matched to a landing, we can therefore compare the codes directly.
+
+A mismatch may indicate that the vessel reported a different gear in the logbook than was recorded at the point of landing — or that one of the systems has a data entry error.
+
+```{r}
+#| label: gear-compare-setup
+
+# For matched trips, get dominant gear code from logbook and from landings
+lb_gear <- stat_raw |>
+  filter(veidiferd_id %in% all_matched$tid) |>
+  count(veidiferd_id, veidarfaeri_id) |>
+  group_by(veidiferd_id) |>
+  slice_max(n, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  select(tid = veidiferd_id, gid_lb = veidarfaeri_id)
+
+land_gear_trip <- all_matched |>
+  select(tid, londun_id) |>
+  left_join(land_raw |> select(londun_id, gid_land), by = "londun_id") |>
+  filter(!is.na(gid_land)) |>
+  count(tid, gid_land) |>
+  group_by(tid) |>
+  slice_max(n, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  select(tid, gid_land)
+
+gear_cmp <- lb_gear |>
+  inner_join(land_gear_trip, by = "tid") |>
+  mutate(
+    same_gear = gid_lb == gid_land,
+    lb_class   = if_else(gid_lb   %in% c(6L,7L,8L,9L,11L,15L,25L), "mobile", "static"),
+    land_class = if_else(gid_land %in% c(6L,7L,8L,9L,11L,15L,25L), "mobile", "static"),
+    class_mismatch = lb_class != land_class
+  )
+```
+
+```{r}
+#| label: tbl-gear-overall
+#| tbl-cap: "Overall gear code agreement between logbook and landings register, for matched trips."
+
+gear_cmp |>
+  summarise(
+    `Trips compared`       = n(),
+    `Exact match`          = sum(same_gear),
+    `Any mismatch`         = sum(!same_gear),
+    `Mobile↔static mismatch` = sum(class_mismatch),
+    `Match rate (%)`       = round(100 * mean(same_gear), 1)
+  ) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+```{r}
+#| label: tbl-gear-mismatch-top
+#| tbl-cap: "Most frequent gear code mismatches. Both codes use the same numerical system: logbook code (left) vs. landings code (right)."
+
+gear_cmp |>
+  filter(!same_gear) |>
+  count(gid_lb, gid_land, class_mismatch, name = "Trips") |>
+  left_join(gear_ref |> select(gid, name_lb   = gear_name), by = c("gid_lb"   = "gid")) |>
+  left_join(gear_ref |> select(gid, name_land = gear_name), by = c("gid_land" = "gid")) |>
+  arrange(desc(Trips)) |>
+  head(15) |>
+  transmute(
+    `Logbook gear`  = paste0(gid_lb,   " — ", coalesce(name_lb,   "?")),
+    `Landings gear` = paste0(gid_land, " — ", coalesce(name_land, "?")),
+    `Mobile↔static` = class_mismatch,
+    Trips
+  ) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+::: {.callout-note}
+**Longline sub-types:** The most common mismatches typically involve gear codes 10, 12, 13, and 21, which are all variants of longline fishing. These are functionally similar and the mismatch likely reflects different coding conventions at the vessel vs. the landing station rather than a genuine operational difference.
+
+**Mobile↔static mismatches** are more significant: they indicate fundamental disagreement about whether the gear was towed through the water (mobile: trawl, seine, dredge) or set and hauled in place (static: nets, lines, jigs). These are flagged with `TRUE` in the table above.
+:::
+
+---
+
+## Summary {#sec-summary}
+
+
+
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Overview of all data quality issues identified in the selected period."
+
+n_stat       <- nrow(stations)
+n_stat_dur   <- nrow(stations |> filter(!is.na(duration_m)))
+n_stat_nodur <- nrow(stations |> filter(!stations$ts_lok_missing))
+n_trip       <- nrow(trip_raw)
+n_land_ev    <- nrow(land_events_cov)
+
+tibble(
+  `Issue` = c(
+    "DDM encoding — upphaf_breidd (known uppruni)",
+    "DDM encoding — upphaf_breidd (detected from row signal)",
+    "Missing/zero upphaf_breidd or upphaf_lengd",
+    "coord_flag: meridian (upphaf_lengd converts to ±1°)",
+    "coord_flag: west (upphaf_lengd too far west)",
+    "coord_flag: south (upphaf_breidd < 62°N, non-OTM)",
+    "Missing lok_timi",
+    "lok_timi before upphaf_timi",
+    "Duration exceeds cap (veidarfaeri_id cap_m)",
+    "Duration zero or negative",
+    "Temporal overlap — mobile (upphaf_timi / lok_timi)",
+    "Temporal overlap — static (milli_timi / lok_timi)",
+    "Logbook trips unmatched to londunardagur",
+    "Landing events (londun_hefst) with no logbook trip",
+    "veidarfaeri_id mismatch vs. landings",
+    "Mobile↔static class mismatch vs. landings"
+  ),
+  `Count` = c(
+    sum(stations$coord_fmt == "ddm" & stations$uppruni %in% DDM_SOURCES),
+    sum(stations$coord_fmt == "ddm" & !stations$uppruni %in% DDM_SOURCES),
+    sum(stations$lon1_na_raw | stations$lat1_na_raw),
+    sum(stations$coord_flag == "meridian", na.rm = TRUE),
+    sum(stations$coord_flag == "west",     na.rm = TRUE),
+    sum(stations$coord_flag == "south",    na.rm = TRUE),
+    sum(stations$ts_lok_missing),
+    sum(stations$ts_lok_before_upphaf),
+    {
+      stations |>
+        left_join(gear_caps, by = c("veidarfaeri_id" = "gid")) |>
+        summarise(n = sum(!is.na(duration_m) & !is.na(cap_m) & duration_m > cap_m)) |>
+        pull(n)
+    },
+    sum(!is.na(stations$duration_m) & stations$duration_m <= 0),
+    sum(overlap_mobile$has_overlap),
+    sum(overlap_static$has_overlap),
+    sum(match_summary$match_type == "Unmatched"),
+    sum(!land_covered$covered),
+    sum(!gear_cmp$same_gear),
+    sum(gear_cmp$class_mismatch)
+  ),
+  `Out of` = c(
+    n_stat, n_stat, n_stat,
+    n_stat, n_stat, n_stat,
+    n_stat, n_stat_nodur,
+    n_stat_dur, n_stat_dur,
+    nrow(overlap_mobile |> filter(!is.na(overlap_m))),
+    nrow(overlap_static |> filter(!is.na(overlap_m))),
+    n_trip, n_land_ev,
+    nrow(gear_cmp), nrow(gear_cmp)
+  )
+) |>
+  mutate(`Rate (%)` = round(100 * Count / `Out of`, 2)) |>
+  kable(format.args = list(big.mark = ","))
+```
+
+---
+
+*Period: `r DATE_FROM` – `r DATE_TO`. Report generated: `r format(Sys.time(), "%Y-%m-%d %H:%M")`.*  
+*Source data: `data-dump/logbooks/fs_afladagbok/` and `data-dump/landings/agf/aflagrunnur.parquet`.*

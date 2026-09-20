@@ -1,0 +1,370 @@
+---
+title: "Merging logbook data sources"
+subtitle: "Rationale, method, and quality assessment"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+execute:
+  warning: false
+---
+
+```{r}
+#| label: load-packages
+library(tidyverse)
+library(nanoparquet)
+library(gt)
+```
+
+```{r}
+#| label: load-data
+afli_trip    <- read_parquet("data-raw/logbooks/afli/trip.parquet")
+afli_station <- read_parquet("data-raw/logbooks/afli/station.parquet")
+afli_fs      <- read_parquet("data-raw/logbooks/afli/fishing_sample.parquet")
+afli_catch   <- read_parquet("data-raw/logbooks/afli/catch.parquet")
+
+fs_trip    <- read_parquet("data-raw/logbooks/fs_afladagbok/trip.parquet")
+fs_station <- read_parquet("data-raw/logbooks/fs_afladagbok/station.parquet")
+fs_fs      <- read_parquet("data-raw/logbooks/fs_afladagbok/fishing_sample.parquet")
+
+merged_trip    <- read_parquet("data/logbooks/trip.parquet")
+merged_station <- read_parquet("data/logbooks/station.parquet")
+merged_fs      <- read_parquet("data/logbooks/fishing_sample.parquet")
+merged_catch   <- read_parquet("data/logbooks/catch.parquet")
+```
+
+# Overview
+
+The `data/merged/` parquet files are the primary output of this project: a
+single unified set of `trip`, `station`, `fishing_sample`, and `catch` tables
+spanning the full historical record of Icelandic fishing logbooks. They are
+produced by `scripts/02_merge.R`.
+
+Two source schemas are combined:
+
+| Schema | Script | Temporal coverage | Character |
+|---|---|---|---|
+| **afli** | `01_afli_convert.R` | ~1950 – present | Legacy Oracle logbook system; primary historical record |
+| **fs_afladagbok** | `01_fs_afladagbok_convert.R` | 2020 – 2025-12 | Static dump from Fiskistofa; canonical digital logbook format |
+
+A third schema (`adb`, the live electronic feed) exists in `data/adb/` but is
+excluded from the merge; its gear codes are old-schema values that require
+lossy conversion, and its coordinates are less thoroughly validated.
+
+# Source priority
+
+## Principle
+
+Where both schemas cover the same vessel-day, a single source is chosen for
+all stations on that day. The decision granularity is the **vessel-day**
+(`vid × date`) to avoid partial-day splits where one source has some hauls
+and the other has others.
+
+**Priority order:**
+
+1. **afli** — used unconditionally where present.
+2. **fs_afladagbok** — used for vessel-days not present in `afli`.
+
+## Why afli takes priority
+
+The key reason is **mobile gear timing precision**. In `afli`, tow-start time
+(`t2`) is derived from the on-bottom clock (`ibotni`), an HHMM integer entered
+by the skipper to record when the gear reached the seabed. Tow-end (`t3`) is
+then `t2 + towtime`. In `fs_afladagbok`, `t2` and `t3` are not recorded for
+OTB or OTM; duration is instead computed as `t4 − t1` (end-of-operation minus
+start-of-operation), which includes deployment and hauling time in addition to
+actual tow time.
+
+```{r}
+#| label: tbl-timing-comparison
+#| tbl-cap: "Timing column availability (%) by schema and gear class"
+
+focus_gears <- c("OTB", "OTM", "DRB", "SDN", "LLS", "GNS", "LHM", "FPO")
+
+merged_fs |>
+  filter(gear %in% focus_gears) |>
+  group_by(Schema = schema, `Gear` = gear) |>
+  summarise(
+    Stations     = n(),
+    `t1 (%)` = round(mean(!is.na(t1)) * 100, 1),
+    `t2 (%)` = round(mean(!is.na(t2)) * 100, 1),
+    `t3 (%)` = round(mean(!is.na(t3)) * 100, 1),
+    `t4 (%)` = round(mean(!is.na(t4)) * 100, 1),
+    `duration_m (%)` = round(mean(!is.na(duration_m)) * 100, 1),
+    .groups = "drop"
+  ) |>
+  arrange(Gear, Schema) |>
+  gt() |>
+  fmt_number(columns = Stations, use_seps = TRUE, decimals = 0) |>
+  tab_style(
+    style = cell_fill(color = "#fff3cd"),
+    locations = cells_body(
+      columns = c(`t2 (%)`),
+      rows = Schema == "afli" & Gear %in% c("OTB", "OTM") & `t2 (%)` > 50
+    )
+  )
+```
+
+For bottom trawl (OTB), `afli` achieves ~86% `t2` coverage (on-bottom clock)
+versus 0% in `fs_afladagbok`. The `duration_m` in `afli` is the recorded tow
+time on the seabed; in `fs_afladagbok` it is the full operation window from
+warp-entry to hauling completion, which is systematically longer.
+
+A secondary reason is historical span: `afli` covers ~1950 to the present,
+and the merged output inherits that full historical depth from it directly.
+
+# Coverage
+
+## Vessel-day overlap
+
+```{r}
+#| label: tbl-coverage
+#| tbl-cap: "Vessel-day coverage in the overlap period (2020–2025)"
+
+DATE_MIN <- as.Date("2020-01-01")
+FS_MAX   <- as.Date("2025-12-31")
+
+afli_vd <- afli_station |>
+  left_join(afli_trip |> select(.tid, vid), by = ".tid") |>
+  filter(between(date, DATE_MIN, FS_MAX)) |>
+  distinct(vid, date)
+
+fs_vd <- fs_station |>
+  filter(between(date, DATE_MIN, FS_MAX)) |>
+  left_join(fs_trip |> select(.tid, vid), by = ".tid") |>
+  distinct(vid, date)
+
+tibble(
+  Metric = c(
+    "afli vessel-days (2020–2025)",
+    "fs_afladagbok vessel-days (2020–2025)",
+    "Vessel-days in both schemas",
+    "fs_afladagbok vessel-days not in afli (tier-2 contribution)"
+  ),
+  Count = c(
+    nrow(afli_vd),
+    nrow(fs_vd),
+    nrow(semi_join(fs_vd, afli_vd, by = c("vid", "date"))),
+    nrow(anti_join(fs_vd, afli_vd, by = c("vid", "date")))
+  )
+) |>
+  mutate(Count = scales::comma(Count)) |>
+  gt()
+```
+
+# Implementation
+
+## Date bounds
+
+| Source | Lower bound | Upper bound | Rationale |
+|---|---|---|---|
+| `afli` | none | 2026-12-31 | Reliable across the full historical period |
+| `fs_afladagbok` | 2020-01-01 | 2025-12-31 | Static dump; coverage ends 2025-12 |
+
+## Decision rule
+
+```r
+# Tier 1: afli vessel-day index
+afli_vid_date <- afli_station |>
+  left_join(afli_trip |> select(.tid, vid), by = ".tid") |>
+  distinct(vid, date)
+
+# Tier 2: fs_afladagbok vessel-days not covered by afli
+fs_only_station <- fs_station |>
+  left_join(fs_trip |> select(.tid, vid), by = ".tid") |>
+  anti_join(afli_vid_date, by = c("vid", "date")) |>
+  select(-vid)
+```
+
+## Record counts
+
+```{r}
+#| label: tbl-record-counts
+#| tbl-cap: "Record counts in the merged output"
+
+# catch.parquet has no schema column; look up via .sid membership
+fs_sids <- merged_station |> filter(schema == "fs_afladagbok") |> pull(.sid)
+
+tibble(
+  Table = c("station", "fishing_sample", "trip", "catch"),
+  afli = c(
+    nrow(merged_station |> filter(schema == "afli")),
+    nrow(merged_fs      |> filter(schema == "afli")),
+    nrow(merged_trip    |> filter(schema == "afli")),
+    nrow(merged_catch) - sum(merged_catch$.sid %in% fs_sids)
+  ),
+  `fs-only` = c(
+    nrow(merged_station |> filter(schema == "fs_afladagbok")),
+    nrow(merged_fs      |> filter(schema == "fs_afladagbok")),
+    nrow(merged_trip    |> filter(schema == "fs_afladagbok")),
+    sum(merged_catch$.sid %in% fs_sids)
+  ),
+  Merged = c(
+    nrow(merged_station),
+    nrow(merged_fs),
+    nrow(merged_trip),
+    nrow(merged_catch)
+  )
+) |>
+  mutate(across(where(is.numeric), scales::comma)) |>
+  gt()
+```
+
+## Year-by-year source breakdown
+
+```{r}
+#| label: fig-yearly-source
+#| fig-cap: "Station counts by source, 2018–2025"
+#| fig-height: 4
+
+merged_station |>
+  mutate(yr = lubridate::year(date)) |>
+  filter(between(yr, 2018, 2025)) |>
+  count(yr, schema) |>
+  ggplot(aes(yr, n, fill = schema)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = 2018:2025) +
+  labs(x = NULL, y = "Stations", fill = "Schema")
+```
+
+`afli` dominates through 2021 and drops sharply from 2022 as the legacy
+system was wound down. `fs_afladagbok` fills the gap from 2021 onwards,
+with near-complete coverage from 2023.
+
+## `.tid` type harmonisation
+
+`afli` trip identifiers (`.tid`) are numeric Oracle sequence values.
+`fs_afladagbok` `.tid` values are also numeric but from a different sequence.
+Both are coerced to character in the merged output so the column type is
+uniform. Downstream joins should key on `(schema, .sid)` or `(schema, .tid)`
+to avoid cross-schema collisions.
+
+# Timing quality
+
+Timing columns are in `fishing_sample`; `station` holds only the spatial and
+date envelope. The two schemas use different time columns depending on gear
+class:
+
+| Schema | Mobile gear | Static gear |
+|---|---|---|
+| `afli` | `t2` tow-start (on-bottom clock); `t3` = `t2` + tow minutes | `t3` retrieval start; `t4` retrieval end |
+| `fs_afladagbok` | `t1` deployment start; `t4` operation end (`t2`, `t3` absent for OTB/OTM) | `t1` deployment start; `t3` retrieval start; `t4` retrieval end |
+
+## t1 ≤ t4 ordering violations
+
+```{r}
+#| label: tbl-timing-violations
+#| tbl-cap: "t1 > t4 ordering violations by schema (fishing_sample)"
+
+merged_fs |>
+  filter(!is.na(t1), !is.na(t4)) |>
+  group_by(Schema = schema) |>
+  summarise(
+    `Rows with t1 and t4` = n(),
+    `t1 > t4 violations`  = sum(t1 > t4),
+    `Violation rate (%)`  = round(mean(t1 > t4) * 100, 3),
+    .groups = "drop"
+  ) |>
+  gt() |>
+  fmt_number(columns = 2:3, use_seps = TRUE, decimals = 0)
+```
+
+Violations in `afli` are confined to records with negative `.sid` values —
+known garbage entries inherited from the Oracle source. Filter to
+`.sid > 0` to exclude them before timing-sensitive analyses.
+
+## Duration coverage by gear
+
+```{r}
+#| label: tbl-duration-coverage
+#| tbl-cap: "duration_m availability (%) and median value (hours) by schema and gear"
+
+merged_fs |>
+  filter(gear %in% c("OTB", "OTM", "DRB", "SDN", "LLS", "GNS", "GND", "LHM", "FPO")) |>
+  group_by(Schema = schema, Gear = gear) |>
+  summarise(
+    Stations       = n(),
+    `duration available (%)` = round(mean(!is.na(duration_m)) * 100, 1),
+    `median duration (h)`    = round(median(duration_m, na.rm = TRUE) / 60, 1),
+    .groups = "drop"
+  ) |>
+  arrange(Gear, Schema) |>
+  gt() |>
+  fmt_number(columns = Stations, use_seps = TRUE, decimals = 0)
+```
+
+`afli` SDN (Dragnót) shows low duration availability (~11%) because that gear
+class records a tow count rather than timestamps; effort for SDN is per
+setting. The `afli` FPO (traps) rate of ~46% reflects sparse soak-time
+recording in the legacy system.
+
+# Annual catch totals
+
+```{r}
+#| label: fig-annual-catch
+#| fig-cap: "Annual catch totals in the merged dataset by source"
+#| fig-height: 4
+
+merged_catch |>
+  left_join(merged_station |> select(.sid, date, schema), by = join_by(.sid, schema)) |>
+  mutate(yr = lubridate::year(date)) |>
+  filter(between(yr, 1990, 2025)) |>
+  group_by(yr, schema) |>
+  summarise(catch_kt = sum(catch, na.rm = TRUE) / 1e6, .groups = "drop") |>
+  ggplot(aes(yr, catch_kt, fill = schema)) +
+  geom_col() +
+  labs(x = NULL, y = "Catch (kt)", fill = "Schema")
+```
+
+```{r}
+#| label: tbl-annual-catch-recent
+#| tbl-cap: "Annual catch totals, 2018–2025 (thousands of tonnes)"
+
+merged_catch |>
+  left_join(merged_station |> select(.sid, date, schema),by = join_by(.sid, schema)) |>
+  mutate(yr = lubridate::year(date)) |>
+  filter(between(yr, 2018, 2025)) |>
+  group_by(yr, schema) |>
+  summarise(catch_kt = round(sum(catch, na.rm = TRUE) / 1e6, 0), .groups = "drop") |>
+  pivot_wider(names_from = schema, values_from = catch_kt, values_fill = 0L) |>
+  rename(Year = yr) |>
+  mutate(Total = afli + fs_afladagbok) |>
+  gt() |>
+  fmt_number(columns = where(is.numeric), use_seps = TRUE, decimals = 0)
+```
+
+# Known limitations
+
+1. **`.sid` and `.tid` collisions**: `afli` and `fs_afladagbok` can share the
+   same numeric identifiers by coincidence. The `schema` column disambiguates
+   provenance; downstream joins should always key on `(schema, .sid)` rather
+   than `.sid` alone.
+
+2. **Residual t1 ≤ t4 violations**: see @tbl-timing-violations. Small in
+   absolute terms and confined to known garbage records in `afli`.
+   Filter `.sid > 0` before timing-sensitive analyses.
+
+3. **Mobile gear timing in fs_afladagbok**: `duration_m` for OTB/OTM is
+   `t4 − t1` (full operation time), not pure tow time on the seabed.
+   This is systematically longer than the tow-time recorded in `afli`.
+   In the merged output, OTB/OTM vessel-days covered by `afli` use the more
+   precise measure; `fs_afladagbok`-only records use the coarser estimate.
+
+4. **DRB duration in fs_afladagbok suspiciously short**: median ~18 minutes
+   for dredge operations, which is atypically brief. How `upphaf_timi` and
+   `lok_timi` are populated for plow gear in the Fiskistofa system is not
+   fully understood.
+
+5. **~54 k OTB stations (2021–2022) missing effort data**: these `fs_afladagbok`
+   records have no matching row in `ws_dragnot_varpa`, so `effort_unit = NA`
+   and `effort = NA`. This is a completeness gap in the source data, not a
+   processing error.
+
+6. **Wacky coordinate error in afli logger positions**: automatic logger
+   positions (`rafr_sjalfvirkir_maelar.parquet`) are affected by a systematic
+   DDMMmm→DDMMss misinterpretation. A recovery algorithm is documented in
+   `wacky_recovery.qmd` but has not yet been applied to the merged output.

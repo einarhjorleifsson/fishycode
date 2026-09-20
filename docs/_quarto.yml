@@ -1,0 +1,61 @@
+project:
+  type: website
+  render:
+    - "*.qmd"
+    - AGENTS.md
+    - AGENTS_data_sources.md
+    - AGENTS_output_schema.md
+
+website:
+  title: "Logbooks"
+  site-url: https://heima.hafro.is/~einarhj/logbooks
+  # favicon: "image/hafro_logo.png"
+  navbar:
+    left:
+      - text: Home
+        href: index.qmd
+    right:
+      - text: Grammar
+        href: grammar.qmd
+      - text: Source Data
+        href: afli-tables.qmd
+      - text: Pipeline
+        menu:
+          - text: Convert script audit
+            href: convert-bugs.qmd
+          - text: Merge
+            href: merge.qmd
+          - text: Historical back-entries
+            href: afli-backentry.qmd
+      - text: Coordinates
+        href: wacky-tracks_recovery.qmd
+      - text: Landings Match
+        menu:
+          - text: Current approach
+            href: landings-match.qmd
+          - text: Improvements & analysis
+            href: landings_match2.qmd
+      - text: Notes
+        menu:
+          - text: macOS disk diagnostics
+            href: on_disk.qmd
+          - text: Misc
+            href: ramb-list.qmd
+      - text: Review
+        href: project-review.qmd
+      - icon: github
+        href: https://github.com/einarhjorleifsson/logbooks
+
+format:
+  html:
+    theme: flatly
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    message: false
+    warning: false
+    echo: true
+    code-fold: true
+
+execute:
+  freeze: auto  # re-render only when source changes

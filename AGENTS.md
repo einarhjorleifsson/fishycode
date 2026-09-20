@@ -58,6 +58,29 @@ permanent — they are the only structure that survived every previous restart.
 | `products/` | Consumers of the sweep — datacall, ad-hoc exports. |
 | `docs/` | Quarto site. Reads `curated/`; never rebuilds it. |
 
+## Script naming
+
+The two predecessor repos used three prefix conventions between them (`DUMP_`,
+`DATASET_`, bare) plus numeric ordering prefixes that had rotted into gaps —
+`00, 01, 05, 11, 12, 41, 43, 80, 91`. Replaced by six rules:
+
+1. **The directory encodes the layer; the filename encodes the subject.** No
+   `DUMP_` or `DATASET_` prefixes — `dump/` and `sources/` already say it.
+2. **No numeric prefixes.** `targets` owns execution order; a number in a filename
+   can only go stale.
+3. **Name for the output, not the action.** From a dataset you can find its
+   producer by name alone.
+4. **`snake_case` throughout.** No hyphens (the old tree mixed both, sometimes in
+   one filename: `stk-mid_vessel-vid_match.R`).
+5. **File path and target name are derivable from each other.**
+   `sources/afli/convert.R` → target `afli`.
+6. **Corrections pair a declaration with an implementation**: `afli_coords.yml`
+   beside `afli_coords.R`.
+
+Deliberate exception: `curate/ais_ping_union.R` and `ais_ping_tag.R` are two
+scripts producing one sweep table, because the intermediate is 44 GB and the
+tagging pass must be restartable without redoing the union.
+
 ## Coding conventions
 
 Carried over unchanged — they are good and were consistent across both previous

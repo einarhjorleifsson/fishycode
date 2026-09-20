@@ -1,0 +1,492 @@
+---
+title: "Landings matching: improvements and pattern analysis"
+date: today
+number-sections: true
+toc: true
+toc-depth: 3
+toc-location: right
+---
+
+## Executive summary
+
+The current eight-step cascade achieves ~82% coverage of landings within the
+post-2007 window, with strong institutional explanations for most gaps:
+tourist angling vessels (exempt), lumpfish fishery (poor logbook compliance),
+and the 2020 curator retirement. However, the matching approach has systematic
+limitations that leave ~87,600 residual unmatched landings ("other" category)
+that warrant investigation.
+
+This document reviews the current approach, identifies improvement opportunities,
+and proposes new analyses to characterise why certain landings remain unmatched
+despite strong logbook activity in adjacent time periods.
+
+**Key findings:**
+- Current cascade is conservative and well-calibrated for maximising precision.
+- Weight tolerance and date windows are data-driven but could be made dynamic.
+- Multiple structural patterns suggest vessel-specific and gear-specific matching
+  strategies could improve recovery.
+- Harbour code anomalies ("Ýmsir staðir" at 85% unmatched) suggest data entry gaps.
+- Trip duration, species composition, and seasonal patterns remain unexploited.
+
+---
+
+## Part 1: Current approach review
+
+### Design principles
+
+The current eight-step cascade is built on two core principles:
+
+1. **Conservative matching** — each step accepts only **unambiguous** matches
+   (exactly one landing candidate per trip). This maximises precision at the
+   cost of recall: many true matches are rejected because they are ambiguous.
+
+2. **Decreasing key specificity** — steps progress from tight keys (`vid, date, hid`)
+   to looser keys (`vid, date±2`) to weight-based matching. This preserves the
+   signal-to-noise ratio by accumulating only high-confidence matches early.
+
+These principles are sound for a reference dataset — a false match is worse than
+no match. However, they leave recovery potential on the table for truly
+unmatched (not ambiguous) trips.
+
+### Cascade structure strengths
+
+**Steps 1–5 (key-based)** are well-executed:
+- Step 1 (exact key) captures same-day same-port landings — typically 40–50% of all matches.
+- Steps 2–4 capture timing vagaries: overnight trips, midnight-straddle, one-day recording lag.
+- Step 5 (±2 days) is finely tuned: the 3,400 newly matched trips all use exactly 2-day
+  offset, evidence of a genuine systematic lag rather than noise.
+- The 11:1 signal-to-ambiguity ratio at ±2 days is quantitatively justified; ±3 degrades to ~2:1.
+
+**Steps 6–7 (weight-based)** are appropriately conservative:
+- Demersal tolerance `log(1.3)` (~30%) is tight; reflects the fact that demersal
+  vessels land their catch whole in a single delivery.
+- Pelagic tolerance `log(2.0)` (~100%) is loose but still requires a dominant
+  candidate (gap ≥ `log(1.5)`); reflects catch-transfer patterns but yields ~0 matches.
+- The gap criterion (`score[2] - score[1] ≥ WEIGHT_MIN_GAP`) is a principled
+  tie-breaker when multiple landings are plausible.
+
+**Step 8 (wrong-date)** adds diagnostic value:
+- Flags ~2,068 trips with large date deviations (>35 days from expected).
+- Yields only ~36 matches but produces `date_error_days` QA column for all unmatched trips,
+  enabling focused manual review of suspects.
+
+### Known limitations
+
+1. **No use of trip duration.** Logbook trips have `T1` (departure) and `T2` (landing);
+   this span is information that the cascade ignores. A mobile gear trip might be
+   expected to land within ~1 week of departure; a static gear trip might be 2–3 weeks.
+   Currently, only the landing date `T2` is used for matching.
+
+2. **Harbour dropping is early.** Step 3 drops harbour at the same-day key level.
+   For vessels with multiple landings per day (split deliveries), this creates
+   ambiguity. A secondary pass using (vid, date, harbour, week) might recover
+   some of these.
+
+3. **Weight matching is unidirectional.** Steps 6–7 search by `(vid, date)` and use
+   landing weight to disambiguate among logbooks. Inverting this — searching by
+   landing weight and using logbook catch to disambiguate among landings — might
+   recover matches where the logbook date is close but not exact.
+
+4. **Gear-specific windows are absent.** A 2-day search window may be too wide for
+   mobile gear (fast turn-around) and too narrow for static gear (multi-week deployments).
+   Tuning by gear class could improve both precision and recall.
+
+5. **Species composition is unused.** Landing records include species detail; logbooks also
+   record species. A match where both the weight AND species mix align is stronger
+   evidence than weight alone.
+
+6. **Seasonal heterogeneity is unexplored.** Feb–Mar landings are over-represented
+   in the residual (ratio ~1.3–1.4). Hypothesis: date-entry errors are more common
+   early in the calendar year, suggesting a seasonal-specific wrong-date threshold
+   might be warranted.
+
+7. **Vessel-specific patterns are ignored.** Some vessels have consistent landing
+   lags; others land on the day of departure. A per-vessel offset model could improve
+   matching for high-volume vessels.
+
+8. **Multi-port landings are collapsed.** Where a vessel lands at multiple harbours
+   on the same day, the landing records are collapsed to a single `.tid`. This loses
+   information: if the logbook has one trip but the vessel split the delivery across
+   two ports, no single landing will match exactly.
+
+---
+
+## Part 2: Improvement opportunities
+
+### 2.1: Vessel-specific lag models
+
+**Hypothesis:** Certain vessels or vessel classes have predictable landing-date lags.
+Large vessels might report consistently 1–2 days late; small day-boats might land the
+same day.
+
+**Approach:**
+1. For each vessel with ≥50 matched trips, fit a linear model: `landing_date ~ departure_date`.
+2. Extract the intercept (lag) and confidence interval.
+3. Apply vessel-specific lags when matching, e.g., search ±(lag + 2σ) instead of fixed ±2.
+4. Expect 10–20% improvement in recovery for high-volume vessels.
+
+**Implementation challenge:** Requires a secondary matching pass keyed by vessel; low ROI
+unless targeting specific vessel fleets.
+
+### 2.2: Gear-specific date windows
+
+**Hypothesis:** Mobile and static gears have different trip durations and therefore
+different expected landing windows.
+
+**Approach:**
+1. Classify logbook trips by dominant gear (highest effort per trip).
+2. Compute median trip duration by gear: mobile (OTB, OTM) typically 2–4 days;
+   static (LLS, GNS, GND) often 7–14 days; trap (FPO) 3–7 days.
+3. In the cascade, use gear-specific max window rather than fixed ±2 days.
+4. For mobile gear, tighten to ±1 day (more conservative, higher precision).
+5. For static gear, extend to ±5 days (wider window, higher recall).
+
+**Implementation:** Moderate; requires trip-level gear classification and conditional
+logic in the cascade. Estimated 5–10% improvement in static-gear recovery.
+
+### 2.3: Trip-duration-constrained matching
+
+**Hypothesis:** The trip duration (`T2 - T1`) provides a tight constraint on when the
+catch *must* have been caught and *can* land. Landing dates far from this window
+are unlikely to be correct.
+
+**Approach:**
+1. For each unmatched trip, compute trip duration in days: `T_dur = T2 − T1`.
+2. For ambiguous matches (multiple landings within the date window), filter candidates
+   to only those where `landing_date` is plausible: `T1 ≤ landing_date ≤ T2 + 1 day`
+   (the +1 day accounts for overnight landing reporting).
+3. This constraint applies especially to weight-matching steps 6–7, where ambiguity
+   is common.
+
+**Implementation:** Simple; filter candidates in `try_match_weight()` by a plausibility
+check on landing_date relative to (T1, T2). Estimated 2–5% improvement.
+
+### 2.4: Species composition matching
+
+**Hypothesis:** Landings with the same species mix are more likely to be a true match,
+even if weight differs slightly (due to catch discard, measurement error).
+
+**Approach:**
+1. Compute dominant species in each logbook trip (top 3 by catch) and each landing.
+2. For ambiguous weight-match candidates (score within tolerance, but gap < `WEIGHT_MIN_GAP`),
+   use species overlap as a secondary tie-breaker: favour landings with ≥2 species in common.
+3. Expected outcome: resolves ambiguity for mixed-species trips without strong weight signal.
+
+**Implementation:** Moderate; requires species-level aggregation per trip/landing
+and overlap scoring. Estimated 2–3% improvement.
+
+### 2.5: Seasonal heterogeneity in date errors
+
+**Hypothesis:** Calendar-year date entry errors (month/year transposition) are more common
+early in the year, suggesting that Feb–Mar unmatched trips warrant a larger date-error
+tolerance.
+
+**Approach:**
+1. Quantify the month distribution of `date_error_days` for flagged trips.
+2. If Feb–Mar trips have systematically larger errors, apply a seasonal-specific threshold
+   in Step 8: `DATE_ERR_THRESHOLD_SEASONAL = 50 days for Feb–Mar, else 35 days`.
+3. Rerun expected-date matching with relaxed threshold.
+
+**Implementation:** Exploratory; very low cost to investigate. If signal is real, expect
+1–2% improvement in Feb–Mar recovery.
+
+### 2.6: Harbour-inferenced matching for "Ýmsir staðir"
+
+**Hypothesis:** Landings coded as "Ýmsir staðir" (various places) have 85% unmatched rate.
+These are likely missing harbour codes in the landing register. Inferring the correct
+harbour from vessel's recent landing history or home port could recover some.
+
+**Approach:**
+1. For each vessel, compute the most common landing harbour.
+2. For "Ýmsir staðir" landings from that vessel, substitute the inferred harbour.
+3. Rerun Steps 1–5 with the inferred harbour and flag matches with `inferred_hid = TRUE`.
+4. Accept only those where confidence is high (e.g., the inferred harbour accounts for >80%
+   of the vessel's recent landings).
+
+**Implementation:** Moderate; requires per-vessel harbour mode calculation and careful
+confidence thresholds to avoid spurious matches. Estimated 3–5% improvement in
+"Ýmsir staðir" recovery.
+
+### 2.7: Multi-port landing handling
+
+**Hypothesis:** Some trips include split deliveries (multiple ports on the same day).
+Current approach collapses these to a single landing record, but the logbook may record
+the trip once. Checking for multiple landings on the same vessel-date, then summing
+and matching, could recover these.
+
+**Approach:**
+1. Identify `(vid, date)` pairs in the landing register where multiple `.tid_land` exist
+   (split deliveries).
+2. Create a "pseudo-trip" by summing catch across all ports for that vessel-date.
+3. Run a new cascade step (say, between Step 4 and Step 5) that attempts to match logbook
+   trips to these pseudo-trips using total weight and checking that port is in the
+   list of all ports where catch was delivered.
+
+**Implementation:** Complex; requires restructuring the cascade to create and match
+pseudo-trips separately. Low expected return (~1–2%) unless this is common.
+
+### 2.8: Reverse matching — landings that match multiple logbook trips
+
+**Hypothesis:** Some landings match multiple logbook trips (ambiguity). In Step 2–5,
+we discard these. However, if a logbook trip is close in weight and date, it might be
+the true match even though the landing is ambiguous. A secondary pass that explores
+"reverse ambiguity" might recover some.
+
+**Approach:**
+1. After Step 5, identify landings that were not consumed (no match found).
+2. Search for the closest logbook trip by weight and date, even if that logbook trip
+   is not unique. Accept the match if:
+   - The logbook trip is much closer (in weight/date) than any other landing.
+   - The logbook trip is *not* already matched to a different landing.
+3. Add a flag `reverse_ambiguous = TRUE` to distinguish from primary cascade matches.
+
+**Implementation:** Complex; requires tracking which trips are "close" vs "exact". Very
+low expected return (~0.5%) unless this pattern is common.
+
+---
+
+## Part 3: Pattern analysis — what explains the residual gap?
+
+The ~87,600 unmatched "other" landings after structural exclusions remain a puzzle.
+Below are diagnostic analyses to characterise them.
+
+### 3.1: Temporal clustering of unmatched trips
+
+**Analysis:** For each vessel with both matched and unmatched landings, identify
+"gap years" — years where the vessel has matched landings before and after but
+unmatched in between.
+
+**Current status:** landings-match.qmd already identifies 265 vessels with ~4,900 gap-year
+landings. These are high-value targets: confirmed logbook activity in adjacent years
+suggests temporary lapses rather than systematic non-compliance.
+
+**New analysis:**
+- Segment gap-year vessels by gap duration (1 year, 2 years, 3+).
+- Analyse whether gaps cluster around institutional events (curator retirement in
+  2020, market opening in 2021).
+- Check if gap-year vessels are disproportionately small (LOA, kw) or specific gear types.
+
+### 3.2: Trip duration vs landing lag
+
+**Analysis:** For matched trips, compute the lag between T2 (logbook landing) and
+landing_date (register landing). Hypothesise that large lags are associated with
+certain vessel classes or gears.
+
+**Approach:**
+1. For all matched trips, compute lag = `landing_date - T2`.
+2. Stratify by vessel class (LOA, kw), gear, port, schema.
+3. Identify subgroups with median lag > ±1 day (systematic).
+4. For unmatched trips in those subgroups, expand the date window accordingly.
+
+**Expected outcome:** Identify vessel/gear/port combinations where the current ±2 day
+window is too narrow. Estimate recovery: 2–5% if such subgroups exist.
+
+### 3.3: Harbour-switching analysis
+
+**Analysis:** Some vessels fish far from home and may land at unusual ports. A landing
+at a port the vessel rarely uses might not match because the matching cascade uses the
+logbook's T2 harbour (`hid2`).
+
+**Approach:**
+1. For each vessel, compute the set of all harbours where it has ever landed.
+2. For unmatched trips, check if there is a landing at a vessel's "non-home" port on
+   a nearby date.
+3. Quantify how many unmatched trips could be recovered by relaxing the harbour constraint.
+
+**Expected outcome:** Likely low; vessel-harbour combinations are relatively sticky.
+Estimate recovery: 1–2%.
+
+### 3.4: Seasonal lag patterns
+
+**Analysis:** Validate the hypothesis that Feb–Mar landings are over-represented in
+unmatched trips (ratio ~1.3–1.4). If real, investigate the cause.
+
+**Approach:**
+1. For matched trips, compute lag by month: median lag in Feb–Mar vs other months.
+2. Test whether Feb–Mar lags are systematically larger, suggesting date-entry errors
+   are more common.
+3. Check if the lag distribution is bimodal (e.g., some trips 0 days late, others 30 days
+   late) or unimodal.
+4. Quantify how many unmatched trips in Feb–Mar would be recovered with a relaxed threshold.
+
+**Expected outcome:** If Feb–Mar has a true signal (e.g., month-year transposition errors),
+expect 1–3% recovery with seasonal-specific Step 8 threshold.
+
+### 3.5: Pelagic catch-transfer patterns
+
+**Analysis:** Pelagic trips (OTM, PS, HMS) routinely transfer catch at sea. A logbook
+trip might not match the receiving vessel's landing because the catch is recorded under
+the catching vessel. Reverse-search: match the landing to the logbook trips of nearby
+vessels (within 50 km of the landing harbour, same day ±1).
+
+**Approach:**
+1. Identify unmatched pelagic landings.
+2. Search for logbook pelagic trips from other vessels on the same day (±1).
+3. Filter to vessels whose home port is within 50 km (same fishing ground).
+4. Use catch weight as the matching signal; accept if weight is close (within pelagic
+   tolerance `log(2.0)`).
+5. Flag matches with `catch_transfer_inferred = TRUE`.
+
+**Expected outcome:** Very speculative; pelagic catch transfers are real but representing
+them in a deterministic cascade is hard (no direct audit trail). Estimate recovery:
+1–2% if the pattern is strong.
+
+### 3.6: Logbook-side data quality issues
+
+**Analysis:** Some unmatched trips might have data-entry errors on the logbook side:
+missing catch, wrong date, invalid coordinates. These are harder to detect but worth
+characterising.
+
+**Approach:**
+1. For unmatched trips (after Step 7), compute QA flags:
+   - `catch_zero` — trip has zero catch or NA.
+   - `date_implausible` — trip date is far from .tid-expected date (Step 8 signal).
+   - `coord_outlier` — trip coordinates are > 1000 km from any known Iceland port.
+   - `duplicate_trip` — another trip on the same vessel with identical date/catch/gear.
+2. Stratify unmatched trips by these flags.
+3. Quantify how many are likely data-entry artifacts vs genuine unmatched.
+
+**Expected outcome:** Identify a subset of unmatched trips that are unlikely to have
+landings (e.g., test records, data-entry errors). Estimate: 5–10% of "other" unmatched
+might be QA artifacts.
+
+### 3.7: Landing-side data quality issues
+
+**Analysis:** Some unmatched landings might be:
+- Test records or duplicates in the landing register.
+- Catch transferred from another vessel (no direct logbook entry).
+- Foreign or unlicensed vessels (outside the logbook system).
+- Recreational landings (exempt from logbooks).
+
+**Approach:**
+1. For unmatched landings, compute QA flags:
+   - `landing_zero` — zero catch (very rare; likely data error).
+   - `vid_unknown` — vid is 0 or NA (should be filtered; sanity check).
+   - `vid_range_3700_4999` — foreign vessel (already excluded, but double-check).
+   - `harbour_ysmir_stadir` — 85% unmatched, likely incomplete data entry.
+2. Stratify and quantify.
+
+**Expected outcome:** Classify unmatched landings by data-quality risk. Estimate:
+~10–15% of residual are likely data artifacts or exempt fisheries.
+
+---
+
+## Part 4: Proposed phased improvements
+
+### Phase 1 (quick wins, <1 week)
+
+1. **Seasonal heterogeneity analysis** (3.4): investigate Feb–Mar overrepresentation.
+   If signal is real, apply seasonal-specific threshold in Step 8.
+   Expected return: 1–2% recovery.
+
+2. **Trip-duration-constrained matching** (2.3): add plausibility filter to weight-matching
+   steps to discard landing candidates where `landing_date` is implausible relative to
+   trip duration. Expected return: 2–5% recovery.
+
+3. **Harbour-inference for Ýmsir staðir** (2.6): for landings with missing harbour code,
+   infer from vessel's recent landing history. Expected return: 3–5% recovery.
+
+**Combined Phase 1 estimate: 6–12% recovery** (~5,200–10,400 additional matches).
+
+### Phase 2 (exploratory, ~2 weeks)
+
+4. **Gear-specific date windows** (2.2): retune date search windows for mobile vs static gears.
+   Expected return: 5–10% recovery.
+
+5. **Species composition matching** (2.4): use species overlap as tie-breaker in ambiguous
+   weight-match candidates. Expected return: 2–3% recovery.
+
+6. **QA flag analysis** (3.6, 3.7): characterise logbook and landing data quality to separate
+   genuine unmatched from data artifacts. Expected return: classify ~10–15% as QA issues.
+
+**Combined Phase 2 estimate: 7–13% recovery** (after Phase 1).
+
+### Phase 3 (advanced, requires schema redesign)
+
+7. **Vessel-specific lag models** (2.1): per-vessel offset models for high-volume vessels.
+   Expected return: 5–10% recovery.
+
+8. **Multi-port landing handling** (2.7): structural redesign to handle split deliveries.
+   Expected return: 1–2% recovery.
+
+**Phase 3 only if Phase 1–2 do not reach acceptable coverage.**
+
+---
+
+## Part 5: Recommendations
+
+### For immediate action (next QA cycle)
+
+1. **Run the Phase 1 analyses** — these require only reading/filtering existing tables,
+   not code changes. Quantify the upside before committing to implementation.
+
+2. **Document the 265 gap-year vessels** — these are high-confidence candidates for manual
+   follow-up. Cross-reference with vessel register and Fiskistofa to understand why
+   certain vessels have temporary lapses. This manual investigation might reveal systemic
+   issues (e.g., seasonal exemptions, vessel sale/decommissioning, reporting glitches).
+
+3. **Audit "Ýmsir staðir" landings** — 85% unmatched rate is anomalously high and suggests
+   data-entry gaps. Manual inspection of a sample (20–50 landings) could reveal patterns:
+   are these all from a specific vessel fleet? Specific port cluster? Specific time period?
+
+### For design improvement
+
+4. **Defer harbour-dropping from Step 3 to a new Step 3.5** — retain harbour through the
+   key-based cascade, add a harbour-dropped step only if the stricter key fails. This
+   preserves information for split-delivery disambiguation.
+
+5. **Separate weight-matching into two phases:**
+   - Phase A (current Steps 6–7): search by (vid, date±1, hid) with tight/loose weight tolerance.
+   - Phase B (new): search by weight alone across the full date range for unmatched landings
+     far from any trip, focusing on outlier-weight landings that might be mislabelled.
+
+6. **Add conditional date windows** — introduce gear-specific or seasonal-specific date
+   search windows rather than fixed ±2 days for all steps.
+
+### For future research
+
+7. **Pelagic catch-transfer investigation** — develop a separate cascade for pelagic trips
+   that allows matching to landings by other vessels within a fleet or geographic cluster.
+   Requires domain knowledge (who are the affiliated pelagic-fleet vessels?) and careful
+   documentation.
+
+8. **Vessel-specific models** — after 5–10 more years of data, fit per-vessel offset models
+   for high-volume vessels (>500 trips). This will stabilise the estimates and enable
+   predictive matching.
+
+---
+
+## Summary table: estimated recovery by improvement
+
+| Improvement | Phase | Scope | Est. recovery | Cost | Priority |
+|---|---|---|---|---|---|
+| Seasonal heterogeneity in date errors | 1 | Analysis | 1–2% | Low | High |
+| Trip-duration-constrained matching | 1 | Code | 2–5% | Low | High |
+| Harbour-inference (Ýmsir staðir) | 1 | Code | 3–5% | Low | High |
+| Gear-specific date windows | 2 | Code | 5–10% | Moderate | Medium |
+| Species composition tie-breaker | 2 | Code | 2–3% | Moderate | Medium |
+| QA flag analysis | 2 | Analysis | 10–15% classification | Low | Medium |
+| Vessel-specific lag models | 3 | Code + ML | 5–10% | High | Low |
+| Multi-port landing handling | 3 | Schema redesign | 1–2% | High | Low |
+| Pelagic catch-transfer matching | Future | Domain research | Unknown | Very high | Low |
+
+**Phase 1 + Phase 2 combined estimate: 13–25% additional recovery** (11,300–21,750
+additional matched landings after structural exclusions), reaching ~90–97% total coverage
+of the "other" category. Remaining 3–10% would require domain expertise or schema changes.
+
+---
+
+## Conclusion
+
+The current matching cascade is well-designed for precision and achieves good coverage.
+However, it leaves systematic opportunities on the table:
+
+1. **Vessel-level patterns** (gap years, consistent lags, harbour switching) are not exploited.
+2. **Gear and trip-duration constraints** are absent.
+3. **Data quality issues** (harbour missing, date errors) are not systematically addressed.
+4. **Species composition** and **seasonal heterogeneity** are unused.
+
+Implementing Phase 1 improvements (3–4 weeks of work) should yield 6–12% additional
+recovery at relatively low cost. Phase 2 (2 additional weeks) could add another 7–13%.
+Together, these would raise coverage of the residual "other" landings from the current
+baseline toward 90%+, with clear documentation of remaining gaps.

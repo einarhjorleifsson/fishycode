@@ -1,0 +1,5 @@
+# system("quarto preview --render all --no-watch-inputs --no-browse")
+# quarto::quarto_render()
+system("rm -rf /home/hafri/einarhj/public_html/fishydata/*")
+system("cp -r _site/* /home/hafri/einarhj/public_html/fishydata/.")
+system("chmod -R a+rX /home/hafri/einarhj/public_html/fishydata")

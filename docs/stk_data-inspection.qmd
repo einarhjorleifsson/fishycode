@@ -1,0 +1,384 @@
+---
+title: "The notorious STK data"
+---
+
+```{r}
+library(duckdbfs)
+library(tidyverse)
+source("R/wacky_points.R")
+library(mapdeck)
+token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"
+mapdeck::set_token(token)
+duckdbfs::load_spatial()
+ports <- open_dataset("data/aux/ports.fgb") |> select(pid, port, .hid = hid, geom)
+stk <- 
+  open_dataset("data-raw/ais/stk") |> 
+  mutate(geom = ST_POINT(lon, lat)) |> 
+  duckdbfs::spatial_join(ports) |> 
+  select(-geom_1)
+```
+
+The stk-data have two variables supposedly associated with departure and arrival to ports:
+
+* hid - A character vector supposedly indicating the port id.
+  * It is not unique over time, i.e. same harbour may have different id at different times
+  * In some cases an id indicates a different harbour than is true, given the lon-lat data
+* io - A character vector:
+  * "I" - indicates vessel entering harbour
+  * "U" - indicates vessel leaving harbour
+* In general lon-lat of "I" is narrower than the "U"
+
+Unfortunately the stk-data are chopped around the time that vessel enters Icelandic or Faroe harbours (not others countries). Ergo the critical part of the data, when (and where) vessel is truly in harbour are missing.
+
+A lot of the "whack" points are associated with the hid and io values. It is hypothesised that the stk-dataset is actually composed of two different datasources:
+
+  * A mostly error-free (in terms of whacky) records when both hid and io are NA
+  * Records that come from a separate, although related system where vessel declare, either automatically or manually that it is leaving / entering a particular port. The lon-lat and even timestamp entry of these data may be suspect.
+
+## Evidence for the two-source hypothesis
+
+```{r}
+stk |>
+  mutate(
+    has_hid = !is.na(hid),
+    has_io  = !is.na(io)
+  ) |>
+  count(has_hid, has_io) |>
+  collect()
+```
+
+The data split into four clearly distinct populations by (hid, io) presence:
+
+| Type | n | % of total |
+|---|---|---|
+| clean (hid=NA, io=NA) | 169.6M | 93.7% |
+| port event (io set) | ~11.3M | 6.3% |
+| hid-only (hid set, io=NA) | 73k | 0.04% |
+
+```{r}
+stk |>
+  mutate(type = case_when(
+    is.na(hid) & is.na(io)   ~ "clean",
+    !is.na(hid) & !is.na(io) ~ "both",
+    is.na(hid) & !is.na(io)  ~ "io_only",
+    TRUE                      ~ "hid_only"
+  )) |>
+  group_by(type) |>
+  summarise(
+    n            = n(),
+    speed_median = median(speed, na.rm = TRUE),
+    n_zero_spd   = sum(speed == 0, na.rm = TRUE),
+    n_in_port    = sum(!is.na(pid))
+  ) |>
+  mutate(
+    pct_zero_spd = n_zero_spd / n,
+    pct_in_port  = n_in_port  / n
+  ) |>
+  select(-n_zero_spd, -n_in_port) |>
+  collect()
+```
+
+Key findings:
+
+* **clean records**: speed median ~3.4 kn; only 6.7% zero-speed; only 2.2% spatially inside a port
+  → vessel is underway
+* **port-event records (io set)**: 37–66% spatially inside a port; 36–38% zero speed
+  → dominated by port-area positions
+* **hid-only records**: only 0.7% spatially inside a port, despite a non-NA hid
+  → these are likely corrupt / wacky coordinate entries
+
+The spatial confirmation rate (% records whose lon-lat falls inside a port polygon) is the critical diagnostic:
+the clean stream is almost never in port (2%), while port-event records frequently are (37–66%).
+This confirms that `hid` and `io` come from a separate port-declaration subsystem, not the regular GPS broadcast.
+
+## The hid → port crosswalk
+
+The STK port codes (`hid`) use abbreviations that differ from the spatial port IDs (`pid`).
+However, the crosswalk is empirically recoverable from cases where both hid and pid are set:
+
+```{r}
+hid_crosswalk <- stk |>
+  filter(!is.na(hid), !is.na(io), !is.na(pid)) |>
+  count(hid, pid) |>
+  collect()
+
+hid_crosswalk |>
+  group_by(hid) |>
+  slice_max(n, n = 1) |>
+  arrange(desc(n)) |>
+  head(20)
+```
+
+The mapping is consistent: NJA → IS-NJA, REY → IS-REY, FA → IS-FAS, HUS → IS-HUS, etc.
+Some ports have multiple abbreviations (e.g. `R` and `REY` both → IS-REY), but they
+collapse cleanly to a single spatial port. This crosswalk can be used to look up the
+port centroid when recorded coordinates are outside the port polygon.
+
+## The io sequential pattern
+
+```{r}
+# Illustrate with a typical vessel
+stk |>
+  filter(mid == 102066, !is.na(io)) |>
+  select(time, lon, lat, speed, hid, io, pid, port) |>
+  arrange(time) |>
+  collect() |>
+  head(25)
+```
+
+The port-declaration stream shows:
+
+* Multiple consecutive "I" records when a vessel is in port (repeated declarations)
+* Multiple consecutive "U" records at departure (repeated transmissions)
+* The ideal U → I → U → I alternating trip signal is present but noisy due to duplicates
+* Coordinates for records with `pid` set (inside port polygon) are reliable; those with
+  `pid = NA` are either just outside the polygon (near-miss for "U" departures) or wacky
+
+---
+
+## Proposed cleaning algorithm
+
+### Step 1 — Classify records
+
+```{r}
+stk_classified <- stk |>
+  mutate(record_type = case_when(
+    is.na(hid) & is.na(io)   ~ "clean",
+    !is.na(io)                ~ "port_event",
+    TRUE                      ~ "hid_orphan"   # hid set, io=NA
+  ))
+```
+
+### Step 2 — Handle hid-orphan records
+
+`hid_orphan` records (hid set, io=NA) are **not** dropped. The spatial evidence and
+the COMMENT above clarify their nature:
+
+* **Foreign vessels (vid 3700–4999)**: `hid` here almost certainly encodes a *destination*
+  harbour declared to the control system — not the vessel's current location. The
+  coordinates are genuine GPS fixes while the vessel is underway.
+* **Icelandic vessels**: the few Icelandic `hid_orphan` records also have coordinates far
+  from the Icelandic shore — again consistent with at-sea positions.
+
+**Conclusion**: these records have valid coordinates; only the `hid` field is
+uninformative for positioning (it is not a current-port indicator). Treat them as
+`clean` for the speed filter and the consolidated trail, and nullify `hid`:
+
+```{r}
+stk_classified <- stk_classified |>
+  mutate(
+    hid = if_else(record_type == "hid_orphan", NA_character_, hid),
+    record_type = if_else(record_type == "hid_orphan", "clean", record_type)
+  )
+```
+
+```{r}
+stk_classified |> 
+  filter(record_type == "port_event") |>
+  collect() |> 
+  sample_n(1e6) |> 
+  ramb::rb_mapdeck()
+```
+
+
+### Step 3 — Clean the underway stream only
+
+Apply the forward-backward speed filter (`whack_fwdbwd()`, 25-kn threshold) to
+`record_type == "clean"` records **only**. Port-event records are declarations, not GPS
+fixes — applying a speed filter across the hid/io → clean gap would flag valid
+port-to-sea transitions as wacky.
+
+```{r}
+KN_MAX <- 25
+clean_filtered <- stk_classified |>
+  filter(record_type == "clean") |>
+  whack_fwdbwd()   # existing wacky-coordinate filter
+```
+
+
+```{r}
+# find a vessel with large whacks
+clean_filtered |> filter(whack == TRUE) |> count(vid) |> arrange(desc(n))
+clean_filtered |> 
+  filter(vid == 2929) |> 
+  collect() |> 
+  mutate(speed = whack) |> 
+  arrange(time) |> 
+  ramb::rb_mapdeck(no_lines = FALSE)
+
+clean_filtered |>
+  filter(vid == 2929) |>
+  filter(whack == FALSE) |> 
+  collect() |> 
+  arrange(time) |> 
+  ramb::rb_mapdeck(no_lines = FALSE)
+
+
+clean_filtered |>
+  filter(vid == 2765) |>
+  filter(whack == FALSE) |> 
+  collect() |> 
+  arrange(time) |> 
+  ramb::rb_mapdeck(no_lines = FALSE)
+```
+
+```{r}
+clean_filtered |> 
+  filter(whack == FALSE) |>
+  group_by(vid) |> 
+  whack_fwdbwd()  |> 
+  filter(vid == 2765) |>
+  #filter(whack == FALSE) |> 
+  collect() |> 
+  arrange(time) |> 
+  ramb::rb_mapdeck(no_lines = FALSE)
+```
+
+### Step 4 — Correct port-event coordinates
+
+Build the hid → pid crosswalk (mode of pid per hid from co-occurring records), then
+join port centroids:
+
+```{r}
+hid_to_pid <- stk |>
+  filter(!is.na(hid), !is.na(io), !is.na(pid)) |>
+  count(hid, pid) |>
+  collect() |>
+  group_by(hid) |>
+  slice_max(n, n = 1) |>
+  select(hid, pid_xwalk = pid)
+
+port_centroids <- ports |>
+  mutate(
+    clon = ST_X(ST_CENTROID(geom)),
+    clat = ST_Y(ST_CENTROID(geom))
+  ) |>
+  collect()
+
+port_events_corrected <- stk_classified |>
+  filter(record_type == "port_event") |>
+  collect() |> 
+  left_join(hid_to_pid, by = "hid") |>
+  left_join(port_centroids |> select(pid, clon, clat),
+            by = c("pid_xwalk" = "pid")) |>
+  mutate(
+    # Use recorded coordinate if inside a port polygon; otherwise use centroid
+    lon = if_else(is.na(pid) & !is.na(clon), clon, lon),
+    lat = if_else(is.na(pid) & !is.na(clat), clat, lat),
+    coord_corrected = is.na(pid) & !is.na(clon)
+  )
+```
+
+For `io_only` records (io set, hid=NA): no crosswalk match is possible. Retain these
+as-is when coordinates are plausible (speed < 25 kn forward-backward), otherwise drop.
+
+### Step 5 — Infer trip boundaries from the io sequence
+
+**On U-record coordinates**: U events are frequently outside the port polygon, but the
+lon/lat values for a given port tend to be *identical across all departures* — a
+fixed lookup value that the STK declaration system stamps automatically when the
+vessel signals departure. This means these coordinates are **not GPS fixes**; they
+are the system's canonical nominal departure position for that port. Two implications:
+
+1. They do not need centroid replacement — they are already a consistent spatial
+   anchor for "departed from port X". The centroid correction in Step 4 still applies
+   when hid is set but pid is NA *and* the coordinate looks implausible (e.g. null
+   island or wrong hemisphere), but for typical cases the declared position is fine.
+2. They should never enter the speed filter — they are declarations, not tracking data.
+
+For each `mid`, collapse consecutive runs of the same `io` value and extract the
+boundary events:
+
+```{r}
+trip_boundaries <- port_events_corrected |>
+  # keep only records with a resolved port
+  filter(!is.na(hid) | !is.na(pid)) |>
+  arrange(mid, time) |>
+  group_by(mid) |>
+  mutate(
+    # Collapse runs: keep first I of each consecutive run (arrival = vessel arrived)
+    #                keep last U of each consecutive run  (departure = vessel cleared port)
+    io_prev = lag(io),
+    run_start = is.na(io_prev) | io != io_prev
+  ) |>
+  filter(
+    (io == "I" & run_start) |          # first I in each arrival cluster
+    (io == "U" & (lead(io) != "U" | is.na(lead(io))))  # last U in each departure cluster
+  ) |>
+  select(mid, time, lon, lat, io, hid, pid, port)
+```
+
+The resulting sequence per mid is a clean alternating I/U series. Each consecutive (U, I)
+pair defines one trip:
+
+| Event | Interpretation |
+|---|---|
+| U timestamp | Vessel cleared the port; trip begins |
+| U hid/port  | Departure port |
+| I timestamp | Vessel entered port; trip ends |
+| I hid/port  | Arrival port |
+
+### Step 6 — Integrate into the consolidated trail
+
+The corrected port events serve two roles:
+
+1. **Trip boundary anchors**: provide accurate departure/arrival times and named ports,
+   filling the gap created by the chopped in-harbour segments.
+2. **Synthetic track points**: the corrected port-centroid positions (for records
+   originally outside the polygon) anchor the trajectory geographically at both ends
+   of each at-sea segment.
+
+In the consolidated trail (`data/trail/`), the port events can be merged with the clean
+stream by keeping all records, sorted by (vid, time). The `record_type` column flags
+clean vs port-declaration rows for downstream filtering.
+
+**Where this fits**: the corrected port events are small (~11M rows) relative to the
+169M-row clean stream. The union must stay fully lazy in DuckDB — collecting
+`port_events_corrected` into R memory and then trying to `union()` it with the lazy
+`clean_filtered` query causes a memory error or a type-mismatch failure.
+
+The fix is to keep `port_events_corrected` as a lazy DuckDB table. Because the
+centroid joins use small in-memory frames (`hid_to_pid`, `port_centroids`), register
+them into the same DuckDB connection via `copy_to()` first:
+
+```{r}
+con <- duckdbfs::cached_connection()
+
+# Register small lookup tables into DuckDB so all joins stay lazy
+dplyr::copy_to(con, hid_to_pid,      "hid_to_pid",      overwrite = TRUE)
+dplyr::copy_to(con, port_centroids |> select(pid, clon, clat),
+               "port_centroids", overwrite = TRUE)
+
+port_events_lazy <- stk_classified |>
+  filter(record_type == "port_event") |>
+  left_join(tbl(con, "hid_to_pid"),    by = "hid") |>
+  left_join(tbl(con, "port_centroids"), by = c("pid_xwalk" = "pid")) |>
+  mutate(
+    lon = if_else(is.na(pid) & !is.na(clon), clon, lon),
+    lat = if_else(is.na(pid) & !is.na(clat), clat, lat),
+    coord_corrected = is.na(pid) & !is.na(clon)
+  ) |>
+  select(-clon, -clat, -pid_xwalk)
+
+trail_with_boundaries <- union_all(
+  clean_filtered    |> mutate(record_type = "clean")      |> select(-geom),
+  port_events_lazy  |> mutate(record_type = "port_event") |> select(-geom, -coord_corrected)
+)
+```
+
+This union runs entirely inside DuckDB — no data is pulled into R. The result can then
+be written to `data/trail/` via `duckdbfs::write_dataset()` partitioned by year.
+
+---
+
+## Outstanding questions
+
+* **`io_only` records** (io set, hid=NA, 2.8M rows): ~37% spatially in a port but
+  ~63% are not. Without a hid we cannot assign a named port. These provide some
+  trip-boundary signal but cannot be georeferenced to a named port. Treat as lower-
+  confidence boundary markers.
+* **Verify hid→pid crosswalk stability over time**: the STK hid codes may have changed
+  (see qmd note: "hid is not unique over time"). Stratify crosswalk by year and check
+  for inconsistencies before production use.
+* **Multiple-hid ambiguity**: a small number of hids map to two distinct pids. These
+  need manual review (possibly same-named ports or code recycling).
