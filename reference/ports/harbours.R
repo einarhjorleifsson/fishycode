@@ -1,4 +1,4 @@
-read_parquet("../landings/data-raw/data-dump/agf/aflagrunnur_v.parquet") |>
+read_parquet(fd_raw("landings", "agf", "aflagrunnur_v.parquet")) |>
   select(starts_with("hafnar")) |>
   distinct() |>
   arrange(hafnarnumer_id) |>
@@ -6,4 +6,4 @@ read_parquet("../landings/data-raw/data-dump/agf/aflagrunnur_v.parquet") |>
          hid_new = hafnarnumer_id,
          harbour = hafnarnumer_heiti) |>
   arrange(hid) |>
-  write_parquet("data/harbours/icelandic_harbours.parquet")
+  write_parquet(fd_curated("reference", "harbour.parquet"))

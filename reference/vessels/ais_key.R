@@ -141,19 +141,19 @@ str_extract_dmy_period <-
 ## Various auxillary informations ----------------------------------------------
 ## Maritime identification digits
 MID <-
-  read_parquet("data/aux/maritime_identification_digits.parquet") |>
+  read_parquet(fd_staging("aux", "maritime_identification_digits.parquet")) |>
   # used for classifying likely incomplete mmsi-signals
   mutate(MID_child = paste0("98", MID),
          MID_aid = paste0("99", MID))
 ## Call sign prefix - flag state
 cs.prefix <-
-  read_parquet("data/aux/callsign_prefix.parquet") |>
+  read_parquet(fd_staging("aux", "callsign_prefix.parquet")) |>
   # critical, lot of mess with TF in stk localid and globalid
   filter(cs_prefix != "TF")
 ## vessel registry
 #  should really add skemmtibatar
 v_all <-
-  read_parquet("data/vessels/vessels_iceland.parquet") |>
+  read_parquet(fd_curated("vessel", "vessel.parquet")) |>
   mutate(vidc = as.character(vid))
 v_mmsi <-
   v_all |>
@@ -284,8 +284,8 @@ VID2 <-
   as.character()
 
 lnd <-
-  read_parquet("data-dump/landings/agf/aflagrunnur.parquet") |>
-  #read_parquet("data/landings/agf_stations.parquet") |>
+  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+  #read_parquet(fd_curated("landing", "agf_stations.parquet")) |>
   group_by(vid = skip_numer) |>
   reframe(n = n(),
           min = min(londun_hefst),
@@ -294,8 +294,8 @@ lnd <-
 
 ## stk summary -----------------------------------------------------------------
 STK <-
-  open_dataset("data-dump/ais/stk/trail")
-mobile <- open_dataset("data-dump/ais/stk/mobile.parquet")
+  open_dataset(fd_raw("ais", "stk", "trail"))
+mobile <- open_dataset(fd_raw("ais", "stk", "mobile.parquet"))
 stk <-
   STK |>
   group_by(mid, year) |>
@@ -321,7 +321,7 @@ stk <-
 
 # Older matches ----------------------------------------------------------------
 older <-
-  read_parquet("data-dump/ais/stk/einarhj_mobile-vid.parquet") |>
+  read_parquet(fd_raw("ais", "stk", "einarhj_mobile-vid.parquet")) |>
   select(mid:vid, no, t1, t2) |>
   # add loid and glid where missing
   left_join(stk |> select(mid, loid_tmp = loid, glid_tmp = glid, d1, d2),
@@ -336,8 +336,8 @@ older <-
 
 # Join manual (duals) ----------------------------------------------------------
 manual <-
-  "data-dump/ais/stk/stk_mobile_match-and-duals.ods" |>
-  #"data-raw/stk_mobile_match-and-duals/stk_mobile_match-and-duals.ods" |>
+  fd_raw("ais", "stk", "stk_mobile_match-and-duals.ods") |>
+  #fd_staging("stk_mobile_match-and-duals", "stk_mobile_match-and-duals.ods") |>
   readODS::read_ods() |>
   select(mid:d2) |>
   # Guard: fix swapped d1/d2 (ODS date-entry errors)
@@ -666,4 +666,4 @@ stk13 |>
          vid = as.integer(vid),
          no = as.integer(no),
          vid_older = as.integer(vid_older)) |>
-  nanoparquet::write_parquet("data/vessels/stk_vessel_match.parquet")
+  nanoparquet::write_parquet(fd_curated("vessel", "vessel_ais_key.parquet"))

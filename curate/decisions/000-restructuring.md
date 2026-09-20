@@ -390,6 +390,38 @@ directory rename and, later, symlinks. Each step stands alone if the next never 
 
 ---
 
+## Open question: wacky positions inside the AIS ping table
+
+Surfaced while declaring the build graph. A decision for the user, not a refactor to make
+unilaterally.
+
+`curate/corrections/afli_coords.R` reads `staging/ais/ping_union` to interpolate corrected
+positions for the afli GPS loggers, then writes `sensor_GPS` — which `ais_ping_union.R`
+folds back in as `provider = "wacky"`. Union depends on correction; correction depends on
+union. Confirmed in code at `afli_coords.R:62` and `ais_ping_union.R:72`.
+
+It sits outside the graph for now, on the same principle as `overrides/` — a genuine cycle
+is broken by a person, not pretended away.
+
+But the cycle is a symptom. **26.8 M of the 565.9 M rows in the AIS ping table are not AIS**:
+they are logbook GPS positions *interpolated from* AIS. The dataset used to derive them
+contains them. Three ways out:
+
+1. **Split the table.** `curated/ais/ping` holds real AIS only (~539 M); recovered GPS lives
+   at `curated/logbook/sensor_gps` with its own `basis`. Consumers union explicitly when they
+   want both. Fixes the data model, matches the "everything inferred carries a basis" rule —
+   but changes the AIS row count, so the equivalence gate must expect it.
+2. **Materialise a base union.** `ping_base` (4 real providers) → `afli_coords` →
+   `ping_union`. Breaks the cycle properly and keeps the current output, at the cost of an
+   extra 13 GB and a full extra pass.
+3. **Leave the bootstrap outside the graph.** What is in place now. Correct output, but
+   `tar_outdated()` cannot tell you the recovery has gone stale.
+
+Recommendation: **option 1** — the only one that fixes the model rather than the plumbing,
+and `provider` already separates the rows, so nothing is lost.
+
+---
+
 ## Verification
 
 - **Equivalence gate (step 5):** rebuilt `trip`/`station`/`fishing_sample`/`catch`/`lid_map`

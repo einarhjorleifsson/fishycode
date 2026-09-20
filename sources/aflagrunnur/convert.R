@@ -1,8 +1,8 @@
 library(nanoparquet)
 library(tidyverse)
-ports <- read_parquet("data/ports/hafnarnumerakerfid.parquet")
+ports <- read_parquet(fd_curated("reference", "port.parquet"))
 aflagrunnur <-
-  read_parquet("data-dump/landings/agf/aflagrunnur.parquet") |>
+  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
   select(.lid = londun_id, vid = skip_numer, date = londun_hefst,
          hid = hafnarnumer, gid = veidarfaeri, .sid = fisktegund,
          .stid = veidistofn,
@@ -22,5 +22,5 @@ landings <-
 catch <-
   aflagrunnur |>
   select(.tid, .lid, gid, .sid, .stid, catch)
-landings |> duckdbfs::write_dataset("data/landings/landings.parquet")
-catch    |> duckdbfs::write_dataset("data/landings/catch.parquet")
+landings |> duckdbfs::write_dataset(fd_curated("landing", "landings.parquet"))
+catch    |> duckdbfs::write_dataset(fd_curated("landing", "catch.parquet"))

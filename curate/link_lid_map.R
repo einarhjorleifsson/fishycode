@@ -36,10 +36,10 @@ DATE_ERR_WINDOW     <- 3L         # ± days around expected date to search
 # One row per (vid × date × hid); catch summed across species.
 # Multiple .lids on the same key are collapsed to min(.lid) = .tid.
 land <-
-  duckdbfs::open_dataset("data/landings/landings.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_curated("landing", "landings.parquet")) |> collect() |>
   filter(vid > 0, date >= ymd("2007-09-01"), date <= ymd("2025-12-12")) |>
   left_join(
-    duckdbfs::open_dataset("data/landings/catch.parquet") |> collect() |>
+    duckdbfs::open_dataset(fd_curated("landing", "catch.parquet")) |> collect() |>
       group_by(.tid) |>
       summarise(catch = sum(catch), .groups = "drop"),
     by = ".tid"
@@ -48,12 +48,12 @@ land <-
 
 ## Logbook trips with total catch -----------------------------------------------
 trip <-
-  duckdbfs::open_dataset("data/logbooks/trip.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_curated("logbook", "trip.parquet")) |> collect() |>
   mutate(date = as_date(T2), hid = hid2) |>
   left_join(
-    duckdbfs::open_dataset("data/logbooks/catch.parquet") |> collect() |>
+    duckdbfs::open_dataset(fd_curated("logbook", "catch.parquet")) |> collect() |>
       left_join(
-        duckdbfs::open_dataset("data/logbooks/station.parquet") |> collect() |> select(.sid, .tid, schema),
+        duckdbfs::open_dataset(fd_curated("logbook", "station.parquet")) |> collect() |> select(.sid, .tid, schema),
         by = ".sid"
       ) |>
       filter(!is.na(.tid)) |>
@@ -142,13 +142,13 @@ m5 <- try_match(
 ## Steps 6–7: catch-weight matching --------------------------------------------
 # gear_mapping has multiple rows per gid (old/new code versions); derive the
 # pelagic flag directly from the known gid set rather than joining on gear name.
-pelagic_gids <- duckdbfs::open_dataset("data/gear/gear_mapping.parquet") |> collect() |>
+pelagic_gids <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |>
   filter(gear %in% c("OTM", "PS", "HMS")) |>
   distinct(gid) |>
   pull(gid)
 
 trip_gear <-
-  duckdbfs::open_dataset("data/logbooks/fishing_sample.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_curated("logbook", "fishing_sample.parquet")) |> collect() |>
   mutate(.tid = as.character(.tid)) |>
   count(.tid, gid) |>
   group_by(.tid) |>
@@ -253,8 +253,8 @@ lid_map |>
   print()
 
 ## Write output -----------------------------------------------------------------
-trip_out <- duckdbfs::open_dataset("data/logbooks/trip.parquet") |> collect() |>
+trip_out <- duckdbfs::open_dataset(fd_curated("logbook", "trip.parquet")) |> collect() |>
   left_join(lid_map, by = c(".tid", "schema"))
 
-lid_map  |> duckdbfs::write_dataset("data/logbooks/lid_map.parquet")
-trip_out |> duckdbfs::write_dataset("data/logbooks/trip.parquet")
+lid_map  |> duckdbfs::write_dataset(fd_curated("logbook", "lid_map.parquet"))
+trip_out |> duckdbfs::write_dataset(fd_curated("logbook", "trip.parquet"))

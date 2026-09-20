@@ -29,7 +29,7 @@ options(knitr.kable.NA = '')
 # Import vessel registries -----------------------------------------------------
 ## ISL -------------------------------------------------------------------------
 mmsi_ISL <-
-  read_parquet("data-dump/vessels/mmsi_iceland_archieves.parquet") |>
+  read_parquet(fd_raw("vessels", "mmsi_iceland_archieves.parquet")) |>
   filter(mmsi_cat == "vessel") |>
   filter(!is.na(sknr)) |>
   filter(!str_starts(sknr, "SKB")) |>
@@ -51,7 +51,7 @@ mmsi_ISL |>
   filter(n.mmsi > 1) |>
   knitr::kable(caption = "Vessel with more than one MMSI (expect) none")
 vessel_ISL <-
-  read_parquet("data-dump/vessels/vessel_v.parquet") |>
+  read_parquet(fd_raw("vessels", "vessel_v.parquet")) |>
   dplyr::select(vid = registration_no,
                 vessel = name,
                 cs = call_sign,
@@ -136,7 +136,7 @@ vessel_ISL <-
 
 # add last year vessel in Hreiðar's dataset (last time updated 2021)
 v <-
-  readxl::read_excel("data-raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx") |>
+  readxl::read_excel(fd_staging("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")) |>
   janitor::clean_names() |>
   select(vid = skskr_nr,
          year = ar) |>
@@ -164,7 +164,7 @@ vessel_ISL <-
 # Save -------------------------------------------------------------------------
 vessel_ISL |>
   mutate(kw = ifelse(kw == 0, NA, kw)) |>
-  write_parquet("data/vessels/vessels_iceland.parquet")
+  write_parquet(fd_curated("vessel", "vessel.parquet"))
 
 
 
@@ -200,7 +200,7 @@ vessel_ISL |> filter(mmsi %in% as.character(missing$mmsi))
 ### ISL vessel - in landings?
 # check if vessels that have landed have mmsi
 vid_landings <-
-  read_parquet("data-dump/landings/agf/aflagrunnur.parquet") |>
+  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
   rename(vid = skip_numer,
          date = londun_hefst,
          .lid = londun_id) |>

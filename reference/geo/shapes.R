@@ -8,7 +8,7 @@ library(mapview)
 #  analysis.
 
 sf_use_s2(FALSE)
-ices_raw <- read_sf("data-dump/aux/ICES_Areas_20160601_cut_dense_3857.gpkg")
+ices_raw <- read_sf(fd_raw("aux", "ICES_Areas_20160601_cut_dense_3857.gpkg"))
 
 # 1. Buffer the union — only external (coastal) boundaries expand
 original_union <- st_union(ices_raw)
@@ -37,12 +37,12 @@ ices_extended <- ices_extended |>
   st_transform(4326) |>
   st_cast("MULTIPOLYGON") |>
   rename(fao = Area_Full)
-ices_extended |> write_sf("data/aux/ices_areas_500m-buffer.gpkg")
-ices_extended |> write_sf("data/aux/ices_areas_500m-buffer.fgb")
+ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"))
+ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.fgb"))
 
 # eusm -------------------------------------------------------------------------
 eusm <-
-  readRDS("data-dump/aux/eusm.rds") |>
+  readRDS(fd_raw("aux", "eusm.rds")) |>
   rename(bbht = MSFD_BBHT, geom = Shape) |>
   # drops 986652 features !!
   filter(bbht != "") |>
@@ -55,16 +55,16 @@ eusm <-
   eusm |>
   st_transform(4326) |>
   st_crop(st_bbox(ices_extended))
-eusm |> write_sf("data/aux/eusm.gpkg")
-eusm |> write_sf("data/aux/eusm.fgb")
+eusm |> write_sf(fd_staging("aux", "eusm.gpkg"))
+eusm |> write_sf(fd_staging("aux", "eusm.fgb"))
 # gebco ------------------------------------------------------------------------
-read_sf("data-raw/aux/gebco.gpkg") |> write_sf("data/aux/gebco.gpkg")
-read_sf("data-raw/aux/gebco.gpkg") |> write_sf("data/aux/gebco.fgb")
+read_sf(fd_staging("aux", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"))
+read_sf(fd_staging("aux", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"))
 # ports ------------------------------------------------------------------------
 ports <-
-  read_sf("../kaenugardr/ports_all.gpkg") |>
+  read_sf(fd_raw("ports", "ports_all.gpkg")) |>
   filter(source %in% c("einar", "gfw")) |>
   filter_out(source == "gfw" & (str_starts(pid, "FO") | str_starts(pid, "IS"))) |>
-  st_crop(st_bbox(read_sf("data/aux/ices_areas_500m-buffer.gpkg")))
-ports |> write_sf("data/aux/ports.gpkg")
-ports |> write_sf("data/aux/ports.fgb")
+  st_crop(st_bbox(read_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"))))
+ports |> write_sf(fd_staging("aux", "ports.gpkg"))
+ports |> write_sf(fd_staging("aux", "ports.fgb"))

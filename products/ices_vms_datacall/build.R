@@ -55,7 +55,7 @@ exclude_gear <- c("FPO", "GND", "LHP", "MIS")
 exclude_met5 <- c("FPO_DEF", "GND_SPF", "LHP_FIF", "MIS_DWF")
 
 vessels <- 
-  open_dataset(here("data/vessels/vessels_iceland.parquet")) |> 
+  open_dataset(here(fd_curated("vessel", "vessel.parquet"))) |> 
   mutate(loa_class = cut(loa,
                          breaks = c(0, 6, 8, 10, 12, 15, 18, 24, 40, 'inf' ),
                          right = FALSE,
@@ -66,10 +66,10 @@ vessels <-
          VE_ID = as.character(VE_ID),
          VE_ID = paste0("IS", str_pad(VE_ID, pad = "0", width = 4)))
 gear <- 
-  open_dataset(here("data/gear/gear_mapping.parquet")) |> 
+  open_dataset(here(fd_curated("reference", "gear.parquet"))) |> 
   select(agf_gid, gear, met5 = target, met6)
 trail <- 
-  open_dataset(here("data/ais/trail")) |> 
+  open_dataset(here(fd_staging("ais", "ping_union"))) |> 
   filter(between(year, 2009, 2024),
          .cid > 0,
          whack == FALSE,
@@ -92,7 +92,7 @@ midpoint <-
   filter(.row_number == floor(total/2)) |> 
   mutate(in_stk = "Y")
 LB <- 
-  open_dataset(here("data/logbooks/station-for-ais.parquet")) |>
+  open_dataset(here(fd_curated("logbook", "station-for-ais.parquet"))) |>
   filter(between(year(date), 2009, 2024)) |>
   # this should be fixed upstream - about 0.05% of data
   distinct(vid, t1, t2, .keep_all = TRUE)

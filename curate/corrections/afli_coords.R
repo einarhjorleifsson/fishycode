@@ -23,17 +23,17 @@ library(duckdbfs)
 library(tidyverse)
 
 # the two datasources are nearly identical; gps1 covers a longer timespan
-gps1 <- duckdbfs::open_dataset("data-dump/logbooks/afli/sjalfvirkir_maelar.parquet") |> collect()
-gps2 <- duckdbfs::open_dataset("data-dump/logbooks/afli/rafr_sjalfvirkir_maelar.parquet") |> collect()
+gps1 <- duckdbfs::open_dataset(fd_raw("logbooks", "afli", "sjalfvirkir_maelar.parquet")) |> collect()
+gps2 <- duckdbfs::open_dataset(fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet")) |> collect()
 
 # build station-level lookup: .sid → .tid + vid, afli schema only
 # drop schema from fishing_sample select to avoid column duplication
 st <-
-  duckdbfs::open_dataset("data/logbooks/trip.parquet") |>
+  duckdbfs::open_dataset(fd_curated("logbook", "trip.parquet")) |>
   collect() |>
   select(.tid, vid, schema) |>
   distinct() |>
-  left_join(duckdbfs::open_dataset("data/logbooks/fishing_sample.parquet") |>
+  left_join(duckdbfs::open_dataset(fd_curated("logbook", "fishing_sample.parquet")) |>
               select(.tid, .sid) |>
               collect()) |>
   filter(schema == "afli") |>
@@ -59,7 +59,7 @@ gps <-
   left_join(st)
 
 trail <-
-  open_dataset("data/trail") |>
+  open_dataset(fd_staging("ais", "ping_union")) |>
   filter(provider == "stk") |>
   #filter(.cid > 0) |>
   select(vid, time, lon, lat)
@@ -115,7 +115,7 @@ res <- bind_rows(res)
 # duckdbfs::write_dataset writes POSIXct as plain TIMESTAMP (not TIMESTAMPTZ);
 # arrow/nanoparquet write_parquet both produce TIMESTAMPTZ, which DuckDB cannot
 # subtract directly (no TIMESTAMPTZ - TIMESTAMPTZ operator).
-res |> duckdbfs::write_dataset("data-raw/logbooks/afli/sensor_GPS", format = "parquet")
+res |> duckdbfs::write_dataset(fd_staging("afli", "sensor_GPS"), format = "parquet")
 
 # QC ---------------------------------------------------------------------------
 # Vessel where no approximation done

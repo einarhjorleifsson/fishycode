@@ -3,7 +3,7 @@ library(tidyverse)
 sf::sf_use_s2(FALSE)
 # ICES areas -------------------------------------------------------------------
 ices_areas <-
-  read_sf("data-dump/aux/ICESareas.gpkg") |>
+  read_sf(fd_raw("aux", "ICESareas.gpkg")) |>
   select(fao = Area_Full) |>
   st_as_sf() |>
   st_make_valid() |>
@@ -11,10 +11,10 @@ ices_areas <-
   st_make_valid()
 ices_areas$geom |> st_is_valid() |> table()
 ices_areas |>
-  write_sf("data-raw/aux/ices_areas.gpkg")
+  write_sf(fd_staging("aux", "ices_areas.gpkg"))
 # gebco ------------------------------------------------------------------------
 gebco <-
-  readRDS("data-dump/aux/ICES_GEBCO.rds") |>
+  readRDS(fd_raw("aux", "ICES_GEBCO.rds")) |>
   rename(depth_range = depth, geom = geometry) |>
   st_as_sf() |>
   st_make_valid() |>
@@ -22,10 +22,10 @@ gebco <-
   st_make_valid()
 gebco$geom |> st_is_valid() |> table()
 gebco |>
-  write_sf("data-raw/aux/gebco.gpkg")
+  write_sf(fd_staging("aux", "gebco.gpkg"))
 # eusm -------------------------------------------------------------------------
 eusm <-
-  readRDS("data-dump/aux/eusm.rds") |>
+  readRDS(fd_raw("aux", "eusm.rds")) |>
   rename(bbht = MSFD_BBHT, geom = Shape) |>
   # drops 986652 features !!
   filter(bbht != "") |>
@@ -35,4 +35,4 @@ eusm <-
   st_make_valid()
 eusm$geom |> st_is_valid() |> table()
 eusm |>
-  write_sf("data-raw/aux/eusm.gpkg")
+  write_sf(fd_staging("aux", "eusm.gpkg"))

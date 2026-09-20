@@ -9,5 +9,5 @@ library(arrow)
          speed = ship_speed,
          heading = ship_heading,
          doorspread = portside_door_dist_star_door) |> 
-  write_parquet("data/gear/optigear.parquet")
+  write_parquet(fd_curated("reference", "optigear.parquet"))
   

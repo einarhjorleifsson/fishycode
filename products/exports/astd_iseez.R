@@ -1,3 +1,5 @@
+# NOTE: this input lives only on the Hafro server and must be synced into
+#       $FISHYDATA/raw/ before this script can run on a laptop.
 # nohup R < scripts/41_DATASET_astd-isleez.R --vanilla > scripts/log/41_DATASET_astd-isleez_2025-07-16.log &
 
 library(tictoc)
@@ -15,10 +17,10 @@ sf::sf_use_s2(use_s2 = FALSE)
 
 
 gebco_ices <- 
-  read_sf("data/auxillary/ICES_GEBCO.gpkg") |>
+  read_sf(fd_staging("aux", "gebco.gpkg")) |>
   select(.depth = depth)
 gebco_raster <- 
-  terra::rast("/u3/haf/gisland/data/gebco_2024_n89.0_s34.0_w-83.0_e69.0.tif")
+  terra::rast(fd_raw("aux", "gebco_2024.tif"))
 
 if(FALSE) {
   test <- 
@@ -32,20 +34,20 @@ if(FALSE) {
 
 
 island <- 
-  read_sf("data/auxillary/shoreline.gpkg") |> 
+  read_sf(fd_staging("aux", "shoreline.gpkg")) |> 
   rename(.iceland = on_land)
 ports <-  
   read_sf("~/stasi/fishydata/data/ports/ports.gpkg") |> 
   select(.pid = pid)
 eusm_ices <- 
-  read_sf("data/auxillary/eusm.gpkg") |> 
+  read_sf(fd_staging("aux", "eusm.gpkg")) |> 
   select(.msfd_bbht = MSFD_BBHT)
 ices <- 
-  read_sf("data/auxillary/ICESareas.gpkg") |> 
+  read_sf(fd_staging("aux", "ices_areas.gpkg")) |> 
   select(.ices = Area_Full)
 # data includes land
 fao <- 
-  read_sf("/u3/haf/gisland/data/area/fao.gpkg") |> 
+  read_sf(fd_raw("aux", "fao.gpkg")) |> 
   select(.fao = fao)
 ## CAFF area -------------------------------------------------------------------
 fil <- "~/stasi/gis/gisland_data/data-raw/misc/CAFF_Boundary_4326.zip"
@@ -113,9 +115,9 @@ library(arrow)
 library(tidyverse)
 library(sf)
 
-ports <- read_sf("data/ports/ports.gpkg")
+ports <- read_sf(fd_curated("reference", "ports.gpkg"))
 mmsi <- 
-  open_dataset("data/vessels/mmsi_iceland_archieves.parquet") |> 
+  open_dataset(fd_curated("vessel", "mmsi_iceland_archieves.parquet")) |> 
   filter(mmsi_cat == "vessel") |> 
   select(vid = sknr,
          mmsi,
@@ -124,7 +126,7 @@ mmsi <-
   mutate(mmsi = as.integer(mmsi)) |> 
   collect()
 astd <- 
-  open_dataset("data/ais/astd") |> 
+  open_dataset(fd_staging("ais", "astd")) |> 
   filter(eez == "ISL" | flag == "ISL")
 
 
@@ -208,7 +210,7 @@ for(y in 1:length(YEARS)) {
   trail |> 
     mutate(vid = as.integer(vid)) |> 
     mutate(year = year(time)) |>
-    arrow::write_dataset("data/ais/astd_isleez", 
+    arrow::write_dataset(fd_staging("ais", "astd_iseez"), 
                          format = "parquet",
                          existing_data_behavior = "overwrite",
                          partitioning = c("year"))

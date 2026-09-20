@@ -5,7 +5,7 @@ library(duckdb)
 library(duckdbfs)
 library(tidyverse)
 
-fil <- dir("data-raw/norway/logbooks", full.names = TRUE, pattern = "*.zip")
+fil <- dir(fd_staging("norway", "logbooks"), full.names = TRUE, pattern = "*.zip")
 base <- basename(fil)
 tdir <- tempdir()
 for(i in 1:length(fil)) {
@@ -24,7 +24,7 @@ files |> print() |> knitr::kable()
 files2 <- 
   files |> 
   filter(str_detect(fil, "fangstmelding")) |> 
-  mutate(out = "data/logbooks/norway/fangstmelding")
+  mutate(out = fd_curated("logbook", "norway", "fangstmelding"))
 files2
 res <- list()
 for(i in 1:nrow(files2)) {
@@ -52,7 +52,7 @@ d <-
          stoppdato = dmy(stoppdato))
 
 
-d |>  duckdbfs::write_dataset("data/logbooks/fangstmelding.parquet")
+d |>  duckdbfs::write_dataset(fd_curated("logbook", "fangstmelding.parquet"))
 
 if(FALSE) {
 d |> 

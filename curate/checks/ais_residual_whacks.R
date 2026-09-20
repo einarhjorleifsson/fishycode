@@ -9,13 +9,13 @@ MS_MAX <- KN_MAX * 0.514444   # 12.861 m/s
 
 
 # Lazy DuckDB path examples ---------------------------------------------------
-ais <- open_dataset("data/trail")
+ais <- open_dataset(fd_staging("ais", "ping_union"))
 
 # Wack detection ---------------------------------------------------------------
 # test if any remaining whacks after first round using whack_fwdbwd
 tic()
 res <- list()
-q <- open_dataset("data/trail")
+q <- open_dataset(fd_staging("ais", "ping_union"))
 years <- 2015:2025
 for(y in 1:length(years)) {
   YR <- years[y]
@@ -73,8 +73,8 @@ ais |>
          month(time) == 1) |>
   compute()
 
-ports <- duckdbfs::open_dataset("../kaenugardr/ports_all.gpkg") |> filter(source == "einar") |> select(port, geom)
-open_dataset("data/trail") |>
+ports <- duckdbfs::open_dataset(fd_raw("ports", "ports_all.gpkg")) |> filter(source == "einar") |> select(port, geom)
+open_dataset(fd_staging("ais", "ping_union")) |>
   duckdbfs::spatial_join(ports, by = "st_intersects", join = "left") |>
   count(pid, port, provider) |>
   collect() ->

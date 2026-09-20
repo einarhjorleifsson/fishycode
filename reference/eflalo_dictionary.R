@@ -6,7 +6,7 @@ tmp <-
           "Log event", "Start datetime", "xx", NA, "t1", NA,
           "Log event", "End datetime", "xx", NA, "t2", NA)
 eformat <- 
-  read_csv("data-raw/datamodel/efalo2_format.csv") |> 
+  read_csv(fd_staging("datamodel", "efalo2_format.csv")) |> 
   janitor::clean_names() |> 
   select(-x5) |> 
   fill(type) |> 

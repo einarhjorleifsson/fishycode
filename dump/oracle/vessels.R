@@ -7,7 +7,7 @@ library(nanoparquet)
 # tbl_mar(con, "afli.ra_email_skeyti") |> collect() -> d
 # # creates an error d |> write_parquet("testo.parquet")
 
-OUT_DIR <- "data-dump/vessels"
+OUT_DIR <- fd_raw("vessels")
 SCHEMA <- "vessel"
 get_tables_and_views <- function(con, owner) {
   bind_rows(mar_tables(con, owner) |> collect() |>

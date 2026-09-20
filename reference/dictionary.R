@@ -274,4 +274,4 @@ dictionary <- bind_rows(afli_stofn,
                         afli_hringn,
                         adb,
                         fs_afladagbok)
-dictionary |> write_parquet("data/dictionary.parquet")
+dictionary |> write_parquet(fd_curated("reference", "dictionary.parquet"))

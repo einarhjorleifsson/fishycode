@@ -42,6 +42,17 @@ permanent — they are the only structure that survived every previous restart.
 - **Shared functions live in `ramb`**, never copied into a script here. The
   previous tree accumulated ~9 copies of the STK matcher and 3 of the ports
   domain by copying instead of depending.
+- **Upstream repos are consumed as artifacts, never as copied code.** Two exist:
+
+  | Repo | Produces | Consumed here as |
+  |---|---|---|
+  | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
+  | [`kaenugardr`](https://github.com/einarhjorleifsson/kaenugardr) | port polygons | `fd_raw("ports", "ports_all.gpkg")` |
+
+  The five `ports-*.R` scripts that came over from the old fishydata were
+  near-identical forks of `kaenugardr` (364 of 384 shared lines in one case) and
+  were deleted. `reference/ports/` keeps only what is genuinely ours: the
+  Icelandic harbour-code crosswalks built from `aflagrunnur_v`.
 
 ## Layout
 
@@ -57,6 +68,7 @@ permanent — they are the only structure that survived every previous restart.
 | `overrides/` | Small, hand-maintained, human-reviewed correction inputs. |
 | `products/` | Consumers of the sweep — datacall, ad-hoc exports. |
 | `docs/` | Quarto site. Reads `curated/`; never rebuilds it. |
+| `R/` | **Function definitions only.** `targets` sources this directory wholesale, so a script here executes on every `tar_make()` — `R/oracle.R` connected to Oracle at load and broke the graph until it was moved to `dump/`. |
 
 ## Script naming
 

@@ -10,10 +10,10 @@ library(tidyverse)
 library(duckdbfs)
 
 SCHEMA <- "fs_afladagbok"
-dictionary   <- duckdbfs::open_dataset("data/dictionary.parquet") |> collect() |> filter(schema == SCHEMA)
-gear_mapping <- duckdbfs::open_dataset("data/gear/gear_mapping.parquet") |> collect() |> filter(version == "new")
+dictionary   <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet")) |> collect() |> filter(schema == SCHEMA)
+gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |> filter(version == "new")
 harbours <-
-  duckdbfs::open_dataset("data/ports/hafnarnumerakerfid.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect() |>
   select(hid_new = hafnarnumer_id, port, hid) |>
   drop_na()
 
@@ -31,7 +31,7 @@ DDM_SOURCES <- c(
 # Built first: `source` (uppruni) is a trip-level column in ws_veidiferd and
 # is needed for coordinate classification in ws_veidi below.
 trip <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_veidiferd.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_veidiferd.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   rename(.tid = id) |>
   mutate(n_crew = NA_integer_, schema = SCHEMA) |>
@@ -53,7 +53,7 @@ trip <- trip |>
 # Raw columns: upphaf_timi→t1, milli_timi→t3, lok_timi→t4.
 # t3 (milli_timi) is absent for OTB/OTM/DRB; for SDN it always equals t1.
 source <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_veidi.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_veidi.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   rename(.sid = id) |>
   select(-c(breytt, skraningartimi, snt, veidarfaeri_efni, athugasemd_txt)) |>
@@ -174,31 +174,31 @@ station <-
 
 ## Mobile (ws_dragnot_varpa: OTB / OTM / SDN) ----------------------------------
 aux_mobile <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_dragnot_varpa.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_dragnot_varpa.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(source_gear |> filter(gear %in% c("OTB", "OTM", "SDN")), by = ".sid")
 
 ## Dredge (ws_plogur: DRB) ----------------------------------------------------
 aux_dredge <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_plogur.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_plogur.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(source_gear |> filter(gear == "DRB"), by = ".sid")
 
 ## Static (ws_linanethandf: LLS / GNS / GND / LHM) ----------------------------
 aux_static <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_linanethandf.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_linanethandf.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(source_gear |> filter(gear %in% c("LLS", "GNS", "GND", "LHM")), by = ".sid")
 
 ## Traps (ws_gildra: FPO) -----------------------------------------------------
 aux_trap <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_gildra.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_gildra.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(source_gear |> filter(gear == "FPO"), by = ".sid")
 
 ## Purse seine (ws_hringn: PS) -------------------------------------------------
 aux_seine <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_hringn.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_hringn.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(source_gear |> filter(gear == "PS"), by = ".sid")
 
@@ -376,7 +376,7 @@ fishing_sample <-
 
 # Catch -----------------------------------------------------------------------
 catch <-
-  duckdbfs::open_dataset("data-dump/logbooks/fs_afladagbok/ws_afli.parquet") |> collect() |>
+  duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_afli.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   select(.sid, sid, catch = magn) |>  # CHANGE DICTIONARY
   group_by(.sid, sid) |>
@@ -385,11 +385,11 @@ catch <-
   arrange(.sid, sid)
 
 # Export -----------------------------------------------------------------------
-trip           |> duckdbfs::write_dataset("data-raw/logbooks/fs_afladagbok/trip.parquet")
-station        |> duckdbfs::write_dataset("data-raw/logbooks/fs_afladagbok/station.parquet")
-fishing_sample |> duckdbfs::write_dataset("data-raw/logbooks/fs_afladagbok/fishing_sample.parquet")
+trip           |> duckdbfs::write_dataset(fd_staging("fs_afladagbok", "trip.parquet"))
+station        |> duckdbfs::write_dataset(fd_staging("fs_afladagbok", "station.parquet"))
+fishing_sample |> duckdbfs::write_dataset(fd_staging("fs_afladagbok", "fishing_sample.parquet"))
 
-catch          |> duckdbfs::write_dataset("data-raw/logbooks/fs_afladagbok/catch.parquet")
+catch          |> duckdbfs::write_dataset(fd_staging("fs_afladagbok", "catch.parquet"))
 
 
 # QC scratch (if FALSE) -------------------------------------------------------

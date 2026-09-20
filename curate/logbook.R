@@ -25,15 +25,15 @@ FS_DATE_MAX <- as.Date("2025-12-31")
 DATE_MAX    <- as.Date("2026-12-31")
 
 # Load -------------------------------------------------------------------------
-afli_trip           <- duckdbfs::open_dataset("data-raw/logbooks/afli/trip.parquet") |> collect()
-afli_station        <- duckdbfs::open_dataset("data-raw/logbooks/afli/station.parquet") |> collect()
-afli_fishing_sample <- duckdbfs::open_dataset("data-raw/logbooks/afli/fishing_sample.parquet") |> collect()
-afli_catch          <- duckdbfs::open_dataset("data-raw/logbooks/afli/catch.parquet") |> collect()
+afli_trip           <- duckdbfs::open_dataset(fd_staging("afli", "trip.parquet")) |> collect()
+afli_station        <- duckdbfs::open_dataset(fd_staging("afli", "station.parquet")) |> collect()
+afli_fishing_sample <- duckdbfs::open_dataset(fd_staging("afli", "fishing_sample.parquet")) |> collect()
+afli_catch          <- duckdbfs::open_dataset(fd_staging("afli", "catch.parquet")) |> collect()
 
-fs_trip           <- duckdbfs::open_dataset("data-raw/logbooks/fs_afladagbok/trip.parquet") |> collect()
-fs_station        <- duckdbfs::open_dataset("data-raw/logbooks/fs_afladagbok/station.parquet") |> collect()
-fs_fishing_sample <- duckdbfs::open_dataset("data-raw/logbooks/fs_afladagbok/fishing_sample.parquet") |> collect()
-fs_catch          <- duckdbfs::open_dataset("data-raw/logbooks/fs_afladagbok/catch.parquet") |> collect()
+fs_trip           <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "trip.parquet")) |> collect()
+fs_station        <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "station.parquet")) |> collect()
+fs_fishing_sample <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "fishing_sample.parquet")) |> collect()
+fs_catch          <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "catch.parquet")) |> collect()
 
 # Apply date bounds ------------------------------------------------------------
 afli_station <- afli_station |> filter(date <= DATE_MAX)
@@ -103,8 +103,8 @@ merged_station |>
   print()
 
 # Export -----------------------------------------------------------------------
-dir.create("data/logbooks", showWarnings = FALSE, recursive = TRUE)
-merged_trip           |> duckdbfs::write_dataset("data/logbooks/trip.parquet")
-merged_station        |> duckdbfs::write_dataset("data/logbooks/station.parquet")
-merged_fishing_sample |> duckdbfs::write_dataset("data/logbooks/fishing_sample.parquet")
-merged_catch          |> duckdbfs::write_dataset("data/logbooks/catch.parquet")
+dir.create(fd_curated("logbook"), showWarnings = FALSE, recursive = TRUE)
+merged_trip           |> duckdbfs::write_dataset(fd_curated("logbook", "trip.parquet"))
+merged_station        |> duckdbfs::write_dataset(fd_curated("logbook", "station.parquet"))
+merged_fishing_sample |> duckdbfs::write_dataset(fd_curated("logbook", "fishing_sample.parquet"))
+merged_catch          |> duckdbfs::write_dataset(fd_curated("logbook", "catch.parquet"))

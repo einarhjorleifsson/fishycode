@@ -15,8 +15,8 @@ library(nanoparquet)
 
 # Configuration ----------------------------------------------------------------
 # Update these two paths when a new xlsx arrives:
-hist_path   <- "data-raw/mmsi/mmsi_iceland_2025-MM-DD.parquet"
-update_path <- "data-raw/mmsi/mmsi-iceland_fjarskiptastofa_2026-03-09.xlsx"
+hist_path   <- fd_staging("mmsi", "mmsi_iceland_2025-MM-DD.parquet")
+update_path <- fd_staging("mmsi", "mmsi-iceland_fjarskiptastofa_2026-03-09.xlsx")
 
 TODAY   <- Sys.Date()
 MMSI_T1 <- ymd("2007-06-01")   # Start of STK
@@ -120,10 +120,10 @@ mmsi_updated <- bind_rows(mmsi_closed, case_c_new, case_b_new) |>
   arrange(mmsi, zombie_no)
 
 # 5. Write output --------------------------------------------------------------
-out_path <- paste0("data-raw/mmsi/mmsi_iceland_", TODAY, ".parquet")
+out_path <- paste0(fd_staging("mmsi", "mmsi_iceland_"), TODAY, ".parquet")
 write_parquet(mmsi_updated, out_path)
 
-mmsi_updated |> write_parquet("data/mmsi/mmsi_iceland.parquet")
+mmsi_updated |> write_parquet(fd_curated("vessel", "mmsi.parquet"))
 
 cat("\nDone.\n")
 cat("  Historical rows:", nrow(mmsi_hist), "\n")

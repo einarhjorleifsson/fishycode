@@ -8,16 +8,16 @@ library(tictoc)
 library(h3)
 duckdbfs::load_spatial()
 ports <-
-  open_dataset("data/aux/ports.fgb") |>
+  open_dataset(fd_staging("aux", "ports.fgb")) |>
   select(pid, hid, geom)
-h3 <- open_dataset("data/aux/h3_indices.parquet") |> select(h3, depth, bbht, fao)
+h3 <- open_dataset(fd_curated("reference", "area_h3.parquet")) |> select(h3, depth, bbht, fao)
 
 # write out --------------------------------------------------------------------
 # Partition by year so downstream queries can apply partition pruning.
 # The loop materialises one year at a time to keep peak memory manageable.
 if(TRUE) {
   ais <-
-    open_dataset("data/trail")
+    open_dataset(fd_staging("ais", "ping_union"))
   years <- 2007:2026
   for(y in 1:length(years)) {
     tic()
@@ -30,7 +30,7 @@ if(TRUE) {
       select(-geom_1) |>
       mutate(h3 = h3_latlng_to_cell_string(lat, lon, 8L)) |>
       left_join(h3) |>
-      duckdbfs::write_dataset("data/trail2", partitioning = c("year"), format = "parquet")
+      duckdbfs::write_dataset(fd_staging("ais", "ping_tagged"), partitioning = c("year"), format = "parquet")
     toc()
   }
 }
@@ -38,7 +38,7 @@ if(TRUE) {
 # write out --------------------------------------------------------------------
 # Partition by year so downstream queries can apply partition pruning.
 # The loop materialises one year at a time to keep peak memory manageable.
-ais <- open_dataset("data/trail") |> mutate(month = month(time))
+ais <- open_dataset(fd_staging("ais", "ping_union")) |> mutate(month = month(time))
 years <- 2009:2025
 months <- 1:12
 for(y in 1:length(years)) {
@@ -55,7 +55,7 @@ for(y in 1:length(years)) {
       select(-geom_1) |>
       mutate(h3 = h3_latlng_to_cell_string(lat, lon, 8L)) |>
       left_join(h3) |>
-      duckdbfs::write_dataset("data/trail2", partitioning = c("year", "month"), format = "parquet")
+      duckdbfs::write_dataset(fd_staging("ais", "ping_tagged"), partitioning = c("year", "month"), format = "parquet")
     toc()
   }
 }

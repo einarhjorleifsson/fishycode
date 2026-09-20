@@ -43,8 +43,8 @@ unlink(tmp)
 # EUSM -> raster -> H3 bbht ----------------------------------------------------
 
 # Read eusm directly from FlatGeoBuf (GDAL handles it, no R memory overhead)
-#eusm_v <- vect("data-raw/aux/eusm.fgb")
-eusm_v <- vect("data/aux/eusm.fgb")
+#eusm_v <- vect(fd_staging("aux", "eusm.fgb"))
+eusm_v <- vect(fd_staging("aux", "eusm.fgb"))
 
 # Rasterize onto GEBCO template — same grid, extent clips eusm automatically
 eusm_r <- rasterize(eusm_v, r, field = "bbht")
@@ -54,14 +54,14 @@ pts <- vect(h3_centres, geom = c("lon", "lat"), crs = "EPSG:4326")
 h3_centres$bbht <- terra::extract(eusm_r, pts)[["bbht"]]
 
 # ices areas -------------------------------------------------------------------
-ices_v <- vect("data/aux/ices_areas_500m-buffer.fgb")
+ices_v <- vect(fd_staging("aux", "ices_areas_500m-buffer.fgb"))
 # Rasterize onto GEBCO template — same grid, extent clips ices automatically
 ices_r <- rasterize(ices_v, r, field = "fao")
 # Extract ices area at H3 centroid points (reuse pts from eusm block)
 h3_centres$fao <- terra::extract(ices_r, pts)[["fao"]]
 
 # save -------------------------------------------------------------------------
-h3_centres |> duckdbfs::write_dataset("data/aux/h3_indices.parquet")
+h3_centres |> duckdbfs::write_dataset(fd_curated("reference", "area_h3.parquet"))
 
 library(mapdeck)
 token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"

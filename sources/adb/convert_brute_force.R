@@ -10,7 +10,7 @@ library(nanoparquet)
 # should possible move functions to the omar-package
 lb_trip_new <- function() {
 
-  read_parquet("data-raw/data-dump/adb/trip_v.parquet") |>
+  read_parquet(fd_staging("data-dump", "adb", "trip_v.parquet")) |>
     select(trip_id,
            vid = vessel_no,
            T1 = departure,
@@ -20,7 +20,7 @@ lb_trip_new <- function() {
            source)
 }
 lb_station_new0 <- function() {
-  read_parquet("data-raw/data-dump/adb/station_v.parquet") |>
+  read_parquet(fd_staging("data-dump", "adb", "station_v.parquet")) |>
     select(trip_id,
            station_id,
            gid = gear_no,
@@ -53,7 +53,7 @@ lb_base_new <- function(con) {
 }
 lb_catch_new <- function() {
   # why not catch_v.parquet
-  read_parquet("data-raw/data-dump/adb/catch.parquet") |>
+  read_parquet(fd_staging("data-dump", "adb", "catch.parquet")) |>
   mutate(catch = case_when(condition == "GUTT" ~ quantity / 0.8,
                            condition == "UNGU" ~ quantity,
                            .default = NA)) |>
@@ -125,7 +125,7 @@ if(FALSE) {
 MOBILE_new <-
   BASE_new |>
   inner_join(
-    read_parquet("data-raw/data-dump/adb/trawl_and_seine_net_v.parquet"),
+    read_parquet(fd_staging("data-dump", "adb", "trawl_and_seine_net_v.parquet")),
     by = join_by(station_id)
   ) |>
   mutate(effort = case_when(gid %in% c(6, 7) ~ as.numeric(difftime(t2, t1, units = "hours")),
@@ -140,7 +140,7 @@ MOBILE_new <-
 STATIC_new <-
   BASE_new |>
   inner_join(
-    read_parquet("data-raw/data-dump/adb/line_and_net_v.parquet"),
+    read_parquet(fd_staging("data-dump", "adb", "line_and_net_v.parquet")),
     by = join_by(station_id)
   ) |>
   mutate(dt = as.numeric(difftime(t2, t1, unit = "hours")),
@@ -157,7 +157,7 @@ STATIC_new <-
 DREDGE_new <-
   BASE_new |>
   inner_join(
-    read_parquet("data-raw/data-dump/adb/dredge_v.parquet"),
+    read_parquet(fd_staging("data-dump", "adb", "dredge_v.parquet")),
     by = join_by(station_id)
   ) |>
   mutate(effort = as.numeric(difftime(t2, t1, units = "hours")),
@@ -168,7 +168,7 @@ DREDGE_new <-
 TRAP_new <-
   BASE_new |>
   inner_join(
-    read_parquet("data-raw/data-dump/adb/trap_v.parquet"),
+    read_parquet(fd_staging("data-dump", "adb", "trap_v.parquet")),
     by = join_by(station_id)
   ) |>
   mutate(dt = as.numeric(difftime(t2, t1, units = "hours")),
@@ -179,7 +179,7 @@ TRAP_new <-
 SEINE_new <-
   BASE_new |>
   inner_join(
-    read_parquet("data-raw/data-dump/adb/surrounding_net_v.parquet"),
+    read_parquet(fd_staging("data-dump", "adb", "surrounding_net_v.parquet")),
     by = join_by(station_id)
   ) |>
   mutate(effort = 1,
@@ -227,12 +227,12 @@ CATCH_new <-
   # filter(station_id %in% BASE_new$station_id) |>
   select(.sid = station_id, sid, catch)
 
-LGS_new   |> write_parquet("data/adb/station_new-brute-force.parquet")
-CATCH_new |> write_parquet("data/adb/catch_new-brute-force.parquet")
+LGS_new   |> write_parquet(fd_staging("adb", "station_brute_force.parquet"))
+CATCH_new |> write_parquet(fd_staging("adb", "catch_brute_force.parquet"))
 
 # sanity test ------------------------------------------------------------------
 ## afli vs adb
-afli <- read_parquet("data/afli/station.parquet") |>
+afli <- read_parquet(fd_staging("afli", "station.parquet")) |>
   mutate(year = year(date)) |>
   count(year)
 
@@ -244,10 +244,10 @@ bind_rows(brute |> mutate(source = "brute"),
 ## brute-force-vs-scripts/01_adb_convert.R
 
 
-brute <- read_parquet("data/adb/station_new-brute-force.parquet") |>
+brute <- read_parquet(fd_staging("adb", "station_brute_force.parquet")) |>
   mutate(year = year(date)) |>
   count(year)
-adb <- read_parquet("data/adb/station.parquet") |>
+adb <- read_parquet(fd_staging("adb", "station.parquet")) |>
   mutate(year = year(date)) |>
   count(year)
 bind_rows(brute |> mutate(source = "brute"),

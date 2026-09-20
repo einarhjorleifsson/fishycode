@@ -10,7 +10,7 @@ ORIT_TYPES <- ORIT_TYPES[!is.na(ORIT_TYPES)]
 
 # Load data -----------------------------------------------------------------------
 
-d <- read_parquet("data-dump/logbooks/afli/afladagb_xml_mottaka.parquet")
+d <- read_parquet(fd_raw("logbooks", "afli", "afladagb_xml_mottaka.parquet"))
 
 # Each row in d is a batch submission (~monthly) from one vessel.
 # Columns: id, ret_val, gerd, skip_nr, fra, til, londun_faersla, email_id, hugbunadur, sending

@@ -6,4 +6,4 @@ con <- connect_mar()
 
 tbl_mar(con, "asfis.asfis") |>
   collect() |>
-  write_parquet("data-raw/data-dump/species/asfis.parquet")
+  write_parquet(fd_staging("data-dump", "species", "asfis.parquet"))

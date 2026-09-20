@@ -1,197 +1,182 @@
-# _targets.R — pipeline entry point for the {targets} package
+# _targets.R — the build graph for the whole pipeline.
 #
-# {targets} tracks every input and output of your pipeline as a "target".
-# When you call tar_make(), it only re-runs targets whose inputs have changed
-# since the last run — everything else is loaded from cache.
+# Run:  targets::tar_make()            build what is stale
+#       targets::tar_outdated()        what would rebuild
+#       targets::tar_visnetwork()      see the graph
 #
-# Key commands (run these in the R console, not here):
-#   targets::tar_make()              — run the whole pipeline (skips up-to-date targets)
-#   targets::tar_make("target_name") — run only that target + its dependencies
-#   targets::tar_visnetwork()        — interactive dependency graph in the Viewer pane
-#   targets::tar_read("target_name") — retrieve a completed target's value
-#   targets::tar_outdated()          — list targets that would re-run if you called tar_make()
-#   targets::tar_destroy()           — wipe the cache (_targets/ folder) and start fresh
+# Every target is format = "file": the command returns the path(s) it produced
+# and targets hashes the contents, so a downstream target rebuilds when an
+# upstream file actually changes — not merely when it is touched.
 #
-# Dependencies between targets are declared implicitly: if you use one target's
-# *name* inside another target's command, {targets} knows to run it first and
-# will re-run the downstream target whenever the upstream result changes.
+# Coverage is deliberately complete. The predecessor pipeline declared 8 of 63
+# scripts, omitting the expensive AIS chain entirely, so tar_outdated() reported
+# "up to date" while the state of the costly half was unknown. A partly-declared
+# graph is worse than none: it reports confidence it has not earned.
+#
+# Two things sit OUTSIDE the graph, on purpose:
+#   dump/       extraction from Oracle and vendor archives. Needs credentials and
+#               a server, writes immutable raw/, and is run on its own schedule.
+#   curate/corrections/afli_coords.R
+#               a bootstrap cycle — see the note above the AIS section.
+# products/ are consumers of the sweep and are run on demand, not on every build.
 
 library(targets)
 
-# Load helper functions from R/ ------------------------------------------------
-# tar_source() is like source() but targets also watches these files for changes.
 tar_source("R/")
 
-# Global options ---------------------------------------------------------------
-# Packages listed here are pre-loaded in every target's R sub-process, so you
-# don't need to call library() inside each target command.
 tar_option_set(
-  packages = c("tidyverse", "nanoparquet", "whack", "geo")
+  packages = c("tidyverse", "duckdbfs", "ramb", "whack", "geo",
+               "sf", "nanoparquet", "duckdb")
 )
 
-# Pipeline definition ----------------------------------------------------------
-# The pipeline is a plain R list of tar_target() calls.
-#
-# tar_target() anatomy:
-#   name    — the symbol you use to refer to this target elsewhere in the pipeline
-#   command — an R expression that produces the target's value
-#   format  — how targets stores the value; "file" means the command returns a
-#             file *path* and targets hashes the file's content (not just the path)
-#             so any downstream target re-runs when the file actually changes.
-#
-# format = "file" is the right choice whenever a target reads or writes disk
-# files (parquet, CSV, etc.).  The command must return a character vector of
-# file paths.
+# Helper: source a script, then return the files it is contracted to produce.
+# Declaring the outputs here rather than inside the scripts keeps the contract
+# visible in one place.
+produces <- function(script, ...) {
+  source(script)
+  c(...)
+}
 
 list(
 
-  # ── Stage 0a: Track input scripts as file targets ───────────────────────────
-  # By declaring each script as a file target, targets will detect when you edit
-  # the script and automatically mark all downstream targets as outdated.
-  # The command here is just the file path string — targets hashes the file.
+  # ── Reference ───────────────────────────────────────────────────────────────
+  # Slow-moving lookups. Everything downstream depends on some of these.
 
-  tar_target(script_dict,  "data-raw/DATASET_dictionary.R",     format = "file"),
-  tar_target(script_gear,  "data-raw/DATASET_gear-codes.R",      format = "file"),
-  tar_target(script_afli,  "data-raw/logbooks/01_afli_convert.R",          format = "file"),
-  tar_target(script_fs,    "data-raw/logbooks/01_fs_afladagbok_convert.R", format = "file"),
-  tar_target(script_adb,            "data-raw/logbooks/01_adb_convert.R",          format = "file"),
-  tar_target(script_merge,          "data/logbooks/logbooks_merge.R",           format = "file"),
-  tar_target(script_landings,       "data/landings/landings.R",                 format = "file"),
-  tar_target(script_landings_match, "data/logbooks/logbooks_landings-match.R",  format = "file"),
+  tar_target(dictionary, produces(
+    "reference/dictionary.R",
+    fd_curated("reference", "dictionary.parquet")), format = "file"),
+
+  tar_target(gear, produces(
+    "reference/gear/mapping.R",
+    fd_curated("reference", "gear.parquet")), format = "file"),
+
+  tar_target(port, produces(
+    "reference/ports/harbour_codes.R",
+    fd_curated("reference", "port.parquet")), format = "file"),
+
+  tar_target(harbour, produces(
+    "reference/ports/harbours.R",
+    fd_curated("reference", "harbour.parquet")), format = "file"),
+
+  # Port polygons come from the kaenugardr repo as a published artifact
+  # (fd_raw("ports", "ports_all.gpkg")); this only crops and buffers them.
+  tar_target(shapes, produces(
+    "reference/geo/shapes.R",
+    fd_staging("aux", "ports.fgb"),
+    fd_staging("aux", "ices_areas_500m-buffer.fgb"),
+    fd_staging("aux", "eusm.fgb")), format = "file"),
+
+  tar_target(area_h3, produces(
+    "reference/geo/h3_index.R",
+    fd_curated("reference", "area_h3.parquet")), format = "file"),
+
+  tar_target(vessel, produces(
+    "reference/vessels/registry.R",
+    fd_curated("vessel", "vessel.parquet")), format = "file"),
+
+  # NOT a registry: a fitted model with residual error (>100-ping threshold,
+  # a 2028-12-24 sentinel, 35 vids with overlapping mid periods). Wrong vid
+  # assignment is a known error class — see curate/checks/.
+  tar_target(vessel_ais_key, produces(
+    "reference/vessels/ais_key.R",
+    fd_curated("vessel", "vessel_ais_key.parquet")), format = "file"),
 
 
-  # ── Stage 0b: Lookup tables ──────────────────────────────────────────────────
-  # These hand-maintained scripts build the reference parquet files (dictionary
-  # and gear mapping) used by all three convert scripts.
-  # Referencing script_dict / script_gear in the command body declares the
-  # dependency: if either script file changes, this target re-runs.
+  # ── Source adapters ─────────────────────────────────────────────────────────
+  # raw/ → staging/<source>/. Mutually independent, so tar_make(workers = 4)
+  # runs them in parallel. Each must emit the four-table grammar.
 
-  tar_target(
-    name    = dictionary_file,
-    command = {
-      script_dict                                  # re-run when script changes
-      source("data-raw/DATASET_dictionary.R")
-      "data/dictionary.parquet"                    # return the output file path
-    },
-    format = "file"
-  ),
+  tar_target(afli, {
+    dictionary; gear; port
+    produces("sources/afli/convert.R",
+             fd_staging("afli", "trip.parquet"),
+             fd_staging("afli", "station.parquet"),
+             fd_staging("afli", "fishing_sample.parquet"),
+             fd_staging("afli", "catch.parquet"),
+             fd_staging("afli", "aggregate.parquet"))
+  }, format = "file"),
 
-  tar_target(
-    name    = gear_mapping_file,
-    command = {
-      script_gear
-      source("data-raw/DATASET_gear-codes.R")
-      "data/gear/gear_mapping.parquet"
-    },
-    format = "file"
-  ),
+  tar_target(fs_afladagbok, {
+    dictionary; gear; port
+    produces("sources/fs_afladagbok/convert.R",
+             fd_staging("fs_afladagbok", "trip.parquet"),
+             fd_staging("fs_afladagbok", "station.parquet"),
+             fd_staging("fs_afladagbok", "fishing_sample.parquet"),
+             fd_staging("fs_afladagbok", "catch.parquet"))
+  }, format = "file"),
+
+  tar_target(adb, {
+    dictionary; gear
+    produces("sources/adb/convert.R",
+             fd_staging("adb", "trip.parquet"),
+             fd_staging("adb", "station.parquet"),
+             fd_staging("adb", "catch.parquet"))
+  }, format = "file"),
+
+  tar_target(aflagrunnur, {
+    port
+    produces("sources/aflagrunnur/convert.R",
+             fd_curated("landing", "landing.parquet"),
+             fd_curated("landing", "catch.parquet"))
+  }, format = "file"),
+
+  tar_target(stk, {
+    vessel_ais_key
+    produces("sources/stk/convert.R", fd_staging("ais", "stk"))
+  }, format = "file"),
 
 
-  # ── Stage 1: Schema conversions ──────────────────────────────────────────────
-  # Each target converts one raw schema to the unified trip / station / catch
-  # format and returns the three output file paths.  These three targets have no
-  # dependency on each other, so {targets} can run them in parallel when you use
-  # tar_make(callr_function = callr::r_bg, workers = 3) or a crew controller.
+  # ── AIS ─────────────────────────────────────────────────────────────────────
+  # NOTE — a bootstrap cycle sits here, deliberately outside the graph.
   #
-  # All three depend on dictionary_file and gear_mapping_file (Tier 0), so those
-  # will always be built first.
+  # curate/corrections/afli_coords.R reads staging/ais/ping_union to interpolate
+  # corrected positions for the afli GPS loggers, and writes sensor_GPS — which
+  # ais_ping_union.R then folds back in as provider = "wacky". Union depends on
+  # the correction; the correction depends on the union.
+  #
+  # It is left out rather than declared, on the same principle as overrides/:
+  # a genuine cycle is broken by a person, not pretended away. Run afli_coords
+  # by hand when the recovery needs refreshing, then rebuild ais_ping_union.
+  #
+  # The proper fix is a design decision, not a declaration — see
+  # curate/decisions/000-restructuring.md, "Open question: wacky positions".
 
-  tar_target(
-    name    = afli_files,
-    command = {
-      dictionary_file                              # must exist before this runs
-      gear_mapping_file
-      script_afli                                  # re-run when script changes
-      source("data-raw/logbooks/01_afli_convert.R")
-      c("data-raw/logbooks/afli/trip.parquet",
-        "data-raw/logbooks/afli/station.parquet",
-        "data-raw/logbooks/afli/catch.parquet")
-    },
-    format = "file"
-  ),
+  tar_target(ais_ping_union, {
+    vessel_ais_key
+    produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
+  }, format = "file"),
 
-  tar_target(
-    name    = fs_files,
-    command = {
-      dictionary_file
-      gear_mapping_file
-      script_fs
-      source("data-raw/logbooks/01_fs_afladagbok_convert.R")
-      c("data-raw/logbooks/fs_afladagbok/trip.parquet",
-        "data-raw/logbooks/fs_afladagbok/station.parquet",
-        "data-raw/logbooks/fs_afladagbok/catch.parquet")
-    },
-    format = "file"
-  ),
+  tar_target(ais_ping_tag, {
+    ais_ping_union; shapes; area_h3
+    produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
+  }, format = "file"),
 
-  tar_target(
-    name    = adb_files,
-    command = {
-      dictionary_file
-      gear_mapping_file
-      script_adb
-      source("data-raw/logbooks/01_adb_convert.R")
-      c("data-raw/logbooks/adb/trip.parquet",
-        "data-raw/logbooks/adb/station.parquet",
-        "data-raw/logbooks/adb/catch.parquet")
-    },
-    format = "file"
-  ),
+  tar_target(ais_trip, {
+    ais_ping_tag
+    produces("curate/ais_trip.R",
+             fd_curated("ais", "ping"),
+             fd_curated("ais", "trip.parquet"))
+  }, format = "file"),
 
 
-  # ── Stage 2: Merge ───────────────────────────────────────────────────────────
-  # Runs after all three conversions are complete.  Depends on afli_files,
-  # fs_files, and adb_files — if any of those parquet files change (e.g. because
-  # a convert script was fixed), the merge automatically re-runs.
+  # ── Curation ────────────────────────────────────────────────────────────────
+  # staging/ → curated/. Where cross-source decisions live.
 
-  tar_target(
-    name    = merged_files,
-    command = {
-      afli_files                                   # Stage 1 outputs must exist
-      fs_files
-      adb_files
-      gear_mapping_file
-      script_merge
-      source("data/logbooks/logbooks_merge.R")
-      c("data/logbooks/trip.parquet",
-        "data/logbooks/station.parquet",
-        "data/logbooks/fishing_sample.parquet",
-        "data/logbooks/catch.parquet")
-    },
-    format = "file"
-  ),
+  # Precedence, recorded once in curate/decisions/: afli where it exists, then
+  # fs_afladagbok through its dump end, then adb beyond it.
+  tar_target(logbook, {
+    afli; fs_afladagbok; adb
+    produces("curate/logbook.R",
+             fd_curated("logbook", "trip.parquet"),
+             fd_curated("logbook", "station.parquet"),
+             fd_curated("logbook", "fishing_sample.parquet"),
+             fd_curated("logbook", "catch.parquet"))
+  }, format = "file"),
 
-
-  # ── Stage 3: Landings ────────────────────────────────────────────────────────
-
-  tar_target(
-    name    = landings_files,
-    command = {
-      script_landings
-      source("data/landings/landings.R")
-      c("data/landings/landings.parquet",
-        "data/landings/catch.parquet")
-    },
-    format = "file"
-  ),
-
-
-  # ── Stage 4: Landings match ──────────────────────────────────────────────────
-  # Builds a .tid → .tid_land crosswalk between merged logbook trips and the
-  # landing register. Depends on merged_files and landings_files being up to date.
-  # Also writes .tid_land and match_type back into trip.parquet.
-
-  tar_target(
-    name    = landings_match_file,
-    command = {
-      merged_files                                 # trip/station/fishing_sample/catch must exist
-      landings_files                               # landings/catch must exist
-      script_landings_match
-      source("data/logbooks/logbooks_landings-match.R")
-      c("data/logbooks/lid_map.parquet",
-        "data/logbooks/trip.parquet")
-    },
-    format = "file"
-  )
-
+  tar_target(lid_map, {
+    logbook; aflagrunnur; gear
+    produces("curate/link_lid_map.R",
+             fd_curated("link", "lid_map.parquet"),
+             fd_curated("logbook", "trip.parquet"))
+  }, format = "file")
 )

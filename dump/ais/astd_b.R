@@ -12,7 +12,7 @@ library(duckdbfs)
 
 
 tmpdir <- tempdir()
-unzip("data-dump/ais/astdB/astd_classb_2014-01-01_2024-12-31.zip", exdir = tmpdir)
+unzip(fd_raw("ais", "astdB", "astd_classb_2014-01-01_2024-12-31.zip"), exdir = tmpdir)
 
 directory <-
   tibble(file = dir(tmpdir, recursive = TRUE, full.names = TRUE, pattern = ".gz")) |>
@@ -48,7 +48,7 @@ for(y in years) {
       mutate(mmsi = as.integer(mmsi),
              month = as.integer(month(date_time_utc)),
              year = as.integer(year(date_time_utc))) |>
-      duckdbfs::write_dataset("data-raw/ais/astdB",partitioning = c("year", "month"), format = "parquet")
+      duckdbfs::write_dataset(fd_staging("ais", "astdB"),partitioning = c("year", "month"), format = "parquet")
   }
 }
 

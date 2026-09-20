@@ -29,7 +29,7 @@ VIDS <- NULL
 
 # -- Data ----------------------------------------------------------------------
 
-ais   <- open_dataset("data/trail2")
+ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
 # -- Main loop -----------------------------------------------------------------
@@ -118,7 +118,7 @@ for (yr in years) {
   tmp <- tempfile(fileext = ".parquet")
   write_dataset(trips_yr, tmp)
 
-  out_dir <- if (is.null(VIDS)) "data/trail_trips" else "data/trail_trips_test"
+  out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
 
   # Use the in-memory clean table (both passes applied) for the ping write
   clean |>
@@ -141,7 +141,7 @@ message(glue::glue(
   "Done: {nrow(trips)} trips across {n_distinct(trips$vid)} vessels"
 ))
 
-out_trips <- if (is.null(VIDS)) "data/ais_trips.parquet" else "data/ais_trips_test.parquet"
+out_trips <- if (is.null(VIDS)) fd_curated("ais", "trip.parquet") else fd_staging("ais", "trip_test.parquet")
 write_dataset(trips, out_trips)
 
 # -- QA: vid == 2765 -----------------------------------------------------------
@@ -153,7 +153,7 @@ if (FALSE) {
   token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"
   mapdeck::set_token(token)
 
-  open_dataset("data/trail_trips_test") |>
+  open_dataset(fd_staging("ais", "ping_test")) |>
     filter(vid == 2765) |>
     collect() |>
     arrange(time) |>

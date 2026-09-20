@@ -19,7 +19,7 @@ read_zip <- function(zipfile) {
 }
 
 # fleet monthly 10th degree resolution -----------------------------------------
-zips <- dir("data-raw/gfw/version3", 
+zips <- dir(fd_staging("gfw", "version3"), 
             pattern = "fleet-monthly-csvs-10", 
             full.names = TRUE)
 res <- map(zips, read_zip)
@@ -30,10 +30,10 @@ res |>
   mutate(year = as.integer(year),
          month = as.integer(month),
          mmsi_present = as.integer(mmsi_present)) |> 
-  write_parquet("data/gfw/fleet-monthly-10-v3.parquet")
+  write_parquet(fd_staging("gfw", "fleet_monthly_v3.parquet"))
 
 # mmsi daily 10th degree resolution --------------------------------------------
-zips <- dir("data-raw/gfw/version3", 
+zips <- dir(fd_staging("gfw", "version3"), 
             pattern = "mmsi-daily-csvs-10-", 
             full.names = TRUE)
 res <- map(zips, read_zip)
@@ -43,14 +43,14 @@ res |>
          lat = cell_ll_lat) |> 
   mutate(mmsi = as.integer(mmsi),
          year = as.integer(year(date))) |> 
-  write_dataset("data/gfw/mmsi-daily-10-v3",
+  write_dataset(fd_staging("gfw", "mmsi_daily_v3"),
                 existing_data_behavio
                 format = "parquet",r = "overwrite",
                 partitioning = c("year"))
 
 # mmsi daily 100th degree resolution -------------------------------------------
 # this takes a while ...
-zips <- dir("data-raw/gfw/version3/", 
+zips <- dir(fd_staging("gfw", "version3", ""), 
             pattern = "fleet-daily-csvs-100", 
             full.names = TRUE)
 for(i in 1:length(zips)) {
@@ -58,7 +58,7 @@ for(i in 1:length(zips)) {
     rename(lon = cell_ll_lon,
            lat = cell_ll_lat) |> 
     mutate(year = as.integer(year(date))) |> 
-    write_dataset("data/gfw/fleet-daily-csvs-100-v3",
+    write_dataset(fd_staging("gfw", "fleet_daily_v3"),
                   format = "parquet",
                   existing_data_behavior = "overwrite",
                   partitioning = c("year"))

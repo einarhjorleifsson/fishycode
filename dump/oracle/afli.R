@@ -9,7 +9,7 @@ con <- connect_mar()
 # tbl_mar(con, "afli.ra_email_skeyti") |> collect() -> d
 # # creates an error d |> write_parquet("testo.parquet")
 
-OUT_DIR <- "data-raw/data-dump/afli"
+OUT_DIR <- fd_staging("data-dump", "afli")
 SCHEMA <- "afli"
 get_tables_and_views <- function(con, owner) {
   bind_rows(mar_tables(con, owner) |> collect() |>

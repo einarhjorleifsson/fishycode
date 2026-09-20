@@ -5,7 +5,7 @@ library(duckdb)
 library(duckdbfs)
 library(tidyverse)
 
-fil <- dir("data-raw/norway/fangstdata", full.names = TRUE, pattern = "*.zip")
+fil <- dir(fd_staging("norway", "fangstdata"), full.names = TRUE, pattern = "*.zip")
 base <- basename(fil)
 tdir <- tempdir()
 for(i in 1:length(fil)) {
@@ -16,7 +16,7 @@ files <-
   filter(str_ends(fil, ".csv")) |> 
   mutate(year = str_replace_all(basename(fil), "\\D", ""),
          year = as.integer(year),
-         out = paste0("data/landings/norway")) |>
+         out = paste0(fd_curated("landing", "norway"))) |>
   arrange(year) |> 
   drop_na()
 files |> print() |> knitr::kable()
@@ -54,5 +54,5 @@ d <-
   mutate(dokument_salgsdato = dmy(dokument_salgsdato),
          dokument_versjonstidspunkt = dmy(dokument_versjonstidspunkt))
 d |>
-  duckdbfs::write_dataset("data/landings/fangstdata.parquet")
+  duckdbfs::write_dataset(fd_curated("landing", "fangstdata.parquet"))
 

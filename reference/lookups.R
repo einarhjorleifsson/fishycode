@@ -33,7 +33,7 @@ iso3166 <- page |>
     alpha_2 = str_extract(alpha_2, "\\b[A-Z]{2}\\b")
   ) |>
   filter(!is.na(alpha_2))
-iso3166 |> nanoparquet::write_parquet("data/aux/country_codes_ISO3166.parquet")
+iso3166 |> nanoparquet::write_parquet(fd_staging("aux", "country_codes_ISO3166.parquet"))
 # MMSI country code ------------------------------------------------------------
 maritime_identification_digits <-
   "https://en.wikipedia.org/wiki/Maritime_identification_digits" |>
@@ -52,7 +52,7 @@ maritime_identification_digits <-
   mutate(MID = str_trim(MID)) |>
   drop_na()
 maritime_identification_digits |>
-  nanoparquet::write_parquet("data/aux/maritime_identification_digits.parquet")
+  nanoparquet::write_parquet(fd_staging("aux", "maritime_identification_digits.parquet"))
 
 
 ## Call signs and country ------------------------------------------------------
@@ -61,7 +61,7 @@ if(FALSE) {
   con <- connect_mar()
   tbl_mar(con, "ops$einarhj.vessel_cs_itu_prefix") |>
     collect() |>
-    nanoparquet::write_parquet("data/aux/callsign_prefix.parquet")
+    nanoparquet::write_parquet(fd_staging("aux", "callsign_prefix.parquet"))
 }
 
 

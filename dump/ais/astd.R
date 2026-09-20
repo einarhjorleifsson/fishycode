@@ -13,9 +13,9 @@ library(tidyverse)
 # Configuration
 # ------------------------------------------------------------------------------
 
-zip_dir   <- "data-dump/ais/astd"
-#out_raw   <- "data-raw/ais/astd_schema_sniff.rds"
-#out_canon <- "data-raw/ais/astd_canonical_schema.rds"
+zip_dir   <- fd_raw("ais", "astd")
+#out_raw   <- fd_staging("ais", "astd_schema_sniff.rds")
+#out_canon <- fd_staging("ais", "astd_canonical_schema.rds")
 csv_delim <- ";"
 n_max     <- 1e4
 
@@ -218,8 +218,8 @@ library(dplyr)
 # Configuration
 # ------------------------------------------------------------------------------
 
-zip_dir     <- "data-dump/ais/astd"
-parquet_dir <- "data-raw/ais/astd"
+zip_dir     <- fd_raw("ais", "astd")
+parquet_dir <- fd_staging("ais", "astd")
 
 # CSV delimiter used in ASTD files
 csv_delim <- ";"
@@ -230,8 +230,8 @@ csv_delim <- ";"
 mdy_period <- c("202311", "202312", "202401", "202402", "202403", "202404")
 
 # Canonical schema produced by SNIFF_astd_schema.R
-#schema_sniff_file <- "data-raw/ais/astd_schema_sniff.rds"
-#canonical_file    <- "data-raw/ais/astd_canonical_schema.rds"
+#schema_sniff_file <- fd_staging("ais", "astd_schema_sniff.rds")
+#canonical_file    <- fd_staging("ais", "astd_canonical_schema.rds")
 
 #if (!file.exists(canonical_file))
 #  stop("Canonical schema not found — run scripts/00_DATASET_ais_astd-zip_sniff-schema.R first.\n  Expected: ",
@@ -310,7 +310,7 @@ run_pipeline <- function(zip_files, yyyymm, parquet_dir) {
   on.exit(dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
   dir.create(parquet_dir, recursive = TRUE, showWarnings = FALSE)
-  dir.create("data-raw/ais/log", recursive = TRUE, showWarnings = FALSE)
+  dir.create(fd_staging("ais", "log"), recursive = TRUE, showWarnings = FALSE)
 
   results <- vector("list", length(zip_files))
 

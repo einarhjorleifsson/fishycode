@@ -29,9 +29,9 @@ library(stringr)
 
 ORIT_TYPES <- orit::hr_types$type[!is.na(orit::hr_types$type)]
 
-SRC       <- "data-dump/logbooks/afli/afladagb_xml_mottaka.parquet"
-OUT_NMEA  <- "data-raw/logbooks/afli/sensor_xml_nmea.parquet"
-OUT_TRACK <- "data-raw/logbooks/afli/sensor_xml_track.parquet"
+SRC       <- fd_raw("logbooks", "afli", "afladagb_xml_mottaka.parquet")
+OUT_NMEA  <- fd_staging("afli", "sensor_xml_nmea.parquet")
+OUT_TRACK <- fd_staging("afli", "sensor_xml_track.parquet")
 
 
 # Parse NMEA strings via orit --------------------------------------------------

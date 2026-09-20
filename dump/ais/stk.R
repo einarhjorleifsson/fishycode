@@ -33,7 +33,7 @@ current_year <- max(year(T1))
 
 for(i in 1:length(T1)) {
 
-  path <- "data-dump/ais/stk/trail"
+  path <- fd_raw("ais", "stk", "trail")
 
   t1 <- T1[i]
   t2 <- T2[i]
@@ -62,10 +62,10 @@ for(i in 1:length(T1)) {
 tbl(con, dbplyr::in_schema("STK", "MOBILE")) |>
   select(mid = MOBILEID, loid = LOCALID, glid = GLOBALID) |>
   collect() |>
-  duckdbfs::write_dataset("data-dump/ais/stk/mobile.parquet")
+  duckdbfs::write_dataset(fd_raw("ais", "stk", "mobile.parquet"))
 
 
 tbl_mar(con, "ops$einarhj.mobile_vid") |>
   collect() |>
-  duckdbfs::write_dataset("data-dump/ais/stk/einarhj_mobile-vid.parquet")
+  duckdbfs::write_dataset(fd_raw("ais", "stk", "einarhj_mobile-vid.parquet"))
 

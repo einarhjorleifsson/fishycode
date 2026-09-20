@@ -7,14 +7,14 @@ library(arrow)
 
 # data -------------------------------------------------------------------------
 vessels <- 
-  open_dataset("data/vessels/vessels_iceland.parquet") |> 
+  open_dataset(fd_curated("vessel", "vessel.parquet")) |> 
   to_duckdb()
 gears <- 
-  open_dataset("data/gear/gear_mapping.parquet") |> 
+  open_dataset(fd_curated("reference", "gear.parquet")) |> 
   to_duckdb() |> 
   select(agf_gid = gid_agf, s1, s2, metier = met5)
 ais <- 
-  open_dataset("data/ais/trail") |> 
+  open_dataset(fd_staging("ais", "ping_union")) |> 
   to_duckdb() |> 
   filter(year %in% 2009:2024,
          (whack == FALSE | is.na(whack)),
@@ -22,7 +22,7 @@ ais <-
          !is.na(gid_trip)) |>           # a fishing trip
   select(vid, lon, lat, time, speed, .cid, dt, dd, year, month, gid_trip)
 lb <- 
-  open_dataset("data/logbooks/station-for-ais.parquet") |>
+  open_dataset(fd_curated("logbook", "station-for-ais.parquet")) |>
   to_duckdb() |> 
   filter(year(date) %in% 2009:2024) |> 
   filter(!is.na(agf_gid)) |> 
@@ -114,7 +114,7 @@ by_0005 <-
 
 # checks -----------------------------------------------------------------------
 metier_used <- 
-  read_parquet("data/gear/gear_mapping.parquet") |> 
+  read_parquet(fd_curated("reference", "gear.parquet")) |> 
   filter(gid_agf %in% c(1:16, 21, 22)) |> 
   pull(met5) |> 
   unique()

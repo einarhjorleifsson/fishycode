@@ -22,13 +22,13 @@ duckdbfs::load_spatial()
 
 # mid → vid match table; used for STK (temporal interval join) and as the
 # authoritative MMSI → vid lookup for the commercial providers.
-vid <- duckdbfs::open_dataset("data/vessels/stk_vessel_match.parquet")
+vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
 
 # stk --------------------------------------------------------------------------
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`
 # (a STK-internal mobile ID), so we resolve to vid via a temporal interval join:
 # each mid may map to different vessels over time as transponders are reused.
-stk <- duckdbfs::open_dataset("data-dump/ais/stk/trail") |>
+stk <- duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
   inner_join(vid |> select(vid, mmsi, mid, d1, d2) |> filter(!is.na(vid)),
              by = join_by(mid, between(time, d1, d2))) |>
   select(vid, mmsi, time, lon, lat, speed, heading)
@@ -38,7 +38,7 @@ stk <- duckdbfs::open_dataset("data-dump/ais/stk/trail") |>
 # filter to 9-digit MMSIs starting with "251" (Iceland's MID) before joining
 # to vid. Speed is not directly available; we derive it from distance/time
 # between consecutive pings and convert m/s → knots.
-astd  <- open_dataset("data-raw/ais/astd") |>
+astd  <- open_dataset(fd_staging("ais", "astd")) |>
   mutate(mmsi = as.character(mmsi),
          nc = nchar(mmsi)) |>
   filter(nc == 9 & str_sub(mmsi, 1, 3) == "251") |>
@@ -54,7 +54,7 @@ astd  <- open_dataset("data-raw/ais/astd") |>
 # astdB ------------------------------------------------------------------------
 # ASTDB is a second commercial AIS feed. Filtered to Iceland (cc_iso3 == "ISL")
 # before joining; this provider includes COG in addition to true heading.
-astdB <- open_dataset("data-raw/ais/astdB") |>
+astdB <- open_dataset(fd_staging("ais", "astdB")) |>
   filter(cc_iso3 == "ISL") |>
   mutate(mmsi = as.character(mmsi)) |>
   inner_join(vid |> filter(!is.na(mmsi)) |> select(mmsi, vid) |> distinct()) |>
@@ -69,7 +69,7 @@ astdB <- open_dataset("data-raw/ais/astdB") |>
 # DDMMmm→DMS-misconverted originals and extend coverage for vessels with poor
 # AIS reception from the commercial feeds.
 wacky <-
-  open_dataset("data-raw/logbooks/afli/sensor_GPS.parquet") |>
+  open_dataset(fd_staging("afli", "sensor_GPS.parquet")) |>
   inner_join(vid |> filter(!is.na(mmsi), !is.na(vid)) |> select(mmsi, vid) |> distinct()) |>
   select(vid, mmsi, time, lon, lat, speed, heading)
 
@@ -79,7 +79,7 @@ wacky <-
 # Note: an additional 2019 file exists (AdditionalMMSI20190327.csv) but was
 # excluded due to parsing issues.
 emn <-
-  read_csv("data-dump/ais/EmodNet/is2017.csv") |>
+  read_csv(fd_raw("ais", "EmodNet", "is2017.csv")) |>
   select(mmsi, time = utime, lon, lat, heading = trueheading, cog) |>
   mutate(mmsi = as.character(mmsi)) |>
   left_join(vid |> filter(!is.na(mmsi), !is.na(vid)) |> select(mmsi, vid) |> distinct(mmsi, .keep_all = TRUE) |>
@@ -127,7 +127,7 @@ for(y in 1:length(years)) {
     arrange(vid, time) |>
     # duckdbfs::write_dataset keeps TIMESTAMP as-is; arrow::write_dataset
     # materialises through R POSIXct and re-writes as TIMESTAMPTZ.
-    duckdbfs::write_dataset("data/trail", partitioning = "year", format = "parquet")
+    duckdbfs::write_dataset(fd_staging("ais", "ping_union"), partitioning = "year", format = "parquet")
 }
 
 toc()
@@ -148,7 +148,7 @@ toc()
 #
 # # read from just created data
 # ais2 <-
-#   open_dataset("data/trail") |>
+#   open_dataset(fd_staging("ais", "ping_union")) |>
 #   # filter out all points in ports
 #   filter(is.na(pid)) |>
 #   select(-pid)
