@@ -380,8 +380,37 @@ directory rename and, later, symlinks. Each step stands alone if the next never 
         Two hours; tells you whether the grammar is a contract.
       - Fix `FS_DATE_MAX`, expired 9 months ago. The next refresh forces a merge-rule change.
 
-- [ ] **6. Equivalence gate.** Rebuild the sweep; compare against current outputs. Only on
-      success do the archives go read-only, on the agreed date.
+- [x] **6. Equivalence gate — PASSED (2026-09-20).** The logbook chain was rebuilt from
+      `raw/` and every curated table reproduces the legacy build exactly:
+
+      | Table | Rows | Match |
+      |---|---|---|
+      | `logbook/trip` | 1,815,425 | exact |
+      | `logbook/station` | 7,219,248 | exact |
+      | `logbook/fishing_sample` | 7,219,248 | exact |
+      | `logbook/catch` | 16,741,776 | exact |
+      | `logbook/lid_map` | 780,203 | exact |
+      | `landing/landings` | 942,984 | exact |
+      | `landing/catch` | 3,818,564 | exact |
+
+      Row counts alone would not prove much, so content was checked too — total catch
+      weight, species and station counts, date and coordinate ranges, vessel counts,
+      matched-landing counts, gear counts, total effort and duration, and the full
+      `match_type` distribution. All identical.
+
+      Per-adapter, also exact: `afli` (6 tables incl. 6,844,567 stations and 3,953,564
+      sensor rows), `fs_afladagbok` (4), `adb` (3).
+
+      **Scope, stated honestly.** The AIS chain was *not* rebuilt — by the decision above,
+      since its model is about to change and rebuilding 565 M pings to validate something
+      known to be wrong is waste. The **shapes chain was not executed either**: reference
+      inputs (`staging/aux/*`, `curated/reference/port.parquet`) were seeded from
+      `legacy/`, because the gate tests the logbook chain and rebuilding 2.18 M eusm
+      polygons is off-purpose. `shapes_raw` and `shapes` are declared and parse, but have
+      never run end to end. Worth a separate run before relying on them.
+
+      Defects found by running, all fixed — see commit `4c00ad2`. Two of them were in code
+      that had never executed at all.
 
 - [ ] **7. Publish tiers A and B** with manifests. *External action — needs explicit
       confirmation before the first publish.*

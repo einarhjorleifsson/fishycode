@@ -133,7 +133,7 @@ list(
   tar_target(aflagrunnur, {
     port
     produces("sources/aflagrunnur/convert.R",
-             fd_curated("landing", "landing.parquet"),
+             fd_curated("landing", "landings.parquet"),
              fd_curated("landing", "catch.parquet"))
   }, format = "file"),
 
@@ -193,7 +193,7 @@ list(
   tar_target(lid_map, {
     logbook; aflagrunnur; gear
     produces("curate/link_lid_map.R",
-             fd_curated("link", "lid_map.parquet"),
+             fd_curated("logbook", "lid_map.parquet"),
              fd_curated("logbook", "trip.parquet"))
   }, format = "file")
 )
