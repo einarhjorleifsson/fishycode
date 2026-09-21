@@ -151,55 +151,42 @@ the mechanism is specified there and simply never applied, which matches the dat
 **Defect inventory — measured 2026-09-21, kaenugardr unmodified.** Solve these before
 anything downstream consumes the merged code.
 
-| # | defect | scale | fix |
+**FIXED 2026-09-21** in kaenugardr `be1e930`, verified against the previous build.
+
+| # | defect | before | after |
 |---|---|---|---|
-| A | `build_pid` misparses **gisco** | **2,425 of 2,440** pids wrong | parse the locode |
-| B | osm names keep the harbour suffix | 232 features | strip `höfn/havn/hamn/harbour` |
-| C | `ports_add` duplicate coordinate | 3 ports, 1 polygon | external geometry needed |
-| D | `ports_add` buffers in EPSG:3857 | 6 ports, ~57% too small | buffer in a projected CRS |
-| E | documented dedup recipe insufficient | 2,027 residual duplicates | cluster spatially, then priority |
-| F | **acronym fallback collides** | **1,848 features on 502 junk pids** | fix the counter; fix empty names |
-| G | network fetch block is dead code | lines 118-146 | assembly reads cached files already |
+| A | `build_pid` misparses gisco | 2,425 of 2,440 pids wrong | 2,440 carry a real locode; merges 5 → **1,585** |
+| C | `ports_add` duplicate coordinate | 3 harbours, 1 polygon | removed — **not harbours** (item 3c) |
+| D | buffers in EPSG:3857 | 246 m at 60-75°N | **501 m**; Hellnar 214 → **500** |
+| E | dedup recipe insufficient | 2,027 residual duplicates | `ports_dedup.gpkg`, 17,994 rows, pid unique |
+| F | acronym fallback collides | 275 features on one code | **51**; span 7,206 → 1,613 km |
+| G | network fetch block | forces network every run | `if (REFRESH_SOURCES)`, default FALSE |
+| H | derived pids depend on row order | 35-64% shift on reorder | sorted before assignment; **0%** |
 
-**A is the high-leverage one.** gisco's `port` column is **not a name — it is a UN/LOCODE**:
-all 2,440 values match `^[A-Z]{2}[A-Z0-9]{3}$`, and 92.5% verify against
-`unlocode.parquet`. `build_pid` treats it as free text and derives an acronym, so
-`FRSXB` becomes `FR-FRS` instead of `FR-SXB`. Only 15 of 2,440 come out right by
-accident. Effect on merging: gisco pids that match another source's pid today — **5 of
-2,435**; after parsing the locode — **1,737 of 2,440**. One branch in `build_pid`
-collapses ~1,732 spurious ports.
+Two further defects surfaced only because the new assertions caught them, both
+now fixed and asserted: `build_pid`'s `local_codes` join fanned the feature table
+out (it joins on `(country, name_key)` but was distinct on
+`(country, name_key, location)`), and a pid could still name two clusters.
 
-**F is the one that matters most now `pid` is the downstream key.** Of the 1,805 pids
-carrying more than one feature, **1,303 are legitimate agreement** — one port, several
-sources, all within 2 km — and those are the system working. The other **502 are
-collisions holding 1,848 features**: unrelated ports sharing a key. `CN-CH0` holds 275
-Chinese anchorages spread over 2,475 km; `US-US0` holds 78 over 5,507 km.
+**B was dropped.** Stripping `höfn` from `Bolungarvíkurhöfn` leaves the genitive
+`Bolungarvíkur`, and `Norðfjarðarhöfn` → `Norðfjarð` is not the nominative
+`Norðfjörður` either. Icelandic morphology defeats a suffix rule, and spatial
+clustering (E) merges these anyway without touching the name.
 
-Two causes, both in `assign_codes()`/`candidates()`:
+**Still open — GFW features are scattered multipolygons.** `src_gfw` unions
+anchorages by `(label, iso3)`, so one "port" can be cells spread across a whole
+country: **43% of GFW features span >2 km themselves, one of them 12,521 km**,
+and 30.6% of clusters contain such a feature. This bounds how well any spatial
+dedup can work. 97.1% of clusters still span under 2 km and the larger ones are
+mostly real complexes (Hamburg runs 34 km up the Elbe), but the tail — 6 clusters
+over 400 km — is wrong. Splitting GFW into contiguous anchorages is a
+source-level decision, deliberately left to the maintainer.
 
-- The exhaustion fallback is `paste0(str_sub(x, 1, 2), sum(used == str_sub(x, 1, 2)))`.
-  `used` holds **3-character** codes and `str_sub(x, 1, 2)` is **2** characters, so the
-  equality is never true, the counter is stuck at 0, and every name that runs out of
-  3-char candidates in a country gets the *same* code — `CH0`, `US0`, `NO0`, `DE0`.
-- `candidates()` pads a normalised name shorter than 3 characters to `"XXX"`, so every
-  port whose name normalises to empty (non-Latin scripts stripped by `[^A-Z0-9]`)
-  collides on `XXX` — 7 countries have one.
-
-**G:** `ports_all.R:118-146` fetches gfw, emodnet, gisco and vmstools from the network
-into objects **no later line reads** — every `src_*` block reads a cached file from
-disk. Removing it makes the assembly runnable offline from frozen artifacts, which is
-the same principle as 4b applied to the external sources.
-
-**E is why `priority` alone will not do it.** `ports_all.R:22` documents
-`slice_min(priority, by = pid, with_ties = FALSE)`, which takes 23,164 → 19,943. But
-**pid is not a reliable identity**, because it is derived from each source's own
-spelling: Ísafjörður is `IS-ISA` (einar/osm/gfw), `IS-ISF` (jeppe "Isafjord") and
-`IS-IIS` (gisco "ISISA"); Rif is `IS-RIF` and `IS-ISI`; Bolungarvík is `IS-BOL`,
-`IS-BOU` and `IS-IBO`. So after the documented recipe, **3,655 retained features
-(18.3%) still sit within 300 m of another retained feature — 2,027 of them redundant**
-(6,027 / 3,582 within 1 km). Deduplication has to cluster on geometry first and apply
-`priority` within the cluster; grouping by `pid` cannot get there. Fixing A and B
-shrinks this but does not remove it.
+**Still open — the pid registry.** Sorting makes the codes reproducible given the
+same *set* of ports. It does not freeze them: a code can still move when a new
+name sorts ahead of an existing one. For a key three databases join on, the
+assignments should be committed to a registry and passed back in as `taken`.
+Tested: with a registry, adding two ports changes 0 of 169/929/817 codes.
 
 **Target architecture, decided 2026-09-21.** The merged pan-European/global port
 database is the **single authority for the harbour code** in all three places it is
@@ -276,8 +263,18 @@ and none should now be generated.**
 
 **This splits a concept that the pipeline currently conflates — see item 3c.**
 
-**check:** no two features in `ports.fgb` share a geometry; `ports_add` buffers measure
-500 m on the ground.
+**DONE 2026-09-21** — kaenugardr `be1e930`. Corrected in the artifact rather than by
+re-running the bootstrap (which cannot run): `ports-iceland-corrections.R` removes
+both records and rebuffers the four remaining hand-added ports to a true 500 m.
+159 → 157 harbours, **no two sharing a geometry** (was 3 sharing one), Hellnar
+214 → 500 m.
+
+**Not yet propagated into this pipeline.** `$FISHYDATA/raw/ports/*.gpkg` are still
+the old hand copies, so `staging/aux/ports.fgb` and `curated/reference/port.parquet`
+are unchanged until they are re-imported and `shapes.R` / `harbour_codes.R` re-run.
+The +70 tagging rows persist until then.
+
+**check:** `ping_tagged` row count equals `ping_union` row count.
 
 ---
 
