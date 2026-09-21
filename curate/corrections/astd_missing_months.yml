@@ -86,9 +86,30 @@ cause:
 repair:
   a_plain_rerun_does_not_work: >-
     Tried 2026-09-21. The script skips the 153 written months, reaches
-    202308_manual, fails in unzip() for the reason above, warns, next()s, and
-    exits reporting success with 2023 still at ten partitions. Re-running is not
-    the repair.
+    202308_manual, fails in unzip() for the reason above, warns and next()s, and
+    2023 is still at ten partitions. Re-running is not the repair.
+  the_failure_was_never_silent: >-
+    Worth stating plainly, because this registry's whole premise is silent
+    corruption and this is NOT an instance of it. The run ends with:
+
+        --- Summary ---
+          Written:  0
+          Skipped:  153  (parquet already existed)
+          Failed:   2
+          Failed months:
+            202308
+            202309
+
+    The script names the two failed months, by number, every time it runs. It
+    also leaves the tree clean - no empty partition directories, no truncated
+    parquet, verified after the 2026-09-21 run. The tooling did its job. What
+    went wrong is that curate/decisions/003-undeclared-dump-inputs.md recorded
+    the original run as "clean: 2,769,131,193 rows, 2013-2026, 124 GB, in
+    25.5 min" - a row total taken from a run whose own summary said Failed: 2.
+    The defect is in the reading, not the reporting.
+  an_earlier_claim_here_was_wrong: >-
+    This file first said the script "exits reporting success". It does not, and
+    that was written without having run it. Corrected the same day.
   action: >-
     Decompress the two members with a tool that implements method 9, then read
     the CSV. macOS Info-ZIP unzip does: `unzip -p` streams both files correctly.

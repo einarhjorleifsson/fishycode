@@ -343,12 +343,14 @@ they will be made again: the `_manual` filename defeating the glob (no — `:206
 documents the suffix); the member exceeding 4 GB (no — 202312 at 4.46 GB works,
 202309 at 4.50 GB fails); a transient temp-space failure (no — deterministic).
 
-**The script's own output says so and nobody read it:** it prints
-`Sniffing 155 files` and then `Canonical schema across 153 months`, and its
-column-set table jumps 202307 → 202310. That 153 has been in every run's output
-all along. `:313` also creates `staging/ais/log/`, which is **empty**, so
-decision 003's "ran clean, 2,769,131,193 rows" was a row total with nothing to
-check coverage against. Item 7's pattern, fourth instance.
+**This is not a silent failure — and that is the point.** The script prints
+`Sniffing 155 files` then `Canonical schema across 153 months`, its column-set
+table jumps 202307 → 202310, and it ends with `Failed: 2` naming `202308` and
+`202309` explicitly. It has said so on every run, and it leaves the tree clean
+(verified: no empty partition dirs, no truncated parquet). Decision 003 recorded
+that run as "clean: 2,769,131,193 rows … 25.5 min" — a row total taken from a
+run whose own summary reported two failures. **Not item 7's pattern after all**:
+the check was there and was not read.
 
 **Fixed in code 2026-09-21, one path verified, one not.** `dump/ais/astd.R` now
 falls back to the Info-ZIP `unzip` CLI, which does implement method 9 — both
@@ -361,14 +363,54 @@ installed here.
 
 Still to handle when the conversion runs: these files carry an **extra leading
 `ship_id` column** (28 against 27) from the hand-written SELECT, plus quoted
-headers and a millisecond timestamp. A plain re-run was tried before the fix and
-did nothing but re-report success.
+headers and a millisecond timestamp. A plain re-run was tried before the fix:
+153 skipped, 0 written, 2 failed, nothing left behind.
 
 **This must precede the item 13 rebuild.** Rebuilding now bakes a two-month hole
 in 2023 into the product, where it is invisible and reads as a real decline.
 
 **check:** every `year=YYYY` under `staging/ais/astd` has one partition per zip
 in `raw/ais/astd` for that year.
+
+---
+
+## Resume note — 2026-09-21, session paused, break over 24 hours
+
+**Start here: one command, then one check.** The `dump/ais/astd.R` DEFLATE64 fix
+(item 14) is committed and the sniff half is verified; the conversion half has
+never executed. Run it, at the machine, not backgrounded:
+
+```
+Rscript -e 'source("R/paths.R"); source("dump/ais/astd.R")'
+```
+
+Expect `R cannot read … — retrying via the unzip CLI` on `202308_manual` and
+`202309_manual`, then the end-of-run summary to say `Written: 2, Failed: 0`.
+Then the item 14 check: `ls staging/ais/astd/year=2023` must show 12 partitions.
+If the `COPY` fails, the likely cause is the extra leading `ship_id` column
+(28 against 27) — the canonical SELECT at `:288` names columns explicitly, so it
+should be ignored, but that is reasoning, not a result.
+
+**State on disk, unchanged by today:** `staging/ais/astd` is 123 GB, 2023 still
+at ten partitions, no empty directories and no truncated parquet. Nothing was
+written today. Everything in items 5, 13 and the older resume note below still
+holds.
+
+**Open, in the order that respects the dependencies:**
+
+1. **Item 14's conversion run** — above. It blocks item 13, because a rebuild
+   would bake the two-month hole into the product.
+2. **Item 5's unanswered question** — whether the astd duplicates already exist
+   in `staging/ais/astd`, upstream of the union. One query per year. It decides
+   whether the repair belongs in the union or the decode, and it should be asked
+   *after* the two months land, since they fall inside the affected era.
+3. **Items 1/1b** — set aside deliberately today. Both are blocked on one line
+   that does not exist: a declared unit for `z1`/`z2`. See item 1b.
+
+**Worth knowing before trusting any measurement here:** three claims about
+item 14's cause were asserted from reading code and file listings today, and all
+three were wrong. Running the script settled it in one pass. Where this file
+states a cause, check whether it says *measured* or *inferred*.
 
 ---
 
