@@ -288,7 +288,8 @@ All of it to `$FISHYDATA`, no LFS anywhere:
   `havnepolygoner3.gpkg`, maksims shapefile, marta xlsx, `unlocode.parquet`,
   `ports_kvoti.parquet`)
 - `ports_iceland_faroe.gpkg` → `raw/ports/`, as the frozen bootstrap artifact
-- consolidated output → **see the open question below**
+- all features → `staging/ports/ports_all.gpkg`
+- deduplicated, one row per port → `curated/reference/` **(settled 2026-09-21)**
 
 Every hardcoded relative path in the migrated scripts becomes `fd_raw()` /
 `fd_staging()` / `fd_curated()`. `R/check_paths.R` should catch any that are
@@ -304,14 +305,19 @@ geometry is currently still not propagated (item 4).
 Make kaenugardr read-only, as with `logbooks` and `fishydata_2024-2026`. Fold
 it into TODO item 9's archive date rather than setting a separate one.
 
-### Open question — which layer holds `ports_all`
-This tests committed boundary 1. `ports_all` merges nine sources, which argues
-`curated/`; but it is reference geometry, and reference outputs already live in
-`curated/reference/`. Three candidates, to be settled before step 2:
-`staging/ports/`, `curated/reference/`, or split — all features to `staging/`,
-the deduplicated one-row-per-port artifact to `curated/reference/`.
-The split matches what the code now produces (`ports_all` + `ports_dedup`) and
-keeps "never destroy the original" intact.
+### Settled — the product is split
+All features to `staging/ports/`, the deduplicated one-row-per-port artifact to
+`curated/reference/`. Matches what the code already produces and keeps "never
+destroy the original" intact.
+
+**But** `AGENTS.md` says `write_curated()` is the only way into `curated/`, and
+that function does not exist (item 12). So the deduplicated artifact is written
+with the same `write_sf()` the rest of `reference/geo/shapes.R` uses, and
+carries no provenance stamp until item 12 is resolved.
+
+### Step 0 is DONE
+kaenugardr pushed to GitHub 2026-09-21, `6cf42a4..c82d053`, 52 MB of LFS
+uploaded. History is preserved; the repo can be archived once steps 1-3 land.
 
 **check:** no `ports-*.R` exists in `~/stasi/kaenugardr` that is not also in this
 repo's history; `grep -rn kaenugardr` in this repo returns only decisions and
@@ -483,6 +489,54 @@ re-checked now the layout has changed, and the `year` data column now coexists w
 hive column of the same name.
 
 **check:** reading each dataset yields exactly one `year` column, of a stable type.
+
+---
+
+## 12. `AGENTS.md`'s provenance section describes machinery that does not exist
+**status:** open · **found 2026-09-21 while planning item 3d**
+
+`AGENTS.md` has a **Provenance and sync** section stating three mechanisms with
+"distinct jobs", and asserting:
+
+> `write_curated()` is the **only** way anything enters `curated/`; it stamps
+> repo, commit SHA, dirty flag, script, build time, input hashes, row count and
+> schema hash. `check_sync()` reports drift.
+
+Checked against the code:
+
+| claimed | references in the repo |
+|---|---|
+| `write_curated()` | **0** |
+| `check_sync()` | **0** |
+| `manifest.yml` | **0** |
+| `KV_METADATA` | **0** |
+
+`R/` holds `check_paths.R`, `check_ready.R`, `gate.R`, `match_nearest_date.R`,
+`paths.R`, `write_parquet.R` — and `write_parquet_group()` writes a plain
+`COPY … (FORMAT parquet)` with no metadata at all. The only KV metadata in
+`curated/reference/port.parquet` is Arrow's own `ARROW:schema` blob, because
+`harbour_codes.R` writes it with `nanoparquet::write_parquet`. `overrides/`
+exists and is empty.
+
+This is the failure the file's own header names: *"Do not let this file drift
+from the code — that is the failure it is replacing."* It is worse than an
+ordinary stale comment, because several open items lean on it: 3b's check
+("derive from one kaenugardr release carrying a recorded version"), 3d's
+step 2, and the pid registry all assume a stamping mechanism that is a plan.
+
+Two honest resolutions, and the choice matters:
+- **Build it.** `write_curated()` is a small function: `COPY … (FORMAT parquet,
+  KV_METADATA {…})` plus the stamps. Then the checks above become real.
+- **Or delete the claim** and describe what actually happens, which is
+  `targets` alone.
+
+Either is fine. Leaving `AGENTS.md` asserting a function that does not exist is
+not, because agents and people read it as a description of the repo — this
+session did, and wrote a false reason into `curate/decisions/006` before
+checking.
+
+**check:** every mechanism named in `AGENTS.md`'s "Provenance and sync" section
+returns at least one hit under `grep -rn --include=*.R`.
 
 ---
 

@@ -62,13 +62,26 @@ existence, which is what the rule wanted all along.
    lives under `$FISHYDATA`. Nothing is written into this repo." Under that
    rule the port data needs no LFS at all.
 
-4. **Every convention the remaining open items need already exists here.**
-   `write_curated()` stamps repo, SHA, dirty flag, inputs, row count and schema
-   hash. `targets` owns staleness. `manifest.yml` versions a release.
-   `curate/corrections/` pairs a `.yml` declaration with a `.R` implementation —
-   which is exactly the shape of `ports-iceland-corrections.R`. And the still-open
-   **pid registry** is precisely an `overrides/` case: "a reviewed override
-   re-enters as an *input*, never as a computed output."
+4. **The conventions this needs are defined here, and partly built.** `targets`
+   owns staleness — 23 targets, real. `curate/corrections/` pairs a `.yml`
+   declaration with a `.R` implementation, 5 entries, which is exactly the shape
+   of `ports-iceland-corrections.R`. `curate/decisions/` is this file. And the
+   still-open **pid registry** is precisely an `overrides/` case: "a reviewed
+   override re-enters as an *input*, never as a computed output."
+
+   **Correction, 2026-09-21, same day.** This reason was first written claiming
+   that `write_curated()` stamps repo/SHA/inputs/row-count and that
+   `manifest.yml` versions a release. That was taken from `AGENTS.md` and is
+   **false**: `write_curated()`, `check_sync()`, `manifest.yml` and
+   `KV_METADATA` have **zero references** anywhere in the code. The only KV
+   metadata in `curated/reference/port.parquet` is Arrow's own schema blob.
+   `overrides/` exists but is empty. See TODO item 12.
+
+   The reason survives in weakened form — `targets`, `corrections/`,
+   `decisions/` are real and are what the migration actually leans on — but the
+   provenance machinery is a plan, not an asset, and absorbing kaenugardr does
+   not inherit it. It does put the port data where that machinery will apply
+   once built, which is still an argument, just a smaller one.
 
 ## What this costs, stated plainly
 
@@ -86,8 +99,13 @@ applies to it.
 
 ## Not decided here
 
-Where the consolidated product lands is left open, because it tests committed
-boundary 1 (source-shaped `staging/<source>/` vs merged-shaped `curated/`).
-`ports_all` merges nine sources, which argues for `curated/`; but it is
-reference geometry, and reference outputs already live in `curated/reference/`.
-See the migration item in `TODO.md`.
+**Settled 2026-09-21:** the product is split. All 24,655 features go to
+`staging/ports/ports_all.gpkg`; the deduplicated one-row-per-port artifact goes
+to `curated/reference/`. That matches what the code already produces and keeps
+"never destroy the original" intact.
+
+One constraint discovered while implementing it: `AGENTS.md` says
+`write_curated()` is the only way into `curated/`, and that function does not
+exist (reason 4 above). So there is no parquet-with-provenance route for the
+deduplicated artifact today; it is written with the same `write_sf()` the rest
+of `reference/geo/shapes.R` uses, and converting it is folded into TODO 12.

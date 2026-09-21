@@ -141,9 +141,16 @@ Data is not in git. Three mechanisms, distinct jobs:
 | Parquet KV metadata | What built *this file*? |
 | `manifest.yml` per release | What is in this release? |
 
-`write_curated()` is the **only** way anything enters `curated/`; it stamps repo,
-commit SHA, dirty flag, script, build time, input hashes, row count and schema
-hash. `check_sync()` reports drift. Nothing under `$FISHYDATA` is ever hand-edited.
+> **NOT BUILT — 2026-09-21.** The table above is the intended design. Checked
+> against the code: `write_curated()`, `check_sync()`, `manifest.yml` and
+> `KV_METADATA` have **zero references** in this repo. Today `targets` is the
+> only mechanism that actually runs; curated files are written with plain
+> `write_parquet()` / `write_sf()` and carry no provenance. See TODO item 12.
+
+The intent: `write_curated()` would be the **only** way anything enters
+`curated/`, stamping repo, commit SHA, dirty flag, script, build time, input
+hashes, row count and schema hash, with `check_sync()` reporting drift.
+Nothing under `$FISHYDATA` is ever hand-edited.
 
 ## Provenance of this repo
 
