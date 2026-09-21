@@ -1,0 +1,98 @@
+id: afli_depth_units
+title: afli depths migrate from fathoms to metres vessel by vessel over 2010 to mid-2012
+status: suspected - defect measured and located in time, repair specified but NOT implemented
+applies_to:
+  - staging/afli/station.parquet   (z1, z2)
+  - curated/logbook/station.parquet
+affects_rows: up to ~60% of deep stations in the worst months of a 30-month window
+implementation: none yet
+discovered: 2026-09-21
+
+origin: >-
+  Reported by the maintainer: afli began by requesting depth in FATHOMS, an ad-hoc
+  decision later moved to METRES, and a non-reproducible process was applied to
+  convert the archive. What follows is what the data shows, which confirms the
+  account but changes its shape - the change was not one conversion event but a
+  vessel-by-vessel migration.
+
+method: >-
+  afli depths cannot be checked against another logbook source, because no other
+  source shares afli's keys. They were checked against GEBCO bathymetry instead:
+  each station indexed to H3 resolution 8, and the cell's GEBCO depth divided by
+  the recorded z1. A ratio near 1.8288 means the record is in fathoms; a ratio
+  near 1.0 means it is already in metres. Restricted to the Icelandic box and,
+  where stated, to z1 >= 50 to remove shallow-water noise.
+
+baseline: >-
+  Across most of the series the ratio is stable and unambiguous. Median by year
+  sits at 1.84-1.90 from 1990 to 2023, and fs_afladagbok independently returns
+  the identical 1.891. Both sources record FATHOMS.
+
+the_anomaly:
+  summary: >-
+    A window from 2010-01 to 2012-06 in which a growing share of records are in
+    metres, ending abruptly.
+  monthly_share_of_deep_stations_consistent_with_metres: |
+    2010-01   5.4%     2011-06  32.7%     2012-01  57.6%
+    2010-06   6.4%     2011-09  47.2%     2012-04  49.9%
+    2010-09  19.8%     2011-11  60.0%     2012-06  19.7%
+    2010-11  34.3%     2011-12  63.4%  <- peak
+                                          2012-07   3.9%  <- cliff
+                                          2012-12   1.4%
+  shape: >-
+    A gradual ramp over roughly two years to about 60%, then an abrupt return to
+    baseline between 2012-06 and 2012-07. Not a changeover date; an adoption curve
+    followed by a correction.
+  median_ratio_deep_only: 2009 1.854, 2010 1.835, 2011 1.509, 2012 1.817, 2013 1.864
+
+not_explained_by:
+  shallow_water: >-
+    Ruled out. The share of shallow stations is flat at 30-36% across 2008-2013
+    and does not move in 2011. The anomaly persists at the same magnitude when
+    restricted to z1 >= 50 (2011: 30.2% of deep stations).
+
+mechanism:
+  finding: the unit is a per-VESSEL property, and vessels switched at different times.
+  evidence: >-
+    Measured over the peak window 2011-09 to 2012-03, on 268 vessels with at least
+    30 deep stations each:
+      0-10%   consistent with metres   65 vessels   (clearly still fathoms)
+      10-25%                           19
+      25-50%                           19
+      50-75%                           64
+      75-90%                           55
+      90-100%                          46 vessels   (clearly metres)
+    Two clear populations at the extremes, with a large mass between them that is
+    what a vessel switching DURING the seven-month window produces.
+  false_start: >-
+    An earlier test over the whole 2010-2012 window found only a smooth continuum
+    and was read as evidence AGAINST a per-vessel mechanism. That was the wrong
+    test: pooling across a two-year transition turns any vessel-level split into a
+    gradient, because a vessel that switched half way through scores ~50%.
+    Recorded because the same mistake is easy to repeat on the other date-bounded
+    defects in this registry.
+
+repair:
+  approach: >-
+    Classify (vid, period) rather than individual rows. For each vessel, compute
+    the GEBCO ratio over a rolling window and find the switch date; records before
+    it are fathoms, after it metres. Convert one side so the column is in a single
+    declared unit, retain the original as z1_raw, and carry a basis column.
+  residual_uncertainty: >-
+    Moderate and honest. GEBCO is a cell mean, not the depth under the gear, so
+    individual rows cannot be classified reliably - only vessel-periods can. The
+    ~111 of 268 vessels at the extremes are unambiguous; the 157 in between need a
+    switch date estimated, and near that date individual rows will be uncertain.
+  do_not: >-
+    Do NOT classify row by row on the ratio. The within-cell spread is wide enough
+    that it would mislabel a large number of genuinely-fathom records in deep or
+    steep ground.
+
+impact: >-
+  Any analysis using afli depth across 2010-2012 mixes two units, with the
+  contaminated share rising from 5% to 60% and back. Depth-stratified effort,
+  habitat association and gear-depth relationships are all affected for that
+  window. Outside it the series is consistent.
+
+related:
+  - adb_vs_fs_afladagbok   (adb records metres where fs records fathoms - a different, cleaner case)

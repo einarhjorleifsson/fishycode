@@ -57,6 +57,27 @@ has a positive longitude.
 
 ---
 
+## 1b. afli depth units drift fathoms → metres over 2010 to mid-2012
+**status:** open · **file:** `sources/afli/convert.R`
+**see:** `curate/corrections/afli_depth_units.yml`
+
+Checked against GEBCO bathymetry (no other source shares afli's keys). Stable at a
+ratio of 1.84–1.90 — fathoms — from 1990 to 2023, matching fs_afladagbok's 1.891
+exactly. But a window from 2010-01 to 2012-06 has a growing share of records in
+metres: 5% → **63% at 2011-12** → back to 1.4% after an abrupt cliff at 2012-07.
+
+Not shallow water (the shallow share is flat at 30–36% throughout, and the anomaly
+survives restricting to z1 ≥ 50). It is a **per-vessel** property: at the peak
+window, 65 of 268 vessels are unambiguously fathoms and 46 unambiguously metres,
+with the mass between them being vessels that switched mid-window.
+
+Repair must classify `(vid, period)`, never individual rows — GEBCO is a cell mean,
+so row-level classification would mislabel genuine fathom records on steep ground.
+
+**check:** median GEBCO-ratio per year varies by less than 5% across 1990–2026.
+
+---
+
 ## 2. `FS_DATE_MAX` expired nine months ago
 **status:** open · **file:** `curate/logbook.R:24`
 
