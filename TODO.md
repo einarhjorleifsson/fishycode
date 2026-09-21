@@ -74,6 +74,16 @@ with the mass between them being vessels that switched mid-window.
 Repair must classify `(vid, period)`, never individual rows — GEBCO is a cell mean,
 so row-level classification would mislabel genuine fathom records on steep ground.
 
+**Both this and item 1 are blocked on the same undeclared thing, upstream of both.**
+`docs/output-schema.md:88` declares `z1`, `z2` as `int`, "Start / end depth" — with
+**no unit**, while the same file spends twenty lines declaring effort units precisely.
+All three adapters carry the column through verbatim (`afli:59`, `fs:146`, `adb:160`)
+and not one converts, so no adapter can be called wrong. Both correction registries
+stop at the same sentence: *"agree a unit for the whole product and convert everything
+once, recording which was chosen"*. Until that line exists, neither repair is writable.
+Deferred by the maintainer 2026-09-21; recorded so the next attempt starts here rather
+than rediscovering it.
+
 **check:** median GEBCO-ratio per year varies by less than 5% across 1990–2026.
 
 ---
