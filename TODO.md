@@ -332,20 +332,37 @@ zips for 2023. 2017 (no 07) and 2019 (no 01) are genuine source gaps — the zip
 do not exist. 2023-08 and 2023-09 are not: 1.17 GB of raw delivery, 10.1 GB of
 CSV, present and never converted.
 
-Both are the only two zips of 155 carrying a `_manual` suffix, and inside, the
-CSV entry is a dumped SQL query rather than `ASTD_area_level1_YYYYMM.csv` — those
-two months were exported by hand from the provider's console. **The file pattern
-is not the cause** (`:93`, `:261`, `:348`, `:266` all match, and `:206` documents
-the suffix). No `month=08` directory exists at all, and `:381` creates it before
-copying, so the loop exited at the unzip or no-CSV branch — both of which only
-`warning()`. Why cannot be established: `:313` creates `staging/ais/log/` and it
-is **empty**, so decision 003's "ran clean, 2,769,131,193 rows" was a row total
-with nothing to check coverage against. Item 7's pattern, fourth instance.
+**Cause established** by running the script, after three wrong guesses from
+reading code. The two zips use **DEFLATE64** (PKWARE method 9, `zipinfo`:
+`deflated (enhanced-64k)`) where every other month uses standard deflate. R's
+`unz()`/`unzip()` are zlib, which implements only method 8, so R cannot read a
+row of them — `unz()` fails instantly with "error reading from the connection".
+Hence `sniff_zip()` returns NULL at `:60`, the month never enters
+`cols_by_month`, and `:341` fails the same way. Wrong guesses, recorded because
+they will be made again: the `_manual` filename defeating the glob (no — `:206`
+documents the suffix); the member exceeding 4 GB (no — 202312 at 4.46 GB works,
+202309 at 4.50 GB fails); a transient temp-space failure (no — deterministic).
 
-The repair is a re-run — `:388` skips months already written, so it processes
-these two and leaves 153 alone, in about 5 minutes. **Do not run it where the
-machine may sleep:** `:388` checks `file.exists()`, not a completed write, so a
-truncated parquet would be treated as done by every later run.
+**The script's own output says so and nobody read it:** it prints
+`Sniffing 155 files` and then `Canonical schema across 153 months`, and its
+column-set table jumps 202307 → 202310. That 153 has been in every run's output
+all along. `:313` also creates `staging/ais/log/`, which is **empty**, so
+decision 003's "ran clean, 2,769,131,193 rows" was a row total with nothing to
+check coverage against. Item 7's pattern, fourth instance.
+
+**Fixed in code 2026-09-21, one path verified, one not.** `dump/ais/astd.R` now
+falls back to the Info-ZIP `unzip` CLI, which does implement method 9 — both
+members verified to decompress to exactly their declared byte counts
+(5,277,681,911 and 4,835,251,763). The **sniff** path is tested: both months now
+return 28 columns, a control month unaffected at 27. The **conversion** path at
+`:341` is written but has **not been executed** — that needs the real 10 GB
+extraction. `bsdtar` is not a usable fallback (stops after 224 bytes); 7z is not
+installed here.
+
+Still to handle when the conversion runs: these files carry an **extra leading
+`ship_id` column** (28 against 27) from the hand-written SELECT, plus quoted
+headers and a millisecond timestamp. A plain re-run was tried before the fix and
+did nothing but re-report success.
 
 **This must precede the item 13 rebuild.** Rebuilding now bakes a two-month hole
 in 2023 into the product, where it is invisible and reads as a real decline.
