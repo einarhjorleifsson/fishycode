@@ -44,24 +44,76 @@ cause:
     that line. The only earlier exits are the unzip failure at :341 and the
     no-CSV-found branch at :350, and both only warning() and next(). The
     pipeline did not break either, since 2023-10 through 12 were written.
-  why_it_cannot_be_pinned_down: >-
-    dump/ais/astd.R:313 creates staging/ais/log/ for a per-run log. The
-    directory is EMPTY. The run is recorded in
-    curate/decisions/003-undeclared-dump-inputs.md as having "run clean:
+  the_cause: >-
+    THE ZIPS USE DEFLATE64, WHICH R CANNOT READ. Established 2026-09-21 by
+    running the script and reading zipinfo, after three wrong guesses recorded
+    below.
+
+      zipinfo -v, compression method:
+        ASTD_area_level1_202312.zip          deflated                 <- works
+        ASTD_area_level1_202309_manual.zip   deflated (enhanced-64k)  <- fails
+
+    "enhanced-64k" is Deflate64, PKWARE method 9. R's unz() and unzip() are
+    built on zlib, which implements only method 8, so R cannot read these two
+    members at all - not a row of them. unz() fails immediately with "error
+    reading from the connection", which is why sniff_zip() returns NULL at :60
+    and the month never enters cols_by_month, and the same failure recurs at
+    :341 in the conversion loop.
+  visible_in_the_scripts_own_output: >-
+    The sniff prints "Sniffing 155 files" and then "Canonical schema across 153
+    months" - two files silently absent - and its non-standard-column-set table
+    jumps 202307 -> 202310. The number 153 appears in the output of every run
+    and has never been compared with 155.
+  wrong_guesses_recorded: >-
+    Three, all plausible and all wrong, kept because each is the kind of thing
+    that will be guessed again:
+      1. The "_manual" filename defeating the glob. No - :93/:261 glob "\.zip$"
+         and :206 documents the suffix.
+      2. The member exceeding 4 GB. No - 202312 at 4.46 GB reads fine while
+         202309 at 4.50 GB fails.
+      3. A transient temp-space failure during the 155-file run. No - it is
+         deterministic and reproduces on demand.
+    The first two were asserted from reading code and file sizes. Only running
+    the script and inspecting the container settled it.
+  the_log_is_still_empty: >-
+    dump/ais/astd.R:313 creates staging/ais/log/ for a per-run log and the
+    directory is EMPTY, so nothing recorded the two warnings at the time.
+    curate/decisions/003-undeclared-dump-inputs.md records the run as "clean:
     2,769,131,193 rows, 2013-2026, 124 GB, in 25.5 min" - a row total with
-    nothing to check month coverage against. Most likely a transient failure
-    unzipping a 5 GB member during a 155-file run, but the evidence to say so
-    does not exist.
+    nothing to check month coverage against. That remains a defect in its own
+    right even now the cause is known.
 
 repair:
+  a_plain_rerun_does_not_work: >-
+    Tried 2026-09-21. The script skips the 153 written months, reaches
+    202308_manual, fails in unzip() for the reason above, warns, next()s, and
+    exits reporting success with 2023 still at ten partitions. Re-running is not
+    the repair.
   action: >-
-    Re-run dump/ais/astd.R. :388 skips any month whose parquet already exists,
-    so it processes only 2023-08 and 2023-09 and leaves the other 153 untouched.
+    Decompress the two members with a tool that implements method 9, then read
+    the CSV. macOS Info-ZIP unzip does: `unzip -p` streams both files correctly.
+    bsdtar does NOT (it stops after 224 bytes). 7z is not installed here.
+    Either pre-extract the two CSVs by hand and point the COPY at them, or give
+    :341 a fallback that shells out to `unzip -p` when R's unzip() fails -
+    preferable, because it also fixes the sniff at :68 and survives the next
+    hand-exported month.
+  two_more_things_differ_in_these_files: >-
+    Both must be handled whichever route is taken, and neither is visible until
+    the file can be read at all:
+      * An EXTRA LEADING COLUMN, ship_id, that no other month has - 28 columns
+        against 27. It is the "mmsi_123456789_as_ship_id" of the filename: the
+        hand-written SELECT aliased a placeholder MMSI into a column. The
+        canonical SELECT at :288 names columns explicitly, so an extra one is
+        ignored, but cols_by_month will not have these months and :369 will
+        borrow the previous month's column set.
+      * Quoted header names and a quoted imonumber where other months are bare,
+        and a millisecond timestamp (2023-08-31 17:43:31.000). CAST AS TIMESTAMP
+        handles the milliseconds; 202308/202309 are not in mdy_period at :230,
+        which is correct, as the format is ISO.
   cost: >-
-    About 5 minutes, under 10. The schema sniff over all 155 zips re-runs
-    unconditionally (its saveRDS cache is commented out at :88) but costs
-    0.0-0.4 s per zip, so roughly one minute; the rest is unzipping and copying
-    10.1 GB of CSV.
+    The schema sniff over all 155 zips re-runs unconditionally (its saveRDS
+    cache is commented out at :88) at 0.0-0.4 s per zip, about a minute. The two
+    months are 10.1 GB of CSV to decompress and copy, a few minutes more.
   hazard: >-
     DO NOT run it where the machine may sleep or shut down mid-copy. :388 skips
     on file.exists(out_file), not on a completed write, so a truncated

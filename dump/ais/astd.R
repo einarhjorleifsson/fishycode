@@ -52,6 +52,25 @@ resolve_type <- function(types) {
 # Helper: sniff one ZIP without extracting to disk
 # ------------------------------------------------------------------------------
 
+# Some months are compressed with DEFLATE64 (PKWARE method 9, reported by
+# zipinfo as "deflated (enhanced-64k)") rather than standard deflate. R's unz()
+# and unzip() are built on zlib, which implements only method 8, so they cannot
+# read a single row of those members and fail with "error reading from the
+# connection". Info-ZIP's `unzip` CLI does implement method 9 and streams them
+# correctly, verified byte-for-byte against the declared uncompressed size.
+#
+# This affected 2023-08 and 2023-09 — both hand-exported from the provider's
+# query console — which were silently absent from staging/ais/astd for months.
+# See curate/corrections/astd_missing_months.yml.
+#
+# bsdtar is NOT a usable fallback: it stops after 224 bytes on these files.
+deflate64_fallback <- function() {
+  cli <- Sys.which("unzip")
+  if (!nzchar(cli)) stop("R cannot read this ZIP (likely DEFLATE64) and no ",
+                         "`unzip` CLI is available to fall back to.")
+  cli
+}
+
 sniff_zip <- function(zip, yyyymm, delim, n_max) {
 
   # Read only the ZIP directory (no decompression yet)
@@ -63,13 +82,21 @@ sniff_zip <- function(zip, yyyymm, delim, n_max) {
     return(NULL)
   }
 
-  # Stream first n_max rows directly from the ZIP
+  # Stream first n_max rows directly from the ZIP. unz() is tried first; on a
+  # DEFLATE64 member it fails instantly, and `unzip -p | head` reads the same
+  # rows without decompressing the whole 5 GB (head closes the pipe early).
+  read_head <- function(src) read_delim(src, delim = delim, n_max = n_max,
+                                        show_col_types = FALSE,
+                                        name_repair = "minimal")
   df <- tryCatch(
-    read_delim(unz(zip, csv_entry),
-               delim          = delim,
-               n_max          = n_max,
-               show_col_types = FALSE,
-               name_repair    = "minimal"),
+    tryCatch(read_head(unz(zip, csv_entry)),
+             error = function(e) {
+               message("  ", basename(zip),
+                       ": unz() failed, retrying via the unzip CLI")
+               read_head(pipe(sprintf("%s -p %s | head -n %d",
+                                      shQuote(deflate64_fallback()),
+                                      shQuote(zip), n_max + 1L)))
+             }),
     error = function(e) {
       warning(basename(zip), ": ", conditionMessage(e))
       NULL
@@ -337,13 +364,29 @@ run_pipeline <- function(zip_files, yyyymm, parquet_dir) {
     break
   }
 
+  # R's unzip() first; the CLI fallback for DEFLATE64 members. Note that
+  # unzip() can FAIL WITHOUT ERRORING on these — it returns character(0) — so
+  # the length check matters as much as the tryCatch.
   csv_files <- tryCatch(
     unzip(zip, exdir = tmp),
     error = function(e) {
-      warning("Cannot unzip ", basename(zip), ": ", conditionMessage(e))
+      message("  unzip() errored: ", conditionMessage(e))
       character(0)
     }
   )
+
+  if (length(csv_files) == 0) {
+    message("  R cannot read ", basename(zip), " — retrying via the unzip CLI")
+    csv_files <- tryCatch({
+      st <- system2(deflate64_fallback(),
+                    c("-o", "-q", shQuote(zip), "-d", shQuote(tmp)))
+      if (st != 0) stop("unzip CLI exited ", st)
+      list.files(tmp, full.names = TRUE, recursive = TRUE)
+    }, error = function(e) {
+      warning("Cannot unzip ", basename(zip), ": ", conditionMessage(e))
+      character(0)
+    })
+  }
 
   csv_files <- csv_files[grepl("\\.csv$", csv_files, ignore.case = TRUE)]
 
