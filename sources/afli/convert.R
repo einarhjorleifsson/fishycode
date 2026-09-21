@@ -11,10 +11,15 @@ library(duckdbfs)
 SCHEMA <- "afli"
 dictionary   <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet")) |> collect() |> filter(schema == SCHEMA)
 gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |> filter(version == "old")
+# hid is the Icelandic harbour code; pid is the standard port key minted once
+# in reference/ports/ports_all.R and shared with the landings and AIS data.
+# drop_na() is scoped to (hid, port) deliberately: 21 of 112 codes are sentinels
+# or country placeholders with no pid, and a bare drop_na() would now discard
+# them along with their names.
 harbours <-
   duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect() |>
-  select(hid, port) |>
-  drop_na()
+  select(hid, port, pid) |>
+  drop_na(hid, port)
 # eytt flag: records officially deleted in Oracle (eytt=1 in rafr_stofn).
 # 16,912 such records exist; they were imported into stofn but later deleted.
 # eytt_deleted = TRUE  → deleted in Oracle; treat with caution / exclude.
@@ -65,7 +70,9 @@ trip <-
   source |>
   select(.tid, vid, T1, hid1, T2, hid2, n_crew, schema) |>
   distinct(.tid, vid, T1, hid1, T2, hid2, .keep_all = TRUE) |>
-  left_join(harbours, by = join_by(hid2 == hid))
+  left_join(harbours |> select(hid, pid1 = pid), by = join_by(hid1 == hid)) |>
+  left_join(harbours, by = join_by(hid2 == hid)) |>
+  rename(pid2 = pid)
 #trip |> count(hid2, port) |> knitr::kable()
 # Station (spatial/temporal envelope) -----------------------------------------
 station <-

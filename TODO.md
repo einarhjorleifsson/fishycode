@@ -384,6 +384,33 @@ placeholders `ports-kvoti.R` deliberately excludes with
 
 ---
 
+## 3f. `pid` is now set on logbook, landings and trail
+**status:** done 2026-09-21
+
+The standard port key reaches all three consumers of
+`curated/reference/port_geometry.parquet`. For Icelandic data the local `hid` is
+mapped to the standard `pid`; `hid` is kept beside it, never overwritten.
+
+| table | columns | coverage |
+|---|---|---|
+| `curated/landing/landings.parquet` | `hid`, `höfn`, **`pid`** | 938,345 of 942,984 — **99.5%** |
+| `curated/logbook/trip.parquet` | `hid1`/`hid2`, **`pid1`/`pid2`**, `port` | pid2 1,764,829 of 1,778,986 `hid2` — **99.2%**; pid1 110,959, all of the populated `hid1` |
+| AIS `ping_tagged` | `pid`, `hid` | already carried it, via `ports.fgb` |
+
+Row counts are unchanged (1,815,425 trips), so the joins added no duplicates.
+
+**One trap avoided.** All three lookups used a bare `drop_na()`, which after
+adding `pid` would have silently discarded the 21 codes that have no pid —
+sentinels (`0`, `999`) and the country placeholders — along with their names.
+Each is now scoped `drop_na(hid, port)`, so a code without a pid keeps its name.
+Those 21 need a *type*, not a pid: item 3c.
+
+**Re-run `link_lid_map.R` before using `trip.parquet`.** `curate/logbook.R`
+rewrites that file, so `.tid_land` and `match_type` are absent until the linkage
+step runs again. `tar_make()` handles it; a hand-run of logbook.R alone does not.
+
+---
+
 ## 4. Harbour polygon: two harbours have no geometry — NO LONGER BLOCKING
 **status:** open · **file:** `staging/aux/ports.fgb`, kaenugardr `ports-iceland-and-faroe.R`
 **see:** `curate/decisions/004-issue-11-seventy-extra-rows.md` (addendum 2),

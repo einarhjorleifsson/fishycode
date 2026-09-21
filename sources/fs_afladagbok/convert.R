@@ -12,10 +12,13 @@ library(duckdbfs)
 SCHEMA <- "fs_afladagbok"
 dictionary   <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet")) |> collect() |> filter(schema == SCHEMA)
 gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |> filter(version == "new")
+# hid is the Icelandic harbour code, hid_new this schema's own code, and pid the
+# standard port key from reference/ports/ports_all.R. drop_na() is scoped so
+# that a code without a pid keeps its name rather than vanishing.
 harbours <-
   duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect() |>
-  select(hid_new = hafnarnumer_id, port, hid) |>
-  drop_na()
+  select(hid_new = hafnarnumer_id, port, hid, pid) |>
+  drop_na(hid_new, hid, port)
 
 # Sources known to encode coordinates in DDM (degrees-decimal-minutes).
 # All others default to DMS classification via row-level signal.
@@ -40,11 +43,12 @@ trip <- trip |>
   rename(hid_new = hid1) |>
   left_join(harbours,
             by = join_by(hid_new == hid_new)) |>
-  select(.tid, vid, T1, hid1 = hid, T2, hid2, n_crew, source, schema) |>
+  select(.tid, vid, T1, hid1 = hid, pid1 = pid, T2, hid2, n_crew, source, schema) |>
   rename(hid_new = hid2) |>
   left_join(harbours,
             by = join_by(hid_new == hid_new)) |>
-  select(.tid, vid, T1, hid1, T2, hid2 = hid, port, n_crew, source, schema)
+  select(.tid, vid, T1, hid1, pid1, T2, hid2 = hid, pid2 = pid, port,
+         n_crew, source, schema)
 # Source (ws_veidi) -----------------------------------------------------------
 # Translate columns, join trip-level `source` for coordinate classification,
 # then convert raw integer coordinates to decimal degrees.

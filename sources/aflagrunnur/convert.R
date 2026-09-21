@@ -18,7 +18,9 @@ aflagrunnur <-
 landings <-
   aflagrunnur |>
   distinct(.tid, vid, date, hid) |>
-  left_join(ports |> select(hid, höfn = port))
+  # hid is Fiskistofa's hafnarnumer; pid is the standard port key, so landings
+  # join to the same port identity as the logbooks and the AIS trail.
+  left_join(ports |> select(hid, höfn = port, pid), by = "hid")
 catch <-
   aflagrunnur |>
   select(.tid, .lid, gid, .sid, .stid, catch)
