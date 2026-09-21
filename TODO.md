@@ -226,6 +226,7 @@ to either a `pid`, a country code, or an explicitly-typed sentinel — never to 
 
 ## 3c. `hid` and `pid` are not the same concept
 **status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
+**see:** `curate/decisions/007-hid-maps-to-pid.md` — the mapping is built; typing is what remains
 
 The landings/logbook harbour code answers **"where did this fish go?"**. A harbour
 polygon answers **"where was the vessel?"**. These coincide most of the time and then
@@ -344,81 +345,6 @@ repo returns only `AGENTS.md`, `TODO.md`, `_targets.R` and `curate/decisions/`;
 (**verified 2026-09-21: 25 targets, all four present**); no `.gpkg` or `.csv`
 is tracked by git **in this repo** (kaenugardr's LFS history stays as it is —
 the earlier wording asked for something archiving cannot deliver).
-
----
-
-## 3e. `port.parquet` carried pids from a stale namespace
-**status:** done 2026-09-21 · **file:** `reference/ports/harbour_codes.R`
-
-Found by asking whether `ports_iceland_faroe.gpkg` is still needed. It is —
-**63 of its 141 harbour clusters exist in no other source**, and it is the only
-carrier of Icelandic `hid` (jeppe's codes are Danish landing places, maksims'
-are locodes). But **its `pid` column was obsolete and being trusted.**
-
-`ports_all.R` reassigns `pid` globally via `build_pid()`, so the bootstrap's
-hand-assigned codes are a different namespace: Hellnar is `IS-HLL` in the
-Iceland file and `IS-HEN` in the port database. `harbour_codes.R` read the
-former, so:
-
-| | |
-|---|---|
-| pids in `port.parquet` | 129 |
-| resolving in the port database | 70 |
-| **orphaned — join silently fails** | **59 (46%)** |
-
-That is the `hid → pid → geometry` route the logbook and landings data are
-supposed to use, broken for nearly half of Icelandic harbour codes, with no
-error anywhere. Exactly the class of defect this project exists to detect, and
-it would have been inherited straight into the downstream key.
-
-Fixed in two parts. The crosswalk now takes `pid` from
-`staging/ports/ports_all.gpkg` (`source == "einar"`, which carries both `hid`
-and the canonical `pid`) — **91 of 91 resolve, 0 orphaned**. Rows fall 150 → 112
-because entries with no `hid` are not codes and were never crosswalk rows.
-
-**And the rival namespace is removed, not just avoided.** Telling people not to
-read a column is a convention, and a convention is exactly what failed here.
-`curate/corrections/ports_iceland.R` now renames the bootstrap's column to
-`pid_bootstrap` on write and asserts `!"pid" %in% names(ports)`, so there is
-exactly one column called `pid` in the pipeline and it is the one `build_pid()`
-issues. `ports_all.R` never read the bootstrap column anyway — it selects
-`port, hid, source, iso_a2, geom` — so nothing else changed.
-
-`ports_all.gpkg` carries `pid` and `pid_src`, which is **not** a second system:
-both are issued by `build_pid()`, before and after cluster canonicalisation,
-per the "a correction adds columns, never overwrites" rule.
-
-Coverage is unaffected: **99.57%** of logbook trip harbour references resolve.
-The 30 uncovered codes are sentinels (`0` — 5,861 trips, `999`) and the country
-placeholders `ports-kvoti.R` deliberately excludes with
-`filter(!stad_nr %in% c(150, 153, 155:212, 300:999))`. Typing those is item 3c.
-
----
-
-## 3f. `pid` is now set on logbook, landings and trail
-**status:** done 2026-09-21
-
-The standard port key reaches all three consumers of
-`curated/reference/port_geometry.parquet`. For Icelandic data the local `hid` is
-mapped to the standard `pid`; `hid` is kept beside it, never overwritten.
-
-| table | columns | coverage |
-|---|---|---|
-| `curated/landing/landings.parquet` | `hid`, `höfn`, **`pid`** | 938,345 of 942,984 — **99.5%** |
-| `curated/logbook/trip.parquet` | `hid1`/`hid2`, **`pid1`/`pid2`**, `port` | pid2 1,764,829 of 1,778,986 `hid2` — **99.2%**; pid1 110,959, all of the populated `hid1` |
-| AIS `ping_tagged` | `pid`, `hid` | already carried it, via `ports.fgb` |
-
-Row counts are unchanged (1,815,425 trips), so the joins added no duplicates.
-
-**One trap avoided.** All three lookups used a bare `drop_na()`, which after
-adding `pid` would have silently discarded the 21 codes that have no pid —
-sentinels (`0`, `999`) and the country placeholders — along with their names.
-Each is now scoped `drop_na(hid, port)`, so a code without a pid keeps its name.
-Those 21 need a *type*, not a pid: item 3c.
-
-**Re-run `link_lid_map.R` before using `trip.parquet`.** `curate/logbook.R`
-rewrites that file, so `.tid_land` and `match_type` are absent until the linkage
-step runs again. `tar_make()` handles it; a hand-run of logbook.R alone does not.
 
 ---
 
@@ -621,25 +547,6 @@ its metadata at the directory level, which parquet KV cannot express.
 
 **check:** `grep -rn "duckdbfs::write_dataset\|nanoparquet::write_parquet" `
 over scripts writing to `fd_curated()` returns nothing.
-
----
-
-## 12b. Removing a harbour from the geometry stranded its code
-**status:** done 2026-09-21 · **file:** `reference/ports/harbour_codes.R`
-
-Recorded because the mechanism will recur. Removing Hellissandur (41) and
-Hnífsdalur (71) from `ports_iceland_faroe.gpkg` as non-harbours (item 4) took
-`port.parquet` from 143 rows to **141** — the crosswalk was built from the
-geometry, so a code with no polygon ceased to exist, stranding **5,235 logbook
-trips** whose `hid2` no longer resolved to any name.
-
-`kvoti.stadur` is the code authority; kaenugardr only supplies geometry. The
-crosswalk now joins `ports_kvoti.parquet` as well, so a code resolves to a name
-whether or not a polygon exists. 150 rows, 129 with a `pid`, 21 without — and
-41 and 71 resolve to their names with `pid` NA, which is exactly what they are.
-
-This is the first half of item 3c in practice: `hid` and `pid` are different
-concepts, and a code must not depend on geometry existing.
 
 ---
 
