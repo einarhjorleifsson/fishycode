@@ -252,3 +252,40 @@ re-checked now the layout has changed, and the `year` data column now coexists w
 hive column of the same name.
 
 **check:** reading each dataset yields exactly one `year` column, of a stable type.
+
+---
+
+## Resume note — 2026-09-21, run stopped deliberately
+
+The L1→L4 trail rebuild was **stopped part-way on purpose**, not by failure. Reason:
+several open items above change the trail output, so completing the run would only
+mean discarding it. Most consequential is the Hellnar/Hellissandur/Hnífsdalur shared
+polygon (item 4), which leaves two harbours undetectable and therefore alters **trip
+segmentation** in `ais_trip.R`, not merely row counts.
+
+**State on disk, all of it reusable:**
+
+| stage | state |
+|---|---|
+| `staging/ais/astd` | complete — 2,769,131,193 rows, 2013–2026, verified against legacy |
+| `staging/ais/astdB` | complete — 901,123,092 rows, 2014–2024, verified against legacy |
+| `staging/ais/ping_union` | complete — 527,960,318 pings, 2007–2026 |
+| `staging/ais/ping_tagged` | complete — 527,960,388 (the +70 is item 4) |
+| `staging/ais/ping_clean` | **partial — 9 of 20 years (2007–2015)** |
+| `curated/ais/*` | not built |
+| `curated/logbook/sensor_gps` | not built |
+
+**Resuming L2 costs nothing already done.** `ais_ping_clean.R` skips any year with a
+marker in `staging/ais/ping_clean_marks/`. To force a full rebuild after fixing the
+harbour geometry, delete that directory — the harbour tag is applied upstream in
+`ais_ping_tag.R`, so an `ports.fgb` fix requires re-running from the tag step, not
+just from L2.
+
+**Before resuming, decide:** items 4 (harbour polygon) and 1/1b (adb units and
+longitude sign, afli depth units) — all three change outputs. Item 6 (GEBCO) still
+blocks a clean full `tar_make()`.
+
+**One command to restart, once those are settled:**
+```
+Rscript <scratchpad>/run_trail.R    # L2 → L3a → L3b → L4, resumable
+```
