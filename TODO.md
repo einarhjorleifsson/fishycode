@@ -272,8 +272,9 @@ segmentation** in `ais_trip.R`, not merely row counts.
 | `staging/ais/ping_union` | complete — 527,960,318 pings, 2007–2026 |
 | `staging/ais/ping_tagged` | complete — 527,960,388 (the +70 is item 4) |
 | `staging/ais/ping_clean` | **partial — 9 of 20 years (2007–2015)** |
-| `curated/ais/*` | not built |
-| `curated/logbook/sensor_gps` | not built |
+| `curated/ais/*` | not built — smoke-test partials (2007–2008 only) were deleted to avoid them reading as finished |
+| `curated/logbook/sensor_gps` | not built — same |
+| `curated/link/trip_voyage.parquet` | complete (803,549 rows) but built on **legacy** AIS voyages, not the rebuild |
 
 **Resuming L2 costs nothing already done.** `ais_ping_clean.R` skips any year with a
 marker in `staging/ais/ping_clean_marks/`. To force a full rebuild after fixing the
