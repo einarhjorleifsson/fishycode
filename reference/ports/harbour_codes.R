@@ -15,9 +15,18 @@ ports <-
   #                            one this crosswalk needs
   # Pointing this at ports_all.gpkg yields 6,003 rows of global ports instead of
   # the 143-row Icelandic harbour crosswalk the converts expect.
-  read_sf(fd_staging("ports", "ports_iceland_faroe.gpkg")) |> st_drop_geometry() |>
+  # pid MUST come from the consolidated table, not from the Iceland file's own
+  # pid column. ports_all.R reassigns pid globally (build_pid), so the bootstrap
+  # codes are a stale namespace: Hellnar is IS-HLL in the Iceland file and
+  # IS-HEN in the port database. Reading the former left 59 of 129 codes with a
+  # pid that exists nowhere, silently breaking the hid -> pid -> geometry join
+  # that the logbook and landings data depend on.
+  read_sf(fd_staging("ports", "ports_all.gpkg")) |> st_drop_geometry() |>
+  filter(source == "einar", !is.na(hid)) |>
+  mutate(hid = as.integer(hid)) |>
   filter(!str_sub(pid, 1, 2) == "FO") |>
   select(hid, port, pid) |>
+  distinct(hid, .keep_all = TRUE) |>
   full_join(harbours) |>
   # kvoti.stadur is the code authority, kaenugardr only supplies geometry. A
   # code must resolve to a NAME whether or not a polygon exists for it, or a
@@ -33,4 +42,4 @@ ports <-
 ports |> write_curated(
   fd_curated("reference", "port.parquet"),
   inputs = c(fd_raw("landings", "agf", "aflagrunnur_v.parquet"),
-             fd_staging("ports", "ports_iceland_faroe.gpkg")))
+             fd_staging("ports", "ports_all.gpkg")))

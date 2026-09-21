@@ -336,6 +336,42 @@ this item; `tar_make(names = "shapes")` rebuilds when a port source changes; no
 
 ---
 
+## 3e. `port.parquet` carried pids from a stale namespace
+**status:** done 2026-09-21 · **file:** `reference/ports/harbour_codes.R`
+
+Found by asking whether `ports_iceland_faroe.gpkg` is still needed. It is —
+**63 of its 141 harbour clusters exist in no other source**, and it is the only
+carrier of Icelandic `hid` (jeppe's codes are Danish landing places, maksims'
+are locodes). But **its `pid` column was obsolete and being trusted.**
+
+`ports_all.R` reassigns `pid` globally via `build_pid()`, so the bootstrap's
+hand-assigned codes are a different namespace: Hellnar is `IS-HLL` in the
+Iceland file and `IS-HEN` in the port database. `harbour_codes.R` read the
+former, so:
+
+| | |
+|---|---|
+| pids in `port.parquet` | 129 |
+| resolving in the port database | 70 |
+| **orphaned — join silently fails** | **59 (46%)** |
+
+That is the `hid → pid → geometry` route the logbook and landings data are
+supposed to use, broken for nearly half of Icelandic harbour codes, with no
+error anywhere. Exactly the class of defect this project exists to detect, and
+it would have been inherited straight into the downstream key.
+
+Fixed: the crosswalk now takes `pid` from `staging/ports/ports_all.gpkg`
+(`source == "einar"`, which carries both `hid` and the canonical `pid`).
+**91 of 91 pids now resolve, 0 orphaned.** Rows fall 150 → 112 because entries
+with no `hid` are not codes and were never crosswalk rows.
+
+Coverage is unaffected: **99.57%** of logbook trip harbour references resolve.
+The 30 uncovered codes are sentinels (`0` — 5,861 trips, `999`) and the country
+placeholders `ports-kvoti.R` deliberately excludes with
+`filter(!stad_nr %in% c(150, 153, 155:212, 300:999))`. Typing those is item 3c.
+
+---
+
 ## 4. Harbour polygon: two harbours have no geometry — NO LONGER BLOCKING
 **status:** open · **file:** `staging/aux/ports.fgb`, kaenugardr `ports-iceland-and-faroe.R`
 **see:** `curate/decisions/004-issue-11-seventy-extra-rows.md` (addendum 2),
