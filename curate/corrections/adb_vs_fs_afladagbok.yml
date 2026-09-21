@@ -1,0 +1,76 @@
+id: adb_vs_fs_afladagbok
+title: adb renders the same records as fs_afladagbok in different units and with an unsigned longitude
+status: suspected - defects measured and quantified, repair NOT implemented
+applies_to:
+  - staging/adb/station.parquet
+implementation: none yet
+discovered: 2026-09-21, cross-checking adb against fs_afladagbok before wiring adb into the merge
+
+context: >-
+  adb is the LIVE VIEW of fs_afladagbok - the same underlying records, re-served.
+  They share 467,635 .sid values, so the two can be compared row for row with no
+  matching heuristic at all. This is the cleanest cross-check available anywhere
+  in the project, and it is only possible because the keys coincide.
+
+agreement:
+  date:  differs on 68 rows (0.01%)
+  t1:    differs on 68 rows (0.04%)
+  summary: >-
+    Timestamps agree almost perfectly, which establishes that these really are
+    the same records and that the disagreements below are rendering faults, not
+    different observations.
+
+defect_1_depth_units:
+  summary: adb stores depth in METRES where fs_afladagbok stores FATHOMS.
+  evidence: >-
+    Over the 443,718 shared stations with positive depth in both, the ratio
+    z_adb / z_fs is 1.8288 at the 1st, 25th, 50th, 75th and 99th percentiles
+    alike - 100.00% of rows fall within 0.001 of it. 1.8288 is the exact
+    fathom-to-metre conversion. Not one row has a ratio of 1.
+  which_is_canonical: >-
+    fs_afladagbok. afli (median z1 83.0) and fs_afladagbok (60.0) are the same
+    order of magnitude - a fleet and period difference, not a unit one - so the
+    merged product is internally consistent in fathoms. adb (111.6) is the
+    outlier, and 111.6 / 60.0 is 1.86.
+  severity: >-
+    HIGH if adb is merged without repair. Depth is a single column in
+    curated/logbook/station.parquet. Merging adb as-is would silently make 2026
+    depths metres inside a column that is fathoms for 1950-2025. Nothing would
+    error; every depth-based analysis crossing the boundary would be wrong.
+  repair: divide adb z1 and z2 by 1.8288 at the adapter, or agree a unit for the
+    whole product and convert everything once, recording which was chosen.
+
+defect_2_longitude_sign:
+  summary: adb drops the west sign on longitude for roughly a tenth of records.
+  evidence: >-
+    50,269 of 467,635 shared stations (10.8%) sit more than 10 km apart between
+    the two renderings. Of those, 91.8% have a POSITIVE longitude in adb against
+    1.5% in fs_afladagbok. Iceland lies near 21 degrees WEST, so a positive 21 is
+    the same position mirrored onto the wrong side of the Greenwich meridian.
+  relation_to_known_issue_13: >-
+    This is the longitude sign heuristic. fs_afladagbok applies it; adb does not.
+  residual: >-
+    The remaining ~8% of the >10 km outliers are not explained by sign alone and
+    have not yet been characterised.
+  severity: HIGH if merged without repair - positions land in the wrong ocean.
+
+defect_3_gear_coding:
+  summary: >-
+    NOT a defect after all, and the cross-check resolves it. adb's gear code is
+    fs_afladagbok's OLD coding (gid_old), not the unified gid.
+  evidence: >-
+    On the shared stations, adb's code equals fs's gid_old in the overwhelming
+    majority: 6=6, 3=3, 5=5, 1=1, 2=2, 7=7, 25=25, 92=92, 14=14. The unified gid
+    is then read off fs: 3 -> 14, 5 -> 11, 1 -> 12, 7 -> 9, 25 -> 3, 92 -> 22.
+  exceptions: >-
+    adb code 53 appears where fs says gid_old 15 (4,578 rows), and adb code 6
+    appears where fs says gid_old 14 / gid 8 (4,352 rows). So the correspondence
+    is not a function - adb 6 maps mostly to unified 6 but sometimes to 8.
+  consequence: >-
+    A crosswalk can be DERIVED from the 467,635 shared stations rather than
+    guessed, with the ambiguous cases carrying an explicit confidence. This is
+    strictly better than mapping adb codes against reference/gear.parquet, which
+    is impossible: codes 92/99/91/29 are valid only as gear$map, code 10 only as
+    gear$gid, and codes 53/51 as neither.
+
+blocks: TODO.md item 1 (wire adb into the logbook merge)

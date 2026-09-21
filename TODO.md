@@ -11,48 +11,61 @@ Status: `open` · `blocked` · `in progress` · `done` (delete when done and rec
 
 ---
 
-## 1. Wire `adb` into the logbook merge — BLOCKED on gear coding
-**status:** blocked · **files:** `sources/adb/convert.R`, `curate/logbook.R`
+## 1. Wire `adb` into the logbook merge — BLOCKED on units and longitude sign
+**status:** blocked · **files:** `sources/adb/convert.R`, `curate/logbook.R`, `curate/link_lid_map.R`
+**see:** `curate/corrections/adb_vs_fs_afladagbok.yml`
 
-`_targets.R` declares `adb` as a dependency of the `logbook` target and the comment
-above it states a three-tier rule — "afli where it exists, then fs_afladagbok
-through its dump end, then adb beyond it". `curate/logbook.R` implements only two
-tiers and never opens `staging/adb/`. The edge exists in the DAG; the code ignores it.
+`_targets.R` declares `adb` as a dependency of `logbook` and states a three-tier rule
+— "afli where it exists, then fs_afladagbok through its dump end, then adb beyond it".
+`curate/logbook.R` implements two tiers and never opens `staging/adb/`. The merged
+product therefore ends **2025-12-12 with zero 2026 coverage**, while adb holds
+**20,530 stations for 2026**, already built.
 
-Consequence: the merged product ends **2025-12-12 with zero 2026 coverage**, while
-`staging/adb/station.parquet` holds **20,530 stations for 2026**, already built.
+**Done:** `sources/adb/convert.R` now splits its fat station table into a narrow
+`station` plus a `fishing_sample`, so adb supplies the four tables the merge binds.
 
-Two obstacles, one of them real:
+**Blocked on two defects that would silently corrupt the product** — found by
+cross-checking adb against fs_afladagbok, which is possible with no matching
+heuristic at all because adb is fs's live view and they share 467,635 `.sid`:
 
-- **`adb` emits no `fishing_sample`.** Its `station` is a *fat* table carrying
-  `gid_old, t1, t3, t4, effort, effort_unit, towtime, gear_width` — detail that in
-  afli and fs_afladagbok lives in `fishing_sample`. The converter never split them.
-  Mechanical to fix.
-- **BLOCKER: adb's gear coding cannot be resolved against `reference/gear.parquet`.**
-  Measured 2026-09-21 over 628,314 adb stations:
+- **Depth units.** adb is in METRES, fs is in FATHOMS. `z_adb / z_fs` is 1.8288 at
+  every percentile — 100.00% of 443,718 rows. Merging as-is makes 2026 depths metres
+  inside a column that is fathoms for 1950–2025. Nothing errors.
+- **Longitude sign.** 50,269 shared stations (10.8%) differ by >10 km; 91.8% of those
+  have a positive longitude in adb against 1.5% in fs. Iceland is at ~21°W — adb is
+  dropping the west sign (known issue 13). ~8% of the outliers are unexplained.
 
-  | adb code | rows | valid as |
-  |---|---|---|
-  | 92, 99, 91, 29 | 4,232 | `gear$map` ONLY (old coding) |
-  | 10 | 2,670 | `gear$gid` ONLY (new coding) |
-  | 53, 51 | 6,654 | **neither** |
+**Gear is no longer a blocker.** The same cross-check resolves it: adb's code IS fs's
+`gid_old`, so the unified `gid` can be *derived* from the 467,635 shared stations
+rather than guessed. Two ambiguous cases (adb 53 → fs 15; adb 6 → fs 14/gid 8) need
+an explicit confidence. The converter leaves `gid` NA for now; downstream it can come
+either from this crosswalk or from the landings gear code, which resolves cleanly —
+all 25 of its distinct values match `gear$gid`, versus 13 matching `map`.
 
-  The two codings overlap on the common values, so the majority is uninformative.
-  The discriminating values contradict each other. Assigning `gear`/`target2` on this
-  evidence would silently mislabel gear.
+**Ordering is not circular:** `link_lid_map.R` reads the MERGED trip table, so adb
+trips reach landings automatically once merged. `R/match_nearest_date.R` is already
+migrated and is the archive's mechanism for attaching landings gear as an ADDED
+column (`gid_agf`, `gid_lods`) rather than overwriting — consistent with this
+project's "a correction adds columns" rule.
 
 **check:** `curate/logbook.R` reads `staging/adb`; merged `station.parquet` has
-non-zero 2026 rows; every adb `gid_old` resolves to exactly one `gid` with a written
-justification for 53 and 51.
+non-zero 2026 rows; depth is in one declared unit throughout; no merged 2026 station
+has a positive longitude.
 
 ---
 
 ## 2. `FS_DATE_MAX` expired nine months ago
 **status:** open · **file:** `curate/logbook.R:24`
 
-`FS_DATE_MAX <- as.Date("2025-12-31")`. Today is 2026-09-21. Everything after that
-date is dropped from the merge. Interacts with item 1: adb is what was supposed to
-cover beyond it.
+`FS_DATE_MAX <- as.Date("2025-12-31")`. fs_afladagbok's real data ends 2025-12-12, so
+this is not currently clipping real fs rows — it is the handover point to adb, and it
+only becomes correct once item 1 lands.
+
+A second, less obvious ceiling matters more: `link_lid_map.R:40` filters landings to
+`date <= ymd("2025-12-12")`. That literal is exactly the merged logbook's current max
+date, i.e. it was derived from the output at the time and then frozen. Landings
+actually run to **2026-04-14** and adb to **2026-04-08**, so this line would block
+2026 from matching landings even after adb is merged.
 
 **check:** no hardcoded date in `logbook.R` sits in the past at build time.
 

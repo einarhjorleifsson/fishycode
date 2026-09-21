@@ -136,7 +136,55 @@ catch <-
   inner_join(station |> select(.sid, schema)) |>
   arrange(.sid, sid)
 
+# split station into station + fishing_sample ----------------------------------
+#
+# This converter used to emit ONE fat station table carrying gid, t1/t3/t4,
+# effort, towtime and gear_width. afli and fs_afladagbok split that detail into
+# a narrow station (keys, date, position, depth) plus a fishing_sample holding
+# the fishing operation, joined on .sid. That mismatch is why adb could never be
+# merged: curate/logbook.R binds FOUR tables and adb supplied three.
+#
+# gid is deliberately left NA here. adb's gear coding is its own and does not
+# resolve against reference/gear.parquet - measured over 628,314 stations,
+# codes 92/99/91/29 are valid only as gear$map, code 10 only as gear$gid, and
+# codes 53/51 (6,654 rows) match neither. The converter's own effort logic keys
+# on those raw codes (gid %in% c(6,7,14), and dredge_v "covers gid 5,6,7,51,53"),
+# so they mean something inside adb and something else outside it. Assigning
+# gear from them would mislabel it. The raw code is preserved verbatim as
+# gid_old; the unified gid is filled downstream from the LANDINGS gear code,
+# which does resolve cleanly - all 25 of its distinct values match gear$gid.
+# See TODO.md item 1.
+
+station_narrow <-
+  station |>
+  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, schema)
+
+fishing_sample <-
+  station |>
+  transmute(
+    .tid, .sid,
+    gid_old = as.integer(gid),      # adb's own coding, kept verbatim
+    gid     = NA_real_,             # filled downstream from landings
+    gear    = NA_character_,
+    target2 = NA_character_,
+    t1,
+    t2 = as.POSIXct(NA),            # adb records no deployment-end time
+    t3, t4,
+    duration_m = as.numeric(towtime),   # towtime is already minutes
+    effort_count    = NA_integer_,
+    effort_duration = NA_real_,
+    effort_unit,
+    effort = as.numeric(effort),
+    n_units = NA_integer_,
+    n_lost  = NA_integer_,
+    g_mesh   = NA_real_,
+    g_width  = as.numeric(gear_width),
+    g_length = NA_real_,
+    g_height = NA_real_,
+    schema)
+
 # save -------------------------------------------------------------------------
-trip    |> duckdbfs::write_dataset(fd_staging("adb", "trip.parquet"))
-station |> rename(gid_old = gid) |> duckdbfs::write_dataset(fd_staging("adb", "station.parquet"))
-catch   |> duckdbfs::write_dataset(fd_staging("adb", "catch.parquet"))
+trip           |> duckdbfs::write_dataset(fd_staging("adb", "trip.parquet"))
+station_narrow |> duckdbfs::write_dataset(fd_staging("adb", "station.parquet"))
+fishing_sample |> duckdbfs::write_dataset(fd_staging("adb", "fishing_sample.parquet"))
+catch          |> duckdbfs::write_dataset(fd_staging("adb", "catch.parquet"))
