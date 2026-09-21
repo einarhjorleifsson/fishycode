@@ -360,10 +360,22 @@ supposed to use, broken for nearly half of Icelandic harbour codes, with no
 error anywhere. Exactly the class of defect this project exists to detect, and
 it would have been inherited straight into the downstream key.
 
-Fixed: the crosswalk now takes `pid` from `staging/ports/ports_all.gpkg`
-(`source == "einar"`, which carries both `hid` and the canonical `pid`).
-**91 of 91 pids now resolve, 0 orphaned.** Rows fall 150 → 112 because entries
-with no `hid` are not codes and were never crosswalk rows.
+Fixed in two parts. The crosswalk now takes `pid` from
+`staging/ports/ports_all.gpkg` (`source == "einar"`, which carries both `hid`
+and the canonical `pid`) — **91 of 91 resolve, 0 orphaned**. Rows fall 150 → 112
+because entries with no `hid` are not codes and were never crosswalk rows.
+
+**And the rival namespace is removed, not just avoided.** Telling people not to
+read a column is a convention, and a convention is exactly what failed here.
+`curate/corrections/ports_iceland.R` now renames the bootstrap's column to
+`pid_bootstrap` on write and asserts `!"pid" %in% names(ports)`, so there is
+exactly one column called `pid` in the pipeline and it is the one `build_pid()`
+issues. `ports_all.R` never read the bootstrap column anyway — it selects
+`port, hid, source, iso_a2, geom` — so nothing else changed.
+
+`ports_all.gpkg` carries `pid` and `pid_src`, which is **not** a second system:
+both are issued by `build_pid()`, before and after cluster canonicalisation,
+per the "a correction adds columns, never overwrites" rule.
 
 Coverage is unaffected: **99.57%** of logbook trip harbour references resolve.
 The 30 uncovered codes are sentinels (`0` — 5,861 trips, `999`) and the country

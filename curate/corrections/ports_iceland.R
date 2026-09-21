@@ -58,4 +58,15 @@ stopifnot(
     ports |> filter(pid %in% rebuffer_pid), 3057))) / pi) - BUFFER_M) < 1)
 )
 
+# -- 3. There is ONE pid namespace, and this file does not define it -----------
+# The bootstrap assigned its own codes (Hellnar = IS-HLL). ports_all.R then
+# reassigns pid globally via build_pid() (Hellnar = IS-HEN). Two columns named
+# `pid` meaning different things is how harbour_codes.R came to publish 59
+# harbour codes whose pid existed nowhere, joining to nothing, silently
+# (TODO 3e). Renaming it here makes that mistake impossible to repeat rather
+# than merely discouraged: after this, exactly one column in the pipeline is
+# called `pid`, and it is the one build_pid() issues.
+ports <- ports |> rename(pid_bootstrap = pid)
+stopifnot(!"pid" %in% names(ports))
+
 write_sf(ports, fd_staging("ports", "ports_iceland_faroe.gpkg"), delete_dsn = TRUE)
