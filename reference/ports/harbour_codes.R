@@ -19,9 +19,18 @@ ports <-
   filter(!str_sub(pid, 1, 2) == "FO") |>
   select(hid, port, pid) |>
   full_join(harbours) |>
-  mutate(port =
-           case_when(is.na(port) ~ hafnarnumer_heiti,
-                     .default = port)) |>
+  # kvoti.stadur is the code authority, kaenugardr only supplies geometry. A
+  # code must resolve to a NAME whether or not a polygon exists for it, or a
+  # harbour that is correctly absent from the geometry becomes an unresolvable
+  # code: removing Hellissandur (41) and Hnífsdalur (71) as non-harbours took
+  # port.parquet from 143 rows to 141 and stranded 5,235 logbook trips.
+  full_join(read_parquet(fd_raw("ports", "ports_kvoti.parquet")) |>
+              rename(hid = stad_nr, port_kvoti = port),
+            by = "hid") |>
+  mutate(port = coalesce(port, hafnarnumer_heiti, port_kvoti)) |>
   arrange(hid) |>
-  select(-hafnarnumer_heiti)
-ports |> write_parquet(fd_curated("reference", "port.parquet"))
+  select(-hafnarnumer_heiti, -port_kvoti)
+ports |> write_curated(
+  fd_curated("reference", "port.parquet"),
+  inputs = c(fd_raw("landings", "agf", "aflagrunnur_v.parquet"),
+             fd_raw("ports", "ports_iceland_faroe.gpkg")))

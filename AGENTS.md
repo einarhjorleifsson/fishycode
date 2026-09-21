@@ -141,16 +141,22 @@ Data is not in git. Three mechanisms, distinct jobs:
 | Parquet KV metadata | What built *this file*? |
 | `manifest.yml` per release | What is in this release? |
 
-> **NOT BUILT — 2026-09-21.** The table above is the intended design. Checked
-> against the code: `write_curated()`, `check_sync()`, `manifest.yml` and
-> `KV_METADATA` have **zero references** in this repo. Today `targets` is the
-> only mechanism that actually runs; curated files are written with plain
-> `write_parquet()` / `write_sf()` and carry no provenance. See TODO item 12.
+`write_curated()` (`R/write_curated.R`) is the way anything should enter
+`curated/`. It writes `COPY … (FORMAT parquet, KV_METADATA {…})` and stamps
+`fd.repo`, `fd.commit`, `fd.dirty`, `fd.script`, `fd.built`, `fd.rows`,
+`fd.schema_hash` and `fd.inputs` (name=md5 per input). `sf` input is accepted:
+geometry is stored as WKB with the CRS in `fd.crs`, read back with
+`read_curated_sf()`. `curated_provenance(path)` prints the stamps and
+`check_sync()` reports drift against HEAD. Nothing under `$FISHYDATA` is ever
+hand-edited.
 
-The intent: `write_curated()` would be the **only** way anything enters
-`curated/`, stamping repo, commit SHA, dirty flag, script, build time, input
-hashes, row count and schema hash, with `check_sync()` reporting drift.
-Nothing under `$FISHYDATA` is ever hand-edited.
+> **Partly adopted — 2026-09-21.** Built and in use by
+> `reference/ports/harbour_codes.R`. The other ~18 writers still call
+> `duckdbfs::write_dataset()` or `nanoparquet::write_parquet()` and carry no
+> provenance. `write_curated()` takes a materialised data frame, so the
+> `write_dataset()` callers (lazy duckdb relations, partitioned directories)
+> need a separate path before they can convert. See TODO item 12.
+> `manifest.yml` is still unbuilt.
 
 ## Provenance of this repo
 

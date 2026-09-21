@@ -492,51 +492,57 @@ hive column of the same name.
 
 ---
 
-## 12. `AGENTS.md`'s provenance section describes machinery that does not exist
-**status:** open · **found 2026-09-21 while planning item 3d**
+## 12. Provenance stamping — built, adopted by 1 of 19 curated writers
+**status:** open · **`write_curated()` built 2026-09-21** (`R/write_curated.R`)
 
-`AGENTS.md` has a **Provenance and sync** section stating three mechanisms with
-"distinct jobs", and asserting:
+Found while planning 3d: `AGENTS.md` asserted `write_curated()`, `check_sync()`,
+`manifest.yml` and `KV_METADATA` as existing machinery. All four had **zero
+references** in the repo. This session had already copied that claim into
+`curate/decisions/006` as a reason before checking it — the exact failure the
+file's own header names.
 
-> `write_curated()` is the **only** way anything enters `curated/`; it stamps
-> repo, commit SHA, dirty flag, script, build time, input hashes, row count and
-> schema hash. `check_sync()` reports drift.
+**Now built and tested.** `write_curated()` writes
+`COPY … (FORMAT parquet, KV_METADATA {…})` stamping `fd.repo`, `fd.commit`,
+`fd.dirty`, `fd.script`, `fd.built`, `fd.rows`, `fd.schema_hash` and
+`fd.inputs`. `sf` is accepted — geometry as WKB, CRS in `fd.crs`, round trip
+verified feature-for-feature on 157 harbours. `curated_provenance()` reads the
+stamps; `check_sync()` reports drift against HEAD.
 
-Checked against the code:
+**Adopted by one writer**, `reference/ports/harbour_codes.R`. The remaining ~18
+still use `duckdbfs::write_dataset()` or `nanoparquet::write_parquet()`.
 
-| claimed | references in the repo |
-|---|---|
-| `write_curated()` | **0** |
-| `check_sync()` | **0** |
-| `manifest.yml` | **0** |
-| `KV_METADATA` | **0** |
+**The blocker for the rest is real, not laziness.** `write_curated()` takes a
+materialised data frame. The `write_dataset()` callers pass **lazy duckdb
+relations**, some writing partitioned `year=YYYY/` directories — `logbook.R`,
+`link_lid_map.R`, `ais_*`, `h3_index.R`. Materialising those to stamp them
+would reintroduce exactly the accumulation `R/write_parquet.R` exists to avoid
+(48 GB spilled across ~130 month groups). They need a variant that stamps a
+`COPY (SELECT …)` straight from the relation, and a partitioned dataset needs
+its metadata at the directory level, which parquet KV cannot express.
 
-`R/` holds `check_paths.R`, `check_ready.R`, `gate.R`, `match_nearest_date.R`,
-`paths.R`, `write_parquet.R` — and `write_parquet_group()` writes a plain
-`COPY … (FORMAT parquet)` with no metadata at all. The only KV metadata in
-`curated/reference/port.parquet` is Arrow's own `ARROW:schema` blob, because
-`harbour_codes.R` writes it with `nanoparquet::write_parquet`. `overrides/`
-exists and is empty.
+`manifest.yml` remains unbuilt and is not started.
 
-This is the failure the file's own header names: *"Do not let this file drift
-from the code — that is the failure it is replacing."* It is worse than an
-ordinary stale comment, because several open items lean on it: 3b's check
-("derive from one kaenugardr release carrying a recorded version"), 3d's
-step 2, and the pid registry all assume a stamping mechanism that is a plan.
+**check:** `grep -rn "duckdbfs::write_dataset\|nanoparquet::write_parquet" `
+over scripts writing to `fd_curated()` returns nothing.
 
-Two honest resolutions, and the choice matters:
-- **Build it.** `write_curated()` is a small function: `COPY … (FORMAT parquet,
-  KV_METADATA {…})` plus the stamps. Then the checks above become real.
-- **Or delete the claim** and describe what actually happens, which is
-  `targets` alone.
+---
 
-Either is fine. Leaving `AGENTS.md` asserting a function that does not exist is
-not, because agents and people read it as a description of the repo — this
-session did, and wrote a false reason into `curate/decisions/006` before
-checking.
+## 12b. Removing a harbour from the geometry stranded its code
+**status:** done 2026-09-21 · **file:** `reference/ports/harbour_codes.R`
 
-**check:** every mechanism named in `AGENTS.md`'s "Provenance and sync" section
-returns at least one hit under `grep -rn --include=*.R`.
+Recorded because the mechanism will recur. Removing Hellissandur (41) and
+Hnífsdalur (71) from `ports_iceland_faroe.gpkg` as non-harbours (item 4) took
+`port.parquet` from 143 rows to **141** — the crosswalk was built from the
+geometry, so a code with no polygon ceased to exist, stranding **5,235 logbook
+trips** whose `hid2` no longer resolved to any name.
+
+`kvoti.stadur` is the code authority; kaenugardr only supplies geometry. The
+crosswalk now joins `ports_kvoti.parquet` as well, so a code resolves to a name
+whether or not a polygon exists. 150 rows, 129 with a `pid`, 21 without — and
+41 and 71 resolve to their names with `pid` NA, which is exactly what they are.
+
+This is the first half of item 3c in practice: `hid` and `pid` are different
+concepts, and a code must not depend on geometry existing.
 
 ---
 
