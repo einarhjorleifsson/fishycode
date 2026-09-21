@@ -61,10 +61,13 @@ eusm |> write_sf(fd_staging("aux", "eusm.fgb"), delete_dsn = TRUE)
 read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"), delete_dsn = TRUE)
 read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"), delete_dsn = TRUE)
 # ports ------------------------------------------------------------------------
+# One row per physical port, already deduplicated across the nine sources by
+# reference/ports/ports_all.R, which resolves overlaps by source priority
+# inside a spatial cluster. The hardcoded source filter this replaced -
+#   filter(source %in% c("einar","gfw")) then drop gfw where pid starts IS/FO
+# - was a crude hand version of that same rule, applied in the wrong place.
 ports <-
-  read_sf(fd_raw("ports", "ports_all.gpkg")) |>
-  filter(source %in% c("einar", "gfw")) |>
-  filter_out(source == "gfw" & (str_starts(pid, "FO") | str_starts(pid, "IS"))) |>
+  read_curated_sf(fd_curated("reference", "port_geometry.parquet")) |>
   st_crop(st_bbox(read_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"))))
 ports |> write_sf(fd_staging("aux", "ports.gpkg"), delete_dsn = TRUE)
 ports |> write_sf(fd_staging("aux", "ports.fgb"), delete_dsn = TRUE)

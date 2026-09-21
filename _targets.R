@@ -53,8 +53,25 @@ list(
     "reference/gear/mapping.R",
     fd_curated("reference", "gear.parquet")), format = "file"),
 
+  # Harbour geometry. kaenugardr was absorbed on 2026-09-21 (decision 006), so
+  # these are produced here rather than hand-copied in as an artifact.
+  #
+  # ports_iceland is a correction, not a producer: the bootstrap that made
+  # raw/ports/ports_iceland_faroe.gpkg cannot be re-run (decision 005), so the
+  # fix is applied to the artifact, raw -> staging. raw/ stays immutable.
+  tar_target(ports_iceland, produces(
+    "curate/corrections/ports_iceland.R",
+    fd_staging("ports", "ports_iceland_faroe.gpkg")), format = "file"),
+
+  tar_target(ports_all, {
+    ports_iceland
+    produces("reference/ports/ports_all.R",
+             fd_staging("ports", "ports_all.gpkg"),
+             fd_curated("reference", "port_geometry.parquet"))
+  }, format = "file"),
+
   tar_target(port, {
-    shapes                                  # needs staging/aux/ports.gpkg
+    ports_iceland
     produces("reference/ports/harbour_codes.R",
              fd_curated("reference", "port.parquet"))
   }, format = "file"),
@@ -73,10 +90,13 @@ list(
     fd_staging("aux_valid", "gebco.gpkg"),
     fd_staging("aux_valid", "eusm.gpkg")), format = "file"),
 
-  # Port polygons come from the kaenugardr repo as a published artifact
-  # (fd_raw("ports", "ports_all.gpkg")); this only crops and buffers them.
+  # Port polygons are now produced by the ports_all target above, so targets can
+  # see when they change. Previously this read a hand copy of kaenugardr's
+  # output, which is why a corrected geometry did not propagate. This only crops
+  # and buffers them.
   tar_target(shapes, {
     shapes_raw
+    ports_all
     produces("reference/geo/shapes.R",
              fd_staging("aux", "ports.fgb"),
              fd_staging("aux", "ices_areas_500m-buffer.fgb"),

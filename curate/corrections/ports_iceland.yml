@@ -1,0 +1,42 @@
+id: ports_iceland
+title: Three Icelandic harbours shared one polygon; hand-added buffers were 57% too small
+status: fixed
+applies_to:
+  - raw/ports/ports_iceland_faroe.gpkg
+affects_rows: 5 of 159
+implementation: curate/corrections/ports_iceland.R
+see:
+  - curate/decisions/004-issue-11-seventy-extra-rows.md
+  - curate/decisions/005-harbour-geometry-is-a-frozen-input.md
+
+defect:
+  summary: >-
+    The producer's hand-written ports_add tribble repeated Hellnar's coordinate
+    pair verbatim on the Hellissandur and Hnífsdalur rows, so three harbours
+    were buffered into one circle. A ping inside it matched three harbours and
+    the left join in curate/ais_ping_tag.R emitted one row per match.
+  detection: |
+    any(duplicated(st_as_text(st_geometry(read_sf(...)))))
+  observed: 3 pids sharing one geometry at -23.64399, 64.75136, area 0.143 km2
+  downstream: ping_tagged had 70 rows more than ping_union, across nine years
+
+second_defect:
+  summary: >-
+    The same block buffered in EPSG:3857, whose unit is a metre only at the
+    equator, so the ground radius was 500*cos(lat).
+  detection: |
+    sqrt(st_area(st_transform(x, 3057)) / pi) differs from the intended 500 m
+  observed: 214 m at Hellnar (64.75N), 224 m at Vík, 203 m at Ögurvík
+
+repair:
+  - Remove IS-HLS and IS-HDL. Neither is a harbour; the codes denote a fish
+    processing site, not a berth, so no geometry should be invented for them.
+  - Rebuffer IS-VIK, IS-HLL, IS-ALV, IS-OGV to 500 m in EPSG:3057.
+  note: >-
+    Applied to the artifact rather than to the producer, because the producer is
+    a one-time bootstrap whose STK input is absent and whose re-run would
+    re-close the STK -> polygon -> STK circle (decision 005).
+
+check: >-
+  staging/ports/ports_iceland_faroe.gpkg has 157 features, no two sharing a
+  geometry, and the four rebuffered ports measure 500 m within 1 m.

@@ -65,8 +65,13 @@ write_curated <- function(d, path, inputs = character(), script = NULL) {
   if (inherits(d, "sf")) {
     geom <- attr(d, "sf_column")
     crs  <- sf::st_crs(d)$wkt
-    d[[geom]] <- sf::st_as_binary(sf::st_geometry(d))
-    d <- as.data.frame(d)
+    # Drop to a plain data frame BEFORE assigning. st_as_binary() returns a
+    # WKB-classed list, and assigning that into a tibble-backed sf dispatches
+    # to tibble's [[<- , which rejects it as a non-vector. unclass() makes it
+    # an ordinary list of raw, which duckdb registers as BLOB.
+    wkb <- unclass(sf::st_as_binary(sf::st_geometry(d)))
+    d <- as.data.frame(sf::st_drop_geometry(d))
+    d[[geom]] <- wkb
   }
 
   g  <- .git_info()

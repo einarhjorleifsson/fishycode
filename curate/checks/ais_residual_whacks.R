@@ -73,7 +73,7 @@ ais |>
          month(time) == 1) |>
   compute()
 
-ports <- duckdbfs::open_dataset(fd_raw("ports", "ports_all.gpkg")) |> filter(source == "einar") |> select(port, geom)
+ports <- duckdbfs::open_dataset(fd_staging("ports", "ports_all.gpkg")) |> filter(source == "einar") |> select(port, geom)
 open_dataset(fd_staging("ais", "ping_union")) |>
   duckdbfs::spatial_join(ports, by = "st_intersects", join = "left") |>
   count(pid, port, provider) |>

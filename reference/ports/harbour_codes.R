@@ -15,7 +15,7 @@ ports <-
   #                            one this crosswalk needs
   # Pointing this at ports_all.gpkg yields 6,003 rows of global ports instead of
   # the 143-row Icelandic harbour crosswalk the converts expect.
-  read_sf(fd_raw("ports", "ports_iceland_faroe.gpkg")) |> st_drop_geometry() |>
+  read_sf(fd_staging("ports", "ports_iceland_faroe.gpkg")) |> st_drop_geometry() |>
   filter(!str_sub(pid, 1, 2) == "FO") |>
   select(hid, port, pid) |>
   full_join(harbours) |>
@@ -33,4 +33,4 @@ ports <-
 ports |> write_curated(
   fd_curated("reference", "port.parquet"),
   inputs = c(fd_raw("landings", "agf", "aflagrunnur_v.parquet"),
-             fd_raw("ports", "ports_iceland_faroe.gpkg")))
+             fd_staging("ports", "ports_iceland_faroe.gpkg")))
