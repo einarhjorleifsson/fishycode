@@ -111,3 +111,104 @@ genuinely at those two harbours are never detected as being in harbour, which af
 trip segmentation rather than just row counts. That impact has not been quantified.
 
 The fix belongs upstream in kaenugardr, not in this pipeline. Recorded in TODO item 3b.
+
+---
+
+## Addendum 2026-09-21 (2) — the source line found, a second defect beside it, and the scale measured
+
+The previous addendum said "one bad record" and pointed upstream. The record has now been
+located in kaenugardr's source, and the lead recorded in TODO item 4 — that a name-based
+join to `ports_kvoti.parquet` produced one geometry under three identities — **was wrong**.
+Recorded because the wrong lead is cheap to re-follow.
+
+### It is a copy-paste, not a join
+
+`kaenugardr/ports-iceland-and-faroe.R:209-215`, the `ports_add` tribble. This is a
+hand-written literal listing "some ports in kvoti.stadur that is not in the stk data":
+
+```r
+ports_add <-
+  tribble(~pid,    ~port, ~lat, ~lon,
+          'IS-VIK', 'Vík',          63.413191, -19.005441,
+          'IS-HLL', 'Hellnar',      64.751359, -23.643993,   # Hellnar
+          'IS-HLS', 'Hellisandur',  64.751359, -23.643993,   # Hellisandur
+          'IS-ALV', 'Aviðruvör',    65.926529, -23.610718,
+          'IS-HDL', 'Hnífsdalur',   64.751359, -23.643993,   # Hnífsdalur
+          'IS-OGV', 'Ögurvík',      66.043098, -22.732611)
+```
+
+Hellnar's coordinate pair is repeated verbatim on the Hellissandur and Hnífsdalur rows.
+The `ports_kvoti` join is by name and is innocent: it attaches `hid` only, and correctly —
+39, 41 and 71 are the right `hid` for those three names. The geometry was already wrong
+before the join ran. `ports_all.R` later renames the pids globally, so these surface in
+`ports_all.gpkg` as `IS-HEN`, `IS-HEA`, `IS-HNI`.
+
+Two spelling slips sit in the same block and are harmless only because `ports_add` drops
+`port` before joining on `pid`: `Hellisandur` vs `Hellissandur`, `Aviðruvör` vs `Alviðruvör`.
+
+### Second defect, same block: the 500 m buffer is not 500 m
+
+`ports_add` buffers in EPSG:3857 (Web Mercator), whose unit is a metre only at the equator:
+
+```r
+st_as_sf(coords = c("lon","lat"), crs = 4326) |>
+  st_transform(crs = 3857) |> st_buffer(dist = 500) |> st_transform(crs = 4326)
+```
+
+At Iceland's latitudes the ground radius is `500 * cos(lat)`. Measured against the
+geometries actually in `ports_all.gpkg` (areas via EPSG:3057), the fit is exact:
+
+| pid | port | lat | area km2 | actual radius m | `500*cos(lat)` |
+|---|---|---|---|---|---|
+| IS-VIK | Vík | 63.413 | 0.158 | 224.2 | 223.8 |
+| IS-HEN | Hellnar | 64.751 | 0.143 | 213.7 | 213.3 |
+| IS-HEA | Hellissandur | 64.751 | 0.143 | 213.7 | 213.3 |
+| IS-HNI | Hnífsdalur | 64.751 | 0.143 | 213.7 | 213.3 |
+| IS-ALV | Alviðruvör | 65.927 | 0.131 | 204.4 | 204.0 |
+| IS-OGU | Ögurvík | 66.043 | 0.130 | 203.5 | 203.0 |
+
+All six `ports_add` harbours are **~57% too small**. This is independent of the duplicate
+coordinate and survives fixing it. The 159 STK-derived (`einar`) polygons are unaffected —
+their median area is 0.143 km2, so an undersized circle is not conspicuous by size alone.
+
+### Scale: 21 trips, not 10,000
+
+The measurement TODO item 4 asked for, against `curated/logbook/trip.parquet`
+(1,815,425 trips; `hid2` = arrival harbour, populated on 1,778,986 of them):
+
+| hid | harbour | pre-2007 | 2007+ (AIS era) |
+|---|---|---|---|
+| 39 | Hellnar | 156 | 17 |
+| 41 | Hellissandur | 232 | 17 |
+| 71 | Hnífsdalur | 4,982 | 4 |
+
+5,408 trips in total (0.298%), but they are overwhelmingly **1975–1993** — Hnífsdalur alone
+carries 4,982 arrivals in that window and 4 since. Against the 836,080 trips in the AIS era,
+the two harbours with no polygon at all (41, 71) account for **21 trips, 0.0025%**.
+
+Departure harbour `hid1` is populated on only 110,959 trips (6.1%), so arrival is effectively
+the only harbour signal in this table. Noted separately; not part of this issue.
+
+### Consequence for ordering
+
+**Item 4 no longer blocks the trail rebuild.** The unquantified fear in the first addendum
+was that two undetectable harbours would distort trip segmentation. In the era where AIS
+exists at all, they are named by 21 trips. The +70 tagging rows remain cosmetic, and the
+`max(pid)` attribution rule still deserves a deliberate answer — but neither is worth
+holding the L1→L4 run for.
+
+### What cannot be fixed from inside these repos
+
+Neither harbour has an independent geometry anywhere in `ports_all.gpkg`. Searched by name
+across all nine sources, and by location:
+
+- **Hellissandur** — nothing on the north Snæfellsnes coast but Rif (`IS-RIF`, hid 42,
+  -23.812/64.922, from `einar`) and Ólafsvík. UNLOCODE has a single `IS RIF`
+  *"Rif-Hellisandur"* with **no coordinates**, which suggests Rif and Hellissandur may be
+  one port rather than two — a domain question, not a data one.
+- **Hnífsdalur** — nothing between Bolungarvík (`IS-BOL`, -23.245/66.157) and Ísafjörður
+  (`IS-ISA`, -23.123/66.068), which is where it belongs.
+
+`ports_kvoti.parquet` is `stad_nr` + `port` only, with no coordinates, so it cannot supply
+them either. The correct geometries must come from outside: OSM queried directly, or the
+maintainer's own knowledge. **No coordinate has been guessed here.**

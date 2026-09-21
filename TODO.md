@@ -108,6 +108,7 @@ adapters.
 
 ## 3b. Make `kaenugardr` the single harbour source — feasibility assessed, HIGH
 **status:** open · **do not change kaenugardr yet** (maintainer working on source overlap)
+**sync half now decided** — see item 4b and `curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
 **files:** `reference/geo/shapes.R:63-70`, `reference/ports/harbour_codes.R`
 
 **It is already the source.** `$FISHYDATA/raw/ports/ports_all.gpkg` and
@@ -147,43 +148,94 @@ per spatial cluster) and deleting the hardcoded filter, so the rule lives in one
 `kaenugardr/AGENTS.md` already documents `priority` as *"use for deduplication"* — so
 the mechanism is specified there and simply never applied, which matches the data.
 
+**Target architecture, decided 2026-09-21.** The merged pan-European/global port
+database is the **single authority for the harbour code** in all three places it is
+used: logbooks, landings, and AIS. `pid` becomes the canonical key; the Icelandic
+`hid` becomes a national alias mapped onto it. Today it is the other way round —
+`harbour_codes.R` takes `hafnarnumer` from the **landings** table
+(`raw/landings/agf/aflagrunnur_v.parquet`) as the spine and attaches `pid` where
+kaenugardr happens to have one.
+
+**This adds resolution the national code structurally lacks.** Of the 143 codes in
+`curated/reference/port.parquet`, 131 carry a `pid` and 12 do not — and **8 of those 12
+are whole countries**: `160 Skotland`, `163 Noregur`, `165 Danmörk`, `166 Grænland`,
+`167 Færeyjar`, `172 Kanada`, `175 Holland`, `208 Írland`. A landing in Hirtshals is
+coded "Danmörk"; one in Peterhead is "Skotland". **The Icelandic harbour code cannot
+name a foreign port at all**, so the pan-European database is not tidying — it is the
+only thing that can carry a port code for landings abroad.
+
+The remaining four are not harbours either: `150 Ýmsir staðir` ("various places"),
+`300 Flutningaskip` (a vessel type), `900 Fiskistofa skráningar` (an administrative
+sentinel) — and `200 Gjögur`, which *is* a real Icelandic harbour and is genuinely
+missing from kaenugardr. So `hid` mixes three kinds of thing in one column: places,
+countries, and sentinels. The crosswalk must separate them explicitly rather than
+leaving them as NA `pid`.
+
+**Consequence: the `hid` ↔ `pid` crosswalk becomes load-bearing.** It is currently a
+`full_join` **by port name** inside kaenugardr (`ports-iceland-and-faroe.R:203`,
+against `ports_kvoti.parquet`). That join is innocent of the Hellnar defect (item 4),
+but a name join is not a foundation for the authority key of three databases. It needs
+to become a checked, versioned crosswalk with no silent non-matches.
+
 **check:** `shapes.R` contains no source-name filter; `ports.fgb` has no two features
 sharing a geometry; `port.parquet` and `ports.fgb` derive from one kaenugardr release
-carrying a recorded version.
+carrying a recorded version; every harbour code used by logbooks or landings resolves
+to either a `pid`, a country code, or an explicitly-typed sentinel — never to NA.
 
 ---
 
-## 4. Harbour-polygon overlap — decide the selection rule
-**status:** open · **file:** `staging/aux/ports.fgb`, `curate/ais_ping_tag.R`
-**see:** `curate/decisions/004-issue-11-seventy-extra-rows.md`
+## 4. Harbour polygon: two harbours have no geometry — NO LONGER BLOCKING
+**status:** open · **file:** `staging/aux/ports.fgb`, kaenugardr `ports-iceland-and-faroe.R`
+**see:** `curate/decisions/004-issue-11-seventy-extra-rows.md` (addendum 2),
+`curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
 
-Overlapping polygons make a left spatial join emit one row per matching harbour.
-One ping was found inside three at once. 70 extra rows in 528 M — harmless for
-aggregates, but it means `max(pid)` decides which harbour a visit is attributed to,
-which is not a decision anyone made. Deduplicate after the join (smallest containing
-polygon) or resolve the source geometry.
+**Cause pinned; the earlier lead was wrong.** It is not the name-based join to
+`ports_kvoti.parquet` — that join attaches `hid` correctly. It is a **copy-paste in a
+hand-written tribble**: `ports-iceland-and-faroe.R:209-215`, where Hellnar's
+`64.751359, -23.643993` is repeated verbatim on the Hellissandur and Hnífsdalur rows.
 
-**Start here next session.** Work from THIS repo with `~/stasi/kaenugardr` added as a
-second working directory — the fix is a few lines there, but only this repo can verify
-it (`ping_tagged`, the trail, the row-count check). A session opened inside kaenugardr
-starts blind: its memory scope is that path, its `AGENTS.md` documents the schema but
-not this defect, and it has no `decisions/` convention at all.
+**Second defect in the same block:** `st_buffer(dist = 500)` is applied in EPSG:3857, so
+the ground radius is `500 * cos(lat)`. All six `ports_add` harbours are **~57% too small**
+(213 m at Hellnar, not 500 m). Confirmed against the built geometries to sub-metre.
+Independent of the duplicate; survives fixing it.
 
-**Lead on the mechanism, not yet followed.** `kaenugardr/ports-iceland-and-faroe.R`
-derives the polygons from STK vessel trails where `io == "I"`, then joins to
-`ports_kvoti.parquet` **by port NAME** to attach `hid`. A name-based join, or a trail
-cluster that several harbours resolve onto, is a plausible way to produce one geometry
-wearing three identities. Look at that join before looking at the output polygon — it
-also answers whether these three are the only cases or merely the only ones that
-survived into the current build.
+**Measured, and it decides the ordering.** Of 836,080 AIS-era trips (2007+), the two
+harbours with no polygon are named by **21** (hid 41: 17, hid 71: 4). The 5,408 trips
+naming these harbours overall are almost all **1975–1993**, before AIS exists. So the
+feared trip-segmentation distortion is negligible, and **this item does not block the
+L1→L4 trail rebuild.** The +70 rows stay cosmetic; the `max(pid)` attribution rule still
+wants a deliberate answer, but not before the run.
 
-**Cheap first measurement, before fixing anything.** Count the voyages that currently
-start or end near Hellnar's polygon, and the logbook trips naming `hid` 41 or 71. That
-says whether this is 10 voyages or 10,000, and that number should decide how much the
-rest of the ordering matters. Note the +70 rows UNDERSTATE the defect: a missed harbour
-stop adds no rows, it merges two voyages into one.
+**Blocked on geometry that no repo here holds.** Neither harbour has an independent
+feature in `ports_all.gpkg` — searched by name across all nine sources and by location.
+UNLOCODE has one `IS RIF` *"Rif-Hellisandur"* with no coordinates, which raises a domain
+question: are Rif (hid 42, which has a good polygon) and Hellissandur one port or two?
+`ports_kvoti.parquet` has no coordinates. Correct geometry must come from OSM queried
+directly, or from local knowledge. **No coordinate was guessed.**
 
-**check:** `ping_tagged` row count equals `ping_union` row count.
+**check:** no two features in `ports.fgb` share a geometry; `ports_add` buffers measure
+500 m on the ground.
+
+---
+
+## 4b. Break the STK → polygon → STK loop
+**status:** open · **see:** `curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
+
+STK ships `harborid` and `in_out_of_harbor` per ping (`raw/ais/DUMP_stk.R:19`). The
+harbour polygons are drawn around the pings STK already flagged, and are then used to
+decide which pings are in harbour. The polygon adds no independent information.
+
+Decided: harbour geometry is a **frozen, version-stamped input**, not recomputed on any
+build; the bootstrap script is **kept in the repo** as provenance and marked not-part-of-
+the-build; corrections are reviewed edits to the artifact. Already frozen de facto —
+`data-raw/ais/stk/stk_trail` is absent from kaenugardr, so the script cannot run.
+
+This explains the blind spot: the harbours STK never flagged are exactly the ones that
+needed hand-adding, which is where the bad record came from. Freezing STK's list still
+leaves it STK's list — the point of breaking the loop is independent geometry.
+
+**check:** kaenugardr carries a version-stamped harbour release; this repo imports it
+rather than receiving a hand copy; the bootstrap script is present and marked as such.
 
 ---
 
@@ -282,9 +334,10 @@ hive column of the same name.
 
 The L1→L4 trail rebuild was **stopped part-way on purpose**, not by failure. Reason:
 several open items above change the trail output, so completing the run would only
-mean discarding it. Most consequential is the Hellnar/Hellissandur/Hnífsdalur shared
-polygon (item 4), which leaves two harbours undetectable and therefore alters **trip
-segmentation** in `ais_trip.R`, not merely row counts.
+mean discarding it. The Hellnar/Hellissandur/Hnífsdalur shared polygon (item 4) was
+named the most consequential of them — **that has since been measured and withdrawn**:
+the two undetectable harbours are named by 21 trips in the whole AIS era, so they cannot
+alter trip segmentation meaningfully. The adb/afli unit items remain.
 
 **State on disk, all of it reusable:**
 
@@ -305,9 +358,10 @@ harbour geometry, delete that directory — the harbour tag is applied upstream 
 `ais_ping_tag.R`, so an `ports.fgb` fix requires re-running from the tag step, not
 just from L2.
 
-**Before resuming, decide:** items 4 (harbour polygon) and 1/1b (adb units and
-longitude sign, afli depth units) — all three change outputs. Item 6 (GEBCO) still
-blocks a clean full `tar_make()`.
+**Before resuming, decide:** items 1/1b (adb units and longitude sign, afli depth units)
+— these change outputs. **Item 4 is no longer a blocker**: measured at 21 AIS-era trips,
+it cannot move trip segmentation meaningfully (decision 004, addendum 2). Item 6 (GEBCO)
+still blocks a clean full `tar_make()`.
 
 **One command to restart, once those are settled:**
 ```
