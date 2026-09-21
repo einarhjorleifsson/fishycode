@@ -224,6 +224,102 @@ to either a `pid`, a country code, or an explicitly-typed sentinel — never to 
 
 ---
 
+## 3c. `hid` and `pid` are not the same concept
+**status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
+
+The landings/logbook harbour code answers **"where did this fish go?"**. A harbour
+polygon answers **"where was the vessel?"**. These coincide most of the time and then
+diverge exactly where it matters:
+
+- **A landing place that is not a harbour.** Hellissandur (41) and Hnífsdalur (71) appear
+  to be processing sites, not berths (item 4). Forcing them into the harbour-polygon
+  domain is what produced the bad record in the first place.
+- **A code that is not a place at all.** `300 Flutningaskip` is a vessel type,
+  `900 Fiskistofa skráningar` an administrative sentinel, `150 Ýmsir staðir` a catch-all.
+- **A code that is a whole country.** The eight foreign codes (item 3b) resolve to a
+  country, not a port.
+- **A harbour that is not a landing place.** Any polygon a vessel visits without landing.
+
+So the crosswalk cannot be `hid ↔ pid` 1:1. It needs a **type** on each code —
+place / processing-site / country / sentinel — and a `pid` only where the code really
+denotes a physical harbour. Building it as a plain join will silently invent harbours
+that do not exist, which is the defect this project is supposed to detect.
+
+**check:** every harbour code carries an explicit type; no code typed non-harbour
+carries a `pid`.
+
+---
+
+## 3d. Absorb kaenugardr — migration plan, not yet executed
+**status:** open · **see:** `curate/decisions/006-absorb-kaenugardr.md`
+**decided 2026-09-21; nothing has moved yet**
+
+Supersedes the `AGENTS.md` rule "upstream repos are consumed as artifacts" for
+kaenugardr only (`ramb` is unaffected). Rationale and cost are in decision 006.
+
+### Step 0 — preserve
+Push kaenugardr's 3 unpushed commits to GitHub (`f18ffca`, `be1e930`, `c82d053`)
+so the history survives. **LFS objects must upload too** — ~43 MB were added.
+
+### Step 1 — code, file by file
+Names lose hyphens under naming rule 4; directory encodes the layer, filename
+the subject.
+
+| kaenugardr | fishydata | note |
+|---|---|---|
+| `ports-gfw.R` | `dump/ports/gfw.R` | web fetch → `raw/ports/` |
+| `ports-giscoR.R` | `dump/ports/gisco.R` | |
+| `ports-osm.R` | `dump/ports/osm.R` | |
+| `ports-emodnet.R` | `dump/ports/emodnet.R` | WFS |
+| `ports-vmstools.R` | `dump/ports/vmstools.R` | |
+| `unloccode.R` | `dump/ports/unlocode.R` | fixes the existing typo |
+| `ports-kvoti.R` | `dump/oracle/ports_kvoti.R` | it is an Oracle extract (`connect_mar()`) |
+| `ports_all.R` | `reference/ports/ports_all.R` | target `ports_all` (rule 5) |
+| `ports-iceland-corrections.R` | `curate/corrections/ports_iceland.R` + `.yml` | it *is* a correction |
+| `ports-iceland-and-faroe.R` | `reference/ports/bootstrap_iceland_faroe.R` | inert: no target references it (decision 005) |
+
+`reference/geo/shapes.R` and `reference/ports/harbour_codes.R` stay, and drop
+their `fd_raw("ports", …)` reads in favour of the new in-repo producer.
+
+### Step 2 — data, out of git
+All of it to `$FISHYDATA`, no LFS anywhere:
+
+- fetched sources → `raw/ports/` (gfw csv + gpkg, gisco, osm, emodnet, vmstools,
+  `havnepolygoner3.gpkg`, maksims shapefile, marta xlsx, `unlocode.parquet`,
+  `ports_kvoti.parquet`)
+- `ports_iceland_faroe.gpkg` → `raw/ports/`, as the frozen bootstrap artifact
+- consolidated output → **see the open question below**
+
+Every hardcoded relative path in the migrated scripts becomes `fd_raw()` /
+`fd_staging()` / `fd_curated()`. `R/check_paths.R` should catch any that are
+missed — though note TODO item 7: it has missed seven before.
+
+### Step 3 — wire into `targets`
+`ports_all` becomes a target producing the consolidated file, and `shapes`
+gains it as a dependency. Today `shapes` reads a hand-copied file, so `targets`
+cannot see that the port data changed — which is exactly how the corrected
+geometry is currently still not propagated (item 4).
+
+### Step 4 — archive
+Make kaenugardr read-only, as with `logbooks` and `fishydata_2024-2026`. Fold
+it into TODO item 9's archive date rather than setting a separate one.
+
+### Open question — which layer holds `ports_all`
+This tests committed boundary 1. `ports_all` merges nine sources, which argues
+`curated/`; but it is reference geometry, and reference outputs already live in
+`curated/reference/`. Three candidates, to be settled before step 2:
+`staging/ports/`, `curated/reference/`, or split — all features to `staging/`,
+the deduplicated one-row-per-port artifact to `curated/reference/`.
+The split matches what the code now produces (`ports_all` + `ports_dedup`) and
+keeps "never destroy the original" intact.
+
+**check:** no `ports-*.R` exists in `~/stasi/kaenugardr` that is not also in this
+repo's history; `grep -rn kaenugardr` in this repo returns only decisions and
+this item; `tar_make(names = "shapes")` rebuilds when a port source changes; no
+`.gpkg` or `.csv` is tracked by git in either repo.
+
+---
+
 ## 4. Harbour polygon: two harbours have no geometry — NO LONGER BLOCKING
 **status:** open · **file:** `staging/aux/ports.fgb`, kaenugardr `ports-iceland-and-faroe.R`
 **see:** `curate/decisions/004-issue-11-seventy-extra-rows.md` (addendum 2),
@@ -275,32 +371,6 @@ are unchanged until they are re-imported and `shapes.R` / `harbour_codes.R` re-r
 The +70 tagging rows persist until then.
 
 **check:** `ping_tagged` row count equals `ping_union` row count.
-
----
-
-## 3c. `hid` and `pid` are not the same concept
-**status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
-
-The landings/logbook harbour code answers **"where did this fish go?"**. A harbour
-polygon answers **"where was the vessel?"**. These coincide most of the time and then
-diverge exactly where it matters:
-
-- **A landing place that is not a harbour.** Hellissandur (41) and Hnífsdalur (71) appear
-  to be processing sites, not berths (item 4). Forcing them into the harbour-polygon
-  domain is what produced the bad record in the first place.
-- **A code that is not a place at all.** `300 Flutningaskip` is a vessel type,
-  `900 Fiskistofa skráningar` an administrative sentinel, `150 Ýmsir staðir` a catch-all.
-- **A code that is a whole country.** The eight foreign codes (item 3b) resolve to a
-  country, not a port.
-- **A harbour that is not a landing place.** Any polygon a vessel visits without landing.
-
-So the crosswalk cannot be `hid ↔ pid` 1:1. It needs a **type** on each code —
-place / processing-site / country / sentinel — and a `pid` only where the code really
-denotes a physical harbour. Building it as a plain join will silently invent harbours
-that do not exist, which is the defect this project is supposed to detect.
-
-**check:** every harbour code carries an explicit type; no code typed non-harbour
-carries a `pid`.
 
 ---
 

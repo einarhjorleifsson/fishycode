@@ -53,17 +53,23 @@ permanent — they are the only structure that survived every previous restart.
 - **Shared functions live in `ramb`**, never copied into a script here. The
   previous tree accumulated ~9 copies of the STK matcher and 3 of the ports
   domain by copying instead of depending.
-- **Upstream repos are consumed as artifacts, never as copied code.** Two exist:
+- **Upstream repos are consumed as artifacts, never as copied code.** One does:
 
   | Repo | Produces | Consumed here as |
   |---|---|---|
   | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
-  | [`kaenugardr`](https://github.com/einarhjorleifsson/kaenugardr) | port polygons | `fd_raw("ports", "ports_all.gpkg")` |
 
-  The five `ports-*.R` scripts that came over from the old fishydata were
-  near-identical forks of `kaenugardr` (364 of 384 shared lines in one case) and
-  were deleted. `reference/ports/` keeps only what is genuinely ours: the
-  Icelandic harbour-code crosswalks built from `aflagrunnur_v`.
+  The point of the rule is that **forking** killed the previous trees: five
+  `ports-*.R` scripts had been copied into the old fishydata, one sharing 364 of
+  384 lines with its upstream, and they drifted. Never keep a second copy.
+
+  **`kaenugardr` was listed here until 2026-09-21 and is being absorbed instead**
+  — it is a loose script collection, not a package, with this repo as its only
+  consumer, and it was "consumed" by hand-copying its output files, which was
+  itself the defect. Absorbing removes a copy rather than creating one, so it
+  serves the rule rather than breaking it. See
+  `curate/decisions/006-absorb-kaenugardr.md`; the migration is TODO item 3d and
+  **has not run yet**, so `fd_raw("ports", …)` is still a hand copy today.
 
 ## Layout
 
