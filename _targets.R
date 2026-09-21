@@ -174,10 +174,12 @@ list(
     produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"))
   }, format = "file"),
 
-  # the logger's positions, approximated from the merged track. Downstream of the
-  # merge, which is what removes the cycle.
+  # L3: supply lon/lat for the logger GPS by interpolating the merged track onto
+  # its timestamps, bounded by voyage. Sits downstream of the merge, which is what
+  # removes the old bootstrap cycle. Depends on ais_trip rather than
+  # ais_ping_clean: the voyages have to exist before anything can be bound by them.
   tar_target(logbook_sensor_gps, {
-    ais_ping_clean; logbook
+    ais_trip; logbook
     produces("curate/logbook_sensor_gps.R", fd_curated("logbook", "sensor_gps"))
   }, format = "file"),
 

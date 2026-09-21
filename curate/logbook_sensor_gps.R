@@ -2,8 +2,9 @@
 #
 # Input:  raw/logbooks/afli/sjalfvirkir_maelar.parquet
 #         raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
-#         staging/ais/ping_clean            (the merged, cleaned vessel track)
-#         curated/logbook/{trip,station,fishing_sample}.parquet   (visir -> vid)
+#         curated/ais/ping          (merged, cleaned track, tagged with trip)
+#         curated/ais/trip.parquet  (voyage windows, to bound the interpolation)
+#         curated/logbook/{trip,fishing_sample}.parquet   (.sid -> vid)
 # Output: curated/logbook/sensor_gps
 #
 # What is wrong with the logger, precisely: the timestamp, speed and heading are
@@ -12,6 +13,12 @@
 #
 # So this keeps the logger's own time, speed and heading and supplies lon/lat by
 # linear interpolation from the merged track onto the logger's clock.
+#
+# BOUNDED BY TRIP. Interpolation runs within a single voyage and never across
+# two. Without that bound a logger fix falling in the gap between voyages gets a
+# position drawn straight across the harbour stop - a line through land between
+# the end of one trip and the start of the next. A logger fix that falls inside
+# no voyage is left NA and flagged, rather than invented.
 #
 # WHY THIS SITS HERE AND NOT IN THE MERGE
 # It used to run before curate/ais_ping_union.R, whose output it then joined as
@@ -60,46 +67,66 @@ logger <- bind_rows(
   inner_join(sid_vid, by = ".sid") |>
   mutate(year = year(time))
 
-# -- interpolate positions from the merged track, per vessel-year -------------
+# -- interpolate positions from the merged track, WITHIN each voyage ----------
 
-track <- open_dataset(fd_staging("ais", "ping_clean"))
-years  <- sort(unique(logger$year))
-out    <- fd_curated("logbook", "sensor_gps")
+track  <- open_dataset(fd_curated("ais", "ping"))
+voyage <- open_dataset(fd_curated("ais", "trip.parquet")) |>
+  select(vid, year, trip, t1, t2) |> collect()
+
+years <- sort(unique(logger$year))
+out   <- fd_curated("logbook", "sensor_gps")
 unlink(out, recursive = TRUE)
 
 for (yr in years) {
   lg <- logger |> filter(year == yr)
   if (!nrow(lg)) next
-  vids <- unique(lg$vid)
+
+  # which voyage does each logger fix fall inside? none is a legitimate answer:
+  # the vessel may have been in harbour, or had no AIS reception at the time.
+  vy <- voyage |> filter(year == yr)
+  lg <- lg |>
+    left_join(vy |> select(vid, trip, t1, t2),
+              by = join_by(vid, between(time, t1, t2))) |>
+    select(-t1, -t2)
 
   tk <- track |>
-    filter(year == yr, vid %in% vids) |>
-    select(vid, time, lon, lat) |>
+    filter(year == yr, !is.na(trip)) |>
+    select(vid, trip, time, lon, lat) |>
     collect() |>
-    arrange(vid, time)
+    arrange(vid, trip, time)
   if (!nrow(tk)) next
 
-  res <- lg |>
-    arrange(vid, time) |>
-    group_by(vid) |>
-    group_modify(function(g, key) {
-      a <- tk[tk$vid == key$vid, ]
-      if (nrow(a) < 2) return(mutate(g, lon = NA_real_, lat = NA_real_, dt_sec = NA_real_))
-      tn <- as.numeric(g$time); an <- as.numeric(a$time)
-      # rule = 1: no extrapolation. A logger fix outside the track's window gets
-      # NA rather than a position invented from the nearest endpoint.
-      g$lon <- approx(an, a$lon, tn, rule = 1, ties = mean)$y
-      g$lat <- approx(an, a$lat, tn, rule = 1, ties = mean)$y
-      before <- approx(an, an, tn, method = "constant", f = 0, rule = 1)$y
-      after  <- approx(an, an, tn, method = "constant", f = 1, rule = 1)$y
-      g$dt_sec <- after - before
-      g
-    }) |>
-    ungroup() |>
-    mutate(basis = if_else(is.na(lon), "no_track_cover", "interpolated_from_track"))
+  inside <- lg |> filter(!is.na(trip))
+  outside <- lg |> filter(is.na(trip)) |>
+    mutate(lon = NA_real_, lat = NA_real_, dt_sec = NA_real_, basis = "outside_voyage")
 
-  res |> write_dataset(file.path(out, paste0("year=", yr)), format = "parquet")
-  message(sprintf("  %d: %s fixes, %.1f%% positioned",
+  if (nrow(inside)) {
+    inside <- inside |>
+      arrange(vid, trip, time) |>
+      group_by(vid, trip) |>
+      group_modify(function(g, key) {
+        a <- tk[tk$vid == key$vid & tk$trip == key$trip, ]
+        if (nrow(a) < 2)
+          return(mutate(g, lon = NA_real_, lat = NA_real_, dt_sec = NA_real_))
+        tn <- as.numeric(g$time); an <- as.numeric(a$time)
+        # rule = 1: no extrapolation. Outside this voyage's own fixes the answer
+        # is NA, not a position carried over from its nearest endpoint.
+        g$lon <- approx(an, a$lon, tn, rule = 1, ties = mean)$y
+        g$lat <- approx(an, a$lat, tn, rule = 1, ties = mean)$y
+        before <- approx(an, an, tn, method = "constant", f = 0, rule = 1)$y
+        after  <- approx(an, an, tn, method = "constant", f = 1, rule = 1)$y
+        g$dt_sec <- after - before
+        g
+      }) |>
+      ungroup() |>
+      mutate(basis = if_else(is.na(lon), "no_track_cover", "interpolated_within_voyage"))
+  }
+
+  res <- bind_rows(inside, outside)
+  # write_parquet_group, not write_dataset: res is materialised. See R/write_parquet.R.
+  write_parquet_group(res, file.path(out, paste0("year=", yr), "data_0.parquet"))
+  message(sprintf("  %d: %s fixes | %.1f%% positioned | %.1f%% outside a voyage",
                   yr, format(nrow(res), big.mark = ","),
-                  100 * mean(!is.na(res$lon))))
+                  100 * mean(!is.na(res$lon)),
+                  100 * mean(res$basis == "outside_voyage")))
 }

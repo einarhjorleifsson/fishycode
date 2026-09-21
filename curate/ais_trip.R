@@ -40,6 +40,9 @@ years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
 trips_all <- vector("list", length(years))
 
+# Target pings per in-memory batch - see the note below.
+BATCH_PINGS <- 5e6
+
 for (yr in years) {
   message("Year ", yr)
 
@@ -48,82 +51,111 @@ for (yr in years) {
     select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, year)
   if (!is.null(VIDS)) base <- filter(base, vid %in% VIDS)
 
-  # -- 1. RLE run detection ---------------------------------------------------
-  # Whacky-point removal is no longer done here - it is its own stage now, in
-  # curate/ais_ping_clean.R (L2), so staging/ais/ping_clean is already clean.
-  clean <- base |> collect()
-
-  runs <- clean |>
-    mutate(in_harbour = !is.na(pid)) |>
-    arrange(vid, time) |>
-    group_by(vid) |>
-    mutate(
-      new_run = is.na(lag(in_harbour)) | in_harbour != lag(in_harbour),
-      run_id  = cumsum(as.integer(new_run))
-    ) |>
-    group_by(vid, run_id) |>
-    summarise(
-      in_harbour = max(in_harbour),
-      pid        = max(pid),
-      t1         = min(time),
-      t2         = max(time),
-      n_pings    = n(),
-      .groups    = "drop"
-    ) |>
-    mutate(dur_hours = as.numeric(t2 - t1, units = "hours"))
-
-  # -- 3. Bridge short harbour stays (in-memory dplyr) -----------------------
-  runs <- runs |>
-    arrange(vid, t1) |>
-    group_by(vid) |>
-    mutate(
-      bridge = in_harbour &
-               dur_hours < MIN_HARBOUR_H &
-               !lag(in_harbour,  default = TRUE) &
-               !lead(in_harbour, default = TRUE),
-      state2       = if_else(bridge, FALSE, in_harbour),
-      state_change = state2 != lag(state2, default = !first(state2)),
-      run_id2      = cumsum(state_change)
-    ) |>
-    group_by(vid, run_id2) |>
-    summarise(
-      in_harbour = first(state2),
-      pid        = first(pid[!is.na(pid)]),
-      t1         = min(t1),
-      t2         = max(t2),
-      n_pings    = sum(n_pings),
-      .groups    = "drop"
-    ) |>
-    arrange(vid, t1)
-
-  # -- 4. Number trips; attach departure / arrival harbour codes -------------
-  trips_yr <- runs |>
-    group_by(vid) |>
-    mutate(
-      hid1 = if_else(!in_harbour, lag(pid),  NA_character_),
-      hid2 = if_else(!in_harbour, lead(pid), NA_character_)
-    ) |>
-    filter(!in_harbour) |>
-    mutate(year = yr, trip = row_number()) |>
-    ungroup() |>
-    select(vid, year, trip, t1, t2, hid1, hid2, n_pings) |>
-    filter(n_pings >= MIN_PINGS)
-
-  # -- 5. Join trip IDs back to clean pings; write parquet -------------------
-  tmp <- tempfile(fileext = ".parquet")
-  write_dataset(trips_yr, tmp)
+  # -- Batch the year by VESSEL ----------------------------------------------
+  #
+  # This loop used to collect() a whole year. On a 24 GB machine that does not
+  # survive the large years: 2017 alone carries 69 M pings, nine times the size
+  # of the year that already reached 6.2 GB resident.
+  #
+  # Every step below groups by vid - run detection, the harbour bridge, and trip
+  # numbering - so a vessel's trips depend on nothing outside that vessel.
+  # Batching whole vessels is therefore EXACTLY equivalent to processing the year
+  # at once, not an approximation. Batching by time would NOT be: a run that
+  # straddles the cut would be split into two.
+  vid_n  <- base |> count(vid) |> collect() |> arrange(desc(n))
+  groups <- split(vid_n$vid, cumsum(as.numeric(vid_n$n)) %/% BATCH_PINGS)
 
   out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
+  unlink(file.path(out_dir, paste0("year=", yr)), recursive = TRUE)
 
-  # Use the in-memory clean table (both passes applied) for the ping write
-  clean |>
+  trips_batches <- vector("list", length(groups))
 
-    left_join(trips_yr |> select(vid, trip, t1, t2),
-              by = join_by(vid, between(time, t1, t2))) |>
-    select(-t1, -t2) |>
-    write_dataset(glue::glue("{out_dir}/year={yr}"), format = "parquet")
+  for (i in seq_along(groups)) {
+    g <- groups[[i]]
+    # -- 1. RLE run detection ---------------------------------------------------
+    # Whacky-point removal is no longer done here - it is its own stage now, in
+    # curate/ais_ping_clean.R (L2), so staging/ais/ping_clean is already clean.
+    clean <- base |> filter(vid %in% g) |> collect()
 
-  unlink(tmp)
+    runs <- clean |>
+      mutate(in_harbour = !is.na(pid)) |>
+      arrange(vid, time) |>
+      group_by(vid) |>
+      mutate(
+        new_run = is.na(lag(in_harbour)) | in_harbour != lag(in_harbour),
+        run_id  = cumsum(as.integer(new_run))
+      ) |>
+      group_by(vid, run_id) |>
+      summarise(
+        in_harbour = max(in_harbour),
+        pid        = max(pid),
+        t1         = min(time),
+        t2         = max(time),
+        n_pings    = n(),
+        .groups    = "drop"
+      ) |>
+      mutate(dur_hours = as.numeric(t2 - t1, units = "hours"))
+
+    # -- 3. Bridge short harbour stays (in-memory dplyr) -----------------------
+    runs <- runs |>
+      arrange(vid, t1) |>
+      group_by(vid) |>
+      mutate(
+        bridge = in_harbour &
+                 dur_hours < MIN_HARBOUR_H &
+                 !lag(in_harbour,  default = TRUE) &
+                 !lead(in_harbour, default = TRUE),
+        state2       = if_else(bridge, FALSE, in_harbour),
+        state_change = state2 != lag(state2, default = !first(state2)),
+        run_id2      = cumsum(state_change)
+      ) |>
+      group_by(vid, run_id2) |>
+      summarise(
+        in_harbour = first(state2),
+        pid        = first(pid[!is.na(pid)]),
+        t1         = min(t1),
+        t2         = max(t2),
+        n_pings    = sum(n_pings),
+        .groups    = "drop"
+      ) |>
+      arrange(vid, t1)
+
+    # -- 4. Number trips; attach departure / arrival harbour codes -------------
+    trips_yr_b <- runs |>
+      group_by(vid) |>
+      mutate(
+        hid1 = if_else(!in_harbour, lag(pid),  NA_character_),
+        hid2 = if_else(!in_harbour, lead(pid), NA_character_)
+      ) |>
+      filter(!in_harbour) |>
+      mutate(year = yr, trip = row_number()) |>
+      ungroup() |>
+      select(vid, year, trip, t1, t2, hid1, hid2, n_pings) |>
+      filter(n_pings >= MIN_PINGS)
+
+    # -- 5. Join trip IDs back to clean pings; write parquet -------------------
+    # A write of trips_yr to a tempfile stood here and was unlinked four lines
+    # later without ever being read. Removed: it was dead, and it registered a
+    # frame into the cached duckdb connection on every year of the loop.
+
+    out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
+
+    # Use the in-memory clean table for the ping write. write_parquet_group, not
+    # write_dataset - this is a materialised frame inside a per-year loop, which
+    # is exactly the shape that accumulates. See R/write_parquet.R.
+    clean |>
+      left_join(trips_yr_b |> select(vid, trip, t1, t2),
+                by = join_by(vid, between(time, t1, t2))) |>
+      select(-t1, -t2) |>
+      write_parquet_group(glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet"))
+
+    trips_batches[[i]] <- trips_yr_b
+    rm(clean); gc(FALSE)
+    message(sprintf("  batch %d/%d: %s vessels, %s trips",
+                    i, length(groups), length(g), nrow(trips_yr_b)))
+  }
+
+  trips_yr <- bind_rows(trips_batches)
   trips_all[[match(yr, years)]] <- trips_yr
 }
 
@@ -136,7 +168,7 @@ message(glue::glue(
 ))
 
 out_trips <- if (is.null(VIDS)) fd_curated("ais", "trip.parquet") else fd_staging("ais", "trip_test.parquet")
-write_dataset(trips, out_trips)
+write_parquet_group(trips, out_trips)
 
 # -- QA: vid == 2765 -----------------------------------------------------------
 
