@@ -144,6 +144,9 @@ spatial join handles inconsistently.
 Consolidating means applying `priority` in kaenugardr (highest-priority feature wins
 per spatial cluster) and deleting the hardcoded filter, so the rule lives in one place.
 
+`kaenugardr/AGENTS.md` already documents `priority` as *"use for deduplication"* — so
+the mechanism is specified there and simply never applied, which matches the data.
+
 **check:** `shapes.R` contains no source-name filter; `ports.fgb` has no two features
 sharing a geometry; `port.parquet` and `ports.fgb` derive from one kaenugardr release
 carrying a recorded version.
@@ -159,6 +162,26 @@ One ping was found inside three at once. 70 extra rows in 528 M — harmless for
 aggregates, but it means `max(pid)` decides which harbour a visit is attributed to,
 which is not a decision anyone made. Deduplicate after the join (smallest containing
 polygon) or resolve the source geometry.
+
+**Start here next session.** Work from THIS repo with `~/stasi/kaenugardr` added as a
+second working directory — the fix is a few lines there, but only this repo can verify
+it (`ping_tagged`, the trail, the row-count check). A session opened inside kaenugardr
+starts blind: its memory scope is that path, its `AGENTS.md` documents the schema but
+not this defect, and it has no `decisions/` convention at all.
+
+**Lead on the mechanism, not yet followed.** `kaenugardr/ports-iceland-and-faroe.R`
+derives the polygons from STK vessel trails where `io == "I"`, then joins to
+`ports_kvoti.parquet` **by port NAME** to attach `hid`. A name-based join, or a trail
+cluster that several harbours resolve onto, is a plausible way to produce one geometry
+wearing three identities. Look at that join before looking at the output polygon — it
+also answers whether these three are the only cases or merely the only ones that
+survived into the current build.
+
+**Cheap first measurement, before fixing anything.** Count the voyages that currently
+start or end near Hellnar's polygon, and the logbook trips naming `hid` 41 or 71. That
+says whether this is 10 voyages or 10,000, and that number should decide how much the
+rest of the ordering matters. Note the +70 rows UNDERSTATE the defect: a missed harbour
+stop adds no rows, it merges two voyages into one.
 
 **check:** `ping_tagged` row count equals `ping_union` row count.
 
