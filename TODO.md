@@ -329,10 +329,21 @@ carries no provenance stamp until item 12 is resolved.
 kaenugardr pushed to GitHub 2026-09-21, `6cf42a4..c82d053`, 52 MB of LFS
 uploaded. History is preserved; the repo can be archived once steps 1-3 land.
 
-**check:** no `ports-*.R` exists in `~/stasi/kaenugardr` that is not also in this
-repo's history; `grep -rn kaenugardr` in this repo returns only decisions and
-this item; `tar_make(names = "shapes")` rebuilds when a port source changes; no
-`.gpkg` or `.csv` is tracked by git in either repo.
+### Step 4 is the live risk — BOTH REPOS NOW CARRY THE SAME SCRIPTS
+Until kaenugardr is archived read-only, `ports_all.R`,
+`ports-iceland-corrections.R` and the five fetch scripts exist in two places
+that can both be edited. That is a **fork**, which is the precise failure
+`AGENTS.md` exists to prevent and which decision 006 justified this migration by
+removing. The window is open now and closes only at step 4.
+
+Fold the date into item 9 rather than setting a separate one.
+
+**check:** `~/stasi/kaenugardr` is not writable; `grep -rln kaenugardr` in this
+repo returns only `AGENTS.md`, `TODO.md`, `_targets.R` and `curate/decisions/`;
+`tar_manifest()` lists `ports_iceland`, `ports_all`, `port` and `shapes`
+(**verified 2026-09-21: 25 targets, all four present**); no `.gpkg` or `.csv`
+is tracked by git **in this repo** (kaenugardr's LFS history stays as it is —
+the earlier wording asked for something archiving cannot deliver).
 
 ---
 
@@ -629,6 +640,32 @@ whether or not a polygon exists. 150 rows, 129 with a `pid`, 21 without — and
 
 This is the first half of item 3c in practice: `hid` and `pid` are different
 concepts, and a code must not depend on geometry existing.
+
+---
+
+## 13. Code is fixed, data is not yet rebuilt
+**status:** open · **added 2026-09-21 at end of session**
+
+Several fixes landed in code and in the reference tables but have **not been
+propagated into the large derived datasets**. Nothing here is wrong; it is
+work not yet run, and it is listed so nobody reads the current files as final.
+
+| dataset | state |
+|---|---|
+| `staging/ais/ping_tagged` | **still 527,960,388 rows vs `ping_union`'s 527,960,318** — the +70. The harbour geometry that caused it is fixed, but `ais_ping_tag.R` has not re-run. |
+| `curated/logbook/trip.parquet` | missing `.tid_land` and `match_type` — `curate/logbook.R` rewrote it and `link_lid_map.R` has not re-run since. |
+| `staging/ais/ping_clean` | still 9 of 20 years, from the stopped run. |
+| `curated/ais/*` | not built. |
+
+**`staging/aux/ports.fgb` went from 6,019 to 10,047 features**, because the
+hardcoded source filter is gone and the deduplicated global set is used instead.
+More harbours are now detectable, which is the intended improvement, but it
+changes which pings are in harbour and therefore **trip segmentation** in
+`ais_trip.R`. Any trail rebuilt before 2026-09-21 is not comparable with one
+rebuilt after.
+
+**check:** `ping_tagged` row count equals `ping_union` row count; `trip.parquet`
+carries `.tid_land`.
 
 ---
 

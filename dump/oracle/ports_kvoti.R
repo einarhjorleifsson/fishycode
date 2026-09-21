@@ -1,8 +1,9 @@
 # kvoti.stadur — the Icelandic harbour CODE authority (stad_nr -> name).
 # Output: raw/ports/ports_kvoti.parquet
 #
-# This is the code authority; kaenugardr geometry is separate and a code must
-# resolve to a name whether or not a polygon exists (TODO 12b).
+# This is the code authority. Harbour GEOMETRY comes from a separate chain
+# (reference/ports/ports_all.R), and a code must resolve to a name whether or
+# not a polygon exists for it (TODO 12b).
 library(sf)
 library(tidyverse)
 library(nanoparquet)

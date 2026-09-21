@@ -8,13 +8,12 @@ harbours <-
   rename(hid = hafnarnumer) |>
   arrange(hid)
 ports <-
-  # kaenugardr publishes two port artifacts and they are not interchangeable:
-  #   ports_all.gpkg           6,019 global ports - used by shapes.R for the AIS
-  #                            harbour spatial join
-  #   ports_iceland_faroe.gpkg 159 Iceland+Faroe ports, hid typed numeric - the
-  #                            one this crosswalk needs
-  # Pointing this at ports_all.gpkg yields 6,003 rows of global ports instead of
-  # the 143-row Icelandic harbour crosswalk the converts expect.
+  # Superseded 2026-09-21. This used to warn against reading ports_all.gpkg,
+  # back when it was a hand copy of a kaenugardr artifact carrying that repo's
+  # own pid codes. It is now produced in this repo by reference/ports/ports_all.R
+  # and is exactly the right source, because it is the only place the canonical
+  # pid exists. Filtering to source == "einar" keeps this a crosswalk rather
+  # than a global port list.
   # pid MUST come from the consolidated table, not from the Iceland file's own
   # pid column. ports_all.R reassigns pid globally (build_pid), so the bootstrap
   # codes are a stale namespace: Hellnar is IS-HLL in the Iceland file and
