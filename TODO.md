@@ -259,15 +259,51 @@ feared trip-segmentation distortion is negligible, and **this item does not bloc
 L1→L4 trail rebuild.** The +70 rows stay cosmetic; the `max(pid)` attribution rule still
 wants a deliberate answer, but not before the run.
 
-**Blocked on geometry that no repo here holds.** Neither harbour has an independent
-feature in `ports_all.gpkg` — searched by name across all nine sources and by location.
-UNLOCODE has one `IS RIF` *"Rif-Hellisandur"* with no coordinates, which raises a domain
-question: are Rif (hid 42, which has a good polygon) and Hellissandur one port or two?
-`ports_kvoti.parquet` has no coordinates. Correct geometry must come from OSM queried
-directly, or from local knowledge. **No coordinate was guessed.**
+**RESOLVED, and not by supplying geometry.** The maintainer rules out a proper harbour
+at either place (2026-09-21). The likely meaning of `hid` 41 and 71 in the landings and
+logbook databases is **where the fish was processed**, not where the vessel berthed —
+both places had fish processing. So the right outcome is *not* to invent a polygon: there
+is no harbour to draw. The records should be typed as landing/processing places.
+
+That also explains the shape of the data without any appeal to a missing polygon:
+Hnífsdalur's 4,982 arrivals are 1975–1993 and then stop, which is a processing plant's
+lifetime, not a harbour's.
+
+For the record, the search that preceded this: neither name has an independent feature in
+`ports_all.gpkg` across all nine sources, `ports_kvoti.parquet` has no coordinates, and
+UNLOCODE's single `IS RIF` *"Rif-Hellisandur"* carries none. **No coordinate was guessed,
+and none should now be generated.**
+
+**This splits a concept that the pipeline currently conflates — see item 3c.**
 
 **check:** no two features in `ports.fgb` share a geometry; `ports_add` buffers measure
 500 m on the ground.
+
+---
+
+## 3c. `hid` and `pid` are not the same concept
+**status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
+
+The landings/logbook harbour code answers **"where did this fish go?"**. A harbour
+polygon answers **"where was the vessel?"**. These coincide most of the time and then
+diverge exactly where it matters:
+
+- **A landing place that is not a harbour.** Hellissandur (41) and Hnífsdalur (71) appear
+  to be processing sites, not berths (item 4). Forcing them into the harbour-polygon
+  domain is what produced the bad record in the first place.
+- **A code that is not a place at all.** `300 Flutningaskip` is a vessel type,
+  `900 Fiskistofa skráningar` an administrative sentinel, `150 Ýmsir staðir` a catch-all.
+- **A code that is a whole country.** The eight foreign codes (item 3b) resolve to a
+  country, not a port.
+- **A harbour that is not a landing place.** Any polygon a vessel visits without landing.
+
+So the crosswalk cannot be `hid ↔ pid` 1:1. It needs a **type** on each code —
+place / processing-site / country / sentinel — and a `pid` only where the code really
+denotes a physical harbour. Building it as a plain join will silently invent harbours
+that do not exist, which is the defect this project is supposed to detect.
+
+**check:** every harbour code carries an explicit type; no code typed non-harbour
+carries a `pid`.
 
 ---
 
