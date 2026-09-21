@@ -250,9 +250,19 @@ carries a `pid`.
 
 ---
 
-## 3d. Absorb kaenugardr — migration plan, not yet executed
+## 3d. Absorb kaenugardr — steps 0-3 DONE, step 4 (archive) open
 **status:** open · **see:** `curate/decisions/006-absorb-kaenugardr.md`
-**decided 2026-09-21; nothing has moved yet**
+**steps 0-3 executed and verified 2026-09-21 (`b7aa258`); only step 4 remains**
+
+Verified: `staging/ports/ports_all.gpkg` 24,653 features / 17,994 pids matching
+the kaenugardr run; `curated/reference/port_geometry.parquet` 17,994 ports, pid
+unique, geometry round-tripping through WKB; `staging/aux/ports.fgb` with
+**zero** features sharing a geometry, where it had two.
+
+`ports.fgb` grew 6,019 → **10,047** features: the source-name filter is gone and
+the deduplicated global set is cropped to the ICES bbox instead. More harbours
+are detectable, which is intended, but it changes AIS harbour tagging and hence
+**trip segmentation** — read any trail rebuild with that in mind.
 
 Supersedes the `AGENTS.md` rule "upstream repos are consumed as artifacts" for
 kaenugardr only (`ramb` is unaffected). Rationale and cost are in decision 006.
@@ -371,12 +381,13 @@ both records and rebuffers the four remaining hand-added ports to a true 500 m.
 159 → 157 harbours, **no two sharing a geometry** (was 3 sharing one), Hellnar
 214 → 500 m.
 
-**Not yet propagated into this pipeline.** `$FISHYDATA/raw/ports/*.gpkg` are still
-the old hand copies, so `staging/aux/ports.fgb` and `curated/reference/port.parquet`
-are unchanged until they are re-imported and `shapes.R` / `harbour_codes.R` re-run.
-The +70 tagging rows persist until then.
+**PROPAGATED 2026-09-21** (`b7aa258`). `shapes.R` now reads the deduplicated
+artifact produced in-repo, and `staging/aux/ports.fgb` has no two features
+sharing a geometry. The +70 rows cannot recur once `ais_ping_tag.R` is re-run;
+the existing `ping_tagged` still carries them until it is.
 
-**check:** `ping_tagged` row count equals `ping_union` row count.
+**check:** `ping_tagged` row count equals `ping_union` row count — **requires a
+re-run of the tag step**, which has not happened.
 
 ---
 
