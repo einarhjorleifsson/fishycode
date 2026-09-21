@@ -158,6 +158,8 @@ anything downstream consumes the merged code.
 | C | `ports_add` duplicate coordinate | 3 ports, 1 polygon | external geometry needed |
 | D | `ports_add` buffers in EPSG:3857 | 6 ports, ~57% too small | buffer in a projected CRS |
 | E | documented dedup recipe insufficient | 2,027 residual duplicates | cluster spatially, then priority |
+| F | **acronym fallback collides** | **1,848 features on 502 junk pids** | fix the counter; fix empty names |
+| G | network fetch block is dead code | lines 118-146 | assembly reads cached files already |
 
 **A is the high-leverage one.** gisco's `port` column is **not a name — it is a UN/LOCODE**:
 all 2,440 values match `^[A-Z]{2}[A-Z0-9]{3}$`, and 92.5% verify against
@@ -166,6 +168,27 @@ all 2,440 values match `^[A-Z]{2}[A-Z0-9]{3}$`, and 92.5% verify against
 accident. Effect on merging: gisco pids that match another source's pid today — **5 of
 2,435**; after parsing the locode — **1,737 of 2,440**. One branch in `build_pid`
 collapses ~1,732 spurious ports.
+
+**F is the one that matters most now `pid` is the downstream key.** Of the 1,805 pids
+carrying more than one feature, **1,303 are legitimate agreement** — one port, several
+sources, all within 2 km — and those are the system working. The other **502 are
+collisions holding 1,848 features**: unrelated ports sharing a key. `CN-CH0` holds 275
+Chinese anchorages spread over 2,475 km; `US-US0` holds 78 over 5,507 km.
+
+Two causes, both in `assign_codes()`/`candidates()`:
+
+- The exhaustion fallback is `paste0(str_sub(x, 1, 2), sum(used == str_sub(x, 1, 2)))`.
+  `used` holds **3-character** codes and `str_sub(x, 1, 2)` is **2** characters, so the
+  equality is never true, the counter is stuck at 0, and every name that runs out of
+  3-char candidates in a country gets the *same* code — `CH0`, `US0`, `NO0`, `DE0`.
+- `candidates()` pads a normalised name shorter than 3 characters to `"XXX"`, so every
+  port whose name normalises to empty (non-Latin scripts stripped by `[^A-Z0-9]`)
+  collides on `XXX` — 7 countries have one.
+
+**G:** `ports_all.R:118-146` fetches gfw, emodnet, gisco and vmstools from the network
+into objects **no later line reads** — every `src_*` block reads a cached file from
+disk. Removing it makes the assembly runnable offline from frozen artifacts, which is
+the same principle as 4b applied to the external sources.
 
 **E is why `priority` alone will not do it.** `ports_all.R:22` documents
 `slice_min(priority, by = pid, with_ties = FALSE)`, which takes 23,164 → 19,943. But
