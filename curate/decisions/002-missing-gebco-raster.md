@@ -65,3 +65,23 @@ artifact — it was a manual browser download into a scratch folder, used once. 
 recorded where it came from or that it had gone. Worth checking whether any other input has
 the same shape; the three GIS layers under `raw/gis/` and the PAME class-B archive are the
 obvious candidates, though those at least still exist on the server.
+
+---
+
+## Addendum 2026-09-21 — two scripts, two filenames
+
+A second consumer of a GEBCO GeoTIFF exists, and it asks for a **different file**:
+
+| Script | Expects | In the DAG? |
+|---|---|---|
+| `reference/geo/h3_index.R:22` | `raw/aux/gebco_2026.tif` | yes — blocks `area_h3` |
+| `products/exports/astd_iseez.R:23` | `raw/aux/gebco_2024.tif` | no — `products/` is outside the graph |
+
+Neither is present; `raw/aux` contains no `.tif` at all, and `~/Downloads` no longer holds
+the original.
+
+Decide on re-download whether one raster serves both. A 2026 release supersedes 2024 in
+coverage, but `astd_iseez.R` hardcodes the 2024 name, so it will keep failing unless it is
+either repointed or given its own file. Repointing is the obvious choice if the depth values
+it extracts are not meant to be frozen at the 2024 vintage — which nothing in the script says
+either way.
