@@ -148,6 +148,36 @@ per spatial cluster) and deleting the hardcoded filter, so the rule lives in one
 `kaenugardr/AGENTS.md` already documents `priority` as *"use for deduplication"* — so
 the mechanism is specified there and simply never applied, which matches the data.
 
+**Defect inventory — measured 2026-09-21, kaenugardr unmodified.** Solve these before
+anything downstream consumes the merged code.
+
+| # | defect | scale | fix |
+|---|---|---|---|
+| A | `build_pid` misparses **gisco** | **2,425 of 2,440** pids wrong | parse the locode |
+| B | osm names keep the harbour suffix | 232 features | strip `höfn/havn/hamn/harbour` |
+| C | `ports_add` duplicate coordinate | 3 ports, 1 polygon | external geometry needed |
+| D | `ports_add` buffers in EPSG:3857 | 6 ports, ~57% too small | buffer in a projected CRS |
+| E | documented dedup recipe insufficient | 2,027 residual duplicates | cluster spatially, then priority |
+
+**A is the high-leverage one.** gisco's `port` column is **not a name — it is a UN/LOCODE**:
+all 2,440 values match `^[A-Z]{2}[A-Z0-9]{3}$`, and 92.5% verify against
+`unlocode.parquet`. `build_pid` treats it as free text and derives an acronym, so
+`FRSXB` becomes `FR-FRS` instead of `FR-SXB`. Only 15 of 2,440 come out right by
+accident. Effect on merging: gisco pids that match another source's pid today — **5 of
+2,435**; after parsing the locode — **1,737 of 2,440**. One branch in `build_pid`
+collapses ~1,732 spurious ports.
+
+**E is why `priority` alone will not do it.** `ports_all.R:22` documents
+`slice_min(priority, by = pid, with_ties = FALSE)`, which takes 23,164 → 19,943. But
+**pid is not a reliable identity**, because it is derived from each source's own
+spelling: Ísafjörður is `IS-ISA` (einar/osm/gfw), `IS-ISF` (jeppe "Isafjord") and
+`IS-IIS` (gisco "ISISA"); Rif is `IS-RIF` and `IS-ISI`; Bolungarvík is `IS-BOL`,
+`IS-BOU` and `IS-IBO`. So after the documented recipe, **3,655 retained features
+(18.3%) still sit within 300 m of another retained feature — 2,027 of them redundant**
+(6,027 / 3,582 within 1 km). Deduplication has to cluster on geometry first and apply
+`priority` within the cluster; grouping by `pid` cannot get there. Fixing A and B
+shrinks this but does not remove it.
+
 **Target architecture, decided 2026-09-21.** The merged pan-European/global port
 database is the **single authority for the harbour code** in all three places it is
 used: logbooks, landings, and AIS. `pid` becomes the canonical key; the Icelandic
