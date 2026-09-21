@@ -109,3 +109,36 @@ One constraint discovered while implementing it: `AGENTS.md` says
 exist (reason 4 above). So there is no parquet-with-provenance route for the
 deduplicated artifact today; it is written with the same `write_sf()` the rest
 of `reference/geo/shapes.R` uses, and converting it is folded into TODO 12.
+
+---
+
+## Completed 2026-09-21
+
+All four steps ran and were verified the same day.
+
+| step | outcome |
+|---|---|
+| 0 preserve | pushed `6cf42a4..c82d053`, 52 MB of LFS uploaded |
+| 1 code | 10 scripts moved; the 214 MB leaflet widget was not carried over |
+| 2 data | everything under `$FISHYDATA`; no LFS; `raw/` restored to the original 159-harbour artifact and the correction writes 157 into `staging/` |
+| 3 targets | `ports_iceland` and `ports_all` added; `port` and `shapes` depend on them |
+| 4 archive | `~/stasi/kaenugardr` is **read-only** — a write is refused |
+
+Verified end to end: `staging/ports/ports_all.gpkg` 24,653 features / 17,994
+pids, matching the pre-migration run; `curated/reference/port_geometry.parquet`
+17,994 ports with `pid` unique and geometry round-tripping through WKB;
+`staging/aux/ports.fgb` with **zero** features sharing a geometry, where it had
+two.
+
+**Consequence to carry forward:** `ports.fgb` went from 6,019 to 10,047
+features, because `shapes.R` lost its hardcoded `source %in% c("einar","gfw")`
+filter — a crude hand version of the priority rule, applied in the wrong place —
+and now reads the deduplicated set. More harbours are detectable, which is the
+improvement, but it changes which pings are in harbour and therefore **trip
+segmentation**. A trail built before 2026-09-21 is not comparable with one built
+after.
+
+TODO items 3b and 3d are deleted as done. Three of 3b's four check clauses pass
+(no source filter; no shared geometry; both port outputs carry provenance
+stamps). The fourth — every harbour code resolving to a `pid`, a country code or
+an explicitly-typed sentinel — is **not** done and is the whole of item 3c.

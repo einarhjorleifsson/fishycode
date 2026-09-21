@@ -212,3 +212,17 @@ across all nine sources, and by location:
 `ports_kvoti.parquet` is `stad_nr` + `port` only, with no coordinates, so it cannot supply
 them either. The correct geometries must come from outside: OSM queried directly, or the
 maintainer's own knowledge. **No coordinate has been guessed here.**
+
+---
+
+## Closed 2026-09-21
+
+Root cause fixed upstream and propagated. `curate/corrections/ports_iceland.R`
+removes the two non-harbours and rebuffers the four hand-added ports to a true
+500 m; `staging/aux/ports.fgb` now has **zero** features sharing a geometry,
+where it had two.
+
+The +70 rows **cannot recur**, but the existing `staging/ais/ping_tagged` still
+carries them (527,960,388 vs `ping_union`'s 527,960,318) because
+`curate/ais_ping_tag.R` has not been re-run. That re-run is TODO item 13, not a
+defect. TODO item 4 is deleted as done.

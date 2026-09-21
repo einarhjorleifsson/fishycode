@@ -68,8 +68,9 @@ permanent — they are the only structure that survived every previous restart.
   consumer, and it was "consumed" by hand-copying its output files, which was
   itself the defect. Absorbing removes a copy rather than creating one, so it
   serves the rule rather than breaking it. See
-  `curate/decisions/006-absorb-kaenugardr.md`; the migration is TODO item 3d and
-  **has not run yet**, so `fd_raw("ports", …)` is still a hand copy today.
+  `curate/decisions/006-absorb-kaenugardr.md`. **Done 2026-09-21**: the scripts
+  live here, the data is under `$FISHYDATA`, `ports_all` is a target, and
+  `~/stasi/kaenugardr` is archived read-only.
 
 ## Layout
 

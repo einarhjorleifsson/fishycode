@@ -106,124 +106,6 @@ adapters.
 
 ---
 
-## 3b. Make `kaenugardr` the single harbour source — feasibility assessed, HIGH
-**status:** open · **do not change kaenugardr yet** (maintainer working on source overlap)
-**sync half now decided** — see item 4b and `curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
-**files:** `reference/geo/shapes.R:63-70`, `reference/ports/harbour_codes.R`
-
-**It is already the source.** `$FISHYDATA/raw/ports/ports_all.gpkg` and
-`ports_iceland_faroe.gpkg` are **byte-identical** (md5) to kaenugardr's outputs. Two
-artifacts feed two roles:
-
-| kaenugardr artifact | → | pipeline role |
-|---|---|---|
-| `ports_all.gpkg` (23,164 features) | `shapes.R` → `staging/aux/ports.fgb` (6,019) | AIS harbour tagging |
-| `ports_iceland_faroe.gpkg` (159) | `harbour_codes.R` → `curated/reference/port.parquet` (143) | logbook harbour codes |
-
-So the question is not adoption but **consolidation and sync**. There is no import
-step and no version stamp — the files were copied by hand.
-
-**Icelandic status: good.** 159 ports, **156 with a unique geometry**. Exactly ONE
-duplicated geometry, covering 3 ports — and it accounts for the *entire* issue-11
-defect (see item 4). Coverage of what the logbooks actually use: **99.8% of the
-1,889,945 real harbour references in trips**. 42 harbour ids are uncovered, but the
-most-used of those are country placeholders (`167 Færeyjar`, `163 Noregur`,
-`166 Grænland`) and sentinels (`-1`, `0`), not missing harbours.
-
-**Pan-European status: the overlap you describe is real, and quantified.**
-979 distinct geometries are shared by 1,993 features — **8.6% of 23,164**. Iceland
-alone carries 131 `einar` entries plus 144 from six other sources. Geometry types are
-mixed (`POINT`, `LINESTRING`, `MULTILINESTRING`, `POLYGON`, `MULTIPOLYGON`), which a
-spatial join handles inconsistently.
-
-**Why feasibility is high: the resolution rule already exists, twice, in two forms.**
-- kaenugardr has a `priority` column: einar 1, gisco 2, jeppe 3, maksims 4,
-  emodnet 5, osm 6, vmstools 7, gfw 8, marta 9 — never applied.
-- `shapes.R` hardcodes a crude equivalent: keep `einar` + `gfw`, drop `gfw` where the
-  pid starts `IS` or `FO`, crop to the ICES bbox.
-
-Consolidating means applying `priority` in kaenugardr (highest-priority feature wins
-per spatial cluster) and deleting the hardcoded filter, so the rule lives in one place.
-
-`kaenugardr/AGENTS.md` already documents `priority` as *"use for deduplication"* — so
-the mechanism is specified there and simply never applied, which matches the data.
-
-**Defect inventory — measured 2026-09-21, kaenugardr unmodified.** Solve these before
-anything downstream consumes the merged code.
-
-**FIXED 2026-09-21** in kaenugardr `be1e930`, verified against the previous build.
-
-| # | defect | before | after |
-|---|---|---|---|
-| A | `build_pid` misparses gisco | 2,425 of 2,440 pids wrong | 2,440 carry a real locode; merges 5 → **1,585** |
-| C | `ports_add` duplicate coordinate | 3 harbours, 1 polygon | removed — **not harbours** (item 3c) |
-| D | buffers in EPSG:3857 | 246 m at 60-75°N | **501 m**; Hellnar 214 → **500** |
-| E | dedup recipe insufficient | 2,027 residual duplicates | `ports_dedup.gpkg`, 17,994 rows, pid unique |
-| F | acronym fallback collides | 275 features on one code | **51**; span 7,206 → 1,613 km |
-| G | network fetch block | forces network every run | `if (REFRESH_SOURCES)`, default FALSE |
-| H | derived pids depend on row order | 35-64% shift on reorder | sorted before assignment; **0%** |
-
-Two further defects surfaced only because the new assertions caught them, both
-now fixed and asserted: `build_pid`'s `local_codes` join fanned the feature table
-out (it joins on `(country, name_key)` but was distinct on
-`(country, name_key, location)`), and a pid could still name two clusters.
-
-**B was dropped.** Stripping `höfn` from `Bolungarvíkurhöfn` leaves the genitive
-`Bolungarvíkur`, and `Norðfjarðarhöfn` → `Norðfjarð` is not the nominative
-`Norðfjörður` either. Icelandic morphology defeats a suffix rule, and spatial
-clustering (E) merges these anyway without touching the name.
-
-**Still open — GFW features are scattered multipolygons.** `src_gfw` unions
-anchorages by `(label, iso3)`, so one "port" can be cells spread across a whole
-country: **43% of GFW features span >2 km themselves, one of them 12,521 km**,
-and 30.6% of clusters contain such a feature. This bounds how well any spatial
-dedup can work. 97.1% of clusters still span under 2 km and the larger ones are
-mostly real complexes (Hamburg runs 34 km up the Elbe), but the tail — 6 clusters
-over 400 km — is wrong. Splitting GFW into contiguous anchorages is a
-source-level decision, deliberately left to the maintainer.
-
-**Still open — the pid registry.** Sorting makes the codes reproducible given the
-same *set* of ports. It does not freeze them: a code can still move when a new
-name sorts ahead of an existing one. For a key three databases join on, the
-assignments should be committed to a registry and passed back in as `taken`.
-Tested: with a registry, adding two ports changes 0 of 169/929/817 codes.
-
-**Target architecture, decided 2026-09-21.** The merged pan-European/global port
-database is the **single authority for the harbour code** in all three places it is
-used: logbooks, landings, and AIS. `pid` becomes the canonical key; the Icelandic
-`hid` becomes a national alias mapped onto it. Today it is the other way round —
-`harbour_codes.R` takes `hafnarnumer` from the **landings** table
-(`raw/landings/agf/aflagrunnur_v.parquet`) as the spine and attaches `pid` where
-kaenugardr happens to have one.
-
-**This adds resolution the national code structurally lacks.** Of the 143 codes in
-`curated/reference/port.parquet`, 131 carry a `pid` and 12 do not — and **8 of those 12
-are whole countries**: `160 Skotland`, `163 Noregur`, `165 Danmörk`, `166 Grænland`,
-`167 Færeyjar`, `172 Kanada`, `175 Holland`, `208 Írland`. A landing in Hirtshals is
-coded "Danmörk"; one in Peterhead is "Skotland". **The Icelandic harbour code cannot
-name a foreign port at all**, so the pan-European database is not tidying — it is the
-only thing that can carry a port code for landings abroad.
-
-The remaining four are not harbours either: `150 Ýmsir staðir` ("various places"),
-`300 Flutningaskip` (a vessel type), `900 Fiskistofa skráningar` (an administrative
-sentinel) — and `200 Gjögur`, which *is* a real Icelandic harbour and is genuinely
-missing from kaenugardr. So `hid` mixes three kinds of thing in one column: places,
-countries, and sentinels. The crosswalk must separate them explicitly rather than
-leaving them as NA `pid`.
-
-**Consequence: the `hid` ↔ `pid` crosswalk becomes load-bearing.** It is currently a
-`full_join` **by port name** inside kaenugardr (`ports-iceland-and-faroe.R:203`,
-against `ports_kvoti.parquet`). That join is innocent of the Hellnar defect (item 4),
-but a name join is not a foundation for the authority key of three databases. It needs
-to become a checked, versioned crosswalk with no silent non-matches.
-
-**check:** `shapes.R` contains no source-name filter; `ports.fgb` has no two features
-sharing a geometry; `port.parquet` and `ports.fgb` derive from one kaenugardr release
-carrying a recorded version; every harbour code used by logbooks or landings resolves
-to either a `pid`, a country code, or an explicitly-typed sentinel — never to NA.
-
----
-
 ## 3c. `hid` and `pid` are not the same concept
 **status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
 **see:** `curate/decisions/007-hid-maps-to-pid.md` — the mapping is built; typing is what remains
@@ -233,11 +115,11 @@ polygon answers **"where was the vessel?"**. These coincide most of the time and
 diverge exactly where it matters:
 
 - **A landing place that is not a harbour.** Hellissandur (41) and Hnífsdalur (71) appear
-  to be processing sites, not berths (item 4). Forcing them into the harbour-polygon
+  to be processing sites, not berths (decision 004). Forcing them into the harbour-polygon
   domain is what produced the bad record in the first place.
 - **A code that is not a place at all.** `300 Flutningaskip` is a vessel type,
   `900 Fiskistofa skráningar` an administrative sentinel, `150 Ýmsir staðir` a catch-all.
-- **A code that is a whole country.** The eight foreign codes (item 3b) resolve to a
+- **A code that is a whole country.** The eight foreign codes (decision 007) resolve to a
   country, not a port.
 - **A harbour that is not a landing place.** Any polygon a vessel visits without landing.
 
@@ -248,179 +130,6 @@ that do not exist, which is the defect this project is supposed to detect.
 
 **check:** every harbour code carries an explicit type; no code typed non-harbour
 carries a `pid`.
-
----
-
-## 3d. Absorb kaenugardr — steps 0-3 DONE, step 4 (archive) open
-**status:** open · **see:** `curate/decisions/006-absorb-kaenugardr.md`
-**steps 0-3 executed and verified 2026-09-21 (`b7aa258`); only step 4 remains**
-
-Verified: `staging/ports/ports_all.gpkg` 24,653 features / 17,994 pids matching
-the kaenugardr run; `curated/reference/port_geometry.parquet` 17,994 ports, pid
-unique, geometry round-tripping through WKB; `staging/aux/ports.fgb` with
-**zero** features sharing a geometry, where it had two.
-
-`ports.fgb` grew 6,019 → **10,047** features: the source-name filter is gone and
-the deduplicated global set is cropped to the ICES bbox instead. More harbours
-are detectable, which is intended, but it changes AIS harbour tagging and hence
-**trip segmentation** — read any trail rebuild with that in mind.
-
-Supersedes the `AGENTS.md` rule "upstream repos are consumed as artifacts" for
-kaenugardr only (`ramb` is unaffected). Rationale and cost are in decision 006.
-
-### Step 0 — preserve
-Push kaenugardr's 3 unpushed commits to GitHub (`f18ffca`, `be1e930`, `c82d053`)
-so the history survives. **LFS objects must upload too** — ~43 MB were added.
-
-### Step 1 — code, file by file
-Names lose hyphens under naming rule 4; directory encodes the layer, filename
-the subject.
-
-| kaenugardr | fishydata | note |
-|---|---|---|
-| `ports-gfw.R` | `dump/ports/gfw.R` | web fetch → `raw/ports/` |
-| `ports-giscoR.R` | `dump/ports/gisco.R` | |
-| `ports-osm.R` | `dump/ports/osm.R` | |
-| `ports-emodnet.R` | `dump/ports/emodnet.R` | WFS |
-| `ports-vmstools.R` | `dump/ports/vmstools.R` | |
-| `unloccode.R` | `dump/ports/unlocode.R` | fixes the existing typo |
-| `ports-kvoti.R` | `dump/oracle/ports_kvoti.R` | it is an Oracle extract (`connect_mar()`) |
-| `ports_all.R` | `reference/ports/ports_all.R` | target `ports_all` (rule 5) |
-| `ports-iceland-corrections.R` | `curate/corrections/ports_iceland.R` + `.yml` | it *is* a correction |
-| `ports-iceland-and-faroe.R` | `reference/ports/bootstrap_iceland_faroe.R` | inert: no target references it (decision 005) |
-
-`reference/geo/shapes.R` and `reference/ports/harbour_codes.R` stay, and drop
-their `fd_raw("ports", …)` reads in favour of the new in-repo producer.
-
-### Step 2 — data, out of git
-All of it to `$FISHYDATA`, no LFS anywhere:
-
-- fetched sources → `raw/ports/` (gfw csv + gpkg, gisco, osm, emodnet, vmstools,
-  `havnepolygoner3.gpkg`, maksims shapefile, marta xlsx, `unlocode.parquet`,
-  `ports_kvoti.parquet`)
-- `ports_iceland_faroe.gpkg` → `raw/ports/`, as the frozen bootstrap artifact
-- all features → `staging/ports/ports_all.gpkg`
-- deduplicated, one row per port → `curated/reference/` **(settled 2026-09-21)**
-
-Every hardcoded relative path in the migrated scripts becomes `fd_raw()` /
-`fd_staging()` / `fd_curated()`. `R/check_paths.R` should catch any that are
-missed — though note TODO item 7: it has missed seven before.
-
-### Step 3 — wire into `targets`
-`ports_all` becomes a target producing the consolidated file, and `shapes`
-gains it as a dependency. Today `shapes` reads a hand-copied file, so `targets`
-cannot see that the port data changed — which is exactly how the corrected
-geometry is currently still not propagated (item 4).
-
-### Step 4 — archive
-Make kaenugardr read-only, as with `logbooks` and `fishydata_2024-2026`. Fold
-it into TODO item 9's archive date rather than setting a separate one.
-
-### Settled — the product is split
-All features to `staging/ports/`, the deduplicated one-row-per-port artifact to
-`curated/reference/`. Matches what the code already produces and keeps "never
-destroy the original" intact.
-
-**But** `AGENTS.md` says `write_curated()` is the only way into `curated/`, and
-that function does not exist (item 12). So the deduplicated artifact is written
-with the same `write_sf()` the rest of `reference/geo/shapes.R` uses, and
-carries no provenance stamp until item 12 is resolved.
-
-### Step 0 is DONE
-kaenugardr pushed to GitHub 2026-09-21, `6cf42a4..c82d053`, 52 MB of LFS
-uploaded. History is preserved; the repo can be archived once steps 1-3 land.
-
-### Step 4 is the live risk — BOTH REPOS NOW CARRY THE SAME SCRIPTS
-Until kaenugardr is archived read-only, `ports_all.R`,
-`ports-iceland-corrections.R` and the five fetch scripts exist in two places
-that can both be edited. That is a **fork**, which is the precise failure
-`AGENTS.md` exists to prevent and which decision 006 justified this migration by
-removing. The window is open now and closes only at step 4.
-
-Fold the date into item 9 rather than setting a separate one.
-
-**check:** `~/stasi/kaenugardr` is not writable; `grep -rln kaenugardr` in this
-repo returns only `AGENTS.md`, `TODO.md`, `_targets.R` and `curate/decisions/`;
-`tar_manifest()` lists `ports_iceland`, `ports_all`, `port` and `shapes`
-(**verified 2026-09-21: 25 targets, all four present**); no `.gpkg` or `.csv`
-is tracked by git **in this repo** (kaenugardr's LFS history stays as it is —
-the earlier wording asked for something archiving cannot deliver).
-
----
-
-## 4. Harbour polygon: two harbours have no geometry — NO LONGER BLOCKING
-**status:** open · **file:** `staging/aux/ports.fgb`, kaenugardr `ports-iceland-and-faroe.R`
-**see:** `curate/decisions/004-issue-11-seventy-extra-rows.md` (addendum 2),
-`curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
-
-**Cause pinned; the earlier lead was wrong.** It is not the name-based join to
-`ports_kvoti.parquet` — that join attaches `hid` correctly. It is a **copy-paste in a
-hand-written tribble**: `ports-iceland-and-faroe.R:209-215`, where Hellnar's
-`64.751359, -23.643993` is repeated verbatim on the Hellissandur and Hnífsdalur rows.
-
-**Second defect in the same block:** `st_buffer(dist = 500)` is applied in EPSG:3857, so
-the ground radius is `500 * cos(lat)`. All six `ports_add` harbours are **~57% too small**
-(213 m at Hellnar, not 500 m). Confirmed against the built geometries to sub-metre.
-Independent of the duplicate; survives fixing it.
-
-**Measured, and it decides the ordering.** Of 836,080 AIS-era trips (2007+), the two
-harbours with no polygon are named by **21** (hid 41: 17, hid 71: 4). The 5,408 trips
-naming these harbours overall are almost all **1975–1993**, before AIS exists. So the
-feared trip-segmentation distortion is negligible, and **this item does not block the
-L1→L4 trail rebuild.** The +70 rows stay cosmetic; the `max(pid)` attribution rule still
-wants a deliberate answer, but not before the run.
-
-**RESOLVED, and not by supplying geometry.** The maintainer rules out a proper harbour
-at either place (2026-09-21). The likely meaning of `hid` 41 and 71 in the landings and
-logbook databases is **where the fish was processed**, not where the vessel berthed —
-both places had fish processing. So the right outcome is *not* to invent a polygon: there
-is no harbour to draw. The records should be typed as landing/processing places.
-
-That also explains the shape of the data without any appeal to a missing polygon:
-Hnífsdalur's 4,982 arrivals are 1975–1993 and then stop, which is a processing plant's
-lifetime, not a harbour's.
-
-For the record, the search that preceded this: neither name has an independent feature in
-`ports_all.gpkg` across all nine sources, `ports_kvoti.parquet` has no coordinates, and
-UNLOCODE's single `IS RIF` *"Rif-Hellisandur"* carries none. **No coordinate was guessed,
-and none should now be generated.**
-
-**This splits a concept that the pipeline currently conflates — see item 3c.**
-
-**DONE 2026-09-21** — kaenugardr `be1e930`. Corrected in the artifact rather than by
-re-running the bootstrap (which cannot run): `ports-iceland-corrections.R` removes
-both records and rebuffers the four remaining hand-added ports to a true 500 m.
-159 → 157 harbours, **no two sharing a geometry** (was 3 sharing one), Hellnar
-214 → 500 m.
-
-**PROPAGATED 2026-09-21** (`b7aa258`). `shapes.R` now reads the deduplicated
-artifact produced in-repo, and `staging/aux/ports.fgb` has no two features
-sharing a geometry. The +70 rows cannot recur once `ais_ping_tag.R` is re-run;
-the existing `ping_tagged` still carries them until it is.
-
-**check:** `ping_tagged` row count equals `ping_union` row count — **requires a
-re-run of the tag step**, which has not happened.
-
----
-
-## 4b. Break the STK → polygon → STK loop
-**status:** open · **see:** `curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
-
-STK ships `harborid` and `in_out_of_harbor` per ping (`raw/ais/DUMP_stk.R:19`). The
-harbour polygons are drawn around the pings STK already flagged, and are then used to
-decide which pings are in harbour. The polygon adds no independent information.
-
-Decided: harbour geometry is a **frozen, version-stamped input**, not recomputed on any
-build; the bootstrap script is **kept in the repo** as provenance and marked not-part-of-
-the-build; corrections are reviewed edits to the artifact. Already frozen de facto —
-`data-raw/ais/stk/stk_trail` is absent from kaenugardr, so the script cannot run.
-
-This explains the blind spot: the harbours STK never flagged are exactly the ones that
-needed hand-adding, which is where the bad record came from. Freezing STK's list still
-leaves it STK's list — the point of breaking the loop is independent geometry.
-
-**check:** kaenugardr carries a version-stamped harbour release; this repo imports it
-rather than receiving a hand copy; the bootstrap script is present and marked as such.
 
 ---
 
@@ -481,11 +190,14 @@ deleted until someone establishes whether anything in it is unique.
 ---
 
 ## 9. No archive date for the old repos
-**status:** open
+**status:** open · **kaenugardr done 2026-09-21 (read-only, write refused)**
 
 The plan calls a fixed, agreed archive date a non-optional safeguard, and names
-parallel development as how the forks were born. There are currently **three** trees
-and both old ones are still writable. No date is set.
+parallel development as how the forks were born.
+
+`kaenugardr` is now read-only, closing the window in which its scripts existed in
+two editable places (decision 006). **`logbooks` and `fishydata_2024-2026` are
+still writable** and no date is set for them.
 
 **check:** `logbooks` and `fishydata_2024-2026` are read-only.
 
@@ -580,7 +292,7 @@ carries `.tid_land`.
 
 The L1→L4 trail rebuild was **stopped part-way on purpose**, not by failure. Reason:
 several open items above change the trail output, so completing the run would only
-mean discarding it. The Hellnar/Hellissandur/Hnífsdalur shared polygon (item 4) was
+mean discarding it. The Hellnar/Hellissandur/Hnífsdalur shared polygon (decision 004) was
 named the most consequential of them — **that has since been measured and withdrawn**:
 the two undetectable harbours are named by 21 trips in the whole AIS era, so they cannot
 alter trip segmentation meaningfully. The adb/afli unit items remain.

@@ -84,3 +84,22 @@ the artifact worth freezing.
 
 kaenugardr was **not modified**: the maintainer is working on source overlap in it
 (TODO 3b). This record states the decision; the edits follow once that work lands.
+
+---
+
+## Closed 2026-09-21
+
+Implemented, and then overtaken by decision 006 in the best way: kaenugardr was
+absorbed, so the artifact no longer crosses a repo boundary at all.
+
+- The bootstrap is `reference/ports/bootstrap_iceland_faroe.R`, carrying the
+  circularity argument in its header, and **no target references it**.
+- `raw/ports/ports_iceland_faroe.gpkg` is the frozen 159-harbour artifact, and
+  `raw/` is immutable.
+- Corrections are reviewed edits to it — `curate/corrections/ports_iceland.R`,
+  declarative, re-runnable, asserted — writing 157 into `staging/`.
+- The "version-stamped release, imported rather than hand-copied" clause is
+  satisfied differently than written: there is no release to import, and the
+  outputs carry `write_curated()` provenance stamps instead.
+
+TODO item 4b is deleted as done.
