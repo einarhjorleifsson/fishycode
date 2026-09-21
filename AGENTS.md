@@ -81,7 +81,7 @@ permanent — they are the only structure that survived every previous restart.
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
 | `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. |
 | `curate/corrections/` | The correction registry — one declarative entry each. |
-| `curate/decisions/` | Decision records. Why, not what. |
+| `curate/decisions/` | Decision records. Why, not what. Indexed in its `README.md` — a finished `TODO.md` item is deleted and recorded there, or in `corrections/`. |
 | `overrides/` | Small, hand-maintained, human-reviewed correction inputs. |
 | `products/` | Consumers of the sweep — datacall, ad-hoc exports. |
 | `docs/` | Quarto site. Reads `curated/`; never rebuilds it. |
