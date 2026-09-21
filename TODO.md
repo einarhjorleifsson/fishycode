@@ -106,6 +106,50 @@ adapters.
 
 ---
 
+## 3b. Make `kaenugardr` the single harbour source — feasibility assessed, HIGH
+**status:** open · **do not change kaenugardr yet** (maintainer working on source overlap)
+**files:** `reference/geo/shapes.R:63-70`, `reference/ports/harbour_codes.R`
+
+**It is already the source.** `$FISHYDATA/raw/ports/ports_all.gpkg` and
+`ports_iceland_faroe.gpkg` are **byte-identical** (md5) to kaenugardr's outputs. Two
+artifacts feed two roles:
+
+| kaenugardr artifact | → | pipeline role |
+|---|---|---|
+| `ports_all.gpkg` (23,164 features) | `shapes.R` → `staging/aux/ports.fgb` (6,019) | AIS harbour tagging |
+| `ports_iceland_faroe.gpkg` (159) | `harbour_codes.R` → `curated/reference/port.parquet` (143) | logbook harbour codes |
+
+So the question is not adoption but **consolidation and sync**. There is no import
+step and no version stamp — the files were copied by hand.
+
+**Icelandic status: good.** 159 ports, **156 with a unique geometry**. Exactly ONE
+duplicated geometry, covering 3 ports — and it accounts for the *entire* issue-11
+defect (see item 4). Coverage of what the logbooks actually use: **99.8% of the
+1,889,945 real harbour references in trips**. 42 harbour ids are uncovered, but the
+most-used of those are country placeholders (`167 Færeyjar`, `163 Noregur`,
+`166 Grænland`) and sentinels (`-1`, `0`), not missing harbours.
+
+**Pan-European status: the overlap you describe is real, and quantified.**
+979 distinct geometries are shared by 1,993 features — **8.6% of 23,164**. Iceland
+alone carries 131 `einar` entries plus 144 from six other sources. Geometry types are
+mixed (`POINT`, `LINESTRING`, `MULTILINESTRING`, `POLYGON`, `MULTIPOLYGON`), which a
+spatial join handles inconsistently.
+
+**Why feasibility is high: the resolution rule already exists, twice, in two forms.**
+- kaenugardr has a `priority` column: einar 1, gisco 2, jeppe 3, maksims 4,
+  emodnet 5, osm 6, vmstools 7, gfw 8, marta 9 — never applied.
+- `shapes.R` hardcodes a crude equivalent: keep `einar` + `gfw`, drop `gfw` where the
+  pid starts `IS` or `FO`, crop to the ICES bbox.
+
+Consolidating means applying `priority` in kaenugardr (highest-priority feature wins
+per spatial cluster) and deleting the hardcoded filter, so the rule lives in one place.
+
+**check:** `shapes.R` contains no source-name filter; `ports.fgb` has no two features
+sharing a geometry; `port.parquet` and `ports.fgb` derive from one kaenugardr release
+carrying a recorded version.
+
+---
+
 ## 4. Harbour-polygon overlap — decide the selection rule
 **status:** open · **file:** `staging/aux/ports.fgb`, `curate/ais_ping_tag.R`
 **see:** `curate/decisions/004-issue-11-seventy-extra-rows.md`

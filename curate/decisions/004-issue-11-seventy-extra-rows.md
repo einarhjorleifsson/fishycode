@@ -79,3 +79,35 @@ Two options, and they are not equivalent:
 Option 1 does not preclude option 2. Neither is done; the rebuild was allowed to proceed with
 the 70 rows present, because they cannot move any number that matters and the harbour-choice
 rule deserves a deliberate answer rather than a passing one.
+
+
+---
+
+## Addendum 2026-09-21 — root cause found, and it is one record
+
+The diagnosis above said "overlapping harbour polygons". That was right about the
+*join* behaviour and wrong about the *cause*. The three harbours are not three
+polygons that happen to overlap. They are **the same polygon, duplicated under three
+different harbour identities**:
+
+| pid | port | hid | source | priority | centroid | area km2 |
+|---|---|---|---|---|---|---|
+| IS-HEN | Hellnar | 39 | einar | 1 | -23.644, 64.751 | 0.143 |
+| IS-HEA | Hellissandur | 41 | einar | 1 | -23.644, 64.751 | 0.143 |
+| IS-HNI | Hnífsdalur | 71 | einar | 1 | -23.644, 64.751 | 0.143 |
+
+Identical centroid, identical area. Hnífsdalur is in the Westfjords, roughly 150 km
+from the other two, so this is not adjacency - Hellissandur and Hnífsdalur have been
+assigned Hellnar's geometry.
+
+Scope, measured over the whole source: of kaenugardr's 159 Iceland/Faroe ports,
+**156 have a unique geometry**. This is the only duplicate, and it covers exactly
+these 3. The entire +70-row defect is one bad record.
+
+**This is worse than the row count suggests, in one direction and better in another.**
+Better: it is not a systemic overlap problem and needs no selection rule for Iceland.
+Worse: Hellissandur and Hnífsdalur have **no correct polygon at all**, so vessels
+genuinely at those two harbours are never detected as being in harbour, which affects
+trip segmentation rather than just row counts. That impact has not been quantified.
+
+The fix belongs upstream in kaenugardr, not in this pipeline. Recorded in TODO item 3b.
