@@ -1,0 +1,95 @@
+id: astd_missing_months
+title: staging/ais/astd is missing four months, one of them held in raw and never loaded
+status: measured - gap located and bounded, repair is a re-run and is NOT done
+applies_to:
+  - staging/ais/astd   (year=2017, year=2019, year=2023)
+affects_rows: unknown until loaded; the two recoverable months are 1.17 GB zipped, 10.1 GB of CSV
+implementation: none yet
+discovered: 2026-09-21, while measuring ping_union_duplicate_keys
+
+defect:
+  summary: >-
+    staging/ais/astd has 12 monthly partitions for most years and fewer for
+    three. Two of the gaps are genuine source gaps. Two are not: the raw
+    delivery is present and the conversion never produced an output.
+  coverage: |
+    year   staging months   raw zips   verdict
+    2017   11 (no 07)       11         source gap - the zip does not exist
+    2019   11 (no 01)       11         source gap - the zip does not exist
+    2023   10 (no 08, 09)   12         DATA LOSS - both zips are present in raw
+    all others  12          12         complete
+  the_two_lost_months: >-
+    raw/ais/astd/ASTD_area_level1_202308_manual.zip  (614 MB)
+    raw/ais/astd/ASTD_area_level1_202309_manual.zip  (558 MB)
+    Both carry the "_manual" suffix, and inside, the CSV entry is not
+    ASTD_area_level1_YYYYMM.csv but a dumped SQL query:
+      _SELECT_mmsi_123456789_as_ship_id_mmsi_imonumber_date_time_utc_v_202406271208.csv
+    So these two months were exported by hand from the provider's query console
+    (the literal mmsi_123456789 is a placeholder in the SELECT) rather than
+    delivered through the normal channel, and they are the only two zips in the
+    set of 155 that are shaped this way. That they are also the only two
+    recoverable months absent from staging is unlikely to be coincidence.
+
+cause:
+  not_the_file_pattern: >-
+    Checked, and ruled out. dump/ais/astd.R:93 and :261 glob "\\.zip$", which
+    matches. :348 picks the entry by "\\.csv$", which matches. :266 takes the
+    year-month with regexpr("\\d{6}") on the ZIP basename, which yields 202308
+    correctly. :206 documents the suffix explicitly as
+    ASTD_area_level1_YYYYMM[_manual].zip. R's unzip(list = TRUE) sees the entry
+    and it satisfies the pattern. Nothing in the code excludes these files.
+  where_it_stopped: >-
+    No month=08 or month=09 directory exists under year=2023 at all. :381
+    creates the output directory BEFORE the copy, so the loop cannot have reached
+    that line. The only earlier exits are the unzip failure at :341 and the
+    no-CSV-found branch at :350, and both only warning() and next(). The
+    pipeline did not break either, since 2023-10 through 12 were written.
+  why_it_cannot_be_pinned_down: >-
+    dump/ais/astd.R:313 creates staging/ais/log/ for a per-run log. The
+    directory is EMPTY. The run is recorded in
+    curate/decisions/003-undeclared-dump-inputs.md as having "run clean:
+    2,769,131,193 rows, 2013-2026, 124 GB, in 25.5 min" - a row total with
+    nothing to check month coverage against. Most likely a transient failure
+    unzipping a 5 GB member during a 155-file run, but the evidence to say so
+    does not exist.
+
+repair:
+  action: >-
+    Re-run dump/ais/astd.R. :388 skips any month whose parquet already exists,
+    so it processes only 2023-08 and 2023-09 and leaves the other 153 untouched.
+  cost: >-
+    About 5 minutes, under 10. The schema sniff over all 155 zips re-runs
+    unconditionally (its saveRDS cache is commented out at :88) but costs
+    0.0-0.4 s per zip, so roughly one minute; the rest is unzipping and copying
+    10.1 GB of CSV.
+  hazard: >-
+    DO NOT run it where the machine may sleep or shut down mid-copy. :388 skips
+    on file.exists(out_file), not on a completed write, so a truncated
+    astd_202308.parquet left behind by an interrupted COPY would be treated as
+    done by every subsequent run. Delete any partial output before retrying.
+  then: >-
+    Re-measure ping_union_duplicate_keys after loading, because the two new
+    months are inside the 2013-2019 band where the astd duplicate population
+    lives, and 2023 currently has none.
+
+separate_finding:
+  summary: >-
+    :388's existence check is a silent-success hazard in its own right, and the
+    same shape as TODO item 7's three cases: it cannot distinguish a complete
+    parquet from a truncated one. A size or row-count assertion, or a write to a
+    temporary name followed by a rename, would remove it. Worth an item of its
+    own; not raised as one here because it belongs to the dump/ scripts, which
+    sit outside the targets graph by design (decision 003).
+
+impact:
+  on_analysis: >-
+    Two months of 2023 AIS are absent from every stage downstream of the union.
+    Nothing errors, and nothing in the product says so. Any 2023 effort, coverage
+    or trip count is low by two months of the year and reads as a real decline.
+  priority: >-
+    HIGH relative to its size, and it must be settled BEFORE the item 13 rebuild.
+    Rebuilding the trail now bakes a two-month hole in 2023 into the product, and
+    the hole is invisible once it is there.
+
+related:
+  - ping_union_duplicate_keys   (found while measuring it; explains the 2017-07 zero)

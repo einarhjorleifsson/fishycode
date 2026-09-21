@@ -133,14 +133,39 @@ carries a `pid`.
 
 ---
 
-## 5. `ping_union` carries exact duplicate rows
+## 5. `ping_union` carries duplicate position keys — measured, not repaired
 **status:** open · **file:** `curate/ais_ping_union.R`
+**see:** `curate/corrections/ping_union_duplicate_keys.yml` · detection in the `.R` beside it
+**measured in full 2026-09-21** — was "25 rows in 2020, not yet quantified"
 
-25 exactly-duplicated rows in 2020 alone — same vid, time, lon, lat — before any
-tagging. Distinct from item 4. Not yet quantified across all years. Most likely one
-fix arriving from two providers, or a provider delivering a ping twice.
+**21,920 duplicate keys on `(vid, time, lon, lat)`, 21,952 excess rows** in
+527,960,318, across all 20 years. Three unrelated populations:
 
-**check:** `count(vid, time, lon, lat) |> filter(n > 1)` is empty across all years.
+| population | groups | years | speed differs | heading differs |
+|---|---|---|---|---|
+| `astd` | 21,142 | **2013–2019 only, zero from 2020** | 15,821 | 0 (astd has no heading) |
+| `astd+emodnet` | 405 | 2017 only — the only emodnet year | 404 | 0 |
+| `stk` | 373 | all 20, flat, 1–91/yr | 323 | 304 |
+
+**Two things this item used to say are wrong.** It called these "exact duplicate
+rows". They are not: lines 98–101 bind with `union()`, which renders SQL `UNION`
+— i.e. `UNION DISTINCT`, verified with `sql_render()` rather than assumed — so
+rows identical in every column are already removed. Every group here differs in
+at least one non-key column, and for 16,144 of them the differing column is
+**`speed`**, which is what decides fishing/not-fishing downstream. And the 25
+rows first seen in 2020 are the `stk` population: 2020 is the one year with zero
+astd duplicates, so the year the defect was noticed is the least representative
+of its bulk.
+
+The `astd` shape — rising 315 → 5,100 over 2013–2019 then stopping dead — points
+at how that era's staging was assembled, not at the feed. **Not yet checked:**
+whether the duplicates already exist in `staging/ais/astd`, upstream of the
+union. That is one query per year and it decides where the repair belongs.
+
+A `DISTINCT` is not the repair. Where the two members disagree on speed, taking
+the first silently makes a fishing call by row order.
+
+**check:** `ping_union_duplicate_keys()` returns NULL.
 
 ---
 
@@ -288,6 +313,38 @@ carries `.tid_land`.
 
 ---
 
+## 14. Two months of astd are in `raw/` and were never loaded
+**status:** open · **added 2026-09-21** · **file:** `dump/ais/astd.R`
+**see:** `curate/corrections/astd_missing_months.yml`
+
+`staging/ais/astd/year=2023` has **10 monthly partitions**; `raw/ais/astd` has 12
+zips for 2023. 2017 (no 07) and 2019 (no 01) are genuine source gaps — the zips
+do not exist. 2023-08 and 2023-09 are not: 1.17 GB of raw delivery, 10.1 GB of
+CSV, present and never converted.
+
+Both are the only two zips of 155 carrying a `_manual` suffix, and inside, the
+CSV entry is a dumped SQL query rather than `ASTD_area_level1_YYYYMM.csv` — those
+two months were exported by hand from the provider's console. **The file pattern
+is not the cause** (`:93`, `:261`, `:348`, `:266` all match, and `:206` documents
+the suffix). No `month=08` directory exists at all, and `:381` creates it before
+copying, so the loop exited at the unzip or no-CSV branch — both of which only
+`warning()`. Why cannot be established: `:313` creates `staging/ais/log/` and it
+is **empty**, so decision 003's "ran clean, 2,769,131,193 rows" was a row total
+with nothing to check coverage against. Item 7's pattern, fourth instance.
+
+The repair is a re-run — `:388` skips months already written, so it processes
+these two and leaves 153 alone, in about 5 minutes. **Do not run it where the
+machine may sleep:** `:388` checks `file.exists()`, not a completed write, so a
+truncated parquet would be treated as done by every later run.
+
+**This must precede the item 13 rebuild.** Rebuilding now bakes a two-month hole
+in 2023 into the product, where it is invisible and reads as a real decline.
+
+**check:** every `year=YYYY` under `staging/ais/astd` has one partition per zip
+in `raw/ais/astd` for that year.
+
+---
+
 ## Resume note — 2026-09-21, run stopped deliberately
 
 The L1→L4 trail rebuild was **stopped part-way on purpose**, not by failure. Reason:
@@ -317,7 +374,8 @@ harbour geometry, delete that directory — the harbour tag is applied upstream 
 just from L2.
 
 **Before resuming, decide:** items 1/1b (adb units and longitude sign, afli depth units)
-— these change outputs. **Item 4 is no longer a blocker**: measured at 21 AIS-era trips,
+— these change outputs. **Item 14 must be done first**, not merely decided: two months
+of 2023 astd are missing from staging and a rebuild would make the hole permanent. **Item 4 is no longer a blocker**: measured at 21 AIS-era trips,
 it cannot move trip segmentation meaningfully (decision 004, addendum 2). Item 6 (GEBCO)
 still blocks a clean full `tar_make()`.
 

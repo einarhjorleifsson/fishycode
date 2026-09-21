@@ -1,0 +1,125 @@
+id: ping_union_duplicate_keys
+title: ping_union carries 21,920 duplicate position keys from three unrelated causes
+status: measured - fully quantified across all 20 years, repair NOT implemented
+applies_to:
+  - staging/ais/ping_union   (all years)
+affects_rows: 21,952 excess rows in 527,960,318 (0.0042%)
+implementation: none yet
+discovered: 2026-09-21 (25 rows in 2020, unquantified); measured in full 2026-09-21
+detection: curate/corrections/ping_union_duplicate_keys.R
+
+supersedes_todo_wording: >-
+  TODO item 5 described these as "exactly-duplicated rows - same vid, time, lon,
+  lat" and proposed "count(vid, time, lon, lat) |> filter(n > 1)" as the check.
+  Both need correcting. curate/ais_ping_union.R binds its four sources with
+  union(), not union_all(), at lines 98-101. dplyr's union() renders SQL UNION,
+  which is UNION DISTINCT - verified with sql_render() on a simulated backend,
+  not assumed. Rows identical in every column are therefore already removed
+  before anything is written. Every group counted here is a KEY COLLISION whose
+  members differ in at least one non-key column. The proposed check is still the
+  right query; it is not counting what the item says it counts.
+
+  The item also proposed "most likely one fix arriving from two providers, or a
+  provider delivering a ping twice" as alternatives. Both are true, of different
+  populations. And the 25 rows originally seen in 2020 are the stk population -
+  2020 is the single year with ZERO astd duplicates, so the year the defect was
+  first noticed is the year least representative of its bulk.
+
+measurement:
+  method: >-
+    Per year (and per month for 2017, which exceeds memory as a single group):
+    GROUP BY vid, time, lon, lat HAVING COUNT(*) > 1, carrying the distinct
+    provider set and the distinct-value count of speed, heading and mmsi within
+    each group. Read directly from year=YYYY/ paths rather than through the
+    dataset, to avoid the duplicated `year` column of TODO item 11.
+  totals_by_population: |
+    population      groups   excess   speed differs   heading differs   mmsi differs
+    astd            21,142   21,142      15,821             0                0
+    astd+emodnet       405      405         404             0                0
+    stk                373      405         323           304                0
+    TOTAL           21,920   21,952
+  by_year: |
+    2007 stk 2      2013 astd 315   stk 2     2020 stk 25
+    2008 stk 9      2014 astd 417   stk 20    2021 stk 20
+    2009 stk 14     2015 astd 3285  stk 27    2022 stk 27
+    2010 stk 13     2016 astd 3350  stk 91    2023 stk 27
+    2011 stk 33     2017 astd 4171  stk 2     2024 stk 35
+    2012 stk 7           astd+emodnet 405     2025 stk 9
+                    2018 astd 4504  stk 6     2026 stk 3
+                    2019 astd 5100  stk 1
+
+populations:
+  astd:
+    shape: >-
+      Confined to 2013-2019 and ZERO from 2020 onward. Rises 315 -> 5,100 across
+      the seven affected years, then stops dead. A bounded era, not a trend -
+      which is what distinguishes a property of how the 2013-2019 astd staging
+      was assembled from a property of the feed.
+    heading_never_differs: >-
+      Not a finding about the data. curate/ais_ping_union.R:48 does not select a
+      heading for astd, so the column is NULL for every astd row and cannot
+      differ. Recorded so the zero is not read as agreement.
+    speed_differs_in_75_percent: >-
+      astd speed is DERIVED in this script, at line 46, as
+      dist_nextpoint / sec_nextpoint. The share of groups whose speed differs
+      climbs from 28% (2013) to 100% (2019). Since both members carry the
+      provider's own next-point distance, a differing speed means the feed
+      computed a different successor for each copy - i.e. the two copies were not
+      adjacent in the source ordering. INFERENCE, not measurement: it has not
+      been confirmed against staging/ais/astd itself.
+    not_yet_checked: >-
+      Whether these duplicates already exist in staging/ais/astd, upstream of the
+      union. That is the decisive question for where the repair belongs and it is
+      one query per year. Until it is answered, do not assume the union created
+      them.
+  astd_plus_emodnet:
+    shape: >-
+      405 groups, all in 2017, which is the ONLY year emodnet covers
+      (raw/ais/EmodNet/is2017.csv). This is genuinely the same position reported
+      by two providers, and is the one population TODO item 5's first hypothesis
+      describes. It cannot recur in another year without another emodnet snapshot.
+  stk:
+    shape: >-
+      373 groups spread evenly over all 20 years, 1-91 per year, no trend. The
+      only population where heading also differs (304 of 373). Unrelated to the
+      astd populations by every measure taken.
+    ruled_out: >-
+      NOT an artefact of the mid -> vid temporal interval join at line 32. A mid
+      matching two vid intervals yields rows with different vid, and vid is part
+      of the group key, so those cannot appear here. A mid matching the same vid
+      twice yields rows identical in every column, which UNION removes.
+  all_populations:
+    mmsi_never_differs: >-
+      Zero groups in any year, any provider, have more than one distinct mmsi.
+      Whatever these are, they are not two vessels colliding on a key.
+
+repair:
+  not_specified: >-
+    Deliberately. The choice depends on the astd-staging question above, and on a
+    decision that is the maintainer's: what it means for one vessel to have two
+    speeds at one instant.
+  why_it_is_not_just_a_distinct: >-
+    Picking either member arbitrarily is not safe. Downstream, speed is what
+    decides whether a ping is fishing - it is the input to ais_ping_clean.R and
+    to trip segmentation. For 15,821 astd groups and 323 stk groups the two
+    members disagree on exactly that value, so "take the first" silently makes a
+    fishing/not-fishing call by row order.
+  constraint: >-
+    A repair adds columns, per this project's rule. Whichever member is chosen,
+    the other's speed and the basis for the choice should survive alongside it.
+
+impact:
+  on_analysis: >-
+    Negligible by volume - 0.0042% of pings. It matters for two reasons that are
+    not about volume. First, vid + time is the key trip segmentation and speed
+    filtering operate on, so a duplicated key is a row that cannot be resolved by
+    joining. Second, the astd population is bounded to 2013-2019, so any
+    per-period comparison spanning 2019/2020 crosses a boundary in the data's
+    duplicate structure as well as in its content.
+  priority: >-
+    Low by volume, but it should be settled BEFORE the item 13 rebuild, because
+    every downstream stage inherits it and re-deriving them later means re-running
+    from the union.
+
+related:
+  - astd_missing_months   (why 2017-07 shows no astd duplicates: there is no astd 2017-07)
