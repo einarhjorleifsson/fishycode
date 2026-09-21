@@ -1,0 +1,73 @@
+id: fs_veidiferd_year
+title: Corrupt year on one date field of fs_afladagbok trips, from a single source system
+status: suspected - detection verified against data, repair specified but NOT implemented
+applies_to:
+  - raw/logbooks/fs_afladagbok/ws_veidiferd.parquet
+affects_rows: 21 of 207,189 trips
+implementation: none yet
+discovered: 2026-09-21, while profiling the trip table
+
+defect:
+  summary: >-
+    On a small number of trips, the YEAR of one of the two date fields is wrong
+    while its month and day survive intact, and the other date field on the same
+    row carries the correct year. The corruption is confined to one source
+    system: 21 of the 22 out-of-range rows in the whole table have
+    uppruni = "FRA TAKTIKAL", which is 0.3% of that system's 7,005 rows. No
+    other uppruni value produces an out-of-range year at all.
+  evidence: >-
+    17 rows have londunardagur in 1923 and upphafstimi in 2023 with IDENTICAL
+    month and day - e.g. dep 2023-03-27 / land 1923-03-27. One row is the mirror
+    case: dep 2030-01-24 / land 2023-01-24. All seven affected vessels have
+    between 5 and 16 other, normal trips in March 2023, so they were demonstrably
+    fishing in the period the in-range field points at.
+  not_a_typo: >-
+    Originally read as a hand-typed century slip. It is not. The clustering on
+    one uppruni, the exact preservation of month and day, and the mirror case on
+    the departure field together indicate a systematic fault in how FRA TAKTIKAL
+    serialises or parses the year, not human entry error.
+
+detection:
+  rule: >-
+    year(field) outside [2018, 2026] - the plausible range for this table, whose
+    genuine extent is 2018 to 2026.
+  yields: 22 rows, of which 21 are this defect and 1 is a sentinel (see below).
+
+repair:
+  confident:
+    applies_to: 18 of 21 rows
+    rule: >-
+      Where exactly ONE of upphafstimi / londunardagur has an out-of-range year,
+      the other is in range, and the two agree on month and day, take the year
+      from the in-range field.
+    residual_uncertainty: >-
+      Low. Month and day agreeing exactly across the two fields is not something
+      a random corruption would produce, and it is what the surviving field
+      independently asserts.
+  weak:
+    applies_to: 3 of 21 rows
+    detail: >-
+      ids 89207, 89212, 86720 have BOTH years corrupt - departures in years
+      0006, 0023 and 0630 alongside 1923 landings. The landing repairs to 2023
+      by the +100 pattern the other 17 rows establish, but the departure year
+      has no in-range sibling to take it from. Month and day survive, so
+      departure = landing year is defensible where month/day ordering allows it,
+      but it is an inference, not a reading. These three should carry a lower
+      confidence than the other 18, or be left NA.
+  emits_if_implemented: [upphafstimi, londunardagur, upphafstimi_raw, londunardagur_raw, basis]
+
+separate_finding:
+  summary: >-
+    The 22nd out-of-range row is NOT this defect. id = -1, skipnr = -300,
+    uppruni = "Rekjanleikaswapper", dates 2006-02-01. Negative id and negative
+    vessel number mark it as a sentinel or placeholder record sitting in the
+    trip table. It should be excluded by identity, not by date range, and it
+    deserves its own registry entry once someone establishes what it is for.
+
+impact:
+  on_analysis: >-
+    Negligible by volume - 21 rows in 207,189. It matters because these rows
+    poison any min/max over the table's date range (which currently reads
+    0006-03-30 to 2030-01-24) and because a 1923 landing will silently fail any
+    between() join against AIS voyages rather than raising an error.
+  priority: low, but the repair is cheap and fully evidenced.
