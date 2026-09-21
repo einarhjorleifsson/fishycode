@@ -28,10 +28,26 @@ defect_1_depth_units:
     alike - 100.00% of rows fall within 0.001 of it. 1.8288 is the exact
     fathom-to-metre conversion. Not one row has a ratio of 1.
   which_is_canonical: >-
-    fs_afladagbok. afli (median z1 83.0) and fs_afladagbok (60.0) are the same
-    order of magnitude - a fleet and period difference, not a unit one - so the
-    merged product is internally consistent in fathoms. adb (111.6) is the
-    outlier, and 111.6 / 60.0 is 1.86.
+    fs_afladagbok. Established against GEBCO bathymetry, not by comparing the
+    two sources to each other. Each source's stations were indexed to H3 res 8
+    and their recorded z1 compared with the GEBCO depth of the cell
+    (curated/reference/area_h3.parquet), on ~59,000 stations each inside the
+    Icelandic box:
+
+      source          median(GEBCO_metres / z1)   IQR
+      afli                      1.891          1.71 - 2.18
+      fs_afladagbok             1.891          1.82 - 2.07
+      adb                       1.025          0.98 - 1.15
+
+    afli and fs_afladagbok return the IDENTICAL ratio, close to the 1.8288
+    fathom-to-metre constant, so both record FATHOMS. adb returns ~1.0, so it
+    already records METRES. The ~3% excess over 1.8288 is expected: GEBCO is a
+    cell mean and fishing gear does not sit at the deepest point of a cell.
+  earlier_weaker_argument: >-
+    First argued from medians alone - afli 83.0 against fs 60.0 being the same
+    order of magnitude. That was not sufficient: a 1.38x difference can conceal a
+    unit change, and it says nothing about what the shared unit IS. The GEBCO
+    comparison is independent of both sources and answers both questions.
   severity: >-
     HIGH if adb is merged without repair. Depth is a single column in
     curated/logbook/station.parquet. Merging adb as-is would silently make 2026

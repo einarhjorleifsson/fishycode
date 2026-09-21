@@ -28,9 +28,12 @@ product therefore ends **2025-12-12 with zero 2026 coverage**, while adb holds
 cross-checking adb against fs_afladagbok, which is possible with no matching
 heuristic at all because adb is fs's live view and they share 467,635 `.sid`:
 
-- **Depth units.** adb is in METRES, fs is in FATHOMS. `z_adb / z_fs` is 1.8288 at
-  every percentile — 100.00% of 443,718 rows. Merging as-is makes 2026 depths metres
-  inside a column that is fathoms for 1950–2025. Nothing errors.
+- **Depth units.** adb is in METRES, fs and afli are in FATHOMS. `z_adb / z_fs` is
+  1.8288 at every percentile — 100.00% of 443,718 rows. Which is canonical was settled
+  against GEBCO, not by comparing the sources to each other: indexing each source's
+  stations to H3 res 8 and dividing the cell's GEBCO depth by the recorded `z1` gives
+  **1.891 for afli, 1.891 for fs, 1.025 for adb**. Merging as-is makes 2026 depths
+  metres inside a column that is fathoms for 1950–2025. Nothing errors.
 - **Longitude sign.** 50,269 shared stations (10.8%) differ by >10 km; 91.8% of those
   have a positive longitude in adb against 1.5% in fs. Iceland is at ~21°W — adb is
   dropping the west sign (known issue 13). ~8% of the outliers are unexplained.
