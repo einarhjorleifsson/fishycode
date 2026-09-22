@@ -439,9 +439,40 @@ is assigned a vid**, which is correct behaviour — so 7.1 M of the 109.0 M unas
 pings are not a coverage gap at all, and the honest unexplained remainder is ~101.9 M.
 
 The genuinely surprising row is the third: **97% of pings come from mids whose `glid`
-is not MMSI-shaped**, and that is where 3,050 of the 3,144 matches live. Whatever the
-working fleet puts in that field, no classification rule has been applied to it. That
-is the first thing the review should look at.
+is not MMSI-shaped**, and that is where 3,050 of the 3,144 matches live.
+
+### The non-MMSI `glid` is mostly place names — and a hand list already exists
+
+Those values are Icelandic place names truncated to nine characters, with `loid` set to
+the literal string `"unkown"`: `Gemlufall`, `Steinanes`, `Haganes_K`, `Eyrarhlid`,
+`Hvannadal`, `Tjaldanes`, `Onundarfj`, `Rey?arfjo`. Shore installations, not vessels.
+
+**The classifier is already here.** `reference/vessels/ais_key.R:163` holds a
+hand-maintained vector of ~200 such names, `fixed`, applied at `:368` and `:387` to tag
+`loid`/`glid`. It came across intact from
+`fishyweb/scripts/01_DATASET_mobileid_classification.R`, which is where it was written;
+the only other copies are in `fishydata_2024-2026` and one inside `$FISHYDATA/legacy/`.
+Nothing more systematic exists in any retired repo — searched all eight.
+
+Nothing leaks, either: `sources/stk/convert.R:28` joins with `filter(!is.na(vid))`, so
+an unclassified shore station never reaches staging. **This is a completeness problem,
+not a contamination problem.**
+
+The list catches **202 mids / 55.8 M pings**. What it misses is *patterned*, which
+matters — the answer is pattern rules, not a longer hand list:
+
+| family | mids | pings |
+|---|---|---|
+| `TF??_NET_` — call-sign shore relays | 106 | 8.4 M |
+| institute / research (`Hafro_Str`, `Rannsokn_`) | 2 | 2.2 M |
+| `Kvi_*` — aquaculture pens | 4 | 1.5 M |
+| `*AIS*` named stations not yet listed | 66 | 0.5 M |
+| `*dufl*` / `*bauja*` — buoys | 4 | 2.6 k |
+
+~182 mids and 12.5 M pings that are derivably non-vessel and unlisted. `TF??_NET_`
+alone is a two-character regex. That is the review's cheapest win, and it should
+produce a real entity-class column rather than a `type` string that happens to contain
+the word `fixed`.
 
 ### Three things the record asserts that the table does not support
 
@@ -459,8 +490,10 @@ is the first thing the review should look at.
 
 ### What the review has to answer
 
-1. What is in `glid` for the 12,001 non-MMSI-shaped mids that carry 97% of the pings,
-   and can they be classified at all?
+1. **Partly answered above.** Replace the hand `fixed` list with pattern rules for the
+   families named there, and emit a proper entity class (`vessel` / `shore_station` /
+   `aquaculture` / `navaid` / `beacon` / `unknown`) instead of encoding it in `type`.
+   Then re-measure what is left unclassified.
 2. Can `d2` be closed from evidence — last ping per mid-vid period — instead of a
    sentinel, and what breaks downstream if it is?
 3. What do the 67 ambiguous mids and 126 multi-mid vids actually represent: genuine
