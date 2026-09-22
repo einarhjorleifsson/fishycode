@@ -462,10 +462,20 @@ declared non-vessel, 23.7 M are vessels that did not match, and **2,996,632 (1.0
 of the trail) are genuinely unknown**. The ~250-literal hand list left the script for
 `overrides/stk_nonvessel_names.csv`.
 
-**check:** the rest of steps 3–4, still additive and still no trail rebuild — the
-three missing cascade rules (`vid_NA`, the `TF???2` suffix family, one-character
-call-sign prefixes), then `curate/checks/ais_key_landings.R` and `ais_key_registry.R`
-existing and run. Step 5 onward changes assignments and is a separate session.
+**Step 3 is done too — 2026-09-22**, `curate/decisions/013-stk-derived-ids-are-equipment.md`.
+Two of its three rules did not survive contact. The `TF???2` family is not missed
+vessels but their **net buoys** (maintainer) — 42 of 78 candidates were transmitting
+while the ship's own mobile-id was, so it became a classifier, not a matcher. The
+one-character call-sign fix *unmatches four vessels* and was reverted: `type` is
+pasted from both fields and the steps match it literally, so correcting the
+classifier breaks rules that key on it. The `vid_NA` rule stands, plus `afmáður`
+("erased" — a vessel still transmitting after leaving the Icelandic registry).
+21 rows gained, coverage 62.39 % → 62.43 %, no existing assignment touched.
+
+**check:** step 4 — `curate/checks/ais_key_landings.R` and `ais_key_registry.R`
+existing and run, which discharges the `_targets.R:123` promise. Step 5 onward changes
+assignments and is a separate session; step 3 has made the case for it, since the
+`type` coupling means no classifier in the cascade can be corrected in place.
 
 ---
 

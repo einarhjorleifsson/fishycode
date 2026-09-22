@@ -1,7 +1,8 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1 and 2 done 2026-09-22**, steps 3–9 open ·
+**status:** partly built — **steps 1, 2 and 3 done 2026-09-22**, steps 4–9 open ·
 **see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
+`curate/decisions/013-stk-derived-ids-are-equipment.md`,
 `reference/vessels/ais_key.R`, plan `002-the-last-mile.md` §4a
 
 **Measured** — on 2026-09-22, against `$FISHYDATA` as it stands:
@@ -434,9 +435,33 @@ Ordered by measured payoff per unit of risk, not by interest.
    the honest residual is **2,996,632 pings — 1.03 %** on 2,098 mobile-ids. Eleven
    classes rather than the eight proposed in §4.2, and a call-sign rule that was not
    proposed at all; the decision record says why.
-3. **The three missing rules** (§3.4). ~1.5 M pings, no schema change, and the TF-suffix
-   family is Icelandic fishing vessels — the population the maintainer says must be
-   complete.
+3. ~~**The three missing rules** (§3.4)~~ — **done 2026-09-22**,
+   `curate/decisions/013-stk-derived-ids-are-equipment.md`. One of the three was
+   wrong and one was harmful, which is why this is worth reading rather than
+   skimming.
+
+   **§3.4's second rule was backwards.** The `TF???2` family is not "Icelandic
+   fishing vessels the matcher misses" — it is those vessels' *net buoys*, registered
+   under a made-up id derived from the ship's (maintainer, 2026-09-22). Confirmed: of
+   78 mobile-ids the drafted rule would have matched, 42 were transmitting while the
+   vessel's own mobile-id was also transmitting. It became a classifier instead —
+   34 mobile-ids, 118,351 pings, now `entity_class == "buoy"`.
+
+   **§3.4's third rule is harmful and was reverted.** Widening the call-sign prefix
+   test to one character assigns no vid and *unmatches four vessels*, because `type`
+   is pasted from both fields and the steps match it as a literal: `NA_cs` becomes
+   `cs4_cs` and the `NA_cs` step stops firing. The classifier cannot be corrected
+   while the rules key on its output — which is a stronger argument for step 5 than
+   anything written below.
+
+   **§3.4's first rule stands**, narrowed to undecorated agreement only: 16 mobile-ids,
+   54,326 pings. Plus a rule the plan did not anticipate — `afmáður`, "erased", is how
+   STK labels a vessel that has left the Icelandic registry and goes on transmitting;
+   GNÚPUR's begins the day after the registry records *Seldur*. 5 of 18 assigned,
+   68,721 pings; the rest held back where the vessel's own mobile-id overlaps.
+
+   Gated: no existing vid changed, none lost, no step or mmsi changed. Coverage
+   62.39 % → **62.43 %** vid, 59.74 % → **59.77 %** mmsi.
 4. **The two checks** (§4.6). They must exist *before* §5 changes assignments, or there
    is no baseline to compare against. They also discharge the `_targets.R:123` promise.
 5. **Split identity from attributes** (§4.1). The large one. Fixes §3.1, makes the

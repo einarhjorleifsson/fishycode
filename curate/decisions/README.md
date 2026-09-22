@@ -37,6 +37,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 010 | [time variable naming](010-time-variable-naming.md) | case is the level: `T1`/`T2` is the harbour-to-harbour voyage, `t1`…`t4` the four event times, which stay four because the fishing interval moves with the gear |
 | 011 | [H3 in storage is experimental](011-h3-in-storage-is-experimental.md) | a ping's `h3` column may be dropped; res 8 is where GEBCO depth gets quantised, and `002` means that grain cannot currently be revisited |
 | 012 | [STK entity class](012-stk-entity-class.md) | a mobile-id now says what kind of thing it is; the hand list moved to `overrides/`; 75.5% of the unassigned pings are declared non-vessel |
+| 013 | [derived ids are equipment](013-stk-derived-ids-are-equipment.md) | `TFBC2` is TFBC's buoy, not TFBC; `Afmáður` is the vessel after it leaves the Icelandic registry; and the `type` classifier cannot be corrected while the rules key on it |
 
 ## Data defects
 

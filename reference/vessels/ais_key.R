@@ -219,6 +219,12 @@ VID2 <-
   pull(vid) |>
   as.character()
 
+# Every identifier the registry actually holds, for the equipment rule in
+# R/entity_class.R: a net buoy is registered under a made-up id derived from its
+# ship's, so the test is "the remainder, once a trailing digit comes off, is a real
+# call sign or a real vid".
+known_ids <- unique(c(CS, CS2, CS3, VID2))
+
 lnd <-
   read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
   #read_parquet(fd_curated("landing", "agf_stations.parquet")) |>
@@ -311,6 +317,16 @@ stk2 <-
              loid %in% CS3 ~ "cs3",
              loid %in% UID ~ "uid",
              loid %in% UID2 ~ "uid2",
+             # NOT widened to one-character prefixes, though ten of the 711 ITU
+             # allocations are one (2 B F G I K M N R W) and this misses every
+             # French, British and Italian call sign - 936 mobile-ids, 1.2 M
+             # pings. Tried 2026-09-22 and reverted: `type` is pasted from both
+             # fields and the steps below match it as a literal, so widening the
+             # classifier renamed NA_cs to cs4_cs and unmatched four vessels that
+             # the NA_cs step had been catching. The classifier cannot be fixed
+             # while the rules key on its output. entity_class carries the same
+             # signal harmlessly - see R/entity_class.R - and the real repair is
+             # plan 003 step 5.
              str_sub(loid, 1, 2) %in% cs.prefix$cs_prefix &
                !numbers_only(str_trim(loid)) &
                !str_starts(loid, "MOB_")  ~ "cs4",
@@ -355,7 +371,8 @@ stk2 <-
   stk2 |>
   bind_cols(stk_entity_class(stk2$loid, stk2$glid,
                              overrides = stk_overrides,
-                             cs_prefix = cs.prefix.all$cs_prefix))
+                             cs_prefix = cs.prefix.all$cs_prefix,
+                             known_ids = known_ids))
 
 stk2 |> lh_overlaps() |> filter(vid > 0) |>  knitr::kable(caption = "Expect none")
 
@@ -583,6 +600,73 @@ if(FALSE) {
   lh_overlaps_plot(c(143787, 102969), stk11)
 }
 
+## loid_cs -----------------------------------------------------------------------
+# The cascade has NA_vid but never had vid_NA: when the LEFT field is the identifier
+# and the right one is unrecognised, nothing fires. 96 mobile-ids on 1.29 M pings sit
+# in that hole.
+#
+# Only the undecorated agreement is taken: loid is a registered vid and glid is that
+# same vid's own call sign, spelled plainly. Decorated variants are the vessel's
+# equipment, not the vessel - see .looks_like_equipment() - and a suffix-stripping
+# match would have handed a vid to 42 mobile-ids that were transmitting while the
+# ship's own mobile-id was also transmitting.
+stk11b <-
+  stk11 |>
+  mutate(.lvid = suppressWarnings(as.integer(loid))) |>
+  left_join(v_all |> select(.lvid = vid, .cs_reg = cs), by = join_by(.lvid)) |>
+  mutate(vid = case_when(
+           !is.na(vid) ~ vid,
+           entity_class == "vessel" & !is.na(.lvid) & !is.na(.cs_reg) &
+             toupper(glid) == toupper(.cs_reg) ~ .lvid,
+           .default = vid)) |>
+  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "loid_cs",
+                          .default = step)) |>
+  select(-c(.lvid, .cs_reg))
+stk11b |>
+  filter(step == "loid_cs") |>
+  knitr::kable(caption = "loid_cs: loid is the vid, glid is that vid's own call sign")
+
+## afmadur -----------------------------------------------------------------------
+# "Afmadur" is afmadur, erased - struck off the Icelandic registry. STK relabels the
+# transponder with it, keeps the old vid in loid, and the vessel goes on transmitting.
+# The vid is still right: it is assigned to the keel and stays with the hull from
+# cradle to grave, whatever flag it ends up under.
+#
+# Measured 2026-09-22 against the registry's own note_date: GNUPUR's afmadur
+# mobile-id begins the day after the registry records "Seldur", BJARNI SAEMUNDSSON's
+# eight days after, AMANDA's twenty-nine. Nine of fifteen start within days of the
+# vessel's PREVIOUS mobile-id falling silent - a clean handover.
+#
+# The other six overlap their own predecessor in real ping time, which is either a
+# handover period or a mobile-id the buyer kept using. Not guessed at: they are
+# listed below and left unassigned.
+#
+# The clash test is a loop over the handful of afmadur rows rather than a join,
+# because .rid is NOT a unique key - the duals join above adds 68 rows after .rid is
+# assigned - and grouping on it silently collapses those 68.
+.afma  <- str_detect(stk11b$glid, regex("^afma", ignore_case = TRUE))
+.alvid <- suppressWarnings(as.integer(stk11b$loid))
+.assigned <- stk11b |> filter(!is.na(vid)) |> select(avid = vid, ad1 = d1, ad2 = d2)
+.clash <- rep(NA, nrow(stk11b))
+for (j in which(.afma & !is.na(.alvid))) {
+  o <- .assigned[.assigned$avid == .alvid[j], ]
+  .clash[j] <- nrow(o) > 0 && any(stk11b$d1[j] < o$ad2 & o$ad1 < stk11b$d2[j])
+}
+stk11c <-
+  stk11b |>
+  mutate(.afma = .afma, .lvid = .alvid, .clash = .clash,
+         vid = case_when(!is.na(vid) ~ vid,
+                         .afma & .lvid %in% v_all$vid & !.clash ~ .lvid,
+                         .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) ~ "afmadur",
+                          .default = step))
+stk11c |>
+  filter(.afma) |>
+  select(mid, loid, glid, vid, step, .clash, pings, d1, d2) |>
+  arrange(-pings) |>
+  knitr::kable(caption = "afmadur: assigned unless the vessel's own mobile-id overlaps")
+stk11c <- stk11c |> select(-c(.afma, .lvid, .clash))
+
 # I AM HERE --------------------------------------------------------------------
 
 lnd |>
@@ -594,7 +678,7 @@ lnd |>
 
 # Add MMSI to Icelandic vessels ------------------------------------------------
 stk12 <-
-  stk11 |>
+  stk11c |>
   left_join(v_mmsi_no_dupes |> select(vid, mmsi))
 
 # Extend the last date ---------------------------------------------------------

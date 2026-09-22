@@ -79,9 +79,34 @@ read_stk_overrides <- function(path = "overrides/stk_nonvessel_names.csv") {
     .default = NA_character_)
 }
 
+# A vessel's own identifier wearing a suffix is not the vessel. STK carries the
+# auxiliary equipment too - net buoys above all - and it is registered under a made
+# up id derived from the ship's: TFBC2 for TFBC, TFMS_2 for TFMS, 1516_2 for vid
+# 1516, LAIJ8 for the Norwegian LAIJ. Maintainer, 2026-09-22: "pretty sure these are
+# madeup and refer to buoy."
+#
+# Measured the same day, and the reason this matters: of 78 mobile-ids that a naive
+# suffix-stripping match would have handed a vid, 42 were transmitting *while the
+# vessel's own mobile-id was also transmitting*. Assigning them would have put a
+# buoy's track on a ship that was somewhere else.
+# Deliberately narrow: one optional separator and exactly one trailing digit, and
+# the remainder must be an identifier the registry actually holds. Wider stripping
+# turns V_2166 into V_216 and TFFM_2277 into TFFM_227, which is guesswork; those are
+# left unclassified instead.
+.looks_like_equipment <- function(x, known) {
+  base <- sub("[_ -]?[0-9]$", "", x)
+  sep  <- grepl("[_ -][0-9]$", x)          # 1516_2 - the separator does the work
+  word <- grepl("[A-Za-z]", base)          # TFBC2  - a call sign, not a number
+  # Without one of those two, the rule eats plain vids: 2800 strips to 280, which is
+  # itself a registered vessel, and 2,151 mobile-ids on 96 M pings get called buoys.
+  !is.na(x) & base != x & nchar(base) > 2 & (sep | word) &
+    toupper(base) %in% toupper(known)
+}
+
 stk_entity_class <- function(loid, glid,
                              overrides = read_stk_overrides(),
-                             cs_prefix = NULL) {
+                             cs_prefix = NULL,
+                             known_ids = NULL) {
   stopifnot(length(loid) == length(glid))
   lo <- as.character(loid)
   gl <- as.character(glid)
@@ -110,6 +135,8 @@ stk_entity_class <- function(loid, glid,
   p_shore <- has("ais$|^ais|_ais|ais_") | grepl("[ _][PB]$", gl) | grepl("[ _][PB]$", lo)
   p_cs <- if (is.null(cs_prefix)) rep(FALSE, length(gl)) else
     .looks_like_callsign(gl, cs_prefix) | .looks_like_callsign(lo, cs_prefix)
+  p_equip <- if (is.null(known_ids)) rep(FALSE, length(gl)) else
+    .looks_like_equipment(gl, known_ids)
 
   out <- dplyr::case_when(
     # A human looked at these, and that beats every rule below — including the two
@@ -120,6 +147,8 @@ stk_entity_class <- function(loid, glid,
     # of the two fields.
     !is.na(mm_gl) & mm_gl != "vessel" ~ mm_gl,
     !is.na(mm_lo) & mm_lo != "vessel" ~ mm_lo,
+    # Before every vessel rule: a derived id is the equipment, not the ship.
+    p_equip ~ "buoy",
     p_net   ~ "net_relay",
     p_kvi   ~ "aquaculture",
     p_inst  ~ "institute",
