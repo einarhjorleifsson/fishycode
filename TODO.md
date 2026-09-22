@@ -411,17 +411,20 @@ is committed in three files. The boundary that actually needs a rule is
 
 The record layer assumes it is: `AGENTS.md` is where the map lives precisely because it
 is supposed to reach every session without being asked for. That assumption is
-**unverified**. The only context I could confirm was injected on 2026-09-22 was
-`MEMORY.md`, and I cannot introspect the rest reliably.
+**unverified**. The only context that could be confirmed as injected on 2026-09-22 was
+`MEMORY.md`, and a session cannot introspect the rest reliably.
 
-If it is *not* auto-loaded, the map has to move into `~/.claude/projects/.../memory/`
-instead, and `check_bookkeeping()`'s `AGENTS.md` invariant is guarding a file nobody
-reads.
+**Partly addressed 2026-09-22** by `curate/decisions/009-claude-md-is-a-loader.md`: a
+`CLAUDE.md` now imports `AGENTS.md`, so the map arrives by either route. That lowers
+the stakes but does not answer the question — **two** mechanisms are now untested
+rather than one, and if neither fires the map has to move into
+`~/.claude/projects/.../memory/` instead.
 
 **check:** in a *fresh* session, ask something answerable only from `AGENTS.md` — e.g.
 "why does `R/` hold function definitions only?" — and watch whether the answer comes
-straight back or is preceded by a read of the file. Record the result here, then delete
-this item and note it wherever the record layer is described.
+straight back or is preceded by a read of the file. A straight answer means the map
+arrived; a read first means it did not. Record the result in 009, then delete this
+item.
 
 ---
 

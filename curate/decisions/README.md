@@ -33,6 +33,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 006 | [absorb kaenugardr](006-absorb-kaenugardr.md) | why the port repo is merged in rather than consumed as an artifact, and what that costs. **All 4 steps done; kaenugardr read-only** |
 | 007 | [hid maps to pid](007-hid-maps-to-pid.md) | `pid` is the standard harbour key across logbooks, landings and AIS; Icelandic `hid` maps onto it |
 | 008 | [three-project rename](008-three-project-rename.md) | `_data`→`fishydata`, `fishydata`→`fishycode`; the hazards, and what `~/.claude.json` did that the plan did not predict. **Closed** |
+| 009 | [CLAUDE.md is a loader](009-claude-md-is-a-loader.md) | `AGENTS.md` stays the map; `CLAUDE.md` imports it so reaching a session is guaranteed rather than assumed. Refines 000, does not overturn it |
 
 ## Data defects
 

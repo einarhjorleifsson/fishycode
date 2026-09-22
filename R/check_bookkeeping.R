@@ -111,6 +111,21 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
       cand[!file.exists(p(cand))],
       "AGENTS.md must not drift; fix the path or the file")
 
+  # -- 5b/6 CLAUDE.md is a loader and stays one ---------------------------------
+  # AGENTS.md reaching a session is the assumption the record layer rests on.
+  # CLAUDE.md is the filename the harness loads; it imports AGENTS.md and holds
+  # no facts of its own. A loader that grows facts is a second AGENTS.md, which
+  # is the drift this whole layer exists to prevent.
+  cl <- rd(p("CLAUDE.md"))
+  bad <- character(0)
+  if (!length(cl))                       bad <- c(bad, "CLAUDE.md is missing")
+  else {
+    if (!grepl("^@AGENTS[.]md", cl[1]))  bad <- c(bad, "first line is not @AGENTS.md")
+    if (length(cl) > 25)                 bad <- c(bad, sprintf("%d lines - it is accruing facts", length(cl)))
+  }
+  add("CLAUDE.md is a loader for AGENTS.md, and only that", bad,
+      "keep it to the import plus the instruction to read AGENTS.md")
+
   # -- 6/6 the decisions index is where TODO says finished work goes ------------
   add("curate/decisions/README.md states the revision convention",
       if (!any(grepl("amend it in place", rd(p("curate/decisions/README.md")))))
