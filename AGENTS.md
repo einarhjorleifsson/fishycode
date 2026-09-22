@@ -44,6 +44,17 @@ permanent — they are the only structure that survived every previous restart.
 - **Never destroy the original.** A correction adds columns; it never overwrites.
   Precedent: wacky-coordinate recovery retains `w_lon`/`w_lat` beside the
   corrected `lon`/`lat`.
+- **The written record is enforced, not promised.** `check_bookkeeping()`
+  (`R/check_bookkeeping.R`) verifies every rule the three `README.md` files
+  assert: records indexed, index rows resolving, no finished item left in
+  `TODO.md`, corrections declared, and no path in *this file* that does not
+  exist. Run it before committing. It is pure base R and needs no `$FISHYDATA`.
+- **Where a thing is written down.** `AGENTS.md` = what is true now.
+  `TODO.md` = what is open, a few paragraphs each. `curate/plans/` = designs
+  not yet built. `curate/decisions/` = what was chosen or found, after the
+  fact. `curate/corrections/` = data defects. A finished `TODO.md` item is
+  **deleted** from it and recorded in `decisions/`, never left in place
+  wearing a done marker.
 - **Every inferred value carries a `basis`** (`"recorded"` / `"reconstructed"` /
   `"synthesised"`). See `station_type` in `docs/grammar.qmd`.
 - **Cycles are broken by a human, outside the DAG.** Cross-checks are circular
@@ -83,6 +94,7 @@ permanent — they are the only structure that survived every previous restart.
 | `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. |
 | `curate/corrections/` | The correction registry — one declarative entry each. |
 | `curate/decisions/` | Decision records. Why, not what. Indexed in its `README.md` — a finished `TODO.md` item is deleted and recorded there, or in `corrections/`. |
+| `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |
 | `overrides/` | Small, hand-maintained, human-reviewed correction inputs. |
 | `products/` | Consumers of the sweep — datacall, ad-hoc exports. |
 | `docs/` | Quarto site. Reads `curated/`; never rebuilds it. |
