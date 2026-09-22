@@ -4,6 +4,11 @@ status: measured - fully quantified across all 20 years, repair NOT implemented
 applies_to:
   - staging/ais/ping_union   (all years)
 affects_rows: 21,952 excess rows in 527,960,318 (0.0042%)
+affects_rows_after_rebuild_2026_09_22: >-
+  22,401 excess in 543,088,458 (0.0041%) across 22,369 groups. Up slightly because
+  astdB now reaches the union: groups spanning two providers rise from 405 to 653.
+  Group sizes are 2 (21,690 single-provider, 653 cross-provider), 3 (21), 4 (4)
+  and 5 (1).
 implementation: none yet
 discovered: 2026-09-21 (25 rows in 2020, unquantified); measured in full 2026-09-21
 detection: curate/corrections/ping_union_duplicate_keys.R
@@ -67,11 +72,24 @@ populations:
       computed a different successor for each copy - i.e. the two copies were not
       adjacent in the source ordering. INFERENCE, not measurement: it has not
       been confirmed against staging/ais/astd itself.
-    not_yet_checked: >-
-      Whether these duplicates already exist in staging/ais/astd, upstream of the
-      union. That is the decisive question for where the repair belongs and it is
-      one query per year. Until it is answered, do not assume the union created
-      them.
+    answered_2026_09_22: >-
+      YES - they exist upstream, in staging/ais/astd, and in far greater numbers
+      than reach the union. Grouping that staging by (mmsi, date_time_utc,
+      longitude, latitude) over Icelandic MMSIs: 766,625 duplicate groups in 2015,
+      5,613 in 2019, 6,661 in 2021. The union did NOT create them.
+
+      Two things follow. The union is a filter, not a source: only Icelandic
+      registry vessels survive the mmsi join and UNION DISTINCT removes members
+      identical in every column, which is why 766,625 groups upstream in 2015
+      become 3,285 in the union, and why 2021 shows 6,661 upstream and zero in the
+      union. And the bounded 2013-2019 shape recorded above is a property of the
+      union's population, not of the astd feed - the feed has duplicates in 2021
+      too.
+
+      The repair still belongs in curate/, not in the adapter: AGENTS.md puts
+      corrections in curate/ and never in a source adapter, and staging/ais/astd
+      is 123 GB, so de-duplicating at the union is both the rule-conformant and the
+      cheap place.
   astd_plus_emodnet:
     shape: >-
       405 groups, all in 2017, which is the ONLY year emodnet covers
