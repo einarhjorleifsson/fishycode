@@ -67,11 +67,30 @@ populations:
     speed_differs_in_75_percent: >-
       astd speed is DERIVED in this script, at line 46, as
       dist_nextpoint / sec_nextpoint. The share of groups whose speed differs
-      climbs from 28% (2013) to 100% (2019). Since both members carry the
-      provider's own next-point distance, a differing speed means the feed
-      computed a different successor for each copy - i.e. the two copies were not
-      adjacent in the source ordering. INFERENCE, not measurement: it has not
-      been confirmed against staging/ais/astd itself.
+      climbs from 28% (2013) to 100% (2019).
+    why_it_differs_MEASURED_2026_09_22: >-
+      The inference previously recorded here - that the feed computed a different
+      SUCCESSOR for each copy, so the copies were not adjacent in the source
+      ordering - is WRONG. Checked against staging/ais/astd itself, which the note
+      admitted had never been done.
+
+      What is actually there: one member of the pair carries dist_nextpoint = 0
+      and sec_nextpoint = 1 EXACTLY, and the other carries a real distance and a
+      real duration (368 s, 36 s, 360 s, 81 s, 238 s, 360 s in the six groups read).
+      Every emission column - co, co2, nox, fuelcons, blackcarbon and the rest -
+      scales with the duration, so they are tiny on the degenerate member too and
+      differ for the same single reason.
+
+      It is not two positions in a sequence. It is one real row and one placeholder.
+
+      Quantified over 2019: of 5,613 duplicate groups, 5,536 (98.6%) have EXACTLY
+      ONE member with (0 m, 1 s); 69 have none and 8 have both.
+
+      (0 m, 1 s) also occurs outside duplicate groups - 26,497 rows of the
+      40,710,111 Icelandic astd rows in 2019, 0.065%. Whether it is a sentinel or a
+      genuinely stationary vessel sampled a second apart is NOT established. Inside
+      a duplicate group it does not matter: the same ping cannot have two different
+      true successors, and the member with a real distance is the informative one.
     answered_2026_09_22: >-
       YES - they exist upstream, in staging/ais/astd, and in far greater numbers
       than reach the union. Grouping that staging by (mmsi, date_time_utc,
@@ -112,10 +131,26 @@ populations:
       Whatever these are, they are not two vessels colliding on a key.
 
 repair:
-  not_specified: >-
-    Deliberately. The choice depends on the astd-staging question above, and on a
-    decision that is the maintainer's: what it means for one vessel to have two
-    speeds at one instant.
+  proposed_2026_09_22: >-
+    For astd, prefer the member whose next-point is real - i.e. drop the one with
+    dist_nextpoint = 0 and sec_nextpoint = 1. This is not a tie-break between two
+    readings; the degenerate member's derived speed is 0/1 = 0 knots, a fabricated
+    stationary value, and stationary is exactly what decides "not fishing"
+    downstream. It resolves 98.6% of the astd groups.
+
+    An earlier proposal - prefer the SMALLER sec_nextpoint, on the theory that the
+    nearest successor in time is the true one - would have selected the placeholder
+    every time. It was built on the inference above, before that inference was
+    checked. Recorded because the rule looked principled and was exactly backwards.
+
+    Unresolved by this rule: the 69 groups per year with no degenerate member and
+    the 8 with two, plus the 373 stk-internal groups, which have no derived
+    quantity to reason from. Carry both members flagged rather than invent a rule.
+  still_the_maintainers: >-
+    Whether the cross-provider groups (653 after the 2026-09-22 rebuild, was 405)
+    take a provider precedence, and which. stk is the domestic receiver and the
+    others are resold, which argues for stk first, but that is a judgement about
+    the feeds and not something in the data.
   why_it_is_not_just_a_distinct: >-
     Picking either member arbitrarily is not safe. Downstream, speed is what
     decides whether a ping is fishing - it is the input to ais_ping_clean.R and
