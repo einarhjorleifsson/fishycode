@@ -63,6 +63,16 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
       setdiff(unique(word), c("open", "blocked", "in", "done")),
       "either use a declared status or amend the vocabulary in TODO.md's header")
 
+  # -- 3c/6 no TODO item number appears twice ----------------------------------
+  # Added 2026-09-22 after an edit that meant to REPLACE item 16 appended the new
+  # text and left the old block above it. Both versions then sat in the file, the
+  # stale one first, and every other invariant still passed.
+  nums <- sub("^##[[:space:]]+([0-9]+[a-z]?)\\..*$", "\\1",
+              grep("^##[[:space:]]+[0-9]+[a-z]?\\.", todo, value = TRUE))
+  add("no TODO.md item number appears twice",
+      unique(nums[duplicated(nums)]),
+      "an item was appended instead of replaced - delete the stale block")
+
   # -- 4/6 corrections: paired, and each .yml declares the required fields ------
   cdir <- p("curate", "corrections")
   ymls <- list.files(cdir, "[.]yml$")
