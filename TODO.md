@@ -475,9 +475,16 @@ scripts with no counterpart here. 26 of 37 are ≥78% superseded; the gap is the
 of the chain, not the chain. Plan 002 §4 gives the disposition of all 37, which
 discharges this item's original "confirm each row" check for the code half.
 
-Two things settle before any porting, both measured: `t1`/`t2` mean *logbook haul* in
-`fishyweb` and *voyage* in `curate/ais_trip.R:5`, and `ais_ping_tag.R:46` tags H3 at
-resolution 8 while every post works at 5 and 9.
+Two things settle before any porting, both measured. **`t1`/`t2` is settled** —
+`curate/decisions/010-time-variable-naming.md`: case is the level, so the voyage is
+`T1`/`T2`, and the four event times stay four because the fishing interval moves with
+the gear. The rename of `ais_trip.R` is still to do. **Still open:**
+`ais_ping_tag.R:46` tags H3 at resolution 8 while every post works at 5 and 9.
+
+Found while settling that, and not a naming problem: `station-for-ais` synthesises
+`t1`=00:00:00 / `t2`=23:59:00 for stations with no recorded fishing times, unflagged,
+so `between(time, t1, t2)` silently means "anywhere that day" for some rows. A `basis`
+defect; wants an entry in `curate/corrections/`.
 
 Still the maintainer's, not mine: the disclosure rule (item 15, plan 001 §3) — though
 plan 002 §5 notes it already exists as working code in the anonymity post.

@@ -83,20 +83,34 @@ What is **not** rebuilt is the tail. `curate/ais_ping_tag.R` ends at ports, H3 a
 Those four lines are the difference between a curated ping table and a table someone
 can ask a question of.
 
-## 3. Two name collisions, measured
+## 3. Two name collisions — settled 2026-09-22
 
-**`t1` / `t2` mean different things in the two repos.** In `fishyweb`'s ping table they
-are the **logbook haul** start and end. In this repo `curate/ais_trip.R:5` writes
-`t1`/`t2` meaning the **harbour-to-harbour voyage** start and end, and
-`curate/link_trip_voyage.R:59` already has to alias them `T1_ais`/`T2_ais` to keep them
-apart from the logbook's `T1`/`T2`. Twenty occurrences of `t1` in `curate/` mean the
-opposite of what every written post means by it. This must be settled *before* the
-enrichment lands, not after.
+Both were raised here as blocking. Both now have an answer in
+`../decisions/010-time-variable-naming.md`, so step 1 of §6 is discharged.
 
-**H3 resolution.** `curate/ais_ping_tag.R:46` tags at resolution **8**. The posts work
-at **5** (overview) and **9** (detail), never 8. Either 8 is the right storage
-resolution and the consumer re-derives, or it is a third resolution nobody asked for.
-Cheap to decide, expensive to discover later.
+**`t1`/`t2`.** Case encodes the level: `T1`/`T2` is trip or voyage, `t1`…`t4` is event.
+A harbour-to-harbour voyage is therefore `T1`/`T2`, and `curate/ais_trip.R:4` writing
+it lowercase is what forces the `v.t1 AS T1_ais` alias at
+`curate/link_trip_voyage.R:59`. The rename makes that alias an ordinary name.
+
+The event times **stay four**, because which interval assigns a ping to fishing moves
+with the gear — a towed gear fishes between `t2` and `t3`, a static gear does not work
+that way. The enrichment tail therefore carries `t1`…`t4`, not the collapsed pair
+`fishyweb`'s `station-for-ais.parquet` carries, and the per-gear rule lives in
+`reference/gear/mapping.R` beside the `s1`/`s2` windows and the max-duration and
+max-distance criteria its header already anticipates.
+
+**H3 resolution.** `curate/ais_ping_tag.R:46` tags at resolution **8**; the posts work
+at **5** (overview) and **9** (detail), never 8. Still open — cheap to decide, and it
+only needs someone to say whether 8 is the storage resolution from which the consumer
+re-derives, or a third resolution nobody asked for.
+
+**A third issue, found while settling these, is not a naming problem.** In
+`fishyweb/scripts/12_DATASET_logbooks.R:883`, a station with no recorded fishing times
+gets `t1` = 00:00:00 and `t2` = 23:59:00 of its date. `between(time, t1, t2)` then
+means "during the haul" for some rows and "anywhere that day" for others, unflagged.
+That is a `basis` defect (`recorded` vs `synthesised`) and belongs in
+`../corrections/`. It affects every published figure that filters on `t1`/`t2`.
 
 ## 4. Script disposition — the item 16 check, discharged for the code half
 
@@ -112,7 +126,7 @@ ones are, almost exactly, the scripts that build what the web reads.
 | `00_DATASET_aux_shapes.R` | 2% | **mostly superseded.** `reference/geo/shapes_raw.R` + `shapes.R` cover ICESareas, ICES_GEBCO, eusm from the same raw inputs, rewritten around `fd_*()`. Genuinely absent: `ICESrectangles` (only *consumed*, at `products/ices_vms_datacall/build.R:257`) and the `hab_and_bathy_layers.zip` fetch |
 | `05_DATASET_ais_stk-to-parquet.R` | 5% | **superseded.** `sources/stk/convert.R` is a DuckDB rewrite of the same job; low overlap is the rewrite, not a gap |
 | `00_DATASET_ais_astdB_zip-to-parquet.R` | 15% | **superseded.** `dump/ais/astd_b.R` likewise, and it carries the fault history 003 records |
-| `00_DATASET_gear.R` | 25% | **read both.** The tribble carries the `s1`/`s2` windows §2 needs; `reference/gear/mapping.R` may already hold them |
+| `00_DATASET_gear.R` | 25% | **port the tribble's `s1`/`s2`.** Measured 2026-09-22: `reference/gear/mapping.R` does **not** carry them; only this tribble does. Decision 010 puts the per-gear fishing-interval rule in the same table |
 | remaining 29 | 78–100% | **superseded.** Includes the three item 16 called "no counterpart": `80_DATASET_SMB_demo.R` → `products/exports/smb_demo.R` (100%), the two `91_datacall_*` → `products/exports/` (93%, 100%), and `ices-datacall/2025/ICES_VMS_QC-main/` → `products/ices_vms_datacall/qc/`, **byte-identical** |
 
 ## 5. What this plan does not decide
@@ -132,7 +146,8 @@ ones are, almost exactly, the scripts that build what the web reads.
 ## 6. Order, and why
 
 1. **Settle `t1`/`t2` and the H3 resolution** (§3). Naming first: every later step
-   writes columns that inherit the answer.
+   writes columns that inherit the answer. **`t1`/`t2` done** — decision 010. The H3
+   resolution is still open, and the rename of `ais_trip.R` is still to do.
 2. **Port the `-for-ais` producers** (`12_DATASET_logbooks.R`). The enrichment has
    nothing to join to until these exist.
 3. **Port the enrichment tail** onto the tagged pings (§2). This is the step that makes
