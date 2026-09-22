@@ -70,7 +70,12 @@ astd  <- open_dataset(fd_staging("ais", "astd")) |>
 # before joining; this provider includes COG in addition to true heading.
 astdB <- open_dataset(fd_staging("ais", "astdB")) |>
   filter(cc_iso3 == "ISL") |>
-  mutate(mmsi = as.character(mmsi)) |>
+  # as.integer() FIRST. astdB stores mmsi as a DOUBLE, and DuckDB renders a double
+  # as VARCHAR with its decimal point: as.character(251525240) is "251525240.0",
+  # eleven characters, which matches no nine-character MMSI anywhere. That silently
+  # discarded 11,119,034 of the 11,147,504 Icelandic astdB rows - the entire feed's
+  # contribution to the union was 0 (curate/corrections/astdb_mmsi_double_cast.yml).
+  mutate(mmsi = as.character(as.integer(mmsi))) |>
   inner_join(idy, by = join_by(mmsi, between(date_time_utc, t1, t2))) |>
   select(vid, mmsi, time = date_time_utc,
          lon, lat,
@@ -95,8 +100,12 @@ emn <-
   read_csv(fd_raw("ais", "EmodNet", "is2017.csv")) |>
   select(mmsi, time = utime, lon, lat, heading = trueheading, cog) |>
   mutate(mmsi = as.character(mmsi)) |>
-  left_join(vid |> filter(!is.na(mmsi), !is.na(vid)) |> select(mmsi, vid) |> distinct(mmsi, .keep_all = TRUE) |>
-              collect()) |>
+  # Time-aware, for the same reason as astd and astdB above: an MMSI reissued from
+  # one hull to the next resolves to whichever held it at the time, not to whichever
+  # distinct() happened to keep. This cast is in R, not DuckDB, so it is safe -
+  # R renders a whole double without a decimal point.
+  left_join(idy |> collect(), by = join_by(mmsi, between(time, t1, t2))) |>
+  select(-c(t1, t2)) |>
   arrange(vid, time) |>
   group_by(vid) |>
   mutate(speed = ramb::rb_speed(lat, lon, time)) |>

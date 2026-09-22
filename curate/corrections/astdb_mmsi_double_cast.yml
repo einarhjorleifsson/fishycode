@@ -1,0 +1,57 @@
+id: astdb_mmsi_double_cast
+title: astdB's mmsi is a double, so casting it to text appends ".0" and the whole feed drops out of the union
+status: confirmed - measured, repair implemented 2026-09-22, rebuild pending
+applies_to:
+  - staging/ais/astdB
+  - staging/ais/ping_union
+implementation: curate/ais_ping_union.R - as.character(as.integer(mmsi))
+discovered: 2026-09-22, taking a baseline of staging/ais/ping_union before rebuilding it for plan 003 step 5
+
+context: >-
+  curate/ais_ping_union.R unions four measured position sources and stamps each
+  with a `provider` column. A baseline count by provider over the existing
+  527,960,318-row union returned astd 334,009,470, stk 174,338,800 and emodnet
+  19,612,048 - and no astdB rows at all, although staging/ais/astdB holds
+  901,123,092 rows of which 11,147,504 are cc_iso3 == "ISL".
+
+defect:
+  summary: >-
+    astdB stores mmsi as a DOUBLE. DuckDB renders a double as VARCHAR with its
+    decimal point, so as.character(mmsi) produces "251525240.0" - eleven characters.
+    The join against the key's nine-character MMSI strings therefore matches nothing.
+  evidence:
+    character_length_of_cast_mmsi:
+      - "11 characters: 11,119,034 rows"
+      - "9 characters:      28,452 rows"
+      - "10 characters:         18 rows"
+    astd_for_comparison: "9 characters on 2,766,355,575 rows - unaffected, its mmsi casts cleanly"
+  pings_lost: 11119034
+  share_of_the_icelandic_astdb_feed: 99.7%
+
+why_it_went_unnoticed: >-
+  It fails silently and in the direction that looks like nothing happened. An
+  inner_join that matches nothing returns zero rows rather than an error, the union
+  still succeeds, and the resulting table is large enough - half a billion rows -
+  that a missing provider is invisible unless someone counts by provider. Nothing
+  did, until a baseline was taken for an unrelated reason.
+
+repair: >-
+  Cast through integer first: as.character(as.integer(mmsi)). Applied to the astdB
+  block in curate/ais_ping_union.R on 2026-09-22.
+
+  The emodnet block casts in R rather than in DuckDB and is NOT affected - R renders
+  a whole double without a decimal point - but it was reviewed at the same time and
+  made time-aware for the separate reason in decision 015.
+
+not_yet_done: >-
+  staging/ais/ping_union has NOT been rebuilt with the fix. Until it is, the union
+  still carries no astdB rows. Everything below it - ping_tagged, ping_clean,
+  ais_trip, trip_voyage - is built on a union missing this feed.
+
+open_questions:
+  - Does astdB overlap astd in coverage, or does it add pings nothing else has? The
+    union is UNION (distinct), not UNION ALL, but `provider` differs per source so
+    an identical position from two feeds is kept twice. How much of the 11.1 M is
+    genuinely new is unmeasured, and it decides whether this changes any analysis.
+  - Are there other double-typed keys being cast to text anywhere in the pipeline?
+    Untested. The failure mode leaves no trace.
