@@ -27,10 +27,17 @@ both asserting absence — and the file was in the data store the whole time. A 
 that reports "gone" is a claim about the searcher as much as the filesystem, and neither
 statement was ever re-run.
 
-**Still to verify** (this record's own step 4): the rebuild has not been executed. Gate
-the result against `raw/aux/h3_indices.parquet` — expect 26,160,965 cells, 66 `fao`
-values, 27 `bbht` values, depth range −6002 to 4. Until that passes,
-`curated/reference/area_h3.parquet` remains **seeded, not built**.
+**Rebuilt and gated, 2026-09-22.** `tar_make(names = "area_h3")` ran in 7m30s and wrote
+668 MB. The gate in step 4 below passes on all four numbers — 26,160,965 cells, 66
+`fao`, 27 `bbht`, depth −6002 to 4 — and a stronger check was run alongside it, because
+matching summary statistics do not prove matching contents: an anti-join against
+`raw/aux/h3_indices.parquet` in **both** directions returns zero rows, and `depth`,
+`bbht` and `fao` disagree on **zero** cells.
+
+The table is therefore no longer seeded. It is built, and the two independent facts that
+fall out are worth separating: the seeded copy was **genuine** (nothing had silently
+diverged from it), and the script **reproduces** it from the raster. Neither was known
+before today; the pipeline had one table it had never made.
 
 ## Superseded — the original record, kept for the reasoning
 
@@ -70,11 +77,14 @@ destined for cleanup when the archives are retired:
 | Path | Role |
 |---|---|
 | `raw/aux/h3_indices.parquet` | safeguard copy, treated as an unbuildable input |
-| `curated/reference/area_h3.parquet` | seeded so downstream targets can run |
+| `curated/reference/area_h3.parquet` | seeded so downstream targets could run — **rebuilt 2026-09-22, identical** |
 | `legacy/curated/aux/h3_indices.parquet` | the original, still in place |
 
 `curated/reference/area_h3.parquet` is therefore **seeded, not built**. It is the one table
 in the sweep that the pipeline did not produce.
+
+*2026-09-22: no longer true — see Resolution above. It is built, and byte-for-byte
+equivalent in content to the copy that was seeded.*
 
 ## What needs doing
 

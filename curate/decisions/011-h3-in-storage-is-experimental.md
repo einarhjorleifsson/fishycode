@@ -39,10 +39,12 @@ real reason to hold res 8 loosely. Two consequences follow:
 - **Dropping the column is cheap; changing the grain is not.** The stored `h3` can go
   tomorrow with nothing downstream affected. Changing *what resolution the spatial
   attributes are computed at* means rebuilding `area_h3.parquet`.
-- **Which cannot be done.** `area_h3.parquet` is seeded, not built: the GEBCO raster
-  it needs is gone (`002-missing-gebco-raster.md`). Until that raster is
-  re-downloaded, res 8 is not a choice being made — it is a choice that cannot
-  currently be revisited. Experimental in intent, frozen in practice.
+- **Which is now possible, as of 2026-09-22.** This record originally said the grain
+  could not be revisited because the GEBCO raster was gone. It was not gone
+  (`002-missing-gebco-raster.md`), and `area_h3.parquet` has since been rebuilt from it
+  in 7m30s, reproducing the seeded table exactly. So changing the resolution is a
+  7-minute rebuild, not an impossibility. The decision to hold res 8 loosely stands on
+  its merits; it is no longer propped up by a missing file.
 
 ## What this means for the work in plan 002
 

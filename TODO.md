@@ -199,13 +199,13 @@ repointing is the obvious move **unless** the depths that script extracts are me
 be frozen at the 2024 vintage. Nothing in the script says either way, and `products/` is
 outside the DAG so nothing has forced the question.
 
-Also still unrun: the `area_h3` rebuild itself. Decision 002 step 4 gives the gate —
-26,160,965 cells, 66 `fao`, 27 `bbht`, depth −6002 to 4, against
-`raw/aux/h3_indices.parquet`. Until it passes, `curated/reference/area_h3.parquet` is
-seeded, not built.
+**The `area_h3` rebuild is done.** `tar_make(names = "area_h3")` ran 2026-09-22 in
+7m30s; the gate passes and an anti-join against `raw/aux/h3_indices.parquet` in both
+directions returns zero rows, with zero disagreements on `depth`, `bbht` or `fao`. The
+sweep no longer contains a table the pipeline never made.
 
-**check:** `tar_make(names = "area_h3")` succeeds and clears the gate above; and
-`astd_iseez.R` either reads the 2026 raster or says in the script why it must not.
+**check:** `astd_iseez.R` either reads the 2026 raster or says in the script why it must
+not.
 
 ---
 
