@@ -85,21 +85,28 @@ can ask a question of.
 
 ### This is not hypothetical: the datacall build already depends on it
 
-Measured 2026-09-22. `products/ices_vms_datacall/build.R` is written against the
-enriched table *as if it existed*:
+**Measured against `$FISHYDATA` itself on 2026-09-22**, not inferred from the source.
+`products/ices_vms_datacall/build.R` is written against the enriched table *as if it
+existed*:
 
 - `:72` opens `staging/ais/ping_union` and filters it on `.cid`, `whack`, `.sid`,
-  `between(speed, s1, s2)` and `between(time, t1, t2)` — none of which
-  `curate/ais_ping_union.R` puts there;
-- `:95` opens `curated/logbook/station-for-ais.parquet`, which **no script in this
-  repo produces**. Grep finds exactly one mention of that name: this consumer;
-- `:69` opens `curated/reference/gear.parquet`, while `reference/gear/mapping.R`
-  writes `gear_mapping.parquet`.
+  `between(speed, s1, s2)` and `between(time, t1, t2)`. The table has **eleven**
+  columns — `vid, mmsi, time, lon, lat, speed, heading, provider, imo, cog, year` —
+  and **none** of the fourteen the consumer reaches for is among them.
+- `:95` opens `curated/logbook/station-for-ais.parquet`. `curated/logbook/` holds
+  `catch`, `fishing_sample`, `lid_map`, `station` and `trip`. The file is not there,
+  and no script here produces it.
 
 So the ICES datacall — the one consumer `AGENTS.md` names — cannot run today, and the
 reason is precisely the missing tail. It also reads `ping_union` from *staging*,
 bypassing `ais_ping_clean.R` and `ais_ping_tag.R` altogether, which is a second
 question worth asking when the tail lands.
+
+*A third item stood here until 2026-09-22 and was wrong: that `:69` reads
+`curated/reference/gear.parquet` while the producer writes `gear_mapping.parquet`.
+`reference/gear/mapping.R:135` writes exactly `gear.parquet`; the claim came from that
+file's header comment, which still names the old path. Read the write, not the header —
+this repo's stale comments have now cost two false findings in one session.*
 
 ## 3. Two name collisions — settled 2026-09-22
 
