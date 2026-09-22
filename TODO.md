@@ -406,28 +406,6 @@ is committed in three files. The boundary that actually needs a rule is
 
 ---
 
-## 15b. Is `AGENTS.md` actually auto-loaded into a session?
-**status:** open · **needs: maintainer** · **added 2026-09-22**
-
-The record layer assumes it is: `AGENTS.md` is where the map lives precisely because it
-is supposed to reach every session without being asked for. That assumption is
-**unverified**. The only context that could be confirmed as injected on 2026-09-22 was
-`MEMORY.md`, and a session cannot introspect the rest reliably.
-
-**Partly addressed 2026-09-22** by `curate/decisions/009-claude-md-is-a-loader.md`: a
-`CLAUDE.md` now imports `AGENTS.md`, so the map arrives by either route. That lowers
-the stakes but does not answer the question — **two** mechanisms are now untested
-rather than one, and if neither fires the map has to move into
-`~/.claude/projects/.../memory/` instead.
-
-**check:** in a *fresh* session, ask something answerable only from `AGENTS.md` — e.g.
-"why does `R/` hold function definitions only?" — and watch whether the answer comes
-straight back or is preceded by a read of the file. A straight answer means the map
-arrived; a read first means it did not. Record the result in 009, then delete this
-item.
-
----
-
 ## 16. `~/stasi/fishyweb` — decide what survives it
 **status:** open · **files:** none in this repo yet · **see:** item 15, `curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
 
@@ -480,6 +458,33 @@ destination (ported, archived, or dropped) rather than sitting unreferenced; the
 `AGENTS.md` source notes are either folded into `sources/*/` or recorded as still
 authoritative there; `fishyweb` is then either archived with a date (see item 9) or has
 a stated ongoing role.
+
+---
+## 16. `~/stasi/fishyweb` — port the last mile
+**status:** open · **see:** `curate/plans/002-the-last-mile.md`, item 15
+
+**`fishyweb` is alive, not an archive** (maintainer, 2026-09-22). The earlier framing
+of this item — "decide what survives it" — is withdrawn. It is the third repo of plan
+001 and it keeps its 22 `ramb/` posts; the question is not what to rescue but what to
+*port*, and the design is in plan 002.
+
+Mined 2026-09-22. Two findings drive the rest. Its documents answer questions with a
+**filter, not a pipeline** — `s1`/`s2`, `t1`/`t2`, `gid_trip` are already columns on
+the ping row — and the scripts that build the tables they filter are exactly the
+scripts with no counterpart here. 26 of 37 are ≥78% superseded; the gap is the **tail**
+of the chain, not the chain. Plan 002 §4 gives the disposition of all 37, which
+discharges this item's original "confirm each row" check for the code half.
+
+Two things settle before any porting, both measured: `t1`/`t2` mean *logbook haul* in
+`fishyweb` and *voyage* in `curate/ais_trip.R:5`, and `ais_ping_tag.R:46` tags H3 at
+resolution 8 while every post works at 5 and 9.
+
+Still the maintainer's, not mine: the disclosure rule (item 15, plan 001 §3) — though
+plan 002 §5 notes it already exists as working code in the anonymity post.
+
+**check:** `t1`/`t2` and the H3 resolution have a written answer; `station-for-ais` and
+`catch-for-ais` have producers here; a ping carries `s1`, `s2`, `t1`, `t2`, `catch` and
+`lb_base`; and each row of plan 002 §4 marked "read both" has been read and decided.
 
 ---
 

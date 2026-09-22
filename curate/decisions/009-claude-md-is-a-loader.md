@@ -1,6 +1,7 @@
 # 009 — `CLAUDE.md` exists, as a loader for `AGENTS.md` and nothing else
 
-*2026-09-22. Refines the rule in `000-restructuring.md:295` — "Keep the `AGENTS.md`
+*2026-09-22; the open question it left was answered the same day — see "Verified" below.
+Refines the rule in `000-restructuring.md:295` — "Keep the `AGENTS.md`
 convention; do not switch to `CLAUDE.md`" — which stands. Nothing switched.*
 
 ## The decision
@@ -21,11 +22,22 @@ confirmed as injected was Claude memory's `MEMORY.md`. `CLAUDE.md` is the filena
 harness is documented to load, so importing from there makes the assumption true by
 construction instead of by hope.
 
-**Still unverified, deliberately.** Whether `AGENTS.md` alone would have been loaded,
-and whether the `@` import fires, are both open — `TODO.md` item 15b keeps the test.
-This record is not a claim that the import works; it is a claim that the repo no longer
-depends on a single untested mechanism. If the import turns out not to fire, the plain
-sentence in `CLAUDE.md` still tells a session to go read the map.
+**Verified 2026-09-22, the same day.** The test item 15b specified was run in a fresh
+session: the maintainer asked *"why does `R/` hold function definitions only?"* and the
+answer came back from the map — the `tar_source("R/")` rule and the `R/oracle.R`
+incident, both quoted, with no read of `AGENTS.md` to find them. **The map arrives.**
+
+Two things the test could not separate, recorded so the next person does not over-read
+the result:
+
+- **Which mechanism fired is still unknown.** Both `AGENTS.md` and `CLAUDE.md` were
+  injected as project instructions, so the test proves the pair works, not that either
+  works alone. That is the outcome this record was designed for — it no longer matters
+  which one carries it — but if one is ever removed, the test must be re-run.
+- **The map arriving is not the same as it being used promptly.** In the same session
+  the question was asked mid-turn and went unanswered until it was asked a second time.
+  That is an attention failure, not a loading failure, and no file arrangement fixes
+  it. Worth knowing that a loaded map can still be walked past.
 
 ## The hazard, and what guards it
 
