@@ -76,6 +76,25 @@ astd  <- open_dataset(fd_staging("ais", "astd")) |>
   mutate(mmsi = as.character(mmsi),
          nc = nchar(mmsi)) |>
   filter(nc == 9 & str_sub(mmsi, 1, 3) == "251") |>
+  # Drop the placeholder half of a duplicated ping. The feed delivers some pings
+  # twice: one copy with a real next-point and one with dist_nextpoint = 0 and
+  # sec_nextpoint = 1 exactly. Every emission column scales with that duration, so
+  # the pair appears to differ in sixteen columns for one reason.
+  #
+  # It matters because speed here is DERIVED as dist/sec, so the placeholder's
+  # speed is 0 knots - a fabricated stationary reading, and stationary is what
+  # decides fishing versus not fishing downstream.
+  #
+  # Measured over 2019 (curate/corrections/ping_union_duplicate_keys.yml): 5,536 of
+  # 5,613 duplicate groups have exactly one such member. The 69 with none and the 8
+  # with two are deliberately left alone - .n_real == 0 keeps both - because there
+  # is nothing in the data to choose between them.
+  group_by(mmsi, date_time_utc, longitude, latitude) |>
+  mutate(.degen  = as.integer(dist_nextpoint == 0 & sec_nextpoint == 1),
+         .n_real = sum(1L - .degen)) |>
+  ungroup() |>
+  filter(.degen == 0 | .n_real == 0) |>
+  select(-c(.degen, .n_real)) |>
   inner_join(idy, by = join_by(mmsi, between(date_time_utc, t1, t2))) |>
   mutate(speed = dist_nextpoint / sec_nextpoint * 1.94384449) |>
   select(vid, mmsi, time = date_time_utc,
