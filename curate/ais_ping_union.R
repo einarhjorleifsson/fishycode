@@ -30,13 +30,33 @@ vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
 # arrange(mmsi, desc(mmsi_t2)) |> slice(1)), so every ASTD and ASTDB ping on a
 # reissued MMSI landed on the LATER hull for all time. In each of the 21 cases it
 # is the earlier holder whose whole era was misattributed: OLAFUR's 2007-08 pings
-# became HOFFELL's, which is also why OLAFUR shows up in
-# curated/check/ais_key_landings.parquet as a vessel that lands fish and has no
-# AIS track. Joining on (mmsi, time) instead of mmsi is the fix.
+# became HOFFELL's.
+#
+# The windows are used to place the BOUNDARY between successive holders, not to
+# bound the feed. A plain between-join on t1..t2 was tried on 2026-09-22 and lost
+# 95.5 M astd rows, because a hull's registry window closes whenever yh2 is stale -
+# and yh2 is stale for at least 21 vessels that are demonstrably still fishing
+# (curate/corrections/vessel_registry_stale_lifetime.yml). Dropping a ping because
+# the registry forgot to update a year is not a defensible thing to do.
+#
+# So: an MMSI held by exactly one hull matches at any time, and an MMSI held by
+# several is split at the handover dates, with the first period open at the start
+# and the last open at the end. Coverage is preserved; only the ambiguous cases are
+# cut, which is the whole and only job.
+OPEN_T1 <- as.POSIXct("1970-01-01", tz = "UTC")
+OPEN_T2 <- as.POSIXct("2099-12-31", tz = "UTC")
 idy <-
   duckdbfs::open_dataset(fd_curated("vessel", "vessel_identity.parquet")) |>
   filter(!is.na(mmsi)) |>
-  select(mmsi, vid, t1, t2)
+  select(mmsi, vid, t1 = mmsi_t1, t2 = mmsi_t2) |>
+  collect() |>
+  group_by(mmsi) |>
+  arrange(t1, .by_group = TRUE) |>
+  mutate(t1 = if_else(row_number() == 1L,  OPEN_T1, as.POSIXct(t1)),
+         t2 = if_else(row_number() == n(), OPEN_T2, as.POSIXct(t2))) |>
+  ungroup() |>
+  duckdbfs::as_dataset() |>
+  mutate(t1 = dplyr::sql("t1::TIMESTAMP"), t2 = dplyr::sql("t2::TIMESTAMP"))
 
 # stk --------------------------------------------------------------------------
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`

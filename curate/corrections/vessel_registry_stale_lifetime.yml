@@ -1,5 +1,5 @@
 id: vessel_registry_stale_lifetime
-title: the vessel registry's yh1/yh2 are stale for hulls that are demonstrably still fishing
+title: yh2 is a snapshot horizon, not a death date - it never exceeds 2021 and half the live fleet is capped there
 status: confirmed - measured against landings, repair NOT implemented
 applies_to:
   - curated/vessel/vessel.parquet
@@ -20,9 +20,28 @@ measurement: >-
 
 defect:
   summary: >-
-    21 of the 81 flagged vessels landed fish throughout the window in which the
-    registry says the hull did not exist.
-  pings_involved: 1392095
+    yh2 never exceeds 2021 ANYWHERE in the registry. It is the horizon of whatever
+    snapshot was loaded, not the year a hull ceased to exist, and treating it as a
+    closing date shuts the window on most of the active fleet.
+  scale:
+    hulls_with_a_yh2: 4714
+    of_those_with_yh2_2021: 2264
+    of_those_that_landed_after_2022_01_01: 1244
+    most_recent_landing_among_them: 2026-04-14
+    max_yh2_anywhere: 2021
+  how_it_was_found: >-
+    curate/ais_ping_union.R was changed to resolve the MMSI-keyed feeds through
+    vessel_identity with a between-join on the hull window. The rebuild came back
+    95.5 M astd rows SHORT. Attributing the loss: 755 hulls, 99,943,759 rows, and
+    almost every one of them has yh2 == 2021 - BALDVIN NJALSSON 666,258 rows,
+    EINAR GUDNASON 383,205, JONINA BRYNJA 375,618. They had not stopped
+    transmitting in 2021; the registry had stopped recording.
+  originally_measured_as: >-
+    21 vessels and 1.39 M pings, from the 81 rows the key's lifetime flag raised.
+    That was a severe undercount - it only ever saw hulls whose mobile-id was active
+    WHOLLY outside the window, which excludes every vessel that was transmitting
+    both before and after the 2021 cap.
+  pings_involved: 99943759
   examples:
     - "vid 2730 GULLBERG: yh2 = 2013; 1,880 landings, the last on 2026-03-10; AIS from 2007-06-12"
     - "vid 3017 KRISTRUN: yh1 = yh2 = 2021; 313 landings, 2022-08-08 to 2026-03-05"
@@ -43,8 +62,18 @@ why_it_matters: >-
   81 matches, which would have discarded 1.39 M pings of correct assignment. It
   flags instead, precisely because of this defect.
 
-proposed_repair: >-
-  Do not patch yh2 from landings inside the DAG - that closes the AIS -> vid ->
+repair_applied: >-
+  2026-09-22, reference/vessels/identity.R: a hull whose yh2 reaches the registry's
+  own horizon - max(yh2), currently 2021 - is treated as OPEN rather than closed.
+  The horizon is computed from the data, not hard-coded, so a later registry dump
+  moves it. This reduced the key's lifetime_conflict count from 77 to 53 and the
+  "registry is stale" subset from 21 to 14, and it is why the MMSI-keyed feeds are
+  resolved on mmsi_t1/mmsi_t2 rather than on the intersected hull window.
+
+still_proposed: >-
+  The horizon rule handles censoring. It does NOT handle the 14 hulls whose yh2 is
+  genuinely earlier than the horizon and genuinely wrong - GULLBERG at 2013 with
+  1,880 landings to 2026. Do not patch those from landings inside the DAG - that closes the AIS -> vid ->
   logbook -> AIS cycle AGENTS.md forbids. Instead extend the hull's period with an
   explicit, reviewed input in overrides/, one row per vid, carrying the evidence
   and the date it was reviewed. The registry columns are never overwritten; the

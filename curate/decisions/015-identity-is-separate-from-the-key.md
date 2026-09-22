@@ -33,13 +33,19 @@ No time dimension at all. The registry reissues **21 MMSIs** from one hull to th
 next, and `ais_key.R:650` attaches exactly one vid per MMSI, chosen by
 `arrange(mmsi, desc(mmsi_t2), desc(vid)) |> slice(1)` — always the later holder. So
 for every one of the 21, **the earlier hull's entire commercial-feed era is
-attributed to its successor**: ÓLAFUR's 2007–08 pings become HOFFELL's, KRISTÍNA
-LOGOS's become GRETTIR STERKI's, ÁRBAKUR's become KRISTRÚN's.
+attributed to its successor**: ÁRBAKUR's become KRISTRÚN's, LITLI HAMAR's
+become SIGURLAUG's.
 
 It is 21 of 21 — the earlier holder every time, never the later — because
-`desc(mmsi_t2)` guarantees it. And ÓLAFUR (vid 2605, 382 landings) is one of the 86
-vessels `curated/check/ais_key_landings.parquet` lists as landing fish with no AIS
-identity. Two checks were describing one defect from opposite ends.
+`desc(mmsi_t2)` guarantees it.
+
+**Measured after the rebuild, the recovery is smaller than that framing implies: 8
+of the 21 earlier holders gained commercial pings, not 21.** The rest had none to
+recover, because `astd` coverage is thin before 2013 and most of these handovers are
+earlier than that — ÓLAFUR's era is 2007–08, where there is no commercial feed at
+all. The defect was real and structural; the data it was destroying was in eight
+cases, not twenty-one. Worth stating, because the mechanism argued for a bigger
+number than the evidence supports.
 
 The join is now `by = join_by(mmsi, between(date_time_utc, t1, t2))`.
 
@@ -90,6 +96,38 @@ alternatives holding TFBR — 2815 DÍSA and 3047 HILDUR — so the registry can
 between them, and choosing on landings would close the cycle. It stays
 `curate/corrections/ais_key_callsign_reuse.yml`, now *visible in a check* rather than
 only in a yml file, which is the improvement actually available.
+
+## Addendum, same day: `yh2` is a horizon, and it cost 99.9 M rows
+
+Applying the identity window to `ais_ping_union.R` as a plain `between` join came
+back **95.5 M astd rows short**. Attributing the loss: 755 hulls, 99,943,759 rows,
+and almost every one of them has `yh2 == 2021` — BALDVIN NJÁLSSON 666,258 rows,
+EINAR GUÐNASON 383,205, JÓNÍNA BRYNJA 375,618.
+
+**`yh2` never exceeds 2021 anywhere in the registry.** 2,264 of the 4,714 hulls that
+carry one carry 2021, and 1,244 of those landed fish after 2022, the most recent on
+2026-04-14. It is the horizon of the snapshot that was loaded, not the year a hull
+ceased to exist.
+
+Two changes followed. `reference/vessels/identity.R` treats a hull reaching the
+registry's own `max(yh2)` as **open**, computed from the data so a later dump moves
+it — which drops the key's `lifetime_conflict` from 77 to 53 and the "registry is
+stale" subset from 21 to 14. And the MMSI-keyed feeds resolve on `mmsi_t1`/`mmsi_t2`
+rather than on the intersected hull window, because the two answer different
+questions: the intersection asks whether a hull was registered, the MMSI window asks
+who was transmitting under that number. Using the intersection left 2011–2019
+belonging to nobody on `251146240`, whose MMSI transferred in 2011 to a hull with
+`yh1` 2020.
+
+The identity table now asserts both directions — no MMSI resolving to two hulls at
+once, and no MMSI unclaimed between two holders. Both pass.
+
+**The undercount is the lesson.** This defect was first declared at 21 vessels and
+1.39 M pings, measured from the 81 rows the key's lifetime flag raised. That flag only
+ever sees a mobile-id active *wholly* outside its window, so it structurally cannot
+see a vessel transmitting both before and after a 2021 cap — which is all 755 of them.
+A check that can only detect the extreme case reports the extreme case and reads like
+a total.
 
 ## What step 5 did not do
 

@@ -31,6 +31,17 @@ SENTINEL <- as.Date("2028-12-24")   # the registry's own open-ended marker
 
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet"))
 
+# yh2 is CENSORED, not an event. It never exceeds 2021 anywhere in the registry:
+# 2,264 of the 4,714 hulls that carry a yh2 carry 2021, and 1,244 of those landed
+# fish after 2022, the most recent on 2026-04-14. So yh2 == the horizon means "still
+# there when the snapshot was taken", not "struck that year", and treating it as a
+# closing date shuts the window on most of the active fleet. Measured 2026-09-22
+# after a first version did exactly that and discarded 99.9 M astd pings across 755
+# hulls. curate/corrections/vessel_registry_stale_lifetime.yml.
+YH_HORIZON <- max(reg$yh2, na.rm = TRUE)
+cat("registry yh2 horizon:", YH_HORIZON, "- hulls reaching it are treated as open
+")
+
 # The registry times exactly one attribute - the MMSI, via mmsi_t1/mmsi_t2 and
 # zombie_no. Call sign, local sign and name carry no dates at all, so their window
 # is the hull's own lifetime, and `window_basis` says which of the two a row got.
@@ -42,7 +53,9 @@ identity <-
     vid, vessel, cs, uid, imo, mmsi, flag, source, mclass,
     zombie_no = coalesce(zombie_no, 1L),
     .hull_t1 = if_else(is.na(yh1), as.Date(NA), as.Date(paste0(yh1, "-01-01"))),
-    .hull_t2 = if_else(is.na(yh2), as.Date(NA), as.Date(paste0(yh2, "-12-31"))),
+    .hull_t2 = case_when(is.na(yh2)          ~ as.Date(NA),
+                         yh2 >= YH_HORIZON   ~ SENTINEL,
+                         .default = as.Date(paste0(yh2, "-12-31"))),
     window_basis = case_when(
       (!is.na(mmsi_t1) | !is.na(mmsi_t2)) & (!is.na(yh1) | !is.na(yh2)) ~ "both",
       !is.na(mmsi_t1) | !is.na(mmsi_t2) ~ "mmsi_window",
@@ -57,7 +70,15 @@ identity <-
     # was gone (curate/corrections/ais_key_callsign_reuse.yml). Both bounds must
     # hold, so both are applied.
     t1 = pmax(coalesce(mmsi_t1, AIS_T1), coalesce(.hull_t1, AIS_T1), AIS_T1),
-    t2 = pmin(coalesce(mmsi_t2, SENTINEL), coalesce(.hull_t2, SENTINEL))) |>
+    t2 = pmin(coalesce(mmsi_t2, SENTINEL), coalesce(.hull_t2, SENTINEL)),
+    # The MMSI window UNINTERSECTED, because the two answer different questions and
+    # only one of them is "who was transmitting under this number". The registry can
+    # say an MMSI transferred in 2011 while the receiving hull's yh1 is 2020 - vid
+    # 7839 BYLGJA on 251146240 is exactly that - and intersecting leaves 2011-2019
+    # belonging to nobody. curate/ais_ping_union.R resolves the MMSI-keyed feeds on
+    # these two; t1/t2 above are for asking whether a hull was registered at all.
+    mmsi_t1 = coalesce(mmsi_t1, AIS_T1),
+    mmsi_t2 = coalesce(mmsi_t2, SENTINEL)) |>
   select(-c(.hull_t1, .hull_t2)) |>
   # A hull struck before STK began has no resolvable window; keeping it would put
   # a t1 after its t2 and break every between-join downstream. Dropping it is also
@@ -79,14 +100,28 @@ identity <-
 overlaps <-
   identity |>
   filter(!is.na(mmsi)) |>
-  arrange(mmsi, t1) |>
+  arrange(mmsi, mmsi_t1) |>
   group_by(mmsi) |>
-  mutate(.next_t1 = lead(t1), .next_vid = lead(vid)) |>
+  mutate(.next_t1 = lead(mmsi_t1), .next_vid = lead(vid)) |>
   ungroup() |>
-  filter(!is.na(.next_t1), t2 >= .next_t1)
+  filter(!is.na(.next_t1), mmsi_t2 >= .next_t1)
 print(overlaps |>
-        select(mmsi, vid, t1, t2, .next_vid, .next_t1) |>
+        select(mmsi, vid, mmsi_t1, mmsi_t2, .next_vid, .next_t1) |>
         knitr::kable(caption = "MMSI resolving to two hulls at once (expect none)"))
+
+# The mirror image, and the one that silently loses pings rather than duplicating
+# them: successive holders of an MMSI with a hole between them.
+gaps <-
+  identity |>
+  filter(!is.na(mmsi)) |>
+  arrange(mmsi, mmsi_t1) |>
+  group_by(mmsi) |>
+  mutate(.next_t1 = lead(mmsi_t1), .next_vid = lead(vid)) |>
+  ungroup() |>
+  filter(!is.na(.next_t1), as.numeric(.next_t1 - mmsi_t2) > 1)
+print(gaps |>
+        select(mmsi, vid, mmsi_t2, .next_vid, .next_t1) |>
+        knitr::kable(caption = "MMSI unclaimed between two holders (expect none)"))
 if (nrow(overlaps))
   warning("vessel_identity: ", nrow(overlaps),
           " MMSI periods overlap; a (mmsi, time) join will duplicate pings")
