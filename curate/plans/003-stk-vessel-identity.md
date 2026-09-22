@@ -350,53 +350,34 @@ registry.R` consumes `data-raw/vessels/{FRO,NOR,EU,gfw}/…`, and no `data-raw`
 directory survives in any repo under `~/stasi`. The *code* is worth porting (plan 002
 §4a already assigns it), but it has no inputs here.
 
-**Not searched: the institute share.** `/Volumes/einarhj` is an SMB mount of
-`hfs-lifs01.ad.hafogvatn.is:/heima/einarhj`, 5.4 TB, and it holds `stasi/fishydata`,
-`stasi/fishydata_backup` and three `stasi/logbooks*` copies — the likeliest home of
-those four files. `stasi/fishydata/` has no `data-raw/`; nothing below that was
-reached. macOS blocks the Claude process from network volumes, a `find` over the share
-did not return within four minutes and was abandoned, and — the reason the attempt was
-given up on 2026-09-22 — **the agent session runs on `sjavarafli.hafro.is` while the
-maintainer was typing on a second host, `HAFRO-EINARHJ-2`**, so every file written for
-the other to read landed on the wrong machine. Check `hostname` on both sides before
-retrying. **So "the registries are gone" is not established — only that they are
-not on local disk.** Before treating a re-fetch as necessary, someone should look, with
-a path narrow enough to survive SMB latency:
+**Searched, 2026-09-22: not on the institute share either.** `/Volumes/einarhj` is an
+SMB mount of `hfs-lifs01.ad.hafogvatn.is:/heima/einarhj`, 5.4 TB. A depth-3 directory
+map of the eight candidate trees under `stasi/` completed: `data-raw/` exists in only
+three of them — `fishydata_backup` (one subdirectory, `ad-hoc`), `logbooks`
+(`data-dump/`) and `logbooks_2026-02-12` (empty) — and **no `vessels`, `FRO`, `NOR`,
+`EU` or `gfw` directory exists in any of them.** A depth-6 filename sweep of
+`stasi/fishydata` found scripts only, no data: the consolidator and the Faroese
+scraper, both of which `fishyweb` already has, plus Norwegian *ingest* scripts that
+are not registries.
 
-```
-ls ~/../../Volumes/einarhj/stasi/fishydata/data-raw 2>/dev/null
-ls /Volumes/einarhj/stasi/fishydata*/data*/vessels
-```
+Two caveats, both cheap to close and neither closed: the directory map lists
+directories, so a loose `vesselRegistryListResults.csv` sitting straight in a
+`data-raw/` would not have shown; and a dozen smaller trees under `stasi/` were not
+surveyed. Reading the share is slow — one depth-6 sweep of a single repo took eleven
+minutes — and it is invisible to the agent session, which runs on
+`sjavarafli.hafro.is` while the maintainer works from a second host,
+`HAFRO-EINARHJ-2`. Check `hostname` on both sides before arranging for one to write a
+file the other reads; three attempts were lost to that.
 
-Two things the share's root already showed in passing: `stk_mobile_match-and-duals.ods`
-(the duals spreadsheet §6 asks to be corrected) and `AdditionalMMSI20190327.csv`, which
-no script here reads and whose name suggests it is exactly the Fiskistofa-side
-supplement §6 asks for. Both are worth opening before anything is re-fetched.
+**So the four sources do have to be re-fetched.** §6.
 
-**What is already here is better than three of the four.** `staging/ais/astd` carries
-`mmsi`, `imonumber`, `vesselname`, `flagname`, `flagcode`, `gross_tonnage`,
-`length_registered`, `year_of_build` and `arcticshiptype`. Aggregated to one row per
-`(mmsi, imo, name, flag)` it yields **638,251 rows over 543,933 distinct MMSI** — a
-global vessel registry, observed rather than declared, already under `$FISHYDATA`.
-The old script built exactly this as `vessel_ASTD`; it was never ported.
-
-What it buys, measured:
-
-- **66.8 %** of the 16,040 STK mids whose `glid` is a vessel-range MMSI are found in
-  ASTD (10,716 mids, 1.30 M pings) and can be given a name, flag and IMO immediately.
-- The 1,288 foreign vids in the registry carry **zero MMSI and zero IMO** and only 557
-  call signs. Matching on normalised vessel name gives 380 hits, of which **178 are
-  unambiguous** (exactly one MMSI for that name). That is a starting point for the 352
-  foreign vids that do appear in STK on 6.3 M pings, none of which carries an MMSI
-  today.
-- Name matching across flags is exactly the kind of inference the cycle rule covers.
-  It produces *candidates*; a reviewed candidate enters through `overrides/` as an
-  input. It must never be a computed output.
-
-Proposed: `reference/vessels/identity_astd.R` → `curated/vessel/identity_astd.parquet`,
-a target, written with `write_curated()`. It is a source of `vessel_identity` rows
-under `source = "ASTD"`, at the bottom of the trust order — national registry first,
-ASTD only where nothing else speaks.
+Two files the search turned up that are worth more than the registries, and that no
+script here reads. At the share root: `stk_mobile_match-and-duals.ods` (the duals
+spreadsheet §6 asks to be corrected — the copy in `raw/ais/stk/` may be older) and
+`AdditionalMMSI20190327.csv`, whose name reads like the Fiskistofa-side supplement §6
+asks for. And in `stasi/fishydata/scripts/`: `00_DATASET_mmsi_icelandic.R` and
+`00_DATASET_ISL-mmsi_historical-consolidation_TOBEDELETED.R`, which are the only
+Icelandic-MMSI consolidation code found anywhere and bear directly on the 88 vids.
 
 ### 4.6 The cross-checks, and where they are allowed to live
 

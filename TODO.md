@@ -439,11 +439,15 @@ tiers), §2 (where the residual sits), §6 (the header's own open items). The
 is code. The 19.2 M `NA_cs4` pings are foreign call signs with no registry to match
 against: the consolidator survives as
 `fishyweb/scripts/01_DATASET_vessels_combine-registry.R`, but its
-`data-raw/vessels/{FRO,NOR,EU}` inputs are on no local disk. **Look on the institute
-share before re-fetching** — `/Volumes/einarhj/stasi/fishydata*` is unsearched, macOS
-blocks Claude from network volumes, and a `find` over SMB was too slow to finish. Plan
-003 §4.5 gives the two paths to check, and names two files already visible at the
-share's root that no script here reads. 88 Icelandic
+`data-raw/vessels/{FRO,NOR,EU}` inputs are on no local disk **and, searched
+2026-09-22, not on the institute share either** — no `vessels`/`FRO`/`NOR`/`EU`/`gfw`
+directory in any of the eight candidate trees under `/Volumes/einarhj/stasi`. They
+have to be re-fetched. Plan 003 §4.5 has the evidence and the two caveats. The search
+did turn up four Icelandic-MMSI files nobody here reads, which bear on the 88 vids
+below: `AdditionalMMSI20190327.csv` and `stk_mobile_match-and-duals.ods` at the share
+root, and `00_DATASET_mmsi_icelandic.R` plus
+`00_DATASET_ISL-mmsi_historical-consolidation_TOBEDELETED.R` in
+`stasi/fishydata/scripts/`. 88 Icelandic
 vids in the key have no MMSI in the registry, on 3.7 M pings — Fiskistofa lookup. And
 the ODS date error on `mid 101097` is now priced: **34,307 pings**, 96 % of every ping
 the key silently drops; the fix is already written in the script header at `:20–22` and
