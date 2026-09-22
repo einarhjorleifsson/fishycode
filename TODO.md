@@ -9,6 +9,11 @@ only for work that is *not done yet*.
 
 Status: `open` · `blocked` · `in progress` · `done` (delete when done and recorded elsewhere)
 
+An item that cannot move without the maintainer — a decision, an account, a
+credential, anything outside this repo — also carries **`needs: maintainer`**, and says
+in one line what is being asked. Without that marker a session either stalls on it or
+does it twice.
+
 ---
 
 ## 1. Wire `adb` into the logbook merge — BLOCKED on units and longitude sign
@@ -383,7 +388,13 @@ in `raw/ais/astd` for that year.
 ---
 
 ## 15. The three-repo publication boundary
-**status:** open · **see:** `curate/plans/001-three-repo-publication-boundary.md`
+**status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
+
+**Asked of the maintainer, in the plan's own words:** restrict or relocate the Mapbox
+token (§4), decide when the GitHub remote goes up and whether history is rewritten
+first (§4), set the aggregation rule for what may leave `fishydata` for an open
+`fishyweb` (§3), and say where `fishydata` lives and whether it is backed up (§5). The
+disclosure rule blocks item 16. Everything else in the plan I can act on unblocked.
 
 `fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page.
 The design, the evidence and the open questions are in the plan; this stub exists so
@@ -391,6 +402,26 @@ the work is visible here. Two things in it are time-sensitive: there is still **
 remote**, so history is free to rewrite until the first push, and a Mapbox `pk.` token
 is committed in three files. The boundary that actually needs a rule is
 `fishydata` → `fishyweb`, which is a data-disclosure question and binds item 16.
+
+
+---
+
+## 15b. Is `AGENTS.md` actually auto-loaded into a session?
+**status:** open · **needs: maintainer** · **added 2026-09-22**
+
+The record layer assumes it is: `AGENTS.md` is where the map lives precisely because it
+is supposed to reach every session without being asked for. That assumption is
+**unverified**. The only context I could confirm was injected on 2026-09-22 was
+`MEMORY.md`, and I cannot introspect the rest reliably.
+
+If it is *not* auto-loaded, the map has to move into `~/.claude/projects/.../memory/`
+instead, and `check_bookkeeping()`'s `AGENTS.md` invariant is guarding a file nobody
+reads.
+
+**check:** in a *fresh* session, ask something answerable only from `AGENTS.md` — e.g.
+"why does `R/` hold function definitions only?" — and watch whether the answer comes
+straight back or is preceded by a read of the file. Record the result here, then delete
+this item and note it wherever the record layer is described.
 
 ---
 

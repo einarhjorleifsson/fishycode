@@ -55,6 +55,8 @@ permanent — they are the only structure that survived every previous restart.
   fact. `curate/corrections/` = data defects. A finished `TODO.md` item is
   **deleted** from it and recorded in `decisions/`, never left in place
   wearing a done marker.
+  An item that cannot move without the maintainer carries **`needs: maintainer`**;
+  `check_bookkeeping()` lists those at the end of its report.
 - **Every inferred value carries a `basis`** (`"recorded"` / `"reconstructed"` /
   `"synthesised"`). See `station_type` in `docs/grammar.qmd`.
 - **Cycles are broken by a human, outside the DAG.** Cross-checks are circular

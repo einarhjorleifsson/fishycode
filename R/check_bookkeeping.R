@@ -55,6 +55,14 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
       if (length(hits)) sprintf("TODO.md:%d  %s", hits, substr(todo[hits], 1, 60)),
       "move it to curate/decisions/ and delete the item")
 
+  # -- 3b/6 TODO.md uses only the status vocabulary it declares -----------------
+  stat <- grep("^\\*\\*status:\\*\\*", todo, value = TRUE)
+  word <- tolower(trimws(sub("^\\*\\*status:\\*\\*[[:space:]]*([A-Za-z ]+).*$", "\\1", stat)))
+  word <- sub("[[:space:]].*$", "", word)
+  add("TODO.md uses only its declared statuses",
+      setdiff(unique(word), c("open", "blocked", "in", "done")),
+      "either use a declared status or amend the vocabulary in TODO.md's header")
+
   # -- 4/6 corrections: paired, and each .yml declares the required fields ------
   cdir <- p("curate", "corrections")
   ymls <- list.files(cdir, "[.]yml$")
@@ -122,6 +130,17 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
     n <- sum(vapply(res, function(r) length(r$bad) > 0, logical(1)))
     cat(strrep("-", 74), "\n")
     cat(if (n) sprintf("%d invariant(s) FAILED\n", n) else "all invariants hold\n")
+
+    # Not an invariant — a reminder. These cannot move without the maintainer,
+    # so a session that does not see them either stalls or repeats them.
+    w <- grep("needs: maintainer", todo)
+    if (length(w)) {
+      cat("\nwaiting on the maintainer:\n")
+      for (i in w) {
+        h <- rev(grep("^## ", todo[seq_len(i)], value = TRUE))[1]
+        if (!is.na(h)) cat("  ", sub("^## ", "", h), "\n")
+      }
+    }
   }
 
   invisible(!any(vapply(res, function(r) length(r$bad) > 0, logical(1))))
