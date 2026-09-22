@@ -380,7 +380,7 @@ in `raw/ais/astd` for that year.
 ---
 
 ## 15. Rename the three projects so the names say what the things are
-**status:** open · **files:** `.Renviron`, `fishydata.Rproj`, directory names under `~/stasi/`
+**status:** done 2026-09-22 · **files:** `.Renviron`, `fishycode.Rproj`, directory names under `~/stasi/`
 
 The names are one generation behind the structure. `_data` holds the artefact other
 people would want; `fishydata` holds the machinery that builds it; there is no name at
@@ -437,6 +437,35 @@ clean recursive sweep does not mean the one real reference is gone;
 
 **Deliberately deferred.** Payoff is legibility, not function, and doing it mid-thread
 makes every path in this file and in recent commit messages stale. Pick a quiet point.
+
+**Done 2026-09-22**, by `~/stasi/rename-fishy.sh` run from Terminal with Claude Desktop
+and R both quit. The script did the preflight the hazard list asks for — refusing if
+Claude is running, if `fishycode` or the new Claude key already exists, if the repo is
+dirty, or if an R process is alive — then moved the code repo out of the way *before*
+moving the 404 GB tree onto its name.
+
+Checks run afterwards, not asserted:
+
+- `.Renviron:1` reads `FISHYDATA=/Users/einarhj/stasi/fishydata`, grepped by name.
+- `Rscript -e 'Sys.getenv("FISHYDATA")'` resolves, and `dir.exists()` on it is `TRUE`.
+- `fd_curated("logbook", "trip.parquet")` opens: 1,815,425 rows × 12 cols. The path
+  indirection survived the rename, which is the only thing that could have broken.
+- `grep -rn 'stasi/_data'` over the repo returns three hits, all in this file's own
+  prose. No code reference survives.
+- `~/.claude/projects/-Users-einarhj-stasi-fishycode/memory/` carries the old
+  `MEMORY.md` plus its three files; the `-…-fishydata` key is gone, so the data tree
+  cannot inherit the pipeline's memory.
+- `fishydata.Rproj` → `fishycode.Rproj` (untracked and gitignored, so the rename is
+  local only). `fishydata_2024-2026/fishydata.Rproj` still carries the old name; it is
+  an archive and nothing opens it, so it was left alone.
+
+**The one thing the plan did not predict.** `~/.claude.json` *does* hold per-project
+state keyed by absolute path — the "not verified" note above was the right worry. The
+script moved the key correctly, but a second key for `/Users/einarhj/stasi/fishydata`
+reappeared afterwards when the data tree was opened. It carries only
+`hasTrustDialogAccepted: true` — no history, no memory, no permissions — so it is inert
+and was left in place. The pre-rename backup is at `~/.claude.json.pre-rename.1790066886`,
+which confirms only one key existed before.
 
 ---
 
