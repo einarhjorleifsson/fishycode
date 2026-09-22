@@ -28,6 +28,8 @@ check_ready <- function() {
     ais_ping_tag   = "curate/ais_ping_tag.R",
     ais_trip       = "curate/ais_trip.R",
     logbook        = "curate/logbook.R",
+    check_ais_key_registry = "curate/checks/ais_key_registry.R",
+    check_ais_key_landings = "curate/checks/ais_key_landings.R",
     lid_map        = "curate/link_lid_map.R")
 
   cat(sprintf("%-16s %-9s %s\n", "target", "status", "missing inputs"))

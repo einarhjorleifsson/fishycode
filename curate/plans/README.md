@@ -28,4 +28,4 @@ that does not separate those is a wish.
 |---|---|---|---|
 | 001 | [three-repo publication boundary](001-three-repo-publication-boundary.md) | proposal — nothing built | what `fishycode`, `fishydata` and `fishyweb` each publish, and the disclosure rule the split forces |
 | 002 | [the last mile](002-the-last-mile.md) | proposal — nothing built | the enrichment and consumer-shaped tables that stand between the curated pings and a sweep an analyst can filter; discharges the code half of `TODO.md` item 16 |
-| 003 | [STK vessel identity](003-stk-vessel-identity.md) | partly built — steps 1–3 done | why the STK match assigns a vid to 62% of pings and an MMSI to 60%, the six defects behind that, and the identity model that would fix them; carries `TODO.md` item 17 |
+| 003 | [STK vessel identity](003-stk-vessel-identity.md) | partly built — steps 1–4 done | why the STK match assigns a vid to 62% of pings and an MMSI to 60%, the six defects behind that, and the identity model that would fix them; carries `TODO.md` item 17 |

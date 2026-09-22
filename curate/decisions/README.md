@@ -38,6 +38,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 011 | [H3 in storage is experimental](011-h3-in-storage-is-experimental.md) | a ping's `h3` column may be dropped; res 8 is where GEBCO depth gets quantised, and `002` means that grain cannot currently be revisited |
 | 012 | [STK entity class](012-stk-entity-class.md) | a mobile-id now says what kind of thing it is; the hand list moved to `overrides/`; 75.5% of the unassigned pings are declared non-vessel |
 | 013 | [derived ids are equipment](013-stk-derived-ids-are-equipment.md) | `TFBC2` is TFBC's buoy, not TFBC; `Afmáður` is the vessel after it leaves the Icelandic registry; and the `type` classifier cannot be corrected while the rules key on it |
+| 014 | [vid-assignment checks](014-stk-vid-assignment-checks.md) | the check `_targets.R:123` promised now exists and reports 1,244 Icelandic hulls missing from the key, 144 of them trackable; 21 `kable` diagnostics had been printing into nothing |
 
 ## Data defects
 

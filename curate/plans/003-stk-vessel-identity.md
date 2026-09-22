@@ -1,8 +1,9 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1, 2 and 3 done 2026-09-22**, steps 4–9 open ·
+**status:** partly built — **steps 1–4 done 2026-09-22**, steps 5–9 open ·
 **see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
 `curate/decisions/013-stk-derived-ids-are-equipment.md`,
+`curate/decisions/014-stk-vid-assignment-checks.md`,
 `reference/vessels/ais_key.R`, plan `002-the-last-mile.md` §4a
 
 **Measured** — on 2026-09-22, against `$FISHYDATA` as it stands:
@@ -462,8 +463,24 @@ Ordered by measured payoff per unit of risk, not by interest.
 
    Gated: no existing vid changed, none lost, no step or mmsi changed. Coverage
    62.39 % → **62.43 %** vid, 59.74 % → **59.77 %** mmsi.
-4. **The two checks** (§4.6). They must exist *before* §5 changes assignments, or there
-   is no baseline to compare against. They also discharge the `_targets.R:123` promise.
+4. ~~**The two checks** (§4.6)~~ — **done 2026-09-22**,
+   `curate/decisions/014-stk-vid-assignment-checks.md`. Both are targets depending on
+   `vessel_ais_key`, both emit into `curated/check/`, and neither is empty:
+   `two_mids_open` 137, `outside_vessel_lifetime` 111, `negative_vid` 15,
+   `landed_but_no_ais` 253 (86 of them Icelandic), `ais_but_never_landed` 813.
+
+   A third check was added that the plan did not have, and it is the one that
+   measures the maintainer's actual target: **`icelandic_vessel_not_in_ais`, 1,244
+   hulls** whose registry lifetime reaches into the STK era and which have no
+   mobile-id. Stratified, because 959 of them have no `yh2` and 141 are small-boat
+   classes that may carry no transponder — **144 have an MMSI or are 15 m and over,
+   and those are the real gap.**
+
+   Also found: the 21 `knitr::kable(caption = "Expect none")` assertions inside
+   `ais_key.R` have never been seen by anyone. `source()` does not echo a top-level
+   value and `produces()` runs every script through `source()`, so they print into
+   nothing. §4.6's claim that "the diagnostics are the valuable part" was right for
+   a worse reason than it knew.
 5. **Split identity from attributes** (§4.1). The large one. Fixes §3.1, makes the
    lookup sets time-aware, and is what turns "assign MMSI" from a join into a model.
 6. **Close `d2`** (§4.3), with `d2_is_open`. Measure the 124 first.

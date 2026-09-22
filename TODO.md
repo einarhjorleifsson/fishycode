@@ -472,10 +472,20 @@ classifier breaks rules that key on it. The `vid_NA` rule stands, plus `afmáðu
 ("erased" — a vessel still transmitting after leaving the Icelandic registry).
 21 rows gained, coverage 62.39 % → 62.43 %, no existing assignment touched.
 
-**check:** step 4 — `curate/checks/ais_key_landings.R` and `ais_key_registry.R`
-existing and run, which discharges the `_targets.R:123` promise. Step 5 onward changes
-assignments and is a separate session; step 3 has made the case for it, since the
-`type` coupling means no classifier in the cascade can be corrected in place.
+**Step 4 is done — 2026-09-22**, `curate/decisions/014-stk-vid-assignment-checks.md`.
+Both checks exist, are targets, emit into `curated/check/`, and none of their counts is
+zero. The one that matters for the stated goal — every Icelandic vid in STK — is new:
+**1,244 Icelandic hulls alive in the STK era have no mobile-id**, of which 959 have no
+`yh2` so their being alive is an assumption, 141 are small-boat classes that may carry
+no transponder, and **144 have an MMSI or are 15 m and over**. That last number is the
+real coverage gap and the largest absentee is a 94 m vessel.
+
+**check:** step 5, which is the large one and changes assignments — split
+`vessel_ais_key` into identity (`mid`-period → `vid`) and attributes
+(`vid, t1, t2` → `mmsi, cs, uid`), making every lookup in the cascade time-aware. It
+fixes the TFBR class of error and forces a `staging/stk` rebuild, so it lands alone.
+Steps 1–4 have made the case for it: the `type` coupling means no classifier can be
+corrected in place, and `two_mids_open` is 137 rows that only a real time model closes.
 
 ---
 

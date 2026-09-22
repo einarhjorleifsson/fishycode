@@ -121,8 +121,11 @@ list(
     fd_curated("vessel", "vessel.parquet")), format = "file"),
 
   # NOT a registry: a fitted model with residual error (>100-ping threshold,
-  # a 2028-12-24 sentinel, 35 vids with overlapping mid periods). Wrong vid
-  # assignment is a known error class — see curate/checks/.
+  # a 2028-12-24 sentinel, 124 vids whose mobile-ids overlap). Wrong vid
+  # assignment is a known error class, and as of 2026-09-22 the two checks below
+  # measure it rather than this comment merely asserting it. It emits
+  # entity_class and basis as well as vid — see curate/plans/003, decisions 012
+  # and 013.
   tar_target(vessel_ais_key, {
     lookups; vessel
     produces("reference/vessels/ais_key.R",
@@ -245,5 +248,27 @@ list(
     produces("curate/link_lid_map.R",
              fd_curated("logbook", "lid_map.parquet"),
              fd_curated("logbook", "trip.parquet"))
+  }, format = "file"),
+
+
+  # ── Checks ──────────────────────────────────────────────────────────────────
+  # Cross-source disagreement. These REPORT: they emit a table into
+  # curated/check/ and correct nothing. Reasoning from landings back onto the vid
+  # assignment closes the AIS → vid → logbook → AIS cycle AGENTS.md warns about,
+  # so a reviewed conclusion re-enters through overrides/ as an input.
+  #
+  # They depend on vessel_ais_key, which makes them run after any rebuild of it —
+  # which is the point. A check that is not in the graph is a check nobody runs.
+
+  tar_target(check_ais_key_registry, {
+    vessel_ais_key; vessel
+    produces("curate/checks/ais_key_registry.R",
+             fd_curated("check", "ais_key_registry.parquet"))
+  }, format = "file"),
+
+  tar_target(check_ais_key_landings, {
+    vessel_ais_key; vessel; aflagrunnur
+    produces("curate/checks/ais_key_landings.R",
+             fd_curated("check", "ais_key_landings.parquet"))
   }, format = "file")
 )
