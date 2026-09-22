@@ -114,8 +114,19 @@ read_curated_sf <- function(path) {
   gcol <- m$value[m$key == "fd.geometry"]
   if (!length(gcol)) stop("no geometry recorded in ", path, call. = FALSE)
   crs <- m$value[m$key == "fd.crs"]
-  sf::st_as_sf(d, geometry = sf::st_as_sfc(structure(d[[gcol]], class = "WKB"),
-                                           EWKB = TRUE), crs = if (length(crs)) crs else NA)
+
+  # Decode IN PLACE, under the column's original name. st_as_sf(d, geometry = ...)
+  # ADDS a column called `geometry` and leaves the raw WKB blob sitting where it
+  # was, so the frame comes back with both - `geom` as a blob and `geometry` as the
+  # geometry. Harmless in R, fatal downstream: write_sf() then writes both to
+  # ports.fgb, and DuckDB's st_read() maps the geometry to `geom` as well and
+  # refuses the file with `duplicate column name "geom"`. That broke
+  # curate/ais_ping_tag.R on 2026-09-22. Round-tripping under the original name
+  # also means read(write(x)) gives back x, which it did not before.
+  g <- sf::st_as_sfc(structure(d[[gcol]], class = "WKB"), EWKB = TRUE)
+  if (length(crs)) sf::st_crs(g) <- crs
+  d[[gcol]] <- g
+  sf::st_as_sf(d, sf_column_name = gcol)
 }
 
 curated_provenance <- function(path) {
