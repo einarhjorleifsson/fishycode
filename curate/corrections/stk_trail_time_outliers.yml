@@ -1,0 +1,53 @@
+id: stk_trail_time_outliers
+title: STK trail carries ping timestamps outside the AIS era, and they set the match window
+status: suspected - defect measured and quantified, repair NOT implemented
+applies_to:
+  - raw/ais/stk/trail
+  - curated/vessel/vessel_ais_key.parquet
+implementation: none yet
+discovered: 2026-09-22, while measuring the STK vessel match for curate/plans/003-stk-vessel-identity.md
+
+context: >-
+  STK begins 2007-06-01. reference/vessels/ais_key.R derives each mobile-id's match
+  window as d1 = min(time), d2 = max(time) over the trail, so any corrupt timestamp
+  on a mid propagates straight into the window that sources/stk/convert.R and
+  curate/ais_ping_union.R join on with between(time, d1, d2).
+
+measurement: >-
+  A grouped min/max over all 289,986,540 rows of raw/ais/stk/trail, on 2026-09-22.
+
+defect:
+  summary: 59 of 31,791 mobile-ids carry ping times outside 2007-06-01 .. 2027-01-01.
+  pings_on_affected_mids: 16642175
+  share_of_all_pings: 5.74%
+  clusters:
+    - "1970-01-01 00:00:00 - Unix epoch zero; mids 103872, 101121"
+    - "1984-08-11 16:27:44/46 - a repeated fixed instant on 10 mids"
+    - "1997-01-01 - a repeated fixed instant on ~20 mids"
+    - "2028 - 2106 futures; 2106-02-06 18:19 is the 32-bit time_t wrap and appears on 4 mids"
+  propagation:
+    summary: 40 rows of vessel_ais_key open before STK existed.
+    with_a_vid: 3
+    worst: >-
+      mid 101121 (vid 155, glid TFQL, 141,276 pings) opens 1970-01-01. The remaining
+      37 are shore stations, which convert.R drops on !is.na(vid), so today's damage
+      is bounded - but the bound is luck, not design.
+
+why_it_matters: >-
+  The upper bound is currently masked: ais_key.R overwrites d2 with the 2028-12-24
+  sentinel for the last period of every mid, so a 2106 max(time) is invisible today.
+  Plan 003 section 4.3 proposes closing d2 from evidence, which would expose every one
+  of these as a window running to 2106 unless the timestamps are screened first.
+  The screen must therefore land BEFORE the d2 change, not after.
+
+proposed_repair: >-
+  Screen at the dump/adapter boundary, not inside ais_key.R: flag pings outside
+  [2007-06-01, today + 1 day] rather than deleting them, per the never-destroy-the-
+  original rule, and exclude flagged rows from the min/max that derives d1/d2. The
+  original time is retained beside the flag. Whether the affected pings are otherwise
+  usable - a wrong clock on an otherwise good position - has not been measured.
+
+open_questions:
+  - Do the repeated fixed instants (1984-08-11 16:27:44, 1997-01-01 00:00:0x) indicate
+    a transponder default clock, i.e. a whole class rather than scattered corruption?
+  - Are the positions on those pings plausible? If so the row is recoverable, not junk.

@@ -399,121 +399,56 @@ in `raw/ais/astd` for that year.
 ---
 
 ## 17. Full review of the STK vessel match
-**status:** open · **files:** `reference/vessels/ais_key.R` (669 lines) → `curated/vessel/vessel_ais_key.parquet`
+**status:** open · **see:** `curate/plans/003-stk-vessel-identity.md`
 
-Requested by the maintainer 2026-09-22. This is the gate every STK ping passes through
-to acquire a vessel identity — `sources/stk/convert.R:21` and `curate/ais_ping_union.R:25`
-both join through it with `between(time, d1, d2)` — and **nothing about its state was
-written down anywhere**. The numbers below were measured on 2026-09-22 and are the
-baseline the review starts from, not the review.
+**Reviewed 2026-09-22.** The review is done and the design is in plan 003; this stub
+records what it settled and what it left for the maintainer. The long baseline that
+used to sit here has been superseded — plan 003 §2 re-measures it, and four of its
+numbers did not survive:
 
-### Measured baseline
+- **Coverage is 62.39 % of pings, not 63.8 %.** The key's `pings` column repeats the
+  *mid* total on every period row, so the old denominator double-counted 10.9 M pings.
+  An MMSI reaches 59.74 %.
+- **Ten match rules, not 61.** The old count was `step`×`type` pairs.
+- **`TF??_NET_` was never missed.** All 107 mids / 8.4 M pings already carry
+  `type == "NA_net"`. The "cheapest first move" written here did not exist.
+- **Reassigned mids do not duplicate or misroute pings.** The 67 multi-period mids have
+  no overlapping periods at all; the between-join returns *fewer* rows than it is given,
+  never more. The overlap that is real is on the **vid** side — 124 vids with two open
+  mids — which is a different defect.
 
-| | |
-|---|---|
-| rows / distinct `mid` / distinct `vid` | 31,859 / 31,791 / 3,009 |
-| rows carrying a `vid` | 3,144 — 90% of mobile-ids unassigned |
-| pings assigned a `vid` | 191.9 M of 300.9 M = **63.8%** |
-| rows with a real `d2` | **68** of 31,859; the rest carry the 2028-12-24 sentinel |
-| `mid` mapping to >1 `vid` | **67** (the note at `_targets.R:123` says 35) |
-| `vid` appearing on >1 `mid` | 126 |
-| distinct match rules (`step`/`type`) | 61, including 492 rows whose step is `manuals` |
+**What the review found that matters.** 74 % of the "coverage gap" is not a gap:
+2,565 mids and 81.2 M pings are already *known* non-vessel and the schema has nowhere
+to put that, so they read as unexplained. And one wrong assignment is confirmed against
+landings — call sign `TFBR` sends 235,121 pings to vid 1473, which has never landed a
+fish, while vid 3047 with 3,770 landings in 2025-26 has no AIS identity at all.
 
-### The mobile-id is not classified
+**Two corrections declared**, both measured, neither repaired:
+`curate/corrections/ais_key_callsign_reuse.yml` and
+`curate/corrections/stk_trail_time_outliers.yml` — 59 mids carry timestamps outside the
+AIS era, 5.74 % of all pings, and they set the join window. That one must land *before*
+`d2` is closed from evidence, or the corruption becomes visible as windows running
+to 2106.
 
-STK ships no entity type: `raw/ais/stk/mobile.parquet` is `mid`, `loid`, `glid` and
-nothing else, 32,967 rows. Classification is **derivable for 60%** of them by applying
-the MMSI rules to `glid` — and `ramb::rb_mmsi_category()` already implements exactly
-those rules, is already used at `reference/vessels/mmsi.R:59` on the MMSI registry, and
-has never been pointed at `glid`.
+**The six questions this item asked are answered in plan 003**: §4.2 (entity class),
+§4.3 (`d2`), §3.1–3.2 (the ambiguous mids and multi-mid vids), §4.4 (reliability
+tiers), §2 (where the residual sits), §6 (the header's own open items). The
+`AGENTS.md` confidence claim is still false and plan 003 §4.4 says how to earn it.
 
-| `glid` | mids | pings | % pings | assigned a vid |
-|---|---|---|---|---|
-| vessel-range MMSI (2–7) | 16,040 | 2.3 M | 0.76% | 94 |
-| **not a vessel** | **3,818** | **7.1 M** | **2.37%** | **0** |
-| not MMSI-shaped | 12,001 | 291.5 M | 96.86% | 3,050 |
+**needs: maintainer** — three things block the largest remaining population, and none
+is code. The 19.2 M `NA_cs4` pings are foreign call signs with no registry to match
+against: the Faroese, Norwegian and EU vessel registries are *gone from this machine*
+(the consolidator survives as `fishyweb/scripts/01_DATASET_vessels_combine-registry.R`,
+its `data-raw/vessels/{FRO,NOR,EU}` inputs do not) and need re-fetching. 88 Icelandic
+vids in the key have no MMSI in the registry, on 3.7 M pings — Fiskistofa lookup. And
+the ODS date error on `mid 101097` is now priced: **34,307 pings**, 96 % of every ping
+the key silently drops; the fix is already written in the script header at `:20–22` and
+has not been applied to the spreadsheet.
 
-The 3,818 are 1,395 navigational aids, 810 child vessels, 682 other 9xx, 659 SAR
-aircraft, 152 handheld VHF, 74 SARTs, 45 man-overboard beacons, 1 coast station. **None
-is assigned a vid**, which is correct behaviour — so 7.1 M of the 109.0 M unassigned
-pings are not a coverage gap at all, and the honest unexplained remainder is ~101.9 M.
-
-The genuinely surprising row is the third: **97% of pings come from mids whose `glid`
-is not MMSI-shaped**, and that is where 3,050 of the 3,144 matches live.
-
-### The non-MMSI `glid` is mostly place names — and a hand list already exists
-
-Those values are Icelandic place names truncated to nine characters, with `loid` set to
-the literal string `"unkown"`: `Gemlufall`, `Steinanes`, `Haganes_K`, `Eyrarhlid`,
-`Hvannadal`, `Tjaldanes`, `Onundarfj`, `Rey?arfjo`. Shore installations, not vessels.
-
-**The classifier is already here.** `reference/vessels/ais_key.R:163` holds a
-hand-maintained vector of ~200 such names, `fixed`, applied at `:368` and `:387` to tag
-`loid`/`glid`. It came across intact from
-`fishyweb/scripts/01_DATASET_mobileid_classification.R`, which is where it was written;
-the only other copies are in `fishydata_2024-2026` and one inside `$FISHYDATA/legacy/`.
-Nothing more systematic exists in any retired repo — searched all eight.
-
-Nothing leaks, either: `sources/stk/convert.R:28` joins with `filter(!is.na(vid))`, so
-an unclassified shore station never reaches staging. **This is a completeness problem,
-not a contamination problem.**
-
-The list catches **202 mids / 55.8 M pings**. What it misses is *patterned*, which
-matters — the answer is pattern rules, not a longer hand list:
-
-| family | mids | pings |
-|---|---|---|
-| `TF??_NET_` — call-sign shore relays | 106 | 8.4 M |
-| institute / research (`Hafro_Str`, `Rannsokn_`) | 2 | 2.2 M |
-| `Kvi_*` — aquaculture pens | 4 | 1.5 M |
-| `*AIS*` named stations not yet listed | 66 | 0.5 M |
-| `*dufl*` / `*bauja*` — buoys | 4 | 2.6 k |
-
-~182 mids and 12.5 M pings that are derivably non-vessel and unlisted. `TF??_NET_`
-alone is a two-character regex. That is the review's cheapest win, and it should
-produce a real entity-class column rather than a `type` string that happens to contain
-the word `fixed`.
-
-### Three things the record asserts that the table does not support
-
-- **`AGENTS.md` says `vessel_ais_key` "carries confidence".** It has no confidence
-  column. `step` and `type` record which of 61 rules fired — provenance, not
-  confidence — and the rules are plainly not equally reliable (`vid_vid` against
-  `NA_cs4`).
-- **The temporal window is all but fictional.** 31,791 of 31,859 rows run to the
-  2028-12-24 sentinel. `between(time, d1, d2)` reads as precision; for 99.8% of mids
-  there is no upper bound. With 67 mids carrying more than one vid, a reassigned mid
-  either duplicates pings or silently attributes them to the wrong vessel.
-- **The check that was supposed to catch that does not exist.** `_targets.R:123` says
-  "Wrong vid assignment is a known error class — see `curate/checks/`." That directory
-  holds one script, about whacky positions. See also item 10.
-
-### What the review has to answer
-
-1. **Partly answered above.** Replace the hand `fixed` list with pattern rules for the
-   families named there, and emit a proper entity class (`vessel` / `shore_station` /
-   `aquaculture` / `navaid` / `beacon` / `unknown`) instead of encoding it in `type`.
-   Then re-measure what is left unclassified.
-2. Can `d2` be closed from evidence — last ping per mid-vid period — instead of a
-   sentinel, and what breaks downstream if it is?
-3. What do the 67 ambiguous mids and 126 multi-mid vids actually represent: genuine
-   reassignment, transponder swaps, or matcher error?
-4. Do the 61 rules stratify into reliability tiers that could become a real confidence
-   column, so the claim in `AGENTS.md` becomes true rather than being deleted?
-5. Where is the residual ~101.9 M unassigned pings concentrated — few big mids or a
-   long tail — and is it worth chasing?
-6. The header's own open items: three unmatched Icelandic MMSIs, and the ODS date
-   error on `mid` 101097 (`vid` 1328), whose `d1`/`d2` sit in a 15-day 2008 window
-   while the mid is active 2007-2026.
-
-**Note the cycle.** `AGENTS.md` warns that AIS → vid assignment → logbook activity →
-validates the vid assignment is circular, and that a reviewed override re-enters as an
-*input*. Anything this review concludes by cross-checking against logbooks belongs in
-`overrides/`, not as a computed output.
-
-**check:** each of the six questions above has a written answer; the `AGENTS.md`
-confidence claim is either made true or removed; and `curate/checks/` contains a
-vid-assignment check that `_targets.R:123` can honestly point at.
+**check:** plan 003's steps 1–4 are additive and land without rebuilding the trail —
+`entity_class` + `basis` emitted, the three missing cascade rules added,
+`curate/checks/ais_key_landings.R` and `ais_key_registry.R` existing and run. Step 5
+onward changes assignments and is a separate session.
 
 ---
 
