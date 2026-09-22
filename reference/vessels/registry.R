@@ -219,30 +219,3 @@ vessel_ISL |>
   arrange(-desc(last.landing)) |>
   select(vid:vessel, n.landings, last.landing) |>
   knitr::kable(caption = "Vessels with no MMSI but have landings")
-
-
-## Same MMSI, different IMO ----------------------------------------------------
-# This is surprisingly rare
-#  could try to run imo_check
-if(FALSE) {
-  vessel_registry |>
-    filter(!is.na(mmsi)) |>
-    arrange(flag, mmsi) |>
-    group_by(mmsi) |>
-    mutate(n.imo = n_distinct(imo, na.rm = TRUE)) |>
-    filter(n.imo > 1) |>
-    knitr::kable()
-
-  ## Check on consolidating ASTD with NOR ----------------------------------------
-  # This will not work because the joining variable is vessel
-  v_astd_nor <-
-    vessel_ASTD |>
-    filter(flag == "NOR",
-           !is.na(imo)) |>
-    select(mmsi, vessel, imo)
-  vessel_NOR |>
-    select(-c(mmsi, imo)) |>
-    filter(vessel %in% v_astd_nor$vessel) |>
-    inner_join(v_astd_nor)
-
-}

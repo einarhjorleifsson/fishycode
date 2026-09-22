@@ -172,20 +172,22 @@ consolidation across the other five registries, and nothing here produces or con
 ASTD feed carries foreign vessels inside the Icelandic EEZ, and today they have no
 identity beyond an MMSI. Answering it is out of scope for this plan.
 
-Two things found while reading, both small and both real:
+Two things found while reading, both small and both real. **Both fixed 2026-09-22:**
 
-- **Dead code with dangling references.** `reference/vessels/registry.R` ends in an
+- **Dead code with dangling references.** `reference/vessels/registry.R` ended in an
   `if(FALSE)` block referring to `vessel_registry`, `vessel_ASTD` and `vessel_NOR` —
-  objects the combine script created and this file never does. Grep confirms those are
-  the *only* mentions of any of them in the repo. It is inert, but it reads as though
-  a consolidation exists.
-- **`reference/vessels/faroe_scrape.R` writes into the repo.** Its `:32` writes
-  `data-external/vessels/færeyjar/vid-NNNN.csv`, a relative path, not `fd_*()` — against
-  the `AGENTS.md` rule that nothing is written into this repo. It is also a web fetch,
-  which by the same file's layout table belongs in `dump/`, not `reference/`. It is not
-  a target, and nothing consumes its output; it is the FRO half of a consolidation that
-  was not carried across. A 20,000-URL scrape at `Sys.sleep(2)` — roughly 11 hours — so
-  not something to re-run to find out.
+  objects the combine script creates and this file never does. Those dead lines were
+  the only mentions of any of them in the repo, so it read as though a consolidation
+  existed. Deleted, 25 lines; grep for all six `vessel_*` object names now returns
+  nothing.
+- **The Faroe scrape wrote into the repo.** `reference/vessels/faroe_scrape.R:32`
+  wrote `data-external/vessels/færeyjar/vid-NNNN.csv`, a relative path, not `fd_*()`.
+  It is a web fetch, so by the `AGENTS.md` layout table it belongs in `dump/`. Now
+  `dump/vessels/faroe.R`, writing `fd_raw("vessels", "faroe")` beside the Oracle
+  vessel dumps, with the directory created the way the other `dump/` scripts do it.
+  Still consumed by nothing — it is the FRO half of the consolidation above — and
+  still 20,000 requests at `Sys.sleep(2)`, roughly 11 hours, so its header now says
+  how to run it deliberately rather than by accident.
 
 ## 5. What this plan does not decide
 
