@@ -100,10 +100,13 @@ that way. The enrichment tail therefore carries `t1`…`t4`, not the collapsed p
 `reference/gear/mapping.R` beside the `s1`/`s2` windows and the max-duration and
 max-distance criteria its header already anticipates.
 
-**H3 resolution.** `curate/ais_ping_tag.R:46` tags at resolution **8**; the posts work
-at **5** (overview) and **9** (detail), never 8. Still open — cheap to decide, and it
-only needs someone to say whether 8 is the storage resolution from which the consumer
-re-derives, or a third resolution nobody asked for.
+**H3 resolution — settled as *experimental*,** `../decisions/011-h3-in-storage-is-experimental.md`.
+`curate/ais_ping_tag.R:46` tags at resolution **8**; the posts work at **5** and **9**,
+never 8. H3 does two jobs: a transient join key into `area_h3.parquet` (load-bearing),
+and a column carried into storage by `curate/ais_ping_clean.R:58` (the experiment).
+The enrichment tail must not add anything keyed on a ping's `h3`. Note that res 8 is
+also the grain at which GEBCO depth is averaged, so it is an analytical commitment —
+and one that cannot be revisited until the raster in `../decisions/002` is recovered.
 
 **A third issue, found while settling these, is not a naming problem.** In
 `fishyweb/scripts/12_DATASET_logbooks.R:883`, a station with no recorded fishing times
@@ -146,8 +149,8 @@ ones are, almost exactly, the scripts that build what the web reads.
 ## 6. Order, and why
 
 1. **Settle `t1`/`t2` and the H3 resolution** (§3). Naming first: every later step
-   writes columns that inherit the answer. **`t1`/`t2` done** — decision 010. The H3
-   resolution is still open, and the rename of `ais_trip.R` is still to do.
+   writes columns that inherit the answer. **Both done** — decisions 010 and 011. The
+   rename of `ais_trip.R` is still to do.
 2. **Port the `-for-ais` producers** (`12_DATASET_logbooks.R`). The enrichment has
    nothing to join to until these exist.
 3. **Port the enrichment tail** onto the tagged pings (§2). This is the step that makes

@@ -478,8 +478,10 @@ discharges this item's original "confirm each row" check for the code half.
 Two things settle before any porting, both measured. **`t1`/`t2` is settled** —
 `curate/decisions/010-time-variable-naming.md`: case is the level, so the voyage is
 `T1`/`T2`, and the four event times stay four because the fishing interval moves with
-the gear. The rename of `ais_trip.R` is still to do. **Still open:**
-`ais_ping_tag.R:46` tags H3 at resolution 8 while every post works at 5 and 9.
+the gear. The rename of `ais_trip.R` is still to do. **H3 is settled too** —
+`curate/decisions/011-h3-in-storage-is-experimental.md`: a ping's `h3` column is
+experimental and may be dropped, and res 8 is where GEBCO depth is quantised, so that
+grain cannot be revisited while the raster in decision 002 is missing.
 
 Found while settling that, and not a naming problem: `station-for-ais` synthesises
 `t1`=00:00:00 / `t2`=23:59:00 for stations with no recorded fishing times, unflagged,
