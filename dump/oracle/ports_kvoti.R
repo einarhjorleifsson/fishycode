@@ -32,7 +32,11 @@ ports_kvoti <-
                           .default = port)) |>
   filter(!stad_nr %in% c(150, 153, 155:212, 300:999)) |>
   add_row(stad_nr = 140, port = "Grundartangi")
-# Writes to the repo root, where ports-iceland-and-faroe.R reads it. It used to
-# write to data/ports/, a directory that does not exist here, so a re-run failed
-# while the root copy everything reads had been put there by hand.
+# Read by reference/ports/harbour_codes.R, and by the frozen bootstrap
+# reference/ports/bootstrap_iceland_faroe.R.
+#
+# The comment that stood here until 2026-09-22 said this wrote to the repo root.
+# It did once - and the write was fixed to fd_raw() in the same commit that
+# carried the comment across from kaenugardr (b7aa258), so the note described
+# behaviour that no longer existed and contradicted the Output line above.
 ports_kvoti |> write_parquet(fd_raw("ports", "ports_kvoti.parquet"))

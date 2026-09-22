@@ -24,6 +24,7 @@
 #  tables.
 #  Inputs:
 #    trail_stk (database) where values are in io
+#    raw/ports/ports_kvoti.parquet - from dump/oracle/ports_kvoti.R
 #  Outputs:
 #    raw/ports/ports_iceland_faroe.gpkg - harbour polygons; corrected into
 #      staging/ by curate/corrections/ports_iceland.R, which ports_all.R reads
@@ -37,7 +38,7 @@ library(nanoparquet)
 
 # Icelandic and Faroe ports ----------------------------------------------------
 ## Place list from Fiskistofa --------------------------------------------------
-ports_kvoti <- read_parquet("ports_kvoti.parquet")
+ports_kvoti <- read_parquet(fd_raw("ports", "ports_kvoti.parquet"))
 ports_kvoti |> count(port) |> filter(n > 1) |> knitr::kable(caption = "Expect none")
 ## Setup a more standardized port list -----------------------------------------
 #    join to above
