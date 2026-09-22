@@ -350,11 +350,15 @@ directory survives in any repo under `~/stasi`. The *code* is worth porting (pla
 §4a already assigns it), but it has no inputs here.
 
 **Not searched: the institute share.** `/Volumes/einarhj` is an SMB mount of
-`hfs-lifs01.ad.hafogvatn.is:/heima/einarhj`, 5.4 TB, and it holds `stasi/fishydata`
-and `stasi/fishydata_backup` — the likeliest home of those four files. macOS blocks
-the Claude process from network volumes, so it can only be read through the
-maintainer's own terminal, and a `find` over it did not return within four minutes and
-was abandoned. **So "the registries are gone" is not established — only that they are
+`hfs-lifs01.ad.hafogvatn.is:/heima/einarhj`, 5.4 TB, and it holds `stasi/fishydata`,
+`stasi/fishydata_backup` and three `stasi/logbooks*` copies — the likeliest home of
+those four files. `stasi/fishydata/` has no `data-raw/`; nothing below that was
+reached. macOS blocks the Claude process from network volumes, a `find` over the share
+did not return within four minutes and was abandoned, and — the reason the attempt was
+given up on 2026-09-22 — **the agent session runs on `sjavarafli.hafro.is` while the
+maintainer was typing on a second host, `HAFRO-EINARHJ-2`**, so every file written for
+the other to read landed on the wrong machine. Check `hostname` on both sides before
+retrying. **So "the registries are gone" is not established — only that they are
 not on local disk.** Before treating a re-fetch as necessary, someone should look, with
 a path narrow enough to survive SMB latency:
 
