@@ -585,6 +585,37 @@ ASTD feed carries inside the EEZ.
 
 ---
 
+## Resume note — 2026-09-22, session closed to start the STK review fresh
+
+**Start here: `TODO.md` item 17.** It carries its own measured baseline, so the review
+does not have to re-derive anything. The cheapest first move is written there —
+replace the hand-maintained `fixed` list at `reference/vessels/ais_key.R:163` with
+pattern rules (`TF??_NET_` alone is 106 mids and 8.4 M pings) and emit a real
+entity-class column instead of encoding the class inside the `type` string.
+
+**Nothing is running and nothing is half-written.** Working tree clean,
+`check_bookkeeping()` green, `check_ready()` 19 of 19.
+
+**What changed today, and what it means for anything read above:**
+
+- `area_h3` is **built**, not seeded — the GEBCO raster was never missing, only under a
+  different filename. Gated against `raw/aux/h3_indices.parquet`: identical cell for
+  cell, both directions, every column. Decision 002 is closed and reversed.
+- `$FISHYDATA` resolves fine on this machine. Work here is not restricted to source
+  edits, whatever an earlier note implies.
+- AIS voyage times are now `T1`/`T2` (decision 010). Event times stay `t1`..`t4`.
+- `fishyweb` is **alive**, not an archive, and the gap between it and this repo is the
+  enrichment tail — `curate/plans/002-the-last-mile.md`.
+
+**Read this file sceptically.** Four of its claims were checked against reality today
+and four were wrong: the raster was present, `$FISHYDATA` was set, `gear.parquet` had
+no producer/consumer mismatch, and `vessel_ais_key` does not carry the confidence
+column `AGENTS.md` says it does. Every one had been written once and never re-run.
+`check_bookkeeping()` verifies the record is *self-consistent*; nothing verifies it is
+*true*. Where a statement matters, re-measure it before building on it.
+
+---
+
 ## Resume note — 2026-09-21, session paused, break over 24 hours
 
 **Start here: one command, then one check.** The `dump/ais/astd.R` DEFLATE64 fix
@@ -656,8 +687,10 @@ just from L2.
 **Before resuming, decide:** items 1/1b (adb units and longitude sign, afli depth units)
 — these change outputs. **Item 14 must be done first**, not merely decided: two months
 of 2023 astd are missing from staging and a rebuild would make the hole permanent. **Item 4 is no longer a blocker**: measured at 21 AIS-era trips,
-it cannot move trip segmentation meaningfully (decision 004, addendum 2). Item 6 (GEBCO)
-still blocks a clean full `tar_make()`.
+it cannot move trip segmentation meaningfully (decision 004, addendum 2). ~~Item 6
+(GEBCO) still blocks a clean full `tar_make()`.~~ *2026-09-22: no longer true — the
+raster was never missing, `area_h3` is built and gated, and `check_ready()` reports
+19 of 19 targets ready.*
 
 **One command to restart, once those are settled:**
 ```
