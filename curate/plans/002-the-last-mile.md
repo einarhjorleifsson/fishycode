@@ -83,6 +83,24 @@ What is **not** rebuilt is the tail. `curate/ais_ping_tag.R` ends at ports, H3 a
 Those four lines are the difference between a curated ping table and a table someone
 can ask a question of.
 
+### This is not hypothetical: the datacall build already depends on it
+
+Measured 2026-09-22. `products/ices_vms_datacall/build.R` is written against the
+enriched table *as if it existed*:
+
+- `:72` opens `staging/ais/ping_union` and filters it on `.cid`, `whack`, `.sid`,
+  `between(speed, s1, s2)` and `between(time, t1, t2)` — none of which
+  `curate/ais_ping_union.R` puts there;
+- `:95` opens `curated/logbook/station-for-ais.parquet`, which **no script in this
+  repo produces**. Grep finds exactly one mention of that name: this consumer;
+- `:69` opens `curated/reference/gear.parquet`, while `reference/gear/mapping.R`
+  writes `gear_mapping.parquet`.
+
+So the ICES datacall — the one consumer `AGENTS.md` names — cannot run today, and the
+reason is precisely the missing tail. It also reads `ping_union` from *staging*,
+bypassing `ais_ping_clean.R` and `ais_ping_tag.R` altogether, which is a second
+question worth asking when the tail lands.
+
 ## 3. Two name collisions — settled 2026-09-22
 
 Both were raised here as blocking. Both now have an answer in
@@ -149,8 +167,12 @@ ones are, almost exactly, the scripts that build what the web reads.
 ## 6. Order, and why
 
 1. **Settle `t1`/`t2` and the H3 resolution** (§3). Naming first: every later step
-   writes columns that inherit the answer. **Both done** — decisions 010 and 011. The
-   rename of `ais_trip.R` is still to do.
+   writes columns that inherit the answer. **Done** — decisions 010 and 011, and the
+   `T1`/`T2` rename landed 2026-09-22 across `ais_trip.R`, `link_trip_voyage.R` and
+   `logbook_sensor_gps.R`. Three other files keep lowercase `t1`/`t2` deliberately,
+   because theirs are event times (`products/ices_vms_datacall/build.R`,
+   `products/exports/buseful_2025-05-05.R`) or an MMSI validity window
+   (`products/exports/astd_iseez.R:124`, a third meaning that wants a better name).
 2. **Port the `-for-ais` producers** (`12_DATASET_logbooks.R`). The enrichment has
    nothing to join to until these exist.
 3. **Port the enrichment tail** onto the tagged pings (§2). This is the step that makes

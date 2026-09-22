@@ -478,7 +478,7 @@ discharges this item's original "confirm each row" check for the code half.
 Two things settle before any porting, both measured. **`t1`/`t2` is settled** —
 `curate/decisions/010-time-variable-naming.md`: case is the level, so the voyage is
 `T1`/`T2`, and the four event times stay four because the fishing interval moves with
-the gear. The rename of `ais_trip.R` is still to do. **H3 is settled too** —
+the gear. The `T1`/`T2` rename landed 2026-09-22. **H3 is settled too** —
 `curate/decisions/011-h3-in-storage-is-experimental.md`: a ping's `h3` column is
 experimental and may be dropped, and res 8 is where GEBCO depth is quantised, so that
 grain cannot be revisited while the raster in decision 002 is missing.
@@ -490,6 +490,10 @@ defect; wants an entry in `curate/corrections/`.
 
 Still the maintainer's, not mine: the disclosure rule (item 15, plan 001 §3) — though
 plan 002 §5 notes it already exists as working code in the anonymity post.
+
+Sharpest evidence that the tail matters: `products/ices_vms_datacall/build.R` already
+reads `station-for-ais.parquet`, which nothing here produces, and filters `ping_union`
+on `s1`/`s2`/`t1`/`t2`/`.sid`, which nothing here writes. The datacall cannot run.
 
 **check:** `t1`/`t2` and the H3 resolution have a written answer; `station-for-ais` and
 `catch-for-ais` have producers here; a ping carries `s1`, `s2`, `t1`, `t2`, `catch` and

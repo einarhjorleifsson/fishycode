@@ -1,11 +1,15 @@
 # ais_trip.R — L4a of the vessel-trail model: harbour-to-harbour voyages.
 #
 # Input:  staging/ais/ping_clean   (whacky positions already removed - L2)
-# Output: curated/ais/trip.parquet (vid, year, trip, t1, t2, hid1, hid2, n_pings)
+# Output: curated/ais/trip.parquet (vid, year, trip, T1, T2, hid1, hid2, n_pings)
 #         curated/ais/ping         (clean pings carrying their trip number)
 #
 # Trip key is (vid, year, trip), numbered 1..n per vessel per year; a voyage
 # spanning New Year is split at the boundary.
+#
+# T1/T2 are UPPERCASE on purpose: case encodes the level, so a trip or voyage is
+# T1/T2 and an event within it is t1..t4. See curate/decisions/010-time-variable-naming.md
+# before "fixing" this to lowercase.
 #
 # Per year:
 #   1. Contiguous harbour/sea runs via a cumsum over the pid tag
@@ -89,16 +93,16 @@ for (yr in years) {
       summarise(
         in_harbour = max(in_harbour),
         pid        = max(pid),
-        t1         = min(time),
-        t2         = max(time),
+        T1         = min(time),
+        T2         = max(time),
         n_pings    = n(),
         .groups    = "drop"
       ) |>
-      mutate(dur_hours = as.numeric(t2 - t1, units = "hours"))
+      mutate(dur_hours = as.numeric(T2 - T1, units = "hours"))
 
     # -- 3. Bridge short harbour stays (in-memory dplyr) -----------------------
     runs <- runs |>
-      arrange(vid, t1) |>
+      arrange(vid, T1) |>
       group_by(vid) |>
       mutate(
         bridge = in_harbour &
@@ -113,12 +117,12 @@ for (yr in years) {
       summarise(
         in_harbour = first(state2),
         pid        = first(pid[!is.na(pid)]),
-        t1         = min(t1),
-        t2         = max(t2),
+        T1         = min(T1),
+        T2         = max(T2),
         n_pings    = sum(n_pings),
         .groups    = "drop"
       ) |>
-      arrange(vid, t1)
+      arrange(vid, T1)
 
     # -- 4. Number trips; attach departure / arrival harbour codes -------------
     trips_yr_b <- runs |>
@@ -130,7 +134,7 @@ for (yr in years) {
       filter(!in_harbour) |>
       mutate(year = yr, trip = row_number()) |>
       ungroup() |>
-      select(vid, year, trip, t1, t2, hid1, hid2, n_pings) |>
+      select(vid, year, trip, T1, T2, hid1, hid2, n_pings) |>
       filter(n_pings >= MIN_PINGS)
 
     # -- 5. Join trip IDs back to clean pings; write parquet -------------------
@@ -144,9 +148,9 @@ for (yr in years) {
     # write_dataset - this is a materialised frame inside a per-year loop, which
     # is exactly the shape that accumulates. See R/write_parquet.R.
     clean |>
-      left_join(trips_yr_b |> select(vid, trip, t1, t2),
-                by = join_by(vid, between(time, t1, t2))) |>
-      select(-t1, -t2) |>
+      left_join(trips_yr_b |> select(vid, trip, T1, T2),
+                by = join_by(vid, between(time, T1, T2))) |>
+      select(-T1, -T2) |>
       write_parquet_group(glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet"))
 
     trips_batches[[i]] <- trips_yr_b

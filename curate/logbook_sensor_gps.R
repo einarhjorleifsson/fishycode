@@ -71,7 +71,7 @@ logger <- bind_rows(
 
 track  <- open_dataset(fd_curated("ais", "ping"))
 voyage <- open_dataset(fd_curated("ais", "trip.parquet")) |>
-  select(vid, year, trip, t1, t2) |> collect()
+  select(vid, year, trip, T1, T2) |> collect()
 
 years <- sort(unique(logger$year))
 out   <- fd_curated("logbook", "sensor_gps")
@@ -85,9 +85,9 @@ for (yr in years) {
   # the vessel may have been in harbour, or had no AIS reception at the time.
   vy <- voyage |> filter(year == yr)
   lg <- lg |>
-    left_join(vy |> select(vid, trip, t1, t2),
-              by = join_by(vid, between(time, t1, t2))) |>
-    select(-t1, -t2)
+    left_join(vy |> select(vid, trip, T1, T2),
+              by = join_by(vid, between(time, T1, T2))) |>
+    select(-T1, -T2)
 
   tk <- track |>
     filter(year == yr, !is.na(trip)) |>

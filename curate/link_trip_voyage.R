@@ -2,8 +2,12 @@
 # harbour-to-harbour voyages derived from AIS.
 #
 # Input:  curated/logbook/trip.parquet      (.tid, vid, T1, T2, schema)
-#         curated/ais/trip.parquet          (vid, year, trip, t1, t2, hid1, hid2)
+#         curated/ais/trip.parquet          (vid, year, trip, T1, T2, hid1, hid2)
 # Output: curated/link/trip_voyage.parquet
+#
+# Both inputs carry T1/T2 because both are trip-level - case encodes the level, not
+# the source (curate/decisions/010-time-variable-naming.md). Where the two meet in
+# one row the AIS side takes the _ais suffix: T1_ais, T2_ais.
 #
 # This is the deliverable the trail data exists for: a trip identity that ties
 # vessel movement to the logbook record. AIS voyages carried no logbook key at
@@ -52,15 +56,15 @@ WITH lb AS (
   WHERE vid IS NOT NULL AND T1 IS NOT NULL
 ),
 v AS (
-  SELECT vid, year, trip, t1, t2, hid1, hid2, n_pings FROM read_parquet('%s')
+  SELECT vid, year, trip, T1, T2, hid1, hid2, n_pings FROM read_parquet('%s')
 ),
 ov AS (
   SELECT lb.tid, lb.vid, lb.schema, lb.T1, lb.T2, lb.T2_fix,
-         v.year, v.trip, v.t1 AS T1_ais, v.t2 AS T2_ais, v.hid1, v.hid2, v.n_pings,
-         date_diff('second', greatest(lb.T1, v.t1), least(lb.T2_fix, v.t2)) AS overlap_s,
+         v.year, v.trip, v.T1 AS T1_ais, v.T2 AS T2_ais, v.hid1, v.hid2, v.n_pings,
+         date_diff('second', greatest(lb.T1, v.T1), least(lb.T2_fix, v.T2)) AS overlap_s,
          date_diff('second', lb.T1, lb.T2_fix) AS lb_span_s
   FROM lb JOIN v
-    ON lb.vid = v.vid AND v.t1 <= lb.T2_fix AND v.t2 >= lb.T1
+    ON lb.vid = v.vid AND v.T1 <= lb.T2_fix AND v.T2 >= lb.T1
 ),
 ranked AS (
   SELECT *, row_number() OVER (PARTITION BY tid ORDER BY overlap_s DESC, n_pings DESC) rn,
