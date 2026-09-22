@@ -480,12 +480,33 @@ zero. The one that matters for the stated goal — every Icelandic vid in STK �
 no transponder, and **144 have an MMSI or are 15 m and over**. That last number is the
 real coverage gap and the largest absentee is a 94 m vessel.
 
-**check:** step 5, which is the large one and changes assignments — split
-`vessel_ais_key` into identity (`mid`-period → `vid`) and attributes
-(`vid, t1, t2` → `mmsi, cs, uid`), making every lookup in the cascade time-aware. It
-fixes the TFBR class of error and forces a `staging/stk` rebuild, so it lands alone.
-Steps 1–4 have made the case for it: the `type` coupling means no classifier can be
-corrected in place, and `two_mids_open` is 137 rows that only a real time model closes.
+**Step 5 is partly done — 2026-09-22**,
+`curate/decisions/015-identity-is-separate-from-the-key.md`.
+`curated/vessel/vessel_identity.parquet` exists (5,169 periods, asserting that
+`(mmsi, time)` resolves to one hull), the key carries a `lifetime_conflict` flag on 81
+rows, and the biggest correctness fix of the whole item landed somewhere the plan had
+not looked: `curate/ais_ping_union.R` was resolving the ASTD and ASTDB feeds with
+`distinct(mmsi, vid)` — **no time at all** — so for each of the 21 reissued MMSIs the
+earlier hull's whole commercial-feed era went to its successor. 21 of 21, always the
+earlier one.
+
+The guard **flags rather than withdraws**, and that is measured: withdrawing the 81
+would have discarded 1.39 M pings from 20 vessels that were landing fish throughout
+the window the registry says they did not exist in. New correction:
+`curate/corrections/vessel_registry_stale_lifetime.yml` — `yh2` is stale, sometimes by
+thirty years, and `yh1 == yh2 == 2021` on vessels still fishing in 2026 looks like a
+bulk load stamping both columns.
+
+**`staging/ais/ping_union` is now stale**, and everything below it. Nothing was
+rebuilt; `tar_make()` will say so. That rebuild is the next decision, not a task to
+start unprompted — it is the whole AIS chain.
+
+**check:** what remains of step 5 is the cascade rewrite — `CS`, `CS2`, `CS3`, `UID`,
+`VID`, `VID2` at `ais_key.R:245–288` are still flat `pull() |> unique()` sets and
+`type` is still pure set membership. Step 3 proved that cannot be fixed piecemeal, so
+the rules have to match on evidence instead of on a pasted label. A session of its
+own. Then steps 6–9: close `d2` behind `d2_is_open`, the tier column, the ASTD
+identity table, and the `n >= 10` filter.
 
 ---
 

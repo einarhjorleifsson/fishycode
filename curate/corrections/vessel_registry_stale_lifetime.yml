@@ -1,0 +1,59 @@
+id: vessel_registry_stale_lifetime
+title: the vessel registry's yh1/yh2 are stale for hulls that are demonstrably still fishing
+status: confirmed - measured against landings, repair NOT implemented
+applies_to:
+  - curated/vessel/vessel.parquet
+  - curated/vessel/vessel_identity.parquet
+implementation: none yet
+discovered: 2026-09-22, building the lifetime flag for curate/plans/003-stk-vessel-identity.md step 5
+
+context: >-
+  vessel_identity.parquet gives each vid the period the Icelandic registry
+  recognises it, as the intersection of the hull's yh1..yh2 and its MMSI window.
+  ais_key.R flags any AIS match whose mobile-id is active wholly outside that
+  period. 81 matches are flagged. The flag is only as good as yh1/yh2, and for a
+  quarter of them yh1/yh2 is simply wrong.
+
+measurement: >-
+  Each flagged match's mobile-id activity span was compared against the vessel's
+  own landing record in raw/landings/agf/aflagrunnur.parquet, on 2026-09-22.
+
+defect:
+  summary: >-
+    21 of the 81 flagged vessels landed fish throughout the window in which the
+    registry says the hull did not exist.
+  pings_involved: 1392095
+  examples:
+    - "vid 2730 GULLBERG: yh2 = 2013; 1,880 landings, the last on 2026-03-10; AIS from 2007-06-12"
+    - "vid 3017 KRISTRUN: yh1 = yh2 = 2021; 313 landings, 2022-08-08 to 2026-03-05"
+    - "vid 2173 TOMAS THORVALDSSON: yh2 = 1995; 2,318 landings, 2019-08-07 to 2026-04-07"
+    - "vid 3007 INDRIDI KRISTINS: yh1 = yh2 = 2021; 5,869 landings, 2022-08-11 to 2026-04-13"
+  reading: >-
+    A vessel that lands 1,880 times up to 2026 existed in 2026. yh2 is not
+    recording when the hull ceased to exist; for these rows it is recording
+    something else - most likely the last year some particular registry event was
+    entered. The pattern where yh1 == yh2 == 2021 on a vessel still fishing in 2026
+    suggests a bulk load that stamped both columns with the load year.
+
+why_it_matters: >-
+  Two things depend on yh1/yh2 and both inherit the error. vessel_identity.parquet
+  derives its window from them, so a vessel with a stale yh2 gets a window that
+  closes too early; and curate/checks/ais_key_registry.R then reports a correct
+  match as a lifetime conflict. The first implementation of the flag WITHDREW the
+  81 matches, which would have discarded 1.39 M pings of correct assignment. It
+  flags instead, precisely because of this defect.
+
+proposed_repair: >-
+  Do not patch yh2 from landings inside the DAG - that closes the AIS -> vid ->
+  logbook -> AIS cycle AGENTS.md forbids. Instead extend the hull's period with an
+  explicit, reviewed input in overrides/, one row per vid, carrying the evidence
+  and the date it was reviewed. The registry columns are never overwritten; the
+  override is a separate bound that vessel_identity.parquet unions in, so the
+  original stays visible beside it.
+
+open_questions:
+  - Is the yh1 == yh2 pattern a load artefact across the whole registry, or only on
+    these rows? Untested - it needs counting over all 7,043 registry rows, not just
+    the 81 flagged.
+  - Which source populates yh1/yh2, and does it have a field that means what yh2 was
+    meant to mean? That is a question for the maintainer, not for the data.

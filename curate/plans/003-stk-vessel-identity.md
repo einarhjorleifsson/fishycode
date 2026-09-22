@@ -1,9 +1,11 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1–4 done 2026-09-22**, steps 5–9 open ·
+**status:** partly built — **steps 1–4 done, step 5 partly done, 2026-09-22**;
+steps 6–9 open ·
 **see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
 `curate/decisions/013-stk-derived-ids-are-equipment.md`,
 `curate/decisions/014-stk-vid-assignment-checks.md`,
+`curate/decisions/015-identity-is-separate-from-the-key.md`,
 `reference/vessels/ais_key.R`, plan `002-the-last-mile.md` §4a
 
 **Measured** — on 2026-09-22, against `$FISHYDATA` as it stands:
@@ -481,8 +483,32 @@ Ordered by measured payoff per unit of risk, not by interest.
    value and `produces()` runs every script through `source()`, so they print into
    nothing. §4.6's claim that "the diagnostics are the valuable part" was right for
    a worse reason than it knew.
-5. **Split identity from attributes** (§4.1). The large one. Fixes §3.1, makes the
-   lookup sets time-aware, and is what turns "assign MMSI" from a join into a model.
+5. **Split identity from attributes** (§4.1) — **partly done 2026-09-22**,
+   `curate/decisions/015-identity-is-separate-from-the-key.md`.
+
+   **Built:** `curated/vessel/vessel_identity.parquet`, 5,169 periods, asserting that
+   `(mmsi, time)` resolves to one hull; a `lifetime_conflict` flag on the key; and —
+   not in this plan, because the plan had missed the second consumer — the
+   commercial-feed joins in `curate/ais_ping_union.R` now resolve through it. Those
+   were `distinct(mmsi, vid)` with no time at all, so for each of the 21 reissued
+   MMSIs the earlier hull's entire ASTD/ASTDB era was attributed to its successor,
+   21 times out of 21.
+
+   **Two things §4.1 got wrong.** `mmsi` must stay on the key — removing it breaks
+   `sources/stk/convert.R` and three joins in `ais_ping_union.R` for no gain. And
+   the identity window must be the *intersection* of the MMSI window and the hull
+   lifetime, not a preference: `mmsi.R:23` writes the MMSI bounds as defaults, so
+   preferring them keeps dead hulls matchable, which is how TFBR survived.
+
+   **The guard flags, it does not withdraw**, and that is measured rather than
+   cautious: withdrawing the 81 conflicts would have discarded 1.39 M pings from 20
+   vessels that were landing fish throughout the window the registry says they did
+   not exist in — `curate/corrections/vessel_registry_stale_lifetime.yml`.
+
+   **Not done:** the cascade's own lookups are still flat sets, and `type` is still
+   pure set membership. Step 3 showed that cannot be fixed piecemeal, so it needs
+   the cascade restructured to match on evidence rather than on a pasted label —
+   a session of its own. `staging/ais/ping_union` is now stale.
 6. **Close `d2`** (§4.3), with `d2_is_open`. Measure the 124 first.
 7. **Tier column** (§4.4), then make `AGENTS.md` true or delete the sentence.
 8. **ASTD identity table** (§4.5), and the foreign-vid candidates into `overrides/`.

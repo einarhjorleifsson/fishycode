@@ -40,22 +40,28 @@ v_negative <- assigned |> filter(vid <= 0)
 ## 2. a vid that is not in the registry at all ----------------------------------
 v_unknown <- assigned |> filter(vid > 0, !vid %in% reg$vid)
 
-## 3. an assignment outside the vessel's own lifetime ---------------------------
-# yh1/yh2 are the registry's first and last year for the hull. A match that
-# starts before the vessel existed, or after it was struck, is either a wrong
-# match or a registry date that is wrong - TFBR is the worked example, and it is
-# declared as curate/corrections/ais_key_callsign_reuse.yml.
+## 3. an assignment outside the vessel's own registered period ------------------
+# ais_key.R now computes this against curated/vessel/vessel_identity.parquet and
+# carries it as lifetime_conflict. It FLAGS rather than withdraws, and the reason
+# is measured: the first version withdrew all 81, and 20 of them - 1.39 M of the
+# 1.83 M pings - are vessels that were actively landing fish throughout the
+# disputed window. The registry lifetime is stale for those, not the match.
 #
-# The `afmadur` step is exempt by construction: it exists precisely to assign a
-# vessel that has left the registry, so a d1 after yh2 is the expected shape
-# there rather than a violation.
+# So the useful output is the split, not the count. A row with landings inside the
+# window is a registry defect; a row without is a candidate wrong match. Which is
+# which is a human's call entering through overrides/, because deciding it here
+# from landings would close the AIS -> vid -> logbook -> AIS cycle.
+lnd_span <-
+  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+  group_by(vid = skip_numer) |>
+  reframe(l1 = as.Date(min(londun_hefst)), l2 = as.Date(max(londun_hefst)))
 v_lifetime <-
   assigned |>
-  left_join(reg |> select(vid, yh1, yh2, vessel), by = "vid") |>
-  filter(!is.na(yh1) | !is.na(yh2)) |>
-  filter(coalesce(step, "") != "afmadur") |>
-  mutate(y1 = as.integer(format(as.Date(d1), "%Y"))) |>
-  filter((!is.na(yh1) & y1 < yh1) | (!is.na(yh2) & y1 > yh2))
+  filter(lifetime_conflict) |>
+  left_join(lnd_span, by = "vid") |>
+  mutate(note2 = if_else(!is.na(l2) & l2 >= as.Date(d1) & l1 <= as.Date(d2),
+                         "landed fish during the window - the REGISTRY date is stale",
+                         "no landings in the window - candidate wrong match"))
 
 ## 4. one vessel, two mobile-ids open at the same time --------------------------
 # d2 is the 2028-12-24 sentinel on 31,791 of 31,859 rows, so when a vessel changes
@@ -115,7 +121,7 @@ out <-
     flag(v_unknown,   "vid_not_in_registry",
          "assigned a vid the vessel registry does not hold"),
     flag(v_lifetime,  "outside_vessel_lifetime",
-         "match begins outside the registry's yh1..yh2 for that hull"),
+         v_lifetime$note2),
     flag(v_two_open,  "two_mids_open",
          "another mobile-id claims this vid over an overlapping period"),
     flag(v_nonvessel, "vid_on_non_vessel",
@@ -130,6 +136,8 @@ if (is.null(out)) out <- tibble(check = character(), note = character())
 # knitr::kable diagnostics in ais_key.R have never once been seen by anyone.
 print(out |> count(check, name = "rows") |>
         knitr::kable(caption = "ais_key_registry"))
+print(out |> filter(check == "outside_vessel_lifetime") |> count(note, name = "rows") |>
+        knitr::kable(caption = "Matched to a hull the registry says was not there"))
 print(out |> filter(check == "icelandic_vessel_not_in_ais") |> count(note, name = "vessels") |>
         arrange(-vessels) |>
         knitr::kable(caption = "Icelandic hulls alive in the STK era with no mobile-id"))

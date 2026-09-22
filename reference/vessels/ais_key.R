@@ -676,9 +676,47 @@ lnd |>
   left_join(v_all) |>
   knitr::kable(caption = "List of vessels in landings not in stk")
 
+# Lifetime flag ----------------------------------------------------------------
+# A match is only as good as the hull being alive to make it. curated/vessel/
+# vessel_identity.parquet gives each vid the period the Icelandic registry actually
+# recognises - the INTERSECTION of the hull's yh1..yh2 and the MMSI's own window,
+# because mmsi.R writes 2007-06-01/2028-12-24 as defaults and those are
+# placeholders, not evidence.
+#
+# 81 matches fall outside their hull's period, 1.83 M pings. The first version of
+# this withdrew them. That was wrong, and the landings database says so: 20 of the
+# 81, carrying 1.39 M of the 1.83 M pings, are vessels that were actively landing
+# fish throughout the disputed window. GULLBERG's yh2 is 2013 and it has 1,880
+# landings running to 2026; KRISTRUN's yh1 and yh2 are both 2021 and it lands
+# through 2026. The registry lifetime is stale, not the match.
+#
+# So this FLAGS. Per AGENTS.md a correction adds a column and never overwrites, and
+# the cycle rule means the choice between "stale registry" and "wrong match" is a
+# human's, made once, entering through overrides/. curate/checks/ais_key_registry.R
+# reports the 81 with the landings evidence beside them.
+.idy <-
+  read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
+  group_by(vid) |>
+  summarise(i_t1 = min(t1), i_t2 = max(t2), .groups = "drop")
+stk11d <-
+  stk11c |>
+  left_join(.idy, by = "vid") |>
+  mutate(lifetime_conflict = !is.na(vid) & vid > 0 & coalesce(step, "") != "afmadur" &
+           (is.na(i_t1) | as.Date(d1) > i_t2 | as.Date(d2) < i_t1),
+         lifetime_note = case_when(
+           !lifetime_conflict    ~ NA_character_,
+           is.na(i_t1)           ~ "hull has no period in the registry during the STK era",
+           .default              = "mobile-id active wholly outside the hull's registry period")) |>
+  select(-c(i_t1, i_t2))
+stk11d |>
+  filter(lifetime_conflict) |>
+  select(mid, loid, glid, vid, step, lifetime_note, pings, d1, d2) |>
+  arrange(-pings) |>
+  knitr::kable(caption = "Matched to a hull the registry says was not there then")
+
 # Add MMSI to Icelandic vessels ------------------------------------------------
 stk12 <-
-  stk11c |>
+  stk11d |>
   left_join(v_mmsi_no_dupes |> select(vid, mmsi))
 
 # Extend the last date ---------------------------------------------------------

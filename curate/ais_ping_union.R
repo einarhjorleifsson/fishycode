@@ -20,9 +20,23 @@ library(duckdbfs)
 library(tidyverse)
 duckdbfs::load_spatial()
 
-# mid → vid match table; used for STK (temporal interval join) and as the
-# authoritative MMSI → vid lookup for the commercial providers.
+# mid → vid match table, for the STK temporal interval join.
 vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
+
+# vid → identity over time, for the commercial providers, which are keyed by MMSI.
+# This used to be `vid |> select(mmsi, vid) |> distinct()` off the key above - no
+# time dimension at all. The registry reissues 21 MMSIs from one hull to the next,
+# and the key carries exactly one vid per MMSI (ais_key.R picks it with
+# arrange(mmsi, desc(mmsi_t2)) |> slice(1)), so every ASTD and ASTDB ping on a
+# reissued MMSI landed on the LATER hull for all time. In each of the 21 cases it
+# is the earlier holder whose whole era was misattributed: OLAFUR's 2007-08 pings
+# became HOFFELL's, which is also why OLAFUR shows up in
+# curated/check/ais_key_landings.parquet as a vessel that lands fish and has no
+# AIS track. Joining on (mmsi, time) instead of mmsi is the fix.
+idy <-
+  duckdbfs::open_dataset(fd_curated("vessel", "vessel_identity.parquet")) |>
+  filter(!is.na(mmsi)) |>
+  select(mmsi, vid, t1, t2)
 
 # stk --------------------------------------------------------------------------
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`
@@ -42,7 +56,7 @@ astd  <- open_dataset(fd_staging("ais", "astd")) |>
   mutate(mmsi = as.character(mmsi),
          nc = nchar(mmsi)) |>
   filter(nc == 9 & str_sub(mmsi, 1, 3) == "251") |>
-  inner_join(vid |> select(mmsi, vid) |> distinct() |> filter(!is.na(mmsi))) |>
+  inner_join(idy, by = join_by(mmsi, between(date_time_utc, t1, t2))) |>
   mutate(speed = dist_nextpoint / sec_nextpoint * 1.94384449) |>
   select(vid, mmsi, time = date_time_utc,
          lon = longitude, lat = latitude,
@@ -57,7 +71,7 @@ astd  <- open_dataset(fd_staging("ais", "astd")) |>
 astdB <- open_dataset(fd_staging("ais", "astdB")) |>
   filter(cc_iso3 == "ISL") |>
   mutate(mmsi = as.character(mmsi)) |>
-  inner_join(vid |> filter(!is.na(mmsi)) |> select(mmsi, vid) |> distinct()) |>
+  inner_join(idy, by = join_by(mmsi, between(date_time_utc, t1, t2))) |>
   select(vid, mmsi, time = date_time_utc,
          lon, lat,
          speed,

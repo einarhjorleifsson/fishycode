@@ -39,6 +39,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 012 | [STK entity class](012-stk-entity-class.md) | a mobile-id now says what kind of thing it is; the hand list moved to `overrides/`; 75.5% of the unassigned pings are declared non-vessel |
 | 013 | [derived ids are equipment](013-stk-derived-ids-are-equipment.md) | `TFBC2` is TFBC's buoy, not TFBC; `Afmáður` is the vessel after it leaves the Icelandic registry; and the `type` classifier cannot be corrected while the rules key on it |
 | 014 | [vid-assignment checks](014-stk-vid-assignment-checks.md) | the check `_targets.R:123` promised now exists and reports 1,244 Icelandic hulls missing from the key, 144 of them trackable; 21 `kable` diagnostics had been printing into nothing |
+| 015 | [identity is separate from the key](015-identity-is-separate-from-the-key.md) | the keel and its names are two tables; the commercial feeds were resolving MMSI with no time at all, misattributing 21 hulls; and `yh2` is stale often enough that the lifetime guard must flag rather than withdraw |
 
 ## Data defects
 

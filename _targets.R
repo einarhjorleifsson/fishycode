@@ -120,6 +120,16 @@ list(
     "reference/vessels/registry.R",
     fd_curated("vessel", "vessel.parquet")), format = "file"),
 
+  # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
+  # uid are attributes of it at a time. Consumed by ais_key.R's lifetime flag and
+  # by curate/ais_ping_union.R, which resolves the MMSI-keyed commercial feeds
+  # through it. See curate/decisions/015.
+  tar_target(vessel_identity, {
+    vessel
+    produces("reference/vessels/identity.R",
+             fd_curated("vessel", "vessel_identity.parquet"))
+  }, format = "file"),
+
   # NOT a registry: a fitted model with residual error (>100-ping threshold,
   # a 2028-12-24 sentinel, 124 vids whose mobile-ids overlap). Wrong vid
   # assignment is a known error class, and as of 2026-09-22 the two checks below
@@ -127,7 +137,7 @@ list(
   # entity_class and basis as well as vid — see curate/plans/003, decisions 012
   # and 013.
   tar_target(vessel_ais_key, {
-    lookups; vessel
+    lookups; vessel; vessel_identity
     produces("reference/vessels/ais_key.R",
              fd_curated("vessel", "vessel_ais_key.parquet"))
   }, format = "file"),
@@ -187,7 +197,7 @@ list(
   # (curate/logbook_sensor_gps.R) breaks it, so the whole chain is now declarable.
 
   tar_target(ais_ping_union, {
-    vessel_ais_key
+    vessel_ais_key; vessel_identity
     produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
   }, format = "file"),
 
