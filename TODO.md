@@ -398,6 +398,92 @@ in `raw/ais/astd` for that year.
 
 ---
 
+## 17. Full review of the STK vessel match
+**status:** open · **files:** `reference/vessels/ais_key.R` (669 lines) → `curated/vessel/vessel_ais_key.parquet`
+
+Requested by the maintainer 2026-09-22. This is the gate every STK ping passes through
+to acquire a vessel identity — `sources/stk/convert.R:21` and `curate/ais_ping_union.R:25`
+both join through it with `between(time, d1, d2)` — and **nothing about its state was
+written down anywhere**. The numbers below were measured on 2026-09-22 and are the
+baseline the review starts from, not the review.
+
+### Measured baseline
+
+| | |
+|---|---|
+| rows / distinct `mid` / distinct `vid` | 31,859 / 31,791 / 3,009 |
+| rows carrying a `vid` | 3,144 — 90% of mobile-ids unassigned |
+| pings assigned a `vid` | 191.9 M of 300.9 M = **63.8%** |
+| rows with a real `d2` | **68** of 31,859; the rest carry the 2028-12-24 sentinel |
+| `mid` mapping to >1 `vid` | **67** (the note at `_targets.R:123` says 35) |
+| `vid` appearing on >1 `mid` | 126 |
+| distinct match rules (`step`/`type`) | 61, including 492 rows whose step is `manuals` |
+
+### The mobile-id is not classified
+
+STK ships no entity type: `raw/ais/stk/mobile.parquet` is `mid`, `loid`, `glid` and
+nothing else, 32,967 rows. Classification is **derivable for 60%** of them by applying
+the MMSI rules to `glid` — and `ramb::rb_mmsi_category()` already implements exactly
+those rules, is already used at `reference/vessels/mmsi.R:59` on the MMSI registry, and
+has never been pointed at `glid`.
+
+| `glid` | mids | pings | % pings | assigned a vid |
+|---|---|---|---|---|
+| vessel-range MMSI (2–7) | 16,040 | 2.3 M | 0.76% | 94 |
+| **not a vessel** | **3,818** | **7.1 M** | **2.37%** | **0** |
+| not MMSI-shaped | 12,001 | 291.5 M | 96.86% | 3,050 |
+
+The 3,818 are 1,395 navigational aids, 810 child vessels, 682 other 9xx, 659 SAR
+aircraft, 152 handheld VHF, 74 SARTs, 45 man-overboard beacons, 1 coast station. **None
+is assigned a vid**, which is correct behaviour — so 7.1 M of the 109.0 M unassigned
+pings are not a coverage gap at all, and the honest unexplained remainder is ~101.9 M.
+
+The genuinely surprising row is the third: **97% of pings come from mids whose `glid`
+is not MMSI-shaped**, and that is where 3,050 of the 3,144 matches live. Whatever the
+working fleet puts in that field, no classification rule has been applied to it. That
+is the first thing the review should look at.
+
+### Three things the record asserts that the table does not support
+
+- **`AGENTS.md` says `vessel_ais_key` "carries confidence".** It has no confidence
+  column. `step` and `type` record which of 61 rules fired — provenance, not
+  confidence — and the rules are plainly not equally reliable (`vid_vid` against
+  `NA_cs4`).
+- **The temporal window is all but fictional.** 31,791 of 31,859 rows run to the
+  2028-12-24 sentinel. `between(time, d1, d2)` reads as precision; for 99.8% of mids
+  there is no upper bound. With 67 mids carrying more than one vid, a reassigned mid
+  either duplicates pings or silently attributes them to the wrong vessel.
+- **The check that was supposed to catch that does not exist.** `_targets.R:123` says
+  "Wrong vid assignment is a known error class — see `curate/checks/`." That directory
+  holds one script, about whacky positions. See also item 10.
+
+### What the review has to answer
+
+1. What is in `glid` for the 12,001 non-MMSI-shaped mids that carry 97% of the pings,
+   and can they be classified at all?
+2. Can `d2` be closed from evidence — last ping per mid-vid period — instead of a
+   sentinel, and what breaks downstream if it is?
+3. What do the 67 ambiguous mids and 126 multi-mid vids actually represent: genuine
+   reassignment, transponder swaps, or matcher error?
+4. Do the 61 rules stratify into reliability tiers that could become a real confidence
+   column, so the claim in `AGENTS.md` becomes true rather than being deleted?
+5. Where is the residual ~101.9 M unassigned pings concentrated — few big mids or a
+   long tail — and is it worth chasing?
+6. The header's own open items: three unmatched Icelandic MMSIs, and the ODS date
+   error on `mid` 101097 (`vid` 1328), whose `d1`/`d2` sit in a 15-day 2008 window
+   while the mid is active 2007-2026.
+
+**Note the cycle.** `AGENTS.md` warns that AIS → vid assignment → logbook activity →
+validates the vid assignment is circular, and that a reviewed override re-enters as an
+*input*. Anything this review concludes by cross-checking against logbooks belongs in
+`overrides/`, not as a computed output.
+
+**check:** each of the six questions above has a written answer; the `AGENTS.md`
+confidence claim is either made true or removed; and `curate/checks/` contains a
+vid-assignment check that `_targets.R:123` can honestly point at.
+
+---
+
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
 
