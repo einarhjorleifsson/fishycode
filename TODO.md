@@ -439,10 +439,10 @@ tiers), §2 (where the residual sits), §6 (the header's own open items). The
 is code. The 19.2 M `NA_cs4` pings are foreign call signs with no registry to match
 against: the consolidator survives as
 `fishyweb/scripts/01_DATASET_vessels_combine-registry.R`, but its
-`data-raw/vessels/{FRO,NOR,EU}` inputs are on no local disk **and, searched
-2026-09-22, not on the institute share either** — no `vessels`/`FRO`/`NOR`/`EU`/`gfw`
-directory in any of the eight candidate trees under `/Volumes/einarhj/stasi`. They
-have to be re-fetched. Plan 003 §4.5 has the evidence and the two caveats. The search
+`data-raw/vessels/{FRO,NOR,EU}` inputs are on no local disk and not on either share —
+searched 2026-09-22. **The maintainer has since found all four (FRO, NOR, EU, GFW) and
+parked them deliberately: the Icelandic fleet comes first.** Their location is not yet
+written down, which is the one thing to capture before this resumes. Plan 003 §4.5. The search
 did turn up four Icelandic-MMSI files nobody here reads, which bear on the 88 vids
 below: `AdditionalMMSI20190327.csv` and `stk_mobile_match-and-duals.ods` at the share
 root, and `00_DATASET_mmsi_icelandic.R` plus

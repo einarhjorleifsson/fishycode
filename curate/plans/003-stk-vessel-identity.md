@@ -373,7 +373,15 @@ minutes — and it is invisible to the agent session, which runs on
 `HAFRO-EINARHJ-2`. Check `hostname` on both sides before arranging for one to write a
 file the other reads; three attempts were lost to that.
 
-**So the four sources do have to be re-fetched.** §6.
+**Found by the maintainer, 2026-09-22, after the searches above.** The Faroese,
+Norwegian, EU and GFW registries exist and are in hand. **Deliberately parked**: the
+Icelandic fleet is the priority, and the Icelandic side does not depend on them. Their
+location is not recorded here yet — record it before acting on this section, because
+the searches above establish only that they are not where the old scripts expect them.
+
+What they unblock, when picked up: the 19.2 M `NA_cs4` pings, which are foreign call
+signs with no registry to match against, and the 352 foreign vids in the key that carry
+6.3 M pings and no MMSI at all.
 
 Two files the search turned up that are worth more than the registries, and that no
 script here reads. At the share root: `stk_mobile_match-and-duals.ods` (the duals
@@ -531,12 +539,12 @@ at once cannot be reviewed.
 
 ## 6. For the maintainer
 
-- **Three national registries need re-fetching** before the 19.2 M `NA_cs4` pings can
-  be resolved: Faroese (the scrape script survives as
-  `fishyweb/scripts/00_DATASET_vessel-scrape_FRO.R`), Norwegian
-  (`norway_vessel-registry.xlsx`), EU (`vesselRegistryListResults.csv`). None is on
-  this machine. GFW's `fishing-vessels-v2.csv` is a nice-to-have; the old script's own
-  comment says it "does not add much".
+- ~~Three national registries need re-fetching~~ — **the maintainer has them,
+  2026-09-22, and parked them deliberately in favour of the Icelandic fleet.** The
+  consumers are ready: `fishyweb/scripts/01_DATASET_vessels_combine-registry.R` is the
+  consolidator and `00_DATASET_vessel-scrape_FRO.R` the Faroese scraper, both to be
+  ported per plan 002 §4a. Where the files now live is not written down; that is the
+  one thing to capture before the work resumes.
 - **88 Icelandic vids in the key have no MMSI** in the registry, on 3.7 M pings, plus
   the three named in the script header at `:16–19` (mids 114902, 118765, 139879).
   Fiskistofa / Fjarskiptastofa lookup.
