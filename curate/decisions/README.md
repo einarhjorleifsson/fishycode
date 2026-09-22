@@ -36,6 +36,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 009 | [CLAUDE.md is a loader](009-claude-md-is-a-loader.md) | `AGENTS.md` stays the map; `CLAUDE.md` imports it so reaching a session is guaranteed rather than assumed. Refines 000, does not overturn it. **Verified 2026-09-22: the map arrives** |
 | 010 | [time variable naming](010-time-variable-naming.md) | case is the level: `T1`/`T2` is the harbour-to-harbour voyage, `t1`…`t4` the four event times, which stay four because the fishing interval moves with the gear |
 | 011 | [H3 in storage is experimental](011-h3-in-storage-is-experimental.md) | a ping's `h3` column may be dropped; res 8 is where GEBCO depth gets quantised, and `002` means that grain cannot currently be revisited |
+| 012 | [STK entity class](012-stk-entity-class.md) | a mobile-id now says what kind of thing it is; the hand list moved to `overrides/`; 75.5% of the unassigned pings are declared non-vessel |
 
 ## Data defects
 
@@ -43,6 +44,7 @@ Not here — `../corrections/`, one `.yml` declaration per defect, paired with a
 `.R` implementation where there is one. Each `.yml` carries `id`, `title`,
 `status`, `applies_to`, a detection rule and the repair, so that directory is its
 own index.
+
 
 | defect | status |
 |---|---|

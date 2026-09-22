@@ -146,8 +146,10 @@ MID <-
   mutate(MID_child = paste0("98", MID),
          MID_aid = paste0("99", MID))
 ## Call sign prefix - flag state
+cs.prefix.all <-
+  read_parquet(fd_staging("aux", "callsign_prefix.parquet"))
 cs.prefix <-
-  read_parquet(fd_staging("aux", "callsign_prefix.parquet")) |>
+  cs.prefix.all |>
   # critical, lot of mess with TF in stk localid and globalid
   filter(cs_prefix != "TF")
 ## vessel registry
@@ -160,85 +162,19 @@ v_mmsi <-
   filter(!is.na(mmsi))
 
 ## Known (via ad hoc) non-vessel localid or globalid ---------------------------
-fixed <-
-  c("Surtseyja", "Straumnes", "Steinanes", "Haganes_K", "Bakkafjar",
-    "Laugardal", "BorgfjE P", "Gemlufall", "Straumduf", "Eyrarhlid",
-    "Hvalnes", "Straumm?l", "V_Blafj P", "Isafj.dju", "Rey?arfjo",
-    "VidarfjAI", "KLIF AIS",  "VadlahAIS", "Hafell_AI", "TIND_AIS",  "Storhof?i",
-    "Helguv", "Laugarb.f", "Grimseyja", "G.skagi",   "Grindavik", "Hornafjar",
-    "Flateyjar", "Kogurdufl", "Blakkur.d", "Bakkafjor", "Hvalbakur", "SUGANDI_A",
-    "TJALDANES",  "Snaefj1",
-    "Snaefj2", "Lande", "Sjomsk", "TJALD.NES", "illvid_p", "BLAKKSNES", "V_Sfell B",
-    "HOF", "Illvi?rah", "Miðfegg P", "BASE11", "Borgarfj ",
-    "V_Hofsos", "V_Hofsos ", "Arnarfjor", "Trackw", "SUGANDAFJ",
-    "BORGARÍS", "BORGARIS", "BORGARIS0", "BORGARIS1",
-    "ThverfAIS",
-    "TEST",
-    "Hvannadal", "Tjaldanes", "BorglAIS", "HvalnAIS", "Midf_AIS",
-    "Hellish A", "GreyAIS", "Berufjor?",
-    "Baeir", "Frodarh_A", "Onundarfj", "HusavikAI", "Haukadals",
-    "Drangsnes", "Hofdahusa", "Djupiv-AI", "Dyrafjor?", "Faskru?sf",
-    "Fossfjor?", "Hvestudal", "Hringsdal", "Bakkafj-d", "Mulagong",
-    "Grnipa P", "Haenuvk P", "Bolafj P", "Ennish P", "Grimsey P",
-    "Frodarh P", "Haoxl B", "Hafell P", "Vidarfj P", "Djupiv P",
-    "Blafj P", "Sigmundar", "Tjnes P", "Sfell P", "Hellish P",
-    "Gvkurfj P", "Klif P", "Thverfj B", "Klif B", "Grimsey B",
-    "Frodarh B", "Hvalnes P", "Haoxl P", "Grnipa B", "Illvidh P",
-    "FLATEYRI_", "Hellish B", "Husavik B", "Hofsos P", "Faskra?sf",
-    "Husavik P", "Tjornes P", "Thorbj B", "Borgarh-P", "Baeir B",
-    "VadlahP", "Thverfj P", "Dalvik P", "Godat-P", "HafellAIS",
-    "Bjolfur P", "Ennish B", "Thorbj P", "Hraunh P", "Gufusk P",
-    "Lambhgi P", "Fri?rik A", "Baeir P", "Flatey du", "Fellsgg1P",
-    "Fellsgg2P", "Akurtr B", "Midfell-P", "Horgargru", "Borgarl P",
-    "Haenuvk B", "Gagnhdi P", "Hvalnes B", "HVestudal", "Gildruh B",
-    "Sfell B", "Gagnhdi B", "BorgfjE B", "Spolur-P", "Klakkur P",
-    "KOLBEINSE", "Stykkh P", "Tjnes B", "Kvigindis", "Dufl_GRV_",
-    "Fell P", "Steinny-P", "Stokksn P", "Tjorn P", "Kopasker",
-    "Akreyri P", "Grima P", "Dalatgi B", "ThverfjP", "Rifssker_",
-    "Dalatgi P", "Tjorn B", "Kolmuli_K", "Vattarnes", "Thorbjorn",
-    "Husavik", "Hafranes_", "Drangaj_P", "Hrisey", "Hofsos",
-    "Midfegg P", "Midf P", "Gufunes P", "Mi?fegg P", "Dalvík P",
-    "Dalvik", "Borgfj E", "Straumn-A", "Talknaf P",
-    "Steinny", "TILK", "ThverfjP1", "Heidar-P", "Vadlaheid",
-    "Talknaf B", "BLAKK_AIS", "Mork-P", "VPN_Bauja",
-    "PF7567", "Daltat", "AEDEY AIS", "Borgfj E",
-    # should really use the mobile id here, at least it is easier
-    #  because that is how things are checked iteratively
-    "2515036", "2311200", "2311400", "2573900", "2311500",
-    "2515071", "25150051", "2314000",
-    "251510120",    # Skipstjóraskólinn
-    "231140005",
-    "231140003",
-    "251999898",
-    "231140004",
-    "231140006",
-    "231140001",
-    "231140002",
-    "251513130",
-    "xxx5",
-    "103984",
-    "Borgfj E",
-    "Borgfj E ",
-    "BLAKK_OLD",
-    "Gufunes B",
-    "Blondos P",
-    "Mork P",
-    "Va?lahei?",
-    # Icelandic MMSI but non-vessel pattern (AIS-SART / buoy / special)
-    "251999895",  # mid 121326 - speed ~0 throughout, scattered pings
-    "251990271"   # mid 126636 - brief 2017 coastal activity, 99x prefix
-  )
-kvi <-
-  c("Eyri_Kvi_", "Kvi_Skotu", "Kvi_Baeja", "Bjarg_Kvi", "Sjokvi-4", "Sjokvi-3",
-    "Kvi-0 Hri", "Sjokvi-2", "Kvi_Sande", "Kvi_Fenri", "Sjokvi",
-    "Y.Kofrady")
-hafro <-
-  c("Hafro_Str", "Hafro_O2_", "Hafro_CO2", "Hafro_H11", "Hafro_H20", "Hafro_Hva",
-    "Hafro_duf", "AfmHafro_", "Afm_Hafro", "Hafro_W.V", "Hafro_W.V ", "afm_Hafro",
-    "Rannsokn_")
-net_glid <-
-  c("9911378")
-unknown_glid <- c("5200000")
+# Until 2026-09-22 these five vectors were ~250 literals inline here, and they were
+# the only entity classifier that has ever existed in any of the eight repos. They
+# are a reviewed *input* - a nine-character truncated Icelandic place name is not
+# derivable from anything, so a human decided each row - and AGENTS.md puts reviewed
+# inputs in overrides/, not in a script. Membership is unchanged; `type` below is
+# byte-for-byte what it was.
+stk_overrides <- read_stk_overrides()
+.ov <- function(g) stk_overrides$value[stk_overrides$legacy_group == g]
+fixed        <- .ov("fixed")
+kvi          <- .ov("kvi")
+hafro        <- .ov("hafro")
+net_glid     <- .ov("net_glid")
+unknown_glid <- .ov("unknown_glid")
 
 ## Vessel info for local- and globalid classification --------------------------
 # suffix 2 is when mmsi not available
@@ -408,6 +344,18 @@ stk2 <-
              .default = NA)) |>
   mutate(type = paste0(replace_na(.loid, "NA"), "_", replace_na(.glid, "NA"))) |>
   select(-c(.loid, .glid))
+
+## Entity class ----------------------------------------------------------------
+# `type` records which pair of rules fired. That is provenance for the cascade
+# below, not a vocabulary a consumer can use: until now the only way to ask "is
+# this a vessel" was to test whether the string contained the word "fixed". The
+# entity class answers it directly, from loid and glid alone, before any vid is
+# matched, and carries the basis AGENTS.md requires. See R/entity_class.R.
+stk2 <-
+  stk2 |>
+  bind_cols(stk_entity_class(stk2$loid, stk2$glid,
+                             overrides = stk_overrides,
+                             cs_prefix = cs.prefix.all$cs_prefix))
 
 stk2 |> lh_overlaps() |> filter(vid > 0) |>  knitr::kable(caption = "Expect none")
 
@@ -659,8 +607,30 @@ stk13 <-
   mutate(d2 = case_when(no == max(no) ~ ymd("2028-12-24"),
                         .default = d2)) |>
   ungroup()
+# Entity class, final pass -----------------------------------------------------
+# A matched vid is itself a statement that the thing is a vessel, and it outranks a
+# name pattern - six matched Norwegian and Faroese registration marks (N-400-B,
+# SF-5-B) read as shore stations before this. It does NOT outrank the reviewed
+# override list or an MMSI number range, both of which are stronger evidence than
+# a match made by this script.
+stk14 <-
+  stk13 |>
+  mutate(.up = !is.na(vid) & entity_class != "vessel" &
+                (is.na(basis) | basis == "reconstructed"),
+         entity_class = if_else(.up, "vessel", entity_class),
+         basis        = if_else(.up, "recorded", basis)) |>
+  select(-.up)
+
+stk14 |>
+  count(entity_class, basis) |>
+  arrange(-n) |>
+  knitr::kable(caption = "Entity class (expect no vid outside entity_class == vessel)")
+stk14 |>
+  filter(!is.na(vid), entity_class != "vessel") |>
+  knitr::kable(caption = "vid assigned to a non-vessel (expect none)")
+
 # SAVE THE STUFF ---------------------------------------------------------------
-stk13 |>
+stk14 |>
   mutate(pings = as.integer(pings),
          n_years = as.integer(n_years),
          vid = as.integer(vid),

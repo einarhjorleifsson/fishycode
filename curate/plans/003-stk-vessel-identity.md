@@ -1,6 +1,7 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** proposal — nothing built · **2026-09-22** · **see:** `TODO.md` item 17,
+**status:** partly built — **steps 1 and 2 done 2026-09-22**, steps 3–9 open ·
+**see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
 `reference/vessels/ais_key.R`, plan `002-the-last-mile.md` §4a
 
 **Measured** — on 2026-09-22, against `$FISHYDATA` as it stands:
@@ -443,12 +444,15 @@ the binding constraint is the three missing national registries, not the matcher
 
 Ordered by measured payoff per unit of risk, not by interest.
 
-1. **Declare the two corrections** — `stk_trail_time_outliers`,
-   `ais_key_callsign_reuse`. Written with this plan; they bound the damage before
-   anything is rebuilt.
-2. **`entity_class` + `basis`** (§4.2). Pure addition, nothing overwritten, and it
-   converts 81.2 M pings from "unexplained gap" to "correctly excluded". It also makes
-   the residual honest, which every later number depends on.
+1. ~~**Declare the two corrections**~~ — **done 2026-09-22**.
+   `stk_trail_time_outliers`, `ais_key_callsign_reuse`.
+2. ~~**`entity_class` + `basis`** (§4.2)~~ — **done 2026-09-22**, recorded in
+   `curate/decisions/012-stk-entity-class.md`. Gated: all fourteen pre-existing
+   columns identical row for row, two columns added. 82.3 M of the 109.0 M unassigned
+   pings are now declared non-vessel and 23.7 M are vessels that did not match, so
+   the honest residual is **2,996,632 pings — 1.03 %** on 2,098 mobile-ids. Eleven
+   classes rather than the eight proposed in §4.2, and a call-sign rule that was not
+   proposed at all; the decision record says why.
 3. **The three missing rules** (§3.4). ~1.5 M pings, no schema change, and the TF-suffix
    family is Icelandic fishing vessels — the population the maintainer says must be
    complete.

@@ -449,10 +449,19 @@ the ODS date error on `mid 101097` is now priced: **34,307 pings**, 96 % of ever
 the key silently drops; the fix is already written in the script header at `:20–22` and
 has not been applied to the spreadsheet.
 
-**check:** plan 003's steps 1–4 are additive and land without rebuilding the trail —
-`entity_class` + `basis` emitted, the three missing cascade rules added,
-`curate/checks/ais_key_landings.R` and `ais_key_registry.R` existing and run. Step 5
-onward changes assignments and is a separate session.
+**Steps 1 and 2 are done — 2026-09-22.** Both corrections are declared, and
+`vessel_ais_key.parquet` now carries `entity_class` and `basis`
+(`curate/decisions/012-stk-entity-class.md`). The rebuild is gated: all fourteen
+pre-existing columns identical row for row, `vid`/`step`/`type` untouched. The
+coverage gap is no longer one number — of 109.0 M unassigned pings, 82.3 M are
+declared non-vessel, 23.7 M are vessels that did not match, and **2,996,632 (1.03 %
+of the trail) are genuinely unknown**. The ~250-literal hand list left the script for
+`overrides/stk_nonvessel_names.csv`.
+
+**check:** the rest of steps 3–4, still additive and still no trail rebuild — the
+three missing cascade rules (`vid_NA`, the `TF???2` suffix family, one-character
+call-sign prefixes), then `curate/checks/ais_key_landings.R` and `ais_key_registry.R`
+existing and run. Step 5 onward changes assignments and is a separate session.
 
 ---
 
