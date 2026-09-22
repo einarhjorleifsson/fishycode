@@ -144,13 +144,48 @@ ones are, almost exactly, the scripts that build what the web reads.
 |---|---|---|
 | `43_DATASET_ais_trail.R` | 3% | **port the tail.** Front superseded (§2); the enrichment joins are the work |
 | `12_DATASET_logbooks.R` (`:915`, `:918`) | 21% | **port.** Sole producer of `station-for-ais` / `catch-for-ais` |
-| `01_DATASET_vessels_combine-registry.R` | 20% | **read both, then decide.** Writes `vessel-registry.parquet` across flags; `reference/vessels/registry.R` is Iceland-shaped |
+| `01_DATASET_vessels_combine-registry.R` | 20% | **deliberately narrowed, not drifted** — read both 2026-09-22, see §4a. Nothing to port unless foreign-flag vessel identity is wanted back |
 | `00_DATASET_aux_various-lookups.R` | 26% | **port.** `callsign_prefix`, `agf_gear`, `agf_species`; `agf_species` is read by the slides |
 | `00_DATASET_aux_shapes.R` | 2% | **mostly superseded.** `reference/geo/shapes_raw.R` + `shapes.R` cover ICESareas, ICES_GEBCO, eusm from the same raw inputs, rewritten around `fd_*()`. Genuinely absent: `ICESrectangles` (only *consumed*, at `products/ices_vms_datacall/build.R:257`) and the `hab_and_bathy_layers.zip` fetch |
 | `05_DATASET_ais_stk-to-parquet.R` | 5% | **superseded.** `sources/stk/convert.R` is a DuckDB rewrite of the same job; low overlap is the rewrite, not a gap |
 | `00_DATASET_ais_astdB_zip-to-parquet.R` | 15% | **superseded.** `dump/ais/astd_b.R` likewise, and it carries the fault history 003 records |
 | `00_DATASET_gear.R` | 25% | **port the tribble's `s1`/`s2`.** Measured 2026-09-22: `reference/gear/mapping.R` does **not** carry them; only this tribble does. Decision 010 puts the per-gear fishing-interval rule in the same table |
 | remaining 29 | 78–100% | **superseded.** Includes the three item 16 called "no counterpart": `80_DATASET_SMB_demo.R` → `products/exports/smb_demo.R` (100%), the two `91_datacall_*` → `products/exports/` (93%, 100%), and `ices-datacall/2025/ICES_VMS_QC-main/` → `products/ices_vms_datacall/qc/`, **byte-identical** |
+
+### 4a. The vessel registry, read on both sides
+
+The 20% was misleading in the *other* direction from `43_DATASET_ais_trail.R`: nothing
+drifted here, and nothing is missing by accident.
+
+`fishyweb` splits the work in two — `00_DATASET_vessels_iceland.R` builds the Icelandic
+registry, and `01_DATASET_vessels_combine-registry.R` reads that in at its `:40` and
+consolidates it with **FRO, NOR, EU, ASTD and GFW** into `vessel-registry.parquet`.
+
+`reference/vessels/registry.R` is the *first* of those two, not the second — which is
+why `00_DATASET_vessels_iceland.R` matches it at **84%** while the combine script
+matches at 20%. It then absorbs the combine script's Icelandic tail (the MMSI join, the
+Hreiðar year range) and writes `curated/vessel/vessel.parquet`, **Iceland only**.
+
+So the disposition is: **narrowed on purpose.** What is genuinely absent is
+consolidation across the other five registries, and nothing here produces or consumes
+`vessel-registry.parquet`. Whether that matters is a real question, not a defect: the
+ASTD feed carries foreign vessels inside the Icelandic EEZ, and today they have no
+identity beyond an MMSI. Answering it is out of scope for this plan.
+
+Two things found while reading, both small and both real:
+
+- **Dead code with dangling references.** `reference/vessels/registry.R` ends in an
+  `if(FALSE)` block referring to `vessel_registry`, `vessel_ASTD` and `vessel_NOR` —
+  objects the combine script created and this file never does. Grep confirms those are
+  the *only* mentions of any of them in the repo. It is inert, but it reads as though
+  a consolidation exists.
+- **`reference/vessels/faroe_scrape.R` writes into the repo.** Its `:32` writes
+  `data-external/vessels/færeyjar/vid-NNNN.csv`, a relative path, not `fd_*()` — against
+  the `AGENTS.md` rule that nothing is written into this repo. It is also a web fetch,
+  which by the same file's layout table belongs in `dump/`, not `reference/`. It is not
+  a target, and nothing consumes its output; it is the FRO half of a consolidation that
+  was not carried across. A 20,000-URL scrape at `Sys.sleep(2)` — roughly 11 hours — so
+  not something to re-run to find out.
 
 ## 5. What this plan does not decide
 

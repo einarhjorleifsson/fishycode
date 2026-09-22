@@ -496,9 +496,16 @@ Sharpest evidence that the tail matters: `products/ices_vms_datacall/build.R` al
 reads `station-for-ais.parquet`, which nothing here produces, and filters `ping_union`
 on `s1`/`s2`/`t1`/`t2`/`.sid`, which nothing here writes. The datacall cannot run.
 
+Both "read both" rows are now read and decided (plan 002 §4, §4a): the gear tribble's
+`s1`/`s2` must be ported, and the vessel registry was **narrowed on purpose**, not
+drifted — `reference/vessels/registry.R` is `fishyweb`'s *Icelandic* script (84%), not
+its cross-flag consolidator (20%). Absent, and a question rather than a defect: FRO,
+NOR, EU, ASTD and GFW consolidation, i.e. any identity for the foreign vessels the
+ASTD feed carries inside the EEZ.
+
 **check:** `t1`/`t2` and the H3 resolution have a written answer; `station-for-ais` and
 `catch-for-ais` have producers here; a ping carries `s1`, `s2`, `t1`, `t2`, `catch` and
-`lb_base`; and each row of plan 002 §4 marked "read both" has been read and decided.
+`lb_base`.
 
 ---
 
