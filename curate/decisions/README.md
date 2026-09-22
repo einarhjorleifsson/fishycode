@@ -26,7 +26,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 |---|---|---|
 | 000 | [restructuring](000-restructuring.md) | why this repo supersedes `logbooks` and `fishydata_2024-2026`, and the two committed boundaries |
 | 001 | [file migration](001-file-migration.tsv) | where every script from the two predecessors landed |
-| 002 | [missing GEBCO raster](002-missing-gebco-raster.md) | `area_h3` cannot be rebuilt; the raster was a manual download since cleared |
+| 002 | [missing GEBCO raster](002-missing-gebco-raster.md) | the raster was never missing — `h3_index.R` wanted a filename nobody created. **Reversed and closed 2026-09-22**; the rebuild itself is still unrun |
 | 003 | [undeclared dump inputs](003-undeclared-dump-inputs.md) | datasets named `year=YYYY` that were not partitioned |
 | 004 | [issue 11, +70 rows](004-issue-11-seventy-extra-rows.md) | three harbours shared one polygon — a copy-pasted coordinate, not a join; measured at 21 AIS-era trips. **Closed** |
 | 005 | [harbour geometry is a frozen input](005-harbour-geometry-is-a-frozen-input.md) | STK ships `harborid`, so deriving polygons from it and then using them to tag pings is a cycle; the artifact is frozen and the bootstrap kept as provenance. **Closed** |

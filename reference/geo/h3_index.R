@@ -1,17 +1,17 @@
 # h3_index.R — build the H3 resolution-8 lookup used for all AIS spatial tagging.
 #
-# Input:  raw/aux/gebco_2026.tif   <-- MISSING, see below
+# Input:  raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif
 #         staging/aux/eusm.fgb, staging/aux/ices_areas_500m-buffer.fgb
 # Output: curated/reference/area_h3.parquet   (26,160,965 cells: h3, depth, bbht, fao)
 #
-# ############################################################################
-# # THIS SCRIPT CANNOT RUN. The GEBCO GeoTIFF is not on this machine - it was
-# # a manual download into ~/Downloads, used once on 2026-05-08, and cleared.
-# # Re-download from https://download.gebco.net, bounding box n89.0 s35.0
-# # w-45.0 e69.0, GeoTIFF, and place it at $FISHYDATA/raw/aux/gebco_2026.tif.
-# # The existing curated/reference/area_h3.parquet is SEEDED, not built.
-# # See curate/decisions/002-missing-gebco-raster.md
-# ############################################################################
+# The raster was recorded as missing from 2026-09-20 to 2026-09-22 and this script
+# carried a CANNOT RUN banner. It was never missing: it is in raw/aux/ under the
+# name GEBCO's download service gave it, which is not the gebco_2026.tif the banner
+# told people to create. Verified 2026-09-22 - 709 MB, extent -45/69/35/89, EPSG:4326,
+# 12960 x 27360. See curate/decisions/002-missing-gebco-raster.md.
+#
+# The filename is left as downloaded, because the bounding box in it IS the
+# provenance of the request; the script is pointed at it instead.
 
 library(terra)
 library(tidyverse)
@@ -19,7 +19,7 @@ library(duckdb)
 library(nanoparquet)
 
 # gebco ------------------------------------------------------------------------
-r <- rast(fd_raw("aux", "gebco_2026.tif"))
+r <- rast(fd_raw("aux", "gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif"))
 
 # Dump raster to temp parquet — DuckDB reads this without loading into R memory
 pts <- as.data.frame(r, xy = TRUE, na.rm = TRUE) |>

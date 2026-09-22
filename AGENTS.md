@@ -4,17 +4,6 @@
 > `curate/decisions/000-restructuring.md`. **Do not let this file drift from the
 > code** — that is the failure it is replacing.
 
-## OPEN: the GEBCO raster is missing
-
-`curated/reference/area_h3.parquet` (26,160,965 H3 cells — the join key for all AIS spatial
-tagging) **cannot be rebuilt**. `reference/geo/h3_index.R` needs a GEBCO GeoTIFF that is no
-longer on this machine; it was a manual browser download into `~/Downloads`, used once on
-2026-05-08, and cleared. The surviving copy of the derived table is seeded, not built.
-
-Re-download from <https://download.gebco.net> (`n89.0 s35.0 w-45.0 e69.0`, GeoTIFF) to
-`$FISHYDATA/raw/aux/gebco_2026.tif`, then `tar_make(names = "area_h3")`.
-Full detail and the verification to run afterwards: `curate/decisions/002-missing-gebco-raster.md`.
-
 ## What this project is
 
 The name is the thesis: the Icelandic logbook, landings and AIS data contain

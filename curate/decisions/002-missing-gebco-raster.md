@@ -1,7 +1,38 @@
-# The GEBCO raster is missing and `area_h3` cannot be rebuilt
+# The GEBCO raster was never missing — `area_h3` can be rebuilt
 
-**Status: OPEN — action required**
-**Raised: 2026-09-20**
+**Status: CLOSED — 2026-09-22. The raster is in `raw/aux/`; `h3_index.R` was looking
+for a filename that was never created.**
+**Raised: 2026-09-20. Reversed: 2026-09-22.**
+
+## Resolution — 2026-09-22
+
+The maintainer pointed at
+`$FISHYDATA/raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif`. Verified: 709 MB,
+extent `-45, 69, 35, 89` — exactly the requested bounding box — EPSG:4326,
+12960 × 27360, opens with `terra::rast()`. It is the file this record said to
+re-download, under the name GEBCO's download service gives it.
+
+`h3_index.R:22` was repointed at that name rather than the data being renamed to
+`gebco_2026.tif`: the bounding box in the filename **is** the provenance of the
+request, and `AGENTS.md` says nothing under `$FISHYDATA` is hand-edited. The CANNOT RUN
+banner is gone from the script, and `check_ready()` now reports `area_h3` as ready —
+the only target it had been blocking.
+
+**What actually went wrong is worth more than the fix.** The record never said "we have
+a raster whose name does not match"; it said the file was *gone*, having "searched every
+`.tif` under `$HOME`". The 2026-09-21 addendum then said `raw/aux` "contains no `.tif` at
+all", while `TODO.md` item 6, written around the same time, located the original in
+`~/Downloads/older/`. Two statements in the same record layer, contradicting each other,
+both asserting absence — and the file was in the data store the whole time. A search
+that reports "gone" is a claim about the searcher as much as the filesystem, and neither
+statement was ever re-run.
+
+**Still to verify** (this record's own step 4): the rebuild has not been executed. Gate
+the result against `raw/aux/h3_indices.parquet` — expect 26,160,965 cells, 66 `fao`
+values, 27 `bbht` values, depth range −6002 to 4. Until that passes,
+`curated/reference/area_h3.parquet` remains **seeded, not built**.
+
+## Superseded — the original record, kept for the reasoning
 
 ## What is missing
 
@@ -85,3 +116,7 @@ coverage, but `astd_iseez.R` hardcodes the 2024 name, so it will keep failing un
 either repointed or given its own file. Repointing is the obvious choice if the depth values
 it extracts are not meant to be frozen at the 2024 vintage — which nothing in the script says
 either way.
+
+*2026-09-22: half of this addendum was wrong — `raw/aux` does hold a `.tif`. The other
+half stands: `gebco_2024.tif` is genuinely absent, `astd_iseez.R` still hardcodes it,
+and the repoint-or-freeze question is still open. It lives on in `TODO.md` item 6.*

@@ -184,17 +184,28 @@ the first silently makes a fishing call by row order.
 
 ---
 
-## 6. GEBCO: two scripts want two different rasters
+## 6. GEBCO: `astd_iseez.R` still wants a raster nobody has
 **status:** open · **see:** `curate/decisions/002-missing-gebco-raster.md`
 
-`reference/geo/h3_index.R` needs `raw/aux/gebco_2026.tif` — this blocks `area_h3` and
-a clean full `tar_make()`. `products/exports/astd_iseez.R` hardcodes `gebco_2024.tif`.
-Neither is present. The 709 MB original is at
-`~/Downloads/older/GEBCO_07_May_2026_8472de0f82f8/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif`
-but macOS privacy blocks Claude from reading `~/Downloads`, so the copy must be run
-by hand. Decide whether one raster serves both scripts.
+**Half of this closed on 2026-09-22.** The 2026 raster is in
+`raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif` and always was;
+`reference/geo/h3_index.R` was looking for `gebco_2026.tif`, a name nobody ever
+created. Repointed, banner removed, and `check_ready()` now reports every target ready.
 
-**check:** `tar_make(names = "area_h3")` succeeds.
+What remains is the second consumer. `products/exports/astd_iseez.R:23` hardcodes
+`raw/aux/gebco_2024.tif`, and that file is genuinely absent — `raw/aux` holds exactly one
+`.tif` and it is the 2026 one. The 2026 release supersedes 2024 in coverage, so
+repointing is the obvious move **unless** the depths that script extracts are meant to
+be frozen at the 2024 vintage. Nothing in the script says either way, and `products/` is
+outside the DAG so nothing has forced the question.
+
+Also still unrun: the `area_h3` rebuild itself. Decision 002 step 4 gives the gate —
+26,160,965 cells, 66 `fao`, 27 `bbht`, depth −6002 to 4, against
+`raw/aux/h3_indices.parquet`. Until it passes, `curated/reference/area_h3.parquet` is
+seeded, not built.
+
+**check:** `tar_make(names = "area_h3")` succeeds and clears the gate above; and
+`astd_iseez.R` either reads the 2026 raster or says in the script why it must not.
 
 ---
 
