@@ -7,6 +7,14 @@ yet**; once an item is finished it is deleted from there and recorded here, or i
 This index exists because the registry is otherwise only browsable by opening
 every file, and because a deleted TODO item leaves no trace of having existed.
 
+**When a record turns out to be wrong,** amend it in place — do not delete it and do
+not renumber. Keep the superseded reasoning under an explicit heading (`## The earlier
+theory was wrong` in 004, `## Superseded — kept for the reasoning` in 000) and date the
+reversal in the italic line under the title; git history says when, so no changelog
+inside the file. A *new* number is for a new decision that overturns an old one (006,
+`## What this supersedes`), not for a record correcting itself. Update the row below,
+which is the status surface.
+
 **Invariant:** every `.md` in this directory has a row here. Checkable:
 
 ```r
