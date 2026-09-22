@@ -51,3 +51,4 @@ own index.
 | `afli_depth_units` | open — fathoms to metres drift, 2010 to mid-2012 |
 | `fs_veidiferd_year` | open — corrupt year on one date field |
 | `ports_iceland` | fixed — shared polygon, undersized buffers |
+| `station_time_whole_day` | open — untimed stations get a midnight-to-23:59 window, unflagged |

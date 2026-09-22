@@ -484,9 +484,10 @@ experimental and may be dropped, and res 8 is where GEBCO depth is quantised, so
 grain cannot be revisited while the raster in decision 002 is missing.
 
 Found while settling that, and not a naming problem: `station-for-ais` synthesises
-`t1`=00:00:00 / `t2`=23:59:00 for stations with no recorded fishing times, unflagged,
-so `between(time, t1, t2)` silently means "anywhere that day" for some rows. A `basis`
-defect; wants an entry in `curate/corrections/`.
+`t1`=00:00:00 / `t2`=23:59:00 for stations with no recorded fishing times, unflagged —
+and collapses several stations into that one row. Declared as
+`curate/corrections/station_time_whole_day.yml`; the repair is decided (keep the
+times, add `basis`) and lands with the producer.
 
 Still the maintainer's, not mine: the disclosure rule (item 15, plan 001 §3) — though
 plan 002 §5 notes it already exists as working code in the anonymity post.

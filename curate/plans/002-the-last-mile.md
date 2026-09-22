@@ -130,8 +130,10 @@ and one that cannot be revisited until the raster in `../decisions/002` is recov
 `fishyweb/scripts/12_DATASET_logbooks.R:883`, a station with no recorded fishing times
 gets `t1` = 00:00:00 and `t2` = 23:59:00 of its date. `between(time, t1, t2)` then
 means "during the haul" for some rows and "anywhere that day" for others, unflagged.
-That is a `basis` defect (`recorded` vs `synthesised`) and belongs in
-`../corrections/`. It affects every published figure that filters on `t1`/`t2`.
+That is a `basis` defect (`recorded` vs `synthesised`), now declared as
+`../corrections/station_time_whole_day.yml`. The repair is decided — keep the times,
+add `basis` — and it lands **with** the producer in step 2 below, not after it. The
+same rows are also an aggregate of several stations, so `n.sids` comes across too.
 
 ## 4. Script disposition — the item 16 check, discharged for the code half
 
@@ -173,7 +175,9 @@ ones are, almost exactly, the scripts that build what the web reads.
    because theirs are event times (`products/ices_vms_datacall/build.R`,
    `products/exports/buseful_2025-05-05.R`) or an MMSI validity window
    (`products/exports/astd_iseez.R:124`, a third meaning that wants a better name).
-2. **Port the `-for-ais` producers** (`12_DATASET_logbooks.R`). The enrichment has
+2. **Port the `-for-ais` producers** (`12_DATASET_logbooks.R`), carrying `basis` and
+   `n.sids` from the start per `../corrections/station_time_whole_day.yml` — adding
+   them later means re-deriving which rows were synthesised. The enrichment has
    nothing to join to until these exist.
 3. **Port the enrichment tail** onto the tagged pings (§2). This is the step that makes
    the sweep answerable by filter.

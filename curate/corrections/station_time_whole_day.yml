@@ -1,0 +1,76 @@
+id: station_time_whole_day
+title: stations with no recorded fishing times are given a whole-day t1/t2 window, unflagged
+status: open - declared and located in code, repair decided, NOT implemented
+applies_to:
+  - curated/logbook/station-for-ais.parquet   (t1, t2)   -- no producer in this repo yet; see curate/plans/002-the-last-mile.md
+  - the enriched ping table, which inherits t1/t2 from it
+affects_rows: unmeasured - needs $FISHYDATA, which was unset when this was written
+implementation: none yet
+discovered: 2026-09-22
+
+origin: >-
+  Found while settling the t1/t2 naming question (curate/decisions/010-time-variable-naming.md)
+  by reading the producer that still lives in ~/stasi/fishyweb. Not reported; nothing
+  in the written analyses treats it as known.
+
+mechanism: >-
+  fishyweb/scripts/12_DATASET_logbooks.R splits the logbook stations in two at :844.
+  Stations with both fishing times keep them. Stations without are routed to lb_rest,
+  and at :883 are given
+
+    t1 = <date> 00:00:00
+    t2 = <date> 23:59:00
+
+  The two halves are then bind_rows'd into one table and written to
+  station-for-ais.parquet, where the columns are indistinguishable.
+
+the_second_half_of_it: >-
+  lb_rest is also AGGREGATED before the times are synthesised (:872-882): grouped by
+  vessel, gear, date and the agf/lods keys, with .sid = min(.sid) and n.sids = n().
+  So an affected row is not merely a station with a guessed time window - it is
+  several stations collapsed into one row, wearing the .sid of the first and a window
+  covering the whole day. The lon/lat re-attached at :888 is the first .sid's position.
+
+detection:
+  rule: >-
+    t2 - t1 equals 23h59m exactly, and t1 is midnight. Both conditions together,
+    because a real haul could in principle span a day.
+  weaker_signal: >-
+    n.sids is set to 1 for the recorded half and n() for the synthesised half, so
+    n.sids > 1 implies synthesised. The converse does NOT hold: a vessel with a
+    single untimed station that day also scores n.sids == 1. Do not use n.sids alone.
+
+repair:
+  decided_by: the maintainer, 2026-09-22
+  approach: >-
+    Keep the times; add a basis column. basis = "recorded" where t1/t2 came from
+    fishing_start/fishing_end, "synthesised" where they are the midnight-to-23:59
+    fallback. Consistent with the AGENTS.md rule that every inferred value carries a
+    basis, and with "never destroy the original" - nothing is overwritten, a column
+    is added.
+  rejected_alternative: >-
+    Leaving the times absent. Rejected because a downstream between(time, t1, t2)
+    would then silently drop the row rather than silently widen it, trading a visible
+    error for an invisible one.
+  carry_through: >-
+    basis must survive the join onto the pings. A ping inheriting a synthesised window
+    is itself only as good as that window, and the enrichment tail in plan 002 is
+    where this is either preserved or lost.
+  also_worth_carrying: >-
+    n.sids, for the aggregation above. A consumer that wants one row per station
+    cannot get it for these rows, and should be able to see that.
+
+impact: >-
+  between(time, t1, t2) is THE filter in the written analyses - it is how a ping is
+  said to belong to fishing. For affected rows it means "anywhere that day" rather
+  than "during the haul", which admits steaming, searching and harbour approaches as
+  fishing. Everything published off that filter is affected: the gridded footprint on
+  the fishyweb index page, the fishtrawl-footprint slides, and the anonymity post's
+  hexagon counts - the last of these being a disclosure surface, so an over-wide
+  window there inflates the apparent number of vessels in a cell.
+  The magnitude is unmeasured and could be small; that is exactly why the flag is
+  worth more than a guess.
+
+related:
+  - curate/decisions/010-time-variable-naming.md   (the four event times, and why they stay four)
+  - curate/plans/002-the-last-mile.md              (where the producer will be built)
