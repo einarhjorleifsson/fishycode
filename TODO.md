@@ -234,7 +234,12 @@ parallel development as how the forks were born.
 two editable places (decision 006). **`logbooks` and `fishydata_2024-2026` are
 still writable** and no date is set for them.
 
-**check:** `logbooks` and `fishydata_2024-2026` are read-only.
+**2026-09-22: a third one.** `~/stasi/fishyweb` was pulled from GitHub and is
+writable, and it holds yet another copy of the ports and source-conversion scripts
+(item 16). It cannot be made read-only until item 16 decides what survives it, so it
+is listed here as known-open rather than silently missing from the check.
+
+**check:** `logbooks`, `fishydata_2024-2026` and `fishyweb` are read-only.
 
 ---
 
@@ -432,6 +437,61 @@ clean recursive sweep does not mean the one real reference is gone;
 
 **Deliberately deferred.** Payoff is legibility, not function, and doing it mid-thread
 makes every path in this file and in recent commit messages stale. Pick a quiet point.
+
+---
+
+## 16. `~/stasi/fishyweb` — decide what survives it
+**status:** open · **files:** none in this repo yet · **see:** item 15, `curate/decisions/005-harbour-geometry-is-a-frozen-input.md`
+
+Pulled 2026-09-22 from `github.com/einarhjorleifsson/fishyweb` (branch `master`, 10 MB,
+last commit **2026-04-08** "reconstucted webpage"). An earlier incarnation of this
+project, already renamed on GitHub — it ships `fishyweb.Rproj`, and its `.gitignore`
+still carries a line excluding the old `fishydata.Rproj`. It mixes two things that the
+current split keeps apart: code that generates data, and web material.
+
+**The data half is mostly a previous generation of code that now lives elsewhere.**
+Mapped by script name and topic, not by reading the code:
+
+| fishyweb `scripts/` | now at |
+|---|---|
+| `00_DATASET_ports-{emodnet,kvoti,osm,vmstools,iceland-and-faroe}.R` | `~/stasi/kaenugardr/`, same filenames |
+| rest of 00/01-series (gear, vessels, mmsi, gfw, optiger, eflalo-dictionary, lookups, shapes) | `reference/` in this repo |
+| 05/11/12/41/43-series (astd, astdB, stk, norway, landings, logbooks, trail) | `sources/` and `curate/` |
+| `80_DATASET_SMB_demo.R`, `91_datacall_*.R`, `ices-datacall/2025/` | **no counterpart** |
+
+**Nothing in it runs here.** Every script uses relative `data/` and `data-raw/`, which
+were symlinks into `/u3/geo/fishydata/` on the Hafró server — documented in its
+`LESTUMIG`, gitignored, absent on this Mac. 17 of its 22 `ramb/` posts also read data,
+several by absolute server path (`/u3/haf/gisland/...`, `/home/haf/einarhj/...`) or
+Hafró FTP. So neither half can be executed or rendered locally without repathing.
+
+**What is actually unique to it, and is the reason not to just archive it:**
+
+- `ramb/` — **22 written posts**, 2025-01 to 2026-03. Prose, not code. This repo
+  produces no reading surface at all, so these have no home in the current structure.
+  They are the `fishyweb` slot of item 15, already populated.
+- `AGENTS.md` (21 KB) — documents the RAW SOURCES, not the code: ASTD schema evolution
+  across four distinct periods, the STK Oracle column mapping and its query-time unit
+  conversions, the MMSI four-case merge logic. Source documentation does not go stale
+  the way the code around it does. Worth diffing against what `sources/astd` and
+  `sources/stk` say now.
+- `ices-datacall/2025/ICES_VMS_QC-main/` — vendored ICES VMS QC harness, 160 KB.
+
+**Already broken in it:** `_quarto.yml` lists `qmd/fishtrawl-footprint.qmd` in the
+navbar; that file does not exist (only `slides/fishtrawl-footprint.qmd` does). The
+other five navbar targets resolve.
+
+**Not verified:** whether `reference/` and `kaenugardr` are genuinely equivalent to the
+00/01-series they appear to replace, or merely cover the same topics. The table above
+was built from filenames and directory listings. Before deleting anything, read the
+pairs.
+
+**check:** each row of the table above is either confirmed superseded by reading both
+sides, or has an explicit decision to keep/port/drop; the `ramb` posts have a named
+destination (ported, archived, or dropped) rather than sitting unreferenced; the
+`AGENTS.md` source notes are either folded into `sources/*/` or recorded as still
+authoritative there; `fishyweb` is then either archived with a date (see item 9) or has
+a stated ongoing role.
 
 ---
 
