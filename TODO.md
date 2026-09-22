@@ -437,9 +437,13 @@ tiers), §2 (where the residual sits), §6 (the header's own open items). The
 
 **needs: maintainer** — three things block the largest remaining population, and none
 is code. The 19.2 M `NA_cs4` pings are foreign call signs with no registry to match
-against: the Faroese, Norwegian and EU vessel registries are *gone from this machine*
-(the consolidator survives as `fishyweb/scripts/01_DATASET_vessels_combine-registry.R`,
-its `data-raw/vessels/{FRO,NOR,EU}` inputs do not) and need re-fetching. 88 Icelandic
+against: the consolidator survives as
+`fishyweb/scripts/01_DATASET_vessels_combine-registry.R`, but its
+`data-raw/vessels/{FRO,NOR,EU}` inputs are on no local disk. **Look on the institute
+share before re-fetching** — `/Volumes/einarhj/stasi/fishydata*` is unsearched, macOS
+blocks Claude from network volumes, and a `find` over SMB was too slow to finish. Plan
+003 §4.5 gives the two paths to check, and names two files already visible at the
+share's root that no script here reads. 88 Icelandic
 vids in the key have no MMSI in the registry, on 3.7 M pings — Fiskistofa lookup. And
 the ODS date error on `mid 101097` is now priced: **34,307 pings**, 96 % of every ping
 the key silently drops; the fix is already written in the script header at `:20–22` and

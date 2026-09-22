@@ -344,11 +344,29 @@ which nothing validates.
 ### 4.5 Foreign vessels: the registry is already on disk
 
 The maintainer asked whether sibling repos hold foreign registries worth moving.
-**Checked: the raw files are gone.** `fishyweb/scripts/01_DATASET_vessels_combine-
+**Checked on local disk: not there.** `fishyweb/scripts/01_DATASET_vessels_combine-
 registry.R` consumes `data-raw/vessels/{FRO,NOR,EU,gfw}/…`, and no `data-raw`
-directory survives in any repo on this machine. There is nothing to `git mv`. The
-*code* is worth porting (plan 002 §4a already assigns it), but it cannot run until
-those four sources are re-fetched — a maintainer task, §6.
+directory survives in any repo under `~/stasi`. The *code* is worth porting (plan 002
+§4a already assigns it), but it has no inputs here.
+
+**Not searched: the institute share.** `/Volumes/einarhj` is an SMB mount of
+`hfs-lifs01.ad.hafogvatn.is:/heima/einarhj`, 5.4 TB, and it holds `stasi/fishydata`
+and `stasi/fishydata_backup` — the likeliest home of those four files. macOS blocks
+the Claude process from network volumes, so it can only be read through the
+maintainer's own terminal, and a `find` over it did not return within four minutes and
+was abandoned. **So "the registries are gone" is not established — only that they are
+not on local disk.** Before treating a re-fetch as necessary, someone should look, with
+a path narrow enough to survive SMB latency:
+
+```
+ls ~/../../Volumes/einarhj/stasi/fishydata/data-raw 2>/dev/null
+ls /Volumes/einarhj/stasi/fishydata*/data*/vessels
+```
+
+Two things the share's root already showed in passing: `stk_mobile_match-and-duals.ods`
+(the duals spreadsheet §6 asks to be corrected) and `AdditionalMMSI20190327.csv`, which
+no script here reads and whose name suggests it is exactly the Fiskistofa-side
+supplement §6 asks for. Both are worth opening before anything is re-fetched.
 
 **What is already here is better than three of the four.** `staging/ais/astd` carries
 `mmsi`, `imonumber`, `vesselname`, `flagname`, `flagcode`, `gross_tonnage`,
