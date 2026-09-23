@@ -398,11 +398,45 @@ in `raw/ais/astd` for that year.
 
 ---
 
+## 19. Report the dropped afli stations upstream — the repair waits on the answer
+**status:** blocked · **needs: maintainer** · **see:** `curate/corrections/afli_rafr_stofn_stations_dropped.yml`
+
+**Asked of the maintainer:** send the report drafted in that file's `the_report_to_send`
+to whoever maintains the `stofn` merge, and bring back their account of what the merge
+does with these rows.
+
+23,570 electronic logbook submissions over 2003–2019 carry `eytt = 0` in `rafr_stofn`
+and never reach `stofn`, so they are absent from everything this repo builds. They are
+real hauls — 100% carry a position, 31,210 catch records hang off them — and the four
+explanations this repo can test all fail: not supersession, not resubmission, not
+deletion, not truncation. What is left is a mechanism inside the source system that
+cannot be observed from here.
+
+**Decided 2026-09-23: hold the repair.** Recovering them would mean this repo asserting
+that the electronic feed is more complete than the source's own bookkeeping, on a guess
+at a mechanism nobody has confirmed. A measured gap is a more honest artefact than a
+repair built on a guess. The recommendation in the yml stays as the *shape* the repair
+would take — in `curate/`, never in the adapter — but it is not the plan of record.
+
+**This is not a decision that the data is fine.** Any per-vessel quantity over 2003–2019
+is materially wrong for the 53 vessels losing over 5% of their stations, seven of them
+over a quarter and one 78.4%. Until this closes, that correction file is the only place
+saying so; if the answer takes a while, the by-vessel warning should reach `docs/`.
+
+**check:** the answer is recorded in the yml under `the_decision_taken.what_unblocks_it`,
+and the correction is either implemented as `curate/corrections/afli_rafr_stofn_stations_dropped.R`
+or closed as working-as-designed with the by-vessel warning published in `docs/`.
+
+
+---
+
 ## Resume note — 2026-09-23, session closed after the AIS chain rebuild
 
-**Start here: `curate/corrections/afli_rafr_stofn_stations_dropped.yml`.** It is the
-last thing found, it is fully characterised, the recommendation is written, and the
-only thing missing is your decision. Nothing else in this note is blocking.
+**Acted on 2026-09-23 — see item 19.** This note opened on
+`curate/corrections/afli_rafr_stofn_stations_dropped.yml` awaiting the maintainer's
+decision. The decision was taken the same day: hold the repair, report the defect
+upstream first, write no R until the source system's own answer arrives. The rest of
+this note stands as written; nothing in it is blocking.
 
 **What it says.** 23,570 live electronic logbook submissions — never deleted, carrying
 positions and 31,210 catch records — are absent from `stofn.parquet`, the source
@@ -417,9 +451,10 @@ skipnr 2395 is missing 265 of its 338 electronic stations. 53 vessels lose over 
 over 10%, seven over a quarter. In tonnage it is 0.09% of catch; the event count is
 what is wrong, not the mass.
 
-**The decision is yours and the yml states it plainly:** whether this repo should
-assert that the electronic feed is more complete than the bookkeeping. If yes, the
-repair goes in `curate/` and NOT in the adapter — `AGENTS.md` puts corrections in
+**The decision, taken 2026-09-23, was to hold:** this repo will not assert that the
+electronic feed is more complete than the bookkeeping until the source system says why
+its merge drops them. Had it gone the other way, the repair would have gone in
+`curate/` and NOT in the adapter — `AGENTS.md` puts corrections in
 `curate/`, and `sources/afli/convert.R` reproducing the source's merged table is the
 adapter doing its job. It is bounded to ~2019, because `rafr_stofn` stops being
 populated then and the 2020-2022 direct-load era cannot be checked at all. And it is

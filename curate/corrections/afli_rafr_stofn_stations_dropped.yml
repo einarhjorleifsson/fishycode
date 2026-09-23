@@ -1,13 +1,13 @@
 id: afli_rafr_stofn_stations_dropped
 title: 23,570 live electronic logbook submissions never reach stofn, the source system's own merged table
-status: confirmed and characterised - repair NOT implemented, recommended, and it belongs in curate/ not the adapter
+status: confirmed and characterised - repair HELD, decided 2026-09-23, pending the source system's own answer
 applies_to:
   - staging/afli/station.parquet
   - staging/afli/fishing_sample.parquet
   - curated/logbook/station.parquet
   - curated/logbook/fishing_sample.parquet
   - curated/logbook/sensor_gps
-implementation: none yet
+implementation: none, and none is to be written until the upstream answer arrives - see the_decision_taken
 discovered: 2026-09-23, maintainer, on being told that 1.6% of logger fixes could not reach a vid - "because it should not"
 
 the_model: >-
@@ -124,24 +124,101 @@ recommendation:
     lost between the vessel feed and the bookkeeping table over 2003-2019. Whoever
     maintains that merge should know. Maintainer's action, not this repo's.
   when: >-
-    Not now. It forces a rebuild of staging/afli, curated/logbook and
-    curated/logbook/sensor_gps, so it should ride along with the next logbook rebuild
-    rather than triggering one.
+    Superseded by the_decision_taken, 2026-09-23. The recommendation above stands as
+    the shape the repair should take IF it is ever written; it is not the plan of
+    record. The plan of record is to hold.
 
-the_decision_this_needs: >-
+the_decision_taken:
+  date: 2026-09-23
+  by: maintainer
+  choice: >-
+    Do NOT admit the rows yet. Report the defect upstream first and wait for the source
+    system's own account of why its merge drops them. No R is to be written against this
+    correction until that answer arrives.
+  reason: >-
+    Every explanation this repo could test has been tested and all four fail -
+    supersession, resubmission, deletion, truncation. What is left is a mechanism inside
+    the source system that this repo cannot observe. A repair built on a guess at that
+    mechanism would be a second defect wearing a correction's clothes, and it would be
+    harder to find than the first, because the recovered rows would carry a basis column
+    asserting a provenance nobody had confirmed. A measured gap that says "23,570 rows
+    are missing and we do not know why" is a more honest artefact than a repair that
+    quietly implies we do.
+  what_this_does_not_change: >-
+    The measurements stand. The skew stands. Any per-vessel quantity over 2003-2019 is
+    still materially wrong for the 53 vessels losing over 5% of their stations, and this
+    file remains the only place that says so. Holding the repair is not the same as
+    deciding the data is fine.
+  what_unblocks_it: >-
+    An answer from whoever maintains the stofn merge, on the record, saying what the
+    merge does with these rows. If the answer is "they should have merged and did not",
+    the recommendation above becomes the plan. If the answer names a legitimate exclusion
+    rule this repo has not modelled, the correction is closed as "working as designed"
+    and the by-vessel warning goes in docs/ instead.
+  tracked_as: TODO item 19, needs maintainer
+
+the_report_to_send:
+  note: >-
+    Drafted here so the decision and the thing it depends on are not in two places.
+    Maintainer's to send, edit or discard. Written for someone who maintains the merge,
+    not for someone who knows this repo.
+  text: |
+    Electronic logbook submissions that are never deleted are not all reaching stofn.
+
+    Over 2003-2019, 23,570 rows in rafr_stofn carry eytt = 0 and have no counterpart
+    in stofn. That is 2.1% of live electronic submissions. The merge is clearly doing
+    the right thing with deleted records - only 327 of 16,912 deleted submissions
+    appear in stofn - so this is not the deletion rule firing.
+
+    The 23,570 look like ordinary records, not shells. 100% carry breidd and lengd,
+    99.1% carry dypi, and 31,210 rows in rafr_afli hang off them. They also appear in
+    rafr_soknartegund and rafr_toga.
+
+    They are not duplicates or resubmissions. 22,475 of them share an
+    xml_faerslu_visir with a row that did merge, but only 14 are an exact twin on
+    vessel, date, gear and position, and 96.3% have no positional twin at all. What
+    the sharing means is that a submission carries several hauls: these are individual
+    hauls dropped out of multi-haul submissions while their siblings were kept. Within
+    a partly-dropped submission the lost rows sit mid-sequence in the same proportion
+    as the kept ones, so it is not a truncation at the end of a transfer either.
+
+    The loss is very unevenly spread across vessels, which is why it matters more than
+    2% suggests. Of 444 vessels with 50 or more electronic stations, the median loses
+    1.29%, but the 95th percentile loses 10.3% and the worst loses 78.4% - skipnr 2395
+    is missing 265 of its 338 electronic stations, and skipnr 1440 is missing 1,698 of
+    4,686. 53 vessels lose over 5%, 25 over 10%, seven over a quarter.
+
+    By year it peaks in 2008-2014 and falls away after 2018, but the fall may be an
+    artefact of our extract: rafr_stofn appears to stop being populated around 2019,
+    and 166,151 negative visir appear in stofn from then on with no counterpart in it,
+    163,233 of those in 2020-2022. So we cannot tell from our copy whether the same
+    loss continues after 2019.
+
+    What would help: an account of what the merge does with these rows. If they were
+    meant to merge and did not, we would like to know the mechanism before we decide
+    whether to supplement our own copy from the feed. If there is an exclusion rule we
+    have not modelled, we would rather model it than work around it.
+
+the_decision_that_was_needed: >-
   Whether to supplement stofn with the 23,570 live rafr_stofn rows the source lost.
   This is not a bug fix in this repo - the adapter faithfully reproduces the source's
   merged table, which is arguably the correct thing for an adapter to do. Admitting
   them means this repo asserting that the electronic feed is more complete than the
   bookkeeping, which is a claim about the source system and the maintainer's to make.
 
-  If admitted, the repair belongs in the adapter and forces a rebuild of staging/afli,
-  curated/logbook and curated/logbook/sensor_gps.
+  If admitted, the repair goes in curate/ and NOT in the adapter - see
+  recommendation.but_not_in_the_adapter - and forces a rebuild of staging/afli,
+  curated/logbook and curated/logbook/sensor_gps. An earlier revision of this line
+  put the repair in the adapter; that contradicted AGENTS.md and is withdrawn.
 
 open_questions:
-  - Do the 23,570 carry positions and times, or only gear and catch? If the station
-    geometry is missing they cannot be placed even once admitted. Not checked.
-  - The cost to the logbook tables themselves - catch, effort, station counts - has
-    not been measured. 1.6% of logger fixes is only where it happened to surface.
-  - Is 2.1% stable across years, or does it mark particular vessels or submission
-    software? The by-year shape suggests an era effect but that is not a test.
+  - Is the loss a property of particular submission software or shore systems? The
+    by-year shape (peak 2008-2014) and the per-vessel skew both suggest something
+    systematic rather than random, but neither is a test of what. rafr_stofn would
+    need a column identifying the submitting client, and it has not been looked for.
+  - Does the same loss continue after rafr_stofn stops being populated around 2019?
+    UNKNOWABLE from the data held here - there is no feed to compare stofn against
+    for 2020-2022. Only the source-system maintainer can answer it.
+  - Answered 2026-09-23, kept so the questions are not asked twice - the 23,570 DO
+    carry geometry (100% breidd and lengd, 99.1% dypi), and the cost to the logbook
+    tables IS measured (23,570 stations, 31,210 catch records, 0.09% of tonnage).
