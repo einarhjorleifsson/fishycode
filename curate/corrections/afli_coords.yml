@@ -196,9 +196,17 @@ parked:
     approach.
   state:
     incumbent: >-
-      curate/corrections/afli_coords_ais_interp.R - AIS interpolated onto the
-      logger clock. Writes staging/afli/sensor_gps_ais. Carries the bootstrap
-      cycle, so it stays outside the targets graph.
+      curate/logbook_sensor_gps.R - AIS interpolated onto the logger clock, bounded
+      by trip. Writes curated/logbook/sensor_gps.
+      CORRECTED 2026-09-23: this field named curate/corrections/afli_coords_ais_interp.R
+      writing staging/afli/sensor_gps_ais, and NEITHER EXISTS. The stale path matters
+      more than most - it is the field a reader consults to learn which derivation is
+      AIS-derived, and using the AIS-derived one to corroborate against AIS measures
+      the interpolation and nothing else. curate/checks/afli_rafr_stofn_corroboration.R
+      came within one join of exactly that.
+      The bootstrap cycle this field warned about is also gone: the interpolation moved
+      downstream of the merge, and curate/ais_ping_union.R now only refers to it in a
+      comment (:129) rather than consuming it.
     alternative: >-
       curate/corrections/afli_coords.R - candidate selection from the logger's
       own reading. Writes staging/afli/sensor_gps, 50,147,118 rows, already
