@@ -1,6 +1,6 @@
 id: afli_rafr_stofn_stations_dropped
 title: 23,570 live electronic logbook submissions never reach stofn, the source system's own merged table
-status: confirmed - measured, repair NOT implemented, and the repair is a judgement not a bug fix
+status: confirmed and characterised - repair NOT implemented, recommended, and it belongs in curate/ not the adapter
 applies_to:
   - staging/afli/station.parquet
   - staging/afli/fishing_sample.parquet
@@ -61,6 +61,72 @@ cost_where_it_surfaced: >-
 
   Note what was NOT wrong: every .sid that does reach curated fishing_sample resolves
   perfectly - .tid found, schema afli, vid present, zero lost at each step.
+
+what_they_are:
+  measured: 2026-09-23
+  they_are_real_hauls: >-
+    Of the 22,475 anomalies that share an xml_faerslu_visir with a row that DID merge,
+    only 14 (0.1%) are an exact twin on vessel, date, gear and position. 96.3% have no
+    positional twin at all. So sharing an entry means "same submission", not
+    "duplicate" - a submission routinely carries several hauls (1 row in 90,522
+    entries, 2-8+ in ~11,000). These are individual hauls dropped out of multi-haul
+    submissions while their siblings were kept.
+  they_are_complete: >-
+    100% carry breidd and lengd, 99.1% carry dypi - the same rates as the rows that
+    merged. 31,210 catch records hang off them.
+  no_truncation_pattern: >-
+    Within a partly-dropped submission the lost rows sit in the middle 21,534 times of
+    22,475, and the kept rows are middle 687,484 times of 702,153. The same
+    proportion. It is not a cut-off at the end of a submission; it is scattered.
+  so_not: supersession, resubmission, deletion, or truncation. None of the four fits.
+
+the_skew_is_the_argument:
+  overall_loss: 2.08%
+  per_vessel_on_444_vessels_with_50plus_stations:
+    median: 1.29%
+    p90: 5.84%
+    p95: 10.34%
+    p99: 35.24%
+    max: 78.40%
+  vessels_losing_over_5pct: 53
+  vessels_losing_over_10pct: 25
+  vessels_losing_over_25pct: 7
+  worst: "skipnr 2395 - 265 of its 338 electronic stations missing; skipnr 1440 - 1,698 of 4,686"
+  reading: >-
+    2% spread evenly would be ignorable. It is not spread evenly. For seven vessels a
+    quarter or more of their logbook stations are absent from the curated data, and for
+    one, four fifths. Any per-vessel quantity - effort, footprint, CPUE, spatial
+    distribution - is materially wrong for those vessels, and nothing in the data as it
+    stands says which they are.
+  in_tonnage_it_is_small: "5,666,434 of 6,076,786,637 = 0.09% of catch. The event count, not the tonnage, is what matters here."
+
+recommendation:
+  recover_them: >-
+    Yes, on the strength of the skew rather than the total. The records are real,
+    complete and undeleted.
+  but_not_in_the_adapter: >-
+    AGENTS.md: "Corrections live in curate/, never in a source adapter. An adapter that
+    reads two other sources is no longer an adapter." sources/afli/convert.R must go on
+    reading stofn.parquet faithfully - it is the source system's own merged table and
+    reproducing it is the adapter's job. The recovery belongs as
+    curate/corrections/afli_rafr_stofn_stations_dropped.R, paired with this file,
+    unioning the recovered stations with a basis column recording that they came from
+    the electronic feed and not from the bookkeeping.
+  bounded_to_2019: >-
+    rafr_stofn stops being populated around 2019, so this defect can neither be
+    measured nor repaired after that. 166,151 negative visir appear in stofn with no
+    counterpart in the feed, 163,233 of them 2020-2022. Whether the same loss continues
+    in the direct-load era is UNKNOWABLE from the data held here. State it; do not
+    imply the repair is complete.
+  report_upstream: >-
+    This is a defect in the source system, not in this repo. 23,570 hauls with
+    positions and 31,210 catch records, submitted electronically and never deleted,
+    lost between the vessel feed and the bookkeeping table over 2003-2019. Whoever
+    maintains that merge should know. Maintainer's action, not this repo's.
+  when: >-
+    Not now. It forces a rebuild of staging/afli, curated/logbook and
+    curated/logbook/sensor_gps, so it should ride along with the next logbook rebuild
+    rather than triggering one.
 
 the_decision_this_needs: >-
   Whether to supplement stofn with the 23,570 live rafr_stofn rows the source lost.
