@@ -1,12 +1,52 @@
 id: afli_depth_units
 title: afli depths migrate from fathoms to metres vessel by vessel over 2010 to mid-2012
-status: suspected - defect measured and located in time, repair specified but NOT implemented
+status: implemented and rebuilt 2026-09-23 - curate/corrections/afli_depth_units.R
+  produces staging/afli/depth.parquet; curate/logbook.R joins it in;
+  curated/logbook/station.parquet rebuilt and validated (median GEBCO ratio
+  1.01-1.03 every year 1990-2023, post-conversion - see
+  curate/decisions/022-depth-unit-is-metres.md).
 applies_to:
-  - staging/afli/station.parquet   (z1, z2)
-  - curated/logbook/station.parquet
+  - staging/afli/depth.parquet   (new: .sid, z1, z2, z1_raw, z2_raw, z1_basis, z2_basis)
+  - curated/logbook/station.parquet   (via curate/logbook.R, once rebuilt)
 affects_rows: up to ~60% of deep stations in the worst months of a 30-month window
-implementation: none yet
+implementation: curate/corrections/afli_depth_units.R
 discovered: 2026-09-21
+implemented: 2026-09-23
+
+unit_decision: >-
+  Product-wide depth unit settled as METRES by the maintainer, 2026-09-23 -
+  see curate/decisions/022-depth-unit-is-metres.md. This repair converts
+  fathom-classified rows to metres (not the reverse). Every converted row must
+  keep the source value as z1_raw/z2_raw and set z1_basis/z2_basis =
+  "reconstructed" (unconverted rows = "recorded"), per AGENTS.md's basis
+  invariant - see decision 022 for why this is not a new rule.
+
+caveat_pelagic_gear: >-
+  Flagged by the maintainer 2026-09-23. The GEBCO ratio test assumes z1 is a
+  bottom depth. A pelagic gear (gear %in% c("OTM", "PS", "HMS"), afli's own
+  gid->gear mapping via reference/gear.parquet - see
+  curate/corrections/afli_depth_units.R) may report FISHING depth in the water
+  column instead, which need not track the seabed at all, regardless of unit.
+  afli_depth_units.R excludes pelagic stations from the CLASSIFICATION evidence
+  only; a vessel's switch date is estimated from its non-pelagic stations and
+  then applied to its pelagic stations too, since the switch is a wheelhouse
+  software/equipment property, not a gear property. The mechanism numbers below
+  (65/157/46 of 268) predate this exclusion - see mechanism_rechecked_2026-09-23.
+
+mechanism_rechecked_2026-09-23: >-
+  Recheck (script: prototype in this correction's git history, superseded by
+  afli_depth_units.R) with pelagic gear excluded, same peak window, threshold
+  z1 >= 50 in the Icelandic box: 252 vessels (was 268) had >= 30 qualifying
+  stations. Band counts shifted: 0-10% 53 (was 65), 10-25% 19 (was 19), 25-50%
+  17 (was 19), 50-75% 28 (was 64), 75-90% 54 (was 55), 90-100% 81 (was 46). The
+  50-75% band nearly halved while 90-100% nearly doubled - pelagic stations
+  were diluting some vessels' ratios toward the ambiguous middle without those
+  vessels actually being ambiguous. Confirms the maintainer's concern: the
+  monthly aggregate curve barely moved (a few points, see the_anomaly), but
+  PER-VESSEL classification - the thing the repair actually bean-counts on -
+  moved substantially. afli_depth_units.R's own MIN_CLASSIFY threshold is 10
+  rows, not 30, so its vessel count (810 classified) is not directly comparable
+  to either count above; both are provided for the historical record.
 
 origin: >-
   Reported by the maintainer: afli began by requesting depth in FATHOMS, an ad-hoc
@@ -74,19 +114,39 @@ mechanism:
 
 repair:
   approach: >-
-    Classify (vid, period) rather than individual rows. For each vessel, compute
-    the GEBCO ratio over a rolling window and find the switch date; records before
-    it are fathoms, after it metres. Convert one side so the column is in a single
-    declared unit, retain the original as z1_raw, and carry a basis column.
+    Implemented in curate/corrections/afli_depth_units.R. Classification
+    evidence: non-pelagic, Icelandic-box (approximate: lon -30..-10, lat
+    62..68), z1 >= 50, inside the 2010-01-01..2012-06-30 drift window.
+    Per-vessel switch date fit as a single step function (fathoms before,
+    metres after) maximising agreement with the vessel's own ordered
+    classification rows - never on an individual row's own ratio. Vessels with
+    < 10 classification rows default to the baseline (fathoms throughout the
+    window). The switch date, once fit, is applied to ALL of that vessel's
+    stations in the window - any gear, any depth, not just the classification
+    subset. Outside the window every afli station converts flatly (baseline is
+    unambiguous fathoms). z1_raw/z2_raw keep the original value; z1_basis/
+    z2_basis records "reconstructed" (converted) or "recorded" (already
+    metres, untouched).
+  result_2026-09-23: >-
+    810 vessels had >= 10 classification rows: 394 always-fathoms (no switch
+    found in-window), 54 already-metres from window start, 362 a genuine
+    mid-window switch. Of 6,844,567 afli stations: 6,290,055 reconstructed
+    (converted), 111,640 recorded (already metres - all inside the window),
+    442,872 NA (no z1). Sanity check: median z1 by year converts cleanly
+    (e.g. 2005: 63 fathoms -> 115 m, ratio 1.83); pct_reconstructed by year
+    drops inside the drift window (2010 87.9%, 2011 57.2%, 2012 69.6%) and is
+    100% immediately outside it - matches the_anomaly's shape.
   residual_uncertainty: >-
     Moderate and honest. GEBCO is a cell mean, not the depth under the gear, so
-    individual rows cannot be classified reliably - only vessel-periods can. The
-    ~111 of 268 vessels at the extremes are unambiguous; the 157 in between need a
-    switch date estimated, and near that date individual rows will be uncertain.
+    individual rows cannot be classified reliably - only vessel-periods can.
+    Vessels near their own switch date carry the most uncertainty; the
+    single-step-function fit does not model a gradual per-vessel transition
+    (e.g. testing before fully adopting a new setting), only an instant one.
   do_not: >-
     Do NOT classify row by row on the ratio. The within-cell spread is wide enough
     that it would mislabel a large number of genuinely-fathom records in deep or
-    steep ground.
+    steep ground. afli_depth_units.R only ever uses a row's ratio as evidence
+    toward its VESSEL's switch date, never as that row's own final basis.
 
 impact: >-
   Any analysis using afli depth across 2010-2012 mixes two units, with the

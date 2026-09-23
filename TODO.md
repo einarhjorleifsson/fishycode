@@ -29,54 +29,24 @@ does it twice.
 
 ---
 
-## 1. Wire `adb` into the logbook merge — BLOCKED on units and longitude sign
-**status:** blocked · **files:** `sources/adb/convert.R`, `curate/logbook.R`
-**see:** `curate/corrections/adb_vs_fs_afladagbok.yml`, item 1b
 
-`_targets.R` declares `adb` as a logbook dependency; `curate/logbook.R` never opens
-`staging/adb/`, so the merged product ends **2025-12-12 with zero 2026 coverage** while
-adb holds 20,530 stations for 2026, already converted.
+## 2. `FS_DATE_MAX` expired nine months ago — now LIVE, not latent
+**status:** open · **files:** `curate/logbook.R`, `curate/link_lid_map.R:40`
+**see:** `curate/decisions/023-adb-wired-into-logbook.md`
 
-Blocked on two defects that would silently corrupt the product — adb is in **metres**
-where fs and afli are in **fathoms** (settled against GEBCO, not by comparing sources),
-and adb **drops the west longitude sign** on 10.8% of shared stations. Both are measured
-in the correction file, together with the gear crosswalk that is no longer a blocker.
-The unit question is shared with item 1b and is the real gate.
+`FS_DATE_MAX <- as.Date("2025-12-31")` is now the real `fs_afladagbok`/`adb` handover
+point (item 1 landed 2026-09-23) rather than a dormant literal — `curated/logbook/
+station.parquet` has 20,530 real 2026 adb stations in it as of this rebuild.
 
-**check:** `curate/logbook.R` reads `staging/adb`; merged `station.parquet` has non-zero
-2026 rows; depth is in one declared unit throughout; no merged 2026 station has a
-positive longitude.
+That makes the second ceiling active too: `link_lid_map.R:40` filters landings to
+`date <= ymd("2025-12-12")`, frozen from the merged logbook's OLD max date. Landings
+run to 2026-04-14 and adb to 2026-04-08, so `trip_voyage`/`link_lid_map` targets, if
+rebuilt now, would silently drop all 2026 landings matches rather than error.
+Nobody has rebuilt them against the new `logbook` yet, so no wrong output exists —
+but the gap is no longer hypothetical.
 
-## 1b. afli depth units drift fathoms → metres over 2010 to mid-2012
-**status:** blocked · **needs: maintainer** · **file:** `sources/afli/convert.R`
-**see:** `curate/corrections/afli_depth_units.yml`
-
-**Asked of the maintainer:** agree one depth unit for the whole product and record which
-was chosen. `docs/output-schema.md:88` declares `z1`/`z2` as "Start / end depth" with **no
-unit**, all three adapters pass the column through verbatim, and so no adapter can be
-called wrong. Until that line exists neither this repair nor item 1's is writable.
-Deferred by the maintainer 2026-09-21; recorded so the next attempt starts here.
-
-The drift itself is measured against GEBCO and is a **per-vessel** property — at the peak
-window 65 of 268 vessels are unambiguously fathoms and 46 unambiguously metres. Repair
-must classify `(vid, period)`, never rows.
-
-**check:** median GEBCO-ratio per year varies by less than 5% across 1990–2026.
-
-## 2. `FS_DATE_MAX` expired nine months ago
-**status:** open · **file:** `curate/logbook.R:24`
-
-`FS_DATE_MAX <- as.Date("2025-12-31")`. fs_afladagbok's real data ends 2025-12-12, so
-this is not currently clipping real fs rows — it is the handover point to adb, and it
-only becomes correct once item 1 lands.
-
-A second, less obvious ceiling matters more: `link_lid_map.R:40` filters landings to
-`date <= ymd("2025-12-12")`. That literal is exactly the merged logbook's current max
-date, i.e. it was derived from the output at the time and then frozen. Landings
-actually run to **2026-04-14** and adb to **2026-04-08**, so this line would block
-2026 from matching landings even after adb is merged.
-
-**check:** no hardcoded date in `logbook.R` sits in the past at build time.
+**check:** no hardcoded date in `logbook.R` or `link_lid_map.R` sits in the past at
+build time; `curated/link/lid_map.parquet` has non-zero 2026 rows once rebuilt.
 
 ---
 
@@ -118,6 +88,24 @@ carries a `pid`.
 
 ---
 
+## 20. `adb`'s `gid` is `NA` throughout the merged logbook
+**status:** open · **file:** `sources/adb/convert.R`
+**see:** `curate/corrections/adb_vs_fs_afladagbok.yml` (`defect_3_gear_coding`),
+`curate/decisions/023-adb-wired-into-logbook.md`
+
+`adb`'s own gear code doesn't resolve against `reference/gear.parquet` (codes
+92/99/91/29 valid only as `gear$map`, code 10 only as `gear$gid`, 53/51 as
+neither), so `sources/adb/convert.R` leaves `gid` `NA` and keeps the raw code as
+`gid_old`. A crosswalk is already DERIVED, not guessed, from the 467,635 stations
+`adb` shares with `fs_afladagbok` (same defect record) — it just isn't applied.
+Now that `adb` is merged in (20,530 stations, all 2026), every downstream
+gear-dependent step (pelagic/demersal splits, effort by gear) is blind for 2026.
+
+**check:** `curated/logbook/fishing_sample.parquet` has no `NA` `gid` where
+`schema == "adb"`.
+
+---
+
 ## 5. `ping_union` carries duplicate position keys — measured, not repaired
 **status:** open · **see:** `curate/corrections/ping_union_duplicate_keys.yml`
 
@@ -127,31 +115,6 @@ rule is the open part, and the correction records one proposed rule that was **r
 
 **check:** `staging/ais/ping_union` has no duplicate `(vid, time)`, or the correction
 states why the surviving ones are legitimate.
-
-## 6. GEBCO: `astd_iseez.R` still wants a raster nobody has
-**status:** open · **see:** `curate/decisions/002-missing-gebco-raster.md`
-
-**Half of this closed on 2026-09-22.** The 2026 raster is in
-`raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif` and always was;
-`reference/geo/h3_index.R` was looking for `gebco_2026.tif`, a name nobody ever
-created. Repointed, banner removed, and `check_ready()` now reports every target ready.
-
-What remains is the second consumer. `products/exports/astd_iseez.R:23` hardcodes
-`raw/aux/gebco_2024.tif`, and that file is genuinely absent — `raw/aux` holds exactly one
-`.tif` and it is the 2026 one. The 2026 release supersedes 2024 in coverage, so
-repointing is the obvious move **unless** the depths that script extracts are meant to
-be frozen at the 2024 vintage. Nothing in the script says either way, and `products/` is
-outside the DAG so nothing has forced the question.
-
-**The `area_h3` rebuild is done.** `tar_make(names = "area_h3")` ran 2026-09-22 in
-7m30s; the gate passes and an anti-join against `raw/aux/h3_indices.parquet` in both
-directions returns zero rows, with zero disagreements on `depth`, `bbht` or `fao`. The
-sweep no longer contains a table the pipeline never made.
-
-**check:** `astd_iseez.R` either reads the 2026 raster or says in the script why it must
-not.
-
----
 
 ## 7. Verification scripts test shape, not substance
 **status:** open · **files:** `R/check_ready.R`, `R/check_paths.R`, `R/paths.R`

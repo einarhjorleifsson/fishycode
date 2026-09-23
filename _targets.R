@@ -157,6 +157,14 @@ list(
              fd_staging("afli", "aggregate.parquet"))
   }, format = "file"),
 
+  # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
+  # afli_station by curate/logbook.R, never written back into station.parquet.
+  tar_target(afli_depth_units, {
+    afli; area_h3
+    produces("curate/corrections/afli_depth_units.R",
+             fd_staging("afli", "depth.parquet"))
+  }, format = "file"),
+
   tar_target(fs_afladagbok, {
     dictionary; gear; port
     produces("sources/fs_afladagbok/convert.R",
@@ -171,7 +179,16 @@ list(
     produces("sources/adb/convert.R",
              fd_staging("adb", "trip.parquet"),
              fd_staging("adb", "station.parquet"),
+             fd_staging("adb", "fishing_sample.parquet"),
              fd_staging("adb", "catch.parquet"))
+  }, format = "file"),
+
+  # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
+  # adb_station by curate/logbook.R (curate/decisions/023-adb-wired-into-logbook.md).
+  tar_target(adb_lon_sign, {
+    adb
+    produces("curate/corrections/adb_vs_fs_afladagbok.R",
+             fd_staging("adb", "lon_sign.parquet"))
   }, format = "file"),
 
   tar_target(aflagrunnur, {
@@ -235,7 +252,7 @@ list(
   # Precedence, recorded once in curate/decisions/: afli where it exists, then
   # fs_afladagbok through its dump end, then adb beyond it.
   tar_target(logbook, {
-    afli; fs_afladagbok; adb
+    afli; afli_depth_units; fs_afladagbok; adb; adb_lon_sign
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),
              fd_curated("logbook", "station.parquet"),

@@ -19,8 +19,8 @@ sf::sf_use_s2(use_s2 = FALSE)
 gebco_ices <- 
   read_sf(fd_staging("aux", "gebco.gpkg")) |>
   select(.depth = depth)
-gebco_raster <- 
-  terra::rast(fd_raw("aux", "gebco_2024.tif"))
+gebco_raster <-
+  terra::rast(fd_raw("aux", "gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif"))
 
 if(FALSE) {
   test <- 

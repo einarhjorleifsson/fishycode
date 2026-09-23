@@ -1,10 +1,15 @@
 id: adb_vs_fs_afladagbok
 title: adb renders the same records as fs_afladagbok in different units and with an unsigned longitude
-status: suspected - defects measured and quantified, repair NOT implemented
+status: implemented and rebuilt 2026-09-23 - depth units closed (decision 022);
+  longitude sign fixed (curate/corrections/adb_vs_fs_afladagbok.R); both joined
+  into curate/logbook.R, adb now wired into the three-tier merge
+  (curate/decisions/023-adb-wired-into-logbook.md), TODO.md item 1 closed
 applies_to:
   - staging/adb/station.parquet
-implementation: none yet
+  - staging/adb/lon_sign.parquet   (new: .sid, lon1, lon2, lon1_raw, lon2_raw, lon1_basis, lon2_basis)
+implementation: curate/corrections/adb_vs_fs_afladagbok.R (longitude sign only; depth handled by curate/logbook.R directly, per decision 022)
 discovered: 2026-09-21, cross-checking adb against fs_afladagbok before wiring adb into the merge
+implemented: 2026-09-23 (longitude sign)
 
 context: >-
   adb is the LIVE VIEW of fs_afladagbok - the same underlying records, re-served.
@@ -53,8 +58,15 @@ defect_1_depth_units:
     curated/logbook/station.parquet. Merging adb as-is would silently make 2026
     depths metres inside a column that is fathoms for 1950-2025. Nothing would
     error; every depth-based analysis crossing the boundary would be wrong.
-  repair: divide adb z1 and z2 by 1.8288 at the adapter, or agree a unit for the
-    whole product and convert everything once, recording which was chosen.
+  repair: >-
+    SUPERSEDED 2026-09-23 - the maintainer settled the product-wide unit as
+    METRES (curate/decisions/022-depth-unit-is-metres.md), which adb already
+    is. adb needs no conversion; fs_afladagbok converts to metres instead
+    (shared with afli_depth_units.yml). Every converted fs_afladagbok row
+    keeps z1_raw/z2_raw and sets z1_basis/z2_basis = "reconstructed", per
+    decision 022. Also per decision 022: exclude pelagic gear
+    (gid %in% pelagic_gids, curate/link_lid_map.R) from any GEBCO-ratio
+    measurement - fishing depth in the water column is not seabed depth.
 
 defect_2_longitude_sign:
   summary: adb drops the west sign on longitude for roughly a tenth of records.
@@ -66,9 +78,27 @@ defect_2_longitude_sign:
   relation_to_known_issue_13: >-
     This is the longitude sign heuristic. fs_afladagbok applies it; adb does not.
   residual: >-
-    The remaining ~8% of the >10 km outliers are not explained by sign alone and
-    have not yet been characterised.
+    13,064 of the 50,269 outliers (26%, not the originally-estimated ~8%) are not
+    explained by sign alone - negating does not bring them within 10 km either -
+    and remain uncharacterised.
   severity: HIGH if merged without repair - positions land in the wrong ocean.
+  repair: >-
+    Implemented 2026-09-23, curate/corrections/adb_vs_fs_afladagbok.R. Rule,
+    derived and checked against all 466,508 stations with usable coordinates on
+    both sides (not a sample): negate lon when lon > 10.75 AND lat < 67.66. This
+    is exactly fs_afladagbok's own restore-threshold (sources/fs_afladagbok/
+    convert.R Step 3) - both systems share the same positive-magnitude
+    convention and the same genuine-eastern-waters exception (Barents/Norwegian
+    Sea, lon up to 51.5, lat mostly > 67.66, ~4,630 stations, all agreeing
+    between adb and fs already). Result on the shared population: fixes 37,205
+    of 50,269 mismatches, breaks ZERO previously-correct rows (checked
+    exhaustively). Applied to the full adb table (628,314 rows, not just the
+    fs-overlap subset - the rule needs only adb's own lon/lat): 42,548
+    reconstructed (6.78%), 585,171 recorded, 595 NA. Only 53 of 20,530 2026
+    rows are touched - the sign defect is concentrated outside the range adb
+    exists to extend. lon1_raw/lon2_raw keep the original; lon1_basis/
+    lon2_basis mark "reconstructed" vs "recorded", per AGENTS.md's basis
+    invariant (same vocabulary as afli_depth_units.yml's z1_basis).
 
 defect_3_gear_coding:
   summary: >-
@@ -89,4 +119,5 @@ defect_3_gear_coding:
     is impossible: codes 92/99/91/29 are valid only as gear$map, code 10 only as
     gear$gid, and codes 53/51 as neither.
 
-blocks: TODO.md item 1 (wire adb into the logbook merge)
+blocked: TODO.md item 1 (wire adb into the logbook merge) - closed 2026-09-23,
+  see curate/decisions/023-adb-wired-into-logbook.md

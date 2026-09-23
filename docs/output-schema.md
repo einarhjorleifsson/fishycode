@@ -85,7 +85,7 @@ gear and effort detail is in `fishing_sample.parquet`.
 | `lon2`, `lat2` | dbl | End position (decimal degrees) |
 | `sq` | int | Statistical square [1–999]; `afli` only — `NA` for `fs_afladagbok` |
 | `ssq` | int | Statistical sub-square [0–4]; `afli` only — `NA` for `fs_afladagbok` |
-| `z1`, `z2` | int | Start / end depth |
+| `z1`, `z2` | int | Start / end depth (m). See `curate/decisions/022-depth-unit-is-metres.md` — not yet enforced, see item 1b in `TODO.md` |
 | `schema` | chr | Schema tag |
 | `eytt_deleted` | lgl | `TRUE` for records flagged deleted in the source (327 stations); `afli` only |
 | `coord_flag` | chr | Suspect-coordinate QC label — `"meridian"`, `"west"`, `"south"`, else `NA`. `fs_afladagbok` only. Flags; does not filter. See `AGENTS_data_sources.md`. |

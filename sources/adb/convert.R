@@ -153,7 +153,7 @@ catch <-
 # gear from them would mislabel it. The raw code is preserved verbatim as
 # gid_old; the unified gid is filled downstream from the LANDINGS gear code,
 # which does resolve cleanly - all 25 of its distinct values match gear$gid.
-# See TODO.md item 1.
+# See TODO.md item 20.
 
 station_narrow <-
   station |>

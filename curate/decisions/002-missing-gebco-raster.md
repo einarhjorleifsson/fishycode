@@ -130,3 +130,9 @@ either way.
 *2026-09-22: half of this addendum was wrong — `raw/aux` does hold a `.tif`. The other
 half stands: `gebco_2024.tif` is genuinely absent, `astd_iseez.R` still hardcodes it,
 and the repoint-or-freeze question is still open. It lives on in `TODO.md` item 6.*
+
+*2026-09-23: repoint-or-freeze answered by the maintainer — repoint. `astd_iseez.R:23`
+now reads `raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif`, the same file
+`h3_index.R` uses, so both consumers track one raster and there is only one to keep
+current. No freeze requirement existed for the 2024 vintage; nothing downstream of
+`astd_iseez.R` depends on that specific release. TODO.md item 6 closed and deleted.*

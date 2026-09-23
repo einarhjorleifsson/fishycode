@@ -26,7 +26,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 |---|---|---|
 | 000 | [restructuring](000-restructuring.md) | why this repo supersedes `logbooks` and `fishydata_2024-2026`, and the two committed boundaries |
 | 001 | [file migration](001-file-migration.tsv) | where every script from the two predecessors landed |
-| 002 | [missing GEBCO raster](002-missing-gebco-raster.md) | the raster was never missing — `h3_index.R` wanted a filename nobody created. **Reversed and closed 2026-09-22**; the rebuild itself is still unrun |
+| 002 | [missing GEBCO raster](002-missing-gebco-raster.md) | the raster was never missing — `h3_index.R` wanted a filename nobody created. **Closed 2026-09-23**: `astd_iseez.R` repointed to the same 2026 raster as `h3_index.R` |
 | 003 | [undeclared dump inputs](003-undeclared-dump-inputs.md) | datasets named `year=YYYY` that were not partitioned |
 | 004 | [issue 11, +70 rows](004-issue-11-seventy-extra-rows.md) | three harbours shared one polygon — a copy-pasted coordinate, not a join; measured at 21 AIS-era trips. **Closed** |
 | 005 | [harbour geometry is a frozen input](005-harbour-geometry-is-a-frozen-input.md) | STK ships `harborid`, so deriving polygons from it and then using them to tag pings is a cycle; the artifact is frozen and the bootstrap kept as provenance. **Closed** |
@@ -46,6 +46,8 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 019 | [the check layer exists](019-the-check-layer-exists.md) | `curated/check/` is real — three tables, and the contract a check owes its reader: report, never correct; one row per entity; carry your own verdict. Also why no `docs/` page had ever read `curated/` |
 | 020 | [reused-callsign candidate review](020-reused-callsign-candidate-review.md) | 3 of 31 reused-callsign candidates fixed (`ais_key_callsign_reuse.yml`); the other 28, with why each was parked — 13 were already correctly keyed under a different mid the callsign search never found, a false-positive class worth checking for next time |
 | 021 | [the cascade matches on evidence now](021-cascade-matches-on-evidence.md) | plan 003 step 5's last piece: the `type`-string cascade is replaced by time-aware joins against `vessel_identity`; six mobile-ids/441K pings now land on the vid their own window actually covers, and two large ones (`TFPH`, `TFUT`) surface as AIS/landings disagreements instead of silently guessing |
+| 022 | [depth unit is metres](022-depth-unit-is-metres.md) | product-wide `z1`/`z2` = metres; every conversion carries `z1_raw`/`z2_raw` and `z1_basis`/`z2_basis`; GEBCO ratio test excludes pelagic gear. **Implemented and rebuilt 2026-09-23** — `curated/logbook/station.parquet` validated (median ratio 1.01–1.03, 1990–2023) |
+| 023 | [adb wired into logbook](023-adb-wired-into-logbook.md) | three-tier merge (afli > fs_afladagbok > adb) closes TODO item 1; adb fills 2026 (20,530 stations) once its longitude sign and `_targets.R`'s incomplete `produces()` declaration are both fixed |
 
 ## Data defects
 
