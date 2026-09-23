@@ -38,6 +38,7 @@
 
 library(duckdbfs)
 library(tidyverse)
+library(ramb)
 
 # -- station -> vessel ---------------------------------------------------------
 
@@ -101,24 +102,13 @@ for (yr in years) {
     mutate(lon = NA_real_, lat = NA_real_, dt_sec = NA_real_, basis = "outside_voyage")
 
   if (nrow(inside)) {
+    # rule = 1 (no extrapolation) inside rb_interpolate_track(): outside this
+    # voyage's own fixes the answer is NA, not a position carried over from
+    # its nearest endpoint. See curate/decisions/024-interpolate-track-in-ramb.md
+    # for why this moved out of an inline group_modify() into ramb.
     inside <- inside |>
+      ramb::rb_interpolate_track(tk, by = c("vid", "trip")) |>
       arrange(vid, trip, time) |>
-      group_by(vid, trip) |>
-      group_modify(function(g, key) {
-        a <- tk[tk$vid == key$vid & tk$trip == key$trip, ]
-        if (nrow(a) < 2)
-          return(mutate(g, lon = NA_real_, lat = NA_real_, dt_sec = NA_real_))
-        tn <- as.numeric(g$time); an <- as.numeric(a$time)
-        # rule = 1: no extrapolation. Outside this voyage's own fixes the answer
-        # is NA, not a position carried over from its nearest endpoint.
-        g$lon <- approx(an, a$lon, tn, rule = 1, ties = mean)$y
-        g$lat <- approx(an, a$lat, tn, rule = 1, ties = mean)$y
-        before <- approx(an, an, tn, method = "constant", f = 0, rule = 1)$y
-        after  <- approx(an, an, tn, method = "constant", f = 1, rule = 1)$y
-        g$dt_sec <- after - before
-        g
-      }) |>
-      ungroup() |>
       mutate(basis = if_else(is.na(lon), "no_track_cover", "interpolated_within_voyage"))
   }
 

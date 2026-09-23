@@ -31,14 +31,14 @@ does it twice.
 
 
 ## 2. `FS_DATE_MAX` expired nine months ago — now LIVE, not latent
-**status:** open · **files:** `curate/logbook.R`, `curate/link_lid_map.R:40`
+**status:** open · **files:** `curate/logbook.R`, `curate/link_lid_map.R:47`
 **see:** `curate/decisions/023-adb-wired-into-logbook.md`
 
 `FS_DATE_MAX <- as.Date("2025-12-31")` is now the real `fs_afladagbok`/`adb` handover
 point (item 1 landed 2026-09-23) rather than a dormant literal — `curated/logbook/
 station.parquet` has 20,530 real 2026 adb stations in it as of this rebuild.
 
-That makes the second ceiling active too: `link_lid_map.R:40` filters landings to
+That makes the second ceiling active too: `link_lid_map.R:47` filters landings to
 `date <= ymd("2025-12-12")`, frozen from the merged logbook's OLD max date. Landings
 run to 2026-04-14 and adb to 2026-04-08, so `trip_voyage`/`link_lid_map` targets, if
 rebuilt now, would silently drop all 2026 landings matches rather than error.
@@ -229,32 +229,6 @@ its metadata at the directory level, which parquet KV cannot express.
 
 **check:** `grep -rn "duckdbfs::write_dataset\|nanoparquet::write_parquet" `
 over scripts writing to `fd_curated()` returns nothing.
-
----
-
-## 13. Code is fixed, data is not yet rebuilt
-**status:** open · **added 2026-09-21 at end of session**
-
-Several fixes landed in code and in the reference tables but have **not been
-propagated into the large derived datasets**. Nothing here is wrong; it is
-work not yet run, and it is listed so nobody reads the current files as final.
-
-| dataset | state |
-|---|---|
-| `staging/ais/ping_tagged` | **still 527,960,388 rows vs `ping_union`'s 527,960,318** — the +70. The harbour geometry that caused it is fixed, but `ais_ping_tag.R` has not re-run. |
-| `curated/logbook/trip.parquet` | missing `.tid_land` and `match_type` — `curate/logbook.R` rewrote it and `link_lid_map.R` has not re-run since. |
-| `staging/ais/ping_clean` | still 9 of 20 years, from the stopped run. |
-| `curated/ais/*` | not built. |
-
-**`staging/aux/ports.fgb` went from 6,019 to 10,047 features**, because the
-hardcoded source filter is gone and the deduplicated global set is used instead.
-More harbours are now detectable, which is the intended improvement, but it
-changes which pings are in harbour and therefore **trip segmentation** in
-`ais_trip.R`. Any trail rebuilt before 2026-09-21 is not comparable with one
-rebuilt after.
-
-**check:** `ping_tagged` row count equals `ping_union` row count; `trip.parquet`
-carries `.tid_land`.
 
 ---
 

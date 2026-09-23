@@ -1,12 +1,19 @@
 # Match merged logbook trips to landing register records.
 # Builds a .tid → .tid_land crosswalk and writes it to lid_map.parquet.
-# Also writes .tid_land and match_type back into trip.parquet.
 #
 # Input:  data/logbooks/{trip,station,fishing_sample,catch}.parquet
 #         data/landings/{landings,catch}.parquet
 #         data/gear/gear_mapping.parquet
 # Output: data/logbooks/lid_map.parquet  — columns: .tid, schema, .tid_land, match_type
-#         data/logbooks/trip.parquet     — extended with .tid_land, match_type
+#
+# Does NOT write back into trip.parquet. It used to (left_join(lid_map) then
+# overwrite trip.parquet in place) - that made logbook.R's own declared output
+# a moving target from this script's side too, and the two targets fought over
+# it: whichever ran last "won", so the other looked permanently outdated on
+# every subsequent check regardless of whether any real input had changed. See
+# curate/decisions/025-lid_map-stops-overwriting-trip-parquet.md. A consumer
+# that wants .tid_land/match_type alongside trip.parquet joins lid_map.parquet
+# onto it themselves, e.g. docs/landings-match.qmd already does.
 #
 # Eight-step cascade in decreasing key specificity.
 # Each step operates only on trips/landings not consumed by earlier steps and
@@ -253,8 +260,4 @@ lid_map |>
   print()
 
 ## Write output -----------------------------------------------------------------
-trip_out <- duckdbfs::open_dataset(fd_curated("logbook", "trip.parquet")) |> collect() |>
-  left_join(lid_map, by = c(".tid", "schema"))
-
-lid_map  |> duckdbfs::write_dataset(fd_curated("logbook", "lid_map.parquet"))
-trip_out |> duckdbfs::write_dataset(fd_curated("logbook", "trip.parquet"))
+lid_map |> duckdbfs::write_dataset(fd_curated("logbook", "lid_map.parquet"))

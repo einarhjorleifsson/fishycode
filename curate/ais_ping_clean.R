@@ -115,9 +115,10 @@ for (yr in years) {
     n_in  <- nrow(clean)
     # `whack` was already dropped when pass 1 was materialised above
     clean <- clean |> filter(!whack2) |> select(-whack2)
+    n_batch_kept <- nrow(clean)
 
-    kept     <- kept + nrow(clean)
-    dropped2 <- dropped2 + (n_in - nrow(clean))
+    kept     <- kept + n_batch_kept
+    dropped2 <- dropped2 + (n_in - n_batch_kept)
 
     # One part file per batch. Several parquet files in one hive directory is
     # normal and reads back as a single partition.
@@ -127,7 +128,7 @@ for (yr in years) {
     # "kept", which made every batch line overstate the result.
     message(sprintf("  batch %d/%d: %s vessels, %s pings in, %s kept",
                     i, length(groups), length(g),
-                    format(n_in, big.mark = ","), format(nrow(clean), big.mark = ",")))
+                    format(n_in, big.mark = ","), format(n_batch_kept, big.mark = ",")))
   }
 
   unlink(pass1)

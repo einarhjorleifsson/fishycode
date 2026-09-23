@@ -7,9 +7,10 @@ date: today
 
 Attach a landing identifier (`.tid_land`) to each logbook trip, enabling
 downstream reconciliation between the two systems. The match is
-produced by the second half of `data/logbooks/logbooks.R` and stored as
-`data/logbooks/lid_map.parquet` with columns `.tid`, `schema`, `.tid_land`,
-`match_type`. The result is also written back into `data/logbooks/trip.parquet`.
+produced by `curate/link_lid_map.R` and stored as
+`curated/logbook/lid_map.parquet` with columns `.tid`, `schema`, `.tid_land`,
+`match_type`. It is not written back into `trip.parquet` — a consumer that
+wants both joins them itself, e.g. below.
 
 ## Data {#sec-data}
 

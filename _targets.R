@@ -24,6 +24,12 @@ library(targets)
 
 tar_source("R/")
 
+# See R/duckdb_temp.R for what this works around and why it's a function call
+# here rather than a top-level variable assignment. Runs in every process that
+# sources _targets.R (main and any callr worker), so it lands before any
+# target's first duckdbfs call.
+configure_duckdb_temp()
+
 tar_option_set(
   packages = c("tidyverse", "duckdbfs", "ramb", "whack", "geo",
                "sf", "nanoparquet", "duckdb")
@@ -273,8 +279,7 @@ list(
   tar_target(lid_map, {
     logbook; aflagrunnur; gear
     produces("curate/link_lid_map.R",
-             fd_curated("logbook", "lid_map.parquet"),
-             fd_curated("logbook", "trip.parquet"))
+             fd_curated("logbook", "lid_map.parquet"))
   }, format = "file"),
 
 
