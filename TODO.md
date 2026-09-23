@@ -398,6 +398,89 @@ in `raw/ais/astd` for that year.
 
 ---
 
+## Resume note — 2026-09-23, session closed after the AIS chain rebuild
+
+**Start here: `curate/corrections/afli_rafr_stofn_stations_dropped.yml`.** It is the
+last thing found, it is fully characterised, the recommendation is written, and the
+only thing missing is your decision. Nothing else in this note is blocking.
+
+**What it says.** 23,570 live electronic logbook submissions — never deleted, carrying
+positions and 31,210 catch records — are absent from `stofn.parquet`, the source
+system's own merged table, and therefore absent from everything this repo builds. Four
+explanations were tested and all four fail: not supersession (0.1% are exact twins),
+not deletion (`eytt = 0`), not incompleteness (100% carry a position), not truncation
+(the lost rows sit mid-submission in the same proportion as the kept ones).
+
+**The skew is why it matters, not the total.** 2.08% overall would be ignorable. The
+median vessel loses 1.29% but the 95th percentile is 10.3% and the worst is **78.4%** —
+skipnr 2395 is missing 265 of its 338 electronic stations. 53 vessels lose over 5%, 25
+over 10%, seven over a quarter. In tonnage it is 0.09% of catch; the event count is
+what is wrong, not the mass.
+
+**The decision is yours and the yml states it plainly:** whether this repo should
+assert that the electronic feed is more complete than the bookkeeping. If yes, the
+repair goes in `curate/` and NOT in the adapter — `AGENTS.md` puts corrections in
+`curate/`, and `sources/afli/convert.R` reproducing the source's merged table is the
+adapter doing its job. It is bounded to ~2019, because `rafr_stofn` stops being
+populated then and the 2020-2022 direct-load era cannot be checked at all. And it is
+worth reporting upstream regardless — that fixes it for everyone, not just here.
+
+**Nothing is running and nothing is half-written.** Working tree clean,
+`check_bookkeeping()` all invariants hold, `check_ready()` 22 of 22.
+
+**The AIS chain was rebuilt end to end and reconciles at every step:**
+
+| stage | rows |
+|---|---|
+| `staging/ais/ping_union` | 543,045,030 |
+| `staging/ais/ping_tagged` | 543,045,030 (delta 0) |
+| `staging/ais/ping_clean` | 539,907,152 |
+| `curated/ais/ping` | 539,907,152 (delta 0) |
+| `curated/ais/trip.parquet` | 720,205 voyages, 2,756 vessels |
+| `curated/logbook/sensor_gps` | 49,324,452 fixes, 436 vessels |
+
+Timings on this machine: union 39 min, tag 2m50s, clean 3h26m, trip 8m41s,
+sensor_gps 1h51m. Two 2026-09-22 baselines are parked and are yours to delete:
+`staging/ais/ping_union_pre-identity_2026-09-22` (12 G) and
+`ping_clean_pre-identity_2026-09-22` (4.2 G).
+
+**What the rebuild actually bought**, since the row counts hide it: **astdB reached
+the union for the first time** — 11.1 M pings, 1,607 vessels, excluded until now by a
+double-to-text cast appending `.0` to every MMSI. The 21 reissued MMSIs no longer
+dump the earlier hull's era onto its successor. And the astd placeholder duplicates
+are gone.
+
+**Still open, in the order I would take them:**
+
+1. **`trip_voyage` is stale** — it is the one remaining target, still built on legacy
+   voyages. It depends on `logbook`, which depends on `adb`, where items 1/1b are open,
+   so it may be a decision rather than a run.
+2. **Plan 003 steps 6-9** — close `d2` behind `d2_is_open`, the reliability tier
+   column, the ASTD identity table, and the dead `n >= 10` filter at `ais_key.R:305`.
+3. **Item 18 / plan 004** — behavioural fishing windows. Five cheap measurements decide
+   whether it is worth building; none has been done.
+4. **The Icelandic coverage work you set as the priority**: 1,244 hulls alive in the
+   STK era with no mobile-id, of which 144 are genuinely actionable (92 with an MMSI,
+   52 at 15 m or over); 86 vessels landing fish with no AIS identity; 92 vids with no
+   MMSI. None of it needs the foreign registries.
+
+**Two things left deliberately unmeasured**, so nobody assumes they were: the 26,497
+non-duplicated `(0 m, 1 s)` astd rows per year that derive a speed of 0 and have no
+twin to drop them against; and the `union_by_name` test from decision 018, which would
+turn six silent wrong answers into six loud ones for ten minutes of work.
+
+**Read this file sceptically.** Several claims I made during this session were wrong
+and were corrected in place: the trip-count "anomaly" (I compared two different
+tables), the "two recording schemas" reading (it is one schema, gear-conditioned,
+exactly as decision 010 says), the duplicate-repair rule (I proposed preferring the
+smaller `sec_nextpoint`, which would have selected the placeholder every time), the
+positioned-rate "trend" (noise), and "these stations exist nowhere upstream" (they are
+all in `rafr_stofn`; I had checked one table). Each is recorded beside the right
+answer rather than quietly replaced. Where this file states a number, it was measured
+on 2026-09-23; where it states a cause, check whether it says measured or inferred.
+
+---
+
 ## 18. Fishing windows from behaviour, not from the logbook
 **status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md`
 
