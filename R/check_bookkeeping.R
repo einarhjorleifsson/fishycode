@@ -92,6 +92,26 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
   add("every corrections/*.yml declares id, title, status", missing,
       "the corrections registry is its own index; those three fields are what index it")
 
+  # -- 4b/6 nothing re-indexes corrections outside corrections/ -----------------
+  # Added 2026-09-23. decisions/README.md carried a "Data defects" table listing a
+  # subset of this directory. Nothing checked it and it drifted to 6 of 14 before
+  # anyone looked. The check above asserts the corrections directory indexes
+  # itself; a second table asserting the same thing is the drift AGENTS.md opens
+  # by naming. Generate the list, never maintain it.
+  dre  <- rd(p("curate", "decisions", "README.md"))
+  hd   <- grep("^##[[:space:]]+Data defects", dre)
+  rows <- character(0)
+  if (length(hd)) {
+    nxt  <- grep("^##[[:space:]]", dre)
+    nxt  <- nxt[nxt > hd[1]]
+    stop_at <- if (length(nxt)) nxt[1] - 1L else length(dre)
+    sect <- dre[(hd[1] + 1L):stop_at]
+    rows <- grep("^[[:space:]]*\\|", sect, value = TRUE)
+  }
+  add("no second index of corrections/ in decisions/README.md",
+      substr(rows, 1, 60),
+      "delete the table - corrections/*.yml carry id/title/status and index themselves")
+
   # -- 5/6 AGENTS.md names no path that does not exist --------------------------
   # AGENTS.md is the only file guaranteed to reach a session, so a stale path in it
   # is worse than a stale path anywhere else.

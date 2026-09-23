@@ -51,12 +51,20 @@ Not here — `../corrections/`, one `.yml` declaration per defect, paired with a
 `status`, `applies_to`, a detection rule and the repair, so that directory is its
 own index.
 
+**There is no table of them here, deliberately.** One stood in this spot until
+2026-09-23 and had drifted to 6 of 14 — it listed `adb_vs_fs_afladagbok`,
+`afli_coords`, `afli_depth_units`, `fs_veidiferd_year`, `ports_iceland` and
+`station_time_whole_day`, and had silently missed the eight added after it.
+Nothing checked it, because `check_bookkeeping()` asserts the opposite: that the
+corrections directory indexes itself. Two files stating the same fact is how the
+record drifts, which is the sentence `AGENTS.md` opens with. Generate the list
+instead of maintaining it:
 
-| defect | status |
-|---|---|
-| `adb_vs_fs_afladagbok` | open — depth units and longitude sign |
-| `afli_coords` | parked — incumbent retained |
-| `afli_depth_units` | open — fathoms to metres drift, 2010 to mid-2012 |
-| `fs_veidiferd_year` | open — corrupt year on one date field |
-| `ports_iceland` | fixed — shared polygon, undersized buffers |
-| `station_time_whole_day` | open — untimed stations get a midnight-to-23:59 window, unflagged |
+```r
+for (f in list.files("curate/corrections", "[.]yml$", full.names = TRUE)) {
+  y <- yaml::read_yaml(f)
+  cat(sprintf("%-34s %s\n", y$id, y$status))
+}
+```
+
+`check_bookkeeping()` fails if this heading grows a table again.
