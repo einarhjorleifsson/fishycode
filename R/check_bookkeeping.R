@@ -63,6 +63,32 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
       setdiff(unique(word), c("open", "blocked", "parked", "in", "done")),
       "either use a declared status or amend the vocabulary in TODO.md's header")
 
+  # -- 2b/6 TODO.md is a list of stubs, not a filing cabinet --------------------
+  # Added 2026-09-23, at 871 lines. TODO.md's own header says "Not a diary" and
+  # plans/README.md says an item needing sections and evidence IS a plan, with a
+  # one-line stub here. Neither was enforced and both were ignored: four "Resume
+  # note" sections held 211 lines of session diary, and seven items restated a plan
+  # or correction that already said it better. Compressed to 377. These three
+  # invariants are the only reason it will stay there.
+  heads <- grep("^##[[:space:]]", todo)
+  ends  <- c(heads[-1] - 1L, length(todo))
+  titles <- sub("^##[[:space:]]+", "", todo[heads])
+
+  add("TODO.md holds no session diary",
+      titles[grepl("^resume note", tolower(titles))],
+      "session state belongs in the git log - delete it")
+
+  long <- sprintf("%s (%d lines)", titles, ends - heads)[(ends - heads) > 35L]
+  add("no TODO.md item runs past 35 lines", long,
+      "it is a plan or a correction - move the evidence there and leave the pointer")
+
+  # An item with no check cannot be audited, only believed, which is the failure
+  # this whole file exists to prevent.
+  nocheck <- titles[vapply(seq_along(heads), function(i)
+    !any(grepl("^\\*\\*check:\\*\\*", todo[heads[i]:ends[i]])), logical(1))]
+  add("every TODO.md item states its check", nocheck,
+      "TODO.md's header requires a check that decides when the item is closed")
+
   # -- 3c/6 no TODO item number appears twice ----------------------------------
   # Added 2026-09-22 after an edit that meant to REPLACE item 16 appended the new
   # text and left the old block above it. Both versions then sat in the file, the
