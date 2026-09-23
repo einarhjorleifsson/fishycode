@@ -150,10 +150,10 @@ accuracy_measured:
     Per POINT, not per station. Earlier figures were per-station medians, which
     hide the tail: a median cannot see 10% of points being wrong by 742 m.
   reference: AIS interpolated onto the logger clock, 1,578 points over 57 stations
-  table: |
-                     median   mean    p90   >500m
-      wacky            652    676   1127   67.0%
-      recovered        322    362    795   34.6%
+  table: |2
+                   median   mean    p90   >500m
+    wacky            652    676   1127   67.0%
+    recovered        322    362    795   34.6%
   reading: >-
     The share of fixes more than 500 m from the vessel's own AIS track falls from
     67% to 35%. Not solved - roughly a third of fixes remain well off - but half

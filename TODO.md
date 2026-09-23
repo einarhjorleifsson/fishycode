@@ -405,12 +405,15 @@ in `raw/ais/astd` for that year.
 
 ---
 
-## 19. Report the dropped afli stations upstream — the repair waits on the answer
-**status:** blocked · **needs: maintainer** · **see:** `curate/corrections/afli_rafr_stofn_stations_dropped.yml`
+## 19. Recover the dropped afli stations on AIS evidence
+**status:** open · **see:** `curate/plans/005-recover-the-dropped-afli-stations.md`,
+`curate/corrections/afli_rafr_stofn_stations_dropped.yml`
 
-**Asked of the maintainer:** send the report drafted in that file's `the_report_to_send`
-to whoever maintains the `stofn` merge, and bring back their account of what the merge
-does with these rows.
+**No longer blocked, and no longer waiting on anyone outside this repo.** This item
+was "report upstream and wait". The maintainer stated 2026-09-23 that no answer is expected soon
+or likely ever, so waiting is not caution any more — it is a permanent silent hole.
+The report drafted in the yml's `the_report_to_send` stays sendable; it is no longer
+the gate.
 
 23,570 electronic logbook submissions over 2003–2019 carry `eytt = 0` in `rafr_stofn`
 and never reach `stofn`, so they are absent from everything this repo builds. They are
@@ -419,11 +422,17 @@ explanations this repo can test all fail: not supersession, not resubmission, no
 deletion, not truncation. What is left is a mechanism inside the source system that
 cannot be observed from here.
 
-**Decided 2026-09-23: hold the repair.** Recovering them would mean this repo asserting
-that the electronic feed is more complete than the source's own bookkeeping, on a guess
-at a mechanism nobody has confirmed. A measured gap is a more honest artefact than a
-repair built on a guess. The recommendation in the yml stays as the *shape* the repair
-would take — in `curate/`, never in the adapter — but it is not the plan of record.
+**The reframe, same day:** *why does the merge drop them* is unanswerable anywhere.
+*Are these rows true* is answerable here. Measured — 92.3% of the lost rows are in the
+STK era, 410 of their 416 vessels have AIS voyages, and **98.3% of lost rows place the
+vessel at sea on that date against a 99.6% control of rows that merged fine**. That is
+corroboration from a system with no connection to the logbook merge. Checked too:
+`ais_key.R` never reads `curated/logbook`, so this does not close the cycle `AGENTS.md`
+warns about.
+
+Admission decided 2026-09-23: **corroborated rows join `curated/logbook`, flagged with
+a `route` column**, so `filter(route == "stofn")` reproduces today's product exactly.
+Never in the adapter. Plan 005 has the design.
 
 **This is not a decision that the data is fine, and the warning is now published** —
 `curate/checks/afli_rafr_stofn_loss.R` → `curated/check/afli_rafr_stofn_loss.parquet`,
@@ -433,7 +442,9 @@ independently, and added one: as a *rate* the loss declines monotonically from 1
 2004 to 0.02% in 2019, so the early years are far riskier than the 2.08% headline and
 the defect had effectively stopped before the feed table did.
 
-So the only thing still waiting on the maintainer is the report itself.
+**check:** `curated/check/afli_rafr_stofn_corroboration.parquet` exists and reports the
+lost rows beside their merged control; `curated/logbook/station.parquet` carries `route`;
+`filter(route == "stofn")` returns exactly today's row count.
 
 **check:** the answer is recorded in the yml under `the_decision_taken.what_unblocks_it`,
 and the correction is either implemented as `curate/corrections/afli_rafr_stofn_stations_dropped.R`

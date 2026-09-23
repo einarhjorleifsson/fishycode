@@ -92,6 +92,32 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
   add("every corrections/*.yml declares id, title, status", missing,
       "the corrections registry is its own index; those three fields are what index it")
 
+  # -- 4c/6 every corrections/*.yml is actually parseable ----------------------
+  # Added 2026-09-23. Three of the fourteen did not parse - a plain scalar with a
+  # colon in it, a literal block whose first line was its most indented, and a
+  # sequence sharing a parent with a mapping key. The checks above grep for
+  # `id:`/`title:`/`status:` at the start of a line, which every broken file still
+  # satisfied, so a registry described as "declarative" had been unreadable by any
+  # machine for as long as it had existed.
+  #
+  # AGENTS.md promises this file is pure base R with no dependencies, so the parse
+  # is skipped rather than errored when yaml is absent - the invariant then reports
+  # honestly that it could not run instead of passing quietly.
+  if (requireNamespace("yaml", quietly = TRUE)) {
+    unparseable <- character(0)
+    for (y in ymls) {
+      msg <- tryCatch({ yaml::yaml.load_file(file.path(cdir, y)); NA_character_ },
+                      error = function(e) conditionMessage(e))
+      if (!is.na(msg))
+        unparseable <- c(unparseable, sprintf("%s - %s", y, sub("\n.*$", "", msg)))
+    }
+    add("every corrections/*.yml parses as YAML", unparseable,
+        "a declaration no machine can read is prose in a .yml costume")
+  } else {
+    add("every corrections/*.yml parses as YAML", "SKIPPED - package 'yaml' not installed",
+        "install.packages('yaml') to enable this invariant")
+  }
+
   # -- 4b/6 nothing re-indexes corrections outside corrections/ -----------------
   # Added 2026-09-23. decisions/README.md carried a "Data defects" table listing a
   # subset of this directory. Nothing checked it and it drifted to 6 of 14 before

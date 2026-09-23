@@ -1,13 +1,13 @@
 id: afli_rafr_stofn_stations_dropped
 title: 23,570 live electronic logbook submissions never reach stofn, the source system's own merged table
-status: confirmed and characterised - repair HELD, decided 2026-09-23, pending the source system's own answer
+status: characterised; the hold is SUPERSEDED - recovery on AIS corroboration, designed in curate/plans/005
 applies_to:
   - staging/afli/station.parquet
   - staging/afli/fishing_sample.parquet
   - curated/logbook/station.parquet
   - curated/logbook/fishing_sample.parquet
   - curated/logbook/sensor_gps
-implementation: none, and none is to be written until the upstream answer arrives - see the_decision_taken
+implementation: none yet; designed in curate/plans/005-recover-the-dropped-afli-stations.md
 discovered: 2026-09-23, maintainer, on being told that 1.6% of logger fixes could not reach a vid - "because it should not"
 
 the_model: >-
@@ -144,6 +144,9 @@ recommendation:
     record. The plan of record is to hold.
 
 the_decision_taken:
+  SUPERSEDED: >-
+    Same day, 2026-09-23, by the_hold_is_lifted below. Kept in full rather than
+    rewritten: the reasoning was right and is what the replacement had to answer.
   date: 2026-09-23
   by: maintainer
   choice: >-
@@ -177,6 +180,52 @@ the_decision_taken:
     - one row per vessel, with a usable flag - and docs/afli-dropped-stations.qmd names
     the 53 vessels an analyst must not compute per-vessel figures for. The check
     reproduced every number in this file independently.
+
+the_hold_is_lifted:
+  date: 2026-09-23
+  by: maintainer
+  the_trigger: >-
+    "We will not get any answer from the afli maintainers soon, and likely ever."
+    The hold above was never a judgement that the rows should stay out - it was a
+    decision to wait for an event. With that event gone, holding stops being caution
+    and becomes a permanent silent hole: 23,570 real hauls absent, seven vessels
+    missing a quarter or more of their history, one missing 78.4%.
+  the_reframe: >-
+    "Why did the merge drop them" is unanswerable here and now unanswerable anywhere.
+    "Are these rows true" is answerable here, with the cross-source evidence this
+    project exists to apply. The mechanism was never what the data needed.
+  what_changed_the_answer: >-
+    Measured 2026-09-23. 92.3% of the lost rows fall in the STK era; 410 of their 416
+    vessels have AIS voyages, covering 99.8% of the rows; and 98.3% of lost rows place
+    the vessel on an AIS voyage on the station's date, against 99.6% for merged rows
+    put through the identical test on the same vessels. The control is the point -
+    98.3% alone would mean only that the test is loose. Beside 99.6% it means the lost
+    rows corroborate at the rate genuine records do, from a transponder system with no
+    connection to the logbook merge. That is evidence, not a guess, which is exactly
+    what the hold above demanded and could not get.
+  cycle_rule_checked: >-
+    reference/vessels/ais_key.R reads the registry, raw landings, raw STK and
+    vessel_identity - never curated/logbook. Recovered stations cannot re-enter the vid
+    assignment, so this does not close the cycle AGENTS.md warns about. Re-check if
+    ais_key.R ever gains a logbook input.
+  admission_rule: >-
+    Corroborated rows join curated/logbook carrying a route column - "stofn" for rows
+    that came through the source's merge, "rafr_stofn" for rows recovered from the feed
+    - plus their evidence grade. Nothing is overwritten and nothing is hidden:
+    filter(route == "stofn") reproduces today's product exactly, permanently. basis
+    stays "recorded", because these rows were recorded by the vessel as much as any
+    merged row was; what is uncertain is the bookkeeping's treatment of them, and route
+    is the column that says so.
+  what_it_still_does_not_do: >-
+    It does not explain the defect and does not try to. It cannot reach the 1,808
+    pre-2007-06 rows, which are in the years with the WORST rate - 19.1% in 2004 - and
+    will stay uncorroborated; admitting those on the strength of the post-2007 result
+    is an extrapolation and must be labelled as one. And it does not close the upstream
+    question: the_report_to_send stays drafted and sendable, and if an answer ever
+    arrives, route is what makes overturning this a one-line filter rather than a
+    rebuild.
+  designed_in: curate/plans/005-recover-the-dropped-afli-stations.md
+  tracked_as: TODO item 19
 
 the_report_to_send:
   note: >-
@@ -233,15 +282,18 @@ the_decision_that_was_needed: >-
   put the repair in the adapter; that contradicted AGENTS.md and is withdrawn.
 
 open_questions:
-  - Is the loss a property of particular submission software or shore systems? The
+  - >-
+    Is the loss a property of particular submission software or shore systems? The
     per-vessel skew suggests something systematic rather than random, but it is not a
-    test of what. Partly narrowed 2026-09-23: as a rate the loss declines steadily
+    test of what. Partly narrowed 2026-09-23 - as a rate the loss declines steadily
     from 2004 to 2019, so whatever it is got better over time rather than switching
     on in one era. rafr_stofn would need a column identifying the submitting client,
     and it has not been looked for.
-  - Does the same loss continue after rafr_stofn stops being populated around 2019?
-    UNKNOWABLE from the data held here - there is no feed to compare stofn against
-    for 2020-2022. Only the source-system maintainer can answer it.
-  - Answered 2026-09-23, kept so the questions are not asked twice - the 23,570 DO
+  - >-
+    Does the same loss continue after rafr_stofn stops being populated around 2019?
+    There is no feed to compare stofn against for 2020-2022, so it cannot be measured
+    directly. The rate trend makes it unlikely - 0.02% in both 2019 and 2020.
+  - >-
+    Answered 2026-09-23, kept so the questions are not asked twice - the 23,570 DO
     carry geometry (100% breidd and lengd, 99.1% dypi), and the cost to the logbook
     tables IS measured (23,570 stations, 31,210 catch records, 0.09% of tonnage).
