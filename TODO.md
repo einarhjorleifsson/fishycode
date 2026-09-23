@@ -398,6 +398,43 @@ in `raw/ais/astd` for that year.
 
 ---
 
+## 18. Fishing windows from behaviour, not from the logbook
+**status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md`
+
+Raised by the maintainer 2026-09-23, while `logbook_sensor_gps` was running, as the
+counter-argument to the union's refusal to merge the afli GPS logger. The refusal
+stands for positions; the logger's **speed and heading** are a different matter.
+
+They are measured aboard, they are not derived from the AIS track or from the vid
+match, and a classifier built on them needs no position at all — so it escapes the
+circularity the union objects to, and would run on 100% of logger fixes rather than
+the ~99.7% that can be positioned.
+
+What it would be for: the logbook's own event times are gear-shaped and thin. Of the
+58,085 logger stations in 2013, towed gear fills `t2`/`t3`, passive gear fills
+`t1`/`t4`, and **7,336 stations — Danish seine and purse seine — record no fishing
+time at all**. The maintainer's assessment of the rest is that they are "only vaguely
+right", and `curate/corrections/station_time_whole_day.yml` already documents stations
+handed a synthesised 00:00–23:59 window. A behavioural window would be an independent
+estimate to set beside the recorded one, and for the seines it would supply something
+that does not currently exist.
+
+It would also give `curated/logbook/sensor_gps` a consumer — `_targets.R` builds it
+and nothing reads it — and it would supply the repair that
+`curate/corrections/logger_runs_past_the_station.yml` currently lacks.
+
+**Written under the maintainer's principle**, stated the same day: keep model separate
+from measurements as far upstream as possible. Nothing in the plan alters a measured
+table; the output is a time window per station, carrying `basis` and a confidence from
+the first day rather than acquiring them later, which is the lesson `vessel_ais_key`
+exists to teach.
+
+**check:** plan 004 §5 — the five measurements that decide whether it is worth
+building, before anything is built. Any of them can kill it, and the cheapest
+(does speed separate inside the recorded window from outside it?) comes first.
+
+---
+
 ## 17. Full review of the STK vessel match
 **status:** open · **see:** `curate/plans/003-stk-vessel-identity.md`
 
