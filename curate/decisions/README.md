@@ -51,6 +51,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 024 | [track interpolation moved into ramb](024-interpolate-track-in-ramb.md) | `logbook_sensor_gps.R`'s inline `group_modify()` was O(groups × track_rows) — 420s for 2013 alone; `ramb::rb_interpolate_track()` (compiled + DuckDB-ASOF dispatch, same shape as `whack_fwdbwd()`) gets the same year to 45.8s |
 | 025 | [lid_map stops overwriting trip.parquet](025-lid_map-stops-overwriting-trip-parquet.md) | two targets writing the same file caused a perpetual `logbook`/`lid_map` rebuild ping-pong; `lid_map.parquet` already carried `.tid_land`/`match_type` independently, so the write-back was pure (and actively harmful) duplication |
 | 026 | [TODO item 13's AIS chain gaps closed](026-item13-ais-chain-rebuilt.md) | `ping_tagged` = `ping_union` (543,152,274 rows, the +70 gone), `ping_clean` covers all 20 years, `curated/ais/*` built (720,281 trips); the `trip.parquet`/`.tid_land` check is retired, not satisfied — see 025 |
+| 027 | [lid_map drops its upper date bound](027-lid_map-drops-upper-date-bound.md) | a stale `date <= ymd("2025-12-12")` literal, migrated verbatim from the old codebase (`git blame`: `bde740b`) and never revisited, silently dropped every 2026 landings match; 0 → 994 adb trips now reach `lid_map` and match |
 
 ## Data defects
 

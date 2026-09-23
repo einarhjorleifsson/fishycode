@@ -29,27 +29,6 @@ does it twice.
 
 ---
 
-
-## 2. `FS_DATE_MAX` expired nine months ago — now LIVE, not latent
-**status:** open · **files:** `curate/logbook.R`, `curate/link_lid_map.R:47`
-**see:** `curate/decisions/023-adb-wired-into-logbook.md`
-
-`FS_DATE_MAX <- as.Date("2025-12-31")` is now the real `fs_afladagbok`/`adb` handover
-point (item 1 landed 2026-09-23) rather than a dormant literal — `curated/logbook/
-station.parquet` has 20,530 real 2026 adb stations in it as of this rebuild.
-
-That makes the second ceiling active too: `link_lid_map.R:47` filters landings to
-`date <= ymd("2025-12-12")`, frozen from the merged logbook's OLD max date. Landings
-run to 2026-04-14 and adb to 2026-04-08, so `trip_voyage`/`link_lid_map` targets, if
-rebuilt now, would silently drop all 2026 landings matches rather than error.
-Nobody has rebuilt them against the new `logbook` yet, so no wrong output exists —
-but the gap is no longer hypothetical.
-
-**check:** no hardcoded date in `logbook.R` or `link_lid_map.R` sits in the past at
-build time; `curated/link/lid_map.parquet` has non-zero 2026 rows once rebuilt.
-
----
-
 ## 3. `station_type` is prose, not a contract
 **status:** open · **files:** `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R`
 

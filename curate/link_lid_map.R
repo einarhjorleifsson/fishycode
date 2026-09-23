@@ -42,9 +42,18 @@ DATE_ERR_WINDOW     <- 3L         # ± days around expected date to search
 ## Landing register -------------------------------------------------------------
 # One row per (vid × date × hid); catch summed across species.
 # Multiple .lids on the same key are collapsed to min(.lid) = .tid.
+#
+# No upper date bound - the earlier `date <= ymd("2025-12-12")` was a literal
+# carried over verbatim from the pre-restructuring codebase (git blame:
+# bde740b, "Migrate code from both archives"), never revisited, and paired
+# with nothing on the `trip` side below (which was always unbounded). It
+# silently dropped every 2026 landings match once FS_DATE_MAX's handover to
+# adb went live (curate/decisions/023) - measured 2026-09-23: 4,962 adb trips
+# in trip.parquet, 0 reaching lid_map. See
+# curate/decisions/027-lid_map-drops-upper-date-bound.md.
 land <-
   duckdbfs::open_dataset(fd_curated("landing", "landings.parquet")) |> collect() |>
-  filter(vid > 0, date >= ymd("2007-09-01"), date <= ymd("2025-12-12")) |>
+  filter(vid > 0, date >= ymd("2007-09-01")) |>
   left_join(
     duckdbfs::open_dataset(fd_curated("landing", "catch.parquet")) |> collect() |>
       group_by(.tid) |>
