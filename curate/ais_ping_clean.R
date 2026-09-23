@@ -42,7 +42,13 @@ dir.create(marks, recursive = TRUE, showWarnings = FALSE)  # the dataset itself
 # this, not the size of a year, is what sets peak memory.
 BATCH_PINGS <- 5e6
 
-kept <- dropped <- 0
+# Three counters, not two. `dropped` used to be incremented only inside the batch
+# loop, as n_in - nrow(clean), where n_in is the count AFTER pass 1 has already
+# filtered - so every pass-1 rejection went unrecorded and the closing message
+# understated the drop rate by a quarter. Measured 2026-09-23 on a completed run:
+# 831,621 pass-1 drops against 2,306,257 reported, a true rate of 0.58% where 0.43%
+# was printed.
+kept <- dropped1 <- dropped2 <- 0
 
 for (yr in years) {
 
@@ -91,6 +97,11 @@ for (yr in years) {
 
   vid_n <- p1 |> count(vid) |> collect() |> arrange(desc(n))
 
+  # Pass-1 accounting. sum(vid_n$n) is the surviving row count and costs nothing -
+  # it is already collected. Only the year's input needs asking for.
+  n_year   <- base |> summarise(n = n()) |> pull(n)
+  dropped1 <- dropped1 + (n_year - sum(as.numeric(vid_n$n)))
+
   batch <- cumsum(as.numeric(vid_n$n)) %/% BATCH_PINGS
   groups <- split(vid_n$vid, batch)
 
@@ -105,21 +116,27 @@ for (yr in years) {
     # `whack` was already dropped when pass 1 was materialised above
     clean <- clean |> filter(!whack2) |> select(-whack2)
 
-    kept    <- kept + nrow(clean)
-    dropped <- dropped + (n_in - nrow(clean))
+    kept     <- kept + nrow(clean)
+    dropped2 <- dropped2 + (n_in - nrow(clean))
 
     # One part file per batch. Several parquet files in one hive directory is
     # normal and reads back as a single partition.
     write_parquet_group(clean, file.path(ydir, sprintf("part_%03d.parquet", i)))
     rm(clean); gc(FALSE)
-    message(sprintf("  batch %d/%d: %s vessels, %s pings kept",
-                    i, length(groups), length(g), format(n_in, big.mark = ",")))
+    # n_in is the count going IN to pass 2, not what survived it. It was labelled
+    # "kept", which made every batch line overstate the result.
+    message(sprintf("  batch %d/%d: %s vessels, %s pings in, %s kept",
+                    i, length(groups), length(g),
+                    format(n_in, big.mark = ","), format(nrow(clean), big.mark = ",")))
   }
 
   unlink(pass1)
   file.create(file.path(marks, as.character(yr)))
 }
 
-message(sprintf("kept %s pings, dropped %s as whacky (%.2f%%)",
-                format(kept, big.mark = ","), format(dropped, big.mark = ","),
-                100 * dropped / (kept + dropped)))
+total_in <- kept + dropped1 + dropped2
+message(sprintf(
+  "kept %s pings; dropped %s whacky (%.2f%%) = %s in pass 1 (whack_fwdbwd) + %s in pass 2 (whack_forward)",
+  format(kept, big.mark = ","), format(dropped1 + dropped2, big.mark = ","),
+  100 * (dropped1 + dropped2) / total_in,
+  format(dropped1, big.mark = ","), format(dropped2, big.mark = ",")))
