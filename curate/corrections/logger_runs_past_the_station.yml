@@ -40,6 +40,54 @@ measurement:
     excess_hours_p99: 19.50
     excess_hours_max: 5475.20
 
+gear_dependence:
+  measured: 2026-09-23 on the 2013 logger stations, at the maintainer's suggestion
+  pattern: |
+    gear                        slots filled   stations
+    OTB  bottom trawl           .23.             38,419
+    OTM  midwater trawl         .23.              5,215
+    LLS  longline               1..4              4,073
+    GNS  gillnet                1..4              1,022
+    SDN  Danish seine           ....              6,058
+    PS   purse seine            ....              1,278
+    LHM  handline               ...4                 93
+  reading: >-
+    TOWED gear fills the inner pair and PASSIVE gear the outer pair, which is what
+    the fishing interval physically is in each case: a trawl fishes while it is
+    towed, so start and end of tow; a longline or gillnet is set, soaks unattended
+    and is hauled, so setting start and hauling end. Seines record neither.
+  so_the_window_is: coalesce(t2, t1) .. coalesce(t3, t4)
+
+against_the_gear_window:
+  towed_t2_t3:
+    stations: 43634
+    median_window_h: 4.02
+    median_logger_span_h: 5.17
+    median_start_offset_h: 0.11     # logger starts just after the window opens
+    median_end_offset_h: 0.78       # and stops ~47 min after it closes
+    pct_running_1h_past: 41.1
+    pct_running_6h_past: 6.5
+    reading: >-
+      The median 47-minute tail is the length of hauling the gear aboard, not
+      forgetfulness. Whatever trim is chosen has to allow for it or it will cut the
+      end of every tow.
+  passive_t1_t4:
+    stations: 5095
+    median_window_h: 16.50
+    median_logger_span_h: 7.50
+    median_start_offset_h: 4.94     # logger starts ~5 h INTO the window
+    median_end_offset_h: 0.32
+    pct_running_1h_past: 28.9
+    pct_running_6h_past: 5.6
+    reading: >-
+      Here the logger UNDER-covers: 7.5 h of a 16.5 h set-to-haul window, because the
+      vessel leaves the gear soaking and returns. A trim to the window would be wrong
+      in the opposite direction - there is no track to trim, there is track missing.
+  asymmetry: >-
+    39.8% of stations run more than an hour past the window's close; only 0.5% begin
+    more than an hour before it opens. One-sided, which is the signature of a switch
+    left on rather than of a mis-recorded window. Only 6.8% sit wholly inside.
+
 why_it_matters: >-
   A consumer asking for "the logger track of station X" gets, two times in five, more
   than the fishing event - and the excess is not small at the tail. Any per-haul
@@ -64,8 +112,7 @@ open_questions:
   - Every .sid in the 2013 sensor_gps is NEGATIVE (-591,898 .. -451,798), as are all
     58,085 stations. The vessel key carries negative vids too (-2605, -467). The
     convention is undocumented anywhere and may or may not be the same one.
-  - t1 and t2 NEVER co-occur on these stations: 5,095 carry t1, 43,634 carry t2, and
-    zero carry both. t3 matches t2's count exactly and t4 matches t1's. That reads as
-    two recording schemas - one using (t1,t4), another (t2,t3) - rather than four
-    event times on one station, which is how curate/decisions/010 describes them.
-    Not investigated; it decides which window a trim would even use.
+  - RESOLVED 2026-09-23, and the reading above was wrong. It is not two schemas. It
+    is ONE schema whose slots are filled BY GEAR, exactly as curate/decisions/010
+    says - "the four event times stay four because the fishing interval moves with
+    the gear". Maintainer's suggestion; measured and confirmed. See gear_dependence.
