@@ -236,3 +236,30 @@ west_sign_in_the_recovery:
     product carries the defect today. The corroboration check repairs the sign in its
     own working copy and says so. If afli_coords.R is ever adopted this must be fixed
     at source first.
+
+does_not_extend_to_the_station_tables:
+  tested: 2026-09-23
+  question: >-
+    Maintainer asked whether rafr_ rows in stofn therefore carry wacky positions too,
+    on the reasoning that the station position might be populated from the logger.
+  answer: NO, on three independent grounds.
+  by_encoding: >-
+    The fault needs DDMMmm - hundredths of a minute decoded as seconds, rolling the
+    minute up at >= 60. stofn and rafr_stofn store breidd/lengd as DDMM integers,
+    whole minutes, with no hundredths digits to misdecode.
+  by_measurement_against_ais: >-
+    Merged station positions sit a median 390 m from the vessel's own AIS track
+    (curate/checks/afli_rafr_stofn_corroboration.R). The wacky fault displaces by
+    741 m and affects ~40% of records. A population 40% displaced by 741 m cannot
+    produce a 390 m median.
+  by_measurement_against_the_logger: >-
+    Distance from each station position to the NEAREST fix on its own logger track,
+    665,744 merged rafr stations - p10 230 m, median 732 m, p90 1,850 m, 90.0% within
+    one arc-minute. That median is what whole-minute rounding alone produces (half a
+    minute of latitude is 930 m); there is no additional 741 m displacement on top.
+  scope_note_on_the_west_sign: >-
+    The west-sign defect recorded above is in the RECOVERY'S OUTPUT, not demonstrated
+    in the raw logger. The raw logger stores longitude unsigned (25.68833), the same
+    convention as the station field; the recovery negates 81.4% and leaves 18.6%
+    positive. So it reads as the recovery applying the sign inconsistently rather than
+    the source shipping mixed signs, and should be described that way.
