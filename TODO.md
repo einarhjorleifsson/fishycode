@@ -706,7 +706,7 @@ alter trip segmentation meaningfully. The adb/afli unit items remain.
 | `staging/ais/ping_clean` | **complete, all 20 years — 539,907,152**; 3,137,878 dropped (0.58%) |
 | `curated/ais/ping` | **built — 539,907,152**, delta 0 against `ping_clean`; 276,523,880 carry a trip id |
 | `curated/ais/trip.parquet` | **built — 720,205 voyages, 2,756 vessels** |
-| `curated/logbook/sensor_gps` | not built |
+| `curated/logbook/sensor_gps` | **built 2026-09-23 — 49,324,452 fixes**, 788,558 stations, **436 vessels**, 99.20% positioned. 820,271 raw fixes (1.6%) dropped: their `.sid` reaches no `vid` through the logbook |
 | `curated/link/trip_voyage.parquet` | 803,549 rows, still built on **legacy** AIS voyages — now stale against the rebuild |
 
 **What the rebuild changed.** astdB reaches the union for the first time (11.1 M pings,
