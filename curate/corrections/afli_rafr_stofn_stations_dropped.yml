@@ -1,6 +1,6 @@
 id: afli_rafr_stofn_stations_dropped
-title: the afli adapter builds stations from stofn.parquet only, so 40,155 stations that exist solely in rafr_stofn never enter the pipeline
-status: confirmed - measured, repair NOT implemented
+title: 23,570 live electronic logbook submissions never reach stofn, the source system's own merged table
+status: confirmed - measured, repair NOT implemented, and the repair is a judgement not a bug fix
 applies_to:
   - staging/afli/station.parquet
   - staging/afli/fishing_sample.parquet
@@ -10,62 +10,72 @@ applies_to:
 implementation: none yet
 discovered: 2026-09-23, maintainer, on being told that 1.6% of logger fixes could not reach a vid - "because it should not"
 
-context: >-
-  curate/logbook_sensor_gps.R joins the GPS logger to a vessel through
-  .sid -> .tid -> vid. 820,271 of the logger's fixes, 1.6%, found no vid. The
-  maintainer's response was that this should not happen, which is what prompted the
-  trace.
+the_model: >-
+  Maintainer, 2026-09-23: rafr_* are what gets automatically fed FROM THE VESSELS;
+  there is then internal bookkeeping where those are merged with logbooks that are
+  not electronically submitted, which carry a positive visir.
 
-  It is not the join. Every .sid that reaches curated/logbook/fishing_sample.parquet
-  resolves perfectly - .tid found, schema afli, vid present, zero lost at each of
-  those three steps. The whole loss is that 17,008 stations are not in
-  fishing_sample at all.
+  Confirmed. stofn.parquet holds 1,275,274 negative visir (electronic) and 5,610,300
+  positive (paper), so it is the merged bookkeeping table. rafr_stofn.parquet is
+  1,149,278 rows and every one is negative - the raw electronic feed.
 
-the_defect:
-  summary: >-
-    sources/afli/convert.R reads rafr_stofn.parquet at :28 ONLY to build the eytt
-    deleted flag, and builds the station table itself from stofn.parquet at :37. Any
-    station present in rafr_stofn and absent from stofn therefore never becomes a row.
-  measurement:
-    stofn_rows: 6885574
-    rafr_stofn_rows: 1149278
-    in_rafr_but_not_in_stofn: 40155        # 3.5% of rafr_stofn
-    of_those_eytt_0_not_deleted: 23570
-    of_those_eytt_1_deleted: 16585
-  years: >-
-    2003-2021, peaking 2008-2014 (3,000-4,700 a year). Plus 2 rows dated 1899 and 41
-    dated 2095/2097/2099, which are corrupt timestamps of the same kind as
-    curate/corrections/stk_trail_time_outliers.yml in a different source.
-  where_it_first_showed: >-
-    17,008 of the 40,155 are referenced by the GPS logger, costing 869,933 logger
-    fixes - 1.68% of the raw logger rows. They are also present in rafr_soknartegund
-    (17,007), rafr_toga (14,807) and rafr_afli (11,357), so these are stations with
-    gear and catch records attached, not empty shells.
+the_merge_works_as_designed:
+  measured: |
+    eytt        not in stofn    in stofn     share reaching the merge
+    0 (live)         23,570    1,108,796               97.9%
+    1 (deleted)      16,585          327                1.9%
+  reading: >-
+    The merge EXCLUDES deleted submissions and ADMITS live ones. That is intent, not
+    defect, and it means sources/afli/convert.R reading stofn.parquet is reading the
+    correct table. An earlier version of this file claimed the adapter "drops 40,155
+    stations"; that was wrong on the number and on the attribution. 16,585 of them
+    are deleted and correctly absent.
 
-the_assumption_that_failed: >-
-  The adapter's own comment at :26-27 states it: "eytt_deleted = FALSE -> active in
-  Oracle (rafr_ era, 2003-2020); eytt_deleted = NA -> not in rafr_ (paper era, or
-  2020-2022 direct-load)". It anticipates stations in stofn that are absent from
-  rafr_stofn, and not the reverse. stofn was taken to be the superset. For 40,155
-  stations it is not.
+the_actual_anomaly:
+  count: 23570
+  what: >-
+    Electronic submissions, never deleted, that the source system's own merge did not
+    carry into stofn. 2.1% of live electronic submissions.
+  by_year: |
+    2003    27   2009 1,697   2015 1,353
+    2004   926   2010 2,421   2016 1,248
+    2005   356   2011 3,288   2017 1,341
+    2006   380   2012 2,364   2018   583
+    2007   358   2013 2,193   2019    15
+    2008 2,913   2014 2,098   2020     8
+  shape: >-
+    Peaks 2008-2014 and falls away after 2018. The fall is an artefact of the dump,
+    not of the merge: rafr_stofn stops being populated around 2019 - 166,151 negative
+    visir appear in stofn with no counterpart in rafr_stofn, and 163,233 of those are
+    2020-2022, which is the "2020-2022 direct-load" the adapter's own comment at :27
+    already names.
+  not_empty_shells: >-
+    The same stations appear in rafr_soknartegund, rafr_toga and rafr_afli, so they
+    carry gear and catch records.
 
-not_established: >-
-  Whether the 23,570 undeleted rafr-only stations SHOULD be in the pipeline. That
-  depends on what the two tables mean to the source system - whether rafr_stofn is
-  an overlay on stofn or a parallel record of the electronic era - and that is the
-  maintainer's to say, not something the data answers. The 16,585 flagged eytt = 1
-  are a separate question and probably belong out.
+cost_where_it_surfaced: >-
+  curate/logbook_sensor_gps.R could not reach a vid for 820,271 logger fixes (1.6%).
+  Those point at 17,008 stations, of which 8,940 are the live anomaly and 8,068 are
+  deleted records the logger had recorded against before deletion - the latter being
+  unremarkable.
 
-if_they_should_be_included: >-
-  The repair is in the adapter, not downstream: union the rafr_stofn-only stations
-  into the station source rather than using that table solely as a flag lookup. That
-  changes staging/afli and everything below it, including a rebuild of
-  curated/logbook and of curated/logbook/sensor_gps, so it should be decided before
-  it is done rather than discovered mid-rebuild.
+  Note what was NOT wrong: every .sid that does reach curated fishing_sample resolves
+  perfectly - .tid found, schema afli, vid present, zero lost at each step.
+
+the_decision_this_needs: >-
+  Whether to supplement stofn with the 23,570 live rafr_stofn rows the source lost.
+  This is not a bug fix in this repo - the adapter faithfully reproduces the source's
+  merged table, which is arguably the correct thing for an adapter to do. Admitting
+  them means this repo asserting that the electronic feed is more complete than the
+  bookkeeping, which is a claim about the source system and the maintainer's to make.
+
+  If admitted, the repair belongs in the adapter and forces a rebuild of staging/afli,
+  curated/logbook and curated/logbook/sensor_gps.
 
 open_questions:
-  - Do the rafr-only stations carry positions and times, or only gear and catch? If
-    the station geometry is missing they cannot be placed even once admitted.
-  - 1.68% of logger fixes is the visible cost. The cost to the logbook tables
-    themselves - catch, effort, stations - has not been measured, and is the larger
-    number if these records are real.
+  - Do the 23,570 carry positions and times, or only gear and catch? If the station
+    geometry is missing they cannot be placed even once admitted. Not checked.
+  - The cost to the logbook tables themselves - catch, effort, station counts - has
+    not been measured. 1.6% of logger fixes is only where it happened to surface.
+  - Is 2.1% stable across years, or does it mark particular vessels or submission
+    software? The by-year shape suggests an era effect but that is not a test.
