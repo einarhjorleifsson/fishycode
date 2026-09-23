@@ -664,12 +664,30 @@ alter trip segmentation meaningfully. The adb/afli unit items remain.
 |---|---|
 | `staging/ais/astd` | complete — 2,769,131,193 rows, 2013–2026, verified against legacy |
 | `staging/ais/astdB` | complete — 901,123,092 rows, 2014–2024, verified against legacy |
-| `staging/ais/ping_union` | complete — 527,960,318 pings, 2007–2026 |
-| `staging/ais/ping_tagged` | complete — 527,960,388 (the +70 is item 4) |
-| `staging/ais/ping_clean` | **partial — 9 of 20 years (2007–2015)** |
-| `curated/ais/*` | not built — smoke-test partials (2007–2008 only) were deleted to avoid them reading as finished |
-| `curated/logbook/sensor_gps` | not built — same |
-| `curated/link/trip_voyage.parquet` | complete (803,549 rows) but built on **legacy** AIS voyages, not the rebuild |
+| `staging/ais/ping_union` | **rebuilt 2026-09-23 — 543,045,030 pings**, 2007–2026 |
+| `staging/ais/ping_tagged` | **rebuilt — 543,045,030, delta 0** against the union. The old +70 did not survive the rebuild |
+| `staging/ais/ping_clean` | **complete, all 20 years — 539,907,152**; 3,137,878 dropped (0.58%) |
+| `curated/ais/ping` | **built — 539,907,152**, delta 0 against `ping_clean`; 276,523,880 carry a trip id |
+| `curated/ais/trip.parquet` | **built — 720,205 voyages, 2,756 vessels** |
+| `curated/logbook/sensor_gps` | not built |
+| `curated/link/trip_voyage.parquet` | 803,549 rows, still built on **legacy** AIS voyages — now stale against the rebuild |
+
+**What the rebuild changed.** astdB reaches the union for the first time (11.1 M pings,
+1,607 vessels — it had been silently excluded by a double-to-text cast). The four
+providers are astd 337.1 M, stk 172.4 M, emodnet 19.3 M, astdB 11.0 M, over 3,043
+vessels. Timings on this machine: union 39 min, tag 2m50s, clean 3h26m, trip 8m41s.
+
+**Two comparisons that are NOT available**, recorded because the obvious ones mislead.
+`curated/ais/trip.parquet` has no predecessor — `curated/ais/` was empty, so 720,205 is
+a first measurement, not a change. And 803,549 is the row count of `trip_voyage`, keyed
+on the *logbook* trip `.tid`; it is not a voyage count and must not be compared with
+one. The nearest like-for-like is the 404,863 distinct legacy voyages that table
+references — a lower bound, since it sees only voyages that matched a logbook trip —
+against 720,205 now, on 2,756 vessels against 1,774.
+
+**287 vessels have pings but no voyage.** Between them 1,362 pings, median 3 each, max
+43, almost all 6–10 m boats. `MIN_PINGS = 10` drops runs shorter than ten pings. Not a
+gap; the threshold working.
 
 **Resuming L2 costs nothing already done.** `ais_ping_clean.R` skips any year with a
 marker in `staging/ais/ping_clean_marks/`. To force a full rebuild after fixing the
