@@ -1,0 +1,71 @@
+id: logger_runs_past_the_station
+title: the afli GPS logger keeps recording after the fishing event ends, so .sid over-attributes fixes to a station
+status: measured on one year - repair NOT implemented
+applies_to:
+  - curated/logbook/sensor_gps
+  - raw/logbooks/afli/sjalfvirkir_maelar.parquet
+  - raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
+implementation: none yet
+discovered: 2026-09-23, maintainer, while curate/logbook_sensor_gps.R was running
+
+context: >-
+  The logger is keyed by logbook EVENT - .sid, a fishing station - not by trip. The
+  maintainer's observation: "unless the captain forgot to switch the logger off."
+  A .sid on a logger fix therefore records which station was last keyed, not that
+  the fix belongs to that fishing event.
+
+  curate/logbook_sensor_gps.R keys its output by .sid and bounds the position
+  interpolation by AIS VOYAGE. The voyage bound is right for what it is for - it
+  stops a position being drawn across a harbour stop - but nothing trims a fix to
+  the station's own event window, so the table positions these fixes correctly and
+  then labels them with a station that had already finished.
+
+measurement:
+  scope: year 2013 only, from the freshly built curated/logbook/sensor_gps
+  stations: 58085
+  fixes: 3653458
+  logger_span_per_station_hours:
+    median: 4.83
+    p95: 15.50
+    p99: 24.67
+    max: 5492          # 229 days on .sid -546515
+    over_24h: 687      # 1.18% of stations
+    over_48h: 119
+  against_recorded_duration:
+    comparable_stations: 50749      # those carrying duration_m > 0
+    median_recorded_duration_h: 4.13
+    median_logger_span_h: 5.33
+    logger_over_1h_longer: 19890    # 39.2%
+    logger_over_6h_longer: 4521     # 8.9%
+    excess_hours_p99: 19.50
+    excess_hours_max: 5475.20
+
+why_it_matters: >-
+  A consumer asking for "the logger track of station X" gets, two times in five, more
+  than the fishing event - and the excess is not small at the tail. Any per-haul
+  quantity computed by grouping the logger on .sid (duration, distance towed, mean
+  depth, bottom temperature) inherits it. The positions themselves are sound; the
+  attribution is not.
+
+proposed_repair: >-
+  Do not trim. Per this project's rule a correction adds a column: flag each fix
+  against the station's own window rather than dropping it, so a consumer can choose
+  whether to include the tail. duration_m is present on 50,749 of the 58,085 stations
+  in 2013, which is enough to flag most of them; the rest would carry NA, which is
+  the honest answer.
+
+  Where the boundary belongs is NOT obvious and is the maintainer's: a fix a minute
+  after the recorded end may well be part of hauling the gear, and a fix six hours
+  later is not. Nothing in the data says where between those the event stops.
+
+open_questions:
+  - Measured on 2013 alone. Whether 39.2% is typical, or whether it tracks the
+    logger generation (sensor_src gps1 vs gps2) or the fishery, is untested.
+  - Every .sid in the 2013 sensor_gps is NEGATIVE (-591,898 .. -451,798), as are all
+    58,085 stations. The vessel key carries negative vids too (-2605, -467). The
+    convention is undocumented anywhere and may or may not be the same one.
+  - t1 and t2 NEVER co-occur on these stations: 5,095 carry t1, 43,634 carry t2, and
+    zero carry both. t3 matches t2's count exactly and t4 matches t1's. That reads as
+    two recording schemas - one using (t1,t4), another (t2,t3) - rather than four
+    event times on one station, which is how curate/decisions/010 describes them.
+    Not investigated; it decides which window a trim would even use.
