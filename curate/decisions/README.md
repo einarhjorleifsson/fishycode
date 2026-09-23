@@ -43,6 +43,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 016 | [read_curated_sf left the WKB behind](016-read-curated-sf-left-the-wkb-behind.md) | decoding added a `geometry` column instead of replacing the blob, so `ports.fgb` carried two `geom`s and DuckDB refused it; one function, one caller, one file |
 | 017 | [the clean undercounted its own drops](017-the-clean-undercounted-its-own-drops.md) | `dropped` counted only pass 2, so 831,621 pass-1 rejections went unreported and the drop rate read 0.43% instead of 0.58%; data correct, tally wrong |
 | 018 | [a curated layer is not a dataset](018-a-curated-layer-is-not-a-dataset.md) | `open_dataset()` on a layer directory stacks unrelated tables under the first file's schema — `curated/logbook` returns 33.8 M rows and 4 of 71 columns, silently; `curated/ais` is the only one that errors |
+| 019 | [the check layer exists](019-the-check-layer-exists.md) | `curated/check/` is real — three tables, and the contract a check owes its reader: report, never correct; one row per entity; carry your own verdict. Also why no `docs/` page had ever read `curated/` |
 
 ## Data defects
 

@@ -259,14 +259,21 @@ is listed here as known-open rather than silently missing from the check.
 
 ---
 
-## 10. `curated/check/` does not exist
+## 10. `reference/species` is an empty directory
 **status:** open
+**see:** `curate/decisions/019-the-check-layer-exists.md`
 
-The plan calls the cross-check disagreement tables "part of the product, not a
-by-product" — an analyst asking "can I trust this row?" should get a dataset to join
-against. Nothing has been built. `reference/species` is also absent.
+This item used to read "`curated/check/` does not exist". That half is **closed** —
+it holds three tables and the contract a check owes its reader is written down in
+decision 019. The claim had gone stale before anyone noticed, which is why it is
+recorded rather than quietly edited.
 
-**check:** `curated/check/` contains at least one disagreement table.
+What is left is the species reference. `reference/species/` is an empty directory and
+`curated/reference/` has no species table, so nothing in the sweep resolves a species
+code to a name. Every other reference domain — gear, ports, geo, vessels — has one.
+
+**check:** `curated/reference/species.parquet` exists and the catch tables' species
+codes all resolve against it.
 
 ---
 
@@ -418,10 +425,15 @@ at a mechanism nobody has confirmed. A measured gap is a more honest artefact th
 repair built on a guess. The recommendation in the yml stays as the *shape* the repair
 would take — in `curate/`, never in the adapter — but it is not the plan of record.
 
-**This is not a decision that the data is fine.** Any per-vessel quantity over 2003–2019
-is materially wrong for the 53 vessels losing over 5% of their stations, seven of them
-over a quarter and one 78.4%. Until this closes, that correction file is the only place
-saying so; if the answer takes a while, the by-vessel warning should reach `docs/`.
+**This is not a decision that the data is fine, and the warning is now published** —
+`curate/checks/afli_rafr_stofn_loss.R` → `curated/check/afli_rafr_stofn_loss.parquet`,
+surfaced in `docs/afli-dropped-stations.qmd`, which names the 53 vessels an analyst must
+not compute per-vessel figures for. The check reproduced every number in the yml
+independently, and added one: as a *rate* the loss declines monotonically from 19.1% in
+2004 to 0.02% in 2019, so the early years are far riskier than the 2.08% headline and
+the defect had effectively stopped before the feed table did.
+
+So the only thing still waiting on the maintainer is the report itself.
 
 **check:** the answer is recorded in the yml under `the_decision_taken.what_unblocks_it`,
 and the correction is either implemented as `curate/corrections/afli_rafr_stofn_stations_dropped.R`

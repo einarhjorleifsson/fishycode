@@ -49,6 +49,21 @@ the_actual_anomaly:
     visir appear in stofn with no counterpart in rafr_stofn, and 163,233 of those are
     2020-2022, which is the "2020-2022 direct-load" the adapter's own comment at :27
     already names.
+  as_a_rate_it_only_declines: >-
+    Measured 2026-09-23 by curate/checks/afli_rafr_stofn_loss.R. The by_year COUNTS
+    above peak in 2008-2014, but that is where the volume is. As a share of each
+    year's submissions the loss is worst at the very start and falls monotonically:
+    2004 19.1%, 2005-2008 5.0-6.3%, 2009-2014 2.2-3.3%, 2015-2017 1.4-1.5%, 2018
+    0.58%, 2019 0.02%, 2020 0.02%. That is the shape of a reporting system maturing,
+    not of an era with its own cause, and it revises the "shape" line above rather
+    than contradicting the counts in it.
+  which_matters_two_ways: >-
+    The early years are far riskier than the 2.08% headline implies - anything
+    computed over 2004-2008 carries a 5-19% per-year loss. And the defect had
+    effectively stopped BEFORE the feed table did: at 0.02% in 2019-2020 it is
+    reasonable to infer the 2020-2022 direct-load era does not carry it. That is an
+    inference from the trend, not a measurement, and bounded_to_2019 below still
+    stands - there is no feed to check those years against.
   not_empty_shells: >-
     The same stations appear in rafr_soknartegund, rafr_toga and rafr_afli, so they
     carry gear and catch records.
@@ -156,6 +171,12 @@ the_decision_taken:
     rule this repo has not modelled, the correction is closed as "working as designed"
     and the by-vessel warning goes in docs/ instead.
   tracked_as: TODO item 19, needs maintainer
+  the_warning_is_published: >-
+    2026-09-23, so that holding the repair does not mean staying silent.
+    curate/checks/afli_rafr_stofn_loss.R emits curated/check/afli_rafr_stofn_loss.parquet
+    - one row per vessel, with a usable flag - and docs/afli-dropped-stations.qmd names
+    the 53 vessels an analyst must not compute per-vessel figures for. The check
+    reproduced every number in this file independently.
 
 the_report_to_send:
   note: >-
@@ -213,9 +234,11 @@ the_decision_that_was_needed: >-
 
 open_questions:
   - Is the loss a property of particular submission software or shore systems? The
-    by-year shape (peak 2008-2014) and the per-vessel skew both suggest something
-    systematic rather than random, but neither is a test of what. rafr_stofn would
-    need a column identifying the submitting client, and it has not been looked for.
+    per-vessel skew suggests something systematic rather than random, but it is not a
+    test of what. Partly narrowed 2026-09-23: as a rate the loss declines steadily
+    from 2004 to 2019, so whatever it is got better over time rather than switching
+    on in one era. rafr_stofn would need a column identifying the submitting client,
+    and it has not been looked for.
   - Does the same loss continue after rafr_stofn stops being populated around 2019?
     UNKNOWABLE from the data held here - there is no feed to compare stofn against
     for 2020-2022. Only the source-system maintainer can answer it.

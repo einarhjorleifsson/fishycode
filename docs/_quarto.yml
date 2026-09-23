@@ -29,6 +29,8 @@ website:
             href: afli-backentry.qmd
       - text: Coordinates
         href: wacky-tracks_recovery.qmd
+      - text: Data warnings
+        href: afli-dropped-stations.qmd
       - text: Landings Match
         menu:
           - text: Current approach

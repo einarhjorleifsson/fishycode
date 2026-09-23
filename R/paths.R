@@ -16,6 +16,27 @@
 
 fishydata_root <- function() {
   root <- Sys.getenv("FISHYDATA", unset = NA_character_)
+
+  # R reads .Renviron from the working directory at STARTUP, and this repo keeps
+  # its own at the root. Anything started from a subdirectory therefore never sees
+  # FISHYDATA - which is why docs/ could not read curated/ despite AGENTS.md saying
+  # it does: quarto runs each .qmd with docs/ as the working directory, so no page
+  # that opened a dataset could render. Walk up to the repo root and read it.
+  if (is.na(root) || !nzchar(root)) {
+    d <- normalizePath(getwd(), mustWork = FALSE)
+    for (i in 1:5) {
+      if (file.exists(file.path(d, ".Renviron")) &&
+          file.exists(file.path(d, "AGENTS.md"))) {
+        readRenviron(file.path(d, ".Renviron"))
+        root <- Sys.getenv("FISHYDATA", unset = NA_character_)
+        break
+      }
+      up <- dirname(d)
+      if (identical(up, d)) break
+      d <- up
+    }
+  }
+
   if (is.na(root) || !nzchar(root)) {
     stop(
       "FISHYDATA is not set.\n",
