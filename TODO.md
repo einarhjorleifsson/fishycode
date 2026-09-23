@@ -352,6 +352,11 @@ numbers are all in the plan. Two corrections came out of it and are declared:
 `ais_key_callsign_reuse.yml` and `stk_trail_time_outliers.yml`. The latter must land
 before `d2` is closed from evidence.
 
+2026-09-23: `ais_key_callsign_reuse.yml`'s candidate list reviewed one by one —
+3 fixed, 28 parked with reasons in `curate/decisions/020-reused-callsign-candidate-review.md`.
+None of it replaces the structural fix plan 003 describes; every row added is a
+patch on the same flat `cs` lookup.
+
 **check:** plan 003 steps 6–9 are marked done in its own header.
 
 ## 15. The three-repo publication boundary

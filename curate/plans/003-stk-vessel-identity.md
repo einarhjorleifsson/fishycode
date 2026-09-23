@@ -401,7 +401,16 @@ and vids assigned in AIS that have never landed. Today: of 2,369 vessels landing
 2007-06, **254 are absent from the key** (14,728 landings, 0.28 %). Most are foreign
 (3700–4999, landing in Iceland), but the head of the list is not: vid 3047, 3,770
 landings in 2025–26, whose call sign *is* in STK and is assigned to someone else
-(§3.1). Vid 2605 (382 landings), vid 1599 (340) likewise.
+(§3.1). Vid 2605 (382 landings) and vid 1599 (340) were named here as "likewise" -
+**measured 2026-09-23, and only half true.** 2605's call sign TFOE is genuinely in
+STK, but it is a two-real-vessel case (also covers vid 2640, 12,845 landings, same
+years) - not decidable without the maintainer. 1599 is NOT a call-sign-reuse case at
+all: no STK mobile id, ever, broadcasts its local sign BA021. It is a genuine "never
+transmitted to STK" vessel, not a wrong match. See `curate/checks/ais_key_reused_callsign.R`,
+written to answer this precisely (from raw/ais/stk/, not off the finished key), and
+`curate/corrections/ais_key_callsign_reuse.yml`'s scope section for the full,
+categorised count: 30 domestic vessels total, of which only 12 are as clean a case as
+3047.
 
 **`curate/checks/ais_key_registry.R`** — the tier-A invariants, which are assertions
 the script currently prints as `knitr::kable(caption = "Expect none")` into a console

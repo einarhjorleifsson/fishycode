@@ -280,5 +280,14 @@ list(
     vessel_ais_key; vessel; aflagrunnur
     produces("curate/checks/ais_key_landings.R",
              fd_curated("check", "ais_key_landings.parquet"))
+  }, format = "file"),
+
+  # Reused Icelandic call signs, checked from the raw STK side rather than off
+  # the finished key - see the script header for why that catches more than
+  # check_ais_key_landings does.
+  tar_target(check_ais_key_reused_callsign, {
+    vessel_ais_key; vessel; aflagrunnur
+    produces("curate/checks/ais_key_reused_callsign.R",
+             fd_curated("check", "ais_key_reused_callsign.parquet"))
   }, format = "file")
 )

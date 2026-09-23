@@ -1,9 +1,14 @@
 id: ais_key_callsign_reuse
 title: a reused call sign sends the AIS match to the wrong keel - 235,121 pings on a vessel that never landed
-status: confirmed - defect measured against landings, repair NOT implemented
+status: confirmed - defect measured against landings, 3 of 31 candidates patched, structural repair NOT implemented
 applies_to:
   - curated/vessel/vessel_ais_key.parquet
-implementation: none yet
+  - raw/ais/stk/stk_mobile_match-and-duals.ods
+implementation: >-
+  Partial, 2026-09-23. Three cases (vid 3047, 2605, the recent era of 3045) added as
+  rows to raw/ais/stk/stk_mobile_match-and-duals.ods, tagged basis: reconstructed to
+  mark them apart from the human-reviewed basis: recorded rows. This is a row-level
+  patch, not the structural fix - see proposed_repair.
 discovered: 2026-09-22, running the landings cross-check proposed by the maintainer, for curate/plans/003-stk-vessel-identity.md
 
 context: >-
@@ -32,10 +37,33 @@ defect:
       the recent part of the span.
 
 scope: >-
-  One case is confirmed. The class is not bounded: 254 of the 2,369 vessels that landed
-  since 2007-06 are absent from the key (14,728 landings, 0.28%), and vid 3047 is the
-  largest of them. vid 2605 (382 landings) and vid 1599 (340) are next and have not
-  been examined. The bound needs curate/checks/ais_key_landings.R - plan 003 section 4.6.
+  Measured 2026-09-22, re-measured and reviewed candidate-by-candidate 2026-09-23.
+  curate/checks/ais_key_reused_callsign.R goes to raw/ais/stk/mobile.parquet and
+  raw/ais/stk/trail/ directly rather than off the finished key, so it catches a
+  vessel that got the WRONG vid, not only one left with none. Restricted to domestic
+  vessels (call sign starts TF, vid < 3700); reference/vessels/ais_key.R already
+  states vid 3700-4999 gets no further matching effort, so foreign misses there are
+  expected, not counted here.
+
+  31 vessels showed a real STK mobile id broadcasting their own call sign, with
+  pings covering their own landing window, that vessel_ais_key did not assign to
+  them. The full per-vessel review - method, disposition and why - is
+  curate/decisions/020-reused-callsign-candidate-review.md. In short: 3 fixed (this
+  file's implementation, above); 13 turned out to already be correctly keyed via a
+  separate mid the call-sign search never found - never actually defects; 13 more
+  show no discontinuity anywhere near the claimed landing window and read as
+  landings-side noise, not an AIS defect; 2 are weak/mixed and were not acted on.
+
+  vid 1599 (uid BA021, named in an earlier version of this note as unexamined) is
+  NOT a mismatch: no STK mobile id, ever, broadcasts that local sign. It is one of
+  the ~50 remaining "landed, no AIS identity" domestic vessels that appear to have
+  genuinely never transmitted to STK, a different and larger open question than
+  this defect - not counted in the 31 above.
+
+  None of this is asserted as ground truth - the premise that one STK mobile id can
+  be legitimately time-split between two real vessels is a modelling choice, not
+  something directly observable in the data. A conclusion drawn from any one row
+  still re-enters through overrides/ as an input, never as a computed output.
 
 proposed_repair: >-
   Structural, not a row edit. Plan 003 section 4.1: split vessel_ais_key into an identity
