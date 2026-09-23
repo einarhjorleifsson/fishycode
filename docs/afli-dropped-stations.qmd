@@ -64,9 +64,12 @@ resubmissions, not deletions, and not a transfer truncated partway.
 **Why the loss is not being repaired.** Recovering the rows would mean this repo
 asserting that the vessel feed is more complete than the source system's own
 bookkeeping, on a guess at a mechanism that cannot be observed from here. A measured
-gap is a more honest artefact than a repair built on a guess. The defect is being
-put to whoever maintains that merge, and the repair waits on their answer; until
-then this page is the warning.
+gap is a more honest artefact than a repair built on a guess.
+
+Recovering them was designed and then deliberately set aside: the evidence that they
+are genuine hauls is strong, but nobody can say why the merge dropped them, and a
+repair built on the wrong theory would be harder to find than the gap it filled. So
+the data stays as it is and this page is the warning.
 
 ## The overall rate is not the story
 

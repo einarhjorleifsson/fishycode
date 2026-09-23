@@ -60,7 +60,7 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
   word <- tolower(trimws(sub("^\\*\\*status:\\*\\*[[:space:]]*([A-Za-z ]+).*$", "\\1", stat)))
   word <- sub("[[:space:]].*$", "", word)
   add("TODO.md uses only its declared statuses",
-      setdiff(unique(word), c("open", "blocked", "in", "done")),
+      setdiff(unique(word), c("open", "blocked", "parked", "in", "done")),
       "either use a declared status or amend the vocabulary in TODO.md's header")
 
   # -- 3c/6 no TODO item number appears twice ----------------------------------

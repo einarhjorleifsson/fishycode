@@ -1,13 +1,13 @@
 id: afli_rafr_stofn_stations_dropped
 title: 23,570 live electronic logbook submissions never reach stofn, the source system's own merged table
-status: characterised; the hold is SUPERSEDED - recovery on AIS corroboration, designed in curate/plans/005
+status: PARKED 2026-09-23 by the maintainer - characterised and evidenced, no repair, no work queued
 applies_to:
   - staging/afli/station.parquet
   - staging/afli/fishing_sample.parquet
   - curated/logbook/station.parquet
   - curated/logbook/fishing_sample.parquet
   - curated/logbook/sensor_gps
-implementation: none yet; designed in curate/plans/005-recover-the-dropped-afli-stations.md
+implementation: none, and none is queued - see parked below
 discovered: 2026-09-23, maintainer, on being told that 1.6% of logger fixes could not reach a vid - "because it should not"
 
 the_model: >-
@@ -93,7 +93,11 @@ what_they_are:
     Within a partly-dropped submission the lost rows sit in the middle 21,534 times of
     22,475, and the kept rows are middle 687,484 times of 702,153. The same
     proportion. It is not a cut-off at the end of a submission; it is scattered.
-  so_not: supersession, resubmission, deletion, or truncation. None of the four fits.
+  so_not: >-
+    supersession, resubmission, deletion, or truncation. None of the four fits. Still
+    true after re-testing supersession properly on 2026-09-23 against
+    xml_faerslu_version - see the_supersession_hypothesis_failed, which also records
+    that the exact-twin argument used here is NOT why it fails.
 
 the_skew_is_the_argument:
   overall_loss: 2.08%
@@ -226,6 +230,74 @@ the_hold_is_lifted:
     rebuild.
   designed_in: curate/plans/005-recover-the-dropped-afli-stations.md
   tracked_as: TODO item 19
+
+parked:
+  date: 2026-09-23
+  by: maintainer
+  decision: >-
+    Leave the product exactly as it was before this session. No rows admitted, no
+    route column, no rebuild. The measurements and the warning page stay; the
+    recovery does not proceed.
+  why_this_is_the_right_call: >-
+    Within one session the position moved from "hold, the evidence is a guess" to
+    "lift the hold, the evidence is strong" to a claimed two-thirds reversal on
+    supersession that turned out to be a conditioning error caught by one further
+    check. A question that swings that far that fast on measurements that are
+    themselves sound is a question about interpretation, and interpretation does not
+    improve by being hurried. Nothing degrades while it waits: the rows are not going
+    anywhere and the warning page covers the analyst in the meantime.
+  what_stays_true: >-
+    23,570 live electronic submissions absent from stofn, measured twice by
+    independent code paths that agreed to the row. The per-vessel skew - 53 vessels
+    over 5%, seven over a quarter, one at 78.4%. The rate declining 19.1% in 2004 to
+    0.02% in 2019. The AIS corroboration in curated/check/. None of that depends on
+    what is decided later.
+  what_is_not_settled: >-
+    Why the merge drops them. Whether they should be admitted. What the consistent
+    ~7-point corroboration gap means - lost rows score worse than their control on
+    every measure, slightly, and nothing explains it. Whether the pre-2007 rows,
+    which no evidence can ever reach, could be admitted on extrapolation.
+  to_resume: >-
+    curate/plans/005 holds the design and the step 1 measurements. Read
+    the_supersession_hypothesis_failed below first - it is the most recent thing
+    learned and the most expensive to rediscover.
+
+the_supersession_hypothesis_failed:
+  tested: 2026-09-23
+  the_idea: >-
+    rafr_stofn carries xml_faerslu_visir and xml_faerslu_version. If the lost rows
+    were earlier versions that the merge correctly replaced, recovering them would
+    inject stale records - inverting the recommendation. The idea was attractive
+    because it also explained the unexplained: the corroboration gap, the per-vessel
+    skew, and the rate declining as submission software matured.
+  why_the_original_test_looked_wrong: >-
+    The earlier analysis ruled out supersession because only 14 of 22,475 lost rows
+    are an exact twin of a kept row on vessel, date, gear and position. That is the
+    wrong instrument - a resubmission that CORRECTS something is not a twin, and
+    differing is the point. The criticism was fair; the conclusion it attacked was
+    right anyway.
+  the_error_i_made: >-
+    Classifying a lost row as "superseded" whenever its entry contained ANY kept row
+    of a higher version gave 15,682 of 23,570 - 66.5% - and it is a base-rate
+    artefact. In a multi-haul entry where one row happens to be a v2, every lost v1
+    row is labelled superseded while its hundreds of same-version peers are ignored.
+  what_the_conditional_rates_show: |
+    within the 7,048 entries holding more than one version
+                        kept      lost    loss rate
+    older version     684,303   16,098        2.3%
+    latest version     10,499      683        6.1%
+    baseline for all live electronic rows                2.08%
+  conclusion: >-
+    97.7% of older-version rows were KEPT. Being an older version does not predict
+    being lost - it is at baseline. Supersession is not the mechanism and the
+    original conclusion stands.
+  what_survives_and_points_the_other_way: >-
+    Loss is associated with revision, but the REVISION is what goes missing, not the
+    thing it replaced. Rows at the latest version of a multi-version entry are lost at
+    6.1%, three times baseline, and version >= 2 rows are 3.5x over-represented among
+    the lost overall (4.3% against 1.2%). That points at the merge mishandling the
+    resubmission path rather than superseding anything deliberately. It is a narrowing
+    of the mechanism, not an explanation, and it covers a minority of the 23,570.
 
 the_report_to_send:
   note: >-

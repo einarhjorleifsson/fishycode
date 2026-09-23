@@ -7,7 +7,12 @@ Not a diary. Why a thing is the way it is goes in `curate/decisions/`. Data defe
 with a detection rule and a repair go in `curate/corrections/*.yml`. This file is
 only for work that is *not done yet*.
 
-Status: `open` · `blocked` · `in progress` · `done` (delete when done and recorded elsewhere)
+Status: `open` · `blocked` · `parked` · `in progress` · `done` (delete when done and
+recorded elsewhere)
+
+`parked` is a deliberate stop, not an obstacle: the work could proceed and a decision
+was taken that it should not. `blocked` means something outside the item is in the way.
+Conflating them hides which ones a session could actually pick up.
 
 An item that cannot move without the maintainer — a decision, an account, a
 credential, anything outside this repo — also carries **`needs: maintainer`**, and says
@@ -405,67 +410,30 @@ in `raw/ais/astd` for that year.
 
 ---
 
-## 19. Recover the dropped afli stations on AIS evidence
-**status:** open · **see:** `curate/plans/005-recover-the-dropped-afli-stations.md`,
-`curate/corrections/afli_rafr_stofn_stations_dropped.yml`
+## 19. The dropped afli stations — PARKED
+**status:** parked · **see:** `curate/corrections/afli_rafr_stofn_stations_dropped.yml`,
+`curate/plans/005-recover-the-dropped-afli-stations.md`
 
-**No longer blocked, and no longer waiting on anyone outside this repo.** This item
-was "report upstream and wait". The maintainer stated 2026-09-23 that no answer is expected soon
-or likely ever, so waiting is not caution any more — it is a permanent silent hole.
-The report drafted in the yml's `the_report_to_send` stays sendable; it is no longer
-the gate.
+**Parked by the maintainer 2026-09-23. Nothing is queued and the product is unchanged.**
+23,570 live electronic submissions are absent from `stofn` and therefore from everything
+this repo builds. That is measured twice and is not in doubt. What to do about it is.
 
-23,570 electronic logbook submissions over 2003–2019 carry `eytt = 0` in `rafr_stofn`
-and never reach `stofn`, so they are absent from everything this repo builds. They are
-real hauls — 100% carry a position, 31,210 catch records hang off them — and the four
-explanations this repo can test all fail: not supersession, not resubmission, not
-deletion, not truncation. What is left is a mechanism inside the source system that
-cannot be observed from here.
+The position moved three times in one session — hold for an upstream answer, lift the
+hold on AIS corroboration, then a claimed two-thirds reversal on supersession that was a
+conditioning error caught by one further check. The measurements underneath were sound
+every time; the readings of them were not. That is why it is parked rather than pushed.
 
-**The reframe, same day:** *why does the merge drop them* is unanswerable anywhere.
-*Are these rows true* is answerable here. Measured — 92.3% of the lost rows are in the
-STK era, 410 of their 416 vessels have AIS voyages, and **98.3% of lost rows place the
-vessel at sea on that date against a 99.6% control of rows that merged fine**. That is
-corroboration from a system with no connection to the logbook merge. Checked too:
-`ais_key.R` never reads `curated/logbook`, so this does not close the cycle `AGENTS.md`
-warns about.
+**What is published and stays:** `curate/checks/afli_rafr_stofn_loss.R` and
+`afli_rafr_stofn_corroboration.R` into `curated/check/`, and
+`docs/afli-dropped-stations.qmd`, which names the 53 vessels whose per-vessel figures
+are wrong. Parking the repair is not a finding that the data is fine.
 
-Admission decided 2026-09-23: **corroborated rows join `curated/logbook`, flagged with
-a `route` column**, so `filter(route == "stofn")` reproduces today's product exactly.
-Never in the adapter. Plan 005 has the design.
+**Before resuming**, read the yml's `parked` and `the_supersession_hypothesis_failed`
+sections. The second is the most recent thing learned and the most expensive to
+rediscover.
 
-**This is not a decision that the data is fine, and the warning is now published** —
-`curate/checks/afli_rafr_stofn_loss.R` → `curated/check/afli_rafr_stofn_loss.parquet`,
-surfaced in `docs/afli-dropped-stations.qmd`, which names the 53 vessels an analyst must
-not compute per-vessel figures for. The check reproduced every number in the yml
-independently, and added one: as a *rate* the loss declines monotonically from 19.1% in
-2004 to 0.02% in 2019, so the early years are far riskier than the 2.08% headline and
-the defect had effectively stopped before the feed table did.
-
-**Step 1 is done, 2026-09-23.** `curate/checks/afli_rafr_stofn_corroboration.R` →
-`curated/check/afli_rafr_stofn_corroboration.parquet`, 92,762 rows. In the STK era the
-lost rows are on an AIS voyage 98.1% of the time against 98.9% for their matched
-control, and on the sharp test — the vessel's own GPS logger against its own
-transponder at matched times — they sit 488 m from the AIS track against 462 m for
-records that merged fine. **26 metres apart.** Full numbers in plan 005.
-
-Two traps it found: `curated/logbook/sensor_gps` positions are AIS interpolations, so
-using them to corroborate against AIS would have measured nothing but the
-interpolation; and the AIS-free alternative carries the notorious dropped-west-sign
-defect on 16.7% of fixes, now declared in `curate/corrections/afli_coords.yml`.
-
-**Steps 2–4 remain**: admission behind the `route` column, the ~1.4% uncorroborated
-residue, and turning the warning page around. They force a logbook rebuild and ride
-along with items 1 and 1b.
-
-**check:** `curated/check/afli_rafr_stofn_corroboration.parquet` exists and reports the
-lost rows beside their merged control; `curated/logbook/station.parquet` carries `route`;
-`filter(route == "stofn")` returns exactly today's row count.
-
-**check:** the answer is recorded in the yml under `the_decision_taken.what_unblocks_it`,
-and the correction is either implemented as `curate/corrections/afli_rafr_stofn_stations_dropped.R`
-or closed as working-as-designed with the by-vessel warning published in `docs/`.
-
+**check:** none — a parked item has no completion test. It closes when the maintainer
+reopens it or decides the rows stay out for good.
 
 ---
 

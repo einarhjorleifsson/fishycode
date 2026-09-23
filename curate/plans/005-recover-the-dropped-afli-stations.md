@@ -1,6 +1,13 @@
 # 005 — Recovering the dropped afli stations on evidence, not on explanation
 
-**Status:** partly built — **step 1 done 2026-09-23**, steps 2–4 open. *2026-09-23.*
+**Status:** **PARKED 2026-09-23** by the maintainer. Step 1 was built and its
+measurements stand; steps 2–4 are designed and will not proceed. *2026-09-23.*
+
+> **Parked the day it was written.** Nothing here is queued. The design and the step 1
+> numbers are kept because they are sound and expensive to redo — what is not kept is
+> any implication that the recovery is going ahead. Read
+> `curate/corrections/afli_rafr_stofn_stations_dropped.yml`, sections `parked` and
+> `the_supersession_hypothesis_failed`, before acting on anything below.
 
 **Measured** (all on 2026-09-23, reproducible from `curate/checks/afli_rafr_stofn_loss.R`
 and the probe described in §2):
@@ -138,7 +145,7 @@ is corroborated"*, keeping the per-vessel table so anyone who needs the strict v
 knows exactly what changes for their vessel.
 
 
-## Step 1 results — 2026-09-23
+## Step 1 results — 2026-09-23 (measurements stand; the work is parked)
 
 Built as `curate/checks/afli_rafr_stofn_corroboration.R` →
 `curated/check/afli_rafr_stofn_corroboration.parquet`, 92,762 rows: all 23,570 lost
@@ -199,7 +206,7 @@ them, and unequally — 55.2% of lost-station fixes against 46.8% of control —
 comparing unequal survivorship. Repairing the sign instead roughly doubled the usable
 stations and removed most of that asymmetry. Declared in `curate/corrections/afli_coords.yml`.
 
-## What step 2 now has to decide
+## What step 2 would have to decide, if this is ever resumed
 
 ## 5. What this does not claim
 
