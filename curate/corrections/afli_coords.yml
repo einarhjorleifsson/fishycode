@@ -208,3 +208,31 @@ parked:
     same position and the comparison is itself of interest. That is also why the
     parking costs nothing - the alternative's output exists and can be analysed
     whenever.
+
+west_sign_in_the_recovery:
+  measured: 2026-09-23
+  found_by: >-
+    curate/checks/afli_rafr_stofn_corroboration.R, which needed AIS-free logger
+    positions and could not use curated/logbook/sensor_gps because those are AIS
+    interpolations. Reaching for staging/afli/sensor_gps instead surfaced this.
+  what: >-
+    The recovered positions in staging/afli/sensor_gps run lon -825.9 to +123.0 and
+    lat -55.7 to +88.0, and 18.6% of longitudes are positive although Iceland sits at
+    about 21 W. Of all 50,147,118 fixes - 79.8% land in Icelandic waters as recorded,
+    16.7% (8,389,194 fixes) are impossible as recorded and valid with lon negated,
+    and 3.5% are unusable either way. The dropped west sign is 83% of the damage.
+  the_context: >-
+    Maintainer, 2026-09-23 - "the lon sign switch is notorious in the logbook
+    databases in general". It is not peculiar to this recovery. TODO item 1 blocks
+    the adb merge on the same fault, where 91.8% of the 50,269 outlying shared
+    stations carry a positive longitude against 1.5% in fs_afladagbok.
+  no_per_row_flag: >-
+    basis does not separate them - 78.3% in box for recovered_rollover, 81.7% for
+    recovered_no_rollover, 80.7% for seed - and median margin_m is 190-223 m across
+    all three. So nothing in the output marks the bad rows, and a consumer that trusts
+    the column gets them silently.
+  status: >-
+    Declared, not repaired. This derivation is already parked and unadopted, so no
+    product carries the defect today. The corroboration check repairs the sign in its
+    own working copy and says so. If afli_coords.R is ever adopted this must be fixed
+    at source first.

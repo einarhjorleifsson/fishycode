@@ -442,6 +442,22 @@ independently, and added one: as a *rate* the loss declines monotonically from 1
 2004 to 0.02% in 2019, so the early years are far riskier than the 2.08% headline and
 the defect had effectively stopped before the feed table did.
 
+**Step 1 is done, 2026-09-23.** `curate/checks/afli_rafr_stofn_corroboration.R` →
+`curated/check/afli_rafr_stofn_corroboration.parquet`, 92,762 rows. In the STK era the
+lost rows are on an AIS voyage 98.1% of the time against 98.9% for their matched
+control, and on the sharp test — the vessel's own GPS logger against its own
+transponder at matched times — they sit 488 m from the AIS track against 462 m for
+records that merged fine. **26 metres apart.** Full numbers in plan 005.
+
+Two traps it found: `curated/logbook/sensor_gps` positions are AIS interpolations, so
+using them to corroborate against AIS would have measured nothing but the
+interpolation; and the AIS-free alternative carries the notorious dropped-west-sign
+defect on 16.7% of fixes, now declared in `curate/corrections/afli_coords.yml`.
+
+**Steps 2–4 remain**: admission behind the `route` column, the ~1.4% uncorroborated
+residue, and turning the warning page around. They force a logbook rebuild and ride
+along with items 1 and 1b.
+
 **check:** `curated/check/afli_rafr_stofn_corroboration.parquet` exists and reports the
 lost rows beside their merged control; `curated/logbook/station.parquet` carries `route`;
 `filter(route == "stofn")` returns exactly today's row count.

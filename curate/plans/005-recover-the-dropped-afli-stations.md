@@ -1,6 +1,6 @@
 # 005 — Recovering the dropped afli stations on evidence, not on explanation
 
-**Status:** proposal — nothing built. *2026-09-23.*
+**Status:** partly built — **step 1 done 2026-09-23**, steps 2–4 open. *2026-09-23.*
 
 **Measured** (all on 2026-09-23, reproducible from `curate/checks/afli_rafr_stofn_loss.R`
 and the probe described in §2):
@@ -136,6 +136,70 @@ gear — that is a finding in its own right and gets its own record.
 are wrong."* After step 2 it says *"here is what was recovered, and how well each row
 is corroborated"*, keeping the per-vessel table so anyone who needs the strict view
 knows exactly what changes for their vessel.
+
+
+## Step 1 results — 2026-09-23
+
+Built as `curate/checks/afli_rafr_stofn_corroboration.R` →
+`curated/check/afli_rafr_stofn_corroboration.parquet`, 92,762 rows: all 23,570 lost
+stations and 69,192 control rows drawn from the same vessel-years.
+
+**The station-position test**, whole population and then the part AIS can speak to:
+
+| | lost | control |
+|---|---|---|
+| on an AIS voyage that day | 90.6% | 96.6% |
+| STK era only (≥ 2007-06) | **98.1%** | **98.9%** |
+| has pings that day, STK era | 97.1% | 98.1% |
+| median distance to nearest ping | 0.43 km | 0.39 km |
+| p90 distance | 3.19 km | 1.23 km |
+| graded `strong`, STK era | 81.6% | 88.3% |
+| no AIS at all, STK era | 1.4% | 1.1% |
+
+1,808 lost rows and 1,596 control rows predate AIS; for them the question is
+unanswerable, not answered badly. Reporting the whole population and the answerable
+subset separately is why the headline reads 90.6% and the real figure is 98.1%.
+
+**The logger test** — the vessel's own GPS against its own transponder, at matched
+timestamps. Five times sharper than the arc-minute station grid:
+
+| | lost | control |
+|---|---|---|
+| stations | 7,695 | 30,174 |
+| fixes | 357,119 | 1,524,347 |
+| median logger-to-AIS distance | **488 m** | **462 m** |
+| p90 | 949 m | 851 m |
+| within 500 m | 51.6% | 55.7% |
+
+**Reading.** On the sharp instrument the two groups are 26 m apart. Two independent
+physical devices agree about a lost station's position as closely as they agree about
+a station the bookkeeping kept. Combined with the voyage test at 98.1% against 98.9%,
+the lost rows behave like genuine records on every measurement available.
+
+The residue is real and stays visible: 2,120 lost rows have no AIS that day against
+2,319 of the larger control — about 1.4% versus 1.1% within the STK era. Plan §3's
+estimate of "~300 uncorroborated" was drawn from the coarse voyage test and is
+superseded by this.
+
+### Two traps found while building it
+
+**The circular logger.** `curated/logbook/sensor_gps` supplies lon/lat by
+interpolating from AIS. Comparing it to AIS would have measured the interpolation and
+produced a triumphant near-zero — the cycle `AGENTS.md` warns about, one join away.
+The test uses `staging/afli/sensor_gps` instead, the `afli_coords.R` derivation that
+recovers the logger's own reading by dead reckoning and "deliberately does NOT read
+AIS". The maintainer's question about where accurate positions come from is what
+surfaced this.
+
+**The west sign.** That AIS-free recovery emits impossible coordinates for 20% of
+fixes, and the maintainer identified the cause immediately: a dropped west sign, "the
+lon sign switch is notorious in the logbook databases in general". 16.7% of all fixes
+are invalid as recorded and valid negated. The first version of this check *discarded*
+them, and unequally — 55.2% of lost-station fixes against 46.8% of control — so it was
+comparing unequal survivorship. Repairing the sign instead roughly doubled the usable
+stations and removed most of that asymmetry. Declared in `curate/corrections/afli_coords.yml`.
+
+## What step 2 now has to decide
 
 ## 5. What this does not claim
 
