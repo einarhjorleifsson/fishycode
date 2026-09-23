@@ -42,6 +42,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 015 | [identity is separate from the key](015-identity-is-separate-from-the-key.md) | the keel and its names are two tables; the commercial feeds were resolving MMSI with no time at all, misattributing 21 hulls; and `yh2` is stale often enough that the lifetime guard must flag rather than withdraw |
 | 016 | [read_curated_sf left the WKB behind](016-read-curated-sf-left-the-wkb-behind.md) | decoding added a `geometry` column instead of replacing the blob, so `ports.fgb` carried two `geom`s and DuckDB refused it; one function, one caller, one file |
 | 017 | [the clean undercounted its own drops](017-the-clean-undercounted-its-own-drops.md) | `dropped` counted only pass 2, so 831,621 pass-1 rejections went unreported and the drop rate read 0.43% instead of 0.58%; data correct, tally wrong |
+| 018 | [a curated layer is not a dataset](018-a-curated-layer-is-not-a-dataset.md) | `open_dataset()` on a layer directory stacks unrelated tables under the first file's schema — `curated/logbook` returns 33.8 M rows and 4 of 71 columns, silently; `curated/ais` is the only one that errors |
 
 ## Data defects
 
