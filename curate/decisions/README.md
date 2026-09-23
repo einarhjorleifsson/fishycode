@@ -45,6 +45,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 018 | [a curated layer is not a dataset](018-a-curated-layer-is-not-a-dataset.md) | `open_dataset()` on a layer directory stacks unrelated tables under the first file's schema — `curated/logbook` returns 33.8 M rows and 4 of 71 columns, silently; `curated/ais` is the only one that errors |
 | 019 | [the check layer exists](019-the-check-layer-exists.md) | `curated/check/` is real — three tables, and the contract a check owes its reader: report, never correct; one row per entity; carry your own verdict. Also why no `docs/` page had ever read `curated/` |
 | 020 | [reused-callsign candidate review](020-reused-callsign-candidate-review.md) | 3 of 31 reused-callsign candidates fixed (`ais_key_callsign_reuse.yml`); the other 28, with why each was parked — 13 were already correctly keyed under a different mid the callsign search never found, a false-positive class worth checking for next time |
+| 021 | [the cascade matches on evidence now](021-cascade-matches-on-evidence.md) | plan 003 step 5's last piece: the `type`-string cascade is replaced by time-aware joins against `vessel_identity`; six mobile-ids/441K pings now land on the vid their own window actually covers, and two large ones (`TFPH`, `TFUT`) surface as AIS/landings disagreements instead of silently guessing |
 
 ## Data defects
 

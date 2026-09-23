@@ -357,6 +357,16 @@ before `d2` is closed from evidence.
 None of it replaces the structural fix plan 003 describes; every row added is a
 patch on the same flat `cs` lookup.
 
+2026-09-23: the structural fix itself is done — `curate/decisions/021-cascade-matches-on-evidence.md`.
+The cascade matches on time-aware evidence against `vessel_identity` now, not a
+pasted `type` string. It surfaced (did not resolve) a residual: a single STK
+mobile-id has one `[d1,d2]` span, so when the same physical device changes hands
+without STK splitting the period, matching on identifiers alone cannot recover the
+split — `TFPH` and `TFUT` are the two large examples, both now visible in
+`check_ais_key_landings`/`check_ais_key_reused_callsign` rather than silently
+mismatched. Whether that is worth folding into step 6's `d2`-closing work is the
+maintainer's call.
+
 **check:** plan 003 steps 6–9 are marked done in its own header.
 
 ## 15. The three-repo publication boundary

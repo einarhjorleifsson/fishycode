@@ -28,7 +28,7 @@
 # INPUT
 #    oracle stk.trail
 #    oracle stk.mobile
-#    data/auxillary/maritime_identification_digits.parquet
+#    curated/vessel/vessel.parquet, curated/vessel/vessel_identity.parquet
 #    data/vessels/vessels_iceland.parquet
 #    older matches of mobileid and vessel registration number
 #     see: ~/R/Pakkar2/omar/data-raw/00_SETUP_mobile-vid-match.R
@@ -139,19 +139,9 @@ str_extract_dmy_period <-
 # Data -------------------------------------------------------------------------
 
 ## Various auxillary informations ----------------------------------------------
-## Maritime identification digits
-MID <-
-  read_parquet(fd_staging("aux", "maritime_identification_digits.parquet")) |>
-  # used for classifying likely incomplete mmsi-signals
-  mutate(MID_child = paste0("98", MID),
-         MID_aid = paste0("99", MID))
-## Call sign prefix - flag state
+## Call sign prefix - flag state, passed to stk_entity_class() below
 cs.prefix.all <-
   read_parquet(fd_staging("aux", "callsign_prefix.parquet"))
-cs.prefix <-
-  cs.prefix.all |>
-  # critical, lot of mess with TF in stk localid and globalid
-  filter(cs_prefix != "TF")
 ## vessel registry
 #  should really add skemmtibatar
 v_all <-
@@ -160,21 +150,31 @@ v_all <-
 v_mmsi <-
   v_all |>
   filter(!is.na(mmsi))
+# One row per mmsi, current holder - used only for the final "stamp an mmsi onto
+# every assigned vid" step below, which is a display convenience, not a match.
+# The matching itself (NA_mmsi tier) uses vessel_identity, time-aware.
+v_mmsi_no_dupes <-
+  v_mmsi |>
+  arrange(mmsi, desc(mmsi_t2), desc(vid)) |>
+  group_by(mmsi) |>
+  slice(1) |>
+  ungroup()
+## Identity periods - the time-aware replacement for v_mmsi's "current value"
+#  lookups. See R/vid_match.R for why: a call sign, uid or mmsi is an ATTRIBUTE
+#  of a vid at a time, not a fact about the vid forever, and the matching below
+#  requires the mobile-id's own [d1,d2] window to overlap the period that
+#  actually held the identifier.
+vessel_identity <-
+  read_parquet(fd_curated("vessel", "vessel_identity.parquet"))
 
 ## Known (via ad hoc) non-vessel localid or globalid ---------------------------
-# Until 2026-09-22 these five vectors were ~250 literals inline here, and they were
-# the only entity classifier that has ever existed in any of the eight repos. They
-# are a reviewed *input* - a nine-character truncated Icelandic place name is not
-# derivable from anything, so a human decided each row - and AGENTS.md puts reviewed
-# inputs in overrides/, not in a script. Membership is unchanged; `type` below is
-# byte-for-byte what it was.
+# A reviewed *input* - a nine-character truncated Icelandic place name is not
+# derivable from anything, so a human decided each row - and AGENTS.md puts
+# reviewed inputs in overrides/, not in a script. Passed to stk_entity_class()
+# directly below; the per-group vectors the old classification block pulled out
+# of it (fixed/kvi/hafro/net_glid/unknown_glid) no longer have a reader now that
+# the block is gone.
 stk_overrides <- read_stk_overrides()
-.ov <- function(g) stk_overrides$value[stk_overrides$legacy_group == g]
-fixed        <- .ov("fixed")
-kvi          <- .ov("kvi")
-hafro        <- .ov("hafro")
-net_glid     <- .ov("net_glid")
-unknown_glid <- .ov("unknown_glid")
 
 ## Vessel info for local- and globalid classification --------------------------
 # suffix 2 is when mmsi not available
@@ -197,16 +197,6 @@ CS3 <-
   filter(!is.na(cs)) |>
   filter(nchar(cs) %in% 4:7) |>
   pull(cs) |>
-  unique()
-UID <-
-  v_mmsi |>
-  filter(!is.na(uid)) |>
-  pull(uid) |>
-  unique()
-UID2 <-
-  v_all |>
-  filter(!is.na(uid)) |>
-  pull(uid) |>
   unique()
 VID <-
   v_mmsi |>
@@ -301,75 +291,13 @@ stk1 <-
                           .default = NA))
 
 
-# Classification ---------------------------------------------------------------
+## Entity class ------------------------------------------------------------------
+# Computed straight from loid/glid, before any vid is matched - it does not need
+# the type string the old classification block built, only to feed it. See
+# R/entity_class.R.
 stk2 <-
   stk1 |>
-  # The order matters in the case_when
-  mutate(.loid =
-           case_when(
-             loid %in% fixed ~ "fixed",
-             loid %in% kvi ~ "kvi",
-             loid %in% VID ~ "vid",
-             loid %in% VID2 ~ "vid2",
-             #
-             loid %in% CS ~ "cs",
-             loid %in% CS2 ~ "cs2",
-             loid %in% CS3 ~ "cs3",
-             loid %in% UID ~ "uid",
-             loid %in% UID2 ~ "uid2",
-             # NOT widened to one-character prefixes, though ten of the 711 ITU
-             # allocations are one (2 B F G I K M N R W) and this misses every
-             # French, British and Italian call sign - 936 mobile-ids, 1.2 M
-             # pings. Tried 2026-09-22 and reverted: `type` is pasted from both
-             # fields and the steps below match it as a literal, so widening the
-             # classifier renamed NA_cs to cs4_cs and unmatched four vessels that
-             # the NA_cs step had been catching. The classifier cannot be fixed
-             # while the rules key on its output. entity_class carries the same
-             # signal harmlessly - see R/entity_class.R - and the real repair is
-             # plan 003 step 5.
-             str_sub(loid, 1, 2) %in% cs.prefix$cs_prefix &
-               !numbers_only(str_trim(loid)) &
-               !str_starts(loid, "MOB_")  ~ "cs4",
-             numbers_only(loid) & str_sub(loid, 1, 5) %in% MID$MID_child ~ "mmsi.other",
-             numbers_only(loid) & str_sub(loid, 1, 5) %in% MID$MID_aid ~ "mmsi.other",
-             numbers_only(loid) & nchar(loid) == 9  ~ "mmsi",
-             .default = NA)) |>
-  mutate(.glid =
-           case_when(
-             glid %in% fixed ~ "fixed",
-             glid %in% kvi ~ "kvi",
-             glid %in% hafro ~ "hafro",
-             glid %in% unknown_glid ~ "unknown",
-             str_detect(tolower(glid), "_net") ~ "net",
-             glid %in% net_glid ~ "net",
-             glid %in% VID ~ "vid",
-             glid %in% VID2 ~ "vid2",
-             # numbers_only(glid) & nchar(glid) == 9 ~ "mmsi",
-             glid %in% CS ~ "cs",
-             glid %in% CS2 ~ "cs2",
-             glid %in% CS3 ~ "cs3",
-             glid %in% UID ~ "uid",
-             glid %in% UID2 ~ "uid2",
-             str_sub(glid, 1, 2) %in% cs.prefix$cs_prefix &
-               !numbers_only(str_trim(glid)) &
-               !str_starts(glid, "MOB_")  ~ "cs4",
-             numbers_only(glid) & str_sub(glid, 1, 5) %in% MID$MID_child ~ "mmsi.other",
-             numbers_only(glid) & str_sub(glid, 1, 5) %in% MID$MID_aid ~ "mmsi.other",
-             numbers_only(glid) & nchar(glid) == 9 ~ "mmsi",
-             #numbers_only(glid) & nchar(glid) == 7 & !omar::vessel_valid_imo(glid) ~ "imo",
-             .default = NA)) |>
-  mutate(type = paste0(replace_na(.loid, "NA"), "_", replace_na(.glid, "NA"))) |>
-  select(-c(.loid, .glid))
-
-## Entity class ----------------------------------------------------------------
-# `type` records which pair of rules fired. That is provenance for the cascade
-# below, not a vocabulary a consumer can use: until now the only way to ask "is
-# this a vessel" was to test whether the string contained the word "fixed". The
-# entity class answers it directly, from loid and glid alone, before any vid is
-# matched, and carries the basis AGENTS.md requires. See R/entity_class.R.
-stk2 <-
-  stk2 |>
-  bind_cols(stk_entity_class(stk2$loid, stk2$glid,
+  bind_cols(stk_entity_class(stk1$loid, stk1$glid,
                              overrides = stk_overrides,
                              cs_prefix = cs.prefix.all$cs_prefix,
                              known_ids = known_ids))
@@ -384,221 +312,155 @@ stk3 <-
 stk3 |> lh_overlaps() |> filter(vid > 0) |> knitr::kable(caption = "Expect none")
 stk3 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
 
-## vid_vid ---------------------------------------------------------------------
-stk4 <-
+# Time-aware evidence matching ---------------------------------------------------
+# Replaces the flat CS/CS2/CS3/UID/UID2 + v_mmsi "current value" lookups below with
+# joins against vessel_identity, constrained by the mobile-id's own [d1,d2] window
+# overlapping the period that held the identifier. See R/vid_match.R for why, and
+# plan 003 §3.1/§4.1 and decision 015 for what this was blocked on: the classifier
+# could not be fixed piecemeal while the rules keyed on its pasted `type` string.
+# Every step below fills `vid` only where it is still NA - the manual duals sheet,
+# already joined into stk1, keeps first claim - and the tiers are ordered the same
+# way the cascade they replace was: agreement, then identifier-plus-corroboration,
+# then a bare identifier, then a bare call sign, then a hail mary, then mmsi.
+#
+# .rid is NOT a unique key by this point - the manual duals join in stk1 can split
+# one mobile-id into several period rows carrying the same .rid (see the afmadur
+# section below). Joining match results back on .rid would silently conflate those
+# rows' evidence, so this section uses its own row key instead.
+base <-
   stk3 |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "vid_vid" & loid == glid ~ as.numeric(glid),
-                         .default = vid)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "vid_vid",
-                          .default = step))
-stk4 |>
-  filter(type == "vid_vid") |>
-  filter(is.na(vid)) |>
-  knitr::kable(caption = "Missing vid for type vid_vid (expect none)")
+  mutate(.mrid = dplyr::row_number(),
+         .lo = suppressWarnings(as.integer(loid)),
+         .gl = suppressWarnings(as.integer(glid)))
 
-# duals with overlaps
-stk4 |> lh_overlaps() |> filter(vid > 0) |> knitr::kable(caption = "Expect vid 1511, 7807")
-stk4 |> lh_mmsi_expectations()
+## vid_vid / vid2_vid2 - both fields state the same vid, agreeing ----------------
+# Not time-gated: a vid is not an attribute at a time, it is the keel itself
+# (AGENTS.md - "the vid stays with the vessel from cradle to grave").
+stk4a <-
+  base |>
+  mutate(vid = case_when(
+           !is.na(vid) ~ vid,
+           loid == glid & !is.na(.lo) & as.character(.lo) %in% VID  ~ as.numeric(.lo),
+           .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) ~ "vid_vid", .default = step))
+stk4a |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
+stk4a |> lh_mmsi_expectations()
 
-## vid_cs match ----------------------------------------------------------------
+# vid2_vid2 - same agreement, for a vid with no MMSI on record (VID2 but not VID:
+# the 3700-4999 foreign range, or a domestic vid the registry never gave one).
+stk4 <-
+  stk4a |>
+  mutate(vid = case_when(
+           !is.na(vid) ~ vid,
+           loid == glid & !is.na(.lo) & as.character(.lo) %in% VID2  ~ as.numeric(.lo),
+           .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) ~ "vid2_vid2", .default = step))
+stk4 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
+
+## vid_cs / vid2_cs - loid states the vid, glid confirms its call sign -----------
+# vid_cs if the vid has an MMSI on record (VID, domestic proper); vid2_cs if it is
+# only in VID2 (the 3700-4999 foreign range, or a domestic vid with no MMSI). Both
+# use the same time-aware confirmation - this is the fix for TFBR: vessel_identity
+# has no row for vid 1473 carrying cs TFBR at all (its holder in 2011 was one of
+# 2815 or 3047, per decision 015), so confirm_vid() cannot manufacture a match for
+# it the way the old flat v_mmsi$cs column did.
+.probe_vc <-
+  stk4 |>
+  filter(is.na(vid), !is.na(.lo), as.character(.lo) %in% VID2) |>
+  transmute(.rid = .mrid, vid = .lo, val = glid, d1, d2)
+.hit_vc <- confirm_vid(.probe_vc, vessel_identity, "cs")
 stk5 <-
   stk4 |>
-  mutate(.vid = case_when(type == "vid_cs" ~ as.numeric(loid),
-                          .default = -9999),
-         .cs = case_when(type == "vid_cs" ~ glid,
-                         .default = "XXXX")) |>
-  left_join(v_mmsi |> select(.vid = vid, .cs = cs) |> mutate(type = "vid_cs"),
-            by = join_by(.vid, .cs, type)) |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "vid_cs" & vid_older == .vid & glid == .cs ~ vid_older,
-                         type == "vid_cs" & is.na(vid_older) ~ .vid,
-                         type == "vid_cs" & vid_older == 6643 ~ vid_older,  # single case
-                         .default = vid)) |>
-  select(-c(.vid, .cs)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "vid_cs",
-                          .default = step))
-stk5 |>
-  filter(type == "vid_cs") |>
-  filter(is.na(vid)) |>
-  knitr::kable(caption = "Missing vid for type vid_cs (expect none)")
+  left_join(.hit_vc |> rename(.vid = vid), by = c(".mrid" = ".rid")) |>
+  mutate(vid = case_when(!is.na(vid) ~ vid, !is.na(.vid) ~ .vid, .default = vid),
+         step = case_when(
+           !is.na(vid) & is.na(step) & !is.na(.vid) & as.character(.vid) %in% VID ~ "vid_cs",
+           !is.na(vid) & is.na(step) & !is.na(.vid) ~ "vid2_cs",
+           .default = step)) |>
+  select(-.vid)
+stk5 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
+stk5 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
 
-stk5 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 1511, 2718, 7807")
-if(FALSE) {
-  lh_overlaps_plot(c(103851, 101223), stk5) # expected, vid 2718 has one mid inbetween another mid
-}
-stk5 |> filter(!vid %in% 3700:4999) |>  lh_mmsi_expectations()
-## uid_cs match ----------------------------------------------------------------
+## uid_cs - loid is a uid, glid confirms that SAME vid's call sign ---------------
+# Both fields must resolve to one vessel_identity period at once (match_identity_pair),
+# not two separate single-field matches that happen to agree by chance.
+.probe_uc <-
+  stk5 |>
+  filter(is.na(vid)) |>
+  transmute(.rid = .mrid, val1 = loid, val2 = glid, d1, d2)
+.hit_uc <- match_identity_pair(.probe_uc, vessel_identity, "uid", "cs")
 stk6 <-
   stk5 |>
-  mutate(.uid = case_when(type == "uid_cs" ~ loid,
-                          .default = "XXXX"),
-         .cs = case_when(type == "uid_cs" ~ glid,
-                         .default = "XXXX")) |>
-  left_join(v_mmsi |> select(.vid = vid, .cs = cs, .uid = uid) |> mutate(type = "uid_cs"),
-            by = join_by(.cs, .uid, type)) |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "uid_cs" & vid_older == .vid ~ vid_older,
-                         type == "uid_cs" & !is.na(vid_older) ~ vid_older,
-                         .default = vid)) |>
-  select(-c(.cs, .uid, .vid)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "uid_cs",
-                          .default = step))
-stk6 |>
-  filter(type == "uid_cs") |>
-  filter(is.na(vid)) |>
-  knitr::kable(caption = "Missing vid for type uid_cs (expect none)")
-stk6 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 1511, 2718, 7807")
+  left_join(.hit_uc |> rename(.vid = vid), by = c(".mrid" = ".rid")) |>
+  mutate(vid = case_when(!is.na(vid) ~ vid, !is.na(.vid) ~ .vid, .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) & !is.na(.vid) ~ "uid_cs", .default = step)) |>
+  select(-.vid)
+stk6 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
 stk6 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
 
-## NA_vid match ----------------------------------------------------------------
+## NA_vid - glid states a vid outright, no corroboration required ----------------
+# VID membership already requires the vid to have an MMSI on record, which was
+# the old step's sanity check.
 stk7 <-
   stk6 |>
-  mutate(.vid = case_when(type == "NA_vid" ~ glid,
-                          .default = NA)) |>
-  left_join(v_mmsi |> select(.vid = vidc, mmsi) |> mutate(type = "NA_vid"),
-            by = join_by(.vid, type)) |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "NA_vid" & !is.na(mmsi) ~ as.integer(.vid),
-                         .default = vid)) |>
-  select(-c(.vid, mmsi)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "NA_vid",
-                          .default = step))
-stk7 |>
-  filter(type == "NA_vid") |>
-  filter(is.na(vid)) |>
-  knitr::kable(caption = "Missing vid for type NA_vid (expect none)")
-
-stk7 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 1511, 2718, 7807")
-if(FALSE) {
-  lh_overlaps_plot(c(101081), stk7) # Still dubious, second period for 2067 may be a wrong allocation
-}
+  mutate(vid = case_when(
+           !is.na(vid) ~ vid,
+           !is.na(.gl) & as.character(.gl) %in% VID ~ as.numeric(.gl),
+           .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) ~ "NA_vid", .default = step))
+stk7 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
 stk7 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
 
-## NA_cs ------------------------------------------------------------------------
+## NA_cs - glid alone matches a call sign, time-aware and unambiguous ------------
+.probe_cs <-
+  stk7 |>
+  filter(is.na(vid)) |>
+  transmute(.rid = .mrid, val = glid, d1, d2)
+.hit_cs <- match_time_aware(.probe_cs, vessel_identity, "cs")
 stk8 <-
   stk7 |>
-  mutate(.cs = glid) |>
-  left_join(v_mmsi |> select(.cs = cs, .vid = vid, .uid = uid, yh1, yh2) |> mutate(type = "NA_cs")) |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "NA_cs" & vid_older == .vid  ~ vid_older,
-                         type == "NA_cs" & !is.na(.vid) ~ .vid,
-                         .default = vid)) |>
-  select(-c(.cs, .vid, .uid, yh1, yh2)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "NA_csts",
-                          .default = step))
-stk8 |>
-  filter(type == "NA_cs") |>
-  filter(is.na(vid)) |>
-  knitr::kable(caption = "Missing vid for type NA_cs (expect none)")
-stk8 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 1511, 2718, 7807")
+  left_join(.hit_cs |> rename(.vid = vid), by = c(".mrid" = ".rid")) |>
+  mutate(vid = case_when(!is.na(vid) ~ vid, !is.na(.vid) ~ .vid, .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) & !is.na(.vid) ~ "NA_csts", .default = step)) |>
+  select(-.vid)
+stk8 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
 stk8 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
 
-## vid2_cs ---------------------------------------------------------------------
-# Question if this should come next
-stk9 <-
-  stk8 |>
-  mutate(.cs = glid) |>
-  left_join(v_mmsi |>
-              select(.cs = cs, .vid = vidc, .uid = uid, yh1, yh2) |> mutate(type = "vid2_cs") |>
-              # did this to not get many-to-many
-              filter(yh2 > 2013)) |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "vid2_cs" ~ as.numeric(.vid),
-                         .default = vid)) |>
-  select(-c(.cs, .vid, .uid, yh1, yh2)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "vid2_cs",
-                          .default = step))
-stk9 |>
-  filter(type == "vid2_cs") |>
-  filter(is.na(vid)) |>
-  knitr::kable()
-stk9 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 1511, 2718, 7807")
-stk9 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
-
-
-if(FALSE) {
-  lnd |>
-    filter(!vid %in% c(stk9 |> select(vid) |> drop_na() |> pull(vid))) |>
-    arrange(desc(max)) |>
-    left_join(v_all) |>
-    knitr::kable(caption = "List of vessels in landings not in stk")
-
-  # CHECK THIS
-  v_all |> filter(vid == 3027)
-  stk9 |> filter(vid == 1115)
-  v_all |> filter(cs == "TFAU")
-  v_all |> filter(uid == "RE245")
-  v_all |> filter(uid == "GK011")
-}
-
-## vid2_vid2 -------------------------------------------------------------------
-# When loid == glid and both classify as vid2, the vid is encoded directly in
-# loid/glid — same logic as stk4's vid_vid step but for vessels without MMSI
-stk9b <-
-  stk9 |>
-  mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "vid2_vid2" & loid == glid ~ as.numeric(loid),
-                         .default = vid)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "vid2_vid2",
-                          .default = step))
-stk9b |>
-  filter(type == "vid2_vid2") |>
-  filter(is.na(vid)) |>
-  knitr::kable(caption = "Missing vid for type vid2_vid2 where loid==glid (expect none for loid==glid rows)")
-stk9b |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 1511, 2718, 7807")
-stk9b |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
-
-## VID_OLDER -------------------------------------------------------------------
+## VID_OLDER -----------------------------------------------------------------------
 # hail mary, step may be premature
 stk10 <-
-  stk9b |>
+  stk8 |>
   mutate(vid = case_when(!is.na(vid) ~ vid,
                          is.na(vid) & !is.na(vid_older) & pings > 100 ~ vid_older,
                          .default = vid)) |>
   mutate(step = case_when(!is.na(vid) & is.na(step) & pings > 100 ~ "older",
                           .default = step))
-
-stk10 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect vid 396, 950, 1511, 2718, 7807")
-if(FALSE) {
-  lh_overlaps_plot(c(113343, 107082), stk10) # 396
-  lh_overlaps_plot(c(107945, 100430), stk10) # 950
-}
+stk10 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
 stk10 |> filter(!vid %in% 3700:4999) |> lh_mmsi_expectations()
 
-## NA_mmsi ---------------------------------------------------------------------
-v_mmsi_no_dupes <-
-  v_mmsi |>
-  arrange(mmsi, desc(mmsi_t2), desc(vid)) |>
-  group_by(mmsi) |>
-  slice(1) |>
-  ungroup()
+## NA_mmsi - glid is a 9-digit mmsi, time-aware -----------------------------------
+# vessel_identity asserts (mmsi, time) resolves to one hull (decision 015), so an
+# ambiguous NA_mmsi candidate should not occur - match_time_aware drops it anyway
+# if it ever does, same as every step above.
+.probe_mmsi <-
+  stk10 |>
+  filter(is.na(vid)) |>
+  transmute(.rid = .mrid,
+            val = if_else(numbers_only(glid) & nchar(glid) == 9, glid, NA_character_),
+            d1, d2)
+.hit_mmsi <- match_time_aware(.probe_mmsi, vessel_identity, "mmsi")
 stk11 <-
   stk10 |>
-  mutate(.mmsi = glid) |>
-  left_join(v_mmsi_no_dupes |> select(.vid = vidc, .mmsi = mmsi, yh1, yh2) |> mutate(type = "NA_mmsi")) |>
+  left_join(.hit_mmsi |> rename(.vid = vid), by = c(".mrid" = ".rid")) |>
   mutate(vid = case_when(!is.na(vid) ~ vid,
-                         type == "NA_mmsi" & pings >= 30 ~ as.numeric(.vid),
-                         .default = vid)) |>
-  select(-c(.vid, .mmsi, yh1, yh2)) |>
-  mutate(step = case_when(!is.na(vid) & is.na(step) ~ "NA_mmsi",
-                          .default = step))
-stk11 |>
-  filter(type == "NA_mmsi") |>
-  filter(!is.na(vid)) |>
-  pull(vid) ->
-  vids
-stk11 |>
-  filter(vid %in% vids) |>
-  group_by(vid) |>
-  mutate(n = n()) |>
-  ungroup() |>
-  filter(n > 1) |>
-  arrange(vid, d2)
-if(FALSE) {
-  lh_overlaps_plot(c(120568, 100873), stk11)
-  lh_overlaps_plot(c(143787, 102969), stk11)
-}
+                         !is.na(.vid) & pings >= 30 ~ .vid,
+                         .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) & !is.na(.vid) ~ "NA_mmsi", .default = step)) |>
+  select(-.vid)
+stk11 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
+
+rm(base, .probe_vc, .hit_vc, .probe_uc, .hit_uc, .probe_cs, .hit_cs, .probe_mmsi, .hit_mmsi)
+stk11 <- stk11 |> select(-c(.mrid, .lo, .gl)) |> mutate(type = step)
 
 ## loid_cs -----------------------------------------------------------------------
 # The cascade has NA_vid but never had vid_NA: when the LEFT field is the identifier

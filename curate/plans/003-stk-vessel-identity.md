@@ -1,12 +1,12 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1–4 done, step 5 partly done, 2026-09-22**;
-steps 6–9 open ·
+**status:** partly built — **steps 1–5 done, 2026-09-23**; steps 6–9 open ·
 **see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
 `curate/decisions/013-stk-derived-ids-are-equipment.md`,
 `curate/decisions/014-stk-vid-assignment-checks.md`,
 `curate/decisions/015-identity-is-separate-from-the-key.md`,
-`reference/vessels/ais_key.R`, plan `002-the-last-mile.md` §4a
+`curate/decisions/021-cascade-matches-on-evidence.md`,
+`reference/vessels/ais_key.R`, `R/vid_match.R`, plan `002-the-last-mile.md` §4a
 
 **Measured** — on 2026-09-22, against `$FISHYDATA` as it stands:
 
@@ -500,8 +500,9 @@ Ordered by measured payoff per unit of risk, not by interest.
    value and `produces()` runs every script through `source()`, so they print into
    nothing. §4.6's claim that "the diagnostics are the valuable part" was right for
    a worse reason than it knew.
-5. **Split identity from attributes** (§4.1) — **partly done 2026-09-22**,
-   `curate/decisions/015-identity-is-separate-from-the-key.md`.
+5. **Split identity from attributes** (§4.1) — **done 2026-09-23**,
+   `curate/decisions/015-identity-is-separate-from-the-key.md` and
+   `curate/decisions/021-cascade-matches-on-evidence.md`.
 
    **Built:** `curated/vessel/vessel_identity.parquet`, 5,169 periods, asserting that
    `(mmsi, time)` resolves to one hull; a `lifetime_conflict` flag on the key; and —
@@ -522,10 +523,17 @@ Ordered by measured payoff per unit of risk, not by interest.
    vessels that were landing fish throughout the window the registry says they did
    not exist in — `curate/corrections/vessel_registry_stale_lifetime.yml`.
 
-   **Not done:** the cascade's own lookups are still flat sets, and `type` is still
-   pure set membership. Step 3 showed that cannot be fixed piecemeal, so it needs
-   the cascade restructured to match on evidence rather than on a pasted label —
-   a session of its own. `staging/ais/ping_union` is now stale.
+   **Finished 2026-09-23** (decision 021): the flat `CS`/`CS2`/`CS3`/`UID`/`UID2`
+   lookups and the pasted `type` string are gone. `R/vid_match.R` gives the cascade
+   three time-aware operations against `vessel_identity`, and every tier is rebuilt
+   on them. Six mobile-ids / 441K pings move to the vid their own window actually
+   covers (`TFAJ`, `TFFS`, others); one newly matches (`TFJI`, 275K pings). Two
+   large mobile-ids (`TFPH`, `TFUT`) lose a flat-lookup match that happened to be
+   right and become visible AIS/landings disagreements instead — a genuine
+   residual, not an oversight: a single STK mobile-id carries one `[d1,d2]` span,
+   and when the same physical device changes hands without STK splitting the
+   period, no amount of identifier-matching on that one row recovers the split.
+   `staging/ais/ping_union` remains stale from step 5's first half.
 6. **Close `d2`** (§4.3), with `d2_is_open`. Measure the 124 first.
 7. **Tier column** (§4.4), then make `AGENTS.md` true or delete the sentence.
 8. **ASTD identity table** (§4.5), and the foreign-vid candidates into `overrides/`.
