@@ -1,6 +1,6 @@
 id: ping_union_duplicate_keys
 title: ping_union carries 21,920 duplicate position keys from three unrelated causes
-status: measured - fully quantified across all 20 years, repair NOT implemented
+status: astd population REPAIRED 2026-09-23; stk and cross-provider populations measured, deliberately left
 applies_to:
   - staging/ais/ping_union   (all years)
 affects_rows: 21,952 excess rows in 527,960,318 (0.0042%)
@@ -9,7 +9,7 @@ affects_rows_after_rebuild_2026_09_22: >-
   astdB now reaches the union: groups spanning two providers rise from 405 to 653.
   Group sizes are 2 (21,690 single-provider, 653 cross-provider), 3 (21), 4 (4)
   and 5 (1).
-implementation: none yet
+implementation: curate/ais_ping_union.R, astd block - see repair.implemented below
 discovered: 2026-09-21 (25 rows in 2020, unquantified); measured in full 2026-09-21
 detection: curate/corrections/ping_union_duplicate_keys.R
 
@@ -146,6 +146,20 @@ repair:
     Unresolved by this rule: the 69 groups per year with no degenerate member and
     the 8 with two, plus the 373 stk-internal groups, which have no derived
     quantity to reason from. Carry both members flagged rather than invent a rule.
+  implemented_2026_09_23: >-
+    Built and verified end to end. The union fell from 543,088,458 rows to
+    543,045,030 - 43,428 degenerate members dropped, which is larger than the
+    21,142 astd groups previously counted IN the union because the filter runs on
+    all Icelandic-MMSI astd rows, before the vid join narrows them to registry
+    vessels.
+
+    Checked on the rebuilt 2019 partition: 5,101 duplicate groups before, 69 after
+    - exactly the 69 measured as having no degenerate member. The 8 both-degenerate
+    groups disappear without being targeted: with both speeds at 0 the two rows are
+    identical in every selected column, so UNION DISTINCT removes one.
+
+    What remains in the union is therefore the residue the rule declines to guess
+    at, not a failure of it.
   still_the_maintainers: >-
     Whether the cross-provider groups (653 after the 2026-09-22 rebuild, was 405)
     take a provider precedence, and which. stk is the domestic receiver and the
