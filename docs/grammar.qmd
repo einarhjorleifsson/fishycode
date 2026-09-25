@@ -764,6 +764,21 @@ coarser than the GPS positions on a logbook station. When linkage to a trip
 succeeds, the richer station-level spatial information is preferred; the
 landing-form area serves only as a fallback.
 
+**Grouping raw landing records into a landing-trip.** In practice a landing
+source can carry several raw records — several `.lid`s — sharing one
+`(vid, date, hid)`: split deliveries, or gear-disaggregated entries recorded
+separately. These must be collapsed to one landing-trip before matching to a
+logbook trip, or the match becomes many-to-one instead of one-to-one. The
+collapsed group gets its own synthetic id, `.tid_land` (= `min(.lid)` within
+the group, catch summed): a landings-side counterpart to the logbook's `.tid`,
+in its own namespace. It is deliberately **not** called `.tid` — see "The
+column vocabulary" below on why a synthetic trip key is reserved per source
+system and never shared across them, even where the real-world concept lines
+up. The eventual match between a landing-trip (`.tid_land`) and a logbook trip
+(`.tid`) is still made the way this section already says — via the natural
+keys, not by treating the two synthetic ids as comparable — and is stored as
+its own crosswalk table (`.tid` ↔ `.tid_land`) rather than a shared column.
+
 ## The column vocabulary
 
 The grammar is only as useful as its naming conventions are consistent. The
@@ -773,7 +788,7 @@ schema.
 
 | Name | Level | Meaning |
 |------|-------|---------|
-| `.tid` | Trip | Synthetic trip key |
+| `.tid` | Trip | Synthetic trip key — reserved for the logbook's own trip identifier; see the fourth naming convention below |
 | `.sid` | Station | Synthetic station key |
 | `vid` | Trip | Vessel identifier |
 | `cid` | Trip | Country identifier |
@@ -812,6 +827,22 @@ Three naming conventions are worth making explicit:
 - **Numeric suffix** on paired columns (`lon1`/`lon2`, `lat1`/`lat2`,
   `z1`/`z2`, `hid1`/`hid2`) consistently encodes start (1) and end (2),
   regardless of which physical direction "start" implies for a given gear type.
+- **A synthetic key is reserved to one source system, never shared.** `.tid`
+  and `.sid` bare (no suffix) mean the *logbook's* trip and station — the
+  logbook is this grammar's reference system, so its own identifiers carry no
+  source suffix. Every other system that has its own notion of a trip gets an
+  explicit one instead of reusing the bare name: `.tid_land` for a landings
+  source (see "Landings" above), not `.tid`. This matters because two systems'
+  synthetic ids are never the same value space even when the real-world
+  concept lines up — the correspondence between them is always an inferred
+  match (a crosswalk table carrying both sides' own key, e.g. `.tid` ↔
+  `.tid_land`), never an identity, and reusing one system's bare name for
+  another's different concept invites exactly the silent-wrong-join the dot
+  prefix exists to prevent. A system whose own "trip" is a composite of
+  several columns rather than one synthetic id (an AIS voyage: `vid`, `year`,
+  `trip` together, no single column) follows the same rule without needing a
+  dot-prefixed name of its own — it's still linked to `.tid` only via its own
+  crosswalk table, never by column-name coincidence.
 
 ## Resolution and the hierarchy
 

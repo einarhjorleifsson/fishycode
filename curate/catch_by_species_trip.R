@@ -44,7 +44,6 @@ logbook_by_trip_species <-
 ## Landed catch, summed by species per landing trip -------------------------------
 landings_by_trip_species <-
   open_dataset(fd_curated("landing", "catch.parquet")) |>
-  rename(.tid_land = .tid) |>
   group_by(.tid_land, sid) |>
   summarise(catch_landings = sum(catch, na.rm = TRUE), .groups = "drop") |>
   collect()

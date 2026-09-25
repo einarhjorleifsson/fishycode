@@ -41,7 +41,7 @@ DATE_ERR_WINDOW     <- 3L         # ± days around expected date to search
 
 ## Landing register -------------------------------------------------------------
 # One row per (vid × date × hid); catch summed across species.
-# Multiple .lids on the same key are collapsed to min(.lid) = .tid.
+# Multiple .lids on the same key are collapsed to min(.lid) = .tid_land.
 #
 # No upper date bound - the earlier `date <= ymd("2025-12-12")` was a literal
 # carried over verbatim from the pre-restructuring codebase (git blame:
@@ -56,11 +56,10 @@ land <-
   filter(vid > 0, date >= ymd("2007-09-01")) |>
   left_join(
     duckdbfs::open_dataset(fd_curated("landing", "catch.parquet")) |> collect() |>
-      group_by(.tid) |>
+      group_by(.tid_land) |>
       summarise(catch = sum(catch), .groups = "drop"),
-    by = ".tid"
-  ) |>
-  rename(.tid_land = .tid)
+    by = ".tid_land"
+  )
 
 ## Logbook trips with total catch -----------------------------------------------
 trip <-

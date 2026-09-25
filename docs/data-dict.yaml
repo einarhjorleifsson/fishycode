@@ -27,6 +27,12 @@ details: >
   2026-09-25 — see `curate/decisions/029-data-dict-introduced.md`, "The
   three tables mid-rename — rebuilt 2026-09-25".
 
+  `landing_catch`/`landing_landings`' `.tid` was renamed `.tid_land` the same
+  day (`curate/plans/006-trip-identity-and-catch-to-ais-pings.md` §1) — `.tid`
+  bare is reserved for the logbook's own trip id, never another system's;
+  landings' synthetic trip key needed its own name from the start, the way
+  `.sid` did for species vs station.
+
 tables:
   - name: ais_trip
     source:
@@ -981,17 +987,22 @@ tables:
     description: >
       One row per species per original landing record (`aflagrunnur`, the
       Directorate of Fisheries landings register). Not yet aggregated to trip
-      level - multiple `.lid` rows can share one `.tid` (see landing_landings).
+      level - multiple `.lid` rows can share one `.tid_land` (see
+      landing_landings).
     todo: |
       - Record a `primary_key`, if present.
     columns:
-      - name: .tid
+      - name: .tid_land
         type: number
         range: [6439, 981357]
         examples: [15639, 198035, 420843, 664055, 967011]
         description: >
-          Logbook-side-style trip id for this landing trip (= min(.lid) within the vid
-          x date x hid group; matches landing_landings..tid).
+          Landing-trip id (= min(.lid) within the vid x date x hid group;
+          matches landing_landings..tid_land). Landings' own synthetic trip
+          key, in its own namespace - never the same value space as the
+          logbook's `.tid`, even though both are "a trip" (see the `.tid`
+          glossary entry). The two are linked only via logbook_lid_map's
+          fuzzy match, never by comparing the columns directly.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1059,18 +1070,20 @@ tables:
     description: >
       One row per landing trip: a `vid x date x hid` group collapsed from one or
       more `.lid` (delivery/original-record) rows in aflagrunnur, catch summed.
-      `.tid` = min(.lid) within that group. Independent of the logbook - this is
-      the buyer/authority's account of what arrived at the dock.
+      `.tid_land` = min(.lid) within that group. Independent of the logbook -
+      this is the buyer/authority's account of what arrived at the dock.
     todo: |
       - Record a `primary_key`, if present.
     columns:
-      - name: .tid
+      - name: .tid_land
         type: number
         range: [6439, 981357]
         examples: [15639, 198035, 420843, 664055, 967011]
         description: >
-          Landing trip id: min(.lid) within the (vid, date, hid) group that was
-          collapsed to this row.
+          Landing-trip id: min(.lid) within the (vid, date, hid) group that was
+          collapsed to this row. Landings' own synthetic trip key - not the
+          same value space as the logbook's `.tid`; see the `.tid` glossary
+          entry.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1815,8 +1828,8 @@ tables:
         range: [6439, 981143]
         examples: [15639, 217536, 475786, 696682, 967011]
         description: >
-          Matched landing trip id (landing_landings..tid); present only where the
-          cascade found an unambiguous match.
+          Matched landing trip id (landing_landings..tid_land); present only
+          where the cascade found an unambiguous match.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3508,7 +3521,20 @@ glossary:
     wrong").
   .tid: >
     Logbook trip identifier (synthetic), and only that — reserved for the
-    logbook tables. Chains down to `.sid` per trip.
+    logbook tables. Chains down to `.sid` per trip. `landing_catch`/
+    `landing_landings` used to carry their own, unrelated `.tid` (a
+    landings-internal id, `min(.lid)` per `vid`×`date`×`hid`) — the same
+    collision class as `.sid` below, fixed the same way, see `.tid_land`.
+  .tid_land: >
+    Landings' own synthetic trip key (`min(.lid)` within a `vid`×`date`×`hid`
+    group) — a different value space from the logbook's `.tid`, even though
+    both are "a trip" in the everyday sense. The two are linked only through
+    `logbook_lid_map`'s fuzzy match (`vid`×`date`×`hid` cascade, then
+    catch-weight tiebreak), never by comparing the columns directly. See
+    `curate/plans/006-trip-identity-and-catch-to-ais-pings.md` for the general
+    rule this follows: every source system's own trip-like identifier is
+    either the logbook's reserved bare `.tid`, or carries an explicit source
+    suffix — never a bare name borrowed from another system.
   .sid: >
     Logbook station (fishing operation) identifier (synthetic), and only
     that — reserved for the logbook tables (`station.parquet` and anything
