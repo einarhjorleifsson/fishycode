@@ -282,6 +282,12 @@ list(
              fd_curated("logbook", "lid_map.parquet"))
   }, format = "file"),
 
+  tar_target(catch_by_species_trip, {
+    logbook; lid_map; aflagrunnur
+    produces("curate/catch_by_species_trip.R",
+             fd_curated("logbook", "catch_by_species_trip.parquet"))
+  }, format = "file"),
+
 
   # ── Checks ──────────────────────────────────────────────────────────────────
   # Cross-source disagreement. These REPORT: they emit a table into
