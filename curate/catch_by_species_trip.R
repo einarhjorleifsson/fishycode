@@ -4,7 +4,7 @@
 # Input:  curated/logbook/{trip,station,catch}.parquet, curated/logbook/lid_map.parquet
 #         curated/landing/catch.parquet
 # Output: curated/logbook/catch_by_species_trip.parquet
-#         columns: vid, tid (logbook trip), tid_land (landing trip), sid,
+#         columns: vid, .tid (logbook trip), .tid_land (landing trip), sid,
 #         catch_logbook, catch_landings
 #
 # Built to test a specific hypothesis (2026-09-25): does logbook sid 445 show
@@ -44,7 +44,7 @@ logbook_by_trip_species <-
 ## Landed catch, summed by species per landing trip -------------------------------
 landings_by_trip_species <-
   open_dataset(fd_curated("landing", "catch.parquet")) |>
-  rename(.tid_land = .tid, sid = .sid) |>
+  rename(.tid_land = .tid) |>
   group_by(.tid_land, sid) |>
   summarise(catch_landings = sum(catch, na.rm = TRUE), .groups = "drop") |>
   collect()
@@ -53,9 +53,8 @@ landings_by_trip_species <-
 out <-
   logbook_by_trip_species |>
   full_join(landings_by_trip_species, by = c(".tid_land", "sid")) |>
-  rename(tid = .tid, tid_land = .tid_land) |>
-  select(vid, tid, tid_land, sid, catch_logbook, catch_landings) |>
-  arrange(vid, tid, sid)
+  select(vid, .tid, .tid_land, sid, catch_logbook, catch_landings) |>
+  arrange(vid, .tid, sid)
 
 ## Spot-check: a species whose codes are believed to already align (cod, sid 1) --
 control <- out |>

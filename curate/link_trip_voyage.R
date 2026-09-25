@@ -73,7 +73,7 @@ ranked AS (
 )
 SELECT
   tid AS \".tid\", vid, schema,
-  year AS voyage_year, trip AS voyage, T1_ais, T2_ais,
+  year, trip, T1_ais, T2_ais,
   hid1 AS hid1_ais, hid2 AS hid2_ais, n_pings,
   overlap_s, lb_span_s,
   round(overlap_s::DOUBLE / nullif(lb_span_s, 0), 4) AS overlap_frac,

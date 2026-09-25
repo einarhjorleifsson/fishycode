@@ -1,0 +1,3549 @@
+$version: 0.1.0
+$learn_more: https://data-dict.tidyverse.org/
+
+name: fishydata
+description: >
+  Icelandic logbook, landings and AIS data, cross-checked and corrected against
+  each other. `curated/` is the sweep an analyst opens directly — see
+  `AGENTS.md` in `fishycode` for the pipeline that builds it.
+details: >
+  Drafted 2026-09-25 with `data-dict draft` from the parquet files under
+  `curated/` (one representative file per year-partitioned table — `ais/ping`,
+  `logbook/sensor_gps` are also Hive-partitioned by `year` on disk, so the
+  `range`/`examples` on their columns, `year` included, reflect one year's
+  file, not the whole table). Every table and column `description` was then
+  filled in the same day, grounded in the scripts/docs/decisions that produce
+  each table — never guessed from a column name alone; a column left
+  ungrounded after checking says so explicitly rather than fabricating one
+  (see `reference_port.hafnarnumer_id`, `reference_harbour.hid_new`). See
+  `curate/decisions/029-data-dict-introduced.md` in `fishycode` for what's
+  still open: `constraints`/`examples` refinement, and expect this file to
+  keep changing as descriptions get corrected — see decision 028's `.sid`
+  reasoning-correction for what that looks like in practice.
+
+  Three tables (`link_trip_voyage`, `logbook_catch_by_species_trip`,
+  `landing_catch`) briefly reflected the pre-rename schema from
+  `curate/decisions/028-join-key-naming-aligned.md`; rebuilt and redrafted
+  2026-09-25 — see `curate/decisions/029-data-dict-introduced.md`, "The
+  three tables mid-rename — rebuilt 2026-09-25".
+
+tables:
+  - name: ais_trip
+    source:
+      parquet: ../../fishydata/curated/ais/trip.parquet
+    description: >
+      One row per harbour-to-harbour voyage, one vessel at a time: contiguous sea
+      time bracketed by two port calls (short harbour stays under 4h are bridged
+      into the surrounding voyage). Built in curate/ais_trip.R from the cleaned,
+      merged AIS/GPS track (staging/ais/ping_clean). Trips with fewer than 10
+      pings are dropped. Numbered 1..n per vessel per year; a voyage spanning New
+      Year is split at the boundary.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: vid
+        type: number
+        range: [-7830, 9853]
+        examples: [162, 2325, 4283, 7007, 7882]
+        description: >
+          Vessel identifier.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: year
+        type: number
+        range: [2007, 2026]
+        examples: [2007, 2012, 2017, 2021, 2026]
+        description: >
+          Calendar year the voyage falls in (trips are numbered per vessel per year; a
+          voyage spanning New Year is split at the boundary).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: trip
+        type: number
+        range: [1, 463]
+        examples: [4, 143, 243, 338, 463]
+        description: >
+          Voyage number, 1..n per vessel per year.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: T1
+        type: datetime
+        time_zone: naive
+        range: [2007-06-01T00:00:44, 2026-04-27T09:57:54]
+        description: >
+          Voyage start: the vessel leaves harbour (trip-level time, uppercase per
+          curate/decisions/010-time-variable-naming.md).
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: T2
+        type: datetime
+        time_zone: naive
+        range: [2007-06-01T03:26:45, 2026-04-27T12:26:14]
+        description: >
+          Voyage end: the vessel returns to harbour.
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: hid1
+        type: string
+        examples: [DE-LAB, IS-BID, IS-PAP, NO-HAR, TR-TOR]
+        description: >
+          Departure harbour id (the pid tag of the harbour run immediately before this
+          voyage's sea run).
+      - name: hid2
+        type: string
+        examples: [DE-LAB, IS-BID, IS-RAU, NO-ENG, TR-TOR]
+        description: >
+          Arrival harbour id (the pid tag of the harbour run immediately after).
+      - name: n_pings
+        type: number
+        range: [10, 183785]
+        examples: [103, 2204, 4552, 7358, 43679]
+        description: >
+          Number of AIS/GPS position fixes making up this voyage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: ais_ping
+    source:
+      parquet: ../../fishydata/curated/ais/ping/year=2023/part_001.parquet
+    description: >
+      One row per AIS/GPS position fix, across every measured source (STK, ASTD,
+      ASTDB, EmodNet) unioned and cleaned. Hive-partitioned by year. Each ping
+      carries the harbour it falls inside (`pid`, NA at sea) and, once ais_trip.R
+      has run, the voyage it belongs to (`trip`).
+    todo: |
+      - Record a `primary_key`, if present.
+      - `curated/ais/ping/` is also Hive-partitioned by `year` on disk
+        (2007-2026, one directory per year). This draft was profiled from a
+        single 2023 partition file, so the `range`/`examples` below (including
+        on `year` itself) reflect one year, not the whole table.
+    columns:
+      - name: vid
+        type: number
+        range: [1136, 3037]
+        examples: [1136, 1977, 2740, 2912, 3037]
+        description: >
+          Vessel identifier.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mmsi
+        type: string
+        examples:
+          - "251006110"
+          - "251177110"
+          - "251314110"
+          - "251452000"
+          - "251858870"
+        description: >
+          The vessel's MMSI at the time of this ping (used to resolve commercial-feed
+          pings to vid; STK pings resolve via mid instead).
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: time
+        type: datetime
+        time_zone: naive
+        range: [2023-01-01T00:00:01, 2023-12-31T23:59:55]
+        description: >
+          Timestamp of the position fix.
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lon
+        type: number
+        range: [-33.25234166773056, 28.883496602372777]
+        examples:
+          - -27.2066383333333
+          - -24.3224916666667
+          - -21.928694
+          - -17.58406499801204
+          - 24.95558499935206
+        description: >
+          Longitude, decimal degrees.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lat
+        type: number
+        range: [61.97405500217418, 74.48200000169508]
+        examples:
+          - 63.16804333281082
+          - 64.26107
+          - 65.88229333153564
+          - 66.51488666527962
+          - 74.0742983333333
+        description: >
+          Latitude, decimal degrees.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: speed
+        type: number
+        range: [0, 102.199999999957]
+        examples:
+          - 0.0007153816825942685
+          - 1.5697283762805978
+          - 3.586885119686531
+          - 4.625197978354074
+          - 14.015197251093694
+        description: >
+          Speed over ground, knots.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: heading
+        type: number
+        range: [0, 360.00000000117]
+        examples:
+          - 0.9948376720415174
+          - 100.200000000096
+          - 208.400000002511
+          - 272.30000000111403
+          - 357.99999959092605
+        description: >
+          True heading (STK/ASTD/ASTDB); course made good where true heading is
+          unavailable.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: cog
+        type: number
+        examples: []
+        description: >
+          Course over ground. Only populated by the ASTDB feed
+          (curate/ais_ping_union.R); NA for STK/ASTD/EmodNet pings.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: provider
+        type: string
+        examples: [astd, stk]
+        description: >
+          Which measured source this ping came from: "stk" (Iceland's domestic AIS
+          receiver network), "astd"/"astdB" (commercial global AIS feeds), or
+          "emodnet" (EmodNet's 2017 Iceland snapshot).
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: pid
+        type: string
+        examples: [FO-FRO, IS-FAS, IS-NES, IS-SIL, NO-SJH]
+        description: >
+          Standardised harbour id the ping falls inside (spatial join against harbour
+          polygons); NA when the vessel is at sea.
+      - name: year
+        type: number
+        range: [2023, 2023]
+        examples: [2023]
+        description: >
+          Calendar year, and the Hive partition key.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: trip
+        type: number
+        range: [1, 304]
+        examples: [4, 93, 176, 229, 303]
+        description: >
+          The voyage this ping belongs to (curated/ais/trip.parquet's trip number for
+          this vid+year); NA if the ping falls outside any recorded voyage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+  - name: check_afli_rafr_stofn_corroboration
+    source:
+      parquet: ../../fishydata/curated/check/afli_rafr_stofn_corroboration.parquet
+    description: >
+      One row per live electronic logbook submission (visir) that either was lost
+      (submitted electronically but absent from afli's own stofn merge) or is a
+      matched control drawn from the same vessel-year that did merge. Verifies,
+      independently of the logbook merge, whether each lost station's vessel and
+      position are corroborated by AIS and by a nearby landing - REPORTS only,
+      never adds or removes a station from any curated product
+      (curate/plans/005-recover-the-dropped-afli-stations.md).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: visir
+        type: number
+        range: [-1157084, -580]
+        examples: [-1014967, -612594, -344712, -137623, -3004]
+        description: >
+          The electronic logbook submission's unique id (row key for both lost and
+          control stations).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [5, 9999]
+        examples: [13, 1525, 2184, 2641, 9999]
+        description: >
+          Vessel registration number.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: route
+        type: string
+        examples: [rafr_stofn, stofn]
+        description: >
+          "rafr_stofn" for a lost row, or "stofn" for a matched-control row from the
+          same vessel-year that did merge.
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: date
+        type: number
+        range: [-25569, 18465]
+        examples: [12281, 13640, 15195, 16453, 18213]
+        description: >
+          The station's fishing date.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lon
+        type: number
+        range: [-180, 50.266666666666666]
+        examples: [-66.1, -23.35, -17.333333333333332, -10.1, 46.2]
+        description: >
+          Recorded longitude, decoded from the raw DDMM integer field and
+          sign-corrected.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lat
+        type: number
+        range: [0, 90]
+        examples:
+          - 0.55
+          - 61.28333333333333
+          - 65.03333333333333
+          - 67.93333333333334
+          - 80.01666666666667
+        description: >
+          Recorded latitude, decoded from the raw DDMM integer field (resolves to
+          about one arc-minute, ~1.9km).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: ais_voyage
+        type: boolean
+        description: >
+          TRUE if the station's date falls within an AIS voyage for that vessel.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: pings_that_day
+        type: number
+        range: [0, 2728]
+        examples: [4, 328, 632, 1086, 2515]
+        description: >
+          Count of AIS pings from that vessel on that date (0 if none).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: ais_km
+        type: number
+        range: [0.00000000000352057774356708, 9774.062661823184]
+        examples:
+          - 0.035139958591734334
+          - 0.22555231614162785
+          - 0.441572543601971
+          - 0.6693240497349339
+          - 7465.662052788416
+        description: >
+          Great-circle distance (km) from the station's recorded position to the
+          nearest AIS ping that day.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: logger_fixes
+        type: number
+        range: [0, 784]
+        examples: [4, 98, 236, 334, 652]
+        description: >
+          Count of the vessel's own GPS-logger fixes matched to that station.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: logger_ais_m
+        type: number
+        range: [5.816094950838715, 974652.4526165391]
+        examples:
+          - 115.62378354228726
+          - 321.23379459841647
+          - 459.5234617932556
+          - 642.8880057004717
+          - 92211.078906171
+        description: >
+          Median distance (metres) between the logger fix and the nearest matched AIS
+          ping.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: landed_within_5d
+        type: boolean
+        description: >
+          TRUE if the vessel has a landing within 5 days after the station date -
+          reported but excluded from the evidence grade as nearly uninformative for a
+          continuously-fishing vessel.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: evidence
+        type: string
+        examples: [none, strong, voyage only, weak]
+        description: >
+          Grade of corroboration: "strong", "weak", "voyage only", or "none".
+        todo: |
+          - Only 4 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: check_afli_rafr_stofn_loss
+    source:
+      parquet: ../../fishydata/curated/check/afli_rafr_stofn_loss.parquet
+    description: >
+      One row per vessel with at least one live electronic logbook submission,
+      2003-2019. Measures how many of that vessel's live submissions never reached
+      afli's merged stofn table, and grades whether a per-vessel figure computed
+      from the curated logbook is usable at all. REPORTS only - no repair to the
+      curated logbook has been implemented
+      (curate/corrections/afli_rafr_stofn_stations_dropped.yml).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: vid
+        type: number
+        range: [5, 9999]
+        examples: [13, 1595, 2281, 2700, 9999]
+        description: >
+          Vessel registration number.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required, unique] # all values distinct & present
+            - constraints: [primary_key] # all values distinct & present
+            - constraints: [required] # all values present
+      - name: vessel
+        type: string
+        examples: [AFI, FÉLAGINN, KRUMMI, SINDRI, ÞRISTUR]
+        description: >
+          Vessel name.
+      - name: cs
+        type: string
+        examples: [TFAC, TFDT, TFKI, TFPO, TFZU]
+        description: >
+          Vessel call sign.
+      - name: loa
+        type: number
+        range: [0, 105]
+        examples: [7.42, 13.15, 27.75, 47.7, 94]
+        description: >
+          Vessel length overall.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: stations_electronic
+        type: number
+        range: [1, 13771]
+        examples: [4, 502, 1158, 2485, 12633]
+        description: >
+          Count of that vessel's live electronic logbook submissions, 2003-2019.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: stations_lost
+        type: number
+        range: [0, 1698]
+        examples: [0, 36, 86, 156, 1698]
+        description: >
+          Count of those live submissions absent from the merged stofn table.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: pct_lost
+        type: number
+        range: [0, 100]
+        examples:
+          - 0.10183299389002036
+          - 0.7891770011273956
+          - 1.8032786885245904
+          - 3.5838150289017343
+          - 38.88888888888889
+        description: >
+          stations_lost / stations_electronic, as a percentage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: first_year
+        type: number
+        range: [2003, 2020]
+        examples: [2003, 2007, 2012, 2016, 2020]
+        description: >
+          Earliest fishing year among that vessel's live electronic submissions.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: last_year
+        type: number
+        range: [2004, 2020]
+        examples: [2004, 2009, 2013, 2016, 2020]
+        description: >
+          Latest such fishing year.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: severity
+        type: string
+        examples:
+          - "at or near the 2.1% baseline"
+          - high
+          - material
+          - severe - a quarter or more absent
+          - too few stations to judge
+        description: >
+          Reporting-floor category from pct_lost and stations_electronic:
+          too-few-to-judge, severe, high, material, or near baseline.
+        todo: |
+          - Only 5 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: usable
+        type: boolean
+        description: >
+          TRUE only if the vessel has >=50 electronic stations and <5% lost.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: check_ais_key_landings
+    source:
+      parquet: ../../fishydata/curated/check/ais_key_landings.parquet
+    description: >
+      One row per vessel flagged by one of three landings-vs-AIS cross-checks
+      against vessel_ais_key.parquet: landed fish but no AIS identity, tracked by
+      AIS but never landed, or AIS tracking beginning implausibly long before the
+      first landing. REPORTS only - a reviewed finding re-enters the pipeline only
+      through overrides/, never as this check's own output (AGENTS.md's cycle
+      rule).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: check
+        type: string
+        examples:
+          - ais_but_never_landed
+          - ais_precedes_landings
+          - landed_but_no_ais
+        description: >
+          Which sub-check produced the row: "landed_but_no_ais",
+          "ais_but_never_landed", or "ais_precedes_landings".
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: note
+        type: string
+        examples:
+          - ICELANDIC vessel with landings and no AIS identity
+          - "tracked from 2007-06-01, first landing 2014-11-06 - 7.4 years later"
+          - "tracked from 2007-06-09, first landing 2010-08-03 - 3.2 years later"
+          - "tracked from 2008-01-12, first landing 2014-08-18 - 6.6 years later"
+          - "tracked in AIS, no landing on record"
+        description: >
+          Human-readable explanation specific to the check/row.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [11, 9999]
+        examples: [115, 2302, 4553, 6928, 9927]
+        description: >
+          Vessel registration number.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: vessel
+        type: string
+        examples: [ABBA, GARÐAR, MAJA, SNÆFUGL, ÞORGEIR]
+        description: >
+          Vessel name.
+      - name: cs
+        type: string
+        examples: [ASTR8, TFDH, TFJT, TFQY, YJQN2]
+        description: >
+          Vessel call sign.
+      - name: uid
+        type: string
+        examples: [AK014, GK171, RE056, SU044, ÞH400]
+        description: >
+          Vessel registry unique id.
+      - name: mmsi
+        type: string
+        examples:
+          - "251002000"
+          - "251346740"
+          - "251708110"
+          - "251844970"
+          - "251862540"
+        description: >
+          Vessel MMSI.
+      - name: landings
+        type: number
+        range: [0, 17128]
+        examples: [0, 24, 80, 287, 17128]
+        description: >
+          Count of that vid's landing records.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: first_landing
+        type: number
+        range: [13772, 20221]
+        examples: [13772, 15047, 16629, 17903, 20221]
+        description: >
+          Earliest landing date for that vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: last_landing
+        type: number
+        range: [13833, 20557]
+        examples: [13833, 15490, 17191, 18856, 20556]
+        description: >
+          Latest landing date for that vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: pings
+        type: number
+        range: [1, 637461]
+        examples: [4, 416, 3387, 11616, 342908]
+        description: >
+          Total AIS pings summed across the vid's vessel_ais_key rows; NA for
+          landed_but_no_ais.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: mids
+        type: number
+        range: [1, 3]
+        examples: [1, 2, 3]
+        description: >
+          Number of distinct STK mobile-ids assigned to that vid; NA for
+          landed_but_no_ais.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+  - name: check_ais_key_registry
+    source:
+      parquet: ../../fishydata/curated/check/ais_key_registry.parquet
+    description: >
+      One row per detected violation of an invariant the vessel_ais_key match
+      model should satisfy against the vessel registry - a negative/unknown vid,
+      an assignment outside the vessel's lifetime, two mobile-ids claiming the
+      same vid, a vid on something classified as not a vessel, or an Icelandic
+      vessel with no AIS identity at all. REPORTS only, same cycle rule as the
+      other checks.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: check
+        type: string
+        examples:
+          - icelandic_vessel_not_in_ais
+          - negative_vid
+          - outside_vessel_lifetime
+          - two_mids_open
+          - vid_not_in_registry
+        description: >
+          Violation type: negative_vid, vid_not_in_registry, outside_vessel_lifetime,
+          two_mids_open, vid_on_non_vessel, or icelandic_vessel_not_in_ais.
+        todo: |
+          - Only 5 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: note
+        type: string
+        examples:
+          - 15 m or over - should be trackable
+          - has an MMSI - should be trackable
+          - mclass 54; may legitimately carry no transponder
+          - mclass 62; may legitimately carry no transponder
+          - vid <= 0; convention or typo has never been recorded
+        description: >
+          Explanation of the specific violation.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mid
+        type: number
+        range: [100010, 152141]
+        examples: [100010, 102034, 114018, 132681, 152141]
+        description: >
+          STK mobile-id; NA for icelandic_vessel_not_in_ais rows, which have no
+          mobile-id.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: loid
+        type: string
+        examples: [--, "2293", "2878", "7024", ÞH061]
+        description: >
+          The key's local-id field for that mobile-id period.
+      - name: glid
+        type: string
+        examples: ["100", "251850470", "2822", "7807", TFWJ]
+        description: >
+          The key's global-id field for that mobile-id period.
+      - name: vid
+        type: number
+        range: [-7830, 9855]
+        examples: [-2835, 5232, 5638, 6205, 9807]
+        description: >
+          Vessel registration number the mobile-id is assigned to (or the registry
+          vid, for icelandic_vessel_not_in_ais).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: step
+        type: string
+        examples:
+          - NA_csts
+          - NA_mmsi
+          - NA_vid
+          - loid_cs
+          - manuals
+          - older
+          - vid2_vid2
+          - vid_cs
+          - vid_vid
+        description: >
+          The ais_key.R cascade rule that produced this assignment.
+        todo: |
+          - Only 9 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: type
+        type: string
+        examples:
+          - NA_csts
+          - NA_mmsi
+          - NA_vid
+          - manuals
+          - older
+          - vid2_vid2
+          - vid_cs
+          - vid_vid
+        description: >
+          The classified type of the (loid, glid) pair.
+        todo: |
+          - Only 8 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: entity_class
+        type: string
+        examples: [vessel]
+        description: >
+          The vessel/non-vessel classification of the mobile-id (should always be
+          "vessel" for assigned rows).
+        todo: |
+          - Only 1 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: pings
+        type: number
+        range: [1, 481908]
+        examples: [1, 238, 2384, 19413, 481908]
+        description: >
+          Ping count for that mobile-id/period.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: d1
+        type: number
+        range: [13665, 20262]
+        examples: [13665, 15499, 17332, 18800, 20262]
+        description: >
+          Start date of the mobile-id's assignment window to that vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: d2
+        type: number
+        range: [13968, 21542]
+        examples: [13968, 15583, 18447, 18889, 21542]
+        description: >
+          End date of the assignment window (most rows carry a 2028-12-24 sentinel).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+  - name: check_ais_key_reused_callsign
+    source:
+      parquet: ../../fishydata/curated/check/ais_key_reused_callsign.parquet
+    description: >
+      One row per Icelandic vessel where raw AIS evidence shows some STK mobile-id
+      broadcasting its exact call sign with pings covering its landing window, but
+      vessel_ais_key.parquet never assigns that mobile-id to it - a candidate
+      call-sign-reuse mismatch the finished key missed. Works from the raw AIS
+      side (unlike check_ais_key_landings) so it can catch a vessel assigned a
+      wrong vid, not just a missing one. REPORTS only.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: vid
+        type: number
+        range: [27, 3060]
+        examples: [27, 1433, 1940, 2233, 3060]
+        description: >
+          The vessel registration number currently holding the call sign in the
+          registry - the vid whose landings could not be reconciled to its own key
+          assignment.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required, unique] # all values distinct & present
+            - constraints: [primary_key] # all values distinct & present
+            - constraints: [required] # all values present
+      - name: vessel
+        type: string
+        examples: [ARNARBORG, HAUKUR, LÓMUR, SKARFUR, ÓLI ÓLA]
+        description: >
+          Vessel name for that vid.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: cs
+        type: string
+        examples: [TFAQ, TFED, TFGN, TFOT, TFUT]
+        description: >
+          The call sign being investigated, shared by the source vid and the candidate
+          mobile-id.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: landings
+        type: number
+        range: [1, 20867]
+        examples: [1, 5, 62, 748, 20867]
+        description: >
+          Landing count for the source vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: first_landing
+        type: number
+        range: [13789, 20273]
+        examples: [13789, 15516, 16629, 18115, 20273]
+        description: >
+          Earliest landing date for the source vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required, unique] # all values distinct & present
+            - constraints: [primary_key] # all values distinct & present
+            - constraints: [required] # all values present
+      - name: last_landing
+        type: number
+        range: [14379, 20557]
+        examples: [14379, 16092, 17744, 20257, 20557]
+        description: >
+          Latest landing date for the source vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mid
+        type: number
+        range: [100092, 133558]
+        examples: [100092, 101059, 101786, 102795, 133558]
+        description: >
+          The STK mobile-id that broadcast this call sign and whose ping span covers
+          the source vid's landing window, but which vessel_ais_key.parquet does not
+          assign to this vid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: pings
+        type: number
+        range: [1911, 507876]
+        examples: [1911, 82845, 125884, 202583, 507876]
+        description: >
+          Ping count for that mobile-id.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: category
+        type: string
+        examples: [A_ghost, B_handover, C_overlapping, D_single_day]
+        description: >
+          Strength-of-evidence bucket: A_ghost, B_handover, C_overlapping, or
+          D_single_day.
+        todo: |
+          - Only 4 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: assigned_to
+        type: string
+        examples:
+          - "1131 (BJARNI SÆMUNDSSON, 1438 lnd 2007-10-17..2024-09-28)"
+          - "2427 (SÆRÚN, 0 lnd NA..NA)"
+          - "2686 (HAKI, 0 lnd NA..NA)"
+          - "2756 (HERDÍS, 0 lnd NA..NA)"
+          - UNMATCHED
+        description: >
+          Which vid(s) the mid is actually keyed to instead, or "UNMATCHED".
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: landing_catch
+    source:
+      parquet: ../../fishydata/curated/landing/catch.parquet
+    description: >
+      One row per species per original landing record (`aflagrunnur`, the
+      Directorate of Fisheries landings register). Not yet aggregated to trip
+      level - multiple `.lid` rows can share one `.tid` (see landing_landings).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .tid
+        type: number
+        range: [6439, 981357]
+        examples: [15639, 198035, 420843, 664055, 967011]
+        description: >
+          Logbook-side-style trip id for this landing trip (= min(.lid) within the vid
+          x date x hid group; matches landing_landings..tid).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: .lid
+        type: number
+        range: [6439, 981357]
+        examples: [15639, 198035, 420843, 664055, 967011]
+        description: >
+          Original aflagrunnur delivery/record id (londun_id) before collapsing split
+          deliveries to one trip.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: gid
+        type: number
+        range: [1, 25]
+        examples: [1, 7, 14, 19, 25]
+        description: >
+          Gear code (tegund veiðarfæris) reported for this landing record.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: sid
+        type: number
+        range: [1, 1128]
+        examples: [1, 31, 99, 210, 1128]
+        description: >
+          Species code (tegundnúmer) - the same vocabulary as logbook_catch.sid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: stid
+        type: number
+        range: [1, 9030]
+        examples: [1, 77, 200, 1994, 9030]
+        description: >
+          Fishing stock code (veiðistofn): an ecological population within a species.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: catch
+        type: number
+        range: [-2000, 3652803]
+        examples: [72.62, 3728.75, 22678, 48292, 2001002]
+        description: >
+          Landed weight, kg (magn óslægt).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: landing_landings
+    source:
+      parquet: ../../fishydata/curated/landing/landings.parquet
+    description: >
+      One row per landing trip: a `vid x date x hid` group collapsed from one or
+      more `.lid` (delivery/original-record) rows in aflagrunnur, catch summed.
+      `.tid` = min(.lid) within that group. Independent of the logbook - this is
+      the buyer/authority's account of what arrived at the dock.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .tid
+        type: number
+        range: [6439, 981357]
+        examples: [15639, 198035, 420843, 664055, 967011]
+        description: >
+          Landing trip id: min(.lid) within the (vid, date, hid) group that was
+          collapsed to this row.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [-401, 9999]
+        examples: [219, 2325, 3988, 6607, 7882]
+        description: >
+          Vessel identifier (skip nr).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: date
+        type: number
+        range: [13757, 20557]
+        examples: [13763, 15529, 17361, 19066, 20514]
+        description: >
+          Landing date (londun hefst).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: hid
+        type: number
+        range: [1, 900]
+        examples: [1, 59, 99, 135, 900]
+        description: >
+          Source-local harbour code (Fiskistofa hafnarnumer).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: höfn
+        type: string
+        examples: [Akranes, Færeyjar, Kópasker, Siglufjörður, Þórshöfn]
+        description: >
+          Harbour name, joined in from the port reference table.
+      - name: pid
+        type: string
+        examples: [IS-AKR, IS-FAS, IS-HVR, IS-RHA, IS-VPN]
+        description: >
+          Standardised cross-source port key (joined in from reference/port.parquet
+          via hid).
+  - name: link_trip_voyage
+    source:
+      parquet: ../../fishydata/curated/link/trip_voyage.parquet
+    description: >
+      One row per logbook trip successfully matched to an AIS voyage: the L4 layer
+      of the vessel-trail model (curate/link_trip_voyage.R). Matching is by
+      temporal overlap on vid, keeping the AIS voyage with the most overlapping
+      seconds per logbook trip (ties/ambiguity recorded in n_candidates). Not
+      every logbook trip has a match - AIS coverage is partial
+      (curate/decisions/000-restructuring.md).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .tid
+        type: string
+        examples: ["-1007642", "-702795", "103689876", "105785128", "79358526"]
+        description: >
+          Logbook trip id this row matches (foreign key to logbook_trip..tid).
+        todo: |
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [10, 9853]
+        examples: [219, 2240, 6094, 7007, 7882]
+        description: >
+          Vessel identifier.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which logbook source system the matched trip came from: "afli",
+          "fs_afladagbok", or "adb".
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: year
+        type: number
+        range: [2007, 2026]
+        examples: [2007, 2012, 2017, 2021, 2026]
+        description: >
+          Calendar year of the matched AIS voyage (ais_trip.year).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: trip
+        type: number
+        range: [1, 287]
+        examples: [1, 75, 150, 205, 287]
+        description: >
+          Voyage number of the matched AIS voyage (ais_trip.trip).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: T1_ais
+        type: datetime
+        time_zone: naive
+        range: [2007-06-01T00:02:30, 2026-04-08T06:27:53]
+        description: >
+          AIS voyage start time - an independently measured alternative to the
+          logbook's own T1, sitting alongside it under the _ais suffix rather than
+          overwriting it.
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: T2_ais
+        type: datetime
+        time_zone: naive
+        range: [2007-06-01T08:59:52, 2026-04-27T12:25:56]
+        description: >
+          AIS voyage end time.
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: hid1_ais
+        type: string
+        examples: [FO-FUG, IS-DRA, IS-KLA, IS-SIL, NO-UTH]
+        description: >
+          AIS-derived departure harbour id.
+      - name: hid2_ais
+        type: string
+        examples: [FO-FUG, IS-DPV, IS-ISJ, IS-SEY, NO-UTH]
+        description: >
+          AIS-derived arrival harbour id.
+      - name: n_pings
+        type: number
+        range: [10, 114673]
+        examples: [103, 1966, 4233, 6280, 25397]
+        description: >
+          Number of AIS pings making up the matched voyage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: overlap_s
+        type: number
+        range: [1, 14294003]
+        examples: [1685, 50529, 80691, 221840, 2665934]
+        description: >
+          Seconds of temporal overlap between the logbook trip's window and the
+          matched AIS voyage's window - the score matches are ranked on.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lb_span_s
+        type: number
+        range: [156, 149040000]
+        examples: [2209, 58644, 76858, 131101, 2221216]
+        description: >
+          Length of the logbook trip's own time window, in seconds (T2_fix - T1) - the
+          denominator for overlap_frac.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: overlap_frac
+        type: number
+        range: [0, 1]
+        examples: [0.0361, 0.2736, 0.5704, 0.7985, 0.999]
+        description: >
+          overlap_s / lb_span_s: what fraction of the logbook trip's own duration is
+          covered by the matched AIS voyage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: n_candidates
+        type: number
+        range: [1, 279]
+        examples: [1, 12, 25, 39, 279]
+        description: >
+          How many AIS voyages overlapped this logbook trip at all before the best one
+          (by overlap_s) was kept; >1 means the match was chosen among ambiguous
+          candidates.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: basis
+        type: string
+        examples: [ais_overlap]
+        description: >
+          How this link was established. Currently always "ais_overlap" (matched by
+          temporal overlap on vid).
+        todo: |
+          - Only 1 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: logbook_catch
+    source:
+      parquet: ../../fishydata/curated/logbook/catch.parquet
+    description: >
+      One row per species per logbook station (fishing operation). Orphan catch
+      records with no matching station are dropped via inner_join. Merged across
+      the three logbook source systems (afli, fs_afladagbok, adb).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .sid
+        type: number
+        range: [-2768723449, 10630176826]
+        examples: [-1270215, 1663706, 31335980, 75950410, 105240080]
+        description: >
+          Logbook station (fishing operation) identifier - synthetic key, foreign key
+          to logbook_station..sid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: sid
+        type: number
+        range: [-34, 1143]
+        examples: [-31, 40, 104, 279, 1143]
+        description: >
+          Species code (tegundnúmer).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: catch
+        type: number
+        range: [0, 9999999]
+        examples: [103, 7473, 16171, 29250, 1020000]
+        description: >
+          Total catch, kg, summed within (.sid, sid).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which logbook source system this record came from: "afli", "fs_afladagbok",
+          or "adb".
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: logbook_catch_by_species_trip
+    source:
+      parquet: ../../fishydata/curated/logbook/catch_by_species_trip.parquet
+    description: >
+      One row per (logbook trip, species), built to compare logbook-reported catch
+      against landed catch of the same species (curate/catch_by_species_trip.R).
+      Only trips with a landings match (.tid_land present, via lid_map) are
+      included. catch_logbook and catch_landings are independently summed from the
+      two systems, so their ratio can be inspected directly - logbook and landings
+      species codes are the same tegundnúmer vocabulary, so a ratio far from 1:1
+      on an otherwise-matched trip is a lead worth checking.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: vid
+        type: number
+        range: [10, 9938]
+        examples: [219, 2240, 6094, 7002, 7882]
+        description: >
+          Vessel identifier.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: .tid
+        type: string
+        examples: ["-1007642", "-648142", "103733035", "105785128", "79358526"]
+        description: >
+          Logbook trip id.
+      - name: .tid_land
+        type: number
+        range: [6439, 981357]
+        examples: [15639, 198035, 420843, 664055, 967011]
+        description: >
+          Matched landing trip id (via logbook_lid_map); NA where the logbook trip has
+          no landings match.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: sid
+        type: number
+        range: [-34, 1143]
+        examples: [-31, 45, 155, 280, 1141]
+        description: >
+          Species code (tegundnúmer) - the join key between the logbook and landings
+          sides.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: catch_logbook
+        type: number
+        range: [0, 8003597]
+        examples: [88, 11599, 51481, 93400, 2970000]
+        description: >
+          Total catch of this species on this trip, summed from logbook_catch (kg).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: catch_landings
+        type: number
+        range: [-2000, 3652803]
+        examples: [72.62, 3728.75, 22678, 48292, 2001002]
+        description: >
+          Total catch of this species on the matched landing trip, summed from
+          landing_catch (kg).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+  - name: logbook_fishing_sample
+    source:
+      parquet: ../../fishydata/curated/logbook/fishing_sample.parquet
+    description: >
+      One row per fishing operation (1:1 with logbook_station; join on .sid) -
+      gear, effort and timing detail kept separate from station's spatial/temporal
+      envelope so station stays narrow. Gear-specific columns are NA where not
+      applicable to that gear class. Merged across afli, fs_afladagbok and adb.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .tid
+        type: string
+        examples: ["-1007642", "101192002", "104783063", "26032426", "79358526"]
+        description: >
+          Logbook trip id.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: .sid
+        type: number
+        range: [-2768723449, 10630176826]
+        examples: [-1270215, 2095051, 31261034, 75842526, 105240080]
+        description: >
+          Logbook station identifier - synthetic key, primary key of this table and
+          foreign key to logbook_station.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: gid_old
+        type: number
+        range: [1, 92]
+        examples: [1, 9, 18, 40, 92]
+        description: >
+          Counterpart old-version gear code; NA where no mapping to the new code
+          exists.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which logbook source system this record came from.
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: eytt_deleted
+        type: boolean
+        description: >
+          TRUE for records flagged deleted in the source system (afli only).
+      - name: gid
+        type: number
+        range: [1, 25]
+        examples: [1, 7, 13, 19, 25]
+        description: >
+          Gear type code - the unified "new" version, consistent across schemas.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: gear
+        type: string
+        examples: [DIV, GND, LHM, OTB, SDN]
+        description: >
+          ICES gear-type code (e.g. "OTB", "LLS"), resolved from gid via the gear
+          mapping.
+      - name: target2
+        type: string
+        examples: [ARI, ECH, KEL, SCL, XXX]
+        description: >
+          Custom Icelandic target-species/fishery code.
+      - name: duration_m
+        type: number
+        range: [-1061366400, 28800]
+        examples:
+          - 5.433333333333334
+          - 248.18333333333334
+          - 582.45
+          - 1010.4166666666666
+          - 8631.183333333332
+        description: >
+          Operation duration, minutes (capped at a gear-class-specific maximum; see
+          .duration_source).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: t1
+        type: datetime
+        time_zone: naive
+        range: [0000-12-30T00:00:00, 2026-04-08T20:31:48]
+        description: >
+          Event 1: gear deployment starts (lowercase - event-level time, per
+          curate/decisions/010-time-variable-naming.md).
+        todo: |
+          - Needs a `time_zone`?
+      - name: t3
+        type: datetime
+        time_zone: naive
+        range: [1962-09-30T16:00:00, 2026-04-08T18:17:00]
+        description: >
+          Event 3: gear retrieval starts.
+        todo: |
+          - Needs a `time_zone`?
+      - name: t4
+        type: datetime
+        time_zone: naive
+        range: [0004-07-20T00:00:00, 2200-04-27T00:00:00]
+        description: >
+          Event 4: gear retrieval ends.
+        todo: |
+          - Needs a `time_zone`?
+      - name: .duration_source
+        type: string
+        examples: [capped, data, missing]
+        description: >
+          "data" (duration read directly), "capped" (exceeded the gear-class maximum
+          and was capped), or "missing".
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: effort_count
+        type: number
+        range: [-1, 580800]
+        examples: [87, 20311, 36445, 42309, 148800]
+        description: >
+          Count component of effort (hooks, nets, jigs, trap units, or gear count,
+          depending on gear class).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: effort_unit
+        type: string
+        examples:
+          - gear-minutes
+          - hook-days
+          - hookhours
+          - hooks
+          - hours towed
+          - jig-hours
+          - net-days
+          - netnights
+          - setting
+          - trap-hours
+          - traphours
+        description: >
+          Unit label for effort_duration: "gear-minutes", "hook-days", "net-days",
+          "jig-hours", "trap-hours", or "setting".
+        todo: |
+          - Only 11 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: effort_duration
+        type: number
+        range: [-17654396, 1800]
+        examples:
+          - 0.21160879629629628
+          - 0.8257291666666666
+          - 9.870277777777778
+          - 134.7
+          - 1280.8
+        description: >
+          Time component of effort, in the natural unit given by effort_unit.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: effort
+        type: number
+        range: [-11055900000, 715660]
+        examples:
+          - 0.2986111111111111
+          - 38.04333333333334
+          - 372.98333333333335
+          - 4140
+          - 42152.97777777778
+        description: >
+          effort_count x effort_duration - the combined effort measure.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: t2
+        type: datetime
+        time_zone: naive
+        range: [1962-09-30T10:00:00, 2025-11-28T09:30:44]
+        description: >
+          Event 2: gear deployment ends / gear reaches bottom.
+        todo: |
+          - Needs a `time_zone`?
+      - name: .t2_source
+        type: string
+        examples: [data, derived]
+        description: >
+          "data" or "derived" - whether t2 came from a raw source column or was
+          computed.
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: .t3_source
+        type: string
+        examples: [data, derived]
+        description: >
+          "data" or "derived" - whether t3 came from a raw source column or was
+          computed.
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: .checks
+        type: string
+        examples:
+          - end time missing
+          - end time overlaps next
+          - ok
+          - start time missing
+          - start time overlaps previous
+        description: >
+          Convert-time validation notes.
+        todo: |
+          - Only 5 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: n_units
+        type: number
+        range: [-1, 96000]
+        examples: [3, 5000, 21489, 34560, 50820]
+        description: >
+          Number of gear units deployed (nets, hook sets, traps, trawls - meaning
+          depends on gear class).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: bottom_type
+        type: string
+        examples: ["1", grjót, hraun, linur, sandur]
+        description: >
+          Seabed type at the operation (afli only).
+      - name: catch_nperkg
+        type: number
+        range: [0, 500]
+        examples: [3, 109, 204, 305, 480]
+        description: >
+          Count-per-kg for the catch, where recorded (afli only, gear-specific).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: g_mesh
+        type: number
+        range: [0, 2678]
+        examples: [3, 136, 203, 273, 1212]
+        description: >
+          Mesh size of the gear.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: g_width
+        type: number
+        range: [0.5, 239.5728]
+        examples: [0.5, 25.6032, 60.3504, 90, 239.5728]
+        description: >
+          Gear width (trawls: beam/wing span; dredge: plow width).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: g_height
+        type: number
+        range: [-1, 987]
+        examples: [-1, 51, 93, 190, 987]
+        description: >
+          Gear height (dredge height; gillnet height).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: g_length
+        type: number
+        range: [0, 30600]
+        examples: [0.2, 280, 1457, 5304, 21700]
+        description: >
+          Gear length (seine: rope length; gillnet: total net length).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: length_togle
+        type: number
+        range: [0, 4000]
+        examples: [0, 256, 725, 1180, 4000]
+        description: >
+          SDN net dimension (afli only).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: length_virle
+        type: number
+        range: [0, 1950]
+        examples: [0, 210, 400, 600, 1950]
+        description: >
+          SDN net dimension (afli only).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: mesh_vod
+        type: number
+        range: [0, 800]
+        examples: [0, 45, 145, 290, 800]
+        description: >
+          SDN net mesh dimension (afli only).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: length_headline
+        type: number
+        range: [0, 1234]
+        examples: [0, 31, 59, 83, 1234]
+        description: >
+          SDN net headline length (afli only).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: length_fotreipi
+        type: number
+        range: [0, 999]
+        examples: [0, 1, 3, 6, 999]
+        description: >
+          SDN net footrope length (afli only).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: n_total
+        type: number
+        range: [0, 580800]
+        examples: [88, 24513, 38136, 43063, 272000]
+        description: >
+          Total hooks for LLS gear (fj_kroka, or n_hooks_per_set x n_sets).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: n_per_unit
+        type: number
+        range: [0, 9999]
+        examples: [3, 280, 560, 1330, 9999]
+        description: >
+          Hooks per set (LLS) or hooks per jig (LHM).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: n_lost
+        type: number
+        range: [0, 6601]
+        examples: [0, 9, 24, 65, 6601]
+        description: >
+          Number of lost gear pieces (fs_afladagbok only).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: back_entry
+        type: boolean
+        description: >
+          TRUE for pre-1980 records with .sid > 2,500,000 - retrospective back-entries
+          rather than contemporaneous records (afli only; NA for fs_afladagbok). See
+          docs/afli-backentry.qmd.
+  - name: logbook_lid_map
+    source:
+      parquet: ../../fishydata/curated/logbook/lid_map.parquet
+    description: >
+      One row per logbook trip matched to a landing trip: a .tid -> .tid_land
+      crosswalk (curate/link_lid_map.R), built by an eight-step cascade of
+      decreasing key specificity (exact vid x date x hid, relaxing the date
+      window, then catch-weight tiebreaking, then a wrong-date QA pass).
+      match_type records which step produced the match. Not written back into
+      trip.parquet - a consumer joins this on separately.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .tid
+        type: string
+        examples: ["-1007642", "-648142", "103733035", "105785128", "79358526"]
+        description: >
+          Logbook trip id.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which logbook source system the trip came from.
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: .tid_land
+        type: number
+        range: [6439, 981143]
+        examples: [15639, 217536, 475786, 696682, 967011]
+        description: >
+          Matched landing trip id (landing_landings..tid); present only where the
+          cascade found an unambiguous match.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: match_type
+        type: string
+        examples:
+          - 01 exact
+          - 02 exact ±1 day
+          - 03 vid_date
+          - 04 vid_date ±1
+          - 05 vid_date ±2
+          - 06 weight_dem
+          - 08 expected_date
+        description: >
+          Which of the eight cascade steps produced this match, e.g. "01 exact" (vid x
+          date x hid), "05 vid_date ±2", "06 weight_dem" (catch-weight tiebreak), "08
+          expected_date" (wrong-date QA). See curate/link_lid_map.R.
+        todo: |
+          - Only 7 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: logbook_sensor_gps
+    source:
+      parquet: ../../fishydata/curated/logbook/sensor_gps/year=2023/data_0.parquet
+    description: >
+      One row per afli GPS-logger fix. The logger's own time/speed/heading are
+      trusted; lon/lat are not (a DDMMmm encoding fault displaces ~40% of fixes by
+      ~741m - curate/corrections/afli_coords.yml) and are instead interpolated
+      from the merged AIS/GPS track (curated/ais/ping), bounded so interpolation
+      never crosses a voyage boundary. The logger's original (wacky) position is
+      kept alongside as w_lon/w_lat, never overwritten (AGENTS.md: never destroy
+      the original).
+    todo: |
+      - Record a `primary_key`, if present.
+      - `curated/logbook/sensor_gps/` is also Hive-partitioned by `year` on
+        disk (2007-2024, one directory per year). This draft was profiled from
+        a single 2023 partition file, so the `range`/`examples` below
+        (including on `year` itself) reflect one year, not the whole table.
+    columns:
+      - name: .sid
+        type: number
+        range: [-1326673, -1324743]
+        examples: [-1326672, -1325965, -1325473, -1325167, -1324759]
+        description: >
+          Logbook station identifier this fix belongs to (afli's raw `visir`).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: time
+        type: datetime
+        time_zone: naive
+        range: [2023-01-02T09:11:07, 2023-12-11T14:35:14]
+        description: >
+          Logger timestamp - trusted as-is (only lon/lat are known to be faulty).
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: w_lat
+        type: number
+        range: [62, 67]
+        examples: [62, 63, 65, 66, 67]
+        description: >
+          The logger's own (wacky/uncorrected) latitude reading - kept alongside the
+          corrected lat, never overwritten.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: w_lon
+        type: number
+        range: [-26, -11]
+        examples: [-26, -22, -18, -15, -11]
+        description: >
+          The logger's own (wacky/uncorrected) longitude reading.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: speed
+        type: number
+        range: [0, 12]
+        examples: [0, 3, 6, 9, 12]
+        description: >
+          Logger-reported speed - trusted as-is.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: heading
+        type: number
+        range: [0, 360]
+        examples: [4, 106, 207, 270, 358]
+        description: >
+          Logger-reported heading - trusted as-is.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: botndypi
+        type: number
+        range: [0, 760]
+        examples: [3, 182, 378, 541, 758]
+        description: >
+          Bottom depth reading from the logger.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: hofudlinudypi
+        type: number
+        examples: []
+        description: >
+          Headline depth reading from the logger.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: botnhiti
+        type: number
+        range: [2, 6.9]
+        examples: [2, 3.3000000000000003, 4.3, 5.8, 6.9]
+        description: >
+          Bottom temperature reading from the logger.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: hofudlinuhiti
+        type: number
+        examples: []
+        description: >
+          Headline temperature reading from the logger.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: sensor_src
+        type: string
+        examples: [gps1]
+        description: >
+          Which raw source table this fix came from: "gps1" (sjalfvirkir_maelar) or
+          "gps2" (rafr_sjalfvirkir_maelar).
+        todo: |
+          - Only 1 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [1084, 6717]
+        examples: [1084, 1868, 2577, 2737, 6717]
+        description: >
+          Vessel identifier (resolved via the station -> afli trip -> vid chain).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: year
+        type: number
+        range: [2023, 2023]
+        examples: [2023]
+        description: >
+          Calendar year, and the Hive partition key.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: trip
+        type: number
+        range: [1, 102]
+        examples: [1, 22, 44, 64, 102]
+        description: >
+          The AIS voyage (curated/ais/trip.parquet trip number) this fix's timestamp
+          falls inside; NA if outside any recorded voyage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lon
+        type: number
+        range: [-26.96439999858144, -11.321769233333333]
+        examples:
+          - -26.76487309546791
+          - -24.247183456762748
+          - -22.77343907317073
+          - -21.32846340817828
+          - -11.562268718724644
+        description: >
+          Corrected longitude: linearly interpolated from the merged AIS/GPS track
+          onto this fix's timestamp, bounded to within a single voyage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lat
+        type: number
+        range: [62.59476724814576, 67.25385850208632]
+        examples:
+          - 62.70092247343449
+          - 63.55727246666667
+          - 64.31244535359232
+          - 65.68233230668056
+          - 67.04806506738545
+        description: >
+          Corrected latitude, same derivation as lon.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: dt_sec
+        type: number
+        range: [0, 44296]
+        examples: [9, 306, 619, 1121, 3929]
+        description: >
+          Seconds between the two track fixes bracketing this timestamp - the
+          interpolation interval, and a measure of how much to trust the interpolated
+          position. Large dt_sec means a long unobserved stretch.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: basis
+        type: string
+        examples: [interpolated_within_voyage, outside_voyage]
+        description: >
+          "interpolated_within_voyage", "no_track_cover" (inside a voyage but no
+          bracketing track fixes), or "outside_voyage" (timestamp fell outside every
+          recorded voyage; lon/lat left NA rather than invented).
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: logbook_station
+    source:
+      parquet: ../../fishydata/curated/logbook/station.parquet
+    description: >
+      One row per fishing operation (station) - narrow spatial/temporal envelope
+      only; gear and effort detail is in logbook_fishing_sample (join on
+      .sid/.tid). Merged across afli, fs_afladagbok and adb.
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .sid
+        type: number
+        range: [-2768723449, 10630176826]
+        examples: [-1270215, 2095051, 31261034, 75842526, 105240080]
+        description: >
+          Station (fishing operation) identifier - synthetic key, primary key of this
+          table.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: .tid
+        type: string
+        examples: ["-1007642", "101192002", "104783063", "26032426", "79358526"]
+        description: >
+          Logbook trip id this station belongs to.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: date
+        type: datetime
+        time_zone: naive
+        range: [1950-02-06T00:00:00, 2026-04-08T00:00:00]
+        description: >
+          Fishing date.
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lon1
+        type: number
+        range: [-15563.3333333333, 132.35]
+        examples:
+          - -56.93333333333334
+          - -22.65966666666666
+          - -17.72611111111111
+          - -12.086111111111112
+          - 50.3
+        description: >
+          Start position longitude, decimal degrees.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lat1
+        type: number
+        range: [-65.75, 90]
+        examples:
+          - 0.11111111111111112
+          - 63.83766666666666
+          - 65.28944444444444
+          - 66.55222222222221
+          - 74.91666666666666
+        description: >
+          Start position latitude.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lon2
+        type: number
+        range: [-242.213333333333, 47.28333333333333]
+        examples:
+          - -64.13333333333334
+          - -22.680833333333336
+          - -17.72611111111111
+          - -13.20766666666666
+          - 25.629722222222224
+        description: >
+          End position longitude.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lat2
+        type: number
+        range: [-64.43333333333334, 90]
+        examples:
+          - 0.11111111111111112
+          - 63.74638888888889
+          - 65.30883333333333
+          - 66.75383333333333
+          - 72.54138888888889
+        description: >
+          End position latitude.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: sq
+        type: number
+        range: [-5982, 6438]
+        examples: [-4789, 23, 455, 764, 1591]
+        description: >
+          Statistical square [1-999]; afli only, NA for fs_afladagbok.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: ssq
+        type: number
+        range: [0, 9]
+        examples: [0, 2, 4, 5, 9]
+        description: >
+          Statistical sub-square [0-4]; afli only.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which logbook source system this station came from.
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: eytt_deleted
+        type: boolean
+        description: >
+          TRUE for records flagged deleted in the source (afli only).
+      - name: z1
+        type: number
+        range: [-1.8288, 14650.5168]
+        examples: [3, 444, 1113.7392, 1802, 14650.5168]
+        description: >
+          Start depth, metres (curate/decisions/022-depth-unit-is-metres.md).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: z2
+        type: number
+        range: [-3.6576, 18286.1712]
+        examples: [11, 771.7536, 1497.7872, 2527.4016, 13765.3776]
+        description: >
+          End depth, metres.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: z1_raw
+        type: number
+        range: [-1, 8011]
+        examples: [3, 397, 872.3376000000001, 1233, 5000]
+        description: >
+          Start depth as originally recorded, before unit conversion to metres - kept
+          alongside z1, never overwritten.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: z2_raw
+        type: number
+        range: [-2, 9999]
+        examples: [3, 567, 1182, 1701, 5358]
+        description: >
+          End depth as originally recorded.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: z1_basis
+        type: string
+        examples: [reconstructed, recorded]
+        description: >
+          How z1 was obtained: "recorded", "reconstructed", or "synthesised"
+          (docs/grammar.qmd).
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: z2_basis
+        type: string
+        examples: [reconstructed, recorded]
+        description: >
+          How z2 was obtained.
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: coord_flag
+        type: string
+        examples: [meridian, south, west]
+        description: >
+          Suspect-coordinate QC label - "meridian", "west", "south", or NA. Flags
+          only; does not filter. fs_afladagbok only.
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: lon1_raw
+        type: number
+        range: [-15563.3333333333, 23.909000000000002]
+        examples:
+          - -66.10666666666665
+          - -24.619333333333326
+          - -23.0695
+          - -21.124833333333328
+          - -11.53983333333333
+        description: >
+          Start longitude as originally recorded, before coordinate correction - kept
+          alongside lon1.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lon2_raw
+        type: number
+        range: [-242.213333333333, -1.0511666666666701]
+        examples:
+          - -66.10666666666665
+          - -24.68566666666666
+          - -23.36716666666666
+          - -20.9215
+          - -4.14266666666667
+        description: >
+          End longitude as originally recorded.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: lon1_basis
+        type: string
+        examples: [reconstructed, recorded]
+        description: >
+          How lon1 was obtained: "recorded", "reconstructed", or "synthesised".
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: lon2_basis
+        type: string
+        examples: [recorded]
+        description: >
+          How lon2 was obtained.
+        todo: |
+          - Only 1 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+  - name: logbook_trip
+    source:
+      parquet: ../../fishydata/curated/logbook/trip.parquet
+    description: >
+      One row per fishing trip (voyage) as reported to the logbook system. .tid
+      origin differs by schema: afli derives it as min(.sid) within (vid, T2,
+      hid2); fs_afladagbok takes it directly from the source system's own trip id.
+      Merged across afli, fs_afladagbok and adb (three-tier precedence: afli where
+      it exists, then fs_afladagbok, then adb beyond fs_afladagbok's dump end).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .tid
+        type: string
+        examples: ["-1007642", "101192002", "104783063", "26032426", "79358526"]
+        description: >
+          Trip identifier. afli: derived as min(.sid) within (vid, T2, hid2).
+          fs_afladagbok: taken directly from the source system's own trip id
+          (ws_veidiferd.id).
+        todo: |
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [-422, 69479]
+        examples: [-415, 1606, 2704, 6526, 7882]
+        description: >
+          Vessel identifier.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: T1
+        type: datetime
+        time_zone: naive
+        range: [0006-03-30T00:00:00, 2026-04-08T20:30:10]
+        description: >
+          Departure time (or earliest fishing date, for afli).
+        todo: |
+          - Needs a `time_zone`?
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: hid1
+        type: number
+        range: [0, 291]
+        examples: [0, 53, 89, 117, 291]
+        description: >
+          Departure harbour id; NA for afli.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: T2
+        type: datetime
+        time_zone: naive
+        range: [0201-07-23T00:00:00, 2026-04-09T09:17:52]
+        description: >
+          Landing date/time.
+        todo: |
+          - Needs a `time_zone`?
+      - name: hid2
+        type: number
+        range: [-1, 3477]
+        examples: [-1, 41, 93, 141, 3477]
+        description: >
+          Landing harbour id.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: n_crew
+        type: number
+        range: [0, 88]
+        examples: [0, 11, 22, 31, 88]
+        description: >
+          Crew count.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which logbook source system this trip came from: "afli", "fs_afladagbok", or
+          "adb".
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: pid1
+        type: string
+        examples: [IS-AKR, IS-ESF, IS-ISJ, IS-SAD, IS-VPN]
+        description: >
+          Standardised departure port key (joined from reference/port.parquet via
+          hid1).
+      - name: port
+        type: string
+        examples: [Akranes, Færeyjar, Keflavík, Seltjarnarnes, Þórshöfn]
+        description: >
+          Landing port name.
+      - name: pid2
+        type: string
+        examples: [IS-AKR, IS-EYR, IS-HUA, IS-RHA, IS-VPN]
+        description: >
+          Standardised landing port key (joined via hid2).
+      - name: source
+        type: string
+        examples:
+          - FRA GAFLI - AUTO
+          - Fiskistofa raun
+          - Marína raun
+          - Reiknistofa fiskmarkaða raun - Skrifstofa VES
+          - Trackwell raun - Skrifstofa VES - GAFL AUTO
+        description: >
+          Source system tag within the fs_afladagbok schema; NA for afli.
+  - name: reference_area_h3
+    source:
+      parquet: ../../fishydata/curated/reference/area_h3.parquet
+    description: >
+      One row per H3 resolution-8 hexagon (~0.4-0.5 km² each) covering the GEBCO
+      bathymetry grid extent, restricted to cells with GEBCO depth < 5
+      (sea/near-sea only). A spatial-join lookup, not raw pings: depth/bbht/fao
+      are aggregate or centroid-sampled values for the hexagon. The res-8 grain is
+      called an experimental, revisitable analytical choice, not a fixed tag
+      (curate/decisions/011-h3-in-storage-is-experimental.md).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: h3
+        type: string
+        examples:
+          - 88001645e1fffff
+          - 88082d826dfffff
+          - 88192e59cdfffff
+          - 881b66c533fffff
+          - 883f46b5b9fffff
+        description: >
+          The H3 resolution-8 cell identifier keying each row.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: depth
+        type: number
+        range: [-6002, 4]
+        examples: [-5966, -4729, -2860, -1455, -17]
+        description: >
+          Minimum GEBCO depth (metres, negative below sea level) among the raster
+          pixels falling in that H3 cell.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lat
+        type: number
+        range: [34.99691670150554, 89.00273221182275]
+        examples:
+          - 35.07216546676164
+          - 43.39993199455245
+          - 54.50468491046375
+          - 67.55311702659067
+          - 86.12572144678809
+        description: >
+          Latitude of the H3 cell's centre.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lon
+        type: number
+        range: [-45.209643528244584, 69.24462212055299]
+        examples:
+          - -44.191509693501885
+          - -22.022003453323514
+          - -5.496418581489124
+          - 20.811261914626925
+          - 67.22379564617857
+        description: >
+          Longitude of the H3 cell's centre.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: bbht
+        type: string
+        examples:
+          - HabBenAbyssal
+          - HabBenBathyalUpSedOrHabBenBathyalUpReef
+          - HabBenCircalitSand
+          - HabBenInfralitRock
+          - HabBenOffshSand
+        description: >
+          MSFD broad benthic habitat type, sampled at the H3 cell centroid.
+      - name: fao
+        type: string
+        examples: [27.1.a, 27.2.b.2, 27.4.c, 27.7.e, 27.9.b.2]
+        description: >
+          ICES/FAO area code, sampled at the H3 cell centroid.
+  - name: reference_dictionary
+    source:
+      parquet: ../../fishydata/curated/reference/dictionary.parquet
+    description: >
+      A hand-maintained column-name translation table, one row per (source-schema,
+      source-column) mapping, consumed by convert scripts via wk_translate() to
+      rename messy source column names to this project's clean names. Coverage is
+      only as complete as the mappings someone has hand-added
+      (reference/dictionary.R).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: clean
+        type: string
+        examples: [.sid, g_grid_type, mesh_circ_count, sid, z2_headline]
+        description: >
+          The standardized ("clean") column name this row maps a source column to.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: messy
+        type: string
+        examples: [aaetladur_afli, fj_skiki, lok_lengd, sjolag, visir]
+        description: >
+          The original, source-system column name being translated from (Icelandic for
+          afli/fs_afladagbok, English for adb).
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: level
+        type: string
+        examples: [catch, sample, station, trip]
+        description: >
+          The grain the source column belongs to at capture time ("station", "trip",
+          "sample", or "catch"); populated only for afli rows.
+        todo: |
+          - Only 4 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: sample_type
+        type: string
+        examples: [NA, fishing, sensor]
+        description: >
+          For afli rows at level "sample": whether the value is a "fishing"-operation
+          attribute (gear/effort) or a "sensor" (environmental/instrument) reading.
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Which source logbook schema this mapping row belongs to: "afli", "adb", or
+          "fs_afladagbok".
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: table
+        type: string
+        examples: [afli, gildra, hringn, lineha, stofn, toga]
+        description: >
+          Which specific source table within the afli schema this mapping came from
+          ("stofn", "afli", "toga", "lineha", "gildra", "hringn"); not populated for
+          adb/fs_afladagbok rows.
+        todo: |
+          - Only 6 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+  - name: reference_gear
+    source:
+      parquet: ../../fishydata/curated/reference/gear.parquet
+    description: >
+      A hand-maintained gear-code vocabulary and cross-version mapping, one row
+      per (version, gid). Covers the historical ("old", afli) and current ("new",
+      fs_afladagbok) Icelandic gear-code systems, cross-mapped and aligned to ICES
+      GearType/TargetAssemblage vocabularies. Not an exhaustive fishery-wide gear
+      list - only the gear types actually observed in these logbook sources
+      (reference/gear/mapping.R).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: version
+        type: string
+        examples: [new, old]
+        description: >
+          Which gear-code vocabulary this row belongs to: "new" (fs_afladagbok) or
+          "old" (historical, afli).
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: gid
+        type: number
+        range: [1, 99]
+        examples: [1, 10, 20, 35, 99]
+        description: >
+          The integer gear code within that version's vocabulary.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: veiðarfæri
+        type: string
+        examples:
+          - Annað - Hvað
+          - Grásleppunet
+          - Lína
+          - Skötuselsnet
+          - Þorsknót
+        description: >
+          Icelandic gear name/label for this code (e.g. "Botnvarpa", "Lína").
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: map
+        type: number
+        range: [1, 99]
+        examples: [1, 8, 16, 25, 99]
+        description: >
+          Canonical cross-version lookup: the corresponding gid in the other version.
+          Many-to-one in both directions, so round-trips are lossy.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: gear
+        type: string
+        examples: [DIV, GND, LHP, OTB, SDN]
+        description: >
+          ICES GearType vocabulary code (e.g. "OTB", "GNS", "LLS").
+      - name: target
+        type: string
+        examples: [CRU, DEF, DES, DWF, FIF, MOL, SPF, SWD]
+        description: >
+          ICES TargetAssemblage vocabulary code (e.g. "DEF", "SPF", "CRU").
+        todo: |
+          - Only 8 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: target2
+        type: string
+        examples: [ARG, DWF, HER, NEP, XXX]
+        description: >
+          Author-defined finer-grained target/species-group code, not a standard ICES
+          vocabulary.
+  - name: reference_harbour
+    source:
+      parquet: ../../fishydata/curated/reference/harbour.parquet
+    description: >
+      One row per distinct harbour-code/name combination found in the raw
+      aflagrunnur (Icelandic landings) source. A narrower, source-specific harbour
+      table with no join to geometry or to the global pid port registry - distinct
+      from reference/port and reference/port_geometry
+      (reference/ports/harbours.R).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: hid
+        type: number
+        range: [1, 900]
+        examples: [1, 57, 99, 135, 900]
+        description: >
+          Harbour code from aflagrunnur's hafnarnumer column - the Fiskistofa harbour
+          number.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required, unique] # all values distinct & present
+            - constraints: [primary_key] # all values distinct & present
+            - constraints: [required] # all values present
+      - name: hid_new
+        type: number
+        range: [1, 140]
+        examples: [1, 29, 52, 69, 140]
+        description: >
+          The newer/alternate harbour-number field (hafnarnumer_id) from the same
+          source table; its relationship to hid beyond common source is ungrounded.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: harbour
+        type: string
+        examples: [Akranes, Færeyjar, Keflavík, Siglufjörður, Þórshöfn]
+        description: >
+          Harbour name, from aflagrunnur's hafnarnumer_heiti column.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required, unique] # all values distinct & present
+            - constraints: [primary_key] # all values distinct & present
+            - constraints: [required] # all values present
+  - name: reference_port
+    source:
+      parquet: ../../fishydata/curated/reference/port.parquet
+    description: >
+      The Icelandic hid <-> global pid crosswalk: one row per Icelandic harbour
+      code (hid). Every hid that Fiskistofa/kvoti recognizes gets a resolvable
+      port name, whether or not a geometry polygon exists for it
+      (sentinel/non-harbour codes like 0, 999 are preserved on purpose). This is
+      the crosswalk logbook/landings/AIS data join hid -> pid through
+      (curate/decisions/007-hid-maps-to-pid.md).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: hid
+        type: number
+        range: [1, 900]
+        examples: [1, 40, 83, 121, 900]
+        description: >
+          Icelandic harbour code (Fiskistofa's hafnarnumer) - the local key this
+          crosswalk maps to the global pid.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: port
+        type: string
+        examples: [Akranes, Færeyjar, Húsavík, Sauðárkrókur, Þórshöfn]
+        description: >
+          Harbour/port name, coalesced with priority: the consolidated ports_all table
+          first, then aflagrunnur's own name, then ports_kvoti.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: pid
+        type: string
+        examples: [IS-AKR, IS-EYR, IS-HRI, IS-REY, IS-VPN]
+        description: >
+          The global country-port id (format <ISO2>-<code>), minted once in
+          reference/ports/ports_all.R - the standard harbour key joined across
+          logbooks, landings and AIS (curate/decisions/007-hid-maps-to-pid.md).
+      - name: hafnarnumer_id
+        type: number(id)
+        examples: [1, 29, 52, 69, 140]
+        description: >
+          Ungrounded - not produced by reference/ports/harbour_codes.R as read; needs
+          a maintainer check.
+  - name: reference_port_geometry
+    source:
+      parquet: ../../fishydata/curated/reference/port_geometry.parquet
+    description: >
+      One row per physical port worldwide (not just Iceland) - the deduplicated,
+      geometry-clustered output of consolidating nine upstream port/harbour
+      sources into a single canonical pid and geometry per real-world port, chosen
+      by source priority within a 300m geometry cluster. Supplies the spatial
+      polygons the pid key (minted here) refers to; the Iceland/Faroe harbour
+      geometry input itself is a frozen, non-recomputed bootstrap
+      (curate/decisions/005-harbour-geometry-is-a-frozen-input.md).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: pid
+        type: string
+        examples: [-99-KAL, DK-ARE, GB-QKF, NO-POR, US-YOR]
+        description: >
+          The canonical global port id assigned by the geometry-clustering step - one
+          pid per physical port, not per source spelling.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: port
+        type: string
+        examples: [A ILLA DE ONS, ESP-194, Marans, RUS-95, 大見港]
+        description: >
+          Port/place name from the winning source feature for that pid's canonical
+          cluster member.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: hid
+        type: string
+        examples: ["10014", "50042", "8003", "92126", SJJAM]
+        description: >
+          The source's own local harbour id where available; NA for sources that don't
+          carry one.
+      - name: unlocode
+        type: string
+        examples: ["no", "yes"]
+        description: >
+          "yes"/"no": whether pid was matched to a genuine UN/LOCODE, vs. a locally
+          derived fallback code.
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: source
+        type: string
+        examples:
+          - einar
+          - emodnet
+          - gfw
+          - gisco
+          - jeppe
+          - maksims
+          - marta
+          - osm
+          - vmstools
+        description: >
+          Which upstream source contributed the canonical feature for this port
+          (einar, gisco, jeppe, maksims, emodnet, osm, vmstools, gfw, marta).
+        todo: |
+          - Only 9 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: priority
+        type: number
+        range: [1, 9]
+        examples: [1, 3, 5, 7, 9]
+        description: >
+          Numeric source-priority rank (1 = einar highest, 9 = marta lowest) used to
+          pick the canonical cluster member.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: geom
+        description: >
+          The port's polygon (or buffered-point) geometry, EPSG:4326, stored as WKB.
+        todo: |
+          - This column could not be profiled (non-UTF-8). Describe it and add a
+            `type`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+  - name: vessel
+    source:
+      parquet: ../../fishydata/curated/vessel/vessel.parquet
+    description: >
+      One row per registered hull, identified by vid (the Icelandic vessel
+      registration number). Consolidates the Icelandic fisheries vessel registry,
+      the Fjarskiptastofa MMSI archive, and Hreiðar's historical vessel-year list;
+      also covers a foreign-vessel range (vid 3700-4999) whose flag is inferred
+      from uid's country prefix. Registry rows with vid == 0 are excluded. This is
+      the base registry other vessel tables are built from
+      (reference/vessels/registry.R).
+    todo: |
+      - What population? All vessels ever registered, or only those with
+        logbook/landings/AIS activity?
+    columns:
+      - name: vid
+        type: number
+        range: [1, 9855]
+        examples: [103, 1873, 4462, 5842, 9043]
+        constraints: [primary_key]
+        description: >
+          Vessel identifier — the one column spelled the same in every
+          curated table. See the `vid` glossary entry.
+        todo: |
+          - Pick a more specific numeric type (currently generic `number`).
+      - name: yh1
+        type: number
+        range: [1860, 2021]
+        examples: [1860, 1934, 1965, 1990, 2021]
+        description: >
+          First year the hull appears in Hreiðar's historical vessel-year list
+          (external, last updated 2021).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: yh2
+        type: number
+        range: [1935, 2021]
+        examples: [1935, 1978, 1993, 2005, 2021]
+        description: >
+          Last year the hull appears in that list - a censoring horizon (never exceeds
+          2021), not necessarily the year the vessel ceased to exist.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: mmsi
+        type: string
+        examples:
+          - "251002000"
+          - "251290110"
+          - "251466240"
+          - "251793540"
+          - "251861740"
+        description: >
+          Maritime Mobile Service Identity, joined in from the Fjarskiptastofa MMSI
+          archive.
+      - name: cs
+        type: string
+        examples: [ASTR8, MAPY2, TFFY, TFQN, XPZJ]
+        description: >
+          Call sign - from the registry, falling back to the MMSI archive, or (for
+          foreign vessels, vid 3700-4999) extracted from the vessel name.
+      - name: imo
+        type: string
+        examples: ["5025967", "7112096", "7719985", "8909056", "9951628"]
+        description: >
+          IMO number, from the registry.
+      - name: uid
+        type: string
+        examples: [AK010, HF074, SH080, SU026, ÞH330]
+        description: >
+          Region acronym + zero-padded region number (harbour/district code); NA for
+          foreign vessels.
+      - name: vessel
+        type: string
+        examples: [AUSTURBORG, GUÐMUNDUR JENSSON, LYSISTRADA, STEINI, ÞORSKUR]
+        description: >
+          Vessel name.
+      - name: flag
+        type: string
+        examples: [ATG, DNK, IRL, NOR, VCT]
+        description: >
+          Flag state - "ISL" by default, or derived from uid's country prefix for
+          foreign vessels (vid 3700-4999).
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: source
+        type: string
+        examples: [ISL]
+        description: >
+          Registry source label; always "ISL" here (only the Icelandic registry is
+          compiled into this table).
+        todo: |
+          - Only 1 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: .id
+        type: number
+        range: [1, 7115]
+        examples: [87, 1794, 3984, 5423, 6945]
+        description: >
+          Internal vessel id from the source registry table.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mclass
+        type: number
+        range: [0, 6304]
+        examples: [0, 45, 59, 68, 6304]
+        description: >
+          Usage category code from the registry (numeric; the code list itself isn't
+          defined in this repo).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: loa
+        type: number
+        range: [0, 172.95000000000002]
+        examples: [5.44, 10.02, 17.2, 33.04, 172]
+        description: >
+          Length overall.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: kw
+        type: number
+        range: [3.68, 12000]
+        examples: [8, 91, 344, 1030, 8536]
+        description: >
+          Engine power, kW.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: n_engines
+        type: number
+        range: [0, 4]
+        examples: [0, 1, 2, 3, 4]
+        description: >
+          Number of engines.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: kw_total
+        type: number
+        range: [0, 300625]
+        examples: [9, 147, 401, 955, 9775]
+        description: >
+          Total engine power across all engines.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: grt
+        type: number
+        range: [0, 11487.7]
+        examples: [1.22, 5.6000000000000005, 16.63, 145.70000000000002, 2461.61]
+        description: >
+          Gross registered tonnage.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: bwt
+        type: number
+        range: [0, 14714]
+        examples: [1.36, 6.47, 15.66, 182, 7065]
+        description: >
+          Brutto (gross) weight, tons.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: nwt
+        type: number
+        range: [0, 4898]
+        examples: [0.53, 3, 9.39, 110.73, 1186.22]
+        description: >
+          Netto weight, tons.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: mmsi_t1
+        type: date
+        range: [2007-06-01, 2021-01-01]
+        description: >
+          Start date of this MMSI's validity window.
+      - name: mmsi_t2
+        type: date
+        range: [2007-06-01, 2028-12-24]
+        description: >
+          End date of this MMSI's validity window - usually a placeholder default
+          (2028-12-24) rather than an observed closing date.
+      - name: zombie_no
+        type: number
+        range: [1, 2]
+        examples: [1, 2]
+        description: >
+          Sequence number counting how many times this MMSI has been reissued to a new
+          hull.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: note_date
+        type: date
+        range: [1997-02-21, 2025-04-01]
+        description: >
+          Date parsed out of the Fjarskiptastofa registry's free-text note field.
+      - name: note_fate
+        type: string
+        examples: [Afskráður, Niðurrif, Seldur, Úr rekstri]
+        description: >
+          Categorized fate parsed from that note field: "Niðurrif" (scrapped),
+          "Seldur" (sold), "Afskráður" (deregistered), or "Úr rekstri" (out of
+          service).
+        todo: |
+          - Only 4 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+  - name: vessel_ais_key
+    source:
+      parquet: ../../fishydata/curated/vessel/vessel_ais_key.parquet
+    description: >
+      NOT a registry: a fitted model with residual error (AGENTS.md). One row per
+      (STK mobile-id, period), covering essentially the whole STK AIS trail
+      whether or not a vessel could be matched. Classifies each mobile-id's (loid,
+      glid) pair into an entity_class and, where evidence supports it, assigns a
+      vid and a confidence step. As of 2026-09-22 it resolves a vid for 62.4% of
+      pings and carries known residual error
+      (curate/plans/003-stk-vessel-identity.md) - a cross-check finding here
+      re-enters the pipeline only through overrides/, never as this table's own
+      output (AGENTS.md's cycle rule).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: .rid
+        type: number
+        range: [1, 31791]
+        examples: [103, 7473, 16049, 22296, 31395]
+        description: >
+          Sequential row id assigned before the manual-duals join; not a unique key
+          after that join (curate/decisions/013-stk-derived-ids-are-equipment.md).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: mid
+        type: number
+        range: [100000, 154040]
+        examples: [100560, 123381, 133025, 142987, 153912]
+        description: >
+          STK "mobile id" - a sequential number STK auto-generates whenever it
+          encounters a new (localid, globalid) pair; not unique to a vessel
+          (curate/plans/003-stk-vessel-identity.md).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: loid
+        type: string
+        examples: ["1013", "2684", "6816", "7685", h26-av]
+        description: >
+          STK "local id" free-text field - sometimes holds a vid, sometimes a call
+          sign, sometimes other text.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: glid
+        type: string
+        examples: ["1432", "251167118", "367863000", "992311071", XPWQ]
+        description: >
+          STK "global id" free-text field - same mixed-content nature as loid.
+      - name: pings
+        type: number
+        range: [1, 1912732]
+        examples: [103, 2075, 8729, 35917, 1629353]
+        description: >
+          Count of AIS pings for this (mid, loid, glid) combination.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: n_years
+        type: number
+        range: [1, 20]
+        examples: [1, 6, 11, 15, 20]
+        description: >
+          Number of distinct years this combination has pings in.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: d1
+        type: date
+        range: [1970-01-01, 2096-05-10]
+        description: >
+          Start of this row's active period.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: d2
+        type: date
+        range: [2007-08-10, 2028-12-24]
+        description: >
+          End of this row's active period - the final/live period of a mid is extended
+          to a 2028-12-24 sentinel so later STK dumps are still captured downstream.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: vid
+        type: number
+        range: [-7830, 9853]
+        examples: [-2835, 2341, 4941, 6988, 7882]
+        description: >
+          The hull this mobile-id period was matched to by the rule cascade (see step)
+          - a fitted/matched value with measurable error, not ground truth.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: "no"
+        type: number
+        range: [0, 4]
+        examples: [0, 1, 2, 3, 4]
+        description: >
+          Period number within a mid, from the manual duals spreadsheet (defaults to
+          1).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: step
+        type: string
+        examples:
+          - NA_csts
+          - NA_mmsi
+          - NA_vid
+          - afmadur
+          - loid_cs
+          - manuals
+          - older
+          - uid_cs
+          - vid2_cs
+          - vid2_vid2
+          - vid_cs
+          - vid_vid
+        description: >
+          Which cascade rule assigned vid (e.g. "manuals", "vid_vid", "vid_cs",
+          "older", "afmadur") - a confidence/evidence label.
+        todo: |
+          - Only 12 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: entity_class
+        type: string
+        examples:
+          - aircraft
+          - aquaculture
+          - beacon
+          - buoy
+          - child_vessel
+          - institute
+          - navaid
+          - net_relay
+          - shore_station
+          - unknown
+          - vessel
+        description: >
+          What kind of thing this mid actually is ("vessel", "shore_station",
+          "net_relay", "navaid", "aquaculture", etc.), classified independently of any
+          vid match (curate/decisions/012-stk-entity-class.md).
+        todo: |
+          - Only 11 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: basis
+        type: string
+        examples: [reconstructed, recorded, synthesised]
+        description: >
+          Tier of evidence behind entity_class: "synthesised" (reviewed override
+          list), "recorded" (MMSI number-range rule), or "reconstructed" (name-pattern
+          rule).
+        todo: |
+          - Only 3 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: vid_older
+        type: number
+        range: [0, 9853]
+        examples: [162, 2323, 6130, 7050, 7810]
+        description: >
+          A previously-matched vid carried in from an older match file, used as a
+          fallback source when nothing else matches and pings > 100.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: type
+        type: string
+        examples:
+          - NA_csts
+          - NA_mmsi
+          - NA_vid
+          - manuals
+          - older
+          - uid_cs
+          - vid2_cs
+          - vid2_vid2
+          - vid_cs
+          - vid_vid
+        description: >
+          Copy of step, kept for older code that keys on this name.
+        todo: |
+          - Only 10 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: lifetime_conflict
+        type: boolean
+        description: >
+          TRUE where this mid's active period falls wholly outside the matched vid's
+          registered identity period (vessel_identity.parquet) - flags, does not
+          correct.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: lifetime_note
+        type: string
+        examples:
+          - hull has no period in the registry during the STK era
+          - "mobile-id active wholly outside the hull's registry period"
+        description: >
+          Explanation for a lifetime_conflict: the hull has no registry period during
+          the STK era, or the mobile-id's active period sits wholly outside it.
+        todo: |
+          - Only 2 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+      - name: mmsi
+        type: string
+        examples:
+          - "251002000"
+          - "251290110"
+          - "251463000"
+          - "251777240"
+          - "251861740"
+        description: >
+          The matched vid's current MMSI, stamped on via a display join (one arbitrary
+          row per MMSI) - not itself a time-aware match; see
+          curate/decisions/015-identity-is-separate-from-the-key.md.
+  - name: vessel_identity
+    source:
+      parquet: ../../fishydata/curated/vessel/vessel_identity.parquet
+    description: >
+      One row per (vid, time period) - not one row per hull. Reshapes
+      vessel.parquet's flat attributes into a time-bounded history, since a hull's
+      MMSI, call sign and name can change while vid persists across its life. Each
+      row's [t1, t2] window intersects the MMSI's own registered window with the
+      hull's lifetime (yh1/yh2); a hull struck before STK began (2007-06-01) is
+      dropped entirely. Asserts as an invariant that (mmsi, time) resolves to
+      exactly one vid - built specifically so AIS-to-vessel joins can resolve on
+      (mmsi, time) rather than mmsi alone (reference/vessels/identity.R).
+    todo: |
+      - Record a `primary_key`, if present.
+    columns:
+      - name: vid
+        type: number
+        range: [10, 9855]
+        examples: [975, 3792, 5492, 6481, 9807]
+        description: >
+          The stable hull identifier, carried through from vessel.parquet unchanged.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data (distinct
+            count is approximate):
+            - constraints: [required, unique] # values look distinct & present
+            - constraints: [primary_key] # values look distinct & present
+            - constraints: [required] # all values present
+      - name: vessel
+        type: string
+        examples: [AFI, Fjellmöy SF-19-V, LATUR, SKINNEY, ÞORLEIFUR]
+        description: >
+          Vessel name for this vid (not itself time-split).
+      - name: cs
+        type: string
+        examples: [ASTR8, LNXT, TFDS, TFOE, XPZJ]
+        description: >
+          Call sign for this vid, carried through from vessel.parquet.
+      - name: uid
+        type: string
+        examples: [AK010, GK317, SF177, ST031, ÞH330]
+        description: >
+          Region/district id for this vid.
+      - name: imo
+        type: string
+        examples: ["5137236", "7017466", "7719985", "9015175", "9951628"]
+        description: >
+          IMO number.
+      - name: mmsi
+        type: string
+        examples:
+          - "251002000"
+          - "251270640"
+          - "251463000"
+          - "251777240"
+          - "251861740"
+        description: >
+          MMSI for this vid.
+      - name: flag
+        type: string
+        examples: [ATG, DNK, IRL, NOR, VCT]
+        description: >
+          Flag state.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: source
+        type: string
+        examples: [ISL]
+        description: >
+          Registry source label.
+        todo: |
+          - Only 1 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mclass
+        type: number
+        range: [0, 6304]
+        examples: [0, 46, 61, 69, 6304]
+        description: >
+          Usage category code.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+      - name: zombie_no
+        type: number
+        range: [1, 2]
+        examples: [1, 2]
+        description: >
+          MMSI-reissue counter (NA coalesced to 1).
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: window_basis
+        type: string
+        examples: [both, hull_lifetime, mmsi_window, unbounded]
+        description: >
+          Which evidence bounded this row's [t1, t2] window: "both", "mmsi_window",
+          "hull_lifetime", or "unbounded".
+        todo: |
+          - Only 4 distinct values. Is this an enum? If so change `string` to
+            `enum` and `examples` to `values`.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: t1
+        type: number
+        range: [13665, 18628]
+        examples: [13665, 14610, 16071, 17167, 18628]
+        description: >
+          Start of the identity period: the later of the MMSI window start and the
+          hull-lifetime start.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: t2
+        type: number
+        range: [13665, 21542]
+        examples: [13665, 14974, 16435, 17531, 21542]
+        description: >
+          End of the identity period: the earlier of the MMSI window end and the
+          hull-lifetime end.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mmsi_t1
+        type: number
+        range: [13665, 18628]
+        examples: [13665, 14245, 15340, 16436, 18628]
+        description: >
+          The MMSI's own validity start, deliberately NOT intersected with the hull
+          lifetime - answers "who was transmitting under this MMSI", used to resolve
+          MMSI-keyed AIS feeds.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+      - name: mmsi_t2
+        type: number
+        range: [13665, 21542]
+        examples: [13665, 14974, 16070, 17531, 21542]
+        description: >
+          The MMSI's own validity end, same rationale as mmsi_t1.
+        todo: |
+          - Pick a more specific numeric type, and keep whichever of `range` and
+            `examples` is appropriate.
+          - Specify `constraints`. Some options suggested by the data:
+            - constraints: [required] # all values present
+
+relationships:
+  # vessel.vid is a measured, clean primary key (7,043 rows, 7,043 distinct
+  # vid, checked 2026-09-25) so these four are the only relationships in this
+  # first pass backed by a verified unique column on their "one" side.
+  - join: logbook_trip.vid = vessel.vid
+    cardinality: many-to-one
+  - join: ais_trip.vid = vessel.vid
+    cardinality: many-to-one
+  - join: landing_landings.vid = vessel.vid
+    cardinality: many-to-one
+  - join: vessel_ais_key.vid = vessel.vid
+    cardinality: many-to-one
+
+  # Every relationship below this line is real (each join key exists and is
+  # used exactly this way by the code that builds these tables — see the
+  # cited scripts) but is deliberately NOT declared as a `relationships` entry
+  # yet: declaring one asserts a `primary_key`/`unique` constraint on its
+  # "one" side, and measuring the actual data 2026-09-25 found every one of
+  # these candidate keys currently has duplicates:
+  #   logbook_trip..tid      1,820,387 rows, 1,813,822 distinct (6,565 dupes)
+  #   logbook_station..sid   7,239,778 rows, 7,224,594 distinct (15,184 dupes)
+  #   reference_gear.gid            59 rows,        37 distinct
+  #   reference_port.pid           112 rows,        86 distinct, 21 missing
+  # Declaring `primary_key` on any of these would be asserting something the
+  # data does not currently satisfy - see AGENTS.md, "measure before claiming
+  # scope". Add each relationship once its key column's duplication (or, for
+  # `reference_gear`/`reference_port`, its intended real key) has been
+  # investigated and either fixed or understood well enough to state a
+  # constraint truthfully.
+  #
+  #   logbook_trip..tid      = logbook_station..tid       (one-to-many)
+  #     curate/logbook.R — a trip covers many fishing operations
+  #   logbook_station..sid   = logbook_fishing_sample..sid (one-to-one)
+  #     docs/output-schema.md — gear/effort detail kept in its own table
+  #   logbook_station..sid   = logbook_catch..sid          (one-to-many)
+  #     docs/output-schema.md — catch recorded one row per species
+  #   link_trip_voyage..tid  = logbook_trip..tid            (one-to-one)
+  #     curate/link_trip_voyage.R:70 (`row_number() ... rn = 1` per tid).
+  #     Rebuilt 2026-09-25 (curate/decisions/028) — now carries `year`/`trip`
+  #     like `ais_trip`, not `voyage_year`/`voyage`.
+  #   logbook_catch_by_species_trip..tid = logbook_trip..tid (many-to-one)
+  #     curate/catch_by_species_trip.R. Rebuilt 2026-09-25 — now carries
+  #     `.tid`/`.tid_land` dotted, like every other logbook table.
+  #   logbook_lid_map..tid   = logbook_trip..tid            (one-to-one)
+  #     curate/link_lid_map.R
+  #   logbook_fishing_sample.gid = reference_gear.gid       (many-to-one)
+  #     `gid`'s 59-vs-37 split needs understanding before this is declared —
+  #     it may mean `reference_gear`'s real key is (gid, some other column),
+  #     not gid alone.
+  #   landing_landings.pid = reference_port.pid
+  #   ais_ping.pid          = reference_port.pid            (many-to-one)
+  #     `reference_port.pid` has 21 missing values (18.8%) on top of the
+  #     duplication - `ais_ping.pid` is separately expected to be NA at sea
+  #     (docs/grammar.qmd), a different and legitimate kind of missing.
+
+glossary:
+  vid: >
+    Vessel identifier. The one identifier that is spelled the same in every
+    curated table — see `curate/decisions/015-identity-is-separate-from-the-key.md`
+    for how it differs from `mmsi` (a vessel's radio identity, which changes
+    over the vessel's life; `vid` does not).
+  dot-prefixed column (.tid, .sid, .lid, ...): >
+    Describes what `.tid`/`.sid`/`.lid` already are — a synthetic/derived key
+    generated by the source database or this pipeline, sequential, no meaning
+    in the value itself — not a style rule to test every dotted name against.
+    `.tid` and `.sid` in particular are specific, reserved names (see their
+    own entries below), not a generic category; a column can't be made
+    dotted or bare by checking whether its *values* look like an enum. See
+    `docs/grammar.qmd` and
+    `curate/decisions/028-join-key-naming-aligned.md` ("The reasoning was
+    wrong").
+  .tid: >
+    Logbook trip identifier (synthetic), and only that — reserved for the
+    logbook tables. Chains down to `.sid` per trip.
+  .sid: >
+    Logbook station (fishing operation) identifier (synthetic), and only
+    that — reserved for the logbook tables (`station.parquet` and anything
+    joined to it). Never reused for another concept in another table, even
+    one that also happens to be a code sharing the "sid" stem — that
+    confusion (a landings-side species column briefly named `.sid`) is
+    exactly what `curate/decisions/028` fixed.
+  sid: >
+    Species code (`tegundnúmer`) — e.g. `1` = cod. One vocabulary, shared by
+    logbook and landings alike (confirmed with the maintainer,
+    2026-09-25) — the same bare `sid` in both is deliberate, not
+    coincidental. Bare because the *value* is meaningful, not because of any
+    general dot/bare test.
+  stid: >
+    Fishing stock code (`veiðistofn`) — an ecological population within a
+    species (e.g. separate stocks of the same species by area). Bare, for
+    the same reason as `sid`: the value is a meaningful classification, not
+    a synthetic key.
+  gid: >
+    Gear code (enum). Paired with a `gear` string column carrying the ICES
+    gear-type code (e.g. `"OTB"`, `"LLS"`) in tables that have both.
+  hid / pid: >
+    Harbour identifiers. `hid` is source-local (e.g. Fiskistofa's
+    `hafnarnumer`); `pid` is the standardised cross-source port key minted in
+    `reference/ports/ports_all.R`. Both are kept, never one replacing the
+    other — see `curate/decisions/007-hid-maps-to-pid.md`. Trip-level tables
+    split into `hid1`/`pid1` (departure) and `hid2`/`pid2` (arrival).
+  T1 / T2 vs t1…t4: >
+    Case encodes the level, not the source: uppercase `T1`/`T2` is the
+    harbour-to-harbour trip or voyage; lowercase `t1`…`t4` is the four
+    gear-deployment event times within one fishing operation. See
+    `curate/decisions/010-time-variable-naming.md`.
+  schema: >
+    Which source system a row came from: `"afli"`, `"fs_afladagbok"`, or
+    `"adb"`. See `docs/output-schema.md`.
+  basis: >
+    Carried by every inferred value: `"recorded"`, `"reconstructed"`, or
+    `"synthesised"`, per `docs/grammar.qmd`.
