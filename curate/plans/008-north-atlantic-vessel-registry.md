@@ -1,7 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** partly built — **§7 Phases 1–5, 8 and 3b done 2026-09-27**,
-decisions 035–039; Phase 6 (ASTD residual pass) onward still proposal ·
+**status:** partly built — **§7 Phases 1–6, 8 and 3b done 2026-09-27**,
+decisions 035–040; Phase 7 (`_targets.R` wiring) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
@@ -553,16 +553,24 @@ await review"). 11,378 mobile-ids remain for Phase 6's ASTD pass.
 correction note). Fixed there and reflected here: `marinetraffic` was never
 meant to be, and now isn't, a row shape in that table.
 
-### Phase 6 — ASTD residual pass
+### Phase 6 — ASTD/astdB residual pass — **done 2026-09-27**, decision 040
 
-After Phase 5, whatever STK mobile-ids are still unmatched (against both the
-Icelandic registry and the new foreign one) get checked against ASTD,
-restricted to exactly those MMSIs — never a global 2.77-billion-row scan.
-`curate/vessel_identity_astd.R` appends `source = "astd"` rows to
-`vessel_identity_foreign.parquet` (or a companion table, if keeping ASTD's
-distinct provenance separate reads better when this is actually built) for
-whatever resolves; `astd_cat` rides along as reference only (§5.0/§6 — not a
-fishing/non-fishing filter).
+Built as two more stages in `ais_key_foreign.R` itself (not a separate
+`curate/vessel_identity_astd.R` writing back into `vessel_identity_foreign.parquet`
+— simpler to extend the one cascade script than reconcile two files), each
+restricted-MMSI (`WHERE mmsi IN (...)`, `QUALIFY` for one row per MMSI),
+never a global scan: **ASTD** (4,295 resolved, `astd_cat` reference-only per
+§6) then **astdB** (722 more, added after the maintainer asked "you are not
+forgetting astdB" — it has no name/IMO column but still gives dimensions,
+flag and AIS class, and reaches MMSIs ASTD has nothing for).
+
+**A real bug surfaced and fixed while checking these results by source**:
+`fro` and `gfw` had matched **zero times ever** in stages 2/3, because
+`R/vid_match.R`'s `.overlaps()` silently drops any candidate whose period has
+an `NA` bound — exactly how FRO (`t2` always `NA`) and GFW (both `NA`) were
+built. Fixed (`NA` coalesces to a sentinel date before comparing), verified
+against decision 037's `ais_key.R` baseline unchanged. Total candidates rose
+1,209 → **7,443**; unmatched fell 11,378 → **5,144**.
 
 ### Phase 7 — `_targets.R` wiring
 
@@ -631,9 +639,11 @@ this plan's identity work exists to generalize onto.
 7. ~~`R/vid_match.R`'s `id_col` generalization~~ — done.
 8. ~~`reference/vessels/ais_key_foreign.R`~~ — done, plus
    `reference/vessels/marinetraffic.R` (Phase 2's loader, built here instead).
-9. Human review pass (marinetraffic + `ais_key_foreign` candidates) — next.
-10. `curate/vessel_identity_astd.R`.
-11. `_targets.R` wiring for all of the above.
+9. ~~Human review pass~~ — done (decision 039: 3 flagged, all resolved).
+10. ~~ASTD/astdB residual pass~~ — done, as two more `ais_key_foreign.R`
+    stages (decision 040), plus a real `R/vid_match.R` bug found and fixed
+    along the way (`fro`/`gfw` had never matched in stages 2/3 before this).
+11. `_targets.R` wiring for all of the above — next.
 12. Confirm `dffc3970-...zip` stays unmoved (§6 — already established it's a
     duplicate) and whether Equasis's licensing question is worth raising with
     the maintainer.

@@ -1,7 +1,8 @@
 # Candidate foreign identity for STK mobile-ids that never got an Icelandic vid.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, curated/vessel/vessel_identity_foreign.parquet,
-#         raw/external/marinetraffic/*.xlsx (via reference/vessels/marinetraffic.R)
+#         raw/external/marinetraffic/*.xlsx (via reference/vessels/marinetraffic.R),
+#         staging/ais/astd (restricted to the unmatched residual's MMSIs)
 # Output: curated/check/ais_key_foreign_candidates.parquet - one row per candidate
 #
 # This is plan 008's Phase 5. A SEPARATE script from reference/vessels/ais_key.R
@@ -15,16 +16,21 @@
 # list and re-entering the confirmed rows through overrides/ - same as
 # curate/checks/ais_key_reused_callsign.R's own candidates.
 #
-# Cascade, in order (plan 008 §5/§7 Phase 5), each stage only trying what the
-# previous stage left unmatched:
+# Cascade, in order (plan 008 §5/§7 Phases 5-6), each stage only trying what
+# the previous stage left unmatched:
 #   1. marinetraffic - a direct mobileid join, already-matched candidates from
 #      one person's manual review (reference/vessels/marinetraffic.R). No
 #      registry dependency.
 #   2. cs, time-aware, against vessel_identity_foreign - the primary key in
 #      practice (plan 008 §5: more complete than mmsi for several flags).
 #   3. mmsi, time-aware, for whatever glid itself parses as a 9-digit MMSI.
-# Both 2/3 reuse R/vid_match.R's match_time_aware(id_col = "external_id")
-# (plan 008 Phase 4) rather than a new matcher.
+#   4. astd (Phase 6), for whatever's still unmatched and MMSI-shaped - a
+#      single-source broadcast lookup, restricted to exactly the MMSIs this
+#      stage needs, never a scan of ASTD's 2.77 billion pings. Lower
+#      confidence than 2/3 (no registry corroboration, no time-aware window),
+#      flagged needs_review = TRUE unconditionally.
+# 2/3 reuse R/vid_match.R's match_time_aware(id_col = "external_id") (plan 008
+# Phase 4) rather than a new matcher.
 
 library(dplyr)
 library(nanoparquet)
@@ -78,7 +84,99 @@ stage3 <- rest2 |>
   inner_join(hit_mmsi, by = ".rid") |>
   mutate(.basis = "mmsi", .note = "time-aware MMSI match")
 
+rest3 <- rest2 |> anti_join(stage3, by = ".rid")
+
 cat("stage 2 (cs):", nrow(stage2), "  stage 3 (mmsi):", nrow(stage3), "\n")
+
+## Stage 4: ASTD, restricted to exactly the MMSIs still unmatched --------------
+## Plan 008 Phase 6. Never a global scan of ASTD's 2.77 billion pings - pushed
+## down to precisely the MMSIs this stage needs, same discipline as plan 003
+## §4.5 always intended. astd_cat/flagcode etc. ride along as reference only,
+## never a filter (plan 008 §6: the maintainer found astd_cat unreliable for a
+## fishing/non-fishing split; the same caution applies to trusting any single
+## ASTD-reported field as ground truth on its own). No time-aware matching
+## against a per-mobile-id window here, unlike stages 2/3 - ASTD is used as a
+## last-resort identity lookup (closer in confidence to ais_key.R's own
+## "older"/hail-mary tier than to a registry match), which is why this is a
+## separate, later stage rather than folded into the same time-aware cascade.
+astd_mmsi <- rest3 |> filter(grepl("^[0-9]{9}$", glid)) |> distinct(glid) |> pull(glid)
+cat("\nstage 4: residual mobile-ids with an MMSI-shaped glid:",
+    sum(grepl("^[0-9]{9}$", rest3$glid)), " (", length(astd_mmsi), "distinct MMSIs)\n")
+
+## A fresh DBI connection, not duckdbfs's single cached one - R/write_parquet.R's
+## own header explains why: a shared connection accumulates state across a
+## session's worth of scripts and has already spilled its temp directory into
+## not existing (measured here, not assumed - the first version of this stage
+## hit exactly that). QUALIFY does the "latest row per mmsi" filter in one pass
+## inside DuckDB, so nothing but one row per MMSI is ever collected to R.
+astd_hit <- data.frame()
+if (length(astd_mmsi)) {
+  con <- DBI::dbConnect(duckdb::duckdb())
+  astd_path <- fd_staging("ais", "astd")
+  mmsi_list <- paste0("'", astd_mmsi, "'", collapse = ",")
+  astd_hit <- DBI::dbGetQuery(con, sprintf("
+    SELECT mmsi, vesselname, imonumber, flagcode, astd_cat, gross_tonnage, date_time_utc
+    FROM read_parquet('%s/**/*.parquet', hive_partitioning = true)
+    WHERE mmsi IN (%s)
+    QUALIFY row_number() OVER (PARTITION BY mmsi ORDER BY date_time_utc DESC) = 1
+  ", astd_path, mmsi_list))
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  astd_hit$mmsi <- as.character(astd_hit$mmsi)
+}
+cat("resolved in ASTD:", nrow(astd_hit), "\n")
+
+stage4 <- rest3 |>
+  filter(grepl("^[0-9]{9}$", glid)) |>
+  inner_join(astd_hit, by = c("glid" = "mmsi")) |>
+  mutate(.external_id = if_else(is_valid_imo(as.character(imonumber)),
+                                as.character(imonumber), paste0("astd_", glid)),
+         .basis = "astd_mmsi",
+         .note = paste0("astd_cat=", coalesce(astd_cat, "NA"),
+                        "; last seen ", as.Date(date_time_utc)))
+
+cat("stage 4 (astd):", nrow(stage4), "\n")
+
+rest4 <- rest3 |> anti_join(stage4, by = ".rid")
+
+## Stage 5: astdB, for whatever astd itself has no row for -----------------
+## astdB carries no vesselname/imonumber at all (checked directly, not
+## assumed) - only dimensions, flag (cc_iso3) and AIS class. That is not a
+## reason to skip it: it still extends coverage (990 more MMSIs resolved here
+## that astd has nothing for) and gives corroborating context - flag state
+## and size - for a candidate that would otherwise be identified by MMSI
+## alone. external_id can only ever be source-local here (astdb_<mmsi>) since
+## there is no IMO to check against. Same restricted-MMSI-lookup discipline
+## as stage 4, same fresh-connection reasoning.
+astdb_mmsi <- rest4 |> filter(grepl("^[0-9]{9}$", glid)) |> distinct(glid) |> pull(glid)
+cat("\nstage 5: still unmatched with an MMSI-shaped glid:", length(astdb_mmsi), "\n")
+
+astdb_hit <- data.frame()
+if (length(astdb_mmsi)) {
+  con <- DBI::dbConnect(duckdb::duckdb())
+  astdb_path <- fd_staging("ais", "astdB")
+  mmsi_list_b <- paste0("'", astdb_mmsi, "'", collapse = ",")
+  astdb_hit <- DBI::dbGetQuery(con, sprintf("
+    SELECT mmsi, cc_iso3, ais_class, length, breadth, draught, date_time_utc
+    FROM read_parquet('%s/**/*.parquet', hive_partitioning = true)
+    WHERE mmsi IN (%s)
+    QUALIFY row_number() OVER (PARTITION BY mmsi ORDER BY date_time_utc DESC) = 1
+  ", astdb_path, mmsi_list_b))
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  astdb_hit$mmsi <- as.character(astdb_hit$mmsi)
+}
+cat("resolved in astdB:", nrow(astdb_hit), "\n")
+
+stage5 <- rest4 |>
+  filter(grepl("^[0-9]{9}$", glid)) |>
+  inner_join(astdb_hit, by = c("glid" = "mmsi")) |>
+  mutate(.external_id = paste0("astdb_", glid),
+         .basis = "astdb_mmsi",
+         .note = paste0("flag=", coalesce(cc_iso3, "NA"),
+                        ", ais_class=", coalesce(ais_class, "NA"),
+                        ", length=", coalesce(as.character(length), "NA"),
+                        "m; last seen ", as.Date(date_time_utc)))
+
+cat("stage 5 (astdB):", nrow(stage5), "\n")
 
 ## Combine, attach identity context for the reviewer ----------------------------
 ## One row per external_id for display purposes - the same external_id can
@@ -106,7 +204,19 @@ candidates <-
       transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                 external_id, basis = .basis, note = .note,
                 candidate_name = .src_name, candidate_cs = .src_cs, candidate_mmsi = .src_mmsi,
-                source = source)
+                source = source),
+    if (nrow(stage4))
+      stage4 |>
+        transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
+                  external_id = .external_id, basis = .basis, note = .note,
+                  candidate_name = vesselname, candidate_cs = NA_character_,
+                  candidate_mmsi = glid, source = "astd"),
+    if (nrow(stage5))
+      stage5 |>
+        transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
+                  external_id = .external_id, basis = .basis, note = .note,
+                  candidate_name = NA_character_, candidate_cs = NA_character_,
+                  candidate_mmsi = glid, source = "astdb")
   ) |>
   select(-.rid)
 
@@ -116,8 +226,8 @@ cat("\ntotal candidates:", nrow(candidates),
 print(candidates |> count(basis, name = "rows"))
 
 still_unmatched <- nrow(unmatched) - n_distinct(candidates$mid)
-cat("\nstill unmatched after all three stages:", still_unmatched,
-    "mobile-ids - plan 008 Phase 6's ASTD residual pass\n")
+cat("\nstill unmatched after all five stages:", still_unmatched,
+    "mobile-ids (no MMSI-shaped glid, or that MMSI never seen in ASTD/astdB)\n")
 
 ## needs_review: does an external_id this candidate resolves to also appear in
 ## curate/checks/vessel_identity_foreign_conflicts.R's own output? A blanket
@@ -139,8 +249,13 @@ review_reason <- conflicts |>
 
 candidates <-
   candidates |>
-  mutate(needs_review = external_id %in% flagged_ids) |>
-  left_join(review_reason, by = "external_id")
+  mutate(needs_review = external_id %in% flagged_ids | basis %in% c("astd_mmsi", "astdb_mmsi")) |>
+  left_join(review_reason, by = "external_id") |>
+  mutate(review_reason = case_when(
+           !is.na(review_reason) ~ review_reason,
+           basis == "astd_mmsi" ~ "astd: single broadcast snapshot, no registry corroboration",
+           basis == "astdb_mmsi" ~ "astdB: dims/flag only, no name or IMO at all",
+           .default = review_reason))
 
 cat("\nneeds_review:\n")
 print(candidates |> count(needs_review))

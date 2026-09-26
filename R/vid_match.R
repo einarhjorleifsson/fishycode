@@ -25,7 +25,21 @@
 # instead — generalizing the function rather than writing a second matcher
 # for the foreign-vessel case (reference/vessels/ais_key_foreign.R).
 
-.overlaps <- function(a1, a2, b1, b2) a1 <= b2 & b1 <= a2
+# A bare `a1 <= b2 & b1 <= a2` returns NA - filtered out, silently - whenever
+# either identity bound is NA, and `identity_foreign.R` builds exactly that:
+# FRO's single open snapshot leaves t2 NA (plan 008 §5.0/§7 Phase 2), GFW's
+# leaves both t1 and t2 NA (no dates at all in that source). Found 2026-09-27
+# via zero stage-2/3 matches ever resolving to source == "fro" or "gfw" in
+# ais_key_foreign.R, despite both contributing rows to the identity table -
+# an unbounded period is supposed to mean "matches any query window," not
+# "never matches." Icelandic vessel_identity.parquet never has an NA bound
+# (identity.R coalesces to a sentinel date instead), so this is a no-op there
+# - verified by reproducing decision 037's ais_key.R baseline unchanged.
+.overlaps <- function(a1, a2, b1, b2) {
+  b1 <- dplyr::coalesce(b1, as.Date("1900-01-01"))
+  b2 <- dplyr::coalesce(b2, as.Date("2100-12-31"))
+  a1 <= b2 & b1 <= a2
+}
 
 # Subset identity to the columns this match needs, with the id column and
 # evidence column(s) renamed to fixed internal names so the join/filter code
