@@ -550,6 +550,26 @@ is clear from what Phase 5 actually produces. Per `AGENTS.md`'s cycle rule,
 this is not optional scaffolding; it is the only legitimate way a foreign
 `external_id` becomes trusted.
 
+### Phase 9 — out of this plan's scope, but immediately unlocked: the trip construct
+
+Worth recording here even though it isn't built as part of this plan — see
+`TODO.md` item 22. `reference/ports/ports_all.R` (kaenugardr, absorbed) already
+merges 24,653 harbours globally: GFW's 12,831 worldwide anchorages, EMODnet's
+946 European ports, GISCO's 2,440 EU ports, plus OSM/vmstools/local sources.
+The geometry side of "what harbour did this foreign vessel's trip start and
+end at" is ready and has been since the absorption — this plan's `external_id`
+work is what's been missing, not the ports.
+
+But identity resolving is not sufficient by itself: `sources/stk/convert.R:28`
+and `curate/ais_ping_union.R:66` both `inner_join(..., filter(!is.na(vid)))` —
+a ping with no *Icelandic* `vid` is dropped before it ever reaches
+`curate/ais_trip.R`, which then groups trips by `vid` alone. So a foreign
+vessel resolved by Phase 5/6's `external_id` still would not get a trip today;
+those two filters and the trip grouping key all need generalizing from `vid`
+to "whatever identity this ping has" — the same `id_col`-style generalization
+as Phase 4, applied to a different pipeline. That is TODO item 22's job, after
+this plan's identity work exists to generalize onto.
+
 ### Suggested build order within the phases above
 
 1. Move the raw files (Phase 1).

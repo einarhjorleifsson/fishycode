@@ -341,3 +341,25 @@ project's own authoritative trail for it. A comparison here would be the same sh
 
 **check:** a check exists comparing GFW-attributed Icelandic fishing effort against
 STK's own trail for at least one overlapping year (2018, via `mmsi-daily`).
+
+---
+
+## 22. Foreign vessels never reach trip segmentation, even once identified
+**status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`
+
+`reference/ports/ports_all.R` (kaenugardr, absorbed) already merges 24,653 harbours
+globally — GFW's 12,831 worldwide anchorages, EMODnet's 946 European ports, GISCO's
+2,440 EU ports, plus OSM/vmstools/local sources. The geometry side of "a foreign
+vessel's trip start/end harbour" is ready and has been since the absorption.
+
+The identity side is not, in three specific places, all keyed strictly on Icelandic
+`vid`: `sources/stk/convert.R:28` and `curate/ais_ping_union.R:66` both
+`inner_join(..., filter(!is.na(vid)))` — a ping with no Icelandic vid is dropped
+before it ever reaches `curate/ais_trip.R`, which then groups trips by `vid` alone.
+Plan 008's `external_id` (§5–§7) will resolve identity for vessels that were never
+going to get an Icelandic vid — but as things stand today, their pings never survive
+long enough to be segmented into trips at all, no matter how good that resolution is.
+
+**check:** a ping carrying an `external_id` but no `vid` (plan 008's foreign match)
+survives into `curated/ais/trip.parquet` with a trip key, `hid1`/`hid2` resolved
+against `ports_all`.
