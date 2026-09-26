@@ -264,7 +264,9 @@ foreign vessels, and locating where the FRO/NOR/EU/GFW registries you found on
 2026-09-22 now live (needed before that step can proceed).
 
 2026-09-26: steps 6, 7, 9 are done — `curate/decisions/032`, `034`, `033`
-respectively.
+respectively. Step 8 paused, deliberately, mid-session: the maintainer is
+getting the FRO/NOR/EU/GFW registry files onto this machine first, so where
+they land can finally be recorded here instead of guessed at.
 
 Reviewed 2026-09-22; the design, the re-measured baseline and the four superseded
 numbers are all in the plan. Two corrections came out of it and are declared:
@@ -286,7 +288,7 @@ split — `TFPH` and `TFUT` are the two large examples, both now visible in
 mismatched. Whether that is worth folding into step 6's `d2`-closing work is the
 maintainer's call.
 
-**check:** plan 003 steps 6–9 are marked done in its own header.
+**check:** plan 003 step 8 is marked done in its own header.
 
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
