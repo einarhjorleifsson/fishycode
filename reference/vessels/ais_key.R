@@ -582,15 +582,73 @@ stk12 <-
   left_join(v_mmsi_no_dupes |> select(vid, mmsi))
 
 # Extend the last date ---------------------------------------------------------
-# Need to extend the 'last' "d2" within any mobileid to something like 2028-12-24
-#  This is so that 'later' stk dumps get included in the between join downstream
+# The old rule extended every mobile-id's last period to the 2028-12-24 sentinel
+# unconditionally, so that a later STK dump still joins. That is right for a mid
+# that is genuinely still transmitting, and wrong for one that a vid's NEXT
+# mobile-id has already superseded - the sentinel then makes 124 vessels exist
+# twice at once (plan 003 §3.2), which is what check #4 in
+# curate/checks/ais_key_registry.R (`two_mids_open`) has been reporting.
+#
+# Plan 003 §4.3: measure the 123 vids with more than one assigned mid, using the
+# mobile-id's own OBSERVED ping bounds (from `stk`, before the manual-duals join
+# and before this extension) - not the registry, not landings, so the cycle rule
+# is not touched. For each vid, order its mids by first ping. A mid is:
+#   - "currently_live"  - it is the chronologically LAST mid for its vid. Nothing
+#     to compare it against; keep the sentinel.
+#   - "clean_handover"  - a later mid for the same vid starts after this one's
+#     last observed ping. The old mid fell silent first; close d2 at that last
+#     ping instead of the sentinel. Measured 2026-09-26: 49 of 172 mid-periods.
+#   - "overlap"         - the later mid starts before this one's last observed
+#     ping - up to years before, e.g. vid 1902's mid 101406 pings on through a
+#     corrupted 2106 timestamp while mid 143788 has been live since 2021. That is
+#     either a genuine two-transponder vessel or a matcher error (§3.1's class),
+#     and deciding which is a human call that re-enters through overrides/, not
+#     this script - so it is left exactly as before (sentinel, open) and stays
+#     visible in `two_mids_open`. Measured 2026-09-26: 82 of 172.
+# A mid that is not part of any multi-mid vid is unaffected either way.
+.mid_bounds <-
+  stk |>
+  group_by(mid) |>
+  summarise(.mid_d1 = min(d1), .mid_d2 = max(d2), .groups = "drop")
+.vid_multi <-
+  stk12 |>
+  filter(!is.na(vid), vid > 0) |>
+  distinct(vid, mid) |>
+  count(vid) |>
+  filter(n > 1) |>
+  pull(vid)
+.mid_status <-
+  stk12 |>
+  filter(vid %in% .vid_multi) |>
+  distinct(vid, mid) |>
+  left_join(.mid_bounds, by = "mid") |>
+  arrange(vid, .mid_d1) |>
+  group_by(vid) |>
+  mutate(.rank = row_number(), .n = n(), .next_d1 = lead(.mid_d1)) |>
+  ungroup() |>
+  mutate(status = case_when(
+           .rank == .n           ~ "currently_live",
+           .mid_d2 < .next_d1    ~ "clean_handover",
+           .default              = "overlap")) |>
+  select(mid, vid, status, .mid_d2)
+
 stk13 <-
   stk12 |>
   mutate(no = replace_na(no, 1)) |>
+  # joined on (mid, vid), not mid alone - a handful of mids carry more than one
+  # vid across their manually split periods (the duals join above), and a plain
+  # mid join fans those rows out many-to-many.
+  left_join(.mid_status, by = c("mid", "vid")) |>
   group_by(mid) |>
-  mutate(d2 = case_when(no == max(no) ~ ymd("2028-12-24"),
-                        .default = d2)) |>
-  ungroup()
+  mutate(
+    d2_is_open = (no == max(no)) & (is.na(status) | status != "clean_handover"),
+    d2 = case_when(
+      no == max(no) & (is.na(status) | status != "clean_handover") ~ ymd("2028-12-24"),
+      no == max(no) & status == "clean_handover"                   ~ .mid_d2,
+      .default = d2)) |>
+  ungroup() |>
+  select(-c(status, .mid_d2))
+rm(.mid_bounds, .vid_multi, .mid_status)
 # Entity class, final pass -----------------------------------------------------
 # A matched vid is itself a statement that the thing is a vessel, and it outranks a
 # name pattern - six matched Norwegian and Faroese registration marks (N-400-B,

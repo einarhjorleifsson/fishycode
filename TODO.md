@@ -259,9 +259,11 @@ measurements decide whether it is worth building; none has been done.
 ## 17. Full review of the STK vessel match
 **status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`
 
-**Asked of the maintainer:** plan 003 steps 6–9 — close `d2` behind `d2_is_open`, the
-reliability tier column, the ASTD identity table, and the dead `n >= 10` filter at
-`ais_key.R:305`.
+**Asked of the maintainer:** plan 003 steps 7–9 — the reliability tier column, the
+ASTD identity table, and the dead `n >= 10` filter at `ais_key.R:305`.
+
+2026-09-26: step 6 (close `d2` behind `d2_is_open`) is done —
+`curate/decisions/032-d2-closed-from-evidence.md`.
 
 Reviewed 2026-09-22; the design, the re-measured baseline and the four superseded
 numbers are all in the plan. Two corrections came out of it and are declared:

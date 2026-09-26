@@ -1,6 +1,6 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1–5 done, 2026-09-23**; steps 6–9 open ·
+**status:** partly built — **steps 1–6 done, 2026-09-26**; steps 7–9 open ·
 **see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
 `curate/decisions/013-stk-derived-ids-are-equipment.md`,
 `curate/decisions/014-stk-vid-assignment-checks.md`,
@@ -534,7 +534,11 @@ Ordered by measured payoff per unit of risk, not by interest.
    and when the same physical device changes hands without STK splitting the
    period, no amount of identifier-matching on that one row recovers the split.
    `staging/ais/ping_union` remains stale from step 5's first half.
-6. **Close `d2`** (§4.3), with `d2_is_open`. Measure the 124 first.
+6. ~~**Close `d2`** (§4.3), with `d2_is_open`~~ — **done 2026-09-26**,
+   `curate/decisions/032-d2-closed-from-evidence.md`. Measured 123 multi-mid vids,
+   172 mobile-id periods: 49 clean handovers closed at their real last ping, 82
+   genuine overlaps left open and unresolved (a human call for `overrides/`).
+   `ais_key_registry.R`'s `two_mids_open` 137 → 95, no vid assignment changed.
 7. **Tier column** (§4.4), then make `AGENTS.md` true or delete the sentence.
 8. **ASTD identity table** (§4.5), and the foreign-vid candidates into `overrides/`.
 9. **Resolve the `n >= 10` filter** (§3.5) deliberately, and re-measure everything
