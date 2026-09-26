@@ -25,7 +25,7 @@ complete, FRO and gfw growing, NOR just finished)
 | `EU` | EU fishing fleet register, one row per registration **event** per vessel (`CFR` id) — 23 states, 1,079,982 rows | MMSI, IRCS (call sign) | 371M, 2 dated snapshots | MMSI populated on ~8% of rows sampled (only some events carry it) |
 | `FRO` | Faroese registry, one file per vessel (`vid-NNNN.csv`, long key→value) — name, call sign, MMSI, IMO, owner, dimensions | MMSI, call sign (`Kallimerki`) | 2,257 files so far, 8.6M | MMSI populated on 859/2,257 (38%) sampled so far |
 | `NOR` | Norwegian vessel register, one sheet per year 2001–2022, from Fiskeridirektoratet | call sign (`Radiokallesignal`) — **no MMSI column at all** | 18M, one file | call sign only; needs a separate MMSI source for Norway specifically |
-| `gfw` | Global Fishing Watch daily fishing-**effort grid** (`date, lat/lon cell, flag, geartype, hours, mmsi_present`) — **not vessel identity**, no names or MMSI values, just per-cell presence counts | none usable | 2.5G, one year (2020) so far | not useful for identity matching as currently landed; the maintainer expects a real vessel-registry table may still arrive from the same GFW copy |
+| `gfw` | Two different things, now both present. The daily grids (`fleet-daily-csvs`, `mmsi-daily-csvs`) are **effort data** — `date, lat/lon cell, flag, geartype, hours, mmsi_present` — no identity. `fishing-vessels-v2.csv` (arrived 2026-09-27) **is** a vessel identity table — one row per MMSI, `flag_ais`/`flag_registry`/`flag_gfw`, `vessel_class_inferred`/`_registry`/`_gfw` (geartype), `length_m_*`, `engine_power_kw_*`, `tonnage_gt_*` (each as inferred-by-neural-net / from-registry / GFW-consolidated), `registries_listed` (which registries back the match — `EU`, `IMO`, `GFCM`, `WCPFC`, national codes, …), and 2012–2020 fishing hours per year | `mmsi` only — **no call sign column**, same limitation as `NOR` | grids: 5.7G (2020) + two more zips mid-copy; `fishing-vessels-v2.csv`: 17M, 114,191 vessels | **measured 2026-09-27**: resolves 515 of the 6,598 unmatched STK mobile-ids whose `glid` is itself an unmatched 9-digit MMSI — smaller than marinetraffic's 920 but real, and CC BY-SA 4.0 licensed (unlike Equasis's restricted terms) |
 | `ISL` | Icelandic MMSI↔vessel spreadsheets, Fjarskiptastofa 2024/2025 | MMSI | 812K | this is the source for the 88 unmatched Icelandic vids item 17 already names |
 | `marinetraffic` | **Two hand-built match tables**, keyed directly by STK's own `mobileid` — see §3 | `mobileid` (STK's own key) | 204K | see §3 — this is the standout |
 
@@ -104,17 +104,24 @@ instruction is to make this a real registry an analyst can open for its own
 sake, not a matching key with a few extras bolted on. Each source already
 carries far more than identity, measured against what actually landed:
 
-| group | column | eu | fro | nor | astd | marinetraffic |
-|---|---|---|---|---|---|---|
-| identity | `name`, `cs`, `mmsi`, `imo` | ✓ | ✓ | ✓ (no mmsi) | ✓ (no cs) | ✓ |
-| registration | `registration_number`, `place_of_registration`, `first_registered_date`, `status` | ✓ | ✓ | — | — | — |
-| dimensions | `loa`, `lbp`/`length_registered`, `breadth`, `depth`, `draught` | ✓ (no draught) | ✓ | `loa`, `breadth` only | `length_registered`, `draught` | — |
-| tonnage/capacity | `gross_tonnage`, `net_tonnage`, `deadweight`, `passenger_capacity` | ✓ (no deadweight/pax) | `gross_tonnage`, `net_tonnage` | — | ✓ (all four) | — |
-| propulsion | `engine_power_kw`, `engine_power_aux_kw`, `n_engines`, `engine_type`, `engine_build_year` | `engine_power_kw`/`aux` only | ✓ (all but n_engines) | `engine_power_kw`, `engine_build_year` | — | — |
-| construction | `year_of_build`, `shipyard`, `hull_material`, `ice_class` | `year_of_build`, `hull_material` | ✓ (all four) | `year_of_build` | `year_of_build`, `ice_class` (`arcticshiptype`) | — |
-| classification | `vessel_type`/`segment`, `gear_main`, `gear_subsidiary_1..5`, `lloyds_cat`, `astd_cat` | ✓ (all, fishing-specific) | `vessel_type` (`Slag`, general) | — | `astd_cat`, `lloyds3_cat`/`lloyds5_cat` | `class` (general) |
-| ownership | `owner_name`, `owner_id`, `ownership_share`, `org_form` | — | `owner_name` | ✓ (all four) | — | — |
-| provenance | `source_file`, `retrieved_date`, `basis` | ✓ | ✓ | ✓ | ✓ | ✓ (`basis = "recorded"`, hand-curated — §6) |
+| group | column | eu | fro | nor | astd | gfw | marinetraffic |
+|---|---|---|---|---|---|---|---|
+| identity | `name`, `cs`, `mmsi`, `imo` | ✓ | ✓ | ✓ (no mmsi) | ✓ (no cs) | `mmsi` only (no name, no cs) | ✓ |
+| registration | `registration_number`, `place_of_registration`, `first_registered_date`, `status` | ✓ | ✓ | — | — | — | — |
+| dimensions | `loa`, `lbp`/`length_registered`, `breadth`, `depth`, `draught` | ✓ (no draught) | ✓ | `loa`, `breadth` only | `length_registered`, `draught` | `length_m` (×3, see below) | — |
+| tonnage/capacity | `gross_tonnage`, `net_tonnage`, `deadweight`, `passenger_capacity` | ✓ (no deadweight/pax) | `gross_tonnage`, `net_tonnage` | — | ✓ (all four) | `tonnage_gt` (×3) | — |
+| propulsion | `engine_power_kw`, `engine_power_aux_kw`, `n_engines`, `engine_type`, `engine_build_year` | `engine_power_kw`/`aux` only | ✓ (all but n_engines) | `engine_power_kw`, `engine_build_year` | — | `engine_power_kw` (×3) | — |
+| construction | `year_of_build`, `shipyard`, `hull_material`, `ice_class` | `year_of_build`, `hull_material` | ✓ (all four) | `year_of_build` | `year_of_build`, `ice_class` (`arcticshiptype`) | — | — |
+| classification | `vessel_type`/`segment`, `gear_main`, `gear_subsidiary_1..5`, `lloyds_cat`, `astd_cat` | ✓ (all, fishing-specific) | `vessel_type` (`Slag`, general) | — | `astd_cat`, `lloyds3_cat`/`lloyds5_cat` | `vessel_class` (×3, GFW's own geartype taxonomy — see README-fishing-vessels-v2.txt) | `class` (general) |
+| ownership | `owner_name`, `owner_id`, `ownership_share`, `org_form` | — | `owner_name` | ✓ (all four) | — | — | — |
+| activity | — | — | — | — | — | `fishing_hours_2012`..`2020` per vessel, `registries_listed` (which registries corroborate the match) | — |
+| provenance | `source_file`, `retrieved_date`, `basis` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ (`basis = "recorded"`, hand-curated — §6) |
+
+`gfw`'s three-way columns (`_inferred` from GFW's neural net, `_registry` from
+whichever registries it cross-referenced, `_gfw` its own consolidated best
+guess) are themselves a `basis` distinction already made for us — `_registry`
+is `"recorded"`, `_inferred` is `"reconstructed"`, and keeping the split rather
+than collapsing to `_gfw` alone means a value's provenance survives.
 
 This is deliberately wider than `vessel.parquet`'s own columns
 (`loa`/`kw`/`n_engines`/`kw_total`/`grt`/`bwt`/`nwt`) — matching or exceeding it
@@ -137,7 +144,7 @@ sign on essentially every active vessel and an MMSI on none, and NOR has no
 MMSI column at all. Leading with `cs` for matching also matches how
 `R/vid_match.R`'s cascade already prioritizes call sign over MMSI for the
 Icelandic fleet — the wider metrics columns above don't change that, they ride
-along on whatever row the identity join resolves. Feeds two consumers:
+along on whatever row the identity join resolves. Feeds four consumers:
 
 - **§3's 920 mobile-ids** → a candidate list for direct human review into
   `overrides/`, no registry dependency.
@@ -145,26 +152,36 @@ along on whatever row the identity join resolves. Feeds two consumers:
   19.2M pings, foreign call signs with no registry at all per plan 003 §4.7)
   → matched against `fro`/`nor`/`eu` by call sign, unfiltered by flag (§6),
   same cycle rule, same route through `overrides/`.
+- **515 more of the unmatched-MMSI population** (§2, measured 2026-09-27) →
+  matched against `gfw`'s `fishing-vessels-v2.csv` by MMSI — this is the one
+  source in the table with no call sign at all, so it only ever reaches the
+  same population `NOR` does, from a different angle (GFW's own
+  registry-cross-referenced identity rather than a national register).
 - **The non-fishing share** (cargo/tanker/passenger/yacht — §6) is out of
-  reach for `fro`/`nor`/`eu` by construction. This is where §6's ASTD-derived
-  identity table does the work plan 003 §4.5 originally scoped as a one-off
-  lookup: a **second table**, same `(external_id, period)` shape, `source =
-  "astd"`, `external_id = mmsi`, built for every MMSI seen in `ping_union` or
-  the unmatched residual — **not filtered by `astd_cat`** (§6: the maintainer
-  finds it unreliable — real fishing vessels land in `Unknown`/`Other
-  activities`) and not a global ASTD summary. `astd_cat` rides along as a
-  reference column only; whether a row is "the fishing share" or "the
-  non-fishing share" is decided by whether it also resolves against
-  `eu`/`nor`/`fro`, not by this field. Equasis (§6) stays a later,
+  reach for `fro`/`nor`/`eu`/`gfw` by construction (`gfw`'s own README:
+  "fishing vessels... which were not identified as non-fishing vessels" — it
+  is fishing-only by design, same boundary as `eu`/`nor`). This is where §6's
+  ASTD-derived identity table does the work plan 003 §4.5 originally scoped as
+  a one-off lookup: a **second table**, same `(external_id, period)` shape,
+  `source = "astd"`, `external_id = mmsi`, built for every MMSI seen in
+  `ping_union` or the unmatched residual — **not filtered by `astd_cat`** (§6:
+  the maintainer finds it unreliable — real fishing vessels land in
+  `Unknown`/`Other activities`) and not a global ASTD summary. `astd_cat`
+  rides along as a reference column only; whether a row is "the fishing share"
+  or "the non-fishing share" is decided by whether it also resolves against
+  `eu`/`nor`/`fro`/`gfw`, not by this field. Equasis (§6) stays a later,
   maintainer-gated option, not part of what gets built first.
 
 ## 6. Open, before this is built for real
 
-- **`gfw`**: confirm whether a vessel-identity table (not the effort grid) is
-  still landing before spending time on it for this purpose. The maintainer
-  expects an R script may arrive alongside it — likely the fetch/build script,
-  which would also be where its own provenance note belongs, same as `NOR`'s
-  `downlod_vessels.R`.
+- **`gfw`**: resolved 2026-09-27 — `fishing-vessels-v2.csv` is the vessel-identity
+  table (§2/§5), CC BY-SA 4.0 licensed (its own README states this, so no
+  licensing question the way Equasis has one), and its README doubles as the
+  provenance note (methodology paper cited: Kroodsma et al., *Science* 2018).
+  One file, `dffc3970-22a2-11ef-aa23-732e8218fbea.zip`, was still mid-copy as
+  of this measurement (growing from 803M to 818M in five seconds) — unidentified,
+  check again once it finishes. The daily-effort grids remain effort data, not
+  identity, and stay out of scope for this plan (§2).
 - **EU scope — measured 2026-09-27, revised same day.** First pass wrongly
   scoped this by *assumed* geography (a "north Atlantic flags" whitelist). The
   maintainer's correction: STK/ASTD will show a Cyprus- or Malta-flagged
@@ -303,16 +320,18 @@ along on whatever row the identity join resolves. Feeds two consumers:
    No registry dependency; can happen before anything else here.
 2. Separately, and independently of the rest of this plan: run `mmsi.R` against
    the newest Fjarskiptastofa xlsx (§4) to close item 17's 88-vid gap.
-3. Land `fro`/`nor`/`eu` under `$FISHYDATA/raw/external/`, one adapter each in
-   `sources/`, writing the shape in §5 to its own `curated/vessel/` table —
-   not into `vessel.parquet`/`vessel_identity.parquet`, and **not filtered by
-   flag** (§6) — keep the full EU file, query by demand.
-4. Match the NA_cs4 residual against the `eu`/`nor`/`fro` table by call sign,
-   time-aware, same construction as `R/vid_match.R`.
+3. Land `fro`/`nor`/`eu`/`gfw` (`fishing-vessels-v2.csv` only, not the effort
+   grids) under `$FISHYDATA/raw/external/`, one adapter each in `sources/`,
+   writing the shape in §5 to its own `curated/vessel/` table — not into
+   `vessel.parquet`/`vessel_identity.parquet`, and **not filtered by flag**
+   (§6) — keep the full EU file, query by demand.
+4. Match the NA_cs4 residual against the `eu`/`nor`/`fro`/`gfw` table — call
+   sign first, `gfw` by MMSI only since it has none — time-aware, same
+   construction as `R/vid_match.R`.
 5. Build the ASTD-derived identity table (§5/§6) for whatever is left
    unresolved by step 4 — every MMSI in `ping_union`/the residual, `astd_cat`
    kept as reference only, not a filter. What resolves against step 3's table
    is the fishing share; what doesn't is the non-fishing share, decided by
    that join, not by asking ASTD what it thinks a vessel is.
-6. Only then revisit whether `gfw` contributes anything beyond effort data, or
+6. Confirm what `dffc3970-....zip` (§6, still mid-copy) turns out to be, and
    whether Equasis's licensing question is worth raising with the maintainer.
