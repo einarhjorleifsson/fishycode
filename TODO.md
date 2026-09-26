@@ -322,3 +322,22 @@ plan 002. Blocked on item 15's disclosure rule, which decides what may leave
 
 **check:** plan 002's port list is built and item 15's disclosure rule exists.
 
+
+---
+
+## 21. GFW effort data may be worth cross-checking against STK
+**status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`
+
+Not a vessel registry — GFW's own effort grids are activity data, the same kind as
+`staging/ais/astd`, not identity like the rest of plan 008. Landed alongside it in
+`~/garbage/vessels_from_.../gfw/`, not yet moved into `$FISHYDATA`:
+`mmsi-daily-csvs-10-v1-5-2018.zip` (per-MMSI, 0.1°, 2018 only) and
+`fleet-daily-csvs-100-v2-2020.zip` (flag+geartype, 0.01°, 2020, no MMSI).
+
+Partners the maintainer has worked with have questioned GFW's data quality. The
+Icelandic fleet is exactly the population where that is answerable — STK is this
+project's own authoritative trail for it. A comparison here would be the same shape as
+`curate/checks/ais_key_landings.R` (report disagreement, never correct from it).
+
+**check:** a check exists comparing GFW-attributed Icelandic fishing effort against
+STK's own trail for at least one overlapping year (2018, via `mmsi-daily`).
