@@ -1,7 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** partly built — **§7 Phases 1–5 and 3b done 2026-09-27**, decisions
-035–039; Phase 6 (ASTD residual pass) onward still proposal ·
+**status:** partly built — **§7 Phases 1–5, 8 and 3b done 2026-09-27**,
+decisions 035–039; Phase 6 (ASTD residual pass) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
@@ -542,9 +542,10 @@ Three stages, each only trying what the previous left unmatched, against
 12,587 currently-unmatched vessel-class mobile-ids (23.8M pings): (1)
 `marinetraffic`, a direct `mobileid` join — 910; (2) `cs`, time-aware via
 `match_time_aware(id_col = "external_id")` — 193; (3) `mmsi`, same function —
-106. **1,209 candidates total, 9.05M pings** — none assigned, all routed to
-`curated/check/ais_key_foreign_candidates.parquet` for human review (Phase 8).
-11,378 mobile-ids remain for Phase 6's ASTD pass.
+106. **1,209 candidates total, 9.05M pings** — none assigned; written to
+`curated/check/ais_key_foreign_candidates.parquet` with a `needs_review` flag
+(§7 Phase 8: 1,206 unambiguous, 3 flagged and since resolved — not "all 1,209
+await review"). 11,378 mobile-ids remain for Phase 6's ASTD pass.
 
 **Correction found while building this**: §5's schema table said
 `vessel_identity_foreign.parquet` would carry a `marinetraffic_match` source
@@ -573,14 +574,30 @@ New targets: `vessels_eu`, `vessels_fro`, `vessels_nor`, `vessels_gfw`
 they stay the stable, already-reviewed Icelandic-fleet cascade; the foreign
 match is additive, downstream, and separately reviewable.
 
-### Phase 8 — Human review loop (the only place a human's judgement enters)
+### Phase 8 — Human review loop, narrowed to what actually needs it — **done 2026-09-27**, decision 039
 
-Marinetraffic's candidates and `ais_key_foreign`'s candidates both route to a
-person before anything is treated as fact — the former into the existing
-duals-sheet mechanism, the latter into a new `overrides/` entry once its shape
-is clear from what Phase 5 actually produces. Per `AGENTS.md`'s cycle rule,
-this is not optional scaffolding; it is the only legitimate way a foreign
-`external_id` becomes trusted.
+**Revised 2026-09-27**, after the maintainer asked plainly what judgement was
+actually needed: not "every candidate awaits review." `ais_key_foreign.R`
+cross-references each candidate against `vessel_identity_foreign_conflicts.R`'s
+own output and splits the 1,209 into 1,206 `needs_review == FALSE` (unique,
+unambiguous — the same bar the Icelandic cascade's own tier A/B matches clear
+with no per-row sign-off) and originally 4, now 0, still `needs_review == TRUE`.
+
+All 4 were resolved the same day, per the maintainer's instruction to make an
+educated guess by checking the real STK ping data: comparing each mobile-id's
+*actual observed* ping window against the full period history of every vessel
+competing for the flagged call sign/MMSI. One flag (`PUNTA VIXIA`) turned out
+to be a source data-quality artifact — a literal string `"null"` recorded as
+a call sign, fixed in `sources/eu/convert.R` (3 rows repo-wide), which made
+the flag disappear on rebuild rather than needing a judgement call at all. The
+other 3 were genuine but temporally irrelevant — a registry ambiguity from
+years before or unrelated to when the specific mobile-id actually pinged.
+Confirmed and recorded in `overrides/stk_foreign_identity_reviewed.csv`, with
+the reasoning per row; not yet wired to feed back into the matching cascade
+automatically. Per `AGENTS.md`'s cycle rule this is not optional scaffolding —
+it is the only legitimate way a flagged foreign `external_id` becomes trusted,
+and doing it once end-to-end (rather than deferring it) is what showed the
+`sources/eu` defect in the first place.
 
 ### Phase 9 — out of this plan's scope, but immediately unlocked: the trip construct
 

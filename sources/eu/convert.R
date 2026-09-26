@@ -83,7 +83,12 @@ stopifnot(n_valid == n_uvi)  # confirmed 2026-09-27; assert it stays true
 
 eu <- eu |>
   mutate(imo = if_else(is_valid_imo(uvi), uvi, NA_character_),
-         t1 = as.Date(t1), t2 = as.Date(t2)) |>
+         t1 = as.Date(t1), t2 = as.Date(t2),
+         # a literal string "null" (3 rows, cs only) - an export artifact,
+         # not a real NA, found while resolving reference/vessels/
+         # ais_key_foreign.R's cs_overlap flags on 2026-09-27 (a false
+         # positive traced to this)
+         cs = na_if(cs, "null")) |>
   select(-uvi)
 
 eu |>

@@ -119,6 +119,33 @@ still_unmatched <- nrow(unmatched) - n_distinct(candidates$mid)
 cat("\nstill unmatched after all three stages:", still_unmatched,
     "mobile-ids - plan 008 Phase 6's ASTD residual pass\n")
 
+## needs_review: does an external_id this candidate resolves to also appear in
+## curate/checks/vessel_identity_foreign_conflicts.R's own output? A blanket
+## "every candidate awaits review" was more caution than the evidence
+## supports - the Icelandic cascade's own tier A/B matches are auto-assigned
+## on the same evidentiary bar (unique, unambiguous) with no per-row sign-off,
+## and there is no principled reason to hold the foreign candidates to a
+## stricter standard just because they are foreign. Only a candidate whose
+## external_id sits inside a REAL flagged ambiguity - a call sign or MMSI the
+## registry itself shows two vessels claiming - gets held for a person to look
+## at; the rest are trusted the same way the Icelandic mechanical matches are.
+conflicts <- read_parquet(fd_curated("check", "vessel_identity_foreign_conflicts.parquet"))
+flagged_ids <- unique(conflicts$external_id[!is.na(conflicts$external_id)])
+review_reason <- conflicts |>
+  filter(!is.na(external_id)) |>
+  distinct(external_id, check) |>
+  group_by(external_id) |>
+  summarise(review_reason = paste(unique(check), collapse = ", "), .groups = "drop")
+
+candidates <-
+  candidates |>
+  mutate(needs_review = external_id %in% flagged_ids) |>
+  left_join(review_reason, by = "external_id")
+
+cat("\nneeds_review:\n")
+print(candidates |> count(needs_review))
+
 write_curated(candidates, fd_curated("check", "ais_key_foreign_candidates.parquet"),
               inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
-                         vessel_identity_foreign = fd_curated("vessel", "vessel_identity_foreign.parquet")))
+                         vessel_identity_foreign = fd_curated("vessel", "vessel_identity_foreign.parquet"),
+                         vessel_identity_foreign_conflicts = fd_curated("check", "vessel_identity_foreign_conflicts.parquet")))
