@@ -1,7 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** partly built — **§7 Phases 1–4 and 3b done 2026-09-27**, decisions
-035–038; Phase 5 (`ais_key_foreign.R`) onward still proposal ·
+**status:** partly built — **§7 Phases 1–5 and 3b done 2026-09-27**, decisions
+035–039; Phase 6 (ASTD residual pass) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
@@ -216,10 +216,16 @@ whatever the thinnest source provides. `basis` (`AGENTS.md`'s "recorded" /
 `marinetraffic`, which §6 confirms is one person's manual lookup rather than a
 registry extract.
 
-`source` distinguishes `marinetraffic_match` (already vid-candidate, highest
-trust), `fro`, `nor`, `eu`, `astd`. (`isl_fjarskiptastofa` drops out of this
-table — see §4, it is `mmsi.R`'s job, into the existing Icelandic `vid`
-keyspace, not this one.) **`cs` is the primary join key for matching, `mmsi`
+`source` distinguishes `fro`, `nor`, `eu`, `gfw`, `astd`. (`isl_fjarskiptastofa`
+drops out of this table — see §4, it is `mmsi.R`'s job, into the existing
+Icelandic `vid` keyspace, not this one. **`marinetraffic` drops out too —
+corrected 2026-09-27, while building Phase 5**: its rows are already-matched
+`mobileid`-keyed candidates, not vessel-registry periods with a native id and
+a time window, so forcing them into this table's `external_id`/`t1`/`t2`
+shape would be artificial. It stays what §5/Phase 5 already described it as —
+a direct `mobileid` join in `ais_key_foreign.R`, no registry dependency,
+handled separately from the time-aware cs/mmsi match below.) **`cs` is the
+primary join key for matching, `mmsi`
 secondary** — §6's EU measurement shows why: Ireland and the UK carry a call
 sign on essentially every active vessel and an MMSI on none, and NOR has no
 MMSI column at all. This is a statement about *evidence availability*, not
@@ -524,17 +530,27 @@ diffing `ais_key.R`'s full output against the last committed baseline via a
 git-stash A/B, not by trusting a single re-run. Fixed; baseline reproduced
 exactly (same row count, same tier/step counts).
 
-### Phase 5 — Candidate matching against STK (a new script, not a bigger `ais_key.R`)
+### Phase 5 — Candidate matching against STK — **done 2026-09-27**, decision 039
 
-`reference/vessels/ais_key_foreign.R`: reads `vessel_ais_key.parquet`'s
-currently-unmatched rows and `vessel_identity_foreign.parquet`, proposes an
-`external_id`/`source` for each via Phase 4's generalized functions — call
-sign first (evidence availability, §5), MMSI second, time-aware throughout.
-**Deliberately a separate script**, not folded into `ais_key.R` — that file is
-already ~700 lines and plan 003's own closing note warns against bundling a
-behaviour change with new logic in one pass. Its output is candidates for
-review, same as the marinetraffic list — nothing here assigns anything on its
-own authority.
+Built as planned: `reference/vessels/ais_key_foreign.R`, a **separate**
+script from `ais_key.R` (plan 003's own closing note against bundling a
+rewrite with new behaviour). Also built along the way:
+`reference/vessels/marinetraffic.R`, the small loader §7 Phase 2 called for
+and this session had skipped.
+
+Three stages, each only trying what the previous left unmatched, against
+12,587 currently-unmatched vessel-class mobile-ids (23.8M pings): (1)
+`marinetraffic`, a direct `mobileid` join — 910; (2) `cs`, time-aware via
+`match_time_aware(id_col = "external_id")` — 193; (3) `mmsi`, same function —
+106. **1,209 candidates total, 9.05M pings** — none assigned, all routed to
+`curated/check/ais_key_foreign_candidates.parquet` for human review (Phase 8).
+11,378 mobile-ids remain for Phase 6's ASTD pass.
+
+**Correction found while building this**: §5's schema table said
+`vessel_identity_foreign.parquet` would carry a `marinetraffic_match` source
+— wrong, for the reason §5 itself already gave in prose (see §5's own
+correction note). Fixed there and reflected here: `marinetraffic` was never
+meant to be, and now isn't, a row shape in that table.
 
 ### Phase 6 — ASTD residual pass
 
@@ -588,15 +604,17 @@ this plan's identity work exists to generalize onto.
 
 ### Suggested build order within the phases above
 
-1. Move the raw files (Phase 1).
-2. `sources/gfw/convert.R` — smallest, proves the pattern.
-3. `sources/eu/convert.R` — well-understood schema, IMO already validated.
-4. `sources/fro/convert.R` — the real work, no ambiguity once written.
-5. `sources/nor/convert.R`.
-6. ~~`reference/vessels/identity_foreign.R` + its conflicts check~~ — done.
-7. `R/vid_match.R`'s `id_col` generalization — small, reviewable diff.
-8. `reference/vessels/ais_key_foreign.R`.
-9. Human review pass (marinetraffic + `ais_key_foreign` candidates).
+1. ~~Move the raw files (Phase 1)~~ — done.
+2. ~~`sources/gfw/convert.R`~~ — done.
+3. ~~`sources/eu/convert.R`~~ — done.
+4. ~~`sources/fro/convert.R`~~ — done.
+5. ~~`sources/nor/convert.R`~~ — done (as `sources/norway/vessel_registry.R`).
+6. ~~`reference/vessels/identity_foreign.R` + its conflicts check~~ — done,
+   plus `vessel_identity_all.parquet` (Phase 3b, not originally planned).
+7. ~~`R/vid_match.R`'s `id_col` generalization~~ — done.
+8. ~~`reference/vessels/ais_key_foreign.R`~~ — done, plus
+   `reference/vessels/marinetraffic.R` (Phase 2's loader, built here instead).
+9. Human review pass (marinetraffic + `ais_key_foreign` candidates) — next.
 10. `curate/vessel_identity_astd.R`.
 11. `_targets.R` wiring for all of the above.
 12. Confirm `dffc3970-...zip` stays unmoved (§6 — already established it's a
