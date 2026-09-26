@@ -65,7 +65,39 @@ mt <- marinetraffic_matches |>
 stage1 <- unmatched |> inner_join(mt, by = "mid")
 cat("stage 1 (marinetraffic direct):", nrow(stage1), "\n")
 
-rest1 <- unmatched |> anti_join(stage1, by = ".rid")
+rest1a <- unmatched |> anti_join(stage1, by = ".rid")
+
+## Stage 1b: SKB - Icelandic pleasure craft, direct sknr join --------------
+## Not foreign at all - found 2026-09-27 while checking the residual's
+## highest-ping mobile-ids: `SKB*` glid values (confirmed by the maintainer:
+## Icelandic pleasure boats) are `sknr` codes in
+## raw/vessels/mmsi_iceland_archieves.parquet, the same archive
+## reference/vessels/registry.R reads - which excludes exactly this prefix
+## (`filter(!str_starts(sknr, "SKB"))`) when building vessel.parquet. That
+## exclusion has no decision record explaining it and looks mechanical, not a
+## deliberate policy call: SKB codes are alphanumeric and do not fit the
+## integer `vid` scheme vessel.parquet's join is built on, which is a reason
+## to keep them out of THAT table, not a reason to leave them unidentifiable
+## everywhere. 94 of 157 residual SKB mobile-ids resolve here (192,554 of
+## 256,292 SKB pings) - including mid 134242 (`SKB011`, "Matthíasarborg -
+## Prammi", 138,151 pings), one of the single largest entries in the whole
+## residual. `vessel.parquet` itself is untouched; this only gives these
+## mobile-ids an identity the same way the foreign cascade does, via their
+## own external_id space (`isl_pleasure_<sknr>`), not the Icelandic `vid`
+## registry's.
+mmsi_isl <- read_parquet(fd_raw("vessels", "mmsi_iceland_archieves.parquet"))
+skb <- mmsi_isl |>
+  filter(grepl("^SKB", sknr)) |>
+  arrange(sknr, desc(mmsi_t2)) |>
+  distinct(sknr, .keep_all = TRUE) |>
+  transmute(glid = sknr, .external_id = paste0("isl_pleasure_", sknr),
+            .name = nafn, .mmsi = mmsi,
+            .basis = "sknr_direct", .note = paste0("mmsi_cat=", mmsi_cat))
+
+stage_skb <- rest1a |> inner_join(skb, by = "glid")
+cat("stage 1b (isl pleasure craft, sknr direct):", nrow(stage_skb), "\n")
+
+rest1 <- rest1a |> anti_join(stage_skb, by = ".rid")
 
 ## Stage 2: cs, time-aware ------------------------------------------------------
 probe_cs <- rest1 |> transmute(.rid, val = glid, d1, d2)
@@ -195,6 +227,11 @@ candidates <-
                         external_id = .external_id, basis = .basis, note = .note,
                         candidate_name = .name, candidate_cs = .cs, candidate_mmsi = .mmsi,
                         source = "marinetraffic"),
+    if (nrow(stage_skb))
+      stage_skb |> transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
+                             external_id = .external_id, basis = .basis, note = .note,
+                             candidate_name = .name, candidate_cs = NA_character_,
+                             candidate_mmsi = .mmsi, source = "isl_pleasure_craft"),
     stage2 |> left_join(ident_lookup, by = "external_id") |>
       transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                 external_id, basis = .basis, note = .note,

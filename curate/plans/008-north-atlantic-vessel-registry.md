@@ -494,6 +494,14 @@ collapsed to 25,220 change-periods, spot-checked correct. Written with
 `write_curated()` — the **second** adopter after `harbour_codes.R` (TODO item
 12).
 
+**Revised 2026-09-27, decision 041**: FRO reuses call signs across vessels
+too (32 of 3,813), which a single-snapshot-per-vessel source has no event
+ledger to reveal on its own. Closed properly as a `t1`-ordered succession
+chain (every row's `t2` closed at the *next* row's `t1`, same construction as
+NOR's year-diffing) — the first attempt only closed the immediate
+predecessor of the current holder, which left a 3-deep chain (`XPRM`) still
+overlapping itself.
+
 A companion check, **`curate/checks/vessel_identity_foreign_conflicts.R`**
 (this one genuinely belongs in `curate/checks/`, matching its siblings) →
 `curated/check/vessel_identity_foreign_conflicts.parquet`: 20 MMSI overlaps,
@@ -546,6 +554,17 @@ Three stages, each only trying what the previous left unmatched, against
 `curated/check/ais_key_foreign_candidates.parquet` with a `needs_review` flag
 (§7 Phase 8: 1,206 unambiguous, 3 flagged and since resolved — not "all 1,209
 await review"). 11,378 mobile-ids remain for Phase 6's ASTD pass.
+
+**Extended 2026-09-27, decision 041, with a stage outside this plan's own
+scope**: `SKB`-prefixed mobile-ids turned out to be Icelandic pleasure craft,
+not foreign vessels at all — a direct `sknr` join against
+`raw/vessels/mmsi_iceland_archieves.parquet` (the same archive
+`reference/vessels/registry.R` already reads and excludes this exact prefix
+from) resolves 94 of them, including the single largest entry in the whole
+residual. Kept in `ais_key_foreign.R` since the shape of the problem is
+identical, tagged `source = "isl_pleasure_craft"` in its own `external_id`
+space — `vessel.parquet` itself untouched. TODO item 23 asks whether
+`registry.R`'s exclusion is worth revisiting now that its cost is measured.
 
 **Correction found while building this**: §5's schema table said
 `vessel_identity_foreign.parquet` would carry a `marinetraffic_match` source

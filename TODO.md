@@ -363,3 +363,26 @@ long enough to be segmented into trips at all, no matter how good that resolutio
 **check:** a ping carrying an `external_id` but no `vid` (plan 008's foreign match)
 survives into `curated/ais/trip.parquet` with a trip key, `hid1`/`hid2` resolved
 against `ports_all`.
+
+---
+
+## 23. Icelandic pleasure craft (SKB) have no entity_class or registry home
+**status:** open · **needs: maintainer** · **see:** `curate/decisions/041-fro-succession-and-skb-pleasure-craft.md`
+
+`reference/vessels/registry.R:35` excludes `sknr` starting `SKB` from `vessel.parquet`
+with no decision record explaining why — found to look mechanical (`SKB` codes are
+alphanumeric, never fit the integer `vid` join) rather than a deliberate policy call.
+Measured: 94 of 157 `SKB` mobile-ids in STK's unmatched residual resolve cleanly
+against `raw/vessels/mmsi_iceland_archieves.parquet`'s own `sknr` field (192,554 of
+256,292 pings) — including the single largest entry anywhere in the residual. A
+resolution path now exists (`ais_key_foreign.R`'s `isl_pleasure_craft` stage, `source`/
+`external_id` of their own, `vessel.parquet` untouched), but they still default to
+`entity_class == "vessel"` in the main cascade and sit in the unmatched residual
+looking like missed real vessels rather than a recognized class.
+
+**Asked of the maintainer:** should `R/entity_class.R` recognize `SKB` as its own
+class, and should `registry.R`'s exclusion be revisited now that it's shown to cost
+real, resolvable AIS coverage?
+
+**check:** `SKB`-prefixed mobile-ids carry a distinct `entity_class`, and
+`registry.R:35`'s exclusion has a decision record (kept or changed) either way.

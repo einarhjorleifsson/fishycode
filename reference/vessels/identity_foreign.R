@@ -75,6 +75,39 @@ fro <- read_parquet(fd_staging("fro", "vessel.parquet")) |>
     owner_name = owner, homeport
   )
 
+## FRO reuses call signs across vessels the same way EU does (plan 008 §5.0),
+## but a single snapshot per vessel has no event ledger to reveal it - found
+## 2026-09-27 while investigating why STK's highest-ping unmatched mobile-ids
+## kept turning up FRO call signs (e.g. mid 137182/OW2023, 58,699 pings).
+## Leaving every row's t2 unbounded made ALL of them "open," so
+## match_time_aware() correctly refused to pick one (plan 003 §1's own design:
+## two equally plausible candidates is "don't know," not a coin flip) - but
+## the ambiguity was manufactured, not real. 32 of 3,813 call signs are shared
+## (65 rows).
+##
+## First version closed only the immediate predecessor of the CURRENT
+## ("Í gildi") holder. Wrong for a 3-deep chain: XPRM's ODDNY (1947-2023,
+## Sokkið) and SÆHRÍMNIR (2022-2023, Selt til útlandið) both got closed at
+## MIÐENNI's (Í gildi, 2023-12-04) own t1 - but ODDNY and SÆHRÍMNIR then still
+## overlapped EACH OTHER for 2022-05-31 to 2023-12-03, which is exactly the
+## span an STK mobile-id's real ping (mid 102409, 2023-12-01) fell inside,
+## still unresolvable. Fixed properly: order every row in a shared-cs group by
+## its own t1 (ascending; a group's `Í gildi` row is usually last, since a
+## call sign is reused only after its previous holder is gone) and close each
+## row's t2 at the NEXT row's t1, same construction as NOR's year-diffing
+## below. A row whose successor's t1 is itself unknown (4 of 32 groups, where
+## the current holder's own registration date was never recorded) is left as
+## it was - there is nothing to close it against.
+fro <-
+  fro |>
+  group_by(cs) |>
+  arrange(t1, .by_group = TRUE) |>
+  mutate(.next_t1 = dplyr::lead(t1),
+         t2 = if_else(!is.na(cs) & dplyr::n() > 1 & is.na(t2) & !is.na(.next_t1),
+                      .next_t1 - 1, t2)) |>
+  ungroup() |>
+  select(-.next_t1)
+
 ## Norway — no IMO column at all (plan 008 §4), no MMSI either (plan 008
 ## §2/§6): external_id is always source-local, cs is the only join key.
 ## 22 one-year snapshots collapsed into change periods here - the adapter
