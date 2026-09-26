@@ -98,22 +98,46 @@ plan has to be scoped against it, not next to it:
 ## 5. Proposed shape (not built)
 
 A **new, separate** table — not a `vessel.parquet` extension — one row per
-(source, external id, attribute period):
+(source, external id, attribute period). The columns needed for AIS matching
+are just `external_id, name, cs, mmsi, imo, flag, t1, t2` — but the maintainer's
+instruction is to make this a real registry an analyst can open for its own
+sake, not a matching key with a few extras bolted on. Each source already
+carries far more than identity, measured against what actually landed:
 
-```
-source, external_id, name, cs, mmsi, imo, flag, t1, t2, loa, tonnage
-```
+| group | column | eu | fro | nor | astd | marinetraffic |
+|---|---|---|---|---|---|---|
+| identity | `name`, `cs`, `mmsi`, `imo` | ✓ | ✓ | ✓ (no mmsi) | ✓ (no cs) | ✓ |
+| registration | `registration_number`, `place_of_registration`, `first_registered_date`, `status` | ✓ | ✓ | — | — | — |
+| dimensions | `loa`, `lbp`/`length_registered`, `breadth`, `depth`, `draught` | ✓ (no draught) | ✓ | `loa`, `breadth` only | `length_registered`, `draught` | — |
+| tonnage/capacity | `gross_tonnage`, `net_tonnage`, `deadweight`, `passenger_capacity` | ✓ (no deadweight/pax) | `gross_tonnage`, `net_tonnage` | — | ✓ (all four) | — |
+| propulsion | `engine_power_kw`, `engine_power_aux_kw`, `n_engines`, `engine_type`, `engine_build_year` | `engine_power_kw`/`aux` only | ✓ (all but n_engines) | `engine_power_kw`, `engine_build_year` | — | — |
+| construction | `year_of_build`, `shipyard`, `hull_material`, `ice_class` | `year_of_build`, `hull_material` | ✓ (all four) | `year_of_build` | `year_of_build`, `ice_class` (`arcticshiptype`) | — |
+| classification | `vessel_type`/`segment`, `gear_main`, `gear_subsidiary_1..5`, `lloyds_cat`, `astd_cat` | ✓ (all, fishing-specific) | `vessel_type` (`Slag`, general) | — | `astd_cat`, `lloyds3_cat`/`lloyds5_cat` | `class` (general) |
+| ownership | `owner_name`, `owner_id`, `ownership_share`, `org_form` | — | `owner_name` | ✓ (all four) | — | — |
+| provenance | `source_file`, `retrieved_date`, `basis` | ✓ | ✓ | ✓ | ✓ | ✓ (`basis = "recorded"`, hand-curated — §6) |
+
+This is deliberately wider than `vessel.parquet`'s own columns
+(`loa`/`kw`/`n_engines`/`kw_total`/`grt`/`bwt`/`nwt`) — matching or exceeding it
+is the right bar, not falling short of what the Icelandic fleet already gets.
+Every column is sparse by source (NOR alone has no dimensions beyond `loa`/
+`breadth` and no tonnage at all; ASTD has no registration or ownership
+information at all — it is a broadcast feed, not a registry) — that sparsity
+is real and should show as `NA`, not be hidden by narrowing the schema to
+whatever the thinnest source provides. `basis` (`AGENTS.md`'s "recorded" /
+"reconstructed" / "synthesised") matters here specifically for
+`marinetraffic`, which §6 confirms is one person's manual lookup rather than a
+registry extract.
 
 `source` distinguishes `marinetraffic_match` (already vid-candidate, highest
-trust), `fro`, `nor`, `eu`. (`isl_fjarskiptastofa` drops out of this table —
-see §4, it is `mmsi.R`'s job, into the existing Icelandic `vid` keyspace, not
-this one.) **`cs` is the primary join key, `mmsi` secondary** — §6's EU
-measurement shows why: Ireland and the UK carry a call sign on essentially
-every active vessel and an MMSI on none, and NOR (§4's finding) has no MMSI
-column at all. Leading with `cs` also matches how `R/vid_match.R`'s cascade
-already prioritizes call sign over MMSI for the Icelandic fleet, so this table
-slots into the existing match order rather than requiring a new one. Feeds two
-consumers:
+trust), `fro`, `nor`, `eu`, `astd`. (`isl_fjarskiptastofa` drops out of this
+table — see §4, it is `mmsi.R`'s job, into the existing Icelandic `vid`
+keyspace, not this one.) **`cs` is the primary join key for identity, `mmsi`
+secondary** — §6's EU measurement shows why: Ireland and the UK carry a call
+sign on essentially every active vessel and an MMSI on none, and NOR has no
+MMSI column at all. Leading with `cs` for matching also matches how
+`R/vid_match.R`'s cascade already prioritizes call sign over MMSI for the
+Icelandic fleet — the wider metrics columns above don't change that, they ride
+along on whatever row the identity join resolves. Feeds two consumers:
 
 - **§3's 920 mobile-ids** → a candidate list for direct human review into
   `overrides/`, no registry dependency.
