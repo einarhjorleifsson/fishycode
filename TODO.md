@@ -257,38 +257,29 @@ measurements decide whether it is worth building; none has been done.
 **check:** plan 004's five measurements are recorded in its header.
 
 ## 17. Full review of the STK vessel match
-**status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`
+**status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`,
+`curate/plans/008-north-atlantic-vessel-registry.md`
 
-**Asked of the maintainer:** plan 003 step 8 — the ASTD identity table for
-foreign vessels, and locating where the FRO/NOR/EU/GFW registries you found on
-2026-09-22 now live (needed before that step can proceed).
+Reviewed 2026-09-22; steps 1–7 and 9 done (decisions 015, 020, 021, 032, 033,
+034). Step 8 (foreign-vessel identity) is absorbed by and built in plan 008 —
+`ais_key_foreign.R`'s six-stage cascade, 7,549 candidates proposed (decisions
+036, 039, 040, 041). Plan 008's own Phase 7 (`_targets.R` wiring) and ongoing
+candidate review remain open there, not here.
 
-2026-09-26: steps 6, 7, 9 are done — `curate/decisions/032`, `034`, `033`
-respectively. Step 8 paused, deliberately, mid-session: the maintainer is
-getting the FRO/NOR/EU/GFW registry files onto this machine first, so where
-they land can finally be recorded here instead of guessed at.
+**`TFPH`/`TFUT`** (named here since 2026-09-23 as "device changes hands
+mid-span, can't recover the split") **re-diagnosed 2026-09-27, more precisely
+wrong than that**: for `TFUT` at least, both `raw/vessels/vessel_v.parquet`
+(Oracle) and `raw/vessels/mmsi_iceland_archieves.parquet` (Fjarskiptastofa)
+show only two historical holders, both ending **1995** — the real mobile-id
+has pinged since 2019. The source data itself has no current holder, not a
+split we failed to recover. Same class as the 88-vid ask below.
 
-Reviewed 2026-09-22; the design, the re-measured baseline and the four superseded
-numbers are all in the plan. Two corrections came out of it and are declared:
-`ais_key_callsign_reuse.yml` and `stk_trail_time_outliers.yml`. The latter must land
-before `d2` is closed from evidence.
+**Asked of the maintainer:** the 88 Icelandic vids with no MMSI on record
+(`ais_key.R:16-19`'s own TODO note) plus `TFUT` above — a Fiskistofa/
+Fjarskiptastofa data refresh, not a code fix.
 
-2026-09-23: `ais_key_callsign_reuse.yml`'s candidate list reviewed one by one —
-3 fixed, 28 parked with reasons in `curate/decisions/020-reused-callsign-candidate-review.md`.
-None of it replaces the structural fix plan 003 describes; every row added is a
-patch on the same flat `cs` lookup.
-
-2026-09-23: the structural fix itself is done — `curate/decisions/021-cascade-matches-on-evidence.md`.
-The cascade matches on time-aware evidence against `vessel_identity` now, not a
-pasted `type` string. It surfaced (did not resolve) a residual: a single STK
-mobile-id has one `[d1,d2]` span, so when the same physical device changes hands
-without STK splitting the period, matching on identifiers alone cannot recover the
-split — `TFPH` and `TFUT` are the two large examples, both now visible in
-`check_ais_key_landings`/`check_ais_key_reused_callsign` rather than silently
-mismatched. Whether that is worth folding into step 6's `d2`-closing work is the
-maintainer's call.
-
-**check:** plan 003 step 8 is marked done in its own header.
+**check:** the 88-vid gap and `TFUT` both resolve against a refreshed pull, or
+this item states why they can't.
 
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`

@@ -75,3 +75,32 @@ like a missed real vessel. Recorded as TODO item 23.
 |---|---|---|
 | total candidates | 7,455 | **7,549** |
 | unmatched residual | 5,132 | **5,038** |
+
+## The three highest-ping non-`SKB` residual entries, checked individually
+
+The maintainer asked whether `TFUT`/`THAE`/`TFRA` might just be recent call
+signs our own data hasn't caught up with. Checked each, not assumed:
+
+- **`TFUT`** (mid 133558, 253,112 pings, 2019–2026) — **confirmed stale
+  source data, not a pipeline defect.** Both `raw/vessels/vessel_v.parquet`
+  (the raw Oracle extract) and `raw/vessels/mmsi_iceland_archieves.parquet`
+  (Fjarskiptastofa) show only the same two historical holders (`JÚLÍUS`,
+  `TÓMAS ÞORVALDSSON`), both ending **1995** — 24 years before this mobile-id
+  even starts pinging. Whoever holds `TFUT` today isn't in either source we
+  have access to. Same class as TODO item 17's existing "88 unmatched
+  Icelandic vids... Fiskistofa/Fjarskiptastofa lookup" ask — a fresher pull is
+  needed, not more code.
+- **`THAE`** (mid 101078, 185,887 pings, 2007–2016) — **mischaracterized in
+  the previous message as Icelandic; it is not.** `TH` is France's ITU prefix
+  (`TF` is Iceland's) — checked against `cs_prefix`. Genuinely absent from
+  `staging/eu/vessel_event.parquet` (zero rows for any French vessel named
+  `THAE`). Consistent with plan 008 §6's own finding: `eu` is the *fishing*
+  fleet register only, so a non-fishing French vessel would not be there at
+  all regardless of data freshness. In scope for plan 008, not resolvable
+  from data currently on hand.
+- **`TFRA`** (mid 101892) — **already adjudicated, nothing new to find.** Its
+  second period (2021-11-24 onward) already carries `vid = -1511` from the
+  `manuals` (duals-sheet) step — a person already reviewed this and
+  explicitly rejected `vid 1511` without naming a replacement. This is a
+  recorded human decision sitting in `raw/ais/stk/stk_mobile_match-and-duals.ods`,
+  not an unexamined residual.
