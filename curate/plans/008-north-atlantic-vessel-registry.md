@@ -122,9 +122,17 @@ consumers:
   → matched against `fro`/`nor`/`eu` by call sign, unfiltered by flag (§6),
   same cycle rule, same route through `overrides/`.
 - **The non-fishing share** (cargo/tanker/passenger/yacht — §6) is out of
-  reach for `fro`/`nor`/`eu` by construction. It stays plan 003 §4.5's job:
-  match against ASTD's own broadcast `vesselname`/`imonumber`/`flagcode`,
-  which carries every vessel type ASTD sees, not fishing vessels only.
+  reach for `fro`/`nor`/`eu` by construction. This is where §6's ASTD-derived
+  identity table does the work plan 003 §4.5 originally scoped as a one-off
+  lookup: a **second table**, same `(external_id, period)` shape, `source =
+  "astd"`, `external_id = mmsi`, built for every MMSI seen in `ping_union` or
+  the unmatched residual — **not filtered by `astd_cat`** (§6: the maintainer
+  finds it unreliable — real fishing vessels land in `Unknown`/`Other
+  activities`) and not a global ASTD summary. `astd_cat` rides along as a
+  reference column only; whether a row is "the fishing share" or "the
+  non-fishing share" is decided by whether it also resolves against
+  `eu`/`nor`/`fro`, not by this field. Equasis (§6) stays a later,
+  maintainer-gated option, not part of what gets built first.
 
 ## 6. Open, before this is built for real
 
@@ -198,12 +206,47 @@ consumers:
   `Handilsskip` (merchant, 151), general cargo, tug, offshore supply, RO-RO,
   container, passenger and tanker types (`fro` sample, 530 vessels checked).
   So EU and (likely) NOR bound only the fishing-vessel share of the unmatched
-  residual; the cargo/tanker/passenger/yacht share needs what plan 003 §4.5
-  originally scoped — ASTD's own broadcast identity, which is vessel-type
-  agnostic — or a general shipping registry (IMO/Equasis) neither this plan
-  nor 003 currently reaches for. `marinetraffic`'s `class` field (§3) already
-  spans exactly this range (cargo, tanker, passenger, yacht, sailing vessel,
-  …), which is further evidence the target population is not fishing-only.
+  residual. `marinetraffic`'s `class` field (§3) already spans cargo, tanker,
+  passenger, yacht, sailing vessel — further evidence the target population is
+  not fishing-only. Two ways to close the rest, one already in hand:
+
+  **ASTD itself, measured 2026-09-27** — `astd_cat` (a category ASTD assigns
+  to every broadcast, not something this plan has to derive) breaks 2.77
+  billion pings as: `Unknown` 1.13B (41%), `Fishing vessels` 552M (20%),
+  `Other activities` 332M (12%), `Passenger ships` 299M (11%), `General cargo
+  ships` 209M (8%), and eight more categories (bulk carriers, tankers of four
+  kinds, container, Ro-Ro, cruise, refrigerated cargo) at 8–46M each.
+
+  **The maintainer flags `astd_cat` itself as unreliable** — a lot of genuine
+  fishing vessels land in `Unknown` and `Other activities` rather than
+  `Fishing vessels`, so `astd_cat != 'Fishing vessels'` is **not** a safe
+  fishing/non-fishing split (it would silently keep real fishing vessels in
+  what's meant to be the non-fishing table, duplicating EU/NOR/FRO rather than
+  complementing them). This still confirms plan 003 §4.5's original idea is
+  worth building out properly rather than as a one-off lookup, just without
+  trusting `astd_cat` as the filter: a real ASTD-derived identity table — one
+  row per `mmsi` with `vesselname`/`imonumber`/`flagcode`/`gross_tonnage`/
+  `astd_cat` carried along **for reference, not as a filter** — built for
+  every MMSI that actually appears in `staging/ais/ping_union` or the
+  unmatched STK residual (2.77B rows is not something to summarize globally).
+  Fishing/non-fishing then has to be decided the same way the rest of this
+  plan already decides identity: by whether the MMSI/call sign also resolves
+  against `eu`/`nor`/`fro`, not by asking ASTD what it thinks it is. This needs
+  no new source and no licensing question — ASTD is already a consumed input
+  here.
+
+  **Equasis** (EMSA-backed, free after registration, ~85,000 merchant ships
+  over 100 GT, all types including fishing) is the "EU registry of all
+  vessels" the maintainer asked to check — it exists, and it does carry
+  MMSI/IMO/call sign/flag/GT/type per ship. But its own terms of use say the
+  data "may [not] be stored in a retrieval system... without prior permission
+  in writing," which is exactly what landing it under `$FISHYDATA` would be —
+  unlike NOR/EU/FRO's open-data exports, this is a **maintainer licensing
+  call, not a scoping one**, before any automated use. Its 100 GT floor also
+  means it mainly reaches the larger end of the non-fishing gap (cargo, tanker,
+  passenger, bulk) that ASTD's own `astd_cat` already surfaces — so it would
+  be corroboration for names ASTD already gives, not a new population, and
+  the ASTD-derived table above is the lower-friction path to try first.
 - **Provenance/licensing**: these are vendor/scraped files, not Oracle — worth
   a line in the eventual `dump/` or `sources/` script about where each came
   from and when, matching how `raw/external/hreidar/` and
@@ -240,7 +283,12 @@ consumers:
    `sources/`, writing the shape in §5 to its own `curated/vessel/` table —
    not into `vessel.parquet`/`vessel_identity.parquet`, and **not filtered by
    flag** (§6) — keep the full EU file, query by demand.
-4. Match the NA_cs4 residual's fishing-vessel share against the consolidated
-   table by call sign, time-aware, same construction as `R/vid_match.R`. The
-   non-fishing share routes to plan 003 §4.5's ASTD lookup instead (§5/§6).
-5. Only then revisit whether `gfw` contributes anything beyond effort data.
+4. Match the NA_cs4 residual against the `eu`/`nor`/`fro` table by call sign,
+   time-aware, same construction as `R/vid_match.R`.
+5. Build the ASTD-derived identity table (§5/§6) for whatever is left
+   unresolved by step 4 — every MMSI in `ping_union`/the residual, `astd_cat`
+   kept as reference only, not a filter. What resolves against step 3's table
+   is the fishing share; what doesn't is the non-fishing share, decided by
+   that join, not by asking ASTD what it thinks a vessel is.
+6. Only then revisit whether `gfw` contributes anything beyond effort data, or
+   whether Equasis's licensing question is worth raising with the maintainer.
