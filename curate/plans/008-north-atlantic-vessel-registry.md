@@ -104,6 +104,68 @@ instruction is to make this a real registry an analyst can open for its own
 sake, not a matching key with a few extras bolted on. Each source already
 carries far more than identity, measured against what actually landed:
 
+### 5.0 Identity is a hierarchy, not one key — and the maintainer's point applies here too
+
+Decision 015 already established this for the Icelandic fleet: `vid` is the
+keel, everything else is an attribute of it *at a time*. The maintainer's
+correction extends the same reasoning to the foreign sources, with a stability
+ranking: **IMO** (assigned once, follows the hull like `vid` does) >
+**MMSI** (mostly stable — reassignment is rare even outside Iceland, per the
+maintainer, though not never) > **call sign** ("more notorious", i.e. changes
+more often) > **vessel name** (least stable of all). Measured against the EU
+file, which is the one source with enough history to check this directly —
+grouping by `CFR` (its own keel-equivalent id) across each vessel's full event
+history:
+
+| attribute | CFRs where it changed at least once |
+|---|---|
+| MMSI | 119 |
+| IRCS (call sign) | 2,369 |
+| Name of vessel | 29,290 (16% of all 183,748) |
+
+One example makes the point concretely: `CFR BEL030151975` kept the same call
+sign (`OPAO`) across eleven registry events from 1989 to 2021, while being
+renamed twice (`STEPHANIE` → `ZILVERMEEUW` → `CALYPSO`) and having its MMSI
+appear from nothing, then change again, all under the one stable `CFR`. A flat
+join on name or a "current" MMSI snapshot would have silently attributed
+pings from the wrong period to the wrong identity — precisely the class of bug
+decision 015 fixed for `TFBR`/HÓLMBERG (§3.1 of plan 003), now shown to apply
+to the foreign fleet too.
+
+**Consequence for `external_id`**: use IMO (or the EU/UVI field, where it is
+an IMO number — needs confirming against the EU documentation when this is
+built, since UVI is IMO for larger vessels and an EU-only scheme number for
+smaller ones) wherever it exists — it is the only identifier safe to match
+**across** sources. Where IMO is absent, fall back to the source's own
+registration id (`CFR`, FRO's `vid`, `Fartøy ID`) — safe **within** that
+source only, never merged across sources on the strength of a shared MMSI,
+call sign or name alone.
+
+**Consequence for the table's shape**: this is not one flat row per vessel.
+It is `vessel_identity.parquet`'s own shape (decision 015), generalized from
+`vid` to `external_id` — one row per `(source, external_id, period)`, and the
+period's grain follows what each source actually evidences, not a single
+assumed cadence:
+
+- `eu`: the registry's own `Event Start Date`/`Event End Date` **are** the
+  attribute-period boundaries already — don't collapse to "current" the way
+  §6's active-fleet count did for measurement purposes; that collapse was for
+  counting vessels, not for this table.
+- `nor`: one sheet per year (2001–2022) — a change window can be inferred by
+  diffing consecutive years' call sign/name per `Fartøy ID`.
+- `fro`/`gfw`: no observed change history — one open window per vessel,
+  `window_basis = "unbounded"` (mirroring `identity.R`'s own column of that
+  name), not evidence of stability, just absence of a second observation.
+
+**Consequence for matching**: joining this table against STK/AIS must go
+through the attribute's own window at the ping's time, exactly like
+`R/vid_match.R`'s `match_time_aware()`/`confirm_vid()`/`match_identity_pair()`
+already do against `vessel_identity.parquet` — those functions generalize
+directly from `vid` to `external_id` with no new logic needed. A flat join
+(candidate MMSI or call sign against whatever this table's "latest" row says)
+is exactly the mistake decision 015 fixed once already; it should not be
+reintroduced here by accident.
+
 | group | column | eu | fro | nor | astd | gfw | marinetraffic |
 |---|---|---|---|---|---|---|---|
 | identity | `name`, `cs`, `mmsi`, `imo` | ✓ | ✓ | ✓ (no mmsi) | ✓ (no cs) | `mmsi` only (no name, no cs) | ✓ |
@@ -138,13 +200,18 @@ registry extract.
 `source` distinguishes `marinetraffic_match` (already vid-candidate, highest
 trust), `fro`, `nor`, `eu`, `astd`. (`isl_fjarskiptastofa` drops out of this
 table — see §4, it is `mmsi.R`'s job, into the existing Icelandic `vid`
-keyspace, not this one.) **`cs` is the primary join key for identity, `mmsi`
+keyspace, not this one.) **`cs` is the primary join key for matching, `mmsi`
 secondary** — §6's EU measurement shows why: Ireland and the UK carry a call
 sign on essentially every active vessel and an MMSI on none, and NOR has no
-MMSI column at all. Leading with `cs` for matching also matches how
-`R/vid_match.R`'s cascade already prioritizes call sign over MMSI for the
-Icelandic fleet — the wider metrics columns above don't change that, they ride
-along on whatever row the identity join resolves. Feeds four consumers:
+MMSI column at all. This is a statement about *evidence availability*, not
+stability — §5.0 already measured `cs` as the more *volatile* of the two. The
+two facts don't conflict: leading with `cs` because it's there more often is
+safe only because the match goes through its own time window (§5.0), the same
+way `R/vid_match.R`'s cascade already prioritizes call sign over MMSI for the
+Icelandic fleet without that being unsafe — time-awareness is precisely what
+makes preferring a volatile-but-available field over a stable-but-sparse one
+work. The wider metrics columns above ride along on whatever row the identity
+join resolves. Feeds four consumers:
 
 - **§3's 920 mobile-ids** → a candidate list for direct human review into
   `overrides/`, no registry dependency.
