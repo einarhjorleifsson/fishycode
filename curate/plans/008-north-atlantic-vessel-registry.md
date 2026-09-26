@@ -4,9 +4,10 @@
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
-*2026-09-26. Scoping only, at the maintainer's request, while source files are
-still landing in `~/garbage/vessels_from_home-haf-einarhj-stasi-fishydata-dataraw`
-— outside `$FISHYDATA`, so nothing here is a `$FISHYDATA` claim yet.*
+*2026-09-26, expanded 2026-09-27 into a full build plan (§7) once EU/FRO/NOR/GFW
+finished landing in `~/garbage/vessels_from_home-haf-einarhj-stasi-fishydata-dataraw`
+— still outside `$FISHYDATA`, so nothing here is a `$FISHYDATA` claim yet; §7
+is a design, not a build log.*
 
 ## 1. Why this is its own plan, not plan 003 step 8
 
@@ -16,6 +17,20 @@ that — five sources, of which one (§3 below) is not a national registry at al
 but an **already-built match table** that answers plan 003's open question more
 directly than ASTD would. This plan scopes the whole set; it does not replace
 003 step 8, it absorbs and extends it.
+
+**The aim is broader than plan 003's consumer, deliberately.** STK vid-matching
+for fishing vessels is the first thing that will use this data inside the
+`fishy***` construct, and it is what §5–§7 below are ordered around — but it is
+not what the registry *is for*. The maintainer's instruction: keep options
+open. Concretely, that means the registry is not narrowed to whatever plan
+003's cascade happens to need this month — not filtered to fishing vessels
+(§6), not filtered to assumed-relevant flags (§6), not trimmed to the handful
+of columns AIS matching reads (§5) — because a general north-Atlantic vessel
+data asset that outlives this particular consumer is worth more than a
+matching table with a few extra columns. `curated/vessel/vessel_identity_foreign.parquet`
+(§7) is written as a first-class table in its own right, the way `products/`
+holds things the sweep produces for more than one purpose — the STK-matching
+use in §7 phases 4–5 is its first consumer, not its only reason to exist.
 
 ## 2. What exists, measured 2026-09-26 (still copying — EU/ISL/marinetraffic
 complete, FRO and gfw growing, NOR just finished)
@@ -132,14 +147,17 @@ pings from the wrong period to the wrong identity — precisely the class of bug
 decision 015 fixed for `TFBR`/HÓLMBERG (§3.1 of plan 003), now shown to apply
 to the foreign fleet too.
 
-**Consequence for `external_id`**: use IMO (or the EU/UVI field, where it is
-an IMO number — needs confirming against the EU documentation when this is
-built, since UVI is IMO for larger vessels and an EU-only scheme number for
-smaller ones) wherever it exists — it is the only identifier safe to match
-**across** sources. Where IMO is absent, fall back to the source's own
-registration id (`CFR`, FRO's `vid`, `Fartøy ID`) — safe **within** that
-source only, never merged across sources on the strength of a shared MMSI,
-call sign or name alone.
+**Consequence for `external_id`**: use IMO wherever it exists — the only
+identifier safe to match **across** sources. **Confirmed 2026-09-27**: EU's
+`UVI` field, wherever populated (3,753 of 183,748 vessels), passes the IMO
+check-digit algorithm (`d7 == (7·d1+6·d2+5·d3+4·d4+3·d5+2·d6) mod 10`) on
+every single row — it is not merely "IMO for larger vessels," it is IMO, full
+stop, whenever present; there is no separate EU-only scheme number to
+disambiguate. Where IMO is absent (the other 98%, mostly smaller vessels never
+eligible for an IMO number), fall back to the source's own registration id
+(`CFR`, FRO's `vid`, `Fartøy ID`) — safe **within** that source only, never
+merged across sources on the strength of a shared MMSI, call sign or name
+alone.
 
 **Consequence for the table's shape**: this is not one flat row per vessel.
 It is `vessel_identity.parquet`'s own shape (decision 015), generalized from
@@ -381,24 +399,170 @@ join resolves. Feeds four consumers:
   `raw/vessels/`, which §4 establishes is reserved for the Oracle dump. Not
   moved yet, per the maintainer's own hold.
 
-## 7. Proposed order, once the copy is done and files are moved into `raw/`
+## 7. Build plan (expanded 2026-09-27 — FRO/NOR/EU/GFW copy complete)
 
-1. Review the 920-mobile-id marinetraffic candidate list by hand → `overrides/`.
-   No registry dependency; can happen before anything else here.
-2. Separately, and independently of the rest of this plan: run `mmsi.R` against
-   the newest Fjarskiptastofa xlsx (§4) to close item 17's 88-vid gap.
-3. Land `fro`/`nor`/`eu`/`gfw` (`fishing-vessels-v2.csv` only, not the effort
-   grids) under `$FISHYDATA/raw/external/`, one adapter each in `sources/`,
-   writing the shape in §5 to its own `curated/vessel/` table — not into
-   `vessel.parquet`/`vessel_identity.parquet`, and **not filtered by flag**
-   (§6) — keep the full EU file, query by demand.
-4. Match the NA_cs4 residual against the `eu`/`nor`/`fro`/`gfw` table — call
-   sign first, `gfw` by MMSI only since it has none — time-aware, same
-   construction as `R/vid_match.R`.
-5. Build the ASTD-derived identity table (§5/§6) for whatever is left
-   unresolved by step 4 — every MMSI in `ping_union`/the residual, `astd_cat`
-   kept as reference only, not a filter. What resolves against step 3's table
-   is the fishing share; what doesn't is the non-fishing share, decided by
-   that join, not by asking ASTD what it thinks a vessel is.
-6. Confirm what `dffc3970-....zip` (§6, still mid-copy) turns out to be, and
-   whether Equasis's licensing question is worth raising with the maintainer.
+Ordered so each phase is independently buildable and testable, and so a
+mistake in a later phase can't force redoing an earlier one. Nothing below is
+built yet.
+
+### Phase 1 — Land raw data (mechanical, no judgment calls)
+
+Move, don't transform:
+
+```
+$FISHYDATA/raw/external/eu/vesselRegistryListResults.csv (+ dated snapshot)
+$FISHYDATA/raw/external/fro/vid-*.csv                     (~21,000+ files)
+$FISHYDATA/raw/external/nor/norway_vessel-registry.xlsx, downlod_vessels.R
+$FISHYDATA/raw/external/gfw/fishing-vessels-v2.csv, README-fishing-vessels-v2.txt
+$FISHYDATA/raw/external/marinetraffic/*.xlsx, *.txt
+```
+
+The two effort-grid zips (`fleet-daily-csvs-100-v2-2020.zip`,
+`mmsi-daily-csvs-10-v1-5-2018.zip`) are TODO item 21's concern, not this
+plan's — leave them out of this move, or land them at
+`raw/external/gfw/effort/` separately if convenient, but they feed no target
+described below. `dffc3970-...zip` (§6) is confirmed a duplicate of files
+already present individually — not moved at all.
+
+### Phase 2 — Adapters (`raw/` → `staging/<name>/`), literal translations only
+
+One per source, matching `sources/<name>/convert.R` → target `<name>`
+(`AGENTS.md`'s naming rule 5). Each adapter's job is to reshape its source's
+native layout into one row per **native record** with the broad §5 columns —
+no cross-source reasoning, no `external_id` resolution, no period-collapsing.
+That reasoning belongs to Phase 3, once, in one place, not duplicated four
+times.
+
+- **`sources/gfw/convert.R`** → `staging/gfw/vessel.parquet`. Smallest and
+  cleanest — a single CSV, one row per MMSI already. Keep the identity columns
+  (§5's table); drop `fishing_hours_2012..2020` (activity, not identity — item
+  21's concern if ever revisited). Build this one first to prove the pattern.
+- **`sources/eu/convert.R`** → `staging/eu/vessel_event.parquet`. One row per
+  `(CFR, event)`, unchanged from the source's own event ledger —
+  `t1 = "Event Start Date"`, `t2 = "Event End Date"` are already the right
+  period boundaries (§5.0), nothing to infer. Rename `UVI` → `imo` only where
+  it passes the checksum (§5.0 — confirmed always true when populated, but
+  assert it in the adapter rather than assuming, since a future EU export
+  could change this).
+- **`sources/fro/convert.R`** → `staging/fro/vessel.parquet`. The one with
+  real code to write: loop over ~21,000 long-format (`variable,value,vid_id`)
+  files, `pivot_wider`, one row per FRO `vid`. Check during construction
+  whether any field carries a status-change date (the one sample seen had
+  `Status: Selt til útlandið` with no adjacent date — if genuinely absent
+  across the corpus, `t2` is `unbounded`, §5.0; don't assume, check first).
+- **`sources/nor/convert.R`** → `staging/nor/vessel_year.parquet`. Row-bind
+  all 22 year-sheets with a `year` column — literal, one row per
+  `(Fartøy ID, year)`, no collapsing. Collapsing consecutive identical years
+  into one period is a Phase 3 job (§5.0), not this adapter's.
+- **`marinetraffic` is not a `sources/` adapter.** Per `AGENTS.md`, a
+  hand-curated, human-reviewed input is an `overrides/`-shaped thing, not a
+  source system — and §6 already confirmed it's one person's manual lookups,
+  not a registry extract. A small loader (`reference/vessels/marinetraffic.R`,
+  alongside `registry.R`/`identity.R`/`mmsi.R`) reads the two xlsx files
+  directly — no `staging/` needed at ~1,230 rows — and serves two consumers:
+  **(a)** the 920-mobile-id review list, promoted (after a human looks at
+  each) into the *existing* `stk_mobile_match-and-duals.ods` mechanism
+  `ais_key.R` already reads, rather than inventing new plumbing; **(b)** rows
+  contributing `source = "marinetraffic"` to Phase 3's merge, `basis =
+  "recorded"` but flagged as hand-curated (§6) in a note column, since a
+  disagreement against a registry means "which one is wrong," not "the scrape
+  mis-parsed something."
+
+### Phase 3 — Merge into one table (`curate/vessel_identity_foreign.R`)
+
+The one place `external_id`, period-collapsing and cross-source reasoning
+happen — everything upstream stays literal so this is the only place a bug in
+that reasoning can hide.
+
+1. Read `staging/eu`, `staging/fro`, `staging/nor` (year-diffed into change
+   periods here — per `Fartøy ID`, compare consecutive years' `cs`/name and
+   emit one row per span of no change, not one row per year), `staging/gfw`,
+   and `reference/vessels/marinetraffic.R`'s output.
+2. `external_id = imo` where a valid IMO exists (§5.0); otherwise
+   `paste0(source, "_", native_id)` (`eu_<CFR>`, `fro_<vid>`, `nor_<FartøyID>`)
+   — safe within-source only, per §5.0, never merged across sources without
+   IMO.
+3. Emit one row per `(source, external_id, period)`, full §5 column set,
+   `t1`/`t2` from whatever each source's own Phase 2 output evidences.
+4. Write with `write_curated()`, not `duckdbfs::write_dataset()`/
+   `nanoparquet::write_parquet()` — this is a materialised data frame (no lazy
+   duckdb relation, no partitioned directory), so none of TODO item 12's
+   blockers apply. This would be the **second** writer to adopt it, after
+   `harbour_codes.R` — worth noting in the eventual decision record, since
+   item 12 is still open and this closes a little of it for free.
+5. A companion check, `curate/checks/vessel_identity_foreign_conflicts.R` →
+   `curated/check/vessel_identity_foreign_conflicts.parquet`: the same shape
+   as `identity.R`'s own `overlaps`/`gaps` assertions (§5.0) — an MMSI
+   resolving to two `external_id`s at once, or the same IMO appearing under
+   two sources with conflicting core facts. Reports; never resolves, per the
+   cycle rule.
+
+### Phase 4 — Generalize the matcher, don't duplicate it
+
+`R/vid_match.R`'s `match_time_aware()`/`confirm_vid()`/`match_identity_pair()`
+are currently hardcoded to a column named `vid` (the calling code in
+`ais_key.R` does `rename(.vid = vid)` against their output). Add an
+`id_col = "vid"` parameter (default preserves every existing call site
+unchanged) so the same three functions work against
+`vessel_identity_foreign.parquet` with `id_col = "external_id"`. This is the
+whole point of `AGENTS.md`'s "shared functions live in `ramb`, never copied" —
+the smallest possible diff, not a second matcher.
+
+### Phase 5 — Candidate matching against STK (a new script, not a bigger `ais_key.R`)
+
+`reference/vessels/ais_key_foreign.R`: reads `vessel_ais_key.parquet`'s
+currently-unmatched rows and `vessel_identity_foreign.parquet`, proposes an
+`external_id`/`source` for each via Phase 4's generalized functions — call
+sign first (evidence availability, §5), MMSI second, time-aware throughout.
+**Deliberately a separate script**, not folded into `ais_key.R` — that file is
+already ~700 lines and plan 003's own closing note warns against bundling a
+behaviour change with new logic in one pass. Its output is candidates for
+review, same as the marinetraffic list — nothing here assigns anything on its
+own authority.
+
+### Phase 6 — ASTD residual pass
+
+After Phase 5, whatever STK mobile-ids are still unmatched (against both the
+Icelandic registry and the new foreign one) get checked against ASTD,
+restricted to exactly those MMSIs — never a global 2.77-billion-row scan.
+`curate/vessel_identity_astd.R` appends `source = "astd"` rows to
+`vessel_identity_foreign.parquet` (or a companion table, if keeping ASTD's
+distinct provenance separate reads better when this is actually built) for
+whatever resolves; `astd_cat` rides along as reference only (§5.0/§6 — not a
+fishing/non-fishing filter).
+
+### Phase 7 — `_targets.R` wiring
+
+New targets: `vessels_eu`, `vessels_fro`, `vessels_nor`, `vessels_gfw`
+(Phase 2); `vessel_identity_foreign`, `vessel_identity_foreign_conflicts`
+(Phase 3); `ais_key_foreign` (Phase 5, depends on `vessel_ais_key` +
+`vessel_identity_foreign`); `vessel_identity_astd` (Phase 6). The existing
+`vessel_ais_key` target and its script are **not modified** by this plan —
+they stay the stable, already-reviewed Icelandic-fleet cascade; the foreign
+match is additive, downstream, and separately reviewable.
+
+### Phase 8 — Human review loop (the only place a human's judgement enters)
+
+Marinetraffic's candidates and `ais_key_foreign`'s candidates both route to a
+person before anything is treated as fact — the former into the existing
+duals-sheet mechanism, the latter into a new `overrides/` entry once its shape
+is clear from what Phase 5 actually produces. Per `AGENTS.md`'s cycle rule,
+this is not optional scaffolding; it is the only legitimate way a foreign
+`external_id` becomes trusted.
+
+### Suggested build order within the phases above
+
+1. Move the raw files (Phase 1).
+2. `sources/gfw/convert.R` — smallest, proves the pattern.
+3. `sources/eu/convert.R` — well-understood schema, IMO already validated.
+4. `sources/fro/convert.R` — the real work, no ambiguity once written.
+5. `sources/nor/convert.R`.
+6. `curate/vessel_identity_foreign.R` + its conflicts check.
+7. `R/vid_match.R`'s `id_col` generalization — small, reviewable diff.
+8. `reference/vessels/ais_key_foreign.R`.
+9. Human review pass (marinetraffic + `ais_key_foreign` candidates).
+10. `curate/vessel_identity_astd.R`.
+11. `_targets.R` wiring for all of the above.
+12. Confirm `dffc3970-...zip` stays unmoved (§6 — already established it's a
+    duplicate) and whether Equasis's licensing question is worth raising with
+    the maintainer.
