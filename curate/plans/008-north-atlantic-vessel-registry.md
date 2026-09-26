@@ -1,7 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** partly built — **§7 Phases 1–2 done 2026-09-27**, decision 035;
-Phase 3 (merge script) onward still proposal ·
+**status:** partly built — **§7 Phases 1–3 done 2026-09-27**, decisions 035–036;
+Phase 4 (generalize `R/vid_match.R`) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
@@ -469,34 +469,32 @@ times.
   disagreement against a registry means "which one is wrong," not "the scrape
   mis-parsed something."
 
-### Phase 3 — Merge into one table (`curate/vessel_identity_foreign.R`)
+### Phase 3 — Merge into one table — **done 2026-09-27**, decision 036
 
-The one place `external_id`, period-collapsing and cross-source reasoning
-happen — everything upstream stays literal so this is the only place a bug in
-that reasoning can hide.
+Built as **`reference/vessels/identity_foreign.R`**, not
+`curate/vessel_identity_foreign.R` as first written here — matching the
+existing convention that vessel-domain scripts (`registry.R`, `identity.R`,
+`mmsi.R`, `ais_key.R`) live together in `reference/vessels/` regardless of
+layer; `identity.R` itself is a merge step and lives there too. The one place
+`external_id`, period-collapsing and cross-source reasoning happen —
+everything upstream stays literal so this is the only place a bug in that
+reasoning can hide.
 
-1. Read `staging/eu`, `staging/fro`, `staging/nor` (year-diffed into change
-   periods here — per `Fartøy ID`, compare consecutive years' `cs`/name and
-   emit one row per span of no change, not one row per year), `staging/gfw`,
-   and `reference/vessels/marinetraffic.R`'s output.
-2. `external_id = imo` where a valid IMO exists (§5.0); otherwise
-   `paste0(source, "_", native_id)` (`eu_<CFR>`, `fro_<vid>`, `nor_<FartøyID>`)
-   — safe within-source only, per §5.0, never merged across sources without
-   IMO.
-3. Emit one row per `(source, external_id, period)`, full §5 column set,
-   `t1`/`t2` from whatever each source's own Phase 2 output evidences.
-4. Write with `write_curated()`, not `duckdbfs::write_dataset()`/
-   `nanoparquet::write_parquet()` — this is a materialised data frame (no lazy
-   duckdb relation, no partitioned directory), so none of TODO item 12's
-   blockers apply. This would be the **second** writer to adopt it, after
-   `harbour_codes.R` — worth noting in the eventual decision record, since
-   item 12 is still open and this closes a little of it for free.
-5. A companion check, `curate/checks/vessel_identity_foreign_conflicts.R` →
-   `curated/check/vessel_identity_foreign_conflicts.parquet`: the same shape
-   as `identity.R`'s own `overlaps`/`gaps` assertions (§5.0) — an MMSI
-   resolving to two `external_id`s at once, or the same IMO appearing under
-   two sources with conflicting core facts. Reports; never resolves, per the
-   cycle rule.
+Result: `curated/vessel/vessel_identity_foreign.parquet`, 1,223,205 rows,
+319,576 distinct `external_id` (43,111 resolved to a real IMO rather than a
+source-local id — close to the sum of each source's own distinct count, so
+cross-source IMO merging is real but rare so far). NOR's 153,755 year-rows
+collapsed to 25,220 change-periods, spot-checked correct. Written with
+`write_curated()` — the **second** adopter after `harbour_codes.R` (TODO item
+12).
+
+A companion check, **`curate/checks/vessel_identity_foreign_conflicts.R`**
+(this one genuinely belongs in `curate/checks/`, matching its siblings) →
+`curated/check/vessel_identity_foreign_conflicts.parquet`: 20 MMSI overlaps,
+1,472 call-sign overlaps, 843 same-IMO-different-flag cases (this last check
+isn't time-aware yet, so most are plausibly ordinary reflagging over the
+years, not errors — narrow before using it for review). Reports; never
+resolves, per the cycle rule.
 
 ### Phase 4 — Generalize the matcher, don't duplicate it
 
@@ -578,7 +576,7 @@ this plan's identity work exists to generalize onto.
 3. `sources/eu/convert.R` — well-understood schema, IMO already validated.
 4. `sources/fro/convert.R` — the real work, no ambiguity once written.
 5. `sources/nor/convert.R`.
-6. `curate/vessel_identity_foreign.R` + its conflicts check.
+6. ~~`reference/vessels/identity_foreign.R` + its conflicts check~~ — done.
 7. `R/vid_match.R`'s `id_col` generalization — small, reviewable diff.
 8. `reference/vessels/ais_key_foreign.R`.
 9. Human review pass (marinetraffic + `ais_key_foreign` candidates).
