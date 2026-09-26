@@ -117,9 +117,14 @@ consumers:
 
 - **§3's 920 mobile-ids** → a candidate list for direct human review into
   `overrides/`, no registry dependency.
-- **The remaining foreign residual** (NA_cs4's 19.2M pings, foreign call signs
-  with no registry at all per plan 003 §4.7) → matched against `fro`/`nor`/`eu`
-  by call sign, same cycle rule, same route through `overrides/`.
+- **The fishing-vessel share of the remaining foreign residual** (NA_cs4's
+  19.2M pings, foreign call signs with no registry at all per plan 003 §4.7)
+  → matched against `fro`/`nor`/`eu` by call sign, unfiltered by flag (§6),
+  same cycle rule, same route through `overrides/`.
+- **The non-fishing share** (cargo/tanker/passenger/yacht — §6) is out of
+  reach for `fro`/`nor`/`eu` by construction. It stays plan 003 §4.5's job:
+  match against ASTD's own broadcast `vesselname`/`imonumber`/`flagcode`,
+  which carries every vessel type ASTD sees, not fishing vessels only.
 
 ## 6. Open, before this is built for real
 
@@ -128,43 +133,77 @@ consumers:
   expects an R script may arrive alongside it — likely the fetch/build script,
   which would also be where its own provenance note belongs, same as `NOR`'s
   `downlod_vessels.R`.
-- **EU scope — measured 2026-09-27.** 23 states, 1,079,981 rows, 183,748
-  distinct vessels (`CFR`), but this is an event ledger (`Event` = `CEN` first
-  registration, `MOD` modified, `RET`/`DES`/`EXP` exit, etc.) — most of those
-  183,748 are **historical**, not fishing today. Taking each vessel's own
-  latest event as "current" and excluding the three exit event types leaves
-  the real active-fleet count, and it changes the picture a lot:
+- **EU scope — measured 2026-09-27, revised same day.** First pass wrongly
+  scoped this by *assumed* geography (a "north Atlantic flags" whitelist). The
+  maintainer's correction: STK/ASTD will show a Cyprus- or Malta-flagged
+  vessel exactly when a flag-of-convenience hull turns up near Iceland, which
+  is precisely the case a geography assumption is blind to. Measured instead,
+  against the actual unmatched population — every `entity_class == "vessel"`
+  mobile-id in today's key with no `vid`, its `glid` matched against
+  `staging/aux/callsign_prefix.parquet` (longest-prefix match, so this is a
+  flag-state guess, not a country in the strict sense — Denmark's block also
+  covers Faroese-administered call signs, which is why it dominates by ping
+  count and is not evidence of that many literally-Danish vessels):
 
-  | flag | CFRs (all history) | **active** | active w/ MMSI | active w/ IRCS |
-  |---|---|---|---|---|
-  | ESP | 27,384 | 8,533 | 5,868 (69%) | 1,991 (23%) |
-  | FRA | 19,270 | 6,000 | 4,518 (75%) | 4,971 (**83%**) |
-  | PRT | 22,088 | 6,861 | 2,098 (31%) | 2,374 (35%) |
-  | IRL | 4,988 | 2,028 | **0 (0%)** | 2,001 (99%) |
-  | DNK | 8,118 | 1,774 | 194 (11%) | 708 (40%) |
-  | DEU | 4,189 | 1,144 | 147 (13%) | 341 (30%) |
-  | SWE | 3,802 | 977 | 287 (29%) | 977 (100%) |
-  | POL | 1,598 | 824 | 205 (25%) | 588 (71%) |
-  | NLD | 2,755 | 766 | 369 (48%) | 451 (59%) |
-  | BEL | 252 | 60 | 60 (100%) | 60 (100%) |
-  | GBR | 91 | 50 | **0 (0%)** | 47 (94%) |
+  | guessed flag | mobile-ids | pings |
+  |---|---|---|
+  | Denmark (incl. Faroese-administered call signs) | 959 | 12.1M |
+  | United Kingdom | 4,315 | 2.77M |
+  | Norway | 530 | 2.48M |
+  | Netherlands | 382 | 1.00M |
+  | France | 204 | 0.60M |
+  | Sweden | 248 | 0.54M |
+  | **Bahamas** | 206 | 0.51M |
+  | Iceland | 15 | 0.46M |
+  | **Antigua and Barbuda** | 188 | 0.40M |
+  | **Cyprus** | 97 | 0.30M |
+  | **Malta** | 235 | 0.29M |
+  | Portugal | 128 | 0.29M |
+  | **Barbados** | 96 | 0.23M |
+  | **Liberia** | 285 | 0.16M |
+  | **Marshall Islands** | 331 | 0.13M |
+  | **Panama** | 293 | 0.11M |
+  | … 88 more, smaller | | |
 
-  Two things follow. **The active fleet across these 11 flags is ~29,000
-  vessels, not 183,748** — that is the number to plan matching effort against.
-  And **IRCS (call sign), not MMSI, is the join key to lead with**: Ireland and
-  the UK carry a call sign for essentially every active vessel and an MMSI for
-  none, and several other flags are IRCS-heavier too. That matches how STK's
-  own cascade already prioritizes call sign over MMSI (`R/vid_match.R`), so no
-  new matching strategy is needed — just this registry joined the same way.
-  GBR's 91 total rows (down from a UK-wide fleet Brexit removed from the EU
-  register) is a leftover, not a gap worth chasing.
+  Bahamas/Antigua/Cyprus/Malta/Barbados/Liberia/Marshall Islands/Panama
+  (bold) are exactly the flag-of-convenience registries a "north Atlantic"
+  assumption would have dropped — 105 guessed flags appear at all, and this
+  covers 23.5M of the 23.8M unmatched pings. **Conclusion: don't pre-filter
+  the EU file by flag at all.** At 371M/1.08M rows it is cheap enough to keep
+  whole and query by demand — filter at match time (which flags actually
+  appear in the residual, this table, re-measured as the residual changes),
+  never by an assumption made once up front.
 
-  DNK, DEU, GBR, IRL, NLD, POL, FRA, SWE, BEL are the plausible north-Atlantic
-  flags; ESP/PRT fish there too (distant-water/NAFO fleets) but are large and
-  mostly non-north-Atlantic-resident — worth a maintainer call on whether to
-  keep them at full size or filter by gear/area. The remaining ~14 EU states
-  (ITA, GRC, HRV, CYP, MLT, BGR, ROU, LVA, LTU, EST, SVN, FIN) are dead weight
-  for this purpose.
+  Still measured and worth keeping regardless of the flag question: this is an
+  **event ledger** (`Event` = `CEN` first registration, `MOD`, `RET`/`DES`/`EXP`
+  exit, etc.), and taking each vessel's latest event while excluding the three
+  exit types separates the ~29,000 active vessels (across DNK/DEU/GBR/IRL/NLD
+  /POL/FRA/SWE/BEL alone) from the 183,748-row historical total — worth
+  re-running per-flag once flag scope is demand-driven rather than assumed.
+  And **IRCS, not MMSI, is the join key to lead with**: Ireland and the UK
+  carry a call sign on essentially every active vessel and an MMSI on none,
+  matching how `R/vid_match.R`'s cascade already prioritizes call sign for the
+  Icelandic fleet — no new matching strategy needed, just this registry joined
+  the same way.
+
+- **Fishing vessels are not the whole target — confirmed 2026-09-27.** The
+  maintainer's second correction: AIS/STK carries every vessel type, and two
+  of these three sources structurally cannot help with most of them. The EU
+  file's `Vessel Type` codes (`FX`, `GO`, `TO`, `MOX`, …) are EU fleet-segment
+  gear codes — it is the **EU Fishing Fleet Register**, fishing vessels only,
+  by construction (`CFR` registration itself is fisheries-specific). `NOR`
+  comes from Fiskeridirektoratet (the Directorate of *Fisheries*) and is very
+  likely the same, unconfirmed. `FRO` is the outlier and is **not**
+  fishing-only: its own `Slag` (type) field spans `Fiskiskip` (fishing, 291),
+  `Handilsskip` (merchant, 151), general cargo, tug, offshore supply, RO-RO,
+  container, passenger and tanker types (`fro` sample, 530 vessels checked).
+  So EU and (likely) NOR bound only the fishing-vessel share of the unmatched
+  residual; the cargo/tanker/passenger/yacht share needs what plan 003 §4.5
+  originally scoped — ASTD's own broadcast identity, which is vessel-type
+  agnostic — or a general shipping registry (IMO/Equasis) neither this plan
+  nor 003 currently reaches for. `marinetraffic`'s `class` field (§3) already
+  spans exactly this range (cargo, tanker, passenger, yacht, sailing vessel,
+  …), which is further evidence the target population is not fishing-only.
 - **Provenance/licensing**: these are vendor/scraped files, not Oracle — worth
   a line in the eventual `dump/` or `sources/` script about where each came
   from and when, matching how `raw/external/hreidar/` and
@@ -199,7 +238,9 @@ consumers:
    the newest Fjarskiptastofa xlsx (§4) to close item 17's 88-vid gap.
 3. Land `fro`/`nor`/`eu` under `$FISHYDATA/raw/external/`, one adapter each in
    `sources/`, writing the shape in §5 to its own `curated/vessel/` table —
-   not into `vessel.parquet`/`vessel_identity.parquet`.
-4. Match the NA_cs4 residual against the consolidated table by call sign,
-   time-aware, same construction as `R/vid_match.R`.
+   not into `vessel.parquet`/`vessel_identity.parquet`, and **not filtered by
+   flag** (§6) — keep the full EU file, query by demand.
+4. Match the NA_cs4 residual's fishing-vessel share against the consolidated
+   table by call sign, time-aware, same construction as `R/vid_match.R`. The
+   non-fishing share routes to plan 003 §4.5's ASTD lookup instead (§5/§6).
 5. Only then revisit whether `gfw` contributes anything beyond effort data.
