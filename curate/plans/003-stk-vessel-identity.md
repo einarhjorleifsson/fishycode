@@ -1,6 +1,6 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1–6 done, 2026-09-26**; steps 7–9 open ·
+**status:** partly built — **steps 1–7 and 9 done, 2026-09-26**; step 8 open ·
 **see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
 `curate/decisions/013-stk-derived-ids-are-equipment.md`,
 `curate/decisions/014-stk-vid-assignment-checks.md`,
@@ -539,10 +539,18 @@ Ordered by measured payoff per unit of risk, not by interest.
    172 mobile-id periods: 49 clean handovers closed at their real last ping, 82
    genuine overlaps left open and unresolved (a human call for `overrides/`).
    `ais_key_registry.R`'s `two_mids_open` 137 → 95, no vid assignment changed.
-7. **Tier column** (§4.4), then make `AGENTS.md` true or delete the sentence.
+7. ~~**Tier column** (§4.4), then make `AGENTS.md` true or delete the sentence~~
+   — **done 2026-09-26**, `curate/decisions/034-tier-column-earns-the-agents-claim.md`.
+   A–E from the cascade's own step order, `loid_cs`/`afmadur` placed (they
+   postdate this section); no assigned vid goes untiered. `AGENTS.md`'s claim
+   is left as written — it is now true.
 8. **ASTD identity table** (§4.5), and the foreign-vid candidates into `overrides/`.
-9. **Resolve the `n >= 10` filter** (§3.5) deliberately, and re-measure everything
-   above against whichever way it goes.
+9. ~~**Resolve the `n >= 10` filter** (§3.5) deliberately~~ — **done 2026-09-26**,
+   `curate/decisions/033-n10-filter-resolved-at-mid-level.md`. Restored, not
+   deleted, but at mobile-id lifetime total rather than the original per-year
+   grouping — the literal fix orphans 166 MMSI-or-15m+ vids' only AIS trace, the
+   lifetime version orphans 0. Key rows 31,862 → 19,234; distinct assigned vid
+   3,038 → 2,820; coverage essentially unchanged (62.39% → 62.48% vid).
 
 Steps 1–4 are additive: nothing already assigned changes, so they can land without
 rebuilding the AIS trail. Step 5 changes assignments and forces a rebuild of

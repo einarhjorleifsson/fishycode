@@ -228,13 +228,29 @@ lnd <-
 STK <-
   open_dataset(fd_raw("ais", "stk", "trail"))
 mobile <- open_dataset(fd_raw("ais", "stk", "mobile.parquet"))
+# Plan 003 §3.5: this filter never filtered. The second `mutate(n = n())` ran on
+# UNGROUPED data, so it overwrote the count with nrow() of the whole trail, and
+# `n >= 10` was therefore always TRUE.
+#
+# Restored deliberately, not as literally written. The original grouped by
+# (mid, year): measured 2026-09-26, that drops 12,822 mobile-ids whose lifetime
+# average is ~2.1 pings - clearly noise - but ALSO drops 264 vids' only mobile-id
+# outright, because a vessel pinging 5-10 times a year across several years never
+# clears 10 in any SINGLE year even though its lifetime total is fine (up to 43
+# pings, spread thin). 166 of those 264 carry an MMSI or are 15 m+ - exactly the
+# "should be trackable" population §4.7 calls the real gap, so the per-year split
+# would have handed the completeness check 166 false negatives.
+#
+# Grouping by mid alone (lifetime total, not per year) removes the same noise
+# population - 12,628 mobile-ids, same ~2 pings/mobile-id average - while
+# orphaning only 203 vids, ZERO of which carry an MMSI or are 15 m+. That is the
+# threshold actually applied here.
 stk <-
   STK |>
-  group_by(mid, year) |>
-  mutate(n = n()) |>
-  ungroup() |>
+  group_by(mid) |>
   mutate(n = n()) |>
   filter(n >= 10) |>
+  ungroup() |>
   left_join(mobile) |>
   group_by(mid, loid, glid) |>
   summarise(pings = n(),
@@ -670,6 +686,41 @@ stk14 |>
 stk14 |>
   filter(!is.na(vid), entity_class != "vessel") |>
   knitr::kable(caption = "vid assigned to a non-vessel (expect none)")
+
+# Reliability tier -------------------------------------------------------------
+# AGENTS.md calls vessel_ais_key "a fitted model... it carries confidence" - it
+# never did; the cascade's step order IS a confidence ranking, it was just
+# unlabelled. Plan 003 §4.4 makes it a column instead of a document:
+#   A - identifier stated twice, agreeing (vid_vid, vid2_vid2): loid == glid and
+#       both parse as a registered vid. Not time-gated - a vid is the keel, not
+#       an attribute at a time (AGENTS.md).
+#   B - identifier stated once, corroborated by a second field, time-aware
+#       against vessel_identity (vid_cs, vid2_cs, uid_cs, NA_vid, loid_cs).
+#   C - human review (manuals): the duals spreadsheet, entered by a person.
+#   D - single weak field, no corroborating field (NA_csts, NA_mmsi), or a
+#       structural inference resting on absence of a clash rather than a second
+#       identifier confirming the first (afmadur - decision 013).
+#   E - inherited guess (older): a previous session's match, gated only on
+#       pings > 100 - the script's own comment calls it a hail mary.
+# Tier is not automatically trust-worthy even at A: mid 101661's vid_vid match
+# resolves to vid -2605, which nothing here validates - see
+# curate/checks/ais_key_registry.R's negative_vid check.
+.tier_map <- c(vid_vid = "A", vid2_vid2 = "A",
+              vid_cs = "B", vid2_cs = "B", uid_cs = "B", NA_vid = "B", loid_cs = "B",
+              manuals = "C",
+              NA_csts = "D", NA_mmsi = "D", afmadur = "D",
+              older = "E")
+stk14 <- stk14 |> mutate(tier = unname(.tier_map[step]))
+rm(.tier_map)
+
+stk14 |>
+  filter(!is.na(vid), is.na(tier)) |>
+  knitr::kable(caption = "vid assigned but no tier - a step is missing from .tier_map (expect none)")
+stk14 |>
+  filter(!is.na(vid)) |>
+  count(tier, step) |>
+  arrange(tier, -n) |>
+  knitr::kable(caption = "Reliability tier (plan 003 §4.4)")
 
 # SAVE THE STUFF ---------------------------------------------------------------
 stk14 |>
