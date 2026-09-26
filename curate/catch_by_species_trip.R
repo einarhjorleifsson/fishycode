@@ -4,7 +4,7 @@
 # Input:  curated/logbook/{trip,station,catch}.parquet, curated/logbook/lid_map.parquet
 #         curated/landing/catch.parquet
 # Output: curated/logbook/catch_by_species_trip.parquet
-#         columns: vid, .tid (logbook trip), .tid_land (landing trip), sid,
+#         columns: vid, .tid (logbook trip), .lid (landing trip), sid,
 #         catch_logbook, catch_landings
 #
 # Built to test a specific hypothesis (2026-09-25): does logbook sid 445 show
@@ -36,23 +36,23 @@ logbook_by_trip_species <-
   inner_join(open_dataset(fd_curated("logbook", "station.parquet")), by = c(".tid", "schema")) |>
   inner_join(open_dataset(fd_curated("logbook", "catch.parquet")), by = c(".sid", "schema")) |>
   left_join(open_dataset(fd_curated("logbook", "lid_map.parquet")), by = c(".tid", "schema")) |>
-  filter(!is.na(.tid_land)) |>
-  group_by(vid, .tid, .tid_land, sid) |>
+  filter(!is.na(.lid)) |>
+  group_by(vid, .tid, .lid, sid) |>
   summarise(catch_logbook = sum(catch, na.rm = TRUE), .groups = "drop") |>
   collect()
 
 ## Landed catch, summed by species per landing trip -------------------------------
 landings_by_trip_species <-
   open_dataset(fd_curated("landing", "catch.parquet")) |>
-  group_by(.tid_land, sid) |>
+  group_by(.lid, sid) |>
   summarise(catch_landings = sum(catch, na.rm = TRUE), .groups = "drop") |>
   collect()
 
 ## Join, in-process (both sides are already small post-aggregation) --------------
 out <-
   logbook_by_trip_species |>
-  full_join(landings_by_trip_species, by = c(".tid_land", "sid")) |>
-  select(vid, .tid, .tid_land, sid, catch_logbook, catch_landings) |>
+  full_join(landings_by_trip_species, by = c(".lid", "sid")) |>
+  select(vid, .tid, .lid, sid, catch_logbook, catch_landings) |>
   arrange(vid, .tid, sid)
 
 ## Spot-check: a species whose codes are believed to already align (cod, sid 1) --

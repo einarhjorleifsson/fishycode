@@ -1,10 +1,10 @@
 # Match merged logbook trips to landing register records.
-# Builds a .tid → .tid_land crosswalk and writes it to lid_map.parquet.
+# Builds a .tid → .lid crosswalk and writes it to lid_map.parquet.
 #
 # Input:  data/logbooks/{trip,station,fishing_sample,catch}.parquet
 #         data/landings/{landings,catch}.parquet
 #         data/gear/gear_mapping.parquet
-# Output: data/logbooks/lid_map.parquet  — columns: .tid, schema, .tid_land, match_type
+# Output: data/logbooks/lid_map.parquet  — columns: .tid, schema, .lid, match_type
 #
 # Does NOT write back into trip.parquet. It used to (left_join(lid_map) then
 # overwrite trip.parquet in place) - that made logbook.R's own declared output
@@ -12,12 +12,12 @@
 # it: whichever ran last "won", so the other looked permanently outdated on
 # every subsequent check regardless of whether any real input had changed. See
 # curate/decisions/025-lid_map-stops-overwriting-trip-parquet.md. A consumer
-# that wants .tid_land/match_type alongside trip.parquet joins lid_map.parquet
+# that wants .lid/match_type alongside trip.parquet joins lid_map.parquet
 # onto it themselves, e.g. docs/landings-match.qmd already does.
 #
 # Eight-step cascade in decreasing key specificity.
 # Each step operates only on trips/landings not consumed by earlier steps and
-# accepts only unambiguous matches (exactly one .tid_land candidate per .tid).
+# accepts only unambiguous matches (exactly one .lid candidate per .tid).
 #
 #   Step 1 — exact (vid, date, hid)
 #   Step 2 — (vid, date±1, hid): overnight trips / midnight-straddle
@@ -40,8 +40,10 @@ DATE_ERR_THRESHOLD  <- 35L        # days; larger deviation flags likely wrong-da
 DATE_ERR_WINDOW     <- 3L         # ± days around expected date to search
 
 ## Landing register -------------------------------------------------------------
-# One row per (vid × date × hid); catch summed across species.
-# Multiple .lids on the same key are collapsed to min(.lid) = .tid_land.
+# One row per (vid × date × hid); catch summed across species. The collapse
+# from multiple per-delivery records to one trip-level `.lid` (min of the raw
+# id within the group, per source) happens upstream in curate/landing.R, not
+# here - this script only reads the already-collapsed curated table.
 #
 # No upper date bound - the earlier `date <= ymd("2025-12-12")` was a literal
 # carried over verbatim from the pre-restructuring codebase (git blame:
@@ -54,11 +56,23 @@ DATE_ERR_WINDOW     <- 3L         # ± days around expected date to search
 land <-
   duckdbfs::open_dataset(fd_curated("landing", "landings.parquet")) |> collect() |>
   filter(vid > 0, date >= ymd("2007-09-01")) |>
+  # Renamed to schema_land: curate/plans/007 added a landings-side `schema`
+  # (agf/lods), which otherwise collides with this script's own `schema`
+  # (the logbook source system, afli/fs_afladagbok/adb) once trip and land
+  # are joined below - dplyr would silently produce schema.x/schema.y and
+  # every downstream `select(schema, ...)` would fail (measured 2026-09-26).
+  # NOT a fix for the deeper issue this rename exposed: 104,192 `.lid`
+  # values are shared between agf-schema and lods-schema rows, and every
+  # uniqueness check in the cascade below (n_distinct(.lid), %in%) keys
+  # on `.lid` alone, not `(.lid, schema_land)` - a loose match step
+  # could in principle treat an agf and an unrelated lods candidate as one
+  # unambiguous match. Flagged, not hardened, here (curate/plans/007 §4).
+  rename(schema_land = schema) |>
   left_join(
     duckdbfs::open_dataset(fd_curated("landing", "catch.parquet")) |> collect() |>
-      group_by(.tid_land) |>
+      group_by(.lid) |>
       summarise(catch = sum(catch), .groups = "drop"),
-    by = ".tid_land"
+    by = ".lid"
   )
 
 ## Logbook trips with total catch -----------------------------------------------
@@ -84,7 +98,7 @@ try_match <- function(unmatched, land_tbl, by, type) {
   unmatched |>
     inner_join(land_tbl, by = by) |>
     group_by(.tid) |>
-    filter(n_distinct(.tid_land) == 1) |>
+    filter(n_distinct(.lid) == 1) |>
     slice(1) |>
     ungroup() |>
     mutate(match_type = type)
@@ -93,7 +107,7 @@ try_match <- function(unmatched, land_tbl, by, type) {
 try_match_weight <- function(unmatched, land_tbl, consumed_land, tol, gap, type) {
   unmatched |>
     inner_join(
-      land_tbl |> filter(!.tid_land %in% consumed_land),
+      land_tbl |> filter(!.lid %in% consumed_land),
       by = c("vid", "date")
     ) |>
     mutate(score = abs(log(catch / catch_land))) |>
@@ -123,7 +137,7 @@ land_pm2 <- bind_rows(
 # Step 2: date ±1 day, port still required
 m2 <- try_match(
   trip     |> filter(!.tid      %in% m1$.tid),
-  land_pm1 |> filter(!.tid_land %in% m1$.tid_land),
+  land_pm1 |> filter(!.lid %in% m1$.lid),
   c("vid", "date", "hid"),
   "02 exact ±1 day"
 )
@@ -131,7 +145,7 @@ m2 <- try_match(
 # Step 3: same day, port dropped
 m3 <- try_match(
   trip |> filter(!.tid      %in% c(m1$.tid,      m2$.tid)),
-  land |> filter(!.tid_land %in% c(m1$.tid_land, m2$.tid_land)),
+  land |> filter(!.lid %in% c(m1$.lid, m2$.lid)),
   c("vid", "date"),
   "03 vid_date"
 )
@@ -139,7 +153,7 @@ m3 <- try_match(
 # Step 4: ±1 day, port dropped
 m4 <- try_match(
   trip     |> filter(!.tid      %in% c(m1$.tid,      m2$.tid,      m3$.tid)),
-  land_pm1 |> filter(!.tid_land %in% c(m1$.tid_land, m2$.tid_land, m3$.tid_land)),
+  land_pm1 |> filter(!.lid %in% c(m1$.lid, m2$.lid, m3$.lid)),
   c("vid", "date"),
   "04 vid_date ±1"
 )
@@ -149,7 +163,7 @@ m4 <- try_match(
 # ±3 drops the signal-to-ambiguity ratio from 11:1 to ~2:1; not worth the risk.
 m5 <- try_match(
   trip     |> filter(!.tid      %in% c(m1$.tid,      m2$.tid,      m3$.tid,      m4$.tid)),
-  land_pm2 |> filter(!.tid_land %in% c(m1$.tid_land, m2$.tid_land, m3$.tid_land, m4$.tid_land)),
+  land_pm2 |> filter(!.lid %in% c(m1$.lid, m2$.lid, m3$.lid, m4$.lid)),
   c("vid", "date"),
   "05 vid_date ±2"
 )
@@ -175,7 +189,7 @@ trip_gear <-
 # Combined land table covering date 0 and ±1 for weight steps
 land_w <- bind_rows(land, land_pm1) |> rename(catch_land = catch)
 
-consumed_so_far <- c(m1$.tid_land, m2$.tid_land, m3$.tid_land, m4$.tid_land, m5$.tid_land)
+consumed_so_far <- c(m1$.lid, m2$.lid, m3$.lid, m4$.lid, m5$.lid)
 
 # Step 6: demersal weight match — tight tolerance
 unmatched_dem <- trip |>
@@ -197,7 +211,7 @@ unmatched_pel <- trip |>
 
 m7 <- try_match_weight(
   unmatched_pel, land_w,
-  c(consumed_so_far, m6$.tid_land),
+  c(consumed_so_far, m6$.lid),
   tol = WEIGHT_TOL_PELAGIC, gap = WEIGHT_MIN_GAP,
   type = "07 weight_pel"
 )
@@ -248,18 +262,18 @@ m8 <- unmatched_post7 |>
   rename(exp_date = expected_date) |>
   select(.tid, vid, schema, exp_date, catch) |>
   inner_join(
-    land_exp |> filter(!.tid_land %in% c(consumed_so_far, m6$.tid_land, m7$.tid_land)),
+    land_exp |> filter(!.lid %in% c(consumed_so_far, m6$.lid, m7$.lid)),
     by = c("vid", "exp_date")
   ) |>
   group_by(.tid) |>
-  filter(n_distinct(.tid_land) == 1) |>
+  filter(n_distinct(.lid) == 1) |>
   slice(1) |>
   ungroup() |>
   mutate(match_type = "08 expected_date")
 
 ## Assemble lid_map -------------------------------------------------------------
 lid_map <- bind_rows(m1, m2, m3, m4, m5, m6, m7, m8) |>
-  select(.tid, schema, .tid_land, match_type)
+  select(.tid, schema, .lid, match_type)
 
 # Summary: matches per step and cumulative coverage
 lid_map |>

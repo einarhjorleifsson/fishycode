@@ -765,19 +765,42 @@ succeeds, the richer station-level spatial information is preferred; the
 landing-form area serves only as a fallback.
 
 **Grouping raw landing records into a landing-trip.** In practice a landing
-source can carry several raw records — several `.lid`s — sharing one
-`(vid, date, hid)`: split deliveries, or gear-disaggregated entries recorded
-separately. These must be collapsed to one landing-trip before matching to a
-logbook trip, or the match becomes many-to-one instead of one-to-one. The
-collapsed group gets its own synthetic id, `.tid_land` (= `min(.lid)` within
-the group, catch summed): a landings-side counterpart to the logbook's `.tid`,
-in its own namespace. It is deliberately **not** called `.tid` — see "The
-column vocabulary" below on why a synthetic trip key is reserved per source
-system and never shared across them, even where the real-world concept lines
-up. The eventual match between a landing-trip (`.tid_land`) and a logbook trip
-(`.tid`) is still made the way this section already says — via the natural
-keys, not by treating the two synthetic ids as comparable — and is stored as
-its own crosswalk table (`.tid` ↔ `.tid_land`) rather than a shared column.
+source's raw records are more granular than a trip — one row per delivery, or
+per delivery × species × buyer — several sharing one `(vid, date, hid)`: split
+deliveries, or gear-disaggregated entries recorded separately. These are
+collapsed to one landing-trip before matching to a logbook trip, or the match
+becomes many-to-one instead of one-to-one. The trip-level `.lid` this section
+already describes (`min` of the raw record id within the group, catch summed)
+is the survivor of that collapse: the raw per-record id does not itself appear
+in the curated table, so there is no second grain competing for the name
+`.lid` within one table — reusing it across the collapse boundary is safe for
+exactly that reason, not a relaxation of the next section's "never shared"
+rule (`.lid` was always landings' own reserved name; the question was only
+whether landings needed a second reserved name for the pre-collapse grain,
+and it doesn't once that grain is gone). The eventual match between a
+landing-trip (`.lid`) and a logbook trip (`.tid`) is still made the way this
+section already says — via the natural keys, not by treating the two
+synthetic ids as comparable — and is stored as its own crosswalk table
+(`.tid` ↔ `.lid`) rather than a shared column.
+
+**When landings themselves come from more than one source system** (as in
+fishydata: `agf`, live since 2007, and `lods`, its legacy predecessor, kept
+in parallel rather than retired — see `curate/plans/007`), the same
+reservation the next section states for `.tid` applies to `.lid` too: each
+source's raw record-id domain is independent, and nothing guarantees two
+source systems never produce the same numeric id by coincidence. This is not
+hypothetical: `agf`/`lods`'s two raw id fields (`londun_id`, `komunr`)
+overlap by 70,173 values, and worse, `komunr` turned out to be a recycled
+loading-batch code rather than a stable per-delivery id - reusing it directly
+produced ~1.1M colliding rows even within `lods` alone, before a fix
+(`curate/plans/007` §5: `lods`'s trip key is now minted as a hash of
+`(vid, date, hid)` rather than derived from `komunr`, which eliminated every
+observed collision, cross-schema and within-`lods` alike). A landings table
+spanning more than one source system therefore carries its own `schema`
+column, and any join or uniqueness check on `.lid` is really on
+`(.lid, schema)` — exactly as for `.tid` across `afli`/`fs_afladagbok`/`adb`;
+a hash reducing observed collisions to zero is not the same as a structural
+guarantee, and the composite key remains the correct thing to rely on.
 
 ## The column vocabulary
 
@@ -830,13 +853,13 @@ Three naming conventions are worth making explicit:
 - **A synthetic key is reserved to one source system, never shared.** `.tid`
   and `.sid` bare (no suffix) mean the *logbook's* trip and station — the
   logbook is this grammar's reference system, so its own identifiers carry no
-  source suffix. Every other system that has its own notion of a trip gets an
-  explicit one instead of reusing the bare name: `.tid_land` for a landings
-  source (see "Landings" above), not `.tid`. This matters because two systems'
-  synthetic ids are never the same value space even when the real-world
-  concept lines up — the correspondence between them is always an inferred
-  match (a crosswalk table carrying both sides' own key, e.g. `.tid` ↔
-  `.tid_land`), never an identity, and reusing one system's bare name for
+  source suffix. Every other system that has its own notion of a trip gets its
+  own reserved name instead of reusing the logbook's bare name: `.lid` for a
+  landings source (see "Landings" above), not `.tid`. This matters because two
+  systems' synthetic ids are never the same value space even when the
+  real-world concept lines up — the correspondence between them is always an
+  inferred match (a crosswalk table carrying both sides' own key, e.g. `.tid`
+  ↔ `.lid`), never an identity, and reusing one system's bare name for
   another's different concept invites exactly the silent-wrong-join the dot
   prefix exists to prevent. A system whose own "trip" is a composite of
   several columns rather than one synthetic id (an AIS voyage: `vid`, `year`,

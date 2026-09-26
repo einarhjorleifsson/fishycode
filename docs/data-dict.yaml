@@ -33,6 +33,14 @@ details: >
   landings' synthetic trip key needed its own name from the start, the way
   `.sid` did for species vs station.
 
+  2026-09-26: `.tid_land` renamed again, to `.lid` (`curate/plans/
+  007-landings-merge-agf-lods.md` §3) — landings is merged from two source
+  systems (`agf`, `lods`) as of this same change, and `.lid` reuses landings'
+  own already-reserved name rather than keeping a second one for a grain that
+  no longer exists in the curated table after the collapse. See plan 007 for
+  the fuller story, including a real key-recycling defect (`lods`'s raw
+  record id, `komunr`) found and fixed while building it.
+
 tables:
   - name: ais_trip
     source:
@@ -985,41 +993,53 @@ tables:
     source:
       parquet: ../../fishydata/curated/landing/catch.parquet
     description: >
-      One row per species per original landing record (`aflagrunnur`, the
-      Directorate of Fisheries landings register). Not yet aggregated to trip
-      level - multiple `.lid` rows can share one `.tid_land` (see
-      landing_landings).
+      One row per (landing trip, schema, species, gear, stock, kfteg), catch
+      summed - the per-delivery record itself (the raw source's own id) is
+      collapsed away here (curate/landing.R); species, gear and stock are kept
+      because they do vary within a real multi-delivery trip (curate/plans/007
+      §5), unlike the per-delivery id. Merged from two source systems, `agf`
+      (2007-) and `lods` (1992- via this table; see `schema`) - curate/plans/007.
     todo: |
-      - Record a `primary_key`, if present.
+      - Record a `primary_key`, if present. Not `.lid` alone - see its
+        description.
     columns:
-      - name: .tid_land
-        type: number
-        range: [6439, 981357]
-        examples: [15639, 198035, 420843, 664055, 967011]
-        description: >
-          Landing-trip id (= min(.lid) within the vid x date x hid group;
-          matches landing_landings..tid_land). Landings' own synthetic trip
-          key, in its own namespace - never the same value space as the
-          logbook's `.tid`, even though both are "a trip" (see the `.tid`
-          glossary entry). The two are linked only via logbook_lid_map's
-          fuzzy match, never by comparing the columns directly.
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
-          - Specify `constraints`. Some options suggested by the data:
-            - constraints: [required] # all values present
       - name: .lid
         type: number
-        range: [6439, 981357]
-        examples: [15639, 198035, 420843, 664055, 967011]
+        range: [6439, 4503598207550488]
+        examples: [894857258018880, 1405804880618352, 2328729173281554, 2671013423776857, 3995985170309360]
         description: >
-          Original aflagrunnur delivery/record id (londun_id) before collapsing split
-          deliveries to one trip.
+          Landing-trip id: for `schema == "agf"`, min(raw delivery record id -
+          londun_id) within the (vid, date, hid) group that was collapsed to
+          this row. For `schema == "lods"`, a deterministic hash of
+          (vid, date, hid) itself (sources/lods/convert.R) - `lods`'s own raw
+          record id (`komunr`) turned out to be a recycled loading-batch code,
+          not a stable per-delivery id (measured: it collided across ~51% of
+          `lods` rows before this fix), so it is kept separately under its own
+          name (`komunr`, this table) rather than used as a key. Renamed from
+          `.tid_land` (curate/plans/007 §3) - reuses landings' own reserved
+          name (docs/grammar.qmd "Landings") rather than keeping a separate
+          name for the pre-collapse grain, which no longer exists in this
+          table. NOT structurally guaranteed unique on its own even so - the
+          real key is `(.lid, schema)` (docs/grammar.qmd, and see `schema`
+          below); zero collisions are currently observed (checked 2026-09-26),
+          which is a property of the hash, not a guarantee. Never the same
+          value space as the logbook's `.tid`, even though both are "a trip"
+          (see the `.tid` glossary entry); the two are linked only via
+          logbook_lid_map's fuzzy match.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: schema
+        type: string
+        values: [agf, lods]
+        description: >
+          Which source system this row came from: "agf" (aflagrunnur, live
+          since 2007-09-01) or "lods" (its legacy predecessor, kept populated
+          in parallel rather than retired - curate/plans/007). Part of the
+          real primary key alongside `.lid` - the two systems' `.lid` values
+          are not the same value space (see the `.lid` entry).
       - name: gid
         type: number
         range: [1, 25]
@@ -1037,6 +1057,8 @@ tables:
         examples: [1, 31, 99, 210, 1128]
         description: >
           Species code (tegundnúmer) - the same vocabulary as logbook_catch.sid.
+          For `schema == "lods"`, mapped 1:1 from the source's own `fteg`
+          (curate/plans/007 §5).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1047,18 +1069,54 @@ tables:
         range: [1, 9030]
         examples: [1, 77, 200, 1994, 9030]
         description: >
-          Fishing stock code (veiðistofn): an ecological population within a species.
+          Fishing stock code (veiðistofn): an ecological population within a
+          species. For `schema == "lods"`, populated only where the source's
+          own `kfteg` uses the same "default stock = species code" convention
+          `agf` does (76.43% of lods rows, measured); `NA` where `kfteg` is
+          unspecified (0/NA, 22.79%) or uses a numbering scheme `agf` does not
+          (0.78%, kept raw in `kfteg` rather than guessed - curate/plans/007
+          §5).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: kfteg
+        type: number
+        range: [0, 95]
+        examples: [0, 1, 45, 48, 73]
+        description: >
+          The source's own raw stock-code field, kept alongside `stid` for
+          `schema == "lods"` rows only (`NA` for `agf`, which has no
+          translation step - its own raw field for this concept already is
+          `stid`) - never destroy the original (AGENTS.md), since the `stid`
+          translation is lossy for 0.78% of lods rows (curate/plans/007 §5).
+        todo: |
+          - Specify `constraints`. Some options suggested by the data.
+      - name: komunr
+        type: number
+        range: [-981361, 9900000]
+        examples: [966919, 9517695, 9801277, 9803706, 9836862]
+        description: >
+          The source's own raw record id, kept for `schema == "lods"` rows
+          only (`NA` for `agf`, which has no equivalent concept - its own
+          `.lid` already is a genuine per-delivery id) - informational only,
+          NOT part of any key. Turned out to be a recycled loading-batch code
+          rather than a stable per-delivery identifier (curate/plans/007 §5,
+          §6): the same value repeats 140-158 times across unrelated vessels,
+          dates and harbours in the raw data. Kept under its own name rather
+          than discarded - never destroy the original (AGENTS.md) - in case
+          it is ever useful for tracing a row back to its loading batch.
+        todo: |
+          - Specify `constraints`. Some options suggested by the data.
       - name: catch
         type: number
-        range: [-2000, 3652803]
+        range: [-203018, 3652803]
         examples: [72.62, 3728.75, 22678, 48292, 2001002]
         description: >
-          Landed weight, kg (magn óslægt).
+          Landed weight, kg (magn óslægt / lods' own magn_oslaegt - the
+          ungutted/round-weight equivalent in both systems, not the gutted
+          weight `agf` separately records as `magn_slaegt` - curate/plans/007).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1068,27 +1126,45 @@ tables:
     source:
       parquet: ../../fishydata/curated/landing/landings.parquet
     description: >
-      One row per landing trip: a `vid x date x hid` group collapsed from one or
-      more `.lid` (delivery/original-record) rows in aflagrunnur, catch summed.
-      `.tid_land` = min(.lid) within that group. Independent of the logbook -
-      this is the buyer/authority's account of what arrived at the dock.
+      One row per landing trip: a `vid x date x hid` group collapsed from one
+      or more raw delivery records, catch summed. Merged from two source
+      systems by precedence - `agf` wins on both presence and value wherever
+      it has a trip, `lods` fills in the rest (curate/plans/007 §2). Date
+      range 1992-09-01 to present: `lods` extends coverage back before `agf`'s
+      2007-09-01 start, but only to 1992-09-01 in practice - `sources/lods/
+      convert.R` reads `lods_oslaegt` (self-sufficient, avoids an orphan-join
+      risk against `lods_londun`'s own header table), and `lods_oslaegt`
+      itself starts 1992-09-01. `lods_londun` alone goes back to 1915-11-21
+      (59 rows, 52 vessels, 1915-1992-08-31) - not currently captured, flagged
+      not fixed (curate/plans/007).
     todo: |
-      - Record a `primary_key`, if present.
+      - Record a `primary_key`, if present. Not `.lid` alone - see its
+        description in landing_catch.
+      - Decide whether the 59-row/52-vessel 1915-1992-08-31 tail in
+        `lods_londun` is worth a small top-up adapter of its own.
     columns:
-      - name: .tid_land
+      - name: .lid
         type: number
-        range: [6439, 981357]
-        examples: [15639, 198035, 420843, 664055, 967011]
+        range: [6439, 4503598207550488]
+        examples: [894857258018880, 1405804880618352, 2328729173281554, 2671013423776857, 3995985170309360]
         description: >
-          Landing-trip id: min(.lid) within the (vid, date, hid) group that was
-          collapsed to this row. Landings' own synthetic trip key - not the
-          same value space as the logbook's `.tid`; see the `.tid` glossary
-          entry.
+          Landing-trip id: for `schema == "agf"`, min(raw delivery record id)
+          within the (vid, date, hid) group; for `schema == "lods"`, a
+          deterministic hash of (vid, date, hid) itself. See landing_catch..lid
+          for the full naming history, why `lods` uses a hash rather than its
+          own raw id, and the `(.lid, schema)` composite-key note - identical
+          here.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: schema
+        type: string
+        values: [agf, lods]
+        description: >
+          Which source system this trip came from: "agf" or "lods" - see
+          landing_catch.schema.
       - name: vid
         type: number
         range: [-401, 9999]
@@ -1365,11 +1441,13 @@ tables:
     description: >
       One row per (logbook trip, species), built to compare logbook-reported catch
       against landed catch of the same species (curate/catch_by_species_trip.R).
-      Only trips with a landings match (.tid_land present, via lid_map) are
+      Only trips with a landings match (.lid present, via lid_map) are
       included. catch_logbook and catch_landings are independently summed from the
       two systems, so their ratio can be inspected directly - logbook and landings
       species codes are the same tegundnúmer vocabulary, so a ratio far from 1:1
-      on an otherwise-matched trip is a lead worth checking.
+      on an otherwise-matched trip is a lead worth checking. NOT `(.lid, schema)`
+      aware (curate/plans/007 §6 item 3) - the join keys on `.lid` alone, which
+      is not globally unique across landing_catch's two source schemas.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -1387,13 +1465,17 @@ tables:
         examples: ["-1007642", "-648142", "103733035", "105785128", "79358526"]
         description: >
           Logbook trip id.
-      - name: .tid_land
+      - name: .lid
         type: number
-        range: [6439, 981357]
-        examples: [15639, 198035, 420843, 664055, 967011]
+        range: [-981361, 9900000]
+        examples: [131165, 464526, 816562, 850856, 9815306]
         description: >
           Matched landing trip id (via logbook_lid_map); NA where the logbook trip has
-          no landings match.
+          no landings match. Renamed from `.tid_land` (curate/plans/007 §3) -
+          see landing_catch..lid for the naming history and the composite-key
+          caveat, which applies here too (schema is not carried onto this
+          table, so a value collision across landing_catch's two source
+          schemas cannot be detected from this table alone).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1793,7 +1875,7 @@ tables:
     source:
       parquet: ../../fishydata/curated/logbook/lid_map.parquet
     description: >
-      One row per logbook trip matched to a landing trip: a .tid -> .tid_land
+      One row per logbook trip matched to a landing trip: a .tid -> .lid
       crosswalk (curate/link_lid_map.R), built by an eight-step cascade of
       decreasing key specificity (exact vid x date x hid, relaxing the date
       window, then catch-weight tiebreaking, then a wrong-date QA pass).
@@ -1823,13 +1905,21 @@ tables:
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: .tid_land
+      - name: .lid
         type: number
-        range: [6439, 981143]
-        examples: [15639, 217536, 475786, 696682, 967011]
+        range: [6439, 4502971185386244]
+        examples: [319773, 344014, 405846, 578252, 797525]
         description: >
-          Matched landing trip id (landing_landings..tid_land); present only
-          where the cascade found an unambiguous match.
+          Matched landing trip id (landing_landings..lid); present only
+          where the cascade found an unambiguous match. Renamed from
+          `.tid_land` (curate/plans/007 §3). This table does NOT carry
+          landing_landings' own `schema` (agf/lods) alongside this value -
+          `curate/link_lid_map.R` renames it to `schema_land` internally
+          purely to avoid colliding with this table's own `schema` column
+          (the logbook source system), and does not carry it into the final
+          output - so a value collision across landing_catch's two source
+          schemas cannot be detected or resolved from this table alone
+          (curate/plans/007 §6 item 3).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3490,7 +3580,7 @@ relationships:
   #     like `ais_trip`, not `voyage_year`/`voyage`.
   #   logbook_catch_by_species_trip..tid = logbook_trip..tid (many-to-one)
   #     curate/catch_by_species_trip.R. Rebuilt 2026-09-25 — now carries
-  #     `.tid`/`.tid_land` dotted, like every other logbook table.
+  #     `.tid`/`.lid` dotted, like every other logbook table.
   #   logbook_lid_map..tid   = logbook_trip..tid            (one-to-one)
   #     curate/link_lid_map.R
   #   logbook_fishing_sample.gid = reference_gear.gid       (many-to-one)
@@ -3524,17 +3614,25 @@ glossary:
     logbook tables. Chains down to `.sid` per trip. `landing_catch`/
     `landing_landings` used to carry their own, unrelated `.tid` (a
     landings-internal id, `min(.lid)` per `vid`×`date`×`hid`) — the same
-    collision class as `.sid` below, fixed the same way, see `.tid_land`.
-  .tid_land: >
-    Landings' own synthetic trip key (`min(.lid)` within a `vid`×`date`×`hid`
-    group) — a different value space from the logbook's `.tid`, even though
-    both are "a trip" in the everyday sense. The two are linked only through
-    `logbook_lid_map`'s fuzzy match (`vid`×`date`×`hid` cascade, then
-    catch-weight tiebreak), never by comparing the columns directly. See
-    `curate/plans/006-trip-identity-and-catch-to-ais-pings.md` for the general
-    rule this follows: every source system's own trip-like identifier is
-    either the logbook's reserved bare `.tid`, or carries an explicit source
-    suffix — never a bare name borrowed from another system.
+    collision class as `.sid` below, fixed the same way, see `.lid`.
+  .lid: >
+    Landings' own synthetic trip key — a different value space from the
+    logbook's `.tid`, even though both are "a trip" in the everyday sense.
+    The two are linked only through `logbook_lid_map`'s fuzzy match
+    (`vid`×`date`×`hid` cascade, then catch-weight tiebreak), never by
+    comparing the columns directly. Was `.tid_land` (see
+    `curate/plans/006-trip-identity-and-catch-to-ais-pings.md` for the
+    general rule that named it: every source system's own trip-like
+    identifier is either the logbook's reserved bare `.tid`, or carries an
+    explicit source suffix, never a bare name borrowed from another system);
+    renamed to `.lid` once landings merged two source systems and the
+    pre-collapse per-delivery grain stopped existing in the curated table at
+    all, so `.lid` was free to mean only the trip-level key — see
+    `curate/plans/007-landings-merge-agf-lods.md` §3. Since that merge, `.lid`
+    is not globally unique on its own — the real key is `(.lid, schema)`; see
+    the `schema` entry and `landing_catch..lid`'s own description for the
+    `komunr`-recycling defect that made this concrete rather than
+    theoretical.
   .sid: >
     Logbook station (fishing operation) identifier (synthetic), and only
     that — reserved for the logbook tables (`station.parquet` and anything
@@ -3568,8 +3666,15 @@ glossary:
     gear-deployment event times within one fishing operation. See
     `curate/decisions/010-time-variable-naming.md`.
   schema: >
-    Which source system a row came from: `"afli"`, `"fs_afladagbok"`, or
-    `"adb"`. See `docs/output-schema.md`.
+    Which source system a row came from. Two independent, non-interchangeable
+    uses of this same column name exist in this dictionary: the logbook
+    tables' `"afli"`/`"fs_afladagbok"`/`"adb"` (see `docs/output-schema.md`),
+    and `landing_catch`/`landing_landings`'s `"agf"`/`"lods"`
+    (`curate/plans/007`). `curate/link_lid_map.R` and
+    `curate/catch_by_species_trip.R` join both together, so a landings-side
+    `schema` value is renamed `schema_land` internally there specifically to
+    avoid colliding with the logbook one - the two are never the same value
+    space, same as `.tid`/`.lid`.
   basis: >
     Carried by every inferred value: `"recorded"`, `"reconstructed"`, or
     `"synthesised"`, per `docs/grammar.qmd`.

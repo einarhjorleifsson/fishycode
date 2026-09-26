@@ -198,8 +198,23 @@ list(
   }, format = "file"),
 
   tar_target(aflagrunnur, {
-    port
     produces("sources/aflagrunnur/convert.R",
+             fd_staging("landing", "agf", "landings.parquet"),
+             fd_staging("landing", "agf", "catch.parquet"))
+  }, format = "file"),
+
+  tar_target(lods, {
+    produces("sources/lods/convert.R",
+             fd_staging("landing", "lods", "landings.parquet"),
+             fd_staging("landing", "lods", "catch.parquet"))
+  }, format = "file"),
+
+  # Precedence merge of agf and lods (curate/plans/007): agf where it exists,
+  # lods elsewhere. Also where the hid -> pid port join happens, once, for
+  # both sources.
+  tar_target(landing, {
+    aflagrunnur; lods; port
+    produces("curate/landing.R",
              fd_curated("landing", "landings.parquet"),
              fd_curated("landing", "catch.parquet"))
   }, format = "file"),
@@ -277,13 +292,13 @@ list(
   }, format = "file"),
 
   tar_target(lid_map, {
-    logbook; aflagrunnur; gear
+    logbook; landing; gear
     produces("curate/link_lid_map.R",
              fd_curated("logbook", "lid_map.parquet"))
   }, format = "file"),
 
   tar_target(catch_by_species_trip, {
-    logbook; lid_map; aflagrunnur
+    logbook; lid_map; landing
     produces("curate/catch_by_species_trip.R",
              fd_curated("logbook", "catch_by_species_trip.parquet"))
   }, format = "file"),
@@ -304,8 +319,14 @@ list(
              fd_curated("check", "ais_key_registry.parquet"))
   }, format = "file"),
 
+  # Both checks read raw/landings/agf/aflagrunnur.parquet directly, bypassing
+  # curated/landing/ entirely - the dependency below is on `landing` (not
+  # `aflagrunnur`) purely for build ordering, consistent with treating
+  # `landing` as the one thing everything landings-related depends on
+  # (curate/plans/007 §7). Their content is agf-only regardless; whether that
+  # should extend to lods once it exists is flagged, not resolved, there.
   tar_target(check_ais_key_landings, {
-    vessel_ais_key; vessel; aflagrunnur
+    vessel_ais_key; vessel; landing
     produces("curate/checks/ais_key_landings.R",
              fd_curated("check", "ais_key_landings.parquet"))
   }, format = "file"),
@@ -314,7 +335,7 @@ list(
   # the finished key - see the script header for why that catches more than
   # check_ais_key_landings does.
   tar_target(check_ais_key_reused_callsign, {
-    vessel_ais_key; vessel; aflagrunnur
+    vessel_ais_key; vessel; landing
     produces("curate/checks/ais_key_reused_callsign.R",
              fd_curated("check", "ais_key_reused_callsign.parquet"))
   }, format = "file")
