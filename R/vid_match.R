@@ -18,25 +18,45 @@
 # in 2011 genuinely fits both 2815 DÍSA and 3047 HILDUR — this returns neither.
 # The old cascade had no way to say "don't know"; picking one of two equally
 # plausible hulls is not an improvement on picking the wrong one.
+#
+# id_col (plan 008 §7 Phase 4): the identity key column defaults to "vid", so
+# every call site above is unchanged. Passing id_col = "external_id" runs the
+# identical logic against vessel_identity_foreign.parquet's external_id
+# instead — generalizing the function rather than writing a second matcher
+# for the foreign-vessel case (reference/vessels/ais_key_foreign.R).
 
 .overlaps <- function(a1, a2, b1, b2) a1 <= b2 & b1 <= a2
+
+# Subset identity to the columns this match needs, with the id column and
+# evidence column(s) renamed to fixed internal names so the join/filter code
+# below never has to know what id_col actually is.
+.identity_cols <- function(identity, id_col, value_cols) {
+  keep <- identity[, c(id_col, "t1", "t2", value_cols), drop = FALSE]
+  names(keep)[names(keep) == id_col] <- "..id"
+  keep
+}
 
 #' Match a single evidence field (cs, uid or mmsi) against vessel_identity.
 #'
 #' @param probe data frame with .rid, val (character, the field to test), d1, d2
-#' @param identity vessel_identity
+#' @param identity vessel_identity (or vessel_identity_foreign)
 #' @param evidence_col name of the column in `identity` to match `val` against
-match_time_aware <- function(probe, identity, evidence_col) {
-  cand <- identity[!is.na(identity[[evidence_col]]), c("vid", "t1", "t2", evidence_col)]
+#' @param id_col name of the identity-key column in `identity` — "vid" for the
+#'   Icelandic registry, "external_id" for the foreign one (plan 008)
+match_time_aware <- function(probe, identity, evidence_col, id_col = "vid") {
+  cand <- identity[!is.na(identity[[evidence_col]]), ]
+  cand <- .identity_cols(cand, id_col, evidence_col)
   names(cand)[names(cand) == evidence_col] <- "val"
-  probe |>
+  out <- probe |>
     dplyr::filter(!is.na(.data$val)) |>
     dplyr::inner_join(cand, by = "val", relationship = "many-to-many") |>
     dplyr::filter(.overlaps(d1, d2, t1, t2)) |>
-    dplyr::distinct(.rid, vid) |>
+    dplyr::distinct(.rid, ..id) |>
     dplyr::add_count(.rid, name = "n_cand") |>
     dplyr::filter(n_cand == 1) |>
-    dplyr::select(.rid, vid)
+    dplyr::select(.rid, ..id)
+  names(out)[names(out) == "..id"] <- id_col
+  out
 }
 
 #' Confirm a vid already stated by one field against a corroborating field.
@@ -47,18 +67,24 @@ match_time_aware <- function(probe, identity, evidence_col) {
 #' window. Unlike `match_time_aware`, this never has to choose among candidates
 #' — the identifier already chose one — so it only ever confirms or rejects.
 #'
-#' @param probe data frame with .rid, vid (the candidate), val (corroborating
-#'   value), d1, d2
-#' @param identity vessel_identity
+#' @param probe data frame with .rid, a column named `id_col` (the candidate),
+#'   val (corroborating value), d1, d2
+#' @param identity vessel_identity (or vessel_identity_foreign)
 #' @param evidence_col name of the column in `identity` to match `val` against
-confirm_vid <- function(probe, identity, evidence_col) {
-  cand <- identity[!is.na(identity[[evidence_col]]), c("vid", "t1", "t2", evidence_col)]
+#' @param id_col name of the candidate-id column in both `probe` and `identity`
+confirm_vid <- function(probe, identity, evidence_col, id_col = "vid") {
+  cand <- identity[!is.na(identity[[evidence_col]]), ]
+  cand <- .identity_cols(cand, id_col, evidence_col)
   names(cand)[names(cand) == evidence_col] <- "val"
-  probe |>
-    dplyr::filter(!is.na(.data$vid), !is.na(.data$val)) |>
-    dplyr::inner_join(cand, by = c("vid", "val")) |>
+  probe <- probe
+  names(probe)[names(probe) == id_col] <- "..id"
+  out <- probe |>
+    dplyr::filter(!is.na(.data$..id), !is.na(.data$val)) |>
+    dplyr::inner_join(cand, by = c("..id", "val")) |>
     dplyr::filter(.overlaps(d1, d2, t1, t2)) |>
-    dplyr::distinct(.rid, vid)
+    dplyr::distinct(.rid, ..id)
+  names(out)[names(out) == "..id"] <- id_col
+  out
 }
 
 #' Confirm a vid stated by one field against TWO corroborating fields at once
@@ -67,19 +93,22 @@ confirm_vid <- function(probe, identity, evidence_col) {
 #' `match_time_aware` calls, which could each resolve to a different vid.
 #'
 #' @param probe data frame with .rid, val1, val2, d1, d2
-#' @param identity vessel_identity
+#' @param identity vessel_identity (or vessel_identity_foreign)
 #' @param col1,col2 names of the columns in `identity` to match val1/val2 against
-match_identity_pair <- function(probe, identity, col1, col2) {
-  cand <- identity[!is.na(identity[[col1]]) & !is.na(identity[[col2]]),
-                    c("vid", "t1", "t2", col1, col2)]
+#' @param id_col name of the identity-key column in `identity`
+match_identity_pair <- function(probe, identity, col1, col2, id_col = "vid") {
+  cand <- identity[!is.na(identity[[col1]]) & !is.na(identity[[col2]]), ]
+  cand <- .identity_cols(cand, id_col, c(col1, col2))
   names(cand)[names(cand) == col1] <- "val1"
   names(cand)[names(cand) == col2] <- "val2"
-  probe |>
+  out <- probe |>
     dplyr::filter(!is.na(.data$val1), !is.na(.data$val2)) |>
     dplyr::inner_join(cand, by = c("val1", "val2")) |>
     dplyr::filter(.overlaps(d1, d2, t1, t2)) |>
-    dplyr::distinct(.rid, vid) |>
+    dplyr::distinct(.rid, ..id) |>
     dplyr::add_count(.rid, name = "n_cand") |>
     dplyr::filter(n_cand == 1) |>
-    dplyr::select(.rid, vid)
+    dplyr::select(.rid, ..id)
+  names(out)[names(out) == "..id"] <- id_col
+  out
 }

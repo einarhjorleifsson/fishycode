@@ -1,7 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** partly built — **§7 Phases 1–3 done 2026-09-27**, decisions 035–036;
-Phase 4 (generalize `R/vid_match.R`) onward still proposal ·
+**status:** partly built — **§7 Phases 1–4 done 2026-09-27**, decisions 035–037;
+Phase 5 (`ais_key_foreign.R`) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
@@ -496,16 +496,16 @@ isn't time-aware yet, so most are plausibly ordinary reflagging over the
 years, not errors — narrow before using it for review). Reports; never
 resolves, per the cycle rule.
 
-### Phase 4 — Generalize the matcher, don't duplicate it
+### Phase 4 — Generalize the matcher, don't duplicate it — **done 2026-09-27**, decision 037
 
-`R/vid_match.R`'s `match_time_aware()`/`confirm_vid()`/`match_identity_pair()`
-are currently hardcoded to a column named `vid` (the calling code in
-`ais_key.R` does `rename(.vid = vid)` against their output). Add an
-`id_col = "vid"` parameter (default preserves every existing call site
-unchanged) so the same three functions work against
-`vessel_identity_foreign.parquet` with `id_col = "external_id"`. This is the
-whole point of `AGENTS.md`'s "shared functions live in `ramb`, never copied" —
-the smallest possible diff, not a second matcher.
+`R/vid_match.R`'s three functions gained `id_col = "vid"` (default preserves
+every `ais_key.R` call site unchanged); all three verified working with
+`id_col = "external_id"` against `vessel_identity_foreign.parquet`. Caught a
+regression in the process — the `confirm_vid()` rewrite silently dropped its
+second join key (`by = c("vid","val")` became `by = "..id"` alone) — by
+diffing `ais_key.R`'s full output against the last committed baseline via a
+git-stash A/B, not by trusting a single re-run. Fixed; baseline reproduced
+exactly (same row count, same tier/step counts).
 
 ### Phase 5 — Candidate matching against STK (a new script, not a bigger `ais_key.R`)
 
