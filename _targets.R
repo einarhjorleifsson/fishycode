@@ -319,12 +319,10 @@ list(
              fd_curated("check", "ais_key_registry.parquet"))
   }, format = "file"),
 
-  # Both checks read raw/landings/agf/aflagrunnur.parquet directly, bypassing
-  # curated/landing/ entirely - the dependency below is on `landing` (not
-  # `aflagrunnur`) purely for build ordering, consistent with treating
-  # `landing` as the one thing everything landings-related depends on
-  # (curate/plans/007 §7). Their content is agf-only regardless; whether that
-  # should extend to lods once it exists is flagged, not resolved, there.
+  # Both checks read curated/landing/landings.parquet (agf + lods, curate/
+  # plans/007 §2/§7), extended from agf-only 2026-09-26 - see each script's
+  # own header for why lods is worth including despite AIS itself starting
+  # later than lods does.
   tar_target(check_ais_key_landings, {
     vessel_ais_key; vessel; landing
     produces("curate/checks/ais_key_landings.R",

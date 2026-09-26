@@ -281,12 +281,22 @@ already, no translation step exists to preserve the input of.
    the general point stands regardless: "`agf` wins on disagreement" (§2)
    means the merge itself can never surface a future `agf`-side defect against
    `lods`, so visibility has to come from somewhere else if it matters.
-2. **The `hid = 159` post-2007 residual (6,282 rows, §1's "Measured") — a real
-   `agf` gap at a specific harbour, or a retired/non-standard code that was
-   never going to appear in `agf` at all?** Not in `reference_port`,
-   `reference_harbour`, or `agf`'s own harbour-name view. Not diagnosed
-   further here; low priority relative to the fact the merge already handles
-   it correctly regardless of cause (`lods` fills in where `agf` has nothing).
+2. **Resolved, not open — `hid = 159` is a catch-all code, not one mislabeled
+   harbour (checked 2026-09-26).** All 38,112 `hid = 159` rows are `lods`-only
+   — zero appear in `agf` (confirming it is a code `agf` never uses at all,
+   not a coverage gap in `agf`'s own data). Cross-checked two independent
+   ways, both against the vessel's own trip end at/near the landing date
+   (±2 days): AIS (`curated/ais/trip.parquet`'s `hid2`, matched 2,331 of the
+   6,686 rows falling in the AIS era) and logbook (`curated/logbook/
+   trip.parquet`'s `pid2`, matched 28,451 of all 38,112 rows, since the
+   logbook trail reaches back before AIS does). Both agree: the vessels'
+   actual arrival ports are spread across the whole country — 65 distinct
+   ports by AIS, ~60 by logbook — with Vestmannaeyjar as a plurality (~39–41%
+   of matches) but nowhere near a majority. A single retired/renamed harbour
+   would show one destination, not sixty; this is `lods` using `hid = 159` as
+   a generic "unspecified/other" value. The merge already handles it
+   correctly regardless of cause (`lods` fills in where `agf` has nothing),
+   so this closes the question without changing any code.
 3. **Harden `link_lid_map.R`'s cascade and `catch_by_species_trip.R`'s join to
    key on `(.lid, schema_land)`, not `.lid` alone** — §4's composite-key
    requirement. The specific defect that made this concrete (`komunr`

@@ -2,7 +2,7 @@
 #
 # Input:  raw/ais/stk/mobile.parquet, raw/ais/stk/trail/,
 #         curated/vessel/vessel.parquet, curated/vessel/vessel_ais_key.parquet,
-#         raw/landings/agf/aflagrunnur.parquet
+#         curated/landing/landings.parquet
 # Output: curated/check/ais_key_reused_callsign.parquet - one row per vessel in question
 #
 # curate/checks/ais_key_landings.R found vid 3047 (HILDUR): call sign TFBR sends
@@ -53,6 +53,10 @@
 # reference/vessels/ais_key.R already states foreign vids (3700-4999) get no
 # further matching effort, so an unmatched foreign call sign is expected, not a
 # finding.
+#
+# Extended to lods, 2026-09-26, same rationale as check_ais_key_landings.R: reads
+# the merged curated/landing/landings.parquet rather than raw agf alone.
+# `landings` is a trip count (distinct .lid) here too.
 
 library(dplyr)
 library(tidyr)
@@ -68,11 +72,11 @@ reg <- read_parquet(fd_curated("vessel", "vessel.parquet")) |>
   select(vid, vessel, cs, cs_t)
 
 lnd <-
-  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
-  group_by(vid = skip_numer) |>
-  reframe(landings = n(),
-          first_landing = as.Date(min(londun_hefst)),
-          last_landing  = as.Date(max(londun_hefst))) |>
+  read_parquet(fd_curated("landing", "landings.parquet")) |>
+  group_by(vid) |>
+  reframe(landings = n_distinct(.lid),
+          first_landing = as.Date(min(date)),
+          last_landing  = as.Date(max(date))) |>
   filter(vid >= 5)
 
 reg_l <- reg |> inner_join(lnd, by = "vid")
@@ -171,4 +175,4 @@ write_curated(out, fd_curated("check", "ais_key_reused_callsign.parquet"),
               inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
                          vessel         = fd_curated("vessel", "vessel.parquet"),
                          stk_mobile     = fd_raw("ais", "stk", "mobile.parquet"),
-                         aflagrunnur    = fd_raw("landings", "agf", "aflagrunnur.parquet")))
+                         landing        = fd_curated("landing", "landings.parquet")))

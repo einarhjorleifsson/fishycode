@@ -1,7 +1,7 @@
 # The STK vessel match, cross-checked against landings.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, curated/vessel/vessel.parquet,
-#         raw/landings/agf/aflagrunnur.parquet
+#         curated/landing/landings.parquet
 # Output: curated/check/ais_key_landings.parquet  - one row per vessel in question
 #
 # The maintainer's own proposal, 2026-09-22: "One way to check coverage and
@@ -16,6 +16,15 @@
 # This check REPORTS. Reasoning from landings back onto the vid assignment closes
 # the AIS -> vid -> logbook -> AIS cycle AGENTS.md warns about; a reviewed
 # conclusion re-enters through overrides/ as an input, never as a computed output.
+#
+# Extended to lods, 2026-09-26: reads the merged curated/landing/landings.parquet
+# (curate/landing.R - agf where it exists, lods filling the gaps, curate/plans/007
+# §2) rather than raw agf alone. lods does not push `no_ais` findings earlier -
+# AIS (STK) itself only starts at AIS_T1, so a lods-only landing before 2007 is
+# outside the AIS era regardless - but lods keeps running in parallel with agf
+# past 2007 too (same plan, §1), so this does add real post-2007 trips agf alone
+# would miss. `landings` is now a trip count (distinct .lid), not a raw delivery-row
+# count - a finer distinction than aflagrunnur's own rows, not a coarser one.
 
 library(dplyr)
 library(nanoparquet)
@@ -25,11 +34,11 @@ AIS_T1 <- as.Date("2007-06-01")   # STK begins
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet"))
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet"))
 lnd <-
-  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
-  group_by(vid = skip_numer) |>
-  reframe(landings = n(),
-          first_landing = as.Date(min(londun_hefst)),
-          last_landing  = as.Date(max(londun_hefst))) |>
+  read_parquet(fd_curated("landing", "landings.parquet")) |>
+  group_by(vid) |>
+  reframe(landings = n_distinct(.lid),
+          first_landing = as.Date(min(date)),
+          last_landing  = as.Date(max(date))) |>
   filter(vid >= 5)
 
 in_ais <- key |> filter(!is.na(vid)) |> distinct(vid)
@@ -107,4 +116,4 @@ print(out |>
 write_curated(out, fd_curated("check", "ais_key_landings.parquet"),
               inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
                          vessel         = fd_curated("vessel", "vessel.parquet"),
-                         aflagrunnur    = fd_raw("landings", "agf", "aflagrunnur.parquet")))
+                         landing        = fd_curated("landing", "landings.parquet")))
