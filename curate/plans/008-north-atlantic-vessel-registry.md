@@ -1,7 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** partly built — **§7 Phases 1–4 done 2026-09-27**, decisions 035–037;
-Phase 5 (`ais_key_foreign.R`) onward still proposal ·
+**status:** partly built — **§7 Phases 1–4 and 3b done 2026-09-27**, decisions
+035–038; Phase 5 (`ais_key_foreign.R`) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
@@ -495,6 +495,23 @@ A companion check, **`curate/checks/vessel_identity_foreign_conflicts.R`**
 isn't time-aware yet, so most are plausibly ordinary reflagging over the
 years, not errors — narrow before using it for review). Reports; never
 resolves, per the cycle rule.
+
+### Phase 3b — the unified sweep table — **done 2026-09-27**, decision 038
+
+Caught by the maintainer asking, plainly, "are we not going to have a single
+vessel.parquet that covers everything?" `vessel_identity.parquet` (Icelandic,
+`vid`-keyed) and `vessel_identity_foreign.parquet` staying separate was the
+right call for the pipeline's own internal joins (§7 Phase 3's own reasoning
+— `vid` is a real primary key `ais_key.R`/`mmsi.R` rely on), but two tables an
+analyst has to know exist and combine themselves is exactly the pipeline
+knowledge `AGENTS.md`'s sweep is supposed to hide.
+
+**`reference/vessels/identity_all.R`** → `curated/vessel/vessel_identity_all.parquet`
+— a union built fresh each run, not a third source of truth; the two
+specialized tables are untouched and still exist for internal joins. 1,228,374
+rows, `external_id` populated for every row (IMO-first throughout, `isl_<vid>`
+fallback on the Icelandic side), `vid` surviving as its own column, NA outside
+`source == "ISL"`. Third `write_curated()` adopter (TODO item 12).
 
 ### Phase 4 — Generalize the matcher, don't duplicate it — **done 2026-09-27**, decision 037
 
