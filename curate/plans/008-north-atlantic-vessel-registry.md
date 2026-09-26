@@ -1,6 +1,7 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
-**status:** proposal — nothing built, nothing moved into `$FISHYDATA` yet ·
+**status:** partly built — **§7 Phases 1–2 done 2026-09-27**, decision 035;
+Phase 3 (merge script) onward still proposal ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
 gap this extends), `TODO.md` item 17
 
