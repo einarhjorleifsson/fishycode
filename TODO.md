@@ -377,3 +377,21 @@ real, resolvable AIS coverage?
 
 **check:** `SKB`-prefixed mobile-ids carry a distinct `entity_class`, and
 `registry.R:35`'s exclusion has a decision record (kept or changed) either way.
+
+---
+
+## 24. `landed_but_no_ais`'s top vessels have no MMSI on record at all
+**status:** open · **see:** `curate/checks/ais_key_landings.R`
+
+83 Icelandic vessels land fish (2007-09 to 2025-12) with zero STK identity. The
+top 10 by landing-trip count (vid 980 STAFNES, 1035 HEIMAEY, 6723 BETA, 2362
+HREFNA, 257 SIGURVON, 1263 ATLAVÍK, 1261 BERGKVIST, 6965 ARNAR, 2302 MÁNI, 978
+SVANUR) carry **no `mmsi` in `vessel.parquet` at all** - not stale, absent -
+so ASTD/astdB (both MMSI-keyed) can't be checked for them with a restricted
+lookup the way plan 008's foreign candidates were. The only way to check is a
+`vesselname`-matched scan across ASTD's ~2.77 billion rows, which is exactly
+the full-table scan this repo has deliberately avoided everywhere else - so
+it wasn't run; do it as a deliberate, budgeted pass, not incidentally.
+
+**check:** each of the 83 has either an ASTD/astdB name-match result recorded,
+or a note that none exists.
