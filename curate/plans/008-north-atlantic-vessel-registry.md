@@ -639,6 +639,22 @@ it is the only legitimate way a flagged foreign `external_id` becomes trusted,
 and doing it once end-to-end (rather than deferring it) is what showed the
 `sources/eu` defect in the first place.
 
+### Phase 5 addendum — an evidence tier for the flagged pool — **done 2026-09-27**, decision 043
+
+The 4,862 `needs_review == TRUE` candidates (Phase 5/8) were otherwise
+undifferentiated — a 813,524-ping/12-year ASTD match (decision 042's worked
+example) and a one-ping snapshot both just said "needs review." Extended the
+existing restricted stage-4 ASTD query (still `WHERE mmsi IN (...)`, no full
+scan) to also aggregate each MMSI's full history: total pings, distinct
+years, dominant-name share. Every candidate now carries an A–E
+`evidence_tier`: A = direct/sknr match, B = unflagged cs/mmsi, C = flagged
+cs/mmsi, D = `astd_mmsi` clearing a corroboration bar (≥100 pings, ≥2 years,
+≥80% one name), E = everything weaker (thin `astd_mmsi` or all `astdb_mmsi`,
+which has no name/IMO to assess consistency on at all). Measured: 3,014 of
+4,200 `astd_mmsi` rows (72%) clear tier D. `needs_review`/`review_reason`
+are unchanged — this is a queue-ordering qualifier, not a promotion out of
+review; per `AGENTS.md`'s cycle rule, only `overrides/` (Phase 8) does that.
+
 ### Phase 9 — out of this plan's scope, but immediately unlocked: the trip construct
 
 Worth recording here even though it isn't built as part of this plan — see

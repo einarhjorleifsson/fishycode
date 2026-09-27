@@ -164,16 +164,41 @@ cat("\nstage 4: residual mobile-ids with an MMSI-shaped glid:",
 ## not existing (measured here, not assumed - the first version of this stage
 ## hit exactly that). QUALIFY does the "latest row per mmsi" filter in one pass
 ## inside DuckDB, so nothing but one row per MMSI is ever collected to R.
+## Alongside the latest snapshot, aggregate this MMSI's WHOLE observed ASTD
+## history (total pings, distinct years, how consistently one name dominates)
+## in the same query - a single-broadcast MMSI and one with 800K consistent
+## pings across 12 years (mid 114277/BAKUR, decision 042) are not the same
+## strength of evidence, and until now nothing distinguished them. Feeds a
+## tier (below), not a filter - astd_cat stays reference-only per §6.
 astd_hit <- data.frame()
 if (length(astd_mmsi)) {
   con <- DBI::dbConnect(duckdb::duckdb())
   astd_path <- fd_staging("ais", "astd")
   mmsi_list <- paste0("'", astd_mmsi, "'", collapse = ",")
   astd_hit <- DBI::dbGetQuery(con, sprintf("
-    SELECT mmsi, vesselname, imonumber, flagcode, astd_cat, gross_tonnage, date_time_utc
-    FROM read_parquet('%s/**/*.parquet', hive_partitioning = true)
-    WHERE mmsi IN (%s)
-    QUALIFY row_number() OVER (PARTITION BY mmsi ORDER BY date_time_utc DESC) = 1
+    WITH base AS (
+      SELECT mmsi, vesselname, imonumber, flagcode, astd_cat, gross_tonnage,
+             date_time_utc, year
+      FROM read_parquet('%s/**/*.parquet', hive_partitioning = true)
+      WHERE mmsi IN (%s)
+    ),
+    agg AS (
+      SELECT mmsi, count(*) total_pings, count(DISTINCT year) distinct_years,
+             count(vesselname) named_pings
+      FROM base GROUP BY mmsi
+    ),
+    top_name AS (
+      SELECT mmsi, vesselname, count(*) n,
+             row_number() OVER (PARTITION BY mmsi ORDER BY count(*) DESC) rn
+      FROM base WHERE vesselname IS NOT NULL GROUP BY mmsi, vesselname
+    )
+    SELECT b.mmsi, b.vesselname, b.imonumber, b.flagcode, b.astd_cat,
+           b.gross_tonnage, b.date_time_utc,
+           a.total_pings, a.distinct_years, a.named_pings, tn.n AS top_name_n
+    FROM base b
+    JOIN agg a USING (mmsi)
+    LEFT JOIN top_name tn ON tn.mmsi = b.mmsi AND tn.rn = 1
+    QUALIFY row_number() OVER (PARTITION BY b.mmsi ORDER BY b.date_time_utc DESC) = 1
   ", astd_path, mmsi_list))
   DBI::dbDisconnect(con, shutdown = TRUE)
   astd_hit$mmsi <- as.character(astd_hit$mmsi)
@@ -186,7 +211,17 @@ stage4 <- rest3 |>
   mutate(.external_id = if_else(is_valid_imo(as.character(imonumber)),
                                 as.character(imonumber), paste0("astd_", glid)),
          .basis = "astd_mmsi",
+         # evidence_tier D: a well-corroborated broadcast history, not a
+         # one-off - thresholds are a starting point (100+ pings, 2+ years,
+         # the dominant name in >=80% of named pings), not tuned beyond that.
+         # Named .evidence_tier (not .tier) - .tier already carries the
+         # unrelated Icelandic vessel_ais_key tier through this pipeline.
+         .evidence_tier = if_else(total_pings >= 100 & distinct_years >= 2 &
+                         !is.na(named_pings) & named_pings > 0 &
+                         (coalesce(top_name_n, 0) / named_pings) >= 0.8,
+                         "D", "E"),
          .note = paste0("astd_cat=", coalesce(astd_cat, "NA"),
+                        "; ", total_pings, " pings/", distinct_years, "y",
                         "; last seen ", as.Date(date_time_utc)))
 
 cat("stage 4 (astd):", nrow(stage4), "\n")
@@ -249,34 +284,35 @@ candidates <-
     stage1 |> transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                         external_id = .external_id, basis = .basis, note = .note,
                         candidate_name = .name, candidate_cs = .cs, candidate_mmsi = .mmsi,
-                        source = "marinetraffic"),
+                        source = "marinetraffic", evidence_tier = "A"),
     if (nrow(stage_skb))
       stage_skb |> transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                              external_id = .external_id, basis = .basis, note = .note,
                              candidate_name = .name, candidate_cs = NA_character_,
-                             candidate_mmsi = .mmsi, source = "isl_pleasure_craft"),
+                             candidate_mmsi = .mmsi, source = "isl_pleasure_craft",
+                             evidence_tier = "A"),
     stage2 |> left_join(ident_lookup, by = "external_id") |>
       transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                 external_id, basis = .basis, note = .note,
                 candidate_name = .src_name, candidate_cs = .src_cs, candidate_mmsi = .src_mmsi,
-                source = source),
+                source = source, evidence_tier = "B"),
     stage3 |> left_join(ident_lookup, by = "external_id") |>
       transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                 external_id, basis = .basis, note = .note,
                 candidate_name = .src_name, candidate_cs = .src_cs, candidate_mmsi = .src_mmsi,
-                source = source),
+                source = source, evidence_tier = "B"),
     if (nrow(stage4))
       stage4 |>
         transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                   external_id = .external_id, basis = .basis, note = .note,
                   candidate_name = vesselname, candidate_cs = NA_character_,
-                  candidate_mmsi = glid, source = "astd"),
+                  candidate_mmsi = glid, source = "astd", evidence_tier = .evidence_tier),
     if (nrow(stage5))
       stage5 |>
         transmute(mid, loid, glid, d1, d2, pings, tier, .rid,
                   external_id = .external_id, basis = .basis, note = .note,
                   candidate_name = NA_character_, candidate_cs = NA_character_,
-                  candidate_mmsi = glid, source = "astdb")
+                  candidate_mmsi = glid, source = "astdb", evidence_tier = "E")
   ) |>
   select(-.rid)
 
@@ -315,7 +351,15 @@ candidates <-
            !is.na(review_reason) ~ review_reason,
            basis == "astd_mmsi" ~ "astd: single broadcast snapshot, no registry corroboration",
            basis == "astdb_mmsi" ~ "astdB: dims/flag only, no name or IMO at all",
-           .default = review_reason))
+           .default = review_reason),
+         # tier C: a cs/mmsi match that IS flagged (its external_id sits
+         # inside a real registry conflict) - same basis as tier B, weaker
+         # standing because the identity itself is contested, not just the
+         # broadcast evidence for it.
+         evidence_tier = if_else(evidence_tier == "B" & needs_review, "C", evidence_tier))
+
+cat("\nevidence_tier:\n")
+print(candidates |> count(evidence_tier))
 
 cat("\nneeds_review:\n")
 print(candidates |> count(needs_review))
