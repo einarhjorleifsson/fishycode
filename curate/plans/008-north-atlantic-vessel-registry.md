@@ -566,6 +566,19 @@ identical, tagged `source = "isl_pleasure_craft"` in its own `external_id`
 space — `vessel.parquet` itself untouched. TODO item 23 asks whether
 `registry.R`'s exclusion is worth revisiting now that its cost is measured.
 
+**Revised again 2026-09-27, decision 042**: reviewing the single highest-ping
+candidate in the flagged ASTD pool by hand (mid 114277, `BAKUR`) — not just
+accepting it, checking it — found it already had a perfect match in `fro`,
+blocked at stage 3 only because `gfw`'s own MMSI-keyed row for the same
+vessel looked like a second, competing candidate. Measured: 6,306 of 6,322
+multi-candidate MMSIs in the table are exactly this (`gfw` plus one real
+source, not two disagreeing ones); fixed by dropping `gfw`'s row whenever a
+real source also claims the MMSI. Stage 3 rose 736 → 913; `needs_review ==
+FALSE` rose 2,529 → 2,706. The same review pass checked `cs_overlap` for an
+equivalent dominant pattern and found none — that residual (mostly `eu`↔`eu`,
+genuine cross-vessel call-sign reuse with no `status`-like signal to key off)
+is left as a harder, real gap, not forced.
+
 **Correction found while building this**: §5's schema table said
 `vessel_identity_foreign.parquet` would carry a `marinetraffic_match` source
 — wrong, for the reason §5 itself already gave in prose (see §5's own

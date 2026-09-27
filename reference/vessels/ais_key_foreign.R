@@ -109,9 +109,32 @@ stage2 <- rest1 |>
 rest2 <- rest1 |> anti_join(stage2, by = ".rid")
 
 ## Stage 3: mmsi, time-aware, only where glid itself is a 9-digit MMSI ----------
+## gfw is MMSI-only by construction (external_id = "gfw_<mmsi>" always, plan
+## 008 §5.0), so for ANY mmsi a real registry (eu/fro/nor) also claims, gfw's
+## own row is not competing evidence, it is the same vessel described a
+## second time - but match_time_aware() cannot tell that apart from a genuine
+## two-vessel collision, so it correctly refused both. Found 2026-09-27
+## reviewing the top fishing-relevant ASTD candidate (mid 114277, BAKUR,
+## MMSI 231009000): fro already had this exact MMSI, but gfw's own row for
+## the same MMSI blocked the match, pushing it needlessly into the ASTD
+## fallback. Measured: 6,306 of 6,322 mmsi values with more than one
+## candidate external_id in vessel_identity_foreign.parquet are exactly this
+## pattern (gfw plus exactly one real source) - only 16 are genuine
+## multi-registry disagreements. Dropping gfw's row wherever a real source
+## also claims the mmsi resolves the 6,306 outright and changes nothing about
+## the 16 genuine ones.
+mmsi_has_real_source <- identity_foreign |>
+  filter(!is.na(mmsi), source != "gfw") |>
+  distinct(mmsi) |>
+  pull(mmsi)
+identity_foreign_mmsi <- identity_foreign |>
+  filter(!(source == "gfw" & mmsi %in% mmsi_has_real_source))
+cat("\nidentity rows available for mmsi matching: ", nrow(identity_foreign),
+    "->", nrow(identity_foreign_mmsi), "after dropping gfw's redundant rows\n")
+
 probe_mmsi <- rest2 |>
   transmute(.rid, val = if_else(grepl("^[0-9]{9}$", glid), glid, NA_character_), d1, d2)
-hit_mmsi <- match_time_aware(probe_mmsi, identity_foreign, "mmsi", id_col = "external_id")
+hit_mmsi <- match_time_aware(probe_mmsi, identity_foreign_mmsi, "mmsi", id_col = "external_id")
 stage3 <- rest2 |>
   inner_join(hit_mmsi, by = ".rid") |>
   mutate(.basis = "mmsi", .note = "time-aware MMSI match")
