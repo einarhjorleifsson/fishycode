@@ -58,6 +58,25 @@ while ÓÐINN (159) matches its own call sign tightly from 2022 on. Something in
 `ais_key.R`'s cascade routed this through a non-cs path; that logic was not
 traced here and nothing is asserted about why.
 
+## Registry corroboration, checked separately - and the anomaly is a confirmed bug
+
+`raw/vessels/vessel_v.parquet` (Fiskistofa's registry dump) is **one row per
+`vessel_id`** (7,044 rows, 7,044 distinct ids) - a live snapshot with a
+`status` field (`Á aðalskipaskrá` active / `Afmáð` deregistered) and
+`valid_from` meaning "this record's last change," not a call-sign-history
+table. It cannot date the handovers independently of the AIS track
+correlation above. It does independently confirm every "era 2" vid in the
+table (HERJÓLFUR, HILDUR, TEISTA, SIGURVIN, INGIBJÖRG, OCEAN SPIRIT, BJÖRG)
+as the call sign's **currently active** registered holder, and every earlier-
+era vid plus every wrongly-keyed current holder as **`Afmáð`**.
+
+**The TFRA anomaly is now a confirmed bug, not just weak evidence**: the
+registry's own row for vid 1511 gives its call sign as `TFRK` - not `TFRA` -
+while vid 159 (ÓÐINN) is registry-confirmed active on `TFRA` itself.
+`vessel_ais_key.parquet` keys mid 101892 to a vid whose registered call sign
+is a completely different string; this is not a stale-registry judgement
+call the way the ghost/handover cases are.
+
 ## What was not done
 
 No vid was reassigned, no `overrides/` row written, `ais_key.R` untouched.
