@@ -1,6 +1,11 @@
 id: ais_key_callsign_reuse
 title: a reused call sign sends the AIS match to the wrong keel - 235,121 pings on a vessel that never landed
-status: confirmed - defect measured against landings, 3 of 31 candidates patched, structural repair NOT implemented
+status: confirmed - defect measured against landings (3 of 31 patched), against
+  other-provider AIS activity for non-landing classes (18 more found, decision
+  044), and 2026-09-28 those 18 track-correlated against candidate vids'
+  positions (7 clean handovers + 4 ghosts + TÝR confirmed, proposed but NOT YET
+  entered via overrides/ - see curate/decisions/045-track-correlation-resolves-callsign-reuse.md);
+  structural repair (ais_key.R itself) still NOT implemented
 applies_to:
   - curated/vessel/vessel_ais_key.parquet
   - raw/ais/stk/stk_mobile_match-and-duals.ods
@@ -64,6 +69,19 @@ scope: >-
   be legitimately time-split between two real vessels is a modelling choice, not
   something directly observable in the data. A conclusion drawn from any one row
   still re-enters through overrides/ as an input, never as a computed output.
+
+  Extended 2026-09-28 (curate/decisions/044): this whole review was scoped to
+  vessels with landings, which by construction misses every non-fishing class -
+  Coast Guard, ferries, and others. The maintainer's own cross-check of
+  curated/ais/ping (vids with real pings in ASTD/astdB/EMODnet but none at all in
+  STK) found 19 such vids; 18 show the identical defect once the vessel's own
+  other-provider ping window stands in for a landing window as the independent
+  activity signal - 9 ghost, 8 overlapping, and TFBR itself turns out to be a
+  three-way collision (HOLMBERG/1473, HILDUR/3047 - already patched as if it were
+  a clean two-way split - and DISA/2815, previously missed, whose own activity
+  overlaps the same era HILDUR's does). One more (TYR/1421) is a fourth pattern:
+  its matching mid is absent from vessel_ais_key.parquet entirely, not assigned
+  elsewhere. None of the 18 is patched - see decision 044 for the per-vessel list.
 
 proposed_repair: >-
   Structural, not a row edit. Plan 003 section 4.1: split vessel_ais_key into an identity
