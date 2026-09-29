@@ -121,3 +121,12 @@ Twelve of the segments above (the 11 "fits only partly" and the rejected mid 103
 1. Accept the confirmed rows above into the segment table as they stand (they already are).
 2. Read the hand and flagged rows; the review app can show them.
 3. Decide whether to make the evidence-extent fix before the table replaces the key in `ais_key.R`.
+
+## Superseded in part, 2026-09-29 (night)
+
+The segment table changed after this review: every segment is now cut at the registration date of any candidate vid and no vid
+is given to a stretch that starts more than 60 days before its vessel was registered (decision 047, last update). That
+removes the impossible pings behind part of the "fits only partly" finding, turns 97,850 pings into explicit stretches for a
+person, and leaves 120 segments differing from the key. **The verdicts above were made on the earlier table; redo the review on the
+current one before entering any of them.**
+

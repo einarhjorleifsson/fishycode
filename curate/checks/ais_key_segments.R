@@ -58,6 +58,14 @@ key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2), window_basis)
 cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
+# The day each hull was first registered (the registry's own, day-exact). A call sign follows its hull, so a
+# vid cannot be carried by a mobile-id before this date. Measured (decision 048): with this date 0 of 32 reuse
+# cases have the successor registered AFTER the switch W1 sees, and 25 fall inside the switch's bracket; the
+# identification date is not the hull's start (a hull that changed home port looks newly registered).
+hull_start <- read_parquet(fd_raw("vessels", "vessel_hist_v.parquet")) |>
+  filter(!is.na(registration_no)) |> group_by(registration_no) |> arrange(desc(valid_from)) |> slice(1) |> ungroup() |>
+  transmute(vid = as.integer(registration_no), reg_start = as.Date(initial_registration_date))
+reg_start_of <- function(v) hull_start$reg_start[match(v, hull_start$vid)]
 life <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> transmute(nvid = as.integer(vid), yh1, yh2)
 HORIZON <- max(life$yh2, na.rm = TRUE)
 ym_of <- function(d) { lt <- as.POSIXlt(d); (lt$year + 1900L) * 12L + lt$mon }   # yh2 never exceeds the registry snapshot horizon: an end AT it is not an end
@@ -146,7 +154,14 @@ cut_long <- days |>
   mutate(gap = as.numeric(d - lag(d))) |> ungroup() |>
   filter(!is.na(gap), gap >= 365) |>
   transmute(mid, cut = d, basis = paste0("silence of ", gap, " d (any silence of a year or more is cut)"))
-cuts <- bind_rows(cut_silence, cut_w1, cut_long)
+# A candidate vid's registration date is a cut: nothing before it can be that vessel
+cand_vids <- bind_rows(distinct(st, mid, vid), distinct(holders, mid, vid = hvid),
+                       key |> filter(!is.na(vid), vid > 0) |> distinct(mid, vid) |> mutate(vid = as.integer(vid)))
+cut_reg <- cand_vids |>
+  mutate(reg_start = reg_start_of(vid)) |> filter(!is.na(reg_start)) |>
+  inner_join(span, by = "mid") |> filter(reg_start > first, reg_start <= last) |>
+  transmute(mid, cut = reg_start, basis = paste0("vid ", vid, " was registered on this day"))
+cuts <- bind_rows(cut_silence, cut_w1, cut_long, cut_reg)
 
 ## Segments --------------------------------------------------------------------------------------
 cuts <- cuts |> distinct(mid, cut, .keep_all = TRUE)
@@ -267,10 +282,16 @@ tbl <- segs |>
   left_join(foreign_seg, by = c("mid", "seg_no")) |>
   left_join(pings, by = c("mid", "seg_no")) |>
   mutate(pings = coalesce(pings, 0L),
+         # a vid cannot be given to a stretch that STARTS more than 60 days before the vessel was registered
+         w1_vid  = if_else(!is.na(w1_vid)  & !is.na(reg_start_of(w1_vid))  & reg_start_of(w1_vid)  > d1 + 60, NA_integer_, w1_vid),
+         reg_vid = if_else(!is.na(reg_vid) & !is.na(reg_start_of(reg_vid)) & reg_start_of(reg_vid) > d1 + 60, NA_integer_, reg_vid),
+         lb_vid  = if_else(!is.na(lb_vid)  & !is.na(reg_start_of(lb_vid))  & reg_start_of(lb_vid)  > d1 + 60, NA_integer_, lb_vid),
          ods_key = !is.na(key_step) & key_step == "manuals" & !is.na(key_vid) & key_vid > 0,
          is_foreign = !is.na(key_vid) & key_vid %in% 3700:4999,
          # continuity may use the key's vid unless the key row came from the ODS (that file is not an input)
-         key_free = if_else(ods_key, NA_integer_, key_vid),
+         # ... and never a vid whose vessel was not yet registered: the key itself does this (mid 102284 is given
+         # vid 2917 from 2007, registered 2017), so continuity must not repeat it
+         key_free = if_else(ods_key | (!is.na(reg_start_of(key_vid)) & reg_start_of(key_vid) > d1 + 60), NA_integer_, key_vid),
          drop_seg = !is.na(key_vid) & key_vid <= 0 & is.na(w1_vid) & is.na(reg_vid) & is.na(lb_vid),
          vid = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_, !is.na(key_free) ~ key_free, .default = foreign_vid),
          source = case_when(!is.na(w1_vid) ~ "physical", !is.na(reg_vid) ~ "registry", !is.na(lb_vid) ~ lb_src, drop_seg ~ "drop: a person decides",
@@ -287,8 +308,9 @@ tbl <- tbl |>
   tidyr::fill(vid_nb, .direction = "downup") |>
   ungroup() |>
   left_join(life, by = c("vid_nb" = "nvid")) |>
-  mutate(nb_alive = is.na(yh1) | (yh1 <= as.integer(format(d2, "%Y")) + 1L &
-                                  (is.na(yh2) | yh2 >= HORIZON | yh2 >= as.integer(format(d1, "%Y")) - 1L)),
+  mutate(nb_alive = (is.na(reg_start_of(vid_nb)) | reg_start_of(vid_nb) <= d1 + 60) &
+                    (is.na(yh1) | (yh1 <= as.integer(format(d2, "%Y")) + 1L &
+                                   (is.na(yh2) | yh2 >= HORIZON | yh2 >= as.integer(format(d1, "%Y")) - 1L))),
          fill_ok = need & !is.na(vid_nb) & nb_alive,
          vid = if_else(fill_ok, vid_nb, vid),
          source = case_when(fill_ok ~ "continuity: neighbour",
@@ -362,6 +384,8 @@ stopifnot("a ping is in no segment or in two" = sum(merged$pings) == sum(span$to
 unassigned <- merged |> filter(is.na(vid))
 cat("\nACCEPTANCE: segments tile all", nrow(span), "mobile-ids; every one of", format(sum(span$total), big.mark = ","),
     "pings is in exactly one segment; pings on no vid (a drop or a stretch for a person, listed):", format(sum(unassigned$pings), big.mark = ","), "\n")
+before_reg <- merged |> filter(!is.na(vid)) |> mutate(rs = reg_start_of(vid)) |> filter(!is.na(rs), d1 < rs - 60)
+cat("\nSegments that START more than 60 d before their vid was registered:", nrow(before_reg), "on", format(sum(before_reg$pings), big.mark = ","), "pings (must be 0)\n")
 w1_check <- st |>
   inner_join(transmute(merged, mid, d1, d2, seg_vid = vid), by = "mid", relationship = "many-to-many") |>
   filter(md >= d1, md <= d2) |>

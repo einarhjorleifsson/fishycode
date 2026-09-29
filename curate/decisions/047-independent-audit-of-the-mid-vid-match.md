@@ -532,6 +532,38 @@ to the single best-dated holder. That assigns mid 101444 to vid 1421 for its who
 STK pings), consistent with the 94 % track correlation in 2014, so the vessel ASTD/ASTD-B hear that had no mid now has
 one. The table now leaves **16,219 pings for a person**.
 
+### Update 2026-09-29 (night): the registry does date a call sign's holders - by the hull's registration date
+
+The maintainer asked whether a registry table covers call-sign history before 2023-12-19. Checked in full:
+the dated call-sign history (`vessel_identification_hist_v`) and the registry's audit stamps
+(`hist_datetime`, 25,524 of 26,191 rows in 2023) start in 2023, and `mmsi_iceland_archieves` carries real dates only in
+its notes (de-registration, e.g. "sold to Panama 28.6.2023"), with placeholder MMSI windows. But **`vessel_hist_v`
+carries `initial_registration_date` and `identificat_registration_date` per vessel, at day resolution** (5,734 and
+5,697 of 7,044). No vessel changes its own call sign, so a call sign follows its hull, and the hull's own first
+registration is the day its call-sign tenure began; the previous holder's tenure ends when the successor's begins. The
+pipeline did not read it (`vessel_identity` uses Hreidar's annual years).
+
+Calibrated against the physical witness, and the definition matters: **`initial_registration_date`** (the hull's
+start) - **0 of 32** reuse cases W1 saw have the successor registered *after* the switch, 25 fall inside the bracket
+(the other 7 registered earlier: a new hull existing before the STK device is moved to it), and with the dated tenure
+the segment table's vid agrees in **90.1 %** of 585 segments. The identification date is *not* the start (a hull that
+changed home port looks newly registered): 3 impossible cases and 78 % agreement.
+
+Used as a hard rule, it finds a real defect: **91,515 pings on 102 segments carried a vid before that vessel was
+registered** (54 segments decided by AIS alone, 19 by the registry) - AIS confirms a vessel from 2013 and the table
+pushed it back to years before the hull existed; the key itself does the same (mid 102284 has vid 2917 from 2007,
+registered 2017). The segment table now cuts at the registration date of every candidate vid and never gives a vid to a
+stretch that starts more than 60 days before it. **Acceptance now passes: 0 segments start before their vid was
+registered.** The impossible pings did not vanish; they are now explicit stretches for a person: **108 stretches on 96
+mids, 97,850 pings** (83 of them "no evidence, the neighbour did not exist then"). This also implements the evidence-extent
+fix proposed in decision 048 for the registration-date part. That review (118 segments) was made on the table before this
+change and must be redone on the new one (120 segments now differ from the key, 2.30 M pings) before its verdicts are used.
+
+**A dated call-sign dataset would still matter** for two things the registration date cannot give: the *end* of a
+holder (strikes are exact only for the 3,489 hulls with an archive note, otherwise annual) and reuse *within* one hull
+record. 55 Icelandic call signs have overlapping `vessel_identity` windows (56 STK mobile-ids, 8.46 M pings, 96 % of them
+resolved by AIS alone); the registration dates now give an AIS-independent check on those.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation
