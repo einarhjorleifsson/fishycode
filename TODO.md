@@ -423,6 +423,10 @@ Side observation, NOT validated and not pursued: on the uncleaned 2019 union, im
 Mid 101444 = vid 1421 (call sign TFGA) is now assigned by dated-holder ranking; the registry's own dated
 call-sign history only starts 2023-12-19 and cannot date a reuse in the STK era (decision 047).
 
+Review done (decision 048): 118 differing segments, 39 accepted, 16 to read by hand, 28 flagged, 1 rejected. Open:
+the evidence-extent fix (a vid confirmed over a few months is extended over an years-long segment; 12 segments,
+about 0.6 M pings) before the table replaces the key.
+
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
 
