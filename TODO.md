@@ -258,7 +258,7 @@ measurements decide whether it is worth building; none has been done.
 
 ## 17. Full review of the STK vessel match
 **status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`,
-`curate/plans/008-north-atlantic-vessel-registry.md`
+`curate/plans/008-north-atlantic-vessel-registry.md`, `TODO.md` item 25 (the audit)
 
 Reviewed 2026-09-22; steps 1–7 and 9 done (decisions 015, 020, 021, 032, 033,
 034). Step 8 (foreign-vessel identity) is absorbed by and built in plan 008 —
@@ -395,3 +395,20 @@ it wasn't run; do it as a deliberate, budgeted pass, not incidentally.
 
 **check:** each of the 83 has either an ASTD/astdB name-match result recorded,
 or a note that none exists.
+
+## 25. Resolve the STK key audit's discrepancies, and reach the rows no witness reaches
+**status:** open · **needs: maintainer** — review of proposed overrides ·
+**see:** `curate/plans/009-independent-audit-of-the-mid-vid-match.md`,
+`curate/decisions/047-independent-audit-of-the-mid-vid-match.md`
+
+Built 2026-09-29: `ais_key_audit` (ledger of every key row, 132 discrepancies, 884
+vid-claiming rows no witness reaches) and `ais_key_split_candidates` (silences where a
+human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009
+phase 2 (resolve each through track correlation, then `overrides/`), phase 3 (usage
+class, Hreidar against logbook and landings, the 2016-06 re-issue), phase 4 (MMSI series
+as a check, foreign vessels), phase 5 (what `ais_key.R` and the ODS become).
+The two `curated/check/` tables build the next time `check_ais_key_*` targets run.
+
+**check:** every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
+through `overrides/` or carries a stated reason, and the 884 are re-counted.
+

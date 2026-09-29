@@ -1,197 +1,99 @@
 # 009 — An independent audit of the mid→vid match, from every witness that does not read the key
 
-**status:** partly executed 2026-09-29 — W1, W2, W3, W6, W8 done, W7 as stratifier only, W8 tested (triage only), 2016-06 sweep open; results in `curate/decisions/047-independent-audit-of-the-mid-vid-match.md` · **see:** plans `003`, `008`;
-decisions 021, 044, 045, 046; `TODO.md` item 17
+**status:** restructured 2026-09-29 after phases 1 and the witnesses were built — phase 1 done,
+phases 2–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 
-*Plan drafted with Claude (AI-assisted); the maintainer set the scope and lifted the
-decision rules for the exploration.*
+*Drafted with Claude (AI-assisted); the maintainer set the scope, lifted the decision rules for
+the exploration, and framed it as a bookkeeping audit first, statistics as background tests.*
 
-**Measured** (2026-09-29, against `$FISHYDATA`): STK trail 2007–2026 keyed by `mid`;
-other-provider pings (`astd` from 2013, `astdB` from 2014, `emodnet` 2017 only) in
-`curated/ais/ping`, keyed by `vid` through MMSI; logbook stations 2007–2026 (7.2 M rows
-overall) carry a **date only** (hour is always 0); landings 2.17 M rows with `vid`,
-`date`, `hid`; the manual ODS has 508 rows; the machine has 25.8 GB RAM, 14 cores.
+**Measured** (decision 047, run 2026-09-29 against `$FISHYDATA`): a ledger of every key row
+(19,234; 2,967 claim a vid) with what each witness says; the witnesses' calibration; 132
+discrepancy rows; 63 mobile-ids that carry two vids in sequence, split correctly by the key for
+only 20; 884 vid-claiming rows (30 %) that no witness reaches; the ODS's 60 splits all fall
+inside a ping silence, and a four-family reader recovers 42 of the 44 on key-claimed mids and
+proposes 107 more (19 strong).
 
-**Assumed** — the whole method below: that a co-located ping is a strong witness, that
-a logbook position is a usable one, that in-harbour coincidence carries any signal. Each
-is tested in §3 *before* it is allowed to judge anything.
+**Assumed** — the resolution rule in phase 2 (which evidence is enough to enter an override);
+that usage-class and Hreidar checks in phase 3 reach a useful part of the 884; that the MMSI
+series in phase 4 hold anything the mid side did not (the one run so far found nothing new).
 
-## 1. The question, and why the earlier checks do not answer it
+## 1. What the first version of this plan got wrong or did not know
 
-The key says: mobile-id `M`, over `[d1,d2]`, *is* vessel `V`. Every check so far
-(014, 020, 021, 044, 045, 046) asks whether that claim is **consistent with the
-registry** (lifetimes, call sign, MMSI) — the same registry the cascade built the key
-from — or looks for the claim's failure only where a landing is missing. They cannot
-find an error the registry itself shares, and they look at whole mid windows, not at
-what the mid did in a given year.
+The plan began as "calibrate statistical witnesses, then synthesise verdicts". Executing it
+showed the work is bookkeeping first:
 
-This plan asks the other question: **does the physical behaviour of `M` match the
-independent record of what `V` did?** A vessel's transponder sends positions; a vessel's
-logbook and landing records say where and when it was. Three witnesses read neither the
-key nor the cascade:
+1. **A physical witness decides more than the statistical ones.** Other-provider AIS on the
+   claimed vid's MMSI, co-located with the mid's pings, confirms at 96–100 % sensitivity and
+   2 false confirms per 100,000. Logbook and landings only discriminate at year level and
+   each fails in a known way (a ferry that "lands" everywhere; fixed stations in fishing
+   grounds). A contradiction therefore needs a second witness or W1.
+2. **The defect is mobile-ids that changed hands**, under the same identifier strings, more
+   than misread identifiers. Sequences of two vids on one mid are the unit.
+3. **The human's ODS splits are recoverable by rule.** Silence ≥ 180 d, then a profile shift,
+   a last trip out of Icelandic waters, or a registry change; ≥ 3 of 4 families is clean.
+4. **A third of the vid-claiming rows have no independent witness at all.** That is not a
+   percentage to improve; it is a list to reach or to state as unreachable.
+5. **Names are not evidence.** vid and MMSI are the identifiers (maintainer); vessel names
+   changed and were reused and are used nowhere as a witness.
 
-| # | witness | says | covers | reads the key? |
-|---|---|---|---|---|
-| W1 | **co-location** — other-provider AIS (`astd`/`astdB`/`emodnet`), keyed by MMSI→vid | "vid `V`'s transponder was at (t, x, y)" | 2013→, vessels the providers hear | no; depends on registry MMSI |
-| W2 | **logbook stations** | "vid `V` fished at (x, y) on day d" | fishing vessels, 2007→; date only | no |
-| W3 | **landings** | "vid `V` landed at harbour h on day d" | fishing vessels with agf/lods | no |
-| W6 | **mid-clock** — `mid` is a sequential number issued when a new (`loid`,`glid`) pair is first seen (maintainer, 2026-09-29) | when the mid was *created*, independent of any ping | all mids | no |
-| W7 | **usage class** (`mclass`, and Hreidar's `Notkunarteg`) | what kind of vessel the register says it is | all | no — a prior and a coverage stratifier: logbook/landing witnesses exist only for fishing classes (33, 35, 36, 37, 64, 68); class can change over a hull's life |
-| W8 | **behaviour change-points** in a mid's own STK series (speed, reporting interval, footprint), esp. across a hiatus | a takeover often leaves a silent gap and a different behaviour profile | all mids | no; needs a seasonal null (some vessels are seasonal) and a class-change null |
-| W4 | **registry** | lifetime, call sign, MMSI | all | it *is* the cascade's input — used only as a prior, never as a witness |
-| W5 | **manual ODS** | a person's mid→vid | 508 rows | it is *part of* the key — audited, not trusted |
+## 2. Phase 1 — witnesses, ledger, reader (DONE, built as checks)
 
-W1 is the strongest: two independent receivers hearing one transponder agree to metres.
-W2 and W3 are weak per observation and become strong only in aggregate, so they are
-scored by **rate against a null**, not as yes/no.
+`R/audit_witnesses.R`, `R/audit_split_reader.R`; `curate/checks/ais_key_audit.R` (ledger +
+discrepancy register) and `curate/checks/ais_key_split_candidates.R`; both wired into
+`_targets.R`; run end to end in full. Calibration and results: decision 047.
 
-## 2. The stance: what is suspended, and what is not
+## 3. Phase 2 — resolve the discrepancies (next; the bulk of the value)
 
-Lifted for exploration, per the maintainer: the "decision rules" — the
-`ais_key.R` cascade order, the tier boundaries, the assumption that a `vid_vid` row is
-right because two fields agree, and that a `manuals` row is right because a person
-wrote it. Every one of them is a *hypothesis under test* here, and the record of which
-were relaxed is in the result.
+Inputs: the 132 discrepancy rows, the split candidates the ODS did not make (19 strong, 88
+review), the ODS rows left open-ended after a vessel changed (mids 101084, 103251, and the
+swap of mids 101197/102497), and the rows the ODS flags "needs checking" (112543, 118584).
+For each, in this order and stopping when the answer is clear:
 
-**Not** lifted: nothing is written into `curated/`; nothing is reassigned; a conclusion
-is a *proposal* that re-enters only through `overrides/` (`AGENTS.md`, cycles broken by
-a human). Scratch scripts and outputs go in the session scratchpad; only what survives
-review is promoted into `curate/checks/`.
+1. the decision-045 track-correlation test (the mid's pings against each candidate vid's own
+   other-provider track — the strongest identity evidence there is);
+2. the vessel registry's dates for the candidate vids;
+3. logbook and landings by month over the disputed span.
 
-## 3. Method
+A resolved case becomes a row in `overrides/` (`proposed` → maintainer-reviewed). Nothing is
+entered by an algorithm alone (`AGENTS.md`: the loop is broken by a human). Resolution
+rule (assumed): W1/track correlation clear on both eras, or two independent witnesses agree.
+**Check:** every discrepancy row is `resolved` (with the override or a reason it stays) or
+`open: needs maintainer`.
 
-### 3.0 Unit of analysis: the mid-year, not the mid
+## 4. Phase 3 — reach the 884 rows no witness reaches
 
-The key holds one vid per period row, and the reused-call-sign defect shows a mid can
-belong to two hulls inside one row. All witnesses are therefore tallied per
-**(mid, year, candidate vid)**. A mid whose evidence changes vid between years is the
-finding.
+- **Usage-class plausibility**: a mid whose track behaves as a trawler while the register
+  calls the vid a passenger vessel (or the reverse) — `mclass`, and Hreidar's `Notkunarteg`
+  by year, which also catches class changes over a hull's life.
+- **Hreidar against the logbook and landings** (the maintainer's original suggestion): a vid
+  in the logbook or landings in a year Hreidar says it did not exist, or after its recorded
+  fate. Hreidar shares the registry's lifetimes (decision 046), so this finds registry-side
+  and logbook-side errors, not the STK ones.
+- **The 2016-06 bulk re-issue** of ~1,800 mids, as a unit.
+- **Time base across sources**: nearest-in-time offsets among confirmed pairs, never inspected.
+- What still cannot be reached is **stated**, not left implied.
+**Check:** the 884 are re-counted; each remaining row carries why nothing reaches it.
 
-### 3.0b The mid-clock, and real activity spans (added 2026-09-29, from the maintainer)
+## 5. Phase 4 — widen
 
-`mid` is issued sequentially the first time a new identifier pair is seen, so its number
-is a clock: measured, Spearman(mid, first ping) = **0.992** over 31,777 mids. Three uses:
+- The MMSI-series reader as a check (exploratory result: it confirms the mid side's two
+  discrepancies and finds none of its own; 7 candidate silences have no STK witness).
+- Foreign vessels (3700–4999): a bonus, after the Icelandic work; the keel rule does not hold
+  there, so a vid is not one hull and the reader needs a different unit.
+- The registry's own MMSI→vid errors, tested independently of W1 (W1 trusts that map).
 
-1. **A mid's lifetime is its real first/last ping, not the key's `d1`/`d2`** (`d2` is a
-   sentinel on 31,791 of 31,859 rows). Every earlier overlap test used the sentinels. The
-   "one vid, two mobile-ids open" question is re-asked on real spans.
-2. **Anachronism:** pings *earlier* than the mid's own creation date (mid-clock) mean
-   back-filled history or wrong timestamps; a mid created long *before* its first ping is
-   dormant hardware. Both are places to look for a mid whose first era belongs to someone
-   else.
-3. **Mechanism:** a new mid appears when the identifier strings change, so a vessel that
-   changes name/call sign gets a *new* mid, while a vessel that *replaces* another under
-   the same strings keeps the old mid. That is exactly the reused-call-sign failure, and
-   it says where the errors can be: reuse lives in **old, long-lived mids**, not in
-   recently created ones. The sweep of 2016-06 (mids 122xxx–123xxx, ~1,800 mids in a
-   week) is a bulk re-issue and needs its own look.
+## 6. Phase 5 — feed back
 
-### 3.0c Behaviour change-points (W8; maintainer, 2026-09-29)
+Decide, after phase 2 has answers: what `ais_key.R` itself should change (a time-aware
+identity split instead of one vid per period row — plan 003's open steps), how the ODS is
+kept or retired (measured: it is the only evidence for 392 of its 508 rows; it is a raw
+input and is never destroyed), and whether the ledger becomes the release's audit table.
+**needs: maintainer.**
 
-A takeover of a mid by another vessel may leave a hiatus and a different speed / reporting /
-footprint profile afterwards. Two traps the maintainer named, both built into the test as
-nulls rather than caveats: **seasonality** (a seasonal fisher differs between quarters
-without any takeover — so a profile change is compared with the same calendar window in
-adjacent years, and only the excess counts) and **class change** (a hull can be
-re-registered to another usage class — so `mclass` history is read first and a change that
-coincides with a registry class change is not a takeover signal). Calibrated on the
-takeovers W1 has already confirmed (TFPH, TFBR, TFHW, TFBK, …): if a change-point test
-does not fire at those, it is not used.
+## 7. What could still make this wrong
 
-### 3.1 Calibrate each witness before using it (the step earlier checks skipped)
-
-A witness that is wrong 30 % of the time produces 30 % false alarms and, worse, a
-sense of rigour. So each witness is first run on rows where the key is *most* likely
-right and on a null:
-
-- **Positive control:** tier A `vid_vid` rows (`loid` and `glid` each independently
-  state the vid, 1,842 rows). The witness should confirm nearly all of them; the rate it
-  does is its **sensitivity**, and the misses are inspected by hand (they are either
-  witness blind spots — no logbook, no other-provider coverage — or real key errors).
-- **Negative control:** re-pair each mid with a *different* vid drawn from the same
-  year and fleet segment. The confirm rate is the **false-positive rate**.
-- A witness enters the synthesis only if the gap between the two is wide, and its
-  threshold is set from these two numbers, not chosen.
-
-### 3.2 W1 — co-location
-
-Moving pings only (speed ≥ 2 kn): in harbour, many vessels sit within metres of each
-other for hours and coincidence proves nothing. STK ping `(M, t, x, y)` is a **hit for
-V** if a `V` ping from another provider lies within ±30 min and ≤ 2 km. Blocked on
-hour × 0.25° cell, exact distance after; year by year to bound memory. Per
-`(M, year, V)`: hits, STK moving pings, and V's other-provider pings. Score =
-hits / min(STK pings, V pings) — normalised by the smaller side so a sparse receiver is
-not punished. Then rank all V for each `(M, year)`.
-
-### 3.3 W2 — logbook stations
-
-A station `(V, d, x, y)` is a hit for `M` if any moving STK ping of `M` on that UTC
-day lies within 10 km. Logbook coordinates are the noisiest input (`corrections/
-afli_coords.yml`, positive-longitude endemic), so: use `-lon` when the recorded point
-falls on land, drop `coord_flag` stations, and run it also with the wide 25 km ring as a
-sensitivity test. Per `(M, year, V)`: stations, hits, hit rate; **null** = the same
-stations against all other mids active that day (fishing grounds are crowded, so a
-raw rate is meaningless without it).
-
-### 3.4 W3 — landings
-
-Landing `(V, d, h)` is a hit for `M` if `M` has a ping in harbour `h` on `d±1`. The
-weakest witness; used only as a tie-breaker between candidates W1/W2 already
-rank, and never alone.
-
-### 3.5 Synthesis: a verdict per mid-year
-
-For each `(M, year)` with key vid `K`, using only witnesses that *cover* it:
-
-- **confirmed** — `K` is the top candidate in ≥ 1 calibrated witness and no witness
-  prefers another vid;
-- **refuted** — a calibrated witness ranks another vid `V*` clearly above `K`, or
-  covers `K` heavily and finds none (coverage is measured by `K`'s own pings/stations);
-- **conflicted** — two witnesses point to different vids;
-- **uncovered** — no witness has data. **This is not a pass**: it is reported as its
-  own class with its ping count, so silence is never counted as agreement.
-
-Alongside, the **recall direction**: for each vid with strong witness evidence, which
-mid(s) are best for it, and is that mid keyed to it. This is what finds vessels the key
-gave no mid at all.
-
-### 3.6 Audit of the human-made rows
-
-The ODS's 508 rows, and every `step == "manuals"` row, are scored by the same synthesis,
-reported apart from the cascade rows. Result to state: how often the human row agrees
-with the witnesses, and whether the disagreements cluster (a reviewer's habit) or are
-scattered (typos).
-
-## 4. What could make this wrong
-
-- **W1's vid labels come from registry MMSI.** A wrong MMSI in the registry corrupts
-  the *witness*, not the key. Guard: a mid–vid pair confirmed by W1 *and* W2 is
-  robust to it; a pair that only W1 refutes is checked against the MMSI window.
-- **Providers may relay STK.** If an "independent" provider's positions are STK's, W1
-  is circular. Guard: measure the fraction of hits at *exactly* the same timestamp and
-  coordinate to the 5th decimal; if it is high, W1 is discounted and reported so.
-- **Timestamps.** STK and other providers must be compared in one time base; the
-  distribution of nearest-in-time offsets among confirmed pairs is inspected before any
-  threshold is fixed.
-- **Multiple-testing on a large table.** ~3,000 mids × 15 years is ~45,000 cells; a 1 %
-  false-alarm rate is 450 spurious refutations. Hence the null in §3.1 and reporting
-  rates with the calibration next to them.
-- **The 2007–2012 blind spot.** Before 2013 there is no other-provider AIS, so W1
-  cannot cover the years when the STK trail is denser than later. Those years are
-  W2/W3 only and are reported as such.
-
-## 5. Order of work, and stop conditions
-
-1. Load, count, and characterise the three sources (offsets, coverage per year).
-2. Build W1, calibrate on tier A and the null; build W6 (cheap, no calibration needed beyond its own monotone fit). **Stop and report if W1's sensitivity on
-   tier A is below ~90 %, or if it is circular.**
-3. Build W2, calibrate the same way.
-4. W3 as tie-breaker.
-5. Synthesis, recall direction, ODS audit.
-6. Decision record with counts; proposed overrides as a CSV *proposal*, not entered.
-
-## 6. Output
-
-A decision record (`047`) stating what was measured and what was found, with the
-calibration numbers first. A proposal CSV in the scratchpad and named in the record.
-No change to the key, to `overrides/`, or to `curated/`.
+- W1 confirms mid ↔ MMSI; MMSI ↔ vid is the registry's word (21 reused MMSIs are handled by
+  windows). A wrong registry MMSI corrupts the witness, not the key.
+- W2/W3 calibration used W1-confirmed pairs, so it is in-sample for the 2013→ window and
+  untested for 2007–2012, where the audit is weakest.
+- The split reader is blind to 14 of the 41 W1-verified changes: a lower bound.
