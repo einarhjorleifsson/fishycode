@@ -58,6 +58,8 @@ key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2))
 cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
+life <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> transmute(nvid = as.integer(vid), yh1, yh2)
+HORIZON <- max(life$yh2, na.rm = TRUE)   # yh2 never exceeds the registry snapshot horizon: an end AT it is not an end
 foreign_keep <- read.csv("overrides/stk_foreign_mid_vid.csv") |>
   transmute(mid, fvid = as.integer(vid), fd1 = as.Date(d1), fd2 = as.Date(d2))
 w1 <- read_parquet(fd_curated("check", "ais_key_audit_w1.parquet"))
@@ -69,7 +71,12 @@ days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
   "select mid, cast(time as date) d, count(*) n from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK_GLOB)))
 DBI::dbDisconnect(con, shutdown = TRUE)
 
-has_vessel <- key |> filter(!is.na(vid), vid > 0) |> distinct(mid) |> pull(mid)
+# A mobile-id is in scope when the key gives it a vessel, OR when W1 confirms a vid on it in >= 3 months
+# although the key gave it none (e.g. an identifier typo), unless the key classes it as a device.
+key_class <- key |> group_by(mid) |> summarise(entity_class = names(sort(table(entity_class), decreasing = TRUE))[1], .groups = "drop")
+w1_named <- w1 |> filter(score >= .8) |> count(mid, vid) |> filter(n >= 3) |> distinct(mid) |>
+  left_join(key_class, by = "mid") |> filter(is.na(entity_class) | entity_class %in% c("vessel", "unknown")) |> pull(mid)
+has_vessel <- union(key |> filter(!is.na(vid), vid > 0) |> distinct(mid) |> pull(mid), w1_named)
 span <- days |>
   filter(mid %in% has_vessel) |>
   group_by(mid) |>
@@ -115,13 +122,20 @@ cut_w1 <- cut_w1 |>
   summarise(covered = any(!is.na(cut_s) & cut_s >= as.Date(sprintf("%d-%02d-01", prev_end %/% 12L, prev_end %% 12L + 1L)) &
                           cut_s <= as.Date(sprintf("%d-%02d-28", next_start %/% 12L, next_start %% 12L + 1L))), .groups = "drop") |>
   filter(!covered) |> transmute(mid, cut, basis)
-cuts <- bind_rows(cut_silence, cut_w1)
+# A silence of a year or more is cut whatever the split reader says: measured, 20 % (>= 365 d) to 35 %
+# (>= 730 d) of them are a change of vessel, and a cut that changes nothing is merged away again.
+cut_long <- days |>
+  filter(mid %in% has_vessel) |> arrange(mid, d) |> group_by(mid) |>
+  mutate(gap = as.numeric(d - lag(d))) |> ungroup() |>
+  filter(!is.na(gap), gap >= 365) |>
+  transmute(mid, cut = d, basis = paste0("silence of ", gap, " d (any silence of a year or more is cut)"))
+cuts <- bind_rows(cut_silence, cut_w1, cut_long)
 
 ## Segments --------------------------------------------------------------------------------------
 cuts <- cuts |> distinct(mid, cut, .keep_all = TRUE)
 frame <- span |>
   left_join(end_of, by = "mid") |>
-  transmute(mid, first, last, end = pmax(coalesce(kend, last), last))
+  transmute(mid, first, last, end = pmax(coalesce(kend, as.Date("2028-12-24")), last))
 segs <- bind_rows(
   frame |> transmute(mid, d1 = first, end),
   cuts |> inner_join(frame, by = "mid") |> filter(cut > first, cut <= last) |> transmute(mid, d1 = cut, end)) |>
@@ -136,14 +150,11 @@ seg_basis <- segs |>
   transmute(mid, seg_no, boundary_basis = coalesce(basis, "first ping"))
 
 ## Evidence per segment --------------------------------------------------------------------------
-w1_seg <- segs |>
+w1_all <- segs |>
   inner_join(select(st, mid, vid, md), by = "mid", relationship = "many-to-many") |>
   filter(md >= d1, md <= d2) |>
   count(mid, seg_no, vid, name = "k") |>
-  group_by(mid, seg_no) |> arrange(desc(k), .by_group = TRUE) |>
-  summarise(w1_vid = vid[1], w1_months = k[1],
-            twin_vid = if (n() > 1 && k[2] >= MIN_W1_MONTHS) vid[2] else NA_integer_, .groups = "drop") |>
-  filter(w1_months >= MIN_W1_MONTHS)
+  filter(k >= MIN_W1_MONTHS)
 
 # the mobile-id's OWN identifier strings: a call sign (TF + two letters) or a 9-digit MMSI
 tok <- key |>
@@ -209,6 +220,16 @@ foreign_seg <- segs |>
   group_by(mid, seg_no) |> arrange(desc(overlap), dist, .by_group = TRUE) |> slice(1) |> ungroup() |>
   transmute(mid, seg_no, foreign_vid = fvid)
 
+# When W1 confirms SEVERAL vids over a segment (a tug and its tow travel together and both fit), the
+# vid the key already names wins if it is among them, and only otherwise the one with most months.
+# The key's ODS-sourced rows are not used for that.
+w1_seg <- w1_all |>
+  left_join(key_seg |> transmute(mid, seg_no, kf = if_else(coalesce(key_step, "") == "manuals", NA_integer_, key_vid)),
+            by = c("mid", "seg_no")) |>
+  group_by(mid, seg_no) |>
+  arrange(desc(vid == kf & !is.na(kf)), desc(k), .by_group = TRUE) |>
+  summarise(w1_vid = vid[1], w1_months = k[1], twin_vid = if (n() > 1) vid[2] else NA_integer_, .groups = "drop")
+
 pings <- segs |>
   inner_join(days, by = "mid", relationship = "many-to-many") |>
   filter(d >= d1, d <= d2) |>
@@ -233,18 +254,27 @@ tbl <- segs |>
                             is.na(key_free) & !is.na(foreign_vid) ~ "foreign: kept override", .default = "continuity"),
          vid_no_ods = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_,
                                 !ods_key & key_vid > 0 ~ key_vid, .default = NA_integer_))
-# an Icelandic stretch with no evidence and no ODS-free key row borrows its neighbour's vid
+# An Icelandic stretch with no evidence and no ODS-free key row borrows its neighbour's vid - but only
+# if that vessel EXISTED then (its registered lifetime covers the segment). A vid cannot be assigned to
+# a time before it was built or after it left the register; otherwise the stretch is left for a person.
 tbl <- tbl |>
   arrange(mid, seg_no) |>
   group_by(mid) |>
   mutate(need = is.na(vid) & !drop_seg, vid_nb = vid) |>
   tidyr::fill(vid_nb, .direction = "downup") |>
   ungroup() |>
-  mutate(vid = if_else(need & !is.na(vid_nb), vid_nb, vid),
-         source = if_else(need & !is.na(vid_nb), "continuity: neighbour", source),
-         agrees_key = !is.na(vid) & vid == key_vid)
+  left_join(life, by = c("vid_nb" = "nvid")) |>
+  mutate(nb_alive = is.na(yh1) | (yh1 <= as.integer(format(d2, "%Y")) + 1L &
+                                  (is.na(yh2) | yh2 >= HORIZON | yh2 >= as.integer(format(d1, "%Y")) - 1L)),
+         fill_ok = need & !is.na(vid_nb) & nb_alive,
+         vid = if_else(fill_ok, vid_nb, vid),
+         source = case_when(fill_ok ~ "continuity: neighbour",
+                            need & !is.na(vid_nb) & !nb_alive ~ "no evidence, neighbour did not exist then: a person decides",
+                            .default = source),
+         agrees_key = !is.na(vid) & vid == key_vid) |>
+  select(-yh1, -yh2, -vid_nb, -nb_alive, -fill_ok)
 
-SRC <- c("physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "foreign: kept override", "drop: a person decides")
+SRC <- c("physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "foreign: kept override", "drop: a person decides", "no evidence, neighbour did not exist then: a person decides")
 # two neighbouring segments of one vid are one segment
 merged <- tbl |>
   arrange(mid, seg_no) |>
@@ -308,7 +338,7 @@ stopifnot("segments leave a gap or overlap" = all(tiles$tiles))
 stopifnot("a ping is in no segment or in two" = sum(merged$pings) == sum(span$total))
 unassigned <- merged |> filter(is.na(vid))
 cat("\nACCEPTANCE: segments tile all", nrow(span), "mobile-ids; every one of", format(sum(span$total), big.mark = ","),
-    "pings is in exactly one segment; pings on no vid (explicit drops only):", format(sum(unassigned$pings), big.mark = ","), "\n")
+    "pings is in exactly one segment; pings on no vid (a drop or a stretch for a person, listed):", format(sum(unassigned$pings), big.mark = ","), "\n")
 w1_check <- st |>
   inner_join(transmute(merged, mid, d1, d2, seg_vid = vid), by = "mid", relationship = "many-to-many") |>
   filter(md >= d1, md <= d2) |>

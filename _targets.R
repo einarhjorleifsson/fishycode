@@ -364,6 +364,14 @@ list(
              fd_curated("check", "ais_key_twins.parquet"))
   }, format = "file"),
 
+  # The vessel-first view: is every Icelandic vessel the registry, Hreidar or an MMSI say existed in the
+  # STK era represented by a mobile-id, and do its mobile-ids report when the vessel is active?
+  tar_target(check_ais_key_vessel_recall, {
+    check_ais_key_segments; check_ais_key_audit; vessel; landing; logbook
+    produces("curate/checks/ais_key_vessel_recall.R",
+             fd_curated("check", "ais_key_vessel_recall.parquet"))
+  }, format = "file"),
+
   # Each discrepancy mid read as eras: which vid when, what the key says, whether the
   # registry allows it. Proposals only; a person decides and it enters through overrides/.
   tar_target(check_ais_key_resolution, {

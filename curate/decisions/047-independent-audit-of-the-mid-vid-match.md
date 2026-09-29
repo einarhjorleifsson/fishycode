@@ -457,6 +457,41 @@ wrong**; the ambiguity is the STK label, which cannot say which of two hulls in 
 maintainer's framing for this: STK is AIS with the original MMSI stripped out and a mobile-id put in
 its place, so a typical AIS feed (astd, astdB, which carry the MMSI) does not have the problem.
 
+### Update 2026-09-29 (evening): the vessel-first missingness accounting, and four fixes it forced
+
+Asked to double-check from the vessels' side (the registry, Hreidar, the MMSIs, and ASTD/ASTD-B where
+the MMSI gives the vid unambiguously): are the vessels that should be in STK represented **in time**?
+`curate/checks/ais_key_vessel_recall.R` (`curated/check/ais_key_vessel_recall.parquet`, wired into
+`_targets.R`) is a missingness accounting whose unit is a vessel-**month**, never a vessel: a vessel
+represented 2008-2012 and absent after is not "represented". States: reported (an assigned mid has
+pings), assigned but silent, unassigned; reasons from W1. A first, vessel-level version hid exactly
+that, and was replaced.
+
+**AIS-first (103,259 vessel-months heard by astd/astdB):** 82.0 % reported, 17.7 % assigned-but-silent,
+**0.3 % (333) unassigned**. Of the 333, only 11 have a co-located mid the table gives to another vid or
+none; 322 have no mid in STK moving with the vessel at all. The silent share grows over time (9.5 % in
+2013, 24.6 % in 2024) and is **not concentrated**: 1,385 vessels, the top 100 holding 31 %; 75 % usage
+class 33 (fishing), 63 % under 15 m; a co-located other mid appears in only 21 of the 18,250 months. It reads as
+small boats whose STK unit is off or seasonal while the AIS is on, not as a mismatch. **Landings or logbook
+only (no AIS):** 97.5 % reported, 1.4 % (1,053) unassigned, 1.1 % silent.
+
+**Four defects of the segment table it exposed, fixed:**
+1. *Tow tie-break.* The barges under vids 9848-9852 (heard by AIS, no mid) had their mids given to the
+   tug that tows them, because both are confirmed and the one with more months won. Now the vid the key
+   already names wins when it is among the confirmed ones.
+2. *Scope.* Mobile-ids the key gave no vid but W1 names (mid 101078 = vid 2549, mid 100512 = vid 1599)
+   were never looked at; 17 more mids are now in scope.
+3. *Time.* A silence of a year or more is now always cut, and a vid borrowed from a neighbouring segment
+   must have existed then (its registered lifetime covers the segment); otherwise the stretch is left for
+   a person. Mid 101097's 2007-08 pings had been given vid 3025, a vessel that exists only from 2023; the
+   logbook now names vid 1328 for them, independently of the ODS.
+4. *Retiring the ODS cost something.* Some ODS-only rows were right where evidence exists (1328); the
+   evidence now supplies them, and where it does not the stretch is listed, not guessed.
+
+**The table now:** 2,896 mids, 3,035 segments, all 181,599,406 pings in exactly one segment; **9,105 pings
+await a person** (4 drop segments, 38 pings; 2 stretches whose neighbour did not exist then, 9,067 pings);
+direct evidence reaches 89.7 % of the pings.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation

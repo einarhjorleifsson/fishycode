@@ -414,7 +414,9 @@ The `curated/check/` tables build the next time the `check_ais_key_*` targets ru
 `ais_key_coverage` finds the pings the key leaves unassigned (39,487 on mids with a vessel; the largest
 is a d1/d2 typo on mid 101097) and proposes a fill; the maintainer's invariant is no unassigned ping.
 
-`ais_key_twins` keeps the 40 mobile-ids heard with two vessels (a candidate fishyweb case example).
+`ais_key_vessel_recall` accounts for every Icelandic vessel-month AIS or the logbook shows active: 0.3 % of
+AIS-heard months have no mid assigned (decision 047).
+`ais_key_twins` keeps the mobile-ids heard with two vessels (a candidate fishyweb case example).
 Side observation, NOT validated and not pursued: on the uncleaned 2019 union, implied-speed jumps
 (> 50 kn) are 0.09 % of consecutive pairs for stk, 0.04 % for astdB, 0.02 % for astd.
 
