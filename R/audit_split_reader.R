@@ -87,7 +87,7 @@ split_registry_handover <- function(con, sil, key, identity) {
     dplyr::filter(!is.na(cs) | !is.na(mmsi)) |>
     dplyr::distinct()
   idn <- identity |>
-    dplyr::filter(vid < 3700) |>
+    dplyr::filter(!vid %in% 3700:4999) |>
     dplyr::transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2))
   DBI::dbWriteTable(con, "tok", tok, overwrite = TRUE); DBI::dbWriteTable(con, "idn", idn, overwrite = TRUE)
   DBI::dbWriteTable(con, "sil2", dplyr::transmute(sil, sid, mid = as.numeric(mid), d_prev, d_next), overwrite = TRUE)

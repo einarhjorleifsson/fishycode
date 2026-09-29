@@ -349,12 +349,19 @@ list(
   }, format = "file"),
 
   # The segment table: every mobile-id tiled, a vid for every stretch, no ping unassigned. Plan 009
-  # phase 2; scored against the manual ODS, which it does not read (phase 5).
+  # phase 2. The manual ODS is not a judge of it.
   tar_target(check_ais_key_segments, {
     vessel_ais_key; vessel_identity; check_ais_key_audit; check_ais_key_split_candidates
     produces("curate/checks/ais_key_segments.R",
-             fd_curated("check", "ais_key_segments.parquet"),
-             fd_curated("check", "ais_key_segments_vs_ods.parquet"))
+             fd_curated("check", "ais_key_segments.parquet"))
+  }, format = "file"),
+
+  # Mobile-ids heard with two vessels at once, kept as a table: companions, vessels in company,
+  # a shared MMSI, and the cases where AIS is inconsistent. A candidate case example for fishyweb.
+  tar_target(check_ais_key_twins, {
+    check_ais_key_segments; vessel
+    produces("curate/checks/ais_key_twins.R",
+             fd_curated("check", "ais_key_twins.parquet"))
   }, format = "file"),
 
   # Each discrepancy mid read as eras: which vid when, what the key says, whether the

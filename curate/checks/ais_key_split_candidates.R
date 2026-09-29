@@ -1,7 +1,7 @@
 # Silences in an STK mobile-id where a human would split it in two vids.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, vessel.parquet, vessel_identity.parquet,
-#         raw/ais/stk/trail, raw/ais/stk/stk_mobile_match-and-duals.ods
+#         raw/ais/stk/trail
 # Output: curated/check/ais_key_split_candidates.parquet - one row per silence >= 180 d on
 #         a mobile-id the key gives ONE Icelandic vid across
 #
@@ -9,12 +9,13 @@
 # identifier strings. The manual match split some by hand. This emulates what the human
 # read (R/audit_split_reader.R) and lists every silence with how many of four evidence
 # families fire: >= 3 is strong (all 19 silences W1 could check were real vessel changes,
-# decision 047), exactly 2 is worth a look (7 of 22). `ods_split` marks the splits the
-# human already made, so what remains is the human-style split the key does not have.
+# decision 047), exactly 2 is worth a look (7 of 22). `key_splits` marks the silences the key
+# already gives two different vids across, so what remains is a split the key does not have.
 #
 # This check REPORTS. It never writes a vid. A reviewed conclusion re-enters through
 # overrides/ as an input (AGENTS.md: the loop is broken by a human, not computed).
-# Icelandic vessels are the target; foreign vids (3700-4999) are excluded here.
+# Icelandic vessels are the target. Only 3700-4999 is foreign: Icelandic vids resume above 4999
+# (small boats), so the filter excludes that range and nothing else.
 
 library(dplyr)
 library(nanoparquet)
@@ -23,7 +24,7 @@ STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parque
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 key_v <- key |>
-  filter(!is.na(vid), vid > 0, vid < 3700, entity_class == "vessel") |>
+  filter(!is.na(vid), vid > 0, !vid %in% 3700:4999, entity_class == "vessel") |>
   select(mid, K = vid, d1, d2)
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> select(vid, yh2)
 identity <- read_parquet(fd_curated("vessel", "vessel_identity.parquet"))
@@ -52,21 +53,13 @@ hand  <- split_registry_handover(con, sil, key, identity)
 # (corrections/vessel_registry_stale_lifetime.yml), so an end AT the horizon is not an end.
 HORIZON <- max(reg$yh2, na.rm = TRUE)
 
-# The human's own splits: consecutive recorded rows on one mid with different vids
-ods <- readODS::read_ods(fd_raw("ais", "stk", "stk_mobile_match-and-duals.ods")) |>
-  as_tibble() |>
-  filter(basis == "recorded", !is.na(vid), vid > 0) |>
-  mutate(d1 = as.Date(d1), d2 = as.Date(d2), vid = as.integer(vid)) |>
-  arrange(mid, d1) |>
-  group_by(mid) |>
-  mutate(nxt_vid = lead(vid), nxt_d1 = lead(d1)) |>
-  ungroup() |>
-  filter(!is.na(nxt_vid), nxt_vid != vid) |>
-  transmute(mid, d_end = d2, d_start = nxt_d1)
-
-ods_hit <- sil |>
-  inner_join(ods, by = "mid") |>
-  filter(d_end >= d_prev - 3, d_start <= d_next + 3)
+# What the key already does across each silence: a different vid on either side means it splits
+key_at <- function(mid_, d_) {
+  tibble(mid = mid_, d = d_) |>
+    left_join(key_v, by = "mid", relationship = "many-to-many") |>
+    filter(d1 <= d, d2 >= d) |> group_by(mid, d) |> slice(1) |> ungroup() |> select(mid, d, k = K)
+}
+key_after <- key_at(sil$mid, sil$d_next) |> rename(d_next = d, k_after = k)
 
 out <- sil |>
   left_join(pos, by = "sid") |>
@@ -79,11 +72,12 @@ out <- sil |>
          E_registry_end = !is.na(yh2) & yh2 < HORIZON & abs(yh2 - as.integer(format(d_prev, "%Y"))) <= 1,
          n_families = E_profile + E_abroad + E_registry_handover + E_registry_end,
          tier = case_when(n_families >= 3 ~ "strong", n_families == 2 ~ "review", .default = "weak")) |>
-  mutate(ods_split = sid %in% ods_hit$sid) |>
+  left_join(key_after, by = c("mid", "d_next")) |>
+  mutate(key_splits = !is.na(k_after) & k_after != vid) |>
   select(mid, vid, d_prev, d_next, gap, lat_last, lon_last, lat_first, lon_first, shift_space, shift_speed,
-         E_profile, E_abroad, E_registry_handover, E_registry_end, n_families, tier, ods_split)
+         E_profile, E_abroad, E_registry_handover, E_registry_end, n_families, tier, key_splits)
 
-print(out |> count(tier, ods_split, name = "silences") |> knitr::kable(caption = "ais_key_split_candidates"))
+print(out |> count(tier, key_splits, name = "silences") |> knitr::kable(caption = "ais_key_split_candidates"))
 DBI::dbDisconnect(con, shutdown = TRUE)
 
 write_curated(out, fd_curated("check", "ais_key_split_candidates.parquet"),

@@ -405,14 +405,18 @@ Built 2026-09-29: `ais_key_audit` (ledger of every key row, 132 discrepancies, 8
 vid-claiming rows no witness reaches) and `ais_key_split_candidates` (silences where a
 human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009 —
 phase 2 (segment table built with logbook and landings: tiles every mid, 90 % of pings with direct evidence, Icelandic ODS rows 87 % reproduced without the ODS; review open), phase 3 (review in the app),
-phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (retire the ODS
-as an input in stages; decided 2026-09-29).
+phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (the ODS is retired:
+switch `ais_key.R` to the segment table, then delete the ODS; decided 2026-09-29).
 `ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids;
 track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
 The `curated/check/` tables build the next time the `check_ais_key_*` targets run.
 
 `ais_key_coverage` finds the pings the key leaves unassigned (39,487 on mids with a vessel; the largest
 is a d1/d2 typo on mid 101097) and proposes a fill; the maintainer's invariant is no unassigned ping.
+
+`ais_key_twins` keeps the 40 mobile-ids heard with two vessels (a candidate fishyweb case example).
+Side observation, NOT validated and not pursued: on the uncleaned 2019 union, implied-speed jumps
+(> 50 kn) are 0.09 % of consecutive pairs for stk, 0.04 % for astdB, 0.02 % for astd.
 
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.

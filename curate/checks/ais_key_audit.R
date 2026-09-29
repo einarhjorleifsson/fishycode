@@ -193,7 +193,7 @@ two <- two |>
 # Computed by curate/checks/ais_key_split_candidates.R (profile, position, registry); here it
 # only annotates the ledger, so the audit does not repeat that work.
 split <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet")) |>
-  filter(tier %in% c("strong", "review"), !ods_split) |>
+  filter(tier %in% c("strong", "review"), !key_splits) |>
   group_by(mid, vid) |>
   summarise(split_tier = if_else(any(tier == "strong"), "strong", "review"), split_silences = n(), .groups = "drop")
 
@@ -250,7 +250,7 @@ discrepancy <- bind_rows(
               evidence = paste0(c_contradicted, " year-cell(s)")),
   ledger |> filter(!is.na(split_tier)) |>
     transmute(type = paste0("split_candidate_", split_tier), mid, key_vid = vid, other_vid = NA_character_,
-              evidence = paste0(split_silences, " silence(s) >= 180 d the ODS did not split"))) |>
+              evidence = paste0(split_silences, " silence(s) >= 180 d the key does not split"))) |>
   mutate(key_vid = as.integer(key_vid), reviewed_override = mid %in% reviewed$mid)
 
 print(ledger |> count(audit_status, name = "rows") |> arrange(desc(rows)) |> knitr::kable(caption = "ais_key_audit ledger"))

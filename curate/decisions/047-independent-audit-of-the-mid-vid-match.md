@@ -428,6 +428,35 @@ The six differences (mids 101084, 101081, 101223, 101776, 101089 and one more) a
 unreachable start-up-year rows are the residue a person reads. The foreign vessels are the bonus and
 stay ODS-only until they get their own evidence.
 
+### Update 2026-09-29 (later): the ODS is no longer a judge, the twins, and a range correction
+
+**The ODS is retired as a judge and, for the new checks, as an input** (maintainer). The scoring of
+the segment table against it, and `ods_split` in the split candidates, are removed; the split
+candidates now flag `key_splits` (the key already gives two vids across the silence) instead. The
+foreign vessels' matches were extracted **once, unchanged** into `overrides/stk_foreign_mid_vid.csv`
+(352 rows, vids 3700-4999), so they are kept without the ODS file; the segment table reads that file
+and labels them `foreign: kept override`. The 21 Icelandic segments that had only an ODS-sourced key
+row now borrow the vid of the neighbouring segment of the same mid and are flagged. Dropping the ODS
+changes no vid anywhere (0 segments) - those stretches simply had no evidence of their own. The ODS
+file itself cannot be deleted yet: `reference/vessels/ais_key.R` still reads it to build today's key.
+It is safe to delete the day `ais_key.R` reads the segment table instead.
+
+**Range correction.** Only vids 3700-4999 are foreign; Icelandic vids resume above 4999 (small
+boats). Several of my filters used `vid < 3700` and so left Icelandic vessels numbered 5000 and above
+out of the split reader. Fixed; the split candidates rise only slightly (52 strong, 106 review, from
+51 and 98) and the earlier conclusions hold.
+
+**Twins: mobile-ids heard with two vessels at once** (`curate/checks/ais_key_twins.R`,
+`curated/check/ais_key_twins.parquet`, kept as a table and a candidate case example for fishyweb).
+40 segments (1.3 % of 2,984; about 2.5 M of 181 M pings, 1.4 %): **30 travel together** (26 mids,
+1.60 M pings; own tracks within 2 km, different MMSIs: passenger vessels in company, paired small
+boats, a tender); **7 partial** (6 mids, 0.85 M); **3 apart, both confirmed** (3 mids, 0.06 M) - the
+two vessels are together part of the time and apart the rest, and in all three a **tug** (usage class
+50) is involved, so it is towing; **0 shared MMSI**. **No case was found where an AIS position itself is
+wrong**; the ambiguity is the STK label, which cannot say which of two hulls in company it is. The
+maintainer's framing for this: STK is AIS with the original MMSI stripped out and a mobile-id put in
+its place, so a typical AIS feed (astd, astdB, which carry the MMSI) does not have the problem.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation

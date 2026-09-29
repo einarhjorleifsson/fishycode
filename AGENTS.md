@@ -82,7 +82,7 @@ permanent — they are the only structure that survived every previous restart.
 | `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. |
 | `reference/` | Vessels, geo, ports, gear, species. Note: `vessel_ais_key` is a *fitted model*, not a registry — it carries confidence. |
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
-| `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, and `ais_key_split_candidates.R` finds where a mobile-id changed hands (plan 009, decision 047). |
+| `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). |
 | `curate/corrections/` | The correction registry — one declarative entry each. |
 | `curate/decisions/` | Decision records. Why, not what. Indexed in its `README.md` — a finished `TODO.md` item is deleted and recorded there, or in `corrections/`. |
 | `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |

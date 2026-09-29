@@ -1,6 +1,6 @@
 # 009 — An independent audit of the mid→vid match, from every witness that does not read the key
 
-**status:** restructured twice, 2026-09-29 — phase 1 (witnesses, ledger, reader, resolution first pass, coverage check) done and built; the product is now a **segment table** that tiles every mid, phases 2–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
+**status:** restructured 2026-09-29 — phase 1 (witnesses, ledger, reader, resolution first pass, coverage check) done and built; the product is now a **segment table** that tiles every mid, phases 2–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 phase 2 first pass built (`ais_key_resolution`), phases 2 (review), 3–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 
 *Drafted with Claude (AI-assisted); the maintainer set the scope, lifted the decision rules for
@@ -83,21 +83,17 @@ until a person has decided; the app already exists for the 30 first-pass proposa
 - The registry's own MMSI-to-vid errors, tested independently of W1.
 **Check:** the `continuity` segments are re-counted in pings, each with why nothing reaches it.
 
-## 6. Phase 5 — replace the ODS, in stages (decided 2026-09-29, maintainer)
+## 6. Phase 5 — the ODS is retired (decided 2026-09-29, maintainer)
 
-The ODS (`raw/ais/stk/stk_mobile_match-and-duals.ods`, 508 rows) is given up as an **input**, and kept
-as a raw file, never destroyed, and as a **test set**.
-1. Build the segment table (phase 2) and run it **beside** the current key. Nothing reads it yet.
-2. Score it against the ODS row by row: reproduces / differs / unreachable (done, with logbook and landings: Icelandic rows 112 of 129 reproduced without the ODS, 6 differ, 11 unreachable; the 332 unreachable manual rows are all foreign vessels). The ODS's 44 splits on
-   key-claimed mids are the first test (the reader recovers 42 with ≥ 2 families, 32 with ≥ 3); the
-   360 single-vid manual rows are unmeasured and are measured next.
-3. Every ODS row the table **differs** on is decided by a person (phase 3). Every row it **cannot
-   reach** (for Icelandic vessels 11 of 129; the foreign vessels' 332 manual rows have no witness) is listed with what the table assigned instead and
-   on what evidence, so no human judgement is dropped unseen.
-4. Only when the table reproduces every reviewed ODS row it can reach, every difference has a
-   reviewed answer and acceptance tests (a)-(d) pass, does `ais_key.R` stop reading the ODS and read
-   the segment table. Until then the ODS stays an input.
-**needs: maintainer** — the reviewed answers, and the moment of the switch.
+The ODS is **not a judge** and is not read by any of the new checks. The foreign vessels' matches it
+held were extracted once, unchanged, to `overrides/stk_foreign_mid_vid.csv`. Dropping it changes no vid
+in the segment table. What is left to do:
+1. Review the segments that differ from the current key (63) and the ledger's discrepancies, in the
+   review app, on evidence alone (phase 3).
+2. Switch `reference/vessels/ais_key.R` to read the segment table instead of the ODS. **needs:
+   maintainer** - the moment of the switch.
+3. Delete `raw/ais/stk/stk_mobile_match-and-duals.ods` (and its `staging` copy) the day step 2 is done;
+   until then `ais_key.R` still reads it and deleting it would break today's key.
 
 ## 7. What could still make this wrong
 

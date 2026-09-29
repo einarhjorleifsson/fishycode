@@ -3,11 +3,9 @@
 # Input:  curated/vessel/{vessel_ais_key,vessel_identity}.parquet, raw/ais/stk/trail,
 #         curated/check/ais_key_split_candidates.parquet, curated/check/ais_key_audit_w1.parquet,
 #         curated/check/ais_key_audit_lb_{hits,n}.parquet (logbook and landings per month),
-#         raw/ais/stk/stk_mobile_match-and-duals.ods (scored against, never read as input)
-# Output: curated/check/ais_key_segments.parquet         - one row per segment of a mobile-id
-#         curated/check/ais_key_segments_vs_ods.parquet  - each ODS row, reproduced or not
+# Output: curated/check/ais_key_segments.parquet - one row per segment of a mobile-id
 #
-# Plan 009 phase 2 / phase 5. The maintainer's invariant: a mobile-id that has a vessel has a
+# Plan 009 phase 2. The maintainer's invariant: a mobile-id that has a vessel has a
 # vessel for its FULL period, first ping to last, so no ping is unassigned. A segment table
 # satisfies that by construction: cut each mobile-id's timeline, and every stretch between cuts
 # gets a vid.
@@ -27,10 +25,18 @@
 #                 clear margin (>= 0.1) over every other vid, with >= 30 stations - calibrated at
 #                 year level (decision 047); landings alone count only at >= 90 % with a margin of
 #                 0.3, because a vessel that calls at every port (a ferry) otherwise wins them all;
-#   4. continuity the key's vid for that stretch (never left empty - the weakest grade).
+#   4. continuity the key's vid for that stretch (never left empty - the weakest grade). For an
+#                 ICELANDIC vid the key rows that came from the ODS are NOT used here (the ODS is
+#                 given up as an input, plan 009 phase 5): a stretch with no evidence borrows the vid
+#                 of the neighbouring segment of the same mobile-id, flagged for a person. FOREIGN
+#                 vessels (vids 3700-4999 only; Icelandic vids resume above 4999) have no other
+#                 evidence, so their matches are read from overrides/stk_foreign_mid_vid.csv, which
+#                 keeps them without the ODS file (extracted once, unchanged), and are labelled
+#                 `foreign: kept override`.
 # A negative key vid (an ODS `drop`) is NOT decided by a rule: it stays NA and is listed.
-# `vid_no_ods` is the same rule with the key rows that came from the ODS removed from the
-# continuity step, so scoring the table against the ODS measures what the rule can do alone.
+# `vid_no_ods` is the same rule with the ODS-sourced key rows removed from the continuity step; it
+# is kept only so the dependence on those rows stays visible. The ODS is not a judge of this table
+# (maintainer, 2026-09-29): disagreements with it are decided on evidence, like any other.
 #
 # ACCEPTANCE (asserted): the segments tile every mobile-id with no gap or overlap; every ping is
 # in exactly one segment; and pings outside a vid are only those on an explicit drop.
@@ -52,6 +58,8 @@ key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2))
 cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
+foreign_keep <- read.csv("overrides/stk_foreign_mid_vid.csv") |>
+  transmute(mid, fvid = as.integer(vid), fd1 = as.Date(d1), fd2 = as.Date(d2))
 w1 <- read_parquet(fd_curated("check", "ais_key_audit_w1.parquet"))
 lb_hits <- read_parquet(fd_curated("check", "ais_key_audit_lb_hits.parquet"))
 lb_n <- read_parquet(fd_curated("check", "ais_key_audit_lb_n.parquet"))
@@ -195,6 +203,12 @@ key_seg <- segs |>
   slice(1) |> ungroup() |>
   transmute(mid, seg_no, key_vid = kvid, key_step = kstep)
 
+foreign_seg <- segs |>
+  inner_join(foreign_keep, by = "mid", relationship = "many-to-many") |>
+  mutate(overlap = pmax(0, as.numeric(pmin(d2, fd2) - pmax(d1, fd1)) + 1), dist = pmax(0, as.numeric(fd1 - d2), as.numeric(d1 - fd2))) |>
+  group_by(mid, seg_no) |> arrange(desc(overlap), dist, .by_group = TRUE) |> slice(1) |> ungroup() |>
+  transmute(mid, seg_no, foreign_vid = fvid)
+
 pings <- segs |>
   inner_join(days, by = "mid", relationship = "many-to-many") |>
   filter(d >= d1, d <= d2) |>
@@ -206,18 +220,31 @@ tbl <- segs |>
   left_join(reg_seg, by = c("mid", "seg_no")) |>
   left_join(lb_seg, by = c("mid", "seg_no")) |>
   left_join(key_seg, by = c("mid", "seg_no")) |>
+  left_join(foreign_seg, by = c("mid", "seg_no")) |>
   left_join(pings, by = c("mid", "seg_no")) |>
   mutate(pings = coalesce(pings, 0L),
+         ods_key = !is.na(key_step) & key_step == "manuals" & !is.na(key_vid) & key_vid > 0,
+         is_foreign = !is.na(key_vid) & key_vid %in% 3700:4999,
+         # continuity may use the key's vid unless the key row came from the ODS (that file is not an input)
+         key_free = if_else(ods_key, NA_integer_, key_vid),
          drop_seg = !is.na(key_vid) & key_vid <= 0 & is.na(w1_vid) & is.na(reg_vid) & is.na(lb_vid),
-         vid = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_, .default = key_vid),
+         vid = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_, !is.na(key_free) ~ key_free, .default = foreign_vid),
          source = case_when(!is.na(w1_vid) ~ "physical", !is.na(reg_vid) ~ "registry", !is.na(lb_vid) ~ lb_src, drop_seg ~ "drop: a person decides",
-                            .default = "continuity"),
-         # the same rule with the ODS-sourced key rows taken out of the continuity step
+                            is.na(key_free) & !is.na(foreign_vid) ~ "foreign: kept override", .default = "continuity"),
          vid_no_ods = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_,
-                                key_step != "manuals" & key_vid > 0 ~ key_vid, .default = NA_integer_),
+                                !ods_key & key_vid > 0 ~ key_vid, .default = NA_integer_))
+# an Icelandic stretch with no evidence and no ODS-free key row borrows its neighbour's vid
+tbl <- tbl |>
+  arrange(mid, seg_no) |>
+  group_by(mid) |>
+  mutate(need = is.na(vid) & !drop_seg, vid_nb = vid) |>
+  tidyr::fill(vid_nb, .direction = "downup") |>
+  ungroup() |>
+  mutate(vid = if_else(need & !is.na(vid_nb), vid_nb, vid),
+         source = if_else(need & !is.na(vid_nb), "continuity: neighbour", source),
          agrees_key = !is.na(vid) & vid == key_vid)
 
-SRC <- c("physical", "registry", "logbook", "landings", "continuity", "drop: a person decides")
+SRC <- c("physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "foreign: kept override", "drop: a person decides")
 # two neighbouring segments of one vid are one segment
 merged <- tbl |>
   arrange(mid, seg_no) |>
@@ -233,7 +260,7 @@ merged <- tbl |>
   group_by(mid) |> mutate(seg_no = row_number()) |> ungroup() |>
   mutate(agrees_key = !is.na(vid) & vid == key_vid,
          startup_phase = d1 < STARTUP_END,
-         grade = case_when(source == "physical" ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source == "continuity" ~ "D", .default = "-")) |>
+         grade = case_when(source == "physical" ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source %in% c("continuity", "continuity: neighbour") ~ "D", source == "foreign: kept override" ~ "E", .default = "-")) |>
   select(mid, seg_no, d1, d2, vid, source, grade, key_vid, agrees_key, vid_no_ods, w1_months, twin_vid,
          boundary_basis, startup_phase, pings)
 
@@ -292,34 +319,9 @@ print(knitr::kable(merged |> filter(!is.na(vid)) |> summarise(pings_with_direct_
 print(knitr::kable(merged |> summarise(mids = n_distinct(mid), segments = n(), differ_from_key_segments = sum(!agrees_key & !is.na(vid)),
                                         pings_relabelled = sum(pings[!agrees_key & !is.na(vid)]), startup_segments = sum(startup_phase)), caption = "against the current key"))
 
-## Scored against the ODS: what the rule reproduces without it ----------------------------------
-ods <- readODS::read_ods(fd_raw("ais", "stk", "stk_mobile_match-and-duals.ods")) |>
-  as_tibble() |>
-  mutate(d1 = as.Date(d1), d2 = as.Date(d2), vid = as.integer(vid)) |>
-  filter(basis == "recorded", !is.na(vid), vid > 0, d1 <= d2) |>
-  mutate(ods_row = row_number(), ods_type = type)
-sc <- ods |>
-  inner_join(days, by = "mid", relationship = "many-to-many") |>
-  filter(d >= d1, d <= d2) |>
-  inner_join(select(merged, mid, sd1 = d1, sd2 = d2, seg_vid = vid, vid_no_ods, source), by = "mid", relationship = "many-to-many") |>
-  filter(d >= sd1, d <= sd2) |>
-  group_by(ods_row, mid, ods_vid = vid, ods_type, d1, d2) |>
-  summarise(pings = sum(n), with_table = sum(n[!is.na(seg_vid) & seg_vid == ods_vid]),
-            no_ods_same = sum(n[!is.na(vid_no_ods) & vid_no_ods == ods_vid]),
-            no_ods_other = sum(n[!is.na(vid_no_ods) & vid_no_ods != ods_vid]),
-            no_ods_none = sum(n[is.na(vid_no_ods)]),
-            physical_or_registry = sum(n[source %in% c("physical", "registry")]), .groups = "drop") |>
-  mutate(verdict = case_when(no_ods_same / pings >= .95 ~ "reproduced without the ODS",
-                             no_ods_other / pings >= .05 ~ "the table differs: a person decides",
-                             no_ods_none / pings >= .05 ~ "unreachable without the ODS",
-                             .default = "mostly reproduced"))
-print(knitr::kable(sc |> group_by(ods_type, verdict) |> summarise(rows = n(), pings = sum(pings), .groups = "drop"), caption = "ODS rows scored (the ODS was not used as input)"))
-
 write_curated(merged, fd_curated("check", "ais_key_segments.parquet"),
               inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
                          w1 = fd_curated("check", "ais_key_audit_w1.parquet"),
                          lb_hits = fd_curated("check", "ais_key_audit_lb_hits.parquet"),
                          lb_n = fd_curated("check", "ais_key_audit_lb_n.parquet"),
                          split_candidates = fd_curated("check", "ais_key_split_candidates.parquet")))
-write_curated(sc, fd_curated("check", "ais_key_segments_vs_ods.parquet"),
-              inputs = c(segments = fd_curated("check", "ais_key_segments.parquet")))
