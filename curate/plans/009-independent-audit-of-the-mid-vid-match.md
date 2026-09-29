@@ -1,6 +1,6 @@
 # 009 — An independent audit of the mid→vid match, from every witness that does not read the key
 
-**status:** restructured 2026-09-29 after phases 1 and the witnesses were built — phase 1 done,
+**status:** restructured twice, 2026-09-29 — phase 1 (witnesses, ledger, reader, resolution first pass, coverage check) done and built; the product is now a **segment table** that tiles every mid, phases 2–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 phase 2 first pass built (`ais_key_resolution`), phases 2 (review), 3–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 
 *Drafted with Claude (AI-assisted); the maintainer set the scope, lifted the decision rules for
@@ -33,7 +33,8 @@ showed the work is bookkeeping first:
    a last trip out of Icelandic waters, or a registry change; ≥ 3 of 4 families is clean.
 4. **A third of the vid-claiming rows have no independent witness at all.** That is not a
    percentage to improve; it is a list to reach or to state as unreachable.
-5. **Names are not evidence.** vid and MMSI are the identifiers (maintainer); vessel names
+5. **The product must tile.** The maintainer's invariant: a mobile-id that has a vessel has a vessel for its full period, first ping to last, and no ping is unassigned. The key breaks it today (39,487 pings on mids with a vessel, 28,299 on negative vids; `ais_key_coverage`). That makes the unit of work a **segment of a mid's timeline**, not an era found from the months a witness happens to cover.
+6. **Names are not evidence.** vid and MMSI are the identifiers (maintainer); vessel names
    changed and were reused and are used nowhere as a witness.
 
 ## 2. Phase 1 — witnesses, ledger, reader (DONE, built as checks)
@@ -42,54 +43,59 @@ showed the work is bookkeeping first:
 discrepancy register) and `curate/checks/ais_key_split_candidates.R`; both wired into
 `_targets.R`; run end to end in full. Calibration and results: decision 047.
 
-## 3. Phase 2 — resolve the discrepancies (next; the bulk of the value)
+## 3. Phase 2 — build the segment table (the product)
 
-Inputs: the 132 discrepancy rows, the split candidates the ODS did not make (19 strong, 88
-review), the ODS rows left open-ended after a vessel changed (mids 101084, 103251, and the
-swap of mids 101197/102497), and the rows the ODS flags "needs checking" (112543, 118584).
-For each, in this order and stopping when the answer is clear:
+**Segments.** Cut each mid's ping timeline at the silences of ≥ 180 days where the split reader says
+the vessel may have changed (≥ 3 of 4 families: strong; exactly 2: review), so segments tile the
+whole mid, first ping to last, by construction. Silences shorter than that never cut.
 
-1. the decision-045 track-correlation test (the mid's pings against each candidate vid's own
-   other-provider track — the strongest identity evidence there is);
-2. the vessel registry's dates for the candidate vids;
-3. logbook and landings by month over the disputed span.
+**Assigning a vid to each segment**, in this order, keeping the source and a grade:
+1. W1 (the vid's own other-provider AIS co-located with the mid) where it reaches: `physical`;
+2. the registry's holder of the mid's call sign or MMSI over the segment: `registry`;
+3. logbook and landings by month, at year level, corroborated: `witnessed`;
+4. otherwise **continuity**: the vid the mid already has, carried across: `continuity` — never
+   left empty, and always the weakest grade. Stretches in STK's start-up years (< 2009) are
+   flagged; a mid's earliest pings may predate a stable identity.
 
-**Invariant on every row entered: no ping of a mid that has a vessel may be left unassigned** (maintainer; `curate/checks/ais_key_coverage.R` measures it, and 39,487 pings already violate it). A resolved case becomes a row in `overrides/` (`proposed` → maintainer-reviewed). Nothing is
-entered by an algorithm alone (`AGENTS.md`: the loop is broken by a human). Resolution
-rule (assumed): W1/track correlation clear on both eras, or two independent witnesses agree.
-*First pass built 2026-09-29: `curate/checks/ais_key_resolution.R` derives the eras and the WHEN/WHICH for each discrepancy mid from the physical witness (30 proposals on 25 mids; 48 mids unreachable by it); track correlation and the review itself are still to do.*
-**Check:** every discrepancy row is `resolved` (with the override or a reason it stays) or
-`open: needs maintainer`.
+**Devices** (net relays, beacons, gear carried between vessels): a mid that is not a vessel gets no
+vid, and the invariant does not apply to it; a mid that alternates between vessels is read by hand.
 
-## 4. Phase 3 — reach the 884 rows no witness reaches
+**Acceptance tests, all mandatory:** (a) `ais_key_coverage` reports 0 unassigned pings and no
+overlap; (b) wherever W1 reaches, the segment's vid is W1's; (c) every reviewed ODS row the table can
+reach is reproduced; (d) a dry run against a copy of the key conserves every mid's pings. A table
+that fails any of them is not entered.
 
-- **Usage-class plausibility**: a mid whose track behaves as a trawler while the register
-  calls the vid a passenger vessel (or the reverse) — `mclass`, and Hreidar's `Notkunarteg`
-  by year, which also catches class changes over a hull's life.
-- **Hreidar against the logbook and landings** (the maintainer's original suggestion): a vid
-  in the logbook or landings in a year Hreidar says it did not exist, or after its recorded
-  fate. Hreidar shares the registry's lifetimes (decision 046), so this finds registry-side
-  and logbook-side errors, not the STK ones.
-- **The 2016-06 bulk re-issue** of ~1,800 mids, as a unit.
-- **Time base across sources**: nearest-in-time offsets among confirmed pairs, never inspected.
-- What still cannot be reached is **stated**, not left implied.
-**Check:** the 884 are re-counted; each remaining row carries why nothing reaches it.
+## 4. Phase 3 — review
 
-## 5. Phase 4 — widen
+Each disagreement between the segment table and the current key (and between the table and an ODS
+row) goes to a person in the review app: the timeline strip, overlap, speed profile, map and track
+correlation by year, with the decision recorded per segment. Nothing enters `overrides/` or the key
+until a person has decided; the app already exists for the 30 first-pass proposals.
+**Check:** every disagreement is `decided` (with the row that enters) or `open: needs maintainer`.
 
-- The MMSI-series reader as a check (exploratory result: it confirms the mid side's two
-  discrepancies and finds none of its own; 7 candidate silences have no STK witness).
-- Foreign vessels (3700–4999): a bonus, after the Icelandic work; the keel rule does not hold
-  there, so a vid is not one hull and the reader needs a different unit.
-- The registry's own MMSI→vid errors, tested independently of W1 (W1 trusts that map).
+## 5. Phase 4 — reach and widen
 
-## 6. Phase 5 — feed back
+- Usage-class plausibility; Hreidar against the logbook and landings; the 2016-06 bulk re-issue;
+  time base across sources — for the segments graded `continuity`, which no witness reaches.
+- The MMSI-series reader as a check; foreign vessels (3700–4999), where a vid is not one hull.
+- The registry's own MMSI-to-vid errors, tested independently of W1.
+**Check:** the `continuity` segments are re-counted in pings, each with why nothing reaches it.
 
-Decide, after phase 2 has answers: what `ais_key.R` itself should change (a time-aware
-identity split instead of one vid per period row — plan 003's open steps), how the ODS is
-kept or retired (measured: it is the only evidence for 392 of its 508 rows; it is a raw
-input and is never destroyed), and whether the ledger becomes the release's audit table.
-**needs: maintainer.**
+## 6. Phase 5 — replace the ODS, in stages (decided 2026-09-29, maintainer)
+
+The ODS (`raw/ais/stk/stk_mobile_match-and-duals.ods`, 508 rows) is given up as an **input**, and kept
+as a raw file, never destroyed, and as a **test set**.
+1. Build the segment table (phase 2) and run it **beside** the current key. Nothing reads it yet.
+2. Score it against the ODS row by row: reproduces / differs / unreachable. The ODS's 44 splits on
+   key-claimed mids are the first test (the reader recovers 42 with ≥ 2 families, 32 with ≥ 3); the
+   360 single-vid manual rows are unmeasured and are measured next.
+3. Every ODS row the table **differs** on is decided by a person (phase 3). Every row it **cannot
+   reach** (392 of 508 have no physical witness) is listed with what the table assigned instead and
+   on what evidence, so no human judgement is dropped unseen.
+4. Only when the table reproduces every reviewed ODS row it can reach, every difference has a
+   reviewed answer and acceptance tests (a)-(d) pass, does `ais_key.R` stop reading the ODS and read
+   the segment table. Until then the ODS stays an input.
+**needs: maintainer** — the reviewed answers, and the moment of the switch.
 
 ## 7. What could still make this wrong
 
