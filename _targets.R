@@ -346,6 +346,15 @@ list(
              fd_curated("check", "ais_key_audit_w1.parquet"))
   }, format = "file"),
 
+  # The segment table: every mobile-id tiled, a vid for every stretch, no ping unassigned. Plan 009
+  # phase 2; scored against the manual ODS, which it does not read (phase 5).
+  tar_target(check_ais_key_segments, {
+    vessel_ais_key; vessel_identity; check_ais_key_audit; check_ais_key_split_candidates
+    produces("curate/checks/ais_key_segments.R",
+             fd_curated("check", "ais_key_segments.parquet"),
+             fd_curated("check", "ais_key_segments_vs_ods.parquet"))
+  }, format = "file"),
+
   # Each discrepancy mid read as eras: which vid when, what the key says, whether the
   # registry allows it. Proposals only; a person decides and it enters through overrides/.
   tar_target(check_ais_key_resolution, {

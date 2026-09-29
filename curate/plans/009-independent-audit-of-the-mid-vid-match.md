@@ -65,6 +65,8 @@ overlap; (b) wherever W1 reaches, the segment's vid is W1's; (c) every reviewed 
 reach is reproduced; (d) a dry run against a copy of the key conserves every mid's pings. A table
 that fails any of them is not entered.
 
+*Built 2026-09-29: `curate/checks/ais_key_segments.R`; the four acceptance tests are asserted or reported there. Result: tiles all 2,879 mids, 0 unassigned pings except 16,902 on an explicit drop; 64.2 % of pings have direct evidence and 35.8 % are carried by continuity; 50 segments differ from the key. The logbook-and-landings step (3 above) is not yet in it.*
+
 ## 4. Phase 3 — review
 
 Each disagreement between the segment table and the current key (and between the table and an ODS
@@ -86,7 +88,7 @@ until a person has decided; the app already exists for the 30 first-pass proposa
 The ODS (`raw/ais/stk/stk_mobile_match-and-duals.ods`, 508 rows) is given up as an **input**, and kept
 as a raw file, never destroyed, and as a **test set**.
 1. Build the segment table (phase 2) and run it **beside** the current key. Nothing reads it yet.
-2. Score it against the ODS row by row: reproduces / differs / unreachable. The ODS's 44 splits on
+2. Score it against the ODS row by row: reproduces / differs / unreachable (done: 91+8+3 rows reproduced without the ODS, 8 differ, 368 unreachable). The ODS's 44 splits on
    key-claimed mids are the first test (the reader recovers 42 with ≥ 2 families, 32 with ≥ 3); the
    360 single-vid manual rows are unmeasured and are measured next.
 3. Every ODS row the table **differs** on is decided by a person (phase 3). Every row it **cannot

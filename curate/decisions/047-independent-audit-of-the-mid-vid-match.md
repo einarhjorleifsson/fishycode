@@ -353,6 +353,47 @@ person confirms those fills. The split proposals of §8b obey the same invariant
 from tiling periods and was dry-run against a copy of the key (1.62 M pings relabelled across 25
 mids, none lost).
 
+## 8d. The segment table (plan 009 phase 2), built and scored against the ODS
+
+`curate/checks/ais_key_segments.R` (`curated/check/ais_key_segments.parquet` and
+`ais_key_segments_vs_ods.parquet`, wired into `_targets.R`) rebuilds the assignment as a table
+that **tiles every mobile-id**. Cuts: silences of ≥ 180 d where the split reader fires ≥ 2
+families, and changes of the vid W1 confirms (dated mid-way between the two runs); over-cutting is
+harmless because neighbouring segments of one vid are merged. Each segment's vid, best evidence
+first: **physical** (W1 confirms it in ≥ 3 months of the segment), **registry** (the mid's own call
+sign or MMSI belongs to one vid over it), **continuity** (the key's vid carried across). A negative
+key vid stays unassigned for a person. Run in full 2026-09-29, write redirected to the scratchpad.
+
+**Acceptance, asserted and passing:** the segments tile all 2,879 mobile-ids that have a vessel, with
+no gap and no overlap; every one of 181,165,778 pings is in exactly one segment; the only pings on
+no vid are **16,902 on an explicit drop**. 2,989 segments in all.
+
+**How far the evidence reaches** — the number to keep in mind: **64.2 % of the pings (116.3 M) lie in
+a month W1 confirms for the assigned vid or in the registry holder's period; 35.8 % (64.8 M) are
+carried across a segment by continuity.** A segment graded "physical" is usually only partly
+covered, so the grade is not the coverage. W1 agrees with the table in 59,591 of 60,566 confirmed
+mid-months; the 975 that differ (1.6 %) are twins or companion vessels still to be read.
+
+**Against the current key:** 50 segments (2.05 M pings) carry a different vid — the queue for a
+person, which subsumes the 30 first-pass proposals of §8b. 1,755 segments start in STK's start-up
+years and are flagged.
+
+**Scored against the ODS without using it** (each segment also has a vid derived with the key rows
+that came from the ODS taken out of the continuity step):
+
+| ODS row type | reproduced without the ODS | the table differs | unreachable without the ODS |
+|---|---|---|---|
+| dual (124) | 91 | 7 | 26 |
+| manual (351) | 8 | 1 | **342** |
+| split (3) | 3 | 0 | 0 |
+
+**The rule alone reproduces the ODS where a witness reaches it and cannot reach the 342 single-vid
+manual rows** (5.5 M pings) and 26 dual rows: for those mobile-ids the cascade had no answer, a
+person supplied one, and no physical or registry evidence exists to re-derive it. That is the
+measured content of "the ODS is the only evidence for those rows". Reaching them needs logbook and
+landings at segment level and a person's review (plan 009 phase 4), and until they are answered the
+ODS stays an input. The 8 differing rows are decided by a person.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation
