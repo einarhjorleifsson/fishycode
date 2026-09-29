@@ -319,6 +319,24 @@ list(
              fd_curated("check", "ais_key_registry.parquet"))
   }, format = "file"),
 
+  # Silences in a mobile-id where a human-style reading (time-speed profile, position,
+  # registry) says the vessel changed - the splits the manual ODS made by hand, and the
+  # ones it did not. See the script header and decision 047.
+  tar_target(check_ais_key_split_candidates, {
+    vessel_ais_key; vessel; vessel_identity
+    produces("curate/checks/ais_key_split_candidates.R",
+             fd_curated("check", "ais_key_split_candidates.parquet"))
+  }, format = "file"),
+
+  # The whole key, row by row, against witnesses that never read it (other-provider AIS
+  # by MMSI, logbook, landings). Long-running by design: it is a ledger, not a test.
+  tar_target(check_ais_key_audit, {
+    vessel_ais_key; landing; logbook; check_ais_key_registry; check_ais_key_split_candidates
+    produces("curate/checks/ais_key_audit.R",
+             fd_curated("check", "ais_key_audit_ledger.parquet"),
+             fd_curated("check", "ais_key_audit_discrepancy.parquet"))
+  }, format = "file"),
+
   # Both checks read curated/landing/landings.parquet (agf + lods, curate/
   # plans/007 §2/§7), extended from agf-only 2026-09-26 - see each script's
   # own header for why lods is worth including despite AIS itself starting
