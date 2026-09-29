@@ -492,6 +492,28 @@ only (no AIS):** 97.5 % reported, 1.4 % (1,053) unassigned, 1.1 % silent.
 await a person** (4 drop segments, 38 pings; 2 stretches whose neighbour did not exist then, 9,067 pings);
 direct evidence reaches 89.7 % of the pings.
 
+### Update 2026-09-29 (night): every vessel ASTD/ASTD-B hear should be in STK
+
+The maintainer's invariant: no MMSI-to-vid vessel in ASTD/ASTD-B that is not also in STK. Measured against
+the segment table: of **2,103 Icelandic vids** heard by astd, astdB or emodnet, **2,098 are in the table**;
+no foreign vid is heard. **5 are not**, and each is accounted for:
+
+| vid | AIS pings | what it is |
+|---|---|---|
+| 1421 (usage class 54, 71 m) | 227,082 (2013-2022) | **mid 101444** carries its call sign TFGA but no vid in the key (its other field is only "RE"). 6,753 STK pings (2007, 2008, 2014); in 2014 they lie within 2 km of vid 1421's own AIS track for 94 % of pings, median 0.36 km. **Proposed for a person: mid 101444 = vid 1421 for its whole span.** Not assigned by a rule: the call sign is shared by several registered vids, and W1 counts moving pings only, so it cannot see a vessel that lies still. |
+| 2931 | 1,261 (2 months, 2017) | no STK mobile-id moves with it |
+| 7070 | 141 (2024) | no STK mobile-id moves with it |
+| 971, 6433 | 1 ping each | noise |
+
+Time-aware (vessel-months, above): 38 vessels have some AIS-heard month with no mid assigned, 333
+vessel-months in all, and in only 11 of them is a mobile-id co-located that the table gives to another
+vid or to none. For 1421 the missing months are the 66 it is heard while 101444 is unassigned.
+
+**A blind spot to keep in mind:** W1 (co-location of moving pings) cannot name a vessel that spends its time
+in harbour; the segment table also now accepts 2 confirmed months when they are at least 80 % of the months
+a segment is active. Scope grew to 2,939 mobile-ids (the registry names 43 more by their own call sign or
+MMSI). 23,311 pings await a person (drops, stretches whose neighbour did not exist then, and mid 101444).
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation

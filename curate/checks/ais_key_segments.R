@@ -59,7 +59,8 @@ ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2))
 cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
 life <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> transmute(nvid = as.integer(vid), yh1, yh2)
-HORIZON <- max(life$yh2, na.rm = TRUE)   # yh2 never exceeds the registry snapshot horizon: an end AT it is not an end
+HORIZON <- max(life$yh2, na.rm = TRUE)
+ym_of <- function(d) { lt <- as.POSIXlt(d); (lt$year + 1900L) * 12L + lt$mon }   # yh2 never exceeds the registry snapshot horizon: an end AT it is not an end
 foreign_keep <- read.csv("overrides/stk_foreign_mid_vid.csv") |>
   transmute(mid, fvid = as.integer(vid), fd1 = as.Date(d1), fd2 = as.Date(d2))
 w1 <- read_parquet(fd_curated("check", "ais_key_audit_w1.parquet"))
@@ -71,12 +72,28 @@ days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
   "select mid, cast(time as date) d, count(*) n from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK_GLOB)))
 DBI::dbDisconnect(con, shutdown = TRUE)
 
+# the mobile-id's OWN identifier strings: a call sign (TF + two letters) or a 9-digit MMSI
+tok <- key |>
+  pivot_longer(c(loid, glid), values_to = "s") |>
+  filter(!is.na(s)) |> mutate(s = toupper(trimws(s))) |>
+  transmute(mid, cs = if_else(grepl("^TF[A-Z]{2}$", s), s, NA_character_),
+            mmsi = if_else(grepl("^[0-9]{9}$", s), s, NA_character_)) |>
+  filter(!is.na(cs) | !is.na(mmsi)) |> distinct()
+holders <- bind_rows(
+  tok |> filter(!is.na(cs))   |> inner_join(filter(ident, !is.na(cs)),   by = "cs",   relationship = "many-to-many") |> select(mid, hvid, t1, t2),
+  tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2)) |>
+  distinct()
+
 # A mobile-id is in scope when the key gives it a vessel, OR when W1 confirms a vid on it in >= 3 months
 # although the key gave it none (e.g. an identifier typo), unless the key classes it as a device.
 key_class <- key |> group_by(mid) |> summarise(entity_class = names(sort(table(entity_class), decreasing = TRUE))[1], .groups = "drop")
 w1_named <- w1 |> filter(score >= .8) |> count(mid, vid) |> filter(n >= 3) |> distinct(mid) |>
   left_join(key_class, by = "mid") |> filter(is.na(entity_class) | entity_class %in% c("vessel", "unknown")) |> pull(mid)
-has_vessel <- union(key |> filter(!is.na(vid), vid > 0) |> distinct(mid) |> pull(mid), w1_named)
+# ... or when the REGISTRY names it: the mobile-id's own call sign or MMSI belongs to a registered vid
+# (mid 101444 = call sign TFGA, no vid in the key because its other field is only 'RE').
+reg_named <- holders |> distinct(mid) |> left_join(key_class, by = "mid") |>
+  filter(is.na(entity_class) | entity_class %in% c("vessel", "unknown")) |> pull(mid)
+has_vessel <- Reduce(union, list(key |> filter(!is.na(vid), vid > 0) |> distinct(mid) |> pull(mid), w1_named, reg_named))
 span <- days |>
   filter(mid %in% has_vessel) |>
   group_by(mid) |>
@@ -150,24 +167,22 @@ seg_basis <- segs |>
   transmute(mid, seg_no, boundary_basis = coalesce(basis, "first ping"))
 
 ## Evidence per segment --------------------------------------------------------------------------
+# Months a segment is ACTIVE (has STK pings): a short segment cannot have 3 confirmed months
+seg_active <- segs |>
+  inner_join(days, by = "mid", relationship = "many-to-many") |>
+  filter(d >= d1, d <= d2) |>
+  distinct(mid, seg_no, ym = ym_of(d)) |>
+  count(mid, seg_no, name = "active_months")
+# W1 names a vid in a segment with >= 3 confirmed months, or >= 2 when they are >= 80 % of the months
+# the segment is active (a brief reappearance, e.g. two months in 2014)
 w1_all <- segs |>
   inner_join(select(st, mid, vid, md), by = "mid", relationship = "many-to-many") |>
   filter(md >= d1, md <= d2) |>
   count(mid, seg_no, vid, name = "k") |>
-  filter(k >= MIN_W1_MONTHS)
+  left_join(seg_active, by = c("mid", "seg_no")) |>
+  filter(k >= MIN_W1_MONTHS | (k >= 2 & k >= .8 * active_months)) |>
+  select(-active_months)
 
-# the mobile-id's OWN identifier strings: a call sign (TF + two letters) or a 9-digit MMSI
-tok <- key |>
-  filter(mid %in% has_vessel) |>
-  pivot_longer(c(loid, glid), values_to = "s") |>
-  filter(!is.na(s)) |> mutate(s = toupper(trimws(s))) |>
-  transmute(mid, cs = if_else(grepl("^TF[A-Z]{2}$", s), s, NA_character_),
-            mmsi = if_else(grepl("^[0-9]{9}$", s), s, NA_character_)) |>
-  filter(!is.na(cs) | !is.na(mmsi)) |> distinct()
-holders <- bind_rows(
-  tok |> filter(!is.na(cs))   |> inner_join(filter(ident, !is.na(cs)),   by = "cs",   relationship = "many-to-many") |> select(mid, hvid, t1, t2),
-  tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2)) |>
-  distinct()
 reg_seg <- segs |>
   inner_join(holders, by = "mid", relationship = "many-to-many") |>
   filter(t1 <= d2, t2 >= d1) |>
