@@ -334,7 +334,16 @@ list(
     vessel_ais_key; landing; logbook; check_ais_key_registry; check_ais_key_split_candidates
     produces("curate/checks/ais_key_audit.R",
              fd_curated("check", "ais_key_audit_ledger.parquet"),
-             fd_curated("check", "ais_key_audit_discrepancy.parquet"))
+             fd_curated("check", "ais_key_audit_discrepancy.parquet"),
+             fd_curated("check", "ais_key_audit_w1.parquet"))
+  }, format = "file"),
+
+  # Each discrepancy mid read as eras: which vid when, what the key says, whether the
+  # registry allows it. Proposals only; a person decides and it enters through overrides/.
+  tar_target(check_ais_key_resolution, {
+    check_ais_key_audit; check_ais_key_split_candidates; vessel; vessel_identity
+    produces("curate/checks/ais_key_resolution.R",
+             fd_curated("check", "ais_key_resolution.parquet"))
   }, format = "file"),
 
   # Both checks read curated/landing/landings.parquet (agf + lods, curate/

@@ -1,7 +1,7 @@
 # 009 — An independent audit of the mid→vid match, from every witness that does not read the key
 
 **status:** restructured 2026-09-29 after phases 1 and the witnesses were built — phase 1 done,
-phases 2–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
+phase 2 first pass built (`ais_key_resolution`), phases 2 (review), 3–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 
 *Drafted with Claude (AI-assisted); the maintainer set the scope, lifted the decision rules for
 the exploration, and framed it as a bookkeeping audit first, statistics as background tests.*
@@ -57,6 +57,7 @@ For each, in this order and stopping when the answer is clear:
 A resolved case becomes a row in `overrides/` (`proposed` → maintainer-reviewed). Nothing is
 entered by an algorithm alone (`AGENTS.md`: the loop is broken by a human). Resolution
 rule (assumed): W1/track correlation clear on both eras, or two independent witnesses agree.
+*First pass built 2026-09-29: `curate/checks/ais_key_resolution.R` derives the eras and the WHEN/WHICH for each discrepancy mid from the physical witness (30 proposals on 25 mids; 48 mids unreachable by it); track correlation and the review itself are still to do.*
 **Check:** every discrepancy row is `resolved` (with the override or a reason it stays) or
 `open: needs maintainer`.
 

@@ -7,6 +7,7 @@
 #         overrides/ais_key_callsign_reuse_reviewed.csv
 # Output: curated/check/ais_key_audit_ledger.parquet      - one row per key row
 #         curated/check/ais_key_audit_discrepancy.parquet - one row per discrepancy
+#         curated/check/ais_key_audit_w1.parquet          - W1 evidence per (mid, vid, month)
 #
 # A bookkeeping audit first: every assignment is a record, each witness says what it
 # sees, and the ledger says whether they agree. The statistics in
@@ -204,7 +205,8 @@ cz <- Z |>
             w1_support_years = sum(w1 == "support"), .groups = "drop")
 reg <- read_parquet(fd_curated("check", "ais_key_registry.parquet")) |>
   filter(check == "partly_outside_vessel_lifetime") |> transmute(mid, vid, partial_lifetime = note)
-reviewed <- read.csv("overrides/ais_key_callsign_reuse_reviewed.csv")
+# a row is "reviewed" only once a person has decided it; `proposed` rows are not
+reviewed <- read.csv("overrides/ais_key_callsign_reuse_reviewed.csv") |> filter(decision != "proposed")
 
 ledger <- key |>
   select(.rid, mid, vid, d1, d2, step, tier, entity_class, mmsi) |>
@@ -258,5 +260,10 @@ inp <- c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
          landings = LANDINGS, station = STATION, trip = TRIP)
 write_curated(ledger, fd_curated("check", "ais_key_audit_ledger.parquet"), inputs = inp)
 write_curated(discrepancy, fd_curated("check", "ais_key_audit_discrepancy.parquet"), inputs = inp)
+# The physical witness month by month, so a resolution can be read against it (one row per
+# mid, vid and month where the co-location was at least half the opportunity).
+w1_out <- P1 |> filter(opp >= 20, score >= .5) |>
+  transmute(mid = as.integer(mid), vid = as.integer(vid), y = as.integer(y), m = as.integer(m), opp, hit_pings, score)
+write_curated(w1_out, fd_curated("check", "ais_key_audit_w1.parquet"), inputs = inp)
 
 DBI::dbDisconnect(con, shutdown = TRUE)

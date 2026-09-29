@@ -272,6 +272,34 @@ None was needed to reach these results; each was *tested* and only the tier-A as
 was found to need qualifying. The cycle rule (`AGENTS.md`) was kept: W1 reads other
 providers keyed by MMSI, W2/W3 read logbooks and landings; none reads the key.
 
+## 8b. Phase 2, first pass: the discrepancies read as eras
+
+`curate/checks/ais_key_resolution.R` (`curated/check/ais_key_resolution.parquet`, wired into
+`_targets.R`) turns each mid in the discrepancy register into eras: runs of months in which one
+vid's own other-provider AIS is co-located with the mid, set beside the key's vid for those
+months, tested against the registry, with the boundary read against the mid's ping silences.
+Run in full 2026-09-29 (output to the scratchpad; `curated/` untouched). 196 mids, 249 rows:
+
+| action | rows |
+|---|---|
+| key already right | 130 |
+| key differs: reassign (a proposal) | 32 |
+| not a vessel: a device heard with this vid, leave the key | 24 |
+| the mid moves between vids, its own included: a device carried between vessels, read by hand | 13 |
+| two vessels heard at once: read by hand | 2 |
+| unresolved: no W1 era (before 2013, or not heard by any provider) | 48 |
+
+**30 proposals on 25 mids** (14 strong ≥ 12 months of co-location, 7 moderate, 9 weak < 6). The
+first draft of this table proposed 112 and was wrong twice, both worth keeping: a seasonal
+vessel's winter silence cut one tenure into many short eras, and net relays and devices
+carried between vessels (the mids keyed to vids 9848–9852, moving between vids 1252 and 2914)
+were proposed as vessels. Eras are now runs of one vid that no other vid interrupts, isolated
+months of a neighbour are dropped first, and a device is never given a vessel's vid.
+
+Nothing is entered as an override. A proposal is where a person starts, with the track
+correlation of decision 045 as the next step. 48 discrepancy mids have no W1 era at all; for
+them phase 3 (usage class, Hreidar against logbook and landings) is the only route.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation
