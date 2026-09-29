@@ -56,7 +56,7 @@ STARTUP_END <- as.Date("2009-01-01")
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
-  transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2))
+  transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2), window_basis)
 cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
 life <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> transmute(nvid = as.integer(vid), yh1, yh2)
 HORIZON <- max(life$yh2, na.rm = TRUE)
@@ -80,8 +80,8 @@ tok <- key |>
             mmsi = if_else(grepl("^[0-9]{9}$", s), s, NA_character_)) |>
   filter(!is.na(cs) | !is.na(mmsi)) |> distinct()
 holders <- bind_rows(
-  tok |> filter(!is.na(cs))   |> inner_join(filter(ident, !is.na(cs)),   by = "cs",   relationship = "many-to-many") |> select(mid, hvid, t1, t2),
-  tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2)) |>
+  tok |> filter(!is.na(cs))   |> inner_join(filter(ident, !is.na(cs)),   by = "cs",   relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis),
+  tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis)) |>
   distinct()
 
 # A mobile-id is in scope when the key gives it a vessel, OR when W1 confirms a vid on it in >= 3 months
@@ -183,10 +183,18 @@ w1_all <- segs |>
   filter(k >= MIN_W1_MONTHS | (k >= 2 & k >= .8 * active_months)) |>
   select(-active_months)
 
+# A call sign has ONE holder at a time, but the registry's own dated call-sign history only begins on
+# 2023-12-19 (the day it was loaded), so it cannot date a reuse in the STK era: `vessel_identity` takes its
+# time from hull lifetime and the MMSI archive's windows. Holders are therefore ranked by how well their
+# window is DATED - a vid with a hull lifetime and an MMSI window outranks one the registry has no dates for
+# ('unbounded') - and the segment goes to the single best-dated holder over it.
+BASIS_RANK <- c(both = 3L, hull_lifetime = 2L, mmsi_window = 2L, unbounded = 1L)
 reg_seg <- segs |>
   inner_join(holders, by = "mid", relationship = "many-to-many") |>
   filter(t1 <= d2, t2 >= d1) |>
+  mutate(rank = coalesce(BASIS_RANK[window_basis], 1L)) |>
   group_by(mid, seg_no) |>
+  filter(rank == max(rank)) |>
   summarise(reg_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop") |>
   filter(!is.na(reg_vid))
 

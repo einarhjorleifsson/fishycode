@@ -514,6 +514,24 @@ in harbour; the segment table also now accepts 2 confirmed months when they are 
 a segment is active. Scope grew to 2,939 mobile-ids (the registry names 43 more by their own call sign or
 MMSI). 23,311 pings await a person (drops, stretches whose neighbour did not exist then, and mid 101444).
 
+### Correction (2026-09-29, night): call signs, time, and the registry's own history
+
+I wrote that call sign TFGA "is shared by several registered vessels". At any moment a call sign has one holder;
+it passes between vessels over time. The repo does hold a dated call-sign history,
+`raw/vessels/vessel_identification_hist_v` (26,191 rows, 7,044 vessels, 634 call signs; 337 call signs are held
+by more than one vessel over time, and no vessel changes its own call sign). **Its dates cannot be used for the
+STK era**: they begin on **2023-12-19**, the day the history was loaded (5,719 of its records carry that date),
+so in 31 of 32 reuse cases (W1's two-vid mids with one call sign) it shows both holders "open since 2023-12-19".
+`vessel_identity` takes its time from the hull lifetime intersected with the Fjarskiptastofa MMSI windows instead,
+and the pipeline does not read the history table at all.
+
+The real cause of the TFGA ambiguity was in `vessel_identity`: vid 1421 has a fully dated window (`both`) and vid 3061 has
+`unbounded` (the registry has no dates for it), so both overlapped everything. The segment table now **ranks the
+holders by how well their window is dated** (both > hull lifetime or MMSI window > unbounded) and gives the segment
+to the single best-dated holder. That assigns mid 101444 to vid 1421 for its whole span by registry evidence (6,753
+STK pings), consistent with the 94 % track correlation in 2014, so the vessel ASTD/ASTD-B hear that had no mid now has
+one. The table now leaves **16,219 pings for a person**.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation

@@ -420,8 +420,8 @@ AIS-heard months have no mid assigned (decision 047).
 Side observation, NOT validated and not pursued: on the uncleaned 2019 union, implied-speed jumps
 (> 50 kn) are 0.09 % of consecutive pairs for stk, 0.04 % for astdB, 0.02 % for astd.
 
-For a person: mid 101444 = vid 1421 (call sign TFGA, 6,753 STK pings; track correlation 94 % within 2 km) is the
-only substantial Icelandic vessel heard by ASTD/ASTD-B with no mid assigned (decision 047).
+Mid 101444 = vid 1421 (call sign TFGA) is now assigned by dated-holder ranking; the registry's own dated
+call-sign history only starts 2023-12-19 and cannot date a reuse in the STK era (decision 047).
 
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
