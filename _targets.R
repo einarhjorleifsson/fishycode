@@ -319,6 +319,14 @@ list(
              fd_curated("check", "ais_key_registry.parquet"))
   }, format = "file"),
 
+  # The invariant: a mobile-id with a vessel has a vessel for its whole period, no ping unassigned.
+  # Finds every ping outside a period (and the ODS's negative-vid drops) and proposes a fill.
+  tar_target(check_ais_key_coverage, {
+    vessel_ais_key
+    produces("curate/checks/ais_key_coverage.R",
+             fd_curated("check", "ais_key_coverage.parquet"))
+  }, format = "file"),
+
   # Silences in a mobile-id where a human-style reading (time-speed profile, position,
   # registry) says the vessel changed - the splits the manual ODS made by hand, and the
   # ones it did not. See the script header and decision 047.

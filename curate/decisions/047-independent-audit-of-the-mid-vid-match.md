@@ -322,6 +322,37 @@ time-speed profile; tracks before and during the era; the correlation by year; t
 registry rows; and records accept / reject / read-by-hand per mid to `review_decisions.csv`. A
 decision recorded there is still only a decision: it enters `overrides/` through a person.
 
+## 8c. The invariant: no ping of a mid that has a vessel is unassigned
+
+Stated by the maintainer (2026-09-29): when a mobile-id is assigned to any vessel, a vessel is
+assigned for its **full period**, first ping to last. The key assigns with `between(time, d1, d2)`,
+so a ping outside every period, or inside one with a negative vid (the ODS's `drop` rows), is
+silently lost. **The key does not meet it today.** `curate/checks/ais_key_coverage.R`
+(`curated/check/ais_key_coverage.parquet`, wired into `_targets.R`), run 2026-09-29 with the write
+redirected to the scratchpad, on 2,879 mids that have a vessel (181.2 M pings):
+
+| where the pings are | mids | stretches | pings |
+|---|---|---|---|
+| before the first period, starting in STK's start-up years (< 2009) | 8 | 22 | 34,602 |
+| before the first period, later | 16 | 20 | 546 |
+| after the last period | 9 | 46 | 4,005 |
+| between periods of different vids | 17 | 53 | 333 |
+| between two periods of one vid | 1 | 1 | 1 |
+| a negative vid, start-up years (a deliberate drop) | 7 | 7 | 24,525 |
+| a negative vid, later | 7 | 7 | 3,774 |
+
+39,487 pings sit outside every period (0.02 %) and 28,299 more on negative vids. **The largest
+single cause is a typo**: mid 101097's first row has d1 2008-06-04 after d2 2008-05-20, so it
+covers nothing, and the mid's first ping is 2007-06-04 — 34,307 pings unassigned. The check
+proposes a deterministic fill (the first period's vid extended back; a single vid across a gap;
+two different vids cut at the midpoint of the pings and flagged ambiguous; a negative vid listed
+for a person, never filled by a rule) and **asserts that applying it leaves 0 pings unassigned**.
+Stretches beginning before 2009 are flagged `startup_phase`: STK's start-up years are
+untrustworthy (back-filled history, a device not yet on its vessel, test transmissions), so a
+person confirms those fills. The split proposals of §8b obey the same invariant: each is built
+from tiling periods and was dry-run against a copy of the key (1.62 M pings relabelled across 25
+mids, none lost).
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation

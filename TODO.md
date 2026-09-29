@@ -411,6 +411,9 @@ as a check, foreign vessels), phase 5 (what `ais_key.R` and the ODS become).
 track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
 The `curated/check/` tables build the next time the `check_ais_key_*` targets run.
 
-**check:** every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
+`ais_key_coverage` finds the pings the key leaves unassigned (39,487 on mids with a vessel; the largest
+is a d1/d2 typo on mid 101097) and proposes a fill; the maintainer's invariant is no unassigned ping.
+
+**check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
 

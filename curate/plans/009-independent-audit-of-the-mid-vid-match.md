@@ -54,7 +54,7 @@ For each, in this order and stopping when the answer is clear:
 2. the vessel registry's dates for the candidate vids;
 3. logbook and landings by month over the disputed span.
 
-A resolved case becomes a row in `overrides/` (`proposed` → maintainer-reviewed). Nothing is
+**Invariant on every row entered: no ping of a mid that has a vessel may be left unassigned** (maintainer; `curate/checks/ais_key_coverage.R` measures it, and 39,487 pings already violate it). A resolved case becomes a row in `overrides/` (`proposed` → maintainer-reviewed). Nothing is
 entered by an algorithm alone (`AGENTS.md`: the loop is broken by a human). Resolution
 rule (assumed): W1/track correlation clear on both eras, or two independent witnesses agree.
 *First pass built 2026-09-29: `curate/checks/ais_key_resolution.R` derives the eras and the WHEN/WHICH for each discrepancy mid from the physical witness (30 proposals on 25 mids; 48 mids unreachable by it); track correlation and the review itself are still to do.*
