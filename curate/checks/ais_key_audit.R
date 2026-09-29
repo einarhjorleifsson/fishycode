@@ -8,6 +8,8 @@
 # Output: curated/check/ais_key_audit_ledger.parquet      - one row per key row
 #         curated/check/ais_key_audit_discrepancy.parquet - one row per discrepancy
 #         curated/check/ais_key_audit_w1.parquet          - W1 evidence per (mid, vid, month)
+#         curated/check/ais_key_audit_lb_hits.parquet     - logbook (W2) and landings (W3) hits per (mid, vid, month)
+#         curated/check/ais_key_audit_lb_n.parquet        - what each vid could have been hit by, per month
 #
 # A bookkeeping audit first: every assignment is a record, each witness says what it
 # sees, and the ledger says whether they agree. The statistics in
@@ -265,5 +267,14 @@ write_curated(discrepancy, fd_curated("check", "ais_key_audit_discrepancy.parque
 w1_out <- P1 |> filter(opp >= 20, score >= .5) |>
   transmute(mid = as.integer(mid), vid = as.integer(vid), y = as.integer(y), m = as.integer(m), opp, hit_pings, score)
 write_curated(w1_out, fd_curated("check", "ais_key_audit_w1.parquet"), inputs = inp)
+# Logbook and landing evidence per month, so a segment can be scored over any window (the segment
+# table, curate/checks/ais_key_segments.R). hits: how many of the vid's stations (W2) or landings
+# (W3) the mid explains; n: how many the vid had that month.
+lb_hits <- bind_rows(mutate(H2, witness = "w2"), mutate(H3, witness = "w3")) |>
+  transmute(witness, mid = as.integer(mid), vid = as.integer(vid), y = as.integer(y), m = as.integer(m), hits = as.integer(hits))
+lb_n <- bind_rows(transmute(N2, witness = "w2", vid = as.integer(vid), y = as.integer(y), m = as.integer(m), n = as.integer(n)),
+                  transmute(N3, witness = "w3", vid = as.integer(vid), y = as.integer(y), m = as.integer(m), n = as.integer(n)))
+write_curated(lb_hits, fd_curated("check", "ais_key_audit_lb_hits.parquet"), inputs = inp)
+write_curated(lb_n, fd_curated("check", "ais_key_audit_lb_n.parquet"), inputs = inp)
 
 DBI::dbDisconnect(con, shutdown = TRUE)

@@ -88,11 +88,11 @@ until a person has decided; the app already exists for the 30 first-pass proposa
 The ODS (`raw/ais/stk/stk_mobile_match-and-duals.ods`, 508 rows) is given up as an **input**, and kept
 as a raw file, never destroyed, and as a **test set**.
 1. Build the segment table (phase 2) and run it **beside** the current key. Nothing reads it yet.
-2. Score it against the ODS row by row: reproduces / differs / unreachable (done: 91+8+3 rows reproduced without the ODS, 8 differ, 368 unreachable). The ODS's 44 splits on
+2. Score it against the ODS row by row: reproduces / differs / unreachable (done, with logbook and landings: Icelandic rows 112 of 129 reproduced without the ODS, 6 differ, 11 unreachable; the 332 unreachable manual rows are all foreign vessels). The ODS's 44 splits on
    key-claimed mids are the first test (the reader recovers 42 with ≥ 2 families, 32 with ≥ 3); the
    360 single-vid manual rows are unmeasured and are measured next.
 3. Every ODS row the table **differs** on is decided by a person (phase 3). Every row it **cannot
-   reach** (392 of 508 have no physical witness) is listed with what the table assigned instead and
+   reach** (for Icelandic vessels 11 of 129; the foreign vessels' 332 manual rows have no witness) is listed with what the table assigned instead and
    on what evidence, so no human judgement is dropped unseen.
 4. Only when the table reproduces every reviewed ODS row it can reach, every difference has a
    reviewed answer and acceptance tests (a)-(d) pass, does `ais_key.R` stop reading the ODS and read

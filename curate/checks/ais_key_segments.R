@@ -2,6 +2,7 @@
 #
 # Input:  curated/vessel/{vessel_ais_key,vessel_identity}.parquet, raw/ais/stk/trail,
 #         curated/check/ais_key_split_candidates.parquet, curated/check/ais_key_audit_w1.parquet,
+#         curated/check/ais_key_audit_lb_{hits,n}.parquet (logbook and landings per month),
 #         raw/ais/stk/stk_mobile_match-and-duals.ods (scored against, never read as input)
 # Output: curated/check/ais_key_segments.parquet         - one row per segment of a mobile-id
 #         curated/check/ais_key_segments_vs_ods.parquet  - each ODS row, reproduced or not
@@ -22,7 +23,11 @@
 # THE VID OF A SEGMENT, best evidence first, with the source recorded:
 #   1. physical   W1 confirms a vid in >= 3 months of the segment;
 #   2. registry   the registry gives the mobile-id's own call sign or MMSI to one vid over it;
-#   3. continuity the key's vid for that stretch (never left empty - the weakest grade).
+#   3. logbook    one vid's logbook stations explain >= 80 % of its stations over the segment, by a
+#                 clear margin (>= 0.1) over every other vid, with >= 30 stations - calibrated at
+#                 year level (decision 047); landings alone count only at >= 90 % with a margin of
+#                 0.3, because a vessel that calls at every port (a ferry) otherwise wins them all;
+#   4. continuity the key's vid for that stretch (never left empty - the weakest grade).
 # A negative key vid (an ODS `drop`) is NOT decided by a rule: it stays NA and is listed.
 # `vid_no_ods` is the same rule with the key rows that came from the ODS removed from the
 # continuity step, so scoring the table against the ODS measures what the rule can do alone.
@@ -48,6 +53,8 @@ ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2))
 cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
 w1 <- read_parquet(fd_curated("check", "ais_key_audit_w1.parquet"))
+lb_hits <- read_parquet(fd_curated("check", "ais_key_audit_lb_hits.parquet"))
+lb_n <- read_parquet(fd_curated("check", "ais_key_audit_lb_n.parquet"))
 
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
@@ -149,6 +156,35 @@ reg_seg <- segs |>
   summarise(reg_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop") |>
   filter(!is.na(reg_vid))
 
+ym_of <- function(d) { lt <- as.POSIXlt(d); (lt$year + 1900L) * 12L + lt$mon }
+# months whose 15th lies inside the segment; a segment shorter than that cannot be scored
+segm <- segs |>
+  mutate(m1 = ym_of(d1) + (as.POSIXlt(d1)$mday > 15L), m2 = ym_of(d2) - (as.POSIXlt(d2)$mday < 15L)) |>
+  filter(m2 >= m1) |> select(mid, seg_no, m1, m2)
+hh <- lb_hits |> filter(mid %in% has_vessel) |> mutate(ym = y * 12L + m - 1L)
+nn <- lb_n |> mutate(ym = y * 12L + m - 1L)
+cand_hits <- segm |>
+  inner_join(hh, by = "mid", relationship = "many-to-many") |>
+  filter(ym >= m1, ym <= m2) |>
+  group_by(mid, seg_no, witness, vid, m1, m2) |> summarise(hits = sum(hits), .groups = "drop")
+cand_n <- cand_hits |>
+  distinct(mid, seg_no, witness, vid, m1, m2) |>
+  inner_join(nn, by = c("witness", "vid"), relationship = "many-to-many") |>
+  filter(ym >= m1, ym <= m2) |>
+  group_by(mid, seg_no, witness, vid) |> summarise(n = sum(n), .groups = "drop")
+lb_sc <- cand_hits |>
+  inner_join(cand_n, by = c("mid", "seg_no", "witness", "vid")) |>
+  mutate(s = hits / n) |>
+  filter((witness == "w2" & n >= 30) | (witness == "w3" & n >= 15))
+pick <- function(d, thr, margin) {
+  d |> group_by(mid, seg_no) |> arrange(desc(s), desc(n), .by_group = TRUE) |>
+    summarise(lb_vid = vid[1], lb_s = s[1], lb_n = n[1], lb_margin = s[1] - if (n() > 1) s[2] else 0, .groups = "drop") |>
+    filter(lb_s >= thr, lb_margin >= margin)
+}
+lb_w2 <- lb_sc |> filter(witness == "w2") |> pick(.8, .1) |> mutate(lb_src = "logbook")
+lb_w3 <- lb_sc |> filter(witness == "w3") |> pick(.9, .3) |> mutate(lb_src = "landings") |> anti_join(lb_w2, by = c("mid", "seg_no"))
+lb_seg <- bind_rows(lb_w2, lb_w3) |> select(mid, seg_no, lb_vid, lb_src, lb_s, lb_n)
+
 # what the key already says for the stretch: the row overlapping it most, else the nearest
 key_seg <- segs |>
   inner_join(kv, by = "mid", relationship = "many-to-many") |>
@@ -168,18 +204,20 @@ tbl <- segs |>
   left_join(seg_basis, by = c("mid", "seg_no")) |>
   left_join(w1_seg, by = c("mid", "seg_no")) |>
   left_join(reg_seg, by = c("mid", "seg_no")) |>
+  left_join(lb_seg, by = c("mid", "seg_no")) |>
   left_join(key_seg, by = c("mid", "seg_no")) |>
   left_join(pings, by = c("mid", "seg_no")) |>
   mutate(pings = coalesce(pings, 0L),
-         drop_seg = !is.na(key_vid) & key_vid <= 0 & is.na(w1_vid) & is.na(reg_vid),
-         vid = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, drop_seg ~ NA_integer_, .default = key_vid),
-         source = case_when(!is.na(w1_vid) ~ "physical", !is.na(reg_vid) ~ "registry", drop_seg ~ "drop: a person decides",
+         drop_seg = !is.na(key_vid) & key_vid <= 0 & is.na(w1_vid) & is.na(reg_vid) & is.na(lb_vid),
+         vid = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_, .default = key_vid),
+         source = case_when(!is.na(w1_vid) ~ "physical", !is.na(reg_vid) ~ "registry", !is.na(lb_vid) ~ lb_src, drop_seg ~ "drop: a person decides",
                             .default = "continuity"),
          # the same rule with the ODS-sourced key rows taken out of the continuity step
-         vid_no_ods = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, drop_seg ~ NA_integer_,
+         vid_no_ods = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_,
                                 key_step != "manuals" & key_vid > 0 ~ key_vid, .default = NA_integer_),
          agrees_key = !is.na(vid) & vid == key_vid)
 
+SRC <- c("physical", "registry", "logbook", "landings", "continuity", "drop: a person decides")
 # two neighbouring segments of one vid are one segment
 merged <- tbl |>
   arrange(mid, seg_no) |>
@@ -188,14 +226,14 @@ merged <- tbl |>
          grp = cumsum(is.na(vid) | is.na(lag(vid)) | sig != lag(sig))) |>
   group_by(mid, grp) |>
   summarise(d1 = min(d1), d2 = max(d2), vid = vid[1],
-            source = c("physical", "registry", "continuity", "drop: a person decides")[min(match(source, c("physical", "registry", "continuity", "drop: a person decides")))],
+            source = SRC[min(match(source, SRC))],
             key_vid = key_vid[which.max(pings)], vid_no_ods = vid_no_ods[1],
             w1_months = sum(w1_months, na.rm = TRUE), twin_vid = twin_vid[!is.na(twin_vid)][1],
             boundary_basis = boundary_basis[1], pings = sum(pings), .groups = "drop") |>
   group_by(mid) |> mutate(seg_no = row_number()) |> ungroup() |>
   mutate(agrees_key = !is.na(vid) & vid == key_vid,
          startup_phase = d1 < STARTUP_END,
-         grade = case_when(source == "physical" ~ "A", source == "registry" ~ "B", source == "continuity" ~ "C", .default = "-")) |>
+         grade = case_when(source == "physical" ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source == "continuity" ~ "D", .default = "-")) |>
   select(mid, seg_no, d1, d2, vid, source, grade, key_vid, agrees_key, vid_no_ods, w1_months, twin_vid,
          boundary_basis, startup_phase, pings)
 
@@ -218,7 +256,19 @@ reg_pings <- merged |> filter(!is.na(vid)) |> select(mid, seg_no, vid, d1, d2) |
   transmute(mid, seg_no, from = pmax(d1, t1), to = pmin(d2, t2)) |>
   inner_join(days, by = "mid", relationship = "many-to-many") |>
   filter(d >= from, d <= to) |> select(mid, seg_no, d, n)
-covered_pings <- bind_rows(w1_pings, reg_pings) |> distinct(mid, seg_no, d, .keep_all = TRUE) |>
+# A logbook/landing month is evidence for the vid only when the mid explains at least half of that
+# month's stations or landings AND at least two of them; a single hit is not evidence.
+lb_months <- hh |>
+  inner_join(nn, by = c("witness", "vid", "ym"), suffix = c("", "_n")) |>
+  filter(hits >= 2, hits / n >= .5) |>
+  distinct(mid, vid, ym)
+lb_pings <- merged |> filter(!is.na(vid)) |>
+  mutate(m1 = ym_of(d1), m2 = ym_of(d2)) |> select(mid, seg_no, vid, d1, d2, m1, m2) |>
+  inner_join(lb_months, by = c("mid", "vid"), relationship = "many-to-many") |>
+  filter(ym >= m1, ym <= m2) |> distinct(mid, seg_no, ym, d1, d2) |>
+  inner_join(mutate(days, ym = ym_of(d)), by = c("mid", "ym"), relationship = "many-to-many") |>
+  filter(d >= d1, d <= d2) |> select(mid, seg_no, d, n)
+covered_pings <- bind_rows(w1_pings, reg_pings, lb_pings) |> distinct(mid, seg_no, d, .keep_all = TRUE) |>
   group_by(mid, seg_no) |> summarise(evidence_pings = sum(n), .groups = "drop")
 merged <- merged |>
   left_join(covered_pings, by = c("mid", "seg_no")) |>
@@ -268,6 +318,8 @@ print(knitr::kable(sc |> group_by(ods_type, verdict) |> summarise(rows = n(), pi
 write_curated(merged, fd_curated("check", "ais_key_segments.parquet"),
               inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
                          w1 = fd_curated("check", "ais_key_audit_w1.parquet"),
+                         lb_hits = fd_curated("check", "ais_key_audit_lb_hits.parquet"),
+                         lb_n = fd_curated("check", "ais_key_audit_lb_n.parquet"),
                          split_candidates = fd_curated("check", "ais_key_split_candidates.parquet")))
 write_curated(sc, fd_curated("check", "ais_key_segments_vs_ods.parquet"),
               inputs = c(segments = fd_curated("check", "ais_key_segments.parquet")))

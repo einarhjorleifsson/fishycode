@@ -404,7 +404,7 @@ or a note that none exists.
 Built 2026-09-29: `ais_key_audit` (ledger of every key row, 132 discrepancies, 884
 vid-claiming rows no witness reaches) and `ais_key_split_candidates` (silences where a
 human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009 —
-phase 2 (segment table built: tiles every mid, 64 % of pings with direct evidence; logbook step and review open), phase 3 (review in the app),
+phase 2 (segment table built with logbook and landings: tiles every mid, 90 % of pings with direct evidence, Icelandic ODS rows 87 % reproduced without the ODS; review open), phase 3 (review in the app),
 phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (retire the ODS
 as an input in stages; decided 2026-09-29).
 `ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids;

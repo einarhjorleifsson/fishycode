@@ -343,7 +343,9 @@ list(
     produces("curate/checks/ais_key_audit.R",
              fd_curated("check", "ais_key_audit_ledger.parquet"),
              fd_curated("check", "ais_key_audit_discrepancy.parquet"),
-             fd_curated("check", "ais_key_audit_w1.parquet"))
+             fd_curated("check", "ais_key_audit_w1.parquet"),
+             fd_curated("check", "ais_key_audit_lb_hits.parquet"),
+             fd_curated("check", "ais_key_audit_lb_n.parquet"))
   }, format = "file"),
 
   # The segment table: every mobile-id tiled, a vid for every stretch, no ping unassigned. Plan 009

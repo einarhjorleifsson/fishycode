@@ -394,6 +394,40 @@ measured content of "the ODS is the only evidence for those rows". Reaching them
 landings at segment level and a person's review (plan 009 phase 4), and until they are answered the
 ODS stays an input. The 8 differing rows are decided by a person.
 
+### Update 2026-09-29: logbook and landings added, and a correction
+
+Logbook (W2) and landings (W3) now sit between the registry and continuity in the vid assignment,
+scored over each segment window with the year-level calibration (logbook ≥ 80 % of the vid's stations,
+margin ≥ 0.1, ≥ 30 stations; landings alone only at ≥ 90 % with margin 0.3, because a ferry wins every
+port it calls at). The audit now persists the monthly tables they need
+(`ais_key_audit_lb_hits/_n`). A missing record is never evidence against a vid: the denominators only
+exist for months a vid has records, so a vessel that stopped fishing does not dilute its own score.
+
+- **Sources of the assignment:** physical 1,686 segments (167.2 M pings), registry 171 (1.5 M),
+  logbook 173 (3.5 M), landings 60 (0.7 M), continuity 895 (8.2 M pings assigned by continuity on
+  top of the parts of other segments the evidence does not reach). **0 pings on no vid**: the one
+  drop segment (16,902 pings, negative key vid) is now assigned by logbook evidence and goes to a
+  person as a proposal, since the human dropped it.
+- **Direct evidence now reaches 89.6 % of the pings (162.4 M)**; 10.4 % (18.8 M) are carried by
+  continuity. A logbook or landing month counts as evidence only when the mid explains ≥ half of that
+  month's stations or landings and at least two of them (the first cut counted a single hit and read
+  91 %; too generous).
+- **55 segments (2.17 M pings) differ from the key** (was 50). 990 W1-confirmed mid-months (1.6 %) sit
+  in a segment of another vid.
+- **Correction to the ODS score above.** The 332 "unreachable" manual rows are **all foreign vessels**
+  (vids 3711–4981, not in the Icelandic registry); the earlier line that the ODS is the only evidence
+  for 342 Icelandic manual rows was wrong. Re-cut by nationality, without using the ODS:
+
+| ODS rows | reproduced without the ODS | the table differs (a person) | unreachable |
+|---|---|---|---|
+| **Icelandic (vid < 3700), 129** | **112 (86.8 %)** | 6 (4.7 %) | 11 (8.5 %, 114,317 pings, mostly 2007-08) |
+| foreign (3700+), 349 | 15 | 2 | 332 (5.2 M pings) |
+
+For the Icelandic focus the rule therefore reproduces the ODS almost entirely from independent evidence.
+The six differences (mids 101084, 101081, 101223, 101776, 101089 and one more) and the eleven
+unreachable start-up-year rows are the residue a person reads. The foreign vessels are the bonus and
+stay ODS-only until they get their own evidence.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation
