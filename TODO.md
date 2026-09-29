@@ -407,7 +407,8 @@ human-style reading says the vessel changed; 19 strong not in the ODS). Open: pl
 phase 2 (resolve each through track correlation, then `overrides/`), phase 3 (usage
 class, Hreidar against logbook and landings, the 2016-06 re-issue), phase 4 (MMSI series
 as a check, foreign vessels), phase 5 (what `ais_key.R` and the ODS become).
-`ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids.
+`ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids;
+track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
 The `curated/check/` tables build the next time the `check_ais_key_*` targets run.
 
 **check:** every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved

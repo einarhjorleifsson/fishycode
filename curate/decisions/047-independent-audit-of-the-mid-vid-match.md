@@ -300,6 +300,28 @@ Nothing is entered as an override. A proposal is where a person starts, with the
 correlation of decision 045 as the next step. 48 discrepancy mids have no W1 era at all; for
 them phase 3 (usage class, Hreidar against logbook and landings) is the only route.
 
+### Track correlation on the 14 strong proposals (decision 045's method)
+
+Each STK ping of the mid is matched to the nearest-in-time ping of the candidate vid's own
+other-provider track (≤ 6 h, either side) and the great-circle distance taken. Years of the
+proposed era only, years with ≥ 100 matched pings:
+
+- **12 of 14 confirm**: 90–100 % of the mid's pings within 2 km of the proposed vid's own track,
+  median 0.0–0.5 km (mids 100099, 100111, 100170, 100290, 100645, 100739, 101081, 101439,
+  101759, 103094, 103749, 111702).
+- **2 are consistent but noisier**: mids 103007 and 103072 — 52–61 % within 2 km but median
+  0.4–3 km and 76–100 % within 10 km; read as a sparser other-provider feed meeting the 6-hour
+  window, not a different vessel. They stay for a person to read.
+- **The key's vid has no other-provider track in the era years for any of the 14**, so nothing
+  supports the key either way; where the key vid *does* have a track it lies before the era
+  (mid 100099: 2013–2015, 78–79 % within 2 km), which is the two-vessel sequence itself.
+
+A temporary Shiny review app (session scratchpad, **not committed**) shows each of the 14 for a
+person: month-by-month overlap of the mid, both vids' AIS, logbook stations and landings; the
+time-speed profile; tracks before and during the era; the correlation by year; the key, eras and
+registry rows; and records accept / reject / read-by-hand per mid to `review_decisions.csv`. A
+decision recorded there is still only a decision: it enters `overrides/` through a person.
+
 ## 9. Recommended next steps (none started)
 
 1. Send the 14 unrecorded W1 groups, the ~33 mis-split two-era mids and the 3 unassigned mids through the decision-045 track-correlation
