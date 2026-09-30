@@ -7,8 +7,9 @@
 
 **Revised 2026-09-30 (same day), on the maintainer's instruction:** (a) the target pipeline
 may be reshaped wholesale to get this; (b) the logbook GPS logger **is included** as a ping
-source with `provider = "gps"` — its lon/lat are known to be interpolated, but its speed is
-finer than AIS and that is what matters here (§5).
+source with `provider = "gps"`, placed directly after the interpolation (§5). Its lon/lat are
+interpolated; its speed is measured. *Phase 0 (§9) found it is **not** finer in time than AIS*
+(10-minute steps), so it earns its place through the recorded `.sid` and the measured speed.
 
 **This plan settles what 006 §5 left open** — `w1`/`w2` versus raw `t1`..`t4` plus speed — by
 proposing a per-gear *window rule* that can be replaced later without rebuilding anything
@@ -81,8 +82,8 @@ Do **not** add columns to the 44 GB ping sweep. Build two small tables and one f
 
 | Piece | Grain | Holds |
 |---|---|---|
-| `logbook/station_window` | one row per station | `vid`, `.tid`, `.sid`, `gear`, `gear_class`, `w_start`, `w_end`, `win_basis`, `phase` , raw `t1`..`t4`, `s1`, `s2` |
-| `ais/ping_trail` | one row per **fix** (AIS ∪ gps), partitioned by `year`, sorted `vid, time` | the ping columns + `provider`, `pos_basis`, `speed_basis`, `dt_sec`, `.tid`, `trip` |
+| `logbook/station_window` | one row per station **and phase** (tow, set, haul, day) | `vid`, `.tid`, `.sid`, `gear`, `gear_class`, `w_start`, `w_end`, `win_basis`, `phase`, raw `t1`..`t4`, `s1`, `s2` |
+| `ais/ping_trail` | one row per **fix** (AIS ∪ gps), partitioned by `year`, sorted `vid, time`, unique on `(vid,time)` | the ping columns + `provider`, `pos_basis`, `speed_basis`, `speed_gps`, `dt_sec`, `.tid`, `trip`; speed in knots throughout |
 | `ais/ping_activity` | one row per **(fix, station)** match, same partitioning | fix key, `.sid`, `phase`, `phase_frac`, `win_basis`, `win_speed_ok`, `n_sid` |
 | `ais_trail(years, vids)` | function | `ping_trail ⟕ ping_activity ⟕ station_window`, returns the old trail's wide shape |
 
@@ -155,15 +156,12 @@ destroy the original); `win_basis` says which rule fired.
 5. Harbour (`.cid`/port tag) and `whack` flags stay where `ais_ping_clean/tag` put them and are
    only read, never recomputed here.
 
-## 4. Live join or materialised?
+## 4. Live join or materialised? — answered by Phase 0
 
-**Phase 0 revises this (§9): a live join for a whole year ran in 6 s.** Original recommendation, kept for the record: **materialise the bridge, join live to the sweep.** The bridge is small (windows
-× pings inside them, not the sweep) and is the only expensive step; attaching it to the pings is
-a cheap equi-join on `(vid, time)` within a year. Phase 0 times the live alternative — a full
-range join for one year straight from `station_window` — on 2017 (the heaviest year, 14 parts).
-If it runs in under ~a minute per year, the function can skip the bridge for single-year work
-and the bridge remains for multi-year sweeps. Per the work-style memory: validate on real data,
-not a synthetic benchmark.
+Phase 0 timed the live alternative on 2017, the heaviest year: a range join of every window
+onto the year's ≈ 50 M pings ran in **6.2 s** (§9). So `ais_trail()` **joins live** from
+`station_window` and `ping_trail`. `ping_activity` is materialised only if a later consumer
+(catch allocation, plan 006 §6) needs the matches stored; it is an optimisation, not the design.
 
 ## 5. The GPS logger as a ping source
 
@@ -171,7 +169,7 @@ Added to the **downstream** table `ais/ping_trail` (new, after `ais_trip` and
 `logbook_sensor_gps`), never to `ais_ping_union`; the cycle in decision 000 stays broken.
 
 - Rows are `sensor_gps` fixes renamed to the ping schema: `provider = "gps"`,
-  `speed`/`heading` from the logger, `lon`/`lat` the interpolated pair, `w_lon`/`w_lat` kept
+  `speed` **converted from m/s to knots** (× 1.9438; §9) and `heading` from the logger, `lon`/`lat` the interpolated pair, `w_lon`/`w_lat` kept
   (never overwrite the original), `dt_sec` carried.
 - **Per-column basis**, because one row mixes provenances (AGENTS.md rule): `pos_basis =
   "reconstructed"` for gps, `"recorded"` for AIS; `speed_basis = "recorded"` for both.
@@ -187,11 +185,14 @@ Added to the **downstream** table `ais/ping_trail` (new, after `ais_trip` and
   for position (recorded beats reconstructed). Mixing provenance in one cell is avoided: the kept
   AIS row stays whole, and the dropped gps row's speed is stored beside it as `speed_gps`. Near-duplicates (different seconds)
   both stay; `provider` tells them apart. The same uniqueness is enforced across `gps1`/`gps2`.
-- **Payoff for plan 004:** the gps fixes are a high-resolution, station-stamped speed trace.
-  The behavioural fishing window (plan 004) can be inferred from them and then *applied to the
-  AIS pings of stations that have no logger*, which is most of the static-gear problem in §2.
+- **Payoff for plan 004:** the gps fixes are a station-stamped, *measured* speed trace. The
+  behavioural fishing window (plan 004) can be inferred from them and then *applied to the AIS
+  pings of stations that have no logger*, which is most of the static-gear problem in §2. It is
+  not higher-resolution than AIS (§9).
 - Limit, measured: 436 vessels and 788,558 stations — a small part of the 7.2 M stations. The
-  logger is not a general fix for missing times, only a source of finer speed where it exists.
+  logger is not a general fix for missing times.
+- **Two collapses happen in this step:** `gps1`+`gps2` → one row per `(vid,time,.sid)` with
+  `speed = coalesce(gps1, gps2)` (§9), then gps against AIS on `(vid,time)` as above.
 
 ## 6. The pipeline gets reshaped, not patched
 
@@ -216,21 +217,47 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
 
 ## 7. Order
 
-0. **Measure** (read-only): is `(vid,time)` unique in `ais/ping` *and* across ping ∪ gps
-   (logger duplicates at identical times between `gps1`/`gps2` are likely); share of gps
-   stations also covered by AIS pings; how much finer gps speed is than AIS on the same
-   vessel-minute; stations per vid-day for each
-   gear class; share of stations whose window contains ≥ 1 ping; live-join cost on 2017.
+0. **Measure** (read-only) — **done 2026-09-30**, results in §9.
 1. **Gear table**: port `s1`/`s2` and the class/window rule to `reference/gear/`.
 2. **`logbook/station_window`** with `basis` from the start (the -for-ais producer, plan 002
-   step 2).
-3. **`ais/ping_trail`** (AIS ∪ gps, §5) then **`ais/ping_activity`** per year, through
-   `write_curated()`, wired into `_targets.R` per §6.
+   step 2), including the estimate of the per-gear set duration from the speed profile (Q9)
+   and the tow/haul caps of §2.
+3. **`ais/ping_trail`** (AIS ∪ gps, §5) — built directly after `logbook_sensor_gps`, gps
+   included from the first build — through `write_curated()`, wired into `_targets.R` per §6.
+   `ais/ping_activity` only if needed (§4). Two prerequisites in `ais_ping_clean`: dedupe
+   `(vid,time)` and clamp/flag speed (§9).
 4. **`ais_trail()`** in `R/`, plus one line in `docs/` showing the old `glimpse()` call working.
 5. **Validate** against the 2019 old trail: fishing-ping counts per vid-month, and the share of
    old-trail `.sid` matches reproduced. Reading `/Volumes/fishydata` needs the terminal tool,
    never a recursive scan. Also conservation: no station's window assigned to a different vid.
 6. Catch allocation (006 §6) and plan 004's behavioural windows then plug into the same bridge.
+
+## 8. Open questions for the maintainer
+
+1. ~~haul window~~ answered: `[t3,t4]` is the haul, `t1` starts the set, `t2` does not exist.
+   Still open: a per-gear **maximum set duration** to close the open-ended `set` phase.
+2. ~~phase marker~~ answered: `phase` + `phase_frac` on every ping (§2); soak is not a phase.
+3. ~~ambiguity~~ answered: stays ambiguous (§3.4).
+4. ~~tie between AIS and gps~~ answered (maintainer): identical timestamps are removed, AIS kept, gps speed stored as `speed_gps` (§5). Near-ties (seconds apart) stay.
+5. ~~old-trail column compatibility~~ answered: exact compatibility not needed; this is an
+   improved trail, and the contract in plan 002 §1 is the floor.
+6. ~~higher-rate logger stream~~ answered (maintainer): none. The logger stays in, directly after the interpolation (§5), for its recorded `.sid` and measured speed.
+7. ~~gps1 vs gps2~~ answered by data: same fixes, speeds never disagree; collapse with `coalesce` (§9).
+8. ~~`duration_m`~~ answered (maintainer): soak is variable — longline usually hauled soon after
+   setting, occasionally longer, **max ≈ 12 h**; nets' soak runs to days, notably Greenland-halibut
+   (grálúða) and lumpfish (grásleppa) nets. Data agree for nets: by target, median `t4 − t1` and
+   `duration_m` are equal (DEF 24.5 vs 24.0 h, GAD 21.1 vs 21.1, LUM 47 vs 47, GHL 107 vs 107 h),
+   so **`duration_m` is gear-in-water time for nets** (corr with `t3 − t1` 0.65). For longline it
+   is not (corr 0.09; `t4 − t1` median 12.5 h, q90 24 h — longer than the stated 12 h max, so some
+   recorded hauls are late or wrong). Consequence: for nets, `t1 = t4 − duration_m` can **rebuild a
+   missing set start** (`basis = "derived"`, to validate on stations that have all three); it is
+   *not* a haul length.
+9. **Set duration (the old Q1 remainder) is a different number from soak.** Soak is `t1 → t3/t4`,
+   gear in water, vessel elsewhere. The *set* is the vessel busy putting the gear out, `t1 → t2`,
+   and `t2` is not recorded, so nothing in the data gives it. Plan: estimate it per gear in Phase 1
+   from the speed profile after `t1` (setting is faster than hauling) rather than guess; until
+   then the set window is closed only by the vessel's next event. A rough figure from you (longline
+   set ≈ hours? nets ≈ 1–2 h?) would serve as a sanity check on that estimate.
 
 ## 9. Phase 0 results — measured 2026-09-30 (read-only, `$FISHYDATA/curated/`)
 
@@ -241,12 +268,12 @@ Scripts in the session scratchpad; all numbers below were printed by them.
 | # | finding | consequence |
 |---|---|---|
 | 1 | **Live join is cheap.** A range join of every 2016–17 window onto all 2017 pings (≈ 50 M) matched 12.76 M pings in **6.2 s**; 2019 coverage in 2.4 s | `ais_trail()` can join live; the materialised bridge becomes optional, not the design. §4 is superseded |
-| 2 | **`duration_m` is not haul time for static gear.** For mobile gear it equals `t3 − t2` (corr 1.00, derived from them). For static: GNS median 1,472 min vs recorded `t4 − t3` 295 (corr 0.26); LLS 796 vs 498 (0.56); vs `t4 − t1` corr 0.02–0.17 | my `[t4 − duration_m, t4]` fallback was wrong and is withdrawn (§2). It would have made 300,958 static windows a median 6 h wide. Replaced by the per-gear median haul. **Open:** what `duration_m` *is* for nets (≈ 24 h looks like gear-in-water) |
+| 2 | **`duration_m` is not haul time for static gear.** For mobile gear it equals `t3 − t2` (corr 1.00, derived from them). For static: GNS median 1,472 min vs recorded `t4 − t3` 295 (corr 0.26); LLS 796 vs 498 (0.56); vs `t4 − t1` corr 0.02–0.17 | my `[t4 − duration_m, t4]` fallback was wrong and is withdrawn (§2). It would have made 300,958 static windows a median 6 h wide. Replaced by the per-gear median haul. Answered since: for nets `duration_m` is gear-in-water time (§8 Q8) |
 | 3 | **Static gear is mostly day-window.** Of 1.48 M static stations: recorded `t3`+`t4` 50,887 (3 %), `t4` only ≈ 0.30 M, day **1.13 M (76 %)**. Towed: recorded 4.09 M, day 1.58 M (28 %) | the day fallback is the majority case for nets/longline; `win_basis` must be in every wide row, and phase marks will be absent for most static pings |
 | 4 | **Ambiguity is a day-window artefact.** Among *recorded* windows only, 2017 has max 2 stations per ping and 0.00 % ambiguous; with day windows 20.7 % of day-matched pings and 12.1 % of recorded-matched pings sit in ≥ 2 stations (max 22) | add a **precedence rule**: a day window claims only pings *not* inside any recorded/derived window of the same vessel. Tows 3.9 stations per vessel-day (max 29), static 1.1 (max 10) |
 | 5 | **Recorded windows still contain pings.** Stations whose window holds ≥ 1 ping, 2019: recorded 98.4 %, day 98.5 %, (wrong) derived 99.7 % | coverage is not the discriminator; window *quality* needs the speed diagnostic (§2) |
 
-**The GPS logger — the premise needs the maintainer**
+**The GPS logger**
 
 - **Units: `sensor_gps.speed` is in m/s, not knots.** On exact `(vid,time)` ties with AIS the
   gps/AIS ratio is 0.517 (q10–q90 0.48–0.61, corr 0.91); during recorded OTB tows AIS speed is
@@ -263,8 +290,8 @@ Scripts in the session scratchpad; all numbers below were printed by them.
   station, and 98.3 % of gps stations already have AIS of the same vessel. What the logger does
   give: a station-stamped, *measured* speed and a recorded `.sid`; its value is greatest in
   2007–2013, when AIS was also 10-minute and the logger is the only station-stamped source.
-  **Maintainer: is there a higher-rate logger stream not in `sensor_gps` (raw tables with 1-minute
-  fixes)?** If not, the case for gps rests on the `.sid`, not on resolution.
+  Maintainer confirmed there is no higher-rate stream, so the case for gps rests on the `.sid`
+  and the measured speed, not on resolution.
 - **Duplicates: half of `sensor_gps` is a duplicate.** 2019: 5,358,797 rows, 2,678,128 distinct
   `(vid,time)`. `sensor_src` names the two raw Oracle tables the logger fixes come from:
   `gps1` = `sjalfvirkir_maelar`, `gps2` = `rafr_sjalfvirkir_maelar`. They hold the **same fixes**
@@ -289,35 +316,5 @@ Scripts in the session scratchpad; all numbers below were printed by them.
 - `ais/ping.speed` has garbage: max 8,565,166.8; 0.019 % over 30 kn in 2019. `whack` does not
   cover speed. A speed clamp/flag belongs in `ais_ping_clean` before any `fishing` filter.
 
-**Not yet done:** the per-gear maximum set duration (§8 Q1) and the `win_speed_ok` diagnostic
+**Not yet done:** the per-gear set duration (§8 Q9) and the `win_speed_ok` diagnostic
 (needs the window table built). `duration_m`'s real meaning for nets.
-
-## 8. Open questions for the maintainer
-
-1. ~~haul window~~ answered: `[t3,t4]` is the haul, `t1` starts the set, `t2` does not exist.
-   Still open: a per-gear **maximum set duration** to close the open-ended `set` phase.
-2. ~~phase marker~~ answered: `phase` + `phase_frac` on every ping (§2); soak is not a phase.
-3. ~~ambiguity~~ answered: stays ambiguous (§3.4).
-4. On an exact `(vid, time)` tie the plan keeps the AIS row and stores the dropped gps speed in
-   `speed_gps`; the alternative is to keep the gps row (finer speed, reconstructed position).
-   Which do you prefer? Also: near-ties (seconds apart) stay — is a minimum gap wanted?
-5. ~~old-trail column compatibility~~ answered: exact compatibility not needed; this is an
-   improved trail, and the contract in plan 002 §1 is the floor.
-6. Phase 0 (§9): is there a higher-rate logger stream than `sensor_gps` (whose step is 600 s)?
-   If not, the logger is included for its recorded `.sid` and measured speed, not resolution.
-7. ~~gps1 vs gps2~~ answered by data: same fixes, speeds never disagree; collapse with `coalesce` (§9).
-8. ~~`duration_m`~~ answered (maintainer): soak is variable — longline usually hauled soon after
-   setting, occasionally longer, **max ≈ 12 h**; nets' soak runs to days, notably Greenland-halibut
-   (grálúða) and lumpfish (grásleppa) nets. Data agree for nets: by target, median `t4 − t1` and
-   `duration_m` are equal (DEF 24.5 vs 24.0 h, GAD 21.1 vs 21.1, LUM 47 vs 47, GHL 107 vs 107 h),
-   so **`duration_m` is gear-in-water time for nets** (corr with `t3 − t1` 0.65). For longline it
-   is not (corr 0.09; `t4 − t1` median 12.5 h, q90 24 h — longer than the stated 12 h max, so some
-   recorded hauls are late or wrong). Consequence: for nets, `t1 = t4 − duration_m` can **rebuild a
-   missing set start** (`basis = "derived"`, to validate on stations that have all three); it is
-   *not* a haul length.
-9. **Set duration (the old Q1 remainder) is a different number from soak.** Soak is `t1 → t3/t4`,
-   gear in water, vessel elsewhere. The *set* is the vessel busy putting the gear out, `t1 → t2`,
-   and `t2` is not recorded, so nothing in the data gives it. Plan: estimate it per gear in Phase 1
-   from the speed profile after `t1` (setting is faster than hauling) rather than guess; until
-   then the set window is closed only by the vessel's next event. A rough figure from you (longline
-   set ≈ hours? nets ≈ 1–2 h?) would serve as a sanity check on that estimate.
