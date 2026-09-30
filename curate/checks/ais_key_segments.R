@@ -94,16 +94,21 @@ holders <- bind_rows(
   tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis)) |>
   distinct()
 
-# The annual ship register dates a call sign's holder by YEAR over 2007-2022 (sources/skipaskra): a run of
-# consecutive years of one holder is a window, and it outranks the identity windows (decision 049). The
-# register's edition falls in the year, so a handover year is ambiguous: its run ends and the next begins at
-# the year boundary, and a segment that touches both holders gets none from the register.
+# The annual ship register dates a call sign's holder by YEAR over 2007-2022 (sources/skipaskra). A register
+# year Y is the state at the START of year Y (~Y-01-01), NOT Y-12-31. Measured (decision 049): no hull
+# registered in 2008-2022 is listed in the year it was registered, nearly all the year after (even January
+# registrations; asserted below), and of the vessels AIS still hears, 61 were last heard in their last listed
+# year against 4 the year after. So a holder listed from Y1 to Y2 held the call sign on Y1-01-01 .. Y2-01-01,
+# took it at some point in Y1-1 (the previous holder's last listed year is Y1-1) and lost it at some point in
+# Y2. The run is a window [Y1-1-01-01, Y2-12-31]; two neighbouring holders overlap in the handover year, and a
+# segment that touches both gets none from the register and is left to the other evidence. It outranks the
+# identity windows (decision 049).
 annual <- read_parquet(fd_staging("skipaskra", "annual_call_sign.parquet")) |> transmute(cs, vid = as.integer(vid), year)
 ann_h <- tok |> filter(!is.na(cs)) |> inner_join(annual, by = "cs", relationship = "many-to-many") |>
   distinct(mid, hvid = vid, year) |> arrange(mid, hvid, year) |>
   group_by(mid, hvid) |> mutate(run = cumsum(year - lag(year, default = first(year)) > 1L)) |>
   group_by(mid, hvid, run) |>
-  summarise(t1 = as.Date(sprintf("%d-01-01", min(year))), t2 = as.Date(sprintf("%d-12-31", max(year))), .groups = "drop") |>
+  summarise(t1 = as.Date(sprintf("%d-01-01", min(year) - 1L)), t2 = as.Date(sprintf("%d-12-31", max(year))), .groups = "drop") |>
   mutate(window_basis = "annual register") |> select(-run)
 holders <- bind_rows(holders, ann_h)
 
@@ -176,6 +181,12 @@ cut_reg <- cand_vids |>
   mutate(reg_start = reg_start_of(vid)) |> filter(!is.na(reg_start)) |>
   inner_join(span, by = "mid") |> filter(reg_start > first, reg_start <= last) |>
   transmute(mid, cut = reg_start, basis = paste0("vid ", vid, " was registered on this day"))
+# ASSERTED, not assumed: a hull's first register year is the year AFTER it was registered (state at the start
+# of the year). Same-year listings would mean a Y-12-31 state.
+first_listed <- annual |> group_by(vid) |> summarise(y1 = min(year), .groups = "drop") |>
+  inner_join(mutate(hull_start, ry = as.integer(format(reg_start, "%Y"))), by = "vid") |> filter(ry >= 2008, ry <= 2022) |> mutate(lag = y1 - ry)
+print(first_listed |> count(lag) |> knitr::kable(caption = "first register year minus registration year (hulls registered 2008-2022)"))
+stopifnot("register year is not the start-of-year state" = mean(first_listed$lag == 0) < .05 && mean(first_listed$lag == 1) > .6)
 # The annual register's holder of the mobile-id's call sign changes: cut at the year boundary (the register
 # cannot say where inside the year; anything physical outranks it)
 cut_ann <- ann_h |> arrange(mid, t1) |> group_by(mid) |>

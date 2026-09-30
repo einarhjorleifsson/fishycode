@@ -9,6 +9,10 @@
 # STK era: the registry's own dated call-sign history starts 2023-12-19 (decision 047, 049). Only vessels
 # that carry a call sign appear (~370-400 a year).
 #
+# A year here is the register's state at the START of that year (~YEAR-01-01), not YEAR-12-31: no hull registered
+# in 2008-2022 is listed in the year it was registered, nearly all the year after (asserted in
+# curate/checks/ais_key_segments.R).
+#
 # Three layouts, three routes (`form` records which):
 #   tidy    2009-2017  the maintainer's almost-tidy table (vid, cs columns);
 #   matrix  2018-2022  the page matrices: the vid is the integer on the same row as the call sign;

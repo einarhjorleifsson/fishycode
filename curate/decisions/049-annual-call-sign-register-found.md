@@ -72,3 +72,21 @@ route above avoids all of it.
   reaches; the 7 that disagree (mids 101079, 101119, 101892, 103251, 103750 x3) are all physical-graded, so W1 wins and they go to
   review, not to a rule.
 - Not run against the real `$FISHYDATA/curated` (the maintainer's `tar_make()` does that).
+
+## What a register year means - tested, 2026-09-30
+
+The maintainer's reading was that year Y is the state on Y-12-31. Tested three ways; the data say it is the state at the START of year Y
+(~Y-01-01), which also fits the editions named `arsbyrjun` (start of year):
+
+- **Registration date.** Of 142 hulls registered 2008-2022 that carry a call sign, 0 are first listed in the registration year and 111
+  the year after (24 two years after); all 6 registered in January are first listed the year after. A Y-12-31 state would list them at once.
+  This is now asserted in `ais_key_segments.R` (same-year < 5 %, next-year > 60 %).
+- **AIS end.** Of vessels last listed 2013-2021 with >= 500 other-provider pings, 61 were last heard in their last listed year Y2 and 4 in
+  Y2+1. A Y-12-31 state would put them in Y2+1.
+- **AIS switch.** W1 sees a mid change from A to B on one call sign in two cases where the register lists A last in Y2 and B first in Y2+1;
+  both fall in Y2 (mid 100137: A gone 2013-10, B from 2013-12, register A 2013, B 2014).
+
+So a holder listed Y1..Y2 held the call sign on Y1-01-01..Y2-01-01, took it during Y1-1 and lost it during Y2: window
+[Y1-1-01-01, Y2-12-31]. The first implementation had the ends the other way round (from Y1-01-01 to Y2+1-12-31 under the maintainer's
+reading) and was replaced. Effect on the table: the register now reaches 579 segments and agrees on 564; 15 disagree, of which 7 are the
+same physically-confirmed segments as before and 8 are zero-ping slivers between a year-boundary cut and a neighbour (harmless).
