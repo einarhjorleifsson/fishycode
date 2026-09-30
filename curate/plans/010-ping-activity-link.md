@@ -495,3 +495,42 @@ not found:
   positions. The recorded window only brackets the operation; the haul is found inside it by speed.
   That is the `[s1,s2]` filter in `fishing` (Danish seine 0.25–2.9 kn) and is where plan 004's
   behavioural window would sharpen this gear most.
+
+### 12b. The raw durations behind every cap — measured 2026-09-30
+
+Recomputed from the raw tables exactly as the adapters do, before the cap (`afli`: `toga`,
+`lineha`, `gildra`; `fs_afladagbok`: `lok_timi − upphaf_timi`). **The two adapters use different
+cap tables** (Danish seine 180 vs 240 min, bottom-trawl finfish 600 vs 720, midwater 1440 vs 1800,
+plough 240 vs 1200): they have already drifted. Minutes; "near" = within 1.0–1.5× the cap,
+"far" = more than 4× the cap.
+
+| gear (source) | cap | n | median | q95 | q99 | over cap | where the excess sits |
+|---|---|---|---|---|---|---|---|
+| SDN (afli) | 180 | 122,406 | 46 | 110 | 539 | 3,215 (2.6 %) | **58 % at 2–4× (6–12 h)**, 23 % near, 8 % far |
+| SDN (fs) | 240 | 57,615 | 48 | 120 | 552 | 1,286 (2.2 %) | 61 % at 2–4× (8–16 h), 19 % near |
+| OTB finfish (afli) | 600 | 3.03 M | 200 | 360 | 480 | 7,254 (0.2 %) | **91 % near (10–15 h)** |
+| OTB Nephrops (afli) | 480 | 249,321 | 300 | 3,660 | 9,723 | 24,209 (9.7 %) | **70 % far (> 32 h)**: garbage |
+| OTB shrimp (afli) | 960 | 880,886 | 360 | 690 | 2,520 | 12,768 (1.5 %) | 54 % far (> 64 h) |
+| OTM (afli) | 1440 | 140,817 | 420 | 1,200 | 1,440 | 1,210 (0.9 %) | 99 % near (24–36 h) |
+| DRB ocean quahog (afli) | 240 | 17,892 | 38 | 360 | 1,080 | 1,081 (6.0 %) | spread: 22 % near, 41 % at 2–4×, 19 % far |
+| LLS (afli / fs) | 1440 | 397,481 / 25,843 | 300 / 797 | 1,200 / 1,577 | 1,500 / 2,418 | 4,412 (1.1 %) / 2,812 (**10.9 %**) | 86 % / 88 % near (24–36 h) |
+| LHM (afli / fs) | 1440 | 403,326 / 76,241 | 480 | 840 | 1,380 / 1,650 | 0.7 % / 1.4 % | 76 % / 69 % near |
+| GNS Greenland-halibut (fs) | 10080 | 3,155 | 6,446 | 15,532 | 23,273 | 518 (**16.4 %**) | 66 % near (7–10.5 d) |
+| GNS other (afli) | 10080 | 368,680 | 1,440 | 5,760 | 8,640 | 1,819 (0.5 %) | 83 % near |
+
+What this says, by kind of cap:
+- **Truncated real values (the excess is just above the cap):** bottom-trawl finfish, midwater,
+  longline, jigs, the gillnets, and above all Danish seine, where a second mode of 6–12 h
+  records (whole-day, several hauls logged as one) sits at 2–4× the cap. Cutting these loses
+  real fishing time, and for static gear it also shortens `duration_m`, which `effort` is built from.
+- **Garbage (the excess is far above the cap):** Nephrops and shrimp trawl (up to 9,990 min = 166 h),
+  and stray values everywhere (`fs_afladagbok` LLS/LHM reach 1.05 billion minutes: a bad timestamp).
+  Capping garbage to the cap *invents* a precise duration (a 61-hour Nephrops "tow" becomes an
+  8-hour one). It should be missing, with a flag.
+- The caps exist for the second reason and are applied for both.
+
+Proposed rule, for the maintainer to set the numbers: **two limits per gear**, `plausible_max`
+(above it the duration is an error: set to NA, `.duration_source = "implausible"`, the window falls
+back to the station date) and, if wanted, a soft `tow_max_min` for the window alone. Starting points
+from the table: SDN 960, OTB finfish 900, OTM 2160, LLS/LHM 2880, GNS 7 d except Greenland-halibut
+nets 21 d, Nephrops 720, shrimp 1440. Nothing in the raw durations is applied yet.
