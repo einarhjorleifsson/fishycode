@@ -59,6 +59,13 @@ list(
     "reference/gear/mapping.R",
     fd_curated("reference", "gear.parquet")), format = "file"),
 
+  # Speed windows and window class per gear (plan 010). Reads gear.parquet.
+  tar_target(gear_window, {
+    gear
+    produces("reference/gear/windows.R",
+             fd_curated("reference", "gear_window.parquet"))
+  }, format = "file"),
+
   # Harbour geometry. kaenugardr was absorbed on 2026-09-21 (decision 006), so
   # these are produced here rather than hand-copied in as an artifact.
   #

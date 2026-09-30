@@ -218,7 +218,13 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
 ## 7. Order
 
 0. **Measure** (read-only) — **done 2026-09-30**, results in §9.
-1. **Gear table**: port `s1`/`s2` and the class/window rule to `reference/gear/`.
+1. **Gear table** — **done 2026-09-30**: `reference/gear/windows.R` → `curated/reference/gear_window.parquet`
+   (target `gear_window`). Per new-version gid: `gear_class`, `s1`, `s2`, `s_basis`, `set_max_min`
+   (NA until Q9). `s1`/`s2` are **fleet-wide declared values** (maintainer: they work reasonably
+   and could be refined), ported from the old `00_DATASET_gear.R`; `s_basis = "declared_fleet"`
+   so a refinement can sit beside them. Checked against AIS speed inside recorded windows: trawls
+   88–96 % and longline 91 % inside `[s1,s2]`; Danish seine 70 %; nets 53–86 % (their recorded
+   hauls include steaming, so the window is the doubtful part there).
 2. **`logbook/station_window`** with `basis` from the start (the -for-ais producer, plan 002
    step 2), including the estimate of the per-gear set duration from the speed profile (Q9)
    and the tow/haul caps of §2.
