@@ -20,6 +20,7 @@
 # before it and the periods touch exactly.
 #
 # THE VID OF A SEGMENT, best evidence first, with the source recorded:
+#   0. reviewed   a person's verdict in overrides/ais_key_segments_reviewed.csv replaces the vid (an input);
 #   1. physical   W1 confirms a vid in >= 3 months of the segment;
 #   2. registry   the registry gives the mobile-id's own call sign or MMSI to one vid over it; for 2007-2022
 #                 the annual ship register dates the holder by year and outranks the identity windows;
@@ -353,7 +354,20 @@ tbl <- tbl |>
          agrees_key = !is.na(vid) & vid == key_vid) |>
   select(-yh1, -yh2, -vid_nb, -nb_alive, -fill_ok)
 
-SRC <- c("physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "foreign: kept override", "drop: a person decides", "no evidence, neighbour did not exist then: a person decides")
+# Reviewed segments (overrides/ais_key_segments_reviewed.csv): a person's verdict on a stretch, read as an INPUT,
+# never computed. It replaces the vid of any segment that lies mostly (>= 50 % of its days) inside a reviewed row.
+ov <- read.csv("overrides/ais_key_segments_reviewed.csv") |> transmute(mid, ovid = as.integer(vid), od1 = as.Date(d1), od2 = as.Date(d2))
+ov_seg <- tbl |> select(mid, seg_no, d1, d2) |>
+  inner_join(ov, by = "mid", relationship = "many-to-many") |>
+  mutate(ov_days = pmax(0, as.numeric(pmin(d2, od2) - pmax(d1, od1)) + 1)) |>
+  filter(ov_days >= .5 * (as.numeric(d2 - d1) + 1)) |>
+  group_by(mid, seg_no) |> slice_max(ov_days, n = 1, with_ties = FALSE) |> ungroup() |> select(mid, seg_no, ovid)
+tbl <- tbl |> left_join(ov_seg, by = c("mid", "seg_no")) |>
+  mutate(source = if_else(!is.na(ovid), "reviewed", source), vid = coalesce(ovid, vid),
+         vid_no_ods = if_else(!is.na(ovid), ovid, vid_no_ods), agrees_key = !is.na(vid) & vid == key_vid) |>
+  select(-ovid)
+
+SRC <- c("reviewed", "physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "foreign: kept override", "drop: a person decides", "no evidence, neighbour did not exist then: a person decides")
 # two neighbouring segments of one vid are one segment
 merged <- tbl |>
   arrange(mid, seg_no) |>
@@ -369,7 +383,7 @@ merged <- tbl |>
   group_by(mid) |> mutate(seg_no = row_number()) |> ungroup() |>
   mutate(agrees_key = !is.na(vid) & vid == key_vid,
          startup_phase = d1 < STARTUP_END,
-         grade = case_when(source == "physical" ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source %in% c("continuity", "continuity: neighbour") ~ "D", source == "foreign: kept override" ~ "E", .default = "-")) |>
+         grade = case_when(source %in% c("reviewed", "physical") ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source %in% c("continuity", "continuity: neighbour") ~ "D", source == "foreign: kept override" ~ "E", .default = "-")) |>
   select(mid, seg_no, d1, d2, vid, source, grade, key_vid, agrees_key, vid_no_ods, w1_months, twin_vid,
          boundary_basis, startup_phase, pings)
 # What the annual register says over each final segment, whatever decided it: the one vid that holds the
@@ -383,7 +397,7 @@ ann_seg <- merged |> select(mid, seg_no, d1, d2) |>
   inner_join(ann_core, by = "mid", relationship = "many-to-many") |> filter(t1 <= d2, t2 >= d1) |>
   group_by(mid, seg_no) |> summarise(annual_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop")
 merged <- merged |> left_join(ann_seg, by = c("mid", "seg_no")) |>
-  mutate(annual_disagrees = !is.na(annual_vid) & !is.na(vid) & annual_vid != vid)
+  mutate(annual_disagrees = !is.na(annual_vid) & !is.na(vid) & annual_vid != vid & source != "reviewed")
 print(merged |> summarise(segments_with_annual_holder = sum(!is.na(annual_vid)), agree = sum(!is.na(annual_vid) & !annual_disagrees, na.rm = TRUE),
                           disagree = sum(annual_disagrees), pings_disagree = sum(pings[annual_disagrees])) |> knitr::kable(caption = "annual register vs the table"))
 

@@ -1,0 +1,3 @@
+mid,d1,d2,vid,reviewed_date,reason
+103750,2011-07-11,2028-12-24,2022,2026-09-30,"vid 2022's own other-provider AIS (2014-2024) is within 2 km of the mid in 100% of its opportunities every year (median 0.1-0.3 km); vids 7487 and 2487 match only part of the time (0.18-0.92, 0-0.87), companions; key, annual register (TFJQ 2007-2022) and registry agree (decision 051)"
+101079,2021-01-01,2028-12-24,7126,2026-09-30,"vid 7126's own AIS is within 2 km of the mid in 91-95% of opportunities each year 2021-2024 (median 0.3-0.7 km) and its landings match the mid's harbour calls at 1.00; vid 1988's AIS is heard only in 2021, median 179 km away; the registry today gives TFAH to 7126; the annual register's single 2022 row (TFAH -> 1988) is overwritten (decision 051)"
