@@ -1,6 +1,6 @@
 # 053 - `ais_key.R` reads the segment table
 
-**Status:** done 2026-09-30 (plan 009 phase 5, step 2). Built through `ais_ping_union`; `stk`, `ais_ping_tag`, `ais_ping_clean`, `ais_trip`, `trip_voyage` and `logbook_sensor_gps` still to run (see the end).
+**Status:** done 2026-09-30 (plan 009 phase 5, step 2). Built end to end and verified 2026-09-30 (see the end).
 
 The key the pipeline consumes (`curated/vessel/vessel_ais_key.parquet`) is now built from `curated/check/ais_key_segments.parquet`, not from
 the cascade and the manual ODS. One mechanical consequence forced a split: the segment table reads the old key (identifiers, entity class,
@@ -37,3 +37,19 @@ year (2019: 50.17 M against 50.15 M in the earlier run's derived table). It was 
 downstream targets remain outdated. The last full union took about 37 minutes (2 min a year); the loop at the end of `ais_ping_union.R` re-evaluates the
 whole lazy query once per year (20 rescans of ~145 GB of ASTD/ASTDB), so each year costs a fixed ~5 minutes whatever its size. Not caused by the join
 (timed in plain DuckDB: 0.3 s for old and new forms, identical rows). A pruned or single-pass write is a possible change, not made.
+
+## The rest of the build, and a silent failure found on the way, 2026-09-30
+
+The union was stopped on purpose, then `tar_make()` was resumed. **It reported success in 3 m 57 s, and `ais_ping_clean` had done nothing**: it keeps an
+empty completion marker per year and skips any year with one, so against the 23 Sep markers every year printed "already done, skipping", `ping_clean`
+stayed the old output (newest file 23 Sep 19:33), and because its files were unchanged targets skipped `ais_trip`, `trip_voyage` and `logbook_sensor_gps`.
+The pipeline said "up to date" while the tail was built from the old key. Fixed in `curate/ais_ping_clean.R`: a marker now holds a fingerprint of that
+year's input files (name, size, mtime) and a year is skipped only when it still matches; old empty markers never match. No other script has this pattern.
+Rerun: `ais_ping_clean` 6 m 08 s (13.71 GB, all years), `ais_trip` 8 m 55 s (12.67 GB), `trip_voyage` under 1 s, `logbook_sensor_gps` 9 m 03 s (1.19 GB);
+the whole resume 24 m 16 s, nothing outdated afterwards.
+
+Verified on the rebuilt tables: STK staging has 181,714,831 rows against the segment table's 181,714,828 pings on a vid (3 apart); the six vid swaps
+(mids 103750, 101280, 146259, 139705, 101079, 101892's 2007-13 stretch) are in staging with the intended vids; no gear-device mid is in it; union ->
+tagged -> clean is 543.7 M -> 543.7 M -> 540.5 M rows (0.59 % dropped: STK 1.18 %, ASTD 0.24 %, ASTDB 0.67 %, EmodNet 1.41 %); the swapped vids have trips
+(720,097 trips, 2,761 vids). STK staging repeats 6.6 M (mid, time) pairs (3.6 %) - inherited from the raw trail (9.9 M of 290 M rows since 2007-06), not
+made by the join (the segments do not overlap); the union removes exact duplicates (175,113,292 STK rows).

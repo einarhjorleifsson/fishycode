@@ -50,11 +50,24 @@ BATCH_PINGS <- 5e6
 # was printed.
 kept <- dropped1 <- dropped2 <- 0
 
+# A completion marker used to be an EMPTY file, so a year was skipped whenever a marker existed - whatever its
+# input had become. After the key was rebuilt from the segment table (decision 053) the whole of ping_tagged
+# changed and every year printed "already done, skipping": ping_clean stayed the 23 Sep output while targets
+# reported it current. The marker now holds a fingerprint of that year's INPUT files (name, size, mtime); a year is
+# skipped only when the fingerprint still matches, so a rebuilt ping_tagged is cleaned again and an old empty
+# marker never matches.
+fingerprint <- function(yr) {
+  f <- list.files(file.path(fd_staging("ais", "ping_tagged"), paste0("year=", yr)), full.names = TRUE, recursive = TRUE)
+  i <- file.info(f)
+  rlang::hash(paste(basename(f), i$size, as.numeric(i$mtime), collapse = ";"))
+}
+
 for (yr in years) {
 
   ydir <- file.path(out, paste0("year=", yr))
-  if (file.exists(file.path(marks, as.character(yr)))) {
-    message("Year ", yr, " already done, skipping"); next
+  marker <- file.path(marks, as.character(yr)); fp <- fingerprint(yr)
+  if (file.exists(marker) && identical(readLines(marker, warn = FALSE)[1], fp)) {
+    message("Year ", yr, " already done for this input, skipping"); next
   }
   message("Year ", yr)
   unlink(ydir, recursive = TRUE)   # any partial output from a failed attempt
@@ -132,7 +145,7 @@ for (yr in years) {
   }
 
   unlink(pass1)
-  file.create(file.path(marks, as.character(yr)))
+  writeLines(fp, marker)
 }
 
 total_in <- kept + dropped1 + dropped2
