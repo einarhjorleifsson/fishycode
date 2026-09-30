@@ -291,13 +291,15 @@ foreign_seg <- segs |>
   transmute(mid, seg_no, foreign_vid = fvid)
 
 # When W1 confirms SEVERAL vids over a segment (a tug and its tow travel together and both fit), the
-# vid the key already names wins if it is among them, and only otherwise the one with most months.
-# The key's ODS-sourced rows are not used for that.
+# vid the key already names wins if it is among them, then the one with most months, and on a tie the
+# vid the registry names for the stretch (mid 103251: a tug and its tow, 16 months each; the annual register
+# gives the call sign to the tow). The key's ODS-sourced rows are not used for that.
 w1_seg <- w1_all |>
   left_join(key_seg |> transmute(mid, seg_no, kf = if_else(coalesce(key_step, "") == "manuals", NA_integer_, key_vid)),
             by = c("mid", "seg_no")) |>
+  left_join(select(reg_seg, mid, seg_no, rg = reg_vid), by = c("mid", "seg_no")) |>
   group_by(mid, seg_no) |>
-  arrange(desc(vid == kf & !is.na(kf)), desc(k), .by_group = TRUE) |>
+  arrange(desc(vid == kf & !is.na(kf)), desc(k), desc(vid == rg & !is.na(rg)), .by_group = TRUE) |>
   summarise(w1_vid = vid[1], w1_months = k[1], twin_vid = if (n() > 1) vid[2] else NA_integer_, .groups = "drop")
 
 pings <- segs |>
@@ -373,8 +375,12 @@ merged <- tbl |>
 # What the annual register says over each final segment, whatever decided it: the one vid that holds the
 # mobile-id's call sign in the years the segment touches (NA when none or several). A segment whose vid
 # differs is listed for a person - the register is dated by year only, so it is evidence, not a judge.
+# Compared over the CORE of each run only - the span the register certainly places the holder in, Y1-01-01 to
+# Y2-01-01. The wider window (a year either side) is where the handover happens, so a segment that lies in it
+# is a handover, not a disagreement.
+ann_core <- ann_h |> mutate(t1 = as.Date(sprintf("%d-01-01", as.integer(format(t1, "%Y")) + 1L)), t2 = as.Date(sprintf("%d-01-01", as.integer(format(t2, "%Y")))))
 ann_seg <- merged |> select(mid, seg_no, d1, d2) |>
-  inner_join(ann_h, by = "mid", relationship = "many-to-many") |> filter(t1 <= d2, t2 >= d1) |>
+  inner_join(ann_core, by = "mid", relationship = "many-to-many") |> filter(t1 <= d2, t2 >= d1) |>
   group_by(mid, seg_no) |> summarise(annual_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop")
 merged <- merged |> left_join(ann_seg, by = c("mid", "seg_no")) |>
   mutate(annual_disagrees = !is.na(annual_vid) & !is.na(vid) & annual_vid != vid)
