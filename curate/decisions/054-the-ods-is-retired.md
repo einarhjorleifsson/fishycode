@@ -17,5 +17,9 @@ vessels: the cascade reaches the override's vid on its own in 318 of 344 segment
 the physical track decided 2730 before, decision 048). A foreign match that agrees with the override keeps the label `foreign: kept override`.
 Mid 143852 now reads 1511 (physical), the vid the key named; decision 052 had left it for a person.
 
-**Not rebuilt:** the key changed slightly (19,357 rows), so the targets downstream of `vessel_ais_key` are outdated again (`stk`, `ais_ping_union`, ...).
-The union costs about 1.5 hours; the difference is 0.1 % of mid-days, so running it is the maintainer's call, not a dependency of anything else.
+**Rebuilt (same day):** the targets downstream of the key were then rebuilt end to end on the retired-ODS key (union 12:0x-12:2x at ~2 min a year - the
+slow 5-min years that morning were machine pressure, not the code; `stk` 1 m, `ais_ping_tag` 2 m 42 s, `ais_ping_clean` 6 m 10 s with no year skipped, `ais_trip`
+8 m 43 s, `trip_voyage` under 1 s, `logbook_sensor_gps` 9 m 04 s). A battery warning stopped the run once between targets (a controlled kill, `ais_trip` rerun from
+scratch); nothing outdated afterwards. Verified: STK staging 181,743,254 rows against the segment table's 181,743,251 pings on a vid (3 apart); no gear-device
+mid in it; union -> tagged -> clean 543.73 M -> 543.73 M -> 540.53 M (0.59 % dropped); mids 103750 -> 2022, 101280 -> 1849, 146259 -> 3037, 143852 -> 1511 and
+108963 -> 2835 are in staging with the intended vids; 720,247 trips for 2,763 vids. The archived ODS is the only thing left for the maintainer to delete.
