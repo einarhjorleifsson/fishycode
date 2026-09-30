@@ -1,6 +1,6 @@
 # 053 - `ais_key.R` reads the segment table
 
-**Status:** done 2026-09-30 (plan 009 phase 5, step 2). The downstream targets are **not yet rebuilt** (see below).
+**Status:** done 2026-09-30 (plan 009 phase 5, step 2). Built through `ais_ping_union`; `stk`, `ais_ping_tag`, `ais_ping_clean`, `ais_trip`, `trip_voyage` and `logbook_sensor_gps` still to run (see the end).
 
 The key the pipeline consumes (`curated/vessel/vessel_ais_key.parquet`) is now built from `curated/check/ais_key_segments.parquet`, not from
 the cascade and the manual ODS. One mechanical consequence forced a split: the segment table reads the old key (identifiers, entity class,
@@ -27,3 +27,13 @@ the cascade's own vid as continuity), so the two cannot be one target.
 **Not done - needs a decision to run:** the targets downstream of the key are outdated (`stk`, `ais_ping_union`, `ais_ping_clean`, `ais_ping_tag`,
 `ais_trip`, `trip_voyage`, `logbook_sensor_gps`, and the checks). Running them re-labels about 1.3 % of STK pings and fills the stretches the old
 key left unassigned; it rebuilds the 44 GB union. The ODS stays until the cascade's `manuals` step is dropped and the audit chain rebuilt on the result.
+
+## Build record, 2026-09-30
+
+`tar_make()` built the cascade (identical to the old key: 19,234 rows, same mid/d1/d2/vid/step), the audit chain (audit 4 m 32 s), the segment table, the new key,
+twins and recall without trouble. `ais_ping_union` first failed on `d2 + 1` (DuckDB has no DATE + DECIMAL; the literal must be `1L` - fixed in both
+`sources/stk/convert.R` and `curate/ais_ping_union.R`), then ran **1 h 35 m 34 s**, 12.79 GB - the same size as the previous union, rows within 0.1 % per
+year (2019: 50.17 M against 50.15 M in the earlier run's derived table). It was stopped on purpose after the union (the maintainer had to leave), so the
+downstream targets remain outdated. The last full union took about 37 minutes (2 min a year); the loop at the end of `ais_ping_union.R` re-evaluates the
+whole lazy query once per year (20 rescans of ~145 GB of ASTD/ASTDB), so each year costs a fixed ~5 minutes whatever its size. Not caused by the join
+(timed in plain DuckDB: 0.3 s for old and new forms, identical rows). A pruned or single-pass write is a possible change, not made.

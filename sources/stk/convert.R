@@ -27,7 +27,7 @@ vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
 duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
   # d2 is a DATE and a segment's last day runs to its end: half-open on d2 + 1, or every ping after 00:00 on
   # the last day of a period falls between two periods and is lost
-  inner_join(vid |> select(vid, mmsi, mid, loid, glid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1),
+  inner_join(vid |> select(vid, mmsi, mid, loid, glid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1L),
              by = join_by(mid, time >= d1, time < d2e)) |>
   mutate(year = year(time)) |>
   arrange(vid, time) |>
