@@ -314,6 +314,12 @@ list(
              fd_curated("link", "trip_voyage.parquet"))
   }, format = "file"),
 
+  # One row per (logbook station, phase): when the vessel is busy with it (plan 010).
+  tar_target(station_window, {
+    logbook; gear_window
+    produces("curate/station_window.R", fd_curated("logbook", "station_window.parquet"))
+  }, format = "file"),
+
   tar_target(lid_map, {
     logbook; landing; gear
     produces("curate/link_lid_map.R",

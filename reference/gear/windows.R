@@ -10,12 +10,15 @@
 # calls s1/s2 (plan 006 §2). The two never share a table.
 #
 # Columns
-#   gear_class  towed | static | other. Decides which logbook times are the vessel
-#               being active (plan 010 §2): towed fishes between t2 and t3; static
-#               is active twice, at the set (from t1) and the haul (t3 to t4); the
-#               time in between is gear in the water with the vessel elsewhere and
-#               is NOT a window. other has no usable event times, so it gets the
-#               station date (basis "synthesised").
+#   gear_class  towed | static | jigged | other. Decides which logbook times are the
+#               vessel being active (plan 010 §2): towed fishes between t2 and t3;
+#               static is active twice, at the set (from t1) and the haul (t3 to
+#               t4); the time in between is gear in the water with the vessel
+#               elsewhere and is NOT a window. jigged (LHM) is active throughout
+#               t1 to t4 - duration_m equals t4 - t1 in 98.6 % of rows and the
+#               speed after t1 is a steady ~1 kn, i.e. drifting and jigging, not
+#               soak. other has no usable event times, so it gets the station date
+#               (basis "synthesised").
 #   s1, s2      speed window, knots. Ported from the pre-restructuring
 #               fishyweb/scripts/00_DATASET_gear.R tribble (agf_gid = this gid).
 #               Fleet-wide and declared, not fitted (maintainer, 2026-09-30): they
@@ -24,9 +27,16 @@
 #               of recorded windows. `s_basis` says so on every row, so a refined
 #               value can arrive beside "declared_fleet" instead of replacing it.
 #               See the check at the foot of this file.
-#   set_max_min Longest plausible set, minutes, for closing the open-ended set
-#               window. NA until estimated from the speed profile after t1 (plan
-#               010 Q9); it is an assumption and is never invented here.
+#   set_max_min How long the vessel is busy setting the gear, minutes, which closes
+#               the open-ended set window (t2, the end of the set, is not recorded).
+#               ESTIMATED, not recorded (plan 010 Q9): the median AIS speed of
+#               stations with a recorded t1 (2014-2023, pings before the station's
+#               own t3/t4 and the vessel's next t1) stays at setting speed and then
+#               falls to the drifting speed:
+#                 LLS  ~6 kn for the first 120 min, 4.0 at 120-150, 1.9 from 150  -> 150
+#                 GNS  2.7 kn in the first 30 min, 1.6 at 30-60, ~1.2 after       ->  60
+#               GND is given the net value. Other gears stay NA: no window needs one.
+#               `set_max_basis` names the evidence so it can be replaced.
 #
 # Adding max-duration and max-distance criteria (mapping.R's TODO) belongs in this
 # file, not in mapping.R: they are properties of a window, not of a vocabulary.
@@ -68,9 +78,11 @@ speed <- tribble(
 
 # Gear codes are ICES GearType. GND (drift net) and FPO (pots) are static by the
 # shape of their recorded times (GND: t1, t3, t4 all present; FPO: rare). PS fishes
-# in an instant and has no window.
-static <- c("LLS", "GNS", "GND", "LHM", "FPO")
+# in an instant and has no window. LHM is jigged, not static (see gear_class).
+static <- c("LLS", "GNS", "GND", "FPO")
+jigged <- "LHM"
 towed  <- c("OTB", "OTM", "SDN", "DRB")
+set_max <- c(LLS = 150L, GNS = 60L, GND = 60L)
 
 gear_window <-
   gear |>
@@ -78,11 +90,14 @@ gear_window <-
   mutate(
     gear_class = case_when(gear %in% towed  ~ "towed",
                            gear %in% static ~ "static",
+                           gear %in% jigged ~ "jigged",
                            .default = "other"),
-    set_max_min = NA_integer_,
+    set_max_min = unname(set_max[gear]),
+    set_max_basis = if_else(is.na(set_max_min), NA_character_,
+                            "estimated_speed_profile_2026-09-30"),
     s_basis = if_else(is.na(s1), NA_character_, "declared_fleet")) |>
   select(gid, veidarfaeri, gear, target, gear_class, s1, s2, s_basis, set_max_min,
-         veidarfaeri_speed)
+         set_max_basis, veidarfaeri_speed)
 
 # check: the speed list and the vocabulary agree on what each gid is ----------
 mismatch <- gear_window |>

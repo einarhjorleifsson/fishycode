@@ -225,9 +225,10 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
    so a refinement can sit beside them. Checked against AIS speed inside recorded windows: trawls
    88–96 % and longline 91 % inside `[s1,s2]`; Danish seine 70 %; nets 53–86 % (their recorded
    hauls include steaming, so the window is the doubtful part there).
-2. **`logbook/station_window`** with `basis` from the start (the -for-ais producer, plan 002
-   step 2), including the estimate of the per-gear set duration from the speed profile (Q9)
-   and the tow/haul caps of §2.
+2. **`logbook/station_window`** — **done 2026-09-30**: `curate/station_window.R` →
+   `curated/logbook/station_window.parquet` (target `station_window`), one row per (station,
+   phase), 7.2 M stations → see §10 for what was built, what changed from this plan, and the
+   check against the old trail.
 3. **`ais/ping_trail`** (AIS ∪ gps, §5) — built directly after `logbook_sensor_gps`, gps
    included from the first build — through `write_curated()`, wired into `_targets.R` per §6.
    `ais/ping_activity` only if needed (§4). Two prerequisites in `ais_ping_clean`: dedupe
@@ -258,7 +259,7 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
    recorded hauls are late or wrong). Consequence: for nets, `t1 = t4 − duration_m` can **rebuild a
    missing set start** (`basis = "derived"`, to validate on stations that have all three); it is
    *not* a haul length.
-9. **Set duration (the old Q1 remainder) is a different number from soak.** Soak is `t1 → t3/t4`,
+9. ~~set duration~~ **estimated 2026-09-30 (§10): longline 150 min, nets 60 min**, from the speed profile after `t1`; confirm or correct. Original question: **set duration (the old Q1 remainder) is a different number from soak.** Soak is `t1 → t3/t4`,
    gear in water, vessel elsewhere. The *set* is the vessel busy putting the gear out, `t1 → t2`,
    and `t2` is not recorded, so nothing in the data gives it. Plan: estimate it per gear in Phase 1
    from the speed profile after `t1` (setting is faster than hauling) rather than guess; until
@@ -324,3 +325,63 @@ Scripts in the session scratchpad; all numbers below were printed by them.
 
 **Not yet done:** the per-gear set duration (§8 Q9) and the `win_speed_ok` diagnostic
 (needs the window table built). `duration_m`'s real meaning for nets.
+
+## 10. Phase 2 — `station_window` built 2026-09-30
+
+`curate/station_window.R`; per (station, phase): `tow`, `set`, `haul`, `jig`, `day`, with
+`win_basis` (recorded / derived / synthesised / capped), `win_closed_by`, and the raw `t1`..`t4`,
+`duration_m`, `s1`, `s2` beside the window.
+
+**What changed from §2 because of the data**
+- **Keys: `.sid` and `.tid` are unique only within a schema.** `afli` and `fs_afladagbok` number
+  independently; 15,184 station ids and 6,565 trip ids occur in both (and 6,563 of those trip ids
+  carry different vessels). Every join is on `(id, schema)`; with that, only **21** stations have no
+  unambiguous vessel. **Everything downstream (`ping_activity`, `ais_trail`) must carry `schema`.**
+  A join on `.sid` alone attaches one schema's pings to the other's station.
+- **Jiggers (LHM) are a separate class, `jigged`, with one active window `[t1,t4]`:** `duration_m`
+  equals `t4 − t1` in 98.6 % of rows and the speed after `t1` is a steady ≈ 1 kn (drifting, jigging).
+  Not set/haul/soak. (`reference/gear/windows.R` updated.)
+- **The "rebuild a net's `t1` from `t4 − duration_m`" idea (§8 Q8) is withdrawn:** only 25 % of net
+  stations agree to 5 min (median error 193 min), and only 1 gillnet station has `t4` and
+  `duration_m` but no `t1` — nothing to rebuild.
+- **Set duration (Q9) estimated from the AIS speed profile after a recorded `t1`** (2014–2023,
+  before the station's own haul and the vessel's next event): longline speed stays ≈ 6 kn for
+  ~2 h then drops to ≈ 1.8 kn → **150 min**; gillnet 2.7 kn in the first half hour, ≈ 1.2 after →
+  **60 min**. Stored in `gear_window.set_max_min` with `set_max_basis`. An estimate, not a record.
+- Typical haul (for stations with `t4` only), median of recorded `t4 − t3`: LLS 498 min, GNS 295.
+  A record with `t1 = t3 = t4` (duration 0; 329 longline stations) is a stamp, not a haul, and
+  gets the typical haul ending at `t4`.
+
+**Built (rows, median window)**
+
+| class | phase | basis | n | median min |
+|---|---|---|---|---|
+| towed | tow | recorded | 4,075,797 | 210 |
+| towed | tow | capped | 396 | 156 |
+| towed | day | synthesised | 1,584,520 | 1440 |
+| static | haul | recorded / synthesised / capped | 47,312 / 205,799 / 354 | 415 / 498 / 36 |
+| static | set | synthesised | 257,490 | 150 |
+| static | day | synthesised | 687,384 | 1440 |
+| jigged | jig | recorded / derived | 76,231 / 13,036 | 480 / 574 |
+| jigged | day | synthesised | 414,417 | 1440 |
+| other | day | synthesised | 109,467 | 1440 |
+
+Capping is rarer than §9 predicted (396 tows, 354 hauls): most of the earlier "overlap" count
+was stations with an *identical* start (one tow logged twice), which a strict "next start" cap does
+not touch. Duplicate windows therefore stay as ambiguity, handled at the join.
+
+**Checked against the current (old) trail, 2019** — as a test that this is not a tangent:
+- **Towed, recorded `[t2,t3]`:** the old trail's window has the same start and end within 1 min in
+  **98.9 %** of 39,359 matched tows; per-station ping counts are identical in **90.6 %** of 48,604
+  stations (median 40 pings new, 41 old). Danish seine agrees too (median start/end difference 0).
+- **Static gear differs, and only as designed:** of the old-trail pings that no new window claims,
+  **99.9 %** for longline (1,047,351 of 1,047,980) and 97 % for nets fall inside the same station's
+  `t1..t4` — the soak, which the old trail tagged as fishing and this table does not.
+- **Totals:** 9.78 M pings tagged by any new window vs 9.59 M by the old trail; 82 % of the old
+  set is also in the new set, 87 % of the new non-`day` pings are in the old set. New-only pings
+  are mostly set/haul windows of stations the old trail treated as day or soak.
+- **Not explained:** old code 5 (Danish seine) has 94,157 pings (19 %) in 2,232 old windows that
+  overlap a new tow window but are not claimed by it; windows match in the typical case, so this
+  is a subset (edge, duplicate or capped windows) to look at in Phase 3 when pings are joined.
+- Gaps the old trail could not show: it had a `t1` on every station-tagged row (the whole-day
+  fill, unflagged); here 28 % of towed, 76 % of static and 82 % of jigged stations are `day` and say so.
