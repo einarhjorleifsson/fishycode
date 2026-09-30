@@ -31,9 +31,11 @@
 #   speed        knots, NA where the source value is implausible (< 0 or > SPEED_MAX).
 #   speed_raw    the same value before that test, also knots. AIS carries values up to
 #                8.6 million; the logger's raw unit is m/s and is converted here.
-#   speed_basis  recorded for both: the vessel's own measurement, not derived from
-#                positions. (The logger's speed is NOT independent of the AIS ping's
-#                on a tie: a tie is the same vessel at the same instant.)
+#   speed_basis  recorded | derived, per provider, from how the feed builds its speed
+#                (curate/ais_ping_union.R): stk and gps carry the source's own measured
+#                speed; astd, astdB and emodnet have none and derive it from the distance
+#                to the next ping over the interval. A derived speed is a chord over the
+#                interval and reads low when pings are sparse or the track bends.
 # Anything that measures WHERE (distance, implied speed, whack) must not use gps rows:
 # their positions come from the same AIS track.
 #
@@ -97,9 +99,13 @@ for (yr in years) {
       FROM ais0) WHERE rk = 1)
   %s
   SELECT a.vid, a.mmsi, a.time, a.lon, a.lat,
-         CASE WHEN a.speed BETWEEN 0 AND %f THEN a.speed END AS speed,
+         -- emodnet speed was computed with lon and lat swapped (correction
+         -- emodnet_speed_args_swapped): unusable until the chain is rebuilt. DELETE the
+         -- provider test below after that rebuild.
+         CASE WHEN a.provider <> 'emodnet' AND a.speed BETWEEN 0 AND %f THEN a.speed END AS speed,
          a.speed AS speed_raw, a.heading, a.cog, a.provider, a.pid, a.year, a.trip,
-         'recorded' AS pos_basis, 'recorded' AS speed_basis,
+         'recorded' AS pos_basis,
+         CASE WHEN a.provider = 'stk' THEN 'recorded' ELSE 'derived' END AS speed_basis,
          g.speed_kn AS speed_gps, CAST(NULL AS DOUBLE) AS dt_sec,
          CAST(NULL AS DOUBLE) AS sid_gps, CAST(NULL AS BIGINT) AS n_sid_gps
   FROM ais1 a LEFT JOIN g2 g ON g.vid = a.vid AND g.time = a.time

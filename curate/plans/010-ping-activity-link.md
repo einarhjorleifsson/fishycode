@@ -403,8 +403,21 @@ for a table too big for R what `write_curated()` does for a data frame.
   dropped, the AIS row kept, the logger's speed stored as `speed_gps`.
 - Gps fixes with no position (outside any voyage) are not in the table. Gps rows carry no `pid`
   (harbour tag) and `mmsi`; `w_lon`/`w_lat` stay in `sensor_gps`, not here.
-- **Observation, not followed up:** in recorded OTB tows `astdB` speed has median 2.1 kn (n = 1,785)
-  against 3.6–3.7 for the other feeds — a possible unit or scale problem in that feed.
+- **Speed is not one kind of measurement (found 2026-09-30).** `stk` and `gps` carry a measured
+  speed; `astd`, `astdB` and `emodnet` have none and derive it from the distance to the next ping
+  over the interval (`ais_ping_union.R`). `speed_basis` now says `recorded` for stk and gps and
+  `derived` for the rest (it said `recorded` for all AIS in the first build).
+- **astdB reads 2.1 kn in trawl tows (10 vessels): not a defect.** The same vessels tow at the same
+  speed in their other feeds (vid 1848: 2.40 kn astdB, 2.30 other; 1787: 1.90 / 1.90; 2070: 2.50 /
+  2.40). They are slower vessels (maintainer's reading, confirmed).
+- **emodnet speed is wrong: lon and lat were swapped** in the call to `ramb::rb_speed(lon, lat,
+  time)` in `ais_ping_union.R`. Not a unit problem: emodnet read 5.8 kn in tows against 3.6 for
+  the same 78 vessels in stk/astd (ratio 1.47–1.92 per vessel, not constant, and not 1.85); a
+  constructed 6.0 kn leg reads 13.6 kn when swapped. 19.3 M pings (2017 only); positions are fine
+  and the whack filter does not use the column. Fixed in the source; registered as
+  `curate/corrections/emodnet_speed_args_swapped.yml`. **The data is not rebuilt**, so
+  `ping_trail` sets emodnet `speed` to NA meanwhile (one test in `ais_ping_trail.R`, to delete
+  after the chain is rebuilt from `ais_ping_union`).
 
 **`ais_trail(years, vids = NULL, long = FALSE, sorted = TRUE)`** — a lazy table, joined on the way
 out. One whole year takes ≈ 9 s unsorted. `sorted = TRUE` (default) sorts by `vid, time`, which is

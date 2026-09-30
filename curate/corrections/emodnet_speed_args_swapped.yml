@@ -1,0 +1,43 @@
+id: emodnet_speed_args_swapped
+title: emodnet speed is computed with longitude and latitude swapped
+status: fixed in source 2026-09-30 - data NOT yet rebuilt; ping_trail nulls the speed meanwhile
+applies_to:
+  - staging/ais/ping_union, ping_tagged, ping_clean, curated/ais/ping  (provider = "emodnet", column speed; 2017 only)
+  - curated/ais/ping_trail  (same rows; speed set NA there until the chain is rebuilt)
+affects_rows: 19,335,227 emodnet pings (2017). Positions, time and heading are not affected.
+implementation: curate/ais_ping_union.R (argument order corrected). Needs tar_make() of the chain from ais_ping_union.
+discovered: 2026-09-30
+
+origin: >-
+  Found while asking why emodnet speed in recorded OTB tows (median 5.8 kn, 78 vessels)
+  disagreed with the same vessels in stk/astd (3.6 kn) in plan 010 Phase 3. The first guess,
+  a unit difference, was wrong: the ratio is not constant (per-vessel 1.47-1.92, per
+  vessel-hour 0.77-2.35) and km/h would give 1.85.
+
+mechanism: >-
+  ramb::rb_speed() has the signature (lon, lat, time). ais_ping_union.R called
+  rb_speed(lat, lon, time). The great-circle distance is then computed with latitude read as
+  longitude and the reverse, so the speed of a leg depends on its direction and on
+  the latitude. Checked on a constructed 6.0 kn east-west leg at 64 N: correct call 6.03 kn,
+  swapped call 13.64 kn. It was the only caller of rb_speed() in the repo.
+
+detection: >-
+  In recorded OTB tows (station_window phase tow, win_basis recorded), compare a vessel's
+  median speed from provider emodnet with its median from stk/astd in the same year: a
+  correct feed gives a ratio near 1 (stk/astd/astdB agree to within 0.1-0.2 kn per vessel).
+  Emodnet gave 1.74 median over 78 vessels.
+
+whack_not_affected: >-
+  ramb::whack_fwdbwd() and whack_forward() recompute the implied speed from positions
+  themselves and never read the speed column, so no ping was kept or dropped because of this.
+
+repair: >-
+  Fixed the call. Rebuild ais_ping_union -> ais_ping_tag -> ais_ping_clean -> ais_trip ->
+  ais_ping_trail; nothing else reads the emodnet speed. Until then curate/ais_ping_trail.R
+  sets speed to NA for provider emodnet (speed_raw keeps the wrong value); delete that
+  line after the rebuild.
+
+not_a_unit_problem_for_astdB: >-
+  The low astdB speed in tows (median 2.1 kn, 10 vessels) was checked at the same time and
+  is not a defect: the same vessels tow at the same speed in their other feeds (vid 1848:
+  2.40 kn astdB vs 2.30 other; 1787: 1.90 vs 1.90; 2070: 2.50 vs 2.40). They are slower vessels.
