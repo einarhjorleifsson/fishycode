@@ -17,6 +17,10 @@
 # trip ids occur in both. Everything here joins on (id, schema); a downstream table
 # that joins on `.sid` alone will attach one schema's pings to the other's station.
 #
+# Every row also lists the events its STATION recorded (`events`, `n_events`), so a
+# longline's set start (t1), haul start (t3) and haul end (t4) stay visible beside
+# whichever window was drawn from them.
+#
 # win_basis says where the interval came from and is never dropped:
 #   recorded     both ends are logbook times
 #   derived      one end is a logbook time, the other comes from duration_m
@@ -168,7 +172,14 @@ SELECT r.sid AS \".sid\", r.schema, r.tid AS \".tid\", r.vid, r.gear, r.gid, r.g
   CASE WHEN r.phase = 'set' AND n.next_any < r.w_end THEN 'next_event'
        WHEN r.phase = 'set' THEN 'max'
        WHEN r.phase IN ('tow', 'haul') AND n.next_work < r.w_end THEN 'next_event' END AS win_closed_by,
-  r.t1, r.t2, r.t3, r.t4, r.duration_m, r.s1, r.s2
+  r.t1, r.t2, r.t3, r.t4, r.duration_m, r.s1, r.s2,
+  -- Which logbook events this STATION recorded, on every one of its rows. A longline
+  -- has three (t1 set starts, t3 haul starts, t4 haul ends); most have one or two,
+  -- and the window of the missing event is an estimate (win_basis says so).
+  (CASE WHEN r.t1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN r.t2 IS NOT NULL THEN 1 ELSE 0 END
+   + CASE WHEN r.t3 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN r.t4 IS NOT NULL THEN 1 ELSE 0 END)::TINYINT AS n_events,
+  concat_ws('+', CASE WHEN r.t1 IS NOT NULL THEN 't1' END, CASE WHEN r.t2 IS NOT NULL THEN 't2' END,
+            CASE WHEN r.t3 IS NOT NULL THEN 't3' END, CASE WHEN r.t4 IS NOT NULL THEN 't4' END) AS events
 FROM win0 r LEFT JOIN nxt n USING (rid)
 ORDER BY r.vid, r.w_start")
 

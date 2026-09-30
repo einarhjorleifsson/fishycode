@@ -56,6 +56,30 @@ digest_string <- function(x) {
   DBI::dbGetQuery(con, "SELECT md5(?) h", params = list(x))$h
 }
 
+# The fd.* stamps, in one place so write_curated() and write_curated_sql() cannot
+# drift apart. `inputs` are hashed here, at the moment of writing.
+.curated_kv <- function(script, rows, schema_hash, inputs = character(),
+                        geom = NA_character_, crs = NA_character_) {
+  g  <- .git_info()
+  ih <- if (length(inputs)) {
+    ex <- inputs[file.exists(inputs)]
+    paste(sprintf("%s=%s", basename(ex), unname(tools::md5sum(ex))), collapse = ";")
+  } else NA_character_
+  kv <- c(
+    "fd.repo"         = g$repo,
+    "fd.commit"       = g$commit,
+    "fd.dirty"        = tolower(as.character(g$dirty)),
+    "fd.script"       = script,
+    "fd.built"        = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+    "fd.rows"         = as.character(rows),
+    "fd.schema_hash"  = schema_hash,
+    "fd.inputs"       = ih,
+    "fd.geometry"     = geom,
+    "fd.crs"          = crs
+  )
+  kv[!is.na(kv)]
+}
+
 write_curated <- function(d, path, inputs = character(), script = NULL) {
   stopifnot(is.data.frame(d))
   if (!grepl("/curated/", path, fixed = TRUE))
@@ -74,25 +98,8 @@ write_curated <- function(d, path, inputs = character(), script = NULL) {
     d[[geom]] <- wkb
   }
 
-  g  <- .git_info()
-  ih <- if (length(inputs)) {
-    ex <- inputs[file.exists(inputs)]
-    paste(sprintf("%s=%s", basename(ex), unname(tools::md5sum(ex))), collapse = ";")
-  } else NA_character_
-
-  kv <- c(
-    "fd.repo"         = g$repo,
-    "fd.commit"       = g$commit,
-    "fd.dirty"        = tolower(as.character(g$dirty)),
-    "fd.script"       = script %||% .calling_script(),
-    "fd.built"        = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
-    "fd.rows"         = as.character(nrow(d)),
-    "fd.schema_hash"  = .schema_hash(d),
-    "fd.inputs"       = ih,
-    "fd.geometry"     = geom,
-    "fd.crs"          = crs
-  )
-  kv <- kv[!is.na(kv)]
+  kv <- .curated_kv(script %||% .calling_script(), nrow(d), .schema_hash(d), inputs,
+                    geom = geom, crs = crs)
 
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   con <- DBI::dbConnect(duckdb::duckdb())
@@ -103,6 +110,42 @@ write_curated <- function(d, path, inputs = character(), script = NULL) {
   DBI::dbExecute(con, sprintf("COPY cur TO %s (FORMAT parquet, KV_METADATA {%s})",
                               shQuote(path, type = "sh"), meta))
   invisible(path)
+}
+
+# write_curated_sql() — the same contract for a table too big to hold in R.
+#
+# `sql` is a SELECT run on `con`; the result goes straight to `path` by
+# COPY ... TO, so a 50-million-row year never enters R memory. Used for the partitioned
+# sweep tables (one call per year, path = .../year=YYYY/part_001.parquet), each file
+# carrying its own stamps. Rows are counted from the written file, not assumed.
+# `order_by` (e.g. "vid, time") fixes the row order of the written file.
+write_curated_sql <- function(con, sql, path, inputs = character(), script = NULL,
+                              order_by = NULL) {
+  if (!grepl("/curated/", path, fixed = TRUE))
+    stop("write_curated_sql() writes under curated/ only; got: ", path, call. = FALSE)
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  tmp <- paste0(path, ".partial")
+  unlink(tmp)
+
+  ds <- DBI::dbGetQuery(con, sprintf("DESCRIBE %s", sql))
+  sh <- substr(digest_string(paste(ds$column_name, ds$column_type, collapse = "|")), 1, 16)
+  # Two passes over the stamps: the row count is only known after the write, but
+  # KV_METADATA has to be given to the COPY. Write once without it, count, then
+  # rewrite with it from the file - cheaper than running the query twice.
+  DBI::dbExecute(con, sprintf("COPY (%s) TO %s (FORMAT parquet)", sql, shQuote(tmp, type = "sh")))
+  n <- DBI::dbGetQuery(con, sprintf("SELECT count(*) n FROM read_parquet(%s)",
+                                    shQuote(tmp, type = "sh")))$n
+  kv <- .curated_kv(script %||% .calling_script(), n, sh, inputs)
+  meta <- paste(sprintf("%s: %s", shQuote(names(kv), type = "sh"),
+                        shQuote(unname(kv), type = "sh")), collapse = ", ")
+  unlink(path)
+  # `order_by` is applied to THIS pass, not left to the query: a sweep table is read
+  # sequentially by vessel and time, and row order in the file is part of the contract.
+  ord <- if (!is.null(order_by)) paste("ORDER BY", order_by) else ""
+  DBI::dbExecute(con, sprintf("COPY (SELECT * FROM read_parquet(%s) %s) TO %s (FORMAT parquet, KV_METADATA {%s})",
+                              shQuote(tmp, type = "sh"), ord, shQuote(path, type = "sh"), meta))
+  unlink(tmp)
+  invisible(n)
 }
 
 `%||%` <- function(a, b) if (is.null(a) || is.na(a)) b else a

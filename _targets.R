@@ -314,6 +314,13 @@ list(
              fd_curated("link", "trip_voyage.parquet"))
   }, format = "file"),
 
+  # Cleaned AIS + the GPS logger as one track, unique on (vid, time) (plan 010 §5).
+  # After the interpolation, never before it: the logger positions come from the AIS track.
+  tar_target(ais_ping_trail, {
+    ais_trip; logbook_sensor_gps
+    produces("curate/ais_ping_trail.R", fd_curated("ais", "ping_trail"))
+  }, format = "file"),
+
   # One row per (logbook station, phase): when the vessel is busy with it (plan 010).
   tar_target(station_window, {
     logbook; gear_window

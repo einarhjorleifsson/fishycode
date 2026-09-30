@@ -229,11 +229,12 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
    `curated/logbook/station_window.parquet` (target `station_window`), one row per (station,
    phase), 7.2 M stations → see §10 for what was built, what changed from this plan, and the
    check against the old trail.
-3. **`ais/ping_trail`** (AIS ∪ gps, §5) — built directly after `logbook_sensor_gps`, gps
-   included from the first build — through `write_curated()`, wired into `_targets.R` per §6.
-   `ais/ping_activity` only if needed (§4). Two prerequisites in `ais_ping_clean`: dedupe
-   `(vid,time)` and clamp/flag speed (§9).
-4. **`ais_trail()`** in `R/`, plus one line in `docs/` showing the old `glimpse()` call working.
+3. **`ais/ping_trail`** — **done 2026-09-30** (`curate/ais_ping_trail.R`, target `ais_ping_trail`):
+   AIS ∪ gps, unique on `(vid,time)` and sorted by `vid, time` (checked on every written file),
+   gps included from the first build, directly after the interpolation. The `(vid,time)` dedupe and
+   the speed test live **here**, not in `ais_ping_clean` as §9 proposed: the 50 GB cleaning chain
+   would have had to be rerun for 0.03 % of rows. `ais/ping_activity` was **not** built (§4); see §11.
+4. **`ais_trail()`** in `R/` — **done 2026-09-30** (`R/ais_trail.R`); the line in `docs/` is still to do.
 5. **Validate** against the 2019 old trail: fishing-ping counts per vid-month, and the share of
    old-trail `.sid` matches reproduced. Reading `/Volumes/fishydata` needs the terminal tool,
    never a recursive scan. Also conservation: no station's window assigned to a different vid.
@@ -386,3 +387,55 @@ not touch. Duplicate windows therefore stay as ambiguity, handled at the join.
   is a subset (edge, duplicate or capped windows) to look at in Phase 3 when pings are joined.
 - Gaps the old trail could not show: it had a `t1` on every station-tagged row (the whole-day
   fill, unflagged); here 28 % of towed, 76 % of static and 82 % of jigged stations are `day` and say so.
+
+## 11. Phase 3 — `ping_trail` and `ais_trail()` built 2026-09-30
+
+**`curated/ais/ping_trail/year=*`** (2007–2026, 20 files, 2.3 min for all): 12 of the
+ping columns plus `speed_raw`, `pos_basis`, `speed_basis`, `speed_gps`, `dt_sec`, `sid_gps`,
+`n_sid_gps`. 2019: 52,584,477 rows, of which 2,645,070 gps. Unique on `(vid,time)` and ordered by
+`vid, time` in every file (checked after writing; the build stops otherwise). Each file carries its
+`fd.*` provenance stamps through the new `write_curated_sql()` (`R/write_curated.R`), which does
+for a table too big for R what `write_curated()` does for a data frame.
+- **Speed in knots throughout.** The gps speed was converted from m/s (× 1.9438). Check: median
+  speed inside recorded OTB tows, 2019 — gps 3.69 kn, stk 3.70, astd 3.63.
+- `speed` is NA where the value is < 0 or > 40 kn (2019: 3,803 rows; 2017: 20,980); `speed_raw`
+  keeps the knots value. Gps fixes that tie an AIS ping's `(vid,time)` (13,371 in 2019) are
+  dropped, the AIS row kept, the logger's speed stored as `speed_gps`.
+- Gps fixes with no position (outside any voyage) are not in the table. Gps rows carry no `pid`
+  (harbour tag) and `mmsi`; `w_lon`/`w_lat` stay in `sensor_gps`, not here.
+- **Observation, not followed up:** in recorded OTB tows `astdB` speed has median 2.1 kn (n = 1,785)
+  against 3.6–3.7 for the other feeds — a possible unit or scale problem in that feed.
+
+**`ais_trail(years, vids = NULL, long = FALSE, sorted = TRUE)`** — a lazy table, joined on the way
+out. One whole year takes ≈ 9 s unsorted. `sorted = TRUE` (default) sorts by `vid, time`, which is
+right for vessels and gears and runs a busy year out of memory if you aggregate the whole year —
+pass `sorted = FALSE` for that (DuckDB does not keep the order through the join: 3.2 M violations
+in 2019). Tier rule: a `day` window claims only fixes no recorded, derived, capped or set/haul window
+claims; ambiguity stays (`n_sid`, and `sid`/`tid`/`phase`/`phase_frac`/`win_basis` filled only when
+one station claims the fix); `fishing` = a tow, haul, jig or day window whose own `[s1,s2]` holds the speed.
+
+**2019 result:** 11,564,744 of 52.6 M fixes are in a window: 11,269,374 uniquely, 295,370 (2.6 %)
+ambiguous; 8.16 M `fishing`.
+
+**Against the current trail, 2019 (old fishing = station-tagged and speed in `[s1,s2]`):**
+- Tow windows on AIS fixes agree: **94 %** of the new fishing fixes in a recorded tow from `astd`
+  and from `stk` are also fishing in the old trail. The new fishing fixes that are *not* in the
+  old trail are almost entirely the **gps logger's** (921,391 tow fixes, 0.1 % of them in the old
+  trail) - the old trail carried none of them as fishing.
+- The old trail's fishing fixes with **no** new window: 831,230, of which 708,442 are old code 1
+  (longline) and 70,777 old code 2 (nets) - the soak - plus 41,163 old code 5 (Danish seine, the
+  subset flagged in §10). A further 285,692 have a window but the speed is outside its range.
+- Overall: 8.16 M new vs 7.76 M old fishing fixes, 6.07 M in common.
+
+**Not done:** `ais/ping_activity` (the live join was fast enough, §4); the `.tid` for fixes in an
+AIS voyage but no window (plan §3.3, via `link_trip_voyage`); the `docs/` line; `tar_make()` has not
+run these targets, so the new parquet files are stamped `fd.dirty`. Whether to also store a sorted
+wide `ais/trail` (≈ 2 GB a year) is a decision for the maintainer.
+
+**Longline events (maintainer, 2026-09-30: keep track of all three).** Every `station_window` row
+now lists the events its station recorded (`events`, `n_events`) next to the raw `t1`, `t2`, `t3`,
+`t4`, and `ais_trail()` passes `events` through. Longline rows by events recorded (`station_window`
+rows, both phases counted): none 377,765 · `t1+t4` 275,754 · `t1+t3+t4` 51,196 · `t1` 1,141 ·
+`t4` 7. The old trail's longline windows end at the recorded `t4` and start somewhere between 3 and
+22 h earlier (median 8.1 h), matching neither `t1`, `t3` nor `duration_m`; this table also ends the
+haul at `t4`, and starts it at `t3` when recorded, else at `t4` minus the median recorded haul.
