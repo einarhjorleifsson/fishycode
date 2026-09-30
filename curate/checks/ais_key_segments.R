@@ -1,6 +1,7 @@
 # The STK mobile-id -> vid assignment rebuilt as a SEGMENT TABLE that tiles every mobile-id.
 #
 # Input:  curated/vessel/{vessel_ais_key,vessel_identity}.parquet, raw/ais/stk/trail,
+#         staging/skipaskra/annual_call_sign.parquet,
 #         curated/check/ais_key_split_candidates.parquet, curated/check/ais_key_audit_w1.parquet,
 #         curated/check/ais_key_audit_lb_{hits,n}.parquet (logbook and landings per month),
 # Output: curated/check/ais_key_segments.parquet - one row per segment of a mobile-id
@@ -20,7 +21,8 @@
 #
 # THE VID OF A SEGMENT, best evidence first, with the source recorded:
 #   1. physical   W1 confirms a vid in >= 3 months of the segment;
-#   2. registry   the registry gives the mobile-id's own call sign or MMSI to one vid over it;
+#   2. registry   the registry gives the mobile-id's own call sign or MMSI to one vid over it; for 2007-2022
+#                 the annual ship register dates the holder by year and outranks the identity windows;
 #   3. logbook    one vid's logbook stations explain >= 80 % of its stations over the segment, by a
 #                 clear margin (>= 0.1) over every other vid, with >= 30 stations - calibrated at
 #                 year level (decision 047); landings alone count only at >= 90 % with a margin of
@@ -92,6 +94,19 @@ holders <- bind_rows(
   tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis)) |>
   distinct()
 
+# The annual ship register dates a call sign's holder by YEAR over 2007-2022 (sources/skipaskra): a run of
+# consecutive years of one holder is a window, and it outranks the identity windows (decision 049). The
+# register's edition falls in the year, so a handover year is ambiguous: its run ends and the next begins at
+# the year boundary, and a segment that touches both holders gets none from the register.
+annual <- read_parquet(fd_staging("skipaskra", "annual_call_sign.parquet")) |> transmute(cs, vid = as.integer(vid), year)
+ann_h <- tok |> filter(!is.na(cs)) |> inner_join(annual, by = "cs", relationship = "many-to-many") |>
+  distinct(mid, hvid = vid, year) |> arrange(mid, hvid, year) |>
+  group_by(mid, hvid) |> mutate(run = cumsum(year - lag(year, default = first(year)) > 1L)) |>
+  group_by(mid, hvid, run) |>
+  summarise(t1 = as.Date(sprintf("%d-01-01", min(year))), t2 = as.Date(sprintf("%d-12-31", max(year))), .groups = "drop") |>
+  mutate(window_basis = "annual register") |> select(-run)
+holders <- bind_rows(holders, ann_h)
+
 # A mobile-id is in scope when the key gives it a vessel, OR when W1 confirms a vid on it in >= 3 months
 # although the key gave it none (e.g. an identifier typo), unless the key classes it as a device.
 key_class <- key |> group_by(mid) |> summarise(entity_class = names(sort(table(entity_class), decreasing = TRUE))[1], .groups = "drop")
@@ -161,7 +176,13 @@ cut_reg <- cand_vids |>
   mutate(reg_start = reg_start_of(vid)) |> filter(!is.na(reg_start)) |>
   inner_join(span, by = "mid") |> filter(reg_start > first, reg_start <= last) |>
   transmute(mid, cut = reg_start, basis = paste0("vid ", vid, " was registered on this day"))
-cuts <- bind_rows(cut_silence, cut_w1, cut_long, cut_reg)
+# The annual register's holder of the mobile-id's call sign changes: cut at the year boundary (the register
+# cannot say where inside the year; anything physical outranks it)
+cut_ann <- ann_h |> arrange(mid, t1) |> group_by(mid) |>
+  filter(hvid != lag(hvid, default = first(hvid))) |> ungroup() |>
+  inner_join(span, by = "mid") |> filter(t1 > first, t1 <= last) |>
+  transmute(mid, cut = t1, basis = paste0("annual register: vid ", hvid, " holds the call sign from this year"))
+cuts <- bind_rows(cut_silence, cut_w1, cut_long, cut_reg, cut_ann)
 
 ## Segments --------------------------------------------------------------------------------------
 cuts <- cuts |> distinct(mid, cut, .keep_all = TRUE)
@@ -203,14 +224,14 @@ w1_all <- segs |>
 # time from hull lifetime and the MMSI archive's windows. Holders are therefore ranked by how well their
 # window is DATED - a vid with a hull lifetime and an MMSI window outranks one the registry has no dates for
 # ('unbounded') - and the segment goes to the single best-dated holder over it.
-BASIS_RANK <- c(both = 3L, hull_lifetime = 2L, mmsi_window = 2L, unbounded = 1L)
+BASIS_RANK <- c(`annual register` = 4L, both = 3L, hull_lifetime = 2L, mmsi_window = 2L, unbounded = 1L)
 reg_seg <- segs |>
   inner_join(holders, by = "mid", relationship = "many-to-many") |>
   filter(t1 <= d2, t2 >= d1) |>
   mutate(rank = coalesce(BASIS_RANK[window_basis], 1L)) |>
   group_by(mid, seg_no) |>
   filter(rank == max(rank)) |>
-  summarise(reg_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop") |>
+  summarise(reg_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, reg_basis = window_basis[1], .groups = "drop") |>
   filter(!is.na(reg_vid))
 
 ym_of <- function(d) { lt <- as.POSIXlt(d); (lt$year + 1900L) * 12L + lt$mon }
@@ -338,6 +359,16 @@ merged <- tbl |>
          grade = case_when(source == "physical" ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source %in% c("continuity", "continuity: neighbour") ~ "D", source == "foreign: kept override" ~ "E", .default = "-")) |>
   select(mid, seg_no, d1, d2, vid, source, grade, key_vid, agrees_key, vid_no_ods, w1_months, twin_vid,
          boundary_basis, startup_phase, pings)
+# What the annual register says over each final segment, whatever decided it: the one vid that holds the
+# mobile-id's call sign in the years the segment touches (NA when none or several). A segment whose vid
+# differs is listed for a person - the register is dated by year only, so it is evidence, not a judge.
+ann_seg <- merged |> select(mid, seg_no, d1, d2) |>
+  inner_join(ann_h, by = "mid", relationship = "many-to-many") |> filter(t1 <= d2, t2 >= d1) |>
+  group_by(mid, seg_no) |> summarise(annual_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop")
+merged <- merged |> left_join(ann_seg, by = c("mid", "seg_no")) |>
+  mutate(annual_disagrees = !is.na(annual_vid) & !is.na(vid) & annual_vid != vid)
+print(merged |> summarise(segments_with_annual_holder = sum(!is.na(annual_vid)), agree = sum(!is.na(annual_vid) & !annual_disagrees, na.rm = TRUE),
+                          disagree = sum(annual_disagrees), pings_disagree = sum(pings[annual_disagrees])) |> knitr::kable(caption = "annual register vs the table"))
 
 ## How much of each segment the evidence actually reaches ---------------------------------------
 # A segment is graded by its best evidence, but the evidence may cover only part of it (W1 exists
@@ -401,4 +432,5 @@ write_curated(merged, fd_curated("check", "ais_key_segments.parquet"),
                          w1 = fd_curated("check", "ais_key_audit_w1.parquet"),
                          lb_hits = fd_curated("check", "ais_key_audit_lb_hits.parquet"),
                          lb_n = fd_curated("check", "ais_key_audit_lb_n.parquet"),
-                         split_candidates = fd_curated("check", "ais_key_split_candidates.parquet")))
+                         split_candidates = fd_curated("check", "ais_key_split_candidates.parquet"),
+                         annual_call_sign = fd_staging("skipaskra", "annual_call_sign.parquet")))

@@ -163,6 +163,13 @@ list(
              fd_staging("afli", "aggregate.parquet"))
   }, format = "file"),
 
+  # The annual ship register: the call sign per vessel per year, 2007-2022. Dates the holder of a call sign
+  # for the segment table (decision 049).
+  tar_target(skipaskra, {
+    produces("sources/skipaskra/annual_call_sign.R",
+             fd_staging("skipaskra", "annual_call_sign.parquet"))
+  }, format = "file"),
+
   # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
   # afli_station by curate/logbook.R, never written back into station.parquet.
   tar_target(afli_depth_units, {
@@ -351,7 +358,7 @@ list(
   # The segment table: every mobile-id tiled, a vid for every stretch, no ping unassigned. Plan 009
   # phase 2. The manual ODS is not a judge of it.
   tar_target(check_ais_key_segments, {
-    vessel_ais_key; vessel_identity; check_ais_key_audit; check_ais_key_split_candidates
+    vessel_ais_key; vessel_identity; skipaskra; check_ais_key_audit; check_ais_key_split_candidates
     produces("curate/checks/ais_key_segments.R",
              fd_curated("check", "ais_key_segments.parquet"))
   }, format = "file"),

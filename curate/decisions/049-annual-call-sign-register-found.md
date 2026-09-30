@@ -40,7 +40,7 @@ route above avoids all of it.
 
 ## What is open
 
-1. Adapter in `sources/skipaskra/` writing `staging/skipaskra/annual_call_sign.parquet` (year, vid, cs, form). The raw copy landed
+1. ~~Adapter~~ Done 2026-09-30 (see Built below). The raw copy landed
    2026-09-30 under `$FISHYDATA/raw/external/skipaskra/` (136 MB: matrices, `data/`, `R/`, 14+ annual report PDFs incl. 2006/2007 for
    the 2007-08 call signs, and `data-raw/mbl`; the ~1,000 vessel photos were deliberately not copied).
 2. Use it in the segment table as a registry evidence family that dates a call sign's holder by year (it would replace Hreidar's annual
@@ -56,3 +56,19 @@ route above avoids all of it.
 - `data-raw/mbl`: one 2026-era snapshot per vid (5,803 files, 5,823 vids); only 405 carry a call sign, 1,738 an MMSI, none dated.
   Low value for dating; kept for completeness.
 - `reports/`: the annual PDFs, the route to 2007-08.
+
+## Built 2026-09-30
+
+- `sources/skipaskra/annual_call_sign.R` -> `staging/skipaskra/annual_call_sign.parquet` (year, vid, cs, form), target `skipaskra`.
+  2007-2008 come from a text parse of the two printed registers (no vessel name read); the same parse reproduces the tidy 2009 table
+  exactly (405 of 405), so the route is validated. 2009-2017 from the almost-tidy table, 2018-2022 from the page matrices.
+  ~370-425 vessels a year; 4 (year, call sign) pairs carry two vids (reported, not repaired). 2004-2006 not read (STK starts 2007).
+- `ais_key_segments.R` now dates call-sign holders by year: a run of consecutive years is a window that outranks the identity windows,
+  and a change of holder is a cut at the year boundary. New columns `annual_vid` (what the register says over each final segment) and
+  `annual_disagrees`.
+- Effect (scratch run): 3,158 -> 3,155 segments; `registry` 212 -> 253; stretches left for a person 97,850 -> 92,683 pings; neighbour-
+  continuity 28 -> 9. 28 mids changed on 69,976 mid-days, mostly a long segment split where the register dates an early holder
+  (mid 102543: 2644 to 2018-07, then 2706; the key already said 2644). The register agrees with the table on 543 of 550 segments it
+  reaches; the 7 that disagree (mids 101079, 101119, 101892, 103251, 103750 x3) are all physical-graded, so W1 wins and they go to
+  review, not to a rule.
+- Not run against the real `$FISHYDATA/curated` (the maintainer's `tar_make()` does that).
