@@ -62,18 +62,29 @@ idy <-
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`
 # (a STK-internal mobile ID), so we resolve to vid via a temporal interval join:
 # each mid may map to different vessels over time as transponders are reused.
-stk <- duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
-  # half-open on d2 + 1: d2 is a date, and a period's last day runs to its end (see sources/stk/convert.R)
-  inner_join(vid |> select(vid, mmsi, mid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1L),
-             by = join_by(mid, time >= d1, time < d2e)) |>
-  select(vid, mmsi, time, lon, lat, speed, heading)
+# The raw trail is hive-partitioned by `year`. That is the year of the ping's time for all but ~33 k of ~290 M
+# rows (bad timestamps: 1984, 1997, 2106 ... sit in a later partition), so a year is its own partition PLUS the
+# rows of every other partition whose time falls in it: reading only year == YR would silently lose those.
+stk_raw <- duckdbfs::open_dataset(fd_raw("ais", "stk", "trail"))
+stk_src <- function(YR) {
+  union_all(stk_raw |> filter(year == YR),
+            stk_raw |> filter(year != YR, year(time) == YR)) |>
+    # half-open on d2 + 1: d2 is a date, and a period's last day runs to its end (see sources/stk/convert.R)
+    inner_join(vid |> select(vid, mmsi, mid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1L),
+               by = join_by(mid, time >= d1, time < d2e)) |>
+    select(vid, mmsi, time, lon, lat, speed, heading)
+}
 
 # astd -------------------------------------------------------------------------
 # ASTD is a global commercial AIS feed. The raw data cover all flags, so we
 # filter to 9-digit MMSIs starting with "251" (Iceland's MID) before joining
 # to vid. Speed is not directly available; we derive it from distance/time
 # between consecutive pings and convert m/s → knots.
-astd  <- open_dataset(fd_staging("ais", "astd")) |>
+# astd and astdB are hive-partitioned by `year`, and the partition IS the year of date_time_utc (0 mismatches), so each
+# year reads only its own partition. The duplicate-ping window below groups on identical timestamps, so it never
+# reaches across a year: pruning first does not change it.
+astd_src <- function(YR) open_dataset(fd_staging("ais", "astd")) |>
+  filter(year == YR) |>
   mutate(mmsi = as.character(mmsi),
          nc = nchar(mmsi)) |>
   filter(nc == 9 & str_sub(mmsi, 1, 3) == "251") |>
@@ -108,7 +119,8 @@ astd  <- open_dataset(fd_staging("ais", "astd")) |>
 # astdB ------------------------------------------------------------------------
 # ASTDB is a second commercial AIS feed. Filtered to Iceland (cc_iso3 == "ISL")
 # before joining; this provider includes COG in addition to true heading.
-astdB <- open_dataset(fd_staging("ais", "astdB")) |>
+astdB_src <- function(YR) open_dataset(fd_staging("ais", "astdB")) |>
+  filter(year == YR) |>
   filter(cc_iso3 == "ISL") |>
   # as.integer() FIRST. astdB stores mmsi as a DOUBLE, and DuckDB renders a double
   # as VARCHAR with its decimal point: as.character(251525240) is "251525240.0",
@@ -159,11 +171,12 @@ emn <-
 # bind -------------------------------------------------------------------------
 # Union the four MEASURED position sources; `provider` traces each ping back to
 # its origin, which matters for coverage gap analysis.
-d <-
-  union(stk   |> mutate(provider = "stk"),
-        astd  |> mutate(provider = "astd")) |>
-  union(astdB |> mutate(provider = "astdB")) |>
-  union(emn   |> mutate(provider = "emodnet"))
+d_for <- function(YR) {
+  union(stk_src(YR)  |> mutate(provider = "stk"),
+        astd_src(YR) |> mutate(provider = "astd")) |>
+    union(astdB_src(YR) |> mutate(provider = "astdB")) |>
+    union(emn |> mutate(provider = "emodnet"))
+}
 
 # ## add harbour -----------------------------------------------------------------
 # # Tag each ping with a port ID where the position falls inside a port polygon.
@@ -182,7 +195,7 @@ years <- 2007:2026
 for(y in 1:length(years)) {
   YR <- years[y]
   print(YR)
-  d |>
+  d_for(YR) |>
     mutate(year = year(time)) |>
     filter(year == YR) |>
     arrange(vid, time) |>
