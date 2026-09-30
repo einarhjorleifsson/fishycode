@@ -99,10 +99,7 @@ for (yr in years) {
       FROM ais0) WHERE rk = 1)
   %s
   SELECT a.vid, a.mmsi, a.time, a.lon, a.lat,
-         -- emodnet speed was computed with lon and lat swapped (correction
-         -- emodnet_speed_args_swapped): unusable until the chain is rebuilt. DELETE the
-         -- provider test below after that rebuild.
-         CASE WHEN a.provider <> 'emodnet' AND a.speed BETWEEN 0 AND %f THEN a.speed END AS speed,
+         CASE WHEN a.speed BETWEEN 0 AND %f THEN a.speed END AS speed,
          a.speed AS speed_raw, a.heading, a.cog, a.provider, a.pid, a.year, a.trip,
          'recorded' AS pos_basis,
          CASE WHEN a.provider = 'stk' THEN 'recorded' ELSE 'derived' END AS speed_basis,

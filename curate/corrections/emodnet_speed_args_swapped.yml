@@ -1,9 +1,9 @@
 id: emodnet_speed_args_swapped
 title: emodnet speed is computed with longitude and latitude swapped
-status: fixed in source 2026-09-30 - data NOT yet rebuilt; ping_trail nulls the speed meanwhile
+status: fixed 2026-09-30 - source corrected, chain rebuilt with tar_make(), repair verified
 applies_to:
   - staging/ais/ping_union, ping_tagged, ping_clean, curated/ais/ping  (provider = "emodnet", column speed; 2017 only)
-  - curated/ais/ping_trail  (same rows; speed set NA there until the chain is rebuilt)
+  - curated/ais/ping_trail  (same rows)
 affects_rows: 19,335,227 emodnet pings (2017). Positions, time and heading are not affected.
 implementation: curate/ais_ping_union.R (argument order corrected). Needs tar_make() of the chain from ais_ping_union.
 discovered: 2026-09-30
@@ -32,10 +32,16 @@ whack_not_affected: >-
   themselves and never read the speed column, so no ping was kept or dropped because of this.
 
 repair: >-
-  Fixed the call. Rebuild ais_ping_union -> ais_ping_tag -> ais_ping_clean -> ais_trip ->
-  ais_ping_trail; nothing else reads the emodnet speed. Until then curate/ais_ping_trail.R
-  sets speed to NA for provider emodnet (speed_raw keeps the wrong value); delete that
-  line after the rebuild.
+  Fixed the call in curate/ais_ping_union.R and rebuilt ais_ping_union -> ais_ping_tag ->
+  ais_ping_clean -> ais_trip -> logbook_sensor_gps -> ais_ping_trail with tar_make() on
+  2026-09-30 (32 min). ping_trail briefly nulled emodnet speed in the meantime; that test
+  is removed.
+
+verified: >-
+  2017, recorded OTB tows, speed_raw: emodnet median 3.53 kn, astd 3.54, stk 3.50 (was
+  5.84 before). Per-vessel emodnet/other ratio over the same 78 vessels: median 0.99, q10
+  0.96, q90 1.00 (was 1.74, 1.47, 1.92). Positions, row counts and the whack filter were
+  unchanged; per-year ping_trail row counts agree with the first build to within 17 rows.
 
 not_a_unit_problem_for_astdB: >-
   The low astdB speed in tows (median 2.1 kn, 10 vessels) was checked at the same time and

@@ -414,10 +414,10 @@ for a table too big for R what `write_curated()` does for a data frame.
   time)` in `ais_ping_union.R`. Not a unit problem: emodnet read 5.8 kn in tows against 3.6 for
   the same 78 vessels in stk/astd (ratio 1.47–1.92 per vessel, not constant, and not 1.85); a
   constructed 6.0 kn leg reads 13.6 kn when swapped. 19.3 M pings (2017 only); positions are fine
-  and the whack filter does not use the column. Fixed in the source; registered as
-  `curate/corrections/emodnet_speed_args_swapped.yml`. **The data is not rebuilt**, so
-  `ping_trail` sets emodnet `speed` to NA meanwhile (one test in `ais_ping_trail.R`, to delete
-  after the chain is rebuilt from `ais_ping_union`).
+  and the whack filter does not use the column. Fixed in the source and registered as
+  `curate/corrections/emodnet_speed_args_swapped.yml`; the chain was rebuilt with `tar_make()` on
+  2026-09-30 (32 min, 9 targets) and emodnet now reads a median 3.53 kn in 2017 tows (astd 3.54, stk
+  3.50; per-vessel ratio 0.99). The interim NA test in `ais_ping_trail.R` is removed.
 
 **`ais_trail(years, vids = NULL, long = FALSE, sorted = TRUE)`** — a lazy table, joined on the way
 out. One whole year takes ≈ 9 s unsorted. `sorted = TRUE` (default) sorts by `vid, time`, which is
@@ -441,8 +441,8 @@ ambiguous; 8.16 M `fishing`.
 - Overall: 8.16 M new vs 7.76 M old fishing fixes, 6.07 M in common.
 
 **Not done:** `ais/ping_activity` (the live join was fast enough, §4); the `.tid` for fixes in an
-AIS voyage but no window (plan §3.3, via `link_trip_voyage`); the `docs/` line; `tar_make()` has not
-run these targets, so the new parquet files are stamped `fd.dirty`. Whether to also store a sorted
+AIS voyage but no window (plan §3.3, via `link_trip_voyage`); the `docs/` line; `tar_make()` has now
+run all of these targets (2026-09-30), so the files carry clean provenance (commit `b68bdea`). Whether to also store a sorted
 wide `ais/trail` (≈ 2 GB a year) is a decision for the maintainer.
 
 **Longline events (maintainer, 2026-09-30: keep track of all three).** Every `station_window` row
