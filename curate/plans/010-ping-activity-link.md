@@ -382,9 +382,7 @@ not touch. Duplicate windows therefore stay as ambiguity, handled at the join.
   set is also in the new set, 87 % of the new non-`day` pings are in the old set. New non-`day` pings
   the old trail lacks: `set` 586,213 of 633,410 (it had no set window), `haul` 321,049 of 2.29 M, `tow`
   69,818 of 4.04 M, `jig` 13,492 of 84,730; why the haul and tow ones differ was not examined.
-- **Not explained:** old code 5 (Danish seine) has 94,157 pings (19 %) in 2,232 old windows that
-  overlap a new tow window but are not claimed by it; windows match in the typical case, so this
-  is a subset (edge, duplicate or capped windows) to look at in Phase 3 when pings are joined.
+- **Danish seine gap — explained 2026-09-30 (§12).**
 - Gaps the old trail could not show: it had a `t1` on every station-tagged row (the whole-day
   fill, unflagged); here 28 % of towed, 76 % of static and 82 % of jigged stations are `day` and say so.
 
@@ -452,3 +450,31 @@ rows, both phases counted): none 377,765 · `t1+t4` 275,754 · `t1+t3+t4` 51,196
 `t4` 7. The old trail's longline windows end at the recorded `t4` and start somewhere between 3 and
 22 h earlier (median 8.1 h), matching neither `t1`, `t3` nor `duration_m`; this table also ends the
 haul at `t4`, and starts it at `t3` when recorded, else at `t4` minus the median recorded haul.
+
+## 12. The Danish-seine gap: the logbook step caps tow durations and throws away the original
+
+The 94,157 old Danish-seine pings (old code 5) that the new windows did not claim (78,256 of
+489,510 in 2019 after the rebuild, from 550 old windows) are **not** a join problem.
+- **Cause.** `sources/afli/convert.R:204-250` (and `sources/fs_afladagbok/convert.R:261-353`)
+  caps `duration_m` at a hand-set maximum per gear and target — Danish seine 180 min, bottom
+  trawl 600, Nephrops 480, shrimp 960, plough for *ari* 240 ("suspiciously low — CHECK", the
+  comment says) — and then derives `t3 = t2 + duration_m`. The station is marked
+  `.duration_source = "capped"`, `.t3_source = "derived"`. The original duration and `t3`
+  are **not kept**. 2019 examples: vid 1636, 2019-08-08 20:40, old window to 05:31 (8.9 h), curated
+  window 20:40–23:40 (exactly 180 min). Every one of the 565 capped SDN tows in 2019 is exactly 3.0 h.
+- **Size.** 4,500 Danish-seine stations (2.5 %) carry `capped`, all 180 or 240 min; also DRB 1,934
+  (2.3 %), LLS 7,217 (1.7 %), OTM 1,221, LHM 3,671, GNS 2,398, OTB 9,133 (0.2 %).
+- **Is the cap right?** For Danish seine, no, at least not always. The pings past the cap but inside
+  the old window have median speed 2.04 kn — the same as inside the window (2.04) — and 53.6 %
+  are in the seine's fishing range `[0.25, 2.9]` (66.7 % inside the window). The hour after the old
+  window ended looks like steaming (median 7.8 kn, 31 % in range). So the cap removed real activity;
+  a Danish-seine "station" is often several hauls logged as one long interval.
+- **Two rules broken.** AGENTS.md: *corrections live in `curate/`, never in a source adapter*, and
+  *never destroy the original*. The caps live in two adapters, and the raw duration is gone.
+- **Consequence for this plan.** `station_window` draws `[t2,t3]` from the curated `t3`, so every
+  capped tow is cut short and the pings past the cap are unclaimed (or claimed by a day window).
+- **Proposed fix (not done, rebuild needed):** the adapters keep the raw `duration_m` and `t3`
+  (`duration_m_raw`, `t3_raw`) and stop capping; the cap moves into `gear_window` as a declared
+  `tow_max_min` (from measured tow-length distributions, not guessed) and is applied in
+  `station_window` with `win_basis = "capped"`, where it can be revised without rebuilding the
+  logbook. TODO item 28.

@@ -446,3 +446,15 @@ up, and review the 7 segments where a physical grade and the register disagree.
 Plan 010 proposes `station_window` + a per-year `ping_activity` bridge + `ais_trail()`. Phase 0 is read-only measurement.
 
 **check:** `ais_trail(2019)` reproduces the old trail's fishing pings per vid-month, and every synthesised window carries `win_basis`.
+
+## 28. Tow-duration caps live in the logbook adapters and destroy the raw value
+**status:** open · **needs: maintainer** · **see:** `curate/plans/010-ping-activity-link.md` §12
+
+`sources/afli/convert.R:204` and `sources/fs_afladagbok/convert.R:261` cap `duration_m` per gear and
+derive `t3`; the raw value is not kept. Danish seine is capped at 180 min and the pings past the
+cap still look like fishing (2019: 78,256 pings, 550 windows). Move the caps to `gear_window` /
+`station_window`, keep `duration_m_raw` and `t3_raw`, and set the limits from measured distributions.
+
+**check:** `fishing_sample` carries the raw duration and `t3`, no adapter applies a cap, and the
+2019 Danish-seine pings past the old 180-min cap are claimed by a tow window.
+
