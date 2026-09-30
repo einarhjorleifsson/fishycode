@@ -39,7 +39,7 @@ STATION   <- fd_path("curated", "logbook", "station.parquet")
 TRIP      <- fd_path("curated", "logbook", "trip.parquet")
 LANDINGS  <- fd_path("curated", "landing", "landings.parquet")
 
-key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
+key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 key_v <- key |>
   filter(!is.na(vid), vid > 0, entity_class == "vessel") |>
@@ -256,7 +256,7 @@ discrepancy <- bind_rows(
 print(ledger |> count(audit_status, name = "rows") |> arrange(desc(rows)) |> knitr::kable(caption = "ais_key_audit ledger"))
 print(discrepancy |> count(type, name = "rows") |> knitr::kable(caption = "ais_key_audit discrepancies"))
 
-inp <- c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
+inp <- c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
          ais_key_registry = fd_curated("check", "ais_key_registry.parquet"),
          split_candidates = fd_curated("check", "ais_key_split_candidates.parquet"),
          landings = LANDINGS, station = STATION, trip = TRIP)

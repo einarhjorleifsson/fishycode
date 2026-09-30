@@ -21,7 +21,7 @@ library(dplyr)
 library(nanoparquet)
 
 STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
-key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
+key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 key_v <- key |>
   filter(!is.na(vid), vid > 0, !vid %in% 3700:4999, entity_class == "vessel") |>
@@ -81,6 +81,6 @@ print(out |> count(tier, key_splits, name = "silences") |> knitr::kable(caption 
 DBI::dbDisconnect(con, shutdown = TRUE)
 
 write_curated(out, fd_curated("check", "ais_key_split_candidates.parquet"),
-              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
+              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
                          vessel = fd_curated("vessel", "vessel.parquet"),
                          vessel_identity = fd_curated("vessel", "vessel_identity.parquet")))

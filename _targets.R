@@ -142,10 +142,19 @@ list(
   # measure it rather than this comment merely asserting it. It emits
   # entity_class and basis as well as vid — see curate/plans/003, decisions 012
   # and 013.
-  tar_target(vessel_ais_key, {
+  tar_target(vessel_ais_key_cascade, {
     lookups; vessel; vessel_identity
+    produces("reference/vessels/ais_key_cascade.R",
+             fd_curated("vessel", "vessel_ais_key_cascade.parquet"))
+  }, format = "file"),
+
+  # The key the pipeline consumes, built from the segment table (plan 009 phase 5, decision 053). The
+  # cascade above is its input and the segment table's: they cannot be one target.
+  tar_target(vessel_ais_key, {
+    check_ais_key_segments; vessel_ais_key_cascade; vessel; vessel_identity
     produces("reference/vessels/ais_key.R",
-             fd_curated("vessel", "vessel_ais_key.parquet"))
+             fd_curated("vessel", "vessel_ais_key.parquet"),
+             fd_curated("vessel", "vessel_ais_device.parquet"))
   }, format = "file"),
 
 
@@ -321,7 +330,7 @@ list(
   # which is the point. A check that is not in the graph is a check nobody runs.
 
   tar_target(check_ais_key_registry, {
-    vessel_ais_key; vessel
+    vessel_ais_key_cascade; vessel
     produces("curate/checks/ais_key_registry.R",
              fd_curated("check", "ais_key_registry.parquet"))
   }, format = "file"),
@@ -338,7 +347,7 @@ list(
   # registry) says the vessel changed - the splits the manual ODS made by hand, and the
   # ones it did not. See the script header and decision 047.
   tar_target(check_ais_key_split_candidates, {
-    vessel_ais_key; vessel; vessel_identity
+    vessel_ais_key_cascade; vessel; vessel_identity
     produces("curate/checks/ais_key_split_candidates.R",
              fd_curated("check", "ais_key_split_candidates.parquet"))
   }, format = "file"),
@@ -346,7 +355,7 @@ list(
   # The whole key, row by row, against witnesses that never read it (other-provider AIS
   # by MMSI, logbook, landings). Long-running by design: it is a ledger, not a test.
   tar_target(check_ais_key_audit, {
-    vessel_ais_key; landing; logbook; check_ais_key_registry; check_ais_key_split_candidates
+    vessel_ais_key_cascade; landing; logbook; check_ais_key_registry; check_ais_key_split_candidates
     produces("curate/checks/ais_key_audit.R",
              fd_curated("check", "ais_key_audit_ledger.parquet"),
              fd_curated("check", "ais_key_audit_discrepancy.parquet"),
@@ -358,7 +367,7 @@ list(
   # The segment table: every mobile-id tiled, a vid for every stretch, no ping unassigned. Plan 009
   # phase 2. The manual ODS is not a judge of it.
   tar_target(check_ais_key_segments, {
-    vessel_ais_key; vessel_identity; skipaskra; check_ais_key_audit; check_ais_key_split_candidates
+    vessel_ais_key_cascade; vessel_identity; skipaskra; check_ais_key_audit; check_ais_key_split_candidates
     produces("curate/checks/ais_key_segments.R",
              fd_curated("check", "ais_key_segments.parquet"))
   }, format = "file"),
@@ -392,7 +401,7 @@ list(
   # own header for why lods is worth including despite AIS itself starting
   # later than lods does.
   tar_target(check_ais_key_landings, {
-    vessel_ais_key; vessel; landing
+    vessel_ais_key_cascade; vessel; landing
     produces("curate/checks/ais_key_landings.R",
              fd_curated("check", "ais_key_landings.parquet"))
   }, format = "file"),
@@ -401,7 +410,7 @@ list(
   # the finished key - see the script header for why that catches more than
   # check_ais_key_landings does.
   tar_target(check_ais_key_reused_callsign, {
-    vessel_ais_key; vessel; landing
+    vessel_ais_key_cascade; vessel; landing
     produces("curate/checks/ais_key_reused_callsign.R",
              fd_curated("check", "ais_key_reused_callsign.parquet"))
   }, format = "file")

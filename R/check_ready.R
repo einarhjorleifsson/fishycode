@@ -19,6 +19,7 @@ check_ready <- function() {
     area_h3        = "reference/geo/h3_index.R",
     vessel         = "reference/vessels/registry.R",
     vessel_identity = "reference/vessels/identity.R",
+    vessel_ais_key_cascade = "reference/vessels/ais_key_cascade.R",
     vessel_ais_key = "reference/vessels/ais_key.R",
     afli           = "sources/afli/convert.R",
     fs_afladagbok  = "sources/fs_afladagbok/convert.R",

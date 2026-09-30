@@ -17,7 +17,7 @@
 library(dplyr)
 library(nanoparquet)
 
-key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet"))
+key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet"))
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet"))
 
 assigned <- key |> filter(!is.na(vid))
@@ -203,5 +203,5 @@ print(out |> filter(check == "icelandic_vessel_not_in_ais") |> count(note, name 
         knitr::kable(caption = "Icelandic hulls alive in the STK era with no mobile-id"))
 
 write_curated(out, fd_curated("check", "ais_key_registry.parquet"),
-              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
+              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
                          vessel         = fd_curated("vessel", "vessel.parquet")))

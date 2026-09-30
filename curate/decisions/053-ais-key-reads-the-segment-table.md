@@ -1,0 +1,29 @@
+# 053 - `ais_key.R` reads the segment table
+
+**Status:** done 2026-09-30 (plan 009 phase 5, step 2). The downstream targets are **not yet rebuilt** (see below).
+
+The key the pipeline consumes (`curated/vessel/vessel_ais_key.parquet`) is now built from `curated/check/ais_key_segments.parquet`, not from
+the cascade and the manual ODS. One mechanical consequence forced a split: the segment table reads the old key (identifiers, entity class,
+the cascade's own vid as continuity), so the two cannot be one target.
+
+- `reference/vessels/ais_key_cascade.R` (git mv of the old `ais_key.R`) -> `vessel_ais_key_cascade.parquet`. Unchanged content, still reads the
+  ODS. Read by the audit, registry, split-candidate, segment, landings, reused-callsign and resolution checks - everything that audits the
+  *cascade's* own claims.
+- `reference/vessels/ais_key.R` (new, ~80 lines) -> `vessel_ais_key.parquet`: one row per segment, same columns as before (`step` =
+  "segment: <source>", `tier` from the grade: A physical or reviewed, B registry or logbook, C landings, D continuity, E foreign override;
+  `basis` reconstructed, foreign recorded), plus the cascade rows of the mobile-ids the table does not cover (navaids, buoys, net relays ...),
+  with ODS `drop` vids set to NA. A stretch nobody can place is a row with vid NA, not a hole. Asserts that each mid's stretches tile it.
+- `check_ais_key_coverage` now reads the final key: its invariant is checked on the product. It finds 70,901 pings (0.04 %) on stretches with no
+  vid for mids that have a vessel - the list awaiting a person - and its own proposed fill closes all of them.
+- **Gear devices are not in the key.** `vessel_ais_device.parquet` (mid, d1, d2, `carrier_vid`, pings; 13 rows, 10 mids) keeps the link to the
+  vid that carries each.
+- **The interval join was half-closed.** `sources/stk/convert.R` and `curate/ais_ping_union.R` joined on `between(time, d1, d2)` with `d2` a
+  Date, so a ping after 00:00 on the last day of a period fell outside it. Both now join `time >= d1, time < d2 + 1`. Measured: the loss is
+  small (57 pings with the old key, 510 with the new one - most periods end on the sentinel or in a silence), and the coverage check could
+  not see it because it counted whole days. With the half-open join the new key assigns 181,714,828 STK pings against the old key's
+  181,126,291 (+588,537).
+- Backups: the previous key is `vessel_ais_key_cascade.parquet` (byte-identical copy at the time of the switch).
+
+**Not done - needs a decision to run:** the targets downstream of the key are outdated (`stk`, `ais_ping_union`, `ais_ping_clean`, `ais_ping_tag`,
+`ais_trip`, `trip_voyage`, `logbook_sensor_gps`, and the checks). Running them re-labels about 1.3 % of STK pings and fills the stretches the old
+key left unassigned; it rebuilds the 44 GB union. The ODS stays until the cascade's `manuals` step is dropped and the audit chain rebuilt on the result.

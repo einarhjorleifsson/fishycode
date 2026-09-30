@@ -63,8 +63,9 @@ idy <-
 # (a STK-internal mobile ID), so we resolve to vid via a temporal interval join:
 # each mid may map to different vessels over time as transponders are reused.
 stk <- duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
-  inner_join(vid |> select(vid, mmsi, mid, d1, d2) |> filter(!is.na(vid)),
-             by = join_by(mid, between(time, d1, d2))) |>
+  # half-open on d2 + 1: d2 is a date, and a period's last day runs to its end (see sources/stk/convert.R)
+  inner_join(vid |> select(vid, mmsi, mid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1),
+             by = join_by(mid, time >= d1, time < d2e)) |>
   select(vid, mmsi, time, lon, lat, speed, heading)
 
 # astd -------------------------------------------------------------------------

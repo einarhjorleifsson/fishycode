@@ -23,7 +23,7 @@ library(nanoparquet)
 disc  <- read_parquet(fd_curated("check", "ais_key_audit_discrepancy.parquet"))
 w1    <- read_parquet(fd_curated("check", "ais_key_audit_w1.parquet"))
 cand  <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
-key   <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
+key   <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 reg   <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> select(vid, yh1, yh2)
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
@@ -159,4 +159,4 @@ write_curated(out, fd_curated("check", "ais_key_resolution.parquet"),
               inputs = c(discrepancy = fd_curated("check", "ais_key_audit_discrepancy.parquet"),
                          w1 = fd_curated("check", "ais_key_audit_w1.parquet"),
                          split_candidates = fd_curated("check", "ais_key_split_candidates.parquet"),
-                         vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet")))
+                         vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet")))

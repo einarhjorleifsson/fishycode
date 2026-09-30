@@ -405,8 +405,8 @@ Built 2026-09-29: `ais_key_audit` (ledger of every key row, 132 discrepancies, 8
 vid-claiming rows no witness reaches) and `ais_key_split_candidates` (silences where a
 human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009 —
 phase 2 (segment table built with logbook and landings: tiles every mid, 90 % of pings with direct evidence, Icelandic ODS rows 87 % reproduced without the ODS; review open), phase 3 (review in the app),
-phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (the ODS is retired:
-switch `ais_key.R` to the segment table, then delete the ODS; decided 2026-09-29).
+phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (the ODS is retired: `ais_key.R` switched to the segment table 2026-09-30, decision 053;
+open: run the downstream targets, then drop the cascade's `manuals` step and delete the ODS - needs: maintainer).
 `ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids;
 track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
 The `curated/check/` tables build the next time the `check_ais_key_*` targets run.

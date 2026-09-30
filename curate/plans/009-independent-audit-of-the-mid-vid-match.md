@@ -90,10 +90,11 @@ held were extracted once, unchanged, to `overrides/stk_foreign_mid_vid.csv`. Dro
 in the segment table. What is left to do:
 1. Review the segments that differ from the current key (63) and the ledger's discrepancies, in the
    review app, on evidence alone (phase 3).
-2. Switch `reference/vessels/ais_key.R` to read the segment table instead of the ODS. **needs:
-   maintainer** - the moment of the switch.
-3. Delete `raw/ais/stk/stk_mobile_match-and-duals.ods` (and its `staging` copy) the day step 2 is done;
-   until then `ais_key.R` still reads it and deleting it would break today's key.
+2. ~~Switch `reference/vessels/ais_key.R` to read the segment table~~ **Done 2026-09-30** (decision 053): the cascade moved to
+   `ais_key_cascade.R`, and `ais_key.R` now builds the key from the segment table.
+3. Delete `raw/ais/stk/stk_mobile_match-and-duals.ods` (and its `staging` copy). **needs: maintainer.** The cascade
+   (`ais_key_cascade.R`) still reads it (step `manuals`), and the audits and the segment table read the cascade, so the ODS can go
+   only when the cascade's `manuals` step is dropped and the audit chain rebuilt on the result.
 
 ## 7. What could still make this wrong
 

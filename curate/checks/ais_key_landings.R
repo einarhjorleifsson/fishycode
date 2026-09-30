@@ -31,7 +31,7 @@ library(nanoparquet)
 
 AIS_T1 <- as.Date("2007-06-01")   # STK begins
 
-key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet"))
+key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet"))
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet"))
 lnd <-
   read_parquet(fd_curated("landing", "landings.parquet")) |>
@@ -114,6 +114,6 @@ print(out |>
         knitr::kable(caption = "Icelandic vessels that land fish and have no AIS identity"))
 
 write_curated(out, fd_curated("check", "ais_key_landings.parquet"),
-              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
+              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
                          vessel         = fd_curated("vessel", "vessel.parquet"),
                          landing        = fd_curated("landing", "landings.parquet")))

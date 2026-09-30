@@ -58,7 +58,7 @@ STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parque
 MIN_W1_MONTHS <- 3L   # months of W1 confirmation that name a vid over a segment
 STARTUP_END <- as.Date("2009-01-01")
 
-key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
+key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(hvid = as.integer(vid), cs, mmsi, t1 = as.Date(t1), t2 = as.Date(t2), window_basis)
@@ -471,7 +471,7 @@ print(knitr::kable(merged |> summarise(mids = n_distinct(mid), segments = n(), d
                                         pings_relabelled = sum(pings[!agrees_key & !is.na(vid)]), startup_segments = sum(startup_phase)), caption = "against the current key"))
 
 write_curated(merged, fd_curated("check", "ais_key_segments.parquet"),
-              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
+              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
                          w1 = fd_curated("check", "ais_key_audit_w1.parquet"),
                          lb_hits = fd_curated("check", "ais_key_audit_lb_hits.parquet"),
                          lb_n = fd_curated("check", "ais_key_audit_lb_n.parquet"),

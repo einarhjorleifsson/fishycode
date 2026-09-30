@@ -99,7 +99,7 @@ pingspan <-
 
 mobp <- mob |> inner_join(pingspan, by = "mid") |> select(mid, glid_t, loid_t, pings, t1, t2)
 
-key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
+key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   distinct(mid, key_vid = vid)
 
 ## For every vid, find the best-covering mid sharing its call sign ------------
@@ -172,7 +172,7 @@ write_curated(out, fd_curated("check", "ais_key_reused_callsign.parquet"),
               # cannot hash it, so it is left out of `inputs` like every other
               # directory-shaped source in this repo; the single mobile.parquet
               # file still ties this check to the raw STK identity table.
-              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key.parquet"),
+              inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
                          vessel         = fd_curated("vessel", "vessel.parquet"),
                          stk_mobile     = fd_raw("ais", "stk", "mobile.parquet"),
                          landing        = fd_curated("landing", "landings.parquet")))
