@@ -124,7 +124,9 @@ w1_named <- w1 |> filter(score >= .8) |> count(mid, vid) |> filter(n >= 3) |> di
 # (mid 101444 = call sign TFGA, no vid in the key because its other field is only 'RE').
 reg_named <- holders |> distinct(mid) |> left_join(key_class, by = "mid") |>
   filter(is.na(entity_class) | entity_class %in% c("vessel", "unknown")) |> pull(mid)
-has_vessel <- Reduce(union, list(key |> filter(!is.na(vid), vid > 0) |> distinct(mid) |> pull(mid), w1_named, reg_named))
+# ... or when a kept foreign match names it: the ODS used to put these in the key, and it no longer exists
+foreign_mids <- foreign_keep$mid
+has_vessel <- Reduce(union, list(key |> filter(!is.na(vid), vid > 0) |> distinct(mid) |> pull(mid), w1_named, reg_named, foreign_mids))
 span <- days |>
   filter(mid %in% has_vessel) |>
   group_by(mid) |>
@@ -332,7 +334,8 @@ tbl <- segs |>
          drop_seg = !is.na(key_vid) & key_vid <= 0 & is.na(w1_vid) & is.na(reg_vid) & is.na(lb_vid),
          vid = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_, !is.na(key_free) ~ key_free, .default = foreign_vid),
          source = case_when(!is.na(w1_vid) ~ "physical", !is.na(reg_vid) ~ "registry", !is.na(lb_vid) ~ lb_src, drop_seg ~ "drop: a person decides",
-                            is.na(key_free) & !is.na(foreign_vid) ~ "foreign: kept override", .default = "continuity"),
+                            # a foreign match the cascade reaches on its own is still the kept override: same vid, named for what it is
+                            !is.na(foreign_vid) & (is.na(key_free) | key_free == foreign_vid) ~ "foreign: kept override", .default = "continuity"),
          vid_no_ods = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_,
                                 !ods_key & key_vid > 0 ~ key_vid, .default = NA_integer_))
 # An Icelandic stretch with no evidence and no ODS-free key row borrows its neighbour's vid - but only

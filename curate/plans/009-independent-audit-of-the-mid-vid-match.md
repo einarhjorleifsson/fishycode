@@ -92,9 +92,8 @@ in the segment table. What is left to do:
    review app, on evidence alone (phase 3).
 2. ~~Switch `reference/vessels/ais_key.R` to read the segment table~~ **Done 2026-09-30** (decision 053): the cascade moved to
    `ais_key_cascade.R`, and `ais_key.R` now builds the key from the segment table.
-3. Delete `raw/ais/stk/stk_mobile_match-and-duals.ods` (and its `staging` copy). **needs: maintainer.** The cascade
-   (`ais_key_cascade.R`) still reads it (step `manuals`), and the audits and the segment table read the cascade, so the ODS can go
-   only when the cascade's `manuals` step is dropped and the audit chain rebuilt on the result.
+3. ~~Retire the ODS~~ **Done 2026-09-30** (decision 054): the cascade no longer reads it; the file was moved to
+   `$FISHYDATA/archive/retired_2026-09-30/` (not deleted - the maintainer deletes it when satisfied).
 
 ## 7. What could still make this wrong
 

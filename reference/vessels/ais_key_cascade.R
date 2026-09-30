@@ -3,7 +3,7 @@
 # Output: curated/vessel/vessel_ais_key_cascade.parquet. Since 2026-09-30 this is NOT the key the pipeline
 # consumes: reference/vessels/ais_key.R builds that from the segment table (check/ais_key_segments), which itself
 # reads THIS file (identifiers, entity class, the cascade's own vid as continuity) - so they must be two targets.
-# Still reads the manual ODS (step `manuals`); the ODS is retired once nothing needs the cascade's manual rows.
+# The manual ODS is no longer read (retired 2026-09-30, decision 054): no `manuals` step, no ODS-made period splits.
 #  Focus on vessel data
 #   * Assign MMSI, if possible to all Icelandic vessels
 #   * Attempt to assign MMSI to foreign vessels
@@ -287,29 +287,14 @@ older <-
   mutate(n.mid = n()) |>
   ungroup()
 
-# Join manual (duals) ----------------------------------------------------------
-manual <-
-  fd_raw("ais", "stk", "stk_mobile_match-and-duals.ods") |>
-  #fd_staging("stk_mobile_match-and-duals", "stk_mobile_match-and-duals.ods") |>
-  readODS::read_ods() |>
-  select(mid:d2) |>
-  # Guard: fix swapped d1/d2 (ODS date-entry errors)
-  mutate(d1_tmp = pmin(d1, d2, na.rm = TRUE),
-         d2     = pmax(d1, d2, na.rm = TRUE),
-         d1     = d1_tmp) |>
-  select(-d1_tmp)
-
+# The manual ODS is RETIRED (decision 054; plan 009 phase 5). This used to join the hand-maintained mid-vid
+# spreadsheet here: it supplied vids (step `manuals`), split mids into periods, and held the foreign matches.
+# The segment table now places every stretch on evidence (reference/vessels/ais_key.R builds the key from it),
+# and the foreign matches live in overrides/stk_foreign_mid_vid.csv. The columns the later steps expect stay,
+# empty, so they fill from the cascade's own evidence.
 stk1 <-
   stk |>
-  left_join(manual |>
-              select(mid, vid, no, .d1 = d1, .d2 = d2)) |>
-  mutate(d1 = case_when(!is.na(.d1) ~ .d1,
-                        .default = d1),
-         d2 = case_when(!is.na(.d2) ~ .d2,
-                        .default = d2)) |>
-  select(-c(.d1, .d2)) |>
-  mutate(step = case_when(!is.na(vid) ~ "manuals",
-                          .default = NA))
+  mutate(vid = NA_real_, no = NA_integer_, step = NA_character_)
 
 
 ## Entity class ------------------------------------------------------------------
