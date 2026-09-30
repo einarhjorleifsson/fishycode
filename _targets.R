@@ -170,7 +170,7 @@ list(
   # runs them in parallel. Each must emit the four-table grammar.
 
   tar_target(afli, {
-    dictionary; gear; port
+    dictionary; gear; gear_window; port
     produces("sources/afli/convert.R",
              fd_staging("afli", "trip.parquet"),
              fd_staging("afli", "station.parquet"),
@@ -195,7 +195,7 @@ list(
   }, format = "file"),
 
   tar_target(fs_afladagbok, {
-    dictionary; gear; port
+    dictionary; gear; gear_window; port
     produces("sources/fs_afladagbok/convert.R",
              fd_staging("fs_afladagbok", "trip.parquet"),
              fd_staging("fs_afladagbok", "station.parquet"),

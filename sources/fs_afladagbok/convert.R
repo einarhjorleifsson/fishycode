@@ -258,28 +258,11 @@ dims <-
       select(.sid, g_mesh, g_length, g_height, effort_count, effort_unit)
   )
 
-## Duration caps (minutes) per gid ---------------------------------------------
-# Mobile tow-time caps and static gear soak-time caps.
-gear_caps <- tribble(
-  ~gid,  ~cap_m,
-     1,  7 * 24 * 60,   # Skötuselsnet  GNS
-     2,  7 * 24 * 60,   # Þorskfisknet  GNS
-     3,  7 * 24 * 60,   # Grásleppunet  GNS
-     4,  7 * 24 * 60,   # Rauðmaganet   GNS
-     5,      24 * 60,   # Reknet        GND
-     6,      12 * 60,   # Botnvarpa     OTB
-     7,      12 * 60,   # Humarvarpa    OTB NEP
-     8,      16 * 60,   # Rækjuvarpa    OTB SHR
-     9,      30 * 60,   # Flotvarpa     OTM
-    11,       4 * 60,   # Dragnót       SDN
-    12,      24 * 60,   # Lína          LLS
-    13,      24 * 60,   # Landbeitt lína LLS
-    14,      24 * 60,   # Handfæri      LHM
-    15,      20 * 60,   # Plógur        DRB
-    16, 20 * 24 * 60,   # Gildra        FPO
-    21,      24 * 60,   # Línutrekt     LLS
-    22,  7 * 24 * 60    # Grálúðunet    GNS
-)
+## Duration limits -------------------------------------------------------------
+# The plausible maximum per gear is reference/gear/windows.R (gear_window.dur_max_min),
+# applied by R/duration_limit.R and shared with afli. This adapter used to carry its own
+# cap table, which had drifted from afli's and kept only the capped value.
+gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
 
 ## Assemble fishing_sample -----------------------------------------------------
 fishing_sample <-
@@ -341,20 +324,12 @@ fishing_sample <-
       as.numeric(difftime(t4, t1, units = "mins")),
     .default = NA_real_
   )) |>
-  # Apply per-gid duration caps
-  left_join(gear_caps, by = "gid") |>
-  mutate(
-    .duration_source = case_when(
-      is.na(duration_m)                   ~ "missing",
-      !is.na(cap_m) & duration_m > cap_m  ~ "capped",
-      .default = "data"
-    ),
-    duration_m = case_when(
-      !is.na(cap_m) & duration_m > cap_m ~ cap_m,
-      .default = duration_m
-    )
-  ) |>
-  select(-cap_m) |>
+  # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R). The
+  # end time that produced it is not believed either: a mobile tow's t3 and a static
+  # set's t4 are set to NA with it, so no window is drawn from an impossible span.
+  apply_duration_limit(gear_window) |>
+  mutate(t3 = if_else(.duration_source == "implausible" & gear %in% c("OTB", "OTM", "DRB", "SDN"), NA_POSIXct_, t3),
+         t4 = if_else(.duration_source == "implausible" & gear %in% c("LLS", "GNS", "GND", "LHM", "FPO"), NA_POSIXct_, t4)) |>
   # Effort: two-component — effort = effort_count × effort_duration
   left_join(dims |> select(.sid, effort_count, effort_unit), by = ".sid") |>
   mutate(
@@ -372,7 +347,7 @@ fishing_sample <-
   # Gear dimensions
   left_join(dims |> select(-effort_count, -effort_unit), by = ".sid") |>
   select(.tid, .sid, gid, gid_old, gear, target2, t1, t2, t3, t4, date,
-         duration_m, .duration_source,
+         duration_m, duration_m_raw, .duration_source,
          effort_count, effort_duration, effort_unit, effort,
          n_units, n_lost, g_mesh, g_width, g_length, g_height,
          schema) |>

@@ -200,30 +200,12 @@ dims <-
   )
 
 
-## Gear caps -------------------------------------------------------------------
-# Maximum plausible fishing duration per gear × target combination (minutes).
-gear_caps <- tribble(
-  ~gear,  ~target2,  ~cap_m,
-  "OTB",  "DEF",      10 * 60,   # finfish
-  "OTB",  "NEP",       8 * 60,   # Nephrops
-  "OTB",  "SHR",      16 * 60,   # shrimp
-  "OTM",  "SPF",      24 * 60,   # pelagics
-  "OTM",  "XXX",      24 * 60,
-  "DRB",  "ARI",       4 * 60,   # suspiciously low — CHECK
-  "DRB",  "ECH",      12 * 60,
-  "DRB",  "SCL",      12 * 60,
-  "SDN",  "DEF",       3 * 60,
-  "LLS",  "DEF",      24 * 60,
-  "LHM",  "DEF",      24 * 60,
-  "GNS",  "DEF",   7 * 24 * 60,
-  "GNS",  "LUM",   7 * 24 * 60,
-  "GNS",  "MON",   7 * 24 * 60,
-  "GNS",  "GHL",   7 * 24 * 60,
-  "GND",  "SPF",           60,
-  "FPO",  "GAD",  20 * 24 * 60,
-  "FPO",  "CRB",  20 * 24 * 60,
-  "FPO",  "WHL",  20 * 24 * 60
-)
+## Duration limits -------------------------------------------------------------
+# Not here any more: the plausible maximum per gear is reference/gear/windows.R
+# (gear_window.dur_max_min) and the rule is R/duration_limit.R, shared with
+# fs_afladagbok. This adapter used to cap a long duration at a hand-set value and keep
+# only the capped one; see curate/plans/010-ping-activity-link.md §12.
+gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
 
 ## Assemble fishing_sample -----------------------------------------------------
 fishing_sample <-
@@ -237,15 +219,8 @@ fishing_sample <-
   # OTB NEP pre-2000: duration appears to be recorded in hours not minutes
   mutate(duration_m = if_else(gear == "OTB" & target2 == "NEP" & year(date) <= 1999,
                               NA_real_, duration_m)) |>
-  # Apply duration caps
-  left_join(gear_caps, by = c("gear", "target2")) |>
-  mutate(.duration_source = case_when(is.na(duration_m) ~ "missing",
-                                      duration_m > cap_m ~ "capped",
-                                      .default           = "data"),
-         duration_m       = case_when(is.na(duration_m) ~ NA_real_,
-                                      duration_m > cap_m ~ cap_m,
-                                      .default           = duration_m)) |>
-  select(-cap_m) |>
+  # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R)
+  apply_duration_limit(gear_window) |>
   # Effort: two-component — effort = effort_count × effort_duration
   left_join(dims |> select(.sid, effort_count, effort_unit), by = ".sid") |>
   mutate(effort_duration = case_when(

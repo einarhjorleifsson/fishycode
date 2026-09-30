@@ -38,6 +38,17 @@
 #               GND is given the net value. Other gears stay NA: no window needs one.
 #               `set_max_basis` names the evidence so it can be replaced.
 #
+#   dur_max_min The longest duration, minutes, a logbook station can have and still be
+#               believed (plan 010 §12b). ABOVE it the duration is an error and is set to
+#               NA in the logbook adapters (`.duration_source = "implausible"`; the raw
+#               value is kept in `duration_m_raw`). It REPLACES the two cap tables the
+#               adapters used to carry, which had drifted apart and which cut real values
+#               short (Danish seine at 180/240 min: 2-4 % of tows are 6-12 h) while
+#               turning garbage into a precise duration (a 61 h Nephrops tow became 8 h).
+#               Set by the maintainer 2026-09-30 from the raw distributions; DRB, GND and
+#               FPO were not revisited and keep the larger of the old values.
+#               NA = no limit.
+#
 # Adding max-duration and max-distance criteria (mapping.R's TODO) belongs in this
 # file, not in mapping.R: they are properties of a window, not of a vocabulary.
 
@@ -84,6 +95,21 @@ jigged <- "LHM"
 towed  <- c("OTB", "OTM", "SDN", "DRB")
 set_max <- c(LLS = 150L, GNS = 60L, GND = 60L)
 
+# Plausible maximum duration by NEW gid (minutes). Comments give the old caps.
+dur_max <- c(
+  `1` = 7 * 24 * 60, `2` = 7 * 24 * 60, `3` = 7 * 24 * 60, `4` = 7 * 24 * 60,  # GNS   (7 d)
+  `22` = 21 * 24 * 60,                                  # Grálúðunet, Greenland halibut (was 7 d)
+  `5` = 24 * 60,                                        # Reknet GND       (24 h)
+  `6` = 900,                                            # Botnvarpa OTB    (was 600/720)
+  `7` = 720,                                            # Humarvarpa OTB   (was 480/720)
+  `8` = 1440,                                           # Rækjuvarpa OTB   (was 960)
+  `9` = 2160,                                           # Flotvarpa OTM    (was 1440/1800)
+  `11` = 960,                                           # Dragnót SDN      (was 180/240)
+  `12` = 2880, `13` = 2880, `21` = 2880,                # Lína LLS         (was 1440)
+  `14` = 2880,                                          # Handfæri LHM     (was 1440)
+  `15` = 1200,                                          # Plógur DRB       (was 240/720/1200)
+  `16` = 20 * 24 * 60)                                  # Gildra FPO       (20 d)
+
 gear_window <-
   gear |>
   left_join(speed |> rename(veidarfaeri_speed = veidarfaeri), by = "gid") |>
@@ -92,12 +118,13 @@ gear_window <-
                            gear %in% static ~ "static",
                            gear %in% jigged ~ "jigged",
                            .default = "other"),
+    dur_max_min = unname(dur_max[as.character(gid)]),
     set_max_min = unname(set_max[gear]),
     set_max_basis = if_else(is.na(set_max_min), NA_character_,
                             "estimated_speed_profile_2026-09-30"),
     s_basis = if_else(is.na(s1), NA_character_, "declared_fleet")) |>
   select(gid, veidarfaeri, gear, target, gear_class, s1, s2, s_basis, set_max_min,
-         set_max_basis, veidarfaeri_speed)
+         set_max_basis, dur_max_min, veidarfaeri_speed)
 
 # check: the speed list and the vocabulary agree on what each gid is ----------
 mismatch <- gear_window |>

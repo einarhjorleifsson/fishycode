@@ -447,14 +447,12 @@ Plan 010 proposes `station_window` + a per-year `ping_activity` bridge + `ais_tr
 
 **check:** `ais_trail(2019)` reproduces the old trail's fishing pings per vid-month, and every synthesised window carries `win_basis`.
 
-## 28. Tow-duration caps live in the logbook adapters and destroy the raw value
-**status:** open · **needs: maintainer** · **see:** `curate/plans/010-ping-activity-link.md` §12
+## 29. The afli overlap check blanks `t2`/`t3` and keeps no original
+**status:** open · **needs: maintainer** · **see:** `curate/decisions/057-duration-limits-replace-the-adapter-caps.md`
 
-`sources/afli/convert.R:204` and `sources/fs_afladagbok/convert.R:261` cap `duration_m` per gear and
-derive `t3`; the raw value is not kept. Danish seine is capped at 180 min and the pings past the
-cap still look like fishing (2019: 78,256 pings, 550 windows). Move the caps to `gear_window` /
-`station_window`, keep `duration_m_raw` and `t3_raw`, and set the limits from measured distributions.
+`sources/afli/convert.R` ("Overlap QC") sets `t2` and `t3` to NA for any mobile operation that overlaps a neighbour on the same vessel:
+183,516 bottom-trawl stations (4.3 %), 3,973 midwater, 460 Danish seine. Same kind of correction as the old caps. `station_window` already cuts
+a window at the vessel's next recorded start, so the times could be kept and the check left as a flag.
 
-**check:** `fishing_sample` carries the raw duration and `t3`, no adapter applies a cap, and the
-2019 Danish-seine pings past the old 180-min cap are claimed by a tow window.
+**check:** `fishing_sample` keeps `t2`/`t3` for flagged stations, `.checks` still names the overlap, and the window counts are compared before and after.
 

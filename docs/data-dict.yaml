@@ -1597,8 +1597,8 @@ tables:
           - 1010.4166666666666
           - 8631.183333333332
         description: >
-          Operation duration, minutes (capped at a gear-class-specific maximum; see
-          .duration_source).
+          Operation duration, minutes, as reported; NA when it is above the gear's plausible
+          maximum (gear_window.dur_max_min; see .duration_source and duration_m_raw).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1629,10 +1629,16 @@ tables:
           - Needs a `time_zone`?
       - name: .duration_source
         type: string
-        examples: [capped, data, missing]
+        examples: [data, implausible, missing]
         description: >
-          "data" (duration read directly), "capped" (exceeded the gear-class maximum
-          and was capped), or "missing".
+          "data" (duration read directly), "implausible" (above the gear's plausible maximum,
+          gear_window.dur_max_min; duration_m is then NA and the raw value is in duration_m_raw), or "missing".
+      - name: duration_m_raw
+        type: double
+        description: >-
+          Operation duration, minutes, exactly as the source gave it, before the plausibility
+          limit. NA where the source has none. Not present for the adb schema.
+
         todo: |
           - Only 3 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.

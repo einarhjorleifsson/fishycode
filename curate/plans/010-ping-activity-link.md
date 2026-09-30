@@ -534,3 +534,8 @@ Proposed rule, for the maintainer to set the numbers: **two limits per gear**, `
 back to the station date) and, if wanted, a soft `tow_max_min` for the window alone. Starting points
 from the table: SDN 960, OTB finfish 900, OTM 2160, LLS/LHM 2880, GNS 7 d except Greenland-halibut
 nets 21 d, Nephrops 720, shrimp 1440. Nothing in the raw durations is applied yet.
+
+**Done 2026-09-30 (decision 057).** The limits above were applied as the maintainer set them (one
+`dur_max_min` per gear in `gear_window`, `R/duration_limit.R` shared by both adapters) and the logbook
+was rebuilt from the raw data. Danish seine: 99th-percentile tow 180 -> 533 min, and the old-trail
+gap for 2019 (old code 5) fell from 78,256 unclaimed pings / 550 windows to 5,913 / 21.
