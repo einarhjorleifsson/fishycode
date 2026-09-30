@@ -378,8 +378,9 @@ not touch. Duplicate windows therefore stay as ambiguity, handled at the join.
   **99.9 %** for longline (1,047,351 of 1,047,980) and 97 % for nets fall inside the same station's
   `t1..t4` — the soak, which the old trail tagged as fishing and this table does not.
 - **Totals:** 9.78 M pings tagged by any new window vs 9.59 M by the old trail; 82 % of the old
-  set is also in the new set, 87 % of the new non-`day` pings are in the old set. New-only pings
-  are mostly set/haul windows of stations the old trail treated as day or soak.
+  set is also in the new set, 87 % of the new non-`day` pings are in the old set. New non-`day` pings
+  the old trail lacks: `set` 586,213 of 633,410 (it had no set window), `haul` 321,049 of 2.29 M, `tow`
+  69,818 of 4.04 M, `jig` 13,492 of 84,730; why the haul and tow ones differ was not examined.
 - **Not explained:** old code 5 (Danish seine) has 94,157 pings (19 %) in 2,232 old windows that
   overlap a new tow window but are not claimed by it; windows match in the typical case, so this
   is a subset (edge, duplicate or capped windows) to look at in Phase 3 when pings are joined.
