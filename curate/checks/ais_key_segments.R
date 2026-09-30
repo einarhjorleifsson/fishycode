@@ -446,8 +446,10 @@ stopifnot("a ping is in no segment or in two" = sum(merged$pings) == sum(span$to
 unassigned <- merged |> filter(is.na(vid))
 cat("\nACCEPTANCE: segments tile all", nrow(span), "mobile-ids; every one of", format(sum(span$total), big.mark = ","),
     "pings is in exactly one segment; pings on no vid (a drop or a stretch for a person, listed):", format(sum(unassigned$pings), big.mark = ","), "\n")
-before_reg <- merged |> filter(!is.na(vid)) |> mutate(rs = reg_start_of(vid)) |> filter(!is.na(rs), d1 < rs - 60)
-cat("\nSegments that START more than 60 d before their vid was registered:", nrow(before_reg), "on", format(sum(before_reg$pings), big.mark = ","), "pings (must be 0)\n")
+# A reviewed row is exempt: a vid's own AIS can place it with a mobile-id before its registration (a new vessel on
+# sea trials: mid 146259 and vid 3037 from 81 days before it was registered, 100 % of 1,071 opportunities).
+before_reg <- merged |> filter(!is.na(vid), source != "reviewed") |> mutate(rs = reg_start_of(vid)) |> filter(!is.na(rs), d1 < rs - 60)
+cat("\nSegments that START more than 60 d before their vid was registered:", nrow(before_reg), "on", format(sum(before_reg$pings), big.mark = ","), "pings (must be 0; reviewed rows exempt)\n")
 w1_check <- st |>
   inner_join(transmute(merged, mid, d1, d2, seg_vid = vid), by = "mid", relationship = "many-to-many") |>
   filter(md >= d1, md <= d2) |>

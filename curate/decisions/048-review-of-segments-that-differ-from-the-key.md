@@ -1,6 +1,6 @@
 # 048 - Review of the segments that differ from the key
 
-*2026-09-29. The review asked for in plan 009 phase 3, done on evidence alone (the ODS is not a judge). Analysis by Claude (AI-assisted); each verdict is a rule applied identically to every segment, and the maintainer decides what enters the key.*
+*Superseded in part by [052](052-review-of-segments-that-differ-from-the-key-redone.md): its 6-hour track test mis-scored sparse providers and its registry-lifetime test is unreliable. 2026-09-29. The review asked for in plan 009 phase 3, done on evidence alone (the ODS is not a judge). Analysis by Claude (AI-assisted); each verdict is a rule applied identically to every segment, and the maintainer decides what enters the key.*
 
 ## Method
 
