@@ -439,3 +439,14 @@ up, and review the 7 segments where a physical grade and the register disagree.
 
 **check:** `ais_key_segments` reports `annual_disagrees` = 0 or every such segment reviewed.
 
+
+## 27. `ais_ping_union` re-scans its sources once per year (1 h 35 m per full build)
+**status:** open, parked 2026-09-30 · **see:** `curate/decisions/053-ais-key-reads-the-segment-table.md` (build record)
+
+The write loop re-evaluates the whole lazy union for each of 20 years, so each year costs ~5 min whatever its size (last full build 1 h 35 m; 37 min in
+the earlier run). A fix is on branch `union-per-year-pruning` (commit `ce9ed40`, unmerged): ASTD and ASTDB read only their own hive `year` partition (partition
+= year of the ping, 0 mismatches), and STK reads its own partition **plus** the ~33 k rows that sit in a partition that is not their own year (bad timestamps).
+Not verified: `curate/checks/ping_union_equivalence.R` (on the branch) compares old and new per year (counts by provider, distinct vids, coordinate and
+time sums); its first run crashed on a vanished R temp folder, the second was stopped. Merge only once it reports identical for 2007, 2014 and 2017.
+
+**check:** `ping_union_equivalence.R` reports identical for three years, then one full `ais_ping_union` build is well under the current 1 h 35 m.
