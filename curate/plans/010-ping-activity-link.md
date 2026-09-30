@@ -266,9 +266,16 @@ Scripts in the session scratchpad; all numbers below were printed by them.
   **Maintainer: is there a higher-rate logger stream not in `sensor_gps` (raw tables with 1-minute
   fixes)?** If not, the case for gps rests on the `.sid`, not on resolution.
 - **Duplicates: half of `sensor_gps` is a duplicate.** 2019: 5,358,797 rows, 2,678,128 distinct
-  `(vid,time)`. Nearly all are `gps1`+`gps2` pairs with the same `.sid` and same raw position;
-  the speed differs in 11 % of pairs. Dedupe rule needed (gps1 vs gps2 precedence — open).
-  Another ≈ 600 keys carry 4+ rows with *different* `.sid`: one fix stamped to several stations.
+  `(vid,time)`. `sensor_src` names the two raw Oracle tables the logger fixes come from:
+  `gps1` = `sjalfvirkir_maelar`, `gps2` = `rafr_sjalfvirkir_maelar`. They hold the **same fixes**
+  in 2008–2019 (row counts equal year by year), `gps2` thins out in 2020 (1.38 M against 2.59 M)
+  and ends in 2020; `gps1` runs to 2024. In 2,676,960 of 2019's pairs (same `(vid,time)`, same
+  `.sid`, same raw position) the **speed never differs where both have one**; 11.4 % of fixes
+  have a NULL speed. *An earlier draft of this section said speeds differ in 11 % of pairs; that
+  was wrong — those were pairs with NULL speed in both.* Only 15,026 pairs (0.6 %) have a speed in
+  one table and not the other. Rule: collapse to one row per `(vid,time,.sid)`, `speed =
+  coalesce(gps1, gps2)`, so the choice between the tables does not matter. Another ≈ 600 keys carry
+  4+ rows with *different* `.sid`: one fix stamped to several stations.
 - **AIS/gps exact-time ties:** only 30,212 of 5.36 M gps fixes (0.6 %) share `(vid,time)` with an
   AIS ping; speeds differ in 98.8 % (median 1.6, which is the unit gap above). The tie rule
   matters little numerically.
@@ -298,5 +305,19 @@ Scripts in the session scratchpad; all numbers below were printed by them.
    improved trail, and the contract in plan 002 §1 is the floor.
 6. Phase 0 (§9): is there a higher-rate logger stream than `sensor_gps` (whose step is 600 s)?
    If not, the logger is included for its recorded `.sid` and measured speed, not resolution.
-7. `gps1` and `gps2` are duplicate streams; which wins on a tie when their speeds differ (11 %)?
-8. What is `duration_m` for gillnet and longline (≈ 24 h and ≈ 13 h medians)?
+7. ~~gps1 vs gps2~~ answered by data: same fixes, speeds never disagree; collapse with `coalesce` (§9).
+8. ~~`duration_m`~~ answered (maintainer): soak is variable — longline usually hauled soon after
+   setting, occasionally longer, **max ≈ 12 h**; nets' soak runs to days, notably Greenland-halibut
+   (grálúða) and lumpfish (grásleppa) nets. Data agree for nets: by target, median `t4 − t1` and
+   `duration_m` are equal (DEF 24.5 vs 24.0 h, GAD 21.1 vs 21.1, LUM 47 vs 47, GHL 107 vs 107 h),
+   so **`duration_m` is gear-in-water time for nets** (corr with `t3 − t1` 0.65). For longline it
+   is not (corr 0.09; `t4 − t1` median 12.5 h, q90 24 h — longer than the stated 12 h max, so some
+   recorded hauls are late or wrong). Consequence: for nets, `t1 = t4 − duration_m` can **rebuild a
+   missing set start** (`basis = "derived"`, to validate on stations that have all three); it is
+   *not* a haul length.
+9. **Set duration (the old Q1 remainder) is a different number from soak.** Soak is `t1 → t3/t4`,
+   gear in water, vessel elsewhere. The *set* is the vessel busy putting the gear out, `t1 → t2`,
+   and `t2` is not recorded, so nothing in the data gives it. Plan: estimate it per gear in Phase 1
+   from the speed profile after `t1` (setting is faster than hauling) rather than guess; until
+   then the set window is closed only by the vessel's next event. A rough figure from you (longline
+   set ≈ hours? nets ≈ 1–2 h?) would serve as a sanity check on that estimate.
