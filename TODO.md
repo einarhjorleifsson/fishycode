@@ -438,3 +438,11 @@ Adapter and segment-table use are built (decision 049, 'Built'); 2007-2022 cover
 up, and review the 7 segments where a physical grade and the register disagree.
 
 **check:** `ais_key_segments` reports `annual_disagrees` = 0 or every such segment reviewed.
+
+## 27b. Link pings to trips and fishing activity (the `trail`)
+**status:** open · **see:** `curate/plans/010-ping-activity-link.md` · **needs: maintainer** (open questions 1, 4, 6-8, plan §8)
+
+`ais/ping` carries `trip` but no `.tid`, `.sid`, gear or fishing flag, so each analysis re-joins.
+Plan 010 proposes `station_window` + a per-year `ping_activity` bridge + `ais_trail()`. Phase 0 is read-only measurement.
+
+**check:** `ais_trail(2019)` reproduces the old trail's fishing pings per vid-month, and every synthesised window carries `win_basis`.
