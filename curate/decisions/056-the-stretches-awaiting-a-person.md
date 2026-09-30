@@ -28,3 +28,11 @@ on mid 146259 (decision 052). Where a test exists it agrees in every case but on
 
 Nothing here decides the bigger question of where an AIS transponder sat before its vessel existed; the placed stretches are the ones where the vessel itself is the only sensible
 answer. The key changed (49,638 more pings on a vessel), so the targets downstream of it are outdated again; they were not rebuilt here.
+
+## Rebuilt and verified, 2026-09-30
+
+The targets downstream of the key were rebuilt on the new key (whole run 30 m 31 s: union 1 m 52 s, `stk` 57 s, `ais_ping_tag` 2 m 46 s, `ais_ping_clean` 6 m 12 s,
+`ais_trip` 8 m 51 s, `trip_voyage` under 1 s, `logbook_sensor_gps` 9 m 32 s; nothing outdated afterwards). STK staging now has 181,792,892 rows against the segment
+table's 181,792,889 pings on a vid (3 apart); no gear-device mid is in it; union -> tagged -> clean 543.78 M -> 543.78 M -> 540.58 M (0.59 % dropped); mids
+103750 -> 2022, 146259 -> 3037, 149520 -> 3059 (49,528 pings), 140664 -> 2983 and 101083 -> 2870 (6,549 pings, from 2013-09-18) are in staging with the intended
+vids; 720,330 trips for 2,763 vids. The 39,106 pings still awaiting a person are not in the vessel pings.
