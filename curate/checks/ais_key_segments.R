@@ -41,6 +41,8 @@
 # is kept only so the dependence on those rows stays visible. The ODS is not a judge of this table
 # (maintainer, 2026-09-29): disagreements with it are decided on evidence, like any other.
 #
+# `device` marks gear devices (an MMSI of class 941/99/97): not vessels, but the link to the carrying vid is kept.
+#
 # ACCEPTANCE (asserted): the segments tile every mobile-id with no gap or overlap; every ping is
 # in exactly one segment; and pings outside a vid are only those on an explicit drop.
 # This check REPORTS. It never writes a vid into the key; a reviewed table replaces the ODS as an
@@ -396,7 +398,15 @@ ann_core <- ann_h |> mutate(t1 = as.Date(sprintf("%d-01-01", as.integer(format(t
 ann_seg <- merged |> select(mid, seg_no, d1, d2) |>
   inner_join(ann_core, by = "mid", relationship = "many-to-many") |> filter(t1 <= d2, t2 >= d1) |>
   group_by(mid, seg_no) |> summarise(annual_vid = if (n_distinct(hvid) == 1) hvid[1] else NA_integer_, .groups = "drop")
-merged <- merged |> left_join(ann_seg, by = c("mid", "seg_no")) |>
+# Gear devices are not vessels (maintainer, 2026-09-30) but keep their link to the vid that carries them: the
+# vid stays on the row, `device` marks it, and a consumer of VESSEL pings filters on `!device`. A mobile-id is a
+# device when its own identifier is an MMSI of a class that is not a ship station: 941xxxxxx, 99xxxxxxx
+# (aids to navigation) or 97xxxxxxx (AIS-SART, MOB, EPIRB) - a fishing-gear tracker rides its boat while deployed,
+# so its position only partly matches the carrier's.
+device_mids <- key |> pivot_longer(c(loid, glid), values_to = "s") |>
+  filter(grepl("^(941|99|97)[0-9]{6}$", trimws(s))) |> distinct(mid) |> pull(mid)
+merged <- merged |> left_join(key_class, by = "mid") |> mutate(device = mid %in% device_mids) |>
+  left_join(ann_seg, by = c("mid", "seg_no")) |>
   mutate(annual_disagrees = !is.na(annual_vid) & !is.na(vid) & annual_vid != vid & source != "reviewed")
 print(merged |> summarise(segments_with_annual_holder = sum(!is.na(annual_vid)), agree = sum(!is.na(annual_vid) & !annual_disagrees, na.rm = TRUE),
                           disagree = sum(annual_disagrees), pings_disagree = sum(pings[annual_disagrees])) |> knitr::kable(caption = "annual register vs the table"))

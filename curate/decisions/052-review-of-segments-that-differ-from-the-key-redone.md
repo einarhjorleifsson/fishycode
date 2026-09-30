@@ -30,9 +30,12 @@ rebuild the table has 121 differing segments (2,394,897 pings, 1.3 %); vessel-mo
 
 ## Still for a person
 
-- **Device mids carried by a vessel** - 117104, 117324, 119842, 128996, 131663 have an `unknown` entity class and MMSIs of the form 941xxxxxx; the
-  table gives them to vessels 2726, 2710, 2499, 7386 at 0.55-0.84 (W1). A fishing-gear tracker rides with its boat while it is deployed, so a
-  partial fit is expected. Kept; whether gear devices belong in a vessel table is the maintainer's call.
+- **Device mids carried by a vessel - decided 2026-09-30: not vessels, link kept.** The segment table gains `entity_class` (the key's) and `device`:
+  a mobile-id is a device when its own identifier is an MMSI of class 941xxxxxx, 99xxxxxxx or 97xxxxxxx. Ten mids (117104, 117324, 119123, 119842,
+  120323, 121684, 121685, 128996, 131663, 140620; 13 segments, 59,990 pings) are marked. Each **keeps its vid** - the vessel that carries it - and a
+  consumer of vessel pings filters on `!device`. `ais_key_vessel_recall` does not count a device as its carrier reporting. Their partial W1 fit
+  (0.55-0.84) is expected, since a gear tracker only rides its boat while deployed. Four more `unknown`-class mids with meaningless ids (100881,
+  101763, 150520, 149853) are not flagged: no evidence they are devices.
 - **No independent test:** 100112 (registry 2277 vs key 2502, 24,761 pings, no AIS for either), 101223 (table 2718 borrowed from a neighbour vs key 971,
   8,219 pings), 102182 (table 6712 by logbook for 2007-2023, 30,847 pings, vs the key's 6806 whose track fits 82 % of 335 opportunities - an unresolved
   conflict for 2007-2012, before any AIS), 143852 (table 1500 at 48 % vs the key's 1511, untestable), and a tail of registry or continuity

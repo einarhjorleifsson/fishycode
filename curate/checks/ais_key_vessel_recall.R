@@ -39,7 +39,7 @@ ym_of <- function(d) { lt <- as.POSIXlt(d); (lt$year + 1900L) * 12L + lt$mon }
 FOREIGN <- 3700:4999
 
 seg <- read_parquet(fd_curated("check", "ais_key_segments.parquet")) |>
-  mutate(d1 = as.Date(d1), d2 = as.Date(d2)) |> filter(!is.na(vid), !vid %in% FOREIGN)
+  mutate(d1 = as.Date(d1), d2 = as.Date(d2)) |> filter(!is.na(vid), !vid %in% FOREIGN, !device)   # a gear device riding a vessel is not the vessel reporting
 w1 <- read_parquet(fd_curated("check", "ais_key_audit_w1.parquet")) |>
   filter(score >= .8) |> transmute(mid, vid, ym = y * 12L + m - 1L)
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> select(vid, mmsi, mclass, loa) |> filter(vid > 0, !vid %in% FOREIGN)
