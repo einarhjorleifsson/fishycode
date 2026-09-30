@@ -430,3 +430,14 @@ redone on this one before any verdict is used.
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
 
+## 26. Land the annual ship register (`skipaskra`) and use it to date call-sign holders
+**status:** open · **needs: maintainer** — the copy of `~/stasi/skipaskra` into `$FISHYDATA/raw/external/skipaskra/` ·
+**see:** `curate/decisions/049-annual-call-sign-register-found.md`
+
+The annual register gives the call sign per vessel per year for 2009-2022 (5,283 vessel-years). Open: land the raw matrices,
+an adapter to `staging/skipaskra/annual_call_sign.parquet`, use it as the time source for call-sign holders in the segment table
+(replacing Hreidar's years and the placeholder MMSI windows), and tidy 2004-2008 so 2007-08 (the start of STK) are covered.
+
+**check:** `staging/skipaskra/annual_call_sign.parquet` exists for 2007-2022, and the segment table reports how many
+call-sign stretches it settles that the identity windows left ambiguous.
+
