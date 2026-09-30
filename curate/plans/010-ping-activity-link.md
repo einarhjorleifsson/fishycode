@@ -478,3 +478,20 @@ The 94,157 old Danish-seine pings (old code 5) that the new windows did not clai
   `tow_max_min` (from measured tow-length distributions, not guessed) and is applied in
   `station_window` with `win_basis = "capped"`, where it can be revised without rebuilding the
   logbook. TODO item 28.
+
+**Danish seine: "three times" and the full-day question (maintainer, 2026-09-30).** The maintainer
+remembered the old trail using the full day for Danish seine, like the jiggers, and some
+stations recording three times. Checked, and both recollections are withdrawn by the maintainer or
+not found:
+- **Not a full-day rule.** The long old windows come from the raw (uncapped) durations; the
+  curated 180-min cap is what shortens them (above).
+- **No station records three distinct times.** Raw `ws_veidi` (electronic logbook): all 75,204
+  Danish-seine rows (gid 11, 2020–2025) have `milli_timi == upphaf_timi` where present (57,619
+  rows) and 57,620 have `lok_timi`: two distinct times, start and end. The adapter already maps a
+  real three-time seine to `t1`,`t2`,`t3`, but none occurs. The old afli system gives the gear-on-bottom
+  clock time (`ibotni`/`hhmm` in `toga`) and a tow duration (`togtimi`) — again one time plus a duration.
+  Curated, Danish seine has `t2`+`t3` (afli: `t3` always derived) or no time at all (969,269 of 1.15 M).
+- **Use for mapping seine footprints (maintainer):** the slow hauling part of the operation gives the
+  positions. The recorded window only brackets the operation; the haul is found inside it by speed.
+  That is the `[s1,s2]` filter in `fishing` (Danish seine 0.25–2.9 kn) and is where plan 004's
+  behavioural window would sharpen this gear most.
