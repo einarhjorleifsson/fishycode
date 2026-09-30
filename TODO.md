@@ -446,7 +446,8 @@ up, and review the 7 segments where a physical grade and the register disagree.
 The write loop re-evaluates the whole lazy union for each of 20 years, so each year costs ~5 min whatever its size (last full build 1 h 35 m; 37 min in
 the earlier run). A fix is on branch `union-per-year-pruning` (commit `ce9ed40`, unmerged): ASTD and ASTDB read only their own hive `year` partition (partition
 = year of the ping, 0 mismatches), and STK reads its own partition **plus** the ~33 k rows that sit in a partition that is not their own year (bad timestamps).
-Not verified: `curate/checks/ping_union_equivalence.R` (on the branch) compares old and new per year (counts by provider, distinct vids, coordinate and
-time sums); its first run crashed on a vanished R temp folder, the second was stopped. Merge only once it reports identical for 2007, 2014 and 2017.
+Verified 2026-09-30 on the same key: `curate/checks/ping_union_equivalence.R` (on the branch) reports **identical** for 2007, 2014 and 2017 (row counts by provider,
+distinct vids, coordinate, time and vid sums) - old 199 / 192 / 230 s per year, new 3.0 / 4.9 / 13.5 s for the query (the write and sort are extra). The STK
+off-partition rows are inside the counts. Open: merge the branch, then time one full `ais_ping_union` build.
 
-**check:** `ping_union_equivalence.R` reports identical for three years, then one full `ais_ping_union` build is well under the current 1 h 35 m.
+**check:** one full `ais_ping_union` build on the merged script is well under the current 1 h 35 m and its rows match the old build.
