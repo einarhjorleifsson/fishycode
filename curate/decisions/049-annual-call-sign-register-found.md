@@ -40,9 +40,19 @@ route above avoids all of it.
 
 ## What is open
 
-1. Land the source properly: raw matrices under `$FISHYDATA/raw/external/skipaskra/`, an adapter in `sources/skipaskra/` writing
-   `staging/skipaskra/annual_call_sign.parquet` (year, vid, cs, form). **needs: maintainer** - the copy into `$FISHYDATA`.
+1. Adapter in `sources/skipaskra/` writing `staging/skipaskra/annual_call_sign.parquet` (year, vid, cs, form). The raw copy landed
+   2026-09-30 under `$FISHYDATA/raw/external/skipaskra/` (136 MB: matrices, `data/`, `R/`, 14+ annual report PDFs incl. 2006/2007 for
+   the 2007-08 call signs, and `data-raw/mbl`; the ~1,000 vessel photos were deliberately not copied).
 2. Use it in the segment table as a registry evidence family that dates a call sign's holder by year (it would replace Hreidar's annual
    years and the placeholder MMSI windows as the time source for call-sign reuse), and feed the 21 segments above to the review.
 3. Tidy 2004-2008 so 2007-2008 are covered.
 4. The registry's current call sign (2023 onward) continues the series; its dated history only starts on 2023-12-19 (decision 047).
+
+## Rest of the `skipaskra` directory (surveyed 2026-09-30)
+
+- `data/history.rda`: dated name and usage-class history, 24,056 rows, 5,100 vids, dates to 2021-12; 3,458 vessels change class over
+  time. A candidate time source for the class-change caveat in the time-speed reading. Not yet used.
+- `data/vessels.rda` (7,111 vessels) and the siglo scrape (owner, status, built, harbour): undated snapshots; MMSI for 2,461 vessels.
+- `data-raw/mbl`: one 2026-era snapshot per vid (5,803 files, 5,823 vids); only 405 carry a call sign, 1,738 an MMSI, none dated.
+  Low value for dating; kept for completeness.
+- `reports/`: the annual PDFs, the route to 2007-08.
