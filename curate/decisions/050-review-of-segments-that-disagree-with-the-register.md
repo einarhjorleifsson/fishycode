@@ -19,8 +19,15 @@ vid from the register's. Read on evidence, not by rule:
 Two changes to the check, both bounded: the register is compared over the **core** of each run (Y1-01-01 to Y2-01-01), so a handover is
 not a disagreement; and the register breaks a W1 tie. After them: 521 segments reached, 518 agree, 3 disagree (101079, and two of 103750).
 
-Open: mid 101892's 2007-2013 stretch is 1511 in the table, but the register gives TFRA to vid 159 for 2007-2013 and to 1511 only from
-2017; W1 starts in 2015, so the early years rest on continuity. A person should place it (not changed here).
+Placed 2026-09-30: mid 101892's 2007-2013 stretch is **vid 1511**, as the table has it. The register gives TFRA to vid 159 for 2007-2013 and to
+1511 only from 2017, and W1 (from 2015) cannot reach the early years, so it was left on continuity. The mid's own positions decide it:
+1511's logbook stations match the mid in every year 2008-2015 (0.47-0.78 in 2007-2013 at month grain, 0.52-0.91 across 2007-2021) and 1511's
+landings match the mid's harbour calls at 0.78 (2008), 0.82, 0.93, 0.98, 0.97, **1.00, 1.00, 1.00** (2013-2015), 1.00 through 2018-2020 -
+hundreds of landings, every one at a port the mid visited that day. Vid 159 has no logbook or landings hit on this mid at all (it is a
+non-fishing hull, so absence alone would count for nothing; it is the 1511 match that is positive). The call sign TFRA on the mid is the
+mid's label, carried by 1511 in 2017-2021 (register) and kept on the mid throughout; it does not show that the mid sat on 159 in
+2007-2013. 2007 itself (7 of 15 stations, 1 of 6 landings) is too thin to say more than continuity. No change to the table; the
+register's dated holder of TFRA (159) is recorded here as the one register reading that the mid's own movements refute.
 
 The register's own vid is rarely wrong: its call sign equals the registry's current call sign for 98.6-100 % of vessel-years (2022:
 5 of 360 differ), which is why a doubtful row (101079) is weighed against W1 and the registry rather than trusted.
