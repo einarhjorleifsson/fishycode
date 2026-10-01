@@ -19,12 +19,13 @@
 #     tier 2  day                      the whole station date, used when a station has
 #                                      no usable time
 #   So a day window never competes with a recorded one for the same fix. What remains
-#   ambiguous STAYS ambiguous: n_sid counts the stations, and sid/tid/phase are filled
+#   ambiguous STAYS ambiguous: n_sid counts the stations, and .sid/.tid/phase are filled
 #   only when exactly one station claims the fix. There is no "primary" station.
 #   A station matched in two of its own phases (set and haul can overlap when the haul
 #   start is an estimate) counts once, with haul > tow > jig > set > day.
 #
-# KEYS. .sid and .tid are unique only within a schema, so the station is (sid, schema).
+# KEYS. .sid and .tid are unique only within a schema, so the station is (.sid, schema).
+# The output columns are .sid and .tid (bare `sid` is the species code in this project).
 #
 # fishing: TRUE when at least one matching window is a tow, haul, jig or day window and
 # the fix's speed is inside that gear's [s1, s2]. A set is never "fishing": the vessel is
@@ -71,7 +72,7 @@ ais_trail <- function(years, vids = NULL, long = FALSE, sorted = TRUE) {
 
   sql <- if (long) sprintf("
     %s
-    SELECT p.*, m.sid, m.schema, m.tid, m.gear, m.gear_class, m.phase, m.win_basis, m.events,
+    SELECT p.*, m.sid AS \".sid\", m.schema, m.tid AS \".tid\", m.gear, m.gear_class, m.phase, m.win_basis, m.events,
            CASE WHEN m.phase <> 'day' THEN epoch(p.time - m.w_start) / nullif(epoch(m.w_end - m.w_start), 0) END AS phase_frac,
            m.s1, m.s2, (m.phase <> 'set' AND p.speed BETWEEN m.s1 AND m.s2) AS fishing
     FROM m JOIN (SELECT * FROM %s WHERE true %s) p USING (vid, time)", matches, pings, vfilter)
@@ -89,9 +90,9 @@ ais_trail <- function(years, vids = NULL, long = FALSE, sorted = TRUE) {
       FROM m GROUP BY vid, time)
     SELECT p.*,
            coalesce(a.n_sid, 0) AS n_sid,
-           CASE WHEN a.n_sid = 1 THEN a.sid END AS sid,
+           CASE WHEN a.n_sid = 1 THEN a.sid END AS \".sid\",
            CASE WHEN a.n_sid = 1 THEN a.schema END AS schema,
-           CASE WHEN a.n_sid = 1 THEN a.tid END AS tid,
+           CASE WHEN a.n_sid = 1 THEN a.tid END AS \".tid\",
            CASE WHEN a.n_sid = 1 THEN a.gear END AS gear,
            CASE WHEN a.n_sid = 1 THEN a.gear_class END AS gear_class,
            CASE WHEN a.n_sid = 1 THEN a.phase END AS phase,
@@ -103,9 +104,14 @@ ais_trail <- function(years, vids = NULL, long = FALSE, sorted = TRUE) {
     %s", matches, pings, vfilter, if (sorted) "ORDER BY p.vid, p.time" else "")
 
   con <- duckdbfs::cached_connection()
-  # A year of fixes sorts past memory and DuckDB spills to disk; its default spill
-  # directory is under the R session's tempdir and is not always there.
-  spill <- file.path(tempdir(), "duckdb_spill"); dir.create(spill, showWarnings = FALSE)
-  DBI::dbExecute(con, sprintf("SET temp_directory = '%s'", spill))
+  # A year of fixes sorts past memory and DuckDB spills to disk, so the spill directory
+  # must exist. DuckDB refuses to SET temp_directory once the connection has used one
+  # (an interactive session always has), so create the current one rather than switch.
+  spill <- DBI::dbGetQuery(con, "SELECT current_setting('temp_directory') AS d")$d
+  if (!nzchar(spill)) {
+    spill <- file.path(tempdir(), "duckdb_spill")
+    DBI::dbExecute(con, sprintf("SET temp_directory = '%s'", spill))
+  }
+  dir.create(spill, recursive = TRUE, showWarnings = FALSE)
   dplyr::tbl(con, dplyr::sql(sql))
 }

@@ -27,6 +27,8 @@ website:
             href: merge.qmd
           - text: Historical back-entries
             href: afli-backentry.qmd
+      - text: AIS trail
+        href: ais_trail.qmd
       - text: Coordinates
         href: wacky-tracks_recovery.qmd
       - text: Data warnings

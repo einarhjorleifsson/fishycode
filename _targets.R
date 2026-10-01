@@ -116,6 +116,16 @@ list(
              fd_staging("aux", "eusm.fgb"))
   }, format = "file"),
 
+  # STK's own harbour code -> the standard pid (plan 011 §3.2). Seeded from where each
+  # code's `I` events fall; reviewed decisions enter through overrides/stk_hid_pid.csv.
+  tar_target(stk_hid_pid_overrides, "overrides/stk_hid_pid.csv", format = "file"),
+  tar_target(stk_hid_pid, {
+    shapes
+    stk_hid_pid_overrides
+    produces("reference/ports/stk_hid_pid.R",
+             fd_curated("reference", "stk_hid_pid.parquet"))
+  }, format = "file"),
+
   tar_target(area_h3, produces(
     "reference/geo/h3_index.R",
     fd_curated("reference", "area_h3.parquet")), format = "file"),

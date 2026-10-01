@@ -443,7 +443,7 @@ up, and review the 7 segments where a physical grade and the register disagree.
 **status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b
 
 Built: `gear_window`, `station_window`, `ais/ping_trail` (AIS + gps logger), `ais_trail()`. Open: the datacall still reads `staging/ping_union`
-and must be repointed to `ais_trail()`; the voyage-only `.tid` for fixes outside every window; the `docs/` example; 76 % of static-gear
+and must be repointed to `ais_trail()`; the voyage-only `.tid` for fixes outside every window; 76 % of static-gear
 stations are whole-day windows (item 18 is the cure); whether to store a sorted wide `ais/trail` (maintainer).
 
 **check:** `products/ices_vms_datacall/build.R` runs on `ais_trail()`, and every synthesised window carries `win_basis`.
@@ -465,4 +465,22 @@ rule the pipeline no longer applies, and it is a second copy of a table - the fa
 `gear_window.dur_max_min` from `curated/reference/gear_window.parquet` and report `implausible` stations from `fishing_sample` instead.
 
 **check:** `grep -n gear_caps docs/qc_fs_afladagbok_2025.qmd` returns nothing and the page renders.
+
+## 31. Harbour stays: fix voyage segmentation in general
+**status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md`
+
+`ais_trip.R` bridges every one-ping harbour run, so day-trip vessels merge into year-long voyages (vid 2481, 2011: 185 landings, one voyage; ≈ 20 % of
+voyages are shared by several logbook trips). The fix is a provider-independent stay rule that measures elapsed time at a harbour; STK's `I`/`U` events, erratic and dropped at the union, are one source of evidence. Plan 011
+holds the rule, the tagging and the standard harbour name; Phase 0 (lost `I` events, the `A` polygon gap) is open.
+
+**check:** vid 2481 in 2011 has ≈ 185 voyages, and `check_bookkeeping()` is clean.
+
+## 32. Harbour polygons: the native and the global harbours in one pass
+**status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §2b, §4a, §4b; `reference/ports/bootstrap_iceland_faroe.R`; `reference/ports/ports_all.R`
+
+About 25 STK harbour codes (about 197,000 `I` events) have no polygon, 57 of 157 existing hulls grow when rebuilt from the full raw trail, and the bootstrap script cannot run as committed
+(`.lat` bug, old input path). Plan 011 decides the polygons are made inside the original bootstrap, in a session of their own that takes the STK-derived and the global (`ports_all`)
+harbours together and issues the standard name and `pid` once; the voyage work (item 31) resumes afterwards. Foreign harbours are a data rule, not a hand-kept list.
+
+**check:** `curated/reference/stk_hid_pid.parquet` has no `unmatched` code with more than 1,000 `I` events, and `check_bookkeeping()` is clean.
 

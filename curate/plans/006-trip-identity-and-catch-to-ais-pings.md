@@ -115,6 +115,8 @@ symptom of a deeper gap (missing pings, not missing precision) that station-leve
 matching cannot fix either. This needs measuring before `link_trip_voyage.R`'s
 algorithm is touched — not assumed from the mechanism being more precise on paper.
 
+> **Correction (2026-10-01).** The 39.3 % is pooled over all years, including those before AIS existed. By start year `afli` links 97.5–100 % from 2008 on, so the "60.7 % unrecovered" is not a date-precision problem. See the correction at the end of plan 010.
+
 ## 5. A design disagreement between two existing documents
 
 `docs/grammar.qmd` ("The AIS location window") proposes precomputing two derived

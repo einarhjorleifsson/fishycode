@@ -1,0 +1,211 @@
+---
+title: "`ais_trail()` — pings with their trip and fishing activity"
+subtitle: "Two trips, followed fix by fix, with the answer checked independently"
+date: today
+editor: source
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(dplyr)
+library(ggplot2)
+library(here)
+# quarto renders from docs/, where here() would root (it has _quarto.yml); i_am() pins the
+# root to the repo, so this runs the same under quarto and line by line.
+i_am("docs/ais_trail.qmd")
+source(here("R/paths.R"))
+source(here("R/ais_trail.R"))
+```
+
+## What it is
+
+`ais_trail()` returns the AIS pings (and the onboard GPS logger fixes) of a vessel with the
+logbook station each one belongs to. It is a **lazy** table joined on the way out — a whole year
+takes about 9 s — so nothing is stored. Rules and numbers are in plan 010
+(`curate/plans/010-ping-activity-link.md`, §3 and §11).
+
+```r
+ais_trail(2019)                      # one row per fix, station columns attached
+ais_trail(2017:2019, vids = 1277)    # a few vessels
+ais_trail(2019, long = TRUE)         # one row per (fix, station)
+```
+
+The columns added to the pings:
+
+| column | meaning |
+|---|---|
+| n_sid | number of station windows that contain the fix (0 = none) |
+| `.sid`, `schema`, `.tid` | the station and trip — filled **only** when `n_sid == 1` |
+| `phase`, `phase_frac` | `tow`, `haul`, `set`, `jig` or `day`; how far through the window the fix is (0–1) |
+| `win_basis` | how the window was drawn (`recorded`, `derived`, `capped`, ...) |
+| `fishing` | inside a tow/haul/jig/day window **and** speed inside that gear's `[s1, s2]` |
+
+Ambiguity stays ambiguous: there is no "primary" station. A station is the pair `(.sid, schema)`,
+never `.sid` alone. (Bare `sid` is the species code.)
+
+## Following a whole trip
+
+A trip is `(.tid, schema)`. The helper below takes one, reads its station windows, and returns the
+fixes from three hours before the trip's first window to three hours after its last. The windows
+returned are **every window of the vessel that overlaps that span**, not only the trip's own: a
+neighbouring trip's tow or a `day` window can claim the fixes at the edges, and the check has to
+know about them. (Fixes outside every window carry no `.tid` yet; the span margin stands in for
+the voyage.)
+
+```{r}
+#| label: helpers
+trip_trail <- function(tid, schema, margin_h = 3) {
+  swall <- duckdbfs::open_dataset(fd_curated("logbook", "station_window.parquet"))
+  own <- swall |> filter(.tid == !!tid, schema == !!schema) |> collect()
+  vid <- unique(own$vid)
+  lo <- min(own$w_start) - margin_h * 3600
+  hi <- max(own$w_end) + margin_h * 3600
+  yrs <- unique(as.integer(format(c(lo, hi), "%Y")))
+  sw <- swall |> filter(vid == !!vid) |> collect() |>
+    filter(w_end >= lo, w_start <= hi) |> arrange(w_start)
+  tr <- ais_trail(yrs, vids = vid) |> filter(time >= !!lo, time <= !!hi) |> collect()
+  list(vid = vid, tid = tid, own = own, sw = sw, tr = tr)
+}
+
+# The check: plain R, not the join. A fix belongs to the tow-type windows holding its time, and
+# only when there is none does a `day` window claim it (the tier rule in R/ais_trail.R).
+prove <- function(x) {
+  sw <- x$sw; tr <- x$tr
+  k <- lapply(tr$time, function(t) {
+    h <- which(t >= sw$w_start & t <= sw$w_end)
+    h1 <- h[sw$phase[h] != "day"]
+    if (length(h1)) h1 else h
+  })
+  stopifnot(identical(as.integer(tr$n_sid), lengths(k)))
+  sid <- vapply(k, function(h) if (length(h) == 1) sw$.sid[h] else NA_real_, numeric(1))
+  stopifnot(identical(as.numeric(tr$.sid), sid))
+  # fishing: a non-set window among the claimants whose own [s1, s2] holds the speed
+  fish <- vapply(seq_len(nrow(tr)), function(i) {
+    h <- k[[i]]
+    any(!is.na(tr$speed[i]) & sw$phase[h] != "set" &
+          tr$speed[i] >= sw$s1[h] & tr$speed[i] <= sw$s2[h])
+  }, logical(1))
+  stopifnot(identical(tr$fishing, fish))
+  stopifnot(!any(tr$fishing & tr$n_sid == 0))
+  tibble(fixes = nrow(tr), in_a_window = sum(tr$n_sid > 0), ambiguous = sum(tr$n_sid > 1),
+         fishing = sum(tr$fishing), mismatches = 0L)
+}
+
+plot_speed <- function(x) {
+  ggplot(x$tr, aes(time, speed)) +
+    geom_rect(data = filter(x$sw, phase != "day"),
+              aes(xmin = w_start, xmax = w_end, ymin = -Inf, ymax = Inf),
+              inherit.aes = FALSE, fill = "steelblue", alpha = 0.2) +
+    geom_hline(yintercept = unique(c(x$own$s1, x$own$s2)), linetype = 3) +
+    geom_line(colour = "grey60") +
+    geom_point(aes(colour = fishing, shape = provider), size = 1.8) +
+    labs(y = "speed (kn)")
+}
+
+per_station <- function(x) {
+  x$tr |>
+    filter(n_sid == 1) |>
+    group_by(.sid, phase) |>
+    summarise(fixes = n(), gps = sum(provider == "gps"), fishing = sum(fishing),
+              median_speed = median(speed, na.rm = TRUE), .groups = "drop") |>
+    left_join(x$sw |> select(.sid, s1, s2), by = ".sid")
+}
+```
+
+`prove()` stops the page if a single fix disagrees on `n_sid`, `.sid` or `fishing`, so a clean
+render is the evidence.
+
+## Example 1: a slow trawler with a sparse logger
+
+Vessel 1787, trip `-1018639`: six recorded bottom-trawl tows on 2019-01-04.
+
+```{r}
+#| label: trip1
+x1 <- trip_trail("-1018639", "afli")
+x1$sw |> transmute(.sid, .tid, gear, phase, w_start, w_end, win_basis, s1, s2)
+x1$tr |> count(provider, name = "fixes")
+```
+
+```{r}
+#| label: fig-speed1
+#| fig-cap: "Vessel 1787, trip -1018639. Shaded bands are the tow windows; colour is `fishing`, shape is the provider."
+#| fig-height: 3.5
+plot_speed(x1)
+```
+
+```{r}
+#| label: prove1
+prove(x1)
+per_station(x1)
+```
+
+The logger gives this vessel only three fixes (it has about 2,900 for the whole of 2019; most
+vessels have a fix every 5–10 minutes). Also, `fishing` is stricter than "in a tow window": it
+needs the speed inside the gear's `[s1, s2]`, and 1787 is a slow trawler (plan 010 §11: 1.9–2.4 kn
+in tows) below the OTB lower limit of 2.62 kn. Use `n_sid == 1` for "belongs to a station" and
+`fishing` for "was towing at fishing speed".
+
+## Example 2: a typical trawler, logger and AIS together
+
+Vessel 2894, trip `-1020724`: four recorded tows on 2019-01-17, trawling at about 3.7 kn, with a
+5-minute logger.
+
+```{r}
+#| label: trip2
+x2 <- trip_trail("-1020724", "afli")
+x2$sw |> transmute(.sid, .tid, gear, phase, w_start, w_end, win_basis, s1, s2)
+x2$tr |> count(provider, name = "fixes")
+```
+
+The span reaches back to 23:00 on the 16th, so two windows that are **not** this trip's are in
+the table: the tow of the previous trip that began at 22:22, and a `day` window covering the whole
+16th (synthesised, because that station had no usable time). The `day` window takes the fixes
+after that tow ends, as the tier rule says, and `prove()` knows it.
+
+```{r}
+#| label: fig-speed2
+#| fig-cap: "Vessel 2894, trip -1020724."
+#| fig-height: 3.5
+plot_speed(x2)
+```
+
+```{r}
+#| label: prove2
+prove(x2)
+per_station(x2)
+```
+
+## When a fix belongs to more than one station
+
+Where two windows overlap, `n_sid > 1` and `.sid` is left empty. The unambiguous alternative is
+`long = TRUE`, which returns one row per (fix, station) so the analyst decides:
+
+```{r}
+#| label: long
+ais_trail(2019, vids = x1$vid, long = TRUE) |>
+  filter(time >= !!min(x1$tr$time), time <= !!max(x1$tr$time)) |>
+  count(.sid, phase, win_basis) |>
+  collect() -> long_n
+long_n
+stopifnot(sum(long_n$n) == sum(x1$tr$n_sid))   # one row per (fix, station)
+```
+
+For this trip no fix is ambiguous. To see how common it is over a whole vessel-year:
+
+```{r}
+#| label: ambiguity
+ais_trail(2019, vids = x1$vid, sorted = FALSE) |>
+  count(n_sid, name = "fixes") |>
+  collect() |>
+  arrange(n_sid)
+```
+
+## Where the numbers come from
+
+- `curated/ais/ping_trail/year=*` — AIS (stk, astd, astdB, emodnet) and the GPS logger, unique on `(vid, time)`, speed in knots.
+- `curated/logbook/station_window.parquet` — one row per station window, with `win_basis` saying how it was drawn.
+- This page and the code behind it were written with AI assistance (Claude); the checks above, not the code's say-so, establish the result.

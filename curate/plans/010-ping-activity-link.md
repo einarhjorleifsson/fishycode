@@ -84,12 +84,12 @@ Do **not** add columns to the 44 GB ping sweep. Build two small tables and one f
 |---|---|---|
 | `logbook/station_window` | one row per station **and phase** (tow, set, haul, day) | `vid`, `.tid`, `.sid`, `gear`, `gear_class`, `w_start`, `w_end`, `win_basis`, `phase`, raw `t1`..`t4`, `s1`, `s2` |
 | `ais/ping_trail` | one row per **fix** (AIS ∪ gps), partitioned by `year`, sorted `vid, time`, unique on `(vid,time)` | the ping columns + `provider`, `pos_basis`, `speed_basis`, `speed_gps`, `dt_sec`, `.tid`, `trip`; speed in knots throughout |
-| `ais/ping_activity` | one row per **(fix, station)** match, same partitioning | fix key, `.sid`, `phase`, `phase_frac`, `win_basis`, `win_speed_ok`, `n_sid` |
+| `ais/ping_activity` | one row per **(fix, station)** match, same partitioning | fix key, `.sid`, `phase`, `phase_frac`, `win_basis`, `win_speed_ok`, n_sid |
 | `ais_trail(years, vids)` | function | `ping_trail ⟕ ping_activity ⟕ station_window`, returns the old trail's wide shape |
 
 Why a bridge and not wide columns: several stations can own the same ping (static gear's
 full-day windows overlap; a vessel can set on one station and haul another). One row per match
-keeps that visible, and `n_sid` says how ambiguous a ping is. A wide `trail` parquet is then a *view
+keeps that visible, and n_sid says how ambiguous a ping is. A wide `trail` parquet is then a *view
 materialised from these*, optional, and never the source of truth.
 
 Everything enters `curated/` through `write_curated()` (AGENTS.md; TODO 12).
@@ -145,12 +145,12 @@ destroy the original); `win_basis` says which rule fired.
 1. Match **directly** on `vid` and `time between w_start and w_end`, year by year (DuckDB
    range/IEJoin on the year's partitions only — decision 055 is the precedent for pruning).
 2. `.tid` comes from the station, not from `trip_voyage`. That makes the ping↔trip link a
-   by-product of station evidence and sidesteps the 39 % `afli` trip-level link rate
-   (006 §4), at the price of covering only pings inside some window.
+   by-product of station evidence and sidesteps the trip-level link rate
+   (006 §4; the 39 % there is a denominator artefact, see the note below it), at the price of covering only pings inside some window.
 3. Pings outside every window but inside an AIS voyage that `trip_voyage` links to a `.tid` get
    that `.tid` with `.sid` NULL (`win_basis = "trip_only"`): steaming, not fishing.
 4. **Ambiguity stays ambiguous (maintainer, Q3; the old trail agrees, ~1 % of station pings).**
-   `ping_activity` keeps every (fix, station) match; `n_sid` counts them; there is **no
+   `ping_activity` keeps every (fix, station) match; n_sid counts them; there is **no
    `primary` flag**. A wide `ais_trail()` row gets a `.sid` only when `n_sid = 1`, otherwise
    `.sid` is NA and `n_sid > 1` — the analyst chooses, knowing the choice exists.
 5. Harbour (`.cid`/port tag) and `whack` flags stay where `ais_ping_clean/tag` put them and are
@@ -234,7 +234,7 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
    gps included from the first build, directly after the interpolation. The `(vid,time)` dedupe and
    the speed test live **here**, not in `ais_ping_clean` as §9 proposed: the 50 GB cleaning chain
    would have had to be rerun for 0.03 % of rows. `ais/ping_activity` was **not** built (§4); see §11.
-4. **`ais_trail()`** in `R/` — **done 2026-09-30** (`R/ais_trail.R`); the line in `docs/` is still to do.
+4. **`ais_trail()`** in `R/` — **done 2026-09-30** (`R/ais_trail.R`); `docs/ais_trail.qmd` (two trips: vid 1787 on 2019-01-04, a slow trawler with a sparse logger, and vid 2894 on 2019-01-17, typical, with the tier rule at work; both checked against a plain-R recomputation) **done 2026-10-01**.
 5. **Validate** against the 2019 old trail: fishing-ping counts per vid-month, and the share of
    old-trail `.sid` matches reproduced. Reading `/Volumes/fishydata` needs the terminal tool,
    never a recursive scan. Also conservation: no station's window assigned to a different vid.
@@ -422,7 +422,7 @@ out. One whole year takes ≈ 9 s unsorted. `sorted = TRUE` (default) sorts by `
 right for vessels and gears and runs a busy year out of memory if you aggregate the whole year —
 pass `sorted = FALSE` for that (DuckDB does not keep the order through the join: 3.2 M violations
 in 2019). Tier rule: a `day` window claims only fixes no recorded, derived, capped or set/haul window
-claims; ambiguity stays (`n_sid`, and `sid`/`tid`/`phase`/`phase_frac`/`win_basis` filled only when
+claims; ambiguity stays (n_sid, and `.sid`/`.tid`/`phase`/`phase_frac`/`win_basis` filled only when
 one station claims the fix); `fishing` = a tow, haul, jig or day window whose own `[s1,s2]` holds the speed.
 
 **2019 result:** 11,564,744 of 52.6 M fixes are in a window: 11,269,374 uniquely, 295,370 (2.6 %)
@@ -439,7 +439,7 @@ ambiguous; 8.16 M `fishing`.
 - Overall: 8.16 M new vs 7.76 M old fishing fixes, 6.07 M in common.
 
 **Not done:** `ais/ping_activity` (the live join was fast enough, §4); the `.tid` for fixes in an
-AIS voyage but no window (plan §3.3, via `link_trip_voyage`); the `docs/` line; `tar_make()` has now
+AIS voyage but no window (plan §3.3, via `link_trip_voyage`); (the `docs/` example is done, 2026-10-01); `tar_make()` has now
 run all of these targets (2026-09-30), so the files carry clean provenance (commit `b68bdea`). Whether to also store a sorted
 wide `ais/trail` (≈ 2 GB a year) is a decision for the maintainer.
 
@@ -539,3 +539,7 @@ nets 21 d, Nephrops 720, shrimp 1440. Nothing in the raw durations is applied ye
 `dur_max_min` per gear in `gear_window`, `R/duration_limit.R` shared by both adapters) and the logbook
 was rebuilt from the raw data. Danish seine: 99th-percentile tow 180 -> 533 min, and the old-trail
 gap for 2019 (old code 5) fell from 78,256 unclaimed pings / 550 windows to 5,913 / 21.
+
+> **Naming (2026-10-01).** `ais_trail()` outputs `.sid` and `.tid`: bare `sid` is the species code. `n_sid` (count of stations) keeps its name for now; the same ambiguity applies and it is to be revisited (`n_station` was proposed). The built `ping_trail` files still carry `sid_gps` and `n_sid_gps`; renaming them needs a rebuild and was not done.
+
+> **Correction (2026-10-01).** The 39.3 % `afli` trip-to-voyage link rate quoted in plan 006 §4 is all years pooled. `afli` runs back before AIS existed (2005–06: 0 %, 2007: 52.9 %), and those trips can never link. By start year the rate is **97.5–100 % from 2008 to 2024** (about 99 % in most years), the same as `fs_afladagbok` (97.7 %). Date-only `T1`/`T2` (100 % of `afli` trips) does not stop the link. The voyage-only `.tid` (§3.3) is therefore feasible for the AIS era; its real wrinkle is several `.tid` sharing one voyage (808,744 links onto 720,330 voyages). Measured from `link/trip_voyage.parquet` against `logbook/trip.parquet`, 2026-10-01.
