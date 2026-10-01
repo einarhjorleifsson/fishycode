@@ -293,7 +293,7 @@ list(
   }, format = "file"),
 
   tar_target(ais_trip, {
-    ais_ping_clean
+    ais_ping_clean; harbour_stay
     produces("curate/ais_trip.R",
              fd_curated("ais", "ping"),
              fd_curated("ais", "trip.parquet"))
@@ -468,6 +468,13 @@ list(
     harbour_stay; logbook; landing
     produces("curate/checks/harbour_stay_logbook.R",
              fd_curated("check", "harbour_stay_logbook.parquet"))
+  }, format = "file"),
+
+  # The residue of the shared-voyage problem after the stays, before vs after (plan 011 §6).
+  tar_target(check_voyage_sharing, {
+    trip_voyage; ais_trip; logbook
+    produces("curate/checks/voyage_sharing.R",
+             fd_curated("check", "voyage_sharing.parquet"))
   }, format = "file"),
 
   tar_target(check_ais_key_reused_callsign, {

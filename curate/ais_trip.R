@@ -1,8 +1,9 @@
 # ais_trip.R — L4a of the vessel-trail model: harbour-to-harbour voyages.
 #
 # Input:  staging/ais/ping_clean   (whacky positions already removed - L2)
+#         curated/ais/harbour_stay.parquet   (stays: elapsed time at a harbour, plan 011 Phase 3)
 # Output: curated/ais/trip.parquet (vid, year, trip, T1, T2, hid1, hid2, n_pings)
-#         curated/ais/ping         (clean pings carrying their trip number)
+#         curated/ais/ping         (clean pings carrying their trip number, and `stay_pid`)
 #
 # Trip key is (vid, year, trip), numbered 1..n per vessel per year; a voyage
 # spanning New Year is split at the boundary.
@@ -11,11 +12,20 @@
 # T1/T2 and an event within it is t1..t4. See curate/decisions/010-time-variable-naming.md
 # before "fixing" this to lowercase.
 #
+# A voyage is the sea between two stays (plan 011, decision 061). Until 2026-10-01 a harbour stay was the
+# span of the pings in a run of polygon-tagged pings, so one `I` ping followed by silence had span 0 and was
+# bridged away, and day-trip vessels merged into year-long "voyages" (vid 2481, 2011: 185 landings, one voyage).
+# Now the harbour is the stay, measured in elapsed time, from every provider (curate/harbour_stay.R).
+#
 # Per year:
-#   1. Contiguous harbour/sea runs via a cumsum over the pid tag
-#   2. Harbour stays shorter than MIN_HARBOUR_H bridged into the surrounding trip
-#   3. Sea runs numbered per vessel, with departure/arrival harbours attached
-#   4. Trip ids joined back to the pings by time range
+#   1. Each ping gets the harbour of the stay it falls in (`stay_pid`), NA at sea; contiguous stay/sea runs
+#      via a cumsum over that
+#   2. Sea runs numbered per vessel, with departure/arrival harbours attached (the stays either side)
+#   3. Trip ids joined back to the pings by time range
+# `pid`, the polygon tag from ping_tagged, is kept as it was; a ping inside a polygon but not in a stay (a
+# visit shorter than the stay minimum, a pass-through) is part of the voyage, as the old bridging made it.
+# Event-only stays (evidence is only `event_pair`) are left out: 21 % of them have a landing against 79 %
+# where ping and event evidence agree (decision 060).
 #
 # Whacky-point removal used to happen here. It is now its own stage in
 # curate/ais_ping_clean.R, so the merged ping table is clean in its own right
@@ -28,17 +38,23 @@ library(tidyverse)
 
 # -- Parameters ----------------------------------------------------------------
 
-MIN_HARBOUR_H <-  4   # harbour dwell < this (hours) → bridged into trip
 MIN_PINGS     <- 10   # trips with fewer pings than this are dropped
+# The stay minimum (4 h) is a parameter of curate/harbour_stay.R, not of this script.
+EXCLUDE_EVENT_ONLY <- TRUE
 
-# Set VIDS for testing; NULL = all vessels
-# VIDS <- c(2765L, 1234L, 500L, 3001L, 2100L)
-VIDS <- NULL
+# Set AIS_TRIP_VIDS (comma-separated) for testing: the run then writes to staging/ais/ping_test and
+# trip_test.parquet, never to curated/. NULL = all vessels.
+VIDS <- if (nzchar(Sys.getenv("AIS_TRIP_VIDS"))) as.integer(strsplit(Sys.getenv("AIS_TRIP_VIDS"), ",")[[1]]) else NULL
 
 # -- Data ----------------------------------------------------------------------
 
 ais   <- open_dataset(fd_staging("ais", "ping_clean"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
+
+stays <- duckdbfs::open_dataset(fd_curated("ais", "harbour_stay.parquet")) |> collect() |>
+  filter(!EXCLUDE_EVENT_ONLY | evidence != "event_pair") |>
+  transmute(vid, stay_pid = pid, S_in = T_in, S_out = T_out) |>
+  arrange(vid, S_in)
 
 # -- Main loop -----------------------------------------------------------------
 
@@ -61,7 +77,7 @@ for (yr in years) {
   # survive the large years: 2017 alone carries 69 M pings, nine times the size
   # of the year that already reached 6.2 GB resident.
   #
-  # Every step below groups by vid - run detection, the harbour bridge, and trip
+  # Every step below groups by vid - stay lookup, run detection and trip
   # numbering - so a vessel's trips depend on nothing outside that vessel.
   # Batching whole vessels is therefore EXACTLY equivalent to processing the year
   # at once, not an approximation. Batching by time would NOT be: a run that
@@ -76,55 +92,38 @@ for (yr in years) {
 
   for (i in seq_along(groups)) {
     g <- groups[[i]]
-    # -- 1. RLE run detection ---------------------------------------------------
     # Whacky-point removal is no longer done here - it is its own stage now, in
     # curate/ais_ping_clean.R (L2), so staging/ais/ping_clean is already clean.
     clean <- base |> filter(vid %in% g) |> collect()
 
+    # -- 1. Harbour of each ping = the stay it falls in --------------------------
+    # a ping inside two overlapping stays (two harbours) takes the earlier one
+    st_g  <- stays |> filter(vid %in% g)
+    clean <- clean |>
+      left_join(st_g, by = join_by(vid, between(time, S_in, S_out)), multiple = "first") |>
+      select(-S_in, -S_out)
+
     runs <- clean |>
-      mutate(in_harbour = !is.na(pid)) |>
+      mutate(in_harbour = !is.na(stay_pid)) |>
       arrange(vid, time) |>
       group_by(vid) |>
       mutate(
-        new_run = is.na(lag(in_harbour)) | in_harbour != lag(in_harbour),
+        new_run = is.na(lag(in_harbour)) | in_harbour != lag(in_harbour) |
+                  (in_harbour & stay_pid != lag(stay_pid)),
         run_id  = cumsum(as.integer(new_run))
       ) |>
       group_by(vid, run_id) |>
       summarise(
         in_harbour = max(in_harbour),
-        pid        = max(pid),
+        pid        = first(stay_pid[!is.na(stay_pid)]),
         T1         = min(time),
         T2         = max(time),
         n_pings    = n(),
         .groups    = "drop"
       ) |>
-      mutate(dur_hours = as.numeric(T2 - T1, units = "hours"))
-
-    # -- 3. Bridge short harbour stays (in-memory dplyr) -----------------------
-    runs <- runs |>
-      arrange(vid, T1) |>
-      group_by(vid) |>
-      mutate(
-        bridge = in_harbour &
-                 dur_hours < MIN_HARBOUR_H &
-                 !lag(in_harbour,  default = TRUE) &
-                 !lead(in_harbour, default = TRUE),
-        state2       = if_else(bridge, FALSE, in_harbour),
-        state_change = state2 != lag(state2, default = !first(state2)),
-        run_id2      = cumsum(state_change)
-      ) |>
-      group_by(vid, run_id2) |>
-      summarise(
-        in_harbour = first(state2),
-        pid        = first(pid[!is.na(pid)]),
-        T1         = min(T1),
-        T2         = max(T2),
-        n_pings    = sum(n_pings),
-        .groups    = "drop"
-      ) |>
       arrange(vid, T1)
 
-    # -- 4. Number trips; attach departure / arrival harbour codes -------------
+    # -- 2. Number trips; attach departure / arrival harbour codes -------------
     trips_yr_b <- runs |>
       group_by(vid) |>
       mutate(
@@ -137,7 +136,7 @@ for (yr in years) {
       select(vid, year, trip, T1, T2, hid1, hid2, n_pings) |>
       filter(n_pings >= MIN_PINGS)
 
-    # -- 5. Join trip IDs back to clean pings; write parquet -------------------
+    # -- 3. Join trip IDs back to clean pings; write parquet -------------------
     # A write of trips_yr to a tempfile stood here and was unlinked four lines
     # later without ever being read. Removed: it was dead, and it registered a
     # frame into the cached duckdb connection on every year of the loop.
