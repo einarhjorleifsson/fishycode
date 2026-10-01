@@ -42,7 +42,7 @@ sf::sf_use_s2(FALSE)
 # -- Parameters ----------------------------------------------------------------
 
 G_H        <- 4      # a stay is at least this many hours (the current MIN_HARBOUR_H)
-R_M        <- 2000   # a ping this close to a polygon counts as at that harbour (Phase 0: 96 % of gap ends)
+R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # a ping this close to a polygon counts as at that harbour (Phase 0: 96 % of gap ends)
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # first year whose events are used
 
 con <- duckdbfs::cached_connection()

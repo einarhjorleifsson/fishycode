@@ -27,11 +27,29 @@ every year because the general rules need no event.
   harbour. The 2.8 pp are neighbouring harbours: landings at `IS-NJA` (Njarðvík) sit in stays at `IS-KEL`
   (Keflavík) (9,526 uncovered `IS-NJA` landings, 53 % of its landings), landings at `IS-REY` in stays at `IS-SNA`/`IS-KOV`
   (Kópavogur, Viðey, Gufunes became their own harbours in decision 058). **The link to the logbook must allow
-  neighbouring harbours; a landing's `pid` is not the stay's `pid`.** `IS-HOR` (Hornafjörður): 3,165 landing
-  dates, 14 % of its landings, have no stay at all (probably under 4 h); not examined.
+  neighbouring harbours; a landing's `pid` is not the stay's `pid`.** `IS-HOR` (Hornafjörður) had
+  3,165 landing dates, 14 % of its landings, with no stay: **not a polygon problem, a radius problem** (follow-up
+  below).
 - **Events:** in 2019 they add 1.7 % more stays, and the ping and event boundaries agree (median 0 s at the start,
   72 s at the end). 2017+ precision (share of stays with a landing): `both` 79 %, `ping only` 71 %, `event only`
   45 % (11,128 stays, 2 % of the total). Events corroborate; as a source of new stays they are weak.
+
+## Follow-up: Hornafjörður, event-only stays, and the radius
+
+- **Hornafjörður:** the polygon holds 100 % of its `I` events (code `HFN`). Vessels leave through a long channel
+  and the first ping after the silence is farther out: `U` distance from the polygon median 181 m, p90 3.4 km.
+  The 2 km radius misses those gap ends. Rerun with `STAY_R_M=5000` (all years, 2008–2025): `IS-HOR` landings
+  covered 86.0 → 94.1 %, all landings 92.5 → 93.1 % (same pid), 14,790 more stays, only 15 % of them at
+  `IS-HOR` (then Mjóifjörður 1,238, Ólafsvík 1,216, Siglufjörður 556): one global radius is wrong both ways,
+  hence the per-harbour `r_m` of plan §3.6, not yet built. The default stays 2 km.
+- **Event-only stays** (13,381 in 2017–2025: an `I`→`U` pair ≥ 4 h with no ping-rule stay at that harbour).
+  By what the pings do between the two events: silent, the two pings 2–5 km apart, 3,398 stays, **81 % with a
+  landing**, 2,701 of them `IS-HOR` (the radius case above, so these are real stays); silent within 2 km, 2,211,
+  7 % with a landing (the pings sit under another harbour's tag: `IS-REY` next to `IS-SNA`, `IS-NJA`/`IS-KEL`);
+  the vessel left beyond 5 km, 2,350, 39 % with a landing, median 48 h (a missing `U`, the pair spans a trip);
+  pings stay within 5 km, 5,422, 22 % with a landing, `IS-NJA` 2,186 (the flicker harbour). So event-only
+  is a mixture: real where the radius is too small, false where an event is missing or the harbour flickers.
+  Filtering on `evidence` alone cannot separate them; fixing the radius first removes the best part.
 
 ## Not decided
 
