@@ -989,6 +989,152 @@ tables:
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+  - name: check_stk_event
+    source:
+      parquet: ../../fishydata/curated/check/stk_event.parquet
+    description: >
+      One row per STK harbour event ping (`I` in / `U` out), 2007-2026, with tags that say which events to
+      distrust before a stay is built from them (plan 011 Phase 2, decision 059). Collapsed from the
+      source rows, because STK sends most `U` events twice. A check: it flags and corrects nothing, the
+      original `io`, `hid` and position are kept beside the tags, and nothing reads it yet. Tags: TRUE = a
+      defect was found, NA = could not be judged, `io_ok` = none fired. Built by
+      `curate/checks/stk_event.R`, whose header is the long form of these definitions.
+    columns:
+      - name: vid
+        type: number
+        description: >
+          Vessel registration number the STK mobile-id was keyed to (`vessel_ais_key`).
+      - name: time
+        type: timestamp
+        description: >
+          Time of the event ping (UTC). With `vid` and `io` it is the key: one row per ping, however many
+          source rows STK sent.
+      - name: io
+        type: string
+        description: >
+          `I` = vessel reported into a harbour, `U` = reported out. As recorded; never changed.
+      - name: year
+        type: number
+        description: >
+          Calendar year of `time`. A few stray rows fall outside 2007-2026 (clock errors in the receiver).
+      - name: hid
+        type: string
+        description: >
+          STK's own alphabetic harbour code (`AST`, `OFS`, `THO`, ...), a different namespace from the
+          logbook's numeric `hid`. NA when the ping carried no code, or two different codes
+          (`hid_conflict`).
+      - name: hid_all
+        type: string
+        description: >
+          Every distinct code the ping carried, joined with `|`; shows both codes when `hid_conflict`.
+      - name: hid_conflict
+        type: boolean
+        description: >
+          The same ping carried two different codes. `hid` is then NA; no code is chosen.
+      - name: n_rows
+        type: number
+        description: >
+          How many source rows in `staging/ais/stk` were merged into this event. STK sends most `U` events
+          twice, once with `hid` and once without (mean 1.75 for `U`, 1.04 for `I`); see
+          `curate/corrections/stk_event_duplicate_rows.yml`.
+      - name: n_pos
+        type: number
+        description: >
+          Distinct (lon, lat) among the merged rows; 1 except in 123 `U` and 148 `I` pings. `lon`/`lat`
+          are then the minimum of each.
+      - name: lon
+        type: number
+        description: >
+          Longitude of the event ping, as recorded.
+      - name: lat
+        type: number
+        description: >
+          Latitude of the event ping, as recorded.
+      - name: hid_pid
+        type: string
+        description: >
+          Standard harbour key (`pid`) the code names, from `reference_stk_hid_pid` incl. reviewed
+          overrides. For codes that cannot name a harbour (`resolve = position`: THH, THO) it is the
+          polygon the event itself lies in. NA for `NONE` and unmatched codes.
+      - name: resolve
+        type: string
+        description: >
+          `code` = `hid_pid` follows from the code; `position` = the code is ambiguous and `hid_pid` is
+          taken from the event's position. NA when `hid` is NA or the code is not in the crosswalk.
+      - name: hid_status
+        type: string
+        description: >
+          The crosswalk row's `status` for `hid` (`auto`, `override`, `review`, `unmatched`, ...): how far
+          `hid_pid` can be trusted.
+      - name: pid_pos
+        type: string
+        description: >
+          The polygon the event lies in: `hid_pid` if it lies in that one, else the first other polygon,
+          else NA.
+      - name: io_pos
+        type: string
+        description: >
+          Event position against the polygon of `hid_pid`: `own` (inside it), `other_harbour` (inside a
+          different polygon), `outside` (inside none); `no_hid` / `no_pid` where there is no harbour to
+          compare with. Only an `I` is judged by it: a `U` is sent after the vessel has left, so most `U`
+          are `outside` and that is not a defect. Polygons are the current (decision 058) set, not the
+          ones tagging the pings.
+      - name: pos_dist_m
+        type: number
+        description: >
+          Distance in metres from the event to the polygon of `hid_pid`; 0 when inside, NA when there is
+          no `hid_pid`. Lets a reader apply a tolerance instead of the strict inside/outside of `io_pos`.
+      - name: io_dup
+        type: boolean
+        description: >
+          TRUE when the vessel's previous event has the same `io` (`I` after `I`, `U` after `U`). Flags a
+          missed event between them, or a flapping flag.
+      - name: io_short
+        type: boolean
+        description: >
+          TRUE on both rows of an `I` then `U` at the same `hid` less than 60 s apart: a flicker, not a
+          stay.
+      - name: in_clean
+        type: boolean
+        description: >
+          Whether `staging/ais/ping_clean` kept this ping. FALSE = the whack filter dropped it; the event
+          cannot be used on the cleaned track, but is still tagged.
+      - name: gap_prev_h
+        type: number
+        description: >
+          Hours back to the nearest retained non-event ping (the previous neighbour of the jump test).
+      - name: gap_next_h
+        type: number
+        description: >
+          Hours forward to the nearest retained non-event ping. A long gap makes any position plausible,
+          so `io_jump = FALSE` means little when either gap is long.
+      - name: v_prev_kn
+        type: number
+        description: >
+          Implied speed in knots from the previous neighbour to the event (great circle over elapsed time,
+          as `whack_fwdbwd`).
+      - name: v_next_kn
+        type: number
+        description: >
+          Implied speed in knots from the event to the next neighbour.
+      - name: v_span_kn
+        type: number
+        description: >
+          Implied speed in knots from the previous neighbour straight to the next one; whether the two
+          neighbours agree with each other.
+      - name: io_jump
+        type: boolean
+        description: >
+          TRUE when the event is inconsistent with BOTH cleaned-track neighbours (`v_prev_kn` and
+          `v_next_kn` above 25 kn) while the neighbours agree with each other (`v_span_kn` at most 25 kn).
+          If the neighbours disagree the fault is theirs and the event is not blamed. NA when a neighbour
+          is missing. Neighbours are retained pings that are not themselves events.
+      - name: io_ok
+        type: boolean
+        description: >
+          No tag fired: not `bad_pos` (an `I` that is `other_harbour` or `outside`, or a `U` that is
+          `other_harbour`), not `io_dup`, not `io_short`, `io_jump` not TRUE. Events that could not be
+          judged (`no_hid`, `no_pid`, `io_jump` NA) count as ok.
   - name: landing_catch
     source:
       parquet: ../../fishydata/curated/landing/catch.parquet
