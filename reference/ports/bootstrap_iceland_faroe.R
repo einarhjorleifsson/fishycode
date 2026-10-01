@@ -17,23 +17,29 @@
 # The committed ports_iceland_faroe.gpkg is the frozen artifact. Corrections are
 # reviewed edits to it, recorded; this script is kept as provenance and as the
 # means to bootstrap again from scratch if that is ever necessary.
-# (Its input, data-raw/ais/stk/stk_trail, is not in this repo.)
+# Its input is raw/ais/stk/trail (the full raw STK trail, all years). Re-run on
+# 2026-10-01 for the harbour/port session (plan 011 §4b); see below for what the
+# re-run does NOT do: it never overwrites the committed raw artifact.
 #  The ports_table is generated from the stk trail harbour data where io == "I"
 #  This table is joined with the ports_kvoti table via port name to generate a
 #  link with the numerical harbour value (hid) found in the logbooks and landings
 #  tables.
 #  Inputs:
-#    trail_stk (database) where values are in io
+#    raw/ais/stk/trail (hive-partitioned parquet) where values are in io
 #    raw/ports/ports_kvoti.parquet - from dump/oracle/ports_kvoti.R
 #  Outputs:
-#    raw/ports/ports_iceland_faroe.gpkg - harbour polygons; corrected into
-#      staging/ by curate/corrections/ports_iceland.R, which ports_all.R reads
+#    raw/ports/ports_iceland_faroe_rebuild.gpkg - candidate harbour polygons.
+#      The committed raw/ports/ports_iceland_faroe.gpkg (corrected into staging/
+#      by curate/corrections/ports_iceland.R, which ports_all.R reads) is NOT
+#      overwritten: promoting a rebuild is a decision, taken after the diff.
 #
 # Comments:
 #
 library(sf)
 library(tidyverse)
 library(nanoparquet)
+library(duckdbfs)
+source(here::here("R", "paths.R"))
 
 
 # Icelandic and Faroe ports ----------------------------------------------------
@@ -213,9 +219,9 @@ ports_table <-
           # added
           'IS-VIK', 'Vík', 'no',
           'IS-HLL', 'Hellnar', 'no',     # Hellnar
-          'IS-HLS', 'Hellissandur', 'no',     # Hellisandur
+          # Hellissandur (41) and Hnífsdalur (71) deliberately absent: processing
+          # sites, not berths (decision 004, dropped 2026-09-21).
           'IS-ALV', 'Alviðruvör', 'no',    # Alviðruvör, Núpur
-          'IS-HDL', 'Hnífsdalur', 'no',     # Hnífsdalur
           'IS-OGV', 'Ögurvík', 'no')
 ports_table |> count(port) |> filter(n > 1) |> knitr::kable(caption = "Expect none")
 
@@ -252,23 +258,23 @@ ports_add <-
           #NA, 'Latrar', 66.389450, -23.039549) |>  #
   st_as_sf(coords = c("lon","lat"),
            crs = 4326) |>
-  # EPSG:3857 is a metre only at the equator - its scale factor is sec(lat) -
-  # so st_buffer(500) here produced 500*cos(lat) = 213 m on the ground in
-  # Iceland, not 500 m. Dividing by cos(lat) cancels the scale factor.
-  st_transform(crs = 3857) |>
-  st_buffer(dist = 500 / cos(.lat * pi / 180)) |>
+  # EPSG:3857 is a metre only at the equator, so a 500 buffer there gave 213 m on
+  # the ground. EPSG:3057 is metres over Iceland: the buffer is exact, and it is
+  # the same construction curate/corrections/ports_iceland.R step 2 applies, so
+  # on a rebuild that step is a no-op.
+  st_transform(crs = 3057) |>
+  st_buffer(dist = 500) |>
   st_transform(crs = 4326) |>
-  select(-port, -.lat)
+  select(-port)
 
 # Besides standardization and some correction code here we may in some cases
 # split up the io="I" points to generate two polygons for some harbours. These
 # will be merged into a multipolygon downstream, so we end up with each pid
 # being unique
 ports <-
-  open_dataset("data-raw/ais/stk/stk_trail") |>
-  filter(!is.na(hid)) %>%
-  collect(n = Inf) |>
-  filter(io == "I") %>%
+  open_dataset(fd_raw("ais", "stk", "trail")) |>
+  filter(!is.na(hid), io == "I") |>
+  collect() |>
   select(stk = hid, lon, lat) |>
   mutate(lon = round(lon, 4),
          lat = round(lat, 4)) |>
@@ -278,11 +284,11 @@ ports <-
   filter(!(stk == "THH" & lat > 65)) |>
   filter(!(stk == "THO" & lat < 65)) |>
   filter(!(stk == "SEY" & lon < -20)) |>
-  filter(!(stk == "FLA" & lon < 65.963447)) |>
+  # Flateyri is north of 65.96; the committed script tested lon here, which is
+  # always true for a negative longitude and would drop every FLA event.
+  filter(!(stk == "FLA" & lat < 65.963447)) |>
   filter(!(stk == "RES" & lat < 65)) |>
-  filter(!(stk == "KRS" & lat < 64)) |>
   filter(!(stk == "HUS" & lon > -16)) |>
-  filter(!(stk == "FA" & lat < 64.872063)) |>
   filter(!(stk == "DRA" & lat > 65.866120)) |>
   filter(!(stk == "HVF" & lon > -21.416204)) |>
   filter(!(stk == "KRS" & lat < 65.699448)) |>
@@ -408,7 +414,7 @@ ports |> st_drop_geometry() |> count(port) |> filter(n > 1) |> knitr::kable(capt
 
 
 ports |>
-  st_write("ports_iceland_faroe.gpkg", append = FALSE)
+  st_write(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg"), delete_dsn = TRUE)
 
 
 
