@@ -3,6 +3,7 @@
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
 #         curated/check/stk_event.parquet   (tagged STK I/U events; used from EVENT_FROM on)
+#         curated/reference/harbour_class.parquet   (class per harbour and year, TODO 33; sets the minimum stay)
 # Output: curated/ais/harbour_stay.parquet  one row per stay: vid, pid, T_in, T_out, ...
 #
 # Plan 011 §3.0, §3.4, Phase 3. `ais_trip.R` measures a harbour stay as the span of the pings in a
@@ -31,6 +32,9 @@
 # tag_then_gap > tag_span > gap_near_harbour); `evidence` lists all of them. Where a stay has both ping
 # and event evidence the two time ranges are kept (`*_ping`, `*_ev`) so their agreement can be read.
 #
+# The minimum stay G is per harbour and year: G_LANDING at a harbour whose class that year is `landing`
+# (harbour_class.R), G_H everywhere else. G_LANDING defaults to G_H, i.e. one minimum for all (decision 062/063).
+#
 # A stay's year is the year of T_in. A year's pings are padded with the vessel's last ping of the year
 # before and first ping of the year after, so a gap over New Year is seen; a stay that ends in the next
 # year's first ping is cut there, not extended (`year_edge`).
@@ -47,6 +51,7 @@ sf::sf_use_s2(FALSE)
 
 G_H        <- as.numeric(Sys.getenv("STAY_G_H", "4"))   # a stay is at least this many hours (the old MIN_HARBOUR_H; test hook, decision 062)
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
+G_LANDING  <- as.numeric(Sys.getenv("STAY_G_LANDING", as.character(G_H)))  # minimum stay at a harbour of class `landing` that year
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # first year whose events are used
 
@@ -77,6 +82,8 @@ DBI::dbWriteTable(con, "harb_wkt", tibble(pid = P$pid,
 x("CREATE OR REPLACE TEMP TABLE harb AS
    SELECT pid, ST_GeomFromText(poly) AS g, ST_GeomFromText(near_in) AS gi, ST_GeomFromText(near_out) AS go FROM harb_wkt")
 
+cls <- nanoparquet::read_parquet(fd_curated("reference", "harbour_class.parquet")) |> as_tibble() |> select(pid, year, class)
+
 # -- One year ------------------------------------------------------------------------
 
 stay_year <- function(yr) {
@@ -106,6 +113,12 @@ stay_year <- function(yr) {
             arg_min(near_in, (CASE WHEN near_in THEN 0 ELSE 10 END) + d) AS near_in
      FROM c GROUP BY vid, rn")
 
+  # minimum stay per harbour this year
+  DBI::dbWriteTable(con, "hg_in", cls |> filter(year == yr) |>
+                      transmute(pid, g_h = if_else(class == "landing", G_LANDING, G_H)),
+                    overwrite = TRUE, temporary = TRUE)
+  x("CREATE OR REPLACE TEMP TABLE hg AS SELECT * FROM hg_in")
+
   x(glue::glue("
     CREATE OR REPLACE TEMP TABLE runs AS
     SELECT vid, h, min(rn) AS s, max(rn) AS e, min(time) AS t_s, max(time) AS t_e
@@ -121,9 +134,11 @@ stay_year <- function(yr) {
     seeds AS (
       SELECT vid, h, rn AS s, nrn AS e, time AS t_s, nt AS t_e,
              CASE WHEN inside OR nin THEN 'tag_then_gap' ELSE 'gap_near_harbour' END AS rule
-      FROM a WHERE nrn = rn + 1 AND nh = h AND near_in AND epoch(nt - time) >= {G_H} * 3600
+      FROM a LEFT JOIN hg ON hg.pid = a.h
+      WHERE nrn = rn + 1 AND nh = h AND near_in AND epoch(nt - time) >= coalesce(hg.g_h, {G_H}) * 3600
       UNION ALL
-      SELECT vid, h, s, e, t_s, t_e, 'tag_span' FROM runs WHERE epoch(t_e - t_s) >= {G_H} * 3600),
+      SELECT vid, h, s, e, t_s, t_e, 'tag_span' FROM runs LEFT JOIN hg ON hg.pid = runs.h
+      WHERE epoch(t_e - t_s) >= coalesce(hg.g_h, {G_H}) * 3600),
     ext AS (
       SELECT sd.vid, sd.h, least(sd.s, coalesce(r1.s, sd.s)) AS s, greatest(sd.e, coalesce(r2.e, sd.e)) AS e,
              least(sd.t_s, coalesce(r1.t_s, sd.t_s)) AS t_s, greatest(sd.t_e, coalesce(r2.t_e, sd.t_e)) AS t_e, sd.rule
@@ -149,8 +164,9 @@ stay_year <- function(yr) {
       FROM read_parquet('{event_f}') WHERE year BETWEEN {yr - 1L} AND {yr + 1L}
       WINDOW w AS (PARTITION BY vid ORDER BY time, io))
     SELECT vid, hid_pid AS pid, time AS t_in, nt AS t_out, ['event_pair'] AS rules
-    FROM e WHERE {ev_from} AND io = 'I' AND nio = 'U' AND good AND ngood AND hid_pid IS NOT NULL AND nh = hid_pid
-      AND epoch(nt - time) >= {G_H} * 3600 AND year(time) = {yr}"))
+    FROM e LEFT JOIN hg ON hg.pid = e.hid_pid
+    WHERE {ev_from} AND io = 'I' AND nio = 'U' AND good AND ngood AND hid_pid IS NOT NULL AND nh = hid_pid
+      AND epoch(nt - time) >= coalesce(hg.g_h, {G_H}) * 3600 AND year(time) = {yr}"))
 
   # one time-based merge of ping stays and event stays
   q(glue::glue("

@@ -87,6 +87,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 060 | [Harbour stays are built from the general rules](060-harbour-stays-built.md) | `curated/ais/harbour_stay`: 1.47 M stays from polygon, gap and (2017+) event evidence, all years and providers; vid 2481 2011 = 190 stays; 95 % of landing days have a stay (neighbouring harbours, not the same pid); events add 2 % stays of low precision |
 | 061 | [Voyages are cut at stays](061-voyages-cut-at-stays.md) | `ais_trip.R` takes its harbours from `harbour_stay` instead of bridging polygon runs; the outdated chain is rebuilt once; baseline archived; shared voyages 23.2 % → 5.0 % (afli), 19.3 % → 4.2 % (fs_afladagbok); vid 2481 2011 = 186 voyages; chain rebuilt, 0 outdated |
 | 062 | [A lower stay minimum, tested](062-stay-minimum-tested.md) | 4/3/2/1 h: shared voyages 4.9 → 4.4 → 3.8 → 3.1 % (afli), landings with a stay 92.8 → 95.3 %, but added stays have 34 → 14 % landing precision and cost 5 → 23 stays per landing recovered; per-harbour minimum (TODO 33) is the better lever; nothing rebuilt |
+| 063 | [A harbour class per year, and a minimum stay by class](063-harbour-class-and-minimum-stay.md) | `curated/reference/harbour_class` (3-year window, provisional; 3.4 % of year steps change); `harbour_stay` takes `G` per class; landing-class 2 h gives the global-2 h coverage with 12 k fewer stays and cuts static-gear shared voyages 7.0 → 4.9 %; recommended, not applied |
 
 ## Data defects
 

@@ -477,10 +477,11 @@ so `.tid` stays station evidence. The residue of shared voyages is the landing w
 ---
 
 ## 33. Harbour class, per period, from the AIS era
-**status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §3.6; memory `harbour-class-is-time-varying`
+**status:** in progress · **needs: maintainer** · **see:** `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memories `harbour-class-is-time-varying`, `static-gear-logbook-recording`
 
-No class exists for the 159 Icelandic/Faroese harbours (fishing, cargo, marina, a stop-off place with no pier such as Hornvík `IS-HOV`, mixed). No external source carries one for
-Iceland (OSM classifies 5 of 157), so it comes from the STK `I`→`U` stays from **2007-09-01** plus a reviewed `overrides/harbour_class.csv`. Fishing ports declined over time, so the class
-is per period, not per `pid`; the period design is not settled. Open codes: `VIS`, `MAN`, `TMY` and `STO` (17 events) have no usable polygon; `A` → `IS-KRI` is accepted but mostly transit.
+Built 2026-10-01: `curated/reference/harbour_class` per harbour × year from the STK `I`→`U` pairs (3-year window, provisional), `overrides/harbour_class.csv` (empty), and a minimum stay per class in
+`harbour_stay.R` (default unchanged, 4 h). Asked of the maintainer: (1) the period design; (2) the landing-class minimum (recommended 2 h: static-gear shared voyages 7.0 → 4.9 %; applying it
+rebuilds stays, voyages, trail); (3) the overrides: Hornvík `IS-HRN` `no_pier`, Helguvík `cargo`, `IS-KRI` mostly transit; `VIS`, `MAN`, `TMY`, `STO` have no usable polygon. Background, not pursued: a
+minimum by gear or vessel size; static-gear trips are often logged at the haul only.
 
-**check:** `curated/reference/` holds a harbour class per `pid` and period with a `basis`, and `check_bookkeeping()` is clean.
+**check:** `harbour_class` has a reviewed class for the harbours the maintainer named, the chosen landing minimum is the default in `harbour_stay.R`, and `check_bookkeeping()` is clean.

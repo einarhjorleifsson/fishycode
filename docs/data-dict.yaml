@@ -2913,6 +2913,63 @@ tables:
         examples: [27.1.a, 27.2.b.2, 27.4.c, 27.7.e, 27.9.b.2]
         description: >
           ICES/FAO area code, sampled at the H3 cell centroid.
+  - name: reference_harbour_class
+    source:
+      parquet: ../../fishydata/curated/reference/harbour_class.parquet
+    description: >
+      One row per Iceland/Faroe harbour (`einar` polygon) and year, 2007-2026: what the harbour is, judged
+      from how long vessels stay (the STK `I`->`U` pairs). Per year because a harbour's role changes
+      (fishing ports declined). Each year pools the pairs of the year before, the year and the year after
+      (provisional period design). A reviewed override file wins. Built by
+      `reference/ports/harbour_class.R` (TODO 33).
+    columns:
+      - name: pid
+        type: string
+        description: >
+          Standard harbour key.
+      - name: port
+        type: string
+        description: >
+          Standard harbour name.
+      - name: year
+        type: number
+        description: >
+          Year the class is for.
+      - name: class
+        type: string
+        description: >
+          `landing` (at least 25 % of stays reach 4 h), `marina`, `flicker` (the in/out flag flaps on a
+          vessel at rest), `transient` (a stop-off or ferry end), `sparse` (under 30 pairs in the window,
+          not judged), `no_events` (no STK pairs), or a manual class from the override file (`cargo`,
+          `no_pier`, `mixed`).
+      - name: basis
+        type: string
+        description: >
+          `reconstructed` = the data rule; `recorded` = a reviewed override.
+      - name: n_pairs
+        type: number
+        description: >
+          `I`->`U` pairs in the three-year window.
+      - name: p_ge4h
+        type: number
+        description: >
+          Share of the pairs lasting 4 h or more.
+      - name: med_min
+        type: number
+        description: >
+          Median pair length in minutes.
+      - name: p_lt60
+        type: number
+        description: >
+          Share of pairs under an hour.
+      - name: p_fast
+        type: number
+        description: >
+          Share of pairs lasting 1-60 min with both ends above 4 knots: a vessel passing through.
+      - name: override_reason
+        type: string
+        description: >
+          The reviewer's reason when `basis` is `recorded`.
   - name: reference_harbour_radius
     source:
       parquet: ../../fishydata/curated/reference/harbour_radius.parquet
