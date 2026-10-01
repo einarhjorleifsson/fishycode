@@ -440,12 +440,13 @@ up, and review the 7 segments where a physical grade and the register disagree.
 **check:** `ais_key_segments` reports `annual_disagrees` = 0 or every such segment reviewed.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`)
-**status:** open · **see:** `curate/plans/010-ping-activity-link.md` · **needs: maintainer** (no open questions; Phase 3 is next (plan §7), plan §8)
+**status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b
 
-`ais/ping` carries `trip` but no `.tid`, `.sid`, gear or fishing flag, so each analysis re-joins.
-Plan 010 proposes `station_window` + a per-year `ping_activity` bridge + `ais_trail()`. Phase 0 is read-only measurement.
+Built: `gear_window`, `station_window`, `ais/ping_trail` (AIS + gps logger), `ais_trail()`. Open: the datacall still reads `staging/ping_union`
+and must be repointed to `ais_trail()`; the voyage-only `.tid` for fixes outside every window; the `docs/` example; 76 % of static-gear
+stations are whole-day windows (item 18 is the cure); whether to store a sorted wide `ais/trail` (maintainer).
 
-**check:** `ais_trail(2019)` reproduces the old trail's fishing pings per vid-month, and every synthesised window carries `win_basis`.
+**check:** `products/ices_vms_datacall/build.R` runs on `ais_trail()`, and every synthesised window carries `win_basis`.
 
 ## 29. The afli overlap check blanks `t2`/`t3` and keeps no original
 **status:** open · **needs: maintainer** · **see:** `curate/decisions/057-duration-limits-replace-the-adapter-caps.md`
