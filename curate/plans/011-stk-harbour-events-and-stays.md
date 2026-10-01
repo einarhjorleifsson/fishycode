@@ -1,6 +1,6 @@
 # 011 — Harbour stays: fix voyage segmentation in general, with STK events as one source of evidence
 
-**status:** partly built — Phase 0 measured and Phase 1 seed built 2026-10-01 (§2, §2a, §4a); **paused 2026-10-01 for a separate harbour/port session (§4b)**; Phases 2–5 not started · **2026-10-01** · **see:** plans
+**status:** partly built — Phase 0 measured and Phase 1 seed built 2026-10-01 (§2, §2a, §4a); **paused 2026-10-01 for a separate harbour/port session (§4b)**; Phase 2 built 2026-10-01 (§4d); Phases 3–5 not started · **2026-10-01** · **see:** plans
 `006-trip-identity-and-catch-to-ais-pings.md` (§4, and its correction), `010-ping-activity-link.md` (§3.3, the
 correction at its end); `reference/ports/bootstrap_iceland_faroe.R`, `reference/ports/ports_all.R`,
 `curate/ais_trip.R`, `curate/ais_ping_clean.R`.
@@ -375,6 +375,12 @@ polygons; the first bootstrap is in `raw/ports/archive/`); `IS-ANV` Álfsnes and
 harbours (Kópavogur, Viðey, Gufunes, Álfsnes were all `IS-REY`). `stk_hid_pid`: `unmatched` 28 → 3 (`VIS`, `MAN`, `TMY`), 9 overrides (`THH`/`THO` by position; `BAK`, `HVF`, `STY`, `VID`, `A`
 accepted; `LH`, `TRAD` `NONE`). Hornvík's raw STK code is `HVK`, not Hólmavík. The class per harbour and period is TODO 33. The AIS chain still uses the previous polygons (25 outdated
 targets) and is rebuilt once, after Phase 3.
+
+## 4d. Phase 2 built (2026-10-01)
+
+`curated/check/stk_event` (`curate/checks/stk_event.R`, target `check_stk_event`), recorded with the shares by year in `decisions/059-stk-event-tags.md`.
+**Correction to §2:** STK sends most `U` events twice (one row without `hid`), so the §2 event counts, "U has no `hid` in 40.2 %", and `U→U` 26.2 % counted source rows;
+per ping there are 3.93 M `U` and 4.26 M `I` (with a vid), 1 % of `U` without a code. See `corrections/stk_event_duplicate_rows.yml`. The §3.3 neighbour test is built as written.
 
 ## 5. Decisions
 

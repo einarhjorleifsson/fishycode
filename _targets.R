@@ -439,6 +439,15 @@ list(
   # Reused Icelandic call signs, checked from the raw STK side rather than off
   # the finished key - see the script header for why that catches more than
   # check_ais_key_landings does.
+  # STK harbour events, one row per ping, tagged (plan 011 Phase 2). Reads the
+  # cleaned track for the neighbour test and the current polygons for the position
+  # test, so it does not wait for the outdated AIS chain to be rebuilt.
+  tar_target(check_stk_event, {
+    stk; ais_ping_clean; shapes; stk_hid_pid
+    produces("curate/checks/stk_event.R",
+             fd_curated("check", "stk_event.parquet"))
+  }, format = "file"),
+
   tar_target(check_ais_key_reused_callsign, {
     vessel_ais_key_cascade; vessel; landing
     produces("curate/checks/ais_key_reused_callsign.R",

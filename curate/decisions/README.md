@@ -83,6 +83,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 056 | [The stretches that awaited a person](056-the-stretches-awaiting-a-person.md) | 94 stretches / 88,744 pings tested on each candidate's own AIS, own identifier and registration lead: 49 placed (49,638 pings; mostly a new vessel's transponder running up to a year before registration), 45 left (39,106 pings; a candidate registered more than a year later, or none); downstream targets outdated, not rebuilt |
 | 057 | [Duration limits replace the adapter caps](057-duration-limits-replace-the-adapter-caps.md) | one plausible maximum per gear (`gear_window.dur_max_min`) replaces two drifted cap tables; raw duration kept, errors become NA instead of a fake capped value; capped stations 30,120 -> 0, Danish-seine gap vs the old trail 78,256 -> 5,913 pings |
 | 058 | [The harbour bootstrap is re-run and promoted](058-promote-the-harbour-rebuild.md) | the Iceland/Faroe polygons are rebuilt from the full STK trail (159, 36 grown, `IS-HVK`/`IS-STK` placed at the right harbour); first bootstrap archived; `ports_all` never merges two `einar` harbours |
+| 059 | [STK harbour events get a tag table](059-stk-event-tags.md) | `curated/check/stk_event`: 8.2 M events, one row per ping (STK sends most `U` twice, so the plan's event counts were source rows); tags `io_pos`, `io_jump`, `io_dup`, `io_short`; 94–98 % `io_ok` from 2017, 50–83 % before; nothing consumes it yet |
 
 ## Data defects
 

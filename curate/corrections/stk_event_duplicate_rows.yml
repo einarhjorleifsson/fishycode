@@ -1,0 +1,26 @@
+id: stk_event_duplicate_rows
+title: STK ships most U events twice, once with the harbour code and once without
+status: handled in the event table (curate/checks/stk_event.R); staging/ais/stk keeps both rows, deliberately
+applies_to:
+  - staging/ais/stk   (all years; io in I/U)
+affects_rows: >-
+  3,105,882 of 4,388,922 U pings (by mid, time) have more than one source row, 3,033,495 of them as a pair
+  with one row's hid NA. I is almost never doubled (166,526 of 4,724,990, none with an NA partner).
+  Source rows 7,761,099 U vs 4,388,922 pings.
+discovered: 2026-10-01 (plan 011 Phase 2)
+detection: >-
+  GROUP BY mid, time, io on raw/ais/stk/trail with count(*), count(hid), count(DISTINCT hid),
+  count(DISTINCT (lon, lat)). Positions agree in all but 123 U and 148 I groups; two different codes
+  on one ping occur in 16,725 U and 12,525 I groups.
+repair:
+  implemented_2026_10_01: >-
+    curated/check/stk_event has one row per (vid, time, io); hid comes from the row that carries it,
+    n_rows says how many source rows were merged, hid_conflict marks pings carrying two codes (hid is
+    then NA and hid_all lists both). Nothing is dropped in staging/ais/stk, per the rule that a correction
+    adds columns and never overwrites. ping_union does not select io or hid, so the two rows become
+    identical there and UNION DISTINCT already removes one: the pings are not affected.
+impact:
+  on_analysis: >-
+    Plan 011 section 2 counted source rows: 6.77 M U, U without hid 40.2 %, U->U 26.2 %. Per ping the
+    figures are 3.93 M U with a vid against 4.26 M I, U without hid 1.0 %, and U after U 0.7-3.6 % by year.
+    Any count of STK events taken from staging/ais/stk instead of the event table is inflated.

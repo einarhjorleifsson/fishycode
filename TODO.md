@@ -471,7 +471,7 @@ rule the pipeline no longer applies, and it is a second copy of a table - the fa
 
 `ais_trip.R` bridges every one-ping harbour run, so day-trip vessels merge into year-long voyages (vid 2481, 2011: 185 landings, one voyage; ≈ 20 % of
 voyages are shared by several logbook trips). The fix is a provider-independent stay rule that measures elapsed time at a harbour; STK's `I`/`U` events, erratic and dropped at the union, are one source of evidence. Plan 011
-holds the rule, the tagging and the standard harbour name. Phases 0-1 and the harbour polygons (decision 058) are done; Phase 2 (event tags `io_pos`, `io_jump`) is next, and the AIS chain
+holds the rule, the tagging and the standard harbour name. Phases 0-1 and the harbour polygons (decision 058) are done; Phase 2 (event tags, decision 059) is done; Phase 3 (stays) is next, and the AIS chain
 (25 outdated targets) is rebuilt once, after Phase 3.
 
 **check:** vid 2481 in 2011 has ≈ 185 voyages, and `check_bookkeeping()` is clean.
