@@ -33,7 +33,7 @@
 # and event evidence the two time ranges are kept (`*_ping`, `*_ev`) so their agreement can be read.
 #
 # The minimum stay G is per harbour and year: G_LANDING at a harbour whose class that year is `landing`
-# (harbour_class.R), G_H everywhere else. G_LANDING defaults to G_H, i.e. one minimum for all (decision 062/063).
+# (harbour_class.R), G_H everywhere else. G_LANDING is 2 h since 2026-10-01 (decision 063, applied in 064); STAY_G_LANDING=4 gives one minimum for all.
 #
 # A stay's year is the year of T_in. A year's pings are padded with the vessel's last ping of the year
 # before and first ping of the year after, so a gap over New Year is seen; a stay that ends in the next
@@ -51,7 +51,7 @@ sf::sf_use_s2(FALSE)
 
 G_H        <- as.numeric(Sys.getenv("STAY_G_H", "4"))   # a stay is at least this many hours (the old MIN_HARBOUR_H; test hook, decision 062)
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
-G_LANDING  <- as.numeric(Sys.getenv("STAY_G_LANDING", as.character(G_H)))  # minimum stay at a harbour of class `landing` that year
+G_LANDING  <- as.numeric(Sys.getenv("STAY_G_LANDING", "2"))  # minimum stay at a harbour of class `landing` that year
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # first year whose events are used
 
