@@ -457,3 +457,12 @@ a window at the vessel's next recorded start, so the times could be kept and the
 
 **check:** `fishing_sample` keeps `t2`/`t3` for flagged stations, `.checks` still names the overlap, and the window counts are compared before and after.
 
+## 30. `docs/qc_fs_afladagbok_2025.qmd` carries its own copy of the removed cap table
+**status:** open · **see:** `curate/decisions/057-duration-limits-replace-the-adapter-caps.md`
+
+The page re-declares `gear_caps` (the table decision 057 removed from the adapters) and reports what "would be capped". It now describes a
+rule the pipeline no longer applies, and it is a second copy of a table - the failure this repo's `R/` rule exists to prevent. It should read
+`gear_window.dur_max_min` from `curated/reference/gear_window.parquet` and report `implausible` stations from `fishing_sample` instead.
+
+**check:** `grep -n gear_caps docs/qc_fs_afladagbok_2025.qmd` returns nothing and the page renders.
+
