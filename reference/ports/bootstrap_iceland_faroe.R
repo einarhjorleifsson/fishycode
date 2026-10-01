@@ -365,7 +365,6 @@ ports <-
                          stk == "GEST" ~ "GHV",
                          stk == "LANG" ~ "LEY",
                          stk == "VIDF" ~ "VFF",
-                         stk == "VIS" ~ "VID",             # 62 events, 2025, at Videy
                          stk == "STO" ~ "STK",             # Stokkseyri (17 events)
                          stk == "LH" ~ "LEH",
                          stk == "SKEY" ~ "SKY",
