@@ -3,7 +3,7 @@ title: Three Icelandic harbours shared one polygon; hand-added buffers were 57% 
 status: fixed
 applies_to:
   - raw/ports/ports_iceland_faroe.gpkg
-affects_rows: 10 of 159
+affects_rows: 0 of 159 (rename of the pid column only)
 implementation: curate/corrections/ports_iceland.R
 see:
   - curate/decisions/004-issue-11-seventy-extra-rows.md
@@ -31,23 +31,13 @@ second_defect:
 repair:
   steps:
     - >-
-      Remove IS-HLS and IS-HDL. Neither is a harbour; the codes denote a fish
-      processing site, not a berth, so no geometry should be invented for them.
-    - >-
-      Replace the geometry of IS-HVK (Hólmavík), IS-STK (Stokkseyri) and IS-STY
-      (Stykkishólmur) with the ones from the rebuilt bootstrap
-      (raw/ports/ports_iceland_faroe_rebuild.gpkg). IS-HVK was built from the raw
-      code HVK at 66.4N (Hornvík), 90 km from Hólmavík; IS-STK carried a
-      Stykkishólmur berth, from the typo "STK2" for "STY2".
-    - >-
-      Add IS-ANV (Álfsnes) and IS-HRN (Hornvík) from the rebuilt bootstrap; the
-      first bootstrap discarded their STK codes (ANV, HVK) for want of a name.
-    - Rebuffer IS-VIK, IS-HLL, IS-ALV, IS-OGV to 500 m in EPSG:3057.
-  note: >-
-    Applied to the artifact rather than to the producer, because the producer is
-    a one-time bootstrap whose STK input is absent and whose re-run would
-    re-close the STK -> polygon -> STK circle (decision 005).
+      The harbour bootstrap was re-run from the full raw STK trail (decision 058) and
+      its output promoted to raw/ports/ports_iceland_faroe.gpkg; the first bootstrap's
+      file is archived in raw/ports/archive/. The defects above, and IS-HVK at Hornvík
+      and IS-STK at Stykkishólmur, are fixed in the producer.
+    - This script now only renames pid to pid_bootstrap and asserts that the fixes held.
 
 check: >-
   staging/ports/ports_iceland_faroe.gpkg has 159 features, no two sharing a
-  geometry, and the four rebuffered ports measure 500 m within 1 m.
+  geometry, no IS-HLS/IS-HDL, the four hand-added ports measure 500 m within 1 m,
+  IS-HVK is at 65.7N and IS-STK at 63.8N.

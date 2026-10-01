@@ -1,11 +1,13 @@
 # Port identification and shapes
 #
 # ONE-TIME BOOTSTRAP - NOT PART OF THE REGULAR BUILD.
-# No target in _targets.R references this file, deliberately. It is kept as the
-# record of how the harbour set was produced, and as the means to produce it
-# again from scratch if that ever becomes necessary.
-# This derived the Iceland/Faroe harbour polygons from STK vessel trails once.
-# Do not re-run it on a schedule, for two reasons:
+# No target in _targets.R references this file, deliberately. It is the producer of
+# the raw artifact raw/ports/ports_iceland_faroe.gpkg and the record of how the
+# harbour set was made.
+# It derives the Iceland/Faroe harbour polygons from STK vessel trails. It was run
+# once in 2026-09 (first bootstrap, in kaenugardr) and re-run on 2026-10-01 from the
+# full raw trail for plan 011 (decision 058); the first bootstrap's output is kept in
+# raw/ports/archive/. Do not re-run it on a schedule, for two reasons:
 #   1. Ports are physical infrastructure. They do not change as AIS accumulates,
 #      so re-deriving them from a growing trail buys nothing.
 #   2. It is circular. STK ships `harborid` and `in_out_of_harbor` per ping - the
@@ -14,12 +16,9 @@
 #      which pings are in harbour. The polygon adds no independent information,
 #      and it inherits STK's blind spots: the harbours STK never flagged are
 #      exactly the ones that had to be hand-added in `ports_add` below.
-# The committed ports_iceland_faroe.gpkg is the frozen artifact. Corrections are
-# reviewed edits to it, recorded; this script is kept as provenance and as the
-# means to bootstrap again from scratch if that is ever necessary.
-# Its input is raw/ais/stk/trail (the full raw STK trail, all years). Re-run on
-# 2026-10-01 for the harbour/port session (plan 011 §4b); see below for what the
-# re-run does NOT do: it never overwrites the committed raw artifact.
+# A re-run replaces the artifact, so the script refuses to overwrite it: archive
+# the current file first. Corrections are reviewed edits, recorded
+# (curate/corrections/ports_iceland.R), not a re-run.
 #  The ports_table is generated from the stk trail harbour data where io == "I"
 #  This table is joined with the ports_kvoti table via port name to generate a
 #  link with the numerical harbour value (hid) found in the logbooks and landings
@@ -28,10 +27,8 @@
 #    raw/ais/stk/trail (hive-partitioned parquet) where values are in io
 #    raw/ports/ports_kvoti.parquet - from dump/oracle/ports_kvoti.R
 #  Outputs:
-#    raw/ports/ports_iceland_faroe_rebuild.gpkg - candidate harbour polygons.
-#      The committed raw/ports/ports_iceland_faroe.gpkg (corrected into staging/
-#      by curate/corrections/ports_iceland.R, which ports_all.R reads) is NOT
-#      overwritten: promoting a rebuild is a decision, taken after the diff.
+#    raw/ports/ports_iceland_faroe.gpkg - harbour polygons; handed to staging/ by
+#      curate/corrections/ports_iceland.R, which ports_all.R reads
 #
 # Comments:
 #
@@ -422,8 +419,11 @@ ports |> st_drop_geometry() |> count(pid) |> filter(n > 1) |> knitr::kable(capti
 ports |> st_drop_geometry() |> count(port) |> filter(n > 1) |> knitr::kable(caption = "Expect none")
 
 
-ports |>
-  st_write(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg"), delete_dsn = TRUE)
+out <- fd_raw("ports", "ports_iceland_faroe.gpkg")
+if (file.exists(out))
+  stop("raw/ports/ports_iceland_faroe.gpkg exists; archive it (raw/ports/archive/) ",
+       "before replacing the artifact")
+ports |> st_write(out)
 
 
 

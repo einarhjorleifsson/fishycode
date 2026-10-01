@@ -82,6 +82,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 055 | [The union reads each year's partitions once](055-the-union-reads-each-year-once.md) | `ais_ping_union` no longer re-scans ~145 GB of ASTD/ASTDB per year: each year reads its own partitions (STK also the ~33 k rows stored under another year); verified identical on three years and on all 46 provider-year cells of the full build; the union takes 1 m 55 s instead of 1 h 35 m |
 | 056 | [The stretches that awaited a person](056-the-stretches-awaiting-a-person.md) | 94 stretches / 88,744 pings tested on each candidate's own AIS, own identifier and registration lead: 49 placed (49,638 pings; mostly a new vessel's transponder running up to a year before registration), 45 left (39,106 pings; a candidate registered more than a year later, or none); downstream targets outdated, not rebuilt |
 | 057 | [Duration limits replace the adapter caps](057-duration-limits-replace-the-adapter-caps.md) | one plausible maximum per gear (`gear_window.dur_max_min`) replaces two drifted cap tables; raw duration kept, errors become NA instead of a fake capped value; capped stations 30,120 -> 0, Danish-seine gap vs the old trail 78,256 -> 5,913 pings |
+| 058 | [The harbour bootstrap is re-run and promoted](058-promote-the-harbour-rebuild.md) | the Iceland/Faroe polygons are rebuilt from the full STK trail (159, 36 grown, `IS-HVK`/`IS-STK` placed at the right harbour); first bootstrap archived; `ports_all` never merges two `einar` harbours |
 
 ## Data defects
 
