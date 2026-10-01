@@ -466,15 +466,15 @@ rule the pipeline no longer applies, and it is a second copy of a table - the fa
 
 **check:** `grep -n gear_caps docs/qc_fs_afladagbok_2025.qmd` returns nothing and the page renders.
 
-## 31. Harbour stays: fix voyage segmentation in general
-**status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md`
+## 31. Voyage-only `.tid` for the trail (plan 011 Phase 5)
+**status:** open · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §4, plan 010 §3.3, `curate/decisions/061-voyages-cut-at-stays.md`
 
-`ais_trip.R` bridges every one-ping harbour run, so day-trip vessels merge into year-long voyages (vid 2481, 2011: 185 landings, one voyage; ≈ 20 % of
-voyages are shared by several logbook trips). The fix is a provider-independent stay rule that measures elapsed time at a harbour; STK's `I`/`U` events, erratic and dropped at the union, are one source of evidence. Plan 011
-holds the rule, the tagging and the standard harbour name. Phases 0-1 and the harbour polygons (decision 058) are done; Phases 2-3 (event tags, decision 059; stays, decision 060) are done; Phase 4 (`ais_trip.R` cuts voyages at the stays) is next, and the AIS chain
-(25 outdated targets) is rebuilt once, after Phase 3.
+The voyages are now cut at stays (shared voyages 23 % → 5 %, decision 061). What is left of item 31 is Phase 5: a voyage-only `.tid_voyage` in `ais_trail()` beside `.tid`,
+so `.tid` stays station evidence. The residue of shared voyages is the landing without a stay (TODO 33 for the per-harbour minimum stay).
 
-**check:** vid 2481 in 2011 has ≈ 185 voyages, and `check_bookkeeping()` is clean.
+**check:** `ais_trail()` returns a `.tid_voyage` column and `check_bookkeeping()` is clean.
+
+---
 
 ## 33. Harbour class, per period, from the AIS era
 **status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §3.6; memory `harbour-class-is-time-varying`

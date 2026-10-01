@@ -47,11 +47,13 @@ tables:
       parquet: ../../fishydata/curated/ais/trip.parquet
     description: >
       One row per harbour-to-harbour voyage, one vessel at a time: contiguous sea
-      time bracketed by two port calls (short harbour stays under 4h are bridged
-      into the surrounding voyage). Built in curate/ais_trip.R from the cleaned,
-      merged AIS/GPS track (staging/ais/ping_clean). Trips with fewer than 10
-      pings are dropped. Numbered 1..n per vessel per year; a voyage spanning New
-      Year is split at the boundary.
+      time bracketed by two stays (curated/ais/harbour_stay: at least 4 h at a
+      harbour by elapsed time, from any provider; a shorter call is part of the
+      voyage). Built in curate/ais_trip.R from the cleaned, merged AIS/GPS track
+      (staging/ais/ping_clean). Until 2026-10-01 a stay was the span of the pings
+      in a polygon run and day trips merged into year-long voyages (decision 061).
+      Trips with fewer than 10 pings are dropped. Numbered 1..n per vessel per
+      year; a voyage spanning New Year is split at the boundary.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -276,6 +278,14 @@ tables:
         description: >
           Standardised harbour id the ping falls inside (spatial join against harbour
           polygons); NA when the vessel is at sea.
+      - name: stay_pid
+        type: string
+        examples: [IS-REY, IS-HOR, IS-OLV, IS-GRI, FO-TOR]
+        description: >
+          Harbour of the stay (curated/ais/harbour_stay) the ping falls in, NA at sea.
+          Unlike `pid` it needs at least 4 h at the harbour by elapsed time, and a
+          ping up to the harbour's departure radius outside the polygon can be in a
+          stay. The voyages are cut at these.
       - name: year
         type: number
         range: [2023, 2023]
@@ -1093,6 +1103,60 @@ tables:
         type: number
         description: >
           Distinct landing dates (agf and lods) in the year.
+  - name: check_voyage_sharing
+    source:
+      parquet: ../../fishydata/curated/check/voyage_sharing.parquet
+    description: >
+      One row per (version, logbook schema, year) from 2008: how many logbook trips link to an AIS voyage
+      and how many of them share a voyage with another logbook trip, before and after the voyages were cut
+      at stays (plan 011 Phase 4, decision 061). `before` is the archived pre-Phase-4 voyages and links.
+      Built by `curate/checks/voyage_sharing.R`; the logbook is only the yardstick.
+    columns:
+      - name: version
+        type: string
+        description: >
+          `before` (archived 2026-10-01) or `after` (current).
+      - name: schema
+        type: string
+        description: >
+          Logbook source: `afli`, `fs_afladagbok` or `adb`.
+      - name: year
+        type: number
+        description: >
+          Year of the logbook trip's start.
+      - name: n_trips
+        type: number
+        description: >
+          Logbook trips with a vessel.
+      - name: linked
+        type: number
+        description: >
+          Share of those trips with an AIS voyage.
+      - name: shared
+        type: number
+        description: >
+          Share of linked trips whose voyage also carries another logbook trip (a share of TRIPS; the
+          share of voyages is in decision 061).
+      - name: arr_match
+        type: number
+        description: >
+          Share of linked trips whose voyage arrival harbour equals the logbook landing harbour (`pid2`).
+      - name: n_voyages
+        type: number
+        description: >
+          AIS voyages that year (same for every schema).
+      - name: gt3d
+        type: number
+        description: >
+          Share of the year's voyages lasting more than 3 days.
+      - name: gt7d
+        type: number
+        description: >
+          Share lasting more than 7 days.
+      - name: med_h
+        type: number
+        description: >
+          Median voyage length in hours.
   - name: check_stk_event
     source:
       parquet: ../../fishydata/curated/check/stk_event.parquet

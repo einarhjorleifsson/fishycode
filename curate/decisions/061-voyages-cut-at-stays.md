@@ -30,3 +30,34 @@ Rollback = restore the two files and `git revert` the `ais_trip.R` change; `ping
 logbook trips linked, trips whose voyage is shared with another trip (plan §6: from ≈ 23 % afli, 19 % fs_afladagbok to
 a small, explained residue), arrival-harbour agreement with the logbook landing harbour, voyages over 3 and 7 days,
 vid 2481 in 2011 (≈ 185 voyages).
+
+## Result (2026-10-01, rebuilt in 45 min)
+
+`tar_make()`: 21 targets built, 0 outdated afterwards. The first attempt stopped when the session lost its connection;
+the targets it had finished were kept and the rest rebuilt. Checked on the outputs, not the log: `ping` has the same row count as
+`ping_clean` in all 20 years; 54 % of pings carry a voyage, 45.9 % are in a stay; vid 2481 in 2011 has **186 voyages** (was 1;
+185 landings). Rebuilt inputs: 1,468,284 stays (decision 060 had 1,468,243), 1,319,244 voyages for 2,731 vessels.
+
+**The residue, voyage level** (voyages linked to more than one logbook trip, the measure of plan §6; "before" reproduces the
+plan's 23 % and 19 %, so the baseline is the same thing):
+
+| schema | linked voyages before → after | shared voyages before → after |
+|---|---|---|
+| afli | 320,762 → 602,441 | **23.2 % → 5.0 %** |
+| fs_afladagbok | 86,830 → 139,665 | **19.3 % → 4.2 %** |
+| adb | 1,762 → 4,494 | 30.4 % → 7.1 % |
+
+Voyage length: over 3 days 19.5 % → 7.4 %, over 7 days 10.3 % → 2.4 % (a long trip of a freezer trawler is real; not
+examined further). Arrival harbour equals the logbook landing harbour for 92.7 % (afli) and 94.1 % (fs_afladagbok) of linked trips,
+was 83.0 % and 88.2 %.
+
+**What is left**, of the shared voyages (afli 30,091, fs_afladagbok 5,912): 78 % carry exactly two trips, 8–9 % four or more.
+For afli only 3.6 % have all trips on one day, so these are trips on different days with no stay between: the landing
+without a stay (decision 060: 6.5 % of landings, of which about a third are visits of 1–4 h, a third under 1 h, a third
+never heard in the harbour). For fs_afladagbok 34.7 % are on one day (two logbook records in a day; a real second trip).
+
+**Cost:** the share of logbook trips with any voyage fell a little, afli 2008 97.5 → 95.4 %, 2012 98.9 → 97.2 %, 2023 unchanged
+(99.2 %): more, shorter voyages, and those under 10 pings are dropped (`MIN_PINGS`, unchanged).
+
+**Not done, and where it stands:** the 4 h stay minimum was kept as asked. The residue of about 5 % is the measure to beat when the
+per-harbour minimum stay (TODO 33) is tried on the 1–4 h class. Phase 5 (a voyage-only `.tid` in `ais_trail()`) is open.
