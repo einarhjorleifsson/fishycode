@@ -3,7 +3,7 @@ title: Three Icelandic harbours shared one polygon; hand-added buffers were 57% 
 status: fixed
 applies_to:
   - raw/ports/ports_iceland_faroe.gpkg
-affects_rows: 6 of 159
+affects_rows: 8 of 159
 implementation: curate/corrections/ports_iceland.R
 see:
   - curate/decisions/004-issue-11-seventy-extra-rows.md
@@ -37,6 +37,9 @@ repair:
       Replace the geometry of IS-HVK (Hólmavík) with the one from the rebuilt bootstrap
       (raw/ports/ports_iceland_faroe_rebuild.gpkg). The committed polygon was built
       from the raw STK code HVK at 66.4N, 90 km from Hólmavík (65.7N).
+    - >-
+      Add IS-ANV (Álfsnes) and IS-HRN (Hornvík) from the rebuilt bootstrap; the
+      first bootstrap discarded their STK codes (ANV, HVK) for want of a name.
     - Rebuffer IS-VIK, IS-HLL, IS-ALV, IS-OGV to 500 m in EPSG:3057.
   note: >-
     Applied to the artifact rather than to the producer, because the producer is
@@ -44,5 +47,5 @@ repair:
     re-close the STK -> polygon -> STK circle (decision 005).
 
 check: >-
-  staging/ports/ports_iceland_faroe.gpkg has 157 features, no two sharing a
+  staging/ports/ports_iceland_faroe.gpkg has 159 features, no two sharing a
   geometry, and the four rebuffered ports measure 500 m within 1 m.

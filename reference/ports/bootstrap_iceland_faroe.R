@@ -222,7 +222,10 @@ ports_table <-
           # Hellissandur (41) and Hnífsdalur (71) deliberately absent: processing
           # sites, not berths (decision 004, dropped 2026-09-21).
           'IS-ALV', 'Alviðruvör', 'no',    # Alviðruvör, Núpur
-          'IS-OGV', 'Ögurvík', 'no')
+          'IS-OGV', 'Ögurvík', 'no',
+          # added 2026-10-01 (maintainer): STK codes the join used to drop
+          'IS-ANV', 'Álfsnes', 'no',      # STK ANV, 64.18N -21.77W, 2025-26
+          'IS-HRN', 'Hornvík', 'no')      # STK HVK, 66.4N -22.4W; a bay, no pier
 ports_table |> count(port) |> filter(n > 1) |> knitr::kable(caption = "Expect none")
 
 ports_table <-
@@ -281,10 +284,6 @@ ports <-
   distinct() |>
   filter(!stk %in% c("ISL", "DNG",  "BER", "REYF", "RYH", "LSGUFA", "GYH", "IYH",
                      "AYH", "GRYYH", "R", "MJO", "MJOIF")) |>
-  # Raw code HVK sits at 66.4N, 80 km north of Holmavik, whose pid is IS-HVK (the
-  # HK/HOL events, 65.7N). Taking it as Holmavik put the committed IS-HVK polygon
-  # in the wrong place; its real harbour is unidentified.
-  filter(!(stk == "HVK" & lat > 66)) |>
   filter(!(stk == "THH" & lat > 65)) |>
   filter(!(stk == "THO" & lat < 65)) |>
   filter(!(stk == "SEY" & lon < -20)) |>
@@ -297,7 +296,10 @@ ports <-
   filter(!(stk == "HVF" & lon > -21.416204)) |>
   filter(!(stk == "KRS" & lat < 65.699448)) |>
   filter(!(stk == "FA" & lat < 64.916849)) |>
+  # Raw HVK is Hornvik (66.4N), not Holmavik: Holmavik's pid is IS-HVK, reached from
+  # HK/HOL below. Taking HVK as Holmavik put the committed IS-HVK polygon 90 km off.
   mutate(stk = case_when(stk == "H" ~ "HNR",
+                         stk == "HVK" ~ "HRN",
                          stk == "BU" ~ "BOL",
                          stk == "SNG" ~ "SAN",
                          stk == "G" ~ "GRD",

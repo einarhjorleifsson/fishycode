@@ -1,7 +1,7 @@
 # Reviewed corrections to the frozen Iceland/Faroe harbour artifact.
 #
 # Input:  raw/ports/ports_iceland_faroe.gpkg       159 harbours, as bootstrapped
-# Output: staging/ports/ports_iceland_faroe.gpkg   157 harbours, corrected
+# Output: staging/ports/ports_iceland_faroe.gpkg   159 harbours, corrected
 #
 # raw/ is immutable, so this writes a corrected copy rather than editing in
 # place; reference/ports/ports_all.R reads the staging copy. Declaration:
@@ -54,6 +54,16 @@ hvk_rebuilt <- read_sf(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg")) |>
   filter(pid == "IS-HVK")
 stopifnot(nrow(hvk_rebuilt) == 1, sum(ports$pid == "IS-HVK") == 1)
 st_geometry(ports)[ports$pid == "IS-HVK"] <- st_geometry(hvk_rebuilt)
+
+# -- 2c. Two harbours the first bootstrap dropped, named by the maintainer ------
+# STK codes ANV (Álfsnes, 72 events) and HVK (Hornvík, 1,128 events at 66.4N) had
+# no row in the bootstrap's ports_table, so the inner join discarded them. Both
+# are in the rebuild now; they are the only polygons taken from it that are new.
+new_pid <- c("IS-ANV", "IS-HRN")
+ports <- bind_rows(ports,
+                   read_sf(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg")) |>
+                     filter(pid %in% new_pid))
+stopifnot(sum(ports$pid %in% new_pid) == 2)
 fixed <- ports |>
   filter(pid %in% rebuffer_pid) |>
   st_transform(3057) |> st_centroid() |> st_buffer(BUFFER_M) |>
@@ -61,7 +71,7 @@ fixed <- ports |>
 ports <- bind_rows(ports |> filter(!pid %in% rebuffer_pid), fixed) |> arrange(pid)
 
 stopifnot(
-  nrow(ports) == 157,
+  nrow(ports) == 159,
   !any(duplicated(st_as_text(st_geometry(ports)))),
   all(!drop_pid %in% ports$pid),
   all(abs(sqrt(as.numeric(st_area(st_transform(
