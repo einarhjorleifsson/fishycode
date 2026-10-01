@@ -1,7 +1,7 @@
 # Reviewed corrections to the frozen Iceland/Faroe harbour artifact.
 #
 # Input:  raw/ports/ports_iceland_faroe.gpkg       159 harbours, as bootstrapped
-# Output: staging/ports/ports_iceland_faroe.gpkg   156 harbours, corrected
+# Output: staging/ports/ports_iceland_faroe.gpkg   157 harbours, corrected
 #
 # raw/ is immutable, so this writes a corrected copy rather than editing in
 # place; reference/ports/ports_all.R reads the staging copy. Declaration:
@@ -34,15 +34,7 @@ stopifnot(nrow(ports) == 159)
 # Their CODES still resolve — curated/reference/port.parquet carries them from
 # kvoti.stadur with pid NA. See TODO 12b; a code must not need a polygon.
 drop_pid <- c("IS-HLS",   # Hellissandur, hid 41
-              "IS-HDL",   # Hnífsdalur,   hid 71
-              "IS-HVK")   # see below
-
-# IS-HVK is dropped too, for a different reason: it is a harbour, but this
-# polygon is in the wrong place. The bootstrap built it from the raw STK code HVK
-# (1,128 events at 66.4N, -22.4W) while the pid is Hólmavík (65.7N, -21.7W), 80 km
-# away. The rebuilt bootstrap excludes those events and builds Hólmavík from the
-# HK/HOL events; until that rebuild is promoted, Hólmavík has no einar polygon
-# rather than a wrong one. Its code (hid 81) still resolves by name via kvoti.
+              "IS-HDL")   # Hnífsdalur,   hid 71
 
 # -- 2. Restore the intended 500 m radius --------------------------------------
 # The hand-added ports were buffered in EPSG:3857, whose unit is a metre only at
@@ -52,6 +44,16 @@ rebuffer_pid <- c("IS-VIK", "IS-HLL", "IS-ALV", "IS-OGV")
 BUFFER_M <- 500
 
 ports <- ports |> filter(!pid %in% drop_pid)
+
+# -- 2b. Hólmavík's polygon was built at the wrong harbour ----------------------
+# IS-HVK was built from the raw STK code HVK (1,128 events at 66.4N, -22.4W)
+# while the pid is Hólmavík (65.7N, -21.7W), 90 km away. The rebuilt bootstrap
+# excludes those events and builds Hólmavík from the HK/HOL events. Only this
+# geometry is taken from the rebuild; the rest of the rebuild is not promoted yet.
+hvk_rebuilt <- read_sf(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg")) |>
+  filter(pid == "IS-HVK")
+stopifnot(nrow(hvk_rebuilt) == 1, sum(ports$pid == "IS-HVK") == 1)
+st_geometry(ports)[ports$pid == "IS-HVK"] <- st_geometry(hvk_rebuilt)
 fixed <- ports |>
   filter(pid %in% rebuffer_pid) |>
   st_transform(3057) |> st_centroid() |> st_buffer(BUFFER_M) |>
@@ -59,7 +61,7 @@ fixed <- ports |>
 ports <- bind_rows(ports |> filter(!pid %in% rebuffer_pid), fixed) |> arrange(pid)
 
 stopifnot(
-  nrow(ports) == 156,
+  nrow(ports) == 157,
   !any(duplicated(st_as_text(st_geometry(ports)))),
   all(!drop_pid %in% ports$pid),
   all(abs(sqrt(as.numeric(st_area(st_transform(
