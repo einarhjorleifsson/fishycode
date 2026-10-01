@@ -45,7 +45,7 @@ sf::sf_use_s2(FALSE)
 
 # -- Parameters ----------------------------------------------------------------
 
-G_H        <- 4      # a stay is at least this many hours (the current MIN_HARBOUR_H)
+G_H        <- as.numeric(Sys.getenv("STAY_G_H", "4"))   # a stay is at least this many hours (the old MIN_HARBOUR_H; test hook, decision 062)
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # first year whose events are used
