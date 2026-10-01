@@ -386,7 +386,7 @@ per ping there are 3.93 M `U` and 4.26 M `I` (with a vid), 1 % of `U` without a 
 
 `curated/ais/harbour_stay` (`curate/harbour_stay.R`) and its yardstick `curated/check/harbour_stay_logbook`; results and open points in `decisions/060-harbour-stays-built.md`.
 The general rules give ≈ 1.2 stays per logbook trip in every year, 95 % of landing days have a stay (the misses are neighbouring harbours), and the events add 2 % stays of low precision,
-so §3.0 stands as the base and §3.1–§3.3 are corroboration, as the maintainer's "do not trust events before 2017" implied.
+and a per-harbour departure radius (`curated/reference/harbour_radius`, §3.6's `r_m` as an asymmetric pair) covers harbours like Hornafjörður; event-only stays are mostly false after it (decision 060). §3.0 stands as the base and §3.1–§3.3 are corroboration, as the maintainer's "do not trust events before 2017" implied.
 
 ## 5. Decisions
 

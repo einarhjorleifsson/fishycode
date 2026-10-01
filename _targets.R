@@ -451,8 +451,15 @@ list(
   # Stays (plan 011 Phase 3): elapsed time at a harbour, from polygon, gap and (2017+) event
   # evidence. Retags the cleaned pings against the current polygons itself, so it does not wait
   # for the chain rebuild; nothing consumes it until Phase 4.
+  # The departure radius per harbour (decision 060), measured from the tagged events.
+  tar_target(harbour_radius, {
+    shapes; check_stk_event
+    produces("reference/ports/harbour_radius.R",
+             fd_curated("reference", "harbour_radius.parquet"))
+  }, format = "file"),
+
   tar_target(harbour_stay, {
-    ais_ping_clean; shapes; check_stk_event
+    ais_ping_clean; shapes; check_stk_event; harbour_radius
     produces("curate/harbour_stay.R",
              fd_curated("ais", "harbour_stay.parquet"))
   }, format = "file"),

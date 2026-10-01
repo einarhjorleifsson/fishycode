@@ -60,11 +60,29 @@ every year because the general rules need no event.
   `IS-RHA`, `IS-FAS`, `IS-KLA`, `IS-HVR`; a few p95 values of 20–59 km (`IS-DRN`, `IS-BLO`) are event errors. So the
   pattern is asymmetric (arrival near, departure sometimes far) but it is a property of a harbour, not a rule:
   a per-harbour departure radius `r_out` (p95 of this distance, floor 2 km, cap about 6 km) with the arrival
-  end kept at 2 km would cover Hornafjörður without the 14 k extra stays a global 5 km adds. Not built.
+  end kept at 2 km would cover Hornafjörður without the 14 k extra stays a global 5 km adds. **Built the same day**,
+  see the last section.
+
+## Asymmetric radius built (2026-10-01)
+
+`reference/ports/harbour_radius.R` → `curated/reference/harbour_radius.parquet` (target `harbour_radius`): `r_in_m` 2 km
+for all, `r_out_m` the p95 of the `U` distance clamped to 2–6 km, **after dropping `U` distances beyond 6 km as bad events**
+(with them in, `IS-DRN` and `IS-BLO` would have got 6 km from errors alone). 100 harbours are measured, 8 get more
+than 2 km: Borgarnes 4.1, Miðsandur 3.7, Hornafjörður 3.4, Mjóifjörður 3.3, Skálmarnes 3.2, Stafnes 2.9, Brjánslækur 2.7,
+Djúpavík 2.6 km. `harbour_stay.R` takes a gap only when its first ping is within 2 km of the harbour and its second within
+that harbour's `r_out_m`. `STAY_RADIUS_OUT=same` reproduces the old symmetric rule. Stays rebuilt: 1,468,243 (+2,608 over
+the 2 km rule; the global 5 km added 14,790).
+- Landing coverage, same pid: 92.5 → 92.7 %, any pid 95.3 → 95.5 %; `IS-HOR` 86.0 → 94.0 %. Stays per logbook trip
+  unchanged (1.14–1.25, 50–65 % within ±25 %).
+- **Event-only stays 13,381 → 10,385.** The "silent, pings 2–5 km apart" class fell from 3,398 (81 % with a landing)
+  to 633 (31 %): the real ones are now found by the ping rules. What remains is 21 % with a landing overall: 2,209 silent
+  within 2 km (7 %), 2,349 where the vessel left beyond 5 km (38 %, a missing `U`), 5,194 where the pings stay within 5 km
+  (19 %). **Event-only stays are now mostly false; Phase 4 should not use them** (filter `evidence` containing only
+  `event_pair`). Events still corroborate: stays with ping and event evidence have the best precision.
 
 ## Not decided
 
-Whether `event only` stays enter the voyages (Phase 4 can filter on `evidence`; recommended not to). The 2 km
+Event-only stays: recommended not to use them in voyages (see above); the maintainer decides. The 2 km
 radius and 4 h are one value for all harbours, the profile is TODO 33. A pass-through guard is not needed for the
 general rules (a transit has no ≥ 4 h gap) and is moot for event pairs (≥ 4 h by construction). Foreign
 harbours have no `einar` polygon and no stays. `rule` here is the plan's `basis` column; the name `basis`

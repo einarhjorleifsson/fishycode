@@ -2849,6 +2849,61 @@ tables:
         examples: [27.1.a, 27.2.b.2, 27.4.c, 27.7.e, 27.9.b.2]
         description: >
           ICES/FAO area code, sampled at the H3 cell centroid.
+  - name: reference_harbour_radius
+    source:
+      parquet: ../../fishydata/curated/reference/harbour_radius.parquet
+    description: >
+      One row per Iceland/Faroe harbour (`einar` polygon): how far from the polygon the first ping after a
+      stay may lie. The arrival end uses `r_in_m` for every harbour; the departure end uses the harbour's
+      own `r_out_m`, measured from the real `I`->`U` pairs of the tagged STK events (decision 060). Used
+      by `curate/harbour_stay.R`. Built by `reference/ports/harbour_radius.R`.
+    columns:
+      - name: pid
+        type: string
+        description: >
+          Standard harbour key.
+      - name: port
+        type: string
+        description: >
+          Standard harbour name.
+      - name: r_in_m
+        type: number
+        description: >
+          Arrival radius in metres, the same for every harbour (2000).
+      - name: r_out_m
+        type: number
+        description: >
+          Departure radius in metres: p95 of the `U` ping's distance from the polygon over the harbour's
+          real pairs, between 2000 and 6000; 2000 where there are fewer than 100 pairs.
+      - name: basis
+        type: string
+        description: >
+          `reconstructed` = measured from at least 100 pairs; `synthesised` = the 2000 m default.
+      - name: n_pairs
+        type: number
+        description: >
+          Real `I`->`U` pairs behind the harbour: adjacent, same harbour, 4 h or more apart, both `io_ok`
+          and kept, 2008-2025.
+      - name: d_p50
+        type: number
+        description: >
+          Median distance in metres of the `U` ping from the polygon, pairs within the 6000 m cap.
+      - name: d_p90
+        type: number
+        description: >
+          90th percentile of the same.
+      - name: d_p95
+        type: number
+        description: >
+          95th percentile of the same: the unclamped `r_out_m`.
+      - name: share_gt_r_in
+        type: number
+        description: >
+          Share of the harbour's pairs whose `U` ping is beyond `r_in_m`.
+      - name: share_gt_cap
+        type: number
+        description: >
+          Share beyond the 6000 m cap; treated as bad events and left out of the percentiles.
   - name: reference_dictionary
     source:
       parquet: ../../fishydata/curated/reference/dictionary.parquet

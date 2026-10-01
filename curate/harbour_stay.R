@@ -11,12 +11,16 @@
 #
 # The harbour of a ping is found HERE, against the current polygons, not read from `ping_clean$pid`:
 # that tag comes from the previous polygon set and the chain is rebuilt once, after this phase
-# (decision 058). `h` = the polygon the ping is inside, else the polygon it lies within R_M metres of;
-# `inside` says which.
+# (decision 058). `h` = the polygon the ping is inside, else the nearest polygon it lies within r_out of;
+# `inside` and `near_in` (within the arrival radius R_M) say how close.
+#
+# The radius is asymmetric (decision 060). The arrival end of a gap (the last ping before the silence) must
+# be within R_M of the harbour; the departure end (the first ping after it) within the harbour's own `r_out_m`
+# (curated/reference/harbour_radius.parquet; 2 km where unmeasured, up to 6 km, Hornafjörður 3.4 km).
 #
 # Evidence, all providers, all years (the rules need no STK event):
-#   tag_then_gap     two consecutive pings at the same harbour at least G hours apart, one of them
-#                    inside the polygon
+#   tag_then_gap     two consecutive pings at the same harbour at least G hours apart (the first within
+#                    R_M, the second within r_out), one of them inside the polygon
 #   gap_near_harbour the same, neither inside (a vessel silent in port, never heard at the quay)
 #   tag_span         consecutive pings inside one polygon spanning at least G hours
 #   event_pair       an STK `I` then `U` at the same standard harbour, G hours or more apart, both
@@ -32,7 +36,7 @@
 # year's first ping is cut there, not extended (`year_edge`).
 #
 # Not here: the pass-through guard for event pairs (they must be >= G hours, so a 1-60 min transit never
-# qualifies), the per-harbour radius and class (TODO 33; one R_M for all), foreign harbours (no `einar`
+# qualifies), the per-harbour class (TODO 33), foreign harbours (no `einar`
 # polygon, deferred in plan §3.6), and the vessels with two streams in one mid (2765, ...).
 
 library(dplyr)
@@ -42,7 +46,8 @@ sf::sf_use_s2(FALSE)
 # -- Parameters ----------------------------------------------------------------
 
 G_H        <- 4      # a stay is at least this many hours (the current MIN_HARBOUR_H)
-R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # a ping this close to a polygon counts as at that harbour (Phase 0: 96 % of gap ends)
+R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
+RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # first year whose events are used
 
 con <- duckdbfs::cached_connection()
@@ -59,13 +64,18 @@ ALL       <- !length(YEARS)
 
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>
   filter(source == "einar") |> select(pid) |> sf::st_make_valid()
-near <- sf::st_transform(sf::st_buffer(sf::st_transform(P, 3575), R_M), 4326)
+rad <- nanoparquet::read_parquet(fd_curated("reference", "harbour_radius.parquet")) |> as_tibble()
+r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else rep(R_M, nrow(P))
+r_out <- pmax(coalesce(r_out, R_M), R_M)
+buf <- function(d) sf::st_transform(sf::st_buffer(sf::st_transform(P, 3575), d), 4326)
+near_in <- buf(R_M); near_out <- buf(r_out)
 DBI::dbWriteTable(con, "harb_wkt", tibble(pid = P$pid,
                                           poly = sf::st_as_text(sf::st_geometry(P), digits = 15),
-                                          near = sf::st_as_text(sf::st_geometry(near), digits = 15)),
+                                          near_in = sf::st_as_text(sf::st_geometry(near_in), digits = 15),
+                                          near_out = sf::st_as_text(sf::st_geometry(near_out), digits = 15)),
                   overwrite = TRUE, temporary = TRUE)
 x("CREATE OR REPLACE TEMP TABLE harb AS
-   SELECT pid, ST_GeomFromText(poly) AS g, ST_GeomFromText(near) AS gn FROM harb_wkt")
+   SELECT pid, ST_GeomFromText(poly) AS g, ST_GeomFromText(near_in) AS gi, ST_GeomFromText(near_out) AS go FROM harb_wkt")
 
 # -- One year ------------------------------------------------------------------------
 
@@ -83,13 +93,18 @@ stay_year <- function(yr) {
                 QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time) = 1)
     SELECT vid, time, lon, lat, row_number() OVER (PARTITION BY vid ORDER BY time) AS rn FROM base"))
 
-  # harbour of each ping: nearest candidate polygon among those whose buffer holds it
+  # harbour of each ping: among the polygons whose r_out buffer holds it, prefer those whose arrival
+  # buffer (R_M) also holds it, then the nearest
   x("CREATE OR REPLACE TEMP TABLE tg AS
-     SELECT s.vid, s.rn, any_value(s.time) AS time,
-            arg_min(h.pid, ST_Distance(ST_Point(s.lon, s.lat), h.g)) AS h,
-            min(ST_Distance(ST_Point(s.lon, s.lat), h.g)) = 0 AS inside
-     FROM seq s JOIN harb h ON ST_Intersects(h.gn, ST_Point(s.lon, s.lat))
-     GROUP BY s.vid, s.rn")
+     WITH c AS (
+       SELECT s.vid, s.rn, s.time, h.pid, ST_Distance(ST_Point(s.lon, s.lat), h.g) AS d,
+              ST_Intersects(h.gi, ST_Point(s.lon, s.lat)) AS near_in
+       FROM seq s JOIN harb h ON ST_Intersects(h.go, ST_Point(s.lon, s.lat)))
+     SELECT vid, rn, any_value(time) AS time,
+            arg_min(pid, (CASE WHEN near_in THEN 0 ELSE 10 END) + d) AS h,
+            min(d) = 0 AS inside,
+            arg_min(near_in, (CASE WHEN near_in THEN 0 ELSE 10 END) + d) AS near_in
+     FROM c GROUP BY vid, rn")
 
   x(glue::glue("
     CREATE OR REPLACE TEMP TABLE runs AS
@@ -106,7 +121,7 @@ stay_year <- function(yr) {
     seeds AS (
       SELECT vid, h, rn AS s, nrn AS e, time AS t_s, nt AS t_e,
              CASE WHEN inside OR nin THEN 'tag_then_gap' ELSE 'gap_near_harbour' END AS rule
-      FROM a WHERE nrn = rn + 1 AND nh = h AND epoch(nt - time) >= {G_H} * 3600
+      FROM a WHERE nrn = rn + 1 AND nh = h AND near_in AND epoch(nt - time) >= {G_H} * 3600
       UNION ALL
       SELECT vid, h, s, e, t_s, t_e, 'tag_span' FROM runs WHERE epoch(t_e - t_s) >= {G_H} * 3600),
     ext AS (
