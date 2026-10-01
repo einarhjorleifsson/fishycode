@@ -51,6 +51,17 @@ every year because the general rules need no event.
   is a mixture: real where the radius is too small, false where an event is missing or the harbour flickers.
   Filtering on `evidence` alone cannot separate them; fixing the radius first removes the best part.
 
+- **Is the `U` ping generally far from the harbour? No (checked 2026-10-01).** 1,282,867 real pairs (adjacent `I`→`U`
+  at one harbour, ≥ 4 h, both `io_ok` and kept, 2008–2025): the `I` ping is inside the polygon (by construction) and
+  the `U` ping is outside it in 82 % of pairs but close: median 94 m, p90 821 m, p95 1.2 km, 2.3 % beyond 2 km
+  (pre-2017 3.3 %, 2017+ 1.4 %). Of 100 harbours with ≥ 100 pairs, 91 have ≤ 10 % of their `U` beyond 2 km and 18 have
+  a p95 above 2 km (9 above 5 km), together 3.8 % of the pairs. The exceptions are specific harbours: Hornafjörður
+  (28 % beyond 2 km, 24,664 pairs, p95 3.4 km), Mjóifjörður (14.5 %), `IS-BRA` (12 %),
+  `IS-RHA`, `IS-FAS`, `IS-KLA`, `IS-HVR`; a few p95 values of 20–59 km (`IS-DRN`, `IS-BLO`) are event errors. So the
+  pattern is asymmetric (arrival near, departure sometimes far) but it is a property of a harbour, not a rule:
+  a per-harbour departure radius `r_out` (p95 of this distance, floor 2 km, cap about 6 km) with the arrival
+  end kept at 2 km would cover Hornafjörður without the 14 k extra stays a global 5 km adds. Not built.
+
 ## Not decided
 
 Whether `event only` stays enter the voyages (Phase 4 can filter on `evidence`; recommended not to). The 2 km
