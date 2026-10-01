@@ -394,6 +394,10 @@ and a per-harbour departure radius (`curated/reference/harbour_radius`, §3.6's 
 shared voyages 23.2 % → 5.0 % (afli) and 19.3 % → 4.2 % (fs_afladagbok); vid 2481 2011 has 186 voyages; arrival harbour agrees with the logbook landing harbour in 93–94 %
 of linked trips (was 83–88 %). Voyages over 7 days 10.3 % → 2.4 %. The residue is landings with no stay (short visits and unheard harbours).
 
+## 4g. The minimum stay per harbour class (2026-10-01)
+
+Decisions 063 (harbour class per year, minimum stay by class tested) and 064 (landing-class minimum of 2 h applied and rebuilt): shared voyages 5.0 → 3.9 % (afli), 4.2 → 3.2 % (fs_afladagbok), static gear 6.9 → 4.85 %. Gear and vessel size are not used (landings are the yardstick, not an input; background in memory `static-gear-logbook-recording`).
+
 ## 5. Decisions
 
 **Settled 2026-10-01 (maintainer):** the harbour class is assigned by the data rule of §3.6 and the maintainer overrides it by file; foreign harbours are deferred, and
