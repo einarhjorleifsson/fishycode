@@ -391,6 +391,26 @@ gr   <- graph_from_edgelist(rbind(e_int, do.call(rbind, e_near), self),
                             directed = FALSE)
 ports_all$cluster <- components(gr)$membership[seq_len(nrow(ports_all))]
 
+# Two einar harbours are never one port. Single linkage chains them through the
+# other sources (a gfw dock anchorage, an osm feature, a 500 m buffer that touches
+# both), so Kópavogur, Viðey, Gufunes and Álfsnes became IS-REY, Garðabær and
+# Straumsvík became IS-HAF, Helguvík and Njarðvík became IS-NJA. The einar polygons
+# are reviewed and each is its own harbour (Kópavogur is a separate entity with
+# its own approach), so a cluster holding several einar features is split: every
+# einar feature starts its own cluster and every other member goes to the nearest.
+is_e <- ports_all$source == "einar"
+for (k in unique(ports_all$cluster[is_e][duplicated(ports_all$cluster[is_e])])) {
+  m   <- which(ports_all$cluster == k)
+  eh  <- m[is_e[m]]
+  oth <- m[!is_e[m]]
+  ids <- c(k, max(ports_all$cluster) + seq_len(length(eh) - 1))
+  ports_all$cluster[eh] <- ids
+  if (length(oth))
+    ports_all$cluster[oth] <-
+      ids[apply(st_distance(gp[oth], gp[eh]), 1, which.min)]
+}
+stopifnot(!any(duplicated(ports_all$cluster[is_e])))
+
 # canonical member: best priority, then a real UN/LOCODE, then the largest
 # footprint, then the code itself so the choice is reproducible
 rep_tbl <- ports_all |>

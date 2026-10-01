@@ -45,15 +45,18 @@ BUFFER_M <- 500
 
 ports <- ports |> filter(!pid %in% drop_pid)
 
-# -- 2b. Hólmavík's polygon was built at the wrong harbour ----------------------
-# IS-HVK was built from the raw STK code HVK (1,128 events at 66.4N, -22.4W)
-# while the pid is Hólmavík (65.7N, -21.7W), 90 km away. The rebuilt bootstrap
-# excludes those events and builds Hólmavík from the HK/HOL events. Only this
-# geometry is taken from the rebuild; the rest of the rebuild is not promoted yet.
-hvk_rebuilt <- read_sf(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg")) |>
-  filter(pid == "IS-HVK")
-stopifnot(nrow(hvk_rebuilt) == 1, sum(ports$pid == "IS-HVK") == 1)
-st_geometry(ports)[ports$pid == "IS-HVK"] <- st_geometry(hvk_rebuilt)
+# -- 2b. Three polygons built at the wrong harbour ----------------------------
+# IS-HVK (Hólmavík) was built from the raw STK code HVK (1,128 events at 66.4N,
+# -22.4W, which is Hornvík), 90 km from Hólmavík (65.7N). IS-STK (Stokkseyri) was
+# a Stykkishólmur berth: the bootstrap labelled it "STK2" by typo, so it carried
+# the Stykkishólmur berth at 65.1N instead of Stokkseyri (63.8N); IS-STY lacks
+# that berth. The rebuilt bootstrap fixes all three. Only these geometries are
+# taken from the rebuild; the rest of the rebuild is not promoted yet.
+swap_pid <- c("IS-HVK", "IS-STK", "IS-STY")
+rebuilt <- read_sf(fd_raw("ports", "ports_iceland_faroe_rebuild.gpkg")) |>
+  filter(pid %in% swap_pid)
+stopifnot(nrow(rebuilt) == 3, all(table(ports$pid[ports$pid %in% swap_pid]) == 1))
+st_geometry(ports)[match(rebuilt$pid, ports$pid)] <- st_geometry(rebuilt)
 
 # -- 2c. Two harbours the first bootstrap dropped, named by the maintainer ------
 # STK codes ANV (Álfsnes, 72 events) and HVK (Hornvík, 1,128 events at 66.4N) had
