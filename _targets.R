@@ -485,6 +485,26 @@ list(
              fd_curated("check", "voyage_sharing.parquet"))
   }, format = "file"),
 
+  # The product (plan 011 Phase 5): every fix with its voyage, station and logbook trip, by year-month.
+  tar_target(ais_trail, {
+    ais_ping_trail; station_window; trip_voyage
+    produces("curate/ais_trail.R",
+             fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
+  }, format = "file"),
+
+  tar_target(check_trail_agreement, {
+    ais_trail
+    produces("curate/checks/trail_agreement.R",
+             fd_curated("check", "trail_agreement.parquet"))
+  }, format = "file"),
+
+  # Logbook stations that find a fix in the trail, by year and gear (plan 011 Phase 5).
+  tar_target(check_trail_sid_coverage, {
+    ais_trail; station_window
+    produces("curate/checks/trail_sid_coverage.R",
+             fd_curated("check", "trail_sid_coverage.parquet"))
+  }, format = "file"),
+
   tar_target(check_ais_key_reused_callsign, {
     vessel_ais_key_cascade; vessel; landing
     produces("curate/checks/ais_key_reused_callsign.R",

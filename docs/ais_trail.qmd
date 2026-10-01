@@ -1,5 +1,5 @@
 ---
-title: "`ais_trail()` — pings with their trip and fishing activity"
+title: "`ais/trail` — pings with their voyage, trip and fishing activity"
 subtitle: "Two trips, followed fix by fix, with the answer checked independently"
 date: today
 editor: source
@@ -18,26 +18,42 @@ library(here)
 # root to the repo, so this runs the same under quarto and line by line.
 i_am("docs/ais_trail.qmd")
 source(here("R/paths.R"))
-source(here("R/ais_trail.R"))
+
+# The trail is a parquet dataset partitioned by year and month; these are only shortcuts for
+# `open_dataset() |> filter()`, which is all an analyst needs.
+trail <- function(years, vids = NULL) {
+  d <- duckdbfs::open_dataset(fd_curated("ais", "trail")) |> filter(year %in% !!years)
+  if (!is.null(vids)) d <- d |> filter(vid %in% !!vids)
+  d
+}
+trail_match <- function(years, vids = NULL) {
+  d <- duckdbfs::open_dataset(fd_curated("ais", "trail_match")) |> filter(year %in% !!years)
+  if (!is.null(vids)) d <- d |> filter(vid %in% !!vids)
+  d
+}
 ```
 
 ## What it is
 
-`ais_trail()` returns the AIS pings (and the onboard GPS logger fixes) of a vessel with the
-logbook station each one belongs to. It is a **lazy** table joined on the way out — a whole year
-takes about 9 s — so nothing is stored. Rules and numbers are in plan 010
-(`curate/plans/010-ping-activity-link.md`, §3 and §11).
+`curated/ais/trail` has one row per fix (the AIS pings and the onboard GPS logger fixes of every
+vessel) with the AIS voyage, the logbook station and the logbook trip it belongs to. It is a parquet
+dataset partitioned by year and month, so there is nothing to call: open it and work on it in dplyr.
+Rules and numbers are in plan 010 (`curate/plans/010-ping-activity-link.md`, §3 and §11) and plan 011
+(Phase 5); `curated/ais/trail_match` holds every (fix, station) match.
 
 ```r
-ais_trail(2019)                      # one row per fix, station columns attached
-ais_trail(2017:2019, vids = 1277)    # a few vessels
-ais_trail(2019, long = TRUE)         # one row per (fix, station)
+trail <- duckdbfs::open_dataset(fd_curated("ais", "trail"))
+trail |> filter(year == 2019, vid == 1277) |> collect()          # one vessel-year
+trail |> filter(year == 2019, month == 6) |> count(gear_class)    # a month
+duckdbfs::open_dataset(fd_curated("ais", "trail_match"))          # one row per (fix, station)
 ```
 
-The columns added to the pings:
+The columns added to the pings (the voyage columns come from the AIS voyage, the station columns from the logbook stations):
 
 | column | meaning |
 |---|---|
+| `stay_pid`, `trip` | harbour of the stay the fix is in (NA at sea); the AIS voyage number within `vid` and `year` |
+| `.tid_voyage`, `schema_voyage`, `n_tid_voyage` | the logbook trip of the voyage — filled only when exactly one trip is on it; `n_tid_voyage` counts them (0 = none) |
 | n_sid | number of station windows that contain the fix (0 = none) |
 | `.sid`, `schema`, `.tid` | the station and trip — filled **only** when `n_sid == 1` |
 | `phase`, `phase_frac` | `tow`, `haul`, `set`, `jig` or `day`; how far through the window the fix is (0–1) |
@@ -53,8 +69,7 @@ A trip is `(.tid, schema)`. The helper below takes one, reads its station window
 fixes from three hours before the trip's first window to three hours after its last. The windows
 returned are **every window of the vessel that overlaps that span**, not only the trip's own: a
 neighbouring trip's tow or a `day` window can claim the fixes at the edges, and the check has to
-know about them. (Fixes outside every window carry no `.tid` yet; the span margin stands in for
-the voyage.)
+know about them. (A fix outside every window has no `.tid`, but it may carry `.tid_voyage`; here the span margin stands in for the voyage.)
 
 ```{r}
 #| label: helpers
@@ -67,12 +82,12 @@ trip_trail <- function(tid, schema, margin_h = 3) {
   yrs <- unique(as.integer(format(c(lo, hi), "%Y")))
   sw <- swall |> filter(vid == !!vid) |> collect() |>
     filter(w_end >= lo, w_start <= hi) |> arrange(w_start)
-  tr <- ais_trail(yrs, vids = vid) |> filter(time >= !!lo, time <= !!hi) |> collect()
+  tr <- trail(yrs, vid) |> filter(time >= !!lo, time <= !!hi) |> collect()
   list(vid = vid, tid = tid, own = own, sw = sw, tr = tr)
 }
 
 # The check: plain R, not the join. A fix belongs to the tow-type windows holding its time, and
-# only when there is none does a `day` window claim it (the tier rule in R/ais_trail.R).
+# only when there is none does a `day` window claim it (the tier rule in R/trail_sql.R).
 prove <- function(x) {
   sw <- x$sw; tr <- x$tr
   k <- lapply(tr$time, function(t) {
@@ -182,11 +197,11 @@ per_station(x2)
 ## When a fix belongs to more than one station
 
 Where two windows overlap, `n_sid > 1` and `.sid` is left empty. The unambiguous alternative is
-`long = TRUE`, which returns one row per (fix, station) so the analyst decides:
+`trail_match`, which has one row per (fix, station) so the analyst decides:
 
 ```{r}
 #| label: long
-ais_trail(2019, vids = x1$vid, long = TRUE) |>
+trail_match(2019, x1$vid) |>
   filter(time >= !!min(x1$tr$time), time <= !!max(x1$tr$time)) |>
   count(.sid, phase, win_basis) |>
   collect() -> long_n
@@ -198,7 +213,7 @@ For this trip no fix is ambiguous. To see how common it is over a whole vessel-y
 
 ```{r}
 #| label: ambiguity
-ais_trail(2019, vids = x1$vid, sorted = FALSE) |>
+trail(2019, x1$vid) |>
   count(n_sid, name = "fixes") |>
   collect() |>
   arrange(n_sid)
@@ -206,6 +221,7 @@ ais_trail(2019, vids = x1$vid, sorted = FALSE) |>
 
 ## Where the numbers come from
 
+- `curated/ais/trail`, `trail_match` — built from `ping_trail`, `station_window` and `link/trip_voyage` by `curate/ais_trail.R`; checks `curated/check/trail_agreement` (the station and the voyage name the same trip in 99.6 % of fixes that have both) and `trail_sid_coverage`.
 - `curated/ais/ping_trail/year=*` — AIS (stk, astd, astdB, emodnet) and the GPS logger, unique on `(vid, time)`, speed in knots.
 - `curated/logbook/station_window.parquet` — one row per station window, with `win_basis` saying how it was drawn.
 - This page and the code behind it were written with AI assistance (Claude); the checks above, not the code's say-so, establish the result.

@@ -142,7 +142,10 @@ write_curated_sql <- function(con, sql, path, inputs = character(), script = NUL
   # `order_by` is applied to THIS pass, not left to the query: a sweep table is read
   # sequentially by vessel and time, and row order in the file is part of the contract.
   ord <- if (!is.null(order_by)) paste("ORDER BY", order_by) else ""
-  DBI::dbExecute(con, sprintf("COPY (SELECT * FROM read_parquet(%s) %s) TO %s (FORMAT parquet, KV_METADATA {%s})",
+  # hive_partitioning = FALSE: the temp file sits under .../year=Y/month=M/, and read_parquet() would turn those
+  # directory names into columns of the file (found 2026-10-01 on ais/trail), so a partitioned table carried its
+  # partition keys twice. A key that is also a column of the query (ping_trail's `year`) is already in the file.
+  DBI::dbExecute(con, sprintf("COPY (SELECT * FROM read_parquet(%s, hive_partitioning = false) %s) TO %s (FORMAT parquet, KV_METADATA {%s})",
                               shQuote(tmp, type = "sh"), ord, shQuote(path, type = "sh"), meta))
   unlink(tmp)
   invisible(n)

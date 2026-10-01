@@ -100,7 +100,7 @@ for (yr in years) {
   %s
   SELECT a.vid, a.mmsi, a.time, a.lon, a.lat,
          CASE WHEN a.speed BETWEEN 0 AND %f THEN a.speed END AS speed,
-         a.speed AS speed_raw, a.heading, a.cog, a.provider, a.pid, a.year, a.trip,
+         a.speed AS speed_raw, a.heading, a.cog, a.provider, a.pid, a.stay_pid, a.year, a.trip,
          'recorded' AS pos_basis,
          CASE WHEN a.provider = 'stk' THEN 'recorded' ELSE 'derived' END AS speed_basis,
          g.speed_kn AS speed_gps, CAST(NULL AS DOUBLE) AS dt_sec,
@@ -109,7 +109,7 @@ for (yr in years) {
   UNION ALL
   SELECT g.vid, CAST(NULL AS VARCHAR), g.time, g.lon, g.lat,
          CASE WHEN g.speed_kn BETWEEN 0 AND %f THEN g.speed_kn END, g.speed_kn,
-         g.heading, CAST(NULL AS DOUBLE), 'gps', CAST(NULL AS VARCHAR), %d, g.trip,
+         g.heading, CAST(NULL AS DOUBLE), 'gps', CAST(NULL AS VARCHAR), CAST(NULL AS VARCHAR), %d, g.trip,
          'reconstructed', 'recorded', CAST(NULL AS DOUBLE), g.dt_sec, g.sid_gps, g.n_sid_gps
   FROM g2 g WHERE NOT EXISTS (SELECT 1 FROM ais1 a WHERE a.vid = g.vid AND a.time = g.time)
   ORDER BY vid, time", a, gps_ctes, SPEED_MAX, SPEED_MAX, yr)

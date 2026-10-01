@@ -1,6 +1,6 @@
 # 011 — Harbour stays: fix voyage segmentation in general, with STK events as one source of evidence
 
-**status:** partly built — Phase 0 measured and Phase 1 seed built 2026-10-01 (§2, §2a, §4a); **paused 2026-10-01 for a separate harbour/port session (§4b)**; Phases 2–4 built 2026-10-01 (§4d–§4f); Phase 5 not started · **2026-10-01** · **see:** plans
+**status:** partly built — Phase 0 measured and Phase 1 seed built 2026-10-01 (§2, §2a, §4a); **paused 2026-10-01 for a separate harbour/port session (§4b)**; all phases built 2026-10-01 (§4d–§4h); closed by decision 065 · **2026-10-01** · **see:** plans
 `006-trip-identity-and-catch-to-ais-pings.md` (§4, and its correction), `010-ping-activity-link.md` (§3.3, the
 correction at its end); `reference/ports/bootstrap_iceland_faroe.R`, `reference/ports/ports_all.R`,
 `curate/ais_trip.R`, `curate/ais_ping_clean.R`.
@@ -397,6 +397,10 @@ of linked trips (was 83–88 %). Voyages over 7 days 10.3 % → 2.4 %. The resid
 ## 4g. The minimum stay per harbour class (2026-10-01)
 
 Decisions 063 (harbour class per year, minimum stay by class tested) and 064 (landing-class minimum of 2 h applied and rebuilt): shared voyages 5.0 → 3.9 % (afli), 4.2 → 3.2 % (fs_afladagbok), static gear 6.9 → 4.85 %. Gear and vessel size are not used (landings are the yardstick, not an input; background in memory `static-gear-logbook-recording`).
+
+## 4h. Phase 5 built (2026-10-01)
+
+Not a `.tid_voyage` column of `ais_trail()` but the trail itself as a month-partitioned parquet, `curated/ais/trail` with `curated/ais/trail_match`, carrying `.tid_voyage`, `schema_voyage` and `n_tid_voyage` beside the station columns; `decisions/065-the-trail-is-a-parquet.md`. `.tid` and `.tid_voyage` agree for 99.6 % of the fixes that have both.
 
 ## 5. Decisions
 

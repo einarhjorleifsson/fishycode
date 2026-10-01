@@ -374,6 +374,226 @@ tables:
         type: string
         description: >
           `reconstructed`: inferred from positions, not recorded.
+  - name: ais_trail
+    source:
+      parquet: ../../fishydata/curated/ais/trail/year=*/month=*/part_001.parquet
+    description: >
+      The product: one row per fix (AIS pings and onboard GPS logger fixes of every vessel), 2007-2026,
+      with its AIS voyage, the logbook station it falls in and the logbook trip of its voyage. Parquet
+      partitioned by year and month (`year` and `month` are the partition keys, not columns in the files),
+      sorted by vessel and time, unique on (vid, time). Open it with open_dataset() and work in dplyr;
+      nothing needs calling. Built by `curate/ais_trail.R` from `ping_trail`, `station_window` and
+      `link/trip_voyage` (plan 011 Phase 5, decision 065). A new month, or a late logbook correction,
+      rewrites that month's files only.
+    columns:
+      - name: vid
+        type: number
+        description: >
+          Vessel registration number.
+      - name: mmsi
+        type: string
+        description: >
+          MMSI of the AIS ping; NA for a GPS logger fix.
+      - name: time
+        type: timestamp
+        description: >
+          Time of the fix, UTC.
+      - name: lon
+        type: number
+        description: >
+          Longitude.
+      - name: lat
+        type: number
+        description: >
+          Latitude.
+      - name: speed
+        type: number
+        description: >
+          Cleaned speed in knots; NA where the source value was implausible (above 40 kn).
+      - name: speed_raw
+        type: number
+        description: >
+          Speed as received, converted to knots.
+      - name: heading
+        type: number
+        description: >
+          Heading.
+      - name: cog
+        type: number
+        description: >
+          Course over ground.
+      - name: provider
+        type: string
+        description: >
+          `stk`, `astd`, `astdB`, `emodnet` or `gps` (the onboard logger).
+      - name: pos_basis
+        type: string
+        description: >
+          `recorded` for an AIS position, `reconstructed` for a logger fix interpolated from the AIS
+          track.
+      - name: speed_basis
+        type: string
+        description: >
+          `recorded` or `derived` (ASTD speed is derived from distance over time).
+      - name: speed_gps
+        type: number
+        description: >
+          The logger's own speed where a logger fix ties an AIS ping, else NA.
+      - name: dt_sec
+        type: number
+        description: >
+          Logger fix: seconds to the previous logger fix; NA for AIS pings.
+      - name: stay_pid
+        type: string
+        description: >
+          Harbour of the stay (curated/ais/harbour_stay) the fix is in; NA at sea. Replaces the polygon
+          tag `pid` of the ping tables, which is not carried.
+      - name: trip
+        type: number
+        description: >
+          AIS voyage number within `vid` and the year of the fix; NA in a harbour stay. The voyage is the
+          sea between two stays (decision 061).
+      - name: .tid_voyage
+        type: number
+        description: >
+          The logbook trip linked to the fix's voyage (link/trip_voyage); filled only when exactly one
+          logbook trip is on the voyage, else NA.
+      - name: schema_voyage
+        type: string
+        description: >
+          Logbook source (`afli`, `fs_afladagbok`, `adb`) of `.tid_voyage`; `.tid` is unique only within a
+          schema.
+      - name: n_tid_voyage
+        type: number
+        description: >
+          Logbook trips linked to the fix's voyage: 0 = none or the fix is in no voyage, 1 = one, more
+          than 1 = trips share the voyage (3-4 % of linked voyages).
+      - name: n_sid
+        type: number
+        description: >
+          Number of logbook station windows that contain the fix (0 = none).
+      - name: .sid
+        type: number
+        description: >
+          The logbook station; filled only when `n_sid` is 1. A station is (.sid, schema).
+      - name: schema
+        type: string
+        description: >
+          Logbook source of the station.
+      - name: .tid
+        type: number
+        description: >
+          The logbook trip of the station, from the station window; filled only when `n_sid` is 1.
+      - name: gear
+        type: string
+        description: >
+          Gear code of the station.
+      - name: gear_class
+        type: string
+        description: >
+          `static`, `towed`, `jigged` or `other`.
+      - name: phase
+        type: string
+        description: >
+          `tow`, `haul`, `set`, `jig` or `day`.
+      - name: phase_frac
+        type: number
+        description: >
+          How far through the phase window the fix is (0-1); NA for `day`.
+      - name: win_basis
+        type: string
+        description: >
+          How the station window was drawn (`recorded`, `derived`, `capped`, `synthesised`).
+      - name: events
+        type: string
+        description: >
+          The times the station recorded (t1..t4).
+      - name: fishing
+        type: boolean
+        description: >
+          Inside a tow, haul, jig or day window and the speed inside that gear's speed range; a set is
+          never fishing. FALSE, not NA, for a fix with no match.
+      - name: sid_gps
+        type: number
+        description: >
+          The logger's own station reference for a GPS fix.
+      - name: n_sid_gps
+        type: number
+        description: >
+          Stations the logger fix refers to.
+  - name: ais_trail_match
+    source:
+      parquet: ../../fishydata/curated/ais/trail_match/year=*/month=*/part_001.parquet
+    description: >
+      One row per (fix, logbook station) match: every station window that contains a fix, including the
+      fixes that several stations claim (where `trail.n_sid` is above 1 and `.sid` is empty). For analysts
+      who want to choose between ambiguous stations themselves. Same year-month partitioning as
+      `ais_trail`; join on (vid, time). Built by `curate/ais_trail.R`.
+    columns:
+      - name: vid
+        type: number
+        description: >
+          Vessel registration number.
+      - name: time
+        type: timestamp
+        description: >
+          Time of the fix, UTC.
+      - name: .sid
+        type: number
+        description: >
+          The logbook station.
+      - name: schema
+        type: string
+        description: >
+          Logbook source; the station is (.sid, schema).
+      - name: .tid
+        type: number
+        description: >
+          The station's logbook trip.
+      - name: gear
+        type: string
+        description: >
+          Gear code.
+      - name: gear_class
+        type: string
+        description: >
+          `static`, `towed`, `jigged` or `other`.
+      - name: phase
+        type: string
+        description: >
+          `tow`, `haul`, `set`, `jig` or `day`.
+      - name: phase_frac
+        type: number
+        description: >
+          Position within the phase window (0-1); NA for `day`.
+      - name: win_basis
+        type: string
+        description: >
+          How the window was drawn.
+      - name: events
+        type: string
+        description: >
+          The times the station recorded.
+      - name: s1
+        type: number
+        description: >
+          Lower speed bound of the gear's fishing range, knots.
+      - name: s2
+        type: number
+        description: >
+          Upper speed bound.
+      - name: w_start
+        type: timestamp
+        description: >
+          Start of the window.
+      - name: w_end
+        type: timestamp
+        description: >
+          End of the window.
+      - name: fishing
+        type: boolean
+        description: >
+          This match is a tow, haul, jig or day window and the fix's speed is inside [s1, s2].
   - name: check_afli_rafr_stofn_corroboration
     source:
       parquet: ../../fishydata/curated/check/afli_rafr_stofn_corroboration.parquet
@@ -1157,6 +1377,101 @@ tables:
         type: number
         description: >
           Median voyage length in hours.
+  - name: check_trail_agreement
+    source:
+      parquet: ../../fishydata/curated/check/trail_agreement.parquet
+    description: >
+      One row per year: do the station and the voyage name the same logbook trip? Counts the fixes of
+      `ais_trail` by how many logbook trips are on their voyage and, where a fix has both a station `.tid`
+      and a `.tid_voyage`, how often they are the same trip (99.6 % over all years). Built by
+      `curate/checks/trail_agreement.R`.
+    columns:
+      - name: year
+        type: number
+        description: >
+          Year of the fix.
+      - name: n_fixes
+        type: number
+        description: >
+          Fixes.
+      - name: n_voyage0
+        type: number
+        description: >
+          Fixes with no logbook trip on the voyage (or in no voyage).
+      - name: n_voyage1
+        type: number
+        description: >
+          Fixes whose voyage carries exactly one logbook trip.
+      - name: n_voyage_shared
+        type: number
+        description: >
+          Fixes whose voyage carries several logbook trips.
+      - name: n_station_tid
+        type: number
+        description: >
+          Fixes with a station `.tid`.
+      - name: n_both
+        type: number
+        description: >
+          Fixes with both `.tid` and `.tid_voyage`.
+      - name: n_agree
+        type: number
+        description: >
+          Of those, fixes where they are the same trip (same id and schema).
+  - name: check_trail_sid_coverage
+    source:
+      parquet: ../../fishydata/curated/check/trail_sid_coverage.parquet
+    description: >
+      One row per (year, logbook source, gear class): how many logbook stations find at least one fix in
+      the trail. `n_tw` (stations with recorded times) is a property of the logbook; `n_tw_matched / n_tw`
+      is the property of the trail (98-99.7 % in 2009-2025). A station without usable times gets a whole-
+      day window, which matches any fix of the day, so `n_any / n_stations` flatters. Stations with no
+      vessel are left out. Built by `curate/checks/trail_sid_coverage.R`.
+    columns:
+      - name: year
+        type: number
+        description: >
+          Year the station's first window starts.
+      - name: schema
+        type: string
+        description: >
+          `afli` or `fs_afladagbok`.
+      - name: gear_class
+        type: string
+        description: >
+          Gear class of the station.
+      - name: n_stations
+        type: number
+        description: >
+          Logbook stations with a vessel.
+      - name: n_any
+        type: number
+        description: >
+          Stations matched by at least one fix, any phase.
+      - name: n_tier1
+        type: number
+        description: >
+          Stations matched through a tow, haul, set or jig window.
+      - name: n_heard
+        type: number
+        description: >
+          Stations whose vessel has any fix in the trail that year.
+      - name: n_any_heard
+        type: number
+        description: >
+          Of those, matched by any fix.
+      - name: n_tier1_heard
+        type: number
+        description: >
+          Of those, matched through a recorded-time window.
+      - name: n_tw
+        type: number
+        description: >
+          Stations with a recorded-time window (the logbook gave usable times).
+      - name: n_tw_matched
+        type: number
+        description: >
+          Of those, matched by a fix.
   - name: check_stk_event
     source:
       parquet: ../../fishydata/curated/check/stk_event.parquet

@@ -466,16 +466,6 @@ rule the pipeline no longer applies, and it is a second copy of a table - the fa
 
 **check:** `grep -n gear_caps docs/qc_fs_afladagbok_2025.qmd` returns nothing and the page renders.
 
-## 31. Voyage-only `.tid` for the trail (plan 011 Phase 5)
-**status:** open · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §4, plan 010 §3.3, `curate/decisions/061-voyages-cut-at-stays.md`
-
-The voyages are now cut at stays (shared voyages 23 % → 5 %, decision 061). What is left of item 31 is Phase 5: a voyage-only `.tid_voyage` in `ais_trail()` beside `.tid`,
-so `.tid` stays station evidence. The residue of shared voyages is the landing without a stay (TODO 33 for the per-harbour minimum stay).
-
-**check:** `ais_trail()` returns a `.tid_voyage` column and `check_bookkeeping()` is clean.
-
----
-
 ## 33. Harbour class, per period, from the AIS era
 **status:** in progress · **needs: maintainer** · **see:** `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memories `harbour-class-is-time-varying`, `static-gear-logbook-recording`
 

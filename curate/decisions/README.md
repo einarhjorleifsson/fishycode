@@ -89,6 +89,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 062 | [A lower stay minimum, tested](062-stay-minimum-tested.md) | 4/3/2/1 h: shared voyages 4.9 → 4.4 → 3.8 → 3.1 % (afli), landings with a stay 92.8 → 95.3 %, but added stays have 34 → 14 % landing precision and cost 5 → 23 stays per landing recovered; per-harbour minimum (TODO 33) is the better lever; nothing rebuilt |
 | 063 | [A harbour class per year, and a minimum stay by class](063-harbour-class-and-minimum-stay.md) | `curated/reference/harbour_class` (3-year window, provisional; 3.4 % of year steps change); `harbour_stay` takes `G` per class; landing-class 2 h gives the global-2 h coverage with 12 k fewer stays and cuts static-gear shared voyages 7.0 → 4.9 %; recommended, not applied |
 | 064 | [Landing-class minimum stay of 2 h applied](064-landing-minimum-stay-applied.md) | `G_LANDING` = 2 h at harbours of class `landing`, 4 h elsewhere; stays, voyages, link and trail rebuilt; shared voyages 5.0 → 3.9 % (afli), 4.2 → 3.2 % (fs), static gear 6.9 → 4.85 %; 4 h baseline archived |
+| 065 | [The trail is a month-partitioned parquet](065-the-trail-is-a-parquet.md) | `curated/ais/trail` (567 M fixes, year/month, 32 columns incl. `.tid_voyage`) and `trail_match`; replaces the `ais_trail()` function; `.tid` and `.tid_voyage` agree for 99.6 %; 98-99.7 % of stations with recorded times find fixes; closes plan 011 |
 
 ## Data defects
 
