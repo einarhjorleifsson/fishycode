@@ -27,3 +27,6 @@ data-dump/
 
 # machine-local data root; each machine sets its own
 .Renviron
+
+# Scratch space for one-off maps and scripts; nothing here is part of the record.
+/tmp/
