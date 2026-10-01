@@ -480,7 +480,7 @@ so `.tid` stays station evidence. The residue of shared voyages is the landing w
 **status:** in progress · **needs: maintainer** · **see:** `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memories `harbour-class-is-time-varying`, `static-gear-logbook-recording`
 
 Built 2026-10-01: `curated/reference/harbour_class` per harbour × year from the STK `I`→`U` pairs (3-year window, provisional), `overrides/harbour_class.csv` (empty), and a minimum stay per class in
-`harbour_stay.R` (landing 2 h, others 4 h, applied in decision 064). Asked of the maintainer: (1) the period design; (2) the landing minimum is applied (2 h, decision 064); (3) the overrides: Hornvík `IS-HRN` `no_pier`, Helguvík `cargo`, `IS-KRI` mostly transit; `VIS`, `MAN`, `TMY`, `STO` have no usable polygon. Background, not pursued: a
+`harbour_stay.R` (landing 2 h, others 4 h, applied in decision 064). Asked of the maintainer: (1) the period design; (2) the landing minimum is applied (2 h, decision 064); (3) overrides: Hornvík `IS-HOV` and Helguvík done 2026-10-01; `IS-KRI` has no landing or logbook records, left `transient` (decision 063); `VIS`, `MAN`, `TMY`, `STO` have no usable polygon. Background, not pursued: a
 minimum by gear or vessel size; static-gear trips are often logged at the haul only.
 
 **check:** `harbour_class` has a reviewed class for the harbours the maintainer named, and `check_bookkeeping()` is clean.

@@ -46,5 +46,13 @@ without the 1 h blanket cost. It needs `harbour_stay`, `ais_trip`, `trip_voyage`
 
 ## Not decided
 
-The value (2 h or 3 h); the period design of the class (the 3-year window is provisional); the reviewed overrides: `IS-HRN` Hornvík (`no_pier`),
+The value (2 h or 3 h); the period design of the class (the 3-year window is provisional); the reviewed overrides: `IS-HOV` Hornvík (`no_pier`; this note and decision 058 wrote `IS-HRN`, the pid in `ports.fgb` is `IS-HOV`),
 Helguvík (`cargo`), `IS-KRI` (`A`, mostly transit); the 3 STK codes with no polygon (`VIS`, `MAN`, `TMY`) and `STO`.
+
+## Overrides entered (2026-10-01, maintainer)
+
+`IS-HOV` Hornvík → `no_pier`, `IS-HEL` Helguvík → `cargo`, all years, in `overrides/harbour_class.csv` (`basis = recorded`). Both were `transient`, so their stays
+(minimum 4 h) do not change. **`IS-KRI` Kristnes (0.7 km from Akureyri) was not made a fishing harbour:** the maintainer's condition was a lot of landing or logbook records
+there, and there are none: no landing or logbook trip carries `IS-KRI` (the logbook harbour `hid` is empty for it), and its 682 stays over 20 years (about 35 a year, 110 vessels,
+median 9 h) coincide with a landing at Akureyri in only 13 % (4–24 h) and 5 % (1 day or more) of cases. It stays `transient` (flicker in 2012, from the code `A`). If the
+fish landed at Kristnes is recorded under Akureyri, that is a question about the landing harbour, not about the class; the maintainer may know.

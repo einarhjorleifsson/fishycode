@@ -1,1 +1,3 @@
 pid,year_from,year_to,class,reason
+IS-HOV,,,no_pier,"Maintainer 2026-10-01: Hornvik (STK code HVK) is a place where vessels stop, with no real pier; probably smaller vessels with no pings to get ashore. 79 stays, 28 vessels, no landings."
+IS-HEL,,,cargo,"Maintainer 2026-10-01: Helguvik is a cargo port. 711 stays, 102 vessels, no landings."
