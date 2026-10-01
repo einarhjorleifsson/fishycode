@@ -281,6 +281,10 @@ ports <-
   distinct() |>
   filter(!stk %in% c("ISL", "DNG",  "BER", "REYF", "RYH", "LSGUFA", "GYH", "IYH",
                      "AYH", "GRYYH", "R", "MJO", "MJOIF")) |>
+  # Raw code HVK sits at 66.4N, 80 km north of Holmavik, whose pid is IS-HVK (the
+  # HK/HOL events, 65.7N). Taking it as Holmavik put the committed IS-HVK polygon
+  # in the wrong place; its real harbour is unidentified.
+  filter(!(stk == "HVK" & lat > 66)) |>
   filter(!(stk == "THH" & lat > 65)) |>
   filter(!(stk == "THO" & lat < 65)) |>
   filter(!(stk == "SEY" & lon < -20)) |>
@@ -325,7 +329,7 @@ ports <-
                          stk == "NFJ" ~ "NOU",
                          stk == "GJ" ~ "GJO",
                          stk == "DRN" ~ "DRA",
-                         stk == "HK" ~ "HOL",
+                         stk %in% c("HK", "HOL") ~ "HVK",  # Holmavik; ports_table has HVK, not HOL
                          stk == "HVT" ~ "HVM",
                          stk == "BL" ~ "BLO",
                          stk == "SR" ~ "SAU",
@@ -359,6 +363,8 @@ ports <-
                          stk == "GEST" ~ "GHV",
                          stk == "LANG" ~ "LEY",
                          stk == "VIDF" ~ "VFF",
+                         stk == "VIS" ~ "VID",             # 62 events, 2025, at Videy
+                         stk == "STO" ~ "STK",             # Stokkseyri (17 events)
                          stk == "LH" ~ "LEH",
                          stk == "SKEY" ~ "SKY",
                          stk == "SKAR" ~ "SKR",
@@ -369,7 +375,7 @@ ports <-
                          stk == "KEV" & lat > 64.007134 ~ "KEV2",
                          stk == "KOV" & lon >= -21.932025 ~ "KOV2",
                          stk == "AKR" & lon < -22.091226 ~ "AKR2",
-                         stk == "STY" & lon <  -22.732919 ~ "STK2",
+                         stk == "STY" & lon <  -22.732919 ~ "STY2",   # was "STK2": merged a Stykkisholmur berth into Stokkseyri
                          stk == "SUD" & lon <  -23.537276 ~ "SUD2",     # Not really a harbour?
                          stk == "DRA" & lon <   -21.471696  ~ "DRA2",
                          stk == "AKU" & lat > 65.697073 ~ "KRS",        # relabelling
@@ -384,6 +390,8 @@ ports <-
 
                          .default = stk)) |>
   filter(!is.na(stk)) |>
+  # TMY: one event (2011), 50 km from Tradir, which has its own code (TRAD).
+  filter(!stk == "TMY") |>
   mutate(pid = case_when(str_starts(stk, "FO-") ~ stk,
                          .default = paste0("IS-", stk))) |>
   st_as_sf(coords = c("lon", "lat"),
