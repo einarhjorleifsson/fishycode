@@ -448,6 +448,21 @@ list(
              fd_curated("check", "stk_event.parquet"))
   }, format = "file"),
 
+  # Stays (plan 011 Phase 3): elapsed time at a harbour, from polygon, gap and (2017+) event
+  # evidence. Retags the cleaned pings against the current polygons itself, so it does not wait
+  # for the chain rebuild; nothing consumes it until Phase 4.
+  tar_target(harbour_stay, {
+    ais_ping_clean; shapes; check_stk_event
+    produces("curate/harbour_stay.R",
+             fd_curated("ais", "harbour_stay.parquet"))
+  }, format = "file"),
+
+  tar_target(check_harbour_stay_logbook, {
+    harbour_stay; logbook; landing
+    produces("curate/checks/harbour_stay_logbook.R",
+             fd_curated("check", "harbour_stay_logbook.parquet"))
+  }, format = "file"),
+
   tar_target(check_ais_key_reused_callsign, {
     vessel_ais_key_cascade; vessel; landing
     produces("curate/checks/ais_key_reused_callsign.R",

@@ -297,6 +297,73 @@ tables:
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
+  - name: ais_harbour_stay
+    source:
+      parquet: ../../fishydata/curated/ais/harbour_stay.parquet
+    description: >
+      One row per harbour stay: elapsed time a vessel spent at one Iceland/Faroe harbour (an `einar`
+      polygon), 2007-2026, all providers. Built from AIS only; logbook and landings are not inputs.
+      Nothing consumes it yet; Phase 4 of plan 011 cuts voyages at it. Built by `curate/harbour_stay.R`
+      (decision 060).
+    columns:
+      - name: vid
+        type: number
+        description: >
+          Vessel registration number.
+      - name: pid
+        type: string
+        description: >
+          Standard harbour key (`pid`) of the polygon the vessel was in or within 2 km of.
+      - name: year
+        type: number
+        description: >
+          Year of `T_in`. A stay over New Year belongs to the year it began.
+      - name: T_in
+        type: timestamp
+        description: >
+          First ping of the stay (or the `I` event of a pair), UTC.
+      - name: T_out
+        type: timestamp
+        description: >
+          Last ping of the stay, or the first ping after the gap that ends it (or the `U` event), UTC. A
+          stay that ends in the next year's first ping is cut there.
+      - name: dur_h
+        type: number
+        description: >
+          Elapsed hours, `T_out - T_in`. At least 4 by construction.
+      - name: rule
+        type: string
+        description: >
+          The strongest evidence present: `event_pair` > `tag_then_gap` > `tag_span` > `gap_near_harbour`.
+      - name: evidence
+        type: string
+        description: >
+          Every rule that fired, joined with `+`. `tag_then_gap`: two consecutive pings at the harbour 4 h
+          or more apart, one inside the polygon. `gap_near_harbour`: the same with neither inside.
+          `tag_span`: consecutive pings inside the polygon spanning 4 h or more. `event_pair`: an STK `I`
+          then `U` at the same harbour 4 h or more apart, both `io_ok` and kept by `ping_clean`, used from
+          2017 only.
+      - name: T_in_ping
+        type: timestamp
+        description: >
+          Start of the stay according to the ping rules; NA when only an event pair evidences it.
+      - name: T_out_ping
+        type: timestamp
+        description: >
+          End of the stay according to the ping rules; NA when only an event pair evidences it.
+      - name: T_in_ev
+        type: timestamp
+        description: >
+          `I` event time; NA when no event pair evidences the stay. Beside `T_in_ping` it shows how far
+          the two sources agree (median 0 s at the start, 72 s at the end in 2019).
+      - name: T_out_ev
+        type: timestamp
+        description: >
+          `U` event time; NA when no event pair evidences the stay.
+      - name: basis
+        type: string
+        description: >
+          `reconstructed`: inferred from positions, not recorded.
   - name: check_afli_rafr_stofn_corroboration
     source:
       parquet: ../../fishydata/curated/check/afli_rafr_stofn_corroboration.parquet
@@ -989,6 +1056,43 @@ tables:
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+  - name: check_harbour_stay_logbook
+    source:
+      parquet: ../../fishydata/curated/check/harbour_stay_logbook.parquet
+    description: >
+      One row per vessel-year, 2008 on: how many stays AIS gives against how many logbook trips and
+      landing days the vessel has. The yardstick for plan 011 Phase 3; the logbook is not an input to the
+      stays. A vessel-year can appear with stays and no trips, or the reverse. Built by
+      `curate/checks/harbour_stay_logbook.R`.
+    columns:
+      - name: vid
+        type: number
+        description: >
+          Vessel registration number.
+      - name: year
+        type: number
+        description: >
+          Calendar year.
+      - name: n_stay
+        type: number
+        description: >
+          Stays that began in the year, all evidence.
+      - name: n_stay_ping
+        type: number
+        description: >
+          Of those, stays with ping evidence (the general rules, any provider).
+      - name: n_stay_ev
+        type: number
+        description: >
+          Of those, stays with an event-pair behind them (2017 on).
+      - name: n_trip
+        type: number
+        description: >
+          Distinct logbook trips (afli and fs_afladagbok) beginning in the year.
+      - name: n_landing_days
+        type: number
+        description: >
+          Distinct landing dates (agf and lods) in the year.
   - name: check_stk_event
     source:
       parquet: ../../fishydata/curated/check/stk_event.parquet
