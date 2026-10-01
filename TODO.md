@@ -471,16 +471,16 @@ rule the pipeline no longer applies, and it is a second copy of a table - the fa
 
 `ais_trip.R` bridges every one-ping harbour run, so day-trip vessels merge into year-long voyages (vid 2481, 2011: 185 landings, one voyage; ≈ 20 % of
 voyages are shared by several logbook trips). The fix is a provider-independent stay rule that measures elapsed time at a harbour; STK's `I`/`U` events, erratic and dropped at the union, are one source of evidence. Plan 011
-holds the rule, the tagging and the standard harbour name; Phase 0 (lost `I` events, the `A` polygon gap) is open.
+holds the rule, the tagging and the standard harbour name. Phases 0-1 and the harbour polygons (decision 058) are done; Phase 2 (event tags `io_pos`, `io_jump`) is next, and the AIS chain
+(25 outdated targets) is rebuilt once, after Phase 3.
 
 **check:** vid 2481 in 2011 has ≈ 185 voyages, and `check_bookkeeping()` is clean.
 
-## 32. Harbour polygons: the native and the global harbours in one pass
-**status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §2b, §4a, §4b; `reference/ports/bootstrap_iceland_faroe.R`; `reference/ports/ports_all.R`
+## 33. Harbour class, per period, from the AIS era
+**status:** open · **needs: maintainer** · **see:** `curate/plans/011-stk-harbour-events-and-stays.md` §3.6; memory `harbour-class-is-time-varying`
 
-About 25 STK harbour codes (about 197,000 `I` events) have no polygon, 57 of 157 existing hulls grow when rebuilt from the full raw trail, and the bootstrap script cannot run as committed
-(`.lat` bug, old input path). Plan 011 decides the polygons are made inside the original bootstrap, in a session of their own that takes the STK-derived and the global (`ports_all`)
-harbours together and issues the standard name and `pid` once; the voyage work (item 31) resumes afterwards. Foreign harbours are a data rule, not a hand-kept list.
+No class exists for the 159 Icelandic/Faroese harbours (fishing, cargo, marina, a stop-off place with no pier such as Hornvík `IS-HOV`, mixed). No external source carries one for
+Iceland (OSM classifies 5 of 157), so it comes from the STK `I`→`U` stays from **2007-09-01** plus a reviewed `overrides/harbour_class.csv`. Fishing ports declined over time, so the class
+is per period, not per `pid`; the period design is not settled. Open codes: `VIS`, `MAN`, `TMY` and `STO` (17 events) have no usable polygon; `A` → `IS-KRI` is accepted but mostly transit.
 
-**check:** `curated/reference/stk_hid_pid.parquet` has no `unmatched` code with more than 1,000 `I` events, and `check_bookkeeping()` is clean.
-
+**check:** `curated/reference/` holds a harbour class per `pid` and period with a `basis`, and `check_bookkeeping()` is clean.

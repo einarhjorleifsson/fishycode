@@ -368,6 +368,14 @@ What a re-run changes, so the next session decides it knowingly, not by accident
 **Sequence agreed:** (1) close this session; (2) a **harbour/port session** that takes the "native" (STK-derived Iceland/Faroe) harbours and the global ones (`ports_all`) in one pass, with the
 standard name and `pid` issued once; (3) return to the **voyage session** (Phases 2–5 of this plan). Phase 2 depends on the new polygon set, so it waits for (2).
 
+## 4c. Harbour/port session closed (2026-10-01)
+
+Done and recorded in `decisions/058-promote-the-harbour-rebuild.md`: the bootstrap was repaired and re-run from the full trail and promoted to `raw/ports/ports_iceland_faroe.gpkg` (159
+polygons; the first bootstrap is in `raw/ports/archive/`); `IS-ANV` Álfsnes and `IS-HRN` Hornvík added; `IS-HVK` is Hólmavík and `IS-STK` Stokkseyri; `ports_all.R` never merges two `einar`
+harbours (Kópavogur, Viðey, Gufunes, Álfsnes were all `IS-REY`). `stk_hid_pid`: `unmatched` 28 → 3 (`VIS`, `MAN`, `TMY`), 9 overrides (`THH`/`THO` by position; `BAK`, `HVF`, `STY`, `VID`, `A`
+accepted; `LH`, `TRAD` `NONE`). Hornvík's raw STK code is `HVK`, not Hólmavík. The class per harbour and period is TODO 33. The AIS chain still uses the previous polygons (25 outdated
+targets) and is rebuilt once, after Phase 3.
+
 ## 5. Decisions
 
 **Settled 2026-10-01 (maintainer):** the harbour class is assigned by the data rule of §3.6 and the maintainer overrides it by file; foreign harbours are deferred, and

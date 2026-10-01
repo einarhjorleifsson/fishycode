@@ -7,3 +7,4 @@ STY,IS-STI,2026-10-01,"Same place as STM (median 65.1N -22.7W, Stykkishólmur). 
 VID,IS-VID,2026-10-01,"Viðey (64.16N -21.86W), west, by Reykjavík; not Viðfjörður (VIDF, east coast, -13.7W). All its I events lie within 25 m of the tiny IS-VID polygon (0.002 km2) but only 19% inside it, so the data rule left it unmatched. Accepted by the maintainer."
 LH,NONE,2026-10-01,"Not to be used when creating voyages (maintainer). 31 I events, 71% outside the Leirhöfn polygon."
 TRAD,NONE,2026-10-01,"Not to be used when creating voyages (maintainer). 28 I events, 57% outside the Traðir polygon."
+A,IS-KRI,2026-10-01,"Accepted by the maintainer as most likely correct (a fish factory at Kristnes). Caveat: 75% of its 27,948 I-to-U stays are under an hour (median 2.5 min) and 43,454 of 60,726 events sit at one coordinate north of Akureyri, so most events look like vessels passing toward Akureyri; 22% of stays exceed 4 h. Not a landing-harbour class without a check."
