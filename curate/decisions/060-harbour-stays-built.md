@@ -80,6 +80,20 @@ the 2 km rule; the global 5 km added 14,790).
   (19 %). **Event-only stays are now mostly false; Phase 4 should not use them** (filter `evidence` containing only
   `event_pair`). Events still corroborate: stays with ping and event evidence have the best precision.
 
+## All providers, not only STK (checked 2026-10-01)
+
+The stays are built from `ping_clean`, every provider merged; only the event pairs and the `r_out` profile are STK-only.
+By what the pings inside a stay are: 2012 (before ASTD) 100 % STK, median 2 pings per stay (the two ends: the signal is
+off in harbour). 2016: 53 % of stays have other-provider pings (median 95), 61 % of those carry `tag_span`; 2019: 70 % (median 62),
+2023: 70 % (median 47); STK-only stays remain 22 k a year (vessels with no ASTD). A stay seen only by other providers is rare
+(1,294 in 2016, 594 in 2023) and has a low landing precision (21–34 %). A vessel with its transponder on in harbour has no gap,
+so its stay comes from the polygon run (`tag_span`), which counts pings inside the polygon only.
+Do the continuous-signal vessels slip through? Landings 2016–2025 with no stay: 29,451 of 450,503 (6.5 %). On the landing
+date and harbour: 9,517 have no ping in the harbour at all (never heard), 9,520 a run under 1 h, 10,297 a run of 1–4 h
+(99.7 % with other-provider pings: short visits, below the 4 h minimum), and only 117 a run of ≥ 4 h. So the polygon-run rule
+is not missing continuous-signal stays; the loss is short landing visits (the per-harbour `min_stay_h`, TODO 33) and
+harbours where no signal is heard.
+
 ## Not decided
 
 Event-only stays: recommended not to use them in voyages (see above); the maintainer decides. The 2 km
