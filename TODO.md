@@ -475,9 +475,11 @@ minimum by gear or vessel size; static-gear trips are often logged at the haul o
 
 **check:** `harbour_class` has a reviewed class for the harbours the maintainer named, and `check_bookkeeping()` is clean.
 
-## 34. Speed range per vessel and gear, tested against the logbook windows
-**status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md`
+## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
+**status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`
 
-The trail's `fishing` uses one declared speed range per gear; recorded tow windows show vessel medians from 1.9 to 4.2 kn, and `OTB` hides three gears (fish, nephrops, shrimp). The GPS logger writes a placeholder speed of exactly 1.000 m/s (12–39 % of `gps1` speeds in 2020–2023; plan 012 §2f) that makes those fixes `fishing = FALSE`; Done 2026-10-02: `speed` is NA there and `fishing` is NA for a fix in a window with no speed; trail rebuilt. Plan 012 proposes a range from recorded windows, explored gear-and-target first, then vessel size class, then individual vessel, and a test of whether the last haul of a trip is left open. Asked of the maintainer: the baseline / 12 nm polygon, how far down that hierarchy to go, the quantiles.
+Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Nothing is built from the plan itself. Asked of the maintainer: (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in); (2) whether to adopt the vessel-shifted range or keep the declared ranges; (3) whether `gid` and the landing's gear go onto the trail as columns (a rebuild).
 
-**check:** `vessel_speed_range` exists and `fishing` reads it, or the plan is marked abandoned with the reason.
+Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
+
+**check:** the answers are recorded in a decision, and either `gid`/`gid_landing` are on the trail and a speed rule is chosen, or plan 012 is marked abandoned with the reason.
