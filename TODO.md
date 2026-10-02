@@ -474,3 +474,10 @@ Built 2026-10-01: `curated/reference/harbour_class` per harbour × year from the
 minimum by gear or vessel size; static-gear trips are often logged at the haul only.
 
 **check:** `harbour_class` has a reviewed class for the harbours the maintainer named, and `check_bookkeeping()` is clean.
+
+## 34. Speed range per vessel and gear, tested against the logbook windows
+**status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md`
+
+The trail's `fishing` uses one declared speed range per gear; recorded tow windows show vessel medians from 1.9 to 4.2 kn, and `OTB` hides three gears (fish, nephrops, shrimp). The GPS logger writes a placeholder speed of exactly 1.000 m/s (12–39 % of `gps1` speeds in 2020–2023; plan 012 §2f) that makes those fixes `fishing = FALSE`; Done 2026-10-02: `speed` is NA there and `fishing` is NA for a fix in a window with no speed; trail rebuilt. Plan 012 proposes a range from recorded windows, explored gear-and-target first, then vessel size class, then individual vessel, and a test of whether the last haul of a trip is left open. Asked of the maintainer: the baseline / 12 nm polygon, how far down that hierarchy to go, the quantiles.
+
+**check:** `vessel_speed_range` exists and `fishing` reads it, or the plan is marked abandoned with the reason.
