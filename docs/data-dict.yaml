@@ -409,7 +409,8 @@ tables:
       - name: speed
         type: number
         description: >
-          Cleaned speed in knots; NA where the source value was implausible (above 40 kn).
+          Cleaned speed in knots; NA where the source value was implausible (above 40 kn) and for a
+          logger speed of exactly 1.000 m/s, which is a placeholder (`speed_basis = placeholder`).
       - name: speed_raw
         type: number
         description: >
@@ -434,11 +435,13 @@ tables:
       - name: speed_basis
         type: string
         description: >
-          `recorded` or `derived` (ASTD speed is derived from distance over time).
+          `recorded`, `derived` (ASTD speed is derived from distance over time) or `placeholder` (a
+          logger fix whose speed was exactly 1.000 m/s; `speed` is NA and `speed_raw` keeps the value).
       - name: speed_gps
         type: number
         description: >
-          The logger's own speed where a logger fix ties an AIS ping, else NA.
+          The logger's own speed where a logger fix ties an AIS ping, else NA (also NA where that
+          speed was the 1.000 m/s placeholder).
       - name: dt_sec
         type: number
         description: >
@@ -512,7 +515,8 @@ tables:
         type: boolean
         description: >
           Inside a tow, haul, jig or day window and the speed inside that gear's speed range; a set is
-          never fishing. FALSE, not NA, for a fix with no match.
+          never fishing. FALSE for a fix with no match. NA where a window holds the fix but the fix has
+          no speed (unknown, not FALSE).
       - name: sid_gps
         type: number
         description: >

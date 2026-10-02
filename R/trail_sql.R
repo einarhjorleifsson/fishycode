@@ -10,7 +10,8 @@
 # A station matched in two of its own phases counts once, haul > tow > jig > set > day.
 # Keys: `.sid` and `.tid` are unique only within a schema, so the station is (.sid, schema).
 # `fishing` is TRUE when a tow, haul, jig or day window holds the fix and its speed is inside that gear's [s1, s2];
-# a set is never fishing.
+# a set is never fishing. It is NA when such a window holds the fix but the fix has no speed (a logger fix with no
+# speed, or the 1.000 m/s placeholder, plan 012 §2f): unknown, not FALSE. FALSE for a fix in no window.
 #
 # The voyage side: `trip_voyage` links a logbook trip to the AIS voyage (vid, year, trip) it overlaps most.
 # Several logbook trips may share one voyage (3-4 %), so `.tid_voyage` is filled only when exactly one trip is on
@@ -60,7 +61,11 @@ trail_month_sql <- function(year, month, kind = c("wide", "match")) {
              any_value(gear) AS gear, any_value(gear_class) AS gear_class,
              any_value(phase) AS phase, any_value(win_basis) AS win_basis, any_value(events) AS events,
              any_value(CASE WHEN phase <> 'day' THEN epoch(time - w_start) / nullif(epoch(w_end - w_start), 0) END) AS phase_frac,
-             bool_or(phase <> 'set' AND speed BETWEEN s1 AND s2) AS fishing
+             -- per claiming window: FALSE for a set or a gear with no speed range, NA when there is no speed
+             CASE WHEN bool_or(CASE WHEN phase = 'set' OR s1 IS NULL THEN FALSE WHEN speed IS NULL THEN NULL
+                                    ELSE speed BETWEEN s1 AND s2 END) THEN TRUE
+                  WHEN count(*) FILTER (WHERE NOT (phase = 'set' OR s1 IS NULL) AND speed IS NULL) > 0 THEN NULL
+                  ELSE FALSE END AS fishing
       FROM m GROUP BY vid, time),
     v AS (
       SELECT vid, year, trip, count(*) AS n_tid_voyage,
@@ -80,7 +85,7 @@ trail_month_sql <- function(year, month, kind = c("wide", "match")) {
            CASE WHEN a.n_sid = 1 THEN a.phase_frac END AS phase_frac,
            CASE WHEN a.n_sid = 1 THEN a.win_basis END AS win_basis,
            CASE WHEN a.n_sid = 1 THEN a.events END AS events,
-           coalesce(a.fishing, false) AS fishing,
+           CASE WHEN a.n_sid IS NULL THEN FALSE ELSE a.fishing END AS fishing,
            p.sid_gps, p.n_sid_gps
     FROM %s p
     LEFT JOIN a USING (vid, time)

@@ -98,16 +98,20 @@ prove <- function(x) {
   stopifnot(identical(as.integer(tr$n_sid), lengths(k)))
   sid <- vapply(k, function(h) if (length(h) == 1) sw$.sid[h] else NA_real_, numeric(1))
   stopifnot(identical(as.numeric(tr$.sid), sid))
-  # fishing: a non-set window among the claimants whose own [s1, s2] holds the speed
+  # fishing: a non-set window among the claimants whose own [s1, s2] holds the speed; NA when no speed
+  # and some claimant could have made it fishing; FALSE in no window
   fish <- vapply(seq_len(nrow(tr)), function(i) {
     h <- k[[i]]
-    any(!is.na(tr$speed[i]) & sw$phase[h] != "set" &
-          tr$speed[i] >= sw$s1[h] & tr$speed[i] <= sw$s2[h])
+    if (is.na(tr$speed[i])) {
+      if (any(sw$phase[h] != "set" & !is.na(sw$s1[h]))) NA else FALSE
+    } else {
+      any(sw$phase[h] != "set" & tr$speed[i] >= sw$s1[h] & tr$speed[i] <= sw$s2[h], na.rm = TRUE)
+    }
   }, logical(1))
   stopifnot(identical(tr$fishing, fish))
-  stopifnot(!any(tr$fishing & tr$n_sid == 0))
+  stopifnot(!any(tr$fishing & tr$n_sid == 0, na.rm = TRUE), !anyNA(tr$fishing[tr$n_sid == 0]))
   tibble(fixes = nrow(tr), in_a_window = sum(tr$n_sid > 0), ambiguous = sum(tr$n_sid > 1),
-         fishing = sum(tr$fishing), mismatches = 0L)
+         fishing = sum(tr$fishing, na.rm = TRUE), no_speed = sum(is.na(tr$fishing)), mismatches = 0L)
 }
 
 plot_speed <- function(x) {
@@ -125,7 +129,7 @@ per_station <- function(x) {
   x$tr |>
     filter(n_sid == 1) |>
     group_by(.sid, phase) |>
-    summarise(fixes = n(), gps = sum(provider == "gps"), fishing = sum(fishing),
+    summarise(fixes = n(), gps = sum(provider == "gps"), fishing = sum(fishing, na.rm = TRUE),
               median_speed = median(speed, na.rm = TRUE), .groups = "drop") |>
     left_join(x$sw |> select(.sid, s1, s2), by = ".sid")
 }

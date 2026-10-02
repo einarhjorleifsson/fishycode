@@ -1,0 +1,54 @@
+id: logger_speed_placeholder
+title: the afli GPS logger writes exactly 1.000 m/s where it has no speed
+status: fixed 2026-10-02 - speed NA and tagged in ping_trail, `fishing` NA where a window holds a fix with no speed; both rebuilt and verified
+applies_to:
+  - curated/ais/ping_trail  (provider = "gps"; columns speed, speed_basis; speed_gps on AIS ties)
+  - curated/ais/trail  (the same fixes; and `fishing`, which compared the placeholder with the gear's speed range)
+  - curated/logbook/sensor_gps  (NOT changed: the raw value stays there and in ping_trail.speed_raw)
+affects_rows: 926,172 logger fixes in 2021 alone (36 % of its logger fixes); 12 % in 2020, 39 % in 2021, 37 % in 2022, 24 % in 2023 of gps1 speeds; 0.01-0.14 % up to 2019
+implementation: curate/ais_ping_trail.R (LOGGER_PLACEHOLDER_MS). Needs tar_make() of ais_ping_trail and everything downstream.
+discovered: 2026-10-02 (plan 012 section 2f)
+
+origin: >-
+  Found while asking why the logger's speed in recorded fish-trawl tows was below the gear's range 15 % of the time
+  against 4.6 % for stk and astd. The pooled quantiles had a floor at exactly 1.943846 kn.
+
+mechanism: >-
+  The logger's raw speed is m/s on a 0.1 knot grid (spikes every 0.0514 m/s). Exactly 1.000 m/s is off that grid, has
+  1.77 M rows (more than any neighbouring value), and sits almost only in the older table (gps1 = sjalfvirkir_maelar,
+  7.6 % of its speeds, against 0.07 % in gps2). Why it is written is not known: firmware, a clamp or a default when
+  the sensor had no fix. The raw column cannot say.
+
+detection: >-
+  Count the logger rows whose raw speed is within 1e-6 of 1.0 m/s, by year and by sensor table. Where a logger fix
+  ties an AIS ping the AIS speed beside a 1.000 m/s logger value has median 3.40 kn (stk) and 3.32 kn (astd), the
+  ordinary towing speed and not 1.94 kn. Where gps1 and gps2 hold the same fix and gps1 says 1.000 m/s they agree
+  17 % of the time, against 97 % otherwise.
+
+effect: >-
+  Each such fix inside a tow window sat below the gear's lower speed limit, so `fishing` was FALSE: 12 % of the
+  logger's fish-trawl tow fixes, concentrated in 2020-2023.
+
+repair: >-
+  In ping_trail the logger speed of exactly 1.000 m/s is set to NA and speed_basis = "placeholder"; the value stays in
+  speed_raw (nothing is overwritten). The gps1/gps2 collapse now prefers a real speed over a placeholder, so a fix
+  that gps2 has a real speed for takes it. Applied in every year, because the value is off the 0.1 kn grid in every
+  year, so a genuine 1.000 m/s cannot occur; the cost is about 0.1 % of pre-2020 logger fixes.
+
+verified: >-
+  2021 rebuilt alone and compared with the previous file: 32,459,012 rows both; positions and providers unchanged; speed
+  changed on 926,183 rows (926,172 became NA, all tagged placeholder with speed_raw 1.9438; 11 took gps2's real speed);
+  logger speeds on AIS ties 9,074 -> 5,358. check: curate/checks/gear_speed_range.R section 4.
+
+rebuilt: >-
+  tar_make() 2026-10-02: ais_ping_trail (2.6 min), ais_trail and two trail checks, 18 min in all. Trail 2008-2024: 1,732,398
+  logger fixes tagged speed_basis = placeholder, none left with the 1.9438 kn value in `speed`. Rows written equal ping_trail's in every year.
+
+fishing_rule: >-
+  R/trail_sql.R: `fishing` is NA when a tow, haul, jig or day window holds the fix and the fix has no speed (the placeholder, and
+  the logger fixes that never had one); FALSE for a set, a gear with no speed range, or a fix in no window. ais_trail rebuilt
+  2026-10-02 (15 min; invalidated by hand, because targets cannot see that the script calls trail_month_sql()). Trail 2008-2024:
+  fishing TRUE 96.9 M, FALSE 419.0 M, NA 4.39 M fixes. All 4.39 M NA are in a window and have no speed (98.7 % logger, the rest
+  AIS fixes with no speed); none is outside a window. In recorded OTB tow windows, fishing among fixes with a speed: gps 91.5 %,
+  astd 91.3 %, stk 89.1 %, emodnet 89.8 % (was 70 % for gps with the placeholder counted as not fishing); gps NA 23.3 %.
+  The independent R check in docs/ais_trail.qmd, which recomputes the rule per fix, renders and passes.
