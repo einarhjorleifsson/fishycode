@@ -250,7 +250,7 @@ ais_ping_clean ∪ logbook_sensor_gps → ais_ping_trail → ais_ping_activity �
 5. ~~old-trail column compatibility~~ answered: exact compatibility not needed; this is an
    improved trail, and the contract in plan 002 §1 is the floor.
 6. ~~higher-rate logger stream~~ answered (maintainer): none. The logger stays in, directly after the interpolation (§5), for its recorded `.sid` and measured speed.
-7. ~~gps1 vs gps2~~ answered by data: same fixes, speeds never disagree; collapse with `coalesce` (§9).
+7. ~~gps1 vs gps2~~ answered by data: same fixes, speeds never disagree; collapse with `coalesce` (§9). *Correction 2026-10-02:* true for real speeds only; from 2020 `gps1` also holds a 1.000 m/s placeholder where `gps2` has a value, and from 2021 `gps2` no longer exists (`curate/corrections/logger_speed_placeholder.yml`).
 8. ~~`duration_m`~~ answered (maintainer): soak is variable — longline usually hauled soon after
    setting, occasionally longer, **max ≈ 12 h**; nets' soak runs to days, notably Greenland-halibut
    (grálúða) and lumpfish (grásleppa) nets. Data agree for nets: by target, median `t4 − t1` and
