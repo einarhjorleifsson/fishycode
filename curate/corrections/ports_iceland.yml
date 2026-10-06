@@ -3,7 +3,7 @@ title: Three Icelandic harbours shared one polygon; hand-added buffers were 57% 
 status: fixed
 applies_to:
   - raw/ports/ports_iceland_faroe.gpkg
-affects_rows: 0 of 159 (rename of the pid column only)
+affects_rows: 12 of 159 (10 renamed, 2 dropped; and the rename of the pid column)
 implementation: curate/corrections/ports_iceland.R
 see:
   - curate/decisions/004-issue-11-seventy-extra-rows.md
@@ -28,6 +28,18 @@ second_defect:
     sqrt(st_area(st_transform(x, 3057)) / pi) differs from the intended 500 m
   observed: 214 m at Hellnar (64.75N), 224 m at Vík, 203 m at Ögurvík
 
+third_defect:
+  summary: >-
+    The bootstrap's place list misnames harbours, and its hid was matched on that
+    name. IS-SEL lies on the coast of Skagi but was called Selfoss (inland) and given
+    Selfoss's landing code 9; FO-HUS at Hósvík was called Husevig, the Danish name of
+    Húsavík on Sandoy; eight Faroese and Icelandic names were misspelled; IS-NUK,
+    "Í Breiðarfirði", and IS-SVD, never named beyond "CHECK", are not harbours.
+  detection: |
+    found preparing the WGSFD harbour file (docs/ports.md): a name not on the coast,
+    a name another source places elsewhere, a misspelling of the local name
+  observed: 10 names, 1 hid (IS-SEL = 9), 2 non-harbours (IS-NUK, IS-SVD), 2026-10-06
+
 repair:
   steps:
     - >-
@@ -35,9 +47,15 @@ repair:
       its output promoted to raw/ports/ports_iceland_faroe.gpkg; the first bootstrap's
       file is archived in raw/ports/archive/. The defects above, and IS-HVK at Hornvík
       and IS-STK at Stykkishólmur, are fixed in the producer.
-    - This script now only renames pid to pid_bootstrap and asserts that the fixes held.
+    - This script renames pid to pid_bootstrap and asserts that the fixes held.
+    - >-
+      Names (third defect) are corrected here from a reviewed table, the bootstrap's
+      values kept in port_bootstrap and hid_bootstrap; IS-NUK and IS-SVD are dropped.
+      Maintainer 2026-10-06 for Selvík, Hósvík, IS-NUK and IS-SVD. ports_all.R mints pid from the name,
+      so a renamed harbour can change its pid.
 
 check: >-
-  staging/ports/ports_iceland_faroe.gpkg has 159 features, no two sharing a
-  geometry, no IS-HLS/IS-HDL, the four hand-added ports measure 500 m within 1 m,
-  IS-HVK is at 65.7N and IS-STK at 63.8N.
+  raw has 159 features; staging/ports/ports_iceland_faroe.gpkg has 157, no
+  IS-NUK or IS-SVD, IS-SEL named Selvík with no hid, no two sharing a name or a geometry,
+  no IS-HLS/IS-HDL, the four hand-added ports measure 500 m within 1 m, IS-HVK
+  is at 65.7N and IS-STK at 63.8N.
