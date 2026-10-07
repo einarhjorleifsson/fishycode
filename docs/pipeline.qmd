@@ -1,0 +1,108 @@
+---
+title: "Build flow"
+execute:
+  freeze: false   # generated from _targets.R: a frozen copy would drift from the graph
+---
+
+Every step of `targets::tar_make()`, in the order data flow through it: each target comes after
+everything it reads, and ties keep their order in `_targets.R`. The bracket is the section of
+`_targets.R` the target sits in.
+
+The page is **generated when it is rendered**, from three sources:
+
+- **What the step does:** the first line of its script's head.
+- **What it writes:** the files `_targets.R` declares in `produces()`.
+- **What it reads:** the targets it depends on.
+
+Where `_targets.R` carries a note above the target, its first sentence follows in italics.
+Nothing here is written by hand, so the page cannot drift from the code. A step that reads
+"no description" has a script with no head comment.
+
+`dump/` (extraction from Oracle and vendor archives) and `products/` (exports run on demand)
+sit outside the graph.
+
+```{r}
+#| echo: false
+#| results: asis
+# here::here() stops at docs/ (the Quarto project); the repo root is where AGENTS.md is
+root  <- rprojroot::find_root(rprojroot::has_file("AGENTS.md"))
+src   <- readLines(file.path(root, "_targets.R"), encoding = "UTF-8")
+nocom <- sub("#.*$", "", src)                       # code without comments
+is_hd <- grepl("^\\s*# \u2500\u2500 ", src)
+tg_i  <- grep("^\\s*tar_target\\(", src)
+name  <- sub("^\\s*tar_target\\(([A-Za-z0-9_.]+).*", "\\1", src[tg_i])
+ends  <- c(tg_i[-1] - 1, length(src))
+sect  <- vapply(tg_i, \(i) {
+  h <- max(which(is_hd[seq_len(i)]))
+  trimws(gsub("\u2500", "", sub("^\\s*#", "", src[h])))
+}, "")
+
+# the comment block right above a target, not a section header or its description
+note_above <- function(i) {
+  j <- i - 1; out <- character(0)
+  while (j > 0 && grepl("^\\s*#", src[j]) && !is_hd[j]) { out <- c(sub("^\\s*#\\s?", "", src[j]), out); j <- j - 1 }
+  if (j > 0 && is_hd[j]) return("")                  # that was the section's own description
+  txt <- paste(out, collapse = " ")
+  if (!nzchar(txt)) "" else sub("^(.*?[.])(\\s.*)?$", "\\1", txt, perl = TRUE)
+}
+
+fd_path_text <- function(x) {
+  m <- regmatches(x, gregexpr('fd_(raw|staging|curated|published)\\(([^)]*)\\)', x))[[1]]
+  vapply(m, \(f) {
+    layer <- sub("^fd_([a-z]+)\\(.*", "\\1", f)
+    args  <- regmatches(f, gregexpr('"[^"]+"', f))[[1]]
+    paste(c(layer, gsub('"', "", args)), collapse = "/")
+  }, "", USE.NAMES = FALSE)
+}
+
+describe_script <- function(s) {
+  f <- file.path(root, s)
+  if (!file.exists(f)) return("script not found")
+  h   <- readLines(f, n = 20, encoding = "UTF-8", warn = FALSE)
+  com <- grepl("^#", h)
+  txt <- trimws(sub("^#\\s?", "", h))
+  ban <- grepl("-{5,}\\s*$", txt)                   # a section banner, not a description
+  i   <- which(com & !ban & nzchar(txt))[1]
+  if (is.na(i)) return("no description")
+  para <- character(0)                               # the opening paragraph of the head
+  while (i <= length(h) && com[i] && !ban[i] && nzchar(txt[i]) &&
+         !grepl("^(Input|Output)s?:", txt[i])) { para <- c(para, txt[i]); i <- i + 1 }
+  p <- sub("^\\S+\\.R\\s*[—–-]+\\s*", "", paste(para, collapse = " "))
+  p <- sub("^(.*?[.?])(\\s.*)?$", "\\1", p, perl = TRUE)     # its first sentence
+  gsub("<", "&lt;", p, fixed = TRUE)
+}
+
+info <- lapply(seq_along(tg_i), \(k) {
+  code  <- paste(nocom[tg_i[k]:ends[k]], collapse = " ")
+  code1 <- sub("^\\s*tar_target\\([A-Za-z0-9_.]+", "", code)   # drop the target's own name
+  ids   <- unique(regmatches(gsub('"[^"]*"', '""', code1),
+                             gregexpr("\\b[A-Za-z][A-Za-z0-9_.]*\\b", gsub('"[^"]*"', '""', code1)))[[1]])
+  scr   <- regmatches(code, regexpr('produces\\(\\s*"[^"]+"', code))
+  scr   <- if (length(scr)) sub('produces\\(\\s*"', "", sub('"$', "", scr)) else NA_character_
+  outs  <- fd_path_text(code)
+  if (is.na(scr)) outs <- c(outs, gsub('"', "", regmatches(code1, regexpr('"[^"]+"', code1))))
+  list(deps = setdiff(intersect(ids, name), name[k]), script = scr, outs = outs)
+})
+names(info) <- name
+
+# topological order; among the ready targets, the one first in _targets.R goes next
+done <- character(0); order <- character(0)
+while (length(order) < length(name)) {
+  ready <- name[!name %in% order & vapply(info, \(x) all(x$deps %in% order), TRUE)]
+  if (!length(ready)) stop("cycle in _targets.R among: ", paste(setdiff(name, order), collapse = ", "))
+  order <- c(order, ready[1])
+}
+
+cat(sprintf("%d targets in %d sections.\n\n", length(name), length(unique(sect))))
+for (n in order) {
+  k <- match(n, name); x <- info[[n]]
+  what <- if (is.na(x$script)) "A reviewed input file, tracked so a change to it rebuilds what reads it." else describe_script(x$script)
+  cat(sprintf("- **`%s`** [%s]: %s\n", n, sect[k], what))
+  nt <- gsub("<", "&lt;", note_above(tg_i[k]), fixed = TRUE)
+  if (nzchar(nt)) cat(sprintf("    - *%s*\n", nt))
+  if (!is.na(x$script)) cat(sprintf("    - script: `%s`\n", x$script))
+  if (length(x$outs)) cat(sprintf("    - %s: %s\n", if (is.na(x$script)) "file" else "writes",
+                                 paste0("`", x$outs, "`", collapse = ", ")))
+  if (length(x$deps)) cat(sprintf("    - reads: %s\n", paste0("`", x$deps, "`", collapse = ", ")))
+}
+```
