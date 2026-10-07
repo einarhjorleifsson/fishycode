@@ -21,7 +21,7 @@ website:
         href: afli-tables.qmd
       - text: Pipeline
         menu:
-          - text: Build flow
+          - text: How the data are built
             href: pipeline.qmd
           - text: Convert script audit
             href: convert-bugs.qmd
