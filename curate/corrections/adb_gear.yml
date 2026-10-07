@@ -1,0 +1,28 @@
+id: adb_gear
+title: adb stations carry no gear code; it is read from the matched landing
+status: applied - 20,274 of 20,530 adb stations (2026-10-03); the rest stay NA
+applies_to:
+  - curated/logbook/fishing_sample.parquet   # schema == "adb"
+affects_rows: 20530
+implementation: curate/corrections/adb_gear.R
+
+defect:
+  summary: >-
+    adb's own gear code does not resolve against reference/gear.parquet (see
+    adb_vs_fs_afladagbok.yml defect_3), so adb stations have gid, gear, target and
+    target2 NA and are invisible to every gear-dependent step (station windows,
+    the trail's fishing flag).
+  see: curate/decisions/066-adb-catch-is-quantity-and-gets-its-gear-from-landings.md
+
+method:
+  approach: >-
+    A station takes the gear of the landing its trip matched in lid_map, when the
+    landing names exactly one gear present in the "new" gear list. Output is a
+    side table, curated/logbook/adb_gear.parquet, keyed (.sid, schema), with
+    gid_basis = "reconstructed". The original gid_old is untouched.
+  not_done: >-
+    No crosswalk fallback (derived from the shared fs_afladagbok stations; declined by
+    the maintainer 2026-10-03). Trips whose landing names several gears stay NA.
+  measured: >-
+    2026-10-03, after the adb catch fix (decision 066): 20,274 of 20,530 stations.
+    Before it, only 11,040: adb catch was 0 for most trips, so lid_map skipped them.

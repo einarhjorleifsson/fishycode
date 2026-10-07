@@ -67,24 +67,6 @@ carries a `pid`.
 
 ---
 
-## 20. `adb`'s `gid` is `NA` throughout the merged logbook
-**status:** open · **file:** `sources/adb/convert.R`
-**see:** `curate/corrections/adb_vs_fs_afladagbok.yml` (`defect_3_gear_coding`),
-`curate/decisions/023-adb-wired-into-logbook.md`
-
-`adb`'s own gear code doesn't resolve against `reference/gear.parquet` (codes
-92/99/91/29 valid only as `gear$map`, code 10 only as `gear$gid`, 53/51 as
-neither), so `sources/adb/convert.R` leaves `gid` `NA` and keeps the raw code as
-`gid_old`. A crosswalk is already DERIVED, not guessed, from the 467,635 stations
-`adb` shares with `fs_afladagbok` (same defect record) — it just isn't applied.
-Now that `adb` is merged in (20,530 stations, all 2026), every downstream
-gear-dependent step (pelagic/demersal splits, effort by gear) is blind for 2026.
-
-**check:** `curated/logbook/fishing_sample.parquet` has no `NA` `gid` where
-`schema == "adb"`.
-
----
-
 ## 5. `ping_union` carries duplicate position keys — measured, not repaired
 **status:** open · **see:** `curate/corrections/ping_union_duplicate_keys.yml`
 

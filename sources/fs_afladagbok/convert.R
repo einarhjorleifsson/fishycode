@@ -268,7 +268,7 @@ gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parqu
 fishing_sample <-
   source |>
   select(.tid, .sid, gid, t1, t3, t4, date, n_lost, schema) |>
-  left_join(gear_mapping |> select(gid, gid_old = map, gear, target2), by = "gid") |>
+  left_join(gear_mapping |> select(gid, gid_old = map, gear, target, target2), by = "gid") |>
   # Remap raw ws_veidi timestamps to the unified t1–t4 grammar.
   # Raw columns: upphaf_timi → t1_raw, milli_timi → t3_raw, lok_timi → t4_raw.
   #
@@ -346,7 +346,7 @@ fishing_sample <-
   ) |>
   # Gear dimensions
   left_join(dims |> select(-effort_count, -effort_unit), by = ".sid") |>
-  select(.tid, .sid, gid, gid_old, gear, target2, t1, t2, t3, t4, date,
+  select(.tid, .sid, gid, gid_old, gear, target, target2, t1, t2, t3, t4, date,
          duration_m, duration_m_raw, .duration_source,
          effort_count, effort_duration, effort_unit, effort,
          n_units, n_lost, g_mesh, g_width, g_length, g_height,
@@ -357,9 +357,15 @@ fishing_sample <-
 catch <-
   duckdbfs::open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_afli.parquet")) |> collect() |>
   wk_translate(dictionary) |>
-  select(.sid, sid, catch = magn) |>  # CHANGE DICTIONARY
-  group_by(.sid, sid) |>
-  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop") |>
+  # After the dictionary `catch` is the raw `afli` (whole-fish weight, NULL for ~98 % of rows from 2023) and
+  # `magn` is the weight in the state `astand` names. `catch` stays what it was, magn; the whole weight
+  # is kept beside it as `catch_whole`, NA (not 0) when no row recorded it. curate/catch_by_species_station.R
+  # fills the gap. Condition codes are adb's (GUTT = S, UNGU = O, RELE = L, confirmed on 1.39 M shared rows).
+  select(.sid, sid, catch_whole = catch, catch = magn, condition = astand) |>
+  mutate(condition = case_match(condition, "S" ~ "GUTT", "O" ~ "UNGU", "L" ~ "RELE", .default = NA_character_)) |>
+  group_by(.sid, sid, condition) |>
+  summarise(catch_whole = if (all(is.na(catch_whole))) NA_real_ else sum(catch_whole, na.rm = TRUE),
+            catch = sum(catch, na.rm = TRUE), .groups = "drop") |>
   inner_join(fishing_sample |> select(.sid, schema), by = ".sid") |>
   arrange(.sid, sid)
 

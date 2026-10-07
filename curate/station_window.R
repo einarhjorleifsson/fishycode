@@ -1,6 +1,7 @@
 # station_window.R — when is the vessel busy with each logbook station?
 #
-# Input:  curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)
+# Input:  curated/logbook/adb_gear.parquet     (.sid, schema, gid, gear, target, target2: adb stations only)
+#         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)
 #         curated/logbook/trip.parquet            (.tid, schema, vid)
 #         curated/logbook/station.parquet         (.sid, schema, date)
 #         curated/reference/gear_window.parquet   (gear_class, s1, s2, set_max_min)
@@ -41,6 +42,8 @@ lb <- function(f) fd_curated("logbook", f)
 dbExecute(con, sprintf("CREATE VIEW fs   AS SELECT * FROM read_parquet('%s')", lb("fishing_sample.parquet")))
 dbExecute(con, sprintf("CREATE VIEW trip AS SELECT * FROM read_parquet('%s')", lb("trip.parquet")))
 dbExecute(con, sprintf("CREATE VIEW st   AS SELECT * FROM read_parquet('%s')", lb("station.parquet")))
+# adb stations have no gear of their own; curate/corrections/adb_gear.R reads it from the matched landing
+dbExecute(con, sprintf("CREATE VIEW ag   AS SELECT * FROM read_parquet('%s')", lb("adb_gear.parquet")))
 dbExecute(con, sprintf("CREATE VIEW gw   AS SELECT * FROM read_parquet('%s')",
                        fd_curated("reference", "gear_window.parquet")))
 
@@ -56,14 +59,22 @@ GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1")
 
 dbExecute(con, "
 CREATE TABLE base AS
-SELECT f.\".sid\" AS sid, f.schema, f.\".tid\" AS tid, tv.vid, f.gear,
-       CAST(f.gid AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
-       f.t1, f.t2, f.t3, f.t4, f.duration_m,
+SELECT f.\".sid\" AS sid, f.schema, f.\".tid\" AS tid, tv.vid, coalesce(f.gear, ag.gear) AS gear, coalesce(f.target, ag.target) AS target,
+       coalesce(f.target2, ag.target2) AS target2,
+       CAST(coalesce(f.gid, ag.gid) AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
+       -- adb keeps the raw start/end as t1/t4 whatever the gear (its gear is unknown in the adapter). For a
+       -- towed gear fs_afladagbok maps them to t2/t3 and leaves t1/t4 NA; the same on the 1.4 M shared
+       -- stations (adb t1 = fs t2, adb t4 = fs t3, 100 %). Without this every 2026 tow was a day window.
+       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN NULL ELSE f.t1 END AS t1,
+       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN f.t1 ELSE f.t2 END AS t2,
+       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN f.t4 ELSE f.t3 END AS t3,
+       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN NULL ELSE f.t4 END AS t4, f.duration_m,
        date_trunc('day', st.date) AS d
 FROM fs f
 JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
 JOIN st          ON st.\".sid\" = f.\".sid\" AND st.schema = f.schema
-JOIN gw g        ON g.gid = CAST(f.gid AS INTEGER)
+LEFT JOIN ag     ON ag.\".sid\" = f.\".sid\" AND ag.schema = f.schema
+JOIN gw g        ON g.gid = CAST(coalesce(f.gid, ag.gid) AS INTEGER)
 WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL")
 
 # The typical haul stands in where only t4 is recorded. It is measured from the
@@ -162,7 +173,7 @@ WHERE r.phase <> 'day'")
 
 dbExecute(con, "
 CREATE TABLE station_window AS
-SELECT r.sid AS \".sid\", r.schema, r.tid AS \".tid\", r.vid, r.gear, r.gid, r.gear_class, r.phase,
+SELECT r.sid AS \".sid\", r.schema, r.tid AS \".tid\", r.vid, r.gear, r.target, r.target2, r.gid, r.gear_class, r.phase,
   r.w_start,
   CASE WHEN r.phase IN ('tow', 'haul') AND n.next_work < r.w_end THEN n.next_work
        WHEN r.phase = 'set' AND n.next_any < r.w_end THEN n.next_any

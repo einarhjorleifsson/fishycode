@@ -32,7 +32,7 @@ trail_month_sql <- function(year, month, kind = c("wide", "match")) {
                                     WHEN 'set' THEN 4 ELSE 5 END AS prank
                FROM read_parquet(%s) WHERE w_end >= %s AND w_start < %s),
     m0 AS (
-      SELECT p.vid, p.time, p.speed, w.\".sid\" AS sid, w.schema, w.\".tid\" AS tid, w.gear,
+      SELECT p.vid, p.time, p.speed, w.\".sid\" AS sid, w.schema, w.\".tid\" AS tid, w.gear, w.target, w.target2,
              w.gear_class, w.phase, w.win_basis, w.events, w.s1, w.s2, w.w_start, w.w_end,
              w.prank, (w.phase <> 'day') AS tier1
       FROM (SELECT vid, time, speed FROM %s) p
@@ -47,7 +47,7 @@ trail_month_sql <- function(year, month, kind = c("wide", "match")) {
 
   if (kind == "match") return(sprintf("
     %s
-    SELECT m.vid, m.time, m.sid AS \".sid\", m.schema, m.tid AS \".tid\", m.gear, m.gear_class, m.phase,
+    SELECT m.vid, m.time, m.sid AS \".sid\", m.schema, m.tid AS \".tid\", m.gear, m.target, m.target2, m.gear_class, m.phase,
            CASE WHEN m.phase <> 'day' THEN epoch(m.time - m.w_start) / nullif(epoch(m.w_end - m.w_start), 0) END AS phase_frac,
            m.win_basis, m.events, m.s1, m.s2, m.w_start, m.w_end,
            (m.phase <> 'set' AND m.speed BETWEEN m.s1 AND m.s2) AS fishing
@@ -58,7 +58,9 @@ trail_month_sql <- function(year, month, kind = c("wide", "match")) {
     a AS (
       SELECT vid, time, count(*) AS n_sid,
              any_value(sid) AS sid, any_value(schema) AS schema, any_value(tid) AS tid,
-             any_value(gear) AS gear, any_value(gear_class) AS gear_class,
+             any_value(gear) AS gear, any_value(target) AS target, any_value(target2) AS target2,
+             any_value(gear_class) AS gear_class,
+             any_value(s1) AS s1, any_value(s2) AS s2,
              any_value(phase) AS phase, any_value(win_basis) AS win_basis, any_value(events) AS events,
              any_value(CASE WHEN phase <> 'day' THEN epoch(time - w_start) / nullif(epoch(w_end - w_start), 0) END) AS phase_frac,
              -- per claiming window: FALSE for a set or a gear with no speed range, NA when there is no speed
@@ -80,7 +82,11 @@ trail_month_sql <- function(year, month, kind = c("wide", "match")) {
            CASE WHEN a.n_sid = 1 THEN a.schema END AS schema,
            CASE WHEN a.n_sid = 1 THEN a.tid END AS \".tid\",
            CASE WHEN a.n_sid = 1 THEN a.gear END AS gear,
+           CASE WHEN a.n_sid = 1 THEN a.target END AS target,
+           CASE WHEN a.n_sid = 1 THEN a.target2 END AS target2,
            CASE WHEN a.n_sid = 1 THEN a.gear_class END AS gear_class,
+           CASE WHEN a.n_sid = 1 THEN a.s1 END AS s1,
+           CASE WHEN a.n_sid = 1 THEN a.s2 END AS s2,
            CASE WHEN a.n_sid = 1 THEN a.phase END AS phase,
            CASE WHEN a.n_sid = 1 THEN a.phase_frac END AS phase_frac,
            CASE WHEN a.n_sid = 1 THEN a.win_basis END AS win_basis,

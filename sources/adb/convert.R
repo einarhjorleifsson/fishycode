@@ -125,12 +125,17 @@ station <-
 catch <-
   duckdbfs::open_dataset(fd_raw("logbooks", "adb", "catch.parquet")) |> collect() |>
   wk_translate(dictionary) |>
+  # `quantity` is fs_afladagbok's `magn` (equal on all 1.07 M shared rows where weight is NULL): the weight in
+  # the state `condition` names. `weight` is fs's `afli`, the whole-fish weight, NULL for ~98 % of rows from
+  # 2023 - summing it with na.rm gave catch 0 for most trips (decision 066). Same layout as the fs adapter.
   rename(.sid = fishing_station_id,
          sid = species_no,
-         catch = weight) |>
-  select(.sid, sid, catch) |>
-  group_by(.sid, sid) |>
-  summarise(catch = sum(catch, na.rm = TRUE),
+         catch_whole = weight,
+         catch = quantity) |>
+  select(.sid, sid, condition, catch_whole, catch) |>
+  group_by(.sid, sid, condition) |>
+  summarise(catch_whole = if (all(is.na(catch_whole))) NA_real_ else sum(catch_whole, na.rm = TRUE),
+            catch = sum(catch, na.rm = TRUE),
             .groups = "drop") |>
   # ensure that catch record not an orphan
   inner_join(station |> select(.sid, schema)) |>
@@ -153,7 +158,7 @@ catch <-
 # gear from them would mislabel it. The raw code is preserved verbatim as
 # gid_old; the unified gid is filled downstream from the LANDINGS gear code,
 # which does resolve cleanly - all 25 of its distinct values match gear$gid.
-# See TODO.md item 20.
+# See curate/decisions/066.
 
 station_narrow <-
   station |>
@@ -166,6 +171,7 @@ fishing_sample <-
     gid_old = as.integer(gid),      # adb's own coding, kept verbatim
     gid     = NA_real_,             # filled downstream from landings
     gear    = NA_character_,
+    target  = NA_character_,
     target2 = NA_character_,
     t1,
     t2 = as.POSIXct(NA),            # adb records no deployment-end time

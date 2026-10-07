@@ -213,7 +213,7 @@ fishing_sample <-
   select(.tid, .sid, gid, date, schema, eytt_deleted) |>
   # Old → new gear code mapping done once here
   rename(gid_old = gid) |>
-  left_join(gear_mapping |> select(gid_old = gid, gid = map, gear, target2),
+  left_join(gear_mapping |> select(gid_old = gid, gid = map, gear, target, target2),
             by = "gid_old") |>
   left_join(timing, by = ".sid") |>
   # OTB NEP pre-2000: duration appears to be recorded in hours not minutes
