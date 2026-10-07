@@ -487,3 +487,19 @@ has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R
 
 **check:** renaming one `einar` harbour in `curate/corrections/ports_iceland.R` leaves every other `pid` unchanged, and
 the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
+
+## 37. `produces()` leaves every script's objects in the session
+**status:** open · **files:** `_targets.R` (`produces()`) · **see:** commit log 2026-10-07
+
+`produces()` runs `source(script)` in the global environment of the one R session that runs every target,
+so a script's objects stay in memory after its target is done. On 2026-10-07 `area_h3` failed with "vector
+memory limit of 24.0 Gb reached" (24 GB is this machine's RAM), right after `shapes` in the same session had
+left its 2.1 M-polygon EUSM object behind. That cause comes from reading the code and has not been tested.
+Global state leaks the same way: `shapes.R` calls `sf_use_s2(FALSE)`, and that setting holds for every later target.
+The fix is to note `ls(globalenv())` before `source()`, then `rm()` what the script added and `gc()` in
+`on.exit()`. Any script that relied on another's leftovers would then fail loudly. Changing `produces()`
+makes **every** target outdated, so do it together with a planned full rebuild. Until then, heavy targets
+go in their own session: `tar_make(names = ...)`.
+
+**check:** after `tar_make()`, the global environment holds no object a script created, and a full rebuild
+from `tar_invalidate(everything())` finishes without a memory error.
