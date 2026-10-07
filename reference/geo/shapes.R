@@ -47,7 +47,7 @@ ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.fgb"), delet
 eusm <-
   read_sf(fd_staging("aux_valid", "eusm.gpkg")) |>
   st_crop(st_bbox(ices_extended))
-eusm |> write_sf(fd_staging("aux", "eusm.gpkg"), delete_dsn = TRUE)
+# .fgb only: both readers (h3_index.R, products/exports/astd_iseez.R) take it; the 2 GB .gpkg copy is gone
 eusm |> write_sf(fd_staging("aux", "eusm.fgb"), delete_dsn = TRUE)
 # gebco ------------------------------------------------------------------------
 read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"), delete_dsn = TRUE)

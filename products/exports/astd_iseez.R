@@ -40,8 +40,8 @@ ports <-
   read_sf(fd_staging("aux", "ports.gpkg")) |> 
   select(.pid = pid)
 eusm_ices <- 
-  read_sf(fd_staging("aux", "eusm.gpkg")) |> 
-  select(.msfd_bbht = MSFD_BBHT)
+  read_sf(fd_staging("aux", "eusm.fgb")) |> 
+  select(.msfd_bbht = bbht)   # shapes_raw.R renames MSFD_BBHT to bbht
 ices <- 
   read_sf(fd_staging("aux_valid", "ices_areas.gpkg")) |> 
   select(.ices = Area_Full)
