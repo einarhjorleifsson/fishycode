@@ -471,7 +471,7 @@ Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at
 ## 35. Downstream of `ping_clean` was built from the previous filter
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
 
-`ping_clean` was rebuilt 2026-10-07 with `ramb::whack_clean()` by running the script directly (8.8 min); `targets` still lists `ais_ping_clean` as outdated, and so are its ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`, `shapes`), so a plain `tar_make()` would rebuild far more than the filter. `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them still come from the old `ping_clean`. Also open, none blocking: the closing count of `ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where the new filter flags more than the old (decision 067); fishyweb `notes/whacky-positions.qmd` is untracked and shows vessel tracks, so the disclosure rule comes first. The same rebuild carries the harbour renames of decision 068 (`shapes`, `port` and the AIS harbour targets take new `pid`s, see item 36).
+`ping_clean` was rebuilt 2026-10-07 with `ramb::whack_clean()` by running the script directly (8.8 min); `targets` still lists `ais_ping_clean` as outdated, and so are its ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`, `shapes`), so a plain `tar_make()` would rebuild far more than the filter. `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them still come from the old `ping_clean`. Also open, none blocking: the closing count of `ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where the new filter flags more than the old (decision 067); fishyweb `notes/whacky-positions.qmd` is untracked and shows vessel tracks, so the disclosure rule comes first. The same rebuild carries the harbour renames of decision 068 (`shapes`, `port` and the AIS harbour targets take new `pid`s, see item 36). **Paused 2026-10-07** after `ais_ping_tag` (11 of 26 outdated targets built one session each, `ais_ping_clean` left finishing); resume with `Rscript -e 'source("R/tar_make_isolated.R"); tar_make_isolated()'`, which builds whatever is still outdated.
 
 **check:** `tar_outdated()` lists none of `ais_ping_clean`, `ais_trip`, `harbour_stay`, `ais_trail`, and `count(ping_clean) + count(ping_whacky)` equals `count(ping_tagged with a vid)` per year.
 
@@ -499,7 +499,7 @@ Global state leaks the same way: `shapes.R` calls `sf_use_s2(FALSE)`, and that s
 The fix is to note `ls(globalenv())` before `source()`, then `rm()` what the script added and `gc()` in
 `on.exit()`. Any script that relied on another's leftovers would then fail loudly. Changing `produces()`
 makes **every** target outdated, so do it together with a planned full rebuild. Until then, heavy targets
-go in their own session: `tar_make(names = ...)`.
+go in their own session: `tar_make_isolated()` (`R/tar_make_isolated.R`) does that for every outdated target.
 
 **check:** after `tar_make()`, the global environment holds no object a script created, and a full rebuild
 from `tar_invalidate(everything())` finishes without a memory error.
