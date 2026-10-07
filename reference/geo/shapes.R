@@ -41,19 +41,11 @@ ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"), dele
 ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.fgb"), delete_dsn = TRUE)
 
 # eusm -------------------------------------------------------------------------
+# reference/geo/shapes_raw.R has already filtered and repaired it (staging/aux_valid/, EPSG:4326).
+# This block used to repeat that from raw/aux/eusm.rds - the same three make_valid passes over
+# 2.2 M polygons, most of this target's 15 minutes - and so never read its declared input.
 eusm <-
-  readRDS(fd_raw("aux", "eusm.rds")) |>
-  rename(bbht = MSFD_BBHT, geom = Shape) |>
-  # drops 986652 features !!
-  filter(bbht != "") |>
-  st_as_sf() |>
-  st_make_valid() |>
-  mutate(geom = lwgeom::lwgeom_make_valid(geom)) |>
-  st_make_valid()
-eusm$geom |> st_is_valid() |> table()
-eusm <-
-  eusm |>
-  st_transform(4326) |>
+  read_sf(fd_staging("aux_valid", "eusm.gpkg")) |>
   st_crop(st_bbox(ices_extended))
 eusm |> write_sf(fd_staging("aux", "eusm.gpkg"), delete_dsn = TRUE)
 eusm |> write_sf(fd_staging("aux", "eusm.fgb"), delete_dsn = TRUE)

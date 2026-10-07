@@ -126,9 +126,14 @@ list(
              fd_curated("reference", "stk_hid_pid.parquet"))
   }, format = "file"),
 
-  tar_target(area_h3, produces(
-    "reference/geo/h3_index.R",
-    fd_curated("reference", "area_h3.parquet")), format = "file"),
+  # h3_index.R reads staging/aux/eusm.fgb and ices_areas_500m-buffer.fgb, both written by
+  # shapes; without this edge a changed habitat or area layer never reached area_h3. Coarse
+  # on purpose: a rewrite changes the bytes of even an unchanged .fgb, so no file target
+  # could tell a real change from a rewrite.
+  tar_target(area_h3, {
+    shapes
+    produces("reference/geo/h3_index.R", fd_curated("reference", "area_h3.parquet"))
+  }, format = "file"),
 
   # Country codes, maritime identification digits, call-sign prefixes. Declared
   # late: this script was producing three inputs vessel_ais_key needs while not
