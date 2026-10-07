@@ -465,3 +465,13 @@ Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in reco
 Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
 
 **check:** the answers are recorded in a decision, and either `gid`/`gid_landing` are on the trail and a speed rule is chosen, or plan 012 is marked abandoned with the reason.
+
+---
+
+## 35. Downstream of `ping_clean` was built from the previous filter
+**status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
+
+`ping_clean` was rebuilt 2026-10-07 with `ramb::whack_clean()` by running the script directly (8.8 min); `targets` still lists `ais_ping_clean` as outdated, and so are its ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`, `shapes`), so a plain `tar_make()` would rebuild far more than the filter. `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them still come from the old `ping_clean`. Also open, none blocking: the closing count of `ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where the new filter flags more than the old (decision 067); fishyweb `notes/whacky-positions.qmd` is untracked and shows vessel tracks, so the disclosure rule comes first.
+
+**check:** `tar_outdated()` lists none of `ais_ping_clean`, `ais_trip`, `harbour_stay`, `ais_trail`, and `count(ping_clean) + count(ping_whacky)` equals `count(ping_tagged with a vid)` per year.
+
