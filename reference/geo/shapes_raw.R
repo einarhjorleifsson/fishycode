@@ -1,3 +1,13 @@
+# shapes_raw.R — repair the raw spatial layers once: ICES areas, GEBCO depth bands and EUSM habitats.
+#
+# Input:  raw/aux/ICESareas.gpkg, raw/aux/ICES_GEBCO.rds, raw/aux/eusm.rds
+# Output: staging/aux_valid/{ices_areas,gebco,eusm}.gpkg   valid geometry, EPSG:4326
+#
+# Each layer goes through st_make_valid(), lwgeom_make_valid() and st_make_valid() again. That is
+# the slow part (about 10 minutes, mostly EUSM's 2.2 M polygons), so it is done here once and
+# reference/geo/shapes.R only crops and buffers the result. EUSM keeps only polygons with an MSFD
+# broad habitat type.
+
 library(sf)
 library(tidyverse)
 sf::sf_use_s2(FALSE)

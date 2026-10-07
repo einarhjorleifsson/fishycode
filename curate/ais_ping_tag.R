@@ -1,6 +1,12 @@
-# The reason that a two step process is used is so that the union process in
-#   script ais-data-cosolidation.R is separate from the allocation of pings
-#   to space and trip creation
+# ais_ping_tag.R — tag every merged ping with its harbour polygon and its H3 cell's depth, habitat and ICES area.
+#
+# Input:  staging/ais/ping_union              all pings, from curate/ais_ping_union.R
+#         staging/aux/ports.fgb               harbour polygons (pid, hid)
+#         curated/reference/area_h3.parquet   H3 resolution-8 cell -> depth, bbht, fao
+# Output: staging/ais/ping_tagged             partitioned by year
+#
+# Two scripts, union then tag, on purpose: the union is 44 GB, and the tagging must be rerunnable
+# without redoing it (AGENTS.md, Script naming).
 
 library(duckdbfs)
 library(tidyverse)

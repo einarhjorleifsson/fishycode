@@ -1,3 +1,13 @@
+# harbour_codes.R — the crosswalk from Iceland's landing-harbour code (hid) to the standard harbour key (pid).
+#
+# Input:  raw/landings/agf/aflagrunnur_v.parquet   the hid codes and names the landings use
+#         raw/ports/ports_kvoti.parquet            Fiskistofa's place list, the code authority
+#         staging/ports/ports_all.gpkg             the pid of each Iceland polygon (source "einar"), by hid
+# Output: curated/reference/port.parquet           one row per hid: hid, port, pid, hafnarnumer_id
+#
+# Every code in any of the three gets a row and a name; only a code with a harbour polygon
+# gets a pid (decision 007: not every landing code is a harbour).
+
 library(sf)
 library(nanoparquet)
 library(tidyverse)

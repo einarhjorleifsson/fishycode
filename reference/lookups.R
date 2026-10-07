@@ -1,3 +1,12 @@
+# lookups.R — country codes, MMSI country digits and call-sign prefixes, scraped from Wikipedia.
+#
+# Input:  en.wikipedia.org: List_of_ISO_3166_country_codes, Maritime_identification_digits, ITU_prefix
+# Output: staging/aux/country_codes_ISO3166.parquet
+#         staging/aux/maritime_identification_digits.parquet
+#         staging/aux/callsign_prefix.parquet
+#
+# It reads live web pages, so a rebuild takes whatever the pages say that day.
+
 library(tidyverse)
 library(rvest)
 library(countrycode)
