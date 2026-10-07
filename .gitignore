@@ -24,6 +24,8 @@ data-dump/
 *.rds
 *.zip
 *.html
+# support files of a standalone render (e.g. docs/ports.md -> ports.html)
+docs/*_files/
 
 # machine-local data root; each machine sets its own
 .Renviron

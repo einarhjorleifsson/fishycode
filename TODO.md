@@ -471,7 +471,19 @@ Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at
 ## 35. Downstream of `ping_clean` was built from the previous filter
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
 
-`ping_clean` was rebuilt 2026-10-07 with `ramb::whack_clean()` by running the script directly (8.8 min); `targets` still lists `ais_ping_clean` as outdated, and so are its ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`, `shapes`), so a plain `tar_make()` would rebuild far more than the filter. `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them still come from the old `ping_clean`. Also open, none blocking: the closing count of `ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where the new filter flags more than the old (decision 067); fishyweb `notes/whacky-positions.qmd` is untracked and shows vessel tracks, so the disclosure rule comes first.
+`ping_clean` was rebuilt 2026-10-07 with `ramb::whack_clean()` by running the script directly (8.8 min); `targets` still lists `ais_ping_clean` as outdated, and so are its ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`, `shapes`), so a plain `tar_make()` would rebuild far more than the filter. `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them still come from the old `ping_clean`. Also open, none blocking: the closing count of `ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where the new filter flags more than the old (decision 067); fishyweb `notes/whacky-positions.qmd` is untracked and shows vessel tracks, so the disclosure rule comes first. The same rebuild carries the harbour renames of decision 068 (`shapes`, `port` and the AIS harbour targets take new `pid`s, see item 36).
 
 **check:** `tar_outdated()` lists none of `ais_ping_clean`, `ais_trip`, `harbour_stay`, `ais_trail`, and `count(ping_clean) + count(ping_whacky)` equals `count(ping_tagged with a vid)` per year.
 
+## 36. A `pid` moves when a harbour is renamed
+**status:** open · **needs: maintainer** · **see:** `curate/decisions/068-the-wgsfd-harbour-file.md`, `reference/ports/ports_all.R`
+
+Asked: pin the `einar` pids, or accept that a rename re-mints them? `ports_all.R` mints `pid` from the harbour name, so
+the renames of decision 068 re-minted five codes and handed `IS-SEL` (Selfoss/Selvík) to Seltjarnarnes (was `IS-SET`):
+a code reused for another harbour, which `docs/ports.md` forbids across WGSFD deliveries. Separately, about 20
+Icelandic harbours whose UN/LOCODE exists carry a locally derived `pid` (Ísafjörður `IS-ISJ`, UN/LOCODE `ISISA`): the
+UN/LOCODE name carries a suffix (" - høfn") the name match misses, and `einar` priority outranks the gisco member that
+has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R` is stale.
+
+**check:** renaming one `einar` harbour in `curate/corrections/ports_iceland.R` leaves every other `pid` unchanged, and
+the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
