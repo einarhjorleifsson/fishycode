@@ -1,6 +1,6 @@
 # 067 — Whacky positions are labelled by `ramb::whack_clean()`; `ais_ping_clean.R` acts on the labels
 
-*2026-10-05. Replaces the two-pass filter of decision 017's `ping_clean`. The script is switched; `ping_clean` is **not rebuilt yet**.*
+*2026-10-05; `ping_clean` rebuilt 2026-10-07 (see Open). Replaces the two-pass filter of decision 017's `ping_clean`.*
 
 ## What changed
 
@@ -36,6 +36,16 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
 
 ## Open
 
-- **Rebuild**: `tar_invalidate(ais_ping_clean)` and a `tar_make()` of the chain downstream of it (trip, harbour stay, trail) have not been run. Until they are, `ping_clean` is the
-  former output and `ping_whacky` does not exist.
+- **Rebuilt 2026-10-07**, by running the script directly, in 8.8 minutes, on the `ping_tagged` on disk: `ping_clean` 540,761,076 pings, `ping_whacky` 2,887,233 (1,091,000 vmask,
+  6,487 spike, 1,789,746 forward; 93 MB), 20 year markers carrying the new fingerprint. `tar_make(ais_ping_clean)` was not used: its ancestors `ais_ping_tag`, `ais_ping_union`,
+  `vessel_ais_key`, `logbook`, `afli`, `shapes` are outdated and it would have rebuilt them first. The target is still outdated in `targets`; the next `tar_make()` runs the
+  script, which skips every year whose markers match.
+- **Downstream is stale**: `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them were built from the previous `ping_clean`.
+- **127,795 pings (emodnet, 2017) have no `vid`** and are in neither `ping_clean` nor `ping_whacky`: the batches select `vid %in% g`, which never matches NA. The former script did the same
+  (and its closing count did not show it). They cannot be judged against a vessel. They are 21 MMSIs, all emodnet 2017, none in `vessel_identity`: 251513000 (60,391 pings, found
+  nowhere, not even in GFW; **a fixed transmitter**: one position, 21.9 W 64.2 N, standard deviation 0 over the whole year, confirmed against the MarineTraffic page the
+  maintainer pointed to) and 251439000 (51,735; GFW has it as an ISL purse seiner without a vid) are 88 %; then 251999898/899 (4,838, not identified), 273398460 and 273396110
+  (Russia), 601378300 (South Africa), 659420000 (Namibia), 257026770 (Norway) from GFW. 251999898 (also one fixed position near Reykjavik), 273396110 and 257110000 (fixed, Russia and Norway) are fixed too; 251439000 moves (a vessel) and is **vid 2411 HUGINN (TFQW, IMO 9211690, registry MMSI 251139000, one digit different)**: where vid 2411 has an stk ping within 2 minutes of one of its 25,992 pings
+  away from Vestmannaeyjar, 5,582 of 6,217 are within 500 m (median 110 m; the next vessel 1,041 of 16,339); **Maintainer, 2026-10-07: no override** (MMSI 251439000 stays without a `vid`; its 51,735 pings are not in `ping_clean`). Not settled from positions alone: one vessel with a mistyped MMSI against two vessels fishing side by side. `rb_mmsi_category()` calls all of them
+  `vessel`, so the number format does not reveal a fixed transmitter, the position does. Maintainer, 2026-10-07: `ping_clean` should not carry them.
 - The 208 vessels where the recipe flags more.
