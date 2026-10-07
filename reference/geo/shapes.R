@@ -8,7 +8,11 @@ library(mapview)
 #  analysis.
 
 sf_use_s2(FALSE)
-ices_raw <- read_sf(fd_raw("aux", "ICES_Areas_20160601_cut_dense_3857.gpkg"))
+# The source is EPSG:3857, whose unit is a metre only at the equator (scale factor sec(lat)):
+# a 500 buffer there was 215 m on the ground at 64.5N and 171 m at 70N. EPSG:3035 (LAEA
+# Europe) gives 498-500 m across the ICES area and within 4 % at its corners (Greenland, 80N).
+ices_raw <- read_sf(fd_raw("aux", "ICES_Areas_20160601_cut_dense_3857.gpkg")) |>
+  st_transform(3035)
 
 # 1. Buffer the union — only external (coastal) boundaries expand
 original_union <- st_union(ices_raw)
