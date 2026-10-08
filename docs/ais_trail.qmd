@@ -48,6 +48,11 @@ trail |> filter(year == 2019, month == 6) |> count(gear_class)    # a month
 duckdbfs::open_dataset(fd_curated("ais", "trail_match"))          # one row per (fix, station)
 ```
 
+Whacky points, positions no vessel could have reached, are not in the trail. `curate/ais_ping_clean.R`
+removes them with `ramb::whack_clean()` before voyages, stays, distances or speeds are worked out. They are
+about 0.5 % of all pings, and they are kept in `staging/ais/ping_whacky`, where `whack_stage` says which test
+flagged each one (decision 067).
+
 The columns added to the pings (the voyage columns come from the AIS voyage, the station columns from the logbook stations):
 
 | column | meaning |
