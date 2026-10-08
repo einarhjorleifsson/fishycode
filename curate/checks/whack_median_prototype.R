@@ -25,20 +25,20 @@ whack_median <- function(d, kn_max = 25, k = 7, floor_m = 100) {
   hav(d$lon, d$lat, runmed(d$lon, k), runmed(d$lat, k)) > kn_max * 0.514444 * half + floor_m
 }
 
-residual <- function(d) sum(whack_fwdbwd(d, 25)$whack)
+residual <- function(d) sum(rb_whack_fwdbwd(d, 25)$whack)
 
 ev <- function(v) {
   d <- ais |> filter(vid == v) |> select(vid, time, lon, lat) |> collect() |> arrange(time)
-  f1 <- whack_fwdbwd(d, 25)$whack
-  cur <- f1; cur[!f1] <- whack_forward(d[!f1, ], 25)$whack2
-  p2  <- whack_forward(d, 25)$whack2
+  f1 <- rb_whack_fwdbwd(d, 25)$whack
+  cur <- f1; cur[!f1] <- rb_whack_forward(d[!f1, ], 25)$whack2
+  p2  <- rb_whack_forward(d, 25)$whack2
   med <- whack_median(d)
   one <- function(nm, f) tibble(vid = v, variant = nm, n = nrow(d), kept = sum(!f),
                                 residual_spikes = residual(d[!f, ]))
-  mf <- med; mf[!med] <- whack_forward(d[!med, ], 25)$whack2   # median first, then forward scan
+  mf <- med; mf[!med] <- rb_whack_forward(d[!med, ], 25)$whack2   # median first, then forward scan
   # gross outliers only (> 50 km from the window median), so the scan's anchor cannot be poisoned
   g <- hav(d$lon, d$lat, runmed(d$lon, 7), runmed(d$lat, 7)) > 50000
-  gf <- g; gf[!g] <- whack_forward(d[!g, ], 25)$whack2
+  gf <- g; gf[!g] <- rb_whack_forward(d[!g, ], 25)$whack2
   bind_rows(one("current (pass 1 + 2)", cur), one("pass 2 only", p2), one("median", med),
             one("median + pass 2", mf), one("gross outliers + pass 2", gf))
 }

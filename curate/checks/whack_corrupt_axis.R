@@ -18,7 +18,7 @@ years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
 by_vid_year <- function(yr) {
   x <- ais |> filter(year == yr, !is.na(vid)) |> select(vid, time, lon, lat) |>
-    whack_fwdbwd(kn_max = 25)
+    rb_whack_fwdbwd(kn_max = 25)
   con <- dbplyr::remote_con(x)
   src <- dbplyr::sql_render(x)
   nb <- function(col) paste0("list_median([", paste0(

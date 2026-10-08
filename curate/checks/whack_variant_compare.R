@@ -46,15 +46,15 @@ gross <- function(lon, lat, time) {
 run_batch <- function(d) {
   d <- arrange(d, vid, time)
   # current
-  f1  <- whack_fwdbwd(d, KN_MAX)$whack
-  s1  <- d[!f1, ] |> whack_forward(KN_MAX)
+  f1  <- rb_whack_fwdbwd(d, KN_MAX)$whack
+  s1  <- d[!f1, ] |> rb_whack_forward(KN_MAX)
   cur_keep <- s1[!s1$whack2, ]
   # variant
   g   <- d |> group_by(vid) |> mutate(g = gross(lon, lat, time)) |> ungroup()
-  s2  <- d[!g$g, ] |> whack_forward(KN_MAX)
+  s2  <- d[!g$g, ] |> rb_whack_forward(KN_MAX)
   new_keep <- s2[!s2$whack2, ]
   per <- function(keep, nm) keep |>
-    mutate(resid = whack_fwdbwd(keep, KN_MAX)$whack) |>
+    mutate(resid = rb_whack_fwdbwd(keep, KN_MAX)$whack) |>
     group_by(vid) |> summarise(kept = n(), spikes = sum(resid), .groups = "drop") |>
     rename_with(\(x) paste0(nm, "_", x), -vid)
   d |> count(vid, name = "n") |>

@@ -1,12 +1,12 @@
-# whack_recipe_timing.R — how long ramb::whack_clean() takes, on a data frame and on DuckDB.
+# whack_recipe_timing.R — how long ramb::rb_whack_clean() takes, on a data frame and on DuckDB.
 #
 # Input:  staging/ais/ping_tagged (read-only)
 # Output: curated/check/whack_recipe_timing.parquet   one row per year x path
 #
 # Times ONLY the filter, per year:
-#   df      collect() of vid, time, lon, lat for the year is timed apart ("read_sec"); whack_clean() on
+#   df      collect() of vid, time, lon, lat for the year is timed apart ("read_sec"); rb_whack_clean() on
 #           the collected frame ("filter_sec"), in batches of whole vessels as ais_ping_clean.R does.
-#   duckdb  whack_clean() on the lazy table, down to a one-row count ("filter_sec" includes reading).
+#   duckdb  rb_whack_clean() on the lazy table, down to a one-row count ("filter_sec" includes reading).
 # The flag counts of the two paths must agree (they are compared here).
 
 source(here::here("R", "paths.R"))
@@ -24,14 +24,14 @@ for (yr in years) {
   for (g in split(vn$vid, cumsum(as.numeric(vn$n)) %/% 5e6)) {
     read <- read + system.time(
       d <- ais |> filter(year == yr, vid %in% g) |> select(vid, time, lon, lat) |> collect())[["elapsed"]]
-    filt <- filt + system.time(r <- whack_clean(d))[["elapsed"]]
+    filt <- filt + system.time(r <- rb_whack_clean(d))[["elapsed"]]
     flagged <- flagged + sum(r$whack)
   }
   rows[[length(rows) + 1]] <- tibble(year = yr, path = "df", pings = sum(vn$n), read_sec = read, filter_sec = filt, flagged = flagged)
   message(yr, " df done")
 }
 for (yr in years) {
-  t <- system.time(n <- ais |> filter(year == yr, !is.na(vid)) |> select(vid, time, lon, lat) |> whack_clean() |>
+  t <- system.time(n <- ais |> filter(year == yr, !is.na(vid)) |> select(vid, time, lon, lat) |> rb_whack_clean() |>
                      summarise(flagged = sum(as.integer(whack), na.rm = TRUE), pings = n()) |> collect())[["elapsed"]]
   rows[[length(rows) + 1]] <- tibble(year = yr, path = "duckdb", pings = n$pings, read_sec = NA_real_, filter_sec = t, flagged = n$flagged)
   message(yr, " duckdb done")

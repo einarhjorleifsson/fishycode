@@ -1,6 +1,6 @@
 # sda_tune.R — tune the speed-distance-angle filter for AIS, and try combinations.
 #
-# Input:  staging/ais/ping_tagged (read-only); ramb::whack_sda() (the Rcpp port lives in ramb)
+# Input:  staging/ais/ping_tagged (read-only); ramb::rb_whack_sda() (the Rcpp port lives in ramb)
 # Output: console table; the same table as curated/check/sda_tune.parquet
 #
 # Two years (2012: sparse stk, 2016: dense), per year in vessel batches.
@@ -52,12 +52,12 @@ run_sda <- function(d, cfg, pre = NULL) {
   kn <- if (length(cfg) >= 5) cfg[[5]] / 0.514444 else KN
   sl <- if (length(cfg[[4]]) == length(cfg[[1]])) cfg[[4]] / 0.514444 else rep(0, length(cfg[[1]]))
   dl <- if (length(cfg[[2]]) == length(cfg[[1]])) cfg[[2]] else rep(0, length(cfg[[1]]))
-  r <- whack_sda(d, kn, ang = cfg[[1]], distlim = dl, speedlim_kn = sl, vmask_min_dist = cfg[[3]])
+  r <- rb_whack_sda(d, kn, ang = cfg[[1]], distlim = dl, speedlim_kn = sl, vmask_min_dist = cfg[[3]])
   r[is.na(r$whack_sda), names(d)]
 }
 drop_gross <- function(d) { g <- d |> group_by(vid) |> mutate(g = gross(lon, lat, time)) |> ungroup(); d[!g$g, ] }
-fwd  <- function(k) { s <- whack_forward(k, KN); s[!s$whack2, ] }
-cur  <- function(d) { f1 <- whack_fwdbwd(d, KN)$whack; fwd(d[!f1, ]) }
+fwd  <- function(k) { s <- rb_whack_forward(k, KN); s[!s$whack2, ] }
+cur  <- function(d) { f1 <- rb_whack_fwdbwd(d, KN)$whack; fwd(d[!f1, ]) }
 grs  <- function(d) { g <- d |> group_by(vid) |> mutate(g = gross(lon, lat, time)) |> ungroup(); fwd(d[!g$g, ]) }
 
 score <- function(keep, d, nm) {
@@ -65,7 +65,7 @@ score <- function(keep, d, nm) {
   d |> mutate(kept = .id %in% keep_id) |>
     summarise(pings = n(), dropped = sum(!kept),
               missed = sum(!kept == FALSE & corrupt), good_dropped = sum(!kept & !corrupt)) |>
-    mutate(spikes = sum(whack_fwdbwd(keep, KN)$whack), filter = nm)
+    mutate(spikes = sum(rb_whack_fwdbwd(keep, KN)$whack), filter = nm)
 }
 
 out <- list()

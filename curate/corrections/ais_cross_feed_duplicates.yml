@@ -1,0 +1,43 @@
+id: ais_cross_feed_duplicates
+title: the merged AIS table holds the same report twice, once from each feed that received it
+status: fixed 2026-10-08 - flagged as whack_stage "duplicate" before rb_whack_clean(); ping_clean and everything downstream rebuilt and verified
+applies_to:
+  - staging/ais/ping_clean  (the second copy is no longer in it)
+  - staging/ais/ping_whacky  (it is, with whack_stage = "duplicate"; nothing is overwritten)
+  - everything built from ping_clean - harbour_stay, ais_trip, ping_trail, trail
+affects_rows: 6,573,358 of 543,638,789 pings with a vid and a position (1.2 %); none 2007-2012 (one feed), 2,094,626 in 2017. Before this, 5,760,358 of them were in ping_clean and the trail and 813,000 were flagged whacky
+implementation: curate/ais_ping_clean.R (cross_feed_dup(), ahead of rb_whack_clean(); DUP_S, DUP_M, DUP_K, FEED). Needs tar_invalidate(ais_ping_clean) and tar_make_isolated() - targets cannot see a script edit.
+discovered: 2026-10-08 (decision 069 - the 10 s time-step floor gives back 1.47 M pings, 96 % of them between two feeds)
+
+origin: >-
+  Evaluating ramb's new time-step floor (min_dt_s = 10, decision 069) against production. The old floor (1e-6 s) turned
+  two reports of one fix a second apart into an impossible speed, so the filter flagged one of them - a de-duplication
+  done silently, and only where the two positions differed. With a 10 s floor those 1.47 M pings came back.
+
+mechanism: >-
+  ais_ping_union.R merges stk, astd, astdB and emodnet. A vessel heard by two networks is reported by both, a second or
+  two apart: in 2017 the median gap is 1-4 s and the median distance 0.1-0.4 m by feed pair, 69-100 % of pairs under
+  1 m. ais_ping_trail.R removes only exact (vid, time) ties (stk wins), so copies a few seconds apart reached the trail.
+
+detection: >-
+  A ping is a duplicate when a higher-priority feed (stk > astd > astdB > emodnet, the tie order of ais_ping_trail.R)
+  has a ping of the same vid within DUP_S = 10 s and DUP_M = 128.6 m - what 25 kn allows in 10 s, so the pair is one
+  the speed filter itself would call consistent - among the 3 neighbours on each side in time order. stk is never one.
+  Placeholder positions (ais_invalid_position) are out first and anchor nothing.
+
+effect: >-
+  1.2 % of the pings, 1.06 % of the trail, were a second copy: ping counts, the derived speed of astd and emodnet (a
+  chord over a one-second interval) and anything summed per ping counted them twice.
+
+repair: >-
+  The copy is flagged whack_stage = "duplicate" and goes to ping_whacky; rb_whack_clean() runs on the rest. Measured
+  first in DuckDB over every year (6,573,358); the R implementation gives the same count for 2023 (343,549: 299,495
+  astd, 44,054 astdB, no stk) in 8 s.
+
+verified: >-
+  Rebuild 2026-10-08: 6,573,358 flagged "duplicate", equal to the DuckDB measurement; the rule run again on the rebuilt
+  ping_clean finds none left (535,618,918 pings). No stk ping is among them.
+
+rebuilt: >-
+  tar_invalidate(ais_ping_clean), then tar_make_isolated(), 2026-10-08 13:17-14:20, with the 10 s floor of decision 069.
+  ping_trail and trail 562,417,835 rows each (-5,150,783), no duplicate (vid, time). Numbers in decision 069.

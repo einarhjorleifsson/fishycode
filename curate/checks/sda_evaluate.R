@@ -1,6 +1,6 @@
 # sda_evaluate.R — argosfilter's speed-distance-angle filter (Rcpp port) vs the whack filters.
 #
-# Input:  staging/ais/ping_tagged (read-only); ramb::whack_sda() (the Rcpp port lives in ramb)
+# Input:  staging/ais/ping_tagged (read-only); ramb::rb_whack_sda() (the Rcpp port lives in ramb)
 # Output: curated/check/whack_sda_vid.parquet   one row per vid x year x filter
 #         (the console also prints seconds spent in each filter over the whole dataset)
 #
@@ -38,7 +38,7 @@ secs <- c(current = 0, variant = 0, sda = 0, `sda+fwd` = 0)
 timed <- function(nm, expr) { t <- system.time(r <- expr)[["elapsed"]]; secs[nm] <<- secs[nm] + t; r }
 
 summarise_kept <- function(keep, d, nm) {
-  keep |> mutate(spike = whack_fwdbwd(keep, KN_MAX)$whack) |>
+  keep |> mutate(spike = rb_whack_fwdbwd(keep, KN_MAX)$whack) |>
     group_by(vid) |> summarise(kept = n(), spikes = sum(spike), .groups = "drop") |>
     right_join(count(d, vid, name = "n"), "vid") |>
     mutate(filter = nm, across(c(kept, spikes), \(x) coalesce(x, 0L)))
@@ -47,16 +47,16 @@ summarise_kept <- function(keep, d, nm) {
 run_batch <- function(d) {
   d <- arrange(d, vid, time)
   cur <- timed("current", {
-    f1 <- whack_fwdbwd(d, KN_MAX)$whack
-    s <- d[!f1, ] |> whack_forward(KN_MAX); s[!s$whack2, ] })
+    f1 <- rb_whack_fwdbwd(d, KN_MAX)$whack
+    s <- d[!f1, ] |> rb_whack_forward(KN_MAX); s[!s$whack2, ] })
   var <- timed("variant", {
     g <- d |> group_by(vid) |> mutate(g = gross(lon, lat, time)) |> ungroup()
-    s <- d[!g$g, ] |> whack_forward(KN_MAX); s[!s$whack2, ] })
+    s <- d[!g$g, ] |> rb_whack_forward(KN_MAX); s[!s$whack2, ] })
   sda <- timed("sda", {
-    r <- whack_sda(d, KN_MAX, ang = c(15, 25), distlim = c(2500, 5000),
+    r <- rb_whack_sda(d, KN_MAX, ang = c(15, 25), distlim = c(2500, 5000),
                    speedlim_kn = c(0, 0), vmask_min_dist = 5000)   # the package's own defaults
     r[is.na(r$whack_sda), names(d)] })
-  sdf <- timed("sda+fwd", { s <- sda |> whack_forward(KN_MAX); s[!s$whack2, ] })
+  sdf <- timed("sda+fwd", { s <- sda |> rb_whack_forward(KN_MAX); s[!s$whack2, ] })
   bind_rows(summarise_kept(cur, d, "current"), summarise_kept(var, d, "variant"),
             summarise_kept(sda, d, "sda"), summarise_kept(sdf, d, "sda+fwd"))
 }

@@ -23,13 +23,13 @@ for(y in 1:length(years)) {
     q |>
     filter(year == YR) |>
     group_by(vid) |>
-    whack_fwdbwd(kn_max = KN_MAX) |>
+    rb_whack_fwdbwd(kn_max = KN_MAX) |>
     mutate(whack = ifelse(is.na(whack), TRUE, whack))
   step2 <-
     step1 |>
     filter(whack == FALSE) |>
     select(-whack) |>
-    whack_fwdbwd(kn_max = KN_MAX) |>
+    rb_whack_fwdbwd(kn_max = KN_MAX) |>
     mutate(whack = ifelse(is.na(whack), TRUE, whack))
   res[[y]] <-
     bind_rows(step1 |> count(whack) |> collect() |> mutate(step = 1, year = YR),
@@ -40,7 +40,7 @@ bind_rows(res) |> spread(step, n) |> arrange(year, whack) |> knitr::kable()
 
 ais |>
   group_by(vid) |>
-  whack_fwdbwd(kn_max = KN_MAX) |>
+  rb_whack_fwdbwd(kn_max = KN_MAX) |>
   mutate(whack = ifelse(is.na(whack), FALSE, whack)) |>
   filter(whack == TRUE) |>
   count(vid) |>
@@ -49,7 +49,7 @@ ais |>
 d <-
   ais |>
   filter(vid == 2765) |>
-  whack_fwdbwd(kn_max = KN_MAX) |>
+  rb_whack_fwdbwd(kn_max = KN_MAX) |>
   mutate(whack = ifelse(is.na(whack), FALSE, whack)) |>
   collect() |>
   arrange(vid, time)

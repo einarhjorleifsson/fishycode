@@ -50,9 +50,11 @@ duckdbfs::open_dataset(fd_curated("ais", "trail_match"))          # one row per 
 
 Whacky points, positions no vessel could have reached, are not in the trail. `curate/ais_ping_clean.R`
 removes them before voyages, stays, distances or speeds are worked out: first placeholder positions, where
-the longitude equals the latitude, (0, 0) included (`curate/corrections/ais_invalid_position.yml`), then
-the rest with `ramb::whack_clean()`. They are about 0.5 % of all pings, and they are kept in
-`staging/ais/ping_whacky`, where `whack_stage` says which test flagged each one (decision 067).
+the longitude equals the latitude, (0, 0) included (`curate/corrections/ais_invalid_position.yml`), then the
+rest with `ramb::rb_whack_clean()`. A second feed's copy of a report is taken out the same way, so a fix two
+networks both heard is here once (`curate/corrections/ais_cross_feed_duplicates.yml`). Together they are about
+1.5 % of all pings, and they are kept in `staging/ais/ping_whacky`, where `whack_stage` says which step took
+each one out (decisions 067 and 069).
 
 The columns added to the pings (the voyage columns come from the AIS voyage, the station columns from the logbook stations):
 

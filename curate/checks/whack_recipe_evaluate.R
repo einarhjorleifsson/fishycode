@@ -1,11 +1,11 @@
-# whack_recipe_evaluate.R — ramb::whack_clean() vs the current filter, whole AIS ping table.
+# whack_recipe_evaluate.R — ramb::rb_whack_clean() vs the current filter, whole AIS ping table.
 #
 # Input:  staging/ais/ping_tagged (read-only)
 # Output: curated/check/whack_recipe_vid.parquet   one row per vid x year x filter
 #         console: summary tables
 #
 #   current  whack_fwdbwd, then whack_forward on the survivors   (ais_ping_clean.R today)
-#   recipe   ramb::whack_clean(): vmask, leg-speed spike, whack_forward. LABELS, never drops.
+#   recipe   ramb::rb_whack_clean(): vmask, leg-speed spike, whack_forward. LABELS, never drops.
 #
 # Judged by pings flagged, by speed spikes left among the UNFLAGGED pings (whack_fwdbwd on
 # them), and by track length: the summed leg distance of the vessel's track raw, and with
@@ -35,7 +35,7 @@ path_km <- function(d) d |> group_by(vid) |>
 
 tally <- function(d, flag, nm) {
   keep <- d[!flag, ]
-  keep |> mutate(spike = whack_fwdbwd(keep, KN)$whack) |>
+  keep |> mutate(spike = rb_whack_fwdbwd(keep, KN)$whack) |>
     group_by(vid) |> summarise(kept = n(), spikes = sum(spike), .groups = "drop") |>
     left_join(path_km(keep) |> rename(path_km = km), "vid") |>
     right_join(count(d, vid, name = "n") |> left_join(path_km(d) |> rename(raw_km = km), "vid"), "vid") |>
@@ -47,8 +47,8 @@ for (yr in years) {
   vn <- ais |> filter(year == yr, !is.na(vid)) |> count(vid) |> collect() |> arrange(desc(n))
   for (g in split(vn$vid, cumsum(as.numeric(vn$n)) %/% 5e6)) {
     d <- ais |> filter(year == yr, vid %in% g) |> select(vid, time, lon, lat) |> collect() |> arrange(vid, time, lon, lat)
-    cur <- timed("current", { f1 <- whack_fwdbwd(d, KN)$whack; f <- f1; f[!f1] <- whack_forward(d[!f1, ], KN)$whack2; f })
-    rec <- timed("recipe_df", whack_clean(d, KN))
+    cur <- timed("current", { f1 <- rb_whack_fwdbwd(d, KN)$whack; f <- f1; f[!f1] <- rb_whack_forward(d[!f1, ], KN)$whack2; f })
+    rec <- timed("recipe_df", rb_whack_clean(d, KN))
     stopifnot(nrow(rec) == nrow(d), all(rec$vid == d$vid), all(rec$time == d$time), all(rec$lon == d$lon))
     out[[length(out) + 1]] <- bind_rows(tally(d, cur, "current"), tally(d, rec$whack, "recipe")) |> mutate(year = yr)
   }

@@ -503,7 +503,7 @@ from `tar_invalidate(everything())` finishes without a memory error.
 The switch and the rebuild downstream of it are done (decision 067). Of the 208 vessels where the new filter flags
 more, the 62 vessel-years that also keep a longer track were looked at: placeholder positions are now flagged first
 (`curate/corrections/ais_invalid_position.yml`). Left, none blocking (decision 067): vessels faster than 25 kn lose
-real track under either filter - 84 fishing vessels, all under 12 m, 8,437 real pings, steaming only (needs a choice:
+real track under either filter - 84 fishing vessels, all under 12 m, 8,433 real pings, steaming only (needs a choice:
 a per-vessel limit, or not flagging a leg the vessel's own recorded speed confirms); the forward scan accepts the
 first ping after a gap of more than 4 h untested (vid 2657, 2017); sparse tracks (vid 1186, 2023). fishyweb `notes/whacky-positions.qmd`
 is untracked and shows vessel tracks, so the disclosure rule comes first.

@@ -1,6 +1,6 @@
 # 067 — Whacky positions are labelled by `ramb::whack_clean()`; `ais_ping_clean.R` acts on the labels
 
-*2026-10-05; `ping_clean` rebuilt 2026-10-07 (see Open). Replaces the two-pass filter of decision 017's `ping_clean`.*
+*2026-10-05; `ping_clean` rebuilt 2026-10-07 (see Open). Replaces the two-pass filter of decision 017's `ping_clean`. **Revised 2026-10-08 by decision 069**: the filter is `rb_whack_clean()` with a 10 s time-step floor, and a cross-feed duplicate stage runs before it, so the counts below are those of the old floor.*
 
 ## What changed
 

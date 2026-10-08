@@ -17,14 +17,14 @@ library(ramb)
 # kn_max. Requiring both spares the first point after a data gap.
 toy <- whacks1 |> filter(vid == 1, tid == 1)
 toy |>
-  whack_fwdbwd(kn_max = 25) |>
+  rb_whack_fwdbwd(kn_max = 25) |>
   filter(whack | whacks) |>
   select(time, lon, lat, whacks, whack) |>
   print()   # `whacks` is the dataset's truth; `whack` is the detector
 
 # whack_forward compares against the last point it KEPT, not the previous one, so
 # it also catches a run of consecutive bad points that are slow among themselves.
-toy |> whack_forward(kn_max = 25) |> count(whack2) |> print()
+toy |> rb_whack_forward(kn_max = 25) |> count(whack2) |> print()
 
 # 2. On our data --------------------------------------------------------------
 library(duckdbfs)
@@ -35,8 +35,8 @@ flag <- function(v, yr) {
     filter(year == yr, vid == v) |>
     select(vid, time, lon, lat, provider) |>
     collect() |>
-    whack_fwdbwd(kn_max = 25) |>
-    whack_forward(kn_max = 25) |>
+    rb_whack_fwdbwd(kn_max = 25) |>
+    rb_whack_forward(kn_max = 25) |>
     mutate(status = case_when(whack ~ "pass 1: spike",
                               whack2 ~ "pass 2: off-track",
                               .default = "kept"))
@@ -78,7 +78,7 @@ pass1_year <- function(yr) {
   ais |>
     filter(year == yr) |>
     select(vid, time, lon, lat) |>
-    whack_fwdbwd(kn_max = 25) |>
+    rb_whack_fwdbwd(kn_max = 25) |>
     summarise(pings = n(), whack = sum(as.integer(whack), na.rm = TRUE)) |>
     collect()
 }
@@ -97,7 +97,7 @@ yr <- 2017
 vids <- ais |> filter(year == yr) |> count(vid) |> arrange(desc(n)) |> head(50) |> collect()
 t2 <- system.time(
   p2 <- ais |> filter(year == yr, vid %in% vids$vid) |> select(vid, time, lon, lat) |>
-    collect() |> whack_forward(kn_max = 25)
+    collect() |> rb_whack_forward(kn_max = 25)
 )[["elapsed"]]
 cat(sprintf("pass 2: %s pings, %.1f s (%.0f pings/s), %.2f%% flagged\n",
             format(nrow(p2), big.mark = ","), t2, nrow(p2) / t2, 100 * mean(p2$whack2)))
