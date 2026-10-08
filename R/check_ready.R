@@ -51,8 +51,14 @@ check_ready <- function() {
 
     miss <- character()
     for (cl in paths) {
-      p <- tryCatch(eval(parse(text = cl)), error = function(e) NA_character_)
-      if (is.na(p) || !file.exists(p)) miss <- c(miss, sub("^fd_", "", cl))
+      # resolve with fd_path(), which creates nothing: fd_staging()/fd_curated() create the
+      # directory as a side effect, which made every missing directory look present (TODO 7)
+      layer <- sub("^fd_(raw|staging|curated)\\(.*$", "\\1", cl)
+      pure <- sub("^fd_(raw|staging|curated)\\(", sprintf("fd_path(\"%s\", ", layer), cl)
+      p <- tryCatch(eval(parse(text = pure)), error = function(e) NA_character_)
+      # an existing but empty directory is a dataset never built, not one that is ready
+      empty <- !is.na(p) && dir.exists(p) && !length(list.files(p, recursive = TRUE))
+      if (is.na(p) || !file.exists(p) || empty) miss <- c(miss, sub("^fd_", "", cl))
     }
     cat(sprintf("%-16s %-9s %s\n", nm, if (length(miss)) "BLOCKED" else "ready",
                 paste(miss, collapse = "; ")))

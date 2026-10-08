@@ -59,5 +59,5 @@ d |>
   select(lon = startposisjon_lengde,
          lat = startposisjon_bredde) |> 
   drop_na() |> 
-  ramb::rb_mapdeck()
+  ramb::rb_plot_trail()
 }

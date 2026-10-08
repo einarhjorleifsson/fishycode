@@ -244,7 +244,7 @@ lb_summary <-
     .groups = "drop") |> 
   collect() |> 
   # already got midpoint of ICES rectangle above, no need to play "safe"
-  mutate(ICESrectangle = ramb::rb_d2ir(lon, lat, safe = FALSE),
+  mutate(ICESrectangle = ramb::rb_encode_ices_rectangle(lon, lat, safe = FALSE),
          .before = lon) |> 
   select(-c(lon, lat)) |> 
   relocate(NoDistinctVessels, AnonymizedVesselID, .before = ICESrectangle)

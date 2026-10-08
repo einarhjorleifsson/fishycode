@@ -95,6 +95,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 068 | [The WGSFD harbour file](068-the-wgsfd-harbour-file.md) | `docs/ports.md` is the exchange format (polygon gpkg or point+radius csv, one file per supplying country, no UN/LOCODE field); Iceland sends the `pid` as `harbour_code`; 10 bootstrap names corrected and 2 non-harbours dropped in `ports_iceland`; renaming re-mints pids and IS-SEL now names Seltjarnarnes; `shapes` and the AIS harbour targets rebuilt with the new pids 2026-10-08 |
 | 069 | [One time-step floor and cross-feed duplicates](069-one-time-step-floor-and-cross-feed-duplicates.md) | ramb filters renamed `rb_whack_*` (old names deprecated), one floor `min_dt_s = 10`, new `rb_distance()`; `ais_ping_clean.R` flags a second feed's copy of a report as `duplicate` before the filter (6,573,358 pings, 1.2 %); flagged by the filter 2.87 M -> 1.45 M; trail 562,417,835 rows |
 | 070 | [Every curated file is stamped](070-every-curated-file-is-stamped.md) | TODO 12 closed: 669 of 669 files under `curated/` carry `fd.*` stamps; four outputs changed through a loop in the key (W1 reads `curated/ais/ping`, which depends on the key), which does not settle — TODO 40 |
+| 071 | [ramb names follow one rule](071-ramb-names-follow-one-rule.md) | plan 013 phase 1: 35 ramb functions renamed verb first, 4 same-task groups merged, 48 old names warn and still work; fishycode calls the new names; real-data check identical; TODO 7 and 30 closed |
 
 ## Data defects
 

@@ -138,12 +138,12 @@ by_005 |>
 # added to {ramb}: it is a one-off plotting helper for this dated export and
 # would drag leaflet, raster and viridis into the package for a single caller.
 # Its original called cap_value(), which was defined nowhere - the function had
-# been broken. Replaced with ramb::rb_cap_winsorize(), which the old
+# been broken. Replaced with ramb::rb_cap_outliers(method = "winsorize"), which the old
 # rb_cap_value() duplicated exactly.
 rb_leaflet_raster <- function(g) {
   r <- g |>
     dplyr::select(x = lon, y = lat, effort = dt) |>
-    dplyr::mutate(effort = ramb::rb_cap_winsorize(effort, probs = 0.975)) |>
+    dplyr::mutate(effort = ramb::rb_cap_outliers(effort, method = "winsorize", probs = 0.975)) |>
     raster::rasterFromXYZ()
   raster::crs(r) <- "epsg:4326"
   inf <- viridis::inferno(12, alpha = 1, begin = 0, end = 1, direction = -1)

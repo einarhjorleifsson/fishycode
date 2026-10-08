@@ -160,9 +160,9 @@ emn <-
   select(-c(t1, t2)) |>
   arrange(vid, time) |>
   group_by(vid) |>
-  # rb_speed() takes (lon, lat, time). It was called (lat, lon, time) until 2026-09-30, which
+  # rb_calc_speed() takes (lon, lat, time). It was called (lat, lon, time) until 2026-09-30, which
   # made every emodnet speed ~1.5-1.9x too high: curate/corrections/emodnet_speed_args_swapped.yml
-  mutate(speed = ramb::rb_speed(lon, lat, time)) |>
+  mutate(speed = ramb::rb_calc_speed(lon, lat, time)) |>
   ungroup() |>
   select(vid, mmsi, time, lon, lat, speed, everything()) |>
   duckdbfs::as_dataset() |>

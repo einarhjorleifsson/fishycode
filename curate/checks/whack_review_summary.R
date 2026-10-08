@@ -47,7 +47,7 @@ if (MODE == "df") {
       st <- st + table(factor(o$whack_stage, names(st)))
       k <- o[!o$whack, ]                                  # rb_whack_clean returns rows sorted by vid, time
       same <- k$vid[-1] == k$vid[-nrow(k)]
-      m <- rb_distance(k$lon[-nrow(k)], k$lat[-nrow(k)], k$lon[-1], k$lat[-1])
+      m <- rb_calc_distance(k$lon[-nrow(k)], k$lat[-nrow(k)], k$lon[-1], k$lat[-1])
       s <- as.numeric(k$time[-1]) - as.numeric(k$time[-nrow(k)])
       legs_fast <- legs_fast + sum(same & m > 1000 & m / pmax(s, 10) > 25 * 0.514444, na.rm = TRUE)
       rm(d, o, k); gc(FALSE)

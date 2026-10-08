@@ -56,7 +56,7 @@ update <-
              str_starts(tolower(note), "teki")     ~ "Úr rekstri",
              .default = NA),
          .after = note_date) |>
-  mutate(mmsi_cat = ramb::rb_mmsi_category(mmsi), .after = mmsi) |>
+  mutate(mmsi_cat = ramb::rb_classify_mmsi(mmsi), .after = mmsi) |>
   mutate(mmsi_cat =
            case_when(
              mmsi == "251991540" ~ "SAR aircraft",

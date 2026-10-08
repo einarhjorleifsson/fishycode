@@ -30,15 +30,18 @@ DATE_TO   <- as.Date("2022-12-31")
 library(tidyverse)
 library(duckdbfs)
 library(knitr)
+# quarto renders from docs/; i_am() pins here() to the repo root
+here::i_am("docs/qc_fs_afladagbok_2025.qmd")
+source(here::here("R/paths.R"))
 
 # ── Data sources ───────────────────────────────────────────────────────────────
 # Raw logbook tables (data-dump from Fiskistofa)
-trip_raw  <- open_dataset("data-dump/logbooks/fs_afladagbok/ws_veidiferd.parquet") |> collect()
-stat_raw  <- open_dataset("data-dump/logbooks/fs_afladagbok/ws_veidi.parquet")     |> collect()
-catch_raw <- open_dataset("data-dump/logbooks/fs_afladagbok/ws_afli.parquet")      |> collect()
+trip_raw  <- open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_veidiferd.parquet")) |> collect()
+stat_raw  <- open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_veidi.parquet")) |> collect()
+catch_raw <- open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_afli.parquet")) |> collect()
 
 # Port crosswalk: londunarhofn (1–140, hafnarnumer_id) → hid (aflagrunnur port code)
-ports <- open_dataset("data/ports/hafnarnumerakerfid.parquet") |>
+ports <- open_dataset(fd_curated("reference", "port.parquet")) |>
   collect() |>
   select(hafnarnumer_id, hid) |>
   drop_na()
@@ -78,28 +81,13 @@ gear_ref <- tribble(
   25L,  "Hringnet",       "mobile"
 )
 
-# ── Duration caps (mirrors gear_caps in 01_fs_afladagbok_convert.R) ───────────
-# cap_m: maximum plausible operation duration in minutes per veidarfaeri_id
-gear_caps <- tribble(
-  ~gid,  ~cap_m,
-     1,  7*24*60,   # Skötuselsnet  GNS
-     2,  7*24*60,   # Þorskfisknet  GNS
-     3,  7*24*60,   # Grásleppunet  GNS
-     4,  7*24*60,   # Rauðmaganet   GNS
-     5,    24*60,   # Reknet        GND
-     6,    12*60,   # Botnvarpa     OTB
-     7,    12*60,   # Humarvarpa    OTB NEP
-     8,    16*60,   # Rækjuvarpa    OTB SHR
-     9,    30*60,   # Flotvarpa     OTM
-    11,     4*60,   # Dragnót       SDN
-    12,    24*60,   # Lína          LLS
-    13,    24*60,   # Landbeitt lína LLS
-    14,    24*60,   # Handfæri      LHM
-    15,    20*60,   # Plógur        DRB
-    16, 20*24*60,   # Gildra        FPO
-    21,    24*60,   # Línutrekt     LLS
-    22,  7*24*60    # Grálúðunet    GNS
-)
+# ── Duration limits (decision 057) ────────────────────────────────────────────
+# limit_m: the gear's maximum plausible operation duration in minutes, read from the pipeline's own
+# table; above it the pipeline sets the duration NA and flags it "implausible", keeping the raw value.
+gear_limits <- open_dataset(fd_curated("reference", "gear_window.parquet")) |>
+  collect() |>
+  transmute(gid = as.numeric(gid), limit_m = dur_max_min) |>
+  filter(!is.na(limit_m))
 
 # Mobile veidarfaeri_id: overlap check on [upphaf_timi, lok_timi]
 MOBILE_GIDS <- c(6L, 7L, 8L, 9L, 11L, 15L, 25L)
@@ -460,40 +448,40 @@ stations |>
 
 ### 3.3 Duration distribution by gear
 
-The plot below shows the distribution of operation duration (hours) by gear type, using only operations with positive, non-missing duration. Vertical dashed lines mark the per-gear caps applied in the pipeline; values beyond those caps are replaced with the cap.
+The plot below shows the distribution of operation duration (hours) by gear type, using only operations with positive, non-missing duration. Vertical dashed lines mark each gear's duration limit (`dur_max_min` in `curated/reference/gear_window.parquet`, decision 057); above it the pipeline sets the duration NA and flags it implausible, keeping the raw value.
 
 ```{r}
 #| label: fig-duration-dist
-#| fig-cap: "Distribution of fishing operation duration (hours) by gear type. Dashed line = pipeline duration cap."
+#| fig-cap: "Distribution of fishing operation duration (hours) by gear type. Dashed line = the gear's duration limit."
 #| fig-height: 7
 
 stations |>
   filter(!is.na(duration_m), duration_m > 0) |>
   mutate(duration_h = duration_m / 60) |>
   filter(!is.na(gear_name)) |>
-  left_join(gear_caps |> mutate(cap_h = cap_m / 60), by = c("veidarfaeri_id" = "gid")) |>
+  left_join(gear_limits |> mutate(limit_h = limit_m / 60), by = c("veidarfaeri_id" = "gid")) |>
   ggplot(aes(duration_h)) +
   geom_histogram(bins = 40) +
-  geom_vline(aes(xintercept = cap_h), linetype = "dashed",
+  geom_vline(aes(xintercept = limit_h), linetype = "dashed",
              colour = "firebrick", na.rm = TRUE) +
   facet_wrap(~gear_name, scales = "free") +
   labs(x = "Duration (hours)", y = "Operations",
-       caption = "Red dashed line = cap_m / 60 from gear_caps") +
+       caption = "Red dashed line = the gear's duration limit (gear_window, decision 057)") +
   theme_minimal(base_size = 9)
 ```
 
 ```{r}
 #| label: tbl-duration-summary
-#| tbl-cap: "Summary of duration issues by gear type. 'Zero/negative' counts operations where lok_timi ≤ upphaf_timi. 'Would be capped' counts operations whose raw duration exceeds the per-gear pipeline cap."
+#| tbl-cap: "Summary of duration issues by gear type. 'Zero/negative' counts operations where lok_timi ≤ upphaf_timi. 'Above the limit' counts operations whose raw duration exceeds the gear's limit."
 
 stations |>
   filter(!ts_lok_missing) |>
-  left_join(gear_caps, by = c("veidarfaeri_id" = "gid")) |>
+  left_join(gear_limits, by = c("veidarfaeri_id" = "gid")) |>
   group_by(`veidarfaeri_id` = coalesce(gear_name, paste0("code ", veidarfaeri_id))) |>
   summarise(
     `Total`          = n(),
     `Zero/negative`  = sum(!is.na(duration_m) & duration_m <= 0),
-    `Would be capped`= sum(!is.na(duration_m) & !is.na(cap_m) & duration_m > cap_m),
+    `Above the limit`= sum(!is.na(duration_m) & !is.na(limit_m) & duration_m > limit_m),
     `Median (hrs)`   = round(median(duration_m[duration_m > 0], na.rm=TRUE) / 60, 1),
     .groups = "drop"
   ) |>
@@ -503,30 +491,30 @@ stations |>
 
 ### 3.4 Duration vs expected caps
 
-Operation duration is compared against the gear-specific caps defined in the processing pipeline (`gear_caps` in `01_fs_afladagbok_convert.R`). Durations exceeding the cap are replaced with the cap in the pipeline; the table below quantifies how many records are affected per `veidarfaeri_id`.
+Operation duration is compared against each gear's duration limit (`dur_max_min` in `curated/reference/gear_window.parquet`, decision 057). Above it the pipeline sets the duration NA and flags it implausible, keeping the raw value; the table below quantifies how many records are affected per `veidarfaeri_id`.
 
 ```{r}
 #| label: tbl-duration-caps
-#| tbl-cap: "Operations whose duration (lok_timi − upphaf_timi) exceeds the per-gear cap. Cap values are in minutes as defined in gear_caps."
+#| tbl-cap: "Operations whose duration (lok_timi − upphaf_timi) exceeds the gear's duration limit. Limits are in minutes, from gear_window."
 
 stations |>
   filter(!ts_lok_missing, !is.na(duration_m), duration_m > 0) |>
-  left_join(gear_caps, by = c("veidarfaeri_id" = "gid")) |>
-  filter(!is.na(cap_m)) |>
+  left_join(gear_limits, by = c("veidarfaeri_id" = "gid")) |>
+  filter(!is.na(limit_m)) |>
   group_by(
     `veidarfaeri_id` = veidarfaeri_id,
     `veidarfaeri`    = coalesce(gear_name, paste0("code ", veidarfaeri_id)),
-    `cap (h)`        = round(cap_m / 60)
+    `limit (h)`        = round(limit_m / 60)
   ) |>
   summarise(
     `Total`        = n(),
-    `Exceeds cap`  = sum(duration_m > cap_m),
-    `% exceeds`    = round(100 * mean(duration_m > cap_m), 1),
+    `Above limit`  = sum(duration_m > limit_m),
+    `% exceeds`    = round(100 * mean(duration_m > limit_m), 1),
     `Max obs (h)`  = round(max(duration_m) / 60, 1),
     .groups = "drop"
   ) |>
-  filter(`Exceeds cap` > 0) |>
-  arrange(desc(`Exceeds cap`)) |>
+  filter(`Above limit` > 0) |>
+  arrange(desc(`Above limit`)) |>
   kable(format.args = list(big.mark = ","))
 ```
 
@@ -625,7 +613,7 @@ The landings register is filtered to the same period (`r DATE_FROM` – `r DATE_
 ```{r}
 #| label: matching-setup
 
-land_raw <- open_dataset("data-dump/landings/agf/aflagrunnur.parquet") |>
+land_raw <- open_dataset(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
   filter(londun_hefst >= DATE_FROM, londun_hefst <= DATE_TO) |>
   select(londun_id, vid = skip_numer, date = londun_hefst, hid_land = hafnarnumer, gid_land = veidarfaeri) |>
   collect() |>
@@ -923,7 +911,7 @@ tibble(
     "coord_flag: south (upphaf_breidd < 62°N, non-OTM)",
     "Missing lok_timi",
     "lok_timi before upphaf_timi",
-    "Duration exceeds cap (veidarfaeri_id cap_m)",
+    "Duration above the gear's limit (gear_window)",
     "Duration zero or negative",
     "Temporal overlap — mobile (upphaf_timi / lok_timi)",
     "Temporal overlap — static (milli_timi / lok_timi)",
@@ -943,8 +931,8 @@ tibble(
     sum(stations$ts_lok_before_upphaf),
     {
       stations |>
-        left_join(gear_caps, by = c("veidarfaeri_id" = "gid")) |>
-        summarise(n = sum(!is.na(duration_m) & !is.na(cap_m) & duration_m > cap_m)) |>
+        left_join(gear_limits, by = c("veidarfaeri_id" = "gid")) |>
+        summarise(n = sum(!is.na(duration_m) & !is.na(limit_m) & duration_m > limit_m)) |>
         pull(n)
     },
     sum(!is.na(stations$duration_m) & stations$duration_m <= 0),

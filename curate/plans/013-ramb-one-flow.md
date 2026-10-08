@@ -1,6 +1,6 @@
 # 013 — ramb as the function library for the WGSFD one-flow; fishycode as its first user
 
-**status:** partly built — step A done (WGSFD doc version 2, `~/stasi/wgsfd2026/`), phase 0 in progress · **2026-10-08** ·
+**status:** partly built — step A done (WGSFD doc version 2: `~/stasi/wgsfd2026/`, claude.ai rev 125), phases 0–1 done (decisions 070, 071); phase 2 next · **2026-10-08** ·
 **see:** `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`, `~/R/Pakkar/ramb`, decision 070
 
 Drafted with AI assistance (Claude) from the maintainer's direction in the session of 2026-10-08, three code
@@ -439,7 +439,7 @@ Open `TODO.md` items that this revamp closes or touches, so they are done togeth
 | Phase | TODO items |
 |---|---|
 | 0 | 12 (closed, decision 070) |
-| 1b | 30 (the QC page's copy of the cap table), 7 (`.fd_writable()` creating directories on read) |
+| 1 | 7 and 30 (closed, decision 071) |
 | 2 | 40 (the key loop: W1 reads key-dependent pings), 42 (`ais_ping_tag` overlap duplicates), 38 (whack loose ends), 3c and 36 (harbour code types, `pid` stability), 33 (harbour class), 22 (foreign vessels never reach trips) |
 | 2–3 rebuild | 37 (`produces()` cleanup, on branch `todo-37-produces-cleanup`), 14 (two astd months, needs the union rebuilt anyway) |
 | 3 | 3 (`station_type` = the record's `resolution`), 41 (`.sid`/`.tid` joins without `schema`), 29 (afli overlap check blanks `t2`/`t3`) |

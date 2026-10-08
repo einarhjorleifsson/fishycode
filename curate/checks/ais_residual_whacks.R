@@ -56,7 +56,7 @@ d <-
 d |> count(whack, provider)
 d |>
   select(lon, lat, speed = whack) |>
-  ramb::rb_mapdeck()
+  ramb::rb_plot_trail()
 # should really do test using whack_sequential_fast (what a misnomer) on some
 #  subsamples, but the one step process above seems sufficient
 
@@ -89,7 +89,7 @@ ais |>
   test
 test |> count(pid)
 test |> count(pid, provider)
-test |> filter(is.na(pid)) |> select(lon, lat, speed = pid) |> ramb::rb_mapdeck()
+test |> filter(is.na(pid)) |> select(lon, lat, speed = pid) |> ramb::rb_plot_trail()
 
 
 library(duckspatial)

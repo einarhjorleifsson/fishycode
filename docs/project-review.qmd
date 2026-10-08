@@ -634,7 +634,7 @@ Filters for AIS position outliers (wacky tracks). Four implementations:
 
 | Function | Algorithm | Use case |
 |---|---|---|
-| `whack_fwdbwd(x, kn_max)` | Forward-backward speed filter O(n); dispatches data.frame/tbl_lazy | Primary production filter; validated against `ramb::whacks1` |
+| `rb_whack_fwdbwd(x, kn_max)` | Forward-backward speed filter O(n); dispatches data.frame/tbl_lazy | Primary production filter; validated against `ramb::whacks1` |
 | `whack_sequential_fast(lon, lat, time, kn_max)` | O(n×k) sequential; cluster-aware; in-memory | Cluster cases (multiple consecutive wacky points) |
 | `whack_forward(x, kn_max, max_gap_h)` | Forward-only; aggressive | Catches clusters missed by fwdbwd |
 | `rb_whacky_*` | Legacy speed/distance variants | Historical reference; not in active use |

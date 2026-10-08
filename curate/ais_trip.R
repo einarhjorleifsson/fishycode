@@ -194,5 +194,5 @@ if (FALSE) {
     filter(!is.na(trip)) |>
     select(trip, lon, lat, speed) |>
     group_by(trip) |>
-    ramb::rb_mapdeck(no_lines = FALSE)
+    ramb::rb_plot_trail(no_lines = FALSE)
 }

@@ -62,10 +62,10 @@ read_stk_overrides <- function(path = "overrides/stk_nonvessel_names.csv") {
 }
 
 # MMSI number ranges are an international allocation, so a 9-digit id that parses
-# as one *states* its own kind. ramb::rb_mmsi_category implements the ranges; this
+# as one *states* its own kind. ramb::rb_classify_mmsi implements the ranges; this
 # maps its wording onto the class vocabulary above.
 .mmsi_entity_class <- function(x) {
-  cat9 <- ramb::rb_mmsi_category(x)
+  cat9 <- ramb::rb_classify_mmsi(x)
   dplyr::case_when(
     cat9 == "vessel"                                       ~ "vessel",
     cat9 == "Child vessel"                                 ~ "child_vessel",

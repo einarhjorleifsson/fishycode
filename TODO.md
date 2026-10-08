@@ -67,24 +67,6 @@ carries a `pid`.
 
 ---
 
-## 7. Verification scripts test shape, not substance
-**status:** open · **files:** `R/check_ready.R`, `R/check_paths.R`, `R/paths.R`
-
-Three times now a check has reported "ready" or "clean" about something that was not:
-`check_paths.R` missed seven absolute paths, `check_ready.R` did not recognise
-`read_excel`, and both were fooled by empty directories. The root cause of the last
-one is `.fd_writable()` **creating a directory as a side effect of resolving a path**,
-so `dir.exists()` cannot distinguish "never built" from "built and empty".
-
-Today's failures were all in code that had never executed, and two would have failed
-*silently* — a character/integer comparison that wrote an empty dataset, and those
-empty directories.
-
-**check:** `check_ready.R` reports not-ready for an existing but empty dataset
-directory.
-
----
-
 ## 8. `fishydata_2024-2026` still holds 40 GB that step 1 never moved
 **status:** open
 
@@ -372,15 +354,6 @@ a window at the vessel's next recorded start, so the times could be kept and the
 
 **check:** `fishing_sample` keeps `t2`/`t3` for flagged stations, `.checks` still names the overlap, and the window counts are compared before and after.
 
-## 30. `docs/qc_fs_afladagbok_2025.qmd` carries its own copy of the removed cap table
-**status:** open · **see:** `curate/decisions/057-duration-limits-replace-the-adapter-caps.md`
-
-The page re-declares `gear_caps` (the table decision 057 removed from the adapters) and reports what "would be capped". It now describes a
-rule the pipeline no longer applies, and it is a second copy of a table - the failure this repo's `R/` rule exists to prevent. It should read
-`gear_window.dur_max_min` from `curated/reference/gear_window.parquet` and report `implausible` stations from `fishing_sample` instead.
-
-**check:** `grep -n gear_caps docs/qc_fs_afladagbok_2025.qmd` returns nothing and the page renders.
-
 ## 33. Harbour class, per period, from the AIS era
 **status:** in progress · **needs: maintainer** · **see:** `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memories `harbour-class-is-time-varying`, `static-gear-logbook-recording`
 
@@ -502,6 +475,7 @@ same `.lid` within a step.
 **status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`
 
 ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Step A (the WGSFD
-doc's version 2) is done; phase 0 is under way. The plan maps the other TODO items it closes to its phases.
+doc's version 2), phase 0 (decision 070) and phase 1 (decision 071: renames, TODO 7 and 30) are done; phase 2 waits
+for the maintainer's go. The plan maps the other TODO items it closes to its phases.
 
 **check:** plan 013's phases 0–3 each have a decision record, and fishycode's steps 0–2 call ramb functions.
