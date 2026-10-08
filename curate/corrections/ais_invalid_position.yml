@@ -1,0 +1,49 @@
+id: ais_invalid_position
+title: stk pings whose longitude equals their latitude, (0, 0) among them, are placeholders, not positions
+status: fixed 2026-10-08 - flagged as whack_stage "invalid" before whack_clean(); ping_clean and everything downstream rebuilt and verified
+applies_to:
+  - staging/ais/ping_clean  (the pings are no longer in it)
+  - staging/ais/ping_whacky  (they are, with whack_stage = "invalid"; nothing is overwritten)
+  - everything built from ping_clean - harbour_stay, ais_trip, ping_trail, trail
+affects_rows: 9,520 of 543,776,104 pings, all stk, all with a vid - 8,799 with lon == lat at 59-76 E and 721 at (0, 0). Before this, 4,654 of them were kept in ping_clean (4,540 lon == lat, 114 at (0, 0))
+implementation: curate/ais_ping_clean.R (`bad <- d$lon == d$lat`, ahead of whack_clean()). Needs tar_invalidate(ais_ping_clean) and tar_make_isolated() - targets cannot see a script edit.
+discovered: 2026-10-08 (decision 067, the 208 vessels the new filter flags more)
+
+origin: >-
+  Looking at the vessel-years where whack_clean() flags more pings than the former filter and still keeps a longer
+  track. Vid 4896 in 2014: a smooth track at 1-14 kn ends in a (0, 0) ping; vmask flags the 452 pings before it and
+  keeps the (0, 0) ping, so the track kept is 13,430 km against 2,016 km under the former filter.
+
+mechanism: >-
+  stk writes the latitude into the longitude field, or both as 0. The lon == lat pings are all foreign vids (3700-4999),
+  2011-2012, a run at a time, so they are self-consistent with each other and the forward scan accepts the run after a
+  gap of more than 4 h. A (0, 0) ping is thousands of km from every neighbour, and vmask can keep it and remove the
+  neighbours instead. The true longitude is not recoverable from the row.
+
+detection: >-
+  lon == lat, exact. (0, 0) satisfies it. Outside these placeholders the rule cannot fire on a real ping in this data:
+  lon == lat needs a position at 59-76 E for the latitudes here, which is Russia and the Kara Sea, where no vessel in the
+  data fishes. A near-zero longitude alone is NOT a rule: 0 E crosses the Norwegian Sea, where real pings are.
+
+effect: >-
+  4,654 placeholder positions sat in ping_clean and the trail. Where vmask kept one as an anchor it flagged good track
+  instead: 24 vessel-years (all foreign, stk only), 5,315 flags where 19 were due.
+
+repair: >-
+  The pings are flagged whack_stage = "invalid" and go to ping_whacky with the rest of the flagged pings; whack_clean()
+  runs on the remaining pings only. Tested on the 24 vessel-years: flags 5,315 -> 19 (former filter 78), kept track
+  397,617 -> 93,521 km (former filter 93,416), no leg over 25 kn left. Vid 4028 2011: 113 invalid, nothing else flagged.
+
+verified: >-
+  Closing count of ais_ping_clean.R, 2026-10-08: 543,776,104 in = 540,765,097 kept + 2,883,212 flagged (9,520 invalid,
+  1,080,671 vmask, 6,413 spike, 1,786,608 forward) + 127,795 no vid; every year reconciles. Against the build before:
+  5,745 more pings kept, because 10,399 good pings are no longer flagged and the 4,654 placeholders that were kept now
+  are. No lon == lat row is left in ping_clean, curated/ais/ping, ping_trail or trail. The 24 vessel-years in the
+  rebuilt ping_clean: 75 flags where there were 5,315 (former filter 78), track 93,521 km (former filter 93,416), no leg
+  over 25 kn.
+
+rebuilt: >-
+  tar_invalidate(ais_ping_clean), then tar_make_isolated(), 2026-10-08 11:40-12:37: the 14 targets from ais_ping_clean
+  to the trail checks, every output file newer than the start, tar_outdated() empty. ais/ping 540,765,097 fixes;
+  trip.parquet 1,373,414 voyages (5 fewer); harbour_stay 1,551,884 stays (36 more); ping_trail and trail 567,568,618
+  rows each, no duplicate (vid, time); check_trail_agreement 99.59 %.

@@ -500,8 +500,12 @@ from `tar_invalidate(everything())` finishes without a memory error.
 ## 38. Loose ends of the `whack_clean()` switch
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
 
-The switch and the rebuild downstream of it are done (decision 067). Left, none blocking: the 208 vessels where
-the new filter flags more than the old are not reviewed; fishyweb `notes/whacky-positions.qmd` is untracked and
-shows vessel tracks, so the disclosure rule comes first.
+The switch and the rebuild downstream of it are done (decision 067). Of the 208 vessels where the new filter flags
+more, the 62 vessel-years that also keep a longer track were looked at: placeholder positions are now flagged first
+(`curate/corrections/ais_invalid_position.yml`). Left, none blocking, each seen once in the 62 (decision 067): a vessel
+faster than 25 kn loses real track under either filter (vid 7830, 2018); the forward scan accepts the first ping after
+a gap of more than 4 h untested (vid 2657, 2017); sparse tracks (vid 1186, 2023). fishyweb `notes/whacky-positions.qmd`
+is untracked and shows vessel tracks, so the disclosure rule comes first.
 
-**check:** decision 067 records a verdict on the 208 vessels, and `notes/whacky-positions.qmd` is committed or removed.
+**check:** decision 067 records a verdict on the fast-vessel, gap and sparse-track cases, and
+`notes/whacky-positions.qmd` is committed or removed.

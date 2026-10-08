@@ -3,7 +3,7 @@
 # Input:  staging/ais/ping_tagged   (merged pings + pid harbour tag + H3)
 # Output: staging/ais/ping_clean    (same columns, whacky positions dropped)
 #         staging/ais/ping_whacky   (the dropped pings, same columns plus `whack_stage`:
-#                                    "vmask", "spike" or "forward" - which step flagged them)
+#                                    "invalid", "vmask", "spike" or "forward" - which step flagged them)
 # Pings with no `vid` are in neither: there is no vessel to judge them against (decision 067).
 #
 # A whacky point is an implausible POSITION - mostly from stk. Not to be confused with the
@@ -11,7 +11,7 @@
 # defect, different source, different fix. See curate/corrections/afli_coords.yml.
 #
 # The filter is ramb::whack_clean() (decision 067): vmask, a leg-speed spike test, then the
-# forward scan. It LABELS; this script is where the labels are acted on, so ping_clean is
+# forward scan. Placeholder positions are taken out before it ("invalid", see below). It LABELS; this script is where the labels are acted on, so ping_clean is
 # the unflagged pings (its contract is unchanged) and ping_whacky keeps what was taken out,
 # with the reason, so a flag can be reviewed or overruled. Before 2026-10-05 this was
 # whack_fwdbwd (lazy, in DuckDB) followed by whack_forward (in R).
@@ -26,7 +26,7 @@ library(tidyverse)
 library(ramb)
 
 KN_MAX <- 25        # speed threshold, knots
-METHOD <- "whack_clean-2026-10-05"   # part of the completion fingerprint: a new method re-cleans every year
+METHOD <- "whack_clean-2026-10-08+invalid"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
@@ -74,7 +74,13 @@ for (yr in years) {
 
   for (i in seq_along(groups)) {
     g <- groups[[i]]
-    d <- base |> filter(vid %in% g) |> collect() |> whack_clean(kn_max = KN_MAX)
+    d <- base |> filter(vid %in% g) |> collect()
+    # A placeholder, not a position: lon == lat (stk wrote the latitude into lon; (0, 0) is the same
+    # rule). Out BEFORE whack_clean(), which otherwise can keep it as an anchor and flag the good
+    # track around it (curate/corrections/ais_invalid_position.yml).
+    bad <- d$lon == d$lat
+    d <- bind_rows(d[!bad, ] |> whack_clean(kn_max = KN_MAX),
+                   d[bad, ] |> mutate(whack_stage = "invalid", whack = TRUE))
 
     clean <- d |> filter(!whack) |> select(-whack, -whack_stage)
     whacky <- d |> filter(whack) |> select(-whack)
@@ -102,11 +108,12 @@ rec <- n_year(ais) |> rename(n_in = n) |>
   left_join(n_year(open_dataset(out_w)) |> rename(flagged = n), by = "year") |>
   mutate(across(-year, \(x) coalesce(as.numeric(x), 0)), off = n_in - kept - flagged - no_vid)
 stage <- open_dataset(out_w) |> count(whack_stage) |> collect() |> deframe()
+stage <- stage[intersect(c("invalid", "vmask", "spike", "forward"), names(stage))]
 fmt <- function(x) format(sum(x), big.mark = ",")
 message(sprintf(
-  "%s pings in: kept %s; flagged %s whacky (%.2f%%) = %s vmask + %s spike + %s forward; %s with no vid, in neither output",
+  "%s pings in: kept %s; flagged %s whacky (%.2f%%) = %s; %s with no vid, in neither output",
   fmt(rec$n_in), fmt(rec$kept), fmt(rec$flagged), 100 * sum(rec$flagged) / sum(rec$kept + rec$flagged),
-  fmt(stage[["vmask"]]), fmt(stage[["spike"]]), fmt(stage[["forward"]]), fmt(rec$no_vid)))
+  paste(vapply(stage, fmt, ""), names(stage), collapse = " + "), fmt(rec$no_vid)))
 if (any(rec$off != 0)) {
   stop("ping_clean + ping_whacky + no-vid pings do not add up to ping_tagged in ",
        paste(rec$year[rec$off != 0], collapse = ", "))

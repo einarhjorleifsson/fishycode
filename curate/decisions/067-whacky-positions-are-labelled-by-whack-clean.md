@@ -63,3 +63,6 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
   a fast vessel whose recorded speed is 29-33 kn, so 25 kn flags real track under either filter (vid 7830 2018, 5,200 of 10,677); a 22-ping sparse track (vid
   1186 2023). **lon == lat** is a defect of its own: 8,799 stk pings, **4,540 kept in `ping_clean`**, all from 59 foreign vids in 2011-2012, at 59-76° E
   (mostly land in Russia). A near-zero lon alone is not a rule: 0° E crosses the Norwegian Sea, where real pings are.
+- **Placeholder positions flagged first, 2026-10-08** (`curate/corrections/ais_invalid_position.yml`): `ais_ping_clean.R` flags `lon == lat`, (0, 0)
+  included, as `whack_stage = "invalid"` (9,520 pings) and runs `whack_clean()` on the rest. `ping_clean` 540,765,097, `ping_whacky` 2,883,212; the
+  24 vessel-years are back to the former filter's result. Rebuilt with everything downstream the same day.
