@@ -44,42 +44,18 @@ if (!file.exists(ais)) {
   message("curated/ais/trip.parquet absent - linking against the legacy AIS trips")
 }
 
-q <- sprintf("
-WITH lb AS (
-  SELECT \".tid\" AS tid, vid, schema, T1, T2,
-    -- Known issue 10: afli stores ~80%% of trips with T1 = T2 (date-midnight) and
-    -- fs_afladagbok stores T2 as midnight of the ARRIVAL date, which for same-day
-    -- trips puts T2 before T1. Either way the window is unusable for an overlap
-    -- test until it is pushed to end-of-day.
-    greatest(T2, date_trunc('day', T1) + INTERVAL 1 DAY - INTERVAL 1 SECOND) AS T2_fix
-  FROM read_parquet('%s')
-  WHERE vid IS NOT NULL AND T1 IS NOT NULL
-),
-v AS (
-  SELECT vid, year, trip, T1, T2, hid1, hid2, n_pings FROM read_parquet('%s')
-),
-ov AS (
-  SELECT lb.tid, lb.vid, lb.schema, lb.T1, lb.T2, lb.T2_fix,
-         v.year, v.trip, v.T1 AS T1_ais, v.T2 AS T2_ais, v.hid1, v.hid2, v.n_pings,
-         date_diff('second', greatest(lb.T1, v.T1), least(lb.T2_fix, v.T2)) AS overlap_s,
-         date_diff('second', lb.T1, lb.T2_fix) AS lb_span_s
-  FROM lb JOIN v
-    ON lb.vid = v.vid AND v.T1 <= lb.T2_fix AND v.T2 >= lb.T1
-),
-ranked AS (
-  SELECT *, row_number() OVER (PARTITION BY tid ORDER BY overlap_s DESC, n_pings DESC) rn,
-            count(*)     OVER (PARTITION BY tid) n_candidates
-  FROM ov WHERE overlap_s > 0
-)
-SELECT
-  tid AS \".tid\", vid, schema,
-  year, trip, T1_ais, T2_ais,
-  hid1 AS hid1_ais, hid2 AS hid2_ais, n_pings,
-  overlap_s, lb_span_s,
-  round(overlap_s::DOUBLE / nullif(lb_span_s, 0), 4) AS overlap_frac,
-  n_candidates,
-  'ais_overlap' AS basis
-FROM ranked WHERE rn = 1", lb, ais)
+# The link itself is ramb::rb_link_trip_voyages() (plan 013 phase 2): the voyage that overlaps the logbook
+# trip by the most seconds, ties by more pings, n_candidates kept. Known issue 10: afli stores ~80% of trips
+# with T1 = T2 (date-midnight) and fs_afladagbok stores T2 as midnight of the ARRIVAL date, which for same-day
+# trips puts T2 before T1; t2_fix = "end_of_t1_day" pushes the window to at least the end of the first day.
+trips <- dplyr::tbl(con, dplyr::sql(sprintf("SELECT \".tid\", vid, schema, T1, T2 FROM read_parquet('%s')", lb)))
+voy <- dplyr::tbl(con, dplyr::sql(sprintf(
+  "SELECT vid, year, trip AS voyage_id, T1, T2, hid1 AS harbour_from, hid2 AS harbour_to, n_pings FROM read_parquet('%s')", ais)))
+link <- ramb::rb_link_trip_voyages(trips, voy, keys = c(".tid", "schema"), t2_fix = "end_of_t1_day") |>
+  dplyr::transmute(.tid, vid, schema, year, trip = voyage_id, T1_ais = T1_voyage, T2_ais = T2_voyage,
+                   hid1_ais = harbour_from, hid2_ais = harbour_to, n_pings, overlap_s, lb_span_s = trip_span_s,
+                   overlap_frac, n_candidates, basis)
+q <- as.character(dbplyr::sql_render(link))
 
 out <- fd_curated("link", "trip_voyage.parquet")
 write_curated_sql(con, q, out, inputs = c(lb, ais))
