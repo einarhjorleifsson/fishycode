@@ -500,10 +500,8 @@ from `tar_invalidate(everything())` finishes without a memory error.
 ## 38. Loose ends of the `whack_clean()` switch
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
 
-The switch and the rebuild downstream of it are done (decision 067). Left, none blocking: the closing count of
-`ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where
+The switch and the rebuild downstream of it are done (decision 067). Left, none blocking: the 208 vessels where
 the new filter flags more than the old are not reviewed; fishyweb `notes/whacky-positions.qmd` is untracked and
 shows vessel tracks, so the disclosure rule comes first.
 
-**check:** the closing count of `ais_ping_clean.R` reports the pings without a `vid`, decision 067 records a verdict
-on the 208 vessels, and `notes/whacky-positions.qmd` is committed or removed.
+**check:** decision 067 records a verdict on the 208 vessels, and `notes/whacky-positions.qmd` is committed or removed.

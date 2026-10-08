@@ -4,6 +4,7 @@
 # Output: staging/ais/ping_clean    (same columns, whacky positions dropped)
 #         staging/ais/ping_whacky   (the dropped pings, same columns plus `whack_stage`:
 #                                    "vmask", "spike" or "forward" - which step flagged them)
+# Pings with no `vid` are in neither: there is no vessel to judge them against (decision 067).
 #
 # A whacky point is an implausible POSITION - mostly from stk. Not to be confused with the
 # "wacky coordinates" of the afli GPS loggers, which are a DDMMmm encoding fault; different
@@ -39,9 +40,6 @@ dir.create(marks, recursive = TRUE, showWarnings = FALSE)  # the dataset itself
 # this, not the size of a year, is what sets peak memory.
 BATCH_PINGS <- 5e6
 
-kept <- 0
-flagged <- c(vmask = 0, spike = 0, forward = 0)
-
 # A completion marker used to be an EMPTY file, so a year was skipped whenever a marker existed - whatever its
 # input had become. After the key was rebuilt from the segment table (decision 053) the whole of ping_tagged
 # changed and every year printed "already done, skipping": ping_clean stayed the 23 Sep output while targets
@@ -65,8 +63,9 @@ for (yr in years) {
   message("Year ", yr)
   unlink(c(ydir, wdir), recursive = TRUE)   # any partial output from a failed attempt
 
+  # Explicit, not left to SQL: `vid %in% g` skips NA in DuckDB, but R's %in% matches NA to NA.
   base <- ais |>
-    filter(year == yr) |>
+    filter(year == yr, !is.na(vid)) |>
     select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, h3,
            depth, bbht, fao, year)
 
@@ -79,9 +78,6 @@ for (yr in years) {
 
     clean <- d |> filter(!whack) |> select(-whack, -whack_stage)
     whacky <- d |> filter(whack) |> select(-whack)
-
-    kept <- kept + nrow(clean)
-    flagged <- flagged + table(factor(whacky$whack_stage, names(flagged)))
 
     # One part file per batch. Several parquet files in one hive directory is
     # normal and reads back as a single partition.
@@ -96,10 +92,22 @@ for (yr in years) {
   writeLines(fp, marker)
 }
 
-total_in <- kept + sum(flagged)
+# Closing count -----------------------------------------------------------------
+# Over the whole output, not this run: a skipped year counted as zero before, and the pings
+# with no vid were in no total at all. Every year must reconcile: in = kept + flagged + no vid.
+n_year <- function(x) x |> count(year) |> collect()
+rec <- n_year(ais) |> rename(n_in = n) |>
+  left_join(n_year(ais |> filter(is.na(vid))) |> rename(no_vid = n), by = "year") |>
+  left_join(n_year(open_dataset(out)) |> rename(kept = n), by = "year") |>
+  left_join(n_year(open_dataset(out_w)) |> rename(flagged = n), by = "year") |>
+  mutate(across(-year, \(x) coalesce(as.numeric(x), 0)), off = n_in - kept - flagged - no_vid)
+stage <- open_dataset(out_w) |> count(whack_stage) |> collect() |> deframe()
+fmt <- function(x) format(sum(x), big.mark = ",")
 message(sprintf(
-  "kept %s pings; flagged %s whacky (%.2f%%) = %s vmask + %s spike + %s forward",
-  format(kept, big.mark = ","), format(sum(flagged), big.mark = ","),
-  100 * sum(flagged) / total_in,
-  format(flagged[["vmask"]], big.mark = ","), format(flagged[["spike"]], big.mark = ","),
-  format(flagged[["forward"]], big.mark = ",")))
+  "%s pings in: kept %s; flagged %s whacky (%.2f%%) = %s vmask + %s spike + %s forward; %s with no vid, in neither output",
+  fmt(rec$n_in), fmt(rec$kept), fmt(rec$flagged), 100 * sum(rec$flagged) / sum(rec$kept + rec$flagged),
+  fmt(stage[["vmask"]]), fmt(stage[["spike"]]), fmt(stage[["forward"]]), fmt(rec$no_vid)))
+if (any(rec$off != 0)) {
+  stop("ping_clean + ping_whacky + no-vid pings do not add up to ping_tagged in ",
+       paste(rec$year[rec$off != 0], collapse = ", "))
+}

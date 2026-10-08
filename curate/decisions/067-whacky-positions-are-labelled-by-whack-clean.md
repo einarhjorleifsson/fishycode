@@ -44,7 +44,8 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
   `curated/ais/ping` 540,759,352 fixes; `trip.parquet` 1,373,419 voyages; `harbour_stay.parquet` 1,551,848 stays, its 148 `pid`s all in the current `ports.fgb` (decision 068);
   `ping_trail` and `trail` 567,562,864 rows each, no duplicate (`vid`, `time`); `check_trail_agreement` 99.59 % agree where both are set.
 - **127,795 pings (emodnet, 2017) have no `vid`** and are in neither `ping_clean` nor `ping_whacky`: the batches select `vid %in% g`, which never matches NA. The former script did the same
-  (and its closing count did not show it). They cannot be judged against a vessel. They are 21 MMSIs, all emodnet 2017, none in `vessel_identity`: 251513000 (60,391 pings, found
+  (and its closing count did not show it; since 2026-10-08 the closing count reconciles every year, `ping_tagged` = `ping_clean` +
+  `ping_whacky` + no-vid pings, and stops if one does not). They cannot be judged against a vessel. They are 21 MMSIs, all emodnet 2017, none in `vessel_identity`: 251513000 (60,391 pings, found
   nowhere, not even in GFW; **a fixed transmitter**: one position, 21.9 W 64.2 N, standard deviation 0 over the whole year, confirmed against the MarineTraffic page the
   maintainer pointed to) and 251439000 (51,735; GFW has it as an ISL purse seiner without a vid) are 88 %; then 251999898/899 (4,838, not identified), 273398460 and 273396110
   (Russia), 601378300 (South Africa), 659420000 (Namibia), 257026770 (Norway) from GFW. 251999898 (also one fixed position near Reykjavik), 273396110 and 257110000 (fixed, Russia and Norway) are fixed too; 251439000 moves (a vessel) and is **vid 2411 HUGINN (TFQW, IMO 9211690, registry MMSI 251139000, one digit different)**: where vid 2411 has an stk ping within 2 minutes of one of its 25,992 pings
