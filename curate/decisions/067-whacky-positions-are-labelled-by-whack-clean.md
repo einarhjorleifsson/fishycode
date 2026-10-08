@@ -51,4 +51,8 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
   (Russia), 601378300 (South Africa), 659420000 (Namibia), 257026770 (Norway) from GFW. 251999898 (also one fixed position near Reykjavik), 273396110 and 257110000 (fixed, Russia and Norway) are fixed too; 251439000 moves (a vessel) and is **vid 2411 HUGINN (TFQW, IMO 9211690, registry MMSI 251139000, one digit different)**: where vid 2411 has an stk ping within 2 minutes of one of its 25,992 pings
   away from Vestmannaeyjar, 5,582 of 6,217 are within 500 m (median 110 m; the next vessel 1,041 of 16,339); **Maintainer, 2026-10-07: no override** (MMSI 251439000 stays without a `vid`; its 51,735 pings are not in `ping_clean`). Not settled from positions alone: one vessel with a mistyped MMSI against two vessels fishing side by side. `rb_mmsi_category()` calls all of them
   `vessel`, so the number format does not reveal a fixed transmitter, the position does. Maintainer, 2026-10-07: `ping_clean` should not carry them.
-- The 208 vessels where the recipe flags more.
+- The 208 vessels where the recipe flags more (12,981 pings net; `whack_recipe_vid.parquet`, built on an earlier `ping_tagged`). First look, 2026-10-08: half
+  have 4 extra flags or fewer, 36 have 100 or more, 78 are foreign vids. In 62 of their vessel-years the recipe flags more **and the kept track gets longer**, the
+  sign it kept the bad ping and dropped the good ones; 24 of those 62 still hold a **(0, 0) position in `ping_clean`**. Vid 4896, 2014: a smooth track at 1-14 kn
+  ends in a (0, 0) ping; vmask flags the 452 pings before it and keeps it (track 2,016 km under the old filter, 13,430 km now). `ping_tagged` holds 721 (0, 0)
+  pings, all stk; 607 are flagged and **114 are kept in `ping_clean`** (40 vessels, 72 of them in 2010, 32 in 2014), so they are in the trail too.
