@@ -1,6 +1,6 @@
 # The STK mid -> vid key, audited row by row against witnesses that never read it.
 #
-# Input:  curated/vessel/vessel_ais_key.parquet, curated/ais/ping (other providers),
+# Input:  curated/vessel/vessel_ais_key.parquet, staging/ais/ping_union (other providers, before cleaning),
 #         raw/ais/stk/trail, curated/logbook/{station,trip}.parquet,
 #         curated/landing/landings.parquet, curated/check/ais_key_registry.parquet,
 #         curated/check/ais_key_split_candidates.parquet,
@@ -34,7 +34,11 @@ library(nanoparquet)
 
 ## Inputs ----------------------------------------------------------------------------
 STK_GLOB  <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
-PING_GLOB <- file.path(fd_path("curated", "ais", "ping"), "year=*", "*.parquet")
+# W1 reads the merged pings BEFORE any cleaning: a non-STK ping there takes its vid from the MMSI
+# identity (vessel_identity), never from the key. curated/ais/ping, read until 2026-10-08, depends on the
+# key through the duplicate and whack stages, so the key fed its own evidence and did not settle
+# (decision 070, TODO 40).
+PING_GLOB <- file.path(fd_path("staging", "ais", "ping_union"), "year=*", "*.parquet")
 STATION   <- fd_path("curated", "logbook", "station.parquet")
 TRIP      <- fd_path("curated", "logbook", "trip.parquet")
 LANDINGS  <- fd_path("curated", "landing", "landings.parquet")

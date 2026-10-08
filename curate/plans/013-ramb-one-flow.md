@@ -445,3 +445,19 @@ Open `TODO.md` items that this revamp closes or touches, so they are done togeth
 | 3 | 3 (`station_type` = the record's `resolution`), 41 (`.sid`/`.tid` joins without `schema`), 29 (afli overlap check blanks `t2`/`t3`) |
 | 4 | 43 (`link_lid_map` bugs), 27b (datacall onto the trail), 25 and 39 (key review), 34 and 18 (speed ranges, behavioural windows), 17 and 23 (vessel identity) |
 | not part of it | 8, 9, 10, 15, 16, 19, 21, 24 |
+
+## Logic questions found while porting (phase 2)
+
+An exact match with the old output proves the port faithful, not the logic right. These were found by reading
+the ported code. Each is to be settled by a measurement, and fixed only as a separate, counted commit:
+
+| Step | Doubt | What would test it |
+|---|---|---|
+| 0 duplicate | A lower feed's copy is flagged before the impossible stage, so an STK anchor that is itself impossible still removes a sound astd copy. | Count duplicates whose STK anchor is later flagged impossible. |
+| 0 invalid | `lon == lat` is safe only where the fleet never fishes at lon ≈ lat (59–76 °E at these latitudes); it is no generic rule. | It stays a fishycode rule (`rules = "lon_eq_lat"`); ramb's default adds `out_of_range`. Count what `out_of_range` adds. |
+| 1 stays | The nearest harbour is chosen by `ST_Distance` in degrees (EPSG:4326). At 65 °N a degree of longitude is about 0.42 of a degree of latitude, so east–west distances are understated. | Re-choose in metres (EPSG:3575) and count the pings whose harbour changes. |
+| 1 stays | Event pairs count only from 2017 (`EVENT_FROM`), so stays are defined differently before and after. | Count event-only stays by year; check whether pre-2017 events are usable. |
+| 1 voyages | Voyages are cut at New Year, so a trip at sea over 31 December becomes two voyages and links to two logbook trips. | Count voyages that end at 23:59:59 31 Dec or start at 00:00 1 Jan with no stay between. |
+| 1 voyages | Voyages under 10 pings are dropped after numbering. Their pings get `trip = NA` though they are at sea, which goes against "no vessel without a trip". | Count the pings and vessel-days on dropped voyages, by year. |
+| key | W1 now reads the merged pings before cleaning, so whacky other-feed positions count as evidence. | Compare W1 hits with the whacky-flagged pings removed. |
+| key | The segment build keeps the first row of a tie in several places; which row wins was decided by the input files' row order (now fixed by sorting on all columns). A principled tie-break (e.g. stronger evidence, then earlier date) is not chosen. | List the ties the sort decides, and compare with an evidence-ranked choice. |

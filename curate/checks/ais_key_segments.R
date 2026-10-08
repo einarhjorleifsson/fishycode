@@ -58,6 +58,16 @@ STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parque
 MIN_W1_MONTHS <- 3L   # months of W1 confirmation that name a vid over a segment
 STARTUP_END <- as.Date("2009-01-01")
 
+# Every input is sorted on all its columns as it is read. The steps below keep "the first" row of a tie in
+# places (distinct(.keep_all = TRUE), slice(1), x[1]), so the result depended on the row order of the files,
+# which the audit does not fix: the same evidence in another row order moved segment boundaries by a month or
+# two (2026-10-08, plan 013 phase 2; decision 070 had read this as a loop in the key). Sorting makes the result
+# the same every run; which row SHOULD win each tie is an open question (plan 013, logic questions).
+read_parquet <- function(...) {
+  d <- nanoparquet::read_parquet(...)
+  d[do.call(order, unname(as.list(d))), , drop = FALSE]
+}
+
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>

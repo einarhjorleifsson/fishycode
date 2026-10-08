@@ -1,6 +1,6 @@
 # 070 — Every file under `curated/` carries provenance stamps; the rebuild exposed a loop in the key
 
-*2026-10-08. Closes TODO item 12. Code by Claude (AI-assisted), commit 1d678ee; measured on `$FISHYDATA` the same day.*
+*2026-10-08. Closes TODO item 12. Code by Claude (AI-assisted), commit 1d678ee; measured on `$FISHYDATA` the same day. Amended later the same day: the key's movement was at least partly row-order flicker in the segment build, not only the loop (last section).*
 
 ## What was done
 
@@ -53,3 +53,20 @@ exactly, so the segment build is deterministic. What changed is an input.
 The audit's header claims witnesses "that never read" the key. For W1 that is not true. This breaks the `AGENTS.md`
 rule that cycles are broken by a human, outside the DAG. TODO item 40 holds the fix: W1 reads the other-feed pings
 before any key-dependent cleaning.
+
+## The loop reading was partly wrong (amended 2026-10-08, plan 013 phase 2)
+
+*Measured by Claude (AI-assisted) in a scratch overlay of `$FISHYDATA`; nothing written to `curated/`.*
+
+- **What happened next.** After W1 was moved to the merged pings before cleaning (TODO 40), two passes on identical
+  inputs still differed. The moving mobile-ids changed from run to run: 100645, 103741, 103742.
+- **The audit is deterministic as a set of rows.** Three runs gave identical W1, `lb_hits` and `lb_n`. It does not
+  fix their row order.
+- **The segment build is not order-independent.** The same audit evidence, sorted and then shuffled, gives segments
+  differing in 4 and 3 rows. Several steps keep the first row of a tie (`distinct(.keep_all = TRUE)`, `slice(1)`,
+  `x[1]`).
+- **So the 3,118 → 3,116 change and mobile-id 103738's shift above cannot be told apart from this flicker** without
+  rebuilding `curated/ais/ping`. The loop through W1 is still a real dependency and is removed anyway.
+- **Fix.** `curate/checks/ais_key_segments.R` sorts every input on all its columns as it reads it. Two different
+  shuffles then give identical segments, equal to the old code run on sorted input. Which row should win each tie is
+  open (plan 013, logic questions).
