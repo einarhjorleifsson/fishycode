@@ -48,6 +48,16 @@ flags 1,446,513, against 2,873,692 before (the forward scan 1,786,608 -> 423,575
 Fishing vessels faster than 25 kn (`whack_fast_vessels.R`): still 84; 8,433 real pings flagged on confirmed fast legs, now 1.9 % of their flagged
 stk pings (was 0.9 % of twice as many).
 
+## The rebuild ran on an unoptimised build
+
+The ramb installed for that rebuild had been built from a source folder in which `devtools::test()` had left
+C++ objects compiled with `-O0`, and `R CMD INSTALL .` linked them. Labels do not depend on it (identical on a clean
+build), only speed: 2015 labels in 30.6 s on that build and 11.2 s on a clean one; `ais_ping_clean` took 17 min
+instead of about 10. ramb is now installed from GitHub. Whole record on that install
+(`curate/checks/whack_review_summary.R`): 537,065,431 pings labelled in 2.9 min (4.0 min with reading, 4.2 GB) as data
+frames a year at a time; 6.8 min and 17.4 GB as one lazy DuckDB call, which judges each vessel's 20 years in one
+piece and so flags 1,443,538 rather than 1,446,513.
+
 ## The duplicate rule moved to ramb
 
 Same day: the rule became `ramb::rb_whack_duplicates()` (ramb `669c63a`, pushed), so it is not a function inside a script and the review
