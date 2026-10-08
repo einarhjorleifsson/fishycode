@@ -1,6 +1,6 @@
 id: ping_union_duplicate_keys
 title: ping_union carries 21,920 duplicate position keys from three unrelated causes
-status: astd population REPAIRED 2026-09-23; stk and cross-provider populations measured, deliberately left
+status: astd population REPAIRED 2026-09-23; cross-provider copies flagged in ping_clean 2026-10-08 (decision 069); the rest left in the union by design; TODO item 5 closed 2026-10-08 - see closed_2026_10_08
 applies_to:
   - staging/ais/ping_union   (all years)
 affects_rows: 21,952 excess rows in 527,960,318 (0.0042%)
@@ -36,7 +36,8 @@ measurement:
     GROUP BY vid, time, lon, lat HAVING COUNT(*) > 1, carrying the distinct
     provider set and the distinct-value count of speed, heading and mmsi within
     each group. Read directly from year=YYYY/ paths rather than through the
-    dataset, to avoid the duplicated `year` column of TODO item 11.
+    dataset, to avoid the duplicated `year` column of TODO item 11 (closed 2026-10-08,
+    decision 003: the union carries `year` only in the path).
   totals_by_population: |
     population      groups   excess   speed differs   heading differs   mmsi differs
     astd            21,142   21,142      15,821             0                0
@@ -165,6 +166,14 @@ repair:
     take a provider precedence, and which. stk is the domestic receiver and the
     others are resold, which argues for stk first, but that is a judgement about
     the feeds and not something in the data.
+  answered_2026_10_08: >-
+    Settled downstream of the union. Decision 069 and
+    curate/corrections/ais_cross_feed_duplicates.yml take the feed order
+    stk > astd > astdB > emodnet (the tie order ais_ping_trail.R already used) and
+    flag a lower feed's copy of a report as whack_stage "duplicate" in
+    ais_ping_clean.R when it is within 10 s and 128.6 m of a higher feed's ping.
+    The cross-provider groups here are 0 s and 0 m apart, so they fall inside that
+    rule. Nothing is removed from the union.
   why_it_is_not_just_a_distinct: >-
     Picking either member arbitrarily is not safe. Downstream, speed is what
     decides whether a ping is fishing - it is the input to ais_ping_clean.R and
@@ -174,6 +183,20 @@ repair:
   constraint: >-
     A repair adds columns, per this project's rule. Whichever member is chosen,
     the other's speed and the basis for the choice should survive alongside it.
+
+closed_2026_10_08: >-
+  TODO item 5 closed on the second half of its check: the keys that survive in
+  ping_union are legitimate there. The union is the source-shaped merge and keeps
+  every member, because a correction never destroys the original. What is left in it
+  is the residue the astd rule declines to guess at (about 69 groups a year), the
+  stk-internal groups (373 over 20 years, measured 2026-09-21), and the
+  cross-provider copies, now flagged in ping_clean (repair.answered_2026_10_08).
+  One row per (vid, time) is enforced where analysis starts, in ais_ping_trail.R:
+  stk first, then provider name, then lon, lat. Measured 2026-10-08 on
+  curated/ais/trail, year by year: 562,417,835 rows, 0 duplicate (vid, time). That
+  order is deterministic but does not decide which of two stk members is right; the
+  member not taken stays upstream. The populations were not re-measured on the
+  current union. Closing check by Claude (AI-assisted).
 
 impact:
   on_analysis: >-

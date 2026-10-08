@@ -154,13 +154,10 @@ geometry is stored as WKB with the CRS in `fd.crs`, read back with
 `check_sync()` reports drift against HEAD. Nothing under `$FISHYDATA` is ever
 hand-edited.
 
-> **Partly adopted — 2026-09-21.** Built and in use by
-> `reference/ports/harbour_codes.R`. The other ~18 writers still call
-> `duckdbfs::write_dataset()` or `nanoparquet::write_parquet()` and carry no
-> provenance. `write_curated()` takes a materialised data frame, so the
-> `write_dataset()` callers (lazy duckdb relations, partitioned directories)
-> need a separate path before they can convert. See TODO item 12.
-> `manifest.yml` is still unbuilt.
+> **Mostly adopted — 2026-10-08.** `write_curated_sql()` (same file) does the
+> same for a `SELECT` too big to hold in R, one stamped file per partition. 42
+> scripts use one or the other; 15 curated writers still write unstamped, listed
+> in TODO item 12. `manifest.yml` is still unbuilt.
 
 ## Provenance of this repo
 

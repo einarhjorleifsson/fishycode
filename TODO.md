@@ -67,16 +67,6 @@ carries a `pid`.
 
 ---
 
-## 5. `ping_union` carries duplicate position keys — measured, not repaired
-**status:** open · **see:** `curate/corrections/ping_union_duplicate_keys.yml`
-
-Duplicate `(vid, time)` keys survive into the union. Measured and declared; the repair
-rule is the open part, and the correction records one proposed rule that was **rejected**
-— preferring the smaller `sec_nextpoint` would have selected the placeholder every time.
-
-**check:** `staging/ais/ping_union` has no duplicate `(vid, time)`, or the correction
-states why the surviving ones are legitimate.
-
 ## 7. Verification scripts test shape, not substance
 **status:** open · **files:** `R/check_ready.R`, `R/check_paths.R`, `R/paths.R`
 
@@ -145,51 +135,30 @@ codes all resolve against it.
 
 ---
 
-## 11. Datasets named `year=YYYY` are not actually partitioned
-**status:** open · **files:** `curate/ais_ping_clean.R`, `curate/ais_trip.R`, `curate/logbook_sensor_gps.R`
-**see:** `curate/decisions/003-undeclared-dump-inputs.md`
+## 12. Provenance stamping — 15 curated writers still write without stamps
+**status:** open · **files:** `R/write_curated.R`
 
-Superseded in part — these now write real `year=YYYY/` directories. But
-`ais_ping_union.R`'s claim that partitioning enables "partition pruning" should be
-re-checked now the layout has changed, and the `year` data column now coexists with a
-hive column of the same name.
+`write_curated()` (a data frame) and `write_curated_sql()` (a `COPY (SELECT …)` straight
+from DuckDB, one stamped file per partition) are built and used by 42 scripts: every
+`curate/checks/` table, the trail, `station_window`, `harbour_stay`, the port and vessel
+identity tables. The blocker this item used to name — lazy relations and partitioned
+directories — is gone; `write_curated_sql()` handles both.
 
-**check:** reading each dataset yields exactly one `year` column, of a stable type.
+Counted 2026-10-08, the writers under `fd_curated()` that still stamp nothing:
 
----
+- `duckdbfs::write_dataset()`: `curate/landing.R`, `curate/link_lid_map.R`,
+  `curate/logbook.R`, `reference/geo/h3_index.R`
+- `write_parquet()`, qualified or not: `reference/dictionary.R`, `reference/optiger.R`,
+  `reference/ports/harbours.R`, `reference/gear/mapping.R`, and in `reference/vessels/`
+  `ais_key.R`, `ais_key_cascade.R`, `mmsi.R`, `registry.R`
+- `write_parquet_group()`: `curate/ais_trip.R`, `curate/logbook_sensor_gps.R`
+- a bare `COPY … TO`: `curate/link_trip_voyage.R`
 
-## 12. Provenance stamping — built, adopted by 1 of 19 curated writers
-**status:** open · **`write_curated()` built 2026-09-21** (`R/write_curated.R`)
+The earlier check grepped only the package-qualified calls and missed nine of these. `manifest.yml` remains unbuilt and is not started.
 
-Found while planning 3d: `AGENTS.md` asserted `write_curated()`, `check_sync()`,
-`manifest.yml` and `KV_METADATA` as existing machinery. All four had **zero
-references** in the repo. This session had already copied that claim into
-`curate/decisions/006` as a reason before checking it — the exact failure the
-file's own header names.
-
-**Now built and tested.** `write_curated()` writes
-`COPY … (FORMAT parquet, KV_METADATA {…})` stamping `fd.repo`, `fd.commit`,
-`fd.dirty`, `fd.script`, `fd.built`, `fd.rows`, `fd.schema_hash` and
-`fd.inputs`. `sf` is accepted — geometry as WKB, CRS in `fd.crs`, round trip
-verified feature-for-feature on 157 harbours. `curated_provenance()` reads the
-stamps; `check_sync()` reports drift against HEAD.
-
-**Adopted by one writer**, `reference/ports/harbour_codes.R`. The remaining ~18
-still use `duckdbfs::write_dataset()` or `nanoparquet::write_parquet()`.
-
-**The blocker for the rest is real, not laziness.** `write_curated()` takes a
-materialised data frame. The `write_dataset()` callers pass **lazy duckdb
-relations**, some writing partitioned `year=YYYY/` directories — `logbook.R`,
-`link_lid_map.R`, `ais_*`, `h3_index.R`. Materialising those to stamp them
-would reintroduce exactly the accumulation `R/write_parquet.R` exists to avoid
-(48 GB spilled across ~130 month groups). They need a variant that stamps a
-`COPY (SELECT …)` straight from the relation, and a partitioned dataset needs
-its metadata at the directory level, which parquet KV cannot express.
-
-`manifest.yml` remains unbuilt and is not started.
-
-**check:** `grep -rn "duckdbfs::write_dataset\|nanoparquet::write_parquet" `
-over scripts writing to `fd_curated()` returns nothing.
+**check:** no script writing under `fd_curated()` calls `write_dataset(`, `write_parquet(`,
+`write_parquet_group(` or a bare `COPY … TO`; `curated_provenance()` finds `fd.commit` on
+every file under `curated/`.
 
 ---
 
@@ -257,7 +226,7 @@ has pinged since 2019. The source data itself has no current holder, not a
 split we failed to recover. Same class as the 88-vid ask below.
 
 **Asked of the maintainer:** the 88 Icelandic vids with no MMSI on record
-(`ais_key.R:16-19`'s own TODO note) plus `TFUT` above — a Fiskistofa/
+(plan 003 §4.7 and §6; the note once at `ais_key.R:16-19` is gone) plus `TFUT` above — a Fiskistofa/
 Fjarskiptastofa data refresh, not a code fix.
 
 **check:** the 88-vid gap and `TFUT` both resolve against a refreshed pull, or
@@ -326,7 +295,7 @@ globally — GFW's 12,831 worldwide anchorages, EMODnet's 946 European ports, GI
 vessel's trip start/end harbour" is ready and has been since the absorption.
 
 The identity side is not, in three specific places, all keyed strictly on Icelandic
-`vid`: `sources/stk/convert.R:28` and `curate/ais_ping_union.R:66` both
+`vid`: `sources/stk/convert.R:30` and `curate/ais_ping_union.R:73` both
 `inner_join(..., filter(!is.na(vid)))` — a ping with no Icelandic vid is dropped
 before it ever reaches `curate/ais_trip.R`, which then groups trips by `vid` alone.
 Plan 008's `external_id` (§5–§7) will resolve identity for vessels that were never
@@ -383,8 +352,8 @@ or a note that none exists.
 **see:** `curate/plans/009-independent-audit-of-the-mid-vid-match.md`,
 `curate/decisions/047-independent-audit-of-the-mid-vid-match.md`
 
-Built 2026-09-29: `ais_key_audit` (ledger of every key row, 132 discrepancies, 884
-vid-claiming rows no witness reaches) and `ais_key_split_candidates` (silences where a
+Built 2026-09-29: `ais_key_audit` (ledger of every key row; 400 discrepancies on the 2026-10-07 build, none
+reviewed, 132 when first built; 884 vid-claiming rows no witness reaches, not re-counted) and `ais_key_split_candidates` (silences where a
 human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009 —
 phase 2 (segment table built with logbook and landings: tiles every mid, 90 % of pings with direct evidence, Icelandic ODS rows 87 % reproduced without the ODS; review open), phase 3 (review in the app),
 phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (the ODS is retired: `ais_key.R` switched to the segment table 2026-09-30, decision 053;
@@ -393,8 +362,8 @@ ODS retired the same day and everything rebuilt without it, decision 054; the ar
 track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
 The `curated/check/` tables build the next time the `check_ais_key_*` targets run.
 
-`ais_key_coverage` finds the pings the key leaves unassigned (39,487 on mids with a vessel; the largest
-is a d1/d2 typo on mid 101097) and proposes a fill; the maintainer's invariant is no unassigned ping.
+`ais_key_coverage` finds the pings the key leaves unassigned (31,512 in 344 stretches on the 2026-10-07 build,
+39,487 when first built; the largest now 4,962 on mid 108582) and proposes a fill; the maintainer's invariant is no unassigned ping.
 
 `ais_key_vessel_recall` accounts for every Icelandic vessel-month AIS or the logbook shows active: 0.3 % of
 AIS-heard months have no mid assigned (decision 047).
@@ -411,15 +380,6 @@ redone on this one before any verdict is used.
 
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
-
-## 26. Annual ship register (`skipaskra`): built, awaiting a real build and review
-**status:** open (raw copy landed 2026-09-30) ·
-**see:** `curate/decisions/049-annual-call-sign-register-found.md`
-
-Adapter and segment-table use are built (decision 049, 'Built'); 2007-2022 covered. Open: run `tar_make()` so curated picks it
-up, and review the 7 segments where a physical grade and the register disagree.
-
-**check:** `ais_key_segments` reports `annual_disagrees` = 0 or every such segment reviewed.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`)
 **status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b

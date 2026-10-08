@@ -2,7 +2,7 @@
 
 *2026-09-30. Found in `~/stasi/skipaskra` (the maintainer copied it in) while hunting for annual call-sign records; the STK
 mid -> vid work needs to know who held a call sign WHEN (decisions 044, 045, 047, 048). Analysis by Claude (AI-assisted).
-Nothing is written under `$FISHYDATA` yet: the source still lives in `~/stasi/skipaskra`, outside the pipeline.*
+Nothing is written under `$FISHYDATA` yet: the source still lives in `~/stasi/skipaskra`, outside the pipeline. Raw copy landed and adapter built 2026-09-30; closed 2026-10-08, checked on the real curated table (last section).*
 
 ## What it is
 
@@ -90,3 +90,20 @@ So a holder listed Y1..Y2 held the call sign on Y1-01-01..Y2-01-01, took it duri
 [Y1-1-01-01, Y2-12-31]. The first implementation had the ends the other way round (from Y1-01-01 to Y2+1-12-31 under the maintainer's
 reading) and was replaced. Effect on the table: the register now reaches 579 segments and agrees on 564; 15 disagree, of which 7 are the
 same physically-confirmed segments as before and 8 are zero-ping slivers between a year-boundary cut and a neighbour (harmless).
+
+## Closed 2026-10-08 - in curated, and no disagreement left (TODO item 26)
+
+*Closing check by Claude (AI-assisted), on `curated/check/ais_key_segments.parquet` as built 2026-10-07 by the
+`check_ais_key_segments` target - the real table, not the scratch run above.*
+
+- The register reaches 519 of the table's 3,118 segments and names the table's vid on 518. `annual_disagrees` is 0.
+- The one segment where they differ is mid 101079 from 2021-01-01: vid 7126 against the register's 1988. It is a reviewed segment
+  (`overrides/ais_key_segments_reviewed.csv`, 2026-09-30: vid 7126's own AIS is within 2 km of the mid in 91-95 % of
+  opportunities each year 2021-2024), and `annual_disagrees` leaves reviewed segments out by definition - the register is
+  evidence, and the vessel's own track outranks it.
+- Of the 7 physical-graded disagreements under 'Built': 101079 and 103750 were reviewed (103750 now agrees, vid 2022); on
+  101119, 101892 and 103251 the final segments now either agree or have no register holder.
+- The register reaches 519 segments here against 579 in the scratch run. The table has been rebuilt since; the difference
+  was not traced.
+
+Items 1-3 of 'What is open' are done (2 and 3 by 'Built 2026-09-30'). Item 4 is a fact about the registry, not work.

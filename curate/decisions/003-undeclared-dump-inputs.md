@@ -1,6 +1,6 @@
 # 003 — The graph has undeclared inputs in `dump/`, and empty directories hid it
 
-*Recorded 2026-09-20, while running the four-layer trail rebuild for the first time.*
+*Recorded 2026-09-20, while running the four-layer trail rebuild for the first time. The `year=YYYY` part closed 2026-10-08 (last section).*
 
 ## What happened
 
@@ -126,3 +126,24 @@ not in passing.
 An in-memory R `POSIXct` written through `duckdbfs::write_dataset` lands as **`TIMESTAMP`**,
 not `TIMESTAMPTZ`. The arrow/nanoparquet prohibition does not extend to materialised frames
 going through duckdbfs.
+
+## Closed 2026-10-08 - the three are partitioned now, and the doubled `year` is harmless (TODO item 11)
+
+*Closing check by Claude (AI-assisted), measured on `$FISHYDATA` 2026-10-08. The section on `write_dataset()` path semantics
+above is kept for the reasoning; its "they are not partitioned" no longer holds.*
+
+The bare-path idiom is gone. `ais_ping_clean.R`, `ais_trip.R` (its per-ping table; `curated/ais/trip.parquet` is one file) and
+`logbook_sensor_gps.R` write real `year=YYYY/` directories. The collision warned about above does exist: in those, `year` is
+both a column in the file and the directory name. Measured, it does no harm:
+
+| dataset | rows | `year` in the file | read with hive partitioning | file year differs from directory |
+|---|---|---|---|---|
+| `staging/ais/ping_clean` | 535,618,918 | DOUBLE | one column, BIGINT | 0 rows |
+| `curated/ais/ping` | 535,618,918 | DOUBLE | one column, BIGINT | 0 rows |
+| `curated/logbook/sensor_gps` | 49,324,452 | DOUBLE | one column, BIGINT | 0 rows |
+| `curated/ais/ping_trail` | 562,417,835 | INT64 | one column, BIGINT | 0 rows |
+| `curated/ais/trail` | 562,417,835 | not in the file | one column, BIGINT | - |
+
+`ais_ping_union.R`'s "partition pruning" comment holds: the union carries `year` only in the path, and
+`EXPLAIN ANALYZE ... WHERE year = 2019` over `staging/ais/ping_union` scans 1 of 20 files. DuckDB was the reader throughout;
+arrow is not used in this repo and might treat the doubled column differently.

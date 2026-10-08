@@ -13,8 +13,9 @@
 # Two things about this query are deliberate:
 #
 #   * It reads year=YYYY/*.parquet directly rather than through
-#     duckdbfs::open_dataset(). The dataset has BOTH a `year` data column and a
-#     `year` hive column (TODO item 11), and reading the paths sidesteps it.
+#     duckdbfs::open_dataset(). Written when the union was thought to carry
+#     `year` in the file as well as in the path; measured 2026-10-08 (decision
+#     003), it carries it only in the path. Reading the paths still works.
 #
 #   * It opens a fresh connection per year and disconnects after. A single
 #     connection accumulates until the aggregate over 40-70 M rows exhausts the
@@ -96,5 +97,6 @@ FROM g GROUP BY 1,2", src, extra_where, label)
   invisible(res)
 }
 
-# The check TODO item 5 closes on: this returns NULL.
+# TODO item 5 closed 2026-10-08 on the yml's closed_2026_10_08, not on this
+# returning NULL: the union keeps its residue by design.
 #   ping_union_duplicate_keys()
