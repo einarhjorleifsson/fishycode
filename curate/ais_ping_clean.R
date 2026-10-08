@@ -10,7 +10,8 @@
 # "wacky coordinates" of the afli GPS loggers, which are a DDMMmm encoding fault; different
 # defect, different source, different fix. See curate/corrections/afli_coords.yml.
 #
-# The filter is ramb::rb_whack_clean() (decisions 067, 069): vmask, a leg-speed spike test, then
+# The filter is ramb::rb_flag_ping_impossible(method = "clean"), formerly rb_whack_clean()
+# (decisions 067, 069): vmask, a leg-speed spike test, then
 # the forward scan, every speed on a time step of at least MIN_DT_S. Two kinds of ping go out
 # before it, see below: placeholder positions ("invalid") and a second feed's copy of a report
 # ("duplicate"). The filter LABELS; this script is where the labels are acted on, so ping_clean
@@ -18,7 +19,7 @@
 # with the reason, so a flag can be reviewed or overruled. Before 2026-10-05 this was
 # whack_fwdbwd (lazy, in DuckDB) followed by whack_forward (in R).
 #
-# rb_whack_clean() judges each vessel independently, so the year is cut into batches of whole
+# rb_flag_ping_impossible() judges each vessel independently, so the year is cut into batches of whole
 # vessels (BATCH_PINGS): exactly equivalent to doing the year at once, and what keeps R below
 # a few GB. Splitting by time would not be equivalent - the forward scan carries the last
 # kept ping across the cut.
@@ -28,15 +29,15 @@ library(tidyverse)
 library(ramb)
 
 KN_MAX   <- 25      # speed threshold, knots
-MIN_DT_S <- 10      # shortest time step for a speed, seconds (rb_whack_clean's min_dt_s)
+MIN_DT_S <- 10      # shortest time step for a speed, seconds (the filter's min_dt_s)
 # Cross-feed duplicate: a lower-priority feed's ping within DUP_S and DUP_M of a higher one of the same vid.
 # DUP_M is what KN_MAX allows in MIN_DT_S (128.6 m), so the pair is one the filter would itself call consistent.
-# ramb::rb_whack_duplicates() applies the rule; it derives DUP_M from KN_MAX and DUP_S itself (kept here for the fingerprint).
+# ramb::rb_flag_ping_duplicate() applies the rule; it derives DUP_M from KN_MAX and DUP_S itself (kept here for the fingerprint).
 DUP_S    <- MIN_DT_S
 DUP_M    <- KN_MAX * 1852 / 3600 * MIN_DT_S
 DUP_K    <- 3       # neighbours compared on each side, in time order
 FEED     <- c(stk = 1, astd = 2, astdB = 3, emodnet = 4)   # priority; stk wins, as in ais_ping_trail.R
-METHOD   <- "rb_whack_clean-2026-10-08+invalid+duplicate"   # part of the completion fingerprint: a new method re-cleans every year
+METHOD   <- "rb_flag_ping-2026-10-08:invalid+duplicate+clean"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
@@ -46,7 +47,7 @@ out_w  <- fd_staging("ais", "ping_whacky")
 marks  <- fd_staging("ais", "ping_clean_marks")   # completion markers, outside
 dir.create(marks, recursive = TRUE, showWarnings = FALSE)  # the dataset itself
 
-# Target pings per in-memory batch. rb_whack_clean() runs in R on a collected frame, so
+# Target pings per in-memory batch. The filter runs in R on a collected frame, so
 # this, not the size of a year, is what sets peak memory.
 BATCH_PINGS <- 5e6
 
@@ -87,23 +88,20 @@ for (yr in years) {
 
   for (i in seq_along(groups)) {
     g <- groups[[i]]
-    d <- base |> filter(vid %in% g) |> collect()
-    # A placeholder, not a position: lon == lat (stk wrote the latitude into lon; (0, 0) is the same
-    # rule). Out BEFORE rb_whack_clean(), which otherwise can keep it as an anchor and flag the good
-    # track around it (curate/corrections/ais_invalid_position.yml).
-    bad <- d$lon == d$lat
-    # Then a second feed's copy of a report the higher-priority feed already has: the same fix twice,
-    # a second or two and well under a metre apart in the median.
-    dup <- logical(nrow(d))
-    dup[!bad] <- with(d[!bad, ], rb_whack_duplicates(vid, time, lon, lat, provider, priority = names(FEED),
-                                                    max_dt_s = DUP_S, kn_max = KN_MAX, n = DUP_K))
-    keep <- !bad & !dup
-    d <- bind_rows(d[keep, ] |> rb_whack_clean(kn_max = KN_MAX, min_dt_s = MIN_DT_S),
-                   d[bad, ] |> mutate(whack_stage = "invalid", whack = TRUE),
-                   d[dup, ] |> mutate(whack_stage = "duplicate", whack = TRUE))
+    # Step 0 of the flow, in order; each flagger tests only pings not yet flagged (ramb, plan 013):
+    #   invalid    a placeholder, not a position: lon == lat (stk wrote the latitude into lon; (0, 0) is
+    #              the same rule). Out first, so the filter cannot keep it as an anchor
+    #              (curate/corrections/ais_invalid_position.yml).
+    #   duplicate  a second feed's copy of a report the higher-priority feed already has: the same fix
+    #              twice, a second or two and well under a metre apart in the median (decision 069).
+    #   impossible rb_whack_clean's two stages: vmask, spike, then forward (decision 067).
+    d <- base |> filter(vid %in% g) |> collect() |>
+      rb_flag_ping_invalid(rules = "lon_eq_lat") |>
+      rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n = DUP_K) |>
+      rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S)
 
-    clean <- d |> filter(!whack) |> select(-whack, -whack_stage)
-    whacky <- d |> filter(whack) |> select(-whack)
+    clean <- d |> filter(is.na(ping_flag)) |> select(-ping_flag) |> arrange(vid, time)
+    whacky <- d |> filter(!is.na(ping_flag)) |> rename(whack_stage = ping_flag)
 
     # One part file per batch. Several parquet files in one hive directory is
     # normal and reads back as a single partition.
