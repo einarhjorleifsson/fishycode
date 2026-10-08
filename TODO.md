@@ -502,10 +502,25 @@ from `tar_invalidate(everything())` finishes without a memory error.
 
 The switch and the rebuild downstream of it are done (decision 067). Of the 208 vessels where the new filter flags
 more, the 62 vessel-years that also keep a longer track were looked at: placeholder positions are now flagged first
-(`curate/corrections/ais_invalid_position.yml`). Left, none blocking, each seen once in the 62 (decision 067): a vessel
-faster than 25 kn loses real track under either filter (vid 7830, 2018); the forward scan accepts the first ping after
-a gap of more than 4 h untested (vid 2657, 2017); sparse tracks (vid 1186, 2023). fishyweb `notes/whacky-positions.qmd`
+(`curate/corrections/ais_invalid_position.yml`). Left, none blocking (decision 067): a vessel faster than 25 kn loses
+real track under either filter (vid 7830, a boat with no logbook or landings; how many fishing vessels are that fast
+is not counted); the forward scan accepts the first ping after a gap of more than 4 h untested (vid 2657, 2017);
+sparse tracks (vid 1186, 2023). fishyweb `notes/whacky-positions.qmd`
 is untracked and shows vessel tracks, so the disclosure rule comes first.
 
 **check:** decision 067 records a verdict on the fast-vessel, gap and sparse-track cases, and
 `notes/whacky-positions.qmd` is committed or removed.
+
+## 39. Mid 108982 changes hands on a registration date, not where the pings say
+**status:** open · **needs: maintainer** — how a reviewed boundary enters the key ·
+**see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md` (vid 7830), item 25
+
+`ais_key_segments` gives mid 108982 to vid 7830 from 2018-04-13 (`boundary_basis`: 7830 registered that day). The pings
+and 2835's own astdB say the mid was vid 2835's in the Westfjords until 2018-07-19 and 7830's off Reykjavik from
+2020-07-10, so 5,029 of 2835's pings are on 7830. `ais_key_split_candidates` lists the gap but grades it weak. The
+reviewed override cannot fix it: `overrides/ais_key_segments_reviewed.csv` replaces the vid of a segment it covers by
+half its days or more, and moves no boundary. Asked: a boundary override, or a rule that a registration date does not
+cut where the earlier holder's own AIS still witnesses the mid. How many other mids have this shape is not counted.
+
+**check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
+that cut a witnessed run is recorded in a decision.

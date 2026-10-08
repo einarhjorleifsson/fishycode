@@ -60,8 +60,13 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
   `whack_clean()` all 24 come back to the old result (flags 5,315 → 19, old 78; kept track 397,617 → 93,521 km, old 93,416; no leg over 25 kn left). **38** have
   no (0, 0) ping and that change does nothing for them. Most differ by a few km with no leg over 25 kn kept. The rest are other defects, each let through by the
   forward scan's reset after a gap of more than 4 h: **lon copied from lat** (vid 4028 2011, `(64.159, 64.159)`); an astd ping at lon -0.001 (vid 2657 2017);
-  a fast vessel whose recorded speed is 29-33 kn, so 25 kn flags real track under either filter (vid 7830 2018, 5,200 of 10,677); a 22-ping sparse track (vid
-  1186 2023). **lon == lat** is a defect of its own: 8,799 stk pings, **4,540 kept in `ping_clean`**, all from 59 foreign vids in 2011-2012, at 59-76° E
+  vid 7830 2018 (5,200 of 10,677 flagged; first read here as a fast vessel, corrected the same day): mostly a **key boundary error**. Mid 108982 is given to
+  7830 from 7830's registration day, 2018-04-13, but until 2018-07-19 it was still vid 2835 in the Westfjords (2835's own astdB within 2 km in 95 % of 195
+  opportunities, median 0.1 km; 7830's in 0 % of 459, median 182 km), so 5,029 of 2835's pings sit on 7830 and interleave with 7830's own mid 129801 off
+  Reykjavik, 180 km away. `ais_key_split_candidates` has the gap (2018-07-19 to 2020-07-10, space and profile shift), graded weak; 7830 moves to mid 108982 on
+  2020-07-10, the day 129801 falls silent. TODO 39. Besides, 7830 IS fast: its own stk speed has p90 31-34 kn a year and max 45.8, so 25 kn flags real
+  track every year (1,843 flagged pings 2019-2026 on 25-45 kn legs its recorded speed confirms). Neither 7830 nor 2835 has a logbook trip or a landing.
+  And a 22-ping sparse track (vid 1186 2023). **lon == lat** is a defect of its own: 8,799 stk pings, **4,540 kept in `ping_clean`**, all from 59 foreign vids in 2011-2012, at 59-76° E
   (mostly land in Russia). A near-zero lon alone is not a rule: 0° E crosses the Norwegian Sea, where real pings are.
 - **Placeholder positions flagged first, 2026-10-08** (`curate/corrections/ais_invalid_position.yml`): `ais_ping_clean.R` flags `lon == lat`, (0, 0)
   included, as `whack_stage = "invalid"` (9,520 pings) and runs `whack_clean()` on the rest. `ping_clean` 540,765,097, `ping_whacky` 2,883,212; the
