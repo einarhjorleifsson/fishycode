@@ -65,126 +65,41 @@ event_f   <- fd_curated("check", "stk_event.parquet")
 YEARS     <- as.integer(strsplit(Sys.getenv("STAY_YEARS", ""), ",")[[1]])
 ALL       <- !length(YEARS)
 
-# -- Polygons and their R_M buffers, in a temp table ---------------------------------
+# -- Harbour polygons with their departure radius; minimum stay per harbour and year ----------------
+# The stay rules themselves are ramb::rb_find_trip_stays() (plan 013, phase 2); this script supplies the
+# Icelandic inputs and keeps the year-by-year processing.
 
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>
   filter(source == "einar") |> select(pid) |> sf::st_make_valid()
 rad <- nanoparquet::read_parquet(fd_curated("reference", "harbour_radius.parquet")) |> as_tibble()
 r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else rep(R_M, nrow(P))
-r_out <- pmax(coalesce(r_out, R_M), R_M)
-buf <- function(d) sf::st_transform(sf::st_buffer(sf::st_transform(P, 3575), d), 4326)
-near_in <- buf(R_M); near_out <- buf(r_out)
-DBI::dbWriteTable(con, "harb_wkt", tibble(pid = P$pid,
-                                          poly = sf::st_as_text(sf::st_geometry(P), digits = 15),
-                                          near_in = sf::st_as_text(sf::st_geometry(near_in), digits = 15),
-                                          near_out = sf::st_as_text(sf::st_geometry(near_out), digits = 15)),
-                  overwrite = TRUE, temporary = TRUE)
-x("CREATE OR REPLACE TEMP TABLE harb AS
-   SELECT pid, ST_GeomFromText(poly) AS g, ST_GeomFromText(near_in) AS gi, ST_GeomFromText(near_out) AS go FROM harb_wkt")
+harbours <- P |> mutate(harbour_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
 
 cls <- nanoparquet::read_parquet(fd_curated("reference", "harbour_class.parquet")) |> as_tibble() |> select(pid, year, class)
 
 # -- One year ------------------------------------------------------------------------
 
 stay_year <- function(yr) {
-  # pings of the year plus the neighbouring years' boundary pings, numbered per vessel
-  x(glue::glue("
-    CREATE OR REPLACE TEMP TABLE seq AS
+  # pings of the year plus the neighbouring years' boundary pings
+  seq_yr <- dplyr::tbl(con, dplyr::sql(glue::glue("
     WITH c AS (SELECT vid, time, lon, lat, year FROM read_parquet('{clean_dir}', hive_partitioning = true)
-               WHERE year BETWEEN {yr - 1L} AND {yr + 1L}),
-    base AS (
-      SELECT vid, time, lon, lat FROM c WHERE year = {yr}
-      UNION ALL SELECT vid, time, lon, lat FROM c WHERE year = {yr - 1L}
-                QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time DESC) = 1
-      UNION ALL SELECT vid, time, lon, lat FROM c WHERE year = {yr + 1L}
-                QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time) = 1)
-    SELECT vid, time, lon, lat, row_number() OVER (PARTITION BY vid ORDER BY time) AS rn FROM base"))
-
-  # harbour of each ping: among the polygons whose r_out buffer holds it, prefer those whose arrival
-  # buffer (R_M) also holds it, then the nearest
-  x("CREATE OR REPLACE TEMP TABLE tg AS
-     WITH c AS (
-       SELECT s.vid, s.rn, s.time, h.pid, ST_Distance(ST_Point(s.lon, s.lat), h.g) AS d,
-              ST_Intersects(h.gi, ST_Point(s.lon, s.lat)) AS near_in
-       FROM seq s JOIN harb h ON ST_Intersects(h.go, ST_Point(s.lon, s.lat)))
-     SELECT vid, rn, any_value(time) AS time,
-            arg_min(pid, (CASE WHEN near_in THEN 0 ELSE 10 END) + d) AS h,
-            min(d) = 0 AS inside,
-            arg_min(near_in, (CASE WHEN near_in THEN 0 ELSE 10 END) + d) AS near_in
-     FROM c GROUP BY vid, rn")
-
-  # minimum stay per harbour this year
-  DBI::dbWriteTable(con, "hg_in", cls |> filter(year == yr) |>
-                      transmute(pid, g_h = if_else(class == "landing", G_LANDING, G_H)),
-                    overwrite = TRUE, temporary = TRUE)
-  x("CREATE OR REPLACE TEMP TABLE hg AS SELECT * FROM hg_in")
-
-  x(glue::glue("
-    CREATE OR REPLACE TEMP TABLE runs AS
-    SELECT vid, h, min(rn) AS s, max(rn) AS e, min(time) AS t_s, max(time) AS t_e
-    FROM (SELECT *, rn - row_number() OVER (PARTITION BY vid, h ORDER BY rn) AS grp FROM tg WHERE inside)
-    GROUP BY vid, h, grp"))
-
-  # seeds, extended over the contiguous inside pings at either end, then merged by ping index
-  x(glue::glue("
-    CREATE OR REPLACE TEMP TABLE pstay AS
-    WITH a AS (
-      SELECT *, lead(rn) OVER w AS nrn, lead(h) OVER w AS nh, lead(inside) OVER w AS nin, lead(time) OVER w AS nt
-      FROM tg WINDOW w AS (PARTITION BY vid ORDER BY rn)),
-    seeds AS (
-      SELECT vid, h, rn AS s, nrn AS e, time AS t_s, nt AS t_e,
-             CASE WHEN inside OR nin THEN 'tag_then_gap' ELSE 'gap_near_harbour' END AS rule
-      FROM a LEFT JOIN hg ON hg.pid = a.h
-      WHERE nrn = rn + 1 AND nh = h AND near_in AND epoch(nt - time) >= coalesce(hg.g_h, {G_H}) * 3600
-      UNION ALL
-      SELECT vid, h, s, e, t_s, t_e, 'tag_span' FROM runs LEFT JOIN hg ON hg.pid = runs.h
-      WHERE epoch(t_e - t_s) >= coalesce(hg.g_h, {G_H}) * 3600),
-    ext AS (
-      SELECT sd.vid, sd.h, least(sd.s, coalesce(r1.s, sd.s)) AS s, greatest(sd.e, coalesce(r2.e, sd.e)) AS e,
-             least(sd.t_s, coalesce(r1.t_s, sd.t_s)) AS t_s, greatest(sd.t_e, coalesce(r2.t_e, sd.t_e)) AS t_e, sd.rule
-      FROM seeds sd
-      LEFT JOIN runs r1 ON r1.vid = sd.vid AND r1.h = sd.h AND sd.s BETWEEN r1.s AND r1.e
-      LEFT JOIN runs r2 ON r2.vid = sd.vid AND r2.h = sd.h AND sd.e BETWEEN r2.s AND r2.e),
-    m AS (
-      SELECT *, max(e) OVER (PARTITION BY vid, h ORDER BY s, e ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS pe
-      FROM ext),
-    g AS (
-      SELECT *, sum(CASE WHEN pe IS NULL OR s > pe + 1 THEN 1 ELSE 0 END) OVER (PARTITION BY vid, h ORDER BY s, e) AS grp
-      FROM m)
-    SELECT vid, h AS pid, min(t_s) AS t_in, max(t_e) AS t_out, list_distinct(list(rule)) AS rules
-    FROM g GROUP BY vid, h, grp"))
-
-  # event pairs: I then U, adjacent in the vessel's event sequence, same standard harbour, both kept and ok
-  ev_from <- if (yr >= EVENT_FROM) "TRUE" else "FALSE"
-  x(glue::glue("
-    CREATE OR REPLACE TEMP TABLE estay AS
-    WITH e AS (
-      SELECT vid, time, io, hid_pid, (io_ok AND in_clean) AS good,
-             lead(io) OVER w AS nio, lead(time) OVER w AS nt, lead(hid_pid) OVER w AS nh, lead(io_ok AND in_clean) OVER w AS ngood
-      FROM read_parquet('{event_f}') WHERE year BETWEEN {yr - 1L} AND {yr + 1L}
-      WINDOW w AS (PARTITION BY vid ORDER BY time, io))
-    SELECT vid, hid_pid AS pid, time AS t_in, nt AS t_out, ['event_pair'] AS rules
-    FROM e LEFT JOIN hg ON hg.pid = e.hid_pid
-    WHERE {ev_from} AND io = 'I' AND nio = 'U' AND good AND ngood AND hid_pid IS NOT NULL AND nh = hid_pid
-      AND epoch(nt - time) >= coalesce(hg.g_h, {G_H}) * 3600 AND year(time) = {yr}"))
-
-  # one time-based merge of ping stays and event stays
-  q(glue::glue("
-    WITH u AS (SELECT vid, pid, t_in, t_out, rules, 'ping' AS src FROM pstay WHERE year(t_in) = {yr}
-               UNION ALL SELECT vid, pid, t_in, t_out, rules, 'ev' FROM estay),
-    m AS (SELECT *, max(t_out) OVER (PARTITION BY vid, pid ORDER BY t_in, t_out ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS pe FROM u),
-    g AS (SELECT *, sum(CASE WHEN pe IS NULL OR t_in > pe THEN 1 ELSE 0 END) OVER (PARTITION BY vid, pid ORDER BY t_in, t_out) AS grp FROM m)
-    SELECT vid, pid, min(t_in) AS T_in, max(t_out) AS T_out,
-           min(t_in) FILTER (src = 'ping') AS T_in_ping, max(t_out) FILTER (src = 'ping') AS T_out_ping,
-           min(t_in) FILTER (src = 'ev')   AS T_in_ev,   max(t_out) FILTER (src = 'ev')   AS T_out_ev,
-           list_sort(list_distinct(flatten(list(rules)))) AS evidence
-    FROM g GROUP BY vid, pid, grp")) |>
-    as_tibble() |>
-    mutate(evidence_s = vapply(evidence, paste, "", collapse = "+"),
-           rule = case_when(grepl("event_pair", evidence_s) ~ "event_pair",
-                            grepl("tag_then_gap", evidence_s) ~ "tag_then_gap",
-                            grepl("tag_span", evidence_s) ~ "tag_span",
-                            TRUE ~ "gap_near_harbour"))
+               WHERE year BETWEEN {yr - 1L} AND {yr + 1L})
+    SELECT vid, time, lon, lat FROM c WHERE year = {yr}
+    UNION ALL SELECT vid, time, lon, lat FROM c WHERE year = {yr - 1L}
+              QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time DESC) = 1
+    UNION ALL SELECT vid, time, lon, lat FROM c WHERE year = {yr + 1L}
+              QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time) = 1")))
+  # minimum stay per harbour this year: shorter at a harbour of class `landing` (decision 064)
+  ms <- cls |> filter(year == yr) |> transmute(harbour_id = pid, min_stay_h = if_else(class == "landing", G_LANDING, G_H))
+  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both kept and ok
+  ev <- if (yr >= EVENT_FROM) dplyr::tbl(con, dplyr::sql(glue::glue("
+    SELECT vid, time, io, hid_pid AS harbour_id, (io_ok AND in_clean) AS good
+    FROM read_parquet('{event_f}') WHERE year BETWEEN {yr - 1L} AND {yr + 1L}"))) else NULL
+  win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
+  ramb::rb_find_trip_stays(seq_yr, harbours, min_stay_h = G_H, min_stay = ms, radius_in = R_M,
+                           events = ev, t_in_window = win) |>
+    collect() |>
+    rename(pid = harbour_id)
 }
 
 # -- Run -----------------------------------------------------------------------------
@@ -201,7 +116,7 @@ for (k in seq_along(years)) {
 out <- bind_rows(res) |>
   transmute(vid, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
             dur_h = as.numeric(T_out - T_in, units = "hours"),
-            rule, evidence = evidence_s, T_in_ping, T_out_ping, T_in_ev, T_out_ev,
+            rule, evidence, T_in_ping, T_out_ping, T_in_ev, T_out_ev,
             basis = "reconstructed") |>
   arrange(vid, T_in)
 stopifnot(!anyDuplicated(out[c("vid", "pid", "T_in")]))
