@@ -71,3 +71,10 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
 - **Placeholder positions flagged first, 2026-10-08** (`curate/corrections/ais_invalid_position.yml`): `ais_ping_clean.R` flags `lon == lat`, (0, 0)
   included, as `whack_stage = "invalid"` (9,520 pings) and runs `whack_clean()` on the rest. `ping_clean` 540,765,097, `ping_whacky` 2,883,212; the
   24 vessel-years are back to the former filter's result. Rebuilt with everything downstream the same day.
+- **Fishing vessels faster than 25 kn, counted 2026-10-08** (`curate/checks/whack_fast_vessels.R`; a leg is confirmed fast when its implied speed is
+  25-50 kn and the vessel's own stk speed backs it, mean of both ends > 25 kn and within 5 kn). Of 2,118 fishing vessels (logbook trip or landing that
+  year), 301 have a confirmed fast leg in some year, **84 have 10 or more** in some year (173 vessel-years) and 6 have 100 or more. **All are under 12 m**:
+  19 under 8 m, 54 of 8-10 m, 11 of 10-12 m; none of 12 m or more. Top: vid 6684 (9.06 m), 1,505 fast legs over 9 years, up to 48 kn, 6.9 % of its
+  legs; the rest mostly 28-32 kn and about 1 % of legs. The 25 kn filter removes **8,437 real pings of fishing vessels** (0.9 % of their flagged stk
+  pings; 0.007 % of legs). Speeds above 25 kn are steaming, so `fishing` is not affected; steaming track and distance are. Non-fishing vessels: 39,250
+  fast legs, 95 vessels with 10 or more in a year. stk only (astd and emodnet carry no recorded speed), so this undercounts.
