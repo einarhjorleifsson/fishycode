@@ -123,7 +123,7 @@ mmsi_updated <- bind_rows(mmsi_closed, case_c_new, case_b_new) |>
 out_path <- paste0(fd_staging("mmsi", "mmsi_iceland_"), TODAY, ".parquet")
 write_parquet(mmsi_updated, out_path)
 
-mmsi_updated |> write_parquet(fd_curated("vessel", "mmsi.parquet"))
+mmsi_updated |> write_curated(fd_curated("vessel", "mmsi.parquet"), inputs = c(hist_path, update_path))
 
 cat("\nDone.\n")
 cat("  Historical rows:", nrow(mmsi_hist), "\n")

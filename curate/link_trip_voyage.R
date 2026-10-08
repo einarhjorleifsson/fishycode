@@ -82,7 +82,7 @@ SELECT
 FROM ranked WHERE rn = 1", lb, ais)
 
 out <- fd_curated("link", "trip_voyage.parquet")
-dbExecute(con, sprintf("COPY (%s) TO '%s' (FORMAT parquet)", q, out))
+write_curated_sql(con, q, out, inputs = c(lb, ais))
 
 # -- report -------------------------------------------------------------------
 

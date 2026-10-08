@@ -132,7 +132,7 @@ gear_mapping |>
   filter(!v_gear | !v_target | !v_met5) |>
   knitr::kable(caption = "Problems with gear and target not in ICES vocabulary, but met5 and met6 considered valid.")
 gear_mapping |>
-  nanoparquet::write_parquet(fd_curated("reference", "gear.parquet"))
+  write_curated(fd_curated("reference", "gear.parquet"), inputs = fd_raw("species", "asfis.parquet"))
 # check: have I captured all gears in the logbook data? ------------------------
 read_parquet(fd_raw("logbooks", "afli", "stofn.parquet")) |>
   count(gid = veidarf) |>

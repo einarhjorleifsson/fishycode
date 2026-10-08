@@ -113,8 +113,13 @@ for (yr in years) {
   }
 
   res <- bind_rows(inside, outside)
-  # write_parquet_group, not write_dataset: res is materialised. See R/write_parquet.R.
-  write_parquet_group(res, file.path(out, paste0("year=", yr), "data_0.parquet"))
+  # write_curated(), not write_dataset: res is materialised, and write_curated() opens a fresh
+  # connection per call (R/write_parquet.R). curated/ais/ping is a directory, left out of `inputs`.
+  write_curated(res, file.path(out, paste0("year=", yr), "data_0.parquet"),
+                inputs = c(fd_raw("logbooks", "afli", "sjalfvirkir_maelar.parquet"),
+                           fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet"),
+                           fd_curated("ais", "trip.parquet"), fd_curated("logbook", "trip.parquet"),
+                           fd_curated("logbook", "fishing_sample.parquet")))
   message(sprintf("  %d: %s fixes | %.1f%% positioned | %.1f%% outside a voyage",
                   yr, format(nrow(res), big.mark = ","),
                   100 * mean(!is.na(res$lon)),

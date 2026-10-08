@@ -82,6 +82,8 @@ merged_landings <- merged_landings |>
   left_join(ports |> select(hid, höfn = port, pid), by = "hid")
 
 # Export -----------------------------------------------------------------------
-dir.create(fd_curated("landing"), showWarnings = FALSE, recursive = TRUE)
-merged_landings |> duckdbfs::write_dataset(fd_curated("landing", "landings.parquet"))
-merged_catch    |> duckdbfs::write_dataset(fd_curated("landing", "catch.parquet"))
+landing_inputs <- c(fd_staging("landing", "agf",  "landings.parquet"), fd_staging("landing", "agf",  "catch.parquet"),
+                    fd_staging("landing", "lods", "landings.parquet"), fd_staging("landing", "lods", "catch.parquet"),
+                    fd_curated("reference", "port.parquet"))
+merged_landings |> write_curated(fd_curated("landing", "landings.parquet"), inputs = landing_inputs)
+merged_catch    |> write_curated(fd_curated("landing", "catch.parquet"),    inputs = landing_inputs)

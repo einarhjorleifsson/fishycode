@@ -76,7 +76,9 @@ ices_r <- rasterize(ices_v, r, field = "fao")
 h3_centres$fao <- terra::extract(ices_r, pts)[["fao"]]
 
 # save -------------------------------------------------------------------------
-h3_centres |> duckdbfs::write_dataset(fd_curated("reference", "area_h3.parquet"))
+h3_centres |> write_curated(fd_curated("reference", "area_h3.parquet"),
+                           inputs = c(fd_raw("aux", "gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif"),
+                                      fd_staging("aux", "eusm.fgb"), fd_staging("aux", "ices_areas_500m-buffer.fgb")))
 
 library(mapdeck)
 token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"

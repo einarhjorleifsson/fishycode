@@ -1,5 +1,4 @@
 library(tidyverse)
-library(arrow)
 fd_raw("optiger", "o_atw_reg.csv") |> 
   read_csv2(guess_max = 1e6) |> 
   janitor::clean_names() |> 
@@ -9,5 +8,5 @@ fd_raw("optiger", "o_atw_reg.csv") |>
          speed = ship_speed,
          heading = ship_heading,
          doorspread = portside_door_dist_star_door) |> 
-  write_parquet(fd_curated("reference", "optigear.parquet"))
+  write_curated(fd_curated("reference", "optigear.parquet"), inputs = fd_raw("optiger", "o_atw_reg.csv"))
   

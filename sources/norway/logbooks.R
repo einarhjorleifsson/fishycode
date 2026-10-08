@@ -23,8 +23,7 @@ files |> print() |> knitr::kable()
 # fangstmelding ----------------------------------------------------------------
 files2 <- 
   files |> 
-  filter(str_detect(fil, "fangstmelding")) |> 
-  mutate(out = fd_curated("logbook", "norway", "fangstmelding"))
+  filter(str_detect(fil, "fangstmelding"))
 files2
 res <- list()
 for(i in 1:nrow(files2)) {
@@ -52,7 +51,8 @@ d <-
          stoppdato = dmy(stoppdato))
 
 
-d |>  duckdbfs::write_dataset(fd_curated("logbook", "fangstmelding.parquet"))
+# An adapter writes staging, never curated (AGENTS.md layout); this wrote curated/ until 2026-10-08.
+d |>  duckdbfs::write_dataset(fd_staging("norway", "fangstmelding.parquet"))
 
 if(FALSE) {
 d |> 

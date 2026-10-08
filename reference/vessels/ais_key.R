@@ -68,5 +68,7 @@ print(key |> summarise(rows = n(), mids = n_distinct(mid), with_vid = sum(!is.na
 print(key |> filter(!is.na(vid)) |> count(tier, step, name = "rows") |> arrange(tier, desc(rows)) |> knitr::kable(caption = "reliability tier"))
 cat("gear devices with a link to a carrying vid:", nrow(device_link), "rows,", n_distinct(device_link$mid), "mobile-ids\n")
 
-write_parquet(key, fd_curated("vessel", "vessel_ais_key.parquet"))
-write_parquet(device_link, fd_curated("vessel", "vessel_ais_device.parquet"))
+key_inputs <- c(fd_curated("check", "ais_key_segments.parquet"), fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
+                fd_curated("vessel", "vessel.parquet"), fd_curated("vessel", "vessel_identity.parquet"))
+write_curated(key, fd_curated("vessel", "vessel_ais_key.parquet"), inputs = key_inputs)
+write_curated(device_link, fd_curated("vessel", "vessel_ais_device.parquet"), inputs = key_inputs)

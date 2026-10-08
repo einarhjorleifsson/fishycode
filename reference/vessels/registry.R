@@ -164,7 +164,9 @@ vessel_ISL <-
 # Save -------------------------------------------------------------------------
 vessel_ISL |>
   mutate(kw = ifelse(kw == 0, NA, kw)) |>
-  write_parquet(fd_curated("vessel", "vessel.parquet"))
+  write_curated(fd_curated("vessel", "vessel.parquet"),
+                inputs = c(fd_raw("vessels", "mmsi_iceland_archieves.parquet"), fd_raw("vessels", "vessel_v.parquet"),
+                           fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")))
 
 
 

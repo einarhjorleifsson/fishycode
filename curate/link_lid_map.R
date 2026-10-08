@@ -282,4 +282,7 @@ lid_map |>
   print()
 
 ## Write output -----------------------------------------------------------------
-lid_map |> duckdbfs::write_dataset(fd_curated("logbook", "lid_map.parquet"))
+lid_map |> write_curated(fd_curated("logbook", "lid_map.parquet"),
+                        inputs = c(fd_curated("landing", "landings.parquet"), fd_curated("landing", "catch.parquet"),
+                                   fd_curated("logbook", "trip.parquet"), fd_curated("logbook", "catch.parquet"),
+                                   fd_curated("logbook", "station.parquet"), fd_curated("reference", "gear.parquet")))

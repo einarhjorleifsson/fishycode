@@ -191,8 +191,12 @@ merged_station |>
   print()
 
 # Export -----------------------------------------------------------------------
-dir.create(fd_curated("logbook"), showWarnings = FALSE, recursive = TRUE)
-merged_trip           |> duckdbfs::write_dataset(fd_curated("logbook", "trip.parquet"))
-merged_station        |> duckdbfs::write_dataset(fd_curated("logbook", "station.parquet"))
-merged_fishing_sample |> duckdbfs::write_dataset(fd_curated("logbook", "fishing_sample.parquet"))
-merged_catch          |> duckdbfs::write_dataset(fd_curated("logbook", "catch.parquet"))
+logbook_inputs <- c(
+  unlist(lapply(c("afli", "fs_afladagbok", "adb"), \(s)
+    c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
+      fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
+  fd_staging("afli", "depth.parquet"), fd_staging("adb", "lon_sign.parquet"))
+merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)
+merged_station        |> write_curated(fd_curated("logbook", "station.parquet"),        inputs = logbook_inputs)
+merged_fishing_sample |> write_curated(fd_curated("logbook", "fishing_sample.parquet"), inputs = logbook_inputs)
+merged_catch          |> write_curated(fd_curated("logbook", "catch.parquet"),          inputs = logbook_inputs)

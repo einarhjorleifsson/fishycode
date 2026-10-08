@@ -143,14 +143,18 @@ for (yr in years) {
 
     out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
 
-    # Use the in-memory clean table for the ping write. write_parquet_group, not
-    # write_dataset - this is a materialised frame inside a per-year loop, which
-    # is exactly the shape that accumulates. See R/write_parquet.R.
-    clean |>
+    # Use the in-memory clean table for the ping write. write_curated() opens a fresh
+    # connection per call, as write_parquet_group() does - this is a materialised frame
+    # inside a per-year loop, which is exactly the shape that accumulates (R/write_parquet.R).
+    # A test run (VIDS) writes to staging, which write_curated() refuses.
+    ping_b <- clean |>
       left_join(trips_yr_b |> select(vid, trip, T1, T2),
                 by = join_by(vid, between(time, T1, T2))) |>
-      select(-T1, -T2) |>
-      write_parquet_group(glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet"))
+      select(-T1, -T2)
+    f <- glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet")
+    if (is.null(VIDS)) write_curated(ping_b, f, inputs = fd_curated("ais", "harbour_stay.parquet"))
+    else write_parquet_group(ping_b, f)
+    rm(ping_b)
 
     trips_batches[[i]] <- trips_yr_b
     rm(clean); gc(FALSE)
@@ -171,7 +175,8 @@ message(glue::glue(
 ))
 
 out_trips <- if (is.null(VIDS)) fd_curated("ais", "trip.parquet") else fd_staging("ais", "trip_test.parquet")
-write_parquet_group(trips, out_trips)
+if (is.null(VIDS)) write_curated(trips, out_trips, inputs = fd_curated("ais", "harbour_stay.parquet")) else
+  write_parquet_group(trips, out_trips)
 
 # -- QA: vid == 2765 -----------------------------------------------------------
 

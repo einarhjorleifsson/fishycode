@@ -13,4 +13,5 @@ read_parquet(fd_raw("landings", "agf", "aflagrunnur_v.parquet")) |>
          hid_new = hafnarnumer_id,
          harbour = hafnarnumer_heiti) |>
   arrange(hid) |>
-  write_parquet(fd_curated("reference", "harbour.parquet"))
+  write_curated(fd_curated("reference", "harbour.parquet"),
+                inputs = fd_raw("landings", "agf", "aflagrunnur_v.parquet"))

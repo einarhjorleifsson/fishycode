@@ -15,8 +15,7 @@ files <-
   tibble(fil = dir(tdir, full.names = TRUE)) |>
   filter(str_ends(fil, ".csv")) |> 
   mutate(year = str_replace_all(basename(fil), "\\D", ""),
-         year = as.integer(year),
-         out = paste0(fd_curated("landing", "norway"))) |>
+         year = as.integer(year)) |>
   arrange(year) |> 
   drop_na()
 files |> print() |> knitr::kable()
@@ -53,6 +52,7 @@ d <-
   mutate(year = as.integer(year)) |> 
   mutate(dokument_salgsdato = dmy(dokument_salgsdato),
          dokument_versjonstidspunkt = dmy(dokument_versjonstidspunkt))
+# An adapter writes staging, never curated (AGENTS.md layout); this wrote curated/ until 2026-10-08.
 d |>
-  duckdbfs::write_dataset(fd_curated("landing", "fangstdata.parquet"))
+  duckdbfs::write_dataset(fd_staging("norway", "fangstdata.parquet"))
 

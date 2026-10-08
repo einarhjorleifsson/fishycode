@@ -719,4 +719,8 @@ stk14 |>
          vid = as.integer(vid),
          no = as.integer(no),
          vid_older = as.integer(vid_older)) |>
-  nanoparquet::write_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet"))
+  # raw/ais/stk/trail is a directory and is left out of `inputs`, as everywhere else
+  write_curated(fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
+                inputs = c(fd_raw("ais", "stk", "mobile.parquet"), fd_raw("ais", "stk", "einarhj_mobile-vid.parquet"),
+                           fd_raw("landings", "agf", "aflagrunnur.parquet"), fd_staging("aux", "callsign_prefix.parquet"),
+                           fd_curated("vessel", "vessel.parquet"), fd_curated("vessel", "vessel_identity.parquet")))
