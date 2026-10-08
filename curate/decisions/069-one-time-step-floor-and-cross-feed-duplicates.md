@@ -48,6 +48,13 @@ flags 1,446,513, against 2,873,692 before (the forward scan 1,786,608 -> 423,575
 Fishing vessels faster than 25 kn (`whack_fast_vessels.R`): still 84; 8,433 real pings flagged on confirmed fast legs, now 1.9 % of their flagged
 stk pings (was 0.9 % of twice as many).
 
+## The duplicate rule moved to ramb
+
+Same day: the rule became `ramb::rb_whack_duplicates()` (ramb `669c63a`, pushed), so it is not a function inside a script and the review
+package can carry it. `ais_ping_clean.R` calls it with the same constants. Checked row for row against the `duplicate` rows on disk, every
+year 2007-2026: identical (6,573,358), so nothing was rebuilt and `METHOD` is unchanged. It is not a filter for exact duplicates: `ping_clean`
+holds 6,260 exact duplicate rows and 24,195 more rows sharing a (vid, time), which `ais_ping_trail.R` removes.
+
 ## Not changed
 
 - The review copy `~/stasi/test` (anonymised examples, for colleagues) holds `rb_whack_clean()`, `rb_whack_sda()`, `rb_whack_forward()` as of

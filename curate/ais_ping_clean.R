@@ -31,6 +31,7 @@ KN_MAX   <- 25      # speed threshold, knots
 MIN_DT_S <- 10      # shortest time step for a speed, seconds (rb_whack_clean's min_dt_s)
 # Cross-feed duplicate: a lower-priority feed's ping within DUP_S and DUP_M of a higher one of the same vid.
 # DUP_M is what KN_MAX allows in MIN_DT_S (128.6 m), so the pair is one the filter would itself call consistent.
+# ramb::rb_whack_duplicates() applies the rule; it derives DUP_M from KN_MAX and DUP_S itself (kept here for the fingerprint).
 DUP_S    <- MIN_DT_S
 DUP_M    <- KN_MAX * 1852 / 3600 * MIN_DT_S
 DUP_K    <- 3       # neighbours compared on each side, in time order
@@ -63,22 +64,6 @@ fingerprint <- function(yr) {
                     paste(names(FEED), FEED, collapse = ","), collapse = ";"))
 }
 
-# TRUE for a ping that a higher-priority feed also reported: same vid, within DUP_S seconds and DUP_M metres,
-# among the DUP_K neighbours on each side in time order. stk is never one (curate/corrections/ais_cross_feed_duplicates.yml).
-cross_feed_dup <- function(d) {
-  pr <- unname(FEED[d$provider]); pr[is.na(pr)] <- length(FEED) + 1
-  o <- order(d$vid, d$time, pr, d$lon, d$lat)
-  v <- d$vid[o]; t <- as.numeric(d$time[o]); x <- d$lon[o]; y <- d$lat[o]; p <- pr[o]
-  n <- length(o); dup <- logical(n)
-  if (n < 2) return(dup)
-  for (k in seq_len(min(DUP_K, n - 1))) {
-    i <- seq_len(n - k); j <- i + k
-    near <- v[i] == v[j] & abs(t[j] - t[i]) <= DUP_S & rb_distance(x[i], y[i], x[j], y[j]) <= DUP_M
-    dup[j[near & p[i] < p[j]]] <- TRUE
-    dup[i[near & p[j] < p[i]]] <- TRUE
-  }
-  dup[order(o)]
-}
 
 for (yr in years) {
 
@@ -109,7 +94,9 @@ for (yr in years) {
     bad <- d$lon == d$lat
     # Then a second feed's copy of a report the higher-priority feed already has: the same fix twice,
     # a second or two and well under a metre apart in the median.
-    dup <- logical(nrow(d)); dup[!bad] <- cross_feed_dup(d[!bad, ])
+    dup <- logical(nrow(d))
+    dup[!bad] <- with(d[!bad, ], rb_whack_duplicates(vid, time, lon, lat, provider, priority = names(FEED),
+                                                    max_dt_s = DUP_S, kn_max = KN_MAX, n = DUP_K))
     keep <- !bad & !dup
     d <- bind_rows(d[keep, ] |> rb_whack_clean(kn_max = KN_MAX, min_dt_s = MIN_DT_S),
                    d[bad, ] |> mutate(whack_stage = "invalid", whack = TRUE),
