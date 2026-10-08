@@ -4,7 +4,7 @@
 
 ## What changed
 
-- **ramb** (`main`, `7a50541`, `d67a3fa`; not pushed): the five filters are `rb_whack_clean()`, `rb_whack_sda()`, `rb_whack_forward()`,
+- **ramb** (`main`, `7a50541`, `d67a3fa`; pushed to GitHub 2026-10-08): the five filters are `rb_whack_clean()`, `rb_whack_sda()`, `rb_whack_forward()`,
   `rb_whack_fwdbwd()` and `rb_whack_sequential_fast()`, in line with the package's `rb_` names (the `dc_`, `mb_` and `read_is_` families are left
   as they are, by choice). The old names are `.Deprecated()` aliases. Output columns are unchanged. All five take `min_dt_s = 10`: a time step
   shorter than 10 s counts as 10 s in every speed. It replaces 1e-6 s in the forward scan, fwdbwd and sequential_fast, and argosfilter's "+1 s
