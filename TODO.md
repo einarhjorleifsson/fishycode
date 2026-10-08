@@ -433,17 +433,6 @@ cut where the earlier holder's own AIS still witnesses the mid. How many other m
 **check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
 that cut a witnessed run is recorded in a decision.
 
-## 40. The key audit's W1 witness reads pings that depend on the key
-**status:** open · **see:** `curate/decisions/070-every-curated-file-is-stamped.md`, plan 013 phase 2
-
-`curate/checks/ais_key_audit.R:37` reads W1 (other-feed AIS) from `curated/ais/ping`. Which other-feed pings survive into
-that table depends on the key (cross-feed duplicates are judged against STK pings of the same vessel; the whack
-filter judges each vessel's track). So the key feeds its own evidence. Measured 2026-10-08: one more pass moves
-mid 103738's boundary between vids 9848 and 2914 by a year (5,484 pings). Fix: W1 reads the other-feed pings
-before any key-dependent cleaning (e.g. `ping_union` or `ping_tagged`, `provider <> 'stk'`).
-
-**check:** two successive audit → segments → key passes on the same pings give identical `vessel_ais_key` rows.
-
 ## 41. Logbook ids joined or grouped without `schema`
 **status:** open · **see:** plan 013 phase 3, memory "sid and tid collide across schemas"
 
@@ -452,15 +441,6 @@ alone; `curate/catch_by_species_trip.R:40, 55` groups and writes without `schema
 within a schema. How many rows are affected is not measured.
 
 **check:** both scripts key on `(id, schema)`, and the count of rows that changed is recorded.
-
-## 42. `ais_ping_tag` can duplicate a ping where harbour polygons overlap
-**status:** open · **see:** plan 013 phase 2
-
-The left spatial join (`curate/ais_ping_tag.R:47-54`) returns one row per matching polygon, and the polygon file
-holds every source, not only `einar`. `ais_ping_clean` reconciles against `ping_tagged`, not `ping_union`, so the
-count check would not see it. Not measured.
-
-**check:** `staging/ais/ping_tagged` has exactly the rows of `staging/ais/ping_union`, year by year.
 
 ## 43. `link_lid_map.R`: the pelagic weight step never runs, and the map is not one-to-one
 **status:** open · **see:** plan 013 phase 4 (`rb_link_trip_landings`)
@@ -472,10 +452,10 @@ same `.lid` within a step.
 **check:** step 7 reports its matches (or why none), and no `(.lid, schema)` appears on two `.tid` in `lid_map`.
 
 ## 44. The ramb one-flow revamp (plan 013)
-**status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`
+**status:** in progress · **needs: maintainer** (go for the rebuild and phase 3) · **see:** `curate/plans/013-ramb-one-flow.md`
 
 ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Step A (the WGSFD
-doc's version 2), phase 0 (decision 070) and phase 1 (decision 071: renames, TODO 7 and 30) are done; phase 2 waits
-for the maintainer's go. The plan maps the other TODO items it closes to its phases.
+doc's version 2) and phases 0–2 are done (decisions 070–072; TODO 7, 12, 30, 40 and 42 closed). Next: the full
+rebuild of the ported scripts with TODO 37 merged, then phase 3; both wait for the maintainer's go. The plan maps the other TODO items it closes to its phases.
 
 **check:** plan 013's phases 0–3 each have a decision record, and fishycode's steps 0–2 call ramb functions.

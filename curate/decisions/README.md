@@ -96,6 +96,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 069 | [One time-step floor and cross-feed duplicates](069-one-time-step-floor-and-cross-feed-duplicates.md) | ramb filters renamed `rb_whack_*` (old names deprecated), one floor `min_dt_s = 10`, new `rb_distance()`; `ais_ping_clean.R` flags a second feed's copy of a report as `duplicate` before the filter (6,573,358 pings, 1.2 %); flagged by the filter 2.87 M -> 1.45 M; trail 562,417,835 rows |
 | 070 | [Every curated file is stamped](070-every-curated-file-is-stamped.md) | TODO 12 closed: 669 of 669 files under `curated/` carry `fd.*` stamps; four outputs changed through a loop in the key (W1 reads `curated/ais/ping`, which depends on the key), which does not settle — TODO 40 |
 | 071 | [ramb names follow one rule](071-ramb-names-follow-one-rule.md) | plan 013 phase 1: 35 ramb functions renamed verb first, 4 same-task groups merged, 48 old names warn and still work; fishycode calls the new names; real-data check identical; TODO 7 and 30 closed |
+| 072 | [Steps 0 and 1 run through ramb](072-steps-0-1-run-through-ramb.md) | plan 013 phase 2: fishycode's harbour tag, ping labels, stays, voyages and voyage link call ramb; each port equals the built output on `$FISHYDATA`; the voyage link ranks per `(.tid, schema)`; the key settles; TODO 40 and 42 closed |
 
 ## Data defects
 

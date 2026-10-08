@@ -7,15 +7,17 @@
 #
 # Two scripts, union then tag, on purpose: the union is 44 GB, and the tagging must be rerunnable
 # without redoing it (AGENTS.md, Script naming).
+#
+# The harbour tag is ramb::rb_flag_ping_harbour() (plan 013 phase 2): a ping inside two polygons takes the
+# smaller one, where the spatial join it replaced kept both and doubled the ping. The point geometry the join
+# left in every row (`geom`) is no longer written; nothing read it.
 
 library(duckdbfs)
 library(tidyverse)
 library(tictoc)
 library(h3)
 duckdbfs::load_spatial()
-ports <-
-  open_dataset(fd_staging("aux", "ports.fgb")) |>
-  select(pid, hid, geom)
+ports <- sf::read_sf(fd_staging("aux", "ports.fgb")) |> transmute(harbour_id = pid, hid)
 h3 <- open_dataset(fd_curated("reference", "area_h3.parquet")) |> select(h3, depth, bbht, fao)
 
 # write out --------------------------------------------------------------------
@@ -46,11 +48,10 @@ for(y in 1:length(years)) {
   print(YR)
   ais |>
     filter(year == YR) |>
-    mutate(geom = ST_POINT(lon, lat)) |>
-    duckdbfs::spatial_join(ports,     by = "st_intersect", join = "left") |>
-    select(-geom_1) |>
+    ramb::rb_flag_ping_harbour(ports, keep = "hid") |>
+    rename(pid = harbour_id) |>
     mutate(h3 = h3_latlng_to_cell_string(lat, lon, 8L)) |>
-    left_join(h3) |>
+    left_join(h3, by = "h3") |>
     duckdbfs::write_dataset(fd_staging("ais", "ping_tagged"), partitioning = c("year"), format = "parquet")
   toc()
 }

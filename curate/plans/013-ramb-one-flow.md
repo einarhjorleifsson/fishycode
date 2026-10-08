@@ -1,6 +1,6 @@
 # 013 — ramb as the function library for the WGSFD one-flow; fishycode as its first user
 
-**status:** partly built — step A done (WGSFD doc version 2: `~/stasi/wgsfd2026/`, claude.ai rev 125), phases 0–1 done (decisions 070, 071); phase 2 next · **2026-10-08** ·
+**status:** partly built — step A done (WGSFD doc version 2: `~/stasi/wgsfd2026/`, claude.ai rev 125), phases 0–2 done (decisions 070–072; `rb_assign_trip`'s declared tier moved to phase 4); phase 3 waits for the maintainer's go · **2026-10-09** ·
 **see:** `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`, `~/R/Pakkar/ramb`, decision 070
 
 Drafted with AI assistance (Claude) from the maintainer's direction in the session of 2026-10-08, three code
@@ -455,9 +455,12 @@ the ported code. Each is to be settled by a measurement, and fixed only as a sep
 |---|---|---|
 | 0 duplicate | A lower feed's copy is flagged before the impossible stage, so an STK anchor that is itself impossible still removes a sound astd copy. | Count duplicates whose STK anchor is later flagged impossible. |
 | 0 invalid | `lon == lat` is safe only where the fleet never fishes at lon ≈ lat (59–76 °E at these latitudes); it is no generic rule. | It stays a fishycode rule (`rules = "lon_eq_lat"`); ramb's default adds `out_of_range`. Count what `out_of_range` adds. |
+| 0 harbour | The harbour polygons are one static set (`staging/aux/ports.fgb`) applied to 2007–2026, though harbours were built out over those years. A ping by a new quay counts as at sea in the years before its polygon was drawn, and the other way round. | Date each polygon change; count pings that change tag if the polygon of the ping's year is used. |
 | 1 stays | The nearest harbour is chosen by `ST_Distance` in degrees (EPSG:4326). At 65 °N a degree of longitude is about 0.42 of a degree of latitude, so east–west distances are understated. | Re-choose in metres (EPSG:3575) and count the pings whose harbour changes. |
 | 1 stays | Event pairs count only from 2017 (`EVENT_FROM`), so stays are defined differently before and after. | Count event-only stays by year; check whether pre-2017 events are usable. |
 | 1 voyages | Voyages are cut at New Year, so a trip at sea over 31 December becomes two voyages and links to two logbook trips. | Count voyages that end at 23:59:59 31 Dec or start at 00:00 1 Jan with no stay between. |
 | 1 voyages | Voyages under 10 pings are dropped after numbering. Their pings get `trip = NA` though they are at sea, which goes against "no vessel without a trip". | Count the pings and vessel-days on dropped voyages, by year. |
+| 1 voyages (`jepol`) | The ICES rule splits a voyage over `max_dur_h` one ping before its longest gap (`which.max(INTV[2:.N])` indexes the rows from the first), and its 3-minute test reads the gap before that ping, not the longest one. Kept so the recode matches `rb_trip_jepol()`. | Fix in ramb as its own commit; count on `dansk` the voyages whose cut moves. Not used by fishycode. |
+| 1 voyages (`jepol`) | The ICES rule's voyage ends at the first ping back in harbour, so that harbour ping belongs to the voyage; `"stays"` and `"runs"` end at the last ping at sea. The methods differ in more than how they find harbour. | Document the choice per method; decide whether `jepol` keeps the ICES convention. |
 | key | W1 now reads the merged pings before cleaning, so whacky other-feed positions count as evidence. | Compare W1 hits with the whacky-flagged pings removed. |
 | key | The segment build keeps the first row of a tie in several places; which row wins was decided by the input files' row order (now fixed by sorting on all columns). A principled tie-break (e.g. stronger evidence, then earlier date) is not chosen. | List the ties the sort decides, and compare with an evidence-ranked choice. |
