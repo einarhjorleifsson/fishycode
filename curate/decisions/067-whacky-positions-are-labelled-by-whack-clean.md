@@ -36,11 +36,13 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
 
 ## Open
 
-- **Rebuilt 2026-10-07**, by running the script directly, in 8.8 minutes, on the `ping_tagged` on disk: `ping_clean` 540,761,076 pings, `ping_whacky` 2,887,233 (1,091,000 vmask,
-  6,487 spike, 1,789,746 forward; 93 MB), 20 year markers carrying the new fingerprint. `tar_make(ais_ping_clean)` was not used: its ancestors `ais_ping_tag`, `ais_ping_union`,
-  `vessel_ais_key`, `logbook`, `afli`, `shapes` are outdated and it would have rebuilt them first. The target is still outdated in `targets`; the next `tar_make()` runs the
-  script, which skips every year whose markers match.
-- **Downstream is stale**: `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them were built from the previous `ping_clean`.
+- **Rebuilt 2026-10-07**, first by running the script directly, in 8.8 minutes, on the `ping_tagged` on disk: `ping_clean` 540,761,076 pings, `ping_whacky` 2,887,233 (1,091,000 vmask,
+  6,487 spike, 1,789,746 forward; 93 MB). Then as the `ais_ping_clean` target, after its outdated ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`,
+  `shapes`) were rebuilt, one session each with `tar_make_isolated()`: `ping_clean` 540,759,352, `ping_whacky` 2,888,957. In every year 2007-2026, `ping_clean` + `ping_whacky`
+  equals the `ping_tagged` pings with a `vid`.
+- **Downstream rebuilt 2026-10-08**: the 14 targets still outdated, in 46 minutes, `tar_outdated()` empty afterwards and every output file newer than the run's start.
+  `curated/ais/ping` 540,759,352 fixes; `trip.parquet` 1,373,419 voyages; `harbour_stay.parquet` 1,551,848 stays, its 148 `pid`s all in the current `ports.fgb` (decision 068);
+  `ping_trail` and `trail` 567,562,864 rows each, no duplicate (`vid`, `time`); `check_trail_agreement` 99.59 % agree where both are set.
 - **127,795 pings (emodnet, 2017) have no `vid`** and are in neither `ping_clean` nor `ping_whacky`: the batches select `vid %in% g`, which never matches NA. The former script did the same
   (and its closing count did not show it). They cannot be judged against a vessel. They are 21 MMSIs, all emodnet 2017, none in `vessel_identity`: 251513000 (60,391 pings, found
   nowhere, not even in GFW; **a fixed transmitter**: one position, 21.9 W 64.2 N, standard deviation 0 over the whole year, confirmed against the MarineTraffic page the

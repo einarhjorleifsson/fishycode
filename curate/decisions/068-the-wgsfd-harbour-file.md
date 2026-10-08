@@ -48,8 +48,8 @@ one file, which includes any foreign harbours its fleet uses. A harbour is eithe
 - `staging/aux/ports.{fgb,gpkg}` were written by the port lines of `reference/geo/shapes.R` (with s2 off) rather
   than the `shapes` target, because that target also rebuilds EUSM (over 10 minutes). The result is 10,062
   features: 10,064 minus the two dropped harbours.
-- `shapes`, `port` and the AIS harbour targets are outdated. They take the new `pid`s on the next full
-  `tar_make()`.
+- `shapes`, `port` and the AIS harbour targets were rebuilt with the new `pid`s on 2026-10-07 and 08, with the
+  `ping_clean` chain of decision 067; all 148 `pid`s in `harbour_stay.parquet` are in the current `ports.fgb`.
 
 ## Not decided
 

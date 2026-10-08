@@ -468,13 +468,6 @@ Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at
 
 ---
 
-## 35. Downstream of `ping_clean` was built from the previous filter
-**status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
-
-`ping_clean` was rebuilt 2026-10-07 with `ramb::whack_clean()` by running the script directly (8.8 min); `targets` still lists `ais_ping_clean` as outdated, and so are its ancestors (`ais_ping_tag`, `ais_ping_union`, `vessel_ais_key`, `logbook`, `afli`, `shapes`), so a plain `tar_make()` would rebuild far more than the filter. `ais_trip`, `harbour_stay`, `ais_trail` and what hangs on them still come from the old `ping_clean`. Also open, none blocking: the closing count of `ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where the new filter flags more than the old (decision 067); fishyweb `notes/whacky-positions.qmd` is untracked and shows vessel tracks, so the disclosure rule comes first. The same rebuild carries the harbour renames of decision 068 (`shapes`, `port` and the AIS harbour targets take new `pid`s, see item 36). **Paused 2026-10-07** after `ais_ping_clean` (12 of 26 outdated targets built, one session each; it kept 540,759,352 pings and flagged 2,888,957); resume with `Rscript -e 'source("R/tar_make_isolated.R"); tar_make_isolated()'`, which builds whatever is still outdated.
-
-**check:** `tar_outdated()` lists none of `ais_ping_clean`, `ais_trip`, `harbour_stay`, `ais_trail`, and `count(ping_clean) + count(ping_whacky)` equals `count(ping_tagged with a vid)` per year.
-
 ## 36. A `pid` moves when a harbour is renamed
 **status:** open · **needs: maintainer** · **see:** `curate/decisions/068-the-wgsfd-harbour-file.md`, `reference/ports/ports_all.R`
 
@@ -503,3 +496,14 @@ go in their own session: `tar_make_isolated()` (`R/tar_make_isolated.R`) does th
 
 **check:** after `tar_make()`, the global environment holds no object a script created, and a full rebuild
 from `tar_invalidate(everything())` finishes without a memory error.
+
+## 38. Loose ends of the `whack_clean()` switch
+**status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
+
+The switch and the rebuild downstream of it are done (decision 067). Left, none blocking: the closing count of
+`ais_ping_clean.R` does not show the 127,795 pings with no `vid` that are in neither output; the 208 vessels where
+the new filter flags more than the old are not reviewed; fishyweb `notes/whacky-positions.qmd` is untracked and
+shows vessel tracks, so the disclosure rule comes first.
+
+**check:** the closing count of `ais_ping_clean.R` reports the pings without a `vid`, decision 067 records a verdict
+on the 208 vessels, and `notes/whacky-positions.qmd` is committed or removed.
