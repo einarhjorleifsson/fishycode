@@ -56,3 +56,10 @@ matters (ties in time are broken by lon, lat); the former filter's counts varied
   sign it kept the bad ping and dropped the good ones; 24 of those 62 still hold a **(0, 0) position in `ping_clean`**. Vid 4896, 2014: a smooth track at 1-14 kn
   ends in a (0, 0) ping; vmask flags the 452 pings before it and keeps it (track 2,016 km under the old filter, 13,430 km now). `ping_tagged` holds 721 (0, 0)
   pings, all stk; 607 are flagged and **114 are kept in `ping_clean`** (40 vessels, 72 of them in 2010, 32 in 2014), so they are in the trail too.
+  The 62, rerun one by one (the rerun matches `ping_whacky` in all 62): **24** keep a (0, 0) ping, all foreign, stk only; with the (0, 0) pings removed before
+  `whack_clean()` all 24 come back to the old result (flags 5,315 → 19, old 78; kept track 397,617 → 93,521 km, old 93,416; no leg over 25 kn left). **38** have
+  no (0, 0) ping and that change does nothing for them. Most differ by a few km with no leg over 25 kn kept. The rest are other defects, each let through by the
+  forward scan's reset after a gap of more than 4 h: **lon copied from lat** (vid 4028 2011, `(64.159, 64.159)`); an astd ping at lon -0.001 (vid 2657 2017);
+  a fast vessel whose recorded speed is 29-33 kn, so 25 kn flags real track under either filter (vid 7830 2018, 5,200 of 10,677); a 22-ping sparse track (vid
+  1186 2023). **lon == lat** is a defect of its own: 8,799 stk pings, **4,540 kept in `ping_clean`**, all from 59 foreign vids in 2011-2012, at 59-76° E
+  (mostly land in Russia). A near-zero lon alone is not a rule: 0° E crosses the Norwegian Sea, where real pings are.
