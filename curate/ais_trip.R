@@ -53,8 +53,8 @@ years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
 stays <- duckdbfs::open_dataset(fd_curated("ais", "harbour_stay.parquet")) |> collect() |>
   filter(!EXCLUDE_EVENT_ONLY | evidence != "event_pair") |>
-  transmute(vid, stay_pid = pid, S_in = T_in, S_out = T_out) |>
-  arrange(vid, S_in)
+  transmute(vid, harbour_id = pid, T_in, T_out) |>
+  arrange(vid, T_in)
 
 # -- Main loop -----------------------------------------------------------------
 
@@ -96,50 +96,13 @@ for (yr in years) {
     # curate/ais_ping_clean.R (L2), so staging/ais/ping_clean is already clean.
     clean <- base |> filter(vid %in% g) |> collect()
 
-    # -- 1. Harbour of each ping = the stay it falls in --------------------------
-    # a ping inside two overlapping stays (two harbours) takes the earlier one
-    st_g  <- stays |> filter(vid %in% g)
-    clean <- clean |>
-      left_join(st_g, by = join_by(vid, between(time, S_in, S_out)), multiple = "first") |>
-      select(-S_in, -S_out)
-
-    runs <- clean |>
-      mutate(in_harbour = !is.na(stay_pid)) |>
-      arrange(vid, time) |>
-      group_by(vid) |>
-      mutate(
-        new_run = is.na(lag(in_harbour)) | in_harbour != lag(in_harbour) |
-                  (in_harbour & stay_pid != lag(stay_pid)),
-        run_id  = cumsum(as.integer(new_run))
-      ) |>
-      group_by(vid, run_id) |>
-      summarise(
-        in_harbour = max(in_harbour),
-        pid        = first(stay_pid[!is.na(stay_pid)]),
-        T1         = min(time),
-        T2         = max(time),
-        n_pings    = n(),
-        .groups    = "drop"
-      ) |>
-      arrange(vid, T1)
-
-    # -- 2. Number trips; attach departure / arrival harbour codes -------------
-    trips_yr_b <- runs |>
-      group_by(vid) |>
-      mutate(
-        hid1 = if_else(!in_harbour, lag(pid),  NA_character_),
-        hid2 = if_else(!in_harbour, lead(pid), NA_character_)
-      ) |>
-      filter(!in_harbour) |>
-      mutate(year = yr, trip = row_number()) |>
-      ungroup() |>
-      select(vid, year, trip, T1, T2, hid1, hid2, n_pings) |>
-      filter(n_pings >= MIN_PINGS)
-
-    # -- 3. Join trip IDs back to clean pings; write parquet -------------------
-    # A write of trips_yr to a tempfile stood here and was unlinked four lines
-    # later without ever being read. Removed: it was dead, and it registered a
-    # frame into the cached duckdb connection on every year of the loop.
+    # -- Voyages: the sea between two stays, numbered per vessel and year (ramb, plan 013 phase 2) -----
+    # A ping takes the stay it falls in (the earlier of two that overlap); sea runs become voyages with
+    # the harbours of the stays either side; voyages under MIN_PINGS pings are dropped after numbering.
+    st_g <- stays |> filter(vid %in% g)
+    v_b <- ramb::rb_cut_trip_voyages(clean, st_g, min_pings = MIN_PINGS)
+    trips_yr_b <- v_b |>
+      transmute(vid, year = as.integer(year), trip = as.integer(voyage_id), T1, T2, hid1 = harbour_from, hid2 = harbour_to, n_pings = as.integer(n_pings))
 
     out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
 
@@ -147,10 +110,8 @@ for (yr in years) {
     # connection per call, as write_parquet_group() does - this is a materialised frame
     # inside a per-year loop, which is exactly the shape that accumulates (R/write_parquet.R).
     # A test run (VIDS) writes to staging, which write_curated() refuses.
-    ping_b <- clean |>
-      left_join(trips_yr_b |> select(vid, trip, T1, T2),
-                by = join_by(vid, between(time, T1, T2))) |>
-      select(-T1, -T2)
+    ping_b <- ramb::rb_assign_trip(clean, v_b, stays = st_g) |>
+      transmute(!!!rlang::syms(names(clean)), stay_pid = stay_harbour_id, trip = as.integer(voyage_id))
     f <- glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet")
     if (is.null(VIDS)) write_curated(ping_b, f, inputs = fd_curated("ais", "harbour_stay.parquet"))
     else write_parquet_group(ping_b, f)
