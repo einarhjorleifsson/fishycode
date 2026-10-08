@@ -46,8 +46,10 @@ permanent — they are the only structure that survived every previous restart.
   wearing a done marker.
   An item that cannot move without the maintainer carries **`needs: maintainer`**;
   `check_bookkeeping()` lists those at the end of its report.
-- **Every inferred value carries a `basis`** (`"recorded"` / `"reconstructed"` /
-  `"synthesised"`). See `station_type` in `docs/grammar.qmd`.
+- **Every inferred value carries a `basis`** (`"recorded"` / `"derived"` /
+  `"reconstructed"` / `"synthesised"`, or `"none"` when no source has it). `derived` =
+  computed from recorded values of the same record (`t2` + duration); modifiers such as
+  `capped` go in their own column. See `station_type` in `docs/grammar.qmd`.
 - **Cycles are broken by a human, outside the DAG.** Cross-checks are circular
   (AIS → vid assignment → logbook activity → validates the vid assignment). A
   reviewed override in `overrides/` re-enters as an *input*, never as a computed
@@ -154,10 +156,10 @@ geometry is stored as WKB with the CRS in `fd.crs`, read back with
 `check_sync()` reports drift against HEAD. Nothing under `$FISHYDATA` is ever
 hand-edited.
 
-> **Mostly adopted — 2026-10-08.** `write_curated_sql()` (same file) does the
-> same for a `SELECT` too big to hold in R, one stamped file per partition. 42
-> scripts use one or the other; 15 curated writers still write unstamped, listed
-> in TODO item 12. `manifest.yml` is still unbuilt.
+> **Adopted — 2026-10-08.** Every file under `curated/` is stamped (669 of 669,
+> decision 070). `write_curated_sql()` (same file) does the same for a `SELECT` too
+> big to hold in R, one stamped file per partition. `manifest.yml` is still unbuilt;
+> it belongs to publishing (decision 000, step 7).
 
 ## Provenance of this repo
 

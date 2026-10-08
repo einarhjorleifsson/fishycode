@@ -1021,6 +1021,18 @@ The `station_type` column also serves the purpose proposed in "Scope and
 extensions": flagging reconstructed stations derived from VMS / AIS pings
 alongside the other provenance classes.
 
+`station_type` is what the WGSFD one-flow document (2026) calls a record's
+`resolution`: what the record covers, from one operation to a year.
+
+Separately, every value inferred by the pipeline carries a **basis**: `"recorded"`,
+`"derived"` (computed from recorded values of the same record, e.g. `t2` plus a
+duration), `"reconstructed"` (from another source, e.g. the track), `"synthesised"`
+(from a rule or a typical value), or `"none"` when no source has it.
+
+A naming clash to know about: here `s1`/`s2` are a station's time bounds, while
+fishycode's gear table (`reference/gear/windows.R`) uses `s1`/`s2` for the gear's
+fishing speed range. ramb calls the speed range `speed_min`/`speed_max` (plan 013).
+
 ## Reconstructing station resolution from position data
 
 When logbook data only records events (trip × gear × day × rectangle), station-
@@ -1117,7 +1129,10 @@ library(dplyr)
 library(nanoparquet)
 library(knitr)
 
-dict <- read_parquet("data/dictionary.parquet")
+# quarto renders from docs/; i_am() pins here() to the repo root, as in ais_trail.qmd
+here::i_am("docs/grammar.qmd")
+source(here::here("R/paths.R"))
+dict <- read_parquet(fd_curated("reference", "dictionary.parquet"))
 
 # Grammar level comes from afli annotations
 afli_levels <- dict |>

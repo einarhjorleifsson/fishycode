@@ -135,33 +135,6 @@ codes all resolve against it.
 
 ---
 
-## 12. Provenance stamping — 15 curated writers still write without stamps
-**status:** open · **files:** `R/write_curated.R`
-
-`write_curated()` (a data frame) and `write_curated_sql()` (a `COPY (SELECT …)` straight
-from DuckDB, one stamped file per partition) are built and used by 42 scripts: every
-`curate/checks/` table, the trail, `station_window`, `harbour_stay`, the port and vessel
-identity tables. The blocker this item used to name — lazy relations and partitioned
-directories — is gone; `write_curated_sql()` handles both.
-
-Counted 2026-10-08, the writers under `fd_curated()` that still stamp nothing:
-
-- `duckdbfs::write_dataset()`: `curate/landing.R`, `curate/link_lid_map.R`,
-  `curate/logbook.R`, `reference/geo/h3_index.R`
-- `write_parquet()`, qualified or not: `reference/dictionary.R`, `reference/optiger.R`,
-  `reference/ports/harbours.R`, `reference/gear/mapping.R`, and in `reference/vessels/`
-  `ais_key.R`, `ais_key_cascade.R`, `mmsi.R`, `registry.R`
-- `write_parquet_group()`: `curate/ais_trip.R`, `curate/logbook_sensor_gps.R`
-- a bare `COPY … TO`: `curate/link_trip_voyage.R`
-
-The earlier check grepped only the package-qualified calls and missed nine of these. `manifest.yml` remains unbuilt and is not started.
-
-**check:** no script writing under `fd_curated()` calls `write_dataset(`, `write_parquet(`,
-`write_parquet_group(` or a bare `COPY … TO`; `curated_provenance()` finds `fd.commit` on
-every file under `curated/`.
-
----
-
 ## 14. Two months of astd are in `raw/` and were never loaded
 **status:** open · **see:** `curate/corrections/astd_missing_months.yml`
 
@@ -442,7 +415,7 @@ has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R
 the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
 
 ## 37. `produces()` leaves every script's objects in the session
-**status:** open · **files:** `_targets.R` (`produces()`) · **see:** commit log 2026-10-07
+**status:** open · **files:** `_targets.R` (`produces()`) · **see:** branch `todo-37-produces-cleanup` (1cd0711: fix and tests, unmerged); plan 013 merges it with the phases 2–3 rebuild
 
 `produces()` runs `source(script)` in the global environment of the one R session that runs every target,
 so a script's objects stay in memory after its target is done. On 2026-10-07 `area_h3` failed with "vector
@@ -486,3 +459,49 @@ cut where the earlier holder's own AIS still witnesses the mid. How many other m
 
 **check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
 that cut a witnessed run is recorded in a decision.
+
+## 40. The key audit's W1 witness reads pings that depend on the key
+**status:** open · **see:** `curate/decisions/070-every-curated-file-is-stamped.md`, plan 013 phase 2
+
+`curate/checks/ais_key_audit.R:37` reads W1 (other-feed AIS) from `curated/ais/ping`. Which other-feed pings survive into
+that table depends on the key (cross-feed duplicates are judged against STK pings of the same vessel; the whack
+filter judges each vessel's track). So the key feeds its own evidence. Measured 2026-10-08: one more pass moves
+mid 103738's boundary between vids 9848 and 2914 by a year (5,484 pings). Fix: W1 reads the other-feed pings
+before any key-dependent cleaning (e.g. `ping_union` or `ping_tagged`, `provider <> 'stk'`).
+
+**check:** two successive audit → segments → key passes on the same pings give identical `vessel_ais_key` rows.
+
+## 41. Logbook ids joined or grouped without `schema`
+**status:** open · **see:** plan 013 phase 3, memory "sid and tid collide across schemas"
+
+`curate/logbook_sensor_gps.R:45-52, 68` joins `fishing_sample` to afli trips on `.tid` and the logger on `.sid`
+alone; `curate/catch_by_species_trip.R:40, 55` groups and writes without `schema`. `.sid`/`.tid` are unique only
+within a schema. How many rows are affected is not measured.
+
+**check:** both scripts key on `(id, schema)`, and the count of rows that changed is recorded.
+
+## 42. `ais_ping_tag` can duplicate a ping where harbour polygons overlap
+**status:** open · **see:** plan 013 phase 2
+
+The left spatial join (`curate/ais_ping_tag.R:47-54`) returns one row per matching polygon, and the polygon file
+holds every source, not only `einar`. `ais_ping_clean` reconciles against `ping_tagged`, not `ping_union`, so the
+count check would not see it. Not measured.
+
+**check:** `staging/ais/ping_tagged` has exactly the rows of `staging/ais/ping_union`, year by year.
+
+## 43. `link_lid_map.R`: the pelagic weight step never runs, and the map is not one-to-one
+**status:** open · **see:** plan 013 phase 4 (`rb_link_trip_landings`)
+
+`filter(!isTRUE(pelagic))` (:198) and `filter(isTRUE(pelagic))` (:210) apply `isTRUE()` to a whole column, so step 6
+keeps pelagic trips and step 7 always gets 0 rows. Uniqueness is checked per `.tid` only, so two trips can take the
+same `.lid` within a step.
+
+**check:** step 7 reports its matches (or why none), and no `(.lid, schema)` appears on two `.tid` in `lid_map`.
+
+## 44. The ramb one-flow revamp (plan 013)
+**status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`
+
+ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Step A (the WGSFD
+doc's version 2) is done; phase 0 is under way. The plan maps the other TODO items it closes to its phases.
+
+**check:** plan 013's phases 0–3 each have a decision record, and fishycode's steps 0–2 call ramb functions.
