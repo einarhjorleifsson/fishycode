@@ -1,4 +1,5 @@
 # harbours.R — the landing-harbour codes as the landings system lists them.
+# Side: preprocessing (ports). See plan 014.
 #
 # Input:  raw/landings/agf/aflagrunnur_v.parquet
 # Output: curated/reference/harbour.parquet   one row per code: hid, hid_new (hafnarnumer_id), harbour (name)

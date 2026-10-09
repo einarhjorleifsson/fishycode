@@ -1,4 +1,5 @@
 # The annual ship register (Skipaskrá): the call sign each registered vessel carried in each year.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  raw/external/skipaskra/data-raw/skipaskra_tabulized_matrix_{2018,2019,2020,2021_2022}.rds
 #         raw/external/skipaskra/data/skipaskra_2009-2017_almost-tidy.rds

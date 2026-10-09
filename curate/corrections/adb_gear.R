@@ -1,4 +1,5 @@
 # adb_gear.R — give adb stations a gear, from the landing their trip matched.
+# Side: preprocessing (logbook and landings). See plan 014.
 #
 # Input:  curated/logbook/fishing_sample.parquet  (adb rows: .sid, .tid, schema)
 #         curated/logbook/lid_map.parquet         (.tid, schema, .lid)

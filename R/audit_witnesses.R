@@ -39,7 +39,7 @@ audit_w1_month <- function(con, y, m, stk_glob, ping_glob, kp, dt_s = 300,
   ft_m <- dt_s / hb
   fy_m <- dist_km / 111.2 / my
   fx_m <- dist_km / (111.32 * cos(65 * pi / 180)) / mx
-  DBI::dbExecute(con, sprintf("create or replace temp table ob as select vid, time, lon, lat, floor(epoch(time)/%d)::bigint hb, floor(lat/%g)::int cy, floor(lon/%g)::int cx from read_parquet('%s') where provider <> 'stk' and %s",
+  DBI::dbExecute(con, sprintf("create or replace temp table ob as select vid, time, lon, lat, floor(epoch(time)/%d)::bigint hb, floor(lat/%g)::int cy, floor(lon/%g)::int cx from read_parquet('%s') where provider NOT IN ('stk', 'gps') and %s",
                               hb, my, mx, ping_glob, win))
   DBI::dbExecute(con, sprintf("create or replace temp table sb as select mid, time, lon, lat, epoch(time)/%d - floor(epoch(time)/%d) ft, lat/%g - floor(lat/%g) fy, lon/%g - floor(lon/%g) fx, floor(epoch(time)/%d)::bigint hb, floor(lat/%g)::int cy, floor(lon/%g)::int cx from read_parquet('%s') where %s",
                               hb, hb, my, my, mx, mx, hb, my, mx, stk_glob, win))

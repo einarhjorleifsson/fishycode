@@ -1,4 +1,5 @@
 # Silences in an STK mobile-id where a human would split it in two vids.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, vessel.parquet, vessel_identity.parquet,
 #         raw/ais/stk/trail

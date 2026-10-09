@@ -1,4 +1,5 @@
 # Column name translation dictionary — hand-maintained
+# Side: preprocessing (reference). See plan 014.
 # Input:  (none)
 # Output: data/dictionary.parquet
 #

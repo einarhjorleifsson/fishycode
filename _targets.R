@@ -13,12 +13,18 @@
 # "up to date" while the state of the costly half was unknown. A partly-declared
 # graph is worse than none: it reports confidence it has not earned.
 #
-# Two things sit OUTSIDE the graph, on purpose:
+# Two things sit OUTSIDE this graph, on purpose:
 #   dump/       extraction from Oracle and vendor archives. Needs credentials and
 #               a server, writes immutable raw/, and is run on its own schedule.
-#   curate/corrections/afli_coords.R
-#               a bootstrap cycle — see the note above the AIS section.
+#   _targets_once.R
+#               the three one-time fixes (the STK vessel key, the GPS logger positions,
+#               the port radius): a second targets project (`TAR_PROJECT=once`, see
+#               _targets.yaml), run only by decision. Their outputs re-enter here as
+#               frozen inputs (plan 014, decision 075).
 # products/ are consumers of the sweep and are run on demand, not on every build.
+#
+# Each script names its layer in a `# Side:` header line - preprocessing (no AIS),
+# once, or flow - and check_bookkeeping() enforces it (plan 014).
 
 library(targets)
 
@@ -35,19 +41,13 @@ tar_option_set(
                "sf", "nanoparquet", "duckdb")
 )
 
-# Helper: source a script, then return the files it is contracted to produce.
-# Declaring the outputs here rather than inside the scripts keeps the contract
-# visible in one place.
-# source_script() (R/source_script.R) sources with encoding = "UTF-8", which is not
-# optional: the scripts carry Icelandic gear and port names (veidarfaeri,
-# Grasleppunet, ...), and a subprocess whose locale is not UTF-8 reads them as
-# Latin-1. It also clears what the script leaves behind - objects, options,
-# attached packages - so one target cannot change the next (TODO item 37).
-# The output paths are evaluated after the cleanup: they name only functions.
-produces <- function(script, ...) {
-  source_script(script)
-  c(...)
-}
+# produces() and frozen_input() are in R/source_script.R, shared with _targets_once.R.
+# source_script() sources with encoding = "UTF-8", which is not optional: the scripts
+# carry Icelandic gear and port names (veidarfaeri, Grasleppunet, ...), and a
+# subprocess whose locale is not UTF-8 reads them as Latin-1. It also clears what the
+# script leaves behind - objects, options, attached packages - so one target cannot
+# change the next. Build with tar_make_isolated() (R/tar_make_isolated.R): one session
+# per target, because a one-session tar_make() swelled to 111 GB (decision 073).
 
 list(
 
@@ -138,9 +138,7 @@ list(
     produces("reference/geo/h3_index.R", fd_curated("reference", "area_h3.parquet"))
   }, format = "file"),
 
-  # Country codes, maritime identification digits, call-sign prefixes. Declared
-  # late: this script was producing three inputs vessel_ais_key needs while not
-  # being a target at all, so the graph reported ready and would have failed.
+  # Country codes, maritime identification digits, call-sign prefixes.
   tar_target(lookups, produces(
     "reference/lookups.R",
     fd_staging("aux", "country_codes_ISO3166.parquet"),
@@ -161,27 +159,23 @@ list(
              fd_curated("vessel", "vessel_identity.parquet"))
   }, format = "file"),
 
-  # NOT a registry: a fitted model with residual error (>100-ping threshold,
-  # a 2028-12-24 sentinel, 124 vids whose mobile-ids overlap). Wrong vid
-  # assignment is a known error class, and as of 2026-09-22 the two checks below
-  # measure it rather than this comment merely asserting it. It emits
-  # entity_class and basis as well as vid — see curate/plans/003, decisions 012
-  # and 013.
-  tar_target(vessel_ais_key_cascade, {
-    lookups; vessel; vessel_identity
-    produces("reference/vessels/ais_key_cascade.R",
-             fd_curated("vessel", "vessel_ais_key_cascade.parquet"))
-  }, format = "file"),
+  # ── Frozen inputs: the three one-time fixes (plan 014, decision 075) ─────────
+  # Built in the `once` project (_targets_once.R), reviewed, and redone only by
+  # decision. A deliberate redo changes the file's hash and propagates from here.
+  # The key is NOT a registry: a fitted model with residual error, audited by the
+  # checks that build it (plans 003, 009).
 
-  # The key the pipeline consumes, built from the segment table (plan 009 phase 5, decision 053). The
-  # cascade above is its input and the segment table's: they cannot be one target.
-  tar_target(vessel_ais_key, {
-    check_ais_key_segments; vessel_ais_key_cascade; vessel; vessel_identity
-    produces("reference/vessels/ais_key.R",
-             fd_curated("vessel", "vessel_ais_key.parquet"),
-             fd_curated("vessel", "vessel_ais_device.parquet"))
-  }, format = "file"),
+  tar_target(vessel_ais_key,
+    frozen_input("curated", "vessel", "vessel_ais_key.parquet"), format = "file"),
 
+  # The afli logger's positions, interpolated once from the AIS track (decision 073's
+  # build). Enters the feed union as provider gps from plan 014 phase 3.
+  tar_target(sensor_gps,
+    frozen_input("curated", "logbook", "sensor_gps"), format = "file"),
+
+  # The departure radius per port, measured once from STK events.
+  tar_target(port_radius,
+    frozen_input("curated", "reference", "port_radius.parquet"), format = "file"),
 
   # ── Source adapters ─────────────────────────────────────────────────────────
   # raw/ → staging/<source>/. Mutually independent, so tar_make(workers = 4)
@@ -195,13 +189,6 @@ list(
              fd_staging("afli", "fishing_sample.parquet"),
              fd_staging("afli", "catch.parquet"),
              fd_staging("afli", "aggregate.parquet"))
-  }, format = "file"),
-
-  # The annual ship register: the call sign per vessel per year, 2007-2022. Dates the holder of a call sign
-  # for the segment table (decision 049).
-  tar_target(skipaskra, {
-    produces("sources/skipaskra/annual_call_sign.R",
-             fd_staging("skipaskra", "annual_call_sign.parquet"))
   }, format = "file"),
 
   # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
@@ -265,15 +252,12 @@ list(
     produces("sources/stk/convert.R", fd_staging("ais", "stk"))
   }, format = "file"),
 
-
   # ── Vessel trail ────────────────────────────────────────────────────────────
   # The four-layer model: merge measured positions, remove whacky points,
   # interpolate within trips, derive voyages and tie them to logbook trips.
   #
-  # The bootstrap cycle that used to sit here is GONE. It existed because the
-  # afli logger's positions were approximated from the merged track BEFORE the
-  # merge, then folded back into it. Deriving them downstream instead
-  # (curate/logbook_sensor_gps.R) breaks it, so the whole chain is now declarable.
+  # The logger positions are interpolated from this chain's output, so they are a
+  # frozen input (sensor_gps above), not a target of it: no cycle.
 
   tar_target(ais_ping_union, {
     vessel_ais_key; vessel_identity
@@ -284,15 +268,6 @@ list(
   tar_target(ais_ping_clean, {
     ais_ping_tag
     produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"))
-  }, format = "file"),
-
-  # L3: supply lon/lat for the logger GPS by interpolating the merged track onto
-  # its timestamps, bounded by voyage. Sits downstream of the merge, which is what
-  # removes the old bootstrap cycle. Depends on ais_trip rather than
-  # ais_ping_clean: the voyages have to exist before anything can be bound by them.
-  tar_target(logbook_sensor_gps, {
-    ais_trip; logbook
-    produces("curate/logbook_sensor_gps.R", fd_curated("logbook", "sensor_gps"))
   }, format = "file"),
 
   tar_target(ais_ping_tag, {
@@ -306,7 +281,6 @@ list(
              fd_curated("ais", "ping"),
              fd_curated("ais", "trip.parquet"))
   }, format = "file"),
-
 
   # ── Curation ────────────────────────────────────────────────────────────────
   # staging/ → curated/. Where cross-source decisions live.
@@ -335,7 +309,7 @@ list(
   # Cleaned AIS + the GPS logger as one track, unique on (vid, time) (plan 010 §5).
   # After the interpolation, never before it: the logger positions come from the AIS track.
   tar_target(ais_ping_trail, {
-    ais_trip; logbook_sensor_gps
+    ais_trip; sensor_gps
     produces("curate/ais_ping_trail.R", fd_curated("ais", "ping_trail"))
   }, format = "file"),
 
@@ -370,96 +344,14 @@ list(
              fd_curated("logbook", "catch_by_species_trip.parquet"))
   }, format = "file"),
 
-
   # ── Checks ──────────────────────────────────────────────────────────────────
   # Cross-source disagreement. These REPORT: they emit a table into
   # curated/check/ and correct nothing. Reasoning from landings back onto the vid
   # assignment closes the AIS → vid → logbook → AIS cycle AGENTS.md warns about,
   # so a reviewed conclusion re-enters through overrides/ as an input.
   #
-  # They depend on vessel_ais_key, which makes them run after any rebuild of it —
-  # which is the point. A check that is not in the graph is a check nobody runs.
+  # The vessel key's own checks build the key and run with it in the `once` project.
 
-  tar_target(check_ais_key_registry, {
-    vessel_ais_key_cascade; vessel
-    produces("curate/checks/ais_key_registry.R",
-             fd_curated("check", "ais_key_registry.parquet"))
-  }, format = "file"),
-
-  # The invariant: a mobile-id with a vessel has a vessel for its whole period, no ping unassigned.
-  # Finds every ping outside a period (and the ODS's negative-vid drops) and proposes a fill.
-  tar_target(check_ais_key_coverage, {
-    vessel_ais_key
-    produces("curate/checks/ais_key_coverage.R",
-             fd_curated("check", "ais_key_coverage.parquet"))
-  }, format = "file"),
-
-  # Silences in a mobile-id where a human-style reading (time-speed profile, position,
-  # registry) says the vessel changed - the splits the manual ODS made by hand, and the
-  # ones it did not. See the script header and decision 047.
-  tar_target(check_ais_key_split_candidates, {
-    vessel_ais_key_cascade; vessel; vessel_identity
-    produces("curate/checks/ais_key_split_candidates.R",
-             fd_curated("check", "ais_key_split_candidates.parquet"))
-  }, format = "file"),
-
-  # The whole key, row by row, against witnesses that never read it (other-provider AIS
-  # by MMSI, logbook, landings). Long-running by design: it is a ledger, not a test.
-  tar_target(check_ais_key_audit, {
-    vessel_ais_key_cascade; landing; logbook; check_ais_key_registry; check_ais_key_split_candidates
-    produces("curate/checks/ais_key_audit.R",
-             fd_curated("check", "ais_key_audit_ledger.parquet"),
-             fd_curated("check", "ais_key_audit_discrepancy.parquet"),
-             fd_curated("check", "ais_key_audit_w1.parquet"),
-             fd_curated("check", "ais_key_audit_lb_hits.parquet"),
-             fd_curated("check", "ais_key_audit_lb_n.parquet"))
-  }, format = "file"),
-
-  # The segment table: every mobile-id tiled, a vid for every stretch, no ping unassigned. Plan 009
-  # phase 2. The manual ODS is not a judge of it.
-  tar_target(check_ais_key_segments, {
-    vessel_ais_key_cascade; vessel_identity; skipaskra; check_ais_key_audit; check_ais_key_split_candidates
-    produces("curate/checks/ais_key_segments.R",
-             fd_curated("check", "ais_key_segments.parquet"))
-  }, format = "file"),
-
-  # Mobile-ids heard with two vessels at once, kept as a table: companions, vessels in company,
-  # a shared MMSI, and the cases where AIS is inconsistent. A candidate case example for fishyweb.
-  tar_target(check_ais_key_twins, {
-    check_ais_key_segments; vessel
-    produces("curate/checks/ais_key_twins.R",
-             fd_curated("check", "ais_key_twins.parquet"))
-  }, format = "file"),
-
-  # The vessel-first view: is every Icelandic vessel the registry, Hreidar or an MMSI say existed in the
-  # STK era represented by a mobile-id, and do its mobile-ids report when the vessel is active?
-  tar_target(check_ais_key_vessel_recall, {
-    check_ais_key_segments; check_ais_key_audit; vessel; landing; logbook
-    produces("curate/checks/ais_key_vessel_recall.R",
-             fd_curated("check", "ais_key_vessel_recall.parquet"))
-  }, format = "file"),
-
-  # Each discrepancy mid read as eras: which vid when, what the key says, whether the
-  # registry allows it. Proposals only; a person decides and it enters through overrides/.
-  tar_target(check_ais_key_resolution, {
-    check_ais_key_audit; check_ais_key_split_candidates; vessel; vessel_identity
-    produces("curate/checks/ais_key_resolution.R",
-             fd_curated("check", "ais_key_resolution.parquet"))
-  }, format = "file"),
-
-  # Both checks read curated/landing/landings.parquet (agf + lods, curate/
-  # plans/007 §2/§7), extended from agf-only 2026-09-26 - see each script's
-  # own header for why lods is worth including despite AIS itself starting
-  # later than lods does.
-  tar_target(check_ais_key_landings, {
-    vessel_ais_key_cascade; vessel; landing
-    produces("curate/checks/ais_key_landings.R",
-             fd_curated("check", "ais_key_landings.parquet"))
-  }, format = "file"),
-
-  # Reused Icelandic call signs, checked from the raw STK side rather than off
-  # the finished key - see the script header for why that catches more than
-  # check_ais_key_landings does.
   # STK harbour events, one row per ping, tagged (plan 011 Phase 2). Reads the
   # cleaned track for the neighbour test and the current polygons for the position
   # test, so it does not wait for the outdated AIS chain to be rebuilt.
@@ -467,16 +359,6 @@ list(
     stk; ais_ping_clean; shapes; stk_hid_pid
     produces("curate/checks/stk_event.R",
              fd_curated("check", "stk_event.parquet"))
-  }, format = "file"),
-
-  # Stays (plan 011 Phase 3): elapsed time at a harbour, from polygon, gap and (2017+) event
-  # evidence. Retags the cleaned pings against the current polygons itself, so it does not wait
-  # for the chain rebuild; nothing consumes it until Phase 4.
-  # The departure radius per harbour (decision 060), measured from the tagged events.
-  tar_target(harbour_radius, {
-    shapes; check_stk_event
-    produces("reference/ports/harbour_radius.R",
-             fd_curated("reference", "harbour_radius.parquet"))
   }, format = "file"),
 
   # Harbour class per harbour and year from the STK I->U stays; to go (decision 074, TODO 45). Overrides enter by file.
@@ -487,8 +369,9 @@ list(
              fd_curated("reference", "harbour_class.parquet"))
   }, format = "file"),
 
+  # Stays (plan 011 Phase 3): elapsed time at a port, from polygon, gap and (2017+) event evidence.
   tar_target(harbour_stay, {
-    ais_ping_clean; shapes; check_stk_event; harbour_radius; harbour_class
+    ais_ping_clean; shapes; check_stk_event; port_radius; harbour_class
     produces("curate/harbour_stay.R",
              fd_curated("ais", "harbour_stay.parquet"))
   }, format = "file"),
@@ -524,11 +407,5 @@ list(
     ais_trail; station_window
     produces("curate/checks/trail_sid_coverage.R",
              fd_curated("check", "trail_sid_coverage.parquet"))
-  }, format = "file"),
-
-  tar_target(check_ais_key_reused_callsign, {
-    vessel_ais_key_cascade; vessel; landing
-    produces("curate/checks/ais_key_reused_callsign.R",
-             fd_curated("check", "ais_key_reused_callsign.parquet"))
   }, format = "file")
 )

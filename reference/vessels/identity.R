@@ -1,4 +1,5 @@
 # What a hull was called, and when.
+# Side: preprocessing (vessels). See plan 014.
 #
 # Input:  curated/vessel/vessel.parquet
 # Output: curated/vessel/vessel_identity.parquet - one row per (vid, period)

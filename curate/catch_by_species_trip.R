@@ -1,4 +1,5 @@
 # Catch summed by species, one row per (logbook trip, species), with the
+# Side: preprocessing (logbook and landings). See plan 014.
 # matching landed catch of that species alongside it.
 #
 # Input:  curated/logbook/{trip,station,catch}.parquet, curated/logbook/lid_map.parquet

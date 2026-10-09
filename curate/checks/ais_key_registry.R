@@ -1,4 +1,5 @@
 # Invariants of the STK vessel match, against the vessel registry.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, curated/vessel/vessel.parquet,
 #         raw/ais/stk/trail (ping counts per mobile-id and year, for check 3b)

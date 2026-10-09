@@ -1,4 +1,5 @@
 # The STK mid -> vid key, audited row by row against witnesses that never read it.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, staging/ais/ping_union (other providers, before cleaning),
 #         raw/ais/stk/trail, curated/logbook/{station,trip}.parquet,
@@ -53,7 +54,7 @@ key_v <- key |>
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 q <- function(sql) dplyr::as_tibble(DBI::dbGetQuery(con, sql))
 
-last_oth <- q(sprintf("select max(time) t from read_parquet('%s') where provider <> 'stk'", PING_GLOB))$t
+last_oth <- q(sprintf("select max(time) t from read_parquet('%s') where provider NOT IN ('stk', 'gps')", PING_GLOB))$t
 LAST_Y <- as.integer(format(last_oth, "%Y")); LAST_M <- as.integer(format(last_oth, "%m"))
 months_from <- function(y1, m1) {
   ym <- seq(y1 * 12 + m1 - 1, LAST_Y * 12 + LAST_M - 1)

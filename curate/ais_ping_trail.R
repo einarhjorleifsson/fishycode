@@ -1,4 +1,5 @@
 # ais_ping_trail.R — the cleaned AIS pings and the GPS logger fixes, as one track.
+# Side: flow, step 0 (gps joins the union in plan 014 phase 3; this script then goes). See plan 014.
 #
 # Input:  curated/ais/ping/year=*           (cleaned AIS with voyage number; ais_trip.R)
 #         curated/logbook/sensor_gps/year=* (logger fixes, lon/lat interpolated; logbook_sensor_gps.R)

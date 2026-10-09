@@ -208,6 +208,21 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
   add("CLAUDE.md is a loader for AGENTS.md, and only that", bad,
       "keep it to the import plus the instruction to read AGENTS.md")
 
+  # -- 5c/6 every script in a targets project names its layer --------------------
+  # Plan 014: preprocessing (no AIS), once (a frozen one-time fix) or flow. The directory does not say it
+  # (no script moved), so the header must; a script without one has not been judged.
+  scripts <- character(0)
+  for (tf in c("_targets.R", "_targets_once.R")) {
+    tx <- paste(rd(p(tf)), collapse = "\n")
+    m  <- regmatches(tx, gregexpr('produces\\(\\s*"[^"]+"', tx))[[1]]
+    scripts <- c(scripts, sub('^produces\\(\\s*"', "", sub('"$', "", m)))
+  }
+  scripts <- unique(scripts)
+  noside <- scripts[vapply(scripts, function(f)
+    !any(grepl("^# Side: (preprocessing|once|flow)", head(rd(p(f)), 30))), logical(1))]
+  add("every targets script names its side", noside,
+      "add a `# Side: preprocessing (...)` / `once (...)` / `flow, step N` line to its header (plan 014)")
+
   # -- 6/6 the decisions index is where TODO says finished work goes ------------
   add("curate/decisions/README.md states the revision convention",
       if (!any(grepl("amend it in place", rd(p("curate/decisions/README.md")))))

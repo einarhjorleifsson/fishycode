@@ -1,4 +1,5 @@
 # ais_ping_clean.R — L2 of the vessel-trail model: label whacky positions, keep the rest.
+# Side: flow, step 0. See plan 014.
 #
 # Input:  staging/ais/ping_tagged   (merged pings + pid harbour tag + H3)
 # Output: staging/ais/ping_clean    (same columns, whacky positions dropped)

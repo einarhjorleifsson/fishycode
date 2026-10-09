@@ -1,4 +1,5 @@
 # link_trip_voyage.R — L4 of the vessel-trail model: join logbook trips to the
+# Side: flow, step 1. See plan 014.
 # harbour-to-harbour voyages derived from AIS.
 #
 # Input:  curated/logbook/trip.parquet      (.tid, vid, T1, T2, schema)

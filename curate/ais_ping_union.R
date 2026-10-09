@@ -1,4 +1,5 @@
 # Consolidate all AIS / GPS sources into a single Icelandic-vessel track dataset.
+# Side: preprocessing (ais feeds). See plan 014.
 #
 # Inputs:
 #   data-dump/ais/stk/trail/                  — STK AIS pings (mid-keyed, all vessels)

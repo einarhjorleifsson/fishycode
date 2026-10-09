@@ -1,4 +1,5 @@
 # lookups.R — country codes, MMSI country digits and call-sign prefixes, scraped from Wikipedia.
+# Side: preprocessing (reference). See plan 014.
 #
 # Input:  en.wikipedia.org: List_of_ISO_3166_country_codes, Maritime_identification_digits, ITU_prefix
 # Output: staging/aux/country_codes_ISO3166.parquet

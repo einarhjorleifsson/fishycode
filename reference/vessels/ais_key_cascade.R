@@ -1,4 +1,5 @@
 # Classify the mobileid-localid-globalid in the stk-data - THE CASCADE (stage 1 of the key).
+# Side: once (vessel key). See plan 014.
 #
 # Output: curated/vessel/vessel_ais_key_cascade.parquet. Since 2026-09-30 this is NOT the key the pipeline
 # consumes: reference/vessels/ais_key.R builds that from the segment table (check/ais_key_segments), which itself

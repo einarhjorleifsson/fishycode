@@ -1,4 +1,5 @@
 # The STK mobile-id -> vid assignment rebuilt as a SEGMENT TABLE that tiles every mobile-id.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/{vessel_ais_key,vessel_identity}.parquet, raw/ais/stk/trail,
 #         staging/skipaskra/annual_call_sign.parquet,

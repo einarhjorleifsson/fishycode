@@ -1,4 +1,5 @@
 # catch_by_species_station.R — the catch as caught (whole fish), one row per (station, species).
+# Side: preprocessing (logbook). See plan 014.
 #
 # Input:  curated/logbook/catch.parquet  (.sid, schema, sid, condition, catch, catch_whole)
 # Output: curated/logbook/catch_by_species_station.parquet

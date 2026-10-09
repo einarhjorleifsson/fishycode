@@ -1,4 +1,5 @@
 # Create standard summary tables
+# Side: preprocessing (adb). See plan 014.
 # Input: data-dump/logbooks/adb/*.parquet
 # Outpt: data-raw/logbooks/adb/*.parquet
 

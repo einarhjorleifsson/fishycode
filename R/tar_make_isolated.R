@@ -10,6 +10,9 @@
 # failure; run it again to resume, since completed targets are no longer outdated.
 #
 #   Rscript -e 'source("R/tar_make_isolated.R"); tar_make_isolated()'
+#
+# It follows TAR_PROJECT (_targets.yaml): set TAR_PROJECT=once for the one-time fixes (plan 014). The
+# Rscript per target inherits the variable.
 
 tar_make_isolated <- function() {
   o <- targets::tar_outdated()

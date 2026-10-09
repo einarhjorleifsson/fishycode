@@ -1,4 +1,5 @@
 # station_window.R — when is the vessel busy with each logbook station?
+# Side: flow, step 2. See plan 014.
 #
 # Input:  curated/logbook/adb_gear.parquet     (.sid, schema, gid, gear, target, target2: adb stations only)
 #         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)

@@ -1,4 +1,5 @@
 # harbour_stay_logbook.R — do the stays agree with the logbook? (plan 011 §4 Phase 3 acceptance)
+# Side: flow, check. See plan 014.
 #
 # Input:  curated/ais/harbour_stay.parquet   (stays from AIS only)
 #         curated/logbook/trip.parquet       (logbook trips, afli + fs_afladagbok)

@@ -1,4 +1,5 @@
 # Create standard summary tables
+# Side: preprocessing (afli). See plan 014.
 # Input:  data-dump/logbooks/afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
 # Output: data-rqw/logbooks/afli/{trip,station,fishing_sample,sensor,catch,aggregate}.parquet
 

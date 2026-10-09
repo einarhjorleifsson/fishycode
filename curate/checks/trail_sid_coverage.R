@@ -1,4 +1,5 @@
 # trail_sid_coverage.R — how many logbook stations find a fix in the trail? (plan 010 §3, plan 011 Phase 5)
+# Side: flow, check. See plan 014.
 #
 # Input:  curated/logbook/station_window.parquet   (the stations: .sid, schema, vid, gear_class, windows)
 #         curated/ais/trail_match/                 (every (fix, station) match, tier 1 = tow/haul/set/jig, tier 2 = day)

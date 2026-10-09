@@ -1,4 +1,5 @@
 # ais_ping_tag.R — tag every merged ping with its harbour polygon and its H3 cell's depth, habitat and ICES area.
+# Side: flow, step 0. See plan 014.
 #
 # Input:  staging/ais/ping_union              all pings, from curate/ais_ping_union.R
 #         staging/aux/ports.fgb               harbour polygons (pid, hid)

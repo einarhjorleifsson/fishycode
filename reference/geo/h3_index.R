@@ -1,4 +1,5 @@
 # h3_index.R — build the H3 resolution-8 lookup used for all AIS spatial tagging.
+# Side: preprocessing (geo). See plan 014.
 #
 # Input:  raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif
 #         staging/aux/eusm.fgb, staging/aux/ices_areas_500m-buffer.fgb

@@ -1,4 +1,5 @@
 # The mobile-id -> vid key the pipeline consumes, built from the SEGMENT TABLE (stage 2 of the key).
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/check/ais_key_segments.parquet         the evidence-graded segment table (plan 009, decision 047-052)
 #         curated/vessel/vessel_ais_key_cascade.parquet  identifiers and entity class of every mobile-id; rows of the

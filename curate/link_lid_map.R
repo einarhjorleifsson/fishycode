@@ -1,4 +1,5 @@
 # Match merged logbook trips to landing register records.
+# Side: preprocessing (logbook and landings). See plan 014.
 # Builds a .tid → .lid crosswalk and writes it to lid_map.parquet.
 #
 # Input:  data/logbooks/{trip,station,fishing_sample,catch}.parquet

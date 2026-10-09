@@ -1,4 +1,5 @@
 # Objective ------------------------------------------------------------------
+# Side: preprocessing (landings). See plan 014.
 # Convert agf (aflagrunnur, the current landings system, live since 2007-09-01)
 # into source-shaped staging tables. Merged with lods (curate/plans/007) in
 # curate/landing.R, which also does the hid -> pid port join - not duplicated

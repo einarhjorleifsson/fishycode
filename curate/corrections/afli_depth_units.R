@@ -1,4 +1,5 @@
 # afli_depth_units.R — convert afli station depth to the product's declared
+# Side: preprocessing (afli). See plan 014.
 # unit (metres, curate/decisions/022-depth-unit-is-metres.md).
 #
 # Input:  staging/afli/{station,trip,fishing_sample}.parquet

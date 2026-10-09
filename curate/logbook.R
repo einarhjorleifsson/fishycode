@@ -1,4 +1,5 @@
 # Merge afli (legacy), fs_afladagbok and adb into unified logbook tables.
+# Side: preprocessing (logbook). See plan 014.
 # Input:  staging/{afli,fs_afladagbok,adb}/{trip,station,fishing_sample,catch}.parquet
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet
 #

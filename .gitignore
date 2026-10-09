@@ -6,6 +6,7 @@
 *.Rproj
 
 _targets/
+_targets_once/
 _freeze/
 _site/
 /.quarto/

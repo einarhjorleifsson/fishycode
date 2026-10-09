@@ -1,4 +1,5 @@
 # Consolidate every harbour source into one reference table.
+# Side: preprocessing (ports). See plan 014.
 #
 # Inputs:  raw/ports/*  (see dump/ports/ for the fetch scripts)
 # Outputs: staging/ports/ports_all.gpkg          all features, pid_src + pid

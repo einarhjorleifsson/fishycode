@@ -1,4 +1,5 @@
 # Every STK ping of a mobile-id that has a vessel must have a vessel.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, raw/ais/stk/trail
 # Output: curated/check/ais_key_coverage.parquet - one row per stretch of pings no period covers

@@ -1,4 +1,5 @@
 # Intermediate processing of the stk data
+# Side: preprocessing (stk). See plan 014.
 #
 # Inputs:
 #   data-dump/ais/stk/trail/                  — STK AIS pings (mid-keyed, all vessels)

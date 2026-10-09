@@ -1,4 +1,5 @@
 # Objective ------------------------------------------------------------------
+# Side: preprocessing (landings). See plan 014.
 # Convert lods (the legacy landings system; still populated in parallel with
 # agf, per curate/plans/007's measured trip-level agreement) into the same
 # source-shaped staging tables agf produces. Merged with agf in

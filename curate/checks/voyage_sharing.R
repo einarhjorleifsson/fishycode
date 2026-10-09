@@ -1,4 +1,5 @@
 # voyage_sharing.R — what is left of the shared-voyage problem after the stays? (plan 011 §6, Phase 4)
+# Side: flow, check. See plan 014.
 #
 # Input:  curated/link/trip_voyage.parquet, curated/ais/trip.parquet, curated/logbook/trip.parquet   (now)
 #         $FISHYDATA/archive/pre-phase4_2026-10-01/{trip,trip_voyage}.parquet                         (before)

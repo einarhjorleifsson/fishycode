@@ -378,19 +378,6 @@ has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R
 **check:** renaming one `einar` harbour in `curate/corrections/ports_iceland.R` leaves every other `pid` unchanged, and
 the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
 
-## 37. `produces()` leaves every script's objects in the session
-**status:** open · **files:** `_targets.R` (`produces()`), `R/source_script.R`, `R/tar_make_isolated.R` · **see:** decision 073
-
-The fix is merged (3df46d8): `source_script()` restores the global environment, options and attached
-packages after each script. It is not enough. In the full rebuild of 2026-10-09 a plain `tar_make()` in one
-session reached a 111 GB memory footprint (24 GB machine) at the 18th target, `landing`, after `shapes`, and
-thrashed; `landing` takes 110 s in its own session. Memory is held outside the global environment; the
-likely holders (DuckDB's cached connection and what is registered in it, the spatial libraries) are not
-traced. `tar_make_isolated()` built the other 41 targets in 2.27 h without trouble.
-
-**check:** either a full `tar_make()` completes without the footprint passing the machine's RAM, or
-`AGENTS.md` names `tar_make_isolated()` as the way to build and this item is closed in a decision.
-
 ## 38. Loose ends of the `whack_clean()` switch
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
 
@@ -426,7 +413,8 @@ that cut a witnessed run is recorded in a decision.
 
 `curate/logbook_sensor_gps.R:45-52, 68` joins `fishing_sample` to afli trips on `.tid` and the logger on `.sid`
 alone; `curate/catch_by_species_trip.R:40, 55` groups and writes without `schema`. `.sid`/`.tid` are unique only
-within a schema. How many rows are affected is not measured.
+within a schema. The logger half is fixed (plan 014 phase 1): 0 of 49,324,452 `sensor_gps` rows had a wrong vid
+(decision 075). `catch_by_species_trip.R` is plan 014 phase 3 (g); its rows affected are not yet counted.
 
 **check:** both scripts key on `(id, schema)`, and the count of rows that changed is recorded.
 
@@ -439,40 +427,15 @@ same `.lid` within a step.
 
 **check:** step 7 reports its matches (or why none), and no `(.lid, schema)` appears on two `.tid` in `lid_map`.
 
-## 44. The ramb one-flow revamp (plan 013)
-**status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`, TODO 45
+## 44. The ramb one-flow revamp (plans 013 and 014)
+**status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`, `curate/plans/014-preprocessing-and-flow.md`
 
-ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Step A (the WGSFD
-doc's version 2) and phases 0–2 are done, rebuilt and verified (decisions 070–073; TODO 7, 12, 30, 40 and 42
-closed). Phase 3 waits for the redesign of TODO 45, which changes the graph it would build on. The plan maps the other TODO items it closes to its phases.
+ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Plan 013's step A and
+phases 0–2 are done (decisions 070–073). Plan 014 draws the line between Icelandic preprocessing, the three frozen
+one-time fixes and the flow (phase 1 done, decision 075). Next: plan 014 phase 2 (plan 013 phase 3, an exact port on
+today's inputs), then phase 3's counted changes, then one rebuild. Each plan maps the TODO items it closes.
 
-**check:** plan 013's phases 0–3 each have a decision record, and fishycode's steps 0–2 call ramb functions.
-
-## 45. Simplify the graph around the WGSFD boundary (plan to write)
-**status:** open · **see:** decision 073, plan 013, `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`
-
-Maintainer, 2026-10-09: draw one line between Icelandic **preprocessing** and the **generic flow** of the WGSFD
-diagram (ramb, steps 0–6), with standard inputs between them. Preprocessing is per source, never cross-source
-(no logbook or landing `T1` from AIS; that is the flow's job). Three one-time fixes sit outside the flow, built
-once, reviewed, frozen as inputs and redone only by decision: the STK mobile-id → vid match, the GPS logger
-positions (the AIS-interpolated `curated/logbook/sensor_gps` of decision 073's build, merged at the feed union
-as provider `gps`), and the harbour layer (static polygons and departure radius, upfront). Also decided:
-- the harbour class goes (decision 074): one minimum stay; reviewed labels may stay as description;
-- `curate/corrections/afli_coords.R` (the AIS-free recovery, median 329 m off AIS) is removed; its defect
-  declaration `afli_coords.yml` stays; `checks/afli_rafr_stofn_corroboration.R` reads its output.
-
-**check:** a plan in `curate/plans/` states the boundary, each input's contract and the scripts on each side,
-and is approved before any of it is built.
-
-## 46. The key audit reads `ping_union`, which the graph cannot declare
-**status:** open · **see:** decision 073, `curate/checks/ais_key_audit.R:41`
-
-Since TODO 40, W1 reads `staging/ais/ping_union`, but the union depends on `vessel_ais_key`, so the edge would
-close a cycle and is not declared: the audit runs first, on the previous build's union. W1 uses only non-STK
-pings, whose `vid` comes from `vessel_identity`, so the evidence is unchanged unless the raw feeds or the
-identity table change. Likely settled by TODO 45 (the key becomes a one-time fix).
-
-**check:** the audit's inputs are declared in the graph, or the key is outside it.
+**check:** plan 014's phases each have a decision record, and fishycode's steps 0–2 call ramb functions.
 
 ## 47. `afli_depth_units.R` decides depth units by tie order
 **status:** open · **see:** decision 073, `curate/corrections/afli_depth_units.R` (`arrange(vid, date)`)
@@ -490,4 +453,14 @@ and with it `z1`/`z2` of their stations. Break ties by the station's time of day
 The lazy port should not be slower than the code it replaced. Not profiled.
 
 **check:** the step runs no slower than 10 min on the full data, with the same output.
+
+## 49. AIS as a qualifier where the logbook or the landings are missing
+**status:** open · **raised by the maintainer 2026-10-09** · **see:** plan 014 §1
+
+Preprocessing reads no AIS (decision 075), but some AIS tracks may be truly fishing with no logbook or even landing
+behind them. The flow could later use the track to qualify such trips (`trip_basis` reconstructed, no declaration).
+Not designed; how many voyages carry no logbook trip and no landing is not counted here.
+
+**check:** the count of voyages with neither a logbook trip nor a landing is recorded, and a decision says whether
+the flow qualifies them.
 

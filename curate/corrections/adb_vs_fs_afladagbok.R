@@ -1,4 +1,5 @@
 # adb_vs_fs_afladagbok.R — fix adb's dropped west longitude sign.
+# Side: preprocessing (adb). See plan 014.
 #
 # Input:  staging/adb/station.parquet
 # Output: staging/adb/lon_sign.parquet  (.sid, lon1, lon2, lon1_raw, lon2_raw,

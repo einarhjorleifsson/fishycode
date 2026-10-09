@@ -1,4 +1,5 @@
 # harbour_class.R — what a harbour is, per year, from how long vessels stay there.
+# Side: flow, step 1 (removed in plan 014 phase 3, decision 074). See plan 014.
 #
 # Input:  curated/check/stk_event.parquet   (tagged STK I/U events; used: io_ok, in_clean, hid_pid)
 #         staging/ais/stk                   (speed of the event pings)

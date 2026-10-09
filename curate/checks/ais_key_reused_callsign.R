@@ -1,4 +1,5 @@
 # The STK vessel match, cross-checked against landings - but from the RAW side.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  raw/ais/stk/mobile.parquet, raw/ais/stk/trail/,
 #         curated/vessel/vessel.parquet, curated/vessel/vessel_ais_key.parquet,

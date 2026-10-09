@@ -1,4 +1,5 @@
 # windows.R — what a gear's fishing window looks like, and how fast it fishes.
+# Side: preprocessing (reference). See plan 014.
 #
 # Input:  curated/reference/gear.parquet   (reference/gear/mapping.R; the gid -> gear vocabulary)
 # Output: curated/reference/gear_window.parquet

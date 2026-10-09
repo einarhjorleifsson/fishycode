@@ -1,4 +1,5 @@
 # Create standard summary tables
+# Side: preprocessing (fs_afladagbok). See plan 014.
 # Input:  data-dump/logbooks/fs_afladagbok/{ws_veidiferd,ws_veidi,ws_afli,
 #           ws_dragnot_varpa,ws_plogur,ws_linanethandf,ws_gildra,ws_hringn}.parquet
 # Output: data-raw/logbooks/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet

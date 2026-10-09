@@ -1,4 +1,5 @@
 # stk_hid_pid.R — crosswalk from STK's alphabetic harbour code to the standard harbour key.
+# Side: preprocessing (stk). See plan 014.
 #
 # Input:  raw/ais/stk/trail                     (hid, io, lon, lat per ping)
 #         staging/aux/ports.fgb                 (standard pid, port, numeric hid; source == "einar")

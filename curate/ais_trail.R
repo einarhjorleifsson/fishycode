@@ -1,4 +1,5 @@
 # ais_trail.R — the product: every fix with its voyage, its station and its logbook trip, as parquet.
+# Side: flow, steps 2 and 4. See plan 014.
 #
 # Input:  curated/ais/ping_trail/year=*     (AIS + GPS logger fixes, unique on vid, time)
 #         curated/logbook/station_window.parquet

@@ -1,4 +1,5 @@
 # Each discrepancy in the STK key read as eras: which vid when, and what the key says.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/check/ais_key_audit_discrepancy.parquet, ais_key_audit_w1.parquet,
 #         ais_key_split_candidates.parquet, curated/vessel/{vessel_ais_key,vessel,vessel_identity}.parquet

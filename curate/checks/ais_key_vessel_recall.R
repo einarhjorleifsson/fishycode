@@ -1,4 +1,5 @@
 # Is every Icelandic vessel that should be in STK represented in it - IN TIME? The vessel-first view.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/check/ais_key_segments.parquet, curated/check/ais_key_audit_w1.parquet,
 #         curated/ais/ping (other providers: astd, astdB, keyed by MMSI -> vid), curated/landing/landings,
@@ -46,7 +47,7 @@ reg <- read_parquet(fd_curated("vessel", "vessel.parquet")) |> select(vid, mmsi,
 
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 q <- function(sql) dplyr::as_tibble(DBI::dbGetQuery(con, sql))
-ais <- q(sprintf("select vid, year(time) * 12 + month(time) - 1 ym, count(*) n from read_parquet('%s') where provider <> 'stk' group by 1, 2", PING_GLOB)) |>
+ais <- q(sprintf("select vid, year(time) * 12 + month(time) - 1 ym, count(*) n from read_parquet('%s') where provider NOT IN ('stk', 'gps') group by 1, 2", PING_GLOB)) |>
   filter(n >= 20, !vid %in% FOREIGN)
 days <- q(sprintf("select mid, cast(time as date) d, count(*) n from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2", STK_GLOB))
 lnd <- q(sprintf("select distinct vid, year(date) * 12 + month(date) - 1 ym from read_parquet('%s') where date >= date '2007-06-01'", fd_curated("landing", "landings.parquet"))) |> filter(!vid %in% FOREIGN)

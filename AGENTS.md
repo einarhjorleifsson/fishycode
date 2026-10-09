@@ -24,6 +24,27 @@ permanent — they are the only structure that survived every previous restart.
    `$FISHYDATA/curated/`.
 2. **Data vs documents** — parquet outputs vs the Quarto site in `docs/`.
 
+## Preprocessing, one-time fixes, flow (plan 014)
+
+Every script in a targets project is on one of three sides, and says which in a `# Side:` header line
+(enforced by `check_bookkeeping()`):
+
+- **preprocessing**: Icelandic data into standard inputs. It may reconcile the logbook with the landings
+  (the trip-landing match, gear from the landings) but **reads no AIS**.
+- **once**: the three one-time fixes, i.e. the STK mobile-id → vid key, the GPS logger positions and the
+  port radius. They are a second targets project (`_targets_once.R`, `TAR_PROJECT=once`, `_targets.yaml`),
+  built once, reviewed, and frozen as inputs of the main project. They are redone only by a decision
+  record.
+- **flow**: the generic WGSFD one-flow, as thin callers of ramb `rb_` steps. Everything that uses the
+  track (voyages, stays, trip ↔ voyage, `T2` from AIS) is here.
+
+**Terms** (decision 075):
+
+- **port** is the place word, and `pid` is its id. `hid` is a source's own port code (logbook, landings,
+  STK).
+- A **stay** is an interval in port. Its values live once, in the stay table; pings carry keys only.
+- A **voyage** is a trip cut from the track.
+
 ## Rules
 
 - **All data lives under `$FISHYDATA`.** Nothing is written into this repo. No
@@ -53,7 +74,13 @@ permanent — they are the only structure that survived every previous restart.
 - **Cycles are broken by a human, outside the DAG.** Cross-checks are circular
   (AIS → vid assignment → logbook activity → validates the vid assignment). A
   reviewed override in `overrides/` re-enters as an *input*, never as a computed
-  output.
+  output. So does a one-time fix (`_targets_once.R`). It is computed once,
+  reviewed, and frozen, and the main project reads it as a file it never builds
+  (decision 075).
+- **Build with `tar_make_isolated()`** (`R/tar_make_isolated.R`). It runs one R
+  session per target. A one-session `tar_make()` swelled to 111 GB on a 24 GB
+  machine (decision 073). `targets` cannot see script edits (`produces()` hashes a
+  path), so invalidate an edited script's target by hand.
 - **Shared functions live in `ramb`**, never copied into a script here. The
   previous tree accumulated ~9 copies of the STK matcher and 3 of the ports
   domain by copying instead of depending.
@@ -84,7 +111,7 @@ permanent — they are the only structure that survived every previous restart.
 | `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. |
 | `reference/` | Vessels, geo, ports, gear, species. Note: `vessel_ais_key` is a *fitted model*, not a registry — it carries confidence. |
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
-| `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). `stk_event.R` tags every STK harbour `I`/`U` event, one row per ping (plan 011, decision 059); `curate/harbour_stay.R` builds the stays from them and from the pings, with the per-harbour departure radius of `reference/ports/harbour_radius.R` (decision 060); `curate/ais_trip.R` cuts voyages at those stays (decision 061), and `curate/ais_trail.R` builds the product from them: `curated/ais/trail`, every fix with its voyage, station and logbook trip, partitioned by year and month (decision 065). |
+| `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). These key checks build the key and run with it in the `once` project. `stk_event.R` tags every STK harbour `I`/`U` event, one row per ping (plan 011, decision 059); `curate/harbour_stay.R` builds the stays from them and from the pings, with the per-port departure radius of `reference/ports/port_radius.R` (decision 060; a frozen one-time fix since decision 075); `curate/ais_trip.R` cuts voyages at those stays (decision 061), and `curate/ais_trail.R` builds the product from them: `curated/ais/trail`, every fix with its voyage, station and logbook trip, partitioned by year and month (decision 065). |
 | `curate/corrections/` | The correction registry — one declarative entry each. |
 | `curate/decisions/` | Decision records. Why, not what. Indexed in its `README.md` — a finished `TODO.md` item is deleted and recorded there, or in `corrections/`. |
 | `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |
@@ -109,8 +136,8 @@ The two predecessor repos used three prefix conventions between them (`DUMP_`,
    one filename: `stk-mid_vessel-vid_match.R`).
 5. **File path and target name are derivable from each other.**
    `sources/afli/convert.R` → target `afli`.
-6. **Corrections pair a declaration with an implementation**: `afli_coords.yml`
-   beside `afli_coords.R`.
+6. **Corrections pair a declaration with an implementation**: `afli_depth_units.yml`
+   beside `afli_depth_units.R`.
 
 Deliberate exception: `curate/ais_ping_union.R` and `ais_ping_tag.R` are two
 scripts producing one sweep table, because the intermediate is 44 GB and the

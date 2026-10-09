@@ -151,7 +151,8 @@ near <- DBI::dbGetQuery(con, "
 # curated/logbook/sensor_gps supplies lon/lat by INTERPOLATING FROM AIS. Comparing
 # that to AIS measures nothing but the interpolation - it would have produced
 # near-zero distances and looked like a triumph. staging/afli/sensor_gps is the
-# other derivation (curate/corrections/afli_coords.R): it recovers the logger's own
+# other derivation (curate/corrections/afli_coords.R, removed by plan 014, decision 075;
+# the file stays on disk as this check's record): it recovers the logger's own
 # DDMMmm reading by dead-reckoning from the logger's OWN speed and heading and
 # "deliberately does NOT read AIS". That is the one an AIS comparison may use.
 # This is the cycle AGENTS.md warns about, one join away.

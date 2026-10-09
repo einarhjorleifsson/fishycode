@@ -1,4 +1,5 @@
 # Compilation of vessel registries
+# Side: preprocessing (vessels). See plan 014.
 #  Main emphasis (for now) is to consolidate the variables that ara of use
 #  to identify the vessels in the stk-dataset
 # TODO: ------------------------------------------------------------------------

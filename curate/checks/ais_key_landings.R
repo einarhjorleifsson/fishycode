@@ -1,4 +1,5 @@
 # The STK vessel match, cross-checked against landings.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, curated/vessel/vessel.parquet,
 #         curated/landing/landings.parquet

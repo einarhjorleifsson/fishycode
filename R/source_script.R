@@ -32,3 +32,23 @@ source_script <- function(script) {
   source(script, encoding = "UTF-8")
   invisible(NULL)
 }
+
+# produces() — source a script, then return the files it is contracted to produce. Used by both targets
+# projects (_targets.R, _targets_once.R). Declaring the outputs in the project file rather than inside the
+# scripts keeps the contract visible in one place. The output paths are evaluated after the cleanup: they
+# name only functions.
+produces <- function(script, ...) {
+  source_script(script)
+  c(...)
+}
+
+# frozen_input() — the path of a one-time fix's frozen output (plan 014, decision 075), for a command-less
+# `format = "file"` target. fd_path(), not fd_curated(): that creates a missing directory, and an empty one
+# would pass as the input. Stops unless the file exists and is non-empty, or the directory holds a parquet file.
+frozen_input <- function(...) {
+  p <- fd_path(...)
+  ok <- if (dir.exists(p)) length(list.files(p, "[.]parquet$", recursive = TRUE)) > 0
+        else file.exists(p) && file.size(p) > 0
+  if (!ok) stop("frozen input missing or empty: ", p, " (redo it in the `once` project, decision 075)", call. = FALSE)
+  p
+}

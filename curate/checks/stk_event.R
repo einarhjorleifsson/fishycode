@@ -1,4 +1,5 @@
 # stk_event.R — one row per STK harbour event (`I` in / `U` out), with tags that say which to distrust.
+# Side: flow, step 1 (STK events; STK-only preprocessing from plan 014 phase 3). See plan 014.
 #
 # Input:  staging/ais/stk                  (vid, time, io, hid, lon, lat; the raw event rows)
 #         staging/ais/ping_clean           (the cleaned track the neighbours are taken from)

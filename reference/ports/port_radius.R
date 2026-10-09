@@ -1,8 +1,9 @@
-# harbour_radius.R — how far from a harbour polygon the first ping after a stay may lie.
+# port_radius.R — how far from a port polygon the first ping after a stay may lie.
+# Side: once (port radius). See plan 014.
 #
 # Input:  curated/check/stk_event.parquet   (tagged STK events; pos_dist_m of the `U` ping)
 #         staging/aux/ports.fgb             (the harbour list; source == "einar")
-# Output: curated/reference/harbour_radius.parquet   one row per Iceland/Faroe harbour
+# Output: curated/reference/port_radius.parquet   one row per Iceland/Faroe port
 #
 # Plan 011 §3.6 (the `r_m` of the harbour profile), decision 060. A real stay ends when the vessel
 # leaves, and the first ping heard afterwards (STK's `U`) lies outside the polygon, usually just
@@ -19,6 +20,11 @@
 # harbour, and a cap alone would still have given those harbours a 6 km radius.
 #
 # No cycle: the pairs come from events and polygons, never from the stays this table is used for.
+#
+# A ONE-TIME FIX (plan 014, decision 075): built in the `once` targets project and frozen as an input of the
+# main graph, redone only by decision. The frozen file is the stamped copy of decision 073's harbour_radius.parquet.
+# Before a redo: since plan 014 phase 3, stk_event carries neither `in_clean` nor `io_jump`; take `in_clean` from
+# staging/ais/ping_clean (provider stk) instead.
 # A reviewed override (as for the harbour class, which goes: decision 074) is not built; add one when a value is
 # judged wrong.
 
@@ -62,7 +68,7 @@ out <- P |>
   arrange(desc(r_out_m), desc(n_pairs))
 
 stopifnot(!anyDuplicated(out$pid))
-out |> write_curated(fd_curated("reference", "harbour_radius.parquet"),
+out |> write_curated(fd_curated("reference", "port_radius.parquet"),
                      inputs = c(ev, fd_staging("aux", "ports.fgb")))
 message(sprintf("harbour_radius: %d harbours, %d measured, %d with r_out above the floor, %d at the cap",
                 nrow(out), sum(out$basis == "reconstructed"), sum(out$r_out_m > R_FLOOR), sum(out$r_out_m >= R_CAP)))

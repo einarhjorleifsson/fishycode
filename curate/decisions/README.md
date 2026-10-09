@@ -99,6 +99,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 072 | [Steps 0 and 1 run through ramb](072-steps-0-1-run-through-ramb.md) | plan 013 phase 2: fishycode's harbour tag, ping labels, stays, voyages and voyage link call ramb; each port equals the built output on `$FISHYDATA`; the voyage link ranks per `(.tid, schema)`; the key settles; TODO 40 and 42 closed |
 | 073 | [Full rebuild after phase 2](073-full-rebuild-after-phase-2.md) | the rebuild of 2026-10-09 against fingerprints of all 872 output files: 50 outputs identical, every other difference explained (vessel key, planned changes, a type, a ramb recode, two non-deterministic steps, file timestamps); a one-session `tar_make()` swelled to 111 GB; TODO 46–48 opened |
 | 074 | [No harbour class](074-no-harbour-class.md) | maintainer: harbours carry no class, per period or otherwise; one minimum stay for all (decision 063: a global 2 h covers landings as well, +0.8 % stays); TODO 33 closed unbuilt, the code change is TODO 45 |
+| 075 | [Preprocessing, once, flow](075-preprocessing-once-flow.md) | plan 014 phase 1: preprocessing reads no AIS (logbook and landings may be reconciled), three one-time fixes frozen in a second targets project, `# Side:` headers enforced, terms port/stay/voyage; TODO 45, 37 and 46 closed |
 
 ## Data defects
 

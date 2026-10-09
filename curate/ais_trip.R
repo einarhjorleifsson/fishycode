@@ -1,4 +1,5 @@
 # ais_trip.R — L4a of the vessel-trail model: harbour-to-harbour voyages.
+# Side: flow, step 1. See plan 014.
 #
 # Input:  staging/ais/ping_clean   (whacky positions already removed - L2)
 #         curated/ais/harbour_stay.parquet   (stays: elapsed time at a harbour, plan 011 Phase 3)

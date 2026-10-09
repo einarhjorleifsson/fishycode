@@ -1,4 +1,5 @@
 # harbour_stay.R — stays: elapsed time at a harbour, from whatever evidence there is.
+# Side: flow, step 1. See plan 014.
 #
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
@@ -17,7 +18,7 @@
 #
 # The radius is asymmetric (decision 060). The arrival end of a gap (the last ping before the silence) must
 # be within R_M of the harbour; the departure end (the first ping after it) within the harbour's own `r_out_m`
-# (curated/reference/harbour_radius.parquet; 2 km where unmeasured, up to 6 km, Hornafjörður 3.4 km).
+# (curated/reference/port_radius.parquet, a frozen input; 2 km where unmeasured, up to 6 km, Hornafjörður 3.4 km).
 #
 # Evidence, all providers, all years (the rules need no STK event):
 #   tag_then_gap     two consecutive pings at the same harbour at least G hours apart (the first within
@@ -71,7 +72,10 @@ ALL       <- !length(YEARS)
 
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>
   filter(source == "einar") |> select(pid) |> sf::st_make_valid()
-rad <- nanoparquet::read_parquet(fd_curated("reference", "harbour_radius.parquet")) |> as_tibble()
+rad <- nanoparquet::read_parquet(fd_path("curated", "reference", "port_radius.parquet")) |> as_tibble()
+# The radius is a frozen input (decision 075) and the polygons are not: a renamed port re-mints its pid (TODO 36)
+# and would silently fall back to the default radius.
+stopifnot("a frozen port radius names a pid with no polygon (TODO 36)" = all(rad$pid %in% P$pid))
 r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else rep(R_M, nrow(P))
 harbours <- P |> mutate(harbour_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
 

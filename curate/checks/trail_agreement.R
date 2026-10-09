@@ -1,4 +1,5 @@
 # trail_agreement.R — do the station and the voyage name the same logbook trip? (plan 011 Phase 5)
+# Side: flow, check. See plan 014.
 #
 # Input:  curated/ais/trail/   (.tid from the station window, .tid_voyage from the AIS voyage's link)
 # Output: curated/check/trail_agreement.parquet   one row per year

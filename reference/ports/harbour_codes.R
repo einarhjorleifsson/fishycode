@@ -1,4 +1,5 @@
 # harbour_codes.R — the crosswalk from Iceland's landing-harbour code (hid) to the standard harbour key (pid).
+# Side: preprocessing (ports). See plan 014.
 #
 # Input:  raw/landings/agf/aflagrunnur_v.parquet   the hid codes and names the landings use
 #         raw/ports/ports_kvoti.parquet            Fiskistofa's place list, the code authority

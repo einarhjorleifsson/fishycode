@@ -1,4 +1,5 @@
 # Hand the Iceland/Faroe harbour artifact to staging under its own pid column, with its names corrected.
+# Side: preprocessing (ports). See plan 014.
 #
 # Input:  raw/ports/ports_iceland_faroe.gpkg       159 harbours (bootstrap of 2026-10-01)
 # Output: staging/ports/ports_iceland_faroe.gpkg   157 harbours, pid renamed pid_bootstrap,

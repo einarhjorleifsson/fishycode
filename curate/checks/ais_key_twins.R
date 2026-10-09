@@ -1,4 +1,5 @@
 # Mobile-ids that are heard with TWO vessels at once, kept as a table.
+# Side: once (vessel key). See plan 014.
 #
 # Input:  curated/check/ais_key_segments.parquet, curated/check/ais_key_audit_w1.parquet,
 #         curated/ais/ping (other providers), curated/vessel/{vessel,vessel_identity}.parquet
@@ -64,9 +65,9 @@ shared <- both |>
 # How far apart are the two vids' OWN tracks in the months both are confirmed?
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 track_gap <- function(v, w, months) {
-  DBI::dbExecute(con, sprintf("create or replace temp table a as select time, lat, lon from read_parquet('%s') where provider <> 'stk' and vid = %d and year(time) * 12 + month(time) - 1 in (%s)",
+  DBI::dbExecute(con, sprintf("create or replace temp table a as select time, lat, lon from read_parquet('%s') where provider NOT IN ('stk', 'gps') and vid = %d and year(time) * 12 + month(time) - 1 in (%s)",
                               PING_GLOB, v, paste(months, collapse = ",")))
-  DBI::dbExecute(con, sprintf("create or replace temp table b as select time, lat, lon from read_parquet('%s') where provider <> 'stk' and vid = %d and year(time) * 12 + month(time) - 1 in (%s)",
+  DBI::dbExecute(con, sprintf("create or replace temp table b as select time, lat, lon from read_parquet('%s') where provider NOT IN ('stk', 'gps') and vid = %d and year(time) * 12 + month(time) - 1 in (%s)",
                               PING_GLOB, w, paste(months, collapse = ",")))
   r <- DBI::dbGetQuery(con, "with p as (select a.time, a.lat, a.lon, b.time bt, b.lat bla, b.lon blo from a asof join b on a.time >= b.time),
       q as (select a.time, a.lat, a.lon, b.time bt, b.lat bla, b.lon blo from a asof join b on a.time <= b.time),

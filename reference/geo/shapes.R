@@ -1,3 +1,4 @@
+# Side: preprocessing (geo). See plan 014.
 library(sf)
 library(tidyverse)
 library(mapview)

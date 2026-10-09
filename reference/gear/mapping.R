@@ -1,4 +1,5 @@
 # Gear vocabulary — hand-maintained
+# Side: preprocessing (reference). See plan 014.
 # Input:  (none)
 # Output: data/gear/gear_mapping.parquet
 

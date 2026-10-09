@@ -1,6 +1,6 @@
 id: afli_coords
 title: Wacky coordinates in the afli GPS logger tables
-status: parked - incumbent retained, alternative measured but not adopted
+status: parked - incumbent retained; the alternative was measured, never adopted, and its implementation removed (plan 014, decision 075)
 applies_to:
   - raw/logbooks/afli/sjalfvirkir_maelar.parquet
   - raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet

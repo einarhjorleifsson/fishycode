@@ -1,4 +1,5 @@
 # logbook_sensor_gps.R — usable positions for the afli GPS logger.
+# Side: once (gps logger). See plan 014.
 #
 # Input:  raw/logbooks/afli/sjalfvirkir_maelar.parquet
 #         raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
@@ -28,9 +29,12 @@
 # instead removes the cycle entirely and states the model honestly: the logger is
 # logbook sensor data, not an AIS feed.
 #
-# The alternative derivation, which recovers lon/lat from the logger's own
-# reading without using AIS at all, is curate/corrections/afli_coords.R. It is
-# measured but not adopted; both outputs are kept so the two can be compared.
+# The alternative derivation, which recovered lon/lat from the logger's own reading
+# without AIS (curate/corrections/afli_coords.R), was never adopted and was removed
+# by plan 014 (decision 075); its output staging/afli/sensor_gps stays on disk.
+#
+# A ONE-TIME FIX (plan 014): run in the `once` targets project, frozen, and redone only
+# by decision. Its output enters the main project as a frozen input.
 #
 # dt_sec is the gap between the two track fixes bracketing each logger
 # timestamp - the interpolation interval, and the honest measure of how much to
@@ -44,9 +48,11 @@ library(ramb)
 
 sid_vid <-
   open_dataset(fd_curated("logbook", "fishing_sample.parquet")) |>
-  select(.sid, .tid) |>
+  filter(schema == "afli") |>
+  select(.sid, .tid, schema) |>
+  # .sid and .tid are unique only within a schema (TODO 41): the logger's visir is an afli .sid
   left_join(open_dataset(fd_curated("logbook", "trip.parquet")) |>
-              filter(schema == "afli") |> select(.tid, vid), by = ".tid") |>
+              filter(schema == "afli") |> select(.tid, schema, vid), by = c(".tid", "schema")) |>
   filter(!is.na(vid)) |>
   select(.sid, vid) |>
   collect()
@@ -91,7 +97,8 @@ for (yr in years) {
     select(-T1, -T2)
 
   tk <- track |>
-    filter(year == yr, !is.na(trip)) |>
+    # never from the logger's own earlier fixes: since plan 014 they are in the track as provider gps
+    filter(year == yr, !is.na(trip), provider != "gps") |>
     select(vid, trip, time, lon, lat) |>
     collect() |>
     arrange(vid, trip, time)

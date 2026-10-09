@@ -1,4 +1,5 @@
 # Merge agf and lods into unified landing tables.
+# Side: preprocessing (landings). See plan 014.
 # Input:  staging/landing/{agf,lods}/{landings,catch}.parquet
 # Output: curated/landing/{landings,catch}.parquet
 #

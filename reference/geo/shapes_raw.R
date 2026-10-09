@@ -1,4 +1,5 @@
 # shapes_raw.R — repair the raw spatial layers once: ICES areas, GEBCO depth bands and EUSM habitats.
+# Side: preprocessing (geo). See plan 014.
 #
 # Input:  raw/aux/ICESareas.gpkg, raw/aux/ICES_GEBCO.rds, raw/aux/eusm.rds
 # Output: staging/aux_valid/{ices_areas,gebco,eusm}.gpkg   valid geometry, EPSG:4326
