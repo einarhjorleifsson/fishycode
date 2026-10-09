@@ -129,6 +129,12 @@ mostly because of their package dependencies.
    - **No `lifecycle` dependency;** this is base `warning()` with a session registry.
    - **`NEWS.md`** lists every old name with its replacement.
 
+9. **Never break on missing inputs; the same output at every resolution** (maintainer, 2026-10-09). Every step
+   function runs when the declared inputs are absent (no trip table, no station table, no landings) and returns the
+   same columns: filled from the track where it can (`T1`/`T2` from stays, `t1`–`t4` from the track, sets paired with
+   hauls), otherwise empty with basis `none`. What fills the output depends on the data; its shape does not. Each step
+   function's tests include a run with the declared inputs set to `NULL`.
+
 ## Decided in this plan (change at approval if you disagree)
 
 - **One label column for step 0.**

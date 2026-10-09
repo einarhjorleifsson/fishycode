@@ -144,7 +144,7 @@ Every row runs the same steps and goes as far as its data allows. Effort and pre
 
 | Data available | Trip | Logbook record | Fishing | Catch and value |
 | --- | --- | --- | --- | --- |
-| Pings and registers only | voyage from the track | — | track | — |
+| Pings and registers only | voyage from the track: `T1`, `T2` from the stays | with dense pings, operations from the track: `t1`–`t4` reconstructed (set and haul paired for static gear) | track | — |
 | + landings | landing; `T1` if given, else the track | — | track | over the trip, or the trips a landing covers |
 | + weekly or monthly logbook | logbook, else track | period × area | track, within the period | per period × area |
 | + daily logbook | logbook | day × rectangle | track, within the day | per day × rectangle |
@@ -159,6 +159,7 @@ Ping density varies in the same way, within one dataset:
 ## One flow, every ping accounted for
 
 - One process for every resolution, of logbooks and pings alike: each step takes the finest evidence available for that ping and records which it was, so a dataset that mixes resolutions needs no special handling.
+- The same output at every resolution: no step stops because a table is missing. With no trip or station table, `T1` and `T2` come from the stays and `t1`–`t4` from the track itself; with declarations, they come from those and the track checks them. The columns are the same either way; what fills them, and the basis that says so, depends on the data.
 - Pings are labelled, not filtered: each keeps its trip, record, gear, fishing state, effort, catch share, basis and flags.
 - Only invalid, duplicate and impossible pings are set aside, in their own table; port pings stay, labelled.
 - What counts is chosen at aggregation, by label, so every total traces back: pings in equal pings out, across the trail and the set-aside table.
