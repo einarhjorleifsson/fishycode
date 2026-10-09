@@ -397,7 +397,7 @@ simulated tracks in the review package (github.com/einarhjorleifsson/test): vmas
 moved along the heading (8 good pings lost), and a burst within reach of the last good ping is partly kept. fishyweb `notes/whacky-positions.qmd`
 is untracked and shows vessel tracks, so the disclosure rule comes first.
 A third fast-vessel option, to revisit later (from Ifremer's iapesca, 2026-10-09, not built): a run of 3+ legs over 25 kn
-whose two-ping legs are fast too is real running - in June 2023 it held 1,115 of the filter's 8,942 flags, recorded SOG > 20 kn on 90-98 %; needs a speed cap.
+whose two-ping legs are fast too is real running - in June 2023 it held 1,115 of the filter's 8,942 flags, recorded SOG > 20 kn on 90-98 %; needs a speed cap (decision 078).
 
 **check:** decision 067 records a verdict on the fast-vessel, gap and sparse-track cases, and
 `notes/whacky-positions.qmd` is committed or removed.

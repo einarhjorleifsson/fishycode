@@ -404,6 +404,9 @@ Each phase ends with three things:
      - `"hmm"`: fitted at tier 3, decoded at tier 4, tested against `moveHMM`.
 5. **Steps 5–6, ramb only:** `rb_assign_effort` and `rb_share_catch`.
 
+   **Before building steps 1, 3, 4 or 5, read decision 078:** outside code mined for them (iapesca, WKSSFGEO,
+   WKSSFGEO2), and ramb's `crs_m = 3575` port-buffer default, measured wrong away from the north.
+
 **fishycode fixes found while exploring** (TODO items in phase 0, fixed in the phase that ports the code):
 
 - `logbook_sensor_gps.R:45-52, 68` joins ids without `schema`.
