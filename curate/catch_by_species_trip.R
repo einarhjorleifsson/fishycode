@@ -38,7 +38,8 @@ logbook_by_trip_species <-
   inner_join(open_dataset(fd_curated("logbook", "catch.parquet")), by = c(".sid", "schema")) |>
   left_join(open_dataset(fd_curated("logbook", "lid_map.parquet")), by = c(".tid", "schema")) |>
   filter(!is.na(.lid)) |>
-  group_by(vid, .tid, .lid, sid) |>
+  # .tid is unique only within a schema (TODO 41): the trip is (.tid, schema)
+  group_by(vid, .tid, schema, .lid, sid) |>
   summarise(catch_logbook = sum(catch, na.rm = TRUE), .groups = "drop") |>
   collect()
 
@@ -53,8 +54,8 @@ landings_by_trip_species <-
 out <-
   logbook_by_trip_species |>
   full_join(landings_by_trip_species, by = c(".lid", "sid")) |>
-  select(vid, .tid, .lid, sid, catch_logbook, catch_landings) |>
-  arrange(vid, .tid, sid)
+  select(vid, .tid, schema, .lid, sid, catch_logbook, catch_landings) |>
+  arrange(vid, .tid, schema, sid)
 
 ## Spot-check: a species whose codes are believed to already align (cod, sid 1) --
 control <- out |>

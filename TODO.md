@@ -410,16 +410,6 @@ cut where the earlier holder's own AIS still witnesses the mid. How many other m
 **check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
 that cut a witnessed run is recorded in a decision.
 
-## 41. Logbook ids joined or grouped without `schema`
-**status:** open · **see:** plan 013 phase 3, memory "sid and tid collide across schemas"
-
-`curate/logbook_sensor_gps.R:45-52, 68` joins `fishing_sample` to afli trips on `.tid` and the logger on `.sid`
-alone; `curate/catch_by_species_trip.R:40, 55` groups and writes without `schema`. `.sid`/`.tid` are unique only
-within a schema. The logger half is fixed (plan 014 phase 1): 0 of 49,324,452 `sensor_gps` rows had a wrong vid
-(decision 075). `catch_by_species_trip.R` is plan 014 phase 3 (g); its rows affected are not yet counted.
-
-**check:** both scripts key on `(id, schema)`, and the count of rows that changed is recorded.
-
 ## 43. `link_lid_map.R`: the pelagic weight step never runs, and the map is not one-to-one
 **status:** open · **see:** plan 013 phase 4 (`rb_link_trip_landings`)
 
