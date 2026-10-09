@@ -410,15 +410,6 @@ cut where the earlier holder's own AIS still witnesses the mid. How many other m
 **check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
 that cut a witnessed run is recorded in a decision.
 
-## 43. `link_lid_map.R`: the pelagic weight step never runs, and the map is not one-to-one
-**status:** open · **see:** plan 013 phase 4 (`rb_link_trip_landings`)
-
-`filter(!isTRUE(pelagic))` (:198) and `filter(isTRUE(pelagic))` (:210) apply `isTRUE()` to a whole column, so step 6
-keeps pelagic trips and step 7 always gets 0 rows. Uniqueness is checked per `.tid` only, so two trips can take the
-same `.lid` within a step.
-
-**check:** step 7 reports its matches (or why none), and no `(.lid, schema)` appears on two `.tid` in `lid_map`.
-
 ## 44. The ramb one-flow revamp (plans 013 and 014)
 **status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`, `curate/plans/014-preprocessing-and-flow.md`
 

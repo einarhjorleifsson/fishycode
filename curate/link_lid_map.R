@@ -5,7 +5,8 @@
 # Input:  data/logbooks/{trip,station,fishing_sample,catch}.parquet
 #         data/landings/{landings,catch}.parquet
 #         data/gear/gear_mapping.parquet
-# Output: data/logbooks/lid_map.parquet  — columns: .tid, schema, .lid, match_type
+# Output: curated/logbook/lid_map.parquet — .tid, schema, .lid, schema_land, date_land, hid_land, pid_land,
+#         match_type, n_trips (trips on the landing; above 1 is a declared many-to-many)
 #
 # Does NOT write back into trip.parquet. It used to (left_join(lid_map) then
 # overwrite trip.parquet in place) - that made logbook.R's own declared output
@@ -84,21 +85,23 @@ trip <-
     duckdbfs::open_dataset(fd_curated("logbook", "catch.parquet")) |> collect() |>
       left_join(
         duckdbfs::open_dataset(fd_curated("logbook", "station.parquet")) |> collect() |> select(.sid, .tid, schema),
-        by = ".sid"
+        by = c(".sid", "schema")
       ) |>
       filter(!is.na(.tid)) |>
-      group_by(.tid) |>
+      group_by(.tid, schema) |>
       summarise(catch = sum(as.numeric(catch), na.rm = TRUE), .groups = "drop"),
-    by = ".tid"
+    by = c(".tid", "schema")
   ) |>
   filter(catch > 0) |>
-  select(.tid, vid, date, hid, port, catch, schema)
+  # .tid is unique only within a schema (TODO 41): the trip is (.tid, schema), carried as one key .tk
+  mutate(.tk = paste(schema, .tid, sep = "|")) |>
+  select(.tk, .tid, vid, date, hid, port, catch, schema)
 
 ## Cascade helpers --------------------------------------------------------------
 try_match <- function(unmatched, land_tbl, by, type) {
   unmatched |>
     inner_join(land_tbl, by = by) |>
-    group_by(.tid) |>
+    group_by(.tk) |>
     filter(n_distinct(.lid) == 1) |>
     slice(1) |>
     ungroup() |>
@@ -113,7 +116,7 @@ try_match_weight <- function(unmatched, land_tbl, consumed_land, tol, gap, type)
     ) |>
     mutate(score = abs(log(catch / catch_land))) |>
     filter(is.finite(score), score <= tol) |>
-    group_by(.tid) |>
+    group_by(.tk) |>
     arrange(score, .by_group = TRUE) |>
     filter(n() == 1 | (score[2] - score[1]) >= gap) |>
     slice(1) |>
@@ -137,7 +140,7 @@ land_pm2 <- bind_rows(
 
 # Step 2: date ±1 day, port still required
 m2 <- try_match(
-  trip     |> filter(!.tid      %in% m1$.tid),
+  trip     |> filter(!.tk      %in% m1$.tk),
   land_pm1 |> filter(!.lid %in% m1$.lid),
   c("vid", "date", "hid"),
   "02 exact ±1 day"
@@ -145,7 +148,7 @@ m2 <- try_match(
 
 # Step 3: same day, port dropped
 m3 <- try_match(
-  trip |> filter(!.tid      %in% c(m1$.tid,      m2$.tid)),
+  trip |> filter(!.tk      %in% c(m1$.tk,      m2$.tk)),
   land |> filter(!.lid %in% c(m1$.lid, m2$.lid)),
   c("vid", "date"),
   "03 vid_date"
@@ -153,7 +156,7 @@ m3 <- try_match(
 
 # Step 4: ±1 day, port dropped
 m4 <- try_match(
-  trip     |> filter(!.tid      %in% c(m1$.tid,      m2$.tid,      m3$.tid)),
+  trip     |> filter(!.tk      %in% c(m1$.tk,      m2$.tk,      m3$.tk)),
   land_pm1 |> filter(!.lid %in% c(m1$.lid, m2$.lid, m3$.lid)),
   c("vid", "date"),
   "04 vid_date ±1"
@@ -163,7 +166,7 @@ m4 <- try_match(
 # All newly resolved trips use exactly a 2-day offset (systematic recording lag).
 # ±3 drops the signal-to-ambiguity ratio from 11:1 to ~2:1; not worth the risk.
 m5 <- try_match(
-  trip     |> filter(!.tid      %in% c(m1$.tid,      m2$.tid,      m3$.tid,      m4$.tid)),
+  trip     |> filter(!.tk      %in% c(m1$.tk,      m2$.tk,      m3$.tk,      m4$.tk)),
   land_pm2 |> filter(!.lid %in% c(m1$.lid, m2$.lid, m3$.lid, m4$.lid)),
   c("vid", "date"),
   "05 vid_date ±2"
@@ -179,13 +182,13 @@ pelagic_gids <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) 
 
 trip_gear <-
   duckdbfs::open_dataset(fd_curated("logbook", "fishing_sample.parquet")) |> collect() |>
-  mutate(.tid = as.character(.tid)) |>
-  count(.tid, gid) |>
-  group_by(.tid) |>
+  mutate(.tk = paste(schema, .tid, sep = "|")) |>
+  count(.tk, gid) |>
+  group_by(.tk) |>
   slice_max(n, n = 1, with_ties = FALSE) |>
   ungroup() |>
   mutate(pelagic = gid %in% pelagic_gids) |>
-  select(.tid, gid, pelagic)
+  select(.tk, gid, pelagic)
 
 # Combined land table covering date 0 and ±1 for weight steps
 land_w <- bind_rows(land, land_pm1) |> rename(catch_land = catch)
@@ -194,9 +197,11 @@ consumed_so_far <- c(m1$.lid, m2$.lid, m3$.lid, m4$.lid, m5$.lid)
 
 # Step 6: demersal weight match — tight tolerance
 unmatched_dem <- trip |>
-  filter(!.tid %in% c(m1$.tid, m2$.tid, m3$.tid, m4$.tid, m5$.tid)) |>
-  left_join(trip_gear |> select(.tid, pelagic), by = ".tid") |>
-  filter(!isTRUE(pelagic))
+  filter(!.tk %in% c(m1$.tk, m2$.tk, m3$.tk, m4$.tk, m5$.tk)) |>
+  left_join(trip_gear |> select(.tk, pelagic), by = ".tk") |>
+  # coalesce, not isTRUE(): isTRUE() of a whole column is one FALSE, so step 6 kept pelagic trips and step 7
+  # got none (TODO 43). A trip with no gear counts as demersal, as before.
+  filter(!coalesce(pelagic, FALSE))
 
 m6 <- try_match_weight(
   unmatched_dem, land_w, consumed_so_far,
@@ -206,9 +211,9 @@ m6 <- try_match_weight(
 
 # Step 7: pelagic weight match — loose tolerance; expect ~0 matches
 unmatched_pel <- trip |>
-  filter(!.tid %in% c(m1$.tid, m2$.tid, m3$.tid, m4$.tid, m5$.tid, m6$.tid)) |>
-  left_join(trip_gear |> select(.tid, pelagic), by = ".tid") |>
-  filter(isTRUE(pelagic))
+  filter(!.tk %in% c(m1$.tk, m2$.tk, m3$.tk, m4$.tk, m5$.tk, m6$.tk)) |>
+  left_join(trip_gear |> select(.tk, pelagic), by = ".tk") |>
+  filter(coalesce(pelagic, FALSE))
 
 m7 <- try_match_weight(
   unmatched_pel, land_w,
@@ -233,7 +238,7 @@ build_approx <- function(ref_trip) {
 }
 
 matched_trip <- trip |>
-  filter(.tid %in% c(m1$.tid, m2$.tid, m3$.tid, m4$.tid, m5$.tid, m6$.tid, m7$.tid))
+  filter(.tk %in% c(m1$.tk, m2$.tk, m3$.tk, m4$.tk, m5$.tk, m6$.tk, m7$.tk))
 
 approx_afli_pos <- build_approx(matched_trip |>
   filter(schema == "afli", as.numeric(.tid) > 0))
@@ -243,7 +248,7 @@ approx_fs <- build_approx(matched_trip |>
   filter(schema == "fs_afladagbok"))
 
 unmatched_post7 <- trip |>
-  filter(!.tid %in% c(m1$.tid, m2$.tid, m3$.tid, m4$.tid, m5$.tid, m6$.tid, m7$.tid)) |>
+  filter(!.tk %in% c(m1$.tk, m2$.tk, m3$.tk, m4$.tk, m5$.tk, m6$.tk, m7$.tk)) |>
   filter(year(date) >= 2007) |>
   mutate(tid_num = as.numeric(.tid)) |>
   mutate(expected_date = date_origin + case_when(
@@ -261,20 +266,29 @@ land_exp <- seq(-DATE_ERR_WINDOW, DATE_ERR_WINDOW) |>
 m8 <- unmatched_post7 |>
   filter(abs(date_error_days) > DATE_ERR_THRESHOLD, !is.na(expected_date)) |>
   rename(exp_date = expected_date) |>
-  select(.tid, vid, schema, exp_date, catch) |>
+  select(.tk, .tid, vid, schema, exp_date, catch) |>
   inner_join(
     land_exp |> filter(!.lid %in% c(consumed_so_far, m6$.lid, m7$.lid)),
     by = c("vid", "exp_date")
   ) |>
-  group_by(.tid) |>
+  group_by(.tk) |>
   filter(n_distinct(.lid) == 1) |>
   slice(1) |>
   ungroup() |>
   mutate(match_type = "08 expected_date")
 
 ## Assemble lid_map -------------------------------------------------------------
+# A trip takes at most one landing (each step keeps only unambiguous trips), but one landing can be taken by
+# several trips of a vessel on one day or around it - e.g. two day trips landed together. That is kept and
+# declared: n_trips counts the trips on the landing (TODO 43). The landing's own date, port code and port id
+# come from the landings table, not from the shifted copies the cascade matched against (plan 014: the logbook
+# carries its landing link, date and port).
 lid_map <- bind_rows(m1, m2, m3, m4, m5, m6, m7, m8) |>
-  select(.tid, schema, .lid, match_type)
+  select(.tid, schema, .lid, match_type) |>
+  left_join(land |> select(.lid, schema_land, date_land = date, hid_land = hid, pid_land = pid), by = ".lid") |>
+  mutate(n_trips = n(), .by = .lid) |>
+  select(.tid, schema, .lid, schema_land, date_land, hid_land, pid_land, match_type, n_trips)
+stopifnot(!anyDuplicated(lid_map[c(".tid", "schema")]))
 
 # Summary: matches per step and cumulative coverage
 lid_map |>
