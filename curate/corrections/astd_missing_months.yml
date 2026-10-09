@@ -1,10 +1,10 @@
 id: astd_missing_months
 title: staging/ais/astd is missing four months, one of them held in raw and never loaded
-status: measured - gap located and bounded, repair is a re-run and is NOT done
+status: repaired in staging 2026-10-09 (plan 014 3e) - 2023-08 (24,819,518 rows, 11,469 MMSI) and 2023-09 (22,823,275 rows, 11,955 MMSI) loaded through the unzip CLI fallback; they reach ping_union in the plan 014 rebuild
 applies_to:
   - staging/ais/astd   (year=2017, year=2019, year=2023)
 affects_rows: unknown until loaded; the two recoverable months are 1.17 GB zipped, 10.1 GB of CSV
-implementation: none yet
+implementation: dump/ais/astd.R (the unzip CLI fallback for DEFLATE64 members), run 2026-10-09 - Written 2, Skipped 153, Failed 0
 discovered: 2026-09-21, while measuring ping_union_duplicate_keys
 
 defect:

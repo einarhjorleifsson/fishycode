@@ -120,9 +120,9 @@ codes all resolve against it.
 ## 14. Two months of astd are in `raw/` and were never loaded
 **status:** open · **see:** `curate/corrections/astd_missing_months.yml`
 
-Two months of ASTD sit in `raw/` and never reach the union, so the AIS track has holes
-nobody sees. Measured and declared in the correction, which holds the month list and what
-was checked.
+Two months of ASTD sat in `raw/` and never reached the union. Loaded into `staging/ais/astd` on 2026-10-09
+(plan 014 3e: 2023-08 and 2023-09, 47.6 M rows); they reach the union in plan 014's rebuild, which closes this.
+The other two gaps (2017-07, 2019-01) are source gaps: no zip exists.
 
 **check:** every month present in `raw/ais/astd` appears in `staging/ais/ping_union`.
 
