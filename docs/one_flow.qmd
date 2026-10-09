@@ -11,7 +11,7 @@ lived in `~/stasi/wgsfd2026` until then.*
 
 *AI use: version 1 drafted by Claude (Anthropic) from the ICES VMS and logbook data-call code (commit `a844911`)
 and the grammar of sea-going data. Version 2, the port terms and the fishycode section drafted by Claude,
-2026-10-08 and 2026-10-09, from the maintainer's comments and decisions 075-078. Human review pending.*
+2026-10-08 and 2026-10-09, from the maintainer's comments and decisions 075-079. Human review pending.*
 
 Mapping fishing activity (effort, pressure on the seabed or stock, and catch) is one cascade, applied to every ping. First each ping gets its vessel, and pings no vessel could have made are set aside. Then:
 

@@ -33,6 +33,17 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
         "add a row to that README, or delete the orphan file")
   }
 
+  # -- 1b/6 no two records share a number ---------------------------------------
+  # Added 2026-10-09: two sessions working at once both wrote a decision 078. Both were indexed, so every other
+  # invariant held.
+  for (slot in c("decisions", "plans")) {
+    dir <- p("curate", slot)
+    if (!dir.exists(dir)) next
+    num <- substr(list.files(dir, "^[0-9]{3}-.*[.](md|tsv)$"), 1, 3)
+    add(sprintf("no two curate/%s/ records share a number", slot), unique(num[duplicated(num)]),
+        "renumber the later one (and its README row and references)")
+  }
+
   # -- 2/6 ... and every README row points at a file that exists ----------------
   for (slot in c("decisions", "plans")) {
     dir <- p("curate", slot)

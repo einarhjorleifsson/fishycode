@@ -1,4 +1,4 @@
-# 078 — The plan 014 rebuild: every difference reconciled
+# 079 — The plan 014 rebuild: every difference reconciled
 
 *2026-10-09. Rebuild and comparison run by Claude (AI-assisted) at fishycode 2af080e → eb6be4d, with ramb f6faf9b
 (local `-O2` build, not yet pushed). Before/after fingerprints (`R/fingerprint.R`), logs and the comparison are in

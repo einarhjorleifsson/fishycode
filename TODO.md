@@ -412,7 +412,7 @@ that cut a witnessed run is recorded in a decision.
 
 The cause was an unpartitioned `row_number() OVER ()`, which DuckDB runs on one core. Numbering per vessel took a
 4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). The plan 014 rebuild took 29 min (decision
-078): faster, not yet fast. Not profiled further.
+079): faster, not yet fast. Not profiled further.
 
 **check:** the step runs no slower than 10 min on the full data, with the same output.
 
@@ -443,7 +443,7 @@ the flow qualifies them.
 
 Decision 029 validated it with zero errors; the tool's spec has moved on, and `validate-spec` now reports 144
 errors on the unedited file (`S07`: number and string columns must give `examples`; `S28`: unknown types).
-Plan 014 updated the tables its renames touched (decision 078) and added `logbook_gear`: 141 errors after those
+Plan 014 updated the tables its renames touched (decision 079) and added `logbook_gear`: 141 errors after those
 edits, none new in kind. Nothing was validated against the data (`validate-meta` stops at spec errors).
 
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors.
