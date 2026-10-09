@@ -30,15 +30,17 @@ does it twice.
 ---
 
 ## 3. `station_type` is prose, not a contract
-**status:** open · **files:** `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R`
+**status:** open · **needs: maintainer** — is a jig or longline record one operation or a day's fishing? ·
+**files:** `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R` · **see:** `docs/grammar.qmd` (`station_type`)
 
-`grammar.qmd`'s flagship contribution. Appears 5x in prose and **0x in any script**,
-unchanged since this restructuring began. Step 3 of the plan, still not started.
+`grammar.qmd` defines `station_type` (the WGSFD doc's `resolution`: operation, event, monthly or annual aggregate,
+reconstructed); no adapter writes it. afli's monthly aggregates are already split into `staging/afli/aggregate`,
+so its stations would be `operation`. Plan 014 3f measured (2026-10-09) that the unit is not clear from the
+data alone: jig (LHM) and longline (LLS) records are one per vessel-day for 98.9 / 98.5 % (afli) and 96.4 / 91.8 %
+(fs_afladagbok) of vessel-days, where bottom trawl averages 3.8 / 3.6 stations a day. A day's jigging recorded as
+one record is a `day`, not an `operation`. Asked: per gear and source, which is it?
 
-**check:** `grep -rn station_type sources/` returns the column being written by both
-adapters.
-
----
+**check:** `grep -rn station_type sources/` returns the column being written by both adapters.
 
 ## 3c. `hid` and `pid` are not the same concept
 **status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
