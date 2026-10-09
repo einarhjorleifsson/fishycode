@@ -1,7 +1,7 @@
 # station_window.R — when is the vessel busy with each logbook station?
 # Side: flow, step 2. See plan 014.
 #
-# Input:  curated/logbook/adb_gear.parquet     (.sid, schema, gid, gear, target, target2: adb stations only)
+# Input:  curated/logbook/gear.parquet         (.sid, schema, gid_used, gear, target, target2: every station; logbook_gear.R)
 #         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)
 #         curated/logbook/trip.parquet            (.tid, schema, vid)
 #         curated/logbook/station.parquet         (.sid, schema, date)
@@ -43,8 +43,9 @@ lb <- function(f) fd_curated("logbook", f)
 dbExecute(con, sprintf("CREATE VIEW fs   AS SELECT * FROM read_parquet('%s')", lb("fishing_sample.parquet")))
 dbExecute(con, sprintf("CREATE VIEW trip AS SELECT * FROM read_parquet('%s')", lb("trip.parquet")))
 dbExecute(con, sprintf("CREATE VIEW st   AS SELECT * FROM read_parquet('%s')", lb("station.parquet")))
-# adb stations have no gear of their own; curate/corrections/adb_gear.R reads it from the matched landing
-dbExecute(con, sprintf("CREATE VIEW ag   AS SELECT * FROM read_parquet('%s')", lb("adb_gear.parquet")))
+# the gear each station is fished with: the logbook's, or its landing's where that names one gear (plan 014,
+# curate/corrections/logbook_gear.R); adb stations have none of their own
+dbExecute(con, sprintf("CREATE VIEW ag   AS SELECT * FROM read_parquet('%s')", lb("gear.parquet")))
 dbExecute(con, sprintf("CREATE VIEW gw   AS SELECT * FROM read_parquet('%s')",
                        fd_curated("reference", "gear_window.parquet")))
 
@@ -60,9 +61,9 @@ GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1")
 
 dbExecute(con, "
 CREATE TABLE base AS
-SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, coalesce(f.gear, ag.gear) AS gear, coalesce(f.target, ag.target) AS target,
-       coalesce(f.target2, ag.target2) AS target2,
-       CAST(coalesce(f.gid, ag.gid) AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
+SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.gear, ag.target,
+       ag.target2,
+       CAST(ag.gid_used AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
        -- adb keeps the raw start/end as t1/t4 whatever the gear (its gear is unknown in the adapter). For a
        -- towed gear fs_afladagbok maps them to t2/t3 and leaves t1/t4 NA; the same on the 1.4 M shared
        -- stations (adb t1 = fs t2, adb t4 = fs t3, 100 %). Without this every 2026 tow was a day window.
@@ -75,7 +76,7 @@ FROM fs f
 JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
 JOIN st          ON st.\".sid\" = f.\".sid\" AND st.schema = f.schema
 LEFT JOIN ag     ON ag.\".sid\" = f.\".sid\" AND ag.schema = f.schema
-JOIN gw g        ON g.gid = CAST(coalesce(f.gid, ag.gid) AS INTEGER)
+JOIN gw g        ON g.gid = CAST(ag.gid_used AS INTEGER)
 WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL")
 
 # Windows ----------------------------------------------------------------------------

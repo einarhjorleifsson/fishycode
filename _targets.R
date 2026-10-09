@@ -316,7 +316,7 @@ list(
 
   # One row per (logbook station, phase): when the vessel is busy with it (plan 010).
   tar_target(station_window, {
-    logbook; gear_window; adb_gear
+    logbook; gear_window; logbook_gear
     produces("curate/station_window.R", fd_curated("logbook", "station_window.parquet"))
   }, format = "file"),
 
@@ -326,10 +326,11 @@ list(
              fd_curated("logbook", "lid_map.parquet"))
   }, format = "file"),
 
-  # Correction, not part of the adapter: adb's gear, read from the matched landing (decision 066).
-  tar_target(adb_gear, {
+  # Correction, not part of the adapter: each station's gear, the landing's where it names one (decision 066,
+  # plan 014 3j; was adb's alone).
+  tar_target(logbook_gear, {
     logbook; lid_map; landing; gear
-    produces("curate/corrections/adb_gear.R", fd_curated("logbook", "adb_gear.parquet"))
+    produces("curate/corrections/logbook_gear.R", fd_curated("logbook", "gear.parquet"))
   }, format = "file"),
 
   # The catch as caught (whole weight), per (station, species): joins the trail on (.sid, schema).

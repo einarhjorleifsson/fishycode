@@ -1,0 +1,37 @@
+id: logbook_gear
+title: a logbook station's gear is the landing's where the landing names one gear; adb stations carry none of their own
+status: applied - every schema since plan 014 3j (2026-10-09, the maintainer's rule); adb 20,274 of 20,530 stations (2026-10-03, decision 066)
+applies_to:
+  - curated/logbook/fishing_sample.parquet   # every schema; adb has no gear of its own
+affects_rows: 20530
+implementation: curate/corrections/logbook_gear.R (curate/corrections/adb_gear.R, adb only, until plan 014)
+plan_014_rule: >-
+  The maintainer, 2026-10-09: landings name the gear more often correctly and at a finer resolution than the
+  logbook. Where a station's linked landing names exactly one gear, that gear is used (gid_used, gid_basis
+  reconstructed); the logbook's gid is kept beside it. Read with two cautions of the same day: gear codes changed
+  (agf landings carry the new code, lods landings the old one, mapped through gear.parquet before comparing),
+  and gears are compared as a metier label, gear + target2 (OTB_NEP), not as a code. Counted on the corrected
+  lid_map: afli 63,076 and fs_afladagbok 12,573 stations take the landing's gear (184,607 and 20,944 when codes
+  were compared), adb 20,275; the largest changes GNS_GAD -> GNS_LUM 18,844, OTB_DEF -> DRB_DES 18,383,
+  GNS_GAD -> GNS_MON 11,010, SDN_DEF -> DRB_DES 7,219.
+
+defect:
+  summary: >-
+    adb's own gear code does not resolve against reference/gear.parquet (see
+    adb_vs_fs_afladagbok.yml defect_3), so adb stations have gid, gear, target and
+    target2 NA and are invisible to every gear-dependent step (station windows,
+    the trail's fishing flag).
+  see: curate/decisions/066-adb-catch-is-quantity-and-gets-its-gear-from-landings.md
+
+method:
+  approach: >-
+    A station takes the gear of the landing its trip matched in lid_map, when the
+    landing names exactly one gear present in the "new" gear list. Output is a
+    side table, curated/logbook/adb_gear.parquet, keyed (.sid, schema), with
+    gid_basis = "reconstructed". The original gid_old is untouched.
+  not_done: >-
+    No crosswalk fallback (derived from the shared fs_afladagbok stations; declined by
+    the maintainer 2026-10-03). Trips whose landing names several gears stay NA.
+  measured: >-
+    2026-10-03, after the adb catch fix (decision 066): 20,274 of 20,530 stations.
+    Before it, only 11,040: adb catch was 0 for most trips, so lid_map skipped them.
