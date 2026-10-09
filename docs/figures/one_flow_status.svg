@@ -72,7 +72,7 @@
 
 <!-- fishing -->
 <rect class="box s-ramb" x="176" y="430" width="108" height="44" rx="6"/><text class="th" x="230" y="451" text-anchor="middle">haul window</text><text class="ts" x="230" y="467" text-anchor="middle">t1–t4 + speed</text>
-<rect class="box s-else" x="292" y="430" width="108" height="44" rx="6"/><text class="th" x="346" y="451" text-anchor="middle">phases</text><text class="ts" x="346" y="467" text-anchor="middle">dense track</text>
+<rect class="box s-plan" x="292" y="430" width="108" height="44" rx="6"/><text class="th" x="346" y="451" text-anchor="middle">phases</text><text class="ts" x="346" y="467" text-anchor="middle">dense track</text>
 <rect class="box s-plan" x="408" y="430" width="108" height="44" rx="6"/><text class="th" x="462" y="451" text-anchor="middle">track model</text><text class="ts" x="462" y="467" text-anchor="middle">mixture, HMM</text>
 <rect class="box s-plan" x="524" y="430" width="108" height="44" rx="6"/><text class="th" x="578" y="451" text-anchor="middle">speed range</text><text class="ts" x="578" y="467" text-anchor="middle">of the gear</text>
 
