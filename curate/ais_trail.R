@@ -17,7 +17,7 @@
 #   the fix       vid mmsi time lon lat speed speed_raw heading cog provider pos_basis speed_basis dt_sec
 #   the voyage    stay (key into curated/ais/port_stay.parquet, NA at sea) voyage (key into curated/ais/voyage.parquet,
 #                 within vid, year) .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
-#   the station   n_sid .sid schema .tid gear target target2 gear_class s1 s2 phase phase_frac win_basis events fishing
+#   the station   n_sid .sid schema .tid metier gear target target2 gear_class s1 s2 phase phase_frac win_basis events fishing
 #   the logger    sid_gps n_sid_gps
 # `pid`, the polygon tag of the ping tables, is not carried: the port of a stay is in the stay table.
 # `trail_match` holds all matches for the fixes whose `n_sid` is above 1 (and the single ones), so nothing is lost.

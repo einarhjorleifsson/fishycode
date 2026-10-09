@@ -1,7 +1,9 @@
 # station_window.R — when is the vessel busy with each logbook station?
 # Side: flow, step 2. See plan 014.
 #
-# Input:  curated/logbook/gear.parquet         (.sid, schema, gid_used, gear, target, target2: every station; logbook_gear.R)
+# Input:  curated/logbook/gear.parquet         (.sid, schema, gid_used, metier, gear, target, target2: every station;
+#                                               logbook_gear.R). `metier` (gear_target2, e.g. OTB_NEP) is the label
+#                                               the flow works from downstream; the window rules are still per gid
 #         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)
 #         curated/logbook/trip.parquet            (.tid, schema, vid)
 #         curated/logbook/station.parquet         (.sid, schema, date)
@@ -61,7 +63,7 @@ GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1")
 
 dbExecute(con, "
 CREATE TABLE base AS
-SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.gear, ag.target,
+SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.metier, ag.gear, ag.target,
        ag.target2,
        CAST(ag.gid_used AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
        -- adb keeps the raw start/end as t1/t4 whatever the gear (its gear is unknown in the adapter). For a
@@ -86,7 +88,7 @@ WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL")
 # from the landing, and adb's t1/t4 moved to t2/t3 for towed gear.
 
 sw <- ramb::rb_build_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
-  dplyr::select(.sid, schema, .tid, vid, gear, target, target2, gid, gear_class, phase, w_start, w_end,
+  dplyr::select(.sid, schema, .tid, vid, metier, gear, target, target2, gid, gear_class, phase, w_start, w_end,
                 win_basis, win_closed_by, t1, t2, t3, t4, duration_m, s1, s2, n_events, events)
 dbExecute(con, paste("CREATE TABLE station_window AS", dbplyr::sql_render(sw), "ORDER BY vid, w_start"))
 

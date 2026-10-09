@@ -101,6 +101,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 074 | [No harbour class](074-no-harbour-class.md) | maintainer: harbours carry no class, per period or otherwise; one minimum stay for all (decision 063: a global 2 h covers landings as well, +0.8 % stays); TODO 33 closed unbuilt, the code change is TODO 45 |
 | 075 | [Preprocessing, once, flow](075-preprocessing-once-flow.md) | plan 014 phase 1: preprocessing reads no AIS (logbook and landings may be reconciled), three one-time fixes frozen in a second targets project, `# Side:` headers enforced, terms port/stay/voyage; TODO 45, 37 and 46 closed |
 | 076 | [Step 2 runs through ramb](076-step-2-runs-through-ramb.md) | plan 014 phase 2: record windows, the duration limit, the ping-record matches, the record and the window fishing method are ramb functions; station windows, durations and a month of the trail identical; two logic doubts recorded |
+| 077 | [Phase 3: the counted changes](077-phase-3-counted-changes.md) | plan 014 phase 3: gps in the union, STK-only events and one 2 h stay, port/stay/voyage names, depth ties, two astd months, lid_map fixed, gear from the landing compared as metier (lods in the old code), the trip SQL 3.3x faster; every change counted; TODO 41, 43, 47 closed, 3 asked |
 
 ## Data defects
 

@@ -33,14 +33,14 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   rend  <- function(x) as.character(dbplyr::sql_render(x))
 
   p <- lazy(sprintf("SELECT * EXCLUDE (year, pid) FROM read_parquet(%s) WHERE time >= %s AND time < %s", pfile, t0, t1))
-  carry <- c(".tid", "gear", "target", "target2", "gear_class", "win_basis", "events")
+  carry <- c(".tid", "metier", "gear", "target", "target2", "gear_class", "win_basis", "events")
 
   if (kind == "match") {
     w <- lazy(sprintf("SELECT * FROM read_parquet(%s) WHERE w_end >= %s AND w_start < %s", swf, t0, t1))
     m <- ramb::rb_link_record_pings(p, w, key = c(".sid", "schema"), carry = carry,
                                     speed_min = "s1", speed_max = "s2")
     return(sprintf("
-      SELECT vid, time, \".sid\", schema, \".tid\", gear, target, target2, gear_class, phase, phase_frac,
+      SELECT vid, time, \".sid\", schema, \".tid\", metier, gear, target, target2, gear_class, phase, phase_frac,
              win_basis, events, s1, s2, w_start, w_end, fishing
       FROM (%s)", rend(m)))
   }
@@ -49,7 +49,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   m <- lazy(sprintf("SELECT * FROM read_parquet(%s)", shQuote(matches, type = "sh")))
   r <- p |>
     ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2") |>
-    ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:5], "s1", "s2", "win_basis", "events"))
+    ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
       SELECT vid, year, voyage, count(*) AS n_tid_voyage,
@@ -60,7 +60,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
            r.pos_basis, r.speed_basis, r.dt_sec, r.stay, r.voyage,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
-           r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.gear, r.target, r.target2, r.gear_class,
+           r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier, r.gear, r.target, r.target2, r.gear_class,
            r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, r.fishing, r.sid_gps, r.n_sid_gps
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage",
     tvf, year, rend(r))

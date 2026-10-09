@@ -1,6 +1,6 @@
 # 014 — One line between Icelandic preprocessing and the generic flow
 
-**status:** partly built — approved 2026-10-09; phases 1–2 done (decisions 075, 076) · **2026-10-09** ·
+**status:** partly built — approved 2026-10-09; phases 1–3 done (decisions 075–077) · **2026-10-09** ·
 **see:** TODO 45 (closed by this plan), plan 013, `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`
 
 Drafted with AI assistance (Claude) in plan mode on 2026-10-09, from the maintainer's direction (TODO 45), the terms

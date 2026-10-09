@@ -363,6 +363,8 @@ Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in reco
 
 Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
 
+Since plan 014 3j (decision 077) each station carries `gid`, `gid_landing` and `metier`, and `metier` is on the trail; question (3) is half answered.
+
 **check:** the answers are recorded in a decision, and either `gid`/`gid_landing` are on the trail and a speed rule is chosen, or plan 012 is marked abandoned with the reason.
 
 ---
@@ -422,11 +424,12 @@ Next: phase 3's counted changes, then one rebuild; ramb f28646d is not pushed ye
 
 **check:** plan 014's phases each have a decision record, and fishycode's steps 0–2 call ramb functions.
 
-## 48. `ais_trip.R` takes 51 min since the ramb port, against 9.4
-**status:** open · **see:** decision 073, ramb `R/cut_trip_voyages.R`
+## 48. The voyage step took 51 min since the ramb port, against 9.4
+**status:** open · **see:** decision 077 (3h), ramb f6faf9b
 
-`rb_cut_trip_voyages()` + `rb_assign_trip()` per year ran one core at ~98 % for 51 min 22 s in the rebuild.
-The lazy port should not be slower than the code it replaced. Not profiled.
+The cause was an unpartitioned `row_number() OVER ()`, which DuckDB runs on one core. Numbering per vessel took a
+4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). Scaled up that is about 15 min: the full
+time is read off the plan 014 rebuild.
 
 **check:** the step runs no slower than 10 min on the full data, with the same output.
 
