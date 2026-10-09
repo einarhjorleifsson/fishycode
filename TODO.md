@@ -355,7 +355,7 @@ a window at the vessel's next recorded start, so the times could be kept and the
 **check:** `fishing_sample` keeps `t2`/`t3` for flagged stations, `.checks` still names the overlap, and the window counts are compared before and after.
 
 ## 33. Harbour class, per period, from the AIS era
-**status:** in progress · **needs: maintainer** · **see:** `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memories `harbour-class-is-time-varying`, `static-gear-logbook-recording`
+**status:** open · **see:** TODO 45 (2026-10-09: the class goes; one minimum stay), `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memory `harbour-class-is-static`, `static-gear-logbook-recording`
 
 Built 2026-10-01: `curated/reference/harbour_class` per harbour × year from the STK `I`→`U` pairs (3-year window, provisional), `overrides/harbour_class.csv` (empty), and a minimum stay per class in
 `harbour_stay.R` (landing 2 h, others 4 h, applied in decision 064). Asked of the maintainer: (1) the period design; (2) the landing minimum is applied (2 h, decision 064); (3) overrides: Hornvík `IS-HOV` and Helguvík done 2026-10-01; `IS-KRI` has no landing or logbook records, left `transient` (decision 063); `VIS`, `MAN`, `TMY`, `STO` have no usable polygon. Background, not pursued: a
@@ -388,20 +388,17 @@ has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R
 the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
 
 ## 37. `produces()` leaves every script's objects in the session
-**status:** in progress (fix merged 2026-10-09, 3df46d8) · **needs: maintainer** (go for the rebuild) · **files:** `_targets.R` (`produces()`), `R/source_script.R` · **see:** plan 013
+**status:** open · **files:** `_targets.R` (`produces()`), `R/source_script.R`, `R/tar_make_isolated.R` · **see:** decision 073
 
-`produces()` runs `source(script)` in the global environment of the one R session that runs every target,
-so a script's objects stay in memory after its target is done. On 2026-10-07 `area_h3` failed with "vector
-memory limit of 24.0 Gb reached" (24 GB is this machine's RAM), right after `shapes` in the same session had
-left its 2.1 M-polygon EUSM object behind. That cause comes from reading the code and has not been tested.
-Global state leaks the same way: `shapes.R` calls `sf_use_s2(FALSE)`, and that setting holds for every later target.
-The fix is to note `ls(globalenv())` before `source()`, then `rm()` what the script added and `gc()` in
-`on.exit()`. Any script that relied on another's leftovers would then fail loudly. Changing `produces()`
-made 58 of 60 targets outdated (the other two are override inputs); the check waits for the full rebuild
-of plan 013 phase 2, run with plain `tar_make()` so this check is tested.
+The fix is merged (3df46d8): `source_script()` restores the global environment, options and attached
+packages after each script. It is not enough. In the full rebuild of 2026-10-09 a plain `tar_make()` in one
+session reached a 111 GB memory footprint (24 GB machine) at the 18th target, `landing`, after `shapes`, and
+thrashed; `landing` takes 110 s in its own session. Memory is held outside the global environment; the
+likely holders (DuckDB's cached connection and what is registered in it, the spatial libraries) are not
+traced. `tar_make_isolated()` built the other 41 targets in 2.27 h without trouble.
 
-**check:** after `tar_make()`, the global environment holds no object a script created, and a full rebuild
-from `tar_invalidate(everything())` finishes without a memory error.
+**check:** either a full `tar_make()` completes without the footprint passing the machine's RAM, or
+`AGENTS.md` names `tar_make_isolated()` as the way to build and this item is closed in a decision.
 
 ## 38. Loose ends of the `whack_clean()` switch
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
@@ -452,10 +449,55 @@ same `.lid` within a step.
 **check:** step 7 reports its matches (or why none), and no `(.lid, schema)` appears on two `.tid` in `lid_map`.
 
 ## 44. The ramb one-flow revamp (plan 013)
-**status:** in progress · **needs: maintainer** (go for the rebuild and phase 3) · **see:** `curate/plans/013-ramb-one-flow.md`
+**status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`, TODO 45
 
 ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Step A (the WGSFD
-doc's version 2) and phases 0–2 are done (decisions 070–072; TODO 7, 12, 30, 40 and 42 closed). Next: the full
-rebuild of the ported scripts with TODO 37 merged, then phase 3; both wait for the maintainer's go. The plan maps the other TODO items it closes to its phases.
+doc's version 2) and phases 0–2 are done, rebuilt and verified (decisions 070–073; TODO 7, 12, 30, 40 and 42
+closed). Phase 3 waits for the redesign of TODO 45, which changes the graph it would build on. The plan maps the other TODO items it closes to its phases.
 
 **check:** plan 013's phases 0–3 each have a decision record, and fishycode's steps 0–2 call ramb functions.
+
+## 45. Simplify the graph around the WGSFD boundary (plan to write)
+**status:** open · **see:** decision 073, plan 013, `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`
+
+Maintainer, 2026-10-09: draw one line between Icelandic **preprocessing** and the **generic flow** of the WGSFD
+diagram (ramb, steps 0–6), with standard inputs between them. Preprocessing is per source, never cross-source
+(no logbook or landing `T1` from AIS; that is the flow's job). Three one-time fixes sit outside the flow, built
+once, reviewed, frozen as inputs and redone only by decision: the STK mobile-id → vid match, the GPS logger
+positions (the AIS-interpolated `curated/logbook/sensor_gps` of decision 073's build, merged at the feed union
+as provider `gps`), and the harbour layer (static polygons and departure radius, upfront). Also decided:
+- the harbour class goes: one minimum stay (decision 063 measured a global 2 h: same landing coverage as the
+  class rule, +12,138 stays, +0.8 %); reviewed labels may stay as description;
+- `curate/corrections/afli_coords.R` (the AIS-free recovery, median 329 m off AIS) is removed; its defect
+  declaration `afli_coords.yml` stays; `checks/afli_rafr_stofn_corroboration.R` reads its output.
+
+**check:** a plan in `curate/plans/` states the boundary, each input's contract and the scripts on each side,
+and is approved before any of it is built.
+
+## 46. The key audit reads `ping_union`, which the graph cannot declare
+**status:** open · **see:** decision 073, `curate/checks/ais_key_audit.R:41`
+
+Since TODO 40, W1 reads `staging/ais/ping_union`, but the union depends on `vessel_ais_key`, so the edge would
+close a cycle and is not declared: the audit runs first, on the previous build's union. W1 uses only non-STK
+pings, whose `vid` comes from `vessel_identity`, so the evidence is unchanged unless the raw feeds or the
+identity table change. Likely settled by TODO 45 (the key becomes a one-time fix).
+
+**check:** the audit's inputs are declared in the graph, or the key is outside it.
+
+## 47. `afli_depth_units.R` decides depth units by tie order
+**status:** open · **see:** decision 073, `curate/corrections/afli_depth_units.R` (`arrange(vid, date)`)
+
+Stations of one vessel on one date are tied; their order, which DuckDB does not fix, feeds the cumulative scan
+of `fit_switch_date()`. Five shuffles of the ties move the fathoms → metres switch date of 12–15 of 809 vessels,
+and with it `z1`/`z2` of their stations. Break ties by the station's time of day.
+
+**check:** two runs give identical `staging/afli/depth.parquet`; the stations whose unit changes are counted.
+
+## 48. `ais_trip.R` takes 51 min since the ramb port, against 9.4
+**status:** open · **see:** decision 073, ramb `R/cut_trip_voyages.R`
+
+`rb_cut_trip_voyages()` + `rb_assign_trip()` per year ran one core at ~98 % for 51 min 22 s in the rebuild.
+The lazy port should not be slower than the code it replaced. Not profiled.
+
+**check:** the step runs no slower than 10 min on the full data, with the same output.
+

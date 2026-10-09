@@ -97,6 +97,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 070 | [Every curated file is stamped](070-every-curated-file-is-stamped.md) | TODO 12 closed: 669 of 669 files under `curated/` carry `fd.*` stamps; four outputs changed through a loop in the key (W1 reads `curated/ais/ping`, which depends on the key), which does not settle — TODO 40 |
 | 071 | [ramb names follow one rule](071-ramb-names-follow-one-rule.md) | plan 013 phase 1: 35 ramb functions renamed verb first, 4 same-task groups merged, 48 old names warn and still work; fishycode calls the new names; real-data check identical; TODO 7 and 30 closed |
 | 072 | [Steps 0 and 1 run through ramb](072-steps-0-1-run-through-ramb.md) | plan 013 phase 2: fishycode's harbour tag, ping labels, stays, voyages and voyage link call ramb; each port equals the built output on `$FISHYDATA`; the voyage link ranks per `(.tid, schema)`; the key settles; TODO 40 and 42 closed |
+| 073 | [Full rebuild after phase 2](073-full-rebuild-after-phase-2.md) | the rebuild of 2026-10-09 against fingerprints of all 872 output files: 50 outputs identical, every other difference explained (vessel key, planned changes, a type, a ramb recode, two non-deterministic steps, file timestamps); a one-session `tar_make()` swelled to 111 GB; TODO 46–48 opened |
 
 ## Data defects
 
