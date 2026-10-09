@@ -186,8 +186,9 @@ LOGGER_PLACEHOLDER_MS <- 1
 gps_src <- function(YR) {
   g <- file.path(fd_curated("logbook", "sensor_gps"), paste0("year=", YR))
   if (!dir.exists(g)) return(NULL)
+  # wrapped in SELECT * FROM (...): dbplyr inlines a WITH query bare inside UNION ALL, which DuckDB rejects
   dplyr::tbl(duckdbfs::cached_connection(), dplyr::sql(sprintf("
-  WITH g0 AS (
+  SELECT * FROM (WITH g0 AS (
     SELECT vid, time, \".sid\" AS sid, sensor_src, lon, lat, dt_sec, heading,
            speed * %f AS speed_kn_raw,
            CASE WHEN abs(speed - %f) < 1e-6 THEN NULL ELSE speed * %f END AS speed_kn
@@ -213,7 +214,7 @@ gps_src <- function(YR) {
          'reconstructed' AS pos_basis,
          CASE WHEN speed_kn IS NULL AND speed_kn_raw IS NOT NULL THEN 'placeholder' ELSE 'recorded' END AS speed_basis,
          dt_sec, sid_gps, n_sid_gps
-  FROM g2", MS_TO_KN, LOGGER_PLACEHOLDER_MS, MS_TO_KN, g)))
+  FROM g2)", MS_TO_KN, LOGGER_PLACEHOLDER_MS, MS_TO_KN, g)))
 }
 
 # bind -------------------------------------------------------------------------
