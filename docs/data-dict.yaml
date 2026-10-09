@@ -2678,8 +2678,9 @@ tables:
         range: [1, 102]
         examples: [1, 22, 44, 64, 102]
         description: >
-          The AIS voyage (curated/ais/voyage.parquet trip number) this fix's timestamp
-          falls inside; NA if outside any recorded voyage.
+          The AIS voyage of decision 073's build this fix fell inside (the old curated/ais/trip.parquet's
+          trip number). The table is frozen (decision 075), so this is NOT a key into curated/ais/voyage.parquet;
+          the fix's current voyage is on curated/ais/ping (provider gps).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
