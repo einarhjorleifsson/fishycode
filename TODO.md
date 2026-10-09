@@ -121,15 +121,6 @@ codes all resolve against it.
 
 ---
 
-## 14. Two months of astd are in `raw/` and were never loaded
-**status:** open · **see:** `curate/corrections/astd_missing_months.yml`
-
-Two months of ASTD sat in `raw/` and never reached the union. Loaded into `staging/ais/astd` on 2026-10-09
-(plan 014 3e: 2023-08 and 2023-09, 47.6 M rows); they reach the union in plan 014's rebuild, which closes this.
-The other two gaps (2017-07, 2019-01) are source gaps: no zip exists.
-
-**check:** every month present in `raw/ais/astd` appears in `staging/ais/ping_union`.
-
 ## 19. The dropped afli stations — PARKED
 **status:** parked · **see:** `curate/corrections/afli_rafr_stofn_stations_dropped.yml`,
 `curate/plans/005-recover-the-dropped-afli-stations.md`
@@ -421,8 +412,8 @@ that cut a witnessed run is recorded in a decision.
 
 ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Plan 013's step A and
 phases 0–2 are done (decisions 070–073). Plan 014 draws the line between Icelandic preprocessing, the three frozen
-one-time fixes and the flow. Phases 1 and 2 are done (decisions 075, 076; step 2 runs through ramb, exact).
-Next: phase 3's counted changes, then one rebuild; ramb f28646d is not pushed yet. Each plan maps the TODO items it closes.
+one-time fixes and the flow. Phases 1-4 are done (decisions 075-078; the rebuild reconciles). Next: the data
+dictionary, docs and fishyweb pages after the renames, then phase 5 (the WGSFD doc); ramb is not pushed yet. Each plan maps the TODO items it closes.
 
 **check:** plan 014's phases each have a decision record, and fishycode's steps 0–2 call ramb functions.
 
@@ -430,8 +421,8 @@ Next: phase 3's counted changes, then one rebuild; ramb f28646d is not pushed ye
 **status:** open · **see:** decision 077 (3h), ramb f6faf9b
 
 The cause was an unpartitioned `row_number() OVER ()`, which DuckDB runs on one core. Numbering per vessel took a
-4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). Scaled up that is about 15 min: the full
-time is read off the plan 014 rebuild.
+4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). The plan 014 rebuild took 29 min (decision
+078): faster, not yet fast. Not profiled further.
 
 **check:** the step runs no slower than 10 min on the full data, with the same output.
 
