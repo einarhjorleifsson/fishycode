@@ -30,15 +30,17 @@ does it twice.
 ---
 
 ## 3. `station_type` is prose, not a contract
-**status:** open · **needs: maintainer** — is a jig or longline record one operation or a day's fishing? ·
-**files:** `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R` · **see:** `docs/grammar.qmd` (`station_type`)
+**status:** open · **files:** `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R` ·
+**see:** `docs/grammar.qmd` (`station_type`), decision 077 (3f)
 
-`grammar.qmd` defines `station_type` (the WGSFD doc's `resolution`: operation, event, monthly or annual aggregate,
-reconstructed); no adapter writes it. afli's monthly aggregates are already split into `staging/afli/aggregate`,
-so its stations would be `operation`. Plan 014 3f measured (2026-10-09) that the unit is not clear from the
-data alone: jig (LHM) and longline (LLS) records are one per vessel-day for 98.9 / 98.5 % (afli) and 96.4 / 91.8 %
-(fs_afladagbok) of vessel-days, where bottom trawl averages 3.8 / 3.6 stations a day. A day's jigging recorded as
-one record is a `day`, not an `operation`. Asked: per gear and source, which is it?
+`grammar.qmd` defines `station_type` (the WGSFD doc's `resolution`: operation, day/event, monthly or annual
+aggregate, reconstructed); no adapter writes it. afli's monthly aggregates are already in `staging/afli/aggregate`.
+Measured (plan 014 3f): jig (LHM) and longline (LLS) records are one per vessel-day for 92-99 % of vessel-days,
+bottom trawl 3.6-3.8 a day. The maintainer (2026-10-09): longlines are normally reported by operation, with
+exceptions; jiggers and netters more often one record per day; it changes over time, and bigger vessels (e.g. the
+Greenland halibut net fishery) more often report each setting. So no fixed rule per gear: read it per vessel, year
+and gear from the vessel's own pattern (share of vessel-days with several records), basis `derived`, longlines
+`operation` unless the pattern says otherwise. To measure first: that share's distribution by gear and year.
 
 **check:** `grep -rn station_type sources/` returns the column being written by both adapters.
 
