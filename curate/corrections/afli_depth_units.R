@@ -63,7 +63,7 @@ trip <- open_dataset(fd_staging("afli", "trip.parquet")) |>
   select(.tid, vid)
 
 gear_sid <- open_dataset(fd_staging("afli", "fishing_sample.parquet")) |>
-  select(.sid, gid, gear)
+  select(.sid, gid, gear, t1, t2, t3, t4)
 
 gebco <- open_dataset(fd_curated("reference", "area_h3.parquet")) |>
   select(h3, gebco_depth = depth)
@@ -91,7 +91,9 @@ classif <- station |>
   filter(!is.na(gebco_depth), gebco_depth < 0) |>
   mutate(gebco_ratio = abs(gebco_depth) / z1,
          is_metres = gebco_ratio < METRES_THRESH) |>
-  select(vid, date, is_metres) |>
+  # the station's first recorded time breaks ties between stations of one date (TODO 47)
+  mutate(t_first = coalesce(t1, t2, t3, t4)) |>
+  select(vid, date, t_first, .sid, is_metres) |>
   collect()
 
 # Per-vessel changepoint --------------------------------------------------------
@@ -112,8 +114,11 @@ fit_switch_date <- function(date_sorted, is_metres_sorted) {
   else date_sorted[k_star + 1]
 }
 
+# Stations of one vessel on one date are tied on `date`; DuckDB does not fix their order, and the order feeds
+# the cumulative scan, so it moved the switch date of 12-15 of 809 vessels between runs (decision 073). The
+# station's first recorded time, then its id, fix it (TODO 47).
 vessel_groups <- classif |>
-  arrange(vid, date) |>
+  arrange(vid, date, t_first, .sid) |>
   group_by(vid) |>
   filter(n() >= MIN_CLASSIFY) |>
   ungroup() |>

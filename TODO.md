@@ -437,15 +437,6 @@ Next: phase 3's counted changes, then one rebuild; ramb f28646d is not pushed ye
 
 **check:** plan 014's phases each have a decision record, and fishycode's steps 0–2 call ramb functions.
 
-## 47. `afli_depth_units.R` decides depth units by tie order
-**status:** open · **see:** decision 073, `curate/corrections/afli_depth_units.R` (`arrange(vid, date)`)
-
-Stations of one vessel on one date are tied; their order, which DuckDB does not fix, feeds the cumulative scan
-of `fit_switch_date()`. Five shuffles of the ties move the fathoms → metres switch date of 12–15 of 809 vessels,
-and with it `z1`/`z2` of their stations. Break ties by the station's time of day.
-
-**check:** two runs give identical `staging/afli/depth.parquet`; the stations whose unit changes are counted.
-
 ## 48. `ais_trip.R` takes 51 min since the ramb port, against 9.4
 **status:** open · **see:** decision 073, ramb `R/cut_trip_voyages.R`
 
