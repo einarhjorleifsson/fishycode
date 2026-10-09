@@ -441,7 +441,8 @@ edits, none new in kind. Nothing was validated against the data (`validate-meta`
 ## 52. Plan 014 leftovers waiting on the maintainer
 **status:** open · **needs: maintainer** — three yes/no answers · **see:** decision 079
 
-- **fishyweb:** three pages follow the plan 014 names (27b35ff), committed locally, not pushed.
+- **fishyweb:** three pages follow the plan 014 names (27b35ff), committed locally. The repo has no remote
+  configured, so there is nothing to push to until one is added (plan 001, TODO 15).
 - **The claude.ai one-flow master:** the WGSFD document now lives in `docs/one_flow.qmd`. The master still has
   version 2 with "harbour". Update it, or retire it in favour of the fishycode page?
 - **`$FISHYDATA/legacy/2026-10-plan014`** (16 GB, mostly the old `ping_trail`): kept for now (maintainer,
