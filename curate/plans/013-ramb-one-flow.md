@@ -471,6 +471,16 @@ Each phase ends with three things:
 4. **Design, then build.** Each piece continues an existing plan or TODO item rather than opening a new one:
    - `T2` reconciliation, with `rb_link_trip_landings` (the `link_lid_map` fixes) as its first piece: TODO 27b and
      plan 011.
+     The maintainer, 2026-10-09: neither declared date is the arrival. The logbook's `T2` is often the expected arrival,
+     written before the trip ends; the landing's date is when the catch was declared or sold. Only the track measures
+     when the vessel enters port, so reconciliation links the declarations to the arrival rather than choosing one of
+     them as it, and keeps all three with their basis.
+     The bootstrap this creates (maintainer, same day): preprocessing matches logbook and landings on the declared
+     dates only (no AIS, plan 014), and the accurate departure and arrival exist only in the flow. So step 1 builds the
+     reconciled trip table as a flow output: `T1`/`T2` from the track's stays, the logbook trip and the landings linked
+     to it, each with its basis; it may also link landings the declared-date match missed. It is never written back
+     into the preprocessing link (`lid_map`). If a reconciled result must change an input, it re-enters as a reviewed,
+     frozen input by decision, as the vessel key does (decision 075).
    - Gear with several gears per trip: TODO 34.
    - Fishing beyond window + speed: plans 004 and 012, TODO 18.
      - `"gmm"` and `"embc"` at tier 3, tested against `mixtools` and `EMbC`.

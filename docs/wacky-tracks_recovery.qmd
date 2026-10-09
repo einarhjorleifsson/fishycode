@@ -8,6 +8,8 @@ date: today
 
 ```{r setup}
 #| include: false
+here::i_am("docs/wacky-tracks_recovery.qmd")
+source(here::here("R/paths.R"))
 library(tidyverse)
 library(duckdbfs)
 ```
@@ -219,7 +221,7 @@ adiff <- function(f, b)
 #| include: false
 # Development subset: 2017, small area off the Icelandic coast (~22 800 records)
 siriti_raw <-
-  open_dataset("data-dump/logbooks/afli/rafr_sjalfvirkir_maelar.parquet") |>
+  open_dataset(fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet")) |>
   mutate(year = year(timi)) |>
   select(year, visir, timi, lengd, breidd, skip_hradi, skip_stefna) |>
   filter(year   == 2017,
@@ -229,7 +231,7 @@ siriti_raw <-
   arrange(visir, timi)
 
 stofn_gear <-
-  open_dataset("data-dump/logbooks/afli/rafr_stofn.parquet") |>
+  open_dataset(fd_raw("logbooks", "afli", "rafr_stofn.parquet")) |>
   select(visir, skipnr, veidarf) |>
   collect()
 
@@ -407,7 +409,7 @@ import**. The error was introduced before transmission.
 ### Record counts by year
 
 ```{r scale-table}
-open_dataset("data-dump/logbooks/afli/rafr_sjalfvirkir_maelar.parquet") |>
+open_dataset(fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet")) |>
   mutate(year = year(timi)) |>
   filter(year >= 2008, year <= 2020) |>
   group_by(year) |>
@@ -615,12 +617,12 @@ Remaining: run at full scale; characterise NA coverage; write to `data/afli/`.
 #| eval: false
 # One-shot pipeline for the full archive
 dat_resolved <-
-  open_dataset("data-dump/logbooks/afli/rafr_sjalfvirkir_maelar.parquet") |>
+  open_dataset(fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet")) |>
   mutate(year = year(timi)) |>
   filter(year >= 2008, year <= 2020) |>
   select(visir, timi, lengd, breidd, skip_hradi, skip_stefna) |>
   left_join(
-    open_dataset("data-dump/logbooks/afli/rafr_stofn.parquet") |>
+    open_dataset(fd_raw("logbooks", "afli", "rafr_stofn.parquet")) |>
       select(visir, skipnr, veidarf),
     by = "visir"
   ) |>

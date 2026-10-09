@@ -3,16 +3,18 @@ title: "The notorious STK data"
 ---
 
 ```{r}
+here::i_am("docs/stk_data-inspection.qmd")
+source(here::here("R/paths.R"))
 library(duckdbfs)
 library(tidyverse)
-source("R/wacky_points.R")
+library(ramb)   # R/wacky_points.R is gone; the rb_ filters are in ramb
 library(mapdeck)
 token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"
 mapdeck::set_token(token)
 duckdbfs::load_spatial()
-ports <- open_dataset("data/aux/ports.fgb") |> select(pid, port, .hid = hid, geom)
+ports <- open_dataset(fd_staging("aux", "ports.fgb")) |> select(pid, port, .hid = hid, geom)
 stk <- 
-  open_dataset("data-raw/ais/stk") |> 
+  open_dataset(fd_staging("ais", "stk")) |> 
   mutate(geom = ST_POINT(lon, lat)) |> 
   duckdbfs::spatial_join(ports) |> 
   select(-geom_1)

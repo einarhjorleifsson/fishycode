@@ -5,10 +5,10 @@ date: today
 
 ## Goal
 
-Attach a landing identifier (`.tid_land`) to each logbook trip, enabling
+Attach a landing identifier (`.lid`) to each logbook trip, enabling
 downstream reconciliation between the two systems. The match is
 produced by `curate/link_lid_map.R` and stored as
-`curated/logbook/lid_map.parquet` with columns `.tid`, `schema`, `.tid_land`,
+`curated/logbook/lid_map.parquet` with columns `.tid`, `schema`, `.lid`,
 `match_type`. It is not written back into `trip.parquet` — a consumer that
 wants both joins them itself, e.g. below.
 
@@ -29,7 +29,7 @@ species per delivery; `landings.R` groups to trip level:
 
 Where multiple `.lid` records share the same `vid × date × hid` (split
 deliveries or gear-disaggregated entries), they are collapsed to a single `.tid`
-with catch summed. In the matching script, `.tid` is renamed to `.tid_land` to
+with catch summed. In the matching script, the landing key is `.lid` (it was `.tid_land` before the agf/lods merge, plan 007), to
 avoid collision with the logbook `.tid`.
 
 ### Logbook trips
@@ -51,7 +51,7 @@ unmatched count.
 
 The cascade works in eight steps of decreasing key specificity. Each step
 operates only on trips and landings **not yet consumed** by earlier steps, and
-accepts only **unambiguous** matches — exactly one `.tid_land` candidate per
+accepts only **unambiguous** matches — exactly one `.lid` candidate per
 `.tid`. The helper used throughout:
 
 ```{r}
@@ -60,7 +60,7 @@ try_match <- function(unmatched, land_tbl, by, type) {
   unmatched |>
     inner_join(land_tbl, by = by) |>
     group_by(.tid) |>
-    filter(n_distinct(.tid_land) == 1) |>
+    filter(n_distinct(.lid) == 1) |>
     slice(1) |>
     ungroup() |>
     mutate(match_type = type)
@@ -131,7 +131,7 @@ Demersal and pelagic trips are treated separately:
 #| eval: false
 try_match_weight <- function(unmatched, land_tbl, consumed_land, tol, gap, type) {
   unmatched |>
-    inner_join(land_tbl |> filter(!.tid_land %in% consumed_land),
+    inner_join(land_tbl |> filter(!.lid %in% consumed_land),
                by = c("vid", "date")) |>
     mutate(score = abs(log(catch / catch_land))) |>
     filter(is.finite(score), score <= tol) |>
@@ -167,10 +167,14 @@ primary value of this step: a QA diagnostic for identifying suspect entries.
 
 ```{r}
 #| label: setup
+here::i_am("docs/landings-match.qmd")
+source(here::here("R/paths.R"))
 library(nanoparquet)
 library(tidyverse)
-trip    <- read_parquet("data/logbooks/trip.parquet")
-lid_map <- read_parquet("data/logbooks/lid_map.parquet")
+trip    <- read_parquet(fd_curated("logbook", "trip.parquet"))
+lid_map <- read_parquet(fd_curated("logbook", "lid_map.parquet"))
+# lid_map no longer writes into trip.parquet (decision 025): the match is joined on here, by (.tid, schema)
+trip <- trip |> left_join(lid_map |> select(.tid, schema, .lid, match_type), by = c(".tid", "schema"))
 ```
 
 ### Match counts by step
@@ -214,32 +218,30 @@ For matched trips, logbook `catch` and landing catch are both in kg.
 #| label: tbl-weight-ratio
 #| tbl-cap: "Ratio of logbook catch to landing weight for matched trips."
 land <-
-  read_parquet("data/landings/landings.parquet") |>
+  read_parquet(fd_curated("landing", "landings.parquet")) |>
   filter(vid > 0, !(vid >= 3700 & vid <= 4999),
          date >= ymd("2007-09-01"), date <= ymd("2025-12-12")) |>
-  rename(.tid_land = .tid) |>
   left_join(
-    read_parquet("data/landings/catch.parquet") |>
-      group_by(.tid) |>
-      summarise(land_catch = sum(catch), .groups = "drop") |>
-      rename(.tid_land = .tid),
-    by = ".tid_land"
+    read_parquet(fd_curated("landing", "catch.parquet")) |>
+      group_by(.lid) |>
+      summarise(land_catch = sum(catch), .groups = "drop"),
+    by = ".lid"
   )
 
-# Trip-level logbook catch from catch.parquet (via station for .tid key)
+# Trip-level logbook catch from catch.parquet (via station for the .tid key); ids are unique within a schema only
 logbook_catch <-
-  read_parquet("data/logbooks/catch.parquet") |>
+  read_parquet(fd_curated("logbook", "catch.parquet")) |>
   left_join(
-    read_parquet("data/logbooks/station.parquet") |> select(.sid, .tid),
-    by = ".sid"
+    read_parquet(fd_curated("logbook", "station.parquet")) |> select(.sid, .tid, schema),
+    by = c(".sid", "schema")
   ) |>
-  group_by(.tid) |>
+  group_by(.tid, schema) |>
   summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")
 
 trip |>
-  filter(!is.na(.tid_land)) |>
-  left_join(logbook_catch, by = ".tid") |>
-  inner_join(land |> select(.tid_land, land_catch), by = ".tid_land") |>
+  filter(!is.na(.lid)) |>
+  left_join(logbook_catch, by = c(".tid", "schema")) |>
+  inner_join(land |> select(.lid, land_catch), by = ".lid") |>
   filter(catch > 0, land_catch > 0) |>
   mutate(ratio = catch / land_catch) |>
   group_by(schema, match_type) |>
@@ -269,7 +271,7 @@ land |>
   filter(vid > 0, !(vid >= 3700 & vid <= 4999),
          date >= ymd("2007-09-01"), date <= ymd("2025-12-12")) |>
   mutate(year    = year(date),
-         matched = .tid_land %in% lid_map$.tid_land) |>
+         matched = .lid %in% lid_map$.lid) |>
   count(year, matched) |>
   group_by(year) |>
   mutate(pct = 100 * n / sum(n)) |>
@@ -290,26 +292,26 @@ behaviour.
 ```{r}
 #| label: tbl-gear-coverage
 #| tbl-cap: "Logbook coverage by gear type on the landings side (≥100 landings)."
-land_catch_gid <- read_parquet("data/landings/catch.parquet") |>
-  select(.tid, gid) |>
-  distinct() |>
-  rename(.tid_land = .tid)
+# agf landings carry the new gear code, lods the old one (decision 077); from 2007-09 nearly all are agf
+land_catch_gid <- read_parquet(fd_curated("landing", "catch.parquet")) |>
+  select(.lid, gid) |>
+  distinct()
 
-gear_labels <- read_parquet("data/gear/gear_mapping.parquet") |>
+gear_labels <- read_parquet(fd_curated("reference", "gear.parquet")) |>
   filter(version == "new") |>
-  select(gid, veiðarfæri, gear)
+  select(gid, `veiðarfæri`, gear)
 
 land |>
   filter(vid > 0, !(vid >= 3700 & vid <= 4999),
          date >= ymd("2007-09-01"), date <= ymd("2025-12-12")) |>
-  mutate(matched = .tid_land %in% lid_map$.tid_land) |>
-  left_join(land_catch_gid, by = ".tid_land") |>
+  mutate(matched = .lid %in% lid_map$.lid) |>
+  left_join(land_catch_gid, by = ".lid") |>
   group_by(gid) |>
   summarise(n = n(), pct_matched = round(100 * mean(matched), 1), .groups = "drop") |>
   filter(n >= 100) |>
   left_join(gear_labels, by = "gid") |>
   arrange(-pct_matched) |>
-  mutate(gear_label = paste0(veiðarfæri, " (", gid, ")")) |>
+  mutate(gear_label = paste0(`veiðarfæri`, " (", gid, ")")) |>
   select(gear_label, gear, n, pct_matched) |>
   knitr::kable(col.names = c("Veiðarfæri (gid)", "ICES", "n", "% matched"))
 ```
@@ -340,39 +342,38 @@ use lumpfish logbook data in catch reconciliation without dedicated QA.**
 library(duckdbfs)
 
 # Load supporting tables
-vessel_reg <- open_dataset("data/vessels/vessels_iceland.parquet") |>
+vessel_reg <- open_dataset(fd_curated("vessel", "vessel.parquet")) |>
   select(vid, mclass) |>
   collect()
 
-gear_new <- read_parquet("data/gear/gear_mapping.parquet") |>
+gear_new <- read_parquet(fd_curated("reference", "gear.parquet")) |>
   filter(version == "new") |>
-  select(gid, veiðarfæri, gear)
+  select(gid, `veiðarfæri`, gear)
 
 # Dominant gear per landing: highest-catch gid
 land_catch_by_gid <-
-  read_parquet("data/landings/catch.parquet") |>
-  group_by(.tid, gid) |>
+  read_parquet(fd_curated("landing", "catch.parquet")) |>
+  group_by(.lid, gid) |>
   summarise(kg = sum(catch, na.rm = TRUE), .groups = "drop") |>
-  group_by(.tid) |>
+  group_by(.lid) |>
   slice_max(kg, n = 1, with_ties = FALSE) |>
   ungroup() |>
-  select(.tid, gid)
+  select(.lid, gid)
 
 # All landings in coverage window, excluding foreign vessels (vid 3700-4999)
 land_all <-
-  read_parquet("data/landings/landings.parquet") |>
+  read_parquet(fd_curated("landing", "landings.parquet")) |>
   filter(vid > 0, !(vid >= 3700 & vid <= 4999),
          date >= ymd("2007-09-01"), date <= ymd("2025-12-31"))
 
 # Unmatched = landings with no entry in lid_map
 matched_tids <- lid_map |>
-  select(.tid_land) |>
-  rename(.tid = .tid_land) |>
+  select(.lid) |>
   distinct()
 
 unmatched_df <- land_all |>
-  anti_join(matched_tids, by = ".tid") |>
-  left_join(land_catch_by_gid, by = ".tid") |>
+  anti_join(matched_tids, by = ".lid") |>
+  left_join(land_catch_by_gid, by = ".lid") |>
   left_join(vessel_reg, by = "vid") |>
   mutate(
     year = year(date),
@@ -459,16 +460,16 @@ Two distinct patterns are visible:
 #| label: tbl-harbour-unmatched
 #| tbl-cap: "Top 15 ports by unmatched landing count, decomposed by category."
 total_havn <- land_all |>
-  count(höfn, name = "total")
+  count(`höfn`, name = "total")
 
 unmatched_df |>
-  count(höfn, category) |>
+  count(`höfn`, category) |>
   tidyr::pivot_wider(names_from = category, values_from = n, values_fill = 0L) |>
   mutate(total_unmatched = tourist_angling + gid19_exempt + lumpfish + other) |>
-  left_join(total_havn, by = "höfn") |>
+  left_join(total_havn, by = join_by(`höfn`)) |>
   mutate(pct_unmatched = round(100 * total_unmatched / total, 1)) |>
   arrange(desc(total_unmatched)) |>
-  select(höfn, total, pct_unmatched, tourist_angling, lumpfish, other, gid19_exempt) |>
+  select(`höfn`, total, pct_unmatched, tourist_angling, lumpfish, other, gid19_exempt) |>
   head(15) |>
   knitr::kable()
 ```
@@ -490,10 +491,10 @@ Harbour hotspots split into two distinct causes:
 #| fig-cap: "Lumpfish (gid 3/4) landings: total and unmatched count by year."
 lf_tids <- land_catch_by_gid |>
   filter(gid %in% c(3L, 4L)) |>
-  pull(.tid)
+  pull(.lid)
 
 lf_total <- land_all |>
-  filter(.tid %in% lf_tids) |>
+  filter(.lid %in% lf_tids) |>
   mutate(year = year(date)) |>
   count(year, name = "total")
 
@@ -542,10 +543,10 @@ recovery to ~2,500–3,100 by 2024–2025.
 unmatched_df |>
   filter(category == "other") |>
   left_join(gear_new, by = "gid") |>
-  count(veiðarfæri, gid, gear) |>
+  count(`veiðarfæri`, gid, gear) |>
   mutate(
     pct        = round(100 * n / sum(n), 1),
-    gear_label = paste0(veiðarfæri, " (", gid, ")")
+    gear_label = paste0(`veiðarfæri`, " (", gid, ")")
   ) |>
   filter(n >= 200) |>
   arrange(desc(n)) |>
@@ -563,12 +564,12 @@ contributor.
 ```{r}
 #| label: tbl-residual-harbour
 #| tbl-cap: "Harbours with highest other-unmatched rate (≥ 500 total landings)."
-total_havn_all <- land_all |> count(höfn, name = "total")
+total_havn_all <- land_all |> count(`höfn`, name = "total")
 
 unmatched_df |>
   filter(category == "other") |>
-  count(höfn, name = "n_other") |>
-  left_join(total_havn_all, by = "höfn") |>
+  count(`höfn`, name = "n_other") |>
+  left_join(total_havn_all, by = join_by(`höfn`)) |>
   mutate(pct_other = round(100 * n_other / total, 1)) |>
   filter(total >= 500) |>
   arrange(desc(pct_other)) |>
@@ -590,7 +591,7 @@ distinct.
 #| label: tbl-residual-month
 #| tbl-cap: "Month distribution of matched vs other-unmatched landings. Ratio > 1 means over-represented in the residual."
 matched_month <- land_all |>
-  filter(.tid %in% matched_tids$.tid) |>
+  filter(.lid %in% matched_tids$.lid) |>
   mutate(month = month(date, label = TRUE)) |>
   count(month, name = "matched")
 
@@ -619,7 +620,7 @@ classes. The signal is not strong enough to draw firm conclusions.
 #| label: tbl-vessel-gaps
 #| tbl-cap: "Vessels with gap years: matched landings in surrounding years but other-unmatched in between (top 15 by gap-year landing count)."
 matched_vid_yr <- land_all |>
-  filter(.tid %in% matched_tids$.tid) |>
+  filter(.lid %in% matched_tids$.lid) |>
   mutate(year = year(date)) |>
   count(vid, year, name = "n_matched")
 
@@ -678,7 +679,7 @@ trip |>
   summarise(
     n_vessels   = n_distinct(vid),
     n_trips     = n(),
-    n_matched   = sum(!is.na(.tid_land)),
+    n_matched   = sum(!is.na(.lid)),
     pct_matched = round(100 * n_matched / n_trips, 1),
     .groups = "drop"
   ) |>

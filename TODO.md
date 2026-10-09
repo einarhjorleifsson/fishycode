@@ -427,17 +427,6 @@ Not designed; how many voyages carry no logbook trip and no landing is not count
 the flow qualifies them.
 
 
-## 50. Six docs pages read paths from before the restructuring
-**status:** open · **found:** plan 014 phase 4 render (2026-10-09)
-
-`quarto render` of `docs/` stops on pages that read pre-2026-09-20 paths: `afli-backentry.qmd`
-(`data/dictionary.parquet`), `convert-bugs.qmd` (`data-dump/...`), `landings-match.qmd` (`data/logbooks/...`),
-`merge.qmd` (`data-raw/...`), `wacky-tracks_recovery.qmd` (`data-dump/...`) and `stk_data-inspection.qmd`
-(`source("R/wacky_points.R")`, which no longer exists). The other 13 pages render. Each is to be repointed at
-`fd_*()` paths, or retired with a reason.
-
-**check:** `quarto render` in `docs/` completes with no error.
-
 ## 51. `docs/data-dict.yaml` fails the current data-dict spec
 **status:** open · **see:** decision 029
 

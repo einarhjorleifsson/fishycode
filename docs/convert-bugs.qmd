@@ -53,11 +53,13 @@ completely unpopulated for gid 6 trips in 2020–2021:
 ```{r}
 #| label: tbl-aux-coverage
 #| tbl-cap: "gid 6 coverage in trawl_and_seine_net_v by year"
+here::i_am("docs/convert-bugs.qmd")
+source(here::here("R/paths.R"))
 library(nanoparquet)
 library(tidyverse)
 
-station_v <- read_parquet("data-dump/logbooks/adb/station_v.parquet")
-trawl     <- read_parquet("data-dump/logbooks/adb/trawl_and_seine_net_v.parquet")
+station_v <- read_parquet(fd_raw("logbooks", "adb", "station_v.parquet"))
+trawl     <- read_parquet(fd_raw("logbooks", "adb", "trawl_and_seine_net_v.parquet"))
 
 station_v |>
   filter(gear_no == 6) |>
@@ -152,7 +154,7 @@ gid 5, 6, 7, 51, and 53 stations that are absent from `trawl_and_seine_net_v`
 ```{r}
 #| label: tbl-dredge
 #| tbl-cap: "dredge_v gear code coverage"
-dredge <- read_parquet("data-dump/logbooks/adb/dredge_v.parquet")
+dredge <- read_parquet(fd_raw("logbooks", "adb", "dredge_v.parquet"))
 station_v |>
   filter(station_id %in% dredge$station_id) |>
   count(gear_no) |>
@@ -184,16 +186,20 @@ removed.
 
 ### `adb` schema
 
+The brute-force reference (`station_new-brute-force.parquet`) was a one-off check and is no longer kept, so the
+table below is shown as code and not rebuilt (2026-10-09).
+
 ```{r}
 #| label: tbl-adb-years
+#| eval: false
 #| tbl-cap: "adb station counts by year: brute-force reference vs fixed script"
 library(nanoparquet)
 library(tidyverse)
 
 bind_rows(
-  read_parquet("data-raw/logbooks/adb/station_new-brute-force.parquet") |>
+  read_parquet(fd_staging("adb", "station_new-brute-force.parquet")) |>
     mutate(year = year(date), source = "brute-force"),
-  read_parquet("data-raw/logbooks/adb/station.parquet") |>
+  read_parquet(fd_staging("adb", "station.parquet")) |>
     mutate(year = year(date), source = "fixed")
 ) |>
   count(year, source) |>
@@ -208,7 +214,7 @@ bind_rows(
 ```{r}
 #| label: tbl-fs-years
 #| tbl-cap: "fs_afladagbok station counts by year after fix"
-read_parquet("data-raw/logbooks/fs_afladagbok/station.parquet") |>
+read_parquet(fd_staging("fs_afladagbok", "station.parquet")) |>
   mutate(year = year(date)) |>
   count(year) |>
   filter(between(year, 2016, 2026)) |>

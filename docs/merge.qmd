@@ -14,6 +14,8 @@ execute:
 
 ```{r}
 #| label: load-packages
+here::i_am("docs/merge.qmd")
+source(here::here("R/paths.R"))
 library(tidyverse)
 library(nanoparquet)
 library(gt)
@@ -21,19 +23,19 @@ library(gt)
 
 ```{r}
 #| label: load-data
-afli_trip    <- read_parquet("data-raw/logbooks/afli/trip.parquet")
-afli_station <- read_parquet("data-raw/logbooks/afli/station.parquet")
-afli_fs      <- read_parquet("data-raw/logbooks/afli/fishing_sample.parquet")
-afli_catch   <- read_parquet("data-raw/logbooks/afli/catch.parquet")
+afli_trip    <- read_parquet(fd_staging("afli", "trip.parquet"))
+afli_station <- read_parquet(fd_staging("afli", "station.parquet"))
+afli_fs      <- read_parquet(fd_staging("afli", "fishing_sample.parquet"))
+afli_catch   <- read_parquet(fd_staging("afli", "catch.parquet"))
 
-fs_trip    <- read_parquet("data-raw/logbooks/fs_afladagbok/trip.parquet")
-fs_station <- read_parquet("data-raw/logbooks/fs_afladagbok/station.parquet")
-fs_fs      <- read_parquet("data-raw/logbooks/fs_afladagbok/fishing_sample.parquet")
+fs_trip    <- read_parquet(fd_staging("fs_afladagbok", "trip.parquet"))
+fs_station <- read_parquet(fd_staging("fs_afladagbok", "station.parquet"))
+fs_fs      <- read_parquet(fd_staging("fs_afladagbok", "fishing_sample.parquet"))
 
-merged_trip    <- read_parquet("data/logbooks/trip.parquet")
-merged_station <- read_parquet("data/logbooks/station.parquet")
-merged_fs      <- read_parquet("data/logbooks/fishing_sample.parquet")
-merged_catch   <- read_parquet("data/logbooks/catch.parquet")
+merged_trip    <- read_parquet(fd_curated("logbook", "trip.parquet"))
+merged_station <- read_parquet(fd_curated("logbook", "station.parquet"))
+merged_fs      <- read_parquet(fd_curated("logbook", "fishing_sample.parquet"))
+merged_catch   <- read_parquet(fd_curated("logbook", "catch.parquet"))
 ```
 
 # Overview
