@@ -38,11 +38,14 @@ tar_option_set(
 # Helper: source a script, then return the files it is contracted to produce.
 # Declaring the outputs here rather than inside the scripts keeps the contract
 # visible in one place.
-# encoding = "UTF-8" is not optional: the scripts carry Icelandic gear and port
-# names (veidarfaeri, Grasleppunet, ...). Without it a subprocess whose locale is
-# not UTF-8 reads the bytes as Latin-1 and the script fails to parse.
+# source_script() (R/source_script.R) sources with encoding = "UTF-8", which is not
+# optional: the scripts carry Icelandic gear and port names (veidarfaeri,
+# Grasleppunet, ...), and a subprocess whose locale is not UTF-8 reads them as
+# Latin-1. It also clears what the script leaves behind - objects, options,
+# attached packages - so one target cannot change the next (TODO item 37).
+# The output paths are evaluated after the cleanup: they name only functions.
 produces <- function(script, ...) {
-  source(script, encoding = "UTF-8")
+  source_script(script)
   c(...)
 }
 
