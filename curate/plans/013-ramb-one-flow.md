@@ -228,11 +228,19 @@ They become one function:
 `rb_calc_distance(lon1, lat1, lon2, lat2, method = c("geodesic", "andoyer", "haversine"))`
 
 - **`"geodesic"`, the default.** Exact on WGS84.
-  - **Data frame:** Vincenty in Rcpp, one C++ function that the speed filters also call.
-  - **Lazy:** DuckDB spatial's `ST_Distance_Spheroid`. It takes points as (lat, lon); the macro fixes the order.
-  - **Non-convergence:** Vincenty can fail for nearly antipodal points. That is never a real leg but possible for a garbage
-    ping, so it needs a defined result: the Andoyer value, or NA with a warning. The other option is to include GeographicLib's C
-    code (MIT, the algorithm DuckDB uses) instead of Vincenty. **The maintainer chooses.**
+  - **Data frame:** Karney's algorithm, from GeographicLib's C code (`geodesic.c`/`geodesic.h`, MIT) added to ramb's
+    `src/` with its licence notice. It is called through Rcpp, and it is one C++ entry point that the speed filters also call. It
+    replaces `.rb_geodesic` (Vincenty).
+  - **Lazy:** DuckDB spatial's `ST_Distance_Spheroid`, which is the same algorithm (through PROJ). It takes points as (lat, lon);
+    the macro fixes the order.
+  - **Why Karney, not Vincenty (maintainer, 2026-10-09).** Vincenty fails near the antipode, which is never a real leg but
+    possible for a garbage ping, and ramb's version fails without any signal. From Iceland (64° N, 22° W) to a ping at the
+    antipode it is 19,441 m short; at 157.9° E, 63.95° S it is 7,059 m short. Andoyer–Lambert cannot stand in for it: it is
+    6,476 m long at the antipode. NA was ruled out by the maintainer. Karney is exact everywhere, so there is no fallback
+    branch. Data frames, the C++ filters and lazy tables run one algorithm and agree on every leg.
+  - **A deliberate exception to the "recode" rule above.** The C code is taken in unchanged, not recoded. Recoding Karney's
+    numerics by hand is where errors would enter, and a reference library kept with its licence is not the forked script the
+    rule was written against.
 - **`"andoyer"`:** Andoyer–Lambert, a closed form with no loop. It runs as a plain DuckDB macro, without the spatial extension.
 - **`"haversine"`:** the sphere, to reproduce older outputs.
 
@@ -243,7 +251,7 @@ They become one function:
 
 | Method | Worst error | Time per million legs, data frame / DuckDB |
 |---|---|---|
-| exact (Vincenty in R; `ST_Distance_Spheroid`) | under 3e-6 m / 2e-9 m | 0.5–0.9 s / 0.12 s |
+| exact (Vincenty in R today; `ST_Distance_Spheroid`) | under 3e-6 m on real legs / 2e-9 m | 0.5–0.9 s / 0.12 s |
 | Andoyer–Lambert | 1.4e-6 of the distance (14 mm per 10 km up to 50°, 8 mm at 65° N); R and macro equal to 2e-9 m | 0.30 s / 0.06 s |
 | haversine | −0.44 % to +0.56 % by latitude and direction; at 35° N +0.23 % north–south, −0.22 % east–west | 0.08 s / 0.02 s |
 
@@ -274,7 +282,8 @@ They become one function:
 decision 069 counted the time-step floor. At 64° N distances grow by about 0.33 %, about 0.08 kn at 25 kn.
 
 **Assumed, not measured:**
-- that Vincenty in Rcpp is faster than the R version;
+- that GeographicLib's C code, called through Rcpp, is at least as fast as the R Vincenty (0.5–0.9 s per million legs). geodist,
+  which uses Karney's algorithm, took 1.6 s per million legs including its R overhead;
 - that DuckDB spatial keeps the (lat, lon) order in later versions (the registration check guards this).
 
 ## What the diagram may be missing (from fishydata)
