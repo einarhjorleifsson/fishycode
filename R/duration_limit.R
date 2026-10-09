@@ -12,18 +12,8 @@
 #   duration_m       NA when implausible, otherwise the raw value
 # A gid with no limit is never implausible.
 
+# The rule is ramb::rb_limit_record_duration() (plan 014 phase 2); this keeps fishycode's column name.
 apply_duration_limit <- function(d, limits) {
-  stopifnot(all(c("gid", "duration_m") %in% names(d)),
-            all(c("gid", "dur_max_min") %in% names(limits)))
-  d |>
-    dplyr::left_join(limits |> dplyr::select(gid, dur_max_min) |> dplyr::distinct(gid, .keep_all = TRUE),
-                     by = "gid") |>
-    dplyr::mutate(
-      duration_m_raw   = duration_m,
-      .duration_source = dplyr::case_when(
-        is.na(duration_m)                              ~ "missing",
-        !is.na(dur_max_min) & duration_m > dur_max_min ~ "implausible",
-        .default                                       = "data"),
-      duration_m       = dplyr::if_else(.duration_source == "implausible", NA_real_, duration_m)) |>
-    dplyr::select(-dur_max_min)
+  ramb::rb_limit_record_duration(d, limits, gear = gid, duration = duration_m) |>
+    dplyr::rename(.duration_source = duration_source)
 }

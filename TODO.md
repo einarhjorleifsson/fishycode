@@ -432,8 +432,8 @@ same `.lid` within a step.
 
 ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Plan 013's step A and
 phases 0–2 are done (decisions 070–073). Plan 014 draws the line between Icelandic preprocessing, the three frozen
-one-time fixes and the flow (phase 1 done, decision 075). Next: plan 014 phase 2 (plan 013 phase 3, an exact port on
-today's inputs), then phase 3's counted changes, then one rebuild. Each plan maps the TODO items it closes.
+one-time fixes and the flow. Phases 1 and 2 are done (decisions 075, 076; step 2 runs through ramb, exact).
+Next: phase 3's counted changes, then one rebuild; ramb f28646d is not pushed yet. Each plan maps the TODO items it closes.
 
 **check:** plan 014's phases each have a decision record, and fishycode's steps 0–2 call ramb functions.
 

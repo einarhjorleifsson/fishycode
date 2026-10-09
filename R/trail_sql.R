@@ -3,6 +3,10 @@
 # Used by curate/ais_trail.R only. Plan 010 §3 (how a fix finds its station) and plan 011 Phase 5 (how it finds
 # its logbook trip through the voyage). Function definitions only; nothing runs on load.
 #
+# The station rules are ramb's (plan 014 phase 2, an exact port of what stood here): rb_link_record_pings() makes
+# the matches, rb_assign_fishing(method = "window") and rb_assign_record() put them on the fixes. This file
+# supplies the month's inputs, the voyage side and fishycode's column names (`n_sid` is ramb's `n_records`).
+#
 # A fix matches every station window of its vessel that contains its time. Windows come in tiers and a lower
 # tier only claims fixes no higher tier claims: tier 1 = tow | haul | set | jig (logbook times), tier 2 = day
 # (the whole station date, used when a station has no usable time). What stays ambiguous stays ambiguous:
@@ -17,84 +21,46 @@
 # Several logbook trips may share one voyage (3-4 %), so `.tid_voyage` is filled only when exactly one trip is on
 # the voyage, and `n_tid_voyage` counts them (0 = no logbook trip on this voyage or the fix is in no voyage).
 
-trail_month_sql <- function(year, month, kind = c("wide", "match")) {
+trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL) {
   kind <- match.arg(kind)
   t0 <- sprintf("TIMESTAMP '%d-%02d-01'", year, month)
   t1 <- if (month == 12) sprintf("TIMESTAMP '%d-01-01'", year + 1L) else sprintf("TIMESTAMP '%d-%02d-01'", year, month + 1L)
   pfile <- shQuote(file.path(fd_curated("ais", "ping_trail"), paste0("year=", year), "part_001.parquet"), type = "sh")
   swf   <- shQuote(fd_curated("logbook", "station_window.parquet"), type = "sh")
   tvf   <- shQuote(fd_curated("link", "trip_voyage.parquet"), type = "sh")
+  lazy  <- function(q) dplyr::tbl(con, dplyr::sql(q))
+  rend  <- function(x) as.character(dbplyr::sql_render(x))
 
-  p <- sprintf("(SELECT * EXCLUDE (year, pid) FROM read_parquet(%s) WHERE time >= %s AND time < %s)", pfile, t0, t1)
+  p <- lazy(sprintf("SELECT * EXCLUDE (year, pid) FROM read_parquet(%s) WHERE time >= %s AND time < %s", pfile, t0, t1))
+  carry <- c(".tid", "gear", "target", "target2", "gear_class", "win_basis", "events")
 
-  matches <- sprintf("
-    WITH w AS (SELECT *, CASE phase WHEN 'haul' THEN 1 WHEN 'tow' THEN 2 WHEN 'jig' THEN 3
-                                    WHEN 'set' THEN 4 ELSE 5 END AS prank
-               FROM read_parquet(%s) WHERE w_end >= %s AND w_start < %s),
-    m0 AS (
-      SELECT p.vid, p.time, p.speed, w.\".sid\" AS sid, w.schema, w.\".tid\" AS tid, w.gear, w.target, w.target2,
-             w.gear_class, w.phase, w.win_basis, w.events, w.s1, w.s2, w.w_start, w.w_end,
-             w.prank, (w.phase <> 'day') AS tier1
-      FROM (SELECT vid, time, speed FROM %s) p
-      JOIN w ON p.vid = w.vid AND p.time BETWEEN w.w_start AND w.w_end),
-    m1 AS (SELECT * FROM m0 WHERE tier1
-           UNION ALL
-           SELECT * FROM m0 WHERE NOT tier1
-             AND NOT EXISTS (SELECT 1 FROM m0 t WHERE t.tier1 AND t.vid = m0.vid AND t.time = m0.time)),
-    m AS (SELECT * EXCLUDE (rk) FROM (
-            SELECT *, row_number() OVER (PARTITION BY vid, time, sid, schema ORDER BY prank) AS rk FROM m1) WHERE rk = 1)",
-    swf, t0, t1, p)
+  if (kind == "match") {
+    w <- lazy(sprintf("SELECT * FROM read_parquet(%s) WHERE w_end >= %s AND w_start < %s", swf, t0, t1))
+    m <- ramb::rb_link_record_pings(p, w, key = c(".sid", "schema"), carry = carry,
+                                    speed_min = "s1", speed_max = "s2")
+    return(sprintf("
+      SELECT vid, time, \".sid\", schema, \".tid\", gear, target, target2, gear_class, phase, phase_frac,
+             win_basis, events, s1, s2, w_start, w_end, fishing
+      FROM (%s)", rend(m)))
+  }
 
-  if (kind == "match") return(sprintf("
-    %s
-    SELECT m.vid, m.time, m.sid AS \".sid\", m.schema, m.tid AS \".tid\", m.gear, m.target, m.target2, m.gear_class, m.phase,
-           CASE WHEN m.phase <> 'day' THEN epoch(m.time - m.w_start) / nullif(epoch(m.w_end - m.w_start), 0) END AS phase_frac,
-           m.win_basis, m.events, m.s1, m.s2, m.w_start, m.w_end,
-           (m.phase <> 'set' AND m.speed BETWEEN m.s1 AND m.s2) AS fishing
-    FROM m ORDER BY m.vid, m.time, m.sid", matches))
-
+  # the wide row reads the month's matches back from trail_match, written just before it
+  m <- lazy(sprintf("SELECT * FROM read_parquet(%s)", shQuote(matches, type = "sh")))
+  r <- p |>
+    ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2") |>
+    ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:5], "s1", "s2", "win_basis", "events"))
   sprintf("
-    %s,
-    a AS (
-      SELECT vid, time, count(*) AS n_sid,
-             any_value(sid) AS sid, any_value(schema) AS schema, any_value(tid) AS tid,
-             any_value(gear) AS gear, any_value(target) AS target, any_value(target2) AS target2,
-             any_value(gear_class) AS gear_class,
-             any_value(s1) AS s1, any_value(s2) AS s2,
-             any_value(phase) AS phase, any_value(win_basis) AS win_basis, any_value(events) AS events,
-             any_value(CASE WHEN phase <> 'day' THEN epoch(time - w_start) / nullif(epoch(w_end - w_start), 0) END) AS phase_frac,
-             -- per claiming window: FALSE for a set or a gear with no speed range, NA when there is no speed
-             CASE WHEN bool_or(CASE WHEN phase = 'set' OR s1 IS NULL THEN FALSE WHEN speed IS NULL THEN NULL
-                                    ELSE speed BETWEEN s1 AND s2 END) THEN TRUE
-                  WHEN count(*) FILTER (WHERE NOT (phase = 'set' OR s1 IS NULL) AND speed IS NULL) > 0 THEN NULL
-                  ELSE FALSE END AS fishing
-      FROM m GROUP BY vid, time),
-    v AS (
+    WITH v AS (
       SELECT vid, year, trip, count(*) AS n_tid_voyage,
              CASE WHEN count(*) = 1 THEN any_value(\".tid\") END AS tid_v,
              CASE WHEN count(*) = 1 THEN any_value(schema) END AS schema_v
-      FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, trip)
-    SELECT p.vid, p.mmsi, p.time, p.lon, p.lat, p.speed, p.speed_raw, p.heading, p.cog, p.provider,
-           p.pos_basis, p.speed_basis, p.speed_gps, p.dt_sec, p.stay_pid, p.trip,
+      FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, trip),
+    r AS (%s)
+    SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
+           r.pos_basis, r.speed_basis, r.speed_gps, r.dt_sec, r.stay_pid, r.trip,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
-           coalesce(a.n_sid, 0) AS n_sid,
-           CASE WHEN a.n_sid = 1 THEN a.sid END AS \".sid\",
-           CASE WHEN a.n_sid = 1 THEN a.schema END AS schema,
-           CASE WHEN a.n_sid = 1 THEN a.tid END AS \".tid\",
-           CASE WHEN a.n_sid = 1 THEN a.gear END AS gear,
-           CASE WHEN a.n_sid = 1 THEN a.target END AS target,
-           CASE WHEN a.n_sid = 1 THEN a.target2 END AS target2,
-           CASE WHEN a.n_sid = 1 THEN a.gear_class END AS gear_class,
-           CASE WHEN a.n_sid = 1 THEN a.s1 END AS s1,
-           CASE WHEN a.n_sid = 1 THEN a.s2 END AS s2,
-           CASE WHEN a.n_sid = 1 THEN a.phase END AS phase,
-           CASE WHEN a.n_sid = 1 THEN a.phase_frac END AS phase_frac,
-           CASE WHEN a.n_sid = 1 THEN a.win_basis END AS win_basis,
-           CASE WHEN a.n_sid = 1 THEN a.events END AS events,
-           CASE WHEN a.n_sid IS NULL THEN FALSE ELSE a.fishing END AS fishing,
-           p.sid_gps, p.n_sid_gps
-    FROM %s p
-    LEFT JOIN a USING (vid, time)
-    LEFT JOIN v ON v.vid = p.vid AND v.trip = p.trip",
-    matches, tvf, year, p)
+           r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.gear, r.target, r.target2, r.gear_class,
+           r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, r.fishing, r.sid_gps, r.n_sid_gps
+    FROM r LEFT JOIN v ON v.vid = r.vid AND v.trip = r.trip",
+    tvf, year, rend(r))
 }

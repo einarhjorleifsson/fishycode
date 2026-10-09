@@ -1,11 +1,11 @@
 # 014 — One line between Icelandic preprocessing and the generic flow
 
-**status:** partly built — approved 2026-10-09; phase 1 done (decision 075) · **2026-10-09** ·
+**status:** partly built — approved 2026-10-09; phases 1–2 done (decisions 075, 076) · **2026-10-09** ·
 **see:** TODO 45 (closed by this plan), plan 013, `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`
 
 Drafted with AI assistance (Claude) in plan mode on 2026-10-09, from the maintainer's direction (TODO 45), the terms
-the maintainer chose in the same session, read-only measurements and an adversarial review. Decisions 075 and 076
-carry the same AI-use line.
+the maintainer chose in the same session, read-only measurements and an adversarial review. Its decision records
+(075 on) carry the same AI-use line.
 
 **Measured:** the counts under "Measured in plan mode" below (read-only, 2026-10-09).
 **Assumed:** everything from §1 on is design. In particular: that gps in the union under the `pos_basis` rule
@@ -233,7 +233,7 @@ Each phase ends with:
    - Fingerprints after, every difference attributed to a step of phase 3 or to a renamed path.
    - The superseded outputs (`harbour_stay`, `ais/trip`, `ping_trail`, `check/stk_event`, `harbour_class`,
      `harbour_radius`, `harbour.parquet`) are moved by a scripted step into `$FISHYDATA/legacy/2026-10-plan014/`.
-   - Decision 076.
+   - A decision record.
 5. **WGSFD doc v2.** "harbour" → "port" in the local md, with an AI-use line. The claude.ai master changes only on
    the maintainer's yes.
 
@@ -253,5 +253,5 @@ Each phase ends with:
   written is `port_radius.parquet`.
 - **Phases 2–3:** real data written to scratch and compared with `$FISHYDATA`, never written into `curated/`.
   Differences are counted. ramb's `devtools::test()` passes; install with `R CMD INSTALL --preclean .`.
-- **Phase 4:** per-file fingerprints compared, every difference with a cause in decision 076. `tar_outdated()` is
+- **Phase 4:** per-file fingerprints compared, every difference with a cause in its decision record. `tar_outdated()` is
   empty afterwards and `check_bookkeeping()` passes.

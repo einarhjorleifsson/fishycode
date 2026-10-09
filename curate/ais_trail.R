@@ -47,9 +47,10 @@ for (yr in years) {
   for (mo in months) {
     f1 <- file.path(out_trail, paste0("year=", yr), paste0("month=", mo), "part_001.parquet")
     f2 <- file.path(out_match, paste0("year=", yr), paste0("month=", mo), "part_001.parquet")
-    n <- write_curated_sql(con, trail_month_sql(yr, mo, "wide"), f1, inputs = c(pf, inputs), order_by = "vid, time")
-    if (n == 0) { unlink(dirname(f1), recursive = TRUE); next }
-    write_curated_sql(con, trail_month_sql(yr, mo, "match"), f2, inputs = c(pf, inputs), order_by = "vid, time, \".sid\"")
+    # matches first: the wide row reads them back rather than computing them twice
+    write_curated_sql(con, trail_month_sql(con, yr, mo, "match"), f2, inputs = c(pf, inputs), order_by = "vid, time, \".sid\"")
+    n <- write_curated_sql(con, trail_month_sql(con, yr, mo, "wide", matches = f2), f1, inputs = c(pf, inputs, f2), order_by = "vid, time")
+    if (n == 0) { unlink(dirname(f1), recursive = TRUE); unlink(dirname(f2), recursive = TRUE); next }
     n_year <- n_year + n
   }
   # every fix of the year must be in exactly one month of the product
