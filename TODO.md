@@ -388,7 +388,7 @@ has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R
 the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
 
 ## 37. `produces()` leaves every script's objects in the session
-**status:** open · **files:** `_targets.R` (`produces()`) · **see:** branch `todo-37-produces-cleanup` (1cd0711: fix and tests, unmerged); plan 013 merges it with the phases 2–3 rebuild
+**status:** in progress (fix merged 2026-10-09, 3df46d8) · **needs: maintainer** (go for the rebuild) · **files:** `_targets.R` (`produces()`), `R/source_script.R` · **see:** plan 013
 
 `produces()` runs `source(script)` in the global environment of the one R session that runs every target,
 so a script's objects stay in memory after its target is done. On 2026-10-07 `area_h3` failed with "vector
@@ -397,8 +397,8 @@ left its 2.1 M-polygon EUSM object behind. That cause comes from reading the cod
 Global state leaks the same way: `shapes.R` calls `sf_use_s2(FALSE)`, and that setting holds for every later target.
 The fix is to note `ls(globalenv())` before `source()`, then `rm()` what the script added and `gc()` in
 `on.exit()`. Any script that relied on another's leftovers would then fail loudly. Changing `produces()`
-makes **every** target outdated, so do it together with a planned full rebuild. Until then, heavy targets
-go in their own session: `tar_make_isolated()` (`R/tar_make_isolated.R`) does that for every outdated target.
+made 58 of 60 targets outdated (the other two are override inputs); the check waits for the full rebuild
+of plan 013 phase 2, run with plain `tar_make()` so this check is tested.
 
 **check:** after `tar_make()`, the global environment holds no object a script created, and a full rebuild
 from `tar_invalidate(everything())` finishes without a memory error.
