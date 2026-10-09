@@ -235,7 +235,7 @@ trail(2019, x1$vid) |>
 
 ## Where the numbers come from
 
-- `curated/ais/trail`, `trail_match` — built from `ping_trail`, `station_window` and `link/trip_voyage` by `curate/ais_trail.R`; checks `curated/check/trail_agreement` (the station and the voyage name the same trip in 99.6 % of fixes that have both) and `trail_sid_coverage`.
-- `curated/ais/ping_trail/year=*` — AIS (stk, astd, astdB, emodnet) and the GPS logger, unique on `(vid, time)`, speed in knots.
+- `curated/ais/trail`, `trail_match` — built from `ais/ping`, `station_window` and `link/trip_voyage` by `curate/ais_trail.R`; checks `curated/check/trail_agreement` (the station and the voyage name the same trip in 99.6 % of fixes that have both) and `trail_sid_coverage`.
+- `curated/ais/ping/year=*` — AIS (stk, astd, astdB, emodnet) and the GPS logger (provider `gps`, positions reconstructed), unique on `(vid, time)`, speed in knots, each ping carrying its `voyage` and `stay` keys (plan 014; `ping_trail` until then).
 - `curated/logbook/station_window.parquet` — one row per station window, with `win_basis` saying how it was drawn.
 - This page and the code behind it were written with AI assistance (Claude); the checks above, not the code's say-so, establish the result.

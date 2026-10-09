@@ -15,7 +15,7 @@ details: >
   filled in the same day, grounded in the scripts/docs/decisions that produce
   each table — never guessed from a column name alone; a column left
   ungrounded after checking says so explicitly rather than fabricating one
-  (see `reference_port.hafnarnumer_id`, `reference_harbour.hid_new`). See
+  (see `reference_port.hafnarnumer_id`, `reference_port_code.hid_new`). See
   `curate/decisions/029-data-dict-introduced.md` in `fishycode` for what's
   still open: `constraints`/`examples` refinement, and expect this file to
   keep changing as descriptions get corrected — see decision 028's `.sid`
@@ -42,14 +42,14 @@ details: >
   record id, `komunr`) found and fixed while building it.
 
 tables:
-  - name: ais_trip
+  - name: ais_voyage
     source:
-      parquet: ../../fishydata/curated/ais/trip.parquet
+      parquet: ../../fishydata/curated/ais/voyage.parquet
     description: >
-      One row per harbour-to-harbour voyage, one vessel at a time: contiguous sea
-      time bracketed by two stays (curated/ais/harbour_stay: at least 4 h at a
+      One row per port-to-port voyage, one vessel at a time: contiguous sea
+      time bracketed by two stays (curated/ais/port_stay: at least 4 h at a
       harbour by elapsed time, from any provider; a shorter call is part of the
-      voyage). Built in curate/ais_trip.R from the cleaned, merged AIS/GPS track
+      voyage). Built in curate/ais_voyage.R from the cleaned, merged AIS/GPS track
       (staging/ais/ping_clean). Until 2026-10-01 a stay was the span of the pings
       in a polygon run and day trips merged into year-long voyages (decision 061).
       Trips with fewer than 10 pings are dropped. Numbered 1..n per vessel per
@@ -80,7 +80,7 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: trip
+      - name: voyage
         type: number
         range: [1, 463]
         examples: [4, 143, 243, 338, 463]
@@ -118,17 +118,15 @@ tables:
             - constraints: [required, unique] # values look distinct & present
             - constraints: [primary_key] # values look distinct & present
             - constraints: [required] # all values present
-      - name: hid1
+      - name: pid1
         type: string
-        examples: [DE-LAB, IS-BID, IS-PAP, NO-HAR, TR-TOR]
         description: >
-          Departure harbour id (the pid tag of the harbour run immediately before this
-          voyage's sea run).
-      - name: hid2
+          Departure port: the port id (pid) of the stay before the voyage. An AIS table has no
+          `hid`, which is a source's own code (plan 014).
+      - name: pid2
         type: string
-        examples: [DE-LAB, IS-BID, IS-RAU, NO-ENG, TR-TOR]
         description: >
-          Arrival harbour id (the pid tag of the harbour run immediately after).
+          Arrival port: the port id (pid) of the stay after the voyage.
       - name: n_pings
         type: number
         range: [10, 183785]
@@ -146,7 +144,7 @@ tables:
     description: >
       One row per AIS/GPS position fix, across every measured source (STK, ASTD,
       ASTDB, EmodNet) unioned and cleaned. Hive-partitioned by year. Each ping
-      carries the harbour it falls inside (`pid`, NA at sea) and, once ais_trip.R
+      carries the harbour it falls inside (`pid`, NA at sea) and, once ais_voyage.R
       has run, the voyage it belongs to (`trip`).
     todo: |
       - Record a `primary_key`, if present.
@@ -278,14 +276,11 @@ tables:
         description: >
           Standardised harbour id the ping falls inside (spatial join against harbour
           polygons); NA when the vessel is at sea.
-      - name: stay_pid
-        type: string
-        examples: [IS-REY, IS-HOR, IS-OLV, IS-GRI, FO-TOR]
+      - name: stay
+        type: number
         description: >
-          Harbour of the stay (curated/ais/harbour_stay) the ping falls in, NA at sea.
-          Unlike `pid` it needs at least 4 h at the harbour by elapsed time, and a
-          ping up to the harbour's departure radius outside the polygon can be in a
-          stay. The voyages are cut at these.
+          The stay the ping falls in: a key, with `vid`, into curated/ais/port_stay.parquet; NA at
+          sea. The stay's port, times and duration are in that table, not on the ping (plan 014).
       - name: year
         type: number
         range: [2023, 2023]
@@ -297,23 +292,43 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: trip
+      - name: voyage
         type: number
-        range: [1, 304]
-        examples: [4, 93, 176, 229, 303]
         description: >
-          The voyage this ping belongs to (curated/ais/trip.parquet's trip number for
-          this vid+year); NA if the ping falls outside any recorded voyage.
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
-  - name: ais_harbour_stay
+          The voyage the ping belongs to: a key, with `vid` and `year`, into
+          curated/ais/voyage.parquet; NA outside every voyage.
+      - name: speed_raw
+        type: number
+        description: >
+          The speed as the feed gave it, knots; `speed` is NA where this is no vessel speed.
+      - name: pos_basis
+        type: string
+        description: >
+          recorded (AIS) or reconstructed (the gps logger: interpolated from the AIS track once,
+          a frozen input). Only recorded positions shape the track (plan 014).
+      - name: speed_basis
+        type: string
+        description: >
+          recorded (stk, gps), derived (astd, astdB, emodnet: distance over time) or placeholder.
+      - name: dt_sec
+        type: number
+        description: >
+          gps only: the AIS gap, seconds, the position was interpolated across.
+      - name: sid_gps
+        type: number
+        description: >
+          gps only: the logbook station the logger fix is stamped to, when exactly one.
+      - name: n_sid_gps
+        type: number
+        description: >
+          gps only: how many stations the logger fix is stamped to.
+  - name: ais_port_stay
     source:
-      parquet: ../../fishydata/curated/ais/harbour_stay.parquet
+      parquet: ../../fishydata/curated/ais/port_stay.parquet
     description: >
       One row per harbour stay: elapsed time a vessel spent at one Iceland/Faroe harbour (an `einar`
       polygon), 2007-2026, all providers. Built from AIS only; logbook and landings are not inputs.
-      Nothing consumes it yet; Phase 4 of plan 011 cuts voyages at it. Built by `curate/harbour_stay.R`
+      Nothing consumes it yet; Phase 4 of plan 011 cuts voyages at it. Built by `curate/port_stay.R`
       (decision 060).
     columns:
       - name: vid
@@ -374,6 +389,10 @@ tables:
         type: string
         description: >
           `reconstructed`: inferred from positions, not recorded.
+      - name: stay
+        type: number
+        description: >
+          The stay's key within the vessel, numbered by T_in (plan 014); pings carry it.
   - name: ais_trail
     source:
       parquet: ../../fishydata/curated/ais/trail/year=*/month=*/part_001.parquet
@@ -382,7 +401,7 @@ tables:
       with its AIS voyage, the logbook station it falls in and the logbook trip of its voyage. Parquet
       partitioned by year and month (`year` and `month` are the partition keys, not columns in the files),
       sorted by vessel and time, unique on (vid, time). Open it with open_dataset() and work in dplyr;
-      nothing needs calling. Built by `curate/ais_trail.R` from `ping_trail`, `station_window` and
+      nothing needs calling. Built by `curate/ais_trail.R` from `ais/ping`, `station_window` and
       `link/trip_voyage` (plan 011 Phase 5, decision 065). A new month, or a late logbook correction,
       rewrites that month's files only.
     columns:
@@ -437,25 +456,18 @@ tables:
         description: >
           `recorded`, `derived` (ASTD speed is derived from distance over time) or `placeholder` (a
           logger fix whose speed was exactly 1.000 m/s; `speed` is NA and `speed_raw` keeps the value).
-      - name: speed_gps
-        type: number
-        description: >
-          The logger's own speed where a logger fix ties an AIS ping, else NA (also NA where that
-          speed was the 1.000 m/s placeholder).
       - name: dt_sec
         type: number
         description: >
           Logger fix: seconds to the previous logger fix; NA for AIS pings.
-      - name: stay_pid
-        type: string
-        description: >
-          Harbour of the stay (curated/ais/harbour_stay) the fix is in; NA at sea. Replaces the polygon
-          tag `pid` of the ping tables, which is not carried.
-      - name: trip
+      - name: stay
         type: number
         description: >
-          AIS voyage number within `vid` and the year of the fix; NA in a harbour stay. The voyage is the
-          sea between two stays (decision 061).
+          Key of the stay the fix is in (curated/ais/port_stay.parquet, with `vid`); NA at sea.
+      - name: voyage
+        type: number
+        description: >
+          Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`).
       - name: .tid_voyage
         type: number
         description: >
@@ -525,6 +537,11 @@ tables:
         type: number
         description: >
           Stations the logger fix refers to.
+      - name: metier
+        type: string
+        description: >
+          The station's gear as a metier label, gear_target2 (e.g. OTB_NEP); the label the flow
+          works from (plan 014). Filled only when `n_sid == 1`.
   - name: ais_trail_match
     source:
       parquet: ../../fishydata/curated/ais/trail_match/year=*/month=*/part_001.parquet
@@ -598,6 +615,10 @@ tables:
         type: boolean
         description: >
           This match is a tow, haul, jig or day window and the fix's speed is inside [s1, s2].
+      - name: metier
+        type: string
+        description: >
+          The station's gear as a metier label, gear_target2 (e.g. OTB_NEP).
   - name: check_afli_rafr_stofn_corroboration
     source:
       parquet: ../../fishydata/curated/check/afli_rafr_stofn_corroboration.parquet
@@ -1290,14 +1311,14 @@ tables:
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-  - name: check_harbour_stay_logbook
+  - name: check_port_stay_logbook
     source:
-      parquet: ../../fishydata/curated/check/harbour_stay_logbook.parquet
+      parquet: ../../fishydata/curated/check/port_stay_logbook.parquet
     description: >
       One row per vessel-year, 2008 on: how many stays AIS gives against how many logbook trips and
       landing days the vessel has. The yardstick for plan 011 Phase 3; the logbook is not an input to the
       stays. A vessel-year can appear with stays and no trips, or the reverse. Built by
-      `curate/checks/harbour_stay_logbook.R`.
+      `curate/checks/port_stay_logbook.R`.
     columns:
       - name: vid
         type: number
@@ -1476,152 +1497,6 @@ tables:
         type: number
         description: >
           Of those, matched by a fix.
-  - name: check_stk_event
-    source:
-      parquet: ../../fishydata/curated/check/stk_event.parquet
-    description: >
-      One row per STK harbour event ping (`I` in / `U` out), 2007-2026, with tags that say which events to
-      distrust before a stay is built from them (plan 011 Phase 2, decision 059). Collapsed from the
-      source rows, because STK sends most `U` events twice. A check: it flags and corrects nothing, the
-      original `io`, `hid` and position are kept beside the tags, and nothing reads it yet. Tags: TRUE = a
-      defect was found, NA = could not be judged, `io_ok` = none fired. Built by
-      `curate/checks/stk_event.R`, whose header is the long form of these definitions.
-    columns:
-      - name: vid
-        type: number
-        description: >
-          Vessel registration number the STK mobile-id was keyed to (`vessel_ais_key`).
-      - name: time
-        type: timestamp
-        description: >
-          Time of the event ping (UTC). With `vid` and `io` it is the key: one row per ping, however many
-          source rows STK sent.
-      - name: io
-        type: string
-        description: >
-          `I` = vessel reported into a harbour, `U` = reported out. As recorded; never changed.
-      - name: year
-        type: number
-        description: >
-          Calendar year of `time`. A few stray rows fall outside 2007-2026 (clock errors in the receiver).
-      - name: hid
-        type: string
-        description: >
-          STK's own alphabetic harbour code (`AST`, `OFS`, `THO`, ...), a different namespace from the
-          logbook's numeric `hid`. NA when the ping carried no code, or two different codes
-          (`hid_conflict`).
-      - name: hid_all
-        type: string
-        description: >
-          Every distinct code the ping carried, joined with `|`; shows both codes when `hid_conflict`.
-      - name: hid_conflict
-        type: boolean
-        description: >
-          The same ping carried two different codes. `hid` is then NA; no code is chosen.
-      - name: n_rows
-        type: number
-        description: >
-          How many source rows in `staging/ais/stk` were merged into this event. STK sends most `U` events
-          twice, once with `hid` and once without (mean 1.75 for `U`, 1.04 for `I`); see
-          `curate/corrections/stk_event_duplicate_rows.yml`.
-      - name: n_pos
-        type: number
-        description: >
-          Distinct (lon, lat) among the merged rows; 1 except in 123 `U` and 148 `I` pings. `lon`/`lat`
-          are then the minimum of each.
-      - name: lon
-        type: number
-        description: >
-          Longitude of the event ping, as recorded.
-      - name: lat
-        type: number
-        description: >
-          Latitude of the event ping, as recorded.
-      - name: hid_pid
-        type: string
-        description: >
-          Standard harbour key (`pid`) the code names, from `reference_stk_hid_pid` incl. reviewed
-          overrides. For codes that cannot name a harbour (`resolve = position`: THH, THO) it is the
-          polygon the event itself lies in. NA for `NONE` and unmatched codes.
-      - name: resolve
-        type: string
-        description: >
-          `code` = `hid_pid` follows from the code; `position` = the code is ambiguous and `hid_pid` is
-          taken from the event's position. NA when `hid` is NA or the code is not in the crosswalk.
-      - name: hid_status
-        type: string
-        description: >
-          The crosswalk row's `status` for `hid` (`auto`, `override`, `review`, `unmatched`, ...): how far
-          `hid_pid` can be trusted.
-      - name: pid_pos
-        type: string
-        description: >
-          The polygon the event lies in: `hid_pid` if it lies in that one, else the first other polygon,
-          else NA.
-      - name: io_pos
-        type: string
-        description: >
-          Event position against the polygon of `hid_pid`: `own` (inside it), `other_harbour` (inside a
-          different polygon), `outside` (inside none); `no_hid` / `no_pid` where there is no harbour to
-          compare with. Only an `I` is judged by it: a `U` is sent after the vessel has left, so most `U`
-          are `outside` and that is not a defect. Polygons are the current (decision 058) set, not the
-          ones tagging the pings.
-      - name: pos_dist_m
-        type: number
-        description: >
-          Distance in metres from the event to the polygon of `hid_pid`; 0 when inside, NA when there is
-          no `hid_pid`. Lets a reader apply a tolerance instead of the strict inside/outside of `io_pos`.
-      - name: io_dup
-        type: boolean
-        description: >
-          TRUE when the vessel's previous event has the same `io` (`I` after `I`, `U` after `U`). Flags a
-          missed event between them, or a flapping flag.
-      - name: io_short
-        type: boolean
-        description: >
-          TRUE on both rows of an `I` then `U` at the same `hid` less than 60 s apart: a flicker, not a
-          stay.
-      - name: in_clean
-        type: boolean
-        description: >
-          Whether `staging/ais/ping_clean` kept this ping. FALSE = the whack filter dropped it; the event
-          cannot be used on the cleaned track, but is still tagged.
-      - name: gap_prev_h
-        type: number
-        description: >
-          Hours back to the nearest retained non-event ping (the previous neighbour of the jump test).
-      - name: gap_next_h
-        type: number
-        description: >
-          Hours forward to the nearest retained non-event ping. A long gap makes any position plausible,
-          so `io_jump = FALSE` means little when either gap is long.
-      - name: v_prev_kn
-        type: number
-        description: >
-          Implied speed in knots from the previous neighbour to the event (great circle over elapsed time,
-          as `whack_fwdbwd`).
-      - name: v_next_kn
-        type: number
-        description: >
-          Implied speed in knots from the event to the next neighbour.
-      - name: v_span_kn
-        type: number
-        description: >
-          Implied speed in knots from the previous neighbour straight to the next one; whether the two
-          neighbours agree with each other.
-      - name: io_jump
-        type: boolean
-        description: >
-          TRUE when the event is inconsistent with BOTH cleaned-track neighbours (`v_prev_kn` and
-          `v_next_kn` above 25 kn) while the neighbours agree with each other (`v_span_kn` at most 25 kn).
-          If the neighbours disagree the fault is theirs and the event is not blamed. NA when a neighbour
-          is missing. Neighbours are retained pings that are not themselves events.
-      - name: io_ok
-        type: boolean
-        description: >
-          No tag fired: not `bad_pos` (an `I` that is `other_harbour` or `outside`, or a `U` that is
-          `other_harbour`), not `io_dup`, not `io_short`, `io_jump` not TRUE. Events that could not be
-          judged (`no_hid`, `no_pid`, `io_jump` NA) count as ok.
   - name: landing_catch
     source:
       parquet: ../../fishydata/curated/landing/catch.parquet
@@ -1893,18 +1768,18 @@ tables:
         range: [2007, 2026]
         examples: [2007, 2012, 2017, 2021, 2026]
         description: >
-          Calendar year of the matched AIS voyage (ais_trip.year).
+          Calendar year of the matched AIS voyage (ais_voyage.year).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: trip
+      - name: voyage
         type: number
         range: [1, 287]
         examples: [1, 75, 150, 205, 287]
         description: >
-          Voyage number of the matched AIS voyage (ais_trip.trip).
+          Voyage number of the matched AIS voyage (ais_voyage.voyage).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -1932,16 +1807,14 @@ tables:
           - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: hid1_ais
+      - name: pid1_ais
         type: string
-        examples: [FO-FUG, IS-DRA, IS-KLA, IS-SIL, NO-UTH]
         description: >
-          AIS-derived departure harbour id.
-      - name: hid2_ais
+          Departure port id of the linked voyage.
+      - name: pid2_ais
         type: string
-        examples: [FO-FUG, IS-DPV, IS-ISJ, IS-SEY, NO-UTH]
         description: >
-          AIS-derived arrival harbour id.
+          Arrival port id of the linked voyage.
       - name: n_pings
         type: number
         range: [10, 114673]
@@ -2583,6 +2456,76 @@ tables:
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: schema_land
+        type: string
+        description: >
+          The landing's system: agf or lods.
+      - name: date_land
+        type: date
+        description: >
+          The landing's own date (not the shifted copy a cascade step matched).
+      - name: hid_land
+        type: number
+        description: >
+          The landing's port code (hid), the landing system's own.
+      - name: pid_land
+        type: string
+        description: >
+          The landing's port id (pid).
+      - name: n_trips
+        type: number
+        description: >
+          Trips on the landing; above 1 is a declared many-to-many (plan 014).
+  - name: logbook_gear
+    source:
+      parquet: ../../fishydata/curated/logbook/gear.parquet
+    description: >
+      The gear each logbook station is fished with (curate/corrections/logbook_gear.R, plan 014,
+      decision 077). The logbook's own gid is kept; where the trip's linked landing names exactly one
+      gear, compared as a metier label (gear_target2), the landing's gear is used. lods landings carry
+      the old gear code and are mapped to the new one first.
+    columns:
+      - name: .sid
+        type: number
+        description: >
+          The station.
+      - name: schema
+        type: string
+        description: >
+          The logbook system: afli, fs_afladagbok or adb. `.sid` is unique only within it.
+      - name: gid
+        type: number
+        description: >
+          The logbook's own gear code (new coding); NA for adb, whose code does not resolve.
+      - name: gid_landing
+        type: number
+        description: >
+          The linked landing's gear (new coding), where the landing names one metier.
+      - name: gid_used
+        type: number
+        description: >
+          The gear the flow uses: gid_landing where its metier differs from the logbook's or the logbook
+          has none, otherwise gid.
+      - name: metier
+        type: string
+        description: >
+          gid_used as a metier label, gear_target2 (e.g. OTB_NEP, GNS_LUM, LLS_DEF).
+      - name: gear
+        type: string
+        description: >
+          Gear code of gid_used.
+      - name: target
+        type: string
+        description: >
+          Target group of gid_used.
+      - name: target2
+        type: string
+        description: >
+          Finer target of gid_used.
+      - name: gid_basis
+        type: string
+        description: >
+          recorded (the logbook's gear), reconstructed (the landing's) or none.
   - name: logbook_sensor_gps
     source:
       parquet: ../../fishydata/curated/logbook/sensor_gps/year=2023/data_0.parquet
@@ -2735,7 +2678,7 @@ tables:
         range: [1, 102]
         examples: [1, 22, 44, 64, 102]
         description: >
-          The AIS voyage (curated/ais/trip.parquet trip number) this fix's timestamp
+          The AIS voyage (curated/ais/voyage.parquet trip number) this fix's timestamp
           falls inside; NA if outside any recorded voyage.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
@@ -3232,71 +3175,14 @@ tables:
         examples: [27.1.a, 27.2.b.2, 27.4.c, 27.7.e, 27.9.b.2]
         description: >
           ICES/FAO area code, sampled at the H3 cell centroid.
-  - name: reference_harbour_class
+  - name: reference_port_radius
     source:
-      parquet: ../../fishydata/curated/reference/harbour_class.parquet
-    description: >
-      One row per Iceland/Faroe harbour (`einar` polygon) and year, 2007-2026: what the harbour is, judged
-      from how long vessels stay (the STK `I`->`U` pairs). Per year because a harbour's role changes
-      (fishing ports declined). Each year pools the pairs of the year before, the year and the year after
-      (provisional period design). A reviewed override file wins. Built by
-      `reference/ports/harbour_class.R` (TODO 33).
-    columns:
-      - name: pid
-        type: string
-        description: >
-          Standard harbour key.
-      - name: port
-        type: string
-        description: >
-          Standard harbour name.
-      - name: year
-        type: number
-        description: >
-          Year the class is for.
-      - name: class
-        type: string
-        description: >
-          `landing` (at least 25 % of stays reach 4 h), `marina`, `flicker` (the in/out flag flaps on a
-          vessel at rest), `transient` (a stop-off or ferry end), `sparse` (under 30 pairs in the window,
-          not judged), `no_events` (no STK pairs), or a manual class from the override file (`cargo`,
-          `no_pier`, `mixed`).
-      - name: basis
-        type: string
-        description: >
-          `reconstructed` = the data rule; `recorded` = a reviewed override.
-      - name: n_pairs
-        type: number
-        description: >
-          `I`->`U` pairs in the three-year window.
-      - name: p_ge4h
-        type: number
-        description: >
-          Share of the pairs lasting 4 h or more.
-      - name: med_min
-        type: number
-        description: >
-          Median pair length in minutes.
-      - name: p_lt60
-        type: number
-        description: >
-          Share of pairs under an hour.
-      - name: p_fast
-        type: number
-        description: >
-          Share of pairs lasting 1-60 min with both ends above 4 knots: a vessel passing through.
-      - name: override_reason
-        type: string
-        description: >
-          The reviewer's reason when `basis` is `recorded`.
-  - name: reference_harbour_radius
-    source:
-      parquet: ../../fishydata/curated/reference/harbour_radius.parquet
+      parquet: ../../fishydata/curated/reference/port_radius.parquet
     description: >
       One row per Iceland/Faroe harbour (`einar` polygon): how far from the polygon the first ping after a
       stay may lie. The arrival end uses `r_in_m` for every harbour; the departure end uses the harbour's
       own `r_out_m`, measured from the real `I`->`U` pairs of the tagged STK events (decision 060). Used
-      by `curate/harbour_stay.R`. Built by `reference/ports/harbour_radius.R`.
+      by `curate/port_stay.R`. Built by `reference/ports/port_radius.R`.
     columns:
       - name: pid
         type: string
@@ -3489,9 +3375,9 @@ tables:
         description: >
           Author-defined finer-grained target/species-group code, not a standard ICES
           vocabulary.
-  - name: reference_harbour
+  - name: reference_port_code
     source:
-      parquet: ../../fishydata/curated/reference/harbour.parquet
+      parquet: ../../fishydata/curated/reference/port_code.parquet
     description: >
       One row per distinct harbour-code/name combination found in the raw
       aflagrunnur (Icelandic landings) source. A narrower, source-specific harbour
@@ -3527,7 +3413,7 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: harbour
+      - name: port
         type: string
         examples: [Akranes, Færeyjar, Keflavík, Siglufjörður, Þórshöfn]
         description: >
@@ -4295,7 +4181,7 @@ relationships:
   # first pass backed by a verified unique column on their "one" side.
   - join: logbook_trip.vid = vessel.vid
     cardinality: many-to-one
-  - join: ais_trip.vid = vessel.vid
+  - join: ais_voyage.vid = vessel.vid
     cardinality: many-to-one
   - join: landing_landings.vid = vessel.vid
     cardinality: many-to-one
@@ -4328,7 +4214,7 @@ relationships:
   #   link_trip_voyage..tid  = logbook_trip..tid            (one-to-one)
   #     curate/link_trip_voyage.R:70 (`row_number() ... rn = 1` per tid).
   #     Rebuilt 2026-09-25 (curate/decisions/028) — now carries `year`/`trip`
-  #     like `ais_trip`, not `voyage_year`/`voyage`.
+  #     like `ais_voyage`, not `voyage_year`/`voyage`.
   #   logbook_catch_by_species_trip..tid = logbook_trip..tid (many-to-one)
   #     curate/catch_by_species_trip.R. Rebuilt 2026-09-25 — now carries
   #     `.tid`/`.lid` dotted, like every other logbook table.
