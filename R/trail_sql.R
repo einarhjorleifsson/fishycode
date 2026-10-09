@@ -25,7 +25,8 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   kind <- match.arg(kind)
   t0 <- sprintf("TIMESTAMP '%d-%02d-01'", year, month)
   t1 <- if (month == 12) sprintf("TIMESTAMP '%d-01-01'", year + 1L) else sprintf("TIMESTAMP '%d-%02d-01'", year, month + 1L)
-  pfile <- shQuote(file.path(fd_curated("ais", "ping_trail"), paste0("year=", year), "part_001.parquet"), type = "sh")
+  # every part of the year: curated/ais/ping is written in batches (plan 014; ping_trail had one file per year)
+  pfile <- shQuote(file.path(fd_curated("ais", "ping"), paste0("year=", year), "*.parquet"), type = "sh")
   swf   <- shQuote(fd_curated("logbook", "station_window.parquet"), type = "sh")
   tvf   <- shQuote(fd_curated("link", "trip_voyage.parquet"), type = "sh")
   lazy  <- function(q) dplyr::tbl(con, dplyr::sql(q))
@@ -57,7 +58,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
       FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, trip),
     r AS (%s)
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
-           r.pos_basis, r.speed_basis, r.speed_gps, r.dt_sec, r.stay_pid, r.trip,
+           r.pos_basis, r.speed_basis, r.dt_sec, r.stay_pid, r.trip,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
            r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.gear, r.target, r.target2, r.gear_class,
            r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, r.fishing, r.sid_gps, r.n_sid_gps

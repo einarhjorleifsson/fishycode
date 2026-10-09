@@ -69,7 +69,8 @@ for (yr in years) {
 
   base <- ais |>
     filter(year == yr) |>
-    select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, year)
+    select(vid, mmsi, time, lon, lat, speed, speed_raw, heading, cog, provider, pos_basis, speed_basis,
+           dt_sec, sid_gps, n_sid_gps, pid, year)
   if (!is.null(VIDS)) base <- filter(base, vid %in% VIDS)
 
   # -- Batch the year by VESSEL ----------------------------------------------
@@ -100,8 +101,10 @@ for (yr in years) {
     # -- Voyages: the sea between two stays, numbered per vessel and year (ramb, plan 013 phase 2) -----
     # A ping takes the stay it falls in (the earlier of two that overlap); sea runs become voyages with
     # the harbours of the stays either side; voyages under MIN_PINGS pings are dropped after numbering.
+    # Only recorded positions cut voyages and count towards MIN_PINGS; the gps logger's reconstructed fixes
+    # get their voyage by time below, like every other ping (plan 014).
     st_g <- stays |> filter(vid %in% g)
-    v_b <- ramb::rb_cut_trip_voyages(clean, st_g, min_pings = MIN_PINGS)
+    v_b <- ramb::rb_cut_trip_voyages(clean |> filter(pos_basis == "recorded"), st_g, min_pings = MIN_PINGS)
     trips_yr_b <- v_b |>
       transmute(vid, year = as.integer(year), trip = as.integer(voyage_id), T1, T2, hid1 = harbour_from, hid2 = harbour_to, n_pings = as.integer(n_pings))
 

@@ -1,7 +1,7 @@
 # wgsfd_harbours.R — the Iceland and Faroe harbour polygons in the WGSFD exchange format.
 #
 # Input:  staging/aux/ports.fgb                    the harbour set of the AIS flow; source == "einar"
-#         curated/reference/harbour_class.parquet  only the reviewed rows (basis == "recorded")
+#         overrides/port_class.csv             the reviewed port labels (decisions 074, 075)
 # Output: exports/wgsfd/IS_harbours_<YYYYMMDD>.gpkg
 #
 # The format is docs/ports.md: one file per supplying country, layer "harbours", EPSG:4326, one polygon
@@ -11,7 +11,7 @@
 # - harbour_code is the MFRI harbour id (pid) for every harbour (maintainer, 2026-10-06): treated as
 #   the Icelandic standard although it is not one. Fiskistofa's landing code (hid) covers only 91 of
 #   the Icelandic harbours and none of the Faroese.
-# - class is filled only where a person reviewed it. The data-derived classes of harbour_class.R
+# - class is filled only where a person reviewed it (overrides/port_class.csv). The data-derived classes of the removed harbour_class.R
 #   describe how long vessels stay, which is not the spec's question (are fish landed here?).
 
 library(sf)
@@ -23,7 +23,7 @@ SUPPLIER <- "IS"   # the supplying country, which names the file
 COLS     <- c("country", "harbour_code", "harbour_name", "class", "data_provider", "updated",
               "comment")
 CLASSES  <- c("fishing", "mixed", "commercial", "marina", "anchorage", "unknown")
-# harbour_class.R vocabulary -> spec vocabulary, for the reviewed classes only
+# the reviewed labels' vocabulary -> spec vocabulary
 CLASS_MAP <- c(cargo = "commercial", no_pier = "anchorage", marina = "marina", mixed = "mixed")
 # The rough extent of each country, to catch a harbour filed under the wrong one
 BBOX <- list(IS = c(-25, 63, -13, 67), FO = c(-8, 61.3, -6, 62.5))
@@ -37,11 +37,10 @@ P <- read_sf(fd_staging("aux", "ports.fgb")) |>
   mutate(country = substr(pid, 1, 2))
 stopifnot(all(P$country %in% names(BBOX)))
 
-cls <- nanoparquet::read_parquet(fd_curated("reference", "harbour_class.parquet")) |>
-  filter(basis == "recorded", year == max(year)) |>
+cls <- utils::read.csv("overrides/port_class.csv", encoding = "UTF-8") |>
   transmute(pid, class = unname(CLASS_MAP[class]))
-# harbour_class is keyed on pid and built after ports.fgb; a reviewed class whose pid has since
-# changed would otherwise be dropped without a word
+# the labels are keyed on pid; a reviewed label whose pid has since changed would otherwise be
+# dropped without a word
 stopifnot(!anyNA(cls$class), all(cls$pid %in% P$pid))
 
 # The four hand-placed harbours of the bootstrap (ports_add) are 500 m circles, not outlines

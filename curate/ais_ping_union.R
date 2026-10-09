@@ -171,14 +171,70 @@ emn <-
   # plain TIMESTAMP so the union with other sources stays type-consistent.
   mutate(time = dplyr::sql("time::TIMESTAMP"))
 
+# gps: the afli logger (plan 014) -----------------------------------------------
+# A frozen input (curated/logbook/sensor_gps, decision 075): the logger's own time, speed and heading, with
+# lon/lat interpolated once from the AIS track. Its positions are RECONSTRUCTED (pos_basis), so nothing in the
+# flow that measures where a vessel is - the duplicate and impossible tests, the stays, the voyage cut - reads
+# them; a gps fix gets its voyage by time afterwards. The rules are the ones curate/ais_ping_trail.R applied
+# until plan 014: gps1 and gps2 (two raw tables of the same fixes) collapse to one row per (vid, time), with
+# a real speed preferred over the 1.000 m/s placeholder (curate/corrections/logger_speed_placeholder.yml); a
+# fix stamped to several stations keeps no single station (sid_gps NA, n_sid_gps counts them). Where the two
+# tables disagree, gps1's value is taken, and between stations the lowest .sid's: any_value() chose
+# arbitrarily, which moved 165 speeds of 2019 between runs (plan 014).
+MS_TO_KN <- 1 / 0.514444
+LOGGER_PLACEHOLDER_MS <- 1
+gps_src <- function(YR) {
+  g <- file.path(fd_curated("logbook", "sensor_gps"), paste0("year=", YR))
+  if (!dir.exists(g)) return(NULL)
+  dplyr::tbl(duckdbfs::cached_connection(), dplyr::sql(sprintf("
+  WITH g0 AS (
+    SELECT vid, time, \".sid\" AS sid, sensor_src, lon, lat, dt_sec, heading,
+           speed * %f AS speed_kn_raw,
+           CASE WHEN abs(speed - %f) < 1e-6 THEN NULL ELSE speed * %f END AS speed_kn
+    FROM read_parquet('%s/*.parquet') WHERE lon IS NOT NULL AND lat IS NOT NULL AND vid IS NOT NULL),
+  g1 AS (
+    SELECT vid, time, sid, arg_min(lon, sensor_src) AS lon, arg_min(lat, sensor_src) AS lat, arg_min(dt_sec, sensor_src) AS dt_sec,
+           arg_min(heading, sensor_src) FILTER (WHERE heading IS NOT NULL) AS heading,
+           arg_min(speed_kn, sensor_src) FILTER (WHERE speed_kn IS NOT NULL) AS speed_kn,
+           arg_min(speed_kn_raw, sensor_src) FILTER (WHERE speed_kn IS NOT NULL) AS speed_kn_ok,
+           arg_min(speed_kn_raw, sensor_src) FILTER (WHERE speed_kn_raw IS NOT NULL) AS speed_kn_raw
+    FROM g0 GROUP BY vid, time, sid),
+  g2 AS (
+    SELECT vid, time, arg_min(lon, sid) AS lon, arg_min(lat, sid) AS lat, arg_min(dt_sec, sid) AS dt_sec,
+           arg_min(heading, sid) AS heading,
+           arg_min(speed_kn, sid) FILTER (WHERE speed_kn IS NOT NULL) AS speed_kn,
+           coalesce(arg_min(speed_kn_ok, sid) FILTER (WHERE speed_kn_ok IS NOT NULL),
+                    arg_min(speed_kn_raw, sid) FILTER (WHERE speed_kn_raw IS NOT NULL)) AS speed_kn_raw,
+           count(DISTINCT sid) AS n_sid_gps,
+           CASE WHEN count(DISTINCT sid) = 1 THEN min(sid) END AS sid_gps
+    FROM g1 GROUP BY vid, time)
+  SELECT vid, NULL::VARCHAR AS mmsi, time, lon, lat, speed_kn AS speed, CAST(heading AS DOUBLE) AS heading,
+         'gps' AS provider, NULL::INTEGER AS imo, NULL::DOUBLE AS cog, speed_kn_raw AS speed_raw,
+         'reconstructed' AS pos_basis,
+         CASE WHEN speed_kn IS NULL AND speed_kn_raw IS NOT NULL THEN 'placeholder' ELSE 'recorded' END AS speed_basis,
+         dt_sec, sid_gps, n_sid_gps
+  FROM g2", MS_TO_KN, LOGGER_PLACEHOLDER_MS, MS_TO_KN, g)))
+}
+
 # bind -------------------------------------------------------------------------
 # Union the four MEASURED position sources; `provider` traces each ping back to
-# its origin, which matters for coverage gap analysis.
+# its origin, which matters for coverage gap analysis. Then the gps feed. Every ping says
+# where its position and its speed came from (pos_basis, speed_basis): stk and gps carry
+# the source's own measured speed, astd, astdB and emodnet derive it from the distance to
+# the next ping. `speed` is NA where a value is no vessel speed (outside 0-40 kn) or the
+# logger placeholder; `speed_raw` keeps the value as given.
+SPEED_MAX <- 40
 d_for <- function(YR) {
-  union(stk_src(YR)  |> mutate(provider = "stk"),
-        astd_src(YR) |> mutate(provider = "astd")) |>
+  ais <- union(stk_src(YR)  |> mutate(provider = "stk"),
+               astd_src(YR) |> mutate(provider = "astd")) |>
     union(astdB_src(YR) |> mutate(provider = "astdB")) |>
-    union(emn |> mutate(provider = "emodnet"))
+    union(emn |> mutate(provider = "emodnet")) |>
+    mutate(speed_raw = speed, pos_basis = "recorded",
+           speed_basis = if_else(provider == "stk", "recorded", "derived"),
+           dt_sec = NA_real_, sid_gps = NA_real_, n_sid_gps = NA_integer_)
+  g <- gps_src(YR)
+  d <- if (is.null(g)) ais else union_all(ais, g)
+  d |> mutate(speed = if_else(speed >= 0 & speed <= SPEED_MAX, speed, NA_real_))
 }
 
 # ## add harbour -----------------------------------------------------------------

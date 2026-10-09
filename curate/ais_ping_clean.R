@@ -38,7 +38,7 @@ DUP_S    <- MIN_DT_S
 DUP_M    <- KN_MAX * 1852 / 3600 * MIN_DT_S
 DUP_K    <- 3       # neighbours compared on each side, in time order
 FEED     <- c(stk = 1, astd = 2, astdB = 3, emodnet = 4)   # priority; stk wins, as in ais_ping_trail.R
-METHOD   <- "rb_flag_ping-2026-10-08:invalid+duplicate+clean"   # part of the completion fingerprint: a new method re-cleans every year
+METHOD   <- "rb_flag_ping-2026-10-09:invalid+duplicate+clean,recorded-only+tie"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
@@ -81,8 +81,8 @@ for (yr in years) {
   # Explicit, not left to SQL: `vid %in% g` skips NA in DuckDB, but R's %in% matches NA to NA.
   base <- ais |>
     filter(year == yr, !is.na(vid)) |>
-    select(vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid, h3,
-           depth, bbht, fao, year)
+    select(vid, mmsi, time, lon, lat, speed, speed_raw, heading, cog, provider, pos_basis, speed_basis,
+           dt_sec, sid_gps, n_sid_gps, pid, h3, depth, bbht, fao, year)
 
   vid_n  <- base |> count(vid) |> collect() |> arrange(desc(n))
   groups <- split(vid_n$vid, cumsum(as.numeric(vid_n$n)) %/% BATCH_PINGS)
@@ -96,10 +96,24 @@ for (yr in years) {
     #   duplicate  a second feed's copy of a report the higher-priority feed already has: the same fix
     #              twice, a second or two and well under a metre apart in the median (decision 069).
     #   impossible rb_whack_clean's two stages: vmask, spike, then forward (decision 067).
-    d <- base |> filter(vid %in% g) |> collect() |>
-      rb_flag_ping_invalid(rules = "lon_eq_lat") |>
-      rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n = DUP_K) |>
-      rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S)
+    # Only RECORDED positions are tested for duplicates and impossible jumps (plan 014): the gps logger's
+    # positions are reconstructed from the AIS track itself, so they take the invalid test only.
+    #   tie        one ping per (vid, time), the rule curate/ais_ping_trail.R applied until plan 014: a recorded
+    #              position over a reconstructed one, then stk over the other feeds, then provider, lon, lat.
+    #              Two feeds can report one second at places more than DUP_M apart; one of them is set aside.
+    d0 <- base |> filter(vid %in% g) |> collect()
+    d <- bind_rows(
+      d0 |> filter(pos_basis == "recorded") |>
+        rb_flag_ping_invalid(rules = "lon_eq_lat") |>
+        rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n = DUP_K) |>
+        rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S),
+      d0 |> filter(pos_basis != "recorded") |>
+        rb_flag_ping_invalid(rules = "lon_eq_lat")) |>
+      arrange(vid, time, pos_basis != "recorded", provider != "stk", provider, lon, lat)
+    # among the pings still unflagged, every one after the first at its (vid, time) is a tie
+    u <- which(is.na(d$ping_flag))
+    d$ping_flag[u[duplicated(d[u, c("vid", "time")])]] <- "tie"
+    rm(d0)
 
     clean <- d |> filter(is.na(ping_flag)) |> select(-ping_flag) |> arrange(vid, time)
     whacky <- d |> filter(!is.na(ping_flag)) |> rename(whack_stage = ping_flag)
@@ -127,7 +141,7 @@ rec <- n_year(ais) |> rename(n_in = n) |>
   left_join(n_year(open_dataset(out_w)) |> rename(flagged = n), by = "year") |>
   mutate(across(-year, \(x) coalesce(as.numeric(x), 0)), off = n_in - kept - flagged - no_vid)
 stage <- open_dataset(out_w) |> count(whack_stage) |> collect() |> deframe()
-stage <- stage[intersect(c("invalid", "duplicate", "vmask", "spike", "forward"), names(stage))]
+stage <- stage[intersect(c("invalid", "duplicate", "vmask", "spike", "forward", "tie"), names(stage))]
 fmt <- function(x) format(sum(x), big.mark = ",")
 message(sprintf(
   "%s pings in: kept %s; flagged %s whacky (%.2f%%) = %s; %s with no vid, in neither output",

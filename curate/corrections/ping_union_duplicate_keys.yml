@@ -191,7 +191,7 @@ closed_2026_10_08: >-
   is the residue the astd rule declines to guess at (about 69 groups a year), the
   stk-internal groups (373 over 20 years, measured 2026-09-21), and the
   cross-provider copies, now flagged in ping_clean (repair.answered_2026_10_08).
-  One row per (vid, time) is enforced where analysis starts, in ais_ping_trail.R:
+  One row per (vid, time) is enforced in step 0 (curate/ais_ping_clean.R, flag `tie`; ais_ping_trail.R until plan 014):
   stk first, then provider name, then lon, lat. Measured 2026-10-08 on
   curated/ais/trail, year by year: 562,417,835 rows, 0 duplicate (vid, time). That
   order is deterministic but does not decide which of two stk members is right; the

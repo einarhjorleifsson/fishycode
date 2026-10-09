@@ -252,15 +252,23 @@ list(
     produces("sources/stk/convert.R", fd_staging("ais", "stk"))
   }, format = "file"),
 
+  # STK's own port events (I in / U out), one row per ping, tagged from STK and the polygons alone (plan 011
+  # Phase 2, plan 014). Which events a stay trusts is the flow's decision (harbour_stay).
+  tar_target(stk_event, {
+    stk; shapes; stk_hid_pid
+    produces("sources/stk/event.R", fd_staging("ais", "stk_event.parquet"))
+  }, format = "file"),
+
   # ── Vessel trail ────────────────────────────────────────────────────────────
   # The four-layer model: merge measured positions, remove whacky points,
   # interpolate within trips, derive voyages and tie them to logbook trips.
   #
   # The logger positions are interpolated from this chain's output, so they are a
-  # frozen input (sensor_gps above), not a target of it: no cycle.
+  # frozen input (sensor_gps above), not a target of it: no cycle. They join the
+  # feed union as provider gps (plan 014); only recorded positions cut voyages.
 
   tar_target(ais_ping_union, {
-    vessel_ais_key; vessel_identity
+    vessel_ais_key; vessel_identity; sensor_gps
     produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
   }, format = "file"),
 
@@ -306,13 +314,6 @@ list(
              fd_curated("link", "trip_voyage.parquet"))
   }, format = "file"),
 
-  # Cleaned AIS + the GPS logger as one track, unique on (vid, time) (plan 010 §5).
-  # After the interpolation, never before it: the logger positions come from the AIS track.
-  tar_target(ais_ping_trail, {
-    ais_trip; sensor_gps
-    produces("curate/ais_ping_trail.R", fd_curated("ais", "ping_trail"))
-  }, format = "file"),
-
   # One row per (logbook station, phase): when the vessel is busy with it (plan 010).
   tar_target(station_window, {
     logbook; gear_window; adb_gear
@@ -352,26 +353,9 @@ list(
   #
   # The vessel key's own checks build the key and run with it in the `once` project.
 
-  # STK harbour events, one row per ping, tagged (plan 011 Phase 2). Reads the
-  # cleaned track for the neighbour test and the current polygons for the position
-  # test, so it does not wait for the outdated AIS chain to be rebuilt.
-  tar_target(check_stk_event, {
-    stk; ais_ping_clean; shapes; stk_hid_pid
-    produces("curate/checks/stk_event.R",
-             fd_curated("check", "stk_event.parquet"))
-  }, format = "file"),
-
-  # Harbour class per harbour and year from the STK I->U stays; to go (decision 074, TODO 45). Overrides enter by file.
-  tar_target(harbour_class_overrides, "overrides/harbour_class.csv", format = "file"),
-  tar_target(harbour_class, {
-    shapes; stk; check_stk_event; harbour_class_overrides
-    produces("reference/ports/harbour_class.R",
-             fd_curated("reference", "harbour_class.parquet"))
-  }, format = "file"),
-
   # Stays (plan 011 Phase 3): elapsed time at a port, from polygon, gap and (2017+) event evidence.
   tar_target(harbour_stay, {
-    ais_ping_clean; shapes; check_stk_event; port_radius; harbour_class
+    ais_ping_clean; shapes; stk_event; port_radius
     produces("curate/harbour_stay.R",
              fd_curated("ais", "harbour_stay.parquet"))
   }, format = "file"),
@@ -391,7 +375,7 @@ list(
 
   # The product (plan 011 Phase 5): every fix with its voyage, station and logbook trip, by year-month.
   tar_target(ais_trail, {
-    ais_ping_trail; station_window; trip_voyage
+    ais_trip; station_window; trip_voyage
     produces("curate/ais_trail.R",
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
   }, format = "file"),

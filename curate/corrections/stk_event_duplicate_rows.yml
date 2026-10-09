@@ -1,6 +1,6 @@
 id: stk_event_duplicate_rows
 title: STK ships most U events twice, once with the harbour code and once without
-status: handled in the event table (curate/checks/stk_event.R); staging/ais/stk keeps both rows, deliberately
+status: handled in the event table (sources/stk/event.R, curate/checks/stk_event.R until plan 014); staging/ais/stk keeps both rows, deliberately
 applies_to:
   - staging/ais/stk   (all years; io in I/U)
 affects_rows: >-
@@ -14,7 +14,7 @@ detection: >-
   on one ping occur in 16,725 U and 12,525 I groups.
 repair:
   implemented_2026_10_01: >-
-    curated/check/stk_event has one row per (vid, time, io); hid comes from the row that carries it,
+    staging/ais/stk_event (curated/check/stk_event until plan 014) has one row per (vid, time, io); hid comes from the row that carries it,
     n_rows says how many source rows were merged, hid_conflict marks pings carrying two codes (hid is
     then NA and hid_all lists both). Nothing is dropped in staging/ais/stk, per the rule that a correction
     adds columns and never overwrites. ping_union does not select io or hid, so the two rows become

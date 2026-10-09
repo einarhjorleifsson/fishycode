@@ -1,7 +1,7 @@
 # ais_trail.R — the product: every fix with its voyage, its station and its logbook trip, as parquet.
 # Side: flow, steps 2 and 4. See plan 014.
 #
-# Input:  curated/ais/ping_trail/year=*     (AIS + GPS logger fixes, unique on vid, time)
+# Input:  curated/ais/ping/year=*           (AIS + GPS logger fixes, unique on vid, time; ais_trip.R)
 #         curated/logbook/station_window.parquet
 #         curated/link/trip_voyage.parquet
 # Output: curated/ais/trail/year=Y/month=M/part_001.parquet         one row per fix
@@ -14,7 +14,7 @@
 # restrict a run; a full run rewrites everything).
 #
 # Columns of `trail` (SQL in R/trail_sql.R; year and month are the partition keys, not columns in the file):
-#   the fix       vid mmsi time lon lat speed speed_raw heading cog provider pos_basis speed_basis speed_gps dt_sec
+#   the fix       vid mmsi time lon lat speed speed_raw heading cog provider pos_basis speed_basis dt_sec
 #   the voyage    stay_pid (harbour of the stay the fix is in, NA at sea) trip (AIS voyage number within vid, year)
 #                 .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
 #   the station   n_sid .sid schema .tid gear target target2 gear_class s1 s2 phase phase_frac win_basis events fishing
@@ -29,7 +29,7 @@ con <- dbConnect(duckdb())
 spill <- file.path(tempdir(), "duckdb_spill"); dir.create(spill, showWarnings = FALSE)
 dbExecute(con, sprintf("SET temp_directory = '%s'", spill))
 
-pt_dir <- fd_curated("ais", "ping_trail")
+pt_dir <- fd_curated("ais", "ping")
 years  <- sort(as.integer(sub("year=", "", list.files(pt_dir, pattern = "^year="))))
 if (nzchar(Sys.getenv("STAIL_YEARS"))) years <- intersect(years, as.integer(strsplit(Sys.getenv("STAIL_YEARS"), ",")[[1]]))
 months <- if (nzchar(Sys.getenv("STAIL_MONTHS"))) as.integer(strsplit(Sys.getenv("STAIL_MONTHS"), ",")[[1]]) else 1:12
@@ -42,7 +42,7 @@ if (ALL) { unlink(out_trail, recursive = TRUE); unlink(out_match, recursive = TR
 inputs <- c(fd_curated("logbook", "station_window.parquet"), fd_curated("link", "trip_voyage.parquet"))
 tot <- 0
 for (yr in years) {
-  pf <- file.path(pt_dir, paste0("year=", yr), "part_001.parquet")
+  pf <- list.files(file.path(pt_dir, paste0("year=", yr)), pattern = "parquet$", full.names = TRUE)
   n_year <- 0
   for (mo in months) {
     f1 <- file.path(out_trail, paste0("year=", yr), paste0("month=", mo), "part_001.parquet")
@@ -54,8 +54,8 @@ for (yr in years) {
     n_year <- n_year + n
   }
   # every fix of the year must be in exactly one month of the product
-  n_src <- dbGetQuery(con, sprintf("SELECT count(*) n FROM read_parquet('%s')", pf))$n
-  message(sprintf("%d: %s fixes written, %s in ping_trail", yr, format(n_year, big.mark = ","), format(n_src, big.mark = ",")))
+  n_src <- dbGetQuery(con, sprintf("SELECT count(*) n FROM read_parquet([%s])", paste0("'", pf, "'", collapse = ", ")))$n
+  message(sprintf("%d: %s fixes written, %s in ais/ping", yr, format(n_year, big.mark = ","), format(n_src, big.mark = ",")))
   if (identical(months, 1:12) && n_year != n_src) stop("ais_trail: ", yr, " lost or gained fixes")
   tot <- tot + n_year
 }

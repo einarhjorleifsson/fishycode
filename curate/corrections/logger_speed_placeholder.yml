@@ -6,7 +6,7 @@ applies_to:
   - curated/ais/trail  (the same fixes; and `fishing`, which compared the placeholder with the gear's speed range)
   - curated/logbook/sensor_gps  (NOT changed: the raw value stays there and in ping_trail.speed_raw)
 affects_rows: 926,172 logger fixes in 2021 alone (36 % of its logger fixes); 12 % in 2020, 39 % in 2021, 37 % in 2022, 24 % in 2023 of gps1 speeds; 0.01-0.14 % up to 2019
-implementation: curate/ais_ping_trail.R (LOGGER_PLACEHOLDER_MS). Needs tar_make() of ais_ping_trail and everything downstream.
+implementation: curate/ais_ping_union.R (LOGGER_PLACEHOLDER_MS, the gps feed; was curate/ais_ping_trail.R until plan 014).
 discovered: 2026-10-02 (plan 012 section 2f)
 
 origin: >-

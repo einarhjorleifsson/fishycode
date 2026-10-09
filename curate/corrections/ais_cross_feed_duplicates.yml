@@ -17,7 +17,7 @@ origin: >-
 mechanism: >-
   ais_ping_union.R merges stk, astd, astdB and emodnet. A vessel heard by two networks is reported by both, a second or
   two apart: in 2017 the median gap is 1-4 s and the median distance 0.1-0.4 m by feed pair, 69-100 % of pairs under
-  1 m. ais_ping_trail.R removes only exact (vid, time) ties (stk wins), so copies a few seconds apart reached the trail.
+  1 m. ais_ping_trail.R removed only exact (vid, time) ties (stk wins; since plan 014 the `tie` flag of step 0), so copies a few seconds apart reached the trail.
 
 detection: >-
   A ping is a duplicate when a higher-priority feed (stk > astd > astdB > emodnet, the tie order of ais_ping_trail.R)

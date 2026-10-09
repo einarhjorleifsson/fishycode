@@ -1,7 +1,7 @@
 # port_radius.R — how far from a port polygon the first ping after a stay may lie.
 # Side: once (port radius). See plan 014.
 #
-# Input:  curated/check/stk_event.parquet   (tagged STK events; pos_dist_m of the `U` ping)
+# Input:  staging/ais/stk_event.parquet    (STK events, tagged from STK alone; pos_dist_m of the `U` ping)
 #         staging/aux/ports.fgb             (the harbour list; source == "einar")
 # Output: curated/reference/port_radius.parquet   one row per Iceland/Faroe port
 #
@@ -38,7 +38,7 @@ MIN_PAIRS <- 100
 QUANTILE  <- 0.95
 
 con <- DBI::dbConnect(duckdb::duckdb())
-ev  <- fd_curated("check", "stk_event.parquet")
+ev  <- fd_staging("ais", "stk_event.parquet")   # before a redo: in_clean and io_jump are gone (see the note above)
 
 d <- DBI::dbGetQuery(con, glue::glue("
   WITH e AS (
