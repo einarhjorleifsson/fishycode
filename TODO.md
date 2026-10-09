@@ -354,15 +354,6 @@ a window at the vessel's next recorded start, so the times could be kept and the
 
 **check:** `fishing_sample` keeps `t2`/`t3` for flagged stations, `.checks` still names the overlap, and the window counts are compared before and after.
 
-## 33. Harbour class, per period, from the AIS era
-**status:** open · **see:** TODO 45 (2026-10-09: the class goes; one minimum stay), `curate/decisions/063-harbour-class-and-minimum-stay.md`; plan 011 §3.6; memory `harbour-class-is-static`, `static-gear-logbook-recording`
-
-Built 2026-10-01: `curated/reference/harbour_class` per harbour × year from the STK `I`→`U` pairs (3-year window, provisional), `overrides/harbour_class.csv` (empty), and a minimum stay per class in
-`harbour_stay.R` (landing 2 h, others 4 h, applied in decision 064). Asked of the maintainer: (1) the period design; (2) the landing minimum is applied (2 h, decision 064); (3) overrides: Hornvík `IS-HOV` and Helguvík done 2026-10-01; `IS-KRI` has no landing or logbook records, left `transient` (decision 063); `VIS`, `MAN`, `TMY`, `STO` have no usable polygon. Background, not pursued: a
-minimum by gear or vessel size; static-gear trips are often logged at the haul only.
-
-**check:** `harbour_class` has a reviewed class for the harbours the maintainer named, and `check_bookkeeping()` is clean.
-
 ## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
 **status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`
 
@@ -466,8 +457,7 @@ diagram (ramb, steps 0–6), with standard inputs between them. Preprocessing is
 once, reviewed, frozen as inputs and redone only by decision: the STK mobile-id → vid match, the GPS logger
 positions (the AIS-interpolated `curated/logbook/sensor_gps` of decision 073's build, merged at the feed union
 as provider `gps`), and the harbour layer (static polygons and departure radius, upfront). Also decided:
-- the harbour class goes: one minimum stay (decision 063 measured a global 2 h: same landing coverage as the
-  class rule, +12,138 stays, +0.8 %); reviewed labels may stay as description;
+- the harbour class goes (decision 074): one minimum stay; reviewed labels may stay as description;
 - `curate/corrections/afli_coords.R` (the AIS-free recovery, median 329 m off AIS) is removed; its defect
   declaration `afli_coords.yml` stays; `checks/afli_rafr_stofn_corroboration.R` reads its output.
 

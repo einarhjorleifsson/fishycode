@@ -3,7 +3,7 @@
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
 #         curated/check/stk_event.parquet   (tagged STK I/U events; used from EVENT_FROM on)
-#         curated/reference/harbour_class.parquet   (class per harbour and year, TODO 33; sets the minimum stay)
+#         curated/reference/harbour_class.parquet   (class per harbour and year; sets the minimum stay; to go, decision 074)
 # Output: curated/ais/harbour_stay.parquet  one row per stay: vid, pid, T_in, T_out, ...
 #
 # Plan 011 §3.0, §3.4, Phase 3. `ais_trip.R` measures a harbour stay as the span of the pings in a
@@ -40,7 +40,7 @@
 # year's first ping is cut there, not extended (`year_edge`).
 #
 # Not here: the pass-through guard for event pairs (they must be >= G hours, so a 1-60 min transit never
-# qualifies), the per-harbour class (TODO 33), foreign harbours (no `einar`
+# qualifies), the per-harbour class (to go, decision 074), foreign harbours (no `einar`
 # polygon, deferred in plan §3.6), and the vessels with two streams in one mid (2765, ...).
 
 library(dplyr)

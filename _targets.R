@@ -479,7 +479,7 @@ list(
              fd_curated("reference", "harbour_radius.parquet"))
   }, format = "file"),
 
-  # Harbour class per harbour and year from the STK I->U stays (TODO 33); reviewed overrides enter by file.
+  # Harbour class per harbour and year from the STK I->U stays; to go (decision 074, TODO 45). Overrides enter by file.
   tar_target(harbour_class_overrides, "overrides/harbour_class.csv", format = "file"),
   tar_target(harbour_class, {
     shapes; stk; check_stk_event; harbour_class_overrides

@@ -19,7 +19,7 @@
 # harbour, and a cap alone would still have given those harbours a 6 km radius.
 #
 # No cycle: the pairs come from events and polygons, never from the stays this table is used for.
-# A reviewed override (as for the harbour class, TODO 33) is not built; add one when a value is
+# A reviewed override (as for the harbour class, which goes: decision 074) is not built; add one when a value is
 # judged wrong.
 
 library(dplyr)
