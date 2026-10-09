@@ -35,8 +35,9 @@ Claude (AI-assisted), from plan mode, an adversarial review and read-only counts
 
   The renames (ramb, columns, paths) are plan 014 phase 3 (c). Not renamed: STK `io`, the whacky/clean tables,
   `provider`.
-- **Port labels.** Decision 074 removed the class. The three reviewed labels in `overrides/harbour_class.csv`
-  (Hornvík `no_pier`, Helguvík `cargo`, Kristnes `transient`) set nothing in the flow. They stay as reviewed
+- **Port labels.** Decision 074 removed the class. The two reviewed labels in `overrides/harbour_class.csv`
+  (Hornvík `no_pier`, Helguvík `cargo`) set nothing in the flow. *Amended 2026-10-09: this said three, adding
+  Kristnes `transient`, which decision 063 left to the data and never entered as an override.* They stay as reviewed
   description, and plan 014 phase 3 renames the file to `overrides/port_class.csv`. The WGSFD port file
   (`products/exports/wgsfd_harbours.R`) reads them from there.
 - **TODO 37.** `tar_make_isolated()` is the way to build (AGENTS.md). Its check allows closing on that.
