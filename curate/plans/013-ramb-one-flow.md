@@ -320,6 +320,79 @@ decision 069 counted the time-step floor. At 64° N distances grow by about 0.33
      several trips.
    - Sales notes are already in the landing panel; no new box.
 
+## Using the functions alone and in the flow (robustness to misuse)
+
+*Maintainer, 2026-10-09: ramb will have many functions. A user may call one alone, to look at one aspect of the data,
+or run them all to deliver the ICES data call or an institute's own product. The functions must not let a user
+silently get it wrong, and should say which steps the data need first. Design drafted by Claude (AI-assisted) from
+established practice; nothing is built yet. To be built before phase 4 adds its functions, and retrofitted to the
+step 0-2 functions first.*
+
+**Prior art.** The problem is old and the methods are established. ramb takes the following from each:
+
+| Practice | Where it is used | What ramb takes |
+|---|---|---|
+| Design by contract: preconditions and postconditions (Meyer) | software engineering generally | each step function states what it needs and what it guarantees to add |
+| Data contracts at pipeline boundaries | pandera (decorators that check a function's input and output frames), pointblank (step-by-step validation reports), Great Expectations | a light contract per function (columns and types), with no dependency on these packages |
+| State inferred from what a step leaves behind | scikit-learn `check_is_fitted`: "fitted" is read from attributes ending in `_`; `NotFittedError` says what to call first | the flow state is read from the columns a step adds; the message names the step to run first |
+| One test suite run over every component | scikit-learn `check_estimator` | one shared misuse test suite run over every step function |
+| Recipes and pipelines | tidymodels `recipes` (steps, then `prep`/`bake`), scikit-learn `Pipeline` | the two layers below: single verbs, and recipes that run them in order |
+| Structural assertions for movement data | move2 (`mt_is_time_ordered`, `mt_is_track_id_cleaved`, `mt_has_unique_location_time_records`, used with `assert_that()`), tsibble (key and index validity), amt (`make_track()`) | cheap structural checks: grouped by vessel, ordered in time, unique `(vid, time)` |
+| Error messages for people | the tidyverse style guide (a problem statement with "must" or "can't", then `x` and `i` bullets, naming the call), via rlang | ramb's message style, plus one line with the code that fixes it |
+
+**Not classes or attributes.** move2, amt, tsibble and sf mark state with a class or attributes. Both are lost when a
+table is written to parquet or passed through a lazy DuckDB query, which is how ramb is used. ramb reads state from
+**columns**, which survive both.
+
+**The design.**
+
+1. **A step registry.** One internal table, one row per exported step function: its stage, the columns it **needs**,
+   the columns it **adds**, and the step that normally comes before it. Checks, messages, documentation, the misuse
+   tests and a user-facing `rb_check_flow(x)` are all generated from it. `rb_check_flow(x)` reports which steps a
+   table has been through and what comes next. A test fails if an exported step function has no row.
+2. **A contract check at the top of each function.** One internal helper (`.rb_check_input(x, fn, ...)`) reads the
+   registry and checks:
+   - the needed columns, under the user's column names (tidy evaluation, as now);
+   - their types: a date-time for times, numbers for positions;
+   - on a lazy table, the schema only, with value checks (latitude range, plausible units) on a small sample. They
+     can be switched off with `check = FALSE`, so a 500 M-row table is never scanned for a check.
+3. **Three responses, by harm:**
+   - *stop* when the result would be silently wrong: a needed column missing, latitude outside ±90, a time that is
+     not a date-time, an input from the wrong stage;
+   - *warn once per session* when it runs but worse, e.g. stays from pings that were never flagged (the existing
+     warn-once registry of `.rb_renamed`);
+   - *fix quietly* where there is one right answer: sort by vessel and time, treat times as UTC.
+
+   A missing **declared** input (no logbook, no landings) is a normal case, not misuse (decided item 9): the
+   function runs and fills basis `none`. A missing **prerequisite step** gets a message.
+4. **Messages** follow the tidyverse style through `rlang::abort()`/`rlang::warn()`, adding no dependency. Each says
+   what is wrong, why it matters, and what to run first. The last line is taken from the registry, never written by
+   hand:
+
+   ```
+   Error in `rb_cut_trip_voyages()`:
+   ! `stays` must be supplied for method "stays".
+   x `stays` is missing.
+   i Voyages run from one stay in port to the next.
+   i Run first: stays <- rb_find_trip_stays(pings, ports)
+   ```
+5. **Two layers.**
+   - The single verbs: permissive, column names as arguments, on a data frame or a lazy table.
+   - Recipes that run the steps in order with sensible defaults: `rb_flow()`, with presets such as `"ices_datacall"`
+     or an institute's own. Most users never assemble the steps by hand, which removes most of the room for misuse.
+6. **A shared misuse test suite**, generated from the registry and run over every step function, as
+   `check_estimator` does in scikit-learn. Each function is tested with:
+   - each needed column missing, where the error must name the step that adds it;
+   - wrong types;
+   - unsorted input;
+   - a lazy table, which must equal the data frame;
+   - the declared inputs `NULL`, which must give the same columns;
+   - messages snapshot-tested (`expect_snapshot`), so they do not rot.
+7. **Provenance as the last net.** If a user still gets it wrong, the basis and case columns show it in the output.
+
+**Costs.** The registry must stay in step with the functions; the test of item 1 enforces that. Checks add a little
+time per call; lazy tables are checked by schema only. Messages need care to stay short.
+
 ## Function map: panel → ramb function → template
 
 | Stage | ramb function | Template, origin, status |
