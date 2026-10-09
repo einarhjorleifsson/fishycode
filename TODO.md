@@ -453,7 +453,7 @@ the flow qualifies them.
 
 Decision 029 validated it with zero errors; the tool's spec has moved on, and `validate-spec` now reports 144
 errors on the unedited file (`S07`: number and string columns must give `examples`; `S28`: unknown types).
-Plan 014 updated the tables its renames touched (decision 078) and added `logbook_gear`, adding 11 such errors of
-its own; nothing was validated against the data (`validate-meta` stops at spec errors).
+Plan 014 updated the tables its renames touched (decision 078) and added `logbook_gear`: 141 errors after those
+edits, none new in kind. Nothing was validated against the data (`validate-meta` stops at spec errors).
 
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors.
