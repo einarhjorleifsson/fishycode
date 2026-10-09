@@ -489,6 +489,20 @@ Each phase ends with three things:
      into the preprocessing link (`lid_map`). If a reconciled result must change an input, it re-enters as a reviewed,
      frozen input by decision, as the vessel key does (decision 075).
    - Gear with several gears per trip: TODO 34.
+   - **Reconcile declared times with the track** (maintainer, 2026-10-09), one rule for every time a declaration
+     may carry: `T1`, `T2` and `t1`–`t4`. `coalesce` only falls back; here a present declared value can also lose.
+     Each value keeps its candidates (logbook, landing, track) and gets one of five cases:
+     - *agree*: the candidates agree within tolerance;
+     - *refine*: they agree and the track is more precise (a date becomes a date and time);
+     - *fallback*: no declaration, so the track fills in;
+     - *override*: the track contradicts the declaration, is precise enough, and is linked unambiguously, so it wins
+       and the declared value is kept beside it;
+     - *not checked*: the track is too sparse at that moment to judge, so the declaration stands.
+     The deciding quantity is the track's uncertainty at the event (about the gap between the pings either side),
+     against the declaration's own precision (date only, minute, or an expected time). With good AIS resolution the
+     track may overwrite; with poor resolution it may not. Output per value: the chosen time, the candidates, an
+     uncertainty, its provenance (`basis`) and the case. Generic, as a ramb step (e.g. `rb_reconcile_time()`); the
+     `T2` reconciliation above is its first use.
    - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
      haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
      to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting
