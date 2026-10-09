@@ -10,7 +10,7 @@
 # never the cleaned track, so it no longer depends on step 0. Until plan 014 it was curate/checks/stk_event.R and
 # also tested each event against its neighbours on `ping_clean` (`io_jump`, `in_clean`); that test rejected only
 # 40 of 3,400,403 events (2017+) that step 0 kept (decision 075). Which events a stay trusts is decided in the
-# flow (curate/harbour_stay.R): `io_ok` here, and step 0 keeping the event's ping.
+# flow (curate/port_stay.R): `io_ok` here, and step 0 keeping the event's ping.
 #
 # One row per ping, not per source row. STK ships most `U` events twice, one row with the harbour code
 # and one without (3.03 M of 4.39 M `U` pings, 2007-2025); `I` is nearly always one row. The plan's

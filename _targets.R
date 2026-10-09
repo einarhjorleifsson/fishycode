@@ -92,9 +92,9 @@ list(
              fd_curated("reference", "port.parquet"))
   }, format = "file"),
 
-  tar_target(harbour, produces(
-    "reference/ports/harbours.R",
-    fd_curated("reference", "harbour.parquet")), format = "file"),
+  tar_target(port_code, produces(
+    "reference/ports/port_code.R",
+    fd_curated("reference", "port_code.parquet")), format = "file"),
 
   # Geometry validation of the raw spatial layers. Its outputs go to
   # staging/aux_valid/; shapes.R then crops and buffers them into staging/aux/.
@@ -253,7 +253,7 @@ list(
   }, format = "file"),
 
   # STK's own port events (I in / U out), one row per ping, tagged from STK and the polygons alone (plan 011
-  # Phase 2, plan 014). Which events a stay trusts is the flow's decision (harbour_stay).
+  # Phase 2, plan 014). Which events a stay trusts is the flow's decision (port_stay).
   tar_target(stk_event, {
     stk; shapes; stk_hid_pid
     produces("sources/stk/event.R", fd_staging("ais", "stk_event.parquet"))
@@ -283,11 +283,11 @@ list(
     produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
   }, format = "file"),
 
-  tar_target(ais_trip, {
-    ais_ping_clean; harbour_stay
-    produces("curate/ais_trip.R",
+  tar_target(ais_voyage, {
+    ais_ping_clean; port_stay
+    produces("curate/ais_voyage.R",
              fd_curated("ais", "ping"),
-             fd_curated("ais", "trip.parquet"))
+             fd_curated("ais", "voyage.parquet"))
   }, format = "file"),
 
   # ── Curation ────────────────────────────────────────────────────────────────
@@ -304,12 +304,12 @@ list(
              fd_curated("logbook", "catch.parquet"))
   }, format = "file"),
 
-  # L4 of the vessel-trail model: tie logbook trips to AIS harbour-to-harbour
+  # L4 of the vessel-trail model: tie logbook trips to AIS port-to-port
   # voyages. The deliverable the trail data exists for - AIS voyages carried no
   # logbook key at all before this. Additive: its own table, improved times as new
   # columns, curated/logbook/trip.parquet untouched.
   tar_target(trip_voyage, {
-    logbook; ais_trip
+    logbook; ais_voyage
     produces("curate/link_trip_voyage.R",
              fd_curated("link", "trip_voyage.parquet"))
   }, format = "file"),
@@ -354,28 +354,28 @@ list(
   # The vessel key's own checks build the key and run with it in the `once` project.
 
   # Stays (plan 011 Phase 3): elapsed time at a port, from polygon, gap and (2017+) event evidence.
-  tar_target(harbour_stay, {
+  tar_target(port_stay, {
     ais_ping_clean; shapes; stk_event; port_radius
-    produces("curate/harbour_stay.R",
-             fd_curated("ais", "harbour_stay.parquet"))
+    produces("curate/port_stay.R",
+             fd_curated("ais", "port_stay.parquet"))
   }, format = "file"),
 
-  tar_target(check_harbour_stay_logbook, {
-    harbour_stay; logbook; landing
-    produces("curate/checks/harbour_stay_logbook.R",
-             fd_curated("check", "harbour_stay_logbook.parquet"))
+  tar_target(check_port_stay_logbook, {
+    port_stay; logbook; landing
+    produces("curate/checks/port_stay_logbook.R",
+             fd_curated("check", "port_stay_logbook.parquet"))
   }, format = "file"),
 
   # The residue of the shared-voyage problem after the stays, before vs after (plan 011 §6).
   tar_target(check_voyage_sharing, {
-    trip_voyage; ais_trip; logbook
+    trip_voyage; ais_voyage; logbook
     produces("curate/checks/voyage_sharing.R",
              fd_curated("check", "voyage_sharing.parquet"))
   }, format = "file"),
 
   # The product (plan 011 Phase 5): every fix with its voyage, station and logbook trip, by year-month.
   tar_target(ais_trail, {
-    ais_trip; station_window; trip_voyage
+    ais_voyage; station_window; trip_voyage
     produces("curate/ais_trail.R",
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
   }, format = "file"),

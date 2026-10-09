@@ -1,10 +1,10 @@
-# harbour_stay_logbook.R — do the stays agree with the logbook? (plan 011 §4 Phase 3 acceptance)
+# port_stay_logbook.R — do the stays agree with the logbook? (plan 011 §4 Phase 3 acceptance)
 # Side: flow, check. See plan 014.
 #
-# Input:  curated/ais/harbour_stay.parquet   (stays from AIS only)
+# Input:  curated/ais/port_stay.parquet   (stays from AIS only)
 #         curated/logbook/trip.parquet       (logbook trips, afli + fs_afladagbok)
 #         curated/landing/landings.parquet   (landings, agf + lods)
-# Output: curated/check/harbour_stay_logbook.parquet   one row per vessel-year
+# Output: curated/check/port_stay_logbook.parquet   one row per vessel-year
 #
 # Landings and logbook trips are NOT inputs to the stays (AGENTS: cycles are broken outside the DAG);
 # they are only the yardstick. Per vessel-year: stays per logbook trip and stays per landing day, in
@@ -19,7 +19,7 @@ library(dplyr)
 MIN_TRIPS <- 20
 
 con <- DBI::dbConnect(duckdb::duckdb())
-f <- list(stay = fd_curated("ais", "harbour_stay.parquet"), trip = fd_curated("logbook", "trip.parquet"),
+f <- list(stay = fd_curated("ais", "port_stay.parquet"), trip = fd_curated("logbook", "trip.parquet"),
           land = fd_curated("landing", "landings.parquet"))
 d <- DBI::dbGetQuery(con, glue::glue("
   WITH s AS (SELECT vid, year, count(*) AS n_stay,
@@ -34,7 +34,7 @@ d <- DBI::dbGetQuery(con, glue::glue("
   FROM t FULL JOIN l USING (vid, year) FULL JOIN s USING (vid, year)")) |>
   as_tibble() |> filter(year >= 2008)
 
-d |> write_curated(fd_curated("check", "harbour_stay_logbook.parquet"),
+d |> write_curated(fd_curated("check", "port_stay_logbook.parquet"),
                    inputs = unlist(f))
 
 within <- function(r) mean(abs(r - 1) <= 0.25)

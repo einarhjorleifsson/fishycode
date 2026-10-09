@@ -1,13 +1,13 @@
-# harbour_stay.R — stays: elapsed time at a harbour, from whatever evidence there is.
+# port_stay.R — stays: elapsed time in port, from whatever evidence there is (harbour_stay.R until plan 014).
 # Side: flow, step 1. See plan 014.
 #
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider; recorded positions only, plan 014)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
 #         staging/ais/stk_event.parquet     (STK I/U events tagged from STK alone; used from EVENT_FROM on)
 #         curated/reference/port_radius.parquet (the departure radius per port; a frozen input)
-# Output: curated/ais/harbour_stay.parquet  one row per stay: vid, pid, T_in, T_out, ...
+# Output: curated/ais/port_stay.parquet  one row per stay: vid, stay (key, numbered per vessel by T_in), pid, T_in, T_out, ...
 #
-# Plan 011 §3.0, §3.4, Phase 3. `ais_trip.R` measures a harbour stay as the span of the pings in a
+# Plan 011 §3.0, §3.4, Phase 3. `ais_trip.R` (now ais_voyage.R) measured a harbour stay as the span of the pings in a
 # polygon run, so one `I` ping followed by silence has span 0 and is bridged away. A stay here is
 # elapsed time. Nothing consumes this table yet; Phase 4 cuts voyages at it.
 #
@@ -77,7 +77,7 @@ rad <- nanoparquet::read_parquet(fd_path("curated", "reference", "port_radius.pa
 # and would silently fall back to the default radius.
 stopifnot("a frozen port radius names a pid with no polygon (TODO 36)" = all(rad$pid %in% P$pid))
 r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else rep(R_M, nrow(P))
-harbours <- P |> mutate(harbour_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
+ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
 
 
 # -- One year ------------------------------------------------------------------------
@@ -94,16 +94,16 @@ stay_year <- function(yr) {
               QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time) = 1")))
   # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both ok and kept by step 0
   ev <- if (yr >= EVENT_FROM) dplyr::tbl(con, dplyr::sql(glue::glue("
-    SELECT e.vid, e.time, e.io, e.hid_pid AS harbour_id, (e.io_ok AND c.vid IS NOT NULL) AS good
+    SELECT e.vid, e.time, e.io, e.hid_pid AS port_id, (e.io_ok AND c.vid IS NOT NULL) AS good
     FROM read_parquet('{event_f}') e
     LEFT JOIN (SELECT DISTINCT vid, time FROM read_parquet('{clean_dir}', hive_partitioning = true)
                WHERE year BETWEEN {yr - 1L} AND {yr + 1L}) c USING (vid, time)
     WHERE e.year BETWEEN {yr - 1L} AND {yr + 1L}"))) else NULL
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
-  ramb::rb_find_trip_stays(seq_yr, harbours, min_stay_h = G_H, radius_in = R_M,
+  ramb::rb_find_trip_stays(seq_yr, ports, min_stay_h = G_H, radius_in = R_M,
                            events = ev, t_in_window = win) |>
     collect() |>
-    rename(pid = harbour_id)
+    rename(pid = port_id)
 }
 
 # -- Run -----------------------------------------------------------------------------
@@ -111,14 +111,17 @@ stay_year <- function(yr) {
 years <- if (ALL) q(glue::glue("SELECT DISTINCT year FROM read_parquet('{clean_dir}', hive_partitioning = true) ORDER BY 1"))$year else YEARS
 res <- vector("list", length(years))
 for (k in seq_along(years)) {
-  yr <- years[k]; t0 <- Sys.time(); message("harbour_stay ", yr)
+  yr <- years[k]; t0 <- Sys.time(); message("port_stay ", yr)
   res[[k]] <- stay_year(yr)
   message(sprintf("  %s stays, %.1f min", format(nrow(res[[k]]), big.mark = ","),
                   as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 }
 
 out <- bind_rows(res) |>
-  transmute(vid, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
+  arrange(vid, T_in, pid) |>
+  # the stay's key: a ping carries it, not the stay's values (plan 014)
+  mutate(stay = row_number(), .by = vid) |>
+  transmute(vid, stay, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
             dur_h = as.numeric(T_out - T_in, units = "hours"),
             rule, evidence, T_in_ping, T_out_ping, T_in_ev, T_out_ev,
             basis = "reconstructed") |>
@@ -129,10 +132,10 @@ print(out |> count(year, rule) |> tidyr::pivot_wider(names_from = rule, values_f
 
 if (ALL) {
   out |> write_curated(
-    fd_curated("ais", "harbour_stay.parquet"),
+    fd_curated("ais", "port_stay.parquet"),
     inputs = c(fd_staging("aux", "ports.fgb"), event_f,
                list.files(fd_staging("ais", "ping_clean"), pattern = "parquet$", recursive = TRUE, full.names = TRUE)))
-  message(sprintf("harbour_stay: %s stays", format(nrow(out), big.mark = ",")))
+  message(sprintf("port_stay: %s stays", format(nrow(out), big.mark = ",")))
 } else {
   assign("stay_test", out, envir = globalenv())
   message("subset run (STAY_YEARS): nothing written")

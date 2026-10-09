@@ -60,7 +60,7 @@ The columns added to the pings (the voyage columns come from the AIS voyage, the
 
 | column | meaning |
 |---|---|
-| `stay_pid`, `trip` | harbour of the stay the fix is in (NA at sea); the AIS voyage number within `vid` and `year` |
+| `stay`, `voyage` | keys: the stay the fix is in (NA at sea; `curated/ais/port_stay.parquet`, by `vid`), and the AIS voyage (`curated/ais/voyage.parquet`, by `vid` and `year`). The port and times of a stay or voyage are in those tables, not on the fix. |
 | `.tid_voyage`, `schema_voyage`, `n_tid_voyage` | the logbook trip of the voyage — filled only when exactly one trip is on it; `n_tid_voyage` counts them (0 = none) |
 | n_sid | number of station windows that contain the fix (0 = none) |
 | `.sid`, `schema`, `.tid` | the station and trip — filled **only** when `n_sid == 1` |

@@ -3,8 +3,8 @@
 #
 # Input:  raw/logbooks/afli/sjalfvirkir_maelar.parquet
 #         raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
-#         curated/ais/ping          (merged, cleaned track, tagged with trip)
-#         curated/ais/trip.parquet  (voyage windows, to bound the interpolation)
+#         curated/ais/ping            (merged, cleaned track, tagged with its voyage)
+#         curated/ais/voyage.parquet  (voyage windows, to bound the interpolation)
 #         curated/logbook/{trip,fishing_sample}.parquet   (.sid -> vid)
 # Output: curated/logbook/sensor_gps
 #
@@ -77,8 +77,8 @@ logger <- bind_rows(
 # -- interpolate positions from the merged track, WITHIN each voyage ----------
 
 track  <- open_dataset(fd_curated("ais", "ping"))
-voyage <- open_dataset(fd_curated("ais", "trip.parquet")) |>
-  select(vid, year, trip, T1, T2) |> collect()
+voyage <- open_dataset(fd_curated("ais", "voyage.parquet")) |>
+  select(vid, year, trip = voyage, T1, T2) |> collect()
 
 years <- sort(unique(logger$year))
 out   <- fd_curated("logbook", "sensor_gps")
@@ -98,8 +98,8 @@ for (yr in years) {
 
   tk <- track |>
     # never from the logger's own earlier fixes: since plan 014 they are in the track as provider gps
-    filter(year == yr, !is.na(trip), provider != "gps") |>
-    select(vid, trip, time, lon, lat) |>
+    filter(year == yr, !is.na(voyage), provider != "gps") |>
+    select(vid, trip = voyage, time, lon, lat) |>
     collect() |>
     arrange(vid, trip, time)
   if (!nrow(tk)) next
@@ -125,7 +125,7 @@ for (yr in years) {
   write_curated(res, file.path(out, paste0("year=", yr), "data_0.parquet"),
                 inputs = c(fd_raw("logbooks", "afli", "sjalfvirkir_maelar.parquet"),
                            fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet"),
-                           fd_curated("ais", "trip.parquet"), fd_curated("logbook", "trip.parquet"),
+                           fd_curated("ais", "voyage.parquet"), fd_curated("logbook", "trip.parquet"),
                            fd_curated("logbook", "fishing_sample.parquet")))
   message(sprintf("  %d: %s fixes | %.1f%% positioned | %.1f%% outside a voyage",
                   yr, format(nrow(res), big.mark = ","),

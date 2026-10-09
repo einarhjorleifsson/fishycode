@@ -3,7 +3,7 @@
 # harbour-to-harbour voyages derived from AIS.
 #
 # Input:  curated/logbook/trip.parquet      (.tid, vid, T1, T2, schema)
-#         curated/ais/trip.parquet          (vid, year, trip, T1, T2, hid1, hid2)
+#         curated/ais/voyage.parquet        (vid, year, voyage, T1, T2, pid1, pid2)
 # Output: curated/link/trip_voyage.parquet
 #
 # Both inputs carry T1/T2 because both are trip-level - case encodes the level, not
@@ -37,13 +37,7 @@ library(duckdb)
 con <- dbConnect(duckdb())
 
 lb  <- fd_curated("logbook", "trip.parquet")
-# the AIS chain has not been rebuilt yet; fall back to the legacy build so the
-# linkage can be established now and simply pick up the new table when it exists
-ais <- fd_curated("ais", "trip.parquet")
-if (!file.exists(ais)) {
-  ais <- file.path(fishydata_root(), "legacy", "curated", "ais_trips.parquet")
-  message("curated/ais/trip.parquet absent - linking against the legacy AIS trips")
-}
+ais <- fd_curated("ais", "voyage.parquet")
 
 # The link itself is ramb::rb_link_trip_voyages() (plan 013 phase 2): the voyage that overlaps the logbook
 # trip by the most seconds, ties by more pings, n_candidates kept. Known issue 10: afli stores ~80% of trips
@@ -51,10 +45,10 @@ if (!file.exists(ais)) {
 # trips puts T2 before T1; t2_fix = "end_of_t1_day" pushes the window to at least the end of the first day.
 trips <- dplyr::tbl(con, dplyr::sql(sprintf("SELECT \".tid\", vid, schema, T1, T2 FROM read_parquet('%s')", lb)))
 voy <- dplyr::tbl(con, dplyr::sql(sprintf(
-  "SELECT vid, year, trip AS voyage_id, T1, T2, hid1 AS harbour_from, hid2 AS harbour_to, n_pings FROM read_parquet('%s')", ais)))
+  "SELECT vid, year, voyage AS voyage_id, T1, T2, pid1 AS port_from, pid2 AS port_to, n_pings FROM read_parquet('%s')", ais)))
 link <- ramb::rb_link_trip_voyages(trips, voy, keys = c(".tid", "schema"), t2_fix = "end_of_t1_day") |>
-  dplyr::transmute(.tid, vid, schema, year, trip = voyage_id, T1_ais = T1_voyage, T2_ais = T2_voyage,
-                   hid1_ais = harbour_from, hid2_ais = harbour_to, n_pings, overlap_s, lb_span_s = trip_span_s,
+  dplyr::transmute(.tid, vid, schema, year, voyage = voyage_id, T1_ais = T1_voyage, T2_ais = T2_voyage,
+                   pid1_ais = port_from, pid2_ais = port_to, n_pings, overlap_s, lb_span_s = trip_span_s,
                    overlap_frac, n_candidates, basis)
 q <- as.character(dbplyr::sql_render(link))
 

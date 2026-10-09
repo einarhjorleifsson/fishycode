@@ -1,12 +1,12 @@
-# ais_trip.R — L4a of the vessel-trail model: harbour-to-harbour voyages.
+# ais_voyage.R — L4a of the vessel-trail model: port-to-port voyages (ais_trip.R until plan 014).
 # Side: flow, step 1. See plan 014.
 #
 # Input:  staging/ais/ping_clean   (whacky positions already removed - L2)
-#         curated/ais/harbour_stay.parquet   (stays: elapsed time at a harbour, plan 011 Phase 3)
-# Output: curated/ais/trip.parquet (vid, year, trip, T1, T2, hid1, hid2, n_pings)
-#         curated/ais/ping         (clean pings carrying their trip number, and `stay_pid`)
+#         curated/ais/port_stay.parquet   (stays: elapsed time at a port, plan 011 Phase 3; key (vid, stay))
+# Output: curated/ais/voyage.parquet (vid, year, voyage, T1, T2, pid1, pid2, n_pings)
+#         curated/ais/ping           (clean pings carrying keys only: `voyage`, and `stay` where the ping is in one)
 #
-# Trip key is (vid, year, trip), numbered 1..n per vessel per year; a voyage
+# Voyage key is (vid, year, voyage), numbered 1..n per vessel per year; a voyage
 # spanning New Year is split at the boundary.
 #
 # T1/T2 are UPPERCASE on purpose: case encodes the level, so a trip or voyage is
@@ -16,13 +16,15 @@
 # A voyage is the sea between two stays (plan 011, decision 061). Until 2026-10-01 a harbour stay was the
 # span of the pings in a run of polygon-tagged pings, so one `I` ping followed by silence had span 0 and was
 # bridged away, and day-trip vessels merged into year-long "voyages" (vid 2481, 2011: 185 landings, one voyage).
-# Now the harbour is the stay, measured in elapsed time, from every provider (curate/harbour_stay.R).
+# Now the port is the stay, measured in elapsed time, from every provider (curate/port_stay.R).
+# Plan 014 (decision 075): a ping carries keys, never the stay's or voyage's values; those are one row each in
+# port_stay.parquet and voyage.parquet. `pid1`/`pid2` are port ids: an AIS table has no `hid`.
 #
 # Per year:
-#   1. Each ping gets the harbour of the stay it falls in (`stay_pid`), NA at sea; contiguous stay/sea runs
+#   1. Each ping gets the stay it falls in (`stay`), NA at sea; contiguous stay/sea runs
 #      via a cumsum over that
-#   2. Sea runs numbered per vessel, with departure/arrival harbours attached (the stays either side)
-#   3. Trip ids joined back to the pings by time range
+#   2. Sea runs numbered per vessel, with departure/arrival ports attached (the stays either side)
+#   3. Voyage keys joined back to the pings by time range
 # `pid`, the polygon tag from ping_tagged, is kept as it was; a ping inside a polygon but not in a stay (a
 # visit shorter than the stay minimum, a pass-through) is part of the voyage, as the old bridging made it.
 # Event-only stays (evidence is only `event_pair`) are left out: 21 % of them have a landing against 79 %
@@ -40,11 +42,11 @@ library(tidyverse)
 # -- Parameters ----------------------------------------------------------------
 
 MIN_PINGS     <- 10   # trips with fewer pings than this are dropped
-# The stay minimum (4 h) is a parameter of curate/harbour_stay.R, not of this script.
+# The stay minimum (2 h) is a parameter of curate/port_stay.R, not of this script.
 EXCLUDE_EVENT_ONLY <- TRUE
 
 # Set AIS_TRIP_VIDS (comma-separated) for testing: the run then writes to staging/ais/ping_test and
-# trip_test.parquet, never to curated/. NULL = all vessels.
+# voyage_test.parquet, never to curated/. NULL = all vessels.
 VIDS <- if (nzchar(Sys.getenv("AIS_TRIP_VIDS"))) as.integer(strsplit(Sys.getenv("AIS_TRIP_VIDS"), ",")[[1]]) else NULL
 
 # -- Data ----------------------------------------------------------------------
@@ -52,9 +54,9 @@ VIDS <- if (nzchar(Sys.getenv("AIS_TRIP_VIDS"))) as.integer(strsplit(Sys.getenv(
 ais   <- open_dataset(fd_staging("ais", "ping_clean"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
-stays <- duckdbfs::open_dataset(fd_curated("ais", "harbour_stay.parquet")) |> collect() |>
+stays <- duckdbfs::open_dataset(fd_curated("ais", "port_stay.parquet")) |> collect() |>
   filter(!EXCLUDE_EVENT_ONLY | evidence != "event_pair") |>
-  transmute(vid, harbour_id = pid, T_in, T_out) |>
+  transmute(vid, port_id = pid, T_in, T_out, stay_id = stay) |>
   arrange(vid, T_in)
 
 # -- Main loop -----------------------------------------------------------------
@@ -100,13 +102,13 @@ for (yr in years) {
 
     # -- Voyages: the sea between two stays, numbered per vessel and year (ramb, plan 013 phase 2) -----
     # A ping takes the stay it falls in (the earlier of two that overlap); sea runs become voyages with
-    # the harbours of the stays either side; voyages under MIN_PINGS pings are dropped after numbering.
+    # the ports of the stays either side; voyages under MIN_PINGS pings are dropped after numbering.
     # Only recorded positions cut voyages and count towards MIN_PINGS; the gps logger's reconstructed fixes
     # get their voyage by time below, like every other ping (plan 014).
     st_g <- stays |> filter(vid %in% g)
     v_b <- ramb::rb_cut_trip_voyages(clean |> filter(pos_basis == "recorded"), st_g, min_pings = MIN_PINGS)
     trips_yr_b <- v_b |>
-      transmute(vid, year = as.integer(year), trip = as.integer(voyage_id), T1, T2, hid1 = harbour_from, hid2 = harbour_to, n_pings = as.integer(n_pings))
+      transmute(vid, year = as.integer(year), voyage = as.integer(voyage_id), T1, T2, pid1 = port_from, pid2 = port_to, n_pings = as.integer(n_pings))
 
     out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
 
@@ -115,9 +117,9 @@ for (yr in years) {
     # inside a per-year loop, which is exactly the shape that accumulates (R/write_parquet.R).
     # A test run (VIDS) writes to staging, which write_curated() refuses.
     ping_b <- ramb::rb_assign_trip(clean, v_b, stays = st_g) |>
-      transmute(!!!rlang::syms(names(clean)), stay_pid = stay_harbour_id, trip = as.integer(voyage_id))
+      transmute(!!!rlang::syms(names(clean)), stay = as.integer(stay_id), voyage = as.integer(voyage_id))
     f <- glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet")
-    if (is.null(VIDS)) write_curated(ping_b, f, inputs = fd_curated("ais", "harbour_stay.parquet"))
+    if (is.null(VIDS)) write_curated(ping_b, f, inputs = fd_curated("ais", "port_stay.parquet"))
     else write_parquet_group(ping_b, f)
     rm(ping_b)
 
@@ -131,22 +133,22 @@ for (yr in years) {
   trips_all[[match(yr, years)]] <- trips_yr
 }
 
-# -- Collect and write trip summary --------------------------------------------
+# -- Collect and write the voyage table --------------------------------------------
 
 trips <- list_rbind(trips_all)
 
 message(glue::glue(
-  "Done: {nrow(trips)} trips across {n_distinct(trips$vid)} vessels"
+  "Done: {nrow(trips)} voyages across {n_distinct(trips$vid)} vessels"
 ))
 
-out_trips <- if (is.null(VIDS)) fd_curated("ais", "trip.parquet") else fd_staging("ais", "trip_test.parquet")
-if (is.null(VIDS)) write_curated(trips, out_trips, inputs = fd_curated("ais", "harbour_stay.parquet")) else
+out_trips <- if (is.null(VIDS)) fd_curated("ais", "voyage.parquet") else fd_staging("ais", "voyage_test.parquet")
+if (is.null(VIDS)) write_curated(trips, out_trips, inputs = fd_curated("ais", "port_stay.parquet")) else
   write_parquet_group(trips, out_trips)
 
 # -- QA: vid == 2765 -----------------------------------------------------------
 
 if (FALSE) {
-  trips |> filter(vid == 2765) |> arrange(year, trip) |> print(n = 40)
+  trips |> filter(vid == 2765) |> arrange(year, voyage) |> print(n = 40)
 
   library(mapdeck)
   token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"
@@ -156,8 +158,8 @@ if (FALSE) {
     filter(vid == 2765) |>
     collect() |>
     arrange(time) |>
-    filter(!is.na(trip)) |>
-    select(trip, lon, lat, speed) |>
-    group_by(trip) |>
+    filter(!is.na(voyage)) |>
+    select(voyage, lon, lat, speed) |>
+    group_by(voyage) |>
     ramb::rb_plot_trail(no_lines = FALSE)
 }

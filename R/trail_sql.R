@@ -17,7 +17,7 @@
 # a set is never fishing. It is NA when such a window holds the fix but the fix has no speed (a logger fix with no
 # speed, or the 1.000 m/s placeholder, plan 012 §2f): unknown, not FALSE. FALSE for a fix in no window.
 #
-# The voyage side: `trip_voyage` links a logbook trip to the AIS voyage (vid, year, trip) it overlaps most.
+# The voyage side: `trip_voyage` links a logbook trip to the AIS voyage (vid, year, voyage) it overlaps most.
 # Several logbook trips may share one voyage (3-4 %), so `.tid_voyage` is filled only when exactly one trip is on
 # the voyage, and `n_tid_voyage` counts them (0 = no logbook trip on this voyage or the fix is in no voyage).
 
@@ -52,16 +52,16 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:5], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
-      SELECT vid, year, trip, count(*) AS n_tid_voyage,
+      SELECT vid, year, voyage, count(*) AS n_tid_voyage,
              CASE WHEN count(*) = 1 THEN any_value(\".tid\") END AS tid_v,
              CASE WHEN count(*) = 1 THEN any_value(schema) END AS schema_v
-      FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, trip),
+      FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, voyage),
     r AS (%s)
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
-           r.pos_basis, r.speed_basis, r.dt_sec, r.stay_pid, r.trip,
+           r.pos_basis, r.speed_basis, r.dt_sec, r.stay, r.voyage,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
            r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.gear, r.target, r.target2, r.gear_class,
            r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, r.fishing, r.sid_gps, r.n_sid_gps
-    FROM r LEFT JOIN v ON v.vid = r.vid AND v.trip = r.trip",
+    FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage",
     tvf, year, rend(r))
 }

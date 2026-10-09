@@ -231,6 +231,10 @@ Each phase ends with:
      target.
    - `tar_make_isolated()`.
    - Fingerprints after, every difference attributed to a step of phase 3 or to a renamed path.
+   - The renamed scripts (3c) first run here: today's `ping_clean` has no `pos_basis`, so 3a and 3c cannot run
+     end to end before step 0 is rebuilt. A failing target is fixed and `tar_make_isolated()` resumes.
+   - After the rebuild: `docs/data-dict.yaml` redrafted for the renamed and new tables (it is drafted from the
+     parquet files), the docs rendered, and the three fishyweb pages updated in that repo.
    - The superseded outputs (`harbour_stay`, `ais/trip`, `ping_trail`, `check/stk_event`, `harbour_class`,
      `harbour_radius`, `harbour.parquet`) are moved by a scripted step into `$FISHYDATA/legacy/2026-10-plan014/`.
    - A decision record.

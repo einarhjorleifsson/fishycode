@@ -1,7 +1,7 @@
 # Are the dropped afli stations real? Asked of AIS, which knows nothing about the
 # logbook merge.
 #
-# Input:  raw/logbooks/afli/{rafr_stofn,stofn}.parquet, curated/ais/{trip.parquet,ping},
+# Input:  raw/logbooks/afli/{rafr_stofn,stofn}.parquet, curated/ais/{voyage.parquet,ping},
 #         curated/landing/landings.parquet, curated/vessel/vessel.parquet
 # Output: curated/check/afli_rafr_stofn_corroboration.parquet - one row per station
 #
@@ -83,7 +83,7 @@ message(sprintf("subjects: %s lost, %s matched control",
 
 ## Test 1 - was the vessel on an AIS voyage that day? ---------------------------
 trip <-
-  read_parquet(fd_curated("ais", "trip.parquet")) |>
+  read_parquet(fd_curated("ais", "voyage.parquet")) |>
   transmute(vid, d1 = as.Date(T1), d2 = as.Date(T2))
 
 on_voyage <-
@@ -332,5 +332,5 @@ print(knitr::kable(
 write_curated(out, fd_curated("check", "afli_rafr_stofn_corroboration.parquet"),
               inputs = c(rafr_stofn = fd_raw("logbooks", "afli", "rafr_stofn.parquet"),
                          stofn      = fd_raw("logbooks", "afli", "stofn.parquet"),
-                         ais_trip   = fd_curated("ais", "trip.parquet"),
+                         ais_trip   = fd_curated("ais", "voyage.parquet"),
                          landings   = fd_curated("landing", "landings.parquet")))

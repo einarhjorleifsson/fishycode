@@ -44,7 +44,7 @@ list(
                              main_file("curated", "logbook", "fishing_sample.parquet")), format = "file"),
   tar_target(main_ping_union, main_file("staging", "ais", "ping_union"), format = "file"),
   tar_target(main_ais_ping, c(main_file("curated", "ais", "ping"),
-                              main_file("curated", "ais", "trip.parquet")), format = "file"),
+                              main_file("curated", "ais", "voyage.parquet")), format = "file"),
   tar_target(main_stk_event, c(main_file("staging", "ais", "stk_event.parquet"),
                                main_file("staging", "aux", "ports.fgb")), format = "file"),
 
