@@ -407,16 +407,6 @@ cut where the earlier holder's own AIS still witnesses the mid. How many other m
 **check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
 that cut a witnessed run is recorded in a decision.
 
-## 44. The ramb one-flow revamp (plans 013 and 014)
-**status:** in progress · **see:** `curate/plans/013-ramb-one-flow.md`, `curate/plans/014-preprocessing-and-flow.md`
-
-ramb gets one `rb_` function per panel of the WGSFD one-flow diagram, and fishycode calls them. Plan 013's step A and
-phases 0–2 are done (decisions 070–073). Plan 014 draws the line between Icelandic preprocessing, the three frozen
-one-time fixes and the flow. Phases 1-4 are done (decisions 075-078; the rebuild reconciles). Next: the data
-dictionary, docs and fishyweb pages after the renames, then phase 5 (the WGSFD doc); ramb is not pushed yet. Each plan maps the TODO items it closes.
-
-**check:** plan 014's phases each have a decision record, and fishycode's steps 0–2 call ramb functions.
-
 ## 48. The voyage step took 51 min since the ramb port, against 9.4
 **status:** open · **see:** decision 077 (3h), ramb f6faf9b
 

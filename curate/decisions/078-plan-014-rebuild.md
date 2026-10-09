@@ -57,3 +57,17 @@ STK staging and every key check.
 - TODO 48 stays open: 29 min, against 51 before and a check of 10.
 - Still to do: the data dictionary redrafted from the new files, the docs rendered, three fishyweb pages, the
   WGSFD doc (plan 014 phase 5), and the ramb push (the maintainer's yes).
+
+## Done after the rebuild, the same day (plan 014 phase 5 and the follow-ups)
+
+- **ramb pushed** to GitHub (9789c0c..f6faf9b), with the maintainer's yes.
+- **`docs/data-dict.yaml`** follows the renames: tables, columns and joins, a new `logbook_gear` table, and
+  `sensor_gps.trip` marked as the frozen voyage number of decision 073's build. Its older spec errors are
+  TODO 51.
+- **Docs:** rendered page by page, 13 of 19 render. The six that fail read paths from before the restructuring
+  (TODO 50), not plan 014's.
+- **fishyweb:** three pages follow the names (27b35ff, local commit, not pushed). The tutorial's
+  `voyage_year` was stale before plan 014. All three render.
+- **WGSFD doc, version 2:** the local copy in `~/stasi/wgsfd2026/` says "port" throughout (text, code
+  examples, diagram SVG and PNG, rendered HTML), and its AI-use line says so. The claude.ai master is unchanged
+  until the maintainer says yes.
