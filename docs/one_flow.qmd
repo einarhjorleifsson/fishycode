@@ -160,6 +160,7 @@ Ping density varies in the same way, within one dataset:
 
 - One process for every resolution, of logbooks and pings alike: each step takes the finest evidence available for that ping and records which it was (its provenance), so a dataset that mixes resolutions needs no special handling.
 - The same output at every resolution: no step stops because a table is missing. With no trip or station table, `T1` and `T2` come from the stays and `t1`–`t4` from the track itself; with declarations, they come from those and the track checks them. The columns are the same either way; what fills them, and the basis that says so, depends on the data.
+- Declarations are evidence, not truth. A declared time (`T1`, `T2`, `t1`–`t4`) is kept, refined or overridden by the track, depending on how precisely the track places that moment: dense pings may overwrite it, sparse pings may not. The declared value is always kept beside the chosen one, with the case and its provenance.
 - Pings are labelled, not filtered: each keeps its trip, record, gear, fishing state, effort, catch share, basis and flags.
 - Only invalid, duplicate and impossible pings are set aside, in their own table; port pings stay, labelled.
 - What counts is chosen at aggregation, by label, so every total traces back: pings in equal pings out, across the trail and the set-aside table.
