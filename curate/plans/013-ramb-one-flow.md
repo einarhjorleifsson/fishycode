@@ -332,6 +332,7 @@ decision 069 counted the time-step floor. At 64° N distances grow by about 0.33
 | record | `rb_build_record_windows(records, rules)` | `curate/station_window.R`; the adb `t1`/`t4` swap stays in fishycode |
 | record | `rb_assign_record(pings, windows)` → `record_id`, `phase`, `n_records`, `record_basis` | `R/trail_sql.R` |
 | record | `rb_link_record_pings(pings, windows)` | `trail_match` in `R/trail_sql.R` |
+| record | `rb_link_record_sets(hauls, pings)` → per static-gear haul: set time, soak, the voyage that set it, `basis` reconstructed | iapesca `Create_Nets` + `Retrieve_SettingOperations`, recoded with attribution (decision 078). **Phase 4** |
 | gear | `rb_assign_gear(...)`, `rb_predict_gear_width(method = "benthis")`, `rb_fill_gear_width(rules)` | `curate/corrections/adb_gear.R`, `rb_benthis_width`, `rb_gearwidth_proxy`. **On hold** |
 | fishing | `rb_assign_fishing(method = "window" \| "speed" \| "gmm" \| "embc" \| "hmm", by = NULL)` | `"window"` = `R/trail_sql.R`, ported as it is in phase 3; the rest in **phase 4** (the removed `R/models.R` is the specification, rewritten) |
 | fishing | `rb_build_fishing_speeds(method = "declared" \| "recorded_windows" \| "gmm", by = NULL)` | `reference/gear/windows.R`, plan 012, removed `rb_gaussian` |
@@ -482,6 +483,15 @@ Each phase ends with three things:
      into the preprocessing link (`lid_map`). If a reconciled result must change an input, it re-enters as a reviewed,
      frozen input by decision, as the vessel key does (decision 075).
    - Gear with several gears per trip: TODO 34.
+   - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
+     haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
+     to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting
+     voyage, which can differ from the hauling one because the gear soaks while the vessel is in port. Generic, for any
+     fleet with static gear.
+     - Recoded in ramb, never copied; iapesca is credited (decision 078).
+     - Tested against labelled ground truth: WKSSFGEO2 `data_examples/IT_CNR_2023_GP.csv` (pots: 426 setting,
+       1,607 hauling pings) and WKSSFGEO `data-examples/example_data_GPS.csv` (pots and dredges, 5 vessels).
+     - Bears on plan 004 / TODO 18 and on the static gear under-covered by `logger_runs_past_the_station`.
    - Fishing beyond window + speed: plans 004 and 012, TODO 18.
      - `"gmm"` and `"embc"` at tier 3, tested against `mixtools` and `EMbC`.
      - `"hmm"`: fitted at tier 3, decoded at tier 4, tested against `moveHMM`.
