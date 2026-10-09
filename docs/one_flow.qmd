@@ -67,7 +67,7 @@ These are set aside in their own table, not dropped: pings in equal pings out ac
 ### 1. Trip (`assign_trip`)
 
 - **Declared trip** (`declared_trips`, recorded): departure and return (`T1`, `T2`) from the logbook. Landings give the landing (`T2`), and in some datasets the departure (`T1`).
-- **Voyage from the track** (reconstructed): from one stay in port to the next. A stay is time spent in a port, not a ping inside its polygon: one port ping followed by silence is not a stay, and the shortest stay can depend on the port. Where only `T2` is declared, the last port departure before it gives `T1`. Without a port list, as for many small-scale fleets, a stay can be read from a silence that begins or ends near the coast.
+- **Voyage from the track** (reconstructed): from one stay in port to the next. A voyage is any such movement; a trip is a fishing trip, so voyages also include steaming between ports and other moves without fishing. A stay is time spent in a port, not a ping inside its polygon: one port ping followed by silence is not a stay, and the shortest stay can depend on the port. Where only `T2` is declared, the last port departure before it gives `T1`. Without a port list, as for many small-scale fleets, a stay can be read from a silence that begins or ends near the coast.
 - **None**: the ping is kept, labelled as having no trip. The aim is that no vessel is left without a trip.
 
 **Link and reconcile** (not a fallback): logbook trips, landings and voyages are linked to each other, many-to-many. One trip can have several sales notes (one per buyer), and one weekly landing can cover several trips. Where they disagree on the landing time (`T2`), the comparison decides; the track can give the arrival as a date and time. Neither declared date is the time the vessel enters port: the logbook's `T2` is often the expected arrival, written before the trip ends, and the landing's date is the date the catch was declared or sold, which can be a day or more after arrival. Only the track measures the arrival; the two declarations are linked to it, not taken as it. This is the loop the design turns on: the declarations are needed to link trips to landings, but their dates are only trustworthy once the track has given the real departure and arrival. So the reconciled trip table, with departure and arrival from the track and the logbook trips and landings linked to it, is an output of this step; it is not fed back to redo the declarations' own match.
@@ -105,7 +105,7 @@ Reading the track (reconstructed):
 
 - simplest: the gear's fishing speed range (`gear_speeds`);
 - better: patterns over consecutive pings, such as speed steadiness, turning and how long a state lasts (`track_model`, e.g. mixture models or hidden Markov models);
-- with frequent pings, the operation's phases (deployment, towing or soak, retrieval): `t1`–`t4` reconstructed from the track; For static gear the set can be found from the haul: the earlier pass along the same line.
+- with frequent pings, the operation's phases (deployment, towing or soak, retrieval): `t1`–`t4` reconstructed from the track; For static gear the set can be found from the haul: the earlier pass along the same line. The set and the haul can fall on different voyages (the gear soaks while the vessel is in port), so pairing them also links the voyage that set the gear to the voyage that retrieved it.
 - haul windows from well-recorded vessels train and test these methods.
 
 Pings judged not fishing are labelled, not removed.

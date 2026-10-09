@@ -877,8 +877,8 @@ Three naming conventions are worth making explicit:
 | `pid` | port id: the polygon's id. ramb calls the column `port_id`. |
 | `hid` | a source's own port code: the logbook's, the landings' or STK's. It is a property of that source, and a table built from the track carries `pid` only. |
 | **stay** | an interval a vessel spends in port, from arrival to departure, measured as elapsed time. Its values (`T_in`, `T_out`, duration, `pid`) live once, in the stay table; a ping carries only the stay's key. |
-| **voyage** | a trip cut from the track, from one stay to the next. A ping carries the voyage's key (`voyage`). |
-| **trip** | a declared trip (`.tid`, `T1`/`T2`), from the logbook. |
+| **voyage** | any movement cut from the track, from one stay in port to the next: fishing trips and everything else (steaming between ports, service runs). A ping carries the voyage's key (`voyage`). |
+| **trip** | a fishing trip: from departure to return, with fishing. Declared in the logbook (`.tid`, `T1`/`T2`); a fishing trip is one voyage, or more, on which the vessel fishes. |
 | **record** | a logbook record at any resolution (a station, a day, a trip). |
 | **ping** | one position report. `provider` is the feed it came from (stk, astd, astdB, emodnet, gps). |
 | **frozen input** | the output of a one-time fix (the STK vessel key, the GPS logger positions, the port radius), built once, reviewed, and read by the build as an input it never rebuilds. |
