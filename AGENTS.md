@@ -72,7 +72,7 @@ Every script in a targets project is on one of three sides, and says which in a 
   wearing a done marker.
   An item that cannot move without the maintainer carries **`needs: maintainer`**;
   `check_bookkeeping()` lists those at the end of its report.
-- **Every inferred value carries a `basis`** (`"recorded"` / `"derived"` /
+- **Every inferred value carries a `basis`**, its provenance (`"recorded"` / `"derived"` /
   `"reconstructed"` / `"synthesised"`, or `"none"` when no source has it). `derived` =
   computed from recorded values of the same record (`t2` + duration); modifiers such as
   `capped` go in their own column. See `station_type` in `docs/grammar.qmd`.

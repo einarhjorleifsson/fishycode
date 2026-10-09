@@ -35,7 +35,7 @@ A set of linked tables, one per level and each child keyed to its parent, holds 
 - **Observation** (`logbook_catch`): catch by species, as the skipper records it in the logbook.
 - **Ping stream** (`pings`; AIS, VMS) and **landings** (`landings`): parallel streams, linked to trips afterwards. Landings (sales notes) are recorded by a buyer or authority, not the skipper.
 - **Resolution** on every logbook record: a haul, or a total over a day, week, month or trip; the record says which.
-- **Basis** on every derived value: recorded, derived (computed from recorded values of the same record, e.g. `t2` + duration), reconstructed, synthesised, or none when no source has it.
+- **Basis** on every derived value, its provenance: recorded, derived (computed from recorded values of the same record, e.g. `t2` + duration), reconstructed, synthesised, or none when no source has it.
 
 ## The flow, step by step
 
@@ -158,7 +158,7 @@ Ping density varies in the same way, within one dataset:
 
 ## One flow, every ping accounted for
 
-- One process for every resolution, of logbooks and pings alike: each step takes the finest evidence available for that ping and records which it was, so a dataset that mixes resolutions needs no special handling.
+- One process for every resolution, of logbooks and pings alike: each step takes the finest evidence available for that ping and records which it was (its provenance), so a dataset that mixes resolutions needs no special handling.
 - The same output at every resolution: no step stops because a table is missing. With no trip or station table, `T1` and `T2` come from the stays and `t1`–`t4` from the track itself; with declarations, they come from those and the track checks them. The columns are the same either way; what fills them, and the basis that says so, depends on the data.
 - Pings are labelled, not filtered: each keeps its trip, record, gear, fishing state, effort, catch share, basis and flags.
 - Only invalid, duplicate and impossible pings are set aside, in their own table; port pings stay, labelled.
