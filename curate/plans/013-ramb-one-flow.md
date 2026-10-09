@@ -190,7 +190,7 @@ Each function is written at the first tier that can express it:
 
 **Macro twins.** The per-row tools (`rb_calc_distance`, `rb_convert_speed`, `rb_encode_ices_rectangle`,
 `rb_encode_csquare`, `rb_bin_midpoint`) get a DuckDB macro of the same name, registered by `rb_register_macros(con)`.
-The same `mutate()` then runs on a lazy table.
+The same `mutate()` then runs on a lazy table. For `rb_calc_distance`, see "One distance function" below.
 
 **Recoding.**
 
@@ -212,6 +212,70 @@ The same `mutate()` then runs on a lazy table.
 
 **Every step function has a test** that runs the same fixture as a data frame and as a DuckDB table and compares the
 results. One known divergence to fix: `fwdbwd` gives FALSE at track ends on a data frame but NA on DuckDB.
+
+## One distance function (maintainer's direction, 2026-10-09)
+
+*The direction is the maintainer's: one function with a `method` argument; DuckDB spatial on lazy tables; Rcpp
+where there is a loop. The default and every number below were proposed and measured by Claude (AI-assisted) in the
+session of 2026-10-09. Nothing is built yet.*
+
+ramb has two distance definitions today:
+- **An ellipsoid:** Vincenty, `.rb_geodesic`, used by `rb_calc_speed`.
+- **A sphere:** haversine with R = 6,371,000 m, used by `rb_calc_distance`, the speed filters' C++ and `rb_flag_ping_duplicate`.
+
+They become one function:
+
+`rb_calc_distance(lon1, lat1, lon2, lat2, method = c("geodesic", "andoyer", "haversine"))`
+
+- **`"geodesic"`, the default.** Exact on WGS84.
+  - **Data frame:** Vincenty in Rcpp, one C++ function that the speed filters also call.
+  - **Lazy:** DuckDB spatial's `ST_Distance_Spheroid`. It takes points as (lat, lon); the macro fixes the order.
+  - **Non-convergence:** Vincenty can fail for nearly antipodal points. That is never a real leg but possible for a garbage
+    ping, so it needs a defined result: the Andoyer value, or NA with a warning. The other option is to include GeographicLib's C
+    code (MIT, the algorithm DuckDB uses) instead of Vincenty. **The maintainer chooses.**
+- **`"andoyer"`:** Andoyer–Lambert, a closed form with no loop. It runs as a plain DuckDB macro, without the spatial extension.
+- **`"haversine"`:** the sphere, to reproduce older outputs.
+
+**Why exact by default.** Measured against Karney's geodesic (geodist) on:
+- 3,293,579 Icelandic legs (June 2023);
+- a grid of 18 bearings and legs of 10 m to 100 km at 45° S to 75° N;
+- WKSSFGEO's Adriatic (43–44° N), Portuguese (37° N) and `dansk` (55–57° N) tracks.
+
+| Method | Worst error | Time per million legs, data frame / DuckDB |
+|---|---|---|
+| exact (Vincenty in R; `ST_Distance_Spheroid`) | under 3e-6 m / 2e-9 m | 0.5–0.9 s / 0.12 s |
+| Andoyer–Lambert | 1.4e-6 of the distance (14 mm per 10 km up to 50°, 8 mm at 65° N); R and macro equal to 2e-9 m | 0.30 s / 0.06 s |
+| haversine | −0.44 % to +0.56 % by latitude and direction; at 35° N +0.23 % north–south, −0.22 % east–west | 0.08 s / 0.02 s |
+
+- **The sphere's error is a bias, not noise.** At low latitudes it also changes sign with direction, so no regional radius
+  fixes it. Any summed distance (track km, effort, swept area) would carry it. On real legs: 18 m in the Adriatic,
+  340 m on a 104 km Danish leg.
+- **Two exact implementations agree** (to 2e-9 m), so the data-frame and lazy results pass this plan's equality test
+  with no tolerance. Andoyer on one side and spatial on the other would differ by up to 14 mm per 10 km.
+
+**Lazy mechanics** (tested with DuckDB 1.5.6 and dbplyr):
+
+- **The switch is a macro, not a test.** Inside `mutate()` on a lazy table, dbplyr never runs the R function; it passes
+  the call to SQL by name. So the switch is a macro named `rb_calc_distance`, registered by `rb_register_macros(con)`,
+  not an `inherits(x, "tbl_lazy")` test. Step functions that take a table keep that test and write the same call into
+  their SQL.
+- **The method is always the fifth argument, never named.** dbplyr cannot pass a named argument: `method = "haversine"`
+  renders as `'haversine' AS "method"`, a parser error. An overloaded macro does work: 4 arguments take the default, and a
+  fifth, positional argument is the method.
+- **The defaults cannot drift.** A macro cannot call itself, so the 4-argument form calls a shared helper macro. R writes
+  the macro SQL from the same constants as the R code.
+- **Registration checks itself.** `rb_register_macros()` loads spatial and checks one known distance (1° of latitude at
+  64° N). NaN or a wrong value stops it: with (lon, lat) the spatial function returned NaN without an error. If spatial
+  cannot load, it stops. It never falls back to another method silently.
+- **The speed filters are the exception.** They pull batches into R even on lazy tables (tier 4), so their distance is the
+  C++ one, and it must be the same exact function.
+
+**Before switching the filters and the duplicate rule** (`DUP_M` = 128.6 m) to the default, count the change, as
+decision 069 counted the time-step floor. At 64° N distances grow by about 0.33 %, about 0.08 kn at 25 kn.
+
+**Assumed, not measured:**
+- that Vincenty in Rcpp is faster than the R version;
+- that DuckDB spatial keeps the (lat, lon) order in later versions (the registration check guards this).
 
 ## What the diagram may be missing (from fishydata)
 
