@@ -43,7 +43,12 @@ Every script in a targets project is on one of three sides, and says which in a 
 - **port** is the place word, and `pid` is its id. `hid` is a source's own port code (logbook, landings,
   STK).
 - A **stay** is an interval in port. Its values live once, in the stay table; pings carry keys only.
-- A **voyage** is a trip cut from the track.
+- A **voyage** is any movement from one stay in port to the next, cut from the track; a **trip** is a fishing
+  trip. Declared dates are not arrival times: the reconciled trip table is a flow output, never fed back into
+  the declarations' own match.
+- The flow runs at any data resolution and never stops for a missing table: the output's shape is the same,
+  its content and basis depend on the data (plan 013, decided item 9). `docs/one_flow.qmd` describes the flow
+  and what exists where (ramb, fishycode, outside code).
 
 ## Rules
 

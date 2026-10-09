@@ -245,15 +245,16 @@ globally — GFW's 12,831 worldwide anchorages, EMODnet's 946 European ports, GI
 vessel's trip start/end harbour" is ready and has been since the absorption.
 
 The identity side is not, in three specific places, all keyed strictly on Icelandic
-`vid`: `sources/stk/convert.R:30` and `curate/ais_ping_union.R:73` both
+`vid`: `sources/stk/convert.R:31` and `curate/ais_ping_union.R:74` both
 `inner_join(..., filter(!is.na(vid)))` — a ping with no Icelandic vid is dropped
-before it ever reaches `curate/ais_trip.R`, which then groups trips by `vid` alone.
+before it ever reaches `curate/ais_voyage.R`, which then groups voyages by `vid` alone. The flow's
+contract (plan 013, decided item 9) is that such a ping is kept with vessel `none`, not dropped.
 Plan 008's `external_id` (§5–§7) will resolve identity for vessels that were never
 going to get an Icelandic vid — but as things stand today, their pings never survive
 long enough to be segmented into trips at all, no matter how good that resolution is.
 
 **check:** a ping carrying an `external_id` but no `vid` (plan 008's foreign match)
-survives into `curated/ais/trip.parquet` with a trip key, `hid1`/`hid2` resolved
+survives into `curated/ais/voyage.parquet` with a voyage key, `pid1`/`pid2` resolved
 against `ports_all`.
 
 ---
@@ -334,8 +335,8 @@ through `overrides/` or carries a stated reason, and the 884 are re-counted.
 ## 27b. Link pings to trips and fishing activity (the `trail`)
 **status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b
 
-Built: `gear_window`, `station_window`, `ais/ping_trail` (AIS + gps logger), `ais_trail()`. Open: the datacall still reads `staging/ping_union`
-and must be repointed to `ais_trail()`; the voyage-only `.tid` for fixes outside every window; 76 % of static-gear
+Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014). Open: the datacall still reads `staging/ping_union`
+and must be repointed to `curated/ais/trail`; the voyage-only `.tid` for fixes outside every window; 76 % of static-gear
 stations are whole-day windows (item 18 is the cure); whether to store a sorted wide `ais/trail` (maintainer).
 
 **check:** `products/ices_vms_datacall/build.R` runs on `ais_trail()`, and every synthesised window carries `win_basis`.
@@ -436,3 +437,15 @@ Plan 014 updated the tables its renames touched (decision 079) and added `logboo
 edits, none new in kind. Nothing was validated against the data (`validate-meta` stops at spec errors).
 
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors.
+
+## 52. Plan 014 leftovers waiting on the maintainer
+**status:** open · **needs: maintainer** — three yes/no answers · **see:** decision 079
+
+- **fishyweb:** three pages follow the plan 014 names (27b35ff), committed locally, not pushed.
+- **The claude.ai one-flow master:** the WGSFD document now lives in `docs/one_flow.qmd`. The master still has
+  version 2 with "harbour". Update it, or retire it in favour of the fishycode page?
+- **`$FISHYDATA/legacy/2026-10-plan014`** (16 GB, mostly the old `ping_trail`): kept for now (maintainer,
+  2026-10-09); delete once no question about the rebuild's differences is left.
+
+**check:** each of the three has an answer recorded here or in a decision, and the agreed action is done.
+
