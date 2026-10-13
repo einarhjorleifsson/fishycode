@@ -1,7 +1,8 @@
 # Create standard summary tables
 # Side: preprocessing (afli). See plan 014.
-# Input:  data-dump/logbooks/afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
-# Output: data-rqw/logbooks/afli/{trip,station,fishing_sample,sensor,catch,aggregate}.parquet
+# Input:  raw/logbooks/afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
+#         curated/reference/{dictionary,gear,port}.parquet
+# Output: staging/afli/{trip,station,fishing_sample,sensor,catch,aggregate}.parquet
 
 # Setup -----------------------------------------------------------------------
 library(whack) # pak::pak("einarhjorleifsson/whack")
@@ -260,16 +261,24 @@ fishing_sample <- fishing_sample |>
 
 
 ## Overlap QC ------------------------------------------------------------------
-# Nullify t2/t3 for operations whose windows overlap a neighbour on the same
-# vessel. Effectively applies to mobile gear only — static-gear t2 is NA so
-# those rows pass through with no change.
+# Label each operation against its neighbours on the same vessel in `.checks`
+# (on t2/t3, so it effectively tests mobile gear: static gear has no t2 and is
+# labelled "start time missing"). The label is a flag; only an impossible interval
+# (start after or equal to end) loses its times. Until 2026-10-13 every label but
+# "ok" blanked t2 and t3 (decision 083), which on the 2026-10-09 build dropped
+#   217,816 recorded static-gear haul starts (t3; the haul is t3 to t4),
+#   1,087,355 recorded tow starts with no duration (t2), and
+#   188,165 tows that overlap a neighbour (t2/t3), each turned into a whole-day
+#   window although station_window cuts a window back at the vessel's next
+#   recorded start (win_basis "capped").
 fishing_sample <- fishing_sample |>
   inner_join(trip |> select(.tid, vid) |> distinct(), by = ".tid") |>
   arrange(vid, date, t2) |>
   osfd::fd_flag_time_overlaps(t2, t3, by = vid) |>
-  mutate(t2 = if_else(.checks != "ok", NA, t2),
-         t3 = if_else(.checks != "ok", NA, t3)) |>
-  select(-vid)
+  mutate(.impossible = .checks %in% c("start after end", "start equals end"),
+         t2 = if_else(.impossible, NA, t2),
+         t3 = if_else(.impossible, NA, t3)) |>
+  select(-vid, -.impossible)
 
 
 ## Join gear dimensions --------------------------------------------------------

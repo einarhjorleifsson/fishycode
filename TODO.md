@@ -341,15 +341,6 @@ stations are whole-day windows (item 18 is the cure); whether to store a sorted 
 
 **check:** `products/ices_vms_datacall/build.R` runs on `ais_trail()`, and every synthesised window carries `win_basis`.
 
-## 29. The afli overlap check blanks `t2`/`t3` and keeps no original
-**status:** open · **needs: maintainer** · **see:** `curate/decisions/057-duration-limits-replace-the-adapter-caps.md`
-
-`sources/afli/convert.R` ("Overlap QC") sets `t2` and `t3` to NA for any mobile operation that overlaps a neighbour on the same vessel:
-183,516 bottom-trawl stations (4.3 %), 3,973 midwater, 460 Danish seine. Same kind of correction as the old caps. `station_window` already cuts
-a window at the vessel's next recorded start, so the times could be kept and the check left as a flag.
-
-**check:** `fishing_sample` keeps `t2`/`t3` for flagged stations, `.checks` still names the overlap, and the window counts are compared before and after.
-
 ## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
 **status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`
 
@@ -449,3 +440,15 @@ calls it. Decide alongside: `tid` → `voyage_id`, as `rb_summarise_track()` did
 function name follows ("port, not harbour").
 
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
+
+## 54. Label the fix nearest each recorded event time (t1–t4)
+**status:** open · **raised by the maintainer 2026-10-13** · **see:** plan 013 phase 4 (reconcile declared times)
+
+For each station's recorded t1 (set start), t2 (tow start), t3 (haul start) and t4 (haul end): the vessel's fix nearest
+in time, with the time difference and the gap between the fixes either side (how precisely the track can place the
+event). The first building block of `rb_reconcile_time()`, so a generic ramb step that `curate/ais_trail.R` calls. On
+the trail as a column naming the event(s) a fix is nearest to (e.g. `t3`, or `t3+t4`), and a table per (station,
+event). Agreed to come after the 2026-10 rebuild; it then needs only the trail rebuilt.
+
+**check:** the trail carries the event column, the per-(station, event) table exists with `dt` and the gap, and the
+ramb step has a test.

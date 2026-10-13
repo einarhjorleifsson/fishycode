@@ -21,4 +21,4 @@ precise-looking duration.
 `station_window` moved by a few hundred stations per row type. The STK key's headline figures are unchanged (720,336 trips for 2,763 vids, against 720,330 and 2,763; the coverage
 invariant closes). AIS rows per year changed by at most 0.016 % (2021: -5,153), cause not isolated.
 
-**Not done:** the overlap check in `afli` that sets `t2`/`t3` to NA for overlapping operations (183,516 bottom-trawl stations, 4.3 %) - the same kind of correction, `TODO.md` item 29.
+**Not done:** the overlap check in `afli` that sets `t2`/`t3` to NA for overlapping operations (183,516 bottom-trawl stations, 4.3 %) - the same kind of correction, `TODO.md` item 29. **Done 2026-10-13** (decision 083): the check is a flag, and it had also dropped recorded static-gear haul starts and tow starts.
