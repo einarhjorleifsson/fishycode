@@ -47,9 +47,13 @@ decision 080, `curate/ramb-articles/`).*
   checked to be the old body verbatim. It is not a fork in AGENTS.md's sense, because `rb_trip()` no longer
   exists. Moving to `rb_cut_trip_voyages(method = "runs")` would mean rebuilding the script around a voyage
   table, and the script reads Oracle, so the result could not be compared here.
-- `curate/ramb-articles/`: six unevaluated sketches, moved out of ramb on 2026-10-11 and untracked here. They
-  call functions that are gone (`rb_interval_id2`, `rb_kn2ms`, `rb_read_trails`) and `YEARS =`. Keeping them
-  or deleting them is the maintainer's call; ramb's git history holds them either way.
+- `curate/ramb-articles/`: six unevaluated sketches, moved out of ramb on 2026-10-11 and never committed
+  here. They call functions that are gone (`rb_interval_id2`, `rb_kn2ms`, `rb_read_trails`) and `YEARS =`.
+  **Deleted 2026-10-13** at the maintainer's request. None belongs in ramb: two are MFRI Oracle workflows
+  sourcing a credentials file, superseded by fishycode itself; the interpolation sketch is covered by
+  `rb_cut_trip_voyages("jepol")`, `rb_interpolate_track()` and a decision-078 pickup; the machine-learning toy
+  is upstream in WKSSFGEO, and models belong in fishymodel. All six are byte-identical in ramb's history at
+  7fcebcd~1. The one pointer worth keeping, a gillnet dataset, is in plan 013.
 - `docs/project-review.qmd` reviews the old `logbooks` repo; its `rb_whack_fwdbwd` row describes that repo.
 
 ## The shims were checked against the functions they replace
