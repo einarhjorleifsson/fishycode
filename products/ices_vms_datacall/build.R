@@ -243,8 +243,8 @@ lb_summary <-
     AnonymizedVesselID = ifelse(n_distinct(VE_ID) < 3, str_flatten(distinct(VE_ID), collapse = ";"), 'not_required'),
     .groups = "drop") |> 
   collect() |> 
-  # already got midpoint of ICES rectangle above, no need to play "safe"
-  mutate(ICESrectangle = ramb::rb_encode_ices_rectangle(lon, lat, safe = FALSE),
+  # already got midpoint of ICES rectangle above, no need to snap to it again
+  mutate(ICESrectangle = ramb::rb_encode_ices_rectangle(lon, lat, snap_to_midpoint = FALSE),
          .before = lon) |> 
   select(-c(lon, lat)) |> 
   relocate(NoDistinctVessels, AnonymizedVesselID, .before = ICESrectangle)

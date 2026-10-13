@@ -105,7 +105,7 @@ for (yr in years) {
     d <- bind_rows(
       d0 |> filter(pos_basis == "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat") |>
-        rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n = DUP_K) |>
+        rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n_neighbours = DUP_K) |>
         rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S),
       d0 |> filter(pos_basis != "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat")) |>

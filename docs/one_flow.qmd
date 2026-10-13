@@ -339,7 +339,7 @@ inputs (`_targets_once.R`). The flow runs ramb's `rb_` functions, one per step. 
 | 2. Record | `station_window.R`, `ais_trail.R` | `rb_limit_record_duration`, `rb_build_record_windows`, `rb_link_record_pings`, `rb_assign_record` | `curated/logbook/station_window.parquet`, `curated/ais/trail`, `trail_match` |
 | 3. Gear | preprocessing: `curate/corrections/logbook_gear.R` | — | `curated/logbook/gear.parquet` (`gid`, `gid_landing`, `metier`) |
 | 4. Fishing | `ais_trail.R`, window and speed | `rb_assign_fishing(method = "window")` | `curated/ais/trail` (`fishing`) |
-| 5–6. Effort, catch | downstream of fishycode | `rb_assign_effort`, `rb_share_catch` (planned) | |
+| 5–6. Effort, catch | downstream of fishycode | `rb_assign_effort` (planned), `rb_share_catch` | |
 
 A ping carries keys, not the values of its stay or voyage; those live once, in their own tables. The record
 gives each fix its gear as `metier`.
@@ -361,7 +361,7 @@ outside repositories offer was read on 2026-10-09 (decision 078); nothing from t
 | 3. Gear | built: `rb_predict_gear_width` (BENTHIS), `rb_fill_gear_width`, `rb_extract_metier`. Planned, on hold: `rb_assign_gear` | the landing's gear where it names one metier; the logbook's kept beside it; `metier` on the trail | the logbook's metier, checked against the ICES lists; widths from the user, then BENTHIS, then a default | gear predicted from the track (Adriatic random forest), a candidate. A licence register: nowhere |
 | 4. Fishing | built: `rb_assign_fishing(method = "window")`. Planned: `"gmm"`, `"embc"`, `"hmm"`, `rb_build_fishing_speeds`, and the set ↔ haul pairing for static gear (`rb_link_record_sets`, from iapesca's method) | window × the gear's declared speed range (plan 012 open) | a Gaussian mixture per towed metier; a set speed range for other gears | labelled set and haul data (pots, dredges); HMM practice (Irish Marine Institute); set ↔ haul pairing (iapesca, now planned in ramb); movement features: candidates |
 | 5. Effort | built: step times, gear widths. Planned: `rb_assign_effort` | not in fishycode (downstream) | interval within the trip, kW-hours, swept area (sfdSAR), 0.05° c-squares, habitat and depth | static-gear effort as net length × soak time; hours apportioned by track length per cell: candidates |
-| 6. Catch | superseded: `dc_spread_cash_and_catch`. Planned: `rb_share_catch`, with units above the trip | catch per station, and per trip beside its landing | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
+| 6. Catch | built: `rb_share_catch` (renamed from `dc_spread_cash_and_catch` on 2026-10-11). Planned: units above the trip | catch per station, and per trip beside its landing | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
 
 **Nowhere yet:** the licence gear register; record windows from haul positions; catch shared over several trips
 (a weekly landing), which is planned for `rb_share_catch`.

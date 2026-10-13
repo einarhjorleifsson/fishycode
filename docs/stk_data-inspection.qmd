@@ -185,7 +185,7 @@ stk_classified |>
 
 ### Step 3 — Clean the underway stream only
 
-Apply the forward-backward speed filter (`rb_whack_fwdbwd()`, 25-kn threshold) to
+Apply the forward-backward speed filter (`rb_flag_ping_impossible(method = "fwdbwd")`, 25-kn threshold) to
 `record_type == "clean"` records **only**. Port-event records are declarations, not GPS
 fixes — applying a speed filter across the hid/io → clean gap would flag valid
 port-to-sea transitions as wacky.
@@ -194,7 +194,8 @@ port-to-sea transitions as wacky.
 KN_MAX <- 25
 clean_filtered <- stk_classified |>
   filter(record_type == "clean") |>
-  rb_whack_fwdbwd()   # existing wacky-coordinate filter
+  rb_flag_ping_impossible(method = "fwdbwd", kn_max = KN_MAX) |>
+  mutate(whack = !is.na(ping_flag))
 ```
 
 
@@ -206,14 +207,14 @@ clean_filtered |>
   collect() |> 
   mutate(speed = whack) |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(no_lines = FALSE)
+  ramb::rb_plot_trail(path = TRUE)
 
 clean_filtered |>
   filter(vid == 2929) |>
   filter(whack == FALSE) |> 
   collect() |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(no_lines = FALSE)
+  ramb::rb_plot_trail(path = TRUE)
 
 
 clean_filtered |>
@@ -221,19 +222,19 @@ clean_filtered |>
   filter(whack == FALSE) |> 
   collect() |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(no_lines = FALSE)
+  ramb::rb_plot_trail(path = TRUE)
 ```
 
 ```{r}
 clean_filtered |> 
   filter(whack == FALSE) |>
-  group_by(vid) |> 
-  rb_whack_fwdbwd()  |> 
+  rb_flag_ping_impossible(method = "fwdbwd", kn_max = KN_MAX) |>
+  mutate(whack = !is.na(ping_flag)) |>
   filter(vid == 2765) |>
   #filter(whack == FALSE) |> 
   collect() |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(no_lines = FALSE)
+  ramb::rb_plot_trail(path = TRUE)
 ```
 
 ### Step 4 — Correct port-event coordinates

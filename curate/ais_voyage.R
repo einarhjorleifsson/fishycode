@@ -161,5 +161,5 @@ if (FALSE) {
     filter(!is.na(voyage)) |>
     select(voyage, lon, lat, speed) |>
     group_by(voyage) |>
-    ramb::rb_plot_trail(no_lines = FALSE)
+    ramb::rb_plot_trail(path = TRUE)
 }

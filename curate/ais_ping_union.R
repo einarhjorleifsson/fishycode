@@ -163,7 +163,9 @@ emn <-
   group_by(vid) |>
   # rb_calc_speed() takes (lon, lat, time). It was called (lat, lon, time) until 2026-09-30, which
   # made every emodnet speed ~1.5-1.9x too high: curate/corrections/emodnet_speed_args_swapped.yml
-  mutate(speed = ramb::rb_calc_speed(lon, lat, time)) |>
+  # Geodesic, named rather than left to the default: derived speeds share this column and the gear speed
+  # windows with recorded speed over ground, which the haversine misses by heading (decision 080).
+  mutate(speed = ramb::rb_calc_speed(lon, lat, time, method = "geodesic")) |>
   ungroup() |>
   select(vid, mmsi, time, lon, lat, speed, everything()) |>
   duckdbfs::as_dataset() |>
