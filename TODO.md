@@ -450,3 +450,15 @@ edits, none new in kind. Nothing was validated against the data (`validate-meta`
 
 **check:** each of the three has an answer recorded here or in a decision, and the agreed action is done.
 
+
+## 53. `rb_pad_harbour()`: argument `hid` → `port_id`
+**status:** open · **see:** decision 081, plan 013 (line 438 keeps the function as it is)
+
+ramb's `rb_pad_harbour(tid, hid)` puts the port id on the first and last ping of a voyage. Its `hid` is a port id
+(`port_id` from `rb_flag_ping_port()`, fishycode's `pid`), not a source's port code: the same mix-up that
+`rb_summarise_track()` dropped in ramb 2026.10.13.2. Rename the argument to `port_id` in ramb, with a test, a NEWS
+bullet and a version bump. Update ramb's AGENTS.md "deliberate keeps" line, and plan 013's note. No fishycode code
+calls it. Decide alongside: `tid` → `voyage_id`, as `rb_summarise_track()` did in 2026.10.13.3, and whether the
+function name follows ("port, not harbour").
+
+**check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
