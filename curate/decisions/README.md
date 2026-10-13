@@ -109,6 +109,7 @@ setdiff(list.files("curate/decisions", "^[0-9]+.*[.]md$"),
 | 082 | [The Iceland/Faroe pids are pinned](082-iceland-faroe-pids-are-pinned.md) | the 157 einar harbours keep the pid of 2026-10-13 (= the WGSFD export) whatever they are called: `overrides/port_pid_pinned.csv` keyed on `pid_bootstrap`, pins reserved before minting; no UN/LOCODE after the fact; the missing `port` → `ports_all` edge added; renames tested: 0 pids move; TODO 36 closed |
 | 083 | [afli keeps its recorded times](083-afli-keeps-its-recorded-times.md) | the afli overlap check blanked t2/t3 for every label but `ok`: 217,816 recorded static haul starts (t3), 1,087,355 tow starts with no towing time (t2) and 188,165 overlapping tows; now a flag, only an impossible interval is blanked; restores measured row by row, nothing else changes; TODO 29 closed |
 | 084 | [`station_type` from the vessel's own pattern](084-station-type-from-the-vessels-own-pattern.md) | per vessel, year and gear, the share of fishing days with more than one record: at least 0.1 is `operation`, below is `event`, longlines always `operation` (maintainer); measured bimodal per gear; on the merged station table, all three schemas; TODO 3 closed |
+| 085 | [The station's gear codes are on the trail](085-gear-codes-on-the-trail.md) | `gid`, `gid_landing`, `gid_used`, `gid_basis` on `curated/ais/trail` from `logbook/gear.parquet`, filled when one station claims the fix; June 2023 checked: old columns identical, `gid_used` = the window's gid; TODO 34 question (3) answered |
 
 ## Data defects
 

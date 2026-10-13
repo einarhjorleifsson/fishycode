@@ -503,6 +503,27 @@ tables:
         type: string
         description: >
           Gear code of the station.
+      - name: gid
+        type: number
+        description: >
+          The station's gear id as the logbook records it (curated/logbook/gear.parquet); filled only
+          when `n_sid` is 1.
+      - name: gid_landing
+        type: number
+        description: >
+          The gear id of the station's landing, where the landing names one; filled only when `n_sid`
+          is 1.
+      - name: gid_used
+        type: number
+        description: >
+          The gear id the station's windows were built with (`gid` in station_window.parquet); filled
+          only when `n_sid` is 1.
+      - name: gid_basis
+        type: string
+        examples: [none, reconstructed, recorded]
+        description: >
+          How `gid_used` was obtained: "recorded" (the logbook's), "reconstructed" (from the landing),
+          "none".
       - name: gear_class
         type: string
         description: >

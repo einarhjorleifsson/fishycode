@@ -382,7 +382,7 @@ list(
 
   # The product (plan 011 Phase 5): every fix with its voyage, station and logbook trip, by year-month.
   tar_target(ais_trail, {
-    ais_voyage; station_window; trip_voyage
+    ais_voyage; station_window; trip_voyage; logbook_gear
     produces("curate/ais_trail.R",
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
   }, format = "file"),
