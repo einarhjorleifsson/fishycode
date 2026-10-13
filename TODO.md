@@ -363,19 +363,6 @@ Since plan 014 3j (decision 077) each station carries `gid`, `gid_landing` and `
 
 ---
 
-## 36. A `pid` moves when a harbour is renamed
-**status:** open · **needs: maintainer** · **see:** `curate/decisions/068-the-wgsfd-harbour-file.md`, `reference/ports/ports_all.R`
-
-Asked: pin the `einar` pids, or accept that a rename re-mints them? `ports_all.R` mints `pid` from the harbour name, so
-the renames of decision 068 re-minted five codes and handed `IS-SEL` (Selfoss/Selvík) to Seltjarnarnes (was `IS-SET`):
-a code reused for another harbour, which `docs/ports.md` forbids across WGSFD deliveries. Separately, about 20
-Icelandic harbours whose UN/LOCODE exists carry a locally derived `pid` (Ísafjörður `IS-ISJ`, UN/LOCODE `ISISA`): the
-UN/LOCODE name carries a suffix (" - høfn") the name match misses, and `einar` priority outranks the gisco member that
-has the code. The comment on Ísafjörður's codes near line 360 of `ports_all.R` is stale.
-
-**check:** renaming one `einar` harbour in `curate/corrections/ports_iceland.R` leaves every other `pid` unchanged, and
-the choice on UN/LOCODE-derived pids is recorded in `curate/decisions/`.
-
 ## 38. Loose ends of the `whack_clean()` switch
 **status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
 

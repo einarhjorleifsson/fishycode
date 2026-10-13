@@ -53,6 +53,7 @@ one file, which includes any foreign harbours its fleet uses. A harbour is eithe
 
 ## Not decided
 
-- How to keep a `pid` stable when a harbour is renamed (for example, pinning the `einar` codes), and whether a
-  `pid` should take an existing UN/LOCODE.
+- ~~How to keep a `pid` stable when a harbour is renamed, and whether a `pid` should take an existing
+  UN/LOCODE.~~ Decided 2026-10-13 in decision 082: the `einar` pids are pinned, and none takes a UN/LOCODE after
+  the fact.
 - The open questions in `docs/ports.md`.

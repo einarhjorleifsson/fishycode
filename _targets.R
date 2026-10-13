@@ -79,15 +79,21 @@ list(
     "curate/corrections/ports_iceland.R",
     fd_staging("ports", "ports_iceland_faroe.gpkg")), format = "file"),
 
+  # The Iceland/Faroe pids are pinned (decision 082): a reviewed input, not a computed one.
+  tar_target(port_pid_pinned, "overrides/port_pid_pinned.csv", format = "file"),
   tar_target(ports_all, {
     ports_iceland
+    port_pid_pinned
     produces("reference/ports/ports_all.R",
              fd_staging("ports", "ports_all.gpkg"),
              fd_curated("reference", "port_geometry.parquet"))
   }, format = "file"),
 
+  # harbour_codes.R reads the pids from staging/ports/ports_all.gpkg; without the edge
+  # it could run before ports_all and read the old file (decision 082).
   tar_target(port, {
     ports_iceland
+    ports_all
     produces("reference/ports/harbour_codes.R",
              fd_curated("reference", "port.parquet"))
   }, format = "file"),

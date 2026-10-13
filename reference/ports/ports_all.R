@@ -2,11 +2,16 @@
 # Side: preprocessing (ports). See plan 014.
 #
 # Inputs:  raw/ports/*  (see dump/ports/ for the fetch scripts)
+#          staging/ports/ports_iceland_faroe.gpkg   the Iceland/Faroe harbours (source "einar")
+#          overrides/port_pid_pinned.csv            the pid of each of them, pinned (decision 082)
 # Outputs: staging/ports/ports_all.gpkg          all features, pid_src + pid
 #          curated/reference/port_geometry.parquet  one row per port, canonical
 #
 # pid is the harbour key the logbook, landings and AIS data all join on, so it
 # must name exactly one port and keep naming it. See curate/decisions/006.
+# A pid is minted from a name, so a renamed harbour would get a new one: the
+# Iceland/Faroe harbours therefore carry a pinned pid, keyed on pid_bootstrap,
+# and their names are not minted at all (decision 082).
 
 library(emodnet.wfs)
 library(giscoR)
@@ -80,7 +85,12 @@ assign_codes <- function(names, taken = character(0)) {
 # `locode_col`, when given, holds a UN/LOCODE location that the source already
 # knows (gisco does). Those rows take it directly instead of being matched by
 # name — matching them by name is what produced FR-FRS for Strasbourg's FRSXB.
-build_pid <- function(df, name_col, country_col, unlocode, locode_col = NULL) {
+#
+# `pin_col`, when given, holds a full pid pinned for that row (decision 082). A pinned
+# name is not minted: the row keeps its pin whatever it is called, another row with
+# the same (country, name_key) shares it as it would share a minted code, and every
+# pin is reserved from the start, so no other name can be handed it.
+build_pid <- function(df, name_col, country_col, unlocode, locode_col = NULL, pin_col = NULL) {
   df <- df |>
     mutate(.rid = row_number(), name_key = norm(.data[[name_col]])) |>
     left_join(
@@ -108,32 +118,45 @@ build_pid <- function(df, name_col, country_col, unlocode, locode_col = NULL) {
   # sources disagree about a port's locode — silently fans the feature table
   # out. Prefer a row that carries a real locode; the code is only derived for
   # names that have none.
+  pins <- tibble(!!country_col := character(), name_key = character(), .pin = character())
+  if (!is.null(pin_col)) {
+    pins <- df |>
+      st_drop_geometry() |>
+      filter(!is.na(.data[[pin_col]])) |>
+      transmute(!!country_col := .data[[country_col]], name_key, .pin = .data[[pin_col]])
+    stopifnot(str_sub(pins$.pin, 1, 3) == paste0(pins[[country_col]], "-"),   # a pin lies in its own country
+              !anyDuplicated(pins[c(country_col, "name_key")]),               # one pin per name
+              !anyDuplicated(pins$.pin))
+    pins <- pins |> mutate(.pin = str_sub(.pin, 4))                         # bare, as assign_codes() keeps them
+  }
   local_codes <- df |>
     st_drop_geometry() |>
     distinct(.data[[country_col]], name_key, location) |>
     arrange(.data[[country_col]], name_key, is.na(location)) |>
     distinct(.data[[country_col]], name_key, .keep_all = TRUE) |>
     arrange(.data[[country_col]], name_key) |>
+    left_join(pins, by = c(country_col, "name_key"), relationship = "one-to-one") |>
     group_by(.data[[country_col]]) |>
     group_modify(\(grp, key) {
-      taken     <- grp$location[!is.na(grp$location)]
-      unmatched <- is.na(grp$location)
-      grp$local <- NA_character_
+      taken     <- c(grp$location[!is.na(grp$location)], grp$.pin[!is.na(grp$.pin)])
+      unmatched <- is.na(grp$location) & is.na(grp$.pin)
+      grp$local <- grp$.pin
       grp$local[unmatched] <- assign_codes(grp$name_key[unmatched], taken)
       grp
     }) |>
     ungroup() |>
     select(all_of(country_col), name_key, local)
 
-  df |>
+  df <- df |>
     left_join(local_codes, by = c(country_col, "name_key"),
               relationship = "many-to-one") |>
     select(-name_key, -.rid) |>
-    mutate(
-      pid      = paste0(.data[[country_col]], "-", coalesce(location, local)),
-      unlocode = if_else(!is.na(location), "yes", "no")
-    ) |>
-    select(-location)
+    mutate(pid = paste0(.data[[country_col]], "-", coalesce(location, local)))
+  if (!is.null(pin_col)) df <- df |> mutate(pid = coalesce(.data[[pin_col]], pid))
+  df |>
+    mutate(unlocode = if_else(!is.na(location) & pid == paste0(.data[[country_col]], "-", location),
+                              "yes", "no")) |>
+    select(-location, -local)
 }
 
 # Assign ISO alpha-2 country code from geometry centroid (nearest-feature).
@@ -222,10 +245,18 @@ src_priority <- c(einar = 1L, gisco = 2L, jeppe = 3L, maksims = 4L, emodnet = 5L
                   vmstools = 7L, gfw = 8L, marta = 9L)
 
 # -- 1. einar (Iceland & Faroe) ------------------------------------------------
+# Each harbour's pid is pinned in overrides/port_pid_pinned.csv, keyed on the
+# bootstrap's own code, which curate/corrections/ports_iceland.R never changes
+# (decision 082). A new harbour stops the build here until it is given a pin.
+pins <- read_csv("overrides/port_pid_pinned.csv", col_types = cols(.default = col_character()))
 src_iceland <- read_sf(fd_staging("ports", "ports_iceland_faroe.gpkg")) |>
   add_country() |>
   mutate(source = "einar") |>
-  select(port, hid, source, iso_a2, geom)
+  left_join(pins |> select(pid_bootstrap, pid_pin = pid), by = "pid_bootstrap",
+            relationship = "one-to-one") |>
+  select(port, hid, source, iso_a2, pid_pin, geom)
+stopifnot(!anyNA(src_iceland$pid_pin), setequal(src_iceland$pid_pin, pins$pid),
+          !anyDuplicated(pins$pid_bootstrap), !anyDuplicated(pins$pid))
 
 # -- 2. jeppe (NW European polygons) ------------------------------------------
 # Kode → hid; cast to MULTIPOLYGON for uniform geometry type.
@@ -348,9 +379,9 @@ ports_all <- bind_rows(
   src_gisco |> mutate(hid = as.character(hid)),
   src_marta |> mutate(hid = as.character(hid)) |> rename(geom = geometry)
 ) |>
-  build_pid("port", "iso_a2", unlocode, locode_col = "locode") |>
-  mutate(priority = src_priority[source]) |>
-  select(pid, port, hid, unlocode, source, priority, geom)
+  build_pid("port", "iso_a2", unlocode, locode_col = "locode", pin_col = "pid_pin") |>
+  mutate(priority = src_priority[source], .pinned = !is.na(pid_pin)) |>
+  select(pid, port, hid, unlocode, source, priority, .pinned, geom)
 
 # build_pid only looks codes up; it must never add or drop a feature
 stopifnot(nrow(ports_all) == n_bound)
@@ -358,7 +389,8 @@ stopifnot(nrow(ports_all) == n_bound)
 # -- Deduplication: one pid per PHYSICAL port ---------------------------------
 # `slice_min(priority, by = pid)` cannot do this, because pid is derived from
 # each source's own spelling and one port therefore carries several: Ísafjörður
-# is IS-ISA (einar/osm/gfw), IS-ISF (jeppe "Isafjord") and IS-IIS (gisco).
+# is IS-ISJ (einar/osm/gfw), IS-ISF (jeppe "Isafjord") and IS-ISA (gisco, the
+# UN/LOCODE, named "Isafjordur - hofn"), as of 2026-10-13.
 # Measured on the pid-grouped recipe, 3,655 of the 19,943 retained features
 # still sat within 300 m of another retained feature, 2,027 of them redundant.
 # So cluster on GEOMETRY first, then let `priority` choose inside the cluster.
@@ -419,7 +451,10 @@ rep_tbl <- ports_all |>
   mutate(.area = as.numeric(st_area(gp))) |>
   arrange(cluster, priority, unlocode != "yes", desc(.area), pid) |>
   distinct(cluster, .keep_all = TRUE) |>
-  transmute(cluster, .pid_canon = pid, .rep = .rid)
+  transmute(cluster, .pid_canon = pid, .rep = .rid, .pinned)
+# einar has the best priority and two einar features never share a cluster, so
+# every pinned feature represents its own cluster and its pin is the cluster's pid
+stopifnot(sum(rep_tbl$.pinned) == sum(ports_all$.pinned))
 
 # A pid must name exactly ONE port. Two clusters can still win the same code —
 # chiefly the ports whose names normalise to empty (non-Latin scripts stripped
@@ -432,7 +467,7 @@ clus <- rep_tbl |>
               summarise(x = mean(x), y = mean(y), n = n(), .by = cluster),
             by = "cluster") |>
   mutate(.iso = str_sub(.pid_canon, 1, 2)) |>
-  arrange(.pid_canon, desc(n), cluster)
+  arrange(.pid_canon, desc(.pinned), desc(n), cluster)
 
 # `taken` holds BARE 3-char codes, because hash_code() returns a bare code.
 # Comparing a bare code against full "IS-REY" pids is never TRUE — the same
@@ -440,8 +475,9 @@ clus <- rep_tbl |>
 taken <- split(str_sub(clus$.pid_canon, 4), clus$.iso)
 clus <- clus |>
   group_by(.pid_canon) |>
-  mutate(.dup = row_number() > 1) |>        # first (largest) cluster keeps the code
+  mutate(.dup = row_number() > 1) |>        # a pinned, else the first (largest), cluster keeps the code
   ungroup()
+stopifnot(!any(clus$.dup & clus$.pinned))
 
 for (i in which(clus$.dup)) {
   iso <- clus$.iso[i]
@@ -466,7 +502,9 @@ cat("features            ", nrow(ports_all), "\n")
 cat("distinct pid_src    ", n_distinct(ports_all$pid_src), "\n")
 cat("distinct pid (ports)", n_distinct(ports_all$pid), "\n")
 stopifnot(!any(is.na(ports_all$pid)),
-          n_distinct(ports_all$pid) == n_distinct(ports_all$cluster))
+          n_distinct(ports_all$pid) == n_distinct(ports_all$cluster),
+          # every pinned harbour is its pin (decision 082)
+          with(ports_all[ports_all$source == "einar", ], all(pid == pid_src) && setequal(pid, pins$pid)))
 
 bb <- st_bbox(c(xmin = -73, ymin = 32, xmax = 60, ymax = 85), crs = 4326)
 #ports_all <- ports_all |>
