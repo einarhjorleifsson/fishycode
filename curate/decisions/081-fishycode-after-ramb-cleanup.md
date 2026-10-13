@@ -120,3 +120,22 @@ look for anything else done wrong, and for older behaviour to come back where th
   says "always FALSE". `curate/checks/ais_residual_whacks.R` relies on the NA, so this is a note, not a fix.
 - In a run filtered to one file, the lazy-table tests error on an unregistered `dbWriteTable` S4 method;
   they pass in the full suite, which has loaded duckdb by then.
+
+## For the next rebuild
+
+The data on disk were built with ramb f6faf9b (decision 079); the installed ramb is 2026.10.13.3. On 2026-10-13
+`tar_outdated()` on the main project returned 0 targets: `targets` sees neither the script edits above nor ramb's
+changes, so what to rebuild is chosen by hand (`tar_invalidate()`, then `tar_make_isolated()`). What a rebuild with
+2026.10.13.3 is expected to change, measured:
+
+- `staging/ais/ping_union`, emodnet 2017: `speed` moves in its last bits. ramb's geodesic engine is Karney now,
+  Vincenty then. On January 2017, 15,135 of 907,726 speeds are bit-identical, and the largest difference is
+  5.3e-8 kn. The column's hash changes; its values do not.
+- `staging/ais/ping_clean` and `ping_whacky`: the same pings are flagged (June 2023, every ping). `whack_stage`
+  can swap between `vmask` and `spike` on byte-identical duplicate rows, 2-4 a month.
+- Stays, voyages, record windows, fishing and the trail: ramb's code for them is identical to f6faf9b.
+- Scripts edited on 2026-10-13: `ais_ping_union.R` names the method its call already used, `ais_ping_clean.R`
+  names `n_neighbours` exactly, and the `ais_voyage.R` edit sits inside `if (FALSE)`. None changes a value.
+  `products/ices_vms_datacall/build.R` is not a target.
+
+Anything else that differs is a finding.
