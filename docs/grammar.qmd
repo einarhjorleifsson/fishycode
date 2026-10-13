@@ -1040,6 +1040,13 @@ alongside the other provenance classes.
 `station_type` is what the WGSFD one-flow document (2026) calls a record's
 `resolution`: what the record covers, from one operation to a year.
 
+In fishycode, `curated/logbook/station.parquet` carries `station_type` (`operation` or
+`event`) and `station_type_basis` since 2026-10-13 (decision 084). No Icelandic logbook
+says which unit a record is, and it varies by vessel and over time. So it is read per
+vessel, year and gear from the share of the vessel's fishing days with more than one
+record, and longlines are `operation` whatever that share. afli's monthly aggregates
+stay in their own table, `staging/afli/aggregate`.
+
 Separately, every value inferred by the pipeline carries a **basis**: `"recorded"`,
 `"derived"` (computed from recorded values of the same record, e.g. `t2` plus a
 duration), `"reconstructed"` (from another source, e.g. the track), `"synthesised"`

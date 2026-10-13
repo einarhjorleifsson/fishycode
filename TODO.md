@@ -29,21 +29,6 @@ does it twice.
 
 ---
 
-## 3. `station_type` is prose, not a contract
-**status:** open · **files:** `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R` ·
-**see:** `docs/grammar.qmd` (`station_type`), decision 077 (3f)
-
-`grammar.qmd` defines `station_type` (the WGSFD doc's `resolution`: operation, day/event, monthly or annual
-aggregate, reconstructed); no adapter writes it. afli's monthly aggregates are already in `staging/afli/aggregate`.
-Measured (plan 014 3f): jig (LHM) and longline (LLS) records are one per vessel-day for 92-99 % of vessel-days,
-bottom trawl 3.6-3.8 a day. The maintainer (2026-10-09): longlines are normally reported by operation, with
-exceptions; jiggers and netters more often one record per day; it changes over time, and bigger vessels (e.g. the
-Greenland halibut net fishery) more often report each setting. So no fixed rule per gear: read it per vessel, year
-and gear from the vessel's own pattern (share of vessel-days with several records), basis `derived`, longlines
-`operation` unless the pattern says otherwise. To measure first: that share's distribution by gear and year.
-
-**check:** `grep -rn station_type sources/` returns the column being written by both adapters.
-
 ## 3c. `hid` and `pid` are not the same concept
 **status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
 **see:** `curate/decisions/007-hid-maps-to-pid.md` — the mapping is built; typing is what remains

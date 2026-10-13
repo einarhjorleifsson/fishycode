@@ -30,6 +30,8 @@
 # keep the original recorded value, z1_basis/z2_basis says which happened.
 # Longitude: adb's dropped west sign is fixed by curate/corrections/
 # adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis).
+# Station type: station.parquet carries station_type (operation / event) and
+# station_type_basis, read per vessel, year and gear (decision 084).
 
 library(tidyverse)
 library(duckdbfs)
@@ -171,6 +173,39 @@ merged_fishing_sample <- bind_rows(
 
 merged_catch <- bind_rows(afli_catch, fs_only_catch, adb_only_catch)
 
+# Station type -----------------------------------------------------------------
+# What a station row covers (`station_type` in docs/grammar.qmd, decision 084): `operation`, one setting, tow
+# or haul, or `event`, one record for the day. No logbook says which, and it varies by vessel and over time,
+# so it is read per vessel, year and gear from the vessel's own pattern: the share of its fishing days with
+# more than one record. Vessel-years pile up at 0 and near 1; below ST_MULTI_MIN is one record a day.
+# Longlines are `operation` whatever the share (maintainer, 2026-10-09): one set a day is what a longliner
+# does, so a single record a day says nothing. Here, on the merged tables, because the tiers mix schemas
+# within a vessel-year; deleted records are left out of the pattern.
+ST_MULTI_MIN <- 0.1
+station_gear <- merged_fishing_sample |> distinct(.sid, schema, gear)
+stopifnot(!anyDuplicated(station_gear[c(".sid", "schema")]))
+st_base <- merged_station |>
+  select(.sid, .tid, schema, date, eytt_deleted) |>
+  left_join(merged_trip |> select(.tid, schema, vid), by = c(".tid", "schema"), relationship = "many-to-one") |>
+  left_join(station_gear, by = c(".sid", "schema"), relationship = "one-to-one") |>
+  mutate(yr = year(date))
+st_pattern <- st_base |>
+  filter(!coalesce(eytt_deleted, FALSE), !is.na(vid), !is.na(date)) |>
+  count(vid, yr, gear, date, name = "n") |>
+  summarise(multi_share = mean(n > 1), .by = c(vid, yr, gear))
+station_type <- st_base |>
+  left_join(st_pattern, by = c("vid", "yr", "gear"), relationship = "many-to-one") |>
+  mutate(station_type       = case_when(multi_share >= ST_MULTI_MIN ~ "operation",
+                                        gear == "LLS" & !is.na(multi_share) ~ "operation",
+                                        !is.na(multi_share) ~ "event"),
+         station_type_basis = case_when(multi_share >= ST_MULTI_MIN ~ "derived",
+                                        gear == "LLS" & !is.na(multi_share) ~ "synthesised",
+                                        !is.na(multi_share) ~ "derived",
+                                        .default = "none")) |>
+  select(.sid, schema, station_type, station_type_basis)
+merged_station <- merged_station |>
+  left_join(station_type, by = c(".sid", "schema"), relationship = "one-to-one")
+
 # Summary ----------------------------------------------------------------------
 cat(sprintf("afli stations (filtered):   %d\n", nrow(afli_station)))
 cat(sprintf("fs-only stations:           %d\n", nrow(fs_only_station)))
@@ -181,6 +216,13 @@ cat(sprintf("fs-only trips:              %d\n", nrow(fs_only_trip)))
 cat(sprintf("adb-only trips:             %d\n", nrow(adb_only_trip)))
 cat(sprintf("merged trips:               %d\n", nrow(merged_trip)))
 cat(sprintf("merged catch:               %d\n", nrow(merged_catch)))
+
+cat("\nStation type by gear (stations):\n")
+merged_station |>
+  left_join(station_gear, by = c(".sid", "schema")) |>
+  count(gear, station_type, station_type_basis) |>
+  pivot_wider(names_from = c(station_type, station_type_basis), values_from = n, values_fill = 0L) |>
+  print(n = 30)
 
 cat("\nYear-by-year station source (2018+):\n")
 merged_station |>

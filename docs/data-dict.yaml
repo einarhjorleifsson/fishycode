@@ -2972,6 +2972,22 @@ tables:
         todo: |
           - Only 1 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
+      - name: station_type
+        type: string
+        examples: [event, operation]
+        description: >
+          What the row covers (docs/grammar.qmd): "operation", one setting, tow or
+          haul, or "event", one record for the day. Read per vessel, year and gear
+          from the share of the vessel's fishing days with more than one record
+          (at least 0.1 is "operation"); longlines are "operation" whatever the
+          share. NA where the station has no vessel. Decision 084.
+      - name: station_type_basis
+        type: string
+        examples: [derived, none, synthesised]
+        description: >
+          How station_type was obtained: "derived" from the vessel's own pattern,
+          "synthesised" for a longline whose pattern alone would say "event", "none"
+          where there is no pattern.
   - name: logbook_trip
     source:
       parquet: ../../fishydata/curated/logbook/trip.parquet
