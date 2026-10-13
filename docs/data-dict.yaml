@@ -505,16 +505,19 @@ tables:
           Gear code of the station.
       - name: gid
         type: number
+        examples: [2, 6, 8, 11, 12, 14]
         description: >
           The station's gear id as the logbook records it (curated/logbook/gear.parquet); filled only
           when `n_sid` is 1.
       - name: gid_landing
         type: number
+        examples: [2, 6, 8, 11, 12, 14]
         description: >
           The gear id of the station's landing, where the landing names one; filled only when `n_sid`
           is 1.
       - name: gid_used
         type: number
+        examples: [2, 6, 8, 11, 12, 14]
         description: >
           The gear id the station's windows were built with (`gid` in station_window.parquet); filled
           only when `n_sid` is 1.
