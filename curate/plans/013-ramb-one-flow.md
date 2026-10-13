@@ -61,7 +61,7 @@ The maintainer wants:
 
 **Audit (2026-10-08).** Of the seven steps:
 
-- ramb captures two: impossible positions (`rb_whack_clean`) and catch sharing (`dc_spread_cash_and_catch`, partly).
+- ramb captures two: impossible positions (`rb_whack_clean`) and catch sharing (`dc_spread_cash_and_catch`, partly; renamed `rb_share_catch` on 2026-10-11).
 - It has building blocks for three: trip, gear and effort.
 - It has nothing for two: the logbook record, and the decision whether a ping is fishing.
 - No ramb function writes a basis.
@@ -406,7 +406,7 @@ time per call; lazy tables are checked by schema only. Messages need care to sta
 | trip | `rb_cut_trip_voyages(pings, stays, method = "stays" \| "runs" \| "jepol", min_pings, split_at_year)` | `curate/ais_trip.R` (keep its choices: per-year cut, numbering before the `MIN_PINGS` filter); `rb_trip`, `rb_trip_jepol`, removed `define_trips_pol` |
 | trip | `rb_link_trip_voyages(trips, voyages)` | `curate/link_trip_voyage.R` |
 | trip | `rb_link_trip_landings(trips, landings, method = "cascade" \| "nearest_date")`: a many-to-many link table (sales notes per buyer; weekly landings over several trips) | `curate/link_lid_map.R`; removed `match_nearest_date`. **Phase 4** |
-| trip | `rb_assign_trip(pings, trips, landings, voyages)` → `trip_id`, `trip_basis` | the declared tier from `rb_add_tripid` (rewritten: it fails silently on DuckDB); the `T2` tier is phase 4 |
+| trip | `rb_assign_trip(pings, trips, landings, voyages)` → `trip_id`, `trip_basis` | the declared tier from `rb_link_trip_logbook` (was `rb_add_tripid`; rewritten: it fails silently on DuckDB); the `T2` tier is phase 4 |
 | record | `rb_limit_record_duration(records, rules)` | `R/duration_limit.R` |
 | record | `rb_build_record_windows(records, rules)` | `curate/station_window.R`; the adb `t1`/`t4` swap stays in fishycode |
 | record | `rb_assign_record(pings, windows)` → `record_id`, `phase`, `n_records`, `record_basis` | `R/trail_sql.R` |
@@ -461,6 +461,12 @@ that supersedes it:
 | `dc_spread_cash_and_catch` | |
 
 Each one's alias test runs it against its own snapshot from before the change.
+
+**Update (2026-10-11):** three rows of the table above have since landed — `rb_add_tripid` is now
+`rb_link_trip_logbook`, `dc_spread_cash_and_catch` is now `rb_share_catch` (placeholder arguments
+`ignore_Einstein`/`go_nuclear` became `raise_unallocated`/`raise_unmatched`), and `rb_grade` is removed
+(`rb_bin_midpoint` is the same binning with the floating-point floor fixed). The same day the
+`R/` sources were reorganised from 40 topical files into 22 stage-named ones, test files mirroring them.
 
 ## Removed functions that come back as methods (rewritten, not copied)
 

@@ -15,6 +15,7 @@ source(here::here("R", "write_curated.R"))
 library(dplyr)
 library(duckdbfs)
 library(ramb)
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 
 KN <- 25; V <- KN * 0.514444
 YEARS <- c(2012, 2016)

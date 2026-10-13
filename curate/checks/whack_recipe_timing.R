@@ -14,6 +14,7 @@ source(here::here("R", "write_curated.R"))
 library(dplyr)
 library(duckdbfs)
 library(ramb)
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 
 ais <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()

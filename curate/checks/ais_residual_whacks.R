@@ -4,6 +4,7 @@ library(tictoc)
 library(tidyverse)
 library(duckdbfs)
 library(ramb)
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 KN_MAX <- 25
 MS_MAX <- KN_MAX * 0.514444   # 12.861 m/s
 

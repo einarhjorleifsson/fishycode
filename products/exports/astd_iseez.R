@@ -15,6 +15,18 @@ con <- connect_mar()
 # so invalid geometry does not crash, and seems to be faster:
 sf::sf_use_s2(use_s2 = FALSE)  
 
+# run ids for a boolean vector, negative for TRUE (in-harbour) runs; the body
+# of ramb::rb_trip(), removed from ramb on 2026-10-11
+trip_runs <- function(x) {
+  tibble::tibble(x = x) |>
+    dplyr::mutate(tid = dplyr::if_else(x != dplyr::lag(x), 1L, 0L, 1L),
+                  tid = ifelse(x, -tid, tid)) |>
+    dplyr::group_by(x) |>
+    dplyr::mutate(tid = cumsum(tid)) |>
+    dplyr::ungroup() |>
+    dplyr::pull(tid)
+}
+
 
 gebco_ices <- 
   read_sf(fd_staging("aux", "gebco.gpkg")) |>
@@ -198,7 +210,7 @@ for(y in 1:length(YEARS)) {
     arrange(mmsi, time) |> 
     group_by(mmsi) %>%
     # NOTE: This generates trip ID within each year because of the loop
-    mutate(.cid = ramb::rb_trip(!is.na(hid))) |> 
+    mutate(.cid = trip_runs(!is.na(hid))) |> 
     ungroup() |> 
     # include first and last point in harbour as part of trip
     group_by(mmsi) |> 

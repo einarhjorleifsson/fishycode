@@ -28,6 +28,7 @@
 
 source(here::here("R", "paths.R"))
 source(here::here("R", "duckdb_temp.R"))
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 suppressMessages({library(dplyr); library(duckdbfs); library(ramb)})
 con <- cached_connection()
 invisible(DBI::dbExecute(con, "SET memory_limit = '6GB'"))

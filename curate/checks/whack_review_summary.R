@@ -15,6 +15,7 @@
 
 source(here::here("R", "paths.R"))
 source(here::here("R", "duckdb_temp.R"))
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 suppressMessages({library(dplyr); library(duckdbfs); library(ramb)})
 configure_duckdb_temp()
 MODE <- Sys.getenv("WHACK_MODE", "df")

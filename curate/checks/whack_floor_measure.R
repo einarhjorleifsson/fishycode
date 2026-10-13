@@ -14,6 +14,7 @@
 # between two feeds (2016: 8,517 of 8,864).
 
 source(here::here("R", "paths.R"))
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 suppressMessages({library(dplyr); library(duckdbfs); library(ramb)})
 ais <- open_dataset(fd_staging("ais", "ping_tagged"))
 FLOORS <- c(1, 5, 10, 20, 30, 60)

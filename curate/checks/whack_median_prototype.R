@@ -14,6 +14,7 @@ source(here::here("R", "paths.R"))
 library(dplyr)
 library(duckdbfs)
 library(ramb)
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 
 hav <- function(x1, y1, x2, y2) 6371000 * 2 * asin(pmin(1, sqrt(
   sin(pi/180 * (y2 - y1)/2)^2 + cos(pi/180 * y1) * cos(pi/180 * y2) * sin(pi/180 * (x2 - x1)/2)^2)))

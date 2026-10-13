@@ -16,6 +16,7 @@ source(here::here("R", "write_curated.R"))
 library(dplyr)
 library(duckdbfs)
 library(ramb)
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 
 KN_MAX <- 25
 VMAX_MS <- KN_MAX * 0.514444

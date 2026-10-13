@@ -11,6 +11,7 @@ source(here::here("R", "paths.R"))
 library(dplyr)
 library(ggplot2)
 library(ramb)
+source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functions removed 2026-10-11
 
 # 1. The idea, on toy data ----------------------------------------------------
 # whack_fwdbwd: a point is whacky if the speed INTO it and OUT OF it both exceed
