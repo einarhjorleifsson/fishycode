@@ -590,6 +590,11 @@ Each phase ends with three things:
      - Recoded in ramb, never copied; iapesca is credited (decision 078).
      - Tested against labelled ground truth: WKSSFGEO2 `data_examples/IT_CNR_2023_GP.csv` (pots: 426 setting,
        1,607 hauling pings) and WKSSFGEO `data-examples/example_data_GPS.csv` (pots and dredges, 5 vessels).
+     - A further candidate, not yet looked at: a gillnet dataset on IRD's dataverse (doi:10.23708/IBZJGD,
+       https://dataverse.ird.fr/dataset.xhtml?persistentId=doi:10.23708/IBZJGD) and its paper
+       (https://hal.archives-ouvertes.fr/hal-03116922). The pointer came from ramb's old `machine2.Rmd` sketch,
+       deleted 2026-10-13 and kept in ramb's history before 7fcebcd. Whether it carries set and haul labels is
+       unchecked.
      - Bears on plan 004 / TODO 18 and on the static gear under-covered by `logger_runs_past_the_station`.
    - Fishing beyond window + speed: plans 004 and 012, TODO 18.
      - `"gmm"` and `"embc"` at tier 3, tested against `mixtools` and `EMbC`.
