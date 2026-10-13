@@ -112,7 +112,8 @@ look for anything else done wrong, and for older behaviour to come back where th
   build both reported 2026.10.8.1. It is 2026.10.13 now (e79e77b, at the maintainer's request); a bump at each
   breaking change would let fishycode state a minimum version.
 - `rb_summarise_track()` was renamed on 2026-10-12 to output `n_harbours` (it counts `hid`), three days
-  after the "port, not harbour" rule.
+  after the "port, not harbour" rule. It is `n_ports` since ramb 9e6b74e (2026.10.13.1), at the maintainer's
+  request.
 - The jepol method warns once per vessel ("shorter than min_dur after splitting"): more than 50 warnings on
   one year. One summary warning would do.
 - The `fwdbwd` SQL leaves a vessel's first or last ping NA, not FALSE, when its one leg is fast; the comment
