@@ -175,6 +175,7 @@ token (§4), decide when the GitHub remote goes up and whether history is rewrit
 first (§4), set the aggregation rule for what may leave `fishydata` for an open
 `fishyweb` (§3), and say where `fishydata` lives and whether it is backed up (§5). The
 disclosure rule blocks item 16. Everything else in the plan I can act on unblocked.
+`fishyweb` has local commits that wait for its first remote too (27b35ff, the plan 014 names; from TODO 52).
 
 **check:** the four questions in plan 001 §§3–5 are answered in the plan, and the
 Mapbox token no longer appears in the working tree.
@@ -399,19 +400,6 @@ Plan 014 updated the tables its renames touched (decision 079) and added `logboo
 edits, none new in kind. Nothing was validated against the data (`validate-meta` stops at spec errors).
 
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors.
-
-## 52. Plan 014 leftovers waiting on the maintainer
-**status:** open · **needs: maintainer** — three yes/no answers · **see:** decision 079
-
-- **fishyweb:** three pages follow the plan 014 names (27b35ff), committed locally. The repo has no remote
-  configured, so there is nothing to push to until one is added (plan 001, TODO 15).
-- **The claude.ai one-flow master:** the WGSFD document now lives in `docs/one_flow.qmd`. The master still has
-  version 2 with "harbour". Update it, or retire it in favour of the fishycode page?
-- **`$FISHYDATA/legacy/2026-10-plan014`** (16 GB, mostly the old `ping_trail`): kept for now (maintainer,
-  2026-10-09); delete once no question about the rebuild's differences is left.
-
-**check:** each of the three has an answer recorded here or in a decision, and the agreed action is done.
-
 
 ## 53. `rb_pad_harbour()`: argument `hid` → `port_id`
 **status:** open · **see:** decision 081, plan 013 (line 438 keeps the function as it is)

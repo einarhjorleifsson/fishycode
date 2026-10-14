@@ -89,4 +89,8 @@ Nothing else differs.
 - **TODO 48:** 13.8 min against a check of 10; it stays open.
 - **TODO 55:** finding A.
 - `AGENTS.md` now says the data are built with ramb 2026.10.13.3.
-- **TODO 52:** the plan 014 legacy (16 GB) is still kept. Whether to delete it is the maintainer's call.
+- **TODO 52 closed** (maintainer, 2026-10-14):
+  - `$FISHYDATA/legacy/2026-10-plan014` (16 GB, the nine outputs plan 014 superseded) was moved to the macOS
+    Trash; it is gone when the Trash is emptied.
+  - The claude.ai one-flow master is retired: a notice under its byline points to `docs/one_flow.qmd`.
+  - fishyweb's local commits wait for its first remote, under TODO 15.
