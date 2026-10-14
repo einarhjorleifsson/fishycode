@@ -28,7 +28,7 @@ sql <- sprintf("
   WITH v AS (SELECT vid, year, voyage, pid1, epoch(T2 - T1) / 3600.0 AS dur_h FROM read_parquet(%s)),
   ld AS (SELECT DISTINCT vid, year(date) AS year FROM read_parquet(%s)),
   lb AS (SELECT DISTINCT vid, year(T1) AS year FROM read_parquet(%s)),
-  hp AS (SELECT vid, year, pid1 AS home_pid, count(*) AS n FROM v WHERE pid1 IS NOT NULL GROUP BY ALL
+  hp AS (SELECT vid, year, pid1 AS home_pid, count(*) AS n FROM v WHERE pid1 IS NOT NULL GROUP BY vid, year, pid1
          QUALIFY row_number() OVER (PARTITION BY vid, year ORDER BY count(*) DESC, pid1) = 1),
   s AS (SELECT vid, year, count(*) AS voyages, round(avg(CASE WHEN dur_h < 12 THEN 1.0 ELSE 0.0 END), 3) AS day_trip_share,
                round(median(dur_h), 1) AS median_voyage_h
