@@ -15,7 +15,8 @@
 **Measured since** (2026-10-14, §8): what a day window costs in the trail, by gear class, with a holdout on
 vessel-days whose hauls or tows are recorded. Status of §5's five: (1) speed separates towed gear (decision 090)
 and longline hauls (93 %), less so gillnets (67 %), pots (57 %) and Danish seine (63 %); (2) heading: not measured;
-(3) and (4): towed gear by the stretch pairing (decision 092), static gear not yet, the holdout in §8 is the bench;
+(3) and (4): towed gear by the stretch pairing (decision 092), jigging by a holdout (§8: no rule does better than
+about 0.63 balanced accuracy against the logged sessions; stopped), static gear not yet, the holdout in §8 is the bench;
 (5) the seines: 205,284 untimed SDN stations, five a vessel-day.
 
 **Assumed** — everything about the classifier: that speed and heading separate
@@ -178,8 +179,28 @@ if the times were missing, under the same rule (it agrees 100 % with the trail's
   - Counting runs merges a dredge's short back-to-back tows (0.41 runs per timed record), so minutes are the
     fairer measure.
 
+**Jigging, tested the same day (maintainer: the gear moves with the boat, and the drift varies in space and time
+with the tidal currents).** The bench used 83,727 vessel-days whose jig stations all have a recorded or derived
+session, with 4.2 M fixes at sea that also have a local drift baseline. The baseline is the median speed of other
+jiggers' slow fixes in the same ~5 km cell within ±1 h. Scored against "inside a session or not":
+
+| rule | sensitivity | specificity | balanced |
+|---|---|---|---|
+| today's range (0.025-1.7 kn) | 0.647 | 0.593 | 0.620 |
+| best fixed threshold (≤ 3.0 kn) | 0.767 | 0.504 | 0.635 |
+| best local-drift rule (≤ 2.75 × local drift) | 0.738 | 0.508 | 0.623 |
+
+- **The local drift does vary:** 0.25 to 1.6 kn (10th to 90th percentile across cells and hours). But it adds
+  nothing over a fixed speed.
+- **Every rule stops near 0.62-0.635,** because the truth is coarse: a session (about 8 h) includes the runs back
+  up-current, and fixes outside the logged sessions include slow drifting.
+- **The reported heading is the course,** within 7° of the track (median), so it carries no drift signal.
+- Fixes are about 10 min apart, so a drift cycle mostly falls between them.
+- **Stopped, by a rule set before the result** (more than 3 points over the best fixed speed, or stop). The speed
+  rule in day windows is as good as these data allow for jigging. Script: `jig_bench.R`.
+
 **Where this points:**
-- **Jigging first.** It carries most of its effort in day windows. The gear moves with the boat, so the question
+- ~~**Jigging first.**~~ Tested and stopped, above. It carries most of its effort in day windows. The gear moves with the boat, so the question
   is which fixes are drifting (maintainer, 2026-10-14), not where a gear lies.
 - **Static gear second:** the over-claim is about +5 % of static fishing fixes. The idea is to place each station
   on a hauling bout by its recorded position, with this holdout as the test bench.

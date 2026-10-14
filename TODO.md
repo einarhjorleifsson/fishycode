@@ -53,11 +53,11 @@ codes all resolve against it.
 Infer fishing time from the track where the logbook gives none. Measured (plan 004 §8): day windows hold 80.7 % of
 jigging fishing fixes, 22.8 % of static and 0.6 % of towed. A day window calls 18-30 % more static fixes fishing at
 sea than the real hauls (an upper bound: unlogged setting), and cuts the 23 % of hauls that cross midnight.
-Next, in order:
-- jigging, where the gear moves with the boat, so the question is which fixes are drifting;
-- static gear, by placing each station on a hauling bout by its recorded position, scored on the holdout bench.
-
-Heading is not yet measured. Towed gear needs no window work for effort.
+Jigging was tested and stopped (§8). A speed rule relative to the local drift does no better than a fixed one
+(0.62 against 0.635 balanced accuracy), and the logged sessions are too coarse to tell more. Left: static gear, by
+placing each station on a hauling bout by its recorded position, scored on the holdout bench. The ceiling is about
++5 % of static fishing fixes, so it is worth building only if a delivery needs static-gear effort that precise.
+Towed gear needs no window work for effort; the reported heading is the course.
 
 **check:** plan 004's header records, for each of its five measurements, the answer or where it lives.
 
