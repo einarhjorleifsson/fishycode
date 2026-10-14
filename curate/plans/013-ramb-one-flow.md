@@ -140,6 +140,16 @@ it serves. The order follows what the product gains, with dependencies first. Ev
 item 9: it runs with the declared inputs `NULL` and returns the same columns. It is also tested on a fixture from
 outside Iceland (`dansk`, the WKSSFGEO examples), and its defaults are checked for Icelandic bias.
 
+**Acceptance test: landings only** (maintainer, 2026-10-14). One fixture with pings and landings but no logbook,
+its landings once per trip, once per week and once per month, runs through every step. It must give effort, fishing
+from the track, and catch on fixes, with kilograms in equal to kilograms out. Today it cannot:
+
+- effort runs (item 1);
+- fishing has only the logbook window, so nothing is fishing (item 3 adds the track's side);
+- `rb_share_catch()` needs logbook trips (item 2 rewrites it).
+
+The test is written with item 2 and must pass before items 2–3 are called done.
+
 **Paths are branches in the code, chosen per unit** (maintainer). One dataset does not run one sequence of methods:
 each part of it runs the methods its data allow.
 
@@ -163,6 +173,8 @@ each part of it runs the methods its data allow.
    without them.
    - **Settled** (maintainer, 2026-10-14): the registry skeleton is built together with item 1, and each new step
      function enters with its row. The four existing step functions are retrofitted afterwards.
+   - **Built** (decision 099, ramb 2026.10.14.6): the skeleton, with a row for every step function. Only
+     `rb_assign_effort()` checks against it so far.
 1. **Effort on the fixes already decided** (step 5; rows 1–2).
    - ramb: `rb_assign_effort()`.
      - Hours: the interval to the vessel's next fix, with the long-gap rule as an argument (the ICES drop over 2 h,
@@ -176,6 +188,8 @@ each part of it runs the methods its data allow.
      - engine power, missing for a third of vessels (plan 015, choice f);
      - gear width (plan 015, choice d).
    - After this, the fixes already called fishing carry effort: 38 / 36 / 30 % of fixes at sea, all in rows 1–2.
+   - **Built in ramb** (decision 099, ramb 2026.10.14.6): `rb_assign_effort()`, checked on June 2023. Not yet wired
+     into fishycode: that waits for the trail rebuild of items 1–3, and the gear width.
 2. **Catch shared at the finest level the data can separate** (step 6; rows 1–2 first, the landing units with items
    3 and 5).
    - **The unit is set by what the times allow, not by the record** (maintainer).
@@ -197,10 +211,16 @@ each part of it runs the methods its data allow.
      For towed gear without times, the day is the unit as a rule. For static gear and jigging, the record mostly is
      the day already, but less so since 2021.
    - **Landings** (row 4, where the logbook is missing; and as the weighed total).
-     - Trips and landings link many-to-many (item 5), so a landing unit is a connected set:
-       - one weekly landing over several trips;
-       - several sales notes (one per buyer) for one trip, summed.
-     - Its catch is shared over the fishing fixes of its voyages; fishing comes from item 3.
+     - **No analysis is lost when landings are all there is** (maintainer). Effort needs only the pings (item 1),
+       fishing comes from the track with the landing's gear (item 3), and the catch is shared at whatever resolution
+       the landings have:
+       - linked to trips or voyages: the unit is those voyages (a connected set, since the link is many-to-many,
+         item 5): several sales notes for one trip summed, or one landing over several trips;
+       - a landing that covers a period (a week, a month): the vessel's fishing fixes in that period;
+       - a landing with only a date and no link: the vessel's fishing fixes since its previous landing;
+       - no pings at all: the catch keeps its port and date with basis `none`, and still counts in the totals
+         (kg in = kg out).
+     - The unit's `resolution` says which (`trip`, `trips`, `week`, `month`, `since_previous`).
      - Where a trip has both a logbook and a landing, one source carries its catch, never both. The logbook says where
        the catch was taken; the landing is weighed.
      - The two record in different units: tonnes against kilograms, and the logbook's condition against the
