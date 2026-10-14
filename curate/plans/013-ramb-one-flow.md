@@ -619,6 +619,31 @@ Each phase ends with three things:
          3. A test set with known times: a trawl's bottom-contact sensor if any exists for Icelandic vessels, or the
             labelled static-gear sets of WKSSFGEO / WKSSFGEO2.
          4. Then set the five cases' tolerances on measured error rates.
+     - **Exploration before any more building (agreed with the maintainer 2026-10-14; TODO 56).** Analysis first, on a
+       month or two of real tracks; nothing goes into ramb or the targets until it is measured.
+       1. *The speed rule as a window (step 4, not only here).* The trail's `fishing` tests each fix's own speed
+          against s1–s2. Score that rule against the windowed one (the median of the fixes within ±W) on the
+          recorded tows and hauls:
+          - share of fixes inside a recorded window called fishing;
+          - share outside called not fishing;
+          - how the score moves with W.
+
+          If the window wins, it changes `rb_assign_fishing()` and the trail's `fishing`, whatever happens to the
+          time reconciliation.
+       2. *Voyage-wide boundaries, a prototype on one month.*
+          - Segment each voyage into steaming, towing and slow stretches, from the windowed speed and the heading's
+            stability.
+          - Pair the stretches in order with the declared tows: one stretch per tow at most, the order kept.
+          - Count what pairs, what does not (an unreported tow, a tow the track cannot see, two tows the track shows
+            as one), and the boundary offsets of the pairs.
+       3. *What `station_event` becomes.* It is built and kept as a first, provisional layer (decision 088): the
+          bounding fix of each declared t1–t4 and the track's precision there. Decide after 2 whether it stays as
+          the declarations' anchor beside the voyage-wide pairing, or the pairing replaces its labels on the trail.
+       4. *Ground truth.* Find a source of known tow or haul times: Icelandic trawl sensors, a vessel with observer
+          records, the labelled sets of WKSSFGEO / WKSSFGEO2.
+
+       ramb 2026.10.14 and 2026.10.14.1 (`rb_link_record_events()`) are committed in ramb but not pushed, held by the
+       maintainer until this settles the function's shape.
    - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
      haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
      to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting

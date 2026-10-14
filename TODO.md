@@ -375,7 +375,7 @@ that cut a witnessed run is recorded in a decision.
 
 The cause was an unpartitioned `row_number() OVER ()`, which DuckDB runs on one core. Numbering per vessel took a
 4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). The plan 014 rebuild took 29 min (decision
-079): faster, not yet fast. The 2026-10 rebuild took 13.8 min with the same voyages (decision 086). Not profiled
+079): faster, not yet fast. The 2026-10 rebuilds took 13.8 and 14.1 min with the same voyages (decisions 086, 089). Not profiled
 further.
 
 **check:** the step runs no slower than 10 min on the full data, with the same output.
@@ -413,27 +413,18 @@ function name follows ("port, not harbour").
 
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
-## 54. Label the fix nearest each recorded event time (t1–t4)
-**status:** open · **raised by the maintainer 2026-10-13** · **see:** plan 013 phase 4 (reconcile declared times)
+## 56. Explore before building the time reconciliation: the speed window, voyage-wide boundaries
+**status:** open · **agreed with the maintainer 2026-10-14** · **see:** plan 013 phase 4 ("Exploration before any more
+building"), decisions 088 and 089
 
-For each station's recorded t1 (set start), t2 (tow start), t3 (haul start) and t4 (haul end): the vessel's fix nearest
-in time, with the time difference and the gap between the fixes either side (how precisely the track can place the
-event). The first building block of `rb_reconcile_time()`, so a generic ramb step that `curate/ais_trail.R` calls. On
-the trail as a column naming the event(s) a fix is nearest to (e.g. `t3`, or `t3+t4`), and a table per (station,
-event). Agreed to come after the 2026-10 rebuild; it then needs only the trail rebuilt.
+A small test re-placed declared tow times from the track for only 57-74 % of tows within 30 min (plan 013 phase 4,
+"Measured, not ready yet"). Four questions come first, by analysis on real tracks:
+1. Does a windowed s1-s2 (the median speed within +/-W) score better than the fix's own speed for the trail's
+   `fishing`?
+2. Can a voyage be cut into towing stretches and paired in order with its declared tows?
+3. What role does `station_event` keep beside that?
+4. Where can known tow or haul times come from?
 
-**check:** the trail carries the event column, the per-(station, event) table exists with `dt` and the gap, and the
-ramb step has a test.
+ramb's `rb_link_record_events()` (2026.10.14 and .14.1) stays unpushed until this settles its shape (maintainer).
 
-## 55. A ping's speed and heading can come from either of two same-position reports
-**status:** open · **see:** decision 086 (finding A), `curate/ais_ping_clean.R`
-
-`ping_tagged` holds 6,412 (vessel, second, feed, position) keys with two pings. In 6,173 of them the two differ in
-speed or heading, mostly 2015-2016. The tie order `(vid, time, pos_basis, provider, lon, lat)` does not separate
-them, so which reading `ping_clean` keeps is arbitrary from one build to the next. The ping set is the same, but the
-speed and heading are not. Make the order total (add speed, speed_raw, heading, cog), and look at whether ramb's
-duplicate filter picks between such pairs too. It changes at most 6,173 pings, through to the trail, so it fits
-the next trail rebuild (TODO 54).
-
-**check:** two builds of `ping_clean` from the same `ping_tagged` give identical speed and heading hashes.
-
+**check:** plan 013 phase 4 records the measured answers to the four questions, and a decision says what is built.
