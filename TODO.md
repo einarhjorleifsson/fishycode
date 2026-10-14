@@ -330,7 +330,7 @@ stations are whole-day windows (item 18 is the cure); whether to store a sorted 
 ## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
 **status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`
 
-Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Nothing is built from the plan itself. Asked of the maintainer: (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in); (2) whether to adopt the vessel-shifted range or keep the declared ranges (§2l: for the pairing it gains about a point at no cost, estimated over all years; the maintainer leans to vessel × gear, 2026-10-14). Question (3), the gear codes on the trail, is answered and built (decision 085).
+Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Nothing is built from the plan itself. Asked of the maintainer: (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in); (2) whether to adopt the vessel-shifted range or keep the declared ranges (§2l: for the pairing it gains about a point of agreement, not shown to be accuracy; not taken up, the declared ranges stay and `fishing` tests the ±10 min speed instead, decision 093). Question (3), the gear codes on the trail, is answered and built (decision 085).
 
 Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
 
@@ -437,20 +437,17 @@ tow's start and end. Without such a set, plan 013's override cases cannot be tun
 
 **check:** a survey tow table is in `raw/` with a `dump/` script, and the pairing is scored against it.
 
-## 61. Use the stretch pairing and the windowed speed in the flow
-**status:** open · **needs: maintainer** — the go for the rebuild, and the speed range (plan 012 §2l)
-· **see:** decision 092, plan 012 §2l
+## 61. Rebuild the trail with the ±10 min fishing speed
+**status:** open · **needs: maintainer** — the go for the rebuild, and for pushing ramb 2026.10.14.5
+· **see:** decision 093
 
-ramb 2026.10.14.4 has the functions; fishycode calls none of them yet. To do:
-- a pairing table (one row per tow operation: its stretch, `dt_start_s`, `dt_end_s`, `stretch_lost`) beside
-  `station_event`, the two candidates that `rb_reconcile_time()` will compare;
-- the trail's `fishing` at `window_s = 600`, with a margin of fixes either side of each month, and `trail_match`'s
-  `fishing` made to agree with it;
-- the speed range per fix. The maintainer leans to vessel × gear over the full period. Plan 012 §2l measured it:
-  the gear of the nearest declared tow, its declared range shifted by the vessel × gear offset over all years,
-  and no shift for Danish seine.
+Built and dry-run on June and January 2023: only `fishing` changes, and the trail and `trail_match` agree. To do:
+- invalidate the trail by hand (`targets` cannot see the edit), rebuild it with `tar_make_isolated()`, and compare
+  fingerprints before and after;
+- render `docs/ais_trail.qmd`, whose proof recomputes `fishing`.
 
-Twins: one record per operation once TODO 58 has resolved them.
+Open beside it: whether the stretch pairing (decision 092) becomes a check in `curate/checks/`. It stays out of
+the flow until ground truth (TODO 60).
 
-**check:** the pairing table is in `curated/link/`, the trail's `fishing` uses ±10 min, and decision 092's 2023 numbers
-are reproduced from the built table.
+**check:** the trail and `trail_match` are rebuilt with ramb ≥ 2026.10.14.5, the fingerprints show only `fishing`
+changed, and `docs/ais_trail.qmd` renders.

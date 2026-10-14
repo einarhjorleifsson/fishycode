@@ -192,6 +192,7 @@ l. **Vessel × gear for the stretch pairing, and over what period, 2026-10-14** 
      - The vessel's own range (D) is wider: it trades the start for the end, and 3 points of specificity.
      - The gear a fix takes should come from the nearest declared tow, not from the month.
      - Danish seine wants no shift until it has a phase model.
+   - *Outcome* (maintainer, 2026-10-14, asking whether this beats the status quo): the vessel × gear shift is not taken up. The gain is agreement with the logbook, not accuracy, and does not pay for a table, a fallback and an exception. `fishing` tests the ±10 min speed instead (decision 093).
 
 ## 3. Proposal
 

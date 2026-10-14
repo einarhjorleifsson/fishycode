@@ -68,7 +68,7 @@ The columns added to the pings (the voyage columns come from the AIS voyage, the
 | `s1`, `s2` | the speed range (knots) of the gear class that `fishing` is tested against; NA for a gear with no range |
 | `phase`, `phase_frac` | `tow`, `haul`, `set`, `jig` or `day`; how far through the window the fix is (0–1) |
 | `win_basis` | how the window was drawn (`recorded`, `derived`, `capped`, ...) |
-| `fishing` | inside a tow/haul/jig/day window **and** speed inside that gear's `[s1, s2]` |
+| `fishing` | inside a tow/haul/jig/day window **and** the median speed of the vessel's fixes within ±10 min inside that gear's `[s1, s2]` (decision 093) |
 
 Ambiguity stays ambiguous: there is no "primary" station. A station is the pair `(.sid, schema)`,
 never `.sid` alone. (Bare `sid` is the species code.)
@@ -89,10 +89,13 @@ trip_trail <- function(tid, schema, margin_h = 3) {
   vid <- unique(own$vid)
   lo <- min(own$w_start) - margin_h * 3600
   hi <- max(own$w_end) + margin_h * 3600
-  yrs <- unique(as.integer(format(c(lo, hi), "%Y")))
+  yrs <- unique(as.integer(format(c(lo, hi) + c(-600, 600), "%Y")))
   sw <- swall |> filter(vid == !!vid) |> collect() |>
     filter(w_end >= lo, w_start <= hi) |> arrange(w_start)
-  tr <- trail(yrs, vid) |> filter(time >= !!lo, time <= !!hi) |> collect()
+  # fishing tests the median speed within ±10 min, so read 10 min either side of the span
+  tr <- trail(yrs, vid) |> filter(time >= !!(lo - 600), time <= !!(hi + 600)) |> collect() |> arrange(time)
+  tr$speed_w <- ramb::rb_calc_speed_smooth(tr$speed, tr$time, window_s = 600)
+  tr <- tr |> filter(time >= lo, time <= hi)
   list(vid = vid, tid = tid, own = own, sw = sw, tr = tr)
 }
 
@@ -108,14 +111,14 @@ prove <- function(x) {
   stopifnot(identical(as.integer(tr$n_sid), lengths(k)))
   sid <- vapply(k, function(h) if (length(h) == 1) sw$.sid[h] else NA_real_, numeric(1))
   stopifnot(identical(as.numeric(tr$.sid), sid))
-  # fishing: a non-set window among the claimants whose own [s1, s2] holds the speed; NA when no speed
-  # and some claimant could have made it fishing; FALSE in no window
+  # fishing: a non-set window among the claimants whose own [s1, s2] holds the ±10 min speed; NA when no
+  # speed and some claimant could have made it fishing; FALSE in no window
   fish <- vapply(seq_len(nrow(tr)), function(i) {
     h <- k[[i]]
-    if (is.na(tr$speed[i])) {
+    if (is.na(tr$speed_w[i])) {
       if (any(sw$phase[h] != "set" & !is.na(sw$s1[h]))) NA else FALSE
     } else {
-      any(sw$phase[h] != "set" & tr$speed[i] >= sw$s1[h] & tr$speed[i] <= sw$s2[h], na.rm = TRUE)
+      any(sw$phase[h] != "set" & tr$speed_w[i] >= sw$s1[h] & tr$speed_w[i] <= sw$s2[h], na.rm = TRUE)
     }
   }, logical(1))
   stopifnot(identical(tr$fishing, fish))

@@ -98,12 +98,12 @@ Every script in a targets project is on one of three sides, and says which in a 
   |---|---|---|
   | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
 
-  **Which ramb.** The code needs ramb ≥ 2026.10.14.3: the argument names of 2026-10-12,
+  **Which ramb.** The code needs ramb ≥ 2026.10.14.5: the argument names of 2026-10-12,
   `rb_calc_speed(method = )`, `rb_link_record_events()` (decision 088) and the exclusive windows and event links
-  with `win_opened_by` and `ping_lost` (decision 091). The data on disk were built with ramb 2026.10.13.3 (the full
+  with `win_opened_by` and `ping_lost` (decision 091), and `window_s` for the ±10 min fishing speed (decision 093). The data on disk were built with ramb 2026.10.13.3 (the full
   rebuild of 2026-10-13/14, decision 086), the afli → trail chain with 2026.10.14.1 (decision 089), `station_window`
-  with 2026.10.14.2 and `station_event` and the trail with 2026.10.14.3 (decision 091). The installed 2026.10.14.4
-  adds the towing-stretch pairing and the windowed speed (decision 092), which nothing here calls yet (TODO 61).
+  with 2026.10.14.2 and `station_event` and the trail with 2026.10.14.3 (decision 091). 2026.10.14.4 added the
+  towing-stretch pairing (decision 092), which nothing here calls.
   `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
 

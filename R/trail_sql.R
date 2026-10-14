@@ -16,8 +16,10 @@
 # A station matched in two of its own phases counts once, haul > tow > jig > set > day.
 # Keys: `.sid` and `.tid` are unique only within a schema, so the station is (.sid, schema).
 # `fishing` is TRUE when a tow, haul, jig or day window holds the fix and its speed is inside that gear's [s1, s2];
-# a set is never fishing. It is NA when such a window holds the fix but the fix has no speed (a logger fix with no
-# speed, or the 1.000 m/s placeholder, plan 012 §2f): unknown, not FALSE. FALSE for a fix in no window.
+# a set is never fishing. The speed tested is the median of the vessel's fix speeds within ±10 min (`window_s`;
+# maintainer, 2026-10-14, decision 093), read from fixes 10 min either side of the month so the month split does
+# not change it. It is NA when such a window holds the fix but the fix has no speed (a logger fix with no speed, or
+# the 1.000 m/s placeholder, plan 012 §2f): unknown, not FALSE. FALSE for a fix in no window.
 #
 # The voyage side: `trip_voyage` links a logbook trip to the AIS voyage (vid, year, voyage) it overlaps most.
 # Several logbook trips may share one voyage (3-4 %), so `.tid_voyage` is filled only when exactly one trip is on
@@ -33,12 +35,18 @@
 # (decision 091). NA otherwise. The station, the time difference and the gap are in that table. The name stayed
 # from the first rule, the nearest fix.
 
-trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL) {
+trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL, window_s = 600) {
   kind <- match.arg(kind)
   t0 <- sprintf("TIMESTAMP '%d-%02d-01'", year, month)
   t1 <- if (month == 12) sprintf("TIMESTAMP '%d-01-01'", year + 1L) else sprintf("TIMESTAMP '%d-%02d-01'", year, month + 1L)
-  # every part of the year: curated/ais/ping is written in batches (plan 014; ping_trail had one file per year)
-  pfile <- shQuote(file.path(fd_curated("ais", "ping"), paste0("year=", year), "*.parquet"), type = "sh")
+  # the month and window_s either side, for the windowed speed: every part of the year (curated/ais/ping is written
+  # in batches, plan 014), and of the year next door where the margin crosses New Year
+  yrs <- year + c(if (month == 1) -1L, 0L, if (month == 12) 1L)
+  yrs <- yrs[dir.exists(file.path(fd_curated("ais", "ping"), paste0("year=", yrs)))]
+  pfile <- paste0("[", paste(shQuote(file.path(fd_curated("ais", "ping"), paste0("year=", yrs), "*.parquet"),
+                                     type = "sh"), collapse = ", "), "]")
+  m0 <- sprintf("%s - to_seconds(%d)", t0, as.integer(window_s))
+  m1 <- sprintf("%s + to_seconds(%d)", t1, as.integer(window_s))
   swf   <- shQuote(fd_curated("logbook", "station_window.parquet"), type = "sh")
   tvf   <- shQuote(fd_curated("link", "trip_voyage.parquet"), type = "sh")
   gf    <- shQuote(fd_curated("logbook", "gear.parquet"), type = "sh")
@@ -46,23 +54,23 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   lazy  <- function(q) dplyr::tbl(con, dplyr::sql(q))
   rend  <- function(x) as.character(dbplyr::sql_render(x))
 
-  p <- lazy(sprintf("SELECT * EXCLUDE (year, pid) FROM read_parquet(%s) WHERE time >= %s AND time < %s", pfile, t0, t1))
+  p <- lazy(sprintf("SELECT * EXCLUDE (year, pid) FROM read_parquet(%s) WHERE time >= %s AND time < %s", pfile, m0, m1))
   carry <- c(".tid", "metier", "gear", "target", "target2", "gear_class", "win_basis", "events")
 
   if (kind == "match") {
     w <- lazy(sprintf("SELECT * FROM read_parquet(%s) WHERE w_end >= %s AND w_start < %s", swf, t0, t1))
     m <- ramb::rb_link_record_pings(p, w, key = c(".sid", "schema"), carry = carry,
-                                    speed_min = "s1", speed_max = "s2")
+                                    speed_min = "s1", speed_max = "s2", window_s = window_s)
     return(sprintf("
       SELECT vid, time, \".sid\", schema, \".tid\", metier, gear, target, target2, gear_class, phase, phase_frac,
              win_basis, events, s1, s2, w_start, w_end, fishing
-      FROM (%s)", rend(m)))
+      FROM (%s) WHERE time >= %s AND time < %s", rend(m), t0, t1))
   }
 
   # the wide row reads the month's matches back from trail_match, written just before it
   m <- lazy(sprintf("SELECT * FROM read_parquet(%s)", shQuote(matches, type = "sh")))
   r <- p |>
-    ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2") |>
+    ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2", window_s = window_s) |>
     ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
@@ -82,6 +90,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
            r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, e.nearest_event, r.fishing, r.sid_gps, r.n_sid_gps
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage
            LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema
-           LEFT JOIN e ON e.vid = r.vid AND e.time = r.time",
-    tvf, year, gf, sef, t0, t1, rend(r))
+           LEFT JOIN e ON e.vid = r.vid AND e.time = r.time
+    WHERE r.time >= %s AND r.time < %s",
+    tvf, year, gf, sef, t0, t1, rend(r), t0, t1)
 }

@@ -20,7 +20,7 @@
 #   the voyage    stay (key into curated/ais/port_stay.parquet, NA at sea) voyage (key into curated/ais/voyage.parquet,
 #                 within vid, year) .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
 #   the station   n_sid .sid schema .tid metier gear target target2 gid gid_landing gid_used gid_basis gear_class s1 s2
-#                 phase phase_frac win_basis events nearest_event fishing
+#                 phase phase_frac win_basis events nearest_event fishing (on the ±10 min median speed, decision 093)
 #   the logger    sid_gps n_sid_gps
 # `pid`, the polygon tag of the ping tables, is not carried: the port of a stay is in the stay table.
 # `trail_match` holds all matches for the fixes whose `n_sid` is above 1 (and the single ones), so nothing is lost.
@@ -51,9 +51,12 @@ for (yr in years) {
   for (mo in months) {
     f1 <- file.path(out_trail, paste0("year=", yr), paste0("month=", mo), "part_001.parquet")
     f2 <- file.path(out_match, paste0("year=", yr), paste0("month=", mo), "part_001.parquet")
+    # the windowed speed reads 10 min past the month's edges, into the next year's fixes at New Year
+    pfm <- c(pf, unlist(lapply(yr + c(if (mo == 1) -1L, if (mo == 12) 1L), function(y)
+      list.files(file.path(pt_dir, paste0("year=", y)), pattern = "parquet$", full.names = TRUE))))
     # matches first: the wide row reads them back rather than computing them twice
-    write_curated_sql(con, trail_month_sql(con, yr, mo, "match"), f2, inputs = c(pf, inputs), order_by = "vid, time, \".sid\"")
-    n <- write_curated_sql(con, trail_month_sql(con, yr, mo, "wide", matches = f2), f1, inputs = c(pf, inputs, f2), order_by = "vid, time")
+    write_curated_sql(con, trail_month_sql(con, yr, mo, "match"), f2, inputs = c(pfm, inputs), order_by = "vid, time, \".sid\"")
+    n <- write_curated_sql(con, trail_month_sql(con, yr, mo, "wide", matches = f2), f1, inputs = c(pfm, inputs, f2), order_by = "vid, time")
     if (n == 0) { unlink(dirname(f1), recursive = TRUE); unlink(dirname(f2), recursive = TRUE); next }
     n_year <- n_year + n
   }

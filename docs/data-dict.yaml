@@ -559,7 +559,8 @@ tables:
         type: boolean
         description: >
           Inside a tow, haul, jig or day window and the speed inside that gear's speed range; a set is
-          never fishing. FALSE for a fix with no match. NA where a window holds the fix but the fix has
+          never fishing. The speed tested is the median of the vessel's fix speeds within ±10 min
+          (decision 093). FALSE for a fix with no match. NA where a window holds the fix but the fix has
           no speed (unknown, not FALSE).
       - name: sid_gps
         type: number
@@ -646,7 +647,8 @@ tables:
       - name: fishing
         type: boolean
         description: >
-          This match is a tow, haul, jig or day window and the fix's speed is inside [s1, s2].
+          This match is a tow, haul, jig or day window and the median of the vessel's fix speeds within
+          ±10 min is inside [s1, s2] (decision 093).
       - name: metier
         type: string
         description: >
