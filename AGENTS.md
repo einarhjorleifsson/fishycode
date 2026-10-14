@@ -95,7 +95,7 @@ Every script in a targets project is on one of three sides, and says which in a 
   |---|---|---|
   | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
 
-  **Which ramb.** The code needs ramb ≥ 2026.10.14: the argument names of 2026-10-12,
+  **Which ramb.** The code needs ramb ≥ 2026.10.14.1: the argument names of 2026-10-12,
   `rb_calc_speed(method = )` and `rb_link_record_events()` (decision 088). The data on disk were built with ramb 2026.10.13.3 (the full rebuild of
   2026-10-13/14, decision 086). `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.

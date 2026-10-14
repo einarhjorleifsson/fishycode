@@ -25,9 +25,10 @@
 # question 3): `gid` the logbook's, `gid_landing` the landing's, `gid_used` the one the windows use, `gid_basis`.
 # Like every station column they are filled only when one station claims the fix.
 #
-# `nearest_event` names the recorded event times this fix is the nearest fix to, from curated/link/station_event
-# (TODO 54, decision 088): `t3`, or `t3+t4` when one fix is nearest to both, whichever station they belong to.
-# NA for a fix nearest to no event; the station, the time difference and the gap are in that table.
+# `nearest_event` names the event times this fix bounds, from curated/link/station_event (TODO 54, decision 088):
+# the first fix of a setting (t1) or hauling (t3), the last of a setting (t2) or hauling (t4); `t3+t4` for a haul of
+# one fix. Whichever station they belong to; NA otherwise. The station, the time difference and the gap are in that
+# table. The name stayed from the first rule, the nearest fix.
 
 trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL) {
   kind <- match.arg(kind)

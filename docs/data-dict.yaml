@@ -551,8 +551,9 @@ tables:
         type: string
         examples: [t2, t3, t3+t4]
         description: >
-          The recorded event times this fix is the nearest fix to (curated/link/station_event.parquet), whichever
-          station they belong to; NA for a fix nearest to no event. Decision 088.
+          The event times this fix bounds (curated/link/station_event.parquet): the first fix of a setting (t1)
+          or hauling (t3), the last of a setting (t2) or hauling (t4); t3+t4 for a haul of one fix. Whichever
+          station they belong to; NA otherwise. Decision 088.
       - name: fishing
         type: boolean
         description: >
@@ -1751,10 +1752,12 @@ tables:
     source:
       parquet: ../../fishydata/curated/link/station_event.parquet
     description: >
-      One row per logbook station and event time it carries (t1 setting start, t2 gear on the bottom, t3 hauling
-      start, t4 hauling end): the vessel's fix nearest in time, how far it is, and the gap between the fixes on
-      either side of the event (curate/link_station_event.R, ramb::rb_link_record_events(); decision 088). The
-      first building block of reconciling declared times with the track (plan 013, phase 4).
+      One row per logbook station and event time it carries (t1 setting start, t2 setting end / gear on the
+      bottom, t3 hauling start, t4 hauling end): the fix that bounds the event's phase - the next fix for a start
+      (t1, t3), the previous for an end (t2, t4) - how far it is, and the gap between the fixes on either side
+      (curate/link_station_event.R, ramb::rb_link_record_events(); decision 088). The fixes from a t1 fix to its
+      t2 fix are the setting, from a t3 fix to its t4 fix the hauling; a tow is the fixes strictly between its t2
+      and t3 fixes.
     primary_key: [.sid, schema, event]
     columns:
       - name: .sid
@@ -1797,12 +1800,12 @@ tables:
         type: string
         examples: ["2023-06-01 04:13:05"]
         description: >
-          The nearest fix's time (in curated/ais/ping); NA when no fix lies within an hour of the event.
+          The bounding fix's time (in curated/ais/ping); NA when it lies more than an hour from the event.
       - name: dt_s
         type: number
         examples: [-120, 0, 65]
         description: >
-          time - event_time, in seconds, signed; NA with time.
+          time - event_time, in seconds: at least 0 for t1 and t3, at most 0 for t2 and t4; NA with time.
       - name: gap_s
         type: number
         examples: [0, 330, 640]

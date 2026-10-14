@@ -1,4 +1,4 @@
-# link_station_event.R — the fix nearest each recorded event time of a logbook station.
+# link_station_event.R — the fix that bounds each recorded event time of a logbook station.
 # Side: flow, step 2. See plan 013 (phase 4: reconcile declared times with the track) and decision 088.
 #
 # Input:  curated/ais/ping/year=*                  the fixes (vid, time)
@@ -7,9 +7,13 @@
 #         curated/logbook/fishing_sample.parquet   afli's .t3_source: a tow end computed from the towing time
 # Output: curated/link/station_event.parquet       one row per (station, event time present)
 #
-#   the event        .sid schema vid event event_time event_basis event_flag
-#   the nearest fix  time dt_s gap_s   (ramb::rb_link_record_events())
+#   the event   .sid schema vid event event_time event_basis event_flag
+#   the fix     time dt_s gap_s   (ramb::rb_link_record_events())
 #
+# The rule (maintainer, 2026-10-14): a start takes the next fix, an end the previous, so the fixes from the t1 fix
+# to the t2 fix are the setting, from the t3 fix to the t4 fix the hauling, and a tow (towed gear records t2 and
+# t3 only) is the fixes strictly between its t2 fix and its t3 fix. The nearest fix, the first rule, was the one
+# before the event half the time (decision 088).
 # event_basis: "recorded", or "derived" for afli's tow end (t2 plus the towing time). Both are matched alike
 # (maintainer, 2026-10-14). event_flag: "suspect_clock" for a clock value far commoner than its neighbours, which
 # reads as "time unknown" (decision 088): afli set starts (t1) at 23:59, fs_afladagbok tow starts (t2) at 00:00.
@@ -81,4 +85,9 @@ q("SELECT schema, event, count(*) AS n, count(time) AS n_fix,
           round(median(abs(dt_s))) AS med_dt, round(quantile_cont(abs(dt_s), 0.9)) AS q90_dt,
           round(median(gap_s)) AS med_gap, round(quantile_cont(gap_s, 0.9)) AS q90_gap
    FROM ev GROUP BY ALL ORDER BY 1, 2")
+message("\nphases with no fix inside: the start's fix comes after the end's (setting t1-t2, hauling t3-t4)")
+q("SELECT a.event || '-' || b.event AS phase, count(*) AS n_both_fixed, sum((a.time > b.time)::INT) AS n_crossed
+   FROM ev a JOIN ev b ON a.\".sid\" = b.\".sid\" AND a.schema = b.schema
+    AND ((a.event = 't1' AND b.event = 't2') OR (a.event = 't3' AND b.event = 't4'))
+   WHERE a.time IS NOT NULL AND b.time IS NOT NULL GROUP BY 1 ORDER BY 1")
 dbDisconnect(con, shutdown = TRUE)
