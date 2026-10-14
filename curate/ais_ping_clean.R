@@ -38,7 +38,7 @@ DUP_S    <- MIN_DT_S
 DUP_M    <- KN_MAX * 1852 / 3600 * MIN_DT_S
 DUP_K    <- 3       # neighbours compared on each side, in time order
 FEED     <- c(stk = 1, astd = 2, astdB = 3, emodnet = 4)   # priority; stk wins, as in ais_ping_trail.R
-METHOD   <- "rb_flag_ping-2026-10-09:invalid+duplicate+clean,recorded-only+tie"   # part of the completion fingerprint: a new method re-cleans every year
+METHOD   <- "rb_flag_ping-2026-10-14:invalid+duplicate+clean,recorded-only+tie,total-order"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
@@ -101,7 +101,11 @@ for (yr in years) {
     #   tie        one ping per (vid, time), the rule curate/ais_ping_trail.R applied until plan 014: a recorded
     #              position over a reconstructed one, then stk over the other feeds, then provider, lon, lat.
     #              Two feeds can report one second at places more than DUP_M apart; one of them is set aside.
-    d0 <- base |> filter(vid %in% g) |> collect()
+    # A total order first: DuckDB returns the rows in no fixed order, and two pings of one vessel, second, feed and
+    # position can differ in speed or heading (6,173 such pairs). The filters and the tie step keep the first of
+    # equals, so without this the kept reading changed from build to build (decision 086, TODO 55).
+    d0 <- base |> filter(vid %in% g) |> collect() |>
+      arrange(vid, time, pos_basis != "recorded", provider != "stk", provider, lon, lat, pick(everything()))
     d <- bind_rows(
       d0 |> filter(pos_basis == "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat") |>
