@@ -188,8 +188,9 @@ each part of it runs the methods its data allow.
      - engine power, missing for a third of vessels (plan 015, choice f);
      - gear width (plan 015, choice d).
    - After this, the fixes already called fishing carry effort: 38 / 36 / 30 % of fixes at sea, all in rows 1–2.
-   - **Built in ramb** (decision 099, ramb 2026.10.14.6): `rb_assign_effort()`, checked on June 2023. Not yet wired
-     into fishycode: that waits for the trail rebuild of items 1–3, and the gear width.
+   - **Built in ramb** (decision 099, ramb 2026.10.14.6): `rb_assign_effort()`, checked on June 2023.
+   - **On the trail** (decision 101): `hours`, `kw_hours`, `interval_flag`, `effort_basis` on every fix. Pressure waits
+     for the gear width.
 2. **Catch shared at the finest level the data can separate** (step 6; rows 1–2 first, the landing units with items
    3 and 5).
    - **The unit is set by what the times allow, not by the record** (maintainer).
@@ -259,6 +260,8 @@ each part of it runs the methods its data allow.
        - On hold since 2026-10-08 because a trip can carry several gears.
        - This takes only the unambiguous case: one gear class on the voyage.
    - fishycode: each voyage's gear from its logbook trip or its landing; the wiring.
+   - **Built** (ramb 2026.10.14.8; decision 101): `curate/voyage_gear.R` and the trail's `fishing_flow`. The
+     per-unit precision rule (a dense track deciding inside a window too) is not built; the cascade is window first.
    - The fallback's cost is already measured on the recorded windows (decision 090, ±10 min speed). It calls fishing
      inside the windows, and not fishing far from them, at these rates:
      - towed gear: 93 % / 88 %;

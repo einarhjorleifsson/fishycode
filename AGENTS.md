@@ -148,7 +148,7 @@ Every script in a targets project is on one of three sides, and says which in a 
   with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
   fishing cascade, the catch units and the composing lazy results of 2026.10.14.6-.9 (decisions 099-101): so ≥ 2026.10.14.9. The data on disk were built with ramb 2026.10.13.3 (the full
   rebuild of 2026-10-13/14, decision 086), the afli → trail chain with 2026.10.14.1 (decision 089), `station_window`
-  with 2026.10.14.2, `station_event` with 2026.10.14.3 (decision 091) and the trail with 2026.10.14.5 (decision 093). 2026.10.14.4 added the
+  with 2026.10.14.2, `station_event` with 2026.10.14.3 (decision 091) the trail with 2026.10.14.5 (decision 093), and `voyage_gear`, the trail and `ais_catch` with 2026.10.14.9 (decision 101). 2026.10.14.4 added the
   towing-stretch pairing (decision 092), which nothing here calls.
   `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
