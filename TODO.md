@@ -251,7 +251,7 @@ redone on this one before any verdict is used.
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
-**status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b, item 8
+**status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, item 8
 
 Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
 trip (`.tid_voyage`) on fixes outside every window. Open: the datacall. `products/ices_vms_datacall/build.R` is the
@@ -266,7 +266,7 @@ Repointing it means building its inputs from the curated tables:
 - catch spread over a station's fishing fixes;
 - the logbook (LE) table without duplicate twins.
 
-That needs a plan, checked against the 2025 delivery (item 8). Also open: whether to store a sorted wide trail
+Plan 015 designs it, checked against the 2025 delivery (item 8); its §4 choices are the maintainer's. Also open: whether to store a sorted wide trail
 (maintainer).
 
 **check:** `products/ices_vms_datacall/build.R` runs on `curated/ais/trail`, its output is compared with the 2025
