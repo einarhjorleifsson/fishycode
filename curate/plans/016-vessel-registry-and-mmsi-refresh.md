@@ -1,6 +1,6 @@
 # 016 — Refreshing the vessel registry and the MMSI archive, and SKB pleasure craft through the AIS flow
 
-**status:** partly built — steps 1–6 written and tested 2026-10-14 (ASTD +849k pings, no vessel loses any); the rebuild (step 8) not run · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
+**status:** partly built — steps 1–6b written and tested 2026-10-14 (ASTD +849k pings, no vessel loses any); the rebuild (step 8) not run · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
 plans 003, 008, 009
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
@@ -163,6 +163,44 @@ i. **TODO 17's TFUT case is already resolved.** All four lists and Oracle give T
 6. **Wiring:**
    - file targets for `raw/vessels/vessel_v.parquet` and the archive's inputs, so a new dump or list shows in `tar_outdated()`;
    - `dump/oracle/vessels.R` gets `rjdbc = TRUE` and becomes the script that runs; `raw/vessels/DUMP_vessels.R` goes.
+6b. **Call sign, local sign and name over time: `vessel_sign.parquet`, one row per vid, kind (`cs` | `uid` | `name`),
+   value and period** (maintainer, 2026-10-14: the call sign and the local sign, ÍS-8, wander across hulls over time,
+   like the MMSI). It is a table of its own: splitting
+   `vessel_identity`'s rows by call sign would repeat its MMSI windows, and through `ais_ping_union` the pings. Measured
+   2026-10-14:
+   - **the annual register** (`staging/skipaskra/annual_call_sign.parquet`, the state at the start of each year,
+     2007–2022): 114 of its 517 call signs belong to more than one hull over the period, and 10 hulls change call sign;
+   - **Oracle's identification history** (`raw/vessels/vessel_identification_hist_v.parquet`, call sign, local sign and
+     home port by `vessel_id`, mostly from 2023-12): a struck hull keeps its last call sign open, so TFBR stands current
+     on 1473, 2815 and 3047 at once. A period closes at the hull's deregistration (`vessel_hist_v` status);
+   - **the MMSI lists and snapshots**: dated call-sign observations, 2019–2026;
+   - **the local sign** (`kvoti.skipasaga`'s `einkst` and `einknr`, dated 1990s–2023-12; Oracle's identification history
+     after that): of the periods reaching 2007 or later, 1,614 of 4,101 local signs belong to more than one hull, and
+     1,240 hulls have more than one sign. ÍS-8 has had four: 1660 (from 1996, never closed), 6325 (1998–2014), 6347
+     (2014–2019) and 7056 (from 2020). As with Oracle's call signs, a struck hull's last sign stays open and must close at
+     deregistration. The value is kept as the register writes it (ÍS-8), with a folded key for matching (Í→I, number
+     padded to three digits, as `vessel.parquet`'s `uid`); some STK mobile-ids carry it in `loid` that way (ÞH061, EA300);
+   - **the name** (`heiti` in `kvoti.skipasaga`, `name` and `previous_name` in Oracle's history), the same way. It
+     wanders most and identifies least: of 5,142 hulls with periods reaching 2007, 1,250 have had more than one name, and
+     on 2020-07-01 638 of 3,430 names were on more than one hull at once (HAFDÍS on 21). A name is history for a reader,
+     never a key.
+   - **names broadcast in AIS** (maintainer, 2026-10-14: they appear in ASTD, astdB and GFW). On disk only ASTD carries
+     them: `vesselname` and `imonumber` on every ping (`staging/ais/astd`). The astdB archive as dumped
+     (`raw/ais/astdB/astd_classb_2014-01-01_2024-12-31.zip`) has length, breadth and draught but no name, and GFW's
+     `raw/external/gfw/fishing-vessels-v2.csv` has none. The name an MMSI broadcast, by year, goes beside the register's
+     holder in the key review as a reader's aid. Under the rule of 2026-09-29 it is never evidence or a match key.
+   As with the MMSI, each period carries its source and `basis`, and one call sign or local sign has one holder at a time
+   (asserted; names repeat and are not asserted). Nothing in the main project reads it: its consumer is the key review
+   (step 7), where call-sign reuse is the known failure (decisions 020, 044, 045), and an analyst who meets a vessel by
+   its marks.
+   **Built 2026-10-14** (`reference/vessels/vessel_sign.R`, tested into scratch): 29,664 periods. Oracle's identification
+   history reaches back to 1954, not only 2023. The sources' placeholder start, 1901-01-01, becomes the hull's first
+   registration: it alone caused 711 of the first version's 735 conflicts. A hull's period ends where its next value
+   begins, so skipasaga's exact day beats Oracle's 1 January. Call signs have no conflicts. Local signs keep 91 periods
+   where two hulls hold one sign at once (14 of 6,905 reaching 2007), flagged `conflict` for a reader. 26 periods have a
+   hull with two values of one kind at once. ÍS-8 reads 401 (1961), 40 (1962), 1660 (1983–95), 1052 (1995–98), 6325
+   (1998–2014), 6347 (2014–19), 7056 (2020–25), 7008 (from 2025-10); TFBR 2815 (2012–22), then 3047 from 2025-01-10, as
+   decision 045 found from the track.
 7. **Review the STK key against the archive** (`once` project, a key redo by decision; maintainer, 2026-10-14). The
    hand-curated match (the reviewed rows behind the segment table, `overrides/ais_key_*_reviewed.csv`,
    `overrides/stk_foreign_mid_vid.csv`) is untouched by this pass: the main rebuild reads the frozen key. Measured

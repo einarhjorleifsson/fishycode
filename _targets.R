@@ -183,6 +183,14 @@ list(
     vessel_class_raw
     produces("reference/vessels/vessel_class.R", fd_curated("vessel", "vessel_class.parquet"))
   }, format = "file"),
+  # Call sign, local sign (ÍS-8) and name over time (plan 016 step 6b). Nothing in this project reads it: its consumer is
+  # the STK key review in the `once` project, whose annual call-sign register it reads as a frozen input.
+  tar_target(annual_call_sign, frozen_input("staging", "skipaskra", "annual_call_sign.parquet"), format = "file"),
+  tar_target(vessel_sign_raw, c(fd_raw("vessels", "vessel_identification_hist_v.parquet")), format = "file"),
+  tar_target(vessel_sign, {
+    annual_call_sign; vessel_sign_raw; vessel_class_raw; vessel_hist_raw; vessel_raw
+    produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))
+  }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
   # uid are attributes of it at a time. Consumed by ais_key.R's lifetime flag and
