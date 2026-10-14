@@ -29,13 +29,21 @@
 # question 3): `gid` the logbook's, `gid_landing` the landing's, `gid_used` the one the windows use, `gid_basis`.
 # Like every station column they are filled only when one station claims the fix.
 #
+# Plan 013 items 1 and 3 (decisions 099, 101): every approach to fishing is a column of its own, and the effort is
+# on every fix. `fishing` (above) is the window alone. `fishing_flow` is the cascade: the window where a station's
+# window holds the fix, else the speed range of the voyage's gear (curated/ais/voyage_gear.parquet), else NA;
+# `fishing_flow_basis` says which (window, speed, none). `hours` is the time to the vessel's next fix within the
+# voyage, capped at 2 h (`interval_flag`), `kw_hours` that times the vessel's engine power, `effort_basis` derived or
+# none. The month is read with 2 h after it, so the last fixes of the month find their next fix.
+#
 # `nearest_event` names the event times this fix bounds, from curated/link/station_event (TODO 54, decision 088):
 # the first fix of a setting (t1) or hauling (t3), the last of a setting (t2) or hauling (t4); `t3+t4` for a haul of
 # one fix. They belong to one station and one phase: when two events would share a fix, the nearer keeps it
 # (decision 091). NA otherwise. The station, the time difference and the gap are in that table. The name stayed
 # from the first rule, the nearest fix.
 
-trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL, window_s = 600) {
+trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL, window_s = 600,
+                            max_interval_s = 7200) {
   kind <- match.arg(kind)
   t0 <- sprintf("TIMESTAMP '%d-%02d-01'", year, month)
   t1 <- if (month == 12) sprintf("TIMESTAMP '%d-01-01'", year + 1L) else sprintf("TIMESTAMP '%d-%02d-01'", year, month + 1L)
@@ -46,11 +54,14 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   pfile <- paste0("[", paste(shQuote(file.path(fd_curated("ais", "ping"), paste0("year=", yrs), "*.parquet"),
                                      type = "sh"), collapse = ", "), "]")
   m0 <- sprintf("%s - to_seconds(%d)", t0, as.integer(window_s))
-  m1 <- sprintf("%s + to_seconds(%d)", t1, as.integer(window_s))
+  # after the month: the speed window, and the longest interval a fix stands for (rb_assign_effort's cap)
+  m1 <- sprintf("%s + to_seconds(%d)", t1, as.integer(max(window_s, max_interval_s)))
   swf   <- shQuote(fd_curated("logbook", "station_window.parquet"), type = "sh")
   tvf   <- shQuote(fd_curated("link", "trip_voyage.parquet"), type = "sh")
   gf    <- shQuote(fd_curated("logbook", "gear.parquet"), type = "sh")
   sef   <- shQuote(fd_curated("link", "station_event.parquet"), type = "sh")
+  vgf   <- shQuote(fd_curated("ais", "voyage_gear.parquet"), type = "sh")
+  vsf   <- shQuote(fd_curated("vessel", "vessel.parquet"), type = "sh")
   lazy  <- function(q) dplyr::tbl(con, dplyr::sql(q))
   rend  <- function(x) as.character(dbplyr::sql_render(x))
 
@@ -69,8 +80,17 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
 
   # the wide row reads the month's matches back from trail_match, written just before it
   m <- lazy(sprintf("SELECT * FROM read_parquet(%s)", shQuote(matches, type = "sh")))
+  # the voyage's gear (voyages are cut at New Year, so a fix's voyage is of the fix's own year)
+  vg <- lazy(sprintf("SELECT vid, year, voyage, gid_voyage, s1_voyage, s2_voyage, gear_voyage_basis FROM read_parquet(%s)", vgf))
+  p <- lazy(sprintf("SELECT p.*, vg.gid_voyage, vg.s1_voyage, vg.s2_voyage, vg.gear_voyage_basis
+                     FROM (%s) p LEFT JOIN (%s) vg ON vg.vid = p.vid AND vg.year = year(p.time) AND vg.voyage = p.voyage",
+                    rend(p), rend(vg)))
+  vessels <- lazy(sprintf("SELECT vid, kw FROM read_parquet(%s)", vsf))
   r <- p |>
     ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2", window_s = window_s) |>
+    ramb::rb_assign_fishing(m, method = c("window", "speed"), speed_min = "s1", speed_max = "s2", window_s = window_s,
+                            ping_speed_min = "s1_voyage", ping_speed_max = "s2_voyage", name = "fishing_flow") |>
+    ramb::rb_assign_effort(vessels, by = "voyage", max_interval_s = max_interval_s) |>
     ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
@@ -87,7 +107,9 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
            r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier, r.gear, r.target, r.target2,
            g.gid, g.gid_landing, g.gid_used, g.gid_basis, r.gear_class,
-           r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, e.nearest_event, r.fishing, r.sid_gps, r.n_sid_gps
+           r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, e.nearest_event, r.fishing,
+           r.gid_voyage, r.s1_voyage, r.s2_voyage, r.gear_voyage_basis, r.fishing_flow, r.fishing_flow_basis,
+           r.hours, r.kw_hours, r.interval_flag, r.effort_basis, r.sid_gps, r.n_sid_gps
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage
            LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema
            LEFT JOIN e ON e.vid = r.vid AND e.time = r.time

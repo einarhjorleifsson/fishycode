@@ -143,9 +143,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   |---|---|---|
   | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
 
-  **Which ramb.** The code needs ramb ≥ 2026.10.14.5: the argument names of 2026-10-12,
+  **Which ramb.** The code needs the argument names of 2026-10-12,
   `rb_calc_speed(method = )`, `rb_link_record_events()` (decision 088) and the exclusive windows and event links
-  with `win_opened_by` and `ping_lost` (decision 091), and `window_s` for the ±10 min fishing speed (decision 093). The data on disk were built with ramb 2026.10.13.3 (the full
+  with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
+  fishing cascade, the catch units and the composing lazy results of 2026.10.14.6-.9 (decisions 099-101): so ≥ 2026.10.14.9. The data on disk were built with ramb 2026.10.13.3 (the full
   rebuild of 2026-10-13/14, decision 086), the afli → trail chain with 2026.10.14.1 (decision 089), `station_window`
   with 2026.10.14.2, `station_event` with 2026.10.14.3 (decision 091) and the trail with 2026.10.14.5 (decision 093). 2026.10.14.4 added the
   towing-stretch pairing (decision 092), which nothing here calls.

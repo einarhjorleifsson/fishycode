@@ -388,10 +388,22 @@ list(
              fd_curated("link", "station_event.parquet"))
   }, format = "file"),
 
+  # The gear of each voyage, for the fixes no logbook window holds (plan 013 item 3).
+  tar_target(voyage_gear, {
+    ais_voyage; trip_voyage; logbook; logbook_gear; landing; gear; gear_window
+    produces("curate/voyage_gear.R", fd_curated("ais", "voyage_gear.parquet"))
+  }, format = "file"),
+
   tar_target(ais_trail, {
-    ais_voyage; station_window; trip_voyage; logbook_gear; station_event
+    ais_voyage; station_window; trip_voyage; logbook_gear; station_event; voyage_gear; vessel
     produces("curate/ais_trail.R",
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
+  }, format = "file"),
+
+  # The catch on the fixes, per catch unit and approach (plan 013 item 2, decision 100).
+  tar_target(ais_catch, {
+    ais_trail; station_window; logbook; lid_map; landing
+    produces("curate/ais_catch.R", fd_curated("ais", "catch"))
   }, format = "file"),
 
   tar_target(check_trail_agreement, {
