@@ -413,18 +413,56 @@ function name follows ("port, not harbour").
 
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
-## 56. Explore before building the time reconciliation: the speed window, voyage-wide boundaries
-**status:** open · **agreed with the maintainer 2026-10-14** · **see:** plan 013 phase 4 ("Exploration before any more
-building"), decisions 088 and 089
+## 57. One fix, one record: make the assignments exclusive
+**status:** open · **see:** decision 090, plan 013 phase 4 ("Measured")
 
-A small test re-placed declared tow times from the track for only 57-74 % of tows within 30 min (plan 013 phase 4,
-"Measured, not ready yet"). Four questions come first, by analysis on real tracks:
-1. Does a windowed s1-s2 (the median speed within +/-W) score better than the fix's own speed for the trail's
-   `fishing`?
-2. Can a voyage be cut into towing stretches and paired in order with its declared tows?
-3. What role does `station_event` keep beside that?
-4. Where can known tow or haul times come from?
+The maintainer's invariant: a fix belongs to at most one record, and to one phase of it. It applies to the trail,
+`station_event` and the pairing; `trail_match` stays a candidate table. Today `station_event` gives 62,694 fixes to
+two operations or phases. The window rules also leave real overlaps uncapped (452k `trail_match` fixes). In ramb,
+before any push:
+- `rb_link_record_events()`: the nearer-in-time rule (64,954 claims lose their fix) and a tie-break for the 3,599
+  equal ones;
+- `rb_build_record_windows()`: cap jig windows, cap a haul at a later set, break equal-start ties, use half-open
+  windows.
 
-ramb's `rb_link_record_events()` (2026.10.14 and .14.1) stays unpushed until this settles its shape (maintainer).
+Then rebuild `station_window`, `station_event` and the trail, with the stop before a rebuild.
 
-**check:** plan 013 phase 4 records the measured answers to the four questions, and a decision says what is built.
+**check:** on the rebuilt data, no `(vid, time)` has two rows in `station_event` from two operations or phases, and
+`trail_match` fixes with 2+ stations from overlapping tier-1 windows are 0 (twins and day windows excepted).
+
+## 58. Twin records: one operation entered as two stations
+**status:** open · **needs: maintainer** — which record keeps the link, and whether a twin's catch is dropped
+· **see:** decision 090
+
+24,768 stations share all of t1-t4 with another station of their vessel:
+- fs_afladagbok: about 2,000 trips submitted twice (same dates, same vendor), 2022-2025;
+- afli: 8,465 same-trip pairs with the same gear;
+- adb: 351 pairs.
+
+They make 279k `trail_match` fixes ambiguous. They may also count catch twice in `catch_by_species_*` and in the
+landings link. Write a correction (`curate/corrections/`, a flag, never a deletion) after counting the catch side.
+
+**check:** a correction entry declares the rule and its count, and the twins carry a flag in `curated/logbook/`.
+
+## 59. The voyage-wide pairing and the speed window, into ramb
+**status:** open · **see:** decision 090, plan 013 phase 4 ("Measured", items 1-2)
+
+The prototype paired 99 % of June 2023 tows exclusively; OTB starts were within 15/30 min for 62/77 % of tows.
+Build:
+- a windowed speed (median over ±10 min) for `rb_assign_fishing()`;
+- the stretch cut and the ordered, exclusive pairing (two step-2 functions; names by plan 013's verb table).
+
+SDN and OTM need a phase model, not one speed range. Not before TODO 57.
+
+**check:** ramb exports the two functions and the windowed speed, tested on a fixture, and the June 2023 prototype
+numbers are reproduced.
+
+## 60. Ground truth for towed-gear tow times
+**status:** open · **needs: maintainer** — access to MFRI's groundfish survey tow records (start and end) for the
+hired trawlers · **see:** decision 090
+
+No local source has known tow times for Icelandic towed gear. The afli logger follows the captain's station entry,
+and WKSSFGEO's OTB AIS labels only fishing pings. The surveys' hired trawlers are in the AIS, and staff record each
+tow's start and end. Without such a set, plan 013's override cases cannot be tuned.
+
+**check:** a survey tow table is in `raw/` with a `dump/` script, and the pairing is scored against it.

@@ -636,14 +636,58 @@ Each phase ends with three things:
           - Pair the stretches in order with the declared tows: one stretch per tow at most, the order kept.
           - Count what pairs, what does not (an unreported tow, a tow the track cannot see, two tows the track shows
             as one), and the boundary offsets of the pairs.
-       3. *What `station_event` becomes.* It is built and kept as a first, provisional layer (decision 088): the
+       3. *What `station_event` becomes.* It was built and kept as a first, provisional layer (decision 088): the
           bounding fix of each declared t1–t4 and the track's precision there. Decide after 2 whether it stays as
           the declarations' anchor beside the voyage-wide pairing, or the pairing replaces its labels on the trail.
        4. *Ground truth.* Find a source of known tow or haul times: Icelandic trawl sensors, a vessel with observer
           records, the labelled sets of WKSSFGEO / WKSSFGEO2.
 
        ramb 2026.10.14 and 2026.10.14.1 (`rb_link_record_events()`) are committed in ramb but not pushed, held by the
-       maintainer until this settles the function's shape.
+       maintainer until this settles the function's shape. The exploration has settled it: the function becomes
+       exclusive (TODO 57) before any push.
+     - **Measured (2026-10-14, Claude, AI-assisted; decision 090).** The maintainer added an invariant first: *a fix
+       belongs to at most one record, and to one phase of it*. It holds for assignments (trail, `station_event`, the
+       pairing). `trail_match` holds candidates. When two events share a bounding fix, the one nearer in time keeps
+       it. The census of where the current code breaks the invariant is in decision 090.
+       1. *Speed window* (2023, at-sea fixes of voyages with one gear range; "in" = inside a recorded window with
+          one candidate, "out" = ≥ 30 min from any window):
+
+          | gear class | in, called fishing: own speed / ±5 / ±10 / ±15 / ±20 min | out, called not fishing: same |
+          |---|---|---|
+          | towed (2.64 M in, 1.69 M out) | 89.9 / 91.7 / 93.4 / 94.3 / 94.7 % | 88.4 / 88.3 / 88.0 / 87.7 / 87.6 % |
+          | static (1.26 M, 0.76 M) | 87.3 / 88.8 / 89.6 / 91.0 / 91.3 % | 77.0 / 76.9 / 76.8 / 76.6 / 76.5 % |
+          | jigged (0.87 M, 0.26 M) | 62.3 / 62.3 / 62.7 / 66.5 / 66.8 % | 84.6 / 84.8 / 84.9 / 84.6 / 84.7 % |
+
+          Next to a window the cost is larger: towed "out", all fixes, goes from 80.4 to 78.1 % at ±10, because
+          shooting and hauling get smeared. ±10 min is the choice for `rb_assign_fishing()` (TODO 59).
+       2. *Voyage-wide pairing* (June 2023, 4,237 declared tow operations, 87 vessels, twins as one operation).
+          - **Method:**
+            - stretches of fixes at the gear's towing speed (median within ±10 min), broken at a gap > 30 min, at
+              least 15 min long;
+            - a stretch holding two declared tows is cut at the slowest fix between them;
+            - an ordered, one-to-one pairing that maximises the overlap with the tows widened by 30 min.
+          - **Result:** 0 invariant breaks in every variant. Shares of all declared tows:
+
+            | variant | paired | start within 15 / 30 min | end within 15 / 30 min |
+            |---|---|---|---|
+            | own speed, no prior | 97.4 % | 43.5 / 59.7 % | 41.0 / 52.3 % |
+            | ±10 min, no prior | 95.0 % | 50.6 / 71.3 % | 46.9 / 61.2 % |
+            | ±10 min, cut at the declared tows | 99.0 % | 54.4 / 76.8 % | 51.1 / 66.1 % |
+            | the same, OTB only (2,951) | 99.5 % | 61.8 / 77.2 % | 63.2 / 74.1 % |
+
+          - Against the earlier non-exclusive test (OTB, 61/74 and 60/71 %), exclusivity costs nothing.
+          - SDN (1,187 tows; end 23 % within 15 min) and OTM (71) need a model of the phases, not one speed range.
+          - 30 % of towing-speed stretches hold no declared tow: searching, slow steaming, or unreported tows.
+       3. *`station_event`* stays as the declared anchor, made exclusive (TODO 57). The pairing gives the track's
+          boundary. The two are the candidates that `rb_reconcile_time()` compares.
+          - In June 2023 the exclusive rule takes the fix from 57 of 8,468 t2/t3 anchors, and the pairing still
+            bounds 50 of those tows.
+          - The track's start is within one fix interval of the declared start for 30 % of paired tows.
+       4. *Ground truth*:
+          - none locally for Icelandic towed gear. The afli logger follows the captain's station entry, and
+            WKSSFGEO's OTB AIS labels only fishing pings.
+          - The labelled dredge and pot sets suit static gear.
+          - Candidate: MFRI's groundfish survey tows (TODO 60).
    - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
      haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
      to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting

@@ -49,6 +49,9 @@ Every script in a targets project is on one of three sides, and says which in a 
 - The flow runs at any data resolution and never stops for a missing table: the output's shape is the same,
   its content and basis depend on the data (plan 013, decided item 9). `docs/one_flow.qmd` describes the flow
   and what exists where (ramb, fishycode, outside code).
+- **One fix, one record** (maintainer, decision 090): an assignment puts a fix in at most one logbook record and one
+  phase of it. `trail_match` holds candidates, not assignments. `station_event` and the window rules still break it
+  (TODO 57).
 
 ## Rules
 
