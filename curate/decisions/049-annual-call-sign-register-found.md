@@ -3,8 +3,8 @@
 *2026-09-30. Found in `~/stasi/skipaskra` (the maintainer copied it in) while hunting for annual call-sign records; the STK
 mid -> vid work needs to know who held a call sign WHEN (decisions 044, 045, 047, 048). Analysis by Claude (AI-assisted).
 Nothing is written under `$FISHYDATA` yet: the source still lives in `~/stasi/skipaskra`, outside the pipeline. Raw copy landed and adapter built 2026-09-30; closed 2026-10-08, checked on the real curated table (last section). 2026-10-14: the rest
-copied in too (the ~1,000 vessel photos, the Faroese scrape, the logs) and `~/stasi/skipaskra` moved to the Trash:
-`raw/external/skipaskra/` is now the one copy (plan 016).*
+copied in too (the ~1,000 vessel photos, the logs) and `~/stasi/skipaskra` moved to the Trash: `raw/external/skipaskra/`
+is now the one copy (plan 016). Its Faroese scrape (`færeyjar/`) moved on to `raw/external/fro/scrape/`, beside the data.*
 
 ## What it is
 

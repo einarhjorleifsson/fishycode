@@ -13,6 +13,10 @@
 #
 # Nothing consumes the output yet - the cross-flag vessel consolidation it feeds was
 # not carried across from fishyweb. See curate/plans/002-the-last-mile.md §4a.
+# The Faroese register the pipeline does read is raw/external/fro/vid-*.csv (sources/fro/convert.R), an earlier scrape
+# of other shipIds; a scrape script and its logs of 2024-02 are beside it in raw/external/fro/scrape/ (moved there from
+# the skipaskra folder 2026-10-14, plan 016). This script's output folder, raw/vessels/faroe/, does not exist: it has
+# never been run here.
 library(tidyverse)
 library(rvest)
 
