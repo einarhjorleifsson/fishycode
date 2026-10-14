@@ -1,6 +1,6 @@
 # 004 — Fishing windows from what the vessel did, not what the skipper wrote
 
-**status:** proposal — nothing built · **2026-09-23** · **see:** `TODO.md` item 18,
+**status:** parked (maintainer, 2026-10-14, after §8: jigging stopped, static gear's ceiling about +5 %) — nothing built · **2026-09-23** · **see:** `TODO.md` item 18,
 `curate/logbook_sensor_gps.R`, `curate/corrections/logger_runs_past_the_station.yml`,
 `curate/decisions/010-time-variable-naming.md`
 

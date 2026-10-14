@@ -47,8 +47,8 @@ codes all resolve against it.
 
 ---
 
-## 18. Fishing windows from behaviour, not from the logbook
-**status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md` (§8, measured 2026-10-14), decisions 090, 092, TODO 60
+## 18. Fishing windows from behaviour, not from the logbook — PARKED
+**status:** parked (maintainer, 2026-10-14: the measured gain is too small to build for now) · **see:** `curate/plans/004-behavioural-fishing-windows.md` (§8, measured 2026-10-14), decisions 090, 092, TODO 60
 
 Infer fishing time from the track where the logbook gives none. Measured (plan 004 §8): day windows hold 80.7 % of
 jigging fishing fixes, 22.8 % of static and 0.6 % of towed. A day window calls 18-30 % more static fixes fishing at
@@ -59,7 +59,8 @@ placing each station on a hauling bout by its recorded position, scored on the h
 +5 % of static fishing fixes, so it is worth building only if a delivery needs static-gear effort that precise.
 Towed gear needs no window work for effort; the reported heading is the course.
 
-**check:** plan 004's header records, for each of its five measurements, the answer or where it lives.
+**check:** none while parked. It reopens when a delivery needs static-gear effort that precise; plan 004's
+header then records, for each of its five measurements, the answer or where it lives.
 
 ## 17. Full review of the STK vessel match
 **status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`,
