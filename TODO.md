@@ -413,18 +413,6 @@ function name follows ("port, not harbour").
 
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
-## 57. One fix, one record: make the assignments exclusive
-**status:** in progress · **see:** decisions 090, 091
-
-ramb 2026.10.14.2 (committed, installed, not pushed) makes the windows and `station_event` exclusive, with the
-maintainer's rules: a set never cuts a haul, twins go by key until TODO 58, and of two windows with the same start
-the longer keeps it. fishycode's `station_window.R` and `link_station_event.R` follow, and both now stop on a
-breach. Dry runs are in decision 091. Left: rebuild `station_window`, `station_event` and the trail (`ais_trail`
-and what follows it), then the check.
-
-**check:** on the rebuilt data, no `(vid, time)` has two rows in `station_event` from two stations or phases, and
-`trail_match` fixes with 2+ stations from tier-1 windows are 0 (day windows excepted).
-
 ## 58. Twin records: one operation entered as two stations
 **status:** open · **needs: maintainer** — which record keeps the link, and whether a twin's catch is dropped
 · **see:** decision 090
@@ -448,7 +436,7 @@ Build:
 - the stretch cut and the ordered, exclusive pairing (two step-2 functions; names by plan 013's verb table).
 
 SDN and OTM need a phase model, not one speed range. Dredges (DRB) need a stretch to hold several short
-tows. All years: 87.3 % paired, and before 2012 the track is too sparse. Not before TODO 57.
+tows. All years: 87.3 % paired, and before 2012 the track is too sparse. TODO 57 is done (decision 091).
 
 **check:** ramb exports the two functions and the windowed speed, tested on a fixture, and the June 2023 prototype
 numbers are reproduced.

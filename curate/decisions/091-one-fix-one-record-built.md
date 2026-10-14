@@ -2,9 +2,9 @@
 
 *2026-10-14. Built by Claude (AI-assisted) on the maintainer's request (TODO 57). The invariant is decision 090.
 The rules for a set inside a haul, for twins and for windows with the same start are the maintainer's
-(2026-10-14). ramb 2026.10.14.2, committed and installed, not pushed. The counts are dry runs against `curated/`
-as built at fe31603, written to a scratch directory. The rebuild of `station_window`, `station_event` and the
-trail waits for the maintainer's go, and TODO 57 stays open until its check passes on the rebuilt data.*
+(2026-10-14). ramb 2026.10.14.2 and 2026.10.14.3, committed and installed, not pushed. The rules were first tested
+on dry runs against `curated/` as built at fe31603. `station_window`, `station_event` and the trail were then
+rebuilt on the maintainer's go, the same day (below), and TODO 57's check passed. Closes TODO 57.*
 
 ## The rules
 
@@ -26,7 +26,8 @@ trail waits for the maintainer's go, and TODO 57 stays open until its check pass
 **Event links** (`rb_link_record_events()`). A fix bounds the events of at most one station, and of one phase of it.
 - The phases are setting (t1-t2) and hauling (t3-t4), so a haul of one fix keeps both its events.
 - When two events would share a fix, the nearer in time keeps it. A tie goes to the earlier event time, then to
-  the lower `(.sid, schema)`.
+  the earlier phase, then to the lower `(.sid, schema)`. The phase was added in 2026.10.14.3, after the first
+  rebuild (below).
 - The others get `time` and `dt_s` NA and `ping_lost` TRUE. Their `gap_s` stays.
 
 ## Why the set yields to the haul
@@ -61,15 +62,15 @@ Their ends differ by a median of 40 min, and 84 % are on the same trip. They rea
 - day windows are untouched. 93,501 fixes still have several day-window stations; these are candidates, as
   decision 090 said.
 
-**`station_event`, all years** (10,991,846 event times):
-- 79,860 lose their fix (0.73 %). Of the 79,860, about 2,400 lose it to the other phase of their own station
-  (221 a t4 to its own t1: a jig or a set and haul holding one fix);
+**`station_event`, all years** (10,991,846 event times; the table is the final rebuild):
+- 79,864 lose their fix (0.73 %). About 2,400 of them lose it to the other phase of their own station (221 a t4 to
+  its own t1: a jig, or a set and haul, holding one fix);
 
   | schema | t1 | t2 | t3 | t4 |
   |---|---|---|---|---|
-  | afli | 5,720 (2.8 %) | 25,003 (0.5 %) | 26,445 (0.6 %) | 2,679 (1.2 %) |
-  | fs_afladagbok | 3,821 (2.5 %) | 6,607 (3.0 %) | 6,438 (2.4 %) | 1,870 (1.5 %) |
-  | adb | 106 (2.1 %) | 533 (3.5 %) | 594 (3.1 %) | 44 (0.9 %) |
+  | afli | 5,683 (2.8 %) | 24,993 (0.5 %) | 26,492 (0.6 %) | 2,680 (1.2 %) |
+  | fs_afladagbok | 3,279 (2.2 %) | 6,603 (3.0 %) | 6,983 (2.6 %) | 1,874 (1.5 %) |
+  | adb | 82 (1.7 %) | 532 (3.5 %) | 619 (3.2 %) | 44 (0.9 %) |
 
 - No fix bounds events of two stations or phases. The script now stops if one does;
 - every other row is the same as before, except 158 events. These lie more than a month after their station's
@@ -91,7 +92,35 @@ Their ends differ by a median of 40 min, and 84 % are on the same trip. They rea
 - `R/trail_sql.R`, `docs/data-dict.yaml` and `docs/ais_trail.qmd` describe half-open windows, and a
   `nearest_event` from one station.
 
-## Still open (TODO 57)
+## The rebuild (maintainer's go, 2026-10-14)
 
-- Rebuild `station_window`, `station_event` and the trail, then run TODO 57's check on the rebuilt data.
-- The ramb push (2026.10.14 to 2026.10.14.2) is held by the maintainer.
+`station_window`, `station_event` and `ais_trail` were invalidated by hand and rebuilt with `tar_make_isolated()`,
+with the two trail checks after them. The logs, fingerprints and check script are in
+`$FISHYDATA/archive/2026-10-todo57/`.
+
+- **Build 1** (ramb 2026.10.14.2) passed TODO 57's check. Against the dry run, though, 1,069 event rows of 532
+  stations came out differently. 531 of those stations have `t1 = t3`: the setting and the hauling start at one
+  moment, so both want the same fix at the same distance and from the same time, and nothing broke the tie.
+- **ramb 2026.10.14.3** breaks it by the phase: the setting keeps the fix. `station_event` and the trail were
+  rebuilt with it (build 2). `station_event` took 28 s, the trail 20 min 23 s.
+- **Reproducible:** a second, independent run of `link_station_event.R` gives the same 10,991,846 rows, with 0
+  differences.
+
+**TODO 57's check, on the rebuilt data:**
+- fixes that bound events of two stations or phases in `station_event`: 0;
+- `trail_match` fixes with two or more stations from tier-1 windows: 0. No fix has a tier-1 and a day window
+  together. 6,497,408 fixes have several day-window stations; these are candidates, as decision 090 said;
+- overlapping non-day windows in `station_window`: 0;
+- every trail fix with `n_sid > 1` is a day-window fix;
+- 2023 on the trail: 4,143,580 fishing fixes, as in the dry run.
+
+**Fingerprints before and after** (847 files): six datasets changed, as expected, and nothing else.
+- `station_window`: the same 7,494,007 rows. Only `w_start`, `w_end`, `win_basis` and `win_closed_by` changed,
+  and `win_opened_by` is new (34,776 windows cut to nothing, 27,598 starts moved).
+- `station_event`: the same rows. `time`, `dt_s` and `gap_s` changed, and `ping_lost` is new.
+- The trail: the same 566,714,976 fixes. Only the station columns changed (`.sid` to `win_basis`, `n_sid`,
+  `fishing`, `nearest_event`); position, speed, stay and voyage are identical.
+- `trail_match`: 186,935,616 candidate rows before, 186,003,233 after (−932,383).
+- The two trail checks.
+
+The ramb push (2026.10.14 to 2026.10.14.3) is held by the maintainer.

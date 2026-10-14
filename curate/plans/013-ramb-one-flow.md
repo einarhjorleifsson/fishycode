@@ -646,7 +646,8 @@ Each phase ends with three things:
        maintainer until this settles the function's shape. The exploration has settled it: the function becomes
        exclusive (TODO 57) before any push. **Built (2026-10-14, Claude, AI-assisted; decision 091):** ramb
        2026.10.14.2 makes `rb_link_record_events()` and `rb_build_record_windows()` exclusive (`ping_lost`,
-       `win_opened_by`, half-open windows), committed and installed, still unpushed; the rebuild is pending.
+       `win_opened_by`, half-open windows), and 2026.10.14.3 breaks a tie between two phases of one record; both
+       committed and installed, still unpushed. Rebuilt the same day; TODO 57's check passed (0/0/0).
      - **Measured (2026-10-14, Claude, AI-assisted; decision 090).** The maintainer added an invariant first: *a fix
        belongs to at most one record, and to one phase of it*. It holds for assignments (trail, `station_event`, the
        pairing). `trail_match` holds candidates. When two events share a bounding fix, the one nearer in time keeps
