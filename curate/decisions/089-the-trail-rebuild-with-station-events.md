@@ -20,7 +20,10 @@ and 55.*
 **Stamps.** 305 files of the second pass carry `fd.dirty = true` at commit 6207a75: most of `ais/trail` and
 `trail_match`, and the two trail checks. While they were being built, Claude edited `TODO.md` and plan 013, which
 are tracked documents. The code that built them is exactly 6207a75. The stamp records that the tree was dirty, not
-which file was. A rebuild of `ais_trail` from a clean tree (about 20 min) would clear the flag; it was not run.
+which file was. **Restamped the same morning** (maintainer's go): `ais_trail` and its two checks were rebuilt from the
+clean tree at 7e873dc (08:13–08:36 UTC). The 456 files are identical in rows, schema and all 13,639 column hashes,
+and only the stamps changed. Every file of this rebuild is now stamped clean (456 at 7e873dc, 137 at fab4052,
+`station_event` at 6207a75).
 
 ## Identical
 
