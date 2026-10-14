@@ -358,7 +358,8 @@ each part of it runs the methods its data allow.
    - **Benched** (decision 103): fishymodel's `fm_gaussian()` fixed for irregular steps. Against the tow windows,
      the declared speed range beats the Gaussian mixture (0.88 against 0.72 at 1 min, 0.81 against 0.73 at
      30 min). HMMs and other gears not run.
-10. **Declared times reconciled with the track** (`rb_reconcile_time()`, phase 4). Waits for ground truth (TODO 60).
+10. **Declared times reconciled with the track** (`rb_reconcile_time()`, phase 4). Ground truth found (decision 104,
+    TODO 60 closed): the track places a tow's boundaries to about ±10 min with dense fixes. Not built.
 
 Items 1–4 change the trail; one rebuild serves them. Each item ends as the phases do: ramb tests pass,
 `check_bookkeeping()` passes, and a decision record and a commit are made in each repo.

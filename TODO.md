@@ -361,21 +361,6 @@ function name follows ("port, not harbour").
 
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
-## 60. Ground truth for towed-gear tow times
-**status:** open · **needs: maintainer** — a yes to download MFRI's public survey-station file · **see:** decision 090
-
-No local source has known tow times for Icelandic towed gear. The afli logger follows the captain's station entry,
-and WKSSFGEO's OTB AIS labels only fishing pings. The surveys' hired trawlers are in the AIS, and staff record each
-tow's start and end. Without such a set, plan 013's override cases cannot be tuned.
-Found 2026-10-14: MFRI publishes every trawl-survey tow, with the vessel, start and end times and positions, at
-`ftp://ftp.hafro.is/pub/data/csv/is_survey-stations.csv` (ramb's `rb_read_survey_stations_mfri()` reads it); the
-tracks are published too (`rb_read_survey_tracks_mfri()`). The times are the captain's, under the survey protocol.
-
-Until then the stretch pairing (decision 092) stays out of the flow; whether it serves as a check meanwhile is
-the maintainer's call (decision 093).
-
-**check:** a survey tow table is in `raw/` with a `dump/` script, and the pairing is scored against it.
-
 ## 62. Foreign vessels' logbooks for Icelandic waters
 **status:** open · **needs: maintainer** — where they are: an Oracle schema and table, or an extract from Fiskistofa ·
 **see:** plan 013 item 5, decisions 102-103
