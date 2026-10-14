@@ -84,13 +84,13 @@ them. The choice is **§4 i**.
   "effort")`)? Catch on stations without fixes stays in `LE` only.
 - **f. kW.** Missing for a third of vessels. Leave kWFishingHour short, or fill from another register?
 - **g. Vessel IDs.** A stable vid → `ISnnnn` key, kept in `reference/vessels` and never renumbered?
+- **h. Where it runs.** By hand per delivery, writing to `$FISHYDATA/exports/ices_vms_datacall/<call year>/` with a
+  manifest (commit, inputs, row counts), or as a target?
 - **i. Untimed stations.** (i) Consolidate them per vessel × gear × date for the datacall, as 2025 did. (ii) Let
   the trail carry gear, target and metier when all the stations claiming a fix agree on them: one rule in
   `R/trail_sql.R` / `ramb::rb_assign_record()`, so the trail itself improves, but it is a trail rebuild. For `LE`,
   FishingDays sums to one per vessel-day either way. Only where the day's catch and position fall differs.
   Recommended: (ii) for the trail, (i) in `LE` for comparability with 2025.
-- **h. Where it runs.** By hand per delivery, writing to `$FISHYDATA/exports/ices_vms_datacall/<call year>/` with a
-  manifest (commit, inputs, row counts), or as a target?
 
 ## 5. Steps
 
