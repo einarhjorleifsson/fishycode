@@ -17,6 +17,11 @@ and 55.*
 - **Step times:** `ais_trail` 20.3 min, `ais_ping_clean` 19.0, `ais_voyage` 14.1 (TODO 48's check is 10), `port_stay`
   5.5, `afli` 2.8. `station_event` took 25 s.
 
+**Stamps.** 305 files of the second pass carry `fd.dirty = true` at commit 6207a75: most of `ais/trail` and
+`trail_match`, and the two trail checks. While they were being built, Claude edited `TODO.md` and plan 013, which
+are tracked documents. The code that built them is exactly 6207a75. The stamp records that the tree was dirty, not
+which file was. A rebuild of `ais_trail` from a clean tree (about 20 min) would clear the flag; it was not run.
+
 ## Identical
 
 Stays, voyages, `trip_voyage`, `lid_map`, both catch-by-species tables, the logbook trip, catch and gear tables, and
