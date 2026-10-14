@@ -1,7 +1,7 @@
 # 013 — ramb as the function library for the WGSFD one-flow; fishycode as its first user
 
-**status:** partly built — step A done (WGSFD doc version 2: `~/stasi/wgsfd2026/`, claude.ai rev 125), phases 0–2 done (decisions 070–072; `rb_assign_trip`'s declared tier moved to phase 4); phase 3 waits for the maintainer's go · **2026-10-09** ·
-**see:** `~/stasi/wgsfd2026/one_flow_effort_pressure_catch_v2.md`, `~/R/Pakkar/ramb`, decision 070
+**status:** partly built — step A, phases 0–3 (phase 3 inside plan 014) and part of phase 4 done (decisions 070–093); what is left is ordered in "What is left, in order" (2026-10-14) · **2026-10-14** ·
+**see:** `docs/one_flow.qmd` (the one-flow document, the home of version 2 since `~/stasi/wgsfd2026/` was retired), `~/R/Pakkar/ramb`, decision 070
 
 Drafted with AI assistance (Claude) from the maintainer's direction in the session of 2026-10-08, three code
 explorations and an adversarial review.
@@ -12,6 +12,321 @@ fishycode scripts named as templates, read file by file.
 **Assumed:** everything from "Function map" onward is proposal. In particular, that each fishycode step can be ported
 to ramb with exact equality on real data, and that the speed-profile models fit at tier 3, are untested.
 
+
+## What is left, in order (2026-10-14)
+
+*Added by Claude (AI-assisted) at the maintainer's request: order what remains so that the design
+(`docs/one_flow.qmd`, its cascade diagram) is fulfilled. Different parts of the Icelandic data take different paths
+through the diagram, and ramb's functions must fit any dataset, not only this one. The phases below keep the designs;
+this section orders them and adds what they lacked: the paths, and coverage. **Measured:** the two tables below
+(read-only counts over `curated/`, 2026-10-14; 2026 left out, its data are incomplete). **Assumed:** the order, and
+every function not yet built.*
+
+**Built today** (decisions 070–093): the vessel and flag rows; trips from the logbook and from the track; records
+with times or a day; gear from the record and the landing; fishing as window × speed. Every fix is labelled to that
+depth. No fix carries effort or catch yet.
+
+### The aim, and what stands between it and today
+
+The aim, and the three tests for when it is met, are in `AGENTS.md` ("What this project is"). Against them:
+
+**Critical gaps** (nothing below can stand in for them):
+
+1. **No effort and no catch on any fix.** These are the product's two headline numbers. AIS fixes also lack the
+   interval that effort needs (`dt_sec` is empty on them). Fails tests 1–2.
+2. **Fishing is gated by the logbook.** A fix outside a logbook window is never fishing, so the track cannot stand in
+   where the record is missing (rows 3–5). Fails test 1 for 16–24 % of fixes at sea on logbook trips, and for every
+   voyage with only a landing or nothing.
+3. **Vessels outside the Icelandic fleet are missing or unlabelled.**
+   - Foreign vessels are dropped before the trail (TODO 22), yet they land most of the catch with no Icelandic
+     logbook trip (rows 4, 9). Their logbooks exist at Fiskistofa.
+   - Aquaculture and whale-watching boats carry no class, so they read as missing logbooks (row 6).
+   - Fails tests 1–2.
+
+**Approaches to rethink:**
+
+1. **Which side decides activity: per unit, sometimes both** (maintainer). Today the logbook window decides for every
+   fix, and the track can only narrow it.
+   - Instead, the side with the better precision at that moment decides, and the other checks it:
+     - a timed record on a sparse track: the window decides, the track checks;
+     - a dense track with a coarse record or none: the track decides, the record checks;
+     - both precise: they are compared, and agreement or disagreement is a label.
+   - The deciding quantity is the one in `rb_reconcile_time()` (phase 4): the track's precision at the moment (the
+     interval between fixes) against the declaration's (minute, date, or none).
+   - This is the path column at work (below). The fallback rates of decision 090 give the track's side for towed
+     gear; static gear and jigging need more.
+   - **Approaches side by side, not a revamp** (maintainer, 2026-10-14). The trail keeps every approach, so the data
+     can be summarised by any of them.
+     - `fishing` stays as it is: the record's window (t2–t3, the haul, the jig or the day) × the gear's s1–s2 on the
+       ±10 min speed. Its name stays too, because consumers read it (plan 002's column contract).
+     - Each other approach is a column beside it:
+       - the gear's s1–s2 on every fix with a gear, window or not;
+       - later, the track models;
+       - the per-unit choice, with `fishing_basis`.
+       - Names are fixed when built.
+     - Effort is computed for every fix at sea, whatever the approach: the interval, kW-hours, and pressure where the
+       gear is known. A summary picks its approach by its column.
+     - Catch per fix is long already (fix × species). It gets an `approach` key, since each approach shares a unit's
+       catch over different fixes.
+     - What is built stays: `station_window`, `station_event`, the stretch pairing, the ±10 min speed, the
+       partitions. The cost is new columns, two new tables and one trail rebuild.
+     - The approaches compared on the same fixes are how test 3 (each path's error) is measured.
+2. **Catch sharing.** Not per record, but per unit the times and the track can separate (item 2): untimed records in
+   one day pooled, a summary record widened to its day, landing sets across trips, all in one unit (kg, live weight).
+3. **The path is implicit.** The code branches by which tables exist, and no number says which method made it. The
+   path becomes a column per unit that the steps branch on (below).
+4. **Steps 5–6 outside fishycode.** Settled 2026-10-14: they are part of the aim and are built in the flow.
+
+### Where the Icelandic data sit on the diagram (measured)
+
+Three periods, as the data change: the AIS interval and the logbook system both shift.
+
+| | 2008–2012 | 2013–2020 | 2021–2025 |
+|---|---|---|---|
+| AIS interval at sea, median | 10 min | 1–3 min | 5–6 min |
+| towed records with times (rest: day) | 70 % | 93 % | 99 % |
+| static records with times | 34 % | 73 % | 90 % |
+| jigging records with times | 2 % | 5 % | 77 % (day to 2021, timed from 2022) |
+
+Each part of the data, by the path it takes (shares are the period means of the table above):
+
+| # | Part of the data | Size | Path through the diagram | Today |
+|---|---|---|---|---|
+| 1 | Fixes in a timed window (tow, haul, jig) | 28 / 31 / 35 % of fixes at sea | declared trip → record with `t1`–`t4` → window + speed | built to step 4 |
+| 2 | Fixes in a day window | 26 / 20 / 4 % of fixes at sea | declared trip → day record → speed within the day | built to step 4, basis `synthesised` |
+| 3 | Fixes on a logbook trip, outside every window | 16 / 23 / 24 % of fixes at sea; at 1–6 kn: 6–7 % | declared trip → no record → the track decides | **never fishing**: the window decides alone |
+| 4 | Voyages with a landing but no logbook trip | 20 / 14 / 12 % of voyages; 11 / 15 / 17 % of landed weight | landing → no record → the track → catch per landing | **not built**: no landing link, never fishing |
+| 5 | Voyages with neither, of vessels that land that year | 10 / 9 / 8 % of voyages; 5–7 % of fixes | voyage → the track → effort only (TODO 49) | never fishing |
+| 6 | Voyages of vessels that land nothing that year | 11 / 20 / 31 % of voyages; 6 / 11 / 24 % of fixes; 290–500 vessels | probably not fishing vessels: a vessel class, not a fallback | unlabelled |
+| 7 | Logbook trips that no voyage covers | 4 / 2 / 4 % of trips; 1–6 % of records have no fix in their window | record with positions → catch at the record's position | **nowhere** |
+| 8 | Logbook records before AIS | 3.5 M records 1990–2006 (93 % with a start position, none with an end); 1.4 M before 1990 (14 % with a position) | record with positions only | **nowhere** |
+| 9 | Landings with neither a logbook trip nor a voyage | 5 / 3 / 4 % of landed weight | catch with a port and a date, no place | basis `none` |
+| 10 | Pings without a vessel | 31,512 STK pings unassigned (TODO 25); foreign vessels dropped before the trail (TODO 22) | vessel `none` | dropped or unassigned |
+
+- **Rows 4 and 9 are mostly foreign vessels landing in Iceland** (vid 3700–4999).
+  - They keep their logbooks with their own flag state, not here.
+  - Share of row 4's weight: 28 / 70 / 80 % by period. Share of row 9's: 84–88 %.
+  - The Icelandic part of row 4 is 7.6 / 4.4 / 3.3 % of all landed weight.
+  - Pelagic species (codes 30–36), 2019–2025: 1,144 of the 1,320 kt landed with no logbook trip is foreign, and
+    952 kt of that has an AIS voyage.
+- **Transhipment, pelagic species only** (codes 30–36; maintainer). A catcher's logbook trip would have no landing,
+  and a carrier's landing no logbook trip. The totals would agree while the vessels do not.
+  - Among Icelandic vessels it is small, 2019–2025: pelagic catch on logbook trips with no landing is 0–17 kt a year
+    (whole weight). Icelandic pelagic landings with no logbook trip total 176 kt, about 25 kt a year.
+  - A loose AIS meeting rule does not single the carriers out. The rule: another vessel within 1 km, both under 4 kn,
+    for 30 min or more; landings selected by gear (pelagic trawl, purse seine). In 2023 it held for 52 % of the Icelandic pelagic landings with no logbook trip (46 landings, 21 kt)
+    against 55 % of those with one: pelagic vessels work close together. A tighter rule, plus each vessel's catch
+    balance, is needed.
+- **Units.** Logbook and landings record in different units: tonnes against kilograms (maintainer). Condition is a
+  second difference: the logbook has `catch_whole` and `condition`, the landings a product code (`kfteg`). The
+  comparisons above between the two sources are therefore not on one unit. Comparisons within one source are.
+- **Row 6 grows with other activity at sea** (maintainer: aquaculture, whale watching). Comparing 2013–2016 with
+  2021–2024, the departure ports where these voyages grew most are:
+  - the fish-farming fjords: Bíldudalur, Tálknafjörður, Patreksfjörður, Þingeyri, Súðavík, Ísafjörður,
+    Fáskrúðsfjörður, Eskifjörður and Reyðarfjörður;
+  - the whale-watching ports: Reykjavík, Húsavík, Akureyri and Hauganes.
+  - The registry tables here give these vessels no class.
+- Row 3 is mostly steaming between hauls. The slow part (1–6 kn) is the fishing the records may not cover: unlogged
+  hauls, static gear being set.
+- Fixes under 2 min apart: 4–8 % a year before 2013, 18–60 % after. Operations can be read from the track from 2013,
+  hardly before.
+- The trail's `dt_sec` is filled only for logger fixes: every AIS fix has it empty.
+- "Fixes at sea" counts fixes, not time, so the years with sparse pings weigh less.
+
+### The order
+
+Each item names the ramb work (generic, for any dataset) and the fishycode work (the Icelandic wiring), and the rows
+it serves. The order follows what the product gains, with dependencies first. Every new ramb function follows decided
+item 9: it runs with the declared inputs `NULL` and returns the same columns. It is also tested on a fixture from
+outside Iceland (`dansk`, the WKSSFGEO examples), and its defaults are checked for Icelandic bias.
+
+**Paths are branches in the code, chosen per unit** (maintainer). One dataset does not run one sequence of methods:
+each part of it runs the methods its data allow.
+
+- **The path is a column.** Each unit (vessel-day, trip, landing set) gets one early, read from both sides (the
+  declarations and the track).
+  - Examples: `record` (timed records that pair with the track's operations), `summary` (records that hide more
+    operations), `day`, `landing_only`, `track_only`, `no_ping`.
+  - It starts from the declarations alone. Item 4 refines it with the track.
+- **Each step chooses its method per row, not per call.**
+  - `rb_assign_fishing()` takes an ordered cascade (`c("window", "track", "speed")`), and each fix takes the first
+    method its path allows.
+  - `rb_build_catch_units()` sets the unit by the path.
+  - The fishycode flow script then branches nothing by hand: it calls the steps, and the column routes the rows.
+- **The path stays on the output**, beside the bases, so each number traces back to the code that produced it.
+- The registry (item 0) records which paths each step serves. The function that sets the path is named per the verb
+  table.
+
+0. **Contract checks before more step functions** (ramb only). The registry, `.rb_check_input()` and the shared misuse
+   suite ("robustness to misuse" below) were to come before phase 4 added functions. Phase 4 has since added
+   `rb_link_record_events()`, `rb_cut_record_stretches()`, `rb_link_record_stretches()` and `rb_calc_speed_smooth()`
+   without them.
+   - **Settled** (maintainer, 2026-10-14): the registry skeleton is built together with item 1, and each new step
+     function enters with its row. The four existing step functions are retrofitted afterwards.
+1. **Effort on the fixes already decided** (step 5; rows 1–2).
+   - ramb: `rb_assign_effort()`.
+     - Hours: the interval to the vessel's next fix, with the long-gap rule as an argument (the ICES drop over 2 h,
+       or a cap).
+     - kW-hours: hours × the vessel's engine power.
+     - Pressure: where a width (towed gear) or a quantity (static gear) is known.
+     - `effort_basis`.
+     - Tier 1 (`lead()`), lazy.
+   - fishycode:
+     - the interval on every fix (`dt_sec` is empty on AIS fixes);
+     - engine power, missing for a third of vessels (plan 015, choice f);
+     - gear width (plan 015, choice d).
+   - After this, the fixes already called fishing carry effort: 38 / 36 / 30 % of fixes at sea, all in rows 1–2.
+2. **Catch shared at the finest level the data can separate** (step 6; rows 1–2 first, the landing units with items
+   3 and 5).
+   - **The unit is set by what the times allow, not by the record** (maintainer).
+     - A fix can go to one record only where that record's window is its own.
+     - Records whose windows overlap cannot be told apart on the track, e.g. several records in one day without
+       `t1`–`t4`. They form one unit: their catch is summed and shared over all their fishing fixes.
+     - The generic rule: the units are the connected sets of one vessel's records whose windows overlap.
+       - A timed, exclusive window is a unit of one.
+       - A day of untimed records is one unit.
+       - A trip-level record is the trip.
+   - **Measured** (2008–2025, records without times): how often one shares its day with other records.
+
+     | gear class | 2008–2012 | 2013–2020 | 2021–2025 |
+     |---|---|---|---|
+     | towed | 98 % (6.3 records a day) | 92 % (5.3) | 79 % (4.0) |
+     | static | 4 % | 8 % | 42 % (2.9) |
+     | jigging | 3 % | 1 % | 18 % (1.5) |
+
+     For towed gear without times, the day is the unit as a rule. For static gear and jigging, the record mostly is
+     the day already, but less so since 2021.
+   - **Landings** (row 4, where the logbook is missing; and as the weighed total).
+     - Trips and landings link many-to-many (item 5), so a landing unit is a connected set:
+       - one weekly landing over several trips;
+       - several sales notes (one per buyer) for one trip, summed.
+     - Its catch is shared over the fishing fixes of its voyages; fishing comes from item 3.
+     - Where a trip has both a logbook and a landing, one source carries its catch, never both. The logbook says where
+       the catch was taken; the landing is weighed.
+     - The two record in different units: tonnes against kilograms, and the logbook's condition against the
+       landing's product code. They are put on one unit (kilograms, live weight) before they are compared, summed or
+       raised. The conversion factors are an input, never a constant in code.
+     - A landing can carry another vessel's catch (transhipment, item 5). Its unit then spans both vessels' voyages.
+     - **Raising is a column, not a choice** (maintainer).
+       - Where a trip has both, each fix keeps its logbook-based share (`kg`) and carries a raising factor beside it:
+         landed over logged, per species and trip, in one unit.
+       - The raised value is `kg` × the factor. The user chooses, and nothing is overwritten.
+       - The ICES data call raises in effect, by allocating sales-note landings to log events.
+   - **Up a level.** Catch with no fishing fix in its unit moves up a level, so totals are kept: record unit → trip →
+     landing set → vessel × period. `catch_basis` and the unit's `resolution` say where each kilogram came from.
+   - ramb:
+     - `rb_build_catch_units()`: records, their windows, trips, landings and the links in; units with their
+       `resolution` and members out.
+     - `rb_share_catch(pings, units)`: by effort.
+     - Today's `rb_share_catch()` is EFLALO-shaped (`VE_REF`, `FT_REF`, `LE_KG`). It shares evenly, and has no haul
+       level and nothing above the trip. Its ICES behaviour stays as a method.
+   - fishycode: station catch, trip catch, landings with `lid_map`, and duplicate twins left out (decision 094).
+3. **Fishing decided per unit, by whichever side is more precise** (step 4, with gear for it; rows 1–5; rethink 1).
+   This is where the paths part: today a fix outside every window is never fishing.
+   - ramb:
+     - `rb_assign_fishing()` as a per-fix cascade whose order comes from the path, not from the call:
+       - a timed record on a sparse track: `"window"`, then `"speed"` as the check;
+       - a dense track, or a coarse record or none: `"speed"` (later the track models, item 9), with the window as the
+         check where there is one;
+       - neither: not decided.
+     - `fishing_basis` says which side decided. Where both were used, a label says whether they agree.
+     - First build: `"window"` and `"speed"` only. The track's precision is the interval between fixes.
+     - The gear for it: the record, landing and none tiers of `rb_assign_gear()`.
+       - On hold since 2026-10-08 because a trip can carry several gears.
+       - This takes only the unambiguous case: one gear class on the voyage.
+   - fishycode: each voyage's gear from its logbook trip or its landing; the wiring.
+   - The fallback's cost is already measured on the recorded windows (decision 090, ±10 min speed). It calls fishing
+     inside the windows, and not fishing far from them, at these rates:
+     - towed gear: 93 % / 88 %;
+     - static gear: 90 / 77 %;
+     - jigging: 63 / 85 %.
+4. **Records checked against the operations the track shows** (steps 2 and 4; rows 1–3). The path is chosen from
+   both sides, not from the declaration alone (maintainer).
+   - One record in a day can hide several operations that the track shows, e.g. several settings, or several tows.
+     - The record is then a summary, whatever its times say.
+     - Its unit widens to the day (or the voyage).
+     - Fishing comes from the track's operations, and the catch is shared over all of them.
+   - The reverse also happens: a record whose operation the track does not show (sparse pings, or a wrong record).
+     Its catch moves up a level.
+   - Per vessel-day, the records are compared with the operations found on the track:
+     - **as many, and they pair:** the record path;
+     - **more on the track:** the records summarise; the day or voyage is the unit, and fishing comes from the track;
+     - **fewer on the track:** the records are unseen; the catch moves up.
+     - The case is kept beside the record's declared resolution.
+   - Seen so far, not counted for this purpose:
+     - In June 2023, 30 % of towing-speed stretches held no declared tow (decision 092).
+     - A day window calls 18–30 % more static fixes fishing than the real hauls (plan 004 §8).
+     - How many records the track shows to be summaries is not measured; it is the first step of this item.
+   - ramb:
+     - The operations come from the existing pieces: `rb_cut_record_stretches()` and `rb_link_record_stretches()`
+       (towed gear), and `rb_link_record_sets()` (static gear, item 8).
+     - New: a step that reads the pairing and gives each record its case and its effective resolution.
+       `rb_build_catch_units()` (item 2) then uses that.
+     - Named per the verb table.
+   - fishycode: wire it after item 3. A summary record's fixes then take the track path inside its day.
+
+5. **Landings linked to trips and voyages** (step 1; rows 4 and 9).
+   - ramb: `rb_link_trip_landings()`, many-to-many (several sales notes per trip, one weekly landing over several
+     trips), a cascade of match rules.
+   - Links can cross vessels: a carrier lands what a catcher took (pelagic species only, codes 30–36). ramb also gets an encounter step (two vessels side
+     by side, slow, for a sustained time) as evidence for such a link. It is generic, the same kind of event GFW calls
+     an encounter, and its thresholds are set on data where the transfers are known.
+   - fishycode:
+     - **Foreign landings** are most of rows 4 and 9.
+       - Their catch has a landing and, for most, an AIS voyage, but no record.
+       - So they take the landing path: fishing from the track, catch per landing.
+       - Their track reaches the trail only once TODO 22 is closed.
+       - Fiskistofa receives foreign vessels' logbooks for Icelandic waters, and more of them over time (maintainer,
+         2026-10-14). They are a source to acquire (a `dump/` script and a `sources/` adapter). Once acquired, much
+         of this catch takes the record path.
+     - **Icelandic landings with no logbook trip:** check which are missed matches in `lid_map` and which are
+       transfers. Use each vessel's catch balance (logbook against landed, in one unit) together with the encounters.
+     - Then link landings to voyages on the flow side: the link reads AIS, so it is not preprocessing.
+     - Those voyages get `trip_basis` from the landing.
+   - With item 3, landing-only voyages get fishing from the track and catch per landing. `T2` reconciliation (phase 4)
+     then has all three candidates.
+6. **Which vessels fish** (the vessel row; rows 5, 6 and 10).
+   - ramb: `rb_assign_vessel()` (planned): the time-bounded id → vessel join, keeping vessel `none`.
+   - fishycode:
+     - a vessel class on the voyage, so the voyages of vessels that land nothing are labelled, not counted as missing
+       logbooks (`R/entity_class.R`, TODO 23).
+       - Aquaculture service and whale watching are the two to recognise first (row 6).
+       - The registry gives these vessels no class, so the class comes from another register or from the activity
+         itself: home port, fjord-bound tracks, short day trips. It is a basis like any other.
+     - TODO 49's decision for fishing vessels with neither a logbook trip nor a landing;
+     - TODO 22 (foreign vessels kept) and TODO 25 (no unassigned ping).
+7. **Records without pings** (rows 7–8).
+   - ramb: a step that gives a record with no pings positions to carry effort and catch.
+     - Built from its start (and end) position and times, at a set interval.
+     - `pos_basis` is `synthesised`; the record's `resolution` is kept.
+     - Generic: logbooks with positions and no tracking are common (small vessels, the years before VMS).
+     - Named per the verb table, e.g. `rb_build_record_pings()`.
+   - fishycode:
+     - the 1990–2006 logbook;
+     - the later trips no voyage covers.
+     - Whether the records before 1990 are in scope is the maintainer's call.
+   - Effort from such a record is its duration, not a track, and the basis says so.
+8. **Static gear** (rows 1–3, static).
+   - ramb:
+     - `rb_link_record_sets()` (set ↔ haul pairing, phase 4 design);
+     - pressure as quantity × soak in `rb_assign_effort()`.
+   - fishycode: gear quantity (nets, hooks) from the logbook where it is recorded.
+   - TODO 18 stays parked.
+9. **Track models for fishing** (step 4 beyond speed).
+   - ramb: `"gmm"`, `"embc"`, `"hmm"`, and phases from a dense track (phase 4 design). For datasets without times
+     these are the main path; for Iceland they matter least, since item 3 covers most fixes.
+   - fishycode is the test bench:
+     - row 1 from 2013 is a large labelled set, with fixes minutes apart;
+     - score each method on it by gear, and again after down-sampling to 30 min (the EU Control Regulation's interval,
+       WGSFD ToR C).
+     - If any of it leaves MFRI, for instance as ToR C's reference dataset, that needs an agreed basis first.
+10. **Declared times reconciled with the track** (`rb_reconcile_time()`, phase 4). Waits for ground truth (TODO 60).
+
+Items 1–4 change the trail; one rebuild serves them. Each item ends as the phases do: ramb tests pass,
+`check_bookkeeping()` passes, and a decision record and a commit are made in each repo.
+
+**Asked of the maintainer:** nothing open (2026-10-14). The order, both ways of deciding activity, raising as a
+column, and approaches side by side were settled the same day.
 
 ## Step A, now, for the WGSFD meeting. Approving this plan approves only this step.
 
@@ -77,7 +392,7 @@ mostly because of their package dependencies.
 | 1 | `T2` is to be resolved by comparing logbook, landings and AIS, and no vessel should be without a trip. The design is open. |
 | 3 | Gear on the trail, but on hold, because global data have several gears per trip. |
 | 4 | The data are fishy, so this needs deep thought first. |
-| 5–6 | Downstream, outside fishycode; ramb still gets generic functions for them. |
+| 5–6 | Downstream, outside fishycode; ramb still gets generic functions for them. **Replaced 2026-10-14:** steps 5–6 are part of the aim and are built in the fishycode flow (maintainer). |
 
 ## Decided by the maintainer (2026-10-08)
 

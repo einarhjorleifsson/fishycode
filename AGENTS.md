@@ -6,14 +6,56 @@
 
 ## What this project is
 
+**The aim is fishing effort and catch at high resolution in time and space**:
+where and when each vessel fished, with what gear, and what it caught. For every
+vessel at sea, each fix says:
+
+- whether it was fishing, and with what gear;
+- the effort it stands for (hours, kW-hours, pressure);
+- its share of the catch (kg by species).
+
+Each value carries the path and basis it came from. All six steps of the flow
+belong here, effort and catch included (maintainer, 2026-10-14).
+
+It is a data product, not a picture. A map such as
+[veidar.hafogvatn.is](https://veidar.hafogvatn.is) (relative effort by gear,
+2008-2024) is one view of it and the ICES VMS datacall another; the data serve
+analyses beyond both.
+
+It is done when:
+
+1. every fix is accounted for: fishing, not fishing, or undecided, with why;
+2. every kilogram logged or landed sits on fixes, or explicitly on a coarser
+   unit (kg in = kg out);
+3. each path's error is known, measured on the well-recorded part of the data.
+
+The work is split in two (maintainer, 2026-10-14):
+
+- **`ramb`** provides generic helper functions for every point on the information
+  spectrum, from pings alone to hauls with times (`docs/one_flow.qmd`).
+- **fishycode** is the scripts that apply them to the Icelandic data.
+
+**Each step is a cascade** (`docs/one_flow.qmd`): ping by ping, it takes the best
+source it has, falls back when that is missing, and records which source
+answered (the basis). The path differs between datasets, and within one dataset
+between periods, records and pings, so no single method assigns effort and
+catch to every ping. The diagram `docs/figures/one_flow_cascade_v2.svg` is this
+design in one picture (rows the steps, boxes the sources, best first);
+`docs/figures/one_flow_status.svg` colours each box by where it is built.
+
+The Icelandic data are rich, but their resolution differs by period, by record
+and by variable, and most of them are not exactly right. The AIS track is most
+likely the best ground truth for time and place. **Coverage is the general
+problem**: logbooks or landings missing, vessels not linked to their AIS, and so
+on.
+
 The name is the thesis: the Icelandic logbook, landings and AIS data contain
 errors, and the value added here is detecting and correcting them using
 cross-source evidence. **Corrections are the core of the product, not exceptions
 to it.**
 
 The deliverable is a *sweep of parquet files* an analyst opens and works with
-directly, with no pipeline knowledge required. The ICES VMS datacall is one
-consumer, not the destination.
+directly, with no pipeline knowledge required.
 
 ## The two committed boundaries
 
