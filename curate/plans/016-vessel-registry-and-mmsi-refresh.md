@@ -1,6 +1,6 @@
 # 016 — Refreshing the vessel registry and the MMSI archive, and SKB pleasure craft through the AIS flow
 
-**status:** proposal — nothing built · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
+**status:** proposal — the asks answered 2026-10-14 (§7), nothing built · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
 plans 003, 008, 009
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
@@ -60,6 +60,14 @@ b. **The archive carries what three boats broadcast, not their official numbers.
    | 2411 Huginn | 251439000 | 251139000 | 251439000 2013-01-03 → 2021-02-27 (533,363 pings); 251139000 2021-03-02 → 2026-01-31 (350,167) |
    | 1357 Níels Jónsson | 251454110 | 251396098 | 251454110 2013-01-03 → 2017-12-09 (283,362); 251396098 2015-05-23 → 2026-01-31 (873,730); both on 202 days |
    | 2935 Gunna Valgeirs | 251216110 | 251216100 | 251216110 never; 251216100 2017-09-30 → 2026-01-31 (695,854) |
+
+   **1357's shared days, measured 2026-10-14 (§7 d):** these are not two transponders on one boat.
+   - **May–Dec 2015:** 251396098 is heard 2015-05-23 → 2015-12-11 about 243 km from 251454110 on every paired ping
+     (44,866 pairs within 5 min). Its median position is 23.6 °W 65.68 °N, in the Westfjords; 251454110 is in
+     Eyjafjörður. 251396098 was then another boat.
+   - **2016:** 251396098 is not heard at all.
+   - **2017-12-09:** 251454110 is last heard at 13:47 and 251396098 starts at 13:49, in the same place (0 km). That is a
+     transponder swap on 1357, the same shape as Huginn's in 2021.
 
 c. **The March list's row for 1612 is a source error.**
    - The first three lists hold Hallgrímur SI-77 on 1612 (251237110, "Afskráð 25.1.2011. Sökk").
@@ -226,6 +234,49 @@ f. **3068:** is it 3048 VINUR (TFAX)?
 g. **Sources:** where are the Oracle snapshots (sources 1–4) and the 2024-10-22 list, so step 1 can read them as files?
    And who refreshes MFRI's copy of the register (stale since about June)?
 h. **`mclass` over time:** take it from `vessel_hist_v`, or keep today's category for all years?
+
+**Answered by the maintainer, 2026-10-14:**
+
+- **a. SKB:** option B. vid = 100000 + SKB number, through the whole flow.
+- **b. Pleasure-craft fishing:** it counts as fishing effort, marked as leisure. A column says so, so analysts and the
+  datacall can drop it.
+- **c. Foreign:** decided from the register's status `Erlent`, not from the vid range. `registry.R` sets the flag from
+  status. The code's `vid %in% 3700:4999` checks move to the flag as they are touched.
+- **d. 1357:** the maintainer was not sure, so it was measured (§2 b). The correction maps 251454110 → 1357 until
+  2017-12-09 and 251396098 → 1357 from 2017-12-09. 251396098's 2015 pings belong to another, unidentified boat.
+- **e. 1612:** the March row is rejected by a declared correction. It is not reported onward.
+- **f. 3068 is 3048.** A declared correction moves 251777340 to 3048 VINUR (TFAX).
+- **g. The snapshots are still in Oracle.** A `dump/` script copies them to `raw/mmsi/`.
+- **h. `mclass` over time:** taken from `vessel_hist_v` where it has rows, and today's category before that, with a
+  basis column saying which. The maintainer then pointed to `~/stasi/skipaskra`, already copied to
+  `raw/external/skipaskra/`. Measured 2026-10-14, it holds two different histories:
+  - **Usage type over time.** The annual register's `gerd` column (`data/skipaskra_2009-2017_almost-tidy.rds`) gives
+    FISKISKIP, SKEMMTISKIP, SEGLSKIP, FRÍSTUNDAFISKISKIP, … per vid and year for 2009–2017: 2,564 vids, 2,237–2,298 a
+    year. 269 vids change type: 172 from SKEMMTISKIP to FISKISKIP, 43 the other way. The 2018–2022 page matrices hold
+    no type text (2018 checked).
+  - **Hreiðar's table fills the gap.** The maintainer next pointed to `~/stasi/hreidar`, which is byte-identical to
+    `raw/external/hreidar/data-raw/`. `registry.R` reads only `yh1`/`yh2` from it.
+    - `HREIDAR_Islensk_skip.xlsx` ("Data main") is one row per vid and year, 1710–2021: 5,900 vids, about 2,270–2,560 a
+      year since 2000. Each row has the usage type (`Notkunarteg`, in the register's vocabulary), Hreiðar's own fleet
+      segment (`Megingerð`: Groundfish, Pelagic, Stern, Multi, Trawl boat, …), measured kW, length, open or decked, and
+      operator.
+    - Its usage type agrees with the register's `gerd` on 98.0% of the 20,441 vid-years both have (2009–2017). Most of
+      the rest is spelling ("Fiski,farþegaskip" against "FISKISKIP/FARÞEGASKIP").
+    - In 2007–2021, 437 of 2,835 vids change usage type. The sea-angling boats are Frístundafiskiskip throughout.
+    - **So the usage type over time is:** Hreiðar for 2007–2021, `vessel_hist_v` from 2023, and today's category for
+      2022 and before 2007. The register (2009–2017) stays as a cross-check. `basis` says which.
+  - **The fisheries-management class over time.** `data/history.rda` has vid, `t1`, and a class code with its name
+    (`mgtm_class`), for 5,100 vids, 1991–2021, in 40 classes. These include Frístundaveiðar (−11, 95), Strandveiðar
+    (−12), aflamark, krókaaflamark and Núllflokkur. This is a different thing from the usage type. It becomes its own
+    dated column, and it also serves answer b: a fix by a boat in a frístundaveiðar class at that time is leisure
+    fishing. It ends 2021-12-15, and what built it is not yet traced.
+
+- **i. kW and length follow the year too** (asked and answered 2026-10-14). The trail's `kw_hours` uses today's kW for
+  every year, but 351 of 2,762 vids change measured kW in Hreiðar's table in 2007–2021. The sources are Hreiðar to
+  2021 and Oracle's `vessel_engines_hist_v` / `vessel_measurement_hist_v` from 2023, with a basis column.
+
+**Still open, not asked:** who refreshes MFRI's copy of the register (stale since about June), and where the 2024-10-22 list is.
+  The four lists bracket that list, so step 1 does not wait for it.
 
 ## 8. Checks (done when)
 

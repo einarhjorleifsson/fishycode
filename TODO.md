@@ -174,7 +174,7 @@ against `ports_all`.
 ---
 
 ## 23. Icelandic pleasure craft (SKB) have no entity_class or registry home
-**status:** open · **needs: maintainer** · **see:** `curate/decisions/041-fro-succession-and-skb-pleasure-craft.md`
+**status:** open — answered 2026-10-14, built by TODO 63 · **see:** `curate/decisions/041-fro-succession-and-skb-pleasure-craft.md`
 
 `reference/vessels/registry.R:35` excludes `sknr` starting `SKB` from `vessel.parquet`
 with no decision record explaining why — found to look mechanical (`SKB` codes are
@@ -190,7 +190,8 @@ looking like missed real vessels rather than a recognized class.
 **Asked of the maintainer:** should `R/entity_class.R` recognize `SKB` as its own
 class, and should `registry.R`'s exclusion be revisited now that it's shown to cost
 real, resolvable AIS coverage? Since 2026-10-14 (vid is an integer, and a hull like an IMO number) this is
-plan 016 §5 and §7 a: SKB as `vid` 100000 + n through the whole flow (option B), or outside `vid` (A).
+plan 016 §5 and §7 a. **Answered 2026-10-14: option B**, SKB as `vid` 100000 + n through the whole flow, with
+`entity_class` pleasure craft at the next key redo (plan 016 §7).
 
 **check:** `SKB`-prefixed mobile-ids carry a distinct `entity_class`, and
 `registry.R:35`'s exclusion has a decision record (kept or changed) either way.
@@ -374,8 +375,7 @@ logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
 foreign catch on the record path where a logbook exists.
 
 ## 63. Refresh the vessel registry and the MMSI archive
-**status:** open · **needs: maintainer** — the eight asks in plan 016 §7 (SKB option, pleasure-craft effort, 3699,
-1357's two MMSIs, the 1612 row, 3068, where the Oracle snapshots are, `mclass` over time) ·
+**status:** open — the eight asks in plan 016 §7 were answered on 2026-10-14; ready to build ·
 **see:** `curate/plans/016-vessel-registry-and-mmsi-refresh.md`, TODO 17 and 23
 
 New Oracle vessel tables were dumped on 2026-10-14 (the April set is in `$FISHYDATA/archive/raw-vessels_2026-04-25/`),
