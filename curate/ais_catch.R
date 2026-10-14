@@ -99,6 +99,9 @@ for (yr in years) {
                           level = 4L, resolution = "landing")
   events <- union_all(ev_s, ev_t) |> union_all(ev_l) |> union_all(ev_lv)
   units <- ramb::rb_build_catch_units(events, key = "id") |> dplyr::compute()
+  # an event in two units would count its catch twice (decision 102)
+  twice <- units |> distinct(id, unit_id) |> count(id) |> filter(n > 1) |> count() |> pull(n)
+  if (twice > 0) stop("ais_catch: ", yr, ": ", twice, " events fall in more than one unit")
   catch <- union_all(
     od("logbook", "catch.parquet") |>
       semi_join(win, by = c(".sid", "schema")) |>
