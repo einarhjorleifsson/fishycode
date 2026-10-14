@@ -381,8 +381,15 @@ list(
   }, format = "file"),
 
   # The product (plan 011 Phase 5): every fix with its voyage, station and logbook trip, by year-month.
+  # The fix nearest each recorded event time of a station (TODO 54, decision 088).
+  tar_target(station_event, {
+    ais_voyage; station_window; logbook
+    produces("curate/link_station_event.R",
+             fd_curated("link", "station_event.parquet"))
+  }, format = "file"),
+
   tar_target(ais_trail, {
-    ais_voyage; station_window; trip_voyage; logbook_gear
+    ais_voyage; station_window; trip_voyage; logbook_gear; station_event
     produces("curate/ais_trail.R",
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
   }, format = "file"),

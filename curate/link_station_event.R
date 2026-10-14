@@ -1,0 +1,84 @@
+# link_station_event.R — the fix nearest each recorded event time of a logbook station.
+# Side: flow, step 2. See plan 013 (phase 4: reconcile declared times with the track) and decision 088.
+#
+# Input:  curated/ais/ping/year=*                  the fixes (vid, time)
+#         curated/logbook/station_window.parquet   t1-t4 per station as the windows read them (adb's towed start
+#                                                  and end already moved to t2/t3)
+#         curated/logbook/fishing_sample.parquet   afli's .t3_source: a tow end computed from the towing time
+# Output: curated/link/station_event.parquet       one row per (station, event time present)
+#
+#   the event        .sid schema vid event event_time event_basis event_flag
+#   the nearest fix  time dt_s gap_s   (ramb::rb_link_record_events())
+#
+# event_basis: "recorded", or "derived" for afli's tow end (t2 plus the towing time). Both are matched alike
+# (maintainer, 2026-10-14). event_flag: "suspect_clock" for a clock value far commoner than its neighbours, which
+# reads as "time unknown" (decision 088): afli set starts (t1) at 23:59, fs_afladagbok tow starts (t2) at 00:00.
+# The fix is still matched (maintainer). MAX_DT_S: farther than this, a fix says nothing about the event, and
+# `time` and `dt_s` are NA; `gap_s` stays.
+#
+# Year by year, so DuckDB's two ASOF joins see one year of fixes and events at a time, plus a month either side
+# for the events at the turn of the year.
+
+library(DBI)
+library(duckdb)
+
+MAX_DT_S <- 3600
+
+con <- dbConnect(duckdb())
+spill <- file.path(tempdir(), "duckdb_spill"); dir.create(spill, showWarnings = FALSE)
+dbExecute(con, sprintf("SET temp_directory = '%s'", spill))
+
+pt  <- file.path(fd_curated("ais", "ping"), "year=*", "*.parquet")
+swf <- fd_curated("logbook", "station_window.parquet")
+fsf <- fd_curated("logbook", "fishing_sample.parquet")
+
+dbExecute(con, sprintf("
+  CREATE TABLE rec AS
+  SELECT DISTINCT \".sid\", schema, vid, t1, t2, t3, t4 FROM read_parquet('%s') WHERE vid IS NOT NULL", swf))
+dbExecute(con, sprintf("
+  CREATE TABLE src AS SELECT \".sid\", schema, \".t3_source\" AS t3_source FROM read_parquet('%s')", fsf))
+stopifnot(dbGetQuery(con, "SELECT count(*) - count(DISTINCT (\".sid\", schema)) AS n FROM rec")$n == 0)
+
+years <- dbGetQuery(con, "
+  SELECT DISTINCT year(t) AS y FROM (UNPIVOT rec ON t1, t2, t3, t4 INTO NAME e VALUE t) ORDER BY 1")$y
+
+dbExecute(con, "CREATE TABLE ev (\".sid\" DOUBLE, schema VARCHAR, vid INTEGER, event VARCHAR, event_time TIMESTAMP,
+                                 time TIMESTAMP, dt_s DOUBLE, gap_s DOUBLE)")
+for (y in years) {
+  t0 <- sprintf("TIMESTAMP '%d-01-01'", y); t1 <- sprintf("TIMESTAMP '%d-01-01'", y + 1L)
+  # a station enters the year of its earliest event time, so each station is linked once
+  r <- dplyr::tbl(con, dplyr::sql(sprintf(
+    "SELECT * FROM rec WHERE least(t1, t2, t3, t4) >= %s AND least(t1, t2, t3, t4) < %s", t0, t1)))
+  p <- dplyr::tbl(con, dplyr::sql(sprintf(
+    "SELECT vid, time FROM read_parquet('%s', hive_partitioning = false)
+     WHERE time >= %s - INTERVAL 31 DAY AND time < %s + INTERVAL 31 DAY", pt, t0, t1)))
+  e <- ramb::rb_link_record_events(p, r, key = c(".sid", "schema"), max_dt_s = MAX_DT_S)
+  dbExecute(con, paste("INSERT INTO ev BY NAME", dbplyr::sql_render(e)))
+}
+
+out_sql <- "
+  SELECT e.\".sid\", e.schema, e.vid, e.event, e.event_time,
+         CASE WHEN e.schema = 'afli' AND e.event = 't3' AND s.t3_source = 'derived' THEN 'derived'
+              ELSE 'recorded' END AS event_basis,
+         CASE WHEN e.schema = 'afli' AND e.event = 't1' AND strftime(e.event_time, '%H:%M') = '23:59' THEN 'suspect_clock'
+              WHEN e.schema = 'fs_afladagbok' AND e.event = 't2' AND e.event_time::TIME = TIME '00:00:00' THEN 'suspect_clock'
+         END AS event_flag,
+         e.time, e.dt_s, e.gap_s
+  FROM ev e LEFT JOIN src s ON s.\".sid\" = e.\".sid\" AND s.schema = e.schema"
+
+# every event time of every station is in the table once
+n_in <- dbGetQuery(con, "SELECT count(*) AS n FROM (UNPIVOT rec ON t1, t2, t3, t4 INTO NAME e VALUE t)")$n
+n_ev <- dbGetQuery(con, "SELECT count(*) AS n FROM ev")$n
+if (n_in != n_ev) stop("station_event: ", n_ev, " rows for ", n_in, " event times")
+
+write_curated_sql(con, out_sql, fd_curated("link", "station_event.parquet"),
+                  inputs = c(swf, fsf), order_by = "vid, event_time, event")
+
+# Report ----------------------------------------------------------------------------
+q <- function(s) print(dbGetQuery(con, s))
+message("\nstation_event: rows, a fix within MAX_DT_S, and |dt| and the gap (median, 90 %), by schema and event")
+q("SELECT schema, event, count(*) AS n, count(time) AS n_fix,
+          round(median(abs(dt_s))) AS med_dt, round(quantile_cont(abs(dt_s), 0.9)) AS q90_dt,
+          round(median(gap_s)) AS med_gap, round(quantile_cont(gap_s, 0.9)) AS q90_gap
+   FROM ev GROUP BY ALL ORDER BY 1, 2")
+dbDisconnect(con, shutdown = TRUE)

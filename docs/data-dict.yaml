@@ -547,6 +547,12 @@ tables:
         type: string
         description: >
           The times the station recorded (t1..t4).
+      - name: nearest_event
+        type: string
+        examples: [t2, t3, t3+t4]
+        description: >
+          The recorded event times this fix is the nearest fix to (curated/link/station_event.parquet), whichever
+          station they belong to; NA for a fix nearest to no event. Decision 088.
       - name: fishing
         type: boolean
         description: >
@@ -1741,6 +1747,68 @@ tables:
         description: >
           Standardised cross-source port key (joined in from reference/port.parquet
           via hid).
+  - name: link_station_event
+    source:
+      parquet: ../../fishydata/curated/link/station_event.parquet
+    description: >
+      One row per logbook station and event time it carries (t1 setting start, t2 gear on the bottom, t3 hauling
+      start, t4 hauling end): the vessel's fix nearest in time, how far it is, and the gap between the fixes on
+      either side of the event (curate/link_station_event.R, ramb::rb_link_record_events(); decision 088). The
+      first building block of reconciling declared times with the track (plan 013, phase 4).
+    primary_key: [.sid, schema, event]
+    columns:
+      - name: .sid
+        type: number
+        examples: [1, 2]
+        description: >
+          The logbook station. A station is (.sid, schema).
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          Logbook source of the station.
+      - name: vid
+        type: number
+        examples: [1421, 2835]
+        description: >
+          The vessel.
+      - name: event
+        type: string
+        examples: [t1, t2, t3, t4]
+        description: >
+          Which event time: the column name in station_window.parquet.
+      - name: event_time
+        type: string
+        examples: ["2023-06-01 04:12:00"]
+        description: >
+          The event time as the station window reads it (adb's towed start and end already moved to t2/t3).
+      - name: event_basis
+        type: string
+        examples: [derived, recorded]
+        description: >
+          "recorded", or "derived" for afli's tow end (t2 plus the towing time). Both are matched alike.
+      - name: event_flag
+        type: string
+        examples: [suspect_clock]
+        description: >
+          "suspect_clock" for a clock value far commoner than its neighbours, which reads as "time unknown": afli
+          set starts at 23:59, fs_afladagbok tow starts at 00:00. NA otherwise. Still matched.
+      - name: time
+        type: string
+        examples: ["2023-06-01 04:13:05"]
+        description: >
+          The nearest fix's time (in curated/ais/ping); NA when no fix lies within an hour of the event.
+      - name: dt_s
+        type: number
+        examples: [-120, 0, 65]
+        description: >
+          time - event_time, in seconds, signed; NA with time.
+      - name: gap_s
+        type: number
+        examples: [0, 330, 640]
+        description: >
+          Seconds between the last fix at or before the event and the first at or after it: how precisely the
+          track can place the event. 0 when a fix falls on it, NA when the track does not reach both sides.
   - name: link_trip_voyage
     source:
       parquet: ../../fishydata/curated/link/trip_voyage.parquet

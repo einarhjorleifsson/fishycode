@@ -24,6 +24,10 @@
 # The station's gear codes come from curated/logbook/gear.parquet under the names they have there (TODO 34,
 # question 3): `gid` the logbook's, `gid_landing` the landing's, `gid_used` the one the windows use, `gid_basis`.
 # Like every station column they are filled only when one station claims the fix.
+#
+# `nearest_event` names the recorded event times this fix is the nearest fix to, from curated/link/station_event
+# (TODO 54, decision 088): `t3`, or `t3+t4` when one fix is nearest to both, whichever station they belong to.
+# NA for a fix nearest to no event; the station, the time difference and the gap are in that table.
 
 trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL) {
   kind <- match.arg(kind)
@@ -34,6 +38,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   swf   <- shQuote(fd_curated("logbook", "station_window.parquet"), type = "sh")
   tvf   <- shQuote(fd_curated("link", "trip_voyage.parquet"), type = "sh")
   gf    <- shQuote(fd_curated("logbook", "gear.parquet"), type = "sh")
+  sef   <- shQuote(fd_curated("link", "station_event.parquet"), type = "sh")
   lazy  <- function(q) dplyr::tbl(con, dplyr::sql(q))
   rend  <- function(x) as.character(dbplyr::sql_render(x))
 
@@ -62,14 +67,17 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
              CASE WHEN count(*) = 1 THEN any_value(schema) END AS schema_v
       FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, voyage),
     g AS (SELECT \".sid\", schema, gid, gid_landing, gid_used, gid_basis FROM read_parquet(%s)),
+    e AS (SELECT vid, time, array_to_string(list_sort(list_distinct(list(event))), '+') AS nearest_event
+          FROM read_parquet(%s) WHERE time >= %s AND time < %s GROUP BY vid, time),
     r AS (%s)
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
            r.pos_basis, r.speed_basis, r.dt_sec, r.stay, r.voyage,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
            r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier, r.gear, r.target, r.target2,
            g.gid, g.gid_landing, g.gid_used, g.gid_basis, r.gear_class,
-           r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, r.fishing, r.sid_gps, r.n_sid_gps
+           r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, e.nearest_event, r.fishing, r.sid_gps, r.n_sid_gps
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage
-           LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema",
-    tvf, year, gf, rend(r))
+           LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema
+           LEFT JOIN e ON e.vid = r.vid AND e.time = r.time",
+    tvf, year, gf, sef, t0, t1, rend(r))
 }
