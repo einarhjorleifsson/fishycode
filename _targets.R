@@ -412,6 +412,13 @@ list(
              fd_curated("check", "trail_agreement.parquet"))
   }, format = "file"),
 
+  # The vessels at sea that land nothing and keep no logbook: aquaculture, whale watching, other (plan 013 item 6).
+  tar_target(check_vessel_activity, {
+    ais_voyage; landing; logbook
+    produces("curate/checks/vessel_activity.R",
+             fd_curated("check", "vessel_activity.parquet"))
+  }, format = "file"),
+
   # Logbook stations that find a fix in the trail, by year and gear (plan 011 Phase 5).
   tar_target(check_trail_sid_coverage, {
     ais_trail; station_window
