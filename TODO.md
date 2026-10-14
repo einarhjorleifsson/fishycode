@@ -56,14 +56,15 @@ carries a `pid`.
 
 ---
 
-## 8. `fishydata_2024-2026` still holds 40 GB that step 1 never moved
-**status:** open
+## 8. `fishydata_2024-2026` still holds a 31 GB trail
+**status:** open · **needs: maintainer** — was a past ICES datacall delivery built from the old trail?
 
-Step 1 of the plan symlinked `logbooks/` into `$FISHYDATA`. It was never applied to
-`fishydata_2024-2026`, which still has `data/ais/trail` (31 GB) and
-`data-raw/ais/stk` (8.4 GB) as **real directories**. Its `trail` is a *third* trail,
-distinct from `legacy/curated/trail` (13 GB) and `trail2` (19 GB), so it cannot be
-deleted until someone establishes whether anything in it is unique.
+Its `data/ais/trail` (31 GB, 476 M rows, 2007-06 to 2025-07) is the old production trail: AIS joined to logbook,
+landings, metiers and spatial attributes. Its inputs are in `$FISHYDATA/raw` and `curated/ais/trail` supersedes it.
+It is unique only as the record of what the old method produced. Kept for now (maintainer, 2026-10-14), until it is known
+whether a past ICES datacall delivery was built from it and is to be reproducible.
+The 8.4 GB `data-raw/ais/stk/stk_trail` was row-for-row identical to `$FISHYDATA/raw/ais/stk/trail` for every year
+2007-2025 (row hashes) and was moved to the macOS Trash on 2026-10-14 (maintainer).
 
 **check:** no directory under `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
