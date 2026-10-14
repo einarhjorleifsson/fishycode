@@ -29,6 +29,18 @@ does it twice.
 
 ---
 
+## 8. The old trail stays until the datacall is rebuilt on the curated trail
+**status:** blocked — on item 27b · **see:** decision 095
+
+`~/stasi/fishydata_2024-2026/data/ais/trail` (31 GB) is the input of the 2025 ICES VMS datacall delivery
+(`ices-datacall/2025/2025_vms-datacall.R` reads it), and the delivered CSVs are not kept locally. It reproduces that
+delivery and is the baseline for checking item 27b. Removed and restored on 2026-10-14 (decision 095).
+
+**check:** a datacall built on `curated/ais/trail` has been compared with the 2025 delivery and has superseded it,
+and no directory under `~/stasi/fishydata_2024-2026` exceeds 1 GB.
+
+---
+
 ## 10. `reference/species` is an empty directory
 **status:** open
 **see:** `curate/decisions/019-the-check-layer-exists.md`
@@ -238,15 +250,27 @@ redone on this one before any verdict is used.
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
 through `overrides/` or carries a stated reason, and the 884 are re-counted.
 
-## 27b. Link pings to trips and fishing activity (the `trail`)
-**status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b
+## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
+**status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b, item 8
 
 Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
-trip (`.tid_voyage`) on fixes outside every window. Open: the datacall still reads `staging/ais/ping_union` (checked
-2026-10-14) and must be repointed to `curated/ais/trail`; whole-day windows are 40 % of static, 15 % of towed and
-76 % of jigged stations since 2007 (item 18); whether to store a sorted wide `ais/trail` (maintainer).
+trip (`.tid_voyage`) on fixes outside every window. Open: the datacall. `products/ices_vms_datacall/build.R` is the
+2025 delivery script with only its paths changed, and it cannot run here (checked 2026-10-14). It reads columns the
+current `ping_union` does not have (`.sid`, `s1`/`s2`, `t1`/`t2`, `met6`, `dt`, `dd`, habitat, depth, catch per fix),
+a `station-for-ais.parquet` nothing here builds, and `agf_gid`/`met6` that `gear.parquet` lacks.
+Repointing it means building its inputs from the curated tables:
+- the trail's `fishing`;
+- metier 6 from the mesh size;
+- swept area from distance and gear width;
+- habitat and depth by spatial join;
+- catch spread over a station's fishing fixes;
+- the logbook (LE) table without duplicate twins.
 
-**check:** `products/ices_vms_datacall/build.R` runs on `ais_trail()`, and every synthesised window carries `win_basis`.
+That needs a plan, checked against the 2025 delivery (item 8). Also open: whether to store a sorted wide trail
+(maintainer).
+
+**check:** `products/ices_vms_datacall/build.R` runs on `curated/ais/trail`, its output is compared with the 2025
+delivery, and every synthesised window carries `win_basis`.
 
 ## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
 **status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`
