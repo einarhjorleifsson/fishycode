@@ -582,6 +582,43 @@ Each phase ends with three things:
      track may overwrite; with poor resolution it may not. Output per value: the chosen time, the candidates, an
      uncertainty, its provenance (`basis`) and the case. Generic, as a ramb step (e.g. `rb_reconcile_time()`); the
      `T2` reconciliation above is its first use.
+     - **Built so far (2026-10-14, decision 088):** `rb_link_record_events()` puts each declared t1–t4 against the
+       track: the fix that bounds its phase (a start takes the next fix, an end the previous one) and `gap_s`, the
+       track's precision at the event. It is the anchor, not the reconciliation: a link, never a changed time.
+     - **Measured, not ready yet (2026-10-14, Claude, AI-assisted; maintainer's request).** A small test: June 2023,
+       3,281 bottom-trawl tows with t2 and t3 both reported (47 vessels).
+       - *The test:* from the declared t2 − 90 min to t3 + 90 min, fixes at the gear's towing speed (s1–s2); the
+         towing run that overlaps the declared tow most gives the track's tow start and end.
+       - *Precision:* the track could place a boundary to about ±5 min (median gap between fixes 5 min, 90 % within
+         10).
+       - *Agreement:*
+
+         | the ping's speed | start within 15 / 30 min | end within 15 / 30 min | start tails (5 % / 95 %) |
+         |---|---|---|---|
+         | alone | 50 / 57 % | 46 / 52 % | −13 / +220 min |
+         | alone, dips ≤ 10 min merged | 60 / 70 % | 57 / 66 % | −28 / +185 min |
+         | median of the fixes within ±10 min | 61 / 74 % | 60 / 71 % | −86 / +153 min |
+         | median within ±15 min | 53 / 66 % | 48 / 64 % | −89 / +85 min |
+
+       - *The window around each ping (maintainer):* a slowdown between towing speeds is not the end of fishing.
+         ±10 min centres the boundaries (median offset −1.9 min at the start, +0.4 at the end, against +10 and −17
+         for the ping alone). ±15 min starts to smear across the hauls between tows, and the ends drift late.
+       - *Not the speed range:* inside the declared tows (10 min in from each end) 92.2 % of fixes are within s1–s2,
+         and only 1 of 47 vessels is below 80 %. The tows with a start more than 30 min off are spread over the
+         fleet: the five worst vessels hold 16 % of them, and the median vessel has 21 %. A vessel's poorer fit to
+         s1–s2 goes with more bad starts (correlation −0.67), so vessel-specific ranges (plan 012) would help some.
+       - *Why it is not ready:*
+         - A tow is rarely one run at towing speed: 81 % of tows hold two or more runs even at ±10 min.
+         - Shooting and hauling can run at towing speed, and adjacent tows compete for the same fixes.
+         - Nothing says which side is right when the track and the declaration differ by half an hour.
+       - *Before an override is trusted:*
+         1. Find the boundaries on the voyage as a whole, all its tows at once with the declared tows as the prior,
+            from the windowed speed (±10 min) and the heading's stability; possibly an HMM (decision 078's WKSSFGEO
+            practice).
+         2. Vessel-specific speed ranges.
+         3. A test set with known times: a trawl's bottom-contact sensor if any exists for Icelandic vessels, or the
+            labelled static-gear sets of WKSSFGEO / WKSSFGEO2.
+         4. Then set the five cases' tolerances on measured error rates.
    - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
      haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
      to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting
