@@ -412,6 +412,13 @@ list(
              fd_curated("check", "trail_agreement.parquet"))
   }, format = "file"),
 
+  # The track's tow boundaries scored against the spring survey's recorded tows (TODO 60, decision 104).
+  tar_target(check_survey_tow_times, {
+    ais_trail; gear_window
+    produces("curate/checks/survey_tow_times.R",
+             fd_curated("check", "survey_tow_times.parquet"))
+  }, format = "file"),
+
   # How the landed weight compares with the logged, per species, year and logbook system (decision 104).
   tar_target(check_landed_logged, {
     logbook; lid_map; landing
