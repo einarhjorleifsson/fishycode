@@ -75,6 +75,6 @@ Kilograms in equal kilograms out in every year, group and approach. 6.7 GB, 2007
 
 - `raise_factor`:
   - It covers 88.8 % of the logbook's kilograms. Its median is 1.00, and 90 % of values lie between 0.59 and 1.78.
-  - 688,292 rows have a factor above 10. Those are trips where one species' landed and logged weights are in
-    different units or conditions (gutted against whole, a product code). They are left as they are and named here
-    for a person to look at.
+  - 688,292 rows have a factor above 10. Read later the same day (decisions 103, 104): not units. For the pelagic
+    species they are trips that landed what another vessel caught (transhipment); for the others, small logged
+    weights. A difference between logbook and landing is information, not an error (maintainer).

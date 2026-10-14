@@ -97,4 +97,4 @@ Blocked on ground truth (TODO 60): unchanged.
   landing-only catch onto the record path.
 - **The years before 1990** for item 7: in scope?
 - **The suggested vessel classes** in `vessel_activity`: review, and confirm through an override?
-- **Raise factors above 10** (688,292 rows): a condition or unit mismatch by species. Correct, or leave as data?
+- **Raise factors above 10** (688,292 rows): a condition or unit difference by species? Correct, or leave as data?

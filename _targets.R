@@ -412,6 +412,13 @@ list(
              fd_curated("check", "trail_agreement.parquet"))
   }, format = "file"),
 
+  # How the landed weight compares with the logged, per species, year and logbook system (decision 104).
+  tar_target(check_landed_logged, {
+    logbook; lid_map; landing
+    produces("curate/checks/landed_logged.R",
+             fd_curated("check", "landed_logged.parquet"))
+  }, format = "file"),
+
   # The vessels at sea that land nothing and keep no logbook: aquaculture, whale watching, other (plan 013 item 6).
   tar_target(check_vessel_activity, {
     ais_voyage; landing; logbook
