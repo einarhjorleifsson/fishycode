@@ -56,20 +56,6 @@ carries a `pid`.
 
 ---
 
-## 8. `fishydata_2024-2026` still holds a 31 GB trail
-**status:** open · **needs: maintainer** — was a past ICES datacall delivery built from the old trail?
-
-Its `data/ais/trail` (31 GB, 476 M rows, 2007-06 to 2025-07) is the old production trail: AIS joined to logbook,
-landings, metiers and spatial attributes. Its inputs are in `$FISHYDATA/raw` and `curated/ais/trail` supersedes it.
-It is unique only as the record of what the old method produced. Kept for now (maintainer, 2026-10-14), until it is known
-whether a past ICES datacall delivery was built from it and is to be reproducible.
-The 8.4 GB `data-raw/ais/stk/stk_trail` was row-for-row identical to `$FISHYDATA/raw/ais/stk/trail` for every year
-2007-2025 (row hashes) and was moved to the macOS Trash on 2026-10-14 (maintainer).
-
-**check:** no directory under `~/stasi/fishydata_2024-2026` exceeds 1 GB.
-
----
-
 ## 9. No archive date for the old repos
 **status:** open · **kaenugardr done 2026-09-21 (read-only, write refused)**
 
