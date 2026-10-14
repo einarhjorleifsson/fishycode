@@ -8,17 +8,15 @@
 # system's merged bookkeeping table, and the adapter reads stofn. 23,570 rows are
 # live in the feed (eytt = 0) and absent from the merge, so they are absent from
 # everything this repo builds. Declared as
-# curate/corrections/afli_rafr_stofn_stations_dropped.yml, where four candidate
-# explanations are tested and all four fail.
+# curate/corrections/afli_rafr_stofn_stations_dropped.yml.
 #
-# This check exists because the headline - 2.1% - is not the problem. The loss is
-# heavily skewed: the median vessel loses about 1%, and a handful lose most of
-# their electronic stations. Any per-vessel quantity over 2003-2019 is materially
-# wrong for those vessels, and nothing in the curated data says which they are.
-# This emits exactly that list.
+# They are not admitted (decision 098): the landings show their trips complete
+# without them, and most are the same hauls submitted again. So a high share here
+# does NOT mean a vessel's figures are wrong, from 2007-09 on. This reports where
+# the feed and the merge differ, per vessel and year; before 2007-09 no landing
+# link can say whether the absent rows are copies.
 #
-# It REPORTS. The repair is held pending the source system's own account of why
-# the merge drops these rows - TODO item 19 - so nothing here corrects anything.
+# It REPORTS and corrects nothing.
 #
 # Bounded to 2003-2019: rafr_stofn stops being populated around 2019, and 163,233
 # negative visir appear in stofn over 2020-2022 with no counterpart in the feed.
@@ -69,18 +67,15 @@ out <-
     read_parquet(fd_curated("vessel", "vessel.parquet")) |> select(vid, vessel, cs, loa),
     by = "vid") |>
   mutate(
-    severity = case_when(
+    share_absent = case_when(
       stations_electronic < MIN_STATIONS ~ "too few stations to judge",
-      pct_lost >= 25                     ~ "severe - a quarter or more absent",
-      pct_lost >= 10                     ~ "high",
-      pct_lost >= 5                      ~ "material",
-      .default                           = "at or near the 2.1% baseline"),
-    # The warning this check exists to carry: what a per-vessel figure computed
-    # from the curated logbook is actually worth for this hull over this period.
-    usable = stations_electronic >= MIN_STATIONS & pct_lost < 5) |>
+      pct_lost >= 25                     ~ "a quarter or more absent",
+      pct_lost >= 10                     ~ "10-25 % absent",
+      pct_lost >= 5                      ~ "5-10 % absent",
+      .default                           = "under 5 % absent")) |>
   arrange(desc(pct_lost)) |>
   select(vid, vessel, cs, loa, stations_electronic, stations_lost, pct_lost,
-         first_year, last_year, severity, usable)
+         first_year, last_year, share_absent)
 
 ## By year ----------------------------------------------------------------------
 # pct is computed from n() and sum(), not from mean(lost): summarise() evaluates
@@ -100,16 +95,16 @@ print(knitr::kable(
                    format(sum(live$lost), big.mark = ","),
                    sprintf("%.2f%%", 100 * mean(live$lost)),
                    sum(out$stations_electronic >= MIN_STATIONS),
-                   sum(out$severity %in% c("material", "high", "severe - a quarter or more absent")),
-                   sum(out$severity %in% c("high", "severe - a quarter or more absent")),
-                   sum(out$severity == "severe - a quarter or more absent"))),
+                   sum(out$share_absent %in% c("5-10 % absent", "10-25 % absent", "a quarter or more absent")),
+                   sum(out$share_absent %in% c("10-25 % absent", "a quarter or more absent")),
+                   sum(out$share_absent == "a quarter or more absent"))),
   caption = "afli_rafr_stofn_loss"))
 
 print(knitr::kable(by_year, digits = 2, caption = "loss by year"))
 
 print(knitr::kable(
   out |> filter(stations_electronic >= MIN_STATIONS) |> head(20),
-  digits = 1, caption = "worst affected vessels - per-vessel figures here are not usable"))
+  digits = 1, caption = "vessels with the largest share absent from stofn"))
 
 write_curated(out, fd_curated("check", "afli_rafr_stofn_loss.parquet"),
               inputs = c(rafr_stofn = fd_raw("logbooks", "afli", "rafr_stofn.parquet"),

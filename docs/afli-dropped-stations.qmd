@@ -1,5 +1,5 @@
 ---
-title: "Missing logbook stations — which vessels you cannot compute per-vessel figures for"
+title: "Logbook submissions the source merge left out"
 author: "Einar Hjörleifsson"
 date: today
 ---
@@ -15,89 +15,50 @@ loss <- read_parquet(fd_curated("check", "afli_rafr_stofn_loss.parquet"))
 big  <- loss |> filter(stations_electronic >= 50)
 ```
 
+*Measured with AI assistance (Claude); the decision is the maintainer's (decision 098, 2026-10-14).*
+
 ## The short version
 
-If you are computing anything **per vessel** from the logbook data for **2003–2019** —
-effort, fishing footprint, CPUE, station counts, spatial distribution — then for
-`r sum(!big$usable)` of the `r nrow(big)` vessels with enough electronic stations to judge, **the answer is
-wrong, and the data does not tell you so.**
+`r format(sum(loss$stations_lost), big.mark = ",")` electronic afli logbook submissions from 2003–2019 never
+reached the source system's merged table, so they are not in this logbook. **From September 2007 on, per-vessel
+figures need no correction for them.** The landings show that the trips they belong to are complete without
+them. Most are the same hauls submitted a second time.
 
-Some of their fishing stations are missing. Not flagged, not zero-filled, not marked
-in any column: simply absent, as if those hauls never happened. For one vessel,
-`r big$vessel[1]` (vid `r big$vid[1]`), **`r round(big$pct_lost[1])`% of its electronic
-stations are gone**.
+Before September 2007 (1,854 of the rows, mostly 2004–2006) no landing can be linked, so nothing here can say
+whether those are copies too.
 
-This page exists so you can check your vessel before you trust a number.
+## What the landings show
 
-## Is my vessel affected?
+Each absent haul was placed on its trip with the same key the logbook uses (vessel, landing date, landing
+harbour). The table compares each trip's logbook catch with its landing (2007-09 to 2019, trips with one landing).
 
-```{r}
-#| echo: false
-big |>
-  filter(!usable) |>
-  transmute(vid, vessel, `call sign` = coalesce(cs, "—"), `LOA` = round(loa, 1),
-            `stations recorded` = stations_electronic,
-            `stations missing`  = stations_lost,
-            `% missing`         = round(pct_lost, 1),
-            `years`             = paste0(first_year, "–", last_year),
-            severity) |>
-  knitr::kable()
-```
+| trips | n | logbook / landed |
+|---|---|---|
+| no absent haul (for comparison) | 560,513 | 0.984 |
+| absent hauls with catch: logbook as it is | 3,142 | 0.987 |
+| the same trips with the absent hauls added | 3,142 | 1.772 |
 
-Vessels absent from this table are at or near the 2.1% baseline, or have too few
-electronic stations for a percentage to mean anything. The full table, including
-those, is `curated/check/afli_rafr_stofn_loss.parquet`.
+- Without the absent hauls, these trips match their landings as well as any trip does.
+- With them, 60 % of the trips go more than 30 % over the landing.
+- 1,288 trips are absent whole. For most of them the vessel's landing within two days is already linked to a
+  logbook trip that is present.
 
-## What actually happened
+## What they are
 
-Icelandic electronic logbook submissions arrive from the vessel into a feed table,
-and the source system then merges that feed with the paper logbooks into a single
-bookkeeping table. This repo reads the merged table, which is the right table to
-read — reproducing the source faithfully is an adapter's job.
+- A third of the absent hauls with catch (31–68 % in 2011–2017) have an exact copy among the hauls that are
+  present: same vessel, same catch of every species, mostly the same day and position.
+- The copy is in another submission, so a check within one submission does not find it.
+- In 2004–2010 there are few exact copies, but the landings still show those trips complete.
+- Their positions lie on the vessel's AIS track nearly as often as those of the hauls that are present (91 %
+  against 97 % within 5 km). A copy of a real haul would do the same.
 
-`r format(sum(loss$stations_lost), big.mark = ",")` submissions never made it across
-that merge. They were never deleted; they carry positions, depths and catch records;
-and their siblings from the very same submission did merge. Four explanations were
-tested against the data and all four fail — they are not supersessions, not
-resubmissions, not deletions, and not a transfer truncated partway.
+## Still open
 
-**Why the loss is not being repaired.** Recovering the rows would mean this repo
-asserting that the vessel feed is more complete than the source system's own
-bookkeeping, on a guess at a mechanism that cannot be observed from here. A measured
-gap is a more honest artefact than a repair built on a guess.
+- **About 410 trips absent whole that do have a landing no logbook trip took.** They are the only candidates for
+  genuinely missing records, and nothing here proves them.
+- **The rows before September 2007**, which no landing link reaches.
 
-Recovering them was designed and then deliberately set aside: the evidence that they
-are genuine hauls is strong, but nobody can say why the merge dropped them, and a
-repair built on the wrong theory would be harder to find than the gap it filled. So
-the data stays as it is and this page is the warning.
-
-## The overall rate is not the story
-
-```{r}
-#| echo: false
-#| fig-height: 3.2
-#| fig-width: 8
-loss |>
-  filter(stations_electronic >= 50) |>
-  ggplot(aes(pct_lost)) +
-  geom_histogram(binwidth = 1, fill = "grey30") +
-  geom_vline(xintercept = 2.08, colour = "firebrick") +
-  annotate("text", x = 3.2, y = Inf, label = "overall 2.08%", hjust = 0, vjust = 1.6,
-           colour = "firebrick", size = 3.2) +
-  labs(x = "% of a vessel's electronic stations missing", y = "vessels",
-       caption = "444 vessels with 50 or more electronic stations") +
-  theme_minimal()
-```
-
-Overall, 2.08% of live electronic submissions are missing, which would be ignorable
-if it were spread evenly. It is not. The median vessel loses about 1.3%, but the tail
-is long: `r sum(big$pct_lost >= 5)` vessels lose 5% or more, `r sum(big$pct_lost >= 10)`
-lose 10% or more, and `r sum(big$pct_lost >= 25)` lose a quarter or more.
-
-In tonnage the loss is 0.09% of catch. **It is the event count that is wrong, not the
-mass** — which is precisely why a catch-weighted sanity check will not detect it.
-
-## It is a historical defect, and it healed
+## Share absent by year
 
 ```{r}
 #| echo: false
@@ -110,26 +71,29 @@ tibble(
   ggplot(aes(year, pct)) +
   geom_line(colour = "grey30") + geom_point(colour = "grey30") +
   scale_x_continuous(breaks = seq(2004, 2020, 4)) +
-  labs(x = NULL, y = "% of that year's submissions missing") +
+  labs(x = NULL, y = "% of that year's submissions absent") +
   theme_minimal()
 ```
 
-As a *rate*, the loss is worst at the very beginning of electronic reporting — 19.1%
-in 2004 — and declines steadily to 0.02% by 2019. The raw counts peak in 2008–2014
-only because that is where the volume is. This looks like a reporting system maturing,
-not an era with a distinct cause.
+The share is highest at the start of electronic reporting (19 % in 2004) and falls to 0.02 % by 2019.
 
-Two practical consequences. **Early years are the risky ones**: anything computed over
-2004–2008 carries a 5–19% per-year loss, far above the headline. And **the recent data
-is probably fine**: at 0.02% in 2019–2020, the defect had effectively stopped before
-the feed table stopped being populated, so the 2020–2022 direct-load era most likely
-does not carry it. That last point is an inference from the trend, not a measurement —
-there is no feed to check those years against.
+## Vessels with the largest share absent
+
+This is where the feed and the merge differ most. From 2007-09 it is not a measure of error in a vessel's figures.
+
+```{r}
+#| echo: false
+big |>
+  slice_max(pct_lost, n = 15) |>
+  transmute(vid, vessel, `call sign` = coalesce(cs, "—"),
+            `submissions` = stations_electronic, `absent` = stations_lost,
+            `% absent` = round(pct_lost, 1), `years` = paste0(first_year, "–", last_year)) |>
+  knitr::kable()
+```
 
 ## Provenance
 
-Built by `curate/checks/afli_rafr_stofn_loss.R` into
-`curated/check/afli_rafr_stofn_loss.parquet`. The defect is declared in
-`curate/corrections/afli_rafr_stofn_stations_dropped.yml`, which holds the full
-characterisation and the decision not to repair it yet. The upstream report is tracked
-as TODO item 19.
+`curate/checks/afli_rafr_stofn_loss.R` writes `curated/check/afli_rafr_stofn_loss.parquet`, one row per vessel.
+The defect and its close are in `curate/corrections/afli_rafr_stofn_stations_dropped.yml` and
+`curate/decisions/098-dropped-afli-hauls-not-admitted.md`. The measurement scripts are in
+`$FISHYDATA/archive/2026-10-todo19/`.

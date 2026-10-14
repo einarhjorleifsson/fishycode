@@ -1,14 +1,44 @@
 id: afli_rafr_stofn_stations_dropped
 title: 23,570 live electronic logbook submissions never reach stofn, the source system's own merged table
-status: PARKED 2026-09-23 by the maintainer - characterised and evidenced, no repair, no work queued
+status: CLOSED 2026-10-14 - not admitted; the landings show the trips complete without them (decision 098); TODO 19 closed
 applies_to:
   - staging/afli/station.parquet
   - staging/afli/fishing_sample.parquet
   - curated/logbook/station.parquet
   - curated/logbook/fishing_sample.parquet
   - curated/logbook/sensor_gps
-implementation: none, and none is queued - see parked below
+implementation: none - not admitted (decision 098); curate/checks/afli_rafr_stofn_loss.R reports the absence per vessel
 discovered: 2026-09-23, maintainer, on being told that 1.6% of logger fixes could not reach a vid - "because it should not"
+
+closed_2026_10_14:
+  by: the maintainer, on a rule agreed before the measurement (decision 098)
+  rule: >-
+    Admit if adding the lost hauls brings most of their trips nearer the landing and their positions agree with the
+    AIS track at about the rate of merged hauls; close as working-as-designed if they overshoot the landing or
+    disagree with the track. Rows before 2007-06 have no witness and stay out either way.
+  landings: >-
+    Lost hauls placed on their trip by the adapter's own key (vessel, landing date, landing harbour): 20,201 on a
+    trip with kept hauls, 3,369 on trips lost whole. 3,142 trips (2007-09 to 2019, one landing) whose lost hauls
+    carry catch: logbook / landed 0.987 with the kept hauls only (control trips 0.984), 1.772 with the lost hauls
+    added; 19.3 % nearer with them, 59.7 % more than 30 % over the landing; the gap the lost catch would fill has a
+    median of 0.02 of it. Every period alike.
+  what_they_are: >-
+    Mostly the same hauls submitted again in another submission. 30.1 % of lost hauls with catch have a
+    catch-identical kept haul of the same vessel within 3 days (control 10.0 %), 31-68 % in 2011-2017, the copy in
+    another submission (3,522 of 3,535) and mostly on the same day. In 2004-2010 there is hardly an exact or
+    same-position copy, but the landings still show those trips complete; how they repeat is not shown.
+  track: >-
+    91.1 % of lost hauls lie within 5 km of the vessel's track that day, against 97.2 % for the kept hauls of the
+    same submissions; at the recorded tow start 91.9 % against 95.7 %. A copy of a real haul lies on the track too,
+    so the track cannot decide this; the landings do.
+  superseded: >-
+    The reading of September no longer holds where it says the rows are missing hauls: what_they_are.
+    they_are_real_hauls (real, but repeated), the_skew_is_the_argument.reading (per-vessel figures are not wrong for
+    want of these rows, from 2007-09), recommendation.recover_them and the_hold_is_lifted. They are kept below for
+    the reasoning. September's twin test looked only within one submission, where the copies are not.
+  still_open: >-
+    About 410 trips lost whole that do have a landing no logbook trip took (31.9 % of 1,288): the only candidates for
+    genuinely missing records, unproven. And the 1,854 rows before 2007-09, which no landing link reaches.
 
 the_model: >-
   Maintainer, 2026-09-23: rafr_* are what gets automatically fed FROM THE VESSELS;

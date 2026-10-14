@@ -35,7 +35,7 @@ website:
         href: ais_trail.qmd
       - text: Coordinates
         href: wacky-tracks_recovery.qmd
-      - text: Data warnings
+      - text: Afli submissions left out
         href: afli-dropped-stations.qmd
       - text: Landings Match
         menu:

@@ -47,33 +47,6 @@ codes all resolve against it.
 
 ---
 
-## 19. The dropped afli stations — PARKED
-**status:** parked · **see:** `curate/corrections/afli_rafr_stofn_stations_dropped.yml`,
-`curate/plans/005-recover-the-dropped-afli-stations.md`
-
-**Parked by the maintainer 2026-09-23. Nothing is queued and the product is unchanged.**
-23,570 live electronic submissions are absent from `stofn` and therefore from everything
-this repo builds. That is measured twice and is not in doubt. What to do about it is.
-
-The position moved three times in one session — hold for an upstream answer, lift the
-hold on AIS corroboration, then a claimed two-thirds reversal on supersession that was a
-conditioning error caught by one further check. The measurements underneath were sound
-every time; the readings of them were not. That is why it is parked rather than pushed.
-
-**What is published and stays:** `curate/checks/afli_rafr_stofn_loss.R` and
-`afli_rafr_stofn_corroboration.R` into `curated/check/`, and
-`docs/afli-dropped-stations.qmd`, which names the 53 vessels whose per-vessel figures
-are wrong. Parking the repair is not a finding that the data is fine.
-
-**Before resuming**, read the yml's `parked` and `the_supersession_hypothesis_failed`
-sections. The second is the most recent thing learned and the most expensive to
-rediscover.
-
-**check:** none — a parked item has no completion test. It closes when the maintainer
-reopens it or decides the rows stay out for good.
-
----
-
 ## 18. Fishing windows from behaviour, not from the logbook
 **status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md`, decisions 090, 092, TODO 60
 
