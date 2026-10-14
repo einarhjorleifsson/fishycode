@@ -2,7 +2,7 @@
 
 *2026-10-14. Measured by Claude (AI-assisted) on the maintainer's request (TODO 56, plan 013 phase 4). The invariant,
 its scope and the shared-fix rule are the maintainer's (2026-10-14). Read-only: nothing in ramb, the targets or
-`$FISHYDATA` changed. Closes TODO 56; the builds are TODOs 57-60.*
+`curated/` changed. Closes TODO 56; the builds are TODOs 57-60.*
 
 ## The invariant (maintainer)
 
@@ -145,4 +145,4 @@ June 2023 answers hold where the track is dense. The wider data add four things.
 - the twin correction itself;
 - extracting the survey tows.
 
-The scripts that produced these numbers were run in the session scratchpad, not kept in the repo.
+The scripts, logs and per-tow results are in `$FISHYDATA/archive/2026-10-todo56/`, with a README giving the run order.
