@@ -136,6 +136,14 @@ repair:
     (e.g. 2005: 63 fathoms -> 115 m, ratio 1.83); pct_reconstructed by year
     drops inside the drift window (2010 87.9%, 2011 57.2%, 2012 69.6%) and is
     100% immediately outside it - matches the_anomaly's shape.
+  rebuild_2026-10: >-
+    The drift window's bounds were as.POSIXct() without a zone, so they followed
+    the R session's clock. The build of 2026-10-09 ran at +03:00 and left out the
+    stations of 2012-06-30. They have been in the window since the 2026-10 rebuild
+    (UTC), and the bounds are UTC in the code since 2026-10-13: 149 stations. A
+    further 121 stations (9 vessels' switch dates) moved because afli keeps its
+    recorded t2/t3 since decision 083, and the stations of one day are ordered by
+    their first recorded time. Decision 086.
   residual_uncertainty: >-
     Moderate and honest. GEBCO is a cell mean, not the depth under the gear, so
     individual rows cannot be classified reliably - only vessel-periods can.

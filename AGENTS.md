@@ -96,9 +96,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
 
   **Which ramb.** The code needs ramb ≥ 2026.10.13: the argument names of 2026-10-12 and
-  `rb_calc_speed(method = )`. The data on disk were built with ramb f6faf9b (decision 079).
-  `targets` does not track ramb, so a ramb change shows up in no `tar_outdated()`. Decision 081
-  lists what a rebuild with the current ramb is expected to change.
+  `rb_calc_speed(method = )`. The data on disk were built with ramb 2026.10.13.3 (the full rebuild of
+  2026-10-13/14, decision 086). `targets` does not track ramb, so a ramb change shows up in no
+  `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
 
   The point of the rule is that **forking** killed the previous trees: five
   `ports-*.R` scripts had been copied into the old fishydata, one sharing 364 of

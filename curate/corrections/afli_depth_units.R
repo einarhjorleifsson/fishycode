@@ -45,8 +45,10 @@ duckdbfs::load_h3()
 
 # Parameters -------------------------------------------------------------------
 FATHOM_TO_M   <- 1.8288
-DRIFT_START   <- as.POSIXct("2010-01-01")
-DRIFT_END     <- as.POSIXct("2012-06-30")
+# UTC, as the station dates are: without a zone the window followed the session's clock, and a build at
+# +03:00 left out the stations of 2012-06-30 (149 stations, the 2026-10 rebuild's record)
+DRIFT_START   <- as.POSIXct("2010-01-01", tz = "UTC")
+DRIFT_END     <- as.POSIXct("2012-06-30", tz = "UTC")
 METRES_THRESH <- 1.4    # GEBCO ratio below this reads as already-metres
 MIN_CLASSIFY  <- 10     # minimum classification rows before trusting a changepoint
 # Approximate Icelandic EEZ box for the GEBCO cross-check; loose on purpose -

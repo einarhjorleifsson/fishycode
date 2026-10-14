@@ -374,7 +374,8 @@ that cut a witnessed run is recorded in a decision.
 
 The cause was an unpartitioned `row_number() OVER ()`, which DuckDB runs on one core. Numbering per vessel took a
 4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). The plan 014 rebuild took 29 min (decision
-079): faster, not yet fast. Not profiled further.
+079): faster, not yet fast. The 2026-10 rebuild took 13.8 min with the same voyages (decision 086). Not profiled
+further.
 
 **check:** the step runs no slower than 10 min on the full data, with the same output.
 
@@ -435,3 +436,16 @@ event). Agreed to come after the 2026-10 rebuild; it then needs only the trail r
 
 **check:** the trail carries the event column, the per-(station, event) table exists with `dt` and the gap, and the
 ramb step has a test.
+
+## 55. A ping's speed and heading can come from either of two same-position reports
+**status:** open · **see:** decision 086 (finding A), `curate/ais_ping_clean.R`
+
+`ping_tagged` holds 6,412 (vessel, second, feed, position) keys with two pings. In 6,173 of them the two differ in
+speed or heading, mostly 2015-2016. The tie order `(vid, time, pos_basis, provider, lon, lat)` does not separate
+them, so which reading `ping_clean` keeps is arbitrary from one build to the next. The ping set is the same, but the
+speed and heading are not. Make the order total (add speed, speed_raw, heading, cog), and look at whether ramb's
+duplicate filter picks between such pairs too. It changes at most 6,173 pings, through to the trail, so it fits
+the next trail rebuild (TODO 54).
+
+**check:** two builds of `ping_clean` from the same `ping_tagged` give identical speed and heading hashes.
+
