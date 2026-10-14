@@ -326,14 +326,17 @@ further.
 **check:** the step runs no slower than 10 min on the full data, with the same output.
 
 ## 49. AIS as a qualifier where the logbook or the landings are missing
-**status:** open · **raised by the maintainer 2026-10-09** · **see:** plan 014 §1
+**status:** open · **needs: maintainer** — whether to qualify them, and the classes · **see:** plan 014 §1, decision 103
 
 Preprocessing reads no AIS (decision 075), but some AIS tracks may be truly fishing with no logbook or even landing
-behind them. The flow could later use the track to qualify such trips (`trip_basis` reconstructed, no declaration).
-Not designed; how many voyages carry no logbook trip and no landing is not counted here.
+behind them. Counted (plan 013 rows 5-6; decision 103): voyages with neither are 29-43 % a year since 2017, most by
+vessels that land nothing all year; `curated/check/vessel_activity.parquet` suggests a class for each such
+vessel-year (whale watching and aquaculture explain 69,198 of 108,505 such voyages in 2021-2025). The flow gives a
+voyage with neither no gear, so no speed range and no fishing: whether it should qualify the rest is the
+maintainer's.
 
-**check:** the count of voyages with neither a logbook trip nor a landing is recorded, and a decision says whether
-the flow qualifies them.
+**check:** a decision says whether the flow qualifies voyages with neither a logbook trip nor a landing, and the
+suggested classes of `vessel_activity` are confirmed through an override or dropped.
 
 
 ## 51. `docs/data-dict.yaml` fails the current data-dict spec

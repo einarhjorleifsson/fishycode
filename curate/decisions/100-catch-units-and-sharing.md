@@ -1,7 +1,8 @@
 # 100 — Catch shared per catch unit, at any resolution
 
 *2026-10-14. Built and measured by Claude (AI-assisted) on the maintainer's go; plan 013, item 2. ramb
-2026.10.14.7. Nothing in fishycode calls it yet, and no data were rebuilt.*
+2026.10.14.7. Nothing in fishycode calls it yet, and no data were rebuilt. Amended the same day: the June 2023
+shares that moved up were an artifact of the check's own trip filter (below, and decision 102).*
 
 ## What was built (ramb)
 
@@ -49,6 +50,15 @@ station catch was shared over the trail's fishing fixes, with effort from `rb_as
   | no fishing fix that month (`none`) | 0.4 % |
 
 - 2.5 s for the month, lazily.
+
+## The moved-up shares above were wrong (amended 2026-10-14)
+
+The check filtered the logbook trips with `!(twin %in% "duplicate")`. dbplyr writes that as
+`NOT (twin IN ('duplicate'))`, which is NULL, and so drops the row, for every trip with no twin value: most trips.
+With hardly any trip units, catch that found no fishing fix in its own record skipped the trip and went to the
+vessel's month. The full-year build with the filter fixed (decision 102) moves 2.3 % of the logbook catch to its
+trip and 0.3 % to the month, not 0.01 % and 1.6 %. The kilograms in and out, the units and the shares within a
+record's own unit were not affected. "Why so little moves to the trip" below is answered by this.
 
 ## What is not done
 

@@ -1,6 +1,6 @@
 # 013 — ramb as the function library for the WGSFD one-flow; fishycode as its first user
 
-**status:** partly built — step A, phases 0–3 (phase 3 inside plan 014) and part of phase 4 done (decisions 070–093); what is left is ordered in "What is left, in order" (2026-10-14) · **2026-10-14** ·
+**status:** partly built — step A, phases 0–3, and of "What is left, in order" items 0–3 and 5 built and on the data, items 4 and 6–9 built in part (decisions 099–103); item 10 blocked (TODO 60) · **2026-10-14** ·
 **see:** `docs/one_flow.qmd` (the one-flow document, the home of version 2 since `~/stasi/wgsfd2026/` was retired), `~/R/Pakkar/ramb`, decision 070
 
 Drafted with AI assistance (Claude) from the maintainer's direction in the session of 2026-10-08, three code
@@ -244,8 +244,7 @@ each part of it runs the methods its data allow.
    - fishycode: station catch, trip catch, landings with `lid_map`, and duplicate twins left out (decision 094).
    - **Built in ramb** (decision 100, ramb 2026.10.14.7): `rb_build_catch_units()` and `rb_share_catch()`
      rewritten. The landings-only acceptance test passes, with its fishing from a plain speed rule until item 3.
-     June 2023's logbook catch was 35,580 t in and out. Open: the raising column, landings as events (item 5),
-     and the wiring in fishycode.
+  @@@
 3. **Fishing decided per unit, by whichever side is more precise** (step 4, with gear for it; rows 1–5; rethink 1).
    This is where the paths part: today a fix outside every window is never fishing.
    - ramb:
@@ -292,6 +291,8 @@ each part of it runs the methods its data allow.
      - Named per the verb table.
    - fishycode: wire it after item 3. A summary record's fixes then take the track path inside its day.
 
+   - **Measured** (decision 103): 9.9 % of June 2023's timed tows hold two or more long towing stretches in their own
+     window, at 3-6 times the usual length. The ramb step for each record's case waits for ground truth (TODO 60).
 5. **Landings linked to trips and voyages** (step 1; rows 4 and 9).
    - ramb: `rb_link_trip_landings()`, many-to-many (several sales notes per trip, one weekly landing over several
      trips), a cascade of match rules.
@@ -312,6 +313,8 @@ each part of it runs the methods its data allow.
      - Those voyages get `trip_basis` from the landing.
    - With item 3, landing-only voyages get fishing from the track and catch per landing. `T2` reconciliation (phase 4)
      then has all three candidates.
+   - **Built** (decision 102): `rb_link_trip_landings()` (98.7 % the same landing as `lid_map`), and the landings
+     with no logbook trip on their voyages in `ais_catch`. Foreign logbooks: asked of the maintainer.
 6. **Which vessels fish** (the vessel row; rows 5, 6 and 10).
    - ramb: `rb_assign_vessel()` (planned): the time-bounded id → vessel join, keeping vessel `none`.
    - fishycode:
@@ -322,6 +325,8 @@ each part of it runs the methods its data allow.
          itself: home port, fjord-bound tracks, short day trips. It is a basis like any other.
      - TODO 49's decision for fishing vessels with neither a logbook trip nor a landing;
      - TODO 22 (foreign vessels kept) and TODO 25 (no unassigned ping).
+   - **Built** (decision 103): the check `vessel_activity`, with a suggested class for a person to confirm.
+     TODO 49, 22, 23 and 25 stay open.
 7. **Records without pings** (rows 7–8).
    - ramb: a step that gives a record with no pings positions to carry effort and catch.
      - Built from its start (and end) position and times, at a set interval.
@@ -333,12 +338,15 @@ each part of it runs the methods its data allow.
      - the later trips no voyage covers.
      - Whether the records before 1990 are in scope is the maintainer's call.
    - Effort from such a record is its duration, not a track, and the basis says so.
+   - **Built in ramb** (decision 103): `rb_build_record_pings()`. Not wired: the scope before 1990 is asked.
 8. **Static gear** (rows 1–3, static).
    - ramb:
      - `rb_link_record_sets()` (set ↔ haul pairing, phase 4 design);
      - pressure as quantity × soak in `rb_assign_effort()`.
    - fishycode: gear quantity (nets, hooks) from the logbook where it is recorded.
    - TODO 18 stays parked.
+   - **Built in ramb** (decision 103): `rb_link_record_sets()`. Not run on the Icelandic hauls; static pressure not
+     built.
 9. **Track models for fishing** (step 4 beyond speed).
    - ramb: `"gmm"`, `"embc"`, `"hmm"`, and phases from a dense track (phase 4 design). For datasets without times
      these are the main path; for Iceland they matter least, since item 3 covers most fixes.
@@ -347,6 +355,9 @@ each part of it runs the methods its data allow.
      - score each method on it by gear, and again after down-sampling to 30 min (the EU Control Regulation's interval,
        WGSFD ToR C).
      - If any of it leaves MFRI, for instance as ToR C's reference dataset, that needs an agreed basis first.
+   - **Benched** (decision 103): fishymodel's `fm_gaussian()` fixed for irregular steps. Against the tow windows,
+     the declared speed range beats the Gaussian mixture (0.88 against 0.72 at 1 min, 0.81 against 0.73 at
+     30 min). HMMs and other gears not run.
 10. **Declared times reconciled with the track** (`rb_reconcile_time()`, phase 4). Waits for ground truth (TODO 60).
 
 Items 1–4 change the trail; one rebuild serves them. Each item ends as the phases do: ramb tests pass,
