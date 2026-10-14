@@ -1,6 +1,6 @@
 # 016 — Refreshing the vessel registry and the MMSI archive, and SKB pleasure craft through the AIS flow
 
-**status:** proposal — the asks answered 2026-10-14 (§7), nothing built · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
+**status:** partly built — steps 1–6 written and tested 2026-10-14 (ASTD +849k pings, no vessel loses any); the rebuild (step 8) not run · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
 plans 003, 008, 009
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
@@ -147,10 +147,35 @@ i. **TODO 17's TFUT case is already resolved.** All four lists and Oracle give T
    - SKB as decided in §5.
 4. **`identity.R` takes its MMSI periods from step 1 and step 2**, one row per vid and period, rather than from
    `vessel.parquet`'s single `mmsi`. Its per-MMSI overlap and gap checks stay.
-5. **Wiring:**
+5. **`reference/vessels/vessel_year.R`**, a new target writing `curated/vessel/vessel_year.parquet`: one row per vid and
+   year from 2007. It holds the usage type, kW and length of that year, each with its `basis` (§7 h, i). The
+   fisheries-management class goes in a separate period table, `vessel_class.parquet` (vid, t1, t2, class), because it
+   changes within a year.
+   - **Effort follows the year.** `R/trail_sql.R` takes kW from `vessel_year` by (vid, year), not from
+     `vessel.parquet`, so each ping's `kw_hours` uses the kW of its own year. This needs no ramb change:
+     `ramb::rb_assign_effort()` takes `vessel_by = c("vid", "year")`.
+   - **Coverage gaps by year** (maintainer, 2026-10-14). The class and usage type of the year tell an expected absence
+     from a gap. A boat with AIS and no logbook or landings in a year is a coverage gap if it held a fishing licence
+     class that year. It is expected if it was in Núllflokkur, a leisure class or a non-fishing type.
+     `curate/checks/vessel_activity.R` and `ais_key_landings.R` classify by it.
+   - **Leisure follows the class.** The trail marks a fix as leisure when the boat is in a frístundaveiðar class at that
+     time, or its usage type that year is Frístundafiskiskip or Skemmtiskip, or it is an SKB boat (§7 b).
+6. **Wiring:**
    - file targets for `raw/vessels/vessel_v.parquet` and the archive's inputs, so a new dump or list shows in `tar_outdated()`;
    - `dump/oracle/vessels.R` gets `rjdbc = TRUE` and becomes the script that runs; `raw/vessels/DUMP_vessels.R` goes.
-6. **Record and rebuild:**
+7. **Review the STK key against the archive** (`once` project, a key redo by decision; maintainer, 2026-10-14). The
+   hand-curated match (the reviewed rows behind the segment table, `overrides/ais_key_*_reviewed.csv`,
+   `overrides/stk_foreign_mid_vid.csv`) is untouched by this pass: the main rebuild reads the frozen key. Measured
+   2026-10-14, read-only, the key's rows with an MMSI the rebuilt archive knows:
+   - **agree:** 2,412 mobile-ids, 173.9 M pings;
+   - **disagree:** 14 mobile-ids, 626k pings. All are MMSIs handed from one hull to another, e.g. mid 101130 (TFSR),
+     1903 in the key for its whole span, while the archive has 251179000 passing to 3009 in 2015. The key's `mmsi` is
+     attached from the register, not observed, so these are cases to review, not errors;
+   - **resolvable:** 42 mobile-ids with no vid (15k pings) whose MMSI the archive gives to a vid, mostly SKB boats
+     broadcasting it as `glid`;
+   - **SKB:** 179 mobile-ids (358k pings), none with a vid; the code in `glid` gives each one (§5).
+   A check in the `once` project would list these for review, as `ais_key_reused_callsign.R` does for call signs.
+8. **Record and rebuild:**
    - a decision record;
    - one main rebuild of the 17 targets;
    - the `once` key stays frozen, except as §5 asks.
@@ -264,7 +289,8 @@ h. **`mclass` over time:** take it from `vessel_hist_v`, or keep today's categor
       the rest is spelling ("Fiski,farþegaskip" against "FISKISKIP/FARÞEGASKIP").
     - In 2007–2021, 437 of 2,835 vids change usage type. The sea-angling boats are Frístundafiskiskip throughout.
     - **So the usage type over time is:** Hreiðar for 2007–2021, `vessel_hist_v` from 2023, and today's category for
-      2022 and before 2007. The register (2009–2017) stays as a cross-check. `basis` says which.
+      2022 and before 2007. `basis` says which. The register (2009–2017) stays as a consistency check, not independent
+      evidence. Hreiðar is keyed on `Skskr.nr.`, which decision 046 found reliable only from 2007 on, the years used here.
   - **The fisheries-management class over time.** `data/history.rda` has vid, `t1`, and a class code with its name
     (`mgtm_class`), for 5,100 vids, 1991–2021, in 40 classes. These include Frístundaveiðar (−11, 95), Strandveiðar
     (−12), aflamark, krókaaflamark and Núllflokkur. This is a different thing from the usage type. It becomes its own

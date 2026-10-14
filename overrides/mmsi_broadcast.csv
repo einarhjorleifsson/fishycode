@@ -1,0 +1,6 @@
+mmsi,vid,t1,t2,decision,reviewed_date,reason
+251139000,2411,2021-02-28,,confirmed,2026-10-14,"Huginn VE-55 broadcasts 251139000, which is in no Fjarskiptastofa list or Oracle table (official: 251439000). ASTD: 251439000 last heard 2021-02-27 02:56, 251139000 first heard 2021-03-02 19:50 (350,167 pings to 2026-01-31). Plan 016 §2 b"
+251396098,1357,2017-12-09,,confirmed,2026-10-14,"Níels Jónsson EA-106 broadcasts 251396098 (official: 251454110). ASTD: 251454110 last heard 2017-12-09 13:47, 251396098 from 13:49 at the same place (0 km). Plan 016 §2 b"
+251396098,,2015-05-23,2015-12-11,confirmed,2026-10-14,"Not 1357: on every ping paired within 5 min (44,866) this MMSI is ~243 km from 1357's own 251454110, median 23.6 W 65.68 N (Westfjords). Another, unidentified boat; its pings get no vid. Plan 016 §2 b"
+251216100,2935,,,confirmed,2026-10-14,"Gunna Valgeirs ÍS broadcasts 251216100 (official: 251216110, never heard in ASTD). ASTD: 251216100 heard 2017-09-30 to 2026-01-31 (695,854 pings). Plan 016 §2 b"
+251066110,84,,,confirmed,2026-10-14,"Kristbjörg (vid 84, TFQZ, struck): in no Fjarskiptastofa list or Oracle table; the old archive carried it as ""manual add - marine traffic"". ASTD: heard 2013-01-04 to 2014-07-10 (2,543 pings)"

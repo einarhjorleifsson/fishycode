@@ -56,6 +56,9 @@ idy <-
   mutate(t1 = if_else(row_number() == 1L,  OPEN_T1, as.POSIXct(t1)),
          t2 = if_else(row_number() == n(), OPEN_T2, as.POSIXct(t2))) |>
   ungroup() |>
+  # a period of no known hull (vid NA, curate/corrections/mmsi_broadcast_unregistered.yml) is dropped only now, after the
+  # windows are opened, so it cuts the neighbouring holder's window instead of being covered by it
+  filter(!is.na(vid)) |>
   duckdbfs::as_dataset() |>
   mutate(t1 = dplyr::sql("t1::TIMESTAMP"), t2 = dplyr::sql("t2::TIMESTAMP"))
 

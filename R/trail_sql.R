@@ -61,7 +61,8 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   gf    <- shQuote(fd_curated("logbook", "gear.parquet"), type = "sh")
   sef   <- shQuote(fd_curated("link", "station_event.parquet"), type = "sh")
   vgf   <- shQuote(fd_curated("ais", "voyage_gear.parquet"), type = "sh")
-  vsf   <- shQuote(fd_curated("vessel", "vessel.parquet"), type = "sh")
+  vyf   <- shQuote(fd_curated("vessel", "vessel_year.parquet"), type = "sh")
+  vcf   <- shQuote(fd_curated("vessel", "vessel_class.parquet"), type = "sh")
   lazy  <- function(q) dplyr::tbl(con, dplyr::sql(q))
   rend  <- function(x) as.character(dbplyr::sql_render(x))
 
@@ -85,12 +86,14 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   p <- lazy(sprintf("SELECT p.*, vg.gid_voyage, vg.s1_voyage, vg.s2_voyage, vg.gear_voyage_basis
                      FROM (%s) p LEFT JOIN (%s) vg ON vg.vid = p.vid AND vg.year = year(p.time) AND vg.voyage = p.voyage",
                     rend(p), rend(vg)))
-  vessels <- lazy(sprintf("SELECT vid, kw FROM read_parquet(%s)", vsf))
+  # the engine power of the fix's own year (plan 016): a hull's engine changes, and the effort is kW x hours
+  p <- lazy(sprintf("SELECT p.*, vy.kw, vy.kw_basis FROM (%s) p
+                     LEFT JOIN read_parquet(%s) vy ON vy.vid = p.vid AND vy.year = year(p.time)", rend(p), vyf))
   r <- p |>
     ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2", window_s = window_s) |>
     ramb::rb_assign_fishing(m, method = c("window", "speed"), speed_min = "s1", speed_max = "s2", window_s = window_s,
                             ping_speed_min = "s1_voyage", ping_speed_max = "s2_voyage", name = "fishing_flow") |>
-    ramb::rb_assign_effort(vessels, by = "voyage", max_interval_s = max_interval_s) |>
+    ramb::rb_assign_effort(by = "voyage", max_interval_s = max_interval_s) |>
     ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
@@ -101,7 +104,9 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     g AS (SELECT \".sid\", schema, gid, gid_landing, gid_used, gid_basis FROM read_parquet(%s)),
     e AS (SELECT vid, time, array_to_string(list_sort(list_distinct(list(event))), '+') AS nearest_event
           FROM read_parquet(%s) WHERE time >= %s AND time < %s GROUP BY vid, time),
-    r AS (%s)
+    r AS (%s),
+    cl AS (SELECT vid, t1, t2 FROM read_parquet(%s) WHERE leisure AND t1 < %s AND t2 > %s),
+    vy AS (SELECT vid, mclass FROM read_parquet(%s) WHERE year = %d)
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
            r.pos_basis, r.speed_basis, r.dt_sec, r.stay, r.voyage,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
@@ -109,10 +114,20 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
            g.gid, g.gid_landing, g.gid_used, g.gid_basis, r.gear_class,
            r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, e.nearest_event, r.fishing,
            r.gid_voyage, r.s1_voyage, r.s2_voyage, r.gear_voyage_basis, r.fishing_flow, r.fishing_flow_basis,
-           r.hours, r.kw_hours, r.interval_flag, r.effort_basis, r.sid_gps, r.n_sid_gps
+           r.hours, r.kw_hours, r.interval_flag, r.effort_basis, r.kw_basis, r.sid_gps, r.n_sid_gps,
+           -- leisure (plan 016 §7 b): a fix outside any logbook record, of a boat in a frístundaveiðar class at the
+           -- time, or of a sailing, pleasure or recreational-fishing type that year (60, 62, 68), or an SKB boat
+           CASE WHEN r.\".sid\" IS NOT NULL THEN FALSE
+                WHEN EXISTS (SELECT 1 FROM cl WHERE cl.vid = r.vid AND r.time >= cl.t1 AND r.time < cl.t2) THEN TRUE
+                WHEN r.vid >= 100000 OR vy.mclass IN (60, 62, 68) THEN TRUE ELSE FALSE END AS leisure,
+           CASE WHEN r.\".sid\" IS NOT NULL THEN NULL
+                WHEN EXISTS (SELECT 1 FROM cl WHERE cl.vid = r.vid AND r.time >= cl.t1 AND r.time < cl.t2) THEN 'class'
+                WHEN r.vid >= 100000 THEN 'skb'
+                WHEN vy.mclass IN (60, 62, 68) THEN 'usage' END AS leisure_basis
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage
+           LEFT JOIN vy ON vy.vid = r.vid
            LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema
            LEFT JOIN e ON e.vid = r.vid AND e.time = r.time
     WHERE r.time >= %s AND r.time < %s",
-    tvf, year, gf, sef, t0, t1, rend(r), t0, t1)
+    tvf, year, gf, sef, t0, t1, rend(r), vcf, t1, t0, vyf, year, t0, t1)
 }

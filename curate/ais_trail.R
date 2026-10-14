@@ -7,7 +7,8 @@
 #         curated/link/station_event.parquet        (the fix nearest each event time; link_station_event.R)
 #         curated/link/trip_voyage.parquet
 #         curated/ais/voyage_gear.parquet           (the voyage's gear and speed range; voyage_gear.R)
-#         curated/vessel/vessel.parquet             (vid, kw: engine power)
+#         curated/vessel/vessel_year.parquet        (vid, year, kw: the engine power of the fix's year; plan 016)
+#         curated/vessel/vessel_class.parquet       (vid, t1, t2, leisure: the fisheries-management class over time)
 # Output: curated/ais/trail/year=Y/month=M/part_001.parquet         one row per fix
 #         curated/ais/trail_match/year=Y/month=M/part_001.parquet   one row per (fix, station) match
 #
@@ -25,8 +26,11 @@
 #                 phase phase_frac win_basis events nearest_event fishing (on the ±10 min median speed, decision 093)
 #   the voyage    gid_voyage s1_voyage s2_voyage gear_voyage_basis   the voyage's gear (voyage_gear.R)
 #   approaches    fishing_flow fishing_flow_basis   the window, else the voyage gear's speed range (plan 013 item 3)
-#   effort        hours kw_hours interval_flag effort_basis   on every fix, whatever the approach (plan 013 item 1)
+#   effort        hours kw_hours interval_flag effort_basis kw_basis   on every fix, whatever the approach (plan 013
+#                 item 1); kW is the engine power of the fix's own year, kw_basis its source (plan 016)
 #   the logger    sid_gps n_sid_gps
+#   leisure       leisure leisure_basis   a fix outside any logbook record, of a boat in a frístundaveiðar class at the
+#                 time (class), an SKB boat (skb), or a sailing, pleasure or recreational-fishing type that year (usage)
 # `pid`, the polygon tag of the ping tables, is not carried: the port of a stay is in the stay table.
 # `trail_match` holds all matches for the fixes whose `n_sid` is above 1 (and the single ones), so nothing is lost.
 
@@ -49,7 +53,8 @@ if (ALL) { unlink(out_trail, recursive = TRUE); unlink(out_match, recursive = TR
 
 inputs <- c(fd_curated("logbook", "station_window.parquet"), fd_curated("logbook", "gear.parquet"),
             fd_curated("link", "trip_voyage.parquet"), fd_curated("link", "station_event.parquet"),
-            fd_curated("ais", "voyage_gear.parquet"), fd_curated("vessel", "vessel.parquet"))
+            fd_curated("ais", "voyage_gear.parquet"), fd_curated("vessel", "vessel_year.parquet"),
+            fd_curated("vessel", "vessel_class.parquet"))
 tot <- 0
 for (yr in years) {
   pf <- list.files(file.path(pt_dir, paste0("year=", yr)), pattern = "parquet$", full.names = TRUE)

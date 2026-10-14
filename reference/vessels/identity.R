@@ -1,8 +1,11 @@
 # What a hull was called, and when.
 # Side: preprocessing (vessels). See plan 014.
 #
-# Input:  curated/vessel/vessel.parquet
-# Output: curated/vessel/vessel_identity.parquet - one row per (vid, period)
+# Input:  curated/vessel/vessel.parquet   the hull: name, call sign, local sign, flag, lifetime
+#         curated/vessel/mmsi.parquet     the MMSI periods: a hull may hold several over time (plan 016)
+# Output: curated/vessel/vessel_identity.parquet - one row per (vid, MMSI period); a hull with no MMSI on record has
+#         one row with no MMSI, and an MMSI period that belongs to no known hull (vid NA) is kept so that
+#         curate/ais_ping_union.R cuts it out instead of opening a neighbouring holder's window over it
 #
 # The vid is assigned to the keel: a vessel may change name, call sign, local sign
 # and MMSI, but the vid stays with the hull from cradle to grave, like an IMO
@@ -31,6 +34,17 @@ AIS_T1   <- as.Date("2007-06-01")   # STK begins; nothing earlier is resolvable
 SENTINEL <- as.Date("2028-12-24")   # the registry's own open-ended marker
 
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet"))
+
+# vessel.parquet carries one MMSI per vid; a hull's other MMSIs over time (Huginn's broadcast number since 2021, a
+# reissued MMSI) come from the archive. Before plan 016 this table was one row per vid and knew only that one.
+mm <- read_parquet(fd_curated("vessel", "mmsi.parquet")) |>
+  filter(mmsi_cat == "vessel") |>
+  select(vid, mmsi, mmsi_t1, mmsi_t2, zombie_no)
+hull <- reg |> select(-any_of(c("mmsi", "mmsi_t1", "mmsi_t2", "zombie_no")))
+reg <- bind_rows(
+  hull |> inner_join(mm |> filter(!is.na(vid)), by = "vid", relationship = "one-to-many"),
+  hull |> filter(!vid %in% mm$vid),
+  mm |> filter(is.na(vid)))
 
 # yh2 is CENSORED, not an event. It never exceeds 2021 anywhere in the registry:
 # 2,264 of the 4,714 hulls that carry a yh2 carry 2021, and 1,244 of those landed
@@ -133,4 +147,4 @@ print(identity |> filter(!is.na(mmsi)) |> count(mmsi) |> filter(n > 1) |> nrow()
         (\(n) knitr::kable(data.frame(reissued_mmsi = n)))())
 
 write_curated(identity, fd_curated("vessel", "vessel_identity.parquet"),
-              inputs = c(vessel = fd_curated("vessel", "vessel.parquet")))
+              inputs = c(vessel = fd_curated("vessel", "vessel.parquet"), mmsi = fd_curated("vessel", "mmsi.parquet")))

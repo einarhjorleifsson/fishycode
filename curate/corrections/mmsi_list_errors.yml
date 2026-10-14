@@ -1,0 +1,25 @@
+id: mmsi_list_errors
+title: rows in an MMSI list or Oracle snapshot that name the wrong vid
+status: confirmed - all three rows decided by the maintainer 2026-10-14
+applies_to:
+  - curated/vessel/mmsi.parquet
+implementation: >-
+  reference/vessels/mmsi.R reads overrides/mmsi_list_errors.csv (rows with decision == "confirmed"): "reject" drops the
+  (mmsi, sknr) row of that source; "move" gives it to `vid` instead. The source file itself is never edited.
+discovered: 2026-10-14, merging the 2026-03-09 list (plan 016 §2 c, h)
+
+context: >-
+  A vid is one hull for life, like an IMO number (maintainer, 2026-10-14), so a list row that puts another vessel on an
+  existing Icelandic vid is a source error, not a reuse.
+
+defect:
+  summary: >-
+    The 2026-03-09 list puts 251237000 "Júlíus Geirmundsson ÍS-270" (TFKJ) on 1612, which is Hallgrímur SI-77 (sank
+    2011), and 251777340 "Vinur ÞH" (TFAX) on 3068, which is not in the Oracle register; TFAX is 3048 VINUR's.
+  evidence:
+    "1612": Júlíus Geirmundsson is 1977 (TFKU, 251036110) in the same list; Oracle vessel_mmsi has 1612 -> 251237110; 251237000 never heard in ASTD
+    "3068": vessel_v has TFAX on 3048 since 2026-03-17; the maintainer confirmed 3068 is 3048
+    "7236": only the 2022 Oracle snapshot puts 251354640 on 7236 ELJA; all other sources have 1815 Sæfari; the maintainer's 2024 script judged them the same vessel
+
+repair: >-
+  The 1612 row is dropped; 251777340 goes to 3048; the 2022 snapshot's 251354640-on-7236 row is dropped.

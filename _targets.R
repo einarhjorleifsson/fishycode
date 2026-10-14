@@ -151,16 +151,45 @@ list(
     fd_staging("aux", "maritime_identification_digits.parquet"),
     fd_staging("aux", "callsign_prefix.parquet")), format = "file"),
 
-  tar_target(vessel, produces(
-    "reference/vessels/registry.R",
-    fd_curated("vessel", "vessel.parquet")), format = "file"),
+  # The MMSI archive, rebuilt from every source (plan 016): the four Fjarskiptastofa lists, the Oracle snapshots, Oracle's
+  # current table, the old archive's hand-set windows, and two declared corrections. File targets, so a new list or
+  # dump shows in tar_outdated() - before plan 016 no vessel target depended on a raw file.
+  tar_target(mmsi_raw, c(list.files(fd_raw("mmsi"), "[.](xlsx|parquet)$", full.names = TRUE),
+                         fd_raw("vessels", "vessel_mmsi.parquet"), fd_raw("vessels", "mmsi_iceland_archieves.parquet"),
+                         "overrides/mmsi_list_errors.csv", "overrides/mmsi_broadcast.csv"), format = "file"),
+  tar_target(vessel_raw, c(fd_raw("vessels", "vessel_v.parquet"),
+                           fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")), format = "file"),
+  tar_target(mmsi, {
+    mmsi_raw; vessel_raw
+    produces("reference/vessels/mmsi.R", fd_curated("vessel", "mmsi.parquet"))
+  }, format = "file"),
+
+  tar_target(vessel, {
+    mmsi; vessel_raw
+    produces("reference/vessels/registry.R", fd_curated("vessel", "vessel.parquet"))
+  }, format = "file"),
+
+  # Usage type, kW and length by year (the effort on a fix uses the kW of its year), and the fisheries-management class
+  # over time (leisure, and coverage gaps by year). Plan 016 §4 step 5.
+  tar_target(vessel_hist_raw, c(fd_raw("vessels", "vessel_hist_v.parquet"), fd_raw("vessels", "vessel_measurement_hist_v.parquet"),
+                                fd_raw("vessels", "usage_category.parquet")), format = "file"),
+  tar_target(vessel_class_raw, c(fd_raw("vessels", "kvoti_skipasaga.parquet"),
+                                 fd_raw("external", "skipaskra", "data", "history.rda")), format = "file"),
+  tar_target(vessel_year, {
+    vessel_raw; vessel_hist_raw
+    produces("reference/vessels/vessel_year.R", fd_curated("vessel", "vessel_year.parquet"))
+  }, format = "file"),
+  tar_target(vessel_class, {
+    vessel_class_raw
+    produces("reference/vessels/vessel_class.R", fd_curated("vessel", "vessel_class.parquet"))
+  }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
   # uid are attributes of it at a time. Consumed by ais_key.R's lifetime flag and
   # by curate/ais_ping_union.R, which resolves the MMSI-keyed commercial feeds
   # through it. See curate/decisions/015.
   tar_target(vessel_identity, {
-    vessel
+    vessel; mmsi
     produces("reference/vessels/identity.R",
              fd_curated("vessel", "vessel_identity.parquet"))
   }, format = "file"),
@@ -395,7 +424,7 @@ list(
   }, format = "file"),
 
   tar_target(ais_trail, {
-    ais_voyage; station_window; trip_voyage; logbook_gear; station_event; voyage_gear; vessel
+    ais_voyage; station_window; trip_voyage; logbook_gear; station_event; voyage_gear; vessel; vessel_year; vessel_class
     produces("curate/ais_trail.R",
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
   }, format = "file"),

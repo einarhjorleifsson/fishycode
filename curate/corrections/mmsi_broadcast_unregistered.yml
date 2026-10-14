@@ -1,0 +1,32 @@
+id: mmsi_broadcast_unregistered
+title: three boats broadcast an MMSI that is in no register, and the old archive carried it in place of the official one
+status: confirmed - measured 2026-10-14; the five override rows confirmed by the maintainer 2026-10-14
+applies_to:
+  - curated/vessel/mmsi.parquet
+  - curated/vessel/vessel_identity.parquet
+implementation: >-
+  reference/vessels/mmsi.R reads overrides/mmsi_broadcast.csv (rows with decision == "confirmed") and adds each as a
+  holder period with basis "reconstructed", beside the vid's official MMSI. A row with no vid marks a period in which the
+  MMSI belongs to another, unidentified boat, so the identity table cuts it out instead of opening the window.
+discovered: 2026-10-14, comparing the four Fjarskiptastofa lists with the archive registry.R reads (plan 016 §2 b)
+
+context: >-
+  The MMSI archive in use (raw/vessels/mmsi_iceland_archieves.parquet) was built by
+  fishydata_2024-2026/scripts/older/00_DATASET_ISL-mmsi_historical-consolidation_TOBEDELETED.R. For three vids it
+  carries the number the boat broadcasts in ASTD, labelled source 5 as if from a list, and not the official number. No
+  script writes them; registry.R's tail lists them as "picked up in astd that are not in mmsi registry".
+
+defect:
+  summary: >-
+    The official MMSI of 1357, 2411 and 2935 is the same in all four lists (2024-08-21 to 2026-03-09) and in Oracle's
+    vessel_mmsi; the archive replaces it with the broadcast number. Adopting the March merge as it stands then gives each
+    vid two open MMSIs and duplicates it in vessel.parquet.
+  evidence:
+    "2411 Huginn": official 251439000 heard 2013-01-03 to 2021-02-27 (533,363 ASTD pings); broadcast 251139000 from 2021-03-02 (350,167)
+    "1357 Níels Jónsson": official 251454110 heard 2013-01-03 to 2017-12-09 (283,362); broadcast 251396098 from 2017-12-09 (2 min later, same place); 251396098 in 2015 is another boat ~243 km away
+    "2935 Gunna Valgeirs": official 251216110 never heard; broadcast 251216100 2017-09-30 to 2026-01-31 (695,854)
+    "84 Kristbjörg": no MMSI in any register; the old archive's 251066110 ("manual add - marine traffic") heard 2013-01-04 to 2014-07-10 (2,543)
+
+repair: >-
+  Both numbers map to the vid: the official one as recorded, the broadcast one from the handover in ASTD. The 2015 pings
+  on 251396098 get no vid.

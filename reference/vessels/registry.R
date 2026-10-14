@@ -7,6 +7,12 @@
 #  * Add loa, kw and other things if available
 #  * Check another source for norwegian vessels, one that has mmsi
 # NEWS -------------------------------------------------------------------------
+# 2026-10-14 (plan 016)
+#  * The MMSI comes from curated/vessel/mmsi.parquet (reference/vessels/mmsi.R), the archive rebuilt from every
+#    source, not from the old hand-kept raw/vessels/mmsi_iceland_archieves.parquet: one current vessel MMSI per vid
+#  * vid and mclass are integers (the rjdbc driver returns doubles), and vid is unique: the script stops otherwise
+#  * Foreign is the register's own status, "Erlent" - all of 3700-4999, and 3699 - not the vid range
+#  * SKB pleasure craft enter as vid 100000 + their number, register "skb" (maintainer, 2026-10-14)
 # 2024-10-27
 #  * Icelandic registry
 #    * Include the note, note_date and note_fate form mmsi into the vessel
@@ -17,8 +23,11 @@
 #    * Properly allocate a flag using info in the uid
 # 2024-10-25
 #  * consolidation, review and addition of older code
+# INPUT ------------------------------------------------------------------------
+# raw/vessels/vessel_v.parquet, curated/vessel/mmsi.parquet,
+# raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx
 # OUTPUT -----------------------------------------------------------------------
-# data-raw/vessels/vessel-registry.parquet
+# curated/vessel/vessel.parquet - one row per vid
 
 library(nanoparquet)
 library(tidyverse)
@@ -29,13 +38,22 @@ options(knitr.kable.NA = '')
 
 # Import vessel registries -----------------------------------------------------
 ## ISL -------------------------------------------------------------------------
+SKB_BASE <- 100000L   # reference/vessels/mmsi.R
+mmsi_all <-
+  read_parquet(fd_curated("vessel", "mmsi.parquet")) |>
+  filter(mmsi_cat == "vessel", !is.na(vid))
+# One MMSI per vid: the current one, a registered number before one reconstructed from AIS (a boat's broadcast number,
+# curate/corrections/mmsi_broadcast_unregistered.yml), else the one held last. A vid's other MMSIs over time stay in
+# mmsi.parquet and reach vessel_identity from there.
+one_per_vid <- function(d) {
+  d |>
+    arrange(vid, desc(current), basis != "recorded", desc(mmsi_t2), desc(mmsi_t1), mmsi) |>
+    distinct(vid, .keep_all = TRUE)
+}
 mmsi_ISL <-
-  read_parquet(fd_raw("vessels", "mmsi_iceland_archieves.parquet")) |>
-  filter(mmsi_cat == "vessel") |>
-  filter(!is.na(sknr)) |>
-  filter(!str_starts(sknr, "SKB")) |>
-  rename(vid = sknr) |>
-  mutate(vid = as.integer(vid)) |>
+  mmsi_all |>
+  filter(vid < SKB_BASE) |>
+  one_per_vid() |>
   arrange(vid)
 # Test: Duplicate MMSI
 mmsi_ISL |>
@@ -44,16 +62,17 @@ mmsi_ISL |>
   ungroup() |>
   filter(n.vid > 1) |>
   arrange(mmsi, mmsi_t2) |>
-  knitr::kable(caption = "Same MMSI on more than one vessel. Created in: 00_DATASET_vessels_iceland-mmsi.R")
+  knitr::kable(caption = "Same MMSI on more than one vessel (a reissued MMSI: one row per vid is kept)")
 mmsi_ISL |>
   group_by(vid) |>
   mutate(n.mmsi = n_distinct(mmsi)) |>
   ungroup() |>
   filter(n.mmsi > 1) |>
-  knitr::kable(caption = "Vessel with more than one MMSI (expect) none")
+  knitr::kable(caption = "Vessel with more than one MMSI (expect none: one per vid)")
 vessel_ISL <-
   read_parquet(fd_raw("vessels", "vessel_v.parquet")) |>
   dplyr::select(vid = registration_no,
+                status,
                 vessel = name,
                 cs = call_sign,
                 uid = region_acronym,
@@ -69,7 +88,9 @@ vessel_ISL <-
                 nwt = netto_weight_tons,
                 .id = vessel_id) |>
   collect() |>
-  dplyr::mutate(uno_c = case_when(uno > 0 ~ str_pad(uno, 3, pad = "0"),
+  dplyr::mutate(vid = as.integer(vid), mclass = as.integer(mclass),
+                foreign = status %in% "Erlent",
+                uno_c = case_when(uno > 0 ~ str_pad(uno, 3, pad = "0"),
                                   .default = NA),
                 uid = case_when(!is.na(uid) & !is.na(uno_c) ~ paste0(uid, uno_c),
                                 .default = NA),
@@ -87,11 +108,11 @@ vessel_ISL <-
                             .default = vessel),
          cs =
            case_when(
-             source == "ISL" & vid %in% 3700:4999 & is.na(cs) ~ str_extract_between_parenthesis(vessel)[,1],,
+             source == "ISL" & foreign & is.na(cs) ~ str_extract_between_parenthesis(vessel)[,1],,
              .default = cs),
          vessel =
            case_when(
-             source == "ISL" & vid %in% 3700:4999 ~ str_remove(vessel, paste0("\\(", cs, "\\)")),
+             source == "ISL" & foreign ~ str_remove(vessel, paste0("\\(", cs, "\\)")),
              .default = vessel),
          vessel = str_squish(vessel))
 # classify foreign vessels
@@ -100,26 +121,26 @@ vessel_ISL <-
   vessel_ISL |>
   mutate(flag =
            case_when(
-             vid %in% 3700:4999 & !is.na(uid) ~ countrycode(str_sub(uid, 1, 2),
+             foreign & !is.na(uid) ~ countrycode(str_sub(uid, 1, 2),
                                                             origin = "iso2c",
                                                             destination = "iso3c"),
              .default = flag)) |>
   # Need to revisit this at a later stage
   mutate(flag =
            case_when(
-             vid %in% 3700:4999 & flag == "ISL" ~ "UNK",
-             vid %in% 3700:4999 & is.na(flag) ~ "UNK",
+             foreign & flag == "ISL" ~ "UNK",
+             foreign & is.na(flag) ~ "UNK",
              .default = flag)) |>
   # drop the uid for foreign vessels
   mutate(uid =
            case_when(
-             vid %in% 3700:4999 ~ NA,
+             foreign ~ NA,
              .default = uid))
 # test
-vessel_ISL |> filter(vid %in% 3700:4999 & flag == "ISL")
-vessel_ISL |> filter(!vid %in% 3700:4999) |> count(flag)
+vessel_ISL |> filter(foreign & flag == "ISL")
+vessel_ISL |> filter(!foreign) |> count(flag)
 vessel_ISL |>
-  filter(vid %in% 3700:4999) |>
+  filter(foreign) |>
   filter(flag == "UNK")
 
 vessel_ISL <-
@@ -131,9 +152,25 @@ vessel_ISL <-
                         .default = cs)) |>
   select(-cs_mmsi) |>
   select(vid, mmsi, cs, imo, uid, vessel, flag, source, .id, everything())
+
+## SKB pleasure craft -------------------------------------------------------------
+# Not in the Oracle register: their number is the SKB code in the MMSI lists, encoded as 100000 + n (plan 016 §5).
+# A registration, not a hull: a code has been reused after a sale (SKB905), and can cover a tender (SKB225).
+vessel_SKB <-
+  mmsi_all |>
+  filter(vid >= SKB_BASE) |>
+  one_per_vid() |>
+  transmute(vid, mmsi, vessel = nafn, flag = "ISL", source = "SKB", mmsi_t1, mmsi_t2, zombie_no, note_date, note_fate,
+            foreign = FALSE)
+cat("SKB pleasure craft:", nrow(vessel_SKB), "\n")
+
 vessel_ISL <-
-  vessel_ISL |>
+  bind_rows(vessel_ISL |> mutate(register = "skipaskra"),
+            vessel_SKB |> mutate(register = "skb")) |>
   arrange(vid)
+if (anyDuplicated(vessel_ISL$vid))
+  stop("vessel.parquet must hold one row per vid; duplicated: ",
+       paste(head(unique(vessel_ISL$vid[duplicated(vessel_ISL$vid)]), 20), collapse = " "), call. = FALSE)
 
 # add last year vessel in Hreiðar's dataset (last time updated 2021)
 v <-
@@ -166,7 +203,7 @@ vessel_ISL <-
 vessel_ISL |>
   mutate(kw = ifelse(kw == 0, NA, kw)) |>
   write_curated(fd_curated("vessel", "vessel.parquet"),
-                inputs = c(fd_raw("vessels", "mmsi_iceland_archieves.parquet"), fd_raw("vessels", "vessel_v.parquet"),
+                inputs = c(fd_curated("vessel", "mmsi.parquet"), fd_raw("vessels", "vessel_v.parquet"),
                            fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")))
 
 
@@ -216,7 +253,7 @@ vid_landings <-
   collect()
 vessel_ISL |>
   filter(source == "ISL") |>
-  filter(!vid %in% 3700:4999) |>
+  filter(!foreign) |>
   left_join(vid_landings) |>
   filter(is.na(mmsi) & !is.na(n.landings)) |>
   arrange(-desc(last.landing)) |>
