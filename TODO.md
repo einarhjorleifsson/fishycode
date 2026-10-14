@@ -29,24 +29,6 @@ does it twice.
 
 ---
 
-## 9. No archive date for the old repos
-**status:** open · **kaenugardr done 2026-09-21 (read-only, write refused)**
-
-The plan calls a fixed, agreed archive date a non-optional safeguard, and names
-parallel development as how the forks were born.
-
-`kaenugardr` is now read-only, closing the window in which its scripts existed in
-two editable places (decision 006). **`logbooks` and `fishydata_2024-2026` are
-still writable** and no date is set for them.
-
-`~/stasi/fishyweb` is not one of them: it is alive (maintainer, 2026-09-22), the third
-repo of plan 001. The copies of the ports and conversion scripts it holds are item 16's
-to remove, not a reason to archive it. Checked 2026-10-14: both old repos still writable.
-
-**check:** `logbooks` and `fishydata_2024-2026` are read-only.
-
----
-
 ## 10. `reference/species` is an empty directory
 **status:** open
 **see:** `curate/decisions/019-the-check-layer-exists.md`

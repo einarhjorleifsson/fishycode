@@ -210,7 +210,7 @@ hand-edited.
 
 ## Provenance of this repo
 
-Supersedes two repos, both archived read-only and never to be edited again:
+Supersedes two repos, never to be edited again. They stay writable, as they are (maintainer, decision 097):
 
 - `~/stasi/logbooks` — QA/methodology; `targets`; `afli` + `fs_afladagbok`
   adapters; landings match; AIS trip chain. Won all 8 forked script pairs.

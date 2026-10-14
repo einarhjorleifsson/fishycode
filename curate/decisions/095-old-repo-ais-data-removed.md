@@ -15,4 +15,4 @@ hold nothing the project needs.
 
 Both were moved to the macOS Trash (`fishydata_2024-2026_stk_trail`, `fishydata_2024-2026_ais_trail`), not deleted,
 so they can be recovered until the Trash is emptied. The repo itself stays; it is now 34 MB, with no directory over
-1 GB. Its git history is on GitHub (`einarhjorleifsson/fishydata`). Making it read-only is TODO 9.
+1 GB. Its git history is on GitHub (`einarhjorleifsson/fishydata`). Making it read-only was TODO 9, dropped the same day (decision 097).
