@@ -84,17 +84,13 @@ Reviewed 2026-09-22; steps 1–7 and 9 done (decisions 015, 020, 021, 032, 033,
 036, 039, 040, 041). Plan 008's own Phase 7 (`_targets.R` wiring) and ongoing
 candidate review remain open there, not here.
 
-**`TFPH`/`TFUT`** (named here since 2026-09-23 as "device changes hands
-mid-span, can't recover the split") **re-diagnosed 2026-09-27, more precisely
-wrong than that**: for `TFUT` at least, both `raw/vessels/vessel_v.parquet`
-(Oracle) and `raw/vessels/mmsi_iceland_archieves.parquet` (Fjarskiptastofa)
-show only two historical holders, both ending **1995** — the real mobile-id
-has pinged since 2019. The source data itself has no current holder, not a
-split we failed to recover. Same class as the 88-vid ask below.
+**`TFUT` resolves (checked 2026-10-14, plan 016 §2 i):** all four Fjarskiptastofa lists and Oracle's `vessel_mmsi`
+give it to vid 2173 (MMSI 251017000), and the key already assigns its mid 133558 to 2173 (step `segment: registry`).
+The 2026-09-27 reading ("two holders, both ending 1995") is superseded. `TFPH` is not rechecked.
 
 **Asked of the maintainer:** the 88 Icelandic vids with no MMSI on record
-(plan 003 §4.7 and §6; the note once at `ais_key.R:16-19` is gone) plus `TFUT` above — a Fiskistofa/
-Fjarskiptastofa data refresh, not a code fix.
+(plan 003 §4.7 and §6; the note once at `ais_key.R:16-19` is gone) — a Fiskistofa/Fjarskiptastofa data
+refresh, not a code fix. The refresh of 2026-10-14 is measured in plan 016 (TODO 63).
 
 **check:** the 88-vid gap and `TFUT` both resolve against a refreshed pull, or
 this item states why they can't.
@@ -193,7 +189,8 @@ looking like missed real vessels rather than a recognized class.
 
 **Asked of the maintainer:** should `R/entity_class.R` recognize `SKB` as its own
 class, and should `registry.R`'s exclusion be revisited now that it's shown to cost
-real, resolvable AIS coverage?
+real, resolvable AIS coverage? Since 2026-10-14 (vid is an integer, and a hull like an IMO number) this is
+plan 016 §5 and §7 a: SKB as `vid` 100000 + n through the whole flow (option B), or outside `vid` (A).
 
 **check:** `SKB`-prefixed mobile-ids carry a distinct `entity_class`, and
 `registry.R:35`'s exclusion has a decision record (kept or changed) either way.
@@ -375,3 +372,15 @@ logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
 
 **check:** a `dump/` script writes them to `raw/logbooks/`, an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
+
+## 63. Refresh the vessel registry and the MMSI archive
+**status:** open · **needs: maintainer** — the eight asks in plan 016 §7 (SKB option, pleasure-craft effort, 3699,
+1357's two MMSIs, the 1612 row, 3068, where the Oracle snapshots are, `mclass` over time) ·
+**see:** `curate/plans/016-vessel-registry-and-mmsi-refresh.md`, TODO 17 and 23
+
+New Oracle vessel tables were dumped on 2026-10-14 (the April set is in `$FISHYDATA/archive/raw-vessels_2026-04-25/`),
+and the March 2026 Fjarskiptastofa list was merged into `raw/mmsi/mmsi_iceland_2026-03-25.parquet`, which nothing reads.
+Adopting that merge as it stands would put four vids twice in `vessel.parquet`. The plan rebuilds the archive from
+all its sources and makes `vid` an integer and unique again, after the `rjdbc` driver turned it into a double.
+
+**check:** plan 016 §8.
