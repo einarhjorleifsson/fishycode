@@ -317,7 +317,8 @@ h. **`mclass` over time:** take it from `vessel_hist_v`, or keep today's categor
     FISKISKIP, SKEMMTISKIP, SEGLSKIP, FRÍSTUNDAFISKISKIP, … per vid and year for 2009–2017: 2,564 vids, 2,237–2,298 a
     year. 269 vids change type: 172 from SKEMMTISKIP to FISKISKIP, 43 the other way. The 2018–2022 page matrices hold
     no type text (2018 checked).
-  - **Hreiðar's table fills the gap.** The maintainer next pointed to `~/stasi/hreidar`, which is byte-identical to
+  - **Hreiðar's table fills the gap.** The maintainer next pointed to `~/stasi/hreidar` (moved into `raw/external/` with
+    `~/stasi/skipaskra` on 2026-10-14: one copy, not copies of copies), which is byte-identical to
     `raw/external/hreidar/data-raw/`. `registry.R` reads only `yh1`/`yh2` from it.
     - `HREIDAR_Islensk_skip.xlsx` ("Data main") is one row per vid and year, 1710–2021: 5,900 vids, about 2,270–2,560 a
       year since 2000. Each row has the usage type (`Notkunarteg`, in the register's vocabulary), Hreiðar's own fleet

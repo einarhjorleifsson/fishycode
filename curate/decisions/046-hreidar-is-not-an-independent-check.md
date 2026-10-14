@@ -2,7 +2,8 @@
 
 *2026-09-29. Review of `vessel_ais_key` against `HREIDAR_Islensk_skip.xlsx`. Analysis
 by Claude (AI-assisted), run against `$FISHYDATA` as it stands; nothing was written under
-it. Scratch scripts were not kept — the numbers below are the record.*
+it. Scratch scripts were not kept — the numbers below are the record. 2026-10-14: `~/stasi/hreidar` moved into `raw/external/hreidar/` (plan 016;
+the two copies were byte-identical); the old path is a symlink to it, for `fishydata_2024-2026`'s script that reads it.*
 
 ## Finding 1 — the workbook is already in the pipeline
 

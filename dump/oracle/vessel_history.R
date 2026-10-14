@@ -1,6 +1,6 @@
 # Fiskistofa's dated vessel history, the source of the fisheries-management class over time (plan 016 §7 h).
 #
-# Input:  Oracle kvoti.skipasaga (what omar::vessel_history() reads; ~/stasi/skipaskra/data/history.rda is a 2021 extract
+# Input:  Oracle kvoti.skipasaga (what omar::vessel_history() reads; raw/external/skipaskra/data/history.rda is a 2021 extract
 #         of it, reduced to one row per class change) and the list of kvoti's tables and views
 # Output: raw/vessels/kvoti_skipasaga.parquet   every row and column, as Oracle returns it
 #         raw/vessels/kvoti_overview.parquet    kvoti's tables and views, to find the class-name lookup
