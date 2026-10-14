@@ -12,6 +12,12 @@
 - the logger's own span per station against the gear-appropriate window;
 - that the over-run is one-sided.
 
+**Measured since** (2026-10-14, §8): what a day window costs in the trail, by gear class, with a holdout on
+vessel-days whose hauls or tows are recorded. Status of §5's five: (1) speed separates towed gear (decision 090)
+and longline hauls (93 %), less so gillnets (67 %), pots (57 %) and Danish seine (63 %); (2) heading: not measured;
+(3) and (4): towed gear by the stretch pairing (decision 092), static gear not yet, the holdout in §8 is the bench;
+(5) the seines: 205,284 untimed SDN stations, five a vessel-day.
+
 **Assumed** — everything about the classifier: that speed and heading separate
 fishing from steaming well enough to place a window, that the transitions are sharp
 enough to time, and that the result is worth more than the recorded times. None of
@@ -134,3 +140,48 @@ was raised on 2026-09-23 as a way to recover turns that linear interpolation era
 and it may be worth doing for swept-area work — but it produces *positions*, which is
 a heavier claim needing its own validation (the closing-error test against the next
 known AIS fix). It is a separate plan if anyone wants it, not part of this one.
+
+## 8. Measured, 2026-10-14: what a day window costs (Claude, AI-assisted, on the maintainer's request)
+
+A station with no usable time gets a day window, midnight to midnight, and a fix in it is fishing when its ±10 min
+median speed is in the gear's range (decision 093). Scripts and logs: `$FISHYDATA/archive/2026-10-todo18/`.
+
+**Weight in the trail** (fishing fixes, 2007-2025): towed 0.6 % in day windows, static 22.8 %, **jigged 80.7 %**.
+
+**Holdout:** take vessel-days whose stations of one gear all have a recorded haul (static, 213k days) or a
+recorded tow (towed, 345k days). Count the fixes called fishing inside the real windows, then over the whole day as
+if the times were missing, under the same rule (it agrees 100 % with the trail's `fishing`).
+
+| gear | extra fishing fixes at sea from a day window | haul or tow fixes called fishing |
+|---|---|---|
+| LLS | 18.4 % | 93.0 % |
+| GNS | 26.7 % | 66.6 % |
+| FPO | 30.3 % | 56.6 % |
+| OTB / OTM | 21.7 / 35.0 % | 94.6 / 94.2 % |
+| SDN | 50.1 % | 62.6 % |
+| DRB | 24.0 % | 87.3 % |
+
+- **The "extra" is an upper bound.** Static gear often logs only the haul, so part of it is unlogged setting.
+- The false fishing at sea lies before the first window and between windows about equally, and less after the last.
+- **Port time is not the trail's problem:** 3.7 % of static day-window fishing fixes are in port (gillnet's range
+  starts at 0, so a day-long window would take port time; the trail's windows evidently mostly do not).
+- **A midnight-to-midnight day cuts real hauls:** 23 % of static hauls (15 % of tows) cross midnight, and 17 %
+  (13 %) of their time falls on another date.
+- **Static day windows are one per vessel-day** (98 %); GNS ones are 89 % `event` (one record a day). Towed ones
+  are mostly Danish seine, five untimed records a vessel-day, so for SDN the question is which tow a fix belongs
+  to, not when.
+- **Dredgers** (2015-2025):
+  - On days logged without times they write 1.5 records and tow a median 104 min at dredge speed.
+  - On days logged with times, 8 records and 382 min.
+  - That is 70 min of towing per untimed record against 48 per timed one: perhaps an extra haul in two records,
+    not records skipped at scale.
+  - Counting runs merges a dredge's short back-to-back tows (0.41 runs per timed record), so minutes are the
+    fairer measure.
+
+**Where this points:**
+- **Jigging first.** It carries most of its effort in day windows. The gear moves with the boat, so the question
+  is which fixes are drifting (maintainer, 2026-10-14), not where a gear lies.
+- **Static gear second:** the over-claim is about +5 % of static fishing fixes. The idea is to place each station
+  on a hauling bout by its recorded position, with this holdout as the test bench.
+- **Towed gear** needs no window work for effort. Danish seine's which-tow question matters only for catch per
+  fix.

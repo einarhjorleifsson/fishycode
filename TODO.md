@@ -48,14 +48,16 @@ codes all resolve against it.
 ---
 
 ## 18. Fishing windows from behaviour, not from the logbook
-**status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md`, decisions 090, 092, TODO 60
+**status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md` (§8, measured 2026-10-14), decisions 090, 092, TODO 60
 
-Infer each station's fishing window from the track's own speed and heading, instead of from logbook times that
-many stations do not record. For towed gear on AIS, plan 004's measurements 1 and 4 are answered by plan 013's
-phase 4: speed separates (decision 090, Q1), and the towing stretches pair with the declared tows (decision 092;
-OTB 2015-2025 start within 15/30 min for 55-60/77-80 %). Whether the track or the logbook is right needs ground
-truth (TODO 60). Left: heading (2), static gear and seines with no recorded time (5: 40 % of static stations
-since 2007 are whole-day windows), and the afli logger as a second source.
+Infer fishing time from the track where the logbook gives none. Measured (plan 004 §8): day windows hold 80.7 % of
+jigging fishing fixes, 22.8 % of static and 0.6 % of towed. A day window calls 18-30 % more static fixes fishing at
+sea than the real hauls (an upper bound: unlogged setting), and cuts the 23 % of hauls that cross midnight.
+Next, in order:
+- jigging, where the gear moves with the boat, so the question is which fixes are drifting;
+- static gear, by placing each station on a hauling bout by its recorded position, scored on the holdout bench.
+
+Heading is not yet measured. Towed gear needs no window work for effort.
 
 **check:** plan 004's header records, for each of its five measurements, the answer or where it lives.
 
