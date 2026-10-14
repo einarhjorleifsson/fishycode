@@ -21,7 +21,7 @@ paths changed. Plan 002 found the same on 2026-09-22.
 | 2025 input | what it gave | here |
 |---|---|---|
 | `data/ais/trail` (old repo, 31 GB) | fishing fixes with metier, vessel, interval, distance, habitat, depth, catch | `staging/ais/ping_union` has none of those columns; `curated/ais/trail` replaces it |
-| `data/logbooks/station-for-ais.parquet` | the logbook in datacall form, with gear width; stations whose time resolved only to the day were consolidated to one record per vessel, gear and date with a whole-day window (maintainer, 2026-10-14; `curate/corrections/station_time_whole_day.yml`) | nowhere on disk; the curated logbook tables replace it, without that consolidation (§2) |
+| `data/logbooks/station-for-ais.parquet` | the logbook in datacall form, with gear width; records without both `t1` and `t2` went to the day, whatever their gear, and were consolidated per vessel, gear, date and landing record into one record with a whole-day window (maintainer, 2026-10-14; `fishydata_2024-2026/scripts/12_DATASET_logbooks.R:844-887`, `curate/corrections/station_time_whole_day.yml`) | nowhere on disk; the curated logbook tables replace it, without that consolidation (§2) |
 | `data/gear/gear_mapping.parquet` | `agf_gid` → gear, target, `met6` | `curated/reference/gear.parquet` has no `met6`; nor does the legacy copy |
 | `data/vessels/vessels_iceland.parquet` | `loa`, `kw_total` | `curated/vessel/vessel.parquet` (one row per vid) |
 
@@ -47,8 +47,11 @@ It also writes into the repo (`here("ices-datacall/2025/...")`), which `AGENTS.m
 | TotWeight | the station's `catch_total` shared equally over its fixes | `catch_by_species_station.catch_round` (whole weight), shared by `ramb::rb_share_catch()` | built in ramb; the method **§4 e** |
 | NoDistinctVessels, AnonymizedVesselID | `VE_ID` = row number of the vessel table, so not stable between deliveries | a fixed vid → ID key | **§4 g** |
 
-**Untimed stations.** 2025 consolidated the stations of a vessel-day that had no time into one record per gear,
-so a day had one whole-day window and every fix in it had a gear. The curated logbook keeps each station, and a day
+**Untimed stations.** In 2025 a record went to the day when it lacked `t1` or `t2`, whatever its gear: the day
+depended on the record (maintainer, 2026-10-14). Now `station_window` gives a day window when the times its gear's
+rule needs are missing, so the day depends on the gear, and the two need not pick the same stations. 2025 then
+consolidated the day records per vessel, gear, date and landing record (first station's position, effort and catch
+summed, mean width), so a day had one whole-day window per gear and every fix in it had a gear. The curated logbook keeps each station, and a day
 window per station (decision 091), so several day windows can claim one fix. The trail then fills neither `.sid`
 nor gear: **2,005,833 fishing fixes, 2009-2025 (1.9 % of 106.2 M), carry no gear**, and the datacall would drop
 them. The choice is **§4 i**.
@@ -111,7 +114,7 @@ them. The choice is **§4 i**.
    - the landing's gear (plan 014 3j);
    - the STK key from the segment table (plan 009);
    - whacky positions labelled (067);
-   - untimed stations no longer consolidated (§4 i).
+   - which stations go to the day (by record in 2025, by gear now), and their consolidation (§4 i).
 5. **Record a decision**, write the delivery to `exports/`, and close TODO 27b. TODO 8 closes when the new delivery
    supersedes 2025's.
 
