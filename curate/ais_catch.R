@@ -10,7 +10,7 @@
 #         curated/landing/landings.parquet          (.lid, schema, vid, date)
 #         curated/landing/catch.parquet             (.lid, schema, sid = species, catch kg)
 #         curated/ais/voyage.parquet                (vid, year, voyage, T1, T2, pid2: the landings' voyages)
-# Output: curated/ais/catch/year=Y/part_001.parquet
+# Output: curated/ais/catch/year=Y/part_00G.parquet  one file per vessel group (vid modulo 4)
 #         one row per (fishing fix, unit, species, approach): vid, time, unit_id, resolution, shared_unit_id,
 #         shared_resolution, species, kg, catch_basis, approach, source, raise_factor
 #
@@ -49,12 +49,16 @@ library(dplyr)
 con <- duckdbfs::cached_connection()
 DBI::dbExecute(con, sprintf("SET temp_directory = '%s'", file.path(tempdir(), "duckdb_spill")))
 # a cap below the machine's 24 GB: the default (80 %) ran out of memory in 2015 on the first try (decision 102)
-DBI::dbExecute(con, "SET memory_limit = '12GB'")
+DBI::dbExecute(con, "SET memory_limit = '14GB'")
+# row order is set by the write's ORDER BY; keeping insertion order and 8+ threads pinned memory it could not spill
+DBI::dbExecute(con, "SET preserve_insertion_order = false")
+DBI::dbExecute(con, "SET threads = 4")
 od <- function(...) duckdbfs::open_dataset(fd_curated(...))
 
 years <- sort(as.integer(sub("year=", "", list.files(fd_curated("ais", "trail"), pattern = "^year="))))
 if (nzchar(Sys.getenv("SCATCH_YEARS"))) years <- intersect(years, as.integer(strsplit(Sys.getenv("SCATCH_YEARS"), ",")[[1]]))
 out_dir <- fd_curated("ais", "catch")
+n_groups <- 4L # vessels per year are shared in this many groups (vid modulo n_groups)
 if (!nzchar(Sys.getenv("SCATCH_YEARS"))) unlink(out_dir, recursive = TRUE)
 
 dup_s <- od("logbook", "station.parquet") |> filter(twin %in% "duplicate") |> select(.sid, schema)
@@ -100,52 +104,70 @@ for (yr in years) {
                           end = dbplyr::sql("CAST(date AS TIMESTAMP) + INTERVAL 1 DAY"),
                           level = 4L, resolution = "landing")
   events <- union_all(ev_s, ev_t) |> union_all(ev_l) |> union_all(ev_lv)
-  units <- ramb::rb_build_catch_units(events, key = "id") |> dplyr::compute()
-  # an event in two units would count its catch twice (decision 102)
-  twice <- units |> distinct(id, unit_id) |> count(id) |> filter(n > 1) |> count() |> pull(n)
-  if (twice > 0) stop("ais_catch: ", yr, ": ", twice, " events fall in more than one unit")
-  catch <- union_all(
+  catch_all <- union_all(
     od("logbook", "catch.parquet") |>
       semi_join(win, by = c(".sid", "schema")) |>
       transmute(id = paste0("S|", schema, "|", as.character(.sid)), species = sid, kg = as.numeric(catch)),
     od("landing", "catch.parquet") |>
       semi_join(ld |> filter(date >= !!d0), by = c(".lid", "schema")) |>
       transmute(id = paste0("L|", schema, "|", as.character(.lid)), species = sid, kg = as.numeric(catch))
-  ) |> filter(!is.na(kg)) |> dplyr::compute()
-  kg_in <- catch |> summarise(kg = sum(kg)) |> pull(kg)
-  pings <- duckdbfs::open_dataset(file.path(fd_curated("ais", "trail"), paste0("year=", yr))) |>
-    select(vid, time, fishing, fishing_flow, hours)
-  shared <- lapply(c("fishing", "fishing_flow"), function(a)
-    ramb::rb_share_catch(pings, units, catch, key = "id", fishing = a))
-  # the raising factor, per trip and species, onto the units of the logbook
+  ) |> filter(!is.na(kg))
+  kg_year <- catch_all |> summarise(kg = sum(kg)) |> pull(kg)
   st <- od("logbook", "station.parquet") |> anti_join(dup_s, by = c(".sid", "schema")) |> select(.sid, schema, .tid)
-  ut <- units |> filter(substr(id, 1, 2) == "S|") |>
-    mutate(schema = dbplyr::sql("split_part(id, '|', 2)"),
-           .sid = dbplyr::sql("CAST(split_part(id, '|', 3) AS DOUBLE)")) |>
-    inner_join(st, by = c(".sid", "schema")) |>
-    group_by(unit_id) |> summarise(.tid = min(.tid), schema = min(schema), .groups = "drop")
   logged <- od("logbook", "catch.parquet") |> inner_join(st, by = c(".sid", "schema")) |>
     group_by(.tid, schema, species = sid) |> summarise(kg_lb = sum(catch, na.rm = TRUE), .groups = "drop")
   landed <- od("logbook", "lid_map.parquet") |> select(.tid, schema, .lid, schema_land) |>
     inner_join(od("landing", "catch.parquet") |> select(.lid, schema_land = schema, species = sid, catch),
                by = c(".lid", "schema_land")) |>
     group_by(.tid, schema, species) |> summarise(kg_ld = sum(catch, na.rm = TRUE), .groups = "drop")
-  rf <- ut |> inner_join(logged, by = c(".tid", "schema")) |>
-    inner_join(landed, by = c(".tid", "schema", "species")) |>
-    filter(kg_lb > 0) |> transmute(unit_id, species, raise_factor = kg_ld / kg_lb)
-  res <- union_all(shared[[1]], shared[[2]]) |>
-    mutate(source = if_else(substr(resolution, 1, 7) == "landing", "landing", "logbook")) |>
-    left_join(rf, by = c("unit_id", "species"))
-  sql <- as.character(dbplyr::sql_render(res))
-  f <- file.path(out_dir, paste0("year=", yr), "part_001.parquet")
+  trail_y <- duckdbfs::open_dataset(file.path(fd_curated("ais", "trail"), paste0("year=", yr))) |>
+    select(vid, time, fishing, fishing_flow, hours)
   part <- list.files(file.path(fd_curated("ais", "trail"), paste0("year=", yr)), "parquet$", recursive = TRUE,
                      full.names = TRUE)
-  n <- write_curated_sql(con, sql, f, inputs = c(inputs, part), order_by = "vid, time, approach")
-  kg_out <- DBI::dbGetQuery(con, sprintf("SELECT approach, sum(kg) AS kg FROM read_parquet('%s') GROUP BY approach", f))
-  message(sprintf("%d: %s rows; kg in %.0f, out %s", yr, format(n, big.mark = ","), kg_in,
-                  paste(sprintf("%s %.0f", kg_out$approach, kg_out$kg), collapse = ", ")))
-  if (any(abs(kg_out$kg - kg_in) > 1e-6 * max(1, kg_in))) stop("ais_catch: ", yr, " kilograms out differ from kilograms in")
-  # the year's temporary tables (computed units and catch, the landing links, ramb's islands) would pile up
+  keep <- DBI::dbGetQuery(con, "SELECT table_name FROM duckdb_tables() WHERE temporary")$table_name
+  kg_done <- 0
+  # vessels in groups: a vessel's units, fixes and landings are its own, so the groups share independently; one
+  # year at once ran out of memory in 2017 (decision 102)
+  for (g in seq_len(n_groups) - 1L) {
+    in_g <- function(x) filter(x, vid %% !!n_groups == !!g)
+    units <- ramb::rb_build_catch_units(in_g(events), key = "id") |> dplyr::compute()
+    # an event in two units would count its catch twice (decision 102)
+    twice <- units |> distinct(id, unit_id) |> count(id) |> filter(n > 1) |> count() |> pull(n)
+    if (twice > 0) stop("ais_catch: ", yr, ": ", twice, " events fall in more than one unit")
+    catch <- catch_all |> semi_join(units |> distinct(id), by = "id") |> dplyr::compute()
+    kg_in <- catch |> summarise(kg = sum(kg)) |> pull(kg)
+    kg_in <- if (is.na(kg_in)) 0 else kg_in
+    shared <- lapply(c("fishing", "fishing_flow"), function(a)
+      ramb::rb_share_catch(in_g(trail_y), units, catch, key = "id", fishing = a))
+    # the raising factor, per trip and species, onto the units of the logbook
+    ut <- units |> filter(substr(id, 1, 2) == "S|") |>
+      mutate(schema = dbplyr::sql("split_part(id, '|', 2)"),
+             .sid = dbplyr::sql("CAST(split_part(id, '|', 3) AS DOUBLE)")) |>
+      inner_join(st, by = c(".sid", "schema")) |>
+      group_by(unit_id) |> summarise(.tid = min(.tid), schema = min(schema), .groups = "drop")
+    rf <- ut |> inner_join(logged, by = c(".tid", "schema")) |>
+      inner_join(landed, by = c(".tid", "schema", "species")) |>
+      filter(kg_lb > 0) |> transmute(unit_id, species, raise_factor = kg_ld / kg_lb)
+    res <- union_all(shared[[1]], shared[[2]]) |>
+      mutate(source = if_else(substr(resolution, 1, 7) == "landing", "landing", "logbook")) |>
+      left_join(rf, by = c("unit_id", "species"))
+    f <- file.path(out_dir, paste0("year=", yr), sprintf("part_%03d.parquet", g + 1L))
+    n <- write_curated_sql(con, as.character(dbplyr::sql_render(res)), f, inputs = c(inputs, part),
+                           order_by = "vid, time, approach")
+    kg_out <- DBI::dbGetQuery(con, sprintf("SELECT approach, sum(kg) AS kg FROM read_parquet('%s') GROUP BY approach", f))
+    message(sprintf("%d group %d: %s rows; kg in %.0f, out %s", yr, g, format(n, big.mark = ","), kg_in,
+                    paste(sprintf("%s %.0f", kg_out$approach, kg_out$kg), collapse = ", ")))
+    if (any(abs(kg_out$kg - kg_in) > 1e-6 * max(1, kg_in))) {
+      stop("ais_catch: ", yr, " group ", g, " kilograms out differ from kilograms in")
+    }
+    kg_done <- kg_done + kg_in
+    # the group's temporary tables (units, catch, ramb's islands) would pile up
+    for (t in setdiff(DBI::dbGetQuery(con, "SELECT table_name FROM duckdb_tables() WHERE temporary")$table_name, keep))
+      DBI::dbExecute(con, sprintf('DROP TABLE IF EXISTS "%s"', t))
+  }
+  # every kilogram of the year is in some group: none is tied to no event
+  if (abs(kg_done - kg_year) > 1e-6 * max(1, kg_year)) stop("ais_catch: ", yr, " catch tied to no event")
   for (t in DBI::dbGetQuery(con, "SELECT table_name FROM duckdb_tables() WHERE temporary")$table_name)
     DBI::dbExecute(con, sprintf('DROP TABLE IF EXISTS "%s"', t))
 }
+
