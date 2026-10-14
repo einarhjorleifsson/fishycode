@@ -248,7 +248,9 @@ fishing_sample <- fishing_sample |>
   mutate(.t2_source = if_else(!is.na(hhmm), "data", "derived"),
          .t3_source = if_else(!is.na(t3),   "data", "derived"),
          duration_m = if_else(duration_m <= 0, NA_real_, duration_m),
-         hhmm = if_else(!is.na(hhmm) & hhmm >= 100, hhmm, NA_real_),
+         # 00:00-00:59 is a time like any other: hour 0 holds 185,943 tow starts, between hour 23's 158,605 and
+         # hour 1's 160,769. A `>= 100` here dropped them all until 2026-10-14 (decision 087).
+         hhmm = if_else(!is.na(hhmm) & hhmm >= 0, hhmm, NA_real_),
          hh   = as.integer(hhmm %/% 100),
          hh   = if_else(hh < 24, hh, NA_integer_),
          mm   = as.integer(hhmm %% 100),
