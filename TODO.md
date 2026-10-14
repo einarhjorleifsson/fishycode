@@ -435,19 +435,7 @@ No local source has known tow times for Icelandic towed gear. The afli logger fo
 and WKSSFGEO's OTB AIS labels only fishing pings. The surveys' hired trawlers are in the AIS, and staff record each
 tow's start and end. Without such a set, plan 013's override cases cannot be tuned.
 
+Until then the stretch pairing (decision 092) stays out of the flow; whether it serves as a check meanwhile is
+the maintainer's call (decision 093).
+
 **check:** a survey tow table is in `raw/` with a `dump/` script, and the pairing is scored against it.
-
-## 61. Rebuild the trail with the ±10 min fishing speed
-**status:** open · **needs: maintainer** — the go for the rebuild, and for pushing ramb 2026.10.14.5
-· **see:** decision 093
-
-Built and dry-run on June and January 2023: only `fishing` changes, and the trail and `trail_match` agree. To do:
-- invalidate the trail by hand (`targets` cannot see the edit), rebuild it with `tar_make_isolated()`, and compare
-  fingerprints before and after;
-- render `docs/ais_trail.qmd`, whose proof recomputes `fishing`.
-
-Open beside it: whether the stretch pairing (decision 092) becomes a check in `curate/checks/`. It stays out of
-the flow until ground truth (TODO 60).
-
-**check:** the trail and `trail_match` are rebuilt with ramb ≥ 2026.10.14.5, the fingerprints show only `fishing`
-changed, and `docs/ais_trail.qmd` renders.
