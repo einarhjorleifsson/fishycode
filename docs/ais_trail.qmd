@@ -177,7 +177,7 @@ per_station(x1)
 
 The logger gives this vessel only three fixes (it has about 2,900 for the whole of 2019; most
 vessels have a fix every 5–10 minutes). Also, `fishing` is stricter than "in a tow window": it
-needs the speed inside the gear's `[s1, s2]`, and 1787 is a slow trawler (plan 010 §11: 1.9–2.4 kn
+needs the speed (the median within ±10 min) inside the gear's `[s1, s2]`, and 1787 is a slow trawler (plan 010 §11: 1.9–2.4 kn
 in tows) below the OTB lower limit of 2.62 kn. Use `n_sid == 1` for "belongs to a station" and
 `fishing` for "was towing at fishing speed".
 
