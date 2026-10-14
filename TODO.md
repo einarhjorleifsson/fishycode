@@ -79,12 +79,11 @@ parallel development as how the forks were born.
 two editable places (decision 006). **`logbooks` and `fishydata_2024-2026` are
 still writable** and no date is set for them.
 
-**2026-09-22: a third one.** `~/stasi/fishyweb` was pulled from GitHub and is
-writable, and it holds yet another copy of the ports and source-conversion scripts
-(item 16). It cannot be made read-only until item 16 decides what survives it, so it
-is listed here as known-open rather than silently missing from the check.
+`~/stasi/fishyweb` is not one of them: it is alive (maintainer, 2026-09-22), the third
+repo of plan 001. The copies of the ports and conversion scripts it holds are item 16's
+to remove, not a reason to archive it. Checked 2026-10-14: both old repos still writable.
 
-**check:** `logbooks`, `fishydata_2024-2026` and `fishyweb` are read-only.
+**check:** `logbooks` and `fishydata_2024-2026` are read-only.
 
 ---
 
@@ -134,13 +133,16 @@ reopens it or decides the rows stay out for good.
 ---
 
 ## 18. Fishing windows from behaviour, not from the logbook
-**status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md`
+**status:** open · **see:** `curate/plans/004-behavioural-fishing-windows.md`, decisions 090, 092, TODO 60
 
-Infer each station's fishing window from the logger's own speed and heading, instead of
-from logbook times that 7,336 stations a year do not record at all. Five cheap
-measurements decide whether it is worth building; none has been done.
+Infer each station's fishing window from the track's own speed and heading, instead of from logbook times that
+many stations do not record. For towed gear on AIS, plan 004's measurements 1 and 4 are answered by plan 013's
+phase 4: speed separates (decision 090, Q1), and the towing stretches pair with the declared tows (decision 092;
+OTB 2015-2025 start within 15/30 min for 55-60/77-80 %). Whether the track or the logbook is right needs ground
+truth (TODO 60). Left: heading (2), static gear and seines with no recorded time (5: 40 % of static stations
+since 2007 are whole-day windows), and the afli logger as a second source.
 
-**check:** plan 004's five measurements are recorded in its header.
+**check:** plan 004's header records, for each of its five measurements, the answer or where it lives.
 
 ## 17. Full review of the STK vessel match
 **status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`,
@@ -321,9 +323,10 @@ through `overrides/` or carries a stated reason, and the 884 are re-counted.
 ## 27b. Link pings to trips and fishing activity (the `trail`)
 **status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/010-ping-activity-link.md` §7, §10-§12b
 
-Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014). Open: the datacall still reads `staging/ping_union`
-and must be repointed to `curated/ais/trail`; the voyage-only `.tid` for fixes outside every window; 76 % of static-gear
-stations are whole-day windows (item 18 is the cure); whether to store a sorted wide `ais/trail` (maintainer).
+Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
+trip (`.tid_voyage`) on fixes outside every window. Open: the datacall still reads `staging/ais/ping_union` (checked
+2026-10-14) and must be repointed to `curated/ais/trail`; whole-day windows are 40 % of static, 15 % of towed and
+76 % of jigged stations since 2007 (item 18); whether to store a sorted wide `ais/trail` (maintainer).
 
 **check:** `products/ices_vms_datacall/build.R` runs on `ais_trail()`, and every synthesised window carries `win_basis`.
 
