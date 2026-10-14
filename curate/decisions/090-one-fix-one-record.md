@@ -48,7 +48,8 @@ impossible, so the algorithm must never produce it.
 
 ## The four questions of TODO 56
 
-The numbers are in plan 013 phase 4 ("Measured").
+The numbers are in plan 013 phase 4 ("Measured"). The answers below are from 2023 and June 2023; the next section
+repeats the tests on all years.
 
 1. **The speed window wins inside the windows.** Measured on 2023, at sea:
    - Fixes in recorded tows called fishing rise from 89.9 % (the fix's own speed) to 93.4 % at ±10 min. Static
@@ -77,6 +78,43 @@ The numbers are in plan 013 phase 4 ("Measured").
      gear and `rb_link_record_sets()`.
    - The candidate is MFRI's own groundfish surveys: hired trawlers in the AIS, with tow start and end recorded by
      staff (TODO 60, maintainer).
+
+## The same tests on all years (maintainer's request, same day)
+
+Q1 and Q2 were rerun on every trail year (2007-2026). Q2 ran on every month, and Q3 was checked on all years. The
+June 2023 answers hold where the track is dense. The wider data add four things.
+
+- **Q1, pooled over all years** (share called fishing inside recorded windows; share called not fishing outside them):
+
+  | gear class | in: own speed / ±10 / ±20 | ≥ 30 min out: same | < 30 min out: same |
+  |---|---|---|---|
+  | towed (58.5 M in) | 89.2 / 92.7 / 94.4 % | 87.2 / 86.8 / 86.2 % | 58.3 / 50.0 / 36.2 % |
+  | static (30.4 M) | 84.8 / 88.8 / 90.5 % | 81.4 / 81.3 / 81.0 % | 74.1 / 73.1 / 70.9 % |
+  | jigged (5.5 M) | 58.8 / 59.7 / 63.1 % | 76.5 / 76.3 / 76.0 % | 75.2 / 75.8 / 75.7 % |
+
+  - Every year gains 1-5 points inside the towed windows and loses 0.3-0.6 far from them.
+  - Next to a window the window costs twice what June 2023 showed. That does not touch the trail's `fishing`,
+    which tests speed only inside windows. It is why the stretch cut needs the declared tows as its prior.
+- **Q2, all years** (1,285,948 tow operations):
+
+  | variant | paired | start within 15 / 30 min | end within 15 / 30 min | invariant breaks |
+  |---|---|---|---|---|
+  | own speed, no prior | 85.6 % | 39.9 / 51.0 % | 36.7 / 46.6 % | 0 |
+  | ±10 min, cut at the declared tows, exclusive | 87.3 % | 46.6 / 64.7 % | 46.4 / 60.5 % | 0 |
+  | the same stretches, each tow its best stretch alone | 88.3 % | 46.5 / 64.6 % | 46.2 / 60.4 % | 27,863 |
+
+  - **Exclusivity costs nothing in agreement**, and the non-exclusive choice breaks the invariant.
+  - The one cost is dredges (DRB): 83.6 % paired against 95.2 %, because one stretch holds several short declared
+    tows.
+  - **OTB, 2015-2025:** 98-99 % paired, start within 15/30 min for 55-60/77-80 %, end 62-68/75-80 %.
+  - **Before 2012 the track is too sparse:** OTB paired 20 % in 2007, 63 % in 2008, 81 % in 2010.
+  - **By source:** fs_afladagbok 96.8 % paired (start 51/74 %); afli 85.4 % (46/63 %). afli's capped tows pair
+    only 50.8 %.
+  - 33 % of towing-speed stretches hold no declared tow.
+- **Q3, all years:** 46,399 tows (3.8 % of 1.22 M with a t2 anchor) lose a t2 or t3 anchor under the exclusive
+  rule. The pairing still bounds 19,553 of them (42 %; June 2023: 50 of 57). The losses gather where the track is
+  sparse, which is also where the pairing fails. The join matched some operations sharing a t2 more than once, so
+  these counts are approximate.
 
 ## What is to be built (each its own TODO and its own go)
 

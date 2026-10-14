@@ -447,12 +447,13 @@ landings link. Write a correction (`curate/corrections/`, a flag, never a deleti
 ## 59. The voyage-wide pairing and the speed window, into ramb
 **status:** open · **see:** decision 090, plan 013 phase 4 ("Measured", items 1-2)
 
-The prototype paired 99 % of June 2023 tows exclusively; OTB starts were within 15/30 min for 62/77 % of tows.
+The prototype paired 99 % of June 2023 tows exclusively (OTB 2015-2025: 98-99 %, start within 15/30 min 55-60/77-80 %).
 Build:
 - a windowed speed (median over ±10 min) for `rb_assign_fishing()`;
 - the stretch cut and the ordered, exclusive pairing (two step-2 functions; names by plan 013's verb table).
 
-SDN and OTM need a phase model, not one speed range. Not before TODO 57.
+SDN and OTM need a phase model, not one speed range. Dredges (DRB) need a stretch to hold several short
+tows. All years: 87.3 % paired, and before 2012 the track is too sparse. Not before TODO 57.
 
 **check:** ramb exports the two functions and the windowed speed, tested on a fixture, and the June 2023 prototype
 numbers are reproduced.

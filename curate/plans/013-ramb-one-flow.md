@@ -688,6 +688,16 @@ Each phase ends with three things:
             WKSSFGEO's OTB AIS labels only fishing pings.
           - The labelled dredge and pot sets suit static gear.
           - Candidate: MFRI's groundfish survey tows (TODO 60).
+       5. *All years* (2007-2026, maintainer's request; decision 090 has the tables):
+          - **Q1 holds in every year.** Inside the towed windows, 89.2 → 92.7 % are called fishing at ±10 min.
+            Far from them, 87.2 → 86.8 % are called not fishing. Within 30 min of a window the cost is
+            58.3 → 50.0 %.
+          - **Q2, 1.29 M tow operations:** 87.3 % paired, start within 15/30 min for 46.6/64.7 %.
+            - Exclusive and independent pairing on the same stretches agree equally, but the independent one
+              breaks the invariant 27,863 times.
+            - OTB 2015-2025: 98-99 % paired, start 55-60/77-80 %.
+            - Before 2012 the track is too sparse (OTB 2007: 20 % paired).
+            - Dredges lose 11.6 points of pairing to exclusivity, because one stretch holds several short tows.
    - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
      haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
      to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting
