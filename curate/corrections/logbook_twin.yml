@@ -1,6 +1,6 @@
 id: logbook_twin
 title: one logbook operation entered as two or more stations (twin records); duplicates are flagged and left out of every sum and link
-status: applied 2026-10-14 - flagged in curated/logbook/{station,trip}.parquet and left out downstream (decision 094); TODO 58 closed
+status: applied and rebuilt 2026-10-14 - flagged in curated/logbook/{station,trip}.parquet and left out downstream; no duplicate left in any consumer (decision 094); TODO 58 closed
 applies_to:
   - curated/logbook/station.parquet   # twin, twin_of
   - curated/logbook/trip.parquet      # twin, twin_of
@@ -30,8 +30,9 @@ evidence:
     of 2.12 with every copy and 1.01 with one; 96.1 % of trips are nearer the landing with one. Trips with no twin
     have 0.99 (afli 2010+), 0.97 (fs_afladagbok), 0.95 (adb).
   landings_two_trips: >-
-    fs_afladagbok trip pairs on one landing (1,837 pairs): 0.96 for either trip, 1.93 for both. The resubmitted
-    trips are the same vendor's, with the same dates, 2022-2025 (most in 2022-2023).
+    fs_afladagbok trip pairs on one landing (1,837 pairs): 0.96 for either trip, 1.93 for both. Of the 739
+    resubmitted trips (557 in 2023), 724 come from the same vendor, 586 have the same dates and 148 a later
+    arrival (median 6.5 h); both trips' dates contain the stations in every case.
   same_time_is_not_a_copy: >-
     afli trips whose same-time stations differ in catch (198 trips with one landing): 1.09 with both, 0.90 with
     one dropped, and dropping is nearer in only 45.5 %. By how the catch differs: disjoint species (22 trips)
@@ -62,6 +63,12 @@ applied_in:
   - curate/link_trip_voyage.R    # no duplicate trip
   - docs/merge.qmd               # "Twin records", and the annual totals without duplicates
   - docs/data-dict.yaml          # twin, twin_of on logbook_station and logbook_trip
+
+after_the_rebuild: >-
+  The counts above, exactly; no duplicate in station_window, station_event, trail_match, the trail, either catch
+  table, lid_map or trip_voyage. afli trips that held a duplicate: logbook / landed 1.01 (928 trips; 2.12 before).
+  catch_by_species_station lost 82,624 t counted twice; 220,305 more trail fixes carry their trip (.tid_voyage).
+  Every output outside the logbook-to-trail chain is unchanged (fingerprints, decision 094).
 
 open: >-
   same_time stations stay two records with equal times, so the AIS track cannot place them apart. Where their

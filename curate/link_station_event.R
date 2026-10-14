@@ -23,7 +23,8 @@
 # One fix, one record (maintainer, decision 090; built in decision 091): a fix bounds the events of at most one
 # station, and of one phase of it (setting t1-t2 or hauling t3-t4). When two would share it, the event nearer in
 # time keeps it, then the earlier event time, then the lower (.sid, schema); the others have `ping_lost` TRUE and
-# no fix. Twins (TODO 58) are broken the same way until the maintainer decides which keeps the link.
+# no fix. A duplicate twin has no window and so no events (curate/corrections/logbook_twin.yml); same-time twins
+# are broken the same way.
 #
 # Year by year, so DuckDB's two ASOF joins see one year of fixes and events at a time, plus a month of fixes
 # either side. Each event is linked in the year of its own time. The events within a day of the year go in too,

@@ -3,7 +3,7 @@
 *2026-10-14. Measured and built by Claude (AI-assisted) on the maintainer's request (TODO 58). The choices are the
 maintainer's, the same day: leave out the catch of duplicates only, let the first record keep the link, put
 accuracy first whatever the rebuild costs, and report the duplication where analysts read. The declaration is
-`curate/corrections/logbook_twin.yml`.*
+`curate/corrections/logbook_twin.yml`. Rebuilt the same day (below); closes TODO 58.*
 
 ## What a twin is: three things, not one
 
@@ -16,8 +16,9 @@ the merged logbook (24,823 stations; read-only, 2026-10-14), they are three thin
 | same time | 6,035 stations | | differs | records of their own whose times equal another's |
 | date only | 386 | | | every time at 00:00: several untimed stations of one day, not twins |
 
-- **fs_afladagbok:** 739 trips were submitted again, by the same vendor with the same dates, mostly in 2022-2023.
-  Each repeats exactly one trip (479 trips, some sent three times or more).
+- **fs_afladagbok:** 739 trips were submitted again, 557 of them in 2023. Each repeats exactly one trip (479
+  trips, some sent three times or more). 724 come from the same vendor. 586 have the same dates, and 148 a later
+  arrival (median 6.5 h). Both trips' dates contain the stations in every case.
 - **afli:** single stations were entered twice within one trip, 1969-2023 (5,286 of 5,813 duplicates). The
   same-time records are towed and seine gear (OTB, SDN, PS) for the most part.
 - **adb:** 235 duplicates on 2 resubmitted trips, 2026.
@@ -46,6 +47,8 @@ The landings are the witness that never reads the logbook's times.
   rules differ in 17 of 7,529 duplicate sets, all on two trips where only the later is linked. With the
   duplicate out, `lid_map` matches the kept trip on its own keys.
 - A trip all of whose stations are duplicates of one other trip is a duplicate trip. The other is the kept trip.
+  Its dates contain the stations in every case. Where the resubmission gives a later arrival, which arrival is
+  right is not tested.
 - Nothing is deleted. `station.parquet` and `trip.parquet` carry `twin` (`kept`, `duplicate`, `same_time`) and
   `twin_of` (the kept `.sid` or `.tid`). `catch.parquet` keeps every row.
 
@@ -65,6 +68,38 @@ The landings are the witness that never reads the logbook's times.
 - **Reported:** the correction entry; "Twin records" in `docs/merge.qmd`, whose annual totals now leave
   duplicates out; `twin` and `twin_of` in `docs/data-dict.yaml`; this record.
 
+## The rebuild (maintainer's go, 2026-10-14)
+
+`logbook` was invalidated by hand and the 13 targets downstream rebuilt with `tar_make_isolated()` at fishycode
+975dbbb, with ramb 2026.10.14.5, in 29 min (the trail 24). `tar_outdated()` is empty afterwards.
+
+- **Fingerprints** (847 files): everything outside the logbook-to-trail chain is identical, including
+  `catch.parquet`, `fishing_sample.parquet`, the AIS side and the landings. `station.parquet` and `trip.parquet`
+  have the two new columns and changed `station_type`. The trail has the same 566,714,976 fixes.
+- **The twins:** the counts are those declared. Every `twin_of` names a kept record. **No duplicate is left in
+  `station_window`, `station_event`, `trail_match`, the trail, either catch table, `lid_map` or `trip_voyage`.**
+- **Catch:** `catch_by_species_station` lost 82,624 t counted twice (afli 48,178, fs_afladagbok 31,902, adb 2,545).
+  `catch_by_species_trip` lost 43,087 t of logbook catch. It also lost 32,725 t of landed catch from trip rows,
+  where a landing was repeated on the original and on the resubmitted trip; 31 t moved to landings with no trip.
+- **The landings as witness, after:** afli trips that held a duplicate (928 with one landing) have logbook /
+  landed 1.01 (2.12 before).
+- **`lid_map`:** 790,875 → 790,205 trips. Trips on a shared landing went from 7,865 to 6,825. The net count rose
+  by one in three steps (fs_afladagbok date ±1 and weight, afli date ±2): a few kept trips match without their
+  copy. Not traced trip by trip.
+- **`trip_voyage`:** 797,639 → 796,922 links.
+- **The trail:** 220,305 more fixes carry their trip (`.tid_voyage`), mostly 2022-2023 (+86,465, +88,967) and 2026
+  (+16,840). 283 lost it (2014, 2021); not traced. Fixes with one station (`n_sid`) rose by 1,971. The gear
+  columns changed in 12 month files and `fishing` in 2, following the gear `lid_map` gives a station; not traced.
+- **Windows:** 7,494,007 → 7,483,178 rows (9,729 duplicate stations; 15 more were deleted records and already
+  out). Emptied windows fell from 34,776 to 24,741. `station_event` 10,991,846 → 10,972,058 rows, with the same
+  3,513,526 fixes. `trail_match` 186,003,233 → 185,990,618 candidate rows.
+- **`station_type`:** at least 3,916 stations moved out of `operation` (derived). With the copies out, their
+  vessel-years record one station a day: fs_afladagbok gained 1,598 `event` and afli 339, and longline
+  `operation` (synthesised) rose by 1,977.
+- `docs/merge.qmd` renders with the new "Twin records" table.
+
+The scripts, logs, fingerprints and measures are in `$FISHYDATA/archive/2026-10-todo58/`, with a README.
+
 ## Open
 
 - Same-time records cannot be placed apart by the track, because their times are equal. Where their positions
@@ -73,4 +108,3 @@ The landings are the witness that never reads the logbook's times.
 - The `once` project reads `trip.parquet` and `fishing_sample.parquet`. It is frozen (decision 075) and was not
   rebuilt. The logbook gained two columns and kept every row.
 
-The counting scripts are in `$FISHYDATA/archive/2026-10-todo58/`.

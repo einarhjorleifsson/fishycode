@@ -413,19 +413,6 @@ function name follows ("port, not harbour").
 
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
-## 58. Twin records: one operation entered as two stations
-**status:** in progress — built 2026-10-14 on the maintainer's rule, rebuild running (decision 094) · **see:** decisions 090, 094
-
-24,768 stations share all of t1-t4 with another station of their vessel:
-- fs_afladagbok: about 2,000 trips submitted twice (same dates, same vendor), 2022-2025;
-- afli: 8,465 same-trip pairs with the same gear;
-- adb: 351 pairs.
-
-They make 279k `trail_match` fixes ambiguous. They may also count catch twice in `catch_by_species_*` and in the
-landings link. Write a correction (`curate/corrections/`, a flag, never a deletion) after counting the catch side.
-
-**check:** a correction entry declares the rule and its count, and the twins carry a flag in `curated/logbook/`.
-
 ## 60. Ground truth for towed-gear tow times
 **status:** open · **needs: maintainer** — access to MFRI's groundfish survey tow records (start and end) for the
 hired trawlers · **see:** decision 090
