@@ -48,6 +48,8 @@
 library(dplyr)
 con <- duckdbfs::cached_connection()
 DBI::dbExecute(con, sprintf("SET temp_directory = '%s'", file.path(tempdir(), "duckdb_spill")))
+# a cap below the machine's 24 GB: the default (80 %) ran out of memory in 2015 on the first try (decision 102)
+DBI::dbExecute(con, "SET memory_limit = '12GB'")
 od <- function(...) duckdbfs::open_dataset(fd_curated(...))
 
 years <- sort(as.integer(sub("year=", "", list.files(fd_curated("ais", "trail"), pattern = "^year="))))
@@ -143,4 +145,7 @@ for (yr in years) {
   message(sprintf("%d: %s rows; kg in %.0f, out %s", yr, format(n, big.mark = ","), kg_in,
                   paste(sprintf("%s %.0f", kg_out$approach, kg_out$kg), collapse = ", ")))
   if (any(abs(kg_out$kg - kg_in) > 1e-6 * max(1, kg_in))) stop("ais_catch: ", yr, " kilograms out differ from kilograms in")
+  # the year's temporary tables (computed units and catch, the landing links, ramb's islands) would pile up
+  for (t in DBI::dbGetQuery(con, "SELECT table_name FROM duckdb_tables() WHERE temporary")$table_name)
+    DBI::dbExecute(con, sprintf('DROP TABLE IF EXISTS "%s"', t))
 }
