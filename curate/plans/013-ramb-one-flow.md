@@ -701,6 +701,9 @@ Each phase ends with three things:
             - OTB 2015-2025: 98-99 % paired, start 55-60/77-80 %.
             - Before 2012 the track is too sparse (OTB 2007: 20 % paired).
             - Dredges lose 11.6 points of pairing to exclusivity, because one stretch holds several short tows.
+       6. *Built* (2026-10-14, decision 092; TODO 59): `rb_calc_speed_smooth()`, `rb_assign_fishing(window_s =)`,
+          `rb_cut_record_stretches()` and `rb_link_record_stretches()` in ramb 2026.10.14.4. June 2023 reproduced
+          tow for tow. Not yet used in fishycode (TODO 61).
    - **Set ↔ haul pairing for static gear**, `rb_link_record_sets(hauls, pings)` (maintainer, 2026-10-09). Build each
      haul's line from its pings, then find the earlier pass along that line (iapesca: 330–550 m, the same voyage or up
      to two voyages back, within 240 h). That pass is the set. The result is the set time, the soak, and the setting

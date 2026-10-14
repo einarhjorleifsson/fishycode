@@ -102,7 +102,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   `rb_calc_speed(method = )`, `rb_link_record_events()` (decision 088) and the exclusive windows and event links
   with `win_opened_by` and `ping_lost` (decision 091). The data on disk were built with ramb 2026.10.13.3 (the full
   rebuild of 2026-10-13/14, decision 086), the afli → trail chain with 2026.10.14.1 (decision 089), `station_window`
-  with 2026.10.14.2 and `station_event` and the trail with 2026.10.14.3 (decision 091). `targets` does not track ramb, so a ramb change shows up in no
+  with 2026.10.14.2 and `station_event` and the trail with 2026.10.14.3 (decision 091). The installed 2026.10.14.4
+  adds the towing-stretch pairing and the windowed speed (decision 092), which nothing here calls yet (TODO 61).
+  `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
 
   The point of the rule is that **forking** killed the previous trees: five

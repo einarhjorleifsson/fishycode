@@ -427,20 +427,6 @@ landings link. Write a correction (`curate/corrections/`, a flag, never a deleti
 
 **check:** a correction entry declares the rule and its count, and the twins carry a flag in `curated/logbook/`.
 
-## 59. The voyage-wide pairing and the speed window, into ramb
-**status:** open · **see:** decision 090, plan 013 phase 4 ("Measured", items 1-2)
-
-The prototype paired 99 % of June 2023 tows exclusively (OTB 2015-2025: 98-99 %, start within 15/30 min 55-60/77-80 %).
-Build:
-- a windowed speed (median over ±10 min) for `rb_assign_fishing()`;
-- the stretch cut and the ordered, exclusive pairing (two step-2 functions; names by plan 013's verb table).
-
-SDN and OTM need a phase model, not one speed range. Dredges (DRB) need a stretch to hold several short
-tows. All years: 87.3 % paired, and before 2012 the track is too sparse. TODO 57 is done (decision 091).
-
-**check:** ramb exports the two functions and the windowed speed, tested on a fixture, and the June 2023 prototype
-numbers are reproduced.
-
 ## 60. Ground truth for towed-gear tow times
 **status:** open · **needs: maintainer** — access to MFRI's groundfish survey tow records (start and end) for the
 hired trawlers · **see:** decision 090
@@ -450,3 +436,19 @@ and WKSSFGEO's OTB AIS labels only fishing pings. The surveys' hired trawlers ar
 tow's start and end. Without such a set, plan 013's override cases cannot be tuned.
 
 **check:** a survey tow table is in `raw/` with a `dump/` script, and the pairing is scored against it.
+
+## 61. Use the stretch pairing and the windowed speed in the flow
+**status:** open · **needs: maintainer** — the go for the rebuild, and which speed range a fix takes
+· **see:** decision 092
+
+ramb 2026.10.14.4 has the functions; fishycode calls none of them yet. To do:
+- a pairing table (one row per tow operation: its stretch, `dt_start_s`, `dt_end_s`, `stretch_lost`) beside
+  `station_event`, the two candidates that `rb_reconcile_time()` will compare;
+- the trail's `fishing` at `window_s = 600`, with a margin of fixes either side of each month, and `trail_match`'s
+  `fishing` made to agree with it;
+- the speed range per fix: the prototype's vessel-month commonest, or the range of the tow nearest in time.
+
+Twins: one record per operation once TODO 58 has resolved them.
+
+**check:** the pairing table is in `curated/link/`, the trail's `fishing` uses ±10 min, and decision 092's 2023 numbers
+are reproduced from the built table.
