@@ -414,21 +414,16 @@ function name follows ("port, not harbour").
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
 ## 57. One fix, one record: make the assignments exclusive
-**status:** open · **see:** decision 090, plan 013 phase 4 ("Measured")
+**status:** in progress · **see:** decisions 090, 091
 
-The maintainer's invariant: a fix belongs to at most one record, and to one phase of it. It applies to the trail,
-`station_event` and the pairing; `trail_match` stays a candidate table. Today `station_event` gives 62,694 fixes to
-two operations or phases. The window rules also leave real overlaps uncapped (452k `trail_match` fixes). In ramb,
-before any push:
-- `rb_link_record_events()`: the nearer-in-time rule (64,954 claims lose their fix) and a tie-break for the 3,599
-  equal ones;
-- `rb_build_record_windows()`: cap jig windows, cap a haul at a later set, break equal-start ties, use half-open
-  windows.
+ramb 2026.10.14.2 (committed, installed, not pushed) makes the windows and `station_event` exclusive, with the
+maintainer's rules: a set never cuts a haul, twins go by key until TODO 58, and of two windows with the same start
+the longer keeps it. fishycode's `station_window.R` and `link_station_event.R` follow, and both now stop on a
+breach. Dry runs are in decision 091. Left: rebuild `station_window`, `station_event` and the trail (`ais_trail`
+and what follows it), then the check.
 
-Then rebuild `station_window`, `station_event` and the trail, with the stop before a rebuild.
-
-**check:** on the rebuilt data, no `(vid, time)` has two rows in `station_event` from two operations or phases, and
-`trail_match` fixes with 2+ stations from overlapping tier-1 windows are 0 (twins and day windows excepted).
+**check:** on the rebuilt data, no `(vid, time)` has two rows in `station_event` from two stations or phases, and
+`trail_match` fixes with 2+ stations from tier-1 windows are 0 (day windows excepted).
 
 ## 58. Twin records: one operation entered as two stations
 **status:** open · **needs: maintainer** — which record keeps the link, and whether a twin's catch is dropped

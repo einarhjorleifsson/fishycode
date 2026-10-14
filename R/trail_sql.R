@@ -7,9 +7,11 @@
 # the matches, rb_assign_fishing(method = "window") and rb_assign_record() put them on the fixes. This file
 # supplies the month's inputs, the voyage side and fishycode's column names (`n_sid` is ramb's `n_records`).
 #
-# A fix matches every station window of its vessel that contains its time. Windows come in tiers and a lower
-# tier only claims fixes no higher tier claims: tier 1 = tow | haul | set | jig (logbook times), tier 2 = day
-# (the whole station date, used when a station has no usable time). What stays ambiguous stays ambiguous:
+# A fix matches every station window of its vessel that contains its time; windows are half-open, [w_start,
+# w_end). Windows come in tiers and a lower tier only claims fixes no higher tier claims: tier 1 = tow | haul |
+# set | jig (logbook times), tier 2 = day (the whole station date, used when a station has no usable time). Tier-1
+# windows of a vessel never overlap (decision 091), so only day windows leave a fix with several stations, and
+# trail_match is a table of candidates there. What stays ambiguous stays ambiguous:
 # `n_sid` counts the stations and `.sid`/`.tid`/`phase` are filled only when exactly one station claims the fix.
 # A station matched in two of its own phases counts once, haul > tow > jig > set > day.
 # Keys: `.sid` and `.tid` are unique only within a schema, so the station is (.sid, schema).
@@ -27,8 +29,9 @@
 #
 # `nearest_event` names the event times this fix bounds, from curated/link/station_event (TODO 54, decision 088):
 # the first fix of a setting (t1) or hauling (t3), the last of a setting (t2) or hauling (t4); `t3+t4` for a haul of
-# one fix. Whichever station they belong to; NA otherwise. The station, the time difference and the gap are in that
-# table. The name stayed from the first rule, the nearest fix.
+# one fix. They belong to one station and one phase: when two events would share a fix, the nearer keeps it
+# (decision 091). NA otherwise. The station, the time difference and the gap are in that table. The name stayed
+# from the first rule, the nearest fix.
 
 trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches = NULL) {
   kind <- match.arg(kind)

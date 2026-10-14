@@ -31,10 +31,21 @@
 #   synthesised  an end is an assumption: the typical haul length (per gear, median
 #                of recorded t4 - t3), the set length (gear_window.set_max_min), or
 #                the whole station date
-#   capped       a recorded end passed the vessel's next recorded event and was cut
+#   capped       a tow, haul or jig end passed the vessel's next window and was cut
 #                back to it (the raw times are kept beside the window, unchanged)
 # A day window must never be treated as evidence of where the vessel was: the join
 # in plan 010 §3 lets it claim only pings that no recorded window claims.
+#
+# One fix, one record (maintainer, decision 090; the rules are decision 091): apart
+# from day windows, the windows of a vessel never overlap, and they are half-open,
+# [w_start, w_end). A window ends where a later start that may cut it begins
+# (win_closed_by = next_event): a tow, haul or jig with a recorded start cuts any
+# window, a set (t1) only an earlier set. A set never cuts a haul: a gillnetter may
+# set one net and go on hauling another (maintainer). A window that starts inside
+# one it may not cut starts at that window's end (win_opened_by = previous_event);
+# so do starts that are not logbook times (the typical haul before t4). Of two
+# windows with the same start the shorter is cut to nothing (w_end = w_start, the
+# row kept); of twins (TODO 58), the one with the higher (.sid, schema).
 
 library(DBI)
 library(duckdb)
@@ -82,14 +93,14 @@ JOIN gw g        ON g.gid = CAST(ag.gid_used AS INTEGER)
 WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL")
 
 # Windows ----------------------------------------------------------------------------
-# The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), capping at the
-# vessel's next recorded event, the day fallback - are ramb::rb_build_record_windows() (plan 014 phase 2, an
-# exact port of what stood here). This script supplies the Icelandic base: the vessel per trip, adb's gear
-# from the landing, and adb's t1/t4 moved to t2/t3 for towed gear.
+# The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts
+# above, the day fallback - are ramb::rb_build_record_windows() (plan 014 phase 2 ported what stood here; ramb
+# 2026.10.14.2 made the windows exclusive, decision 091). This script supplies the Icelandic base: the vessel
+# per trip, adb's gear from the landing, and adb's t1/t4 moved to t2/t3 for towed gear.
 
 sw <- ramb::rb_build_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
   dplyr::select(.sid, schema, .tid, vid, metier, gear, target, target2, gid, gear_class, phase, w_start, w_end,
-                win_basis, win_closed_by, t1, t2, t3, t4, duration_m, s1, s2, n_events, events)
+                win_basis, win_closed_by, win_opened_by, t1, t2, t3, t4, duration_m, s1, s2, n_events, events)
 dbExecute(con, paste("CREATE TABLE station_window AS", dbplyr::sql_render(sw), "ORDER BY vid, w_start"))
 
 # Report ----------------------------------------------------------------------------
@@ -110,8 +121,20 @@ print(q("
    JOIN gw g ON g.gid = CAST(f.gid AS INTEGER)
    WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NULL"))
 
-bad <- q("SELECT count(*) n FROM station_window WHERE NOT (w_end > w_start)")$n
-if (bad > 0) stop("station_window: ", bad, " windows with w_end <= w_start")
+message("\nwindows cut to nothing (w_end = w_start), by phase and what cut them")
+print(q("SELECT phase, coalesce(win_opened_by, win_closed_by) AS by, count(*) n FROM station_window
+         WHERE w_end = w_start GROUP BY ALL ORDER BY 1, 2"))
+
+bad <- q("SELECT count(*) n FROM station_window WHERE NOT (w_end >= w_start)")$n
+if (bad > 0) stop("station_window: ", bad, " windows with w_end < w_start")
+bad <- q("SELECT count(*) n FROM station_window WHERE w_end = w_start AND win_closed_by IS DISTINCT FROM 'next_event'
+            AND win_opened_by IS DISTINCT FROM 'previous_event'")$n
+if (bad > 0) stop("station_window: ", bad, " empty windows that nothing cut")
+ovl <- q("SELECT count(*) n FROM (
+            SELECT w_start, max(w_end) OVER (PARTITION BY vid ORDER BY w_start, w_end
+                                             ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_end
+            FROM station_window WHERE phase <> 'day' AND w_end > w_start) WHERE prev_end > w_start")$n
+if (ovl > 0) stop("station_window: ", ovl, " windows overlap an earlier window of the vessel")
 lost <- q("SELECT count(*) n FROM base b WHERE NOT EXISTS (
             SELECT 1 FROM station_window w WHERE w.\".sid\" = b.\".sid\" AND w.schema = b.schema)")$n
 if (lost > 0) stop("station_window: ", lost, " stations produced no window")

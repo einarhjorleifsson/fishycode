@@ -98,9 +98,11 @@ Every script in a targets project is on one of three sides, and says which in a 
   |---|---|---|
   | [`ramb`](https://github.com/einarhjorleifsson/ramb) | R functions | `library(ramb)` |
 
-  **Which ramb.** The code needs ramb ≥ 2026.10.14.1: the argument names of 2026-10-12,
-  `rb_calc_speed(method = )` and `rb_link_record_events()` (decision 088). The data on disk were built with ramb 2026.10.13.3 (the full rebuild of
-  2026-10-13/14, decision 086). `targets` does not track ramb, so a ramb change shows up in no
+  **Which ramb.** The code needs ramb ≥ 2026.10.14.2: the argument names of 2026-10-12,
+  `rb_calc_speed(method = )`, `rb_link_record_events()` (decision 088) and its exclusive form with `ping_lost`
+  and `win_opened_by` (decision 091). The data on disk were built with ramb 2026.10.13.3 (the full rebuild of
+  2026-10-13/14, decision 086), the afli → trail chain with 2026.10.14.1 (decision 089); `station_window`,
+  `station_event` and the trail await the 2026.10.14.2 rebuild (TODO 57). `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
 
   The point of the rule is that **forking** killed the previous trees: five

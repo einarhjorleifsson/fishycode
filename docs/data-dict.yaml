@@ -552,8 +552,9 @@ tables:
         examples: [t2, t3, t3+t4]
         description: >
           The event times this fix bounds (curated/link/station_event.parquet): the first fix of a setting (t1)
-          or hauling (t3), the last of a setting (t2) or hauling (t4); t3+t4 for a haul of one fix. Whichever
-          station they belong to; NA otherwise. Decision 088.
+          or hauling (t3), the last of a setting (t2) or hauling (t4); t3+t4 for a haul of one fix. All of one
+          station and one phase: when two events would share the fix, the nearer keeps it (decision 091). NA
+          otherwise. Decision 088.
       - name: fishing
         type: boolean
         description: >
@@ -1757,7 +1758,9 @@ tables:
       (t1, t3), the previous for an end (t2, t4) - how far it is, and the gap between the fixes on either side
       (curate/link_station_event.R, ramb::rb_link_record_events(); decision 088). The fixes from a t1 fix to its
       t2 fix are the setting, from a t3 fix to its t4 fix the hauling; a tow is the fixes strictly between its t2
-      and t3 fixes.
+      and t3 fixes. A fix bounds the events of at most one station and one phase of it: when two would share it,
+      the event nearer in time keeps it, then the earlier event, then the lower (.sid, schema) (decisions 090,
+      091).
     primary_key: [.sid, schema, event]
     columns:
       - name: .sid
@@ -1800,7 +1803,8 @@ tables:
         type: string
         examples: ["2023-06-01 04:13:05"]
         description: >
-          The bounding fix's time (in curated/ais/ping); NA when it lies more than an hour from the event.
+          The bounding fix's time (in curated/ais/ping); NA when it lies more than an hour from the event, or
+          went to a nearer event of another station or phase (ping_lost).
       - name: dt_s
         type: number
         examples: [-120, 0, 65]
@@ -1812,6 +1816,12 @@ tables:
         description: >
           Seconds between the last fix at or before the event and the first at or after it: how precisely the
           track can place the event. 0 when a fix falls on it, NA when the track does not reach both sides.
+      - name: ping_lost
+        type: boolean
+        examples: [false, true]
+        description: >
+          TRUE when the bounding fix, within the hour, went to a nearer event of another station or of the other
+          phase of this one (decision 091); time and dt_s are then NA, and gap_s says how sparse the track was.
   - name: link_trip_voyage
     source:
       parquet: ../../fishydata/curated/link/trip_voyage.parquet

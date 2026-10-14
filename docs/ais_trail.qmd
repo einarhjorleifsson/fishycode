@@ -101,7 +101,7 @@ trip_trail <- function(tid, schema, margin_h = 3) {
 prove <- function(x) {
   sw <- x$sw; tr <- x$tr
   k <- lapply(tr$time, function(t) {
-    h <- which(t >= sw$w_start & t <= sw$w_end)
+    h <- which(t >= sw$w_start & t < sw$w_end)
     h1 <- h[sw$phase[h] != "day"]
     if (length(h1)) h1 else h
   })
