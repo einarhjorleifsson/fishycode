@@ -346,9 +346,11 @@ Plan 014 updated the tables its renames touched (decision 079) and added `logboo
 edits, none new in kind. Nothing was validated against the data (`validate-meta` stops at spec errors).
 Also missing (2026-10-14): the tables and columns of decisions 099-104 are not in it: the trail's ten new
 columns, `ais/catch`, `ais/voyage_gear`, and the checks `vessel_activity`, `landed_logged`, `survey_tow_times`.
+Plan 016 adds `vessel/mmsi`, `vessel/vessel_year`, `vessel/vessel_class`, `vessel/vessel_sign`, the columns `status`,
+`foreign`, `register` in `vessel.parquet` and `kw_basis`, `leisure`, `leisure_basis` on the trail (after its rebuild).
 
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors, and the tables of
-decisions 099-104 are in the file.
+decisions 099-104 and plan 016 are in the file.
 
 ## 53. `rb_pad_harbour()`: argument `hid` → `port_id`
 **status:** open · **see:** decision 081, plan 013 (line 438 keeps the function as it is)

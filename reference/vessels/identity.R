@@ -57,9 +57,10 @@ YH_HORIZON <- max(reg$yh2, na.rm = TRUE)
 cat("registry yh2 horizon:", YH_HORIZON, "- hulls reaching it are treated as open
 ")
 
-# The registry times exactly one attribute - the MMSI, via mmsi_t1/mmsi_t2 and
-# zombie_no. Call sign, local sign and name carry no dates at all, so their window
-# is the hull's own lifetime, and `window_basis` says which of the two a row got.
+# This table times exactly one attribute - the MMSI, via mmsi_t1/mmsi_t2 and
+# zombie_no. Its call sign, local sign and name are vessel.parquet's current ones, so
+# their window is the hull's own lifetime, and `window_basis` says which of the two a
+# row got; their dated history is curated/vessel/vessel_sign.parquet (plan 016).
 # That distinction matters: an mmsi_window is evidence, a hull_lifetime is an
 # inference, and a row with neither is a guess that spans the whole era.
 identity <-
