@@ -241,6 +241,10 @@ each part of it runs the methods its data allow.
      - Today's `rb_share_catch()` is EFLALO-shaped (`VE_REF`, `FT_REF`, `LE_KG`). It shares evenly, and has no haul
        level and nothing above the trip. Its ICES behaviour stays as a method.
    - fishycode: station catch, trip catch, landings with `lid_map`, and duplicate twins left out (decision 094).
+   - **Built in ramb** (decision 100, ramb 2026.10.14.7): `rb_build_catch_units()` and `rb_share_catch()`
+     rewritten. The landings-only acceptance test passes, with its fishing from a plain speed rule until item 3.
+     June 2023's logbook catch was 35,580 t in and out. Open: the raising column, landings as events (item 5),
+     and the wiring in fishycode.
 3. **Fishing decided per unit, by whichever side is more precise** (step 4, with gear for it; rows 1–5; rethink 1).
    This is where the paths part: today a fix outside every window is never fishing.
    - ramb:
