@@ -79,7 +79,18 @@ re-enter as an override.
 
 Blocked on ground truth (TODO 60): unchanged.
 
-## Asked of the maintainer
+## Answered by the maintainer (2026-10-14)
+
+- **Push** ramb and fishymodel: no, not now.
+- **Foreign logbooks:** yes, acquire them (TODO 62; where they are is asked).
+- **The years before 1990:** not in scope.
+- **Raise factors above 10:** the maintainer pointed at the pelagic species (30-36), the only fisheries where
+  transhipment is expected. Measured per trip and species: pelagic logged and landed weights agree within 0.5-2 for
+  23,682 trip-species (9.8 Mt landed). Only 8 sit near the ×1,000 of a tonnes/kilograms mix. The outliers come in
+  pairs that look like transfers: 2,548 landed 2-300 times what they logged (1.0 Mt landed, 0.19 Mt logged) and
+  1,032 logged more than twice what they landed. The demersal factors above 10 are small logged weights, not units.
+
+## Asked of the maintainer (as first put)
 
 - **Push** ramb (2026.10.14.6-.14, 9 commits) and fishymodel (1 commit) to GitHub?
 - **Foreign logbooks** from Fiskistofa: acquire them, as a `dump/` script and a source adapter? They would move most
