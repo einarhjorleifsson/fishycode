@@ -2,7 +2,7 @@
 
 *2026-10-14. Built by Claude (AI-assisted) on the maintainer's request (TODO 59). The design and its numbers are
 decision 090 and plan 013 phase 4 ("Measured", items 1-2). ramb 2026.10.14.4 (b33aa31), committed and installed,
-not pushed. Nothing in fishycode calls the new functions yet, and nothing under `curated/` was rebuilt. Closes
+and pushed with 2026.10.14 to .14.3 on the maintainer's request the same day. Nothing in fishycode calls the new functions yet, and nothing under `curated/` was rebuilt. Closes
 TODO 59.*
 
 ## What ramb now has

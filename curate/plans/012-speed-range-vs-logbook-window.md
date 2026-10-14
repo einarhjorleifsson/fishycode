@@ -158,6 +158,41 @@ k. **The logger is switched on and off with the logbook, 2026-10-02** (`curate/c
    - *So for the speed range:* inside a window the logger's speed is a measured GPS speed, as good as AIS speed (§2e: medians within 0.1 kn), but it exists only for the tow by design and adds no check of the window's
      start. The speed ranges of §2e–§2i should therefore be read from AIS pings, with the logger as a cross-check, not pooled with it. The logger's after-`t3` speeds are the new information it carries.
 
+l. **Vessel × gear for the stretch pairing, and over what period, 2026-10-14** (Claude, AI-assisted; the maintainer's question for TODO 61: vessel × gear rather than gear, and the full
+   period rather than a month). Script and log: `$FISHYDATA/archive/2026-10-speed-range/`. Recorded tow fixes of all years (`n_sid = 1`, `phase = 'tow'`, `win_basis = 'recorded'`,
+   towed gear, 58.8 M fixes); "offset" = the vessel × gear median minus the gear's median, used where the vessel × gear has ≥ 2,000 such fixes.
+   - *Drift within vessel × gear* (vessel-years with ≥ 2,000 fixes). The sd of the yearly median around the vessel × gear's own, against the sd between vessels, in kn:
+     fish trawl (gid 6) 0.17 / 0.51, shrimp (8) 0.17 / 0.24, nephrops (7) 0.09 / 0.22, dredge (15) 0.12 / 0.32, **pelagic trawl (9) 0.45 / 0.41, Danish seine (11) 0.48 / 0.38**.
+     The mean gap between two yearly medians grows with the years between them, slowly: fish trawl 0.07 kn at 1 year, 0.15 at 8; pelagic trawl 0.26 → 0.42; Danish seine 0.16 → 0.33.
+     For the trawls the vessel is the larger effect and the drift is small; for pelagic trawl and Danish seine the year-to-year noise is as large as the difference between vessels.
+   - *The offsets.* Fish trawl: median −0.06 kn, 5–95 % −1.19 to +0.21 (the slow tail is §2j's small near-coast vessels); 23 of 121 vessels beyond ±0.3 kn, holding 4 % of the fixes.
+     Pelagic trawl: 39 of 113 beyond ±0.3 kn (17 % of fixes).
+   - *The pairing* (decision 092's settings, 397,248 tow operations of 2010, 2013, 2016, 2019, 2023 and 2025; each variant changes one thing):
+
+     | variant | paired | start within 15 / 30 min | end within 15 / 30 min | fish in tow | not fish ≥ 30 min out |
+     |---|---|---|---|---|---|
+     | A the prototype: declared range of the vessel's commonest gear in the month | 93.9 % | 51.3 / 70.6 % | 50.4 / 65.6 % | 92.2 % | (86.8 %) |
+     | B declared range of the fix's gear (the nearest declared tow) | 94.0 % | 51.5 / 70.8 % | 50.6 / 65.8 % | 92.6 % | 82.7 % |
+     | **C B shifted by the vessel × gear offset, all years** | 93.9 % | **52.3 / 71.6 %** | **52.4 / 67.2 %** | 93.3 % | 82.7 % |
+     | D the vessel × gear's own 5–95 %, all years | 94.4 % | 52.4 / 68.0 % | 55.6 / 67.8 % | 94.0 % | 79.7 % |
+     | E as C, offset of the test year only | 93.7 % | 52.5 / 71.7 % | 52.7 / 67.4 % | 93.4 % | 82.7 % |
+     | F as C, offset of all other years (out of sample) | 93.8 % | 52.2 / 71.4 % | 52.2 / 67.0 % | 93.2 % | 82.6 % |
+     | G as C, offset of the previous year | 93.8 % | 52.3 / 71.4 % | 51.9 / 66.7 % | 93.0 % | 82.7 % |
+
+     "Fish in tow": fixes in recorded tows whose ±10 min speed is in range. "Not fish": at-sea fixes ≥ 30 min from any declared tow out of range. A's figure is flattered: a fix in a month
+     with no tow gets no range under A.
+   - *By gear:* bottom trawl (294 k tows) gains most from C: start within 15 min 54.4 → 55.6 %, end 57.1 → 58.4 %, paired 94.2 → 94.7 %. Pelagic trawl gains 1.7 points of pairing from B
+     (vessels switch gear within a month), and its end agreement most from E (35.3 → 37.8 %). **Danish seine loses pairing under every shift** (97.9 → 94.7 % under C). Under D its end within
+     15 min jumps 20 → 48 %, while its start within 30 min falls 83 → 63 %: one range cannot hold both its phases (decision 090). Dredges do best under D (paired 83.3 → 85.6 %).
+   - *So:*
+     - **Vessel × gear as an offset on the gear's range** gains about a point in boundary agreement and 0.7 in fish-in-tow at no cost in specificity. This is §2i's finding, now for the
+       pairing.
+     - **The full period is enough.** It equals the out-of-sample estimate (F), so it is not flattered by the test year. The test year alone (E) adds a few tenths, and the previous
+       year (G) slightly less.
+     - The vessel's own range (D) is wider: it trades the start for the end, and 3 points of specificity.
+     - The gear a fix takes should come from the nearest declared tow, not from the month.
+     - Danish seine wants no shift until it has a phase model.
+
 ## 3. Proposal
 
 **Principle.** A *recorded* window (both haul times logged) is the training set for the speed range; a *derived* or *synthesised* window is
