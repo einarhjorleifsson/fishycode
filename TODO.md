@@ -414,8 +414,7 @@ function name follows ("port, not harbour").
 **check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
 
 ## 58. Twin records: one operation entered as two stations
-**status:** open · **needs: maintainer** — which record keeps the link, and whether a twin's catch is dropped
-· **see:** decision 090
+**status:** in progress — built 2026-10-14 on the maintainer's rule, rebuild running (decision 094) · **see:** decisions 090, 094
 
 24,768 stations share all of t1-t4 with another station of their vessel:
 - fs_afladagbok: about 2,000 trips submitted twice (same dates, same vendor), 2022-2025;

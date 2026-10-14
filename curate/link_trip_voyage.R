@@ -2,7 +2,7 @@
 # Side: flow, step 1. See plan 014.
 # harbour-to-harbour voyages derived from AIS.
 #
-# Input:  curated/logbook/trip.parquet      (.tid, vid, T1, T2, schema)
+# Input:  curated/logbook/trip.parquet      (.tid, vid, T1, T2, schema, twin)
 #         curated/ais/voyage.parquet        (vid, year, voyage, T1, T2, pid1, pid2)
 # Output: curated/link/trip_voyage.parquet
 #
@@ -30,6 +30,9 @@
 #     usually missing data rather than a failed match.
 #   - 35 vids have overlapping mid periods (known issue 9) and will produce
 #     ambiguous candidates; n_candidates records this.
+#
+# A resubmitted trip (trip `twin` "duplicate", curate/corrections/logbook_twin.yml) is not linked: it is its kept
+# trip again, and on the voyage it made the trail's trip (`.tid_voyage`) ambiguous.
 
 library(DBI)
 library(duckdb)
@@ -43,7 +46,8 @@ ais <- fd_curated("ais", "voyage.parquet")
 # trip by the most seconds, ties by more pings, n_candidates kept. Known issue 10: afli stores ~80% of trips
 # with T1 = T2 (date-midnight) and fs_afladagbok stores T2 as midnight of the ARRIVAL date, which for same-day
 # trips puts T2 before T1; t2_fix = "end_of_t1_day" pushes the window to at least the end of the first day.
-trips <- dplyr::tbl(con, dplyr::sql(sprintf("SELECT \".tid\", vid, schema, T1, T2 FROM read_parquet('%s')", lb)))
+trips <- dplyr::tbl(con, dplyr::sql(sprintf(
+  "SELECT \".tid\", vid, schema, T1, T2 FROM read_parquet('%s') WHERE twin IS DISTINCT FROM 'duplicate'", lb)))
 voy <- dplyr::tbl(con, dplyr::sql(sprintf(
   "SELECT vid, year, voyage AS voyage_id, T1, T2, pid1 AS port_from, pid2 AS port_to, n_pings FROM read_parquet('%s')", ais)))
 link <- ramb::rb_link_trip_voyages(trips, voy, keys = c(".tid", "schema"), t2_fix = "end_of_t1_day") |>
@@ -58,7 +62,8 @@ write_curated_sql(con, q, out, inputs = c(lb, ais))
 # -- report -------------------------------------------------------------------
 
 n_lb <- dbGetQuery(con, sprintf(
-  "SELECT schema, count(*) n FROM read_parquet('%s') WHERE vid IS NOT NULL GROUP BY 1", lb))
+  "SELECT schema, count(*) n FROM read_parquet('%s') WHERE vid IS NOT NULL AND twin IS DISTINCT FROM 'duplicate'
+   GROUP BY 1", lb))
 n_lk <- dbGetQuery(con, sprintf(
   "SELECT schema, count(*) linked, round(100.0*avg(CASE WHEN n_candidates > 1 THEN 1 ELSE 0 END),1) pct_ambiguous,
           round(median(overlap_frac),3) median_overlap_frac

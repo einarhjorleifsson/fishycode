@@ -6,7 +6,7 @@
 #                                               the flow works from downstream; the window rules are still per gid
 #         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)
 #         curated/logbook/trip.parquet            (.tid, schema, vid)
-#         curated/logbook/station.parquet         (.sid, schema, date)
+#         curated/logbook/station.parquet         (.sid, schema, date, twin)
 #         curated/reference/gear_window.parquet   (gear_class, s1, s2, set_max_min)
 # Output: curated/logbook/station_window.parquet
 #
@@ -45,7 +45,8 @@
 # one it may not cut starts at that window's end (win_opened_by = previous_event);
 # so do starts that are not logbook times (the typical haul before t4). Of two
 # windows with the same start the shorter is cut to nothing (w_end = w_start, the
-# row kept); of twins (TODO 58), the one with the higher (.sid, schema).
+# row kept); of twins with the same times, the one with the higher (.sid, schema). A duplicate twin, the same
+# record entered again, gets no window: its kept record stands for it (curate/corrections/logbook_twin.yml).
 
 library(DBI)
 library(duckdb)
@@ -90,7 +91,7 @@ JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
 JOIN st          ON st.\".sid\" = f.\".sid\" AND st.schema = f.schema
 LEFT JOIN ag     ON ag.\".sid\" = f.\".sid\" AND ag.schema = f.schema
 JOIN gw g        ON g.gid = CAST(ag.gid_used AS INTEGER)
-WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL")
+WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS DISTINCT FROM 'duplicate'")
 
 # Windows ----------------------------------------------------------------------------
 # The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts
@@ -119,7 +120,10 @@ print(q("
   UNION ALL
   SELECT 'gear with no code (farm cage, mussel line)', count(*) FROM fs f
    JOIN gw g ON g.gid = CAST(f.gid AS INTEGER)
-   WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NULL"))
+   WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NULL
+  UNION ALL
+  SELECT 'a duplicate twin (its kept record has the window)', count(*) FROM st
+   WHERE NOT coalesce(st.eytt_deleted, false) AND st.twin = 'duplicate'"))
 
 message("\nwindows cut to nothing (w_end = w_start), by phase and what cut them")
 print(q("SELECT phase, coalesce(win_opened_by, win_closed_by) AS by, count(*) n FROM station_window

@@ -1,7 +1,8 @@
 # catch_by_species_station.R — the catch as caught (whole fish), one row per (station, species).
 # Side: preprocessing (logbook). See plan 014.
 #
-# Input:  curated/logbook/catch.parquet  (.sid, schema, sid, condition, catch, catch_whole)
+# Input:  curated/logbook/catch.parquet    (.sid, schema, sid, condition, catch, catch_whole)
+#         curated/logbook/station.parquet  (.sid, schema, twin)
 # Output: curated/logbook/catch_by_species_station.parquet
 #         .sid schema sid  catch_recorded catch_released catch_round round_basis
 #
@@ -23,6 +24,9 @@
 # `catch_recorded` is the sum as recorded (mixed states), `catch_released` the part in condition RELE
 # (already inside catch_round). The station's basis is the weakest of its rows: synthesised >
 # reconstructed > recorded.
+#
+# A duplicate twin (curate/corrections/logbook_twin.yml) has no rows here: its catch is its kept record's, entered
+# again, so a sum over this table counts it once. catch.parquet keeps every row.
 
 library(DBI)
 library(duckdb)
@@ -31,6 +35,7 @@ con <- dbConnect(duckdb())
 spill <- file.path(tempdir(), "duckdb_spill"); dir.create(spill, showWarnings = FALSE)
 dbExecute(con, sprintf("SET temp_directory = '%s'", spill))
 src <- fd_curated("logbook", "catch.parquet")
+stf <- fd_curated("logbook", "station.parquet")
 
 sql <- sprintf("
   WITH r AS (
@@ -42,16 +47,17 @@ sql <- sprintf("
                 WHEN condition = 'GUTT' THEN 2
                 WHEN condition IS NULL AND schema <> 'afli' THEN 3
                 ELSE 1 END AS b
-    FROM read_parquet('%s'))
+    FROM read_parquet('%s') c
+    ANTI JOIN (SELECT \".sid\", schema FROM read_parquet('%s') WHERE twin = 'duplicate') d USING (\".sid\", schema))
   SELECT \".sid\", schema, sid,
          sum(catch) AS catch_recorded,
          sum(cr) FILTER (WHERE condition = 'RELE') AS catch_released,
          sum(cr) AS catch_round,
          CASE max(b) WHEN 1 THEN 'recorded' WHEN 2 THEN 'reconstructed' ELSE 'synthesised' END AS round_basis
-  FROM r GROUP BY \".sid\", schema, sid", src)
+  FROM r GROUP BY \".sid\", schema, sid", src, stf)
 
 n <- write_curated_sql(con, sql, fd_curated("logbook", "catch_by_species_station.parquet"),
-                       inputs = src, order_by = "schema, \".sid\", sid")
+                       inputs = c(src, stf), order_by = "schema, \".sid\", sid")
 message(sprintf("catch_by_species_station: %s rows", format(n, big.mark = ",")))
 print(dbGetQuery(con, sprintf("SELECT round_basis, count(*) n, round(sum(catch_round) / 1e6) kt FROM read_parquet('%s') GROUP BY 1",
                               fd_curated("logbook", "catch_by_species_station.parquet"))))

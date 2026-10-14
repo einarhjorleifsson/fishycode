@@ -27,6 +27,9 @@
 # tables (16.8M logbook rows, 3.8M landings rows) before applying the join.
 # Aggregating first collapses each side to ~3-4M (trip, species) rows, and
 # the full join of those two runs in-process in under two seconds.
+#
+# A duplicate twin's catch is its kept record's again and is left out (curate/corrections/logbook_twin.yml):
+# counted, it doubled a trip's logbook catch against its landing.
 
 library(duckdbfs)
 library(tidyverse)
@@ -34,7 +37,10 @@ library(tidyverse)
 ## Logbook catch, summed by species per trip -------------------------------------
 logbook_by_trip_species <-
   open_dataset(fd_curated("logbook", "trip.parquet")) |>
-  inner_join(open_dataset(fd_curated("logbook", "station.parquet")), by = c(".tid", "schema")) |>
+  select(.tid, schema, vid) |>
+  inner_join(open_dataset(fd_curated("logbook", "station.parquet")) |>
+               filter(is.na(twin) | twin != "duplicate") |>
+               select(.sid, .tid, schema), by = c(".tid", "schema")) |>
   inner_join(open_dataset(fd_curated("logbook", "catch.parquet")), by = c(".sid", "schema")) |>
   left_join(open_dataset(fd_curated("logbook", "lid_map.parquet")), by = c(".tid", "schema")) |>
   filter(!is.na(.lid)) |>

@@ -8,6 +8,10 @@
 # Output: curated/logbook/lid_map.parquet — .tid, schema, .lid, schema_land, date_land, hid_land, pid_land,
 #         match_type, n_trips (trips on the landing; above 1 is a declared many-to-many)
 #
+# Twin records (curate/corrections/logbook_twin.yml): a resubmitted trip (trip `twin` "duplicate") is not matched,
+# since its kept trip is the same trip, and a duplicate station's catch and gear are not counted twice in the
+# trip's catch (steps 6-7) or its main gear.
+#
 # Does NOT write back into trip.parquet. It used to (left_join(lid_map) then
 # overwrite trip.parquet in place) - that made logbook.R's own declared output
 # a moving target from this script's side too, and the two targets fought over
@@ -80,14 +84,15 @@ land <-
 ## Logbook trips with total catch -----------------------------------------------
 trip <-
   duckdbfs::open_dataset(fd_curated("logbook", "trip.parquet")) |> collect() |>
+  filter(is.na(twin) | twin != "duplicate") |>
   mutate(date = as_date(T2), hid = hid2) |>
   left_join(
     duckdbfs::open_dataset(fd_curated("logbook", "catch.parquet")) |> collect() |>
       left_join(
-        duckdbfs::open_dataset(fd_curated("logbook", "station.parquet")) |> collect() |> select(.sid, .tid, schema),
+        duckdbfs::open_dataset(fd_curated("logbook", "station.parquet")) |> collect() |> select(.sid, .tid, schema, twin),
         by = c(".sid", "schema")
       ) |>
-      filter(!is.na(.tid)) |>
+      filter(!is.na(.tid), is.na(twin) | twin != "duplicate") |>
       group_by(.tid, schema) |>
       summarise(catch = sum(as.numeric(catch), na.rm = TRUE), .groups = "drop"),
     by = c(".tid", "schema")
@@ -182,6 +187,8 @@ pelagic_gids <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) 
 
 trip_gear <-
   duckdbfs::open_dataset(fd_curated("logbook", "fishing_sample.parquet")) |> collect() |>
+  anti_join(duckdbfs::open_dataset(fd_curated("logbook", "station.parquet")) |> filter(twin == "duplicate") |>
+              select(.sid, schema) |> collect(), by = c(".sid", "schema")) |>
   mutate(.tk = paste(schema, .tid, sep = "|")) |>
   count(.tk, gid) |>
   group_by(.tk) |>

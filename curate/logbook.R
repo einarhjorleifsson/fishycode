@@ -173,6 +173,50 @@ merged_fishing_sample <- bind_rows(
 
 merged_catch <- bind_rows(afli_catch, fs_only_catch, adb_only_catch)
 
+# Twin records -----------------------------------------------------------------
+# One operation entered as two or more stations (curate/corrections/logbook_twin.yml, decision 094). A twin
+# group is the stations of one vessel, in one schema, with identical t1-t4, at least one of them a time of day:
+# all at 00:00 is a date, several untimed stations of one day, not a twin. In a group, stations with identical
+# catch (every species, condition and weight; no catch counts as a catch) are one record entered more than once:
+# the first (not deleted, then lowest .sid) is `kept`, the others `duplicate`, with `twin_of` the kept .sid. A
+# member whose catch matches no other member's is `same_time`, a record of its own whose times equal another's.
+# The landings decided the rule (maintainer, 2026-10-14): a trip's logbook catch is about twice its landing with
+# every copy counted and equal to it with one, while dropping a same-time record does not bring a trip nearer.
+# A trip all of whose stations are duplicates of one other trip's is that trip submitted again: trip `twin`
+# "duplicate" and `twin_of` the other trip's .tid, which is "kept". Nothing is dropped here; every table that
+# sums catch or effort, and every link, leaves the duplicates out.
+is_tod <- function(t) !is.na(t) & as.numeric(t) %% 86400 != 0
+tw <- merged_fishing_sample |>
+  select(.sid, .tid, schema, eytt_deleted, t1, t2, t3, t4) |>
+  left_join(merged_trip |> select(.tid, schema, vid), by = c(".tid", "schema"), relationship = "many-to-one") |>
+  filter(!is.na(vid), is_tod(t1) | is_tod(t2) | is_tod(t3) | is_tod(t4)) |>
+  filter(n() > 1, .by = c(vid, schema, t1, t2, t3, t4))
+tw_sig <- merged_catch |>
+  semi_join(tw, by = c(".sid", "schema")) |>
+  arrange(sid, condition, catch) |>
+  summarise(sig = paste(sid, condition, catch, sep = ":", collapse = ","), .by = c(.sid, schema))
+tw <- tw |>
+  left_join(tw_sig, by = c(".sid", "schema"), relationship = "one-to-one") |>
+  mutate(sig = coalesce(sig, "")) |>
+  arrange(coalesce(eytt_deleted, FALSE), .sid) |>
+  mutate(n_same = n(), kept_sid = first(.sid), kept_tid = first(.tid), .by = c(vid, schema, t1, t2, t3, t4, sig)) |>
+  mutate(twin    = case_when(n_same == 1 ~ "same_time", .sid == kept_sid ~ "kept", .default = "duplicate"),
+         twin_of = if_else(twin == "duplicate", kept_sid, NA_real_))
+tw_trip <- tw |>
+  filter(twin == "duplicate") |>
+  summarise(n_dup = n(), n_kept_tid = n_distinct(kept_tid), kept_tid = first(kept_tid), .by = c(.tid, schema)) |>
+  inner_join(merged_station |> count(.tid, schema, name = "n_st"), by = c(".tid", "schema")) |>
+  filter(n_dup == n_st) |>
+  mutate(twin = "duplicate", twin_of = if_else(n_kept_tid == 1, kept_tid, NA_character_))
+tw_trip <- bind_rows(
+  tw_trip |> select(.tid, schema, twin, twin_of),
+  tw_trip |> filter(!is.na(twin_of)) |> distinct(.tid = twin_of, schema) |> mutate(twin = "kept"))
+stopifnot(!anyDuplicated(tw_trip[c(".tid", "schema")]))
+merged_station <- merged_station |>
+  left_join(tw |> select(.sid, schema, twin, twin_of), by = c(".sid", "schema"), relationship = "one-to-one")
+merged_trip <- merged_trip |>
+  left_join(tw_trip, by = c(".tid", "schema"), relationship = "one-to-one")
+
 # Station type -----------------------------------------------------------------
 # What a station row covers (`station_type` in docs/grammar.qmd, decision 084): `operation`, one setting, tow
 # or haul, or `event`, one record for the day. No logbook says which, and it varies by vessel and over time,
@@ -180,17 +224,17 @@ merged_catch <- bind_rows(afli_catch, fs_only_catch, adb_only_catch)
 # more than one record. Vessel-years pile up at 0 and near 1; below ST_MULTI_MIN is one record a day.
 # Longlines are `operation` whatever the share (maintainer, 2026-10-09): one set a day is what a longliner
 # does, so a single record a day says nothing. Here, on the merged tables, because the tiers mix schemas
-# within a vessel-year; deleted records are left out of the pattern.
+# within a vessel-year; deleted records and duplicate twins are left out of the pattern.
 ST_MULTI_MIN <- 0.1
 station_gear <- merged_fishing_sample |> distinct(.sid, schema, gear)
 stopifnot(!anyDuplicated(station_gear[c(".sid", "schema")]))
 st_base <- merged_station |>
-  select(.sid, .tid, schema, date, eytt_deleted) |>
+  select(.sid, .tid, schema, date, eytt_deleted, twin) |>
   left_join(merged_trip |> select(.tid, schema, vid), by = c(".tid", "schema"), relationship = "many-to-one") |>
   left_join(station_gear, by = c(".sid", "schema"), relationship = "one-to-one") |>
   mutate(yr = year(date))
 st_pattern <- st_base |>
-  filter(!coalesce(eytt_deleted, FALSE), !is.na(vid), !is.na(date)) |>
+  filter(!coalesce(eytt_deleted, FALSE), !coalesce(twin == "duplicate", FALSE), !is.na(vid), !is.na(date)) |>
   count(vid, yr, gear, date, name = "n") |>
   summarise(multi_share = mean(n > 1), .by = c(vid, yr, gear))
 station_type <- st_base |>
@@ -223,6 +267,11 @@ merged_station |>
   count(gear, station_type, station_type_basis) |>
   pivot_wider(names_from = c(station_type, station_type_basis), values_from = n, values_fill = 0L) |>
   print(n = 30)
+
+cat("\nTwin records (curate/corrections/logbook_twin.yml), stations and trips:\n")
+merged_station |> filter(!is.na(twin)) |> count(schema, twin) |>
+  pivot_wider(names_from = twin, values_from = n, values_fill = 0L) |> print()
+merged_trip |> filter(!is.na(twin)) |> count(schema, twin, has_twin_of = !is.na(twin_of)) |> print()
 
 cat("\nYear-by-year station source (2018+):\n")
 merged_station |>

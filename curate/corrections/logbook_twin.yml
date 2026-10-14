@@ -1,0 +1,69 @@
+id: logbook_twin
+title: one logbook operation entered as two or more stations (twin records); duplicates are flagged and left out of every sum and link
+status: applied 2026-10-14 - flagged in curated/logbook/{station,trip}.parquet and left out downstream (decision 094); TODO 58 closed
+applies_to:
+  - curated/logbook/station.parquet   # twin, twin_of
+  - curated/logbook/trip.parquet      # twin, twin_of
+affects_rows: >-
+  9,744 duplicate stations (afli 5,813, fs_afladagbok 3,696, adb 235) of 7,239,778, repeating 7,529 kept
+  records; 6,035 same-time stations (afli 5,819, fs_afladagbok 214, adb 2). 774 duplicate trips (fs_afladagbok
+  739, afli 33, adb 2) repeating 509 kept trips.
+implementation: curate/logbook.R, section "Twin records" (the flag); the consumers listed under `applied_in`
+discovered: 2026-10-14, the one-fix-one-record census (decision 090)
+decided_by: the maintainer, 2026-10-14 - leave out only duplicates with identical catch; the first record keeps
+  the link; accuracy first, and the duplication reported where analysts read
+
+rule: >-
+  A twin group is the stations of one vessel, in one schema, with identical t1-t4 (missing equal to missing), at
+  least one of them a time of day. In a group, stations with identical catch (every species, condition and
+  weight; a station with no catch matches only another with none) are one record entered more than once: the
+  first, not deleted (eytt_deleted) and then lowest .sid, is "kept", the others "duplicate" with twin_of the kept
+  .sid. A member whose catch matches no other member's is "same_time". A trip all of whose stations are
+  duplicates is "duplicate", with twin_of the trip of the kept stations when they are all on one trip (32 of 33
+  afli trips, all others); that trip is "kept".
+  Stations whose recorded times are all at 00:00 are left out: they are dates, several untimed stations on one
+  day (fs_afladagbok 382 groups, afli 4), the whole-day problem of station_time_whole_day.yml.
+
+evidence:
+  landings_one_trip: >-
+    afli trips with duplicates on one trip and one landing (897 trips): logbook catch / landed catch has a median
+    of 2.12 with every copy and 1.01 with one; 96.1 % of trips are nearer the landing with one. Trips with no twin
+    have 0.99 (afli 2010+), 0.97 (fs_afladagbok), 0.95 (adb).
+  landings_two_trips: >-
+    fs_afladagbok trip pairs on one landing (1,837 pairs): 0.96 for either trip, 1.93 for both. The resubmitted
+    trips are the same vendor's, with the same dates, 2022-2025 (most in 2022-2023).
+  same_time_is_not_a_copy: >-
+    afli trips whose same-time stations differ in catch (198 trips with one landing): 1.09 with both, 0.90 with
+    one dropped, and dropping is nearer in only 45.5 %. By how the catch differs: disjoint species (22 trips)
+    0.08 with one dropped, so plainly two records; overlapping species (71) 45.1 % nearer; the same species at
+    other weights (108) 1.19 against 0.95, 56.5 % nearer. The last may hold some re-entries with edited weights;
+    the landings cannot separate them, so all are kept.
+  what_duplicates_share: >-
+    The kept record and its duplicate are on one trip for afli (5,286 of 5,813) and on two trips for
+    fs_afladagbok (3,684 of 3,696) and adb (234 of 235). Every fs_afladagbok resubmitted trip repeats exactly one
+    trip. Positions agree where both are recorded, except 220 afli duplicates (median 7.9 km apart). The gear
+    agrees except in 20 (adb has no gear of its own). Deleted (eytt_deleted) records are 15 of the duplicates and none of the kept.
+
+what_a_duplicate_distorted:
+  - catch_by_species_station and catch_by_species_trip summed its catch twice.
+  - lid_map summed it into the trip's catch (weight steps 6-7) and the trip's main gear; a resubmitted trip took
+    the same landing as its original, so n_trips said 2 for one trip.
+  - station_type counted it as a second record that day (decision 084's multi_share).
+  - trip_voyage put the resubmitted trip on its original's voyage, so the trail's .tid_voyage was empty there.
+  - station_window, since decision 091, gave a twin with the higher (.sid, schema) an empty window, so the trail no
+    longer gave one fix to both. A duplicate now gets no window at all, and its kept record's window stands.
+
+applied_in:
+  - curate/logbook.R             # station_type's pattern leaves duplicates out
+  - curate/link_lid_map.R        # no duplicate trip; trip catch and main gear without duplicate stations
+  - curate/catch_by_species_station.R   # no rows for a duplicate
+  - curate/catch_by_species_trip.R      # no catch from a duplicate
+  - curate/station_window.R      # no window for a duplicate
+  - curate/link_trip_voyage.R    # no duplicate trip
+  - docs/merge.qmd               # "Twin records", and the annual totals without duplicates
+  - docs/data-dict.yaml          # twin, twin_of on logbook_station and logbook_trip
+
+open: >-
+  same_time stations stay two records with equal times, so the AIS track cannot place them apart. Where their
+  positions differ, the track could say which record the times belong to. The
+  same-species, other-weight pairs may hold re-entries; nothing local can tell.

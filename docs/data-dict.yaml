@@ -1999,7 +1999,10 @@ tables:
     description: >
       One row per species per logbook station (fishing operation). Orphan catch
       records with no matching station are dropped via inner_join. Merged across
-      the three logbook source systems (afli, fs_afladagbok, adb).
+      the three logbook source systems (afli, fs_afladagbok, adb). Every row is
+      kept, including those of duplicate twins (station.twin = "duplicate"): sum
+      it only after leaving those stations out, or use catch_by_species_station,
+      which already does.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -2058,7 +2061,8 @@ tables:
       included. catch_logbook and catch_landings are independently summed from the
       two systems, so their ratio can be inspected directly - logbook and landings
       species codes are the same tegundnúmer vocabulary, so a ratio far from 1:1
-      on an otherwise-matched trip is a lead worth checking. NOT `(.lid, schema)`
+      on an otherwise-matched trip is a lead worth checking. Duplicate twins'
+      catch is left out (station.twin). NOT `(.lid, schema)`
       aware (curate/plans/007 §6 item 3) - the join keys on `.lid` alone, which
       is not globally unique across landing_catch's two source schemas.
     todo: |
@@ -3095,6 +3099,24 @@ tables:
           How station_type was obtained: "derived" from the vessel's own pattern,
           "synthesised" for a longline whose pattern alone would say "event", "none"
           where there is no pattern.
+      - name: twin
+        type: enum
+        values: [kept, duplicate, same_time]
+        description: >
+          Twin records (curate/corrections/logbook_twin.yml, decision 094): stations
+          of one vessel with identical t1-t4, at least one a time of day. NA for a
+          station with no twin. "duplicate" is the same record entered again: same
+          times and identical catch to the "kept" record named in twin_of. A
+          duplicate's catch and effort are the kept record's, so leave duplicates out
+          of any sum or count: catch_by_species_station, catch_by_species_trip,
+          station_window, lid_map and the trail already do. "same_time" is a record
+          of its own whose times equal another's (its catch differs); it is kept
+          everywhere, but the AIS track cannot tell it from its twin.
+      - name: twin_of
+        type: number
+        description: >
+          For a "duplicate" twin, the .sid (same schema) of the kept record it
+          repeats. NA otherwise.
   - name: logbook_trip
     source:
       parquet: ../../fishydata/curated/logbook/trip.parquet
@@ -3211,6 +3233,20 @@ tables:
           - Trackwell raun - Skrifstofa VES - GAFL AUTO
         description: >
           Source system tag within the fs_afladagbok schema; NA for afli.
+      - name: twin
+        type: enum
+        values: [kept, duplicate]
+        description: >
+          A trip submitted again (curate/corrections/logbook_twin.yml, decision
+          094): "duplicate" when every station of the trip is a duplicate twin, and
+          "kept" for the trip they repeat. NA otherwise. A duplicate trip has no
+          landing (lid_map) and no AIS voyage (trip_voyage); leave it out of trip
+          counts.
+      - name: twin_of
+        type: string
+        description: >
+          For a "duplicate" trip, the .tid (same schema) of the kept trip, when all
+          its stations repeat that one trip. NA otherwise.
   - name: reference_area_h3
     source:
       parquet: ../../fishydata/curated/reference/area_h3.parquet

@@ -304,7 +304,54 @@ class records a tow count rather than timestamps; effort for SDN is per
 setting. The `afli` FPO (traps) rate of ~46% reflects sparse soak-time
 recording in the legacy system.
 
+# Twin records
+
+Some stations are one operation entered twice: the same vessel, the same t1–t4 and the
+same catch (`curate/corrections/logbook_twin.yml`, decision 094). In `fs_afladagbok`,
+whole trips were submitted again by the same vendor in 2022–2023. In `afli`, single
+stations were entered twice within one trip (1969–2023). Counted, a duplicate doubles the
+trip's catch against its landing: the logbook catch is about twice the landing with every
+copy and equal to it with one.
+
+`station.parquet` and `trip.parquet` carry `twin` and `twin_of`. Nothing is removed:
+
+- **`duplicate`**: the same record entered again. Its catch and effort are those of the
+  `kept` record named in `twin_of`. Leave it out of any sum or count.
+  `catch_by_species_station`, `catch_by_species_trip`, `station_window`, `lid_map`,
+  `trip_voyage` and the trail already do.
+- **`same_time`**: a record of its own whose times equal another station's, while its
+  catch differs. It stays in every table, but the AIS track cannot tell it from its twin.
+- A trip is `duplicate` when every one of its stations repeats one other trip, which is
+  `kept`.
+
+Stations whose times are all at 00:00 are not twins. They are several untimed stations
+on one date.
+
+```{r}
+#| label: tbl-twins
+#| tbl-cap: "Twin records by schema: stations, their catch, and trips"
+
+twin_catch <- merged_catch |>
+  inner_join(merged_station |> filter(!is.na(twin)) |> select(.sid, schema, twin),
+             by = join_by(.sid, schema)) |>
+  summarise(catch_t = sum(catch, na.rm = TRUE) / 1e3, .by = c(schema, twin))
+merged_station |>
+  filter(!is.na(twin)) |>
+  count(schema, twin, name = "stations") |>
+  left_join(twin_catch, by = join_by(schema, twin)) |>
+  left_join(merged_trip |> filter(!is.na(twin)) |> count(schema, twin, name = "trips"),
+            by = join_by(schema, twin)) |>
+  arrange(schema, twin) |>
+  gt() |>
+  fmt_number(columns = c(stations, trips), decimals = 0, use_seps = TRUE) |>
+  fmt_number(columns = catch_t, decimals = 0, use_seps = TRUE) |>
+  sub_missing(missing_text = "") |>
+  cols_label(catch_t = "catch (t)")
+```
+
 # Annual catch totals
+
+Duplicate twins are left out of the totals below.
 
 ```{r}
 #| label: fig-annual-catch
@@ -312,7 +359,8 @@ recording in the legacy system.
 #| fig-height: 4
 
 merged_catch |>
-  left_join(merged_station |> select(.sid, date, schema), by = join_by(.sid, schema)) |>
+  left_join(merged_station |> select(.sid, date, schema, twin), by = join_by(.sid, schema)) |>
+  filter(is.na(twin) | twin != "duplicate") |>
   mutate(yr = lubridate::year(date)) |>
   filter(between(yr, 1990, 2025)) |>
   group_by(yr, schema) |>
@@ -327,7 +375,8 @@ merged_catch |>
 #| tbl-cap: "Annual catch totals, 2018–2025 (thousands of tonnes)"
 
 merged_catch |>
-  left_join(merged_station |> select(.sid, date, schema),by = join_by(.sid, schema)) |>
+  left_join(merged_station |> select(.sid, date, schema, twin), by = join_by(.sid, schema)) |>
+  filter(is.na(twin) | twin != "duplicate") |>
   mutate(yr = lubridate::year(date)) |>
   filter(between(yr, 2018, 2025)) |>
   group_by(yr, schema) |>
