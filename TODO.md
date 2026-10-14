@@ -29,33 +29,6 @@ does it twice.
 
 ---
 
-## 3c. `hid` and `pid` are not the same concept
-**status:** open · **raised by the maintainer 2026-09-21, while resolving item 4**
-**see:** `curate/decisions/007-hid-maps-to-pid.md` — the mapping is built; typing is what remains
-
-The landings/logbook harbour code answers **"where did this fish go?"**. A harbour
-polygon answers **"where was the vessel?"**. These coincide most of the time and then
-diverge exactly where it matters:
-
-- **A landing place that is not a harbour.** Hellissandur (41) and Hnífsdalur (71) appear
-  to be processing sites, not berths (decision 004). Forcing them into the harbour-polygon
-  domain is what produced the bad record in the first place.
-- **A code that is not a place at all.** `300 Flutningaskip` is a vessel type,
-  `900 Fiskistofa skráningar` an administrative sentinel, `150 Ýmsir staðir` a catch-all.
-- **A code that is a whole country.** The eight foreign codes (decision 007) resolve to a
-  country, not a port.
-- **A harbour that is not a landing place.** Any polygon a vessel visits without landing.
-
-So the crosswalk cannot be `hid ↔ pid` 1:1. It needs a **type** on each code —
-place / processing-site / country / sentinel — and a `pid` only where the code really
-denotes a physical harbour. Building it as a plain join will silently invent harbours
-that do not exist, which is the defect this project is supposed to detect.
-
-**check:** every harbour code carries an explicit type; no code typed non-harbour
-carries a `pid`.
-
----
-
 ## 9. No archive date for the old repos
 **status:** open · **kaenugardr done 2026-09-21 (read-only, write refused)**
 
