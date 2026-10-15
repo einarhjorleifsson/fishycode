@@ -152,6 +152,11 @@ dump_connect <- function(heap = "8g") {
     dplyr::rename_with(tolower)
 }
 
+# Run a lazy query through DBI rather than dplyr::collect(): when the driver throws a Java exception, collect()'s error
+# wrapper fails on the exception object ("no field, method or inner class called 'use_cli_format'", agf 2026-10-15)
+# and Oracle's message is lost.
+.oracle_collect <- function(con, q) tibble::as_tibble(DBI::dbGetQuery(con, dbplyr::sql_render(q)))
+
 # One table or view ("schema.name") to one parquet file, as it is. Reports and returns the rows written.
 dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(fields)) {
@@ -161,10 +166,10 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(run)) run <- .dump_run(con, NA_character_)
   if (any(fields$data_type %in% .oracle_lob)) {
     lc <- dump_connect()
-    d <- tryCatch(.oracle_query(lc, table, fields) |> dplyr::collect(),
+    d <- tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields)),
                   finally = DBI::dbDisconnect(lc))
   } else {
-    d <- .oracle_query(con, table, fields) |> dplyr::collect()
+    d <- .oracle_collect(con, .oracle_query(con, table, fields))
   }
   d <- .oracle_numbers(d, fields)
   .write_raw(d, path, table, run)
@@ -178,8 +183,7 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
 # Returns the rows written in this run.
 dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   q <- .oracle_query(con, table, fields)
-  span <- q |> dplyr::summarise(a = min(.data[[column]], na.rm = TRUE), b = max(.data[[column]], na.rm = TRUE)) |>
-    dplyr::collect()
+  span <- .oracle_collect(con, q |> dplyr::summarise(a = min(.data[[column]], na.rm = TRUE), b = max(.data[[column]], na.rm = TRUE)))
   years <- seq(as.integer(format(as.POSIXct(span$a), "%Y")), as.integer(format(as.POSIXct(span$b), "%Y")))
   n <- 0
   for (y in years) {
@@ -191,10 +195,9 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
       DBI::dbDisconnect(dc, shutdown = TRUE)
       if (!is.na(last) && as.Date(last) >= as.Date(sprintf("%d-12-31", y))) next
     }
-    d <- q |>
+    d <- .oracle_collect(con, q |>
       dplyr::filter(.data[[column]] >= to_date(!!sprintf("%d-01-01", y), "YYYY-MM-DD"),
-                    .data[[column]] <  to_date(!!sprintf("%d-01-01", y + 1), "YYYY-MM-DD")) |>
-      dplyr::collect()
+                    .data[[column]] <  to_date(!!sprintf("%d-01-01", y + 1), "YYYY-MM-DD")))
     d <- .oracle_numbers(d, fields)
     .write_raw(d, f, table, run)
     message(sprintf("%s, %d: %s rows", table, y, format(nrow(d), big.mark = ",")))

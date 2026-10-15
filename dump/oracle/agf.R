@@ -8,10 +8,12 @@
 #   Rscript dump/oracle/agf.R
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
-# The two views left out of every earlier dump (aflagrunnur_sec_v, aflagrunnur_th_igildi_v, reason not recorded)
-# are tried too; a failure is recorded in the overview.
+# Two views are left out, as in every earlier dump, now with the reason (both failed on 2026-10-15):
+#   aflagrunnur_sec_v       a per-user secured view: ORA-20290, the user has no row in ask.valin_hofn (chosen ports)
+#   aflagrunnur_th_igildi_v failed with a Java exception the error wrapper hid; aflagrunnur and aflagrunnur_v are dumped
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
-dump_oracle_schema(con, "agf", fd_raw("oracle", "agf"), script = "dump/oracle/agf.R")
+dump_oracle_schema(con, "agf", fd_raw("oracle", "agf"), skip = c("aflagrunnur_sec_v", "aflagrunnur_th_igildi_v"),
+                   script = "dump/oracle/agf.R")
