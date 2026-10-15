@@ -68,12 +68,17 @@ oracle_objects <- function(con, schema) {
 }
 
 # The connection every dump uses. rJava starts the JVM with a 0.5 GB heap under Rscript (measured 2026-10-15), and
-# adb's tables exhausted it; java.parameters takes effect only before the JVM starts, so it is set here, first.
+# adb's tables exhausted it. The JVM also reads Oracle's DATE (no time zone) through its own zone: in Atlantic/Reykjavik
+# a date before 1912 moves 16 min 8 s (measured 2026-10-15), and on a machine elsewhere every date would move. In UTC
+# a date comes through as Oracle holds it. Both settings take effect only before the JVM starts, so they are set here,
+# first; in a session where rJava already runs (RStudio after an earlier dump), restart R.
 dump_connect <- function(heap = "8g") {
-  options(java.parameters = paste0("-Xmx", heap))
+  options(java.parameters = c(paste0("-Xmx", heap), "-Duser.timezone=UTC"))
   con <- mar::connect_mar(rjdbc = TRUE)
   rt <- rJava::.jcall("java/lang/Runtime", "Ljava/lang/Runtime;", "getRuntime")
-  message(sprintf("JVM heap: %.1f GB", rJava::.jcall(rt, "J", "maxMemory") / 2^30))
+  tz <- rJava::.jcall(rJava::.jcall("java/util/TimeZone", "Ljava/util/TimeZone;", "getDefault"), "S", "getID")
+  message(sprintf("JVM heap: %.1f GB, time zone: %s", rJava::.jcall(rt, "J", "maxMemory") / 2^30, tz))
+  if (tz != "UTC") warning("the JVM is not in UTC (it started before dump_connect()): restart R", call. = FALSE)
   con
 }
 
