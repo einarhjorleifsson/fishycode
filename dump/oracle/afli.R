@@ -31,6 +31,6 @@ mottaka <-
   dplyr::collect() |>
   dplyr::rename_with(tolower) |>
   dplyr::left_join(xml, by = "id")
-mottaka <- .oracle_integers(mottaka, oracle_fields(con, "afli", "afladagb_xml_mottaka"))
+mottaka <- .oracle_numbers(mottaka, oracle_fields(con, "afli", "afladagb_xml_mottaka"))
 write_parquet_group(mottaka, file.path(out, "afladagb_xml_mottaka.parquet"))
 message("afli.afladagb_xml_mottaka: ", nrow(mottaka), " rows")

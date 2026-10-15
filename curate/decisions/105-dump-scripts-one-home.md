@@ -28,11 +28,12 @@ loop caught only the error of building the query, and kept no list of what it wr
   `_overview_tables.parquet` gains the rows written, the status, the error, the time, the script, the commit and the
   driver; `_overview_fields.parquet` holds each column's declared type. A file an earlier dump wrote and this one did
   not is named at the end and left in place.
-- **Types follow Oracle's declaration, not the driver.** RJDBC, the only driver on the laptop (ROracle finds no
-  Oracle client), returns NUMBER columns as doubles (every one in the vessel dump of 2026-10-14); the earlier dumps
-  hold some as integers (adb's `species_no`, afli's `skipnr`). `NUMBER(p <= 9, 0)` is cast to integer from
-  `all_tab_columns`; whether that reproduces the earlier types column for column is checked on the first run. A mock run against
-  DuckDB checked the cast, an empty table, a failure, `skip`, `drop` and the stale-file note.
+- **Types follow Oracle's declaration, not the driver.** RJDBC is the only driver on the laptop (ROracle finds no
+  Oracle client). It returns `NUMBER(p, s)` as a double, but a NUMBER with scale 0 and no precision (Oracle's
+  `INTEGER`) as text; the earlier dumps, made with ROracle, hold `NUMBER(p <= 9, 0)` as integers and every other
+  NUMBER as a double. From `all_tab_columns`, `NUMBER(p <= 9, 0)` is cast to integer and a NUMBER that arrives as text
+  to double, unless a value does not convert exactly (past 2^53), when the text is kept and named. A mock run against
+  DuckDB checked both casts, an empty table, a failure, `skip`, `drop` and the stale-file note.
 - **Writes go through `write_parquet_group()`**, plain `TIMESTAMP` as AGENTS.md requires; the vessel and afli dumps
   had used nanoparquet.
 - **The scripts:** `dump/oracle/{adb,afli,agf,fs_afladagbok,gear,lods,logbook,species,vessels}.R` and `dump/ais/stk.R`,
@@ -42,17 +43,33 @@ loop caught only the error of building the query, and kept no list of what it wr
 - **They run in the maintainer's terminal.** The password comes from the macOS keychain, which Claude's shell cannot
   open.
 
+## The first run: adb, 2026-10-15
+
+The maintainer ran `dump/oracle/adb.R` before the text cast existed. 31 of 32 objects were written; `fishing_station`
+failed, as the maintainer expected (the overview now records it). `trip_v` came out column for column as in April,
+but 16 files held their ids as text: `station_v.station_id`, `catch.catch_id`, `fishing_trip.fishing_trip_id` and
+others, all declared NUMBER with scale 0 and no precision. That would have broken `sources/adb/convert.R`, which joins
+the catch's double `fishing_station_id` to the station's id.
+
+With the cast applied to a scratch copy, `convert.R` ran into scratch and matched `staging/adb` (built from April)
+column for column: trips 270,490 then, 306,509 now; stations 628,314 then, 690,912 now; catch rows 1,893,058 then,
+2,074,255 now. Every April trip and station is still there. Their times agree except on 11 trips and 70 stations,
+all dated before 1990 (years 6, 202, 630, 1923: typos), where Java and R read historic calendars and local mean time
+differently. The April `_overview_views.parquet` went to the Trash; the overview now lists views by `type`.
+
 ## Found on the way
 
 - **STK `year=2026`, dumped 2026-10-15, holds `.id` and `mid` as text**; 2007-2025 hold doubles. The pipeline reads
   them right only because DuckDB takes the schema from the first file and casts the rest. `stk.R` now casts after
-  collecting, and since 2026 is the current year its next run rewrites the partition.
+  collecting, and since 2026 is the current year its next run rewrites the partition. The same cause as adb's text
+  ids: the old script cast with `as.integer()` inside the Oracle query. Its times are right: on 2026-03-01, 21,511 fixes
+  match `staging/ais/ping_union` (built from the April dump) to the second.
 - **`stk.R` refetches a year that does not reach 31 December**, instead of a first year edited by hand: every year
   2007-2025 holds a record from the last minute of 31 December.
 - **`raw/ais/stk/einarhj_mobile-vid.parquet`, rewritten 2026-10-15, holds `t1`, `t2` and `datel` as text.** It is an
-  input of the frozen `once` project only (`ais_key_cascade`), so it matters only if that project is redone.
+  input of the frozen `once` project only, and `ais_key_cascade` takes only `mid` and `vid` from it.
 
 ## Not done
 
-The new scripts have not run against Oracle. `dump/oracle/landings.R` is not a dump (it transforms, writes
+adb and stk are to be rerun with the text cast; the other scripts have not run against Oracle. `dump/oracle/landings.R` is not a dump (it transforms, writes
 `staging/` and uses arrow) and was left as it is.

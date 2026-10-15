@@ -11,9 +11,10 @@
 # The table-and-view loop used to be copied into six scripts, three in dump/ and three beside the data under
 # $FISHYDATA/raw/, and the copies drifted (decision 105). The dump scripts in dump/ call these instead.
 #
-# Integer columns are cast by the type Oracle declares, not by what the driver returns: RJDBC returns every
-# NUMBER as a double, while the dumps made with ROracle on the servers hold NUMBER(p, 0) as integers. Casting
-# NUMBER(p <= 9, 0) from all_tab_columns gives the same parquet whichever driver read it.
+# NUMBER columns are typed by what Oracle declares, not by what the driver returns, so the parquet is the same
+# whichever driver read it. The dumps made with ROracle on the servers hold NUMBER(p <= 9, 0) as integers and other
+# NUMBERs as doubles. RJDBC returns NUMBER(p, s) as a double, but a NUMBER with scale 0 and no precision (Oracle's
+# INTEGER: adb's ids) as text - measured on the adb dump of 2026-10-15, where it broke the station-catch join.
 
 # Columns of a schema (or of one table in it), with Oracle's declared types and comments.
 oracle_fields <- function(con, schema, table = NULL) {
@@ -42,11 +43,25 @@ oracle_fields <- function(con, schema, table = NULL) {
     dplyr::arrange(table, column_id)
 }
 
-.oracle_integers <- function(d, fields) {
+.oracle_numbers <- function(d, fields) {
+  num <- fields$column[fields$data_type %in% "NUMBER"]
   int <- fields$column[fields$data_type %in% "NUMBER" &
                        fields$data_scale %in% 0 &
                        !is.na(fields$data_precision) & fields$data_precision <= 9]
-  for (v in intersect(int, names(d))) if (is.double(d[[v]])) d[[v]] <- as.integer(d[[v]])
+  for (v in intersect(num, names(d))) {
+    x <- d[[v]]
+    if (is.character(x)) {
+      y <- suppressWarnings(as.numeric(x))
+      # a double holds integers exactly up to 2^53; past that, or if a value does not parse, the text is kept
+      if (any(is.na(y) & !is.na(x)) || any(abs(y) > 2^53, na.rm = TRUE)) {
+        message("  ", v, ": NUMBER returned as text and kept as text (not every value converts exactly)")
+        next
+      }
+      x <- y
+    }
+    if (v %in% int && is.double(x)) x <- as.integer(x)
+    d[[v]] <- x
+  }
   d
 }
 
@@ -61,7 +76,7 @@ dump_oracle_table <- function(con, table, path, fields = NULL, drop = character(
   }
   d <- mar::tbl_mar(con, table) |> dplyr::collect()
   d <- d[setdiff(names(d), drop)]
-  d <- .oracle_integers(d, fields)
+  d <- .oracle_numbers(d, fields)
   write_parquet_group(d, path)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
   nrow(d)
