@@ -190,8 +190,8 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
 }
 
 # A table too big for one collect(), by calendar year of `column`, to <dir>/year=<y>/data_0.parquet. A year is fetched
-# again until its partition holds a value from 31 December: for STK's recdate (receipt time) every year 2007-2025
-# does, within the last minute (measured 2026-10-15), so a year dumped before it ended is completed on the next run.
+# again until it has been dumped after it ended, read from the partition's own fd.dumped stamp: a year dumped while
+# it was running is completed on the next run, whatever the column (a logger may record nothing on 31 December).
 # Returns the rows written in this run.
 dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   q <- .oracle_query(con, table, fields)
@@ -201,11 +201,9 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   for (y in years) {
     f <- file.path(dir, paste0("year=", y), "data_0.parquet")
     if (file.exists(f)) {
-      dc <- DBI::dbConnect(duckdb::duckdb())
-      last <- DBI::dbGetQuery(dc, sprintf("SELECT max(%s) AS mx FROM read_parquet(%s)", column,
-                                          shQuote(f, type = "sh")))$mx
-      DBI::dbDisconnect(dc, shutdown = TRUE)
-      if (!is.na(last) && as.Date(last) >= as.Date(sprintf("%d-12-31", y))) next
+      m <- curated_provenance(f)
+      d0 <- m$value[m$key == "fd.dumped"]
+      if (length(d0) && as.Date(substr(d0, 1, 10)) > as.Date(sprintf("%d-12-31", y))) next
     }
     d <- .oracle_collect(con, q |>
       dplyr::filter(.data[[column]] >= to_date(!!sprintf("%d-01-01", y), "YYYY-MM-DD"),
@@ -278,18 +276,28 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   yaml::write_yaml(dd, file.path(out_dir, "_data-dict.yaml"))
 }
 
+# Does the connection still answer?
+.oracle_alive <- function(con) tryCatch({ DBI::dbGetQuery(con, "SELECT 1 FROM DUAL"); TRUE }, error = function(e) FALSE)
+
 # Every table and view of a schema, as it is. A table that fails is recorded and the loop goes on.
 #   tables     dump only these (the overview still lists every object); for a schema that is not ours to dump whole
 #   skip       objects deliberately left out; the caller says why
 #   partition  list(table = "date column"): dumped by calendar year (dump_oracle_by_year())
 #   max_rows   a table Oracle estimates bigger than this, and not partitioned, is listed but not dumped
+#   resume     keep what the last run wrote (status written, file on disk) and dump the rest; on by `--resume` on the
+#              command line (Rscript dump/oracle/afli.R --resume)
+# A table that fails on a dead connection is tried once more on a new one: afli's dump of 2026-10-15 lost its
+# connection on sjalfvirkir_maelar (ORA-17002), and the 27 tables after it failed on the dead connection.
 # Returns the overview, invisibly.
 dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = character(), partition = list(),
-                               max_rows = 5e7, script = NA_character_) {
+                               max_rows = 5e7, script = NA_character_,
+                               resume = "--resume" %in% commandArgs(trailingOnly = TRUE)) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   run <- .dump_run(con, script)
   ov_path <- file.path(out_dir, "_overview_tables.parquet")
-  before  <- if (file.exists(ov_path)) nanoparquet::read_parquet(ov_path)$name else character()
+  prev    <- if (file.exists(ov_path)) as.data.frame(nanoparquet::read_parquet(ov_path)) else NULL
+  before  <- prev$name
+  if (resume && !all(c("status", "rows", "dumped") %in% names(prev))) prev <- NULL   # nothing to resume from
 
   objects <- oracle_objects(con, schema)
   if (length(bad <- setdiff(c(tables, skip, names(partition)), objects$name)))
@@ -301,6 +309,8 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   objects$partitioned <- objects$name %in% names(partition)
   rows <- rep(NA_real_, n); status <- rep(NA_character_, n)
   error <- rep(NA_character_, n); seconds <- rep(NA_real_, n)
+  stamp <- data.frame(dumped = rep(run$dumped, n), script = run$script, commit = run$commit, dirty = run$dirty,
+                      driver = run$driver, resumed = FALSE)
   for (i in seq_len(n)) {
     nm <- objects$name[i]
     why <- if (!is.null(tables) && !nm %in% tables) "listed"
@@ -312,14 +322,28 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
       if (why != "listed") message(sprintf("%s.%s: %s", schema, nm, why))
       next
     }
+    j <- if (resume && !is.null(prev)) match(nm, prev$name) else NA
+    if (!is.na(j) && prev$status[j] %in% "written" &&
+        (file.exists(file.path(out_dir, paste0(nm, ".parquet"))) || dir.exists(file.path(out_dir, nm)))) {
+      rows[i] <- prev$rows[j]; seconds[i] <- prev$seconds[j]; status[i] <- "written"
+      for (k in c("dumped", "script", "commit", "dirty", "driver")) if (k %in% names(prev)) stamp[[k]][i] <- prev[[k]][j]
+      stamp$resumed[i] <- TRUE
+      next
+    }
     t0 <- Sys.time()
     fl <- fields[fields$table == nm, ]
-    r <- tryCatch(
+    attempt <- function() tryCatch(
       if (objects$partitioned[i])
         dump_oracle_by_year(con, paste0(schema, ".", nm), file.path(out_dir, nm), partition[[nm]], fl, run)
       else
         dump_oracle_table(con, paste0(schema, ".", nm), file.path(out_dir, paste0(nm, ".parquet")), fl, run),
       error = function(e) e)
+    r <- attempt()
+    if (inherits(r, "error") && !.oracle_alive(con)) {
+      message(sprintf("%s.%s: the connection is lost - reconnecting and trying once more", schema, nm))
+      con <- dump_connect()
+      r <- attempt()
+    }
     seconds[i] <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     invisible(gc(FALSE))   # an R reference holds its Java result until R's gc runs, whatever the Java heap
     if (inherits(r, "error")) {
@@ -333,9 +357,8 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   }
 
   objects <- objects |>
-    dplyr::mutate(rows = rows, status = status, error = error, seconds = seconds,
-                  dumped = run$dumped, script = run$script, commit = run$commit, dirty = run$dirty,
-                  driver = run$driver)
+    dplyr::mutate(rows = rows, status = status, error = error, seconds = seconds) |>
+    dplyr::bind_cols(stamp)
   .write_raw(objects, ov_path, paste0(schema, " objects"), run)
   dd <- tryCatch(.write_data_dict(out_dir, schema, objects, fields, run), error = function(e) e)
   if (inherits(dd, "error")) message("  _data-dict.yaml not written: ", conditionMessage(dd))
@@ -345,8 +368,8 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   # Left in place, since raw/ is never deleted by code; the overview says they are not from this dump.
   stale <- setdiff(before, objects$name[objects$status %in% c("written", "skipped")])
   stale <- stale[file.exists(file.path(out_dir, paste0(stale, ".parquet"))) | dir.exists(file.path(out_dir, stale))]
-  message(sprintf("%s: %d written, %d failed, %d skipped, %d too big, %d listed only -> %s",
-                  schema, sum(status == "written"), length(failed), sum(status == "skipped"),
+  message(sprintf("%s: %d written (%d kept from the last run), %d failed, %d skipped, %d too big, %d listed only -> %s",
+                  schema, sum(status == "written"), sum(stamp$resumed), length(failed), sum(status == "skipped"),
                   sum(status == "too_big"), sum(status == "listed"), out_dir))
   if (length(failed)) message("  failed: ", paste(failed, collapse = ", "))
   if (length(stale))  message("  not from this dump (older files kept): ", paste(stale, collapse = ", "))

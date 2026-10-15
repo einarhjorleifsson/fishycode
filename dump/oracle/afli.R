@@ -16,7 +16,9 @@
 #   rafr_mottaka_view      a view with an XML CLOB (xml_clob)
 #   ra_email_skeyti        e-mails, two CLOBs; nothing reads them
 #   ps_txn, create$java$lob$table   Oracle's own tables (BLOBs)
-# afladagb_schema (an XMLTYPE, 37 rows) is small and is dumped.
+# afladagb_schema (an XMLTYPE, 37 rows) is small and is dumped. sjalfvirkir_maelar (28.2 M logger readings) goes by
+# year of its time, timi: whole, it lost the connection after 6 min (ORA-17002, 2026-10-15).
+# After a run with failures, `Rscript dump/oracle/afli.R --resume` keeps what was written and dumps the rest.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
@@ -24,4 +26,5 @@ con <- dump_connect()
 dump_oracle_schema(con, "afli", fd_raw("oracle", "afli"),
                    skip = c("afladagb_xml_mottaka", "rafr_mottaka_view", "ra_email_skeyti", "ps_txn",
                             "create$java$lob$table"),
+                   partition = list(sjalfvirkir_maelar = "timi"),
                    script = "dump/oracle/afli.R")
