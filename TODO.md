@@ -388,13 +388,15 @@ and a crosswalk from each feed identity to it. It follows plan 016's rebuild and
 
 **check:** plan 021 §7.
 
-## 66. Oracle dumps as they are: finish the dumps, then switch the readers
-**status:** in progress · **needs: maintainer** — run kvoti and stk through `run_dump()`, and the `afli.afli` query
-in plan 018 §3 · **see:** `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105-106
+## 66. Oracle dumps as they are: redo them on the server, then switch the readers
+**status:** in progress · **needs: maintainer** — the server's name and setup, the first run (`dump/oracle/all.R
+--driver=ROracle`, asfis first), and the `afli.afli` query in plan 018 §3 · **see:**
+`curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106 and 109
 
-Phase 2 (the dumps) is under way: afli finished with `afli.afli` and `v_afli` unreadable through either fetch, most
-likely malformed NUMBERs in Oracle; the April copy stays their source until the rows are found. Phase 3 (the readers)
-follows the dumps.
+The Mac's dumps (RJDBC, over Wi-Fi and the VPN) finish as the baseline; afli's had `afli.afli` and `v_afli` unreadable,
+most likely malformed NUMBERs in Oracle. Decision 109 redoes every schema on the server through ROracle: the code is
+built and tested without Oracle. Each schema is compared with `compare_dumps()` before it replaces the Mac's. Phase 3
+(the readers) follows.
 
 **check:** plan 018 phase 3 is done: the readers use `fd_raw("oracle", ...)` and the old dump directories are gone or
 kept by a decision.

@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** approved 2026-10-15; phase 1 built, phase 2 under way · **2026-10-15** · **see:** decisions 105-106; TODO 66 and 51; plan 016 §4 step 6
+**status:** approved 2026-10-15; phase 1 built, phase 2 under way · **2026-10-15** · **see:** decisions 105, 106 and 109; TODO 66 and 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.
@@ -64,9 +64,13 @@ Where it stands, 2026-10-15 evening:
 - **kvoti, unclear:** `raw/oracle/kvoti/` holds 531 files, the last written 21:12, with no `_logs` and no process:
   started outside `run_dump()` and stopped? To be rerun through `run_dump()`.
 - **Not run:** stk.
-- **Driver:** RJDBC stays (decision 106). Dumps run through `run_dump()`, one process per schema. Two runs of one
-  schema write the same files: `run_dump()` refuses a schema whose run is still alive (since 2026-10-15, after two
+- **Driver:** RJDBC on the Mac (decision 106). Dumps run through `run_dump()`, one process per schema. Two runs of
+  one schema write the same files: `run_dump()` refuses a schema whose run is still alive (since 2026-10-15, after two
   ask runs went into one directory). A dump started by hand is not seen.
+- **Redone on the server, through ROracle (decision 109):** the Mac's dumps were bound by Wi-Fi and the VPN. The code
+  is ready, not yet run against Oracle: `nohup Rscript dump/oracle/all.R --driver=ROracle &` runs every schema with
+  its logs under `raw/oracle/` (after a failure, the same with `--resume`), and `compare_dumps()` checks each against today's RJDBC dump before it replaces it.
+  The runs on the Mac (ask; kvoti in RStudio) finish as the baseline.
 
 **`afli.afli` holds numbers neither fetch can read (2026-10-15).** It is the logbook's catch table (15,674,405 rows,
 the same count as the April copy). The first fetch failed in the driver (`ArrayIndexOutOfBoundsException: Index -1

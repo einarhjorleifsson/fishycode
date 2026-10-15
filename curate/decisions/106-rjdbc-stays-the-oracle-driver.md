@@ -1,7 +1,8 @@
 # 106 — RJDBC stays the Oracle driver
 
 *2026-10-15. Written by Claude (AI-assisted); the choice is the maintainer's ("we just stick with what we got").
-Plan 018.*
+Plan 018. Later the same day decision 109 moved the dumps to the server, through ROracle; RJDBC stays the Mac's
+driver.*
 
 ## Why it was asked
 

@@ -67,19 +67,55 @@ oracle_objects <- function(con, schema) {
   objects |> dplyr::relocate(owner, name, type, comments)
 }
 
-# The connection every dump uses. rJava starts the JVM with a 0.5 GB heap under Rscript (measured 2026-10-15), and
-# adb's tables exhausted it. The JVM also reads Oracle's DATE (no time zone) through its own zone: in Atlantic/Reykjavik
-# a date before 1912 moves 16 min 8 s (measured 2026-10-15), and on a machine elsewhere every date would move. In UTC
-# a date comes through as Oracle holds it. Both settings take effect only before the JVM starts, so they are set here,
-# first; in a session where rJava already runs (RStudio after an earlier dump), restart R.
-dump_connect <- function(heap = "8g") {
-  options(java.parameters = c(paste0("-Xmx", heap), "-Duser.timezone=UTC"))
-  con <- mar::connect_mar(rjdbc = TRUE)
-  rt <- rJava::.jcall("java/lang/Runtime", "Ljava/lang/Runtime;", "getRuntime")
-  tz <- rJava::.jcall(rJava::.jcall("java/util/TimeZone", "Ljava/util/TimeZone;", "getDefault"), "S", "getID")
-  message(sprintf("JVM heap: %.1f GB, time zone: %s", rJava::.jcall(rt, "J", "maxMemory") / 2^30, tz))
-  if (tz != "UTC") warning("the JVM is not in UTC (it started before dump_connect()): restart R", call. = FALSE)
+# The connection every dump uses, through RJDBC (Oracle's JDBC driver, in Java) or ROracle (Oracle's client library).
+# The driver comes from FD_DUMP_DRIVER, which run_dump(driver = ) sets, so a dump script, its reconnect and its LOB
+# connection all use one driver. RJDBC is the default: it is the only one on the Mac (decisions 106, 109).
+#
+# RJDBC: rJava starts the JVM with a 0.5 GB heap under Rscript (measured 2026-10-15), and adb's tables exhausted it.
+# The JVM also reads Oracle's DATE (no time zone) through its own zone: in Atlantic/Reykjavik a date before 1912 moves
+# 16 min 8 s (measured 2026-10-15), and on a machine elsewhere every date would move. In UTC a date comes through as
+# Oracle holds it. Both settings take effect only before the JVM starts, so they are set here, first; in a session
+# where rJava already runs (RStudio after an earlier dump), restart R.
+#
+# ROracle: DATE is read through R's time zone (TZ) and Oracle's session time zone (ORA_SDTZ), so both are set to UTC
+# before connecting; in an interactive session this changes how R prints times. mar::connect_mar() falls back to
+# RJDBC without a word when ROracle is not installed, so the connection's driver is checked.
+#
+# Either way a DATE before 1912 is read back first, the way a dump writes it (.oracle_check_time()).
+dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = "8g") {
+  driver <- match.arg(driver, c("RJDBC", "ROracle"))
+  if (driver == "ROracle") {
+    if (!requireNamespace("ROracle", quietly = TRUE)) stop("ROracle is not installed here", call. = FALSE)
+    Sys.setenv(TZ = "UTC", ORA_SDTZ = "UTC")
+    con <- mar::connect_mar(rjdbc = FALSE)
+    message(sprintf("ROracle %s, time zone: %s", utils::packageVersion("ROracle"), Sys.getenv("TZ")))
+  } else {
+    options(java.parameters = c(paste0("-Xmx", heap), "-Duser.timezone=UTC"))
+    con <- mar::connect_mar(rjdbc = TRUE)
+    rt <- rJava::.jcall("java/lang/Runtime", "Ljava/lang/Runtime;", "getRuntime")
+    tz <- rJava::.jcall(rJava::.jcall("java/util/TimeZone", "Ljava/util/TimeZone;", "getDefault"), "S", "getID")
+    message(sprintf("JVM heap: %.1f GB, time zone: %s", rJava::.jcall(rt, "J", "maxMemory") / 2^30, tz))
+    if (tz != "UTC") warning("the JVM is not in UTC (it started before dump_connect()): restart R", call. = FALSE)
+  }
+  if (.oracle_driver(con) != driver)
+    stop(sprintf("asked for %s, connected through %s", driver, .oracle_driver(con)), call. = FALSE)
+  .oracle_check_time(con)
   con
+}
+
+# A DATE goes through the driver and DuckDB as a dump writes it, and must come out as Oracle holds it; else the dump
+# stops before it writes anything.
+.oracle_check_time <- function(con) {
+  d <- DBI::dbGetQuery(con, "SELECT TO_DATE('1900-01-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS') AS D FROM DUAL")
+  names(d) <- "d"
+  dk <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(dk, shutdown = TRUE), add = TRUE)
+  duckdb::duckdb_register(dk, "t", d)
+  got <- DBI::dbGetQuery(dk, "SELECT CAST(CAST(d AS TIMESTAMP) AS VARCHAR) AS v FROM t")$v
+  if (!identical(got, "1900-01-01 12:00:00"))
+    stop("a DATE of 1900-01-01 12:00:00 would be written as ", got, ": the driver reads dates through a time zone ",
+         "other than UTC", call. = FALSE)
+  invisible(TRUE)
 }
 
 .oracle_numbers <- function(d, fields) {
@@ -201,9 +237,11 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   for (y in years) {
     f <- file.path(dir, paste0("year=", y), "data_0.parquet")
     if (file.exists(f)) {
-      m <- curated_provenance(f)
+      # a year file cut off mid-write has no readable footer, and one of the other driver is not mixed in: both redone
+      m <- tryCatch(curated_provenance(f), error = function(e) NULL)
       d0 <- m$value[m$key == "fd.dumped"]
-      if (length(d0) && as.Date(substr(d0, 1, 10)) > as.Date(sprintf("%d-12-31", y))) next
+      if (length(d0) && identical(m$value[m$key == "fd.driver"], run$driver) &&
+          as.Date(substr(d0, 1, 10)) > as.Date(sprintf("%d-12-31", y))) next
     }
     d <- .oracle_collect(con, q |>
       dplyr::filter(.data[[column]] >= to_date(!!sprintf("%d-01-01", y), "YYYY-MM-DD"),
@@ -276,31 +314,56 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   yaml::write_yaml(dd, file.path(out_dir, "_data-dict.yaml"))
 }
 
+# What a resumed run keeps of table `nm`: NULL to dump it again, else its rows, seconds and stamps. A table is kept when
+# the last overview says it was written, or, when there is no overview (a run killed before its end writes none: the
+# kvoti run in RStudio, 2026-10-15), when its file reads back with the stamps .write_raw() puts in the footer, which a
+# file cut off mid-write lacks. Either way only a file of the same driver is kept, so one directory never mixes them.
+# A partitioned table is never kept whole: dump_oracle_by_year() keeps each year dumped after it ended.
+.dump_kept <- function(nm, out_dir, prev, run, partitioned) {
+  if (partitioned) return(NULL)
+  f <- file.path(out_dir, paste0(nm, ".parquet"))
+  if (!file.exists(f)) return(NULL)
+  j <- if (is.null(prev)) NA else match(nm, prev$name)
+  if (!is.na(j) && prev$status[j] %in% "written" && identical(prev$driver[j], run$driver)) {
+    keys <- intersect(c("dumped", "script", "commit", "dirty", "driver"), names(prev))
+    return(list(rows = prev$rows[j], seconds = prev$seconds[j], stamp = as.list(prev[j, keys, drop = FALSE])))
+  }
+  m <- tryCatch(curated_provenance(f), error = function(e) NULL)
+  v <- if (is.null(m)) character() else stats::setNames(m$value, m$key)
+  if (!all(c("fd.rows", "fd.dumped", "fd.driver") %in% names(v)) || v[["fd.driver"]] != run$driver) return(NULL)
+  stamp <- list(dumped = v[["fd.dumped"]], driver = v[["fd.driver"]])
+  for (k in c("script", "commit", "dirty")) if (paste0("fd.", k) %in% names(v)) stamp[[k]] <- v[[paste0("fd.", k)]]
+  list(rows = as.numeric(v[["fd.rows"]]), seconds = NA_real_, stamp = stamp)
+}
+
 # Does the connection still answer?
 .oracle_alive <- function(con) tryCatch({ DBI::dbGetQuery(con, "SELECT 1 FROM DUAL"); TRUE }, error = function(e) FALSE)
 
 # Every table and view of a schema, as it is. A table that fails is recorded and the loop goes on.
 #   tables     dump only these (the overview still lists every object); for a schema that is not ours to dump whole
 #   skip       objects deliberately left out; the caller says why
+#   skip_rjdbc left out only when the driver is RJDBC: tables with LOB columns, which it fetches one row at a time
+#              (3 MB/s), and objects that fail in its Java layer. ROracle is expected to read them: the April dump made
+#              with it on the server holds afli.afladagb_xml_mottaka (decision 109)
 #   partition  list(table = "date column"): dumped by calendar year (dump_oracle_by_year())
 #   max_rows   a table Oracle estimates bigger than this, and not partitioned, is listed but not dumped
-#   resume     keep what the last run wrote (status written, file on disk) and dump the rest; on by `--resume` on the
-#              command line (Rscript dump/oracle/afli.R --resume)
+#   resume     keep what an earlier run of the same driver wrote completely and dump the rest (.dump_kept()); on by
+#              `--resume` on the command line (Rscript dump/oracle/afli.R --resume), which dump/oracle/all.R passes
 # A table that fails on a dead connection is tried once more on a new one: afli's dump of 2026-10-15 lost its
 # connection on sjalfvirkir_maelar (ORA-17002), and the 27 tables after it failed on the dead connection.
 # Returns the overview, invisibly.
-dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = character(), partition = list(),
-                               max_rows = 5e7, script = NA_character_,
+dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = character(), skip_rjdbc = character(),
+                               partition = list(), max_rows = 5e7, script = NA_character_,
                                resume = "--resume" %in% commandArgs(trailingOnly = TRUE)) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   run <- .dump_run(con, script)
   ov_path <- file.path(out_dir, "_overview_tables.parquet")
   prev    <- if (file.exists(ov_path)) as.data.frame(nanoparquet::read_parquet(ov_path)) else NULL
   before  <- prev$name
-  if (resume && !all(c("status", "rows", "dumped") %in% names(prev))) prev <- NULL   # nothing to resume from
+  if (resume && !all(c("status", "rows", "dumped") %in% names(prev))) prev <- NULL   # an overview without them
 
   objects <- oracle_objects(con, schema)
-  if (length(bad <- setdiff(c(tables, skip, names(partition)), objects$name)))
+  if (length(bad <- setdiff(c(tables, skip, skip_rjdbc, names(partition)), objects$name)))
     stop("not in ", schema, ": ", paste(bad, collapse = ", "), call. = FALSE)
   fields <- oracle_fields(con, schema)
   .write_raw(fields, file.path(out_dir, "_overview_fields.parquet"), paste0(schema, " columns"), run)
@@ -311,10 +374,11 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   error <- rep(NA_character_, n); seconds <- rep(NA_real_, n)
   stamp <- data.frame(dumped = rep(run$dumped, n), script = run$script, commit = run$commit, dirty = run$dirty,
                       driver = run$driver, resumed = FALSE)
+  if (run$driver != "RJDBC") skip_rjdbc <- character()
   for (i in seq_len(n)) {
     nm <- objects$name[i]
     why <- if (!is.null(tables) && !nm %in% tables) "listed"
-           else if (nm %in% skip) "skipped"
+           else if (nm %in% c(skip, skip_rjdbc)) "skipped"
            else if (!objects$partitioned[i] && isTRUE(objects$num_rows[i] > max_rows)) "too_big"
            else NA_character_
     if (!is.na(why)) {
@@ -322,11 +386,10 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
       if (why != "listed") message(sprintf("%s.%s: %s", schema, nm, why))
       next
     }
-    j <- if (resume && !is.null(prev)) match(nm, prev$name) else NA
-    if (!is.na(j) && prev$status[j] %in% "written" &&
-        (file.exists(file.path(out_dir, paste0(nm, ".parquet"))) || dir.exists(file.path(out_dir, nm)))) {
-      rows[i] <- prev$rows[j]; seconds[i] <- prev$seconds[j]; status[i] <- "written"
-      for (k in c("dumped", "script", "commit", "dirty", "driver")) if (k %in% names(prev)) stamp[[k]][i] <- prev[[k]][j]
+    kept <- if (resume) .dump_kept(nm, out_dir, prev, run, objects$partitioned[i]) else NULL
+    if (!is.null(kept)) {
+      rows[i] <- kept$rows; seconds[i] <- kept$seconds; status[i] <- "written"
+      for (k in names(kept$stamp)) stamp[[k]][i] <- kept$stamp[[k]]
       stamp$resumed[i] <- TRUE
       next
     }

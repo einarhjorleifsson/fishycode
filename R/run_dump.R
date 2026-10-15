@@ -16,6 +16,7 @@
 #   run_dump("kvoti")                       a full dump of one schema
 #   run_dump(c("kvoti", "stk"))             one after the other, in one background process
 #   run_dump("afli", resume = TRUE)         keep what the last run wrote, dump the rest
+#   run_dump("afli", driver = "ROracle")    through ROracle, on the server (decision 109); RJDBC when not given
 #   dump_status()                           every schema: running, queued, finished (and how), stopped
 
 .repo_root <- function() {
@@ -30,8 +31,7 @@
 }
 
 # The process dumping schema `s` now, from its _logs/current: its id while it runs or waits its turn, NA once its log
-# has an exit code or the process is gone. A dump started outside run_dump(), or with wait = TRUE, leaves no process
-# id there and is not seen.
+# has an exit code or the process is gone. A dump started outside run_dump() leaves no _logs/current and is not seen.
 .dump_pid <- function(s, log_root) {
   cur <- file.path(log_root, s, "_logs", "current")
   if (!file.exists(cur)) return(NA_integer_)
@@ -42,8 +42,12 @@
 
 # Start dump/oracle/<schema>.R for each schema, one after the other, in one background process. Returns its process id
 # (NA with wait = TRUE), invisibly.
-run_dump <- function(schema, resume = FALSE, wait = FALSE, root = .repo_root(), log_root = fd_raw("oracle")) {
+run_dump <- function(schema, resume = FALSE, driver = NULL, wait = FALSE, root = .repo_root(),
+                     log_root = fd_raw("oracle")) {
   scripts <- file.path("dump", "oracle", paste0(schema, ".R"))
+  # dump_connect() reads the driver from FD_DUMP_DRIVER; ROracle's time zones are set before R starts as well
+  env <- if (is.null(driver)) "" else switch(match.arg(driver, c("RJDBC", "ROracle")),
+    RJDBC = "FD_DUMP_DRIVER=RJDBC ", ROracle = "FD_DUMP_DRIVER=ROracle TZ=UTC ORA_SDTZ=UTC ")
   if (length(miss <- schema[!file.exists(file.path(root, scripts))]))
     stop("no dump script for ", paste(miss, collapse = ", "), " (dump/oracle/<schema>.R)", call. = FALSE)
   # Two runs of one schema write the same files: two ask runs went into one directory on 2026-10-15.
@@ -52,7 +56,7 @@ run_dump <- function(schema, resume = FALSE, wait = FALSE, root = .repo_root(), 
     stop(paste(sprintf("%s is being dumped by process %d", schema[!is.na(busy)], busy[!is.na(busy)]), collapse = "; "),
          ". Wait for it (dump_status()), or stop it first. If that process is not the dump, remove ",
          "<schema>/_logs/current", call. = FALSE)
-  dirty <-suppressWarnings(system2("git", c("-C", shQuote(root), "status", "--porcelain", "--", "R", "dump/oracle"),
+  dirty <- suppressWarnings(system2("git", c("-C", shQuote(root), "status", "--porcelain", "--", "R", "dump/oracle"),
                                     stdout = TRUE, stderr = FALSE))
   if (length(dirty))
     warning("the dumper has uncommitted changes (", paste(trimws(dirty), collapse = "; "), "): the files will be ",
@@ -63,12 +67,13 @@ run_dump <- function(schema, resume = FALSE, wait = FALSE, root = .repo_root(), 
     dir.create(d, recursive = TRUE, showWarnings = FALSE)
     file.path(d, sprintf("%s%s.log", when, if (resume) "_resume" else ""))
   }, "")
-  steps <- sprintf("Rscript %s%s > %s 2>&1; echo $? > %s", shQuote(scripts), if (resume) " --resume" else "",
+  steps <- sprintf("%sRscript %s%s > %s 2>&1; echo $? > %s", env, shQuote(scripts), if (resume) " --resume" else "",
                    shQuote(logs), shQuote(paste0(logs, ".exit")))
   body <- sprintf("cd %s && %s", shQuote(root), paste(steps, collapse = "; "))
   awake <- if (nzchar(Sys.which("caffeinate"))) "caffeinate -i " else ""
   if (wait) {
-    for (s in schema) writeLines(c("NA", logs[[s]]), file.path(log_root, s, "_logs", "current"))
+    # this R process waits for the run, so its id is the run's for dump_status() and the guard above
+    for (s in schema) writeLines(c(as.character(Sys.getpid()), logs[[s]]), file.path(log_root, s, "_logs", "current"))
     system2("/bin/sh", c("-c", shQuote(paste0(awake, "/bin/sh -c ", shQuote(body)))))
     pid <- NA_integer_
   } else {
@@ -76,8 +81,9 @@ run_dump <- function(schema, resume = FALSE, wait = FALSE, root = .repo_root(), 
     pid <- as.integer(system2("/bin/sh", c("-c", shQuote(outer)), stdout = TRUE))
     for (s in schema) writeLines(c(as.character(pid), logs[[s]]), file.path(log_root, s, "_logs", "current"))
   }
-  message(sprintf("%s %s%s%s; logs in %s/<schema>/_logs/", if (wait) "ran" else "started",
+  message(sprintf("%s %s%s%s%s; logs in %s/<schema>/_logs/", if (wait) "ran" else "started",
                   paste(schema, collapse = ", "), if (resume) " (resume)" else "",
+                  if (is.null(driver)) "" else paste0(" through ", driver),
                   if (wait) "" else sprintf(" in process %d", pid), log_root),
           if (wait) "" else "\n  follow with dump_status()")
   invisible(pid)
@@ -86,7 +92,7 @@ run_dump <- function(schema, resume = FALSE, wait = FALSE, root = .repo_root(), 
 # Where each schema's dump stands: running, queued (waiting for an earlier schema in the same process), finished
 # (with its exit code and the overview's counts and failures), or stopped (the process ended without finishing it).
 dump_status <- function(schema = NULL, log_root = fd_raw("oracle"), lines = 3) {
-  if (is.null(schema)) schema <- basename(list.dirs(log_root, recursive = FALSE))
+  if (is.null(schema)) schema <- grep("^_", basename(list.dirs(log_root, recursive = FALSE)), value = TRUE, invert = TRUE)
   out <- lapply(schema, function(s) {
     cur <- file.path(log_root, s, "_logs", "current")
     logs <- sort(list.files(file.path(log_root, s, "_logs"), pattern = "[.]log$", full.names = TRUE))
@@ -120,4 +126,64 @@ dump_status <- function(schema = NULL, log_root = fd_raw("oracle"), lines = 3) {
     data.frame(schema = s, state = state, pid = pid, log = log)
   })
   invisible(do.call(rbind, out))
+}
+
+# Every schema named, one after the other, each through run_dump(wait = TRUE) with its own log; this run's own log is
+# raw/oracle/_logs/<time>_all.log, so the whole sweep, data and logs, sits under raw/oracle/ (decision 109). The
+# directories are created when missing. It stops at the first schema whose script fails as a whole (no login, the date
+# check): that would fail every schema alike. A table that fails is recorded in its schema's overview and does not
+# stop the run. With resume, the same call picks up after a failure: a schema whose last run exited 0 with nothing
+# failed, through the same driver, is skipped; any other keeps the files an earlier run of the driver completed and
+# dumps the rest (dump_oracle_schema(resume = TRUE)). Returns the exit code of each schema run, invisibly.
+run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .repo_root(), log_root = fd_raw("oracle")) {
+  order <- c("asfis", "gear", "orri", "vessel", "ops_einarhj", "logbook", "agf", "ask", "kvoti", "adb",
+             "fs_afladagbok", "afli", "stk")   # a small schema first, to fail fast; stk, the largest, last
+  scripts <- sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$"))
+  scripts <- setdiff(scripts, "all")
+  if (is.null(schema)) schema <- c(intersect(order, scripts), setdiff(scripts, order))
+  if (!dir.exists(log_root)) dir.create(log_root, recursive = TRUE)
+  dir.create(file.path(log_root, "_logs"), showWarnings = FALSE)
+  log <- file.path(log_root, "_logs", sprintf("%s_all.log", format(Sys.time(), "%Y%m%dT%H%M%S")))
+  say <- function(...) {
+    line <- paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), sprintf(...))
+    cat(line, "\n", sep = "", file = log, append = TRUE)
+    message(line)
+  }
+  say("dump of %s through %s%s, from %s (commit %s), into %s", paste(schema, collapse = ", "),
+      if (is.null(driver)) "the default driver" else driver, if (resume) ", resuming" else "", root,
+      substr(.git_info()$commit, 1, 7), log_root)
+  exit <- stats::setNames(rep(NA_integer_, length(schema)), schema)
+  for (s in schema) {
+    if (resume && .dump_finished(s, log_root, if (is.null(driver)) "RJDBC" else driver)) {
+      say("%s: finished in an earlier run with nothing failed - skipped", s)
+      exit[[s]] <- 0L
+      next
+    }
+    if (!dir.exists(file.path(log_root, s))) { dir.create(file.path(log_root, s)); say("%s: created %s", s, file.path(log_root, s)) }
+    say("%s: started", s)
+    t0 <- Sys.time()
+    r <- tryCatch(run_dump(s, resume = resume, driver = driver, wait = TRUE, root = root, log_root = log_root),
+                  error = function(e) e)
+    if (inherits(r, "error")) { say("%s: not started - %s", s, conditionMessage(r)); exit[[s]] <- -1L; break }
+    slog <- readLines(file.path(log_root, s, "_logs", "current"))[2]
+    exit[[s]] <- suppressWarnings(as.integer(readLines(paste0(slog, ".exit"))[1]))
+    tail <- utils::tail(readLines(slog, warn = FALSE), 3)
+    say("%s: exit %s after %.1f min; log %s", s, exit[[s]], as.numeric(difftime(Sys.time(), t0, units = "mins")), slog)
+    for (l in tail) say("%s:   | %s", s, l)
+    if (!identical(exit[[s]], 0L)) { say("%s failed as a whole: stopping here", s); break }
+  }
+  say("done: %d of %d schemas exited 0", sum(exit %in% 0L), length(schema))
+  invisible(exit)
+}
+
+# Did the last run of schema `s` end well: exit 0, an overview with nothing failed, every written table of `driver`?
+.dump_finished <- function(s, log_root, driver) {
+  cur <- file.path(log_root, s, "_logs", "current")
+  ov <- file.path(log_root, s, "_overview_tables.parquet")
+  if (!file.exists(cur) || !file.exists(ov)) return(FALSE)
+  ex <- paste0(readLines(cur)[2], ".exit")
+  if (!file.exists(ex) || !identical(suppressWarnings(as.integer(readLines(ex)[1])), 0L)) return(FALSE)
+  o <- as.data.frame(nanoparquet::read_parquet(ov))
+  all(c("status", "driver") %in% names(o)) && !any(o$status %in% "failed") &&
+    all(o$driver[o$status %in% "written"] == driver)
 }
