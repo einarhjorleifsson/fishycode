@@ -125,7 +125,12 @@ dump_connect <- function(heap = "8g") {
 
 # Columns the driver cannot fetch are read as text in Oracle's own form: SDO_GEOMETRY as WKT, XMLTYPE as the document.
 # adb.fishing_station's location (SDO_GEOMETRY) failed every earlier dump; afli's XML table needed its own query.
-.oracle_text <- c(SDO_GEOMETRY = "SDO_UTIL.TO_WKTGEOMETRY(%s)", XMLTYPE = "XMLSERIALIZE(DOCUMENT %s AS CLOB)")
+# The WKT is cast to VARCHAR2: as a CLOB, each of fishing_station's 690,912 rows left a temporary LOB in the session,
+# and the next query waited on Oracle for over 15 min (2026-10-15), most likely while it freed them. A geometry whose
+# WKT passes 4,000 characters then fails loudly (ORA-22835) rather than being cut. An XML document is longer than
+# that, so it stays a CLOB, read on a connection of its own that is closed before the LOBs are released.
+.oracle_text <- c(SDO_GEOMETRY = "TO_CHAR(SDO_UTIL.TO_WKTGEOMETRY(%s))", XMLTYPE = "XMLSERIALIZE(DOCUMENT %s AS CLOB)")
+.oracle_lob <- "XMLTYPE"
 
 # The table as a lazy query: every column as it is, those in .oracle_text converted to text under their own name.
 .oracle_query <- function(con, table, fields) {
@@ -149,7 +154,13 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
     fields <- oracle_fields(con, x[1], x[2])
   }
   if (is.null(run)) run <- .dump_run(con, NA_character_)
-  d <- .oracle_query(con, table, fields) |> dplyr::collect()
+  if (any(fields$data_type %in% .oracle_lob)) {
+    lc <- dump_connect()
+    d <- tryCatch(.oracle_query(lc, table, fields) |> dplyr::collect(),
+                  finally = DBI::dbDisconnect(lc))
+  } else {
+    d <- .oracle_query(con, table, fields) |> dplyr::collect()
+  }
   d <- .oracle_numbers(d, fields)
   .write_raw(d, path, table, run)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
