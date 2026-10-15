@@ -1,6 +1,6 @@
 # dump_oracle.R — dump an Oracle schema, as it is, to raw/oracle/<schema>/ (plan 018).
 #
-# Input:  an open connection, mar::connect_mar(rjdbc = TRUE), and a schema (Oracle owner)
+# Input:  an open connection (dump_connect()) and a schema (Oracle owner)
 # Output: <out_dir>/<name>.parquet for each table and view, as Oracle holds it: names, values and units unchanged.
 #         A table named in `partition` goes to <out_dir>/<name>/year=<y>/data_0.parquet, by calendar year of a date.
 #           _overview_tables.parquet  one row per table and view: Oracle's comment and row estimate, what was written,
@@ -67,6 +67,16 @@ oracle_objects <- function(con, schema) {
   objects |> dplyr::relocate(owner, name, type, comments)
 }
 
+# The connection every dump uses. rJava starts the JVM with a 0.5 GB heap under Rscript (measured 2026-10-15), and
+# adb's tables exhausted it; java.parameters takes effect only before the JVM starts, so it is set here, first.
+dump_connect <- function(heap = "8g") {
+  options(java.parameters = paste0("-Xmx", heap))
+  con <- mar::connect_mar(rjdbc = TRUE)
+  rt <- rJava::.jcall("java/lang/Runtime", "Ljava/lang/Runtime;", "getRuntime")
+  message(sprintf("JVM heap: %.1f GB", rJava::.jcall(rt, "J", "maxMemory") / 2^30))
+  con
+}
+
 .oracle_numbers <- function(d, fields) {
   num <- fields$column[fields$data_type %in% "NUMBER"]
   int <- fields$column[fields$data_type %in% "NUMBER" &
@@ -113,6 +123,25 @@ oracle_objects <- function(con, schema) {
   invisible(path)
 }
 
+# Columns the driver cannot fetch are read as text in Oracle's own form: SDO_GEOMETRY as WKT, XMLTYPE as the document.
+# adb.fishing_station's location (SDO_GEOMETRY) failed every earlier dump; afli's XML table needed its own query.
+.oracle_text <- c(SDO_GEOMETRY = "SDO_UTIL.TO_WKTGEOMETRY(%s)", XMLTYPE = "XMLSERIALIZE(DOCUMENT %s AS CLOB)")
+
+# The table as a lazy query: every column as it is, those in .oracle_text converted to text under their own name.
+.oracle_query <- function(con, table, fields) {
+  if (!any(fields$data_type %in% names(.oracle_text))) return(mar::tbl_mar(con, table))
+  x <- strsplit(table, ".", fixed = TRUE)[[1]]
+  fields <- fields[order(fields$column_id), ]
+  cols <- vapply(seq_len(nrow(fields)), function(i) {
+    q <- sprintf('"%s"', toupper(fields$column[i]))
+    f <- .oracle_text[fields$data_type[i]]
+    if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
+  }, "")
+  dplyr::tbl(con, dplyr::sql(sprintf('SELECT %s FROM "%s"."%s"', paste(cols, collapse = ", "),
+                                     toupper(x[1]), toupper(x[2])))) |>
+    dplyr::rename_with(tolower)
+}
+
 # One table or view ("schema.name") to one parquet file, as it is. Reports and returns the rows written.
 dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(fields)) {
@@ -120,7 +149,7 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
     fields <- oracle_fields(con, x[1], x[2])
   }
   if (is.null(run)) run <- .dump_run(con, NA_character_)
-  d <- mar::tbl_mar(con, table) |> dplyr::collect()
+  d <- .oracle_query(con, table, fields) |> dplyr::collect()
   d <- .oracle_numbers(d, fields)
   .write_raw(d, path, table, run)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
@@ -132,7 +161,7 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
 # does, within the last minute (measured 2026-10-15), so a year dumped before it ended is completed on the next run.
 # Returns the rows written in this run.
 dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
-  q <- mar::tbl_mar(con, table)
+  q <- .oracle_query(con, table, fields)
   span <- q |> dplyr::summarise(a = min(.data[[column]], na.rm = TRUE), b = max(.data[[column]], na.rm = TRUE)) |>
     dplyr::collect()
   years <- seq(as.integer(format(as.POSIXct(span$a), "%Y")), as.integer(format(as.POSIXct(span$b), "%Y")))
@@ -170,8 +199,8 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   }
   show <- function(x, type) {
     if (type == "number") {
-      x <- as.numeric(x)
-      return(if (all(x == round(x)) && all(abs(x) < 2^31)) as.integer(x) else x)
+      x <- as.numeric(x); w <- x[!is.na(x)]
+      return(if (length(w) && all(w == round(w)) && all(abs(w) < 2^31)) as.integer(x) else x)
     }
     x <- as.character(x)
     ifelse(nchar(x) > 60, paste0(substr(x, 1, 57), "..."), x)
@@ -195,9 +224,10 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
       cn <- desc$column_name[j]; ty <- types[[j]]
       cm <- fl$comments[match(cn, fl$column)]
       e <- list(name = cn, type = ty)
-      if (cn %in% ranged && !is.null(rng)) e$range <- show(c(rng[[paste0("min_", cn)]], rng[[paste0("max_", cn)]]), ty)
+      r <- if (cn %in% ranged && !is.null(rng)) c(rng[[paste0("min_", cn)]], rng[[paste0("max_", cn)]])
+      if (length(r) && !anyNA(r)) e$range <- as.list(show(r, ty))
       ex <- unique(head[[cn]][!is.na(head[[cn]])])
-      if (length(ex) && ty %in% c("number", "string")) e$examples <- show(utils::head(ex, 5), ty)
+      if (length(ex) && ty %in% c("number", "string")) e$examples <- as.list(show(utils::head(ex, 5), ty))
       e$description <- if (is.na(cm) || !nzchar(cm)) "No comment in Oracle." else cm
       e
     })
@@ -260,9 +290,10 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
         dump_oracle_table(con, paste0(schema, ".", nm), file.path(out_dir, paste0(nm, ".parquet")), fl, run),
       error = function(e) e)
     seconds[i] <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    invisible(gc(FALSE))   # an R reference holds its Java result until R's gc runs, whatever the Java heap
     if (inherits(r, "error")) {
       status[i] <- "failed"
-      error[i]  <- conditionMessage(r)
+      error[i]  <- gsub("\033\\[[0-9;]*m", "", conditionMessage(r))
       message(sprintf("%s.%s: FAILED - %s", schema, nm, error[i]))
     } else {
       rows[i] <- r

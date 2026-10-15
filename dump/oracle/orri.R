@@ -12,6 +12,6 @@
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
-con <- mar::connect_mar(rjdbc = TRUE)
+con <- dump_connect()
 dump_oracle_schema(con, "orri", fd_raw("oracle", "orri"), tables = c("veidarfaeri", "veidarfaeri_ny"),
                    script = "dump/oracle/orri.R")

@@ -16,6 +16,6 @@
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
-con <- mar::connect_mar(rjdbc = TRUE)
+con <- dump_connect()
 dump_oracle_schema(con, "stk", fd_raw("oracle", "stk"), partition = list(trail = "recdate"),
                    script = "dump/oracle/stk.R")

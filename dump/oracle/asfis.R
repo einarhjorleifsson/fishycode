@@ -10,5 +10,5 @@
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
-con <- mar::connect_mar(rjdbc = TRUE)
+con <- dump_connect()
 dump_oracle_schema(con, "asfis", fd_raw("oracle", "asfis"), script = "dump/oracle/asfis.R")

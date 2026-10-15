@@ -12,7 +12,7 @@
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
-con <- mar::connect_mar(rjdbc = TRUE)
+con <- dump_connect()
 dump_oracle_schema(con, "ops$einarhj", fd_raw("oracle", "ops_einarhj"),
                    tables = c("mobile_vid",                 # the old STK mobile-id -> vid matches (ais_key_cascade)
                               "vessel_mmsi_20190627",       # the MMSI archive's sources 1-4 (plan 016)
