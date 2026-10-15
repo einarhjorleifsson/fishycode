@@ -1,0 +1,236 @@
+---
+title: "The Icelandic logbooks in the grammar"
+number-sections: true
+toc: true
+toc-location: right
+toc-depth: 3
+---
+
+*Moved here verbatim from `grammar.qmd` on 2026-10-15, when that page was rewritten (with AI assistance, Claude, at
+the maintainer's request) as a general note for any sea-going trip. These are the parts specific to the Icelandic
+logbooks (`afli`, `fs_afladagbok`, `adb`) and to this repository. The next step, a review of how the logbooks are
+restructured in the light of the general grammar, revises this page.*
+
+## The Icelandic trip and the AIS trail
+
+In this project the AIS stream is consolidated from four sources (STK domestic
+network, two commercial feeds, and AIS-corrected GPS logger positions) into
+`data/trail/`, partitioned by year and accessed via `duckdbfs::open_dataset()`.
+The schema is `vid, mmsi, time, lon, lat, speed, heading, cog, provider, pid`,
+where `pid` is a harbour identifier assigned by spatial join — non-`NA` when the
+ping falls inside a port polygon, `NA` at sea. Linking to trips uses a temporal
+between-join on `(vid, T1, T2)`. See `on_ais.qmd` for the full pipeline and
+data volumes.
+
+## Times and effort in afli and fs_afladagbok
+
+### Effort duration
+
+The theoretically correct effort interval is `t3 − t2` for all gear classes:
+deployment-end to retrieval-start. For mobile gear in the `afli` schema, t2 is
+derived from `ibotni` (the recorded gear-on-bottom time) and t3 from t2 +
+logged duration, so the interval is exact. In `fs_afladagbok`, t3 is absent
+for mobile gear (OTB/OTM/DRB); duration is approximated as `t4 − t1` (full
+operation from warp-entry to retrieval end), which overestimates the active
+tow time by the warp-out and warp-in intervals. For static gear, `t2` (last
+hook/net in) is never recorded in either schema; soak time is therefore
+approximated as `t3 − t1` — the interval from first-hook-in to first-hook-hauled
+— which overestimates true soak time by the deployment duration `t2 − t1`.
+
+### What is typically recorded
+
+The table below summarises what is available in practice across the two source
+schemas. Gear code entry errors exist in both systems — a record nominally coded
+as mobile gear may occasionally represent a static operation and vice versa —
+so the timestamp pattern of a record is a useful cross-check on the declared
+gear code.
+
+| Label | Mobile (trawl/dredge) | Jig / handline | Static (net / longline) |
+|---|---|---|---|
+| `t1` | `afli`: absent; `fs_afladagbok`: always present | Rarely | Usually (`afli`); always present (`fs_afladagbok`) |
+| `t2` | `afli`: derived from `ibotni` (gear-on-bottom hhmm); `fs_afladagbok`: absent | Rarely | Never in either schema |
+| `t3` | `afli`: derived (t2 + duration); `fs_afladagbok`: absent for OTB/OTM/DRB, always = t1 for SDN | Rarely | Usually (`afli`); always present (`fs_afladagbok`) |
+| `t4` | `afli`: absent; `fs_afladagbok`: always present | Rarely | Usually (`afli`); always present (`fs_afladagbok`) |
+
+For jigs, the canonical expectation is t2 and t3 (fishing start and end); with
+three distinct timestamps the interpretation is t1, t2, t3. In practice the
+`afli` jig records carry timestamps in only ~3% of rows, so effort is almost
+always derived from the logged duration (`klst`) rather than timestamp
+differences.
+
+## The sensor layer — multiple tables at different levels
+
+The logbook project currently maintains two sensor-level tables for the `afli`
+schema, and their structural difference is instructive:
+
+| Table | Rows | Has `time`? | Grammar level |
+|---|--:|:--:|---|
+| `data-raw/logbooks/afli/sensor.parquet` | ~3.9 M | No | Station supplement |
+| `data-raw/logbooks/afli/sensor_GPS.parquet` | ~27.7 M | Yes | Measurement (time-series) |
+
+`sensor.parquet` carries one row per station — gear flags, surface/bottom/
+headline temperatures, headline depth — with no timestamp column. It is a
+**station-level supplement**: sensor readings that have already been aggregated
+or summarised to the station envelope. It belongs conceptually alongside the
+station record, not inside a time-series.
+
+`sensor_GPS.parquet` carries many rows per station, each with a timestamp and
+a position (`lon`/`lat`, corrected from AIS), plus speed, heading, depth, and
+temperature channels. It is a **measurement-level time-series**: one row per
+logger tick, keyed on `(.tid, .sid, vid, time)`. The original wacky coordinates
+are retained as `w_lon`/`w_lat`; `dt_sec` records the interpolation interval
+used in the AIS-based position correction. The AIS positions used for the
+correction are drawn from `data/trail/` — the consolidated multi-source track
+dataset described in `on_ais.qmd`.
+
+This table has a dual role: it is simultaneously a measurement-level logbook
+supplement (linked to stations via `.sid`) and one of the four sources merged
+into `data/trail/` under `provider = "wacky"`. In the consolidated AIS trail
+the records appear with corrected coordinates and no station link; in
+`sensor_GPS.parquet` the same records carry `.sid` and `.tid` keys and the
+original wacky coordinates alongside the corrected ones.
+
+This split reflects a real structural difference that the grammar should make
+explicit rather than paper over with a single "sensor" label. A single physical
+logger records multiple channels — GPS, depth, temperature, heading — at a
+common tick rate. But other instruments (e.g. NMEA-connected sensors: net
+mensuration systems, echo sounders, flow-through temperature chains) may operate
+at different sampling rates and produce separate data streams. Each stream is
+a candidate for its own measurement-level table, keyed on `.sid` and a
+timestamp, with `instrument_id` identifying the physical source.
+
+**Consequence for downstream code.** The two tables are not interchangeable.
+Use `sensor_GPS.parquet` for position time-series and spatial analysis; use
+`sensor.parquet` for station-level environmental covariates. Where
+`sensor_GPS.parquet` has `NA` lon/lat (AIS coverage absent), fall back to
+station-level position from `station.parquet`.
+
+## Landings from more than one source system
+
+**When landings themselves come from more than one source system** (as in
+fishydata: `agf`, live since 2007, and `lods`, its legacy predecessor, kept
+in parallel rather than retired — see `curate/plans/007`), the same
+reservation the next section states for `.tid` applies to `.lid` too: each
+source's raw record-id domain is independent, and nothing guarantees two
+source systems never produce the same numeric id by coincidence. This is not
+hypothetical: `agf`/`lods`'s two raw id fields (`londun_id`, `komunr`)
+overlap by 70,173 values, and worse, `komunr` turned out to be a recycled
+loading-batch code rather than a stable per-delivery id - reusing it directly
+produced ~1.1M colliding rows even within `lods` alone, before a fix
+(`curate/plans/007` §5: `lods`'s trip key is now minted as a hash of
+`(vid, date, hid)` rather than derived from `komunr`, which eliminated every
+observed collision, cross-schema and within-`lods` alike). A landings table
+spanning more than one source system therefore carries its own `schema`
+column, and any join or uniqueness check on `.lid` is really on
+`(.lid, schema)` — exactly as for `.tid` across `afli`/`fs_afladagbok`/`adb`;
+a hash reducing observed collisions to zero is not the same as a structural
+guarantee, and the composite key remains the correct thing to rely on.
+
+## A concrete case: monthly aggregates embedded in `afli/stofn`
+
+The `afli` schema illustrates a common real-world complication: aggregate
+records were stored in the *same table* as individual-operation records, with
+no structural separation — only a free-text `comment` field distinguishing them.
+Three batches are present:
+
+| `comment` value | Species group | `gid` | Records | Date range |
+|---|---|---|---|---|
+| `Frá OPS$SIGFUS.GAMALL_HUMAR, samantekt` | Nephrops | 9 | 26,405 | 1960–1999 |
+| `Frá OPS$SIGFUS.GOMUL_RAEKJA, samantekt` | Shrimp | 14 | 12,708 | 1953–1986 |
+| `Frá afli.gomul_dragnot, samantekt, ...` | D-seine | 5 | 1,854 | 1960–1966 |
+
+All three have `date` fixed to the 15th of the month (a clear mid-month
+placeholder), no coordinates, and exactly one catch row per record — all
+consistent with monthly summaries rather than individual hauls. They were
+identified by inspecting `count(comment)` on the raw table before any
+downstream processing.
+
+These records are excluded from `station.parquet` and `fishing_sample.parquet`
+and stored separately as `data/afli/aggregate.parquet` (Option A), a flat table
+keyed on `.sid × species` that also carries aggregated tow time from the `toga`
+detail table. The original `.sid` is preserved so any record can be traced back
+to the Oracle source.
+
+The practical lesson: always inspect free-text annotation columns early in
+a convert script. Aggregate rows mixed into a station table will silently
+inflate record counts, distort effort distributions, and corrupt swept-area
+calculations if not removed.
+
+## How data systems map onto the grammar
+
+| | `afli` | `fs_afladagbok` | `adb`^†^ | EU eflalo |
+|-|--------|-----------------|-------|-----------|
+| **Trip key** | Derived: `min(.sid)` per `(vid, T2, hid2)` | `ws_veidiferd.id` | `trip_v.trip_id` | Derived: `consecutive_id()` on `FT_DDAT`/`FT_LDAT` |
+| **Station key** | `stofn.visir` | `ws_veidi.id` | `station_v.station_id` | `.eid` (row number — not a true station) |
+| **Station concept** | Individual fishing operation | Individual fishing operation | Individual fishing operation | Aggregate: trip × gear × day × rectangle |
+| **Gear code** | Legacy integer (old) | New integer (canonical) | New integer (derived) | ICES metier string (e.g. `OTB`, `LLS`) |
+| **Spatial resolution** | GPS (metres) | GPS (metres) | GPS (variable quality) | ICES rectangle (~50 km) |
+| **Temporal resolution** | Minutes (on-bottom clock) | Minutes (electronic timestamps) | Minutes (electronic timestamps) | Day (`LE_CDAT`); rarely `t2`/`t3` |
+| **Catch format** | Long | Long | Long | Wide (`LE_KG_<SP>` columns) |
+
+^†^ `adb` is the live-streaming feed and is **excluded from the merged output** (`data/logbooks/`): it uses old gear codes and has less reliable coordinates. It is documented here for completeness.
+
+The gear code unification for the Icelandic schemas is handled by
+`gear_mapping` (`data/gear/gear_mapping.parquet`), which maps the legacy many-
+to-one from old codes to new. For the EU eflalo system, gear is expressed as
+an ICES metier string (`LE_GEAR`, `LE_MET`) that encodes gear type, target
+species, and mesh size, and maps onto the same ICES controlled vocabulary via
+`sfdSAR::predict_gear_width()` for swept-area calculations.
+
+### Raw column mapping by grammar level
+
+The table below is generated from `data/dictionary.parquet` and shows, for
+every unified column name, which raw source column it originates from in each
+of the three Icelandic schemas. Grammar level annotations (`trip`, `station`,
+`sample`, `catch`) are currently assigned for the `afli` schema; the same
+levels apply to the corresponding rows in the other two schemas wherever the
+unified name matches.
+
+For `afli`, the source table is shown in parentheses because several unified
+names are populated from more than one raw table (e.g. `temp1_surface` appears
+in both `toga` and `lineha`). A dash (—) means the variable is absent or not
+yet mapped in that schema.
+
+```{r}
+#| label: tbl-column-mapping
+#| tbl-cap: "Raw-to-unified column mapping by grammar level across the three Icelandic logbook schemas. `afli` entries show `raw_name (source_table)`."
+library(dplyr)
+library(nanoparquet)
+library(knitr)
+
+# quarto renders from docs/; i_am() pins here() to the repo root, as in ais_trail.qmd
+here::i_am("docs/grammar_logbooks.qmd")
+source(here::here("R/paths.R"))
+dict <- read_parquet(fd_curated("reference", "dictionary.parquet"))
+
+# Grammar level comes from afli annotations
+afli_levels <- dict |>
+  filter(schema == "afli", !is.na(level)) |>
+  select(clean, level) |>
+  distinct()
+
+# Build per-schema display strings; include source table for afli
+raw_names <- dict |>
+  filter(schema %in% c("afli", "fs_afladagbok", "adb")) |>
+  mutate(display = if_else(
+    schema == "afli",
+    paste0(messy, " (", table, ")"),
+    messy
+  )) |>
+  summarise(display = paste(unique(display), collapse = ", "),
+            .by = c(clean, schema)) |>
+  tidyr::pivot_wider(names_from = schema, values_from = display,
+                     values_fill = "—")
+
+afli_levels |>
+  left_join(raw_names, by = "clean") |>
+  arrange(factor(level, levels = c("trip", "station", "sample", "catch")),
+          clean) |>
+  select(level, clean, afli, fs_afladagbok, adb) |>
+  rename(Level = level,
+         `Unified` = clean,
+         `afli raw (table)` = afli,
+         `fs_afladagbok raw` = fs_afladagbok,
+         `adb raw` = adb) |>
+  kable()
+```

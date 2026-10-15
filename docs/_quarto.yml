@@ -16,7 +16,11 @@ website:
         href: index.qmd
     right:
       - text: Grammar
-        href: grammar.qmd
+        menu:
+          - text: A grammar of sea-going data
+            href: grammar.qmd
+          - text: The Icelandic logbooks in the grammar
+            href: grammar_logbooks.qmd
       - text: Source Data
         href: afli-tables.qmd
       - text: Pipeline
