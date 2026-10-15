@@ -138,13 +138,15 @@ dump_connect <- function(heap = "8g") {
 .oracle_lob <- "XMLTYPE"
 
 # The table as a lazy query: every column as it is, those in .oracle_text converted to text under their own name.
-.oracle_query <- function(con, table, fields) {
-  if (!any(fields$data_type %in% names(.oracle_text))) return(mar::tbl_mar(con, table))
+# With numbers_as_text, every NUMBER comes as TO_CHAR too (the retry in dump_oracle_table()).
+.oracle_query <- function(con, table, fields, numbers_as_text = FALSE) {
+  conv <- c(.oracle_text, if (numbers_as_text) c(NUMBER = "TO_CHAR(%s)"))
+  if (!any(fields$data_type %in% names(conv))) return(mar::tbl_mar(con, table))
   x <- strsplit(table, ".", fixed = TRUE)[[1]]
   fields <- fields[order(fields$column_id), ]
   cols <- vapply(seq_len(nrow(fields)), function(i) {
     q <- sprintf('"%s"', toupper(fields$column[i]))
-    f <- .oracle_text[fields$data_type[i]]
+    f <- conv[fields$data_type[i]]
     if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
   }, "")
   dplyr::tbl(con, dplyr::sql(sprintf('SELECT %s FROM "%s"."%s"', paste(cols, collapse = ", "),
@@ -158,19 +160,29 @@ dump_connect <- function(heap = "8g") {
 .oracle_collect <- function(con, q) tibble::as_tibble(DBI::dbGetQuery(con, dbplyr::sql_render(q)))
 
 # One table or view ("schema.name") to one parquet file, as it is. Reports and returns the rows written.
+# A table whose fetch fails is fetched once more with its numbers as text: afli.afli (15.7 M rows) failed through RJDBC
+# with java.lang.ArrayIndexOutOfBoundsException (2026-10-15), most likely the driver parsing a malformed NUMBER, which
+# ROracle on the server had read. .oracle_numbers() turns the text back into numbers, and names any column it cannot.
 dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(fields)) {
     x <- strsplit(table, ".", fixed = TRUE)[[1]]
     fields <- oracle_fields(con, x[1], x[2])
   }
   if (is.null(run)) run <- .dump_run(con, NA_character_)
-  if (any(fields$data_type %in% .oracle_lob)) {
-    lc <- dump_connect()
-    d <- tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields)),
-                  finally = DBI::dbDisconnect(lc))
-  } else {
-    d <- .oracle_collect(con, .oracle_query(con, table, fields))
+  fetch <- function(numbers_as_text) {
+    if (any(fields$data_type %in% .oracle_lob)) {
+      lc <- dump_connect()
+      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text)), finally = DBI::dbDisconnect(lc))
+    } else {
+      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text))
+    }
   }
+  d <- tryCatch(fetch(FALSE), error = function(e) {
+    if (!any(fields$data_type %in% "NUMBER")) stop(e)
+    message(sprintf("%s: %s - fetching again with its numbers as text", table,
+                    gsub("\033\\[[0-9;]*m", "", conditionMessage(e))))
+    fetch(TRUE)
+  })
   d <- .oracle_numbers(d, fields)
   .write_raw(d, path, table, run)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
