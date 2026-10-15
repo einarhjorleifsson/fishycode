@@ -48,22 +48,23 @@ oracle_fields <- function(con, schema, table = NULL) {
     dplyr::arrange(table, column_id)
 }
 
-# Tables and views of a schema, with Oracle's comment and (for tables) its row estimate.
+# Tables and views of a schema, with Oracle's comment and (for tables) its row estimate. Read from the catalogue
+# directly: mar::mar_views() calls sql() unqualified, so it fails under Rscript, where dplyr is not attached
+# (2026-10-15).
 oracle_objects <- function(con, schema) {
-  s <- toupper(schema)
-  comm <- mar::tbl_mar(con, "sys.all_tab_comments") |>
-    dplyr::filter(owner == !!s) |>
-    dplyr::select(name = table_name, comments) |>
-    dplyr::collect() |>
-    dplyr::mutate(name = tolower(name))
-  objects <- dplyr::bind_rows(
-    mar::mar_tables(con, schema) |> dplyr::collect() |>
-      dplyr::rename(name = table_name) |> dplyr::mutate(type = "table"),
-    mar::mar_views(con, schema) |> dplyr::collect() |>
-      dplyr::rename(name = view_name) |> dplyr::mutate(type = "view"))
-  objects$comments <- comm$comments[match(objects$name, comm$name)]
+  s <- gsub("'", "''", toupper(schema))
+  q <- function(cols, from) DBI::dbGetQuery(con, sprintf("SELECT %s FROM %s WHERE OWNER = '%s'", cols, from, s)) |>
+    dplyr::rename_with(tolower)
+  tabs <- q("OWNER, TABLE_NAME, TABLESPACE_NAME, NUM_ROWS, LAST_ANALYZED", "SYS.ALL_TABLES") |>
+    dplyr::rename(name = table_name) |> dplyr::mutate(type = "table")
+  views <- q("OWNER, VIEW_NAME", "SYS.ALL_VIEWS") |>
+    dplyr::rename(name = view_name) |> dplyr::mutate(type = "view")
+  comm <- q("OWNER, TABLE_NAME, COMMENTS", "SYS.ALL_TAB_COMMENTS")
+  objects <- dplyr::bind_rows(tabs, views) |>
+    dplyr::mutate(owner = tolower(owner), name = tolower(name))
+  objects$comments <- comm$comments[match(objects$name, tolower(comm$table_name))]
   objects$num_rows <- as.numeric(objects$num_rows)
-  objects
+  objects |> dplyr::relocate(owner, name, type, comments)
 }
 
 .oracle_numbers <- function(d, fields) {
