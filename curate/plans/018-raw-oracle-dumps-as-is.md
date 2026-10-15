@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** approved 2026-10-15; phase 1 being built · **2026-10-15** · **see:** decision 105; TODO 51; plan 016 §4 step 6
+**status:** approved 2026-10-15; phase 1 built, phase 2 under way · **2026-10-15** · **see:** decisions 105-106; TODO 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.
@@ -55,6 +55,13 @@ written as a data-dict yaml.
 
 **Phase 2, the dumps (maintainer's terminal):** every script once. The trail's 20 years take roughly 2-3 h (2026's
 20.6 M rows took about 10 min). Disk: 188 GB free; the as-is trail is about 9 GB beside the old one.
+Where it stands, 2026-10-15 evening:
+- **Dumped:** adb, logbook, fs_afladagbok, gear, asfis, ops_einarhj, orri, vessel, agf.
+- **Running:** afli, resumed after a lost connection; and ask, added (7c96ad7) because fs_afladagbok's gear codes
+  refer to `ASK.VEIDARFAERI`. Its `_jn` tables look like change journals and may name staff.
+- **Not run:** kvoti, stk (next: `run_dump(c("kvoti", "stk"))`).
+- **Driver:** RJDBC stays (decision 106). Dumps run through `run_dump()`, one process per schema. Two runs of one
+  schema write the same files, so start each once.
 
 **Phase 3, the readers (Claude):**
 - about 25 reader files move to `fd_raw("oracle", ...)`, and the trail's 7 readers to `stk_trail()`;
