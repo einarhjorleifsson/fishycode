@@ -353,18 +353,6 @@ Plan 016 adds `vessel/mmsi`, `vessel/vessel_year`, `vessel/vessel_class`, `vesse
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors, and the tables of
 decisions 099-104 and plan 016 are in the file.
 
-## 53. `rb_pad_harbour()`: argument `hid` → `port_id`
-**status:** open · **see:** decision 081, plan 013 (line 438 keeps the function as it is)
-
-ramb's `rb_pad_harbour(tid, hid)` puts the port id on the first and last ping of a voyage. Its `hid` is a port id
-(`port_id` from `rb_flag_ping_port()`, fishycode's `pid`), not a source's port code: the same mix-up that
-`rb_summarise_track()` dropped in ramb 2026.10.13.2. Rename the argument to `port_id` in ramb, with a test, a NEWS
-bullet and a version bump. Update ramb's AGENTS.md "deliberate keeps" line, and plan 013's note. No fishycode code
-calls it. Decide alongside: `tid` → `voyage_id`, as `rb_summarise_track()` did in 2026.10.13.3, and whether the
-function name follows ("port, not harbour").
-
-**check:** `names(formals(ramb::rb_pad_harbour))` contains `port_id` and not `hid`.
-
 ## 62. Foreign vessels' logbooks for Icelandic waters
 **status:** open · **needs: maintainer** — where they are: an Oracle schema and table, or an extract from Fiskistofa ·
 **see:** plan 013 item 5, decisions 102-103, plan 017 §3 (`raw/logbooks/afli/steini.parquet` is a partial one: oceanic redfish, 1989-2017)

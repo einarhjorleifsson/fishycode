@@ -789,7 +789,7 @@ time per call; lazy tables are checked by schema only. Messages need care to sta
 | `rb_detect_crosses_year`, `rb_check_trip_crosses_year`, `rb_create_timestamp` | `rb_check_crosses_year`, `dc_check_eflalo_crosses_year`, `dc_create_timestamp` |
 | `rb_plot_trail`, `rb_plot_trip`, `rb_rasterize_xyz`, `rb_rayshade_raster`, … | `rb_mapdeck`, `rb_md_trip`, every `mb_*` (each listed in NEWS.md, including the misspelt `mb_rashade_xyz_dynamic`) |
 | `rb_read_logbook_mfri`, `rb_read_trail_mfri`, `rb_read_harbours_mfri`, `rb_read_survey_*_mfri` | `rb_logbook`, `rb_trail`, `read_is_*` |
-| `rb_interpolate_track`, `rb_interpolate`, `rb_sum_across`, `rb_pad_harbour`, `rb_peek` | kept as they are; their verbs are in the table |
+| `rb_interpolate_track`, `rb_interpolate`, `rb_sum_across`, `rb_pad_harbour`, `rb_peek` | kept as they are; their verbs are in the table (`rb_pad_harbour`'s arguments are `voyage_id` and `port_id` since ramb 2026.10.15.1, decision 108) |
 
 Notes on this table:
 
