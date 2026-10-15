@@ -397,3 +397,14 @@ measures what each identity source reaches over every MMSI in ASTD and astdB, an
 and a crosswalk from each feed identity to it. It follows plan 016's rebuild and plan 018 phase 3.
 
 **check:** plan 021 §7.
+
+## 66. Oracle dumps as they are: finish the dumps, then switch the readers
+**status:** in progress · **needs: maintainer** — run kvoti and stk through `run_dump()`, and the `afli.afli` query
+in plan 018 §3 · **see:** `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105-106
+
+Phase 2 (the dumps) is under way: afli finished with `afli.afli` and `v_afli` unreadable through either fetch, most
+likely malformed NUMBERs in Oracle; the April copy stays their source until the rows are found. Phase 3 (the readers)
+follows the dumps.
+
+**check:** plan 018 phase 3 is done: the readers use `fd_raw("oracle", ...)` and the old dump directories are gone or
+kept by a decision.

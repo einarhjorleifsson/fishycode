@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** approved 2026-10-15; phase 1 built, phase 2 under way · **2026-10-15** · **see:** decisions 105-106; TODO 51; plan 016 §4 step 6
+**status:** approved 2026-10-15; phase 1 built, phase 2 under way · **2026-10-15** · **see:** decisions 105-106; TODO 66 and 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.
@@ -57,11 +57,44 @@ written as a data-dict yaml.
 20.6 M rows took about 10 min). Disk: 188 GB free; the as-is trail is about 9 GB beside the old one.
 Where it stands, 2026-10-15 evening:
 - **Dumped:** adb, logbook, fs_afladagbok, gear, asfis, ops_einarhj, orri, vessel, agf.
-- **Running:** afli, resumed after a lost connection; and ask, added (7c96ad7) because fs_afladagbok's gear codes
-  refer to `ASK.VEIDARFAERI`. Its `_jn` tables look like change journals and may name staff.
-- **Not run:** kvoti, stk (next: `run_dump(c("kvoti", "stk"))`).
+- **afli, resumed:** finished, 88 written, 5 skipped (the LOB tables), 3 failed: `afli`, `v_afli` (below) and
+  `urv_raekja` (ORA-01843, not a valid month: a date in the view itself).
+- **Running:** ask, added (7c96ad7) because fs_afladagbok's gear codes refer to `ASK.VEIDARFAERI`. Its `_jn` tables
+  look like change journals and may name staff.
+- **kvoti, unclear:** `raw/oracle/kvoti/` holds 531 files, the last written 21:12, with no `_logs` and no process:
+  started outside `run_dump()` and stopped? To be rerun through `run_dump()`.
+- **Not run:** stk.
 - **Driver:** RJDBC stays (decision 106). Dumps run through `run_dump()`, one process per schema. Two runs of one
-  schema write the same files, so start each once.
+  schema write the same files: `run_dump()` refuses a schema whose run is still alive (since 2026-10-15, after two
+  ask runs went into one directory). A dump started by hand is not seen.
+
+**`afli.afli` holds numbers neither fetch can read (2026-10-15).** It is the logbook's catch table (15,674,405 rows,
+the same count as the April copy). The first fetch failed in the driver (`ArrayIndexOutOfBoundsException: Index -1
+out of bounds for length 21`, converting a NUMBER); the retry, with every NUMBER as `TO_CHAR`, failed in Oracle
+itself (ORA-01722, invalid number). `TO_CHAR` of a valid NUMBER cannot raise ORA-01722, so most likely some stored
+NUMBERs are malformed bytes. `v_afli` (four of its columns, the same rows) fails the same way. The April copy in
+`raw/logbooks/afli/` (ROracle on the server) read every row and holds nothing odd, except 48 rows (46 `visir`) with
+an empty `afli`: where ROracle turned malformed numbers into NULL? Not shown. It stays the copy `sources/afli` reads
+until the rows are found.
+
+Asked of the maintainer: run this in R (`con <- dump_connect()`). It fetches no raw NUMBER, only `DUMP()`, which shows
+the stored bytes and never fails, and returns the rows where `TO_CHAR` fails on any column (one full scan, a few
+minutes):
+
+```r
+DBI::dbGetQuery(con, "
+WITH FUNCTION bad(x NUMBER) RETURN NUMBER IS s VARCHAR2(200);
+  BEGIN s := TO_CHAR(x); RETURN 0; EXCEPTION WHEN OTHERS THEN RETURN 1; END;
+SELECT ROWIDTOCHAR(ROWID) AS rid,
+       CASE WHEN bad(visir) = 0 THEN TO_CHAR(visir) END AS visir,
+       DUMP(visir) AS d_visir, DUMP(sokntegund) AS d_sokntegund, DUMP(tegund) AS d_tegund,
+       DUMP(afli) AS d_afli, DUMP(medalthyngd_gr) AS d_medalthyngd_gr, DUMP(magn) AS d_magn
+FROM afli.afli
+WHERE bad(visir) + bad(sokntegund) + bad(tegund) + bad(afli) + bad(medalthyngd_gr) + bad(magn) > 0")
+```
+
+Then: are they the 48 empty rows of the April copy, and can the dump read them as text (`DUMP`) and the rest as
+numbers?
 
 **Phase 3, the readers (Claude):**
 - about 25 reader files move to `fd_raw("oracle", ...)`, and the trail's 7 readers to `stk_trail()`;

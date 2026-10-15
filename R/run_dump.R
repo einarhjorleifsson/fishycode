@@ -29,13 +29,30 @@
   stop("run_dump(): start R in fishycode or below it", call. = FALSE)
 }
 
+# The process dumping schema `s` now, from its _logs/current: its id while it runs or waits its turn, NA once its log
+# has an exit code or the process is gone. A dump started outside run_dump(), or with wait = TRUE, leaves no process
+# id there and is not seen.
+.dump_pid <- function(s, log_root) {
+  cur <- file.path(log_root, s, "_logs", "current")
+  if (!file.exists(cur)) return(NA_integer_)
+  x <- readLines(cur)
+  pid <- suppressWarnings(as.integer(x[1]))
+  if (is.na(pid) || !isTRUE(tools::pskill(pid, 0L)) || file.exists(paste0(x[2], ".exit"))) NA_integer_ else pid
+}
+
 # Start dump/oracle/<schema>.R for each schema, one after the other, in one background process. Returns its process id
 # (NA with wait = TRUE), invisibly.
 run_dump <- function(schema, resume = FALSE, wait = FALSE, root = .repo_root(), log_root = fd_raw("oracle")) {
   scripts <- file.path("dump", "oracle", paste0(schema, ".R"))
   if (length(miss <- schema[!file.exists(file.path(root, scripts))]))
     stop("no dump script for ", paste(miss, collapse = ", "), " (dump/oracle/<schema>.R)", call. = FALSE)
-  dirty <- suppressWarnings(system2("git", c("-C", shQuote(root), "status", "--porcelain", "--", "R", "dump/oracle"),
+  # Two runs of one schema write the same files: two ask runs went into one directory on 2026-10-15.
+  busy <- vapply(schema, .dump_pid, 0L, log_root = log_root)
+  if (any(!is.na(busy)))
+    stop(paste(sprintf("%s is being dumped by process %d", schema[!is.na(busy)], busy[!is.na(busy)]), collapse = "; "),
+         ". Wait for it (dump_status()), or stop it first. If that process is not the dump, remove ",
+         "<schema>/_logs/current", call. = FALSE)
+  dirty <-suppressWarnings(system2("git", c("-C", shQuote(root), "status", "--porcelain", "--", "R", "dump/oracle"),
                                     stdout = TRUE, stderr = FALSE))
   if (length(dirty))
     warning("the dumper has uncommitted changes (", paste(trimws(dirty), collapse = "; "), "): the files will be ",
