@@ -151,7 +151,8 @@ STK's own trail for at least one overlapping year (2018, via `mmsi-daily`).
 ---
 
 ## 22. Foreign vessels never reach trip segmentation, even once identified
-**status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`
+**status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`, `curate/plans/017-foreign-vessels-through-the-flow.md`
+(measured 2026-10-14: foreign vids keyed in STK already reach voyages; the plan proposes a vid, not an `external_id`, for the rest)
 
 `reference/ports/ports_all.R` (kaenugardr, absorbed) already merges 24,653 harbours
 globally — GFW's 12,831 worldwide anchorages, EMODnet's 946 European ports, GISCO's
@@ -366,7 +367,7 @@ function name follows ("port, not harbour").
 
 ## 62. Foreign vessels' logbooks for Icelandic waters
 **status:** open · **needs: maintainer** — where they are: an Oracle schema and table, or an extract from Fiskistofa ·
-**see:** plan 013 item 5, decisions 102-103
+**see:** plan 013 item 5, decisions 102-103, plan 017 §3 (`raw/logbooks/afli/steini.parquet` is a partial one: oceanic redfish, 1989-2017)
 
 The maintainer said yes on 2026-10-14: acquire them. Foreign vessels land 80-124 a year in Iceland and hold most of
 the landed weight with no Icelandic logbook trip (plan 013, rows 4 and 9; 1,144 of 1,320 kt of pelagic species in
