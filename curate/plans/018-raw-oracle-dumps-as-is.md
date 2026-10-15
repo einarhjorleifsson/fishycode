@@ -62,7 +62,17 @@ written as a data-dict yaml.
   file until the once project is redone;
 - checks: `stk_trail()` over the new dump against the old trail by `.id` (time, position, speed, heading, port, in
   and out), every year. Each adapter run into scratch against its current staging;
-- then the old directories go to the Trash, and a decision record is written.
+- then the old directories go to the Trash, and a decision record is written. **Except** an old dump that holds rows
+  the new one lacks: compare table by table first. Oracle's `logbook` schema was rebuilt, with new ids, after the copy
+  in `raw/logbooks/logbook/` (files of 2026-04-09, rows entered to 2025-11-18; the rebuild's to 2025-12-05).
+  - **The old copy:** 1.85 M trips, 1950-2025, from `afli.stofn` and `afladagbok.veidiferd`.
+  - **Now:** 1.10 M trips, 1950-2020, from `afli.stofn` only. `catch` has 3,581,193 rows against 17,062,085, and
+    `station` 1,262,920 against 7,092,122, all from `afli.lineha` and 85 % without a time. `trawl`, `seine_net`,
+    `dredge`, `trap` and `diving` are empty, and columns were renamed (`headline` to `headline_length`).
+  - **Ids are renumbered:** trip 607697 was a 2002 trip and is now a 2015 one. So the two copies cannot be compared
+    row by row.
+
+  The old copy is kept. Nothing reads it.
 
 **Phase 4:** the rebuild, together with plan 016's (maintainer's go). The raw inputs are not declared in
 `_targets.R`, so the targets that read them are invalidated by hand, or the raw-dump-targets session declares them.

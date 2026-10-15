@@ -12,4 +12,9 @@
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
-dump_oracle_schema(con, "fs_afladagbok", fd_raw("oracle", "fs_afladagbok"), script = "dump/oracle/fs_afladagbok.R")
+# takt_json_form (6,912 rows) is left out. Its CLOB columns, json_clob and file_base64 (whole files as base64), came at
+# about 3 MB/s, one LOB fetch per row, at 2 % CPU; after 10+ minutes it had not finished, and it was stopped
+# (2026-10-15). The wait is the round trips, not R. Getting it means a tool that fetches LOBs in bulk, outside R or
+# with JDBC's LOB prefetch, sized first with SUM(DBMS_LOB.GETLENGTH(...)). It was not in the April dump either.
+dump_oracle_schema(con, "fs_afladagbok", fd_raw("oracle", "fs_afladagbok"), skip = "takt_json_form",
+                   script = "dump/oracle/fs_afladagbok.R")
