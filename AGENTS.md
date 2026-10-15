@@ -170,7 +170,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 
 | Directory | Holds |
 |---|---|
-| `dump/` | Extraction only — Oracle, vendor archives, web fetches. Writes `raw/`. |
+| `dump/` | Extraction only — Oracle, vendor archives, web fetches. Writes `raw/`. The only home of a dump script: none lives beside the data (decision 105). Oracle schemas and tables go through `dump_oracle_schema()` / `dump_oracle_table()` (`R/dump_oracle.R`), run by hand in the maintainer's terminal, since the password is in the macOS keychain. |
 | `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. |
 | `reference/` | Vessels, geo, ports, gear, species. Note: `vessel_ais_key` is a *fitted model*, not a registry — it carries confidence. |
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |

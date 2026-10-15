@@ -1,57 +1,14 @@
-library(mar)
-con <- connect_mar()
-library(tidyverse)
-library(nanoparquet)
+# vessels — the vessel registry (Oracle schema vessel), every table and view as it is.
+#
+# Input:  Oracle vessel
+# Output: raw/vessels/<name>.parquet, _overview_tables.parquet, _overview_fields.parquet
+#         (raw/vessels/ also holds files from dump/oracle/vessel_history.R and the MMSI archive)
+#
+# Run by hand from the repo root, with a connection to the MFRI Oracle database:
+#   Rscript dump/oracle/vessels.R
+# The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 
+for (f in list.files("R", full.names = TRUE)) source(f)
 
-# tbl_mar(con, "afli.ra_email_skeyti") |> collect() -> d
-# # creates an error d |> write_parquet("testo.parquet")
-
-OUT_DIR <- fd_raw("vessels")
-SCHEMA <- "vessel"
-get_tables_and_views <- function(con, owner) {
-  bind_rows(mar_tables(con, owner) |> collect() |>
-              rename(name = table_name) |>
-              mutate(type = "table"),
-            mar_views(con, owner) |> collect() |>
-              rename(name = view_name) |>
-              mutate(type = "view"))
-}
-get_fields <- function(schema.table) {
-  mar_fields(con, schema.table) |>
-    collect() |>
-    rename(table = table_name,
-           column = column_name)
-}
-
-
-ov <- get_tables_and_views(con, SCHEMA)
-ov |> write_parquet(paste0(OUT_DIR, "/", "_overview_tables.parquet"))
-
-ov |>
-  unite(owner, name, col = name, sep = ".") |>
-  pull(name) |>
-  purrr::map_df(get_fields) |>
-  write_parquet(paste0(OUT_DIR, "/", "_overview_fields.parquet"))
-
-for(i in 1:nrow(ov)) {
-  table <- paste0(ov$owner[i], ".", ov$name[i])
-  result <-
-    try(tbl_mar(con, table) |> collect(),
-        silent = FALSE)
-
-  if (class(result)[1] == "try-error") {
-    print(paste0("An error reading:", table))
-    #print(geterrmessage())
-  } else {
-    print(table)
-    if(!table %in% "afli.ra_email_skeyti") {
-      result |>
-        write_parquet(paste0(OUT_DIR,
-                             "/",
-                             str_remove(table,
-                                        paste0(SCHEMA, ".")),
-                             ".parquet"))
-    }
-  }
-}
+con <- mar::connect_mar(rjdbc = TRUE)
+dump_oracle_schema(con, "vessel", fd_raw("vessels"), script = "dump/oracle/vessels.R")

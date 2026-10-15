@@ -1,31 +1,21 @@
-library(nanoparquet)
-library(tidyverse)
-library(omar)
-con <- connect_mar()
+# gear — the gear code lists, as they are.
+#
+# Input:  Oracle orri.veidarfaeri, orri.veidarfaeri_ny, gear.veidarfaeri_v, gear.fishing_gear,
+#         gear.gear_category, gear.isscfg
+# Output: raw/gear/<schema>_<table>.parquet
+#
+# Run by hand from the repo root, with a connection to the MFRI Oracle database:
+#   Rscript dump/oracle/gear.R
+# The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 
-# orri -------------------------------------------------------------------------
-tbl_mar(con, "orri.veidarfaeri") |>
-  arrange(veidarfaeri) |>
-  select(-c(snt, snn, sbt, sbn)) |>
-  collect() |>
-  write_parquet(fd_staging("data-dump", "gear", "orri_veidarfaeri.parquet"))
-tbl_mar(con, "orri.veidarfaeri_ny") |>
-  collect() |>
-  write_parquet(fd_staging("data-dump", "gear", "orri_veidarfaeri_ny.parquet"))
+for (f in list.files("R", full.names = TRUE)) source(f)
 
-# gear -------------------------------------------------------------------------
-tbl_mar(con, "gear.veidarfaeri_v") |>
-  collect() |>
-  arrange(veidarfaeri_nr) |>
-  write_parquet(fd_staging("data-dump", "gear", "gear_veidarfaeri_v.parquet"))
-tbl_mar(con, "gear.fishing_gear") |>
-  collect() |>
-  arrange(fishing_gear_no) |>
-  write_parquet(fd_staging("data-dump", "gear", "gear_fishing_gear.parquet"))
-tbl_mar(con, "gear.gear_category") |>
-  collect() |>
-  write_parquet(fd_staging("data-dump", "gear", "gear_gear_category.parquet"))
-tbl_mar(con, "gear.isscfg") |>
-  collect() |>
-  write_parquet(fd_staging("data-dump", "gear", "gear_isscfg.parquet"))
-
+con <- mar::connect_mar(rjdbc = TRUE)
+# snt, snn, sbt, sbn: the row audit stamps, left out since the first version of this dump
+dump_oracle_table(con, "orri.veidarfaeri", fd_raw("gear", "orri_veidarfaeri.parquet"),
+                  drop = c("snt", "snn", "sbt", "sbn"))
+dump_oracle_table(con, "orri.veidarfaeri_ny", fd_raw("gear", "orri_veidarfaeri_ny.parquet"))
+dump_oracle_table(con, "gear.veidarfaeri_v",  fd_raw("gear", "gear_veidarfaeri_v.parquet"))
+dump_oracle_table(con, "gear.fishing_gear",   fd_raw("gear", "gear_fishing_gear.parquet"))
+dump_oracle_table(con, "gear.gear_category",  fd_raw("gear", "gear_gear_category.parquet"))
+dump_oracle_table(con, "gear.isscfg",         fd_raw("gear", "gear_isscfg.parquet"))

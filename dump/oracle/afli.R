@@ -1,83 +1,36 @@
-library(mar)
-library(tidyverse)
-library(duckdbfs)
-library(nanoparquet)
-library(xml2)
-con <- connect_mar()
+# afli — MFRI's logbooks (Oracle schema afli), every table and view as it is.
+#
+# Input:  Oracle afli
+# Output: raw/logbooks/afli/<name>.parquet, _overview_tables.parquet, _overview_fields.parquet
+#
+# Run by hand from the repo root, with a connection to the MFRI Oracle database:
+#   Rscript dump/oracle/afli.R
+# The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 
+for (f in list.files("R", full.names = TRUE)) source(f)
 
-# tbl_mar(con, "afli.ra_email_skeyti") |> collect() -> d
-# # creates an error d |> write_parquet("testo.parquet")
+con <- mar::connect_mar(rjdbc = TRUE)
+out <- fd_raw("logbooks", "afli")
 
-OUT_DIR <- fd_staging("data-dump", "afli")
-SCHEMA <- "afli"
-get_tables_and_views <- function(con, owner) {
-  bind_rows(mar_tables(con, owner) |> collect() |>
-              rename(name = table_name) |>
-              mutate(type = "table"),
-            mar_views(con, owner) |> collect() |>
-              rename(name = view_name) |>
-              mutate(type = "view"))
-}
-get_fields <- function(schema.table) {
-  mar_fields(con, schema.table) |>
-    collect() |>
-    rename(table = table_name,
-           column = column_name)
-}
+# ra_email_skeyti       e-mailed submissions; nanoparquet failed to write it, and nothing here or in the old repos
+#                       reads it
+# afladagb_xml_mottaka  an XMLTYPE column, which the dump has always fetched through xmlserialize; written below
+#                       with the XML as text
+dump_oracle_schema(con, "afli", out, skip = c("ra_email_skeyti", "afladagb_xml_mottaka"),
+                   script = "dump/oracle/afli.R")
 
-
-ov <- get_tables_and_views(con, SCHEMA)
-ov |> write_parquet(paste0(OUT_DIR, "/", "_overview_tables.parquet"))
-
-ov |>
-  unite(owner, name, col = name, sep = ".") |>
-  pull(name) |>
-  purrr::map_df(get_fields) |>
-  write_parquet(paste0(OUT_DIR, "/", "_overview_fields.parquet"))
-
-for(i in 1:nrow(ov)) {
-  table <- paste0(ov$owner[i], ".", ov$name[i])
-  result <-
-    try(tbl_mar(con, table) |> collect(),
-        silent = FALSE)
-
-  if (class(result)[1] == "try-error") {
-    print(paste0("An error reading:", table))
-    #print(geterrmessage())
-  } else {
-    print(table)
-    if(!table %in% "afli.ra_email_skeyti") {
-      result |>
-        write_parquet(paste0(OUT_DIR,
-                             "/",
-                             str_remove(table,
-                                        paste0(SCHEMA, ".")),
-                             ".parquet"))
-    }
-  }
-}
-
-
-# XML special case: AFLADAGB_XML_MOTTAKA
-result <- dbGetQuery(con,
-                     'SELECT xmlserialize(DOCUMENT SENDING AS CLOB indent size = 2) AS SENDING
-   FROM \"AFLI\".\"AFLADAGB_XML_MOTTAKA\"')
-
-afladagb_xml_mottaka <-
-  dplyr::tbl(con, sql('SELECT
-                      ID,
-                      RET_VAL,
-                      GERD,
-                      SKIP_NR,
-                      FRA,
-                      TIL,
-                      LONDUN_FAERSLA,
-                      EMAIL_ID,
-                      HUGBUNADUR
-                      FROM "AFLI"."AFLADAGB_XML_MOTTAKA"')) |>
-  collect()
-names(afladagb_xml_mottaka) <- names(afladagb_xml_mottaka) |> tolower()
-afladagb_xml_mottaka$sending <- result$SENDING
-afladagb_xml_mottaka |> write_parquet("dump/afladagb_xml_mottaka.parquet")
-
+# afladagb_xml_mottaka ---------------------------------------------------------
+# Two queries, joined on id (unique: 483,738 rows in the 2026-04 dump). Before 2026-10 they were bound side by
+# side, which trusted Oracle to return both in the same row order.
+xml <- DBI::dbGetQuery(con, 'SELECT ID, xmlserialize(DOCUMENT SENDING AS CLOB indent size = 2) AS SENDING
+                             FROM "AFLI"."AFLADAGB_XML_MOTTAKA"')
+names(xml) <- tolower(names(xml))
+mottaka <-
+  dplyr::tbl(con, dplyr::sql('SELECT ID, RET_VAL, GERD, SKIP_NR, FRA, TIL, LONDUN_FAERSLA, EMAIL_ID, HUGBUNADUR
+                              FROM "AFLI"."AFLADAGB_XML_MOTTAKA"')) |>
+  dplyr::collect() |>
+  dplyr::rename_with(tolower) |>
+  dplyr::left_join(xml, by = "id")
+mottaka <- .oracle_integers(mottaka, oracle_fields(con, "afli", "afladagb_xml_mottaka"))
+write_parquet_group(mottaka, file.path(out, "afladagb_xml_mottaka.parquet"))
+message("afli.afladagb_xml_mottaka: ", nrow(mottaka), " rows")

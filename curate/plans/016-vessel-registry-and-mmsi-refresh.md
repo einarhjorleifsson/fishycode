@@ -163,6 +163,7 @@ i. **TODO 17's TFUT case is already resolved.** All four lists and Oracle give T
 6. **Wiring:**
    - file targets for `raw/vessels/vessel_v.parquet` and the archive's inputs, so a new dump or list shows in `tar_outdated()`;
    - `dump/oracle/vessels.R` gets `rjdbc = TRUE` and becomes the script that runs; `raw/vessels/DUMP_vessels.R` goes.
+     Done for every dump script, decision 105.
 6b. **Call sign, local sign and name over time: `vessel_sign.parquet`, one row per vid, kind (`cs` | `uid` | `name`),
    value and period** (maintainer, 2026-10-14: the call sign and the local sign, ÍS-8, wander across hulls over time,
    like the MMSI). It is a table of its own: splitting
