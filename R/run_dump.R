@@ -83,6 +83,8 @@ dump_status <- function(schema = NULL, log_root = fd_raw("oracle"), lines = 3) {
              else if (!is.na(log)) "stopped"
              else "never run"
     ov_path <- file.path(log_root, s, "_overview_tables.parquet")
+    # a schema dumped before run_dump() existed has an overview but no log
+    if (state == "never run" && file.exists(ov_path)) state <- "finished (no log)"
     counts <- ""
     if (grepl("finished", state) && file.exists(ov_path)) {
       ov <- as.data.frame(nanoparquet::read_parquet(ov_path))
