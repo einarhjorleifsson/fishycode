@@ -57,6 +57,16 @@ column for column: trips 270,490 then, 306,509 now; stations 628,314 then, 690,9
 all dated before 1990 (years 6, 202, 630, 1923: typos), where Java and R read historic calendars and local mean time
 differently. The April `_overview_views.parquet` went to the Trash; the overview now lists views by `type`.
 
+## The reruns, 2026-10-15
+
+- **adb** (`dba939f`): 31 written, `fishing_station` failed again; no NUMBER column is text, and `catch` is typed as in
+  April column for column. `convert.R`, run on it into scratch, matches `staging/adb`'s types with the counts above.
+- **stk**: only `year=2026` was fetched (20,618,281 fixes, ids unique, last received 08:45). All 20 partitions now
+  share one schema, `.id` and `mid` double.
+- **Neither shows in `tar_outdated()`.** The `adb` and `ais_ping_union` targets do not declare their raw files, so
+  a rebuild that should take up the new dumps invalidates them by hand (`tar_invalidate(c(adb, ais_ping_union))`).
+  The vessel dump does show, through plan 016's file targets.
+
 ## Found on the way
 
 - **STK `year=2026`, dumped 2026-10-15, holds `.id` and `mid` as text**; 2007-2025 hold doubles. The pipeline reads
@@ -71,5 +81,5 @@ differently. The April `_overview_views.parquet` went to the Trash; the overview
 
 ## Not done
 
-adb and stk are to be rerun with the text cast; the other scripts have not run against Oracle. `dump/oracle/landings.R` is not a dump (it transforms, writes
+The other scripts have not run against Oracle yet; the maintainer runs them through 2026-10-15. `dump/oracle/landings.R` is not a dump (it transforms, writes
 `staging/` and uses arrow) and was left as it is.

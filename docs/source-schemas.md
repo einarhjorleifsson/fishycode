@@ -2,10 +2,11 @@
 
 > Load this file when working on raw data, convert scripts, or the dictionary.
 
-Raw data live in `$FISHYDATA/raw/` and are never in git. They are dumped from
-Oracle by the scripts in `dump/oracle/` and `dump/ais/stk.R`, one per schema or
-source, through `dump_oracle_schema()` (`R/dump_oracle.R`; decision 105). The
-paths below are from before the restructuring.
+Raw data live in `$FISHYDATA/raw/` and are never in git. Each Oracle schema is
+dumped as it is to `raw/oracle/<schema>/` by `dump/oracle/<schema>.R`, through
+`dump_oracle_schema()` (`R/dump_oracle.R`; decision 105, plan 018), with an
+overview, the columns' types and comments, and a `_data-dict.yaml`. The paths
+below are from before the restructuring.
 
 Dump sizes: `data-dump/ais/` ~149 GB, `data-dump/logbooks/` ~3.4 GB,
 `data-dump/aux/` ~2.4 GB, `data-dump/landings/` ~797 MB.

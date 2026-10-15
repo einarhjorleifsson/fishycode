@@ -1,23 +1,23 @@
-# afli — MFRI's logbooks (Oracle schema afli), every table and view as it is.
+# afli — MFRI's logbooks, every table and view as Oracle holds it (plan 018).
 #
 # Input:  Oracle afli
-# Output: raw/logbooks/afli/<name>.parquet, _overview_tables.parquet, _overview_fields.parquet
+# Output: raw/oracle/afli/: <name>.parquet per table and view, _overview_tables.parquet,
+#         _overview_fields.parquet, _data-dict.yaml; every file stamped with the dump's time (fd.dumped)
 #
 # Run by hand from the repo root, with a connection to the MFRI Oracle database:
 #   Rscript dump/oracle/afli.R
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
+#
+# ra_email_skeyti, left out of earlier dumps because nanoparquet failed to write it, is tried again.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- mar::connect_mar(rjdbc = TRUE)
-out <- fd_raw("logbooks", "afli")
+out <- fd_raw("oracle", "afli")
 
-# ra_email_skeyti       e-mailed submissions; nanoparquet failed to write it, and nothing here or in the old repos
-#                       reads it
-# afladagb_xml_mottaka  an XMLTYPE column, which the dump has always fetched through xmlserialize; written below
-#                       with the XML as text
-dump_oracle_schema(con, "afli", out, skip = c("ra_email_skeyti", "afladagb_xml_mottaka"),
-                   script = "dump/oracle/afli.R")
+# afladagb_xml_mottaka has an XMLTYPE column, which the dump has always fetched through xmlserialize: written below,
+# the XML as text
+dump_oracle_schema(con, "afli", out, skip = "afladagb_xml_mottaka", script = "dump/oracle/afli.R")
 
 # afladagb_xml_mottaka ---------------------------------------------------------
 # Two queries, joined on id (unique: 483,738 rows in the 2026-04 dump). Before 2026-10 they were bound side by
@@ -32,5 +32,6 @@ mottaka <-
   dplyr::rename_with(tolower) |>
   dplyr::left_join(xml, by = "id")
 mottaka <- .oracle_numbers(mottaka, oracle_fields(con, "afli", "afladagb_xml_mottaka"))
-write_parquet_group(mottaka, file.path(out, "afladagb_xml_mottaka.parquet"))
+.write_raw(mottaka, file.path(out, "afladagb_xml_mottaka.parquet"), "afli.afladagb_xml_mottaka",
+           .dump_run(con, "dump/oracle/afli.R"))
 message("afli.afladagb_xml_mottaka: ", nrow(mottaka), " rows")
