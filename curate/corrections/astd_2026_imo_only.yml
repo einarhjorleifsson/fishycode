@@ -1,0 +1,72 @@
+id: astd_2026_imo_only
+title: ASTD 2026-02 to 2026-06 carry only vessels with an IMO number; loaded as delivered, the gap declared
+status: >-
+  declared 2026-10-15 - the five months loaded into staging/ais/astd as delivered (maintainer's choice), the gap
+  reported in docs/ais_trail.qmd ("Gaps in the feeds") and on ais_ping in docs/data-dict.yaml; they reach
+  curated/ais/ping at the next ais_ping_union build (decision 107)
+applies_to:
+  - staging/ais/astd   (year=2026, month=02 to 06)
+  - curated/ais/ping and everything built from it, 2026-02 to 2026-06
+affects_rows: >-
+  none changed; the rows that are missing are the defect. Against the same months of 2025, about a third of the
+  fixes in curated/ais/ping and 16 % of the vessel-days (see impact).
+implementation: >-
+  none in code: dump/ais/astd.R loads the months as they are. Nothing in a single delivery marks it, so the rule
+  below is the detection.
+discovered: 2026-10-15, reviewing the five zips the maintainer added to raw/ais/astd that morning
+decided_by: the maintainer, 2026-10-15 - load them as they are, with a correction entry declaring the IMO-only gap
+
+rule: >-
+  A month whose share of rows with imonumber > 0 is 1.000 is an IMO-only extraction. Every month from 2025-01 to
+  2026-01 has 0.53-0.57; 2026-02 to 2026-06 have 1.000.
+
+defect:
+  summary: >-
+    The five zips read cleanly (the same 28 columns, ISO timestamps, standard deflate, every day of the month, no rows
+    outside it, no missing MMSI, time or position), but each holds only vessels with an IMO number. Small vessels,
+    most of the Icelandic fleet among them, are absent.
+  measured: |
+    month      rows         MMSIs   Icelandic MMSIs   rows with an IMO   placeholder pings
+    2025 (each month)  22.6-31.8 M  11,747-16,609  397-952   0.53-0.57   6,446-11,466
+    2026-01    32,152,645   13,511  474               0.566              8,326
+    2026-02    16,848,357    4,946  164               1.000            124,429
+    2026-03    18,620,966    5,182  165               1.000            139,014
+    2026-04    17,947,893    5,440  164               1.000            119,966
+    2026-05    18,952,197    5,584  165               1.000            125,977
+    2026-06    18,737,801    5,845  160               1.000            133,618
+  the_icelandic_imo_mmsis: >-
+    In each month of 2025, 180-187 Icelandic MMSIs carry an IMO number, and 2026-02 to 2026-06 hold 160-165. So the
+    new months keep about the IMO-numbered part of the fleet and nothing else.
+  placeholders: >-
+    A placeholder ping has dist_nextpoint 0 and sec_nextpoint 1 (ping_union_duplicate_keys.yml). Over all flags they
+    are 15 times as common as before, but almost all are on foreign MMSIs. On Icelandic MMSIs, the only ones the union
+    reads, there are 176, 206, 337, 288 and 5,370 a month (2026-02 to 06), against 16 in 2026-01. Those not in a
+    duplicate group reach the union with a derived speed of 0 knots; June's 5,370 are 0.25 % of its 2.12 M Icelandic
+    rows.
+  icelandic_rows: >-
+    Read through ais_ping_union.R's own filter (9-digit MMSI starting 251): 2,018,290, 2,231,430, 2,074,614,
+    2,136,852 and 2,116,623 rows on 160-165 MMSIs, against 4,217,495 rows on 474 MMSIs in 2026-01.
+  ship_id: >-
+    The five files carry an empty ship_id column: 2023-08 and 2023-09, hand-exported, have it (a placeholder), and
+    since they were loaded on 2026-10-09 the canonical schema of dump/ais/astd.R includes it. open_dataset() takes
+    the first file's 40 columns and does not see it, so nothing reads it.
+
+impact:
+  on_analysis: >-
+    Measured on curated/ais/ping for 2025-02 to 2025-06, the same months a year earlier: 13.69 M fixes, of
+    which 4.69 M came from ASTD on MMSIs with no IMO number that month (505 vids), 5.90 M from ASTD on MMSIs with one
+    (196 vids) and 3.10 M from STK (1,689 vids). Of 81,515 vessel-days, 20,740 had fixes of the kind now missing, and
+    13,401 (267 vids) had no other fix. In 2026-02 to 2026-06 those days have no ASTD fix, so a drop in fixes,
+    voyages or effort of small vessels in those months is the delivery, not the fishing.
+  not_measured: >-
+    How much STK covers for them in 2026: STK's share of the 2025 fixes is small, and why was not examined here.
+
+repair:
+  action: >-
+    Ask the provider for the five months with the extraction used up to 2026-01, and replace the zips in
+    raw/ais/astd; then delete the five partitions, rerun dump/ais/astd.R, and invalidate ais_ping_union.
+  until_then: the months stay as delivered and this entry stands.
+
+related:
+  - astd_missing_months          (the last change to the ASTD months in staging)
+  - ping_union_duplicate_keys    (the placeholder pings)

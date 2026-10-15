@@ -145,7 +145,9 @@ tables:
       One row per AIS/GPS position fix, across every measured source (STK, ASTD,
       ASTDB, EmodNet) unioned and cleaned. Hive-partitioned by year. Each ping
       carries the harbour it falls inside (`pid`, NA at sea) and, once ais_voyage.R
-      has run, the voyage it belongs to (`trip`).
+      has run, the voyage it belongs to (`trip`). ASTD (`provider` astd) carries only
+      vessels with an IMO number in 2026-02 to 2026-06, so small vessels have no ASTD
+      fixes in those months (curate/corrections/astd_2026_imo_only.yml).
     todo: |
       - Record a `primary_key`, if present.
       - `curated/ais/ping/` is also Hive-partitioned by `year` on disk

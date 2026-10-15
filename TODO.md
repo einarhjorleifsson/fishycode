@@ -387,3 +387,13 @@ Adopting that merge as it stands would put four vids twice in `vessel.parquet`. 
 all its sources and makes `vid` an integer and unique again, after the `rjdbc` driver turned it into a double.
 
 **check:** plan 016 §8.
+
+## 65. A vessel registry for every ping, whatever the flag
+**status:** open · **needs: maintainer** — the eight asks in plan 021 §6 ·
+**see:** `curate/plans/021-vessel-registry-for-every-ping.md`, plans 008, 016 and 017, TODO 22
+
+The maintainer asked on 2026-10-15 for a registry of every vessel the pings carry, not only the Icelandic ones. Plan 021
+measures what each identity source reaches over every MMSI in ASTD and astdB, and proposes one integer `vid` per hull
+and a crosswalk from each feed identity to it. It follows plan 016's rebuild and plan 018 phase 3.
+
+**check:** plan 021 §7.

@@ -236,6 +236,10 @@ trail(2019, x1$vid) |>
   arrange(n_sid)
 ```
 
+## Gaps in the feeds
+
+- **ASTD, 2026-02 to 2026-06: vessels with an IMO number only.** These five months were delivered as a different extraction: every row has an IMO number, against 53-57 % of rows in every month of 2025. Small vessels, most of the Icelandic fleet among them, have no ASTD fixes in those months. In the same months of 2025, ASTD fixes of MMSIs with no IMO number were 4.69 M of the 13.69 M fixes in `curated/ais/ping`, and 13,401 of 81,515 vessel-days had no other fix. A drop in small-vessel fixes, voyages or effort in 2026-02 to 2026-06 is the delivery, not the fishing. Details in `curate/corrections/astd_2026_imo_only.yml`.
+
 ## Where the numbers come from
 
 - `curated/ais/trail`, `trail_match` — built from `ais/ping`, `station_window` and `link/trip_voyage` by `curate/ais_trail.R`; checks `curated/check/trail_agreement` (the station and the voyage name the same trip in 99.6 % of fixes that have both) and `trail_sid_coverage`.
