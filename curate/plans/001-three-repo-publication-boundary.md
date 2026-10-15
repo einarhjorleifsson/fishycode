@@ -68,6 +68,10 @@ Measured 2026-09-22:
 
 - **There is no git remote yet.** 59 commits, 3.1 MB of history, entirely local.
   History rewriting is free now and disruptive after the first push.
+  *2026-10-15: a private remote went up, so the server can clone the dumper (decision 109):
+  `github.com/einarhjorleifsson/fishycode`, created private and empty by the maintainer, `main` pushed
+  at 1a959ae (414 commits). Nothing is public. History can still be rewritten before it goes public, at
+  the cost of a force-push and a fresh clone wherever it was cloned.*
 - **A Mapbox token is committed**, in `curate/ais_trip.R:179`,
   `reference/geo/h3_index.R:82` and `docs/stk_data-inspection.qmd:10`, entering at
   commit `bde740b`. It is a `pk.` *public* token — designed for client-side use, so not

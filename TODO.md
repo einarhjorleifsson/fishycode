@@ -99,8 +99,8 @@ this item states why they can't.
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
 
 **Asked of the maintainer, in the plan's own words:** restrict or relocate the Mapbox
-token (§4), decide when the GitHub remote goes up and whether history is rewritten
-first (§4), set the aggregation rule for what may leave `fishydata` for an open
+token (§4), decide when the GitHub repo goes public and whether history is rewritten
+first (§4; a private remote went up on 2026-10-15), set the aggregation rule for what may leave `fishydata` for an open
 `fishyweb` (§3), and say where `fishydata` lives and whether it is backed up (§5). The
 disclosure rule blocks item 16. Everything else in the plan I can act on unblocked.
 `fishyweb` has local commits that wait for its first remote too (27b35ff, the plan 014 names; from TODO 52).
@@ -110,9 +110,10 @@ Mapbox token no longer appears in the working tree.
 
 `fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page.
 The design, the evidence and the open questions are in the plan; this stub exists so
-the work is visible here. Two things in it are time-sensitive: there is still **no git
-remote**, so history is free to rewrite until the first push, and a Mapbox `pk.` token
-is committed in three files. The boundary that actually needs a rule is
+the work is visible here. Two things in it are time-sensitive: the repo has been on GitHub
+since 2026-10-15, **private**, so history can still be rewritten before it goes public (a
+force-push, and a fresh clone on the server), and a Mapbox `pk.` token is committed in
+three files. The boundary that actually needs a rule is
 `fishydata` → `fishyweb`, which is a data-disclosure question and binds item 16.
 
 
