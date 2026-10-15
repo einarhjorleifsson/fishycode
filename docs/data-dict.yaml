@@ -41,6 +41,11 @@ details: >
   the fuller story, including a real key-recycling defect (`lods`'s raw
   record id, `komunr`) found and fixed while building it.
 
+  2026-10-15: the tables and columns of decisions 099-104 added by Claude
+  (AI-assisted), from their scripts' heads, the decisions and the data
+  (`ais_catch`, `ais_voyage_gear`, the three checks, and the trail's effort,
+  fishing-flow and voyage-gear columns); TODO 51.
+
 tables:
   - name: ais_voyage
     source:
@@ -397,7 +402,7 @@ tables:
           The stay's key within the vessel, numbered by T_in (plan 014); pings carry it.
   - name: ais_trail
     source:
-      parquet: ../../fishydata/curated/ais/trail/year=*/month=*/part_001.parquet
+      parquet: ../../fishydata/curated/ais/trail/year=2024/month=6/part_001.parquet
     description: >
       The product: one row per fix (AIS pings and onboard GPS logger fixes of every vessel), 2007-2026,
       with its AIS voyage, the logbook station it falls in and the logbook trip of its voyage. Parquet
@@ -405,7 +410,7 @@ tables:
       sorted by vessel and time, unique on (vid, time). Open it with open_dataset() and work in dplyr;
       nothing needs calling. Built by `curate/ais_trail.R` from `ais/ping`, `station_window` and
       `link/trip_voyage` (plan 011 Phase 5, decision 065). A new month, or a late logbook correction,
-      rewrites that month's files only.
+      rewrites that month's files only. `source` names one representative file, June 2024.
     columns:
       - name: vid
         type: number
@@ -471,7 +476,8 @@ tables:
         description: >
           Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`).
       - name: .tid_voyage
-        type: number
+        type: string
+        examples: ["-1326693", "148474", "154222", "157476"]
         description: >
           The logbook trip linked to the fix's voyage (link/trip_voyage); filled only when exactly one
           logbook trip is on the voyage, else NA.
@@ -498,13 +504,26 @@ tables:
         description: >
           Logbook source of the station.
       - name: .tid
-        type: number
+        type: string
+        examples: ["-1326685", "146251", "153722", "162205"]
         description: >
           The logbook trip of the station, from the station window; filled only when `n_sid` is 1.
       - name: gear
         type: string
         description: >
           Gear code of the station.
+      - name: target
+        type: string
+        examples: [CRU, DEF, DES, SPF, SWD]
+        description: >
+          Target group of the station's gear (the middle part of `metier`), as in logbook_gear. Filled
+          only when `n_sid` is 1.
+      - name: target2
+        type: string
+        examples: [DEF, DES, GHL, LUM, SPF, SWD]
+        description: >
+          Finer target of the station's gear (the last part of `metier`), as in logbook_gear. Filled only
+          when `n_sid` is 1.
       - name: gid
         type: number
         examples: [2, 6, 8, 11, 12, 14]
@@ -533,6 +552,18 @@ tables:
         type: string
         description: >
           `static`, `towed`, `jigged` or `other`.
+      - name: s1
+        type: number
+        examples: [0, 0.05, 0.1, 1.2, 2.625]
+        description: >
+          Lower end of the station gear's fishing speed range, knots (reference/gear/windows.R:
+          fleet-wide and declared, not fitted). Filled only when `n_sid` is 1. Not the station's outer
+          time bound that docs/grammar.qmd also calls s1.
+      - name: s2
+        type: number
+        examples: [1.4, 2.75, 2.9, 4.7, 6]
+        description: >
+          Upper end of the station gear's fishing speed range, knots. Filled only when `n_sid` is 1.
       - name: phase
         type: string
         description: >
@@ -564,6 +595,65 @@ tables:
           never fishing. The speed tested is the median of the vessel's fix speeds within ±10 min
           (decision 093). FALSE for a fix with no match. NA where a window holds the fix but the fix has
           no speed (unknown, not FALSE).
+      - name: gid_voyage
+        type: number
+        examples: [3, 9, 11, 14, 21]
+        description: >
+          The gear of the fix's voyage, from curated/ais/voyage_gear (decision 101); NA for a fix in no
+          voyage or a voyage with no gear.
+      - name: s1_voyage
+        type: number
+        examples: [0, 0.05, 0.125, 1.2, 2.625]
+        description: >
+          Lower end of the voyage gear's speed range, knots; what `fishing_flow` tests where no station
+          window holds the fix.
+      - name: s2_voyage
+        type: number
+        examples: [1.25, 1.7, 2.75, 3, 6]
+        description: >
+          Upper end of the voyage gear's speed range, knots.
+      - name: gear_voyage_basis
+        type: enum
+        values: [logbook, ambiguous, landing, none]
+        description: >
+          Where the voyage's gear came from (curated/ais/voyage_gear): the logbook trip's stations, gears
+          with different speed ranges (no range), the landing, or none. NA for a fix in no voyage.
+      - name: fishing_flow
+        type: boolean
+        description: >
+          Fishing by the flow's cascade (plan 013 item 3, decisions 099 and 101): the station window and
+          its speed range where a window holds the fix, as `fishing`; else the speed range of the voyage's
+          gear; else NA. `fishing` is the window alone. Each is an approach of its own, so choose one and
+          keep to it.
+      - name: fishing_flow_basis
+        type: enum
+        values: [window, speed, none]
+        description: >
+          Which source decided `fishing_flow`: a station window, the voyage gear's speed range, or none.
+      - name: hours
+        type: number
+        examples: [0.0022, 0.29, 0.59, 0.96, 1.44, 2]
+        description: >
+          The effort the fix stands for: hours to the vessel's next fix in the same voyage (a vessel's fixes
+          in port form one group), capped at 2 h (ramb::rb_assign_effort(), plan 013 item 1). On every fix,
+          fishing or not; sum it over the fixes of one fishing approach. NA where there is no next fix
+          (`interval_flag` edge, `effort_basis` none).
+      - name: kw_hours
+        type: number
+        examples: [0.44, 15.3, 33.9, 98.9, 221]
+        description: >
+          `hours` times the vessel's engine power (kW). NA where the engine power is not known.
+      - name: interval_flag
+        type: enum
+        values: [edge, capped]
+        description: >
+          `capped`: the interval to the next fix was longer than 2 h and `hours` is 2. `edge`: the fix
+          has no next fix in its group. NA otherwise.
+      - name: effort_basis
+        type: enum
+        values: [derived, none]
+        description: >
+          `derived` where `hours` is computed, `none` where there are no hours.
       - name: sid_gps
         type: number
         description: >
@@ -579,7 +669,7 @@ tables:
           works from (plan 014). Filled only when `n_sid == 1`.
   - name: ais_trail_match
     source:
-      parquet: ../../fishydata/curated/ais/trail_match/year=*/month=*/part_001.parquet
+      parquet: ../../fishydata/curated/ais/trail_match/year=2024/month=6/part_001.parquet
     description: >
       One row per (fix, logbook station) match: every station window that contains a fix, including the
       fixes that several stations claim (where `trail.n_sid` is above 1 and `.sid` is empty). For analysts
@@ -603,13 +693,24 @@ tables:
         description: >
           Logbook source; the station is (.sid, schema).
       - name: .tid
-        type: number
+        type: string
+        examples: ["-1326685", "146251", "153722", "162205"]
         description: >
           The station's logbook trip.
       - name: gear
         type: string
         description: >
           Gear code.
+      - name: target
+        type: string
+        examples: [CRU, DEF, DES, SPF, SWD]
+        description: >
+          Target group of the station's gear (the middle part of `metier`), as in logbook_gear.
+      - name: target2
+        type: string
+        examples: [DEF, DES, GHL, LUM, SPF, SWD]
+        description: >
+          Finer target of the station's gear (the last part of `metier`), as in logbook_gear.
       - name: gear_class
         type: string
         description: >
@@ -655,6 +756,154 @@ tables:
         type: string
         description: >
           The station's gear as a metier label, gear_target2 (e.g. OTB_NEP).
+  - name: ais_catch
+    source:
+      parquet: ../../fishydata/curated/ais/catch/year=2024/part_001.parquet
+    description: >
+      The catch on the fixes (flow step 6, plan 013 item 2, decisions 100 and 102): one row per fishing fix,
+      catch unit, species and approach. Each catch unit's catch (logbook stations, a logbook trip, or a landing
+      with no logbook trip) is shared over its fishing fixes in proportion to their `hours`, separately for each
+      approach to fishing on the trail (`fishing` and `fishing_flow`). A unit with no fishing fix moves its
+      catch up: to its trip, a landing period, or the vessel's month (`shared_resolution`); where none of these
+      has a fishing fix, the row has no fix and `catch_basis` none. The kilograms written equal the kilograms in,
+      per year and approach (the script stops if not). Duplicate twins are left out (decision 094). Built by
+      curate/ais_catch.R; partitioned by `year` (the partition key, not a column in the files), one file per
+      vessel group (vid modulo 4). `unit_id` is unique within a year only. `source` names one representative
+      file, 2024's first vessel group; open the whole table with open_dataset() on curated/ais/catch.
+    columns:
+      - name: vid
+        type: number
+        examples: [2430, 2958, 6484, 7212, 9851]
+        description: >
+          Vessel id. The few negative values are the landings' own placeholders (agf, lods) for a landing
+          with no registration number, carried as they are.
+      - name: time
+        type: datetime
+        time_zone: naive
+        range: [2007-06-01T00:06:27, 2026-04-16T14:27:53]
+        description: >
+          The fishing fix (vid, time) on curated/ais/trail. NA where the catch found no fishing fix
+          (`catch_basis` none).
+      - name: unit_id
+        type: number
+        examples: [1493, 2008, 4436, 9358, 29507]
+        description: >
+          The catch unit (ramb::rb_build_catch_units(), decision 100), unique within a year.
+      - name: resolution
+        type: string
+        examples: [tow, haul+set, jig, day, landing_trip, landing+landing_trip]
+        description: >
+          The unit's level: a station window (tow, haul, set, jig), the stations of a vessel-day (day), a
+          landing with no logbook trip linked to its voyages (landing_trip) or not linked (landing); joined
+          with `+` where events of several kinds formed one unit.
+      - name: shared_unit_id
+        type: number
+        examples: [993, 1014, 13033, 23651, 34188]
+        description: >
+          The unit whose fishing fixes the catch was shared over: almost always `unit_id` itself where
+          `shared_resolution` equals `resolution`, else the unit the catch moved up to. NA where it went to
+          the vessel's month.
+      - name: shared_resolution
+        type: string
+        examples: [tow, haul+set, jig, trip, landing, landing_trip, vessel_month]
+        description: >
+          The level the catch was shared at: the unit's own `resolution`, or the level it moved up to
+          (trip, landing, landing_trip, vessel_month) because the unit had no fishing fix.
+      - name: species
+        type: number
+        examples: [1, 7, 24, 43, 161]
+        description: >
+          Species, MFRI code, as in logbook_catch and landing_catch.
+      - name: kg
+        type: number
+        examples: [0.044, 1.48, 19.1, 31.3, 91.9]
+        description: >
+          Kilograms of the species on this fix: the logbook's estimate or the landed weight (`source`), not
+          raised. The raised value is kg × raise_factor.
+      - name: catch_basis
+        type: enum
+        values: [derived, none]
+        description: >
+          `derived` where the catch sits on a fix; `none` where no fishing fix was found at any level, so the
+          kilograms are kept on the vessel and month with no fix.
+      - name: approach
+        type: enum
+        values: [fishing, fishing_flow]
+        description: >
+          The trail's fishing column the catch was shared over. Each approach carries all the catch, so
+          filter to one before summing.
+      - name: source
+        type: enum
+        values: [logbook, landing]
+        description: >
+          Where the kilograms came from: the logbook (a trip with a logbook) or the landing (a landing with
+          no logbook trip, most of them foreign vessels).
+      - name: raise_factor
+        type: number
+        examples: [0.0096, 0.95, 1.04, 1.14, 1.32, 8.93]
+        description: >
+          The trip's landed weight of the species over its logged weight (lid_map's landings), on the
+          logbook's rows; NA where there is none. Raising is a column, not a choice (maintainer, plan 013
+          item 2).
+  - name: ais_voyage_gear
+    source:
+      parquet: ../../fishydata/curated/ais/voyage_gear.parquet
+    description: >
+      The gear each AIS voyage fished with, for the fixes no logbook window holds (flow step 3, plan 013 item 3,
+      decision 101): one row per voyage of curated/ais/voyage. Its speed range lets the track decide whether a fix
+      is fishing (`fishing_flow` on the trail). A voyage takes the gears of its logbook trips' stations when they
+      share one speed range (the gear used most is named), none when they differ (ambiguous), else the gear that
+      holds most of the landed weight of a landing dated within the voyage (to the day after it ends), else
+      nothing. Duplicate twin stations are left out (decision 094). Built by curate/voyage_gear.R.
+    details: >
+      Key: (vid, year, voyage), as in ais_voyage.
+    columns:
+      - name: vid
+        type: number
+        examples: [100, 2282, 3032, 6089, 9852]
+        description: >
+          Vessel id.
+      - name: year
+        type: number
+        range: [2007, 2026]
+        examples: [2007, 2015, 2026]
+        description: >
+          The voyage's year (voyages are numbered per vessel per year).
+      - name: voyage
+        type: number
+        examples: [1, 20, 98, 311, 534]
+        description: >
+          The voyage, a key into curated/ais/voyage within (vid, year).
+      - name: gid_voyage
+        type: number
+        examples: [1, 4, 9, 14, 22]
+        description: >
+          The voyage's gear (new gear code, reference_gear): for an ambiguous voyage the gear its stations
+          used most. NA where `gear_voyage_basis` is none.
+      - name: gear_class_voyage
+        type: enum
+        values: [towed, static, jigged, other]
+        description: >
+          The class of `gid_voyage` (reference/gear/windows.R); NA where `gear_voyage_basis` is ambiguous or
+          none.
+      - name: s1_voyage
+        type: number
+        examples: [0, 0.05, 0.125, 1.2, 2.625]
+        description: >
+          Lower end of the gear's fishing speed range, knots; NA where there is no single range (ambiguous,
+          none) and for the few gears with no range.
+      - name: s2_voyage
+        type: number
+        examples: [1.125, 1.7, 2.9, 3.7, 6]
+        description: >
+          Upper end of the gear's fishing speed range, knots.
+      - name: gear_voyage_basis
+        type: enum
+        values: [logbook, ambiguous, landing, none]
+        description: >
+          `logbook`: the logbook trip's stations, one speed range. `ambiguous`: its stations use gears with
+          different speed ranges, so no range and only the windows decide. `landing`: no logbook trip, the
+          landing's main gear. `none`: neither.
   - name: check_afli_rafr_stofn_corroboration
     source:
       parquet: ../../fishydata/curated/check/afli_rafr_stofn_corroboration.parquet
@@ -1533,6 +1782,211 @@ tables:
         type: number
         description: >
           Of those, matched by a fix.
+  - name: check_landed_logged
+    source:
+      parquet: ../../fishydata/curated/check/landed_logged.parquet
+    description: >
+      A report, not a correction (decision 104): how the landed weight compares with the logged weight, one row
+      per year, logbook system and species. The logbook is the skipper's estimate at sea and the landing is
+      weighed, so the two differ by design; a difference is of interest where it is systematic. Over the trips
+      whose landing is linked (logbook_lid_map) and whose logged weight is at least 100 kg. For the pelagic
+      species (30-36) a trip may land what another vessel caught, or pass its catch on, so their wide
+      percentiles are that, not the scale. Built by curate/checks/landed_logged.R.
+    columns:
+      - name: year
+        type: number
+        range: [2007, 2026]
+        examples: [2007, 2015, 2026]
+        description: >
+          Year.
+      - name: schema
+        type: enum
+        values: [adb, afli, fs_afladagbok]
+        description: >
+          The logbook system.
+      - name: species
+        type: number
+        examples: [1, 17, 26, 41, 60, 99]
+        description: >
+          Species, MFRI code.
+      - name: trips
+        type: number
+        examples: [1, 169, 571, 2699, 45307]
+        description: >
+          Trips compared.
+      - name: kg_logged
+        type: number
+        examples: [10000, 14800, 250735, 9846210]
+        description: >
+          Kilograms logged on those trips.
+      - name: kg_landed
+        type: number
+        examples: [14977.55, 64593.11, 1000562, 42636525]
+        description: >
+          Kilograms landed on those trips.
+      - name: landed_over_logged
+        type: number
+        examples: [0, 0.89, 0.97, 1.01, 1.10, 8.38]
+        description: >
+          kg_landed over kg_logged: the ratio of the totals.
+      - name: median_trip
+        type: number
+        examples: [0.15, 0.89, 0.97, 1.01, 1.04]
+        description: >
+          Median of the trips' own landed-over-logged ratios.
+      - name: p10_trip
+        type: number
+        examples: [0.023, 0.58, 0.68, 0.80, 0.91]
+        description: >
+          10th percentile of the trips' ratios.
+      - name: p90_trip
+        type: number
+        examples: [0.04, 1.13, 1.23, 1.38, 1.55]
+        description: >
+          90th percentile of the trips' ratios.
+  - name: check_survey_tow_times
+    source:
+      parquet: ../../fishydata/curated/check/survey_tow_times.parquet
+    description: >
+      A report, not a correction (TODO 60, decision 104): how well the track finds a tow's start and end, scored
+      against the spring survey's tows, one row per survey tow of 2007-2019. The survey's tow times are recorded
+      on the bridge under the survey protocol (one-hour tows), so they are ground truth for the track's own tow
+      boundaries. Each tow is paired with the vessel's towing stretch as decision 092 pairs commercial tows: the
+      stretch at bottom trawl's speed range on the ±10 min median speed. Built by
+      curate/checks/survey_tow_times.R from raw/survey/is_smb_stations.csv and the trail.
+    columns:
+      - name: id
+        type: string
+        examples: ["300443", "330663", "365054", "410813", "475197"]
+        description: >
+          The survey station.
+      - name: vid
+        type: number
+        examples: [1131, 1275, 1277, 1281, 1476, 2350]
+        description: >
+          The vessel that towed.
+      - name: year
+        type: number
+        range: [2007, 2019]
+        examples: [2007, 2012, 2019]
+        description: >
+          Year of the tow.
+      - name: start
+        type: datetime
+        time_zone: naive
+        range: [2007-02-27T19:52:00, 2019-03-19T21:48:00]
+        description: >
+          The tow's start, as the survey recorded it.
+      - name: end
+        type: datetime
+        time_zone: naive
+        range: [2007-02-27T20:37:00, 2019-03-19T22:52:00]
+        description: >
+          The tow's end, as the survey recorded it.
+      - name: stretch_id
+        type: number
+        examples: [1, 27, 63, 99, 170]
+        description: >
+          The towing stretch paired with the tow; NA where none was.
+      - name: s_start
+        type: datetime
+        time_zone: naive
+        range: [2008-02-26T20:44:21, 2019-03-19T21:47:46]
+        description: >
+          Start of the paired stretch.
+      - name: s_end
+        type: datetime
+        time_zone: naive
+        range: [2008-02-26T21:24:31, 2019-03-20T01:14:15]
+        description: >
+          End of the paired stretch.
+      - name: dt_start_s
+        type: number
+        examples: [-1000, -705, -347, 968, 1467]
+        description: >
+          Stretch start minus survey start, seconds.
+      - name: dt_end_s
+        type: number
+        examples: [-538, -234, -100, 137, 495]
+        description: >
+          Stretch end minus survey end, seconds.
+      - name: n_fix
+        type: number
+        examples: [0, 3, 9, 16, 36]
+        description: >
+          Fixes inside the tow.
+      - name: gap_med_min
+        type: number
+        examples: [1.02, 2.62, 3.93, 9.98, 11.3]
+        description: >
+          Median fix spacing within 30 min of the tow, minutes.
+  - name: check_vessel_activity
+    source:
+      parquet: ../../fishydata/curated/check/vessel_activity.parquet
+    description: >
+      A report, not a correction (plan 013 item 6, decision 103): the vessels at sea that neither land fish nor
+      keep a logbook, and what they may be doing. One row per vessel-year with voyages, with the evidence for a
+      class and the class it suggests, for a person to confirm through overrides/. The port lists behind
+      `suggested` are the maintainer's of 2026-10-14 and are evidence, not a register: a vessel there may be a
+      pleasure boat or a pilot boat. Built by curate/checks/vessel_activity.R.
+    details: >
+      Key: (vid, year).
+    columns:
+      - name: vid
+        type: number
+        examples: [100, 2064, 2988, 6002, 9852]
+        description: >
+          Vessel id.
+      - name: year
+        type: number
+        range: [2007, 2026]
+        examples: [2007, 2015, 2026]
+        description: >
+          Year.
+      - name: voyages
+        type: number
+        examples: [1, 99, 169, 308, 438]
+        description: >
+          AIS voyages of the vessel that year.
+      - name: day_trip_share
+        type: number
+        examples: [0.009, 0.197, 0.578, 0.784, 0.998]
+        description: >
+          Share of the voyages under 12 h.
+      - name: median_voyage_h
+        type: number
+        examples: [0.9, 25.6, 65.3, 152.8, 419.2]
+        description: >
+          Median voyage length, hours.
+      - name: lands
+        type: boolean
+        description: >
+          Whether the vessel landed fish that year.
+      - name: logbook
+        type: boolean
+        description: >
+          Whether the vessel kept a logbook that year.
+      - name: home_pid
+        type: string
+        examples: [IS-ARN, IS-GRD, IS-JON, IS-RHA, FO-ANI]
+        description: >
+          The port most of its voyages leave from (pid).
+      - name: port_share
+        type: number
+        examples: [0.087, 0.359, 0.502, 0.827, 1]
+        description: >
+          Share of the voyages that leave from `home_pid`.
+      - name: suggested
+        type: enum
+        values: [fishing, aquaculture_service, whale_watching, other]
+        description: >
+          `fishing`: lands or keeps a logbook. `aquaculture_service`: no fish, home in a fish-farming fjord,
+          day trips. `whale_watching`: no fish, home in a whale-watching port, day trips. `other`: no fish.
+      - name: suggested_basis
+        type: enum
+        values: [derived]
+        description: >
+          Always `derived`: computed, not recorded or reviewed.
   - name: landing_catch
     source:
       parquet: ../../fishydata/curated/landing/catch.parquet
@@ -1765,7 +2219,8 @@ tables:
       and t3 fixes. A fix bounds the events of at most one station and one phase of it: when two would share it,
       the event nearer in time keeps it, then the earlier event, then the lower (.sid, schema) (decisions 090,
       091).
-    primary_key: [.sid, schema, event]
+    details: >
+      Key: (.sid, schema, event), one row each. The spec has no key over several columns, so it is stated here.
     columns:
       - name: .sid
         type: number

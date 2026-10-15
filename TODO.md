@@ -341,17 +341,19 @@ suggested classes of `vessel_activity` are confirmed through an override or drop
 ## 51. `docs/data-dict.yaml` fails the current data-dict spec
 **status:** open · **see:** decision 029
 
-Decision 029 validated it with zero errors; the tool's spec has moved on, and `validate-spec` now reports 144
-errors on the unedited file (`S07`: number and string columns must give `examples`; `S28`: unknown types).
-Plan 014 updated the tables its renames touched (decision 079) and added `logbook_gear`: 141 errors after those
-edits, none new in kind. Nothing was validated against the data (`validate-meta` stops at spec errors).
-Also missing (2026-10-14): the tables and columns of decisions 099-104 are not in it: the trail's ten new
-columns, `ais/catch`, `ais/voyage_gear`, and the checks `vessel_activity`, `landed_logged`, `survey_tow_times`.
+Decision 029 validated it with zero errors; the tool's spec has moved on (data-dict 0.0.3, `datadict::dd_install()`).
+On 2026-10-15 a table-level `primary_key` the spec does not allow was moved into `details`, the tables and columns of
+decisions 099-104 were added (`ais_catch`, `ais_voyage_gear`, `check_landed_logged`, `check_survey_tow_times`,
+`check_vessel_activity`, 16 trail and trail_match columns), and the trail's `.tid` columns were corrected to text:
+141 errors, none in the new entries (130 `S07`: a number or string column without `examples`, a datetime without
+`range`; 11 `S28`: the types `timestamp` and `double`). `validate-meta` stops at any spec error in the file; on a
+scratch copy of the seven tables touched it passes with no warning. The tool reads no `*` glob, so a partitioned
+table names one representative file (decision 029).
 Plan 016 adds `vessel/mmsi`, `vessel/vessel_year`, `vessel/vessel_class`, `vessel/vessel_sign`, the columns `status`,
 `foreign`, `register` in `vessel.parquet` and `kw_basis`, `leisure`, `leisure_basis` on the trail (after its rebuild).
 
 **check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors, and the tables of
-decisions 099-104 and plan 016 are in the file.
+plan 016 are in the file.
 
 ## 62. Foreign vessels' logbooks for Icelandic waters
 **status:** open · **needs: maintainer** — where they are: an Oracle schema and table, or an extract from Fiskistofa ·
