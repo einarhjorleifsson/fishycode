@@ -23,7 +23,9 @@
 
 # Columns of a schema (or of one table in it), with Oracle's declared types and comments. The catalogue is read with
 # the columns named, never SELECT *: ALL_TAB_COLUMNS holds a LONG (DATA_DEFAULT), which ROracle cannot fetch
-# ("unsupported column type", hafdruna 2026-10-16; RJDBC read it as text).
+# ("unsupported column type", hafdruna 2026-10-16; RJDBC read it as text). `column` is the name in lower case, as the
+# files have it; `oracle_column` is Oracle's own spelling, which a query must quote as it is: a column made with
+# quotes keeps its case (ops$einarhj.mmsi_icelandic_registry's "stadur" failed as "STADUR", ORA-00904).
 oracle_fields <- function(con, schema, table = NULL) {
   w <- sprintf("OWNER = '%s'", gsub("'", "''", toupper(schema)))
   if (!is.null(table)) w <- sprintf("%s AND TABLE_NAME = '%s'", w, gsub("'", "''", toupper(table)))
@@ -35,8 +37,8 @@ oracle_fields <- function(con, schema, table = NULL) {
     dplyr::rename(table = table_name, column = column_name)
   cols |>
     dplyr::left_join(comm, by = c("table", "column")) |>
-    dplyr::mutate(owner = tolower(schema), table = tolower(table), column = tolower(column),
-                  column_id = as.integer(column_id)) |>
+    dplyr::mutate(owner = tolower(schema), table = tolower(table), oracle_column = column,
+                  column = tolower(column), column_id = as.integer(column_id)) |>
     dplyr::relocate(owner) |>
     dplyr::arrange(table, column_id) |>
     tibble::as_tibble()
@@ -209,7 +211,8 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   fields <- fields[o, ]
   decimal <- decimal[o]
   cols <- vapply(seq_len(nrow(fields)), function(i) {
-    q <- sprintf('"%s"', toupper(fields$column[i]))
+    nm <- if (is.null(fields$oracle_column)) toupper(fields$column[i]) else fields$oracle_column[i]
+    q <- sprintf('"%s"', gsub('"', '""', nm))
     f <- if (decimal[i]) "TO_CHAR(%s)" else conv[fields$data_type[i]]
     if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
   }, "")

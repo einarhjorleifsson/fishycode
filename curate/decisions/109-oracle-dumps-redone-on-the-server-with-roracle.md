@@ -151,3 +151,19 @@ comparison will show these columns as differences.
   turned into the nearest double in R (`.oracle_query()`, `.oracle_numbers()`); a whole NUMBER is exact either way.
   Tested with DuckDB standing in for Oracle: 60.3 comes out equal to 60.3, whole numbers stay integers. The server's
   first run, made before this, is to be set aside and redone from the start.
+- **Second comparison, the run on 8e3778f** (the same six schemas): the decimal fix holds; `power_kw`, `length` and
+  logbook's positions now equal the Mac's. Left: dates before 1912 (the Mac's 16 min 8 s; in logbook exactly its 47
+  such values), and a few values of two NUMBER columns without a declared precision (`auxiliary_engine_powerkw`,
+  `brutto_weight_tons`), where the server now holds the double nearest Oracle's decimal (`53.09999847412109`) and the
+  Mac's RJDBC is a step off (exactly float32's 53.1). One table failed: ops$einarhj's `mmsi_icelandic_registry`,
+  ORA-00904 `"STADUR"`: a column made with quotes keeps its lower case (`stadur`), and the explicit column list the
+  decimal fix needs had upper-cased every name. `oracle_fields()` now keeps Oracle's own spelling
+  (`oracle_column`) and the query quotes it as it is; ask has two column names with Icelandic letters
+  (`er_línuívilnun_heiti`, `er_lokuð_heiti`) that need the same. Tested with DuckDB: `"stadur"` and
+  `"ER_LOKUÐ_HEITI"` quoted as they are, the files' names in lower case. A failed table is recorded and the run goes
+  on, so after it, `--resume` with this fix redoes only the failed tables.
+- **`dump/oracle/sync.sh`**: on the Mac, it copies each schema from the share to `raw/oracle_server/` as soon as its
+  run has ended (its `.exit` file appears). It watches for new files, not the run's log, because the macOS SMB client
+  showed `_all.log` without the lines the server had appended since. Tested on local stand-ins (copies as schemas
+  finish, stops at the end or at a schema that failed as a whole); on the real run it had the six small schemas on
+  the Mac within two minutes of their end.

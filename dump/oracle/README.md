@@ -148,14 +148,24 @@ Each schema then has its `_overview_tables.parquet` (what was written, skipped a
 
 ## 10. Copy it to the Mac
 
-On the Mac, with the server's name and the path from section 2:
+While the server dumps, a watcher on the Mac can copy each schema as soon as it is finished, from the share where
+the Mac sees the server's folder (`/Volumes/einarhj` is hafdruna's `/heima/einarhj`). From the fishycode folder:
+
+```bash
+nohup caffeinate -i sh dump/oracle/sync.sh /Volumes/einarhj/stasi/fishydata/raw/oracle ~/stasi/fishydata/raw/oracle_server > /dev/null 2>&1 &
+```
+
+Its progress is in `~/stasi/fishydata/raw/oracle_server/_sync.log`; it stops when every schema is copied.
+`caffeinate` keeps the Mac awake meanwhile. It watches for each schema's `.exit` file rather than the run's log,
+because the share can show the log without its newest lines. After a `--resume`, run it again once the dump is done.
+
+Or in one go once the dump is done, with the server's name and the path from section 2:
 
 ```bash
 rsync -a SERVER:/path/to/fishydata/raw/oracle/ ~/stasi/fishydata/raw/oracle_server/
 ```
 
-It goes beside the Mac's own dumps, not over them. Running it again copies only what changed, so it can also fetch
-schemas as they finish.
+Either way the copy goes beside the Mac's own dumps, not over them, and running it again copies only what changed.
 
 ## 11. Compare it with the Mac's dumps
 
