@@ -77,6 +77,11 @@ Measured 2026-09-22:
   commit `bde740b`. It is a `pk.` *public* token — designed for client-side use, so not
   a secret leak — but it is scoped to the `fishvice` account and unrestricted. Either
   URL-restrict it at Mapbox or move it to `Sys.getenv()`.
+  *2026-10-16: moved out of the working tree (the maintainer's go). The three files no longer set it:
+  mapdeck reads any environment variable named like `MAPBOX_TOKEN`, kept in `~/.Renviron`. It stays in the
+  history from `bde740b`. Recommended (Claude): revoke it at Mapbox and make a new one, rather than rewrite
+  the history, since the curated files' `fd.commit` stamps and the decision records cite commit ids. A
+  history scan the same day found no other secret, no ID numbers and no data files beyond `overrides/`.*
 - **No Oracle credentials in tracked code.** `dump/` obtains them externally. Checked,
   not assumed.
 - `.gitignore` already excludes every data extension and `.Renviron`; no data file

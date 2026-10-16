@@ -82,8 +82,7 @@ h3_centres |> write_curated(fd_curated("reference", "area_h3.parquet"),
                                       fd_staging("aux", "eusm.fgb"), fd_staging("aux", "ices_areas_500m-buffer.fgb")))
 
 library(mapdeck)
-token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"
-mapdeck::set_token(token)
+# mapdeck reads the Mapbox token from MAPBOX_TOKEN in ~/.Renviron; it is never in the repo
 mapdeck(libraries = "h3", location = c(-20, 64)) |>
   add_h3(data = h3_centres |> filter(between(lon, -30, -10),
                                      between(lat, 63, 67)),

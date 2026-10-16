@@ -151,8 +151,7 @@ if (FALSE) {
   trips |> filter(vid == 2765) |> arrange(year, voyage) |> print(n = 40)
 
   library(mapdeck)
-  token <- "pk.eyJ1IjoiZmlzaHZpY2UiLCJhIjoiY2p0MXQ5dThpMDZqeDQ5bHM0MGx4dHI5cyJ9.Fed_z7mv_TgTWDRjiavU3A"
-  mapdeck::set_token(token)
+  # mapdeck reads the Mapbox token from MAPBOX_TOKEN in ~/.Renviron; it is never in the repo
 
   open_dataset(fd_staging("ais", "ping_test")) |>
     filter(vid == 2765) |>
