@@ -134,3 +134,11 @@ comparison will show these columns as differences.
   driver meant.
 - **`dump/oracle/README.md`**: the steps on the server, from the clone to the copy back and the comparison, from
   the shell and from R, a whole run or one schema (the maintainer asked for a readme with the `nohup` command).
+- **First run on hafdruna, 2026-10-16.** `all.R --check` passed: ROracle 1.5.1, the 1900 DATE exact in UTC, þæöÐ
+  intact, all 13 schemas visible with the Mac's object counts. The run then stopped at asfis within a second:
+  `oracle_fields()` read `SYS.ALL_TAB_COLUMNS` through dbplyr with `SELECT *`, and its `DATA_DEFAULT` is a `LONG`,
+  which ROracle refuses ("unsupported column type"; RJDBC had read it as text). It now names its columns, and
+  `--check` reads each schema's columns too. Tested on a stand-in catalogue in DuckDB built from kvoti's column
+  list: the same 7,740 rows and values. The data tables hold no `LONG` (the twelve schemas the Mac dumped have
+  NUMBER, VARCHAR2, DATE, CHAR, CLOB, BLOB, TIMESTAMP, XMLTYPE, SDO_GEOMETRY; stk is not known), and a BLOB in
+  ROracle's form (a list of raw vectors) writes as a parquet BLOB.

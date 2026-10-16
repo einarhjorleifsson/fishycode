@@ -195,8 +195,8 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
 }
 
 # Is this machine ready to dump? Packages, $FISHYDATA and its free space, the commit the stamps will name, R's
-# locale, then a connection through `driver` with its date and text checks, and each schema reachable. Dumps
-# nothing. Returns TRUE when all is well, invisibly; dump/oracle/all.R --check prints it.
+# locale, then a connection through `driver` with its date and text checks, and each schema's objects and columns
+# read as a dump reads them. Dumps nothing. Returns TRUE when all is well, invisibly; dump/oracle/all.R --check prints it.
 dump_check <- function(schema = NULL, driver = Sys.getenv("FD_DUMP_DRIVER", "ROracle"), root = .repo_root()) {
   ok <- TRUE
   say <- function(good, ...) { message(if (isTRUE(good)) "  ok    " else "  NOT OK ", sprintf(...)); if (!isTRUE(good)) ok <<- FALSE }
@@ -224,9 +224,10 @@ dump_check <- function(schema = NULL, driver = Sys.getenv("FD_DUMP_DRIVER", "ROr
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   say(TRUE, "connected through %s; the date%s check passed", .oracle_driver(con), if (driver == "ROracle") " and text" else "")
   for (s in if (is.null(schema)) .dump_schemas(root) else schema) {
-    n <- tryCatch(nrow(oracle_objects(con, if (s == "ops_einarhj") "ops$einarhj" else s)), error = function(e) e)
+    o <- if (s == "ops_einarhj") "ops$einarhj" else s
+    n <- tryCatch(c(nrow(oracle_objects(con, o)), nrow(oracle_fields(con, o))), error = function(e) e)
     if (inherits(n, "error")) say(FALSE, "%s: %s", s, conditionMessage(n))
-    else say(n > 0, "%s: %d tables and views visible", s, n)
+    else say(n[1] > 0 && n[2] > 0, "%s: %d tables and views, %d columns read from the catalogue", s, n[1], n[2])
   }
   message(if (ok) "ready to dump" else "not ready: see NOT OK above")
   invisible(ok)

@@ -21,31 +21,25 @@
 # NUMBERs as doubles. RJDBC returns NUMBER(p, s) as a double, but a NUMBER with scale 0 and no precision (Oracle's
 # INTEGER: adb's ids) as text - measured on the adb dump of 2026-10-15, where it broke the station-catch join.
 
-# Columns of a schema (or of one table in it), with Oracle's declared types and comments.
+# Columns of a schema (or of one table in it), with Oracle's declared types and comments. The catalogue is read with
+# the columns named, never SELECT *: ALL_TAB_COLUMNS holds a LONG (DATA_DEFAULT), which ROracle cannot fetch
+# ("unsupported column type", hafdruna 2026-10-16; RJDBC read it as text).
 oracle_fields <- function(con, schema, table = NULL) {
-  s <- toupper(schema)
-  cols <- mar::tbl_mar(con, "sys.all_tab_columns") |>
-    dplyr::filter(owner == !!s)
-  comm <- mar::tbl_mar(con, "sys.all_col_comments") |>
-    dplyr::filter(owner == !!s)
-  if (!is.null(table)) {
-    t <- toupper(table)
-    cols <- cols |> dplyr::filter(table_name == !!t)
-    comm <- comm |> dplyr::filter(table_name == !!t)
-  }
-  cols <- cols |>
-    dplyr::select(table = table_name, column = column_name, column_id,
-                  data_type, data_precision, data_scale, nullable) |>
-    dplyr::collect()
-  comm <- comm |>
-    dplyr::select(table = table_name, column = column_name, comments) |>
-    dplyr::collect()
+  w <- sprintf("OWNER = '%s'", gsub("'", "''", toupper(schema)))
+  if (!is.null(table)) w <- sprintf("%s AND TABLE_NAME = '%s'", w, gsub("'", "''", toupper(table)))
+  q <- function(sql) DBI::dbGetQuery(con, sql) |> dplyr::rename_with(tolower)
+  cols <- q(paste("SELECT TABLE_NAME, COLUMN_NAME, COLUMN_ID, DATA_TYPE, DATA_PRECISION, DATA_SCALE, NULLABLE",
+                  "FROM SYS.ALL_TAB_COLUMNS WHERE", w)) |>
+    dplyr::rename(table = table_name, column = column_name)
+  comm <- q(paste("SELECT TABLE_NAME, COLUMN_NAME, COMMENTS FROM SYS.ALL_COL_COMMENTS WHERE", w)) |>
+    dplyr::rename(table = table_name, column = column_name)
   cols |>
     dplyr::left_join(comm, by = c("table", "column")) |>
     dplyr::mutate(owner = tolower(schema), table = tolower(table), column = tolower(column),
                   column_id = as.integer(column_id)) |>
     dplyr::relocate(owner) |>
-    dplyr::arrange(table, column_id)
+    dplyr::arrange(table, column_id) |>
+    tibble::as_tibble()
 }
 
 # Tables and views of a schema, with Oracle's comment and (for tables) its row estimate. Read from the catalogue
