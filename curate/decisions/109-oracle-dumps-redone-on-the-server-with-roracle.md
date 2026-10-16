@@ -142,3 +142,12 @@ comparison will show these columns as differences.
   list: the same 7,740 rows and values. The data tables hold no `LONG` (the twelve schemas the Mac dumped have
   NUMBER, VARCHAR2, DATE, CHAR, CLOB, BLOB, TIMESTAMP, XMLTYPE, SDO_GEOMETRY; stk is not known), and a BLOB in
   ROracle's form (a list of raw vectors) writes as a parquet BLOB.
+- **First comparison, 2026-10-16:** the six schemas the server had finished (asfis, gear, orri, vessel, ops_einarhj,
+  logbook) against the Mac's RJDBC dumps of the day before. 46 of 70 tables identical; every table the same rows and
+  column types. The rest differ in two ways. Dates before 1912 (the Mac's 16 min 8 s, as known). And decimal
+  numbers one step apart (1 ulp, relative 2e-16): `power_kw` 60.3 came through ROracle as 60.3000000000000043, where
+  RJDBC gave 60.2999999999999972, the nearest double; 198 of vessel's 7,047 rows, and logbook station's positions.
+  RJDBC is right. Through ROracle a NUMBER whose scale is not 0 is now fetched as `TO_CHAR`, the exact decimal, and
+  turned into the nearest double in R (`.oracle_query()`, `.oracle_numbers()`); a whole NUMBER is exact either way.
+  Tested with DuckDB standing in for Oracle: 60.3 comes out equal to 60.3, whole numbers stay integers. The server's
+  first run, made before this, is to be set aside and redone from the start.

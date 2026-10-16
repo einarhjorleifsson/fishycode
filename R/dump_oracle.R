@@ -146,8 +146,10 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
     x <- d[[v]]
     if (is.character(x)) {
       y <- suppressWarnings(as.numeric(x))
-      # a double holds integers exactly up to 2^53; past that, or if a value does not parse, the text is kept
-      if (any(is.na(y) & !is.na(x)) || any(abs(y) > 2^53, na.rm = TRUE)) {
+      # a double holds integers exactly up to 2^53; past that a whole NUMBER, or any value that does not parse, is
+      # kept as text. A decimal NUMBER is a double past 2^53 too, as RJDBC returns it.
+      whole <- v %in% fields$column[fields$data_type %in% "NUMBER" & fields$data_scale %in% 0]
+      if (any(is.na(y) & !is.na(x)) || (whole && any(abs(y) > 2^53, na.rm = TRUE))) {
         message("  ", v, ": NUMBER returned as text and kept as text (not every value converts exactly)")
         next
       }
@@ -193,15 +195,22 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 .oracle_lob <- "XMLTYPE"
 
 # The table as a lazy query: every column as it is, those in .oracle_text converted to text under their own name.
-# With numbers_as_text, every NUMBER comes as TO_CHAR too (the retry in dump_oracle_table()).
+# With numbers_as_text, every NUMBER comes as TO_CHAR too (the retry in dump_oracle_table()). Through ROracle a NUMBER
+# that may hold decimals (scale not 0) always comes as TO_CHAR, the exact decimal, which .oracle_numbers() turns into
+# the nearest double: ROracle's own conversion lands a step off for some values (power_kw 60.3 came through as
+# 60.3000000000000043, RJDBC's 60.2999999999999972 is the nearest double; 198 of vessel's 7,047, hafdruna 2026-10-16),
+# and then x == 60.3 is FALSE. A whole NUMBER (scale 0) is exact either way.
 .oracle_query <- function(con, table, fields, numbers_as_text = FALSE) {
   conv <- c(.oracle_text, if (numbers_as_text) c(NUMBER = "TO_CHAR(%s)"))
-  if (!any(fields$data_type %in% names(conv))) return(mar::tbl_mar(con, table))
+  decimal <- .oracle_driver(con) == "ROracle" & fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0)
+  if (!any(fields$data_type %in% names(conv)) && !any(decimal)) return(mar::tbl_mar(con, table))
   x <- strsplit(table, ".", fixed = TRUE)[[1]]
-  fields <- fields[order(fields$column_id), ]
+  o <- order(fields$column_id)
+  fields <- fields[o, ]
+  decimal <- decimal[o]
   cols <- vapply(seq_len(nrow(fields)), function(i) {
     q <- sprintf('"%s"', toupper(fields$column[i]))
-    f <- conv[fields$data_type[i]]
+    f <- if (decimal[i]) "TO_CHAR(%s)" else conv[fields$data_type[i]]
     if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
   }, "")
   dplyr::tbl(con, dplyr::sql(sprintf('SELECT %s FROM "%s"."%s"', paste(cols, collapse = ", "),
