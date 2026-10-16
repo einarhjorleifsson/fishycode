@@ -402,7 +402,7 @@ and leave them out of `ais_key_landings`' `landed_but_no_ais`.
 
 
 ## 68. stk's tables besides the trail: what they hold, and which fishycode should read
-**status:** open · **see:** decision 109, `curate/ais_voyage.R`, `curate/port_stay.R`
+**status:** open · **see:** plan 022, decision 109, `curate/ais_voyage.R`, `curate/port_stay.R`
 
 fishycode reads only stk's trail. The server's dump of stk (2026-10-16) holds 63 objects, and the maintainer asks for
 them to be checked: some are copies of the trail, some may be very useful. First **`tilk_stk_allt`**: recorded
@@ -423,6 +423,8 @@ STK key. Copies: `trail_all` is the trail as one table (the same
 303.8 M positions, 5 fewer columns; checked 2026-10-16, no positions before 2007 beyond the trail's), and most
 likely `stk_vms_v` (303,784,194 rows), the yearly `vms_stk_export_*` and the view `view_trail` (303,791,859).
 `stk_vms_v`, `trail_all` and `view_trail` stay on the server (`SYNC_EXCLUDE`).
+
+The first half of the check is met by plan 022's appendix (2026-10-16); the voyages comparison is plan 022 §4.
 
 **check:** each stk table besides the trail has a line saying what it holds, its time span and keys, and whether
 fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.parquet` on a sample of vessels, the
@@ -449,3 +451,27 @@ fault.
 
 **check:** the rows the query returns are recorded in a decision or a correction, with whether they are the 48 empty
 values.
+
+## 71. The `ops$einarhj` MMSI list of 2023-01-15: find it or dump it
+**status:** open · **needs: maintainer** — where a copy is, if one exists; else dump `mmsi_icelandic_registry_20230115`
+(and `vessel_mmsi`) on the server · **see:** plan 022 §3.1, `reference/vessels/mmsi.R`, decision 111, TODO 63
+
+Ten tables of `ops$einarhj` are not dumped. Judged from the dump's overview (columns, Oracle's row counts), only one
+holds what fishycode does not:
+- **The 2023 list:** `mmsi_icelandic_registry_20230115` (3,687 rows), the MMSI list of 2023-01-15. It falls between
+  the 2022-04 snapshot and the 2024 lists that the MMSI history reads.
+- **Probably the same list:** `vessel_mmsi` has its columns and its row count.
+- **Already held:** `mmsi_mid` and `vessel_mid` (MID → flag, as `staging/aux/maritime_identification_digits`).
+- **Earlier versions of what is dumped:** `mobile_vid_20240212`, `stk_mid_vid`, `stk_mid_vid_2020`,
+  `mid_vid_icelandic_20220418`, `temporary_mid_vid` and `pame_vid_mmsi`.
+
+**Not on the Mac (2026-10-16):**
+- the overview has the 2023 list as listed, not written;
+- the old copies in the Trash (`raw-mmsi-oracle_2026-10-14`) are the four snapshots `mmsi.R` reads;
+- no file of that name is under `~/stasi`, `~/R` or `$FISHYDATA`.
+
+**The undated `mmsi_icelandic_registry` is not it.** It shares 3,756 of its 3,759 MMSI-vessel pairs with the list of
+2024-08-21, so it is a 2024 list. `mmsi.R` reads it with no date.
+
+**check:** `raw/oracle/ops_einarhj/mmsi_icelandic_registry_20230115.parquet` exists and the MMSI history reads it as a
+dated list, or a decision says why not; and `mmsi_icelandic_registry` carries a date in the MMSI history.
