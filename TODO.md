@@ -103,7 +103,8 @@ Mapbox token in that history is revoked (maintainer) and out of the working tree
 
 **Asked of the maintainer, in the plan's own words:** set the aggregation rule for what may
 leave `fishydata` for an open `fishyweb` (§3), and say where `fishydata` lives and whether it
-is backed up (§5). The
+is backed up (§5). §5 now binds TODO 65 too: every hull through the flow needs about 650-700 GB for the AIS
+chain, and the Mac has 158 GB free (plan 021 §6 a). The
 disclosure rule blocks item 16. Everything else in the plan I can act on unblocked.
 `fishyweb` has local commits that wait for its first remote too (27b35ff, the plan 014 names; from TODO 52).
 
@@ -379,12 +380,15 @@ all its sources and makes `vid` an integer and unique again, after the `rjdbc` d
 **check:** plan 016 §8.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** open · **needs: maintainer** — the eight asks in plan 021 §6 ·
-**see:** `curate/plans/021-vessel-registry-for-every-ping.md`, plans 008, 016 and 017, TODO 22
+**status:** open · **needs: maintainer** — a GFW API token once Claude has read its terms, GFW's v3 vessel list
+downloaded, the Directorate of Fisheries asked about MMSI, and ASTD's provider asked about the yearly extraction and
+full 2026-02 to 06 months (plan 021 §6 d, e, h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
+plans 008, 016 and 017, TODO 15 and 22
 
 The maintainer asked on 2026-10-15 for a registry of every vessel the pings carry, not only the Icelandic ones. Plan 021
 measures what each identity source reaches over every MMSI in ASTD and astdB, and proposes one integer `vid` per hull
-and a crosswalk from each feed identity to it. It follows plan 016's rebuild and plan 018 phase 3.
+and a crosswalk from each feed identity to it. Its eight asks were answered on 2026-10-16: every hull goes through the
+flow, which needs about 650-700 GB for the AIS chain against 158 GB free (TODO 15).
 
 **check:** plan 021 §7.
 

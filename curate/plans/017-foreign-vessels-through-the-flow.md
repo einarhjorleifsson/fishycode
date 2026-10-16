@@ -1,6 +1,6 @@
 # 017 — Foreign vessels through the flow, the Faroese first
 
-**status:** proposal — nothing built · **2026-10-14** · **see:** TODO 22, 62, 63; plans 008 (§7 Phase 7, Phase 9), 013,
+**status:** proposal — nothing built; steps 1-3 moved to plan 021 (2026-10-16), asks e-g open · **2026-10-14** · **see:** TODO 22, 62, 63; plans 008 (§7 Phase 7, Phase 9), 013,
 015, 016; decisions 039–043, 067, 075, 102
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only queries of the code and
@@ -272,6 +272,14 @@ g. **TODO 62:**
    - Where are the foreign logbooks for Icelandic waters?
    - Should `afli.steini` (oceanic redfish, 1989–2017, six nations) be staged as a partial foreign logbook?
 h. **Order:** plan 016's rebuild first and this plan after it (two rebuilds, recommended), or wait and do one?
+
+**Settled by plan 021 §6, 2026-10-16 (the maintainer):** plan 021 takes over steps 1-3 (MMSI periods, vids, the key)
+for every flag, and this plan keeps the flow side for non-Icelandic hulls: ports, gear, kW, catch. Plan 021's answer
+(a), every hull through the flow, answers asks a (every foreign vessel, any type), b (the whole track) and d (the
+MID-251 filter is lifted; identity decides). Ask h is moot: plan 016's rebuild ran on 2026-10-16 (decision 112). Ask
+c's first half is plan 021's (b), 200000 + n; whether an Icelandic foreign vid (3700-4999) is a hull, with 47 call
+signs on two or more of them, goes to plan 021's crosswalk. Asks e (gear), f (ports, now over ASTD's whole area) and g
+(foreign logbooks, TODO 62) stay open here.
 
 ## 7. Checks (done when)
 

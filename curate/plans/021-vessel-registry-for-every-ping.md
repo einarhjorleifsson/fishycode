@@ -1,6 +1,6 @@
 # 021 — A vessel registry for every ping, whatever the flag
 
-**status:** proposal — nothing built · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
+**status:** proposal — §6 answered 2026-10-16, nothing built · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
 015, 036–043, 067, 107; `curate/corrections/astd_2026_imo_only.yml`
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request: "a comprehensive vessel registry for
@@ -193,6 +193,45 @@ f. **Where the crosswalk sits.** In the flow, rebuilt with each delivery, with c
 g. **Plan 017:** does this plan take over its steps 1–3 (MMSI periods for foreign vids, vid 200000 + n, the key),
    leaving 017 the flow side (ports, gear, kW, catch)? Recommended.
 h. **ASTD's extraction:** are the changes by year (§2.1) known: area, filters? Coverage would be documented per year.
+
+**Answered by the maintainer, 2026-10-16** (put to them one by one with Claude's recommendation; the notes under each
+answer are Claude's). They are read with the aim the maintainer restated the same day (plan 022): one vessel table,
+Icelandic hulls by vid, and an MMSI for every vessel and accessory.
+
+- **a. Every hull goes through the flow** (option i), not the recommended fishing hulls heard in the box. Measured
+  2026-10-16: the AIS chain (`ping_union`, `ping_tagged`, `ping_clean`, `curated/ais`) holds 99 GB for 584 M pings;
+  every hull is about 4.0 B pings, so about 650-700 GB at the same bytes per ping, against 158 GB free on the Mac.
+  The AIS steps, about 100 min in decision 112, scale to the order of 12 h. So the build needs a home for `fishydata`
+  with that room, which is plan 001 §5's open question.
+- **b. vid 200000 + n for every valid non-Icelandic hull,** broadcast-only hulls included, given once and never moved.
+  The MMSI, IMO and call sign are attributes in `vessel_identity`, by period; an MMSI is not a hull, since 1,336 ASTD
+  MMSIs carry two or more IMOs. An invalid MMSI gets no vid, only the reason. Accessories (net relays, tenders) get no
+  vid of their own: they link to their ship's vid in `vessel_ais_link`, with their role.
+- **c. The feed's own IMO decides the hull,** with basis `broadcast`, where the check digit passes and no register
+  holds it. The 1,056 MMSIs with two IMOs in one year, and an IMO on two MMSIs at the same time, go to a check table
+  and are linked only through `overrides/`.
+- **d. GFW's Vessels API for every flag**, not only Norway, once its terms for bulk use are read and fit (Claude reads
+  them; the token is the maintainer's). The query sends only MMSIs. In parallel the maintainer asks the Directorate of
+  Fisheries (postmottak@fiskeridir.no) whether its vessel API returns MMSI. Kystverket is not used.
+- **e. GFW v3.** GFW's static fishing effort release v3.0 (March 2025) covers 2012-2024, against v2's 2012-2020, with
+  a vessel list laid out differently from v2's one row per MMSI
+  ([GFW FAQ](https://globalfishingwatch.org/faqs/2025-march-static-apparent-fishing-effort-v3-difference-with-map/)).
+  The maintainer downloads it (GFW login) into `raw/external/gfw/`; `sources/gfw/` gets a reader for its layout, and
+  v2 moves to `archive/` once v3 is staged and compared. GFW's inferred class, length and kW carry their own basis,
+  apart from a register's. GFW's API notes say its hand-entered IMO records for fishing vessels give way to S&P
+  Global's from June 2026.
+- **f. The crosswalk in the flow, the vid numbering outside it.** Which hull an MMSI period is follows from the inputs
+  and is rebuilt with each delivery. Which vid a hull has depends on earlier builds, and a step cannot read its own
+  output, so hull → vid is an append-only ledger read as an input, like `overrides/`, stamped and never rewritten. A
+  small `allocate_vids()` extends it when a delivery brings new hulls; until then a new hull's pings carry `vid` NA
+  with the reason `unallocated`, and the flow does not stop. Numbering in the flow (by first-seen date, say) was
+  rejected: a backfilled month, such as full 2026-02 to 06 ASTD months, would move every later vid.
+- **g. Split as proposed.** This plan owns identity (MMSI periods, vids, the crosswalk); plan 017 keeps the flow side
+  (ports, gear, kW, catch) for non-Icelandic hulls. Answer (a) settles 017's asks a, b and d. Its port question (017
+  §6 f) grows: stays and voyages for every hull need ports over ASTD's whole area.
+- **h. Not known.** The maintainer asks the provider what changed by year, and whether the full 2026-02 to 06 months
+  can be sent again. Claude measures each year from staging (extent, MMSIs, IMO share, category mix), so coverage is
+  documented whatever the answer.
 
 ## 7. Checks (done when)
 
