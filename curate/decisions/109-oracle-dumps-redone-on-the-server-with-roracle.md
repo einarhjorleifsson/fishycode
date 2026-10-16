@@ -234,3 +234,11 @@ comparison will show these columns as differences.
   - The trail holds 303,795,653 positions, 2003-09-26 to 2026-10-16 17:15.
   - 40 of 42 tables are within 5 % of Oracle's row estimate. `error_log` and `mobile` are 8 % and 10 % above theirs,
     estimates older than the rows.
+- **Swapped in, 2026-10-16.** `raw/oracle_server/` is now `raw/oracle/`: 1,508 parquet files, all stamped ROracle,
+  31 GB. The Mac's RJDBC set (1,180 files, dumped 2026-10-15) went to the macOS Trash as `raw-oracle-rjdbc_2026-10-15`,
+  not to `archive/` as planned under "How". The maintainer's reason: nothing downstream ever read it, and no reader
+  in fishycode, `~/stasi/logbooks` or `~/stasi/fishydata_2024-2026` names `raw/oracle`. What only RJDBC read, kvoti's
+  `adili_jn` and `eftirlits_gjald_utan_ees`, can be dumped through it again one at a time, with `dump_oracle_table()`
+  on an RJDBC connection into a folder of its own. A whole-schema run would overwrite the ROracle files.
+  `dump_status()` and `--resume` now find a schema's log by name in its own `_logs/`, as the server's logs name paths
+  under `/heima`; a process id from another machine is not checked here.

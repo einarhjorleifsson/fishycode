@@ -389,14 +389,13 @@ and a crosswalk from each feed identity to it. It follows plan 016's rebuild and
 **check:** plan 021 §7.
 
 ## 66. Oracle dumps as they are: redo them on the server, then switch the readers
-**status:** in progress · **needs: maintainer** — the go for the swap (`raw/oracle_server/` → `raw/oracle/`, the
-RJDBC set to `archive/`), and the `afli.afli` query in plan 018 §3 · **see:**
+**status:** in progress · **needs: maintainer** — the `afli.afli` query in plan 018 §3 · **see:**
 `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106 and 109
 
-The server dump (ROracle, decision 109) is complete: 13 of 13 schemas, afli.afli included, copied to
-`raw/oracle_server/` on 2026-10-16 and checked against the Mac's RJDBC dumps (in full for seven, the light check for
-the rest; stk has no Mac copy). Left: the swap; the two kvoti tables only RJDBC read (`adili_jn`,
-`eftirlits_gjald_utan_ees`, NUL characters), which stay in the archive unless a reader needs them; then phase 3, the
+The server dump (ROracle, decision 109) is complete: 13 of 13 schemas, afli.afli included, checked against the Mac's
+RJDBC dumps (in full for seven, the light check for the rest; stk has no Mac copy) and in `raw/oracle/` since
+2026-10-16. The RJDBC set went to the Trash: nothing downstream read it. Two kvoti tables only RJDBC read (`adili_jn`,
+`eftirlits_gjald_utan_ees`, NUL characters) can be dumped through it again if a reader needs them. Left: phase 3, the
 readers.
 
 **check:** plan 018 phase 3 is done: the readers use `fd_raw("oracle", ...)` and the old dump directories are gone or

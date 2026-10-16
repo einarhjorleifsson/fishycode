@@ -31,14 +31,23 @@
   stop("run_dump(): start R in fishycode or below it", call. = FALSE)
 }
 
+# A schema's _logs/current: the id of the process that runs or ran its dump, and its log, found by name in the
+# schema's own _logs/. A dump copied from another machine still reads: hafdruna's logs name paths under /heima
+# (2026-10-16). Its process id belongs to that machine, so it is NA here.
+.dump_current <- function(s, log_root) {
+  cur <- file.path(log_root, s, "_logs", "current")
+  if (!file.exists(cur)) return(list(pid = NA_integer_, log = NA_character_))
+  x <- readLines(cur)
+  log <- file.path(log_root, s, "_logs", basename(x[2]))
+  here <- file.exists(x[2]) || !file.exists(log)
+  list(pid = if (here) suppressWarnings(as.integer(x[1])) else NA_integer_, log = log)
+}
+
 # The process dumping schema `s` now, from its _logs/current: its id while it runs or waits its turn, NA once its log
 # has an exit code or the process is gone. A dump started outside run_dump() leaves no _logs/current and is not seen.
 .dump_pid <- function(s, log_root) {
-  cur <- file.path(log_root, s, "_logs", "current")
-  if (!file.exists(cur)) return(NA_integer_)
-  x <- readLines(cur)
-  pid <- suppressWarnings(as.integer(x[1]))
-  if (is.na(pid) || !isTRUE(tools::pskill(pid, 0L)) || file.exists(paste0(x[2], ".exit"))) NA_integer_ else pid
+  x <- .dump_current(s, log_root)
+  if (is.na(x$pid) || !isTRUE(tools::pskill(x$pid, 0L)) || file.exists(paste0(x$log, ".exit"))) NA_integer_ else x$pid
 }
 
 # Start dump/oracle/<schema>.R for each schema, one after the other, in one background process. Returns its process id
@@ -96,10 +105,10 @@ run_dump <- function(schema, resume = FALSE, driver = NULL, wait = FALSE, root =
 dump_status <- function(schema = NULL, log_root = fd_raw("oracle"), lines = 3) {
   if (is.null(schema)) schema <- grep("^_", basename(list.dirs(log_root, recursive = FALSE)), value = TRUE, invert = TRUE)
   out <- lapply(schema, function(s) {
-    cur <- file.path(log_root, s, "_logs", "current")
+    cur <- .dump_current(s, log_root)
     logs <- sort(list.files(file.path(log_root, s, "_logs"), pattern = "[.]log$", full.names = TRUE))
-    log <- if (file.exists(cur)) readLines(cur)[2] else if (length(logs)) logs[length(logs)] else NA_character_
-    pid <- if (file.exists(cur)) suppressWarnings(as.integer(readLines(cur)[1])) else NA_integer_
+    log <- if (!is.na(cur$log)) cur$log else if (length(logs)) logs[length(logs)] else NA_character_
+    pid <- cur$pid
     alive <- !is.na(pid) && isTRUE(tools::pskill(pid, 0L))
     exit <- if (!is.na(log) && file.exists(paste0(log, ".exit"))) as.integer(readLines(paste0(log, ".exit"))[1]) else NA_integer_
     state <- if (!is.na(exit)) (if (exit == 0) "finished" else sprintf("finished with error %d", exit))
@@ -116,8 +125,12 @@ dump_status <- function(schema = NULL, log_root = fd_raw("oracle"), lines = 3) {
       if ("status" %in% names(ov)) {
         counts <- paste(names(table(ov$status)), table(ov$status), collapse = ", ")
         f <- ov[ov$status %in% "failed", ]
+        # Oracle's own message where there is one: R's wrapper around it fills the first 60 characters
+        why <- gsub("[[:space:]]+", " ", f$error)
+        ora <- regexpr("ORA-[0-9]+[^!]*", why)
+        why[ora > 0] <- regmatches(why, ora)
         if (nrow(f)) counts <- paste0(counts, "\n    failed: ", paste(sprintf("%s (%s)", f$name,
-          substr(gsub("[[:space:]]+", " ", f$error), 1, 60)), collapse = "\n            "))
+          substr(trimws(why), 1, 60)), collapse = "\n            "))
       }
     }
     cat(sprintf("%-14s %s%s\n", s, state, if (nzchar(counts)) paste0(" - ", counts) else ""))
@@ -163,7 +176,7 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
     r <- tryCatch(run_dump(s, resume = resume, driver = driver, wait = TRUE, root = root, log_root = log_root),
                   error = function(e) e)
     if (inherits(r, "error")) { say("%s: not started - %s", s, conditionMessage(r)); exit[[s]] <- -1L; break }
-    slog <- readLines(file.path(log_root, s, "_logs", "current"))[2]
+    slog <- .dump_current(s, log_root)$log
     exit[[s]] <- suppressWarnings(as.integer(readLines(paste0(slog, ".exit"))[1]))
     tail <- utils::tail(readLines(slog, warn = FALSE), 3)
     say("%s: exit %s after %.1f min; log %s", s, exit[[s]], as.numeric(difftime(Sys.time(), t0, units = "mins")), slog)
@@ -176,10 +189,10 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
 
 # Did the last run of schema `s` end well: exit 0, an overview with nothing failed, every written table of `driver`?
 .dump_finished <- function(s, log_root, driver) {
-  cur <- file.path(log_root, s, "_logs", "current")
+  log <- .dump_current(s, log_root)$log
   ov <- file.path(log_root, s, "_overview_tables.parquet")
-  if (!file.exists(cur) || !file.exists(ov)) return(FALSE)
-  ex <- paste0(readLines(cur)[2], ".exit")
+  if (is.na(log) || !file.exists(ov)) return(FALSE)
+  ex <- paste0(log, ".exit")
   if (!file.exists(ex) || !identical(suppressWarnings(as.integer(readLines(ex)[1])), 0L)) return(FALSE)
   o <- as.data.frame(nanoparquet::read_parquet(ov))
   all(c("status", "driver") %in% names(o)) && !any(o$status %in% "failed") &&

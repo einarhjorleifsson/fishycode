@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** approved 2026-10-15; phase 1 built, phase 2 under way · **2026-10-15** · **see:** decisions 105, 106 and 109; TODO 66 and 51; plan 016 §4 step 6
+**status:** approved 2026-10-15; phases 1 and 2 done (the server dump in `raw/oracle/` since 2026-10-16), phase 3 next · **2026-10-15** · **see:** decisions 105, 106 and 109; TODO 66 and 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.
@@ -53,7 +53,7 @@ written as a data-dict yaml.
   `ports_kvoti.R`, `species.R`, `mmsi_snapshots.R`, `vessels.R` and `ais/stk.R` into the scripts above;
 - check it on a DuckDB mock.
 
-**Phase 2, the dumps (maintainer's terminal):** every script once. The trail's 20 years take roughly 2-3 h (2026's
+**Phase 2, the dumps:** done 2026-10-16. Every schema was dumped on hafdruna through ROracle and copied into `raw/oracle/`; the Mac's RJDBC dumps described below were checked against it and moved to the Trash (decision 109). As planned: every script once. The trail's 20 years take roughly 2-3 h (2026's
 20.6 M rows took about 10 min). Disk: 188 GB free; the as-is trail is about 9 GB beside the old one.
 Where it stands, 2026-10-15 evening:
 - **Dumped:** adb, logbook, fs_afladagbok, gear, asfis, ops_einarhj, orri, vessel, agf.
