@@ -76,7 +76,11 @@ only driver that logs in (ROracle is installed there but finds no Oracle client 
    `afli` values: ROracle may write NULL for a malformed stored NUMBER where RJDBC fails.
 2. asfis first (3 tables, minutes), then `compare_dumps()` against `raw/oracle/asfis/`: expected the same.
 3. Every schema compared with today's RJDBC dump before it replaces it, and each difference explained: Oracle changed
-   in between, or the driver.
+   in between, or the driver. *Revised 2026-10-16 (maintainer): in full for the first seven (asfis, gear, orri,
+   vessel, ops_einarhj, logbook, ask), which found the decimal and column-name faults and nothing else; for kvoti,
+   adb, fs_afladagbok, afli and stk the light check, `compare_dumps(values = FALSE)` (rows, columns and types per
+   table) and the overview's failures, with a full comparison only where those look wrong. The same code reads them
+   all, and stk has no Mac copy to compare with.*
 4. ROracle's fetch size (`bulk_read`) is left at its default; tune it only on a measured need.
 
 ## How (plan 018 phase 2, on the server)
@@ -167,3 +171,10 @@ comparison will show these columns as differences.
   showed `_all.log` without the lines the server had appended since. Tested on local stand-ins (copies as schemas
   finish, stops at the end or at a schema that failed as a whole); on the real run it had the six small schemas on
   the Mac within two minutes of their end.
+- **ask, server against Mac (2026-10-16):** of the 220 tables both runs reach, 165 are identical, 47 the Mac never
+  got, none only on the Mac. The 8 others differ in one column each: `gildir_fra`/`gildir_til` placeholder dates
+  (`1901-01-01` against the Mac's `00:16:08`; two year-13 typos also differ by 2 days, Java counting dates before
+  1582 in the Julian calendar), and `magn_oslaegt`, decimals one step apart, as in vessel. Of the server's 15 failed
+  objects, 13 are views guarded by `ask.valin_hofn` (ORA-20290, no chosen ports for this login), now in ask.R's
+  `skip`; the other 2 are column names Oracle keeps as quoted (one begins with an apostrophe, `'STADA_HEITI`), for
+  `--resume` with the name fix.

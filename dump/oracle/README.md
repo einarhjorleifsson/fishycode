@@ -178,5 +178,14 @@ d[!d$same, ]
 ```
 
 Each difference is explained before the server's files replace the Mac's: Oracle changed in between, or the
-driver. Known: the Mac's dates before 1912 are 16 min 8 s late (decision 109). The swap itself is in decision
-109, "How".
+driver. Known: the Mac's dates before 1912 are 16 min 8 s late, and some decimals differ in the last binary
+digit (decision 109). The swap itself is in decision 109, "How".
+
+The light check compares rows, columns and types only, in seconds where a big schema takes minutes in full; add the
+failures from the schema's overview:
+
+```r
+compare_dumps(fd_raw("oracle_server", "kvoti"), fd_raw("oracle", "kvoti"), values = FALSE) |> subset(!same)
+o <- nanoparquet::read_parquet(fd_raw("oracle_server", "kvoti", "_overview_tables.parquet"))
+o[o$status == "failed", c("name", "error")]
+```

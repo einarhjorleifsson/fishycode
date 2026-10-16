@@ -11,8 +11,15 @@
 #   - fs_afladagbok's gear codes: ws_veidi.veidarfaeri_id refers to ASK.VEIDARFAERI, the Directorate's own gear list;
 #   - agf's aflagrunnur_sec_v is guarded by ASK.ADGANGUR_PKG and ASK.VALIN_HOFN (users and their chosen ports).
 # Views guarded the same way may fail on the first run; the overview records them, and they become skips here.
+# Thirteen did, on the server's first ROracle run (2026-10-16): ORA-20290, no row in ask.valin_hofn for this login.
+# They are left out; the tables they read are dumped.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
-dump_oracle_schema(con, "ask", fd_raw("oracle", "ask"), script = "dump/oracle/ask.R")
+dump_oracle_schema(con, "ask", fd_raw("oracle", "ask"),
+                   skip = c("athugasemdir_sec_v", "bilar_sec_v", "bruttovigtun_gama_sec_v", "endurvigtun_vidtakendur_sec_v",
+                            "fradrattarlidir_hafnar_sec_v", "fradrattur_sec_v", "landanir_flutningstaekja_v",
+                            "landanir_sec_v", "landanir_vigtarnotur_sec_v", "vigtanir_sec_v", "vigtanir_v15_sec_v",
+                            "vigtarnotur_flutningstaekja_v", "vigtarnotur_sec_v"),
+                   script = "dump/oracle/ask.R")

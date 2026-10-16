@@ -14,11 +14,12 @@
 #
 # Two dumps made at different times also differ wherever Oracle changed in between: a row only in the later one may
 # be a new record, not the driver's doing. `digits` rounds DOUBLE columns before comparing, for a driver that converts
-# NUMBER to double differently in the last bits.
+# NUMBER to double differently in the last bits. `values = FALSE` is the light check (decision 109): rows, columns
+# and types only, with no comparison of values, in seconds where a big schema takes minutes.
 #
 #   d <- compare_dumps(fd_raw("oracle_server", "afli"), fd_raw("oracle", "afli"))
 #   d[!d$same, ]
-compare_dumps <- function(a, b, tables = NULL, max_rows = 5e7, digits = NULL, memory_limit = "8GB") {
+compare_dumps <- function(a, b, tables = NULL, max_rows = 5e7, digits = NULL, values = TRUE, memory_limit = "8GB") {
   units <- function(dir) {
     f <- list.files(dir, pattern = "^[^_].*[.]parquet$")
     p <- list.dirs(dir, recursive = FALSE, full.names = FALSE)
@@ -68,6 +69,7 @@ compare_dumps <- function(a, b, tables = NULL, max_rows = 5e7, digits = NULL, me
     tb <- db$column_type[match(common, db$column_name)]
     diff <- ta != tb
     r$type_differs <- paste(sprintf("%s (%s / %s)", common[diff], ta[diff], tb[diff]), collapse = ", ")
+    if (!values) { r$compared <- "rows only"; return(r) }
     if (max(r$rows_a, r$rows_b) > max_rows) { r$compared <- "too big"; return(r) }
     expr <- vapply(seq_along(common), function(i) {
       cn <- sprintf('"%s"', gsub('"', '""', common[i]))
@@ -92,13 +94,15 @@ compare_dumps <- function(a, b, tables = NULL, max_rows = 5e7, digits = NULL, me
     r
   })
   out <- do.call(rbind, lapply(rows, as.data.frame))
-  out$same <- out$in_a & out$in_b & out$compared == "yes" & out$rows_a == out$rows_b &
+  out$same <- out$in_a & out$in_b & out$compared %in% c("yes", "rows only") & out$rows_a == out$rows_b &
     !nzchar(out$only_a) & !nzchar(out$only_b) & !nzchar(out$type_differs) &
-    out$rows_only_a == 0 & out$rows_only_b == 0
+    (out$compared == "rows only" | (out$rows_only_a == 0 & out$rows_only_b == 0))
   out$same[is.na(out$same)] <- FALSE
-  message(sprintf("%d tables: %d the same, %d only in a, %d only in b, %d differ, %d too big to compare by row",
-                  nrow(out), sum(out$same), sum(out$in_a & !out$in_b), sum(out$in_b & !out$in_a),
-                  sum(out$in_a & out$in_b & !out$same & out$compared == "yes"), sum(out$compared == "too big")))
+  message(sprintf("%d tables: %d the same%s, %d only in a, %d only in b, %d differ, %d too big to compare by row",
+                  nrow(out), sum(out$same), if (values) "" else " in rows, columns and types",
+                  sum(out$in_a & !out$in_b), sum(out$in_b & !out$in_a),
+                  sum(out$in_a & out$in_b & !out$same & out$compared %in% c("yes", "rows only")),
+                  sum(out$compared == "too big")))
   out
 }
 
