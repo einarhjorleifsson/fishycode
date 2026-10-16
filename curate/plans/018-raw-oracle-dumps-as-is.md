@@ -104,6 +104,12 @@ WHERE bad(visir) + bad(sokntegund) + bad(tegund) + bad(afli) + bad(medalthyngd_g
 Then: are they the 48 empty rows of the April copy, and can the dump read them as text (`DUMP`) and the rest as
 numbers?
 
+*The dump reads it now (2026-10-16; code, not yet run).* Through ROracle the dump's own `TO_CHAR` of the decimals
+failed too (ORA-01722, afli and v_afli). `dump_oracle_table()` now finds the columns whose `TO_CHAR` fails and reads
+only those natively, as the April dump did. A note in the file, the overview and `_data-dict.yaml` says which columns,
+and how many values Oracle holds that came through empty (decision 109). Expected: `visir`, the only decimal in
+v_afli. The query above still shows which rows and bytes.
+
 **Phase 3, the readers (Claude):**
 - about 25 reader files move to `fd_raw("oracle", ...)`, and the trail's 7 readers to `stk_trail()`;
 - `ports_kvoti.R`'s renames and fixes move into `reference/ports/harbour_codes.R`. The frozen bootstrap keeps its

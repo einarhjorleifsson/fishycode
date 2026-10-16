@@ -13,24 +13,29 @@
 # with a script beside this one. It stops when all are copied, or after one whose run failed as a whole (the dump
 # stops there too). Made for a fresh run: after a --resume, run it again once the dump is done. Run it again any
 # time: rsync copies only what changed. Every minute by default; SYNC_EVERY=<seconds> changes that.
+# SYNC_EXCLUDE="<name> ..." leaves files of those names out of the copy, e.g. stk's three copies of the whole trail
+# (8-9 GB each), whose positions the trail itself holds (2026-10-16):
+#   SYNC_EXCLUDE="stk_vms_v.parquet trail_all.parquet view_trail.parquet" nohup caffeinate -i sh dump/oracle/sync.sh FROM TO > /dev/null 2>&1 &
 
 FROM=${1:?"usage: sh dump/oracle/sync.sh FROM TO"}
 TO=${2:?"usage: sh dump/oracle/sync.sh FROM TO"}
 EVERY=${SYNC_EVERY:-60}
+EXCL=""
+for p in ${SYNC_EXCLUDE:-}; do EXCL="$EXCL --exclude=$p"; done
 HERE=$(cd "$(dirname "$0")" && pwd)
 SCHEMAS=$(cd "$HERE" && ls *.R | sed 's/[.]R$//' | grep -v '^all$')
 mkdir -p "$TO"
 LOG="$TO/_sync.log"
 say() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG"; }
 
-say "sync of $(echo $SCHEMAS | wc -w | tr -d ' ') schemas from $FROM to $TO, every $EVERY s"
+say "sync of $(echo $SCHEMAS | wc -w | tr -d ' ') schemas from $FROM to $TO, every $EVERY s${SYNC_EXCLUDE:+, leaving out $SYNC_EXCLUDE}"
 copied=""
 while :; do
   for s in $SCHEMAS; do
     case " $copied " in *" $s "*) continue ;; esac
     x=$(ls "$FROM/$s/_logs/"*.exit 2>/dev/null | tail -1)
     [ -n "$x" ] || continue
-    if rsync -a "$FROM/$s" "$TO/"; then
+    if rsync -a $EXCL "$FROM/$s" "$TO/"; then
       copied="$copied $s"
       code=$(cat "$x")
       say "$s copied (its run exited $code; $(du -sh "$TO/$s" | cut -f1))"

@@ -9,7 +9,9 @@
 #           _data-dict.yaml           the schema in data-dict's format (https://data-dict.tidyverse.org/): Oracle's
 #                                     comments, with types, ranges and examples from the files written
 #         Every parquet file carries fd.* stamps in its key/value metadata, read by curated_provenance():
-#         fd.source, fd.dumped (the dump's start, its version marker), fd.rows, fd.driver, fd.script, fd.commit, fd.dirty.
+#         fd.source, fd.dumped (the dump's start, its version marker), fd.rows, fd.driver, fd.script, fd.commit, fd.dirty,
+#         and fd.note when a column could not be read as the others are (dump_oracle_table()); the note is also in the
+#         overview's `note` and the table's `details` in _data-dict.yaml.
 #
 # Definitions only: targets sources R/ wholesale, so nothing here may connect at load.
 #
@@ -173,9 +175,10 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 }
 
 # Write a frame as parquet (plain TIMESTAMP) with fd.* stamps in its key/value metadata.
-.write_raw <- function(d, path, source, run) {
+.write_raw <- function(d, path, source, run, note = NA_character_) {
   kv <- c("fd.source" = source, "fd.dumped" = run$dumped, "fd.rows" = as.character(nrow(d)),
-          "fd.driver" = run$driver, "fd.script" = run$script, "fd.commit" = run$commit, "fd.dirty" = run$dirty)
+          "fd.driver" = run$driver, "fd.script" = run$script, "fd.commit" = run$commit, "fd.dirty" = run$dirty,
+          "fd.note" = note)
   kv <- kv[!is.na(kv)]
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   con <- .duckdb_quiet()
@@ -201,24 +204,62 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # that may hold decimals (scale not 0) always comes as TO_CHAR, the exact decimal, which .oracle_numbers() turns into
 # the nearest double: ROracle's own conversion lands a step off for some values (power_kw 60.3 came through as
 # 60.3000000000000043, RJDBC's 60.2999999999999972 is the nearest double; 198 of vessel's 7,047, hafdruna 2026-10-16),
-# and then x == 60.3 is FALSE. A whole NUMBER (scale 0) is exact either way.
-.oracle_query <- function(con, table, fields, numbers_as_text = FALSE) {
+# and then x == 60.3 is FALSE. A whole NUMBER (scale 0) is exact either way. The columns in `native` come as the driver
+# returns them: Oracle cannot write some of their values as text (dump_oracle_table()).
+.oracle_query <- function(con, table, fields, numbers_as_text = FALSE, native = character()) {
   conv <- c(.oracle_text, if (numbers_as_text) c(NUMBER = "TO_CHAR(%s)"))
-  decimal <- .oracle_driver(con) == "ROracle" & fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0)
+  decimal <- .oracle_driver(con) == "ROracle" & fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0) &
+             !fields$column %in% native
   if (!any(fields$data_type %in% names(conv)) && !any(decimal)) return(mar::tbl_mar(con, table))
   x <- strsplit(table, ".", fixed = TRUE)[[1]]
   o <- order(fields$column_id)
   fields <- fields[o, ]
   decimal <- decimal[o]
+  quoted <- .oracle_name(fields)
   cols <- vapply(seq_len(nrow(fields)), function(i) {
-    nm <- if (is.null(fields$oracle_column)) toupper(fields$column[i]) else fields$oracle_column[i]
-    q <- sprintf('"%s"', gsub('"', '""', nm))
+    q <- quoted[i]
     f <- if (decimal[i]) "TO_CHAR(%s)" else conv[fields$data_type[i]]
     if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
   }, "")
   dplyr::tbl(con, dplyr::sql(sprintf('SELECT %s FROM "%s"."%s"', paste(cols, collapse = ", "),
                                      toupper(x[1]), toupper(x[2])))) |>
     dplyr::rename_with(tolower)
+}
+
+# Columns as a query must name them: Oracle's own spelling, quoted.
+.oracle_name <- function(fields) {
+  nm <- if (is.null(fields$oracle_column)) toupper(fields$column) else fields$oracle_column
+  sprintf('"%s"', gsub('"', '""', nm))
+}
+
+# The decimal NUMBERs of a table whose TO_CHAR fails (ORA-01722): Oracle cannot write some stored value of theirs as
+# text. One scan of the table per decimal column.
+.oracle_untextable <- function(con, table, fields) {
+  x <- strsplit(table, ".", fixed = TRUE)[[1]]
+  dec <- fields[fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0), ]
+  bad <- vapply(.oracle_name(dec), function(q) inherits(tryCatch(
+    DBI::dbGetQuery(con, sprintf('SELECT MAX(LENGTH(TO_CHAR(%s))) FROM "%s"."%s"', q, toupper(x[1]), toupper(x[2]))),
+    error = function(e) e), "error"), NA)
+  dec$column[bad]
+}
+
+# What came through for columns read as the driver returns them: Oracle's count of their values against the values
+# fetched, as a note for the file. The counts are read by position, as Oracle names unquoted aliases in capitals.
+.oracle_note_native <- function(con, table, fields, native, d) {
+  x <- strsplit(table, ".", fixed = TRUE)[[1]]
+  f <- fields[match(native, fields$column), ]
+  q <- sprintf('SELECT COUNT(*), %s FROM "%s"."%s"', paste0("COUNT(", .oracle_name(f), ")", collapse = ", "),
+               toupper(x[1]), toupper(x[2]))
+  held <- tryCatch(as.numeric(unlist(DBI::dbGetQuery(con, q), use.names = FALSE)), error = function(e) NULL)
+  note <- sprintf("TO_CHAR fails on %s (ORA-01722): read as the driver's doubles, not as exact text",
+                  paste(native, collapse = ", "))
+  if (is.null(held)) return(paste0(note, "; Oracle could not count them"))
+  got <- vapply(native, function(v) sum(!is.na(d[[v]])), 0)
+  note <- paste0(note, "; values Oracle holds that are empty here: ",
+                 paste(sprintf("%s %s", native, format(held[-1] - got, big.mark = ",", trim = TRUE)), collapse = ", "))
+  if (held[1] != nrow(d)) note <- paste0(note, sprintf(" (Oracle counted %s rows, %s were fetched)",
+                                                       format(held[1], big.mark = ","), format(nrow(d), big.mark = ",")))
+  note
 }
 
 # Run a lazy query through DBI rather than dplyr::collect(): when the driver throws a Java exception, collect()'s error
@@ -230,30 +271,48 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # A table whose fetch fails is fetched once more with its numbers as text: afli.afli (15.7 M rows) failed through RJDBC
 # with java.lang.ArrayIndexOutOfBoundsException (2026-10-15), most likely the driver parsing a malformed NUMBER, which
 # ROracle on the server had read. .oracle_numbers() turns the text back into numbers, and names any column it cannot.
+# Through ROracle the same table fails otherwise: Oracle's own TO_CHAR, which reads decimals exactly (.oracle_query()),
+# raises ORA-01722 on afli.afli and v_afli (hafdruna 2026-10-16), most likely on malformed stored NUMBERs, which an
+# April dump with ROracle had read natively. The columns at fault are then found one by one and read natively; the
+# note says which, and how many of their values Oracle holds that came through empty.
+# Returns the rows written, with the note, if any, as attribute "note".
 dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(fields)) {
     x <- strsplit(table, ".", fixed = TRUE)[[1]]
     fields <- oracle_fields(con, x[1], x[2])
   }
   if (is.null(run)) run <- .dump_run(con, NA_character_)
-  fetch <- function(numbers_as_text) {
+  fetch <- function(numbers_as_text, native = character()) {
     if (any(fields$data_type %in% .oracle_lob)) {
       lc <- dump_connect()
-      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text)), finally = DBI::dbDisconnect(lc))
+      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text, native)),
+               finally = DBI::dbDisconnect(lc))
     } else {
-      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text))
+      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text, native))
     }
   }
+  note <- NA_character_
   d <- tryCatch(fetch(FALSE), error = function(e) {
+    msg <- gsub("\033\\[[0-9;]*m", "", conditionMessage(e))
+    if (.oracle_driver(con) == "ROracle" && grepl("ORA-01722", msg)) {
+      native <- .oracle_untextable(con, table, fields)
+      if (!length(native)) stop(e)
+      message(sprintf("%s: TO_CHAR fails on %s (ORA-01722) - fetching %s as the driver returns %s", table,
+                      paste(native, collapse = ", "), if (length(native) > 1) "them" else "it",
+                      if (length(native) > 1) "them" else "it"))
+      d <- fetch(FALSE, native)
+      note <<- .oracle_note_native(con, table, fields, native, d)
+      return(d)
+    }
     if (!any(fields$data_type %in% "NUMBER")) stop(e)
-    message(sprintf("%s: %s - fetching again with its numbers as text", table,
-                    gsub("\033\\[[0-9;]*m", "", conditionMessage(e))))
+    message(sprintf("%s: %s - fetching again with its numbers as text", table, msg))
     fetch(TRUE)
   })
   d <- .oracle_numbers(d, fields)
-  .write_raw(d, path, table, run)
+  .write_raw(d, path, table, run, note)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
-  nrow(d)
+  if (!is.na(note)) message("  ", note)
+  structure(nrow(d), note = note)
 }
 
 # A table too big for one collect(), by calendar year of `column`, to <dir>/year=<y>/data_0.parquet. A year is fetched
@@ -329,10 +388,12 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
       e$description <- if (is.na(cm) || !nzchar(cm)) "No comment in Oracle." else cm
       e
     })
-    list(name = nm, source = list(parquet = src),
-         description = if (is.na(written$comments[i]) || !nzchar(written$comments[i])) "No comment in Oracle."
-                       else written$comments[i],
-         columns = cols)
+    e <- list(name = nm, source = list(parquet = src),
+              description = if (is.na(written$comments[i]) || !nzchar(written$comments[i])) "No comment in Oracle."
+                            else written$comments[i])
+    if (!is.null(written$note) && !is.na(written$note[i])) e$details <- written$note[i]
+    e$columns <- cols
+    e
   })
   dd <- list(`$version` = "0.1.0", `$learn_more` = "https://data-dict.tidyverse.org/",
              name = schema,
@@ -357,14 +418,16 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   j <- if (is.null(prev)) NA else match(nm, prev$name)
   if (!is.na(j) && prev$status[j] %in% "written" && identical(prev$driver[j], run$driver)) {
     keys <- intersect(c("dumped", "script", "commit", "dirty", "driver"), names(prev))
-    return(list(rows = prev$rows[j], seconds = prev$seconds[j], stamp = as.list(prev[j, keys, drop = FALSE])))
+    return(list(rows = prev$rows[j], seconds = prev$seconds[j], stamp = as.list(prev[j, keys, drop = FALSE]),
+                note = if (is.null(prev$note)) NA_character_ else prev$note[j]))
   }
   m <- tryCatch(curated_provenance(f), error = function(e) NULL)
   v <- if (is.null(m)) character() else stats::setNames(m$value, m$key)
   if (!all(c("fd.rows", "fd.dumped", "fd.driver") %in% names(v)) || v[["fd.driver"]] != run$driver) return(NULL)
   stamp <- list(dumped = v[["fd.dumped"]], driver = v[["fd.driver"]])
   for (k in c("script", "commit", "dirty")) if (paste0("fd.", k) %in% names(v)) stamp[[k]] <- v[[paste0("fd.", k)]]
-  list(rows = as.numeric(v[["fd.rows"]]), seconds = NA_real_, stamp = stamp)
+  list(rows = as.numeric(v[["fd.rows"]]), seconds = NA_real_, stamp = stamp,
+       note = if ("fd.note" %in% names(v)) v[["fd.note"]] else NA_character_)
 }
 
 # Does the connection still answer?
@@ -407,7 +470,7 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   n <- nrow(objects)
   objects$partitioned <- objects$name %in% names(partition)
   rows <- rep(NA_real_, n); status <- rep(NA_character_, n)
-  error <- rep(NA_character_, n); seconds <- rep(NA_real_, n)
+  error <- rep(NA_character_, n); note <- rep(NA_character_, n); seconds <- rep(NA_real_, n)
   stamp <- data.frame(dumped = rep(run$dumped, n), script = run$script, commit = run$commit, dirty = run$dirty,
                       driver = run$driver, resumed = FALSE)
   if (run$driver != "RJDBC") skip_rjdbc <- character()
@@ -424,14 +487,16 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
     }
     kept <- if (resume) .dump_kept(nm, out_dir, prev, run, objects$partitioned[i]) else NULL
     if (!is.null(kept)) {
-      rows[i] <- kept$rows; seconds[i] <- kept$seconds; status[i] <- "written"
+      rows[i] <- kept$rows; seconds[i] <- kept$seconds; status[i] <- "written"; note[i] <- kept$note
       for (k in names(kept$stamp)) stamp[[k]][i] <- kept$stamp[[k]]
       stamp$resumed[i] <- TRUE
       next
     }
     if (objects$type[i] == "view" && !objects$partitioned[i]) {
-      cnt <- tryCatch(as.numeric(DBI::dbGetQuery(con, sprintf('SELECT COUNT(*) AS n FROM "%s"."%s"', toupper(schema),
-                                                              toupper(nm)))$n), error = function(e) NA_real_)
+      # the count by position: Oracle names an unquoted alias in capitals, so `AS n` came back as N, $n was NULL, and
+      # no view was ever too big (stk's trail_all and view_trail were fetched whole on hafdruna, 2026-10-16)
+      cnt <- tryCatch(as.numeric(DBI::dbGetQuery(con, sprintf('SELECT COUNT(*) FROM "%s"."%s"', toupper(schema),
+                                                              toupper(nm)))[[1]]), error = function(e) NA_real_)
       if (isTRUE(cnt > max_rows)) {
         status[i] <- "too_big"; rows[i] <- cnt
         message(sprintf("%s.%s: too_big (a view of %s rows)", schema, nm, format(cnt, big.mark = ",")))
@@ -459,13 +524,14 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
       error[i]  <- gsub("\033\\[[0-9;]*m", "", conditionMessage(r))
       message(sprintf("%s.%s: FAILED - %s", schema, nm, error[i]))
     } else {
-      rows[i] <- r
+      rows[i] <- as.numeric(r)
+      if (!is.null(attr(r, "note"))) note[i] <- attr(r, "note")
       status[i] <- "written"
     }
   }
 
   objects <- objects |>
-    dplyr::mutate(rows = rows, status = status, error = error, seconds = seconds) |>
+    dplyr::mutate(rows = rows, status = status, error = error, note = note, seconds = seconds) |>
     dplyr::bind_cols(stamp)
   .write_raw(objects, ov_path, paste0(schema, " objects"), run)
   dd <- tryCatch(.write_data_dict(out_dir, schema, objects, fields, run), error = function(e) e)

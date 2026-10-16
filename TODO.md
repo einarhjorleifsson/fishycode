@@ -413,3 +413,30 @@ and leave them out of `ais_key_landings`' `landed_but_no_ais`.
 **check:** 8008 and 8009 carry a diver class in fishycode's landings or vessel classification, and
 `landed_but_no_ais` leaves them out.
 
+
+## 68. stk's tables besides the trail: what they hold, and which fishycode should read
+**status:** open · **see:** decision 109, `curate/ais_voyage.R`, `curate/port_stay.R`
+
+fishycode reads only stk's trail. The server's dump of stk (2026-10-16) holds 63 objects, and the maintainer asks for
+them to be checked: some are copies of the trail, some may be very useful. First **`tilk_stk_allt`**: recorded
+voyages, 3,186,904 from 2003-09-08 to 2021-02-08, each a departure and an arrival (time, port, the trail ids at both
+ends) and its duration; `tilk_stk` holds the 5.9 M port events behind them. They are voyages in fishycode's sense,
+port to port: whether the vessel fished is not recorded (maintainer). Of value three ways (maintainer):
+- before mid-2007, voyages where there is no track: 116,000-129,000 a year by 1,400-1,700 vessels in 2004-2006, when
+  the trail has 190 to 9,820 positions a year;
+- to 2021, recorded departures and arrivals to check, or correct, the voyages and stays cut from the track;
+- a departure time (T1) for logbook trips and landings, which lack one, with its own basis.
+The other `tilk_` tables (maintainer: they may hold more): `tilk_stk_allt_v` (1.95 M voyages, the same columns: which
+selection?), `tilk_stk_por_v` (pairs departure and arrival; not dumped, see stk's overview), and `tilk_vss`, calls of
+departure (1) and arrival (2) to the traffic service in 2010-2011 (28,138, of them 9,824 moved to STK's events,
+`flutt`), then in 2012-2013 almost only a code 0 that Oracle's comment does not explain (141,172).
+Then `leidangrar_stk` (2,018,618 rows), `lodnuskip_stk` (1,102,509), `tilk_vss`, `posrep_current`,
+`coral_stk_export`, and the mobile-id tables (`mobile`, `mobile_skip_v`, `mobile_tab`), to compare with fishycode's
+STK key. Copies: `trail_all` is the trail as one table (the same
+303.8 M positions, 5 fewer columns; checked 2026-10-16, no positions before 2007 beyond the trail's), and most
+likely `stk_vms_v` (303,784,194 rows), the yearly `vms_stk_export_*` and the view `view_trail` (303,791,859).
+`stk_vms_v`, `trail_all` and `view_trail` stay on the server (`SYNC_EXCLUDE`).
+
+**check:** each stk table besides the trail has a line saying what it holds, its time span and keys, and whether
+fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.parquet` on a sample of vessels, the
+result recorded in a decision or a plan.

@@ -187,3 +187,30 @@ comparison will show these columns as differences.
   test for a lost connection and reconnected through `dump_connect()`, which the keychain now answers without a
   prompt; it ran read-only queries on tables that do not exist. The reconnect is now an argument (`connect =`), and
   a dumper test replaces `dump_connect()` with one that refuses.
+- **The view count never fired (found 2026-10-16).** Oracle names an unquoted alias in capitals: `COUNT(*) AS n` came
+  back as `N`, `$n` was NULL, and no view was ever too big. The DuckDB stand-in keeps the alias as written, so the
+  test passed. stk's resume (commit c9f596a) fetched `trail_all` (303,790,717 rows) and `view_trail` (303,791,859,
+  8.4 GB) whole. Both stay on the server, as `stk_vms_v` does, left out of the Mac's copy (`SYNC_EXCLUDE`). The count
+  is now read by position.
+- **afli.afli and v_afli through ROracle (2026-10-16).** Both still failed on the server with ORA-01722, now in the
+  `TO_CHAR` that reads decimals exactly. `dump_oracle_table()` finds the columns whose `TO_CHAR` fails, one scan
+  each (`MAX(LENGTH(TO_CHAR(col)))`), and reads only those as ROracle returns them, as the April dump did. Which
+  columns, and how many of their values Oracle counts but the fetch left empty, goes in the file's `fd.note`, the
+  overview's new `note` column and the table's `details` in `_data-dict.yaml`. In v_afli the only decimal is `visir`,
+  so `visir` is expected: the April copy's 48 rows with an empty `afli` include 46 with an empty `visir` (plan 018).
+  Tested on a DuckDB stand-in whose `TO_CHAR` fails on one value. A resumed run keeps the note, from the overview or
+  from the footer.
+- **Light check of kvoti, adb, fs_afladagbok and afli (2026-10-16)**, server against Mac, rows, columns and types:
+  - **No column or type differs.** Where both have a table and the rows differ, the server has more rows, never
+    fewer: kvoti 59 tables, adb 16. That is a day of Oracle's new records.
+  - **kvoti:** 488 of 742 identical. 193 objects are only on the server: the Mac's RStudio run was stopped before its
+    end, with no overview written. Two are only on the Mac: `adili_jn` (156,364 rows) and `eftirlits_gjald_utan_ees`
+    (5,472). ROracle fails on them with "embedded nul in string": a text value holds a NUL character, which an R
+    string cannot. The Mac's RJDBC copies hold them. Oracle fails three views itself, the same on both: ORA-01843 in
+    their own code, and ORA-04063 "has errors" for `vinnsluadili_v` and `vinnsluadili_vadili_fteg_v`. `della_post` is
+    ORA-00942, a table this login may not read.
+  - **fs_afladagbok:** 32 identical. `takt_json_form` fails through ROracle with an embedded NUL (PDF bytes in it); RJDBC
+    skipped it.
+  - **afli:** 287 identical. `afladagb_xml_mottaka` and `ra_email_skeyti` are on the server only: the LOB tables RJDBC
+    skipped. Failed: `afli` and `v_afli` (ORA-01722, the fallback above), and `rafr_mottaka_view` and `urv_raekja`
+    (ORA-01843 in Oracle's own view code).
