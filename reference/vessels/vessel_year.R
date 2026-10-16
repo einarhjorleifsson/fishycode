@@ -2,10 +2,10 @@
 # Side: preprocessing (vessels). See plan 014.
 #
 # Input:  raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx   one row per vid and year to 2021 ("Data main")
-#         raw/vessels/vessel_hist_v.parquet                          Oracle's dated history: usage category, kW
-#         raw/vessels/vessel_measurement_hist_v.parquet              Oracle's dated history: length (by vessel_id)
-#         raw/vessels/vessel_v.parquet                               the current register; vessel_id -> vid
-#         raw/vessels/usage_category.parquet                         the usage-category codes
+#         raw/oracle/vessel/vessel_hist_v.parquet                          Oracle's dated history: usage category, kW
+#         raw/oracle/vessel/vessel_measurement_hist_v.parquet              Oracle's dated history: length (by vessel_id)
+#         raw/oracle/vessel/vessel_v.parquet                               the current register; vessel_id -> vid
+#         raw/oracle/vessel/usage_category.parquet                         the usage-category codes
 # Output: curated/vessel/vessel_year.parquet - one row per vid (in the register) and year, 2007 to this year
 #
 # vessel.parquet holds today's values for every year. A hull's use, engine and length change: in 2007-2021, 437 of
@@ -32,14 +32,14 @@ HREIDAR_USAGE <- c("SKEMMTISKIP" = 62L, "OLÍUSKIP" = 48L, "RANNSÓKNASKIP" = 44
                    "UPPSJÁVARSKIP" = 33L, "TOGSKIP" = 33L, "LÍNUBÁTUR" = 33L)
 num <- function(x) suppressWarnings(as.numeric(gsub(",", ".", as.character(x))))
 
-uc <- read_parquet(fd_raw("vessels", "usage_category.parquet")) |>
+uc <- read_parquet(fd_raw("oracle", "vessel", "usage_category.parquet")) |>
   transmute(mclass = as.integer(usage_category_no), key = toupper(trimws(name)))
 usage_code <- function(txt) {
   key <- toupper(trimws(txt))
   coalesce(uc$mclass[match(key, uc$key)], unname(HREIDAR_USAGE[key]))
 }
 
-v <- read_parquet(fd_raw("vessels", "vessel_v.parquet")) |>
+v <- read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet")) |>
   transmute(vid = as.integer(registration_no), vessel_id = as.integer(vessel_id),
             mclass_now = as.integer(usage_category_no), kw_now = num(power_kw), loa_now = num(max_length))
 
@@ -56,10 +56,10 @@ h <- readxl::read_excel(fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islen
 # Oracle's history ---------------------------------------------------------------------------------------------------
 mid_year <- function(y) as.Date(paste0(y, "-07-01"))
 as_day <- function(x) as.Date(format(x, "%Y-%m-%d"))
-oh <- read_parquet(fd_raw("vessels", "vessel_hist_v.parquet")) |>
+oh <- read_parquet(fd_raw("oracle", "vessel", "vessel_hist_v.parquet")) |>
   transmute(vid = as.integer(registration_no), from = as_day(valid_from), to = as_day(valid_to),
             mclass_o = as.integer(usage_category_no), usage_o = usage_category, kw_o = num(power_kw))
-om <- read_parquet(fd_raw("vessels", "vessel_measurement_hist_v.parquet")) |>
+om <- read_parquet(fd_raw("oracle", "vessel", "vessel_measurement_hist_v.parquet")) |>
   transmute(vessel_id = as.integer(vessel_id), from = as_day(valid_from), to = as_day(valid_to), loa_o = num(max_length)) |>
   inner_join(v |> select(vessel_id, vid), by = "vessel_id") |>
   select(-vessel_id)
@@ -111,5 +111,5 @@ cat("unmapped Hreiðar usage names:", paste(unique(h$usage_h[is.na(usage_code(h$
 
 write_curated(vessel_year, fd_curated("vessel", "vessel_year.parquet"),
               inputs = c(fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx"),
-                         fd_raw("vessels", "vessel_hist_v.parquet"), fd_raw("vessels", "vessel_measurement_hist_v.parquet"),
-                         fd_raw("vessels", "vessel_v.parquet"), fd_raw("vessels", "usage_category.parquet")))
+                         fd_raw("oracle", "vessel", "vessel_hist_v.parquet"), fd_raw("oracle", "vessel", "vessel_measurement_hist_v.parquet"),
+                         fd_raw("oracle", "vessel", "vessel_v.parquet"), fd_raw("oracle", "vessel", "usage_category.parquet")))

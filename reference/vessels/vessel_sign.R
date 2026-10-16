@@ -4,11 +4,11 @@
 # Input:  staging/skipaskra/annual_call_sign.parquet       the annual register's call sign per vid and year, 2007-2022, the
 #                                                          state at the start of the year (a frozen input from the `once`
 #                                                          project, sources/skipaskra/annual_call_sign.R)
-#         raw/vessels/kvoti_skipasaga.parquet              Fiskistofa's dated history: local sign (einkst, einknr) and name
+#         raw/oracle/kvoti/skipasaga.parquet              Fiskistofa's dated history: local sign (einkst, einknr) and name
 #                                                          (heiti), 1990s to 2023-12-07
-#         raw/vessels/vessel_identification_hist_v.parquet Oracle's dated call sign and local sign (KE-18 from 1954)
-#         raw/vessels/vessel_hist_v.parquet                Oracle's dated name and register status
-#         raw/vessels/vessel_v.parquet                     vessel_id -> vid
+#         raw/oracle/vessel/vessel_identification_hist_v.parquet Oracle's dated call sign and local sign (KE-18 from 1954)
+#         raw/oracle/vessel/vessel_hist_v.parquet                Oracle's dated name and register status
+#         raw/oracle/vessel/vessel_v.parquet                     vessel_id -> vid
 # Output: curated/vessel/vessel_sign.parquet - one row per vid, kind (cs | uid | name), value and period [t1, t2)
 #
 # A vid is the hull for life; its marks are attributes at a time, and they wander: since 2007, 114 of the annual
@@ -44,12 +44,12 @@ uid_value <- function(st, nr) if_else(is.na(st) | is.na(nr), NA_character_, past
 uid_key   <- function(st, nr) if_else(is.na(st) | is.na(nr), NA_character_, paste0(fold(st), sprintf("%03d", nr)))
 as_day <- function(x) as.Date(format(x, "%Y-%m-%d"))
 
-v <- read_parquet(fd_raw("vessels", "vessel_v.parquet")) |>
+v <- read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet")) |>
   transmute(vessel_id = as.integer(vessel_id), vid = as.integer(registration_no), foreign = status %in% "Erlent")
 FOREIGN <- v$vid[v$foreign]
 
 # Oracle: the periods a hull is on the register (any status but struck), to clip its marks to
-oh <- read_parquet(fd_raw("vessels", "vessel_hist_v.parquet")) |>
+oh <- read_parquet(fd_raw("oracle", "vessel", "vessel_hist_v.parquet")) |>
   transmute(vid = as.integer(registration_no), from = as_day(valid_from), to = coalesce(as_day(valid_to), OPEN),
             status, name = trimws(name), reg = as_day(initial_registration_date))
 # 1901-01-01 is the sources' placeholder for "held since some unknown day": several hulls then hold one sign at once from
@@ -77,7 +77,7 @@ ann <- read_parquet(fd_staging("skipaskra", "annual_call_sign.parquet")) |>
   transmute(vid, kind, value, t1 = as.Date(paste0(year, "-01-01")), t2 = as.Date(paste0(year + 1L, "-01-01")),
             source = "annual_register")
 
-sk <- read_parquet(fd_raw("vessels", "kvoti_skipasaga.parquet")) |>
+sk <- read_parquet(fd_raw("oracle", "kvoti", "skipasaga.parquet")) |>
   transmute(vid = as.integer(skip_nr), t1 = as_day(i_gildi), t2 = coalesce(as_day(ur_gildi), OPEN),
             st = na_if(trimws(einkst), ""), nr = suppressWarnings(as.integer(einknr)), name = na_if(trimws(heiti), "")) |>
   filter(vid > 0, !is.na(t1), t2 > t1)
@@ -85,7 +85,7 @@ sk_uid  <- sk |> filter(!is.na(st), nr > 0, !vid %in% FOREIGN) |>
   transmute(vid, kind = "uid", value = uid_value(st, nr), key = uid_key(st, nr), t1, t2, source = "skipasaga")
 sk_name <- sk |> filter(!is.na(name)) |> transmute(vid, kind = "name", value = toupper(name), t1, t2, source = "skipasaga")
 
-oi <- read_parquet(fd_raw("vessels", "vessel_identification_hist_v.parquet")) |>
+oi <- read_parquet(fd_raw("oracle", "vessel", "vessel_identification_hist_v.parquet")) |>
   transmute(vessel_id = as.integer(vessel_id), t1 = as_day(valid_from), t2 = coalesce(as_day(valid_to), OPEN),
             cs = na_if(toupper(trimws(call_sign)), ""), st = na_if(trimws(region_acronym), ""),
             nr = suppressWarnings(as.integer(region_no))) |>
@@ -189,6 +189,6 @@ for (k in c("cs", "uid", "name")) {
 }
 
 write_curated(sign, fd_curated("vessel", "vessel_sign.parquet"),
-              inputs = c(fd_staging("skipaskra", "annual_call_sign.parquet"), fd_raw("vessels", "kvoti_skipasaga.parquet"),
-                         fd_raw("vessels", "vessel_identification_hist_v.parquet"), fd_raw("vessels", "vessel_hist_v.parquet"),
-                         fd_raw("vessels", "vessel_v.parquet")))
+              inputs = c(fd_staging("skipaskra", "annual_call_sign.parquet"), fd_raw("oracle", "kvoti", "skipasaga.parquet"),
+                         fd_raw("oracle", "vessel", "vessel_identification_hist_v.parquet"), fd_raw("oracle", "vessel", "vessel_hist_v.parquet"),
+                         fd_raw("oracle", "vessel", "vessel_v.parquet")))

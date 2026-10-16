@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** approved 2026-10-15; phases 1 and 2 done (the server dump in `raw/oracle/` since 2026-10-16), phase 3 next · **2026-10-15** · **see:** decisions 105, 106 and 109; TODO 66 and 51; plan 016 §4 step 6
+**status:** approved 2026-10-15; phases 1-3 done (the server dump in `raw/oracle/` since 2026-10-16, every reader on it, decision 111), phase 4 next · **2026-10-15** · **see:** decisions 105, 106, 109 and 111; TODO 66 and 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.
@@ -110,7 +110,14 @@ those natively, as the April dump did, with a note in the file, the overview and
 The column is `visir`, none of its values came through empty, and they match the April copy's exactly. The query
 above still shows which rows and bytes `TO_CHAR` rejects. The 48 empty `afli` values (46 stations) are in both copies.
 
-**Phase 3, the readers (Claude):**
+**Phase 3, the readers (Claude):** *done 2026-10-16, decision 111.* 34 scripts and pages and `_targets.R` read
+`raw/oracle/`; the trail's 12 readers (not 7) read it through `stk_trail()` (`R/stk_trail.R`). `harbour_codes.R` also
+reads the base table `agf.aflagrunnur`, which adds code 168. Both targets projects run in UTC, as nanoparquet reads a
+plain TIMESTAMP in the session's zone. Each adapter ran into scratch on the old copies and on the dump; their
+differences are Oracle's latest day, the old copies' known faults (RJDBC's 16 min 8 s and Julian dates, last-digit
+decimals) and code 168. The trail matched by `.id` in every year. The old directories are in the Trash, except
+`raw/logbooks/logbook/` (below) and the frozen bootstrap's `ports_kvoti.parquet`.
+As planned:
 - about 25 reader files move to `fd_raw("oracle", ...)`, and the trail's 7 readers to `stk_trail()`;
 - `ports_kvoti.R`'s renames and fixes move into `reference/ports/harbour_codes.R`. The frozen bootstrap keeps its
   file until the once project is redone;

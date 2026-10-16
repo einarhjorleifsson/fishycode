@@ -3,7 +3,7 @@
 #
 # Input:  curated/check/ais_key_segments.parquet, curated/check/ais_key_audit_w1.parquet,
 #         curated/ais/ping (other providers: astd, astdB, keyed by MMSI -> vid), curated/landing/landings,
-#         curated/logbook/trip, raw/ais/stk/trail
+#         curated/logbook/trip, raw/oracle/stk/trail (stk_trail())
 # Output: curated/check/ais_key_vessel_recall.parquet - one row per (vid, state, reason) span of months
 #
 # Every other check starts from a mobile-id and asks which vessel it is. This one starts from the
@@ -34,7 +34,7 @@ library(dplyr)
 library(tidyr)
 library(nanoparquet)
 
-STK_GLOB  <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
+STK  <- stk_trail_sql()   # R/stk_trail.R: the trail in its preferred form, read as `from (%s)`
 PING_GLOB <- file.path(fd_path("curated", "ais", "ping"), "year=*", "*.parquet")
 ym_of <- function(d) { lt <- as.POSIXlt(d); (lt$year + 1900L) * 12L + lt$mon }
 FOREIGN <- 3700:4999
@@ -49,7 +49,7 @@ con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 q <- function(sql) dplyr::as_tibble(DBI::dbGetQuery(con, sql))
 ais <- q(sprintf("select vid, year(time) * 12 + month(time) - 1 ym, count(*) n from read_parquet('%s') where provider NOT IN ('stk', 'gps') group by 1, 2", PING_GLOB)) |>
   filter(n >= 20, !vid %in% FOREIGN)
-days <- q(sprintf("select mid, cast(time as date) d, count(*) n from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2", STK_GLOB))
+days <- q(sprintf("select mid, cast(time as date) d, count(*) n from (%s) where time >= timestamp '2007-06-01' group by 1, 2", STK))
 lnd <- q(sprintf("select distinct vid, year(date) * 12 + month(date) - 1 ym from read_parquet('%s') where date >= date '2007-06-01'", fd_curated("landing", "landings.parquet"))) |> filter(!vid %in% FOREIGN)
 lgb <- q(sprintf("select distinct vid, year(T1) * 12 + month(T1) - 1 ym from read_parquet('%s') where T1 >= timestamp '2007-06-01'", fd_curated("logbook", "trip.parquet"))) |> filter(!vid %in% FOREIGN)
 DBI::dbDisconnect(con, shutdown = TRUE)

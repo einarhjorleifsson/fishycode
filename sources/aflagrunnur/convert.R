@@ -5,7 +5,7 @@
 # curate/landing.R, which also does the hid -> pid port join - not duplicated
 # here since lods needs the same join.
 #
-# Input:  raw/landings/agf/aflagrunnur.parquet
+# Input:  raw/oracle/agf/aflagrunnur.parquet
 # Output: staging/landing/agf/landings.parquet
 #         staging/landing/agf/catch.parquet
 
@@ -15,7 +15,7 @@ library(tidyverse)
 SCHEMA <- "agf"
 
 aflagrunnur <-
-  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+  read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet")) |>
   select(.lid = londun_id, vid = skip_numer, date = londun_hefst,
          hid = hafnarnumer, gid = veidarfaeri, sid = fisktegund,
          stid = veidistofn,

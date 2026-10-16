@@ -1,7 +1,7 @@
 # The STK vessel match, cross-checked against landings - but from the RAW side.
 # Side: once (vessel key). See plan 014.
 #
-# Input:  raw/ais/stk/mobile.parquet, raw/ais/stk/trail/,
+# Input:  raw/oracle/stk/mobile.parquet (stk_mobile()), raw/oracle/stk/trail (stk_trail()),
 #         curated/vessel/vessel.parquet, curated/vessel/vessel_ais_key.parquet,
 #         curated/landing/landings.parquet
 # Output: curated/check/ais_key_reused_callsign.parquet - one row per vessel in question
@@ -13,7 +13,7 @@
 # NO vid at all. It cannot see a vessel that got a WRONG vid, nor tell a wrong
 # match from a vessel that genuinely never transmitted.
 #
-# This check instead goes to raw/ais/stk/mobile.parquet and raw/ais/stk/trail/
+# This check instead goes to raw/oracle/stk/mobile.parquet (stk_mobile()) and raw/oracle/stk/trail (stk_trail())
 # directly: for every Icelandic vid with a real call sign and landings, does ANY
 # STK mobile id broadcasting that exact call sign have pings covering the vid's
 # own landing window? If so, the vessel unmistakably transmitted to STK - the
@@ -85,13 +85,13 @@ reg_l <- reg |> inner_join(lnd, by = "vid")
 # raw stk mobile ids whose broadcast identity string carries a usable call sign,
 # joined to their actual ping span in the trail - independent of vessel_ais_key.
 mob <-
-  read_parquet(fd_raw("ais", "stk", "mobile.parquet")) |>
+  stk_mobile() |> collect() |>
   mutate(loid_t = toupper(gsub("[^A-Za-z0-9]", "", loid)),
          glid_t = toupper(gsub("[^A-Za-z0-9]", "", glid))) |>
   filter(nchar(glid_t) >= 4 | nchar(loid_t) >= 4)
 
 pingspan <-
-  open_dataset(fd_raw("ais", "stk", "trail")) |>
+  stk_trail() |>
   filter(mid %in% !!unique(mob$mid)) |>
   group_by(mid) |>
   summarise(pings = n(), t1 = min(time, na.rm = TRUE), t2 = max(time, na.rm = TRUE)) |>
@@ -175,5 +175,5 @@ write_curated(out, fd_curated("check", "ais_key_reused_callsign.parquet"),
               # file still ties this check to the raw STK identity table.
               inputs = c(vessel_ais_key = fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
                          vessel         = fd_curated("vessel", "vessel.parquet"),
-                         stk_mobile     = fd_raw("ais", "stk", "mobile.parquet"),
+                         stk_mobile     = fd_raw("oracle", "stk", "mobile.parquet"),
                          landing        = fd_curated("landing", "landings.parquet")))

@@ -3,8 +3,8 @@ title: the afli GPS logger keeps recording after the fishing event ends, so .sid
 status: measured on one year - repair NOT implemented
 applies_to:
   - curated/logbook/sensor_gps
-  - raw/logbooks/afli/sjalfvirkir_maelar.parquet
-  - raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
+  - raw/oracle/afli/sjalfvirkir_maelar/   # raw/logbooks/afli/sjalfvirkir_maelar.parquet until plan 018
+  - raw/oracle/afli/rafr_sjalfvirkir_maelar.parquet
 implementation: none yet
 discovered: 2026-09-23, maintainer, while curate/logbook_sensor_gps.R was running
 

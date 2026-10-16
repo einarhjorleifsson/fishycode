@@ -1,6 +1,6 @@
 # Extract signal data from afladagb_xml_mottaka XML column
 #
-# Input:  data-dump/logbooks/afli/afladagb_xml_mottaka.parquet
+# Input:  raw/oracle/afli/afladagb_xml_mottaka.parquet
 # Output: data-raw/logbooks/afli/sensor_xml_nmea.parquet
 #         data-raw/logbooks/afli/sensor_xml_track.parquet
 #
@@ -29,7 +29,7 @@ library(stringr)
 
 ORIT_TYPES <- orit::hr_types$type[!is.na(orit::hr_types$type)]
 
-SRC       <- fd_raw("logbooks", "afli", "afladagb_xml_mottaka.parquet")
+SRC       <- fd_raw("oracle", "afli", "afladagb_xml_mottaka.parquet")
 OUT_NMEA  <- fd_staging("afli", "sensor_xml_nmea.parquet")
 OUT_TRACK <- fd_staging("afli", "sensor_xml_track.parquet")
 

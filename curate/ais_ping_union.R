@@ -2,7 +2,7 @@
 # Side: preprocessing (ais feeds). See plan 014.
 #
 # Inputs:
-#   data-dump/ais/stk/trail/                  — STK AIS pings (mid-keyed, all vessels)
+#   raw/oracle/stk/trail (stk_trail())                  — STK AIS pings (mid-keyed, all vessels)
 #   data-raw/ais/astd/                        — ASTD commercial AIS (all flags, parquet)
 #   data-raw/ais/astdB/                       — ASTDB commercial AIS (all flags, parquet)
 #   data-raw/logbooks/afli/sensor_GPS.parquet — AIS-corrected GPS logger positions
@@ -69,7 +69,7 @@ idy <-
 # The raw trail is hive-partitioned by `year`. That is the year of the ping's time for all but ~33 k of ~290 M
 # rows (bad timestamps: 1984, 1997, 2106 ... sit in a later partition), so a year is its own partition PLUS the
 # rows of every other partition whose time falls in it: reading only year == YR would silently lose those.
-stk_raw <- duckdbfs::open_dataset(fd_raw("ais", "stk", "trail"))
+stk_raw <- stk_trail()
 stk_src <- function(YR) {
   union_all(stk_raw |> filter(year == YR),
             stk_raw |> filter(year != YR, year(time) == YR)) |>

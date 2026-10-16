@@ -1,8 +1,8 @@
 # logbook_sensor_gps.R — usable positions for the afli GPS logger.
 # Side: once (gps logger). See plan 014.
 #
-# Input:  raw/logbooks/afli/sjalfvirkir_maelar.parquet
-#         raw/logbooks/afli/rafr_sjalfvirkir_maelar.parquet
+# Input:  raw/oracle/afli/sjalfvirkir_maelar/   (by year of timi, as the dump partitions it)
+#         raw/oracle/afli/rafr_sjalfvirkir_maelar.parquet
 #         curated/ais/ping            (merged, cleaned track, tagged with its voyage)
 #         curated/ais/voyage.parquet  (voyage windows, to bound the interpolation)
 #         curated/logbook/{trip,fishing_sample}.parquet   (.sid -> vid)
@@ -60,11 +60,11 @@ sid_vid <-
 # -- logger fixes: time, speed and heading are kept; lon/lat are not ----------
 
 logger <- bind_rows(
-  open_dataset(fd_raw("logbooks", "afli", "sjalfvirkir_maelar.parquet")) |>
+  open_dataset(fd_raw("oracle", "afli", "sjalfvirkir_maelar")) |>
     select(visir, timi, breidd, lengd, skip_hradi, skip_stefna,
            botndypi, hofudlinudypi, botnhiti, hofudlinuhiti) |>
     collect() |> mutate(sensor_src = "gps1"),
-  open_dataset(fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet")) |>
+  open_dataset(fd_raw("oracle", "afli", "rafr_sjalfvirkir_maelar.parquet")) |>
     select(visir, timi, breidd, lengd, skip_hradi, skip_stefna,
            botndypi, hofudlinudypi, botnhiti, hofudlinuhiti) |>
     collect() |> mutate(sensor_src = "gps2")) |>
@@ -123,8 +123,9 @@ for (yr in years) {
   # write_curated(), not write_dataset: res is materialised, and write_curated() opens a fresh
   # connection per call (R/write_parquet.R). curated/ais/ping is a directory, left out of `inputs`.
   write_curated(res, file.path(out, paste0("year=", yr), "data_0.parquet"),
-                inputs = c(fd_raw("logbooks", "afli", "sjalfvirkir_maelar.parquet"),
-                           fd_raw("logbooks", "afli", "rafr_sjalfvirkir_maelar.parquet"),
+                inputs = c(list.files(fd_raw("oracle", "afli", "sjalfvirkir_maelar"), "[.]parquet$", recursive = TRUE,
+                                      full.names = TRUE),
+                           fd_raw("oracle", "afli", "rafr_sjalfvirkir_maelar.parquet"),
                            fd_curated("ais", "voyage.parquet"), fd_curated("logbook", "trip.parquet"),
                            fd_curated("logbook", "fishing_sample.parquet")))
   message(sprintf("  %d: %s fixes | %.1f%% positioned | %.1f%% outside a voyage",

@@ -2,7 +2,7 @@
 # Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, curated/vessel/vessel.parquet,
-#         raw/ais/stk/trail (ping counts per mobile-id and year, for check 3b)
+#         raw/oracle/stk/trail (stk_trail()) (ping counts per mobile-id and year, for check 3b)
 # Output: curated/check/ais_key_registry.parquet  - one row per violation
 #
 # `_targets.R` says "wrong vid assignment is a known error class - see
@@ -54,7 +54,7 @@ v_unknown <- assigned |> filter(vid > 0, !vid %in% reg$vid)
 # which is a human's call entering through overrides/, because deciding it here
 # from landings would close the AIS -> vid -> logbook -> AIS cycle.
 lnd_span <-
-  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+  read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet")) |>
   group_by(vid = skip_numer) |>
   reframe(l1 = as.Date(min(londun_hefst)), l2 = as.Date(max(londun_hefst)))
 v_lifetime <-
@@ -88,7 +88,7 @@ MIN_FRAC  <- 0.05
 FLOOR     <- 100L   # a fraction alone is not evidence: 3 pings of 3 is noise
 
 mid_year <-
-  duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
+  stk_trail() |>
   # the trail carries time outliers (1970-2106, corrections/stk_trail_time_outliers.yml)
   dplyr::mutate(yr = year(time)) |>
   dplyr::filter(dplyr::between(yr, STK_ERA, HORIZON)) |>

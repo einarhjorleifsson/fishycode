@@ -1,7 +1,7 @@
 # The STK mobile-id -> vid assignment rebuilt as a SEGMENT TABLE that tiles every mobile-id.
 # Side: once (vessel key). See plan 014.
 #
-# Input:  curated/vessel/{vessel_ais_key,vessel_identity}.parquet, raw/ais/stk/trail,
+# Input:  curated/vessel/{vessel_ais_key,vessel_identity}.parquet, raw/oracle/stk/trail (stk_trail()),
 #         staging/skipaskra/annual_call_sign.parquet,
 #         curated/check/ais_key_split_candidates.parquet, curated/check/ais_key_audit_w1.parquet,
 #         curated/check/ais_key_audit_lb_{hits,n}.parquet (logbook and landings per month),
@@ -55,7 +55,7 @@ library(dplyr)
 library(tidyr)
 library(nanoparquet)
 
-STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
+STK <- stk_trail_sql()   # R/stk_trail.R: the trail in its preferred form, read as `from (%s)`
 MIN_W1_MONTHS <- 3L   # months of W1 confirmation that name a vid over a segment
 STARTUP_END <- as.Date("2009-01-01")
 
@@ -78,7 +78,7 @@ cand <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet"))
 # vid cannot be carried by a mobile-id before this date. Measured (decision 048): with this date 0 of 32 reuse
 # cases have the successor registered AFTER the switch W1 sees, and 25 fall inside the switch's bracket; the
 # identification date is not the hull's start (a hull that changed home port looks newly registered).
-hull_start <- read_parquet(fd_raw("vessels", "vessel_hist_v.parquet")) |>
+hull_start <- read_parquet(fd_raw("oracle", "vessel", "vessel_hist_v.parquet")) |>
   filter(!is.na(registration_no)) |> group_by(registration_no) |> arrange(desc(valid_from)) |> slice(1) |> ungroup() |>
   transmute(vid = as.integer(registration_no), reg_start = as.Date(initial_registration_date))
 reg_start_of <- function(v) hull_start$reg_start[match(v, hull_start$vid)]
@@ -93,7 +93,7 @@ lb_n <- read_parquet(fd_curated("check", "ais_key_audit_lb_n.parquet"))
 
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
-  "select mid, cast(time as date) d, count(*) n from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK_GLOB)))
+  "select mid, cast(time as date) d, count(*) n from (%s) where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK)))
 DBI::dbDisconnect(con, shutdown = TRUE)
 
 # the mobile-id's OWN identifier strings: a call sign (TF + two letters) or a 9-digit MMSI

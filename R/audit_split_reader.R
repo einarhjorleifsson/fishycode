@@ -38,13 +38,14 @@ split_silences <- function(days, key_v, gap_min = 180) {
 }
 
 # Last position before and first after each silence ------------------------------------
-split_end_positions <- function(con, sil, stk_glob) {
+# stk: the trail's SELECT (stk_trail_sql()).
+split_end_positions <- function(con, sil, stk) {
   DBI::dbWriteTable(con, "sil", dplyr::transmute(sil, sid, mid = as.numeric(mid), d_prev, d_next), overwrite = TRUE)
   f <- DBI::dbGetQuery(con, sprintf("
-    with l as (select s.sid, t.lat, t.lon, row_number() over (partition by s.sid order by t.time desc) rn from sil s join read_parquet('%s') t on t.mid = s.mid and cast(t.time as date) = s.d_prev where t.time >= timestamp '2007-06-01'),
-         f as (select s.sid, t.lat, t.lon, row_number() over (partition by s.sid order by t.time asc) rn from sil s join read_parquet('%s') t on t.mid = s.mid and cast(t.time as date) = s.d_next where t.time >= timestamp '2007-06-01')
+    with l as (select s.sid, t.lat, t.lon, row_number() over (partition by s.sid order by t.time desc) rn from sil s join (%s) t on t.mid = s.mid and cast(t.time as date) = s.d_prev where t.time >= timestamp '2007-06-01'),
+         f as (select s.sid, t.lat, t.lon, row_number() over (partition by s.sid order by t.time asc) rn from sil s join (%s) t on t.mid = s.mid and cast(t.time as date) = s.d_next where t.time >= timestamp '2007-06-01')
     select l.sid, l.lat lat_last, l.lon lon_last, f.lat lat_first, f.lon lon_first from l join f on f.sid = l.sid and f.rn = 1 where l.rn = 1",
-    stk_glob, stk_glob))
+    stk, stk))
   # 'Icelandic waters': a generous box around the island and its fishing grounds
   inice <- function(lat, lon) lat >= 62 & lat <= 68.6 & lon >= -28.5 & lon <= -10
   dplyr::as_tibble(f) |>

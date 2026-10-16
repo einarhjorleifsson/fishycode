@@ -24,8 +24,10 @@
 #  link with the numerical harbour value (hid) found in the logbooks and landings
 #  tables.
 #  Inputs:
-#    raw/ais/stk/trail (hive-partitioned parquet) where values are in io
-#    raw/ports/ports_kvoti.parquet - from dump/oracle/ports_kvoti.R
+#    the STK trail, stk_trail() (R/stk_trail.R) over raw/oracle/stk/trail, where values are in io; until plan 018
+#      raw/ais/stk/trail, the copy converted in Oracle
+#    raw/ports/ports_kvoti.parquet - from dump/oracle/ports_kvoti.R, removed in plan 018; the file is kept for this
+#      script, and reference/ports/harbour_codes.R makes the same list from kvoti.stadur
 #  Outputs:
 #    raw/ports/ports_iceland_faroe.gpkg - harbour polygons; handed to staging/ by
 #      curate/corrections/ports_iceland.R, which ports_all.R reads
@@ -37,6 +39,7 @@ library(tidyverse)
 library(nanoparquet)
 library(duckdbfs)
 source(here::here("R", "paths.R"))
+source(here::here("R", "stk_trail.R"))
 
 
 # Icelandic and Faroe ports ----------------------------------------------------
@@ -272,7 +275,7 @@ ports_add <-
 # will be merged into a multipolygon downstream, so we end up with each pid
 # being unique
 ports <-
-  open_dataset(fd_raw("ais", "stk", "trail")) |>
+  stk_trail() |>
   filter(!is.na(hid), io == "I") |>
   collect() |>
   select(stk = hid, lon, lat) |>

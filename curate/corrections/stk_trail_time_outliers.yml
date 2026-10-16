@@ -2,7 +2,7 @@ id: stk_trail_time_outliers
 title: STK trail carries ping timestamps outside the AIS era, and they set the match window
 status: suspected - defect measured and quantified, repair NOT implemented
 applies_to:
-  - raw/ais/stk/trail
+  - raw/oracle/stk/trail   # through stk_trail(); raw/ais/stk/trail, the converted copy, until plan 018
   - curated/vessel/vessel_ais_key.parquet
 implementation: none yet
 discovered: 2026-09-22, while measuring the STK vessel match for curate/plans/003-stk-vessel-identity.md

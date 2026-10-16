@@ -1,7 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
-# Input: data-dump/logbooks/adb/*.parquet
-# Outpt: data-raw/logbooks/adb/*.parquet
+# Input: raw/oracle/adb/*.parquet
+# Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
 library(whack) # pak::pak("einarhjorleifsson/whack)
 library(geo)
@@ -14,14 +14,14 @@ dictionary <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet
   filter(schema == SCHEMA)
 
 # trip -------------------------------------------------------------------------
-trip <- duckdbfs::open_dataset(fd_raw("logbooks", "adb", "trip_v.parquet")) |> collect() |>
+trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "trip_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   select(.tid, vid, T1, hid1, T2, hid2) |>
   mutate(schema = SCHEMA)
 
 # base -------------------------------------------------------------------------
 base <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "station_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "station_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   mutate(date = as_date(coalesce(t1, t3, t4))) |>
   select(.tid, .sid, gid, date,
@@ -37,7 +37,7 @@ base <-
 
 ## mobile (trawl / seine-net) --------------------------------------------------
 mobile_aux <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "trawl_and_seine_net_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "trawl_and_seine_net_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>                  # station_id → .sid; bridle_length → sweeps
   inner_join(base |> select(.sid, gid, t3, t4), by = ".sid") |>
   mutate(
@@ -59,7 +59,7 @@ mobile_aux <-
 ## dredge (plógur) -------------------------------------------------------------
 ##   dredge_v covers gid 5, 6, 7, 51, 53 that are absent from trawl_and_seine_net_v
 dredge_aux <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "dredge_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "dredge_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid, t3, t4), by = ".sid") |>
   mutate(
@@ -72,7 +72,7 @@ dredge_aux <-
 
 ## static (longline / gillnet / handline) --------------------------------------
 static_aux <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "line_and_net_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "line_and_net_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid, gid, t3, t4), by = ".sid") |>
   mutate(
@@ -94,7 +94,7 @@ static_aux <-
 
 ## traps -----------------------------------------------------------------------
 trap_aux <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "trap_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "trap_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid, t3, t4), by = ".sid") |>
   mutate(
@@ -106,7 +106,7 @@ trap_aux <-
 
 ## seine / surrounding net -----------------------------------------------------
 seine_aux <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "surrounding_net_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "surrounding_net_v.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid), by = ".sid") |>
   mutate(effort = 1, effort_unit = "setting") |>
@@ -124,7 +124,7 @@ station <-
 
 # catch ------------------------------------------------------------------------
 catch <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "adb", "catch.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "catch.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   # `quantity` is fs_afladagbok's `magn` (equal on all 1.07 M shared rows where weight is NULL): the weight in
   # the state `condition` names. `weight` is fs's `afli`, the whole-fish weight, NULL for ~98 % of rows from

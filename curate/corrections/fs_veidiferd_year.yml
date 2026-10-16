@@ -2,7 +2,7 @@ id: fs_veidiferd_year
 title: Corrupt year on one date field of fs_afladagbok trips, from a single source system
 status: suspected - detection verified against data, repair specified but NOT implemented
 applies_to:
-  - raw/logbooks/fs_afladagbok/ws_veidiferd.parquet
+  - raw/oracle/fs_afladagbok/ws_veidiferd.parquet   # raw/logbooks/fs_afladagbok/ until plan 018
 affects_rows: 21 of 207,189 trips
 implementation: none yet
 discovered: 2026-09-21, while profiling the trip table

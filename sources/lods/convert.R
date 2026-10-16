@@ -5,7 +5,7 @@
 # source-shaped staging tables agf produces. Merged with agf in
 # curate/landing.R, which also does the hid -> pid port join.
 #
-# Input:  raw/landings/kvoti/lods_oslaegt.parquet
+# Input:  raw/oracle/kvoti/lods_oslaegt.parquet
 # Output: staging/landing/lods/landings.parquet
 #         staging/landing/lods/catch.parquet
 #
@@ -59,7 +59,7 @@ hash_id <- function(vid, date, hid) {
 }
 
 lods <-
-  read_parquet(fd_raw("landings", "kvoti", "lods_oslaegt.parquet")) |>
+  read_parquet(fd_raw("oracle", "kvoti", "lods_oslaegt.parquet")) |>
   transmute(komunr, vid = skip_nr, date = as_date(l_dags),
             hid = hofn, gid = veidarf, sid = fteg, kfteg,
             stid = if_else(!is.na(kfteg) & kfteg == sid, kfteg, NA_integer_),

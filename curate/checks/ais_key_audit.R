@@ -2,7 +2,7 @@
 # Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, staging/ais/ping_union (other providers, before cleaning),
-#         raw/ais/stk/trail, curated/logbook/{station,trip}.parquet,
+#         raw/oracle/stk/trail (stk_trail()), curated/logbook/{station,trip}.parquet,
 #         curated/landing/landings.parquet, curated/check/ais_key_registry.parquet,
 #         curated/check/ais_key_split_candidates.parquet,
 #         overrides/ais_key_callsign_reuse_reviewed.csv
@@ -34,7 +34,7 @@ library(tidyr)
 library(nanoparquet)
 
 ## Inputs ----------------------------------------------------------------------------
-STK_GLOB  <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
+STK  <- stk_trail_sql()   # R/stk_trail.R: the trail in its preferred form, read as `from (%s)`
 # W1 reads the merged pings BEFORE any cleaning: a non-STK ping there takes its vid from the MMSI
 # identity (vessel_identity), never from the key. curated/ais/ping, read until 2026-10-08, depends on the
 # key through the duplicate and whack stages, so the key fed its own evidence and did not settle
@@ -67,7 +67,7 @@ w1 <- purrr::map(seq_len(nrow(months_from(2013, 1))), function(i) {
   ym <- months_from(2013, 1)[i, ]
   mid15 <- as.Date(sprintf("%d-%02d-15", ym$y, ym$m))
   kp <- key_v |> filter(d1 <= mid15, d2 >= mid15) |> transmute(mid = as.numeric(mid), vid = as.integer(K))
-  audit_w1_month(con, ym$y, ym$m, STK_GLOB, PING_GLOB, kp)
+  audit_w1_month(con, ym$y, ym$m, STK, PING_GLOB, kp)
 })
 bind_w <- function(l, f) bind_rows(lapply(l, function(o) mutate(as_tibble(o[[f]]), y = o$y, m = o$m)))
 H1  <- bind_w(w1, "hits"); OPP <- bind_w(w1, "opp"); NM <- bind_w(w1, "n_mid")
@@ -108,12 +108,12 @@ alt <- cls |>
 ## W2 / W3: logbook and landings, 2007-06 onwards ---------------------------------------
 w2 <- purrr::map(seq_len(nrow(months_from(2007, 6))), function(i) {
   ym <- months_from(2007, 6)[i, ]
-  audit_w2_month(con, ym$y, ym$m, STK_GLOB, STATION, TRIP)
+  audit_w2_month(con, ym$y, ym$m, STK, STATION, TRIP)
 })
 H2 <- bind_w(w2, "hits") |> select(mid, vid, y, m, hits)
 N2 <- bind_w(w2, "n") |> rename(n = n_st)
 
-DBI::dbExecute(con, sprintf("create or replace table ev as select distinct mid, cast(time as date) d, hid from read_parquet('%s') where hid is not null and io = 'I' and time >= timestamp '2007-06-01'", STK_GLOB))
+DBI::dbExecute(con, sprintf("create or replace table ev as select distinct mid, cast(time as date) d, hid from (%s) where hid is not null and io = 'I' and time >= timestamp '2007-06-01'", STK))
 DBI::dbExecute(con, sprintf("create or replace table ld as select distinct vid, date d, pid, \".lid\" lid from read_parquet('%s') where date >= date '2007-06-01' and pid is not null and vid is not null", LANDINGS))
 truth <- mg |>
   filter(opp_k >= 50, coalesce(score_k, 0) >= .8) |>
@@ -123,7 +123,7 @@ H3 <- q("select ev.mid, ld.vid, year(ld.d) y, month(ld.d) m, count(distinct ld.l
 N3 <- q("select vid, year(d) y, month(d) m, count(distinct lid) n from ld group by 1,2,3")
 
 ## Synthesis: one verdict per key (mid, vid, year) ------------------------------------------
-mid_year <- q(sprintf("select mid, year(time) y from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2", STK_GLOB))
+mid_year <- q(sprintf("select mid, year(time) y from (%s) where time >= timestamp '2007-06-01' group by 1, 2", STK))
 grid <- key_v |>
   crossing(y = YEARS, m = 1:12) |>
   mutate(d15 = as.Date(sprintf("%d-%02d-15", y, m))) |>
@@ -203,7 +203,7 @@ split <- read_parquet(fd_curated("check", "ais_key_split_candidates.parquet")) |
   summarise(split_tier = if_else(any(tier == "strong"), "strong", "review"), split_silences = n(), .groups = "drop")
 
 ## Ledger: one row per key row ----------------------------------------------------------------
-fp <- q(sprintf("select mid, cast(min(time) as date) first_ping, cast(max(time) as date) last_ping, count(*) pings from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1", STK_GLOB))
+fp <- q(sprintf("select mid, cast(min(time) as date) first_ping, cast(max(time) as date) last_ping, count(*) pings from (%s) where time >= timestamp '2007-06-01' group by 1", STK))
 cz <- Z |>
   group_by(mid, vid = K) |>
   summarise(cells = n(), c_confirmed = sum(verdict == "confirmed"), c_one_witness = sum(verdict == "supported_one_witness"),

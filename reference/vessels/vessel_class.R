@@ -1,7 +1,7 @@
 # The fisheries-management class of each vessel over time: aflamark, krókaaflamark, strandveiðar, frístundaveiðar, ...
 # Side: preprocessing (vessels). See plan 014.
 #
-# Input:  raw/vessels/kvoti_skipasaga.parquet            Fiskistofa's dated vessel history (dump/oracle/vessel_history.R)
+# Input:  raw/oracle/kvoti/skipasaga.parquet            Fiskistofa's dated vessel history (dump/oracle/vessel_history.R)
 #         raw/external/skipaskra/data/history.rda        the class names: a 2021 extract of the same table that carried them
 # Output: curated/vessel/vessel_class.parquet - one row per vid and class period, [t1, t2) in whole days
 #
@@ -16,7 +16,7 @@ library(nanoparquet)
 
 LEISURE <- c(-11L, 95L)   # Frístundaveiðar án aflaheimilda, Frístundaveiðar - krókaaflamark
 
-s <- read_parquet(fd_raw("vessels", "kvoti_skipasaga.parquet")) |>
+s <- read_parquet(fd_raw("oracle", "kvoti", "skipasaga.parquet")) |>
   # whole days (the source's times are midnight, or a 1901 placeholder with a clock offset); a DATE also compares
   # cleanly with the trail's TIMESTAMP, where a TIMESTAMP WITH TIME ZONE does not
   transmute(vid = as.integer(skip_nr), t1 = as.Date(i_gildi), t2 = as.Date(ur_gildi), class_code = as.integer(flokkur)) |>
@@ -51,4 +51,4 @@ cat("codes without a name:", paste(sort(unique(vessel_class$class_code[is.na(ves
 print(vessel_class |> count(class_code, class_name, sort = TRUE), n = 15)
 
 write_curated(vessel_class, fd_curated("vessel", "vessel_class.parquet"),
-              inputs = c(fd_raw("vessels", "kvoti_skipasaga.parquet"), fd_raw("external", "skipaskra", "data", "history.rda")))
+              inputs = c(fd_raw("oracle", "kvoti", "skipasaga.parquet"), fd_raw("external", "skipaskra", "data", "history.rda")))

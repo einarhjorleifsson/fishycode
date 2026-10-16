@@ -28,9 +28,9 @@
 # look like a failed match: measured, tier-A confirmation was 96-100 % when the
 # provider was at least as dense as STK and 3 % when it was not.
 #
-# stk_glob / ping_glob: parquet globs. kp: (mid, vid) pairs of the key to test in
+# stk: the trail's SELECT (stk_trail_sql()); ping_glob: a parquet glob. kp: (mid, vid) pairs of the key to test in
 # this month, so a key pair with zero hits still gets an opportunity count.
-audit_w1_month <- function(con, y, m, stk_glob, ping_glob, kp, dt_s = 300,
+audit_w1_month <- function(con, y, m, stk, ping_glob, kp, dt_s = 300,
                            dist_km = 2, vmin = 1) {
   b <- .audit_bounds(y, m)
   win <- sprintf("time >= timestamp '%s' - interval 10 minute and time < timestamp '%s' + interval 10 minute and speed >= %g and lat between 60 and 70 and lon between -35 and -5",
@@ -41,8 +41,8 @@ audit_w1_month <- function(con, y, m, stk_glob, ping_glob, kp, dt_s = 300,
   fx_m <- dist_km / (111.32 * cos(65 * pi / 180)) / mx
   DBI::dbExecute(con, sprintf("create or replace temp table ob as select vid, time, lon, lat, floor(epoch(time)/%d)::bigint hb, floor(lat/%g)::int cy, floor(lon/%g)::int cx from read_parquet('%s') where provider NOT IN ('stk', 'gps') and %s",
                               hb, my, mx, ping_glob, win))
-  DBI::dbExecute(con, sprintf("create or replace temp table sb as select mid, time, lon, lat, epoch(time)/%d - floor(epoch(time)/%d) ft, lat/%g - floor(lat/%g) fy, lon/%g - floor(lon/%g) fx, floor(epoch(time)/%d)::bigint hb, floor(lat/%g)::int cy, floor(lon/%g)::int cx from read_parquet('%s') where %s",
-                              hb, hb, my, my, mx, mx, hb, my, mx, stk_glob, win))
+  DBI::dbExecute(con, sprintf("create or replace temp table sb as select mid, time, lon, lat, epoch(time)/%d - floor(epoch(time)/%d) ft, lat/%g - floor(lat/%g) fy, lon/%g - floor(lon/%g) fx, floor(epoch(time)/%d)::bigint hb, floor(lat/%g)::int cy, floor(lon/%g)::int cx from (%s) where %s",
+                              hb, hb, my, my, mx, mx, hb, my, mx, stk, win))
   DBI::dbExecute(con, "create or replace temp table d as select unnest([-1,0,1]) n")
   hits <- DBI::dbGetQuery(con, sprintf("
     with sx as (
@@ -78,7 +78,7 @@ audit_w1_month <- function(con, y, m, stk_glob, ping_glob, kp, dt_s = 300,
 # Station (vid, day, x, y) is a hit for mid M when M has any ping within R km on that
 # day. Stations carry a date only. Per month this discriminates poorly on crowded
 # grounds; per YEAR it does (audit_score_year), so only year-level use is meaningful.
-audit_w2_month <- function(con, y, m, stk_glob, station, trip, R = 10) {
+audit_w2_month <- function(con, y, m, stk, station, trip, R = 10) {
   b <- .audit_bounds(y, m)
   cy <- 0.2; cx <- 0.5
   fy_m <- R / 111.2 / cy; fx_m <- R / (111.32 * cos(65 * pi / 180)) / cx
@@ -88,8 +88,8 @@ audit_w2_month <- function(con, y, m, stk_glob, station, trip, R = 10) {
     select sid, vid, d, lon, lat, floor(lat/%g)::int cy, floor(lon/%g)::int cx, lat/%g - floor(lat/%g) fy, lon/%g - floor(lon/%g) fx
     from (%s union all %s) where lat between 60 and 70 and lon between -35 and -5 and vid is not null",
     cy, cx, cy, cy, cx, cx, pt("lon1", "lat1"), pt("lon2", "lat2")))
-  DBI::dbExecute(con, sprintf("create or replace temp table pg as select mid, cast(time as date) d, lon, lat, floor(lat/%g)::int cy, floor(lon/%g)::int cx from read_parquet('%s') where time >= timestamp '%s' and time < timestamp '%s' and lat between 60 and 70 and lon between -35 and -5",
-                              cy, cx, stk_glob, b$t0, b$t1))
+  DBI::dbExecute(con, sprintf("create or replace temp table pg as select mid, cast(time as date) d, lon, lat, floor(lat/%g)::int cy, floor(lon/%g)::int cx from (%s) where time >= timestamp '%s' and time < timestamp '%s' and lat between 60 and 70 and lon between -35 and -5",
+                              cy, cx, stk, b$t0, b$t1))
   DBI::dbExecute(con, "create or replace temp table dd as select unnest([-1,0,1]) n")
   hits <- DBI::dbGetQuery(con, sprintf("
     with sx as (select stn.sid, stn.vid, stn.d, stn.lon, stn.lat, stn.cy + y.n cy, stn.cx + x.n cx from stn, dd y, dd x

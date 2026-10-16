@@ -1,7 +1,7 @@
 # Electronic logbook submissions the source system's own merge did not carry
 # through, reported per vessel.
 #
-# Input:  raw/logbooks/afli/{rafr_stofn,stofn}.parquet, curated/vessel/vessel.parquet
+# Input:  raw/oracle/afli/{rafr_stofn,stofn}.parquet, curated/vessel/vessel.parquet
 # Output: curated/check/afli_rafr_stofn_loss.parquet - one row per vessel
 #
 # rafr_stofn is the electronic feed from the vessels; stofn is the source
@@ -26,7 +26,7 @@ library(dplyr)
 library(nanoparquet)
 
 feed <-
-  read_parquet(fd_raw("logbooks", "afli", "rafr_stofn.parquet")) |>
+  read_parquet(fd_raw("oracle", "afli", "rafr_stofn.parquet")) |>
   select(visir, vid = skipnr, eytt, vedags) |>
   # One row carries a 1899 fishing date and eight carry 2000, before electronic
   # reporting existed. They are kept in the counts - they are real rows - but
@@ -35,7 +35,7 @@ feed <-
   mutate(year = as.integer(format(as.Date(vedags), "%Y")),
          year = if_else(year %in% 2003:2030, year, NA_integer_))
 
-merged <- read_parquet(fd_raw("logbooks", "afli", "stofn.parquet")) |> select(visir)
+merged <- read_parquet(fd_raw("oracle", "afli", "stofn.parquet")) |> select(visir)
 
 # eytt = 1 is a deleted submission, and the merge excludes those by design: only
 # 327 of 16,912 reach stofn. Deleted rows are not the finding and are dropped
@@ -107,6 +107,6 @@ print(knitr::kable(
   digits = 1, caption = "vessels with the largest share absent from stofn"))
 
 write_curated(out, fd_curated("check", "afli_rafr_stofn_loss.parquet"),
-              inputs = c(rafr_stofn = fd_raw("logbooks", "afli", "rafr_stofn.parquet"),
-                         stofn      = fd_raw("logbooks", "afli", "stofn.parquet"),
+              inputs = c(rafr_stofn = fd_raw("oracle", "afli", "rafr_stofn.parquet"),
+                         stofn      = fd_raw("oracle", "afli", "stofn.parquet"),
                          vessel     = fd_curated("vessel", "vessel.parquet")))

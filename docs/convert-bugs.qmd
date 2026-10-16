@@ -58,8 +58,8 @@ source(here::here("R/paths.R"))
 library(nanoparquet)
 library(tidyverse)
 
-station_v <- read_parquet(fd_raw("logbooks", "adb", "station_v.parquet"))
-trawl     <- read_parquet(fd_raw("logbooks", "adb", "trawl_and_seine_net_v.parquet"))
+station_v <- read_parquet(fd_raw("oracle", "adb", "station_v.parquet"))
+trawl     <- read_parquet(fd_raw("oracle", "adb", "trawl_and_seine_net_v.parquet"))
 
 station_v |>
   filter(gear_no == 6) |>
@@ -154,7 +154,7 @@ gid 5, 6, 7, 51, and 53 stations that are absent from `trawl_and_seine_net_v`
 ```{r}
 #| label: tbl-dredge
 #| tbl-cap: "dredge_v gear code coverage"
-dredge <- read_parquet(fd_raw("logbooks", "adb", "dredge_v.parquet"))
+dredge <- read_parquet(fd_raw("oracle", "adb", "dredge_v.parquet"))
 station_v |>
   filter(station_id %in% dredge$station_id) |>
   count(gear_no) |>

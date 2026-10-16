@@ -1,7 +1,7 @@
 # stk_hid_pid.R — crosswalk from STK's alphabetic harbour code to the standard harbour key.
 # Side: preprocessing (stk). See plan 014.
 #
-# Input:  raw/ais/stk/trail                     (hid, io, lon, lat per ping)
+# Input:  raw/oracle/stk/trail (stk_trail())                     (hid, io, lon, lat per ping)
 #         staging/aux/ports.fgb                 (standard pid, port, numeric hid; source == "einar")
 #         overrides/stk_hid_pid.csv             (reviewed overrides: hid, pid, reviewed_date, reason)
 # Output: curated/reference/stk_hid_pid.parquet one row per STK `hid`
@@ -58,7 +58,7 @@ BOOTSTRAP_EXCLUDED <- c("ISL", "DNG", "BER", "REYF", "RYH", "LSGUFA", "GYH", "IY
 
 # -- Events --------------------------------------------------------------------
 
-ev <- duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
+ev <- stk_trail() |>
   filter(!is.na(hid), !is.na(io), !is.na(lon), !is.na(lat)) |>
   mutate(lon4 = round(lon, 4), lat4 = round(lat, 4)) |>
   group_by(io, hid, lon4, lat4) |>
@@ -175,7 +175,7 @@ stopifnot(!anyDuplicated(out$hid))
 out |> write_curated(
   fd_curated("reference", "stk_hid_pid.parquet"),
   inputs = c(fd_staging("aux", "ports.fgb"), ov_file,
-             list.files(fd_raw("ais", "stk", "trail"), pattern = "parquet$", recursive = TRUE,
+             list.files(fd_raw("oracle", "stk", "trail"), pattern = "parquet$", recursive = TRUE,
                         full.names = TRUE)))
 
 message(sprintf("stk_hid_pid: %d codes; %s", nrow(out),

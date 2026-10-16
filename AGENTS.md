@@ -171,7 +171,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 | Directory | Holds |
 |---|---|
 | `dump/` | Extraction only — Oracle, vendor archives, web fetches. Writes `raw/`. The only home of a dump script: none lives beside the data (decision 105). Each Oracle schema is dumped as it is, names and units unchanged, by `dump/oracle/<schema>.R` to `raw/oracle/<schema>/`, every table and view, with Oracle's comments in a `_data-dict.yaml` and the dump time stamped in each file (`dump_oracle_schema()`, `R/dump_oracle.R`; plan 018). The preferred form is made after, never in the dump. Run by the maintainer, since the password is in the macOS keychain: `run_dump(schema, resume = FALSE)` (`R/run_dump.R`) starts each script in its own background Rscript, with a log in `raw/oracle/<schema>/_logs/`; `dump_status()` says where each stands. On the server, through ROracle (decision 109; steps in `dump/oracle/README.md`): `Rscript dump/oracle/all.R --check`, then `nohup Rscript dump/oracle/all.R &` runs every schema in turn; `compare_dumps()` (`R/compare_dumps.R`) checks a server dump against the Mac's before it replaces it. |
-| `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. |
+| `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. An Oracle table is read where the dump put it, `fd_raw("oracle", <schema>, <table>.parquet)`, as Oracle holds it; the STK trail and mobile ids through `stk_trail()` and `stk_mobile()` (`R/stk_trail.R`), their preferred form over the dump with no copy (decision 111). |
 | `reference/` | Vessels, geo, ports, gear, species. Note: `vessel_ais_key` is a *fitted model*, not a registry — it carries confidence. |
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
 | `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). These key checks build the key and run with it in the `once` project. `sources/stk/event.R` tags every STK port `I`/`U` event from STK alone, one row per ping (plan 011, decision 059; preprocessing since plan 014); `curate/port_stay.R` builds the stays from them and from the pings, with the per-port departure radius of `reference/ports/port_radius.R` (decision 060; a frozen one-time fix since decision 075); `curate/ais_voyage.R` cuts voyages at those stays (decision 061), and `curate/ais_trail.R` builds the product from them: `curated/ais/trail`, every fix with its voyage, station and logbook trip, partitioned by year and month (decision 065). |
@@ -213,6 +213,8 @@ repos.
 
 - **dplyr-first**; DuckDB/SQL only for performance.
 - **Base R pipe** `|>`, not `%>%`.
+- **Date-times are UTC.** Both targets projects set `TZ=UTC`: the dumps hold plain TIMESTAMPs in UTC, which
+  `nanoparquet::read_parquet()` would otherwise read in the session's zone (decision 111).
 - **`duckdbfs` for parquet I/O.** Never `library(arrow)` in a pipeline script —
   arrow and nanoparquet write `TIMESTAMP WITH TIME ZONE`, which DuckDB cannot
   subtract. `duckdbfs::write_dataset` writes plain `TIMESTAMP`.

@@ -1,7 +1,7 @@
 # Are the dropped afli stations real? Asked of AIS, which knows nothing about the
 # logbook merge.
 #
-# Input:  raw/logbooks/afli/{rafr_stofn,stofn}.parquet, curated/ais/{voyage.parquet,ping},
+# Input:  raw/oracle/afli/{rafr_stofn,stofn}.parquet, curated/ais/{voyage.parquet,ping},
 #         curated/landing/landings.parquet, curated/vessel/vessel.parquet
 # Output: curated/check/afli_rafr_stofn_corroboration.parquet - one row per station
 #
@@ -40,9 +40,9 @@ ddmm <- function(x) {
 
 ## Population -------------------------------------------------------------------
 feed <-
-  read_parquet(fd_raw("logbooks", "afli", "rafr_stofn.parquet")) |>
+  read_parquet(fd_raw("oracle", "afli", "rafr_stofn.parquet")) |>
   select(visir, vid = skipnr, eytt, vedags, breidd, lengd)
-merged_ids <- read_parquet(fd_raw("logbooks", "afli", "stofn.parquet"))$visir
+merged_ids <- read_parquet(fd_raw("oracle", "afli", "stofn.parquet"))$visir
 
 live <-
   feed |>
@@ -330,7 +330,7 @@ print(knitr::kable(
                   "defect is repaired in this script's working copy only.")))
 
 write_curated(out, fd_curated("check", "afli_rafr_stofn_corroboration.parquet"),
-              inputs = c(rafr_stofn = fd_raw("logbooks", "afli", "rafr_stofn.parquet"),
-                         stofn      = fd_raw("logbooks", "afli", "stofn.parquet"),
+              inputs = c(rafr_stofn = fd_raw("oracle", "afli", "rafr_stofn.parquet"),
+                         stofn      = fd_raw("oracle", "afli", "stofn.parquet"),
                          ais_trip   = fd_curated("ais", "voyage.parquet"),
                          landings   = fd_curated("landing", "landings.parquet")))

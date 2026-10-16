@@ -2,8 +2,8 @@
 # Side: preprocessing (stk). See plan 014.
 #
 # Inputs:
-#   data-dump/ais/stk/trail/                  — STK AIS pings (mid-keyed, all vessels)
-#   data/vessels/stk_vessel_match.parquet     — mid → vid temporal lookup
+#   raw/oracle/stk/trail/, through stk_trail()    — STK AIS pings (mid-keyed, all vessels; R/stk_trail.R)
+#   curated/vessel/vessel_ais_key.parquet          — mid → vid temporal lookup
 #
 # Output:
 #   data-raw/ais/stk   — Hive-partitioned parquet (by year); ~566 M rows (Icelandic vessels)
@@ -25,7 +25,7 @@ vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`
 # (a STK-internal mobile ID), so we resolve to vid via a temporal interval join:
 # each mid may map to different vessels over time as transponders are reused.
-duckdbfs::open_dataset(fd_raw("ais", "stk", "trail")) |>
+stk_trail() |>
   # d2 is a DATE and a segment's last day runs to its end: half-open on d2 + 1, or every ping after 00:00 on
   # the last day of a period falls between two periods and is lost
   inner_join(vid |> select(vid, mmsi, mid, loid, glid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1L),

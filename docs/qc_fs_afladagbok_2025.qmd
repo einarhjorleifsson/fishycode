@@ -36,9 +36,9 @@ source(here::here("R/paths.R"))
 
 # ── Data sources ───────────────────────────────────────────────────────────────
 # Raw logbook tables (data-dump from Fiskistofa)
-trip_raw  <- open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_veidiferd.parquet")) |> collect()
-stat_raw  <- open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_veidi.parquet")) |> collect()
-catch_raw <- open_dataset(fd_raw("logbooks", "fs_afladagbok", "ws_afli.parquet")) |> collect()
+trip_raw  <- open_dataset(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet")) |> collect()
+stat_raw  <- open_dataset(fd_raw("oracle", "fs_afladagbok", "ws_veidi.parquet")) |> collect()
+catch_raw <- open_dataset(fd_raw("oracle", "fs_afladagbok", "ws_afli.parquet")) |> collect()
 
 # Port crosswalk: londunarhofn (1–140, hafnarnumer_id) → hid (aflagrunnur port code)
 ports <- open_dataset(fd_curated("reference", "port.parquet")) |>
@@ -613,7 +613,7 @@ The landings register is filtered to the same period (`r DATE_FROM` – `r DATE_
 ```{r}
 #| label: matching-setup
 
-land_raw <- open_dataset(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+land_raw <- open_dataset(fd_raw("oracle", "agf", "aflagrunnur.parquet")) |>
   filter(londun_hefst >= DATE_FROM, londun_hefst <= DATE_TO) |>
   select(londun_id, vid = skip_numer, date = londun_hefst, hid_land = hafnarnumer, gid_land = veidarfaeri) |>
   collect() |>

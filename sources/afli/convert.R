@@ -1,6 +1,6 @@
 # Create standard summary tables
 # Side: preprocessing (afli). See plan 014.
-# Input:  raw/logbooks/afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
+# Input:  raw/oracle/afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
 #         curated/reference/{dictionary,gear,port}.parquet
 # Output: staging/afli/{trip,station,fishing_sample,sensor,catch,aggregate}.parquet
 
@@ -27,7 +27,7 @@ harbours <-
 # eytt_deleted = TRUE  → deleted in Oracle; treat with caution / exclude.
 # eytt_deleted = FALSE → active in Oracle (rafr_ era, 2003–2020).
 # eytt_deleted = NA    → not in rafr_ (paper era, or 2020–2022 direct-load).
-eytt_ref <- duckdbfs::open_dataset(fd_raw("logbooks", "afli", "rafr_stofn.parquet")) |> collect() |>
+eytt_ref <- duckdbfs::open_dataset(fd_raw("oracle", "afli", "rafr_stofn.parquet")) |> collect() |>
   select(visir, eytt) |>
   mutate(eytt_deleted = eytt == 1L) |>
   select(visir, eytt_deleted)
@@ -36,7 +36,7 @@ eytt_ref <- duckdbfs::open_dataset(fd_raw("logbooks", "afli", "rafr_stofn.parque
 # No explicit trip table in this schema; .tid derived as min(.sid) per
 # (vid, T2, hid2). T1 is the minimum fishing date within the derived trip.
 source <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "stofn.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "stofn.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   filter(!is.na(date)) |>                        # 40 records have NA date
   # Remove ~41k monthly aggregate records (nephrops, shrimp, d-seine); these
@@ -89,14 +89,14 @@ station <-
 
 ## Mobile (toga: OTB / OTM / DRB / SDN) ---------------------------------------
 aux_mobile <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "toga.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "toga.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear %in% c("DRB", "OTB", "OTM", "SDN")),
              by = ".sid")
 
 ## Static (lineha: LLS / GNS / GND / LHM) -------------------------------------
 aux_static <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "lineha.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "lineha.parquet")) |> collect() |>
   rename(.sid = visir) |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear %in% c("LLS", "GNS", "GND", "LHM")),
@@ -104,14 +104,14 @@ aux_static <-
 
 ## Trap (gildra: FPO) ----------------------------------------------------------
 aux_trap <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "gildra.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "gildra.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear == "FPO"), by = ".sid") |>
   mutate(duration_m = duration_h * 60)
 
 ## Seine / ring net (hringn: PS) -----------------------------------------------
 aux_seine <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "hringn.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "hringn.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear == "PS"), by = ".sid")
 
@@ -315,7 +315,7 @@ sensor <-
 
 # Catch -----------------------------------------------------------------------
 catch <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "afli.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "afli.parquet")) |> collect() |>
   wk_translate(dictionary, "messy", "clean") |>
   select(.sid, sid, catch) |>
   group_by(.sid, sid) |>
@@ -329,7 +329,7 @@ catch <-
 # date is mid-month (15th); no coordinates available; duration_m is total
 # aggregated tow time for the period (not a single-haul value).
 agg_stofn <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "stofn.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "stofn.parquet")) |> collect() |>
   wk_translate(dictionary) |>
   filter(!is.na(date)) |>
   filter(
@@ -347,12 +347,12 @@ agg_stofn <-
   select(.sid, vid, gid, date, sq, ssq, agg_type)
 
 agg_catch <-
-  duckdbfs::open_dataset(fd_raw("logbooks", "afli", "afli.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "afli", "afli.parquet")) |> collect() |>
   wk_translate(dictionary, "messy", "clean") |>
   select(.sid, sid, catch) |>
   inner_join(agg_stofn, by = ".sid") |>
   left_join(
-    duckdbfs::open_dataset(fd_raw("logbooks", "afli", "toga.parquet")) |> collect() |>
+    duckdbfs::open_dataset(fd_raw("oracle", "afli", "toga.parquet")) |> collect() |>
       wk_translate(dictionary) |>
       select(.sid, duration_m),
     by = ".sid"
@@ -408,7 +408,7 @@ if (FALSE) {
 
   ## Cross-check against landings ----------------------------------------------
   lods_londun <-
-    duckdbfs::open_dataset(fd_raw("landings", "kvoti", "lods_londun.parquet")) |> collect() |>
+    duckdbfs::open_dataset(fd_raw("oracle", "kvoti", "lods_londun.parquet")) |> collect() |>
     select(.lid = komunr, vid = skip_nr, D2 = l_dags, hid2 = hofn,
            comment = aths, stada) |>
     mutate(D2 = as_date(D2))

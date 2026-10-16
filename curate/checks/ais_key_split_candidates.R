@@ -2,7 +2,7 @@
 # Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key.parquet, vessel.parquet, vessel_identity.parquet,
-#         raw/ais/stk/trail
+#         raw/oracle/stk/trail (stk_trail())
 # Output: curated/check/ais_key_split_candidates.parquet - one row per silence >= 180 d on
 #         a mobile-id the key gives ONE Icelandic vid across
 #
@@ -21,7 +21,7 @@
 library(dplyr)
 library(nanoparquet)
 
-STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
+STK <- stk_trail_sql()   # R/stk_trail.R: the trail in its preferred form, read as `from (%s)`
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 key_v <- key |>
@@ -32,19 +32,19 @@ identity <- read_parquet(fd_curated("vessel", "vessel_identity.parquet"))
 
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
-  "select mid, cast(time as date) d from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2", STK_GLOB)))
+  "select mid, cast(time as date) d from (%s) where time >= timestamp '2007-06-01' group by 1, 2", STK)))
 
 sil <- split_silences(days, key_v)
-pos <- split_end_positions(con, sil, STK_GLOB)
+pos <- split_end_positions(con, sil, STK)
 
 wk <- dplyr::as_tibble(local({
   bin <- function(col, e, pre) paste(sprintf("sum(case when %s >= %g%s then 1 else 0 end) %s%d", col, e,
                                              c(sprintf(" and %s < %g", col, e[-1]), ""), pre, seq_along(e) - 1), collapse = ", ")
   DBI::dbGetQuery(con, sprintf("
     with p as (select mid, time, lat, lon, speed, epoch(time) - epoch(lag(time) over (partition by mid order by time)) dt
-               from read_parquet('%s') where time >= timestamp '2007-06-01' and speed is not null and lat between 55 and 75)
+               from (%s) where time >= timestamp '2007-06-01' and speed is not null and lat between 55 and 75)
     select mid, cast(date_trunc('week', time) as date) wk, count(*) n, sum(lat) slat, sum(lon) slon, %s, %s
-    from p where dt is null or dt > 0 group by 1, 2 order by 1, 2", STK_GLOB,
+    from p where dt is null or dt > 0 group by 1, 2 order by 1, 2", STK,
     bin("speed", c(0, .5, 1, 2, 3, 4, 6, 8, 10, 12, 15), "sp"), bin("dt", c(0, 120, 300, 600, 1200, 3600, 10800, 43200), "dt")))
 }))
 shift <- split_profile_shift(wk, sil)

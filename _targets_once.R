@@ -24,6 +24,13 @@ library(targets)
 tar_source("R/")
 configure_duckdb_temp()
 
+# The pipeline runs in UTC, as the Oracle dumps do (decision 109). The dumps in raw/oracle/ hold plain TIMESTAMPs in
+# UTC, and nanoparquet::read_parquet() returns those with no time zone, so format(), lubridate's as_date() and year()
+# would read them in the session's zone: on a Mac in Atlantic/Reykjavik that moved dates before 1912 back a day
+# (vessel_sign's 1901-01-01 placeholders became 1900-12-31), and anywhere outside UTC it moves every one. DuckDB
+# returns them in UTC either way (plan 018 phase 3).
+Sys.setenv(TZ = "UTC")
+
 tar_option_set(
   packages = c("tidyverse", "duckdbfs", "ramb", "whack", "geo",
                "sf", "nanoparquet", "duckdb")

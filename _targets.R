@@ -36,6 +36,13 @@ tar_source("R/")
 # target's first duckdbfs call.
 configure_duckdb_temp()
 
+# The pipeline runs in UTC, as the Oracle dumps do (decision 109). The dumps in raw/oracle/ hold plain TIMESTAMPs in
+# UTC, and nanoparquet::read_parquet() returns those with no time zone, so format(), lubridate's as_date() and year()
+# would read them in the session's zone: on a Mac in Atlantic/Reykjavik that moved dates before 1912 back a day
+# (vessel_sign's 1901-01-01 placeholders became 1900-12-31), and anywhere outside UTC it moves every one. DuckDB
+# returns them in UTC either way (plan 018 phase 3).
+Sys.setenv(TZ = "UTC")
+
 tar_option_set(
   packages = c("tidyverse", "duckdbfs", "ramb", "whack", "geo",
                "sf", "nanoparquet", "duckdb")
@@ -154,10 +161,14 @@ list(
   # The MMSI archive, rebuilt from every source (plan 016): the four Fjarskiptastofa lists, the Oracle snapshots, Oracle's
   # current table, the old archive's hand-set windows, and two declared corrections. File targets, so a new list or
   # dump shows in tar_outdated() - before plan 016 no vessel target depended on a raw file.
-  tar_target(mmsi_raw, c(list.files(fd_raw("mmsi"), "[.](xlsx|parquet)$", full.names = TRUE),
-                         fd_raw("vessels", "vessel_mmsi.parquet"), fd_raw("vessels", "mmsi_iceland_archieves.parquet"),
+  tar_target(mmsi_raw, c(list.files(fd_raw("mmsi"), "[.]xlsx$", full.names = TRUE),
+                         fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20190627.parquet"),
+                         fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20201215.parquet"),
+                         fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20220405.parquet"),
+                         fd_raw("oracle", "ops_einarhj", "mmsi_icelandic_registry.parquet"),
+                         fd_raw("oracle", "vessel", "vessel_mmsi.parquet"), fd_raw("vessels", "mmsi_iceland_archieves.parquet"),
                          "overrides/mmsi_list_errors.csv", "overrides/mmsi_broadcast.csv"), format = "file"),
-  tar_target(vessel_raw, c(fd_raw("vessels", "vessel_v.parquet"),
+  tar_target(vessel_raw, c(fd_raw("oracle", "vessel", "vessel_v.parquet"),
                            fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")), format = "file"),
   tar_target(mmsi, {
     mmsi_raw; vessel_raw
@@ -171,9 +182,9 @@ list(
 
   # Usage type, kW and length by year (the effort on a fix uses the kW of its year), and the fisheries-management class
   # over time (leisure, and coverage gaps by year). Plan 016 §4 step 5.
-  tar_target(vessel_hist_raw, c(fd_raw("vessels", "vessel_hist_v.parquet"), fd_raw("vessels", "vessel_measurement_hist_v.parquet"),
-                                fd_raw("vessels", "usage_category.parquet")), format = "file"),
-  tar_target(vessel_class_raw, c(fd_raw("vessels", "kvoti_skipasaga.parquet"),
+  tar_target(vessel_hist_raw, c(fd_raw("oracle", "vessel", "vessel_hist_v.parquet"), fd_raw("oracle", "vessel", "vessel_measurement_hist_v.parquet"),
+                                fd_raw("oracle", "vessel", "usage_category.parquet")), format = "file"),
+  tar_target(vessel_class_raw, c(fd_raw("oracle", "kvoti", "skipasaga.parquet"),
                                  fd_raw("external", "skipaskra", "data", "history.rda")), format = "file"),
   tar_target(vessel_year, {
     vessel_raw; vessel_hist_raw
@@ -186,7 +197,7 @@ list(
   # Call sign, local sign (ÍS-8) and name over time (plan 016 step 6b). Nothing in this project reads it: its consumer is
   # the STK key review in the `once` project, whose annual call-sign register it reads as a frozen input.
   tar_target(annual_call_sign, frozen_input("staging", "skipaskra", "annual_call_sign.parquet"), format = "file"),
-  tar_target(vessel_sign_raw, c(fd_raw("vessels", "vessel_identification_hist_v.parquet")), format = "file"),
+  tar_target(vessel_sign_raw, c(fd_raw("oracle", "vessel", "vessel_identification_hist_v.parquet")), format = "file"),
   tar_target(vessel_sign, {
     annual_call_sign; vessel_sign_raw; vessel_class_raw; vessel_hist_raw; vessel_raw
     produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))

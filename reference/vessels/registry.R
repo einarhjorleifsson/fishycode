@@ -24,7 +24,7 @@
 # 2024-10-25
 #  * consolidation, review and addition of older code
 # INPUT ------------------------------------------------------------------------
-# raw/vessels/vessel_v.parquet, curated/vessel/mmsi.parquet,
+# raw/oracle/vessel/vessel_v.parquet, curated/vessel/mmsi.parquet,
 # raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx
 # OUTPUT -----------------------------------------------------------------------
 # curated/vessel/vessel.parquet - one row per vid
@@ -70,7 +70,7 @@ mmsi_ISL |>
   filter(n.mmsi > 1) |>
   knitr::kable(caption = "Vessel with more than one MMSI (expect none: one per vid)")
 vessel_ISL <-
-  read_parquet(fd_raw("vessels", "vessel_v.parquet")) |>
+  read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet")) |>
   dplyr::select(vid = registration_no,
                 status,
                 vessel = name,
@@ -203,7 +203,7 @@ vessel_ISL <-
 vessel_ISL |>
   mutate(kw = ifelse(kw == 0, NA, kw)) |>
   write_curated(fd_curated("vessel", "vessel.parquet"),
-                inputs = c(fd_curated("vessel", "mmsi.parquet"), fd_raw("vessels", "vessel_v.parquet"),
+                inputs = c(fd_curated("vessel", "mmsi.parquet"), fd_raw("oracle", "vessel", "vessel_v.parquet"),
                            fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")))
 
 
@@ -240,7 +240,7 @@ vessel_ISL |> filter(mmsi %in% as.character(missing$mmsi))
 ### ISL vessel - in landings?
 # check if vessels that have landed have mmsi
 vid_landings <-
-  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+  read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet")) |>
   rename(vid = skip_numer,
          date = londun_hefst,
          .lid = londun_id) |>

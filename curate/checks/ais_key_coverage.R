@@ -1,7 +1,7 @@
 # Every STK ping of a mobile-id that has a vessel must have a vessel.
 # Side: once (vessel key). See plan 014.
 #
-# Input:  curated/vessel/vessel_ais_key.parquet, raw/ais/stk/trail
+# Input:  curated/vessel/vessel_ais_key.parquet, raw/oracle/stk/trail (stk_trail())
 # Output: curated/check/ais_key_coverage.parquet - one row per stretch of pings no period covers
 #
 # The maintainer's invariant (2026-09-29): when a mobile-id is assigned to any vessel, a vessel is
@@ -29,13 +29,13 @@ library(dplyr)
 library(tidyr)
 library(nanoparquet)
 
-STK_GLOB <- file.path(fd_path("raw", "ais", "stk", "trail"), "year=*", "*.parquet")
+STK <- stk_trail_sql()   # R/stk_trail.R: the trail in its preferred form, read as `from (%s)`
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet")) |>
   mutate(d1 = as.Date(d1), d2 = as.Date(d2))
 
 con <- DBI::dbConnect(duckdb::duckdb(), config = list(memory_limit = "16GB"))
 days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
-  "select mid, cast(time as date) d, count(*) n from read_parquet('%s') where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK_GLOB)))
+  "select mid, cast(time as date) d, count(*) n from (%s) where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK)))
 DBI::dbDisconnect(con, shutdown = TRUE)
 
 # A mobile-id "has a vessel" when any of its rows carries a positive vid. Periods are the

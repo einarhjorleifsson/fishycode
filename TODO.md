@@ -388,18 +388,21 @@ and a crosswalk from each feed identity to it. It follows plan 016's rebuild and
 
 **check:** plan 021 §7.
 
-## 66. Oracle dumps as they are: redo them on the server, then switch the readers
-**status:** in progress · **needs: maintainer** — the `afli.afli` query in plan 018 §3 · **see:**
-`curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106 and 109
+## 66. Oracle dumps as they are: rebuild from them (plan 018 phase 4)
+**status:** open · **needs: maintainer** — the go for the rebuild, with plan 016's; and the `afli.afli` query in plan
+018 §3 · **see:** `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106, 109 and 111, TODO 63
 
-The server dump (ROracle, decision 109) is complete: 13 of 13 schemas, afli.afli included, checked against the Mac's
-RJDBC dumps (in full for seven, the light check for the rest; stk has no Mac copy) and in `raw/oracle/` since
-2026-10-16. The RJDBC set went to the Trash: nothing downstream read it. Two kvoti tables only RJDBC read (`adili_jn`,
-`eftirlits_gjald_utan_ees`, NUL characters) can be dumped through it again if a reader needs them. Left: phase 3, the
-readers.
+Phases 1-3 are done. Every reader uses `raw/oracle/`, the trail through `stk_trail()`, and both targets projects run
+in UTC (decision 111). Each adapter was run into scratch and compared with the old copies and with today's staging.
+The differences are Oracle's latest day and the old copies' known faults. The old copies are in the Trash, except
+`raw/logbooks/logbook/` and the frozen bootstrap's `raw/ports/ports_kvoti.parquet`. Left: the rebuild. The raw inputs
+are undeclared in `_targets.R` except the vessel files, so ten targets are invalidated by hand first (decision 111,
+"What is left"), and `staging/ais/stk` is cleared (TODO 69).
+Two kvoti tables only RJDBC read (`adili_jn`, `eftirlits_gjald_utan_ees`, NUL characters) can be dumped through it
+again if a reader needs them.
 
-**check:** plan 018 phase 3 is done: the readers use `fd_raw("oracle", ...)` and the old dump directories are gone or
-kept by a decision.
+**check:** plan 018 phase 4 is done: `staging/` and `curated/` are rebuilt from `raw/oracle/` and compared with the
+outputs they replace.
 
 ## 67. Divers' registrations in the landings
 **status:** open · **see:** `curate/decisions/110-divers-registrations-in-the-landings.md`, TODO 24
@@ -440,3 +443,13 @@ likely `stk_vms_v` (303,784,194 rows), the yearly `vms_stk_export_*` and the vie
 **check:** each stk table besides the trail has a line saying what it holds, its time span and keys, and whether
 fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.parquet` on a sample of vessels, the
 result recorded in a decision or a plan.
+
+## 69. Partitioned outputs keep partitions a rebuild no longer writes
+**status:** open · **see:** decision 111
+
+`duckdbfs::write_dataset()` replaces the partitions it writes and leaves the others. `staging/ais/stk` still holds
+`year=1970` and `year=2006` from the build of 2026-09-23 (3 rows), which every reader of it takes in. Any partitioned
+output can carry an older build's rows the same way. Clear the directory before each write, or check for it.
+
+**check:** no partitioned output under `staging/` or `curated/` holds a partition its last build did not write, and
+the scripts that write them make sure of it.

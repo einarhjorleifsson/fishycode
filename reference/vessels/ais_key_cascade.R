@@ -222,7 +222,7 @@ VID2 <-
 known_ids <- unique(c(CS, CS2, CS3, VID2))
 
 lnd <-
-  read_parquet(fd_raw("landings", "agf", "aflagrunnur.parquet")) |>
+  read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet")) |>
   #read_parquet(fd_curated("landing", "agf_stations.parquet")) |>
   group_by(vid = skip_numer) |>
   reframe(n = n(),
@@ -232,8 +232,8 @@ lnd <-
 
 ## stk summary -----------------------------------------------------------------
 STK <-
-  open_dataset(fd_raw("ais", "stk", "trail"))
-mobile <- open_dataset(fd_raw("ais", "stk", "mobile.parquet"))
+  stk_trail()
+mobile <- stk_mobile()
 # Plan 003 §3.5: this filter never filtered. The second `mutate(n = n())` ran on
 # UNGROUPED data, so it overwrote the count with nrow() of the whole trail, and
 # `n >= 10` was therefore always TRUE.
@@ -275,7 +275,7 @@ stk <-
 
 # Older matches ----------------------------------------------------------------
 older <-
-  read_parquet(fd_raw("ais", "stk", "einarhj_mobile-vid.parquet")) |>
+  read_parquet(fd_raw("oracle", "ops_einarhj", "mobile_vid.parquet")) |>
   select(mid:vid, no, t1, t2) |>
   # add loid and glid where missing
   left_join(stk |> select(mid, loid_tmp = loid, glid_tmp = glid, d1, d2),
@@ -722,6 +722,6 @@ stk14 |>
          vid_older = as.integer(vid_older)) |>
   # raw/ais/stk/trail is a directory and is left out of `inputs`, as everywhere else
   write_curated(fd_curated("vessel", "vessel_ais_key_cascade.parquet"),
-                inputs = c(fd_raw("ais", "stk", "mobile.parquet"), fd_raw("ais", "stk", "einarhj_mobile-vid.parquet"),
-                           fd_raw("landings", "agf", "aflagrunnur.parquet"), fd_staging("aux", "callsign_prefix.parquet"),
+                inputs = c(fd_raw("oracle", "stk", "mobile.parquet"), fd_raw("oracle", "ops_einarhj", "mobile_vid.parquet"),
+                           fd_raw("oracle", "agf", "aflagrunnur.parquet"), fd_staging("aux", "callsign_prefix.parquet"),
                            fd_curated("vessel", "vessel.parquet"), fd_curated("vessel", "vessel_identity.parquet")))

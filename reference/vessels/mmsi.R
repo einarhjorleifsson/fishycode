@@ -3,10 +3,11 @@
 #
 # Input:  raw/mmsi/*.xlsx                        the Fjarskiptastofa lists, dated by file name; a byte-identical copy under
 #                                                another name is read once
-#         raw/mmsi/oracle_*.parquet              the Oracle snapshots behind the old archive's sources 1-4
-#                                                (dump/oracle/mmsi_snapshots.R), read when present
-#         raw/vessels/vessel_mmsi.parquet        Oracle's current MMSI table, dated by the register's last change
-#         raw/vessels/vessel_v.parquet           that date (max valid_from)
+#         raw/oracle/ops_einarhj/{vessel_mmsi_20190627,_20201215,_20220405,mmsi_icelandic_registry}.parquet
+#                                                the Oracle snapshots behind the old archive's sources 1-4 (until plan 018
+#                                                copied to raw/mmsi/oracle_*.parquet, whose names stay their `source`)
+#         raw/oracle/vessel/vessel_mmsi.parquet  Oracle's current MMSI table, dated by the register's last change
+#         raw/oracle/vessel/vessel_v.parquet     that date (max valid_from)
 #         raw/vessels/mmsi_iceland_archieves.parquet   the old archive, for its hand-set windows only: 46 rows on 23 MMSIs
 #                                                handed from one hull to another, set in 2024 partly from the STK track
 #         overrides/mmsi_list_errors.csv, overrides/mmsi_broadcast.csv   confirmed rows only
@@ -45,7 +46,7 @@ holder_vid <- function(sknr) {
             .default = NA_integer_)
 }
 as_mmsi <- function(x) {
-  x <- if (is.numeric(x)) sprintf("%.0f", x) else trimws(as.character(x))
+  x <- if (is.numeric(x)) sprintf("%.0f", as.numeric(x)) else trimws(as.character(x))   # the dump has MMSIs as integers
   if_else(x %in% c("", "NA"), NA_character_, x)
 }
 pick <- function(d, opts) { hit <- intersect(opts, names(d)); if (length(hit)) d[[hit[1]]] else rep(NA, nrow(d)) }
@@ -74,7 +75,10 @@ LATEST_LIST <- max(lists$source_date)
 cat("lists:", paste(sort(unique(lists$source)), collapse = " "), "\n")
 
 ## The Oracle snapshots (sources 1-4 of the old archive) --------------------------------------------------------------
-snap_files <- list.files(fd_raw("mmsi"), "^oracle_.*[.]parquet$", full.names = TRUE)
+snap_files <- c(fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20190627.parquet"),
+                fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20201215.parquet"),
+                fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20220405.parquet"),
+                fd_raw("oracle", "ops_einarhj", "mmsi_icelandic_registry.parquet"))
 snaps <- bind_rows(lapply(snap_files, function(f) {
   d  <- read_parquet(f)
   dd <- regmatches(basename(f), regexpr("[0-9]{8}", basename(f)))
@@ -83,16 +87,15 @@ snaps <- bind_rows(lapply(snap_files, function(f) {
          cs   = as.character(pick(d, c("cs", "call_sign", "kallm"))),
          nafn = as.character(pick(d, c("nafn", "name", "vessel", "skip", "heiti"))),
          note = as.character(pick(d, c("athugasemdir", "note", "aths"))),
-         source = sub("[.]parquet$", "", basename(f)),
+         source = paste0("oracle_", sub("[.]parquet$", "", basename(f))),   # the old copies' names, raw/mmsi/oracle_*
          source_date = if (length(dd)) as.Date(dd, "%Y%m%d") else as.Date(NA))
 }))
-if (!length(snap_files)) cat("NOTE: no raw/mmsi/oracle_*.parquet yet - run dump/oracle/mmsi_snapshots.R; built from the lists and Oracle's current table only\n")
 
 ## Oracle's current table ---------------------------------------------------------------------------------------------
-v <- read_parquet(fd_raw("vessels", "vessel_v.parquet"))
+v <- read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet"))
 REGISTER_DATE <- as.Date(max(v$valid_from, na.rm = TRUE))   # the register's last change, not the dump date
-oracle_now <- read_parquet(fd_raw("vessels", "vessel_mmsi.parquet")) |>
-  transmute(mmsi = as_mmsi(mmsi_no), sknr = if_else(is.na(registration_no), NA_character_, sprintf("%.0f", registration_no)),
+oracle_now <- read_parquet(fd_raw("oracle", "vessel", "vessel_mmsi.parquet")) |>
+  transmute(mmsi = as_mmsi(mmsi_no), sknr = as.character(registration_no),
             cs = call_sign, nafn = NA_character_,
             note, source = "oracle_vessel_mmsi", source_date = REGISTER_DATE)
 
@@ -227,6 +230,6 @@ print(two |> select(vid, sknr, mmsi, nafn, sources), n = Inf)
 
 print(mmsi |> count(mmsi_cat, window_basis, basis), n = Inf)
 write_curated(mmsi, fd_curated("vessel", "mmsi.parquet"),
-              inputs = c(xl, snap_files, fd_raw("vessels", "vessel_mmsi.parquet"), fd_raw("vessels", "vessel_v.parquet"),
+              inputs = c(xl, snap_files, fd_raw("oracle", "vessel", "vessel_mmsi.parquet"), fd_raw("oracle", "vessel", "vessel_v.parquet"),
                          fd_raw("vessels", "mmsi_iceland_archieves.parquet"),
                          "overrides/mmsi_list_errors.csv", "overrides/mmsi_broadcast.csv"))
