@@ -18,6 +18,14 @@
 # the metadata, so curated/ stays parquet-only and an analyst still gets
 # geometry back (see read_curated_sf()).
 
+# A DuckDB connection without duckdb's notice about where it keeps extensions (~/.duckdb): in a script the package
+# prints its five lines for each of the first 60 connections, so a dump's log had them once per table written
+# (hafdruna, 2026-10-16). Only that message is muffled; the home and its cached extensions stay as they are.
+.duckdb_quiet <- function() {
+  withCallingHandlers(DBI::dbConnect(duckdb::duckdb()),
+                      duckdb_storage_location = function(m) invokeRestart("muffleMessage"))
+}
+
 .git_info <- function() {
   g <- function(...) tryCatch(
     system2("git", c(...), stdout = TRUE, stderr = FALSE),
@@ -176,7 +184,7 @@ read_curated_sf <- function(path) {
 }
 
 curated_provenance <- function(path) {
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- .duckdb_quiet()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
   r <- DBI::dbGetQuery(con, sprintf(
     "SELECT decode(key) AS \"key\", decode(value) AS \"value\" FROM parquet_kv_metadata(%s)",

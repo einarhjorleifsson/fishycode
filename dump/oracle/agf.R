@@ -11,7 +11,10 @@
 # Two views are left out, as in every earlier dump, now with the reason (both failed on 2026-10-15):
 #   aflagrunnur_sec_v       a per-user secured view: ORA-20290, the user has no row in ask.valin_hofn (chosen ports)
 #   aflagrunnur_th_igildi_v failed with a Java exception the error wrapper hid; aflagrunnur and aflagrunnur_v are
-#                           dumped. Through ROracle it is tried (skip_rjdbc; decision 109).
+#                           dumped. Through ROracle the cause shows: the view fails in Oracle itself, ORA-20006 from
+#                           KVOTI.KVUTIL, no cod-equivalent factor (thorskigildisstudull) for quota species 34 in
+#                           period 2526 (hafdruna, 2026-10-16). It is still tried there (skip_rjdbc), so it comes
+#                           through once Oracle has the factor; until then it is recorded as failed, with that reason.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 

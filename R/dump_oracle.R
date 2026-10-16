@@ -126,7 +126,7 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   d <- DBI::dbGetQuery(con, "SELECT TO_DATE('1900-01-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS') AS D FROM DUAL")
   names(d) <- "d"
   raw <- sprintf("%s %s", class(d$d)[1], if (inherits(d$d, "POSIXct")) format(d$d, "%Y-%m-%d %H:%M:%S %Z") else d$d)
-  dk <- DBI::dbConnect(duckdb::duckdb())
+  dk <- .duckdb_quiet()
   on.exit(DBI::dbDisconnect(dk, shutdown = TRUE), add = TRUE)
   duckdb::duckdb_register(dk, "t", d)
   got <- DBI::dbGetQuery(dk, "SELECT CAST(CAST(d AS TIMESTAMP) AS VARCHAR) AS v FROM t")$v
@@ -176,7 +176,7 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
           "fd.driver" = run$driver, "fd.script" = run$script, "fd.commit" = run$commit, "fd.dirty" = run$dirty)
   kv <- kv[!is.na(kv)]
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- .duckdb_quiet()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   duckdb::duckdb_register(con, "d", d)
   meta <- paste(sprintf("%s: %s", shQuote(names(kv), type = "sh"), shQuote(unname(kv), type = "sh")),
@@ -300,7 +300,7 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
     x <- as.character(x)
     ifelse(nchar(x) > 60, paste0(substr(x, 1, 57), "..."), x)
   }
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- .duckdb_quiet()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   written <- objects[objects$status %in% "written", ]
   tables <- lapply(seq_len(nrow(written)), function(i) {
