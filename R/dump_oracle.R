@@ -377,14 +377,19 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
 #              (3 MB/s), and objects that fail in its Java layer. ROracle is expected to read them: the April dump made
 #              with it on the server holds afli.afladagb_xml_mottaka (decision 109)
 #   partition  list(table = "date column"): dumped by calendar year (dump_oracle_by_year())
-#   max_rows   a table Oracle estimates bigger than this, and not partitioned, is listed but not dumped
+#   max_rows   a table Oracle estimates bigger than this, and not partitioned, is listed but not dumped. A view has no
+#              estimate, so its rows are counted first (SELECT COUNT(*)), and a bigger one is listed too: stk's views
+#              of the whole trail were fetched whole into memory, stk_vms_v's 303,784,194 rows among them, and the run
+#              went silent on the next ones (hafdruna, 2026-10-16). The trail itself is dumped by year.
 #   resume     keep what an earlier run of the same driver wrote completely and dump the rest (.dump_kept()); on by
 #              `--resume` on the command line (Rscript dump/oracle/afli.R --resume), which dump/oracle/all.R passes
 # A table that fails on a dead connection is tried once more on a new one: afli's dump of 2026-10-15 lost its
-# connection on sjalfvirkir_maelar (ORA-17002), and the 27 tables after it failed on the dead connection.
+# connection on sjalfvirkir_maelar (ORA-17002), and the 27 tables after it failed on the dead connection. The new
+# one comes from `connect`; a test passes one that refuses, so that it never reaches the real database (a test on a
+# stand-in did, through dump_connect() and the keychain, 2026-10-16: read-only queries on tables that do not exist).
 # Returns the overview, invisibly.
 dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = character(), skip_rjdbc = character(),
-                               partition = list(), max_rows = 5e7, script = NA_character_,
+                               partition = list(), max_rows = 5e7, script = NA_character_, connect = dump_connect,
                                resume = "--resume" %in% commandArgs(trailingOnly = TRUE)) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   run <- .dump_run(con, script)
@@ -424,6 +429,15 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
       stamp$resumed[i] <- TRUE
       next
     }
+    if (objects$type[i] == "view" && !objects$partitioned[i]) {
+      cnt <- tryCatch(as.numeric(DBI::dbGetQuery(con, sprintf('SELECT COUNT(*) AS n FROM "%s"."%s"', toupper(schema),
+                                                              toupper(nm)))$n), error = function(e) NA_real_)
+      if (isTRUE(cnt > max_rows)) {
+        status[i] <- "too_big"; rows[i] <- cnt
+        message(sprintf("%s.%s: too_big (a view of %s rows)", schema, nm, format(cnt, big.mark = ",")))
+        next
+      }
+    }
     t0 <- Sys.time()
     fl <- fields[fields$table == nm, ]
     attempt <- function() tryCatch(
@@ -435,7 +449,7 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
     r <- attempt()
     if (inherits(r, "error") && !.oracle_alive(con)) {
       message(sprintf("%s.%s: the connection is lost - reconnecting and trying once more", schema, nm))
-      con <- dump_connect()
+      con <- connect()
       r <- attempt()
     }
     seconds[i] <- as.numeric(difftime(Sys.time(), t0, units = "secs"))

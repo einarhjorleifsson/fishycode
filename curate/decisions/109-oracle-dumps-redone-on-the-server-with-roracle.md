@@ -178,3 +178,12 @@ comparison will show these columns as differences.
   objects, 13 are views guarded by `ask.valin_hofn` (ORA-20290, no chosen ports for this login), now in ask.R's
   `skip`; the other 2 are column names Oracle keeps as quoted (one begins with an apostrophe, `'STADA_HEITI`), for
   `--resume` with the name fix.
+- **Views are counted before they are fetched (2026-10-16).** stk's run went silent for hours on its views: a view has
+  no row estimate, so the `max_rows` rule for tables did not apply, and views of the whole trail were fetched whole
+  into memory (`stk_vms_v`, 303,784,194 rows, was written; `trail_all`, `view_trail` and seven others were left).
+  `dump_oracle_schema()` now counts a view first and lists one over `max_rows` (50 M) as `too_big`, its count kept.
+  The trail itself is dumped by year. Tested on a stand-in schema in DuckDB.
+- **A test reached the real database once (2026-10-16).** The stand-in lacked Oracle's `DUAL`, so the dumper took the
+  test for a lost connection and reconnected through `dump_connect()`, which the keychain now answers without a
+  prompt; it ran read-only queries on tables that do not exist. The reconnect is now an argument (`connect =`), and
+  a dumper test replaces `dump_connect()` with one that refuses.
