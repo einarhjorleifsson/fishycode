@@ -400,3 +400,16 @@ built and tested without Oracle. Each schema is compared with `compare_dumps()` 
 
 **check:** plan 018 phase 3 is done: the readers use `fd_raw("oracle", ...)` and the old dump directories are gone or
 kept by a decision.
+
+## 67. Divers' registrations in the landings
+**status:** open · **see:** `curate/decisions/110-divers-registrations-in-the-landings.md`, TODO 24
+
+Two `vid`s in the landings are divers, not vessels: 8009 (the register's útgerðarflokkur "Kafarar") and very likely
+8008, both landing only with gear 23 "Kafari", about 14 t on 152 landing rows. They have no hull and no AIS track, so
+a check of vessels that land but are never heard on AIS counts them as missed vessels unless they are told apart.
+Mark them as divers, through an override that names the two, or a rule (a registration that lands only with gear 23),
+and leave them out of `ais_key_landings`' `landed_but_no_ais`.
+
+**check:** 8008 and 8009 carry a diver class in fishycode's landings or vessel classification, and
+`landed_but_no_ais` leaves them out.
+
