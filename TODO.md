@@ -427,7 +427,7 @@ port to port: whether the vessel fished is not recorded (maintainer). Of value t
 - to 2021, recorded departures and arrivals to check, or correct, the voyages and stays cut from the track;
 - a departure time (T1) for logbook trips and landings, which lack one, with its own basis.
 The other `tilk_` tables (maintainer: they may hold more): `tilk_stk_allt_v` (1.95 M voyages, the same columns: which
-selection?), `tilk_stk_por_v` (pairs departure and arrival; not dumped, see stk's overview), and `tilk_vss`, calls of
+selection?), `tilk_stk_por_v` (pairs departure and arrival; skipped: Oracle did not finish it in over 2 h, twice), and `tilk_vss`, calls of
 departure (1) and arrival (2) to the traffic service in 2010-2011 (28,138, of them 9,824 moved to STK's events,
 `flutt`), then in 2012-2013 almost only a code 0 that Oracle's comment does not explain (141,172).
 Then `leidangrar_stk` (2,018,618 rows), `lodnuskip_stk` (1,102,509), `tilk_vss`, `posrep_current`,

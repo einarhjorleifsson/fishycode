@@ -214,3 +214,9 @@ comparison will show these columns as differences.
   - **afli:** 287 identical. `afladagb_xml_mottaka` and `ra_email_skeyti` are on the server only: the LOB tables RJDBC
     skipped. Failed: `afli` and `v_afli` (ORA-01722, the fallback above), and `rafr_mottaka_view` and `urv_raekja`
     (ORA-01843 in Oracle's own view code).
+- **stk's silences were one view (2026-10-16).** Both stk runs went quiet on `tilk_stk_por_v`, departures paired with
+  arrivals. The first run's last line was at 12:49 and nothing followed until it was stopped after 15:00; the resume
+  was quiet from 16:03 with every other object written. Oracle does not finish evaluating that view in hours, so
+  `dump/oracle/stk.R` skips it, as it does `toti2_mobile_skip_v` (ORA-00942, an object it reads is not there for this
+  login). `tilk_stk_allt` holds voyages, each a departure and its arrival (TODO 68). The big trail views were
+  slow too, but they finished.
