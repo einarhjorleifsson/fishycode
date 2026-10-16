@@ -396,8 +396,8 @@ Phases 1-3 are done. Every reader uses `raw/oracle/`, the trail through `stk_tra
 in UTC (decision 111). Each adapter was run into scratch and compared with the old copies and with today's staging.
 The differences are Oracle's latest day and the old copies' known faults. The old copies are in the Trash, except
 `raw/logbooks/logbook/` and the frozen bootstrap's `raw/ports/ports_kvoti.parquet`. Left: the rebuild. The raw inputs
-are undeclared in `_targets.R` except the vessel files, so ten targets are invalidated by hand first (decision 111,
-"What is left"), and `staging/ais/stk` is cleared (TODO 69).
+are undeclared in `_targets.R` except the vessel files, so ten targets were invalidated by hand (2026-10-16, decision
+111): `tar_outdated()` lists 50. `staging/ais/stk` is kept for the rebuild; its stale partitions are TODO 69.
 Two kvoti tables only RJDBC read (`adili_jn`, `eftirlits_gjald_utan_ees`, NUL characters) can be dumped through it
 again if a reader needs them.
 

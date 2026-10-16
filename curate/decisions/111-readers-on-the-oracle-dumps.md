@@ -122,7 +122,9 @@ edit, so they are invalidated by hand before the build:
 targets::tar_invalidate(c(gear, port, port_code, stk_hid_pid, afli, fs_afladagbok, adb, aflagrunnur, lods, stk))
 ```
 
-`staging/ais/stk` is best cleared before `stk` rebuilds, or its two stale partitions stay (TODO 69). The `once` project
+*Done 2026-10-16, at the maintainer's request:* the ten are invalidated, and `tar_outdated()` then lists 50 targets,
+the ten and everything downstream. `staging/ais/stk` is not cleared (the maintainer: the rebuild needs it), so its two
+stale partitions stay until TODO 69 is done. The `once` project
 is not rebuilt (decision 075). `TZ=UTC` in `_targets.R` changes no target's hash; it acts on the targets that rebuild.
 The April copy of `raw/logbooks/afli/` is in the Trash (`raw-logbooks-afli_2026-04-19`) and can be put back if a
 second copy of `afladagb_xml_mottaka` in its old serialisation is wanted.
