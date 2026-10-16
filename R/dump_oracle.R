@@ -82,11 +82,14 @@ oracle_objects <- function(con, schema) {
 # RJDBC without a word when ROracle is not installed, so the connection's driver is checked.
 #
 # Either way a DATE before 1912 is read back first, the way a dump writes it (.oracle_check_time()).
+# The JVM in UTC was not enough: on 2026-10-16 that check stopped ask and kvoti, a 1900 DATE coming through 16 min
+# 8 s late with the JVM in UTC, and 84 files of the RJDBC dumps of 2026-10-15 carry the shift (decision 109). So the
+# whole process runs in UTC, R included, whatever the driver; run_dump() also sets it before R starts.
 dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = "8g") {
   driver <- match.arg(driver, c("RJDBC", "ROracle"))
+  Sys.setenv(TZ = "UTC", ORA_SDTZ = "UTC")
   if (driver == "ROracle") {
     if (!requireNamespace("ROracle", quietly = TRUE)) stop("ROracle is not installed here", call. = FALSE)
-    Sys.setenv(TZ = "UTC", ORA_SDTZ = "UTC")
     con <- mar::connect_mar(rjdbc = FALSE)
     message(sprintf("ROracle %s, time zone: %s", utils::packageVersion("ROracle"), Sys.getenv("TZ")))
   } else {
@@ -108,13 +111,15 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 .oracle_check_time <- function(con) {
   d <- DBI::dbGetQuery(con, "SELECT TO_DATE('1900-01-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS') AS D FROM DUAL")
   names(d) <- "d"
+  raw <- sprintf("%s %s", class(d$d)[1], if (inherits(d$d, "POSIXct")) format(d$d, "%Y-%m-%d %H:%M:%S %Z") else d$d)
   dk <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(dk, shutdown = TRUE), add = TRUE)
   duckdb::duckdb_register(dk, "t", d)
   got <- DBI::dbGetQuery(dk, "SELECT CAST(CAST(d AS TIMESTAMP) AS VARCHAR) AS v FROM t")$v
   if (!identical(got, "1900-01-01 12:00:00"))
-    stop("a DATE of 1900-01-01 12:00:00 would be written as ", got, ": the driver reads dates through a time zone ",
-         "other than UTC", call. = FALSE)
+    stop("a DATE of 1900-01-01 12:00:00 would be written as ", got, " (the driver returned ", raw, ", R's time zone ",
+         Sys.getenv("TZ"), "): somewhere dates are read through a time zone other than UTC", call. = FALSE)
+  message("date check: a 1900 DATE comes through as ", got, " (the driver returned ", raw, ")")
   invisible(TRUE)
 }
 

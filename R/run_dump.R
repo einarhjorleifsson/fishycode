@@ -45,9 +45,10 @@
 run_dump <- function(schema, resume = FALSE, driver = NULL, wait = FALSE, root = .repo_root(),
                      log_root = fd_raw("oracle")) {
   scripts <- file.path("dump", "oracle", paste0(schema, ".R"))
-  # dump_connect() reads the driver from FD_DUMP_DRIVER; ROracle's time zones are set before R starts as well
-  env <- if (is.null(driver)) "" else switch(match.arg(driver, c("RJDBC", "ROracle")),
-    RJDBC = "FD_DUMP_DRIVER=RJDBC ", ROracle = "FD_DUMP_DRIVER=ROracle TZ=UTC ORA_SDTZ=UTC ")
+  # dump_connect() reads the driver from FD_DUMP_DRIVER; the process runs in UTC from its start, whatever the driver
+  # (decision 109: a 1900 DATE came through 16 min 8 s late with only the JVM in UTC)
+  env <- paste0("TZ=UTC ORA_SDTZ=UTC ",
+                if (is.null(driver)) "" else paste0("FD_DUMP_DRIVER=", match.arg(driver, c("RJDBC", "ROracle")), " "))
   if (length(miss <- schema[!file.exists(file.path(root, scripts))]))
     stop("no dump script for ", paste(miss, collapse = ", "), " (dump/oracle/<schema>.R)", call. = FALSE)
   # Two runs of one schema write the same files: two ask runs went into one directory on 2026-10-15.

@@ -59,10 +59,13 @@ Where it stands, 2026-10-15 evening:
 - **Dumped:** adb, logbook, fs_afladagbok, gear, asfis, ops_einarhj, orri, vessel, agf.
 - **afli, resumed:** finished, 88 written, 5 skipped (the LOB tables), 3 failed: `afli`, `v_afli` (below) and
   `urv_raekja` (ORA-01843, not a valid month: a date in the view itself).
-- **Running:** ask, added (7c96ad7) because fs_afladagbok's gear codes refer to `ASK.VEIDARFAERI`. Its `_jn` tables
-  look like change journals and may name staff.
-- **kvoti, unclear:** `raw/oracle/kvoti/` holds 531 files, the last written 21:12, with no `_logs` and no process:
-  started outside `run_dump()` and stopped? To be rerun through `run_dump()`.
+- **ask:** added (7c96ad7) because fs_afladagbok's gear codes refer to `ASK.VEIDARFAERI`. Its `_jn` tables look like
+  change journals and may name staff. Stopped 2026-10-16 at 06:29 with 173 of 235 written: the Mac's network dropped
+  after 23:00, and the reconnect waited on a keychain prompt nobody answered.
+- **Dates before 1912 are 16 min 8 s late** in 84 files of these RJDBC dumps (decision 109); the process now runs in
+  UTC, and the date check stops a dump that would shift them.
+- **kvoti:** an RStudio run started 18:40 with the dumper before `run_dump()`; stuck after 22:59 (the same network
+  drop) with 549 of 748 written, and stopped. A resume keeps every complete file (`.dump_kept()`).
 - **Not run:** stk.
 - **Driver:** RJDBC on the Mac (decision 106). Dumps run through `run_dump()`, one process per schema. Two runs of
   one schema write the same files: `run_dump()` refuses a schema whose run is still alive (since 2026-10-15, after two

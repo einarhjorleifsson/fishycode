@@ -93,3 +93,21 @@ only driver that logs in (ROracle is installed there but finds no Oracle client 
   `raw/oracle_server/`. Each schema is compared, then moved into `raw/oracle/<schema>/`. Today's RJDBC set goes to
   `archive/raw-oracle-rjdbc_2026-10-15/` until the comparison is recorded.
 - The two runs still going on the Mac (ask, and kvoti in RStudio) are left to finish: they are the baseline.
+
+## Found 2026-10-16: dates before 1912 in the RJDBC dumps are 16 min 8 s late
+
+The date check stopped the resumed ask and kvoti runs at their start: a DATE of 1900-01-01 12:00:00 would be
+written as 12:16:08, with the JVM in UTC. The decision-105 fix (the JVM in UTC) was therefore not enough. Current
+time-zone data give Atlantic/Reykjavik an offset of −0:16:08 before 1912 and none after, so only earlier dates move.
+
+Measured on the dumps of 2026-10-15: 84 files (adb 10, afli 11, agf 1, ask 5, fs_afladagbok 4, kvoti 29, logbook 2,
+vessel 22), 132 date columns and 2,797,887 values before 1912, every one ending in 16:08. Most are placeholder dates:
+`1900-01-01 00:16:08` and `1860-01-01 00:16:08` in the vessel tables, `0001-01-01 00:16:08` in adb's `registered`,
+`1899-12-30 00:16:08` in afli's logger times. An equality on such a placeholder fails silently. No reader uses
+`raw/oracle/` yet (plan 018 phase 3).
+
+RJDBC hands dates to R as text, so the shift is in the JDBC layer or in R's reading of that text; which one is not
+established without a connection. The dump process now runs in UTC from its start, R included, for both drivers
+(`dump_connect()`, `run_dump()`), and the check says what the driver returned, so its next run either passes or
+names the layer. The 84 files are to be redone: on the server through ROracle, which replaces them all, and the
+comparison will show these columns as differences.
