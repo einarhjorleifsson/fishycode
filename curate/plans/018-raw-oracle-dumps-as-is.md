@@ -71,8 +71,9 @@ Where it stands, 2026-10-15 evening:
   one schema write the same files: `run_dump()` refuses a schema whose run is still alive (since 2026-10-15, after two
   ask runs went into one directory). A dump started by hand is not seen.
 - **Redone on the server, through ROracle (decision 109):** the Mac's dumps were bound by Wi-Fi and the VPN. The code
-  is ready, not yet run against Oracle: `nohup Rscript dump/oracle/all.R --driver=ROracle &` runs every schema with
-  its logs under `raw/oracle/` (after a failure, the same with `--resume`), and `compare_dumps()` checks each against today's RJDBC dump before it replaces it.
+  is ready, not yet run against Oracle: on the server, `Rscript dump/oracle/all.R --check`, then
+  `nohup Rscript dump/oracle/all.R &` runs every schema through ROracle with its logs under `raw/oracle/` (after a
+  failure, the same with `--resume`), and `compare_dumps()` checks each against today's RJDBC dump before it replaces it.
   The runs on the Mac (ask; kvoti in RStudio) finish as the baseline.
 
 **`afli.afli` holds numbers neither fetch can read (2026-10-15).** It is the logbook's catch table (15,674,405 rows,

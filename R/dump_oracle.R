@@ -85,9 +85,13 @@ oracle_objects <- function(con, schema) {
 # The JVM in UTC was not enough: on 2026-10-16 that check stopped ask and kvoti, a 1900 DATE coming through 16 min
 # 8 s late with the JVM in UTC, and 84 files of the RJDBC dumps of 2026-10-15 carry the shift (decision 109). So the
 # whole process runs in UTC, R included, whatever the driver; run_dump() also sets it before R starts.
+#
+# ROracle's text passes through Oracle's client, which converts it to the character set of NLS_LANG: unset, that is
+# commonly plain ASCII, and þ, æ, ö, ð come out as '?'. AMERICAN_AMERICA.AL32UTF8 gives UTF-8, and a decimal point in
+# the text retry's TO_CHAR (an Icelandic territory gives a comma). .oracle_check_text() checks it (ROracle only).
 dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = "8g") {
   driver <- match.arg(driver, c("RJDBC", "ROracle"))
-  Sys.setenv(TZ = "UTC", ORA_SDTZ = "UTC")
+  Sys.setenv(TZ = "UTC", ORA_SDTZ = "UTC", NLS_LANG = "AMERICAN_AMERICA.AL32UTF8")
   if (driver == "ROracle") {
     if (!requireNamespace("ROracle", quietly = TRUE)) stop("ROracle is not installed here", call. = FALSE)
     con <- mar::connect_mar(rjdbc = FALSE)
@@ -103,7 +107,23 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   if (.oracle_driver(con) != driver)
     stop(sprintf("asked for %s, connected through %s", driver, .oracle_driver(con)), call. = FALSE)
   .oracle_check_time(con)
+  if (driver == "ROracle") .oracle_check_text(con)
   con
+}
+
+# Icelandic letters made in Oracle (UNISTR) must come back as UTF-8, or the dump stops before it writes anything.
+# ROracle only: RJDBC's strings are Java's, and its dumps of 2026-10-15 hold þ, æ, ö and ð (1,604 of vessel's 7,047
+# names, none with '?').
+.oracle_check_text <- function(con) {
+  want <- "\u00fe\u00e6\u00f6\u00d0"
+  got <- DBI::dbGetQuery(con, "SELECT CAST(UNISTR('\\00FE\\00E6\\00F6\\00D0') AS VARCHAR2(16)) AS S FROM DUAL")[[1]]
+  got <- enc2utf8(as.character(got))
+  if (!identical(got, want))
+    stop("Icelandic letters made in Oracle (U+00FE U+00E6 U+00F6 U+00D0) came back as '", got, "' (NLS_LANG ",
+         Sys.getenv("NLS_LANG"), ", R locale ",
+         Sys.getlocale("LC_CTYPE"), "): text would not be dumped as UTF-8", call. = FALSE)
+  message("text check: Icelandic letters come through (", got, ")")
+  invisible(TRUE)
 }
 
 # A DATE goes through the driver and DuckDB as a dump writes it, and must come out as Oracle holds it; else the dump

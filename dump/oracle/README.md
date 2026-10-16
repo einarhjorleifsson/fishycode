@@ -1,0 +1,172 @@
+# Dumping the Oracle schemas on the server
+
+*Written with Claude (AI-assisted), 2026-10-16. The why is in
+`curate/decisions/109-oracle-dumps-redone-on-the-server-with-roracle.md`; the plan is
+`curate/plans/018-raw-oracle-dumps-as-is.md`.*
+
+The dump writes every table and view of every schema in `dump/oracle/` to `$FISHYDATA/raw/oracle/<schema>/`, as
+Oracle holds them, through ROracle. The logs sit in the same tree, so copying `raw/oracle/` copies the whole sweep.
+A full run takes hours: start it with `nohup`, from the shell or from R, and leave it.
+
+The schemas, in the order a full run takes them: asfis, gear, orri, vessel, ops_einarhj, logbook, agf, ask, kvoti,
+adb, fs_afladagbok, afli, stk. Each is one script, `dump/oracle/<schema>.R`, which says what it leaves out and why.
+
+## 1. Get the code
+
+```bash
+git clone https://github.com/einarhjorleifsson/fishycode.git
+cd fishycode
+```
+
+Later changes: `git pull` in the same folder. Every command below runs from this folder, and R must start in it
+too (in RStudio: open it as the project).
+
+## 2. Settings for this machine
+
+Make a file called `.Renviron` in the fishycode folder with these three lines (your own path in the first):
+
+```
+FISHYDATA=/path/to/fishydata
+LANG=en_US.UTF-8
+FD_DUMP_DRIVER=ROracle
+```
+
+`FISHYDATA` is where the data go; the folder is created if it does not exist. `FD_DUMP_DRIVER=ROracle` makes
+every way of starting a dump below use ROracle, so it never needs saying again. `.Renviron` is not in git; it
+stays on this machine. In RStudio, restart R after making it.
+
+## 3. Check that the machine is ready
+
+From the shell:
+
+```bash
+Rscript dump/oracle/all.R --check
+```
+
+or from R, see section 6. It dumps nothing. It checks the R packages, the locale, `$FISHYDATA` and its free space
+(40 GB wanted), the git commit, then logs in to Oracle, tries a date before 1912 and the letters þ æ ö ð, and
+counts each schema's tables. The last line says `ready to dump`, or `not ready` with `NOT OK` on what to fix. A
+missing package: install it, and run the check again.
+
+## 4. Dump everything, from the shell
+
+```bash
+nohup Rscript dump/oracle/all.R > /dev/null 2>&1 &
+```
+
+You get the prompt back at once and can log out: `nohup` keeps it running. It stops at a schema that fails as a
+whole, such as a failed login; a single table that fails is recorded, and the dump goes on.
+
+## 5. One schema, or a few, from the shell
+
+The schema names go at the end, before `>`. One:
+
+```bash
+nohup Rscript dump/oracle/all.R asfis > /dev/null 2>&1 &
+```
+
+A few, one after the other:
+
+```bash
+nohup Rscript dump/oracle/all.R kvoti stk > /dev/null 2>&1 &
+```
+
+Each gets the same log and checks as in a full run. (`Rscript dump/oracle/asfis.R` runs a schema's script bare,
+in the foreground, with no log of its own: use it only to watch one closely.)
+
+## 6. The same from R
+
+Start R in the fishycode folder (RStudio: the project), then load the dump functions once per session:
+
+```r
+for (f in list.files("R", full.names = TRUE)) source(f)
+```
+
+| what | command |
+|---|---|
+| is this machine ready? | `dump_check()` |
+| one schema | `run_dump("asfis")` |
+| a few, one after the other | `run_dump(c("kvoti", "stk"))` |
+| every schema, with the run's own log | `run_dump_all()` |
+| after a failure | `run_dump("afli", resume = TRUE)`, or `run_dump_all(resume = TRUE)` |
+| where each stands | `dump_status()` |
+
+`run_dump()` starts each run as a separate R process in the background, the same as `nohup` does, and gives the
+prompt back at once: closing RStudio or logging out does not stop it. `run_dump_all()` instead waits until all
+are done, so start it from the shell (section 4) when you mean to log out. The driver is ROracle from
+`.Renviron`; `driver = "RJDBC"` would override it.
+
+`dump_status()` prints, per schema: running, queued, finished (with counts and the tables that failed), finished
+with an error, or stopped; and the last lines of the log of a run that is going or went wrong.
+
+## 7. Follow it
+
+A full run's own log, one line per schema started and finished:
+
+```bash
+tail -f $FISHYDATA/raw/oracle/_logs/*_all.log
+```
+
+One schema's full log:
+
+```bash
+tail -f $FISHYDATA/raw/oracle/asfis/_logs/*.log
+```
+
+Ctrl-C stops the watching, not the dump. Is anything still running?
+
+```bash
+ps -ef | grep [d]ump/oracle
+```
+
+## 8. If it stopped, or to stop it
+
+Network, a reboot, a failed login: fix the cause, then the same command with `--resume` (or `resume = TRUE` in R):
+
+```bash
+nohup Rscript dump/oracle/all.R --resume > /dev/null 2>&1 &
+```
+
+A schema that finished with nothing failed is skipped. The others keep every table already written completely
+and dump the rest; a file cut off mid-write is done again. Schema names work with `--resume` too.
+
+To stop every dump yourself:
+
+```bash
+pkill -f dump/oracle/
+```
+
+(it ends anything whose command line names `dump/oracle/`, so close an editor with one of those files open), and
+`--resume` later carries on. Do not start a second dump of a schema while one runs: two runs of a schema
+write the same files. `all.R` and `run_dump()` refuse a schema that is still being dumped.
+
+## 9. Done
+
+A full run's `_all.log` ends with `done: 13 of 13 schemas exited 0`, and `dump_status()` says `finished` for each.
+Each schema then has its `_overview_tables.parquet` (what was written, skipped and failed, and why) and a
+`_data-dict.yaml`.
+
+## 10. Copy it to the Mac
+
+On the Mac, with the server's name and the path from section 2:
+
+```bash
+rsync -a SERVER:/path/to/fishydata/raw/oracle/ ~/stasi/fishydata/raw/oracle_server/
+```
+
+It goes beside the Mac's own dumps, not over them. Running it again copies only what changed, so it can also fetch
+schemas as they finish.
+
+## 11. Compare it with the Mac's dumps
+
+In R on the Mac, in the fishycode folder, one schema at a time:
+
+```r
+for (f in list.files("R", full.names = TRUE)) source(f)
+d <- compare_dumps(fd_raw("oracle_server", "asfis"), fd_raw("oracle", "asfis"))
+d[!d$same, ]
+```
+
+Each difference is explained before the server's files replace the Mac's: Oracle changed in between, or the
+driver. Known: the Mac's dates before 1912 are 16 min 8 s late (decision 109). The swap itself is in decision
+109, "How".

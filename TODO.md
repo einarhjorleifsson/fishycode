@@ -101,7 +101,7 @@ this item states why they can't.
 **Asked of the maintainer, in the plan's own words:** revoke the Mapbox token at Mapbox
 before the repo goes public (§4; out of the working tree since 2026-10-16, still in the
 history), decide when the GitHub repo goes public and whether history is rewritten
-first (§4; a private remote went up on 2026-10-15), set the aggregation rule for what may leave `fishydata` for an open
+first (§4; a private remote went up on 2026-10-15 and was deleted on 2026-10-16), set the aggregation rule for what may leave `fishydata` for an open
 `fishyweb` (§3), and say where `fishydata` lives and whether it is backed up (§5). The
 disclosure rule blocks item 16. Everything else in the plan I can act on unblocked.
 `fishyweb` has local commits that wait for its first remote too (27b35ff, the plan 014 names; from TODO 52).
@@ -111,10 +111,10 @@ Mapbox token in the history is revoked.
 
 `fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page.
 The design, the evidence and the open questions are in the plan; this stub exists so
-the work is visible here. Two things in it are time-sensitive: the repo has been on GitHub
-since 2026-10-15, **private**, so history can still be rewritten before it goes public (a
-force-push, and a fresh clone on the server), and a Mapbox `pk.` token sits in the
-history (out of the working tree since 2026-10-16). The boundary that actually needs a rule is
+the work is visible here. Two things in it are time-sensitive: the repo went up on GitHub
+private on 2026-10-15 and was deleted the next day, to go up again for the server's clone
+(decision 109), so history can still be rewritten before it goes public; and a Mapbox `pk.`
+token sits in the history (out of the working tree since 2026-10-16). The boundary that actually needs a rule is
 `fishydata` → `fishyweb`, which is a data-disclosure question and binds item 16.
 
 
@@ -391,8 +391,8 @@ and a crosswalk from each feed identity to it. It follows plan 016's rebuild and
 **check:** plan 021 §7.
 
 ## 66. Oracle dumps as they are: redo them on the server, then switch the readers
-**status:** in progress · **needs: maintainer** — the server's name and setup, the first run (`dump/oracle/all.R
---driver=ROracle`, asfis first), and the `afli.afli` query in plan 018 §3 · **see:**
+**status:** in progress · **needs: maintainer** — the repo back on GitHub to clone on the server, then there
+`dump/oracle/all.R --check` and the run, and the `afli.afli` query in plan 018 §3 · **see:**
 `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106 and 109
 
 The Mac's dumps (RJDBC, over Wi-Fi and the VPN) finish as the baseline; afli's had `afli.afli` and `v_afli` unreadable,

@@ -82,11 +82,15 @@ only driver that logs in (ROracle is installed there but finds no Oracle client 
 ## How (plan 018 phase 2, on the server)
 
 - A copy of fishycode with its `.git` (no remote yet: `git bundle` or `rsync`), so the stamps name the commit.
-- R with ROracle and the Oracle client, `mar`, `duckdb`, `nanoparquet`, `dplyr`, `dbplyr`, `tibble`, `yaml`;
-  `$FISHYDATA` set.
+- R with ROracle and the Oracle client, `mar`, `duckdb`, `nanoparquet`, `dplyr`, `dbplyr`, `tibble`, `yaml`; a
+  `.Renviron` at the repo root with `FISHYDATA=` and `LANG=en_US.UTF-8`.
+- The code reaches the server through GitHub: `git clone` (maintainer, 2026-10-16), the repo pushed first.
 - The login: `mar::connect_mar(rjdbc = FALSE)` passes only `dbname = "sjor"`, so it comes from the server's own Oracle
   setup, presumably as for the April dumps (`ops$` is Oracle's prefix for an operating-system login).
-- From the repo root: `nohup Rscript dump/oracle/all.R --driver=ROracle > /dev/null 2>&1 &`, followed with
+- First `Rscript dump/oracle/all.R --check`: packages, `$FISHYDATA` and its free space, R's locale, the commit, then
+  a login with the date and text checks and each schema's objects; it dumps nothing.
+- Then, from the repo root: `nohup Rscript dump/oracle/all.R > /dev/null 2>&1 &` (ROracle is `all.R`'s default since
+  2026-10-16, the maintainer's "run via rjdbc set to FALSE"), followed with
   `tail -f $FISHYDATA/raw/oracle/_logs/*_all.log`. asfis comes first, so a wrong setup stops it within minutes.
   After a failure, the same command with `--resume`.
 - The whole sweep is under `raw/oracle/`, data and logs, so one copy brings it to the Mac (`rsync -a`), into
@@ -111,3 +115,22 @@ established without a connection. The dump process now runs in UTC from its star
 (`dump_connect()`, `run_dump()`), and the check says what the driver returned, so its next run either passes or
 names the layer. The 84 files are to be redone: on the server through ROracle, which replaces them all, and the
 comparison will show these columns as differences.
+
+## Added 2026-10-16 for the server run
+
+- **Icelandic letters.** ROracle's text passes through Oracle's client, which converts it to the character set of
+  `NLS_LANG`, commonly plain ASCII when it is unset: þ, æ, ö and ð would come out as `?`. `dump_connect()` and
+  `run_dump()` set `NLS_LANG=AMERICAN_AMERICA.AL32UTF8` (UTF-8, and a decimal point in the text retry's `TO_CHAR`),
+  and `.oracle_check_text()` stops a ROracle dump whose letters made in Oracle (`UNISTR`) do not come back as UTF-8.
+  Tested with stubbed answers: UTF-8 and latin1 pass, `????` stops. The RJDBC dumps carry the letters (1,604 of
+  vessel's 7,047 names), so `compare_dumps()` will show any loss.
+- **`dump_check()`**, `all.R --check`: run on the Mac through ROracle it reported the packages, locale,
+  `$FISHYDATA`, 170 GB free and the commit as ok, and the connection as not ok (no Oracle client library here),
+  before any login.
+- **One default driver per machine.** `FD_DUMP_DRIVER=ROracle` in the server's `.Renviron` makes ROracle the
+  default of `dump_connect()`, `run_dump()`, `run_dump_all()`, `dump_check()` and `all.R` (which falls back to
+  ROracle itself); the Mac sets nothing and keeps RJDBC. Tested on stand-in scripts: `all.R` alone, with
+  `FD_DUMP_DRIVER=RJDBC`, and `run_dump()` from R under such a `.Renviron` each reached the schema script with the
+  driver meant.
+- **`dump/oracle/README.md`**: the steps on the server, from the clone to the copy back and the comparison, from
+  the shell and from R, a whole run or one schema (the maintainer asked for a readme with the `nohup` command).

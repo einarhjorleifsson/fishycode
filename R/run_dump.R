@@ -16,7 +16,8 @@
 #   run_dump("kvoti")                       a full dump of one schema
 #   run_dump(c("kvoti", "stk"))             one after the other, in one background process
 #   run_dump("afli", resume = TRUE)         keep what the last run wrote, dump the rest
-#   run_dump("afli", driver = "ROracle")    through ROracle, on the server (decision 109); RJDBC when not given
+#   run_dump("afli", driver = "ROracle")    through ROracle, on the server (decision 109); when not given, the
+#                                           driver is FD_DUMP_DRIVER (the server's .Renviron: ROracle), else RJDBC
 #   dump_status()                           every schema: running, queued, finished (and how), stopped
 
 .repo_root <- function() {
@@ -47,7 +48,7 @@ run_dump <- function(schema, resume = FALSE, driver = NULL, wait = FALSE, root =
   scripts <- file.path("dump", "oracle", paste0(schema, ".R"))
   # dump_connect() reads the driver from FD_DUMP_DRIVER; the process runs in UTC from its start, whatever the driver
   # (decision 109: a 1900 DATE came through 16 min 8 s late with only the JVM in UTC)
-  env <- paste0("TZ=UTC ORA_SDTZ=UTC ",
+  env <- paste0("TZ=UTC ORA_SDTZ=UTC NLS_LANG=AMERICAN_AMERICA.AL32UTF8 ",
                 if (is.null(driver)) "" else paste0("FD_DUMP_DRIVER=", match.arg(driver, c("RJDBC", "ROracle")), " "))
   if (length(miss <- schema[!file.exists(file.path(root, scripts))]))
     stop("no dump script for ", paste(miss, collapse = ", "), " (dump/oracle/<schema>.R)", call. = FALSE)
@@ -137,11 +138,7 @@ dump_status <- function(schema = NULL, log_root = fd_raw("oracle"), lines = 3) {
 # failed, through the same driver, is skipped; any other keeps the files an earlier run of the driver completed and
 # dumps the rest (dump_oracle_schema(resume = TRUE)). Returns the exit code of each schema run, invisibly.
 run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .repo_root(), log_root = fd_raw("oracle")) {
-  order <- c("asfis", "gear", "orri", "vessel", "ops_einarhj", "logbook", "agf", "ask", "kvoti", "adb",
-             "fs_afladagbok", "afli", "stk")   # a small schema first, to fail fast; stk, the largest, last
-  scripts <- sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$"))
-  scripts <- setdiff(scripts, "all")
-  if (is.null(schema)) schema <- c(intersect(order, scripts), setdiff(scripts, order))
+  if (is.null(schema)) schema <- .dump_schemas(root)
   if (!dir.exists(log_root)) dir.create(log_root, recursive = TRUE)
   dir.create(file.path(log_root, "_logs"), showWarnings = FALSE)
   log <- file.path(log_root, "_logs", sprintf("%s_all.log", format(Sys.time(), "%Y%m%dT%H%M%S")))
@@ -151,11 +148,11 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
     message(line)
   }
   say("dump of %s through %s%s, from %s (commit %s), into %s", paste(schema, collapse = ", "),
-      if (is.null(driver)) "the default driver" else driver, if (resume) ", resuming" else "", root,
+      if (is.null(driver)) Sys.getenv("FD_DUMP_DRIVER", "RJDBC") else driver, if (resume) ", resuming" else "", root,
       substr(.git_info()$commit, 1, 7), log_root)
   exit <- stats::setNames(rep(NA_integer_, length(schema)), schema)
   for (s in schema) {
-    if (resume && .dump_finished(s, log_root, if (is.null(driver)) "RJDBC" else driver)) {
+    if (resume && .dump_finished(s, log_root, if (is.null(driver)) Sys.getenv("FD_DUMP_DRIVER", "RJDBC") else driver)) {
       say("%s: finished in an earlier run with nothing failed - skipped", s)
       exit[[s]] <- 0L
       next
@@ -187,4 +184,50 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
   o <- as.data.frame(nanoparquet::read_parquet(ov))
   all(c("status", "driver") %in% names(o)) && !any(o$status %in% "failed") &&
     all(o$driver[o$status %in% "written"] == driver)
+}
+
+# The schemas with a dump script, in the order a full run takes them: a small one first, to fail fast; stk last.
+.dump_schemas <- function(root = .repo_root()) {
+  order <- c("asfis", "gear", "orri", "vessel", "ops_einarhj", "logbook", "agf", "ask", "kvoti", "adb",
+             "fs_afladagbok", "afli", "stk")
+  scripts <- setdiff(sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$")), "all")
+  c(intersect(order, scripts), setdiff(scripts, order))
+}
+
+# Is this machine ready to dump? Packages, $FISHYDATA and its free space, the commit the stamps will name, R's
+# locale, then a connection through `driver` with its date and text checks, and each schema reachable. Dumps
+# nothing. Returns TRUE when all is well, invisibly; dump/oracle/all.R --check prints it.
+dump_check <- function(schema = NULL, driver = Sys.getenv("FD_DUMP_DRIVER", "ROracle"), root = .repo_root()) {
+  ok <- TRUE
+  say <- function(good, ...) { message(if (isTRUE(good)) "  ok    " else "  NOT OK ", sprintf(...)); if (!isTRUE(good)) ok <<- FALSE }
+  message("dump check, driver ", driver, ", from ", root)
+  need <- c("mar", "DBI", "dplyr", "dbplyr", "duckdb", "nanoparquet", "tibble", "yaml",
+            if (driver == "ROracle") "ROracle" else c("rJava", "RJDBC"))
+  miss <- need[!vapply(need, requireNamespace, TRUE, quietly = TRUE)]
+  say(!length(miss), "R %s; packages%s", getRversion(), if (length(miss)) paste(": missing", paste(miss, collapse = ", ")) else " all there")
+  say(isTRUE(l10n_info()[["UTF-8"]]), "R locale %s%s", Sys.getlocale("LC_CTYPE"),
+      if (isTRUE(l10n_info()[["UTF-8"]])) "" else " - not UTF-8: put LANG=en_US.UTF-8 in .Renviron")
+  fd <- Sys.getenv("FISHYDATA")
+  say(nzchar(fd), "FISHYDATA %s", if (nzchar(fd)) fd else "is not set: put FISHYDATA=/path in .Renviron")
+  if (nzchar(fd)) {
+    where <- if (dir.exists(fd)) fd else dirname(fd)
+    df <- suppressWarnings(system2("df", c("-k", shQuote(where)), stdout = TRUE))
+    free <- if (length(df) >= 2) as.numeric(strsplit(trimws(df[length(df)]), "[[:space:]]+")[[1]][4]) / 2^20 else NA
+    say(isTRUE(free > 40), "%.0f GB free at %s (wanted 40: the Mac's unfinished dumps hold 11 GB, stk's trail adds about 9)",
+        free, where)
+  }
+  g <- .git_info()
+  say(!is.na(g$commit), "commit %s%s", substr(g$commit, 1, 7), if (isTRUE(g$dirty)) ", with uncommitted changes" else "")
+  if (length(miss)) { message("connection not tried: install the missing packages first"); return(invisible(FALSE)) }
+  con <- tryCatch(dump_connect(driver), error = function(e) e)
+  if (inherits(con, "error")) { say(FALSE, "connection: %s", conditionMessage(con)); return(invisible(FALSE)) }
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  say(TRUE, "connected through %s; the date%s check passed", .oracle_driver(con), if (driver == "ROracle") " and text" else "")
+  for (s in if (is.null(schema)) .dump_schemas(root) else schema) {
+    n <- tryCatch(nrow(oracle_objects(con, if (s == "ops_einarhj") "ops$einarhj" else s)), error = function(e) e)
+    if (inherits(n, "error")) say(FALSE, "%s: %s", s, conditionMessage(n))
+    else say(n > 0, "%s: %d tables and views visible", s, n)
+  }
+  message(if (ok) "ready to dump" else "not ready: see NOT OK above")
+  invisible(ok)
 }
