@@ -388,22 +388,6 @@ and a crosswalk from each feed identity to it. It follows plan 016's rebuild and
 
 **check:** plan 021 §7.
 
-## 66. Oracle dumps as they are: rebuild from them (plan 018 phase 4)
-**status:** open · **needs: maintainer** — the go for the rebuild, with plan 016's; and the `afli.afli` query in plan
-018 §3 · **see:** `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106, 109 and 111, TODO 63
-
-Phases 1-3 are done. Every reader uses `raw/oracle/`, the trail through `stk_trail()`, and both targets projects run
-in UTC (decision 111). Each adapter was run into scratch and compared with the old copies and with today's staging.
-The differences are Oracle's latest day and the old copies' known faults. The old copies are in the Trash, except
-`raw/logbooks/logbook/` and the frozen bootstrap's `raw/ports/ports_kvoti.parquet`. Left: the rebuild. The raw inputs
-are undeclared in `_targets.R` except the vessel files, so ten targets were invalidated by hand (2026-10-16, decision
-111): `tar_outdated()` lists 50. `staging/ais/stk` is kept for the rebuild; its stale partitions are TODO 69.
-Two kvoti tables only RJDBC read (`adili_jn`, `eftirlits_gjald_utan_ees`, NUL characters) can be dumped through it
-again if a reader needs them.
-
-**check:** plan 018 phase 4 is done: `staging/` and `curated/` are rebuilt from `raw/oracle/` and compared with the
-outputs they replace.
-
 ## 67. Divers' registrations in the landings
 **status:** open · **see:** `curate/decisions/110-divers-registrations-in-the-landings.md`, TODO 24
 
@@ -453,3 +437,15 @@ output can carry an older build's rows the same way. Clear the directory before 
 
 **check:** no partitioned output under `staging/` or `curated/` holds a partition its last build did not write, and
 the scripts that write them make sure of it.
+
+## 70. `afli.afli`: which stored values `TO_CHAR` rejects
+**status:** open · **needs: maintainer** — the query in plan 018 §3, run against Oracle · **see:**
+`curate/plans/018-raw-oracle-dumps-as-is.md` §3, decision 109
+
+The dump reads `afli.afli` and `v_afli` whole: `TO_CHAR` fails on `visir`, which is read natively, and its values match
+the April copy exactly (decision 109). Which rows and stored bytes `TO_CHAR` rejects is not known; the query in plan 018
+§3 (`DUMP()` only, one scan) names them. The 48 empty `afli` values (46 stations) are in both copies and are not this
+fault.
+
+**check:** the rows the query returns are recorded in a decision or a correction, with whether they are the 48 empty
+values.

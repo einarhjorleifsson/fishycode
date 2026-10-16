@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** approved 2026-10-15; phases 1-3 done (the server dump in `raw/oracle/` since 2026-10-16, every reader on it, decision 111), phase 4 next · **2026-10-15** · **see:** decisions 105, 106, 109 and 111; TODO 66 and 51; plan 016 §4 step 6
+**status:** executed 2026-10-16 (phases 1-4: the server dump in `raw/oracle/`, every reader on it, decision 111; the rebuild, decision 112) · **2026-10-15** · **see:** decisions 105, 106, 109, 111 and 112; TODO 70 and 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.
@@ -135,5 +135,5 @@ As planned:
 
   The old copy is kept. Nothing reads it.
 
-**Phase 4:** the rebuild, together with plan 016's (maintainer's go). The raw inputs are not declared in
+**Phase 4:** *done 2026-10-16, decision 112: all 50 targets in one pass, every change traced.* The rebuild, together with plan 016's (maintainer's go). The raw inputs are not declared in
 `_targets.R`, so the targets that read them are invalidated by hand, or the raw-dump-targets session declares them.
