@@ -196,10 +196,16 @@ comparison will show these columns as differences.
   `TO_CHAR` that reads decimals exactly. `dump_oracle_table()` finds the columns whose `TO_CHAR` fails, one scan
   each (`MAX(LENGTH(TO_CHAR(col)))`), and reads only those as ROracle returns them, as the April dump did. Which
   columns, and how many of their values Oracle counts but the fetch left empty, goes in the file's `fd.note`, the
-  overview's new `note` column and the table's `details` in `_data-dict.yaml`. In v_afli the only decimal is `visir`,
-  so `visir` is expected: the April copy's 48 rows with an empty `afli` include 46 with an empty `visir` (plan 018).
-  Tested on a DuckDB stand-in whose `TO_CHAR` fails on one value. A resumed run keeps the note, from the overview or
-  from the footer.
+  overview's new `note` column and the table's `details` in `_data-dict.yaml`. Tested on a DuckDB stand-in whose
+  `TO_CHAR` fails on one value. A resumed run keeps the note, from the overview or from the footer.
+  *Run on hafdruna (d1520dc, 2026-10-16):*
+  - **The column was `visir`,** in both, as expected: it is the only decimal in v_afli. No `visir` value came through
+    empty, and its values are exactly the April copy's: the same multiset of 15,674,405, none infinite, NaN or
+    fractional. So a value `TO_CHAR` rejects reaches R through ROracle as a number.
+  - **Which values those are is still open.** 302 are above 10^9 (largest 10,630,176,826) and 4,064,218 are negative.
+    The query in plan 018 names the rows.
+  - **The 48 empty `afli` values are the same 48 as in April**, on 46 stations. `afli` is a whole NUMBER, read natively
+    by both dumps, so they are not this fault.
 - **Light check of kvoti, adb, fs_afladagbok and afli (2026-10-16)**, server against Mac, rows, columns and types:
   - **No column or type differs.** Where both have a table and the rows differ, the server has more rows, never
     fewer: kvoti 59 tables, adb 16. That is a day of Oracle's new records.
@@ -220,3 +226,11 @@ comparison will show these columns as differences.
   `dump/oracle/stk.R` skips it, as it does `toti2_mobile_skip_v` (ORA-00942, an object it reads is not there for this
   login). `tilk_stk_allt` holds voyages, each a departure and its arrival (TODO 68). The big trail views were
   slow too, but they finished.
+- **The sweep is on the Mac (2026-10-16).** The server's last resume (d1520dc) ended with 13 of 13 schemas exited 0.
+  `raw/oracle_server/` matches the server's `raw/oracle/` file for file (an rsync dry run lists nothing). The
+  exceptions are stk's three copies of the whole trail (`stk_vms_v`, `trail_all`, `view_trail`, 26.2 GB), left on
+  the server. stk has no Mac copy to compare with, so its light check is the dump against itself:
+  - 61 objects written and 2 skipped; every file reads back with the rows the overview records.
+  - The trail holds 303,795,653 positions, 2003-09-26 to 2026-10-16 17:15.
+  - 40 of 42 tables are within 5 % of Oracle's row estimate. `error_log` and `mobile` are 8 % and 10 % above theirs,
+    estimates older than the rows.

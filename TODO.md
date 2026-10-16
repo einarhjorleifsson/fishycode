@@ -389,14 +389,15 @@ and a crosswalk from each feed identity to it. It follows plan 016's rebuild and
 **check:** plan 021 §7.
 
 ## 66. Oracle dumps as they are: redo them on the server, then switch the readers
-**status:** in progress · **needs: maintainer** — the repo back on GitHub to clone on the server, then there
-`dump/oracle/all.R --check` and the run, and the `afli.afli` query in plan 018 §3 · **see:**
+**status:** in progress · **needs: maintainer** — the go for the swap (`raw/oracle_server/` → `raw/oracle/`, the
+RJDBC set to `archive/`), and the `afli.afli` query in plan 018 §3 · **see:**
 `curate/plans/018-raw-oracle-dumps-as-is.md`, decisions 105, 106 and 109
 
-The Mac's dumps (RJDBC, over Wi-Fi and the VPN) finish as the baseline; afli's had `afli.afli` and `v_afli` unreadable,
-most likely malformed NUMBERs in Oracle. Decision 109 redoes every schema on the server through ROracle: the code is
-built and tested without Oracle. Each schema is compared with `compare_dumps()` before it replaces the Mac's. Phase 3
-(the readers) follows.
+The server dump (ROracle, decision 109) is complete: 13 of 13 schemas, afli.afli included, copied to
+`raw/oracle_server/` on 2026-10-16 and checked against the Mac's RJDBC dumps (in full for seven, the light check for
+the rest; stk has no Mac copy). Left: the swap; the two kvoti tables only RJDBC read (`adili_jn`,
+`eftirlits_gjald_utan_ees`, NUL characters), which stay in the archive unless a reader needs them; then phase 3, the
+readers.
 
 **check:** plan 018 phase 3 is done: the readers use `fd_raw("oracle", ...)` and the old dump directories are gone or
 kept by a decision.
