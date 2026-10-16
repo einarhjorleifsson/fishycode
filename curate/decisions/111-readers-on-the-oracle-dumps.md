@@ -1,7 +1,8 @@
 # 111 — Every reader reads the Oracle dumps as they are; the old copies are in the Trash
 
 *2026-10-16. Written by Claude (AI-assisted) as plan 018 phase 3, from the session that did phases 1 and 2. The choices
-are plan 018's (the maintainer's, 2026-10-15) except where marked Claude's. TODO 66.*
+are plan 018's (the maintainer's, 2026-10-15) except where marked Claude's. TODO 66. The comparison scripts and their
+logs are in `$FISHYDATA/archive/2026-10-oracle-rebuild/phase3/`.*
 
 ## What was done
 

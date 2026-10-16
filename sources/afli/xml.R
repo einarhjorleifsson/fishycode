@@ -1,8 +1,8 @@
 # Extract signal data from afladagb_xml_mottaka XML column
 #
 # Input:  raw/oracle/afli/afladagb_xml_mottaka.parquet
-# Output: data-raw/logbooks/afli/sensor_xml_nmea.parquet
-#         data-raw/logbooks/afli/sensor_xml_track.parquet
+# Output: staging/afli/sensor_xml_nmea.parquet
+#         staging/afli/sensor_xml_track.parquet
 #
 # Bypasses xml2 entirely; uses DuckDB regex on the raw XML strings.
 #

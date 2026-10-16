@@ -436,6 +436,8 @@ result recorded in a decision or a plan.
 `duckdbfs::write_dataset()` replaces the partitions it writes and leaves the others. `staging/ais/stk` still holds
 `year=1970` and `year=2006` from the build of 2026-09-23 (3 rows), which every reader of it takes in. Any partitioned
 output can carry an older build's rows the same way. Clear the directory before each write, or check for it.
+Measured after the rebuild of 2026-10-16 (decision 112): of the eight partitioned outputs it wrote, only
+`staging/ais/stk` holds files older than the build (those two).
 
 **check:** no partitioned output under `staging/` or `curated/` holds a partition its last build did not write, and
 the scripts that write them make sure of it.

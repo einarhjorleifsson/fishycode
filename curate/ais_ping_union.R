@@ -2,15 +2,16 @@
 # Side: preprocessing (ais feeds). See plan 014.
 #
 # Inputs:
-#   raw/oracle/stk/trail (stk_trail())                  — STK AIS pings (mid-keyed, all vessels)
-#   data-raw/ais/astd/                        — ASTD commercial AIS (all flags, parquet)
-#   data-raw/ais/astdB/                       — ASTDB commercial AIS (all flags, parquet)
-#   data-raw/logbooks/afli/sensor_GPS.parquet — AIS-corrected GPS logger positions
-#   data-dump/ais/EmodNet/is2017.csv          — EmodNet AIS snapshot (Iceland, 2017 only)
-#   data/vessels/stk_vessel_match.parquet     — mid → vid temporal lookup
+#   raw/oracle/stk/trail, through stk_trail()   — STK AIS pings (mid-keyed, all vessels; R/stk_trail.R)
+#   staging/ais/astd/                           — ASTD commercial AIS (all flags, parquet)
+#   staging/ais/astdB/                          — ASTDB commercial AIS (all flags, parquet)
+#   curated/logbook/sensor_gps/                 — AIS-corrected GPS logger positions
+#   raw/ais/EmodNet/is2017.csv                  — EmodNet AIS snapshot (Iceland, 2017 only)
+#   curated/vessel/vessel_ais_key.parquet       — mid → vid temporal lookup (STK)
+#   curated/vessel/vessel_identity.parquet      — vid → MMSI over time (the MMSI-keyed feeds)
 #
 # Output:
-#   data/trail/   — Hive-partitioned parquet (by year); ~566 M rows (Icelandic vessels)
+#   staging/ais/ping_union/   — Hive-partitioned parquet (by year); ~593 M rows (decision 112)
 #
 # All heavy lifting is done lazily in DuckDB; data never fully enter R memory.
 library(tictoc)

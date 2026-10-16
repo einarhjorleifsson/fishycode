@@ -146,10 +146,12 @@ Every script in a targets project is on one of three sides, and says which in a 
   **Which ramb.** The code needs the argument names of 2026-10-12,
   `rb_calc_speed(method = )`, `rb_link_record_events()` (decision 088) and the exclusive windows and event links
   with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
-  fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102): so ≥ 2026.10.14.14. The data on disk were built with ramb 2026.10.13.3 (the full
-  rebuild of 2026-10-13/14, decision 086), the afli → trail chain with 2026.10.14.1 (decision 089), `station_window`
-  with 2026.10.14.2, `station_event` with 2026.10.14.3 (decision 091), the trail with 2026.10.14.5 (decision 093), `voyage_gear` and the trail with 2026.10.14.9 (decision 101), and `ais_catch` with 2026.10.14.14 (decision 102). 2026.10.14.4 added the
-  towing-stretch pairing (decision 092), which nothing here calls.
+  fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102): so ≥ 2026.10.14.14. The data on disk were built with ramb 2026.10.15.1: every
+  target the rebuild of 2026-10-16 reached (decision 112), from the raw readers and plan 016's vessel tables to
+  `ais_catch`. The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
+  `shapes`, `area_h3`, `lookups`) are from the rebuild of 2026-10-13 with 2026.10.13.3 (decision 086), and the `once`
+  project's frozen outputs are older. 2026.10.14.4 added the towing-stretch pairing (decision 092), which nothing here
+  calls.
   `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
 
