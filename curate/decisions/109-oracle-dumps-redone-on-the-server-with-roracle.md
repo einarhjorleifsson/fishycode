@@ -224,7 +224,9 @@ comparison will show these columns as differences.
   arrivals. The first run's last line was at 12:49 and nothing followed until it was stopped after 15:00; the resume
   was quiet from 16:03 with every other object written. Oracle does not finish evaluating that view in hours, so
   `dump/oracle/stk.R` skips it, as it does `toti2_mobile_skip_v` (ORA-00942, an object it reads is not there for this
-  login). `tilk_stk_allt` holds voyages, each a departure and its arrival (TODO 68). The big trail views were
+  login). *Corrected 2026-10-17 (decision 122): the ORA-00942 was the dumper's, which upper-cased the view's
+  mixed-case name, `toti2_MOBILE_SKIP_V`; kvoti's `della_post` failed the same way. The NUL characters of kvoti's
+  `adili_jn` and `eftirlits_gjald_utan_ees` are removed on a retry since.* `tilk_stk_allt` holds voyages, each a departure and its arrival (TODO 68). The big trail views were
   slow too, but they finished.
 - **The sweep is on the Mac (2026-10-16).** The server's last resume (d1520dc) ended with 13 of 13 schemas exited 0.
   `raw/oracle_server/` matches the server's `raw/oracle/` file for file (an rsync dry run lists nothing). The

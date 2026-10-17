@@ -30,7 +30,7 @@
 # quotes keeps its case (ops$einarhj.mmsi_icelandic_registry's "stadur" failed as "STADUR", ORA-00904).
 oracle_fields <- function(con, schema, table = NULL) {
   w <- sprintf("OWNER = '%s'", gsub("'", "''", toupper(schema)))
-  if (!is.null(table)) w <- sprintf("%s AND TABLE_NAME = '%s'", w, gsub("'", "''", toupper(table)))
+  if (!is.null(table)) w <- sprintf("%s AND TABLE_NAME = '%s'", w, gsub("'", "''", .oracle_part(table)))
   q <- function(sql) DBI::dbGetQuery(con, sql) |> dplyr::rename_with(tolower)
   cols <- q(paste("SELECT TABLE_NAME, COLUMN_NAME, COLUMN_ID, DATA_TYPE, DATA_PRECISION, DATA_SCALE, NULLABLE",
                   "FROM SYS.ALL_TAB_COLUMNS WHERE", w)) |>
@@ -48,7 +48,8 @@ oracle_fields <- function(con, schema, table = NULL) {
 
 # Tables and views of a schema, with Oracle's comment and (for tables) its row estimate. Read from the catalogue
 # directly: mar::mar_views() calls sql() unqualified, so it fails under Rscript, where dplyr is not attached
-# (2026-10-15).
+# (2026-10-15). `name` is in lower case, as the files have it; `oracle_name` is Oracle's own spelling, which a query
+# must quote as it is (.oracle_spelled()).
 oracle_objects <- function(con, schema) {
   s <- gsub("'", "''", toupper(schema))
   q <- function(cols, from) DBI::dbGetQuery(con, sprintf("SELECT %s FROM %s WHERE OWNER = '%s'", cols, from, s)) |>
@@ -59,16 +60,17 @@ oracle_objects <- function(con, schema) {
     dplyr::rename(name = view_name) |> dplyr::mutate(type = "view")
   comm <- q("OWNER, TABLE_NAME, COMMENTS", "SYS.ALL_TAB_COMMENTS")
   objects <- dplyr::bind_rows(tabs, views) |>
-    dplyr::mutate(owner = tolower(owner), name = tolower(name))
+    dplyr::mutate(owner = tolower(owner), oracle_name = name, name = tolower(name))
   objects$comments <- comm$comments[match(objects$name, tolower(comm$table_name))]
   objects$num_rows <- as.numeric(objects$num_rows)
   objects |> dplyr::relocate(owner, name, type, comments)
 }
 
 # Every table and view the account can see, in every schema: Oracle's comment, its row estimate (tables only; a
-# view has none) and the number of columns, from the data dictionary alone. No table is read. For choosing what to
-# dump: until 2026-10-17 a schema was found by name, from mar's readers or a remark. `oracle_maintained` marks
-# Oracle's own schemas (SYS, MDSYS, ...); NA where the database's ALL_USERS has no such column (before 12c).
+# view has none), the number of columns and Oracle's own spelling of the name (oracle_name), from the data
+# dictionary alone. No table is read. For choosing what to dump: until 2026-10-17 a schema was found by name, from
+# mar's readers or a remark. `oracle_maintained` marks Oracle's own schemas (SYS, MDSYS, ...); NA where the
+# database's ALL_USERS has no such column (before 12c).
 oracle_catalogue <- function(con) {
   q <- function(sql) DBI::dbGetQuery(con, sql) |> dplyr::rename_with(tolower)
   tabs  <- q("SELECT OWNER, TABLE_NAME, NUM_ROWS, LAST_ANALYZED FROM SYS.ALL_TABLES") |>
@@ -86,7 +88,7 @@ oracle_catalogue <- function(con) {
     dplyr::left_join(comm, by = c("owner", "name")) |>
     dplyr::left_join(ncol, by = c("owner", "name")) |>
     dplyr::mutate(oracle_maintained = users$oracle_maintained[match(owner, users$username)] == "Y",
-                  owner = tolower(owner), name = tolower(name),
+                  owner = tolower(owner), oracle_name = name, name = tolower(name),
                   num_rows = as.numeric(num_rows), n_columns = as.integer(n_columns)) |>
     dplyr::relocate(owner, name, type, comments, num_rows, n_columns) |>
     dplyr::arrange(owner, name) |>
@@ -233,24 +235,24 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # the nearest double: ROracle's own conversion lands a step off for some values (power_kw 60.3 came through as
 # 60.3000000000000043, RJDBC's 60.2999999999999972 is the nearest double; 198 of vessel's 7,047, hafdruna 2026-10-16),
 # and then x == 60.3 is FALSE. A whole NUMBER (scale 0) is exact either way. The columns in `native` come as the driver
-# returns them: Oracle cannot write some of their values as text (dump_oracle_table()).
-.oracle_query <- function(con, table, fields, numbers_as_text = FALSE, native = character()) {
+# returns them: Oracle cannot write some of their values as text (dump_oracle_table()). The columns in `nul` come
+# without their NUL characters, which R cannot hold (.oracle_nul()); in Oracle, '' is NULL, so REPLACE drops them.
+.oracle_query <- function(con, table, fields, numbers_as_text = FALSE, native = character(), nul = character()) {
   conv <- c(.oracle_text, if (numbers_as_text) c(NUMBER = "TO_CHAR(%s)"))
   decimal <- .oracle_driver(con) == "ROracle" & fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0) &
              !fields$column %in% native
-  if (!any(fields$data_type %in% names(conv)) && !any(decimal)) return(mar::tbl_mar(con, table))
-  x <- strsplit(table, ".", fixed = TRUE)[[1]]
+  if (!any(fields$data_type %in% names(conv)) && !any(decimal) && !length(nul)) return(mar::tbl_mar(con, table))
   o <- order(fields$column_id)
   fields <- fields[o, ]
   decimal <- decimal[o]
   quoted <- .oracle_name(fields)
   cols <- vapply(seq_len(nrow(fields)), function(i) {
     q <- quoted[i]
-    f <- if (decimal[i]) "TO_CHAR(%s)" else conv[fields$data_type[i]]
+    f <- if (decimal[i]) "TO_CHAR(%s)" else if (fields$column[i] %in% nul) "REPLACE(%s, CHR(0), '')"
+         else conv[fields$data_type[i]]
     if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
   }, "")
-  dplyr::tbl(con, dplyr::sql(sprintf('SELECT %s FROM "%s"."%s"', paste(cols, collapse = ", "),
-                                     toupper(x[1]), toupper(x[2])))) |>
+  dplyr::tbl(con, dplyr::sql(sprintf("SELECT %s FROM %s", paste(cols, collapse = ", "), .oracle_ref(table)))) |>
     dplyr::rename_with(tolower)
 }
 
@@ -260,13 +262,39 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   sprintf('"%s"', gsub('"', '""', nm))
 }
 
+# A table as a query must name it, "SCHEMA"."NAME", from "schema.name": in upper case, as Oracle folds a name made
+# without quotes, unless a part is given in quotes, which keeps its spelling (the convention of mar::tbl_mar()).
+# ops$einarhj's heildarafli, raw_index_calc and test were made from R with quoted lower-case names, and
+# "OPS$EINARHJ"."HEILDARAFLI" does not exist (ORA-00942, hafdruna 2026-10-17).
+.oracle_part <- function(x) ifelse(grepl('"', x, fixed = TRUE), gsub('"', "", x, fixed = TRUE), toupper(x))
+.oracle_ref <- function(table) {
+  x <- .oracle_part(strsplit(table, ".", fixed = TRUE)[[1]])
+  sprintf('"%s"."%s"', x[1], x[2])
+}
+# An object's name as dump_oracle_schema() passes it on: lower case where Oracle's spelling is upper case, so the
+# usual name is unchanged, and quoted otherwise.
+.oracle_spelled <- function(name) ifelse(name == toupper(name), tolower(name), sprintf('"%s"', name))
+
+# The text columns of a table that hold a NUL character (CHR(0)), with the number of values that do, in one scan.
+# R's strings cannot hold NUL, so such a table fails whatever the driver: uv.veidisvaedi ("embedded nul in string",
+# ROracle, hafdruna 2026-10-17), and kvoti's adili_jn and eftirlits_gjald_utan_ees (decision 109). Not a CLOB:
+# fs_afladagbok's takt_json_form holds signed PDF files there, whose NULs are their content.
+.oracle_nul <- function(con, table, fields) {
+  txt <- fields[fields$data_type %in% c("VARCHAR2", "CHAR", "NVARCHAR2", "NCHAR"), ]
+  if (!nrow(txt)) return(stats::setNames(numeric(), character()))
+  has <- paste0("SUM(CASE WHEN INSTR(", .oracle_name(txt), ", CHR(0)) > 0 THEN 1 ELSE 0 END)", collapse = ", ")
+  q <- sprintf("SELECT %s FROM %s", has, .oracle_ref(table))
+  n <- as.numeric(unlist(DBI::dbGetQuery(con, q), use.names = FALSE))
+  n <- stats::setNames(n, txt$column)
+  n[!is.na(n) & n > 0]
+}
+
 # The decimal NUMBERs of a table whose TO_CHAR fails (ORA-01722): Oracle cannot write some stored value of theirs as
 # text. One scan of the table per decimal column.
 .oracle_untextable <- function(con, table, fields) {
-  x <- strsplit(table, ".", fixed = TRUE)[[1]]
   dec <- fields[fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0), ]
   bad <- vapply(.oracle_name(dec), function(q) inherits(tryCatch(
-    DBI::dbGetQuery(con, sprintf('SELECT MAX(LENGTH(TO_CHAR(%s))) FROM "%s"."%s"', q, toupper(x[1]), toupper(x[2]))),
+    DBI::dbGetQuery(con, sprintf("SELECT MAX(LENGTH(TO_CHAR(%s))) FROM %s", q, .oracle_ref(table))),
     error = function(e) e), "error"), NA)
   dec$column[bad]
 }
@@ -274,10 +302,9 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # What came through for columns read as the driver returns them: Oracle's count of their values against the values
 # fetched, as a note for the file. The counts are read by position, as Oracle names unquoted aliases in capitals.
 .oracle_note_native <- function(con, table, fields, native, d) {
-  x <- strsplit(table, ".", fixed = TRUE)[[1]]
   f <- fields[match(native, fields$column), ]
-  q <- sprintf('SELECT COUNT(*), %s FROM "%s"."%s"', paste0("COUNT(", .oracle_name(f), ")", collapse = ", "),
-               toupper(x[1]), toupper(x[2]))
+  q <- sprintf("SELECT COUNT(*), %s FROM %s", paste0("COUNT(", .oracle_name(f), ")", collapse = ", "),
+               .oracle_ref(table))
   held <- tryCatch(as.numeric(unlist(DBI::dbGetQuery(con, q), use.names = FALSE)), error = function(e) NULL)
   note <- sprintf("TO_CHAR fails on %s (ORA-01722): read as the driver's doubles, not as exact text",
                   paste(native, collapse = ", "))
@@ -303,6 +330,8 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # raises ORA-01722 on afli.afli and v_afli (hafdruna 2026-10-16), most likely on malformed stored NUMBERs, which an
 # April dump with ROracle had read natively. The columns at fault are then found one by one and read natively; the
 # note says which, and how many of their values Oracle holds that came through empty.
+# A table with NUL characters in its text fails in R itself ("embedded nul in string"): it is fetched once more with
+# them removed from the columns that hold them, and the note says which and in how many values (.oracle_nul()).
 # Returns the rows written, with the note, if any, as attribute "note".
 dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(fields)) {
@@ -310,18 +339,27 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
     fields <- oracle_fields(con, x[1], x[2])
   }
   if (is.null(run)) run <- .dump_run(con, NA_character_)
-  fetch <- function(numbers_as_text, native = character()) {
+  fetch <- function(numbers_as_text, native = character(), nul = character()) {
     if (any(fields$data_type %in% .oracle_lob)) {
       lc <- dump_connect()
-      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text, native)),
+      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text, native, nul)),
                finally = DBI::dbDisconnect(lc))
     } else {
-      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text, native))
+      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text, native, nul))
     }
   }
   note <- NA_character_
   d <- tryCatch(fetch(FALSE), error = function(e) {
     msg <- gsub("\033\\[[0-9;]*m", "", conditionMessage(e))
+    if (grepl("embedded nul|null byte", msg)) {
+      nul <- .oracle_nul(con, table, fields)
+      if (!length(nul)) stop(e)
+      note <<- sprintf(paste("NUL characters (CHR(0)) removed from %s: R cannot hold them; a value of NULs only is",
+                             "empty here"), paste(sprintf("%s (%s values)", names(nul),
+                                                          format(nul, big.mark = ",", trim = TRUE)), collapse = ", "))
+      message(sprintf("%s: %s - fetching again", table, note))
+      return(fetch(FALSE, nul = names(nul)))
+    }
     if (.oracle_driver(con) == "ROracle" && grepl("ORA-01722", msg)) {
       native <- .oracle_untextable(con, table, fields)
       if (!length(native)) stop(e)
@@ -524,11 +562,12 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
       stamp$resumed[i] <- TRUE
       next
     }
+    ref <- paste0(schema, ".", .oracle_spelled(objects$oracle_name[i]))
     if (objects$type[i] == "view" && !objects$partitioned[i]) {
       # the count by position: Oracle names an unquoted alias in capitals, so `AS n` came back as N, $n was NULL, and
       # no view was ever too big (stk's trail_all and view_trail were fetched whole on hafdruna, 2026-10-16)
-      cnt <- tryCatch(as.numeric(DBI::dbGetQuery(con, sprintf('SELECT COUNT(*) FROM "%s"."%s"', toupper(schema),
-                                                              toupper(nm)))[[1]]), error = function(e) NA_real_)
+      cnt <- tryCatch(as.numeric(DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", .oracle_ref(ref)))[[1]]),
+                      error = function(e) NA_real_)
       if (isTRUE(cnt > max_rows)) {
         status[i] <- "too_big"; rows[i] <- cnt
         message(sprintf("%s.%s: too_big (a view of %s rows)", schema, nm, format(cnt, big.mark = ",")))
@@ -539,9 +578,9 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
     fl <- fields[fields$table == nm, ]
     attempt <- function() tryCatch(
       if (objects$partitioned[i])
-        dump_oracle_by_year(con, paste0(schema, ".", nm), file.path(out_dir, nm), partition[[nm]], fl, run)
+        dump_oracle_by_year(con, ref, file.path(out_dir, nm), partition[[nm]], fl, run)
       else
-        dump_oracle_table(con, paste0(schema, ".", nm), file.path(out_dir, paste0(nm, ".parquet")), fl, run),
+        dump_oracle_table(con, ref, file.path(out_dir, paste0(nm, ".parquet")), fl, run),
       error = function(e) e)
     r <- attempt()
     if (inherits(r, "error") && !.oracle_alive(con)) {

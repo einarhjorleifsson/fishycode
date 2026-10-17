@@ -18,8 +18,10 @@ for (f in list.files("R", full.names = TRUE)) source(f)
 
 # Left out (hafdruna, 2026-10-16): tilk_stk_por_v, departures paired with arrivals, which Oracle did not finish
 # evaluating in over 2 h, twice; tilk_stk_allt holds voyages, each a departure and its arrival, and tilk_stk the events
-# behind both (TODO 68). toti2_mobile_skip_v fails in Oracle (ORA-00942: an object it reads is not there for this
-# login); mobile_skip_v, mobile_skip_mv and mobile_tab hold mobile ids with vessels.
+# behind both (TODO 68). toti2_mobile_skip_v holds mobile_skip_mv's columns (plan 022),
+# which is dumped. Its ORA-00942 was not Oracle's: the dumper upper-cased its mixed-case name, toti2_MOBILE_SKIP_V,
+# which it now spells as Oracle does (decision 122); mobile_skip_v, mobile_skip_mv and mobile_tab hold mobile ids with
+# vessels.
 con <- dump_connect()
 dump_oracle_schema(con, "stk", fd_raw("oracle", "stk"), partition = list(trail = "recdate"),
                    skip = c("tilk_stk_por_v", "toti2_mobile_skip_v"), script = "dump/oracle/stk.R")

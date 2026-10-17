@@ -45,7 +45,7 @@ English and scientific names); `asfis/asfis` is FAO's list, with no Icelandic co
 no kg). Not checked: that the lists name a shared code alike, and an Icelandic code → FAO 3-alpha link (none in raw
 beyond the 74 scientific names).
 
-**Dumped next (decision 121, TODO 76):** `taxon` (`tegund_v`: names, WoRMS id, FAO 3-alpha), `orri` whole
+**Dumped 2026-10-17 (decisions 121-122), not yet read:** `taxon` (`tegund_v`: names, WoRMS id, FAO 3-alpha), `orri` whole
 (`fisktegundir`, `fao_fisktegund_vorpun`), `ufs.fisktegundir` (the landed species, with FAO code) and
 `fs_ufs.landing_species` (landings code to orri code, taxon number, WoRMS id and target assemblage).
 
@@ -235,7 +235,7 @@ plan 016 are in the file.
 plan 017's ask g)
 
 The maintainer said yes on 2026-10-14: acquire them. **A lead (decision 121):** `dw.dw_aflaskeyti`, 21,627 rows of
-ERS catch messages with the flag state, dumped with `dw` (TODO 76). Foreign vessels land 80-124 a year in Iceland and hold most of
+ERS catch messages with the flag state, in `raw/oracle/dw/` since 2026-10-17 (decision 122). Foreign vessels land 80-124 a year in Iceland and hold most of
 the landed weight with no Icelandic logbook trip (plan 013, rows 4 and 9; 1,144 of 1,320 kt of pelagic species in
 2019-2025). They are not in what is dumped: the logbook tables hold 6 foreign trips in all, and none of the four
 logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
@@ -314,12 +314,11 @@ fault.
 values.
 
 ## 71. The `ops$einarhj` MMSI list of 2023-01-15: find it or dump it
-**status:** open · **needs: maintainer** — the dump of TODO 76, which takes `mmsi_icelandic_registry_20230115` and
-`vessel_mmsi`; also where the 2024-10-22 list is, and who refreshes MFRI's copy of the vessel
+**status:** open · **needs: maintainer** — where the 2024-10-22 list is, and who refreshes MFRI's copy of the vessel
 register, stale since about June (plan 016 §7, "still open, not asked") · **see:** plan 022 §3.1, `reference/vessels/mmsi.R`, decision 111, decision 119
 
-`dump/oracle/ops_einarhj.R` now dumps the whole schema (decision 121), not yet run (TODO 76). Of the tables not
-dumped before, judged from the dump's overview (columns, Oracle's row counts), only one
+The whole schema is dumped since 2026-10-17 (decisions 121-122), the 2023 list among it; `mmsi.R` does not read it
+yet. Of the tables not dumped before, judged from the dump's overview (columns, Oracle's row counts), only one
 holds what fishycode does not:
 - **The 2023 list:** `mmsi_icelandic_registry_20230115` (3,687 rows), the MMSI list of 2023-01-15. It falls between
   the 2022-04 snapshot and the 2024 lists that the MMSI history reads.
@@ -394,17 +393,30 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
-## 76. The dumps of decision 121, and `fs_afli` against `afli`
-**status:** open · **needs: maintainer** — the run on the server (`dump/oracle/README.md` §12) · **see:**
-`curate/decisions/121-more-oracle-schemas-and-the-catalogue.md`, TODO 10, 62 and 71
+## 76. The dumps of decision 121: the failures redone, and `fs_afli` against `afli`
+**status:** in progress · **needs: maintainer** — the rerun on the server, `all.R --resume uv ops_einarhj kvoti`
+(`dump/oracle/README.md` §12) · **see:** decisions 121 and 122, TODO 10, 62 and 71
 
-Nine scripts are written and not run: `taxon`, `fs_ufs`, `uv`, `rdbes`, `dw`, `ufs` and `fs_afli` are new, and
-`orri` and `ops_einarhj` now take the whole schema. One `all.R --resume` on the server dumps them and keeps the files
-of 2026-10-16. Then they are copied to the Mac (README §10-11).
+The nine schemas are dumped, checked and in `raw/oracle/` (decision 122). Four objects failed through the dumper's
+faults, fixed since: `uv.veidisvaedi` (NUL characters), and ops$einarhj's `heildarafli`, `raw_index_calc` and `test`
+(lower-case names). The rerun takes these and kvoti's three of the same causes, and keeps everything else.
 
-`fs_afli` is the Directorate's copy of the logbook schema. Oracle's estimates, older than afli's, are larger than
-afli's dump for the electronic logbooks (`rafr_stofn` 1,318,771 against 1,149,278). Whether it holds records `afli`
-lacks, and which (foreign vessels, deleted records, the years it covers), is measured table by table on the keys.
+`fs_afli` holds every station `afli` holds, plus 2,090 paper stations (spring 2022) and 169,502 electronic ones
+(2020-2023), none in the foreign vid range (decision 122). Open: whether those 169,502 are trips fishycode lacks or
+the same trips `fs_afladagbok` holds; and the other 23 tables with more rows.
 
-**check:** each of the nine has an overview under `raw/oracle/` with every failure explained, the Mac's copy agrees
-with the server's, and a decision records `fs_afli` against `afli`: rows by key in each table both hold.
+**check:** after the rerun, uv's and ops$einarhj's overviews hold no failure of ours, the copies on the Mac agree with
+the server's, and a decision says, for the stations only `fs_afli` holds, whether `curated/logbook` has their trips.
+
+## 77. The build that decisions 113, 115 and 116 left
+**status:** open · **needs: maintainer** — the go for one `tar_make_isolated()`, and whether decision 115's targets
+(TODO 65) are built in the same pass · **see:** decisions 113, 115, 116 and 122
+
+`tar_outdated()` lists 63 of 92 targets. Twenty were added to `_targets.R` and never built: decision 113's four
+declared inputs (the STK trail and the AIS feeds), decision 116's eight (the Oracle tables the adapters read) and
+decision 115's eight (plan 021's crosswalk and vid ledger). The other 43 read them, or their commands changed with
+them (`mmsi_raw`), down to `ais_trail` and `ais_catch`. Both decisions advised building with the next dump. The
+dumps of decisions 121-122 changed no declared input, so nothing forces it.
+
+**check:** `tar_outdated()` is empty after the build, and the fingerprints before and after (`R/fingerprint.R`) are
+compared in a decision.
