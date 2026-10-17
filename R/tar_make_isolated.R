@@ -11,11 +11,16 @@
 #
 #   Rscript -e 'source("R/tar_make_isolated.R"); tar_make_isolated()'
 #
+# `names` builds only those targets and their outdated ancestors (tar_outdated(names = )), and leaves
+# the rest outdated: the logbook half of a build waits for nothing downstream of a key not yet redone.
+#
 # It follows TAR_PROJECT (_targets.yaml): set TAR_PROJECT=once for the one-time fixes (plan 014). The
 # Rscript per target inherits the variable.
 
-tar_make_isolated <- function() {
-  o <- targets::tar_outdated()
+tar_make_isolated <- function(names = NULL) {
+  # names is inlined into the call: tar_outdated() evaluates it in a callr process, where the variable does not exist
+  o <- if (is.null(names)) targets::tar_outdated() else
+    eval(bquote(targets::tar_outdated(names = tidyselect::all_of(.(names)))))
   if (!length(o)) return(invisible(cat("nothing outdated\n")))
   e <- targets::tar_network(targets_only = TRUE, outdated = FALSE)$edges
   e <- e[e$from %in% o & e$to %in% o, ]
