@@ -325,6 +325,8 @@ first and in vids second.
    - **No MMSI:** aquaculture, institutes, buoys, and most shore stations.
 8. **Positions on a vid.**
    - **Icelandic:** 181.3 M of 182.0 M lie in key rows that carry the vid's MMSI.
+     130 Icelandic vids in the key have no MMSI on record at all, 671,987 of the key's pings (counted on the
+     rebuilt archive 2026-10-17, decision 117). The archive's refresh did not reach them; co-location is the route left.
    - **Foreign:** no foreign vid has an MMSI in fishycode. Co-location gives one to units holding 6.55 M of the 6.78 M
      positions on foreign vids.
 9. **The foreign candidates** (`ais_key_foreign_candidates`, 2026-09-27) cover 7,540 of the 12,562 units: 21.3 M

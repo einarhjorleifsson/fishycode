@@ -1,7 +1,7 @@
 # The STK vessel match, cross-checked against landings.
 # Side: once (vessel key). See plan 014.
 #
-# Input:  curated/vessel/vessel_ais_key.parquet, curated/vessel/vessel.parquet,
+# Input:  curated/vessel/vessel_ais_key_cascade.parquet (the cascade's own claims, decision 053), vessel.parquet,
 #         curated/landing/landings.parquet
 # Output: curated/check/ais_key_landings.parquet  - one row per vessel in question
 #

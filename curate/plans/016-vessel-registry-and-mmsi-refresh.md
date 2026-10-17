@@ -352,4 +352,5 @@ h. **`mclass` over time:** take it from `vessel_hist_v`, or keep today's categor
 - **`tar_outdated()`:** shows `vessel` after a change to `raw/vessels/vessel_v.parquet` or a list.
 - **With option B:** every SKB fix is in the trail, with fishing basis `none` unless it has gear; no code filters out
   vids ≥ 100000 by accident.
-- **TODO 17:** its check is rerun against the rebuilt archive.
+- **TODO 17:** its check is rerun against the rebuilt archive. Rerun 2026-10-17 (decision 117): `TFUT` and `TFPH`
+  resolve; the 88 vids below 3700 still have no MMSI, and 42 above 4999 with them.

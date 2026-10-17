@@ -7,7 +7,7 @@
 #
 # Plan 008: an identity source for the north-Atlantic vessel registry, not a
 # position source — GFW's daily effort grids (fleet-daily-csvs,
-# mmsi-daily-csvs) are activity data, TODO item 21's concern, and are not
+# mmsi-daily-csvs) are activity data, out of scope (decision 117), and are not
 # read here. This adapter stays a literal translation of the source's own
 # layout; external_id resolution, periods and cross-source reasoning happen once, in
 # reference/vessels/identity_foreign.R, not here.

@@ -45,14 +45,17 @@ and no directory under `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 **status:** open
 **see:** `curate/decisions/019-the-check-layer-exists.md`
 
-This item used to read "`curated/check/` does not exist". That half is **closed** —
-it holds three tables and the contract a check owes its reader is written down in
-decision 019. The claim had gone stale before anyone noticed, which is why it is
-recorded rather than quietly edited.
+This item's other half (`curated/check/`) closed in decision 019. What is left is the species reference.
+`reference/species/` is an empty directory and `curated/reference/` has no species table, so nothing in the sweep
+resolves a species code to a name. Every other reference domain — gear, ports, geo, vessels — has one.
 
-What is left is the species reference. `reference/species/` is an empty directory and
-`curated/reference/` has no species table, so nothing in the sweep resolves a species
-code to a name. Every other reference domain — gear, ports, geo, vessels — has one.
+**Raw holds no proper list (measured 2026-10-17).** Each source has a partial list of its own: `afli/fiskar` (68
+codes), `adb/species` (410), `kvoti/lods_fteg` (125) and `kvoti/stadall_fisktegundir_v` (74, the only one with
+English and scientific names); `asfis/asfis` is FAO's list, with no Icelandic code. Together they resolve every
+`sid` in `curated/logbook/catch` and `curated/landing/catch` but 9 codes (11 by schema): afli's 999 (74,706 rows,
+143,586 t, 0.32 % of afli kg) and 0, lods' 0, agf's 665, 533, 278, 1128, fs_afladagbok's 665, 269, 954, 901 (almost
+no kg). Not checked: that the
+lists name a shared code alike, and an Icelandic code → FAO 3-alpha link (none in raw beyond the 74 scientific names).
 
 **check:** `curated/reference/species.parquet` exists and the catch tables' species
 codes all resolve against it.
@@ -73,27 +76,6 @@ Towed gear needs no window work for effort; the reported heading is the course.
 
 **check:** none while parked. It reopens when a delivery needs static-gear effort that precise; plan 004's
 header then records, for each of its five measurements, the answer or where it lives.
-
-## 17. Full review of the STK vessel match
-**status:** open · **needs: maintainer** · **see:** `curate/plans/003-stk-vessel-identity.md`,
-`curate/plans/008-north-atlantic-vessel-registry.md`, `TODO.md` item 25 (the audit)
-
-Reviewed 2026-09-22; steps 1–7 and 9 done (decisions 015, 020, 021, 032, 033,
-034). Step 8 (foreign-vessel identity) is absorbed by and built in plan 008 —
-`ais_key_foreign.R`'s six-stage cascade, 7,549 candidates proposed (decisions
-036, 039, 040, 041). Plan 008's own Phase 7 (`_targets.R` wiring) and ongoing
-candidate review remain open there, not here.
-
-**`TFUT` resolves (checked 2026-10-14, plan 016 §2 i):** all four Fjarskiptastofa lists and Oracle's `vessel_mmsi`
-give it to vid 2173 (MMSI 251017000), and the key already assigns its mid 133558 to 2173 (step `segment: registry`).
-The 2026-09-27 reading ("two holders, both ending 1995") is superseded. `TFPH` is not rechecked.
-
-**Asked of the maintainer:** the 88 Icelandic vids with no MMSI on record
-(plan 003 §4.7 and §6; the note once at `ais_key.R:16-19` is gone) — a Fiskistofa/Fjarskiptastofa data
-refresh, not a code fix. The refresh of 2026-10-14 is measured in plan 016 (TODO 63).
-
-**check:** the 88-vid gap and `TFUT` both resolve against a refreshed pull, or
-this item states why they can't.
 
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
@@ -131,25 +113,6 @@ plan 002. Blocked on item 15's disclosure rule, which decides what may leave
 
 ---
 
-## 21. GFW effort data may be worth cross-checking against STK
-**status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`
-
-Not a vessel registry — GFW's own effort grids are activity data, the same kind as
-`staging/ais/astd`, not identity like the rest of plan 008. Landed alongside it in
-`~/garbage/vessels_from_.../gfw/`, not yet moved into `$FISHYDATA`:
-`mmsi-daily-csvs-10-v1-5-2018.zip` (per-MMSI, 0.1°, 2018 only) and
-`fleet-daily-csvs-100-v2-2020.zip` (flag+geartype, 0.01°, 2020, no MMSI).
-
-Partners the maintainer has worked with have questioned GFW's data quality. The
-Icelandic fleet is exactly the population where that is answerable — STK is this
-project's own authoritative trail for it. A comparison here would be the same shape as
-`curate/checks/ais_key_landings.R` (report disagreement, never correct from it).
-
-**check:** a check exists comparing GFW-attributed Icelandic fishing effort against
-STK's own trail for at least one overlapping year (2018, via `mmsi-daily`).
-
----
-
 ## 22. Foreign vessels never reach trip segmentation, even once identified
 **status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`, `curate/plans/017-foreign-vessels-through-the-flow.md`
 (measured 2026-10-14: foreign vids keyed in STK already reach voyages; the plan proposes a vid, not an `external_id`, for the rest)
@@ -174,63 +137,39 @@ against `ports_all`.
 
 ---
 
-## 23. Icelandic pleasure craft (SKB) have no entity_class or registry home
-**status:** open — answered 2026-10-14, built by TODO 63 · **see:** `curate/decisions/041-fro-succession-and-skb-pleasure-craft.md`
+## 24. Icelandic vessels that land fish but are never heard on AIS
+**status:** open · **see:** decision 117, `curate/checks/ais_key_landings.R`, TODO 67
 
-`reference/vessels/registry.R:35` excludes `sknr` starting `SKB` from `vessel.parquet`
-with no decision record explaining why — found to look mechanical (`SKB` codes are
-alphanumeric, never fit the integer `vid` join) rather than a deliberate policy call.
-Measured: 94 of 157 `SKB` mobile-ids in STK's unmatched residual resolve cleanly
-against `raw/vessels/mmsi_iceland_archieves.parquet`'s own `sknr` field (192,554 of
-256,292 pings) — including the single largest entry anywhere in the residual. A
-resolution path now exists (`ais_key_foreign.R`'s `isl_pleasure_craft` stage, `source`/
-`external_id` of their own, `vessel.parquet` untouched), but they still default to
-`entity_class == "vessel"` in the main cascade and sit in the unmatched residual
-looking like missed real vessels rather than a recognized class.
+`ais_key_landings`' `landed_but_no_ais` lists 308 vids (the `once` file of 2026-10-09). It audits the cascade, not
+the key (decision 053), so 53 of them are in the key and heard, and 148 are foreign. **107 Icelandic vids landed in
+the AIS era with no key row and no ping from any provider in the union:** 96 registered vessels (9 with an MMSI, 67
+landing in 2013 or later) and 11 landings placeholders; the two divers are TODO 67. A vessel name is never used to
+match, and the MMSI route is already taken, since the union takes ASTD, astdB and EMODnet by MMSI. What is left is to
+say why each has no track: no transponder (a small boat), an STK unit the key leaves without a vid (plan 022 §3), or a
+missed match.
 
-**Asked of the maintainer:** should `R/entity_class.R` recognize `SKB` as its own
-class, and should `registry.R`'s exclusion be revisited now that it's shown to cost
-real, resolvable AIS coverage? Since 2026-10-14 (vid is an integer, and a hull like an IMO number) this is
-plan 016 §5 and §7 a. **Answered 2026-10-14: option B**, SKB as `vid` 100000 + n through the whole flow, with
-`entity_class` pleasure craft at the next key redo (plan 016 §7).
-
-**check:** `SKB`-prefixed mobile-ids carry a distinct `entity_class`, and
-`registry.R:35`'s exclusion has a decision record (kept or changed) either way.
+**check:** each of the 107 has a stated reason in a check table or an override: no AIS expected, an STK unit or MMSI
+found, or a match missed.
 
 ---
-
-## 24. `landed_but_no_ais`'s top vessels have no MMSI on record at all
-**status:** open · **see:** `curate/checks/ais_key_landings.R`
-
-83 Icelandic vessels land fish (2007-09 to 2025-12) with zero STK identity. The
-top 10 by landing-trip count (vid 980 STAFNES, 1035 HEIMAEY, 6723 BETA, 2362
-HREFNA, 257 SIGURVON, 1263 ATLAVÍK, 1261 BERGKVIST, 6965 ARNAR, 2302 MÁNI, 978
-SVANUR) carry **no `mmsi` in `vessel.parquet` at all** - not stale, absent -
-so ASTD/astdB (both MMSI-keyed) can't be checked for them with a restricted
-lookup the way plan 008's foreign candidates were. The only way to check is a
-`vesselname`-matched scan across ASTD's ~2.77 billion rows, which is exactly
-the full-table scan this repo has deliberately avoided everywhere else - so
-it wasn't run; do it as a deliberate, budgeted pass, not incidentally.
-
-**check:** each of the 83 has either an ASTD/astdB name-match result recorded,
-or a note that none exists.
 
 ## 25. Resolve the STK key audit's discrepancies, and reach the rows no witness reaches
 **status:** open · **needs: maintainer** — review of proposed overrides ·
 **see:** `curate/plans/009-independent-audit-of-the-mid-vid-match.md`,
 `curate/decisions/047-independent-audit-of-the-mid-vid-match.md`
 
-Built 2026-09-29: `ais_key_audit` (ledger of every key row; 400 discrepancies on the 2026-10-07 build, none
-reviewed, 132 when first built; 884 vid-claiming rows no witness reaches, not re-counted) and `ais_key_split_candidates` (silences where a
+Built 2026-09-29: `ais_key_audit` (ledger of every key row; 402 discrepancies on 239 mids in the `once` files of
+2026-10-09, none reviewed, 132 when first built; 840 vid-claiming rows no witness reaches, 884 when first built;
+decision 117) and `ais_key_split_candidates` (silences where a
 human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009 —
 phase 2 (segment table built with logbook and landings: tiles every mid, 90 % of pings with direct evidence, Icelandic ODS rows 87 % reproduced without the ODS; review open), phase 3 (review in the app),
 phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (the ODS is retired: `ais_key.R` switched to the segment table 2026-09-30, decision 053;
 ODS retired the same day and everything rebuilt without it, decision 054; the archived file stays, by decision).
 `ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids;
 track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
-The `curated/check/` tables build the next time the `check_ais_key_*` targets run.
+The review is settled at the key redo that plan 016 §4 step 7, plan 021 step 7 and plan 022 §3 also name.
 
-`ais_key_coverage` finds the pings the key leaves unassigned (31,512 in 344 stretches on the 2026-10-07 build,
+`ais_key_coverage` finds the pings the key leaves unassigned (31,512 in 344 stretches on the 2026-10-09 files,
 39,487 when first built; the largest now 4,962 on mid 108582) and proposes a fill; the maintainer's invariant is no unassigned ping.
 
 `ais_key_vessel_recall` accounts for every Icelandic vessel-month AIS or the logbook shows active: 0.3 % of
@@ -247,7 +186,7 @@ The segment table now uses each hull's registration date (a vid cannot precede i
 redone on this one before any verdict is used.
 
 **check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
-through `overrides/` or carries a stated reason, and the 884 are re-counted.
+through `overrides/` or carries a stated reason.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, item 8
@@ -368,13 +307,17 @@ logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
 foreign catch on the record path where a logbook exists.
 
 ## 63. Refresh the vessel registry and the MMSI archive
-**status:** open — the eight asks in plan 016 §7 were answered on 2026-10-14; ready to build ·
-**see:** `curate/plans/016-vessel-registry-and-mmsi-refresh.md`, TODO 17 and 23
+**status:** open — built in the rebuild of 2026-10-16 (decision 112); §8's checks and the plan's decision record are left ·
+**see:** `curate/plans/016-vessel-registry-and-mmsi-refresh.md`, decision 117 (TODO 17 and 23 folded in)
 
 New Oracle vessel tables were dumped on 2026-10-14 (the April set is in `$FISHYDATA/archive/raw-vessels_2026-04-25/`),
 and the March 2026 Fjarskiptastofa list was merged into `raw/mmsi/mmsi_iceland_2026-03-25.parquet`, which nothing reads.
 Adopting that merge as it stands would put four vids twice in `vessel.parquet`. The plan rebuilds the archive from
 all its sources and makes `vid` an integer and unique again, after the `rjdbc` driver turned it into a double.
+
+From TODO 23 (decision 117): SKB's registry half is built (203 rows, vid 100002–102772), and the decision record says
+what became of `registry.R`'s exclusion. Its key half (179 mobile-ids, no vid, class "vessel") waits on §4 step 7's
+key redo.
 
 **check:** plan 016 §8.
 
