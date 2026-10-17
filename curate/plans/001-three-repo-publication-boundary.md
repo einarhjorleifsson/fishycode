@@ -62,9 +62,10 @@ in `fishycode` and enforced by a function, on the same principle as
 `AGENTS.md`'s "prefer enforcement over instruction". Whether that rule is right is for
 the maintainer and the institute, not for this file.
 
-**Answered in part (maintainer, recorded 2026-10-02; written here 2026-10-17, decision 118):** the minimum of 3
-vessels per cell applies only to ICES datacall deliveries. `fishyweb` posts and ordinary analyses grid and map
-without it. Still open: the minimum spatial cell, and the allowlist of tables that may leave `fishydata`.
+**Answered in part (maintainer, confirmed 2026-10-17; first said 2026-10-02):** the three-vessel rule applies only
+to the ICES VMS datacall, where the delivery lists the vessels of each cell (`AnonymizedVesselID`) and ICES applies
+it. No minimum vessel count applies anywhere else, `fishyweb` included. Still open: the minimum spatial cell, and the
+allowlist of tables that may leave `fishydata`.
 
 ## 4. Before the first push to a public remote
 

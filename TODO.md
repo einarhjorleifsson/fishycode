@@ -56,8 +56,8 @@ codes all resolve against it.
 `fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page. The design, the evidence and the
 open questions are in the plan. **Answered 2026-10-16 (§4):** fishycode is public
 (`github.com/einarhjorleifsson/fishycode`), with its history as it was, so that history is now fixed; the Mapbox token
-in it is revoked (maintainer) and out of the working tree. **Answered in part (§3):** the minimum of 3 vessels per cell
-applies only to ICES datacall deliveries (maintainer, recorded 2026-10-02).
+in it is revoked (maintainer) and out of the working tree. **Answered in part (§3):** the three-vessel rule applies
+only to the ICES VMS datacall, and no minimum vessel count applies anywhere else (maintainer, 2026-10-17).
 
 The boundary that still needs a rule is `fishydata` → `fishyweb`, a data-disclosure question that binds item 16.
 **Asked of the maintainer, in the plan's own words:** the rest of the aggregation rule for what may leave `fishydata`
