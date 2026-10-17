@@ -1,6 +1,7 @@
 # 005 — Recovering the dropped afli stations on evidence, not on explanation
 
-**Status:** **PARKED 2026-09-23** by the maintainer. Step 1 was built and its
+**Status:** abandoned — decision 098 (2026-10-14) settled it: the dropped hauls are mostly copies and are not
+admitted; its open ends are TODO 75. Parked by the maintainer on 2026-09-23. Step 1 was built and its
 measurements stand; steps 2–4 are designed and will not proceed. *2026-09-23.*
 
 > **Parked the day it was written.** Nothing here is queued. The design and the step 1

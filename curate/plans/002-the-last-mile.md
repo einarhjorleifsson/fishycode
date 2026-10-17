@@ -1,6 +1,8 @@
 # 002 — The last mile: what still has to be built before the sweep is usable
 
-**status:** proposal — nothing built · **2026-09-22** · **see:** `TODO.md` item 16,
+**status:** partly built — steps 1 and 5 done (decisions 010, 011, 070); the tail built as the trail by plan 010
+(decisions 065, 085, 101); the species lookup is TODO 10 and the fishyweb port waits on TODO 15 · **2026-09-22** ·
+**see:** `TODO.md` item 16,
 plan `001-three-repo-publication-boundary.md`
 
 **Measured** — by reading `~/stasi/fishyweb` on 2026-09-22 and comparing it line by

@@ -1,7 +1,7 @@
 # 001 — the three-repo publication boundary
 
-**Status:** proposal. Nothing built. **Drafted:** 2026-09-22, from the maintainer's
-statement of intent.
+**Status:** proposal — §4 done (fishycode public since 2026-10-16); §3 answered in part (decision 118); the rest of §3
+and §5 wait on the maintainer (TODO 15). **Drafted:** 2026-09-22, from the maintainer's statement of intent.
 
 **Measured vs assumed.** The repository facts below — remote state, commit counts, the
 token, the absence of Oracle credentials in tracked code — were checked on 2026-09-22

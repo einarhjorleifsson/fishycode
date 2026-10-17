@@ -1,8 +1,9 @@
 # 021 — A vessel registry for every ping, whatever the flag
 
 **status:** partly built — §6 answered 2026-10-16 ((a) revised 2026-10-17), step 1 built (decision 114), steps 2-4 code,
-checked in scratch (decision 115), §6 c amended 2026-10-17; the first vid allocation, decision 115's readings and
-the review of the proposed overrides wait on the maintainer (§6 i answered 2026-10-17) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
+checked in scratch (decision 115), §6 c amended 2026-10-17, §6 i answered 2026-10-17; 52 links confirmed
+(`overrides/vessel_ais_link.csv`); the build of decision 115's targets, the first vid allocation and decision 115's
+readings wait on the maintainer (TODO 65) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 65 and 25 (17, 22 and 63 closed or folded); decisions
 015, 036–043, 067, 107; `curate/corrections/astd_2026_imo_only.yml`
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request: "a comprehensive vessel registry for

@@ -1,6 +1,6 @@
 # 017 — Foreign vessels through the flow, the Faroese first
 
-**status:** proposal — nothing built; steps 1-3 moved to plan 021 (2026-10-16), asks e-g open · **2026-10-14** · **see:** TODO 22, 62, 63; plans 008 (§7 Phase 7, Phase 9), 013,
+**status:** proposal — nothing built; steps 1-3 moved to plan 021 (2026-10-16), asks e-g open (e and f in TODO 65, g in TODO 62) · **2026-10-14** · **see:** TODO 62 and 65 (22 folded into 65, 63 closed); plans 008 (§7 Phase 7, Phase 9), 013,
 015, 016; decisions 039–043, 067, 075, 102
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only queries of the code and

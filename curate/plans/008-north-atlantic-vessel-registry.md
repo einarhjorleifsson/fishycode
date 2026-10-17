@@ -1,9 +1,10 @@
 # 008 — A north-Atlantic vessel registry, to feed the AIS trail build
 
 **status:** partly built — **§7 Phases 1–6, 8 and 3b done 2026-09-27**,
-decisions 035–040; Phase 7 (`_targets.R` wiring) onward still proposal ·
+decisions 035–043; Phase 7 (`_targets.R` wiring) in part (decision 114); the rest is carried by plan 021 steps
+6–7 (TODO 25, 65) ·
 **see:** `curate/plans/003-stk-vessel-identity.md` §4.5/§4.7 (the foreign-vessel
-gap this extends), `TODO.md` item 17
+gap this extends), `TODO.md` items 25 and 65 (17 closed, decision 117)
 
 *2026-09-26, expanded 2026-09-27 into a full build plan (§7) once EU/FRO/NOR/GFW
 finished landing in `~/garbage/vessels_from_home-haf-einarhj-stasi-fishydata-dataraw`

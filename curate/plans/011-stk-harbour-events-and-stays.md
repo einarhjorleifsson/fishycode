@@ -1,6 +1,7 @@
 # 011 — Harbour stays: fix voyage segmentation in general, with STK events as one source of evidence
 
-**status:** partly built — Phase 0 measured and Phase 1 seed built 2026-10-01 (§2, §2a, §4a); **paused 2026-10-01 for a separate harbour/port session (§4b)**; all phases built 2026-10-01 (§4d–§4h); closed by decision 065 · **2026-10-01** · **see:** plans
+**status:** executed — all phases built 2026-10-01 (decisions 058–065; closed by 065); the harbour class was dropped
+(decision 074) and harbour stays became port stays (decision 075: `port_stay.R`, `ais_voyage.R`) · **2026-10-01** · **see:** plans
 `006-trip-identity-and-catch-to-ais-pings.md` (§4, and its correction), `010-ping-activity-link.md` (§3.3, the
 correction at its end); `reference/ports/bootstrap_iceland_faroe.R`, `reference/ports/ports_all.R`,
 `curate/ais_trip.R`, `curate/ais_ping_clean.R`.

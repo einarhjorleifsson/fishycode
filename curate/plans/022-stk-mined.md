@@ -1,6 +1,7 @@
 # 022 — stk mined whole: the mobile-id key, the trip table, and what the rest holds
 
-**status:** proposal — §2, §3 and §5 measured, §4 waits for the rebuilt voyages; nothing in the pipeline changed ·
+**status:** proposal — §2, §3 and §5 measured; §4 waits for the maintainer's go (the voyages were rebuilt 2026-10-16,
+decision 112); §7 asks 1, 3, 4 and 5 open (TODO 25, 68); nothing in the pipeline changed ·
 **2026-10-16** · **see:** plan 009 (the STK key), plan 018 (the dump), plan 021 (registries for every ping), plan 023
 (the landings, which build on this one), TODOs 68 and 71, decisions 047, 075, 094 and 109
 

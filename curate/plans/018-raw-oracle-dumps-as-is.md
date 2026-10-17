@@ -1,6 +1,6 @@
 # 018 — Oracle dumps as they are: one directory per schema, every table and view, a data dictionary beside them
 
-**status:** executed 2026-10-16 (phases 1-4: the server dump in `raw/oracle/`, every reader on it, decision 111; the rebuild, decision 112) · **2026-10-15** · **see:** decisions 105, 106, 109, 111 and 112; TODO 70 and 51; plan 016 §4 step 6
+**status:** executed 2026-10-16 (phases 1-4: the server dump in `raw/oracle/`, every reader on it, decision 111; the rebuild, decision 112) · **2026-10-15** · **see:** decisions 105, 106, 109, 111, 112, 113 and 116 (the inputs declared); open: TODO 70; TODO 51; plan 016 §4 step 6
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The four choices in §2 are the
 maintainer's, made the same day.

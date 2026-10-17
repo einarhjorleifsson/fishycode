@@ -1,6 +1,7 @@
 # 015 — The ICES VMS datacall from the curated trail
 
-**status:** proposal — nothing built · **2026-10-14** · **see:** TODO 27b and 8, plans 002, 010 (§7), 013
+**status:** proposal — nothing built; effort and catch per fix have been built since (decisions 101–102), so §4 c and e
+want restating · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
 (`rb_assign_effort`, `rb_share_catch`), decision 095
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code

@@ -1,6 +1,6 @@
 # 013 — ramb as the function library for the WGSFD one-flow; fishycode as its first user
 
-**status:** partly built — step A, phases 0–3, and of "What is left, in order" items 0–3 and 5 built and on the data, items 4 and 6–9 built in part (decisions 099–103); item 10 blocked (TODO 60) · **2026-10-14** ·
+**status:** partly built — step A, phases 0–3, and of "What is left, in order" items 0–3 and 5 built and on the data, items 4 and 6–9 built in part (decisions 099–103); item 10 unblocked by decision 104, not built; what is left is TODO 72 · **2026-10-14** ·
 **see:** `docs/one_flow.qmd` (the one-flow document, the home of version 2 since `~/stasi/wgsfd2026/` was retired), `~/R/Pakkar/ramb`, decision 070
 
 Drafted with AI assistance (Claude) from the maintainer's direction in the session of 2026-10-08, three code

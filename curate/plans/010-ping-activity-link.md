@@ -1,6 +1,7 @@
 # 010 — Linking pings to trips and fishing activity (the `trail`)
 
-**status:** proposal — Phase 0 measured 2026-09-30 (§9), nothing built · **2026-09-30** · **see:** plans `002-the-last-mile.md`
+**status:** executed — steps 0–4 built 2026-09-30/10-01 (§7); the function became `curated/ais/trail` (decision 065);
+the catch was built under plan 013 (decisions 100–102); the delivery is plan 015 (TODO 27b) · **2026-09-30** · **see:** plans `002-the-last-mile.md`
 (§2 the tail, §3 `t1`..`t4`), `004-behavioural-fishing-windows.md`,
 `006-trip-identity-and-catch-to-ais-pings.md` (§4, §5, §6); decisions `010`, `028`, `053`;
 `corrections/station_time_whole_day.yml`

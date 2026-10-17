@@ -1,7 +1,8 @@
 # 009 — An independent audit of the mid→vid match, from every witness that does not read the key
 
-**status:** restructured 2026-09-29 — phase 1 (witnesses, ledger, reader, resolution first pass, coverage check) done and built; the product is now a **segment table** that tiles every mid, phases 2–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
-phase 2 first pass built (`ais_key_resolution`), phases 2 (review), 3–5 open · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
+**status:** partly built — phases 1–2 built (decisions 047–053; the product is a **segment table** that tiles every
+mid), phase 5 done (decisions 053, 054), phase 3 in part (decisions 048–056); the rest of phase 3 and phase 4 wait for
+the key redo (TODO 25) · **see:** `TODO.md` item 25; decisions 046, 047; plans `003`, `008`
 
 *Drafted with Claude (AI-assisted); the maintainer set the scope, lifted the decision rules for
 the exploration, and framed it as a bookkeeping audit first, statistics as background tests.*

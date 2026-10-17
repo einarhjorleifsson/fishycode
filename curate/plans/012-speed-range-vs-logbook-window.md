@@ -1,6 +1,7 @@
 # 012 — Speed range and the logbook time window: which one defines "fishing"?
 
-**status:** proposal — nothing built · **2026-10-02** · **see:** plan `010-ping-activity-link.md` (§2, §11), plan `004-behavioural-fishing-windows.md`,
+**status:** partly built — step 0 (2026-10-02) and step 4 (gear codes on the trail, decision 085); steps 1–2 not taken
+up (decision 093); step 3 (the last haul), step 5 (12 nm, needs a baseline) and ask (1) open (TODO 34) · **2026-10-02** · **see:** plan `010-ping-activity-link.md` (§2, §11), plan `004-behavioural-fishing-windows.md`,
 `reference/gear/windows.R` (the gear `s1`/`s2`), `R/trail_sql.R` (`fishing`), `curate/station_window.R`; the exploratory post
 `fishyweb/blog/posts/trawl-footprint/index.qmd` (draft, not rendering).
 

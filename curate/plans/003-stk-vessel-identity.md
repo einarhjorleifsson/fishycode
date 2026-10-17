@@ -1,10 +1,11 @@
 # 003 — STK vessel identity: from a match script to an identity model
 
-**status:** partly built — **steps 1–7 and 9 done, 2026-09-26**; step 8
+**status:** executed — **steps 1–7 and 9 done, 2026-09-26**; the key has been plan 009's segment table since
+2026-09-30 (decision 053), and the redo it waits for is TODO 25. Step 8
 absorbed into `curate/plans/008-north-atlantic-vessel-registry.md` (that plan's
 §1: "it does not replace 003 step 8, it absorbs and extends it") and built
 there — see its Phases 3–6, decisions 036/040/041 ·
-**see:** `TODO.md` item 17, `curate/decisions/012-stk-entity-class.md`,
+**see:** `TODO.md` item 25 (item 17 closed, decision 117), `curate/decisions/012-stk-entity-class.md`,
 `curate/decisions/013-stk-derived-ids-are-equipment.md`,
 `curate/decisions/014-stk-vid-assignment-checks.md`,
 `curate/decisions/015-identity-is-separate-from-the-key.md`,

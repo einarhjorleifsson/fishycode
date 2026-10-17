@@ -1,6 +1,7 @@
 # 006 — Trip identity across systems, and splitting catch onto AIS pings
 
-**status:** proposal — nothing built · **2026-09-25** · **see:** `curate/decisions/
+**status:** abandoned — overtaken: §1 by plan 007 (`.lid`, decision 031), §4–§5 by plan 010 and decision 093, §6 by
+decisions 100–102 · **2026-09-25** · **see:** `curate/decisions/
 007-hid-maps-to-pid.md`, `010-time-variable-naming.md`, `015-identity-is-separate-
 from-the-key.md`, `028-join-key-naming-aligned.md`; `curate/plans/
 002-the-last-mile.md`, `004-behavioural-fishing-windows.md`; `docs/grammar.qmd`
