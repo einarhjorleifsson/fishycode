@@ -69,6 +69,10 @@ astd_files      <- input_files("staging", "ais", "astd")
 astd_b_files    <- input_files("staging", "ais", "astdB")
 # The Fjarskiptastofa MMSI lists, for the same reason (decision 116): mmsi.R reads every list in the folder.
 mmsi_list_files <- input_files("raw", "mmsi", pattern = "[.]xlsx$")
+# The vid ledger (plan 021 §6 f): one file per allocation, written by allocate_vids() (R/allocate_vids.R) outside the
+# graph, so a new allocation shows in tar_outdated(). Empty until the first allocation; the crosswalk builds without it.
+vid_ledger_files <- sort(list.files(fd_path("curated", "vessel", "vid_ledger"), "^batch_.*[.]parquet$",
+                                    full.names = TRUE), method = "radix")
 
 list(
 
@@ -301,6 +305,40 @@ list(
   tar_target(astd_staged, astd_files, format = "file"),
   tar_target(astd_b_staged, astd_b_files, format = "file"),
   tar_target(emodnet_raw, fd_raw("ais", "EmodNet", "is2017.csv"), format = "file"),
+
+  # ── The vessel crosswalk (plan 021 steps 2-4) ───────────────────────────────
+  # What each MMSI feed claims about its vessel, by MMSI and year; then each feed id and period to a hull and its vid.
+  # The vid numbering is outside the graph: the ledger enters as an input, like overrides/, and allocate_vids() extends
+  # it by hand. Nothing in the flow reads the crosswalk yet: its reader is the union (plan 021 step 6).
+  tar_target(astd_identity, {
+    astd_staged
+    produces("sources/astd/identity.R", fd_staging("astd", "identity.parquet"))
+  }, format = "file"),
+  tar_target(astd_b_identity, {
+    astd_b_staged
+    produces("sources/astd_b/identity.R", fd_staging("astd_b", "identity.parquet"))
+  }, format = "file"),
+  tar_target(emodnet_identity, {
+    emodnet_raw
+    produces("sources/emodnet/identity.R", fd_staging("emodnet", "identity.parquet"))
+  }, format = "file"),
+  tar_target(stk_mobile_raw, fd_raw("oracle", "stk", "mobile.parquet"), format = "file"),
+  tar_target(vessel_ais_link_overrides, "overrides/vessel_ais_link.csv", format = "file"),
+  tar_target(vid_ledger, vid_ledger_files, format = "file"),
+  tar_target(vessel_ais_link, {
+    astd_identity; astd_b_identity; emodnet_identity; lookups
+    vessel_identity; vessel; vessel_identity_foreign; vessel_ais_key; stk_mobile_raw
+    vessel_ais_link_overrides; vid_ledger
+    produces("curate/vessel_ais_link.R",
+             fd_curated("vessel", "vessel_ais_link.parquet"),
+             fd_curated("check", "vessel_ais_link_review.parquet"))
+  }, format = "file"),
+  # Plan 021 §2.2's table rebuilt from the crosswalk, by year: which route reaches each MMSI, and what it carries.
+  tar_target(check_vessel_ais_link_routes, {
+    vessel_ais_link; astd_identity; vessel_identity_foreign
+    produces("curate/checks/vessel_ais_link_routes.R",
+             fd_curated("check", "vessel_ais_link_routes.parquet"))
+  }, format = "file"),
 
   # ── Source adapters ─────────────────────────────────────────────────────────
   # raw/ → staging/<source>/. Mutually independent, so tar_make(workers = 4)

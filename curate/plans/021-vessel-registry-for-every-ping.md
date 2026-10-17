@@ -1,6 +1,8 @@
 # 021 — A vessel registry for every ping, whatever the flag
 
-**status:** partly built — §6 answered 2026-10-16 ((a) revised 2026-10-17), step 1 built (decision 114) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
+**status:** partly built — §6 answered 2026-10-16 ((a) revised 2026-10-17), step 1 built (decision 114), steps 2-4 code,
+checked in scratch (decision 115), §6 c amended 2026-10-17; the first vid allocation, decision 115's readings and
+the review of the proposed overrides wait on the maintainer (§6 i answered 2026-10-17) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
 015, 036–043, 067, 107; `curate/corrections/astd_2026_imo_only.yml`
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request: "a comprehensive vessel registry for
@@ -48,8 +50,8 @@ STK is taken from plan 017 §2.2 (2026-10-14), not re-measured.
 | feed | key | identities | pings | what it says about the vessel |
 |---|---|---|---|---|
 | STK | mobile-id | (plan 017 §2.2) | 290 M | `loid`/`glid`; keyed to a vid in the `once` project. 175.4 M pings on Icelandic vids, 6.39 M on 364 foreign-vid mobile-ids, 9.44 M on 1,083 `fro` candidates, 8.66 M on 910 `marinetraffic` candidates, 3.62 M on 5,028 vessel mobile-ids with no vid |
-| ASTD | MMSI | 546,892, of which 99,978 invalid | 2,817 M | per ping: name, IMO, flag, `astd_cat`, size group, ice class; no call sign |
-| astdB | MMSI | 68,663, of which 30,496 invalid | 901 M | `cc_iso3`, length, breadth, draught; no name, IMO or call sign |
+| ASTD | MMSI | 546,892, of which 99,978 invalid | 2,817 M | PAME's Arctic Ship Traffic Data ([pame.is](https://pame.is)), all flags, not Norway's AIS; per ping: name, IMO, flag, `astd_cat`, size group, ice class; no call sign |
+| astdB | MMSI | 68,663, of which 30,496 invalid | 901 M | PAME's class-B archive; `cc_iso3`, length, breadth, draught; no name, IMO or call sign |
 | EMODnet 2017 | MMSI | | 19.6 M | an Iceland extract; 10,640 rows not on MID 251 |
 | GPS logger | vid | | | Icelandic only |
 
@@ -152,9 +154,21 @@ length.
    - Add the six `ops$einarhj` MMSI tables to `dump/oracle/ops_einarhj.R`; the maintainer runs it.
    - Refresh the EU register: the adapter reads `vesselRegistryListResults.csv`, downloaded 2024-02-19.
 2. **The feeds' claims:** `staging/astd/identity.parquet` and the astdB counterpart (§4).
+   - *Code 2026-10-17 (decision 115), run in scratch only:* `sources/astd/identity.R`, `sources/astd_b/identity.R` and
+     `sources/emodnet/identity.R`, targets `astd_identity`, `astd_b_identity`, `emodnet_identity`.
 3. **The crosswalk:** each MMSI and period to a hull, by the rule in §4. The 1,056 MMSIs with two IMOs in one year go
    to a check table, and are linked only through `overrides/`.
+   - *Code 2026-10-17 (decision 115), run in scratch only:* `curate/vessel_ais_link.R` → `vessel_ais_link.parquet` and
+     `curated/check/vessel_ais_link_review.parquet`; reviewed links in `overrides/vessel_ais_link.csv` (empty); §2.2 by
+     year in `check_vessel_ais_link_routes`. Periods are dated segments (half-open UTC timestamps), cut at clean
+     handovers (§6 c as amended). The held-out cases and their counts are in decision 115.
+   - GFW's Vessels API pass (§6 d) is not built; the token is in place, and the pass's place is marked in the script as
+     one more register by MMSI.
 4. **vids:** 200000 + n from the append-only table.
+   - *Code 2026-10-17 (decision 115):* `R/allocate_vids.R`; the ledger is `curated/vessel/vid_ledger/`, a file per
+     allocation, read as the input `vid_ledger`. Not yet allocated: the maintainer runs `allocate_vids(dry_run = FALSE)`
+     once the targets are built, then rebuilds `vessel_ais_link`. What a vid does when a hull's key changes is §6 i:
+     it keeps its vid (answered 2026-10-17).
 5. **The vessel tables** for every hull: `register`, `flag` and `fishing` with their bases. Length and kW come from
    the best register into `vessel_year` (plan 017 step 7).
 6. **The union:** identity decides, not the MID (plan 017 step 4). Which hulls enter is §6 a.
@@ -215,6 +229,12 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
 - **c. The feed's own IMO decides the hull,** with basis `broadcast`, where the check digit passes and no register
   holds it. The 1,056 MMSIs with two IMOs in one year, and an IMO on two MMSIs at the same time, go to a check table
   and are linked only through `overrides/`.
+  *Amended by the maintainer, 2026-10-17:* "cut clean handovers at the ping boundary, review only overlaps, and count
+  how many of the two-IMO MMSI-years are clean." Where one MMSI-year's claims hand over without overlapping in time
+  (one IMO's last ping before the next one's first), the period is cut at the first ping of the new one and each side
+  links to its own hull; only claims that overlap go to the check table. The same boundary applies, where it can, to
+  an IMO followed or preceded by pings with no IMO under another name (decision 115 says what that rests on). Counted
+  in decision 115: of 900 non-Icelandic MMSI-years with two or more valid IMOs, 261 are clean and 639 overlap.
 - **d. GFW's Vessels API for every flag**, not only Norway, once its terms for bulk use are read and fit (Claude reads
   them; the token is the maintainer's). The query sends only MMSIs. In parallel the maintainer asks the Directorate of
   Fisheries (postmottak@fiskeridir.no) whether its vessel API returns MMSI. Kystverket is not used.
@@ -225,6 +245,9 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
   may carry its own licence, and GFW's registry fields from S&P Global (since June 2026) are limited in distribution.
   The search takes at most 50 entries a page and a `where` with OR; whether one request can carry several MMSIs is
   to be tested. gfwr 3.0 (installed) reads the token from `GFW_TOKEN`.
+  *2026-10-17:* the token is in place. The maintainer added `GFW_TOKEN` to fishycode's own `.Renviron` (git-ignored;
+  R reads only the working directory's one), and a test query answered. The pass no longer waits on the token, only
+  on being built (decision 115 marks its place in the crosswalk).
 - **e. GFW v3.** GFW's static fishing effort release v3.0 (March 2025) covers 2012-2024, against v2's 2012-2020, with
   a vessel list laid out differently from v2's one row per MMSI
   ([GFW FAQ](https://globalfishingwatch.org/faqs/2025-march-static-apparent-fishing-effort-v3-difference-with-map/)).
@@ -250,7 +273,25 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
   §6 f) grows: stays and voyages for foreign fishing vessels need ports over the area and their home ports.
 - **h. Not known.** The maintainer asks the provider what changed by year, and whether the full 2026-02 to 06 months
   can be sent again. Claude measures each year from staging (extent, MMSIs, IMO share, category mix), so coverage is
-  documented whatever the answer.
+  documented whatever the answer. *2026-10-17:* the maintainer has written to the provider, PAME (pame.is), about the
+  drop from 2026-02 to vessels with an IMO number; no answer yet.
+- **i. Put to the maintainer 2026-10-17 ("pass as an open question"), answered the same day: what does a hull's vid do when new data
+  change which hull key an MMSI resolves to?** The ledger stays append-only either way, and a never-seen hull gets a
+  new number; two cases are open:
+  1. *An upgrade.* A broadcast hull (`mmsi_<n>`) gains an IMO, from new feed data, a register or the GFW API pass, so
+     its key becomes `imo_<n>`. Done naively, the IMO hull gets a second vid and the pings move to it.
+  2. *A split.* The IMO history later shows one MMSI on two hulls, so one hull becomes two.
+
+  Recommended to the maintainer (theirs to choose): for an upgrade, a ledger row that gives the new key the vid the
+  old key had (an alias); for a split, the earlier period keeps the old vid and the new hull takes the next number.
+  Either way an analyst's vid changes only where it really was two vessels. The ledger already carries either answer:
+  each row has `basis` (`new`, or `inherited` with the old key in `from_hull`), and `allocate_vids(inherit = )`
+  writes the aliases (`TRUE`) or numbers every new key afresh (`FALSE`).
+  *Answered by the maintainer, 2026-10-17: the vid is kept.* An upgrade keeps its vid through a ledger row with basis
+  `inherited`; in a split the earlier period keeps it and the new hull takes the next number. `inherit = TRUE` is now
+  `allocate_vids()`'s default. A third case, a **merge** (a broadcast hull found to be a hull that already has a vid),
+  keeps the existing vid and retires the other; the answer includes recording the retired vid's successor, so an
+  analyst's old number still leads somewhere. The ledger has no row for that yet: it is not built.
 
 ## 7. Checks (done when)
 

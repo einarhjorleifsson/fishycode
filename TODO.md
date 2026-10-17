@@ -379,16 +379,21 @@ all its sources and makes `vid` an integer and unique again, after the `rjdbc` d
 **check:** plan 016 §8.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** open · **needs: maintainer** — a GFW API token (terms read, they fit: plan 021 §6 d), the Directorate of Fisheries asked about MMSI, and ASTD's provider asked about the yearly extraction and
-full 2026-02 to 06 months (plan 021 §6 d, e, h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
-plans 008, 016 and 017, TODO 15 and 22
+**status:** in progress · **needs: maintainer** — the first vid allocation, `allocate_vids(dry_run = FALSE)`, once
+decision 115's targets are built, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
+PAME's answer on ASTD (asked 2026-10-17, §6 h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
+plans 008, 016 and 017, decisions 114-115, TODO 15 and 22
 
 The maintainer asked on 2026-10-15 for a registry of every vessel the pings carry, not only the Icelandic ones. Plan 021
-measures what each identity source reaches over every MMSI in ASTD and astdB, and proposes one integer `vid` per hull
-and a crosswalk from each feed identity to it. Its eight asks were answered on 2026-10-16, and (a) revised on
-2026-10-17: the registry holds every vessel, the flow all Icelandic vessels and foreign fishing vessels, whole voyages
-that enter ICES subareas 1, 2, 5, 12, 14 and NAFO subarea 1. Step 1 is built (the foreign registers and GFW v3 in the
-graph, decision 114).
+proposes one integer `vid` per hull and a crosswalk from each feed identity to it. Its asks are answered (a revised and
+c amended 2026-10-17, i answered the same day: a vid is kept when a hull's key changes). Step 1 is built (decision 114),
+steps 2-4 are code checked in scratch (decision 115).
+
+The 52 links in `overrides/vessel_ais_link.csv` for 50 of the 59 `foreign_vid_candidate` MMSIs were confirmed on
+2026-10-17; 9 stay held. Left from that review: 19 of them (class B) rest on the hand-made STK call-sign sheet
+`overrides/stk_foreign_mid_vid.csv`, whose entries want checking; 27 MMSIs carrying a linked hull's IMO would still get
+a second vid (a change to `curate/vessel_ais_link.R`); the STK key is wrong for mids 101843, 147141, 102481 and 102527
+(reused call signs, step 7's redo); foreign vids 3777 (a duplicate of 3756), 4077 and 3792 are not one hull each.
 
 **check:** plan 021 §7.
 
