@@ -25,7 +25,7 @@ answer on the 282 Icelandic hauls (§7).
 ## 1. What enters
 
 The Norwegian and Faroese rows: 6,310 rows, 2,778 hauls of 111 vessels, 280.4 kt, from 2014-01-20 to 2018-06-08
-(the Faroese from 2017-10-14). The Icelandic rows are staged too, and tier 4 keeps the 282 Icelandic hauls on
+(the Faroese from 2017-10-14). The Icelandic rows are staged too, and tier 4 keeps the 280 Icelandic hauls on
 vessel-days the logbook lacks (§7, the maintainer's choice of 2026-10-17). A haul is one station with one fishing
 sample (the collapsed case of `docs/grammar.qmd`).
 
@@ -71,7 +71,7 @@ It reads no other source and corrects nothing (AGENTS.md).
   is 48 hours or more (§4). `vid` = `id_skip`, `T1` = the run's first time, and `T2`, `hid1`, `hid2` empty. `source`
   is `ERS DCA (dw_aflaskeyti)`. §4 then cuts the runs at landings in Iceland and dates them.
 
-## 3. Two corrections
+## 3. Two corrections (the third is §7's)
 
 Each is a declaration (`.yml`) paired with its implementation (`.R`), and writes a side table into
 `staging/aflaskeyti/` that `curate/logbook.R` joins by (`.sid`, schema), as `adb_vs_fs_afladagbok` does for adb.
@@ -162,10 +162,13 @@ last haul to the next landing is 7 days or less for 454 of 460 Norwegian landing
   table read from `curated/logbook` that says the rows arrive at the next build until they do. It is a section on
   foreign vessels and their ERS catch reports, 2014-2018. It gives the span; the
   coverage by flag and year from decision 126 (Norway whole by vessel, 72-77 % of AIS fishing days from 2015; the
-  Faroes about 700 vessel-days a year by AIS, none before 2017-10); the two corrections; and the trip rule. Foreign
+  Faroes about 700 vessel-days a year by AIS, none before 2017-10); the three corrections; and the trip rule. Foreign
   fishing outside that span takes the pings path, and the basis on each fix says which path it took.
 
-## 7. The 282 Icelandic hauls: in (maintainer, 2026-10-17)
+## 7. The Icelandic hauls on vessel-days the logbook lacks: in (maintainer, 2026-10-17)
+
+Counted below by vessel, time and position as 282; by vessel and start time they are 280 hauls, two of them sent
+again with a corrected position (§11).
 
 **Measured:** of the 5,050 Icelandic hauls, 4,716 are in the curated logbook. Of the other 294, 282 lie on vessel-days
 the Icelandic logbook lacks entirely:

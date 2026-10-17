@@ -410,7 +410,7 @@ list(
              fd_staging("adb", "lon_sign.parquet"))
   }, format = "file"),
 
-  # The ERS catch reports of foreign vessels, 2014-2018 (decision 126, plan 026): the adapter, its two corrections
+  # The ERS catch reports of foreign vessels, 2014-2018 (decision 126, plan 026): the adapter, its three corrections
   # (side tables, joined by curate/logbook.R) and the trips cut at landings in Iceland.
   tar_target(aflaskeyti_raw, fd_raw("oracle", "dw", "dw_aflaskeyti.parquet"), format = "file"),
   tar_target(aflaskeyti, {

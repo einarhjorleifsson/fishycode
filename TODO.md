@@ -242,9 +242,9 @@ logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
 **2014-2018 (decision 126):** `dw.dw_aflaskeyti` holds 2,778 foreign hauls of 111 vessels, each confirmed by AIS and
 by landings in Iceland. Norway is whole by vessel; the Faroes only from 2017-10. Coordinates are swapped, Faroese
 summer times are local, and there are no trips. The maintainer took them in (2026-10-17); plan 026 is the design:
-an adapter, two corrections, trips cut at landings in Iceland and then at 48-hour gaps, and a tier in
+an adapter, three corrections, trips cut at landings in Iceland and then at 48-hour gaps, and a tier in
 `curate/logbook.R`, built with TODO 77. The adapter, the corrections and the trip script are coded and run on a
-scratch `$FISHYDATA`, with the 282 Icelandic hauls on vessel-days the logbook lacks (maintainer, 2026-10-17) and
+scratch `$FISHYDATA`, with the 280 Icelandic hauls on vessel-days the logbook lacks (maintainer, 2026-10-17) and
 tier 4 in `curate/logbook.R` (plan 026 §11), and `docs/merge.qmd` has the section. Not built.
 **2019-2025, the lead:** Norway's open ERS catch messages. `sources/norway/logbooks.R` reads them, but it is not a
 target, it reads from `staging/`, and the files are not on disk. The Faroese half has no lead.
