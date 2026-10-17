@@ -456,15 +456,15 @@ scratch `$FISHYDATA`: +5,664 adb stations and 1,448 trips, nothing kept changes.
 that `curated/logbook` does not hold, and the four tables differ from the build before by decision 125's rows only.
 
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
-**status:** open · **see:** plan 026 §11, `curate/link_lid_map.R`, `curate/ais_catch.R`, plans 023 and 025
+**status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,
+`curate/link_lid_map.R`, `curate/ais_catch.R`
 
-`curated/landing` makes one landing per vessel, date and port, so a catch unloaded across midnight is two landings.
-`link_lid_map.R` links each logbook trip to one landing (821,524 trips, one each), and by `ais_catch.R`'s rule a
-landing it leaves unclaimed carries its own catch. In the current build, 9,878 unclaimed landings (53.7 kt, from
-2007-09) come the day after a claimed landing of the same vessel at the same port. Their catch is probably counted
-twice on the fixes; that is not yet checked on `curated/ais/catch`. Plan 026's foreign trips add 9 such landings
-(3.5 kt). Plan 025's first weighing time may tell one unloading from two trips.
+`lid_map` gives a trip one landing, and `ais_catch.R` shares every landing it leaves unclaimed, mostly on the trip's
+own fixes (its voyage link sees only unclaimed landings). Measured 2026-10-17 (plan 027 §2-§3): of 9,955 next-day
+landings at the same port (68.8 kt), 1,246 (30.2 kt) came with the vessel in port, 490 of them (23.0 kt) also in the
+logbook, so counted twice; 8,376 (31.2 kt) came after it fished again. Another port or 2-7 days later adds 1,529
+(65.4 kt). Plan 027 proposes plan 025's `withdrawn` first, a flow table `trip_landing` read by `ais_catch.R`, and
+the voyage link given every landing. Nothing changed in the pipeline.
 
-**check:** measured on `curated/ais/catch` whether these landings' kg is counted beside their trip's logbook catch;
-if it is, `lid_map` (or the landings) joins a trip's further landings to it, and kg in equals kg out per vessel and
-year.
+**check:** a trip's further landings join it (plan 027 §5), and kg on the fixes, raised, equals kg landed per vessel
+and year within the ratio of vessel-years with no second landing (plan 027 §6).
