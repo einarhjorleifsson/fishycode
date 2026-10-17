@@ -22,6 +22,10 @@ The Directorate's data warehouse copy of the ERS catch messages Iceland exchange
 | NOR | 3,205 | 93 | 2,138 | 264.6 | 2,130 of the hauls in Icelandic waters |
 | FRO | 3,105 | 18 | 640 | 15.8 | all in Icelandic waters, from 2017-10-14 |
 
+The counts are of the rows as dumped, so a haul sent in more than one message counts once per message. Taking the
+latest message of each haul, as the adapter does (plan 026 §1), leaves 4,992 Icelandic hauls and 236.8 kt; Norway
+2,138 hauls and 264.5 kt (one 80 t row was sent twice); the Faroes unchanged.
+
 ## Are the foreign rows logbook records?
 
 - **One record per haul.** 2,777 of the 2,778 foreign hauls are in one message, with one row per species (one

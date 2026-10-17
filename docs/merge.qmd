@@ -38,23 +38,21 @@ merged_fs      <- read_parquet(fd_curated("logbook", "fishing_sample.parquet"))
 merged_catch   <- read_parquet(fd_curated("logbook", "catch.parquet"))
 ```
 
+*Updated with AI assistance (Claude) on 2026-10-17: the overview, the source priority, the date bounds, the record
+counts, the timing table and @sec-ers.*
+
 # Overview
 
-The `data/merged/` parquet files are the primary output of this project: a
-single unified set of `trip`, `station`, `fishing_sample`, and `catch` tables
-spanning the full historical record of Icelandic fishing logbooks. They are
-produced by `scripts/02_merge.R`.
+`curated/logbook/` holds one set of `trip`, `station`, `fishing_sample` and `catch` tables for the whole record of
+the logbooks. `curate/logbook.R` writes them from the staging tables of four source schemas, each staged by its own
+adapter in `sources/`:
 
-Two source schemas are combined:
-
-| Schema | Script | Temporal coverage | Character |
+| Schema | Adapter | Coverage | Character |
 |---|---|---|---|
-| **afli** | `01_afli_convert.R` | ~1950 – present | Legacy Oracle logbook system; primary historical record |
-| **fs_afladagbok** | `01_fs_afladagbok_convert.R` | 2020 – 2025-12 | Static dump from Fiskistofa; canonical digital logbook format |
-
-Two more schemas fill the vessel-days these two lack. `adb`, the live electronic feed, is tier 3 (decisions 023 and
-125). `aflaskeyti`, the ERS catch reports exchanged with Norway and the Faroes in 2014–2018, is tier 4: it brings the
-foreign vessels' hauls in Icelandic waters (@sec-ers).
+| **afli** | `sources/afli/convert.R` | 1950 – 2022 (a few records to 2024) | The legacy Oracle logbook; the historical record |
+| **fs_afladagbok** | `sources/fs_afladagbok/convert.R` | 2020 – 2025-11-28 | A one-time dump of the Directorate of Fisheries' e-logbook |
+| **adb** | `sources/adb/convert.R` | 2020 – present | The live view of the same e-logbook (decisions 023, 125) |
+| **aflaskeyti** | `sources/aflaskeyti/convert.R` | 2014-01 – 2018-06 | ERS catch reports exchanged with Norway and the Faroes: foreign vessels' hauls in Icelandic waters (@sec-ers) |
 
 # Source priority
 
@@ -69,6 +67,10 @@ and the other has others.
 
 1. **afli** — used unconditionally where present.
 2. **fs_afladagbok** — used for vessel-days not present in `afli`.
+   - **2b.** The afli stations read from `fs_afli`, on vessel-days neither holds (decision 124).
+3. **adb** — vessel-days none of the above holds (decision 125).
+4. **aflaskeyti** — vessel-days none of the above holds: every foreign haul, and the Icelandic hauls on days their
+   logbook lacks (@sec-ers).
 
 ## Why afli takes priority
 
@@ -164,7 +166,9 @@ tibble(
 | Source | Lower bound | Upper bound | Rationale |
 |---|---|---|---|
 | `afli` | none | 2026-12-31 | Reliable across the full historical period |
-| `fs_afladagbok` | 2020-01-01 | 2025-12-31 | Static dump; coverage ends 2025-12 |
+| `fs_afladagbok` | 2020-01-01 | 2025-12-31 | Static dump; its records end on 2025-11-28 (decision 125) |
+| `adb` | 2020-01-01 | 2026-12-31 | The lower bound is a floor against misdated records, not a handover: the tiers decide (decision 125) |
+| `aflaskeyti` | none | 2026-12-31 | The records run from 2014-01-20 to 2018-06-08 |
 
 ## Decision rule
 
@@ -181,38 +185,22 @@ fs_only_station <- fs_station |>
   select(-vid)
 ```
 
+Tiers 2b, 3 and 4 repeat the anti-join against the vessel-days of every tier above them.
+
 ## Record counts
 
 ```{r}
 #| label: tbl-record-counts
 #| tbl-cap: "Record counts in the merged output"
 
-# catch.parquet has no schema column; look up via .sid membership
-fs_sids <- merged_station |> filter(schema == "fs_afladagbok") |> pull(.sid)
-
-tibble(
-  Table = c("station", "fishing_sample", "trip", "catch"),
-  afli = c(
-    nrow(merged_station |> filter(schema == "afli")),
-    nrow(merged_fs      |> filter(schema == "afli")),
-    nrow(merged_trip    |> filter(schema == "afli")),
-    nrow(merged_catch) - sum(merged_catch$.sid %in% fs_sids)
-  ),
-  `fs-only` = c(
-    nrow(merged_station |> filter(schema == "fs_afladagbok")),
-    nrow(merged_fs      |> filter(schema == "fs_afladagbok")),
-    nrow(merged_trip    |> filter(schema == "fs_afladagbok")),
-    sum(merged_catch$.sid %in% fs_sids)
-  ),
-  Merged = c(
-    nrow(merged_station),
-    nrow(merged_fs),
-    nrow(merged_trip),
-    nrow(merged_catch)
-  )
-) |>
-  mutate(across(where(is.numeric), scales::comma)) |>
-  gt()
+list(station = merged_station, fishing_sample = merged_fs, trip = merged_trip, catch = merged_catch) |>
+  purrr::imap(\(d, tbl) count(d, schema) |> mutate(Table = tbl)) |>
+  bind_rows() |>
+  pivot_wider(names_from = schema, values_from = n, values_fill = 0L) |>
+  mutate(Merged = rowSums(pick(-Table))) |>
+  relocate(Table) |>
+  gt() |>
+  fmt_number(columns = -Table, decimals = 0, use_seps = TRUE)
 ```
 
 ## Year-by-year source breakdown
@@ -235,7 +223,7 @@ merged_station |>
 
 `afli` dominates through 2021 and drops sharply from 2022 as the legacy
 system was wound down. `fs_afladagbok` fills the gap from 2021 onwards,
-with near-complete coverage from 2023.
+with near-complete coverage from 2023, and `adb` takes over where its dump ends, in late 2025.
 
 ## `.tid` type harmonisation
 
@@ -255,6 +243,7 @@ class:
 |---|---|---|
 | `afli` | `t2` tow-start (on-bottom clock); `t3` = `t2` + tow minutes | `t3` retrieval start; `t4` retrieval end |
 | `fs_afladagbok` | `t1` deployment start; `t4` operation end (`t2`, `t3` absent for OTB/OTM) | `t1` deployment start; `t3` retrieval start; `t4` retrieval end |
+| `aflaskeyti` | `t2` fishing start; `t3` = `t2` + duration (also purse seine) | `t1` setting start; `t4` hauling end (longline) |
 
 ## t1 ≤ t4 ordering violations
 
