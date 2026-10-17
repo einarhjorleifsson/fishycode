@@ -39,7 +39,7 @@ merged_catch   <- read_parquet(fd_curated("logbook", "catch.parquet"))
 ```
 
 *Updated with AI assistance (Claude) on 2026-10-17: the overview, the source priority, the date bounds, the record
-counts, the timing table and @sec-ers.*
+counts, the timing table and its note on `t1` after `t4`, known limitation 2, and @sec-ers.*
 
 # Overview
 
@@ -49,7 +49,7 @@ adapter in `sources/`:
 
 | Schema | Adapter | Coverage | Character |
 |---|---|---|---|
-| **afli** | `sources/afli/convert.R` | 1950 – 2022 (a few records to 2024) | The legacy Oracle logbook; the historical record |
+| **afli** | `sources/afli/convert.R` | paper 1950 – 2022; electronic 2003 – 2024 | The legacy Oracle logbook; the historical record. A negative `.sid` is an electronic logbook station (1.28 M), a positive one a paper station (5.57 M) |
 | **fs_afladagbok** | `sources/fs_afladagbok/convert.R` | 2020 – 2025-11-28 | A one-time dump of the Directorate of Fisheries' e-logbook |
 | **adb** | `sources/adb/convert.R` | 2020 – present | The live view of the same e-logbook (decisions 023, 125) |
 | **aflaskeyti** | `sources/aflaskeyti/convert.R` | 2014-01 – 2018-06 | ERS catch reports exchanged with Norway and the Faroes: foreign vessels' hauls in Icelandic waters (@sec-ers) |
@@ -264,9 +264,10 @@ merged_fs |>
   fmt_number(columns = 2:3, use_seps = TRUE, decimals = 0)
 ```
 
-Violations in `afli` are confined to records with negative `.sid` values —
-known garbage entries inherited from the Oracle source. Filter to
-`.sid > 0` to exclude them before timing-sensitive analyses.
+In `afli` only electronic logbook stations (negative `.sid`) carry both `t1` and `t4`; paper stations record the
+tow by `t2` and `t3`. Of the 204,768 that carry both, 5 have `t1` after `t4` (build of 2026-10-16). Negative `.sid`
+values are not faulty records: they are the electronic logbook, 1.28 M stations from 2003 to 2024, so do not filter
+them out.
 
 ## Duration coverage by gear
 
@@ -509,9 +510,9 @@ merged_catch |>
    provenance; downstream joins should always key on `(schema, .sid)` rather
    than `.sid` alone.
 
-2. **Residual t1 ≤ t4 violations**: see @tbl-timing-violations. Small in
-   absolute terms and confined to known garbage records in `afli`.
-   Filter `.sid > 0` before timing-sensitive analyses.
+2. **Residual t1 ≤ t4 violations**: see @tbl-timing-violations. In `afli`, 5 of the 204,768 stations with both
+   times have `t1` after `t4`, all of them electronic. Leave such a station out where the order matters; do not
+   filter on the sign of `.sid`, which would drop the whole electronic logbook.
 
 3. **Mobile gear timing in fs_afladagbok**: `duration_m` for OTB/OTM is
    `t4 − t1` (full operation time), not pure tow time on the seabed.
