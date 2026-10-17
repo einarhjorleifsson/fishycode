@@ -172,7 +172,7 @@ Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in reco
 
 **Asked of the maintainer:** (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in). The same baseline serves the plan's step 5, the 12-mile limit. **Answered:** (2) the declared ranges stay, and `fishing` tests the ±10 min median speed instead of a vessel-shifted range (decision 093); (3) the gear codes on the trail (decision 085).
 
-`uv`'s regulation areas (decision 121, TODO 76) may hold the trawl limits; not checked.
+`uv`'s regulation areas (decisions 121 and 122) may hold the trawl limits; not checked.
 
 Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
 
@@ -394,18 +394,6 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
-## 76. The dumps of decision 121: the failures redone, and `fs_afli` against `afli`
-**status:** in progress · **see:** decisions 121 and 122, TODO 10, 62 and 71
-
-The nine schemas are dumped, checked and in `raw/oracle/`, uv, kvoti and ops$einarhj complete after two reruns
-(decision 122). What is left is `fs_afli`.
-
-`fs_afli` holds every station `afli` holds, plus 2,090 paper stations (spring 2022) and 169,502 electronic ones
-(2020-2023), none in the foreign vid range (decision 122). Open: whether those 169,502 are trips fishycode lacks or
-the same trips `fs_afladagbok` holds; and the other 23 tables with more rows.
-
-**check:** a decision says, for the stations only `fs_afli` holds, whether `curated/logbook` has their trips.
-
 ## 77. The build that decisions 113, 115 and 116 left
 **status:** open · **needs: maintainer** — the go for one `tar_make_isolated()`, and whether decision 115's targets
 (TODO 65) are built in the same pass · **see:** decisions 113, 115, 116 and 122
@@ -418,3 +406,16 @@ dumps of decisions 121-122 changed no declared input, so nothing forces it.
 
 **check:** `tar_outdated()` is empty after the build, and the fingerprints before and after (`R/fingerprint.R`) are
 compared in a decision.
+
+## 78. Whether the afli adapter reads `fs_afli`: the deletion flag and 248 stations
+**status:** open · **needs: maintainer** — which of decision 123's three options: nothing, `eytt` from
+`fs_afli.rafr_stofn` (Claude's recommendation), or `fs_afli` in place of `afli` · **see:** decisions 122 and 123
+
+The stations only `fs_afli` holds are in `curated/logbook` already, all but 248 (492 t, mostly spring-2022 jig and
+gillnet and electronic stations of 2002-2016), most of whose trips the landings hold (decision 123). Two things follow for
+`sources/afli/convert.R`. It takes `eytt_deleted` from `afli.rafr_stofn`, so 61 stations Oracle has deleted carry NA,
+and 38 of them count as live. Reading `fs_afli` would also add the 248, but it would move 1,857 vessel-days
+of the same hauls from fs_afladagbok to afli under `curate/logbook.R`'s tiers.
+
+**check:** a decision records the choice; if the adapter changes, the rebuilt `curated/logbook/station.parquet` shows
+the 61 as `eytt_deleted` TRUE (and, under option 3, the measured source swap).
