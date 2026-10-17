@@ -27,7 +27,8 @@
 # the columns named, never SELECT *: ALL_TAB_COLUMNS holds a LONG (DATA_DEFAULT), which ROracle cannot fetch
 # ("unsupported column type", hafdruna 2026-10-16; RJDBC read it as text). `column` is the name in lower case, as the
 # files have it; `oracle_column` is Oracle's own spelling, which a query must quote as it is: a column made with
-# quotes keeps its case (ops$einarhj.mmsi_icelandic_registry's "stadur" failed as "STADUR", ORA-00904).
+# quotes keeps its case (ops$einarhj.mmsi_icelandic_registry's "stadur" failed as "STADUR", ORA-00904). Two names
+# that differ only in case are one name in lower case, so `column` is made unique (.oracle_unique()).
 oracle_fields <- function(con, schema, table = NULL) {
   w <- sprintf("OWNER = '%s'", gsub("'", "''", toupper(schema)))
   if (!is.null(table)) w <- sprintf("%s AND TABLE_NAME = '%s'", w, gsub("'", "''", .oracle_part(table)))
@@ -43,7 +44,23 @@ oracle_fields <- function(con, schema, table = NULL) {
                   column = tolower(column), column_id = as.integer(column_id)) |>
     dplyr::relocate(owner) |>
     dplyr::arrange(table, column_id) |>
+    dplyr::mutate(column = .oracle_unique(column, oracle_column), .by = table) |>
     tibble::as_tibble()
+}
+
+# Oracle's quoted names are case-sensitive and the files' are lower case, so ops$einarhj's raw_index_calc and test,
+# with columns N and n, B and b, failed in R ("Names must be unique", hafdruna 2026-10-17). The one spelled in lower
+# case keeps its name, or else the first, and the others get _2, _3, ... in column order. dump_oracle_table() notes it.
+.oracle_unique <- function(lower, spelled) {
+  out <- lower
+  for (nm in unique(lower[duplicated(lower)])) {
+    i <- which(lower == nm)
+    keep <- i[spelled[i] == nm][1]
+    if (is.na(keep)) keep <- i[1]
+    rest <- setdiff(i, keep)
+    out[rest] <- paste0(nm, "_", seq_along(rest) + 1)
+  }
+  make.unique(out, sep = "_")
 }
 
 # Tables and views of a schema, with Oracle's comment and (for tables) its row estimate. Read from the catalogue
@@ -204,6 +221,12 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
        script = script, commit = g$commit, dirty = tolower(as.character(g$dirty)))
 }
 
+# A string as an SQL literal, quotes doubled. shQuote(type = "sh") is shell quoting: it can give double quotes with
+# backslash escapes (for a whole vector, once one element holds an apostrophe; on hafdruna it did so for the stamps of
+# ops$einarhj."heildarafli"), which DuckDB does not read once a value holds a double quote: that write failed
+# (2026-10-17).
+.sql_string <- function(x) paste0("'", gsub("'", "''", x, fixed = TRUE), "'")
+
 # Write a frame as parquet (plain TIMESTAMP) with fd.* stamps in its key/value metadata.
 .write_raw <- function(d, path, source, run, note = NA_character_) {
   kv <- c("fd.source" = source, "fd.dumped" = run$dumped, "fd.rows" = as.character(nrow(d)),
@@ -214,9 +237,8 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   con <- .duckdb_quiet()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   duckdb::duckdb_register(con, "d", d)
-  meta <- paste(sprintf("%s: %s", shQuote(names(kv), type = "sh"), shQuote(unname(kv), type = "sh")),
-                collapse = ", ")
-  DBI::dbExecute(con, sprintf("COPY d TO %s (FORMAT parquet, KV_METADATA {%s})", shQuote(path, type = "sh"), meta))
+  meta <- paste(sprintf("%s: %s", .sql_string(names(kv)), .sql_string(unname(kv))), collapse = ", ")
+  DBI::dbExecute(con, sprintf("COPY d TO %s (FORMAT parquet, KV_METADATA {%s})", .sql_string(path), meta))
   invisible(path)
 }
 
@@ -241,7 +263,9 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   conv <- c(.oracle_text, if (numbers_as_text) c(NUMBER = "TO_CHAR(%s)"))
   decimal <- .oracle_driver(con) == "ROracle" & fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0) &
              !fields$column %in% native
-  if (!any(fields$data_type %in% names(conv)) && !any(decimal) && !length(nul)) return(mar::tbl_mar(con, table))
+  renamed <- !is.null(fields$oracle_column) && any(fields$column != tolower(fields$oracle_column))
+  if (!any(fields$data_type %in% names(conv)) && !any(decimal) && !length(nul) && !renamed)
+    return(mar::tbl_mar(con, table))
   o <- order(fields$column_id)
   fields <- fields[o, ]
   decimal <- decimal[o]
@@ -250,7 +274,7 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
     q <- quoted[i]
     f <- if (decimal[i]) "TO_CHAR(%s)" else if (fields$column[i] %in% nul) "REPLACE(%s, CHR(0), '')"
          else conv[fields$data_type[i]]
-    if (is.na(f)) q else paste(sprintf(f, q), "AS", q)
+    paste(if (is.na(f)) q else sprintf(f, q), "AS", sprintf('"%s"', fields$column[i]))
   }, "")
   dplyr::tbl(con, dplyr::sql(sprintf("SELECT %s FROM %s", paste(cols, collapse = ", "), .oracle_ref(table)))) |>
     dplyr::rename_with(tolower)
@@ -375,6 +399,11 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
     fetch(TRUE)
   })
   d <- .oracle_numbers(d, fields)
+  ren <- !is.null(fields$oracle_column) & fields$column != tolower(fields$oracle_column)
+  if (any(ren)) {
+    cased <- paste(sprintf('"%s" is %s here', fields$oracle_column[ren], fields$column[ren]), collapse = ", ")
+    note <- paste(stats::na.omit(c(note, paste("names that differ only in case in Oracle:", cased))), collapse = "; ")
+  }
   .write_raw(d, path, table, run, note)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
   if (!is.na(note)) message("  ", note)
@@ -438,7 +467,7 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   tables <- lapply(seq_len(nrow(written)), function(i) {
     nm  <- written$name[i]
     src <- if (written$partitioned[i]) file.path(nm, "*", "*.parquet") else paste0(nm, ".parquet")
-    rp  <- sprintf("read_parquet(%s, hive_partitioning = false)", shQuote(file.path(out_dir, src), type = "sh"))
+    rp  <- sprintf("read_parquet(%s, hive_partitioning = false)", .sql_string(file.path(out_dir, src)))
     desc <- DBI::dbGetQuery(con, paste("DESCRIBE SELECT * FROM", rp))
     types <- vapply(desc$column_type, dd_type, "")
     ranged <- desc$column_name[types %in% c("number", "datetime", "date")]

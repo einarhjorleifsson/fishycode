@@ -65,6 +65,29 @@ keeps the rest. kvoti's files that `_targets.R` reads are kept as they are. Expe
 ops$einarhj tables, and kvoti's `della_post`, `adili_jn` and `eftirlits_gjald_utan_ees` written; kvoti's five
 failing views fail again.
 
+## The rerun (751f209, 12:48)
+
+`all.R --resume uv ops_einarhj kvoti`, 3 of 3 exited 0, copied to the Mac (only the new tables, overviews, data
+dictionaries and logs changed, as an rsync dry run listed first):
+
+- **uv:** `veidisvaedi` written, 5,948 rows, NULs removed from `fs_skyring` (19 values). uv holds 3,932 real-time
+  closures (1976-11-28 to 2020-08-12), 574 regulations, 172 protected areas, 98 Danish seine areas, 32 "Línur" and
+  more. Nothing starts after 2020-09-15, so later closures are kept elsewhere. A few dates are wrong (years 0006,
+  0015, 0986).
+- **kvoti:** `della_post` (139 rows), `adili_jn` (156,364; NULs in `heimili_1` and `heimili_2`) and
+  `eftirlits_gjald_utan_ees` (5,472; NULs in `heimili`) written. Its five views failing in Oracle failed again. The two
+  NUL tables hold parties' addresses, data decision 121 left out of the new schemas. kvoti also holds `adili` itself.
+  Whether they stay is asked in TODO 76.
+- **ops$einarhj: two more faults of ours.** `heildarafli` was read but not written. Its source,
+  `ops$einarhj."heildarafli"`, went into the parquet metadata with shell quoting (`shQuote(type = "sh")`), which can
+  give double quotes with backslash escapes, and DuckDB's SQL does not read them once a value holds a double quote.
+  `raw_index_calc` and `test` hold columns `N`, `B`, `n` and `b`, four names to Oracle and two in lower case ("Names
+  must be unique"). Fixed: metadata is quoted as SQL strings (`.sql_string()`); `oracle_fields()` makes the lower-case
+  names unique (`.oracle_unique()`: `n` and `b` keep theirs, `N` and `B` become `n_2` and `b_2`); every query names its
+  columns as the files do; the file and its overview carry a note. No other dumped table has such names. The stand-in
+  test has 19 checks, all passing; on 751f209's code the metadata write fails and the four columns come out as two.
+  `R/write_curated.R` quotes the same way and has not met such a value; it is not changed, since targets would see it.
+
 ## fs_afli against afli: a first measurement
 
 By rows, fs_afli holds more in 25 tables and the same in 48. By key, in the two station tables:

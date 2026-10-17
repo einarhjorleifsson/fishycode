@@ -394,18 +394,18 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
 ## 76. The dumps of decision 121: the failures redone, and `fs_afli` against `afli`
-**status:** in progress · **needs: maintainer** — the rerun on the server, `all.R --resume uv ops_einarhj kvoti`
-(`dump/oracle/README.md` §12) · **see:** decisions 121 and 122, TODO 10, 62 and 71
+**status:** in progress · **needs: maintainer** — one more rerun, `all.R --resume ops_einarhj` (`dump/oracle/README.md`
+§12); and whether kvoti's party tables with addresses (`adili`, `adili_jn`, `eftirlits_gjald_utan_ees`) stay in
+`raw/` (decision 121 left such tables out of the new schemas) · **see:** decisions 121 and 122, TODO 10, 62 and 71
 
-The nine schemas are dumped, checked and in `raw/oracle/` (decision 122). Four objects failed through the dumper's
-faults, fixed since: `uv.veidisvaedi` (NUL characters), and ops$einarhj's `heildarafli`, `raw_index_calc` and `test`
-(lower-case names). The rerun takes these and kvoti's three of the same causes, and keeps everything else.
+The nine schemas are dumped, checked and in `raw/oracle/` (decision 122); the rerun of 12:48 completed uv and kvoti.
+ops$einarhj's `heildarafli`, `raw_index_calc` and `test` still failed, on two more faults of the dumper, fixed since.
 
 `fs_afli` holds every station `afli` holds, plus 2,090 paper stations (spring 2022) and 169,502 electronic ones
 (2020-2023), none in the foreign vid range (decision 122). Open: whether those 169,502 are trips fishycode lacks or
 the same trips `fs_afladagbok` holds; and the other 23 tables with more rows.
 
-**check:** after the rerun, uv's and ops$einarhj's overviews hold no failure of ours, the copies on the Mac agree with
+**check:** after the rerun, ops$einarhj's overview holds no failure, the copies on the Mac agree with
 the server's, and a decision says, for the stations only `fs_afli` holds, whether `curated/logbook` has their trips.
 
 ## 77. The build that decisions 113, 115 and 116 left
