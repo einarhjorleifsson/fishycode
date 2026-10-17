@@ -15,17 +15,16 @@
 #   missing in fs_afladagbok.
 #   fs_afladagbok > adb: adb has no fishing_sample detail of its own (gid is
 #   NA - see sources/adb/convert.R) and exists to extend coverage past
-#   fs_afladagbok's static dump, not to compete with it.
+#   fs_afladagbok's static dump, not to compete with it: it fills the
+#   vessel-days afli and fs_afladagbok lack, whatever the date.
 #
 # Date bounds applied:
 #   afli          — no lower bound; upper: <= DATE_MAX
 #   fs_afladagbok — lower: >= FS_DATE_MIN; upper: <= FS_DATE_MAX (static dump)
-#   adb           — lower: >= ADB_DATE_MIN (day after FS_DATE_MAX); upper: <= DATE_MAX.
-#                   Below ADB_DATE_MIN adb is redundant with fs_afladagbok and
-#                   would otherwise need the same vid-date tiering to suppress it;
-#                   above it, adb's own dates are corrupt in places (rows found in
-#                   year 3, year 202, year 2031 - a handful each, unrelated to this
-#                   merge) so DATE_MAX still applies.
+#   adb           — lower: >= ADB_DATE_MIN, a floor against adb's impossible
+#                   dates, not a handover (decision 125); upper: <= DATE_MAX.
+#                   Which of fs_afladagbok and adb holds a vessel-day is the
+#                   tier anti-join's to decide.
 #
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
 # keep the original recorded value, z1_basis/z2_basis says which happened.
@@ -40,7 +39,10 @@ library(duckdbfs)
 # Parameters -------------------------------------------------------------------
 FS_DATE_MIN  <- as.Date("2020-01-01")
 FS_DATE_MAX  <- as.Date("2025-12-31")
-ADB_DATE_MIN <- FS_DATE_MAX + 1
+# Decision 125: fs_afladagbok's dump ends on 2025-11-28 and thins from 11-19, so a handover on a date dropped the
+# vessel-days it never received (December 2025 whole). adb before 2020 is misdated: years 3 to 2018, 99 of its
+# 108 stations off their own trip's dates.
+ADB_DATE_MIN <- FS_DATE_MIN
 DATE_MAX     <- as.Date("2026-12-31")
 # curate/decisions/022-depth-unit-is-metres.md: product-wide depth is metres.
 # fs_afladagbok has no drift (curate/corrections/afli_depth_units.yml baseline) -
@@ -150,10 +152,8 @@ afli_fishing_sample <- afli_fishing_sample |> semi_join(afli_station |> distinct
 afli_catch          <- afli_catch          |> semi_join(afli_station |> distinct(.sid), by = ".sid")
 
 # Tier 3: adb — vessel-days not covered by afli or fs_afladagbok --------------
-# ADB_DATE_MIN already keeps this to the tail fs_afladagbok never reached, but
-# the anti-join is kept anyway: it is what actually enforces the stated
-# priority (afli > fs_afladagbok > adb) rather than a date cutoff standing in
-# for it, and it costs nothing since fs's own vid-dates in this window are rare.
+# fs_afladagbok and adb are copies of one e-logbook (the same station ids), so until fs_afladagbok's dump ends this
+# keeps only the vessel-days that neither afli nor the dump holds, and after it almost all of adb.
 tier12_vid_date <- bind_rows(afli_vid_date, fs_only_vid_date, afli_fs_vid_date)
 
 adb_only_station <- adb_station |>

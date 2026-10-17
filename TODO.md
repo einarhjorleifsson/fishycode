@@ -433,15 +433,12 @@ kept.
 §2's counts; a decision records it.
 
 ## 80. December 2025 is missing from `curated/logbook`
-**status:** open · **needs: maintainer** — how the handover from fs_afladagbok to adb is set · **see:** plan 024 §3,
-decision 023
+**status:** in progress — code done, waits for TODO 77's build · **see:** decision 125, plan 024 §3
 
-`FS_DATE_MAX` (2025-12-31) and `ADB_DATE_MIN` (2026-01-01) assume fs_afladagbok's dump reaches the end of 2025. It
-ends on 2025-11-28 (217 stations on 11-26, 25 on 11-27, 2 on 11-28). adb's stations from 2025-11-27 to 12-31 are
-dropped by `ADB_DATE_MIN`, and nothing else holds their vessel-days: 5,009 stations, 193 vessels, 1,070 trips,
-52.4 kt as recorded (measured 2026-10-17). Ways out: the handover set from fs_afladagbok's last full day, or adb's
-lower bound replaced by the tier anti-join the merge already runs (which would also let in 826 adb stations of
-2019-2025, 4.3 kt, on vessel-days nothing holds, and needs a floor against adb's impossible dates).
+fs_afladagbok's dump ends on 2025-11-28, not at the end of 2025, so `ADB_DATE_MIN` (2026-01-01) dropped adb's
+December 2025: 5,009 stations, 52.4 kt. Decision 125 (the maintainer's choice) makes `ADB_DATE_MIN` a floor
+(`FS_DATE_MIN`, 2020-01-01) and leaves the choice between the two copies to the vessel-day anti-join. Tested on a
+scratch `$FISHYDATA`: +5,664 adb stations and 1,448 trips, nothing kept changes. Not built.
 
-**check:** after the fix and a build, no adb station from 2025-11-27 on is dropped on a vessel-day that
-`curated/logbook` does not hold, and a decision records the handover.
+**check:** after TODO 77's build, no adb station between `ADB_DATE_MIN` and `DATE_MAX` is dropped on a vessel-day
+that `curated/logbook` does not hold, and the four tables differ from the build before by decision 125's rows only.
