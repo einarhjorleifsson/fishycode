@@ -1,4 +1,4 @@
-# orri — two gear code tables of MFRI's general schema, as Oracle holds them (plan 018).
+# orri — MFRI's general schema, every table and view as Oracle holds it, except the registers of persons (plan 018).
 #
 # Input:  Oracle orri
 # Output: raw/oracle/orri/: <name>.parquet per table and view, _overview_tables.parquet,
@@ -8,10 +8,18 @@
 #   Rscript dump/oracle/orri.R
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
-# orri is MFRI's catch-all schema; only the two tables named are dumped, and the overview lists the rest.
+# Until 2026-10-17 only the two gear tables were dumped. The whole schema is wanted for its species list
+# (fisktegundir, the code of the logbooks; fao_fisktegund_vorpun to FAO 3-alpha), the FAO gear and area mappings and
+# the place names (ornefni) (maintainer, 2026-10-17; TODO 10).
+# Left out (maintainer, 2026-10-17): the national register of persons (thjodskra, br_thjodskra, einst), the staff
+# (starfsmenn and its three views) and the company register (fyrirt, sole traders among them). They hold names,
+# kennitala and home addresses, fishycode has no use for them, and _data-dict.yaml would copy examples of each.
+# A dump resumed from the one of 2026-10-16 keeps its two gear files (--resume, dump/oracle/README.md).
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
-dump_oracle_schema(con, "orri", fd_raw("oracle", "orri"), tables = c("veidarfaeri", "veidarfaeri_ny"),
+dump_oracle_schema(con, "orri", fd_raw("oracle", "orri"),
+                   skip = c("thjodskra", "br_thjodskra", "einst", "fyrirt",
+                            "starfsmenn", "starfsmenn_hafro", "starfsmenn_raduneyti", "starfsmenn_stofa"),
                    script = "dump/oracle/orri.R")

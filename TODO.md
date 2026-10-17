@@ -45,6 +45,10 @@ English and scientific names); `asfis/asfis` is FAO's list, with no Icelandic co
 no kg). Not checked: that the lists name a shared code alike, and an Icelandic code → FAO 3-alpha link (none in raw
 beyond the 74 scientific names).
 
+**Dumped next (decision 121, TODO 76):** `taxon` (`tegund_v`: names, WoRMS id, FAO 3-alpha), `orri` whole
+(`fisktegundir`, `fao_fisktegund_vorpun`), `ufs.fisktegundir` (the landed species, with FAO code) and
+`fs_ufs.landing_species` (landings code to orri code, taxon number, WoRMS id and target assemblage).
+
 **check:** `curated/reference/species.parquet` exists and the catch tables' species
 codes all resolve against it.
 
@@ -147,7 +151,8 @@ current `ping_union` does not have (`.sid`, `s1`/`s2`, `t1`/`t2`, `met6`, `dt`, 
 a `station-for-ais.parquet` nothing here builds, and `agf_gid`/`met6` that `gear.parquet` lacks.
 Repointing it means building its inputs from the curated tables. Built since 2026-10-14: the trail's `fishing`
 (decision 093), `hours` and `kw_hours` on each fix (decision 101), and catch per fix in `curated/ais/catch` (decisions
-101-102). Not built: metier 6 from the mesh size (the trail's `metier` column is there, its level not checked), swept
+101-102). Not built: metier 6 from the mesh size (the trail's `metier` column is there, its level not checked; `rdbes.metier`,
+the allowed metiers by area and mesh range, is dumped next, decision 121), swept
 area from distance and gear width, habitat and depth by spatial join, and the logbook (LE) table without duplicate twins.
 
 Plan 015 designs it, checked against the 2025 delivery. Also open: whether to store a sorted wide trail (maintainer).
@@ -166,6 +171,8 @@ delivery and supersedes it, every synthesised window carries `win_basis`, and no
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
 
 **Asked of the maintainer:** (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in). The same baseline serves the plan's step 5, the 12-mile limit. **Answered:** (2) the declared ranges stay, and `fishing` tests the ±10 min median speed instead of a vessel-shifted range (decision 093); (3) the gear codes on the trail (decision 085).
+
+`uv`'s regulation areas (decision 121, TODO 76) may hold the trawl limits; not checked.
 
 Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
 
@@ -227,7 +234,8 @@ plan 016 are in the file.
 **see:** plan 013 item 5, decisions 102-103, plan 017 §3 (`raw/oracle/afli/steini.parquet` is a partial one: oceanic redfish, 1989-2017; whether to stage it is
 plan 017's ask g)
 
-The maintainer said yes on 2026-10-14: acquire them. Foreign vessels land 80-124 a year in Iceland and hold most of
+The maintainer said yes on 2026-10-14: acquire them. **A lead (decision 121):** `dw.dw_aflaskeyti`, 21,627 rows of
+ERS catch messages with the flag state, dumped with `dw` (TODO 76). Foreign vessels land 80-124 a year in Iceland and hold most of
 the landed weight with no Icelandic logbook trip (plan 013, rows 4 and 9; 1,144 of 1,320 kt of pelagic species in
 2019-2025). They are not in what is dumped: the logbook tables hold 6 foreign trips in all, and none of the four
 logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
@@ -306,11 +314,12 @@ fault.
 values.
 
 ## 71. The `ops$einarhj` MMSI list of 2023-01-15: find it or dump it
-**status:** open · **needs: maintainer** — where a copy is, if one exists; else dump `mmsi_icelandic_registry_20230115`
-(and `vessel_mmsi`) on the server; also where the 2024-10-22 list is, and who refreshes MFRI's copy of the vessel
+**status:** open · **needs: maintainer** — the dump of TODO 76, which takes `mmsi_icelandic_registry_20230115` and
+`vessel_mmsi`; also where the 2024-10-22 list is, and who refreshes MFRI's copy of the vessel
 register, stale since about June (plan 016 §7, "still open, not asked") · **see:** plan 022 §3.1, `reference/vessels/mmsi.R`, decision 111, decision 119
 
-Ten tables of `ops$einarhj` are not dumped. Judged from the dump's overview (columns, Oracle's row counts), only one
+`dump/oracle/ops_einarhj.R` now dumps the whole schema (decision 121), not yet run (TODO 76). Of the tables not
+dumped before, judged from the dump's overview (columns, Oracle's row counts), only one
 holds what fishycode does not:
 - **The 2023 list:** `mmsi_icelandic_registry_20230115` (3,687 rows), the MMSI list of 2023-01-15. It falls between
   the 2022-04 snapshot and the 2024 lists that the MMSI history reads.
@@ -384,3 +393,18 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 2004), and whether those are copies is unknown.
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
+
+## 76. The dumps of decision 121, and `fs_afli` against `afli`
+**status:** open · **needs: maintainer** — the run on the server (`dump/oracle/README.md` §12) · **see:**
+`curate/decisions/121-more-oracle-schemas-and-the-catalogue.md`, TODO 10, 62 and 71
+
+Nine scripts are written and not run: `taxon`, `fs_ufs`, `uv`, `rdbes`, `dw`, `ufs` and `fs_afli` are new, and
+`orri` and `ops_einarhj` now take the whole schema. One `all.R --resume` on the server dumps them and keeps the files
+of 2026-10-16. Then they are copied to the Mac (README §10-11).
+
+`fs_afli` is the Directorate's copy of the logbook schema. Oracle's estimates, older than afli's, are larger than
+afli's dump for the electronic logbooks (`rafr_stofn` 1,318,771 against 1,149,278). Whether it holds records `afli`
+lacks, and which (foreign vessels, deleted records, the years it covers), is measured table by table on the keys.
+
+**check:** each of the nine has an overview under `raw/oracle/` with every failure explained, the Mac's copy agrees
+with the server's, and a decision records `fs_afli` against `afli`: rows by key in each table both hold.

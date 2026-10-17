@@ -188,6 +188,8 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
 }
 
 # Did the last run of schema `s` end well: exit 0, an overview with nothing failed, every written table of `driver`?
+# An object the overview lists without dumping it (`tables =`) leaves the schema unfinished: orri and ops$einarhj were
+# dumped in part until 2026-10-17, and their scripts now take the whole schema, which --resume completes.
 .dump_finished <- function(s, log_root, driver) {
   log <- .dump_current(s, log_root)$log
   ov <- file.path(log_root, s, "_overview_tables.parquet")
@@ -195,15 +197,17 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
   ex <- paste0(log, ".exit")
   if (!file.exists(ex) || !identical(suppressWarnings(as.integer(readLines(ex)[1])), 0L)) return(FALSE)
   o <- as.data.frame(nanoparquet::read_parquet(ov))
-  all(c("status", "driver") %in% names(o)) && !any(o$status %in% "failed") &&
+  all(c("status", "driver") %in% names(o)) && !any(o$status %in% c("failed", "listed")) &&
     all(o$driver[o$status %in% "written"] == driver)
 }
 
 # The schemas with a dump script, in the order a full run takes them: a small one first, to fail fast; stk last.
+# all.R runs them, and catalogue.R lists every schema without dumping one.
 .dump_schemas <- function(root = .repo_root()) {
-  order <- c("asfis", "gear", "orri", "vessel", "ops_einarhj", "logbook", "agf", "ask", "kvoti", "adb",
-             "fs_afladagbok", "afli", "stk")
-  scripts <- setdiff(sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$")), "all")
+  order <- c("asfis", "taxon", "fs_ufs", "uv", "rdbes", "dw", "ufs", "gear", "orri", "vessel", "ops_einarhj", "logbook",
+             "agf", "ask", "kvoti", "adb", "fs_afladagbok", "afli", "fs_afli", "stk")
+  scripts <- setdiff(sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$")),
+                     c("all", "catalogue"))
   c(intersect(order, scripts), setdiff(scripts, order))
 }
 

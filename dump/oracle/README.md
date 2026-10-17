@@ -8,8 +8,10 @@ The dump writes every table and view of every schema in `dump/oracle/` to `$FISH
 Oracle holds them, through ROracle. The logs sit in the same tree, so copying `raw/oracle/` copies the whole sweep.
 A full run takes hours: start it with `nohup`, from the shell or from R, and leave it.
 
-The schemas, in the order a full run takes them: asfis, gear, orri, vessel, ops_einarhj, logbook, agf, ask, kvoti,
-adb, fs_afladagbok, afli, stk. Each is one script, `dump/oracle/<schema>.R`, which says what it leaves out and why.
+The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes, dw, ufs, gear, orri, vessel,
+ops_einarhj, logbook, agf, ask, kvoti, adb, fs_afladagbok, afli, fs_afli, stk. Each is one script,
+`dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` is not a schema: it lists what else
+Oracle holds (section 13).
 
 ## 1. Get the code
 
@@ -142,7 +144,7 @@ write the same files. `all.R` and `run_dump()` refuse a schema that is still bei
 
 ## 9. Done
 
-A full run's `_all.log` ends with `done: 13 of 13 schemas exited 0`, and `dump_status()` says `finished` for each.
+A full run's `_all.log` ends with `done: 20 of 20 schemas exited 0`, and `dump_status()` says `finished` for each.
 Each schema then has its `_overview_tables.parquet` (what was written, skipped and failed, and why) and a
 `_data-dict.yaml`.
 
@@ -189,3 +191,33 @@ compare_dumps(fd_raw("oracle_server", "kvoti"), fd_raw("oracle", "kvoti"), value
 o <- nanoparquet::read_parquet(fd_raw("oracle_server", "kvoti", "_overview_tables.parquet"))
 o[o$status == "failed", c("name", "error")]
 ```
+
+## 12. Schemas added or widened since the last full run
+
+On 2026-10-17 orri and ops_einarhj were widened to the whole schema, and taxon, fs_ufs, uv, rdbes, dw, ufs and
+fs_afli were added (decision 121). After `git pull` (section 1), dump only those, resuming:
+
+```bash
+nohup Rscript dump/oracle/all.R --resume taxon fs_ufs uv rdbes dw ufs orri ops_einarhj fs_afli > /dev/null 2>&1 &
+```
+
+or from R:
+
+```r
+run_dump(c("taxon", "fs_ufs", "uv", "rdbes", "dw", "ufs", "orri", "ops_einarhj", "fs_afli"), resume = TRUE)
+```
+
+`--resume` keeps what the run of 2026-10-16 wrote: orri's two gear tables, and ops_einarhj's five tables that
+`_targets.R` reads, so those files and the targets on them stay as they are. fs_afli takes longest, about as long
+as afli. Then copy the nine directories as in section 10, and check orri and ops_einarhj as in section 11: the files
+kept are the same, and the rest are new. The Mac has no copy of the seven new schemas to compare with.
+
+## 13. What else is in Oracle
+
+```bash
+Rscript dump/oracle/catalogue.R
+```
+
+lists every table and view the account can see, in every schema, with Oracle's comment, row estimate and number of
+columns, to `raw/oracle/_catalogue/objects.parquet`. It reads the data dictionary only, in about a minute, and prints
+each schema's size and whether it has a dump script. `all.R` and `sync.sh` leave it out.

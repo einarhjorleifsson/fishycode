@@ -65,6 +65,34 @@ oracle_objects <- function(con, schema) {
   objects |> dplyr::relocate(owner, name, type, comments)
 }
 
+# Every table and view the account can see, in every schema: Oracle's comment, its row estimate (tables only; a
+# view has none) and the number of columns, from the data dictionary alone. No table is read. For choosing what to
+# dump: until 2026-10-17 a schema was found by name, from mar's readers or a remark. `oracle_maintained` marks
+# Oracle's own schemas (SYS, MDSYS, ...); NA where the database's ALL_USERS has no such column (before 12c).
+oracle_catalogue <- function(con) {
+  q <- function(sql) DBI::dbGetQuery(con, sql) |> dplyr::rename_with(tolower)
+  tabs  <- q("SELECT OWNER, TABLE_NAME, NUM_ROWS, LAST_ANALYZED FROM SYS.ALL_TABLES") |>
+    dplyr::rename(name = table_name) |> dplyr::mutate(type = "table")
+  views <- q("SELECT OWNER, VIEW_NAME FROM SYS.ALL_VIEWS") |>
+    dplyr::rename(name = view_name) |> dplyr::mutate(type = "view")
+  comm  <- q("SELECT OWNER, TABLE_NAME, COMMENTS FROM SYS.ALL_TAB_COMMENTS WHERE COMMENTS IS NOT NULL") |>
+    dplyr::rename(name = table_name)
+  ncol  <- q(paste("SELECT OWNER, TABLE_NAME, COUNT(*) AS N_COLUMNS FROM SYS.ALL_TAB_COLUMNS",
+                   "GROUP BY OWNER, TABLE_NAME")) |>
+    dplyr::rename(name = table_name)
+  users <- tryCatch(q("SELECT USERNAME, ORACLE_MAINTAINED FROM SYS.ALL_USERS"),
+                    error = function(e) data.frame(username = character(), oracle_maintained = character()))
+  dplyr::bind_rows(tabs, views) |>
+    dplyr::left_join(comm, by = c("owner", "name")) |>
+    dplyr::left_join(ncol, by = c("owner", "name")) |>
+    dplyr::mutate(oracle_maintained = users$oracle_maintained[match(owner, users$username)] == "Y",
+                  owner = tolower(owner), name = tolower(name),
+                  num_rows = as.numeric(num_rows), n_columns = as.integer(n_columns)) |>
+    dplyr::relocate(owner, name, type, comments, num_rows, n_columns) |>
+    dplyr::arrange(owner, name) |>
+    tibble::as_tibble()
+}
+
 # The connection every dump uses, through RJDBC (Oracle's JDBC driver, in Java) or ROracle (Oracle's client library).
 # The driver comes from FD_DUMP_DRIVER, which run_dump(driver = ) sets, so a dump script, its reconnect and its LOB
 # connection all use one driver. RJDBC is the default: it is the only one on the Mac (decisions 106, 109).
@@ -330,8 +358,12 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
       # a year file cut off mid-write has no readable footer, and one of the other driver is not mixed in: both redone
       m <- tryCatch(curated_provenance(f), error = function(e) NULL)
       d0 <- m$value[m$key == "fd.dumped"]
+      # a kept year counts too: afli.sjalfvirkir_maelar's overview said 2,714 rows after a resume, of 28,234,223
       if (length(d0) && identical(m$value[m$key == "fd.driver"], run$driver) &&
-          as.Date(substr(d0, 1, 10)) > as.Date(sprintf("%d-12-31", y))) next
+          as.Date(substr(d0, 1, 10)) > as.Date(sprintf("%d-12-31", y))) {
+        n <- n + sum(as.numeric(m$value[m$key == "fd.rows"]))
+        next
+      }
     }
     d <- .oracle_collect(con, q |>
       dplyr::filter(.data[[column]] >= to_date(!!sprintf("%d-01-01", y), "YYYY-MM-DD"),
