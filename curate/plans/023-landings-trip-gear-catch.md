@@ -2,7 +2,8 @@
 
 **status:** proposal — only the inventory and the columns measured, nothing in the pipeline changed; §8 asks open
 (TODO 74) · **2026-10-16**
-· **see:** plan 007 (fishycode's landings), plan 018 (the dump), plan 022 (stk, which this one builds on), TODO 74 (and 24, where 67 went),
+· **see:** plan 007 (fishycode's landings), plan 018 (the dump), plan 022 (stk, which this one builds on), plan 025
+(ask mined whole: §3 and §4 measured for ask), TODO 74 (and 24, where 67 went),
 decisions 094, 109 and 110
 
 Drafted with AI assistance (Claude) on 2026-10-16, at the maintainer's request, now that ask, kvoti and agf are dumped

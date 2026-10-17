@@ -369,19 +369,22 @@ the fishing sample (`gear_part` prototyped for fs).
 
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
-## 74. The landings: trip, gear and catch from each period's source (plan 023), and plan 007's two questions
+## 74. The landings: trip, gear and catch from each period's source (plans 023 and 025), and plan 007's two questions
 **status:** open · **needs: maintainer** — plan 023 §8 asks 1 (who knows what feeds LODS 1 and agf since 2020) and 2
-(the write-up), plan 007 §6 questions 1 and 3 · **see:** `curate/plans/023-landings-trip-gear-catch.md`,
+(the write-up), plan 025 §6 asks 1 (factory-vessel live weight) and 2 (when to build), plan 007 §6 questions 1 and 3
+· **see:** `curate/plans/023-landings-trip-gear-catch.md`, `curate/plans/025-ask-mined.md`,
 `curate/plans/007-landings-merge-agf-lods.md` §6, decision 031, plan 022
 
 Plan 023 has the inventory and the columns of ask, kvoti and agf measured, and nothing built. Its §6, each landing to
 its trip from four sources, builds on plan 022 §4 (TODO 68). Plan 007's merge is built (decision 031), with two
 questions left: a `curate/checks/` report of every trip where agf and lods disagree, since agf wins on disagreement
 and the merge cannot show an agf defect; and keying `link_lid_map.R` and `catch_by_species_trip.R` on
-`(.lid, schema_land)`, not `.lid` alone.
+`(.lid, schema_land)`, not `.lid` alone. Plan 025 has ask mined whole and its design chosen (agf's rows, ask's
+columns, a weighing table), nothing built: its first weighing time bounds `T2` to the hour for 2007-2020, and agf keeps
+zero-kg landings that the Directorate withdrew.
 
-**check:** plan 023's asks are answered in the plan and it is built, parked or abandoned in its header; and plan 007's
-questions 1 and 3 are answered in a decision.
+**check:** the asks of plans 023 and 025 are answered in the plans, and each is built, parked or abandoned in its
+header; and plan 007's questions 1 and 3 are answered in a decision.
 
 ## 75. Afli trips lost whole, and the rows before 2007-09 (decision 098's open ends)
 **status:** open · **see:** `curate/decisions/098-dropped-afli-hauls-not-admitted.md` ("Open"), plan 005
