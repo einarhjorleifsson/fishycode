@@ -110,8 +110,9 @@ Every script in a targets project is on one of three sides, and says which in a 
 - **The written record is enforced, not promised.** `check_bookkeeping()`
   (`R/check_bookkeeping.R`) verifies every rule the three `README.md` files
   assert: records indexed, index rows resolving, no finished item left in
-  `TODO.md`, corrections declared, and no path in *this file* that does not
-  exist. Run it before committing. It is pure base R and needs no `$FISHYDATA`.
+  `TODO.md`, a plan's status agreeing with its index row and every open plan
+  named in `TODO.md`, corrections declared, and no path in *this file* that
+  does not exist. Run it before committing. It is pure base R and needs no `$FISHYDATA`.
 - **Where a thing is written down.** `AGENTS.md` = what is true now.
   `TODO.md` = what is open, a few paragraphs each. `curate/plans/` = designs
   not yet built. `curate/decisions/` = what was chosen or found, after the

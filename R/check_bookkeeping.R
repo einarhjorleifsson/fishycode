@@ -56,10 +56,48 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
         "the index names a file that is not there — renamed, or never written")
   }
 
+  # -- 2c/6 a plan's status is declared, its index row agrees, and an open plan has a stub
+  # Added 2026-10-17 (decision 120). plans/README.md requires a declared status and a TODO.md stub for every open
+  # plan, and nothing tested either: 14 of 23 headers had drifted from the record, row 011 called an executed plan
+  # "nothing built", and four open plans had no stub, so nothing in TODO.md led to them.
+  todo  <- rd(p("TODO.md"))
+  vocab <- c("proposal", "partly built", "executed", "parked", "abandoned")
+  word_of <- function(x) {
+    x <- tolower(trimws(gsub("*", "", x, fixed = TRUE)))
+    hit <- vocab[startsWith(x, vocab)]
+    if (length(hit)) hit[1] else NA_character_
+  }
+  pdir <- p("curate", "plans")
+  pidx <- rd(file.path(pdir, "README.md"))
+  undeclared <- disagree <- open_plans <- character(0)
+  for (f in list.files(pdir, "^[0-9]{3}-.*[.]md$")) {
+    n  <- substr(f, 1, 3)
+    st <- grep("^\\*\\*[Ss]tatus:?\\*\\*:?", rd(file.path(pdir, f)), value = TRUE)[1]
+    hw <- if (is.na(st)) NA_character_ else word_of(sub("^\\*\\*[Ss]tatus:?\\*\\*:?", "", st))
+    if (is.na(hw)) { undeclared <- c(undeclared, f); next }
+    row <- grep(sprintf("^\\|[[:space:]]*%s[[:space:]]*\\|", n), pidx, value = TRUE)[1]
+    rw  <- if (is.na(row)) NA_character_ else word_of(strsplit(row, "|", fixed = TRUE)[[1]][4])
+    if (!identical(hw, rw)) disagree <- c(disagree, sprintf("%s: header '%s', index '%s'", n, hw, rw))
+    if (hw %in% c("proposal", "partly built")) open_plans <- c(open_plans, n)
+  }
+  add("every plan's status uses the plans vocabulary", undeclared,
+      sprintf("open the header's status line with one of: %s", paste(vocab, collapse = " / ")))
+  add("every plan's index row agrees with its header", disagree,
+      "a decision changed the plan: update its header and its row in plans/README.md together")
+
+  # TODO.md names a plan by its path, or as "plan NNN" / "plans NNN, NNN and NNN": a span runs to the next plan,
+  # decision, TODO or item (any case), `**`, `;`, `)` or a sentence's end, so a decision or a count is not read as a plan
+  tx    <- paste(todo, collapse = " ")
+  refs  <- substr(sub("^curate/plans/", "", unlist(regmatches(tx, gregexpr("curate/plans/[0-9]{3}-", tx)))), 1, 3)
+  spans <- unlist(regmatches(tx, gregexpr(
+    "\\bplans? [0-9]{3}(?:(?!\\bplans? [0-9]|(?i:decision|todo|item)|\\*\\*|[.] )[^;)])*", tx, perl = TRUE)))
+  refs  <- c(refs, unlist(regmatches(spans, gregexpr("\\b[0-9]{3}\\b", spans, perl = TRUE))))
+  add("every open plan has a TODO.md stub", setdiff(open_plans, refs),
+      "plans/README.md: an open plan has a one-line stub in TODO.md - add it, or park or abandon the plan")
+
   # -- 3/6 TODO.md holds only what is NOT done ---------------------------------
   # The convention: a finished item is deleted from TODO.md and recorded in
   # curate/decisions/. An item left behind wearing a done marker is the drift.
-  todo <- rd(p("TODO.md"))
   hits <- grep("^\\*\\*status:\\*\\*[[:space:]]*(done|closed|complete)", todo,
                ignore.case = TRUE)
   add("TODO.md holds no finished item",

@@ -51,3 +51,11 @@ licensing is left in that plan as a later option. Plan 021 §6 d chose GFW's API
 
 Stale sentences inside plan bodies, for example plan 009's "not yet in it" and plan 015's §4 e naming a ramb method
 that has since been renamed. The headers now say where each plan stands.
+
+## Enforced since
+
+`check_bookkeeping()` gained three invariants the same day, at the maintainer's request: each plan's status opens
+with a declared word, its index row opens with the same word, and every `proposal` or `partly built` plan is named in
+`TODO.md` (by its path, or as "plan NNN"; a list such as "plans 009, 016 and 021" counts). Each was shown to fail on a
+scratch copy broken for it: plan 009 given "restructured", row 011 set back to "proposal", and TODO 73 removed (019
+and 020 reported). The real repo passes.

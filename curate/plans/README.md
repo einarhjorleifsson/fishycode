@@ -22,8 +22,10 @@ stop, as in `TODO.md`), the date, and — this is the
 part that matters — which claims are **measured** and which are **assumed**. A plan
 that does not separate those is a wish.
 
-**Invariant:** every `.md` in this directory has a row here. Checked by
-`check_bookkeeping()`.
+**Invariants**, checked by `check_bookkeeping()`: every `.md` in this directory has a row here; each plan's status
+line opens with a word of the vocabulary above, and its row here opens with the same word; and every `proposal` or
+`partly built` plan is named in `TODO.md`, by its path or as "plan NNN" (since 2026-10-17, decision 120). So when a
+decision changes a plan, its header, its row and its stub change in the same commit.
 
 | # | plan | status | what it proposes |
 |---|---|---|---|
