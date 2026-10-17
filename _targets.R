@@ -246,8 +246,8 @@ list(
   # The foreign registers, each staged as its source has it: the EU fleet register (an event ledger), the Faroese
   # register (a page per vessel), Norway's register (a sheet per year) and GFW's fishing vessel list (v3, a row per MMSI
   # and year). identity_foreign.R joins them into one table per (source, external_id, period), and identity_all.R adds
-  # the Icelandic one. Built by hand on 2026-09-26 until now (plan 008 Phase 7, plan 021 step 1). Nothing in this
-  # project reads them yet: their readers are plan 021's crosswalk and ais_key_foreign.R, run by hand (plan 008).
+  # the Icelandic one. Built by hand on 2026-09-26 until now (plan 008 Phase 7, plan 021 step 1). Read by the crosswalk,
+  # vessel_ais_link (below), and by ais_key_foreign.R, run by hand (plan 008); nothing in the flow reads them yet.
   tar_target(eu_raw, fd_raw("external", "eu", "vesselRegistryListResults.csv"), format = "file"),
   tar_target(eu, {
     eu_raw
