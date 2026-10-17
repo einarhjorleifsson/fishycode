@@ -353,6 +353,19 @@ run_pipeline <- function(zip_files, yyyymm, parquet_dir) {
     i, length(zip_files), basename(zip), format(Sys.time(), "%H:%M:%S")
   ))
 
+  # -- Skip if parquet already exists ------------------------------------------
+  # Before the extraction, or adding one month decompresses all the others (decision 113).
+  out_dir  <- file.path(parquet_dir,
+                        sprintf("year=%d", yr),
+                        sprintf("month=%02d", mo))
+  out_file <- file.path(out_dir, sprintf("astd_%s.parquet", ym))
+
+  if (file.exists(out_file)) {
+    message("  -> already exists, skipping")
+    results[[i]] <- data.frame(yyyymm = ym, ok = NA, seconds = 0)
+    next
+  }
+
   # -- Unzip -------------------------------------------------------------------
   tmp <- tempfile(pattern = "astd_")
   dir_ok <- dir.create(tmp)
@@ -421,20 +434,7 @@ run_pipeline <- function(zip_files, yyyymm, parquet_dir) {
     }
   }
 
-  # -- Build output path -------------------------------------------------------
-  out_dir  <- file.path(parquet_dir,
-                        sprintf("year=%d", yr),
-                        sprintf("month=%02d", mo))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  out_file <- file.path(out_dir, sprintf("astd_%s.parquet", ym))
-
-  # -- Skip if parquet already exists ------------------------------------------
-  if (file.exists(out_file)) {
-    message("  -> already exists, skipping")
-    results[[i]] <- data.frame(yyyymm = ym, ok = NA, seconds = 0)
-    unlink(tmp, recursive = TRUE)
-    next
-  }
 
   # -- COPY CSV → Parquet via DuckDB (no R memory) ----------------------------
   # year and month are encoded in the hive directory path (year=YYYY/month=MM)

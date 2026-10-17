@@ -64,7 +64,8 @@ impact:
 repair:
   action: >-
     Ask the provider for the five months with the extraction used up to 2026-01, and replace the zips in
-    raw/ais/astd; then delete the five partitions, rerun dump/ais/astd.R, and invalidate ais_ping_union.
+    raw/ais/astd; then delete the five partitions and rerun dump/ais/astd.R. ais_ping_union then shows in
+    tar_outdated() on its own (decision 113).
   until_then: the months stay as delivered and this entry stands.
 
 related:

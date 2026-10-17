@@ -16,6 +16,8 @@
 # Two things sit OUTSIDE this graph, on purpose:
 #   dump/       extraction from Oracle and vendor archives. Needs credentials and
 #               a server, writes immutable raw/, and is run on its own schedule.
+#               What it writes enters as declared file inputs, so a new dump or
+#               feed month shows in tar_outdated() (decision 113).
 #   _targets_once.R
 #               the three one-time fixes (the STK vessel key, the GPS logger positions,
 #               the port radius): a second targets project (`TAR_PROJECT=once`, see
@@ -55,6 +57,12 @@ tar_option_set(
 # script leaves behind - objects, options, attached packages - so one target cannot
 # change the next. Build with tar_make_isolated() (R/tar_make_isolated.R): one session
 # per target, because a one-session tar_make() swelled to 111 GB (decision 073).
+
+# The partitioned inputs, listed here rather than in their targets' commands (decision 113): a listing made in a command
+# is not redone until the command changes, so it would never see a new partition. About 0.1 s for the ~320 files.
+stk_trail_files <- input_files("raw", "oracle", "stk", "trail")
+astd_files      <- input_files("staging", "ais", "astd")
+astd_b_files    <- input_files("staging", "ais", "astdB")
 
 list(
 
@@ -138,6 +146,7 @@ list(
   tar_target(stk_hid_pid, {
     shapes
     stk_hid_pid_overrides
+    stk_trail_raw
     produces("reference/ports/stk_hid_pid.R",
              fd_curated("reference", "stk_hid_pid.parquet"))
   }, format = "file"),
@@ -231,6 +240,15 @@ list(
   tar_target(port_radius,
     frozen_input("curated", "reference", "port_radius.parquet"), format = "file"),
 
+  # ── Inputs built outside the graph (decision 113) ───────────────────────────
+  # The STK trail as dumped (decision 111), the ASTD feeds as dump/ais/astd.R and astd_b.R stage them, and EMODnet's
+  # 2017 extract. A new dump or feed month marks its readers outdated; before, each needed a tar_invalidate() by hand.
+  # A changed input is rehashed whole, ~3.5 GB/s: the trail 3 s, ASTD 38 s, ASTDB 8 s, EMODnet 1 s.
+  tar_target(stk_trail_raw, stk_trail_files, format = "file"),
+  tar_target(astd_staged, astd_files, format = "file"),
+  tar_target(astd_b_staged, astd_b_files, format = "file"),
+  tar_target(emodnet_raw, fd_raw("ais", "EmodNet", "is2017.csv"), format = "file"),
+
   # ── Source adapters ─────────────────────────────────────────────────────────
   # raw/ → staging/<source>/. Mutually independent, so tar_make(workers = 4)
   # runs them in parallel. Each must emit the four-table grammar.
@@ -302,7 +320,7 @@ list(
   }, format = "file"),
 
   tar_target(stk, {
-    vessel_ais_key
+    vessel_ais_key; stk_trail_raw
     produces("sources/stk/convert.R", fd_staging("ais", "stk"))
   }, format = "file"),
 
@@ -322,7 +340,7 @@ list(
   # feed union as provider gps (plan 014); only recorded positions cut voyages.
 
   tar_target(ais_ping_union, {
-    vessel_ais_key; vessel_identity; sensor_gps
+    vessel_ais_key; vessel_identity; sensor_gps; stk_trail_raw; astd_staged; astd_b_staged; emodnet_raw
     produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
   }, format = "file"),
 

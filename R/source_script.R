@@ -52,3 +52,17 @@ frozen_input <- function(...) {
   if (!ok) stop("frozen input missing or empty: ", p, " (redo it in the `once` project, decision 075)", call. = FALSE)
   p
 }
+
+# input_files() — the parquet files under a directory the main project reads but never builds (a dump, a vendor feed
+# staged outside the graph), for a `format = "file"` target (decision 113). Call it at the top of _targets.R, never in
+# the target's command: targets reruns a command only when its code or dependencies change, so a listing made inside
+# one never sees a new partition, while a listing made outside is a dependency whose value changes when a file is added
+# or removed. A change inside a listed file is targets' own check (mtime and size, then the hash). Sorted by radix, so
+# the order does not depend on the locale. Nothing there gives a path that does not exist, so the target fails at
+# build, naming it, and sourcing _targets.R does not.
+input_files <- function(...) {
+  p <- fd_path(...)
+  f <- list.files(p, "[.]parquet$", recursive = TRUE, full.names = TRUE)
+  if (!length(f)) return(file.path(p, "(no parquet files here)"))
+  sort(f, method = "radix")
+}
