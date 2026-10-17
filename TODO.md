@@ -408,14 +408,17 @@ dumps of decisions 121-122 changed no declared input, so nothing forces it.
 compared in a decision.
 
 ## 78. Whether the afli adapter reads `fs_afli`: the deletion flag and 248 stations
-**status:** open · **needs: maintainer** — which of decision 123's three options: nothing, `eytt` from
-`fs_afli.rafr_stofn` (Claude's recommendation), or `fs_afli` in place of `afli` · **see:** decisions 122 and 123
+**status:** open · **needs: maintainer** — which of decision 123's four options: nothing; `eytt` from
+`fs_afli.rafr_stofn`; `fs_afli` in place of `afli`; or afli kept, with the flag and group E's 189 paper stations
+added from `fs_afli` (Claude recommends the second and fourth) · **see:** decisions 122 and 123
 
 The stations only `fs_afli` holds are in `curated/logbook` already, all but 248 (492 t, mostly spring-2022 jig and
-gillnet and electronic stations of 2002-2016), most of whose trips the landings hold (decision 123). Two things follow for
-`sources/afli/convert.R`. It takes `eytt_deleted` from `afli.rafr_stofn`, so 61 stations Oracle has deleted carry NA,
-and 38 of them count as live. Reading `fs_afli` would also add the 248, but it would move 1,857 vessel-days
-of the same hauls from fs_afladagbok to afli under `curate/logbook.R`'s tiers.
+gillnet and electronic stations of 2002-2016). The electronic logbooks of 2020-2024 came in through `fs_afli` and
+were read into `afli.stofn`, which MFRI still edits (decision 123). `sources/afli/convert.R` takes `eytt_deleted`
+from `afli.rafr_stofn`, frozen since 2020-07-23, so 61 stations Oracle has deleted carry NA, and 38 of them count as
+live. Reading `fs_afli` whole would move 1,863 fs_afladagbok stations of 2022 to afli and drop 32 dated ones. Group
+E's 162 stations with no curated station agree with their landings by species and lie on the vessel's track as
+closely as curated stations do.
 
 **check:** a decision records the choice; if the adapter changes, the rebuilt `curated/logbook/station.parquet` shows
-the 61 as `eytt_deleted` TRUE (and, under option 3, the measured source swap).
+the 61 as `eytt_deleted` TRUE, and under the fourth option group E's 189 stations.
