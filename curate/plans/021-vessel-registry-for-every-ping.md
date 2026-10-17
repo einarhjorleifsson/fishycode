@@ -223,6 +223,8 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
   (EU, Faroese and Norwegian registers, GFW's list) or by landing in Iceland, never by ASTD's own category. The ICES
   areas are on disk (`staging/aux/ices_areas_500m-buffer`); NAFO subarea 1 is not. The volume is not measured.
   (The answer of 2026-10-16 was every hull through the flow, about 650-700 GB for the AIS chain: superseded.)
+  *For now (maintainer, 2026-10-17, decision 127):* the AIS rebuild carries the vessels of the Icelandic logbooks and
+  landings (vid 1-9999) and every other Icelandic vessel, SKB included; foreign hulls enter with step 6, later.
 - **b. vid 200000 + n for every valid non-Icelandic hull,** broadcast-only hulls included, given once and never moved.
   The MMSI, IMO and call sign are attributes in `vessel_identity`, by period; an MMSI is not a hull, since 1,336 ASTD
   MMSIs carry two or more IMOs. An invalid MMSI gets no vid, only the reason. Accessories (net relays, tenders) get no

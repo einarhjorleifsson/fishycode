@@ -111,6 +111,8 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 boundary override for mid 108982, and the go for the redo · **see:** plans 009, 016 §4 step 7, 021 step 7, 022 §3 and
 §7; decisions 047, 053, 075 and 117-119
 
+**It gates TODO 77's second half** (maintainer, 2026-10-17, decision 127): the AIS chain is built once, after it, and
+for now carries the vessels of the logbooks and landings (vid 1-9999) and every other Icelandic vessel, SKB included.
 The key is frozen and redone only by a decision (decision 075). Eight reviews wait on the same redo:
 - **The audit** (plan 009, decision 047): 402 discrepancies on 239 mids (`once` files of 2026-10-09), none reviewed; 840
   vid-claiming rows no witness reaches; `ais_key_resolution`'s 30 proposals on 25 mids (track correlation confirms 12
@@ -245,7 +247,8 @@ summer times are local, and there are no trips. The maintainer took them in (202
 an adapter, three corrections, trips cut at landings in Iceland and then at 48-hour gaps, and a tier in
 `curate/logbook.R`, built with TODO 77. The adapter, the corrections and the trip script are coded and run on a
 scratch `$FISHYDATA`, with the 280 Icelandic hauls on vessel-days the logbook lacks (maintainer, 2026-10-17) and
-tier 4 in `curate/logbook.R` (plan 026 §11), and `docs/merge.qmd` has the section. Not built.
+tier 4 in `curate/logbook.R` (plan 026 §11), and `docs/merge.qmd` has the section. Built to `curated/logbook`
+2026-10-17 (decision 127); it reaches the fixes with TODO 77's second half.
 **2019-2025, the lead:** Norway's open ERS catch messages. `sources/norway/logbooks.R` reads them, but it is not a
 target, it reads from `staging/`, and the files are not on disk. The Faroese half has no lead.
 
@@ -254,8 +257,9 @@ Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** in progress · **needs: maintainer** — the go to build decision 115's targets, then the first vid
-allocation, `allocate_vids(dry_run = FALSE)`, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
+**status:** in progress · **needs: maintainer** — decision 115's `vessel_ais_link` is built with TODO 77's second half
+(it reads the STK key; its identity tables are built, decision 127), then the first vid allocation,
+`allocate_vids(dry_run = FALSE)`, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
 PAME's answer on ASTD (asked 2026-10-17, §6 h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
 plans 008, 016 and 017, decisions 114-115 and 118, TODO 15 and 25
 
@@ -406,30 +410,19 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
-## 77. The build that decisions 113, 115 and 116 left
-**status:** open · **needs: maintainer** — the go for one `tar_make_isolated()`, and whether decision 115's targets
-(TODO 65) are built in the same pass · **see:** decisions 113, 115, 116, 122 and 124
+## 77. The build that decisions 113, 115 and 116 left: its second half, after the key redo
+**status:** blocked — on TODO 25's key redo · **see:** decisions 112, 113, 115, 116 and 127, plan 026 §8
 
-`tar_outdated()` lists 63 of 92 targets, and decision 124's afli change (TODO 78) rides on the same build. Twenty were
-added to `_targets.R` and never built: decision 113's four declared inputs (the STK trail and the AIS feeds), decision
-116's eight (the Oracle tables the adapters read) and decision 115's eight (plan 021's crosswalk and vid ledger). The
-other 43 read them, or their commands changed with them (`mmsi_raw`), down to `ais_trail` and `ais_catch`. Both
-decisions advised building with the next dump. The dumps of decisions 121-122 changed no declared input, so nothing
-forces it.
+The build is split (maintainer, 2026-10-17; decision 127). Its first half is built: the 49 targets that do not read
+the STK key (`vessel_ais_key`), with decisions 124 and 125 and plan 026 in `curated/logbook`. The 20 that read it wait
+for the key redo, so the AIS chain runs once: `stk`, `stk_event`, `port_stay`, `ais_ping_union` to `ais_catch`,
+`trip_voyage`, `station_event`, `voyage_gear`, decision 115's `vessel_ais_link` and seven checks. Until then
+`curated/ais/trail` and `curated/ais/catch` are decision 112's, and the 8,894 stations added on 2026-10-17 are on no
+fix. For now the AIS carries the vessels of the Icelandic logbooks and landings (vid 1-9999) and every other
+Icelandic vessel, SKB included (maintainer, 2026-10-17); foreign hulls wait for plan 021 step 6.
 
-**check:** `tar_outdated()` is empty after the build, and the fingerprints before and after (`R/fingerprint.R`) are
-compared in a decision.
-
-## 78. The afli adapter reads `fs_afli`'s deletion flag and paper stations: check after the build
-**status:** in progress · **see:** decisions 123 and 124, TODO 77
-
-The maintainer chose decision 123's options 2 and 4 (2026-10-17). `sources/afli/convert.R` takes `eytt_deleted` from
-`fs_afli.rafr_stofn` and adds the 189 paper stations only `fs_afli` holds (`copy` = "fs_afli"); `curate/logbook.R`
-keeps the 172 of them on vessel-days neither afli nor fs_afladagbok holds (decision 124). Tested on a scratch
-`$FISHYDATA` against the current build; not built.
-
-**check:** after TODO 77's build, `curated/logbook/station.parquet` holds 172 stations with `copy` "fs_afli" and
-65 more with `eytt_deleted` TRUE than before (61 from NA, 4 from FALSE), and `tar_outdated()` is empty.
+**check:** after one `tar_make_isolated()`, `tar_outdated()` is empty, plan 026 §8.5-6 pass, and the fingerprints
+after are compared in a decision with decision 127's after set (`$FISHYDATA/archive/2026-10-17-rebuild/`).
 
 ## 79. Every source station accounted for in the logbook merge (plan 024)
 **status:** open · **needs: maintainer** — the go, and plan 024's four asks (§6) · **see:**
@@ -443,17 +436,6 @@ kept.
 
 **check:** `curated/logbook/station_fate.parquet` exists, has one row per staging station, and reproduces plan 024
 §2's counts; a decision records it.
-
-## 80. December 2025 is missing from `curated/logbook`
-**status:** in progress — code done, waits for TODO 77's build · **see:** decision 125, plan 024 §3
-
-fs_afladagbok's dump ends on 2025-11-28, not at the end of 2025, so `ADB_DATE_MIN` (2026-01-01) dropped adb's
-December 2025: 5,009 stations, 52.4 kt. Decision 125 (the maintainer's choice) makes `ADB_DATE_MIN` a floor
-(`FS_DATE_MIN`, 2020-01-01) and leaves the choice between the two copies to the vessel-day anti-join. Tested on a
-scratch `$FISHYDATA`: +5,664 adb stations and 1,448 trips, nothing kept changes. Not built.
-
-**check:** after TODO 77's build, no adb station between `ADB_DATE_MIN` and `DATE_MAX` is dropped on a vessel-day
-that `curated/logbook` does not hold, and the four tables differ from the build before by decision 125's rows only.
 
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
 **status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,

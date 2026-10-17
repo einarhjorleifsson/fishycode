@@ -1,6 +1,6 @@
 # 026 — The ERS catch reports of `dw_aflaskeyti` as a logbook source: foreign vessels 2014-2018
 
-**status:** proposal — measured 2026-10-17; §2-§7 written: coded, run on a scratch `$FISHYDATA` against the committed merge, targets added (§11), `docs/merge.qmd` section rendered; nothing built (TODO 62, 77) · **2026-10-17**
+**status:** partly built — measured 2026-10-17; §2-§7 coded, scratch-tested and built to `curated/logbook` 2026-10-17 (decision 127), §8.1-4 pass; §8.5-6 wait for the AIS chain (TODO 62, 77) · **2026-10-17**
 · **see:** decision 126, TODO 62 and 77, plans 014, 017 and 024; `curate/logbook.R`, `curate/link_lid_map.R`,
 `curate/corrections/logbook_gear.R`, `curate/station_window.R`, `curate/ais_catch.R`
 

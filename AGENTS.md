@@ -152,7 +152,7 @@ Every script in a targets project is on one of three sides, and says which in a 
   with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
   fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102): so ≥ 2026.10.14.14. The data on disk were built with ramb 2026.10.15.1: every
   target the rebuild of 2026-10-16 reached (decision 112), from the raw readers and plan 016's vessel tables to
-  `ais_catch`, and the foreign vessel tables of 2026-10-17 (decision 114). The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
+  `ais_catch`, the foreign vessel tables of 2026-10-17 (decision 114), and the logbook, landings and vessel half of the rebuild of 2026-10-17 (decision 127). The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
   `shapes`, `area_h3`, `lookups`) are from the rebuild of 2026-10-13 with 2026.10.13.3 (decision 086), and the `once`
   project's frozen outputs are older. 2026.10.14.4 added the towing-stretch pairing (decision 092), which nothing here
   calls.

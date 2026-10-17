@@ -95,7 +95,8 @@ since adb and fs_afladagbok are the same e-logbook.
 to 12-12, while adb runs on at up to 300 a day. adb's stations from 2025-11-27 to 12-31 are dropped by
 `ADB_DATE_MIN`, and nothing else holds their vessel-days: **5,009 stations, 1,947 vessel-days, 193 vessels, 1,070
 trips, 52.4 kt as recorded (56.3 kt round)**. None of those trips has a station kept in 2026. This is a defect in the
-product, not a matter for this plan to fix; it is TODO 80. The fate table is what would have shown it.
+product, not a matter for this plan to fix; it was TODO 80 (decision 125, built in decision 127). The fate table is what
+would have shown it.
 
 ## 4. The design: `curated/logbook/station_fate.parquet`
 
@@ -134,7 +135,7 @@ default). No fs_afladagbok or adb station has an NA `vid` today, but 21 afli sta
   staging tables today, and describes an older merge (adb left out).
 - The account that done-criterion 2 asks for: this is the merge's link of kg in = kg out. The links before it (the
   adapters, §6 d) and after it (`curate/ais_catch.R`) keep their own.
-- Before-and-after checks of a merge change: TODO 78's check after TODO 77's build, and TODO 80's fix.
+- Before-and-after checks of a merge change, such as TODO 78's and TODO 80's, done by hand in decision 127.
 - Not the flow. The flow reads `curated/logbook`'s four tables, and a dropped station stays out of them.
 
 ## 5. Steps
