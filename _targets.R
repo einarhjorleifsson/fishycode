@@ -67,6 +67,8 @@ fro_files <- sort(list.files(fd_raw("external", "fro"), "^vid-.*[.]csv$", full.n
 stk_trail_files <- input_files("raw", "oracle", "stk", "trail")
 astd_files      <- input_files("staging", "ais", "astd")
 astd_b_files    <- input_files("staging", "ais", "astdB")
+# The Fjarskiptastofa MMSI lists, for the same reason (decision 116): mmsi.R reads every list in the folder.
+mmsi_list_files <- input_files("raw", "mmsi", pattern = "[.]xlsx$")
 
 list(
 
@@ -77,9 +79,13 @@ list(
     "reference/dictionary.R",
     fd_curated("reference", "dictionary.parquet")), format = "file"),
 
-  tar_target(gear, produces(
-    "reference/gear/mapping.R",
-    fd_curated("reference", "gear.parquet")), format = "file"),
+  # Each reader of raw/oracle/ names the tables its output is built from, so a new dump marks it outdated (decision
+  # 116). mapping.R also reads afli's stofn and fs_afladagbok's ws_veidi, for a printed check after the save: not inputs.
+  tar_target(gear_raw, fd_raw("oracle", "asfis", "asfis.parquet"), format = "file"),
+  tar_target(gear, {
+    gear_raw
+    produces("reference/gear/mapping.R", fd_curated("reference", "gear.parquet"))
+  }, format = "file"),
 
   # Speed windows and window class per gear (plan 010). Reads gear.parquet.
   tar_target(gear_window, {
@@ -110,16 +116,22 @@ list(
 
   # harbour_codes.R reads the pids from staging/ports/ports_all.gpkg; without the edge
   # it could run before ports_all and read the old file (decision 082).
+  tar_target(port_raw, c(fd_raw("oracle", "agf", "aflagrunnur_v.parquet"),
+                         fd_raw("oracle", "agf", "aflagrunnur.parquet"),
+                         fd_raw("oracle", "kvoti", "stadur.parquet")), format = "file"),
   tar_target(port, {
     ports_iceland
     ports_all
+    port_raw
     produces("reference/ports/harbour_codes.R",
              fd_curated("reference", "port.parquet"))
   }, format = "file"),
 
-  tar_target(port_code, produces(
-    "reference/ports/port_code.R",
-    fd_curated("reference", "port_code.parquet")), format = "file"),
+  tar_target(port_code_raw, fd_raw("oracle", "agf", "aflagrunnur_v.parquet"), format = "file"),
+  tar_target(port_code, {
+    port_code_raw
+    produces("reference/ports/port_code.R", fd_curated("reference", "port_code.parquet"))
+  }, format = "file"),
 
   # Geometry validation of the raw spatial layers. Its outputs go to
   # staging/aux_valid/; shapes.R then crops and buffers them into staging/aux/.
@@ -174,7 +186,7 @@ list(
   # The MMSI archive, rebuilt from every source (plan 016): the four Fjarskiptastofa lists, the Oracle snapshots, Oracle's
   # current table, the old archive's hand-set windows, and two declared corrections. File targets, so a new list or
   # dump shows in tar_outdated() - before plan 016 no vessel target depended on a raw file.
-  tar_target(mmsi_raw, c(list.files(fd_raw("mmsi"), "[.]xlsx$", full.names = TRUE),
+  tar_target(mmsi_raw, c(mmsi_list_files,
                          fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20190627.parquet"),
                          fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20201215.parquet"),
                          fd_raw("oracle", "ops_einarhj", "vessel_mmsi_20220405.parquet"),
@@ -188,6 +200,7 @@ list(
     produces("reference/vessels/mmsi.R", fd_curated("vessel", "mmsi.parquet"))
   }, format = "file"),
 
+  # registry.R also reads agf/aflagrunnur, for a printed check after the save: not an input (decision 116).
   tar_target(vessel, {
     mmsi; vessel_raw
     produces("reference/vessels/registry.R", fd_curated("vessel", "vessel.parquet"))
@@ -293,8 +306,16 @@ list(
   # raw/ → staging/<source>/. Mutually independent, so tar_make(workers = 4)
   # runs them in parallel. Each must emit the four-table grammar.
 
+  # The Oracle tables each adapter reads (decision 116). afli's kvoti/lods_londun is read only in its if (FALSE) block.
+  tar_target(afli_raw, c(fd_raw("oracle", "afli", "stofn.parquet"),
+                         fd_raw("oracle", "afli", "rafr_stofn.parquet"),
+                         fd_raw("oracle", "afli", "toga.parquet"),
+                         fd_raw("oracle", "afli", "lineha.parquet"),
+                         fd_raw("oracle", "afli", "gildra.parquet"),
+                         fd_raw("oracle", "afli", "hringn.parquet"),
+                         fd_raw("oracle", "afli", "afli.parquet")), format = "file"),
   tar_target(afli, {
-    dictionary; gear; gear_window; port
+    dictionary; gear; gear_window; port; afli_raw
     produces("sources/afli/convert.R",
              fd_staging("afli", "trip.parquet"),
              fd_staging("afli", "station.parquet"),
@@ -311,8 +332,16 @@ list(
              fd_staging("afli", "depth.parquet"))
   }, format = "file"),
 
+  tar_target(fs_afladagbok_raw, c(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_veidi.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_dragnot_varpa.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_plogur.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_linanethandf.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_gildra.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_hringn.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_afli.parquet")), format = "file"),
   tar_target(fs_afladagbok, {
-    dictionary; gear; gear_window; port
+    dictionary; gear; gear_window; port; fs_afladagbok_raw
     produces("sources/fs_afladagbok/convert.R",
              fd_staging("fs_afladagbok", "trip.parquet"),
              fd_staging("fs_afladagbok", "station.parquet"),
@@ -320,8 +349,16 @@ list(
              fd_staging("fs_afladagbok", "catch.parquet"))
   }, format = "file"),
 
+  tar_target(adb_raw, c(fd_raw("oracle", "adb", "trip_v.parquet"),
+                        fd_raw("oracle", "adb", "station_v.parquet"),
+                        fd_raw("oracle", "adb", "trawl_and_seine_net_v.parquet"),
+                        fd_raw("oracle", "adb", "dredge_v.parquet"),
+                        fd_raw("oracle", "adb", "line_and_net_v.parquet"),
+                        fd_raw("oracle", "adb", "trap_v.parquet"),
+                        fd_raw("oracle", "adb", "surrounding_net_v.parquet"),
+                        fd_raw("oracle", "adb", "catch.parquet")), format = "file"),
   tar_target(adb, {
-    dictionary; gear
+    dictionary; gear; adb_raw
     produces("sources/adb/convert.R",
              fd_staging("adb", "trip.parquet"),
              fd_staging("adb", "station.parquet"),
@@ -337,13 +374,17 @@ list(
              fd_staging("adb", "lon_sign.parquet"))
   }, format = "file"),
 
+  tar_target(aflagrunnur_raw, fd_raw("oracle", "agf", "aflagrunnur.parquet"), format = "file"),
   tar_target(aflagrunnur, {
+    aflagrunnur_raw
     produces("sources/aflagrunnur/convert.R",
              fd_staging("landing", "agf", "landings.parquet"),
              fd_staging("landing", "agf", "catch.parquet"))
   }, format = "file"),
 
+  tar_target(lods_raw, fd_raw("oracle", "kvoti", "lods_oslaegt.parquet"), format = "file"),
   tar_target(lods, {
+    lods_raw
     produces("sources/lods/convert.R",
              fd_staging("landing", "lods", "landings.parquet"),
              fd_staging("landing", "lods", "catch.parquet"))
