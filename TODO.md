@@ -231,10 +231,11 @@ logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
 by landings in Iceland. Norway is whole by vessel; the Faroes only from 2017-10. Coordinates are swapped, Faroese
 summer times are local, and there are no trips. The maintainer took them in (2026-10-17); plan 026 is the design:
 an adapter, three corrections, trips cut at landings in Iceland and then at 48-hour gaps, and a tier in
-`curate/logbook.R`, built with TODO 77. The adapter, the corrections and the trip script are coded and run on a
+`curate/logbook.R`. The adapter, the corrections and the trip script are coded and run on a
 scratch `$FISHYDATA`, with the 280 Icelandic hauls on vessel-days the logbook lacks (maintainer, 2026-10-17) and
 tier 4 in `curate/logbook.R` (plan 026 §11), and `docs/merge.qmd` has the section. Built to `curated/logbook`
-2026-10-17 (decision 127); it reaches the fixes with TODO 77's second half.
+2026-10-17 (decision 127), and on the fixes the same day (decision 129): plan 026 §8.6 passes, §8.5 holds as the
+trail's exclusive windows allow, and §8.7's render is not checked.
 **2019-2025, the lead:** Norway's open ERS catch messages. `sources/norway/logbooks.R` reads them, but it is not a
 target, it reads from `staging/`, and the files are not on disk. The Faroese half has no lead.
 
@@ -243,8 +244,8 @@ Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** in progress · **needs: maintainer** — decision 115's `vessel_ais_link` is built with TODO 77's second half
-(it reads the STK key; its identity tables are built, decision 127), then the first vid allocation,
+**status:** in progress · **needs: maintainer** — decision 115's `vessel_ais_link` is built (decision 129: 655,184
+rows on the redone STK key, with its review list of 3,023 rows), so next is the first vid allocation,
 `allocate_vids(dry_run = FALSE)`, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
 PAME's answer on ASTD (asked 2026-10-17, §6 h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
 plans 008, 016 and 017, decisions 114-115 and 118, TODO 15 and 25
@@ -395,20 +396,6 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 2004), and whether those are copies is unknown.
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
-
-## 77. The build that decisions 113, 115 and 116 left: its second half, after the key redo
-**status:** blocked — on TODO 25's key redo · **see:** decisions 112, 113, 115, 116 and 127, plan 026 §8
-
-The build is split (maintainer, 2026-10-17; decision 127). Its first half is built: the 49 targets that do not read
-the STK key (`vessel_ais_key`), with decisions 124 and 125 and plan 026 in `curated/logbook`. The 20 that read it wait
-for the key redo, so the AIS chain runs once: `stk`, `stk_event`, `port_stay`, `ais_ping_union` to `ais_catch`,
-`trip_voyage`, `station_event`, `voyage_gear`, decision 115's `vessel_ais_link` and seven checks. Until then
-`curated/ais/trail` and `curated/ais/catch` are decision 112's, and the 8,894 stations added on 2026-10-17 are on no
-fix. For now the AIS carries the vessels of the Icelandic logbooks and landings (vid 1-9999) and every other
-Icelandic vessel, SKB included (maintainer, 2026-10-17); foreign hulls wait for plan 021 step 6.
-
-**check:** after one `tar_make_isolated()`, `tar_outdated()` is empty, plan 026 §8.5-6 pass, and the fingerprints
-after are compared in a decision with decision 127's after set (`$FISHYDATA/archive/2026-10-17-rebuild/`).
 
 ## 79. Every source station accounted for in the logbook merge (plan 024)
 **status:** open · **needs: maintainer** — the go, and plan 024's four asks (§6) · **see:**

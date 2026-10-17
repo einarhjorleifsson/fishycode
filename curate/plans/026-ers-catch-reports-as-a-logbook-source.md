@@ -1,7 +1,7 @@
 # 026 — The ERS catch reports of `dw_aflaskeyti` as a logbook source: foreign vessels 2014-2018
 
-**status:** partly built — measured 2026-10-17; §2-§7 coded, scratch-tested and built to `curated/logbook` 2026-10-17 (decision 127), §8.1-4 pass; §8.5-6 wait for the AIS chain (TODO 62, 77) · **2026-10-17**
-· **see:** decision 126, TODO 62 and 77, plans 014, 017 and 024; `curate/logbook.R`, `curate/link_lid_map.R`,
+**status:** partly built — measured 2026-10-17; §2-§7 coded, scratch-tested and built 2026-10-17 (decisions 127 and 129); §8.1-4 and §8.6 pass, §8.5 holds as the trail's exclusive windows allow (decision 129); §8.7's render not checked (TODO 62) · **2026-10-17**
+· **see:** decisions 126, 127 and 129, TODO 62, plans 014, 017 and 024; `curate/logbook.R`, `curate/link_lid_map.R`,
 `curate/corrections/logbook_gear.R`, `curate/station_window.R`, `curate/ais_catch.R`
 
 Drafted with AI assistance (Claude) on 2026-10-17. The maintainer chose to take the Norwegian and Faroese rows of
@@ -214,7 +214,17 @@ lie on a logbook station today.
 4. `curated/logbook`: the other schemas' row counts and catch by schema are unchanged.
 5. `curated/ais/trail`: foreign hauls with fixes are on their station windows (2,191 hold a fix between `t2` and
    `t3` today).
+
+   *Checked 2026-10-17 (decision 129): 2,277 of the 2,778 hauls have a fix of their vessel inside their own window.
+   A purse seine's window is its day (gear class `other`). A fix carries the haul's `.sid` where the haul is the
+   vessel-day's only window (1,028 hauls). On a day with two or more hauls it carries no single station and `n_sid`
+   = the hauls (decision 091's exclusive windows, as for every logbook). Whether such a fix should name its hauls is
+   a question for the trail.*
 6. `curated/ais/catch`: the foreign catch is on the record path, and kg in equals kg out per vessel and year.
+
+   *Passes (decision 129): 507.30 kt in and out for the foreign ERS vessels 2014-2018, equal in every vessel-year.
+   280.27 kt is the ERS hauls (source logbook): 232.96 kt on fishing fixes, and 47.31 kt with no fishing fix in its
+   unit, trip or month, since these vessels reach the AIS only through STK.*
 7. `docs/merge.qmd` renders with the section, and `check_bookkeeping()` passes.
 
 ## 9. Order and build
