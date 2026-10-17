@@ -2,7 +2,7 @@
 
 *2026-10-17. The scope and the rules are the maintainer's, asked one question at a time; the code, the scratch runs,
 the investigation and the measurements are by Claude (AI-assisted). The frozen key of 2026-10-09 and its checks are
-kept in `$FISHYDATA/archive/2026-10-17-key-redo/before/`. Redoes the one-time fix of decision 075 by decision, as it
+kept in `$FISHYDATA/archive/2026-10-17-key-redo/before/`, with the scripts and the build log. Redoes the one-time fix of decision 075 by decision, as it
 requires. TODO 25's first redo; what it leaves is TODO 25 again.*
 
 ## What the maintainer chose
@@ -162,7 +162,22 @@ It tiles 3,196 mids and 189,262,200 pings. The 834 pings on no vid are on mids w
 
 ## Built in the once project
 
-Not yet built.
+- **The run:** `TAR_PROJECT=once`, `tar_make_isolated(names = )` with the 13 key targets
+  (`archive/2026-10-17-key-redo/once_build.R`). 19 targets were built: the 13 and their six watchers of main-project
+  files. It ran 18:13:56 to 18:19:34 UTC with exit 0; the audit took 180 s and the segment table 48 s. The frozen
+  files were copied to `before/` first.
+- **Left outdated, by design:** `port_radius`, `sensor_gps` and their two watchers.
+- **Stamps:** every file carries fishycode 9cb2f45 and `fd.dirty` false.
+- **Against the scratch run:** the key, the cascade, the segment table and the device file are identical (rows and
+  order-free hashes). Four checks differ only in columns that pick among ties, which they do in no fixed order:
+  - the split candidates' first-ping position and shift;
+  - the audit's alternative vid;
+  - the twins' own-track distances;
+  - and so `ais_key_resolution`, with 323 rows against 322.
+
+  The key reads none of these columns.
+- **`ais_key_coverage`:** 0 rows. Its one warning is `min()` over the empty table.
+- **The main project:** `tar_outdated()` lists decision 127's 20 targets and the key's own file target.
 
 ## Left
 
