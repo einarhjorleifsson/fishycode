@@ -418,3 +418,30 @@ keeps the 172 of them on vessel-days neither afli nor fs_afladagbok holds (decis
 
 **check:** after TODO 77's build, `curated/logbook/station.parquet` holds 172 stations with `copy` "fs_afli" and
 65 more with `eytt_deleted` TRUE than before (61 from NA, 4 from FALSE), and `tar_outdated()` is empty.
+
+## 79. Every source station accounted for in the logbook merge (plan 024)
+**status:** open · **needs: maintainer** — the go, and plan 024's four asks (§6) · **see:**
+`curate/plans/024-logbook-station-fate.md`
+
+`curate/logbook.R` drops staging stations by date bounds and (vid, date) tiers, and nothing records them: a dropped
+station is simply absent from `curated/logbook`. Plan 024 proposes `curated/logbook/station_fate.parquet`, written by
+the merge, one row per staging station with whether it is kept and, if not, why, and measures what it would hold on
+the build of 2026-10-16: 702,988 stations dropped (8,131 kt as recorded), 99 % of held vessel-days copies of what is
+kept.
+
+**check:** `curated/logbook/station_fate.parquet` exists, has one row per staging station, and reproduces plan 024
+§2's counts; a decision records it.
+
+## 80. December 2025 is missing from `curated/logbook`
+**status:** open · **needs: maintainer** — how the handover from fs_afladagbok to adb is set · **see:** plan 024 §3,
+decision 023
+
+`FS_DATE_MAX` (2025-12-31) and `ADB_DATE_MIN` (2026-01-01) assume fs_afladagbok's dump reaches the end of 2025. It
+ends on 2025-11-28 (217 stations on 11-26, 25 on 11-27, 2 on 11-28). adb's stations from 2025-11-27 to 12-31 are
+dropped by `ADB_DATE_MIN`, and nothing else holds their vessel-days: 5,009 stations, 193 vessels, 1,070 trips,
+52.4 kt as recorded (measured 2026-10-17). Ways out: the handover set from fs_afladagbok's last full day, or adb's
+lower bound replaced by the tier anti-join the merge already runs (which would also let in 826 adb stations of
+2019-2025, 4.3 kt, on vessel-days nothing holds, and needs a floor against adb's impossible dates).
+
+**check:** after the fix and a build, no adb station from 2025-11-27 on is dropped on a vessel-day that
+`curated/logbook` does not hold, and a decision records the handover.
