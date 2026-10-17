@@ -345,13 +345,11 @@ list(
   # runs them in parallel. Each must emit the four-table grammar.
 
   # The Oracle tables each adapter reads (decision 116). afli's kvoti/lods_londun is read only in its if (FALSE) block.
-  tar_target(afli_raw, c(fd_raw("oracle", "afli", "stofn.parquet"),
-                         fd_raw("oracle", "afli", "rafr_stofn.parquet"),
-                         fd_raw("oracle", "afli", "toga.parquet"),
-                         fd_raw("oracle", "afli", "lineha.parquet"),
-                         fd_raw("oracle", "afli", "gildra.parquet"),
-                         fd_raw("oracle", "afli", "hringn.parquet"),
-                         fd_raw("oracle", "afli", "afli.parquet")), format = "file"),
+  # fs_afli gives the eytt flag and the paper stations afli lacks (decision 124).
+  tar_target(afli_raw, c(unlist(lapply(c("afli", "fs_afli"), \(s)
+                           fd_raw("oracle", s, paste0(c("stofn", "toga", "lineha", "gildra", "hringn", "afli"),
+                                                      ".parquet")))),
+                         fd_raw("oracle", "fs_afli", "rafr_stofn.parquet")), format = "file"),
   tar_target(afli, {
     dictionary; gear; gear_window; port; afli_raw
     produces("sources/afli/convert.R",

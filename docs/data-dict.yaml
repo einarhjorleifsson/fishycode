@@ -2640,7 +2640,8 @@ tables:
       - name: eytt_deleted
         type: boolean
         description: >
-          TRUE for records flagged deleted in the source system (afli only).
+          TRUE for records flagged deleted in the source system (afli only), read from
+          fs_afli's rafr_stofn, which runs to 2024 (decision 124). NA for paper records.
       - name: gid
         type: number
         range: [1, 25]
@@ -3431,7 +3432,16 @@ tables:
       - name: eytt_deleted
         type: boolean
         description: >
-          TRUE for records flagged deleted in the source (afli only).
+          TRUE for records flagged deleted in the source (afli only), read from fs_afli's
+          rafr_stofn, which runs to 2024 (decision 124). NA for paper records.
+      - name: copy
+        type: string
+        examples: [afli, fs_afli]
+        description: >
+          For afli stations, the Oracle copy of the logbook schema the record was read
+          from: afli, or fs_afli for the paper stations only the Directorate's copy holds,
+          kept where neither afli nor fs_afladagbok has the vessel-day (decision 124).
+          NA for the other schemas.
       - name: z1
         type: number
         range: [-1.8288, 14650.5168]

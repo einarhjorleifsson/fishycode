@@ -396,29 +396,25 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 
 ## 77. The build that decisions 113, 115 and 116 left
 **status:** open · **needs: maintainer** — the go for one `tar_make_isolated()`, and whether decision 115's targets
-(TODO 65) are built in the same pass · **see:** decisions 113, 115, 116 and 122
+(TODO 65) are built in the same pass · **see:** decisions 113, 115, 116, 122 and 124
 
-`tar_outdated()` lists 63 of 92 targets. Twenty were added to `_targets.R` and never built: decision 113's four
-declared inputs (the STK trail and the AIS feeds), decision 116's eight (the Oracle tables the adapters read) and
-decision 115's eight (plan 021's crosswalk and vid ledger). The other 43 read them, or their commands changed with
-them (`mmsi_raw`), down to `ais_trail` and `ais_catch`. Both decisions advised building with the next dump. The
-dumps of decisions 121-122 changed no declared input, so nothing forces it.
+`tar_outdated()` lists 63 of 92 targets, and decision 124's afli change (TODO 78) rides on the same build. Twenty were
+added to `_targets.R` and never built: decision 113's four declared inputs (the STK trail and the AIS feeds), decision
+116's eight (the Oracle tables the adapters read) and decision 115's eight (plan 021's crosswalk and vid ledger). The
+other 43 read them, or their commands changed with them (`mmsi_raw`), down to `ais_trail` and `ais_catch`. Both
+decisions advised building with the next dump. The dumps of decisions 121-122 changed no declared input, so nothing
+forces it.
 
 **check:** `tar_outdated()` is empty after the build, and the fingerprints before and after (`R/fingerprint.R`) are
 compared in a decision.
 
-## 78. Whether the afli adapter reads `fs_afli`: the deletion flag and 248 stations
-**status:** open · **needs: maintainer** — which of decision 123's four options: nothing; `eytt` from
-`fs_afli.rafr_stofn`; `fs_afli` in place of `afli`; or afli kept, with the flag and group E's 189 paper stations
-added from `fs_afli` (Claude recommends the second and fourth) · **see:** decisions 122 and 123
+## 78. The afli adapter reads `fs_afli`'s deletion flag and paper stations: check after the build
+**status:** in progress · **see:** decisions 123 and 124, TODO 77
 
-The stations only `fs_afli` holds are in `curated/logbook` already, all but 248 (492 t, mostly spring-2022 jig and
-gillnet and electronic stations of 2002-2016). The electronic logbooks of 2020-2024 came in through `fs_afli` and
-were read into `afli.stofn`, which MFRI still edits (decision 123). `sources/afli/convert.R` takes `eytt_deleted`
-from `afli.rafr_stofn`, frozen since 2020-07-23, so 61 stations Oracle has deleted carry NA, and 38 of them count as
-live. Reading `fs_afli` whole would move 1,863 fs_afladagbok stations of 2022 to afli and drop 32 dated ones. Group
-E's 162 stations with no curated station agree with their landings by species and lie on the vessel's track as
-closely as curated stations do.
+The maintainer chose decision 123's options 2 and 4 (2026-10-17). `sources/afli/convert.R` takes `eytt_deleted` from
+`fs_afli.rafr_stofn` and adds the 189 paper stations only `fs_afli` holds (`copy` = "fs_afli"); `curate/logbook.R`
+keeps the 172 of them on vessel-days neither afli nor fs_afladagbok holds (decision 124). Tested on a scratch
+`$FISHYDATA` against the current build; not built.
 
-**check:** a decision records the choice; if the adapter changes, the rebuilt `curated/logbook/station.parquet` shows
-the 61 as `eytt_deleted` TRUE, and under the fourth option group E's 189 stations.
+**check:** after TODO 77's build, `curated/logbook/station.parquet` holds 172 stations with `copy` "fs_afli" and
+65 more with `eytt_deleted` TRUE than before (61 from NA, 4 from FALSE), and `tar_outdated()` is empty.

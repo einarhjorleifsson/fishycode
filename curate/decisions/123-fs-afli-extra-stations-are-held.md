@@ -167,10 +167,16 @@ The 156 trips log 146,882 kg in all and land 160,379 kg.
 | curated fs_afladagbok LHM | 11,183 | 10,813 | 11,036 | 10,627 | 2.3 | 5,219 | 3,403 |
 
 So the paper stations record fishing trips that took place and were landed as logged. They lie as close to the
-vessel's track as the curated stations do: closer than fs_afladagbok's, farther than afli's. The 19 jig stations more
-than 20 km from the track were not examined further. Agreement shows consistency, not accuracy. It is a fair test,
-though: these stations never entered curated, so they shaped neither the landing links nor the trail's fishing flags
-on these days.
+vessel's track as the curated stations do: closer than fs_afladagbok's, farther than afli's. Agreement shows
+consistency, not accuracy. It is a fair test, though: these stations never entered curated, so they shaped neither
+the landing links nor the trail's fishing flags on these days.
+
+The 22 stations more than 20 km from the track (19 jig, 3 gillnet) are all on days the vessel was at sea. Their
+positions are wrong in the ways logbook positions often are, so they say nothing against the stations (maintainer,
+2026-10-17). 6 come within 1 km of the track with one digit changed: the latitude degree one too high in 4, a minutes
+tens digit in 2. 11 repeat nearly the same position on several days (vessels 1695, 2084 and 7720), a standing
+position rather than the haul's. 2 give latitude 46° where 66° fits the track. The other 3 hold other errors
+(minutes of 64, a longitude of 44°, a latitude of 67° north of the track). They are kept as recorded.
 
 ## What could change (the maintainer's choice, TODO 78)
 

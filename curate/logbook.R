@@ -3,9 +3,10 @@
 # Input:  staging/{afli,fs_afladagbok,adb}/{trip,station,fishing_sample,catch}.parquet
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet
 #
-# Decision rule (three-tier priority):
+# Decision rule (tiered priority):
 #   Tier 1 — if (vid, date) present in afli                        → use afli
 #   Tier 2 — not in afli, but present in fs_afladagbok             → use fs_afladagbok
+#   Tier 2b — not in either, and an afli station read from fs_afli  → use it (decision 124)
 #   Tier 3 — not in afli or fs_afladagbok, present in adb          → use adb
 #
 # Rationale:
@@ -113,7 +114,9 @@ adb_trip           <- adb_trip           |> semi_join(adb_station |> distinct(.t
 adb_fishing_sample <- adb_fishing_sample |> semi_join(adb_station |> distinct(.sid), by = ".sid")
 adb_catch          <- adb_catch          |> semi_join(adb_station |> distinct(.sid), by = ".sid")
 
-# Tier 1: afli — full coverage -------------------------------------------------
+# Tier 1: afli — full coverage, less the stations read from fs_afli -------------
+afli_fs_station <- afli_station |> filter(copy == "fs_afli")
+afli_station    <- afli_station |> filter(copy == "afli")
 afli_vid_date <- afli_station |>
   left_join(afli_trip |> select(.tid, vid), by = ".tid") |>
   distinct(vid, date)
@@ -133,12 +136,25 @@ fs_only_trip           <- fs_trip           |> semi_join(fs_tids_kept, by = ".ti
 fs_only_fishing_sample <- fs_fishing_sample |> semi_join(fs_sids_kept, by = ".sid")
 fs_only_catch          <- fs_catch          |> semi_join(fs_sids_kept, by = ".sid")
 
+# Tier 2b: the paper stations only fs_afli holds -------------------------------
+# Where afli or fs_afladagbok has the vessel-day, they are the same hauls entered again (decision 123): of the
+# 17 such stations, 14 carry the same kg as a station already there, and one has no catch.
+afli_fs_kept <- afli_fs_station |>
+  left_join(afli_trip |> select(.tid, vid), by = ".tid") |>
+  anti_join(bind_rows(afli_vid_date, fs_only_vid_date), by = c("vid", "date"))
+afli_fs_vid_date <- afli_fs_kept |> distinct(vid, date)
+afli_station <- bind_rows(afli_station, afli_fs_kept |> select(-vid))
+
+afli_trip           <- afli_trip           |> semi_join(afli_station |> distinct(.tid), by = ".tid")
+afli_fishing_sample <- afli_fishing_sample |> semi_join(afli_station |> distinct(.sid), by = ".sid")
+afli_catch          <- afli_catch          |> semi_join(afli_station |> distinct(.sid), by = ".sid")
+
 # Tier 3: adb — vessel-days not covered by afli or fs_afladagbok --------------
 # ADB_DATE_MIN already keeps this to the tail fs_afladagbok never reached, but
 # the anti-join is kept anyway: it is what actually enforces the stated
 # priority (afli > fs_afladagbok > adb) rather than a date cutoff standing in
 # for it, and it costs nothing since fs's own vid-dates in this window are rare.
-tier12_vid_date <- bind_rows(afli_vid_date, fs_only_vid_date)
+tier12_vid_date <- bind_rows(afli_vid_date, fs_only_vid_date, afli_fs_vid_date)
 
 adb_only_station <- adb_station |>
   left_join(adb_trip |> select(.tid, vid), by = ".tid") |>
@@ -252,6 +268,7 @@ merged_station <- merged_station |>
 
 # Summary ----------------------------------------------------------------------
 cat(sprintf("afli stations (filtered):   %d\n", nrow(afli_station)))
+cat(sprintf("  of them read from fs_afli: %d of %d\n", nrow(afli_fs_kept), nrow(afli_fs_station)))
 cat(sprintf("fs-only stations:           %d\n", nrow(fs_only_station)))
 cat(sprintf("adb-only stations:          %d\n", nrow(adb_only_station)))
 cat(sprintf("merged stations:            %d\n", nrow(merged_station)))

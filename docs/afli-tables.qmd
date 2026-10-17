@@ -568,7 +568,8 @@ are therefore the authoritative source for fishing data.
   (none carry catch). The convert script (`01_afli_convert.R`) now propagates
   this as an `eytt_deleted` logical column: `TRUE` = deleted in Oracle,
   `FALSE` = active in rafr_ era (2003–2020), `NA` = paper era or Phase 4
-  direct-load.
+  direct-load. Since decision 124 the flag is read from fs_afli's copy of
+  `rafr_stofn`, which runs to 2024, so the direct-load stations carry it too.
 
 - **`snt`/`sng`/`sbt`/`sbg` audit columns.** Nearly all electronic tables
   carry these four columns (stamped-name/time, approved-name/time). They record

@@ -1,6 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (afli). See plan 014.
-# Input:  raw/oracle/afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
+# Input:  raw/oracle/afli/{stofn,toga,lineha,gildra,hringn,afli}.parquet
+#         raw/oracle/fs_afli/{stofn,toga,lineha,gildra,hringn,afli,rafr_stofn}.parquet
 #         curated/reference/{dictionary,gear,port}.parquet
 # Output: staging/afli/{trip,station,fishing_sample,sensor,catch,aggregate}.parquet
 
@@ -22,21 +23,40 @@ harbours <-
   duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect() |>
   select(hid, port, pid) |>
   drop_na(hid, port)
+# fs_afli is the Directorate's copy of this schema and holds all of it (decisions 122-124). The electronic
+# logbooks of 2020-2024 came in through it and were read into afli.stofn, so afli's own rafr_ tables stop on
+# 2020-07-23. Two things are taken from it: the eytt flag, from its rafr_stofn, and the paper stations
+# afli.stofn lacks (positive ids), with copy = "fs_afli". The electronic stations afli lacks are left out:
+# they are fs_afladagbok's hauls. curate/logbook.R ranks the added stations below fs_afladagbok, since where
+# afli or fs_afladagbok has the vessel-day they are the same hauls entered again (decision 123).
 # eytt flag: records officially deleted in Oracle (eytt=1 in rafr_stofn).
-# 16,912 such records exist; they were imported into stofn but later deleted.
 # eytt_deleted = TRUE  → deleted in Oracle; treat with caution / exclude.
-# eytt_deleted = FALSE → active in Oracle (rafr_ era, 2003–2020).
-# eytt_deleted = NA    → not in rafr_ (paper era, or 2020–2022 direct-load).
-eytt_ref <- duckdbfs::open_dataset(fd_raw("oracle", "afli", "rafr_stofn.parquet")) |> collect() |>
+# eytt_deleted = FALSE → active in Oracle (rafr_ era, 2003–2024).
+# eytt_deleted = NA    → not in rafr_ (paper).
+eytt_ref <- duckdbfs::open_dataset(fd_raw("oracle", "fs_afli", "rafr_stofn.parquet")) |> collect() |>
   select(visir, eytt) |>
   mutate(eytt_deleted = eytt == 1L) |>
   select(visir, eytt_deleted)
+stofn_afli <- duckdbfs::open_dataset(fd_raw("oracle", "afli", "stofn.parquet")) |> collect()
+stofn_fs <-
+  duckdbfs::open_dataset(fd_raw("oracle", "fs_afli", "stofn.parquet")) |> collect() |>
+  filter(visir > 0, !visir %in% stofn_afli$visir) |>
+  select(-uppruni)
+FS_SID <- stofn_fs$visir
+# A table of each copy, afli's whole and fs_afli's for the added stations only
+read_copies <- function(table) {
+  bind_rows(
+    duckdbfs::open_dataset(fd_raw("oracle", "afli", table)) |> collect(),
+    duckdbfs::open_dataset(fd_raw("oracle", "fs_afli", table)) |> filter(visir %in% FS_SID) |> collect())
+}
 
 # Source (stofn) --------------------------------------------------------------
 # No explicit trip table in this schema; .tid derived as min(.sid) per
 # (vid, T2, hid2). T1 is the minimum fishing date within the derived trip.
+# Each copy makes its own trips, so an added station never changes an afli trip or its .tid.
 source <-
-  duckdbfs::open_dataset(fd_raw("oracle", "afli", "stofn.parquet")) |> collect() |>
+  bind_rows(stofn_afli |> mutate(copy = "afli"),
+            stofn_fs   |> mutate(copy = "fs_afli")) |>
   wk_translate(dictionary) |>
   filter(!is.na(date)) |>                        # 40 records have NA date
   # Remove ~41k monthly aggregate records (nephrops, shrimp, d-seine); these
@@ -51,7 +71,7 @@ source <-
          lat1 =  geoconvert.1(y1 * 100),
          lon2 = -geoconvert.1(x2 * 100),
          lat2 =  geoconvert.1(y2 * 100)) |>
-  group_by(vid, T2, hid2) |>
+  group_by(copy, vid, T2, hid2) |>
   mutate(.tid = min(.sid)) |>
   group_by(vid, .tid) |>
   mutate(T1 = min(date, na.rm = TRUE), hid1 = NA_integer_) |>
@@ -59,7 +79,7 @@ source <-
   mutate(schema = SCHEMA) |>
   left_join(eytt_ref, by = c(".sid" = "visir")) |>
   select(.sid, .tid, vid, gid, date, lon1, lat1, lon2, lat2, sq, ssq, z1, z2,
-         T1, hid1, T2, hid2, n_crew, schema, eytt_deleted)
+         T1, hid1, T2, hid2, n_crew, schema, eytt_deleted, copy)
 
 # Helper: station keys with ICES gear labels, used in aux table joins below
 stofn_gear <- source |>
@@ -80,7 +100,7 @@ trip <-
 station <-
   source |>
   select(.sid, .tid, date, lon1, lat1, lon2, lat2, sq, ssq, z1, z2, schema,
-         eytt_deleted)
+         eytt_deleted, copy)
 
 # Aux tables ------------------------------------------------------------------
 # Each block reads one source parquet, translates columns, and inner-joins to
@@ -89,14 +109,14 @@ station <-
 
 ## Mobile (toga: OTB / OTM / DRB / SDN) ---------------------------------------
 aux_mobile <-
-  duckdbfs::open_dataset(fd_raw("oracle", "afli", "toga.parquet")) |> collect() |>
+  read_copies("toga.parquet") |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear %in% c("DRB", "OTB", "OTM", "SDN")),
              by = ".sid")
 
 ## Static (lineha: LLS / GNS / GND / LHM) -------------------------------------
 aux_static <-
-  duckdbfs::open_dataset(fd_raw("oracle", "afli", "lineha.parquet")) |> collect() |>
+  read_copies("lineha.parquet") |>
   rename(.sid = visir) |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear %in% c("LLS", "GNS", "GND", "LHM")),
@@ -104,14 +124,14 @@ aux_static <-
 
 ## Trap (gildra: FPO) ----------------------------------------------------------
 aux_trap <-
-  duckdbfs::open_dataset(fd_raw("oracle", "afli", "gildra.parquet")) |> collect() |>
+  read_copies("gildra.parquet") |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear == "FPO"), by = ".sid") |>
   mutate(duration_m = duration_h * 60)
 
 ## Seine / ring net (hringn: PS) -----------------------------------------------
 aux_seine <-
-  duckdbfs::open_dataset(fd_raw("oracle", "afli", "hringn.parquet")) |> collect() |>
+  read_copies("hringn.parquet") |>
   wk_translate(dictionary) |>
   inner_join(stofn_gear |> filter(gear == "PS"), by = ".sid")
 
@@ -315,7 +335,7 @@ sensor <-
 
 # Catch -----------------------------------------------------------------------
 catch <-
-  duckdbfs::open_dataset(fd_raw("oracle", "afli", "afli.parquet")) |> collect() |>
+  read_copies("afli.parquet") |>
   wk_translate(dictionary, "messy", "clean") |>
   select(.sid, sid, catch) |>
   group_by(.sid, sid) |>
