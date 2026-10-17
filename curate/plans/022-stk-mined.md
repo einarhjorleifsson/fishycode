@@ -1,7 +1,8 @@
 # 022 — stk mined whole: the mobile-id key, the trip table, and what the rest holds
 
 **status:** proposal — §2, §3 and §5 measured; §4 waits for the maintainer's go (the voyages were rebuilt 2026-10-16,
-decision 112); §7 asks 1, 3, 4 and 5 open (TODO 25, 68); nothing in the pipeline changed ·
+decision 112); §7 asks 1 and 4 open, 3 and 5 answered 2026-10-17 (decision 128; TODO 25, 68); the key redo of
+decision 128 took SKB and the units with an Icelandic vid's own MMSI ·
 **2026-10-16** · **see:** plan 009 (the STK key), plan 018 (the dump), plan 021 (registries for every ping), plan 023
 (the landings, which build on this one), TODOs 68 and 71, decisions 047, 075, 094 and 109
 
@@ -479,10 +480,16 @@ Before mid-2007 the notifications stand alone, so how far they can be trusted th
    Should routes M1 and M2 of §3.1 (14.5 M positions of vessel units with no vid) enter the frozen key?
    - It would be a `once` redo, which can also take the 1,772 units created since the key's dump.
    - It needs a decision record (plan 014, decision 075).
+
+   *Answered (maintainer, 2026-10-17, decision 128): not now. Their hulls are mostly Faroese and otherwise foreign,
+   so they wait for plan 021 step 6 to give foreign hulls vids.*
 4. **Survey windows:** should `leidangrar_ctrl`'s windows mark the survey tows of chartered vessels in the trail (§5.1)?
 5. **The review lists:** who reviews them, and where?
    - §3.1 finding 10: 43 units, 41 key rows, 37 claims.
    - §5.1 finding 6: 5 port codes.
+
+   *Answered (maintainer, 2026-10-17, decision 128): Claude drafts each list with its witnesses and a proposed verdict
+   per row, and the maintainer confirms. Confirmed rows enter `overrides/` for the next key redo (TODO 25).*
 
 ## Appendix: the 63 objects of stk (§2)
 

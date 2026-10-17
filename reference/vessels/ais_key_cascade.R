@@ -466,7 +466,36 @@ stk11 <-
   select(-.vid)
 stk11 |> filter(vid > 0) |> lh_overlaps() |> knitr::kable(caption = "Expect none")
 
-rm(base, .probe_vc, .hit_vc, .probe_uc, .hit_uc, .probe_cs, .hit_cs, .probe_mmsi, .hit_mmsi)
+## mmsi_after_window - glid is an MMSI whose last holder's window has closed -------
+# A hull can go on broadcasting its last Icelandic MMSI under a new STK unit after its identity window closes, as an
+# afmadur unit goes on with its old vid in loid: a hull sold abroad, one still on the register whose radio licence was
+# cancelled ("Afskráð" in the lists), or one whose registry lifetime (yh2) is stale. NA_mmsi cannot take it: the
+# window in vessel_identity (plan 016's archive cut to the hull's lifetime) ends before the unit starts. The vid stays
+# with the keel unless another vessel took the MMSI up (the maintainer, 2026-10-17, at the key redo): the unit takes
+# the MMSI's last holder when the archive gives the MMSI to no later one. Measured then: 19 units starting 2019-2023,
+# none whose MMSI another vessel took up by the archive, the foreign registries or the feeds' IMO claims (decision 128
+# lists them, with the 3 left below NA_mmsi's 30 pings).
+.mm_last <-
+  vessel_identity |>
+  filter(!is.na(mmsi), !is.na(vid)) |>
+  group_by(mmsi) |>
+  filter(t2 == max(t2)) |>
+  summarise(.vid = if (n_distinct(vid) == 1) as.numeric(vid[1]) else NA_real_, .t2 = as.Date(t2[1]), .groups = "drop") |>
+  filter(!is.na(.vid))
+stk11 <-
+  stk11 |>
+  left_join(.mm_last, by = c("glid" = "mmsi")) |>
+  mutate(vid = case_when(!is.na(vid) ~ vid,
+                         !is.na(.vid) & as_date(d1) > .t2 & pings >= 30 ~ .vid,
+                         .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) ~ "mmsi_after_window", .default = step)) |>
+  select(-c(.vid, .t2))
+stk11 |>
+  filter(step == "mmsi_after_window") |>
+  select(mid, loid, glid, vid, pings, d1, d2) |>
+  knitr::kable(caption = "mmsi_after_window: an MMSI broadcast after its last holder's window closed")
+
+rm(base, .probe_vc, .hit_vc, .probe_uc, .hit_uc, .probe_cs, .hit_cs, .probe_mmsi, .hit_mmsi, .mm_last)
 stk11 <- stk11 |> select(-c(.mrid, .lo, .gl)) |> mutate(type = step)
 
 ## loid_cs -----------------------------------------------------------------------
@@ -536,6 +565,28 @@ stk11c |>
   knitr::kable(caption = "afmadur: assigned unless the vessel's own mobile-id overlaps")
 stk11c <- stk11c |> select(-c(.afma, .lvid, .clash))
 
+## skb -----------------------------------------------------------------------------
+# An SKB pleasure craft names its registration in glid (SKB271, skb222, SKB009_MF); the local id is always "Unknown".
+# The registration is the vid: 100000 + n (plan 016 §5, the maintainer's option B, 2026-10-14), as
+# reference/vessels/mmsi.R encodes it. Case and a suffix after the number are dropped. The key redo of 2026-10-17
+# (TODO 25) adds this step: before it, none of STK's 185 SKB units had a vid and their pings never reached the flow.
+# A code in no MMSI list (67 of the 185 vids at the redo) still gets its vid; it has no row in vessel.parquet, which
+# every reader joins on the left. The 99xx range is a placeholder, as in the landings: skb9998 (mid 106459) is a fixed unit in
+# Reykjavík harbour, 604 pings at speed 0 in 2009-10.
+SKB_BASE <- 100000L
+stk11c <-
+  stk11c |>
+  mutate(.skb_n = suppressWarnings(as.integer(str_match(toupper(trimws(glid)), "^SKB([0-9]+)")[, 2])),
+         vid = case_when(!is.na(vid) ~ vid,
+                         !is.na(.skb_n) & .skb_n < 9900L ~ as.numeric(SKB_BASE + .skb_n),
+                         .default = vid),
+         step = case_when(!is.na(vid) & is.na(step) ~ "skb", .default = step))
+stk11c |>
+  filter(!is.na(.skb_n)) |>
+  group_by(step) |> summarise(mids = n_distinct(mid), pings = sum(pings), .groups = "drop") |>
+  knitr::kable(caption = "skb: STK units whose glid is an SKB code")
+stk11c <- stk11c |> select(-.skb_n)
+
 # I AM HERE --------------------------------------------------------------------
 
 lnd |>
@@ -570,7 +621,9 @@ lnd |>
 stk11d <-
   stk11c |>
   left_join(.idy, by = "vid") |>
-  mutate(lifetime_conflict = !is.na(vid) & vid > 0 & coalesce(step, "") != "afmadur" &
+  # an SKB vid names a registration, and its identity windows are the MMSI lists' dates, not a hull's lifetime
+  # ... and an mmsi_after_window match lies after its MMSI's window by construction, as an afmadur one does
+  mutate(lifetime_conflict = !is.na(vid) & vid > 0 & !coalesce(step, "") %in% c("afmadur", "skb", "mmsi_after_window") &
            (is.na(i_t1) | as.Date(d1) > i_t2 | as.Date(d2) < i_t1),
          lifetime_note = case_when(
            !lifetime_conflict    ~ NA_character_,
@@ -686,20 +739,21 @@ stk14 |>
 #       both parse as a registered vid. Not time-gated - a vid is the keel, not
 #       an attribute at a time (AGENTS.md).
 #   B - identifier stated once, corroborated by a second field, time-aware
-#       against vessel_identity (vid_cs, vid2_cs, uid_cs, NA_vid, loid_cs).
+#       against vessel_identity (vid_cs, vid2_cs, uid_cs, NA_vid, loid_cs), or an
+#       SKB registration stated outright (skb), as NA_vid states a vid.
 #   C - human review (manuals): the duals spreadsheet, entered by a person.
 #   D - single weak field, no corroborating field (NA_csts, NA_mmsi), or a
 #       structural inference resting on absence of a clash rather than a second
-#       identifier confirming the first (afmadur - decision 013).
+#       identifier confirming the first (afmadur - decision 013; mmsi_after_window, its MMSI twin).
 #   E - inherited guess (older): a previous session's match, gated only on
 #       pings > 100 - the script's own comment calls it a hail mary.
 # Tier is not automatically trust-worthy even at A: mid 101661's vid_vid match
 # resolves to vid -2605, which nothing here validates - see
 # curate/checks/ais_key_registry.R's negative_vid check.
 .tier_map <- c(vid_vid = "A", vid2_vid2 = "A",
-              vid_cs = "B", vid2_cs = "B", uid_cs = "B", NA_vid = "B", loid_cs = "B",
+              vid_cs = "B", vid2_cs = "B", uid_cs = "B", NA_vid = "B", loid_cs = "B", skb = "B",
               manuals = "C",
-              NA_csts = "D", NA_mmsi = "D", afmadur = "D",
+              NA_csts = "D", NA_mmsi = "D", afmadur = "D", mmsi_after_window = "D",
               older = "E")
 stk14 <- stk14 |> mutate(tier = unname(.tier_map[step]))
 rm(.tier_map)

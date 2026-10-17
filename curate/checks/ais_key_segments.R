@@ -16,7 +16,9 @@
 #   * a silence of >= 180 days where the split reader fires >= 2 families
 #     (ais_key_split_candidates: 'strong' >= 3, 'review' = 2);
 #   * a change of the vid that W1 (the vid's own other-provider AIS, co-located with the
-#     mobile-id) confirms, cut in the middle of the months between the two confirmed runs.
+#     mobile-id) confirms, cut in the middle of the months between the two confirmed runs;
+#   * a silence of a year or more; a candidate vid's registration day; a change of the annual register's holder;
+#   * the edges of a reviewed row (since the key redo of 2026-10-17).
 # A segment starts on the first ping after a silence, so the silence belongs to the segment
 # before it and the periods touch exactly.
 #
@@ -24,7 +26,8 @@
 #   0. reviewed   a person's verdict in overrides/ais_key_segments_reviewed.csv replaces the vid (an input);
 #   1. physical   W1 confirms a vid in >= 3 months of the segment;
 #   2. registry   the registry gives the mobile-id's own call sign or MMSI to one vid over it; for 2007-2022
-#                 the annual ship register dates the holder by year and outranks the identity windows;
+#                 the annual ship register dates the holder by year and outranks the identity windows. An SKB
+#                 code in the mobile-id's own identifier is its registration, vid 100000 + n, over its whole span;
 #   3. logbook    one vid's logbook stations explain >= 80 % of its stations over the segment, by a
 #                 clear margin (>= 0.1) over every other vid, with >= 30 stations - calibrated at
 #                 year level (decision 047); landings alone count only at >= 90 % with a margin of
@@ -32,7 +35,8 @@
 #   4. continuity the key's vid for that stretch (never left empty - the weakest grade). For an
 #                 ICELANDIC vid the key rows that came from the ODS are NOT used here (the ODS is
 #                 given up as an input, plan 009 phase 5): a stretch with no evidence borrows the vid
-#                 of the neighbouring segment of the same mobile-id, flagged for a person. FOREIGN
+#                 of the neighbouring segment of the same mobile-id, flagged by its source, also where that
+#                 vessel's registered lifetime does not cover it (since 2026-10-17). FOREIGN
 #                 vessels (vids 3700-4999 only; Icelandic vids resume above 4999) have no other
 #                 evidence, so their matches are read from overrides/stk_foreign_mid_vid.csv, which
 #                 keeps them without the ODS file (extracted once, unchanged), and are labelled
@@ -96,16 +100,23 @@ days <- dplyr::as_tibble(DBI::dbGetQuery(con, sprintf(
   "select mid, cast(time as date) d, count(*) n from (%s) where time >= timestamp '2007-06-01' group by 1, 2 order by 1, 2", STK)))
 DBI::dbDisconnect(con, shutdown = TRUE)
 
-# the mobile-id's OWN identifier strings: a call sign (TF + two letters) or a 9-digit MMSI
+# the mobile-id's OWN identifier strings: a call sign (TF + two letters), a 9-digit MMSI, or an SKB code
+# (SKB271, skb222, SKB009_MF -> vid 100000 + n; the 99xx placeholder excluded, as in the cascade's `skb` step)
 tok <- key |>
   pivot_longer(c(loid, glid), values_to = "s") |>
   filter(!is.na(s)) |> mutate(s = toupper(trimws(s))) |>
   transmute(mid, cs = if_else(grepl("^TF[A-Z]{2}$", s), s, NA_character_),
-            mmsi = if_else(grepl("^[0-9]{9}$", s), s, NA_character_)) |>
-  filter(!is.na(cs) | !is.na(mmsi)) |> distinct()
+            mmsi = if_else(grepl("^[0-9]{9}$", s), s, NA_character_),
+            skb = suppressWarnings(as.integer(sub("^SKB([0-9]+).*$", "\\1", if_else(grepl("^SKB[0-9]", s), s, NA_character_))))) |>
+  mutate(skb = if_else(skb < 9900L, 100000L + skb, NA_integer_)) |>
+  filter(!is.na(cs) | !is.na(mmsi) | !is.na(skb)) |> distinct()
 holders <- bind_rows(
   tok |> filter(!is.na(cs))   |> inner_join(filter(ident, !is.na(cs)),   by = "cs",   relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis),
-  tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis)) |>
+  tok |> filter(!is.na(mmsi)) |> inner_join(filter(ident, !is.na(mmsi)), by = "mmsi", relationship = "many-to-many") |> select(mid, hvid, t1, t2, window_basis),
+  # an SKB code is the registration itself, stated by the unit: it holds for the unit's whole span (key redo of
+  # 2026-10-17; before it no SKB unit had a vid)
+  tok |> filter(!is.na(skb)) |> transmute(mid, hvid = skb, t1 = as.Date("1900-01-01"), t2 = as.Date("2100-12-31"),
+                                          window_basis = "skb code")) |>
   distinct()
 
 # The annual ship register dates a call sign's holder by YEAR over 2007-2022 (sources/skipaskra). A register
@@ -209,7 +220,13 @@ cut_ann <- ann_h |> arrange(mid, t1) |> group_by(mid) |>
   filter(hvid != lag(hvid, default = first(hvid))) |> ungroup() |>
   inner_join(span, by = "mid") |> filter(t1 > first, t1 <= last) |>
   transmute(mid, cut = t1, basis = paste0("annual register: vid ", hvid, " holds the call sign from this year"))
-cuts <- bind_rows(cut_silence, cut_w1, cut_long, cut_reg, cut_ann)
+# A reviewed row's edges are cuts (the maintainer, 2026-10-17, for mid 108982): a person's verdict on a stretch
+# places its boundaries as well as its vid. Before the key redo of 2026-10-17 a reviewed row only replaced the vid
+# of the segments lying mostly inside it, so it could not move a boundary the rules had drawn.
+ov <- read.csv("overrides/ais_key_segments_reviewed.csv") |> transmute(mid, ovid = as.integer(vid), od1 = as.Date(d1), od2 = as.Date(d2))
+cut_ov <- bind_rows(ov |> transmute(mid, cut = od1, basis = paste0("a reviewed row gives vid ", ovid, " from this day")),
+                    ov |> transmute(mid, cut = od2 + 1L, basis = paste0("a reviewed row gives vid ", ovid, " to the day before")))
+cuts <- bind_rows(cut_ov, cut_silence, cut_w1, cut_long, cut_reg, cut_ann)
 
 ## Segments --------------------------------------------------------------------------------------
 cuts <- cuts |> distinct(mid, cut, .keep_all = TRUE)
@@ -349,9 +366,10 @@ tbl <- segs |>
                             !is.na(foreign_vid) & (is.na(key_free) | key_free == foreign_vid) ~ "foreign: kept override", .default = "continuity"),
          vid_no_ods = case_when(!is.na(w1_vid) ~ w1_vid, !is.na(reg_vid) ~ reg_vid, !is.na(lb_vid) ~ lb_vid, drop_seg ~ NA_integer_,
                                 !ods_key & key_vid > 0 ~ key_vid, .default = NA_integer_))
-# An Icelandic stretch with no evidence and no ODS-free key row borrows its neighbour's vid - but only
-# if that vessel EXISTED then (its registered lifetime covers the segment). A vid cannot be assigned to
-# a time before it was built or after it left the register; otherwise the stretch is left for a person.
+# An Icelandic stretch with no evidence and no ODS-free key row borrows its neighbour's vid: the one before it, or for
+# the first stretch the one after. Where that vessel did not EXIST then (its registered lifetime does not cover the
+# segment) the stretch was left for a person until the key redo of 2026-10-17. The maintainer chose then to fill it as
+# well (ais_key_coverage's proposal; the invariant is no unassigned ping), under a source of its own so a reader sees it.
 tbl <- tbl |>
   arrange(mid, seg_no) |>
   group_by(mid) |>
@@ -362,17 +380,16 @@ tbl <- tbl |>
   mutate(nb_alive = (is.na(reg_start_of(vid_nb)) | reg_start_of(vid_nb) <= d1 + 60) &
                     (is.na(yh1) | (yh1 <= as.integer(format(d2, "%Y")) + 1L &
                                    (is.na(yh2) | yh2 >= HORIZON | yh2 >= as.integer(format(d1, "%Y")) - 1L))),
-         fill_ok = need & !is.na(vid_nb) & nb_alive,
+         fill_ok = need & !is.na(vid_nb),
          vid = if_else(fill_ok, vid_nb, vid),
-         source = case_when(fill_ok ~ "continuity: neighbour",
-                            need & !is.na(vid_nb) & !nb_alive ~ "no evidence, neighbour did not exist then: a person decides",
+         source = case_when(fill_ok & nb_alive ~ "continuity: neighbour",
+                            fill_ok ~ "continuity: neighbour, outside its registered lifetime",
                             .default = source),
-         agrees_key = !is.na(vid) & vid == key_vid) |>
+         agrees_key = coalesce(vid == key_vid, FALSE)) |>
   select(-yh1, -yh2, -vid_nb, -nb_alive, -fill_ok)
 
 # Reviewed segments (overrides/ais_key_segments_reviewed.csv): a person's verdict on a stretch, read as an INPUT,
 # never computed. It replaces the vid of any segment that lies mostly (>= 50 % of its days) inside a reviewed row.
-ov <- read.csv("overrides/ais_key_segments_reviewed.csv") |> transmute(mid, ovid = as.integer(vid), od1 = as.Date(d1), od2 = as.Date(d2))
 ov_seg <- tbl |> select(mid, seg_no, d1, d2) |>
   inner_join(ov, by = "mid", relationship = "many-to-many") |>
   mutate(ov_days = pmax(0, as.numeric(pmin(d2, od2) - pmax(d1, od1)) + 1)) |>
@@ -380,15 +397,16 @@ ov_seg <- tbl |> select(mid, seg_no, d1, d2) |>
   group_by(mid, seg_no) |> slice_max(ov_days, n = 1, with_ties = FALSE) |> ungroup() |> select(mid, seg_no, ovid)
 tbl <- tbl |> left_join(ov_seg, by = c("mid", "seg_no")) |>
   mutate(source = if_else(!is.na(ovid), "reviewed", source), vid = coalesce(ovid, vid),
-         vid_no_ods = if_else(!is.na(ovid), ovid, vid_no_ods), agrees_key = !is.na(vid) & vid == key_vid) |>
+         vid_no_ods = if_else(!is.na(ovid), ovid, vid_no_ods), agrees_key = coalesce(vid == key_vid, FALSE)) |>
   select(-ovid)
 
-SRC <- c("reviewed", "physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "foreign: kept override", "drop: a person decides", "no evidence, neighbour did not exist then: a person decides")
+SRC <- c("reviewed", "physical", "registry", "logbook", "landings", "continuity", "continuity: neighbour", "continuity: neighbour, outside its registered lifetime", "foreign: kept override", "drop: a person decides")
 # two neighbouring segments of one vid are one segment
 merged <- tbl |>
   arrange(mid, seg_no) |>
   group_by(mid) |>
-  mutate(sig = paste(vid, vid_no_ods),
+  # a fill outside the neighbour's lifetime stays a segment of its own, so its source is not merged away
+  mutate(sig = paste(vid, vid_no_ods, source == "continuity: neighbour, outside its registered lifetime"),
          grp = cumsum(is.na(vid) | is.na(lag(vid)) | sig != lag(sig))) |>
   group_by(mid, grp) |>
   summarise(d1 = min(d1), d2 = max(d2), vid = vid[1],
@@ -397,9 +415,9 @@ merged <- tbl |>
             w1_months = sum(w1_months, na.rm = TRUE), twin_vid = twin_vid[!is.na(twin_vid)][1],
             boundary_basis = boundary_basis[1], pings = sum(pings), .groups = "drop") |>
   group_by(mid) |> mutate(seg_no = row_number()) |> ungroup() |>
-  mutate(agrees_key = !is.na(vid) & vid == key_vid,
+  mutate(agrees_key = coalesce(vid == key_vid, FALSE),
          startup_phase = d1 < STARTUP_END,
-         grade = case_when(source %in% c("reviewed", "physical") ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source %in% c("continuity", "continuity: neighbour") ~ "D", source == "foreign: kept override" ~ "E", .default = "-")) |>
+         grade = case_when(source %in% c("reviewed", "physical") ~ "A", source %in% c("registry", "logbook") ~ "B", source == "landings" ~ "C", source %in% c("continuity", "continuity: neighbour", "continuity: neighbour, outside its registered lifetime") ~ "D", source == "foreign: kept override" ~ "E", .default = "-")) |>
   select(mid, seg_no, d1, d2, vid, source, grade, key_vid, agrees_key, vid_no_ods, w1_months, twin_vid,
          boundary_basis, startup_phase, pings)
 # What the annual register says over each final segment, whatever decided it: the one vid that holds the
@@ -424,6 +442,21 @@ merged <- merged |> left_join(key_class, by = "mid") |> mutate(device = mid %in%
   mutate(annual_disagrees = !is.na(annual_vid) & !is.na(vid) & annual_vid != vid & source != "reviewed")
 print(merged |> summarise(segments_with_annual_holder = sum(!is.na(annual_vid)), agree = sum(!is.na(annual_vid) & !annual_disagrees, na.rm = TRUE),
                           disagree = sum(annual_disagrees), pings_disagree = sum(pings[annual_disagrees])) |> knitr::kable(caption = "annual register vs the table"))
+
+## Registration-date cuts inside a witnessed run -------------------------------------------------
+# A segment that starts on a vid's registration day while W1 still confirms the PREVIOUS segment's vid inside it: the
+# registration says only that the new vessel cannot be there before, not that the old one left (TODO 25, mid 108982:
+# 7830 registered 2018-04-13, 2835's own astdB on the mid to 2018-07-19). Listed for a person (the maintainer,
+# 2026-10-17); a reviewed row moves such a boundary.
+rc <- merged |> arrange(mid, seg_no) |> group_by(mid) |> mutate(prev_vid = lag(vid)) |> ungroup() |>
+  filter(grepl("was registered on this day$", boundary_basis), !is.na(prev_vid), !is.na(vid), prev_vid != vid) |>
+  select(mid, seg_no, d1, d2, prev_vid) |>
+  inner_join(select(st, mid, wvid = vid, md), by = "mid", relationship = "many-to-many") |>
+  filter(wvid == prev_vid, md >= d1, md <= d2) |>
+  distinct(mid, seg_no) |> mutate(reg_cut_in_w1_run = TRUE)
+merged <- merged |> left_join(rc, by = c("mid", "seg_no")) |> mutate(reg_cut_in_w1_run = coalesce(reg_cut_in_w1_run, FALSE))
+cat("\nRegistration-date boundaries inside the earlier holder's W1 run (for review):", sum(merged$reg_cut_in_w1_run), "on",
+    n_distinct(merged$mid[merged$reg_cut_in_w1_run]), "mobile-ids\n")
 
 ## How much of each segment the evidence actually reaches ---------------------------------------
 # A segment is graded by its best evidence, but the evidence may cover only part of it (W1 exists
@@ -472,8 +505,12 @@ cat("\nACCEPTANCE: segments tile all", nrow(span), "mobile-ids; every one of", f
     "pings is in exactly one segment; pings on no vid (a drop or a stretch for a person, listed):", format(sum(unassigned$pings), big.mark = ","), "\n")
 # A reviewed row is exempt: a vid's own AIS can place it with a mobile-id before its registration (a new vessel on
 # sea trials: mid 146259 and vid 3037 from 81 days before it was registered, 100 % of 1,071 opportunities).
-before_reg <- merged |> filter(!is.na(vid), source != "reviewed") |> mutate(rs = reg_start_of(vid)) |> filter(!is.na(rs), d1 < rs - 60)
-cat("\nSegments that START more than 60 d before their vid was registered:", nrow(before_reg), "on", format(sum(before_reg$pings), big.mark = ","), "pings (must be 0; reviewed rows exempt)\n")
+# The fills outside a neighbour's lifetime are exempt too, and counted on their own (the maintainer's choice, 2026-10-17).
+FILL_OUT <- "continuity: neighbour, outside its registered lifetime"
+before_reg <- merged |> filter(!is.na(vid), !source %in% c("reviewed", FILL_OUT)) |> mutate(rs = reg_start_of(vid)) |> filter(!is.na(rs), d1 < rs - 60)
+cat("\nSegments that START more than 60 d before their vid was registered:", nrow(before_reg), "on", format(sum(before_reg$pings), big.mark = ","), "pings (must be 0; reviewed rows and fills exempt)\n")
+cat("Stretches filled with a neighbour outside its registered lifetime:", sum(merged$source == FILL_OUT), "on",
+    format(sum(merged$pings[merged$source == FILL_OUT]), big.mark = ","), "pings,", n_distinct(merged$mid[merged$source == FILL_OUT]), "mobile-ids\n")
 w1_check <- st |>
   inner_join(transmute(merged, mid, d1, d2, seg_vid = vid), by = "mid", relationship = "many-to-many") |>
   filter(md >= d1, md <= d2) |>

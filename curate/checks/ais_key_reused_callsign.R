@@ -50,7 +50,8 @@
 #                      sign at once, so one side of the registry's `cs` is stale,
 #                      but which is not decidable from AIS + landings alone.
 #
-# Restricted to domestic vessels (call sign starts "TF", vid < 3700).
+# Restricted to domestic vessels (call sign starts "TF", not `foreign`). Until the key redo of 2026-10-17 this
+# read `vid < 3700`, which also dropped every Icelandic vid from 5000 up (decision 119).
 # reference/vessels/ais_key.R already states foreign vids (3700-4999) get no
 # further matching effort, so an unmatched foreign call sign is expected, not a
 # finding.
@@ -67,7 +68,7 @@ library(duckdbfs)
 norm <- function(x) toupper(gsub("[^A-Za-z0-9]", "", x))
 
 reg <- read_parquet(fd_curated("vessel", "vessel.parquet")) |>
-  filter(!is.na(cs), startsWith(cs, "TF"), cs != "TF", vid < 3700) |>
+  filter(!is.na(cs), startsWith(cs, "TF"), cs != "TF", !foreign) |>
   mutate(cs_t = norm(cs)) |>
   filter(nchar(cs_t) >= 4) |>
   select(vid, vessel, cs, cs_t)

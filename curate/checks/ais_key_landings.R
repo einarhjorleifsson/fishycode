@@ -84,7 +84,9 @@ no_lnd <-
 # reused call sign: the AIS period and the fishing period disagree by years.
 window <-
   key |>
-  filter(!is.na(vid), vid > 0, vid < 3700, coalesce(step, "") != "afmadur") |>
+  # Icelandic only: by the register's `foreign` flag, not `vid < 3700`, which dropped every vid from 5000 up
+  # until the key redo of 2026-10-17 (decision 119)
+  filter(!is.na(vid), vid > 0, !vid %in% reg$vid[reg$foreign], coalesce(step, "") != "afmadur") |>
   group_by(vid) |>
   summarise(ais_from = as.Date(min(d1)), pings = sum(pings),
             mids = n_distinct(mid), .groups = "drop") |>

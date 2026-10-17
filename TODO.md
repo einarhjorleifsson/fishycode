@@ -106,41 +106,27 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 
 ---
 
-## 25. The STK key redo (`once` project): what enters it
-**status:** open · **needs: maintainer** — the review of what enters and who reviews it (plan 022 §7 asks 3 and 5), a
-boundary override for mid 108982, and the go for the redo · **see:** plans 009, 016 §4 step 7, 021 step 7, 022 §3 and
-§7; decisions 047, 053, 075 and 117-119
+## 25. The next STK key redo (`once` project): the review lists
+**status:** open · **needs: maintainer** — to confirm the drafted verdicts row by row · **see:** decision 128; plans
+009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075
 
-**It gates TODO 77's second half** (maintainer, 2026-10-17, decision 127): the AIS chain is built once, after it, and
-for now carries the vessels of the logbooks and landings (vid 1-9999) and every other Icelandic vessel, SKB included.
-The key is frozen and redone only by a decision (decision 075). Eight reviews wait on the same redo:
-- **The audit** (plan 009, decision 047): 402 discrepancies on 239 mids (`once` files of 2026-10-09), none reviewed; 840
-  vid-claiming rows no witness reaches; `ais_key_resolution`'s 30 proposals on 25 mids (track correlation confirms 12
-  of the 14 strong ones); the segment table's 108 stretches (97,850 pings) for a person, on which decision 048's
-  review is to be redone.
-- **Coverage:** `ais_key_coverage` holds 31,512 unassigned pings in 344 stretches (the largest 4,962, mid 108582); the
-  maintainer's invariant is no unassigned ping.
-- **Mid 108982** (from TODO 39): the segment table gives it to 7830 from 7830's registration day, 2018-04-13, but the
-  pings and 2835's own astdB say 2835 held it to 2018-07-19 (5,029 pings). The reviewed override moves no boundary.
-  Asked: a boundary override, or a rule that a registration date does not cut where the earlier holder's AIS still
-  witnesses the mid. How many mids have this shape is not counted.
-- **SKB** (plan 016 §5, decision 119): 179 mobile-ids (357,642 pings), no vid and class "vessel" in the frozen key, to
-  vid 100000 + n, class pleasure craft. The registry half is built, and the ASTD and astdB fixes reach the trail.
-- **The archive** (plan 016 §4 step 7): 14 mobile-ids whose MMSI passed to another hull (626k pings), and 42 with no
-  vid whose MMSI the archive gives to a vid (15k pings).
-- **Foreign hulls** (plan 021 step 7, TODO 65): the foreign candidates on the same vids, and mids 101843, 147141,
-  102481 and 102527 (reused call signs).
-- **STK mined, review lists** (plan 022 §3, point 10): 43 units with no vid whose MMSI is an Icelandic vid's, 41 key
-  rows the register gives to another vessel, 37 `ops$einarhj.mobile_vid` claims naming another vid.
-- **STK mined, MMSI routes** (plan 022 §7 ask 3): whether routes M1 and M2 (14.5 M positions on vessel units with no
-  vid) enter the key, with the 1,772 units created since the key's dump.
+The first redo is decision 128 (2026-10-17): SKB as vid 100000 + n, MMSIs broadcast after their window, the coverage
+fills and a boundary override for mid 108982. The rest waits for the next one. For each list Claude drafts the
+witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter
+`overrides/`:
+- the audit's 426 discrepancy rows on 254 mids, the 1,051 rows no witness reaches, and `ais_key_resolution`'s
+  proposals (decision 128);
+- the 32 stretches filled with a neighbour outside its registered lifetime (34,514 pings, 12 before 2009), on which
+  decision 048's review of the stretches for a person is redone;
+- vid 7570's MMSI 251477540: the hull was struck in 2018, and the MMSI is heard in west Iceland 2021-24;
+- plan 016 §4 step 7's 14 mobile-ids whose MMSI passed to another hull;
+- plan 022 §3's 43 co-location units, the 41 key rows the register gives to another vessel, the 37 `mobile_vid`
+  claims, and §5.1's 5 port codes;
+- after plan 021 step 6: the foreign hulls (plan 021 step 7, TODO 65) with mids 101843, 147141, 102481 and 102527
+  (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before).
 
-Two `once` checks filter `vid < 3700`, dropping every Icelandic vid from 5000 up (`ais_key_reused_callsign.R:70`,
-`ais_key_landings.R:87`; decision 119); at the redo they take the `foreign` flag instead.
-
-**check:** a decision record states the redo; `ais_key_coverage` reports 0 unassigned pings; every row of
-`ais_key_audit_discrepancy` and of the lists above is resolved through `overrides/` or carries a stated reason; and
-mid 108982 is 2835 through 2018-07-19, with the count of registration-date boundaries that cut a witnessed run.
+**check:** a decision record states the redo; every row of each list is resolved through `overrides/` or carries a
+stated reason; `ais_key_coverage` stays at 0 unassigned pings.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
