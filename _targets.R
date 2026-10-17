@@ -50,6 +50,10 @@ tar_option_set(
                "sf", "nanoparquet", "duckdb")
 )
 
+# The Faroese register is a file per vessel, listed here rather than in a command for the same reason as the feeds
+# below (decision 113): a listing in a command is not redone, so it would never see a new vessel's file.
+fro_files <- sort(list.files(fd_raw("external", "fro"), "^vid-.*[.]csv$", full.names = TRUE), method = "radix")
+
 # produces() and frozen_input() are in R/source_script.R, shared with _targets_once.R.
 # source_script() sources with encoding = "UTF-8", which is not optional: the scripts
 # carry Icelandic gear and port names (veidarfaeri, Grasleppunet, ...), and a
@@ -220,6 +224,42 @@ list(
     vessel; mmsi
     produces("reference/vessels/identity.R",
              fd_curated("vessel", "vessel_identity.parquet"))
+  }, format = "file"),
+
+  # The foreign registers, each staged as its source has it: the EU fleet register (an event ledger), the Faroese
+  # register (a page per vessel), Norway's register (a sheet per year) and GFW's fishing vessel list (v3, a row per MMSI
+  # and year). identity_foreign.R joins them into one table per (source, external_id, period), and identity_all.R adds
+  # the Icelandic one. Built by hand on 2026-09-26 until now (plan 008 Phase 7, plan 021 step 1). Nothing in this
+  # project reads them yet: their readers are plan 021's crosswalk and ais_key_foreign.R, run by hand (plan 008).
+  tar_target(eu_raw, fd_raw("external", "eu", "vesselRegistryListResults.csv"), format = "file"),
+  tar_target(eu, {
+    eu_raw
+    produces("sources/eu/convert.R", fd_staging("eu", "vessel_event.parquet"))
+  }, format = "file"),
+  tar_target(fro_raw, fro_files, format = "file"),
+  tar_target(fro, {
+    fro_raw
+    produces("sources/fro/convert.R", fd_staging("fro", "vessel.parquet"))
+  }, format = "file"),
+  tar_target(norway_vessel_registry_raw, fd_raw("external", "nor", "norway_vessel-registry.xlsx"), format = "file"),
+  tar_target(norway_vessel_registry, {
+    norway_vessel_registry_raw
+    produces("sources/norway/vessel_registry.R", fd_staging("norway", "vessel_registry.parquet"))
+  }, format = "file"),
+  tar_target(gfw_raw, fd_raw("external", "gfw", "fishing-vessels-v3", "fishing-vessels-v3.csv"), format = "file"),
+  tar_target(gfw, {
+    gfw_raw
+    produces("sources/gfw/convert.R", fd_staging("gfw", "vessel.parquet"))
+  }, format = "file"),
+  tar_target(vessel_identity_foreign, {
+    eu; fro; norway_vessel_registry; gfw
+    produces("reference/vessels/identity_foreign.R",
+             fd_curated("vessel", "vessel_identity_foreign.parquet"))
+  }, format = "file"),
+  tar_target(vessel_identity_all, {
+    vessel_identity; vessel_identity_foreign
+    produces("reference/vessels/identity_all.R",
+             fd_curated("vessel", "vessel_identity_all.parquet"))
   }, format = "file"),
 
   # ── Frozen inputs: the three one-time fixes (plan 014, decision 075) ─────────

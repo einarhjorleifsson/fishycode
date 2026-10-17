@@ -1,6 +1,6 @@
 # 021 — A vessel registry for every ping, whatever the flag
 
-**status:** proposal — §6 answered 2026-10-16, nothing built · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
+**status:** partly built — §6 answered 2026-10-16 ((a) revised 2026-10-17), step 1 built (decision 114) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 17, 22, 63, 65; decisions
 015, 036–043, 067, 107; `curate/corrections/astd_2026_imo_only.yml`
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request: "a comprehensive vessel registry for
@@ -147,9 +147,10 @@ length.
 0. **After plan 016's rebuild and plan 018 phase 3**, which are one rebuild already queued. The 2026-02 to 2026-06
    ASTD months were loaded as delivered, with the gap declared (decision 107).
 1. **Sources.**
-   - Wire plan 008's adapters, `identity_foreign.R` and `identity_all.R` into `_targets.R` (plan 008 Phase 7).
+   - *Done 2026-10-17 (decision 114):* plan 008's adapters, `identity_foreign.R` and `identity_all.R` are in
+     `_targets.R` (plan 008 Phase 7), and GFW is v3.
    - Add the six `ops$einarhj` MMSI tables to `dump/oracle/ops_einarhj.R`; the maintainer runs it.
-   - Refresh the EU register, last copied 2026-09-26, and GFW if there is a newer release (§6 e).
+   - Refresh the EU register: the adapter reads `vesselRegistryListResults.csv`, downloaded 2024-02-19.
 2. **The feeds' claims:** `staging/astd/identity.parquet` and the astdB counterpart (§4).
 3. **The crosswalk:** each MMSI and period to a hull, by the rule in §4. The 1,056 MMSIs with two IMOs in one year go
    to a check table, and are linked only through `overrides/`.
@@ -198,11 +199,15 @@ h. **ASTD's extraction:** are the changes by year (§2.1) known: area, filters? 
 answer are Claude's). They are read with the aim the maintainer restated the same day (plan 022): one vessel table,
 Icelandic hulls by vid, and an MMSI for every vessel and accessory.
 
-- **a. Every hull goes through the flow** (option i), not the recommended fishing hulls heard in the box. Measured
-  2026-10-16: the AIS chain (`ping_union`, `ping_tagged`, `ping_clean`, `curated/ais`) holds 99 GB for 584 M pings;
-  every hull is about 4.0 B pings, so about 650-700 GB at the same bytes per ping, against 158 GB free on the Mac.
-  The AIS steps, about 100 min in decision 112, scale to the order of 12 h. So the build needs a home for `fishydata`
-  with that room, which is plan 001 §5's open question.
+- **a. Revised by the maintainer, 2026-10-17.** The registry is as complete as the feeds allow: the identity of every
+  vessel in any AIS dataset. The flow is not the whole AIS: it carries **all Icelandic vessels and foreign fishing
+  vessels**, in the North Atlantic from the West Greenland fishery to the Barents Sea, drawn as **ICES subareas 1, 2,
+  5, 12 and 14 and NAFO subarea 1** (12 added by the maintainer: the Reykjanes Ridge, where oceanic redfish is fished
+  with 14), and it keeps **whole voyages that enter that area**, so each voyage keeps its ports;
+  fishing and catch are reported for the fixes inside it. A foreign vessel is a fishing vessel by register evidence
+  (EU, Faroese and Norwegian registers, GFW's list) or by landing in Iceland, never by ASTD's own category. The ICES
+  areas are on disk (`staging/aux/ices_areas_500m-buffer`); NAFO subarea 1 is not. The volume is not measured.
+  (The answer of 2026-10-16 was every hull through the flow, about 650-700 GB for the AIS chain: superseded.)
 - **b. vid 200000 + n for every valid non-Icelandic hull,** broadcast-only hulls included, given once and never moved.
   The MMSI, IMO and call sign are attributes in `vessel_identity`, by period; an MMSI is not a hull, since 1,336 ASTD
   MMSIs carry two or more IMOs. An invalid MMSI gets no vid, only the reason. Accessories (net relays, tenders) get no
@@ -213,6 +218,13 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
 - **d. GFW's Vessels API for every flag**, not only Norway, once its terms for bulk use are read and fit (Claude reads
   them; the token is the maintainer's). The query sends only MMSIs. In parallel the maintainer asks the Directorate of
   Fisheries (postmottak@fiskeridir.no) whether its vessel API returns MMSI. Kystverket is not used.
+  *Terms read by Claude, 2026-10-16* ([license and rate limits](https://globalfishingwatch.org/our-apis/documentation/docs/license-rate-limits)):
+  non-commercial use only, under CC BY-NC 4.0, which fits MFRI's research use; anything shown carries GFW's
+  attribution, downstream users' too (relevant to `fishyweb`, TODO 15); the token is not to be shared or published;
+  50,000 requests a day and 1.5 M a month per user, a breach blocking the token for a day or 30 days. Each dataset
+  may carry its own licence, and GFW's registry fields from S&P Global (since June 2026) are limited in distribution.
+  The search takes at most 50 entries a page and a `where` with OR; whether one request can carry several MMSIs is
+  to be tested. gfwr 3.0 (installed) reads the token from `GFW_TOKEN`.
 - **e. GFW v3.** GFW's static fishing effort release v3.0 (March 2025) covers 2012-2024, against v2's 2012-2020, with
   a vessel list laid out differently from v2's one row per MMSI
   ([GFW FAQ](https://globalfishingwatch.org/faqs/2025-march-static-apparent-fishing-effort-v3-difference-with-map/)).
@@ -220,6 +232,13 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
   v2 moves to `archive/` once v3 is staged and compared. GFW's inferred class, length and kW carry their own basis,
   apart from a register's. GFW's API notes say its hand-entered IMO records for fishing vessels give way to S&P
   Global's from June 2026.
+  *Downloaded 2026-10-17* (`raw/external/gfw/fishing-vessels-v3/`, provenance in `README-provenance.txt` beside it).
+  Measured: 773,165 rows, one per MMSI and active year, on 192,582 MMSIs (v2: 114,191), of which 32,029 are listed
+  on a registry. 86,320 MMSIs are new, and 7,929 of v2's are gone. For 1,277 MMSIs the class changes between years,
+  and for 1,054 the flag. Against every ASTD MMSI (2013-01 to 2026-06): v3 holds 9,628 of them, 1,046 M pings
+  (36 %), and v2 held 8,624 with 987 M pings. v3 adds 1,260 MMSIs (78.8 M pings, 2.1 M hours in the box). It drops
+  256 that v2 held (19.1 M pings, 0.6 M hours in the box), for reasons not given; GFW's README names a spoofed
+  identity, a registry that calls the vessel non-fishing, and too little activity as grounds for leaving one out.
 - **f. The crosswalk in the flow, the vid numbering outside it.** Which hull an MMSI period is follows from the inputs
   and is rebuilt with each delivery. Which vid a hull has depends on earlier builds, and a step cannot read its own
   output, so hull → vid is an append-only ledger read as an input, like `overrides/`, stamped and never rewritten. A
@@ -228,7 +247,7 @@ Icelandic hulls by vid, and an MMSI for every vessel and accessory.
   rejected: a backfilled month, such as full 2026-02 to 06 ASTD months, would move every later vid.
 - **g. Split as proposed.** This plan owns identity (MMSI periods, vids, the crosswalk); plan 017 keeps the flow side
   (ports, gear, kW, catch) for non-Icelandic hulls. Answer (a) settles 017's asks a, b and d. Its port question (017
-  §6 f) grows: stays and voyages for every hull need ports over ASTD's whole area.
+  §6 f) grows: stays and voyages for foreign fishing vessels need ports over the area and their home ports.
 - **h. Not known.** The maintainer asks the provider what changed by year, and whether the full 2026-02 to 06 months
   can be sent again. Claude measures each year from staging (extent, MMSIs, IMO share, category mix), so coverage is
   documented whatever the answer.

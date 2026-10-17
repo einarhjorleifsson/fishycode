@@ -1,5 +1,6 @@
 # What a non-Icelandic vessel was called, and when — the foreign counterpart
 # to reference/vessels/identity.R.
+# Side: preprocessing (vessels). See plan 014.
 #
 # Input:  staging/eu/vessel_event.parquet, staging/fro/vessel.parquet,
 #         staging/norway/vessel_registry.parquet, staging/gfw/vessel.parquet
@@ -142,20 +143,40 @@ nor <- nor_raw |>
     county, municipality
   )
 
-## GFW — a single snapshot, no dates at all; no IMO column, no cs column.
-## Every metric kept three ways (plan 008 §5) rather than collapsed to one -
-## _registry is "recorded", _inferred is "reconstructed" (AGENTS.md's basis
-## distinction), and losing that split was the thing worth not doing. ------
-gfw <- read_parquet(fd_staging("gfw", "vessel.parquet")) |>
-  transmute(
-    source = "gfw", external_id = paste0("gfw_", mmsi), t1 = as.Date(NA), t2 = as.Date(NA),
-    mmsi, flag = coalesce(flag_gfw, flag_registry, flag_ais),
-    vessel_class_inferred, vessel_class_registry, vessel_class_gfw,
-    length_m_inferred, length_m_registry, length_m_gfw,
-    engine_power_kw_inferred, engine_power_kw_registry, engine_power_kw_gfw,
-    tonnage_gt_inferred, tonnage_gt_registry, tonnage_gt_gfw,
-    note = registries_listed
-  )
+## GFW — a row per MMSI and active year (v3, plan 021 §6 e); no dates beyond the
+## year, no IMO column, no cs column. Every metric kept three ways (plan 008 §5)
+## rather than collapsed to one - _registry is "recorded", _inferred is
+## "reconstructed" (AGENTS.md's basis distinction), and losing that split was
+## the thing worth not doing. Years collapse into periods where every kept
+## attribute stays the same, as NOR's do above; a gap of inactive years does not
+## end a period. The release's own edges stay open: a period in its first year
+## (2012) has no t1 and one in its last (2024) no t2, since the release cannot
+## say the vessel began or ended there - v2's rows were open at both ends. ----
+gfw_cols <- c("flag",
+              "vessel_class_inferred", "vessel_class_registry", "vessel_class_gfw",
+              "length_m_inferred", "length_m_registry", "length_m_gfw",
+              "engine_power_kw_inferred", "engine_power_kw_registry", "engine_power_kw_gfw",
+              "tonnage_gt_inferred", "tonnage_gt_registry", "tonnage_gt_gfw",
+              "note")
+gfw_raw <- read_parquet(fd_staging("gfw", "vessel.parquet"))
+gfw_y <- range(gfw_raw$year)
+gfw <- gfw_raw |>
+  mutate(flag = coalesce(flag_gfw, flag_registry, flag_ais), note = registries_listed) |>
+  select(mmsi, year, all_of(gfw_cols)) |>
+  arrange(mmsi, year) |>
+  group_by(mmsi) |>
+  mutate(across(all_of(gfw_cols), ~ .differs(.x, lag(.x)), .names = ".d_{.col}"),
+         .chg = if_any(starts_with(".d_")),
+         .chg = if_else(row_number() == 1, FALSE, .chg),
+         .period = cumsum(.chg)) |>
+  group_by(mmsi, .period) |>
+  summarise(y1 = min(year), y2 = max(year), across(all_of(gfw_cols), first), .groups = "drop") |>
+  mutate(
+    source = "gfw", external_id = paste0("gfw_", mmsi),
+    t1 = if_else(y1 == gfw_y[1], as.Date(NA), as.Date(paste0(y1, "-01-01"))),
+    t2 = if_else(y2 == gfw_y[2], as.Date(NA), as.Date(paste0(y2, "-12-31")))
+  ) |>
+  select(source, external_id, t1, t2, mmsi, all_of(gfw_cols))
 
 ## Merge ---------------------------------------------------------------------
 identity_foreign <- bind_rows(eu, fro, nor, gfw)

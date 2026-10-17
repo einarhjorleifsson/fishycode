@@ -1,4 +1,5 @@
 # The EU Fishing Fleet Register.
+# Side: preprocessing (eu). See plan 014.
 #
 # Input:  raw/external/eu/vesselRegistryListResults.csv
 # Output: staging/eu/vessel_event.parquet — one row per (cfr, event)
@@ -7,7 +8,7 @@
 # own registration-event boundaries (CEN first registration, MOD modified,
 # RET/DES/EXP exit). Plan 008 §5.0 measured these as already the right period
 # grain for a time-aware identity match - kept as-is here, not collapsed to
-# "current," so curate/vessel_identity_foreign.R (where periods actually get
+# "current," so reference/vessels/identity_foreign.R (where periods actually get
 # used for matching) has the real boundaries to work with.
 #
 # Fishing vessels only, by construction - CFR registration is fisheries-

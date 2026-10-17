@@ -1,12 +1,13 @@
 # Norwegian vessel register, "Fartøy og eier i første eierledd" — one sheet
 # per year snapshot, from Fiskeridirektoratet.
+# Side: preprocessing (norway). See plan 014.
 #
 # Input:  raw/external/nor/norway_vessel-registry.xlsx (sheets "2001".."2022")
 # Output: staging/norway/vessel_registry.parquet — one row per (fartoy_id, year)
 #
 # Literal, one sheet bound per year - no NOR call-sign/name change history is
 # detected here (plan 008 §5.0/§7 Phase 2/3): collapsing consecutive identical
-# years into a single period is curate/vessel_identity_foreign.R's job, once,
+# years into a single period is reference/vessels/identity_foreign.R's job, once,
 # not this adapter's. No MMSI column exists in this source at all — plan
 # 008 §2/§4 already found this; matching Norwegian vessels leans on `cs`.
 
@@ -20,7 +21,7 @@ years <- as.character(2001:2022)
 stopifnot(all(years %in% excel_sheets(p)))
 
 nor <-
-  map(years, function(yr) {
+  purrr::map(years, function(yr) {
     read_excel(p, sheet = yr, col_types = c(
       "text", "text", "text", "text", "text", "text", "text", "text", "text",
       "numeric", "numeric", "numeric", "numeric", "numeric",

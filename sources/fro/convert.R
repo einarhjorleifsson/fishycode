@@ -1,5 +1,6 @@
 # The Faroese vessel registry (Føroya Skipaskráseting), scraped one vessel
 # per file.
+# Side: preprocessing (fro). See plan 014.
 #
 # Input:  raw/external/fro/vid-*.csv  (long variable,value,vid_id format)
 # Output: staging/fro/vessel.parquet — one row per FRO vid
@@ -7,7 +8,7 @@
 # No change history is carried per field (plan 008 §4/§5.0: a single snapshot
 # per vessel, first-registration date is the only date this source gives at
 # all) — `t1` is that date, `t2` is left NA (open/unbounded), collapsing to
-# a period happens in curate/vessel_identity_foreign.R, not here.
+# a period happens in reference/vessels/identity_foreign.R, not here.
 #
 # "Einki ásett" ("not set") is this source's own NA spelling — cleaned in the
 # long form, before pivoting, so every downstream column sees a real NA.
