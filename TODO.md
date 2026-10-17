@@ -103,7 +103,7 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 
 ## 25. The STK key redo (`once` project): what enters it
 **status:** open · **needs: maintainer** — the review of what enters, a boundary override for mid 108982, and the go
-for the redo · **see:** plans 009, 016 §4 step 7, 021 step 7 and 022 §3; decisions 047, 053, 075, 117 and 118
+for the redo · **see:** plans 009, 016 §4 step 7, 021 step 7 and 022 §3; decisions 047, 053, 075, 117, 118 and 119
 
 The key is frozen and redone only by a decision (decision 075). Seven reviews wait on the same redo:
 - **The audit** (plan 009, decision 047): 402 discrepancies on 239 mids in the `once` files of 2026-10-09, none
@@ -117,13 +117,18 @@ The key is frozen and redone only by a decision (decision 075). Seven reviews wa
   7830). `overrides/ais_key_segments_reviewed.csv` moves no boundary. Asked: a boundary override, or a rule that a
   registration date does not cut where the earlier holder's own AIS still witnesses the mid. How many other mids have
   this shape is not counted.
-- **SKB** (TODO 63, plan 016 §5): 179 mobile-ids to vid 100000 + n, class pleasure craft.
+- **SKB** (plan 016 §5, from TODO 63; decision 119): 179 mobile-ids (357,642 pings), no vid and class "vessel" in
+  the frozen key, to vid 100000 + n, class pleasure craft. The registry half is built (203 rows, vid 100002–102772),
+  and the ASTD and astdB fixes reach the trail.
 - **The archive** (plan 016 §4 step 7): 14 mobile-ids whose MMSI passed to another hull (626k pings), and 42 with no vid
   whose MMSI the archive gives to a vid (15k pings).
 - **Foreign hulls** (plan 021 step 7, TODO 65): the foreign candidates on the same vids, and mids 101843, 147141,
   102481 and 102527 (reused call signs).
 - **STK mined** (plan 022 §3, point 10): 43 units with no vid whose MMSI is an Icelandic vid's, 41 key rows the
   register gives to another vessel, and 37 `ops$einarhj.mobile_vid` claims naming another vid.
+
+Two `once` checks filter `vid < 3700`, which also drops every Icelandic vid from 5000 up: `ais_key_reused_callsign.R:70`
+and `ais_key_landings.R:87` (decision 119). When the redo reruns them, they take the `foreign` flag instead.
 
 **check:** a decision record states the redo; `ais_key_coverage` reports 0 unassigned pings; every row of
 `ais_key_audit_discrepancy` and of the lists above is resolved through `overrides/` or carries a stated reason; and
@@ -230,21 +235,6 @@ logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
 **check:** a `dump/` script writes them to `raw/logbooks/`, an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
-## 63. Refresh the vessel registry and the MMSI archive
-**status:** open — built in the rebuild of 2026-10-16 (decision 112); §8's checks and the plan's decision record are left ·
-**see:** `curate/plans/016-vessel-registry-and-mmsi-refresh.md`, decision 117 (TODO 17 and 23 folded in)
-
-New Oracle vessel tables were dumped on 2026-10-14 (the April set is in `$FISHYDATA/archive/raw-vessels_2026-04-25/`),
-and the March 2026 Fjarskiptastofa list was merged into `raw/mmsi/mmsi_iceland_2026-03-25.parquet`, which nothing reads.
-Adopting that merge as it stands would put four vids twice in `vessel.parquet`. The plan rebuilds the archive from
-all its sources and makes `vid` an integer and unique again, after the `rjdbc` driver turned it into a double.
-
-From TODO 23 (decision 117): SKB's registry half is built (203 rows, vid 100002–102772), and the decision record says
-what became of `registry.R`'s exclusion. Its key half (179 mobile-ids, no vid, class "vessel") waits on §4 step 7's
-key redo (TODO 25).
-
-**check:** plan 016 §8.
-
 ## 65. A vessel registry for every ping, whatever the flag
 **status:** in progress · **needs: maintainer** — the first vid allocation, `allocate_vids(dry_run = FALSE)`, once
 decision 115's targets are built, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
@@ -310,7 +300,7 @@ values.
 
 ## 71. The `ops$einarhj` MMSI list of 2023-01-15: find it or dump it
 **status:** open · **needs: maintainer** — where a copy is, if one exists; else dump `mmsi_icelandic_registry_20230115`
-(and `vessel_mmsi`) on the server · **see:** plan 022 §3.1, `reference/vessels/mmsi.R`, decision 111, TODO 63
+(and `vessel_mmsi`) on the server · **see:** plan 022 §3.1, `reference/vessels/mmsi.R`, decision 111, decision 119
 
 Ten tables of `ops$einarhj` are not dumped. Judged from the dump's overview (columns, Oracle's row counts), only one
 holds what fishycode does not:

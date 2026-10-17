@@ -1,7 +1,8 @@
 # 016 — Refreshing the vessel registry and the MMSI archive, and SKB pleasure craft through the AIS flow
 
-**status:** partly built — steps 1–6b written and tested 2026-10-14 (ASTD +849k pings, no vessel loses any); the rebuild (step 8) not run · **2026-10-14** · **see:** TODO 17, 23, 24, 63; decisions 015, 038, 041, 047, 067;
-plans 003, 008, 009
+**status:** executed except step 7 — steps 1–6b and 8 built in the rebuild of 2026-10-16 (decision 112), §8 checked
+2026-10-17 (decision 119); step 7 and SKB's STK half wait for the key redo (TODO 25) · **2026-10-14** · **see:** TODO 24,
+25; decisions 015, 038, 041, 047, 067, 112, 117, 119; plans 003, 008, 009
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
 and the data. The choices in §7 are the maintainer's to make.
