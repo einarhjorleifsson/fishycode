@@ -1,0 +1,24 @@
+id: aflaskeyti_local_time
+title: dw_aflaskeyti's Faroese haul times are local time in summer
+status: implemented 2026-10-17, not built (plan 026, built with TODO 77)
+applies_to:
+  - staging/aflaskeyti/fishing_sample.parquet   (t1-t4 as reported)
+  - staging/aflaskeyti/time.parquet             (new: .sid, t1, t2, t3, t4, t_shift_min, time_basis)
+implementation: curate/corrections/aflaskeyti_local_time.R
+discovered: 2026-10-17, testing the foreign hauls' positions against the AIS trail (decision 126, plan 026 §3b)
+
+detection: >-
+  Hauls of Faroese vessels (upprunaland_cd FRO) during Faroese summer time, which follows the EU rule: from 01:00 UTC
+  on the last Sunday of March to 01:00 UTC on the last Sunday of October. 316 of the 640 Faroese hauls.
+
+evidence: >-
+  For each shift from -180 to +180 minutes, the median distance from the reported start to the AIS fix nearest the
+  shifted time. Faroese summer hauls (264 with fixes): best at -60 min, 2.0 nm, against 5.8 nm unshifted. Faroese
+  winter hauls (262): best unshifted, 1.5 nm. Norwegian hauls are UTC in both seasons: summer (97) 1.0 nm unshifted
+  and 2.7 at -60; winter (1,567) 0.18 nm unshifted. The 6 Faroese hauls with fixes in the summer days of
+  2017-10-14..28 are too few to tell; the rule is assumed there.
+
+repair: >-
+  t1 to t4 moved by -60 minutes on the hauls detected. t_shift_min holds the shift (-60 or 0), so the reported time
+  is t - t_shift_min, and time_basis is "reconstructed" where shifted and "recorded" elsewhere. The station date
+  stays as recorded. Joined onto the fishing sample by curate/logbook.R, and read by curate/aflaskeyti_trip.R.

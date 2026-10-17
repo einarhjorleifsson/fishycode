@@ -230,18 +230,27 @@ Plan 016's tables are built (decision 112) and not in the file yet (checked 2026
 plan 016 are in the file.
 
 ## 62. Foreign vessels' logbooks for Icelandic waters
-**status:** open · **needs: maintainer** — where they are: an Oracle schema and table, or an extract from Fiskistofa ·
-**see:** plan 013 item 5, decisions 102-103, plan 017 §3 (`raw/oracle/afli/steini.parquet` is a partial one: oceanic redfish, 1989-2017; whether to stage it is
+**status:** in progress · **needs: maintainer** — where the 2019-2025 ones are: Norway's open ERS data for the
+Norwegian half, an extract from Fiskistofa for the rest ·
+**see:** plan 026, plan 013 item 5, decisions 102-103 and 126, plan 017 §3 (`raw/oracle/afli/steini.parquet` is a partial one: oceanic redfish, 1989-2017; whether to stage it is
 plan 017's ask g)
 
-The maintainer said yes on 2026-10-14: acquire them. **A lead (decision 121):** `dw.dw_aflaskeyti`, 21,627 rows of
-ERS catch messages with the flag state, in `raw/oracle/dw/` since 2026-10-17 (decision 122). Foreign vessels land 80-124 a year in Iceland and hold most of
+The maintainer said yes on 2026-10-14: acquire them. Foreign vessels land 80-124 a year in Iceland and hold most of
 the landed weight with no Icelandic logbook trip (plan 013, rows 4 and 9; 1,144 of 1,320 kt of pelagic species in
 2019-2025). They are not in what is dumped: the logbook tables hold 6 foreign trips in all, and none of the four
 logbook schemas (afli, fs_afladagbok, adb, logbook) has a foreign table.
+**2014-2018 (decision 126):** `dw.dw_aflaskeyti` holds 2,778 foreign hauls of 111 vessels, each confirmed by AIS and
+by landings in Iceland. Norway is whole by vessel; the Faroes only from 2017-10. Coordinates are swapped, Faroese
+summer times are local, and there are no trips. The maintainer took them in (2026-10-17); plan 026 is the design:
+an adapter, two corrections, trips cut at landings in Iceland and then at 48-hour gaps, and a tier in
+`curate/logbook.R`, built with TODO 77. The adapter, the corrections and the trip script are coded and run on a
+scratch `$FISHYDATA`, with the 282 Icelandic hauls on vessel-days the logbook lacks (maintainer, 2026-10-17) and
+tier 4 in `curate/logbook.R` (plan 026 §11), and `docs/merge.qmd` has the section. Not built.
+**2019-2025, the lead:** Norway's open ERS catch messages. `sources/norway/logbooks.R` reads them, but it is not a
+target, it reads from `staging/`, and the files are not on disk. The Faroese half has no lead.
 
-**check:** a `dump/` script writes them under `raw/` (`raw/oracle/<schema>/` if they are in Oracle, plan 018), an
-adapter in `sources/` stages them, and `ais_catch.R` puts
+**check:** a `dump/` script writes the foreign logbooks under `raw/` (`raw/oracle/<schema>/` if they are in
+Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
@@ -445,3 +454,17 @@ scratch `$FISHYDATA`: +5,664 adb stations and 1,448 trips, nothing kept changes.
 
 **check:** after TODO 77's build, no adb station between `ADB_DATE_MIN` and `DATE_MAX` is dropped on a vessel-day
 that `curated/logbook` does not hold, and the four tables differ from the build before by decision 125's rows only.
+
+## 81. A trip's catch landed over two days: `lid_map` claims one landing
+**status:** open · **see:** plan 026 §11, `curate/link_lid_map.R`, `curate/ais_catch.R`, plans 023 and 025
+
+`curated/landing` makes one landing per vessel, date and port, so a catch unloaded across midnight is two landings.
+`link_lid_map.R` links each logbook trip to one landing (821,524 trips, one each), and by `ais_catch.R`'s rule a
+landing it leaves unclaimed carries its own catch. In the current build, 9,878 unclaimed landings (53.7 kt, from
+2007-09) come the day after a claimed landing of the same vessel at the same port. Their catch is probably counted
+twice on the fixes; that is not yet checked on `curated/ais/catch`. Plan 026's foreign trips add 9 such landings
+(3.5 kt). Plan 025's first weighing time may tell one unloading from two trips.
+
+**check:** measured on `curated/ais/catch` whether these landings' kg is counted beside their trip's logbook catch;
+if it is, `lid_map` (or the landings) joins a trip's further landings to it, and kg in equals kg out per vessel and
+year.

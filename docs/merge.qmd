@@ -52,9 +52,9 @@ Two source schemas are combined:
 | **afli** | `01_afli_convert.R` | ~1950 – present | Legacy Oracle logbook system; primary historical record |
 | **fs_afladagbok** | `01_fs_afladagbok_convert.R` | 2020 – 2025-12 | Static dump from Fiskistofa; canonical digital logbook format |
 
-A third schema (`adb`, the live electronic feed) exists in `data/adb/` but is
-excluded from the merge; its gear codes are old-schema values that require
-lossy conversion, and its coordinates are less thoroughly validated.
+Two more schemas fill the vessel-days these two lack. `adb`, the live electronic feed, is tier 3 (decisions 023 and
+125). `aflaskeyti`, the ERS catch reports exchanged with Norway and the Faroes in 2014–2018, is tier 4: it brings the
+foreign vessels' hauls in Icelandic waters (@sec-ers).
 
 # Source priority
 
@@ -349,6 +349,131 @@ merged_station |>
   cols_label(catch_t = "catch (t)")
 ```
 
+# Foreign vessels: the ERS catch reports, 2014–2018 {#sec-ers}
+
+*Drafted with AI assistance (Claude), 2026-10-17. The evidence is in decision 126 and the design in plan 026.*
+
+Foreign vessels take most of the pelagic catch landed in Iceland, and no Icelandic logbook holds their hauls. For
+2014–2018 some of them are in the Directorate of Fisheries' data warehouse: `dw.dw_aflaskeyti`, the ERS catch
+reports (DCA) Iceland exchanged with Norway and the Faroes. Each row is one haul and species, with the vessel, the
+time fishing started, the duration, the start and end positions, the gear and the weight. The warehouse loaded the
+feed from 2015-09 to 2018-06 and then stopped. It is the schema `aflaskeyti`, tier 4 of the merge.
+
+| Flag | Vessels | Hauls | Catch (kt) | Where |
+|---|---|---|---|---|
+| Norway | 93 | 2,138 | 264.5 | Icelandic waters (2,130 hauls) |
+| Faroes | 18 | 640 | 15.8 | Icelandic waters, from 2017-10-14 |
+| Iceland | 33 | 4,992 | 236.8 | Norwegian and Faroese waters |
+
+Hauls and catch are counted after resent messages are removed (the latest message of a haul is kept).
+
+The foreign hauls were tested against sources that never read them:
+
+- **The AIS track.** For purse seines, the reported start lies a median 0.1–0.6 nm from the vessel's position, and
+  the vessel slows from about 6 kn to under 1 kn during the set.
+- **Landings in Iceland.** Over the 279 Norwegian landings that follow hauls, 144.0 kt was reported and 140.7 kt
+  landed (capelin 136.4 kt against 138.2 kt).
+- **The Icelandic logbook.** On the Icelandic rows, 4,716 of 5,050 hauls match the vessel's own logbook station
+  within a minute.
+
+## Span and coverage
+
+There are foreign logbook records only from 2014-01-20 to 2018-06-08, and within that span they are not whole. The
+measure is a vessel-day with at least three fixes the flow marks as fishing in ICES division 5.a, an AIS proxy:
+
+| Year | Norway: days with an ERS haul / AIS fishing days | Faroes: days with an ERS haul / AIS fishing days |
+|---|---|---|
+| 2014 | 29 / 48 | 0 / 752 |
+| 2015 | 107 / 132 | 0 / 754 |
+| 2016 | 221 / 311 | 0 / 707 |
+| 2017 | 158 / 210 | 12 / 674 |
+| 2018 (to 06-08) | 215 / 306 | 490 / 570 |
+
+- **Norway:** every Norwegian vessel that AIS shows fishing in 5.a is in the feed.
+- **Faroes:** about 16 Faroese vessels fish in 5.a all year, and the feed holds them only from 2017-10.
+
+Foreign fishing outside the span, and on the days the feed lacks, takes the pings-only path; the basis on each fix
+says which path it took. Records for 2019 onwards are being sought (TODO 62).
+
+```{r}
+#| label: tbl-ers
+#| tbl-cap: "aflaskeyti in the merged output: stations, trips and catch by flag and year"
+
+if (!any(merged_station$schema == "aflaskeyti")) {
+  knitr::asis_output("*Not in the current build: `curated/logbook` gains these rows at the next build (TODO 77).*")
+} else {
+  flag <- read_parquet(fd_curated("vessel", "vessel.parquet")) |>
+    arrange(vid, desc(yh2)) |>
+    distinct(vid, .keep_all = TRUE) |>
+    select(vid, flag)
+  ers_st <- merged_station |>
+    filter(schema == "aflaskeyti") |>
+    left_join(merged_trip |> filter(schema == "aflaskeyti") |> select(.tid, vid), by = ".tid") |>
+    left_join(flag, by = "vid") |>
+    mutate(Year = lubridate::year(date))
+  ers_st |>
+    left_join(merged_catch |> filter(schema == "aflaskeyti") |>
+                summarise(kg = sum(catch, na.rm = TRUE), .by = .sid), by = ".sid") |>
+    summarise(Stations = n(), Trips = n_distinct(.tid), `Catch (t)` = sum(kg, na.rm = TRUE) / 1e3,
+              .by = c(Flag = flag, Year)) |>
+    arrange(Flag, Year) |>
+    gt() |>
+    fmt_number(columns = c(Stations, Trips, `Catch (t)`), decimals = 0, use_seps = TRUE)
+}
+```
+
+## What tier 4 keeps
+
+Tier 4 keeps the vessel-days that afli, fs_afladagbok and adb do not hold. No foreign vessel-day is held by them, so
+every foreign haul is kept: 2,778 hauls in 579 trips. Of the Icelandic hauls, 280 lie on 75 vessel-days that the
+Icelandic logbook lacks entirely (mostly Barents Sea trawling in 2014–2015). They are kept, and the rest are the same
+hauls as logbook stations already held. Where a haul was sent in more than one message, the latest message is kept,
+whole.
+
+## Three corrections
+
+Each is declared in `curate/corrections/` and joined as a side table, and the value as staged is kept beside the
+corrected one:
+
+- **Latitude and longitude are swapped** in the source on every row (`aflaskeyti_coordinates`). `lon1_raw`,
+  `lat1_raw`, `lon2_raw` and `lat2_raw` keep the staged values, and `coord_flag` is `lat_lon_swapped`.
+- **Faroese times are local in summer** (`aflaskeyti_local_time`). From the last Sunday of March to the last Sunday
+  of October they are moved by −60 min, which brings the reported start from 5.8 nm to 2.0 nm of the AIS track. Norwegian
+  times are UTC all year. `t_shift_min` holds the shift and `time_basis` says `reconstructed`.
+- **Some Icelandic vessels report demersal catch gutted** (`aflaskeyti_weight`), though every row says live weight.
+  Where the vessel's own logbook has the same haul, it holds either the same weight or 1.25 times it, a trait of the
+  vessel. `condition` is set from the vessel's matched hauls: `GUTT` or `UNGU`, basis `derived`. Foreign rows are
+  `UNGU`, basis `recorded`, and `NA` (basis `none`) means there is no evidence. `catch` is the weight in the state
+  `condition` names, as for fs_afladagbok and adb.
+
+The times follow the gear. For trawls and purse seines the reported start is `t2` and start plus duration is `t3`.
+For longlines, start to end is setting start to hauling end, `t1` to `t4`. 63 hauls with a duration of 0 have no end
+time.
+
+## The trip rule
+
+The catch reports hold no trip, so trips are made in `curate/aflaskeyti_trip.R` from the hauls and the landings in
+Iceland:
+
+1. **A landing ends a trip.** A trip ends at a landing in Iceland that falls between one haul and the next and
+   within 7 days of the haul. `T2` and the port are the landing's, with `T2_basis` `reconstructed`. The trip-landing
+   match (`lid_map`) then links the trip to that landing at its exact step, so the landing's catch is not counted
+   again beside the hauls.
+2. **Otherwise a gap of 48 hours ends it.** `T2` is empty, with basis `none`: the catch was landed abroad.
+3. **`T1` is the first haul's time**, basis `synthesised`: a bound on departure, not a departure.
+4. **A haul inside an Icelandic logbook trip claims no landing.** That landing belongs to the logbook trip.
+
+## Limitations
+
+- **Coverage:** only 2014–2018, Norway from 2015 for most days, and the Faroes only from 2017-10.
+- **Second landings:** 9 landings (3.5 kt) are a second day of unloading one trip's catch, and `lid_map` links one
+  landing to a trip. They are counted twice on the fixes until plan 027 joins a trip's further landings to it (TODO
+  81). Icelandic trips have some such landings too.
+- **Trips ended at a gap** have no `T2`. The trip-voyage link pads them to the end of their first day, so they link
+  to the voyage that day falls in.
+- **Weight condition:** the demersal catch of two Icelandic vessels with no matched hauls has `condition` `NA`, which
+  `catch_by_species_station` reads as round.
+
 # Annual catch totals
 
 Duplicate twins are left out of the totals below.
@@ -383,7 +508,7 @@ merged_catch |>
   summarise(catch_kt = round(sum(catch, na.rm = TRUE) / 1e6, 0), .groups = "drop") |>
   pivot_wider(names_from = schema, values_from = catch_kt, values_fill = 0L) |>
   rename(Year = yr) |>
-  mutate(Total = afli + fs_afladagbok) |>
+  mutate(Total = rowSums(pick(-Year))) |>
   gt() |>
   fmt_number(columns = where(is.numeric), use_seps = TRUE, decimals = 0)
 ```

@@ -1,0 +1,28 @@
+id: aflaskeyti_coordinates
+title: dw_aflaskeyti's latitude and longitude columns are swapped on every row
+status: implemented 2026-10-17, not built (plan 026, built with TODO 77)
+applies_to:
+  - staging/aflaskeyti/station.parquet          (lon1, lat1, lon2, lat2 as Oracle names them)
+  - staging/aflaskeyti/coordinates.parquet      (new: .sid, lon1, lat1, lon2, lat2, lon1_raw, lat1_raw, lon2_raw, lat2_raw, lon1_basis, lon2_basis, coord_flag)
+implementation: curate/corrections/aflaskeyti_coordinates.R
+discovered: 2026-10-17, matching the Icelandic rows of dw_aflaskeyti to their own logbook stations (decision 126)
+
+detection: >-
+  Every row. `lengd_byrjun` and `lengd_endir` (lengd is longitude) hold 59.8 to 90.0, and `breidd_byrjun` and
+  `breidd_endir` (breidd is latitude) hold -179.5 to 37.2.
+
+evidence: >-
+  Decision 126. 4,716 of the 5,050 Icelandic hauls match a curated logbook station of the same vid with t2 within a
+  minute. With the columns swapped, the start positions agree to a median of 0.005 degrees in each coordinate; read
+  as named, they are 53 degrees off. On the foreign hauls the swapped start lies a median 0.12-0.61 nm from the AIS
+  fix nearest t2 (Norwegian purse seines).
+
+repair: >-
+  lon1 = the staged lat1, lat1 = the staged lon1, and likewise for the end position. lon1_raw, lat1_raw, lon2_raw
+  and lat2_raw keep the staged values (AGENTS.md: never destroy the original). lon1_basis and lon2_basis are
+  "recorded": the values are the recorded ones, only their labels were wrong. coord_flag is "lat_lon_swapped".
+  Joined onto the station table by curate/logbook.R.
+
+test: >-
+  Every corrected latitude lies within +-90 degrees, and the foreign hauls lie around Iceland as measured: 2,772 of
+  2,778 in the box 60-69 N, 32-5 W.

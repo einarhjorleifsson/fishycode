@@ -10,9 +10,10 @@
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
 # Added 2026-10-17 (maintainer), found through raw/oracle/_catalogue/. dw_aflaskeyti holds 21,627 rows of ERS catch
-# messages, with the vessel's flag state, haul positions and times, FAO gear and species and kg: a first lead to the
-# foreign vessels' logbooks of TODO 62. The FAO code lists (species, gear, areas, countries) and the warehouse's own
-# species, gear, area and port lists are small.
+# messages, with the vessel's flag state, haul positions and times, FAO gear and species and kg: the exchange with
+# Norway and the Faroes of 2014-2018, measured in decision 126: the Norwegian and Faroese rows are haul-level logbook
+# records, and the latitude and longitude columns are swapped. The FAO code lists (species, gear, areas, countries)
+# and the warehouse's own species, gear, area and port lists are small.
 # Left out: dw_afli, dw_afli_test, dw_afli_v and dw_heildarafli, copies of the landings that agf and kvoti hold
 # (15 M rows by Oracle's estimates), and dw_skip, dw_millifaerslur and dw_uthlutanir. Five of the seven carry owners'
 # kennitala (dw_skip their names too), which fishycode has no use for (as for orri).

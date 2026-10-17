@@ -410,6 +410,37 @@ list(
              fd_staging("adb", "lon_sign.parquet"))
   }, format = "file"),
 
+  # The ERS catch reports of foreign vessels, 2014-2018 (decision 126, plan 026): the adapter, its two corrections
+  # (side tables, joined by curate/logbook.R) and the trips cut at landings in Iceland.
+  tar_target(aflaskeyti_raw, fd_raw("oracle", "dw", "dw_aflaskeyti.parquet"), format = "file"),
+  tar_target(aflaskeyti, {
+    gear; aflaskeyti_raw
+    produces("sources/aflaskeyti/convert.R",
+             fd_staging("aflaskeyti", "trip.parquet"),
+             fd_staging("aflaskeyti", "station.parquet"),
+             fd_staging("aflaskeyti", "fishing_sample.parquet"),
+             fd_staging("aflaskeyti", "catch.parquet"))
+  }, format = "file"),
+  tar_target(aflaskeyti_coordinates, {
+    aflaskeyti
+    produces("curate/corrections/aflaskeyti_coordinates.R", fd_staging("aflaskeyti", "coordinates.parquet"))
+  }, format = "file"),
+  tar_target(aflaskeyti_local_time, {
+    aflaskeyti; aflaskeyti_raw
+    produces("curate/corrections/aflaskeyti_local_time.R", fd_staging("aflaskeyti", "time.parquet"))
+  }, format = "file"),
+  tar_target(aflaskeyti_trip, {
+    aflaskeyti; aflaskeyti_local_time; landing; afli; fs_afladagbok; adb
+    produces("curate/aflaskeyti_trip.R",
+             fd_staging("aflaskeyti", "trip_landing.parquet"),
+             fd_staging("aflaskeyti", "station_trip.parquet"))
+  }, format = "file"),
+  # The state of each weight: the Icelandic vessels' own hauls in the staged afli logbook (upstream of the merge).
+  tar_target(aflaskeyti_weight, {
+    aflaskeyti; aflaskeyti_local_time; aflaskeyti_raw; afli
+    produces("curate/corrections/aflaskeyti_weight.R", fd_staging("aflaskeyti", "weight.parquet"))
+  }, format = "file"),
+
   tar_target(aflagrunnur_raw, fd_raw("oracle", "agf", "aflagrunnur.parquet"), format = "file"),
   tar_target(aflagrunnur, {
     aflagrunnur_raw
@@ -486,6 +517,7 @@ list(
   # fs_afladagbok through its dump end, then adb beyond it.
   tar_target(logbook, {
     afli; afli_depth_units; fs_afladagbok; adb; adb_lon_sign
+    aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),
              fd_curated("logbook", "station.parquet"),

@@ -269,7 +269,8 @@ e. **Gear where a foreign voyage has no landing in Iceland.** Options:
    - register gear: EU `gear_main` (the Faroese register has no gear).
 f. **Ports:** extend the frozen port radius to foreign ports (a `once` redo)?
 g. **TODO 62:**
-   - Where are the foreign logbooks for Icelandic waters?
+   - Where are the foreign logbooks for Icelandic waters? Decision 126: `dw.dw_aflaskeyti` holds haul-level records
+     of Norwegian and Faroese vessels for 2014-2018; whether to take them in is TODO 62's ask, and 2019-2025 is open.
    - Should `afli.steini` (oceanic redfish, 1989–2017, six nations) be staged as a partial foreign logbook?
 h. **Order:** plan 016's rebuild first and this plan after it (two rebuilds, recommended), or wait and do one?
 

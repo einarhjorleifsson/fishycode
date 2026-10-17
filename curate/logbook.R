@@ -1,6 +1,7 @@
-# Merge afli (legacy), fs_afladagbok and adb into unified logbook tables.
+# Merge afli (legacy), fs_afladagbok, adb and the ERS catch reports (aflaskeyti) into unified logbook tables.
 # Side: preprocessing (logbook). See plan 014.
-# Input:  staging/{afli,fs_afladagbok,adb}/{trip,station,fishing_sample,catch}.parquet
+# Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti}/{trip,station,fishing_sample,catch}.parquet, and the side
+#         tables named under "Load"
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet
 #
 # Decision rule (tiered priority):
@@ -8,6 +9,8 @@
 #   Tier 2 — not in afli, but present in fs_afladagbok             → use fs_afladagbok
 #   Tier 2b — not in either, and an afli station read from fs_afli  → use it (decision 124)
 #   Tier 3 — not in afli or fs_afladagbok, present in adb          → use adb
+#   Tier 4 — in none of them, present in aflaskeyti                → use aflaskeyti (plan 026): the foreign
+#            vessels' hauls of 2014-2018, and the Icelandic vessels' hauls on vessel-days their logbook lacks
 #
 # Rationale:
 #   afli > fs_afladagbok: afli mobile-gear timing is derived from the on-bottom
@@ -30,6 +33,10 @@
 # keep the original recorded value, z1_basis/z2_basis says which happened.
 # Longitude: adb's dropped west sign is fixed by curate/corrections/
 # adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis).
+# aflaskeyti: three corrections and the trips, each a side table (plan 026): the swapped positions
+# (aflaskeyti_coordinates.R: lon1_raw, lat1_raw, lon2_raw, lat2_raw, coord_flag), the Faroese summer times
+# (aflaskeyti_local_time.R: t_shift_min, time_basis), the state of each weight (aflaskeyti_weight.R:
+# condition_basis), and the trips cut at landings in Iceland (curate/aflaskeyti_trip.R: T1_basis, T2_basis).
 # Station type: station.parquet carries station_type (operation / event) and
 # station_type_basis, read per vessel, year and gear (decision 084).
 
@@ -70,6 +77,16 @@ adb_fishing_sample <- duckdbfs::open_dataset(fd_staging("adb", "fishing_sample.p
 adb_catch          <- duckdbfs::open_dataset(fd_staging("adb", "catch.parquet")) |> collect()
 adb_lon_sign       <- duckdbfs::open_dataset(fd_staging("adb", "lon_sign.parquet")) |> collect()
 
+# aflaskeyti's trips and station keys come from curate/aflaskeyti_trip.R, not from the adapter's runs.
+ers_trip           <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "trip_landing.parquet")) |> collect()
+ers_station_trip   <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "station_trip.parquet")) |> collect()
+ers_station        <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "station.parquet")) |> collect()
+ers_fishing_sample <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "fishing_sample.parquet")) |> collect()
+ers_catch          <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "catch.parquet")) |> collect()
+ers_coordinates    <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "coordinates.parquet")) |> collect()
+ers_time           <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "time.parquet")) |> collect()
+ers_weight         <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "weight.parquet")) |> collect()
+
 # Depth unit ---------------------------------------------------------------
 # afli: replace z1/z2 with the per-vessel-period corrected value from
 # afli_depth_units.R; keep z1_raw/z2_raw/z1_basis/z2_basis (never overwrite the
@@ -98,10 +115,25 @@ adb_station <- adb_station |>
   left_join(adb_lon_sign |> select(.sid, lon1, lon2, lon1_raw, lon2_raw, lon1_basis, lon2_basis),
             by = ".sid")
 
+# aflaskeyti: positions swapped back, times in UTC, each weight's state, and the trips (plan 026). No depth.
+ers_station <- ers_station |>
+  select(-lon1, -lat1, -lon2, -lat2, -.tid) |>
+  left_join(ers_coordinates, by = ".sid", relationship = "one-to-one") |>
+  left_join(ers_station_trip, by = ".sid", relationship = "one-to-one")
+ers_fishing_sample <- ers_fishing_sample |>
+  select(-t1, -t2, -t3, -t4, -.tid) |>
+  left_join(ers_time, by = ".sid", relationship = "one-to-one") |>
+  left_join(ers_station_trip, by = ".sid", relationship = "one-to-one")
+ers_catch <- ers_catch |>
+  select(-condition, -catch_whole) |>
+  left_join(ers_weight, by = c(".sid", "sid"), relationship = "one-to-one")
+stopifnot(!anyNA(ers_station$.tid), !anyNA(ers_station$lat1), all(ers_station$.tid %in% ers_trip$.tid))
+
 # Apply date bounds ------------------------------------------------------------
 afli_station <- afli_station |> filter(date <= DATE_MAX)
 fs_station   <- fs_station   |> filter(date >= FS_DATE_MIN, date <= FS_DATE_MAX)
 adb_station  <- adb_station  |> filter(date >= ADB_DATE_MIN, date <= DATE_MAX)
+ers_station  <- ers_station  |> filter(date <= DATE_MAX)
 
 # Subset all tables to stations/trips surviving the date filter
 afli_trip           <- afli_trip           |> semi_join(afli_station |> distinct(.tid), by = ".tid")
@@ -168,26 +200,49 @@ adb_only_trip           <- adb_trip           |> semi_join(adb_tids_kept, by = "
 adb_only_fishing_sample <- adb_fishing_sample |> semi_join(adb_sids_kept, by = ".sid")
 adb_only_catch          <- adb_catch          |> semi_join(adb_sids_kept, by = ".sid")
 
+# Tier 4: aflaskeyti — vessel-days not covered by tiers 1-3 ---------------------
+# The ERS catch reports of 2014-2018 (plan 026). No foreign vessel-day is held above; of the Icelandic vessels'
+# hauls, those on vessel-days their logbook holds are the same hauls again (4,716 of 5,050 within a minute), and
+# the rest fill days nothing else holds (plan 026 §7).
+tier123_vid_date <- bind_rows(
+  tier12_vid_date,
+  adb_only_station |> left_join(adb_trip |> select(.tid, vid), by = ".tid") |> distinct(vid, date))
+
+ers_only_station <- ers_station |>
+  left_join(ers_trip |> select(.tid, vid), by = ".tid") |>
+  anti_join(tier123_vid_date, by = c("vid", "date")) |>
+  select(-vid)
+
+ers_sids_kept <- ers_only_station |> distinct(.sid)
+ers_tids_kept <- ers_only_station |> distinct(.tid)
+
+ers_only_trip           <- ers_trip           |> semi_join(ers_tids_kept, by = ".tid")
+ers_only_fishing_sample <- ers_fishing_sample |> semi_join(ers_sids_kept, by = ".sid")
+ers_only_catch          <- ers_catch          |> semi_join(ers_sids_kept, by = ".sid")
+
 # Merge ------------------------------------------------------------------------
 merged_trip <- bind_rows(
   afli_trip    |> mutate(.tid = as.character(.tid)),
   fs_only_trip |> mutate(.tid = as.character(.tid)),
-  adb_only_trip |> mutate(.tid = as.character(.tid))
+  adb_only_trip |> mutate(.tid = as.character(.tid)),
+  ers_only_trip
 )
 
 merged_station <- bind_rows(
   afli_station     |> mutate(.tid = as.character(.tid)),
   fs_only_station  |> mutate(.tid = as.character(.tid)),
-  adb_only_station |> mutate(.tid = as.character(.tid))
+  adb_only_station |> mutate(.tid = as.character(.tid)),
+  ers_only_station
 )
 
 merged_fishing_sample <- bind_rows(
   afli_fishing_sample     |> mutate(.tid = as.character(.tid)),
   fs_only_fishing_sample  |> mutate(.tid = as.character(.tid)),
-  adb_only_fishing_sample |> mutate(.tid = as.character(.tid))
+  adb_only_fishing_sample |> mutate(.tid = as.character(.tid)),
+  ers_only_fishing_sample
 )
 
-merged_catch <- bind_rows(afli_catch, fs_only_catch, adb_only_catch)
+merged_catch <- bind_rows(afli_catch, fs_only_catch, adb_only_catch, ers_only_catch)
 
 # Twin records -----------------------------------------------------------------
 # One operation entered as two or more stations (curate/corrections/logbook_twin.yml, decision 094). A twin
@@ -271,10 +326,12 @@ cat(sprintf("afli stations (filtered):   %d\n", nrow(afli_station)))
 cat(sprintf("  of them read from fs_afli: %d of %d\n", nrow(afli_fs_kept), nrow(afli_fs_station)))
 cat(sprintf("fs-only stations:           %d\n", nrow(fs_only_station)))
 cat(sprintf("adb-only stations:          %d\n", nrow(adb_only_station)))
+cat(sprintf("aflaskeyti-only stations:   %d of %d\n", nrow(ers_only_station), nrow(ers_station)))
 cat(sprintf("merged stations:            %d\n", nrow(merged_station)))
 cat(sprintf("afli trips (filtered):      %d\n", nrow(afli_trip)))
 cat(sprintf("fs-only trips:              %d\n", nrow(fs_only_trip)))
 cat(sprintf("adb-only trips:             %d\n", nrow(adb_only_trip)))
+cat(sprintf("aflaskeyti-only trips:      %d\n", nrow(ers_only_trip)))
 cat(sprintf("merged trips:               %d\n", nrow(merged_trip)))
 cat(sprintf("merged catch:               %d\n", nrow(merged_catch)))
 
@@ -304,7 +361,9 @@ logbook_inputs <- c(
   unlist(lapply(c("afli", "fs_afladagbok", "adb"), \(s)
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
-  fd_staging("afli", "depth.parquet"), fd_staging("adb", "lon_sign.parquet"))
+  fd_staging("afli", "depth.parquet"), fd_staging("adb", "lon_sign.parquet"),
+  unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
+                  "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
 merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)
 merged_station        |> write_curated(fd_curated("logbook", "station.parquet"),        inputs = logbook_inputs)
 merged_fishing_sample |> write_curated(fd_curated("logbook", "fishing_sample.parquet"), inputs = logbook_inputs)

@@ -1,0 +1,26 @@
+id: aflaskeyti_weight
+title: some Icelandic vessels report demersal catch in dw_aflaskeyti as gutted weight, though every row says live weight
+status: implemented 2026-10-17, not built (plan 026 §7, built with TODO 77)
+applies_to:
+  - staging/aflaskeyti/catch.parquet    (condition UNGU, catch_whole = catch on every row, as the adapter stages it)
+  - staging/aflaskeyti/weight.parquet   (new: .sid, sid, condition, catch_whole, condition_basis)
+implementation: curate/corrections/aflaskeyti_weight.R
+discovered: 2026-10-17, matching the Icelandic rows of dw_aflaskeyti to their own logbook stations (decision 126, plan 026 §7)
+
+detection: >-
+  Icelandic hauls matched to a staged afli station of the same vid with t2 within 60 s. Where both record a species,
+  the afli weight is either equal to the ERS weight or 1.25 times it (catch_by_species_station.R's gutted-to-round
+  factor), and which one is a trait of the vessel: of the 13 vessels with matched demersal catch, six report it at
+  the logbook's weight and six at 1/1.25 of it; one does both. Blue whiting is equal in 578 of 582 pairs.
+
+evidence: >-
+  Plan 026 section 7 and decision 126: cod equal in 1,231 of 4,073 station-species pairs, median ratio 1.25, in every
+  year 2014-2018. Foreign rows show no such factor: the weight landed in Iceland is 0.98-1.13 of the ERS weight.
+
+repair: >-
+  condition per row: foreign rows UNGU (basis recorded); an Icelandic vessel and species with matched pairs takes
+  their majority, GUTT where afli is 1.25 times the ERS weight and UNGU where equal (basis derived); a species round
+  for every vessel (at least 20 matched pairs, 95 % of them equal) is UNGU (derived); anything else NA (basis none),
+  which catch_by_species_station.R reads as round. catch is never changed: it is the weight in the state condition
+  names, as in fs_afladagbok and adb. catch_whole is the catch where UNGU and NA otherwise. Joined onto the catch by
+  curate/logbook.R; it matters only for the Icelandic hauls tier 4 keeps (282, on vessel-days the logbook lacks).
