@@ -29,18 +29,6 @@ does it twice.
 
 ---
 
-## 8. The old trail stays until the datacall is rebuilt on the curated trail
-**status:** blocked — on item 27b · **see:** decision 095
-
-`~/stasi/fishydata_2024-2026/data/ais/trail` (31 GB) is the input of the 2025 ICES VMS datacall delivery
-(`ices-datacall/2025/2025_vms-datacall.R` reads it), and the delivered CSVs are not kept locally. It reproduces that
-delivery and is the baseline for checking item 27b. Removed and restored on 2026-10-14 (decision 095).
-
-**check:** a datacall built on `curated/ais/trail` has been compared with the 2025 delivery and has superseded it,
-and no directory under `~/stasi/fishydata_2024-2026` exceeds 1 GB.
-
----
-
 ## 10. `reference/species` is an empty directory
 **status:** open
 **see:** `curate/decisions/019-the-check-layer-exists.md`
@@ -54,49 +42,30 @@ codes), `adb/species` (410), `kvoti/lods_fteg` (125) and `kvoti/stadall_fisktegu
 English and scientific names); `asfis/asfis` is FAO's list, with no Icelandic code. Together they resolve every
 `sid` in `curated/logbook/catch` and `curated/landing/catch` but 9 codes (11 by schema): afli's 999 (74,706 rows,
 143,586 t, 0.32 % of afli kg) and 0, lods' 0, agf's 665, 533, 278, 1128, fs_afladagbok's 665, 269, 954, 901 (almost
-no kg). Not checked: that the
-lists name a shared code alike, and an Icelandic code → FAO 3-alpha link (none in raw beyond the 74 scientific names).
+no kg). Not checked: that the lists name a shared code alike, and an Icelandic code → FAO 3-alpha link (none in raw
+beyond the 74 scientific names).
 
 **check:** `curated/reference/species.parquet` exists and the catch tables' species
 codes all resolve against it.
 
 ---
 
-## 18. Fishing windows from behaviour, not from the logbook — PARKED
-**status:** parked (maintainer, 2026-10-14: the measured gain is too small to build for now) · **see:** `curate/plans/004-behavioural-fishing-windows.md` (§8, measured 2026-10-14), decisions 090, 092, TODO 60
-
-Infer fishing time from the track where the logbook gives none. Measured (plan 004 §8): day windows hold 80.7 % of
-jigging fishing fixes, 22.8 % of static and 0.6 % of towed. A day window calls 18-30 % more static fixes fishing at
-sea than the real hauls (an upper bound: unlogged setting), and cuts the 23 % of hauls that cross midnight.
-Jigging was tested and stopped (§8). A speed rule relative to the local drift does no better than a fixed one
-(0.62 against 0.635 balanced accuracy), and the logged sessions are too coarse to tell more. Left: static gear, by
-placing each station on a hauling bout by its recorded position, scored on the holdout bench. The ceiling is about
-+5 % of static fishing fixes, so it is worth building only if a delivery needs static-gear effort that precise.
-Towed gear needs no window work for effort; the reported heading is the course.
-
-**check:** none while parked. It reopens when a delivery needs static-gear effort that precise; plan 004's
-header then records, for each of its five measurements, the answer or where it lives.
-
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
 
-**Answered 2026-10-16 (§4):** fishycode is public on GitHub, with its history as it was; the
-Mapbox token in that history is revoked (maintainer) and out of the working tree.
+`fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page. The design, the evidence and the
+open questions are in the plan. **Answered 2026-10-16 (§4):** fishycode is public
+(`github.com/einarhjorleifsson/fishycode`), with its history as it was, so that history is now fixed; the Mapbox token
+in it is revoked (maintainer) and out of the working tree. **Answered in part (§3):** the minimum of 3 vessels per cell
+applies only to ICES datacall deliveries (maintainer, recorded 2026-10-02).
 
-**Asked of the maintainer, in the plan's own words:** set the aggregation rule for what may
-leave `fishydata` for an open `fishyweb` (§3), and say where `fishydata` lives and whether it
-is backed up (§5). The
-disclosure rule blocks item 16. Everything else in the plan I can act on unblocked.
-`fishyweb` has local commits that wait for its first remote too (27b35ff, the plan 014 names; from TODO 52).
+The boundary that still needs a rule is `fishydata` → `fishyweb`, a data-disclosure question that binds item 16.
+**Asked of the maintainer, in the plan's own words:** the rest of the aggregation rule for what may leave `fishydata`
+for an open `fishyweb` (the minimum cell and the allowlist of tables, §3), and where `fishydata` lives and whether it
+is backed up (§5). Everything else in the plan I can act on unblocked. `fishyweb` has local commits that wait for its
+first remote too (27b35ff, the plan 014 names; from TODO 52).
 
 **check:** the questions of plan 001 §3 and §5 are answered in the plan.
-
-`fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page.
-The design, the evidence and the open questions are in the plan; this stub exists so
-the work is visible here. `fishycode` has been public on GitHub since 2026-10-16
-(`github.com/einarhjorleifsson/fishycode`), so its history is now fixed. The boundary that actually needs a rule is
-`fishydata` → `fishyweb`, which is a data-disclosure question and binds item 16.
-
 
 ---
 
@@ -110,86 +79,59 @@ plan 002. Blocked on item 15's disclosure rule, which decides what may leave
 
 **check:** plan 002's port list is built and item 15's disclosure rule exists.
 
-
----
-
-## 22. Foreign vessels never reach trip segmentation, even once identified
-**status:** open · **see:** `curate/plans/008-north-atlantic-vessel-registry.md`, `curate/plans/017-foreign-vessels-through-the-flow.md`
-(measured 2026-10-14: foreign vids keyed in STK already reach voyages; the plan proposes a vid, not an `external_id`, for the rest)
-
-`reference/ports/ports_all.R` (kaenugardr, absorbed) already merges 24,653 harbours
-globally — GFW's 12,831 worldwide anchorages, EMODnet's 946 European ports, GISCO's
-2,440 EU ports, plus OSM/vmstools/local sources. The geometry side of "a foreign
-vessel's trip start/end harbour" is ready and has been since the absorption.
-
-The identity side is not, in three specific places, all keyed strictly on Icelandic
-`vid`: `sources/stk/convert.R:31` and `curate/ais_ping_union.R:74` both
-`inner_join(..., filter(!is.na(vid)))` — a ping with no Icelandic vid is dropped
-before it ever reaches `curate/ais_voyage.R`, which then groups voyages by `vid` alone. The flow's
-contract (plan 013, decided item 9) is that such a ping is kept with vessel `none`, not dropped.
-Plan 008's `external_id` (§5–§7) will resolve identity for vessels that were never
-going to get an Icelandic vid — but as things stand today, their pings never survive
-long enough to be segmented into trips at all, no matter how good that resolution is.
-
-**check:** a ping carrying an `external_id` but no `vid` (plan 008's foreign match)
-survives into `curated/ais/voyage.parquet` with a voyage key, `pid1`/`pid2` resolved
-against `ports_all`.
-
 ---
 
 ## 24. Icelandic vessels that land fish but are never heard on AIS
-**status:** open · **see:** decision 117, `curate/checks/ais_key_landings.R`, TODO 67
+**status:** open · **see:** decisions 110, 117 and 118, `curate/checks/ais_key_landings.R`
 
 `ais_key_landings`' `landed_but_no_ais` lists 308 vids (the `once` file of 2026-10-09). It audits the cascade, not
 the key (decision 053), so 53 of them are in the key and heard, and 148 are foreign. **107 Icelandic vids landed in
 the AIS era with no key row and no ping from any provider in the union:** 96 registered vessels (9 with an MMSI, 67
-landing in 2013 or later) and 11 landings placeholders; the two divers are TODO 67. A vessel name is never used to
+landing in 2013 or later) and 11 landings placeholders. A vessel name is never used to
 match, and the MMSI route is already taken, since the union takes ASTD, astdB and EMODnet by MMSI. What is left is to
 say why each has no track: no transponder (a small boat), an STK unit the key leaves without a vid (plan 022 §3), or a
 missed match.
 
+**The divers (from TODO 67):** 8009 (the register's útgerðarflokkur "Kafarar") and very likely 8008 land only with gear
+23 "Kafari", about 14 t on 152 landing rows, and have no hull. Mark them as divers, through an override that names the
+two or a rule (a registration that lands only with gear 23).
+
 **check:** each of the 107 has a stated reason in a check table or an override: no AIS expected, an STK unit or MMSI
-found, or a match missed.
+found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_no_ais` leaves them out.
 
 ---
 
-## 25. Resolve the STK key audit's discrepancies, and reach the rows no witness reaches
-**status:** open · **needs: maintainer** — review of proposed overrides ·
-**see:** `curate/plans/009-independent-audit-of-the-mid-vid-match.md`,
-`curate/decisions/047-independent-audit-of-the-mid-vid-match.md`
+## 25. The STK key redo (`once` project): what enters it
+**status:** open · **needs: maintainer** — the review of what enters, a boundary override for mid 108982, and the go
+for the redo · **see:** plans 009, 016 §4 step 7, 021 step 7 and 022 §3; decisions 047, 053, 075, 117 and 118
 
-Built 2026-09-29: `ais_key_audit` (ledger of every key row; 402 discrepancies on 239 mids in the `once` files of
-2026-10-09, none reviewed, 132 when first built; 840 vid-claiming rows no witness reaches, 884 when first built;
-decision 117) and `ais_key_split_candidates` (silences where a
-human-style reading says the vessel changed; 19 strong not in the ODS). Open: plan 009 —
-phase 2 (segment table built with logbook and landings: tiles every mid, 90 % of pings with direct evidence, Icelandic ODS rows 87 % reproduced without the ODS; review open), phase 3 (review in the app),
-phase 4 (reach the continuity segments, MMSI series, foreign vessels), phase 5 (the ODS is retired: `ais_key.R` switched to the segment table 2026-09-30, decision 053;
-ODS retired the same day and everything rebuilt without it, decision 054; the archived file stays, by decision).
-`ais_key_resolution` (built, first pass) reads each discrepancy as eras: 30 proposals on 25 mids;
-track correlation confirms 12 of the 14 strong ones (decision 047), the other 2 need a person.
-The review is settled at the key redo that plan 016 §4 step 7, plan 021 step 7 and plan 022 §3 also name.
+The key is frozen and redone only by a decision (decision 075). Seven reviews wait on the same redo:
+- **The audit** (plan 009, decision 047): 402 discrepancies on 239 mids in the `once` files of 2026-10-09, none
+  reviewed; 840 vid-claiming rows no witness reaches; `ais_key_resolution`'s 30 proposals on 25 mids (track
+  correlation confirms 12 of the 14 strong ones, the other 2 need a person); the segment table's 108 stretches
+  (97,850 pings) for a person. Decision 048's review was made on an earlier table and is to be redone on this one.
+- **Coverage:** `ais_key_coverage` holds 31,512 unassigned pings in 344 stretches (the largest 4,962, mid 108582);
+  the maintainer's invariant is no unassigned ping.
+- **Mid 108982** (from TODO 39, decision 067's vid 7830): the segment table gives it to 7830 from 2018-04-13, the day
+  7830 was registered, but the pings and 2835's own astdB say it was 2835's to 2018-07-19 (5,029 of 2835's pings sit on
+  7830). `overrides/ais_key_segments_reviewed.csv` moves no boundary. Asked: a boundary override, or a rule that a
+  registration date does not cut where the earlier holder's own AIS still witnesses the mid. How many other mids have
+  this shape is not counted.
+- **SKB** (TODO 63, plan 016 §5): 179 mobile-ids to vid 100000 + n, class pleasure craft.
+- **The archive** (plan 016 §4 step 7): 14 mobile-ids whose MMSI passed to another hull (626k pings), and 42 with no vid
+  whose MMSI the archive gives to a vid (15k pings).
+- **Foreign hulls** (plan 021 step 7, TODO 65): the foreign candidates on the same vids, and mids 101843, 147141,
+  102481 and 102527 (reused call signs).
+- **STK mined** (plan 022 §3, point 10): 43 units with no vid whose MMSI is an Icelandic vid's, 41 key rows the
+  register gives to another vessel, and 37 `ops$einarhj.mobile_vid` claims naming another vid.
 
-`ais_key_coverage` finds the pings the key leaves unassigned (31,512 in 344 stretches on the 2026-10-09 files,
-39,487 when first built; the largest now 4,962 on mid 108582) and proposes a fill; the maintainer's invariant is no unassigned ping.
-
-`ais_key_vessel_recall` accounts for every Icelandic vessel-month AIS or the logbook shows active: 0.3 % of
-AIS-heard months have no mid assigned (decision 047).
-`ais_key_twins` keeps the mobile-ids heard with two vessels (a candidate fishyweb case example).
-Side observation, NOT validated and not pursued: on the uncleaned 2019 union, implied-speed jumps
-(> 50 kn) are 0.09 % of consecutive pairs for stk, 0.04 % for astdB, 0.02 % for astd.
-
-Mid 101444 = vid 1421 (call sign TFGA) is now assigned by dated-holder ranking; the registry's own dated
-call-sign history only starts 2023-12-19 and cannot date a reuse in the STK era (decision 047).
-
-The segment table now uses each hull's registration date (a vid cannot precede its vessel): 0 impossible segments,
-108 stretches / 97,850 pings for a person. The review of decision 048 was made on the earlier table and is to be
-redone on this one before any verdict is used.
-
-**check:** `ais_key_coverage` reports 0 unassigned pings, and every row of `curated/check/ais_key_audit_discrepancy.parquet` is resolved
-through `overrides/` or carries a stated reason.
+**check:** a decision record states the redo; `ais_key_coverage` reports 0 unassigned pings; every row of
+`ais_key_audit_discrepancy` and of the lists above is resolved through `overrides/` or carries a stated reason; and
+mid 108982 is 2835 through 2018-07-19, with the count of registration-date boundaries that cut a witnessed run
+recorded in a decision.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
-**status:** in progress - phases 0-3 built and rebuilt from raw (2026-09-30) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, item 8
+**status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
 
 Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
 trip (`.tid_voyage`) on fixes outside every window. Open: the datacall. `products/ices_vms_datacall/build.R` is the
@@ -204,20 +146,27 @@ Repointing it means building its inputs from the curated tables:
 - catch spread over a station's fishing fixes;
 - the logbook (LE) table without duplicate twins.
 
-Plan 015 designs it, checked against the 2025 delivery (item 8); its §4 choices are the maintainer's. Also open: whether to store a sorted wide trail
+Plan 015 designs it, checked against the 2025 delivery; its §4 choices are the maintainer's. Also open: whether to store a sorted wide trail
 (maintainer).
 
+**The old trail stays until then (from TODO 8):** `~/stasi/fishydata_2024-2026/data/ais/trail` (31 GB) is the input of
+the 2025 delivery (`ices-datacall/2025/2025_vms-datacall.R` reads it), and the delivered CSVs are not kept locally. It
+reproduces that delivery and is the baseline for the comparison. Removed and restored on 2026-10-14 (decision 095).
+
 **check:** `products/ices_vms_datacall/build.R` runs on `curated/ais/trail`, its output is compared with the 2025
-delivery, and every synthesised window carries `win_basis`.
+delivery and supersedes it, every synthesised window carries `win_basis`, and no directory under
+`~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
 ## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
-**status:** open · **needs: maintainer** · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`
+**status:** open · **needs: maintainer** — ask (1) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`, decisions 085 and 093
 
-Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Nothing is built from the plan itself. Asked of the maintainer: (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in); (2) whether to adopt the vessel-shifted range or keep the declared ranges (§2l: for the pairing it gains about a point of agreement, not shown to be accuracy; not taken up, the declared ranges stay and `fishing` tests the ±10 min speed instead, decision 093). Question (3), the gear codes on the trail, is answered and built (decision 085).
+Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Nothing is built from the plan itself.
+
+**Asked of the maintainer:** (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in). **Answered:** (2) the declared ranges stay, and `fishing` tests the ±10 min median speed instead of a vessel-shifted range (decision 093); (3) the gear codes on the trail (decision 085).
 
 Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
 
-**check:** the answers to (1) and (2) are recorded in a decision, and either a speed rule is chosen or plan 012 is marked abandoned with the reason.
+**check:** the answer to (1) is recorded in a decision, and plan 012 says whether the last haul is left unclosed.
 
 ---
 
@@ -239,30 +188,6 @@ whose two-ping legs are fast too is real running - in June 2023 it held 1,115 of
 **check:** decision 067 records a verdict on the fast-vessel, gap and sparse-track cases, and
 `notes/whacky-positions.qmd` is committed or removed.
 
-## 39. Mid 108982 changes hands on a registration date, not where the pings say
-**status:** open · **needs: maintainer** — how a reviewed boundary enters the key ·
-**see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md` (vid 7830), item 25
-
-`ais_key_segments` gives mid 108982 to vid 7830 from 2018-04-13 (`boundary_basis`: 7830 registered that day). The pings
-and 2835's own astdB say the mid was vid 2835's in the Westfjords until 2018-07-19 and 7830's off Reykjavik from
-2020-07-10, so 5,029 of 2835's pings are on 7830. `ais_key_split_candidates` lists the gap but grades it weak. The
-reviewed override cannot fix it: `overrides/ais_key_segments_reviewed.csv` replaces the vid of a segment it covers by
-half its days or more, and moves no boundary. Asked: a boundary override, or a rule that a registration date does not
-cut where the earlier holder's own AIS still witnesses the mid. How many other mids have this shape is not counted.
-
-**check:** mid 108982 is 2835 through 2018-07-19 in `vessel_ais_key`, and the count of registration-date boundaries
-that cut a witnessed run is recorded in a decision.
-
-## 48. The voyage step took 51 min since the ramb port, against 9.4
-**status:** open · **see:** decision 077 (3h), ramb f6faf9b
-
-The cause was an unpartitioned `row_number() OVER ()`, which DuckDB runs on one core. Numbering per vessel took a
-4.9 M-ping batch from 24.0 to 7.3 s with identical output (plan 014 3h). The plan 014 rebuild took 29 min (decision
-079): faster, not yet fast. The 2026-10 rebuilds took 13.8 and 14.1 min with the same voyages (decisions 086, 089). Not profiled
-further.
-
-**check:** the step runs no slower than 10 min on the full data, with the same output.
-
 ## 49. AIS as a qualifier where the logbook or the landings are missing
 **status:** open · **needs: maintainer** — whether to qualify them, and the classes · **see:** plan 014 §1, decision 103
 
@@ -275,7 +200,6 @@ maintainer's.
 
 **check:** a decision says whether the flow qualifies voyages with neither a logbook trip nor a landing, and the
 suggested classes of `vessel_activity` are confirmed through an override or dropped.
-
 
 ## 51. `docs/data-dict.yaml` fails the current data-dict spec
 **status:** open · **see:** decision 029
@@ -317,7 +241,7 @@ all its sources and makes `vid` an integer and unique again, after the `rjdbc` d
 
 From TODO 23 (decision 117): SKB's registry half is built (203 rows, vid 100002–102772), and the decision record says
 what became of `registry.R`'s exclusion. Its key half (179 mobile-ids, no vid, class "vessel") waits on §4 step 7's
-key redo.
+key redo (TODO 25).
 
 **check:** plan 016 §8.
 
@@ -325,7 +249,7 @@ key redo.
 **status:** in progress · **needs: maintainer** — the first vid allocation, `allocate_vids(dry_run = FALSE)`, once
 decision 115's targets are built, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
 PAME's answer on ASTD (asked 2026-10-17, §6 h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
-plans 008, 016 and 017, decisions 114-115, TODO 15 and 22
+plans 008, 016 and 017, decisions 114-115 and 118, TODO 15 and 25
 
 The maintainer asked on 2026-10-15 for a registry of every vessel the pings carry, not only the Icelandic ones. Plan 021
 proposes one integer `vid` per hull and a crosswalk from each feed identity to it. Its asks are answered (a revised and
@@ -336,47 +260,25 @@ The 52 links in `overrides/vessel_ais_link.csv` for 50 of the 59 `foreign_vid_ca
 2026-10-17; 9 stay held. Left from that review: 19 of them (class B) rest on the hand-made STK call-sign sheet
 `overrides/stk_foreign_mid_vid.csv`, whose entries want checking; 27 MMSIs carrying a linked hull's IMO would still get
 a second vid (a change to `curate/vessel_ais_link.R`); the STK key is wrong for mids 101843, 147141, 102481 and 102527
-(reused call signs, step 7's redo); foreign vids 3777 (a duplicate of 3756), 4077 and 3792 are not one hull each.
+(reused call signs, step 7's redo, TODO 25); foreign vids 3777 (a duplicate of 3756), 4077 and 3792 are not one hull each.
 
-**check:** plan 021 §7.
+**From TODO 22:** a ping with no vid is still dropped before the voyages: STK by the key's join
+(`sources/stk/convert.R:31`, `curate/ais_ping_union.R:78`), the other feeds by the MMSI periods
+(`curate/ais_ping_union.R:62`). A foreign hull reaches the voyages once the union reads the crosswalk (plan 021 step 6);
+`ports_all` already holds the ports abroad.
 
-## 67. Divers' registrations in the landings
-**status:** open · **see:** `curate/decisions/110-divers-registrations-in-the-landings.md`, TODO 24
-
-Two `vid`s in the landings are divers, not vessels: 8009 (the register's útgerðarflokkur "Kafarar") and very likely
-8008, both landing only with gear 23 "Kafari", about 14 t on 152 landing rows. They have no hull and no AIS track, so
-a check of vessels that land but are never heard on AIS counts them as missed vessels unless they are told apart.
-Mark them as divers, through an override that names the two, or a rule (a registration that lands only with gear 23),
-and leave them out of `ais_key_landings`' `landed_but_no_ais`.
-
-**check:** 8008 and 8009 carry a diver class in fishycode's landings or vessel classification, and
-`landed_but_no_ais` leaves them out.
-
+**check:** plan 021 §7, and plan 017 §7's check that a foreign vessel's ping reaches `curated/ais/voyage.parquet` with
+a voyage key and `pid1`/`pid2` resolved.
 
 ## 68. stk's tables besides the trail: what they hold, and which fishycode should read
-**status:** open · **see:** plan 022, decision 109, `curate/ais_voyage.R`, `curate/port_stay.R`
+**status:** open · **see:** plan 022 (§2.1, its appendix, §4), decision 109, `curate/ais_voyage.R`, `curate/port_stay.R`
 
-fishycode reads only stk's trail. The server's dump of stk (2026-10-16) holds 63 objects, and the maintainer asks for
-them to be checked: some are copies of the trail, some may be very useful. First **`tilk_stk_allt`**: recorded
-voyages, 3,186,904 from 2003-09-08 to 2021-02-08, each a departure and an arrival (time, port, the trail ids at both
-ends) and its duration; `tilk_stk` holds the 5.9 M port events behind them. They are voyages in fishycode's sense,
-port to port: whether the vessel fished is not recorded (maintainer). Of value three ways (maintainer):
-- before mid-2007, voyages where there is no track: 116,000-129,000 a year by 1,400-1,700 vessels in 2004-2006, when
-  the trail has 190 to 9,820 positions a year;
-- to 2021, recorded departures and arrivals to check, or correct, the voyages and stays cut from the track;
-- a departure time (T1) for logbook trips and landings, which lack one, with its own basis.
-The other `tilk_` tables (maintainer: they may hold more): `tilk_stk_allt_v` (1.95 M voyages, the same columns: which
-selection?), `tilk_stk_por_v` (pairs departure and arrival; skipped: Oracle did not finish it in over 2 h, twice), and `tilk_vss`, calls of
-departure (1) and arrival (2) to the traffic service in 2010-2011 (28,138, of them 9,824 moved to STK's events,
-`flutt`), then in 2012-2013 almost only a code 0 that Oracle's comment does not explain (141,172).
-Then `leidangrar_stk` (2,018,618 rows), `lodnuskip_stk` (1,102,509), `tilk_vss`, `posrep_current`,
-`coral_stk_export`, and the mobile-id tables (`mobile`, `mobile_skip_v`, `mobile_tab`), to compare with fishycode's
-STK key. Copies: `trail_all` is the trail as one table (the same
-303.8 M positions, 5 fewer columns; checked 2026-10-16, no positions before 2007 beyond the trail's), and most
-likely `stk_vms_v` (303,784,194 rows), the yearly `vms_stk_export_*` and the view `view_trail` (303,791,859).
-`stk_vms_v`, `trail_all` and `view_trail` stay on the server (`SYNC_EXCLUDE`).
-
-The first half of the check is met by plan 022's appendix (2026-10-16); the voyages comparison is plan 022 §4.
+The maintainer asked for every stk object besides the trail to be checked: some are copies of the trail, some may be
+very useful. Plan 022's appendix (2026-10-16) says what each of the 63 holds, so the first half of the check is met.
+Left is **`tilk_stk_allt`**: 3,186,904 recorded voyages, 2003-09-08 to 2021-02-08, port to port, with times and the
+trail ids at both ends. It is of value three ways (maintainer): voyages before mid-2007, where the trail has almost no
+track; recorded departures and arrivals to check, or correct, the voyages and stays cut from the track; and a
+departure time (T1) for logbook trips and landings, with its own basis. The comparison is plan 022 §4.
 
 **check:** each stk table besides the trail has a line saying what it holds, its time span and keys, and whether
 fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.parquet` on a sample of vessels, the
