@@ -212,14 +212,8 @@ run_dump(c("taxon", "fs_ufs", "uv", "rdbes", "dw", "ufs", "orri", "ops_einarhj",
 as afli. Then copy the nine directories as in section 10, and check orri and ops_einarhj as in section 11: the files
 kept are the same, and the rest are new. The Mac has no copy of the seven new schemas to compare with.
 
-Done 2026-10-17 (decision 122), and uv and kvoti redone at 12:48 after fixes to the dumper. ops$einarhj's three
-tables with lower-case names need one more run, after `git pull`:
-
-```bash
-nohup Rscript dump/oracle/all.R --resume ops_einarhj > /dev/null 2>&1 &
-```
-
-Then copy ops_einarhj as in section 10. kvoti's five views that fail in Oracle itself are expected to fail.
+Done 2026-10-17 (decision 122), with two reruns after fixes to the dumper: uv and kvoti at 12:48, ops_einarhj at
+13:01, each `all.R --resume <schemas>`. kvoti's five views that fail in Oracle itself are expected to fail.
 
 ## 13. What else is in Oracle
 

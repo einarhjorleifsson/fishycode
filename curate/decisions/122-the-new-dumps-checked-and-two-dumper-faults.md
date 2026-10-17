@@ -77,7 +77,7 @@ dictionaries and logs changed, as an rsync dry run listed first):
 - **kvoti:** `della_post` (139 rows), `adili_jn` (156,364; NULs in `heimili_1` and `heimili_2`) and
   `eftirlits_gjald_utan_ees` (5,472; NULs in `heimili`) written. Its five views failing in Oracle failed again. The two
   NUL tables hold parties' addresses, data decision 121 left out of the new schemas. kvoti also holds `adili` itself.
-  Whether they stay is asked in TODO 76.
+  They stay in `raw/` (maintainer, 2026-10-17).
 - **ops$einarhj: two more faults of ours.** `heildarafli` was read but not written. Its source,
   `ops$einarhj."heildarafli"`, went into the parquet metadata with shell quoting (`shQuote(type = "sh")`), which can
   give double quotes with backslash escapes, and DuckDB's SQL does not read them once a value holds a double quote.
@@ -87,6 +87,15 @@ dictionaries and logs changed, as an rsync dry run listed first):
   columns as the files do; the file and its overview carry a note. No other dumped table has such names. The stand-in
   test has 19 checks, all passing; on 751f209's code the metadata write fails and the four columns come out as two.
   `R/write_curated.R` quotes the same way and has not met such a value; it is not changed, since targets would see it.
+
+## The last rerun (6b5a48d, 13:01)
+
+`all.R --resume ops_einarhj`: 52 of 52 written, 0 failed, copied to the Mac. The five files `_targets.R` reads have
+the same md5 before and after the copy. `heildarafli` (6,715,339 rows), `raw_index_calc` (389,922) and `test`
+(549,157) match Oracle's counts. `raw_index_calc` and `test` carry `n`, `b`, `n_2` and `b_2`; `n` differs from `n_2`
+(Oracle's `N`) in 386,579 of 389,922 rows, so they are two quantities, as Oracle has them. `heildarafli`'s `visir`
+fails `TO_CHAR` as `afli.afli`'s does, and is read natively. Its ids run from -2,768,723,449 to 10,630,176,826, and
+all of its 1,256,147 ids outside 0 to 10^9 are in `afli.afli` (TODO 70).
 
 ## fs_afli against afli: a first measurement
 

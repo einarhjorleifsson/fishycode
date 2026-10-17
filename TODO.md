@@ -308,7 +308,8 @@ the scripts that write them make sure of it.
 The dump reads `afli.afli` and `v_afli` whole: `TO_CHAR` fails on `visir`, which is read natively, and its values match
 the April copy exactly (decision 109). Which rows and stored bytes `TO_CHAR` rejects is not known; the query in plan 018
 §3 (`DUMP()` only, one scan) names them. The 48 empty `afli` values (46 stations) are in both copies and are not this
-fault.
+fault. `visir` runs from -2,768,723,449 to 10,630,176,826, with 4,064,520 rows outside 0 to 10^9; whether those are
+the rejected values is not known. `ops$einarhj.heildarafli` carries the same ids and fails the same way (decision 122).
 
 **check:** the rows the query returns are recorded in a decision or a correction, with whether they are the 48 empty
 values.
@@ -394,19 +395,16 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
 ## 76. The dumps of decision 121: the failures redone, and `fs_afli` against `afli`
-**status:** in progress · **needs: maintainer** — one more rerun, `all.R --resume ops_einarhj` (`dump/oracle/README.md`
-§12); and whether kvoti's party tables with addresses (`adili`, `adili_jn`, `eftirlits_gjald_utan_ees`) stay in
-`raw/` (decision 121 left such tables out of the new schemas) · **see:** decisions 121 and 122, TODO 10, 62 and 71
+**status:** in progress · **see:** decisions 121 and 122, TODO 10, 62 and 71
 
-The nine schemas are dumped, checked and in `raw/oracle/` (decision 122); the rerun of 12:48 completed uv and kvoti.
-ops$einarhj's `heildarafli`, `raw_index_calc` and `test` still failed, on two more faults of the dumper, fixed since.
+The nine schemas are dumped, checked and in `raw/oracle/`, uv, kvoti and ops$einarhj complete after two reruns
+(decision 122). What is left is `fs_afli`.
 
 `fs_afli` holds every station `afli` holds, plus 2,090 paper stations (spring 2022) and 169,502 electronic ones
 (2020-2023), none in the foreign vid range (decision 122). Open: whether those 169,502 are trips fishycode lacks or
 the same trips `fs_afladagbok` holds; and the other 23 tables with more rows.
 
-**check:** after the rerun, ops$einarhj's overview holds no failure, the copies on the Mac agree with
-the server's, and a decision says, for the stations only `fs_afli` holds, whether `curated/logbook` has their trips.
+**check:** a decision says, for the stations only `fs_afli` holds, whether `curated/logbook` has their trips.
 
 ## 77. The build that decisions 113, 115 and 116 left
 **status:** open · **needs: maintainer** — the go for one `tar_make_isolated()`, and whether decision 115's targets
