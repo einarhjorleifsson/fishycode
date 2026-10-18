@@ -39,7 +39,7 @@
   main { grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 16px; }
   #vessel { grid-template-columns: minmax(300px, 460px) 1fr; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-  /* Where | When: app.js sets Where's width from the map's height and the fishing grounds' shape (sizeMap) */
+  /* Where | When: a third and two thirds; the map's shape is fixed in app.js (MAP_RATIO), its height follows its width */
   #where-when { grid-template-columns: 1fr 2fr; }
   section.controls { position: sticky; top: 52px; z-index: 15; }
   #trips, #pings { overflow-x: auto; }   /* wide QC tables scroll sideways */
@@ -71,7 +71,7 @@
   .badge.ok { background: #e8f5e9; color: #2e7d32; }
   dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
   dt { color: var(--muted); } dd { margin: 0; }
-  #map { position: relative; height: 320px; border-radius: 6px; overflow: hidden; background: #e8edf1; }
+  #map { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 6px; overflow: hidden; background: #e8edf1; }
   #attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
   #plot, #lanes { margin-top: 6px; }
   #hoverinfo { min-height: 18px; font-size: 12px; color: var(--ink); }

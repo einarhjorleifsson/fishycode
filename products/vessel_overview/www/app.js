@@ -133,30 +133,17 @@ const basemap = TOKEN.startsWith('pk.')
   : null;
 $('attrib').textContent = basemap ? '© Mapbox © OpenStreetMap' : 'no basemap: MAPBOX_TOKEN is not set';
 
-// The map's shape (maintainer, 2026-10-18): Where is as wide as the fishing grounds around Iceland need to fill its
-// height at the same distance per pixel both ways, and When takes the rest of the row. 98% of the Icelandic fleet's
-// fishing pings in 2016 and 2024 lie in lon -32 to -5, lat 59 to 70, and nearly all of those in the box below. At
-// 65°N a degree of longitude is 0.42 of a degree of latitude (47 against 111 km), so the box is 752 by 556 km: 1.35
-// times as wide as tall, on the map's Web Mercator projection too.
+// The map's shape is fixed, the same for every vessel, mode and window; only the zoom changes (maintainer, 2026-10-18:
+// "the aspect ratio of the 'leaflet' should be fixed across vessel ... the zoom level is the only thing that can
+// change"). It is the shape of the fishing grounds around Iceland at the same distance per pixel both ways. 98% of the
+// Icelandic fleet's fishing pings in 2016 and 2024 lie in lon -32 to -5, lat 59 to 70, and nearly all of those in the
+// box below. At 65°N a degree of longitude is 0.42 of a degree of latitude (47 against 111 km), so the box is 752 by
+// 556 km: 1.35 times as wide as tall, on the map's Web Mercator projection too. Where takes a third of the row (index.html),
+// and the map is as tall as that width needs.
 const GROUNDS = [[-27.5, 62.5], [-11.5, 67.5]];
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const MAP_RATIO = ((GROUNDS[1][0] - GROUNDS[0][0]) * Math.PI) / 180 / (merc(GROUNDS[1][1]) - merc(GROUNDS[0][1]));
-function sizeMap() {
-  const row = $('where-when'), map = $('map'), where = $('p-map'), when = $('p-chart');
-  if (!$('now').classList.contains('on')) return;
-  if (window.innerWidth <= 1000) {   // one column: the map as wide as the page, as tall as the grounds need
-    row.style.gridTemplateColumns = '';
-    map.style.height = `${Math.round(Math.min(map.clientWidth / MAP_RATIO, 0.7 * window.innerHeight))}px`;
-    return;
-  }
-  for (let k = 0; k < 2; k++) {   // twice: the help text and the chart's legend wrap by width, which moves the heights
-    const chrome = where.offsetHeight - map.offsetHeight, pad = where.offsetWidth - map.clientWidth;
-    const h = Math.max(240, when.offsetHeight - chrome);
-    const w = Math.min(Math.round(h * MAP_RATIO) + pad, Math.round(row.clientWidth / 2));   // When keeps at least half
-    if (row.style.gridTemplateColumns !== `${w}px 1fr`) row.style.gridTemplateColumns = `${w}px 1fr`;
-    if (map.style.height !== `${h}px`) map.style.height = `${h}px`;
-  }
-}
+$('map').style.aspectRatio = String(MAP_RATIO);
 // The zoom the map is at, for the hexagons' size
 const view = { zoom: 5, latitude: 65 };
 function groundsView() {
@@ -165,8 +152,6 @@ function groundsView() {
   view.zoom = v.zoom; view.latitude = v.latitude;
   return { longitude: v.longitude, latitude: v.latitude, zoom: v.zoom };
 }
-sizeMap();
-
 let afterRender = null;
 const deckgl = new deck.Deck({
   parent: $('map'), controller: true, initialViewState: groundsView(),
@@ -455,11 +440,10 @@ function makeLanes() {
   clickToSelect(lanes);
 }
 function fitPanels() {
-  sizeMap();
   plot?.setSize({ width: $('plot').clientWidth, height: PLOT_H });
   lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
 }
-// When's height moves with the lanes and the legend's wrapping: the map follows it
+// the chart follows its panel's width, which a scroll bar's coming and going also moves
 new ResizeObserver(() => requestAnimationFrame(fitPanels)).observe($('p-chart'));
 window.addEventListener('resize', () => {
   fitPanels();

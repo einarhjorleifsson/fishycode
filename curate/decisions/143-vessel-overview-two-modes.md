@@ -181,6 +181,14 @@ changed.
   - At 1,440 px, Where takes 34% of the row in Overview. In Quality control, the event lanes make When taller, so by
     the same rule Where would take 55%; the half-row cap holds it at 50%.
   - On one column (phone width), the map is as wide as the page and 1/1.35 as tall.
+  - **Revised the same day: the shape is fixed.** "the aspect ratio of the 'leaflet' should be fixed across vessel.
+    find some good default given the dataset. the zoom level is the only thing that can change, given any selection".
+    - The map now keeps the grounds' 1.35 always, and Where is a third of the row, as first asked. The map's height
+      follows its width alone, no longer the When panel beside it, so the half-row cap is gone too.
+    - At 1,440 px the map is 434 by 322 px in both modes, on vids 2047, 1977 and 2757 alike. At phone width it is 317 by
+      235 px.
+    - Only the zoom and the centre change with the vessel and the window. In Quality control the When panel is taller
+      than the map.
   - To make room, Overview's help text moved from the map into the Window line of the choices. The speed plot is
     230 px tall, up from 190.
 - **Outside the window: nothing first.** The default is now nothing, and the order of the choices is nothing, fishing
