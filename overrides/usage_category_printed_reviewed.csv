@@ -1,3 +1,4 @@
 printed,usage_category_no,reviewer,date,reason
 OLÍUSKIP,48,maintainer,2026-10-18,"an oil vessel: OLÍUFLUTNINGASKIP (decision 136)"
 BRUNNBÁTUR,67,maintainer,2026-10-18,"a special cargo vessel, a well-boat possibly serving aquaculture: FLUTNINGA/BRUNNSKIP (decision 136)"
+SKEMMTISKIP,62,maintainer,2026-10-18,"a pleasure ship: Skemmtibátur, by its name, as vessel_year.R read it; the vessel schema gives 33 to 87 % of the same hulls (decision 144)"

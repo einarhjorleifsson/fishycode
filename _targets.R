@@ -204,26 +204,6 @@ list(
     produces("reference/vessels/mmsi.R", fd_curated("vessel", "mmsi.parquet"))
   }, format = "file"),
 
-  # registry.R also reads agf/aflagrunnur, for a printed check after the save: not an input (decision 116).
-  tar_target(vessel, {
-    mmsi; vessel_raw
-    produces("reference/vessels/registry.R", fd_curated("vessel", "vessel.parquet"))
-  }, format = "file"),
-
-  # Usage type, kW and length by year (the effort on a fix uses the kW of its year), and the fisheries-management class
-  # over time (leisure, and coverage gaps by year). Plan 016 §4 step 5.
-  tar_target(vessel_hist_raw, c(fd_raw("oracle", "vessel", "vessel_hist_v.parquet"), fd_raw("oracle", "vessel", "vessel_measurement_hist_v.parquet"),
-                                fd_raw("oracle", "vessel", "usage_category.parquet")), format = "file"),
-  tar_target(vessel_class_raw, c(fd_raw("oracle", "kvoti", "skipasaga.parquet"),
-                                 fd_raw("external", "skipaskra", "data", "history.rda")), format = "file"),
-  tar_target(vessel_year, {
-    vessel_raw; vessel_hist_raw
-    produces("reference/vessels/vessel_year.R", fd_curated("vessel", "vessel_year.parquet"))
-  }, format = "file"),
-  tar_target(vessel_class, {
-    vessel_class_raw
-    produces("reference/vessels/vessel_class.R", fd_curated("vessel", "vessel_class.parquet"))
-  }, format = "file"),
   # The ship register: the history to 2023-12-19, frozen in the `once` project (plan 028 steps 1-5, decision 136), and the
   # `vessel` schema's own history after it, through the same decision model (plan 028 step 6, decision 142). The
   # register's tables for every year, in curated/vessel/register/.
@@ -249,6 +229,26 @@ list(
   tar_target(vessel_sign, {
     vessel_register
     produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))
+  }, format = "file"),
+
+  # The register's readers (plan 028 step 7). registry.R takes yh1/yh2, the first and last year on the register, and
+  # also reads agf/aflagrunnur, for a printed check after the save: not an input (decision 116).
+  tar_target(vessel, {
+    mmsi; vessel_raw; vessel_register
+    produces("reference/vessels/registry.R", fd_curated("vessel", "vessel.parquet"))
+  }, format = "file"),
+
+  # Usage type, kW and length by year (the effort on a fix uses the kW of its year), and the fisheries-management class
+  # over time (leisure, and coverage gaps by year). Plan 016 §4 step 5, from the register (plan 028 step 7). Hreiðar's
+  # segment comes from his staged workbook, built in the `once` project.
+  tar_target(hreidar_vessel_year, frozen_input("staging", "hreidar", "vessel_year.parquet"), format = "file"),
+  tar_target(vessel_year, {
+    vessel_raw; vessel_register; hreidar_vessel_year
+    produces("reference/vessels/vessel_year.R", fd_curated("vessel", "vessel_year.parquet"))
+  }, format = "file"),
+  tar_target(vessel_class, {
+    vessel_register
+    produces("reference/vessels/vessel_class.R", fd_curated("vessel", "vessel_class.parquet"))
   }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
