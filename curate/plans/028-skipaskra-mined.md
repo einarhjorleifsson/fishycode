@@ -1,9 +1,9 @@
 # 028 — The annual ship register (Skipaskrá) mined whole, into the `vessel` schema's tables
 
-**status:** partly built — step 1 coded and checked in a scratch store on 2026-10-18, not yet a target (decision 130);
-step 2 coded in another session and merged (c56278d); steps 3-4 in progress; the output takes the `vessel` schema's
-table structure, not one table, and what public sources print is kept (maintainer, 2026-10-18); §9 asks a and c-f
-open (TODO 83) · **2026-10-18** · **see:** decisions 046,
+**status:** partly built — steps 1, 3 and 4 coded and checked in a scratch store on 2026-10-18, not yet targets
+(decisions 130 and 131); step 2 coded in another session and merged (c56278d); step 5 waits on asks a and f; the output
+takes the `vessel` schema's table structure, not one table, and what public sources print is kept (maintainer,
+2026-10-18); §9 asks a and c-f open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)
 
@@ -200,7 +200,7 @@ The key also states rules that can be checked:
 | decked ships by type, age, mean age and engine make | 2004-2013; 2006 images | no | aggregates |
 | draught, dimensions and weight | 2004-2006 | yes | number, L, B, weight, light and loaded draught |
 | lists by registration number, district number and call sign | 2004-2013 | yes | the call-sign list also shows unassigned call signs |
-| name prerogative (*einkaréttur á skipsnöfnum*) | all | yes | reserved name and holder: not read (§7) |
+| name prerogative (*einkaréttur á skipsnöfnum*) | all | yes | reserved name and holder, kennitala 2013-2015: read since the maintainer's rule of 2026-10-18 (§7, decision 130) |
 | the key: district letters, classification societies, types of ship | all | no | code lists |
 
 ### 2.4 How far a plain text parse gets
@@ -484,7 +484,7 @@ gives is in it, chosen or not, so a row's `disputed` columns can always be trace
 | registrations list | `vessel_event` | `event`, `date`, GT |
 | deregistrations list | `vessel_event` | `event`, `date`, `fate`, `fate_class`, GT |
 | owner, owner's address | `vessel_owners_hist` | `name`, `address`, `postal_no` |
-| name prerogative | — | not read |
+| name prerogative | — | staged only (`staging/skipaskra/name_prerogative.parquet`): a reservation of a name, not a hull's record |
 
 So four PDF fields are added as columns: the changes, light draught, weight, and the deregistration fate. Hreiðar's
 `BRL gömul` maps to the schema's `brutto_grt_older`.

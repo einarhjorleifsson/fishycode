@@ -23,6 +23,8 @@ website:
             href: grammar_logbooks.qmd
       - text: Source Data
         href: afli-tables.qmd
+      - text: Ship register
+        href: skipaskra.qmd
       - text: Pipeline
         menu:
           - text: How the data are built

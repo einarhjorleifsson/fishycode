@@ -709,8 +709,14 @@ sk_parse_lists <- function(file, edition) {
     }
     for (l in ln$line[ln$page == p & kind_of_line %in% kind]) {
       w <- Wp[Wp$line == l, ]; w <- w[order(w$x), ]
-      for (b in if (is.finite(split_x)) 1:2 else 1L) {
-        wb <- if (b == 1) w[w$x < split_x, ] else w[w$x >= split_x, ]
+      # a second block too short to set the page's split (2007, p. 310: five lines) starts at a number after a district
+      sx <- split_x
+      if (!is.finite(sx) && kind == "number" && nrow(w) > 2) {
+        j <- which(grepl(DISTRICT_RE, w$text[-nrow(w)]) & grepl(key_re, w$text[-1]) & w$x[-1] > x_left + 150)
+        if (length(j)) sx <- w$x[j[1] + 1] - 1
+      }
+      for (b in if (is.finite(sx)) 1:2 else 1L) {
+        wb <- if (b == 1) w[w$x < sx, ] else w[w$x >= sx, ]
         if (!nrow(wb) || !grepl(key_re, wb$text[1])) next
         rec <- list(edition = edition, page = p, list = kind, block = b, key = wb$text[1])
         rest <- wb[-1, , drop = FALSE]
@@ -724,7 +730,6 @@ sk_parse_lists <- function(file, edition) {
           tx <- rest$text
           dist <- NA_character_
           if (length(tx) && (grepl(DISTRICT_RE, tx[length(tx)]) || tx[length(tx)] %in% c("-", "‐", "–"))) { dist <- tx[length(tx)]; tx <- tx[-length(tx)] }
-          if (kind == "number" && length(tx) && grepl("^[0-9]{1,4}$", tx[length(tx)])) tx <- tx[-length(tx)]
           rec$name <- if (length(tx)) paste(tx, collapse = " ") else NA_character_
           rec$district <- dist
         }

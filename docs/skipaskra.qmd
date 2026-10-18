@@ -1,0 +1,162 @@
+---
+title: "The annual ship register checked"
+author: "Einar Hjörleifsson"
+date: today
+---
+
+```{r setup}
+#| include: false
+library(tidyverse)
+library(nanoparquet)
+# quarto sets the working directory to this file's own; R/paths.R is the
+# single place that resolves $FISHYDATA, and nothing here hardcodes a data path.
+source("../R/paths.R")
+disc <- read_parquet(fd_curated("check", "skipaskra_discrepancy.parquet"))
+agr  <- read_parquet(fd_curated("check", "skipaskra_agreement.parquet"))
+n_of <- function(k) sum(disc$check == k)
+fmt <- function(x) format(x, big.mark = ",")
+pdf_agr <- agr |> filter(anchor == "pdf")
+pct <- function(d) round(100 * sum(d$n_agree) / sum(d$n), 1)
+MEASURES <- c("length", "max_length", "width", "depth", "brutto_grt", "brutto_weight_tons", "power", "construction_year")
+idn  <- disc |> filter(check == "identical_editions")
+cnt_eds <- disc |> filter(check == "total", grepl("^n_", column)) |> pull(edition) |> unique() |> sort()
+saga_names <- disc |> filter(check == "witness_value", column == "name", grepl("skipasaga", source_other), !is.na(edition))
+list13 <- disc |> filter(check == "number_list", edition == 2013, column == "name")
+two <- disc |> filter(check == "call_sign_two_hulls")
+key <- function(x) gsub("[^\\p{L}\\p{N}]", "", toupper(x), perl = TRUE)
+ff <- disc |> filter(check == "fixed_field")
+cut_short <- startsWith(key(ff$value), key(ff$value_other)) | startsWith(key(ff$value_other), key(ff$value))
+WHAT <- c(
+  total = "entries against the edition's own count and GT",
+  table_sum = "a trend table's decked + open against its total",
+  number_list = "the register against its number list (2004-2013)",
+  callsign_list = "the register against its call-sign list (2004-2013)",
+  aggregate_class = "entries by classification society against the inspection table",
+  aggregate_events = "the year's lists against the trend table",
+  rule_callsign_short = "a call sign below 15 m length overall",
+  rule_imo_check_digit = "an IMO number that fails its check digit",
+  rule_imo_missing = "no IMO number above 24 m registered length",
+  rule_gt_formula = "GT off 0.031 L² B below 15 m",
+  rule_nt_formula = "NT off 0.3 GT below 15 m",
+  rule_year_after_edition = "a build or engine year after the edition",
+  vocabulary = "a value outside the key's lists (mostly a type cut short in print)",
+  unique_call_sign = "one call sign on two hulls in one edition",
+  unique_district = "one district number on two hulls in one edition",
+  identical_editions = "an edition that repeats the one before",
+  fixed_field = "build year, place, yard, IMO or hull material changing between editions",
+  change_unexplained = "a dimension or tonnage change with no note and no dated change",
+  left_unlisted = "a hull that left with no deregistration listed",
+  arrived_unlisted = "a hull that came with no registration listed",
+  deregistered_still_printed = "a deregistered hull printed the next year",
+  registered_not_printed = "a registered hull missing the next year",
+  first_registration_seen_before = "a first registration of a hull printed before",
+  trend = "a trend-table figure that differs from most editions'",
+  witness_value = "a PDF value no witness of the same date agrees with",
+  witness_undated = "kvoti.skip_extra's fixed fields against every edition",
+  call_sign_two_hulls = "one call sign on two hulls at once, in one witness",
+  mmsi_unregistered = "an MMSI first held in a year the hull is off the register",
+  mmsi_after_register = "an MMSI held more than a year after the hull's last edition",
+  mmsi_mbl_not_in_archive = "mbl's MMSI not in the archive",
+  mmsi_list_2023 = "the 2023-01-15 MMSI list against the archive",
+  licence_non_fishing = "a fishing licence on a ship of a non-fishing type",
+  licence_after_deregistration = "a licence issued after the hull's last deregistration",
+  activity_unregistered = "landings or logbook trips in a year the hull is off the register",
+  activity_after_deregistration = "fishing after a listed deregistration",
+  activity_before_registration = "fishing before a listed registration",
+  landing_without_licence = "a landing with no licence valid on the day (to 2020-07-22)",
+  gear_without_licence = "Danish seine or lumpfish nets without their licence (to 2020-07-22)")
+```
+
+*Checked with AI assistance (Claude), plan 028 step 4, 2026-10-18. A check only finds: every finding stays
+"unsettled" until the decision model of plan 028 §6 settles it, and that model waits for the maintainer.*
+
+## The short version
+
+The annual register PDFs, 19 editions from 2004 to 2022 (decision 130), were checked in four ways: inside each
+edition, between editions, against every other witness, and against landings and logbooks.
+`r length(unique(disc$check))` of `r length(WHAT)` checks found something, `r fmt(nrow(disc))` findings in all. Nothing
+in the PDFs or any other source is changed by them.
+
+- **The witnesses agree with the PDFs on measures:** `r pct(pdf_agr |> filter(column %in% MEASURES))` % of lengths,
+  breadths, depths, tonnages, kW and build years. They agree on names and districts less often:
+  `r pct(pdf_agr |> filter(column %in% c("name", "region_acronym", "region_no"), grepl("skipasaga", witness)))` % for
+  the Directorate of Fisheries' ship history. In `r fmt(sum(grepl("earlier edition", saga_names$detail)))` of its
+  `r fmt(nrow(saga_names))` disagreements on a name, that history gives the name the register printed for the hull
+  in an earlier edition: it keeps an old name.
+- **The `vessel` schema's history before 2023-12-19 has no call sign at all.** Its back-filled engine rows also hold
+  the engine type ("D") where the make belongs. For 2004-2022 the call signs come only from the PDFs, kvoti's copy of
+  the register and the ufs journal.
+- **The `r idn$edition` edition reprints `r sub("pdf:", "", idn$source_other)`'s register:** `r idn$value_other` of its
+  entries are exactly as in `r sub("pdf:", "", idn$source_other)`.
+- **2013's number list is newer than its register.** It names `r nrow(list13)` hulls differently from the register,
+  and `r sum(grepl("later edition", list13$detail))` of those names are the hull's name in a later edition.
+
+## Findings by check
+
+```{r}
+#| echo: false
+tibble(check = names(WHAT), what = unname(WHAT)) |>
+  left_join(disc |> count(kind, check), by = "check") |>
+  mutate(n = coalesce(n, 0L), kind = coalesce(kind, "")) |>
+  select(kind, check, what, findings = n) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+## The PDFs against each witness
+
+Each PDF value is compared with every value a witness gives for the same hull and column on the edition's 1 January.
+Numbers agree when equal at the coarser of the two precisions. Text is compared on its letters and digits, so case,
+spaces and stops do not count. Witnesses are grouped by where they come from, as in plan 028 §6.1: copies of one
+database agree only as a copy.
+
+```{r}
+#| echo: false
+pdf_agr |>
+  group_by(witness, column) |>
+  summarise(values = sum(n), agree = round(100 * sum(n_agree) / sum(n), 1),
+            `agree within half a year` = round(100 * sum(n_agree_in_time) / sum(n), 1), .groups = "drop") |>
+  arrange(witness, column) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+Where a witness disagrees with the PDF but agrees within half a year, the difference is in the dating, not the value.
+Step 5 dates such changes from the dated sources.
+
+## What the findings say
+
+- **Inside an edition.**
+  - Entries differ from the edition's own count in `r paste(cnt_eds, collapse = ", ")`. That is the gaps decision
+    130 found. The GT totals differ in
+    `r paste(sort(unique(disc$edition[disc$check == "total" & grepl("^gt_", disc$column)])), collapse = ", ")`.
+  - Of the key's rules, the GT formula below 15 m is broken most often (`r fmt(n_of("rule_gt_formula"))` entries),
+    then call signs on boats below 15 m (`r fmt(n_of("rule_callsign_short"))`).
+  - `r n_of("rule_imo_check_digit")` IMO numbers fail their check digit as printed.
+- **Between editions.**
+  - `r n_of("fixed_field")` times a build year, place, yard, IMO or hull material differs from the hull's other
+    editions. In `r sum(cut_short)` of them one value is the other cut short in print;
+    `r sum(disc$check == "fixed_field" & disc$column == "imo_no")` are IMO numbers.
+  - `r n_of("change_unexplained")` changes in a dimension or tonnage have neither a changes note nor a dated change in
+    another source.
+  - The lists of registrations and deregistrations miss `r n_of("left_unlisted") + n_of("arrived_unlisted")` hulls that
+    left or came.
+  - `r sum(disc$check == "deregistered_still_printed" & disc$edition == 2013)` of the
+    `r n_of("deregistered_still_printed")` hulls listed as deregistered but printed the next year are in 2013, and
+    `r sum(disc$check == "registered_not_printed" & disc$edition == 2013)` of the `r n_of("registered_not_printed")`
+    listed as registered but not printed.
+- **Against the witnesses.**
+  - `r fmt(n_of("witness_value"))` PDF values have no agreeing witness on their date.
+  - `r fmt(n_of("call_sign_two_hulls"))` times a witness gives one call sign to two hulls at once. In
+    `r fmt(sum(grepl("last printed (200|201|202[01])|in no edition", two$detail)))` of them one of the two hulls had
+    left the register before 2022: the witness keeps the sign on a hull that is gone while another holds it. Most
+    such rows come from the `vessel` schema, from 2023-12-19, and kvoti's register copy.
+- **Against activity.**
+  - `r n_of("activity_unregistered")` vessel-years have landings or logbook trips while the hull is in neither edition
+    around them.
+  - `r n_of("gear_without_licence")` vessel-years land from Danish seine or lumpfish nets without that licence.
+
+## Not checked here
+
+- **AIS.** That comes later, and only through what the feed broadcasts itself (plan 028 §5.4).
+- **Changes the editions do not show.** Step 5 dates changes from the ufs journals.
+- **Owners' addresses.** The sources write them in different grammatical cases, with or without postcode and town.
+- **Personal data.** Owners' names are compared, but this page shows only counts. The rows stay under `$FISHYDATA`.

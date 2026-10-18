@@ -21,8 +21,9 @@ name-prerogative list is now read too.*
   2006 prints no lists.
 - **`sources/skipaskra/lists.R`** writes three tables:
   - `draught.parquet`: 3,160 rows, 2004-2006, the only source of weight and light draught;
-  - `index_list.parquet`: 22,964 rows by registration number and 6,754 by call sign, 2004-2013. The call-sign list
-    holds every sign of the TF block, held or free;
+  - `index_list.parquet`: 22,969 rows by registration number and 6,754 by call sign, 2004-2013. The call-sign list
+    holds every sign of the TF block, held or free. (22,964 at first: decision 131's checks found the reader dropping
+    a name's trailing number and joining two blocks on 2007 p. 310. Both are fixed.);
   - `summary.parquet`: 1,309 cells from 41 of the prefaces' tables by year;
   - `name_prerogative.parquet`: the names reserved for a holder, 173-239 a year in all 19 editions, with the
     holder's name, and kennitala in 2013-2015. 2004-2006 print it in two blocks with no header, so their columns
@@ -117,5 +118,6 @@ These go to plan 028 §5's checks. None is repaired.
 ## Not done
 
 - **Not targets.** The scripts carry `# Side: preprocessing` and wait on plan 028 ask a for their project.
-- **Step 2.** The other readers are on the other session's branch and are not merged here.
-- **Steps 3-5**, the evidence table, the checks and the decision model, are still to come (TODO 83).
+- **Step 2.** The other readers were on the other session's branch; merged in c56278d.
+- **Steps 3-5**, the evidence table, the checks and the decision model, were still to come. Steps 3-4 are decision
+  131; step 5 waits on plan 028's asks a and f (TODO 83).
