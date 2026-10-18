@@ -3,7 +3,9 @@
 *2026-10-18. Coded and checked by Claude (AI-assisted), on the maintainer's go ("start implementing the plan"; "accuracy
 over speed"). Code only: the three scripts ran against a scratch store, and nothing was written under the real
 `$FISHYDATA`. They are not yet targets, which waits on plan 028 ask a. The checking scripts and the 150 page strips
-were in the session's scratch and were not kept, so the numbers below are the record.*
+were in the session's scratch and were not kept, so the numbers below are the record. Amended the same day: the
+maintainer's rule, given in the step-2 session, keeps everything a public source prints, kennitala included, so the
+name-prerogative list is now read too.*
 
 ## What was built
 
@@ -21,15 +23,28 @@ were in the session's scratch and were not kept, so the numbers below are the re
   - `draught.parquet`: 3,160 rows, 2004-2006, the only source of weight and light draught;
   - `index_list.parquet`: 22,964 rows by registration number and 6,754 by call sign, 2004-2013. The call-sign list
     holds every sign of the TF block, held or free;
-  - `summary.parquet`: 1,309 cells from 41 of the prefaces' tables by year.
+  - `summary.parquet`: 1,309 cells from 41 of the prefaces' tables by year;
+  - `name_prerogative.parquet`: the names reserved for a holder, 173-239 a year in all 19 editions, with the
+    holder's name, and kennitala in 2013-2015. 2004-2006 print it in two blocks with no header, so their columns
+    are read from the data.
 
-## The owner and the address are kept
+## The owner and the address are kept, and what else a public source prints
 
 Asked whether the readers should keep the owner's name and address, the maintainer chose "Keep both, $FISHYDATA only"
-(2026-10-18), noting that they are public in the register. They are read as printed, are never published, and never
-enter this repository. This replaces decision 121's default for the register. Kennitala, which the 2012-2013
-name-prerogative list prints, and phone numbers stay unread, since the answer covered names and addresses only.
-Plan 028 §7 is amended to match.
+(2026-10-18), noting that they are public in the register. In the step-2 session the same day, they widened it: owner
+and operator names and addresses are kept as printed, "and so is anything else from a public source", and all of
+Hreiðar's columns are kept, at least in staging (commits bb8fe9a and 662b99e, merged in c56278d). Asked directly in the
+main session whether that is the rule (kennitala, phone numbers and Hreiðar's counts of people lost included), the
+maintainer answered "Yes, that's my rule". Everything stays
+under `$FISHYDATA`, never in the repository, docs or anything published. This replaces decision 121's default for
+the register and its kin. Plan 028 §7 is amended to match, and ask b (Hreiðar's counts of people lost and rescued) is
+answered: kept in staging.
+
+## Superseded — kept for the reasoning
+
+The first answer covered names and addresses only, so this record said at first that kennitala (printed in the
+2013-2015 name-prerogative list) and phone numbers stayed unread, and the name-prerogative list was not read. The
+maintainer's public-source rule overturned that the same day.
 
 ## How the PDFs read
 

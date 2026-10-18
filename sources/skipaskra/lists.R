@@ -5,12 +5,15 @@
 # Output: staging/skipaskra/draught.parquet             draught, dimensions and weight by number, 2004-2006
 #         staging/skipaskra/index_list.parquet          the vessels by registration number and by call sign, 2004-2013
 #         staging/skipaskra/summary.parquet             the preface's tables by year (counts and tonnage), 2004-2022
+#         staging/skipaskra/name_prerogative.parquet    the names reserved for a holder, with holder (and kennitala,
+#                                                       2013-2015), 2004-2022
 #
 # These repeat the register in another order, or sum it, so they serve the checks (plan 028 §5.1): every number in the
 # register and in its list, every call sign once, the counts the preface prints against the entries. The draught
 # table is the only source of weight and light draught. The call-sign list holds every sign of the TF block, held
-# or free. Not read: the district list (it repeats the register) and the name prerogative (holders and, in
-# 2012-2013, their kennitala).
+# or free. The name prerogative is read since the maintainer's rule of 2026-10-18 keeps what a public source prints,
+# holders' names and kennitala included, under $FISHYDATA only (decision 130). Not read: the district list, which
+# repeats the register.
 
 library(dplyr)
 library(nanoparquet)
@@ -37,12 +40,16 @@ index_list <- li |>
 summ <- bind_rows(lapply(seq_len(nrow(eds)), function(i) sk_parse_summary(eds$file[i], eds$edition[i]))) |>
   mutate(value = sk_num(printed))
 
-stopifnot(!anyNA(draught$vid), !anyNA(index_list$key))
+pre <- bind_rows(lapply(seq_len(nrow(eds)), function(i) sk_parse_prerogative(eds$file[i], eds$edition[i])))
+
+stopifnot(!anyNA(draught$vid), !anyNA(index_list$key), !anyNA(pre$name))
 print(index_list |> count(edition, list) |> tidyr::pivot_wider(names_from = list, values_from = n, values_fill = 0) |>
         left_join(draught |> count(edition, name = "draught"), by = "edition") |>
+        full_join(pre |> count(edition, name = "prerogative"), by = "edition") |> arrange(edition) |>
         knitr::kable(caption = "lists: rows per edition"))
 message(nrow(summ), " summary cells from ", n_distinct(paste(summ$edition, summ$table)), " tables")
 
 write_parquet(draught, fd_staging("skipaskra", "draught.parquet"))
 write_parquet(index_list, fd_staging("skipaskra", "index_list.parquet"))
 write_parquet(summ, fd_staging("skipaskra", "summary.parquet"))
+write_parquet(pre, fd_staging("skipaskra", "name_prerogative.parquet"))

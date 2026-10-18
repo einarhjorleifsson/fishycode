@@ -673,8 +673,7 @@ sk_parse_events <- function(file, edition) {
 
 # Pages after the register, 2004-2013, hold two-block lists: draught and weight by number (2004-2006), the vessels by
 # registration number and by call sign. One row per entry: the list, its key, and the entry's fields. The district
-# list and the name prerogative are not read (the first repeats the register; the second names holders with their
-# kennitala, which the maintainer's answer of 2026-10-18 did not cover).
+# list is not read: it repeats the register. The name prerogative has its own reader below.
 sk_parse_lists <- function(file, edition) {
   W <- sk_words(file)
   lastreg <- max(W$page[grepl("^Smíðasta", W$text)])
@@ -769,6 +768,73 @@ sk_parse_summary <- function(file, edition) {
       out[[length(out) + 1]] <- data.frame(edition = edition, page = ln$page[i], table = title, label = lab, occurrence = k,
                                            year = years, printed = vals, stringsAsFactors = FALSE)
     } else if (!length(vals) && nzchar(lab) && nrow(w) > 3) years <- NULL   # prose: the table has ended
+  }
+  dplyr::bind_rows(out)
+}
+
+# The name prerogative --------------------------------------------------------------------------------------------
+
+# The last table of every edition: names reserved for a holder (einkaréttur á skipsnöfnum), with the holder's name and,
+# in 2013-2015, kennitala. One row per reserved name. Read since the maintainer's rule of 2026-10-18 keeps what a public
+# source prints (decision 130). 2007-2022 print a header ("Sérleyfisnafn Nafn eiganda [Kennitala]"); 2004-2006 print
+# two blocks of name and holder with no header, under a title in spaced letters, so their columns come from the data.
+sk_parse_prerogative <- function(file, edition) {
+  W <- sk_words(file)
+  ln <- stats::aggregate(list(y = W$y), by = list(page = W$page, line = W$line), FUN = min)
+  ln$sq <- mapply(function(p, l) tolower(paste(W$text[W$page == p & W$line == l][order(W$x[W$page == p & W$line == l])], collapse = "")),
+                  ln$page, ln$line)
+  title <- ln$page[grepl("(einkarétt|einkarøtt|sérleyfisnafn)", ln$sq) & ln$page > 4 & !grepl("\\.\\.\\.|qxd", ln$sq)]
+  if (!length(title)) return(NULL)
+  W <- W[W$page >= min(title), ]
+  hdr_re <- "^(Sérleyfisnafn|Skipsheiti|Skipsnafn)$"
+  has_lower <- function(t) grepl("[a-záðéíóúýþæö]", t)
+  mode_x <- function(x) { if (!length(x)) return(NA_real_); t <- table(round(x)); as.numeric(names(t)[which.max(t)]) }
+  out <- list(); cols <- NULL
+  for (p in sort(unique(W$page))) {
+    Wp <- W[W$page == p, ]
+    h <- Wp[grepl(hdr_re, Wp$text), ]
+    if (nrow(h)) {
+      yh <- min(h$y); hl <- Wp[abs(Wp$y - yh) < 2.5, ]
+      cols <- list(blocks = list(c(name = min(h$x), holder = min(hl$x[grepl("^(Nafn|Eigandi)", hl$text)]),
+                                   kennitala = suppressWarnings(min(hl$x[grepl("^Kennitala", hl$text)])))))
+      body <- Wp[Wp$y > yh + 2.5, ]
+    } else {
+      body <- Wp
+      if (!any(grepl(hdr_re, W$text))) {
+        # no header in this edition: name at the margin, holder where the mixed-case text starts, two blocks
+        lines <- split(body, body$line)
+        firsts <- vapply(lines, function(w) min(w$x), 0)
+        x1 <- mode_x(firsts)
+        right <- body[body$x > x1 + 180 & !has_lower(body$text) & grepl("^[A-ZÁÐÉÍÓÚÝÞÆÖ]{2,}", body$text), ]
+        x3 <- mode_x(vapply(split(right, right$line), function(w) min(w$x), 0))
+        h1 <- vapply(lines, function(w) { k <- which(has_lower(w$text) & w$x < (if (is.na(x3)) Inf else x3) - 4); if (length(k)) w$x[k[1]] else NA }, 0)
+        h2 <- vapply(lines, function(w) { k <- which(has_lower(w$text) & !is.na(x3) & w$x > x3); if (length(k)) w$x[k[1]] else NA }, 0)
+        x2 <- mode_x(h1[!is.na(h1)]); x4 <- mode_x(h2[!is.na(h2)])
+        if (is.na(x1) || is.na(x2)) next
+        cols <- list(blocks = Filter(function(b) !anyNA(b[c("name", "holder")]),
+                                     list(c(name = x1, holder = x2, kennitala = Inf, end = if (is.na(x3)) Inf else x3),
+                                          c(name = x3, holder = x4, kennitala = Inf, end = Inf))))
+      }
+    }
+    if (is.null(cols)) next
+    for (l in unique(body$line[order(body$y)])) {
+      w <- body[body$line == l, ]; w <- w[order(w$x), ]
+      if (grepl(PAGE_FURNITURE_RE, paste(w$text, collapse = " "))) next
+      for (b in cols$blocks) {
+        end <- if ("end" %in% names(b)) b[["end"]] else Inf
+        wb <- w[w$x >= b[["name"]] - 6 & w$x < end - 4, ]
+        if (!nrow(wb) || min(wb$x) > b[["holder"]] - 6) next
+        kt_col <- is.finite(b[["kennitala"]])
+        nm <- wb$text[wb$x < b[["holder"]] - 6]
+        hd <- wb$text[wb$x >= b[["holder"]] - 6 & (!kt_col | wb$x < b[["kennitala"]] - 6)]
+        kt <- if (kt_col) wb$text[wb$x >= b[["kennitala"]] - 6] else character(0)
+        if (!length(nm) || !grepl("^[A-ZÁÐÉÍÓÚÝÞÆÖ]", nm[1]) || has_lower(nm[1])) next
+        out[[length(out) + 1]] <- data.frame(edition = edition, page = p, name = paste(nm, collapse = " "),
+                                             holder = if (length(hd)) paste(hd, collapse = " ") else NA_character_,
+                                             kennitala = if (length(kt)) paste(kt, collapse = "") else NA_character_,
+                                             stringsAsFactors = FALSE)
+      }
+    }
   }
   dplyr::bind_rows(out)
 }
