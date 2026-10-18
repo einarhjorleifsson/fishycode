@@ -239,7 +239,9 @@ sk_fields_A <- function(L, a, page, y, edition, section) {
   k1 <- hd[which.min(w1$x[hd])]
   sknr <- w1$text[k1]
   w1 <- w1[-k1, , drop = FALSE]
-  w1 <- w1[order(w1$x), ]
+  # the head line reads before what wrapped below it: in 2007 the GRT stays at the line's end and the length wraps to
+  # the next line's left margin (1764, 1929), so ordering by x alone swapped them
+  w1 <- w1[order(w1$y > min(w1$y) + 2.5, w1$x), ]
   # the trailing run of numbers is year built, GRT and registered length, any of which may be blank. A 4-digit integer
   # opening the run is the year when the run has three, or when it stands nearer the year's column than the GRT's.
   # measures merged in from the line below (2005, 2007) are line 1's GRT and length; the head line's year is then its

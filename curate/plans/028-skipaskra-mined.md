@@ -2,9 +2,9 @@
 
 **status:** partly built — steps 1-4 built in the `once` project on 2026-10-18 and equal to their scratch checks
 (decisions 130-132; step 2 coded in another session, c56278d); the history to 2023-12-19 builds in `once`, the live
-part in the main project (ask a, decision 132); step 5 waits on ask f; the output takes the
-`vessel` schema's table structure, not one table, and what public sources print is kept (maintainer, 2026-10-18); §9
-asks c-g open (TODO 83) · **2026-10-18** · **see:** decisions 046,
+part in the main project (ask a, decision 132); step 5 in progress (asks f and g answered,
+decision 135); the output takes the `vessel` schema's table structure, not one table, and what public sources print is
+kept (maintainer, 2026-10-18); §9 asks d and e open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)
 
@@ -431,11 +431,12 @@ can read it. It goes in `curated/vessel/skipaskra/`. It is a set of tables, not 
 - **Tables the schema lacks:**
   - `vessel_event`: registration, re-registration and deregistration, each with its date, and for a deregistration
     the fate in words and a fate class;
-  - `vessel_licence_hist`: one row per licence, with type, area and validity, from §3.4.
+  - `vessel_licence_hist`: one row per licence, with type, area and validity, from §3.4. *Amended 2026-10-18: this
+    is plan 029's product (its §5.5), not built here (decision 135).*
 - **The key** is `registration_no`, the vid, which is one to one with `vessel_id`. `vessel_id` is kept as a column for
   joining back to Oracle.
-- **`vessel_owners_hist`** takes the owner's name and address as the PDFs print them, without the schema's
-  `national_identity_no` (§7). `vessel_fishery_hist` (the operator, keyed by kennitala) is not built.
+- **`vessel_owners_hist`** takes the owner's name and address as the PDFs print them, and `national_identity_no`
+  where a source has it. `vessel_fishery_hist`, the operator, is built too (maintainer, 2026-10-18, decision 135; §7).
 
 **Provenance and dispute indicators on every row** (maintainer, 2026-10-18: where the data came from, and whether the
 cross-checks disagree):
@@ -669,9 +670,9 @@ default for the register and its kin (decision 130).
   - Hreiðar: every column, the operator's kennitala and the counts of people lost and rescued included (ask b,
     answered);
   - the `vessel` schema: the names and addresses in `vessel_owners*`.
-- **Not read without a word from the maintainer:** kennitala and phone columns in the Oracle dumps, which are copies
-  held by the institute rather than public prints (the schema's `national_identity_no`, kvoti's and ufs's ids and
-  phone numbers).
+- **Kennitala from any source**, the Oracle dumps included, may be carried up to and including `curated/` (the
+  maintainer's general rule of 2026-10-18, AGENTS.md). So the history's owners carry `national_identity_no` and its
+  operator table is built (decision 135). Phone columns in the Oracle dumps still need the maintainer's word.
 - **Where the data stay:** everything stays under `$FISHYDATA`. The repository carries code and counts only.
 
 ## 8. Steps
@@ -722,12 +723,14 @@ a. **Where it builds.** Answered (maintainer, 2026-10-18, decision 132): the his
 b. **Hreiðar's counts of people lost and rescued, and its notes on the fate.** Answered (maintainer, 2026-10-18): kept,
    at least in staging (§7).
 c. **Licences after July 2020.** Which schema holds them (the Directorate of Fisheries' current system), to dump?
-   Until then `vessel_operational_hist` is the only source after 2020.
+   Until then `vessel_operational_hist` is the only source after 2020. *Moved to plan 029 (its ask a), which builds
+   the licence history (decision 133).*
 d. **The MMSI lists `mmsi.R` does not read.** Proposed: the 2023-01-15 list goes into `mmsi.R` (TODO 71); mbl's MMSIs
    and MarineTraffic's are checks, not sources, since neither is the authority's list.
 e. **Editions outside 2004-2022.** Does Samgöngustofa publish 2023 and later? Is there a reason to scan the printed
    registers before 2004, rather than lean on Hreiðar?
-f. **The decision model (§6).**
+f. **The decision model (§6).** Answered (maintainer, 2026-10-18, decision 135): as written. Hreiðar does not count
+   apart from the register in 2004-2021, mbl counts as its own lineage, and D4 is on with its error measured.
    - Are the lineages of §6.1 right? In particular, should Hreiðar count apart from the register in 2004-2021, and
      where does mbl copy from?
    - Is the rule order right? Should D4, the typo rule, overrule the PDF at all, or only flag?
@@ -736,6 +739,7 @@ f. **The decision model (§6).**
 g. **Hreiðar's own numbers.** 1,764 boats without a register number (90000 and above, 30,913 rows, nearly all before
    1992) are in staging only: the evidence leaves them out, having no vid. Carry them into the history, each given a
    vid through the vid ledger (decision 115), or leave them in staging? (Raised by the maintainer, 2026-10-18.)
+   Answered (maintainer, 2026-10-18, decision 135): left in staging, no vids given.
 
 ## 10. Not in this plan
 

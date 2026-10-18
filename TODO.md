@@ -453,8 +453,8 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
-**status:** in progress · **needs: maintainer** — plan 028 §9's asks c-g: licences after July 2020, the MMSI lists
-`mmsi.R` does not read, editions outside 2004-2022, the decision model, Hreiðar's own numbers (a and b answered) · **see:** `curate/plans/028-skipaskra-mined.md`, decisions 130-132, TODO 71
+**status:** in progress · **needs: maintainer** — plan 028 §9's asks d and e: the MMSI lists `mmsi.R` does not read,
+editions outside 2004-2022 (a, b, f and g answered, decisions 132 and 135; c moved to plan 029) · **see:** `curate/plans/028-skipaskra-mined.md`, decisions 130-132 and 135, TODO 71
 
 Steps 1-4 are coded and checked in a scratch store (decisions 130, 131). They cover:
 - the 19 editions read whole: 43,430 entries, the event lists, the number and call-sign lists, the summary tables and
@@ -464,7 +464,7 @@ Steps 1-4 are coded and checked in a scratch store (decisions 130, 131). They co
 
 They are built in the `once` project (decision 132), by name: `tar_make_isolated(names =
 "check_skipaskra_discrepancy")` in `TAR_PROJECT=once`, never the whole project, whose key targets are outdated. What public sources print is kept, never published. Step 5, the decision model and the `_hist`
-tables, needs ask f; step 6, the live part, goes in the main project.
+tables, is in progress; step 6, the live part, goes in the main project.
 
 **check:** plan 028's steps 1-5 built and its discrepancy table and docs page published, or the plan parked.
 
