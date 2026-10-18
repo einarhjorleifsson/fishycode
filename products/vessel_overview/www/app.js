@@ -397,8 +397,9 @@ function laneLists() {   // every lane as intervals {a, b} sorted by a, with its
   }
   for (const d of S.landings) L.land.push({ a: d.d, b: d.d + DAY, d });
   if (tr) {
-    // a run of one key, ended by a gap in the AIS; a stay in port runs on through a gap (bridge), since the vessel lay
-    // in that port all the while
+    // a run of one key, ended by a gap in the AIS; a stay or a voyage runs on through a gap (bridge), since the vessel
+    // was in that stay, or on that voyage, all the while (maintainer, 2026-10-18: "draw each voyage as one unbroken bar
+    // in the QC lane, leaving gaps to the gap lane")
     const runs = (key, ok, out, bridge = false) => {
       let s = -1;
       for (let i = 0; i <= tr.n; i++) {
@@ -408,7 +409,7 @@ function laneLists() {   // every lane as intervals {a, b} sorted by a, with its
       }
     };
     runs((i) => tr.stay[i], (i) => tr.stay[i] >= 0, L.stay, true);
-    runs((i) => tr.voyage[i], (i) => tr.voyage[i] >= 0, L.voy);
+    runs((i) => tr.voyage[i], (i) => tr.voyage[i] >= 0, L.voy, true);
     runs(() => 1, (i) => tr.fishing[i] === 1, L.flow);
     // a gap between two pings of one stay is the vessel lying in port, not a hole in the track (maintainer, 2026-10-18:
     // "the ais gap in the graph should not include when vessel is in harbour"); a gap that leaves or reaches a port is kept
@@ -553,8 +554,8 @@ $('pts').querySelectorAll('button').forEach((b) => b.addEventListener('click', (
 
 // Presets: each sets the window and centres the map on it
 function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
-// The AIS voyages, whole. The lane splits a voyage at its gaps, and the trail numbers voyages afresh each year, so
-// one voyage is the consecutive runs of one number, never every run of that number.
+// The AIS voyages, whole. The trail numbers voyages afresh each year, so one voyage is the consecutive runs of one
+// number, never every run of that number (a ping on no voyage and in no stay can also part a voyage's run).
 function voyages() {
   const out = [];
   for (const r of S.lanes?.voy || []) {

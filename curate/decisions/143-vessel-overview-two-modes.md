@@ -285,6 +285,13 @@ by Claude (AI-assisted).
 
   So 2047's gap lane is now empty, 1977's is unchanged, and 2757's keeps 3 gaps. Seen in the pane for 2757's 2021,
   with no console error.
+- **The voyage lane, too, runs on through a gap.** The maintainer asked whether a voyage is cut at an AIS gap of more
+  than 30 min. It is not: `curate/ais_voyage.R` cuts voyages only at stays and at the New Year
+  (`ramb::rb_cut_trip_voyages`, method `stays`). Only the page split a voyage's bar at gaps, which could look like a new
+  voyage. "Yes, draw each voyage as one unbroken bar in the QC lane, leaving gaps to the gap lane": done.
+  - Seen on 2757's 2021 and on 1977's last trip of 2021, with no console error.
+  - On 1977's trip, the trail's voyage changes around 2021-12-11 inside the one logbook trip, with no stay to be seen
+    at that scale. That was not looked into.
 
 ## Amended 2026-10-18: the speed line drawn trip by trip
 
