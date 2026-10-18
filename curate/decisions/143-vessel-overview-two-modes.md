@@ -302,3 +302,44 @@ harbour", and "you can show a stretch if the voyage is the same" (maintainer). C
   - vid 1977's three trips of autumn 2021, with nothing drawn between them.
 - The redraw time was not measured: the browser pane was hidden, which gives the page no animation frames. The break
   test runs once per drawn point.
+
+## Amended 2026-10-18: the window's points can be turned off; AIS gaps at sea measured by distance offshore
+
+The maintainer's asks; code, measurement and this section by Claude (AI-assisted).
+
+**Points off.** "one thing i would like in the where is to turn off any ping points. now it seems not possible".
+- The choices have "In the window: points | line only". With "line only", the window's line is drawn stronger, so the
+  track stays plain: dark grey at about 85% opacity and 1.5 px, against about 30% and 1 px with points.
+- The choice is kept with the others (`pts` in the address) and carried to the next vessel.
+- Seen in the pane on vid 1977's last trip of 2021, then carried to vid 2047, with no console error.
+
+**AIS gaps at sea grow offshore.** The maintainer: "an ais gap when at sea may need to be flagged - but then you see the
+further we go from shore stations the greater the gap, because on the high seas we only have satellite receivers".
+Measured on the 2021 trail:
+- the sample: intervals between consecutive pings of one voyage, neither in port, vid 1-9999, a 3% sample (510,607);
+- the distance offshore: crudely, the distance to the nearest of the 157 ports in `ports_iceland_faroe`.
+
+| from the nearest port | intervals | median (min) | 90% | 99% | over 30 min |
+|---|---|---|---|---|---|
+| 0-12 nm | 198,923 | 6.0 | 12.0 | 24 | 0.8% |
+| 12-25 nm | 100,738 | 3.9 | 10.7 | 12 | 0.0% |
+| 25-50 nm | 128,225 | 3.0 | 6.7 | 12 | 0.0% |
+| 50-100 nm | 61,267 | 3.6 | 10.0 | 27 | 0.9% |
+| 100-200 nm | 5,089 | 11.4 | 95 | 355 | 29.4% |
+| over 200 nm | 16,365 | 6.0 | 33 | 251 | 10.5% |
+
+By provider, the 90% and 99% intervals are:
+
+| provider | 90% (min) | 99% (min) | over 30 min |
+|---|---|---|---|
+| `astd` | 7.4 | 12 | 0.0% |
+| `stk` | 12 | 68 | 2.0% |
+| `gps` | 7.5 | 10 | 0.1% |
+| `astdB` | 299 | 2,135 | 15.9% |
+
+Within 100 nm, the page's 30 min threshold flags under 1% of intervals. Beyond it, the same threshold flags 10-30%,
+mostly coverage rather than a vessel gone quiet. A flag that allows for coverage would judge a gap against the
+intervals usual where it happens, by distance offshore or area, and by receiver, rather than against one threshold.
+That needs a distance offshore on the fixes, which the trail lacks, so it belongs to the flow and is proposed as its own
+piece of work. The trail's own `interval_flag` marks 306,276 fixes of 2021 `capped` and 80,804 `edge`: the effort's cap,
+not a gap flag. Until the flow has one, the page keeps its 30 min lane.

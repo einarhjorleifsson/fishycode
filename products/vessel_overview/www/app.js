@@ -90,7 +90,8 @@ const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win
 //   years: 'latest' (the vessel's last year on AIS), 'all', or 'from-to'
 //   win: 'last' (the last n trips and the current one), 'month', 'range' (the loaded years), or 'custom' (a to b)
 //   bg: what the map shows outside the window ('none', 'hex', 'track')
-const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, bg: 'none' };
+//   pts: whether the window's pings are drawn as points, or only the line between them
+const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, bg: 'none', pts: true };
 // The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
 // a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
 // using the logbooks"). The previous logbook trip's gear only where that landing records none ("if a logbook is missing
@@ -185,11 +186,13 @@ function layers() {
     extruded: false, radius: 1000 * hexKm(), coverage: 0.94, opacity: 0.7, pickable: true, upperPercentile: 100,
     colorRange: VIRIDIS, onSetColorDomain: ([lo, hi]) => { $('hexlegend').innerHTML = hexLegend(lo, hi); },
   }));
+  // the points can be turned off (maintainer, 2026-10-18: "turn off any ping points"); the line is then drawn stronger,
+  // so the track stays plain
   L.push(new deck.LineLayer({
-    id: 'window-line', data: tr.lineData, getColor: [40, 50, 70, 80], getWidth: 1, widthUnits: 'pixels',
-    extensions: [FILTER2], filterRange: [range, range],
+    id: 'window-line', data: tr.lineData, getColor: P.pts ? [40, 50, 70, 80] : [30, 40, 60, 220], getWidth: P.pts ? 1 : 1.5,
+    widthUnits: 'pixels', extensions: [FILTER2], filterRange: [range, range], updateTriggers: { getColor: P.pts, getWidth: P.pts },
   }));
-  L.push(new deck.ScatterplotLayer({
+  if (P.pts) L.push(new deck.ScatterplotLayer({
     id: 'pings', data: tr.pingData, radiusUnits: 'meters', getRadius: 400, radiusMinPixels: 2, radiusMaxPixels: 6,
     pickable: true, extensions: [FILTER], filterRange: range,
   }));
@@ -539,8 +542,14 @@ const hexLegend = (lo, hi) => {
 function showBg() {
   $('hexlegend').style.display = S.bg === 'hex' ? '' : 'none';
   $('bg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.bg === S.bg));
+  $('pts').querySelectorAll('button').forEach((x) => x.classList.toggle('on', (x.dataset.pts === '1') === P.pts));
   render();
 }
+$('pts').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+  P.pts = b.dataset.pts === '1';
+  showBg();
+  setHash();
+}));
 
 // Presets: each sets the window and centres the map on it
 function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
@@ -1211,7 +1220,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer'
 // The address holds the vessel and every choice: the years, the window, the map's background, the tab and the mode ---
 const isoMin = (ms) => new Date(ms).toISOString().slice(0, 16);
 function hashFor(vid) {
-  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, tab: tabOn(), mode: S.mode });
+  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, pts: P.pts ? 1 : 0, tab: tabOn(), mode: S.mode });
   if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
   return q.toString();
 }
@@ -1237,6 +1246,7 @@ function fromHash() {
   if ([...$('ntrips').options].some((o) => +o.value === n)) P.n = n;
   $('ntrips').value = P.n;
   if (['none', 'hex', 'track'].includes(h.get('bg'))) P.bg = h.get('bg');
+  if (['0', '1'].includes(h.get('pts'))) P.pts = h.get('pts') === '1';
   markPicked();
   if (!Number.isInteger(vid)) return;
   choose(vid).then(() => { if (h.get('bench')) bench(); }).catch((e) => status(String(e)));
