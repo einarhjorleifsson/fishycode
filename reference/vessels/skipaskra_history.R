@@ -24,7 +24,8 @@
 #   schema's later rows, then the 2022 edition. Neighbouring stretches merge when printed alike (numbers at their
 #   coarser precision, materials as sets), each agreeing with the value the merged stretch carries.
 # - D1: a row of overrides/skipaskra_reviewed.csv outranks everything. D2: a PDF value that breaks one of the register's
-#   own rules gives way to another lineage's value that keeps it, or stays and goes `open`. D3: else the period's
+#   own rules gives way to another lineage's value that keeps it, or stays and goes `open`; a GT off the formula below
+#   15 m is only flagged (the maintainer's check, decision 136). D3: else the period's
 #   witness decides. D4: a PDF value alone in its series gives way when two other lineages agree on its neighbours'.
 #   D5: a change between two annual witnesses takes its day from a dated source that gives the value before and after.
 # - Lineages (decision 135): Hreiðar is inside the register's for 2004-2021; mbl is its own; observation never counts.
@@ -112,7 +113,8 @@ printed <- pdf_cm |> left_join(open_rec, by = "record") |> distinct(record, edit
   count(edition, open, table, column) |> left_join(n_sec, by = c("edition", "open")) |> filter(n >= 0.01 * N)
 blank <- pdf_rec |> left_join(open_rec, by = "record") |>
   inner_join(printed |> select(edition, open, table, column), by = c("edition", "open"), relationship = "many-to-many") |>
-  anti_join(pdf_cm |> distinct(record, table, column), by = c("record", "table", "column"))
+  # a printed zero ("0,00") is a placeholder, not none: others may fill it (6996's GT in 2018, the maintainer's check)
+  anti_join(evi |> filter(grepl("^pdf:", source)) |> distinct(record, table, column), by = c("record", "table", "column"))
 cand <- bind_rows(cand, blank |> left_join(HIST, by = c("table", "column")) |>
                     transmute(vid, table, column, type, value = NA_character_, cmp = "<none>", num = NA_real_, dec = NA_integer_,
                                            source = paste0("pdf:", edition), lineage = "register", fam = "pdf", kind = "snapshot",
@@ -144,7 +146,7 @@ keeps <- function(why, cmpv, L, B, edition) case_when(
   TRUE ~ FALSE)
 alt <- br |> inner_join(other |> select(vid, table, column, t1, t2, oval = value, ocmp = cmp, osrc = source, onum = num, odec = dec),
                         by = c("vid", "table", "column"), relationship = "many-to-many") |>
-  filter(is.na(t1) | t1 <= d, is.na(t2) | t2 >= d, keeps(why, ocmp, L, B, edition)) |>
+  filter(is.na(t1) | t1 <= d, is.na(t2) | t2 >= d, why != "gt_formula", keeps(why, ocmp, L, B, edition)) |>
   group_by(vid, edition, table, column) |> slice(1) |> ungroup()
 d2 <- br |> left_join(alt |> select(vid, edition, table, column, oval, ocmp, osrc, onum, odec), by = c("vid", "edition", "table", "column")) |>
   mutate(src = paste0("pdf:", edition))
@@ -153,7 +155,8 @@ hit <- !is.na(i2) & !is.na(d2$oval[i2])
 cand$value_printed[hit] <- cand$value[hit]
 cand$value[hit] <- d2$oval[i2[hit]]; cand$cmp[hit] <- d2$ocmp[i2[hit]]; cand$num[hit] <- d2$onum[i2[hit]]; cand$dec[hit] <- d2$odec[i2[hit]]
 cand$rule[hit] <- "D2"; cand$record[hit] <- paste0(cand$record[hit], " <- ", d2$osrc[i2[hit]])
-cand$rule[!is.na(i2) & !hit] <- "D2_open"
+# the GT formula is a flag only: the maintainer found the PDF right on all 32 of D2's formula replacements (decision 136)
+cand$rule[!is.na(i2) & !hit & d2$why[i2] != "gt_formula"] <- "D2_open"
 cand$flag[!is.na(i2)] <- d2$why[i2[!is.na(i2)]]
 message("D2: ", nrow(br), " PDF values break a rule; ", sum(!is.na(d2$oval)), " give way to another lineage's value that keeps it")
 

@@ -179,6 +179,10 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
 - **D3, the period's source,** settled `r fmt(n_rule("D3"))` stretches where the lineages disagree.
 - **D2, the register's own rules:** `r n_rule("D2", "resolved")` stretches took another lineage's value that keeps the
   rule, and `r n_rule("D2", "open")` stay as printed, open, with no such value.
+  - Its error was measured by the maintainer on all 33 decisions D2 made as first built (decision 136): the page
+    proved the PDF right in 32, a 97 % error.
+  - All 32 were GTs off the formula 0.031 L² B. That formula is now a flag on the value (`gt_formula`, on
+    `r sum(grepl("gt_formula", dec$flag))` stretches), not a reason to replace it.
 - **D4, the typo rule,** decided `r n_rule("D4")`. It needs two lineages besides the register's to agree, and with
   Hreiðar inside the register's lineage for 2004-2021 (decision 135) that is almost never the case.
 - **D1, a person's decision,** decided `r n_rule("D1")`. None is entered yet.
