@@ -49,3 +49,26 @@ Read by hand: landings carry their port and gear names (none missing for 2757 or
 Vid 2757 has the most pings of 2026-09, and pings to 2026-10-16, but its last landing and logbook trip are on
 2024-12-27, and none of its 2026 pings is flagged fishing. The service shows the tables as they are. Whether the
 vessel stopped fishing or the key puts another hull's pings on its vid was not looked into.
+
+## Amended 2026-10-18: started with a click
+
+The maintainer: "is there not a simple way - can you not just create a little app for this that i can click on", "or
+if not, a shell script". Both were written, by Claude (AI-assisted):
+
+- `products/vessel_overview/start.sh` starts the server in the background and opens the page. It also takes
+  `restart`, `start`, `stop` and `status`.
+  - Its output goes to `~/Library/Logs/vessel_overview.log`.
+  - It sets a UTF-8 locale and finds Rscript itself, since a program started from the Finder has neither.
+  - It stops only a vessel overview server. A port held by another program is reported, never freed.
+- `products/vessel_overview/make_app.sh` makes `~/Applications/Vessel overview.app`. A click starts the server and opens
+  the page. While the server runs, a click asks whether to open the page, restart the server or stop it.
+  - The app holds the path of the checkout it was made from, outside the repository. Made from this branch's worktree,
+    it runs the branch; after a merge, make it again from main.
+
+Checked on port 8791, with the maintainer's server on 8790 left running:
+- start, status, a second start that does nothing, and stop;
+- a start from an empty environment, as from the Finder: the page and the service answered, and the Mapbox token was
+  found;
+- a port held by another program: reported, and left as it was.
+
+The app's own dialog was not clicked here.
