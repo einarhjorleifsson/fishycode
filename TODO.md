@@ -472,14 +472,15 @@ tables, needs ask f; step 6, the live part, goes in the main project.
 
 ## 84. A fishing licence history from every witness (plan 029)
 **status:** open · **needs: maintainer** — plan 029 §8's asks: where licences are kept after 2020-07-22 and whether it
-can be dumped (a), the rules' threshold (b), the live witnesses (c), lumpfish statuses (d), plan 028 reading the table
-(e), lineages (f), activity as a witness (g), records before 1991 (h) · **see:** `curate/plans/029-licence-history.md`,
-plan 028 (§3.4 and ask c), TODO 83
+can be dumped (a), the rules' threshold (b), lumpfish statuses (d), plan 028 reading the table (e), lineages (f),
+activity as a witness (g), records before 1991 (h); c answered (decision 133) · **see:**
+`curate/plans/029-licence-history.md`, decision 133, plan 028 (§3.4 and ask c), TODO 83
 
 Measured read-only by Claude, 2026-10-18. kvoti's licence tables stop on 2020-07-22. The plan sweeps every dumped
 table for other witnesses of a licence, before 1996 and after 2020: the class, the quota record, notices, coastal trips
 and the lumpfish logbook. It measures how far each agreed with the licences where both exist, and proposes a history
-chosen from an evidence table by ordered rules, built in the `once` project. Steps 1-3 (staging, corrections, the
+chosen from an evidence table by ordered rules: the history to 2020-07-22 in `once`, the live tail in the main
+project (decision 133). Steps 1-3 (staging, corrections, the
 evidence table) need no answer.
 
 **check:** `curated/vessel/licence.parquet` and `curated/check/licence_discrepancy.parquet` built in `once` and

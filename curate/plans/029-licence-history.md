@@ -1,8 +1,8 @@
 # 029 — A fishing licence history: which licence each vessel held, of what type, where and when, from every witness
 
-**status:** proposal — the sources measured 2026-10-18 (read-only); nothing built; it builds in the `once` project
-(maintainer, 2026-10-18); asks open (TODO 84) · **2026-10-18** · **see:** plan 028 (§3.4, §5.3-5.4, §6 and ask c,
-which this plan takes over), decisions 130-132, plans 014, 017, 021, 023 and 025, `reference/vessels/vessel_class.R`,
+**status:** proposal — the sources measured 2026-10-18 (read-only); nothing built; the history to 2020-07-22 builds
+in the `once` project, the live tail after it in the main one (ask c, decision 133); asks a, b and d-h open (TODO 84)
+· **2026-10-18** · **see:** plan 028 (§3.4, §5.3-5.4, §6 and ask c, which this plan takes over), decisions 130-133, plans 014, 017, 021, 023 and 025, `reference/vessels/vessel_class.R`,
 `reference/vessels/skipaskra_evidence.R`, `curate/checks/skipaskra_discrepancy.R`, `docs/one_flow.qmd` (step 3's
 `gear_register`)
 
@@ -303,7 +303,7 @@ The first four lineages are the Directorate of Fisheries'. Plan 028 counts them 
 separate records, kept for different purposes, and §3.5 shows they disagree in ways a copy would not. Whether to count
 them apart is ask f.
 
-**`curated/vessel/licence_evidence.parquet`** holds one row per witness statement:
+**`curated/vessel/licence/evidence.parquet`** holds one row per witness statement:
 - vid, licence group and type where the witness names one, area, `t1`, `t2`;
 - the witness: source table and row;
 - its lineage;
@@ -345,6 +345,8 @@ allocation reaching hulls with no licence. It is described once, on the docs pag
 is a defect.
 
 ### 5.5 The licence history: `curated/vessel/licence.parquet`
+
+The frozen history to 2020-07-22 (`curated/vessel/licence/history.parquet`, §5.7) with the live tail after it.
 
 One row per licence held, implied, deleted, stored, surrendered or revoked:
 
@@ -407,23 +409,30 @@ It shows no rows.
 
 ### 5.7 Where it builds
 
-In the `once` project (maintainer, 2026-10-18). kvoti's licence tables end in 2020 and do not change. The history is
-built once from the frozen dump, reviewed, and frozen, like the register's history (decision 132). The main
-project reads it with `frozen_input()`.
-- **Its inputs are raw tables**, and the landings and logbook stations as watched main-project files for activity and
-  completeness. It reads no AIS and no trail.
-- **The scripts:**
-  - `sources/kvoti/licence.R` (target `kvoti_licence`);
-  - `curate/corrections/licence_lost_century.{yml,R}`;
-  - `reference/vessels/licence_evidence.R` (target `licence_evidence`);
-  - `reference/vessels/licence.R` (target `licence`);
-  - `curate/checks/licence.R` (target `check_licence`).
+Split at 2020-07-22, the day the licence tables end (maintainer, 2026-10-18, decision 133), as the register is split
+at 2023-12-19 (decision 132):
 
-  Each carries `# Side: once (licence history)`.
-- **Built by name, never as a whole project:** `tar_make_isolated(names = "check_licence")`, after the maintainer's
-  go.
-- **Two witnesses are live.** `vessel_operational_hist` and the quota record change with every dump. Whether their
-  part after 2020 is frozen here or read in the main project is ask c.
+| part | project | writes | why |
+|---|---|---|---|
+| the history to 2020-07-22: staging, corrections, the evidence of every lineage, each witness's calibration (§3.5), the rules, reviewed overrides | `once` | `curated/vessel/licence/{evidence,calibration,history}.parquet` | closed sources; reviewed and frozen; read by the register's history and the STK key, which build in `once` |
+| the live tail from 2020-07-23: the class and quota witnesses run through the same rules with the frozen calibration, on top of the frozen history | main, preprocessing side | `curated/vessel/licence.parquet` | the witnesses change with every dump; a `once` fix would need a decision for each |
+
+- **The calibration is frozen with the history.** The tail uses the agreement measured in the overlap. It does not
+  measure it again, because after 2020 there is nothing to measure against.
+- **No AIS and no trail** in either part. The `once` part watches the landings and logbook stations as
+  main-project files, for activity and completeness, as the key's targets do.
+- **The scripts:**
+  - in `once`, each with `# Side: once (licence history)`:
+    - `sources/kvoti/licence.R` (target `kvoti_licence`);
+    - `curate/corrections/licence_lost_century.{yml,R}`;
+    - `reference/vessels/licence_evidence.R` (target `licence_evidence`, with the calibration);
+    - `reference/vessels/licence_history.R` (target `licence_history`);
+    - `curate/checks/licence.R` (target `check_licence`);
+  - in the main project, with `# Side: preprocessing`: `reference/vessels/licence.R` (target `licence`). It reads
+    the frozen history and calibration with `frozen_input()`.
+- **Built by name, never as a whole project:** `tar_make_isolated(names = "check_licence")` in `once`, after the
+  maintainer's go.
+- **A licence system after 2020 that can be dumped (ask a)** goes into the live tail, not into a `once` redo.
 
 ## 6. Uses, named and not measured
 
@@ -445,9 +454,10 @@ Each is measured when it is built, in its own plan or TODO item:
 4. The rules and the licence history (§5.4-5.5).
 5. The checks and the docs page (§5.6).
 6. Wiring into `once`; the build by name after the maintainer's go.
-7. Plan 028's evidence table and checks read this table (ask e).
+7. The live tail in the main project (§5.7).
+8. Plan 028's evidence table and checks read this table (ask e).
 
-Steps 1-3 need no answer. Asks b, f and g settle step 4; ask c settles step 6.
+Steps 1-3 need no answer. Asks b, f and g settle step 4.
 
 ## 8. Asks
 
@@ -456,8 +466,8 @@ a. **Licences after 2020-07-22** (plan 028's ask c, moved here). The licence tab
 b. **The rules (§5.4).**
    - Is 95 % agreement the right bar for a record to imply a licence (L2)?
    - Should uncalibrated records (L3) imply licences at all, or only flag?
-c. **The live witnesses.** Freeze the class after 2023-12-19 and the quota record after 2020 here at the 2026-10-16
-   dump? Or read them in the main project, like the register's live part (decision 132)?
+c. **The live witnesses.** Answered (maintainer, 2026-10-18, decision 133): the history to 2020-07-22 builds in
+   `once`, and the live tail from 2020-07-23 in the main project, with the frozen calibration (§5.7).
 d. **Lumpfish statuses F and S** (65 and 11 rows). What do they mean? Until then they are kept as given, with status
    `held`.
 e. **Plan 028 reads this table.** Its `vessel_licence_hist` becomes this table, and its evidence and checks read it
