@@ -488,7 +488,7 @@ reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 ## 85. Vessel photos from mbl and an internal vessel overview app (plan 030)
 **status:** in progress · **needs: maintainer** — ask b, revised after the pilot (decision 141): fetch the 1,589 missing
 photos by their logged URLs, ask Morgunblaðið first, or keep the 1,000; asks a and c-h answered (decision 137) ·
-**see:** `curate/plans/030-vessel-photos-and-overview.md`, plan 028 §3.6 and §7, plan 001, decisions 049, 105, 137-141
+**see:** `curate/plans/030-vessel-photos-and-overview.md`, plan 028 §3.6 and §7, plan 001, decisions 049, 105, 137-141, 143
 
 The 1,000 mbl photo files in `raw/external/skipaskra/jpg/` are about a quarter of the 2022 scrape. Plan 030 indexes them
 by vid in `staging/mbl/photo.parquet`, moves the scrape code to `dump/`, and specifies an internal overview per vessel:
@@ -496,6 +496,20 @@ photo, register, landings, logbook, and a map linked to a time-speed plot by a t
 a thin R service, so that it stays responsive (maintainer). The photos are a newspaper's images: internal use only,
 never published. Step 1, the photo index, is built (decision 138). Step 2's `dump/vessels/mbl.R` is written; its pilot
 met a bot check on mbl's pages (decision 141). Steps 3 and 4, the R service and the page, are built (decisions 139,
-140). The app runs on the laptop first, from `products/vessel_overview/`.
+140), in two modes, Overview and Quality control (decision 143). The app runs on the laptop first, from
+`products/vessel_overview/`.
 
 **check:** the whole photo set fetched, found or declared lost (step 5, ask b); or the plan parked.
+
+## 86. The gear read from the AIS track, where no logbook gives it
+**status:** open · **see:** TODO 49, plan 004 (parked), decision 143, `docs/grammar.qmd` (the attended windows)
+
+Where a trip has no logbook, the flow has no recorded gear for its pings. The vessel overview assumes the previous
+logbook trip's gear, up to the last landing (the maintainer's rule, decision 143). "Better still would be that we would
+obtain the gear from the AIS track - but that is a bigger TODO" (maintainer, 2026-10-18). A track shows its gear's
+kind: a tow at 3-4 knots for hours, a seine's circle, a longline's or a net's set and haul a soak apart, a jigger's
+drift. The logbook trips with a recorded gear give the labelled examples. TODO 49 asks whether a voyage with neither
+logbook nor landing counts as fishing; this asks which gear a voyage used.
+
+**check:** a plan or decision on reading the gear's kind from the track, its error measured on trips whose logbook
+records the gear; or the item parked.

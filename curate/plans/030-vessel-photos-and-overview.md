@@ -2,9 +2,10 @@
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
 written, its pilot refused by a bot check on mbl's pages (decision 141); steps 3 and 4, the R
-service and the page, built and checked (decisions 139, 140); asks a-h answered (decision 137; h: the R service
+service and the page, built and checked (decisions 139, 140), then extended to two modes, Overview and Quality control
+(decision 143); asks a-h answered (decision 137; h: the R service
 serves, DuckDB-WASM in the page reads); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132 and 137-141,
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137-141 and 143,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
@@ -378,7 +379,10 @@ The maintainer's call (ask a):
 3. **The R service**: `products/vessel_overview/` (`api.R`, `server.R`, `check.R`), built 2026-10-18 (decision 139).
    **Checked** (`check.R`): no allowlisted column is personal; 43 answers for vids 2757, 3739 and 2652, each with
    exactly its allowlisted columns, all under 0.4 s; a photo served byte for byte; eight requests refused.
-4. **The page**: `products/vessel_overview/www/`, the linked views of §4.2, built 2026-10-18 (decision 140).
+4. **The page**: `products/vessel_overview/www/`, the linked views of §4.2, built 2026-10-18 (decision 140), and
+   extended the same day at the maintainer's asking (decision 143): a vessel list, a year range, trips, hauls and
+   landings on the chart, Activity and History tabs, an expandable trip table, and two modes, Overview in plain words
+   and Quality control with an event lane, the pings of the window and per-trip checks.
    **Checked:** it opens for vids 2652, 1977, 2757 and 3739, and each panel shows its latest rows or says it is
    empty; 40 window moves on vid 1977's 2025 (147,432 pings) redrew in 7-10 ms each, against 50 ms. Not checked: the
    hover link, Play, and the time to load a vessel.

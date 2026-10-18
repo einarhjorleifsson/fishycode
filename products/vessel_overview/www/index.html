@@ -1,6 +1,8 @@
 <!doctype html>
-<!-- The vessel overview page (plan 030 step 4). Served by products/vessel_overview/server.R, which puts the Mapbox
-     token into the meta tag below as it serves the page; the token is never in this file. Internal use only. -->
+<!-- The vessel overview page (plan 030 step 4; decisions 140 and 143). Served by products/vessel_overview/server.R,
+     which puts the Mapbox token into the meta tag below as it serves the page; the token is never in this file.
+     Two modes on one page: Overview, in plain words, and Quality control, with every record, its basis and the
+     disagreements between sources. Internal use only. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -11,69 +13,167 @@
 <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@8.9.35/dist.min.js"></script>
 <style>
-  :root { --bg: #f6f7f9; --panel: #fff; --ink: #16202a; --muted: #5d6b78; --line: #dde2e7; --accent: #1f6feb; }
+  :root { --bg: #f6f7f9; --panel: #fff; --ink: #16202a; --muted: #5d6b78; --line: #dde2e7; --accent: #1f6feb;
+          --warn: #b45309; --warnbg: #fef3c7; --bad: #b91c1c; --badbg: #fee2e2; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 16px; background: var(--panel);
-           border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
-  header h1 { font-size: 16px; margin: 0 12px 0 0; }
-  #search { width: min(420px, 100%); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
-  #title { font-weight: 600; }
-  #status { margin-left: auto; color: var(--muted); font-size: 12px; }
-  main { display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px 16px; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 16px; background: var(--panel);
+           border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+  header h1 { font-size: 16px; margin: 0 4px 0 0; }
+  #title { font-weight: 600; font-size: 15px; }
+  #status { margin-left: auto; color: var(--muted); font-size: 12px; max-width: 40%; text-align: right; }
+  button, select, input[type=text] { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+                                     background: var(--panel); color: var(--ink); }
+  button { cursor: pointer; } button:hover { border-color: var(--accent); } button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .years { display: flex; gap: 4px; align-items: center; font-size: 13px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; padding: 4px 10px; }
+  .seg button.on { background: var(--ink); color: #fff; }
+  nav { display: flex; gap: 4px; padding: 8px 16px 0; }
+  nav button { border-radius: 6px 6px 0 0; }
+  nav button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab { display: none; } .tab.on { display: grid; }
+  main { grid-template-columns: 360px 1fr; gap: 12px; padding: 8px 16px 16px; }
+  #history { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 1000px) { main, #history { grid-template-columns: 1fr !important; } #status { max-width: 100%; } }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
   section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+  h3 { font-size: 12px; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
   .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .help { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+  #summary p { margin: 0 0 6px; } #summary ul { margin: 0; padding-left: 18px; } #summary li { margin: 2px 0; }
   #photo img { width: 100%; border-radius: 4px; cursor: pointer; display: block; }
   .note { color: var(--muted); font-size: 12px; }
   table { border-collapse: collapse; width: 100%; font-size: 12px; }
   th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 500; }
+  th { color: var(--muted); font-weight: 500; background: var(--panel); }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
   tr.click { cursor: pointer; } tr.click:hover, tr.sel { background: #eef4ff; }
+  tr.sub > td { background: #fafbfc; padding: 6px 6px 10px 22px; }
+  .caret { display: inline-block; width: 12px; color: var(--muted); }
+  .badge { display: inline-block; padding: 0 6px; border-radius: 9px; font-size: 11px; margin: 1px 2px 1px 0; white-space: nowrap; }
+  .badge.warn { background: var(--warnbg); color: var(--warn); } .badge.bad { background: var(--badbg); color: var(--bad); }
+  .badge.ok { background: #e8f5e9; color: #2e7d32; }
   dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
   dt { color: var(--muted); } dd { margin: 0; }
-  #map { position: relative; height: 52vh; min-height: 320px; border-radius: 6px; overflow: hidden; background: #e8edf1; }
+  #map { position: relative; height: 46vh; min-height: 300px; border-radius: 6px; overflow: hidden; background: #e8edf1; }
   #attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
-  #plot { margin-top: 8px; }
+  #plot, #lanes { margin-top: 6px; }
+  #hoverinfo { min-height: 18px; font-size: 12px; color: var(--ink); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .sw { display: inline-block; width: 14px; height: 8px; margin-right: 4px; vertical-align: middle; border-radius: 2px; }
+  .tri { display: inline-block; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
+         border-bottom: 9px solid #e07b00; margin-right: 4px; vertical-align: middle; }
   .window { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; }
-  .dual { position: relative; flex: 1 1 300px; height: 24px; }
+  .dual { position: relative; flex: 1 1 260px; height: 24px; }
   .dual input { position: absolute; left: 0; width: 100%; top: 4px; pointer-events: none; background: none; -webkit-appearance: none; appearance: none; }
   .dual input::-webkit-slider-thumb { pointer-events: auto; }
   .dual input::-moz-range-thumb { pointer-events: auto; }
-  button, select { font: inherit; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: pointer; }
+  .pager { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 12px; }
+  .scroll { max-height: 420px; overflow: auto; }
+  .qc-only { display: none !important; }
+  body.qc .qc-only { display: revert !important; }
+  body.qc .ov-only { display: none !important; }
+  /* the vessel list */
+  #drawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(780px, 100%); background: var(--panel); z-index: 30;
+            box-shadow: 0 0 24px #0003; display: none; flex-direction: column; padding: 12px 16px; gap: 8px; }
+  #drawer.on { display: flex; }
+  #drawer .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 13px; }
+  #drawer .scroll { max-height: none; flex: 1; }
+  #drawer th { cursor: pointer; position: sticky; top: 0; }
 </style>
 </head>
 <body>
 <header>
   <h1>Vessel overview</h1>
-  <input id="search" list="vessels" placeholder="vid, name, call sign or MMSI" autocomplete="off">
-  <datalist id="vessels"></datalist>
+  <button id="open-list" class="primary">Choose a vessel</button>
   <span id="title"></span>
+  <span class="years" title="the years whose trail, trips, hauls and landings are loaded">years <select id="from"></select> to <select id="to"></select></span>
+  <span class="seg" title="Overview: in plain words. Quality control: every record, its basis, and where the sources disagree.">
+    <button id="mode-ov" class="on">Overview</button><button id="mode-qc">Quality control</button></span>
   <span id="status">loading</span>
 </header>
-<main>
+<nav><button id="tab-now" class="on">Activity</button><button id="tab-history">History</button></nav>
+
+<main id="now" class="tab on">
   <div class="col">
-    <section id="photo"><h2>Photo</h2><div id="photo-body" class="note">no vessel chosen</div></section>
-    <section><h2>Register today</h2><div id="register"></div></section>
-    <section><h2>Register history</h2><div class="note">from the annual register, to 2023-12-19 (plan 028)</div><div id="history"></div></section>
+    <section><h2>About this vessel</h2><div id="summary" class="note">Choose a vessel to begin.</div></section>
+    <section id="photo"><h2>Photo</h2><div id="photo-body" class="note"></div></section>
+    <section><h2>Last landing</h2><div id="last-landing" class="note"></div></section>
+    <section><h2>The trip that landed it</h2><div id="last-trip" class="note"></div></section>
   </div>
   <div class="col">
     <section>
-      <h2>Trail <select id="year"></select> <span id="window-label" class="note"></span></h2>
+      <h2>Where and when <span id="window-label" class="note"></span></h2>
+      <div class="help ov-only">The map shows where the vessel was in the time window. Drag across the speed chart, or
+        move the slider, to choose the window. Hover on the chart to see the vessel's position at that moment.</div>
       <div id="map"><div id="attrib"></div></div>
       <div id="plot"></div>
+      <div id="lanes" class="qc-only"></div>
+      <div id="hoverinfo"></div>
+      <div class="legend ov-only">
+        <span><span class="sw" style="background:#1f6feb"></span>speed (knots)</span>
+        <span><span class="sw" style="background:#d62728"></span>fishing, as estimated from speed and the logbook</span>
+        <span><span class="sw" style="background:#1f6feb33"></span>a fishing trip in the logbook (click it)</span>
+        <span><span class="sw" style="background:#9aa5b1"></span>a haul: gear in the water</span>
+        <span><span class="sw" style="background:#2e7d32"></span>fishing, where the logbook gives the times</span>
+        <span><span class="tri"></span>a landing</span>
+      </div>
+      <div class="legend qc-only">
+        <span><span class="sw" style="background:#1f6feb"></span>speed</span>
+        <span><span class="sw" style="background:#d62728"></span>fishing_flow</span>
+        <span><span class="sw" style="background:#1f6feb33"></span>logbook trip T1-T2</span>
+        <span><span class="sw" style="background:#9aa5b1"></span>haul t1-t4</span><span><span class="sw" style="background:#2e7d32"></span>t2-t3</span>
+        <span><span class="tri"></span>landing (date)</span>
+        <span>lanes: one row per record kind, on the same time axis</span>
+      </div>
       <div class="window">
         <button id="play" title="move the window along the track">Play</button>
-        <div class="dual"><input id="from" type="range"><input id="to" type="range"></div>
-        <button id="month">Last month</button><button id="all">Whole year</button>
+        <div class="dual"><input id="wfrom" type="range" aria-label="window start"><input id="wto" type="range" aria-label="window end"></div>
+        <button id="month">Last month</button><button id="all">All loaded years</button>
         <span id="perf" class="note"></span>
       </div>
     </section>
-    <section><h2>Latest landings</h2><div id="landings"></div></section>
-    <section><h2>Latest logbook trips</h2><div class="note">click a trip to set the window to it</div><div id="trips"></div></section>
+    <section>
+      <h2>Fishing trips in these years</h2>
+      <div class="help ov-only">From the logbook. Click a trip to see it on the map and chart, and to list its hauls.</div>
+      <div class="help qc-only">Logbook trips with the pings inside them. Warnings compare the logbook's hauls with
+        the flow's fishing flag on the pings. Click to expand every record.</div>
+      <div id="trips"></div>
+    </section>
+    <section class="qc-only">
+      <h2>Pings in the window</h2>
+      <div id="pings"></div>
+    </section>
   </div>
 </main>
+
+<main id="history" class="tab">
+  <div class="col">
+    <section><h2>Register today</h2><div id="register"></div></section>
+    <section><h2>Register history</h2><div class="note">from the annual register, to 2023-12-19 (plan 028)</div><div id="reghist"></div></section>
+  </div>
+  <div class="col">
+    <section><h2>Landings by year</h2><div id="h-land-years" class="scroll"></div></section>
+    <section><h2>All landings</h2><div id="h-land"></div></section>
+    <section><h2>Logbook trips by year</h2><div id="h-trip-years" class="scroll"></div></section>
+    <section><h2>All logbook trips</h2><div class="note">click a trip to see it on the Activity tab</div><div id="h-trips"></div></section>
+  </div>
+</main>
+
+<div id="drawer" role="dialog" aria-label="Choose a vessel">
+  <div class="controls">
+    <strong>Choose a vessel</strong>
+    <input id="filter" type="text" placeholder="type a number, name, call sign or MMSI" autocomplete="off" style="flex:1 1 220px">
+    <label><input id="f-trail" type="checkbox" checked> heard on AIS</label>
+    <label><input id="f-photo" type="checkbox"> with a photo</label>
+    <label>landed since <select id="f-landed"><option value="">any time</option></select></label>
+    <button id="close-list">Close</button>
+  </div>
+  <div id="list-count" class="note"></div>
+  <div class="scroll"><div id="list"></div></div>
+</div>
 <script type="module" src="/www/app.js"></script>
 </body>
 </html>

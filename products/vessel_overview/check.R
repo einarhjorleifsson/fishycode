@@ -5,7 +5,8 @@
 # Output: a printed table; nothing written
 #
 # Run from the repository root:  Rscript products/vessel_overview/check.R
-# It calls the app in this process, with no server: the same code a request reaches. The vessels (plan 030 §4.4):
+# It calls the app in this process, with no server: the same code a request reaches. Year ranges and the whole history
+# (from=1900&to=2100) are asked too (decision 143). The vessels (plan 030 §4.4):
 # 2757 (most pings in 2026-09), 3739 (no logbook trip, no register history), 2652 (no ping since 2024).
 
 source("R/paths.R")
@@ -26,9 +27,12 @@ stopifnot("a personal column is allowlisted" = !any(unlist(ALLOW) %in% PERSONAL)
 # 2. Every endpoint: columns exactly as allowlisted, none personal, rows and time --------------------------------------
 asks <- c(list(c("vessels", "")), lapply(c(2757L, 3739L, 2652L), function(v) {
   base <- paste0("vid=", v)
+  all <- paste0(base, "&from=1900&to=2100")
   list(c("register", base), c("landings", paste0(base, "&n=20")), c("trips", paste0(base, "&n=10")),
        c("stations", paste0(base, "&n=10")), c("station_catch", paste0(base, "&n=10")), c("trail_years", base),
-       c("trail", base), c("photos", base))
+       c("trail", base), c("photos", base), c("trail", paste0(base, "&from=2024&to=2026")),
+       c("landings", all), c("trips", all), c("trip_summary", all), c("stations", paste0(base, "&from=2025&to=2026")),
+       c("station_catch", paste0(base, "&from=2025&to=2026")), c("landing_trips", base), c("landings", paste0(base, "&n=1")))
 }) |> unlist(recursive = FALSE),
 lapply(c(2757L, 3739L, 2652L), function(v) lapply(names(HIST), function(t) c("hist", sprintf("vid=%d&table=%s", v, t)))) |>
   unlist(recursive = FALSE))
@@ -54,6 +58,7 @@ stopifnot("a listed photo is not served whole" = r$status == 200L && unname(tool
 # 4. What it must refuse ------------------------------------------------------------------------------------------------
 refuse <- list(c("/api/register", "vid=abc", 400L), c("/api/register", "vid=1;DROP", 400L),
                c("/api/register", "", 400L), c("/api/hist", "vid=2757&table=vessel_owners_hist", 400L),
+               c("/api/trail", "vid=2757&from=2024", 400L), c("/api/trail", "vid=2757&from=x&to=2026", 400L),
                c("/api/nope", "vid=1", 404L), c("/photo", "vid=2757&file=../../x.jpg", 404L),
                c("/photo", sprintf("vid=%d&file=9999-0001.jpg", ph$vid), 404L), c("/etc/passwd", "", 404L))
 for (x in refuse) {
