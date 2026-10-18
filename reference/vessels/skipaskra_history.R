@@ -50,32 +50,8 @@ ed_next <- function(e) { i <- match(e, EDITIONS); nx <- EDITIONS[pmin(i + 1, len
   as.Date(ifelse(is.na(i), NA, ifelse(i < length(EDITIONS), paste0(nx, "-01-01"), as.character(END)))) }
 year_start <- function(d, k = 0) as.Date(ifelse(is.na(d), NA, paste0(as.integer(format(d, "%Y")) + k, "-01-01")))
 yd <- function(y) as.Date(paste0(y, "-01-01"))
-agree_v <- function(cmp1, num1, dec1, cmp2, num2, dec2) ifelse(!is.na(num1) & !is.na(num2), num_agree(num1, dec1, num2, dec2), cmp1 == cmp2)
-STATUS_ORDER <- c("single", "agreed", "resolved", "reviewed", "open")
-worst <- function(s) STATUS_ORDER[max(match(s, STATUS_ORDER))]
-pad_kt <- function(x) ifelse(grepl("^[0-9]{9}$", x), paste0("0", x), x)   # a kennitala whose leading zero was lost
-
-HIST <- tribble(
-  ~table, ~column, ~type,
-  "vessel_hist", "name", "text", "vessel_hist", "previous_name", "text", "vessel_hist", "usage_category", "text",
-  "vessel_hist", "open", "text", "vessel_hist", "classification_society", "class",
-  "vessel_hist", "construction_place", "text", "vessel_hist", "construction_country", "text",
-  "vessel_hist", "construction_year", "num", "vessel_hist", "construction_station", "text",
-  "vessel_hist", "hull_material", "material", "vessel_hist", "imo_no", "text", "vessel_hist", "power_indicator", "num",
-  "vessel_hist", "power_kw", "num", "vessel_hist", "horse_power", "num", "vessel_hist", "changes", "text",
-  "vessel_identification_hist", "region_acronym", "text", "vessel_identification_hist", "region_no", "num",
-  "vessel_identification_hist", "call_sign", "text", "vessel_identification_hist", "home_port", "text",
-  "vessel_measurement_hist", "length", "num", "vessel_measurement_hist", "max_length", "num",
-  "vessel_measurement_hist", "width", "num", "vessel_measurement_hist", "depth", "num",
-  "vessel_measurement_hist", "brutto_grt", "num", "vessel_measurement_hist", "brutto_weight_tons", "num",
-  "vessel_measurement_hist", "netto_weight_tons", "num", "vessel_measurement_hist", "brutto_grt_older", "num",
-  "vessel_measurement_hist", "draft", "num", "vessel_measurement_hist", "draft_light", "num",
-  "vessel_measurement_hist", "weight", "num",
-  "vessel_engines_hist", "manufacturer_name", "text", "vessel_engines_hist", "year", "num",
-  "vessel_engines_hist", "power", "num",
-  "vessel_operational_hist", "operational_category_no", "text", "vessel_operational_hist", "operational_category", "text",
-  "vessel_fishery_hist", "name", "text", "vessel_fishery_hist", "address", "text", "vessel_fishery_hist", "postal_no", "num",
-  "vessel_fishery_hist", "identity_no", "text")
+# agree_v(), worst(), pad_kt() and HIST, the columns the history chooses: R/skipaskra_compare.R, shared with the live part
+agree_v <- sk_agree_v; worst <- sk_worst; pad_kt <- sk_pad_kt; HIST <- SK_HIST
 
 # The witnesses, comparable -------------------------------------------------------------------------------------------
 # register numbers only: no placeholder (the fisheries' -999 and up), no foreign number (3700-4999)
@@ -292,28 +268,7 @@ anc <- pk |> mutate(d = if_else(fam == "pdf", ca, s)) |>
 WIT_OUT <- "^ufs[.]skipasaga_jn$|^kvoti[.]skip_extra$|^marinetraffic$|^pdf_event"
 wit <- cm |> filter(!grepl(WIT_OUT, source), !(grepl("^pdf", source) & edition %in% 2020), lineage != "observation") |>
   transmute(vid, tab = table, col = column, lineage, a = t1, b = t2, value, cmp, num, dec)
-duckdb_register(con, "anc", anc |> transmute(sid, vid, tab = table, col = column, d, clin = lineage, cmp, num, dec))
-duckdb_register(con, "wit", wit)
-agree_sql <- "
-  CASE WHEN a.num IS NOT NULL AND w.num IS NOT NULL THEN
-    abs(round((CASE WHEN a.dec >= w.dec THEN a.num ELSE w.num END) * pow(10, least(a.dec, w.dec))) -
-        round((CASE WHEN a.dec >= w.dec THEN w.num ELSE a.num END) * pow(10, least(a.dec, w.dec)))) < 0.5 OR
-    abs(floor((CASE WHEN a.dec >= w.dec THEN a.num ELSE w.num END) * pow(10, least(a.dec, w.dec)) + 1e-7) -
-        round((CASE WHEN a.dec >= w.dec THEN w.num ELSE a.num END) * pow(10, least(a.dec, w.dec)))) < 0.5
-  ELSE a.cmp = w.cmp END"
-st <- dbGetQuery(con, sprintf("
-  WITH j AS (
-    SELECT a.sid, a.d, CASE WHEN a.clin = 'hreidar' AND a.d >= DATE '2004-01-01' AND a.d < DATE '2022-01-01' THEN 'register' ELSE a.clin END AS clin,
-           CASE WHEN w.lineage = 'hreidar' AND a.d >= DATE '2004-01-01' AND a.d < DATE '2022-01-01' THEN 'register' ELSE w.lineage END AS lin,
-           (%s) AS ag, w.value
-    FROM anc a JOIN wit w ON a.vid = w.vid AND a.tab = w.tab AND a.col = w.col
-     AND (w.a IS NULL OR w.a <= a.d) AND (w.b IS NULL OR w.b >= a.d)),
-  per AS (
-    SELECT sid, d, any_value(clin) AS clin, list_distinct(list(lin)) AS lins, list_distinct(list(lin) FILTER (WHERE ag)) AS agl,
-           string_agg(DISTINCT value, '; ' ORDER BY value) FILTER (WHERE NOT ag) AS alt
-    FROM j GROUP BY sid, d)
-  SELECT sid, d, len(list_distinct(list_append(lins, clin))) AS n_lin, len(list_distinct(list_append(agl, clin))) AS n_agr, alt FROM per",
-  agree_sql))
+st <- sk_lineages(con, anc |> transmute(sid, vid, tab = table, col = column, d, clin = lineage, cmp, num, dec), wit)
 dbDisconnect(con, shutdown = TRUE)
 unlink(spill, recursive = TRUE)
 st <- anc |> select(sid, d) |> left_join(st, by = c("sid", "d")) |>

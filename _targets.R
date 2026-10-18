@@ -233,6 +233,27 @@ list(
     produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))
   }, format = "file"),
 
+  # The ship register: the history to 2023-12-19, frozen in the `once` project (plan 028 steps 1-5, decision 136), and the
+  # `vessel` schema's own history after it, through the same decision model (plan 028 step 6, decision 137). The
+  # register's tables for every year, in curated/vessel/register/.
+  tar_target(register_history, frozen_input("curated", "vessel", "skipaskra"), format = "file"),
+  tar_target(register_live_raw, c(
+    fd_raw("oracle", "vessel", paste0(c("vessel", "vessel_identification", "vessel_measurement", "vessel_engines",
+                                        "vessel_operational", "vessel_fishery", "vessel_owners", "vessel_hist",
+                                        "vessel_identification_hist", "vessel_measurement_hist", "vessel_engines_hist",
+                                        "vessel_operational_hist", "vessel_fishery_hist", "vessel_owners_hist"), ".parquet")),
+    fd_raw("oracle", "ufs", paste0(c("skip", "skip_jn", "skipasaga", "skipasaga_jn"), ".parquet")),
+    "overrides/skipaskra_reviewed.csv"), format = "file"),
+  tar_target(vessel_register, {
+    register_history; register_live_raw; mmsi
+    produces("reference/vessels/vessel_register.R",
+             file.path(fd_curated("vessel", "register"),
+                       paste0(c("vessel_hist", "vessel_identification_hist", "vessel_measurement_hist", "vessel_engines_hist",
+                                "vessel_operational_hist", "vessel_fishery_hist", "vessel_owners_hist", "vessel_mmsi_hist",
+                                "vessel_event", "registered", "decision", "annual_call_sign"), ".parquet")),
+             fd_curated("check", "vessel_register_open.parquet"))
+  }, format = "file"),
+
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
   # uid are attributes of it at a time. Consumed by ais_key.R's lifetime flag and
   # by curate/ais_ping_union.R, which resolves the MMSI-keyed commercial feeds

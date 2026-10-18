@@ -38,26 +38,10 @@ library(dplyr)
 library(tidyr)
 library(nanoparquet)
 
-ora <- function(schema, table) read_parquet(fd_raw("oracle", schema, paste0(table, ".parquet")))
-d8 <- function(x) as.Date(x)
+# sk_ora(), sk_longer(), sk_no_sign() and the `vessel` schema's and ufs's mappings: R/skipaskra_sources.R, shared with the
+# live part (reference/vessels/vessel_register.R)
+ora <- sk_ora; d8 <- sk_d8; longer <- sk_longer; no_sign <- sk_no_sign
 ymd_int <- function(x) as.Date(sprintf("%08d", as.integer(x)), format = "%Y%m%d")
-fmt <- function(x) if (is.numeric(x)) ifelse(is.na(x), NA_character_, format(x, scientific = FALSE, trim = TRUE, drop0trailing = TRUE)) else as.character(x)
-blank_na <- function(x) { x <- trimws(as.character(x)); x[x %in% c("", "-", "–", "‐", "NA")] <- NA; x }
-# a call sign of "0" or the bare prefix "TF" stands for none (164 hulls in kvoti.skipaskra_siglo and the `vessel` schema)
-no_sign <- function(x) ifelse(trimws(x) %in% c("0", "", "TF"), NA, x)
-
-# Long form: `d` holds vid, t1, t2, record and columns named "<table>.<column>"
-longer <- function(d, source, lineage, kind, edition = NA_integer_, page = NA_integer_) {
-  cols <- grep("[.]", names(d), value = TRUE)
-  if (!"edition" %in% names(d)) d$edition <- edition
-  if (!"page" %in% names(d)) d$page <- page
-  d |>
-    mutate(across(all_of(cols), ~ blank_na(fmt(.x)))) |>
-    pivot_longer(all_of(cols), names_to = "key", values_to = "value", values_drop_na = TRUE) |>
-    transmute(vid = as.integer(vid), table = sub("[.].*$", "", key), column = sub("^[^.]*[.]", "", key), value,
-              t1 = d8(t1), t2 = d8(t2), source = if (length(source) == 1) source else source, lineage, kind,
-              edition = as.integer(edition), page = as.integer(page), record = as.character(record))
-}
 
 ev <- list()
 
@@ -166,58 +150,7 @@ ev$samgongustofa_owners <- sgs_own |>
   longer("samgongustofa:2022-12-28", "register", "snapshot")
 
 # The `vessel` schema --------------------------------------------------------------------------------------------------
-vkey <- ora("vessel", "vessel") |> transmute(vessel_id, vid = as.integer(registration_no))
-vh <- function(table) ora("vessel", table) |> filter(hist_operation != "DEL") |> inner_join(vkey, by = "vessel_id") |>
-  mutate(t1 = d8(valid_from), t2 = d8(valid_to))
-ev$vessel_hist <- vh("vessel_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_hist:", vessel_hist_id),
-            vessel_hist.name = name, vessel_hist.previous_name = previous_name, vessel_hist.usage_category = usage_category,
-            vessel_hist.usage_category_no = usage_category_no, vessel_hist.status = status, vessel_hist.open = open,
-            vessel_hist.imo_no = imo_no, vessel_hist.construction_year = construction_year,
-            vessel_hist.construction_place = construction_place, vessel_hist.construction_station = construction_station,
-            vessel_hist.construction_country = construction_country,
-            vessel_hist.classification_society = classification_society, vessel_hist.hull_material = hull_material,
-            vessel_hist.power_kw = power_kw, vessel_hist.horse_power = horse_power,
-            vessel_hist.power_indicator = power_indicator, vessel_hist.operation_area = operation_area,
-            vessel_event.initial_registration = d8(initial_registration_date)) |>
-  longer("vessel:vessel_hist", "register", "interval")
-ev$vessel_ident <- vh("vessel_identification_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_identification_hist:", vessel_iden_hist_id),
-            vessel_identification_hist.region_acronym = region_acronym, vessel_identification_hist.region_no = region_no,
-            vessel_identification_hist.call_sign = no_sign(call_sign), vessel_identification_hist.home_port = home_port,
-            vessel_identification_hist.home_port_no = home_port_no) |>
-  longer("vessel:vessel_identification_hist", "register", "interval")
-ev$vessel_meas <- vh("vessel_measurement_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_measurement_hist:", vessel_meas_hist_id),
-            vessel_measurement_hist.length = length, vessel_measurement_hist.max_length = max_length,
-            vessel_measurement_hist.width = width, vessel_measurement_hist.depth = depth,
-            vessel_measurement_hist.draft = draft, vessel_measurement_hist.brutto_grt = brutto_grt,
-            vessel_measurement_hist.brutto_weight_tons = brutto_weight_tons,
-            vessel_measurement_hist.netto_weight_tons = netto_weight_tons,
-            vessel_measurement_hist.brutto_grt_older = brutto_grt_older) |>
-  longer("vessel:vessel_measurement_hist", "register", "interval")
-ev$vessel_eng <- vh("vessel_engines_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_engines_hist:", vessel_eng_hist_id),
-            vessel_engines_hist.manufacturer_name = manufacturer_name, vessel_engines_hist.year = year,
-            vessel_engines_hist.power = power, vessel_engines_hist.usage_code = usage_code) |>
-  longer("vessel:vessel_engines_hist", "register", "interval")
-ev$vessel_op <- vh("vessel_operational_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_operational_hist:", vessel_op_hist_id),
-            vessel_operational_hist.operational_category_no = operational_category_no,
-            vessel_operational_hist.operational_category = operational_category,
-            vessel_operational_hist.license_system = license_system) |>
-  longer("vessel:vessel_operational_hist", "fisheries", "interval")
-ev$vessel_own <- vh("vessel_owners_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_owners_hist:", vessel_owners_id, ":", vessel_own_hist_id),
-            vessel_owners_hist.name = name, vessel_owners_hist.address = address,
-            vessel_owners_hist.postal_no = postal_no, vessel_owners_hist.percentage = percentage,
-            vessel_owners_hist.national_identity_no = national_identity_no) |>
-  longer("vessel:vessel_owners_hist", "register", "interval")
-ev$vessel_fish <- vh("vessel_fishery_hist") |>
-  transmute(vid, t1, t2, record = paste0("vessel_fishery_hist:", vessel_fish_hist_id),
-            vessel_fishery_hist.name = name, vessel_fishery_hist.address = address, vessel_fishery_hist.postal_no = postal_no,
-            vessel_fishery_hist.identity_no = identity_no) |>
-  longer("vessel:vessel_fishery_hist", "fisheries", "interval")
+ev <- c(ev, sk_vessel_schema())
 
 # The Directorate of Fisheries' ship history (kvoti to 2020, ufs after) -------------------------------------------------
 ks <- ora("kvoti", "skipasaga")
@@ -232,27 +165,7 @@ ev$kvoti_saga <- ks |>
             vessel_operational_hist.operational_category_no = flokkur) |>
   longer("kvoti.skipasaga", "fisheries", "interval")
 
-ufs_key <- ora("ufs", "skip") |> transmute(skip_id = id, vid = as.integer(skip_numer))
-saga_cols <- function(d) d |>
-  transmute(vid, t1 = gildir_fra, t2 = gildir_til, record,
-            vessel_hist.name = heiti, vessel_hist.deck = dekk,
-            vessel_identification_hist.region_acronym = einkennisstafir, vessel_identification_hist.region_no = einkennisnumer,
-            vessel_identification_hist.home_port_no = heimahofn_id,
-            vessel_measurement_hist.brutto_grt = bruttolestir, vessel_measurement_hist.length_fisheries = lengd,
-            vessel_measurement_hist.brutto_weight_tons = bruttotonn, vessel_measurement_hist.length = skrad_lengd,
-            vessel_measurement_hist.width = skrad_breidd, vessel_measurement_hist.depth = skrad_dypt,
-            vessel_operational_hist.utgerdarflokkur_id = utgerdarflokkur_id)
-ev$ufs_saga <- ora("ufs", "skipasaga") |> inner_join(ufs_key, by = "skip_id") |>
-  mutate(record = paste0("ufs.skipasaga:", id)) |> saga_cols() |> longer("ufs.skipasaga", "fisheries", "interval")
-ev$ufs_saga_jn <- ora("ufs", "skipasaga_jn") |> filter(jn_operation != "DEL") |> inner_join(ufs_key, by = "skip_id") |>
-  # two users can change one row in the same second, so the session tells them apart
-  mutate(record = paste0("ufs.skipasaga_jn:", id, ":", format(jn_datetime, "%Y%m%d%H%M%S"), ":", jn_session)) |> saga_cols() |>
-  longer("ufs.skipasaga_jn", "fisheries", "interval")
-# the journal of ufs.skip: each insert or update of a vessel's call sign and IMO, at the moment it was made
-ev$ufs_skip_jn <- ora("ufs", "skip_jn") |> filter(jn_operation != "DEL", !is.na(skip_numer)) |>
-  transmute(vid = skip_numer, t1 = jn_datetime, t2 = as.Date(NA), record = paste0("ufs.skip_jn:", id, ":", format(jn_datetime, "%Y%m%d%H%M%S")),
-            vessel_identification_hist.call_sign = no_sign(kallmerki), vessel_hist.imo_no = imo_numer) |>
-  longer("ufs.skip_jn", "fisheries", "change")
+ev <- c(ev, sk_ufs())
 
 # kvoti's copies of the maritime register --------------------------------------------------------------------------------
 sig <- ora("kvoti", "skipaskra_siglo")
