@@ -16,6 +16,7 @@
 # - Twin records (decision 094): trips and stations marked `duplicate` are left out.
 # - The register history stops on 2023-12-19 (plan 028 step 6 is not built); the page labels it (ask g).
 # - The photos are a newspaper's images, for internal use only: served to the page, from the files the index lists.
+# - The page is www/index.html with the Mapbox token put in as it is served, and its script under /www.
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -115,6 +116,13 @@ latest_year <- function(con, vid) {
   if (is.na(y)) NULL else y
 }
 
+# The basemap's token (decision 137, ask c): read from the environment (.Renviron) and put into the page as it is
+# served, never into a file in the repository. A Mapbox public token is meant for the browser. Empty if unset or odd.
+mapbox_token <- function() {
+  tk <- Sys.getenv("MAPBOX_TOKEN")
+  if (grepl("^pk[.][A-Za-z0-9._-]+$", tk)) tk else ""
+}
+
 # HTTP ---------------------------------------------------------------------------------------------------------------
 reply <- function(status, body, type = "text/plain; charset=utf-8")
   list(status = status, headers = list(`Content-Type` = type, `Cache-Control` = "no-store"), body = body)
@@ -140,7 +148,8 @@ vessel_overview_app <- function(con, www) {
     if (path == "/") {
       f <- file.path(www, "index.html")
       if (!file.exists(f)) return(reply(200L, "vessel overview: the page comes in plan 030 step 4"))
-      return(reply(200L, paste(readLines(f, warn = FALSE, encoding = "UTF-8"), collapse = "\n"), "text/html; charset=utf-8"))
+      page <- paste(readLines(f, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+      return(reply(200L, sub("%%MAPBOX_TOKEN%%", mapbox_token(), page, fixed = TRUE), "text/html; charset=utf-8"))
     }
     if (path == "/photo") {
       vid <- int_arg(a$vid, 1L, 999999L)
@@ -172,5 +181,5 @@ vessel_overview_app <- function(con, www) {
     r$headers$`X-Server-Ms` <- sprintf("%.0f", 1000 * as.numeric(difftime(Sys.time(), t0, units = "secs")))
     r
   }
-  list(call = call, staticPaths = if (dir.exists(www)) list(`/www` = httpuv::staticPath(www, indexhtml = FALSE)) else list())
+  list(call = call, staticPaths = if (dir.exists(www)) list(`/www` = httpuv::staticPath(www, indexhtml = FALSE, headers = list(`Cache-Control` = "no-store"))) else list())
 }

@@ -1,0 +1,79 @@
+<!doctype html>
+<!-- The vessel overview page (plan 030 step 4). Served by products/vessel_overview/server.R, which puts the Mapbox
+     token into the meta tag below as it serves the page; the token is never in this file. Internal use only. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mapbox-token" content="%%MAPBOX_TOKEN%%">
+<title>Vessel overview</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@8.9.35/dist.min.js"></script>
+<style>
+  :root { --bg: #f6f7f9; --panel: #fff; --ink: #16202a; --muted: #5d6b78; --line: #dde2e7; --accent: #1f6feb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 16px; background: var(--panel);
+           border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 16px; margin: 0 12px 0 0; }
+  #search { width: min(420px, 100%); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+  #title { font-weight: 600; }
+  #status { margin-left: auto; color: var(--muted); font-size: 12px; }
+  main { display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+  .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  #photo img { width: 100%; border-radius: 4px; cursor: pointer; display: block; }
+  .note { color: var(--muted); font-size: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  tr.click { cursor: pointer; } tr.click:hover, tr.sel { background: #eef4ff; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
+  dt { color: var(--muted); } dd { margin: 0; }
+  #map { position: relative; height: 52vh; min-height: 320px; border-radius: 6px; overflow: hidden; background: #e8edf1; }
+  #attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
+  #plot { margin-top: 8px; }
+  .window { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; }
+  .dual { position: relative; flex: 1 1 300px; height: 24px; }
+  .dual input { position: absolute; left: 0; width: 100%; top: 4px; pointer-events: none; background: none; -webkit-appearance: none; appearance: none; }
+  .dual input::-webkit-slider-thumb { pointer-events: auto; }
+  .dual input::-moz-range-thumb { pointer-events: auto; }
+  button, select { font: inherit; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vessel overview</h1>
+  <input id="search" list="vessels" placeholder="vid, name, call sign or MMSI" autocomplete="off">
+  <datalist id="vessels"></datalist>
+  <span id="title"></span>
+  <span id="status">loading</span>
+</header>
+<main>
+  <div class="col">
+    <section id="photo"><h2>Photo</h2><div id="photo-body" class="note">no vessel chosen</div></section>
+    <section><h2>Register today</h2><div id="register"></div></section>
+    <section><h2>Register history</h2><div class="note">from the annual register, to 2023-12-19 (plan 028)</div><div id="history"></div></section>
+  </div>
+  <div class="col">
+    <section>
+      <h2>Trail <select id="year"></select> <span id="window-label" class="note"></span></h2>
+      <div id="map"><div id="attrib"></div></div>
+      <div id="plot"></div>
+      <div class="window">
+        <button id="play" title="move the window along the track">Play</button>
+        <div class="dual"><input id="from" type="range"><input id="to" type="range"></div>
+        <button id="month">Last month</button><button id="all">Whole year</button>
+        <span id="perf" class="note"></span>
+      </div>
+    </section>
+    <section><h2>Latest landings</h2><div id="landings"></div></section>
+    <section><h2>Latest logbook trips</h2><div class="note">click a trip to set the window to it</div><div id="trips"></div></section>
+  </div>
+</main>
+<script type="module" src="/www/app.js"></script>
+</body>
+</html>

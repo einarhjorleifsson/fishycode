@@ -1,10 +1,10 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
-written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); step 3, the R service,
-built and checked (decision 139); step 4, the page, not started; asks a-h answered (decision 137; h: the R service
+written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3 and 4, the R
+service and the page, built and checked (decisions 139, 140); asks a-h answered (decision 137; h: the R service
 serves, DuckDB-WASM in the page reads); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137, 138 and 139,
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132 and 137-140,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
@@ -194,9 +194,10 @@ browser already holds: dragging on the time-speed plot, the time slider, hoverin
 asked once per vessel, and again only for an earlier year. It is never asked during an interaction. A Shiny input
 goes to the server and back on every change, and this shape avoids that.
 
-**The front end** is one page in plain JavaScript (ES modules, no build step). Its libraries are pinned and kept
-beside the page, since the app runs inside the institute's network:
-- **The map:** deck.gl over MapLibre GL JS. deck.gl is the engine mapdeck wraps. Pings are drawn as points and
+**The front end** is one page in plain JavaScript (ES modules, no build step). Its libraries are pinned to exact
+versions and loaded from jsdelivr (step 4, decision 140): DuckDB-WASM's engine is too large for git. A server with no
+internet access would need local copies:
+- **The map:** deck.gl, the engine mapdeck wraps, with Mapbox raster tiles as the basemap (§4.6). Pings are drawn as points and
   voyages as paths. The time window filters on the GPU (deck.gl's `DataFilterExtension`), so moving the slider
   redraws without sending data again.
 - **The time-speed plot:** uPlot, which works like dygraphs and draws a canvas of 10^5-10^6 points with drag-to-zoom.
@@ -343,7 +344,7 @@ Decided here; the maintainer can overrule (ask e):
 
 ### 4.6 The basemap and the Mapbox token
 
-deck.gl draws the data. The basemap under it is a MapLibre style.
+deck.gl draws the data, and the basemap under it: Mapbox's light style as raster tiles, through deck.gl's tile layer.
 - A Mapbox style needs a token, and the browser receives it. It is a public `pk.` token, built for that.
 - The token is never in the repo (plan 001 §4: the committed one was revoked on 2026-10-16). The service reads
   `MAPBOX_TOKEN` from the environment and hands it to the page when it loads.
@@ -377,12 +378,10 @@ The maintainer's call (ask a):
 3. **The R service**: `products/vessel_overview/` (`api.R`, `server.R`, `check.R`), built 2026-10-18 (decision 139).
    **Checked** (`check.R`): no allowlisted column is personal; 43 answers for vids 2757, 3739 and 2652, each with
    exactly its allowlisted columns, all under 0.4 s; a photo served byte for byte; eight requests refused.
-4. **The page**: `products/vessel_overview/www/`, the linked views of §4.2.
-   **Check:**
-   - it opens for vids 2757, 3739 and 2652, and each panel shows its latest rows with their date;
-   - a vessel with no photo, no logbook trip (3739) or no trail since 2024 (2652) shows an empty panel that says so;
-   - responsive, measured in the browser (`performance.now()`) on the busiest year of 2025 (vid 1977, 147,432
-     pings): a slider move or a drag redraws both views in under 50 ms.
+4. **The page**: `products/vessel_overview/www/`, the linked views of §4.2, built 2026-10-18 (decision 140).
+   **Checked:** it opens for vids 2652, 1977, 2757 and 3739, and each panel shows its latest rows or says it is
+   empty; 40 window moves on vid 1977's 2025 (147,432 pings) redrew in 7-10 ms each, against 50 ms. Not checked: the
+   hover link, Play, and the time to load a vessel.
 5. **The whole photo set**, if ask b finds it or allows a new scrape. **Check:** the index has no `missing` row, or
    each one is explained.
 
