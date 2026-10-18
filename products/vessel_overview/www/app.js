@@ -21,6 +21,16 @@ const esc = (x) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const sqlstr = (x) => `'${String(x).replace(/'/g, "''")}'`;
 const num = (x, d = 0) => (x == null || x === '' || Number.isNaN(x) ? '' : Number(x).toLocaleString('en-GB', { maximumFractionDigits: d }));
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
+// The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
+// another, or none: say so plainly, rather than fail in silence.
+const API = '2026-10-18.3';
+function banner(html) {
+  let b = $('banner');
+  if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
+  b.style.cssText = 'background:#fee2e2;color:#7f1d1d;padding:10px 16px;border-bottom:1px solid #fca5a5;font-size:14px';
+  b.innerHTML = html;
+}
+window.addEventListener('unhandledrejection', (e) => banner(`Something went wrong: ${esc(e.reason?.message || e.reason)}`));
 
 // DuckDB-WASM ---------------------------------------------------------------------------------------------------------
 status('starting DuckDB');
@@ -34,6 +44,12 @@ const conn = await db.connect();
 let fileNo = 0;
 const fetchParquet = async (endpoint, params) => {
   const r = await fetch(`/api/${endpoint}?${new URLSearchParams(params)}`);
+  const v = r.headers.get('X-Overview-Api');
+  if (v !== API) {
+    banner(`<b>The service is older than this page</b> (service ${esc(v || 'unknown')}, page ${API}). Stop
+      <code>server.R</code> with Ctrl-C in its terminal, start it again, and reload this page.`);
+    throw new Error('the service and the page differ in version');
+  }
   if (!r.ok) throw new Error(`${endpoint}: ${r.status} ${await r.text()}`);
   return new Uint8Array(await r.arrayBuffer());
 };

@@ -20,6 +20,10 @@
 # - The photos are a newspaper's images, for internal use only: served to the page, from the files the index lists.
 # - The page is www/index.html with the Mapbox token put in as it is served, and its script under /www.
 
+# The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
+# a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
+API_VERSION <- "2026-10-18.3"
+
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
 
@@ -165,7 +169,8 @@ mapbox_token <- function() {
 
 # HTTP ---------------------------------------------------------------------------------------------------------------
 reply <- function(status, body, type = "text/plain; charset=utf-8")
-  list(status = status, headers = list(`Content-Type` = type, `Cache-Control` = "no-store"), body = body)
+  list(status = status, headers = list(`Content-Type` = type, `Cache-Control` = "no-store", `X-Overview-Api` = API_VERSION),
+       body = body)
 
 parse_query <- function(qs) {
   qs <- sub("^[?]", "", qs %||% "")
