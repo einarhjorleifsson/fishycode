@@ -497,3 +497,54 @@ logbook nor landing counts as fishing; this asks which gear a voyage used.
 
 **check:** a plan or decision on reading the gear's kind from the track, its error measured on trips whose logbook
 records the gear; or the item parked.
+
+## 87. The STK reports reloaded by hand after the crash of 2026-10-11
+**status:** open · **see:** decision 143 (the measurement), `R/stk_trail.R`, `curate/ais_ping_clean.R`
+
+The Oracle database crashed around 2026-10-11 and the reports were loaded by hand (maintainer).
+- About 904,000 STK reports were received 2026-10-12 to 10-14 with position dates 2026-10-11 to 10-13, from about
+  1,200 mobile ids.
+- Many carry a date exactly one day early, with the time of day right. Some duplicate live reports.
+- They put day-shifted copies of tracks into `curated/ais/trail`, as on vid 2350 on 2026-10-12.
+
+The fix is a declared correction in `curate/corrections/`, before the whack filter: a corrected time beside the
+original, and the duplicates flagged. The maintainer: the dump's order may help. Then the AIS chain is rebuilt, with the
+maintainer's go. Other periods with the same signature, a long receipt lag, are to be looked for.
+
+**check:** a corrections entry (`.yml` and `.R`) for the reload; the trail's jumps on 2026-10-11 to 10-14 counted
+before and after; other such periods listed or ruled out.
+
+## 88. A whack filter that catches troubled pings without domain knowledge
+**status:** open · **see:** TODO 38, decisions 067, 069, 078 and 143
+
+"the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
+for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
+- On vid 2350, 2026-10-12, the filter removed 29 pings of a day-shifted copy of the track (TODO 87).
+- It kept a 24 kn jump between the copy and the live track, under its fixed 25 kn.
+
+The reload is a labelled test: its receipt lag marks the truth, and is never a filter input. Candidates:
+- a per-vessel speed limit, from the vessel's own recorded speed;
+- splitting a vessel's pings into chains that are each consistent;
+- zigzags judged over a window;
+- each leg's displacement against its reported speed and course.
+
+The filter is in ramb, so a candidate is judged by its WGSFD-wide use. TODO 38 keeps the filter's other loose ends.
+
+**check:** a plan with the current filter's recall and precision on the reload's days, the candidates compared on
+those days and on normal ones, and a recommendation.
+
+## 89. AIS gaps at sea judged against coverage
+**status:** open · **see:** decision 143 (intervals at sea by distance offshore and provider), plan 030
+
+The intervals between pings at sea grow offshore, where only satellites receive (maintainer). On the 2021 trail:
+- within 100 nm of a port, under 1% of intervals exceed 30 min;
+- 100-200 nm out, 29% do;
+- beyond 200 nm, 10.5% do;
+- `astdB`'s 90th percentile is 299 min.
+
+So a fixed threshold mostly flags coverage. A gap flag should judge a gap against the intervals usual for its distance
+offshore or area, its receiver and its year. The trail has no distance offshore, so this is flow work. Until then, the
+vessel overview's QC lane keeps its 30 min threshold.
+
+**check:** a plan or decision with the grouping that explains the intervals, measured over several years, and a gap
+flag on the fixes that the overview's lane reads.

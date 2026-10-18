@@ -380,3 +380,34 @@ The maintainer's asks; code, checks and this section by Claude (AI-assisted). Th
   - `check.R` passes: 79 answers and 10 refusals, with the new endpoints under 15 ms.
   - In the pane, on vid 1977's last trip of 2021: the lanes from the tables, and a drag on the chart (2021-11-25 to
     11-29) that moved the map onto that stretch of track. No console error.
+
+## Found with Quality control, 2026-10-18: STK reports reloaded a day early, and a filter that let them through
+
+The maintainer saw clear jumps on vid 2350 at about 2026-10-12 08:37-09:08 UTC, and said: "the QC 'shiny' has already
+shown that it is fit for purpose". Measurements and this section by Claude (AI-assisted); nothing was corrected here.
+
+**What the data hold.** The maintainer: the Oracle database crashed around these dates, and the reports were then
+loaded by hand. Read from the raw dump (`R/stk_trail.R`):
+- About 904,000 STK reports have a receipt lag (recdate - time) of 12 h or more. They were received between 2026-10-12
+  09h and 2026-10-14 12h, carry position dates of 2026-10-11 to 10-13, and come from about 1,200 mobile ids.
+- 2026-10-11 has 485,673 reports, against 50,000-65,000 on normal days. The live feed has 516 that day.
+- Moving reports (over 3 kn) were matched to the live feed within 0.05 nm. 317 matches across 155 mobile ids sit
+  exactly 24 h early, with the time of day the same to the minute. 116 matches across 83 sit at 0 h, likely duplicates
+  of live reports. So many of the reloaded reports carry a date one day early.
+- vid 2350 (mid 101109, TFNA), 2026-10-12, 07:13-10:23: the reloaded reports, received 2026-10-13 at about 14:00, form a
+  copy of the vessel's next-day track. It lies about 40 nm from the live track and interleaves with it.
+- In trailid order, the reloaded batches lie among the live rows. The position time steps back by about 24 h where they
+  begin, for vid 2350 at ids 326662969 and 327600138.
+
+**What the whack filter did.** `curate/ais_ping_clean.R` removed 29 of those pings (vmask, forward). It kept 08:47:36
+on the copy and 10:32:45 on the live track: 39.5 nm in 1 h 39 min, 24 kn, under its fixed 25 kn. So
+`curated/ais/trail` jumps between the two. vid 2350's own at-sea speeds in 2026 are a median of 8.8 kn and 13.6 kn at
+the 99th percentile. Across the 2021 trail, the filter leaves 542 pairs over 25 kn in 32 million. Its failure here is
+of a kind, not of volume. The maintainer: "the current whack procedure should have picked out these troubled pings ...
+we may not have the luxury in other cases for having this domain specific knowledge, including the order that the
+data got entered into the system".
+
+Open, in `TODO.md`:
+- TODO 87: the reload, corrected in the data;
+- TODO 88: a filter that catches such cases blind;
+- TODO 89: the coverage-aware gap flag measured above.
