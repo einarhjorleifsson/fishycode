@@ -23,7 +23,7 @@ const num = (x, d = 0) => (x == null || x === '' || Number.isNaN(x) ? '' : Numbe
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-18.4';
+const API = '2026-10-18.5';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -241,7 +241,7 @@ function getTooltip({ layer, index, object }) {
 // crude measure"): the 1-99% range of the fishing pings' positions, so a stray fishing flag does not widen it. With
 // fewer than 5 fishing pings, the whole track in the span.
 const FIT_MIN_FISHING = 5;
-function fitTo(a, b) {
+function fitTo(a, b, glide = false) {
   const tr = S.tr, i0 = lower(tr.t, a), i1 = lower(tr.t, b + 1);
   const fishing = tr.fishCum[i1] - tr.fishCum[i0] >= FIT_MIN_FISHING;
   const xs = new Float64Array(fishing ? tr.fishCum[i1] - tr.fishCum[i0] : i1 - i0), ys = new Float64Array(xs.length);
@@ -257,7 +257,9 @@ function fitTo(a, b) {
     const v = new deck.WebMercatorViewport({ width: Math.max(width, 200), height: Math.max(height, 200) })
       .fitBounds([[cx - hx, cy - hy], [cx + hx, cy + hy]], { padding: Math.min(40, width / 4, height / 4) });
     view.zoom = Math.min(v.zoom, 11); view.latitude = v.latitude;
-    deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: view.zoom } });
+    // after a choice on the chart the map glides to its frame, so the eye follows where the window went
+    deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: view.zoom,
+                                          ...(glide ? { transitionDuration: 300 } : {}) } });
   } catch (e) {
     view.zoom = 8; view.latitude = cy;
     deckgl.setProps({ initialViewState: { longitude: cx, latitude: cy, zoom: 8 } });
@@ -328,11 +330,12 @@ const SPEED_CAP = 15, PLOT_H = 230;
 // The speed line is drawn trip by trip (maintainer, 2026-10-18: "the when time-speed graph should be segmentized by trip
 // - i.e. not a line between entry to harbour to exit from harbour"). A ping in port has no point (plotSpeed is null), and
 // the line breaks where the voyage changes; within one voyage it is joined, across an AIS gap too ("you can show a
-// stretch if the voyage is the same").
+// stretch if the voyage is the same"). A ping on no voyage and in no stay joins nothing ("a line is drawn between
+// time-speed points within any voyage").
 function tripGaps(u, sidx, idx0, idx1, nullGaps) {
   const tr = S.tr, xs = u.data[0], gaps = [];
   for (let i = idx0 + 1; i <= idx1; i++) {
-    if (tr.voyage[i] !== tr.voyage[i - 1])
+    if (tr.voyage[i] < 0 || tr.voyage[i] !== tr.voyage[i - 1])
       uPlot.addGap(gaps, Math.round(u.valToPos(xs[i - 1], 'x', true)), Math.round(u.valToPos(xs[i], 'x', true)));
   }
   // merged with uPlot's own gaps at the nulls: overlapping gaps cancel each other in its clip, and the line shows again
@@ -397,19 +400,18 @@ function laneLists() {   // every lane as intervals {a, b} sorted by a, with its
   }
   for (const d of S.landings) L.land.push({ a: d.d, b: d.d + DAY, d });
   if (tr) {
-    // a run of one key, ended by a gap in the AIS; a stay or a voyage runs on through a gap (bridge), since the vessel
-    // was in that stay, or on that voyage, all the while (maintainer, 2026-10-18: "draw each voyage as one unbroken bar
-    // in the QC lane, leaving gaps to the gap lane")
-    const runs = (key, ok, out, bridge = false) => {
+    // a run of the fishing flag, ended by a gap in the AIS
+    const runs = (key, ok, out) => {
       let s = -1;
       for (let i = 0; i <= tr.n; i++) {
-        const same = i < tr.n && ok(i) && s >= 0 && key(i) === key(s) && (bridge || tr.t[i] - tr.t[i - 1] <= GAP);
+        const same = i < tr.n && ok(i) && s >= 0 && key(i) === key(s) && tr.t[i] - tr.t[i - 1] <= GAP;
         if (s >= 0 && !same) { out.push({ a: tr.t[s], b: tr.t[i - 1], id: key(s) }); s = -1; }
         if (s < 0 && i < tr.n && ok(i)) s = i;
       }
     };
-    runs((i) => tr.stay[i], (i) => tr.stay[i] >= 0, L.stay, true);
-    runs((i) => tr.voyage[i], (i) => tr.voyage[i] >= 0, L.voy, true);
+    // the stays and voyages as the flow made them, one bar each from start to end, whatever the AIS did in between
+    // (maintainer, 2026-10-18: "it should reflect what is in the data. ergo: should not have an independent mind")
+    L.stay = [...S.stays]; L.voy = [...S.voy];
     runs(() => 1, (i) => tr.fishing[i] === 1, L.flow);
     // a gap between two pings of one stay is the vessel lying in port, not a hole in the track (maintainer, 2026-10-18:
     // "the ais gap in the graph should not include when vessel is in harbour"); a gap that leaves or reaches a port is kept
@@ -511,9 +513,12 @@ function setWindow(a, b, source) {
   if (source === 'plot' || source === 'slider') {
     P.win = 'custom'; P.a = a; P.b = b; markPicked();
     clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 300);   // Safari refuses many replaceState calls in a row
+    // the map follows a window chosen on the chart or the slider (maintainer, 2026-10-18: "the zoom should be dynamic
+    // here"), framed as at the start, on the fishing in it: at once after a drag, once the slider rests
+    clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTo(S.win[0], S.win[1], true), source === 'plot' ? 0 : 200);
   }
 }
-let hashTimer = null;
+let hashTimer = null, fitTimer = null;
 function slider() {
   let a = +$('wfrom').value * 1000, b = +$('wto').value * 1000;
   if (a > b) [a, b] = [b, a];
@@ -554,16 +559,8 @@ $('pts').querySelectorAll('button').forEach((b) => b.addEventListener('click', (
 
 // Presets: each sets the window and centres the map on it
 function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
-// The AIS voyages, whole. The trail numbers voyages afresh each year, so one voyage is the consecutive runs of one
-// number, never every run of that number (a ping on no voyage and in no stay can also part a voyage's run).
-function voyages() {
-  const out = [];
-  for (const r of S.lanes?.voy || []) {
-    const last = out.at(-1);
-    if (last && last.id === r.id) last.b = Math.max(last.b, r.b); else out.push({ a: r.a, b: r.b, id: r.id });
-  }
-  return out;
-}
+// The flow's voyages (curate/ais_voyage.R), oldest first; keyed by year and number, which restarts each year
+const voyages = () => S.voy || [];
 // "Last N trips" is the last N finished trips and then the current one (maintainer, 2026-10-18: "the 'last trip' should
 // be last trip and then the current trip"). The finished trips are the logbook's over the loaded track, then the AIS
 // voyages after the last of them, whose logbook is not in yet; a vessel with no logbook trip has its voyages. The
@@ -694,7 +691,8 @@ async function loadRange(from, to) {
   status(`loading ${S.from}–${S.to}`);
   const yrs = { vid: S.vid, from: S.from, to: S.to };
   const hasTrail = S.years.some((y) => y >= S.from && y <= S.to);
-  await loadAll([...(hasTrail ? [['trail', 'trail', yrs]] : []), ['trips', 'trips', yrs], ['stations', 'stations', yrs],
+  await loadAll([...(hasTrail ? [['trail', 'trail', yrs], ['voyages', 'voyages', yrs], ['stays', 'stays', yrs]] : []),
+                 ['trips', 'trips', yrs], ['stations', 'stations', yrs],
                  ['station_catch', 'station_catch', yrs], ['landings', 'landings', yrs]]);
   S.trips = await rows(`SELECT t.".tid" AS tid, t.schema, epoch_ms(t.T1)::DOUBLE AS a, epoch_ms(t.T2)::DOUBLE AS b,
       coalesce(t.port, '') AS port, t.T1_basis AS b1, t.T2_basis AS b2, count(s.".sid")::INTEGER AS n,
@@ -710,6 +708,11 @@ async function loadRange(from, to) {
     FROM stations s LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
     WHERE lon1 IS NOT NULL AND lat1 IS NOT NULL ORDER BY t1`);
   S.hauls = S.stations.map((h) => ({ ...h, a: h.t1, b: h.t4 }));
+  // the flow's voyages and stays, each from its table: the lanes and the presets draw them as they are
+  S.voy = hasTrail ? await rows(`SELECT year, voyage AS id, epoch_ms(T1)::DOUBLE AS a, epoch_ms(T2)::DOUBLE AS b, pid1, pid2,
+      n_pings FROM voyages ORDER BY T1`) : [];
+  S.stays = hasTrail ? await rows(`SELECT stay AS id, pid, epoch_ms(T_in)::DOUBLE AS a, epoch_ms(T_out)::DOUBLE AS b
+    FROM stays ORDER BY T_in`) : [];
   S.landings = await rows(`SELECT epoch_ms(date)::DOUBLE AS d, round(sum(catch) / 1000, 2)::DOUBLE AS t
     FROM landings GROUP BY ".lid", schema, date ORDER BY d`);
   // one row per landing, joined to its logbook trip through lid_map: a trip's row shows what it landed, and a landing

@@ -22,7 +22,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-18.4"
+API_VERSION <- "2026-10-18.5"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -54,6 +54,8 @@ ALLOW <- list(
                "phase", "fishing_flow", "hours"),
   photos   = c("image_no", "kind", "file", "width", "height", "exif_date", "exif_artist", "best", "use"),
   landing_trips = c(".lid", "schema_land", ".tid", "schema", "match_type"),
+  voyages  = c("year", "voyage", "T1", "T2", "pid1", "pid2", "n_pings"),
+  stays    = c("stay", "pid", "T_in", "T_out", "dur_h", "evidence", "basis"),
   trip_summary  = c(".tid", "schema", "T1", "T2", "port", "stations", "catch")
 )
 
@@ -128,6 +130,16 @@ SQL <- list(
   photos   = function(vid, p) sprintf(
     "SELECT *, regexp_extract(path, '[^/]+$') AS file FROM %s WHERE vid = %d AND kind <> 'missing'
      ORDER BY best DESC, kind, image_no", src("staging", "mbl", "photo.parquet"), vid),
+  # The voyages and the stays as the flow made them (curate/ais_voyage.R, curate/port_stay.R), so the page draws them
+  # as they are, not from its own reading of the pings (maintainer, 2026-10-18: "it should reflect what is in the
+  # data"). The stays are those the voyages were cut by: ais_voyage.R leaves out stays with event evidence alone
+  # (EXCLUDE_EVENT_ONLY, decision 060). A stay over New Year is kept by either year it touches.
+  voyages  = function(vid, p) sprintf("SELECT * FROM %s WHERE vid = %d %s", src("curated", "ais", "voyage.parquet"), vid,
+                                      scope(p, "T1", "T1 DESC")),
+  stays    = function(vid, p) sprintf(
+    "SELECT * FROM %s WHERE vid = %d AND evidence <> 'event_pair' %s", src("curated", "ais", "port_stay.parquet"), vid,
+    if (ranged(p)) sprintf("AND T_out >= MAKE_DATE(%d, 1, 1) AND T_in < MAKE_DATE(%d, 1, 1) ORDER BY T_in", p$from, p$to + 1L)
+    else sprintf("ORDER BY T_in DESC LIMIT %d", p$n)),
   # Which logbook trip each of the vessel's landings came from (curate/logbook/lid_map.R), for the front tab
   landing_trips = function(vid, p) sprintf(
     "SELECT m.* FROM %s m JOIN (SELECT \".tid\", schema FROM %s WHERE vid = %d) t USING (\".tid\", schema)",

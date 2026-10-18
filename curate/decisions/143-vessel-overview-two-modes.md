@@ -350,3 +350,33 @@ intervals usual where it happens, by distance offshore or area, and by receiver,
 That needs a distance offshore on the fixes, which the trail lacks, so it belongs to the flow and is proposed as its own
 piece of work. The trail's own `interval_flag` marks 306,276 fixes of 2021 `capped` and 80,804 `edge`: the effort's cap,
 not a gap flag. Until the flow has one, the page keeps its 30 min lane.
+
+## Amended 2026-10-18: voyages and stays drawn from their tables; the map follows a choice made in When
+
+The maintainer's asks; code, checks and this section by Claude (AI-assisted). The service changed (API version
+2026-10-18.5), so a server started earlier shows the page's banner until it is restarted.
+
+- **The lanes reflect the data.** "the voyage bar should really be continuous - i.e. it should reflect what is in the
+  data. ergo: should not have an independent mind".
+  - The service has two new endpoints, `voyages` (`curated/ais/voyage.parquet`) and `stays`
+    (`curated/ais/port_stay.parquet`).
+  - The voyage and in-port lanes draw each voyage from T1 to T2, and each stay from T_in to T_out, as the flow made
+    them. They no longer come from runs of the pings.
+  - The stays are those the voyages were cut by. `curate/ais_voyage.R` leaves out stays with event evidence alone
+    (`EXCLUDE_EVENT_ONLY`, decision 060), and the service does the same.
+  - The presets and a landing's window take their voyages from the same table.
+  - This explains the voyage change found on vid 1977's last trip of 2021. Voyage 27 ends at 12:58 on 2021-12-11 and
+    voyage 28 starts at 15:19: a stay of two hours at Ísafjörður (IS-ISJ). The in-port lane now shows that stay.
+- **The speed line joins points only within a voyage.** "so a line is drawn between time-speed points within any
+  voyage": a ping on no voyage and in no stay now joins nothing.
+- **The map follows a choice made in When.** "some responsiveness is missing when selecting the when vs then what comes
+  out in the where. the zoom should be dynamic here".
+  - After a drag on the chart or the lanes, or once the slider rests (200 ms), the map glides (300 ms) to the
+    window's frame. As at the start, the frame is set by the fishing in the window, else by the whole track.
+  - Play keeps its frame.
+  - The earlier refit after every drag was taken out above, on "extent" read as the starting view only. It is back on
+    this ask.
+- Checked:
+  - `check.R` passes: 79 answers and 10 refusals, with the new endpoints under 15 ms.
+  - In the pane, on vid 1977's last trip of 2021: the lanes from the tables, and a drag on the chart (2021-11-25 to
+    11-29) that moved the map onto that stretch of track. No console error.
