@@ -322,14 +322,32 @@ function describe(t) {   // what is going on at time t, in the mode's words
 // The chart's speed is capped at 15 knots (maintainer, 2026-10-18: vessels rarely go above 12-15 knots, and fishing is
 // well below that): a ping above it is drawn at the cap, and the hover text gives its real speed
 const SPEED_CAP = 15, PLOT_H = 230;
+// The speed line is drawn trip by trip (maintainer, 2026-10-18: "the when time-speed graph should be segmentized by trip
+// - i.e. not a line between entry to harbour to exit from harbour"). A ping in port has no point (plotSpeed is null), and
+// the line breaks where the voyage changes; within one voyage it is joined, across an AIS gap too ("you can show a
+// stretch if the voyage is the same").
+function tripGaps(u, sidx, idx0, idx1, nullGaps) {
+  const tr = S.tr, xs = u.data[0], gaps = [];
+  for (let i = idx0 + 1; i <= idx1; i++) {
+    if (tr.voyage[i] !== tr.voyage[i - 1])
+      uPlot.addGap(gaps, Math.round(u.valToPos(xs[i - 1], 'x', true)), Math.round(u.valToPos(xs[i], 'x', true)));
+  }
+  // merged with uPlot's own gaps at the nulls: overlapping gaps cancel each other in its clip, and the line shows again
+  const out = [];
+  for (const g of [...nullGaps, ...gaps].sort((a, b) => a[0] - b[0])) {
+    const last = out.at(-1);
+    if (last && g[0] <= last[1]) last[1] = Math.max(last[1], g[1]); else out.push([g[0], g[1]]);
+  }
+  return out;
+}
 function makePlot() {
   const tr = S.tr;
   plot?.destroy();
   plot = new uPlot({
     width: $('plot').clientWidth || 600, height: PLOT_H, legend: { show: false }, padding: PADDING,
     scales: { x: { time: true }, y: { range: [0, SPEED_CAP] } },
-    series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false } },
-             { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false }],
+    series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false }, gaps: tripGaps },
+             { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false, gaps: tripGaps }],
     axes: [{ font: GUTTER.font }, { ...GUTTER, label: `knots (cap ${SPEED_CAP})` }],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
     hooks: {
@@ -461,7 +479,7 @@ function setHover(i, source) {
   render();
   if (source === 'map' && plot) {
     cursorFromMap = true;
-    plot.setCursor({ left: plot.valToPos(S.tr.ts[i], 'x'), top: plot.valToPos(S.tr.plotSpeed[i], 'y') });
+    plot.setCursor({ left: plot.valToPos(S.tr.ts[i], 'x'), top: plot.valToPos(S.tr.plotSpeed[i] ?? 0, 'y') });
     cursorFromMap = false;
   }
 }
@@ -740,7 +758,7 @@ async function buildTrail() {
   tr.t0 = tr.t[0]; tr.t1 = tr.t[tr.n - 1];
   tr.ts = new Float64Array(tr.n); tr.pos = new Float32Array(2 * tr.n); tr.col = new Uint8Array(4 * tr.n);
   tr.th = new Float32Array(tr.n); tr.fishSpeed = new Array(tr.n); tr.fishCum = new Int32Array(tr.n + 1);
-  tr.plotSpeed = new Float64Array(tr.n);
+  tr.plotSpeed = new Array(tr.n);   // an Array, since a ping in port is null: no point, no line
   tr.paths = [];   // one path per voyage: a new one wherever the number changes, since it restarts each year
   let path = null;
   for (let i = 0; i < tr.n; i++) {
@@ -748,7 +766,7 @@ async function buildTrail() {
     tr.pos[2 * i] = tr.lon[i]; tr.pos[2 * i + 1] = tr.lat[i];
     const c = speedColour(tr.speed[i]);
     tr.col[4 * i] = c[0]; tr.col[4 * i + 1] = c[1]; tr.col[4 * i + 2] = c[2]; tr.col[4 * i + 3] = 230;
-    tr.plotSpeed[i] = tr.speed[i] > SPEED_CAP ? SPEED_CAP : tr.speed[i];
+    tr.plotSpeed[i] = tr.stay[i] >= 0 ? null : tr.speed[i] > SPEED_CAP ? SPEED_CAP : tr.speed[i];
     tr.fishSpeed[i] = tr.fishing[i] ? tr.plotSpeed[i] : null;
     tr.fishCum[i + 1] = tr.fishCum[i] + (tr.fishing[i] ? 1 : 0);
     const v = tr.voyage[i];

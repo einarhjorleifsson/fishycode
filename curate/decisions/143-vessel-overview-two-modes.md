@@ -285,3 +285,20 @@ by Claude (AI-assisted).
 
   So 2047's gap lane is now empty, 1977's is unchanged, and 2757's keeps 3 gaps. Seen in the pane for 2757's 2021,
   with no console error.
+
+## Amended 2026-10-18: the speed line drawn trip by trip
+
+"the when time-speed graph should be segmentized by trip - i.e. not a line between entry to harbour to exit from
+harbour", and "you can show a stretch if the voyage is the same" (maintainer). Code, checks and this section by Claude
+(AI-assisted).
+
+- A ping in port has no point on the speed chart, for the speed line and the fishing line alike.
+- The line breaks where the voyage changes. Within one voyage it is joined, across an AIS gap too.
+- The breaks are passed to uPlot's `gaps` hook, merged with its own breaks at the empty points. Unmerged, the two
+  overlapped and cancelled each other in uPlot's clip, and a straight line showed again across days in port. That was
+  seen on vid 2047's 2021 before the merge.
+- Seen in the pane after the merge, with no console error:
+  - vid 2047's daily trips of July 2021, each drawn alone;
+  - vid 1977's three trips of autumn 2021, with nothing drawn between them.
+- The redraw time was not measured: the browser pane was hidden, which gives the page no animation frames. The break
+  test runs once per drawn point.
