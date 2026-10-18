@@ -162,7 +162,7 @@ Not checked: the layout at phone width, and a person using the page.
 - The checks' rule for gear the lists do not name is lenient by design. Whether STATIC and MOBILE are complete for
   the Icelandic gears is for a person to say.
 
-## Amended 2026-10-18: the map's shape, what it shows outside the window, and a map that follows the window
+## Amended 2026-10-18: the map's shape, what it shows outside the window, and its frame on the fishing
 
 The maintainer's next asks; code, the measurement, checks and this section by Claude (AI-assisted). Only the page
 changed.
@@ -189,15 +189,18 @@ changed.
   0.5, 1, 2, 5, 10, 20 or 50 km. The cells re-aggregate only when the step changes, and the legend names the step.
   On vid 1977's 2026, the whole grounds show 20 km cells, and zooming in gives 10 km. The colours are viridis, R's
   default ("D"), in six steps.
-- **The map follows the window.** "it would then be nice that the 'leaflet' would set the extent automatically given
-  the extent of the vessel and time period selected".
-  - Once a drag on the chart or a move of the slider rests (250 ms), the map frames the vessel's track in the window.
-  - The presets, a trip and a haul already framed it.
-  - Play frames the whole run at its start, so the vessel moves across a still map.
-  - Fit map frames it again after the map was moved by hand.
+- **The map's frame: the fishing, not the steaming.** "it would then be nice that the 'leaflet' would set the extent
+  automatically given the extent of the vessel and time period selected", and then "extent was referring to the default
+  'starting' zoom level. if a fishing vessel, the zoom level 'start' would be the fishing events only, not steaming.
+  could use crude measure".
+  - Wherever the page frames the map on a time span, it takes the 1-99% range of the positions of the fishing pings
+    (`fishing_flow`) in the span. With fewer than 5 fishing pings, it takes the whole track.
+  - That covers the start (the last 3 trips), the presets, a trip, a haul and Fit map.
+  - On vid 1977, the trips' steaming to port now runs off the map's lower edge, and the fishing fills it.
+  - The first reading of the ask made the map refit itself after every drag of the chart or the slider. That was not
+    what was asked, and it is taken out: as before, the map moves only when a preset, a row or Fit map frames it.
 
-Checked in the browser pane on vid 1977:
-- the shares and ratios above;
-- the hexagons' step after zooming;
-- the map reframed by the slider;
+Checked in the browser pane:
+- on vid 1977, the shares and ratios above, the hexagons' step after zooming, and the frame on the fishing;
+- on vids 2047 and 2757, the starting frame;
 - no console error, and no sideways scroll at phone width.

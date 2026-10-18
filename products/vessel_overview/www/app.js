@@ -231,12 +231,20 @@ function getTooltip({ layer, index, object }) {
   if (layer.id === 'stations' && object) return { html: `haul on ${esc(object.day)}, ${esc(object.gear)}, ${num(object.kg)} kg<br>gear in ${fmt(object.t1)}, out ${fmt(object.t4)}` };
   return null;
 }
+// The map's frame for a time span. A vessel that fished in it is framed on its fishing, not its steaming (maintainer,
+// 2026-10-18: "if a fishing vessel, the zoom level 'start' would be the fishing events only, not steaming. could use
+// crude measure"): the 1-99% range of the fishing pings' positions, so a stray fishing flag does not widen it. With
+// fewer than 5 fishing pings, the whole track in the span.
+const FIT_MIN_FISHING = 5;
 function fitTo(a, b) {
-  const tr = S.tr; let x0 = 180, x1 = -180, y0 = 90, y1 = -90;
-  for (let i = lower(tr.t, a); i < tr.n && tr.t[i] <= b; i++) {
-    x0 = Math.min(x0, tr.lon[i]); x1 = Math.max(x1, tr.lon[i]); y0 = Math.min(y0, tr.lat[i]); y1 = Math.max(y1, tr.lat[i]);
-  }
-  if (x0 > x1) return;
+  const tr = S.tr, i0 = lower(tr.t, a), i1 = lower(tr.t, b + 1);
+  const fishing = tr.fishCum[i1] - tr.fishCum[i0] >= FIT_MIN_FISHING;
+  const xs = new Float64Array(fishing ? tr.fishCum[i1] - tr.fishCum[i0] : i1 - i0), ys = new Float64Array(xs.length);
+  for (let i = i0, k = 0; i < i1; i++) if (!fishing || tr.fishing[i]) { xs[k] = tr.lon[i]; ys[k] = tr.lat[i]; k++; }
+  if (!xs.length) return;
+  xs.sort(); ys.sort();
+  const q = (v, p) => v[Math.round(p * (v.length - 1))], lo = fishing ? 0.01 : 0, hi = 1 - lo;
+  const x0 = q(xs, lo), x1 = q(xs, hi), y0 = q(ys, lo), y1 = q(ys, hi);
   // a vessel in port for the whole window gives a single point: give the box a least size, about 2 km
   const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hx = Math.max((x1 - x0) / 2, 0.02), hy = Math.max((y1 - y0) / 2, 0.01);
   const { width, height } = $('map').getBoundingClientRect();
@@ -472,11 +480,7 @@ function setWindow(a, b, source) {
   };
   render();
   if (qc()) { clearTimeout(pingTimer); pingTimer = setTimeout(() => { S.pingPage = 0; renderPings(); }, 150); }
-  // the map follows the window, framed on the vessel's track in it (maintainer, 2026-10-18), once a drag on the chart or
-  // the slider rests; the presets, a trip and a haul frame it themselves, and Play keeps the frame it starts with
-  if (source === 'plot' || source === 'slider') { clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTo(S.win[0], S.win[1]), 250); }
 }
-let fitTimer = null;
 function slider() {
   let a = +$('wfrom').value * 1000, b = +$('wto').value * 1000;
   if (a > b) [a, b] = [b, a];
@@ -543,7 +547,6 @@ $('play').addEventListener('click', () => {
   if (!S.tr) return;
   playing = !playing;
   $('play').textContent = playing ? 'Pause' : 'Play';
-  if (playing) fitTo(S.win[0], S.tr.t1);   // the frame of the whole run, so the vessel moves across a still map
   const step = () => {
     if (!playing) return;
     const [a, b] = S.win, d = (b - a) / 40;
