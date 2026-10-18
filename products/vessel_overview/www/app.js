@@ -517,18 +517,25 @@ function voyages() {
   }
   return out;
 }
-function lastUnits() {   // the logbook's trips over the loaded track, else the AIS voyages, newest last
+// "Last N trips" is the last N finished trips and then the current one (maintainer, 2026-10-18: "the 'last trip' should
+// be last trip and then the current trip"). The finished trips are the logbook's over the loaded track, then the AIS
+// voyages after the last of them, whose logbook is not in yet; a vessel with no logbook trip has its voyages. The
+// current trip is the track after them while the vessel is at sea at its last ping.
+const MIN_VOYAGE = HOUR;   // a shorter move is a shift within a port, not a trip
+function lastUnits() {   // newest last
   const tr = S.tr, trips = S.trips.filter((d) => d.b >= tr.t0 && d.a <= tr.t1);
-  if (trips.length) return { word: 'trips', units: trips };
-  return { word: 'voyages', units: voyages() };
+  const after = trips.length ? trips.at(-1).b : -Infinity, atSea = tr.stay[tr.n - 1] < 0;
+  const voy = voyages().filter((v) => v.a > after && v.b - v.a >= MIN_VOYAGE && !(atSea && v.b >= tr.t1));
+  return { word: trips.length ? 'trips' : 'voyages', units: [...trips, ...voy], atSea };
 }
 function showLastTrips() {
   if (!S.tr) return;
-  const n = +$('ntrips').value, { word, units } = lastUnits();
+  const n = +$('ntrips').value, { word, units, atSea } = lastUnits();
   $('ntrips-label').textContent = n; $('trips-word').textContent = n === 1 ? word.slice(0, -1) : word;
+  $('trips-current').textContent = atSea ? ' + the current' : '';
   if (!units.length) { show(S.tr.t1 - 30 * DAY, S.tr.t1); return; }
   const pick = units.slice(-n);
-  show(Math.min(...pick.map((d) => d.a)) - HOUR, Math.max(...pick.map((d) => d.b)) + HOUR);
+  show(Math.min(...pick.map((d) => d.a)) - HOUR, atSea ? S.tr.t1 : Math.max(...pick.map((d) => d.b)) + HOUR);
 }
 $('last-trips').addEventListener('click', showLastTrips);
 $('ntrips').addEventListener('change', showLastTrips);

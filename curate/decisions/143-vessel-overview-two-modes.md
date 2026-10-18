@@ -199,6 +199,14 @@ changed.
   - On vid 1977, the trips' steaming to port now runs off the map's lower edge, and the fishing fills it.
   - The first reading of the ask made the map refit itself after every drag of the chart or the slider. That was not
     what was asked, and it is taken out: as before, the map moves only when a preset, a row or Fit map frames it.
+- **"Last N trips" runs through the current trip.** "the 'last trip' should be last trip and then the current trip".
+  - The finished trips are the logbook's trips, then the AIS voyages of an hour or more after the last of them. Those
+    voyages are trips whose logbook is not in yet. A vessel with no logbook trip has its voyages.
+  - While the vessel is at sea at its last ping, the window runs on to that ping, and the button says "+ the current".
+  - On vid 2047, whose logbook ends on 2026-07-15, "Last 1 trip + the current" now shows the voyage of 2026-10-13 and
+    the one it is on, to 2026-10-14 14:01. Before, it showed the logbook trip of July.
+  - On vid 1977, the window runs from its last logbook trip (2026-09-02) to its last ping (2026-10-16).
+  - vid 2757's 2024 ends in port, so nothing is added.
 
 Checked in the browser pane:
 - on vid 1977, the shares and ratios above, the hexagons' step after zooming, and the frame on the fishing;
