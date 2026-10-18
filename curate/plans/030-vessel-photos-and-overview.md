@@ -1,10 +1,10 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
-written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3-4 not started:
-ask h answered after a prototype (§4.1): the R service serves, DuckDB-WASM in the page reads; asks a-h answered
-(decision 137); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137 and 138,
+written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); step 3, the R service,
+built and checked (decision 139); step 4, the page, not started; asks a-h answered (decision 137; h: the R service
+serves, DuckDB-WASM in the page reads); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137, 138 and 139,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
@@ -243,10 +243,11 @@ page would read the parquet files itself over HTTP, and the R service would shri
   - Drawing is the same in both designs. With 147,432 pings, moving the time filter redrew in a median of 8-25 ms.
     The embedded browser pane holds back frames while it is not looked at, so the first-draw times it gave (0.6 s
     and 23 s) are not measurements.
-- *Chosen (ask h, decision 137 amended): both, each where it is strong.* The R service chooses and serves the rows (fixed endpoints,
-  the column allowlist, 17 KB to 1.7 MB a vessel-year), and DuckDB-WASM in the page reads that response. The
-  prototype's service column did exactly this (`registerFileBuffer`). The page can then run its own SQL on the
-  vessel's rows (by voyage, gear or month) with no further request.
+- *Chosen (ask h, decision 137 amended): both, each where it is strong.* The R service chooses and serves the rows
+  (fixed endpoints, the column allowlist, 17 KB to 1.7 MB a vessel-year), and DuckDB-WASM in the page reads that
+  response. The prototype's service column did exactly this (`registerFileBuffer`). The page can then run its own SQL on
+  the vessel's rows (by voyage, gear or month) with no further request.
+
 
 **An alternative not proposed: Shiny.** It stays only as a wrapper, if the app must run on the institute's Shiny
 Server (ask a). The same page would then be one custom component, with Shiny only delivering the data, as the R
@@ -373,9 +374,9 @@ The maintainer's call (ask a):
    **Check (needs the maintainer's go, since it sends requests):** a pilot of five vessels (vids 78, 1977, 2184, 2757
    and 9810). Their pages are read by a person, to see whether mbl still uses the 2022 selectors and where a caption or
    credit sits, before any whole run.
-3. **The R service**: `products/vessel_overview/server.R`, its endpoints, the column allowlist and its test.
-   **Check:** the personal-column test passes; each endpoint answers for vids 2757, 3739 and 2652 within the times
-   of §4.4.
+3. **The R service**: `products/vessel_overview/` (`api.R`, `server.R`, `check.R`), built 2026-10-18 (decision 139).
+   **Checked** (`check.R`): no allowlisted column is personal; 43 answers for vids 2757, 3739 and 2652, each with
+   exactly its allowlisted columns, all under 0.4 s; a photo served byte for byte; eight requests refused.
 4. **The page**: `products/vessel_overview/www/`, the linked views of §4.2.
    **Check:**
    - it opens for vids 2757, 3739 and 2652, and each panel shows its latest rows with their date;
