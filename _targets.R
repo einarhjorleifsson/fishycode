@@ -55,6 +55,8 @@ tar_option_set(
 fro_files <- sort(list.files(fd_raw("external", "fro"), "^vid-.*[.]csv$", full.names = TRUE), method = "radix")
 # The mbl vessel photos (plan 030), for the same reason: if the rest of the 2022 scrape is found, it lands in this folder.
 mbl_photo_files <- input_files("raw", "external", "skipaskra", "jpg", pattern = "[.]jpg$")
+mbl_photo_recovered <- sort(list.files(fd_raw("external", "skipaskra"), "^mbl-photo-recover_.*[.]csv$", full.names = TRUE),
+                            method = "radix")
 
 # produces() and frozen_input() are in R/source_script.R, shared with _targets_once.R.
 # source_script() sources with encoding = "UTF-8", which is not optional: the scripts
@@ -236,8 +238,9 @@ list(
   }, format = "file"),
 
   # The mbl vessel photos indexed by vid, with the scrape's logs for mbl's image id and the files it never delivered
-  # (plan 030 step 1, decision 137). Nothing in the flow reads it; products/vessel_overview does. Internal use only.
-  tar_target(mbl_photo_raw, c(mbl_photo_files,
+  # (plan 030 step 1, decision 137), and the manifests of the photos fetched again by their logged URLs (decision 145).
+  # Nothing in the flow reads it; products/vessel_overview does. Internal use only.
+  tar_target(mbl_photo_raw, c(mbl_photo_files, mbl_photo_recovered,
                               fd_raw("external", "skipaskra",
                                      c("nohup_2022-12-27.log", "nohup2.log",
                                        sprintf("mbl-scrape_2022-12-28_%s.log",

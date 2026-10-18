@@ -1,11 +1,11 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
-**status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
-written, its pilot refused by a bot check on mbl's pages (decision 141); steps 3 and 4, the R
-service and the page, built and checked (decisions 139, 140), then extended to two modes, Overview and Quality control
-(decision 143); asks a-h answered (decision 137; h: the R service
-serves, DuckDB-WASM in the page reads); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137-141 and 143,
+**status:** executed 2026-10-18 on branch `claude/dreamy-shirley-2a8ae2`, not yet merged into main — step 1, the
+photo index (decision 138), rebuilt on the whole set (decision 145); step 2's scraper written, a new scrape closed by
+mbl's bot check (decision 141); steps 3 and 4, the R service and the page, in two modes, Overview and Quality control
+(decisions 139, 140, 143); step 5, the 1,589 missing photos fetched again by their logged URLs (decision 145); asks
+a-h answered (decision 137)
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137-141, 143 and 145,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
@@ -386,10 +386,9 @@ The maintainer's call (ask a):
    **Checked:** it opens for vids 2652, 1977, 2757 and 3739, and each panel shows its latest rows or says it is
    empty; 40 window moves on vid 1977's 2025 (147,432 pings) redrew in 7-10 ms each, against 50 ms. Not checked: the
    hover link, Play, and the time to load a vessel.
-5. **The whole photo set.** The image host still serves the 2022 images by id, with no bot check (decision 141):
-   the 1,589 missing photos (about 370 MB) can most likely be fetched by their logged URLs into
-   `raw/external/skipaskra/jpg/`, under their 2022 names, each byte count checked against the log. Only with the
-   maintainer's go (ask b). **Check:** the index has no `missing` row, or each one is explained.
+5. **The whole photo set.** The image host still serves the 2022 images by id, with no bot check (decision 141).
+   **Done 2026-10-18** (decision 145): the 1,589 missing photos fetched by their logged URLs, 4 s apart, each byte
+   count and md5 checked; the index rebuilt with no `missing` row, 2,129 vessels with an image.
 
 ## 6. Asks
 

@@ -1,9 +1,11 @@
 # The vessel photos scraped from Morgunblaðið's online register (200 mílur) in December 2022, indexed by vid.
 # Side: preprocessing (an index of image files; it feeds no flow step, its reader is products/vessel_overview). Plan 030
-# step 1; decision 137.
+# steps 1 and 5; decisions 137, 138 and 145.
 #
-# Input:  raw/external/skipaskra/jpg/<vid>-<image_no>[-thumb].jpg (1,000 files on 2026-10-18)
+# Input:  raw/external/skipaskra/jpg/<vid>-<image_no>[-thumb].jpg (1,000 files from the 2022 copy, and those fetched
+#         again on 2026-10-18)
 #         raw/external/skipaskra/{nohup_2022-12-27,nohup2,mbl-scrape_2022-12-28_*}.log - the photo scrape's eight logs
+#         raw/external/skipaskra/mbl-photo-recover_*.csv - the files fetched again by their logged URLs, and when
 # Output: staging/mbl/photo.parquet - one row per file, and one per logged download that has no file (kind "missing")
 #
 # The files were made by raw/external/skipaskra/R/mbl-scrape_jpg.R, which took the first image of each vessel page's
@@ -11,8 +13,9 @@
 # image id is not in the file name, only in the logs, so it comes from there with the URL and the byte count.
 #
 # - The folder is about a quarter of the scrape: the logs record 2,120 downloads and 538 photos are here (plan 030
-#   §1.3). Each logged download with no file is a row of kind "missing", so the gap shows in the table. If the whole
-#   set is found (decision 137, ask b) it lands in the same folder and the index grows.
+#   §1.3). Each logged download with no file is a row of kind "missing", so the gap shows in the table.
+# - The missing photos were fetched again on 2026-10-18 by their logged URLs, each byte count equal to its log's
+#   (dump/vessels/mbl_photo_recover.R, decision 145). `recovered` is that day for those files, NA for the 2022 copy.
 # - `defect`, first rule that applies: a photo 120 px high or less is "undersized" (0078: a thumbnail-sized image under
 #   a photo's name); a photo with fewer bytes than its log says is "truncated" (1722: the download that halted the
 #   first run), more is "size_differs"; a file whose vid no log covers is "no_log".
@@ -34,6 +37,7 @@ DIR  <- fd_raw("external", "skipaskra", "jpg")
 LOGS <- c("nohup_2022-12-27.log", "nohup2.log",
           sprintf("mbl-scrape_2022-12-28_%s.log", c("153000", "160000", "163000", "170000", "173000", "180000")))
 SCRAPED <- "2022-12-27/2022-12-28"
+RECOVERED <- list.files(fd_raw("external", "skipaskra"), "^mbl-photo-recover_.*[.]csv$", full.names = TRUE)
 USE <- "internal only (mbl.is)"
 NAME <- "^([0-9]{4})-([0-9]{4})(-thumb)?[.]jpg$"
 
@@ -75,11 +79,12 @@ stopifnot("a logged download has no vid" = !anyNA(logged$vid),
 files <- sort(list.files(DIR), method = "radix")
 stopifnot("a file in jpg/ is not named <vid>-<image_no>[-thumb].jpg" = all(grepl(NAME, files)))
 
+# EXIF text as printed, made valid UTF-8 first: some cameras wrote Latin-1 (none of the first 1,000 files did; one of
+# those fetched in 2026 does), and trimws() stops on an invalid string
 exif_text <- function(x) {
-  x <- trimws(x)
   bad <- !is.na(x) & !validUTF8(x)
   x[bad] <- iconv(x[bad], "latin1", "UTF-8")
-  na_if(x, "")
+  na_if(trimws(x), "")
 }
 read_image <- function(f) {
   im <- tryCatch(magick::image_read(f), error = function(e) stop("does not decode: ", f, ": ", conditionMessage(e)))
@@ -89,7 +94,7 @@ read_image <- function(f) {
   g  <- function(k) if (k %in% names(e)) unname(e[[k]]) else NA_character_
   tibble(width = i$width, height = i$height, format = i$format,
          exif_date_txt = coalesce(g("exif:DateTimeOriginal"), g("exif:DateTime")),
-         exif_camera = exif_text(trimws(paste(coalesce(g("exif:Make"), ""), coalesce(g("exif:Model"), "")))),
+         exif_camera = exif_text(paste(coalesce(g("exif:Make"), ""), coalesce(g("exif:Model"), ""))),
          exif_artist = exif_text(g("exif:Artist")), exif_copyright = exif_text(g("exif:Copyright")))
 }
 paths <- file.path(DIR, files)
@@ -115,7 +120,14 @@ missing <- logged |>
   anti_join(img |> filter(kind == "photo"), by = "vid") |>
   mutate(image_no = 1L, kind = "missing")
 
+recovered <- purrr::map(RECOVERED, \(f) utils::read.csv(f, colClasses = "character")) |>
+  bind_rows(tibble(file = character(), status = character(), fetched = character())) |>
+  filter(status == "ok") |>
+  transmute(path = file.path("raw", "external", "skipaskra", "jpg", file), recovered = as.Date(substr(fetched, 1, 10)))
+stopifnot("a file was recovered twice" = !anyDuplicated(recovered$path))
+
 out <- bind_rows(img |> select(-file, -format), missing) |>
+  left_join(recovered, by = "path") |>
   mutate(exif_date = as.Date(as.POSIXct(exif_date_txt, format = "%Y:%m:%d %H:%M:%S", tz = "UTC")),
          exif_date = if_else(exif_date == as.Date("2000-01-01"), as.Date(NA), exif_date),
          scraped = SCRAPED, use = USE,
@@ -126,7 +138,7 @@ out <- bind_rows(img |> select(-file, -format), missing) |>
   mutate(best = !is.na(rank) & rank == suppressWarnings(min(rank, na.rm = TRUE))) |>
   ungroup() |>
   select(vid, image_no, kind, path, bytes, md5, width, height, mbl_image_id, url, log, logged_bytes, logged_status,
-         defect, exif_date, exif_date_txt, exif_camera, exif_artist, exif_copyright, scraped, use, best) |>
+         defect, exif_date, exif_date_txt, exif_camera, exif_artist, exif_copyright, scraped, recovered, use, best) |>
   arrange(vid, image_no, kind)
 
 # Check and write ----------------------------------------------------------------------------------------------------
@@ -137,6 +149,8 @@ stopifnot(
   "a (vid, image_no, kind) repeats" = !anyDuplicated(out[c("vid", "image_no", "kind")]),
   "a logged download has no photo row" = all(logged$vid %in% out$vid[out$kind %in% c("photo", "missing")]),
   "a missing row is not a logged download" = all(out$vid[out$kind == "missing"] %in% logged$vid),
+  "a recovered file is not in the folder" = all(recovered$path %in% out$path),
+  "a recovered file has a defect" = !any(!is.na(out$recovered) & !is.na(out$defect)),
   "a vid with a file has no best image, or two" =
     all(tapply(out$best[out$vid %in% with_file], out$vid[out$vid %in% with_file], sum) == 1),
   "a missing row is marked best" = !any(out$best & out$kind == "missing"))
@@ -145,7 +159,7 @@ print(knitr::kable(out |> count(kind, defect), caption = "staging/mbl/photo: row
 print(knitr::kable(tibble(
   files = length(files), vids_with_file = length(with_file), logged_downloads = nrow(logged),
   logged_without_file = nrow(missing), exif_date = sum(!is.na(out$exif_date)), exif_artist = sum(!is.na(out$exif_artist)),
-  exif_copyright = sum(!is.na(out$exif_copyright)), best = sum(out$best)),
+  exif_copyright = sum(!is.na(out$exif_copyright)), recovered = sum(!is.na(out$recovered)), best = sum(out$best)),
   caption = "staging/mbl/photo"))
 
 write_parquet_group(out, fd_staging("mbl", "photo.parquet"))
