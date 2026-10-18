@@ -453,9 +453,8 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
-**status:** in progress · **needs: maintainer** — a person's check of D2's 33 decisions against the page images (crops
-ready; the rebuild with decision 136's amendments follows), and
-plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e (editions outside 2004-2022) · **see:**
+**status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
+(editions outside 2004-2022) · **see:**
 `curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135 and 136, TODO 71
 
 Steps 1-5 are built in the `once` project:
@@ -469,7 +468,7 @@ sources print is kept, never published.
 
 Next: step 6, the live part from 2023-12-19 in the main project, then step 7, repointing the vessel readers.
 
-**check:** plan 028's steps 1-7 built and D2's sample checked, or the plan parked.
+**check:** plan 028's steps 1-7 built, or the plan parked.
 
 ## 84. A fishing licence history from every witness (plan 029)
 **status:** in progress · **needs: maintainer** — plan 029 §8's asks: where licences are kept after 2020-07-22 and

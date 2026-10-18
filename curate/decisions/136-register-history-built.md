@@ -2,7 +2,9 @@
 
 *2026-10-18. Coded, checked and built by Claude (AI-assisted), on the maintainer's go ("proceed and ask"), with the
 decision model the maintainer confirmed (decision 135). Built in the `once` project by name, at 314d8ee, and the history
-and checks again at 43c513f. A person has not yet checked D2's decisions against the page images.*
+and checks again at 43c513f. The maintainer then checked D2's 33 decisions against the page images, and the history was
+rebuilt at 8527da7 with what that check found (below). The numbers here are the rebuild's; the first build's are under
+"Superseded".*
 
 ## What was built
 
@@ -11,10 +13,10 @@ and checks again at 43c513f. A person has not yet checked D2's decisions against
 
 | table | rows | hulls |
 |---|---|---|
-| `vessel_hist` | 30,587 | 4,618 |
+| `vessel_hist` | 29,166 | 4,618 |
 | `vessel_identification_hist` | 22,967 | 4,616 |
-| `vessel_measurement_hist` | 15,331 | 4,615 |
-| `vessel_engines_hist` | 14,572 | 3,462 |
+| `vessel_measurement_hist` | 15,397 | 4,615 |
+| `vessel_engines_hist` | 13,393 | 3,462 |
 | `vessel_operational_hist` | 36,333 | 3,144 |
 | `vessel_fishery_hist` (operators, with `identity_no`) | 20,516 | 3,845 |
 | `vessel_owners_hist` (with `national_identity_no`) | 27,089 | 3,795 |
@@ -23,7 +25,7 @@ and checks again at 43c513f. A person has not yet checked D2's decisions against
 | `registered`, the runs on the register | 6,157 | 4,702 |
 | `annual_call_sign`, the call sign on each 1 January, 2004-2023 | 7,848 | |
 | `usage_category_printed`, the printed types to the schema's codes | 122 | |
-| `decision`, one row per column and stretch | 282,842 | |
+| `decision`, one row per column and stretch | 276,936 | |
 
 How a value is chosen is in the script's head and plan 028 §4.3 and §6.2:
 - each witness speaks for a window, and each stretch of time takes the first witness in its period's order;
@@ -33,9 +35,11 @@ How a value is chosen is in the script's head and plan 028 §4.3 and §6.2:
 
 ## Design choices the plan left open
 
-- **A blank means none.** A field an edition prints (on 1 % of the entries of its section) and an entry leaves empty
-  says the hull has none: no call sign, no previous name. 98,274 such blanks block the fall back to other sources.
-  Before this, FJÖLVI (2196), which prints no call sign in 2006-2011, took kvoti's TFKC for those years.
+- **A blank means none; a printed zero means unknown.** A field an edition prints (on 1 % of the entries of its
+  section) and an entry leaves empty says the hull has none: no call sign, no previous name. 63,915 such blanks block
+  the fall back to other sources. Before this, FJÖLVI (2196), which prints no call sign in 2006-2011, took kvoti's TFKC
+  for those years. A printed zero ("0,00") is a placeholder, which other sources may fill (the maintainer's check,
+  below).
 - **kvoti's register copy is a snapshot of 2020-07-22.** Its `dagsfaerslu` is an entry date that dates no value:
   FJÖLVI's is 1993, with the call sign it was given in 2012. The evidence now dates the copy to that day, and the
   history reads it as a witness only. Its comparisons in the agreement table fell from 1,158 rows to 934.
@@ -55,9 +59,15 @@ How a value is chosen is in the script's head and plan 028 §4.3 and §6.2:
   - `national_identity_no` comes from the row's own source or, by name, from the `vessel` schema, kvoti's copy or the
     scrape: 26,680 of 27,089 rows carry one, 17,716 of them matched by name.
   - The `vessel` schema's nine-digit kennitala (429) lost a leading zero, and are padded to ten for matching.
-- **The types of ship.** 43,390 of 43,416 printed types map to a code: by the code table's names, by the schema's own
-  name-code pairs, or by the code the schema gives the same hulls on the same date. No code is found for OLÍUSKIP
-  and BRUNNBÁTUR (26 entries). `vessel_year.R`'s hand list was not copied.
+- **The types of ship.** All 43,416 printed types map to a code. The bases, in order:
+  - the maintainer's reading (`overrides/usage_category_printed_reviewed.csv`): OLÍUSKIP, an oil vessel, is 48,
+    OLÍUFLUTNINGASKIP; BRUNNBÁTUR, a special cargo vessel or well-boat, possibly serving aquaculture, is 67,
+    FLUTNINGA/BRUNNSKIP;
+  - the code table's names;
+  - the schema's own name-code pairs;
+  - the code the schema gives the same hulls on the same date.
+
+  `vessel_year.R`'s hand list was not copied.
 - **`annual_call_sign` as a view** (plan 028 §4.4) is written beside the history. The STK key still reads
   `staging/skipaskra/annual_call_sign.parquet`, and the switch belongs to its redo (TODO 25).
 - **The outputs are deterministic.** A rebuild had changed the order inside `alternatives` and among tied findings
@@ -77,32 +87,32 @@ Plan 028 step 5's checks, one by one:
 
 1. **Tiling.** No table's rows overlap for a hull, and all lie within its registered life. They cover 90-98 % of it;
    the rest is where no column has a value.
-2. **Every column filled where its source prints it.** Of 880,054 PDF values, 880,035 equal the history on their
-   edition's 1 January. The 19 others were replaced by D2, and none falls outside the registered life.
-3. **Every disputed value has a status, and a rule when resolved or open.** The script stops otherwise. Of the 282,842
+2. **Every column filled where its source prints it.** All 880,054 PDF values equal the history on their edition's
+   1 January.
+3. **Every disputed value has a status, and a rule when resolved or open.** The script stops otherwise. Of the 276,936
    stretches:
 
    | status | stretches | share |
    |---|---|---|
-   | single (one lineage) | 153,247 | 54.2 % |
-   | agreed | 104,578 | 37.0 % |
-   | resolved | 24,817 | 8.8 % |
-   | open | 200 | 0.1 % |
+   | single (one lineage) | 147,465 | 53.2 % |
+   | agreed | 104,595 | 37.8 % |
+   | resolved | 24,795 | 9.0 % |
+   | open | 81 | 0.0 % |
 
-   - D3 settled 24,805 of the resolved, and D2 the other 12.
-   - D4 and D1 settled none.
-   - D5 dated 29,081 of 69,603 changes between annual witnesses.
+   - D3 settled all the resolved; D2, D4 and D1 settled none.
+   - 81 stay open under D2: 71 call signs below 15 m and 10 IMO numbers that fail their check digit.
+   - 143 stretches carry the flag `gt_formula`.
+   - D5 dated 29,123 of 67,062 changes between annual witnesses.
 4. **The docs page counts each rule's decisions.** `docs/skipaskra.qmd` gained a section on the history; it renders
    against the built store.
-5. **D2's and D4's samples, checked by a person.** Not done; this waits for the maintainer.
-   - D4 made no decision.
-   - D2 replaced 33 values in 12 stretches, all GTs that break the formula below 15 m. They are in `decision.parquet`
-     (`rule` D2, `status` resolved), fewer than 50, so they are the whole sample.
-   - Several look doubtful: a rounded GT from the fisheries' history replaces a value the PDFs print alike for years
-     (vid 7147: 5.37 in all 11 editions 2012-2022, replaced by 5, which falls within the rule's tolerance). The check
-     decides whether D2 should require the alternative to be printed as finely as the PDF.
-   - 200 stretches stay open under D2, with no other lineage's value that keeps the rule: 119 GTs off the formula, 71
-     call signs below 15 m, 10 IMO check digits.
+5. **D2's and D4's samples, checked by a person.** D4 made no decision. The maintainer checked all 33 of D2's decisions
+   in the first build against the page crops: the PDF was right on 32, a 97 % error (plan 028 §6.3).
+   - The 32 were all GTs off the formula below 15 m, replaced by the fisheries' history. In 28 of them the value
+     came only from the ufs journal's superseded versions, which the history uses as a witness nowhere else.
+   - The one right was 6996 in 2018, where the PDF prints GT 0,00, a placeholder. The rebuild fills it from
+     Hreiðar's 2018 value, 12.01, which every edition from 2019 prints too. The first build had the journal's 11.9.
+   - What changed, by the maintainer's choice of "flag only": the GT formula flags a value and replaces none. D2 takes
+     no value from the ufs journal. A printed zero is unknown, not none.
 6. **The call signs against `annual_call_sign`.**
    - For 2007-2017 the history's call sign on each 1 January equals the built table on all 4,311.
    - For 2018-2022, against 88823e5's fixed parse built in a scratch store, 1,802 agree and none differs.
@@ -124,27 +134,26 @@ Plan 028 step 5's checks, one by one:
 - the reader fixes moved a few others (`callsign_list` −2, `change_unexplained` −4, `rule_callsign_short` +1,
   `rule_gt_formula` −2).
 
-## Amended 2026-10-18: two changes, coded and checked in scratch, not yet built
+## The rebuild of 8527da7
 
-- **The maintainer's codes for the two unmapped types**, a reviewed input
-  (`overrides/usage_category_printed_reviewed.csv`, part of the `once` file target `skipaskra_reviewed`):
-  - OLÍUSKIP, an oil vessel, is code 48, OLÍUFLUTNINGASKIP;
-  - BRUNNBÁTUR, a special cargo vessel, a well-boat possibly serving aquaculture, is code 67, FLUTNINGA/BRUNNSKIP.
+- `skipaskra_history` was rebuilt in the `once` project by name, exit 0, its 13 files identical to the scratch run.
+- The `once` project's 12 outdated key, logger and radius targets stayed as they were.
 
-  The reading takes precedence over the other bases, and all 43,416 printed types now map.
-- **D2 no longer takes the ufs journal's superseded versions** as another lineage's value. The page crops prepared
-  for the person's check showed that 28 of the 33 replacements came only from them, values the history never uses
-  as a witness elsewhere.
-  - In scratch, D2 replaces 5 values, all 2022 GTs where the current `ufs.skipasaga` disagrees with the print.
-  - 207 stretches stay open, where 200 did.
-  - 880,049 of 880,054 PDF values equal the history on their 1 January.
+## Superseded — kept for the reasoning
 
-The rebuild waits for the maintainer's verdicts on the 33 values, so that D2 is settled once.
+The first build (314d8ee, 43c513f) had:
+- 30,587 rows in `vessel_hist`, 15,331 in `vessel_measurement_hist`, 14,572 in `vessel_engines_hist`, and 282,842
+  stretches;
+- 98,274 blanks, because a printed zero counted as none;
+- 880,035 of 880,054 PDF values on the history, the 19 others replaced by D2;
+- D2 replacing 33 values in 12 stretches, with 200 stretches open;
+- 43,390 of 43,416 printed types mapped.
+
+D2 then sought, for a GT off the formula, another lineage's value that keeps it. The maintainer's check showed that
+the formula is no rule these GTs keep.
 
 ## Not done
 
-- **D2's sample**, checked by a person against the page images, and its error rate printed (plan 028 §6.3). The crops
-  of the 33 values are ready; the rebuild with the two amendments follows the verdicts.
 - **Step 6, the live part** from 2023-12-19 in the main project, and **step 7**, repointing `vessel_sign`,
   `vessel_class`, `vessel_year` and `registry.R`.
 - **Asks d and e** (the MMSI lists `mmsi.R` does not read; editions outside 2004-2022).
