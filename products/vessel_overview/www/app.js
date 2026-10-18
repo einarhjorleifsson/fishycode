@@ -32,24 +32,9 @@ function banner(html) {
 }
 window.addEventListener('unhandledrejection', (e) => banner(`Something went wrong: ${esc(e.reason?.message || e.reason)}`));
 
-// The layout of the Activity tab, per mode (maintainer, 2026-10-18): Quality control reads top-down, the choices
-// first, then where | when, landings | logbooks, the pings, and the vessel last; Overview puts the vessel first. The
-// same sections move between the two, so nothing reloads when the mode changes.
-function layout(mode) {
-  const L = $('layout'), parts = $('parts'), p = (k) => $(`p-${k}`);
-  for (const sec of parts.parentNode.querySelectorAll('section[id^="p-"]')) parts.appendChild(sec);
-  L.replaceChildren();
-  const box = (cls, ...kids) => { const d = document.createElement('div'); d.className = cls; d.append(...kids); return d; };
-  const col = (...ks) => box('col', ...ks.map(p));
-  if (mode === 'qc') {
-    L.append(p('controls'), box('row2', col('map'), col('chart')), box('row2', col('landing', 'lasttrip'), col('trips')),
-             p('pings'), box('row2', col('about'), col('photo')));
-  } else {
-    L.append(p('controls'), box('row-ov', col('about', 'photo', 'landing', 'lasttrip'), col('map', 'chart', 'trips')));
-  }
-  p('controls').style.top = `${document.querySelector('header').offsetHeight}px`;
-}
-layout(new URLSearchParams(location.hash.slice(1)).get('mode') === 'qc' ? 'qc' : 'ov');
+// The choices stay in view under the header as the page scrolls
+const stickTop = () => { $('p-controls').style.top = `${document.querySelector('header').offsetHeight}px`; };
+stickTop(); window.addEventListener('resize', stickTop);
 
 // DuckDB-WASM ---------------------------------------------------------------------------------------------------------
 status('starting DuckDB');
@@ -98,14 +83,23 @@ function lower(a, x, key = (v) => v) {
 const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null,
             stations: [], hauls: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
             history: false, about: {}, assumed: null, assumedBase: null, bg: 'track', ready: false };
-// The gear after the last logbook trip, where no logbook covers the time: the previous logbook trip's (maintainer,
-// 2026-10-18: "if a logbook is missing from vessels last trip, assume that the gear is the same gear as from the
-// previous trip"). Better still would be the gear read from the track, a TODO of its own (TODO 86).
-const gearAt = (t, recorded) => (recorded ? { gear: recorded, assumed: false }
-  : S.assumed && t > S.assumed.after && t <= S.assumed.until ? { gear: S.assumed.gear, assumed: true } : { gear: '', assumed: false });
+// The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
+// a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
+// using the logbooks"). The previous logbook trip's gear only where that landing records none ("if a logbook is missing
+// from vessels last trip, assume that the gear is the same gear as from the previous trip"). Better still would be the
+// gear read from the track, a TODO of its own (TODO 86).
 // It applies only where a logbook is missing: the last landing has no logbook trip, and only from the last logbook
-// trip's return to that landing. A vessel that stopped fishing gets no assumed gear.
+// trip's return to that landing. A vessel that stopped fishing gets no gear.
 const assumedAt = (t) => S.assumed && t > S.assumed.after && t <= S.assumed.until;
+function gearAfter(t) {   // { gear, landing: the day of the landing that gives it, or null for the previous trip's }
+  if (!assumedAt(t)) return null;
+  const l = (S.landOnly || []).find((x) => x.d + DAY >= t);   // the next landing, in the loaded years
+  const g = l ? l.gear : S.assumed.landingGear, day = l ? l.day : S.assumed.lastDay;
+  if (g) return { gear: g, landing: day };
+  return S.assumed.gear ? { gear: S.assumed.gear, landing: null } : null;
+}
+const gearAt = (t, recorded) => (recorded ? { gear: recorded, recorded: true } : gearAfter(t) || { gear: '' });
+const gearWords = (g) => (g.landing ? `${g.gear}, as the landing of ${g.landing} records it` : `${g.gear}, assumed as on the previous logbook trip`);
 const qc = () => S.mode === 'qc';
 
 // The map ------------------------------------------------------------------------------------------------------------
@@ -187,7 +181,7 @@ function getTooltip({ layer, index, object }) {
     const head = layer.id === 'last' ? `<b>${esc(S.name)} (${S.vid})</b><br>last position heard<br>` : '';
     const what = tr.fishing[i] ? (qc() ? 'fishing_flow' : 'fishing') : (tr.stay[i] >= 0 ? 'in port' : 'at sea');
     const g = gearAt(tr.t[i], tr.gear[i]);
-    const gear = g.gear ? `, ${esc(g.gear)}${g.assumed ? ' (assumed: the previous trip\'s gear)' : ''}` : '';
+    const gear = g.gear ? `, ${esc(g.recorded ? g.gear : gearWords(g))}` : '';
     return { html: `${head}<b>${fmt(tr.t[i])} UTC</b><br>${num(tr.speed[i], 1)} knots, heading ${num(tr.heading[i])}°<br>` +
       `${what}${gear}<br>${num(tr.lat[i], 4)} N, ${num(tr.lon[i], 4)} E` };
   }
@@ -267,22 +261,25 @@ function describe(t) {   // what is going on at time t, in the mode's words
   } else {
     if (tp) out.push(`on a fishing trip, ${dstr(tp.a)} to ${dstr(tp.b)}: ${tp.n} hauls, ${num(tp.kg / 1000, 1)} t`);
     if (hl) out.push(`gear in the water (${hl.gear}), ${num(hl.kg)} kg caught in this haul`);
-    if (!tp && !hl) out.push(assumedAt(t)
-      ? `no logbook yet; gear assumed ${S.assumed.gear}, as on the previous trip`
-      : 'no fishing trip in the logbook at this time');
+    const g = !tp && !hl && gearAfter(t);
+    if (!tp && !hl) out.push(g ? `no logbook yet; gear ${gearWords(g)}` : 'no fishing trip in the logbook at this time');
   }
-  if (qc() && !tp && assumedAt(t)) out.push(`after the last logbook trip: gear assumed ${S.assumed.gear} (${S.assumed.tid})`);
+  const g = qc() && !tp && gearAfter(t);
+  if (g) out.push(`after the last logbook trip (${S.assumed.tid}): gear ${gearWords(g)}`);
   return out.join(' · ');
 }
+// The chart's speed is capped at 15 knots (maintainer, 2026-10-18: vessels rarely go above 12-15 knots, and fishing is
+// well below that): a ping above it is drawn at the cap, and the hover text gives its real speed
+const SPEED_CAP = 15;
 function makePlot() {
   const tr = S.tr;
   plot?.destroy();
   plot = new uPlot({
     width: $('plot').clientWidth || 600, height: 190, legend: { show: false }, padding: PADDING,
-    scales: { x: { time: true }, y: { range: [0, Math.max(12, tr.maxSpeed)] } },
+    scales: { x: { time: true }, y: { range: [0, SPEED_CAP] } },
     series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false } },
              { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false }],
-    axes: [{ font: GUTTER.font }, { ...GUTTER, label: 'knots' }],
+    axes: [{ font: GUTTER.font }, { ...GUTTER, label: `knots (cap ${SPEED_CAP})` }],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
     hooks: {
       drawClear: [drawTrips], draw: [drawMarks],
@@ -298,7 +295,7 @@ function makePlot() {
         if (!cursorFromMap && u.cursor.idx != null) setHover(u.cursor.idx, 'plot');
       }],
     },
-  }, [tr.ts, tr.speed, tr.fishSpeed], $('plot'));
+  }, [tr.ts, tr.plotSpeed, tr.fishSpeed], $('plot'));
   clickToSelect(plot);
 }
 // a click (not a drag) on a trip selects it
@@ -309,7 +306,7 @@ function clickToSelect(u) {
     const x = down; down = null;
     if (x == null || Math.abs(e.clientX - x) > 3 || u.cursor.left == null) return;
     const tp = tripAt(u.posToVal(u.cursor.left, 'x') * 1000);
-    if (tp) selectTrip(tp.tid, tp.schema).catch((err) => status(String(err)));
+    if (tp) selectTrip(tp.tid, tp.schema, { scroll: false }).catch((err) => status(String(err)));
   });
 }
 
@@ -403,7 +400,7 @@ function setHover(i, source) {
   render();
   if (source === 'map' && plot) {
     cursorFromMap = true;
-    plot.setCursor({ left: plot.valToPos(S.tr.ts[i], 'x'), top: plot.valToPos(S.tr.speed[i], 'y') });
+    plot.setCursor({ left: plot.valToPos(S.tr.ts[i], 'x'), top: plot.valToPos(S.tr.plotSpeed[i], 'y') });
     cursorFromMap = false;
   }
 }
@@ -448,12 +445,20 @@ $('hexkm').addEventListener('change', render);
 
 // Presets: each sets the window and centres the map on it
 function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
+// The AIS voyages, whole. The lane splits a voyage at its gaps, and the trail numbers voyages afresh each year, so
+// one voyage is the consecutive runs of one number, never every run of that number.
+function voyages() {
+  const out = [];
+  for (const r of S.lanes?.voy || []) {
+    const last = out.at(-1);
+    if (last && last.id === r.id) last.b = Math.max(last.b, r.b); else out.push({ a: r.a, b: r.b, id: r.id });
+  }
+  return out;
+}
 function lastUnits() {   // the logbook's trips over the loaded track, else the AIS voyages, newest last
   const tr = S.tr, trips = S.trips.filter((d) => d.b >= tr.t0 && d.a <= tr.t1);
   if (trips.length) return { word: 'trips', units: trips };
-  const byId = new Map();
-  for (const r of S.lanes?.voy || []) { const v = byId.get(r.id); byId.set(r.id, v ? { a: Math.min(v.a, r.a), b: Math.max(v.b, r.b) } : { a: r.a, b: r.b }); }
-  return { word: 'voyages', units: [...byId.values()].sort((x, y) => x.a - y.a) };
+  return { word: 'voyages', units: voyages() };
 }
 function showLastTrips() {
   if (!S.tr) return;
@@ -492,7 +497,7 @@ $('play').addEventListener('click', () => {
 
 // Selecting a trip: the window, the map's view, the red band, its row opened ------------------------------------------
 async function tripYear(tid, schema) {   // the year a trip landed, from whichever table holds it
-  for (const t of ['f_trips', 'h_trips', 'trips']) {
+  for (const t of ['h_trips', 'trips']) {
     try {
       const r = (await rows(`SELECT year(T2)::INTEGER AS y FROM ${t} WHERE ".tid" = ${sqlstr(tid)}${schema ? ` AND schema = ${sqlstr(schema)}` : ''}`))[0];
       if (r) return r.y;
@@ -509,15 +514,31 @@ async function selectTrip(tid, schema, opts = {}) {
     d = S.trips.find((x) => x.tid === tid);
     if (!d) return;
   }
-  S.trip = d.tid;
-  S.expanded.add(d.tid);
-  const order = [...S.trips].sort((x, y) => y.a - x.a);
-  S.tripPage = Math.floor(order.findIndex((x) => x.tid === d.tid) / TRIPS_PER_PAGE);
+  S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`;
   showTab('now');
   const [a, b] = d.span || [d.a, d.b];   // the trip and every haul of it, which the logbook may put outside T1-T2
   if (S.tr) { fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false); }
-  await renderTrips();
-  if (opts.scroll !== false) document.querySelector(`#trips tr[data-tid="${CSS.escape(d.tid)}"]`)?.scrollIntoView({ block: 'nearest' });
+  if (opts.open) S.expanded.add(S.selKey);
+  const row = () => document.querySelector(`#trips tr[data-key="${CSS.escape(S.selKey)}"]`);
+  if (opts.open || !row()) {   // from the chart or the History tab: the row on its page
+    S.tripPage = Math.floor(tripRows().findIndex((r) => r.key === S.selKey) / TRIPS_PER_PAGE);
+    await renderTrips();
+  } else markSelected();
+  if (opts.scroll) row()?.scrollIntoView({ block: 'nearest' });
+}
+// A landing no logbook trip claims: the window on the AIS voyage that ended there, else on the landing's days
+function selectLanding(r) {
+  S.trip = null; S.selKey = r.key;
+  if (S.tr) {
+    const near = voyages().filter((w) => w.b >= r.d - DAY && w.b <= r.d + 2 * DAY)
+      .sort((x, y) => Math.abs(x.b - r.d - 12 * HOUR) - Math.abs(y.b - r.d - 12 * HOUR))[0];
+    const [a, b] = near ? [near.a, near.b] : [r.d - DAY, r.d + 2 * DAY];
+    fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false);
+  }
+  markSelected();
+}
+function markSelected() {
+  document.querySelectorAll('#trips tr[data-key]').forEach((row) => row.classList.toggle('sel', row.dataset.key === S.selKey));
 }
 
 // The years of trail, trips, hauls and landings --------------------------------------------------------------------
@@ -546,7 +567,30 @@ async function loadRange(from, to) {
   S.hauls = S.stations.map((h) => ({ ...h, a: h.t1, b: h.t4 }));
   S.landings = await rows(`SELECT epoch_ms(date)::DOUBLE AS d, round(sum(catch) / 1000, 2)::DOUBLE AS t
     FROM landings GROUP BY ".lid", schema, date ORDER BY d`);
-  S.expanded = new Set(); S.tripPage = 0; S.trip = null;
+  // one row per landing, joined to its logbook trip through lid_map: a trip's row shows what it landed, and a landing
+  // no trip of the range claims gets a row of its own in the trip table
+  const L = await rows(`SELECT ".lid" AS lid, schema, epoch_ms(date)::DOUBLE AS d, strftime(date, '%Y-%m-%d') AS day,
+      any_value(port) AS port, any_value(coalesce(gear_name, gear)) AS gear, round(sum(catch) / 1000, 2)::DOUBLE AS t,
+      string_agg(sid::VARCHAR || ': ' || round(catch)::VARCHAR || ' kg', ', ' ORDER BY catch DESC) AS sp
+    FROM landings GROUP BY 1, 2, 3, 4 ORDER BY d`);
+  const links = await rows(`SELECT ".lid" AS lid, schema_land, ".tid" AS tid, schema, match_type FROM landing_trips`);
+  const byTrip = new Map(), linked = new Map();
+  for (const k of links) {
+    linked.set(`${k.lid}|${k.schema_land}`, k);
+    const key = `${k.tid}|${k.schema}`;
+    if (!byTrip.has(key)) byTrip.set(key, []);
+    byTrip.get(key).push(k);
+  }
+  const byLid = new Map(L.map((l) => [`${l.lid}|${l.schema}`, l]));
+  for (const d of S.trips) {
+    d.landed = (byTrip.get(`${d.tid}|${d.schema}`) || []).filter((k) => byLid.has(`${k.lid}|${k.schema_land}`))
+      .map((k) => ({ ...byLid.get(`${k.lid}|${k.schema_land}`), match: k.match_type }));
+    d.landedT = d.landed.reduce((x, l) => x + l.t, 0);
+  }
+  const inTable = new Set(S.trips.map((d) => `${d.tid}|${d.schema}`));
+  S.landOnly = L.filter((l) => { const k = linked.get(`${l.lid}|${l.schema}`); return !k || !inTable.has(`${k.tid}|${k.schema}`); })
+    .map((l) => ({ ...l, kind: 'landing', key: `L${l.lid}|${l.schema}`, link: linked.get(`${l.lid}|${l.schema}`) || null }));
+  S.expanded = new Set(); S.tripPage = 0; S.trip = null; S.selKey = null;
   if (hasTrail) await buildTrail(); else { S.tr = null; plot?.destroy(); plot = null; lanes?.destroy(); lanes = null; $('window-label').textContent = ''; render(); }
   tripChecks();
   S.lanes = laneLists();
@@ -579,25 +623,28 @@ async function buildTrail() {
   tr.t0 = tr.t[0]; tr.t1 = tr.t[tr.n - 1];
   tr.ts = new Float64Array(tr.n); tr.pos = new Float32Array(2 * tr.n); tr.col = new Uint8Array(4 * tr.n);
   tr.th = new Float32Array(tr.n); tr.fishSpeed = new Array(tr.n); tr.fishCum = new Int32Array(tr.n + 1);
-  let maxSpeed = 0;
-  const byVoyage = new Map();
+  tr.plotSpeed = new Float64Array(tr.n);
+  tr.paths = [];   // one path per voyage: a new one wherever the number changes, since it restarts each year
+  let path = null;
   for (let i = 0; i < tr.n; i++) {
     tr.ts[i] = tr.t[i] / 1000; tr.th[i] = (tr.t[i] - tr.t0) / HOUR;
     tr.pos[2 * i] = tr.lon[i]; tr.pos[2 * i + 1] = tr.lat[i];
     const c = speedColour(tr.speed[i]);
     tr.col[4 * i] = c[0]; tr.col[4 * i + 1] = c[1]; tr.col[4 * i + 2] = c[2]; tr.col[4 * i + 3] = 230;
-    tr.fishSpeed[i] = tr.fishing[i] ? tr.speed[i] : null;
+    tr.plotSpeed[i] = tr.speed[i] > SPEED_CAP ? SPEED_CAP : tr.speed[i];
+    tr.fishSpeed[i] = tr.fishing[i] ? tr.plotSpeed[i] : null;
     tr.fishCum[i + 1] = tr.fishCum[i] + (tr.fishing[i] ? 1 : 0);
-    if (tr.speed[i] > maxSpeed && tr.speed[i] < 30) maxSpeed = tr.speed[i];
     const v = tr.voyage[i];
-    if (v >= 0) { if (!byVoyage.has(v)) byVoyage.set(v, []); byVoyage.get(v).push([tr.lon[i], tr.lat[i]]); }
+    if (v < 0) path = null;
+    else {
+      if (!path || path.voyage !== v) { path = { voyage: v, path: [] }; tr.paths.push(path); }
+      path.path.push([tr.lon[i], tr.lat[i]]);
+    }
   }
-  tr.maxSpeed = Math.ceil(maxSpeed);
   // the fishing pings with the hours each stands for (the trail's `hours`, the effort of the fix): the hexagons sum hours,
   // not pings, so a stretch the AIS reported often does not count for more than one it reported seldom
   tr.fish = [];
   for (let i = 0; i < tr.n; i++) if (tr.fishing[i]) tr.fish.push({ p: [tr.lon[i], tr.lat[i]], h: tr.h[i] });
-  tr.paths = [...byVoyage].map(([voyage, path]) => ({ voyage, path }));
   tr.pingData = { length: tr.n, attributes: { getPosition: { value: tr.pos, size: 2 }, getFillColor: { value: tr.col, size: 4 },
                                               getFilterValue: { value: tr.th, size: 1 } } };
   S.tr = tr; S.hover = -1;
@@ -654,16 +701,23 @@ const warnings = (d) => {
   return w.length ? w.join('') : '<span class="badge ok">agree</span>';
 };
 
-// The trip table: newest first, a click opens its hauls ----------------------------------------------------------------
+// The trip table: logbook trips with what they landed, and landings no trip claims, newest first. A click selects a
+// row (window, map, chart); a double-click, or the caret, opens it: the trip's logbook records, and what it landed
+// (maintainer, 2026-10-18: "the trip/logbooks all in one").
 const TRIPS_PER_PAGE = 25;
+function tripRows() {
+  const trips = S.trips.map((d) => ({ ...d, kind: 'trip', key: `${d.tid}|${d.schema}`, end: d.b }));
+  const lands = (S.landOnly || []).map((l) => ({ ...l, end: l.d + 12 * HOUR }));
+  return [...trips, ...lands].sort((x, y) => y.end - x.end);
+}
 async function renderTrips() {
-  const order = [...S.trips].sort((x, y) => y.a - x.a), total = order.length;
-  if (!total) { $('trips').innerHTML = '<div class="note">No logbook trip in these years.</div>'; return; }
+  const order = tripRows(), total = order.length;
+  if (!total) { $('trips').innerHTML = '<div class="note">No logbook trip or landing in these years.</div>'; return; }
   const pages = Math.ceil(total / TRIPS_PER_PAGE);
   S.tripPage = Math.max(0, Math.min(S.tripPage, pages - 1));
   const page = order.slice(S.tripPage * TRIPS_PER_PAGE, (S.tripPage + 1) * TRIPS_PER_PAGE);
   const species = new Map();
-  const open = page.filter((d) => S.expanded.has(d.tid));
+  const open = page.filter((d) => d.kind === 'trip' && S.expanded.has(d.key));
   if (open.length) {   // species by haul, only for the opened trips
     const sids = open.flatMap((d) => d.hauls.map((h) => h.sid)).join(',');
     if (sids) for (const r of await rows(`SELECT ".sid" AS sid, string_agg(sid::VARCHAR || ': ' || round(catch)::VARCHAR, ', ' ORDER BY catch DESC) AS sp
@@ -671,30 +725,48 @@ async function renderTrips() {
   }
   const ov = !qc();
   const head = ov
-    ? ['', 'departure', 'return', 'days', 'port', 'hauls', 'catch (t)']
-    : ['', 'trip (.tid)', 'schema', 'T1', 'T2', 'T1 / T2 basis', 'port', 'hauls', 'catch (t)', 'pings', 'fishing pings', 'checks'];
-  const num_ = new Set(ov ? [3, 5, 6] : [7, 8, 9, 10]);
-  let html = `<table><tr>${head.map((h, i) => `<th${num_.has(i) ? ' class="n"' : ''}>${h}</th>`).join('')}</tr>`;
+    ? ['', 'departure', 'return', 'days', 'port', 'hauls', 'logbook (t)', 'landed (t)']
+    : ['', 'trip (.tid)', 'schema', 'T1', 'T2', 'T1 / T2 basis', 'port', 'hauls', 'logbook (t)', 'landed (t)', 'lid_map', 'pings', 'fishing pings', 'checks'];
+  const numc = new Set(ov ? [3, 5, 6, 7] : [7, 8, 9, 11, 12]);
+  const cell = (c, i) => `<td${numc.has(i + 1) ? ' class="n"' : ''}>${c}</td>`;
+  let html = `<table><tr>${head.map((h, i) => `<th${numc.has(i) ? ' class="n"' : ''}>${h}</th>`).join('')}</tr>`;
   for (const d of page) {
-    const isOpen = S.expanded.has(d.tid), cls = `click${d.tid === S.trip ? ' sel' : ''}`;
-    const cells = ov
-      ? [dstr(d.a), dstr(d.b), num((d.b - d.a) / DAY, 1), esc(d.port), d.n, num(d.kg / 1000, 2)]
-      : [esc(d.tid), esc(d.schema), fmt(d.a), fmt(d.b), `${esc(d.b1 ?? '')} / ${esc(d.b2 ?? '')}`, esc(d.port), d.n, num(d.kg / 1000, 2),
-         d.pings ?? '', d.fishPings ?? '', warnings(d)];
-    html += `<tr class="${cls}" data-tid="${esc(d.tid)}" data-schema="${esc(d.schema)}"><td><span class="caret">${isOpen ? '▾' : '▸'}</span></td>` +
-      cells.map((c, i) => `<td${num_.has(i + 1) ? ' class="n"' : ''}>${c}</td>`).join('') + '</tr>';
-    if (isOpen) html += `<tr class="sub"><td colspan="${head.length}">${haulTable(d, species)}</td></tr>`;
+    const isOpen = S.expanded.has(d.key);
+    let cells;
+    if (d.kind === 'trip') {
+      const land = d.landed.length ? num(d.landedT, 2) : '';
+      cells = ov
+        ? [dstr(d.a), dstr(d.b), num((d.b - d.a) / DAY, 1), esc(d.port), d.n, num(d.kg / 1000, 2), land]
+        : [esc(d.tid), esc(d.schema), fmt(d.a), fmt(d.b), `${esc(d.b1 ?? '')} / ${esc(d.b2 ?? '')}`, esc(d.port), d.n,
+           num(d.kg / 1000, 2), land, esc(d.landed.map((l) => l.match).join(', ')), d.pings ?? '', d.fishPings ?? '', warnings(d)];
+    } else {   // a landing no logbook trip of the range claims
+      const g = !d.gear && gearAfter(d.d);
+      const gear = d.gear ? ` ${esc(d.gear)}` : g
+        ? ` <span class="badge warn" title="the landing records no gear: the previous logbook trip's (decision 143)">gear assumed ${esc(g.gear)}</span>` : '';
+      const why = `<span class="badge">${d.link ? 'logbook trip in another year' : 'no logbook'}</span>${gear}`;
+      cells = ov
+        ? ['', d.day, '', esc(d.port), '', why, num(d.t, 2)]
+        : [why, esc(d.schema), '', d.day, '', esc(d.port), '', '', num(d.t, 2),
+           esc(d.link ? `${d.link.match_type} → ${d.link.tid}` : 'none'), '', '', '<span class="badge bad">landing without a trip in these years</span>'];
+    }
+    html += `<tr class="click${d.key === S.selKey ? ' sel' : ''}" data-key="${esc(d.key)}" title="click: show it on the map and chart · double-click: its records">` +
+      `<td><span class="caret" data-open="1">${isOpen ? '▾' : '▸'}</span></td>${cells.map(cell).join('')}</tr>`;
+    if (isOpen) html += `<tr class="sub"><td colspan="${head.length}">${d.kind === 'trip' ? haulTable(d, species) + landedTable(d.landed) : landingOnly(d)}</td></tr>`;
   }
   html += '</table>';
   if (pages > 1) html += `<div class="pager"><button data-d="-1" ${S.tripPage === 0 ? 'disabled' : ''}>‹ newer</button>
-    trips ${S.tripPage * TRIPS_PER_PAGE + 1}–${Math.min(total, (S.tripPage + 1) * TRIPS_PER_PAGE)} of ${total}
+    ${S.tripPage * TRIPS_PER_PAGE + 1}–${Math.min(total, (S.tripPage + 1) * TRIPS_PER_PAGE)} of ${total}
     <button data-d="1" ${S.tripPage >= pages - 1 ? 'disabled' : ''}>older ›</button></div>`;
   $('trips').innerHTML = html;
-  $('trips').querySelectorAll('tr.click[data-tid]').forEach((row) => row.addEventListener('click', () => {
-    const tid = row.dataset.tid;
-    if (S.expanded.has(tid) && S.trip === tid) { S.expanded.delete(tid); renderTrips(); return; }
-    selectTrip(tid, row.dataset.schema, { scroll: false }).catch((e) => status(String(e)));
-  }));
+  const toggle = (key) => { if (S.expanded.has(key)) S.expanded.delete(key); else S.expanded.add(key); renderTrips(); };
+  $('trips').querySelectorAll('tr.click[data-key]').forEach((row) => {
+    const r = page.find((x) => x.key === row.dataset.key);
+    row.addEventListener('click', (e) => {
+      if (e.target.dataset.open) { toggle(r.key); return; }
+      if (r.kind === 'trip') selectTrip(r.tid, r.schema).catch((err) => status(String(err))); else selectLanding(r);
+    });
+    row.addEventListener('dblclick', (e) => { if (!e.target.dataset.open) { window.getSelection()?.removeAllRanges(); toggle(r.key); } });
+  });
   $('trips').querySelectorAll('tr.haul').forEach((row) => row.addEventListener('click', (e) => {
     e.stopPropagation();
     const h = S.hauls.find((x) => String(x.sid) === row.dataset.sid);
@@ -702,15 +774,23 @@ async function renderTrips() {
   }));
   $('trips').querySelectorAll('.pager button').forEach((b) => b.addEventListener('click', () => { S.tripPage += +b.dataset.d; renderTrips(); }));
 }
+const landedTable = (landed) => `<h3>Landed</h3>` + (!landed.length ? '<div class="note">No landing is linked to this trip.</div>'
+  : landed.map((l) => `<div>${esc(l.day)} in ${esc(l.port)}, ${esc(l.gear)}: <b>${num(l.t, 2)} t</b> · ${esc(l.sp)}${qc()
+      ? ` <span class="note">(.lid ${esc(l.lid)}, ${esc(l.schema)}, lid_map ${esc(l.match)})</span>` : ''}</div>`).join(''));
+const landingOnly = (d) => `<h3>Landed</h3><div>${esc(d.day)} in ${esc(d.port)}, ${esc(d.gear)}: <b>${num(d.t, 2)} t</b> · ${esc(d.sp)}${qc()
+    ? ` <span class="note">(.lid ${esc(d.lid)}, ${esc(d.schema)})</span>` : ''}</div>
+  <div class="note">${d.link ? `lid_map links it to logbook trip ${esc(d.link.tid)}, outside the loaded years.`
+    : 'No logbook trip is linked to this landing, so there are no logbook records to show.'}${!d.gear && gearAfter(d.d)
+    ? ` The landing records no gear, so it is assumed to be <b>${esc(gearAfter(d.d).gear)}</b>, as on the previous logbook trip (returned ${esc(S.assumed.day)}).` : ''}</div>`;
 function haulTable(d, species) {
-  if (!d.hauls.length) return '<div class="note">No haul is recorded for this trip.</div>';
+  if (!d.hauls.length) return '<h3>Logbook records</h3><div class="note">No haul is recorded for this trip.</div>';
   const fishIn = (h) => (S.tr && h.att ? S.tr.fishCum[lower(S.tr.t, h.att.b + 1)] - S.tr.fishCum[lower(S.tr.t, h.att.a)] : null);
   if (!qc()) {
-    return `<table><tr><th>gear in</th><th>gear out</th><th>gear</th><th class="n">depth (m)</th><th class="n">catch (kg)</th><th>main species (codes)</th></tr>` +
+    return `<h3>Logbook records (${d.hauls.length})</h3><table><tr><th>gear in</th><th>gear out</th><th>gear</th><th class="n">depth (m)</th><th class="n">catch (kg)</th><th>main species (codes)</th></tr>` +
       d.hauls.map((h) => `<tr class="click haul" data-sid="${h.sid}" title="show this haul on the chart and map"><td>${fmt(h.t1)}</td><td>${fmt(h.t4)}</td><td>${esc(h.gear)}</td>
         <td class="n">${num(h.z1)}</td><td class="n">${num(h.kg)}</td><td>${esc((species.get(h.sid) || '').split(', ').slice(0, 3).map((x) => x.split(':')[0]).join(', '))}</td></tr>`).join('') + '</table>';
   }
-  return `<table><tr><th>.sid</th><th>type</th><th>t1</th><th>t2</th><th>t3</th><th>t4</th><th>gear / target</th><th class="n">min</th>
+  return `<h3>Logbook records (${d.hauls.length})</h3><table><tr><th>.sid</th><th>type</th><th>t1</th><th>t2</th><th>t3</th><th>t4</th><th>gear / target</th><th class="n">min</th>
     <th>effort</th><th>start</th><th>end</th><th class="n">z1-z2</th><th>judged on</th><th class="n">fishing pings</th><th>catch kg by species</th></tr>` +
     d.hauls.map((h) => { const f = fishIn(h); return `<tr class="click haul" data-sid="${h.sid}"><td>${h.sid}</td><td>${esc(h.station_type)}</td>
       <td>${fmt(h.t1)}</td><td>${fmt(h.t2)}</td><td>${fmt(h.t3)}</td><td>${fmt(h.t4)}</td><td>${esc(h.gear) || '<span class="badge warn">none</span>'} ${esc(h.target)}${h.gear_basis && h.gear_basis !== 'recorded' ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}</td>
@@ -741,39 +821,47 @@ async function renderPings() {
   $('pings').querySelectorAll('.pager button').forEach((x) => x.addEventListener('click', () => { S.pingPage += +x.dataset.d; renderPings(); }));
 }
 
-// About this vessel: a summary in the mode's words ------------------------------------------------------------------
+// About this vessel: a strip of two lines on the Activity tab, the whole on the Vessel tab, in the mode's words ------------
 function renderSummary() {
-  const A = S.about, v = V.find((x) => x.vid === S.vid) || {}, tr = S.tr;
+  const A = S.about || {}, v = V.find((x) => x.vid === S.vid) || {}, tr = S.tr;
   if (!S.vid) return;
   const lastHeard = tr && v.last_ping && dstr(tr.t1) === v.last_ping
     ? `${fmt(tr.t1)} UTC, ${tr.stay[tr.n - 1] >= 0 ? 'in port' : 'at sea'}` : (v.last_ping || 'never');
-  const tonnes = S.landings.reduce((s, d) => s + d.t, 0);
+  const tonnes = S.landings.reduce((s, d) => s + d.t, 0), range = S.from === S.to ? `${S.from}` : `${S.from}–${S.to}`;
+  const kind = A.use ? A.use.toLowerCase() : 'vessel';
+  const parts = [A.loa && `${num(A.loa, 1)} m long`, A.built && `built ${A.built}`, A.home && `home port ${A.home}`].filter(Boolean);
+  const warn = S.trips.filter((d) => d.pings === 0 || d.haulsOutside || d.haulsNoFishing || d.fishOutside > 0).length;
   if (!qc()) {
-    const kind = A.use ? A.use.toLowerCase() : 'vessel';
-    const parts = [A.loa && `${num(A.loa, 1)} m long`, A.built && `built ${A.built}`, A.home && `home port ${A.home}`].filter(Boolean);
+    $('strip-info').innerHTML = `<div><b>${esc(S.name || 'vid ' + S.vid)}</b>, a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''}.</div>
+      <div class="note">Last heard on AIS ${esc(lastHeard)} · last landing ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}
+      · ${range}: ${S.trips.length} fishing trips, ${num(tonnes, 1)} t landed${S.assumed ? ` · no logbook since ${esc(S.assumed.day)}: gear ${esc(gearWords(gearAfter(S.assumed.until) || { gear: '—' }))}` : ''}</div>`;
     $('summary').innerHTML = `<p><b>${esc(S.name || 'vid ' + S.vid)}</b> is a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''}.</p><ul>
       <li>Last heard on AIS: ${esc(lastHeard)}.</li>
       <li>Last landing: ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}.</li>
-      <li>In ${S.from === S.to ? S.from : `${S.from}–${S.to}`}: ${S.trips.length} fishing trips in the logbook, ${num(tonnes, 1)} t landed in ${S.landings.length} landings.</li></ul>
+      <li>In ${range}: ${S.trips.length} fishing trips in the logbook, ${num(tonnes, 1)} t landed in ${S.landings.length} landings.</li></ul>
       <div class="note">Type, length and home port from the register (history to 2023-12-19). Species are shown as codes.</div>`;
   } else {
-    const warn = S.trips.filter((d) => d.pings === 0 || d.haulsOutside || d.haulsNoFishing || d.fishOutside > 0).length;
+    $('strip-info').innerHTML = `<div>vid ${S.vid} · ${esc(v.cs || 'no call sign')} · MMSI ${esc(v.mmsi || '—')} · ${esc(A.use || 'use not in the register')}
+      · on the trail ${v.first_year ?? '—'} – ${esc(v.last_ping || '—')} · last landing ${esc(v.last_landing || '—')}</div>
+      <div class="note">${range}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips (${warn} with checks), ${S.stations.length} hauls,
+      ${S.landings.length} landings${S.assumed ? ` · after trip ${esc(S.assumed.tid)}: gear ${esc(gearWords(gearAfter(S.assumed.until) || { gear: '—' }))}` : ''}</div>`;
     $('summary').innerHTML = `<dl><dt>vid</dt><dd>${S.vid}</dd><dt>call sign</dt><dd>${esc(v.cs)}</dd><dt>MMSI</dt><dd>${esc(v.mmsi)}</dd>
       <dt>on the trail</dt><dd>${v.first_year ?? '—'} – ${esc(v.last_ping || '—')}</dd><dt>last landing</dt><dd>${esc(v.last_landing || '—')}</dd>
-      <dt>loaded</dt><dd>${S.from}–${S.to}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips, ${S.stations.length} hauls, ${S.landings.length} landings</dd>
+      <dt>loaded</dt><dd>${range}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips, ${S.stations.length} hauls, ${S.landings.length} landings</dd>
       <dt>trips with checks</dt><dd>${warn} of ${S.trips.length}</dd><dt>usage (register)</dt><dd>${esc(A.use || '—')}</dd>
-      <dt>last logbook trip</dt><dd>${S.assumedBase ? `${esc(S.assumedBase.tid)}, T2 ${esc(S.assumedBase.day)}` : '—'}${S.assumed ? `; to the last landing the gear is assumed ${esc(S.assumed.gear)}` : ''}</dd></dl>`;
+      <dt>last logbook trip</dt><dd>${S.assumedBase ? `${esc(S.assumedBase.tid)}, T2 ${esc(S.assumedBase.day)}` : '—'}${S.assumed ? `; to the last landing the gear is the landings' (the last records ${esc(S.assumed.landingGear || 'none')}), the previous trip's ${esc(S.assumed.gear || 'none')}` : ''}</dd></dl>`;
   }
 }
 
-// The Activity tab: photo, the last landing, the trip that landed it --------------------------------------------------
+// Photos (the Vessel tab, and the thumb on the Activity tab), the vessel's basics, the last landing ---------------------
 let photos = [], photoAt = 0;
+const photoUrl = (p) => `/photo?vid=${S.vid}&file=${encodeURIComponent(p.file)}`;
 function showPhoto() {
   const p = photos[photoAt];
   if (!p) { $('photo-body').innerHTML = '<div class="note">No photo of this vessel in the 2022 mbl scrape.</div>'; return; }
   const credit = [p.exif_artist ? `Photo: ${p.exif_artist}` : 'Photographer not given', 'mbl.is, 200 mílur',
                   p.exif_date ? `taken ${p.exif_date}` : 'date unknown, before 2022-12-28'].join(' · ');
-  $('photo-body').innerHTML = `<img src="/photo?vid=${S.vid}&file=${encodeURIComponent(p.file)}" alt="${esc(S.name || 'vessel ' + S.vid)}">
+  $('photo-body').innerHTML = `<img src="${photoUrl(p)}" alt="${esc(S.name || 'vessel ' + S.vid)}">
     <div class="note">${esc(credit)}${photos.length > 1 ? ` · ${photoAt + 1} of ${photos.length}, click for the next` : ''}
     ${p.kind === 'thumbnail' ? ' · thumbnail only' : ''} · internal use only</div>`;
   $('photo-body').querySelector('img').addEventListener('click', () => { photoAt = (photoAt + 1) % photos.length; showPhoto(); });
@@ -781,62 +869,33 @@ function showPhoto() {
 async function renderNow() {
   photos = await rows(`SELECT file, kind, exif_artist, strftime(exif_date, '%Y-%m-%d') AS exif_date FROM photos ORDER BY best DESC, kind, image_no`);
   photoAt = 0; showPhoto();
+  $('thumb').innerHTML = photos.length ? `<img src="${photoUrl(photos[0])}" alt="${esc(S.name || 'vessel ' + S.vid)}">` : '<span>no photo</span>';
   const u = (await rows(`SELECT usage_category AS use, construction_year AS built FROM a_vessel ORDER BY valid_from DESC LIMIT 1`))[0] || {};
   const h = (await rows(`SELECT home_port FROM a_ident ORDER BY valid_from DESC LIMIT 1`))[0] || {};
   const r = (await rows(`SELECT loa FROM a_register`))[0] || {};
   S.about = { use: u.use, built: u.built, home: h.home_port ? h.home_port.charAt(0) + h.home_port.slice(1).toLowerCase() : null, loa: r.loa };
-  const L = await rows(`SELECT ".lid" AS lid, schema, strftime(date, '%Y-%m-%d') AS day, year(date)::INTEGER AS y, port,
-      coalesce(gear_name, gear) AS gear, sid, round(catch)::DOUBLE AS kg FROM last_landing ORDER BY catch DESC`);
-  if (!L.length) { $('last-landing').innerHTML = '<div class="note">No landing recorded.</div>'; $('last-trip').innerHTML = ''; S.about.lastLanding = null; return; }
+  S.assumed = null; S.lastKey = null; S.about.lastLanding = null;
+  const L = await rows(`SELECT ".lid" AS lid, schema, strftime(date, '%Y-%m-%d') AS day, port, coalesce(gear_name, gear) AS gear,
+      round(catch)::DOUBLE AS kg FROM last_landing ORDER BY catch DESC`);
+  if (!L.length) return;
   const l = L[0], total = L.reduce((s, x) => s + x.kg, 0);
   S.about.lastLanding = `${l.day} in ${l.port}, ${num(total / 1000, 2)} t`;
-  $('last-landing').innerHTML = `<dl><dt>Date</dt><dd>${esc(l.day)}</dd><dt>Port</dt><dd>${esc(l.port)}</dd>
-    <dt>Gear</dt><dd>${esc(l.gear)}</dd><dt>Total</dt><dd>${num(total / 1000, 2)} t</dd></dl>` +
-    table([['sid', 'species (code)'], ['kg', 'kg', true]], L.map((x) => ({ ...x, kg: num(x.kg) })));
-  const link = await rows(`SELECT ".tid" AS tid, schema, match_type FROM landing_trips WHERE ".lid" = ${l.lid} AND schema_land = ${sqlstr(l.schema)}`);
-  S.assumed = null;
-  if (!link.length) {
-    S.assumed = S.assumedBase && Date.parse(`${l.day}T00:00:00Z`) > S.assumedBase.after
-      ? { ...S.assumedBase, until: Date.parse(`${l.day}T00:00:00Z`) + DAY } : null;
-    const A = S.assumed, lgear = l.gear || '';
-    const assumed = !A ? '' : qc()
-      ? `<dl><dt>gear assumed</dt><dd>${esc(A.gear)}, from the previous logbook trip ${esc(A.tid)} (T2 ${esc(A.day)})</dd>
-         <dt>landing's gear</dt><dd>${esc(lgear)}</dd></dl>`
-      : `<p>Until the logbook comes in, the gear is assumed to be <b>${esc(A.gear)}</b>, as on the previous logbook trip
-         (returned ${esc(A.day)}). The landing itself records ${esc(lgear) || 'no gear'}.</p>`;
-    $('last-trip').innerHTML = `<div class="note">${qc() ? 'lid_map links no logbook trip to this landing.' : 'No logbook trip is linked to this landing yet.'}</div>${assumed}`;
-    return;
-  }
-  const yrs = { vid: S.vid, from: l.y, to: l.y };
-  await loadAll([['f_trips', 'trips', yrs], ['f_stations', 'stations', yrs], ['f_catch', 'station_catch', yrs]]);
-  const tids = link.map((x) => sqlstr(x.tid)).join(',');
-  const T = await rows(`SELECT ".tid" AS tid, schema, strftime(T1, '%Y-%m-%d %H:%M') AS t1, strftime(T2, '%Y-%m-%d %H:%M') AS t2, port
-    FROM f_trips WHERE ".tid" IN (${tids})`);
-  const H = await rows(`SELECT strftime(coalesce(s.t1, s.date), '%Y-%m-%d %H:%M') AS t1, strftime(s.t4, '%m-%d %H:%M') AS t4,
-      coalesce(s.gear, '') AS gear, round(s.lat1, 3)::DOUBLE AS lat, round(s.lon1, 3)::DOUBLE AS lon, round(sum(c.catch))::DOUBLE AS kg
-    FROM f_stations s LEFT JOIN f_catch c USING (".sid", schema) WHERE s.".tid" IN (${tids})
-    GROUP BY s.".sid", s.schema, s.t1, s.date, s.t4, s.gear, s.lat1, s.lon1 ORDER BY 1`);
-  $('last-trip').innerHTML = T.map((t) => `<dl><dt>Departure</dt><dd>${esc(t.t1)}</dd><dt>Return</dt><dd>${esc(t.t2)}</dd>
-      <dt>Port</dt><dd>${esc(t.port)}</dd>${qc() ? `<dt>.tid</dt><dd>${esc(t.tid)}</dd><dt>lid_map</dt><dd>${esc(link[0].match_type)}</dd>` : ''}</dl>
-      <button class="show-trip" data-tid="${esc(t.tid)}" data-schema="${esc(t.schema)}">Show this trip on the map and chart</button>`).join('') +
-    `<h3>Hauls (${H.length})</h3><div class="scroll">${table([['t1', 'gear in'], ['t4', 'gear out'], ['gear', 'gear'],
-      ['lat', 'lat', true], ['lon', 'lon', true], ['kg', 'kg', true]], H.map((x) => ({ ...x, kg: num(x.kg) })), { empty: 'no haul recorded' })}</div>`;
-  $('last-trip').querySelectorAll('.show-trip').forEach((b) => b.addEventListener('click',
-    () => selectTrip(b.dataset.tid, b.dataset.schema).catch((e) => status(String(e)))));
+  S.lastKey = `L${l.lid}|${l.schema}`;
+  // the maintainer's rule (decision 143): a last landing with no logbook trip has the gear of the previous logbook trip
+  const link = await rows(`SELECT ".tid" FROM landing_trips WHERE ".lid" = ${l.lid} AND schema_land = ${sqlstr(l.schema)}`);
+  const day = Date.parse(`${l.day}T00:00:00Z`);
+  if (!link.length && S.assumedBase && day > S.assumedBase.after) S.assumed = { ...S.assumedBase, until: day + DAY, landingGear: l.gear || '', lastDay: l.day };
 }
 
-// The History tab: register, all landings, all trips, loaded when first opened ------------------------------------------
-const hpages = { land: 0, trip: 0 };
-const PAGE = 50;
-async function renderHistory() {
-  if (S.history) return;
-  status(`loading the history of vid ${S.vid}`);
-  const t = performance.now(), all = { vid: S.vid, from: 1900, to: 2100 };
-  const HIST = ['vessel', 'identification', 'measurement', 'owners', 'operators', 'events'];
-  await loadAll([['register', 'register', { vid: S.vid }], ...HIST.map((h) => [`hist_${h}`, 'hist', { vid: S.vid, table: h }]),
-                 ['h_landings', 'landings', all], ['h_trips', 'trip_summary', all]]);
+// The Vessel tab: about, every photo, the register today and its history, loaded when first opened ------------------
+async function renderVessel() {
+  if (S.vesselTab) return;
+  status(`loading the register of vid ${S.vid}`);
+  const t = performance.now();
+  const HIST = ['vessel', 'identification', 'owners', 'operators', 'events'];
+  await loadAll(HIST.map((h) => [`hist_${h}`, 'hist', { vid: S.vid, table: h }]));
   const r = (await rows(`SELECT *, strftime(mmsi_t1, '%Y-%m-%d') AS m1, strftime(mmsi_t2, '%Y-%m-%d') AS m2,
-                                strftime(note_date, '%Y-%m-%d') AS nd FROM register`))[0];
+                                strftime(note_date, '%Y-%m-%d') AS nd FROM a_register`))[0];
   const f = r ? [['Name', r.vessel], ['Call sign', r.cs], ['MMSI', r.mmsi && `${r.mmsi}${r.m1 ? ` (${r.m1} – ${r.m2 ?? ''})` : ''}`],
              ['IMO', r.imo], ['Local sign', r.uid], ['Flag', r.flag], ['Status', r.status], ['Length', r.loa && `${num(r.loa, 1)} m`],
              ['Power', r.kw && `${num(r.kw)} kW`], ['GRT / GT', [r.grt, r.bwt].filter((x) => x != null).map((x) => num(x, 1)).join(' / ')],
@@ -855,6 +914,18 @@ async function renderHistory() {
     `<h3>Operators</h3>${table([['f', 'from'], ['t', 'to'], ['name', 'name']], ops)}` +
     `<h3>Home port and call sign</h3>${table([['f', 'from'], ['t', 'to'], ['home_port', 'home port'], ['call_sign', 'call sign']], idn)}` +
     `<h3>Events</h3>${table([['date', 'date'], ['event', 'event'], ['fate', 'fate']], ev)}`;
+  S.vesselTab = true;
+  status(`register of vid ${S.vid} loaded in ${Math.round(performance.now() - t)} ms`);
+}
+
+// The History tab: all landings and all logbook trips, loaded when first opened ----------------------------------------
+const hpages = { land: 0, trip: 0 };
+const PAGE = 50;
+async function renderHistory() {
+  if (S.history) return;
+  status(`loading the history of vid ${S.vid}`);
+  const t = performance.now(), all = { vid: S.vid, from: 1900, to: 2100 };
+  await loadAll([['h_landings', 'landings', all], ['h_trips', 'trip_summary', all]]);
   const ly = await rows(`SELECT year(date)::INTEGER AS y, count(DISTINCT (".lid", schema))::INTEGER AS n,
       round(sum(catch) / 1000, 1)::DOUBLE AS t FROM h_landings GROUP BY 1 ORDER BY 1 DESC`);
   $('h-land-years').innerHTML = table([['y', 'year'], ['n', 'landings', true], ['t', 'tonnes', true]], ly.map((x) => ({ ...x, t: num(x.t, 1) })), { empty: 'no landing' });
@@ -895,20 +966,23 @@ async function pageTrips() {
   $('h-trips').innerHTML = table([['t1', 'departure'], ['t2', 'return'], ['port', 'port'], ['stations', 'hauls', true], ['t', 'tonnes', true]],
                                  T.map((x) => ({ ...x, t: num(x.t, 2) })), { click: true, empty: 'no logbook trip' }) + pager('trip', hpages.trip, total);
   $('h-trips').querySelectorAll('tr.click').forEach((row) => row.addEventListener('click', () => {
-    const x = T[+row.dataset.i]; selectTrip(x.tid, x.schema).catch((e) => status(String(e)));
+    const x = T[+row.dataset.i]; selectTrip(x.tid, x.schema, { open: true, scroll: true }).catch((e) => status(String(e)));
   }));
   bindPager('h-trips', 'trip', total, pageTrips);
 }
 
 // Tabs and modes --------------------------------------------------------------------------------------------------------
+const TABS = ['now', 'vessel', 'history'];
+const tabOn = () => TABS.find((t) => $(t).classList.contains('on')) || 'now';
 function showTab(name) {
-  for (const t of ['now', 'history']) { $(t).classList.toggle('on', t === name); $(`tab-${t}`).classList.toggle('on', t === name); }
+  for (const t of TABS) { $(t).classList.toggle('on', t === name); $(`tab-${t}`).classList.toggle('on', t === name); }
+  if (name === 'vessel' && S.vid && !S.vesselTab) renderVessel().catch((e) => status(String(e)));
   if (name === 'history' && S.vid && !S.history) renderHistory().catch((e) => status(String(e)));
   if (name === 'now' && plot) { plot.setSize({ width: $('plot').clientWidth, height: 190 }); lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 }); render(); }
   setHash();
 }
-$('tab-now').addEventListener('click', () => showTab('now'));
-$('tab-history').addEventListener('click', () => showTab('history'));
+for (const t of TABS) $(`tab-${t}`).addEventListener('click', () => showTab(t));
+$('thumb').addEventListener('click', () => showTab('vessel'));
 function relayout() {
   plot?.setSize({ width: $('plot').clientWidth, height: 190 });
   lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
@@ -916,7 +990,6 @@ function relayout() {
 }
 async function setMode(m) {
   S.mode = m;
-  layout(m);
   document.body.classList.toggle('qc', m === 'qc');
   $('mode-ov').classList.toggle('on', m === 'ov'); $('mode-qc').classList.toggle('on', m === 'qc');
   setHash();
@@ -926,7 +999,6 @@ async function setMode(m) {
   requestAnimationFrame(relayout);
   renderSummary();
   await renderTrips();
-  await renderNow();
 }
 $('mode-ov').addEventListener('click', () => setMode('ov'));
 $('mode-qc').addEventListener('click', () => setMode('qc'));
@@ -935,7 +1007,7 @@ $('mode-qc').addEventListener('click', () => setMode('qc'));
 async function choose(vid, from, to) {
   S.ready = false;
   status(`loading vid ${vid}`);
-  S.vid = vid; S.trip = null; S.tr = null; S.history = false; render();
+  S.vid = vid; S.trip = null; S.selKey = null; S.tr = null; S.history = false; S.vesselTab = false; render();
   const v = V.find((x) => x.vid === vid);
   S.name = v?.vessel || '';
   $('title').textContent = `${S.name || 'vid ' + vid}${S.name ? ' · vid ' + vid : ''}${v?.cs ? ' · ' + v.cs : ''}`;
@@ -947,7 +1019,7 @@ async function choose(vid, from, to) {
   S.years = (await rows('SELECT year FROM trail_years ORDER BY year')).map((r) => r.year);
   const lt = (await rows(`SELECT ".tid" AS tid, epoch_ms(T2)::DOUBLE AS after, strftime(T2, '%Y-%m-%d') AS day FROM last_trip`))[0];
   const lg = (await rows(`SELECT gear, count(*)::INTEGER AS n FROM last_trip_st WHERE coalesce(gear, '') <> '' GROUP BY 1 ORDER BY 2 DESC LIMIT 1`))[0];
-  S.assumedBase = lt && lg ? { ...lt, gear: lg.gear } : null;
+  S.assumedBase = lt ? { ...lt, gear: lg?.gear || '' } : null;
   const thisYear = new Date().getUTCFullYear();
   const first = Math.min(S.years[0] ?? thisYear, 2007), last = Math.max(S.years.at(-1) ?? thisYear, thisYear);
   const opts = []; for (let y = last; y >= first; y--) opts.push(`<option value="${y}">${y}${S.years.includes(y) ? '' : ' (no AIS)'}</option>`);
@@ -956,7 +1028,8 @@ async function choose(vid, from, to) {
   await renderNow();
   await loadRange(Number.isInteger(from) ? from : y, Number.isInteger(to) ? to : y);
   S.ready = true;
-  if ($('history').classList.contains('on')) await renderHistory();
+  if (tabOn() === 'vessel') await renderVessel();
+  if (tabOn() === 'history') await renderHistory();
 }
 
 // The vessel list --------------------------------------------------------------------------------------------------------
@@ -988,15 +1061,14 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer'
 // The address holds the vessel, the years, the tab and the mode --------------------------------------------------------
 function setHash() {
   if (!S.vid) return;
-  const h = `vid=${S.vid}&from=${S.from ?? ''}&to=${S.to ?? ''}&tab=${$('history').classList.contains('on') ? 'history' : 'now'}&mode=${S.mode}`;
+  const h = `vid=${S.vid}&from=${S.from ?? ''}&to=${S.to ?? ''}&tab=${tabOn()}&mode=${S.mode}`;
   if (location.hash.slice(1) !== h) history.replaceState(null, '', `#${h}`);
 }
 function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  const vid = parseInt(h.get('vid'), 10), hist = h.get('tab') === 'history';
-  for (const t of ['now', 'history']) { $(t).classList.toggle('on', (t === 'history') === hist); $(`tab-${t}`).classList.toggle('on', (t === 'history') === hist); }
+  const vid = parseInt(h.get('vid'), 10), tab = TABS.includes(h.get('tab')) ? h.get('tab') : 'now';
+  for (const t of TABS) { $(t).classList.toggle('on', t === tab); $(`tab-${t}`).classList.toggle('on', t === tab); }
   S.mode = h.get('mode') === 'qc' ? 'qc' : 'ov';
-  layout(S.mode);
   document.body.classList.toggle('qc', S.mode === 'qc');
   $('mode-ov').classList.toggle('on', S.mode === 'ov'); $('mode-qc').classList.toggle('on', S.mode === 'qc');
   if (!Number.isInteger(vid)) return;

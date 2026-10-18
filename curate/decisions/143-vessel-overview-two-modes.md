@@ -69,6 +69,9 @@ assumed.
 "Better still would be that we would obtain the gear from the ais track - but that is a bigger TODO" (maintainer):
 TODO 86. The same rule in the flow's gear cascade, for pings and voyages with no logbook, is not made here.
 
+**Revised the same day:** the landing's own gear now comes first, and the previous trip's only where the landing
+records none (the second amendment below).
+
 ## Amended 2026-10-18: presets, the map's background, fishing hours in hexagons
 
 The maintainer's tweaks:
@@ -92,6 +95,53 @@ The maintainer's tweaks:
 The service now sends `hours` with the trail (API version 2026-10-18.4), so an older running server shows the page's
 banner. Checked in the browser pane on vids 2047 and 1977: the presets, the range's name, the hexagons' legend (0-10.4
 fishing hours per 1 km cell for vid 1977). The redraw time with hexagons on was not measured: the pane was hidden.
+
+## Amended 2026-10-18: one table of trips and landings, the vessel in a strip and a tab, the gear from the landing
+
+The maintainer's next asks; code, checks and this section by Claude (AI-assisted). The page alone changed, not the
+service.
+
+- **One table.** "we can just have trip tables - then if one (double-)clicks on a table it would show the logbook
+  records for that trip only as a 'subtable'". The Activity tab's table now holds:
+  - every logbook trip of the range, with what it landed through `lid_map` (in Quality control, the match too);
+  - every landing no trip of the range claims, as a row of its own ("no logbook", or "logbook trip in another year"),
+    with the landing's gear.
+
+  A click selects a row: the window, map and chart go to the trip, or, for a landing, to the AIS voyage that ended
+  within a day of it. A double-click, or the caret, opens the row: a trip's logbook records and what it landed, or a
+  landing's species. The panels "Last landing" and "The trip that landed it" are gone.
+- **The vessel as a strip and a tab.** "the vessel info should become a tab, not a scroll down", and "a short 'strip'
+  at the top with only one/two row info line, with the thumb-image at the rightmost side".
+  - Activity opens on two lines about the vessel, with its photo as a thumb at the right.
+  - A click on the thumb opens the new **Vessel** tab: about the vessel, every photo, the register today and its history.
+  - History keeps all landings and all trips.
+  - Both modes now share one top-down layout: the strip, the choices, where | when, the table, and in Quality control
+    the pings.
+- **The chart's speed capped at 15 knots.** "vessels rarely go above 12-15 knots. And all fishing activity is well below
+  that speed". A ping above the cap is drawn at 15. The map's tooltip keeps the real speed.
+- **The gear from the landing.** "actually the gear is in the 'last landing', better than using the logbooks". This
+  revises the rule above. After the last logbook trip, a time takes the gear its next landing records. The previous
+  logbook trip's gear is used only where that landing records none.
+  - On vid 2047, all 22 landings after the last logbook trip (2026-07-15) record Þorskfisknet, so nothing is assumed
+    now. Before, each was given GNS from the previous trip.
+  - The gear is the landing's own name for it (Þorskfisknet, Lína), not the logbook's code (GNS, LLS).
+
+**Found on the way: voyage numbers restart each year.** The trail numbers a vessel's voyages afresh each year, and the
+page grouped pings by that number. Over a range of two years it merged, for example, 2025's voyage 72 with 2026's:
+- the map drew a path between the two;
+- "Last N voyages" could span a year.
+
+A voyage is now the consecutive pings of one number. On vid 2047, the landing of 2026-09-08 framed 2025-08-21 to
+2026-09-08 before the fix, and after it its own voyage, 06:57-10:37 that day. Separately, vid 2757's 2025 holds one
+voyage from 1 January to 24 August with no stay. That is the trail's matter, not the page's.
+
+Checked in the browser pane:
+- vid 2047, 2025-2026, Quality control: 129 rows (102 trips and 27 landings without one). A mouse double-click opened
+  trip 250710 with its haul and its landing (`lid_map` 01 exact).
+- vid 2757, 2024, Overview: 42 rows, one landing with no logbook.
+- vid 1977, 2026: the strip, the thumb, and the Vessel and History tabs, with no console error.
+
+Not checked: the layout at phone width, and a person using the page.
 
 ## Measured
 
