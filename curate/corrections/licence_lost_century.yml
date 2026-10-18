@@ -1,0 +1,31 @@
+id: licence_lost_century
+title: kvoti's revocation, exemption and arrears dates with a 1-3 digit year (the century lost)
+status: implemented 2026-10-18, checked in a scratch store, not built (plan 029 step 2)
+applies_to:
+  - staging/kvoti/licence_revocation.parquet   (t1, t2)
+  - staging/kvoti/licence_exemption.parquet    (t1, t2, closed)
+  - staging/kvoti/licence_arrears.parquet      (t1, t2)
+  - staging/kvoti/licence_date_fix.parquet     (new: table, record, column, value_raw, value, flag)
+implementation: curate/corrections/licence_lost_century.R
+discovered: 2026-10-18, measuring kvoti's licence tables for plan 029 (§2)
+
+detection: >-
+  A date whose year is below 1000. Read in UTC, Oracle holds these dates as typed: 0012-12-02 for a revocation
+  entered on 2012-12-04. 13 revocation rows, 1 exemption and 2 arrears rows. A session outside UTC shows them with
+  odd clock offsets (23:43:52): that is the session's zone, not the data.
+
+evidence: >-
+  Plan 029 §2. In 10 of the 13 revocations, 2000 plus the typed year falls within a year of the row's entry stamp
+  and keeps the revocation's start before its end. Three do not: 0010-06-23 ends a revocation entered on
+  2007-06-21, 0201-09-02 one that started 2015-08-31, and 0219-03-26 one that started 2018-10-08.
+
+repair: >-
+  A year y below 100 becomes 2000 + y, month, day and time unchanged, when the result lies within 366 days of the
+  row's `entered` stamp: flag "lost_century". Otherwise the value is not guessed: `value` NA, flag
+  "lost_century_unresolved", and the row waits for review (plan 029 rule L1). A year of 100-999 is unresolved
+  too. The staged tables are untouched; `value_raw` keeps the date as staged (AGENTS.md: never destroy the
+  original). Read by reference/vessels/licence_evidence.R, which flags the evidence row.
+
+test: >-
+  Every resolved value lies in 1991-2026, within 366 days of its entry stamp, and no resolved revocation ends
+  before it starts unless it did so as typed.

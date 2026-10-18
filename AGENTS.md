@@ -108,6 +108,9 @@ Every script in a targets project is on one of three sides, and says which in a 
 - **Never destroy the original.** A correction adds columns; it never overwrites.
   Precedent: wacky-coordinate recovery retains `w_lon`/`w_lat` beside the
   corrected `lon`/`lat`.
+- **Kennitala may be carried up to and including `curated/`** (maintainer, 2026-10-18, a general rule), under
+  `$FISHYDATA` only: never in this repo, `docs/`, or anything published. What a public source prints (owners,
+  addresses, phones) is kept the same way (decision 130).
 - **The written record is enforced, not promised.** `check_bookkeeping()`
   (`R/check_bookkeeping.R`) verifies every rule the three `README.md` files
   assert: records indexed, index rows resolving, no finished item left in

@@ -1,7 +1,8 @@
 # 029 — A fishing licence history: which licence each vessel held, of what type, where and when, from every witness
 
-**status:** proposal — the sources measured 2026-10-18 (read-only); nothing built; the history to 2020-07-22 builds
-in the `once` project, the live tail after it in the main one (ask c, decision 133); asks a, b and d-h open (TODO 84)
+**status:** partly built — steps 1-3 coded and checked in a scratch store, not wired or built (decision 134); the
+history to 2020-07-22 builds in the `once` project, the live tail after it in the main one (ask c, decision 133);
+asks a, b and d-h open (TODO 84)
 · **2026-10-18** · **see:** plan 028 (§3.4, §5.3-5.4, §6 and ask c, which this plan takes over), decisions 130-133, plans 014, 017, 021, 023 and 025, `reference/vessels/vessel_class.R`,
 `reference/vessels/skipaskra_evidence.R`, `curate/checks/skipaskra_discrepancy.R`, `docs/one_flow.qmd` (step 3's
 `gear_register`)
@@ -34,7 +35,8 @@ Those uses are named here, not measured. Measuring them before the product exist
 - Oracle's catalogue (`raw/oracle/_catalogue/objects.parquet`) for licence tables in schemas not dumped;
 - `curated/landing/`, only to test whether the sources are complete.
 
-Scripts and output are in scratch only. No column naming a person was read beyond its name and count.
+Scripts and output are in scratch only. No column naming a person was read beyond its name and count, and the
+free-text notes only for a kennitala-like number.
 
 **Assumed:**
 - A licence row says the hull was allowed to fish, not that it fished.
@@ -54,12 +56,15 @@ Scripts and output are in scratch only. No column naming a person was read beyon
   - coastal trips, 2009 to 2021-02;
   - the lumpfish logbook, 1980-2016;
   - activity in the landings and logbooks.
-- **Where they overlap with the licence tables, they agree to a measured degree** (§3.5):
-  - the coastal and hook-and-line quota classes, and the cod-cap allocation, agree with their licences on all
-    but a few hulls a year;
-  - the mackerel and recreational allocations, and the lumpfish logbook, imply their licences but cover only part
-    of the holders;
-  - the catch-quota allocation is no witness for the catch-quota licence.
+- **Where they overlap with the licence tables, they agree to a measured degree** (§3.5, decision 134). In the last
+  five years of each overlap:
+  - the class implies its licence for 98-100 % of hulls. That covers coastal, hook-and-line quota, catch quota (the
+    classes that name a fishing vessel), cod cap, effort days, handline, line and handline, and recreational;
+  - so do the coastal trips, the cod-cap and recreational allocations (97-100 %), and the lumpfish logbook (99.8 %);
+  - the scallop (91 %), mackerel (54 %), catch-quota (49 %) and inshore-shrimp (20 %) allocations imply theirs less
+    often;
+  - in the landings, Danish seine, lumpfish nets and sea cucumber imply their licence on 99 % of vessel-days, and
+    sea urchin on 97 %.
 - **Four class tables are copies** of `kvoti.skipasaga`: `ufs.skipasaga`, `st_skipa`, the `vessel` schema's
   back-fill to 2023-12-18, and mbl's snapshot. Copies are not counted as witnesses.
 - **Before 1991 the dumps hold only the lumpfish logbook** (from 1980) and activity.
@@ -191,8 +196,11 @@ tables while both existed is how far it can be trusted after they stop. It is me
 - **implies:** the share of the record's hulls that held the licence;
 - **covers:** the share of licence holders that appear in the record.
 
-A record can change over time. So the last years of the overlap weigh most: the mackerel allocation implied the
-licence for 35-73 % of hulls in 2010-2013 and 90-98 % in 2014-2017.
+A record can change over time. So the last years of the overlap weigh most: the line-and-handline class implied its
+licence for 54 % of hull-years over 1996-2001, and 99 % in its last five.
+
+The table below is the hand count that came first. `curated/vessel/licence/calibration.parquet` now gives both
+measures for every witness, group and year (step 3, decision 134), summed after it.
 
 | pair | years | measured on | agreement | reading |
 |---|---|---|---|---|
@@ -213,6 +221,27 @@ licence for 35-73 % of hulls in 2010-2013 and 90-98 % in 2014-2017.
 | catch-quota allocation `R` against licence 1 | 2012-2019 | hulls a year | 57-68 % of licence hulls; allocations reach more hulls | no witness for licence 1 |
 | lumpfish logbook against the lumpfish licence (11, 36, `grasleppusaga`) | 1997-2016 | hulls a year | 97-100 % of logbook hulls hold a licence; the logbook covers 12-80 % of licence hulls | the logbook implies the licence |
 
+**Calibrated** (step 3, decision 134). Each statement is cut at year ends, and each measure is taken over the last
+five years in which the register held the group:
+
+| group | record | overlap | implies | covers |
+|---|---|---|---|---|
+| coastal | class −12; coastal trips | 2009-2020 | 0.998; 0.999 | 0.997; 0.957 |
+| hook-and-line quota | class 96 | 2000-2020 | 0.998 | 0.999 |
+| catch quota | class (10-91, the fishing-vessel classes) | 1996-2020 | 0.995 | 0.995 |
+| catch quota | allocation `R` | 1996-2020 | 0.494 | 0.606 |
+| cod cap | class 98; allocation `F` | 1996-2001 | 0.996; 0.971 | 1.000; 0.935 |
+| effort days | class 101; notices | 1999-2006; 1999-2002 | 0.998; 0.699 | 1.000; 0.379 |
+| handline; line and handline | class 100; class 99 | 1996-2001 | 1.000; 0.993 | 1.000; 1.000 |
+| recreational | class 89, 95, −11; allocation `H` | 2009-2020; 2010-2020 | 0.980; 1.000 | 1.000; 0.422 |
+| lumpfish | lumpfish logbook; class 93; landings | 1996-2016; 1996-2020; 1996-2020 | 0.998; 0.314; 0.992 | 0.247; 0.005; 0.710 |
+| mackerel | allocations (`uthl_makrill`); mackerel class | 2010-2018; 2018 | 0.543; 0.116 | 0.792; 0.973 |
+| scallop | allocation; landings | 1996-2003 | 0.906; 0.932 | 0.770; 0.424 |
+| inshore shrimp | allocation by area | 1996-2017 | 0.203 | 0.754 |
+| Danish seine; sea cucumber; sea urchin | landings | 1994-2020; 2010-2020; 1996-2020 | 0.992; 0.998; 0.965 | 0.921; 0.777; 0.617 |
+
+The mackerel allocations of quota type 36 (from 2019) have no overlap: uncalibrated.
+
 ### 3.6 Are the licence tables complete?
 
 Tested on the landings, as a check of the sources, not a use:
@@ -230,7 +259,7 @@ Tested on the landings, as a check of the sources, not a use:
 |---|---|---|---|---|
 | coastal (37) | — | — | licences (from 2009); class −12; coastal trips | class −12 (to 2026-06); coastal trips (to 2021-02) |
 | hook boats: handline, line, cod cap, effort days, hook-and-line quota (2, 3, 14, 23, 32) | — | class (99, 98, 100, 101, 96); cod-cap allocation `F` (1995) | licences; class; `F` (to 2000); effort-day notices (1996-2002) | class 96 |
-| catch quota (1) | — | quota record, class (necessary, not sufficient) | licences | quota record, class (necessary, not sufficient) |
+| catch quota (1) | — | class (the fishing-vessel classes); quota record (weak) | licences | class; quota record (weak) |
 | recreational (38, 39, 42) | — | — | licences (from 2009); class 89, 95, −11; `H` | class; `H` (to 2024) |
 | lumpfish (11, 36) | lumpfish logbook (from 1980) | lumpfish logbook; rights from 1996-03 | licences; rights; logbook (to 2016) | rights (to 2021-07); quota 951 (from 2024-09); activity between |
 | Danish seine (8, 9, 10) | — | `dragnot_leyfi` (from 1994) | licences; `dragnot_leyfi` (to 2010) | activity only |
@@ -269,13 +298,15 @@ house style; nothing else changes.
 The copies (`veidileyfi_v`, `strandveidileyfi_v`, `ufs.skipasaga`, `st_skipa`) are not read. The check (§5.6)
 proves them copies. Activity is read from `curated/` when the evidence table is built, not staged again.
 
-**No column naming a person.** Staging drops:
-- kennitala (`eigandi`, `kennitala`, `kt`, `rek_adili`);
-- names, addresses, phones, contacts and message texts;
-- the staff's user names in the stamps (`snn`, `sbn`, `sng`, `sbg`, `gerandi`).
+**Personal data.** Kennitala is kept: the lumpfish right's owner and the net application's operator. The
+maintainer's general rule (2026-10-18) is that kennitala may be carried up to and including `curated/`, under
+`$FISHYDATA` only, never in the repo, docs or anything published. Staging also:
+- keeps the free-text notes as given, which give the reason for a storage, deletion or revocation;
+- drops the staff's user names in the stamps (`snn`, `sbn`, `sng`, `sbg`, `gerandi`), which nothing uses;
+- keeps the stamps' times, which date the entry and the deletion.
 
-The stamps' times are kept: they date the entry and the deletion. The notices of `veidileyfi_svipt_tilk`, the contact
-agreements, the mail settings and `strandveidar_logskradur` (coastal boats' owners) are not read.
+The notices of `veidileyfi_svipt_tilk`, the contact agreements, the mail settings and `strandveidar_logskradur`
+(coastal boats' owners) are not read: the history needs none of them.
 
 ### 5.2 Corrections
 
@@ -321,19 +352,27 @@ The first rule that applies decides. Each writes its id into `rule`.
   date, reason) outranks every rule below.
 - **L2 Implied by a separate record.** Where the register is silent, a record of another lineage gives a licence row
   with basis `reconstructed`. It must have implied the licence at least 95 % of the time in the last years of the
-  overlap (§3.5; the threshold is proposed, ask b). By that measure:
-  - coastal (37) from class −12;
-  - hook-and-line quota (32) from class 96;
-  - cod cap (3) from allocation `F` in 1995/96;
-  - lumpfish from the lumpfish logbook (1980-1995);
-  - recreational from allocation `H`.
+  overlap (§3.5; the threshold is proposed, ask b). By that measure (decision 134):
+  - the class: coastal (−12), hook-and-line quota (96), catch quota (10-91), cod cap (98), effort days (101),
+    handline (100), line and handline (99), recreational (89, 95, −11);
+  - the coastal trips;
+  - the cod-cap (`F`) and recreational (`H`) allocations;
+  - the lumpfish logbook.
+
+  Below the bar, so these flag only:
+  - the effort-day notices (0.70);
+  - class 93, only a lumpfish licence (0.31);
+  - the scallop (0.91), mackerel (0.54), catch-quota (0.49) and inshore-shrimp (0.20) allocations.
+
+  Activity reaches the bar (0.97-1.00), but it stays under L4 (ask g).
 
   Each row carries its witness, and the record's `implies` and `covers` from the overlap.
 - **L3 Implied, not calibrated.** A record with no overlap to measure on gives a row with basis `reconstructed` and
   flag `uncalibrated`. These are:
   - the area quotas for sea cucumber, sea urchin and scallop (from 2022/23);
   - lumpfish quota 951 (from 2024/25);
-  - mackerel allocations after 2020 (90-98 % in 2014-2017, below the threshold in 2010-2013).
+  - mackerel allocations after 2020 (quota type 36). They have no overlap of their own, and the allocations
+    before them implied the licence for only 54 % of hulls.
 - **L4 Activity.** Activity never makes a licence row by default. It bounds and flags: a gear that requires a
   licence, landed with no licence row covering the day, goes `open`. Ask g is whether activity may imply a licence
   where no other lineage speaks (lumpfish 2021-2024, Danish seine after 2020).
