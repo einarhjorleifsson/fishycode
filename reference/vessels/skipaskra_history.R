@@ -20,9 +20,13 @@
 #   witness), Hreiðar for his year, a dated source for its from-to, the 2022-12-28 scrape and mbl from their date on.
 # - Every stretch of time takes the first witness in its period's order: before 2004 Hreiðar, then the fisheries'
 #   histories, then the `vessel` schema's back-filled rows; 2004-2021 the PDFs, then Hreiðar, the `vessel` schema, the
-#   fisheries; from 2022 the fisheries' changes after the 2022 edition, the scrape, mbl, the `vessel`
-#   schema's later rows, then the 2022 edition. Neighbouring stretches merge when printed alike (numbers at their
-#   coarser precision, materials as sets), each agreeing with the value the merged stretch carries.
+#   fisheries; from 2022 the fisheries' changes after the 2022 edition, the scrape, the `vessel` schema's later rows,
+#   the 2022 edition, then the older rows, and mbl last: its pages of 2023-01 carry values a hull had years before
+#   (1136's call sign until 2014), so it fills only where no other source speaks (decision 144). Neighbouring stretches
+#   merge when printed alike (numbers at their coarser precision, materials as sets), each agreeing with the value the
+#   merged stretch carries. The fisheries class (`vessel_operational_hist`) is the fisheries' own: kvoti and ufs come
+#   first in every period, since the `vessel` schema's back-fill missed changes they date (Þróunarsjóður, -10, on 6300
+#   from 1994-12-09, back-filled only from 2024-02-02; decision 144).
 # - D1: a row of overrides/skipaskra_reviewed.csv outranks everything. D2: a PDF value that breaks one of the register's
 #   own rules gives way to another lineage's value that keeps it, or stays and goes `open`; a GT off the formula below
 #   15 m is only flagged (the maintainer's check, decision 136). D3: else the period's
@@ -184,11 +188,13 @@ pick <- dbGetQuery(con, "
   SELECT vid, tab, col, s, e, cid FROM (
     SELECT el.vid, el.tab, el.col, el.s, el.e, c.cid,
       CASE WHEN c.fam = 'review' THEN 0
+           WHEN el.tab = 'vessel_operational_hist' AND c.fam = 'fisheries' THEN 1
            WHEN el.s < DATE '2004-01-01' THEN CASE c.fam WHEN 'hreidar' THEN 1 WHEN 'fisheries' THEN 2 WHEN 'copy' THEN 3 ELSE 9 END
            WHEN el.s < DATE '2022-01-01' THEN CASE c.fam WHEN 'pdf' THEN 1 WHEN 'hreidar' THEN 2 WHEN 'copy' THEN 3 WHEN 'fisheries' THEN 4 ELSE 9 END
            ELSE CASE WHEN c.fam = 'fisheries' AND c.a >= DATE '2022-01-01' THEN 1 WHEN c.fam = 'samgongustofa' THEN 2
-                     WHEN c.fam = 'mbl' THEN 3 WHEN c.fam = 'copy' AND c.a >= DATE '2022-01-01' THEN 4 WHEN c.fam = 'pdf' THEN 5
-                     WHEN c.fam = 'copy' THEN 6 WHEN c.fam = 'fisheries' THEN 7 WHEN c.fam = 'hreidar' THEN 8 ELSE 9 END END AS tier,
+                     WHEN c.fam = 'copy' AND c.a >= DATE '2022-01-01' THEN 3 WHEN c.fam = 'pdf' THEN 4
+                     WHEN c.fam = 'copy' THEN 5 WHEN c.fam = 'fisheries' THEN 6 WHEN c.fam = 'hreidar' THEN 7
+                     WHEN c.fam = 'mbl' THEN 8 ELSE 9 END END AS tier,
       row_number() OVER (PARTITION BY el.vid, el.tab, el.col, el.s ORDER BY tier, c.a DESC, c.cid) AS rk
     FROM el JOIN cand c ON c.vid = el.vid AND c.tab = el.tab AND c.col = el.col AND c.a <= el.s AND el.s < c.b) WHERE rk = 1")
 
