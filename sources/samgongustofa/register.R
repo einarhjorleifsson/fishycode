@@ -1,8 +1,9 @@
-# Samgöngustofa's online ship register, scraped number by number on 2022-12-28.
+# Samgöngustofa's online ship register, scraped number by number on 2022-12-28 (plan 028's "siglo", after the raw file).
 # Side: preprocessing (vessels). See plan 014; plan 028 step 2.
 #
 # Input:  raw/external/skipaskra/data-raw/2022-12-28_siglo.rds (raw/external/skipaskra/R/samgongustofa-scrape.R)
-# Output: staging/skipaskra/siglo.parquet - one row per registration number (5,677), printed values and parsed numbers
+# Output: staging/samgongustofa/register_2022-12-28.parquet - one row per registration number (5,677), printed values
+#         and parsed numbers
 #
 # Source-shaped: the register's lookup page as it stood, every number it answered for: registered (Skráð),
 # deregistered (Óskráð) and allocated but not yet registered (Úthlutað), in `status`.
@@ -61,6 +62,6 @@ stopifnot("a personal column is in the output" = !any(grepl(PERSONAL, names(out)
           "a left-out column is in the output" = !any(names(out) %in% LEFT_OUT))
 
 print(knitr::kable(out |> count(status, name = "numbers") |>
-                     bind_rows(tibble(status = "all", numbers = nrow(out))), caption = "staging/skipaskra/siglo"))
+                     bind_rows(tibble(status = "all", numbers = nrow(out))), caption = "staging/samgongustofa/register_2022-12-28"))
 
-write_parquet(out, fd_staging("skipaskra", "siglo.parquet"))
+write_parquet(out, fd_staging("samgongustofa", "register_2022-12-28.parquet"))

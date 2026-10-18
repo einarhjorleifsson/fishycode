@@ -2,7 +2,8 @@
 # Side: preprocessing (vessels). See plan 014; plan 028 step 2.
 #
 # Input:  raw/external/skipaskra/data-raw/mbl/vid-*.csv (5,803 files, long: variable, value, vid)
-# Output: staging/skipaskra/mbl.parquet - one row per vid, the printed values and the numbers parsed from them
+# Output: staging/mbl/register_2023-01.parquet - one row per vid, the printed values and the numbers parsed from them
+#         (2023-01: the month of the info scrape's logs, see `scraped`)
 #
 # Source-shaped: the newspaper's fields, curated by hand by the newspaper, not by the authority (plan 028 §3.6).
 #
@@ -10,7 +11,7 @@
 #   printed (it often stands for not given: about half of `loa`, `breadth`, `depth` and `nt`).
 # - The scraper (raw/external/skipaskra/R/mbl-scrape_info.R) turned only the FIRST comma into a point, so the
 #   thousands points survive: "1.100,0" is "1.100.0". Every point but the last is dropped before parsing.
-# - The newspaper's own pages print a whole GT of 1,000 and more divided by 1,000 (2982: "4.14 t", siglo "4.139 t"):
+# - The newspaper's own pages print a whole GT of 1,000 and more divided by 1,000 (2982: "4.14 t", Samgöngustofa "4.139 t"):
 #   85 of the 4,308 GTs both scrapes print, and one GRT. Kept as printed, for the checks of plan 028 §5.
 # - `call_sign` drops the hyphen of "TF-IX"; `imo` drops the "IMO", and "IMO0" is NA.
 # - `scraped` is "2022-12-28/2023-01-09", the span of the scrape logs' names. The info logs are all 2023-01-09 and
@@ -86,6 +87,6 @@ print(knitr::kable(tibble(
   vids = nrow(out), name = sum(!is.na(out$name)), gt = sum(!is.na(out$gt)), grt = sum(!is.na(out$grt)),
   mmsi = sum(!is.na(out$mmsi)), call_sign = sum(!is.na(out$call_sign)), imo = sum(!is.na(out$imo)),
   previous_name = sum(!is.na(out$previous_name)), changes = sum(!is.na(out$changes))),
-  caption = "staging/skipaskra/mbl"))
+  caption = "staging/mbl/register_2023-01"))
 
-write_parquet(out, fd_staging("skipaskra", "mbl.parquet"))
+write_parquet(out, fd_staging("mbl", "register_2023-01.parquet"))
