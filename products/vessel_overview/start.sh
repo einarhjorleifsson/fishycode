@@ -3,7 +3,8 @@
 # makes. The server runs in the background on 127.0.0.1, port VESSEL_OVERVIEW_PORT (8790), with its output in
 # ~/Library/Logs/vessel_overview.log.
 #
-#   products/vessel_overview/start.sh          start it if it is not running, and open the page
+#   products/vessel_overview/start.sh          start it if it is not running, and open the page; a running server
+#                                              older than the code (api.R's API_VERSION) is restarted first
 #   products/vessel_overview/start.sh restart  stop it, start it again (after a change to api.R), and open the page
 #   products/vessel_overview/start.sh start    start it if it is not running, without opening the page
 #   products/vessel_overview/start.sh stop     stop it
@@ -21,6 +22,10 @@ export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 VESSEL_OVERVIEW_PORT="$PORT"
 RSCRIPT=$(command -v Rscript || ls /usr/local/bin/Rscript /Library/Frameworks/R.framework/Resources/bin/Rscript 2>/dev/null | head -n 1)
 
 pid() { lsof -nP -t -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null | head -n 1; }
+# the version the code says, and the one the running server answers with (every answer carries X-Overview-Api)
+code_version() { sed -n 's/^API_VERSION <- "\(.*\)"/\1/p' products/vessel_overview/api.R; }
+served_version() { curl -s -D - -o /dev/null "$URL" | tr -d '\r' | sed -n 's/^[Xx]-[Oo]verview-[Aa]pi: //p'; }
+stale() { ours && [ "$(served_version)" != "$(code_version)" ]; }
 ours() { p=$(pid); [ -n "$p" ] && ps -o command= -p "$p" | grep -q "vessel_overview/server.R"; }
 fail() { echo "$1" >&2; exit 1; }
 
@@ -48,10 +53,10 @@ $(tail -n 8 "$LOG")"
 }
 
 case "${1:-open}" in
-  open)    start && open "$URL" ;;
+  open)    if stale; then stop || exit 1; fi; start && open "$URL" ;;
   start)   start ;;
   restart) stop && start && open "$URL" ;;
   stop)    stop ;;
-  status)  if ours; then echo running; else echo stopped; fi ;;
+  status)  if stale; then echo "running, older than the code"; elif ours; then echo running; else echo stopped; fi ;;
   *)       fail "usage: start.sh [open | start | restart | stop | status]" ;;
 esac

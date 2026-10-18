@@ -72,3 +72,13 @@ Checked on port 8791, with the maintainer's server on 8790 left running:
 - a port held by another program: reported, and left as it was.
 
 The app's own dialog was not clicked here.
+
+**A server older than its code is restarted (2026-10-18).** After the service's version moved to 2026-10-18.5, the
+maintainer ran `start.sh` and got the page's banner: the script found a vessel overview server already running and only
+opened the page.
+- `start.sh` now compares the running server's `X-Overview-Api` answer with `API_VERSION` in `api.R`, and restarts it
+  when they differ. `status` then says "running, older than the code".
+- The app restarts such a server without asking.
+- The page's banner now points to the app and the script, not to Ctrl-C in a terminal.
+- Checked on the maintainer's server on 8790: `status` said older, and after a restart the server answered
+  2026-10-18.5.

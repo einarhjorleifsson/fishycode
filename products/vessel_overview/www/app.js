@@ -50,8 +50,9 @@ const fetchParquet = async (endpoint, params) => {
   const r = await fetch(`/api/${endpoint}?${new URLSearchParams(params)}`);
   const v = r.headers.get('X-Overview-Api');
   if (v !== API) {
-    banner(`<b>The service is older than this page</b> (service ${esc(v || 'unknown')}, page ${API}). Stop
-      <code>server.R</code> with Ctrl-C in its terminal, start it again, and reload this page.`);
+    banner(`<b>The service is older than this page</b> (service ${esc(v || 'unknown')}, page ${API}). Restart it: click
+      <b>Vessel overview</b> in Applications, or run <code>products/vessel_overview/start.sh</code>, which restarts an older
+      server by itself. Then reload this page.`);
     throw new Error('the service and the page differ in version');
   }
   if (!r.ok) throw new Error(`${endpoint}: ${r.status} ${await r.text()}`);

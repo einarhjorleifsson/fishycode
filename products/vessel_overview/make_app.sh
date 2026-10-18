@@ -17,7 +17,11 @@ property launcher : "$launcher"
 on run
 	try
 		set cmd to quoted form of launcher
-		if (do shell script cmd & " status") is "running" then
+		set state to do shell script cmd & " status"
+		if state is "running, older than the code" then
+			display notification "The server is older than its code: restarting." with title "Vessel overview"
+			do shell script cmd & " restart"
+		else if state is "running" then
 			set r to button returned of (display dialog "The vessel overview is running." buttons {"Stop", "Restart", "Open"} default button "Open" with title "Vessel overview")
 			if r is "Stop" then
 				do shell script cmd & " stop"
