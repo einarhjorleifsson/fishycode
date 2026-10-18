@@ -1,7 +1,8 @@
 # 142 — The register's live part from 2023-12-19, through the same model, in the main project (plan 028 step 6)
 
 *2026-10-18. Coded, checked and built by Claude (AI-assisted), on the maintainer's go ("Start plan 028 step 6: the live
-part from 2023-12-19 in the main project, through the same model"). Built in the main project by name, at 916ae1e.*
+part from 2023-12-19 in the main project, through the same model"). Built in the main project by name, at 916ae1e. Amended the same day: the dump's date, and the register rebuilt
+by decision 144, whose numbers supersede the tables below.*
 
 ## What was built
 
@@ -33,7 +34,8 @@ Two more outputs:
 
 - **D3.** From 2023-12-19 the `vessel` schema answers (plan 028 §4.3). It is one register source and dated, so D3 takes
   its versions. Its history tables hold every version, the current one with no `valid_to` and equal to the current
-  table's row. They run to the dump of 2026-06-16.
+  table's row. They run to the dump of 2026-10-16, whose last entry in every history table is 2026-06-16 (first written
+  here as the dump of 2026-06-16).
 - **D1** applies as in the history.
 - **D2's rules act on the schema's values** as in the history:
   - an IMO number failing its check digit gives way to ufs's that keeps it, or goes open: 9 fail, none has an

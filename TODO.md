@@ -128,7 +128,8 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
 The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
 proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a
 rule admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest
-`vessel_hist_v` date or `yh1`: the latest row's is a re-registration, which made most list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's
+`vessel_hist_v` date or `yh1` (the first year on the register since decision 144): the latest row's is a
+re-registration, which made most list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's
 `tar_outdated()` lists the key and its checks again. That is the cycle, not a reason to build: the key changes only here.
 
 The annual register's matrix parse is fixed in code, not yet in data: build years and a legend entry had been read
@@ -453,9 +454,9 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
-**status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
-(editions outside 2004-2022) · **see:**
-`curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135, 136 and 142, TODO 71
+**status:** in progress · **needs: maintainer** — the go to rebuild the AIS chain and trail on the repointed readers,
+and plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e (editions outside 2004-2022) · **see:**
+`curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135, 136, 142 and 144, TODO 71
 
 Steps 1-5 are built in the `once` project:
 - the 19 editions read whole, and the other witnesses (decisions 130, 131);
@@ -466,11 +467,15 @@ Build by name, never the whole project, whose key targets are outdated:
 `tar_make_isolated(names = c("check_skipaskra_discrepancy", "skipaskra_history"))` in `TAR_PROJECT=once`. What public
 sources print is kept, never published.
 
-Step 6 is built in the main project (decision 142): `curated/vessel/register/` holds the register's tables for every
-year, the history's rows and the `vessel` schema's after 2023-12-19. Next: step 7, repointing `vessel_sign`,
-`vessel_class`, `vessel_year` and `registry.R` to it, one at a time with fingerprints.
+Steps 6 and 7 are built in the main project (decisions 142, 144): `curated/vessel/register/` holds the register's
+tables for every year, and `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R` read it. The history was rebuilt
+first with mbl last, kvoti first for the class, SKEMMTISKIP as 62 and Hreiðar's years read whole (decision 144).
 
-**check:** plan 028's steps 1-7 built, or the plan parked.
+Waiting: 20 main-project targets are outdated, the AIS chain from `vessel_identity` through `ais_trail` and
+`ais_catch`. The trail's `kw_basis`, `leisure` and the catch will change; the chain above the trail would rebuild to the
+same content. Build only on the maintainer's go.
+
+**check:** the AIS chain and trail rebuilt on the repointed readers, and asks d and e answered or parked.
 
 ## 84. A fishing licence history from every witness (plan 029)
 **status:** in progress · **needs: maintainer** — plan 029 §8's asks: where licences are kept after 2020-07-22 and

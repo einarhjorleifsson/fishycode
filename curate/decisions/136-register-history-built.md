@@ -4,7 +4,9 @@
 decision model the maintainer confirmed (decision 135). Built in the `once` project by name, at 314d8ee, and the history
 and checks again at 43c513f. The maintainer then checked D2's 33 decisions against the page images, and the history was
 rebuilt at 8527da7 with what that check found (below). The numbers here are the rebuild's; the first build's are under
-"Superseded".*
+"Superseded". Amended the same day: the registered life below rested on Hreiðar's years read shifted, and the history
+was rebuilt at 4b2fdf8 with them read right, mbl last and kvoti first for the class (decision 144, whose numbers
+supersede these).*
 
 ## What was built
 
@@ -47,8 +49,8 @@ How a value is chosen is in the script's head and plan 028 §4.3 and §6.2:
   Siglingastofnun to Samgöngustofa is the register's own. Numbers merge at their coarser precision.
 - **A stretch must agree with the value its merged group carries.** A coarser print had bridged two that differ (GRT
   142.18 and 142.19 through 142.2, five hulls in 2005), so such a stretch now stands as a group of its own.
-- **Registered life.** It is built from runs of the editions a hull is in and of Hreiðar's years in use (not his
-  placeholder years).
+- **Registered life.** *(Read wrong: `nanoparquet`'s `col_select` shifted Hreiðar's years, decision 144.)* It is built
+  from runs of the editions a hull is in and of Hreiðar's years in use (not his placeholder years).
   - Ends take a day from the lists, the first registration or the `vessel` schema where one falls in the bracket:
     1,835 starts and 810 ends are dated, and 2,327 runs reach 2023-12-19.
   - A hull printed in an edition was on the register that 1 January, so it left after it (GUÐRÚN, 243).

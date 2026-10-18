@@ -145,8 +145,8 @@ the current row, open to 2099-12-31.
   - 380 in the null class.
 - **It ends 2023-12-07.** 5,733 class changes are dated after 2020-07-22.
 
-`reference/vessels/vessel_class.R` already reads it for the trail's leisure flag. That script carries the last class
-after 2023-12-07 unchanged.
+`reference/vessels/vessel_class.R` reads it, through the register, for the trail's leisure flag: kvoti's dated class to
+2023-12-19 and `vessel_operational_hist` after (plan 028 step 7, decision 144).
 
 **`vessel.vessel_operational_hist` continues it from 2023-12-19.** It is written from that day and back-filled to
 1904. Before 1991 every row has no class.

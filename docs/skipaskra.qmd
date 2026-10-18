@@ -180,6 +180,10 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
 ```
 
 - **D3, the period's source,** settled `r fmt(n_rule("D3"))` stretches where the lineages disagree.
+  - mbl's pages of 2023-01 come last: they carry values a hull had years before, such as the call sign 1136 held until
+    2014. They fill only where no other source speaks (decision 144).
+  - For the fisheries class, kvoti comes first in every period: the `vessel` schema's back-fill missed changes kvoti
+    dates, such as Þróunarsjóður (−10) on about 105 hulls a month.
 - **D2, the register's own rules:** `r n_rule("D2", "resolved")` stretches took another lineage's value that keeps the
   rule, and `r n_rule("D2", "open")` stay as printed, open, with no such value.
   - Its error was measured by the maintainer on all 33 decisions D2 made as first built (decision 136): the page
@@ -193,7 +197,8 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
   `r fmt(sum(dec$window_from == "annual"))` within a known year.
 - **Types of ship:** `r fmt(sum(ucp$entries[ucp$basis != "none"]))` of `r fmt(sum(ucp$entries))` printed types map to
   the `vessel` schema's codes: by the code table's names, the schema's own name-code pairs, or the code the schema gives
-  the same hulls, or the maintainer's reading of the few no table maps. `r if (any(ucp$basis == "none")) paste0("No code is found for ", paste(ucp$printed[ucp$basis == "none"], collapse = " and "), " (", sum(ucp$entries[ucp$basis == "none"]), " entries).") else "Every printed type has a code."`
+  the same hulls, or the maintainer's reading. That reading covers types no table maps, and SKEMMTISKIP, a pleasure
+  ship, which the schema's codes would make a fishing vessel (62, not 33). `r if (any(ucp$basis == "none")) paste0("No code is found for ", paste(ucp$printed[ucp$basis == "none"], collapse = " and "), " (", sum(ucp$entries[ucp$basis == "none"]), " entries).") else "Every printed type has a code."`
 
 ## The register after 2023-12-19
 
