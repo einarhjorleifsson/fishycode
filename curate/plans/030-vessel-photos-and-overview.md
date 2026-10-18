@@ -1,7 +1,8 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
-**status:** proposal — measured 2026-10-18 (read-only), nothing built; asks a-g open (TODO 85)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130 and 132,
+**status:** proposal — measured 2026-10-18 (read-only), nothing built; asks a-g answered the same day, each the
+proposed option (decision 137); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132 and 137,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
@@ -343,6 +344,17 @@ The maintainer's call (ask a):
    each one is explained.
 
 ## 6. Asks
+
+**Answered 2026-10-18 (decision 137), each with the proposed option:**
+- a: the laptop first;
+- b: the maintainer looks for the whole set, and the index is built now with the rest `missing`;
+- c: the `.Renviron` token;
+- d: `products/vessel_overview/`;
+- e: names shown, never kennitala, address or phone;
+- f: the raw scripts kept as the record;
+- g: today and the history to 2023-12-19, labelled.
+
+The asks as they were put:
 
 a. **Where does the app run:** the laptop only, an institute server running the R service, or the institute's Shiny
    Server, which would need the Shiny wrapper (§4.7)?
