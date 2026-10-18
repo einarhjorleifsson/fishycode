@@ -4,7 +4,8 @@
 repoint vessel_sign, vessel_class, vessel_year and registry.R to curated/vessel/register/, one at a time, with
 fingerprints before and after"). The three changes to the decision model are the maintainer's choices, asked on the
 way. Built by name at 4b2fdf8: the history in the `once` project, the register and the four readers in the main
-project.*
+project. The AIS chain and trail downstream were rebuilt the same evening at 3aacc9f, on the maintainer's go ("Yes,
+rebuild the 20 outdated targets ... and check the trail's kw_basis and leisure against the old trail afterwards").*
 
 ## What step 7 found in the register first
 
@@ -178,6 +179,9 @@ Only `yh1` and `yh2` change. They are now the first and last year on the registe
 - They were Hreiðar's first and last year keyed on `Skskr.nr.`. Decision 046 found that key auto-incrementing in old
   blocks, which made 164 hulls' ranges wrong.
 - `yh1` is the same on 4,420 hulls and differs on 289. `yh2` is the same on 2,411 and differs on 136.
+- `vessel_identity` (`reference/vessels/identity.R`) reads them to bound a hull's lifetime, so the change reaches the
+  ping union. Its old horizon rule (a `yh2` of 2021, Hreiðar's last year, read as still open) now meets a `yh2` that is
+  NA while the hull is registered.
 
 ### Targets
 
@@ -187,16 +191,56 @@ Only `yh1` and `yh2` change. They are now the first and last year on the registe
 - `vessel_raw` still lists Hreiðar's workbook, which no main script reads now. Dropping it would cascade through
   `mmsi` into the AIS chain for nothing.
 
+## The downstream rebuild
+
+All 20 targets downstream of `vessel.parquet` were rebuilt by name in the main project, from 20:54 to 22:48 UTC:
+- the run ended "ALL DONE", exit 0, and `tar_outdated()` is empty;
+- all 856 files the targets record are new, the 689 curated ones stamped 3aacc9f, not dirty (the 167 staging ping
+  partitions carry no stamp);
+- the longest steps were `ais_trail` (32 min), `ais_ping_clean` (21 min), `ais_catch` (20 min) and `ais_voyage`
+  (15 min);
+- the warnings are decision 129's: the SQL notice on missing values, and the `vid` coercion in `vessel_ais_link`.
+
+Before the build, the old trail and catch were aggregated by vessel and year, and the 856 files fingerprinted.
+- **The chain above the trail changed, though this record first said it would not.** `vessel_identity` reads
+  `yh1`/`yh2`, which the first draft of this record missed: a search for their readers was cut short.
+  - Identity rows go from 5,409 to 5,421; 5,181 windows are unchanged.
+  - 12 of 20 ping-union partitions change, and the trail's fixes from 2019 rise by 74,000 to 101,000 a year: 671,363
+    gained and 7,884 lost, on 26 vessel-years of 10 hulls.
+  - Nine of the ten had an old `yh2` before 2021 from the misread key, and are on the register. Most of the gain is
+    one hull: 2173, TÓMAS ÞORVALDSSON (TFUT), whose MMSI-keyed pings 2019-2026 an old `yh2` of 1995 had shut out
+    (+662,066 fixes). It lands every year 2019-2026.
+  - 7,860 fixes in 2023-2024 move from 1773, struck in 2016, to 7107, which holds the MMSI since 2018.
+- **kW-hours.** Total kW-hours change by at most 0.32 % in any year (2022), mostly through the gained fixes. On
+  fishing fixes (`fishing_flow`), by vessel-year:
+
+  | change | vessel-years | kW-hours before → after (GWh) |
+  |---|---|---|
+  | the same | 23,530 | 11,834 → 11,841 |
+  | within 5 % | 364 | 1.90 → 1.89 |
+  | more than 20 % | 1 | 0.01 → 0.15 |
+  | a kW where there was none | 1 | 0 → 0.01 |
+
+  The one vessel-year over 20 % is 6061 in 2016. The `vessel` schema's history gives it 728 kW that year alone,
+  against 58 in the years either side, in the 2016 PDF and in Hreiðar: a typo in the back-fill. `power_kw` has no
+  other witness, so no rule caught it.
+- **`kw_basis`** on the trail's fixes: `register` 564.8 M, `register_later` 10.5 M, `register_earlier` 1.9 M,
+  `current` 0.2 M (was 72.7 M), `none` 7.6 M (was 7.6 M). The old `hreidar`, `oracle_hist` and `oracle_later` are
+  gone.
+- **Leisure** stays at 1.04 % of all fixes.
+  - By the class: 2,709,204 fixes in 2007-2021 (2,709,231 before), and 621,512 in 2022-2026 (613,681).
+  - By the usage type: 1,626,172 in 2007-2021 (1,721,673) and 748,070 in 2022-2026 (629,259).
+  - The usage changes sit on 71 hulls whose usage code differs between the register and Hreiðar or Oracle: −152,210
+    fixes in 2017, about +60,000 a year in 2021-2023.
+- **The catch** is unchanged in total: every year's kilograms and every approach and basis equal the old to the
+  kilogram. Its rows move with the fixes.
+
 ## Not done
 
-- **The downstream rebuild waits for the maintainer.**
-  - 20 targets are outdated: the AIS chain from `vessel_identity` through `ais_trail` and `ais_catch`, and their checks.
-  - The trail's `kw_basis` and `leisure` and the catch will change.
-  - The chain above the trail reads none of the changed columns. It would rebuild to the same content with new
-    stamps.
 - **The STK key** reads `yh1`/`yh2` and `staging/skipaskra/annual_call_sign.parquet`, frozen in the `once` project. Its
   redo (TODO 25) should read the register's values, with `yh2` NA meaning on the register at the dump.
 - **Left in the register:**
+  - 6061's 728 kW in 2016, a back-fill typo, which a reviewed row (D1) would settle;
   - the class name column (622 rows off their code);
   - mbl's sole values, such as 2730's TFCR in 2023;
   - 12 kvoti stretches starting on its 1901 placeholder, on old hulls before 1920;

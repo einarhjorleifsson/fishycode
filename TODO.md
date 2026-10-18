@@ -454,8 +454,8 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
-**status:** in progress · **needs: maintainer** — the go to rebuild the AIS chain and trail on the repointed readers,
-and plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e (editions outside 2004-2022) · **see:**
+**status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
+(editions outside 2004-2022), and a reviewed row for 6061's 2016 kW (decision 144) · **see:**
 `curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135, 136, 142 and 144, TODO 71
 
 Steps 1-5 are built in the `once` project:
@@ -471,11 +471,11 @@ Steps 6 and 7 are built in the main project (decisions 142, 144): `curated/vesse
 tables for every year, and `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R` read it. The history was rebuilt
 first with mbl last, kvoti first for the class, SKEMMTISKIP as 62 and Hreiðar's years read whole (decision 144).
 
-Waiting: 20 main-project targets are outdated, the AIS chain from `vessel_identity` through `ais_trail` and
-`ais_catch`. The trail's `kw_basis`, `leisure` and the catch will change; the chain above the trail would rebuild to the
-same content. Build only on the maintainer's go.
+The AIS chain and trail were rebuilt on them the same evening (decision 144): kW-hours on fishing fixes equal on
+23,530 vessel-years, leisure 1.04 % of fixes as before, the catch equal to the kilogram, 671,363 fixes gained where
+the old `yh2` shut hulls out.
 
-**check:** the AIS chain and trail rebuilt on the repointed readers, and asks d and e answered or parked.
+**check:** asks d and e answered or parked.
 
 ## 84. A fishing licence history from every witness (plan 029)
 **status:** in progress · **needs: maintainer** — plan 029 §8's asks: where licences are kept after 2020-07-22 and

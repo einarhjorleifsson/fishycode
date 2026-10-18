@@ -5,7 +5,7 @@
 the decision model and rebuilt after the maintainer's check of D2 (97 % error; the GT formula is now a flag) and again
 with mbl last, kvoti first for the class and Hreiðar's years read right, and the `vessel` schema's own history after
 it, in `curated/vessel/register/`; `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R` read it, and the AIS
-chain and trail downstream wait for the maintainer's go; the output takes the `vessel` schema's table structure, not one table, and what public sources print is
+chain and trail are rebuilt on them; the output takes the `vessel` schema's table structure, not one table, and what public sources print is
 kept (maintainer, 2026-10-18); §9 asks d and e open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)
