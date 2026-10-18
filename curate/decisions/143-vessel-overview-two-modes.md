@@ -202,6 +202,13 @@ changed.
   0.5, 1, 2, 5, 10, 20 or 50 km. The cells re-aggregate only when the step changes, and the legend names the step.
   On vid 1977's 2026, the whole grounds show 20 km cells, and zooming in gives 10 km. The colours are viridis, R's
   default ("D"), in six steps.
+  - **On a log scale** ("fishing hours should be displayed on a log-scale"). A cell's colour is the log10 of its hours,
+    cut into six equal steps, since a few cells near port or on a favourite tow hold most of the hours.
+    - The legend gives hours at the two ends, and each colour's range on hovering it. On vid 1977's 2021 with 20 km
+      cells, the scale runs from 0.026 to 664 hours, each colour about 5.4 times the last.
+    - A cell's hover text gives its hours and its pings, read from the cell's points (deck.gl wraps each point when a
+      cell is picked).
+    - A cell under 0.01 h is coloured as 0.01 h, since log10 of 0 has no place on the scale.
 - **The map's frame: the fishing, not the steaming.** "it would then be nice that the 'leaflet' would set the extent
   automatically given the extent of the vessel and time period selected", and then "extent was referring to the default
   'starting' zoom level. if a fishing vessel, the zoom level 'start' would be the fishing events only, not steaming.

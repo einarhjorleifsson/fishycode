@@ -178,11 +178,12 @@ function layers() {
   // fishing hours per hexagon: fixed cells, a quantity and a legend, where a heat map would only smooth (maintainer:
   // "hex-layer instead of heatmap may be better science"). The cells are regular on the Web Mercator map, sized by the
   // zoom (hexKm) and coloured by viridis.
+  // The colour is on a log scale (maintainer, 2026-10-18: "fishing hours should be displayed on a log-scale"): a cell's
+  // log10 of its hours, cut into six equal steps, since a few cells near port or on a favourite tow hold most hours
   if (S.bg === 'hex' && tr.fish.length) L.push(new deck.HexagonLayer({
-    id: 'hex', data: tr.fish, getPosition: (d) => d.p, getColorWeight: (d) => d.h, colorAggregation: 'SUM',
-    getElevationWeight: (d) => d.h, elevationAggregation: 'SUM', extruded: false, radius: 1000 * hexKm(),
-    coverage: 0.94, opacity: 0.7, pickable: true, upperPercentile: 100, colorRange: VIRIDIS,
-    onSetColorDomain: ([lo, hi]) => { $('hexlegend').innerHTML = hexLegend(lo, hi); },
+    id: 'hex', data: tr.fish, getPosition: (d) => d.p, getColorValue: (pts) => Math.log10(Math.max(cellHours(pts), HEX_MIN_H)),
+    extruded: false, radius: 1000 * hexKm(), coverage: 0.94, opacity: 0.7, pickable: true, upperPercentile: 100,
+    colorRange: VIRIDIS, onSetColorDomain: ([lo, hi]) => { $('hexlegend').innerHTML = hexLegend(lo, hi); },
   }));
   L.push(new deck.LineLayer({
     id: 'window-line', data: tr.lineData, getColor: [40, 50, 70, 80], getWidth: 1, widthUnits: 'pixels',
@@ -216,6 +217,7 @@ function getTooltip({ layer, index, object }) {
   if (!layer || !tr) return null;
   if (layer.id === 'pings' || layer.id === 'last') {
     const i = layer.id === 'last' ? tr.n - 1 : index;
+    if (!(i >= 0 && i < tr.n)) return null;   // a pick left from a track no longer loaded
     const head = layer.id === 'last' ? `<b>${esc(S.name)} (${S.vid})</b><br>last position heard<br>` : '';
     const what = tr.fishing[i] ? (qc() ? 'fishing_flow' : 'fishing') : (tr.stay[i] >= 0 ? 'in port' : 'at sea');
     const g = gearAt(tr.t[i], tr.gear[i]);
@@ -224,8 +226,8 @@ function getTooltip({ layer, index, object }) {
       `${what}${gear}<br>${num(tr.lat[i], 4)} N, ${num(tr.lon[i], 4)} E` };
   }
   if (layer.id === 'hex' && object) {
-    const n = object.count ?? object.points?.length ?? 0;
-    return { html: `<b>${num(object.colorValue, 1)} fishing hours</b><br>${n} fishing pings in this hexagon (${hexKm()} km)` };
+    const pts = object.points || [];
+    return { html: `<b>${fmtHours(cellHours(pts))} fishing hours</b><br>${pts.length} fishing pings in this hexagon (${hexKm()} km)` };
   }
   if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage}` : 'the track between ports' };
   if (layer.id === 'stations' && object) return { html: `haul on ${esc(object.day)}, ${esc(object.gear)}, ${num(object.kg)} kg<br>gear in ${fmt(object.t1)}, out ${fmt(object.t4)}` };
@@ -502,7 +504,15 @@ function hexKm() {
   const km = (12 * mpp) / 1000;
   return HEX_STEPS.reduce((b, x) => (Math.abs(Math.log(x / km)) < Math.abs(Math.log(b / km)) ? x : b));
 }
-const hexLegend = (lo, hi) => `fishing hours per ${hexKm()} km hexagon: ${num(lo, 1)} ${HEXCOL.map((c) => `<span class="sw" style="background:${c};margin:0"></span>`).join('')} ${num(hi, 1)}`;
+const HEX_MIN_H = 0.01;   // a cell of less, a ping or two of a few seconds, is coloured as 0.01 h: log10 of 0 has no place
+const cellHours = (pts) => pts.reduce((s, d) => s + ((d.source || d).h || 0), 0);   // a picked cell wraps its points
+const fmtHours = (x) => (x < 10 ? Number(x.toPrecision(2)).toString() : Math.round(x).toLocaleString('en-GB'));
+// the legend in hours: the ends of the scale, and each colour's range on hovering it
+const hexLegend = (lo, hi) => {
+  const step = (hi - lo) / HEXCOL.length, at = (k) => fmtHours(10 ** (lo + k * step));
+  return `fishing hours per ${hexKm()} km hexagon, log scale: ${at(0)} ${HEXCOL.map((c, k) =>
+    `<span class="sw" style="background:${c};margin:0" title="${at(k)} to ${at(k + 1)} hours"></span>`).join('')} ${at(HEXCOL.length)}`;
+};
 function showBg() {
   $('hexlegend').style.display = S.bg === 'hex' ? '' : 'none';
   $('bg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.bg === S.bg));
