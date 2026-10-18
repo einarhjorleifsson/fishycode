@@ -124,9 +124,27 @@ Plan 028 step 5's checks, one by one:
 - the reader fixes moved a few others (`callsign_list` −2, `change_unexplained` −4, `rule_callsign_short` +1,
   `rule_gt_formula` −2).
 
+## Amended 2026-10-18: two changes, coded and checked in scratch, not yet built
+
+- **The maintainer's codes for the two unmapped types**, a reviewed input
+  (`overrides/usage_category_printed_reviewed.csv`, part of the `once` file target `skipaskra_reviewed`):
+  - OLÍUSKIP, an oil vessel, is code 48, OLÍUFLUTNINGASKIP;
+  - BRUNNBÁTUR, a special cargo vessel, a well-boat possibly serving aquaculture, is code 67, FLUTNINGA/BRUNNSKIP.
+
+  The reading takes precedence over the other bases, and all 43,416 printed types now map.
+- **D2 no longer takes the ufs journal's superseded versions** as another lineage's value. The page crops prepared
+  for the person's check showed that 28 of the 33 replacements came only from them, values the history never uses
+  as a witness elsewhere.
+  - In scratch, D2 replaces 5 values, all 2022 GTs where the current `ufs.skipasaga` disagrees with the print.
+  - 207 stretches stay open, where 200 did.
+  - 880,049 of 880,054 PDF values equal the history on their 1 January.
+
+The rebuild waits for the maintainer's verdicts on the 33 values, so that D2 is settled once.
+
 ## Not done
 
-- **D2's sample**, checked by a person against the page images, and its error rate printed (plan 028 §6.3).
+- **D2's sample**, checked by a person against the page images, and its error rate printed (plan 028 §6.3). The crops
+  of the 33 values are ready; the rebuild with the two amendments follows the verdicts.
 - **Step 6, the live part** from 2023-12-19 in the main project, and **step 7**, repointing `vessel_sign`,
   `vessel_class`, `vessel_year` and `registry.R`.
 - **Asks d and e** (the MMSI lists `mmsi.R` does not read; editions outside 2004-2022).

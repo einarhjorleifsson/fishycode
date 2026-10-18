@@ -186,8 +186,7 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
   `r fmt(sum(dec$window_from == "annual"))` within a known year.
 - **Types of ship:** `r fmt(sum(ucp$entries[ucp$basis != "none"]))` of `r fmt(sum(ucp$entries))` printed types map to
   the `vessel` schema's codes: by the code table's names, the schema's own name-code pairs, or the code the schema gives
-  the same hulls. No code is found for `r paste(ucp$printed[ucp$basis == "none"], collapse = " and ")`
-  (`r sum(ucp$entries[ucp$basis == "none"])` entries).
+  the same hulls, or the maintainer's reading of the few no table maps. `r if (any(ucp$basis == "none")) paste0("No code is found for ", paste(ucp$printed[ucp$basis == "none"], collapse = " and "), " (", sum(ucp$entries[ucp$basis == "none"]), " entries).") else "Every printed type has a code."`
 
 ## Not checked here
 

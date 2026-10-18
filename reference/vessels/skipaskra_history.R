@@ -8,6 +8,7 @@
 #         curated/vessel/mmsi.parquet                        the MMSI archive's windows (plan 016)
 #         raw/oracle/vessel/{vessel,usage_category}.parquet  vessel_id, and the usage code table
 #         overrides/skipaskra_reviewed.csv                   a person's decisions (D1)
+#         overrides/usage_category_printed_reviewed.csv      a person's codes for printed types no table maps
 # Output: curated/vessel/skipaskra/<table>.parquet, for vessel_hist, vessel_identification_hist, vessel_measurement_hist,
 #         vessel_engines_hist, vessel_operational_hist, vessel_owners_hist, vessel_fishery_hist, vessel_mmsi_hist and
 #         vessel_event; registered.parquet, each hull's runs on the register; usage_category_printed.parquet, the
@@ -121,7 +122,9 @@ cand <- bind_rows(cand, blank |> left_join(HIST, by = c("table", "column")) |>
 message("blanks: ", nrow(blank), " fields an edition prints and an entry leaves empty, read as none")
 
 ## D2: the register's own rules ------------------------------------------------------------------------------------------
-other <- cm |> filter(!lineage %in% c("register", "hreidar", "observation"))
+# another lineage's value, as it stands: the ufs journal's superseded versions are no witness (28 of D2's first 33
+# replacements came only from them)
+other <- cm |> filter(!lineage %in% c("register", "hreidar", "observation"), source != "ufs.skipasaga_jn")
 br <- bind_rows(
   reg |> filter(!is.na(imo), !imo_ok(imo)) |> transmute(vid, edition, table = "vessel_hist", column = "imo_no", why = "imo_check_digit"),
   reg |> filter(!is.na(length_reg), length_reg < 15, !is.na(gt), !is.na(breadth)) |>
@@ -459,13 +462,17 @@ same <- reg |> filter(edition != 2020, !is.na(ship_type)) |> transmute(vid, d = 
                transmute(vid, t1, t2, no = as.integer(value)), by = "vid", relationship = "many-to-many") |>
   filter(t1 <= d, is.na(t2) | t2 >= d) |> count(key, no) |> group_by(key) |> mutate(share = n / sum(n)) |>
   slice_max(n, n = 1, with_ties = FALSE) |> ungroup() |> filter(share >= 0.5)
+# first: the maintainer's reading of types no table maps (overrides/usage_category_printed_reviewed.csv)
+rvu <- utils::read.csv("overrides/usage_category_printed_reviewed.csv", colClasses = "character", encoding = "UTF-8") |>
+  transmute(key = key_txt(printed), no_review = as.integer(usage_category_no), review = paste0("reviewed (", reviewer, ", ", date, ")"))
 usage_category_printed <- reg |> filter(!is.na(ship_type)) |> count(printed = ship_type, name = "entries") |>
   mutate(key = key_txt(printed)) |>
+  left_join(rvu, by = "key") |>
   left_join(uc |> rename(no_code = usage_category_no), by = "key") |>
   left_join(pairs |> select(key, no_pair = no), by = "key") |>
   left_join(same |> select(key, no_same = no, share), by = "key") |>
-  mutate(usage_category_no = coalesce(no_code, no_pair, no_same),
-         basis = case_when(!is.na(no_code) ~ "the code table's name", !is.na(no_pair) ~ "the `vessel` schema's own pairs",
+  mutate(usage_category_no = coalesce(no_review, no_code, no_pair, no_same),
+         basis = case_when(!is.na(no_review) ~ review, !is.na(no_code) ~ "the code table's name", !is.na(no_pair) ~ "the `vessel` schema's own pairs",
                            !is.na(no_same) ~ paste0("the `vessel` schema's code for the same hulls (", round(100 * share), " %)"),
                            TRUE ~ "none")) |>
   select(printed, entries, usage_category_no, basis) |> arrange(desc(entries))
@@ -592,7 +599,8 @@ print(decision |> count(table, status, rule) |> pivot_wider(names_from = status,
 inputs <- c(fd_curated("vessel", "skipaskra", "evidence.parquet"), fd_curated("vessel", "mmsi.parquet"),
             file.path(fd_staging("skipaskra"), c("register.parquet", "event.parquet", "annual_call_sign.parquet")),
             fd_staging("hreidar", "vessel_year.parquet"),
-            fd_raw("oracle", "vessel", c("vessel.parquet", "usage_category.parquet")), "overrides/skipaskra_reviewed.csv")
+            fd_raw("oracle", "vessel", c("vessel.parquet", "usage_category.parquet")), "overrides/skipaskra_reviewed.csv",
+            "overrides/usage_category_printed_reviewed.csv")
 w <- function(d, name) write_curated(d, fd_curated("vessel", "skipaskra", paste0(name, ".parquet")), inputs = inputs)
 for (tab in TABLES) w(out[[tab]], tab)
 w(vessel_owners_hist, "vessel_owners_hist")

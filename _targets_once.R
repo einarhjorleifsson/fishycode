@@ -242,7 +242,8 @@ list(
 
   # The history to 2023-12-19, chosen by the decision model (plan 028 step 5, decision 136). A person's decisions
   # re-enter as an input (D1).
-  tar_target(skipaskra_reviewed, "overrides/skipaskra_reviewed.csv", format = "file"),
+  tar_target(skipaskra_reviewed, c("overrides/skipaskra_reviewed.csv", "overrides/usage_category_printed_reviewed.csv"),
+             format = "file"),
   tar_target(skipaskra_history, {
     skipaskra_evidence; skipaskra_register; skipaskra_event; hreidar_vessel_year; register_oracle; main_mmsi
     skipaskra; skipaskra_reviewed
