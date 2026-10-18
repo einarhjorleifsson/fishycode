@@ -487,14 +487,16 @@ reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 
 ## 85. Vessel photos from mbl and an internal vessel overview app (plan 030)
 **status:** open · **needs: maintainer** — plan 030 §6's asks: where the app runs (a), the whole photo set or a new
-scrape (b), the Mapbox token (c), where the app's code lives (d), owner names shown (e), the raw scrape scripts (f),
+scrape (b), the basemap token (c), where the app's code lives (d), owner names shown (e), the raw scrape scripts (f),
 the register panel before plan 028 step 6 (g) · **see:** `curate/plans/030-vessel-photos-and-overview.md`, plan 028
 §3.6 and §7, plan 001, decisions 049 and 105
 
 The 1,000 mbl photo files in `raw/external/skipaskra/jpg/` are about a quarter of the 2022 scrape and not yet in the
 flow. Plan 030 indexes them by vid in `staging/mbl/photo.parquet`, moves the scrape code to `dump/`, and specifies an
-internal Shiny overview per vessel (photo, register, landings, logbook, a mapdeck map of the latest trail). The photos
-are a newspaper's images: internal use only, never published. Nothing is built.
+internal overview per vessel: photo, register, landings, logbook, and a map linked to a time-speed plot by a time
+slider. It is a JavaScript page over a thin R service, so that it stays responsive (maintainer). The photos are a
+newspaper's images: internal use only, never published. Nothing is built.
 
-**check:** `staging/mbl/photo.parquet` built with one row per file and per logged download, and the app opening for
-vids 2757, 3739 and 2652 where ask a says, with no personal column read; or the plan parked.
+**check:** `staging/mbl/photo.parquet` built with one row per file and per logged download; the app opening for vids
+2757, 3739 and 2652 where ask a says, with no personal column served, and redrawing in under 50 ms on vid 1977's
+2025; or the plan parked.

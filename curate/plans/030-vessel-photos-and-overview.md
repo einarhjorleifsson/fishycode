@@ -7,15 +7,23 @@
 Drafted with AI assistance (Claude) on 2026-10-18, at the maintainer's request, relayed by the plan 028 session. The
 numbers below were measured by Claude (AI). A person has not yet checked them.
 
-**Why** (maintainer, 2026-10-18). An internal Shiny overview of one vessel at a time:
+**Why** (maintainer, 2026-10-18). An internal overview of one vessel at a time:
 - its photo;
 - the latest register entry;
 - the latest landings;
 - the latest logbook trips and stations;
-- a mapdeck map of its latest AIS trail.
+- a map of its latest AIS trail.
+
+Asked first as a Shiny app with a mapdeck map. The maintainer then added (the same day): linked views, so that a map
+and a dygraph-type time-speed plot are tied together with a time slider. "The main thing is that [it] is responsive",
+and the app may be better written directly in JavaScript, without Shiny in the middle. §4 follows that.
 
 The photos must first enter the flow as an index a consumer can join on `vid`. The app's uses (checking a vessel
 while reviewing the key, the register history or a trip) are named here, not measured.
+
+A predecessor exists: the Shiny app in `ShinyApps/skipaskra/` on the institute share (2026-03-02). It read
+landings and logbooks live from Oracle, the old trail's `.rds` files and the thumbnails from `~/stasi/skipaskra/jpg/`
+on the server. The maintainer does not count it as a model ("may be not my best example"), so it is not one here.
 
 **Measured** (read-only, 2026-10-18, on the build of 2026-10-17):
 - every file in `raw/external/skipaskra/jpg/`: size, pixel size, EXIF (R's `magick`);
@@ -23,14 +31,16 @@ while reviewing the key, the register history or a trip) are named here, not mea
 - photo coverage against `staging/mbl/register_2023-01`, `staging/samgongustofa/register_2022-12-28` and
   `curated/vessel/vessel.parquet`;
 - each panel's table: its schema, how recent it is, and the time to read one vessel's latest rows through DuckDB, for
-  three vessels: vid 2757 (most pings in 2026-09), 3739 (median), 2652 (silent since 2024).
+  three vessels: vid 2757 (most pings in 2026-09), 3739 (median), 2652 (silent since 2024);
+- the size of one vessel's year of trail, the payload a browser would hold.
 
 Scripts and output are in scratch only. Nothing was written under `$FISHYDATA`.
 
 **Assumed:**
 - the 1,000 files are a capped copy of a set about four times larger (§1.3);
 - timings on a cold cache, or on another machine, are of the same order as those measured;
-- mapdeck draws a vessel-month of trail without thinning.
+- a browser draws and filters a vessel-year (up to about 150,000 pings) on the GPU without lag. This is deck.gl's
+  stated range, not tested here.
 
 ## 1. The photos as they are
 
@@ -75,8 +85,13 @@ Scripts and output are in scratch only. Nothing was written under `$FISHYDATA`.
 - About 42 % of the logged vids in every thousand have a file. 538 of 2,120 photos (25 %) are on disk, and 462 of
   the 2,120 thumbnails (22 %). That fits 1,000 files taken from about 4,240 in no name order.
 - Assumed: a copy capped at 1,000 files, made before or during the move into `~/stasi/skipaskra`. Where the whole
-  set is was not checked. The Trash is closed to Claude, and `/Volumes/einarhj` is not mounted on this host
-  (HAFRO-EINARHJ-2). Ask b.
+  set is was not found:
+  - the Trash is closed to Claude;
+  - the institute share (`/Volumes/einarhj`) has no `stasi/skipaskra/`;
+  - the predecessor app reads `~/stasi/skipaskra/jpg/` on the Shiny server, whose home is `/home/haf/einarhj`. Not
+    known: whether that home is the share (with the folder gone since) or another disk.
+
+  Ask b.
 - 529 of the 531 logged photos on disk have the logged byte count, so they are the downloads. The other two are
   defects:
   - `0078-0001.jpg` is 120 × 90 px, 34.7 KB, against 330,685 bytes logged. It is thumbnail-sized under a photo's
@@ -164,15 +179,64 @@ target `mbl_photo`.
 
 ## 4. Proposed: the vessel overview app
 
-### 4.1 Where its code lives
+### 4.1 Its shape: the browser does the work, the server only reads
 
-`products/vessel_overview/app.R`. AGENTS.md's `products/` holds the consumers of the sweep. The code is public, like
-the rest of the repo; it holds no data, names, image or token.
+"The main thing is that [it] is responsive" (maintainer). So every interaction runs in the browser, on data the
+browser already holds: dragging on the time-speed plot, the time slider, hovering, playing the track. The server is
+asked once per vessel, and again only for an earlier year. It is never asked during an interaction. A Shiny input
+goes to the server and back on every change, and this shape avoids that.
+
+**The front end** is one page in plain JavaScript (ES modules, no build step). Its libraries are pinned and kept
+beside the page, since the app runs inside the institute's network:
+- **The map:** deck.gl over MapLibre GL JS. deck.gl is the engine mapdeck wraps. Pings are drawn as points and
+  voyages as paths. The time window filters on the GPU (deck.gl's `DataFilterExtension`), so moving the slider
+  redraws without sending data again.
+- **The time-speed plot:** uPlot, which works like dygraphs and draws a canvas of 10^5-10^6 points with drag-to-zoom.
+  dygraphs itself would do, if the maintainer prefers it. Both are MIT-licensed.
+- **The tables** (register, landings, logbook) are plain HTML, and the photo is an image.
+- **The data** arrive as Apache Arrow, read by `apache-arrow` in the browser: columns, with no JSON to parse.
+
+**The server** is a thin R service in fishycode (`httpuv`, or `plumber`) with fixed endpoints. The browser sends no
+SQL, only the vessel and the year:
+- the vessel list for the search: vid, name, call sign, MMSI;
+- one vessel's register, landings, logbook, photos, and one year of trail.
+
+It runs DuckDB on `curated/` in place, through `R/paths.R`, so the 19 GB trail is not copied. The column allowlist of
+§4.5 lives in its queries.
+
+**Two alternatives, not proposed:**
+- *DuckDB in the browser (DuckDB-WASM) reading the parquet files over HTTP.* The browser would then reach the files
+  themselves, every column included, kennitala among them. An extract without the personal columns would be a second
+  copy of the trail.
+- *Shiny.* It stays only as a wrapper, if the app must run on the institute's Shiny Server (ask a). The same page
+  would then be one custom component, with Shiny only delivering the data, as the R service does. The front end is
+  the same either way.
+
+### 4.2 The linked views
+
+The maintainer's "crosstab" is read here as linked views. All the views share one state: the vessel, the time window,
+the time under the cursor, and the selected voyage or trip. Each view reads that state and writes it:
+- a drag on the time-speed plot, or the slider, sets the window. The map shows the window's pings and fades the rest;
+- hovering on the plot puts a marker on the map at that ping, and hovering on the map puts a cursor line on the plot;
+- the slider has a play button that moves the window along the track;
+- a click on a landing, trip or station in the tables sets the window to its span (a trip's `T1`-`T2`, a station's
+  window) and lights its stations on the map;
+- both views colour alike, by `fishing_flow`, gear or phase.
+
+Later, if wanted: a box drawn on the map lights its pings on the plot.
+
+### 4.3 Where its code lives
+
+`products/vessel_overview/`: `server.R` for the R service and `www/` for the page, its script and the pinned
+libraries. AGENTS.md's `products/` holds the consumers of the sweep.
+- The code is public, like the rest of the repo. It holds no data, name, image or token.
+- It is the repo's first JavaScript. AGENTS.md's coding conventions are R conventions, so the page needs a short
+  convention of its own: modules, no build step, pinned libraries.
 - It is not a target, and not in `R/`, which `targets` sources wholesale.
 - It is not in `docs/`, since `products/publish.R` copies the rendered site to a public web page.
 - The alternative is `~/stasi/fishyshiny/`, where the review apps live. It is outside git (ask d).
 
-### 4.2 The panels, their tables, and what "latest" means
+### 4.4 The panels, their tables, and what "latest" means
 
 | panel | reads | latest | one vessel, measured |
 |---|---|---|---|
@@ -181,54 +245,60 @@ the rest of the repo; it holds no data, names, image or token.
 | register, history | `curated/vessel/skipaskra/*_hist`, `vessel_event` (3.6-36 k rows each), keyed on `registration_no`, the vid | the window holding the date shown | under 0.01 s |
 | landings | `curated/landing/landings.parquet` (2.2 M) and `catch.parquet` (8.2 M), joined on (`.lid`, `schema`) | `date`, to 2026-10-14 | the last 20 and their catch: 0.01 s |
 | logbook | `curated/logbook/trip.parquet` (1.85 M), `station.parquet` (7.3 M), `catch.parquet` (17 M), on (`.tid`, `schema`) and (`.sid`, `schema`); `twin` `duplicate` left out (decision 094) | `T2`, to 2026-10-16 | the last 10 trips, their stations and catch: 0.05 s |
-| map | `curated/ais/trail/year=*/month=*` (585 M rows, 19 GB) | `max(time)` for the vid over all partitions, then that month | `max(time)`: 0.13 s; the month: under 0.01 s |
+| map and time-speed plot | `curated/ais/trail/year=*/month=*` (585 M rows, 19 GB) | the year of the vid's `max(time)`, with the window on its last month | `max(time)`: 0.13 s; the busiest year: 0.07 s |
 
-Measured on this laptop, with the files in the OS cache. A cold start was not measured.
+Measured on this machine, with the files in the OS cache. A cold start was not measured.
 
 - **The register's history stops on 2023-12-19.** Plan 028 step 6, the live part, is not built. Until it is, the
   panel shows `vessel.parquet` for today and the history to 2023-12-19, each labelled with its date (ask g).
 - **The trail is cheap per vessel.** 233 partition files, 2007-2026, one per month. Each file is sorted by `vid`, with
   a median of 22 row groups, so a vid filter reads one or two of them.
-  - A vessel-month since 2024: median 479 pings, 99 % under 16,149, max 20,637. Over all years the max is 47,738
-    (vid 2800, 2013-06).
+- **A year of one vessel fits in the browser.**
+  - Pings per vessel-year: in 2025 a median of 1,558, 99 % under 131,415, and at most 147,432 (vid 1977). 2024 is
+    alike (median 2,120, max 134,208). The most in any year is 342,826 (vid 2800, 2014).
+  - The busiest year of 2025 reads in 0.07 s. Its time, position, speed, fishing flag, voyage and stay are 4.3 MB as
+    plain columns, and 1.7 MB as zstd-compressed parquet.
+  - A vessel-month since 2024: median 479 pings, max 20,637.
   - The months 2026-07 to 2026-10 hold 0.55-0.98 M pings, against 2.4-5.1 M in the months before, with as many
     vessels. The latest trail is the sparsest. The cause was not measured.
 - **Names for codes.** Gear and port come from `curated/reference/gear` and `port`. There is no species reference
   (TODO 10), so species show as codes until it is built.
 - **A vessel is chosen** by vid, name, call sign or MMSI. Names are for reading only; the app keys on `vid`.
-- **The map:** the latest month's track as a path per voyage, coloured by `fishing_flow`, with time, speed and gear
-  on hover; the latest trips' logbook stations as a second layer; the vessel's stays in port.
+- **The map's layers:** pings and voyage paths, the latest trips' logbook stations, and the vessel's stays in port.
 
-### 4.3 Persons and the photos: what the app shows
+### 4.5 Persons and the photos: what the app shows
 
 Decided here; the maintainer can overrule (ask e):
 - **Never shown:** kennitala (`vessel_owners_hist.national_identity_no`, `vessel_fishery_hist.identity_no`),
-  addresses, postal codes, phone numbers, web pages, and the EXIF copyright strings. The app's readers select named
-  columns (an allowlist), so these columns never enter the R session. A test checks the app's column lists against
-  a list of the personal columns.
+  addresses, postal codes, phone numbers, web pages, and the EXIF copyright strings. The service's queries select
+  named columns (an allowlist), so these columns never leave the server. A test checks the service's column lists
+  against a list of the personal columns.
 - **Shown:** the owner's and operator's names as the register prints them; the photographer (`exif_artist`) as a
   credit, with "mbl.is, 200 mílur" as the source.
-- **The photos are a newspaper's images, for internal use only.** They never go into the repo, `docs/`, `fishyweb`
-  or a release. No screenshot showing a photo goes into a plan, decision or docs page. The app is not reachable from
-  outside MFRI.
+- **The photos are a newspaper's images, for internal use only.** The service sends them from `$FISHYDATA`. They
+  never go into the repo, `docs/`, `fishyweb` or a release. No screenshot showing a photo goes into a plan, decision
+  or docs page. The app is not reachable from outside MFRI.
 - **Nothing leaves `$FISHYDATA`** (plan 001 §3). The app reads and writes nothing there.
 
-### 4.4 The Mapbox token
+### 4.6 The basemap and the Mapbox token
 
-mapdeck needs a Mapbox token, and its basemap sends the token to the browser.
-- The token is never in the repo (plan 001 §4: the committed one was revoked on 2026-10-16).
+deck.gl draws the data. The basemap under it is a MapLibre style.
+- A Mapbox style needs a token, and the browser receives it. It is a public `pk.` token, built for that.
+- The token is never in the repo (plan 001 §4: the committed one was revoked on 2026-10-16). The service reads
+  `MAPBOX_TOKEN` from the environment and hands it to the page when it loads.
 - `MAPBOX_TOKEN` is set in both the project's `.Renviron` and `~/.Renviron` (names checked, not values). R started in
   the repo reads the project's `.Renviron`.
 - Whether that value is the token made after 2026-10-16, and whether it is restricted to the app's URL, is the
-  maintainer's to say (ask c).
-- If there is no token, leaflet needs none, as `~/stasi/fishyshiny/` does.
+  maintainer's to say. A basemap that needs no token is the alternative (ask c).
 
-### 4.5 Where it runs
+### 4.7 Where it runs
 
 The maintainer's call (ask a):
-- **On the laptop** (`shiny::runApp()`, 127.0.0.1): the case measured here.
-- **On an MFRI Shiny server:** the tables the app reads (about 19 GB of trail, 0.3 GB of tables, the photos) would
-  have to be on that server, and access limited to MFRI.
+- **On the laptop:** the R service on 127.0.0.1, with the browser on the same machine. This is the case measured here.
+- **On an institute server:** the R service there, with the curated tables it reads (about 19 GB of trail, 0.3 GB of
+  tables, the photos), and access limited to MFRI.
+- **On the institute's Shiny Server**, which is in use (`ShinyApps/` on the share): it hosts Shiny apps only, so there
+  the page runs inside the Shiny wrapper of §4.1.
 
 ## 5. Steps
 
@@ -238,27 +308,33 @@ The maintainer's call (ask a):
 2. **The dump script**: `dump/vessels/mbl.R`, written from the two 2022 scripts, not run.
    **Check:** for five vids, the URLs and file names the script would use match the 2022 logs', checked without
    sending a request.
-3. **The app**: `products/vessel_overview/app.R`, with the column allowlist and its test.
+3. **The R service**: `products/vessel_overview/server.R`, its endpoints, the column allowlist and its test.
+   **Check:** the personal-column test passes; each endpoint answers for vids 2757, 3739 and 2652 within the times
+   of §4.4.
+4. **The page**: `products/vessel_overview/www/`, the linked views of §4.2.
    **Check:**
    - it opens for vids 2757, 3739 and 2652, and each panel shows its latest rows with their date;
    - a vessel with no photo, no logbook trip (3739) or no trail since 2024 (2652) shows an empty panel that says so;
-   - the personal-column test passes.
-4. **The whole photo set**, if ask b finds it or allows a new scrape. **Check:** the index has no `missing` row, or
+   - responsive, measured in the browser (`performance.now()`) on the busiest year of 2025 (vid 1977, 147,432
+     pings): a slider move or a drag redraws both views in under 50 ms.
+5. **The whole photo set**, if ask b finds it or allows a new scrape. **Check:** the index has no `missing` row, or
    each one is explained.
 
 ## 6. Asks
 
-a. **Where does the app run:** the laptop only, or an MFRI Shiny server (which)?
+a. **Where does the app run:** the laptop only, an institute server running the R service, or the institute's Shiny
+   Server, which would need the Shiny wrapper (§4.7)?
 
 b. **The whole photo set.** The scrape logged 2,120 photos (500 MB), and 1,000 files came in. Is the original `jpg/`
    on the Linux machine that ran the scrape (R 4.2.2, 2022-12-27/28), or in the `skipaskra` folder in the Trash? If
    neither, is a new scrape of mbl wanted (every image per vessel, with captions and credits if the page prints
    them), and is it acceptable to scrape the newspaper's site again for internal use?
 
-c. **The Mapbox token:** is the project `.Renviron`'s `MAPBOX_TOKEN` the token made after 2026-10-16, and is it
-   restricted to the app's URL? Or should the map use leaflet, which needs no token?
+c. **The basemap:** is the project `.Renviron`'s `MAPBOX_TOKEN` the token made after 2026-10-16, and is it restricted
+   to the app's URL? Or should the basemap be one that needs no token?
 
-d. **Where the app's code lives:** `products/vessel_overview/` in fishycode (proposed), or `~/stasi/fishyshiny/`?
+d. **Where the app's code lives:** `products/vessel_overview/` in fishycode, the repo's first JavaScript (proposed),
+   or `~/stasi/fishyshiny/`?
 
 e. **Owner and operator names in the app:** shown (proposed) or not? Kennitala, addresses and phone numbers are never
    shown.
