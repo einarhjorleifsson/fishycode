@@ -2,7 +2,7 @@
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
 written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3-4 not started:
-a prototype of DuckDB in the browser is measured (§4.1) and ask h waits for the maintainer; asks a-g answered
+ask h answered after a prototype (§4.1): the R service serves, DuckDB-WASM in the page reads; asks a-h answered
 (decision 137); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
 · **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137 and 138,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
@@ -202,7 +202,8 @@ beside the page, since the app runs inside the institute's network:
 - **The time-speed plot:** uPlot, which works like dygraphs and draws a canvas of 10^5-10^6 points with drag-to-zoom.
   dygraphs itself would do, if the maintainer prefers it. Both are MIT-licensed.
 - **The tables** (register, landings, logbook) are plain HTML, and the photo is an image.
-- **The data** arrive as Apache Arrow, read by `apache-arrow` in the browser: columns, with no JSON to parse.
+- **The data** arrive as parquet, one response per panel, read by DuckDB-WASM in the page (ask h): columns, with no
+  JSON to parse.
 
 **The server** is a thin R service in fishycode (`httpuv`, or `plumber`) with fixed endpoints. The browser sends no
 SQL, only the vessel and the year:
@@ -242,10 +243,10 @@ page would read the parquet files itself over HTTP, and the R service would shri
   - Drawing is the same in both designs. With 147,432 pings, moving the time filter redrew in a median of 8-25 ms.
     The embedded browser pane holds back frames while it is not looked at, so the first-draw times it gave (0.6 s
     and 23 s) are not measurements.
-- *Recommended (Claude): both, each where it is strong.* The R service chooses and serves the rows (fixed endpoints,
+- *Chosen (ask h, decision 137 amended): both, each where it is strong.* The R service chooses and serves the rows (fixed endpoints,
   the column allowlist, 17 KB to 1.7 MB a vessel-year), and DuckDB-WASM in the page reads that response. The
   prototype's service column did exactly this (`registerFileBuffer`). The page can then run its own SQL on the
-  vessel's rows (by voyage, gear or month) with no further request. The maintainer chooses (ask h).
+  vessel's rows (by voyage, gear or month) with no further request.
 
 **An alternative not proposed: Shiny.** It stays only as a wrapper, if the app must run on the institute's Shiny
 Server (ask a). The same page would then be one custom component, with Shiny only delivering the data, as the R
@@ -421,4 +422,5 @@ g. **The register panel until plan 028 step 6:** `vessel.parquet` for today and 
    labelled (proposed), or wait for step 6?
 
 h. **The R service, DuckDB in the browser, or both** (§4.1, measured 2026-10-18)? Recommended: both, the R service
-   serving the vessel's rows and DuckDB-WASM in the page reading them. Open.
+   serving the vessel's rows and DuckDB-WASM in the page reading them. **Answered 2026-10-18: both** (decision 137,
+   amended).

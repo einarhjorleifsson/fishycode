@@ -487,8 +487,7 @@ reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 
 ## 85. Vessel photos from mbl and an internal vessel overview app (plan 030)
 **status:** in progress · **needs: maintainer** — the go for a pilot scrape of five vessels (step 2), the search for
-the whole photo set (ask b), and ask h (the R service, DuckDB in the browser, or both; measured in plan 030 §4.1);
-asks a and c-g answered (decision 137) · **see:** `curate/plans/030-vessel-photos-and-overview.md`,
+the whole photo set (ask b); asks a and c-h answered (decision 137) · **see:** `curate/plans/030-vessel-photos-and-overview.md`,
 plan 028 §3.6 and §7, plan 001, decisions 049, 105, 137 and 138
 
 The 1,000 mbl photo files in `raw/external/skipaskra/jpg/` are about a quarter of the 2022 scrape. Plan 030 indexes
