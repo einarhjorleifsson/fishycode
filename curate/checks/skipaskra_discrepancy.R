@@ -554,7 +554,7 @@ F$licence_use <- bind_rows(
 # Count, write ------------------------------------------------------------------------------------------------------------
 disc <- bind_rows(F) |>
   mutate(status = "unsettled", rule = NA_character_, value_chosen = NA_character_) |>
-  arrange(kind, check, vid, edition, date)
+  arrange(kind, check, vid, edition, date, table, column, value, source, value_other, source_other, detail)   # a fixed order
 CHECKS <- c("total", "table_sum", "number_list", "callsign_list", "aggregate_class", "aggregate_events",
             "rule_callsign_short", "rule_imo_check_digit", "rule_imo_missing", "rule_gt_formula", "rule_nt_formula",
             "rule_year_after_edition", "vocabulary", "unique_call_sign", "unique_district", "identical_editions",

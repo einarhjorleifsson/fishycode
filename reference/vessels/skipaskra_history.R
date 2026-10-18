@@ -304,7 +304,7 @@ st <- dbGetQuery(con, sprintf("
      AND (w.a IS NULL OR w.a <= a.d) AND (w.b IS NULL OR w.b >= a.d)),
   per AS (
     SELECT sid, d, any_value(clin) AS clin, list_distinct(list(lin)) AS lins, list_distinct(list(lin) FILTER (WHERE ag)) AS agl,
-           string_agg(DISTINCT value, '; ') FILTER (WHERE NOT ag) AS alt
+           string_agg(DISTINCT value, '; ' ORDER BY value) FILTER (WHERE NOT ag) AS alt
     FROM j GROUP BY sid, d)
   SELECT sid, d, len(list_distinct(list_append(lins, clin))) AS n_lin, len(list_distinct(list_append(agl, clin))) AS n_agr, alt FROM per",
   agree_sql))
@@ -316,7 +316,7 @@ st <- anc |> select(sid, d) |> left_join(st, by = c("sid", "d")) |>
 ss <- st |> group_by(sid) |>
   summarise(n_lineages = max(n_lin), n_agree = min(n_agr[n_lin == max(n_lin)]),
             any_disp = any(a_status == "disputed"), any_agreed = any(a_status == "agreed"),
-            alternatives = paste(head(unique(unlist(strsplit(na.omit(alt), "; "))), 5), collapse = "; "), .groups = "drop")
+            alternatives = paste(head(sort(unique(unlist(strsplit(na.omit(alt), "; ")))), 5), collapse = "; "), .groups = "drop")
 seg <- seg |> left_join(ss, by = "sid") |>
   mutate(status = case_when(grepl("D1", rule) ~ "reviewed",
                             grepl("D2_open", rule) ~ "open",
