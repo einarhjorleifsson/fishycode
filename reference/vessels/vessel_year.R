@@ -85,7 +85,8 @@ p_kw     <- full_join(p_kw, p_eng, by = c("vid", "year")) |>
          kw = if_else(use_e, e, kw), kw_source = if_else(use_e, e_source, kw_source), kw_basis = if_else(use_e, "register", kw_basis)) |>
   select(vid, year, kw, kw_basis, kw_source)
 p_loa    <- pick(loa, "loa")
-seg <- read_parquet(fd_staging("hreidar", "vessel_year.parquet"), col_select = c("nr", "year", "segment")) |>
+# read whole, then select: nanoparquet's col_select shifts this file's optional integer columns (decision 144)
+seg <- read_parquet(fd_staging("hreidar", "vessel_year.parquet")) |> select(nr, year, segment) |>
   transmute(vid = as.integer(nr), year = as.integer(year), segment) |> filter(!is.na(vid), year %in% YEARS, !is.na(segment)) |>
   distinct(vid, year, .keep_all = TRUE)
 

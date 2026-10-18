@@ -295,7 +295,9 @@ seg <- seg |> left_join(ss, by = "sid") |>
 
 # Registered life -------------------------------------------------------------------------------------------------------
 evt <- read_parquet(fd_staging("skipaskra", "event.parquet")) |> filter(!is.na(vid))
-hr <- read_parquet(fd_staging("hreidar", "vessel_year.parquet"), col_select = c("nr", "year", "year_placeholder", "year_out", "fate", "fate_note")) |>
+# read whole, then select: nanoparquet 0.5.1's col_select drops the NULLs of an optional integer column in a file it wrote,
+# and shifts its values (157,501 of Hreiðar's years were another row's; decision 144)
+hr <- read_parquet(fd_staging("hreidar", "vessel_year.parquet")) |> select(nr, year, year_placeholder, year_out, fate, fate_note) |>
   filter(nr >= 1, nr <= 9999, !(nr >= 3700 & nr <= 4999), !is.na(year))
 fate_class <- function(f) {
   f <- toupper(f)

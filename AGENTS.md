@@ -231,6 +231,9 @@ repos.
   Exception: `write_curated()` uses `COPY … (FORMAT parquet, KV_METADATA {…})`,
   which also writes plain `TIMESTAMP` *and* embeds provenance —
   `duckdbfs::write_dataset` writes no KV metadata at all.
+- **Never `nanoparquet::read_parquet(col_select = )` on a file nanoparquet wrote.** Version 0.5.1 drops the NULLs of an
+  optional integer column and shifts its values up: 157,501 of Hreiðar's 164,164 years came back as another row's
+  (decision 144). Read the whole file, then `select()`.
 - **`purrr::map()` must be qualified** — `duckdbfs` loads `maps`, which masks it.
 - **Comments**: non-obvious reasons only; every script head states input and output.
 - **Section headers**: single-dash style only.
