@@ -19,7 +19,10 @@
 # - a run can be resumed: a vid whose page is already saved in the run's folder is skipped.
 #
 # The selectors are the 2022 scripts' (`.carousel-item`, an image named <id>.jpg). Whether mbl's pages still have them,
-# and where a caption or credit sits, is unknown until a pilot run: run a few vids first and read the pages.
+# and where a caption or credit sits, is unknown: the pilot of 2026-10-18 (decision 141) got no page. Since 2022 mbl.is
+# answers a script with HTTP 403 and a Cloudflare bot check (`cf-mitigated: challenge`). The script records that
+# status and stops; it never tries to pass the check. The images on static.mbl.is are still served to a script, by
+# their id.
 #
 # The images are a newspaper's, for internal use only (plan 030 §4.5): they stay under $FISHYDATA.
 #
@@ -34,6 +37,7 @@ if (!exists("VIDS"))    VIDS    <- 1:9999
 if (!exists("DRY_RUN")) DRY_RUN <- TRUE
 if (!exists("RUN"))     RUN     <- format(Sys.Date())
 if (!exists("SLEEP"))   SLEEP   <- 4
+if (!exists("MAX_FAILS")) MAX_FAILS <- 10   # pages in a row that fail other than by 404 (no such vessel)
 
 PAGE  <- "https://www.mbl.is/200milur/skipaskra/skip/%d"
 IMAGE <- "https://static.mbl.is/generic/sax/skipamyndir/%s.jpg"
@@ -58,6 +62,15 @@ gallery <- function(page) {
   if (is.null(out)) data.frame() else cbind(image_no = seq_len(nrow(out)), out)
 }
 
+# A page and its HTTP status. Anything but 200 is recorded as its status, a bot check named as such.
+fetch_page <- function(url) {
+  r <- tryCatch(curl::curl_fetch_memory(url), error = function(e) e)
+  if (inherits(r, "error")) return(list(status = conditionMessage(r)))
+  checked <- any(grepl("^cf-mitigated:[[:space:]]*challenge", curl::parse_headers(r$headers), ignore.case = TRUE))
+  if (r$status_code != 200) return(list(status = sprintf("HTTP %d%s", r$status_code, if (checked) ", bot check" else "")))
+  list(status = "ok", page = xml2::read_html(r$content, encoding = "UTF-8"))
+}
+
 append_csv <- function(d, f) utils::write.table(d, f, sep = ",", row.names = FALSE, col.names = !file.exists(f),
                                                 append = file.exists(f), qmethod = "double", fileEncoding = "UTF-8")
 
@@ -65,15 +78,17 @@ append_csv <- function(d, f) utils::write.table(d, f, sep = ",", row.names = FAL
 cat(sprintf("mbl register: %d vids, run %s, %s\n", length(VIDS), RUN, if (DRY_RUN) "DRY RUN, no request" else OUT))
 if (!DRY_RUN) for (d in c("html", "jpg")) dir.create(file.path(OUT, d), recursive = TRUE, showWarnings = FALSE)
 
+fails <- 0
 for (vid in VIDS) {
   url <- sprintf(PAGE, vid)
   if (DRY_RUN) { cat(vid, url, "->", page_file(vid), "\n"); next }
   if (file.exists(page_file(vid))) next
-  page <- tryCatch(xml2::read_html(url), error = function(e) e)
-  status <- if (inherits(page, "error")) conditionMessage(page) else "ok"
+  got <- fetch_page(url)
+  status <- got$status
+  fails <- if (status %in% c("ok", "HTTP 404")) 0 else fails + 1
   if (status == "ok") {
-    xml2::write_html(page, page_file(vid))
-    g <- gallery(page)
+    xml2::write_html(got$page, page_file(vid))
+    g <- gallery(got$page)
     for (i in seq_len(nrow(g))) {
       src <- sprintf(IMAGE, g$mbl_image_id[i])
       f <- image_file(vid, g$image_no[i])
@@ -89,5 +104,6 @@ for (vid in VIDS) {
   }
   append_csv(data.frame(vid = vid, url = url, status = status, fetched = format(Sys.time(), tz = "UTC", usetz = TRUE)),
              file.path(OUT, "pages.csv"))
+  if (fails >= MAX_FAILS) stop(sprintf("%d pages in a row failed, the last with \"%s\": stopped (see pages.csv)", fails, status))
   Sys.sleep(SLEEP)
 }

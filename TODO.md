@@ -486,17 +486,16 @@ wired: the plan 028 session edits `_targets_once.R` too. Step 4 needs asks b, f 
 reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 
 ## 85. Vessel photos from mbl and an internal vessel overview app (plan 030)
-**status:** in progress · **needs: maintainer** — the go for a pilot scrape of five vessels (step 2), the search for the
-whole photo set (ask b); asks a and c-h answered (decision 137) · **see:**
-`curate/plans/030-vessel-photos-and-overview.md`, plan 028 §3.6 and §7, plan 001, decisions 049, 105, 137-140
+**status:** in progress · **needs: maintainer** — ask b, revised after the pilot (decision 141): fetch the 1,589 missing
+photos by their logged URLs, ask Morgunblaðið first, or keep the 1,000; asks a and c-h answered (decision 137) ·
+**see:** `curate/plans/030-vessel-photos-and-overview.md`, plan 028 §3.6 and §7, plan 001, decisions 049, 105, 137-141
 
 The 1,000 mbl photo files in `raw/external/skipaskra/jpg/` are about a quarter of the 2022 scrape. Plan 030 indexes them
 by vid in `staging/mbl/photo.parquet`, moves the scrape code to `dump/`, and specifies an internal overview per vessel:
 photo, register, landings, logbook, and a map linked to a time-speed plot by a time slider. It is a JavaScript page over
 a thin R service, so that it stays responsive (maintainer). The photos are a newspaper's images: internal use only,
-never published. Step 1, the photo index, is built (decision 138). Step 2's `dump/vessels/mbl.R` is written and checked
-offline, not run. Steps 3 and 4, the R service and the page, are built (decisions 139, 140). The app runs on the laptop
-first, from `products/vessel_overview/`.
+never published. Step 1, the photo index, is built (decision 138). Step 2's `dump/vessels/mbl.R` is written; its pilot
+met a bot check on mbl's pages (decision 141). Steps 3 and 4, the R service and the page, are built (decisions 139,
+140). The app runs on the laptop first, from `products/vessel_overview/`.
 
-**check:** the pilot scrape run and its pages read (step 2), and the whole photo set found or declared lost (step 5);
-or the plan parked.
+**check:** the whole photo set fetched, found or declared lost (step 5, ask b); or the plan parked.

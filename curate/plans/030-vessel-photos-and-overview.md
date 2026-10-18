@@ -1,10 +1,10 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
-written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3 and 4, the R
+written, its pilot refused by a bot check on mbl's pages (decision 141); steps 3 and 4, the R
 service and the page, built and checked (decisions 139, 140); asks a-h answered (decision 137; h: the R service
 serves, DuckDB-WASM in the page reads); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132 and 137-140,
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132 and 137-141,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
@@ -372,9 +372,9 @@ The maintainer's call (ask a):
    **Checked offline:** it parses; a dry run sends no request and writes nothing; with the network stubbed and a
    synthetic page shaped like the 2022 selectors, the loop writes the page, both images and both manifests, records a
    failed page with its HTTP status, and a second run tries only the failed page.
-   **Check (needs the maintainer's go, since it sends requests):** a pilot of five vessels (vids 78, 1977, 2184, 2757
-   and 9810). Their pages are read by a person, to see whether mbl still uses the 2022 selectors and where a caption or
-   credit sits, before any whole run.
+   **Piloted 2026-10-18** on vids 78, 1977, 2184, 2757 and 9810 (decision 141): every page answered HTTP 403 with a
+   Cloudflare bot check, so no page was read. The check is not passed. The script now records the status and stops
+   after 10 such failures in a row. A new scrape of the register is closed while the check stands.
 3. **The R service**: `products/vessel_overview/` (`api.R`, `server.R`, `check.R`), built 2026-10-18 (decision 139).
    **Checked** (`check.R`): no allowlisted column is personal; 43 answers for vids 2757, 3739 and 2652, each with
    exactly its allowlisted columns, all under 0.4 s; a photo served byte for byte; eight requests refused.
@@ -382,14 +382,17 @@ The maintainer's call (ask a):
    **Checked:** it opens for vids 2652, 1977, 2757 and 3739, and each panel shows its latest rows or says it is
    empty; 40 window moves on vid 1977's 2025 (147,432 pings) redrew in 7-10 ms each, against 50 ms. Not checked: the
    hover link, Play, and the time to load a vessel.
-5. **The whole photo set**, if ask b finds it or allows a new scrape. **Check:** the index has no `missing` row, or
-   each one is explained.
+5. **The whole photo set.** The image host still serves the 2022 images by id, with no bot check (decision 141):
+   the 1,589 missing photos (about 370 MB) can most likely be fetched by their logged URLs into
+   `raw/external/skipaskra/jpg/`, under their 2022 names, each byte count checked against the log. Only with the
+   maintainer's go (ask b). **Check:** the index has no `missing` row, or each one is explained.
 
 ## 6. Asks
 
 **Answered 2026-10-18 (decision 137), each with the proposed option:**
 - a: the laptop first;
-- b: the maintainer looks for the whole set, and the index is built now with the rest `missing`;
+- b: the maintainer looks for the whole set, and the index is built now with the rest `missing`. Reopened after the
+  pilot (decision 141): the missing photos can be fetched by their logged URLs, on a go;
 - c: the `.Renviron` token;
 - d: `products/vessel_overview/`;
 - e: names shown, never kennitala, address or phone;
@@ -405,6 +408,9 @@ b. **The whole photo set.** The scrape logged 2,120 photos (500 MB), and 1,000 f
    on the Linux machine that ran the scrape (R 4.2.2, 2022-12-27/28), or in the `skipaskra` folder in the Trash? If
    neither, is a new scrape of mbl wanted (every image per vessel, with captions and credits if the page prints
    them), and is it acceptable to scrape the newspaper's site again for internal use?
+   **Revised 2026-10-18 after the pilot (decision 141):** a new scrape is closed (a bot check). Fetch the 1,589
+   missing photos by their logged URLs from the image host, which has no check (about 1,600 requests, 370 MB), or ask
+   Morgunblaðið first, or keep the 1,000? Open.
 
 c. **The basemap:** the `.Renviron` token is not the revoked one. Is it the token made after 2026-10-16, for this use,
    and should it be restricted to the app's URL? Or should the basemap be one that needs no token?
