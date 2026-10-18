@@ -184,8 +184,10 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
 - **D1, a person's decision,** decided `r n_rule("D1")`. None is entered yet.
 - **D5, dating:** `r fmt(sum(dec$window_from == "dated"))` stretches start on a known day, and
   `r fmt(sum(dec$window_from == "annual"))` within a known year.
-- **Types of ship:** `r round(100 * sum(ucp$entries[ucp$basis != "none"]) / sum(ucp$entries))` % of the printed types
-  map to the `vessel` schema's codes. The rest are cut short in print.
+- **Types of ship:** `r fmt(sum(ucp$entries[ucp$basis != "none"]))` of `r fmt(sum(ucp$entries))` printed types map to
+  the `vessel` schema's codes: by the code table's names, the schema's own name-code pairs, or the code the schema gives
+  the same hulls. No code is found for `r paste(ucp$printed[ucp$basis == "none"], collapse = " and ")`
+  (`r sum(ucp$entries[ucp$basis == "none"])` entries).
 
 ## Not checked here
 
