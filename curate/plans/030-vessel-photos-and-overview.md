@@ -2,8 +2,8 @@
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
 written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3-4 not started:
-a prototype of DuckDB in the browser is measured (§4.1) and ask h waits for the maintainer; asks a-g answered (decision 137); the search for the
-whole photo set (ask b) is the maintainer's (TODO 85)
+a prototype of DuckDB in the browser is measured (§4.1) and ask h waits for the maintainer; asks a-g answered
+(decision 137); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
 · **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137 and 138,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
