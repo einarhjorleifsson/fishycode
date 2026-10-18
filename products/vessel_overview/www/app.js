@@ -32,6 +32,25 @@ function banner(html) {
 }
 window.addEventListener('unhandledrejection', (e) => banner(`Something went wrong: ${esc(e.reason?.message || e.reason)}`));
 
+// The layout of the Activity tab, per mode (maintainer, 2026-10-18): Quality control reads top-down, the choices
+// first, then where | when, landings | logbooks, the pings, and the vessel last; Overview puts the vessel first. The
+// same sections move between the two, so nothing reloads when the mode changes.
+function layout(mode) {
+  const L = $('layout'), parts = $('parts'), p = (k) => $(`p-${k}`);
+  for (const sec of parts.parentNode.querySelectorAll('section[id^="p-"]')) parts.appendChild(sec);
+  L.replaceChildren();
+  const box = (cls, ...kids) => { const d = document.createElement('div'); d.className = cls; d.append(...kids); return d; };
+  const col = (...ks) => box('col', ...ks.map(p));
+  if (mode === 'qc') {
+    L.append(p('controls'), box('row2', col('map'), col('chart')), box('row2', col('landing', 'lasttrip'), col('trips')),
+             p('pings'), box('row2', col('about'), col('photo')));
+  } else {
+    L.append(p('controls'), box('row-ov', col('about', 'photo', 'landing', 'lasttrip'), col('map', 'chart', 'trips')));
+  }
+  p('controls').style.top = `${document.querySelector('header').offsetHeight}px`;
+}
+layout(new URLSearchParams(location.hash.slice(1)).get('mode') === 'qc' ? 'qc' : 'ov');
+
 // DuckDB-WASM ---------------------------------------------------------------------------------------------------------
 status('starting DuckDB');
 const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
@@ -78,7 +97,7 @@ function lower(a, x, key = (v) => v) {
 // State ----------------------------------------------------------------------------------------------------------------
 const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null,
             stations: [], hauls: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
-            history: false, about: {}, assumed: null, assumedBase: null, bg: 'track' };
+            history: false, about: {}, assumed: null, assumedBase: null, bg: 'track', ready: false };
 // The gear after the last logbook trip, where no logbook covers the time: the previous logbook trip's (maintainer,
 // 2026-10-18: "if a logbook is missing from vessels last trip, assume that the gear is the same gear as from the
 // previous trip"). Better still would be the gear read from the track, a TODO of its own (TODO 86).
@@ -890,13 +909,21 @@ function showTab(name) {
 }
 $('tab-now').addEventListener('click', () => showTab('now'));
 $('tab-history').addEventListener('click', () => showTab('history'));
+function relayout() {
+  plot?.setSize({ width: $('plot').clientWidth, height: 190 });
+  lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
+  if (S.tr) { fitTo(S.win[0], S.win[1]); render(); }
+}
 async function setMode(m) {
   S.mode = m;
+  layout(m);
   document.body.classList.toggle('qc', m === 'qc');
   $('mode-ov').classList.toggle('on', m === 'ov'); $('mode-qc').classList.toggle('on', m === 'qc');
   setHash();
-  if (!S.vid) return;
+  // while a vessel is still loading, its tables are not all there: the load draws the panels in the new mode itself
+  if (!S.vid || !S.ready) return;
   if (m === 'qc' && S.tr) { makeLanes(); S.pingPage = 0; await renderPings(); } else { lanes?.destroy(); lanes = null; }
+  requestAnimationFrame(relayout);
   renderSummary();
   await renderTrips();
   await renderNow();
@@ -906,6 +933,7 @@ $('mode-qc').addEventListener('click', () => setMode('qc'));
 
 // Choosing a vessel ----------------------------------------------------------------------------------------------------
 async function choose(vid, from, to) {
+  S.ready = false;
   status(`loading vid ${vid}`);
   S.vid = vid; S.trip = null; S.tr = null; S.history = false; render();
   const v = V.find((x) => x.vid === vid);
@@ -927,6 +955,7 @@ async function choose(vid, from, to) {
   const y = S.years.at(-1) ?? thisYear;
   await renderNow();
   await loadRange(Number.isInteger(from) ? from : y, Number.isInteger(to) ? to : y);
+  S.ready = true;
   if ($('history').classList.contains('on')) await renderHistory();
 }
 
@@ -967,6 +996,7 @@ function fromHash() {
   const vid = parseInt(h.get('vid'), 10), hist = h.get('tab') === 'history';
   for (const t of ['now', 'history']) { $(t).classList.toggle('on', (t === 'history') === hist); $(`tab-${t}`).classList.toggle('on', (t === 'history') === hist); }
   S.mode = h.get('mode') === 'qc' ? 'qc' : 'ov';
+  layout(S.mode);
   document.body.classList.toggle('qc', S.mode === 'qc');
   $('mode-ov').classList.toggle('on', S.mode === 'ov'); $('mode-qc').classList.toggle('on', S.mode === 'qc');
   if (!Number.isInteger(vid)) return;

@@ -33,17 +33,22 @@
   nav { display: flex; gap: 4px; padding: 8px 16px 0; }
   nav button { border-radius: 6px 6px 0 0; }
   nav button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .tab { display: none; } .tab.on { display: grid; }
+  .tab { display: none; } .tab.on { display: grid; } #now.tab.on { display: block; }
   main { grid-template-columns: 360px 1fr; gap: 12px; padding: 8px 16px 16px; }
   #history { grid-template-columns: 1fr 1fr; }
-  @media (max-width: 1000px) { main, #history { grid-template-columns: 1fr !important; } #status { max-width: 100%; } }
+  #layout { display: flex; flex-direction: column; gap: 12px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  .row-ov { display: grid; grid-template-columns: 360px 1fr; gap: 12px; align-items: start; }
+  section.controls { position: sticky; top: 52px; z-index: 15; }
+  #trips, #pings, #last-trip { overflow-x: auto; }   /* wide QC tables scroll sideways in a half-width column */
+  @media (max-width: 1000px) { main, #history, .row2, .row-ov { grid-template-columns: 1fr !important; } #status { max-width: 100%; } }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
   section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
   h3 { font-size: 12px; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
   .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .help { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
   #summary p { margin: 0 0 6px; } #summary ul { margin: 0; padding-left: 18px; } #summary li { margin: 2px 0; }
-  #photo img { width: 100%; border-radius: 4px; cursor: pointer; display: block; }
+  #p-photo img { width: 100%; border-radius: 4px; cursor: pointer; display: block; }
   .note { color: var(--muted); font-size: 12px; }
   table { border-collapse: collapse; width: 100%; font-size: 12px; }
   th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -98,18 +103,35 @@
 <nav><button id="tab-now" class="on">Activity</button><button id="tab-history">History</button></nav>
 
 <main id="now" class="tab on">
-  <div class="col">
-    <section><h2>About this vessel</h2><div id="summary" class="note">Choose a vessel to begin.</div></section>
-    <section id="photo"><h2>Photo</h2><div id="photo-body" class="note"></div></section>
-    <section><h2>Last landing</h2><div id="last-landing" class="note"></div></section>
-    <section><h2>The trip that landed it</h2><div id="last-trip" class="note"></div></section>
-  </div>
-  <div class="col">
-    <section>
-      <h2>Where and when <span id="window-label" class="note"></span></h2>
-      <div class="help ov-only">The map shows where the vessel was in the time window. Drag across the speed chart, or
-        move the slider, to choose the window. Hover on the chart to see the vessel's position at that moment.</div>
+  <!-- The sections below are placed by app.js (layout()) into the layout of the mode: Quality control reads top-down
+       (choices; where | when; landings | logbooks; pings; the vessel), Overview puts the vessel first. -->
+  <div id="layout"></div>
+  <div id="parts" hidden>
+    <section id="p-controls" class="controls">
+      <div class="window" style="margin-top:0">
+        <span class="note">Show</span>
+        <span class="seg"><button id="last-trips" title="the window and the map on the vessel's last trips">Last <span id="ntrips-label">3</span> <span id="trips-word">trips</span></button><select id="ntrips" aria-label="how many trips" style="border:none;border-left:1px solid var(--line);border-radius:0">
+          <option>1</option><option selected>3</option><option>5</option><option>10</option></select></span>
+        <button id="month" title="the window and the map on the last 30 days">Last month</button>
+        <button id="all" title="the window and the map on every loaded year">Whole range</button>
+        <button id="fit" title="centre the map on the window as it is">Fit map</button>
+        <span class="note" style="margin-left:8px">Outside the window</span>
+        <span class="seg" id="bg" title="what the map shows besides the window's pings">
+          <button data-bg="track" class="on">track</button><button data-bg="hex">fishing hours</button><button data-bg="none">nothing</button></span>
+        <select id="hexkm" aria-label="hexagon size" title="the hexagons' size: centre to corner, in km at the map's latitude" style="display:none">
+          <option value="0.5">0.5 km</option><option value="1" selected>1 km</option><option value="2">2 km</option><option value="5">5 km</option></select>
+        <span id="hexlegend" class="note" style="display:none"></span>
+      </div>
+      <div class="window"><span class="note">Window</span><b id="window-label" style="font-size:13px"></b><span id="perf" class="note"></span></div>
+    </section>
+    <section id="p-map">
+      <h2>Where</h2>
+      <div class="help ov-only">Where the vessel was in the time window. Choose the window above, drag across the speed
+        chart, or move the slider. Hover on the chart to see the vessel's position at that moment.</div>
       <div id="map"><div id="attrib"></div></div>
+    </section>
+    <section id="p-chart">
+      <h2>When</h2>
       <div id="plot"></div>
       <div id="lanes" class="qc-only"></div>
       <div id="hoverinfo"></div>
@@ -133,33 +155,22 @@
         <button id="play" title="move the window along the track">Play</button>
         <div class="dual"><input id="wfrom" type="range" aria-label="window start"><input id="wto" type="range" aria-label="window end"></div>
       </div>
-      <div class="window">
-        <span class="note">Show</span>
-        <span class="seg"><button id="last-trips" title="the window and the map on the vessel's last trips">Last <span id="ntrips-label">3</span> <span id="trips-word">trips</span></button><select id="ntrips" aria-label="how many trips" style="border:none;border-left:1px solid var(--line);border-radius:0">
-          <option>1</option><option selected>3</option><option>5</option><option>10</option></select></span>
-        <button id="month" title="the window and the map on the last 30 days">Last month</button>
-        <button id="all" title="the window and the map on every loaded year">Whole range</button>
-        <button id="fit" title="centre the map on the window as it is">Fit map</button>
-        <span class="note" style="margin-left:8px">Outside the window</span>
-        <span class="seg" id="bg" title="what the map shows besides the window's pings">
-          <button data-bg="track" class="on">track</button><button data-bg="hex">fishing hours</button><button data-bg="none">nothing</button></span>
-        <select id="hexkm" aria-label="hexagon size" title="the hexagons' size: centre to corner, in km at the map's latitude" style="display:none">
-          <option value="0.5">0.5 km</option><option value="1" selected>1 km</option><option value="2">2 km</option><option value="5">5 km</option></select>
-        <span id="hexlegend" class="note" style="display:none"></span>
-        <span id="perf" class="note"></span>
-      </div>
     </section>
-    <section>
+    <section id="p-landing"><h2>Last landing</h2><div id="last-landing" class="note"></div></section>
+    <section id="p-lasttrip"><h2>The trip that landed it</h2><div id="last-trip" class="note"></div></section>
+    <section id="p-trips">
       <h2>Fishing trips in these years</h2>
       <div class="help ov-only">From the logbook. Click a trip to see it on the map and chart, and to list its hauls.</div>
       <div class="help qc-only">Logbook trips with the pings inside them. Warnings compare the logbook's hauls with
         the flow's fishing flag on the pings. Click to expand every record.</div>
       <div id="trips"></div>
     </section>
-    <section class="qc-only">
+    <section id="p-pings" class="qc-only">
       <h2>Pings in the window</h2>
       <div id="pings"></div>
     </section>
+    <section id="p-about"><h2>About this vessel</h2><div id="summary" class="note">Choose a vessel to begin.</div></section>
+    <section id="p-photo"><h2>Photo</h2><div id="photo-body" class="note"></div></section>
   </div>
 </main>
 
