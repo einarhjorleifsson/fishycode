@@ -1,5 +1,5 @@
 # Hreiðar's workbook of Icelandic vessels: one row per number and year in use, 1710-2021, as he typed it.
-# Side: preprocessing (vessels). See plan 014; plan 028 step 2.
+# Side: once (register history). See plan 014; plan 028 step 2; decision 132.
 #
 # Input:  raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx, sheet "Data main"
 # Output: staging/hreidar/vessel_year.parquet - one row per sheet row (164,164), keyed on `nr` and `year`

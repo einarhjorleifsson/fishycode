@@ -1,6 +1,6 @@
 # The Icelandic rows of the two hand-made MarineTraffic match sheets: a dated witness for a few MMSIs, IMOs and call
 # signs.
-# Side: preprocessing (vessels). See plan 014; plan 028 step 2.
+# Side: once (register history). See plan 014; plan 028 step 2; decision 132.
 #
 # Input:  raw/external/marinetraffic/STK_MARINETRAFFIC_MATCTH.xlsx (1,230 rows) and CS_MARINE_TRAFFIC_MATCH4.xlsx (823)
 # Output: staging/marinetraffic/icelandic.parquet - one row per sheet row that is Icelandic, with its `file`

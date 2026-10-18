@@ -453,16 +453,19 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
-**status:** in progress · **needs: maintainer** — plan 028 §9's asks a and c-f: where it builds, licences after July
-2020, the MMSI lists `mmsi.R` does not read, editions outside 2004-2022, the decision model (b answered) · **see:**
-`curate/plans/028-skipaskra-mined.md`, decisions 130 and 131, TODO 71
+**status:** in progress · **needs: maintainer** — the go for the `once` build of steps 1-4, and plan 028 §9's asks
+c-g: licences after July 2020, the MMSI lists `mmsi.R` does not read, editions outside 2004-2022, the decision model,
+Hreiðar's own numbers (a and b answered) · **see:** `curate/plans/028-skipaskra-mined.md`, decisions 130-132, TODO 71
 
-Step 1 done in code (decision 130): `R/skipaskra_pdf.R` and `sources/skipaskra/{register,event,lists}.R` read all 19
-editions (43,430 entries, 1,637 registrations and deregistrations, draught, the number and call-sign lists, the
-summary tables, the name prerogative), checked in a scratch store. Step 2 (Hreiðar, mbl, Samgöngustofa,
-MarineTraffic) is merged (c56278d); its outputs are in the real store. Neither is a target until ask a is answered.
-What public sources print is kept, never published (maintainer, 2026-10-18). Steps 3-4 done in code (decision 131):
-the evidence table, 38 checks with 61,300 unsettled findings, and `docs/skipaskra.qmd`, in the scratch store. Step 5,
-the decision model and the `_hist` tables, needs asks a and f.
+Steps 1-4 are coded and checked in a scratch store (decisions 130, 131). They cover:
+- the 19 editions read whole: 43,430 entries, the event lists, the number and call-sign lists, the summary tables and
+  the name prerogative;
+- the step-2 readers (merged, c56278d; their outputs already in the real store);
+- the evidence table, 38 checks with 61,300 unsettled findings, and `docs/skipaskra.qmd`.
+
+They are wired into the `once` project (decision 132) but not yet built. Build them by name:
+`tar_make_isolated(names = "check_skipaskra_discrepancy")` in `TAR_PROJECT=once`, never the whole project, whose key
+targets are outdated. What public sources print is kept, never published. Step 5, the decision model and the `_hist`
+tables, needs ask f; step 6, the live part, goes in the main project.
 
 **check:** plan 028's steps 1-5 built and its discrepancy table and docs page published, or the plan parked.

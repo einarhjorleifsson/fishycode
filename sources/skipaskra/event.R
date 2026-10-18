@@ -1,5 +1,5 @@
 # The annual ship register's lists of the previous year's registrations and deregistrations, 2004-2022, as printed.
-# Side: preprocessing (vessels). See plan 014; plan 028 step 1.
+# Side: once (register history). See plan 014; plan 028 step 1; decision 132.
 #
 # Input:  raw/external/skipaskra/reports/*.pdf          the 19 editions (R/skipaskra_pdf.R reads them)
 # Output: staging/skipaskra/event.parquet               one row per listed registration or deregistration

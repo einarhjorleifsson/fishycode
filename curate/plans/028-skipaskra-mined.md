@@ -1,9 +1,10 @@
 # 028 — The annual ship register (Skipaskrá) mined whole, into the `vessel` schema's tables
 
-**status:** partly built — steps 1, 3 and 4 coded and checked in a scratch store on 2026-10-18, not yet targets
-(decisions 130 and 131); step 2 coded in another session and merged (c56278d); step 5 waits on asks a and f; the output
-takes the `vessel` schema's table structure, not one table, and what public sources print is kept (maintainer,
-2026-10-18); §9 asks a and c-f open (TODO 83) · **2026-10-18** · **see:** decisions 046,
+**status:** partly built — steps 1-4 coded, checked in a scratch store and wired into the `once` project on
+2026-10-18, not yet built (decisions 130-132; step 2 coded in another session, c56278d); the history to 2023-12-19
+builds in `once`, the live part in the main project (ask a, decision 132); step 5 waits on ask f; the output takes the
+`vessel` schema's table structure, not one table, and what public sources print is kept (maintainer, 2026-10-18); §9
+asks c-g open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)
 
@@ -716,10 +717,8 @@ Steps 1-4 need no answer from the maintainer. Step 5 needs asks a and f.
 
 ## 9. Asks
 
-a. **Where it builds.** Proposed: the history to 2023-12-19 in the `once` project, reviewed and frozen like the STK
-   key that reads it, and the live part in the main project. The history is built from frozen raw files. This needs
-   a decision record, since decision 075 limits `once` to its fixes, though `skipaskra` is a `once` target already.
-   The alternative is to build all of it in the main project.
+a. **Where it builds.** Answered (maintainer, 2026-10-18, decision 132): the history to 2023-12-19 in the `once`
+   project, reviewed and frozen like the STK key that reads it, and the live part in the main project.
 b. **Hreiðar's counts of people lost and rescued, and its notes on the fate.** Answered (maintainer, 2026-10-18): kept,
    at least in staging (§7).
 c. **Licences after July 2020.** Which schema holds them (the Directorate of Fisheries' current system), to dump?
@@ -734,6 +733,9 @@ f. **The decision model (§6).**
    - Is the rule order right? Should D4, the typo rule, overrule the PDF at all, or only flag?
 
    Proposed: as written, with D4 on, its error measured and printed.
+g. **Hreiðar's own numbers.** 1,764 boats without a register number (90000 and above, 30,913 rows, nearly all before
+   1992) are in staging only: the evidence leaves them out, having no vid. Carry them into the history, each given a
+   vid through the vid ledger (decision 115), or leave them in staging? (Raised by the maintainer, 2026-10-18.)
 
 ## 10. Not in this plan
 

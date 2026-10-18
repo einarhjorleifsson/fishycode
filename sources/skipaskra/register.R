@@ -1,5 +1,5 @@
 # The annual ship register (Skipaskrá): every entry of every edition, 2004-2022, as printed.
-# Side: preprocessing (vessels). See plan 014; plan 028 step 1.
+# Side: once (register history). See plan 014; plan 028 step 1; decision 132.
 #
 # Input:  raw/external/skipaskra/reports/*.pdf          the 19 editions (R/skipaskra_pdf.R reads them)
 # Output: staging/skipaskra/register.parquet            one row per edition and entry

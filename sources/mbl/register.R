@@ -1,5 +1,5 @@
 # Morgunblaðið's online vessel register (200 mílur), scraped vessel by vessel around the turn of 2023.
-# Side: preprocessing (vessels). See plan 014; plan 028 step 2.
+# Side: once (register history). See plan 014; plan 028 step 2; decision 132.
 #
 # Input:  raw/external/skipaskra/data-raw/mbl/vid-*.csv (5,803 files, long: variable, value, vid)
 # Output: staging/mbl/register_2023-01.parquet - one row per vid, the printed values and the numbers parsed from them

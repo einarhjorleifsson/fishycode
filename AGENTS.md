@@ -73,10 +73,11 @@ Every script in a targets project is on one of three sides, and says which in a 
 
 - **preprocessing**: Icelandic data into standard inputs. It may reconcile the logbook with the landings
   (the trip-landing match, gear from the landings) but **reads no AIS**.
-- **once**: the three one-time fixes, i.e. the STK mobile-id → vid key, the GPS logger positions and the
-  port radius. They are a second targets project (`_targets_once.R`, `TAR_PROJECT=once`, `_targets.yaml`),
-  built once, reviewed, and frozen as inputs of the main project. They are redone only by a decision
-  record.
+- **once**: the one-time fixes, i.e. the STK mobile-id → vid key, the GPS logger positions, the port radius,
+  and the annual ship register's history to 2023-12-19 (decision 132). They are a second targets project
+  (`_targets_once.R`, `TAR_PROJECT=once`, `_targets.yaml`), built once, reviewed, and frozen as inputs of the
+  main project. They are redone only by a decision record, and built by name, never as a whole project
+  (`tar_make_isolated(names = )`): a whole build redoes every fix whose watched files changed.
 - **flow**: the generic WGSFD one-flow, as thin callers of ramb `rb_` steps. Everything that uses the
   track (voyages, stays, trip ↔ voyage, `T2` from AIS) is here.
 

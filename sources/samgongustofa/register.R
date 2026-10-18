@@ -1,5 +1,5 @@
 # Samgöngustofa's online ship register, scraped number by number on 2022-12-28 (plan 028's "siglo", after the raw file).
-# Side: preprocessing (vessels). See plan 014; plan 028 step 2.
+# Side: once (register history). See plan 014; plan 028 step 2; decision 132.
 #
 # Input:  raw/external/skipaskra/data-raw/2022-12-28_siglo.rds (raw/external/skipaskra/R/samgongustofa-scrape.R)
 # Output: staging/samgongustofa/register_2022-12-28.parquet - one row per registration number (5,677), printed values

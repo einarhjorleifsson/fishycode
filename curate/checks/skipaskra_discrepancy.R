@@ -1,6 +1,6 @@
 # The annual ship register checked: inside each edition, between editions, against the other witnesses, and against
 # landings and logbooks (plan 028 step 4).
-# Side: preprocessing (vessels). See plan 014; plan 028 §5.
+# Side: once (register history). See plan 014; plan 028 §5; decision 132.
 #
 # Input:  staging/skipaskra/{register,event,index_list,summary}.parquet                the PDFs as read (decision 130)
 #         curated/vessel/skipaskra/evidence.parquet                                     every witness's values (step 3)

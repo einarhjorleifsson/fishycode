@@ -1,4 +1,4 @@
-# _targets_once.R — the three one-time fixes, as their own targets project (plan 014, decision 075).
+# _targets_once.R — the one-time fixes, as their own targets project (plan 014, decisions 075 and 132).
 #
 # Run:  Sys.setenv(TAR_PROJECT = "once"); targets::tar_outdated()
 #       Sys.setenv(TAR_PROJECT = "once"); source("R/tar_make_isolated.R"); tar_make_isolated()
@@ -18,6 +18,11 @@
 #                Frozen: curated/logbook/sensor_gps
 #   port radius  the departure radius per port from STK events (decision 060).
 #                Frozen: curated/reference/port_radius.parquet
+#   register     the annual ship register's history to 2023-12-19: the PDFs and the other witnesses read, every
+#                witness's values in one evidence table, the checks (plan 028 steps 1-4, decision 132). Its
+#                decision model and `_hist` tables (step 5) will be frozen here too; the live part after
+#                2023-12-19 is the main project's. Build it by its last target, which pulls in the rest, never
+#                with the whole project: tar_make_isolated(names = "check_skipaskra_discrepancy")
 
 library(targets)
 
@@ -38,6 +43,10 @@ tar_option_set(
 
 main_file <- function(...) fd_path(...)
 
+# The register's raw inputs, listed outside the commands so a new file shows in tar_outdated() (input_files(), decision 113)
+skipaskra_pdf_files <- input_files("raw", "external", "skipaskra", "reports", pattern = "[.]pdf$")
+mbl_files           <- input_files("raw", "external", "skipaskra", "data-raw", "mbl", pattern = "^vid-.*[.]csv$")
+
 list(
 
   # ── What the fixes read from the main project (watched, never built here) ───
@@ -54,6 +63,9 @@ list(
                               main_file("curated", "ais", "voyage.parquet")), format = "file"),
   tar_target(main_stk_event, c(main_file("staging", "ais", "stk_event.parquet"),
                                main_file("staging", "aux", "ports.fgb")), format = "file"),
+  # read by the register history only (main_landing and main_logbook above serve it too)
+  tar_target(main_mmsi, main_file("curated", "vessel", "mmsi.parquet"), format = "file"),
+  tar_target(main_landing_catch, main_file("curated", "landing", "catch.parquet"), format = "file"),
 
   # ── Vessel key ───────────────────────────────────────────────────────────────
   # The annual ship register: the call sign per vessel per year, 2007-2022. Dates the holder of a call
@@ -158,5 +170,73 @@ list(
     main_stk_event
     produces("reference/ports/port_radius.R",
              fd_curated("reference", "port_radius.parquet"))
+  }, format = "file"),
+
+  # ── Register history (plan 028, decision 132) ────────────────────────────────
+  # The annual register PDFs, 2004-2022, read whole (decision 130).
+  tar_target(skipaskra_pdf, skipaskra_pdf_files, format = "file"),
+  tar_target(skipaskra_register, {
+    skipaskra_pdf
+    produces("sources/skipaskra/register.R", fd_staging("skipaskra", "register.parquet"))
+  }, format = "file"),
+  tar_target(skipaskra_event, {
+    skipaskra_pdf
+    produces("sources/skipaskra/event.R",
+             fd_staging("skipaskra", "event.parquet"), fd_staging("skipaskra", "event_total.parquet"))
+  }, format = "file"),
+  tar_target(skipaskra_lists, {
+    skipaskra_pdf
+    produces("sources/skipaskra/lists.R",
+             fd_staging("skipaskra", "draught.parquet"), fd_staging("skipaskra", "index_list.parquet"),
+             fd_staging("skipaskra", "summary.parquet"), fd_staging("skipaskra", "name_prerogative.parquet"))
+  }, format = "file"),
+
+  # The other witnesses outside Oracle (plan 028 step 2).
+  tar_target(hreidar_raw, fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx"), format = "file"),
+  tar_target(hreidar_vessel_year, {
+    hreidar_raw
+    produces("sources/hreidar/vessel_year.R", fd_staging("hreidar", "vessel_year.parquet"))
+  }, format = "file"),
+  tar_target(mbl_raw, mbl_files, format = "file"),
+  tar_target(mbl_register, {
+    mbl_raw
+    produces("sources/mbl/register.R", fd_staging("mbl", "register_2023-01.parquet"))
+  }, format = "file"),
+  tar_target(samgongustofa_raw, fd_raw("external", "skipaskra", "data-raw", "2022-12-28_siglo.rds"), format = "file"),
+  tar_target(samgongustofa_register, {
+    samgongustofa_raw
+    produces("sources/samgongustofa/register.R", fd_staging("samgongustofa", "register_2022-12-28.parquet"))
+  }, format = "file"),
+  tar_target(marinetraffic_raw, fd_raw("external", "marinetraffic",
+                                       c("STK_MARINETRAFFIC_MATCTH.xlsx", "CS_MARINE_TRAFFIC_MATCH4.xlsx")), format = "file"),
+  tar_target(marinetraffic_icelandic, {
+    marinetraffic_raw
+    produces("sources/marinetraffic/icelandic.R", fd_staging("marinetraffic", "icelandic.parquet"))
+  }, format = "file"),
+
+  # The Oracle tables the evidence and the checks read, as dumped (plan 018).
+  tar_target(register_oracle, c(
+    fd_raw("oracle", "vessel", paste0(c("vessel", "vessel_hist", "vessel_identification_hist", "vessel_measurement_hist",
+                                        "vessel_engines_hist", "vessel_operational_hist", "vessel_owners_hist",
+                                        "vessel_fishery_hist"), ".parquet")),
+    fd_raw("oracle", "kvoti", paste0(c("skipasaga", "skipaskra_siglo", "skip_extra", "veidileyfi", "veidileyfi_eydd",
+                                       "veidileyfi_sviptingar", "strandveidileyfi_v", "dragnot_leyfi", "grasleppusaga",
+                                       "tegund_veidileyfis"), ".parquet")),
+    fd_raw("oracle", "ufs", paste0(c("skip", "skip_jn", "skipasaga", "skipasaga_jn"), ".parquet")),
+    fd_raw("oracle", "ops_einarhj", "mmsi_icelandic_registry_20230115.parquet")), format = "file"),
+
+  # Every witness's values in the `vessel` schema's tables (plan 028 step 3).
+  tar_target(skipaskra_evidence, {
+    skipaskra_register; skipaskra_lists; skipaskra_event; hreidar_vessel_year; mbl_register; samgongustofa_register
+    marinetraffic_icelandic; register_oracle; main_mmsi
+    produces("reference/vessels/skipaskra_evidence.R", fd_curated("vessel", "skipaskra", "evidence.parquet"))
+  }, format = "file"),
+
+  # The checks of plan 028 §5 (step 4): inside an edition, between editions, the witnesses, landings and logbooks.
+  tar_target(check_skipaskra_discrepancy, {
+    skipaskra_evidence; skipaskra_register; skipaskra_event; skipaskra_lists; register_oracle
+    main_landing; main_landing_catch; main_logbook
+    produces("curate/checks/skipaskra_discrepancy.R",
+             fd_curated("check", "skipaskra_discrepancy.parquet"), fd_curated("check", "skipaskra_agreement.parquet"))
   }, format = "file")
 )

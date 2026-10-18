@@ -1,5 +1,5 @@
-# Two targets projects (plan 014, decision 075). `main` is the build; `once` holds the three one-time
-# fixes and is run only by decision:  Sys.setenv(TAR_PROJECT = "once")
+# Two targets projects (plan 014, decisions 075 and 132). `main` is the build; `once` holds the one-time
+# fixes and is run only by decision, target by name:  Sys.setenv(TAR_PROJECT = "once")
 main:
   script: _targets.R
   store: _targets

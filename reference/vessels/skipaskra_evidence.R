@@ -1,5 +1,5 @@
 # Every value every witness gives for an Icelandic hull's register record, in one long table (plan 028 step 3).
-# Side: preprocessing (vessels). See plan 014; plan 028 §4.1 and §6.
+# Side: once (register history). See plan 014; plan 028 §4.1 and §6; decision 132.
 #
 # Input:  staging/skipaskra/{register,draught,event}.parquet          the annual register PDFs, 2004-2022 (decision 130)
 #         staging/hreidar/vessel_year.parquet                         Hreiðar's workbook, a row per number and year

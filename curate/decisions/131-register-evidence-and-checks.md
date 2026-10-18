@@ -105,6 +105,7 @@ counts only (decision 130, plan 028 §7).
 
 ## Not done
 
-- **Not targets.** The scripts carry `# Side: preprocessing` and wait on plan 028 ask a.
+- **Not targets.** The scripts carried `# Side: preprocessing` and waited on plan 028 ask a. They are `once` targets
+  since decision 132, not yet built.
 - **The real store.** It has none of these outputs until the build.
 - **AIS** (plan 028 §5.4) and changes the editions do not show come with step 5, which needs asks a and f.

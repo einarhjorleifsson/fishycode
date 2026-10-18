@@ -20,6 +20,9 @@ Claude (AI-assisted), from plan mode, an adversarial review and read-only counts
   - the port departure radius (`curated/reference/port_radius.parquet`, a stamped copy of
     `harbour_radius.parquet`).
 
+  *Amended 2026-10-18: a fourth, the annual ship register's history to 2023-12-19 (plan 028), is built in the `once`
+  project too, by the maintainer's choice (decision 132).*
+
   Their 23 targets form a second targets project (`_targets_once.R`, `TAR_PROJECT=once`). It watches the
   main-project files they read and never builds them. The main project reads each fix through `frozen_input()`,
   which stops if the file is missing or empty. A fix is redone only by a decision record.

@@ -117,7 +117,8 @@ These go to plan 028 §5's checks. None is repaired.
 
 ## Not done
 
-- **Not targets.** The scripts carry `# Side: preprocessing` and wait on plan 028 ask a for their project.
+- **Not targets.** The scripts carried `# Side: preprocessing` and waited on plan 028 ask a for their project. They
+  are `once` targets since decision 132.
 - **Step 2.** The other readers were on the other session's branch; merged in c56278d.
 - **Steps 3-5**, the evidence table, the checks and the decision model, were still to come. Steps 3-4 are decision
   131; step 5 waits on plan 028's asks a and f (TODO 83).
