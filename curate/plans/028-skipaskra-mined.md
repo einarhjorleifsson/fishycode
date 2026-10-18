@@ -1,7 +1,9 @@
 # 028 — The annual ship register (Skipaskrá) mined whole, into the `vessel` schema's tables
 
-**status:** proposal — measured 2026-10-18 (read-only), nothing built; the output takes the `vessel` schema's table
-structure, not one table (maintainer, 2026-10-18); §9 asks open (TODO 83) · **2026-10-18** · **see:** decisions 046,
+**status:** partly built — step 1 coded and checked in a scratch store on 2026-10-18, not yet a target (decision 130);
+step 2 coded in another session, on branch `claude/lucid-jang-7f8c0f`, not merged here; the output takes the `vessel`
+schema's table structure, not one table, and owner and address are kept (maintainer, 2026-10-18); §9 asks open
+(TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)
 
@@ -43,9 +45,9 @@ Scripts and text are in scratch only.
 - the kvoti and ufs Oracle comments say what a table holds (only their date spans were measured);
 - the mbl and siglo scrapes are the state at the date in their log names, not on 1 January.
 
-**Personal data:** every entry prints the owner's name and address. The name-prerogative list names holders, and
-mbl has the operator and a phone number. None of it was extracted, and the plan does not read it (§7). This follows
-decision 121 and plan 023 §7. Nothing personal enters this repository, which is public.
+**Personal data:** every entry prints the owner's name and address. The maintainer chose on 2026-10-18 to keep both,
+as printed, under `$FISHYDATA` only, never published ("Keep both, $FISHYDATA only"; §7). Kennitala and phone numbers
+are still not read. Nothing personal enters this repository, which is public.
 
 ## 1. In short
 
@@ -361,11 +363,11 @@ No licence table was found in `ufs`, `fs_ufs` or any other dumped schema, by nam
   - curated by hand by the newspaper, not by the authority;
   - fields: name, home port, type, operational class, processing licence, lengths, GRT, GT, NT, build year and yard,
     engine and hp, previous name for 1,570 vessels, changes for 1,263, MMSI for 1,738, call sign for 405, IMO for 58;
-  - also the operator and a phone number (not read, §7);
+  - also the operator (kept) and a phone number (not read, §7);
   - two files carry a scraped catch table by mistake.
 - **Samgöngustofa's online register, `data-raw/2022-12-28_siglo.rds`:** 5,677 numbers on 2022-12-28: 2,244
   registered, 3,364 not, and 69 numbers allocated. Fields: name, type, district letters, length, GRT, GT, build year,
-  home port and status. Owners are among them, and not read.
+  home port and status, and the owners (kept, §7).
 - **`data/vessels.rda` and `data/history.rda`:**
   - `vessels.rda`: 7,111 vessels, an undated merge of older sources, MMSI among them;
   - `history.rda`: 24,056 rows, a dated name and class history of 5,100 vids to 2021-12 (decision 049).
@@ -431,7 +433,8 @@ can read it. It goes in `curated/vessel/skipaskra/`. It is a set of tables, not 
   - `vessel_licence_hist`: one row per licence, with type, area and validity, from §3.4.
 - **The key** is `registration_no`, the vid, which is one to one with `vessel_id`. `vessel_id` is kept as a column for
   joining back to Oracle.
-- **Not built:** `vessel_owners_hist` and `vessel_fishery_hist`, which hold persons (§7).
+- **`vessel_owners_hist`** takes the owner's name and address as the PDFs print them, without the schema's
+  `national_identity_no` (§7). `vessel_fishery_hist` (the operator, keyed by kennitala) is not built.
 
 **Provenance and dispute indicators on every row** (maintainer, 2026-10-18: where the data came from, and whether the
 cross-checks disagree):
@@ -480,7 +483,8 @@ gives is in it, chosen or not, so a row's `disputed` columns can always be trace
 | engine make, engine year, kW (to 2017) | `vessel_engines_hist` | `manufacturer_name`, `year`, `power`; and `vessel_hist.power_kw` |
 | registrations list | `vessel_event` | `event`, `date`, GT |
 | deregistrations list | `vessel_event` | `event`, `date`, `fate`, `fate_class`, GT |
-| owner, owner's address, name prerogative | — | not read |
+| owner, owner's address | `vessel_owners_hist` | `name`, `address`, `postal_no` |
+| name prerogative | — | not read |
 
 So four PDF fields are added as columns: the changes, light draught, weight, and the deregistration fate. Hreiðar's
 `BRL gömul` maps to the schema's `brutto_grt_older`.
@@ -650,18 +654,18 @@ value by value. It becomes a declared correction in `curate/corrections/` and is
 
 ## 7. Personal data
 
-- **Not read:**
-  - the owner and the owner's address, on every entry;
-  - the holders in the name-prerogative list;
-  - mbl's operator and phone number;
-  - the owners in the siglo scrape;
-  - Hreiðar's operator and parent-company names and kennitala;
-  - the `vessel` schema's `vessel_owners*` and `vessel_fishery*`;
-  - kvoti's owner, operator, phone and kennitala columns;
-  - the owner, operator and buyer ids in ufs;
-  - the owner and place columns of the MMSI lists (`eigandi`, `stadur`).
-- **How it is kept out:** the parser skips the owner lines by their position, and a test asserts that no staging
-  column holds them.
+The maintainer's choice of 2026-10-18: the owner's name and address are public in the register and are kept, as
+printed, under `$FISHYDATA`. They are never published (fishyweb, releases) and never enter this repository. It
+replaces decision 121's default for the register (decision 130).
+
+- **Read and kept:** the owner and the owner's address on every entry (with postcode and town where printed); mbl's
+  operator; the owners in the siglo scrape; Hreiðar's operator and parent-company names; the names and addresses in
+  the `vessel` schema's `vessel_owners*`.
+- **Still not read**, since the answer covered names and addresses only:
+  - kennitala, wherever printed: the name-prerogative list of 2012-2013, Hreiðar's `Kt` columns, the schema's
+    `national_identity_no`, kvoti's and ufs's ids;
+  - phone numbers (mbl, kvoti);
+  - the holders in the name-prerogative list.
 - **Hreiðar's counts of people lost and rescued, and its notes on the fate,** are left out unless the maintainer wants
   them (ask b).
 - **Where the data stay:** everything stays under `$FISHYDATA`. The repository carries code and counts only.
