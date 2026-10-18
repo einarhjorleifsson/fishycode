@@ -69,6 +69,30 @@ assumed.
 "Better still would be that we would obtain the gear from the ais track - but that is a bigger TODO" (maintainer):
 TODO 86. The same rule in the flow's gear cascade, for pings and voyages with no logbook, is not made here.
 
+## Amended 2026-10-18: presets, the map's background, fishing hours in hexagons
+
+The maintainer's tweaks:
+- **"All loaded years" named its range.** The page loads the latest year by default, so the button now says
+  "Whole range: 2026", and an **All years** button loads every year the vessel was heard on AIS.
+- **"Last N trips" instead of a month.** "rather than having 'month' having last x trips": a preset of the last 1, 3,
+  5 or 10 logbook trips, or of AIS voyages for a vessel with no logbook. The page opens on the last 3. "Last month"
+  stays. Every preset also fits the map to what it selects, and **Fit map** does so after a drag ("center the data
+  view to the last trip(s), month, year per vessel").
+- **What the map shows outside the window:** the whole loaded track, the fishing hours in hexagons, or nothing ("choose
+  to only see the data selected or the full sweep").
+  - The first version drew a heat map. "hex-layer instead of heatmap may be better science" (maintainer): a heat map
+    smooths over a spread set in screen pixels, while hexagons are fixed cells with a quantity and a legend.
+  - The cells sum the trail's `hours`, the effort each fishing fix stands for, not a count of pings, so a stretch the
+    AIS reported often weighs no more than one it reported seldom. On vid 1977's 2026 that is 4,268 fishing hours in
+    78,347 pings.
+  - The cells are 0.5, 1, 2 or 5 km from centre to corner, regular on the Web Mercator map at the map's latitude, so
+    only roughly equal in area. H3 cells would be equal-area; they would need h3-js or the service.
+  - The option is greyed out for a vessel with no fishing ping.
+
+The service now sends `hours` with the trail (API version 2026-10-18.4), so an older running server shows the page's
+banner. Checked in the browser pane on vids 2047 and 1977: the presets, the range's name, the hexagons' legend (0-10.4
+fishing hours per 1 km cell for vid 1977). The redraw time with hexagons on was not measured: the pane was hidden.
+
 ## Measured
 
 - The service (`check.R`): 67 answers on vids 2757, 3739 and 2652, each with exactly its allowlisted columns, all

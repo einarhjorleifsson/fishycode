@@ -89,7 +89,8 @@
   <h1>Vessel overview</h1>
   <button id="open-list" class="primary">Choose a vessel</button>
   <span id="title"></span>
-  <span class="years" title="the years whose trail, trips, hauls and landings are loaded">years <select id="from"></select> to <select id="to"></select></span>
+  <span class="years" title="the years whose trail, trips, hauls and landings are loaded">years <select id="from"></select> to <select id="to"></select>
+    <button id="all-years" title="load every year this vessel was heard on AIS">All years</button></span>
   <span class="seg" title="Overview: in plain words. Quality control: every record, its basis, and where the sources disagree.">
     <button id="mode-ov" class="on">Overview</button><button id="mode-qc">Quality control</button></span>
   <span id="status">loading</span>
@@ -131,7 +132,20 @@
       <div class="window">
         <button id="play" title="move the window along the track">Play</button>
         <div class="dual"><input id="wfrom" type="range" aria-label="window start"><input id="wto" type="range" aria-label="window end"></div>
-        <button id="month">Last month</button><button id="all">All loaded years</button>
+      </div>
+      <div class="window">
+        <span class="note">Show</span>
+        <span class="seg"><button id="last-trips" title="the window and the map on the vessel's last trips">Last <span id="ntrips-label">3</span> <span id="trips-word">trips</span></button><select id="ntrips" aria-label="how many trips" style="border:none;border-left:1px solid var(--line);border-radius:0">
+          <option>1</option><option selected>3</option><option>5</option><option>10</option></select></span>
+        <button id="month" title="the window and the map on the last 30 days">Last month</button>
+        <button id="all" title="the window and the map on every loaded year">Whole range</button>
+        <button id="fit" title="centre the map on the window as it is">Fit map</button>
+        <span class="note" style="margin-left:8px">Outside the window</span>
+        <span class="seg" id="bg" title="what the map shows besides the window's pings">
+          <button data-bg="track" class="on">track</button><button data-bg="hex">fishing hours</button><button data-bg="none">nothing</button></span>
+        <select id="hexkm" aria-label="hexagon size" title="the hexagons' size: centre to corner, in km at the map's latitude" style="display:none">
+          <option value="0.5">0.5 km</option><option value="1" selected>1 km</option><option value="2">2 km</option><option value="5">5 km</option></select>
+        <span id="hexlegend" class="note" style="display:none"></span>
         <span id="perf" class="note"></span>
       </div>
     </section>

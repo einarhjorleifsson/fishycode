@@ -23,7 +23,7 @@ const num = (x, d = 0) => (x == null || x === '' || Number.isNaN(x) ? '' : Numbe
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-18.3';
+const API = '2026-10-18.4';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -78,7 +78,7 @@ function lower(a, x, key = (v) => v) {
 // State ----------------------------------------------------------------------------------------------------------------
 const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null,
             stations: [], hauls: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
-            history: false, about: {}, assumed: null, assumedBase: null };
+            history: false, about: {}, assumed: null, assumedBase: null, bg: 'track' };
 // The gear after the last logbook trip, where no logbook covers the time: the previous logbook trip's (maintainer,
 // 2026-10-18: "if a logbook is missing from vessels last trip, assume that the gear is the same gear as from the
 // previous trip"). Better still would be the gear read from the track, a TODO of its own (TODO 86).
@@ -122,9 +122,20 @@ function layers() {
   const L = basemap ? [basemap] : [], tr = S.tr;
   if (!tr || !tr.n) return L;
   const range = [hours(S.win[0]), hours(S.win[1])];
-  L.push(new deck.PathLayer({
+  // outside the window: the whole loaded track, its fishing hours in hexagons, or nothing but the window's pings
+  if (S.bg === 'track') L.push(new deck.PathLayer({
     id: 'track', data: tr.paths, getPath: (d) => d.path, widthUnits: 'meters', getWidth: 300, widthMinPixels: 1,
     widthMaxPixels: 5, getColor: [70, 80, 100, 90], pickable: true, autoHighlight: true, highlightColor: [0, 0, 0, 149],
+  }));
+  // fishing hours per hexagon: fixed cells, a quantity and a legend, where a heat map would only smooth (maintainer:
+  // "hex-layer instead of heatmap may be better science"). The cells are regular on the Web Mercator map, sized in km at
+  // the map's latitude.
+  if (S.bg === 'hex' && tr.fish.length) L.push(new deck.HexagonLayer({
+    id: 'hex', data: tr.fish, getPosition: (d) => d.p, getColorWeight: (d) => d.h, colorAggregation: 'SUM',
+    getElevationWeight: (d) => d.h, elevationAggregation: 'SUM', extruded: false, radius: 1000 * +$('hexkm').value,
+    coverage: 0.94, opacity: 0.6, pickable: true, upperPercentile: 100,
+    colorRange: [[255, 255, 178], [254, 217, 118], [254, 178, 76], [253, 141, 60], [240, 59, 32], [189, 0, 38]],
+    onSetColorDomain: ([lo, hi]) => { $('hexlegend').innerHTML = hexLegend(lo, hi); },
   }));
   L.push(new deck.ScatterplotLayer({
     id: 'pings', data: tr.pingData, radiusUnits: 'meters', getRadius: 400, radiusMinPixels: 2, radiusMaxPixels: 6,
@@ -160,6 +171,10 @@ function getTooltip({ layer, index, object }) {
     const gear = g.gear ? `, ${esc(g.gear)}${g.assumed ? ' (assumed: the previous trip\'s gear)' : ''}` : '';
     return { html: `${head}<b>${fmt(tr.t[i])} UTC</b><br>${num(tr.speed[i], 1)} knots, heading ${num(tr.heading[i])}°<br>` +
       `${what}${gear}<br>${num(tr.lat[i], 4)} N, ${num(tr.lon[i], 4)} E` };
+  }
+  if (layer.id === 'hex' && object) {
+    const n = object.count ?? object.points?.length ?? 0;
+    return { html: `<b>${num(object.colorValue, 1)} fishing hours</b><br>${n} fishing pings in this hexagon (${$('hexkm').value} km)` };
   }
   if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage}` : 'the track between ports' };
   if (layer.id === 'stations' && object) return { html: `haul on ${esc(object.day)}, ${esc(object.gear)}, ${num(object.kg)} kg<br>gear in ${fmt(object.t1)}, out ${fmt(object.t4)}` };
@@ -402,8 +417,45 @@ function slider() {
 }
 $('wfrom').addEventListener('input', slider);
 $('wto').addEventListener('input', slider);
-$('month').addEventListener('click', () => S.tr && setWindow(S.tr.t1 - 30 * DAY, S.tr.t1));
-$('all').addEventListener('click', () => S.tr && setWindow(S.tr.t0, S.tr.t1));
+const HEXCOL = ['#ffffb2', '#fed976', '#feb24c', '#fd8d3c', '#f03b20', '#bd0026'];
+const hexLegend = (lo, hi) => `fishing hours per hexagon: ${num(lo, 1)} ${HEXCOL.map((c) => `<span class="sw" style="background:${c};margin:0"></span>`).join('')} ${num(hi, 1)}`;
+function showBg() {
+  const hex = S.bg === 'hex';
+  $('hexkm').style.display = hex ? '' : 'none'; $('hexlegend').style.display = hex ? '' : 'none';
+  $('bg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.bg === S.bg));
+  render();
+}
+$('hexkm').addEventListener('change', render);
+
+// Presets: each sets the window and centres the map on it
+function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
+function lastUnits() {   // the logbook's trips over the loaded track, else the AIS voyages, newest last
+  const tr = S.tr, trips = S.trips.filter((d) => d.b >= tr.t0 && d.a <= tr.t1);
+  if (trips.length) return { word: 'trips', units: trips };
+  const byId = new Map();
+  for (const r of S.lanes?.voy || []) { const v = byId.get(r.id); byId.set(r.id, v ? { a: Math.min(v.a, r.a), b: Math.max(v.b, r.b) } : { a: r.a, b: r.b }); }
+  return { word: 'voyages', units: [...byId.values()].sort((x, y) => x.a - y.a) };
+}
+function showLastTrips() {
+  if (!S.tr) return;
+  const n = +$('ntrips').value, { word, units } = lastUnits();
+  $('ntrips-label').textContent = n; $('trips-word').textContent = n === 1 ? word.slice(0, -1) : word;
+  if (!units.length) { show(S.tr.t1 - 30 * DAY, S.tr.t1); return; }
+  const pick = units.slice(-n);
+  show(Math.min(...pick.map((d) => d.a)) - HOUR, Math.max(...pick.map((d) => d.b)) + HOUR);
+}
+$('last-trips').addEventListener('click', showLastTrips);
+$('ntrips').addEventListener('change', showLastTrips);
+$('month').addEventListener('click', () => S.tr && show(S.tr.t1 - 30 * DAY, S.tr.t1));
+$('all').addEventListener('click', () => S.tr && show(S.tr.t0, S.tr.t1));
+$('fit').addEventListener('click', () => S.tr && fitTo(S.win[0], S.win[1]));
+$('bg').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+  if (b.disabled) return;
+  S.bg = b.dataset.bg;
+  showBg();
+}));
+$('all-years').addEventListener('click', () => S.vid && S.years.length &&
+  loadRange(S.years[0], S.years.at(-1)).catch((e) => status(String(e))));
 let playing = false;
 $('play').addEventListener('click', () => {
   if (!S.tr) return;
@@ -480,6 +532,14 @@ async function loadRange(from, to) {
   tripChecks();
   S.lanes = laneLists();
   if (S.tr) makeLanes();
+  $('all').textContent = `Whole range: ${S.from === S.to ? S.from : `${S.from}–${S.to}`}`;
+  const hexb = $('bg').querySelector('[data-bg="hex"]'), fished = S.tr && S.tr.fish.length > 0;
+  hexb.disabled = !fished;
+  hexb.title = fished ? `${num(S.tr.fish.reduce((s, d) => s + d.h, 0))} fishing hours in ${S.tr.fish.length.toLocaleString('en-GB')} pings, these years`
+                      : 'no fishing ping in these years';
+  if (!fished && S.bg === 'hex') S.bg = 'track';
+  showBg();
+  showLastTrips();
   await renderTrips();
   renderSummary();
   if (qc()) renderPings();
@@ -490,11 +550,12 @@ async function loadRange(from, to) {
 async function buildTrail() {
   const tbl = await conn.query(`SELECT epoch_ms(time)::DOUBLE AS t, lon::FLOAT AS lon, lat::FLOAT AS lat,
       coalesce(speed, 0)::FLOAT AS speed, coalesce(heading, 0)::FLOAT AS heading, coalesce(voyage, -1)::INTEGER AS voyage,
-      coalesce(stay, -1)::INTEGER AS stay, coalesce(fishing_flow, false)::INTEGER AS fishing, coalesce(gear, '') AS gear
+      coalesce(stay, -1)::INTEGER AS stay, coalesce(fishing_flow, false)::INTEGER AS fishing, coalesce(gear, '') AS gear,
+      coalesce("hours", 0)::FLOAT AS h
     FROM trail WHERE lon IS NOT NULL AND lat IS NOT NULL ORDER BY time`);
   const col = (k) => tbl.getChild(k).toArray();
   const tr = { n: tbl.numRows, t: col('t'), lon: col('lon'), lat: col('lat'), speed: col('speed'), heading: col('heading'),
-               voyage: col('voyage'), stay: col('stay'), fishing: col('fishing'), gear: col('gear') };
+               voyage: col('voyage'), stay: col('stay'), fishing: col('fishing'), gear: col('gear'), h: col('h') };
   if (!tr.n) { S.tr = null; render(); return; }
   tr.t0 = tr.t[0]; tr.t1 = tr.t[tr.n - 1];
   tr.ts = new Float64Array(tr.n); tr.pos = new Float32Array(2 * tr.n); tr.col = new Uint8Array(4 * tr.n);
@@ -513,6 +574,10 @@ async function buildTrail() {
     if (v >= 0) { if (!byVoyage.has(v)) byVoyage.set(v, []); byVoyage.get(v).push([tr.lon[i], tr.lat[i]]); }
   }
   tr.maxSpeed = Math.ceil(maxSpeed);
+  // the fishing pings with the hours each stands for (the trail's `hours`, the effort of the fix): the hexagons sum hours,
+  // not pings, so a stretch the AIS reported often does not count for more than one it reported seldom
+  tr.fish = [];
+  for (let i = 0; i < tr.n; i++) if (tr.fishing[i]) tr.fish.push({ p: [tr.lon[i], tr.lat[i]], h: tr.h[i] });
   tr.paths = [...byVoyage].map(([voyage, path]) => ({ voyage, path }));
   tr.pingData = { length: tr.n, attributes: { getPosition: { value: tr.pos, size: 2 }, getFillColor: { value: tr.col, size: 4 },
                                               getFilterValue: { value: tr.th, size: 1 } } };

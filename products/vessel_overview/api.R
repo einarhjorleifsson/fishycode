@@ -22,7 +22,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-18.3"
+API_VERSION <- "2026-10-18.4"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -51,7 +51,7 @@ ALLOW <- list(
   station_catch = c(".sid", "schema", "sid", "catch", "catch_whole", "condition"),
   trail_years = c("year", "n", "time_first", "time_last"),
   trail    = c("time", "lon", "lat", "speed", "heading", "provider", "voyage", "stay", ".tid", "schema", ".sid", "gear",
-               "phase", "fishing_flow"),
+               "phase", "fishing_flow", "hours"),
   photos   = c("image_no", "kind", "file", "width", "height", "exif_date", "exif_artist", "best", "use"),
   landing_trips = c(".lid", "schema_land", ".tid", "schema", "match_type"),
   trip_summary  = c(".tid", "schema", "T1", "T2", "port", "stations", "catch")
