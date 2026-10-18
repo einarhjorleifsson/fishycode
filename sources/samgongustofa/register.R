@@ -16,22 +16,23 @@
 #   into `district`, `district_no` and `region`, each printed text kept. "RE-. (Reykjavík)" has no number, and 34
 #   numbers print "- ()".
 #
-# Not read (decision 121, plan 028 §7): the owners (`Eigendur`, `Eigendur:`), dropped as soon as the file is read.
+# Personal data (maintainer, 2026-10-18; plan 028 §7): the register is a public source, so the owners stay as printed,
+# kennitala included, under $FISHYDATA only: never in the repo, docs or anything published. `Eigendur` (`Eigendur:`
+# is always empty) becomes `owners`: each owner's name, kennitala and share, in one string.
 
 library(dplyr)
 library(nanoparquet)
 
 SCRAPED <- as.Date("2022-12-28")
-LEFT_OUT <- c("Eigendur", "Eigendur:")
 KEPT <- c("Skráningarnr", "Nafn", "Nafn:", "Gerð", "Skrán.staða", "Umdæmisstafir", "Heimahöfn", "Heimahöfn:",
-          "Skráð lengd", "Brúttórúmlestir", "Brúttótonn", "Smíðað")
+          "Skráð lengd", "Brúttórúmlestir", "Brúttótonn", "Smíðað", "Eigendur", "Eigendur:")
 
 # Read ---------------------------------------------------------------------------------------------------------------
 s <- readRDS(fd_raw("external", "skipaskra", "data-raw", "2022-12-28_siglo.rds"))
-stopifnot("a column is neither kept nor left out" = all(names(s) %in% c(KEPT, LEFT_OUT)))
-s <- s |> select(-any_of(LEFT_OUT))
-stopifnot("a field is printed twice" = !any(!is.na(s$Nafn) & !is.na(s$`Nafn:`)),
-          "a field is printed twice" = !any(!is.na(s$Heimahöfn) & !is.na(s$`Heimahöfn:`)))
+stopifnot("a column is not known" = all(names(s) %in% KEPT),
+          "a field is printed twice" = !any(!is.na(s$Nafn) & !is.na(s$`Nafn:`)),
+          "a field is printed twice" = !any(!is.na(s$Heimahöfn) & !is.na(s$`Heimahöfn:`)),
+          "a field is printed twice" = !any(!is.na(s$Eigendur) & !is.na(s$`Eigendur:`)))
 
 # Shape --------------------------------------------------------------------------------------------------------------
 num <- function(x) as.numeric(chartr(",", ".", gsub(".", "", sub(" (m|t)$", "", x), fixed = TRUE)))
@@ -41,6 +42,7 @@ DISTRICT <- "^([^-]*)-([0-9]*)[.]? [(](.*)[)]$"
 out <- s |>
   transmute(vid = as.integer(Skráningarnr), status = `Skrán.staða`,
             name = coalesce(Nafn, `Nafn:`), type = Gerð, home_port = coalesce(Heimahöfn, `Heimahöfn:`),
+            owners = coalesce(Eigendur, `Eigendur:`),
             district = na_if(sub(DISTRICT, "\\1", Umdæmisstafir), ""),
             district_no = as.integer(na_if(sub(DISTRICT, "\\2", Umdæmisstafir), "")),
             region = na_if(sub(DISTRICT, "\\3", Umdæmisstafir), ""),
@@ -57,11 +59,8 @@ stopifnot(nrow(out) == nrow(s), !anyNA(out$vid), !anyDuplicated(out$vid),
           "a printed number does not parse" = !anyNA(out$length[!is.na(out$length_txt)]),
           "a printed number does not parse" = !anyNA(out$grt[!is.na(out$grt_txt)]),
           "a printed number does not parse" = !anyNA(out$gt[!is.na(out$gt_txt)]))
-PERSONAL <- "owner|operator|eigand|eigend|utgerdaradil|útgerðaraðil|kennitala|^kt|_kt|phone|sími|simi|address|heimilisfang"
-stopifnot("a personal column is in the output" = !any(grepl(PERSONAL, names(out), ignore.case = TRUE)),
-          "a left-out column is in the output" = !any(names(out) %in% LEFT_OUT))
 
-print(knitr::kable(out |> count(status, name = "numbers") |>
-                     bind_rows(tibble(status = "all", numbers = nrow(out))), caption = "staging/samgongustofa/register_2022-12-28"))
+print(knitr::kable(out |> group_by(status) |> summarise(numbers = n(), owners = sum(!is.na(owners))) |>
+                     bind_rows(tibble(status = "all", numbers = nrow(out), owners = sum(!is.na(out$owners)))), caption = "staging/samgongustofa/register_2022-12-28"))
 
 write_parquet(out, fd_staging("samgongustofa", "register_2022-12-28.parquet"))

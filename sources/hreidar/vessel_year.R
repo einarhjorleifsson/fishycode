@@ -20,16 +20,19 @@
 #   `size_class` and `formula`.
 # - `NR_ÁR` (NR + Ár / 10000) and the empty `x` are checked and dropped.
 #
-# Not read (decision 121, plan 028 §7): the operator's and parent company's names and kennitala, and (ask b, by
-# default) the counts of people lost and rescued, how they were rescued, and the notes on the fate. The fate class,
-# `Endalok`, is kept. The free-text notes `Aths` and `Ath skkr` are kept; a few of them name an owner.
+# Personal data (maintainer, 2026-10-18; plan 028 §7): the operator's and parent company's names are kept as printed
+# (`operator`, and `parent_company`, empty in every row), under $FISHYDATA only: never in the repo, docs or anything
+# published. A kennitala stays only where it came from a public source, and this workbook is not known to be one, so
+# its two kennitala columns are not read. Nor (ask b, by default) are the counts of people lost and rescued, how they
+# were rescued, and the notes on the fate. The fate class, `Endalok`, and the free-text notes `Aths` and `Ath skkr`
+# are kept.
 
 library(dplyr)
 library(nanoparquet)
 
 FILE <- fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")
 
-LEFT_OUT <- c("Kt útgerðaraðila", "Útgerðaraðili", "kt móðurfélags", "Móðurfélag",
+LEFT_OUT <- c("Kt útgerðaraðila", "kt móðurfélags",
               "Fjöldi fórst", "Fjöldi bjargaðist", "Hvernig bjargaðist", "Aths við endalok")
 DROPPED  <- c("NR_ÁR", "x")
 MAP <- c(nr = "NR", year = "Ár", name = "Nafn", district = "Staður", district_no = "Númer", skskr_nr = "Skskr.nr.",
@@ -38,6 +41,7 @@ MAP <- c(nr = "NR", year = "Ár", name = "Nafn", district = "Staður", district_
          engine_class = "Vélagerð megin", engine_type = "Vélagerð 2", deck = "Opinn/þilaður", segment = "Megingerð",
          segment_ho = "Gerð HÖ", usage = "Notkunarteg", grt_old = "BRL gömul", grt = "Brl ný", gt = "Brúttótonn mæld",
          kw = "KW mælt", hp = "HP Mælt", length = "Lengd skráð", loa = "Mesta lengd", home_port = "Heimahöfn",
+         operator = "Útgerðaraðili", parent_company = "Móðurfélag",
          book = "Bók", page = "bls", note_register = "Ath skkr", note = "Aths", website = "Vefsíða", fate = "Endalok",
          grt_filled = "BRL", gt_filled = "BT", kw_filled = "KW", kw_per_grt = "Afl", size_class = "Stærðarflokkur",
          length_filled = "Lengd", formula = "formúla")
@@ -85,14 +89,14 @@ out <- out |>
 
 # Check and write ----------------------------------------------------------------------------------------------------
 stopifnot(nrow(out) == nrow(raw), !anyNA(out$nr), !anyNA(out$year_placeholder))
-PERSONAL <- "owner|operator|eigand|eigend|utgerdaradil|útgerðaraðil|kennitala|^kt|_kt|phone|sími|simi|address|heimilisfang"
-stopifnot("a personal column is in the output" = !any(grepl(PERSONAL, names(out), ignore.case = TRUE)),
+NOT_KEPT <- "kennitala|(^|_)kt($|_)|phone|sími|simi"
+stopifnot("a kennitala or phone column is in the output" = !any(grepl(NOT_KEPT, names(out), ignore.case = TRUE)),
           "a left-out header is in the output" = !any(names(out) %in% LEFT_OUT))
 
 print(knitr::kable(tibble(
   rows = nrow(out), numbers = n_distinct(out$nr), numbers_90000 = n_distinct(out$nr[out$nr >= 90000]),
   years = paste(range(out$year, na.rm = TRUE), collapse = "-"), placeholder_rows = sum(out$year_placeholder),
   repeated_nr_year = sum(duplicated(out[c("nr", "year")])), skskr_nr_text = sum(!is.na(out$skskr_nr_txt)),
-  fate = sum(!is.na(out$fate))), caption = "staging/hreidar/vessel_year"))
+  fate = sum(!is.na(out$fate)), operator = sum(!is.na(out$operator))), caption = "staging/hreidar/vessel_year"))
 
 write_parquet(out, fd_staging("hreidar", "vessel_year.parquet"))

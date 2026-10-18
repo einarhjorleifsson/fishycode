@@ -40,8 +40,6 @@ out <- all_rows |>
 
 # Check and write ----------------------------------------------------------------------------------------------------
 stopifnot(all(KEEP %in% names(out)), !anyNA(out$mobileid), !anyDuplicated(out[c("file", "mobileid")]))
-PERSONAL <- "owner|operator|eigand|eigend|utgerdaradil|útgerðaraðil|kennitala|^kt|_kt|phone|sími|simi|address|heimilisfang"
-stopifnot("a personal column is in the output" = !any(grepl(PERSONAL, names(out), ignore.case = TRUE)))
 
 print(knitr::kable(out |> group_by(file) |>
                      summarise(rows = n(), tf_call_sign = sum(grepl("^TF", toupper(cs))), mmsi_251 = sum(grepl("^251", mmsi)),

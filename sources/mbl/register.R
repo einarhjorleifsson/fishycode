@@ -19,8 +19,9 @@
 #   photo scrape. No file is dated by itself, so the span is given for every vid.
 # - Two files (vid 5665 and 9999) also hold a catch table, scraped by mistake: its columns and rows are dropped.
 #
-# Not read (decision 121, plan 028 §7): `Útgerð` (the operator), `Sími` (a phone number) and `Heimasíða` (a home page,
-# which names the operator or a person). They are dropped as soon as the files are read.
+# Personal data (maintainer, 2026-10-18; plan 028 §7): mbl.is is a public source, so what it printed stays as printed,
+# under $FISHYDATA only: never in the repo, docs or anything published. That is the operator (`Útgerð`, `operator`),
+# a phone number (`Sími`, `phone`) and a home page that names the operator or a person (`Heimasíða`, `website`).
 
 library(dplyr)
 library(nanoparquet)
@@ -28,13 +29,13 @@ library(nanoparquet)
 DIR <- fd_raw("external", "skipaskra", "data-raw", "mbl")
 SCRAPED <- "2022-12-28/2023-01-09"
 
-LEFT_OUT <- c("Útgerð", "Sími", "Heimasíða")
 MAP <- c(registration_no = "Skipanr.", name = "Nafn", home_port = "Heimahöfn", type = "Tegund",
          operational_category = "Útgerðarflokkur", processing_licence = "Vinnsluleyfi", length = "Skráð lengd",
          loa = "Mesta lengd", breadth = "Breidd", depth = "Dýpt", grt = "Brúttórúmlestir", gt = "Brúttótonn",
          nt = "Nettótonn", hp = "Hestöfl", build_year = "Smíðaár", yard = "Smíðastöð", build_place = "Smíðastaður",
          hull_material = "Efni í bol", engine = "Vél", previous_name = "Fyrra nafn", changes = "Breytingar",
-         mmsi = "MMSI", call_sign = "Kallmerki", imo = "IMO")
+         mmsi = "MMSI", call_sign = "Kallmerki", imo = "IMO", operator = "Útgerð", phone = "Sími",
+         website = "Heimasíða")
 NUM <- c("length", "loa", "breadth", "depth", "grt", "gt", "nt", "hp", "build_year")
 
 # Read ---------------------------------------------------------------------------------------------------------------
@@ -44,9 +45,9 @@ long <- purrr::map(files, function(f)
                                    col_select = c(variable, value, vid), progress = FALSE)) |>
     mutate(file_vid = as.integer(sub("^vid-([0-9]+)[.]csv$", "\\1", basename(f))))) |>
   bind_rows() |>
-  filter(!is.na(variable), !variable %in% LEFT_OUT)
+  filter(!is.na(variable))
 
-stopifnot("a field is neither mapped nor left out" = all(long$variable %in% MAP),
+stopifnot("a field is not mapped" = all(long$variable %in% MAP),
           "a vid differs from its file name" = all(as.integer(long$vid) == long$file_vid),
           "a field repeats within a file" = !anyDuplicated(long[c("file_vid", "variable")]))
 
@@ -79,14 +80,12 @@ out <- out |>
 
 # Check and write ----------------------------------------------------------------------------------------------------
 stopifnot(nrow(out) == length(files), !anyDuplicated(out$vid))
-PERSONAL <- "owner|operator|eigand|eigend|utgerdaradil|útgerðaraðil|^útgerð$|kennitala|^kt|_kt|phone|sími|simi|address|heimilisfang|heimasíða"
-stopifnot("a personal column is in the output" = !any(grepl(PERSONAL, names(out), ignore.case = TRUE)),
-          "a left-out field is in the output" = !any(names(out) %in% LEFT_OUT))
 
 print(knitr::kable(tibble(
   vids = nrow(out), name = sum(!is.na(out$name)), gt = sum(!is.na(out$gt)), grt = sum(!is.na(out$grt)),
   mmsi = sum(!is.na(out$mmsi)), call_sign = sum(!is.na(out$call_sign)), imo = sum(!is.na(out$imo)),
-  previous_name = sum(!is.na(out$previous_name)), changes = sum(!is.na(out$changes))),
+  previous_name = sum(!is.na(out$previous_name)), changes = sum(!is.na(out$changes)),
+  operator = sum(!is.na(out$operator))),
   caption = "staging/mbl/register_2023-01"))
 
 write_parquet(out, fd_staging("mbl", "register_2023-01.parquet"))
