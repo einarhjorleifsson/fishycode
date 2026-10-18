@@ -189,6 +189,11 @@ changed.
       235 px.
     - Only the zoom and the centre change with the vessel and the window. In Quality control the When panel is taller
       than the map.
+    - "the width between where and when should be fixed at a global level": the split is one setting in `index.html`,
+      a third and two thirds. Each column is held so that its content cannot widen it: the chart's canvas, sized in
+      pixels, could otherwise hold When wider when the window narrows.
+    - Measured in the pane: Where is 0.333 of the two at 1,920, 1,100 and 1,440 px, in both modes, on vids 2047 and
+      1977. The 1,100 px case came after narrowing the window from 1,920 px.
   - To make room, Overview's help text moved from the map into the Window line of the choices. The speed plot is
     230 px tall, up from 190.
 - **Outside the window: nothing first.** The default is now nothing, and the order of the choices is nothing, fishing

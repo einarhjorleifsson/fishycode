@@ -39,8 +39,10 @@
   main { grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 16px; }
   #vessel { grid-template-columns: minmax(300px, 460px) 1fr; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-  /* Where | When: a third and two thirds; the map's shape is fixed in app.js (MAP_RATIO), its height follows its width */
-  #where-when { grid-template-columns: 1fr 2fr; }
+  /* Where | When: one split for every vessel, mode and window (maintainer, 2026-10-18), set here and only here. minmax(0, )
+     keeps a column's content (the chart's canvas, a long legend) from widening it. The map's shape is fixed in app.js
+     (MAP_RATIO); its height follows its width. */
+  #where-when { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
   section.controls { position: sticky; top: 52px; z-index: 15; }
   #trips, #pings { overflow-x: auto; }   /* wide QC tables scroll sideways */
   /* the vessel in two lines, its photo as a thumb at the right; a click on it opens the Vessel tab */
