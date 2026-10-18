@@ -53,6 +53,8 @@ tar_option_set(
 # The Faroese register is a file per vessel, listed here rather than in a command for the same reason as the feeds
 # below (decision 113): a listing in a command is not redone, so it would never see a new vessel's file.
 fro_files <- sort(list.files(fd_raw("external", "fro"), "^vid-.*[.]csv$", full.names = TRUE), method = "radix")
+# The mbl vessel photos (plan 030), for the same reason: if the rest of the 2022 scrape is found, it lands in this folder.
+mbl_photo_files <- input_files("raw", "external", "skipaskra", "jpg", pattern = "[.]jpg$")
 
 # produces() and frozen_input() are in R/source_script.R, shared with _targets_once.R.
 # source_script() sources with encoding = "UTF-8", which is not optional: the scripts
@@ -231,6 +233,19 @@ list(
   tar_target(vessel_sign, {
     annual_call_sign; vessel_sign_raw; vessel_class_raw; vessel_hist_raw; vessel_raw
     produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))
+  }, format = "file"),
+
+  # The mbl vessel photos indexed by vid, with the scrape's logs for mbl's image id and the files it never delivered
+  # (plan 030 step 1, decision 137). Nothing in the flow reads it; products/vessel_overview does. Internal use only.
+  tar_target(mbl_photo_raw, c(mbl_photo_files,
+                              fd_raw("external", "skipaskra",
+                                     c("nohup_2022-12-27.log", "nohup2.log",
+                                       sprintf("mbl-scrape_2022-12-28_%s.log",
+                                               c("153000", "160000", "163000", "170000", "173000", "180000"))))),
+             format = "file"),
+  tar_target(mbl_photo, {
+    mbl_photo_raw
+    produces("sources/mbl/photo.R", fd_staging("mbl", "photo.parquet"))
   }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and

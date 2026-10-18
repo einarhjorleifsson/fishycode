@@ -1,7 +1,8 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
-**status:** proposal — measured 2026-10-18 (read-only), nothing built; asks a-g answered the same day, each the
-proposed option (decision 137); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
+**status:** partly built — step 1 (`sources/mbl/photo.R`, target `mbl_photo`) coded, wired and checked in a scratch
+store on 2026-10-18, not built: it waits for the maintainer's go; asks a-g answered, each the proposed option
+(decision 137); the search for the whole photo set (ask b) is the maintainer's (TODO 85)
 · **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132 and 137,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
@@ -107,12 +108,13 @@ Scripts and output are in scratch only. Nothing was written under `$FISHYDATA`.
 - The scraper kept nothing from the page but the image id: no caption, no photographer, no date. The info scrape
   (`data-raw/mbl/vid-*.csv`, 27 fields) has no photo field.
 - The EXIF in the photos themselves:
-  - a camera date on 410 of the 538 photos. 17 are before 2000 (most likely camera clocks never set); 86 fall in
-    2006-2010, 256 in 2011-2015, 49 in 2016-2020, and none later;
+  - a camera date on 410 of the 538 photos. 17 of them are 2000-01-01, a camera's default (a clock never set). The
+    other 393 run from 2003 to 2016-09-04: 2 before 2006, 86 in 2006-2010, 256 in 2011-2015 and 49 in 2016.
+    (Corrected 2026-10-18 by step 1's build in scratch: the first draft read the 17 as "before 2000".)
   - camera make and model on 405;
   - a photographer's name (`Artist`) on 82, and a `Copyright` string on 63. Some of these hold an e-mail address and
     a phone number.
-- So a photo's date is known for 410 vessels at most. For the rest, the scrape (2022-12-27/28) is a bound. A photo
+- So a photo's date is known for 393 vessels at most. For the rest, the scrape (2022-12-27/28) is a bound. A photo
   can show a vessel before a refit or under an earlier name.
 
 ### 1.5 Coverage against the registers

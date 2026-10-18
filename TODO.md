@@ -486,16 +486,16 @@ wired: the plan 028 session edits `_targets_once.R` too. Step 4 needs asks b, f 
 reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 
 ## 85. Vessel photos from mbl and an internal vessel overview app (plan 030)
-**status:** open · **needs: maintainer** — the search for the whole photo set (plan 030 ask b), and the go to build
-step 1's target; asks a and c-g answered (decision 137) · **see:** `curate/plans/030-vessel-photos-and-overview.md`,
+**status:** in progress · **needs: maintainer** — the go to build `mbl_photo` (step 1, coded and checked in scratch),
+and the search for the whole photo set (plan 030 ask b); asks a and c-g answered (decision 137) · **see:** `curate/plans/030-vessel-photos-and-overview.md`,
 plan 028 §3.6 and §7, plan 001, decisions 049, 105 and 137
 
 The 1,000 mbl photo files in `raw/external/skipaskra/jpg/` are about a quarter of the 2022 scrape and not yet in the
 flow. Plan 030 indexes them by vid in `staging/mbl/photo.parquet`, moves the scrape code to `dump/`, and specifies an
 internal overview per vessel: photo, register, landings, logbook, and a map linked to a time-speed plot by a time
 slider. It is a JavaScript page over a thin R service, so that it stays responsive (maintainer). The photos are a
-newspaper's images: internal use only, never published. Nothing is built. It runs on the laptop first, from
-`products/vessel_overview/`.
+newspaper's images: internal use only, never published. Step 1, the photo index, is coded and wired; nothing is
+built. The app runs on the laptop first, from `products/vessel_overview/`.
 
 **check:** `staging/mbl/photo.parquet` built with one row per file and per logged download; the app opening for vids
 2757, 3739 and 2652 where ask a says, with no personal column served, and redrawing in under 50 ms on vid 1977's
