@@ -451,3 +451,18 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 
 **check:** no MMSI window opens before its hull's first register date, or the maintainer's alternative is recorded;
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
+
+## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
+**status:** open · **needs: maintainer** — plan 028 §9's six asks: where it builds, Hreiðar's counts of people lost,
+licences after July 2020, the MMSI lists `mmsi.R` does not read, editions outside 2004-2022, the decision model · **see:**
+`curate/plans/028-skipaskra-mined.md`, decisions 046, 049, 121, TODO 71
+
+Measured read-only by Claude, 2026-10-18. The 19 register editions (2004-2022, 5,230 pages) carry a text layer in
+three layouts, with minor tables of each year's registrations and deregistrations (date and fate). The output takes
+the `vessel` schema's table structure, not one table (maintainer, 2026-10-18). Its histories were all written from
+2023-12-19 and hold no call-sign change. `kvoti.skipasaga`, the ufs change journals, the mbl and siglo scrapes
+(2022-12/2023-01) and the MMSI lists are witnesses outside it, and licences are dated in kvoti 1996-2020. Each row will
+carry its source, its dispute status and the rule of a decision model (§6) that settled it. Steps 1-4 (adapters,
+evidence, checks) need no answer.
+
+**check:** plan 028's steps 1-5 built and its discrepancy table and docs page published, or the plan parked.
