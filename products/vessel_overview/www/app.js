@@ -186,6 +186,9 @@ function fitTo(a, b) {
 // The speed chart ----------------------------------------------------------------------------------------------------
 let plot = null, lanes = null, cursorFromMap = false;
 const SYNC = uPlot.sync('vessel');
+// The speed chart and the event lane share one left gutter (axis and its label), so a time falls at the same x in both
+const GUTTER = { size: 118, labelSize: 18, labelFont: '600 11px system-ui', font: '11px system-ui' };
+const PADDING = [8, 28, null, null];   // a fixed right margin: the chart's last time label no longer widens only the chart
 const inside = (arr, t, maxDur) => { for (let i = lower(arr, t - maxDur, (d) => d.a); i < arr.length && arr[i].a <= t; i++) if (arr[i].b >= t) return arr[i]; return null; };
 const tripAt = (t) => inside(S.trips, t, 120 * DAY);
 
@@ -241,11 +244,11 @@ function makePlot() {
   const tr = S.tr;
   plot?.destroy();
   plot = new uPlot({
-    width: $('plot').clientWidth || 600, height: 190, legend: { show: false },
+    width: $('plot').clientWidth || 600, height: 190, legend: { show: false }, padding: PADDING,
     scales: { x: { time: true }, y: { range: [0, Math.max(12, tr.maxSpeed)] } },
     series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false } },
              { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false }],
-    axes: [{}, { label: 'knots', size: 50 }],
+    axes: [{ font: GUTTER.font }, { ...GUTTER, label: 'knots' }],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
     hooks: {
       drawClear: [drawTrips], draw: [drawMarks],
@@ -329,10 +332,11 @@ function makeLanes() {
   if (!qc() || !S.tr) return;
   const tr = S.tr, n = LANES.length;
   lanes = new uPlot({
-    width: $('lanes').clientWidth || 600, height: 22 * n + 30, legend: { show: false },
+    width: $('lanes').clientWidth || 600, height: 22 * n + 30, legend: { show: false }, padding: PADDING,
     scales: { x: { time: true, min: S.win[0] / 1000, max: S.win[1] / 1000 }, y: { range: [0, n] } },
     series: [{}, { show: false }],
-    axes: [{ show: false }, { size: 130, splits: () => LANES.map((_, i) => n - i - 0.5), values: () => LANES.map((l) => l[0]), grid: { show: false }, ticks: { show: false } }],
+    axes: [{ show: false }, { ...GUTTER, label: 'events', splits: () => LANES.map((_, i) => n - i - 0.5), values: () => LANES.map((l) => l[0]),
+                              grid: { show: false }, ticks: { show: false } }],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false }, y: false },
     hooks: {
       draw: [drawLanes],
