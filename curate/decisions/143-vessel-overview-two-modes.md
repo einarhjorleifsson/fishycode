@@ -161,3 +161,43 @@ Not checked: the layout at phone width, and a person using the page.
   once in the browser pane.
 - The checks' rule for gear the lists do not name is lenient by design. Whether STATIC and MOBILE are complete for
   the Icelandic gears is for a person to say.
+
+## Amended 2026-10-18: the map's shape, what it shows outside the window, and a map that follows the window
+
+The maintainer's next asks; code, the measurement, checks and this section by Claude (AI-assisted). Only the page
+changed.
+
+- **Where's width from the fishing grounds' shape.** "the where could be 1/3 of the width and when the 2/3", and "better
+  still": take the aspect ratio of longitude to latitude at about 65°N, so that the map is equidistant, and let that set
+  Where's width against When's.
+  - Measured on the trail: 98% of the Icelandic fleet's fishing pings (vid 1-9999, `fishing_flow`) lie in lon -32 to
+    -5, lat 59 to 70, in both 2016 and 2024.
+  - Within that area, 1-97.5% of them lie in lon -27.4 to -12.0 and lat 62.4 to 67.5. The page takes the box lon -27.5
+    to -11.5, lat 62.5 to 67.5.
+  - At 65°N a degree of longitude is 0.42 of a degree of latitude (47 against 111 km). The box is therefore 752 by
+    556 km, 1.35 times as wide as tall. The map's Web Mercator projection gives the same 1.35.
+  - The map is as tall as the When panel beside it, less its heading, and 1.35 times as wide as it is tall. When takes
+    the rest of the row, and always keeps at least half of it.
+  - At 1,440 px, Where takes 34% of the row in Overview. In Quality control, the event lanes make When taller, so by
+    the same rule Where would take 55%; the half-row cap holds it at 50%.
+  - On one column (phone width), the map is as wide as the page and 1/1.35 as tall.
+  - To make room, Overview's help text moved from the map into the Window line of the choices. The speed plot is
+    230 px tall, up from 190.
+- **Outside the window: nothing first.** The default is now nothing, and the order of the choices is nothing, fishing
+  hours, track.
+- **Hexagons sized by the zoom, in viridis.** A cell is about 12 pixels from centre to corner, rounded to a step: 0.25,
+  0.5, 1, 2, 5, 10, 20 or 50 km. The cells re-aggregate only when the step changes, and the legend names the step.
+  On vid 1977's 2026, the whole grounds show 20 km cells, and zooming in gives 10 km. The colours are viridis, R's
+  default ("D"), in six steps.
+- **The map follows the window.** "it would then be nice that the 'leaflet' would set the extent automatically given
+  the extent of the vessel and time period selected".
+  - Once a drag on the chart or a move of the slider rests (250 ms), the map frames the vessel's track in the window.
+  - The presets, a trip and a haul already framed it.
+  - Play frames the whole run at its start, so the vessel moves across a still map.
+  - Fit map frames it again after the map was moved by hand.
+
+Checked in the browser pane on vid 1977:
+- the shares and ratios above;
+- the hexagons' step after zooming;
+- the map reframed by the slider;
+- no console error, and no sideways scroll at phone width.

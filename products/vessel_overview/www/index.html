@@ -38,6 +38,8 @@
   main { grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 16px; }
   #vessel { grid-template-columns: minmax(300px, 460px) 1fr; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  /* Where | When: app.js sets Where's width from the map's height and the fishing grounds' shape (sizeMap) */
+  #where-when { grid-template-columns: 1fr 2fr; }
   section.controls { position: sticky; top: 52px; z-index: 15; }
   #trips, #pings { overflow-x: auto; }   /* wide QC tables scroll sideways */
   /* the vessel in two lines, its photo as a thumb at the right; a click on it opens the Vessel tab */
@@ -47,7 +49,7 @@
   #thumb { flex: none; padding: 0; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; height: 50px; min-width: 72px;
            display: flex; align-items: center; justify-content: center; background: #eef1f4; color: var(--muted); font-size: 11px; }
   #thumb img { height: 50px; width: auto; max-width: 120px; object-fit: cover; display: block; }
-  @media (max-width: 1000px) { main, .row2 { grid-template-columns: 1fr !important; } #status { max-width: 100%; } }
+  @media (max-width: 1000px) { main, .row2, #where-when { grid-template-columns: 1fr !important; } #status { max-width: 100%; } }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
   section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
   h3 { font-size: 12px; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
@@ -68,7 +70,7 @@
   .badge.ok { background: #e8f5e9; color: #2e7d32; }
   dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
   dt { color: var(--muted); } dd { margin: 0; }
-  #map { position: relative; height: 46vh; min-height: 300px; border-radius: 6px; overflow: hidden; background: #e8edf1; }
+  #map { position: relative; height: 320px; border-radius: 6px; overflow: hidden; background: #e8edf1; }
   #attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
   #plot, #lanes { margin-top: 6px; }
   #hoverinfo { min-height: 18px; font-size: 12px; color: var(--ink); }
@@ -122,21 +124,18 @@
           <option>1</option><option selected>3</option><option>5</option><option>10</option></select></span>
         <button id="month" title="the window and the map on the last 30 days">Last month</button>
         <button id="all" title="the window and the map on every loaded year">Whole range</button>
-        <button id="fit" title="centre the map on the window as it is">Fit map</button>
+        <button id="fit" title="the map follows the window by itself; this frames it again after you moved the map">Fit map</button>
         <span class="note" style="margin-left:8px">Outside the window</span>
         <span class="seg" id="bg" title="what the map shows besides the window's pings">
-          <button data-bg="track" class="on">track</button><button data-bg="hex">fishing hours</button><button data-bg="none">nothing</button></span>
-        <select id="hexkm" aria-label="hexagon size" title="the hexagons' size: centre to corner, in km at the map's latitude" style="display:none">
-          <option value="0.5">0.5 km</option><option value="1" selected>1 km</option><option value="2">2 km</option><option value="5">5 km</option></select>
+          <button data-bg="none" class="on">nothing</button><button data-bg="hex" title="the hexagons' size follows the zoom">fishing hours</button><button data-bg="track">track</button></span>
         <span id="hexlegend" class="note" style="display:none"></span>
       </div>
-      <div class="window"><span class="note">Window</span><b id="window-label" style="font-size:13px"></b><span id="perf" class="note"></span></div>
+      <div class="window"><span class="note">Window</span><b id="window-label" style="font-size:13px"></b><span id="perf" class="note"></span>
+        <span class="note ov-only">· the map shows where the vessel was in this window: drag across the speed chart or move the slider to change it, and hover on the chart to see the vessel at that moment</span></div>
     </section>
-    <div class="row2">
+    <div class="row2" id="where-when">
     <section id="p-map">
       <h2>Where</h2>
-      <div class="help ov-only">Where the vessel was in the time window. Choose the window above, drag across the speed
-        chart, or move the slider. Hover on the chart to see the vessel's position at that moment.</div>
       <div id="map"><div id="attrib"></div></div>
     </section>
     <section id="p-chart">

@@ -82,7 +82,7 @@ function lower(a, x, key = (v) => v) {
 // State ----------------------------------------------------------------------------------------------------------------
 const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null,
             stations: [], hauls: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
-            history: false, about: {}, assumed: null, assumedBase: null, bg: 'track', ready: false };
+            history: false, about: {}, assumed: null, assumedBase: null, bg: 'none', ready: false };
 // The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
 // a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
 // using the logbooks"). The previous logbook trip's gear only where that landing records none ("if a logbook is missing
@@ -122,10 +122,49 @@ const basemap = TOKEN.startsWith('pk.')
   : null;
 $('attrib').textContent = basemap ? '© Mapbox © OpenStreetMap' : 'no basemap: MAPBOX_TOKEN is not set';
 
+// The map's shape (maintainer, 2026-10-18): Where is as wide as the fishing grounds around Iceland need to fill its
+// height at the same distance per pixel both ways, and When takes the rest of the row. 98% of the Icelandic fleet's
+// fishing pings in 2016 and 2024 lie in lon -32 to -5, lat 59 to 70, and nearly all of those in the box below. At
+// 65°N a degree of longitude is 0.42 of a degree of latitude (47 against 111 km), so the box is 752 by 556 km: 1.35
+// times as wide as tall, on the map's Web Mercator projection too.
+const GROUNDS = [[-27.5, 62.5], [-11.5, 67.5]];
+const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+const MAP_RATIO = ((GROUNDS[1][0] - GROUNDS[0][0]) * Math.PI) / 180 / (merc(GROUNDS[1][1]) - merc(GROUNDS[0][1]));
+function sizeMap() {
+  const row = $('where-when'), map = $('map'), where = $('p-map'), when = $('p-chart');
+  if (!$('now').classList.contains('on')) return;
+  if (window.innerWidth <= 1000) {   // one column: the map as wide as the page, as tall as the grounds need
+    row.style.gridTemplateColumns = '';
+    map.style.height = `${Math.round(Math.min(map.clientWidth / MAP_RATIO, 0.7 * window.innerHeight))}px`;
+    return;
+  }
+  for (let k = 0; k < 2; k++) {   // twice: the help text and the chart's legend wrap by width, which moves the heights
+    const chrome = where.offsetHeight - map.offsetHeight, pad = where.offsetWidth - map.clientWidth;
+    const h = Math.max(240, when.offsetHeight - chrome);
+    const w = Math.min(Math.round(h * MAP_RATIO) + pad, Math.round(row.clientWidth / 2));   // When keeps at least half
+    if (row.style.gridTemplateColumns !== `${w}px 1fr`) row.style.gridTemplateColumns = `${w}px 1fr`;
+    if (map.style.height !== `${h}px`) map.style.height = `${h}px`;
+  }
+}
+// The zoom the map is at, for the hexagons' size
+const view = { zoom: 5, latitude: 65 };
+function groundsView() {
+  const { width, height } = $('map').getBoundingClientRect();
+  const v = new deck.WebMercatorViewport({ width: Math.max(width, 200), height: Math.max(height, 200) }).fitBounds(GROUNDS, { padding: 10 });
+  view.zoom = v.zoom; view.latitude = v.latitude;
+  return { longitude: v.longitude, latitude: v.latitude, zoom: v.zoom };
+}
+sizeMap();
+
 let afterRender = null;
 const deckgl = new deck.Deck({
-  parent: $('map'), controller: true, initialViewState: { longitude: -20, latitude: 64.5, zoom: 5 },
+  parent: $('map'), controller: true, initialViewState: groundsView(),
   onAfterRender: () => { if (afterRender) { const f = afterRender; afterRender = null; f(); } },
+  onViewStateChange: ({ viewState }) => {
+    const before = hexKm();
+    view.zoom = viewState.zoom; view.latitude = viewState.latitude;
+    if (S.bg === 'hex' && hexKm() !== before) render();
+  },
   getTooltip, onHover: ({ layer, index }) => { if (layer && layer.id === 'pings' && index >= 0) setHover(index, 'map'); },
   layers: basemap ? [basemap] : [],
 });
@@ -141,13 +180,12 @@ function layers() {
     widthMaxPixels: 5, getColor: [70, 80, 100, 90], pickable: true, autoHighlight: true, highlightColor: [0, 0, 0, 149],
   }));
   // fishing hours per hexagon: fixed cells, a quantity and a legend, where a heat map would only smooth (maintainer:
-  // "hex-layer instead of heatmap may be better science"). The cells are regular on the Web Mercator map, sized in km at
-  // the map's latitude.
+  // "hex-layer instead of heatmap may be better science"). The cells are regular on the Web Mercator map, sized by the
+  // zoom (hexKm) and coloured by viridis.
   if (S.bg === 'hex' && tr.fish.length) L.push(new deck.HexagonLayer({
     id: 'hex', data: tr.fish, getPosition: (d) => d.p, getColorWeight: (d) => d.h, colorAggregation: 'SUM',
-    getElevationWeight: (d) => d.h, elevationAggregation: 'SUM', extruded: false, radius: 1000 * +$('hexkm').value,
-    coverage: 0.94, opacity: 0.6, pickable: true, upperPercentile: 100,
-    colorRange: [[255, 255, 178], [254, 217, 118], [254, 178, 76], [253, 141, 60], [240, 59, 32], [189, 0, 38]],
+    getElevationWeight: (d) => d.h, elevationAggregation: 'SUM', extruded: false, radius: 1000 * hexKm(),
+    coverage: 0.94, opacity: 0.7, pickable: true, upperPercentile: 100, colorRange: VIRIDIS,
     onSetColorDomain: ([lo, hi]) => { $('hexlegend').innerHTML = hexLegend(lo, hi); },
   }));
   L.push(new deck.ScatterplotLayer({
@@ -187,7 +225,7 @@ function getTooltip({ layer, index, object }) {
   }
   if (layer.id === 'hex' && object) {
     const n = object.count ?? object.points?.length ?? 0;
-    return { html: `<b>${num(object.colorValue, 1)} fishing hours</b><br>${n} fishing pings in this hexagon (${$('hexkm').value} km)` };
+    return { html: `<b>${num(object.colorValue, 1)} fishing hours</b><br>${n} fishing pings in this hexagon (${hexKm()} km)` };
   }
   if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage}` : 'the track between ports' };
   if (layer.id === 'stations' && object) return { html: `haul on ${esc(object.day)}, ${esc(object.gear)}, ${num(object.kg)} kg<br>gear in ${fmt(object.t1)}, out ${fmt(object.t4)}` };
@@ -205,10 +243,13 @@ function fitTo(a, b) {
   try {
     const v = new deck.WebMercatorViewport({ width: Math.max(width, 200), height: Math.max(height, 200) })
       .fitBounds([[cx - hx, cy - hy], [cx + hx, cy + hy]], { padding: Math.min(40, width / 4, height / 4) });
-    deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: Math.min(v.zoom, 11) } });
+    view.zoom = Math.min(v.zoom, 11); view.latitude = v.latitude;
+    deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: view.zoom } });
   } catch (e) {
+    view.zoom = 8; view.latitude = cy;
     deckgl.setProps({ initialViewState: { longitude: cx, latitude: cy, zoom: 8 } });
   }
+  if (S.bg === 'hex') render();   // the hexagons' size follows the zoom
 }
 
 // The speed chart ----------------------------------------------------------------------------------------------------
@@ -270,12 +311,12 @@ function describe(t) {   // what is going on at time t, in the mode's words
 }
 // The chart's speed is capped at 15 knots (maintainer, 2026-10-18: vessels rarely go above 12-15 knots, and fishing is
 // well below that): a ping above it is drawn at the cap, and the hover text gives its real speed
-const SPEED_CAP = 15;
+const SPEED_CAP = 15, PLOT_H = 230;
 function makePlot() {
   const tr = S.tr;
   plot?.destroy();
   plot = new uPlot({
-    width: $('plot').clientWidth || 600, height: 190, legend: { show: false }, padding: PADDING,
+    width: $('plot').clientWidth || 600, height: PLOT_H, legend: { show: false }, padding: PADDING,
     scales: { x: { time: true }, y: { range: [0, SPEED_CAP] } },
     series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false } },
              { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false }],
@@ -390,9 +431,15 @@ function makeLanes() {
   }, [[tr.t0 / 1000, tr.t1 / 1000], [null, null]], $('lanes'));
   clickToSelect(lanes);
 }
+function fitPanels() {
+  sizeMap();
+  plot?.setSize({ width: $('plot').clientWidth, height: PLOT_H });
+  lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
+}
+// When's height moves with the lanes and the legend's wrapping: the map follows it
+new ResizeObserver(() => requestAnimationFrame(fitPanels)).observe($('p-chart'));
 window.addEventListener('resize', () => {
-  plot && plot.setSize({ width: $('plot').clientWidth, height: 190 });
-  lanes && lanes.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
+  fitPanels();
 });
 
 function setHover(i, source) {
@@ -425,7 +472,11 @@ function setWindow(a, b, source) {
   };
   render();
   if (qc()) { clearTimeout(pingTimer); pingTimer = setTimeout(() => { S.pingPage = 0; renderPings(); }, 150); }
+  // the map follows the window, framed on the vessel's track in it (maintainer, 2026-10-18), once a drag on the chart or
+  // the slider rests; the presets, a trip and a haul frame it themselves, and Play keeps the frame it starts with
+  if (source === 'plot' || source === 'slider') { clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTo(S.win[0], S.win[1]), 250); }
 }
+let fitTimer = null;
 function slider() {
   let a = +$('wfrom').value * 1000, b = +$('wto').value * 1000;
   if (a > b) [a, b] = [b, a];
@@ -433,15 +484,22 @@ function slider() {
 }
 $('wfrom').addEventListener('input', slider);
 $('wto').addEventListener('input', slider);
-const HEXCOL = ['#ffffb2', '#fed976', '#feb24c', '#fd8d3c', '#f03b20', '#bd0026'];
-const hexLegend = (lo, hi) => `fishing hours per hexagon: ${num(lo, 1)} ${HEXCOL.map((c) => `<span class="sw" style="background:${c};margin:0"></span>`).join('')} ${num(hi, 1)}`;
+// Viridis, R's default ("D"), in six steps; the hexagons' size follows the zoom (maintainer, 2026-10-18): about 12 pixels
+// from centre to corner, rounded to a step so the cells re-aggregate only when the step changes
+const HEXCOL = ['#440154', '#414487', '#2a788e', '#22a884', '#7ad151', '#fde725'];
+const VIRIDIS = HEXCOL.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
+const HEX_STEPS = [0.25, 0.5, 1, 2, 5, 10, 20, 50];
+function hexKm() {
+  const mpp = (2 * Math.PI * 6378137 * Math.cos((view.latitude * Math.PI) / 180)) / (512 * 2 ** view.zoom);
+  const km = (12 * mpp) / 1000;
+  return HEX_STEPS.reduce((b, x) => (Math.abs(Math.log(x / km)) < Math.abs(Math.log(b / km)) ? x : b));
+}
+const hexLegend = (lo, hi) => `fishing hours per ${hexKm()} km hexagon: ${num(lo, 1)} ${HEXCOL.map((c) => `<span class="sw" style="background:${c};margin:0"></span>`).join('')} ${num(hi, 1)}`;
 function showBg() {
-  const hex = S.bg === 'hex';
-  $('hexkm').style.display = hex ? '' : 'none'; $('hexlegend').style.display = hex ? '' : 'none';
+  $('hexlegend').style.display = S.bg === 'hex' ? '' : 'none';
   $('bg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.bg === S.bg));
   render();
 }
-$('hexkm').addEventListener('change', render);
 
 // Presets: each sets the window and centres the map on it
 function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
@@ -485,6 +543,7 @@ $('play').addEventListener('click', () => {
   if (!S.tr) return;
   playing = !playing;
   $('play').textContent = playing ? 'Pause' : 'Play';
+  if (playing) fitTo(S.win[0], S.tr.t1);   // the frame of the whole run, so the vessel moves across a still map
   const step = () => {
     if (!playing) return;
     const [a, b] = S.win, d = (b - a) / 40;
@@ -600,7 +659,7 @@ async function loadRange(from, to) {
   hexb.disabled = !fished;
   hexb.title = fished ? `${num(S.tr.fish.reduce((s, d) => s + d.h, 0))} fishing hours in ${S.tr.fish.length.toLocaleString('en-GB')} pings, these years`
                       : 'no fishing ping in these years';
-  if (!fished && S.bg === 'hex') S.bg = 'track';
+  if (!fished && S.bg === 'hex') S.bg = 'none';
   showBg();
   showLastTrips();
   await renderTrips();
@@ -978,14 +1037,13 @@ function showTab(name) {
   for (const t of TABS) { $(t).classList.toggle('on', t === name); $(`tab-${t}`).classList.toggle('on', t === name); }
   if (name === 'vessel' && S.vid && !S.vesselTab) renderVessel().catch((e) => status(String(e)));
   if (name === 'history' && S.vid && !S.history) renderHistory().catch((e) => status(String(e)));
-  if (name === 'now' && plot) { plot.setSize({ width: $('plot').clientWidth, height: 190 }); lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 }); render(); }
+  if (name === 'now') { fitPanels(); render(); }
   setHash();
 }
 for (const t of TABS) $(`tab-${t}`).addEventListener('click', () => showTab(t));
 $('thumb').addEventListener('click', () => showTab('vessel'));
 function relayout() {
-  plot?.setSize({ width: $('plot').clientWidth, height: 190 });
-  lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
+  fitPanels();
   if (S.tr) { fitTo(S.win[0], S.win[1]); render(); }
 }
 async function setMode(m) {
