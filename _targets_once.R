@@ -21,8 +21,8 @@
 #   register     the annual ship register's history to 2023-12-19: the PDFs and the other witnesses read, every
 #                witness's values in one evidence table, the checks (plan 028 steps 1-4, decision 132). Its
 #                decision model and `_hist` tables (step 5) will be frozen here too; the live part after
-#                2023-12-19 is the main project's. Build it by its last target, which pulls in the rest, never
-#                with the whole project: tar_make_isolated(names = "check_skipaskra_discrepancy")
+#                2023-12-19 is the main project's. Build it by its last targets, which pull in the rest, never
+#                with the whole project: tar_make_isolated(names = c("check_skipaskra_discrepancy", "skipaskra_history"))
 
 library(targets)
 
@@ -218,7 +218,7 @@ list(
   tar_target(register_oracle, c(
     fd_raw("oracle", "vessel", paste0(c("vessel", "vessel_hist", "vessel_identification_hist", "vessel_measurement_hist",
                                         "vessel_engines_hist", "vessel_operational_hist", "vessel_owners_hist",
-                                        "vessel_fishery_hist"), ".parquet")),
+                                        "vessel_fishery_hist", "usage_category"), ".parquet")),
     fd_raw("oracle", "kvoti", paste0(c("skipasaga", "skipaskra_siglo", "skip_extra", "veidileyfi", "veidileyfi_eydd",
                                        "veidileyfi_sviptingar", "strandveidileyfi_v", "dragnot_leyfi", "grasleppusaga",
                                        "tegund_veidileyfis"), ".parquet")),
@@ -238,5 +238,18 @@ list(
     main_landing; main_landing_catch; main_logbook
     produces("curate/checks/skipaskra_discrepancy.R",
              fd_curated("check", "skipaskra_discrepancy.parquet"), fd_curated("check", "skipaskra_agreement.parquet"))
+  }, format = "file"),
+
+  # The history to 2023-12-19, chosen by the decision model (plan 028 step 5, decision 136). A person's decisions
+  # re-enter as an input (D1).
+  tar_target(skipaskra_reviewed, "overrides/skipaskra_reviewed.csv", format = "file"),
+  tar_target(skipaskra_history, {
+    skipaskra_evidence; skipaskra_register; skipaskra_event; hreidar_vessel_year; register_oracle; main_mmsi
+    skipaskra; skipaskra_reviewed
+    produces("reference/vessels/skipaskra_history.R",
+             file.path(fd_curated("vessel", "skipaskra"), paste0(c("vessel_hist", "vessel_identification_hist", "vessel_measurement_hist",
+                                                        "vessel_engines_hist", "vessel_operational_hist", "vessel_fishery_hist",
+                                                        "vessel_owners_hist", "vessel_mmsi_hist", "vessel_event", "registered",
+                                                        "usage_category_printed", "annual_call_sign", "decision"), ".parquet")))
   }, format = "file")
 )

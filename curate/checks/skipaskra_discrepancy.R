@@ -33,6 +33,9 @@
 #   its one-letter makes are left out of the comparison and counted.
 # - The MMSI archive's default window (from 2007-06-01, to 2028-12-24) is no date: such a start opens nothing, and such
 #   an end is open. vids above 9999 are no register numbers and are left out of the MMSI and activity checks.
+# - Gear against its licence: lumpfish and lumpfish-male nets need a lumpfish licence (types 11 or 36, or
+#   grasleppusaga); Danish seine needs types 8-10 or a dragnot_leyfi year, read as a whole calendar year until plan
+#   029 stages the periods' dates (decision 135).
 
 library(dplyr)
 library(tidyr)
@@ -50,30 +53,8 @@ ed_date <- function(e) {                  # paste0() of an empty vector still re
 }
 yr <- function(d) as.integer(format(d, "%Y"))
 
-key_txt <- function(x) gsub("[^\\p{L}\\p{N}]", "", stringi::stri_trans_nfc(toupper(x)), perl = TRUE)
-key_material <- function(x) {
-  p <- strsplit(gsub(",", " OG ", toupper(ifelse(is.na(x), "", x))), "\\s+OG\\s+")
-  k <- vapply(p, function(w) paste(sort(key_txt(w[w != ""])), collapse = "+"), "")
-  ifelse(is.na(x) | k == "", NA, k)
-}
-key_class <- function(x) {
-  k <- key_txt(x)
-  case_when(k %in% c("SI", "SS") | grepl("^SAMG|^SIGL", k) ~ "AUTHORITY",
-            k %in% c("NV", "NG", "DNV", "DNVGL") ~ "DNV",
-            TRUE ~ k)
-}
-dec_of <- function(v) ifelse(grepl("\\.", v), nchar(sub("^[^.]*\\.", "", v)), 0L)
-num_agree <- function(a, da, b, db) {
-  s <- 10^pmin(da, db)
-  fine <- ifelse(da >= db, a, b); coarse <- ifelse(da >= db, b, a)
-  abs(round(fine * s) - round(coarse * s)) < 0.5 | abs(floor(fine * s + 1e-7) - round(coarse * s)) < 0.5
-}
+# key_txt(), key_material(), key_class(), dec_of(), num_agree(), imo_ok() and sk_comparable(): R/skipaskra_compare.R
 is_fishing <- function(type) grepl("FISKI|TOGAR|NÓTAVEIÐI|HVALVEIÐI", key_txt(type))
-imo_ok <- function(x) {
-  x <- as.character(x); ok <- !is.na(x) & grepl("^[0-9]{7}$", x)
-  d <- matrix(as.integer(unlist(strsplit(ifelse(ok, x, "0000000"), ""))), ncol = 7, byrow = TRUE)
-  ok & as.vector(d[, 1:6, drop = FALSE] %*% (7:2)) %% 10 == d[, 7]
-}
 fnd <- function(check, kind, vid = NA, edition = NA, date = NA, table = NA, column = NA, value = NA, source = NA,
                 value_other = NA, source_other = NA, detail = NA) {
   tibble(check, kind, vid = as.integer(vid), edition = as.integer(edition), date = as.Date(date),
@@ -372,48 +353,10 @@ F$trend <- with(tr, fnd("trend", "between_editions", NA, eds, ed_date(year), "su
                         paste0("the edition's figure for ", year, " differs from the most editions'")))
 
 # 5.3 Against the witnesses ----------------------------------------------------------------------------------------------
-CMP <- tribble(
-  ~table, ~column, ~type,
-  "vessel_hist", "name", "text", "vessel_hist", "previous_name", "text", "vessel_hist", "usage_category", "text",
-  "vessel_hist", "open", "text", "vessel_hist", "classification_society", "class",
-  "vessel_hist", "construction_place", "text", "vessel_hist", "construction_year", "num",
-  "vessel_hist", "construction_station", "text", "vessel_hist", "hull_material", "material",
-  "vessel_hist", "imo_no", "text", "vessel_hist", "power_indicator", "num",
-  "vessel_identification_hist", "district", "text", "vessel_identification_hist", "region_acronym", "text",
-  "vessel_identification_hist", "region_no", "num", "vessel_identification_hist", "call_sign", "text",
-  "vessel_identification_hist", "home_port", "text",
-  "vessel_measurement_hist", "length", "num", "vessel_measurement_hist", "max_length", "num",
-  "vessel_measurement_hist", "width", "num", "vessel_measurement_hist", "depth", "num",
-  "vessel_measurement_hist", "brutto_grt", "num", "vessel_measurement_hist", "brutto_weight_tons", "num",
-  "vessel_measurement_hist", "netto_weight_tons", "num",
-  "vessel_engines_hist", "manufacturer_name", "text", "vessel_engines_hist", "year", "num",
-  "vessel_engines_hist", "power", "num",
-  "vessel_owners_hist", "name", "text")
 n_type <- sum(evi$source == "vessel:vessel_engines_hist" & evi$column == "manufacturer_name" & nchar(key_txt(evi$value)) == 1)
 message(n_type, " engine makes of one letter in the `vessel` schema (an engine type) left out of the comparison")
-ev2 <- evi |>
-  inner_join(CMP, by = c("table", "column")) |>
-  filter(!(source == "mbl" & column == "usage_category"),           # mbl types by fishery, not by the register's key
-         !(column == "district" & !grepl("[0-9]", value)),             # letters alone are compared as region_acronym
-         !(source == "vessel:vessel_engines_hist" & column == "manufacturer_name" & nchar(key_txt(value)) == 1)) |>
-  mutate(v = case_when(source == "mbl" & table == "vessel_hist" & column == "name" ~
-                         sub("\\s+\\p{Lu}{1,2}[- ]?\\d{1,3}$", "", value, perl = TRUE),
-                       source == "mbl" & column == "manufacturer_name" ~ sub("\\.\\s*\\d{1,2}-\\d{4}$", "", value),
-                       TRUE ~ value),
-         num = ifelse(type == "num" & !is.na(value_num) & value_num != 0, value_num, NA_real_),
-         is_pdf = grepl("^pdf:", source),
-         dec = ifelse(type == "num", as.integer(dec_of(value)), NA_integer_),
-         cmp = case_when(type == "num" ~ ifelse(is.na(num), NA, as.character(num)),
-                         type == "material" ~ key_material(v),
-                         type == "class" ~ key_class(v),
-                         TRUE ~ key_txt(v))) |>
-  filter(!is.na(cmp), cmp != "")
-# kvoti.skip_extra writes two societies in one code ("SINV")
-two <- ev2$source == "kvoti.skip_extra" & ev2$column == "classification_society" & nchar(ev2$cmp) == 4
-ev2 <- bind_rows(ev2[!two, ], ev2[two, ] |> separate_longer_position(v, width = 2) |> mutate(cmp = key_class(v)))
-# ufs.skip_jn dates each call sign and IMO from the change that set it to the next change
-jn <- ev2 |> filter(kind == "change") |> arrange(vid, table, column, t1) |> group_by(vid, table, column) |>
-  mutate(t2 = lead(t1) - 1) |> ungroup()
+ev2 <- sk_comparable(evi)
+jn <- sk_journal_intervals(ev2)
 NOT_WITNESS <- "^pdf|^ufs[.]skipasaga_jn$|^kvoti[.]skip_extra$"      # the journal's old versions date changes (step 5)
 anc <- ev2 |> filter(is_pdf | source == "samgongustofa:2022-12-28") |>
   transmute(aid = row_number(), vid, tab = table, col = column, value, source, edition, d = t1, num, dec, cmp)
@@ -590,11 +533,11 @@ a4 <- ld |> anti_join(lok, by = c("vid", "date")) |> mutate(y = yr(date), asrc =
   left_join(type_y, by = c("vid", "y"))
 seine_ok <- bind_rows(lic |> filter(type %in% c("8", "9", "10")) |> select(vid, t1, t2),
                       ora("kvoti", "dragnot_leyfi") |> transmute(vid = skip_nr, t1 = as.Date(paste0(ar, "-01-01")), t2 = as.Date(paste0(ar, "-12-31"))))
-lump_ok <- lic |> filter(type == "11") |> select(vid, t1, t2)
+lump_ok <- lic |> filter(type %in% c("11", "36")) |> select(vid, t1, t2)      # lumpfish and lumpfish male (plan 029)
 cg <- read_parquet(fd_curated("landing", "catch.parquet"), col_select = c(".lid", "schema", "gid")) |> distinct()
 lg <- land |> filter(date <= LICENCE_END) |> inner_join(cg, by = c(".lid", "schema")) |>
   mutate(gear = case_when((schema == "agf" & gid == 11) | (schema == "lods" & gid %in% c(5, 26, 35)) ~ "dragnót",
-                          (schema == "agf" & gid == 3) | (schema == "lods" & gid == 25) ~ "grásleppunet")) |>
+                          (schema == "agf" & gid %in% c(3, 4)) | (schema == "lods" & gid %in% c(25, 29)) ~ "grásleppunet")) |>
   filter(!is.na(gear)) |> distinct(vid, date, gear)
 g_ok <- bind_rows(lg |> filter(gear == "dragnót") |> inner_join(seine_ok, by = join_by(vid, date >= t1, date <= t2)),
                   lg |> filter(gear == "grásleppunet") |> inner_join(lump_ok, by = join_by(vid, date >= t1, date <= t2))) |>

@@ -13,6 +13,10 @@ library(nanoparquet)
 source("../R/paths.R")
 disc <- read_parquet(fd_curated("check", "skipaskra_discrepancy.parquet"))
 agr  <- read_parquet(fd_curated("check", "skipaskra_agreement.parquet"))
+dec  <- read_parquet(fd_curated("vessel", "skipaskra", "decision.parquet"))
+regd <- read_parquet(fd_curated("vessel", "skipaskra", "registered.parquet"))
+ucp  <- read_parquet(fd_curated("vessel", "skipaskra", "usage_category_printed.parquet"))
+n_rule <- function(r, st = NULL) sum(dec$rule %in% r & (is.null(st) | dec$status %in% st))
 n_of <- function(k) sum(disc$check == k)
 fmt <- function(x) format(x, big.mark = ",")
 pdf_agr <- agr |> filter(anchor == "pdf")
@@ -67,8 +71,9 @@ WHAT <- c(
   gear_without_licence = "Danish seine or lumpfish nets without their licence (to 2020-07-22)")
 ```
 
-*Checked with AI assistance (Claude), plan 028 step 4, 2026-10-18. A check only finds: every finding stays
-"unsettled" until the decision model of plan 028 §6 settles it, and that model waits for the maintainer.*
+*Checked and built with AI assistance (Claude), plan 028 steps 4-5, 2026-10-18. A check only finds: its findings stay
+"unsettled". The history (step 5, below) chooses every value by the decision model of plan 028 §6, and its `decision`
+table says how each was settled.*
 
 ## The short version
 
@@ -154,9 +159,37 @@ Step 5 dates such changes from the dated sources.
     around them.
   - `r n_of("gear_without_licence")` vessel-years land from Danish seine or lumpfish nets without that licence.
 
+## The history to 2023-12-19
+
+The history keeps a value only while the hull is on the register.
+- `r fmt(nrow(regd))` runs on the register cover `r fmt(n_distinct(regd$registration_no))` hulls.
+- `r sum(regd$window_from == "dated")` of the runs' starts and `r sum(regd$window_to == "dated")` of their ends take a
+  day from a list, a first registration or the `vessel` schema. The rest are known to the year.
+- `r sum(regd$window_to == "open")` runs reach 2023-12-19, where the `vessel` schema's own history takes over.
+
+Each column's value is chosen stretch by stretch, by the period's source and the rules of plan 028 §6:
+
+```{r}
+#| echo: false
+dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
+  pivot_wider(names_from = status, values_from = n, values_fill = 0) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+- **D3, the period's source,** settled `r fmt(n_rule("D3"))` stretches where the lineages disagree.
+- **D2, the register's own rules:** `r n_rule("D2", "resolved")` stretches took another lineage's value that keeps the
+  rule, and `r n_rule("D2", "open")` stay as printed, open, with no such value.
+- **D4, the typo rule,** decided `r n_rule("D4")`. It needs two lineages besides the register's to agree, and with
+  Hreiðar inside the register's lineage for 2004-2021 (decision 135) that is almost never the case.
+- **D1, a person's decision,** decided `r n_rule("D1")`. None is entered yet.
+- **D5, dating:** `r fmt(sum(dec$window_from == "dated"))` stretches start on a known day, and
+  `r fmt(sum(dec$window_from == "annual"))` within a known year.
+- **Types of ship:** `r round(100 * sum(ucp$entries[ucp$basis != "none"]) / sum(ucp$entries))` % of the printed types
+  map to the `vessel` schema's codes. The rest are cut short in print.
+
 ## Not checked here
 
 - **AIS.** That comes later, and only through what the feed broadcasts itself (plan 028 §5.4).
-- **Changes the editions do not show.** Step 5 dates changes from the ufs journals.
+- **Changes the editions do not show.** Between two editions the history dates a change (D5) but adds none.
 - **Owners' addresses.** The sources write them in different grammatical cases, with or without postcode and town.
 - **Personal data.** Owners' names are compared, but this page shows only counts. The rows stay under `$FISHYDATA`.

@@ -89,7 +89,9 @@ DISTRICTS   <- c("AK", "ÁR", "BA", "DA", "EA", "GK", "HF", "HU", "ÍS", "IS", "
                  "RE", "SF", "SH", "SI", "SK", "ST", "SU", "VE", "VS", "ÞH")
 DISTRICT_RE <- paste0("^(", paste(DISTRICTS, collapse = "|"), ")[-–‐]?[0-9]{0,3}\\.?$")   # "RE005", "AK-010", "EA."
 CALLSIGN_RE <- "^TF[A-Z]{2}$"
-CLASS_SET   <- c("SI", "SS", "LR", "NV", "BV", "GL", "AB", "RS", "KR", "DNV", "RINA", "IRS")
+# SR (2005-2013), DG (2015) and NG (2016 on, DNV GL) were missing until plan 028 step 5: unknown, the code and the call sign
+# after it were read into the home port (22 entries, decision 136)
+CLASS_SET   <- c("SI", "SS", "LR", "NV", "BV", "GL", "AB", "RS", "KR", "DNV", "RINA", "IRS", "SR", "DG", "NG")
 # Running heads, titles and page numbers, matched as whole lines: a boat owned by "Siglingastofnun Íslands" prints
 # that name inside its entry (7385, 2009-2014)
 PAGE_FURNITURE_RE <- paste0("^(Siglingastofnun [ÍíI]slands|Samgöngustofa|",

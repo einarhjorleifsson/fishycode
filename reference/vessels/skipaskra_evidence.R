@@ -27,10 +27,12 @@
 # - `record`: the witness's own row, so values printed together stay together.
 # - `value` as given (numbers formatted plainly); `value_num` where it reads as a number; `value_norm` for comparing
 #   text (upper case, wrap hyphens joined, spaces collapsed).
-# - Personal data (plan 028 §7): owners' and operators' names and addresses are kept; kennitala is not carried here
-#   (it stays in staging where a public source printed it).
+# - Personal data (plan 028 §7): owners' and operators' names, addresses and kennitala are kept, from every source
+#   that has them (the maintainer's general rule of 2026-10-18, decision 135), under $FISHYDATA only.
 #
-# kvoti's skipaskra_siglo stores its measures in hundredths (7.23 m as 723): divided here.
+# kvoti's skipaskra_siglo stores its measures in hundredths (7.23 m as 723): divided here. It is a copy of the register
+# made on 2020-07-22 and speaks for that day only: its `dagsfaerslu` is an entry date that does not date the values
+# (FJÖLVI, 2196: 1993, with the call sign TFKC it was given in 2012; decision 136).
 
 library(dplyr)
 library(tidyr)
@@ -118,7 +120,7 @@ ev$hreidar <- hr |>
             vessel_measurement_hist.brutto_weight_tons = gt, vessel_measurement_hist.length = length,
             vessel_measurement_hist.max_length = loa,
             vessel_engines_hist.power = kw, vessel_engines_hist.engine_type = engine_type,
-            vessel_fishery_hist.name = operator,
+            vessel_fishery_hist.name = operator, vessel_fishery_hist.identity_no = operator_kennitala,
             vessel_event.out_of_use = year_out, vessel_event.fate = fate, vessel_event.note_register = note_register) |>
   longer("hreidar", "hreidar", "interval")
 
@@ -150,6 +152,17 @@ ev$samgongustofa <- sgs |>
             vessel_identification_hist.home_port = home_port,
             vessel_measurement_hist.length = length, vessel_measurement_hist.brutto_grt = grt,
             vessel_measurement_hist.brutto_weight_tons = gt) |>
+  longer("samgongustofa:2022-12-28", "register", "snapshot")
+# its owners are one string per hull: "Name (kt. ...) 25% eign Name (kt. ...) 75% eign", the share sometimes left out
+own_re <- "\\s*(.+?) \\(kt\\. ([0-9]{6}-?[0-9]{4})\\)(?:\\s*([0-9.,]+)% eign)?"
+sgs_own <- sgs |> filter(!is.na(owners)) |> select(vid, owners) |>
+  mutate(m = regmatches(owners, gregexpr(own_re, owners, perl = TRUE))) |> select(-owners) |> tidyr::unnest_longer(m, indices_to = "i") |>
+  mutate(name = trimws(sub(own_re, "\\1", m, perl = TRUE)), kt = sub(own_re, "\\2", m, perl = TRUE),
+         share = sub(own_re, "\\3", m, perl = TRUE))
+ev$samgongustofa_owners <- sgs_own |>
+  transmute(vid, t1 = as.Date("2022-12-28"), t2 = t1, record = paste0("samgongustofa:", vid, ":owner", i),
+            vessel_owners_hist.name = name, vessel_owners_hist.national_identity_no = kt,
+            vessel_owners_hist.percentage = suppressWarnings(as.numeric(sub(",", ".", share)))) |>
   longer("samgongustofa:2022-12-28", "register", "snapshot")
 
 # The `vessel` schema --------------------------------------------------------------------------------------------------
@@ -197,11 +210,13 @@ ev$vessel_op <- vh("vessel_operational_hist") |>
 ev$vessel_own <- vh("vessel_owners_hist") |>
   transmute(vid, t1, t2, record = paste0("vessel_owners_hist:", vessel_owners_id, ":", vessel_own_hist_id),
             vessel_owners_hist.name = name, vessel_owners_hist.address = address,
-            vessel_owners_hist.postal_no = postal_no, vessel_owners_hist.percentage = percentage) |>
+            vessel_owners_hist.postal_no = postal_no, vessel_owners_hist.percentage = percentage,
+            vessel_owners_hist.national_identity_no = national_identity_no) |>
   longer("vessel:vessel_owners_hist", "register", "interval")
 ev$vessel_fish <- vh("vessel_fishery_hist") |>
   transmute(vid, t1, t2, record = paste0("vessel_fishery_hist:", vessel_fish_hist_id),
-            vessel_fishery_hist.name = name, vessel_fishery_hist.address = address, vessel_fishery_hist.postal_no = postal_no) |>
+            vessel_fishery_hist.name = name, vessel_fishery_hist.address = address, vessel_fishery_hist.postal_no = postal_no,
+            vessel_fishery_hist.identity_no = identity_no) |>
   longer("vessel:vessel_fishery_hist", "fisheries", "interval")
 
 # The Directorate of Fisheries' ship history (kvoti to 2020, ufs after) -------------------------------------------------
@@ -243,7 +258,7 @@ ev$ufs_skip_jn <- ora("ufs", "skip_jn") |> filter(jn_operation != "DEL", !is.na(
 sig <- ora("kvoti", "skipaskra_siglo")
 h100 <- function(x) ifelse(is.na(x) | x == 0, NA, x / 100)
 ev$kvoti_siglo <- sig |>
-  transmute(vid = as.integer(skipnr), t1 = dagsfaerslu, t2 = as.Date("2020-07-22"), record = paste0("kvoti.skipaskra_siglo:", skipnr),
+  transmute(vid = as.integer(skipnr), t1 = as.Date("2020-07-22"), t2 = t1, record = paste0("kvoti.skipaskra_siglo:", skipnr),
             vessel_hist.name = nafnskips, vessel_hist.usage_category_no = notkunarteg,
             vessel_hist.imo_no = ifelse(trimws(imonr) %in% c("0", ""), NA, imonr),
             vessel_hist.power_indicator = h100(aflvisir), vessel_hist.max_propeller_diameter = h100(thvermskrufu),
@@ -255,10 +270,11 @@ ev$kvoti_siglo <- sig |>
             vessel_measurement_hist.depth = h100(skraddypt), vessel_measurement_hist.max_length = h100(mestalengd),
             vessel_measurement_hist.brutto_grt = h100(bruttoruml), vessel_measurement_hist.brutto_weight_tons = h100(bruttotonn),
             vessel_owners_hist.name = eigandi, vessel_owners_hist.address = heimilieiganda,
-            vessel_fishery_hist.name = utgerdaradili,
+            vessel_owners_hist.national_identity_no = kt_eiganda,
+            vessel_fishery_hist.name = utgerdaradili, vessel_fishery_hist.identity_no = ktutgerdaradila,
             vessel_certificate.seaworthy_issued = d8(haffaeriutgafudags), vessel_certificate.seaworthy_valid_to = d8(haffaerigildirtil),
             vessel_certificate.seaworthy_extended = d8(haffaeriframlengt)) |>
-  longer("kvoti.skipaskra_siglo", "register", "interval")
+  longer("kvoti.skipaskra_siglo", "register", "snapshot")
 
 ex <- ora("kvoti", "skip_extra")
 ev$kvoti_extra <- ex |>
