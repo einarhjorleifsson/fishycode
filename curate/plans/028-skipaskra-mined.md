@@ -1,9 +1,9 @@
 # 028 — The annual ship register (Skipaskrá) mined whole, into the `vessel` schema's tables
 
-**status:** partly built — steps 1-5 built in the `once` project on 2026-10-18 (decisions 130-132, 135 and 136; step
-2 coded in another session, c56278d): the history to 2023-12-19, chosen by the decision model, rebuilt after the
-maintainer's check of D2 (97 % error; the GT formula is now a flag); steps 6 (the live part, in the main project) and 7
-are to come; the output takes the `vessel` schema's table structure, not one table, and what public sources print is
+**status:** partly built — steps 1-5 built in the `once` project and step 6 in the main project on 2026-10-18
+(decisions 130-132, 135, 136 and 142; step 2 coded in another session, c56278d): the history to 2023-12-19, chosen by
+the decision model and rebuilt after the maintainer's check of D2 (97 % error; the GT formula is now a flag), and the
+`vessel` schema's own history after it, in `curated/vessel/register/`; step 7, repointing the readers, is to come; the output takes the `vessel` schema's table structure, not one table, and what public sources print is
 kept (maintainer, 2026-10-18); §9 asks d and e open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)

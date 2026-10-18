@@ -234,7 +234,7 @@ list(
   }, format = "file"),
 
   # The ship register: the history to 2023-12-19, frozen in the `once` project (plan 028 steps 1-5, decision 136), and the
-  # `vessel` schema's own history after it, through the same decision model (plan 028 step 6, decision 137). The
+  # `vessel` schema's own history after it, through the same decision model (plan 028 step 6, decision 142). The
   # register's tables for every year, in curated/vessel/register/.
   tar_target(register_history, frozen_input("curated", "vessel", "skipaskra"), format = "file"),
   tar_target(register_live_raw, c(

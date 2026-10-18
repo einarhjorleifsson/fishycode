@@ -1,6 +1,6 @@
 # The ship register from 2023-12-19 on, the `vessel` schema's own history, through plan 028's decision model, set after
 # the frozen history before it: the register's tables from the first year to the latest dump (plan 028 step 6).
-# Side: preprocessing (vessels). See plan 014; plan 028 §4.3 and step 6; decisions 132 and 137.
+# Side: preprocessing (vessels). See plan 014; plan 028 §4.3 and step 6; decisions 132 and 142.
 #
 # Input:  curated/vessel/skipaskra/*.parquet                    the history to 2023-12-19, frozen (`once`, decision 136)
 #         raw/oracle/vessel/{vessel,vessel_*,vessel_*_hist}.parquet   the `vessel` schema, as dumped
