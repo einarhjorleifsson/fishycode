@@ -1,8 +1,9 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
-**status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); steps 2-4 not
-started; asks a-g answered, each the proposed option (decision 137); the search for the whole photo set (ask b) is
-the maintainer's (TODO 85)
+**status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
+written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3-4 not started,
+and a prototype of DuckDB in the browser comes first (ask h); asks a-g answered (decision 137); the search for the
+whole photo set (ask b) is the maintainer's (TODO 85)
 · **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137 and 138,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
@@ -140,15 +141,18 @@ thumbnail script and the Samgöngustofa scrape. Decision 105 left the scripts un
 them was a copy of a script in `dump/`. AGENTS.md says `dump/` is the only home of a dump script. The precedent is
 `dump/vessels/faroe.R`, a vessel register scraped page by page, moved out of `reference/` on 2026-09-22.
 
-**Proposed** (nothing moved):
+**Written** (step 2, 2026-10-18; not run):
 - `dump/vessels/mbl.R`, one script for both scrapes, since one page request gives the fields and the gallery. It
-  writes `raw/external/mbl/<date>/` through `fd_raw()`, with a log per run and a manifest: vid, image place, mbl image
-  id, URL, caption and credit if the page prints them, bytes, md5, time.
-- Every image in a vessel's gallery is taken, not only the first.
+  writes `raw/external/mbl/<run date>/` through `fd_raw()`: each page as it is (`html/`), every image in its gallery
+  (`jpg/`), and two manifests. `pages.csv` holds vid, URL, status and time. `images.csv` holds vid, place in the
+  gallery, mbl image id, URL, file, bytes, md5, time, and the item's alt text, title and caption as printed.
+- The page is kept whole. The 2022 run kept a CSV of the first four tables with the first comma turned into a point,
+  which the adapter has to undo. Parsing is the adapter's job, so `sources/mbl/register.R` would read a new run's
+  pages.
 - Thumbnails are not a dump step. The app scales images itself.
-- The script's first commit holds the two 2022 scripts verbatim, so git records what made the files on disk.
-- The raw copies of the scripts stay beside the 2022 files as their record, read-only, or go to the Trash as in
-  decision 105 (ask f).
+- A halted run resumes: a vid whose page is saved is skipped. `DRY_RUN = TRUE`, the default, sends no request.
+- The raw copies of the 2022 scripts stay beside the files they made, as their record (decision 137, ask f). No
+  verbatim copy goes into git: it would be a second copy of that record.
 - `dump/vessels/samgongustofa.R` for the Samgöngustofa scrape belongs with it. It is named here, not planned.
 - The script is not run without the maintainer's go. It is the newspaper's site (ask b).
 
@@ -208,13 +212,23 @@ SQL, only the vessel and the year:
 It runs DuckDB on `curated/` in place, through `R/paths.R`, so the 19 GB trail is not copied. The column allowlist of
 §4.5 lives in its queries.
 
-**Two alternatives, not proposed:**
-- *DuckDB in the browser (DuckDB-WASM) reading the parquet files over HTTP.* The browser would then reach the files
-  themselves, every column included, kennitala among them. An extract without the personal columns would be a second
-  copy of the trail.
-- *Shiny.* It stays only as a wrapper, if the app must run on the institute's Shiny Server (ask a). The same page
-  would then be one custom component, with Shiny only delivering the data, as the R service does. The front end is
-  the same either way.
+**An alternative to measure: DuckDB in the browser** (DuckDB-WASM, raised by the maintainer, 2026-10-18). The
+page would read the parquet files itself over HTTP, and the R service would shrink to a static file server.
+- *Personal data.* The first draft rejected it because the browser would reach every column. That is narrower than it
+  read. Of the tables the app reads, only two hold kennitala: `vessel_owners_hist` and `vessel_fishery_hist` (from
+  the schemas measured for §4.4). The trail, landings, logbook and `vessel.parquet` hold no person's column. So the
+  server would serve those directories as they are, and a small extract of the two register tables without the
+  kennitala columns. The allowlist becomes a list of directories and one extract.
+- *Speed.* DuckDB-WASM reads only the row groups it needs when the server answers HTTP range requests, and the
+  trail's files are sorted by vid (§4.4). Without range requests it fetches whole files: a vessel-year would be 12
+  monthly files of 18-160 MB.
+- *To measure, in a prototype on the laptop before step 3:* whether the static server answers range requests; the
+  time from a vessel's choice to its year on the map; the size of the DuckDB-WASM download. The maintainer then
+  chooses between it and the R service (ask h).
+
+**An alternative not proposed: Shiny.** It stays only as a wrapper, if the app must run on the institute's Shiny
+Server (ask a). The same page would then be one custom component, with Shiny only delivering the data, as the R
+service does. The front end is the same either way.
 
 ### 4.2 The linked views
 
@@ -330,9 +344,13 @@ The maintainer's call (ask a):
 1. **The photo index**: `sources/mbl/photo.R`, target `mbl_photo` in `_targets.R`, built by name
    (`tar_make_isolated(names = "mbl_photo")`) on the maintainer's go.
    **Check:** §3's checks pass; the counts in §1 are reproduced from the table.
-2. **The dump script**: `dump/vessels/mbl.R`, written from the two 2022 scripts, not run.
-   **Check:** for five vids, the URLs and file names the script would use match the 2022 logs', checked without
-   sending a request.
+2. **The dump script**: `dump/vessels/mbl.R`, written 2026-10-18, not run.
+   **Checked offline:** it parses; a dry run sends no request and writes nothing; with the network stubbed and a
+   synthetic page shaped like the 2022 selectors, the loop writes the page, both images and both manifests, records a
+   failed page with its HTTP status, and a second run tries only the failed page.
+   **Check (needs the maintainer's go, since it sends requests):** a pilot of five vessels (vids 78, 1977, 2184, 2757
+   and 9810). Their pages are read by a person, to see whether mbl still uses the 2022 selectors and where a caption or
+   credit sits, before any whole run.
 3. **The R service**: `products/vessel_overview/server.R`, its endpoints, the column allowlist and its test.
    **Check:** the personal-column test passes; each endpoint answers for vids 2757, 3739 and 2652 within the times
    of §4.4.
@@ -380,3 +398,5 @@ f. **The raw copies of the 2022 scrape scripts:** kept beside the files as their
 
 g. **The register panel until plan 028 step 6:** `vessel.parquet` for today and the history to 2023-12-19, each
    labelled (proposed), or wait for step 6?
+
+h. **The R service or DuckDB in the browser** (§4.1), chosen after the prototype's measurements. Open.

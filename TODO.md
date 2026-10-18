@@ -486,16 +486,17 @@ wired: the plan 028 session edits `_targets_once.R` too. Step 4 needs asks b, f 
 reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 
 ## 85. Vessel photos from mbl and an internal vessel overview app (plan 030)
-**status:** in progress · **needs: maintainer** — the search for the whole photo set (plan 030 ask b); asks a and c-g
-answered (decision 137) · **see:** `curate/plans/030-vessel-photos-and-overview.md`,
+**status:** in progress · **needs: maintainer** — the go for a pilot scrape of five vessels (step 2), the search for
+the whole photo set (ask b), and ask h after the DuckDB-in-the-browser prototype; asks a and c-g answered (decision
+137) · **see:** `curate/plans/030-vessel-photos-and-overview.md`,
 plan 028 §3.6 and §7, plan 001, decisions 049, 105, 137 and 138
 
 The 1,000 mbl photo files in `raw/external/skipaskra/jpg/` are about a quarter of the 2022 scrape. Plan 030 indexes
 them by vid in `staging/mbl/photo.parquet`, moves the scrape code to `dump/`, and specifies an
 internal overview per vessel: photo, register, landings, logbook, and a map linked to a time-speed plot by a time
 slider. It is a JavaScript page over a thin R service, so that it stays responsive (maintainer). The photos are a
-newspaper's images: internal use only, never published. Step 1, the photo index, is built (decision 138); steps 2-4
-(the dump script, the R service, the page) are not started. The app runs on the laptop first, from
+newspaper's images: internal use only, never published. Step 1, the photo index, is built (decision 138). Step 2's
+`dump/vessels/mbl.R` is written and checked offline, not run. Steps 3-4 (the R service, the page) are not started. The app runs on the laptop first, from
 `products/vessel_overview/`.
 
 **check:** the app opening for vids 2757, 3739 and 2652 on the laptop, with no personal column served, and
