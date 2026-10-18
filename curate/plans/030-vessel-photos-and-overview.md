@@ -2,7 +2,8 @@
 
 **status:** proposal — measured 2026-10-18 (read-only), nothing built; asks a-g open (TODO 85)
 · **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130 and 132,
-`sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`, `~/stasi/fishyshiny/` (outside this repo)
+`sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
+maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 
 Drafted with AI assistance (Claude) on 2026-10-18, at the maintainer's request, relayed by the plan 028 session. The
 numbers below were measured by Claude (AI). A person has not yet checked them.
@@ -225,6 +226,26 @@ the time under the cursor, and the selected voyage or trip. Each view reads that
 
 Later, if wanted: a box drawn on the map lights its pings on the plot.
 
+**The map's layers follow the maintainer's `asjo` app** (`ShinyApps/asjo/` on the share, 2026-07). It shows the
+vessels at sea now, by gear, with mapdeck, and is given as the model for the map's set-up (maintainer, 2026-10-18).
+Here it is applied to one vessel:
+- the basemap is drawn once, centred on Iceland. The data layers are then replaced by a fixed layer id, without
+  moving the view (`mapdeck_update()`, `update_view = FALSE`);
+- the track is a thin path layer (1-5 px), with a highlight on hover and a tooltip. `asjo` draws one line per vessel;
+  here there is one per voyage;
+- the pings are a scatterplot coloured by speed (capped, palette `inferno`, with a legend). Their radius is set in
+  metres and clamped to 2-6 px, and each has a tooltip table;
+- the last position is a larger point (clamped to 4-20 px), with vessel, time, speed, heading and position in its
+  tooltip.
+
+mapdeck is an R wrapper of deck.gl, and these settings are deck.gl's own (`PathLayer`, `ScatterplotLayer`,
+`radiusMinPixels`, `radiusMaxPixels`, `autoHighlight`, layer ids), so the page uses the same set-up directly. The page
+adds two things: the time window, which filters every layer, and the link to the plot.
+
+Inside Shiny, the same map would be `asjo`'s pattern: each change sends the layer's data again through
+`mapdeck_update()`. For a median vessel-year (1,558 pings in 2025) that is small. For the busiest (147,432) it is
+megabytes on every slider move. That is the measured case for keeping the data in the browser.
+
 ### 4.3 Where its code lives
 
 `products/vessel_overview/`: `server.R` for the R service and `www/` for the page, its script and the pinned
@@ -264,7 +285,7 @@ Measured on this machine, with the files in the OS cache. A cold start was not m
 - **Names for codes.** Gear and port come from `curated/reference/gear` and `port`. There is no species reference
   (TODO 10), so species show as codes until it is built.
 - **A vessel is chosen** by vid, name, call sign or MMSI. Names are for reading only; the app keys on `vid`.
-- **The map's layers:** pings and voyage paths, the latest trips' logbook stations, and the vessel's stays in port.
+- **Beyond `asjo`'s layers (§4.2):** the latest trips' logbook stations, and the vessel's stays in port.
 
 ### 4.5 Persons and the photos: what the app shows
 
@@ -286,8 +307,9 @@ deck.gl draws the data. The basemap under it is a MapLibre style.
 - A Mapbox style needs a token, and the browser receives it. It is a public `pk.` token, built for that.
 - The token is never in the repo (plan 001 §4: the committed one was revoked on 2026-10-16). The service reads
   `MAPBOX_TOKEN` from the environment and hands it to the page when it loads.
-- `MAPBOX_TOKEN` is set in both the project's `.Renviron` and `~/.Renviron` (names checked, not values). R started in
-  the repo reads the project's `.Renviron`.
+- `MAPBOX_TOKEN` is set in both the project's `.Renviron` and `~/.Renviron`. R started in the repo reads the
+  project's `.Renviron`. Both hold the same `pk.` token, and it is not the one in fishycode's history, revoked on
+  2026-10-16 (compared without printing either).
 - Whether that value is the token made after 2026-10-16, and whether it is restricted to the app's URL, is the
   maintainer's to say. A basemap that needs no token is the alternative (ask c).
 
@@ -330,8 +352,8 @@ b. **The whole photo set.** The scrape logged 2,120 photos (500 MB), and 1,000 f
    neither, is a new scrape of mbl wanted (every image per vessel, with captions and credits if the page prints
    them), and is it acceptable to scrape the newspaper's site again for internal use?
 
-c. **The basemap:** is the project `.Renviron`'s `MAPBOX_TOKEN` the token made after 2026-10-16, and is it restricted
-   to the app's URL? Or should the basemap be one that needs no token?
+c. **The basemap:** the `.Renviron` token is not the revoked one. Is it the token made after 2026-10-16, for this use,
+   and should it be restricted to the app's URL? Or should the basemap be one that needs no token?
 
 d. **Where the app's code lives:** `products/vessel_overview/` in fishycode, the repo's first JavaScript (proposed),
    or `~/stasi/fishyshiny/`?
