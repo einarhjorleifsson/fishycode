@@ -125,6 +125,12 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
 - after plan 021 step 6: the foreign hulls (plan 021 step 7, TODO 65) with mids 101843, 147141, 102481 and 102527
   (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before).
 
+The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
+proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a
+rule admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest
+`vessel_hist_v` date or `yh1`: the latest row's is a re-registration, which made most list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's
+`tar_outdated()` lists the key and its checks again. That is the cycle, not a reason to build: the key changes only here.
+
 The annual register's matrix parse is fixed in code, not yet in data: build years and a legend entry had been read
 as vids (22 rows, 2018-2022). The redo invalidates `skipaskra` by hand, since `targets` cannot see the edit; in a
 scratch run 6,891 pings on 3 mids change vid (`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`).
@@ -427,3 +433,21 @@ the voyage link given every landing. Nothing changed in the pipeline.
 
 **check:** a trip's further landings join it (plan 027 §5), and kg on the fixes, raised, equals kg landed per vessel
 and year within the ratio of vessel-years with no second landing (plan 027 §6).
+
+## 82. MMSI windows that open before the hull exists
+**status:** open · **needs: maintainer** — whether the gap goes to the previous holder or to no vid, and whether to
+apply the patch · **see:** plan 016, decision 128, `reference/vessels/mmsi.R`, `reference/vessels/identity.R`,
+`$FISHYDATA/archive/2026-10-17-mmsi-window/`
+
+Measured read-only by Claude, 2026-10-17. Of the 24 vessel MMSIs with more than one holder, 18 later holders'
+hand-set windows open 1.9-14.5 years before the hull's first register date. One has pings in the gap: 87,372 ASTDB and
+EMODnet pings of MMSI 251764110 carry vid 7873 from 2017-02 to 2018-01, but they are the sold hull 2608 in northern
+Norway. 79,721 of them reach `curated/ais/trail` (2 voyages, no catch). None falls in W1's box, and the key's MMSI tier
+gives the same vids. The drafted rule: a later holder's window opens no earlier than its first register date, and the
+previous holder keeps the gap (decision 128's rule), with the given dates kept and a `proposed` correction. The patch
+(4 files) and its note are in the archive above, not applied. It outdates the AIS half (about 2 h) and the `once` key
+targets. Found beside it: the later holders 3009 (MMSI 251179000) and 7764 (251846940) are in neither `vessel_hist_v`
+nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep those MMSIs for all time.
+
+**check:** no MMSI window opens before its hull's first register date, or the maintainer's alternative is recorded;
+MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
