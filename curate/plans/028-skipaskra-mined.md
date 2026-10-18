@@ -1,8 +1,8 @@
 # 028 — The annual ship register (Skipaskrá) mined whole, into the `vessel` schema's tables
 
-**status:** partly built — steps 1-4 coded, checked in a scratch store and wired into the `once` project on
-2026-10-18, not yet built (decisions 130-132; step 2 coded in another session, c56278d); the history to 2023-12-19
-builds in `once`, the live part in the main project (ask a, decision 132); step 5 waits on ask f; the output takes the
+**status:** partly built — steps 1-4 built in the `once` project on 2026-10-18 and equal to their scratch checks
+(decisions 130-132; step 2 coded in another session, c56278d); the history to 2023-12-19 builds in `once`, the live
+part in the main project (ask a, decision 132); step 5 waits on ask f; the output takes the
 `vessel` schema's table structure, not one table, and what public sources print is kept (maintainer, 2026-10-18); §9
 asks c-g open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65

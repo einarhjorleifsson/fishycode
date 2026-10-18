@@ -1,7 +1,8 @@
 # 132 — The register's history builds in the `once` project, its live part in the main one (plan 028 ask a)
 
-*2026-10-18. The maintainer's choice; the wiring and the read-only checks by Claude (AI-assisted). Nothing was built:
-the graph was checked with `tar_validate()` and `tar_outdated()` only.*
+*2026-10-18. The maintainer's choice; the wiring, the checks and the build by Claude (AI-assisted). The graph was
+first checked read-only; the build followed the same day on the maintainer's go ("Yes, run the once register build
+now ..., compare the outputs with the scratch copies").*
 
 ## Decided
 
@@ -49,11 +50,23 @@ history to 2023-12-19 in the once project, as plan 028 proposes, and the live pa
     radius.
 - The main project has nothing outdated.
 
+## Built
+
+`tar_make_isolated(names = "check_skipaskra_discrepancy")` in the `once` project, at b929d16 with a clean tree:
+- all 17 targets were built, exit 0, in 11 minutes, most of it the PDF readers (lists 5 min, register 2 min);
+- `tar_outdated()` lists the same 12 as before, and the 26 files of the key, logger and radius are byte-identical;
+- no target outside the register changed in `tar_meta()`.
+
+Every output equals its scratch copy from decisions 130 and 131:
+- 13 of 14 files are identical, value for value;
+- `skipaskra_discrepancy.parquet` holds the same 61,300 rows in another order: rows that tie on its sort keys come out
+  of DuckDB in no fixed order, so a rebuild changes the file's hash but not its content.
+
+The curated files are stamped b929d16, not dirty. Nothing in the register calls ramb, so AGENTS.md's ramb versions are
+untouched.
+
 ## Not done
 
-- **The build.** It writes `staging/skipaskra/*`, `staging/{hreidar,mbl,samgongustofa,marinetraffic}/*` (written already
-  by step 2, identical on a rerun), `curated/vessel/skipaskra/evidence.parquet` and
-  `curated/check/skipaskra_{discrepancy,agreement}.parquet` to the real store, and waits for the maintainer's go.
 - **Step 5** still needs ask f (the decision model).
 - **A question raised the same day:** whether Hreiðar's own numbers belong in the history. These are 90000 and above:
   1,764 boats without a register number, 30,913 rows, nearly all before 1992. The evidence table leaves them out, since
