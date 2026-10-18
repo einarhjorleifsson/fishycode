@@ -365,7 +365,7 @@ function clickToSelect(u) {
 const LANES = [
   ['logbook trip', 'trip', '#1f6feb88'], ['setting t1-t2', 'set', '#9aa5b1'], ['fishing t2-t3', 'fish', '#2e7d32'],
   ['hauling t3-t4', 'haul', '#7b5ea7'], ['landing', 'land', '#e07b00'], ['in port (stay)', 'stay', '#5d6b78'],
-  ['voyage', 'voy', '#4a7bd0'], ['fishing_flow', 'flow', '#d62728'], [`AIS gap > ${GAP / 6e4} min`, 'gap', '#111827'],
+  ['voyage', 'voy', '#4a7bd0'], ['fishing_flow', 'flow', '#d62728'], ['AIS gap at sea', 'gap', '#111827'],
 ];
 function laneLists() {   // every lane as intervals {a, b} sorted by a, with its longest interval for the search
   const tr = S.tr, L = { trip: S.trips, set: [], fish: [], haul: [], land: [], stay: [], voy: [], flow: [], gap: [] };
@@ -376,18 +376,23 @@ function laneLists() {   // every lane as intervals {a, b} sorted by a, with its
   }
   for (const d of S.landings) L.land.push({ a: d.d, b: d.d + DAY, d });
   if (tr) {
-    const runs = (key, ok, out) => {
+    // a run of one key, ended by a gap in the AIS; a stay in port runs on through a gap (bridge), since the vessel lay
+    // in that port all the while
+    const runs = (key, ok, out, bridge = false) => {
       let s = -1;
       for (let i = 0; i <= tr.n; i++) {
-        const same = i < tr.n && ok(i) && s >= 0 && key(i) === key(s) && tr.t[i] - tr.t[i - 1] <= GAP;
+        const same = i < tr.n && ok(i) && s >= 0 && key(i) === key(s) && (bridge || tr.t[i] - tr.t[i - 1] <= GAP);
         if (s >= 0 && !same) { out.push({ a: tr.t[s], b: tr.t[i - 1], id: key(s) }); s = -1; }
         if (s < 0 && i < tr.n && ok(i)) s = i;
       }
     };
-    runs((i) => tr.stay[i], (i) => tr.stay[i] >= 0, L.stay);
+    runs((i) => tr.stay[i], (i) => tr.stay[i] >= 0, L.stay, true);
     runs((i) => tr.voyage[i], (i) => tr.voyage[i] >= 0, L.voy);
     runs(() => 1, (i) => tr.fishing[i] === 1, L.flow);
-    for (let i = 1; i < tr.n; i++) if (tr.t[i] - tr.t[i - 1] > GAP) L.gap.push({ a: tr.t[i - 1], b: tr.t[i] });
+    // a gap between two pings of one stay is the vessel lying in port, not a hole in the track (maintainer, 2026-10-18:
+    // "the ais gap in the graph should not include when vessel is in harbour"); a gap that leaves or reaches a port is kept
+    const inPort = (i) => tr.stay[i - 1] >= 0 && tr.stay[i] === tr.stay[i - 1];
+    for (let i = 1; i < tr.n; i++) if (tr.t[i] - tr.t[i - 1] > GAP && !inPort(i)) L.gap.push({ a: tr.t[i - 1], b: tr.t[i] });
   }
   for (const k of Object.keys(L)) { L[k].sort((x, y) => x.a - y.a); L[k].maxDur = L[k].reduce((m, d) => Math.max(m, d.b - d.a), 0); }
   return L;

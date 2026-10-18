@@ -263,3 +263,25 @@ Checked in the browser pane:
 - on vid 1977, the shares and ratios above, the hexagons' step after zooming, and the frame on the fishing;
 - on vids 2047 and 2757, the starting frame;
 - no console error, and no sideways scroll at phone width.
+
+## Amended 2026-10-18: AIS gaps in port are not gaps
+
+"the ais gap in the graph should not include when vessel is in harbour" (maintainer). Code, measurement and this section
+by Claude (AI-assisted).
+
+- **The gap lane.** Quality control's lane of AIS gaps, now named "AIS gap at sea", leaves out a gap of more than 30 min
+  between two pings of the same stay: the vessel lay in port.
+  - A gap that leaves or reaches a port is kept, as is one between two different stays.
+  - The legend says what the lane counts.
+- **The in-port lane runs on through such a gap**, since the vessel was in that stay all the while. Before, the bar
+  broke there, leaving a hole with nothing in it.
+- Measured on the 2021 trail, for gaps of more than 30 min:
+
+  | vid | gaps | in one stay | hours | in one stay |
+  |---|---|---|---|---|
+  | 2047 | 16 | 16 | 74 | 74 |
+  | 1977 | 20 | 0 | 16 | 0 |
+  | 2757 | 17 | 14 | 259 | 256 |
+
+  So 2047's gap lane is now empty, 1977's is unchanged, and 2757's keeps 3 gaps. Seen in the pane for 2757's 2021,
+  with no console error.
