@@ -83,6 +83,14 @@ function lower(a, x, key = (v) => v) {
 const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null,
             stations: [], hauls: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
             history: false, about: {}, assumed: null, assumedBase: null, bg: 'none', ready: false };
+// The user's choices (maintainer, 2026-10-18: "if one selects a new vessel - all the users selections besides the new
+// vessels should be preserved"). The page starts on these defaults; from then on each choice the user makes is the
+// default for the next vessel. They are in the address too, so a reload or a shared link keeps them. Mode and tab are
+// S.mode and the open tab.
+//   years: 'latest' (the vessel's last year on AIS), 'all', or 'from-to'
+//   win: 'last' (the last n trips and the current one), 'month', 'range' (the loaded years), or 'custom' (a to b)
+//   bg: what the map shows outside the window ('none', 'hex', 'track')
+const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, bg: 'none' };
 // The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
 // a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
 // using the logbooks"). The previous logbook trip's gear only where that landing records none ("if a logbook is missing
@@ -109,7 +117,10 @@ function speedColour(s) {
   const i = Math.min(Math.floor(x), INFERNO.length - 2), f = x - i, a = INFERNO[i], b = INFERNO[i + 1];
   return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
 }
-const FILTER = new deck.DataFilterExtension({ filterSize: 1 });
+const FILTER = new deck.DataFilterExtension({ filterSize: 1 }), FILTER2 = new deck.DataFilterExtension({ filterSize: 2 });
+// the window's pings are joined in time order (maintainer, 2026-10-18), faintly, but not across a gap of more than two
+// hours, so the hourly positions of the early years still join
+const LINE_GAP = 2 * HOUR;
 const basemap = TOKEN.startsWith('pk.')
   ? new deck.TileLayer({
       id: 'basemap', minZoom: 0, maxZoom: 19, tileSize: 256,
@@ -187,6 +198,10 @@ function layers() {
     getElevationWeight: (d) => d.h, elevationAggregation: 'SUM', extruded: false, radius: 1000 * hexKm(),
     coverage: 0.94, opacity: 0.7, pickable: true, upperPercentile: 100, colorRange: VIRIDIS,
     onSetColorDomain: ([lo, hi]) => { $('hexlegend').innerHTML = hexLegend(lo, hi); },
+  }));
+  L.push(new deck.LineLayer({
+    id: 'window-line', data: tr.lineData, getColor: [40, 50, 70, 80], getWidth: 1, widthUnits: 'pixels',
+    extensions: [FILTER2], filterRange: [range, range],
   }));
   L.push(new deck.ScatterplotLayer({
     id: 'pings', data: tr.pingData, radiusUnits: 'meters', getRadius: 400, radiusMinPixels: 2, radiusMaxPixels: 6,
@@ -480,7 +495,12 @@ function setWindow(a, b, source) {
   };
   render();
   if (qc()) { clearTimeout(pingTimer); pingTimer = setTimeout(() => { S.pingPage = 0; renderPings(); }, 150); }
+  if (source === 'plot' || source === 'slider') {
+    P.win = 'custom'; P.a = a; P.b = b; markPicked();
+    clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 300);   // Safari refuses many replaceState calls in a row
+  }
 }
+let hashTimer = null;
 function slider() {
   let a = +$('wfrom').value * 1000, b = +$('wto').value * 1000;
   if (a > b) [a, b] = [b, a];
@@ -528,27 +548,56 @@ function lastUnits() {   // newest last
   const voy = voyages().filter((v) => v.a > after && v.b - v.a >= MIN_VOYAGE && !(atSea && v.b >= tr.t1));
   return { word: trips.length ? 'trips' : 'voyages', units: [...trips, ...voy], atSea };
 }
+// The button names what it shows; 0 trips is the current trip alone ("the zero here is important", maintainer)
+function lastLabel() {
+  const n = P.n, { word, atSea } = S.tr ? lastUnits() : { word: 'trips', atSea: false };
+  $('last-trips').textContent = n === 0 ? (atSea ? 'The current trip' : 'Since the last trip')
+    : `Last ${n} ${n === 1 ? word.slice(0, -1) : word}${atSea ? ' + the current' : ''}`;
+}
 function showLastTrips() {
   if (!S.tr) return;
-  const n = +$('ntrips').value, { word, units, atSea } = lastUnits();
-  $('ntrips-label').textContent = n; $('trips-word').textContent = n === 1 ? word.slice(0, -1) : word;
-  $('trips-current').textContent = atSea ? ' + the current' : '';
-  if (!units.length) { show(S.tr.t1 - 30 * DAY, S.tr.t1); return; }
+  const tr = S.tr, n = P.n, { units, atSea } = lastUnits();
+  lastLabel();
+  if (n === 0) {   // at sea, the voyage it is on; in port, the time since the last trip
+    const cur = atSea ? voyages().at(-1) : null;
+    const a = cur && cur.b >= tr.t1 ? cur.a : units.length ? units.at(-1).b : tr.t1 - DAY;
+    show(Math.min(a, tr.t1 - HOUR) - HOUR, tr.t1);
+    return;
+  }
+  if (!units.length) { show(tr.t1 - 30 * DAY, tr.t1); return; }
   const pick = units.slice(-n);
-  show(Math.min(...pick.map((d) => d.a)) - HOUR, atSea ? S.tr.t1 : Math.max(...pick.map((d) => d.b)) + HOUR);
+  show(Math.min(...pick.map((d) => d.a)) - HOUR, atSea ? tr.t1 : Math.max(...pick.map((d) => d.b)) + HOUR);
 }
-$('last-trips').addEventListener('click', showLastTrips);
-$('ntrips').addEventListener('change', showLastTrips);
-$('month').addEventListener('click', () => S.tr && show(S.tr.t1 - 30 * DAY, S.tr.t1));
-$('all').addEventListener('click', () => S.tr && show(S.tr.t0, S.tr.t1));
+// The window the user chose, for this vessel: the same kind of window, or the same dates where they overlap its track
+function applyWin() {
+  if (!S.tr) return;
+  lastLabel();
+  if (P.win === 'month') show(S.tr.t1 - 30 * DAY, S.tr.t1);
+  else if (P.win === 'range') show(S.tr.t0, S.tr.t1);
+  else if (P.win === 'custom' && P.a < S.tr.t1 && P.b > S.tr.t0) show(P.a, P.b);
+  else showLastTrips();
+  markPicked();
+}
+function markPicked() {
+  for (const [id, w] of [['last-trips', 'last'], ['month', 'month'], ['all', 'range']]) $(id).classList.toggle('picked', P.win === w);
+}
+const preset = (w, f) => () => { if (!S.tr) return; P.win = w; markPicked(); f(); setHash(); };
+$('last-trips').addEventListener('click', preset('last', showLastTrips));
+$('ntrips').addEventListener('change', () => { P.n = +$('ntrips').value; preset('last', showLastTrips)(); });
+$('month').addEventListener('click', preset('month', () => show(S.tr.t1 - 30 * DAY, S.tr.t1)));
+$('all').addEventListener('click', preset('range', () => show(S.tr.t0, S.tr.t1)));
 $('fit').addEventListener('click', () => S.tr && fitTo(S.win[0], S.win[1]));
 $('bg').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
   if (b.disabled) return;
-  S.bg = b.dataset.bg;
+  S.bg = P.bg = b.dataset.bg;
   showBg();
+  setHash();
 }));
-$('all-years').addEventListener('click', () => S.vid && S.years.length &&
-  loadRange(S.years[0], S.years.at(-1)).catch((e) => status(String(e))));
+$('all-years').addEventListener('click', () => {
+  if (!S.vid || !S.years.length) return;
+  P.years = 'all';
+  loadRange(S.years[0], S.years.at(-1)).catch((e) => status(String(e)));
+});
 let playing = false;
 $('play').addEventListener('click', () => {
   if (!S.tr) return;
@@ -669,9 +718,9 @@ async function loadRange(from, to) {
   hexb.disabled = !fished;
   hexb.title = fished ? `${num(S.tr.fish.reduce((s, d) => s + d.h, 0))} fishing hours in ${S.tr.fish.length.toLocaleString('en-GB')} pings, these years`
                       : 'no fishing ping in these years';
-  if (!fished && S.bg === 'hex') S.bg = 'none';
+  S.bg = P.bg === 'hex' && !fished ? 'none' : P.bg;   // the user's choice stays for the next vessel that fished
   showBg();
-  showLastTrips();
+  applyWin();
   await renderTrips();
   renderSummary();
   if (qc()) renderPings();
@@ -714,6 +763,15 @@ async function buildTrail() {
   // not pings, so a stretch the AIS reported often does not count for more than one it reported seldom
   tr.fish = [];
   for (let i = 0; i < tr.n; i++) if (tr.fishing[i]) tr.fish.push({ p: [tr.lon[i], tr.lat[i]], h: tr.h[i] });
+  const m = Math.max(tr.n - 1, 0);   // segment i joins ping i to ping i + 1; both must be in the window
+  tr.segF = new Float32Array(2 * m);
+  for (let i = 0; i < m; i++) {
+    const ok = tr.t[i + 1] - tr.t[i] <= LINE_GAP;
+    tr.segF[2 * i] = ok ? tr.th[i] : -1e9; tr.segF[2 * i + 1] = ok ? tr.th[i + 1] : -1e9;
+  }
+  tr.lineData = { length: m, attributes: { getSourcePosition: { value: tr.pos.subarray(0, 2 * m), size: 2 },
+                                           getTargetPosition: { value: tr.pos.subarray(2), size: 2 },
+                                           getFilterValue: { value: tr.segF, size: 2 } } };
   tr.pingData = { length: tr.n, attributes: { getPosition: { value: tr.pos, size: 2 }, getFillColor: { value: tr.col, size: 4 },
                                               getFilterValue: { value: tr.th, size: 1 } } };
   S.tr = tr; S.hover = -1;
@@ -724,7 +782,12 @@ async function buildTrail() {
   fitTo(a, tr.t1);
   setWindow(a, tr.t1);
 }
-const reloadYears = () => S.vid && loadRange(+$('from').value, +$('to').value).catch((e) => status(String(e)));
+const reloadYears = () => {
+  if (!S.vid) return;
+  const f = +$('from').value, t = +$('to').value;
+  P.years = `${Math.min(f, t)}-${Math.max(f, t)}`;
+  loadRange(f, t).catch((e) => status(String(e)));
+};
 $('from').addEventListener('change', reloadYears);
 $('to').addEventListener('change', reloadYears);
 
@@ -1072,7 +1135,7 @@ $('mode-ov').addEventListener('click', () => setMode('ov'));
 $('mode-qc').addEventListener('click', () => setMode('qc'));
 
 // Choosing a vessel ----------------------------------------------------------------------------------------------------
-async function choose(vid, from, to) {
+async function choose(vid) {
   S.ready = false;
   status(`loading vid ${vid}`);
   S.vid = vid; S.trip = null; S.selKey = null; S.tr = null; S.history = false; S.vesselTab = false; render();
@@ -1092,9 +1155,11 @@ async function choose(vid, from, to) {
   const first = Math.min(S.years[0] ?? thisYear, 2007), last = Math.max(S.years.at(-1) ?? thisYear, thisYear);
   const opts = []; for (let y = last; y >= first; y--) opts.push(`<option value="${y}">${y}${S.years.includes(y) ? '' : ' (no AIS)'}</option>`);
   $('from').innerHTML = opts.join(''); $('to').innerHTML = opts.join('');
-  const y = S.years.at(-1) ?? thisYear;
+  const y = S.years.at(-1) ?? thisYear, [f, t] = P.years.split('-').map(Number);
   await renderNow();
-  await loadRange(Number.isInteger(from) ? from : y, Number.isInteger(to) ? to : y);
+  if (P.years === 'all' && S.years.length) await loadRange(S.years[0], S.years.at(-1));
+  else if (Number.isInteger(f) && Number.isInteger(t)) await loadRange(f, t);
+  else await loadRange(y, y);
   S.ready = true;
   if (tabOn() === 'vessel') await renderVessel();
   if (tabOn() === 'history') await renderHistory();
@@ -1118,7 +1183,7 @@ function renderList() {
     const k = th.dataset.k; if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = k === 'vessel' || k === 'cs' ? 1 : -1; } renderList();
   }));
   $('list').querySelectorAll('tr.click').forEach((tr) => tr.addEventListener('click', () => {
-    $('drawer').classList.remove('on'); location.hash = `vid=${tr.dataset.vid}&mode=${S.mode}`;
+    $('drawer').classList.remove('on'); location.hash = hashFor(+tr.dataset.vid);
   }));
 }
 for (const id of ['filter', 'f-trail', 'f-photo', 'f-landed']) $(id).addEventListener('input', renderList);
@@ -1126,10 +1191,16 @@ $('open-list').addEventListener('click', () => { $('drawer').classList.add('on')
 $('close-list').addEventListener('click', () => $('drawer').classList.remove('on'));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer').classList.remove('on'); });
 
-// The address holds the vessel, the years, the tab and the mode --------------------------------------------------------
+// The address holds the vessel and every choice: the years, the window, the map's background, the tab and the mode ---
+const isoMin = (ms) => new Date(ms).toISOString().slice(0, 16);
+function hashFor(vid) {
+  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, tab: tabOn(), mode: S.mode });
+  if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
+  return q.toString();
+}
 function setHash() {
   if (!S.vid) return;
-  const h = `vid=${S.vid}&from=${S.from ?? ''}&to=${S.to ?? ''}&tab=${tabOn()}&mode=${S.mode}`;
+  const h = hashFor(S.vid);
   if (location.hash.slice(1) !== h) history.replaceState(null, '', `#${h}`);
 }
 function fromHash() {
@@ -1139,9 +1210,19 @@ function fromHash() {
   S.mode = h.get('mode') === 'qc' ? 'qc' : 'ov';
   document.body.classList.toggle('qc', S.mode === 'qc');
   $('mode-ov').classList.toggle('on', S.mode === 'ov'); $('mode-qc').classList.toggle('on', S.mode === 'qc');
+  // the choices; an address of before 2026-10-18 gives the years as from and to
+  const years = h.get('years') || (h.get('from') && h.get('to') ? `${h.get('from')}-${h.get('to')}` : null);
+  if (years && /^(latest|all|\d{4}-\d{4})$/.test(years)) P.years = years;
+  if (['last', 'month', 'range', 'custom'].includes(h.get('win'))) P.win = h.get('win');
+  const a = Date.parse(`${h.get('a')}Z`), b = Date.parse(`${h.get('b')}Z`);
+  if (P.win === 'custom') { if (a < b) { P.a = a; P.b = b; } else P.win = 'last'; }
+  const n = parseInt(h.get('n'), 10);
+  if ([...$('ntrips').options].some((o) => +o.value === n)) P.n = n;
+  $('ntrips').value = P.n;
+  if (['none', 'hex', 'track'].includes(h.get('bg'))) P.bg = h.get('bg');
+  markPicked();
   if (!Number.isInteger(vid)) return;
-  choose(vid, parseInt(h.get('from'), 10), parseInt(h.get('to'), 10))
-    .then(() => { if (h.get('bench')) bench(); }).catch((e) => status(String(e)));
+  choose(vid).then(() => { if (h.get('bench')) bench(); }).catch((e) => status(String(e)));
 }
 window.addEventListener('hashchange', fromHash);
 

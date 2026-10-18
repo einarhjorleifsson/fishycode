@@ -207,6 +207,37 @@ changed.
     the one it is on, to 2026-10-14 14:01. Before, it showed the logbook trip of July.
   - On vid 1977, the window runs from its last logbook trip (2026-09-02) to its last ping (2026-10-16).
   - vid 2757's 2024 ends in port, so nothing is added.
+- **The number of trips is the user's.** "use a pull-down list: 0, 1, 2, 3, 4, 5, ... the zero here is important". The
+  list holds 0 to 10, 15 and 20.
+  - 0 is the current trip alone, and the button says "The current trip". In port, it shows the time since the last
+    trip, and says "Since the last trip".
+  - The button names what it shows ("Last 2 trips + the current"). The window the user chose is outlined.
+- **A faint line joins the window's pings.** "we should also have a connecting line between the pings that are selected.
+  now we just have points. make them reasonably faint".
+  - Consecutive pings are joined in time order, in a dark grey at about a third of full opacity, 1 px wide.
+  - There is no line across a gap of more than two hours, so the hourly positions of the early years still join.
+  - A segment shows only when both its pings are in the window, filtered on the graphics card as the points are.
+- **The user's choices carry over to the next vessel.** "if one selects a new vessel - all the users selections besides
+  the new vessels should be preserved. ergo, we have a global starting default and then a follow up default".
+  - The page starts on: the vessel's last year, the last 3 trips and the current one, nothing outside the window,
+    Overview, Activity.
+  - From then on, each choice the user makes is the default for the next vessel:
+    - the years: the same years, or "all" years;
+    - the window: the same preset, or the same dates after a drag on the chart or the slider;
+    - the number of trips;
+    - what the map shows outside the window: the choice stays even for a vessel with no fishing, which shows nothing
+      and passes "fishing hours" on to the next vessel;
+    - the mode and the tab.
+  - All of them are in the address (`years`, `win`, `n`, `bg`, `a` and `b`, `tab`, `mode`), so a reload or a shared link
+    keeps them. An address of before this change, with `from` and `to`, still opens.
+  - A trip or a haul picked in the table frames the window for that vessel only. It is not carried over.
+  - Checked in the browser pane:
+    - from vid 2047 to 1977: the years 2013-2014, 2 trips, fishing hours and Quality control carried over;
+    - from 1977 to 2047, through the vessel list: a dragged window, 2013-10-21 to 2013-11-04, carried over.
+
+While these were checked, another session was rebuilding `curated/ais/trail` (`tar_make(names = ais_trail)`). The trail
+then held 2007-2015 only, so the service, and any running overview, showed those years alone until the rebuild ends.
+The checks used 2013-2014.
 
 Checked in the browser pane:
 - on vid 1977, the shares and ratios above, the hexagons' step after zooming, and the frame on the fishing;
