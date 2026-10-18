@@ -1,8 +1,8 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
 **status:** partly built — step 1 built 2026-10-18 (`staging/mbl/photo.parquet`, decision 138); step 2's script
-written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3-4 not started,
-and a prototype of DuckDB in the browser comes first (ask h); asks a-g answered (decision 137); the search for the
+written and checked offline, not run (a pilot of five vessels waits for the maintainer's go); steps 3-4 not started:
+a prototype of DuckDB in the browser is measured (§4.1) and ask h waits for the maintainer; asks a-g answered (decision 137); the search for the
 whole photo set (ask b) is the maintainer's (TODO 85)
 · **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137 and 138,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
@@ -222,9 +222,30 @@ page would read the parquet files itself over HTTP, and the R service would shri
 - *Speed.* DuckDB-WASM reads only the row groups it needs when the server answers HTTP range requests, and the
   trail's files are sorted by vid (§4.4). Without range requests it fetches whole files: a vessel-year would be 12
   monthly files of 18-160 MB.
-- *To measure, in a prototype on the laptop before step 3:* whether the static server answers range requests; the
-  time from a vessel's choice to its year on the map; the size of the DuckDB-WASM download. The maintainer then
-  chooses between it and the R service (ask h).
+- *Measured in a prototype on the laptop* (2026-10-18, scratch only; DuckDB-WASM 1.28.0, deck.gl 8.9.35). The page
+  read vid 1977's 2025 (147,432 pings, the busiest) and vid 7637's (1,558, the median) both ways. A small R server
+  on 127.0.0.1 served the 12 monthly trail files with range requests and logged every byte. Two page loads; times
+  are the range over both:
+
+  | | DuckDB-WASM reading the files | the R service (one parquet response) |
+  |---|---|---|
+  | busiest vessel-year, first read | 0.49-0.99 s; 147 requests, **119 MB** | 0.16-0.31 s; 1.7 MB (42 ms in R) |
+  | the same again | 0.08-0.30 s, 0 bytes (DuckDB-WASM keeps what it read) | as first |
+  | median vessel-year | 0.15-0.42 s; 48 requests, **31.6 MB** | 0.02-0.03 s; 17 KB |
+  | one-time download | DuckDB-WASM 3.6 MB compressed; ready in 2.2 s, 0.2 s from the browser's cache | none |
+
+  - httpuv's own static file server does not answer range requests: it sends the whole file (92 MB for one month).
+    So DuckDB-WASM would still need an R handler that serves byte ranges, as the prototype's did.
+  - DuckDB-WASM reads whole column chunks of every row group that may hold the vid (about 120,000 rows each), and
+    each file's footer: 2.6 MB a file for a vessel with 130 pings a month. On the laptop that is fast. Over a
+    network, 31.6 MB for the median vessel and 119 MB for the busiest would take seconds.
+  - Drawing is the same in both designs. With 147,432 pings, moving the time filter redrew in a median of 8-25 ms.
+    The embedded browser pane holds back frames while it is not looked at, so the first-draw times it gave (0.6 s
+    and 23 s) are not measurements.
+- *Recommended (Claude): both, each where it is strong.* The R service chooses and serves the rows (fixed endpoints,
+  the column allowlist, 17 KB to 1.7 MB a vessel-year), and DuckDB-WASM in the page reads that response. The
+  prototype's service column did exactly this (`registerFileBuffer`). The page can then run its own SQL on the
+  vessel's rows (by voyage, gear or month) with no further request. The maintainer chooses (ask h).
 
 **An alternative not proposed: Shiny.** It stays only as a wrapper, if the app must run on the institute's Shiny
 Server (ask a). The same page would then be one custom component, with Shiny only delivering the data, as the R
@@ -399,4 +420,5 @@ f. **The raw copies of the 2022 scrape scripts:** kept beside the files as their
 g. **The register panel until plan 028 step 6:** `vessel.parquet` for today and the history to 2023-12-19, each
    labelled (proposed), or wait for step 6?
 
-h. **The R service or DuckDB in the browser** (§4.1), chosen after the prototype's measurements. Open.
+h. **The R service, DuckDB in the browser, or both** (§4.1, measured 2026-10-18)? Recommended: both, the R service
+   serving the vessel's rows and DuckDB-WASM in the page reading them. Open.
