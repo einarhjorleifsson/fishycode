@@ -16,7 +16,7 @@
 #
 # Three layouts, three routes (`form` records which):
 #   tidy    2009-2017  the maintainer's almost-tidy table (vid, cs columns);
-#   matrix  2018-2022  the page matrices: the vid is the integer on the same row as the call sign;
+#   matrix  2018-2022  the page matrices: the vid is the number that opens the call sign's row;
 #   pdf     2007-2008  the printed register; each entry is a line starting with the registration number
 #                      (Sknr.) and the next line carries class then call sign.
 # 2004-2006 (card layout in the PDFs) are not read: the STK starts in 2007.
@@ -32,6 +32,10 @@ tidy <- readRDS(file.path(SK, "data", "skipaskra_2009-2017_almost-tidy.rds")) |>
   transmute(year = as.integer(year), vid = suppressWarnings(as.integer(vid)), cs = toupper(trimws(cs))) |>
   filter(!is.na(vid), grepl("^TF[A-Z]{2}$", cs)) |> mutate(form = "tidy")
 
+# The registration number opens the row: alone in the first cell, or fused with the name ("5935 Selur I", most
+# of 2022). The first bare 1-4 digit cell is NOT it where the number is fused: it is the build year (TFBS read as
+# vid 1998, 17 rows in 2019-2022). The legend page's sample entry ("5. | Kallmerki | TFGH | ... | 431") opens with
+# no number and is dropped.
 matrix_cs <- function(file) {
   d <- readRDS(file); out <- list()
   for (yi in seq_along(d)) {
@@ -40,8 +44,9 @@ matrix_cs <- function(file) {
       if (!is.matrix(m) || ncol(m) < 3) next
       hit <- which(matrix(grepl("^TF[A-Z]{2}$", m), nrow(m)), arr.ind = TRUE)
       for (k in seq_len(nrow(hit))) {
-        row <- m[hit[k, 1], ]; num <- which(grepl("^[0-9]{1,4}$", row))
-        out[[length(out) + 1]] <- tibble(year = yr, vid = if (length(num)) as.integer(row[num[1]]) else NA_integer_,
+        row <- trimws(m[hit[k, 1], ]); first <- row[!is.na(row) & nzchar(row)][1]
+        out[[length(out) + 1]] <- tibble(year = yr, vid = if (grepl("^[0-9]{1,4}(\\s|$)", first))
+                                           as.integer(sub("^([0-9]{1,4}).*$", "\\1", first)) else NA_integer_,
                                          cs = m[hit[k, 1], hit[k, 2]])
       }
     }
@@ -49,8 +54,9 @@ matrix_cs <- function(file) {
   bind_rows(out)
 }
 mat <- bind_rows(lapply(c("2018", "2019", "2020", "2021_2022"), function(f)
-  matrix_cs(file.path(SK, "data-raw", paste0("skipaskra_tabulized_matrix_", f, ".rds"))))) |>
-  filter(!is.na(vid), !is.na(year)) |> mutate(form = "matrix")
+  matrix_cs(file.path(SK, "data-raw", paste0("skipaskra_tabulized_matrix_", f, ".rds")))))
+message(sum(is.na(mat$vid)), " matrix call-sign rows open with no registration number (the legend's sample entry) and are dropped")
+mat <- mat |> filter(!is.na(vid), !is.na(year)) |> mutate(form = "matrix")
 
 pdf_cs <- function(file, year) {
   x <- system2("pdftotext", c("-layout", shQuote(file), "-"), stdout = TRUE)

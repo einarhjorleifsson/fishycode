@@ -125,6 +125,10 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
 - after plan 021 step 6: the foreign hulls (plan 021 step 7, TODO 65) with mids 101843, 147141, 102481 and 102527
   (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before).
 
+The annual register's matrix parse is fixed in code, not yet in data: build years and a legend entry had been read
+as vids (22 rows, 2018-2022). The redo invalidates `skipaskra` by hand, since `targets` cannot see the edit; in a
+scratch run 6,891 pings on 3 mids change vid (`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`).
+
 **check:** a decision record states the redo; every row of each list is resolved through `overrides/` or carries a
 stated reason; `ais_key_coverage` stays at 0 unassigned pings.
 
