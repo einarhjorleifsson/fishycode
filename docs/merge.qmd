@@ -400,17 +400,19 @@ if (!any(merged_station$schema == "aflaskeyti")) {
     filter(schema == "aflaskeyti") |>
     left_join(merged_trip |> filter(schema == "aflaskeyti") |> select(.tid, vid), by = ".tid") |>
     left_join(flag, by = "vid") |>
-    mutate(Year = lubridate::year(date))
+    mutate(Flag = flag, Year = lubridate::year(date))
   ers_st |>
     left_join(merged_catch |> filter(schema == "aflaskeyti") |>
                 summarise(kg = sum(catch, na.rm = TRUE), .by = .sid), by = ".sid") |>
     summarise(Stations = n(), Trips = n_distinct(.tid), `Catch (t)` = sum(kg, na.rm = TRUE) / 1e3,
-              .by = c(Flag = flag, Year)) |>
+              .by = c(Flag, Year)) |>
     arrange(Flag, Year) |>
     gt() |>
     fmt_number(columns = c(Stations, Trips, `Catch (t)`), decimals = 0, use_seps = TRUE)
 }
 ```
+
+The flag is the vessel registry's. `UNK` is three Norwegian vessels the registry holds without a flag (decision 126).
 
 ## What tier 4 keeps
 

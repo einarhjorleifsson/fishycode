@@ -1,6 +1,6 @@
 # 026 — The ERS catch reports of `dw_aflaskeyti` as a logbook source: foreign vessels 2014-2018
 
-**status:** partly built — measured 2026-10-17; §2-§7 coded, scratch-tested and built 2026-10-17 (decisions 127 and 129); §8.1-4 and §8.6 pass, §8.5 holds as the trail's exclusive windows allow (decision 129); §8.7's render not checked (TODO 62) · **2026-10-17**
+**status:** partly built — measured 2026-10-17; §2-§7 coded, scratch-tested and built 2026-10-17 (decisions 127 and 129); §8.1-4 and §8.6 pass, §8.5 holds as the trail's exclusive windows allow (decision 129); §8.7 passes: `docs/merge.qmd` renders against the build, its table fixed (2026-10-19) (TODO 62) · **2026-10-17**
 · **see:** decisions 126, 127 and 129, TODO 62, plans 014, 017 and 024; `curate/logbook.R`, `curate/link_lid_map.R`,
 `curate/corrections/logbook_gear.R`, `curate/station_window.R`, `curate/ais_catch.R`
 

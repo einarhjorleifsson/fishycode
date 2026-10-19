@@ -246,7 +246,7 @@ an adapter, three corrections, trips cut at landings in Iceland and then at 48-h
 scratch `$FISHYDATA`, with the 280 Icelandic hauls on vessel-days the logbook lacks (maintainer, 2026-10-17) and
 tier 4 in `curate/logbook.R` (plan 026 §11), and `docs/merge.qmd` has the section. Built to `curated/logbook`
 2026-10-17 (decision 127), and on the fixes the same day (decision 129): plan 026 §8.6 passes, §8.5 holds as the
-trail's exclusive windows allow, and §8.7's render is not checked.
+trail's exclusive windows allow, and §8.7 passes: `docs/merge.qmd` renders against the build (2026-10-19).
 **2019-2025, the lead:** Norway's open ERS catch messages. `sources/norway/logbooks.R` reads them, but it is not a
 target, it reads from `staging/`, and the files are not on disk. The Faroese half has no lead.
 
