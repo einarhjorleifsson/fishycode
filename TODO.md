@@ -647,3 +647,24 @@ The asks:
 
 **check:** each proposed set is in ramb's `inst/extdata` with its dictionary entry, or recorded as left out with the
 reason.
+
+## 94. fishybook: one Quarto book for the groups' thinking, ramb's methods and the Icelandic data (plan 033)
+**status:** open · **needs: maintainer** — asks a-f of plan 033 §12 · **see:** `curate/plans/033-fishybook.md`, plans
+001 and 002, items 15, 16 and 91
+
+The maintainer, 2026-10-19: replace the doc spaces with one Quarto book. Its main text is generic (the problem, the
+approach, the ramb code, on example data), it consolidates the WKSSFGEO, WKSSFGEO2 and WGSFD reports for their
+members, and it is the guide to what ramb can do and still lacks. Technical tests go in appendices, and the
+Icelandic data manual is its own part. ramb keeps only what it takes to run it.
+
+Measured (plan 033 §2): 26 of fishyweb's 35 pages are outlines; `docs/` holds the real text, and the record links to it
+about 130 times; the seed is `one_flow.qmd` and `wkssfgeo.qmd`. The ICES texts are in `raw/external/ices/`: the 11
+WGSFD reports of 2013-2025 were fetched 2026-10-19 (1,129 pages, licences differ by period), beside the two
+workshop reports. A Quarto profile builds an internal edition with the Icelandic part appended (tested).
+
+Proposed: `docs/` converted in place, so the links hold; a public edition (Parts I-III, appendices) and an internal
+one (with Part IV) from one source; no chapter before its text; record → book, one way; ramb's articles moved, not
+copied; one gap file behind every "what ramb lacks" view; `check_book()` in `check_bookkeeping()`. Item 16's port
+target becomes the book's public edition if ask a is answered as proposed.
+
+**check:** asks a-f answered in the plan, and plan 033's step 1 built (`docs/` renders as a book in both editions).
