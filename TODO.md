@@ -471,12 +471,15 @@ Steps 6 and 7 are built in the main project (decisions 142, 144): `curated/vesse
 tables for every year, and `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R` read it. The history was rebuilt
 first with mbl last, kvoti first for the class, SKEMMTISKIP as 62 and Hreiðar's years read whole (decision 144).
 
-The AIS chain and trail were rebuilt on them the same evening (decision 144): kW-hours on fishing fixes equal on
-23,530 vessel-years, leisure 1.04 % of fixes as before, the catch equal to the kilogram, 671,363 fixes gained where
-the old `yh2` shut hulls out. A reviewed row set 6061's 2016 kW to 58 (728 in the back-fill), and all was rebuilt
-again; `curate/voyage_gear.R`'s gear choice is not deterministic between rebuilds (decision 144).
+The AIS chain and trail were rebuilt on them (decision 144), and again after a reviewed row set 6061's 2016 kW to 58.
 
-**check:** asks d and e answered or parked.
+Left in the register (decision 144):
+- the class name column: 622 rows name another class than their code;
+- mbl's sole values, such as 2730's TFCR in 2023;
+- 12 kvoti stretches starting on its 1901 placeholder, on old hulls before 1920;
+- 111 local signs typed oddly ("RE.", "ís", "TH" for ÞH), which `vessel_sign` folds in its key.
+
+**check:** asks d and e answered or parked, and the four leftovers fixed or declared.
 
 ## 84. A fishing licence history from every witness (plan 029)
 **status:** in progress · **needs: maintainer** — plan 029 §8's asks: where licences are kept after 2020-07-22 and
