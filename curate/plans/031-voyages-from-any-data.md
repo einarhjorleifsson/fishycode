@@ -1,6 +1,7 @@
 # 031 — Voyages from any data: the stays the track misses, records as evidence, and several gears in a voyage
 
-**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f); nothing built; six asks open (TODO 90) ·
+**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f), and step 1 done the same day (§3.6);
+nothing built; six asks open; TODO 90 now carries it under a wider review of the voyage definition ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 063, 074, 101 and 144, plan 011 (port stays), plan 013 (ramb's
 steps), plan 025 (the first weighing bounds `T2`), `docs/one_flow.qmd` (step 1, trip, and step 3, gear),
 `curate/port_stay.R`, `curate/ais_voyage.R`, `curate/link_trip_voyage.R`, `curate/voyage_gear.R`; on the vessel-overview
@@ -128,6 +129,49 @@ are by a vessel with AIS within a day of the landing date:
 
 Every one of the 66 landing ports has a stay polygon, and stays are found at all of them.
 
+### 3.6 Step 1: `port_stay`'s own rules replayed
+
+`port_stay.R`'s year function was run from a scratch copy on the real inputs: the same pings, polygons, radii and STK
+events, with one parameter changed at a time.
+- **The check:** with today's parameters it reproduces the built stays exactly, 1,631,285 of 1,631,285.
+- **The four loosenings:**
+  - a departure radius of 30 km;
+  - that, plus an arrival radius of 5 km;
+  - a minimum stay of 1 h;
+  - a minimum stay of 0.5 h.
+- **The measure:** a stay one of them finds that overlaps no built stay is a missed call. Finds of one vessel and port
+  that overlap are one call, labelled by the loosenings that find it. A landing or logbook trip end at that port
+  within a day confirms it.
+- These numbers replace the approximations of §3.2-3.4 where they differ.
+
+| the call fails | calls | confirmed by a record |
+|---|---|---|
+| only the departure radius: the next ping is outside it | 12,295 | 79 % |
+| the minimum stay: at port 1-2 h | 168,323 | 16 % |
+| the minimum stay: at port 0.5-1 h | 168,568 | 14 % |
+| the arrival radius: the last ping 2-5 km from the polygon | 7,325 | 28 % |
+| short, and the departure ping outside | 630 | 77 % |
+
+- **The departure radius is the clear fault, and a time budget fixes it.**
+  - These calls are long silences in port: a median 19 h, most overnight.
+  - The first ping after is a median 4.1 km from the polygon (90 % within 12.3 km).
+  - §4.1's rule (2 h, at 6 knots) accepts 12,022 of the 12,295: 9,630 of the 9,712 a record confirms, and 2,392 of the
+    2,583 no record names.
+- **Short calls are many and mostly unconfirmed.** 336,891 calls of 0.5-2 h, only about 15 % with a landing or logbook
+  end at that port that day. Lowering the minimum stay everywhere would mostly add stops that are not landings. A
+  record confirming a short call (ask c) adds about 51,000.
+- **The 7,388 landings with no stay:**
+  - 29 % are departure-radius misses, and 2 % more combine it with another;
+  - 13 % are calls of 1-2 h, 2 % calls of 0.5-1 h, and 5 % an arrival ping 2-5 km out;
+  - 42 % are found at the landing port by no loosening. There the track and the landing disagree on the port: a wrong
+    port in the record, a landing trucked in, or another vessel's track (§4.2's check).
+- **The 24,729 voyages with several trips:**
+  - 43 % hold no missed call;
+  - 25 % a call of 1-2 h, 17 % a departure-radius call, 6 % a call of 0.5-1 h, 3 % an arrival-radius call, and about
+    5 % several kinds.
+  - Of §3.2's continuous sea trips, 165 of 5,023 get a call: they are what they looked like. Of its voyages with a
+    port call inside, 8,203 of 11,933 do.
+
 ## 4. The design (proposal)
 
 A generic voyage finder, with Iceland as one configuration of it.
@@ -209,7 +253,7 @@ Every case gives the same output (`docs/one_flow.qmd`): the columns are the same
 
 1. **Measure exactly.** Replay `rb_find_trip_stays` on every voyage with a missed call (§3.2-3.4), not only those with
    several trips. Classify each miss by the rule it fails, with the polygon distances `port_stay` uses. This settles
-   the approximations above. Read-only.
+   the approximations above. Read-only. *Done 2026-10-19, §3.6.*
 2. **The time budget in ramb,** tested in scratch on the Icelandic data. Measure:
    - stays gained and lost, and voyages split;
    - the landing coverage of §3.4, with a tighter window;

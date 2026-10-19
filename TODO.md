@@ -493,16 +493,29 @@ wired: the plan 028 session edits `_targets_once.R` too. Step 4 needs asks b, f 
 **check:** `curated/vessel/licence.parquet` and `curated/check/licence_discrepancy.parquet` built in `once` and
 reviewed, and `docs/licence.qmd` rendered, or the plan parked.
 
-## 90. Voyages from any data: missed stays, records as evidence, several gears per voyage (plan 031)
+## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
 **status:** open · **needs: maintainer** — plan 031's asks a-f · **see:** `curate/plans/031-voyages-from-any-data.md`,
-decision 144, TODO 25
+decision 144, TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), plan 011
 
-Voyages with several gears are rare (702 of 797,540), and half the voyages that carry several logbook trips hide a port
-call the stay rules missed, mostly a silence in port in 2007-2012. The plan proposes a generic voyage finder in ramb:
-- a time-budget stay rule;
-- landings and logbook trip ends as evidence;
-- a gear set per voyage.
+The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
+whole, with what is now known of the data. The goal is a generic voyage finder for any data: pings with landings
+only, logbooks only, both or neither, and several gears in a voyage.
 
-Iceland is one configuration of it.
+What plan 031 measured, step 1 included:
+- `port_stay` misses calls in four ways. The departure radius is the clear fault: 12,295 calls, 79 % confirmed by a
+  landing or logbook end, 98 % accepted by a time budget. Short calls are many (337,000) and mostly not landings.
+- 42 % of the landings with no stay disagree with the track on the port.
+- A fifth of the voyages carrying several logbook trips are continuous sea trips that the date-only logbook splits by
+  day.
 
-**check:** plan 031's steps 1-7 done, or the plan parked.
+The threads it gathers:
+- the STK key, TODO 25;
+- the trail and its delivery, TODO 27b;
+- AIS where records are missing, TODO 49;
+- a landing over two days, TODO 81 and plan 027;
+- on the vessel-overview branch: the gear read from the track (its TODO 86) and gaps judged against coverage (its
+  TODO 89).
+
+A fresh session starts here: answer plan 031's asks, then design the whole.
+
+**check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
