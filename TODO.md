@@ -563,25 +563,22 @@ vessel overview's QC lane keeps its 30 min threshold.
 flag on the fixes that the overview's lane reads.
 
 ## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
-**status:** open · **needs: maintainer** — plan 031's asks a-g · **see:** `curate/plans/031-voyages-from-any-data.md`,
+**status:** open · **needs: maintainer** — plan 031's asks a-h · **see:** `curate/plans/031-voyages-from-any-data.md`,
 decision 144, TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), plan 011
 
 The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
 whole, with what is now known of the data. The goal is a generic voyage finder for any data: pings with landings
 only, logbooks only, both or neither, and several gears in a voyage.
 
-What plan 031 measured, step 1 included:
-- `port_stay` misses calls in four ways. The departure radius is the clear fault: 12,295 calls, 79 % confirmed by a
-  landing or logbook end, 98 % accepted by a time budget. Short calls are many (337,000) and mostly not landings.
-- 42 % of the landings with no stay disagree with the track on the port.
-- A fifth of the voyages carrying several logbook trips are continuous sea trips that the date-only logbook splits by
-  day.
+Measured, in plan 031 §3.2-3.6: `port_stay` misses calls in four ways, the departure radius the clear fault, which a
+time budget fixes; 42 % of the landings with no stay disagree with the track on the port; a fifth of the voyages with
+several logbook trips are one sea trip that the date-only logbook splits by day.
 
 The rest of plan 031:
 - §4.0, the design: the problem as a cascade (ports, stays, voyages, trips with no track, link and reconcile), each
   attribute with a basis.
-- §3.7, the pitfalls, among them: no stays and no warning without a port list; 296 calls at foreign ports; short
-  voyages dropped.
+- §3.7, the pitfalls, among them: no stays and no warning without a port list; calls abroad never stays (40,117
+  vessel-days at foreign ports); short voyages dropped.
 - §3.8, outside code: iapesca and the CNR code.
 - §4.8, a robustness bench, step 2:
   - methods (ramb's, Danish, Irish, Italian, iapesca, learned ports) scored on the Icelandic witnesses, the logbook
@@ -595,7 +592,7 @@ The threads it gathers:
 - a landing over two days, TODO 81 and plan 027;
 - the gear read from the track, TODO 86, and gaps judged against coverage, TODO 89.
 
-Next: plan 031's asks, then the bench, then settle the whole design from §4.0.
+Next: plan 031's asks a-h, then settle the whole design from §4.0 with the bench's lessons (§3.9), then step 3.
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 

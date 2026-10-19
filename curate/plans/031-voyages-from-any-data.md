@@ -1,8 +1,9 @@
 # 031 — Voyages from any data: the stays the track misses, records as evidence, and several gears in a voyage
 
-**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f), and step 1 done the same day (§3.6);
+**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f); steps 1 and 2 done the same day
+(§3.6, §3.9);
 the cascade (§4.0), the other pitfalls (§3.7), outside code (§3.8) and the robustness bench (§4.8) added the same
-day; nothing built; seven asks open; TODO 90 now carries it under a wider review of the voyage definition ·
+day; nothing built; eight asks open; TODO 90 now carries it under a wider review of the voyage definition ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 062, 063, 074, 078, 101 and 144, plan 011 (port stays), plan 013 (ramb's
 steps, and its table of logic doubts), plan 017 (foreign ports), plan 022 §4 (STK's own voyages, TODO 68), plan 025
 (the first weighing bounds `T2`), `docs/one_flow.qmd` (step 1, trip, and step 3, gear), `docs/ports.md`,
@@ -194,14 +195,19 @@ Counted 2026-10-19 on the same build, or cited where the record already holds th
 1. **No port list gives no stays, and no warning.** ramb on a made-up track (three day trips 6 h apart, silent in port)
    with an empty port table: `rb_find_trip_stays` returns no stay, and `rb_cut_trip_voyages` makes one voyage of the
    three. Other people's data meet this first.
-2. **A foreign port is never a stay.** Of the polygons in `ports.fgb` from other sources, 9,894 lie more than 5 km
-   from every `einar` polygon. 296 voyages in 2007-2026, about 15 a year, hold either a silence of 2 h or more, or pings
-   under 1 knot spanning 2 h or more, inside one of them.
-   - By country (a voyage can count twice): Norway 167, Greenland 39, the Faroes 29 (anchorages away from the listed
-     ports), Denmark 20, Sweden 11, Britain 10 and Turkey 10 (the yards at Tuzla and Yalova), then 13 more countries.
-   - Rendsburg on the Kiel Canal is a transit: a longer list also brings stays that are not port calls.
-   - This is a lower bound: only pings inside a polygon count, and the slow span does not apply `port_stay`'s rule of
-     consecutive pings.
+2. **A foreign port is never a stay.** The stays read the `einar` polygons of Iceland and the Faroes only, so a call
+   anywhere else is part of a voyage. *Corrected 2026-10-19 (maintainer's doubt): a first count here gave 296 voyages,
+   far too few. It matched pings only inside polygons, so the lists stored as points (GISCO, vmstools, EMODnet, most of
+   OSM) never matched, and it left out the Faroes, which are on the `einar` list.* Counted again, 2007-2026:
+   - **AIS:** 40,117 vessel-days with pings under 2 knots within 3 km of a foreign port on any list (raw GFW anchorages,
+     GISCO, OSM, vmstools, EMODnet, UN/LOCODE, `jeppe`, and the Faroese ports). 200-470 a year in 2007-2012 (STK only),
+     3,200-4,150 a year since 2020, when ASTD hears vessels abroad; 19-147 vessels a year. A vessel-day is not a call (a
+     stay of 5 days counts 5), and a few lie at offshore anchorages on GFW's list.
+   - **Landings abroad** (the Directorate's port codes): the Faroes 1,207 (111 vessels), Norway 535 (138), Canada 29,
+     Denmark 27, Greenland 23, Ireland, Scotland, the Netherlands and Britain 12: at least 1,833. Code 150 "various
+     places" holds 3,028 more, and code 159, with no name in the port list, 7,305 (145 vessels); what 159 is, is ask h.
+   - Among the places: yards in Turkey (Tuzla, Yalova); Rendsburg on the Kiel Canal is a transit, so a longer list also
+     brings stays that are not port calls.
    - Plan 017: non-Faroese foreign voyages have no start port in 19 % of cases.
 3. **The fixes of a short voyage get no voyage.** A fix in neither a stay nor a voyage sits in a voyage of under 10
    recorded pings, which the cut drops: every such run has 9 or fewer recorded pings, checked in 2010 and 2020.
@@ -275,6 +281,135 @@ Read 2026-10-19. Decision 078 read the rest on 2026-10-09. None of it is in ramb
 - **`define_trips_pol`** (WKSSFGEO, the ICES data call) is ramb's `"jepol"` already.
 - **The ICES data call** takes trips only from the logbook. Its vmstools harbour points are buffered 3 km in
   EPSG:3857, about 1.3 km on the ground at 64°N.
+
+### 3.9 Step 2: the robustness bench, measured
+
+Run 2026-10-19, read-only; scripts and output in the session's scratch. The design is §4.8.
+- **Scoring:**
+  - *found* is the share of witnessed landings (a landing that a logbook trip end or an STK arrival puts at the same
+    port group within a day) with a stay at that group on the landing day or the day before;
+  - *claimed* is the share of a method's stays that some witness record claims, each record claiming only the nearest
+    stay;
+  - *per landing* is stays per witnessed landing.
+- **Port groups:** `einar` ports within 3 km of each other (157 ports, 138 groups).
+- **Comparing:** compare methods within a year only. Before 2017 STK's events are no witness, so *claimed* is lower
+  in 2010.
+
+**The bench's own check.**
+- The published jepol reproduces its 90 saved trips on the Danish tracks exactly.
+- CNR's method, run per vessel as its script does, gives back 84 of its 94 saved trips. The other 10 are artefacts of
+  CNR's own run: one saved trip starts on one vessel and ends on another.
+- ramb's `"jepol"` matches the published code on 89 of 90 trips. The one difference is a split ramb fixed on purpose.
+
+**Today's inputs (S0):**
+
+| method | found 2010 | found 2018 | stays 2018 | claimed 2018 | per landing 2018 |
+|---|---|---|---|---|---|
+| `stays`, today's | 95.2 % | 98.3 % | 62,331 | 76.4 % | 1.25 |
+| `stays` + time budget (§4.1, prototype) | 97.8 % | 98.4 % | 73,339 | 65.6 % | 1.47 |
+| `runs` | 97.3 % | 99.4 % | 77,645 | 73.6 % | 1.55 |
+| jepol (ramb) | 97.9 % | 99.5 % | 78,438 (14,464 at no port) | 76.3 % | 1.28 |
+| Irish, a gap of 2 h | 97.6 % | 65.8 % | 114,970 | 31.8 % | 2.27 |
+| CNR (published R, 65 min on 4 cores) | not run | 97.6 % | 59,891 | 79.9 % | 1.20 |
+| learned ports, no port list (§4.3) | 97.6 % | 98.1 % | 68,770 | 70.9 % | 1.37 |
+| iapesca (published R) | not run | not run: too slow as published (above) | | | |
+
+- **The time budget helps where pings are sparse:** +2.6 points in 2010. In 2018 it only adds about 11,000 stays that no
+  witness claims, so it must scale with the ping interval.
+- **jepol's** 72 h cap splits long trips at sea, hence its stays at no port.
+- **CNR's rule** has the best *claimed* and the fewest extra stays on Icelandic AIS.
+
+**Learned ports against lists that do not come from our AIS.** The `einar` polygons are hulls of STK's own pings, so
+learned ports were compared with the raw lists, before `ports_all.R` merges them into `einar`. In Iceland those are GFW
+anchorages (63 places), GISCO (60), UN/LOCODE (80), OSM (11) and vmstools (1).
+
+| | 2018 | 2010 |
+|---|---|---|
+| learned ports near an `einar` port, within 2 km of a place on some independent list | 82.4 % of 91 | 73.9 % of 115 |
+| learned ports away from every `einar` port, near any list | 0 % of 33 | 0 % of 99 |
+| landing ports found by learned ports | 96.7 % of 60 | 100 % of 62 |
+| landing ports on GFW / GISCO / all independent lists | 91.7 / 90.0 / 95.0 % | 90.3 / 87.1 / 91.9 % |
+
+The learned ports away from `einar` are on no list: anchorages, shelter, fishing grounds or fish farms. That is the
+learning's false-port cost.
+
+**Port lists by source and by share (S3, S4), 2018, today's rules:**
+
+| port list | found | claimed |
+|---|---|---|
+| `einar` | 98.3 % | 76.2 % |
+| GFW anchorages, points buffered 1 / 2 / 3 km | 98.1 / 98.3 / 96.6 % | 77.4 / 77.0 / 75.4 % |
+| GISCO, buffered 1 / 2 / 3 km | 91.8 / 95.0 / 89.7 % | 76.9 / 76.5 / 72.8 % |
+| all independent lists, 2 km | 98.3 % | 76.9 % |
+| `einar` with 25 / 50 / 75 % of ports dropped | 79.3 / 35.1 / 17.6 % | about 76 % |
+| the same, plus learned ports | 98.4 / 98.3 / 98.2 % | 74.5 / 73.0 / 71.7 % |
+
+- **An independent list does as well as our AIS-made one.**
+- **A point list wants a buffer of 1-2 km.** At 3 km, neighbouring ports merge and passing vessels are caught.
+- **A partial list with learned ports as the fallback** recovers what the list misses (the cascade of §4.0).
+
+**Thinned pings (S5)**, on the 323 vessels of 2018 whose pings are a median 3 minutes apart or less:
+
+| method | full | 10 min | 1 h | 2 h | in-port pings removed (as STK) |
+|---|---|---|---|---|---|
+| `stays` | 98.2 % | 97.9 % | 86.9 % | 82.4 % | 97.0 % |
+| `stays` + time budget | 98.2 % | 98.0 % | 87.5 % | 82.9 % | 97.4 % |
+| `runs` | 99.3 % | 89.9 % | 83.3 % | 81.9 % | 0 % |
+| jepol | 99.4 % | 92.8 % | 85.7 % | 84.2 % | 0 % |
+| Irish | 51.0 % | 51.0 % | 47.4 % | 91.6 % (6 stays per landing) | 98.1 % |
+| learned ports | 95.9 % | 95.4 % | 87.0 % | 87.5 % | 95.1 % |
+
+- **Methods that need pings in port fail when the tracker falls silent there** (`runs`, jepol). The silence-based rules
+  keep 95-98 %.
+- **At VMS rates every method loses 12-16 points.** Mostly these are short calls by day boats, which hold one or two pings.
+- **A fixed 2 h gap or minimum stay** is meaningless at 2-hourly pings: 2,626 learned "ports", and 6 Irish stays per
+  landing. The stay rules must scale with the vessel's own interval. The time in port should be estimated from the pings
+  just outside the call, less the sailing time, not only from silences that begin near a port.
+
+**Whacks (S6):** with the speed filter's 59,000 whacks of 2018 put back, the duration-based methods hardly move
+(`stays` 98.2 %, jepol 99.6 %, learned 98.0 %). `runs` gains 13,000 short false stays (*claimed* 73.6 to 65.8 %),
+because whacks flicker in and out of port. Many whacks are STK's port-event rows at the harbour: noise for the track,
+evidence of a stay.
+
+**Combinations:**
+
+| | found 2018 | claimed 2018 | found 2010 | claimed 2010 |
+|---|---|---|---|---|
+| best single (jepol 2018; `stays` + budget 2010) | 99.5 % | 76.3 % | 97.8 % | 56.7 % |
+| today's `stays` | 98.3 % | 76.4 % | 95.2 % | 59.5 % |
+| vote, 5 methods agree | 98.1 % | 77.1 % | 97.1 % | 61.2 % |
+| vote, 3 agree | 98.9 % | 73.8 % | 97.7 % | 59.3 % |
+| union | 99.8 % | 73.9 % | 98.6 % | 54.6 % |
+
+- **In dense 2018,** combining adds little.
+- **In sparse 2010,** a vote of 5 methods beats today's on both counts.
+- **The cascade as prototyped** (time budget for vessels with a median interval over 15 min) adds nothing: almost no
+  vessel qualifies. It should judge the gaps around each call.
+- **The hourly vote fragments calls** when many methods must agree (7 methods, 6 agreeing).
+
+**Other fleets' data**, scored against their providers' trips: the share of trip boundaries a method puts a stay
+across, on boundaries with a ping within 6 h either side.
+
+| set | `stays` | `runs` | jepol | Irish | learned | CNR |
+|---|---|---|---|---|---|---|
+| vmstools, VMS about 2 h, logbook trips (291 vessels with VMS) | 83.7 % | 95.0 % | 97.8 % (1.41 splits per trip) | 92.4 % (3.30 splits) | 82.4 % | 18.6 % |
+| iapesca, 15 min, its harbour | 100 % | 100 % | 100 % | 57 % | 57 % | 86 % |
+| Adriatic passive gear, 6 min, CNR's harbours | 89 % | 100 % | 100 % | 100 % | 78 % | 56 % |
+| Irish pots, gillnets; Italian pots (anonymised, trip pings only) | none | none | none | 100 % | 0 / 0 / 100 % | none |
+
+- **Where a file holds only trip pings,** only the gap rule sees a boundary.
+- **Where anonymisation moves each trip,** learned ports fail.
+- **CNR's rule needs 4 pings in port,** so at 2-hourly VMS it misses most calls.
+- **vmstools' example data:** its logbook covers 586 vessels and its VMS 291, so trips of vessels with no VMS are left
+  out. 133 pings are dated 29/02/1801, a day its anonymisation invented. 22 % of speeds are missing.
+
+**What the bench changes in the design:**
+- the port tier can be any independent list (GFW, GISCO), points buffered 1-2 km, with learned ports as the fallback;
+- every duration rule (minimum stay, gap, time budget) scales with the ping interval around the call;
+- methods that need pings in port are not used alone;
+- in sparse data, a vote of methods is worth having;
+- CNR's per-ping rule now has a C++ port in ramb, uncommitted. It reproduces the published code on the Italian,
+  Adriatic and Danish data, and runs Iceland 2018 in under a minute.
 
 ## 4. The design (proposal)
 
@@ -534,6 +669,8 @@ others recorded the trips. Profiled 2026-10-19:
 | `PT_IPM_2017_GP2` | WKSSFGEO2 (MIT) | Portuguese pots and dredges, 8 vessels, 30 s apart, labelled | 8 trip ids | none | yes: `wkssfgeo2_pt_gps` |
 | `IT_CNR_2023_GP` | WKSSFGEO2 (MIT) | Italian pots, 1 vessel, 60 s apart, sets and hauls labelled; anonymised | 13 trips | none | yes: `wkssfgeo2_it_pots` |
 | creel, Portuguese GPS, Malagasy gillnets | Dryad (CC0), WKSSFGEO (MIT), IRD (CC BY 4.0) | small-scale tracks, 60 s, labelled | one trip per vessel (creel), else none | none | yes: `creel`, `wkssfgeo_pt_gps`, `ird_mg_gillnet` |
+| `anonymized_dataset.rds` | CNR-IRBIM, GitHub `PamelaLattanzi/softwarex_paper` v2.0 (GNU GPL 3), for Lattanzi et al. 2026, SoftwareX; `$FISHYDATA/raw/external/cnr` | Italian passive-gear vessels, 5, 30 s apart, fishing labelled by hand; dates and positions anonymised, positions in metres with no CRS stated; speed and the other features scaled 0-1, no gear | 846 trip ids | none: the positions are moved | no, not decided: read from `raw/external/cnr` |
+| `mmc3`-`mmc6` | Mendo et al. 2023, Ecological Indicators, supplements (CC BY 4.0); `$FISHYDATA/raw/external/mendo2023` | soak-time code in R (two PDFs) and its samples: Peruvian gillnets, 3 vessels, 3 min apart; a Danish gillnetter on 4 days, 1 min apart. Labels are a random forest's, not observed; metres with no CRS stated | 3 and 4 trip ids | none | no, not decided: read from `raw/external/mendo2023` |
 
 How the bench uses them:
 - **Every method runs on every set,** scored against the set's own trips. Where the positions are anonymised, no real
@@ -592,6 +729,12 @@ step:
    - then the methods across the scenarios S0-S6, on the Icelandic data and on the external sets;
    - then the combinations.
 
+   *Done 2026-10-19, §3.9.* Not run:
+   - iapesca's trip finder. Its published code took over 13 minutes on 4 cores for a sample of 100 Icelandic vessels
+     and was stopped (maintainer); a faster version is being tested in a separate session. Its coastline mode, which
+     downloads a coastline, was not tried either.
+   - CNR for 2010: its R loop took 65 min for 2018, and ramb's C++ port is not installed yet.
+
    Its results choose what steps 3 and 4 build. The time budget and records as evidence enter it as methods.
 3. **The time budget in ramb,** with the cut of §4.7 and, if ask g says so, the other lists of §4.3. Tested in scratch
    on the Icelandic data. Measure:
@@ -641,3 +784,5 @@ f. **The logbook's day trips on one sea trip:** keep them as several trips on on
    one trip in the reconciled trip table?
 g. **Ports outside Iceland and the Faroes:** take the other sources' polygons in `ports.fgb` as a second tier now
    (§3.7 item 2, §4.3), or wait for learned ports (ask e)? The bench's scenario S3 measures what each source adds.
+h. **Landing port code 159:** 7,305 landings of 145 vessels in 2007-2026 carry it, and the Directorate's port list
+   gives it no name. Is it a port abroad, fish sold in containers, or something else (§3.7 item 2)?
