@@ -36,7 +36,11 @@ website:
           - text: Historical back-entries
             href: afli-backentry.qmd
       - text: One flow
-        href: one_flow.qmd
+        menu:
+          - text: One flow for effort, pressure and catch
+            href: one_flow.qmd
+          - text: The WKSSFGEO workshops and ramb
+            href: wkssfgeo.qmd
       - text: AIS trail
         href: ais_trail.qmd
       - text: Coordinates

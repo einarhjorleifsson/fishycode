@@ -347,27 +347,60 @@ inputs (`_targets_once.R`). The flow runs ramb's `rb_` functions, one per step. 
 A ping carries keys, not the values of its port call or voyage; those live once, in their own tables (the trail repeats a few voyage values on each fix, decision 147). The record
 gives each fix its gear as `metier`.
 
-## What exists, and where (2026-10-09)
+## What exists, and where (2026-10-19) {#what-exists}
 
-![Who has each piece. A box takes the colour of its most advanced home: built in ramb, built in fishycode only (Icelandic preprocessing or a one-time fix), planned in ramb (plan 013), found only elsewhere (the ICES data call, WKSSFGEO, WKSSFGEO2, iapesca), or nowhere.](figures/one_flow_status.svg)
+![Who has each piece, as of 2026-10-09. A box takes the colour of its most advanced home: built in ramb, built in fishycode only (Icelandic preprocessing or a one-time fix), planned in ramb (plan 013), found only elsewhere (the ICES data call, WKSSFGEO, WKSSFGEO2, iapesca), or nowhere. The tables below are newer.](figures/one_flow_status.svg)
 
-"Planned" means written down in fishycode plan 013 and not built: phase 4 holds the `T2` reconciliation, the
-trip–landing link, gear and the track-based fishing methods; phase 5 holds effort and catch sharing. What the
-outside repositories offer was read on 2026-10-09 (decision 078); nothing from them is in ramb yet.
+"Planned" means written down in fishycode plan 013 or plan 031 and not built. Outside code was read on 2026-10-09
+(decision 078) and on 2026-10-19 (decision 148). Since then, ramb has three pieces recoded from it:
+- CNR-IRBIM's trip finder (`cnr`);
+- Ifremer's trip finder (`iapesca`);
+- iapesca's set ↔ haul pairing (`rb_link_record_sets`).
 
-| Step | ramb | fishycode | ICES data call (`a844911`, vmstools, sfdSAR) | WKSSFGEO, WKSSFGEO2, iapesca |
+Each was checked against the published code. Nothing outside ramb is copied into it. The workshops' example data are
+on [their own page](wkssfgeo.qmd).
+
+| Step | ramb | fishycode | ICES data call (`a844911`, vmstools, sfdSAR) | WKSSFGEO, WKSSFGEO2, iapesca, others |
 |---|---|---|---|---|
-| Vessel | planned: `rb_add_vessel` (the time-bounded join) | built and frozen: the STK mobile-id → vessel key, from the register, the vessel's own track, logbook and landings, continuity (plans 003, 009) | assumes VMS and logbook share one vessel id | — |
+| Vessel | built: `rb_link_vessel_tracks` (two feeds matched by co-location, decision 146). Planned: `rb_add_vessel` (the time-bounded join) | built and frozen: the STK mobile-id → vessel key, from the register, the vessel's own track, logbook and landings, continuity (plans 003, 009) | assumes VMS and logbook share one vessel id | — |
 | Flag pings | built: `rb_flag_ping_invalid`, `_duplicate`, `_impossible`, `_port`; they label, never drop | calls them; only recorded positions are tested; exact time ties flagged | drops pings (see above) rather than labelling them | iapesca's speed filter (55–60× slower than ramb's); its fast-run idea is TODO 38 |
-| 1. Trip | built: `rb_create_port_calls` and `rb_create_voyages`, sharing their methods (`dwell`, `runs`, `jepol`, `cnr`, `iapesca`), `rb_add_voyages`, `rb_link_trip_voyages`. Built since: `rb_link_trip_landings` (decision 102). Planned: the declared-trip tier and the reconciliation of declared times with the track (`rb_reconcile_time`: `T1`, `T2`; the track may override where it is precise) | the logbook ↔ landings match (`lid_map`, with the landing's date and port); one 2 h minimum port call; STK port events | trips only from the logbook; pings tied by time; unmatched pings and trips over New Year dropped | port calls without a port list: gap rules, a coastal band, a coastline buffer (candidates). ramb's default projection for the port buffers is right only at high latitudes |
-| 2. Record | built: `rb_create_record_pings` (records with no pings) and `rb_link_record_sets` (static-gear sets) (decision 103); `rb_create_record_windows` (tow, set, haul, jig, day), `rb_link_record_pings`, `rb_add_record`, `rb_limit_record_duration`, `rb_link_record_events` (the fix that bounds each declared time), `rb_create_record_stretches` and `rb_link_record_stretches` (the track's towing stretches paired with the declared tows, in order and one to one). Planned: declared `t1`–`t4` reconciled with the track (`rb_reconcile_time`), set ↔ haul pairing for static gear (`rb_link_record_sets`). Not built: windows from haul positions, trip-level records | station windows; a record's resolution is open (TODO 3) | the log event of the ping's date, else the record with the most catch; a haul-time match exists but is switched off | — |
-| 3. Gear | built: `rb_predict_gear_width` (BENTHIS), `rb_fill_gear_width`, `rb_extract_metier`. Planned, on hold: `rb_add_gear` | the landing's gear where it names one metier; the logbook's kept beside it; `metier` on the trail | the logbook's metier, checked against the ICES lists; widths from the user, then BENTHIS, then a default | gear predicted from the track (Adriatic random forest), a candidate. A licence register: nowhere |
-| 4. Fishing | built: `rb_add_fishing(method = "window")`, `"speed"` and the window-then-speed cascade (decision 101); the models are in fishymodel, benched in decision 103;, on a fix's own speed or the median over ±`window_s` (`rb_calc_speed_smooth`). Planned: `"gmm"`, `"embc"`, `"hmm"`, `rb_build_fishing_speeds`, and the set ↔ haul pairing for static gear (`rb_link_record_sets`, from iapesca's method) | window × the gear's declared speed range, tested on the ±10 min median speed (decision 093) | a Gaussian mixture per towed metier; a set speed range for other gears | labelled set and haul data (pots, dredges); HMM practice (Irish Marine Institute); set ↔ haul pairing (iapesca, now planned in ramb); movement features: candidates |
-| 5. Effort | built: `rb_add_effort` (hours, kW-hours, swept area; decision 099), step times, gear widths | on every fix of the trail (decision 101) | interval within the trip, kW-hours, swept area (sfdSAR), 0.05° c-squares, habitat and depth | static-gear effort as net length × soak time; hours apportioned by track length per cell: candidates |
-| 6. Catch | built: `rb_add_catch_units` and `rb_share_catch` rewritten: units at any resolution, by effort, up a level, kg in = kg out (decisions 100, 102); the EFLALO sharing as `method = "eflalo"` | `curated/ais/catch`: per fishing fix, unit, species and approach, with `raise_factor` (decision 102) | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
+| 1. Trip | built: `rb_create_port_calls` and `rb_create_voyages`, sharing their methods (`dwell`, `runs`, `jepol`, `cnr`, `iapesca`); `rb_add_voyages`, `rb_link_trip_voyages`, `rb_link_trip_landings` (decision 102). Planned: the declared-trip tier, and declared times reconciled with the track (`rb_reconcile_time`: `T1`, `T2`; the track may override where it is precise) | the logbook ↔ landings match (`lid_map`, with the landing's date and port); one 2 h minimum port call; STK port events | trips only from the logbook; pings tied by time; unmatched pings and trips over New Year dropped | not in ramb: trips without a port list (the Irish gap rule, iapesca's coastline mode, the power-on rule of CNR-IRBIM's trackers); mooring sites learned from the track (Mendo et al. 2024; GFW's `pipe-anchorages`); CNR-IRBIM's coastal zones, which its join rule needs. ramb's default projection for port buffers is right only at high latitudes |
+| 2. Record | built: `rb_create_record_windows` (tow, set, haul, jig, day), `rb_create_record_pings` (records with no pings), `rb_link_record_pings`, `rb_add_record`, `rb_limit_record_duration`, `rb_link_record_events` (the fix that bounds each declared time), `rb_create_record_stretches` and `rb_link_record_stretches` (the track's towing stretches paired with the declared tows, in order and one to one), `rb_link_record_sets` (the set of each static-gear haul, decisions 103 and 146). Planned: declared `t1`–`t4` reconciled with the track (`rb_reconcile_time`). Not built: windows from haul positions; trip-level records | station windows; a record's resolution is open (TODO 3) | the log event of the ping's date, else the record with the most catch; a haul-time match exists but is switched off | a second set finder, by buffer and overlap (Mendo et al. 2023) |
+| 3. Gear | built: `rb_predict_gear_width` (BENTHIS), `rb_fill_gear_width`, `rb_extract_metier`. Planned, on hold: `rb_add_gear` | the landing's gear where it names one metier; the logbook's kept beside it; `metier` on the trail | the logbook's metier, checked against the ICES lists; widths from the user, then BENTHIS, then a default | gear from the track: CNR-IRBIM's Adriatic random forest, gear from hauls (Lattanzi et al. 2026), GFW's `vessel-classification`. A licence register: nowhere |
+| 4. Fishing | built: `rb_add_fishing(method = "window")`, `"speed"` and the window-then-speed cascade (decision 101), on a fix's own speed or the median over ±`window_s` (`rb_calc_speed_smooth`). The track models (Gaussian mixture, EMbC, HMM) are in the sibling package fishymodel, benched in decision 103. Planned: those models as methods (`"gmm"`, `"embc"`, `"hmm"`), and `rb_build_fishing_speeds` | window × the gear's declared speed range, tested on the ±10 min median speed (decision 093) | a Gaussian mixture per towed metier; a set speed range for other gears | movement features and random forests (iapesca; CNR-IRBIM's SoftwareX code, Python); HMM practice (Irish Marine Institute) |
+| 5. Effort | built: `rb_add_effort` (hours, kW-hours, swept area; decision 099), step times, gear widths | on every fix of the trail (decision 101) | interval within the trip, kW-hours, swept area (sfdSAR), 0.05° c-squares, habitat and depth | static-gear effort as net length × soak time; hours apportioned by track length per cell |
+| 6. Catch | built: `rb_add_catch_units` and `rb_share_catch`: units at any resolution, by effort, up a level, kg in = kg out (decisions 100, 102); the EFLALO sharing as `method = "eflalo"` | `curated/ais/catch`: per fishing fix, unit, species and approach, with `raise_factor` (decision 102) | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
 
 **Nowhere yet:** the licence gear register; record windows from haul positions; catch shared over several trips
 (a weekly landing), which is planned for `rb_share_catch`.
+
+### The workshops' wish list
+
+What the two ICES workshops on small-scale fisheries asked for, and where it stands (G1 = WKSSFGEO 2021, G2 =
+WKSSFGEO2 2023; pages as printed; read 2026-10-19, decision 148). "Nowhere" means in none of ramb, fishymodel or
+fishycode.
+
+| Wish | Asked in | Where it stands |
+|---|---|---|
+| Duplicates, positions on land, computed against reported speed, smoothed speed | G1 p. 17-19 | ramb: `rb_flag_ping_duplicate`, `rb_detect_in_polygons`, `rb_calc_speed`, `rb_calc_speed_smooth` |
+| Interpolation that uses course and speed (cubic Hermite) | G1 p. 19 | ramb has linear interpolation only (`rb_interpolate_track`); the cubic Hermite spline is in vmstools and the WKSSFGEO code |
+| Downsampling, and how results change with the ping rate | G1 p. 19-20, 39; G2 p. 37 | nowhere as a function; plan 031's bench thins pings in scratch |
+| Trips from harbour polygons | G1 p. 19-20 | ramb: `dwell`, `runs`, `jepol` (DTU), `cnr`, `iapesca` |
+| Trips without a port list: gaps, stops, device power | G1 p. 20; G2 p. 20-21 | in ramb only inside `cnr` (a silence of 4 h) and `jepol` (the longest gap); the Irish gap rule and CNR-IRBIM's power-on rule are not in ramb (example data in decision 148) |
+| Harbours without drawn polygons: mooring sites, beaches | G1 p. 16, 19; G2 p. 6, 24 | nowhere; Mendo et al. 2024's workflow and GFW's `pipe-anchorages` do it; plan 031 §4.3 |
+| Fishing from speed rules | G1 p. 21 | ramb: `rb_add_fishing(method = "speed")` |
+| Mixture models, EMbC, HMM | G1 p. 21; G2 p. 19-20, 29 | fishymodel: `fm_gaussian`, `fm_gaussian_binary_clustering`, `fm_hidden_markov_step`, `fm_hidden_markov_step_and_turn` |
+| Random forests and other learned classifiers, with movement features | G1 p. 26; G2 p. 2-3, 26, 30-36 | nowhere; iapesca, CNR-IRBIM's SoftwareX code (Python) and Samarão et al. 2025 have them |
+| Gear from the track | G1 p. 6-7, 38 | nowhere; CNR-IRBIM's Adriatic model, Lattanzi et al. 2026, GFW's `vessel-classification` |
+| Sets, hauls and soak time | G1 p. 29-30; G2 p. 30-36 | ramb: `rb_link_record_sets` (iapesca's method); Mendo et al. 2023's method is not in ramb |
+| Hours fished, kW-hours, swept area | G1 p. 27-28 | ramb: `rb_add_effort`, `rb_predict_gear_width` |
+| Days at sea, fishing days, hours at sea | G1 p. 12-13, 27 | nowhere as a function |
+| Net length from hauling, haul counts, the three-level set/haul indicator, static-gear pressure | G1 p. 28-30 | nowhere; `rb_add_effort`'s pressure is for towed gear only |
+| Hours spread over grid cells by track length | WKSSFGEO2 code | nowhere |
+| Grids at 0.01° or 100-1000 m | G1 p. 40; G2 p. 70 | ramb: `rb_bin_midpoint` (any cell size), `rb_encode_ices_rectangle`; c-squares in the ICES data call |
+| Open labelled data as a common benchmark | G2 p. 8, 72 | ramb's example data (the [workshops' sets](wkssfgeo.qmd)); more in `$FISHYDATA/raw/external` (decision 148, TODO 93) |
+| Scoring: accuracy, kappa, F-score; trips matched within ±10 % of duration | G1 p. 22-25, 52-57 | nowhere as a function; plan 031's bench, in scratch |
+| Anonymising tracks for sharing | G2 p. 8 | nowhere |
 
 ## The diagram as presented at WGSFD 2026 (version 1)
 

@@ -620,3 +620,24 @@ radius. Score them against the landings abroad (the Faroes, Norway; code 159 "G�
 the false stays at transits and offshore anchorages (the Kiel Canal at Rendsburg).
 
 **check:** a decision on the second tier, with its lists and radius and their score abroad; or the item parked.
+
+## 93. Which of decision 148's data go into ramb's example data
+**status:** open · **needs: maintainer** — the choice of sets, and three asks outside this repo (below) · **see:**
+decision 148, `docs/wkssfgeo.qmd`, plan 031 §4.8
+
+Proposed (2026-10-19), each documented as ramb's present sets are (data dictionary, sources, licence):
+- CNR-IRBIM's two coastal zones (WKSSFGEO `dev_branch`, GPL 3). ramb's `cnr` method needs them to give CNR's own
+  trips: 72 with the zone, 70 without. Plan 031 §4.8 had left them out as gear data.
+- CNR-IRBIM's tracker log (`raw/external/cnr/zenodo_5783920`, CC BY 4.0). It is the only set with power, ignition
+  and the device's own port events.
+- CNR-IRBIM's labelled tracks (`raw/external/cnr/anonymized_dataset.rds`, GPL 3), raw columns only. Wait until the
+  CRS of its x and y is known.
+
+The asks:
+- Lattanzi (CNR-IRBIM): the CRS of the labelled tracks' x and y.
+- Mendo or Glemarec: the observed set and haul times behind Mendo et al. 2023's samples. With them the samples become
+  a set-finder test; without them they are model output.
+- Galdelli (CNR-IRBIM): may the 5-vessel file they removed from WKSSFGEO2 be used?
+
+**check:** each proposed set is in ramb's `inst/extdata` with its dictionary entry, or recorded as left out with the
+reason.

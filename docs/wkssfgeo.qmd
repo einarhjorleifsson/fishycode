@@ -1,0 +1,280 @@
+---
+title: "The WKSSFGEO workshops: what they hold, and what ramb has"
+---
+
+::: {.callout-note}
+**Written by AI, not yet reviewed by a person.** The summary below was written on 2026-10-19 by Claude (Anthropic), in
+a subagent that read both reports in full, for fishycode plan 031 (voyages) and the WGSFD flow. The mapping of the
+example data to ramb, and the checks against the code, were made by Claude the same day (decision 148). Page numbers
+are the reports' printed ones. The reports themselves are in `$FISHYDATA/raw/external/ices/`.
+:::
+
+Two ICES workshops on geo-spatial data for small-scale fisheries:
+
+- **G1:** WKSSFGEO, Lisbon, 2021 (ICES Scientific Reports 4:10, [doi 10.17895/ices.pub.10032](https://doi.org/10.17895/ices.pub.10032));
+  code and data at [ices-eg/WKSSFGEO](https://github.com/ices-eg/WKSSFGEO).
+- **G2:** WKSSFGEO2, Faro, 2023 (ICES Scientific Reports 5:49, [doi 10.17895/ices.pub.22789475](https://doi.org/10.17895/ices.pub.22789475));
+  code and data at [ices-eg/WKSSFGEO2](https://github.com/ices-eg/WKSSFGEO2).
+
+What they ask for, and where each piece now is (ramb, fishymodel, iapesca, the ICES data call, others, or nowhere),
+is in [One flow: what exists, and where](one_flow.qmd#what-exists). This page holds the workshops' example data and
+the summary of the two reports.
+
+## The example data, and which are in ramb
+
+"In ramb" means a table in ramb's `inst/extdata`, read with `rb_read_example()`. "Not public" means the set was never on
+either GitHub repository; only the workshop chairs (Rufino, Mendo) can release it.
+
+| Dataset | Provider, gear, size | In ramb |
+|---|---|---|
+| `example_data_AIS` (G1) | DTU; Danish AIS, gillnets and otter trawl, 14 vessels, 10 s, fishing labelled | `dansk` |
+| `example_data_GPS` (G1) | IPMA; pots and dredges, 5 vessels, 20 s, set and haul labelled | `wkssfgeo_pt_gps` |
+| `passive_vessel_ais_adriatic_2017` (G1 repository, in neither report) | CNR-IRBIM; one passive-gear vessel, AIS, 10 trips | `wkssfgeo_adriatic_passive` |
+| `harbours.rds`, `Denmark.rds` (G1) | 942 harbour polygons; Denmark's coastline | `dansk_harbours`, `wkssfgeo_denmark` |
+| CNR folder, G1 `dev_branch` | test AIS, the Danish tracks cut by CNR's method (94 trips) and by jepol (90), Mediterranean harbours | `wkssfgeo_cnr_ais`, `wkssfgeo_cnr_dansk_trips`, `wkssfgeo_cnr_dansk_ping_trips`, `wkssfgeo_cnr_med_harbours`. Its two coastal zones are not in ramb, so ramb's `cnr` method cannot reproduce CNR's own trips from ramb alone (TODO 93) |
+| Scottish creels (G1 case study; Mendo et al. 2019, Dryad) | St Andrews; 5 creel vessels, 60 s, observers | `creel` |
+| DK_DTU_1897_EM (G2) | DTU; gillnets, 5 vessels, 10 s, electronic monitoring | not public |
+| ES_AZT_2018_AIS (G2) | AZTI; longlines and lines, 7 vessels, 60 s | not public |
+| ES_IEO_2021_GRB (G2) | IEO; green boxes, 73 vessels, 180 s | not public |
+| FR_IFR_2021_GP (G2) | Ifremer; nets, 1 vessel, 15 min | in the iapesca package; not copied into ramb (the maintainer) |
+| IE_MII_2019_IVMS (G2) | Marine Institute; dredges (HMD), 6 vessels, 5 min | not public |
+| IR_MII_2020_IVMS (G2) | Marine Institute; pots, 1 vessel, 60 s | `wkssfgeo2_irl_pots` (332 rows; the report says 322) |
+| IT_CNR_2023_GP (G2) | CNR-IRBIM; pots, 1 vessel, 60 s, set and haul labelled | `wkssfgeo2_it_pots` |
+| PT_CCM_2021_GP (G2) | CCMAR; octopus pots, 3 vessels, 20 s | not public |
+| PT_IPM_2017_GP (G2) | IPMA; dredges and pots, 8 vessels, 30 s | `wkssfgeo2_pt_gps` (9,115 rows, 8 trips, 8 vessels, as the report) |
+| UK_USA_2018_GP (G2) | St Andrews; creels, 5 vessels, 60 s | `creel` (2,226 rows, 5 vessels, as the report; dated 2017 in the Dryad copy) |
+| `IRL_KY22` (G2 repository, in neither report) | Marine Institute; gillnets, 4 vessels, inshore VMS, 136 trips, no labels | `wkssfgeo2_irl_gillnets` |
+| `ITA_SSF_WKSSFGEO2_CNR_Annon` (G2 repository history, added at 4292d67, removed at f04e3bd) | CNR-IRBIM; pots, gillnets, trammel nets, longlines, 5 vessels, 60 s, set and haul labelled | not in ramb: CNR-IRBIM removed it, so ask them first (TODO 93) |
+
+Found beyond the workshops (decision 148), in `$FISHYDATA/raw/external/`, not in ramb:
+- CNR-IRBIM's labelled tracks (Lattanzi et al. 2026, SoftwareX): 5 passive-gear vessels, 846 trips, 30 s.
+- CNR-IRBIM's tracker log (Pulcinella et al. 2022, Sensors): one vessel, with power and geofence events.
+- Mendo et al. 2023's soak-time code and samples.
+
+Which of these go into ramb is TODO 93.
+
+::: {.callout-note collapse="true"}
+## Checked against the code (2026-10-19)
+
+- CNR's `create_fishing_trip()` as coded (WKSSFGEO `dev_branch` efd28a8) differs from its own description in the
+  report and in its release note:
+  - a vessel is in port after 4 consecutive pings inside the port polygon at a mean speed under 6 kn;
+  - a silence of over 4 h at sea, not 30 min, ends a trip;
+  - split trips are joined unless both ends lie in the coastal zone, and then only if the joined trip lasts under 24 h;
+  - `closest_port_recovery` takes the other end's port if it is among the 5 closest within 50 km, else the closest,
+    else "At_Sea";
+  - the port buffer is 0.001 degrees, with s2 off.
+
+  ramb's `rb_create_voyages(method = "cnr")` reproduces the code trip for trip.
+- The 94 CNR trips on the Danish data (G1 Annex 3) come from one call over all vessels together, which the function
+  sorts by time alone. Per vessel, the same code gives 90.
+:::
+
+## Summary of the two reports
+
+The two reports, summarised for a trip finder and for a full fishing-activity flow.
+
+Both reports read in full. Pages are printed page numbers. G1 = WKSSFGEO (ICES Sci. Rep. 4:10); G2 = WKSSFGEO2 (5:49). G2 Annex 5, the data-standardising Rmd output after p. 87, has no page numbers: cited "A5". Presentation abstracts are folded into the sections where they hold a method or a number.
+
+### 1. What each report is
+
+- G1: 29 Nov-3 Dec 2021, IPMA Lisbon, hybrid; chairs Rufino, Egekvist (p. iii). ToR a: methods to identify trips/hauls in SSF, passive gears included; b: an R template script; c: how high-resolution data improve effort estimates (p. 1). 43 datasets (AIS 17, GPS 13, VMS 13), mostly 1 s-1 min, max 20 min (p. 5). Code at github ices-eg/WKSSFGEO (p. 35-38): DTU define_trips_pol (Jeppe Olsen); Irish trip method and potter HMM (Guillermo Martin, Marine Institute); CNR create_fishing_trip and classification_wrapper (Galdelli, Pulcinella, Tassetti); French features and RF toy (Danhiez); interpolation and downsampling (Jeppe/Niels, vmstools); an "Icelandic approach" HMM (Einar). Annex 3: CNR finder vs jepol (p. 47-57). Annex 4: review (p. 58-60).
+- G2: 13-16 March 2023, Faro, hybrid, 38 participants; chairs Rufino, Mendo (p. iii). ToR a.i open anonymised example data; a.ii compare classification methods; a.iii ping rate by gear; b SSF coverage in ICES VMS/logbook, FDI, GFW; c guidance on tracking small vessels (p. 78). Funded by a DG ENV request (p. 79).
+- Abstracts with no method or number, one line: GFW matches Sentinel radar detections to AIS to find dark vessels (G2 p. 4-5); NOAA AccessAIS (p. 7); ABIOMMED trawl bioeconomics (p. 7); Balearic green boxes (G1 p. 10); a Greek multi-criteria fishing-pressure index (G1 p. 11).
+
+### 2. Terminology (G1 Table 3.1, p. 12-16)
+
+- High-resolution: a fix at least every 15 min (p. 12).
+- Fishing trip (EU 404/2011): "any voyage ... during which fishing activities are conducted", port to port; several a day each count (p. 13). The legal trip needs fishing.
+- Days at sea: any 24 h or part absent from port; a 2 h SSF trip counts as a day (p. 12).
+- Fishing day: proposed "Any day at sea with a fishing operation" (p. 13).
+- Fishing event: haul or passive-gear use, in logbook terms; tracks show events logbooks ignore (damaged gear) (p. 14). Fishing operation: searching, set, soak, haul; "may include no fishing events" (p. 14).
+- Haul: retrieval, end of an event. Set: placement, start of an event; also a string of passive gear (p. 14).
+- Fishing time (404/2011): sea hours minus transit, dodging, idling, repair; for static gear vessel time or soak is unclear (p. 14). Soak time: set of each unit to start of its removal; start and end undefined (p. 15).
+- Home port; base port (where a unit operates from, may be seasonal); landing site; "boat parking areas" where a vessel is berthed, moored or launched; some SSF leave from beaches (p. 16).
+- Ping rate is not defined; G2 says a 30 s acquisition gives a 1 min interval, unexplained (p. 39).
+
+### 3. Trip identification
+
+G1 Table 4.2 (p. 20): leave/enter a harbour polygon (define_trips_pol); unlisted hotspots treated as harbours; for vessels not harbour-based, a coastline buffer; or a stop outside harbour/coast longer than e.g. 3 h ("varies with the fishery") starts a new trip; some split on the interval between pings (fits daily trips). Limits: beach departures, AIS switched on only outside harbour, drawing the polygon. Without logbooks, find fishing events first and group them into trips (p. 21); static gear may be set on one trip and hauled on another (p. 59).
+Harbours (Table 4.1, p. 19): polygons; vmstools pointInHarbour (~1 NM buffer); hotspots from position frequency (RANN::nn2); a depth cut; buffer size from points in port; fishing within ~10 m of shore causes false positives.
+Methods in G1 Table 5.5 (p. 37):
+
+- Danish (Olsen, DTU): out of and back into harbour polygons; large gaps split a trip; tested on 10 s video-validated EM, GN/OT. Has a minimum and maximum duration, yet its defaults gave trips over the maximum; runs in under 1 min (p. 57).
+- Irish (Martin): a trip is consecutive pings out of harbour (pointInHarbour, sortTacsat); iVMS 5 min, HMD. The potter HMM cuts trips internally (p. 38).
+- Italian: create_fishing_trip, AIS 5 min (below).
+
+G2:
+
+- CNR ARGOS (p. 20-21): trip ends from zero-satellite/zero-power pings at device boot, with a minimum interval between shutdown and restart; a stop over 45 min starts a new trip; Teltonika 1 min; hauler sensor; code github irbimMAPS/ssf.
+- Mendo et al.: automatic mooring-site detection where no port list exists (p. 6); IPMA wants ports without hand-drawn polygons (p. 3, 24).
+- Daily trips: Alboran green boxes, ~100 vessels, ~9,000 one-day trips in 2021 (p. 3); Basque trips = days in AIS and sales notes (p. 6).
+- The ping rate must catch short turnarounds between trips (p. 39).
+
+#### CNR create_fishing_trip (G1 Annex 3, Pulcinella, Galdelli, Tassetti, 10/12/2021)
+
+- Rule: points from leaving port to return; stores departure/arrival port, country, statistical area. Built for terrestrial AIS, large-scale, mainly trawl (p. 47).
+- Gaps: "loss of signal of at least 30 minutes" spoils port assignment. Recovery: overlays trip end/start points on the coastal ban zone, compares ids and times, and joins with the nearest port if end and start "are consecutive, have a temporal distance shorter than 24 h and at least one is outside the coastal_ban_zone". Then closest_port_recovery forces a port "under other conditions", not given (p. 47).
+- A sliding window of 3-6 pings; no minimum or maximum duration; no interpolation; cleaned pings; rebuilds trips across gaps and when the last fixes are not in harbour (p. 56-57).
+- Layers: ICES + Mediterranean ports merged, Portugal missing (p. 49); ban zone = 3 nm buffer for northern Europe, made in QGIS, or the Mediterranean trawl ban, 3 nm or 50 m isobath (p. 47, 50). Port buffer st_buffer(ports, 0.001) on EPSG:4326, no unit stated (p. 49).
+- Run on G1 example_data_AIS (p. 48). EX_1: 3 trips both, starts within ~4 min; jepol 3.09, 1.24, 5.63 h (p. 51-52). Whole set ~5 min vs under 1 min (p. 57). Equal counts on 8 of 12 vessels; CNR more on EX_10 (14 v 12), EX_3 (18 v 17), EX_7 (8 v 6), fewer on EX_9 (2 v 3) (p. 53-54). Equal counts hide errors: EX_11 26 v 26 but mean 102.5 h v 12.2 h. Matching, jepol as reference: one overlapping CNR trip within +/-10% of duration (p. 55). The 13 mismatch rows include CNR trips of 2,400 h and 811 h that failed to split, and jepol trips of 688 h and 6,301 h (p. 55-56). "Errors in both"; not analysed further (p. 56).
+- Limits: renamed columns and new layers outside the Mediterranean; passive gear (8h); no run on Portuguese example_data_GPS, no harbours (p. 57).
+
+### 4. Example data sets
+
+G1 (github ices-eg/WKSSFGEO, data-examples):
+
+- example_data_AIS: provider not named; columns vessel_id (EX_n), time_stamp, lon, lat, speed, course, gear, behaviour; rows 10 s apart; Oresund; trips 2013-2020; EX_5 and EX_8 absent from the comparison (p. 48, 53-56). G1's ML example used a DTU subset "including validated fishing operations" (p. 22), not said to be this file.
+- example_data_GPS (Portugal): only named as unusable for CNR (p. 57). Scottish creels: a case study, no file (p. 31-32).
+
+G2 template (p. 11-12): FILE_NAME, SOURCE, BOAT_ID, TRIP_ID, DATE_TIME (UTC), LATITUDE, LONGITUDE (4326), GEAR (ICES), PASSIVE_ACTIVE, STATUS (passive: setting/hauling/not_fishing; active: fishing/not_fishing); optional SPEED, COURSE, HEADING, QUALITY. Trips are given, not derived. Table 1 (p. 13-17) and A5, as provider; gear; area; period; interval; points/trips/vessels; labels; anonymised:
+
+- DK_DTU_1897_EM: DTU; GNS; N Sea, Baltic ("Black Sea" also listed); dates shifted to 1897-98; 10 s; 879,053/284/5; EM, all trips; names, positions, times.
+- ES_AZT_2018_AIS: AZTI; LLS, LTL, LHM, GXX; Biscay; 2018 shown as 1974-75; 60 s; 163,882/605/7; expert visual, "errors can occur"; satellite AIS linked to sales notes; names, positions, times. Not in A5.
+- ES_IEO_2021_GRB: IEO; DRB, GNS, LLS, FPO, GTR; W Mediterranean; 1-2/2021; 180 s green box; 192,612/2,326 (3,326 "validated")/73; only DRB validated (27 boats, 373 trips, A5); names; A5 shows 11,882 negative intervals.
+- FR_IFR_2021_GP: Ifremer (RECOPESCA); nets; English Channel (A5); 12/2021-1/2022; 900 s; 1,937/8/1; fisher's net positions and times; identity changed, positions "randomly translated" (A5); in iapesca.
+- IE_MII_2019_IVMS: Marine Institute; HMD; Celtic Seas; 1/2019; 300 s; 2,094/8/6; validated visually only, "Could be wrong"; names, positions, times.
+- IR_MII_2020_IVMS: Marine Institute; FPO; Celtic Seas; 2020; 60 s; 322/6/1; no validation.
+- IT_CNR_2023_GP (Adriatic potter): CNR-IRBIM; FPO; 1-2/2023; 60 s Teltonika; 3,699/14/1; fisher interviews; names, positions, times; A5 table mislabelled "IE_MII_2019_IVMS"; 44 zero intervals.
+- PT_CCM_2021_GP: CCMAR; FPO (octopus); Iberian; 9/2021-2/2022; 20 s portable GPS; 10,667/5 (7 on p. 27 and in A5)/3; experts + observers, setting/hauling; names; A5 intervals of -40 s (2,481) and 80 s (1,068).
+- PT_IPM_2017_GP: IPMA; 4 DRB + 4 FPO trips; Iberian; 3/2017; 30 s; 9,115/8/8; expert visual; names and times, not positions.
+- UK_USA_2018_GP (Scottish creels): St Andrews; FPO; 3-5/2018; 60 s portable GPS; 2,226/5/5; on-board observers.
+
+Stated as 9 case studies (p. ii) or 10 (p. 72). Not in either report: "datatest", "IRL_FPO", "IRL_KY22". Irish tangle nets (crayfish, iVMS 10 min, observers) appear only in Table 2 (p. 21).
+
+### 5. Validation numbers
+
+- Trip finders: only the CNR-jepol comparison. Neither report scores a trip finder against labelled trips.
+- Fishing activity: section 10. Linkage: Alboran green boxes to sales notes, 55% of trips (2021, p. 4); Basque sales notes to AIS trips, 55% (2018, p. 6).
+- Measures (G1 p. 22-25): accuracy, kappa, F-score; RMSD, MRAD, bias, per-ping false positives/negatives; point-density skewness and kurtosis; plausibility (a "haul" shorter than the gear is wrong). Labels: expert-labelled tracks (cheap, need QC), logbooks, observers (costly), sensors. Validate few vessels over a full run of trips (p. 25).
+
+### 6. Ping rate, headline
+
+VMS's 2 h exceeds many SSF trips; SSF needs seconds to minutes (G1 p. 3, 39). G2 recommends 30 s acquisition (1 min interval) for every metier (p. 39, 72), but reports no results from its ping-rate framework (p. 37). Detail in 12.
+
+### 7. Conclusions for a trip finder and port lists
+
+- Port lists are incomplete (G1 p. 49, 57); include beaches and parking areas (p. 16, 28) or estimate harbours from the data (p. 19; G2 p. 6, 24). The legal trip requires fishing (p. 13).
+- Gaps depend on the device: AIS can be switched off and has ~50 nm terrestrial range (G2 p. 43, 66); iVMS and green boxes store and forward (p. 9, 70); Irish units ping less inside port geofences (G1 p. 7). Trips can be multi-gear (G2 p. 1); no method fits all (p. 72).
+
+### 8. Checks of the CNR rules as first read for plan 031
+
+- **(a)** Not addressed. Annex 3 has only a 3-6 ping sliding window (p. 56-57); no 4-ping or 6 kn rule. The only 6 kn is IPMA's post-classification cap (G2 p. 3).
+- **(b)** Half confirmed: the code is st_buffer(ports, 0.001) on EPSG:4326 (p. 49); "1 km" is not in the report. My inference, not the report's: with sf >= 1.0 and s2 on, the distance on lon/lat is in metres, so 0.001 means ~0.001 degree (~110 m) or 1 mm depending on the session.
+- **(c)** Not confirmed: a gap is "loss of signal of at least 30 minutes" (p. 47); no 4 h rule.
+- **(d)** Partly contradicted: the report states the release-note rule, join if consecutive, under 24 h from end to next start, and at least one end outside the zone (p. 47). "Not both in the zone" agrees; the 24 h is a gap, not a combined duration.
+- **(e)** Not addressed: closest_port_recovery is only named (p. 47); no 50 km, 5 ports, "At_Sea".
+- **(f)** Confirmed by summing the per-vessel table: 94 vs 90 over 12 vessels (p. 53-54). The report gives no totals, only 8/12 equal.
+- **(g)** Not addressed: the Irish method is consecutive pings out of harbour (G1 p. 37), no gap rule. Nearest: the Irish tangle-net HMM drops trips with pings over 5 min apart (G2 p. 21).
+- **(h)** Confirmed (p. 47); the stated reason is that it "does not require at least one fishing event during the trip".
+
+### 9. Preprocessing (G1 Table 4.1, p. 17-20; p. 35-36)
+
+- UTM if the extent is under 5 degrees, else haversine; sf, not sp; prefilter big files (p. 17). Time zones, future points (p. 18).
+- Speed: threshold, percentile, moving average; compare reported with computed speed (p. 18).
+- Duplicates: vessel + time (+ position), 2 s buffer (p. 18). Land: shapefiles or own polygons (p. 18-19).
+- Interpolation: linear, COG+speed curves (vmstools interpolateTacsat), Kalman, ML; limit interpolated points; uneven sampling may bias models (p. 19). DTU splines gaps to 1 per minute (p. 9). Fails for circling gear (G2 p. 40); French ML needs linear resampling (G2 p. 4).
+- Downsampling: mean or nearest, e.g. 5 min; a sensitivity protocol suggested (p. 19-20, 36). Post-process: re-check land and outliers, recompute variables (p. 20).
+- Vessel id from MMSI or call sign via the register, or from the AIS name (DTU, p. 9).
+- G2: standardising script WKSSFGEO2_examples_data_base.Rmd (p. 12); irregular green-box gaps (p. 3); keep 4-5 decimals (p. 65).
+
+### 10. Methods to infer fishing activity
+
+G1 Table 4.3 (p. 21): speed filter + turning angle, HMM, EM, RF, XGBoost, CNN, C5.0. Pitfall: slowing without fishing (approach, cleaning nets) (p. 9, 21). Active gear: a speed band with typical geometry; passive: set, soak, haul (p. 21). Variables (p. 26, 36): time of day, speed, turning, acceleration, jerk, sinuosity, depth, substrate, season, tide, gear rules, vessel. Chain gear, then fishing, then gear size; handle NAs; balance classes (p. 26-27).
+
+- Speed rules: North Irish Sea HMD, iVMS 10 min, plus a <~12 m depth buffer (G1 p. 31). Greece: OTB <=4 kn, PS <=1 kn on interpolated VMS, no validation (G2 p. 22-23). Basque bands from fishers: passive set/haul 0-1 kn, trolling 6-7 kn, AIS 1 min (p. 6, 21). Irish tangle nets, 10 min (p. 21).
+- Threshold vs Gaussian mixture (EM), overall or per trip: Scottish creels (60 s, observers): per-trip mixture best and fastest; one overall rule fails across regions and sizes (G2 p. 19). CCMAR octopus (20 s): 74% accuracy, precision 63% vs 64% per trip; not_fishing missed (p. 27). French nets: 49.12%; per-trip binary clustering 64.94% (p. 32).
+- HMM: Irish iVMS potter/HMD on step and angle, states Fishing, Transit, Mix_Transit, initial values per boat, extended to 10 min; on G2 datasets agreement "varied substantially", judged visually (G2 p. 19-20, 29). French: speed 42.60%, speed + angle 50.00% (p. 32). Uses sequence, but complex and slow (p. 26).
+- RF and ML: Scottish RF (speed, angle, share of trip elapsed) 94% (p. 19, 26). IPMA dredges + octopus, 170 tracks: RF, boosting >95%; 10% training (17 trips) 80-96%; best at raw 30 s; 10-point speed average; k-neighbour smoothing and no fishing above 6 kn give RF 99.07% (p. 2-3, 26). IEO longlines RF, AIS ~3 min; observers' set/haul times imprecise (p. 23-24). RECOPESCA gear class: XGBoost 94.89%, 25,612 trips, 107 vessels, 34 trip features (G1 p. 6-7). DTU workshop example "not satisfying" (G1 p. 22). ML ignores sequence (G2 p. 26).
+- French netters (iapesca), 8 trips, 15 min: CART and RF 91.5% (3-fold CV by trip), poor on sets; RF + geocomputation 94.3% (nets built from hauls, sets retrieved by buffers and scored candidates). Waiting on the grounds reads as hauling (G2 p. 30-36).
+- Others: CNR cascade per trip, OTB/PTM/TBB/PS, untested (G1 p. 38); hauler sensors (G2 p. 1, 20); four passive states incl. drift for soak (G2 p. 5); VMS-AIS fusion and LSTM (p. 23); neural networks proposed (p. 26-27).
+
+### 11. Effort indicators (G1 Table 4.6, p. 27-30)
+
+- Days at sea: trips only; report hours at sea instead (p. 27).
+- Hours fished: mobile = inferred fishing; static = soak, set at t to haul at t+y, maybe another trip (p. 27). Fishing days likewise (p. 27-28).
+- kW or GT x days at sea or fishing days: register, keyed on the EU CFR; SSF registers unreliable (p. 28). kW-hours not defined.
+- Fishing operations: count hauls if sets are invisible; three-level indicator (set+haul, haul only, set only) (p. 28-29).
+- Net length = distance of pings classed as hauling; soak from overlapping set and haul tracks; hooks and pots via observed spacing (p. 29-30).
+- Swept area: gear-width polygons for mobile bottom gear (DTU, p. 9).
+- Day measures overstate SSF effort; soak from start, middle or end is unsettled (p. 30). For passive gear, track length beats time at sea (G2 p. 5).
+
+Case studies: North Irish Sea razor clams, all <12 m, 10 min, hours fished by speed and depth (G1 p. 31). Scottish traps: hauls inferred, creel numbers from hauled distance with 95% CI (p. 31-32). South Portugal octopus: ~60 trackers, observers label set/haul (p. 33). Portuguese dredges: 80 vessels, 5.45-15.82 m, 2,100-2,700 t (2018-2020), 3-15 m deep in the south, to 34 m in the northwest, ~30 s with operation status (p. 33-34). French netters: 39 nets, 398.8 km observed vs 37, 362.3 km predicted; 7 of 8 trips consistent (G2 p. 32, 35).
+
+### 12. Ping rate against gear
+
+- Trammel shooting can be under 20 min, missed at low rates; sensors compensate (G1 p. 24). Net length needs a sufficient rate (p. 40).
+- French nets: 15 min gives degraded but consistent fishing hours; sets, hauls, soak and net length need 1 min (SSF) or 2 min (>15 m) (G2 p. 4).
+- IPMA: 30 s to 10 min tested, best at 30 s (p. 2). Irish HMM: trouble above 10 min (p. 20); crayfish HMM <=5 min (p. 21). RECOPESCA: gear class at <=15 min (G1 p. 7).
+- What sets the rate (G2 p. 39): trip and event durations, trips per day, track complexity, events per trip (coarse rates merge them), set/haul overlap for soak. Rule: shortest trip / points needed, 2 h / 50 = 3.6 min (p. 40). At 2 h, 25 kn covers 90 km, 2 kn 7 km (p. 42).
+
+### 13. Data sources (G2 sec. 5, p. 41-67)
+
+- ICES VMS/logbook: logbooks >10 m (>8 m Baltic), ICES rectangle only; VMS >12 m since 2012, 2 h, no activity flag; national activity rules may count port and passage as fishing; monthly, 0.05 degree c-squares; VMSenabled flag (p. 41-42). Portugal and Lithuania logbooks dropped, Norway and Iceland excluded (p. 43).
+- FDI: SSF without logbooks from declarations, sales notes or surveys, one sale note = one fishing day (p. 43, 57); 12-18 m class, no 15 m split (p. 44); no UK for 2021 (p. 56).
+- GFW AIS: class A >15 m since 2014; nearly all EU >15 m in the Mediterranean, but gillnetters and longliners missed; EU register only; GFW gear classes (p. 43-44). Series ICES 2009-2021, FDI 2013-2021, GFW 2016-2021 (p. 44).
+- Findings: passive gears dominate effort; ~1/3 of area 27 is mobile bottom gear (MBCG) (p. 64); AIS days rise 2016-2021, mostly 12-15 m (p. 47); 10-12 m VMS trawling on the slope suggests misclassification (p. 57).
+- FDI MBCG 2021 (Annex 4, p. 84-87): area 27, <12 m 235,531 vs >12 m 303,964 days (44%); 27.9.a 82%; Mediterranean 76,091 vs 449,469 (14%), miscaptioned "FAO area 27".
+- MBCG days 2021, AIS / logbook / FDI (Annex 3, p. 80-83), my sums: <10 m 8,656 / 16,200 / 24,224; 10-12 m 18,604 / 30,320 / 35,488; 12-15 m (FDI 12-18) 62,983 / 24,770 / 71,829. 27.9.a <10 m: 0 / 3 / 9,703. "Difficult to compare" (p. 56, 64).
+- Danish positions cover, by landed value, >91% of trawls/seines but 3-20% of pots (2015-2020, G1 p. 9).
+
+### 14. Tracking small vessels
+
+- VMS >=12 m at 2 h, with an exemption for 12-15 m vessels in territorial waters or on trips under 24 h (G2 p. 78); AIS >=15 m; logbooks >=10 m; tracking of all vessels proposed in 2018, still negotiated (G1 p. 3-4; G2 p. 68-69). Schemes: Portugal 150 boxes at 30 s (G2 p. 2), Andalucia since 2004 at 3 min (p. 3), Ireland razor-clam iVMS (G1 p. 7), England and Wales iVMS mandatory 2023 (G2 p. 68, 70).
+- Options (G2 p. 65-66): simple electronic logbooks; GPS with a start/end button; VMS for all, via GSM; AIS (status 7 "engaged in fishing", can be switched off).
+- Challenges: cost, phasing, formats, duplicate reporting, mistrust, power at high latitude in winter (p. 66, 69).
+
+### 15. Anonymising tracks
+
+G2 data may hide positions, times and ids, with a script (p. ii, 8); the form records which (p. 10). Seen: replaced ids, shifted dates (DK to 1897, AZTI to 1974), randomly translated positions (FR, A5); the script's method is not described. Public AIS exposes grounds to competitors (G2 p. 9). A data call would be anonymised and aggregated (p. 70).
+
+### 16. Recommendations and open questions
+
+G1:
+
+1. Refine definitions; glossary with infographics (p. 12, 40).
+2. Fishing day = "Any day at sea with a fishing operation" (p. 13).
+3. Hours at sea for SSF (p. 27).
+4. Count trips from "Port and other boat parking areas" (p. 28).
+5. Count hauling operations; three-level set/haul indicator (p. 29).
+6. Define soak for nets, longlines, pots (p. 29-30).
+7. Relate pots and hooks to tracks via observer surveys (p. 30).
+8. Map SSF on a 100-1000 m grid (p. 40).
+9. Collect at the highest rate and downsample (p. 39).
+10. More validation: observers, an EM reference fleet (p. 40).
+11. Detect sets and hauls with sensors; work with WGFTFB (p. 40).
+12. Harmonise with EU-MAP table 6 (p. 40).
+13. Confidentiality for tracked fishers (p. 39).
+14. A follow-up workshop linked to WGSFD and WGTIFD (p. 41).
+15. QC labels; validate few vessels over full spans (p. 22, 25).
+16. Reviewer: one workflow, tested on case studies; static-gear effort; set/haul and soak methods (p. 60).
+
+Open: days at sea without fishing (p. 12); hours fished, vessel or soak (p. 14, 30); soak start and end (p. 15); beaches as harbours (p. 19); a downsampling protocol (p. 20).
+G2:
+
+17. The open dataset as a common benchmark (p. 8, 72).
+18. 30 s rate for all metiers; adjustable devices (p. 39, 72).
+19. Linked logbook + tracker, mandatory for all EU vessels; electronic logbooks; 4-5 decimals (p. 65, 73).
+20. Preprocess before ML; find ports without polygons (p. 24).
+21. An observer protocol for set/haul times (p. 23).
+22. HMMs: speed covariates, refined states, per-trip initial values (p. 29).
+23. Run the ping-rate framework on full data (p. 37).
+24. Data call at 0.01 degree; a vmstools-scale project with an ICES role (p. 70, 73).
+
+Open: GNS vs GTR (p. 20); detecting sets (p. 22, 31); hauling vs waiting (p. 30); sequence-blind ML (p. 26).
+
+### For a trip-finder benchmark, beyond the above
+
+- G2's labelled trips (TRIP_ID) as truth for daily fleets, resampled from 10 s to 15 min (Rufino_2023_ping_rate.Rmd; Fig. 3 uses 30 s-20 min, p. 37-38).
+- Matching protocol: one overlap within +/-10% of duration, per-vessel count and mean and total duration, runtime (G1 p. 52-57).
+- Robustness cases: negative and zero intervals, duplicates, store-and-forward bursts, AIS off near port, boot pings, beach launches, multi-gear trips, trips of hundreds of hours.
+- Thresholds to sweep: 3 h and 45 min stops, 30 min gap, 24 h join, ~1 NM harbour buffer, 3 nm ban zone (section 3); port layers harbours.rds plus CNR's Mediterranean ports (G1 p. 47, 49).
+- If this summary enters a report, mark it as AI-generated.
+
+## Sources
+
+- ICES. 2022. Workshop on Geo-Spatial Data for Small-Scale Fisheries (WKSSFGEO). ICES Scientific Reports 4:10.
+  <https://doi.org/10.17895/ices.pub.10032>
+- ICES. 2023. Workshop on Small Scale Fisheries and Geo-Spatial Data 2 (WKSSFGEO2). ICES Scientific Reports 5:49.
+  <https://doi.org/10.17895/ices.pub.22789475>
+- Both CC BY 4.0. Their PDFs, with checksums, are in `$FISHYDATA/raw/external/ices/` (`README-provenance.txt`).
