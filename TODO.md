@@ -492,3 +492,17 @@ wired: the plan 028 session edits `_targets_once.R` too. Step 4 needs asks b, f 
 
 **check:** `curated/vessel/licence.parquet` and `curated/check/licence_discrepancy.parquet` built in `once` and
 reviewed, and `docs/licence.qmd` rendered, or the plan parked.
+
+## 90. Voyages from any data: missed stays, records as evidence, several gears per voyage (plan 031)
+**status:** open · **needs: maintainer** — plan 031's asks a-f · **see:** `curate/plans/031-voyages-from-any-data.md`,
+decision 144, TODO 25
+
+Voyages with several gears are rare (702 of 797,540), and half the voyages that carry several logbook trips hide a port
+call the stay rules missed, mostly a silence in port in 2007-2012. The plan proposes a generic voyage finder in ramb:
+- a time-budget stay rule;
+- landings and logbook trip ends as evidence;
+- a gear set per voyage.
+
+Iceland is one configuration of it.
+
+**check:** plan 031's steps 1-7 done, or the plan parked.
