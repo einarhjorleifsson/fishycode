@@ -563,7 +563,7 @@ vessel overview's QC lane keeps its 30 min threshold.
 flag on the fixes that the overview's lane reads.
 
 ## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
-**status:** open · **needs: maintainer** — plan 031's asks a-h · **see:** `curate/plans/031-voyages-from-any-data.md`,
+**status:** open · **see:** `curate/plans/031-voyages-from-any-data.md` (asks a-h answered 2026-10-19; g is TODO 92),
 decision 144, TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), plan 011
 
 The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
@@ -592,7 +592,7 @@ The threads it gathers:
 - a landing over two days, TODO 81 and plan 027;
 - the gear read from the track, TODO 86, and gaps judged against coverage, TODO 89.
 
-Next: plan 031's asks a-h, then settle the whole design from §4.0 with the bench's lessons (§3.9), then step 3.
+Next: step 3, the time budget and the cut in ramb, with the asks' answers (§4.1-4.5, §7) and the bench's lessons (§3.9).
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
@@ -605,3 +605,18 @@ lists the twelve old names. It belongs to the session writing ramb's `sets` and 
 patch waits beside `naming-renames-done.md` in the side-session notes of 2026-10-19 (`ramb-pkgdown-renames.patch`).
 
 **check:** `pkgdown::build_site()` in ramb finds every exported function in the reference index.
+
+## 92. Ports abroad: the independent lists as a second port tier, tested
+**status:** open · **see:** plan 031 §3.7 item 2 (calls abroad), §3.9 (the port-list scenarios), §4.3; its ask g
+
+Calls abroad are many: 40,117 AIS vessel-days at foreign ports in 2007-2026, at least 1,833 landings abroad. Today they
+are never stays, because the stays read only the `einar` polygons of Iceland and the Faroes. The bench found that an
+independent list does as well as `einar` in Iceland. GFW anchorages, read raw and buffered 2 km, find 98.3 % of the
+witnessed landings, as `einar` does. The maintainer (2026-10-19, ask g): "this needs some testing" before such a list
+becomes a second tier.
+
+To test, abroad: which raw list or lists (GFW anchorages, GISCO, OSM, vmstools, `jeppe`, UN/LOCODE), and the buffer
+radius. Score them against the landings abroad (the Faroes, Norway; code 159 "Gámur/Sigling" names no port), and count
+the false stays at transits and offshore anchorages (the Kiel Canal at Rendsburg).
+
+**check:** a decision on the second tier, with its lists and radius and their score abroad; or the item parked.

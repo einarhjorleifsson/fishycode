@@ -3,12 +3,18 @@
 **status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f); steps 1 and 2 done the same day
 (§3.6, §3.9);
 the cascade (§4.0), the other pitfalls (§3.7), outside code (§3.8) and the robustness bench (§4.8) added the same
-day; nothing built; eight asks open; TODO 90 now carries it under a wider review of the voyage definition ·
+day; nothing built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
+the voyage definition ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 062, 063, 074, 078, 101 and 144, plan 011 (port stays), plan 013 (ramb's
 steps, and its table of logic doubts), plan 017 (foreign ports), plan 022 §4 (STK's own voyages, TODO 68), plan 025
 (the first weighing bounds `T2`), `docs/one_flow.qmd` (step 1, trip, and step 3, gear), `docs/ports.md`,
 `curate/port_stay.R`, `curate/ais_voyage.R`, `curate/link_trip_voyage.R`, `curate/voyage_gear.R`, TODO 86 (the gear read
 from the track) and TODO 89 (gaps at sea judged against coverage)
+
+*Names (decisions 147, 149, the same day):* stays are now port calls. `curate/port_stay.R` is `curate/port_call.R`
+(`curated/ais/port_call.parquet`, key `port_call_id`); ramb's `rb_find_trip_stays()` is `rb_create_port_calls()`,
+`rb_cut_trip_voyages()` is `rb_create_voyages()` and `rb_assign_trip()` is `rb_add_voyages()`. §2, §3.7 and §4 use the new
+names. The parts measured before the rename (the lists above, §3.1-3.6, step 1) keep the names they were measured with.
 
 Drafted with AI assistance (Claude) on 2026-10-19, at the maintainer's request. The numbers below were measured by
 Claude (AI); a person has not yet checked them. §3.7, §3.8, §4.0, §4.7 and §4.8 were written by Claude the same day,
@@ -51,7 +57,7 @@ one gear (decision 144):
 
 - **Whacks first:** the pings are marked and the whacks set aside before any stay is sought (step 0,
   `curate/ais_ping_clean.R`, ramb's `rb_flag_ping_*`, decisions 067 and 069). The stays read `ping_clean` only.
-- **Stays** (`port_stay.R`, `ramb::rb_find_trip_stays`): a stay needs 2 hours of evidence at one port, from any of
+- **Stays** (`port_call.R`, `ramb::rb_create_port_calls(method = "dwell")`): a stay needs 2 hours of evidence at one port, from any of
   four rules (decisions 060, 074):
   - two consecutive pings 2 h or more apart, the first within 2 km of the port (arrival) and the second within the
     port's own departure radius (2-6 km);
@@ -60,7 +66,7 @@ one gear (decision 144):
     used (decision 060).
 - **Ports:** the 157 `einar` polygons only, Iceland 129 and Faroe 28 (plan 017). `staging/aux/ports.fgb` holds 9,905
   more from other sources (GFW anchorages, vmstools, GISCO, OSM, `jeppe`, EMODnet), and no stay reads them.
-- **Voyages** (`ais_voyage.R`, `rb_cut_trip_voyages`): the sea between two stays, cut at New Year (`by_year`); a voyage
+- **Voyages** (`ais_voyage.R`, `rb_create_voyages`): the sea between two stays, cut at New Year (`by_year`); a voyage
   of under 10 recorded pings is dropped after numbering, and its fixes keep no voyage.
 - **Trips to voyages** (`link_trip_voyage.R`): each logbook trip goes to the voyage it overlaps most. One voyage can
   carry several trips.
@@ -193,7 +199,8 @@ events, with one parameter changed at a time.
 Counted 2026-10-19 on the same build, or cited where the record already holds the number.
 
 1. **No port list gives no stays, and no warning.** ramb on a made-up track (three day trips 6 h apart, silent in port)
-   with an empty port table: `rb_find_trip_stays` returns no stay, and `rb_cut_trip_voyages` makes one voyage of the
+   with an empty port table: `rb_find_trip_stays` (now `rb_create_port_calls`) returns no stay, and `rb_cut_trip_voyages`
+   (now `rb_create_voyages`) makes one voyage of the
    three. Other people's data meet this first.
 2. **A foreign port is never a stay.** The stays read the `einar` polygons of Iceland and the Faroes only, so a call
    anywhere else is part of a voyage. *Corrected 2026-10-19 (maintainer's doubt): a first count here gave 296 voyages,
@@ -231,7 +238,7 @@ Counted 2026-10-19 on the same build, or cited where the record already holds th
    adds 23 (decision 062). §3.6 finds the short calls mostly not landings.
    - A learned or longer port list must face anchoring, shelter in a fjord, canal queues and fish farms.
 8. **Geometry for the North Atlantic.** The nearest port is chosen by distance in degrees (`ST_Distance` on longitude
-   and latitude in `rb_find_trip_stays`), and the buffers default to EPSG:3575 (plan 013's table).
+   and latitude in `rb_create_port_calls`), and the buffers default to EPSG:3575 (plan 013's table).
    - Generic code needs metres in a projection local to each port.
 9. **Circular evidence.** The Icelandic polygons are hulls of STK's own `I` pings
    (`reference/ports/bootstrap_iceland_faroe.R`). STK's 3.19 M recorded voyages (`tilk_stk_allt`, plan 022 §4, TODO 68)
@@ -310,14 +317,19 @@ Run 2026-10-19, read-only; scripts and output in the session's scratch. The desi
 | `runs` | 97.3 % | 99.4 % | 77,645 | 73.6 % | 1.55 |
 | jepol (ramb) | 97.9 % | 99.5 % | 78,438 (14,464 at no port) | 76.3 % | 1.28 |
 | Irish, a gap of 2 h | 97.6 % | 65.8 % | 114,970 | 31.8 % | 2.27 |
-| CNR (published R, 65 min on 4 cores) | not run | 97.6 % | 59,891 | 79.9 % | 1.20 |
+| CNR (published R, 65 min on 4 cores; ramb's C++ port, 0.6 min) | 95.2 % | 97.6 % | 59,891 | 79.9 % | 1.20 |
 | learned ports, no port list (§4.3) | 97.6 % | 98.1 % | 68,770 | 70.9 % | 1.37 |
-| iapesca (published R) | not run | not run: too slow as published (above) | | | |
+| iapesca (ramb's port, one DuckDB query, about 1 min) | 84.7 % | 92.9 % | 67,148 | 65.6 % | 1.34 |
 
 - **The time budget helps where pings are sparse:** +2.6 points in 2010. In 2018 it only adds about 11,000 stays that no
   witness claims, so it must scale with the ping interval.
 - **jepol's** 72 h cap splits long trips at sea, hence its stays at no port.
-- **CNR's rule** has the best *claimed* and the fewest extra stays on Icelandic AIS.
+- **CNR's rule** has the best *claimed* and the fewest extra stays on Icelandic AIS, in both years (2010: 63.4 % claimed,
+  1.53 per landing).
+- **ramb's ports of CNR and iapesca** (`rb_create_voyages(method = "cnr")`, `"iapesca"`, ramb 2026.10.19.2). CNR's gives
+  the published R loop's 2018 result: 59,923 of 59,934 calls identical, the same scores.
+- **iapesca's rule is the weakest** of the methods with a port list. Its buffer of 2 km to 2 nautical miles around each
+  port seems to blur Iceland's close fjord ports.
 
 **Learned ports against lists that do not come from our AIS.** The `einar` polygons are hulls of STK's own pings, so
 learned ports were compared with the raw lists, before `ports_all.R` merges them into `einar`. In Iceland those are GFW
@@ -473,15 +485,28 @@ explicit, so it scales with the ping interval:
   ping to the port and from the port to the next ping, is at least the minimum stay.
 - **Dense AIS:** the travel time is minutes, and the rule is the present one.
 - **Hourly VMS or sparse STK:** the rule still finds the stay where a fixed radius rejects it.
-- **The steaming speed:** one value (6 knots) or the vessel's own, read from its track (ask b).
+- **The steaming speed** is the vessel's own, read from its track, else 6 knots (ask b, answered 2026-10-19).
+- **The minimum stay X** is set per data set (or fleet), not fixed: the low point between the two modes of the call
+  lengths on a log scale, pass-throughs and real calls (ask a, answered 2026-10-19). It needs no records, and is checked
+  against the witnesses where they exist. The length it is applied to is the interval-aware one: the time between the
+  pings just outside the call, less the sailing time, not only the span of the pings inside.
+  - Measured 2026-10-19 (calls of any length, runs inside a port and silences within 5 km of one, each witness
+    claiming its nearest call): no length is a natural cut. The claimed share rises steadily: in 2018 from 56 % at
+    15-30 min to 74 % at 1.5-2 h and 87 % at 6-12 h; in 2010 from 19 % to 34 % and 75 %. The counts have the valley:
+    10,869 calls under 15 min in 2018, 700-1,000 in each half-hour from 15 min to 2 h, 12,443 at 6-12 h.
 
 ### 4.2 Records as evidence, never as positions
 
 A landing, a logbook trip end (its declared port and date) or a port-state visit says the vessel was at a port on a
 date.
-- **Confirm:** where the track can reach that port on that date (§4.1's budget), the record supports a stay. That
-  includes a call shorter than the minimum, where the record says the vessel landed there (ask a, c). The stay's
-  `basis` names it: `landing`, `logbook`.
+- **Confirm:** where the track can reach that port on that date (§4.1's budget), the record supports a stay. The
+  stay's `basis` names it: `landing`, `logbook`.
+- **A call under the minimum on a landing day** is a call of its own: it cuts the voyage and is labelled short
+  (ask c, answered 2026-10-19), so an analyst can merge it back. Below X, only a record makes a call; X decides only
+  the calls nobody recorded.
+- **A landing with no port:** codes 159 "Gámur/Sigling" (container or sailing abroad) and 150 "Ýmsir staðir" (various
+  places), found in the dump's `ask.londunarstadir` and `kvoti.stadur` (ask h, 2026-10-19). They say the vessel landed
+  that day but not where, so only the track can place the call, abroad for a sailing.
 - **Never place:** a record never makes a stay where the track is elsewhere all that date. That disagreement goes to
   a check, one of three things:
   - the wrong port or date in the record;
@@ -494,8 +519,8 @@ date.
 ### 4.3 Beyond the port list, and without one
 
 Step A of §4.0. Each tier gives the stay's port a basis: `listed`, `other_list`, `learned` or `coast`.
-- **Other lists:** the polygons of `ports.fgb` that are not `einar` would take the foreign calls of §3.7 item 2. This
-  is ask g.
+- **Other lists:** the independent lists, read raw (GFW anchorages, GISCO; points buffered 1-2 km, §3.9), would take
+  the foreign calls of §3.7 item 2. Ask g (2026-10-19): this needs testing first, TODO 92.
   - Transits such as the Kiel Canal, and anchorages, then need the minimum stay, or a record, to count.
 - **Learned ports:** for fleets with no port polygons, which is much of the world's small-scale fishing.
   - A candidate port is a place where silences or still pings begin and end, near the coast. `docs/one_flow.qmd`
@@ -508,19 +533,22 @@ Step A of §4.0. Each tier gives the stay's port a basis: `listed`, `other_list`
   one voyage per vessel and year without a word (§3.7 item 1).
 - **Distances in metres,** in a projection local to each port, not degrees (§3.7 item 8).
 
-Learned ports and the coastline are generic work that Iceland does not need. Ask e puts their scope.
+Learned ports are built in ramb in this plan, as the fallback tier (ask e, answered 2026-10-19). The coastline band
+waits.
 
 ### 4.4 Voyages and the logbook's day trips
 
-Voyages are cut at stays, as now (`rb_cut_trip_voyages`). Several logbook trips on one voyage stay allowed: on a
+Voyages are cut at stays, as now (`rb_create_voyages`). Several logbook trips on one voyage stay allowed: on a
 continuous sea trip they are the logbook's days, not an error. The reconciled trip table (`docs/one_flow.qmd`, step 1)
-says, for each voyage, which records cover it (ask f).
+says, for each voyage, which records cover it. The day trips are kept as recorded and linked many-to-many, never
+merged (ask f, answered 2026-10-19).
 
 ### 4.5 Several gears in a voyage: a gear set
 
 `voyage_gear` becomes a set of gears per voyage, each with its share and basis:
 - **Where shares come from:** the landing's gears by weight, the logbook stations by count or time.
-- **The order** follows the maintainer's rule for Iceland: the landing first, then the logbook (ask d).
+- **The order** follows the maintainer's rule for Iceland: the landing first, for every voyage, then the logbook
+  (ask d, answered 2026-10-19).
 - **Code variants** of one gear type (Lína, Landbeitt lína and Línutrekt as LLS_DEF) are one gear, with one speed range.
 - **Fishing per fix:**
   - by the record's window where one holds the fix;
@@ -535,13 +563,13 @@ says, for each voyage, which records cover it (ask f).
 
 | piece | ramb (generic) | fishycode (Iceland) |
 |---|---|---|
-| time-budget stays | `rb_find_trip_stays` gains the rule, with the steaming speed as an argument | the speed chosen by ask b |
-| records as evidence | `rb_find_trip_stays` takes optional `records` (vessel, date, port, kind) | landings and logbook trip ends passed in |
+| time-budget stays | `rb_create_port_calls` gains the rule, with the steaming speed as an argument | each vessel's own speed, else 6 knots (ask b) |
+| records as evidence | `rb_create_port_calls` takes optional `records` (vessel, date, port, kind) | landings and logbook trip ends passed in |
 | learned ports | a new `rb_` step, later (ask e) | not needed |
 | gear set | a new `rb_` step: a voyage's gears from records, with shares | landing first; metier variants merged |
 | fishing per fix | `rb_assign_fishing` takes a gear set | `R/trail_sql.R` |
 | ports beyond the list (§4.3) | a new `rb_` step: other lists, learned ports and the coastline, each with a basis, and a message when it falls back | the other sources of `ports.fgb` (ask g) |
-| the cut (§4.7) | `rb_cut_trip_voyages`: no cut at New Year, short voyages labelled, open ends and gap classes | `ais_voyage.R` keeps the year as a partition only |
+| the cut (§4.7) | `rb_create_voyages`: no cut at New Year, short voyages labelled, open ends and gap classes | `ais_voyage.R` keeps the year as a partition only |
 | an open end's port | the CNR rule as the last tier for `pid1` and `pid2` (§3.8) | the same |
 | reconciled trips (§4.0, E) | a new `rb_` step (plan 013's `rb_reconcile_time`): one row per voyage or declared trip, each attribute with value, basis and precision | logbook trips, landings and voyages passed in |
 
@@ -730,11 +758,9 @@ step:
    - then the methods across the scenarios S0-S6, on the Icelandic data and on the external sets;
    - then the combinations.
 
-   *Done 2026-10-19, §3.9.* Not run:
-   - iapesca's trip finder. Its published code took over 13 minutes on 4 cores for a sample of 100 Icelandic vessels
-     and was stopped (maintainer); a faster version is being tested in a separate session. Its coastline mode, which
-     downloads a coastline, was not tried either.
-   - CNR for 2010: its R loop took 65 min for 2018, and ramb's C++ port is not installed yet.
+   *Done 2026-10-19, §3.9.* iapesca's published R took over 13 minutes on 4 cores for 100 Icelandic vessels, so the
+   maintainer stopped it. iapesca and CNR for 2010 ran instead as ramb's ports of them (ramb 2026.10.19.2), about a
+   minute each per year. Not tried: iapesca's coastline mode, which downloads a coastline.
 
    Its results choose what steps 3 and 4 build. The time budget and records as evidence enter it as methods.
 3. **The time budget in ramb,** with the cut of §4.7 and, if ask g says so, the other lists of §4.3. Tested in scratch
@@ -774,16 +800,27 @@ step:
 
 ## 7. Asks
 
+All answered by the maintainer on 2026-10-19 (ask h looked up the same day). The answers are written into §4.
+
 a. **May a landing make a stay** where the pings alone fall short of the minimum, given the track reaches the port
    that day? Or should it only confirm, and flag?
+   *Answer:* the maintainer asked how the minimum X should be set at all. The answer is per data set, from the valley
+   in the call lengths (§4.1). Below X, a landing makes a call, labelled short (ask c).
 b. **The steaming speed for the time budget:** one value (6 knots), or each vessel's own from its track?
+   *Answer:* each vessel's own, 6 knots as the fallback.
 c. **A call under 2 h on a landing day:** a stay, or a call of its own, which cuts the voyage but is labelled short?
+   *Answer:* a call of its own, labelled short.
 d. **Voyage gear:** the landing first for every voyage, or only where the logbook stations disagree?
-e. **Learned ports for fleets without a port list:** built in ramb in this plan, or in a later one? The bench tests a
-   scratch version either way.
-f. **The logbook's day trips on one sea trip:** keep them as several trips on one voyage, as now, or merge them into
-   one trip in the reconciled trip table?
-g. **Ports outside Iceland and the Faroes:** take the other sources' polygons in `ports.fgb` as a second tier now
-   (§3.7 item 2, §4.3), or wait for learned ports (ask e)? The bench's scenario S3 measures what each source adds.
+   *Answer:* the landing first, for every voyage.
+e. **Learned ports for fleets without a port list:** built in ramb in this plan, or in a later one?
+   *Answer:* in this plan.
+f. **The logbook's day trips on one sea trip:** keep them as several trips on one voyage, or merge them into one trip
+   in the reconciled trip table?
+   *Answer:* keep them, linked many-to-many.
+g. **Ports outside Iceland and the Faroes:** take the independent lists as a second tier now, or wait for learned
+   ports?
+   *Answer:* "this needs some testing", so it is TODO 92.
 h. **Landing port code 159:** 7,305 landings of 145 vessels in 2007-2026 carry it, and the Directorate's port list
-   gives it no name. Is it a port abroad, fish sold in containers, or something else (§3.7 item 2)?
+   gives it no name.
+   *Answer, looked up in the dump:* "Gámur/Sigling", container or sailing abroad, in `ask.londunarstadir` and
+   `kvoti.stadur` (port class E; 150 "Ýmsir staðir" is class F). It names no port (§4.2).
