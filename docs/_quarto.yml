@@ -11,10 +11,10 @@ book:
   repo-url: https://github.com/einarhjorleifsson/fishycode
   chapters:
     - index.qmd
-    - part: "The problem, the flow and the tools"
+    - part: "At sea"
       chapters:
+        - at_sea.qmd
         - one_flow.qmd
-        - grammar.qmd
     - part: "The groups"
       chapters:
         - wkssfgeo.qmd
@@ -43,6 +43,8 @@ book:
         - convert-bugs.qmd
         # how the data are used
         - datacall-strategy.qmd
+  appendices:
+    - grammar.qmd
 
 format:
   html:

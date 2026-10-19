@@ -1,0 +1,236 @@
+# Going to sea: who writes what down {#sec-at-sea}
+
+::: {.callout-note}
+**Written by AI, not yet reviewed by a person.** Drafted by Claude (Anthropic) on 2026-10-19 from the maintainer's
+direction for the book's first chapter (fishycode plan 033 §4). The survey data are MFRI's, published on the
+maintainer's web space and cleared by him for the book; the trawler's logbook is shown as background, in figures only.
+Reviewed by: nobody yet.
+:::
+
+```{r setup}
+#| include: false
+# quarto's R may start in a C locale, which prints a degree sign as <U+00B0>
+invisible(Sys.setlocale("LC_CTYPE", "en_US.UTF-8"))
+library(tidyverse)
+library(duckdbfs)
+library(ramb)
+# quarto runs this file from docs/; R/paths.R resolves $FISHYDATA
+source("../R/paths.R")
+
+## The survey: MFRI's spring groundfish survey (SMB), March 2019 -------------------------------
+stations <- read_csv(fd_raw("survey", "is_smb_stations.csv"), show_col_types = FALSE) |>
+  filter(year == 2019)
+catch <- read_csv(fd_raw("survey", "is_smb_biological.csv"), show_col_types = FALSE) |>
+  semi_join(stations, by = "id")
+tows <- rb_read_example("trawlsurveytows") |> collect()
+tows <- sf::st_sf(id = tows$id.lgs,
+                  geometry = sf::st_as_sfc(structure(tows$geometry, class = "WKB"), crs = 4326))
+track <- rb_read_example("trawlsurvey") |> collect()
+coast <- map_data("world", region = "Iceland")
+
+## The trawler: one of the two commercial trawlers on the survey, its 2019 logbook --------------
+TRAWLER <- 1277
+lb_trip <- open_dataset(fd_curated("logbook", "trip.parquet")) |>
+  filter(vid == TRAWLER, year(T1) == 2019, is.na(twin) | twin != "duplicate")
+lb_haul <- open_dataset(fd_curated("logbook", "station.parquet")) |>
+  filter(is.na(twin) | twin != "duplicate") |>
+  inner_join(lb_trip |> select(.tid, schema), by = c(".tid", "schema"))
+lb_catch <- open_dataset(fd_curated("logbook", "catch.parquet")) |>
+  inner_join(lb_haul |> select(.sid, schema, date), by = c(".sid", "schema"))
+species <- open_dataset(fd_raw("oracle", "taxon", "species.parquet")) |>
+  select(sid = species_no, species = eng_name) |> collect() |>
+  mutate(species = str_to_lower(species))
+trips <- lb_trip |> select(T1, T2) |> collect() |> arrange(T1)
+hauls <- lb_haul |> select(.sid, date) |> collect()
+hcatch <- lb_catch |> select(.sid, date, sid, catch) |> collect() |>
+  left_join(species, by = "sid")
+
+## Numbers used in the text --------------------------------------------------------------------
+s_trawler <- stations |> filter(vid == TRAWLER)
+n_tows <- nrow(stations)
+n_tows_trawler <- nrow(s_trawler)
+survey_days <- range(as_date(s_trawler$t1))
+n_trips <- nrow(trips)
+days_at_sea <- round(sum(as.numeric(difftime(trips$T2, trips$T1, units = "days"))))
+n_hauls <- nrow(hauls)
+tonnes <- round(sum(hcatch$catch, na.rm = TRUE) / 1000)
+```
+
+Two people can go to sea on the same boat in the same month and come home with different records. One is a
+scientist, the other a fisher. Both write things down at sea, and both are careful. They are simply interested in
+different things.
+
+- **The scientist** wants to know what is in the sea. Every tow is made the same way at a station set in advance.
+  Everything in the net is sorted, counted and weighed, and the depth, the temperature and the wind are noted.
+- **The fisher** wants to know whether the trip paid. The haul goes where the fish are expected to be. The skipper
+  estimates the catch in kilograms by species, as the logbook requires, and the sales note at the quay says what it
+  was worth. The days at sea say what it cost.
+
+This book is about what the second kind of record can tell the first kind of person: how a scientist gets a
+quantitative view of a commercial fishery from records made for control and for selling fish. To see the gap, it
+helps to watch both at work. Iceland offers a neat case: its spring groundfish survey is carried out partly by
+commercial trawlers, chartered for three weeks in March.
+
+## A scientist's day at sea
+
+In March 2019 four vessels made `r n_tows` tows on the Icelandic spring groundfish survey (@fig-survey). Two were
+research vessels. The other two were commercial trawlers, which for three weeks fished where the plan said rather than
+where the fish were, and were paid for it. Each tow lasted about an hour and covered about four nautical miles.
+
+```{r}
+#| label: fig-survey
+#| fig-cap: "The tows of the Icelandic spring groundfish survey, 27 February to 19 March 2019 (ramb's `trawlsurveytows`), with the cod caught in each (MFRI). Every tow is the same length, at a station fixed in advance, so differences in catch are differences in the sea."
+#| fig-height: 5.5
+cod <- catch |> filter(species == "cod") |> select(id, kg)
+mid <- stations |> transmute(id, lon = (lon1 + lon2) / 2, lat = (lat1 + lat2) / 2) |>
+  left_join(cod, by = "id") |> mutate(kg = replace_na(kg, 0))
+ggplot() +
+  geom_polygon(data = coast, aes(long, lat, group = group), fill = "grey85", colour = NA) +
+  geom_sf(data = tows, linewidth = 0.3, colour = "grey40") +
+  geom_point(data = mid, aes(lon, lat, size = kg), shape = 21, fill = "#C0504D", alpha = 0.5, colour = "white") +
+  scale_size_area(max_size = 12, name = "cod, kg per tow") +
+  coord_sf(xlim = c(-28, -10), ylim = c(62.8, 67.6)) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal()
+```
+
+What one tow leaves behind is a small, tidy record (@tbl-tow). It holds the place, the time and the gear, plus the
+conditions on the bottom. Then comes every species in the net, counted and weighed. The full survey also measures
+lengths and takes otoliths for age; the public file used here keeps the counts and weights.
+
+```{r}
+#| label: tbl-tow
+#| tbl-cap: "One tow of the survey, as the scientist records it: the station, then the catch."
+one <- 491031
+st1 <- stations |> filter(id == one)
+tibble(
+  item = c("date", "start and end (UTC)", "start position", "depth (m)", "bottom temperature (\u00b0C)",
+           "wind", "tow length (nautical miles)", "duration (min)"),
+  value = c(format(st1$date), paste(format(st1$t1, "%H:%M"), "to", format(st1$t2, "%H:%M")),
+            sprintf("%.3f\u00b0N %.3f\u00b0W", st1$lat1, -st1$lon1), st1$z1, st1$temp_b, st1$wind,
+            st1$towlength, st1$duration)
+) |> knitr::kable()
+catch |> filter(id == one) |>
+  transmute(species, number = n, kg = round(kg), `mean weight (g)` = round(1000 * kg / n)) |>
+  arrange(desc(kg)) |> knitr::kable(format.args = list(big.mark = ","))
+```
+
+Seen from the vessel, the same day is a stream of positions, a ping about every ten minutes from the vessel's
+tracking system, with the tows inside it (@fig-day). The track itself does not say when the net is down. The station record
+does: the tows' start and end times mark which pings were fishing.
+
+```{r}
+#| label: fig-day
+#| fig-cap: "One survey day of the trawler: its positions (ramb's `trawlsurvey`) and its tows. The pings come from the tracking system; whether the net was down comes from the station record."
+#| fig-height: 5
+day <- as_date(st1$t1)
+d <- track |> filter(vid == TRAWLER, as_date(time) == day) |> arrange(time)
+ggplot(d, aes(lon, lat)) +
+  geom_path(colour = "grey70") +
+  geom_point(aes(colour = behaviour), size = 0.8) +
+  scale_colour_manual(values = c(hauling = "#C0504D", "not hauling" = "grey50"), name = NULL) +
+  coord_quickmap() +
+  labs(x = NULL, y = NULL) +
+  theme_minimal()
+```
+
+## The same trawler, the rest of the year
+
+From late March the trawler went back to work. In 2019 its logbook holds `r n_trips` trips, about `r days_at_sea` days
+at sea and `r format(n_hauls, big.mark = ",")` hauls, with some `r format(tonnes, big.mark = ",")` tonnes of fish
+(@fig-year). Its survey weeks sit inside that year, with a few short commercial trips between the survey's legs.
+None of those hauls is at a survey station: the two records stay apart.
+
+```{r}
+#| label: fig-year
+#| fig-cap: "The trawler's 2019: each logbook trip from departure to return, and its survey weeks (shaded). The logbook trip is what the control and the sale need: when the vessel left, when it came back, and what it caught."
+#| fig-height: 2.2
+ggplot(trips) +
+  annotate("rect", xmin = as_datetime(survey_days[1]), xmax = as_datetime(survey_days[2] + 1),
+           ymin = 0, ymax = 1, fill = "#C0504D", alpha = 0.2) +
+  geom_rect(aes(xmin = T1, xmax = T2 + days(1), ymin = 0.2, ymax = 0.8), fill = "grey40") +
+  scale_x_datetime(date_breaks = "1 month", date_labels = "%b") +
+  scale_y_continuous(breaks = NULL) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal()
+```
+
+What the fisher writes down is the haul and the catch in kilograms by species. There is no count of fish, no
+length and no bottom temperature, because the logbook is a declaration, not a survey. Over the year it adds up to a
+picture the scientist cannot get from a survey: where and when the fleet actually fishes, and how much (@fig-month).
+
+```{r}
+#| label: fig-month
+#| fig-cap: "The trawler's logbook catch by month and species, 2019, in tonnes, as the skipper declared it."
+#| fig-height: 3.5
+top <- hcatch |> count(species, wt = catch, sort = TRUE) |> slice_head(n = 5) |> pull(species)
+hcatch |>
+  mutate(species = if_else(species %in% top, species, "other"),
+         month = month(date, label = TRUE)) |>
+  count(month, species, wt = catch / 1000, name = "tonnes") |>
+  ggplot(aes(month, tonnes, fill = species)) +
+  geom_col() +
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = NULL, y = "tonnes") +
+  theme_minimal()
+```
+
+The two records also catch fish differently (@fig-compare). A survey tow is an hour at a fixed station: it catches
+whatever is there, often little. A commercial haul goes where the skipper expects fish, for as long as it pays, so
+its catch of cod is typically many times larger. Neither is wrong. They answer different questions.
+
+```{r}
+#| label: fig-compare
+#| fig-cap: "Cod per tow on the survey and per haul in the logbook, for the same trawler in 2019 (tows and hauls with cod). The survey samples the sea; the fishery samples where the fish are."
+#| fig-height: 3
+bind_rows(
+  catch |> filter(species == "cod") |> semi_join(s_trawler, by = "id") |>
+    transmute(record = "survey tow (scientist)", kg),
+  hcatch |> filter(sid == 1, catch > 0) |> transmute(record = "logbook haul (fisher)", kg = catch)
+) |>
+  ggplot(aes(kg, fill = record)) +
+  geom_density(alpha = 0.5, colour = NA) +
+  scale_x_log10(labels = scales::label_comma()) +
+  scale_fill_manual(values = c("survey tow (scientist)" = "#C0504D", "logbook haul (fisher)" = "grey40"), name = NULL) +
+  labs(x = "cod, kg (log scale)", y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "top", axis.text.y = element_blank())
+```
+
+And the money? The scientist's record has none. The fisher's sits in two other places: the sales note at landing,
+which gives the value, and the days at sea, which drive the cost in fuel and crew. Neither is in the files used here.
+Iceland's sales notes carry the weight, and the value is not in this extract. That is a fair summary of the
+situation the rest of this book works in: the records that matter to the fisher are rarely the ones that reach the
+scientist whole.
+
+## One grammar for both
+
+Survey and logbook look different, but they share a shape: a trip holds stations, a station holds what was caught,
+and the vessel's positions run alongside as a separate stream. The working groups describe the same shape. A trip
+runs from leaving port to returning, with fishing in between. A fishing event is a haul, or a use of passive gear, as
+the logbook holds it (WKSSFGEO 2022, pp. 13-14). A logbook trip holds log events, each with the species landed, and
+a new event starts with each change of gear or area (WGSFD 2025a, p. 34). How fine those events are differs between
+countries and fleets. Some records give each haul with its times. Others give a day in a rectangle. Many small-scale
+fleets give only a landing date and place (WGSFD 2025a, pp. 12-13).
+
+| Level | The scientist's record | The fisher's record |
+|---|---|---|
+| Trip | the survey leg | the fishing trip, from departure to landing |
+| Station | the tow: start and end, position, depth, temperature, wind | the haul: date and position, the time where recorded |
+| Sample | the gear, and the whole catch sorted | the gear |
+| Observation | each species counted, weighed, measured | each species' catch, estimated in kilograms |
+| Streams alongside | the vessel's positions | the vessel's positions; the landings (sales notes) |
+
+This book calls that shape a grammar: trip, station, sample and observation, with pings and landings as parallel
+streams. The full grammar, with every level's fields, is in [the appendix](grammar.qmd). Here it is enough that both
+records fit it, and that each fills it in its own way.
+
+The next chapter takes the scientist's side of the gap. What can be known about a commercial fishery from records like
+the fisher's, and from the positions running alongside them? What happens when even those are missing, as they are
+for most small boats?
+
+::: {.callout-tip appearance="minimal"}
+**Sources.** MFRI's spring groundfish survey (SMB), 2019: tows and catch, `is_smb_stations.csv` and
+`is_smb_biological.csv` (fishycode `dump/survey/`), and ramb's `trawlsurvey` and `trawlsurveytows`. The trawler's
+2019 logbook: fishycode's curated logbook. ICES (2022), WKSSFGEO, pp. 13-14; ICES (2025a), WGSFD, pp. 12-13 and 34.
+:::
