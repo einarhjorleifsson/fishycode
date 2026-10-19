@@ -1,9 +1,9 @@
 # 031 — Voyages from any data: the stays the track misses, records as evidence, and several gears in a voyage
 
-**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f); steps 1 and 2 done the same day
-(§3.6, §3.9);
+**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f); steps 1, 2 and 3 done the same day
+(§3.6, §3.9, §3.10, with STK and ASTD apart);
 the cascade (§4.0), the other pitfalls (§3.7), outside code (§3.8) and the robustness bench (§4.8) added the same
-day; nothing built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
+day; step 3's code is in ramb (2026.10.19.3, f2492db), nothing in fishycode built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
 the voyage definition ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 062, 063, 074, 078, 101 and 144, plan 011 (port stays), plan 013 (ramb's
 steps, and its table of logic doubts), plan 017 (foreign ports), plan 022 §4 (STK's own voyages, TODO 68), plan 025
@@ -18,7 +18,7 @@ names. The parts measured before the rename (the lists above, §3.1-3.6, step 1)
 
 Drafted with AI assistance (Claude) on 2026-10-19, at the maintainer's request. The numbers below were measured by
 Claude (AI); a person has not yet checked them. §3.7, §3.8, §4.0, §4.7 and §4.8 were written by Claude the same day,
-in a second session. They draw on the maintainer's outline of the problem (§4.0) and points on robustness (§4.8), on
+in a second session, and §3.10 in a third. They draw on the maintainer's outline of the problem (§4.0) and points on robustness (§4.8), on
 the code and on the record.
 
 **Measured** (read-only, scripts and output in scratch only):
@@ -420,8 +420,209 @@ across, on boundaries with a ping within 6 h either side.
 - every duration rule (minimum stay, gap, time budget) scales with the ping interval around the call;
 - methods that need pings in port are not used alone;
 - in sparse data, a vote of methods is worth having;
-- CNR's per-ping rule now has a C++ port in ramb, uncommitted. It reproduces the published code on the Italian,
+- CNR's per-ping rule now has a C++ port in ramb (`06595ea`, pushed). It reproduces the published code on the Italian,
   Adriatic and Danish data, and runs Iceland 2018 in under a minute.
+
+### 3.10 Step 3: the time budget and the minimum from the data, measured
+
+Run 2026-10-19 by Claude (AI), read-only. ramb was loaded from source with the step's code before its commit (2026.10.19.3, f2492db,
+§4.1, §4.7). Scripts and output are in the session's scratch. Pings are `ping_clean`'s recorded fixes of vessels with
+landings that year, with the `einar` ports and `port_radius`'s departure radius. STK's port events are left out, so v0
+is today's rules without them.
+- **2010:** STK pings only.
+- **2018:** every AIS feed: STK's 8.0 M pings (1,230 vessels), ASTD's 30.2 M (242 vessels, class A) and `astdB`'s
+  0.87 M (913 vessels, class B).
+- **The feeds apart:** below, measured 2026-10-19 at the maintainer's request.
+
+**The yardstick (§3.9, §4.8).** No table of true port calls exists. A method is scored against records from other
+systems that put a vessel at a port on a day, the witnesses (vessel-day-port rows):
+
+| witness | gives | 2010 | 2018 |
+|---|---|---|---|
+| landings (`landings.parquet`) | vessel, landing date, landing port | 57,300 | 50,388 |
+| logbook trip ends (`trip.parquet`, duplicates left out) | vessel, the date of `T2`, the declared port `pid2` | 45,835 | 46,635 |
+| STK port entries (`stk_event`, `I` judged good, from 2017) | vessel, day, port | none | 89,394 |
+
+- **Places and days:** ports are compared as groups (`einar` ports within 3 km of each other are one: 157 ports, 138
+  groups), and times by day, since the records hold dates.
+- **Found** is the recall: of the witnessed landings, the share with a call of the method at their group on the
+  landing day or the day before. A witnessed landing is one that a logbook trip end or an STK entry puts at the same
+  group within a day (43,683 in 2010, 49,973 in 2018). A second record makes a wrong date or port less likely.
+- **Claimed** stands in for precision: the share of the method's calls that some witness record takes as its nearest
+  call. It is a lower bound, since a stay for repairs, weather or lay-up lands nothing.
+- **Per landing** is calls per witnessed landing.
+- **The limits:**
+  - only calls that end in a landing are tested for recall;
+  - the records cannot judge `T_in` and `T_out` to the hour;
+  - 2010 has only landings and logbooks;
+  - scores compare within a year, not between;
+  - in 2018 the STK entries come from the same system as STK's pings, and the `einar` polygons are hulls of STK's
+    `I` pings, so the score is partly circular. The feeds apart, below, measure how much.
+
+- **v0:** minimum 2 h, no budget.
+- **v1:** minimum 2 h, plus the time budget at each vessel's own speed (§4.1, ask b).
+- **v2:** the minimum from the data (the valley, ask a), no budget.
+- **v3:** the valley plus the budget.
+
+**Iceland, every vessel with landings:**
+
+| year | variant | minimum (h) | calls | from the budget | voyages with 2+ logbook trips | found | found, landing day only | claimed | per landing |
+|---|---|---|---|---|---|---|---|---|---|
+| 2010 | v0 | 2 | 70,549 | 0 | 2,203 | 95.0 % | 93.8 % | 59.9 % | 1.62 |
+| 2010 | v1 | 2 | 77,389 | 7,082 | 862 | 97.6 % | 97.1 % | 57.0 % | 1.77 |
+| 2010 | v2 | 1.55 | 71,358 | 0 | 2,153 | 95.1 % | 94.0 % | 59.4 % | 1.63 |
+| 2010 | v3 | 1.50 | 78,258 | 7,068 | 815 | 97.7 % | 97.2 % | 56.6 % | 1.79 |
+| 2018 | v0 | 2 | 62,730 | 0 | 1,078 | 98.3 % | 97.2 % | 76.2 % | 1.26 |
+| 2018 | v1 | 2 | 63,700 | 980 | 744 | 98.5 % | 97.6 % | 75.7 % | 1.27 |
+| 2018 | v2 | 2.19 | 62,473 | 0 | 1,134 | 98.2 % | 97.0 % | 76.3 % | 1.25 |
+| 2018 | v3 | 2.21 | 63,365 | 938 | 815 | 98.4 % | 97.4 % | 75.8 % | 1.27 |
+
+**S5's 323 densely tracked vessels, 2018, thinned (§4.8).** Each cell gives found / claimed, with the valley's
+minimum in brackets. Every one of them has ASTD pings (111 class A), so the densities are ASTD's.
+
+| variant | hourly | 2-hourly | no pings in port | full rate |
+|---|---|---|---|---|
+| v0 | 86.9 / 86.2 % | 82.4 / 84.5 % | 97.0 / 82.3 % | 98.2 / 79.1 % |
+| v1 | 91.3 / 84.5 % | 88.5 / 83.0 % | 97.4 / 81.7 % | 98.4 / 78.9 % |
+| v2 | 87.6 / 86.0 % (1.37 h) | 83.7 / 85.4 % (0.98 h) | 98.2 / 80.7 % (0.82 h) | 97.8 / 79.4 % (2.29 h) |
+| v3 | 92.1 / 83.3 % (1.18 h) | 90.6 / 82.8 % (0.98 h) | 98.4 / 80.4 % (0.98 h) | 98.1 / 79.1 % (2.29 h) |
+
+Voyages with 2+ logbook trips, v0 to v3: 1,797 to 1,213 (hourly), 1,906 to 1,277 (2-hourly), 817 to 430 (no pings in
+port), 486 to 484 (full rate).
+
+**What it shows:**
+- **The budget splits the voyages that hold several logbook trips:** 63 % fewer in 2010 (2,203 to 815) and 24 % fewer
+  in 2018 (1,078 to 815). On AIS thinned to hourly or 2-hourly it adds 4-8 points of found (2.6 in 2010), for
+  1.5-3 points of claimed. At the full AIS rate it changes little: 938 extra calls in 2018.
+- **The valley follows the ping rate:** about 2.2-2.3 h at the full AIS rate, 1.5 h in 2010, and about 1 h at
+  2-hourly. Alone it moves found by a point or less, either way. Its use is that it needs no number from us.
+- **A tighter window,** the landing day alone, costs v0 1.2 points in 2010 and v3 0.5, so the budget's calls there
+  sit on the landing day. In 2018 both lose about a point.
+- **The two budget rules differ.** The share with any witness at the group within the day or the day before:
+
+  | rule | 2010 | 2018 |
+  |---|---|---|
+  | a run of pings in port, then a silence (today's `tag_then_gap`) | 84.3 % of 70,360 | 99.8 % of 41,637 |
+  | `span_budget`: the run's pings, plus the sailing time either side | 60.5 % of 6,705 | 95.8 % of 859 |
+  | `gap_budget`: a silence that starts near a port | 27.0 % of 363 | 21.5 % of 79 |
+
+  A call with no witness is not false: a stay for repairs or weather lands nothing.
+- **Where the unwitnessed budget calls sit, 2010 (v3):**
+  - Siglufjörður: 584 calls, 150 vessels, median 11.8 h;
+  - the Reykjavík group: 281 calls, 157 vessels, median 22 h;
+  - Ólafsfjörður: 226 calls, 108 vessels, median 14 h;
+  - the Hafnarfjörður group: 223 calls, 135 vessels, median 22 h;
+  - Þorlákshöfn: 150 calls, 94 vessels, median 15 h.
+
+  In 2018 only 98 are unwitnessed, most in the Hafnarfjörður group (21, median 45 h) and the Reykjavík group (12,
+  median 107 h): vessels laid up.
+  Siglufjörður and Ólafsfjörður lie under mountains. Their 2010 silences may be coverage gaps at sea near the port
+  rather than calls (TODO 89). Not checked.
+- **The short label does not scale with the ping rate.** At 2-hourly, 8,926 of v0's 15,174 voyages have fewer than
+  10 pings, against 7,000 of 70,904 in 2010 and 3,693 of 62,525 in 2018. Like every duration rule (§3.9), a short
+  voyage wants a length in time, or pings scaled to the interval.
+- **Time:** v3 took 1.2 min for Iceland 2018 (the speeds and the valley included); v0 took 0.5 min.
+
+**The feeds apart, 2018.** STK and ASTD were split, at the maintainer's request (2026-10-19). The `einar` polygons
+were drawn from STK, never from ASTD, so ASTD is an independent test of them and of STK's calls.
+- **The two feeds hear different things.** 1,147 vessels with landings are heard by both:
+  - ASTD (class A and B together) hears vessels in port: median speed 0.03 kn, 65 % of its pings inside a polygon;
+  - STK hears them at sea: median 3.4 kn, 3 % of its pings inside a polygon.
+- **Calls, all vessels with landings:**
+  - STK alone gives 60,016 calls (v0) and 61,129 (v3, 1,907 from the budget). The valley gives 3.82 h without the
+    budget and 2.60 h with it.
+  - ASTD alone gives 35,992 (v0) and 41,775 (v3, 6,544 from the budget), with a valley of 2.2 h.
+  - Voyages with 2+ logbook trips: STK 1,836 to 981 (v0 to v3); ASTD 4,035 to 4,116.
+
+Against the records, on the 1,147 vessels. The two right-hand columns leave STK's entries out of the witnesses, so a
+witnessed landing is one a logbook trip end backs:
+
+| pings | variant | found | claimed | per landing | found, without STK entries | claimed, without STK entries |
+|---|---|---|---|---|---|---|
+| STK | v0 | 97.8 % | 77.9 % | 1.20 | 98.0 % | 63.8 % |
+| STK | v3 | 98.1 % | 77.1 % | 1.22 | 98.2 % | 63.0 % |
+| ASTD | v0 | 63.7 % | 80.9 % | 0.72 | 64.6 % | 68.0 % |
+| ASTD | v3 | 77.5 % | 81.6 % | 0.84 | 78.2 % | 69.0 % |
+| both | v0 | 98.4 % | 76.1 % | 1.25 | 98.6 % | 62.0 % |
+| both | v3 | 98.5 % | 75.7 % | 1.27 | 98.7 % | 61.5 % |
+
+Each feed's calls against the other feed's pings, and against its calls by v0, the same reference for every variant.
+- *Heard:* the other feed has a ping of the vessel inside the call.
+- *Confirmed:* the other feed has a call at the same group overlapping it.
+- *Hides a trip:* the other feed hears the vessel more than 5 km from any port inside the call, then back within 2 km
+  of the call's port before it ends.
+
+Confirmed and hides a trip are shares of the heard calls. A moving ping alone proves nothing, since a budget call's
+interval holds the sailing time to the next ping.
+
+| calls | rule | calls | heard | confirmed | hides a trip |
+|---|---|---|---|---|---|
+| STK v0 | all | 59,607 | 65.9 % | 87.8 % | 11 calls |
+| STK v3 | not budget | 58,816 | 65.9 % | 87.9 % | 11 calls, all rules |
+| STK v3 | `span_budget` | 1,808 | 74.2 % | 74.8 % | |
+| STK v3 | `gap_budget` | 92 | 30.4 % | 39.3 % | |
+| ASTD v0 | all | 35,986 | 33.9 % | 91.0 % | 5.8 % (12.4 % of calls of 48 h+) |
+| ASTD v3 | not budget | 35,225 | 44.7 % | 92.5 % | 7.7 % |
+| ASTD v3 | `span_budget` | 4,812 | 60.8 % | 95.9 % | 7.9 % |
+| ASTD v3 | `gap_budget` | 1,727 | 99.9 % | 53.0 % | 9.3 % |
+
+- **The test has power.** ASTD hears the vessel more than 5 km out inside 21 of STK's v0 calls and 411 of its v3
+  calls. Only 11 come back to port within the call; the rest are the sailing time a budget call holds.
+- **Where both feeds have the call,** STK's start is 2 min before ASTD's and its end 4 min after (medians, absolute
+  4 and 5 min; 35,556 pairs). The 90th percentile of the absolute difference is 16-17 h: one feed's call spans two
+  of the other's.
+
+**Still vessels against the polygons,** vessels with landings, speed under 0.5 kn, counted in vessel-hours so a
+feed's ping rate does not weigh:
+
+| distance to the nearest `einar` polygon | STK | ASTD |
+|---|---|---|
+| inside | 10.4 % | 92.1 % (1,559,171) |
+| 0-250 m | 4.4 % | 0.2 % |
+| 250 m-1 km | 5.9 % | 0.1 % |
+| 1-2 km | 3.6 % | 0.1 % |
+| 2-5 km | 8.5 % | 0.5 % |
+| 5-10 km | 13.9 % | 1.1 % |
+| over 10 km | 53.3 % | 5.8 % |
+
+- **Within 2 km of a port,** 99.6 % of ASTD's still vessel-hours are inside the polygon. STK's are inside only 50.2 %,
+  though the polygons were drawn from STK. Of the 70 ports with 100+ ASTD vessel-hours near them, 65 hold 90 % or
+  more.
+- **The exceptions:**
+  - Garður: 3.5 % inside, 198 vessel-hours, 19 vessels, a median of 677 m out;
+  - Helguvík: 54 %, 437 m out;
+  - Flatey á Skjálfanda and Hjalteyri: 64 % each.
+
+  The polygon may be misplaced or too small. Not checked.
+- **Places off the list,** cells more than 1 km from any polygon where 3 or more vessels lay still 2 h or more each:
+  89 cells at 1-5 km, 143 at 5-10 km and 214 beyond. The busiest lie 3-9 km off Rif (up to 10 vessels), more likely
+  grounds where boats drift than ports. Not checked.
+- **What this test shows, and what not:** the polygons hold where vessels lie still. It cannot show that they are
+  not too large.
+
+**What the feeds apart show:**
+- **The circular part is small.** Without STK's entries, claimed falls 14.1 points for STK's calls and 12.9 for
+  ASTD's: fewer witnesses claim less. The difference, about a point, is what STK's entries add to STK's own score.
+  Found does not move.
+- **STK's calls hold against an independent feed.** They almost never hide a trip ASTD heard (11 of 59,607).
+- **ASTD's calls hide trips** in 6-8 % of cases, and in 12-16 % of those of 48 h or more. ASTD falls silent at sea, so
+  a silence after a port is a trip.
+- **The rule that a silence after a port is a call holds for a feed that falls silent in port (STK), not for one
+  that falls silent at sea (ASTD).** Which a silence is depends on the feed's coverage: TODO 89's coverage model is a
+  condition of the gap rules, not only of the gap classes.
+- **`gap_budget` is weak on either feed:** 39 % of STK's are confirmed by ASTD and 53 % of ASTD's by STK, against
+  75-96 % for the other rules.
+- **The `einar` polygons pass the independent test,** but for Garður and in part Helguvík.
+
+**Not measured in this step:**
+- The 11,933 voyages of §3.2 over every year. The count of voyages with 2+ trips, in two years, stands in for it
+  until the rebuild (step 7).
+- §3.7's counts again:
+  - foreign calls: `einar` holds no ports abroad (TODO 92);
+  - voyages over New Year: `by_year = FALSE` runs across it, but these runs were one year each;
+  - long voyages by the class of their gaps: the gap classes of §4.7 are not built, since `coverage` needs TODO 89.
+- No fix is left without a voyage when `min_pings = 1`. That is shown on made-up tracks in ramb's tests, not
+  counted here.
 
 ## 4. The design (proposal)
 
@@ -771,6 +972,10 @@ step:
    - stays added with neither a landing nor a logbook end, by port (anchoring, waiting): the false-positive check;
    - the counts of §3.7 items 2-5 again: foreign calls, fixes without a voyage, voyages over New Year, and long
      voyages by the class of their gaps.
+
+   *Done 2026-10-19, §3.10,* in ramb 2026.10.19.3 (f2492db): the time budget, the minimum from the data, and the cut's short
+   and open labels. Not done: the gap classes (they wait on TODO 89), the other lists (ask g became TODO 92), and the
+   all-year counts, which wait for the rebuild.
 4. **Records as evidence** (landings, then logbook trip ends), with step 3's measures, and the records the track
    contradicts listed for the key review.
 5. **The gear set** (`voyage_gear` in ramb and fishycode), landing first. Measure fishing flags and catch against

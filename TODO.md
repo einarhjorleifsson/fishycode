@@ -592,7 +592,9 @@ The threads it gathers:
 - a landing over two days, TODO 81 and plan 027;
 - the gear read from the track, TODO 86, and gaps judged against coverage, TODO 89.
 
-Next: step 3, the time budget and the cut in ramb, with the asks' answers (§4.1-4.5, §7) and the bench's lessons (§3.9).
+Step 3 done (§3.10, ramb 2026.10.19.3, f2492db, not pushed), with STK and ASTD apart. Next: step 4, records as evidence
+(§4.2); open from step 3: ramb's defaults against the plan's choices, a short voyage by time rather than pings, the
+weak `gap_budget`, and gap rules that hold only for a feed silent in port (TODO 89's coverage model).
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
