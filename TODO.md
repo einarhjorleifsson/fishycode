@@ -455,7 +455,7 @@ MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
 **status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
-(editions outside 2004-2022), and a reviewed row for 6061's 2016 kW (decision 144) · **see:**
+(editions outside 2004-2022) · **see:**
 `curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135, 136, 142 and 144, TODO 71
 
 Steps 1-5 are built in the `once` project:
@@ -473,7 +473,8 @@ first with mbl last, kvoti first for the class, SKEMMTISKIP as 62 and Hreiðar's
 
 The AIS chain and trail were rebuilt on them the same evening (decision 144): kW-hours on fishing fixes equal on
 23,530 vessel-years, leisure 1.04 % of fixes as before, the catch equal to the kilogram, 671,363 fixes gained where
-the old `yh2` shut hulls out.
+the old `yh2` shut hulls out. A reviewed row set 6061's 2016 kW to 58 (728 in the back-fill), and all was rebuilt
+again; `curate/voyage_gear.R`'s gear choice is not deterministic between rebuilds (decision 144).
 
 **check:** asks d and e answered or parked.
 

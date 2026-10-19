@@ -5,7 +5,8 @@ repoint vessel_sign, vessel_class, vessel_year and registry.R to curated/vessel/
 fingerprints before and after"). The three changes to the decision model are the maintainer's choices, asked on the
 way. Built by name at 4b2fdf8: the history in the `once` project, the register and the four readers in the main
 project. The AIS chain and trail downstream were rebuilt the same evening at 3aacc9f, on the maintainer's go ("Yes,
-rebuild the 20 outdated targets ... and check the trail's kw_basis and leisure against the old trail afterwards").*
+rebuild the 20 outdated targets ... and check the trail's kw_basis and leisure against the old trail afterwards").
+The maintainer then had 6061's 2016 kW set by a reviewed row, and everything was rebuilt again at e2f741f.*
 
 ## What step 7 found in the register first
 
@@ -235,14 +236,41 @@ Before the build, the old trail and catch were aggregated by vessel and year, an
 - **The catch** is unchanged in total: every year's kilograms and every approach and basis equal the old to the
   kilogram. Its rows move with the fixes.
 
+## The reviewed row for 6061, and the second rebuild
+
+On the maintainer's go ("add a reviewed row (D1) setting 6061's power_kw in 2016 to 58, then rebuild the history, the
+register, vessel_year and the trail by name"):
+- **The row.** `overrides/skipaskra_reviewed.csv` gained its first row: 6061, `vessel_hist.power_kw`, 2016-01-01 to
+  2017-01-01, 58. That stretch is now `reviewed`, rule D1, with 728 kept in `alternatives`. `vessel_year` gives 58 kW
+  for 2016, with `kw_source` `review`.
+  - In a scratch store first, it changed one row each in the history, the register and `vessel_year`, and nothing
+    else.
+- **The build.** The history was rebuilt in the `once` project by name. Then all 27 targets that were outdated in the
+  main project were rebuilt by name, from 23:36 to 01:28 UTC: the register, the four readers and the whole AIS chain.
+  - The chain reran because the register's rewritten files carry new stamps, which make `vessel` and everything
+    after it outdated.
+  - The run ended "ALL DONE", exit 0, and `tar_outdated()` is empty in both projects. All 856 files are new, the 689
+    curated ones stamped e2f741f, not dirty.
+- **The trail.** 6061's 2016 kW-hours fall from 280,870 to 22,377 on its fixes (58/728 of the old).
+- **What else moved, from identical inputs.** Against the first rebuild, a little more changed than the row explains:
+  - `voyage_gear` chose another gear (`gid_voyage`, `s1_voyage`, `s2_voyage`) for some voyages. This reaches
+    `gid_voyage` in 60 trail partitions. It also changes the fishing flag on about 25 fixes of hulls 1808 (2008), 2404
+    (2022) and 2018 (2019, 2023).
+  - So `curate/voyage_gear.R`'s choice is not deterministic: a tie, probably, broken differently on each run. It
+    predates this work.
+  - The catch is equal in every vessel-year to 0.0000002 kg, and in total. Two vessel-years of 2018 spread the same
+    kilograms over slightly different fixes.
+  - The rest is the order of floating-point sums (`kg`, the link checks' `hours`), and rows moving between two 2025
+    `ping_clean` part files, which together hold the same 9,890,591 rows.
+
 ## Not done
 
 - **The STK key** reads `yh1`/`yh2` and `staging/skipaskra/annual_call_sign.parquet`, frozen in the `once` project. Its
   redo (TODO 25) should read the register's values, with `yh2` NA meaning on the register at the dump.
 - **Left in the register:**
-  - 6061's 728 kW in 2016, a back-fill typo, which a reviewed row (D1) would settle;
   - the class name column (622 rows off their code);
   - mbl's sole values, such as 2730's TFCR in 2023;
   - 12 kvoti stretches starting on its 1901 placeholder, on old hulls before 1920;
   - 111 local signs with Hreiðar's or a page's typing ("RE.", "ís", "TH" for ÞH), which `vessel_sign` folds in its key.
+- **`voyage_gear`'s non-deterministic gear choice** (above), which makes a rebuild move a few fishing flags.
 - **Asks d and e** of plan 028.
