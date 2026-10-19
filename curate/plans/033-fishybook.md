@@ -1,9 +1,9 @@
 # 033 — fishybook: one Quarto book that consolidates the ICES groups' thinking, with ramb as its code
 
-**status:** proposal — asks a-f answered by the maintainer 2026-10-19 (§12): `docs/` converted in place, keeping its
-name; one edition at `~einarhj/fishybook`, Part IV in it (rendered figures and tables, no data files, vessel
-data static); the four leftover pages removed; the meeting folder moved, cited once published; the title *From pings to
-effort and catch*; nothing built · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
+**status:** partly built — step 1 done for the seven reports from 2019 (decision 150): the reading map
+`docs/ices_reports.yml`, the diagram tested and amended as version 3, §4 revised; asks a-f answered 2026-10-19 (§12):
+`docs/` converted in place keeping its name, one edition at `~einarhj/fishybook` with the Icelandic part in it (no data
+files, vessel data static), the title *From pings to effort and catch*; the 2013-2018 reports and steps 2-9 open · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
 be) and plan 002 (its port list), TODO 15 and 16; TODO 91 (ramb's pkgdown index); TODO 93 and decision 148 (the
 workshops' data); `docs/one_flow.qmd`, `docs/wkssfgeo.qmd`
 
@@ -95,7 +95,13 @@ small-scale fisheries. They know their own data and the data call, and they use 
 
 **Second reader: an analyst using the Icelandic data**, for whom Part IV is the manual.
 
-**Using the texts.** The book paraphrases and cites by page. Quotes are short, marked and attributed. A figure is
+**The reports are template text** (maintainer, 2026-10-19). The reading map is the index: it finds every place the
+groups treated a topic. The reports' own text, read at the cited pages, is the material each chapter is drafted from,
+in the book's voice. The licence decides how close a draft may stay. A CC BY 4.0 report may be **adapted**, with
+attribution ("adapted from ICES 2025, pp. 26-29, CC BY 4.0"). A report that may be reproduced only with permission
+(WGSFD 2013-2019) is paraphrased and cited.
+
+**Using the texts.** Quotes are short, marked and attributed. A figure is
 reused only where its licence allows: the CC BY 4.0 reports with attribution, and never a third-party figure inside
 them on that licence alone. The 2013-2019 WGSFD reports are paraphrased and cited, with no figure without ICES's
 permission. The 2026 meeting folder informs the text, and the book cites it only once the group's report is published
@@ -103,22 +109,22 @@ permission. The 2026 meeting folder informs the text, and the book cites it only
 
 ## 4. The book's parts
 
-**The maintainer's starting points** (2026-10-19). The first is open to review by the mining: "I will stand corrected if
-your review is that the diagram is wrong", wrong as the centre of the book, and the diagram may be amended "if your
-reading of the reports etc. says so" (§11.1, the test).
+**The maintainer's starting points** (2026-10-19). The first was open to review by the mining: "I will stand corrected
+if your review is that the diagram is wrong", wrong as the centre of the book, and the diagram may be amended "if your
+reading of the reports etc. says so". **Tested** (decision 150): it holds as the centre and is amended as version 3.
 
-- **The flow diagram is the essence of the book.** It is the one presented at WGSFD 2026
-  (`docs/figures/one_flow_cascade_v2.svg`, version 1 in `one_flow_cascade_v1.png`), with its text in
-  `docs/one_flow.qmd`. Part II follows its rows: vessel, flag pings, trip, record, gear, fishing, effort, catch. Each
-  chapter's sections follow that row's boxes, the sources best first. The diagram and its text are the maintainer's own
-  work, so they are used as they stand, before the group's 2026 report (ask e).
+- **The flow diagram is the essence of the book.** It is the one presented at WGSFD 2026, now version 3
+  (`docs/figures/one_flow_cascade_v3.svg`; versions 1 and 2 kept), with its text in `docs/one_flow.qmd`. Part II
+  follows its rows, and each chapter's sections follow that row's boxes, the sources best first. The diagram and its
+  text are the maintainer's own work, so they are used as they stand, before the group's 2026 report (ask e).
 - **The official ICES data call flow runs through the book, not at its front** (the maintainer, correcting a first
   draft that opened with it). The flow is ICES's own workflow, `ices-eg/ICES-VMS-and-Logbook-Data-Call` (cloned at
   a844911): its blocks 0-3, its guidelines and its formats. It is not the centrepiece. It appears in each chapter where
   its way of handling that row is worth comparing (§5, item 4), politely and with some humour (§3).
 
-**The rest is provisional until the reports are mined** (§11.1). The mining revises it before any new chapter is
-written, and maps each report's rows onto the diagram's rows.
+**Revised from the recent reports** (decision 150). The six reports of 2013-2018 may revise it again when they are
+read. Where a chapter below names its sources in the reports, the reading map (`docs/ices_reports.yml`) gives the
+pages.
 
 A chapter is listed in `_quarto.yml` only once its text exists (§8). The outline below is the only place a chapter
 that is not yet written is named. "Seed" is the text it starts from; "sources" are what it distils.
@@ -129,32 +135,49 @@ that is not yet written is named. "Seed" is the text it starts from; "sources" a
    project is"), `one_flow.qmd`'s opening. Sources: WGSFD terms of reference; the EU request on methods to calculate
    fishing effort (2026).
 2. *One flow*: the diagram, every ping accounted for. Seed: `one_flow.qmd` (its generic sections; the file keeps its
-   path), the two diagrams, ramb's `flow` article.
-3. *A grammar of sea-going data*. Seed: `grammar.qmd`.
+   path), version 3 of the diagram and its section "Version 3: what the groups' reports added", ramb's `flow` article.
+3. *A grammar of sea-going data*. Seed: `grammar.qmd`. Sources: the reading map's vocabulary, so that the groups'
+   terms and this project's are mapped.
 4. *What ramb can do for you*: organised by the data the reader has, the rows of "How far down each kind of data
    gets", each cell naming the ramb functions that give it, and each row a runnable example on a bundled set that
    has that level of data. A row with no public set is a gap in ramb's example data. To write.
-5. *Large tracks on a laptop: parquet, DuckDB, lazy tables*. Seed: the published site's "ICES VMS datacall: present →
-   dplyr (→ duckdb)" (`qmd/dataflow_dplyr_thenduckdb.qmd`), a friendly place for the data call to appear; `notes_duckdbfs-vs-duckspatial.md`; ramb's
-   `flow` article (a data frame and a lazy table give the same result). Sources: decisions 073, 111, 144.
+5. *Workflow and code: large tracks on a laptop* (parquet, DuckDB, lazy tables, one workflow). "Workflow and code" is the
+   theme the reports return to most (four of seven). Seeds:
+   - the published site's "ICES VMS datacall: present → dplyr (→ duckdb)" (`qmd/dataflow_dplyr_thenduckdb.qmd`), a
+     friendly place for the data call to appear;
+   - `notes_duckdbfs-vs-duckspatial.md`;
+   - ramb's `flow` article (a data frame and a lazy table give the same result).
 
-**Part II — The flow, row by row** (the diagram's rows; ramb's reference already groups this way)
+   Sources: decisions 073, 111, 144; the reading map's code trail (362 rows).
+
+**Part II — The flow, row by row** (the rows of version 3; ramb's reference already groups this way)
 
 6. *Vessels: linking feeds*. Seed: ramb's `vessels` article. Sources: decision 146.
-7. *Pings: label, never drop*. Seed: fishyweb's `notes/whacky-positions.qmd` (its vessel tracks go to Part IV or
-   become aggregates), ramb's `tools` article. Sources: decision 067, TODO 88.
-8. *Trips: port calls and voyages*. Seed: ramb's `trips` article. Sources: plan 031, decisions 058-065, 147, 149.
+7. *Pings: label, never drop, and the ping rate*: the flags, then the rate that sets how far down a track can go,
+   interpolation and downsampling, devices and gaps. Seeds: fishyweb's `notes/whacky-positions.qmd` (its vessel
+   tracks go to Part IV or become aggregates) and ramb's `tools` article. Sources: decision 067, TODO 88; the reports'
+   polling and resolution rows.
+8. *Trips: port calls, voyages, and trips from gaps*. Seed: ramb's `trips` article. Sources: plan 031, decisions
+   058-065, 147, 149; trips from gaps and device power (WGSFD 2025a, WKSSFGEO, WKSSFGEO2).
 9. *Records: windows, sets and hauls*. Seed: ramb's `sets` article. Sources: decisions 088, 091, 094.
-10. *Gear*. Seed: ramb's `gear` article.
-11. *Fishing*. Sources: decisions 093, 101. To write.
-12. *Effort*. Sources: decision 099. To write.
-13. *Catch*. Seed: ramb's `catch` article. Sources: decisions 100, 102.
+10. *Gear: the sources, one vocabulary, several gears*. Seed: ramb's `gear` article. Sources: the reports' FAO,
+    BENTHIS, DATSU and métier rows, and their multi-gear trips.
+11. *Fishing*. Sources: decisions 093, 101; the reports' classification work. To write.
+12. *Validation: how each answer is checked*. This is the band across the rows: labelled tracks, observers,
+    electronic monitoring, gear sensors, and the metrics that come from them. Its tests in detail are appendix B.
+    Sources: WKSSFGEO, WKSSFGEO2, WGSFD 2025a and 2025b. To write.
+13. *Effort*: hours, kW-hours, pressure, static gear (soak, hauls) and fishing days. Sources: decision 099; the
+    reports' effort rows. To write.
+14. *Catch*. Seed: ramb's `catch` article. Sources: decisions 100, 102.
+15. *Products: grids, the data call's delivery, and its checks*. Seed: `one_flow.qmd`'s "7. Products". Sources: the
+    reports' c-squares, delivery and QC rows; `products/ices_vms_datacall/`. To write.
 
 **Part III — The groups**
 
-14. *WKSSFGEO (2021) and WKSSFGEO2 (2023)*. Seed: `wkssfgeo.qmd`.
-15. *WGSFD, 2013-2025*: what each report set out to do, and what it asked of methods. To write, from the 11 reports.
-16. *WGSFD 2026*. Seed: `one_flow.qmd`'s "The diagram as presented at WGSFD 2026". Sources: the meeting folder.
+16. *WKSSFGEO (2021) and WKSSFGEO2 (2023)*. Seed: `wkssfgeo.qmd`; the reading map.
+17. *WGSFD, 2013-2025*: what each report set out to do, and what it asked of methods. To write, from the reading map
+    (the recent reports now, the old ones when read).
+18. *WGSFD 2026*. Seed: `one_flow.qmd`'s "The diagram as presented at WGSFD 2026". Sources: the meeting folder.
 
 Later meetings are appended, one chapter each.
 
@@ -236,6 +259,11 @@ are not data in ask c's sense, so they may be interactive. Positions may stay re
 recognised by its port and grounds, and the maintainer judged that "nobody will manage to link this lon-lat stuff to a
 vessel; besides the AIS data is kind of already public". **Where simulated data live** (ramb's
 example data, the book, or fishycode) is a decision of its own, taken downstream.
+
+**The groups' anonymity rules are theirs, not the book's.** WGSFD's vessel anonymity rules (ICES 2019, cited in
+WGSFDGOV 2023 p. 4) govern what ICES publishes as advice. fishycode, ramb and the book are not bound by them
+(maintainer, 2026-10-19), as plan 001 §3 already says of the three-vessel rule. The book describes them as the groups'
+practice for ICES products, and follows its own rule above.
 
 So there is **one edition**: `docs/_quarto.yml` with all four parts, rendered on this machine from `$FISHYDATA`, and
 only the rendered `_book/` is published. The internal edition first proposed, and the "locally only" answer to its half
@@ -330,7 +358,7 @@ provisional until they are mined (§11.1). Step 2 only regroups existing pages a
 alongside step 1.
 
 1. **Mine the ICES reports** (§11.1). The result is a reading map, a decision record of what was found, and §4
-   revised from it, in one commit.
+   revised from it, in one commit. *Done for the seven reports from 2019 (decision 150); the six of 2013-2018 later.*
 2. **Convert `docs/` to a book in place, with no new text.** `type: book`, the four parts from existing pages; the
    title *From pings to effort and catch*, subtitle *Spatial fisheries data with ramb* (ask f); `site-url`
    `heima.hafro.is/~einarhj/fishybook` (ask b); the GitHub link to fishycode; drop the two phantom render entries;
@@ -455,6 +483,43 @@ suggest the following, but **this is not measured until they are read**:
   - **What it means.** At 1.8 tokens a compact character, the six recent reports still to read would take about
     1.7M tokens and the six old ones about 1.4M. The estimate above (1.4-1.6M for all 13) was too low by half.
   - **The lean reading is the map for 2025b**, since it carries the new fields; the pilot is kept for comparison.
+- **The run of the recent reports** (2026-10-19, measured). The maintainer noted the weekly usage had "hardly moved",
+  so the stop rule was dropped and the reading kept at paragraph level, with 10 readers in parallel.
+  - **Rows.** Seven reports (the six new ones and 2025b): 983 topic rows and 362 code rows. The checker flags 20 topic
+    rows (2 %, mostly lists of names) and 3 code rows.
+  - **Cost.** 1.36M tokens for the six new ones (1.49 per compact character), and 1.88M for all the mining so far.
+  - **Granularity.** On WKSSFGEO 2022, a section-level reading gave 48 rows and 71 code rows for 155k tokens. The
+    paragraph-level reading gave 147 and 87 for 199k: three times the rows for 28 % more.
+  - **Diagram test.** 68 % of the 537 substantive rows land on a diagram row. Four themes outside it pass the
+    criterion:
+    - workflow and code (4 reports);
+    - data quality of submissions (3);
+    - c-squares and gridding (3);
+    - the data call (3).
+
+    Seabed pressure does not: the readers put swept area under effort.
+  - **Where rows fit no box ("other").**
+    - ping: ping rate and resolution, interpolation and downsampling, device types (VMS, iVMS, AIS A/B, green
+      boxes), gaps and jamming;
+    - fishing: validation (observers, electronic monitoring, expert-labelled tracks, gear sensors, metrics,
+      misclassification modelled);
+    - effort: fishing days and their definitions, static-gear effort (soak time, hauls), effort statistics compared
+      across sources (FDI, GFW, the data call);
+    - gear: code vocabularies (FAO, Benthis, DATSU, métier levels) and several gears in one trip;
+    - trip: trips cut at gaps or by device power.
+- **Verdict** (proposed by Claude, made on the maintainer's go; decision 150). The diagram holds as the centre: two-thirds of
+  the groups' substantive work lands on its rows, and steadily so across reports. It is amended, not replaced:
+  1. a closing row, "from fixes to products": gridding (c-squares), the data call's delivery, and quality control of
+     submissions;
+  2. a validation band across the rows, strongest on fishing: what checks each box's answer (labelled data,
+     observers, electronic monitoring, sensors). It is also where `AGENTS.md`'s third "done" criterion shows;
+  3. on the ping row, the ping rate made explicit, with interpolation and downsampling, since resolution decides which
+     boxes below can be reached;
+  4. on the effort row, fishing days and static-gear effort (soak, hauls) as boxes;
+  5. on the gear row, code vocabularies and several gears in one trip;
+  6. on the trip row, trips from gaps and device power.
+
+  "Workflow and code" is the book's own Part I and ramb itself, not a diagram row.
 - **The recent reports first** (maintainer, 2026-10-19: read "just the more recent reports to cut cost down", and the
   very old ones later). From 2019, where the ICES Scientific Reports series begins, there are 7 reports: WGSFD 2019,
   2022, 2025a and 2025b, WGSFDGOV 2023, WKSSFGEO and WKSSFGEO2. They come to about 1.0M compact characters, 56 % of
@@ -487,6 +552,10 @@ The decision record states the verdict with these numbers, and the diagram (`one
 the source within the row (logbook, landings, track, …), so each chapter can say which boxes the groups worked on and
 which they did not. The data call repository's guidelines and formats (about 600 lines) are read directly, for the
 chapters where the data call appears, not by a subagent.
+
+**The page-marked texts are kept** as the source the chapters are drafted from, beside the PDFs in
+`$FISHYDATA/raw/external/ices/` (regenerable with `mark_pages.sh`, but kept so that a chapter's pages can be read without
+redoing the extraction).
 
 **Where the results go.** Record → book, one way (§8):
 

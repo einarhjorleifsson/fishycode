@@ -665,10 +665,12 @@ Asks a-f answered the same day (plan 033 §12):
 - the four leftover pages removed;
 - the 2026 meeting folder moved, and cited once published.
 
-**Next, step 1: mine the ICES reports** (§11.1) before any new text. The 11 WGSFD reports (2013-2025, 1,129 pages,
-fetched 2026-10-19 into `raw/external/ices/`) and the two WKSSFGEO reports, read again for the book. One subagent per
-report, a pilot on WGSFD 2025b first. The output is `docs/ices_reports.yml` (a reading map by topic and page), a
-decision, and §4's outline revised. The conversion of `docs/` (step 2) writes no text and may run alongside.
+**Step 1 done for the seven reports from 2019** (decision 150). They are in the reading map `docs/ices_reports.yml`
+(983 topic rows, 362 code rows). The diagram held as the centre and was amended as version 3, and §4 was revised.
 
-**check:** plan 033 steps 1 and 2 done: the reading map and its decision exist, §4 is revised, and `docs/` renders as
-a book.
+Open:
+- the six reports of 2013-2018 (texts ready in `raw/external/ices/text/`; tools in `dump/ices/`);
+- step 2, converting `docs/` to a book with no new text;
+- steps 3-9.
+
+**check:** the 2013-2018 reports are in the reading map, and `docs/` renders as a book (plan 033 steps 1 and 2).

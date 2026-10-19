@@ -8,14 +8,16 @@ date: 2026-10-09
 the group's copy is on SharePoint). Version 2 (2026-10-08) revised the diagram and the text it implies after the
 meeting; on 2026-10-09 "harbour" became "port" throughout, and the section on fishycode was added (plan 014); on
 2026-10-19 a stay became a port call and ramb's functions took their new names (decision 147), and fishycode's tables
-their keys `port_call_id` and `voyage_id` (decision 149). It lived in
+their keys `port_call_id` and `voyage_id` (decision 149); later that day the diagram became version 3, amended from a
+reading of seven ICES reports (decision 150). It lived in
 `~/stasi/wgsfd2026` until then.*
 
 *AI use: version 1 drafted by Claude (Anthropic) from the ICES VMS and logbook data-call code (commit `a844911`)
 and the grammar of sea-going data. Version 2, the port terms, the fishycode section and the inventory ("What
 exists, and where") drafted by Claude, 2026-10-08 and 2026-10-09, from the maintainer's comments, decisions
 075-079 and a reading of the outside repositories (decision 078); the renames of 2026-10-19 by Claude, from the
-maintainer's answers (decision 147). Human review pending.*
+maintainer's answers (decision 147); version 3 of the diagram and the text it implies by Claude, from the reading map
+of seven ICES reports (`ices_reports.yml`, decision 150). Human review pending.*
 
 Mapping fishing activity (effort, pressure on the seabed or stock, and catch) is one cascade, applied to every ping. First each ping gets its vessel, and pings no vessel could have made are set aside. Then:
 
@@ -24,7 +26,8 @@ Mapping fishing activity (effort, pressure on the seabed or stock, and catch) is
 3. find its gear;
 4. decide whether the vessel was fishing;
 5. give fishing pings their effort (hours, kW-hours) and a gear-specific pressure;
-6. where a logbook or landings exist, give them a share of catch and value.
+6. where a logbook or landings exist, give them a share of catch and value;
+7. make the products from the fixes: grids, the data call's delivery, and checks of what was delivered.
 
 **Effort and pressure need pings, the vessel register and the gear; only catch and value need a logbook or landings.** Each step takes the best source it has for each ping and falls back when it is missing, so one flow serves every data resolution. The last section reads the ICES VMS and logbook data call through this flow.
 
@@ -42,9 +45,9 @@ A set of linked tables, one per level and each child keyed to its parent, holds 
 
 ## The flow, step by step
 
-Two preparatory steps, then six, in pipeline order. Each takes, ping by ping, the best source it has, falls back when that is missing, and records which source answered.
+Two preparatory steps, then six, in pipeline order, and the products made from the fixes. Each step takes, ping by ping, the best source it has, falls back when that is missing, and records which source answered. A band down the side marks validation: every answer is checked where something better is known.
 
-![The flow: vessel and ping flags, then six steps, each with its sources, best first](figures/one_flow_cascade_v2.svg)
+![The flow, version 3: vessel and ping flags, then six steps, each with its sources, best first, the products made from the fixes, and validation across the rows](figures/one_flow_cascade_v3.svg)
 
 ### Vessel (`assign_vessel`)
 
@@ -67,10 +70,13 @@ In order, each test only on pings not yet flagged:
 
 These are set aside in their own table, not dropped: pings in equal pings out across the two tables. Pings inside a port polygon get its id (`port_id`) and stay in the trail.
 
+**The ping rate sets how far down a track can go.** The groups return to it in almost every report: what the national VMS systems poll (WGSFD 2025a p. 3), a minimum rate for small vessels, around a ping every 30 seconds (WGSFD 2025b p. 14), and how the rate limits what can be classified and validated (WKSSFGEO 2022 pp. 24-25; WKSSFGEO2 2023 p. 2). A track can be interpolated to a regular series or downsampled to test how results change with the rate (WKSSFGEO 2022 p. 9; WGSFD 2025a p. 32). The device and its gaps are kept with the pings, since a silence is information too.
+
 ### 1. Trip (`assign_trip`)
 
 - **Declared trip** (`declared_trips`, recorded): departure and return (`T1`, `T2`) from the logbook. Landings give the landing (`T2`), and in some datasets the departure (`T1`).
 - **Voyage from the track** (reconstructed): from one port call to the next. A voyage is any such movement; a trip is a fishing trip, so voyages also include steaming between ports and other moves without fishing. A port call is time spent in a port, not a ping inside its polygon: one port ping followed by silence is not a port call, and the shortest port call can depend on the port. Where only `T2` is declared, the last port departure before it gives `T1`. Without a port list, as for many small-scale fleets, a port call can be read from a silence that begins or ends near the coast.
+- **Gaps and device power** (reconstructed): where there is no port list, a long silence cuts the track (WGSFD 2025a p. 32; WKSSFGEO 2022 p. 47), and a tracker that logs its own power marks trip ends when it is switched off and on (WKSSFGEO2 2023 pp. 20-21).
 - **None**: the ping is kept, labelled as having no trip. The aim is that no vessel is left without a trip.
 
 **Link and reconcile** (not a fallback): logbook trips, landings and voyages are linked to each other, many-to-many. One trip can have several sales notes (one per buyer), and one weekly landing can cover several trips. Where they disagree on the landing time (`T2`), the comparison decides; the track can give the arrival as a date and time. Neither declared date is the time the vessel enters port: the logbook's `T2` is often the expected arrival, written before the trip ends, and the landing's date is the date the catch was declared or sold, which can be a day or more after arrival. Only the track measures the arrival; the two declarations are linked to it, not taken as it. This is the loop the design turns on: the declarations are needed to link trips to landings, but their dates are only trustworthy once the track has given the real departure and arrival. So the reconciled trip table, with departure and arrival from the track and the logbook trips and landings linked to it, is an output of this step; it is not fed back to redo the declarations' own match.
@@ -98,6 +104,8 @@ Gear, gear class (towed or static), width and quantity, from the best source:
 
 With no gear, fishing is read from the track pattern alone and pressure stays empty.
 
+Whatever the source, the gear code is mapped to one vocabulary before it is used: FAO codes to the BENTHIS categories for pressure (WGSFD 2019 pp. 13-14; WGSFD 2022 pp. 15-16), and métier codes checked against the ICES lists (DATSU) before a delivery (WGSFD 2022 p. 3; WGSFD 2025a p. 28). A trip may use several gears, common in small-scale fleets, so gear is a property of the operation more than of the vessel or the trip (WGSFD 2025a pp. 18-20; WGSFD 2025b p. 26; WKSSFGEO2 2023 p. 4).
+
 ### 4. Fishing? (`assign_fishing`)
 
 - **Haul window and speed** (recorded). Every operation has four events: `t1` deployment starts, `t2` deployment ends, `t3` retrieval starts, `t4` retrieval ends. Towed gear fishes from gear on the bottom (`t2`) to gear off the bottom (`t3`), within the whole operation (`t1`–`t4`); static gear is visited while setting (`t1`–`t2`) and hauling (`t3`–`t4`). Within the window, a ping counts as fishing when its speed is in the gear's fishing range (`gear_speeds`). The median speed of the pings within ±10 minutes is steadier than a ping's own and fits recorded tows better (fishycode decision 090).
@@ -113,6 +121,8 @@ Reading the track (reconstructed):
 
 Pings judged not fishing are labelled, not removed.
 
+**Validation** (the band down the side of the diagram) is where the groups have spent much of their effort. Each answer is checked against something better where it exists: expert-labelled tracks, logbook hauls with times, observers and electronic monitoring, and gear sensors such as hauler counters (WKSSFGEO 2022 pp. 22-25; WKSSFGEO2 2023 pp. 1, 16, 23-24; WGSFD 2025a p. 50). The checks give measured error, such as the share of pings misclassified by speed, by method and by ping rate (WGSFD 2025b pp. 27-29). That error, measured on the well-recorded part of the data, is what lets the rest be trusted.
+
 ### 5. Effort and pressure (`assign_effort`)
 
 Fishing pings only:
@@ -122,6 +132,11 @@ Fishing pings only:
 - **pressure**, gear-specific: swept area for towed gear (width × speed × time); gear quantity × soak time for static gear, where set and haul can be placed.
 
 No logbook or landings are needed. Without engine power, hours only; without width or quantity, no pressure.
+
+Two more measures the groups use:
+
+- **static gear**: the track shows the vessel, not the gear, so a classifier measures vessel effort. Gear effort for nets and pots is soak time, net length hauled, or the number of sets and hauls (WKSSFGEO 2022 pp. 15, 28-29; WKSSFGEO2 2023 pp. 5, 26);
+- **fishing days**: the official unit, a calendar day at sea with fishing. It is recorded differently by source (logbooks, sales notes, sampling) and by vessel length, so days from tracks, logbooks and the EU's fishing-effort statistics (FDI) do not agree (WKSSFGEO 2022 pp. 12-13, 27-28; WKSSFGEO2 2023 pp. 56-57).
 
 ### 6. Catch and value (`share_catch`)
 
@@ -140,6 +155,16 @@ Catch can be coarser than the activity: fishing may be known per haul while catc
 
 - Catch with no fishing ping at its level moves up a level, so the total is kept.
 - With neither source, effort and pressure are mapped; catch and value are "none".
+
+### 7. Products (from the fixes)
+
+The fixes are the product; what most users see is made from them:
+
+- **a grid**: effort, pressure and catch summed into cells, c-squares in the ICES data call, finer where the data allow (WGSFD 2022 p. 11; WGSFD 2025a p. 8);
+- **the data call's delivery**: the national tables, built by the ICES workflow in three blocks (WGSFD 2025a p. 11);
+- **checks of what was delivered**: the format screened against the ICES code lists, and a quality report that submitters see before ICES uses the data (WGSFD 2019 p. 2; WGSFD 2022 p. 1).
+
+Because every fix keeps its labels and basis, a product can be rebuilt at another grid, period or definition without redoing the flow.
 
 ## How far down each kind of data gets
 
@@ -370,6 +395,7 @@ on [their own page](wkssfgeo.qmd).
 | 4. Fishing | built: `rb_add_fishing(method = "window")`, `"speed"` and the window-then-speed cascade (decision 101), on a fix's own speed or the median over ±`window_s` (`rb_calc_speed_smooth`). The track models (Gaussian mixture, EMbC, HMM) are in the sibling package fishymodel, benched in decision 103. Planned: those models as methods (`"gmm"`, `"embc"`, `"hmm"`), and `rb_build_fishing_speeds` | window × the gear's declared speed range, tested on the ±10 min median speed (decision 093) | a Gaussian mixture per towed metier; a set speed range for other gears | movement features and random forests (iapesca; CNR-IRBIM's SoftwareX code, Python); HMM practice (Irish Marine Institute) |
 | 5. Effort | built: `rb_add_effort` (hours, kW-hours, swept area; decision 099), step times, gear widths | on every fix of the trail (decision 101) | interval within the trip, kW-hours, swept area (sfdSAR), 0.05° c-squares, habitat and depth | static-gear effort as net length × soak time; hours apportioned by track length per cell |
 | 6. Catch | built: `rb_add_catch_units` and `rb_share_catch`: units at any resolution, by effort, up a level, kg in = kg out (decisions 100, 102); the EFLALO sharing as `method = "eflalo"` | `curated/ais/catch`: per fishing fix, unit, species and approach, with `raise_factor` (decision 102) | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
+| 7. Products | built: `rb_bin_midpoint` (any cell size), `rb_encode_ices_rectangle`. Not built: c-square codes; a check of a delivery | `products/ices_vms_datacall/` builds the delivery and its quality check | 0.05° c-squares; the delivery screened by DATSU, then a quality report (WGSFD 2022 p. 1; WGSFD 2025a p. 28) | finer grids (0.01°, 100–1000 m; G1 p. 40, G2 p. 70) |
 
 **Nowhere yet:** the licence gear register; record windows from haul positions; catch shared over several trips
 (a weekly landing), which is planned for `rb_share_catch`.
@@ -402,11 +428,24 @@ fishycode.
 | Scoring: accuracy, kappa, F-score; trips matched within ±10 % of duration | G1 p. 22-25, 52-57 | nowhere as a function; plan 031's bench, in scratch |
 | Anonymising tracks for sharing | G2 p. 8 | nowhere |
 
+## Version 3: what the groups' reports added (2026-10-19)
+
+Seven ICES reports were read for this flow (WGSFD 2019, 2022, 2025a and 2025b, WGSFDGOV 2023, WKSSFGEO 2022 and WKSSFGEO2 2023; the reading map is `ices_reports.yml`, decision 150). Of the 537 places where they set out a method, a definition or a finding, 370 fall on a row of the diagram (68 %), in every report alike: the diagram held as the centre. What fell outside its boxes, or outside its rows, amended it:
+
+1. a closing row, the products made from the fixes: grids, the data call's delivery, and its quality checks;
+2. validation, as a band across the rows;
+3. the ping rate, with interpolation and downsampling, under the ping flags;
+4. on effort, static gear (soak, hauls) and fishing days;
+5. on gear, one vocabulary for the codes, and several gears in one trip;
+6. on trip, trips from gaps and from the device's power.
+
+The six older reports (WGSFD 2013-2018) are to be read later. Version 2 is kept as `figures/one_flow_cascade_v2.svg`.
+
 ## The diagram as presented at WGSFD 2026 (version 1)
 
 ![Version 1 of the flow, as the working group saw it on 2026-10-07](figures/one_flow_cascade_v1.png)
 
-Version 2 (above) added the vessel and flag-pings rows, voyages from stays in port, the many-to-many link and
+Version 2 added the vessel and flag-pings rows, voyages from stays in port, the many-to-many link and
 reconcile band, the two-way note, window plus speed, catch units above the trip, and "every ping is accounted for"
 with five basis values.
 
@@ -415,4 +454,7 @@ with five basis values.
 - [ices-eg/ICES-VMS-and-Logbook-Data-Call](https://github.com/ices-eg/ICES-VMS-and-Logbook-Data-Call), commit `a844911` (2026-10-05).
 - [vmstools 0.77](https://github.com/nielshintzen/vmstools/releases/tag/0.77): trip matching, activity from speed, catch dispatch.
 - *A grammar of sea-going observational data* (working document): trip, station, sample, observation; parallel streams; basis.
+- ICES (2019, 2022, 2025a, 2025b). Working Group on Spatial Fisheries Data (WGSFD). ICES Scientific Reports. [doi 10.17895/ices.pub.5648](https://doi.org/10.17895/ices.pub.5648), [21630236](https://doi.org/10.17895/ices.pub.21630236.v1), [30501452](https://doi.org/10.17895/ices.pub.30501452.v2), [30734759](https://doi.org/10.17895/ices.pub.30734759.v2).
+- ICES (2023). Working Group on Spatial Fisheries Data Governance (WGSFDGOV). ICES Business Reports. [doi 10.17895/ices.pub.22308919](https://doi.org/10.17895/ices.pub.22308919.v1).
+- ICES (2022). WKSSFGEO, ICES Scientific Reports 4:10, [doi 10.17895/ices.pub.10032](https://doi.org/10.17895/ices.pub.10032); ICES (2023). WKSSFGEO2, ICES Scientific Reports 5:49, [doi 10.17895/ices.pub.22789475](https://doi.org/10.17895/ices.pub.22789475).
 

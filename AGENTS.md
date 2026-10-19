@@ -39,9 +39,12 @@ The work is split in two (maintainer, 2026-10-14):
 source it has, falls back when that is missing, and records which source
 answered (the basis). The path differs between datasets, and within one dataset
 between periods, records and pings, so no single method assigns effort and
-catch to every ping. The diagram `docs/figures/one_flow_cascade_v2.svg` is this
-design in one picture (rows the steps, boxes the sources, best first);
-`docs/figures/one_flow_status.svg` colours each box by where it is built.
+catch to every ping. The diagram `docs/figures/one_flow_cascade_v3.svg` is this
+design in one picture (rows the steps, boxes the sources, best first, closed by the
+products made from the fixes, with validation across the rows). It was amended from
+version 2 on a reading of seven ICES reports (decision 150), and is the centre of
+the book of plan 033. `docs/figures/one_flow_status.svg` colours version 2's boxes by
+where each is built.
 
 The Icelandic data are rich, but their resolution differs by period, by record
 and by variable, and most of them are not exactly right. The AIS track is most
@@ -185,7 +188,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 
 | Directory | Holds |
 |---|---|
-| `dump/` | Extraction only — Oracle, vendor archives, web fetches. Writes `raw/`. The only home of a dump script: none lives beside the data (decision 105). Each Oracle schema is dumped as it is, names and units unchanged, by `dump/oracle/<schema>.R` to `raw/oracle/<schema>/`, every table and view, with Oracle's comments in a `_data-dict.yaml` and the dump time stamped in each file (`dump_oracle_schema()`, `R/dump_oracle.R`; plan 018). The preferred form is made after, never in the dump. Run by the maintainer, since the password is in the macOS keychain: `run_dump(schema, resume = FALSE)` (`R/run_dump.R`) starts each script in its own background Rscript, with a log in `raw/oracle/<schema>/_logs/`; `dump_status()` says where each stands. `dump/oracle/catalogue.R` lists every schema Oracle holds, from the data dictionary, to `raw/oracle/_catalogue/objects.parquet` (decision 121). On the server, through ROracle (decision 109; steps in `dump/oracle/README.md`): `Rscript dump/oracle/all.R --check`, then `nohup Rscript dump/oracle/all.R &` runs every schema in turn; `compare_dumps()` (`R/compare_dumps.R`) checks a server dump against the Mac's before it replaces it. |
+| `dump/` | Extraction only — Oracle, vendor archives, web fetches. Writes `raw/`. The only home of a dump script: none lives beside the data (decision 105). `dump/ices/` turns the ICES reports in `raw/external/ices/` into page-marked text (`raw/external/ices/text/`) and holds the tools of their reading map, `docs/ices_reports.yml` (decision 150). Each Oracle schema is dumped as it is, names and units unchanged, by `dump/oracle/<schema>.R` to `raw/oracle/<schema>/`, every table and view, with Oracle's comments in a `_data-dict.yaml` and the dump time stamped in each file (`dump_oracle_schema()`, `R/dump_oracle.R`; plan 018). The preferred form is made after, never in the dump. Run by the maintainer, since the password is in the macOS keychain: `run_dump(schema, resume = FALSE)` (`R/run_dump.R`) starts each script in its own background Rscript, with a log in `raw/oracle/<schema>/_logs/`; `dump_status()` says where each stands. `dump/oracle/catalogue.R` lists every schema Oracle holds, from the data dictionary, to `raw/oracle/_catalogue/objects.parquet` (decision 121). On the server, through ROracle (decision 109; steps in `dump/oracle/README.md`): `Rscript dump/oracle/all.R --check`, then `nohup Rscript dump/oracle/all.R &` runs every schema in turn; `compare_dumps()` (`R/compare_dumps.R`) checks a server dump against the Mac's before it replaces it. |
 | `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. An Oracle table is read where the dump put it, `fd_raw("oracle", <schema>, <table>.parquet)`, as Oracle holds it; the STK trail and mobile ids through `stk_trail()` and `stk_mobile()` (`R/stk_trail.R`), their preferred form over the dump with no copy (decision 111). |
 | `reference/` | Vessels, geo, ports, gear, species. Note: `vessel_ais_key` is a *fitted model*, not a registry — it carries confidence. |
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
@@ -196,7 +199,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 | `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |
 | `overrides/` | Small, hand-maintained, human-reviewed correction inputs. |
 | `products/` | Consumers of the sweep — datacall, ad-hoc exports, and the vessel overview (`products/vessel_overview/`, plan 030): an R service on 127.0.0.1 with a column allowlist, and the repo's only JavaScript, a page whose libraries are pinned and loaded from jsdelivr. Internal use only (newspaper photos, owners' names). |
-| `docs/` | Quarto site. Reads `curated/`; never rebuilds it. |
+| `docs/` | Quarto site. Reads `curated/`; never rebuilds it. To become the book of plan 033. `docs/ices_reports.yml` is the reading map of the ICES reports, the index the book is drafted from. |
 | `R/` | **Function definitions only.** `targets` sources this directory wholesale, so a script here executes on every `tar_make()` — `R/oracle.R` connected to Oracle at load and broke the graph until it was moved to `dump/`. |
 
 ## Script naming
