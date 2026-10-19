@@ -126,6 +126,16 @@ reading of the reports etc. says so". **Tested** (decision 150): it holds as the
 read. Where a chapter below names its sources in the reports, the reading map (`docs/ices_reports.yml`) gives the
 pages.
 
+**Sources still to find** (maintainer, 2026-10-19: "there is plenty there, we just need to find it"; noted, not mined
+yet). Mostly for Products (15), and in part for Validation (12):
+
+- **the maintainer's own products** on the published site, `heima.hafro.is/~einarhj/fishydata` (the fishtrawl
+  footprint, the data call QC report, the posts);
+- **ICES's products from the data call**, on ICES's web pages;
+- **WGSFD outputs that enter ICES advice**;
+- **the publications** that came out of the WGSFD and WKSSFGEO collaborations. Much of the classification and
+  validation work was published.
+
 A chapter is listed in `_quarto.yml` only once its text exists (§8). The outline below is the only place a chapter
 that is not yet written is named. "Seed" is the text it starts from; "sources" are what it distils.
 
@@ -170,7 +180,7 @@ that is not yet written is named. "Seed" is the text it starts from; "sources" a
     reports' effort rows. To write.
 14. *Catch*. Seed: ramb's `catch` article. Sources: decisions 100, 102.
 15. *Products: grids, the data call's delivery, and its checks*. Seed: `one_flow.qmd`'s "7. Products". Sources: the
-    reports' c-squares, delivery and QC rows; `products/ices_vms_datacall/`. To write.
+    reports' c-squares, delivery and QC rows; `products/ices_vms_datacall/`; the material below. To write.
 
 **Part III — The groups**
 
