@@ -2,8 +2,10 @@ id: astd_2026_imo_only
 title: ASTD 2026-02 to 2026-06 carry only vessels with an IMO number; loaded as delivered, the gap declared
 status: >-
   declared 2026-10-15 - the five months loaded into staging/ais/astd as delivered (maintainer's choice), the gap
-  reported in docs/ais_trail.qmd ("Gaps in the feeds") and on ais_ping in docs/data-dict.yaml; they reach
-  curated/ais/ping at the next ais_ping_union build (decision 107)
+  reported in docs/ais_trail.qmd ("Gaps in the feeds") and on ais_ping in docs/data-dict.yaml (decision 107); in
+  curated/ais/ping since the rebuild of 2026-10-16 (decision 112), with 1.97-2.18 M ASTD fixes a month in 2026-02
+  to 06 against 4.10 M in 2026-01 (checked 2026-10-19). The provider, PAME, was asked for full months on
+  2026-10-17 (plan 021 §6 h, TODO 65).
 applies_to:
   - staging/ais/astd   (year=2026, month=02 to 06)
   - curated/ais/ping and everything built from it, 2026-02 to 2026-06
