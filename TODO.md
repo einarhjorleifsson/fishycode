@@ -303,11 +303,12 @@ result recorded in a decision or a plan.
 ## 69. Partitioned outputs keep partitions a rebuild no longer writes
 **status:** open · **see:** decision 111
 
-`duckdbfs::write_dataset()` replaces the partitions it writes and leaves the others. `staging/ais/stk` still holds
+`duckdbfs::write_dataset()` replaces the partitions it writes and leaves the others. `staging/ais/stk` held
 `year=1970` and `year=2006` from the build of 2026-09-23 (3 rows), which every reader of it takes in. Any partitioned
 output can carry an older build's rows the same way. Clear the directory before each write, or check for it.
 Measured after the rebuild of 2026-10-16 (decision 112): of the eight partitioned outputs it wrote, only
-`staging/ais/stk` holds files older than the build (those two).
+`staging/ais/stk` holds files older than the build (those two). Measured again 2026-10-19, every partitioned dataset:
+TODO 95 (only `year=2006` is left).
 
 **check:** no partitioned output under `staging/` or `curated/` holds a partition its last build did not write, and
 the scripts that write them make sure of it.
@@ -674,21 +675,41 @@ version 3 holds.
 Open:
 - decision 152's proposals, the maintainer's call: four boxes for the products row (indicators from the grid,
   disclosure, coverage, impact), and a chapter on the products' uses;
+- the book's front page (`docs/index.qmd`) is still the old site's "Icelandic Fishing Logbooks"; it becomes the
+  preface (step 8; seen when the book was first viewed, 2026-10-19);
 - steps 3-9.
 
 **check:** decision 152's proposals are decided, and `check_book()` runs in `check_bookkeeping()` (plan 033 step 3).
 
 ## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
-**status:** open · **needs: maintainer** — whether to rebuild `stk` clean now, since the AIS chain reads it · **see:**
-decision 151, `docs/stk_data-inspection.qmd`
+**status:** open · **needs: maintainer** — approve the fix below and when to rebuild `stk` clean · **see:** TODO 69 (the
+same defect, every output), decision 151, `docs/stk_data-inspection.qmd`
 
-Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 pings from the build of 2026-09-23, without
-the column `d2e` the rebuild of 2026-10-17 wrote into the other 27 partitions. `duckdbfs::write_dataset()` does not
-remove a partition the build no longer writes. A reader that projects `d2e` fails on the glob. One that does not, such
-as the glob in `sources/stk/event.R`, would take the 2 old pings in with the new ones (its output not checked). The
-book's STK page reads with `unify_schemas = TRUE` until this is fixed.
+Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 rows from the build of 2026-09-23 (vid 2618,
+an `I` at HFN, 2006-12-31 12:28), without the column `d2e` the rebuild of 2026-10-17 wrote into the other 27
+partitions. The key now starts that mid on 2007-06-01, so no build writes 2006 again, and `duckdbfs::write_dataset()`
+replaces only the partitions it writes. The book's STK page reads with `unify_schemas = TRUE` until this is fixed.
 
-Not measured: whether other partitioned `write_dataset()` outputs keep old partitions the same way.
+Measured 2026-10-19, read-only:
+- **Downstream.** Only `sources/stk/event.R` reads the table (and the STK page). `stk_event.parquet` holds the stale
+  ping as an event, and it makes vid 2618's first real event (2007-06-01 05:20, `I` HFN) `io_dup`, so `io_ok` is
+  FALSE: 2 rows wrong. No further: `port_call` reads events from 2016 on (`EVENT_FROM` 2017), the frozen `port_radius`
+  2008-2025, and the ping chain reads the trail through `stk_trail()`, not this table.
+- **Other outputs.** 20 hive-partitioned datasets (1,838 files) under `staging/`, `curated/` and `raw/`. In the 10 that
+  targets write, this is the only file older than its target's last build. `convert.R` is the one writer that clears
+  nothing and takes its years from the data (`group_by(year)`, junk years such as 1936 and 2106 included). `ais_catch.R`,
+  `ais_trail.R` and `logbook_sensor_gps.R` clear the whole output; `ais_ping_clean.R` and `ais_voyage.R` clear the
+  years they write; `ais_ping_union.R` and `ais_ping_tag.R` write a fixed 2007:2026.
+- **Mixed schemas, not stale:** `ping_union` 2025-2026 store `dt_sec`, `sid_gps` and `n_sid_gps` as INT32 (DOUBLE,
+  INT64 elsewhere); 7 `astd` months carry an extra `ship_id`; `raw/ais/trail2/year=2014` (2026-05-07, read by no code)
+  has no parquet footer.
+
+**Proposal.** (a) In `convert.R`, `unlink(fd_staging("ais", "stk"), recursive = TRUE)` before the write, as
+`ais_catch.R` does. (b) `targets` cannot see that edit, so with the next AIS rebuild, from a clean tree: fingerprint,
+`tar_invalidate("stk")`, then `tar_make_isolated(names = )` on the 15 targets from `stk` down (`stk_event`,
+`port_call`, `ais_voyage`, `ais_trail`, `ais_catch`, `station_event` and 8 small ones), ~75 min at their last build
+times. Only `stk` and `stk_event` should change in content; the rest is re-stamped. `once`'s `port_radius` is outdated
+already and stays frozen. (c) The STK page drops `unify_schemas`, and this item closes with TODO 69.
 
 **check:** every partition of `staging/ais/stk` is from the latest build, the writer clears what it no longer writes,
-and the STK page no longer needs `unify_schemas`.
+`stk_event` has no 2006 row, and the STK page no longer needs `unify_schemas`.
