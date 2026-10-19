@@ -640,10 +640,10 @@ The asks:
 - Mendo or Glemarec: the observed set and haul times behind Mendo et al. 2023's samples. With them the samples become
   a set-finder test; without them they are model output.
 - Galdelli (CNR-IRBIM): may the 5-vessel file they removed from WKSSFGEO2 be used?
-- ICES, or the chairs Rufino and Mendo: the five WKSSFGEO2 sets that never reached GitHub (DK_DTU_1897_EM,
-  ES_AZT_2018_AIS, ES_IEO_2021_GRB, IE_MII_2019_IVMS, PT_CCM_2021_GP). They are on the WKSSFGEO2
-  SharePoint, `2022 Meeting Documents/06. Data`, for members only (the report's Annex 5 and section 2.3;
-  `docs/wkssfgeo.qmd`).
+- The five WKSSFGEO2 sets that never reached GitHub (DK_DTU_1897_EM, ES_AZT_2018_AIS, ES_IEO_2021_GRB,
+  IE_MII_2019_IVMS, PT_CCM_2021_GP): on the WKSSFGEO2 SharePoint, `2022 Meeting Documents/06. Data` (the report's
+  Annex 5 and section 2.3; `docs/wkssfgeo.qmd`). The maintainer has access (2026-10-19), but the site downloads one
+  file at a time; the maintainer is finding another way to copy them out.
 
 **check:** each proposed set is in ramb's `inst/extdata` with its dictionary entry, or recorded as left out with the
 reason.

@@ -33,8 +33,9 @@ the WKSSFGEO2 GitHub "for anyone"; the GitHub repository has neither the script 
 2026-10-19, at f3e49fe). The report's summary calls the data set "openly available on ICES github", which holds for
 only part of it.
 
-The SharePoint is for WKSSFGEO2's members. The maintainer took part in WKSSFGEO, not WKSSFGEO2, so the way in is
-through ICES or the chairs, Rufino and Mendo (TODO 93). Whether a set may then go into ramb is for its provider to say.
+The SharePoint is for WKSSFGEO2's members. The maintainer took part in WKSSFGEO, not WKSSFGEO2, but has access
+(2026-10-19). The site runs SharePoint Server 2016, which downloads one file at a time and has no zip, so the sets are
+not copied out yet (TODO 93). Whether a set may then go into ramb is for its provider to say.
 
 | Dataset | Provider, gear, size | In ramb |
 |---|---|---|
