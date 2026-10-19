@@ -440,6 +440,26 @@ suggest the following, but **this is not measured until they are read**:
 - **Parts.** 21 in all: WGSFD 2015 in three; 2016, 2018, 2019, 2022, 2025a, WKSSFGEO and WKSSFGEO2 in two; the rest
   whole. They are merged per report.
 - **Estimate:** about 1.4-1.6M tokens, against about 5.9M at the pilot's depth.
+- **Calibration** (WGSFD 2025b read again on the compact text with the lean prompt, 2026-10-19, measured):
+  - **Rows.** 106 topic rows, 46 code rows and 25 vocabulary entries.
+  - **Coverage.** It matches 106 of the pilot's 108 rows (98 %, by overlapping pages and a shared term). The one
+    finding missed is a numeric table whose body the compact text drops.
+  - **Diagram test.** 71 % of the substantive rows land on a diagram row, against 69 % in the pilot.
+  - **Code trail.** 47 of 48 code rows name something found on their pages.
+  - **Copying.** Four summaries copied an 8-word run. Two were lists of names; the other two were reworded.
+  - **Boxes.** Many rows on a diagram row fit none of its boxes ("other"): 7 on ping, 4 on record, 4 on fishing,
+    3 on effort. This is a first sign of what the diagram may lack.
+  - **Cost.** 157k tokens in 8 minutes, against 210k in 13 for the pilot. That is only a quarter less, not the
+    two-thirds estimated above. The output stayed at 0.8 of the input, since the code trail added what the shorter
+    summaries saved, and each turn after the write re-sends text and output.
+  - **What it means.** At 1.8 tokens a compact character, the six recent reports still to read would take about
+    1.7M tokens and the six old ones about 1.4M. The estimate above (1.4-1.6M for all 13) was too low by half.
+  - **The lean reading is the map for 2025b**, since it carries the new fields; the pilot is kept for comparison.
+- **The recent reports first** (maintainer, 2026-10-19: read "just the more recent reports to cut cost down", and the
+  very old ones later). From 2019, where the ICES Scientific Reports series begins, there are 7 reports: WGSFD 2019,
+  2022, 2025a and 2025b, WGSFDGOV 2023, WKSSFGEO and WKSSFGEO2. They come to about 1.0M compact characters, 56 % of
+  the text: about 1.7M tokens for the six not yet read, at the calibration's rate. WGSFD 2013-2018 (6 reports, 0.79M characters) are read later, as a second
+  run. The diagram test's threshold counts the reports read so far: three or more.
 - **WGSFD 2025b is read again** with the lean prompt, which gives it the new fields. Comparing that reading with the
   pilot measures what the lean reading loses before the rest are read.
 
@@ -452,7 +472,7 @@ should share the centre. It is measured on the merged rows:
 - the share of topic rows that land on a diagram row (`step` not `none`), by report and by year;
 - the themes of the rows that land on none, and how many reports treat each.
 
-A theme outside the rows that recurs as method or definition in three or more of the 13 reports earns a place: a new
+A theme outside the rows that recurs as method or definition in three or more of the reports read earns a place: a new
 row or box in the diagram, or a main part of the book.
 
 *Hypothesis (Claude, before reading; not a finding):* the reports spend much of their pages after the last row. That
