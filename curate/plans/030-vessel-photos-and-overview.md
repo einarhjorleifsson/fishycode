@@ -1,6 +1,6 @@
 # 030 — Vessel photos from mbl into the flow, and an internal vessel overview app
 
-**status:** executed 2026-10-18 on branch `claude/dreamy-shirley-2a8ae2`, not yet merged into main — step 1, the
+**status:** executed 2026-10-18, merged into main 2026-10-19 — step 1, the
 photo index (decision 138), rebuilt on the whole set (decision 145); step 2's scraper written, a new scrape closed by
 mbl's bot check (decision 141); steps 3 and 4, the R service and the page, in two modes, Overview and Quality control
 (decisions 139, 140, 143); step 5, the 1,589 missing photos fetched again by their logged URLs (decision 145); asks

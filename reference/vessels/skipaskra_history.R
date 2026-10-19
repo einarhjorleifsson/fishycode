@@ -8,6 +8,7 @@
 #         curated/vessel/mmsi.parquet                        the MMSI archive's windows (plan 016)
 #         raw/oracle/vessel/{vessel,usage_category}.parquet  vessel_id, and the usage code table
 #         overrides/skipaskra_reviewed.csv                   a person's decisions (D1)
+#         overrides/usage_category_printed_reviewed.csv      a person's codes for printed types no table maps
 # Output: curated/vessel/skipaskra/<table>.parquet, for vessel_hist, vessel_identification_hist, vessel_measurement_hist,
 #         vessel_engines_hist, vessel_operational_hist, vessel_owners_hist, vessel_fishery_hist, vessel_mmsi_hist and
 #         vessel_event; registered.parquet, each hull's runs on the register; usage_category_printed.parquet, the
@@ -19,11 +20,16 @@
 #   witness), Hreiðar for his year, a dated source for its from-to, the 2022-12-28 scrape and mbl from their date on.
 # - Every stretch of time takes the first witness in its period's order: before 2004 Hreiðar, then the fisheries'
 #   histories, then the `vessel` schema's back-filled rows; 2004-2021 the PDFs, then Hreiðar, the `vessel` schema, the
-#   fisheries; from 2022 the fisheries' changes after the 2022 edition, the scrape, mbl, the `vessel`
-#   schema's later rows, then the 2022 edition. Neighbouring stretches merge when printed alike (numbers at their
-#   coarser precision, materials as sets), each agreeing with the value the merged stretch carries.
+#   fisheries; from 2022 the fisheries' changes after the 2022 edition, the scrape, the `vessel` schema's later rows,
+#   the 2022 edition, then the older rows, and mbl last: its pages of 2023-01 carry values a hull had years before
+#   (1136's call sign until 2014), so it fills only where no other source speaks (decision 144). Neighbouring stretches
+#   merge when printed alike (numbers at their coarser precision, materials as sets), each agreeing with the value the
+#   merged stretch carries. The fisheries class (`vessel_operational_hist`) is the fisheries' own: kvoti and ufs come
+#   first in every period, since the `vessel` schema's back-fill missed changes they date (Þróunarsjóður, -10, on 6300
+#   from 1994-12-09, back-filled only from 2024-02-02; decision 144).
 # - D1: a row of overrides/skipaskra_reviewed.csv outranks everything. D2: a PDF value that breaks one of the register's
-#   own rules gives way to another lineage's value that keeps it, or stays and goes `open`. D3: else the period's
+#   own rules gives way to another lineage's value that keeps it, or stays and goes `open`; a GT off the formula below
+#   15 m is only flagged (the maintainer's check, decision 136). D3: else the period's
 #   witness decides. D4: a PDF value alone in its series gives way when two other lineages agree on its neighbours'.
 #   D5: a change between two annual witnesses takes its day from a dated source that gives the value before and after.
 # - Lineages (decision 135): Hreiðar is inside the register's for 2004-2021; mbl is its own; observation never counts.
@@ -48,32 +54,8 @@ ed_next <- function(e) { i <- match(e, EDITIONS); nx <- EDITIONS[pmin(i + 1, len
   as.Date(ifelse(is.na(i), NA, ifelse(i < length(EDITIONS), paste0(nx, "-01-01"), as.character(END)))) }
 year_start <- function(d, k = 0) as.Date(ifelse(is.na(d), NA, paste0(as.integer(format(d, "%Y")) + k, "-01-01")))
 yd <- function(y) as.Date(paste0(y, "-01-01"))
-agree_v <- function(cmp1, num1, dec1, cmp2, num2, dec2) ifelse(!is.na(num1) & !is.na(num2), num_agree(num1, dec1, num2, dec2), cmp1 == cmp2)
-STATUS_ORDER <- c("single", "agreed", "resolved", "reviewed", "open")
-worst <- function(s) STATUS_ORDER[max(match(s, STATUS_ORDER))]
-pad_kt <- function(x) ifelse(grepl("^[0-9]{9}$", x), paste0("0", x), x)   # a kennitala whose leading zero was lost
-
-HIST <- tribble(
-  ~table, ~column, ~type,
-  "vessel_hist", "name", "text", "vessel_hist", "previous_name", "text", "vessel_hist", "usage_category", "text",
-  "vessel_hist", "open", "text", "vessel_hist", "classification_society", "class",
-  "vessel_hist", "construction_place", "text", "vessel_hist", "construction_country", "text",
-  "vessel_hist", "construction_year", "num", "vessel_hist", "construction_station", "text",
-  "vessel_hist", "hull_material", "material", "vessel_hist", "imo_no", "text", "vessel_hist", "power_indicator", "num",
-  "vessel_hist", "power_kw", "num", "vessel_hist", "horse_power", "num", "vessel_hist", "changes", "text",
-  "vessel_identification_hist", "region_acronym", "text", "vessel_identification_hist", "region_no", "num",
-  "vessel_identification_hist", "call_sign", "text", "vessel_identification_hist", "home_port", "text",
-  "vessel_measurement_hist", "length", "num", "vessel_measurement_hist", "max_length", "num",
-  "vessel_measurement_hist", "width", "num", "vessel_measurement_hist", "depth", "num",
-  "vessel_measurement_hist", "brutto_grt", "num", "vessel_measurement_hist", "brutto_weight_tons", "num",
-  "vessel_measurement_hist", "netto_weight_tons", "num", "vessel_measurement_hist", "brutto_grt_older", "num",
-  "vessel_measurement_hist", "draft", "num", "vessel_measurement_hist", "draft_light", "num",
-  "vessel_measurement_hist", "weight", "num",
-  "vessel_engines_hist", "manufacturer_name", "text", "vessel_engines_hist", "year", "num",
-  "vessel_engines_hist", "power", "num",
-  "vessel_operational_hist", "operational_category_no", "text", "vessel_operational_hist", "operational_category", "text",
-  "vessel_fishery_hist", "name", "text", "vessel_fishery_hist", "address", "text", "vessel_fishery_hist", "postal_no", "num",
-  "vessel_fishery_hist", "identity_no", "text")
+# agree_v(), worst(), pad_kt() and HIST, the columns the history chooses: R/skipaskra_compare.R, shared with the live part
+agree_v <- sk_agree_v; worst <- sk_worst; pad_kt <- sk_pad_kt; HIST <- SK_HIST
 
 # The witnesses, comparable -------------------------------------------------------------------------------------------
 # register numbers only: no placeholder (the fisheries' -999 and up), no foreign number (3700-4999)
@@ -111,7 +93,8 @@ printed <- pdf_cm |> left_join(open_rec, by = "record") |> distinct(record, edit
   count(edition, open, table, column) |> left_join(n_sec, by = c("edition", "open")) |> filter(n >= 0.01 * N)
 blank <- pdf_rec |> left_join(open_rec, by = "record") |>
   inner_join(printed |> select(edition, open, table, column), by = c("edition", "open"), relationship = "many-to-many") |>
-  anti_join(pdf_cm |> distinct(record, table, column), by = c("record", "table", "column"))
+  # a printed zero ("0,00") is a placeholder, not none: others may fill it (6996's GT in 2018, the maintainer's check)
+  anti_join(evi |> filter(grepl("^pdf:", source)) |> distinct(record, table, column), by = c("record", "table", "column"))
 cand <- bind_rows(cand, blank |> left_join(HIST, by = c("table", "column")) |>
                     transmute(vid, table, column, type, value = NA_character_, cmp = "<none>", num = NA_real_, dec = NA_integer_,
                                            source = paste0("pdf:", edition), lineage = "register", fam = "pdf", kind = "snapshot",
@@ -121,7 +104,9 @@ cand <- bind_rows(cand, blank |> left_join(HIST, by = c("table", "column")) |>
 message("blanks: ", nrow(blank), " fields an edition prints and an entry leaves empty, read as none")
 
 ## D2: the register's own rules ------------------------------------------------------------------------------------------
-other <- cm |> filter(!lineage %in% c("register", "hreidar", "observation"))
+# another lineage's value, as it stands: the ufs journal's superseded versions are no witness (28 of D2's first 33
+# replacements came only from them)
+other <- cm |> filter(!lineage %in% c("register", "hreidar", "observation"), source != "ufs.skipasaga_jn")
 br <- bind_rows(
   reg |> filter(!is.na(imo), !imo_ok(imo)) |> transmute(vid, edition, table = "vessel_hist", column = "imo_no", why = "imo_check_digit"),
   reg |> filter(!is.na(length_reg), length_reg < 15, !is.na(gt), !is.na(breadth)) |>
@@ -141,7 +126,7 @@ keeps <- function(why, cmpv, L, B, edition) case_when(
   TRUE ~ FALSE)
 alt <- br |> inner_join(other |> select(vid, table, column, t1, t2, oval = value, ocmp = cmp, osrc = source, onum = num, odec = dec),
                         by = c("vid", "table", "column"), relationship = "many-to-many") |>
-  filter(is.na(t1) | t1 <= d, is.na(t2) | t2 >= d, keeps(why, ocmp, L, B, edition)) |>
+  filter(is.na(t1) | t1 <= d, is.na(t2) | t2 >= d, why != "gt_formula", keeps(why, ocmp, L, B, edition)) |>
   group_by(vid, edition, table, column) |> slice(1) |> ungroup()
 d2 <- br |> left_join(alt |> select(vid, edition, table, column, oval, ocmp, osrc, onum, odec), by = c("vid", "edition", "table", "column")) |>
   mutate(src = paste0("pdf:", edition))
@@ -150,7 +135,8 @@ hit <- !is.na(i2) & !is.na(d2$oval[i2])
 cand$value_printed[hit] <- cand$value[hit]
 cand$value[hit] <- d2$oval[i2[hit]]; cand$cmp[hit] <- d2$ocmp[i2[hit]]; cand$num[hit] <- d2$onum[i2[hit]]; cand$dec[hit] <- d2$odec[i2[hit]]
 cand$rule[hit] <- "D2"; cand$record[hit] <- paste0(cand$record[hit], " <- ", d2$osrc[i2[hit]])
-cand$rule[!is.na(i2) & !hit] <- "D2_open"
+# the GT formula is a flag only: the maintainer found the PDF right on all 32 of D2's formula replacements (decision 136)
+cand$rule[!is.na(i2) & !hit & d2$why[i2] != "gt_formula"] <- "D2_open"
 cand$flag[!is.na(i2)] <- d2$why[i2[!is.na(i2)]]
 message("D2: ", nrow(br), " PDF values break a rule; ", sum(!is.na(d2$oval)), " give way to another lineage's value that keeps it")
 
@@ -202,11 +188,13 @@ pick <- dbGetQuery(con, "
   SELECT vid, tab, col, s, e, cid FROM (
     SELECT el.vid, el.tab, el.col, el.s, el.e, c.cid,
       CASE WHEN c.fam = 'review' THEN 0
+           WHEN el.tab = 'vessel_operational_hist' AND c.fam = 'fisheries' THEN 1
            WHEN el.s < DATE '2004-01-01' THEN CASE c.fam WHEN 'hreidar' THEN 1 WHEN 'fisheries' THEN 2 WHEN 'copy' THEN 3 ELSE 9 END
            WHEN el.s < DATE '2022-01-01' THEN CASE c.fam WHEN 'pdf' THEN 1 WHEN 'hreidar' THEN 2 WHEN 'copy' THEN 3 WHEN 'fisheries' THEN 4 ELSE 9 END
            ELSE CASE WHEN c.fam = 'fisheries' AND c.a >= DATE '2022-01-01' THEN 1 WHEN c.fam = 'samgongustofa' THEN 2
-                     WHEN c.fam = 'mbl' THEN 3 WHEN c.fam = 'copy' AND c.a >= DATE '2022-01-01' THEN 4 WHEN c.fam = 'pdf' THEN 5
-                     WHEN c.fam = 'copy' THEN 6 WHEN c.fam = 'fisheries' THEN 7 WHEN c.fam = 'hreidar' THEN 8 ELSE 9 END END AS tier,
+                     WHEN c.fam = 'copy' AND c.a >= DATE '2022-01-01' THEN 3 WHEN c.fam = 'pdf' THEN 4
+                     WHEN c.fam = 'copy' THEN 5 WHEN c.fam = 'fisheries' THEN 6 WHEN c.fam = 'hreidar' THEN 7
+                     WHEN c.fam = 'mbl' THEN 8 ELSE 9 END END AS tier,
       row_number() OVER (PARTITION BY el.vid, el.tab, el.col, el.s ORDER BY tier, c.a DESC, c.cid) AS rk
     FROM el JOIN cand c ON c.vid = el.vid AND c.tab = el.tab AND c.col = el.col AND c.a <= el.s AND el.s < c.b) WHERE rk = 1")
 
@@ -286,28 +274,7 @@ anc <- pk |> mutate(d = if_else(fam == "pdf", ca, s)) |>
 WIT_OUT <- "^ufs[.]skipasaga_jn$|^kvoti[.]skip_extra$|^marinetraffic$|^pdf_event"
 wit <- cm |> filter(!grepl(WIT_OUT, source), !(grepl("^pdf", source) & edition %in% 2020), lineage != "observation") |>
   transmute(vid, tab = table, col = column, lineage, a = t1, b = t2, value, cmp, num, dec)
-duckdb_register(con, "anc", anc |> transmute(sid, vid, tab = table, col = column, d, clin = lineage, cmp, num, dec))
-duckdb_register(con, "wit", wit)
-agree_sql <- "
-  CASE WHEN a.num IS NOT NULL AND w.num IS NOT NULL THEN
-    abs(round((CASE WHEN a.dec >= w.dec THEN a.num ELSE w.num END) * pow(10, least(a.dec, w.dec))) -
-        round((CASE WHEN a.dec >= w.dec THEN w.num ELSE a.num END) * pow(10, least(a.dec, w.dec)))) < 0.5 OR
-    abs(floor((CASE WHEN a.dec >= w.dec THEN a.num ELSE w.num END) * pow(10, least(a.dec, w.dec)) + 1e-7) -
-        round((CASE WHEN a.dec >= w.dec THEN w.num ELSE a.num END) * pow(10, least(a.dec, w.dec)))) < 0.5
-  ELSE a.cmp = w.cmp END"
-st <- dbGetQuery(con, sprintf("
-  WITH j AS (
-    SELECT a.sid, a.d, CASE WHEN a.clin = 'hreidar' AND a.d >= DATE '2004-01-01' AND a.d < DATE '2022-01-01' THEN 'register' ELSE a.clin END AS clin,
-           CASE WHEN w.lineage = 'hreidar' AND a.d >= DATE '2004-01-01' AND a.d < DATE '2022-01-01' THEN 'register' ELSE w.lineage END AS lin,
-           (%s) AS ag, w.value
-    FROM anc a JOIN wit w ON a.vid = w.vid AND a.tab = w.tab AND a.col = w.col
-     AND (w.a IS NULL OR w.a <= a.d) AND (w.b IS NULL OR w.b >= a.d)),
-  per AS (
-    SELECT sid, d, any_value(clin) AS clin, list_distinct(list(lin)) AS lins, list_distinct(list(lin) FILTER (WHERE ag)) AS agl,
-           string_agg(DISTINCT value, '; ' ORDER BY value) FILTER (WHERE NOT ag) AS alt
-    FROM j GROUP BY sid, d)
-  SELECT sid, d, len(list_distinct(list_append(lins, clin))) AS n_lin, len(list_distinct(list_append(agl, clin))) AS n_agr, alt FROM per",
-  agree_sql))
+st <- sk_lineages(con, anc |> transmute(sid, vid, tab = table, col = column, d, clin = lineage, cmp, num, dec), wit)
 dbDisconnect(con, shutdown = TRUE)
 unlink(spill, recursive = TRUE)
 st <- anc |> select(sid, d) |> left_join(st, by = c("sid", "d")) |>
@@ -328,7 +295,9 @@ seg <- seg |> left_join(ss, by = "sid") |>
 
 # Registered life -------------------------------------------------------------------------------------------------------
 evt <- read_parquet(fd_staging("skipaskra", "event.parquet")) |> filter(!is.na(vid))
-hr <- read_parquet(fd_staging("hreidar", "vessel_year.parquet"), col_select = c("nr", "year", "year_placeholder", "year_out", "fate", "fate_note")) |>
+# read whole, then select: nanoparquet 0.5.1's col_select drops the NULLs of an optional integer column in a file it wrote,
+# and shifts its values (157,501 of Hreiðar's years were another row's; decision 144)
+hr <- read_parquet(fd_staging("hreidar", "vessel_year.parquet")) |> select(nr, year, year_placeholder, year_out, fate, fate_note) |>
   filter(nr >= 1, nr <= 9999, !(nr >= 3700 & nr <= 4999), !is.na(year))
 fate_class <- function(f) {
   f <- toupper(f)
@@ -459,13 +428,17 @@ same <- reg |> filter(edition != 2020, !is.na(ship_type)) |> transmute(vid, d = 
                transmute(vid, t1, t2, no = as.integer(value)), by = "vid", relationship = "many-to-many") |>
   filter(t1 <= d, is.na(t2) | t2 >= d) |> count(key, no) |> group_by(key) |> mutate(share = n / sum(n)) |>
   slice_max(n, n = 1, with_ties = FALSE) |> ungroup() |> filter(share >= 0.5)
+# first: the maintainer's reading of types no table maps (overrides/usage_category_printed_reviewed.csv)
+rvu <- utils::read.csv("overrides/usage_category_printed_reviewed.csv", colClasses = "character", encoding = "UTF-8") |>
+  transmute(key = key_txt(printed), no_review = as.integer(usage_category_no), review = paste0("reviewed (", reviewer, ", ", date, ")"))
 usage_category_printed <- reg |> filter(!is.na(ship_type)) |> count(printed = ship_type, name = "entries") |>
   mutate(key = key_txt(printed)) |>
+  left_join(rvu, by = "key") |>
   left_join(uc |> rename(no_code = usage_category_no), by = "key") |>
   left_join(pairs |> select(key, no_pair = no), by = "key") |>
   left_join(same |> select(key, no_same = no, share), by = "key") |>
-  mutate(usage_category_no = coalesce(no_code, no_pair, no_same),
-         basis = case_when(!is.na(no_code) ~ "the code table's name", !is.na(no_pair) ~ "the `vessel` schema's own pairs",
+  mutate(usage_category_no = coalesce(no_review, no_code, no_pair, no_same),
+         basis = case_when(!is.na(no_review) ~ review, !is.na(no_code) ~ "the code table's name", !is.na(no_pair) ~ "the `vessel` schema's own pairs",
                            !is.na(no_same) ~ paste0("the `vessel` schema's code for the same hulls (", round(100 * share), " %)"),
                            TRUE ~ "none")) |>
   select(printed, entries, usage_category_no, basis) |> arrange(desc(entries))
@@ -592,7 +565,8 @@ print(decision |> count(table, status, rule) |> pivot_wider(names_from = status,
 inputs <- c(fd_curated("vessel", "skipaskra", "evidence.parquet"), fd_curated("vessel", "mmsi.parquet"),
             file.path(fd_staging("skipaskra"), c("register.parquet", "event.parquet", "annual_call_sign.parquet")),
             fd_staging("hreidar", "vessel_year.parquet"),
-            fd_raw("oracle", "vessel", c("vessel.parquet", "usage_category.parquet")), "overrides/skipaskra_reviewed.csv")
+            fd_raw("oracle", "vessel", c("vessel.parquet", "usage_category.parquet")), "overrides/skipaskra_reviewed.csv",
+            "overrides/usage_category_printed_reviewed.csv")
 w <- function(d, name) write_curated(d, fd_curated("vessel", "skipaskra", paste0(name, ".parquet")), inputs = inputs)
 for (tab in TABLES) w(out[[tab]], tab)
 w(vessel_owners_hist, "vessel_owners_hist")

@@ -1,8 +1,8 @@
 # skipaskra_compare.R — how the register's witnesses are compared: one normal form per column type.
 #
-# Function definitions only (targets sources R/ wholesale). Used by curate/checks/skipaskra_discrepancy.R and
-# reference/vessels/skipaskra_history.R (plan 028 steps 4-5), so a check and the decision model never disagree on
-# whether two values are the same.
+# Function definitions only (targets sources R/ wholesale). Used by curate/checks/skipaskra_discrepancy.R,
+# reference/vessels/skipaskra_history.R and reference/vessels/vessel_register.R (plan 028 steps 4-6), so a check, the
+# history and the live part never disagree on whether two values are the same.
 #
 # Input:  the evidence table, curated/vessel/skipaskra/evidence.parquet (reference/vessels/skipaskra_evidence.R)
 # Output: none
@@ -39,6 +39,7 @@ num_agree <- function(a, da, b, db) {
 
 # the IMO number's check digit: the first six digits weighted 7 to 2, summed, last digit of the sum
 imo_ok <- function(x) {
+  if (!length(x)) return(logical(0))
   x <- as.character(x); ok <- !is.na(x) & grepl("^[0-9]{7}$", x)
   d <- matrix(as.integer(unlist(strsplit(ifelse(ok, x, "0000000"), ""))), ncol = 7, byrow = TRUE)
   ok & as.vector(d[, 1:6, drop = FALSE] %*% (7:2)) %% 10 == d[, 7]
@@ -97,3 +98,62 @@ sk_journal_intervals <- function(d) {
   d |> dplyr::filter(kind == "change") |> dplyr::arrange(vid, table, column, t1) |>
     dplyr::group_by(vid, table, column) |> dplyr::mutate(t2 = dplyr::lead(t1) - 1) |> dplyr::ungroup()
 }
+
+# The agreement of two values in SQL, as num_agree() and the normal form: `a` and `w` are the two rows' aliases
+SK_AGREE_SQL <- "
+  CASE WHEN a.num IS NOT NULL AND w.num IS NOT NULL THEN
+    abs(round((CASE WHEN a.dec >= w.dec THEN a.num ELSE w.num END) * pow(10, least(a.dec, w.dec))) -
+        round((CASE WHEN a.dec >= w.dec THEN w.num ELSE a.num END) * pow(10, least(a.dec, w.dec)))) < 0.5 OR
+    abs(floor((CASE WHEN a.dec >= w.dec THEN a.num ELSE w.num END) * pow(10, least(a.dec, w.dec)) + 1e-7) -
+        round((CASE WHEN a.dec >= w.dec THEN w.num ELSE a.num END) * pow(10, least(a.dec, w.dec)))) < 0.5
+  ELSE a.cmp = w.cmp END"
+
+# Each anchor's lineages: those that speak on its date, and those that agree with its value. The anchor's own lineage
+# always speaks and agrees. Hreiðar is inside the register's lineage for 2004-2021 (decision 135).
+# `anc`: sid, vid, tab, col, d, clin, cmp, num, dec. `wit`: vid, tab, col, lineage, a, b (its window), value, cmp, num, dec.
+# Returns sid, d, n_lin, n_agr, alt (the disagreeing values, sorted).
+sk_lineages <- function(con, anc, wit) {
+  duckdb::duckdb_register(con, "anc", anc)
+  duckdb::duckdb_register(con, "wit", wit)
+  DBI::dbGetQuery(con, sprintf("
+  WITH j AS (
+    SELECT a.sid, a.d, CASE WHEN a.clin = 'hreidar' AND a.d >= DATE '2004-01-01' AND a.d < DATE '2022-01-01' THEN 'register' ELSE a.clin END AS clin,
+           CASE WHEN w.lineage = 'hreidar' AND a.d >= DATE '2004-01-01' AND a.d < DATE '2022-01-01' THEN 'register' ELSE w.lineage END AS lin,
+           (%s) AS ag, w.value
+    FROM anc a JOIN wit w ON a.vid = w.vid AND a.tab = w.tab AND a.col = w.col
+     AND (w.a IS NULL OR w.a <= a.d) AND (w.b IS NULL OR w.b >= a.d)),
+  per AS (
+    SELECT sid, d, any_value(clin) AS clin, list_distinct(list(lin)) AS lins, list_distinct(list(lin) FILTER (WHERE ag)) AS agl,
+           string_agg(DISTINCT value, '; ' ORDER BY value) FILTER (WHERE NOT ag) AS alt
+    FROM j GROUP BY sid, d)
+  SELECT sid, d, len(list_distinct(list_append(lins, clin))) AS n_lin, len(list_distinct(list_append(agl, clin))) AS n_agr, alt FROM per", SK_AGREE_SQL))
+}
+
+# Two values agree: numbers at their coarser precision, else in normal form
+sk_agree_v <- function(cmp1, num1, dec1, cmp2, num2, dec2) ifelse(!is.na(num1) & !is.na(num2), num_agree(num1, dec1, num2, dec2), cmp1 == cmp2)
+SK_STATUS_ORDER <- c("single", "agreed", "resolved", "reviewed", "open")
+sk_worst <- function(s) SK_STATUS_ORDER[max(match(s, SK_STATUS_ORDER))]
+sk_pad_kt <- function(x) ifelse(grepl("^[0-9]{9}$", x), paste0("0", x), x)   # a kennitala whose leading zero was lost
+
+# The columns the history chooses, table by table (plan 028 §4.2), and how each compares
+SK_HIST <- tibble::tribble(
+  ~table, ~column, ~type,
+  "vessel_hist", "name", "text", "vessel_hist", "previous_name", "text", "vessel_hist", "usage_category", "text",
+  "vessel_hist", "open", "text", "vessel_hist", "classification_society", "class",
+  "vessel_hist", "construction_place", "text", "vessel_hist", "construction_country", "text",
+  "vessel_hist", "construction_year", "num", "vessel_hist", "construction_station", "text",
+  "vessel_hist", "hull_material", "material", "vessel_hist", "imo_no", "text", "vessel_hist", "power_indicator", "num",
+  "vessel_hist", "power_kw", "num", "vessel_hist", "horse_power", "num", "vessel_hist", "changes", "text",
+  "vessel_identification_hist", "region_acronym", "text", "vessel_identification_hist", "region_no", "num",
+  "vessel_identification_hist", "call_sign", "text", "vessel_identification_hist", "home_port", "text",
+  "vessel_measurement_hist", "length", "num", "vessel_measurement_hist", "max_length", "num",
+  "vessel_measurement_hist", "width", "num", "vessel_measurement_hist", "depth", "num",
+  "vessel_measurement_hist", "brutto_grt", "num", "vessel_measurement_hist", "brutto_weight_tons", "num",
+  "vessel_measurement_hist", "netto_weight_tons", "num", "vessel_measurement_hist", "brutto_grt_older", "num",
+  "vessel_measurement_hist", "draft", "num", "vessel_measurement_hist", "draft_light", "num",
+  "vessel_measurement_hist", "weight", "num",
+  "vessel_engines_hist", "manufacturer_name", "text", "vessel_engines_hist", "year", "num",
+  "vessel_engines_hist", "power", "num",
+  "vessel_operational_hist", "operational_category_no", "text", "vessel_operational_hist", "operational_category", "text",
+  "vessel_fishery_hist", "name", "text", "vessel_fishery_hist", "address", "text", "vessel_fishery_hist", "postal_no", "num",
+  "vessel_fishery_hist", "identity_no", "text")

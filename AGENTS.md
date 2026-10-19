@@ -156,9 +156,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
   fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102): so ≥ 2026.10.14.14. The data on disk were built with ramb 2026.10.15.1: every
   target the rebuild of 2026-10-16 reached (decision 112), from the raw readers and plan 016's vessel tables to
-  `ais_catch`, the foreign vessel tables of 2026-10-17 (decision 114), and both halves of the rebuild of 2026-10-17: the logbook, landings and vessel half (decision 127), and the AIS chain on the STK key redone that day (decision 129). The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
+  `ais_catch`, the foreign vessel tables of 2026-10-17 (decision 114), and both halves of the rebuild of 2026-10-17: the logbook, landings and vessel half (decision 127), and the AIS chain on the STK key redone that day (decision 129). The register, its four readers (`vessel_sign`, `vessel_class`, `vessel_year`, `vessel`) and the AIS chain through `ais_catch` were rebuilt again on 2026-10-18 and 2026-10-19, the last at e2f741f (decision 144), with the same ramb. The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
   `shapes`, `area_h3`, `lookups`) are from the rebuild of 2026-10-13 with 2026.10.13.3 (decision 086). In the `once`
-  project the STK key and its checks are the redo of 2026-10-17 (decision 128); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the towing-stretch pairing (decision 092), which nothing here
+  project the STK key and its checks are the redo of 2026-10-17 (decision 128), and the register's history the build of 2026-10-18 at e2f741f (decision 144); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the towing-stretch pairing (decision 092), which nothing here
   calls.
   `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
@@ -231,6 +231,9 @@ repos.
   Exception: `write_curated()` uses `COPY … (FORMAT parquet, KV_METADATA {…})`,
   which also writes plain `TIMESTAMP` *and* embeds provenance —
   `duckdbfs::write_dataset` writes no KV metadata at all.
+- **Never `nanoparquet::read_parquet(col_select = )` on a file nanoparquet wrote.** Version 0.5.1 drops the NULLs of an
+  optional integer column and shifts its values up: 157,501 of Hreiðar's 164,164 years came back as another row's
+  (decision 144). Read the whole file, then `select()`.
 - **`purrr::map()` must be qualified** — `duckdbfs` loads `maps`, which masks it.
 - **Comments**: non-obvious reasons only; every script head states input and output.
 - **Section headers**: single-dash style only.

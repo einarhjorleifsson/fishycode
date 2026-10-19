@@ -208,33 +208,51 @@ list(
     produces("reference/vessels/mmsi.R", fd_curated("vessel", "mmsi.parquet"))
   }, format = "file"),
 
-  # registry.R also reads agf/aflagrunnur, for a printed check after the save: not an input (decision 116).
+  # The ship register: the history to 2023-12-19, frozen in the `once` project (plan 028 steps 1-5, decision 136), and the
+  # `vessel` schema's own history after it, through the same decision model (plan 028 step 6, decision 142). The
+  # register's tables for every year, in curated/vessel/register/.
+  tar_target(register_history, frozen_input("curated", "vessel", "skipaskra"), format = "file"),
+  tar_target(register_live_raw, c(
+    fd_raw("oracle", "vessel", paste0(c("vessel", "vessel_identification", "vessel_measurement", "vessel_engines",
+                                        "vessel_operational", "vessel_fishery", "vessel_owners", "vessel_hist",
+                                        "vessel_identification_hist", "vessel_measurement_hist", "vessel_engines_hist",
+                                        "vessel_operational_hist", "vessel_fishery_hist", "vessel_owners_hist"), ".parquet")),
+    fd_raw("oracle", "ufs", paste0(c("skip", "skip_jn", "skipasaga", "skipasaga_jn"), ".parquet")),
+    "overrides/skipaskra_reviewed.csv"), format = "file"),
+  tar_target(vessel_register, {
+    register_history; register_live_raw; mmsi
+    produces("reference/vessels/vessel_register.R",
+             file.path(fd_curated("vessel", "register"),
+                       paste0(c("vessel_hist", "vessel_identification_hist", "vessel_measurement_hist", "vessel_engines_hist",
+                                "vessel_operational_hist", "vessel_fishery_hist", "vessel_owners_hist", "vessel_mmsi_hist",
+                                "vessel_event", "registered", "decision", "annual_call_sign"), ".parquet")),
+             fd_curated("check", "vessel_register_open.parquet"))
+  }, format = "file"),
+  # Call sign, local sign (ÍS-8) and name over time (plan 016 step 6b), from the register (plan 028 step 7). Nothing in
+  # this project reads it.
+  tar_target(vessel_sign, {
+    vessel_register
+    produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))
+  }, format = "file"),
+
+  # The register's readers (plan 028 step 7). registry.R takes yh1/yh2, the first and last year on the register, and
+  # also reads agf/aflagrunnur, for a printed check after the save: not an input (decision 116).
   tar_target(vessel, {
-    mmsi; vessel_raw
+    mmsi; vessel_raw; vessel_register
     produces("reference/vessels/registry.R", fd_curated("vessel", "vessel.parquet"))
   }, format = "file"),
 
   # Usage type, kW and length by year (the effort on a fix uses the kW of its year), and the fisheries-management class
-  # over time (leisure, and coverage gaps by year). Plan 016 §4 step 5.
-  tar_target(vessel_hist_raw, c(fd_raw("oracle", "vessel", "vessel_hist_v.parquet"), fd_raw("oracle", "vessel", "vessel_measurement_hist_v.parquet"),
-                                fd_raw("oracle", "vessel", "usage_category.parquet")), format = "file"),
-  tar_target(vessel_class_raw, c(fd_raw("oracle", "kvoti", "skipasaga.parquet"),
-                                 fd_raw("external", "skipaskra", "data", "history.rda")), format = "file"),
+  # over time (leisure, and coverage gaps by year). Plan 016 §4 step 5, from the register (plan 028 step 7). Hreiðar's
+  # segment comes from his staged workbook, built in the `once` project.
+  tar_target(hreidar_vessel_year, frozen_input("staging", "hreidar", "vessel_year.parquet"), format = "file"),
   tar_target(vessel_year, {
-    vessel_raw; vessel_hist_raw
+    vessel_raw; vessel_register; hreidar_vessel_year
     produces("reference/vessels/vessel_year.R", fd_curated("vessel", "vessel_year.parquet"))
   }, format = "file"),
   tar_target(vessel_class, {
-    vessel_class_raw
+    vessel_register
     produces("reference/vessels/vessel_class.R", fd_curated("vessel", "vessel_class.parquet"))
-  }, format = "file"),
-  # Call sign, local sign (ÍS-8) and name over time (plan 016 step 6b). Nothing in this project reads it: its consumer is
-  # the STK key review in the `once` project, whose annual call-sign register it reads as a frozen input.
-  tar_target(annual_call_sign, frozen_input("staging", "skipaskra", "annual_call_sign.parquet"), format = "file"),
-  tar_target(vessel_sign_raw, c(fd_raw("oracle", "vessel", "vessel_identification_hist_v.parquet")), format = "file"),
-  tar_target(vessel_sign, {
-    annual_call_sign; vessel_sign_raw; vessel_class_raw; vessel_hist_raw; vessel_raw
-    produces("reference/vessels/vessel_sign.R", fd_curated("vessel", "vessel_sign.parquet"))
   }, format = "file"),
 
   # The mbl vessel photos indexed by vid, with the scrape's logs for mbl's image id and the files it never delivered

@@ -128,7 +128,8 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
 The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
 proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a
 rule admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest
-`vessel_hist_v` date or `yh1`: the latest row's is a re-registration, which made most list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's
+`vessel_hist_v` date or `yh1` (the first year on the register since decision 144): the latest row's is a
+re-registration, which made most list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's
 `tar_outdated()` lists the key and its checks again. That is the cycle, not a reason to build: the key changes only here.
 
 The annual register's matrix parse is fixed in code, not yet in data: build years and a legend entry had been read
@@ -453,9 +454,9 @@ nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep th
 MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
-**status:** in progress · **needs: maintainer** — a person's check of D2's 33 decisions against the page images, and
-plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e (editions outside 2004-2022) · **see:**
-`curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135 and 136, TODO 71
+**status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
+(editions outside 2004-2022) · **see:**
+`curate/plans/028-skipaskra-mined.md`, decisions 130-132, 135, 136, 142 and 144, TODO 71
 
 Steps 1-5 are built in the `once` project:
 - the 19 editions read whole, and the other witnesses (decisions 130, 131);
@@ -466,9 +467,19 @@ Build by name, never the whole project, whose key targets are outdated:
 `tar_make_isolated(names = c("check_skipaskra_discrepancy", "skipaskra_history"))` in `TAR_PROJECT=once`. What public
 sources print is kept, never published.
 
-Next: step 6, the live part from 2023-12-19 in the main project, then step 7, repointing the vessel readers.
+Steps 6 and 7 are built in the main project (decisions 142, 144): `curated/vessel/register/` holds the register's
+tables for every year, and `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R` read it. The history was rebuilt
+first with mbl last, kvoti first for the class, SKEMMTISKIP as 62 and Hreiðar's years read whole (decision 144).
 
-**check:** plan 028's steps 1-7 built and D2's sample checked, or the plan parked.
+The AIS chain and trail were rebuilt on them (decision 144), and again after a reviewed row set 6061's 2016 kW to 58.
+
+Left in the register (decision 144):
+- the class name column: 622 rows name another class than their code;
+- mbl's sole values, such as 2730's TFCR in 2023;
+- 12 kvoti stretches starting on its 1901 placeholder, on old hulls before 1920;
+- 111 local signs typed oddly ("RE.", "ís", "TH" for ÞH), which `vessel_sign` folds in its key.
+
+**check:** asks d and e answered or parked, and the four leftovers fixed or declared.
 
 ## 84. A fishing licence history from every witness (plan 029)
 **status:** in progress · **needs: maintainer** — plan 029 §8's asks: where licences are kept after 2020-07-22 and
@@ -548,3 +559,29 @@ vessel overview's QC lane keeps its 30 min threshold.
 
 **check:** a plan or decision with the grouping that explains the intervals, measured over several years, and a gap
 flag on the fixes that the overview's lane reads.
+
+## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
+**status:** open · **needs: maintainer** — plan 031's asks a-f · **see:** `curate/plans/031-voyages-from-any-data.md`,
+decision 144, TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), plan 011
+
+The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
+whole, with what is now known of the data. The goal is a generic voyage finder for any data: pings with landings
+only, logbooks only, both or neither, and several gears in a voyage.
+
+What plan 031 measured, step 1 included:
+- `port_stay` misses calls in four ways. The departure radius is the clear fault: 12,295 calls, 79 % confirmed by a
+  landing or logbook end, 98 % accepted by a time budget. Short calls are many (337,000) and mostly not landings.
+- 42 % of the landings with no stay disagree with the track on the port.
+- A fifth of the voyages carrying several logbook trips are continuous sea trips that the date-only logbook splits by
+  day.
+
+The threads it gathers:
+- the STK key, TODO 25;
+- the trail and its delivery, TODO 27b;
+- AIS where records are missing, TODO 49;
+- a landing over two days, TODO 81 and plan 027;
+- the gear read from the track, TODO 86, and gaps judged against coverage, TODO 89.
+
+A fresh session starts here: answer plan 031's asks, then design the whole.
+
+**check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.

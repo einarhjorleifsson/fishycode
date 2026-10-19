@@ -7,6 +7,10 @@
 #  * Add loa, kw and other things if available
 #  * Check another source for norwegian vessels, one that has mmsi
 # NEWS -------------------------------------------------------------------------
+# 2026-10-18 (plan 028 step 7)
+#  * yh1, yh2 are the first and last year on the ship register (curated/vessel/register/registered.parquet), yh2 NA
+#    while the hull is on it; they were Hreiðar's first and last year, keyed on Skskr.nr., which is reliable only from
+#    2007 (decision 046)
 # 2026-10-14 (plan 016)
 #  * The MMSI comes from curated/vessel/mmsi.parquet (reference/vessels/mmsi.R), the archive rebuilt from every
 #    source, not from the old hand-kept raw/vessels/mmsi_iceland_archieves.parquet: one current vessel MMSI per vid
@@ -25,7 +29,7 @@
 #  * consolidation, review and addition of older code
 # INPUT ------------------------------------------------------------------------
 # raw/oracle/vessel/vessel_v.parquet, curated/vessel/mmsi.parquet,
-# raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx
+# curated/vessel/register/registered.parquet (the hull's runs on the register)
 # OUTPUT -----------------------------------------------------------------------
 # curated/vessel/vessel.parquet - one row per vid
 
@@ -172,24 +176,19 @@ if (anyDuplicated(vessel_ISL$vid))
   stop("vessel.parquet must hold one row per vid; duplicated: ",
        paste(head(unique(vessel_ISL$vid[duplicated(vessel_ISL$vid)]), 20), collapse = " "), call. = FALSE)
 
-# add last year vessel in Hreiðar's dataset (last time updated 2021)
+# The first and last year on the ship register (plan 028): runs of the editions a hull is in and of Hreiðar's years in
+# use, the `vessel` schema's after 2023-12-19 (decisions 136, 142). yh2 is NA while the hull is on the register at the
+# dump, and a run's last year is the year of its last day.
 v <-
-  readxl::read_excel(fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")) |>
-  janitor::clean_names() |>
-  select(vid = skskr_nr,
-         year = ar) |>
-  filter(!is.na(vid)) |>
-  group_by(vid) |>
-  reframe(yh1 = min(year),        # year hreiðar first
-          yh2 = max(year)) |>     # year hreiðar last
-  mutate(vid = as.integer(vid)) |>
-  mutate(yh1 = ifelse(yh1 == 9999, NA, yh1),
-         yh2 = ifelse(yh2 == 9999, NA, yh2))
+  read_parquet(fd_curated("vessel", "register", "registered.parquet")) |>
+  group_by(vid = as.integer(registration_no)) |>
+  summarise(yh1 = as.integer(format(min(valid_from), "%Y")),
+            yh2 = if (anyNA(valid_to)) NA_integer_ else as.integer(format(max(valid_to) - 1, "%Y")),
+            .groups = "drop")
 
 vessel_ISL <-
   vessel_ISL |>
-  # Note: We will have vessels entering after 2021 which have NA year_last_hreidar
-  left_join(v) |>
+  left_join(v, by = "vid") |>
   select(vid, yh1, yh2, everything())
 
 # get rid of spaces in CS
@@ -204,7 +203,7 @@ vessel_ISL |>
   mutate(kw = ifelse(kw == 0, NA, kw)) |>
   write_curated(fd_curated("vessel", "vessel.parquet"),
                 inputs = c(fd_curated("vessel", "mmsi.parquet"), fd_raw("oracle", "vessel", "vessel_v.parquet"),
-                           fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")))
+                           fd_curated("vessel", "register", "registered.parquet")))
 
 
 

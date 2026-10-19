@@ -16,6 +16,9 @@ agr  <- read_parquet(fd_curated("check", "skipaskra_agreement.parquet"))
 dec  <- read_parquet(fd_curated("vessel", "skipaskra", "decision.parquet"))
 regd <- read_parquet(fd_curated("vessel", "skipaskra", "registered.parquet"))
 ucp  <- read_parquet(fd_curated("vessel", "skipaskra", "usage_category_printed.parquet"))
+live <- read_parquet(fd_curated("vessel", "register", "decision.parquet")) |> filter(part == "live")
+lreg <- read_parquet(fd_curated("vessel", "register", "registered.parquet")) |> filter(part == "live")
+opn  <- read_parquet(fd_curated("check", "vessel_register_open.parquet"))
 n_rule <- function(r, st = NULL) sum(dec$rule %in% r & (is.null(st) | dec$status %in% st))
 n_of <- function(k) sum(disc$check == k)
 fmt <- function(x) format(x, big.mark = ",")
@@ -177,8 +180,16 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
 ```
 
 - **D3, the period's source,** settled `r fmt(n_rule("D3"))` stretches where the lineages disagree.
+  - mbl's pages of 2023-01 come last: they carry values a hull had years before, such as the call sign 1136 held until
+    2014. They fill only where no other source speaks (decision 144).
+  - For the fisheries class, kvoti comes first in every period: the `vessel` schema's back-fill missed changes kvoti
+    dates, such as Þróunarsjóður (−10) on about 105 hulls a month.
 - **D2, the register's own rules:** `r n_rule("D2", "resolved")` stretches took another lineage's value that keeps the
   rule, and `r n_rule("D2", "open")` stay as printed, open, with no such value.
+  - Its error was measured by the maintainer on all 33 decisions D2 made as first built (decision 136): the page
+    proved the PDF right in 32, a 97 % error.
+  - All 32 were GTs off the formula 0.031 L² B. That formula is now a flag on the value (`gt_formula`, on
+    `r sum(grepl("gt_formula", dec$flag))` stretches), not a reason to replace it.
 - **D4, the typo rule,** decided `r n_rule("D4")`. It needs two lineages besides the register's to agree, and with
   Hreiðar inside the register's lineage for 2004-2021 (decision 135) that is almost never the case.
 - **D1, a person's decision,** decided `r n_rule("D1")`. None is entered yet.
@@ -186,8 +197,21 @@ dec |> mutate(rule = coalesce(rule, "")) |> count(table, status) |>
   `r fmt(sum(dec$window_from == "annual"))` within a known year.
 - **Types of ship:** `r fmt(sum(ucp$entries[ucp$basis != "none"]))` of `r fmt(sum(ucp$entries))` printed types map to
   the `vessel` schema's codes: by the code table's names, the schema's own name-code pairs, or the code the schema gives
-  the same hulls. No code is found for `r paste(ucp$printed[ucp$basis == "none"], collapse = " and ")`
-  (`r sum(ucp$entries[ucp$basis == "none"])` entries).
+  the same hulls, or the maintainer's reading. That reading covers types no table maps, and SKEMMTISKIP, a pleasure
+  ship, which the schema's codes would make a fishing vessel (62, not 33). `r if (any(ucp$basis == "none")) paste0("No code is found for ", paste(ucp$printed[ucp$basis == "none"], collapse = " and "), " (", sum(ucp$entries[ucp$basis == "none"]), " entries).") else "Every printed type has a code."`
+
+## The register after 2023-12-19
+
+From 2023-12-19 the `vessel` schema keeps its own dated history, and it answers (plan 028 step 6, decision 142). The
+main project sets its versions after the history in `curated/vessel/register/`, the register's tables for every year.
+- `r fmt(nrow(lreg))` runs on the register on `r fmt(n_distinct(lreg$registration_no))` hulls come after the split.
+  `r fmt(sum(lreg$window_from == "continued"))` of them continue one of the history's.
+- Of `r fmt(nrow(live))` live stretches, `r round(100 * mean(live$status == "single"), 1)` % have one lineage, since the
+  fisheries' history and the radio's lists speak to few columns after 2023-12-19.
+  `r fmt(sum(live$rule %in% "D3"))` are resolved by the schema's precedence, and `r sum(live$status == "open")` stay open
+  under D2.
+- **The step's check:** every open row against the schema's current tables, registered hulls, column by column.
+  `r fmt(sum(opn$equal))` of `r fmt(nrow(opn))` values are equal.
 
 ## Not checked here
 

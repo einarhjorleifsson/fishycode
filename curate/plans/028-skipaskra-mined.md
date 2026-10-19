@@ -1,8 +1,11 @@
 # 028 — The annual ship register (Skipaskrá) mined whole, into the `vessel` schema's tables
 
-**status:** partly built — steps 1-5 built in the `once` project on 2026-10-18 (decisions 130-132, 135 and 136; step
-2 coded in another session, c56278d): the history to 2023-12-19, chosen by the decision model; D2's sample waits for a
-person's check, and steps 6 (the live part, in the main project) and 7 are to come; the output takes the `vessel` schema's table structure, not one table, and what public sources print is
+**status:** partly built — steps 1-5 built in the `once` project and steps 6-7 in the main project on 2026-10-18
+(decisions 130-132, 135, 136, 142 and 144; step 2 coded in another session, c56278d): the history to 2023-12-19, chosen by
+the decision model and rebuilt after the maintainer's check of D2 (97 % error; the GT formula is now a flag) and again
+with mbl last, kvoti first for the class and Hreiðar's years read right, and the `vessel` schema's own history after
+it, in `curated/vessel/register/`; `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R` read it, and the AIS
+chain and trail are rebuilt on them; the output takes the `vessel` schema's table structure, not one table, and what public sources print is
 kept (maintainer, 2026-10-18); §9 asks d and e open (TODO 83) · **2026-10-18** · **see:** decisions 046,
 047, 049 and 121; plans 008, 016, 021, 022 and 023; TODO 25 (the key redo, which rebuilds `annual_call_sign`), TODO 65
 and TODO 71 (the 2023-01-15 MMSI list)
@@ -502,9 +505,12 @@ This is the maintainer's rule, with the snapshots added:
 |---|---|---|
 | to 2004-01-01 | Hreiðar's workbook | the kvoti and ufs histories (from 1992) |
 | 2004-01-01 to 2022-01-01 | the PDFs | none: a dated source may place a change inside a year the editions bracket, but never changes its value |
-| 2022-01-01 to 2023-12-19 | the dated sources: the ufs journals, `skipasaga` to 2023-12-07 | the siglo scrape (2022-12-28), mbl (2023-01), the `vessel` schema's back-filled rows |
+| 2022-01-01 to 2023-12-19 | the dated sources: the ufs journals, `skipasaga` to 2023-12-07 | the siglo scrape (2022-12-28), the `vessel` schema's rows, the 2022 edition; mbl (2023-01) last, where no other source speaks (decision 144) |
 | from 2023-12-19 | the `vessel` schema's own history | |
 | MMSI, any time | `mmsi.parquet`'s windows | the lists it does not read (§3.7), MarineTraffic |
+
+For the fisheries class (`vessel_operational_hist`), kvoti and ufs come first in every period before 2023-12-19: the
+`vessel` schema's back-fill missed changes they date (decision 144).
 
 Where witnesses disagree, this precedence is the decision model's default rule (§6.2, D3). The model's other rules
 can overrule it, and every other value stays in the evidence table and goes to the discrepancy table (§5).
@@ -513,8 +519,8 @@ can overrule it, and every other value stays in the evidence table and goes to t
 
 - `staging/skipaskra/annual_call_sign.parquet` becomes a view of `vessel_identification_hist`, so the key redo reads
   the same values.
-- `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R`'s `yh1`/`yh2` today read parts of this from Hreiðar
-  and Oracle. Each is repointed in its own step, measured before and after.
+- `vessel_sign`, `vessel_class`, `vessel_year` and `registry.R`'s `yh1`/`yh2` read parts of this from Hreiðar and
+  Oracle until step 7, which repointed each to the register, measured before and after (decision 144).
 - `mmsi.R` stays the MMSI archive. `vessel_mmsi_hist` takes its windows, and the lists it does not read go in as
   evidence or checks (ask d).
 - The trail and the catch flow are not touched, except through those tables.

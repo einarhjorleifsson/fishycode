@@ -1,1 +1,2 @@
 vid,table,column,valid_from,valid_to,value,reviewer,date,reason
+6061,vessel_hist,power_kw,2016-01-01,2017-01-01,58,maintainer,2026-10-18,"a typo in the vessel schema's back-fill: 728 kW in 2016 alone, 58 the years either side, in the 2016 PDF and in Hreiðar (decision 144)"

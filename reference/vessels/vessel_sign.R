@@ -1,34 +1,33 @@
-# Call sign, local sign (ÍS-8) and name of each vessel over time (plan 016 §4 step 6b).
+# Call sign, local sign (ÍS-8) and name of each vessel over time (plan 016 §4 step 6b), from the ship register's history
+# (plan 028 step 7).
 # Side: preprocessing (vessels). See plan 014.
 #
-# Input:  staging/skipaskra/annual_call_sign.parquet       the annual register's call sign per vid and year, 2007-2022, the
-#                                                          state at the start of the year (a frozen input from the `once`
-#                                                          project, sources/skipaskra/annual_call_sign.R)
-#         raw/oracle/kvoti/skipasaga.parquet              Fiskistofa's dated history: local sign (einkst, einknr) and name
-#                                                          (heiti), 1990s to 2023-12-07
-#         raw/oracle/vessel/vessel_identification_hist_v.parquet Oracle's dated call sign and local sign (KE-18 from 1954)
-#         raw/oracle/vessel/vessel_hist_v.parquet                Oracle's dated name and register status
-#         raw/oracle/vessel/vessel_v.parquet                     vessel_id -> vid
+# Input:  curated/vessel/register/vessel_identification_hist.parquet  the register's call sign and local sign, every year:
+#                                                                      the decision model's choice among the PDFs, Hreiðar,
+#                                                                      kvoti and ufs and the `vessel` schema (decisions 136,
+#                                                                      142), within the hull's registered life
+#         curated/vessel/register/vessel_hist.parquet                 the register's name, likewise
+#         curated/vessel/register/decision.parquet                    the witnesses of each value
 # Output: curated/vessel/vessel_sign.parquet - one row per vid, kind (cs | uid | name), value and period [t1, t2)
 #
-# A vid is the hull for life; its marks are attributes at a time, and they wander: since 2007, 114 of the annual
-# register's 517 call signs and 1,614 of 4,101 local signs have passed between hulls, and 1,250 hulls have changed name.
-# `vessel_identity` times only the MMSI, so this is a table of its own (splitting identity's rows would repeat its MMSI
-# windows, and through the ping union the pings).
+# A vid is the hull for life; its marks are attributes at a time, and they wander: call signs and local signs pass
+# between hulls, and hulls change name. `vessel_identity` times only the MMSI, so this is a table of its own (splitting
+# identity's rows would repeat its MMSI windows, and through the ping union the pings).
 #
 #   value       as the register writes it: TFBR, ÍS-8, HUGINN
 #   key         for matching: upper case, Icelandic letters folded (Í -> I, Þ -> TH, ...), a local sign as letters and
 #               a 3-digit number (IS008, as vessel.parquet's uid; STK's loid writes some that way: ÞH061)
 #   t1, t2      whole days, t2 exclusive; 2099-12-31 open
-#   source      annual_register | skipasaga | oracle_hist
-#   window      source (as the source dates it) | cut (closed where the next holder took the mark: a struck hull's last
-#               mark stays open in the sources, as ÍS-8 on 1660 from 1996) | merged (consecutive periods of one value) |
-#               registration (the source's placeholder start, 1901-01-01, replaced by the hull's first registration) |
-#               conflict (two hulls on one mark at once, mostly both taking it on the same day: for a reader to settle)
+#   source      the witnesses of the value in the register's decisions, joined by "+": pdf | hreidar | kvoti.skipasaga |
+#               ufs.skip_jn | vessel | samgongustofa | mbl (the register's own `source` names a row's, not a column's)
+#   window      source (one stretch of the register) | merged (consecutive stretches of one value) | cut (closed where
+#               the next holder took the mark) | conflict (two hulls on one mark at once: for a reader to settle)
+#   basis       the register's
 #
-# A call sign or local sign has one holder at a time, bar a few flagged conflicts. A name is history for a reader, never a key: on
-# 2020-07-01 HAFDÍS was on 21 hulls at once. Oracle's rows count only while the hull is on the register: a struck hull
-# keeps its last call sign open there (TFBR "current" on 1473, 2815 and 3047 at once).
+# The register chooses one value per hull and column at a time and keeps it only while the hull is on the register, so
+# a hull holds one mark of a kind at a time, and a struck hull's mark ends with its registration. Across hulls nothing
+# forbids two on one mark, so a call sign or local sign still gets one holder at a time here, bar a few flagged
+# conflicts. A name is history for a reader, never a key: one name is on many hulls at once.
 
 library(dplyr)
 library(nanoparquet)
@@ -36,137 +35,104 @@ library(nanoparquet)
 OPEN <- as.Date("2099-12-31")
 fold <- function(x) {
   x <- toupper(trimws(x))
-  x <- chartr("ÁÉÍÓÚÝÖÆ", "AEIOUYOA", x)
+  x <- chartr("ÁÉÍÓÚÝÖÆÏÄ", "AEIOUYOAIA", x)
   x <- gsub("Þ", "TH", gsub("Ð", "D", x))
   gsub("[^A-Z0-9]", "", x)
 }
 uid_value <- function(st, nr) if_else(is.na(st) | is.na(nr), NA_character_, paste0(toupper(trimws(st)), "-", nr))
 uid_key   <- function(st, nr) if_else(is.na(st) | is.na(nr), NA_character_, paste0(fold(st), sprintf("%03d", nr)))
-as_day <- function(x) as.Date(format(x, "%Y-%m-%d"))
 
-v <- read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet")) |>
-  transmute(vessel_id = as.integer(vessel_id), vid = as.integer(registration_no), foreign = status %in% "Erlent")
-FOREIGN <- v$vid[v$foreign]
-
-# Oracle: the periods a hull is on the register (any status but struck), to clip its marks to
-oh <- read_parquet(fd_raw("oracle", "vessel", "vessel_hist_v.parquet")) |>
-  transmute(vid = as.integer(registration_no), from = as_day(valid_from), to = coalesce(as_day(valid_to), OPEN),
-            status, name = trimws(name), reg = as_day(initial_registration_date))
-# 1901-01-01 is the sources' placeholder for "held since some unknown day": several hulls then hold one sign at once from
-# 1901 (711 of 735 conflicts in a first version). A hull cannot carry a mark before it was registered, so such a period
-# starts at the hull's first registration instead (window "registration").
-PLACEHOLDER <- as.Date("1901-01-01")
-registered_on <- oh |> filter(!is.na(reg), reg > PLACEHOLDER) |> group_by(vid) |> summarise(reg = min(reg), .groups = "drop")
-from_registration <- function(d) d |>
-  left_join(registered_on, by = "vid") |>
-  mutate(placeholder = t1 <= PLACEHOLDER & !is.na(reg), t1 = if_else(placeholder, reg, t1)) |>
-  filter(t2 > t1) |>
-  select(-reg)
-# before the system change of 2023-12 the status is empty: not known to be struck, so on the register
-on_register <- oh |> filter(!status %in% "Afmáð") |> select(vid, rf = from, rt = to)
-clip <- function(d) d |>
-  inner_join(on_register, by = "vid", relationship = "many-to-many") |>
-  mutate(t1 = pmax(t1, rf), t2 = pmin(t2, rt)) |>
-  filter(t2 > t1) |>
-  select(-rf, -rt)
+reg <- function(table) read_parquet(fd_curated("vessel", "register", paste0(table, ".parquet"))) |>
+  mutate(vid = as.integer(registration_no), t1 = valid_from, t2 = coalesce(valid_to, OPEN))
+dec <- read_parquet(fd_curated("vessel", "register", "decision.parquet"),
+                    col_select = c("registration_no", "table", "column", "valid_from", "valid_to", "source")) |>
+  mutate(valid_to = coalesce(valid_to, OPEN))
+# the witnesses of a row's columns (each row lies inside one decision per column), as source families
+fam <- function(s) vapply(strsplit(s, "[;+] ?"), function(p) paste(sort(unique(sub(":.*$", "", p))), collapse = "+"), "")
+col_source <- function(d, tab, cols) {
+  d <- d |> mutate(.i = row_number())
+  s <- dec |> filter(table == tab, column %in% cols) |>
+    inner_join(d |> select(.i, vid, t1), by = join_by(registration_no == vid, valid_from <= t1, valid_to > t1)) |>
+    group_by(.i) |> summarise(source = fam(paste(source, collapse = "; ")), .groups = "drop")
+  d |> select(-source) |> left_join(s, by = ".i") |> select(-.i)
+}
 
 # Sources --------------------------------------------------------------------------------------------------------------
-ann <- read_parquet(fd_staging("skipaskra", "annual_call_sign.parquet")) |>
-  transmute(vid = as.integer(vid), kind = "cs", value = toupper(trimws(cs)), year = as.integer(year)) |>
-  filter(!is.na(value), value != "") |>
-  transmute(vid, kind, value, t1 = as.Date(paste0(year, "-01-01")), t2 = as.Date(paste0(year + 1L, "-01-01")),
-            source = "annual_register")
-
-sk <- read_parquet(fd_raw("oracle", "kvoti", "skipasaga.parquet")) |>
-  transmute(vid = as.integer(skip_nr), t1 = as_day(i_gildi), t2 = coalesce(as_day(ur_gildi), OPEN),
-            st = na_if(trimws(einkst), ""), nr = suppressWarnings(as.integer(einknr)), name = na_if(trimws(heiti), "")) |>
-  filter(vid > 0, !is.na(t1), t2 > t1)
-sk_uid  <- sk |> filter(!is.na(st), nr > 0, !vid %in% FOREIGN) |>
-  transmute(vid, kind = "uid", value = uid_value(st, nr), key = uid_key(st, nr), t1, t2, source = "skipasaga")
-sk_name <- sk |> filter(!is.na(name)) |> transmute(vid, kind = "name", value = toupper(name), t1, t2, source = "skipasaga")
-
-oi <- read_parquet(fd_raw("oracle", "vessel", "vessel_identification_hist_v.parquet")) |>
-  transmute(vessel_id = as.integer(vessel_id), t1 = as_day(valid_from), t2 = coalesce(as_day(valid_to), OPEN),
-            cs = na_if(toupper(trimws(call_sign)), ""), st = na_if(trimws(region_acronym), ""),
-            nr = suppressWarnings(as.integer(region_no))) |>
-  inner_join(v |> select(vessel_id, vid), by = "vessel_id") |>
-  filter(!is.na(t1), t2 > t1)
-oi_cs  <- oi |> filter(!is.na(cs)) |> transmute(vid, kind = "cs", value = cs, t1, t2, source = "oracle_hist") |> clip()
-oi_uid <- oi |> filter(!is.na(st), nr > 0, !vid %in% FOREIGN) |>
-  transmute(vid, kind = "uid", value = uid_value(st, nr), key = uid_key(st, nr), t1, t2, source = "oracle_hist") |> clip()
-oh_name <- oh |> filter(!is.na(name), name != "") |>
-  transmute(vid, kind = "name", value = toupper(name), t1 = from, t2 = to, source = "oracle_hist") |> clip()
+ident <- reg("vessel_identification_hist") |>
+  mutate(cs = na_if(toupper(trimws(call_sign)), ""), st = na_if(trimws(region_acronym), ""),
+         nr = suppressWarnings(as.integer(region_no)))
+cs   <- ident |> filter(!is.na(cs)) |> transmute(vid, kind = "cs", value = cs, key = fold(cs), t1, t2, source, basis) |>
+  col_source("vessel_identification_hist", "call_sign")
+uid  <- ident |> filter(!is.na(st), nr > 0) |>
+  transmute(vid, kind = "uid", value = uid_value(st, nr), key = uid_key(st, nr), t1, t2, source, basis) |>
+  col_source("vessel_identification_hist", c("region_acronym", "region_no"))
+name <- reg("vessel_hist") |> filter(!is.na(name), trimws(name) != "") |>
+  transmute(vid, kind = "name", value = toupper(trimws(name)), key = fold(name), t1, t2, source, basis) |>
+  col_source("vessel_hist", "name")
+stopifnot("every value has its witnesses" = !anyNA(c(cs$source, uid$source, name$source)))
 
 # Periods --------------------------------------------------------------------------------------------------------------
-# Per vid and kind, in time order: the later source wins where two overlap (Oracle after the register), and consecutive
-# periods of one value - also across a gap of under two years between sources - are merged.
+# The register's stretches change wherever any column of their table does, so consecutive stretches of one value that
+# touch are one period. A gap is time off the register, or with no value, and is kept.
 sign <-
-  bind_rows(ann, sk_uid, sk_name, oi_cs, oi_uid, oh_name) |>
-  mutate(key = coalesce(key, fold(value))) |>
-  filter(!(kind == "uid" & value == "AÁ-999")) |>          # a dummy sign on the placeholder vids 4 and 5
-  from_registration() |>
-  arrange(vid, kind, t1, desc(t2)) |>
+  bind_rows(cs, uid, name) |>
+  arrange(vid, kind, t1) |>
   group_by(vid, kind) |>
-  mutate(t2 = if_else(!is.na(lead(t1)) & lead(t1) < t2 & lead(value) != value, lead(t1), t2)) |>
-  filter(t2 > t1) |>
-  mutate(run = cumsum(value != lag(value, default = "") | t1 > lag(t2, default = as.Date("1900-01-01")) + 730)) |>
+  mutate(run = cumsum(key != lag(key, default = "") | t1 != lag(t2, default = as.Date("1800-01-01")))) |>
   group_by(vid, kind, run) |>
   summarise(value = first(value), key = first(key), t1 = min(t1), t2 = max(t2),
-            source = paste(unique(source), collapse = "+"), n = n(), placeholder = any(placeholder), .groups = "drop") |>
-  mutate(window = case_when(placeholder ~ "registration", n > 1 ~ "merged", .default = "source")) |>
-  select(-run, -n, -placeholder)
-# One value per hull at a time: a period ends where the hull's next, different value begins. Oracle's older rows end on
-# 1 January, skipasaga gives the day (vid 13: GULLTOPPUR to 2007-01-01 in Oracle, LITLABERG from 2006-12-29), and the
-# exact day wins.
-sign <- sign |> mutate(.r = row_number())
-nxt_v <- sign |>
-  inner_join(sign |> select(vid, kind, value2 = value, t1b = t1), by = join_by(vid, kind, t1 < t1b), relationship = "many-to-many") |>
-  filter(value2 != value) |>
-  group_by(.r) |> summarise(next_value = min(t1b), .groups = "drop")
-sign <- sign |>
-  left_join(nxt_v, by = ".r") |>
-  mutate(t2 = if_else(!is.na(next_value) & next_value < t2, next_value, t2)) |>
-  filter(t2 > t1) |>
-  select(-.r, -next_value)
+            source = fam(paste(source, collapse = "+")), basis = paste(sort(unique(basis)), collapse = "+"),
+            window = if (n() > 1) "merged" else "source", .groups = "drop") |>
+  select(-run)
 
-# One holder at a time for a call sign or a local sign: a period ends where another hull next takes the mark, whichever
-# row that is (a struck hull's stale period can span several later holders: KE-18 on 567 from 1954).
+# One holder at a time for a call sign or a local sign: a period ends where another hull takes the mark over. A local
+# sign passes between hulls often, and the later holder's dated change ends the earlier's annual value. A call sign is
+# the hull's for life, so another hull takes it over only by holding it to this period's end or beyond.
 marks <- sign |> filter(kind %in% c("cs", "uid")) |> mutate(.r = row_number())
 nxt <- marks |>
-  inner_join(marks |> select(kind, key, vid2 = vid, t1b = t1), by = join_by(kind, key, t1 < t1b), relationship = "many-to-many") |>
-  filter(vid2 != vid) |>
+  inner_join(marks |> select(kind, key, vid2 = vid, t1b = t1, t2b = t2), by = join_by(kind, key, t1 < t1b), relationship = "many-to-many") |>
+  filter(vid2 != vid, t1b < t2, kind == "uid" | t2b >= t2) |>
   group_by(.r) |> summarise(next_other = min(t1b), .groups = "drop")
 held <- marks |>
   left_join(nxt, by = ".r") |>
-  mutate(cut = !is.na(next_other) & next_other < t2,
+  mutate(cut = !is.na(next_other),
          t2 = if_else(cut, next_other, t2),
          window = if_else(cut, "cut", window)) |>
   filter(t2 > t1) |>
   select(-.r, -next_other, -cut)
-# one hull's overlapping pieces of one mark are one period
-held <- held |>
-  arrange(kind, key, vid, t1) |>
-  group_by(kind, key, vid) |>
-  mutate(run = cumsum(t1 > lag(cummax(as.numeric(t2)), default = -Inf))) |>
-  group_by(kind, key, vid, run) |>
-  summarise(value = first(value), t1 = min(t1), t2 = max(t2), source = paste(unique(unlist(strsplit(source, "[+]"))), collapse = "+"),
-            window = if (n() > 1) "merged" else first(window), .groups = "drop") |>
-  select(-run)
-# what is left is two hulls on one mark at once - mostly both taking it on the same day in the source. Kept and flagged
-# `conflict`, for a reader to settle, rather than settled by a rule that would be a guess.
-held <- held |>
-  arrange(kind, key, t1) |>
-  group_by(kind, key) |>
-  mutate(conflict = (t1 < lag(cummax(as.numeric(t2)), default = -Inf)) |
-                    (lead(t1, default = OPEN + 1) < t2)) |>
-  ungroup() |>
+# What is left is two hulls on one mark at once: one holding inside another's (mbl's 2023 page gives 2730 the TFCR it
+# held to 2013, while 2892 holds it), or both taking it on the same day. Kept, and the overlap alone flagged `conflict`,
+# for a reader to settle, rather than settled by a rule that would be a guess: each period is split where another
+# hull's period of the mark starts or ends, the pieces two hulls hold are flagged, and the rest joined again.
+bounds <- bind_rows(held |> select(kind, key, d = t1), held |> select(kind, key, d = t2)) |> distinct()
+pieces <- held |>
+  mutate(.r = row_number()) |>
+  left_join(bounds, by = join_by(kind, key, t1 < d, t2 > d), relationship = "many-to-many") |>
+  group_by(.r) |>
+  reframe(kind = first(kind), key = first(key), vid = first(vid), value = first(value), source = first(source),
+          basis = first(basis), window = first(window),
+          t1 = sort(unique(c(first(t1), d[!is.na(d)]))), t2 = c(t1[-1], first(t2)))
+holders <- pieces |>
+  inner_join(held |> select(kind, key, vid2 = vid, h1 = t1, h2 = t2), by = join_by(kind, key, t1 >= h1, t1 < h2), relationship = "many-to-many") |>
+  group_by(.r, t1) |> summarise(conflict = n_distinct(vid2) > 1, .groups = "drop")
+held <- pieces |>
+  left_join(holders, by = c(".r", "t1")) |>
+  arrange(.r, t1) |>
+  group_by(.r) |>
+  mutate(run = cumsum(conflict != lag(conflict, default = first(!conflict)))) |>
+  group_by(.r, run, conflict) |>
+  summarise(kind = first(kind), key = first(key), vid = first(vid), value = first(value), t1 = min(t1), t2 = max(t2),
+            source = first(source), basis = first(basis), window = first(window), .groups = "drop") |>
   mutate(window = if_else(conflict, "conflict", window)) |>
-  select(-conflict)
+  select(-.r, -run, -conflict)
 sign <- bind_rows(held, sign |> filter(kind == "name")) |>
-  mutate(basis = "recorded") |>
+  select(kind, key, vid, value, t1, t2, source, window, basis) |>
   arrange(vid, kind, t1)
 
 # Assertions -----------------------------------------------------------------------------------------------------------
+# The register gives a hull one value of a kind at a time.
+two <- sign |> arrange(vid, kind, t1) |> group_by(vid, kind) |> filter(t1 < lag(t2)) |> ungroup()
+if (nrow(two)) { print(two, n = 20); stop(nrow(two), " periods where a vid holds two values of one kind at once", call. = FALSE) }
 # A call sign or local sign has one holder at a time, except the flagged conflicts; they must stay rare.
 cf <- sign |> filter(window == "conflict")
 cat("conflict periods (two hulls on one mark at once):", nrow(cf), "of", sum(sign$kind %in% c("cs", "uid")),
@@ -178,10 +144,8 @@ if (sum(m7$window == "conflict") > 0.01 * nrow(m7)) stop("more than 1% of mark p
 un <- sign |> filter(kind %in% c("cs", "uid"), window != "conflict") |> arrange(kind, key, t1) |> group_by(kind, key) |>
   filter(t1 < lag(t2)) |> ungroup()
 if (nrow(un)) { print(un, n = 20); stop(nrow(un), " overlapping mark periods not flagged", call. = FALSE) }
-two <- sign |> arrange(vid, kind, t1) |> group_by(vid, kind) |> filter(t1 < lag(t2)) |> ungroup()
-cat("periods where a vid holds two values of one kind at once:", nrow(two), "\n")
 
-print(sign |> count(kind, source, window), n = Inf)
+print(sign |> count(kind, window), n = Inf)
 for (k in c("cs", "uid", "name")) {
   s7 <- sign |> filter(kind == k, t2 > as.Date("2007-01-01"))
   cat(k, ": marks on more than one hull since 2007:", s7 |> distinct(key, vid) |> count(key) |> filter(n > 1) |> nrow(),
@@ -189,6 +153,4 @@ for (k in c("cs", "uid", "name")) {
 }
 
 write_curated(sign, fd_curated("vessel", "vessel_sign.parquet"),
-              inputs = c(fd_staging("skipaskra", "annual_call_sign.parquet"), fd_raw("oracle", "kvoti", "skipasaga.parquet"),
-                         fd_raw("oracle", "vessel", "vessel_identification_hist_v.parquet"), fd_raw("oracle", "vessel", "vessel_hist_v.parquet"),
-                         fd_raw("oracle", "vessel", "vessel_v.parquet")))
+              inputs = file.path(fd_curated("vessel", "register"), c("vessel_identification_hist.parquet", "vessel_hist.parquet", "decision.parquet")))
