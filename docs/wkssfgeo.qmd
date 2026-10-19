@@ -23,7 +23,18 @@ the summary of the two reports.
 ## The example data, and which are in ramb
 
 "In ramb" means a table in ramb's `inst/extdata`, read with `rb_read_example()`. "Not public" means the set was never on
-either GitHub repository; only the workshop chairs (Rufino, Mendo) can release it.
+either GitHub repository.
+
+**Where the sets that are not public are.** The report itself names the place. Annex 5, the output of the script that
+standardised the sets, finds them in three places: the WKSSFGEO GitHub (`data-examples/`), the WKSSFGEO2 GitHub, and
+the **WKSSFGEO2 SharePoint**: `community.ices.dk/ExpertGroups/WKSSFGEO2`, folder `2022 Meeting Documents/06. Data`.
+Section 2.3 says that script, `WKSSFGEO2_examples_data_base.Rmd`, is on the SharePoint "for workshop members" and on
+the WKSSFGEO2 GitHub "for anyone"; the GitHub repository has neither the script nor these five sets (checked
+2026-10-19, at f3e49fe). The report's summary calls the data set "openly available on ICES github", which holds for
+only part of it.
+
+The SharePoint is for WKSSFGEO2's members. The maintainer took part in WKSSFGEO, not WKSSFGEO2, so the way in is
+through ICES or the chairs, Rufino and Mendo (TODO 93). Whether a set may then go into ramb is for its provider to say.
 
 | Dataset | Provider, gear, size | In ramb |
 |---|---|---|
