@@ -57,32 +57,32 @@ codes all resolve against it.
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
 
-`fishycode` public on GitHub, `fishydata` never public, `fishyweb` an open web page. The design, the evidence and the
-open questions are in the plan. **Answered 2026-10-16 (§4):** fishycode is public
-(`github.com/einarhjorleifsson/fishycode`), with its history as it was, so that history is now fixed; the Mapbox token
-in it is revoked (maintainer) and out of the working tree. **Answered in part (§3):** the three-vessel rule applies
-only to the ICES VMS datacall, and no minimum vessel count applies anywhere else (maintainer, 2026-10-17).
+`fishycode` public on GitHub, `fishydata` never public; the open web page that was to be `fishyweb` is now the book of
+plan 033. The design, the evidence and the open questions are in plan 001. **Answered 2026-10-16 (§4):** fishycode is
+public (`github.com/einarhjorleifsson/fishycode`), with its history as it was, so that history is now fixed; the
+Mapbox token in it is revoked (maintainer) and out of the working tree. **§3 answered:** the three-vessel rule applies
+only to the ICES VMS datacall (maintainer, 2026-10-17), and on 2026-10-19 (plan 033 ask c) rendered figures and tables
+may be published but no data file, an interactive widget counts as data, and no personal data. **§5 answered in
+part:** the book renders from `$FISHYDATA` on this machine and only its pages are published; ramb is public.
 
-The boundary that still needs a rule is `fishydata` → `fishyweb`, a data-disclosure question that binds item 16.
-**Asked of the maintainer, in the plan's own words:** the rest of the aggregation rule for what may leave `fishydata`
-for an open `fishyweb` (the minimum cell and the allowlist of tables, §3); and §5: where `fishydata` lives and whether
-it is backed up, whether `fishyweb` reads `fishydata` directly or only extracts committed to it, and whether `ramb` is
-public. Everything else in the plan I can act on unblocked. `fishyweb` has local commits that wait for its
-first remote too (27b35ff, the plan 014 names; from TODO 52).
+**Still asked of the maintainer (§5):** where `fishydata` lives once it leaves this laptop, and whether it is backed
+up (404 GB). `fishyweb` has local commits that wait for a remote (27b35ff, the plan 014 names; from TODO 52), now
+settled by plan 033 step 4.
 
 **check:** the questions of plan 001 §3 and §5 are answered in the plan.
 
 ---
 
 ## 16. `~/stasi/fishyweb` — port the last mile
-**status:** blocked · **see:** `curate/plans/002-the-last-mile.md`, item 15
+**status:** open · **see:** `curate/plans/002-the-last-mile.md`, plan 033 step 4, items 15 and 94
 
-`fishyweb` is alive, not an archive (maintainer, 2026-09-22) — the third repo of plan
-001, keeping its 22 `ramb/` posts. The question is what to *port*, and the design is in
-plan 002. Blocked on item 15's disclosure rule, which decides what may leave
-`fishydata` at all.
+`fishyweb` was to be the third repo of plan 001, keeping its 22 `ramb/` posts (maintainer, 2026-09-22). Since
+2026-10-19 its role passes to the book of plan 033: its five real pages move into `docs/`, its 26 outlines are dropped,
+and it is archived read-only. The disclosure rule this item waited on is answered (item 15, plan 033 ask c). The posts
+of `~/stasi/fishyweb_2026-09-24` are sources for chapters, read against ramb's present names.
 
-**check:** plan 002's port list is built and item 15's disclosure rule exists.
+**check:** plan 033 step 4 done: fishyweb's five pages in the book and fishyweb archived; plan 002 closed or
+redirected.
 
 ---
 
@@ -649,22 +649,26 @@ The asks:
 reason.
 
 ## 94. fishybook: one Quarto book for the groups' thinking, ramb's methods and the Icelandic data (plan 033)
-**status:** open · **needs: maintainer** — asks a-f of plan 033 §12 · **see:** `curate/plans/033-fishybook.md`, plans
-001 and 002, items 15, 16 and 91
+**status:** open · **see:** `curate/plans/033-fishybook.md`, plans 001 and 002, items 15, 16 and 91
 
-The maintainer, 2026-10-19: replace the doc spaces with one Quarto book. Its main text is generic (the problem, the
-approach, the ramb code, on example data), it consolidates the WKSSFGEO, WKSSFGEO2 and WGSFD reports for their
-members, and it is the guide to what ramb can do and still lacks. Technical tests go in appendices, and the
-Icelandic data manual is its own part. ramb keeps only what it takes to run it.
+The maintainer, 2026-10-19: replace the doc spaces with one Quarto book, *From pings to effort and catch*, for the
+members of WGSFD and WKSSFGEO. Its main text is generic (the problem, the approach, the ramb code, on example data). It
+consolidates the groups' reports, and it is the guide to what ramb can do and still lacks. Technical tests go in
+appendices, and the Icelandic data manual is its own part. ramb keeps only what it takes to run it.
 
-Measured (plan 033 §2): 26 of fishyweb's 35 pages are outlines; `docs/` holds the real text, and the record links to it
-about 130 times; the seed is `one_flow.qmd` and `wkssfgeo.qmd`. The ICES texts are in `raw/external/ices/`: the 11
-WGSFD reports of 2013-2025 were fetched 2026-10-19 (1,129 pages, licences differ by period), beside the two
-workshop reports. A Quarto profile builds an internal edition with the Icelandic part appended (tested).
+Asks a-f answered the same day (plan 033 §12):
 
-Proposed: `docs/` converted in place, so the links hold; a public edition (Parts I-III, appendices) and an internal
-one (with Part IV) from one source; no chapter before its text; record → book, one way; ramb's articles moved, not
-copied; one gap file behind every "what ramb lacks" view; `check_book()` in `check_bookkeeping()`. Item 16's port
-target becomes the book's public edition if ask a is answered as proposed.
+- `docs/` converted in place, keeping its name;
+- one edition, at `~einarhj/fishybook`;
+- Part IV public: rendered figures and tables, no data files; widgets count as data, so vessel data are static and
+  interactive figures use ramb's example sets;
+- the four leftover pages removed;
+- the 2026 meeting folder moved, and cited once published.
 
-**check:** asks a-f answered in the plan, and plan 033's step 1 built (`docs/` renders as a book in both editions).
+**Next, step 1: mine the ICES reports** (§11.1) before any new text. The 11 WGSFD reports (2013-2025, 1,129 pages,
+fetched 2026-10-19 into `raw/external/ices/`) and the two WKSSFGEO reports, read again for the book. One subagent per
+report, a pilot on WGSFD 2025b first. The output is `docs/ices_reports.yml` (a reading map by topic and page), a
+decision, and §4's outline revised. The conversion of `docs/` (step 2) writes no text and may run alongside.
+
+**check:** plan 033 steps 1 and 2 done: the reading map and its decision exist, §4 is revised, and `docs/` renders as
+a book.

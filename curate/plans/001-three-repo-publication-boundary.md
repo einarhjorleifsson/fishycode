@@ -1,7 +1,9 @@
 # 001 — the three-repo publication boundary
 
-**Status:** proposal — §4 done (fishycode public since 2026-10-16); §3 answered in part (decision 118); the rest of §3
-and §5 wait on the maintainer (TODO 15). **Drafted:** 2026-09-22, from the maintainer's statement of intent.
+**Status:** proposal — §4 done (fishycode public since 2026-10-16); §3 answered (decision 118, and plan 033's ask c
+on 2026-10-19: rendered figures and tables may be published, data files may not); §5 answered but for where
+`fishydata` lives and its backup, which waits on the maintainer (TODO 15). `fishyweb`'s role passes to the book of
+plan 033. **Drafted:** 2026-09-22, from the maintainer's statement of intent.
 
 **Measured vs assumed.** The repository facts below — remote state, commit counts, the
 token, the absence of Oracle credentials in tracked code — were checked on 2026-09-22
@@ -67,6 +69,18 @@ to the ICES VMS datacall, where the delivery lists the vessels of each cell (`An
 it. No minimum vessel count applies anywhere else, `fishyweb` included. Still open: the minimum spatial cell, and the
 allowlist of tables that may leave `fishydata`.
 
+**Answered (maintainer, 2026-10-19, plan 033 ask c).** The open web page is now the book of plan 033, which takes over
+`fishyweb`'s pages. All of it may be public "as long as no data goes with it":
+
+- rendered figures and tables from the data may be published;
+- no data file may, so the allowlist of tables is empty;
+- an interactive widget counts as data, since it writes its points into the page, so vessel-level data are shown as
+  static figures;
+- no personal data, as `AGENTS.md` already rules.
+
+No minimum spatial cell is set for rendered figures (Claude's reading of the answer, which shows vessel-level
+figures). The book's `check_book()` enforces the file and widget rules (plan 033 §10).
+
 ## 4. Before the first push to a public remote
 
 Measured 2026-09-22:
@@ -101,4 +115,7 @@ Measured 2026-09-22:
 - Does `fishyweb` read `fishydata` directly, or only pre-rendered extracts committed to
   it? The answer determines whether the disclosure rule is enforced once at export or
   on every page build.
+  *Answered by plan 033 (asks a and c, 2026-10-19): the book lives in `fishycode/docs`, renders on this machine
+  from `$FISHYDATA`, and only the rendered pages are published, so the rule is enforced at every build.*
 - Is `ramb` (the installed package, 62 exports) public? It sits between all three.
+  *Yes: `github.com/einarhjorleifsson/ramb` is public (checked 2026-10-19).*

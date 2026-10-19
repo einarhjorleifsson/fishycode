@@ -1,6 +1,9 @@
 # 033 — fishybook: one Quarto book that consolidates the ICES groups' thinking, with ramb as its code
 
-**status:** proposal · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
+**status:** proposal — asks a-f answered by the maintainer 2026-10-19 (§12): `docs/` converted in place, keeping its
+name; one edition at `~einarhj/fishybook`, Part IV in it (rendered figures and tables, no data files, vessel
+data static); the four leftover pages removed; the meeting folder moved, cited once published; the title *From pings to
+effort and catch*; nothing built · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
 be) and plan 002 (its port list), TODO 15 and 16; TODO 91 (ramb's pkgdown index); TODO 93 and decision 148 (the
 workshops' data); `docs/one_flow.qmd`, `docs/wkssfgeo.qmd`
 
@@ -91,9 +94,13 @@ small-scale fisheries. They know their own data and the data call, and they use 
 **Using the texts.** The book paraphrases and cites by page. Quotes are short, marked and attributed. A figure is
 reused only where its licence allows: the CC BY 4.0 reports with attribution, and never a third-party figure inside
 them on that licence alone. The 2013-2019 WGSFD reports are paraphrased and cited, with no figure without ICES's
-permission. The 2026 meeting folder informs the text, but the public edition cites only what is published (ask e).
+permission. The 2026 meeting folder informs the text, and the book cites it only once the group's report is published
+(ask e).
 
 ## 4. The book's parts
+
+**Provisional until the reports are mined** (§11.1): the mining revises this outline before any new chapter is
+written.
 
 A chapter is listed in `_quarto.yml` only once its text exists (§8). The outline below is the only place a chapter
 that is not yet written is named. "Seed" is the text it starts from; "sources" are what it distils.
@@ -131,7 +138,7 @@ that is not yet written is named. "Seed" is the text it starts from; "sources" a
 
 Later meetings are appended, one chapter each.
 
-**Part IV — The Icelandic data** (the internal edition only, until TODO 15 decides otherwise; §6)
+**Part IV — The Icelandic data** (published with the rest, under ask c's rule; §6)
 
 - *Sources*: `afli-tables`, `source-schemas`, `grammar_logbooks`, `skipaskra`, `stk_data-inspection`, `on_ais`,
   `ports`.
@@ -156,8 +163,10 @@ moving files. `ports.md` is a standalone render today: step 1 decides whether it
   step 6, and the source of the gap file's `asked` column.
 - E. *The example data*: sources and licences, from ramb's `inst/extdata/data-dict.yaml`.
 
-**Out of the book**: `on_disk.qmd` (macOS disk notes), `ramb-list.qmd` (8 lines), `notes_mid-to-vid.md`, and
-`project-review.qmd`. Where they go is ask d. fishyweb's 26 outlines are dropped.
+**Removed** (ask d): `on_disk.qmd` (macOS disk notes), `ramb-list.qmd` (a listing for a `ramb/` folder that
+`docs/` lacks), `notes_mid-to-vid.md` (the mid → vid plan before plan 009), and `project-review.qmd` (the review of
+the `logbooks` repo). Git keeps them, so the links in decisions 022, 069 and 081 still resolve at their commit.
+fishyweb's 26 outlines are dropped.
 
 ## 5. Each chapter's shape
 
@@ -176,41 +185,50 @@ Every chapter carries the AI-use callout the docs pages already use, and a revie
 so machine and human text stay distinguishable. Part IV chapters keep the manual's shape: the source, its defects,
 what the build does, the columns and their basis.
 
-## 6. Two editions from one source (measured with Quarto 1.8.26, in a scratch book)
+## 6. One edition, and what may be published with it
 
-- `docs/_quarto.yml` is the **public edition**: Parts I-III and the appendices.
-- `docs/_quarto-internal.yml` lists **only Part IV**, and `project: output-dir: _book-internal`.
+**Answered (ask c, maintainer 2026-10-19):** all of Part IV may be public "as long as no data goes with it". What that
+means:
 
-Measured: a profile's `book: chapters:` are **appended** to the base list, and land after the base chapters and before
-the appendices. The generic chapters therefore keep their numbers in both editions. Each edition renders to its own
-folder, and the public folder holds no Part IV page. A cross-reference from a base chapter into Part IV renders in the
-public edition as `WARN: … Unable to resolve crossref`.
+- **Rendered figures and tables** from the data may be published.
+- **Data files** may not: no parquet, CSV, RDS, GeoPackage or other extract is published with the book, or linked
+  from it.
+- **An interactive widget counts as data**, since it writes its points into the page (asked and answered the same
+  day). Vessel-level data are shown as static figures. mapdeck, leaflet, plotly or DT are used only over aggregates or
+  ramb's public example data. Today only `stk_data-inspection.qmd` has such a map (mapdeck). The maintainer, the same
+  day: an interactive part "could always center the topic around the public data already in the ramb package". So the
+  interactive figure of a topic is drawn on ramb's example sets, and the Icelandic data show the same thing static.
+- **Personal data never**, as `AGENTS.md` already rules for `docs/`: no kennitala, and none of the owners, addresses
+  or phones a public source prints.
 
-Rules:
+So there is **one edition**: `docs/_quarto.yml` with all four parts, rendered on this machine from `$FISHYDATA`, and
+only the rendered `_book/` is published. The internal edition first proposed, and the "locally only" answer to its half
+of ask b, fall away.
 
-- Parts I-III and the appendices never link or cross-refer into Part IV. Part IV may refer back.
-- No kennitala in either edition (`AGENTS.md`: never in `docs/`).
-- A Part IV chapter moves into the public edition only under TODO 15's rule (ask c).
-- **Assumed, not tested:** that an Icelandic example inside a generic chapter can be kept out of the public output
-  with `::: {.content-visible when-profile="internal"}`. Its code still runs on a public render, which needs
-  `$FISHYDATA`. Prefer Part IV for such examples.
+*Kept for the record, not used:* Quarto 1.8.26 can build two editions from one source (measured in a scratch book). A
+profile's `book: chapters:` are appended after the base chapters and before the appendices. `project: output-dir`
+gives each edition its own folder. A cross-reference into a part missing from an edition renders as `WARN: …
+Unable to resolve crossref`.
 
 ## 7. Where it lives: `fishycode/docs`, converted in place
 
-**Proposed:** `docs/` becomes the book (`project: type: book`), and its directory keeps its name. Why here:
+**Answered (ask a):** `docs/` becomes the book (`project: type: book`), and **keeps its name**. A rename to `book/`
+was weighed and refused: `docs/` is named 200 times in 69 files (32 decision records, 21 plans, 6 corrections,
+`AGENTS.md`, `R/paths.R`), and renaming would mean rewriting them or leaving them dangling, for a label only. Why
+here:
 
 - Part IV must change in the same commit as the code that makes its columns.
 - The ~130 links into `docs/` keep working.
 - `check_bookkeeping()` can enforce the book's rules.
-- fishycode is already public, so the source is no more exposed than `docs/` is today. `_book*/` is added to
+- fishycode is already public, so the source is no more exposed than `docs/` is today. `_book/` is added to
   `.gitignore` (today it ignores `_freeze/` and `_site/`).
 
 `fishyweb` gives its five real pages to the book (step 4). Its unpushed commit and untracked note are settled, and it
-is archived read-only, as `kaenugardr` was (decision 006). The open web page of plan 001 becomes the book's public
-edition. Plans 001 and 002 and TODO 15 and 16 are updated in that commit.
+is archived read-only, as `kaenugardr` was (decision 006). The open web page of plan 001 becomes the book. Plan 002 and
+TODO 16 are closed or redirected in that commit.
 
-**Alternative** (the maintainer's first framing): `fishyweb` renamed `fishybook`, as its own repo. That is a
-cleaner unit to publish, but Part IV would leave the code it documents and its links would break. This is ask a.
+*Not chosen:* `fishyweb` renamed `fishybook`, as its own repo (the maintainer's first framing). It would have been a
+cleaner unit to publish, but Part IV would have left the code it documents.
 
 ## 8. Rules
 
@@ -256,7 +274,7 @@ in step 3.
 
 `check_book()` in `R/`, called by `check_bookkeeping()`. It is pure base R and needs no `$FISHYDATA`:
 
-1. every chapter listed in `_quarto.yml` and `_quarto-internal.yml` exists, and every `.qmd`/`.md` in `docs/` is
+1. every chapter listed in `_quarto.yml` exists, and every `.qmd`/`.md` in `docs/` is
    listed or on a short, named exclude list;
 2. no listed chapter contains "To be filled in";
 3. every chapter carries the AI-use callout and a review line;
@@ -264,40 +282,107 @@ in step 3.
    via `find.package()`; skipped with a note if ramb is absent);
 5. every function in the gap file's `ramb` column exists in ramb, and a `nowhere` row whose named function now exists
    is flagged;
-6. no Part I-III or appendix file links or cross-refers to a Part IV file or label (a static scan, cheaper than
-   rendering).
+6. no chapter that reads `$FISHYDATA` loads an interactive widget library (mapdeck, leaflet, plotly, DT, reactable,
+   ggiraph, mapview) unless it is on a short, named list of chapters that show only aggregates (ask c);
+7. when `_book/` exists, it holds no data file (parquet, CSV, RDS, GeoPackage, FlatGeobuf, GeoJSON, Excel) (ask c).
 
 ## 11. Steps
 
-1. **Convert `docs/` to a book in place, with no new text.** `type: book`, the parts from existing pages, Part IV in
-   the internal profile; fix the title, URL, GitHub link, the two phantom render entries and the four pages in no
-   menu; `_book*/` in `.gitignore`. Both editions render. The pages out of the book go where ask d says.
-2. **`check_book()`** (§10), wired into `check_bookkeeping()`.
-3. **The gap file** (§9), seeded from `one_flow.qmd`, whose two tables are then generated from it; the status
-   diagram decided.
-4. **fishyweb's five pages in**: the data dictionary, species 445 and trawl footprint to Part IV; whacky positions to
+**The reports come first** (maintainer, 2026-10-19). The WGSFD reports, on top of the WKSSFGEO reports already read,
+should decide the book's main chapters. The outline in §4 was drawn from what fishycode and ramb hold, so it is
+provisional until they are mined (§11.1). Step 2 only regroups existing pages and writes no text, so it may run
+alongside step 1.
+
+1. **Mine the ICES reports** (§11.1). The result is a reading map, a decision record of what was found, and §4
+   revised from it, in one commit.
+2. **Convert `docs/` to a book in place, with no new text.** `type: book`, the four parts from existing pages; the
+   title *From pings to effort and catch*, subtitle *Spatial fisheries data with ramb* (ask f); `site-url`
+   `heima.hafro.is/~einarhj/fishybook` (ask b); the GitHub link to fishycode; drop the two phantom render entries;
+   `_book/` in `.gitignore`. Remove the four leftover pages (ask d), and make `stk_data-inspection.qmd`'s mapdeck map
+   static (ask c). The book renders.
+3. **`check_book()`** (§10), wired into `check_bookkeeping()`.
+4. **The gap file** (§9), seeded from `one_flow.qmd` and from the reading map's asks; `one_flow.qmd`'s two tables are
+   then generated from it; the status diagram decided.
+5. **fishyweb's five pages in**: the data dictionary, species 445 and trawl footprint to Part IV; whacky positions to
    chapter 7 (generic, public data) and Part IV (the tracks); the AIS trip tutorial checked against ramb 2026.10.19.2's
-   names, then into chapter 8 or dropped. Settle 27b35ff and the untracked note; archive fishyweb; update plans 001,
-   002 and TODO 15, 16.
-5. **ramb's seven articles into Part II**, one at a time, each deleted from ramb when its chapter lands; ramb's "Get
+   names, then into chapter 8 or dropped. Settle 27b35ff and the untracked note; archive fishyweb; close or redirect
+   plan 002 and TODO 16.
+6. **ramb's seven articles into Part II**, one at a time, each deleted from ramb when its chapter lands; ramb's "Get
    started"; `distance-2026-10-12.qmd` to appendix B.
-6. **The ICES texts indexed**: appendix D, by step and page; the `asked` column filled. The meeting folder moved under
-   `$FISHYDATA/raw/external/ices/` with its provenance, if the maintainer agrees (ask e).
-7. **New chapters, one at a time**, in the shape of §5: 1, 3, 4, 11, 12, 15, 16 first. Each is its own commit and
-   enters the book only when written.
-8. **Publish the public edition** (ask b). It replaces the old 2026-09-01 grammar page at `/~einarhj/logbooks`.
+7. **The 2026 meeting folder** moved under `$FISHYDATA/raw/external/ices/` with its provenance, after a checksum check
+   (ask e), and mined the same way. It is cited only once the group's 2026 report is published, and that report is
+   mined when it is.
+8. **New chapters, one at a time**, in the shape of §5 and in the order the revised outline gives. Each is its own
+   commit and enters the book only when written.
+9. **Publish** at `heima.hafro.is/~einarhj/fishybook` (ask b). The old 2026-09-01 grammar page at
+   `/~einarhj/logbooks` gets a pointer to it.
 
-## 12. Asks (needs: maintainer)
+### 11.1 Mining the ICES reports
 
-- a. Where the book lives: `fishycode/docs` converted in place (proposed), or its own repo.
-- b. The public edition's URL, and where the internal edition is served (only locally, or on an internal server).
-- c. Which Part IV chapters may go into the public edition: TODO 15's rule (the minimum cell, the table allowlist).
-  Until then, none.
-- d. Where `on_disk.qmd`, `ramb-list.qmd`, `notes_mid-to-vid.md` and `project-review.qmd` go: the Trash, or kept
-  outside the book.
-- e. Whether the 2026 meeting folder moves under `$FISHYDATA/raw/external/ices/`, and whether its working documents
-  may be cited in the public edition before the group's report is published.
-- f. The book's title.
+**What is read.**
+
+- The 11 WGSFD reports (2013-2025, 1,129 pages), in full.
+- The two WKSSFGEO reports (176 pages), a second time. The first reading (decision 148, `docs/wkssfgeo.qmd`) asked
+  what plan 031 and the flow's wish list needed. This one asks what the book needs.
+
+**What each reading returns.** One fixed structure per report, so the reports can be compared and the map can be
+merged:
+
+- *the report*: its terms of reference and what it set out to do; the state of the ICES VMS and logbook data call
+  that year (what was requested, at what resolution); its main outputs;
+- *one row per topic it treats*:
+  - `report`, `pages` (printed page numbers);
+  - `topic`: a flow step, or anything else the report treats;
+  - `kind`: method, definition, finding, recommendation or ask, data-call change, or product;
+  - a summary of one or two sentences, in the reader's own paraphrase;
+  - the group's terms for it;
+- *the vocabulary*: the terms the group uses, and what each means there, for the grammar chapter's mapping (§3).
+
+Which topics beyond the flow's steps the reports treat is the point of the reading. Their titles and the group's remit
+suggest the following, but **this is not measured until they are read**:
+
+- gridding and aggregation (c-squares);
+- fishing intensity and footprint;
+- pressure and impact on the seabed (swept-area ratio, sfdSAR);
+- the quality of national submissions;
+- governance and disclosure (WGSFDGOV);
+- small-scale fisheries, AIS and high-resolution data.
+
+**How.**
+
+- **One subagent per report**, or per pair of short ones: about eight in all. Each reads the text of its PDF with page
+  markers, so every row cites printed pages.
+- **A pilot first:** WGSFD 2025b (45 pages, the latest). Its rows are checked against the PDF (pages cited, nothing
+  invented) and the structure is fixed before the rest are read.
+- **Copyright:** summaries are paraphrases, never copied passages, and a quoted term is only a term. The 2013-2019
+  reports may be reproduced only with permission, so the map holds no text of theirs beyond terms.
+- **Cost:** about 1,300 pages, on the order of a million tokens of reading.
+
+**Where the results go.** Record → book, one way (§8):
+
+- **`docs/ices_reports.yml`**, the reading map. It holds the report-level fields and the topic rows above. It is the
+  source of appendix D, of the gap file's `asked` column, and of each chapter's "what the groups say" (§5). Its
+  header states that it was read by AI subagents, spot-checked against the PDFs, and not reviewed line by line.
+- **A decision record**, numbered when it is written: what the reports treat, how often and when, and what that
+  changes in the book.
+- **§4 of this plan revised** from it, in the same commit. The parts and chapters follow what the groups have
+  actually worked on, not only what ramb and fishycode hold.
+
+## 12. Asks, answered by the maintainer on 2026-10-19
+
+- a. **Where the book lives:** `fishycode/docs`, converted in place. Asked whether to rename it `book/`, the
+  maintainer noted a rename "may create an issue on its own", and chose to keep `docs/` once its cost was measured
+  (§7).
+- b. **URL:** `heima.hafro.is/~einarhj/fishybook`. The internal edition was to be served "locally only", but ask c
+  made it unnecessary.
+- c. **What may be published:** all of Part IV, "as long as no data goes with it": rendered figures and tables, no
+  data files. Asked further: an interactive widget counts as data, so vessel-level data are shown as static figures
+  (§6).
+- d. **The four leftover pages:** removed, with git keeping them.
+- e. **The 2026 meeting folder:** moved under `$FISHYDATA/raw/external/ices/` with provenance, and cited only once the
+  group's 2026 report is published.
+- f. **Title:** *From pings to effort and catch*, subtitle *Spatial fisheries data with ramb*. "fishybook" stays the
+  working name and the URL.
 
 ## 13. Measured and assumed
 
@@ -305,11 +390,12 @@ in step 3.
 
 - §2: the doc spaces, line and link counts, the licences printed in the reports, the meeting folder's contents, and
   ramb's visibility;
-- §6: the profile behaviour, on a scratch book with Quarto 1.8.26.
+- §6: the profile behaviour, on a scratch book with Quarto 1.8.26, and that only one docs page has an interactive
+  map;
+- §7: the cost of a rename.
 
 **Assumed:**
 
-- the book's structure (§4) and each chapter's shape (§5);
-- that `when-profile` blocks keep internal examples out of the public output;
+- the book's structure (§4), provisional until the reports are mined (§11.1), and each chapter's shape (§5);
 - that a member of the groups reads the book in the order given;
 - what the writing will cost.
