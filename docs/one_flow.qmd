@@ -6,13 +6,15 @@ date: 2026-10-09
 
 *The one home of this document. Version 1 was presented to WGSFD 2026 (claude.ai doc revision 108, 2026-10-07;
 the group's copy is on SharePoint). Version 2 (2026-10-08) revised the diagram and the text it implies after the
-meeting; on 2026-10-09 "harbour" became "port" throughout, and the section on fishycode was added (plan 014). It
-lived in `~/stasi/wgsfd2026` until then.*
+meeting; on 2026-10-09 "harbour" became "port" throughout, and the section on fishycode was added (plan 014); on
+2026-10-19 a stay became a port call and ramb's functions took their new names (decision 147). It lived in
+`~/stasi/wgsfd2026` until then.*
 
 *AI use: version 1 drafted by Claude (Anthropic) from the ICES VMS and logbook data-call code (commit `a844911`)
 and the grammar of sea-going data. Version 2, the port terms, the fishycode section and the inventory ("What
 exists, and where") drafted by Claude, 2026-10-08 and 2026-10-09, from the maintainer's comments, decisions
-075-079 and a reading of the outside repositories (decision 078). Human review pending.*
+075-079 and a reading of the outside repositories (decision 078); the renames of 2026-10-19 by Claude, from the
+maintainer's answers (decision 147). Human review pending.*
 
 Mapping fishing activity (effort, pressure on the seabed or stock, and catch) is one cascade, applied to every ping. First each ping gets its vessel, and pings no vessel could have made are set aside. Then:
 
@@ -67,7 +69,7 @@ These are set aside in their own table, not dropped: pings in equal pings out ac
 ### 1. Trip (`assign_trip`)
 
 - **Declared trip** (`declared_trips`, recorded): departure and return (`T1`, `T2`) from the logbook. Landings give the landing (`T2`), and in some datasets the departure (`T1`).
-- **Voyage from the track** (reconstructed): from one stay in port to the next. A voyage is any such movement; a trip is a fishing trip, so voyages also include steaming between ports and other moves without fishing. A stay is time spent in a port, not a ping inside its polygon: one port ping followed by silence is not a stay, and the shortest stay can depend on the port. Where only `T2` is declared, the last port departure before it gives `T1`. Without a port list, as for many small-scale fleets, a stay can be read from a silence that begins or ends near the coast.
+- **Voyage from the track** (reconstructed): from one port call to the next. A voyage is any such movement; a trip is a fishing trip, so voyages also include steaming between ports and other moves without fishing. A port call is time spent in a port, not a ping inside its polygon: one port ping followed by silence is not a port call, and the shortest port call can depend on the port. Where only `T2` is declared, the last port departure before it gives `T1`. Without a port list, as for many small-scale fleets, a port call can be read from a silence that begins or ends near the coast.
 - **None**: the ping is kept, labelled as having no trip. The aim is that no vessel is left without a trip.
 
 **Link and reconcile** (not a fallback): logbook trips, landings and voyages are linked to each other, many-to-many. One trip can have several sales notes (one per buyer), and one weekly landing can cover several trips. Where they disagree on the landing time (`T2`), the comparison decides; the track can give the arrival as a date and time. Neither declared date is the time the vessel enters port: the logbook's `T2` is often the expected arrival, written before the trip ends, and the landing's date is the date the catch was declared or sold, which can be a day or more after arrival. Only the track measures the arrival; the two declarations are linked to it, not taken as it. This is the loop the design turns on: the declarations are needed to link trips to landings, but their dates are only trustworthy once the track has given the real departure and arrival. So the reconciled trip table, with departure and arrival from the track and the logbook trips and landings linked to it, is an output of this step; it is not fed back to redo the declarations' own match.
@@ -144,7 +146,7 @@ Every row runs the same steps and goes as far as its data allows. Effort and pre
 
 | Data available | Trip | Logbook record | Fishing | Catch and value |
 | --- | --- | --- | --- | --- |
-| Pings and registers only | voyage from the track: `T1`, `T2` from the stays | with dense pings, operations from the track: `t1`–`t4` reconstructed (set and haul paired for static gear) | track | — |
+| Pings and registers only | voyage from the track: `T1`, `T2` from the port calls | with dense pings, operations from the track: `t1`–`t4` reconstructed (set and haul paired for static gear) | track | — |
 | + landings | landing; `T1` if given, else the track | — | track | over the trip, or the trips a landing covers |
 | + weekly or monthly logbook | logbook, else track | period × area | track, within the period | per period × area |
 | + daily logbook | logbook | day × rectangle | track, within the day | per day × rectangle |
@@ -159,7 +161,7 @@ Ping density varies in the same way, within one dataset:
 ## One flow, every ping accounted for
 
 - One process for every resolution, of logbooks and pings alike: each step takes the finest evidence available for that ping and records which it was (its provenance), so a dataset that mixes resolutions needs no special handling.
-- The same output at every resolution: no step stops because a table is missing. With no trip or station table, `T1` and `T2` come from the stays and `t1`–`t4` from the track itself; with declarations, they come from those and the track checks them. The columns are the same either way; what fills them, and the basis that says so, depends on the data.
+- The same output at every resolution: no step stops because a table is missing. With no trip or station table, `T1` and `T2` come from the port calls and `t1`–`t4` from the track itself; with declarations, they come from those and the track checks them. The columns are the same either way; what fills them, and the basis that says so, depends on the data.
 - Declarations are evidence, not truth. A declared time (`T1`, `T2`, `t1`–`t4`) is kept, refined or overridden by the track, depending on how precisely the track places that moment: dense pings may overwrite it, sparse pings may not. The declared value is always kept beside the chosen one, with the case and its provenance.
 - Pings are labelled, not filtered: each keeps its trip, record, gear, fishing state, effort, catch share, basis and flags.
 - Only invalid, duplicate and impossible pings are set aside, in their own table; port pings stay, labelled.
@@ -175,7 +177,7 @@ pings |>                              # transponder id, time, lon, lat, speed (A
   flag_pings(ports) |>                # invalid, duplicate, impossible: flagged, then set aside;
                                       #   port polygons: in-port pings labelled, kept
   assign_trip(declared_trips) |>      # vessel, T1, T2: logbook or landings; landings may lack T1 (optional);
-                                      #   missing T1, or whole voyages, from the track, stay in port to stay in port
+                                      #   missing T1, or whole voyages, from the track, port call to port call
   assign_record(logbook_records) |>   # vessel, period, area, gear, resolution (optional):
                                       #   a haul with t1–t4, or a day, week, month or trip
   assign_gear(landings,               # gear declared on the landing (optional)
@@ -206,7 +208,7 @@ flag_pings(pings, ports)
 
 assign_trip(pings, declared_trips)
   # needs:   departure (T1), arrival (T2)
-  # sources: logbook > landings (T2, sometimes T1) > track: stay in port to stay in port
+  # sources: logbook > landings (T2, sometimes T1) > track: port call to port call
   # rule:    same vessel, T1 <= time <= T2; trips, landings and voyages linked many-to-many, T2 reconciled
   # adds:    trip_id, trip_basis
 
@@ -333,15 +335,15 @@ inputs (`_targets_once.R`). The flow runs ramb's `rb_` functions, one per step. 
 
 | Step | fishycode | ramb | Output |
 |---|---|---|---|
-| Vessel | the frozen key (STK); vessel identity by MMSI and date (commercial feeds), in the union | (`rb_assign_vessel`, planned) | `staging/ais/ping_union` |
+| Vessel | the frozen key (STK); vessel identity by MMSI and date (commercial feeds), in the union | (`rb_add_vessel`, planned) | `staging/ais/ping_union` |
 | Flag pings | `ais_ping_tag.R`, `ais_ping_clean.R`; only recorded positions are tested for duplicates and impossible jumps | `rb_flag_ping_port`, `rb_flag_ping_invalid`, `rb_flag_ping_duplicate`, `rb_flag_ping_impossible` | `staging/ais/ping_clean`, set aside: `ping_whacky` |
-| 1. Trip | `port_stay.R` (one 2 h minimum stay), `ais_voyage.R`, `link_trip_voyage.R` | `rb_find_trip_stays`, `rb_cut_trip_voyages`, `rb_assign_trip`, `rb_link_trip_voyages` | `curated/ais/{port_stay,voyage}.parquet`, `curated/ais/ping`, `curated/link/trip_voyage.parquet` |
-| 2. Record | `station_window.R`, `ais_trail.R` | `rb_limit_record_duration`, `rb_build_record_windows`, `rb_link_record_pings`, `rb_assign_record` | `curated/logbook/station_window.parquet`, `curated/ais/trail`, `trail_match` |
+| 1. Trip | `port_stay.R` (one 2 h minimum in port), `ais_voyage.R`, `link_trip_voyage.R` | `rb_create_port_calls`, `rb_create_voyages`, `rb_add_voyages`, `rb_link_trip_voyages` | `curated/ais/{port_stay,voyage}.parquet`, `curated/ais/ping`, `curated/link/trip_voyage.parquet` |
+| 2. Record | `station_window.R`, `ais_trail.R` | `rb_limit_record_duration`, `rb_create_record_windows`, `rb_link_record_pings`, `rb_add_record` | `curated/logbook/station_window.parquet`, `curated/ais/trail`, `trail_match` |
 | 3. Gear | preprocessing: `curate/corrections/logbook_gear.R`; flow: `voyage_gear.R`, the voyage's gear from its logbook trip or landing (decision 101) | — | `curated/logbook/gear.parquet` (`gid`, `gid_landing`, `metier`), `curated/ais/voyage_gear.parquet` |
-| 4. Fishing | `ais_trail.R`: the window and the ±10 min speed (`fishing`); the window, else the voyage gear's speed range (`fishing_flow`, decision 101) | `rb_assign_fishing(method = "window")`, `rb_assign_fishing(method = c("window", "speed"))` | `curated/ais/trail` (`fishing`, `fishing_flow`, `fishing_flow_basis`) |
-| 5–6. Effort, catch | `ais_trail.R`: effort on every fix; `ais_catch.R`: catch per fishing fix, unit, species and approach, with the landings linked to their voyages and a raising factor (decisions 101, 102) | `rb_assign_effort`, `rb_build_catch_units`, `rb_share_catch`, `rb_link_trip_landings` | `curated/ais/trail` (`hours`, `kw_hours`), `curated/ais/catch` |
+| 4. Fishing | `ais_trail.R`: the window and the ±10 min speed (`fishing`); the window, else the voyage gear's speed range (`fishing_flow`, decision 101) | `rb_add_fishing(method = "window")`, `rb_add_fishing(method = c("window", "speed"))` | `curated/ais/trail` (`fishing`, `fishing_flow`, `fishing_flow_basis`) |
+| 5–6. Effort, catch | `ais_trail.R`: effort on every fix; `ais_catch.R`: catch per fishing fix, unit, species and approach, with the landings linked to their voyages and a raising factor (decisions 101, 102) | `rb_add_effort`, `rb_add_catch_units`, `rb_share_catch`, `rb_link_trip_landings` | `curated/ais/trail` (`hours`, `kw_hours`), `curated/ais/catch` |
 
-A ping carries keys, not the values of its stay or voyage; those live once, in their own tables. The record
+A ping carries keys, not the values of its port call or voyage; those live once, in their own tables (the trail repeats a few voyage values on each fix, decision 147). The record
 gives each fix its gear as `metier`.
 
 ## What exists, and where (2026-10-09)
@@ -354,14 +356,14 @@ outside repositories offer was read on 2026-10-09 (decision 078); nothing from t
 
 | Step | ramb | fishycode | ICES data call (`a844911`, vmstools, sfdSAR) | WKSSFGEO, WKSSFGEO2, iapesca |
 |---|---|---|---|---|
-| Vessel | planned: `rb_assign_vessel` (the time-bounded join) | built and frozen: the STK mobile-id → vessel key, from the register, the vessel's own track, logbook and landings, continuity (plans 003, 009) | assumes VMS and logbook share one vessel id | — |
+| Vessel | planned: `rb_add_vessel` (the time-bounded join) | built and frozen: the STK mobile-id → vessel key, from the register, the vessel's own track, logbook and landings, continuity (plans 003, 009) | assumes VMS and logbook share one vessel id | — |
 | Flag pings | built: `rb_flag_ping_invalid`, `_duplicate`, `_impossible`, `_port`; they label, never drop | calls them; only recorded positions are tested; exact time ties flagged | drops pings (see above) rather than labelling them | iapesca's speed filter (55–60× slower than ramb's); its fast-run idea is TODO 38 |
-| 1. Trip | built: `rb_find_trip_stays`, `rb_cut_trip_voyages` (stays, runs, jepol), `rb_assign_trip` (voyages), `rb_link_trip_voyages`. Built since: `rb_link_trip_landings` (decision 102). Planned: the declared-trip tier and the reconciliation of declared times with the track (`rb_reconcile_time`: `T1`, `T2`; the track may override where it is precise) | the logbook ↔ landings match (`lid_map`, with the landing's date and port); one 2 h stay; STK port events | trips only from the logbook; pings tied by time; unmatched pings and trips over New Year dropped | stays without a port list: gap rules, a coastal band, a coastline buffer (candidates). ramb's default projection for the port buffers is right only at high latitudes |
-| 2. Record | built: `rb_build_record_pings` (records with no pings) and `rb_link_record_sets` (static-gear sets) (decision 103); `rb_build_record_windows` (tow, set, haul, jig, day), `rb_link_record_pings`, `rb_assign_record`, `rb_limit_record_duration`, `rb_link_record_events` (the fix that bounds each declared time), `rb_cut_record_stretches` and `rb_link_record_stretches` (the track's towing stretches paired with the declared tows, in order and one to one). Planned: declared `t1`–`t4` reconciled with the track (`rb_reconcile_time`), set ↔ haul pairing for static gear (`rb_link_record_sets`). Not built: windows from haul positions, trip-level records | station windows; a record's resolution is open (TODO 3) | the log event of the ping's date, else the record with the most catch; a haul-time match exists but is switched off | — |
-| 3. Gear | built: `rb_predict_gear_width` (BENTHIS), `rb_fill_gear_width`, `rb_extract_metier`. Planned, on hold: `rb_assign_gear` | the landing's gear where it names one metier; the logbook's kept beside it; `metier` on the trail | the logbook's metier, checked against the ICES lists; widths from the user, then BENTHIS, then a default | gear predicted from the track (Adriatic random forest), a candidate. A licence register: nowhere |
-| 4. Fishing | built: `rb_assign_fishing(method = "window")`, `"speed"` and the window-then-speed cascade (decision 101); the models are in fishymodel, benched in decision 103;, on a fix's own speed or the median over ±`window_s` (`rb_calc_speed_smooth`). Planned: `"gmm"`, `"embc"`, `"hmm"`, `rb_build_fishing_speeds`, and the set ↔ haul pairing for static gear (`rb_link_record_sets`, from iapesca's method) | window × the gear's declared speed range, tested on the ±10 min median speed (decision 093) | a Gaussian mixture per towed metier; a set speed range for other gears | labelled set and haul data (pots, dredges); HMM practice (Irish Marine Institute); set ↔ haul pairing (iapesca, now planned in ramb); movement features: candidates |
-| 5. Effort | built: `rb_assign_effort` (hours, kW-hours, swept area; decision 099), step times, gear widths | on every fix of the trail (decision 101) | interval within the trip, kW-hours, swept area (sfdSAR), 0.05° c-squares, habitat and depth | static-gear effort as net length × soak time; hours apportioned by track length per cell: candidates |
-| 6. Catch | built: `rb_build_catch_units` and `rb_share_catch` rewritten: units at any resolution, by effort, up a level, kg in = kg out (decisions 100, 102); the EFLALO sharing as `method = "eflalo"` | `curated/ais/catch`: per fishing fix, unit, species and approach, with `raise_factor` (decision 102) | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
+| 1. Trip | built: `rb_create_port_calls` and `rb_create_voyages`, sharing their methods (`dwell`, `runs`, `jepol`, `cnr`, `iapesca`), `rb_add_voyages`, `rb_link_trip_voyages`. Built since: `rb_link_trip_landings` (decision 102). Planned: the declared-trip tier and the reconciliation of declared times with the track (`rb_reconcile_time`: `T1`, `T2`; the track may override where it is precise) | the logbook ↔ landings match (`lid_map`, with the landing's date and port); one 2 h minimum port call; STK port events | trips only from the logbook; pings tied by time; unmatched pings and trips over New Year dropped | port calls without a port list: gap rules, a coastal band, a coastline buffer (candidates). ramb's default projection for the port buffers is right only at high latitudes |
+| 2. Record | built: `rb_create_record_pings` (records with no pings) and `rb_link_record_sets` (static-gear sets) (decision 103); `rb_create_record_windows` (tow, set, haul, jig, day), `rb_link_record_pings`, `rb_add_record`, `rb_limit_record_duration`, `rb_link_record_events` (the fix that bounds each declared time), `rb_create_record_stretches` and `rb_link_record_stretches` (the track's towing stretches paired with the declared tows, in order and one to one). Planned: declared `t1`–`t4` reconciled with the track (`rb_reconcile_time`), set ↔ haul pairing for static gear (`rb_link_record_sets`). Not built: windows from haul positions, trip-level records | station windows; a record's resolution is open (TODO 3) | the log event of the ping's date, else the record with the most catch; a haul-time match exists but is switched off | — |
+| 3. Gear | built: `rb_predict_gear_width` (BENTHIS), `rb_fill_gear_width`, `rb_extract_metier`. Planned, on hold: `rb_add_gear` | the landing's gear where it names one metier; the logbook's kept beside it; `metier` on the trail | the logbook's metier, checked against the ICES lists; widths from the user, then BENTHIS, then a default | gear predicted from the track (Adriatic random forest), a candidate. A licence register: nowhere |
+| 4. Fishing | built: `rb_add_fishing(method = "window")`, `"speed"` and the window-then-speed cascade (decision 101); the models are in fishymodel, benched in decision 103;, on a fix's own speed or the median over ±`window_s` (`rb_calc_speed_smooth`). Planned: `"gmm"`, `"embc"`, `"hmm"`, `rb_build_fishing_speeds`, and the set ↔ haul pairing for static gear (`rb_link_record_sets`, from iapesca's method) | window × the gear's declared speed range, tested on the ±10 min median speed (decision 093) | a Gaussian mixture per towed metier; a set speed range for other gears | labelled set and haul data (pots, dredges); HMM practice (Irish Marine Institute); set ↔ haul pairing (iapesca, now planned in ramb); movement features: candidates |
+| 5. Effort | built: `rb_add_effort` (hours, kW-hours, swept area; decision 099), step times, gear widths | on every fix of the trail (decision 101) | interval within the trip, kW-hours, swept area (sfdSAR), 0.05° c-squares, habitat and depth | static-gear effort as net length × soak time; hours apportioned by track length per cell: candidates |
+| 6. Catch | built: `rb_add_catch_units` and `rb_share_catch` rewritten: units at any resolution, by effort, up a level, kg in = kg out (decisions 100, 102); the EFLALO sharing as `method = "eflalo"` | `curated/ais/catch`: per fishing fix, unit, species and approach, with `raise_factor` (decision 102) | `splitAmongPings`: day, then rectangle, then trip, weighted by interval | — |
 
 **Nowhere yet:** the licence gear register; record windows from haul positions; catch shared over several trips
 (a weekly landing), which is planned for `rb_share_catch`.

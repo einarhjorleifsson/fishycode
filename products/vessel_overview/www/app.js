@@ -389,7 +389,7 @@ function clickToSelect(u) {
 // The event lane (Quality control) -------------------------------------------------------------------------------------
 const LANES = [
   ['logbook trip', 'trip', '#1f6feb88'], ['setting t1-t2', 'set', '#9aa5b1'], ['fishing t2-t3', 'fish', '#2e7d32'],
-  ['hauling t3-t4', 'haul', '#7b5ea7'], ['landing', 'land', '#e07b00'], ['in port (stay)', 'stay', '#5d6b78'],
+  ['hauling t3-t4', 'haul', '#7b5ea7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'stay', '#5d6b78'],
   ['voyage', 'voy', '#4a7bd0'], ['fishing_flow', 'flow', '#d62728'], ['AIS gap at sea', 'gap', '#111827'],
 ];
 function laneLists() {   // every lane as intervals {a, b} sorted by a, with its longest interval for the search

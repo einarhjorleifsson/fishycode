@@ -14,7 +14,7 @@
 #         one row per (fishing fix, unit, species, approach): vid, time, unit_id, resolution, shared_unit_id,
 #         shared_resolution, species, kg, catch_basis, approach, source, raise_factor
 #
-# The units (ramb::rb_build_catch_units(), decision 100), by level:
+# The units (ramb::rb_add_catch_units(), decision 100), by level:
 #   1  a station with a timed window (tow, haul, set, jig): its windows; overlapping ones would merge
 #   2  a station with only a day window: the stations of one vessel-day are one unit
 #   3  a logbook trip, T1 to the day after T2: it carries no catch of its own, only catch moved up to it
@@ -130,7 +130,7 @@ for (yr in years) {
   # year at once ran out of memory in 2017 (decision 102)
   for (g in seq_len(n_groups) - 1L) {
     in_g <- function(x) filter(x, vid %% !!n_groups == !!g)
-    units <- ramb::rb_build_catch_units(in_g(events), key = "id") |> dplyr::compute()
+    units <- ramb::rb_add_catch_units(in_g(events), key = "id") |> dplyr::compute()
     # an event in two units would count its catch twice (decision 102)
     twice <- units |> distinct(id, unit_id) |> count(id) |> filter(n > 1) |> count() |> pull(n)
     if (twice > 0) stop("ais_catch: ", yr, ": ", twice, " events fall in more than one unit")

@@ -56,7 +56,7 @@ years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
 
 stays <- duckdbfs::open_dataset(fd_curated("ais", "port_stay.parquet")) |> collect() |>
   filter(!EXCLUDE_EVENT_ONLY | evidence != "event_pair") |>
-  transmute(vid, port_id = pid, T_in, T_out, stay_id = stay) |>
+  transmute(vid, port_id = pid, T_in, T_out, port_call_id = stay) |>
   arrange(vid, T_in)
 
 # -- Main loop -----------------------------------------------------------------
@@ -106,7 +106,7 @@ for (yr in years) {
     # Only recorded positions cut voyages and count towards MIN_PINGS; the gps logger's reconstructed fixes
     # get their voyage by time below, like every other ping (plan 014).
     st_g <- stays |> filter(vid %in% g)
-    v_b <- ramb::rb_cut_trip_voyages(clean |> filter(pos_basis == "recorded"), st_g, min_pings = MIN_PINGS)
+    v_b <- ramb::rb_create_voyages(clean |> filter(pos_basis == "recorded"), st_g, min_pings = MIN_PINGS)
     trips_yr_b <- v_b |>
       transmute(vid, year = as.integer(year), voyage = as.integer(voyage_id), T1, T2, pid1 = port_from, pid2 = port_to, n_pings = as.integer(n_pings))
 
@@ -116,8 +116,9 @@ for (yr in years) {
     # connection per call, as write_parquet_group() does - this is a materialised frame
     # inside a per-year loop, which is exactly the shape that accumulates (R/write_parquet.R).
     # A test run (VIDS) writes to staging, which write_curated() refuses.
-    ping_b <- ramb::rb_assign_trip(clean, v_b, stays = st_g) |>
-      transmute(!!!rlang::syms(names(clean)), stay = as.integer(stay_id), voyage = as.integer(voyage_id))
+    # ramb's port_call_id is the stay key; the column keeps its name until the rebuild of plan 032 §7 d
+    ping_b <- ramb::rb_add_voyages(clean, v_b, port_calls = st_g) |>
+      transmute(!!!rlang::syms(names(clean)), stay = as.integer(port_call_id), voyage = as.integer(voyage_id))
     f <- glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet")
     if (is.null(VIDS)) write_curated(ping_b, f, inputs = fd_curated("ais", "port_stay.parquet"))
     else write_parquet_group(ping_b, f)

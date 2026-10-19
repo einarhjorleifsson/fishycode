@@ -12,7 +12,7 @@
 # Output: curated/ais/voyage_gear.parquet        one row per voyage
 #
 # The gear's speed range lets the track decide whether a fix is fishing where no logbook window holds it:
-# ramb::rb_assign_fishing(method = c("window", "speed")) in R/trail_sql.R (plan 013 item 3). A voyage takes
+# ramb::rb_add_fishing(method = c("window", "speed")) in R/trail_sql.R (plan 013 item 3). A voyage takes
 #   logbook    the gears of its logbook trips' stations, when they share one speed range (the gid used most is named);
 #   ambiguous  its stations use gears with different speed ranges: no range, so only the windows decide;
 #   landing    no logbook trip, but a landing of the vessel dated within the voyage (to the day after it ends):

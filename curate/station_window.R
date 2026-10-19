@@ -95,11 +95,11 @@ WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS 
 
 # Windows ----------------------------------------------------------------------------
 # The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts
-# above, the day fallback - are ramb::rb_build_record_windows() (plan 014 phase 2 ported what stood here; ramb
+# above, the day fallback - are ramb::rb_create_record_windows() (plan 014 phase 2 ported what stood here; ramb
 # 2026.10.14.2 made the windows exclusive, decision 091). This script supplies the Icelandic base: the vessel
 # per trip, adb's gear from the landing, and adb's t1/t4 moved to t2/t3 for towed gear.
 
-sw <- ramb::rb_build_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
+sw <- ramb::rb_create_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
   dplyr::select(.sid, schema, .tid, vid, metier, gear, target, target2, gid, gear_class, phase, w_start, w_end,
                 win_basis, win_closed_by, win_opened_by, t1, t2, t3, t4, duration_m, s1, s2, n_events, events)
 dbExecute(con, paste("CREATE TABLE station_window AS", dbplyr::sql_render(sw), "ORDER BY vid, w_start"))

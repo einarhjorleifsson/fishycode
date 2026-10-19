@@ -4,7 +4,7 @@
 # its logbook trip through the voyage). Function definitions only; nothing runs on load.
 #
 # The station rules are ramb's (plan 014 phase 2, an exact port of what stood here): rb_link_record_pings() makes
-# the matches, rb_assign_fishing(method = "window") and rb_assign_record() put them on the fixes. This file
+# the matches, rb_add_fishing(method = "window") and rb_add_record() put them on the fixes. This file
 # supplies the month's inputs, the voyage side and fishycode's column names (`n_sid` is ramb's `n_records`).
 #
 # A fix matches every station window of its vessel that contains its time; windows are half-open, [w_start,
@@ -54,7 +54,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   pfile <- paste0("[", paste(shQuote(file.path(fd_curated("ais", "ping"), paste0("year=", yrs), "*.parquet"),
                                      type = "sh"), collapse = ", "), "]")
   m0 <- sprintf("%s - to_seconds(%d)", t0, as.integer(window_s))
-  # after the month: the speed window, and the longest interval a fix stands for (rb_assign_effort's cap)
+  # after the month: the speed window, and the longest interval a fix stands for (rb_add_effort's cap)
   m1 <- sprintf("%s + to_seconds(%d)", t1, as.integer(max(window_s, max_interval_s)))
   swf   <- shQuote(fd_curated("logbook", "station_window.parquet"), type = "sh")
   tvf   <- shQuote(fd_curated("link", "trip_voyage.parquet"), type = "sh")
@@ -90,11 +90,11 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   p <- lazy(sprintf("SELECT p.*, vy.kw, vy.kw_basis FROM (%s) p
                      LEFT JOIN read_parquet(%s) vy ON vy.vid = p.vid AND vy.year = year(p.time)", rend(p), vyf))
   r <- p |>
-    ramb::rb_assign_fishing(m, method = "window", speed_min = "s1", speed_max = "s2", window_s = window_s) |>
-    ramb::rb_assign_fishing(m, method = c("window", "speed"), speed_min = "s1", speed_max = "s2", window_s = window_s,
+    ramb::rb_add_fishing(m, method = "window", speed_min = "s1", speed_max = "s2", window_s = window_s) |>
+    ramb::rb_add_fishing(m, method = c("window", "speed"), speed_min = "s1", speed_max = "s2", window_s = window_s,
                             ping_speed_min = "s1_voyage", ping_speed_max = "s2_voyage", name = "fishing_flow") |>
-    ramb::rb_assign_effort(by = "voyage", max_interval_s = max_interval_s) |>
-    ramb::rb_assign_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
+    ramb::rb_add_effort(by = "voyage", max_interval_s = max_interval_s) |>
+    ramb::rb_add_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
       SELECT vid, year, voyage, count(*) AS n_tid_voyage,

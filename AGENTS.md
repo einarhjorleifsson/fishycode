@@ -79,14 +79,16 @@ Every script in a targets project is on one of three sides, and says which in a 
   main project. They are redone only by a decision record, and built by name, never as a whole project
   (`tar_make_isolated(names = )`): a whole build redoes every fix whose watched files changed.
 - **flow**: the generic WGSFD one-flow, as thin callers of ramb `rb_` steps. Everything that uses the
-  track (voyages, stays, trip ↔ voyage, `T2` from AIS) is here.
+  track (voyages, port calls, trip ↔ voyage, `T2` from AIS) is here.
 
-**Terms** (decision 075):
+**Terms** (decision 075; "port call" since decision 147):
 
 - **port** is the place word, and `pid` is its id. `hid` is a source's own port code (logbook, landings,
   STK).
-- A **stay** is an interval in port. Its values live once, in the stay table; pings carry keys only.
-- A **voyage** is any movement from one stay in port to the next, cut from the track; a **trip** is a fishing
+- A **port call** is an interval in port (a *stay* until decision 147; `port_stay.parquet` and its `stay` key keep
+  that name until their rebuild, TODO 91). Its values live once, in its table; pings carry keys only, and the
+  trail's few voyage values on each fix are a recorded exception (decision 147).
+- A **voyage** is any movement from one port call to the next, cut from the track; a **trip** is a fishing
   trip. Declared dates are not arrival times: the reconciled trip table is a flow output, never fed back into
   the declarations' own match.
 - The flow runs at any data resolution and never stops for a missing table: the output's shape is the same,
@@ -154,7 +156,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   **Which ramb.** The code needs the argument names of 2026-10-12,
   `rb_calc_speed(method = )`, `rb_link_record_events()` (decision 088) and the exclusive windows and event links
   with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
-  fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102): so ≥ 2026.10.14.14. The data on disk were built with ramb 2026.10.15.1: every
+  fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102), and the names by
+  output shape of 2026.10.19.2 (`rb_create_*()`, `rb_add_*()`, port calls; decision 147): so ≥ 2026.10.19.2. The data on disk were built with ramb 2026.10.15.1: every
   target the rebuild of 2026-10-16 reached (decision 112), from the raw readers and plan 016's vessel tables to
   `ais_catch`, the foreign vessel tables of 2026-10-17 (decision 114), and both halves of the rebuild of 2026-10-17: the logbook, landings and vessel half (decision 127), and the AIS chain on the STK key redone that day (decision 129). The register, its four readers (`vessel_sign`, `vessel_class`, `vessel_year`, `vessel`) and the AIS chain through `ais_catch` were rebuilt again on 2026-10-18 and 2026-10-19, the last at e2f741f (decision 144), with the same ramb. The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
   `shapes`, `area_h3`, `lookups`) are from the rebuild of 2026-10-13 with 2026.10.13.3 (decision 086). In the `once`

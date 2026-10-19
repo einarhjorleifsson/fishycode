@@ -29,7 +29,7 @@ for (y in sort(unique(sv$year))) {
     filter(vid %in% !!unique(s$vid), time >= !!w0, time <= !!w1) |>
     select(vid, time, speed, stay) |> collect() |>
     mutate(speed_min = gw$s1, speed_max = gw$s2)
-  st <- ramb::rb_cut_record_stretches(p, records = s, start = "start", end = "end", stay = "stay", window_s = 600)
+  st <- ramb::rb_create_record_stretches(p, records = s, start = "start", end = "end", port_call = "stay", window_s = 600)
   k <- ramb::rb_link_record_stretches(s, st, key = "id", start = "start", end = "end")
   gaps <- p |> arrange(vid, time) |> group_by(vid) |>
     mutate(dt = as.numeric(difftime(lead(time), time, units = "mins"))) |> ungroup()

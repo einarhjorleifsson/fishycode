@@ -67,7 +67,8 @@ YEARS     <- as.integer(strsplit(Sys.getenv("STAY_YEARS", ""), ",")[[1]])
 ALL       <- !length(YEARS)
 
 # -- Port polygons with their departure radius ---------------------------------------------------
-# The stay rules themselves are ramb::rb_find_trip_stays() (plan 013, phase 2); this script supplies the
+# The stay rules themselves are ramb::rb_create_port_calls(method = "dwell") (plan 013, phase 2; a stay is a port
+# call in ramb since plan 032, the table and its `stay` key keep their names until their rebuild); this script supplies the
 # Icelandic inputs and keeps the year-by-year processing.
 
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>
@@ -100,7 +101,7 @@ stay_year <- function(yr) {
                WHERE year BETWEEN {yr - 1L} AND {yr + 1L}) c USING (vid, time)
     WHERE e.year BETWEEN {yr - 1L} AND {yr + 1L}"))) else NULL
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
-  ramb::rb_find_trip_stays(seq_yr, ports, min_stay_h = G_H, radius_in = R_M,
+  ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,
                            events = ev, t_in_window = win) |>
     collect() |>
     rename(pid = port_id)
@@ -119,7 +120,8 @@ for (k in seq_along(years)) {
 
 out <- bind_rows(res) |>
   arrange(vid, T_in, pid) |>
-  # the stay's key: a ping carries it, not the stay's values (plan 014)
+  # the stay's key: a ping carries it, not the stay's values (plan 014). Numbered here over all years; ramb's
+  # port_call_id is numbered within each year's window and is dropped below
   mutate(stay = row_number(), .by = vid) |>
   transmute(vid, stay, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
             dur_h = as.numeric(T_out - T_in, units = "hours"),

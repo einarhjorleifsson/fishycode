@@ -598,3 +598,25 @@ The threads it gathers:
 Next: plan 031's asks, then the bench, then settle the whole design from §4.0.
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
+
+## 91. Names by output shape: `rb_create_*` for a table, `rb_add_*` for columns, "port call" for a stay (plan 032)
+**status:** in progress · **needs: maintainer** — the go for the tables' rebuild (its own session since 2026-10-19)
+· **see:** `curate/plans/032-names-by-output-shape.md` (§7, the answers), decision 147
+(what was built), decision 075, plan 013, TODO 90
+
+Set aside by the maintainer on 2026-10-19 while the trip finders of plan 031 go into ramb. The thinking: all voyage
+detection in one ramb function with `method`; a function's verb says whether it returns a new table or the input with
+a column added (tidyverse's `count()`/`add_count()`); "stay" means nothing outside the project, so "port call".
+fishycode's flow scripts split the same way, but its key names differ from ramb's.
+
+Asks a-e answered by the maintainer the same day (plan 032 §7): `create` and `add`, twelve renames with one release
+of warning aliases; "port call" and `method = "dwell"`; `port_call_id` (per vessel) and `voyage_id` in fishycode's
+tables too, at a rebuild of their own; the trail keeps its voyage values. Built and committed the same day (decision
+147): ramb 2026.10.19.2 (a312781, not pushed), its suite green; fishycode's callers on the new names with today's columns, identical on
+2023's real data; `grammar.qmd`, `one_flow.qmd` and `AGENTS.md` on "port call". Left: `port_stay.parquet` →
+`port_call.parquet` with `port_call_id`, and `stay`/`voyage` → `port_call_id`/`voyage_id` on the pings and the trail,
+with their readers (the vessel overview, `docs/ais_trail.qmd`, the checks), in one rebuild; and ramb's
+`_pkgdown.yml` reference index, held by another session, onto the new names.
+
+**check:** ramb and fishycode's callers use the names of plan 032 §7, and fishycode's tables carry `port_call_id` and
+`voyage_id` after their rebuild.
