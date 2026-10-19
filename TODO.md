@@ -668,9 +668,25 @@ Asks a-f answered the same day (plan 033 §12):
 **Step 1 done for the seven reports from 2019** (decision 150). They are in the reading map `docs/ices_reports.yml`
 (983 topic rows, 362 code rows). The diagram held as the centre and was amended as version 3, and §4 was revised.
 
+**Step 2 done** (decision 151): `docs/` renders as a book, three parts from the pages that exist, no new text.
+
 Open:
 - the six reports of 2013-2018 (texts ready in `raw/external/ices/text/`; tools in `dump/ices/`);
-- step 2, converting `docs/` to a book with no new text;
 - steps 3-9.
 
 **check:** the 2013-2018 reports are in the reading map, and `docs/` renders as a book (plan 033 steps 1 and 2).
+
+## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
+**status:** open · **needs: maintainer** — whether to rebuild `stk` clean now, since the AIS chain reads it · **see:**
+decision 151, `docs/stk_data-inspection.qmd`
+
+Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 pings from the build of 2026-09-23, without
+the column `d2e` the rebuild of 2026-10-17 wrote into the other 27 partitions. `duckdbfs::write_dataset()` does not
+remove a partition the build no longer writes. A reader that projects `d2e` fails on the glob. One that does not, such
+as the glob in `sources/stk/event.R`, would take the 2 old pings in with the new ones (its output not checked). The
+book's STK page reads with `unify_schemas = TRUE` until this is fixed.
+
+Not measured: whether other partitioned `write_dataset()` outputs keep old partitions the same way.
+
+**check:** every partition of `staging/ais/stk` is from the latest build, the writer clears what it no longer writes,
+and the STK page no longer needs `unify_schemas`.

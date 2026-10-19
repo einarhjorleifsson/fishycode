@@ -3,7 +3,8 @@
 **status:** partly built — step 1 done for the seven reports from 2019 (decision 150): the reading map
 `docs/ices_reports.yml`, the diagram tested and amended as version 3, §4 revised; asks a-f answered 2026-10-19 (§12):
 `docs/` converted in place keeping its name, one edition at `~einarhj/fishybook` with the Icelandic part in it (no data
-files, vessel data static), the title *From pings to effort and catch*; the 2013-2018 reports and steps 2-9 open · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
+files, vessel data static), the title *From pings to effort and catch*; step 2 done (decision 151): `docs/` renders as a
+book from the pages that exist; the 2013-2018 reports and steps 3-9 open · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
 be) and plan 002 (its port list), TODO 15 and 16; TODO 91 (ramb's pkgdown index); TODO 93 and decision 148 (the
 workshops' data); `docs/one_flow.qmd`, `docs/wkssfgeo.qmd`
 
@@ -208,7 +209,7 @@ Later meetings are appended, one chapter each.
   chapters instead.
 
 Each keeps its file path in `docs/`, so the record's links keep working. The parts are made in `_quarto.yml`, not by
-moving files. `ports.md` is a standalone render today: step 1 decides whether it renders inside the book.
+moving files. `ports.md`, a standalone render until then, renders inside the book (step 2, decision 151).
 
 **Appendices**
 
@@ -256,7 +257,7 @@ means:
   from it.
 - **An interactive widget counts as data**, since it writes its points into the page (asked and answered the same
   day). Vessel-level data are shown as static figures. mapdeck, leaflet, plotly or DT are used only over aggregates or
-  ramb's public example data. Today only `stk_data-inspection.qmd` has such a map (mapdeck). The maintainer, the same
+  ramb's public example data. Only `stk_data-inspection.qmd` had such a map (mapdeck), static since step 2. The maintainer, the same
   day: an interactive part "could always center the topic around the public data already in the ramb package". So the
   interactive figure of a topic is drawn on ramb's example sets, and the Icelandic data show the same thing static.
 - **Personal data never**, as `AGENTS.md` already rules for `docs/`: no kennitala, and none of the owners, addresses
@@ -295,7 +296,7 @@ here:
 - The ~130 links into `docs/` keep working.
 - `check_bookkeeping()` can enforce the book's rules.
 - fishycode is already public, so the source is no more exposed than `docs/` is today. `_book/` is added to
-  `.gitignore` (today it ignores `_freeze/` and `_site/`).
+  `.gitignore` beside `_freeze/` and `_site/` (step 2).
 
 `fishyweb` gives its five real pages to the book (step 4). Its unpushed commit and untracked note are settled, and it
 is archived read-only, as `kaenugardr` was (decision 006). The open web page of plan 001 becomes the book. Plan 002 and
@@ -373,7 +374,8 @@ alongside step 1.
    title *From pings to effort and catch*, subtitle *Spatial fisheries data with ramb* (ask f); `site-url`
    `heima.hafro.is/~einarhj/fishybook` (ask b); the GitHub link to fishycode; drop the two phantom render entries;
    `_book/` in `.gitignore`. Remove the four leftover pages (ask d), and make `stk_data-inspection.qmd`'s mapdeck map
-   static (ask c). The book renders.
+   static (ask c). The book renders. *Done (decision 151): three parts, since the flow's rows have no chapter yet;
+   `ports.md` inside the book.*
 3. **`check_book()`** (§10), wired into `check_bookkeeping()`.
 4. **The gap file** (§9), seeded from `one_flow.qmd` and from the reading map's asks; `one_flow.qmd`'s two tables are
    then generated from it; the status diagram decided.

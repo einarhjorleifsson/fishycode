@@ -1,68 +1,48 @@
+# The book of plan 033. A chapter is listed here only once its text exists (plan 033 §8), so the
+# parts hold the pages written so far: the part "The flow, row by row" has none yet. A book renders
+# only its listed chapters; notes_duckdbfs-vs-duckspatial.md is a seed (§4, chapter 5), not one.
 project:
-  type: website
-  render:
-    - "*.qmd"
-    - AGENTS.md
-    - AGENTS_data_sources.md
-    - AGENTS_output_schema.md
+  type: book
 
-website:
-  title: "Logbooks"
-  site-url: https://heima.hafro.is/~einarhj/logbooks
-  # favicon: "image/hafro_logo.png"
-  navbar:
-    left:
-      - text: Home
-        href: index.qmd
-    right:
-      - text: Grammar
-        menu:
-          - text: A grammar of sea-going data
-            href: grammar.qmd
-          - text: The Icelandic logbooks in the grammar
-            href: grammar_logbooks.qmd
-      - text: Source Data
-        href: afli-tables.qmd
-      - text: Ship register
-        href: skipaskra.qmd
-      - text: Pipeline
-        menu:
-          - text: How the data are built
-            href: pipeline.qmd
-          - text: Convert script audit
-            href: convert-bugs.qmd
-          - text: Merge
-            href: merge.qmd
-          - text: Historical back-entries
-            href: afli-backentry.qmd
-      - text: One flow
-        menu:
-          - text: One flow for effort, pressure and catch
-            href: one_flow.qmd
-          - text: The WKSSFGEO workshops and ramb
-            href: wkssfgeo.qmd
-      - text: AIS trail
-        href: ais_trail.qmd
-      - text: Coordinates
-        href: wacky-tracks_recovery.qmd
-      - text: Afli submissions left out
-        href: afli-dropped-stations.qmd
-      - text: Landings Match
-        menu:
-          - text: Current approach
-            href: landings-match.qmd
-          - text: Improvements & analysis
-            href: landings_match2.qmd
-      - text: Notes
-        menu:
-          - text: macOS disk diagnostics
-            href: on_disk.qmd
-          - text: Misc
-            href: ramb-list.qmd
-      - text: Review
-        href: project-review.qmd
-      - icon: github
-        href: https://github.com/einarhjorleifsson/logbooks
+book:
+  title: "From pings to effort and catch"
+  subtitle: "Spatial fisheries data with ramb"
+  site-url: https://heima.hafro.is/~einarhj/fishybook
+  repo-url: https://github.com/einarhjorleifsson/fishycode
+  chapters:
+    - index.qmd
+    - part: "The problem, the flow and the tools"
+      chapters:
+        - one_flow.qmd
+        - grammar.qmd
+    - part: "The groups"
+      chapters:
+        - wkssfgeo.qmd
+    - part: "The Icelandic data"
+      chapters:
+        # sources
+        - afli-tables.qmd
+        - source-schemas.md
+        - grammar_logbooks.qmd
+        - skipaskra.qmd
+        - stk_data-inspection.qmd
+        - on_ais.qmd
+        - ports.md
+        # building the data
+        - pipeline.qmd
+        - merge.qmd
+        - afli-backentry.qmd
+        - landings-match.qmd
+        - landings_match2.qmd
+        - ais_trail.qmd
+        - output-schema.md
+        # defects and corrections
+        - wacky-tracks_recovery.qmd
+        - afli-dropped-stations.qmd
+        - qc_fs_afladagbok_2025.qmd
+        - convert-bugs.qmd
+        # how the data are used
+        - datacall-strategy.qmd
 
 format:
   html:

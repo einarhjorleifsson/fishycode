@@ -9,7 +9,6 @@ format:
     toc-title: "Contents"
     code-fold: true
     theme: flatly
-    embed-resources: true
 execute:
   echo: false
   warning: false

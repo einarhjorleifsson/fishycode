@@ -67,7 +67,7 @@ permanent — they are the only structure that survived every previous restart.
 
 1. **Source-shaped vs merged-shaped** — `$FISHYDATA/staging/<source>/` vs
    `$FISHYDATA/curated/`.
-2. **Data vs documents** — parquet outputs vs the Quarto site in `docs/`.
+2. **Data vs documents** — parquet outputs vs the Quarto book in `docs/`.
 
 ## Preprocessing, one-time fixes, flow (plan 014)
 
@@ -199,7 +199,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 | `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |
 | `overrides/` | Small, hand-maintained, human-reviewed correction inputs. |
 | `products/` | Consumers of the sweep — datacall, ad-hoc exports, and the vessel overview (`products/vessel_overview/`, plan 030): an R service on 127.0.0.1 with a column allowlist, and the repo's only JavaScript, a page whose libraries are pinned and loaded from jsdelivr. Internal use only (newspaper photos, owners' names). |
-| `docs/` | Quarto site. Reads `curated/`; never rebuilds it. To become the book of plan 033. `docs/ices_reports.yml` is the reading map of the ICES reports, the index the book is drafted from. |
+| `docs/` | The book of plan 033, *From pings to effort and catch*: a Quarto book since decision 151, rendered by `quarto render` here into `_book/` (untracked), and to be published at `heima.hafro.is/~einarhj/fishybook`. A chapter is listed in `docs/_quarto.yml` only once its text exists. Reads `curated/`; never rebuilds it. It shows rendered figures and tables, never data files, and vessel data only as static figures (plan 033 §6). `docs/ices_reports.yml` is the reading map of the ICES reports, the index the book is drafted from. |
 | `R/` | **Function definitions only.** `targets` sources this directory wholesale, so a script here executes on every `tar_make()` — `R/oracle.R` connected to Oracle at load and broke the graph until it was moved to `dump/`. |
 
 ## Script naming

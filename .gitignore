@@ -9,6 +9,7 @@ _targets/
 _targets_once/
 _freeze/
 _site/
+_book/
 /.quarto/
 **/*.quarto_ipynb
 
@@ -27,7 +28,7 @@ data-dump/
 *.html
 # ... except the vessel overview's page, which is source, not a render (plan 030)
 !products/vessel_overview/www/index.html
-# support files of a standalone render (e.g. docs/ports.md -> ports.html)
+# support files of a standalone render (docs/ports.md was one until it joined the book, plan 033)
 docs/*_files/
 
 # machine-local data root; each machine sets its own

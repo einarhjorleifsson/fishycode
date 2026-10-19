@@ -8,12 +8,18 @@ source(here::here("R/paths.R"))
 library(duckdbfs)
 library(tidyverse)
 library(ramb)   # R/wacky_points.R is gone; the rb_ filters are in ramb
-library(mapdeck)
-# mapdeck reads the Mapbox token from MAPBOX_TOKEN in ~/.Renviron; it is never in the repo
 duckdbfs::load_spatial()
+# Static in place of ramb::rb_plot_trail()'s mapdeck map: a widget writes the vessels' points into
+# the page, and the book publishes no data (plan 033 §6)
+plot_trail <- function(d, col = "speed", path = FALSE) {
+  p <- ggplot(d, aes(lon, lat))
+  if (path) p <- p + geom_path(colour = "cyan3", linewidth = 0.2)
+  p + geom_point(aes(colour = .data[[col]]), size = 0.2) + coord_quickmap() + labs(colour = col)
+}
 ports <- open_dataset(fd_staging("aux", "ports.fgb")) |> select(pid, port, .hid = hid, geom)
+# unify_schemas: year=2006 is a partition the build of 2026-09-23 left behind, without `d2e` (TODO 95)
 stk <- 
-  open_dataset(fd_staging("ais", "stk")) |> 
+  open_dataset(fd_staging("ais", "stk"), unify_schemas = TRUE) |> 
   mutate(geom = ST_POINT(lon, lat)) |> 
   duckdbfs::spatial_join(ports) |> 
   select(-geom_1)
@@ -178,7 +184,7 @@ stk_classified |>
   filter(record_type == "port_event") |>
   collect() |> 
   sample_n(1e6) |> 
-  ramb::rb_plot_trail()
+  plot_trail()
 ```
 
 
@@ -204,16 +210,15 @@ clean_filtered |> filter(whack == TRUE) |> count(vid) |> arrange(desc(n))
 clean_filtered |> 
   filter(vid == 2929) |> 
   collect() |> 
-  mutate(speed = whack) |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(path = TRUE)
+  plot_trail(col = "whack", path = TRUE)
 
 clean_filtered |>
   filter(vid == 2929) |>
   filter(whack == FALSE) |> 
   collect() |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(path = TRUE)
+  plot_trail(path = TRUE)
 
 
 clean_filtered |>
@@ -221,7 +226,7 @@ clean_filtered |>
   filter(whack == FALSE) |> 
   collect() |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(path = TRUE)
+  plot_trail(path = TRUE)
 ```
 
 ```{r}
@@ -233,7 +238,7 @@ clean_filtered |>
   #filter(whack == FALSE) |> 
   collect() |> 
   arrange(time) |> 
-  ramb::rb_plot_trail(path = TRUE)
+  plot_trail(path = TRUE)
 ```
 
 ### Step 4 — Correct port-event coordinates

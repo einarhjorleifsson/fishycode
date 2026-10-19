@@ -1,6 +1,4 @@
----
-title: "Icelandic Fishing Logbooks"
----
+# Icelandic Fishing Logbooks {.unnumbered}
 
 Icelandic fishing vessels are required to record their catches and fishing
 activity in logbooks. These records — covering gear type, location, timing,
