@@ -527,7 +527,8 @@ maintainer's go. Other periods with the same signature, a long receipt lag, are 
 before and after; other such periods listed or ruled out.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open · **see:** TODO 38, decisions 067, 069, 078 and 143
+**status:** open · **see:** TODO 38, decisions 067, 069, 078 and 143, plan 031 §3.7 item 12 (what the filter leaves near
+harbours: about 6,000 fixes, mostly STK port event rows)
 
 "the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
 for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
@@ -562,7 +563,7 @@ vessel overview's QC lane keeps its 30 min threshold.
 flag on the fixes that the overview's lane reads.
 
 ## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
-**status:** open · **needs: maintainer** — plan 031's asks a-f · **see:** `curate/plans/031-voyages-from-any-data.md`,
+**status:** open · **needs: maintainer** — plan 031's asks a-g · **see:** `curate/plans/031-voyages-from-any-data.md`,
 decision 144, TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), plan 011
 
 The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
@@ -576,6 +577,17 @@ What plan 031 measured, step 1 included:
 - A fifth of the voyages carrying several logbook trips are continuous sea trips that the date-only logbook splits by
   day.
 
+The rest of plan 031:
+- §4.0, the design: the problem as a cascade (ports, stays, voyages, trips with no track, link and reconcile), each
+  attribute with a basis.
+- §3.7, the pitfalls, among them: no stays and no warning without a port list; 296 calls at foreign ports; short
+  voyages dropped.
+- §3.8, outside code: iapesca and the CNR code.
+- §4.8, a robustness bench, step 2:
+  - methods (ramb's, Danish, Irish, Italian, iapesca, learned ports) scored on the Icelandic witnesses, the logbook
+    among them, and on other fleets' example data (vmstools, iapesca, WKSSFGEO);
+  - with records, ports or pings taken away.
+
 The threads it gathers:
 - the STK key, TODO 25;
 - the trail and its delivery, TODO 27b;
@@ -583,6 +595,6 @@ The threads it gathers:
 - a landing over two days, TODO 81 and plan 027;
 - the gear read from the track, TODO 86, and gaps judged against coverage, TODO 89.
 
-A fresh session starts here: answer plan 031's asks, then design the whole.
+Next: plan 031's asks, then the bench, then settle the whole design from §4.0.
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.

@@ -1,6 +1,6 @@
 # whack_demo.R — how whacky position detection works, on toy data and on ours.
 #
-# Input:  ramb::whacks1 (toy), staging/ais/ping_tagged (ours, read-only)
+# Input:  ramb's whacks1 (toy; rb_read_example(), ramb >= 2026.10.16.1), staging/ais/ping_tagged (ours, read-only)
 # Output: console tables and two PNGs in tempdir(); nothing is written to $FISHYDATA.
 #
 # Not the afli "wacky coordinates" (a DDMMmm encoding fault, see
@@ -16,6 +16,7 @@ source(here::here("curate/checks", "whack_shims.R"))  # adapters for ramb functi
 # 1. The idea, on toy data ----------------------------------------------------
 # whack_fwdbwd: a point is whacky if the speed INTO it and OUT OF it both exceed
 # kn_max. Requiring both spares the first point after a data gap.
+whacks1 <- dplyr::collect(ramb::rb_read_example("whacks1"))
 toy <- whacks1 |> filter(vid == 1, tid == 1)
 toy |>
   rb_whack_fwdbwd(kn_max = 25) |>
