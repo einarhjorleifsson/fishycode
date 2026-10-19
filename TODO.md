@@ -360,9 +360,10 @@ Items 0-3 and 5 are built and on the data. Items 4 and 6-9 are built in part, an
 - 6, which vessels fish (the vessel row; the classes are TODO 49);
 - 7, records without pings: the 1990-2006 logbook (3.5 M records, start positions only) needs a target of its own,
   since the years before 1990 are out of scope (decision 103);
-- 8, static gear: `rb_link_record_sets()` is in ramb, and its run on the Icelandic static hauls and pressure as
-  quantity × soak are not built (decision 103). ramb's NEWS (53519ee, 2026-10-16) reports a measurement on the 2023
-  Icelandic static-gear hauls that no fishycode record holds;
+- 8, static gear: `rb_link_record_sets()` is in ramb, measured on labelled and Icelandic 2023 hauls (decision 146),
+  but its run on the Icelandic static hauls and pressure as quantity × soak are not built (decision 103). Its defaults
+  and a set made inside another haul's window wait for the maintainer (decision 146). ramb a68d1f6 is not pushed or
+  installed: GitHub must include LFS objects in archives first, and `whack_demo.R` then reads `rb_read_example()`;
 - 9, track models for fishing;
 - 10, declared times reconciled with the track (`rb_reconcile_time()`): unblocked by decision 104's ground truth,
   not in ramb.
