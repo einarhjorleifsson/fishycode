@@ -509,7 +509,7 @@ list(
   }, format = "file"),
 
   # STK's own port events (I in / U out), one row per ping, tagged from STK and the polygons alone (plan 011
-  # Phase 2, plan 014). Which events a stay trusts is the flow's decision (port_stay).
+  # Phase 2, plan 014). Which events a port call trusts is the flow's decision (port_call).
   tar_target(stk_event, {
     stk; shapes; stk_hid_pid
     produces("sources/stk/event.R", fd_staging("ais", "stk_event.parquet"))
@@ -540,7 +540,7 @@ list(
   }, format = "file"),
 
   tar_target(ais_voyage, {
-    ais_ping_clean; port_stay
+    ais_ping_clean; port_call
     produces("curate/ais_voyage.R",
              fd_curated("ais", "ping"),
              fd_curated("ais", "voyage.parquet"))
@@ -611,20 +611,21 @@ list(
   #
   # The vessel key's own checks build the key and run with it in the `once` project.
 
-  # Stays (plan 011 Phase 3): elapsed time at a port, from polygon, gap and (2017+) event evidence.
-  tar_target(port_stay, {
+  # Port calls (plan 011 Phase 3; stays until decision 147): elapsed time at a port, from polygon, gap and (2017+)
+  # event evidence.
+  tar_target(port_call, {
     ais_ping_clean; shapes; stk_event; port_radius
-    produces("curate/port_stay.R",
-             fd_curated("ais", "port_stay.parquet"))
+    produces("curate/port_call.R",
+             fd_curated("ais", "port_call.parquet"))
   }, format = "file"),
 
-  tar_target(check_port_stay_logbook, {
-    port_stay; logbook; landing
-    produces("curate/checks/port_stay_logbook.R",
-             fd_curated("check", "port_stay_logbook.parquet"))
+  tar_target(check_port_call_logbook, {
+    port_call; logbook; landing
+    produces("curate/checks/port_call_logbook.R",
+             fd_curated("check", "port_call_logbook.parquet"))
   }, format = "file"),
 
-  # The residue of the shared-voyage problem after the stays, before vs after (plan 011 §6).
+  # The residue of the shared-voyage problem after the port calls, before vs after (plan 011 §6).
   tar_target(check_voyage_sharing, {
     trip_voyage; ais_voyage; logbook
     produces("curate/checks/voyage_sharing.R",

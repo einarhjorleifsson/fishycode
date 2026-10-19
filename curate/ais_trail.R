@@ -20,8 +20,9 @@
 #
 # Columns of `trail` (SQL in R/trail_sql.R; year and month are the partition keys, not columns in the file):
 #   the fix       vid mmsi time lon lat speed speed_raw heading cog provider pos_basis speed_basis dt_sec
-#   the voyage    stay (key into curated/ais/port_stay.parquet, NA at sea) voyage (key into curated/ais/voyage.parquet,
-#                 within vid, year) .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
+#   the voyage    port_call_id (key into curated/ais/port_call.parquet, NA at sea) voyage_id (key into
+#                 curated/ais/voyage.parquet, within vid, year; `stay` and `voyage` until decision 148)
+#                 .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
 #   the station   n_sid .sid schema .tid metier gear target target2 gid gid_landing gid_used gid_basis gear_class s1 s2
 #                 phase phase_frac win_basis events nearest_event fishing (on the ±10 min median speed, decision 093)
 #   the voyage    gid_voyage s1_voyage s2_voyage gear_voyage_basis   the voyage's gear (voyage_gear.R)
@@ -31,7 +32,7 @@
 #   the logger    sid_gps n_sid_gps
 #   leisure       leisure leisure_basis   a fix outside any logbook record, of a boat in a frístundaveiðar class at the
 #                 time (class), an SKB boat (skb), or a sailing, pleasure or recreational-fishing type that year (usage)
-# `pid`, the polygon tag of the ping tables, is not carried: the port of a stay is in the stay table.
+# `pid`, the polygon tag of the ping tables, is not carried: the port of a port call is in the port-call table.
 # `trail_match` holds all matches for the fixes whose `n_sid` is above 1 (and the single ones), so nothing is lost.
 
 library(DBI)

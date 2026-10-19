@@ -7,7 +7,8 @@ date: 2026-10-09
 *The one home of this document. Version 1 was presented to WGSFD 2026 (claude.ai doc revision 108, 2026-10-07;
 the group's copy is on SharePoint). Version 2 (2026-10-08) revised the diagram and the text it implies after the
 meeting; on 2026-10-09 "harbour" became "port" throughout, and the section on fishycode was added (plan 014); on
-2026-10-19 a stay became a port call and ramb's functions took their new names (decision 147). It lived in
+2026-10-19 a stay became a port call and ramb's functions took their new names (decision 147), and fishycode's tables
+their keys `port_call_id` and `voyage_id` (decision 148). It lived in
 `~/stasi/wgsfd2026` until then.*
 
 *AI use: version 1 drafted by Claude (Anthropic) from the ICES VMS and logbook data-call code (commit `a844911`)
@@ -337,7 +338,7 @@ inputs (`_targets_once.R`). The flow runs ramb's `rb_` functions, one per step. 
 |---|---|---|---|
 | Vessel | the frozen key (STK); vessel identity by MMSI and date (commercial feeds), in the union | (`rb_add_vessel`, planned) | `staging/ais/ping_union` |
 | Flag pings | `ais_ping_tag.R`, `ais_ping_clean.R`; only recorded positions are tested for duplicates and impossible jumps | `rb_flag_ping_port`, `rb_flag_ping_invalid`, `rb_flag_ping_duplicate`, `rb_flag_ping_impossible` | `staging/ais/ping_clean`, set aside: `ping_whacky` |
-| 1. Trip | `port_stay.R` (one 2 h minimum in port), `ais_voyage.R`, `link_trip_voyage.R` | `rb_create_port_calls`, `rb_create_voyages`, `rb_add_voyages`, `rb_link_trip_voyages` | `curated/ais/{port_stay,voyage}.parquet`, `curated/ais/ping`, `curated/link/trip_voyage.parquet` |
+| 1. Trip | `port_call.R` (one 2 h minimum in port), `ais_voyage.R`, `link_trip_voyage.R` | `rb_create_port_calls`, `rb_create_voyages`, `rb_add_voyages`, `rb_link_trip_voyages` | `curated/ais/{port_call,voyage}.parquet`, `curated/ais/ping`, `curated/link/trip_voyage.parquet` |
 | 2. Record | `station_window.R`, `ais_trail.R` | `rb_limit_record_duration`, `rb_create_record_windows`, `rb_link_record_pings`, `rb_add_record` | `curated/logbook/station_window.parquet`, `curated/ais/trail`, `trail_match` |
 | 3. Gear | preprocessing: `curate/corrections/logbook_gear.R`; flow: `voyage_gear.R`, the voyage's gear from its logbook trip or landing (decision 101) | — | `curated/logbook/gear.parquet` (`gid`, `gid_landing`, `metier`), `curated/ais/voyage_gear.parquet` |
 | 4. Fishing | `ais_trail.R`: the window and the ±10 min speed (`fishing`); the window, else the voyage gear's speed range (`fishing_flow`, decision 101) | `rb_add_fishing(method = "window")`, `rb_add_fishing(method = c("window", "speed"))` | `curated/ais/trail` (`fishing`, `fishing_flow`, `fishing_flow_basis`) |

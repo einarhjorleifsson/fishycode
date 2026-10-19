@@ -25,7 +25,7 @@ aqua <- c("IS-BID", "IS-TAK", "IS-PAR", "IS-TEY", "IS-SUV", "IS-FAS", "IS-ESF", 
 whale <- c("IS-REY", "IS-HUA", "IS-AKU", "IS-HAU")
 q <- function(x) paste0("'", x, "'", collapse = ", ")
 sql <- sprintf("
-  WITH v AS (SELECT vid, year, voyage, pid1, epoch(T2 - T1) / 3600.0 AS dur_h FROM read_parquet(%s)),
+  WITH v AS (SELECT vid, year, voyage_id, pid1, epoch(T2 - T1) / 3600.0 AS dur_h FROM read_parquet(%s)),
   ld AS (SELECT DISTINCT vid, year(date) AS year FROM read_parquet(%s)),
   lb AS (SELECT DISTINCT vid, year(T1) AS year FROM read_parquet(%s)),
   hp AS (SELECT vid, year, pid1 AS home_pid, count(*) AS n FROM v WHERE pid1 IS NOT NULL GROUP BY vid, year, pid1

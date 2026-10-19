@@ -3,7 +3,7 @@
 # harbour-to-harbour voyages derived from AIS.
 #
 # Input:  curated/logbook/trip.parquet      (.tid, vid, T1, T2, schema, twin)
-#         curated/ais/voyage.parquet        (vid, year, voyage, T1, T2, pid1, pid2)
+#         curated/ais/voyage.parquet        (vid, year, voyage_id, T1, T2, pid1, pid2)
 # Output: curated/link/trip_voyage.parquet
 #
 # Both inputs carry T1/T2 because both are trip-level - case encodes the level, not
@@ -49,9 +49,9 @@ ais <- fd_curated("ais", "voyage.parquet")
 trips <- dplyr::tbl(con, dplyr::sql(sprintf(
   "SELECT \".tid\", vid, schema, T1, T2 FROM read_parquet('%s') WHERE twin IS DISTINCT FROM 'duplicate'", lb)))
 voy <- dplyr::tbl(con, dplyr::sql(sprintf(
-  "SELECT vid, year, voyage AS voyage_id, T1, T2, pid1 AS port_from, pid2 AS port_to, n_pings FROM read_parquet('%s')", ais)))
+  "SELECT vid, year, voyage_id, T1, T2, pid1 AS port_from, pid2 AS port_to, n_pings FROM read_parquet('%s')", ais)))
 link <- ramb::rb_link_trip_voyages(trips, voy, keys = c(".tid", "schema"), t2_fix = "end_of_t1_day") |>
-  dplyr::transmute(.tid, vid, schema, year, voyage = voyage_id, T1_ais = T1_voyage, T2_ais = T2_voyage,
+  dplyr::transmute(.tid, vid, schema, year, voyage_id, T1_ais = T1_voyage, T2_ais = T2_voyage,
                    pid1_ais = port_from, pid2_ais = port_to, n_pings, overlap_s, lb_span_s = trip_span_s,
                    overlap_frac, n_candidates, basis)
 q <- as.character(dbplyr::sql_render(link))

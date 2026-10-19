@@ -77,8 +77,9 @@ logger <- bind_rows(
 # -- interpolate positions from the merged track, WITHIN each voyage ----------
 
 track  <- open_dataset(fd_curated("ais", "ping"))
+# the voyage key is `voyage_id` since decision 148 (`voyage` when this frozen fix was built)
 voyage <- open_dataset(fd_curated("ais", "voyage.parquet")) |>
-  select(vid, year, trip = voyage, T1, T2) |> collect()
+  select(vid, year, trip = voyage_id, T1, T2) |> collect()
 
 years <- sort(unique(logger$year))
 out   <- fd_curated("logbook", "sensor_gps")
@@ -98,8 +99,8 @@ for (yr in years) {
 
   tk <- track |>
     # never from the logger's own earlier fixes: since plan 014 they are in the track as provider gps
-    filter(year == yr, !is.na(voyage), provider != "gps") |>
-    select(vid, trip = voyage, time, lon, lat) |>
+    filter(year == yr, !is.na(voyage_id), provider != "gps") |>
+    select(vid, trip = voyage_id, time, lon, lat) |>
     collect() |>
     arrange(vid, trip, time)
   if (!nrow(tk)) next

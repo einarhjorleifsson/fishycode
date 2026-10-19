@@ -9,7 +9,7 @@
 #         curated/logbook/lid_map.parquet           (the landings that have a logbook trip)
 #         curated/landing/landings.parquet          (.lid, schema, vid, date)
 #         curated/landing/catch.parquet             (.lid, schema, sid = species, catch kg)
-#         curated/ais/voyage.parquet                (vid, year, voyage, T1, T2, pid2: the landings' voyages)
+#         curated/ais/voyage.parquet                (vid, year, voyage_id, T1, T2, pid2: the landings' voyages)
 # Output: curated/ais/catch/year=Y/part_00G.parquet  one file per vessel group (vid modulo 4)
 #         one row per (fishing fix, unit, species, approach): vid, time, unit_id, resolution, shared_unit_id,
 #         shared_resolution, species, kg, catch_basis, approach, source, raise_factor
@@ -90,7 +90,7 @@ for (yr in years) {
   # the landings with no logbook trip, linked to the voyages they ended
   vy <- od("ais", "voyage.parquet") |>
     filter(T2 >= !!(y0 - 31 * 86400), T1 < !!y1) |>
-    transmute(vkey = paste(as.character(vid), as.character(year), as.character(voyage)), vid, T1, T2, pid2)
+    transmute(vkey = paste(as.character(vid), as.character(year), as.character(voyage_id)), vid, T1, T2, pid2)
   lk <- ramb::rb_link_trip_landings(vy, ld |> select(.lid, schema, vid, date, pid), trip_key = "vkey",
                                     landing_key = c(".lid", "schema"), port_trip = "pid2", port_landing = "pid",
                                     since_previous_days = 14)

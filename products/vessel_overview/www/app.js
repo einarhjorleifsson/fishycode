@@ -6,7 +6,7 @@
 // - Overview, in plain words: a summary, the map, the speed chart with trips, hauls and landings marked, and a trip
 //   table that opens into its hauls.
 // - Quality control: the same, and every record with its basis; an event lane on the chart's time axis (logbook trip,
-//   setting, fishing, hauling, landing, stays in port, voyages, the flow's fishing flag, AIS gaps); per-trip warnings
+//   setting, fishing, hauling, landing, port calls, voyages, the flow's fishing flag, AIS gaps); per-trip warnings
 //   where the logbook's hauls and the pings' fishing flag disagree; and the pings of the window.
 // The map, the chart, the lane and the slider share one time window. The map's layers follow the maintainer's asjo app
 // (plan 030 §4.2). Internal use only: the photos are a newspaper's.
@@ -223,7 +223,7 @@ function getTooltip({ layer, index, object }) {
     const i = layer.id === 'last' ? tr.n - 1 : index;
     if (!(i >= 0 && i < tr.n)) return null;   // a pick left from a track no longer loaded
     const head = layer.id === 'last' ? `<b>${esc(S.name)} (${S.vid})</b><br>last position heard<br>` : '';
-    const what = tr.fishing[i] ? (qc() ? 'fishing_flow' : 'fishing') : (tr.stay[i] >= 0 ? 'in port' : 'at sea');
+    const what = tr.fishing[i] ? (qc() ? 'fishing_flow' : 'fishing') : (tr.port_call_id[i] >= 0 ? 'in port' : 'at sea');
     const g = gearAt(tr.t[i], tr.gear[i]);
     const gear = g.gear ? `, ${esc(g.recorded ? g.gear : gearWords(g))}` : '';
     return { html: `${head}<b>${fmt(tr.t[i])} UTC</b><br>${num(tr.speed[i], 1)} knots, heading ${num(tr.heading[i])}°<br>` +
@@ -233,7 +233,7 @@ function getTooltip({ layer, index, object }) {
     const pts = object.points || [];
     return { html: `<b>${fmtHours(cellHours(pts))} fishing hours</b><br>${pts.length} fishing pings in this hexagon (${hexKm()} km)` };
   }
-  if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage}` : 'the track between ports' };
+  if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage_id}` : 'the track between ports' };
   if (layer.id === 'stations' && object) return { html: `haul on ${esc(object.day)}, ${esc(object.gear)}, ${num(object.kg)} kg<br>gear in ${fmt(object.t1)}, out ${fmt(object.t4)}` };
   return null;
 }
@@ -331,12 +331,12 @@ const SPEED_CAP = 15, PLOT_H = 230;
 // The speed line is drawn trip by trip (maintainer, 2026-10-18: "the when time-speed graph should be segmentized by trip
 // - i.e. not a line between entry to harbour to exit from harbour"). A ping in port has no point (plotSpeed is null), and
 // the line breaks where the voyage changes; within one voyage it is joined, across an AIS gap too ("you can show a
-// stretch if the voyage is the same"). A ping on no voyage and in no stay joins nothing ("a line is drawn between
+// stretch if the voyage is the same"). A ping on no voyage and in no port call joins nothing ("a line is drawn between
 // time-speed points within any voyage").
 function tripGaps(u, sidx, idx0, idx1, nullGaps) {
   const tr = S.tr, xs = u.data[0], gaps = [];
   for (let i = idx0 + 1; i <= idx1; i++) {
-    if (tr.voyage[i] < 0 || tr.voyage[i] !== tr.voyage[i - 1])
+    if (tr.voyage_id[i] < 0 || tr.voyage_id[i] !== tr.voyage_id[i - 1])
       uPlot.addGap(gaps, Math.round(u.valToPos(xs[i - 1], 'x', true)), Math.round(u.valToPos(xs[i], 'x', true)));
   }
   // merged with uPlot's own gaps at the nulls: overlapping gaps cancel each other in its clip, and the line shows again
@@ -389,11 +389,11 @@ function clickToSelect(u) {
 // The event lane (Quality control) -------------------------------------------------------------------------------------
 const LANES = [
   ['logbook trip', 'trip', '#1f6feb88'], ['setting t1-t2', 'set', '#9aa5b1'], ['fishing t2-t3', 'fish', '#2e7d32'],
-  ['hauling t3-t4', 'haul', '#7b5ea7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'stay', '#5d6b78'],
+  ['hauling t3-t4', 'haul', '#7b5ea7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'call', '#5d6b78'],
   ['voyage', 'voy', '#4a7bd0'], ['fishing_flow', 'flow', '#d62728'], ['AIS gap at sea', 'gap', '#111827'],
 ];
 function laneLists() {   // every lane as intervals {a, b} sorted by a, with its longest interval for the search
-  const tr = S.tr, L = { trip: S.trips, set: [], fish: [], haul: [], land: [], stay: [], voy: [], flow: [], gap: [] };
+  const tr = S.tr, L = { trip: S.trips, set: [], fish: [], haul: [], land: [], call: [], voy: [], flow: [], gap: [] };
   for (const h of S.hauls) {
     if (h.t1 != null && h.t2 != null) L.set.push({ a: h.t1, b: h.t2, h });
     if (h.t2 != null && h.t3 != null) L.fish.push({ a: h.t2, b: h.t3, h });
@@ -410,13 +410,13 @@ function laneLists() {   // every lane as intervals {a, b} sorted by a, with its
         if (s < 0 && i < tr.n && ok(i)) s = i;
       }
     };
-    // the stays and voyages as the flow made them, one bar each from start to end, whatever the AIS did in between
+    // the port calls and voyages as the flow made them, one bar each from start to end, whatever the AIS did in between
     // (maintainer, 2026-10-18: "it should reflect what is in the data. ergo: should not have an independent mind")
-    L.stay = [...S.stays]; L.voy = [...S.voy];
+    L.call = [...S.portCalls]; L.voy = [...S.voy];
     runs(() => 1, (i) => tr.fishing[i] === 1, L.flow);
-    // a gap between two pings of one stay is the vessel lying in port, not a hole in the track (maintainer, 2026-10-18:
+    // a gap between two pings of one port call is the vessel lying in port, not a hole in the track (maintainer, 2026-10-18:
     // "the ais gap in the graph should not include when vessel is in harbour"); a gap that leaves or reaches a port is kept
-    const inPort = (i) => tr.stay[i - 1] >= 0 && tr.stay[i] === tr.stay[i - 1];
+    const inPort = (i) => tr.port_call_id[i - 1] >= 0 && tr.port_call_id[i] === tr.port_call_id[i - 1];
     for (let i = 1; i < tr.n; i++) if (tr.t[i] - tr.t[i - 1] > GAP && !inPort(i)) L.gap.push({ a: tr.t[i - 1], b: tr.t[i] });
   }
   for (const k of Object.keys(L)) { L[k].sort((x, y) => x.a - y.a); L[k].maxDur = L[k].reduce((m, d) => Math.max(m, d.b - d.a), 0); }
@@ -569,7 +569,7 @@ const voyages = () => S.voy || [];
 const MIN_VOYAGE = HOUR;   // a shorter move is a shift within a port, not a trip
 function lastUnits() {   // newest last
   const tr = S.tr, trips = S.trips.filter((d) => d.b >= tr.t0 && d.a <= tr.t1);
-  const after = trips.length ? trips.at(-1).b : -Infinity, atSea = tr.stay[tr.n - 1] < 0;
+  const after = trips.length ? trips.at(-1).b : -Infinity, atSea = tr.port_call_id[tr.n - 1] < 0;
   const voy = voyages().filter((v) => v.a > after && v.b - v.a >= MIN_VOYAGE && !(atSea && v.b >= tr.t1));
   return { word: trips.length ? 'trips' : 'voyages', units: [...trips, ...voy], atSea };
 }
@@ -692,7 +692,7 @@ async function loadRange(from, to) {
   status(`loading ${S.from}–${S.to}`);
   const yrs = { vid: S.vid, from: S.from, to: S.to };
   const hasTrail = S.years.some((y) => y >= S.from && y <= S.to);
-  await loadAll([...(hasTrail ? [['trail', 'trail', yrs], ['voyages', 'voyages', yrs], ['stays', 'stays', yrs]] : []),
+  await loadAll([...(hasTrail ? [['trail', 'trail', yrs], ['voyages', 'voyages', yrs], ['port_calls', 'port_calls', yrs]] : []),
                  ['trips', 'trips', yrs], ['stations', 'stations', yrs],
                  ['station_catch', 'station_catch', yrs], ['landings', 'landings', yrs]]);
   S.trips = await rows(`SELECT t.".tid" AS tid, t.schema, epoch_ms(t.T1)::DOUBLE AS a, epoch_ms(t.T2)::DOUBLE AS b,
@@ -709,11 +709,11 @@ async function loadRange(from, to) {
     FROM stations s LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
     WHERE lon1 IS NOT NULL AND lat1 IS NOT NULL ORDER BY t1`);
   S.hauls = S.stations.map((h) => ({ ...h, a: h.t1, b: h.t4 }));
-  // the flow's voyages and stays, each from its table: the lanes and the presets draw them as they are
-  S.voy = hasTrail ? await rows(`SELECT year, voyage AS id, epoch_ms(T1)::DOUBLE AS a, epoch_ms(T2)::DOUBLE AS b, pid1, pid2,
+  // the flow's voyages and port calls, each from its table: the lanes and the presets draw them as they are
+  S.voy = hasTrail ? await rows(`SELECT year, voyage_id AS id, epoch_ms(T1)::DOUBLE AS a, epoch_ms(T2)::DOUBLE AS b, pid1, pid2,
       n_pings FROM voyages ORDER BY T1`) : [];
-  S.stays = hasTrail ? await rows(`SELECT stay AS id, pid, epoch_ms(T_in)::DOUBLE AS a, epoch_ms(T_out)::DOUBLE AS b
-    FROM stays ORDER BY T_in`) : [];
+  S.portCalls = hasTrail ? await rows(`SELECT port_call_id AS id, pid, epoch_ms(T_in)::DOUBLE AS a, epoch_ms(T_out)::DOUBLE AS b
+    FROM port_calls ORDER BY T_in`) : [];
   S.landings = await rows(`SELECT epoch_ms(date)::DOUBLE AS d, round(sum(catch) / 1000, 2)::DOUBLE AS t
     FROM landings GROUP BY ".lid", schema, date ORDER BY d`);
   // one row per landing, joined to its logbook trip through lid_map: a trip's row shows what it landed, and a landing
@@ -761,13 +761,13 @@ async function loadRange(from, to) {
 }
 async function buildTrail() {
   const tbl = await conn.query(`SELECT epoch_ms(time)::DOUBLE AS t, lon::FLOAT AS lon, lat::FLOAT AS lat,
-      coalesce(speed, 0)::FLOAT AS speed, coalesce(heading, 0)::FLOAT AS heading, coalesce(voyage, -1)::INTEGER AS voyage,
-      coalesce(stay, -1)::INTEGER AS stay, coalesce(fishing_flow, false)::INTEGER AS fishing, coalesce(gear, '') AS gear,
+      coalesce(speed, 0)::FLOAT AS speed, coalesce(heading, 0)::FLOAT AS heading, coalesce(voyage_id, -1)::INTEGER AS voyage_id,
+      coalesce(port_call_id, -1)::INTEGER AS port_call_id, coalesce(fishing_flow, false)::INTEGER AS fishing, coalesce(gear, '') AS gear,
       coalesce("hours", 0)::FLOAT AS h
     FROM trail WHERE lon IS NOT NULL AND lat IS NOT NULL ORDER BY time`);
   const col = (k) => tbl.getChild(k).toArray();
   const tr = { n: tbl.numRows, t: col('t'), lon: col('lon'), lat: col('lat'), speed: col('speed'), heading: col('heading'),
-               voyage: col('voyage'), stay: col('stay'), fishing: col('fishing'), gear: col('gear'), h: col('h') };
+               voyage_id: col('voyage_id'), port_call_id: col('port_call_id'), fishing: col('fishing'), gear: col('gear'), h: col('h') };
   if (!tr.n) { S.tr = null; render(); return; }
   tr.t0 = tr.t[0]; tr.t1 = tr.t[tr.n - 1];
   tr.ts = new Float64Array(tr.n); tr.pos = new Float32Array(2 * tr.n); tr.col = new Uint8Array(4 * tr.n);
@@ -780,13 +780,13 @@ async function buildTrail() {
     tr.pos[2 * i] = tr.lon[i]; tr.pos[2 * i + 1] = tr.lat[i];
     const c = speedColour(tr.speed[i]);
     tr.col[4 * i] = c[0]; tr.col[4 * i + 1] = c[1]; tr.col[4 * i + 2] = c[2]; tr.col[4 * i + 3] = 230;
-    tr.plotSpeed[i] = tr.stay[i] >= 0 ? null : tr.speed[i] > SPEED_CAP ? SPEED_CAP : tr.speed[i];
+    tr.plotSpeed[i] = tr.port_call_id[i] >= 0 ? null : tr.speed[i] > SPEED_CAP ? SPEED_CAP : tr.speed[i];
     tr.fishSpeed[i] = tr.fishing[i] ? tr.plotSpeed[i] : null;
     tr.fishCum[i + 1] = tr.fishCum[i] + (tr.fishing[i] ? 1 : 0);
-    const v = tr.voyage[i];
+    const v = tr.voyage_id[i];
     if (v < 0) path = null;
     else {
-      if (!path || path.voyage !== v) { path = { voyage: v, path: [] }; tr.paths.push(path); }
+      if (!path || path.voyage_id !== v) { path = { voyage_id: v, path: [] }; tr.paths.push(path); }
       path.path.push([tr.lon[i], tr.lat[i]]);
     }
   }
@@ -969,13 +969,13 @@ async function renderPings() {
   if (!S.tr) { $('pings').innerHTML = '<div class="note">No AIS in these years.</div>'; return; }
   const [a, b] = S.win, i0 = lower(S.tr.t, a), i1 = lower(S.tr.t, b + 1), total = i1 - i0;
   const P = await rows(`SELECT epoch_ms(time)::DOUBLE AS ms, strftime(time, '%Y-%m-%d %H:%M:%S') AS t, round(lat, 4)::DOUBLE AS lat,
-      round(lon, 4)::DOUBLE AS lon, round(speed, 1)::DOUBLE AS speed, round(heading)::DOUBLE AS heading, provider, voyage, stay,
+      round(lon, 4)::DOUBLE AS lon, round(speed, 1)::DOUBLE AS speed, round(heading)::DOUBLE AS heading, provider, voyage_id, port_call_id,
       gear, phase, fishing_flow::VARCHAR AS fishing, ".tid" AS tid, ".sid" AS sid
     FROM trail WHERE epoch_ms(time) BETWEEN ${a} AND ${b} ORDER BY time LIMIT ${PINGS_PER_PAGE} OFFSET ${S.pingPage * PINGS_PER_PAGE}`);
   const pages = Math.ceil(total / PINGS_PER_PAGE);
   $('pings').innerHTML = `<div class="note">${total.toLocaleString('en-GB')} pings in the window; click one to find it on the map and chart.</div>
     <div class="scroll">${table([['t', 'time (UTC)'], ['lat', 'lat', true], ['lon', 'lon', true], ['speed', 'speed', true], ['heading', 'heading', true],
-      ['provider', 'provider'], ['voyage', 'voyage', true], ['stay', 'stay', true], ['gear', 'gear'], ['phase', 'phase'], ['fishing', 'fishing_flow'],
+      ['provider', 'provider'], ['voyage_id', 'voyage_id', true], ['port_call_id', 'port_call_id', true], ['gear', 'gear'], ['phase', 'phase'], ['fishing', 'fishing_flow'],
       ['tid', '.tid'], ['sid', '.sid', true]], P, { click: true, empty: 'no ping in the window' })}</div>` +
     (pages > 1 ? `<div class="pager"><button data-d="-1" ${S.pingPage === 0 ? 'disabled' : ''}>‹ earlier</button>
       ${S.pingPage * PINGS_PER_PAGE + 1}–${Math.min(total, (S.pingPage + 1) * PINGS_PER_PAGE)} of ${total.toLocaleString('en-GB')}
@@ -989,7 +989,7 @@ function renderSummary() {
   const A = S.about || {}, v = V.find((x) => x.vid === S.vid) || {}, tr = S.tr;
   if (!S.vid) return;
   const lastHeard = tr && v.last_ping && dstr(tr.t1) === v.last_ping
-    ? `${fmt(tr.t1)} UTC, ${tr.stay[tr.n - 1] >= 0 ? 'in port' : 'at sea'}` : (v.last_ping || 'never');
+    ? `${fmt(tr.t1)} UTC, ${tr.port_call_id[tr.n - 1] >= 0 ? 'in port' : 'at sea'}` : (v.last_ping || 'never');
   const tonnes = S.landings.reduce((s, d) => s + d.t, 0), range = S.from === S.to ? `${S.from}` : `${S.from}–${S.to}`;
   const kind = A.use ? A.use.toLowerCase() : 'vessel';
   const parts = [A.loa && `${num(A.loa, 1)} m long`, A.built && `built ${A.built}`, A.home && `home port ${A.home}`].filter(Boolean);

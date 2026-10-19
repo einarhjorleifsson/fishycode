@@ -87,11 +87,10 @@ The positions of each Icelandic vessel, from every source, built into voyages.
 - **Impossible positions labelled.** These are positions that could only be reached from
   their neighbours at more than 25 knots, and single positions that jump out and back. They
   are kept, with the reason, not deleted.
-- **Harbour stays.** When a vessel is in harbour is worked out from the polygons, from gaps in
-  the track and from STK's own in/out events. Each harbour gets a class per year (landing
-  harbour, marina, stop-off and so on) and a departure allowance measured from where vessels
-  actually leave it. A stay counts sooner at a landing harbour (2 hours) than elsewhere (4).
-- **Voyages** run from one harbour stay to the next, and each logbook trip is tied to the
+- **Port calls.** When a vessel is in port is worked out from the polygons, from gaps in
+  the track and from STK's own in/out events. Each port has a departure allowance measured
+  from where vessels actually leave it. A port call is at least 2 hours, at every port.
+- **Voyages** run from one port call to the next, and each logbook trip is tied to the
   voyage it took place on.
 - **GPS logger positions.** Some vessels carry a GPS logger. Its records get their positions
   from the merged track within the same voyage, and then join the track.

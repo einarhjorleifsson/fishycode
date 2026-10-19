@@ -21,7 +21,7 @@
 # not change it. It is NA when such a window holds the fix but the fix has no speed (a logger fix with no speed, or
 # the 1.000 m/s placeholder, plan 012 §2f): unknown, not FALSE. FALSE for a fix in no window.
 #
-# The voyage side: `trip_voyage` links a logbook trip to the AIS voyage (vid, year, voyage) it overlaps most.
+# The voyage side: `trip_voyage` links a logbook trip to the AIS voyage (vid, year, voyage_id) it overlaps most.
 # Several logbook trips may share one voyage (3-4 %), so `.tid_voyage` is filled only when exactly one trip is on
 # the voyage, and `n_tid_voyage` counts them (0 = no logbook trip on this voyage or the fix is in no voyage).
 #
@@ -82,9 +82,9 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
   # the wide row reads the month's matches back from trail_match, written just before it
   m <- lazy(sprintf("SELECT * FROM read_parquet(%s)", shQuote(matches, type = "sh")))
   # the voyage's gear (voyages are cut at New Year, so a fix's voyage is of the fix's own year)
-  vg <- lazy(sprintf("SELECT vid, year, voyage, gid_voyage, s1_voyage, s2_voyage, gear_voyage_basis FROM read_parquet(%s)", vgf))
+  vg <- lazy(sprintf("SELECT vid, year, voyage_id, gid_voyage, s1_voyage, s2_voyage, gear_voyage_basis FROM read_parquet(%s)", vgf))
   p <- lazy(sprintf("SELECT p.*, vg.gid_voyage, vg.s1_voyage, vg.s2_voyage, vg.gear_voyage_basis
-                     FROM (%s) p LEFT JOIN (%s) vg ON vg.vid = p.vid AND vg.year = year(p.time) AND vg.voyage = p.voyage",
+                     FROM (%s) p LEFT JOIN (%s) vg ON vg.vid = p.vid AND vg.year = year(p.time) AND vg.voyage_id = p.voyage_id",
                     rend(p), rend(vg)))
   # the engine power of the fix's own year (plan 016): a hull's engine changes, and the effort is kW x hours
   p <- lazy(sprintf("SELECT p.*, vy.kw, vy.kw_basis FROM (%s) p
@@ -93,14 +93,14 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     ramb::rb_add_fishing(m, method = "window", speed_min = "s1", speed_max = "s2", window_s = window_s) |>
     ramb::rb_add_fishing(m, method = c("window", "speed"), speed_min = "s1", speed_max = "s2", window_s = window_s,
                             ping_speed_min = "s1_voyage", ping_speed_max = "s2_voyage", name = "fishing_flow") |>
-    ramb::rb_add_effort(by = "voyage", max_interval_s = max_interval_s) |>
+    ramb::rb_add_effort(by = "voyage_id", max_interval_s = max_interval_s) |>
     ramb::rb_add_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
   sprintf("
     WITH v AS (
-      SELECT vid, year, voyage, count(*) AS n_tid_voyage,
+      SELECT vid, year, voyage_id, count(*) AS n_tid_voyage,
              CASE WHEN count(*) = 1 THEN any_value(\".tid\") END AS tid_v,
              CASE WHEN count(*) = 1 THEN any_value(schema) END AS schema_v
-      FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, voyage),
+      FROM read_parquet(%s) WHERE year = %d GROUP BY vid, year, voyage_id),
     g AS (SELECT \".sid\", schema, gid, gid_landing, gid_used, gid_basis FROM read_parquet(%s)),
     e AS (SELECT vid, time, array_to_string(list_sort(list_distinct(list(event))), '+') AS nearest_event
           FROM read_parquet(%s) WHERE time >= %s AND time < %s GROUP BY vid, time),
@@ -108,7 +108,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     cl AS (SELECT vid, t1, t2 FROM read_parquet(%s) WHERE leisure AND t1 < %s AND t2 > %s),
     vy AS (SELECT vid, mclass FROM read_parquet(%s) WHERE year = %d)
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
-           r.pos_basis, r.speed_basis, r.dt_sec, r.stay, r.voyage,
+           r.pos_basis, r.speed_basis, r.dt_sec, r.port_call_id, r.voyage_id,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
            r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier, r.gear, r.target, r.target2,
            g.gid, g.gid_landing, g.gid_used, g.gid_basis, r.gear_class,
@@ -124,7 +124,7 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
                 WHEN EXISTS (SELECT 1 FROM cl WHERE cl.vid = r.vid AND r.time >= cl.t1 AND r.time < cl.t2) THEN 'class'
                 WHEN r.vid >= 100000 THEN 'skb'
                 WHEN vy.mclass IN (60, 62, 68) THEN 'usage' END AS leisure_basis
-    FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage = r.voyage
+    FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage_id = r.voyage_id
            LEFT JOIN vy ON vy.vid = r.vid
            LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema
            LEFT JOIN e ON e.vid = r.vid AND e.time = r.time

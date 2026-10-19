@@ -1,15 +1,17 @@
-# port_stay.R — stays: elapsed time in port, from whatever evidence there is (harbour_stay.R until plan 014).
+# port_call.R — port calls: elapsed time in port, from whatever evidence there is (harbour_stay.R until plan 014,
+# port_stay.R until decision 148).
 # Side: flow, step 1. See plan 014.
 #
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider; recorded positions only, plan 014)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
 #         staging/ais/stk_event.parquet     (STK I/U events tagged from STK alone; used from EVENT_FROM on)
 #         curated/reference/port_radius.parquet (the departure radius per port; a frozen input)
-# Output: curated/ais/port_stay.parquet  one row per stay: vid, stay (key, numbered per vessel by T_in), pid, T_in, T_out, ...
+# Output: curated/ais/port_call.parquet  one row per port call: vid, port_call_id (key, numbered per vessel by T_in), pid,
+#         T_in, T_out, ...
 #
 # Plan 011 §3.0, §3.4, Phase 3. `ais_trip.R` (now ais_voyage.R) measured a harbour stay as the span of the pings in a
 # polygon run, so one `I` ping followed by silence has span 0 and is bridged away. A stay here is
-# elapsed time. Nothing consumes this table yet; Phase 4 cuts voyages at it.
+# elapsed time. curate/ais_voyage.R cuts voyages at it (Phase 4).
 #
 # The harbour of a ping is found HERE, against the current polygons, not read from `ping_clean$pid`:
 # that tag comes from the previous polygon set and the chain is rebuilt once, after this phase
@@ -67,9 +69,9 @@ YEARS     <- as.integer(strsplit(Sys.getenv("STAY_YEARS", ""), ",")[[1]])
 ALL       <- !length(YEARS)
 
 # -- Port polygons with their departure radius ---------------------------------------------------
-# The stay rules themselves are ramb::rb_create_port_calls(method = "dwell") (plan 013, phase 2; a stay is a port
-# call in ramb since plan 032, the table and its `stay` key keep their names until their rebuild); this script supplies the
-# Icelandic inputs and keeps the year-by-year processing.
+# The rules themselves are ramb::rb_create_port_calls(method = "dwell") (plan 013, phase 2; a stay was renamed a port
+# call by decision 147, and the table and its key by decision 148); this script supplies the Icelandic inputs and keeps
+# the year-by-year processing.
 
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>
   filter(source == "einar") |> select(pid) |> sf::st_make_valid()
@@ -112,18 +114,18 @@ stay_year <- function(yr) {
 years <- if (ALL) q(glue::glue("SELECT DISTINCT year FROM read_parquet('{clean_dir}', hive_partitioning = true) ORDER BY 1"))$year else YEARS
 res <- vector("list", length(years))
 for (k in seq_along(years)) {
-  yr <- years[k]; t0 <- Sys.time(); message("port_stay ", yr)
+  yr <- years[k]; t0 <- Sys.time(); message("port_call ", yr)
   res[[k]] <- stay_year(yr)
-  message(sprintf("  %s stays, %.1f min", format(nrow(res[[k]]), big.mark = ","),
+  message(sprintf("  %s port calls, %.1f min", format(nrow(res[[k]]), big.mark = ","),
                   as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 }
 
 out <- bind_rows(res) |>
   arrange(vid, T_in, pid) |>
-  # the stay's key: a ping carries it, not the stay's values (plan 014). Numbered here over all years; ramb's
-  # port_call_id is numbered within each year's window and is dropped below
-  mutate(stay = row_number(), .by = vid) |>
-  transmute(vid, stay, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
+  # the port call's key: a ping carries it, not the call's values (plan 014). Numbered here per vessel over all years,
+  # so a call over New Year keeps one number; ramb's port_call_id is numbered within each year's window and is replaced
+  mutate(port_call_id = row_number(), .by = vid) |>
+  transmute(vid, port_call_id, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
             dur_h = as.numeric(T_out - T_in, units = "hours"),
             rule, evidence, T_in_ping, T_out_ping, T_in_ev, T_out_ev,
             basis = "reconstructed") |>
@@ -134,10 +136,10 @@ print(out |> count(year, rule) |> tidyr::pivot_wider(names_from = rule, values_f
 
 if (ALL) {
   out |> write_curated(
-    fd_curated("ais", "port_stay.parquet"),
+    fd_curated("ais", "port_call.parquet"),
     inputs = c(fd_staging("aux", "ports.fgb"), event_f,
                list.files(fd_staging("ais", "ping_clean"), pattern = "parquet$", recursive = TRUE, full.names = TRUE)))
-  message(sprintf("port_stay: %s stays", format(nrow(out), big.mark = ",")))
+  message(sprintf("port_call: %s port calls", format(nrow(out), big.mark = ",")))
 } else {
   assign("stay_test", out, envir = globalenv())
   message("subset run (STAY_YEARS): nothing written")

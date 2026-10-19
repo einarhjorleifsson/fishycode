@@ -18,8 +18,9 @@ library(dplyr)
 
 arch <- file.path(fishydata_root(), "archive", "pre-phase4_2026-10-01")
 con  <- DBI::dbConnect(duckdb::duckdb())
-# the archived "before" files keep the names of their day (trip, hid2_ais); plan 014 renamed them
-now  <- list(tv = fd_curated("link", "trip_voyage.parquet"), v = fd_curated("ais", "voyage.parquet"), cols = "voyage, pid2_ais")
+# the archived "before" files keep the names of their day (trip, hid2_ais); plan 014 renamed them, and decision 148
+# made `voyage` `voyage_id`
+now  <- list(tv = fd_curated("link", "trip_voyage.parquet"), v = fd_curated("ais", "voyage.parquet"), cols = "voyage_id AS voyage, pid2_ais")
 bef  <- list(tv = file.path(arch, "trip_voyage.parquet"),    v = file.path(arch, "trip.parquet"), cols = "trip AS voyage, hid2_ais AS pid2_ais")
 lb   <- fd_curated("logbook", "trip.parquet")
 

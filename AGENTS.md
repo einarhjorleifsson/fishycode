@@ -85,9 +85,10 @@ Every script in a targets project is on one of three sides, and says which in a 
 
 - **port** is the place word, and `pid` is its id. `hid` is a source's own port code (logbook, landings,
   STK).
-- A **port call** is an interval in port (a *stay* until decision 147; `port_stay.parquet` and its `stay` key keep
-  that name until their rebuild, TODO 91). Its values live once, in its table; pings carry keys only, and the
-  trail's few voyage values on each fix are a recorded exception (decision 147).
+- A **port call** is an interval in port (a *stay* until decision 147). Its values live once, in its table
+  (`curated/ais/port_call.parquet`, key `port_call_id` per vessel); pings carry keys only (`port_call_id`, and
+  `voyage_id` per vessel-year: ramb's names since decision 148), and the trail's few voyage values on each fix are a
+  recorded exception (decision 147).
 - A **voyage** is any movement from one port call to the next, cut from the track; a **trip** is a fishing
   trip. Declared dates are not arrival times: the reconciled trip table is a flow output, never fed back into
   the declarations' own match.
@@ -187,7 +188,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 | `sources/<name>/` | One adapter per source system. `raw/` → `staging/<name>/`. An Oracle table is read where the dump put it, `fd_raw("oracle", <schema>, <table>.parquet)`, as Oracle holds it; the STK trail and mobile ids through `stk_trail()` and `stk_mobile()` (`R/stk_trail.R`), their preferred form over the dump with no copy (decision 111). |
 | `reference/` | Vessels, geo, ports, gear, species. Note: `vessel_ais_key` is a *fitted model*, not a registry — it carries confidence. |
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
-| `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). These key checks build the key and run with it in the `once` project. `sources/stk/event.R` tags every STK port `I`/`U` event from STK alone, one row per ping (plan 011, decision 059; preprocessing since plan 014); `curate/port_stay.R` builds the stays from them and from the pings, with the per-port departure radius of `reference/ports/port_radius.R` (decision 060; a frozen one-time fix since decision 075); `curate/ais_voyage.R` cuts voyages at those stays (decision 061), and `curate/ais_trail.R` builds the product from them: `curated/ais/trail`, every fix with its voyage, station and logbook trip, partitioned by year and month (decision 065). |
+| `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). These key checks build the key and run with it in the `once` project. `sources/stk/event.R` tags every STK port `I`/`U` event from STK alone, one row per ping (plan 011, decision 059; preprocessing since plan 014); `curate/port_call.R` builds the port calls from them and from the pings, with the per-port departure radius of `reference/ports/port_radius.R` (decision 060; a frozen one-time fix since decision 075); `curate/ais_voyage.R` cuts voyages at those port calls (decision 061), and `curate/ais_trail.R` builds the product from them: `curated/ais/trail`, every fix with its voyage, station and logbook trip, partitioned by year and month (decision 065). |
 | `curate/corrections/` | The correction registry — one declarative entry each. |
 | `curate/decisions/` | Decision records. Why, not what. Indexed in its `README.md` — a finished `TODO.md` item is deleted and recorded there, or in `corrections/`. |
 | `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |

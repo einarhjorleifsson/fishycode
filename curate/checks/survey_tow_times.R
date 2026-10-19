@@ -2,7 +2,7 @@
 # Side: flow (reads the AIS trail). See TODO 60, decision 104.
 #
 # Input:  $FISHYDATA/raw/survey/is_smb_stations.csv     (dump/survey/smb_stations.R; 2008-2019 overlap the AIS)
-#         curated/ais/trail/year=*                      (vid, time, speed, stay)
+#         curated/ais/trail/year=*                      (vid, time, speed, port_call_id)
 #         curated/reference/gear_window.parquet         (bottom trawl's speed range, gid 6)
 # Output: curated/check/survey_tow_times.parquet        one row per survey tow
 #
@@ -27,9 +27,9 @@ for (y in sort(unique(sv$year))) {
   w0 <- min(s$start) - 6 * 3600; w1 <- max(s$end) + 6 * 3600
   p <- duckdbfs::open_dataset(file.path(fd_curated("ais", "trail"), paste0("year=", y))) |>
     filter(vid %in% !!unique(s$vid), time >= !!w0, time <= !!w1) |>
-    select(vid, time, speed, stay) |> collect() |>
+    select(vid, time, speed, port_call_id) |> collect() |>
     mutate(speed_min = gw$s1, speed_max = gw$s2)
-  st <- ramb::rb_create_record_stretches(p, records = s, start = "start", end = "end", port_call = "stay", window_s = 600)
+  st <- ramb::rb_create_record_stretches(p, records = s, start = "start", end = "end", port_call = "port_call_id", window_s = 600)
   k <- ramb::rb_link_record_stretches(s, st, key = "id", start = "start", end = "end")
   gaps <- p |> arrange(vid, time) |> group_by(vid) |>
     mutate(dt = as.numeric(difftime(lead(time), time, units = "mins"))) |> ungroup()

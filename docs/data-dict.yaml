@@ -52,13 +52,13 @@ tables:
       parquet: ../../fishydata/curated/ais/voyage.parquet
     description: >
       One row per port-to-port voyage, one vessel at a time: contiguous sea
-      time bracketed by two stays (curated/ais/port_stay: at least 4 h at a
-      harbour by elapsed time, from any provider; a shorter call is part of the
+      time bracketed by two port calls (curated/ais/port_call: at least 2 h at a
+      port by elapsed time, from any provider, decision 074; a shorter call is part of the
       voyage). Built in curate/ais_voyage.R from the cleaned, merged AIS/GPS track
       (staging/ais/ping_clean). Until 2026-10-01 a stay was the span of the pings
       in a polygon run and day trips merged into year-long voyages (decision 061).
       Trips with fewer than 10 pings are dropped. Numbered 1..n per vessel per
-      year; a voyage spanning New Year is split at the boundary.
+      year (`voyage_id`; `voyage` until decision 148); a voyage spanning New Year is split at the boundary.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -85,7 +85,7 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: voyage
+      - name: voyage_id
         type: number
         range: [1, 463]
         examples: [4, 143, 243, 338, 463]
@@ -126,12 +126,12 @@ tables:
       - name: pid1
         type: string
         description: >
-          Departure port: the port id (pid) of the stay before the voyage. An AIS table has no
+          Departure port: the port id (pid) of the port call before the voyage. An AIS table has no
           `hid`, which is a source's own code (plan 014).
       - name: pid2
         type: string
         description: >
-          Arrival port: the port id (pid) of the stay after the voyage.
+          Arrival port: the port id (pid) of the port call after the voyage.
       - name: n_pings
         type: number
         range: [10, 183785]
@@ -283,11 +283,12 @@ tables:
         description: >
           Standardised harbour id the ping falls inside (spatial join against harbour
           polygons); NA when the vessel is at sea.
-      - name: stay
+      - name: port_call_id
         type: number
         description: >
-          The stay the ping falls in: a key, with `vid`, into curated/ais/port_stay.parquet; NA at
-          sea. The stay's port, times and duration are in that table, not on the ping (plan 014).
+          The port call the ping falls in: a key, with `vid`, into curated/ais/port_call.parquet; NA at
+          sea. The call's port, times and duration are in that table, not on the ping (plan 014; `stay`
+          until decision 148).
       - name: year
         type: number
         range: [2023, 2023]
@@ -299,11 +300,11 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: voyage
+      - name: voyage_id
         type: number
         description: >
           The voyage the ping belongs to: a key, with `vid` and `year`, into
-          curated/ais/voyage.parquet; NA outside every voyage.
+          curated/ais/voyage.parquet; NA outside every voyage (`voyage` until decision 148).
       - name: speed_raw
         type: number
         description: >
@@ -329,14 +330,14 @@ tables:
         type: number
         description: >
           gps only: how many stations the logger fix is stamped to.
-  - name: ais_port_stay
+  - name: ais_port_call
     source:
-      parquet: ../../fishydata/curated/ais/port_stay.parquet
+      parquet: ../../fishydata/curated/ais/port_call.parquet
     description: >
-      One row per harbour stay: elapsed time a vessel spent at one Iceland/Faroe harbour (an `einar`
+      One row per port call: elapsed time a vessel spent at one Iceland/Faroe port (an `einar`
       polygon), 2007-2026, all providers. Built from AIS only; logbook and landings are not inputs.
-      Nothing consumes it yet; Phase 4 of plan 011 cuts voyages at it. Built by `curate/port_stay.R`
-      (decision 060).
+      curate/ais_voyage.R cuts voyages at it. Built by `curate/port_call.R` (decision 060; a stay in
+      `port_stay.parquet` until decisions 147 and 148).
     columns:
       - name: vid
         type: number
@@ -349,20 +350,20 @@ tables:
       - name: year
         type: number
         description: >
-          Year of `T_in`. A stay over New Year belongs to the year it began.
+          Year of `T_in`. A port call over New Year belongs to the year it began.
       - name: T_in
         type: timestamp
         description: >
-          First ping of the stay (or the `I` event of a pair), UTC.
+          First ping of the port call (or the `I` event of a pair), UTC.
       - name: T_out
         type: timestamp
         description: >
-          Last ping of the stay, or the first ping after the gap that ends it (or the `U` event), UTC. A
-          stay that ends in the next year's first ping is cut there.
+          Last ping of the port call, or the first ping after the gap that ends it (or the `U` event), UTC. A
+          port call that ends in the next year's first ping is cut there.
       - name: dur_h
         type: number
         description: >
-          Elapsed hours, `T_out - T_in`. At least 4 by construction.
+          Elapsed hours, `T_out - T_in`. At least 2 by construction (decision 074).
       - name: rule
         type: string
         description: >
@@ -370,36 +371,37 @@ tables:
       - name: evidence
         type: string
         description: >
-          Every rule that fired, joined with `+`. `tag_then_gap`: two consecutive pings at the harbour 4 h
+          Every rule that fired, joined with `+`. `tag_then_gap`: two consecutive pings at the harbour 2 h
           or more apart, one inside the polygon. `gap_near_harbour`: the same with neither inside.
-          `tag_span`: consecutive pings inside the polygon spanning 4 h or more. `event_pair`: an STK `I`
-          then `U` at the same harbour 4 h or more apart, both `io_ok` and kept by `ping_clean`, used from
+          `tag_span`: consecutive pings inside the polygon spanning 2 h or more. `event_pair`: an STK `I`
+          then `U` at the same harbour 2 h or more apart, both `io_ok` and kept by `ping_clean`, used from
           2017 only.
       - name: T_in_ping
         type: timestamp
         description: >
-          Start of the stay according to the ping rules; NA when only an event pair evidences it.
+          Start of the port call according to the ping rules; NA when only an event pair evidences it.
       - name: T_out_ping
         type: timestamp
         description: >
-          End of the stay according to the ping rules; NA when only an event pair evidences it.
+          End of the port call according to the ping rules; NA when only an event pair evidences it.
       - name: T_in_ev
         type: timestamp
         description: >
-          `I` event time; NA when no event pair evidences the stay. Beside `T_in_ping` it shows how far
+          `I` event time; NA when no event pair evidences the port call. Beside `T_in_ping` it shows how far
           the two sources agree (median 0 s at the start, 72 s at the end in 2019).
       - name: T_out_ev
         type: timestamp
         description: >
-          `U` event time; NA when no event pair evidences the stay.
+          `U` event time; NA when no event pair evidences the port call.
       - name: basis
         type: string
         description: >
           `reconstructed`: inferred from positions, not recorded.
-      - name: stay
+      - name: port_call_id
         type: number
         description: >
-          The stay's key within the vessel, numbered by T_in (plan 014); pings carry it.
+          The port call's key within the vessel, numbered by T_in over all years (plan 014), so a call over New
+          Year keeps one number; pings carry it (`stay` until decision 148).
   - name: ais_trail
     source:
       parquet: ../../fishydata/curated/ais/trail/year=2024/month=6/part_001.parquet
@@ -467,14 +469,15 @@ tables:
         type: number
         description: >
           Logger fix: seconds to the previous logger fix; NA for AIS pings.
-      - name: stay
+      - name: port_call_id
         type: number
         description: >
-          Key of the stay the fix is in (curated/ais/port_stay.parquet, with `vid`); NA at sea.
-      - name: voyage
+          Key of the port call the fix is in (curated/ais/port_call.parquet, with `vid`); NA at sea (`stay`
+          until decision 148).
+      - name: voyage_id
         type: number
         description: >
-          Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`).
+          Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`; `voyage` until decision 148).
       - name: .tid_voyage
         type: string
         examples: ["-1326693", "148474", "154222", "157476"]
@@ -856,7 +859,7 @@ tables:
       holds most of the landed weight of a landing dated within the voyage (to the day after it ends), else
       nothing. Duplicate twin stations are left out (decision 094). Built by curate/voyage_gear.R.
     details: >
-      Key: (vid, year, voyage), as in ais_voyage.
+      Key: (vid, year, voyage_id), as in ais_voyage.
     columns:
       - name: vid
         type: number
@@ -869,7 +872,7 @@ tables:
         examples: [2007, 2015, 2026]
         description: >
           The voyage's year (voyages are numbered per vessel per year).
-      - name: voyage
+      - name: voyage_id
         type: number
         examples: [1, 20, 98, 311, 534]
         description: >
@@ -1596,14 +1599,14 @@ tables:
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-  - name: check_port_stay_logbook
+  - name: check_port_call_logbook
     source:
-      parquet: ../../fishydata/curated/check/port_stay_logbook.parquet
+      parquet: ../../fishydata/curated/check/port_call_logbook.parquet
     description: >
-      One row per vessel-year, 2008 on: how many stays AIS gives against how many logbook trips and
+      One row per vessel-year, 2008 on: how many port calls AIS gives against how many logbook trips and
       landing days the vessel has. The yardstick for plan 011 Phase 3; the logbook is not an input to the
-      stays. A vessel-year can appear with stays and no trips, or the reverse. Built by
-      `curate/checks/port_stay_logbook.R`.
+      port calls. A vessel-year can appear with port calls and no trips, or the reverse. Built by
+      `curate/checks/port_call_logbook.R` (`port_stay_logbook` until decision 148).
     columns:
       - name: vid
         type: number
@@ -1613,18 +1616,18 @@ tables:
         type: number
         description: >
           Calendar year.
-      - name: n_stay
+      - name: n_port_call
         type: number
         description: >
-          Stays that began in the year, all evidence.
-      - name: n_stay_ping
+          Port calls that began in the year, all evidence.
+      - name: n_port_call_ping
         type: number
         description: >
-          Of those, stays with ping evidence (the general rules, any provider).
-      - name: n_stay_ev
+          Of those, port calls with ping evidence (the general rules, any provider).
+      - name: n_port_call_ev
         type: number
         description: >
-          Of those, stays with an event-pair behind them (2017 on).
+          Of those, port calls with an event-pair behind them (2017 on).
       - name: n_trip
         type: number
         description: >
@@ -1639,7 +1642,7 @@ tables:
     description: >
       One row per (version, logbook schema, year) from 2008: how many logbook trips link to an AIS voyage
       and how many of them share a voyage with another logbook trip, before and after the voyages were cut
-      at stays (plan 011 Phase 4, decision 061). `before` is the archived pre-Phase-4 voyages and links.
+      at port calls (plan 011 Phase 4, decision 061). `before` is the archived pre-Phase-4 voyages and links.
       Built by `curate/checks/voyage_sharing.R`; the logbook is only the yardstick.
     columns:
       - name: version
@@ -2338,12 +2341,12 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: voyage
+      - name: voyage_id
         type: number
         range: [1, 287]
         examples: [1, 75, 150, 205, 287]
         description: >
-          Voyage number of the matched AIS voyage (ais_voyage.voyage).
+          Voyage number of the matched AIS voyage (ais_voyage.voyage_id; `voyage` until decision 148).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3807,9 +3810,9 @@ tables:
       parquet: ../../fishydata/curated/reference/port_radius.parquet
     description: >
       One row per Iceland/Faroe harbour (`einar` polygon): how far from the polygon the first ping after a
-      stay may lie. The arrival end uses `r_in_m` for every harbour; the departure end uses the harbour's
+      port call may lie. The arrival end uses `r_in_m` for every harbour; the departure end uses the harbour's
       own `r_out_m`, measured from the real `I`->`U` pairs of the tagged STK events (decision 060). Used
-      by `curate/port_stay.R`. Built by `reference/ports/port_radius.R`.
+      by `curate/port_call.R`. Built by `reference/ports/port_radius.R`.
     columns:
       - name: pid
         type: string

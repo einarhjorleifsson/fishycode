@@ -50,12 +50,12 @@ ALLOW <- list(
                "station_type", "gid", "gear", "gear_basis", "target", "duration_m", "effort", "effort_unit"),
   station_catch = c(".sid", "schema", "sid", "catch", "catch_whole", "condition"),
   trail_years = c("year", "n", "time_first", "time_last"),
-  trail    = c("time", "lon", "lat", "speed", "heading", "provider", "voyage", "stay", ".tid", "schema", ".sid", "gear",
+  trail    = c("time", "lon", "lat", "speed", "heading", "provider", "voyage_id", "port_call_id", ".tid", "schema", ".sid", "gear",
                "phase", "fishing_flow", "hours"),
   photos   = c("image_no", "kind", "file", "width", "height", "exif_date", "exif_artist", "best", "use"),
   landing_trips = c(".lid", "schema_land", ".tid", "schema", "match_type"),
-  voyages  = c("year", "voyage", "T1", "T2", "pid1", "pid2", "n_pings"),
-  stays    = c("stay", "pid", "T_in", "T_out", "dur_h", "evidence", "basis"),
+  voyages  = c("year", "voyage_id", "T1", "T2", "pid1", "pid2", "n_pings"),
+  port_calls = c("port_call_id", "pid", "T_in", "T_out", "dur_h", "evidence", "basis"),
   trip_summary  = c(".tid", "schema", "T1", "T2", "port", "stations", "catch")
 )
 
@@ -130,14 +130,14 @@ SQL <- list(
   photos   = function(vid, p) sprintf(
     "SELECT *, regexp_extract(path, '[^/]+$') AS file FROM %s WHERE vid = %d AND kind <> 'missing'
      ORDER BY best DESC, kind, image_no", src("staging", "mbl", "photo.parquet"), vid),
-  # The voyages and the stays as the flow made them (curate/ais_voyage.R, curate/port_stay.R), so the page draws them
+  # The voyages and the port calls as the flow made them (curate/ais_voyage.R, curate/port_call.R), so the page draws them
   # as they are, not from its own reading of the pings (maintainer, 2026-10-18: "it should reflect what is in the
-  # data"). The stays are those the voyages were cut by: ais_voyage.R leaves out stays with event evidence alone
-  # (EXCLUDE_EVENT_ONLY, decision 060). A stay over New Year is kept by either year it touches.
+  # data"). The port calls are those the voyages were cut by: ais_voyage.R leaves out calls with event evidence alone
+  # (EXCLUDE_EVENT_ONLY, decision 060). A port call over New Year is kept by either year it touches.
   voyages  = function(vid, p) sprintf("SELECT * FROM %s WHERE vid = %d %s", src("curated", "ais", "voyage.parquet"), vid,
                                       scope(p, "T1", "T1 DESC")),
-  stays    = function(vid, p) sprintf(
-    "SELECT * FROM %s WHERE vid = %d AND evidence <> 'event_pair' %s", src("curated", "ais", "port_stay.parquet"), vid,
+  port_calls = function(vid, p) sprintf(
+    "SELECT * FROM %s WHERE vid = %d AND evidence <> 'event_pair' %s", src("curated", "ais", "port_call.parquet"), vid,
     if (ranged(p)) sprintf("AND T_out >= MAKE_DATE(%d, 1, 1) AND T_in < MAKE_DATE(%d, 1, 1) ORDER BY T_in", p$from, p$to + 1L)
     else sprintf("ORDER BY T_in DESC LIMIT %d", p$n)),
   # Which logbook trip each of the vessel's landings came from (curate/logbook/lid_map.R), for the front tab

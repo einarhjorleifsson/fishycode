@@ -309,13 +309,13 @@ The terms used for the track (decision 075; "port call", and the names ramb uses
 | **ping** | one position report; `provider` is the feed it came from. |
 | **frozen input** | the output of a one-time fix, built once, reviewed, and read by the build as an input it never rebuilds. |
 
-fishycode's tables and ramb's functions name some of these columns differently. The two keys follow ramb at the next
-rebuild of the tables (decision 147); the rest keep the mapping:
+fishycode's tables and ramb's functions name some of these columns differently. The two keys have followed ramb since
+the rebuild of 2026-10-19 (decisions 147 and 148); the rest keep the mapping:
 
 | fishycode | ramb | what |
 |---|---|---|
-| `stay`, `port_call_id` after the rebuild | `port_call_id` | a port call's key |
-| `voyage`, `voyage_id` after the rebuild | `voyage_id` | a voyage's key, with `vid` and `year` |
+| `port_call_id` (`stay` until decision 148) | `port_call_id` | a port call's key, per vessel |
+| `voyage_id` (`voyage` until decision 148) | `voyage_id` | a voyage's key, with `vid` and `year` |
 | `pid` | `port_id` | a port |
 | `pid1`, `pid2` | `port_from`, `port_to` | a voyage's ports |
 | `.tid`, `.sid`, with `schema` | `trip_id`, or the `keys` given | a declared trip or station |
