@@ -8,7 +8,7 @@ date: 2026-10-09
 the group's copy is on SharePoint). Version 2 (2026-10-08) revised the diagram and the text it implies after the
 meeting; on 2026-10-09 "harbour" became "port" throughout, and the section on fishycode was added (plan 014); on
 2026-10-19 a stay became a port call and ramb's functions took their new names (decision 147), and fishycode's tables
-their keys `port_call_id` and `voyage_id` (decision 148). It lived in
+their keys `port_call_id` and `voyage_id` (decision 149). It lived in
 `~/stasi/wgsfd2026` until then.*
 
 *AI use: version 1 drafted by Claude (Anthropic) from the ICES VMS and logbook data-call code (commit `a844911`)

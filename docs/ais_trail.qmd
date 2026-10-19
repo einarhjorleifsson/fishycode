@@ -60,7 +60,7 @@ The columns added to the pings (the voyage columns come from the AIS voyage, the
 
 | column | meaning |
 |---|---|
-| `port_call_id`, `voyage_id` | keys: the port call the fix is in (NA at sea; `curated/ais/port_call.parquet`, by `vid`), and the AIS voyage (`curated/ais/voyage.parquet`, by `vid` and `year`). The port and times of a port call or voyage are in those tables, not on the fix. `stay` and `voyage` until decision 148. |
+| `port_call_id`, `voyage_id` | keys: the port call the fix is in (NA at sea; `curated/ais/port_call.parquet`, by `vid`), and the AIS voyage (`curated/ais/voyage.parquet`, by `vid` and `year`). The port and times of a port call or voyage are in those tables, not on the fix. `stay` and `voyage` until decision 149. |
 | `.tid_voyage`, `schema_voyage`, `n_tid_voyage` | the logbook trip of the voyage — filled only when exactly one trip is on it; `n_tid_voyage` counts them (0 = none) |
 | n_sid | number of station windows that contain the fix (0 = none) |
 | `.sid`, `schema`, `.tid` | the station and trip — filled **only** when `n_sid == 1` |
@@ -243,6 +243,6 @@ trail(2019, x1$vid) |>
 ## Where the numbers come from
 
 - `curated/ais/trail`, `trail_match` — built from `ais/ping`, `station_window` and `link/trip_voyage` by `curate/ais_trail.R`; checks `curated/check/trail_agreement` (the station and the voyage name the same trip in 99.6 % of fixes that have both) and `trail_sid_coverage`.
-- `curated/ais/ping/year=*` — AIS (stk, astd, astdB, emodnet) and the GPS logger (provider `gps`, positions reconstructed), unique on `(vid, time)`, speed in knots, each ping carrying its `voyage_id` and `port_call_id` keys (plan 014; `ping_trail` until then; `voyage` and `stay` until decision 148).
+- `curated/ais/ping/year=*` — AIS (stk, astd, astdB, emodnet) and the GPS logger (provider `gps`, positions reconstructed), unique on `(vid, time)`, speed in knots, each ping carrying its `voyage_id` and `port_call_id` keys (plan 014; `ping_trail` until then; `voyage` and `stay` until decision 149).
 - `curated/logbook/station_window.parquet` — one row per station window, with `win_basis` saying how it was drawn.
 - This page and the code behind it were written with AI assistance (Claude); the checks above, not the code's say-so, establish the result.

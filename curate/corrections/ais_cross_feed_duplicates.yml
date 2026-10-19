@@ -4,7 +4,7 @@ status: fixed 2026-10-08 - flagged as whack_stage "duplicate" before rb_whack_cl
 applies_to:
   - staging/ais/ping_clean  (the second copy is no longer in it)
   - staging/ais/ping_whacky  (it is, with whack_stage = "duplicate"; nothing is overwritten)
-  - everything built from ping_clean - port_call, ais_voyage, trail (harbour_stay, ais_trip, ping_trail until plan 014; port_stay until decision 148)
+  - everything built from ping_clean - port_call, ais_voyage, trail (harbour_stay, ais_trip, ping_trail until plan 014; port_stay until decision 149)
 affects_rows: 6,573,358 of 543,638,789 pings with a vid and a position (1.2 %); none 2007-2012 (one feed), 2,094,626 in 2017. Before this, 5,760,358 of them were in ping_clean and the trail and 813,000 were flagged whacky
 implementation: ramb::rb_whack_duplicates() (ramb main, 2026-10-08), called in curate/ais_ping_clean.R ahead of rb_whack_clean() with DUP_S, DUP_K, FEED; until then the same rule was a function in that script (row for row identical, all 20 years). Needs tar_invalidate(ais_ping_clean) and tar_make_isolated() - targets cannot see a script edit.
 discovered: 2026-10-08 (decision 069 - the 10 s time-step floor gives back 1.47 M pings, 96 % of them between two feeds)

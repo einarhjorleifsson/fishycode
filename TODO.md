@@ -285,7 +285,7 @@ a voyage key and `pid1`/`pid2` resolved.
 ## 68. stk's tables besides the trail: what they hold, and which fishycode should read
 **status:** open · **needs: maintainer** — the go for plan 022 §4, and its asks 1 (who knows what STK's export and
 backup tables were for) and 4 (survey windows) · **see:** plan 022 (§2.1, its appendix, §4, §7), decision 109,
-`curate/ais_voyage.R`, `curate/port_stay.R`
+`curate/ais_voyage.R`, `curate/port_call.R`
 
 The maintainer asked for every stk object besides the trail to be checked: some are copies of the trail, some may be
 very useful. Plan 022's appendix (2026-10-16) says what each of the 63 holds, so the first half of the check is met.
@@ -597,23 +597,11 @@ Next: plan 031's asks a-h, then settle the whole design from §4.0 with the benc
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
 ## 91. Names by output shape: `rb_create_*` for a table, `rb_add_*` for columns, "port call" for a stay (plan 032)
-**status:** in progress · **needs: maintainer** — the go for the tables' rebuild (its own session since 2026-10-19)
-· **see:** `curate/plans/032-names-by-output-shape.md` (§7, the answers), decision 147
-(what was built), decision 075, plan 013, TODO 90
+**status:** in progress · **see:** `curate/plans/032-names-by-output-shape.md`, decisions 147 and 149
 
-Set aside by the maintainer on 2026-10-19 while the trip finders of plan 031 go into ramb. The thinking: all voyage
-detection in one ramb function with `method`; a function's verb says whether it returns a new table or the input with
-a column added (tidyverse's `count()`/`add_count()`); "stay" means nothing outside the project, so "port call".
-fishycode's flow scripts split the same way, but its key names differ from ramb's.
+Built in ramb and fishycode on 2026-10-19 (decision 147), and fishycode's tables rebuilt on ramb's keys the same day
+(decision 149): `port_call.parquet`, `port_call_id`, `voyage_id`. Left: ramb's `_pkgdown.yml` reference index still
+lists the twelve old names. It belongs to the session writing ramb's `sets` and `vessels` articles, uncommitted; a
+patch waits beside `naming-renames-done.md` in the side-session notes of 2026-10-19 (`ramb-pkgdown-renames.patch`).
 
-Asks a-e answered by the maintainer the same day (plan 032 §7): `create` and `add`, twelve renames with one release
-of warning aliases; "port call" and `method = "dwell"`; `port_call_id` (per vessel) and `voyage_id` in fishycode's
-tables too, at a rebuild of their own; the trail keeps its voyage values. Built and committed the same day (decision
-147): ramb 2026.10.19.2 (a312781, not pushed), its suite green; fishycode's callers on the new names with today's columns, identical on
-2023's real data; `grammar.qmd`, `one_flow.qmd` and `AGENTS.md` on "port call". Left: `port_stay.parquet` →
-`port_call.parquet` with `port_call_id`, and `stay`/`voyage` → `port_call_id`/`voyage_id` on the pings and the trail,
-with their readers (the vessel overview, `docs/ais_trail.qmd`, the checks), in one rebuild; and ramb's
-`_pkgdown.yml` reference index, held by another session, onto the new names.
-
-**check:** ramb and fishycode's callers use the names of plan 032 §7, and fishycode's tables carry `port_call_id` and
-`voyage_id` after their rebuild.
+**check:** `pkgdown::build_site()` in ramb finds every exported function in the reference index.

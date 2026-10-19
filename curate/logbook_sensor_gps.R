@@ -77,7 +77,7 @@ logger <- bind_rows(
 # -- interpolate positions from the merged track, WITHIN each voyage ----------
 
 track  <- open_dataset(fd_curated("ais", "ping"))
-# the voyage key is `voyage_id` since decision 148 (`voyage` when this frozen fix was built)
+# the voyage key is `voyage_id` since decision 149 (`voyage` when this frozen fix was built)
 voyage <- open_dataset(fd_curated("ais", "voyage.parquet")) |>
   select(vid, year, trip = voyage_id, T1, T2) |> collect()
 

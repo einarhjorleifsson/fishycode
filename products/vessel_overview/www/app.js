@@ -23,7 +23,7 @@ const num = (x, d = 0) => (x == null || x === '' || Number.isNaN(x) ? '' : Numbe
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-18.5';
+const API = '2026-10-19.1';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }

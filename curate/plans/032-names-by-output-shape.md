@@ -1,8 +1,9 @@
 # 032 — Names by output shape: one verb for a table, one for a column, and "port call" for a stay
 
-**status:** partly built — asks a-e answered by the maintainer on 2026-10-19 (§7): `create` for a table, `add` for
+**status:** executed — asks a-e answered by the maintainer on 2026-10-19 (§7): `create` for a table, `add` for
 columns, "port call" for a stay; ramb renamed (2026.10.19.2) and fishycode's callers on the new names the same day
-(decision 147), committed, not pushed; fishycode's tables take the new keys at a rebuild of their own (TODO 91) ·
+(decision 147), and fishycode's tables rebuilt on the new keys the same evening (decision 149); not pushed; ramb's
+pkgdown index is left (TODO 91) ·
 **2026-10-19** · **see:** TODO 91, decision 075 (the terms port, stay,
 voyage), plan 013 (ramb's steps and its step registry), plan 014 (the flow as thin callers of ramb), plan 031 (the
 voyage cascade and its bench), ramb `AGENTS.md` (naming), ramb `R/registry.R`

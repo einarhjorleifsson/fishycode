@@ -4,7 +4,7 @@ status: fixed 2026-10-08 - flagged as whack_stage "invalid" before whack_clean()
 applies_to:
   - staging/ais/ping_clean  (the pings are no longer in it)
   - staging/ais/ping_whacky  (they are, with whack_stage = "invalid"; nothing is overwritten)
-  - everything built from ping_clean - port_call, ais_voyage, trail (harbour_stay, ais_trip, ping_trail until plan 014; port_stay until decision 148)
+  - everything built from ping_clean - port_call, ais_voyage, trail (harbour_stay, ais_trip, ping_trail until plan 014; port_stay until decision 149)
 affects_rows: 9,520 of 543,776,104 pings, all stk, all with a vid - 8,799 with lon == lat at 59-76 E and 721 at (0, 0). Before this, 4,654 of them were kept in ping_clean (4,540 lon == lat, 114 at (0, 0))
 implementation: curate/ais_ping_clean.R (`bad <- d$lon == d$lat`, ahead of whack_clean()). Needs tar_invalidate(ais_ping_clean) and tar_make_isolated() - targets cannot see a script edit.
 discovered: 2026-10-08 (decision 067, the 208 vessels the new filter flags more)

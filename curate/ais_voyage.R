@@ -8,7 +8,7 @@
 #                                     in a port call)
 #
 # Voyage key is (vid, year, voyage_id), numbered 1..n per vessel per year; a voyage
-# spanning New Year is split at the boundary. The keys are ramb's names since decision 148 (`stay`, `voyage` before).
+# spanning New Year is split at the boundary. The keys are ramb's names since decision 149 (`stay`, `voyage` before).
 #
 # T1/T2 are UPPERCASE on purpose: case encodes the level, so a trip or voyage is
 # T1/T2 and an event within it is t1..t4. See curate/decisions/010-time-variable-naming.md

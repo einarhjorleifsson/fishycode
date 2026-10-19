@@ -58,7 +58,7 @@ tables:
       (staging/ais/ping_clean). Until 2026-10-01 a stay was the span of the pings
       in a polygon run and day trips merged into year-long voyages (decision 061).
       Trips with fewer than 10 pings are dropped. Numbered 1..n per vessel per
-      year (`voyage_id`; `voyage` until decision 148); a voyage spanning New Year is split at the boundary.
+      year (`voyage_id`; `voyage` until decision 149); a voyage spanning New Year is split at the boundary.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -288,7 +288,7 @@ tables:
         description: >
           The port call the ping falls in: a key, with `vid`, into curated/ais/port_call.parquet; NA at
           sea. The call's port, times and duration are in that table, not on the ping (plan 014; `stay`
-          until decision 148).
+          until decision 149).
       - name: year
         type: number
         range: [2023, 2023]
@@ -304,7 +304,7 @@ tables:
         type: number
         description: >
           The voyage the ping belongs to: a key, with `vid` and `year`, into
-          curated/ais/voyage.parquet; NA outside every voyage (`voyage` until decision 148).
+          curated/ais/voyage.parquet; NA outside every voyage (`voyage` until decision 149).
       - name: speed_raw
         type: number
         description: >
@@ -337,7 +337,7 @@ tables:
       One row per port call: elapsed time a vessel spent at one Iceland/Faroe port (an `einar`
       polygon), 2007-2026, all providers. Built from AIS only; logbook and landings are not inputs.
       curate/ais_voyage.R cuts voyages at it. Built by `curate/port_call.R` (decision 060; a stay in
-      `port_stay.parquet` until decisions 147 and 148).
+      `port_stay.parquet` until decisions 147 and 149).
     columns:
       - name: vid
         type: number
@@ -401,7 +401,7 @@ tables:
         type: number
         description: >
           The port call's key within the vessel, numbered by T_in over all years (plan 014), so a call over New
-          Year keeps one number; pings carry it (`stay` until decision 148).
+          Year keeps one number; pings carry it (`stay` until decision 149).
   - name: ais_trail
     source:
       parquet: ../../fishydata/curated/ais/trail/year=2024/month=6/part_001.parquet
@@ -473,11 +473,11 @@ tables:
         type: number
         description: >
           Key of the port call the fix is in (curated/ais/port_call.parquet, with `vid`); NA at sea (`stay`
-          until decision 148).
+          until decision 149).
       - name: voyage_id
         type: number
         description: >
-          Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`; `voyage` until decision 148).
+          Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`; `voyage` until decision 149).
       - name: .tid_voyage
         type: string
         examples: ["-1326693", "148474", "154222", "157476"]
@@ -1606,7 +1606,7 @@ tables:
       One row per vessel-year, 2008 on: how many port calls AIS gives against how many logbook trips and
       landing days the vessel has. The yardstick for plan 011 Phase 3; the logbook is not an input to the
       port calls. A vessel-year can appear with port calls and no trips, or the reverse. Built by
-      `curate/checks/port_call_logbook.R` (`port_stay_logbook` until decision 148).
+      `curate/checks/port_call_logbook.R` (`port_stay_logbook` until decision 149).
     columns:
       - name: vid
         type: number
@@ -2346,7 +2346,7 @@ tables:
         range: [1, 287]
         examples: [1, 75, 150, 205, 287]
         description: >
-          Voyage number of the matched AIS voyage (ais_voyage.voyage_id; `voyage` until decision 148).
+          Voyage number of the matched AIS voyage (ais_voyage.voyage_id; `voyage` until decision 149).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.

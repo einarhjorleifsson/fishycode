@@ -1,5 +1,5 @@
 # port_call.R — port calls: elapsed time in port, from whatever evidence there is (harbour_stay.R until plan 014,
-# port_stay.R until decision 148).
+# port_stay.R until decision 149).
 # Side: flow, step 1. See plan 014.
 #
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider; recorded positions only, plan 014)
@@ -70,7 +70,7 @@ ALL       <- !length(YEARS)
 
 # -- Port polygons with their departure radius ---------------------------------------------------
 # The rules themselves are ramb::rb_create_port_calls(method = "dwell") (plan 013, phase 2; a stay was renamed a port
-# call by decision 147, and the table and its key by decision 148); this script supplies the Icelandic inputs and keeps
+# call by decision 147, and the table and its key by decision 149); this script supplies the Icelandic inputs and keeps
 # the year-by-year processing.
 
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>

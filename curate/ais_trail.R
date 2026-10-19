@@ -21,7 +21,7 @@
 # Columns of `trail` (SQL in R/trail_sql.R; year and month are the partition keys, not columns in the file):
 #   the fix       vid mmsi time lon lat speed speed_raw heading cog provider pos_basis speed_basis dt_sec
 #   the voyage    port_call_id (key into curated/ais/port_call.parquet, NA at sea) voyage_id (key into
-#                 curated/ais/voyage.parquet, within vid, year; `stay` and `voyage` until decision 148)
+#                 curated/ais/voyage.parquet, within vid, year; `stay` and `voyage` until decision 149)
 #                 .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
 #   the station   n_sid .sid schema .tid metier gear target target2 gid gid_landing gid_used gid_basis gear_class s1 s2
 #                 phase phase_frac win_basis events nearest_event fishing (on the ±10 min median speed, decision 093)
