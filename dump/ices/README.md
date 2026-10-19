@@ -4,7 +4,7 @@ The ICES expert-group reports behind plan 033's book: WKSSFGEO, WKSSFGEO2, and e
 (2013-2025). The PDFs were fetched by hand from the ICES library on figshare, at the maintainer's request on
 2026-10-19. Each one's DOI, licence, size and sha256 is in `$FISHYDATA/raw/external/ices/README-provenance.txt`.
 
-Plan 033 §11.1 has the design, and decision 150 what the reading found.
+Plan 033 §11.1 has the design, and decisions 150 and 152 what the reading found.
 
 ## Text (writes `raw/external/ices/text/`)
 
@@ -34,7 +34,8 @@ Plan 033 §11.1 has the design, and decision 150 what the reading found.
 4. **Writing.** The checked maps are written into `docs/ices_reports.yml` under a header that states the AI use and
    the checks.
 
-The six reports of 2013-2018 are not read yet. Their texts are ready in `raw/external/ices/text/`, and their header
-format (`8 | ICES WGSFD REPORT 2015`) is handled by `mark_pages.sh`.
+All 13 reports are read: the seven from 2019 (decision 150) and the six of 2013-2018 (decision 152), whose header
+format (`8 | ICES WGSFD REPORT 2015`) `mark_pages.sh` handles. Before the maps are written, themes that two readers
+coined for one thing are merged (decision 152 lists them).
 
 Python is used here for text handling only; the pipeline itself stays R.

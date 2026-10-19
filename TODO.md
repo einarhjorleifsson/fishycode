@@ -665,16 +665,18 @@ Asks a-f answered the same day (plan 033 §12):
 - the four leftover pages removed;
 - the 2026 meeting folder moved, and cited once published.
 
-**Step 1 done for the seven reports from 2019** (decision 150). They are in the reading map `docs/ices_reports.yml`
-(983 topic rows, 362 code rows). The diagram held as the centre and was amended as version 3, and §4 was revised.
+**Step 1 done** (decisions 150, 152). All 13 reports are in the reading map `docs/ices_reports.yml` (1,777 topic
+rows, 511 code rows). The diagram held as the centre and was amended as version 3, and §4 was revised. Over all 13,
+version 3 holds.
 
 **Step 2 done** (decision 151): `docs/` renders as a book, three parts from the pages that exist, no new text.
 
 Open:
-- the six reports of 2013-2018 (texts ready in `raw/external/ices/text/`; tools in `dump/ices/`);
+- decision 152's proposals, the maintainer's call: four boxes for the products row (indicators from the grid,
+  disclosure, coverage, impact), and a chapter on the products' uses;
 - steps 3-9.
 
-**check:** the 2013-2018 reports are in the reading map, and `docs/` renders as a book (plan 033 steps 1 and 2).
+**check:** decision 152's proposals are decided, and `check_book()` runs in `check_bookkeeping()` (plan 033 step 3).
 
 ## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
 **status:** open · **needs: maintainer** — whether to rebuild `stk` clean now, since the AIS chain reads it · **see:**

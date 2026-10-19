@@ -40,7 +40,9 @@ for i, r in enumerate(rows, 1):
         # allow the printed range to be given as its end points only
         if not (pr and str(pr[0]) == exp[0] and str(pr[-1]) == exp[-1]): probs.append(f"pages {r.get('pages')} vs markers {exp}")
     text = norm(" ".join(pages.get(p, "") for p in pp))
-    terms = [t for t in (r.get("terms") or []) if str(t).strip()]
+    terms = r.get("terms") or []
+    if isinstance(terms, str): terms = [terms]  # a single term arrives unboxed from the merge
+    terms = [t for t in terms if str(t).strip()]
     hit = [t for t in terms if norm(str(t)) and norm(str(t)) in text]
     if terms and not hit: probs.append(f"no term found on its pages: {terms}")
     sw = norm(r.get("summary", "")).split()

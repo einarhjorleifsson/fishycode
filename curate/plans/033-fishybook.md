@@ -1,10 +1,11 @@
 # 033 — fishybook: one Quarto book that consolidates the ICES groups' thinking, with ramb as its code
 
-**status:** partly built — step 1 done for the seven reports from 2019 (decision 150): the reading map
-`docs/ices_reports.yml`, the diagram tested and amended as version 3, §4 revised; asks a-f answered 2026-10-19 (§12):
+**status:** partly built — step 1 done (decisions 150, 152): the reading map `docs/ices_reports.yml` of all 13
+reports, the diagram tested and amended as version 3, then tested over all 13 (it holds; four boxes for its products
+row and a chapter on the products' uses proposed, not made), §4 revised; asks a-f answered 2026-10-19 (§12):
 `docs/` converted in place keeping its name, one edition at `~einarhj/fishybook` with the Icelandic part in it (no data
 files, vessel data static), the title *From pings to effort and catch*; step 2 done (decision 151): `docs/` renders as a
-book from the pages that exist; the 2013-2018 reports and steps 3-9 open · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
+book from the pages that exist; steps 3-9 open, and decision 152's proposals wait for the maintainer · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
 be) and plan 002 (its port list), TODO 15 and 16; TODO 91 (ramb's pkgdown index); TODO 93 and decision 148 (the
 workshops' data); `docs/one_flow.qmd`, `docs/wkssfgeo.qmd`
 
@@ -123,8 +124,10 @@ reading of the reports etc. says so". **Tested** (decision 150): it holds as the
   a844911): its blocks 0-3, its guidelines and its formats. It is not the centrepiece. It appears in each chapter where
   its way of handling that row is worth comparing (§5, item 4), politely and with some humour (§3).
 
-**Revised from the recent reports** (decision 150). The six reports of 2013-2018 may revise it again when they are
-read. Where a chapter below names its sources in the reports, the reading map (`docs/ices_reports.yml`) gives the
+**Revised from the recent reports** (decision 150), **and tested against the old ones** (decision 152). The six
+reports of 2013-2018 add no row. They propose four boxes for the Products row (chapter 15): indicators from the grid,
+disclosure, coverage and impact. They also propose a chapter on the products' uses (protected areas, wind farms,
+displacement). The outline gains these only on the maintainer's go. Where a chapter below names its sources in the reports, the reading map (`docs/ices_reports.yml`) gives the
 pages.
 
 **Sources still to find** (maintainer, 2026-10-19: "there is plenty there, we just need to find it"; noted, not mined
@@ -187,7 +190,7 @@ that is not yet written is named. "Seed" is the text it starts from; "sources" a
 
 16. *WKSSFGEO (2021) and WKSSFGEO2 (2023)*. Seed: `wkssfgeo.qmd`; the reading map.
 17. *WGSFD, 2013-2025*: what each report set out to do, and what it asked of methods. To write, from the reading map
-    (the recent reports now, the old ones when read).
+    (all 13 read).
 18. *WGSFD 2026*. Seed: `one_flow.qmd`'s "The diagram as presented at WGSFD 2026". Sources: the meeting folder.
 
 Later meetings are appended, one chapter each.
@@ -369,7 +372,7 @@ provisional until they are mined (§11.1). Step 2 only regroups existing pages a
 alongside step 1.
 
 1. **Mine the ICES reports** (§11.1). The result is a reading map, a decision record of what was found, and §4
-   revised from it, in one commit. *Done for the seven reports from 2019 (decision 150); the six of 2013-2018 later.*
+   revised from it, in one commit. *Done: the seven reports from 2019 (decision 150) and the six of 2013-2018 (decision 152).*
 2. **Convert `docs/` to a book in place, with no new text.** `type: book`, the four parts from existing pages; the
    title *From pings to effort and catch*, subtitle *Spatial fisheries data with ramb* (ask f); `site-url`
    `heima.hafro.is/~einarhj/fishybook` (ask b); the GitHub link to fishycode; drop the two phantom render entries;
@@ -539,6 +542,23 @@ suggest the following, but **this is not measured until they are read**:
   run. The diagram test's threshold counts the reports read so far: three or more.
 - **WGSFD 2025b is read again** with the lean prompt, which gives it the new fields. Comparing that reading with the
   pilot measures what the lean reading loses before the rest are read.
+- **The run of the old reports** (2026-10-19, measured; decision 152). WGSFD 2013-2018, in nine parts, by the same
+  method, with the readers told to paraphrase strictly, since these reports reproduce only with permission.
+  - **Rows.** 794 topic rows and 149 code rows. 15 copied runs were reworded and 13 layout-split terms reset from the
+    page, so all six pass the checker; 24 rows were checked by hand, all faithful. A checker fault was fixed: rows
+    with a single term had passed unchecked.
+  - **Cost.** 1.22M tokens (1.56 per compact character), against the estimate of about 1.4M; 3.10M for all the
+    mining.
+  - **Themes coined twice**, merged across all 13: "vmes", "pressure indicators" and "indicators" (DCF 5-7),
+    "static gears", "sensors".
+  - **Diagram test over 13 reports.** 64 % of the 949 substantive rows land on a diagram row (59 % for 2013-2018).
+    The share follows each report's remit, not its year: 46-55 % where OSPAR, HELCOM and spatial-planning work
+    dominate, 85-90 % for the workshops. Six themes pass the criterion for the first time: seabed pressure and impact,
+    data access and governance, marine spatial planning, dcf indicators, data coverage and high-resolution data.
+    Their rows lie after the last row, or are uses of the products.
+  - **Verdict** (proposed by Claude, not made). Version 3 holds. The old reports call for the products row to be
+    filled in: indicators from the grid (DCF 5-7), disclosure, coverage, and perhaps impact (below the criterion).
+    The products' uses would be a chapter, not a box. The diagram and §4's chapters wait for the maintainer.
 
 The page-marking script and the checker live in the session's scratch folder until the run is done; they move to
 `curate/` or `dump/` with the reading map, which is decided then.
