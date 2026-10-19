@@ -1,0 +1,183 @@
+# Issues for iapesca (https://github.com/JulRodrigu/r-packages_iapesca), found while porting its trip finder to ramb
+# for the voyage bench (plan 031). Drafted 2026-10-19 by Claude (AI) for the maintainer of ramb/fishycode, who reviewed
+# them and sent them to the package's author by personal email the same day, as a Quarto document and its HTML
+# rendered from this file. None is filed on GitHub.
+# Each reprex was run against r-packages_iapesca at 1b7248c (2022-11-16), first by sourcing its R/ folder, then with
+# the package installed by the maintainer (library(iapesca)): the same output both ways. Each body carries its own
+# reprex; the combined script stayed in the drafting session's notes and is not kept.
+
+repository: JulRodrigu/r-packages_iapesca
+commit: 1b7248c0dc2b29df814cc2b92f914764320b8405
+environment: R 4.5.2, sf 1.1.3, GEOS 3.13.0, s2 1.1.13, lwgeom 0.2.17
+sent: 2026-10-19
+sent_how: personal email to the author (Quarto document and HTML), not filed on GitHub
+
+shared_setup: |
+  ```r
+  library(iapesca)
+  library(sf)
+  data(positions)
+  data(harbours)
+  pos <- st_as_sf(positions[, c("DATE_TIME", "LONGITUDE", "LATITUDE")],
+                  coords = c("LONGITUDE", "LATITUDE"), crs = 4326, remove = FALSE)
+  ```
+
+issues:
+  - title: "Detect_FishingTrips() finds no trips on lon/lat data when sf's s2 is switched off"
+    labels: [bug]
+    body: |
+      With positions and harbours in lon/lat (EPSG:4326) and `sf::sf_use_s2(FALSE)`, which many workflows set,
+      `st_buffer(Harbours, dist = buf.size)` reads the 2,000 m buffer as 2,000 degrees. Every position is then
+      "in harbour" and no trip is returned. With s2 off, `CalcDist()` also goes through lwgeom one pair at a time,
+      which makes the speed cleaning about 50 times slower (284 s instead of 4.7 s on a track of 103,078 positions).
+
+      (shared setup, then)
+      ```r
+      sf_use_s2(TRUE);  a <- Detect_FishingTrips(pos, Harbours = harbours)
+      sf_use_s2(FALSE); b <- Detect_FishingTrips(pos, Harbours = harbours)
+      c(nrow(a$trip.path), nrow(b$trip.path))
+      #> [1] 1877    0
+      st_bbox(st_buffer(harbours, dist = 2000))   # with s2 off: about 4000 x 4000 degrees
+      ```
+
+      **Suggested remedy.** Make the result independent of the global option: when `sf::st_is_longlat(trip.path)`,
+      either work in a local metric CRS (the package already has `lonlat2UTM()`) for the buffers and distances, or
+      set s2 inside the function and restore it on exit:
+      ```r
+      if (sf::st_is_longlat(trip.path)) {
+        old <- sf::sf_use_s2(TRUE)
+        on.exit(sf::sf_use_s2(old), add = TRUE)
+      }
+      ```
+      and for a projected CRS, check that its unit is metres (`sf::st_crs(trip.path)$units_gdal == "metre"`).
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+  - title: "min.stop measures the time between trip ends, not the length of the stop"
+    labels: [bug]
+    body: |
+      `min.stop` is documented as the "minimal duration in seconds to define a stop". In `Detect_FishingTrips()`,
+      `TimeBreak` is the time between successive candidate changes, i.e. from the end of one trip to the end of the
+      next, which includes the trip itself. So a long stay after a short trip is ignored, and a short stop after a
+      long trip splits it.
+
+      Made-up track at the example harbour, a position every 2 min, out to sea and back at about 11 knots:
+      ```r
+      hc <- st_coordinates(st_centroid(st_geometry(harbours)))[1, ]
+      track <- function(...) {   # each argument: n positions in port, or a trip out to `deg` degrees east and back
+        lon <- NULL
+        for (l in list(...)) lon <- c(lon, if (l$port) rep(hc[1], l$n) else
+          hc[1] + c(seq(0.005, l$deg, by = 0.005), seq(l$deg, 0.005, by = -0.005)))
+        x <- data.frame(lon = lon, lat = hc[2], DATE_TIME = format(as.POSIXct("2021-12-01 06:00:00", tz = "UTC") +
+                          (seq_along(lon) - 1) * 120, "%Y-%m-%d %H:%M:%S"))
+        st_as_sf(x, coords = c("lon", "lat"), crs = 4326, remove = FALSE)
+      }
+      port <- function(n) list(port = TRUE, n = n); sea <- function(deg) list(port = FALSE, deg = deg)
+      a <- Detect_FishingTrips(track(port(3), sea(0.05), port(150), sea(0.2), port(3)), Harbours = harbours)
+      b <- Detect_FishingTrips(track(port(3), sea(0.2), port(5), sea(0.2), port(3)), Harbours = harbours)
+      length(unique(a$trip.path$FISHING_TRIP_FK))   # 40 min at sea, 5 h in port, 2.7 h at sea
+      #> [1] 1      (one trip, 06:14 to 14:16, across the 5 h stay)
+      length(unique(b$trip.path$FISHING_TRIP_FK))   # 2.7 h at sea, 10 min in port, 2.7 h at sea
+      #> [1] 2      (split by a 10 min stop)
+      ```
+
+      **Suggested remedy.** Measure each stop from the last position at sea before it to the first after it:
+      ```r
+      gap <- which(diff(IsFishingTrip) > min.timelapse)
+      stop.secs <- as.numeric(difftime(timestamp[IsFishingTrip[gap + 1]], timestamp[IsFishingTrip[gap]], units = "secs"))
+      FT.Change <- c(1, IsFishingTrip[gap][stop.secs > min.stop])
+      ```
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+  - title: "Harbour buffer drops back to buf.size.start for tracks wider than about 370 km"
+    labels: [bug]
+    body: |
+      `buf.size` takes 1 % of the track's bounding-box diagonal only while it is between `buf.size.start` and
+      `buf.size.max` (2 nm):
+      ```r
+      if (as.numeric(diag.length)/100 > buf.size & as.numeric(diag.length)/100 < buf.size.max) buf.size <- ...
+      ```
+      Past the cap it stays at the start value, so the buffer jumps from 3.7 km back to 2 km. The example track
+      plus one slow position (three days later) at a given distance north gives:
+      ```
+      track extent about 250 km: buf.size = 2605 m
+      track extent about 300 km: buf.size = 3092 m
+      track extent about 360 km: buf.size = 3682 m
+      track extent about 380 km: buf.size = 2000 m
+      track extent about 450 km: buf.size = 2000 m
+      ```
+      **Suggested remedy.** `buf.size <- min(max(buf.size.start, as.numeric(diag.length)/100), buf.size.max)`.
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+  - title: "CalcSpeed() drops rows that are not duplicates"
+    labels: [bug]
+    body: |
+      `test.dup <- duplicated(timestamp) & duplicated(sf::st_geometry(trip.path))` evaluates the two `duplicated()`
+      separately, so a row is dropped when its time repeats one row and its position repeats another.
+      ```r
+      hc <- st_coordinates(st_centroid(st_geometry(harbours)))[1, ]
+      x <- st_as_sf(data.frame(DATE_TIME = c("2021-12-01 06:00:00", "2021-12-01 06:05:00", "2021-12-01 06:00:00"),
+                               lon = c(hc[1], hc[1] + 0.01, hc[1] + 0.01), lat = hc[2]),
+                    coords = c("lon", "lat"), crs = 4326, remove = FALSE)
+      nrow(CalcSpeed(x))   # three distinct rows
+      #> [1] 2
+      ```
+      **Suggested remedy.** `test.dup <- duplicated(data.frame(timestamp, sf::st_coordinates(trip.path)))`.
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+  - title: "CleanSpuriousSpeeds() returns NA rows after CalcSpeed() has removed a duplicate"
+    labels: [bug]
+    body: |
+      In the loop, `valid.speed <- 1:nrow(trip.path)` counts the rows of the input before `CalcSpeed()` removed
+      duplicates, so when a spurious speed is then found, indexing `trip.path.wspeed[valid.speed, ]` runs past the
+      end and adds rows of NA.
+      ```r
+      y <- pos[1:50, ]
+      y <- rbind(y[1:10, ], y[10, ], y[11:50, ])                     # one exact duplicate
+      y$LONGITUDE[30] <- y$LONGITUDE[30] + 1                          # and a spike
+      st_geometry(y)[30] <- st_point(c(y$LONGITUDE[30], y$LATITUDE[30]))
+      z <- CleanSpuriousSpeeds(y)
+      c(nrow(z), sum(is.na(z$DATE_TIME)))
+      #> [1] 50  1
+      ```
+      **Suggested remedy.** Index the table the speeds were computed on:
+      `valid.speed <- seq_len(nrow(trip.path.wspeed))` and `trip.path <- trip.path.wspeed[valid.speed, ]`.
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+  - title: "Char2Time() returns NA for a date-time at exact midnight, and CalcSpeed() then reports speed 0"
+    labels: [bug]
+    body: |
+      Given a POSIXct, `Char2Time()` parses its character form, which R prints without the time at midnight, so
+      `strptime(..., "%Y-%m-%d %H:%M:%S")` gives NA. `CalcSpeed()` then sets the NA time step to 0, and the speed
+      next to that position silently becomes 0.
+      ```r
+      Char2Time(as.POSIXct(c("2021-12-23 00:00:00", "2021-12-23 00:05:00"), tz = "UTC"))
+      #> [1] NA                        "2021-12-23 00:05:00 UTC"
+      w <- pos[1:20, ]
+      w$DATE_TIME <- as.POSIXct(w$DATE_TIME, tz = "UTC")
+      w$DATE_TIME[5] <- as.POSIXct("2021-12-23 00:00:00", tz = "UTC")
+      w <- w[order(w$DATE_TIME), ]
+      CalcSpeed(w)$SPEED.kn[1:2]                     # the same data with DATE_TIME as text gives 0, 0.21
+      #> [1] 0 0
+      ```
+      **Suggested remedy.** In `Char2Time()`, return a POSIXct input as is (`if (inherits(DateTime, "POSIXct"))
+      return(lubridate::with_tz(DateTime, output.tz))`), and in `CalcSpeed()` stop on NA times instead of setting
+      the step to 0.
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+  - title: "Faster harbour test: sparse st_intersects() and one buffer"
+    labels: [enhancement]
+    body: |
+      `apply(sf::st_intersects(trip.path.wspeed, sf::st_buffer(Harbours, dist = buf.size), sparse = FALSE), 1, any)`
+      builds a dense positions x harbours matrix and loops over its rows in R. `lengths(sf::st_intersects(
+      trip.path.wspeed, sf::st_buffer(Harbours, dist = buf.size))) > 0` gives the same answer from the sparse result.
+      Buffering the harbours costs about 1.3 s per call with s2 on (157 polygons), repeated for every vessel; callers
+      running many vessels would gain from a way to pass buffered harbours in. For reference, the same rule written as
+      DuckDB SQL ran on 395,558 positions of 14 vessels in 1.1 s, and gave the same trips position for position.
+
+      *Drafted with the help of an AI assistant (Claude).*

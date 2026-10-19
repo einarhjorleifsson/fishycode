@@ -123,7 +123,8 @@ Every script in a targets project is on one of three sides, and says which in a 
 - **Where a thing is written down.** `AGENTS.md` = what is true now.
   `TODO.md` = what is open, a few paragraphs each. `curate/plans/` = designs
   not yet built. `curate/decisions/` = what was chosen or found, after the
-  fact. `curate/corrections/` = data defects. A finished `TODO.md` item is
+  fact. `curate/corrections/` = data defects. `curate/issues/` = defects found in
+  other people's code, for their authors. A finished `TODO.md` item is
   **deleted** from it and recorded in `decisions/`, never left in place
   wearing a done marker.
   An item that cannot move without the maintainer carries **`needs: maintainer`**;
@@ -190,6 +191,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 | `curate/` | Merge, linkage, corrections, cross-checks. `staging/` → `curated/`. |
 | `curate/checks/` | Cross-source disagreement checks; emit `curated/check/`. `ais_key_audit.R` audits the whole STK mid→vid key row by row against witnesses that never read it, `ais_key_split_candidates.R` finds where a mobile-id changed hands, `ais_key_coverage.R` checks that no ping of a mid with a vessel is unassigned, `ais_key_segments.R` rebuilds the assignment as a segment table that tiles every mid, and `ais_key_twins.R` keeps mids heard with two vessels (plan 009, decision 047). These key checks build the key and run with it in the `once` project. `sources/stk/event.R` tags every STK port `I`/`U` event from STK alone, one row per ping (plan 011, decision 059; preprocessing since plan 014); `curate/port_call.R` builds the port calls from them and from the pings, with the per-port departure radius of `reference/ports/port_radius.R` (decision 060; a frozen one-time fix since decision 075); `curate/ais_voyage.R` cuts voyages at those port calls (decision 061), and `curate/ais_trail.R` builds the product from them: `curated/ais/trail`, every fix with its voyage, station and logbook trip, partitioned by year and month (decision 065). |
 | `curate/corrections/` | The correction registry — one declarative entry each. |
+| `curate/issues/` | Defects and suggestions found in code fishycode does not depend on, written up for its authors: one YAML per package, its drafts with their reprexes, and when and how they were sent (`sent`, `sent_how`). |
 | `curate/decisions/` | Decision records. Why, not what. Indexed in its `README.md` — a finished `TODO.md` item is deleted and recorded there, or in `corrections/`. |
 | `curate/plans/` | Forward design — written *before* the work, for anything too big to sit inside a `TODO.md` item. Indexed in its `README.md`; a plan states what is measured and what is assumed. |
 | `overrides/` | Small, hand-maintained, human-reviewed correction inputs. |
