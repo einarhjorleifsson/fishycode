@@ -1,16 +1,27 @@
-# Icelandic Fishing Logbooks {.unnumbered}
+# Preface {.unnumbered}
 
-Icelandic fishing vessels are required to record their catches and fishing
-activity in logbooks. These records — covering gear type, location, timing,
-and species caught — form the backbone of fisheries monitoring and stock
-assessment in Iceland.
+::: {.callout-note}
+**Written by AI, not yet reviewed by a person.** Drafted by Claude (Anthropic) on 2026-10-19 from the maintainer's
+direction for this book (fishycode plan 033). Reviewed by: nobody yet.
+:::
 
-This site documents the work of consolidating logbook data from three separate
-source systems into a single, consistent dataset spanning several decades. The
-main challenges are that the systems use different formats and codes, their
-records partially overlap in time, and the data contain various quality issues
-that need to be identified and resolved before the data can be used reliably.
+Since 2013 the ICES Working Group on Spatial Fisheries Data (WGSFD) has worked out how to turn vessel tracks and
+fishing records into maps of fishing effort, pressure on the seabed, and catch. Two workshops, WKSSFGEO (2021) and
+WKSSFGEO2 (2023), took the work to small-scale fleets, which often carry no VMS and keep no logbook. The thinking is in
+thirteen reports, some 1,300 pages, written one meeting at a time. Few people have read them all; most of us have read
+the ones we were in the room for.
 
-The pages here cover the structure of the raw data, the processing steps
-applied to each source, known data quality problems and how they are addressed,
-and the logic used to merge the sources into one unified record.
+This book gathers that work in one place, ordered by the problem rather than by the meeting.
+
+- **Its centre is one flow, drawn as a diagram** in the first chapter. Each ping gets its vessel, its trip, its
+  record, its gear, whether it was fishing, its effort and its share of the catch. Each comes from the best source the
+  data offer, with a fallback when that source is missing, and a note of which source answered.
+- **Each chapter starts from what the groups wrote**, cited by report and page. Then it sets out the problem, the ways
+  others have approached it, and code that does it.
+
+The code is [ramb](https://github.com/einarhjorleifsson/ramb), an R package for that flow. Its examples run on public
+data: the workshops' own example sets, which ship with ramb. The Icelandic data that fishycode builds appear as
+background, one country's data among others, used where they show something the public sets cannot.
+
+The book is for the members of WGSFD and WKSSFGEO, and for anyone joining the work. It is young: most of its chapters
+are still to be written, and the groups will, with luck, keep giving it more to say.

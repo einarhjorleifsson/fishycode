@@ -18,7 +18,7 @@ book:
     - part: "The groups"
       chapters:
         - wkssfgeo.qmd
-    - part: "The Icelandic data"
+    - part: "Background: the Icelandic data"
       chapters:
         # sources
         - afli-tables.qmd

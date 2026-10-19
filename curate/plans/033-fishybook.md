@@ -95,6 +95,11 @@ small-scale fisheries. They know their own data and the data call, and they use 
   who did the work, so it is described kindly. The book may smile: at the data, at the oddities of sea-going records,
   at itself. It never smiles at someone's expense.
 
+**The book is about the work of WGSFD and WKSSFGEO, not about the Icelandic data** (maintainer, 2026-10-19, on first
+viewing the book: "the index definitively start on the wrong foot"). The Icelandic data are used, but always as
+background material, one country's data among others, like the workshops' example sets. They never frame a chapter.
+The preface (`docs/index.qmd`) says so, and Part IV is titled "Background: the Icelandic data".
+
 **Second reader: an analyst using the Icelandic data**, for whom Part IV is the manual.
 
 **The reports are template text** (maintainer, 2026-10-19). The reading map is the index: it finds every place the
@@ -195,7 +200,8 @@ that is not yet written is named. "Seed" is the text it starts from; "sources" a
 
 Later meetings are appended, one chapter each.
 
-**Part IV — The Icelandic data** (published with the rest, under ask c's rule; §6)
+**Part IV — Background: the Icelandic data** (published with the rest, under ask c's rule; §6; background material,
+not the book's subject, §3)
 
 - *Sources*: `afli-tables`, `source-schemas`, `grammar_logbooks`, `skipaskra`, `stk_data-inspection`, `on_ais`,
   `ports`.

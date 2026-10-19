@@ -675,8 +675,6 @@ version 3 holds.
 Open:
 - decision 152's proposals, the maintainer's call: four boxes for the products row (indicators from the grid,
   disclosure, coverage, impact), and a chapter on the products' uses;
-- the book's front page (`docs/index.qmd`) is still the old site's "Icelandic Fishing Logbooks"; it becomes the
-  preface (step 8; seen when the book was first viewed, 2026-10-19);
 - steps 3-9.
 
 **check:** decision 152's proposals are decided, and `check_book()` runs in `check_bookkeeping()` (plan 033 step 3).
