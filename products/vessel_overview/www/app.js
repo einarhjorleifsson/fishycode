@@ -272,8 +272,12 @@ const FIT_MIN_FISHING = 5;
 function fitTo(a, b, glide = false) {
   const tr = S.tr, i0 = lower(tr.t, a), i1 = lower(tr.t, b + 1);
   const fishing = tr.fishCum[i1] - tr.fishCum[i0] >= FIT_MIN_FISHING;
-  const xs = new Float64Array(fishing ? tr.fishCum[i1] - tr.fishCum[i0] : i1 - i0), ys = new Float64Array(xs.length);
-  for (let i = i0, k = 0; i < i1; i++) if (!fishing || tr.fishing[i]) { xs[k] = tr.lon[i]; ys[k] = tr.lat[i]; k++; }
+  // the map draws voyages only, so it frames the window's voyage pings, and the harbour when there are none
+  const pick = (i) => !fishing || tr.fishing[i];
+  let idx = [];
+  for (let i = i0; i < i1; i++) if (pick(i) && tr.voyage_id[i] >= 0) idx.push(i);
+  if (!idx.length) for (let i = i0; i < i1; i++) if (pick(i)) idx.push(i);
+  const xs = Float64Array.from(idx, (i) => tr.lon[i]), ys = Float64Array.from(idx, (i) => tr.lat[i]);
   if (!xs.length) return;
   xs.sort(); ys.sort();
   const q = (v, p) => v[Math.round(p * (v.length - 1))], lo = fishing ? 0.01 : 0, hi = 1 - lo;
@@ -824,16 +828,20 @@ async function buildTrail() {
   tr.fish = [];
   for (let i = 0; i < tr.n; i++) if (tr.fishing[i]) tr.fish.push({ p: [tr.lon[i], tr.lat[i]], h: tr.h[i] });
   const m = Math.max(tr.n - 1, 0);   // segment i joins ping i to ping i + 1; both must be in the window
+  // the map draws voyages only (maintainer, 2026-10-20): a ping in no voyage, in port above all, is left out, and a
+  // segment is drawn within one voyage; the chart keeps every ping
+  tr.mapF = new Float32Array(tr.n);
+  for (let i = 0; i < tr.n; i++) tr.mapF[i] = tr.voyage_id[i] >= 0 ? tr.th[i] : -1e9;
   tr.segF = new Float32Array(2 * m);
   for (let i = 0; i < m; i++) {
-    const ok = tr.t[i + 1] - tr.t[i] <= LINE_GAP;
+    const ok = tr.t[i + 1] - tr.t[i] <= LINE_GAP && tr.voyage_id[i] >= 0 && tr.voyage_id[i] === tr.voyage_id[i + 1];
     tr.segF[2 * i] = ok ? tr.th[i] : -1e9; tr.segF[2 * i + 1] = ok ? tr.th[i + 1] : -1e9;
   }
   tr.lineData = { length: m, attributes: { getSourcePosition: { value: tr.pos.subarray(0, 2 * m), size: 2 },
                                            getTargetPosition: { value: tr.pos.subarray(2), size: 2 },
                                            getFilterValue: { value: tr.segF, size: 2 } } };
   tr.pingData = { length: tr.n, attributes: { getPosition: { value: tr.pos, size: 2 }, getFillColor: { value: tr.col, size: 4 },
-                                              getFilterValue: { value: tr.th, size: 1 } } };
+                                              getFilterValue: { value: tr.mapF, size: 1 } } };
   S.tr = tr; S.hover = -1;
   for (const id of ['wfrom', 'wto']) { $(id).min = tr.t0 / 1000; $(id).max = tr.t1 / 1000; $(id).step = 60; }
   makePlot();

@@ -767,6 +767,17 @@ the trail of 2026-10-20 it flags 2,095 of 26.8 M logger fixes and nothing else, 
 (`$FISHYDATA/archive/2026-10-todo98/scripts/gps_scope.R`). Proposed: that test in the cleaning step, as a flag on
 any reconstructed position, generic for ramb (`rb_flag_ping_*`), whatever TODO 98 decides for the logger.
 
+Also measured 2026-10-20 (vid 1417, Bjössi Sör, a 7-knot boat out of Húsavík): the test's one ceiling, `KN_MAX` 25 kn,
+lets a slow vessel's whacks through. With the vessel's own ceiling (99.9th percentile of its at-sea reported speed + 3
+kn: 15.3 kn) 132 of its steps are flagged, 42 out and back; the typical one is a ping 3 km off the track reporting 0 kn
+mid-run. Over the whole trail (vessels with 1,000+ at-sea pings a year): 132,380 steps under 25 kn but over the
+vessel's own ceiling, 8,196 of them out and back, 400-800 vessels a year. A second witness: each ping's reported
+speed against the step's implied speed (two pings both at rest yet far apart), with care, since a harbour-to-harbour
+run with no ping between rightly reports 0 at both ends (most of vid 1417's 31). Positions shared exactly by many
+vessels are berths, not ghosts. The maintainer's idea: a second pass within voyages, for the tests that need one; the
+per-vessel ceiling and the speed check need no voyage, so they can go in the first pass with no circularity.
+Scripts: `$FISHYDATA/archive/2026-10-todo98/scripts/` (fan1417.R, voyage_gaps_ceiling.R).
+
 **check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
 
 ## 100. The logbook's sensor readings: what they measure, and whether they can time a haul
