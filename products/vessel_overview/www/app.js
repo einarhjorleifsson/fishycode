@@ -14,6 +14,11 @@ import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0
 
 const $ = (id) => document.getElementById(id);
 const TOKEN = document.querySelector('meta[name="mapbox-token"]').content;
+// Bundle mode (products/exports/vessel_demo.R): the page is opened as a file, with no service. Each vessel's answers are
+// in a script beside it, data/v<vid>.js, as the service would give them for the bundle's window; the meta tag says what
+// the bundle holds. Its vessels are anonymised: no register, photos, call sign or MMSI.
+const BUNDLE = document.querySelector('meta[name="bundle"]')?.content || '';
+document.body.classList.toggle('bundle', !!BUNDLE);
 const status = (msg) => { $('status').textContent = msg; };
 const fmt = (ms) => (ms == null ? '' : new Date(ms).toISOString().slice(0, 16).replace('T', ' '));
 const dstr = (ms) => (ms == null ? '' : new Date(ms).toISOString().slice(0, 10));
@@ -46,7 +51,28 @@ const conn = await db.connect();
 
 // A panel's rows: fetched as parquet, then held as a DuckDB table. Fetches run together, ingestion one at a time.
 let fileNo = 0;
+// A page opened as a file may not fetch(), but it may load a script: the bundle's data are scripts, each loaded once
+const scripts = new Map();
+const loadScript = (src) => {
+  if (!scripts.has(src)) scripts.set(src, new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error(`${src} did not load`));
+    document.head.append(s);
+  }));
+  return scripts.get(src);
+};
+// The bundle holds one window of time, so a range of years is never asked again: only the latest n, or a register
+// table, which is empty for every vessel (FD.empty)
+async function bundled(endpoint, params) {
+  const file = endpoint === 'vessels' ? 'vessels' : `v${params.vid}`;
+  await loadScript(`data/${file}.js`);
+  const key = [endpoint, params.table, params.n && `n${params.n}`].filter(Boolean).join('/');
+  const b64 = window.FD?.[file]?.[key] ?? window.FD?.empty?.[key];
+  if (b64 == null) throw new Error(`the bundle holds no ${key} for ${file}`);
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+}
 const fetchParquet = async (endpoint, params) => {
+  if (BUNDLE) return bundled(endpoint, params);
   const r = await fetch(`/api/${endpoint}?${new URLSearchParams(params)}`);
   const v = r.headers.get('X-Overview-Api');
   if (v !== API) {
@@ -123,17 +149,23 @@ const FILTER = new deck.DataFilterExtension({ filterSize: 1 }), FILTER2 = new de
 // the window's pings are joined in time order (maintainer, 2026-10-18), faintly, but not across a gap of more than two
 // hours, so the hourly positions of the early years still join
 const LINE_GAP = 2 * HOUR;
-const basemap = TOKEN.startsWith('pk.')
+// A bundle has no token: it draws Esri's light grey canvas, which needs no key. A page opened as a file sends no
+// Referer, and CARTO's and OpenStreetMap's tiles refuse it (tested 2026-10-20)
+const TILES = TOKEN.startsWith('pk.')
+  ? [`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/256/{z}/{x}/{y}?access_token=${TOKEN}`, '© Mapbox © OpenStreetMap', 19]
+  : BUNDLE ? ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+              'Tiles © Esri: Esri, HERE, Garmin, © OpenStreetMap contributors', 16] : null;
+const basemap = TILES
   ? new deck.TileLayer({
-      id: 'basemap', minZoom: 0, maxZoom: 19, tileSize: 256,
-      data: `https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/256/{z}/{x}/{y}?access_token=${TOKEN}`,
+      id: 'basemap', minZoom: 0, maxZoom: TILES[2], tileSize: 256,
+      data: TILES[0],
       renderSubLayers: (props) => {
         const { west, south, east, north } = props.tile.bbox;
         return new deck.BitmapLayer(props, { data: null, image: props.data, bounds: [west, south, east, north] });
       },
     })
   : null;
-$('attrib').textContent = basemap ? '© Mapbox © OpenStreetMap' : 'no basemap: MAPBOX_TOKEN is not set';
+$('attrib').textContent = TILES ? TILES[1] : 'no basemap: MAPBOX_TOKEN is not set';
 
 // The map's shape is fixed, the same for every vessel, mode and window; only the zoom changes (maintainer, 2026-10-18:
 // "the aspect ratio of the 'leaflet' should be fixed across vessel ... the zoom level is the only thing that can
@@ -335,6 +367,7 @@ const SPEED_CAP = 15, PLOT_H = 230;
 // time-speed points within any voyage").
 function tripGaps(u, sidx, idx0, idx1, nullGaps) {
   const tr = S.tr, xs = u.data[0], gaps = [];
+  if (!tr) return nullGaps;   // the previous vessel's chart, redrawn while the next one loads
   for (let i = idx0 + 1; i <= idx1; i++) {
     if (tr.voyage_id[i] < 0 || tr.voyage_id[i] !== tr.voyage_id[i - 1])
       uPlot.addGap(gaps, Math.round(u.valToPos(xs[i - 1], 'x', true)), Math.round(u.valToPos(xs[i], 'x', true)));
@@ -1002,13 +1035,13 @@ function renderSummary() {
       <li>Last heard on AIS: ${esc(lastHeard)}.</li>
       <li>Last landing: ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}.</li>
       <li>In ${range}: ${S.trips.length} fishing trips in the logbook, ${num(tonnes, 1)} t landed in ${S.landings.length} landings.</li></ul>
-      <div class="note">Type, length and home port from the register (history to 2023-12-19). Species are shown as codes.</div>`;
+      <div class="note">${BUNDLE ? `${esc(BUNDLE)}: the register is left out.` : 'Type, length and home port from the register (history to 2023-12-19).'} Species are shown as codes.</div>`;
   } else {
-    $('strip-info').innerHTML = `<div>vid ${S.vid} · ${esc(v.cs || 'no call sign')} · MMSI ${esc(v.mmsi || '—')} · ${esc(A.use || 'use not in the register')}
+    $('strip-info').innerHTML = `<div>vid ${S.vid}${BUNDLE ? '' : ` · ${esc(v.cs || 'no call sign')} · MMSI ${esc(v.mmsi || '—')} · ${esc(A.use || 'use not in the register')}`}
       · on the trail ${v.first_year ?? '—'} – ${esc(v.last_ping || '—')} · last landing ${esc(v.last_landing || '—')}</div>
       <div class="note">${range}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips (${warn} with checks), ${S.stations.length} hauls,
       ${S.landings.length} landings${S.assumed ? ` · after trip ${esc(S.assumed.tid)}: gear ${esc(gearWords(gearAfter(S.assumed.until) || { gear: '—' }))}` : ''}</div>`;
-    $('summary').innerHTML = `<dl><dt>vid</dt><dd>${S.vid}</dd><dt>call sign</dt><dd>${esc(v.cs)}</dd><dt>MMSI</dt><dd>${esc(v.mmsi)}</dd>
+    $('summary').innerHTML = `<dl><dt>vid</dt><dd>${S.vid}</dd>${BUNDLE ? '' : `<dt>call sign</dt><dd>${esc(v.cs)}</dd><dt>MMSI</dt><dd>${esc(v.mmsi)}</dd>`}
       <dt>on the trail</dt><dd>${v.first_year ?? '—'} – ${esc(v.last_ping || '—')}</dd><dt>last landing</dt><dd>${esc(v.last_landing || '—')}</dd>
       <dt>loaded</dt><dd>${range}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips, ${S.stations.length} hauls, ${S.landings.length} landings</dd>
       <dt>trips with checks</dt><dd>${warn} of ${S.trips.length}</dd><dt>usage (register)</dt><dd>${esc(A.use || '—')}</dd>
@@ -1183,7 +1216,8 @@ async function choose(vid) {
   const lg = (await rows(`SELECT gear, count(*)::INTEGER AS n FROM last_trip_st WHERE coalesce(gear, '') <> '' GROUP BY 1 ORDER BY 2 DESC LIMIT 1`))[0];
   S.assumedBase = lt ? { ...lt, gear: lg?.gear || '' } : null;
   const thisYear = new Date().getUTCFullYear();
-  const first = Math.min(S.years[0] ?? thisYear, 2007), last = Math.max(S.years.at(-1) ?? thisYear, thisYear);
+  const first = BUNDLE ? S.years[0] ?? thisYear : Math.min(S.years[0] ?? thisYear, 2007),
+        last = BUNDLE ? S.years.at(-1) ?? thisYear : Math.max(S.years.at(-1) ?? thisYear, thisYear);
   const opts = []; for (let y = last; y >= first; y--) opts.push(`<option value="${y}">${y}${S.years.includes(y) ? '' : ' (no AIS)'}</option>`);
   $('from').innerHTML = opts.join(''); $('to').innerHTML = opts.join('');
   const y = S.years.at(-1) ?? thisYear, [f, t] = P.years.split('-').map(Number);
@@ -1206,7 +1240,8 @@ function renderList() {
   X.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * sortDir);
   $('list-count').textContent = `${X.length.toLocaleString('en-GB')} vessels${X.length > 300 ? ' — the first 300 are shown; type to narrow' : ''}. Click one to open it.`;
   const cols = [['vid', 'number'], ['vessel', 'name'], ['cs', 'call sign'], ['mmsi', 'MMSI'], ['first_year', 'on AIS since'],
-                ['last_ping', 'last heard'], ['last_landing', 'last landing'], ['photo', 'photo']];
+                ['last_ping', 'last heard'], ['last_landing', 'last landing'], ['photo', 'photo']]
+    .filter(([k]) => !BUNDLE || !['cs', 'mmsi', 'photo'].includes(k));
   X = X.slice(0, 300);
   $('list').innerHTML = `<table><tr>${cols.map(([k, h]) => `<th data-k="${k}" title="sort">${h}${k === sortKey ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr>` +
     X.map((v) => `<tr class="click" data-vid="${v.vid}">${cols.map(([k]) => `<td>${esc(k === 'photo' ? (v.photo ? '✓' : '') : v[k])}</td>`).join('')}</tr>`).join('') + '</table>';
@@ -1236,7 +1271,7 @@ function setHash() {
 }
 function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  const vid = parseInt(h.get('vid'), 10), tab = TABS.includes(h.get('tab')) ? h.get('tab') : 'now';
+  const vid = parseInt(h.get('vid'), 10), tab = TABS.includes(h.get('tab')) && !(BUNDLE && h.get('tab') === 'vessel') ? h.get('tab') : 'now';
   for (const t of TABS) { $(t).classList.toggle('on', t === tab); $(`tab-${t}`).classList.toggle('on', t === tab); }
   S.mode = h.get('mode') === 'qc' ? 'qc' : 'ov';
   document.body.classList.toggle('qc', S.mode === 'qc');
@@ -1279,5 +1314,6 @@ await ingest('vessels', await fetchParquet('vessels', {}));
 V = await rows(`SELECT vid, coalesce(vessel, '') AS vessel, coalesce(cs, '') AS cs, coalesce(mmsi, '') AS mmsi, first_year,
     strftime(last_ping, '%Y-%m-%d') AS last_ping, strftime(last_landing, '%Y-%m-%d') AS last_landing, photo FROM vessels`);
 for (let y = new Date().getUTCFullYear(); y >= 1992; y--) $('f-landed').insertAdjacentHTML('beforeend', `<option value="${y}-01-01">${y}</option>`);
-status(`${V.length.toLocaleString('en-GB')} vessels`);
+status(BUNDLE ? `${BUNDLE}: ${V.length} vessels` : `${V.length.toLocaleString('en-GB')} vessels`);
+if (BUNDLE) { $('f-photo').closest('label').hidden = true; $('filter').placeholder = 'type a number'; }
 if (location.hash.length > 1) fromHash(); else { $('drawer').classList.add('on'); renderList(); $('filter').focus(); }

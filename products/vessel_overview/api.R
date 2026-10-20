@@ -156,13 +156,13 @@ SQL <- list(
     SQL$trips(vid, p), src("curated", "logbook", "station.parquet"), src("curated", "logbook", "catch.parquet"))
 )
 
-# One endpoint's rows as parquet bytes: the allowlisted columns only
-answer <- function(con, endpoint, vid, p = list()) {
+# One endpoint's rows as parquet bytes: the allowlisted columns only. `where` narrows them and `inner` replaces the
+# endpoint's SQL; the service uses neither, the demo bundle both (products/exports/vessel_demo.R)
+answer <- function(con, endpoint, vid, p = list(), where = "TRUE", inner = SQL[[endpoint]](vid, p)) {
   cols <- ALLOW[[if (endpoint == "hist") paste0("hist_", p$table) else endpoint]]
-  inner <- SQL[[endpoint]](vid, p)
   tmp <- tempfile(fileext = ".parquet"); on.exit(unlink(tmp))
-  DBI::dbExecute(con, sprintf("COPY (SELECT %s FROM (%s)) TO '%s' (FORMAT parquet, COMPRESSION zstd)",
-                              paste(q(cols), collapse = ", "), inner, tmp))
+  DBI::dbExecute(con, sprintf("COPY (SELECT %s FROM (%s) WHERE %s) TO '%s' (FORMAT parquet, COMPRESSION zstd)",
+                              paste(q(cols), collapse = ", "), inner, where, tmp))
   readBin(tmp, "raw", file.size(tmp))
 }
 

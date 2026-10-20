@@ -718,3 +718,14 @@ already and stays frozen. (c) The STK page drops `unify_schemas`, and this item 
 
 **check:** every partition of `staging/ais/stk` is from the latest build, the writer clears what it no longer writes,
 `stk_event` has no 2006 row, and the STK page no longer needs `unify_schemas`.
+
+## 96. The vessel demo: Safari, Windows, and the basis for sending it
+**status:** open · **needs: maintainer** — a Mac with Safari's remote automation on, or a person, and a Windows machine;
+and the agreement under which the folder goes · **see:** decision 153, `products/exports/vessel_demo.R`
+
+The demo (`$FISHYDATA/exports/vessel_demo_2018-06/`) was tested from `file://` in headless Chrome and Firefox on macOS
+only. Safari cannot be driven without `safaridriver --enable`. Under MFRI's data policy (gagnastefna), confidential data
+leave MFRI only on an agreed basis.
+
+**check:** the demo opens and loads a vessel in Safari and in Edge on Windows, and the agreement it went under is
+written in decision 153.
