@@ -846,20 +846,25 @@ session to classify them was proposed on 2026-10-20 (read-only; overview links p
 **check:** a decision or correction says what the overlapping trips are, by class with counts, and how the flow
 treats each.
 
-## 103. A static-gear set time that is the haul less 270 minutes
-**status:** open · **needs: maintainer** — plan 031 ask j · **see:** plan 031 §3.11 and ask j, TODO 72 (item 8),
-`curated/logbook/fishing_sample.parquet`, `curated/logbook/station_window.parquet`
+## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
+**status:** open · **needs: maintainer** — the correction's design, and whether to ask Trackwell or Fiskistofa · **see:**
+decision 157, plan 031 §3.11 and asks i-k, TODO 72 (item 8), `$FISHYDATA/archive/2026-10-todo103/`
 
-Measured 2026-10-20, read-only: on 71,306 static-gear stations `t3 - t1` is exactly 270 min, in afli, adb and
-fs_afladagbok alike, and the median soak of all static stations is 4.5 h in each schema; 5,902 more are 1,710 min
-(28.5 h), and 210, 330 and 150 min are the next commonest. In 45,572 of them `t1` falls in a port call before the haul,
-and 25,106 have the vessel heard in port then. No fishycode code sets it (searched for 270 and 4.5); where it comes
-from, the source or its entry form, is not known. It makes decision 155's audit count a set time as a time at sea,
-and any soak or set phase read from `t1` on these stations is the offset, not the logbook's (`station_window`'s set,
-and plan 013's pressure as quantity × soak).
+Origin found (decision 157, measured by Claude 2026-10-20, not yet checked by a person): the static-gear set time 270
+min before the haul start is in the raw dumps, from Trackwell's logbook only (afli's electronic logbook, fs_afladagbok,
+adb), a required field filled. The AIS track shows the set is the placeholder (at 270 and 1,710 min); the haul start on
+those stations is degraded, not fake; 1,440-min soaks look real. Other placeholders: a set copied from the trip's
+departure (27 % of jigging stations), from the haul start or end, or at 00:00. They are a third of decision 155's
+stations in a port call, not the multi-gear voyages. Any soak or set phase read from these `t1` is the offset, not the
+logbook's (`station_window`'s set, plan 013's pressure as quantity × soak).
 
-**check:** the origin of the offset is known, and a correction in `curate/corrections/` flags or replaces the set time
-on these stations, or a decision says why not.
+Left: a correction in `curate/corrections/` (which patterns; remove `t1` keeping the original, or flag: on static
+gear only a synthesised set window goes, on jiggers the window's start, 6,494 falling to a day window; fs_afladagbok's
+duration and effort and afli's `klst` carry the offset before `curate/`; the 270-min haul start flagged or kept), and
+the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained).
+
+**check:** a correction in `curate/corrections/` flags or replaces the placeholder times, or a decision says why not;
+and the gillnet set times in port explained or listed.
 
 ## 104. The vessel overview draws hauls from the flow's windows
 **status:** open · **see:** plan 030, decision 143, `curated/logbook/station_window.parquet`, `products/vessel_overview/`

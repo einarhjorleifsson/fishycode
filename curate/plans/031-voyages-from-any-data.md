@@ -1149,3 +1149,16 @@ j. **The allocation audit's time at sea for static gear:** a station's hauling t
 k. **Step 4 into ramb:** R1, and R2 as ask i decides, in `rb_create_port_calls(records = )`, each call with its `basis`
    (`landing`, `logbook`) and the unplaced records returned for the check; tested on made-up data and against §3.11's
    numbers in scratch; ramb not pushed and fishycode not rebuilt until step 7. Recommended: yes.
+
+*Claude's recommendations revised on 2026-10-20, after decision 157 (the placeholder set times); not answers, the asks
+stay the maintainer's:*
+- *i:* cut only with a landing, and that landing the cut trip's own (`lid_map`), dated on or after the station's day and
+  two days or more after the call began (a landing weighed the day after arrival belongs to the arriving voyage): 798
+  of the 1,708 cuts, 34 of them 1-3 h from a call's end against 192 (decision 157). Re-measure on the corrected times.
+- *j:* instead of a rule per gear, the audit judges a station by its times after TODO 103's correction: all of them in
+  a call, in a port call; some, the times disagree (a record error, not an allocation error); none, at sea. The
+  placeholders are a third of the stations in a port call (73,794 to 49,862); the set times left still lie in a call
+  for 14-18 % of static stations against 2-5 % for haul times.
+- *k:* yes, on four conditions: calls placed with step 3's time budget, and §3.11 re-measured with it before step 7;
+  records as one generic table (vessel, date or time, port, kind); not applied to Iceland before the many-to-many trip
+  link (ask f); pieces under 10 pings kept (§4.7).
