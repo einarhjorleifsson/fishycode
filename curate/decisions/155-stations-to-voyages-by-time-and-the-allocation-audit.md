@@ -1,7 +1,6 @@
 # 155 — A station's voyage by its own time, and an audit of every link the flow makes
 
-*2026-10-20. Follows decision 154. The code is in; the rebuild from `voyage_gear` and the audit's first run follow
-(below, when done).*
+*2026-10-20. Follows decision 154. Committed at ae9b4fc and rebuilt that evening at 5cec0f4 (below).*
 
 - **Who chose.** The maintainer: a voyage whose gears tie points to a wrong voyage allocation, since two gears on a
   voyage are rare, and the fault "may show error in the code flow that may actually then affect single voyage gears";
@@ -62,6 +61,27 @@
 - The audit's `station_voyage_gear`, on 1,802,922 timed stations in a voyage: before, 94.9 % in a voyage taking their
   own gear from the logbook, 3.5 % in one taking a landing's, 1.0 % in one with no gear, 0.05 % in one with another
   logbook gear; after, 99.35 %, 0, 0 and 30 stations, and 0.65 % ambiguous.
+
+## Rebuilt (2026-10-20, 5cec0f4, ramb 2026.10.19.2)
+
+The tree held another session's uncommitted dump scripts (biota, channel); on the maintainer's word they were
+committed first (5cec0f4), so the build is stamped clean. `voyage_gear` invalidated by hand; seven targets by name
+(`voyage_gear`, `ais_trail`, `ais_catch`, `check_allocation_audit` and three checks), "ALL DONE" (`ais_trail` 31.5 min,
+`ais_catch` 19.5). Fingerprints before and after, the after-checks (`scripts/after.R`, `after.txt`) and the audit's
+summary (`audit_summary.txt`) are in `$FISHYDATA/archive/2026-10-voyage-gear/`.
+
+- `voyage_gear` equals the trial but for 5 voyages whose top gears tie on the same speed range (`arg_max()` names
+  either). By basis: landing to logbook 24,837, none to logbook 3,802, logbook to landing 960, to ambiguous 288, to
+  none 60. vid 2965's voyages 166, 167 and 169 of 2021 now take the logbook's Danish seine.
+- The trail: fixes flagged fishing by the flow on voyages with no gear fell from 576,140 to 21,774 (those voyages held
+  logbook stations); on all fixes, 140.05 M to 140.19 M flagged fishing. `trail_match`, `trail_agreement`,
+  `survey_tow_times` and `trail_sid_coverage` are the same; `ais_catch` has 56,779 more rows, kilograms conserved.
+- The audit's first run, every year: `station_voyage_gear` 99.35 % in a voyage taking the station's own logbook gear,
+  0.65 % ambiguous, 30 stations another gear; `fix_trip` 91.7 % same trip, 4.5 % shared, 2.8 % no trip, 0.7 % in no
+  voyage, 0.4 % another trip; `station_voyage` (with a time of day) 1,689,028 in their trip's voyage, 113,160 in
+  another, 73,635 in a port call; `station_trip` 99.7 % inside; `trip_landing` 75.7 % of the judged on the voyage's end
+  day at its port; `catch` 92.2 % of kilograms on fixes, 7.8 % on a unit with no fix, 4,238 t deleted in the source,
+  57 t lost on stations with no window.
 
 ## Not done (proposed, the maintainer's to choose; TODO 101)
 
