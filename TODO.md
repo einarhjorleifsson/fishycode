@@ -746,7 +746,8 @@ logger's time, speed and heading, with lon/lat interpolated once from the AIS tr
 Decided the same day: from mid-2020 the logger writes position in whole degrees and speed in whole m/s, and those
 fixes leave the track (`logger_whole_degrees.yml`; built 2026-10-20 at c7fa8c7, decision 154). That removed 4.85 M of
 the trail's 8.86 M logger fixes of 2019-2024 (and 15 of 2008) and 1,234 of its 2,071 over 5 km from the recorded
-track; 837 remain (2019-2020).
+track. Measured on the rebuilt trail (2026-10-20): 861 remain over 5 km of 21,971,181 logger fixes, all on vids 2173
+(500, 2019-2020) and 2411 (361, 2013-2020); 860 of them interpolated across a gap of over an hour.
 
 Left: the rest of the 2,095 off-track fixes (vid 2173 2019-mid 2020, vid 2411 2013-2020) come from interpolating
 across silences of the old track (no gap limit: 101,982 fixes span over 6 h). Options: take the logger out of the
@@ -763,7 +764,8 @@ other readings (depth, temperature) are TODO 100. Scripts: `$FISHYDATA/archive/2
 position was assumed to lie on the track. When the track it was drawn from differs from today's, it does not: vid
 2173's logger fixes ran up to 270 km beside ASTD's. Found by a check outside the flow: each reconstructed fix against
 the recorded pings at the same moment (bracketing pings within 15 min, linear interpolation), flagged over 5 km. On
-the trail of 2026-10-20 it flags 2,095 of 26.8 M logger fixes and nothing else, all years in about two minutes
+the trail before the 2026-10-20 rebuild it flagged 2,095 of 26.8 M logger fixes, and 861 of 22.0 M after it, nothing else,
+all years in about two minutes
 (`$FISHYDATA/archive/2026-10-todo98/scripts/gps_scope.R`). Proposed: that test in the cleaning step, as a flag on
 any reconstructed position, generic for ramb (`rb_flag_ping_*`), whatever TODO 98 decides for the logger.
 
