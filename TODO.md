@@ -675,6 +675,9 @@ version 3 holds.
 Open:
 - decision 152's proposals, the maintainer's call: four boxes for the products row (indicators from the grid,
   disclosure, coverage, impact), and a chapter on the products' uses;
+- the main part is restructured (2026-10-20): one skeleton chapter per diagram row (`docs/flow_*.qmd`, with
+  sections per box, the cases outlined from ramb's articles and data), and the Icelandic chapters are in the
+  appendices. The skeletons wait for the maintainer's review, then their cases are written, graphics first;
 - chapter 1 (`docs/at_sea.qmd`) is drafted and waits for the maintainer's review. Its gap: the fisher's money, since
   no landing value or cost is in the data held; find a public price source or leave it stated;
 - steps 3-9.

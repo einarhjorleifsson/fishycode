@@ -1,0 +1,103 @@
+# Pings: label, never drop, and the ping rate {#sec-pings}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** the second row, *Flag pings* (`flag_pings`). Its tests run in order, each on pings not yet flagged:
+invalid (placeholder) → duplicate (second feed) → impossible (set aside) → port (kept in the trail). The band below
+it says that **the ping rate sets how far down a track can go**: interpolate or downsample to a regular series, and
+keep the gaps and the device.
+
+## The problem
+
+- Raw positions hold placeholders (0, 0), copies from a second feed, and jumps no vessel can make.
+- Dropping them loses the record of what was wrong. Labelling them keeps it, so pings in equal pings out.
+- How often a vessel reports decides everything below it. A ping every hour cannot show a 20-minute haul.
+
+## What the groups say
+
+- Cleaning steps: time checks, duplicates, outliers, points in harbours and boat parking areas (WKSSFGEO 2022,
+  pp. 18-19).
+- A longitude sign error, and before-and-after cleaning summaries (WGSFD 2015, pp. 12, 24).
+- Overlapping national and NEAFC feeds (WGSFD 2015, pp. 12-13); feeds merged with a spline (WKSSFGEO 2022, p. 9).
+- Polling rates: higher or variable VMS rates (WGSFD 2016, p. 60), iVMS (WGSFD 2016, p. 31), what member states poll
+  (WGSFD 2025a, p. 3), a recommended minimum for small vessels (WGSFD 2025b, p. 14), and what counts as
+  high-resolution data (WGSFD 2025b, p. 23).
+- Low-cost tracking (WKSSFGEO2 2023, p. 1); mooring sites found from the track (WKSSFGEO2 2023, p. 6).
+
+## From ramb's articles
+
+- *trips* ("Step 0: flag the pings"): the four flaggers on `dansk`, with `dansk_harbours` for ports.
+- *trips* ("Trouble pings that bend the track"): vessel `EX_10` on 6 October 2013, sixteen impossible positions that
+  drag the line, before and after.
+- *trips* ("Side point: when the flagged pings sit on the track"): a dense and a sparse feed of `EX_10` interleaved.
+  Speed against the last kept ping flags innocent dense pings, and flagging duplicates first repairs it.
+- *tools* ("Track calculations", "Interpolation"): distances, speeds and step times; `rb_interpolate_track()`
+  putting positions onto event times.
+
+## The tests, in order
+
+### Invalid: placeholders
+
+- Case: positions at (0, 0), on land, or outside the area; times in the future. Data: ramb's `whacks1` (a made-up
+  track with impossible positions), plus placeholders added to `creel`.
+  - Graphic: the track with flagged points in red, and a count of each flag.
+
+### Duplicate: the second feed
+
+- Case: the dense and sparse feeds of `EX_10` in `dansk` (the trips article). Run without the duplicate flag, the speed
+  test flags five innocent dense pings; run with it first, none.
+  - Graphic: implied speed against time, coloured by feed, before and after; the time and distance between
+    neighbouring pings, with the duplicates as a cluster near zero.
+
+### Impossible: set aside
+
+- Case: jumps that need impossible speeds. Data: `whacks1`, and the whacky positions of fishyweb's note (positions
+  real, ids garbled).
+  - Graphic: the track before and after, with the speed of each step.
+
+### Port: kept in the trail
+
+- Case: pings inside a harbour polygon labelled with the port, not dropped. Data: `dansk` and `dansk_harbours`;
+  the Mediterranean list `wkssfgeo_cnr_med_harbours` with `wkssfgeo_cnr_ais`.
+  - Graphic: one harbour at close zoom, with the pings inside it coloured.
+
+### The band: the ping rate
+
+- Case: one dense track thinned step by step, from 30 s to 2 h. Data: `wkssfgeo2_pt_gps` (dense GPS).
+  - Graphic: small multiples of the same trip at each rate.
+- Case: the ping interval of every ramb example set on one plot, from GPS loggers to inshore VMS.
+  - Graphic: a distribution of intervals per dataset (log scale). This is the book's one picture of data scarcity.
+- Case: interpolation to a regular series, linear against a spline that uses course and speed. Data: `creel`.
+  - Graphic: the two interpolations over the true dense track.
+
+## Methods compared
+
+- Flagging impossible pings by a speed threshold against the cleaning in ramb (`rb_flag_ping_impossible`,
+  method "clean"). Graphic: what each removes on `whacks1`.
+
+## What if a source is missing
+
+- No port list: ports unknown, so port pings stay unlabelled. Show the effect on the trips of the next chapter.
+- A sparse feed only (hourly VMS): which flags still work, and which pings can no longer be judged.
+
+## Checking it
+
+- Pings in equal pings out across the trail and the set-aside table: a bar per dataset.
+
+## In the ICES data call
+
+- The data call drops the pings it does not keep. This book labels them instead, so totals can be traced back.
+
+## With ramb
+
+- `rb_flag_ping_invalid()`, `rb_flag_ping_duplicate()`, `rb_flag_ping_impossible()`, `rb_flag_ping_port()`,
+  `rb_detect_in_polygons()`, `rb_calc_speed()`, `rb_calc_speed_smooth()`, `rb_calc_step_time()`,
+  `rb_interpolate_track()`, `rb_summarise_track()`.
+
+## Not yet in ramb
+
+- Interpolation that uses course and speed (cubic Hermite), and downsampling as a function.

@@ -98,9 +98,9 @@ small-scale fisheries. They know their own data and the data call, and they use 
 **The book is about the work of WGSFD and WKSSFGEO, not about the Icelandic data** (maintainer, 2026-10-19, on first
 viewing the book: "the index definitively start on the wrong foot"). The Icelandic data are used, but always as
 background material, one country's data among others, like the workshops' example sets. They never frame a chapter.
-The preface (`docs/index.qmd`) says so, and Part V is titled "Background: the Icelandic data".
+The preface (`docs/index.qmd`) says so, and since 2026-10-20 they are all in the appendices.
 
-**Second reader: an analyst using the Icelandic data**, for whom Part V is the manual.
+**Second reader: an analyst using the Icelandic data**, for whom the appendices are the manual.
 
 **The reports are template text** (maintainer, 2026-10-19). The reading map is the index: it finds every place the
 groups treated a topic. The reports' own text, read at the cited pages, is the material each chapter is drafted from,
@@ -190,28 +190,40 @@ technical material moves to the back, and the Icelandic data stay background (§
 
    Seed: `one_flow.qmd`'s generic sections.
 
-**Part II — The flow, row by row** (the rows of version 3)
+**Part II — The flow, row by row: the main part** (maintainer, 2026-10-20)
 
-Each chapter shows its data first and its ramb code last, folded (§5).
+The maintainer's direction for this part:
+- the main part has **one chapter per vertical part of the diagram** (its rows, and the validation band);
+- each chapter has **a section per horizontal element** of its row: the boxes, best first, and the bands;
+- **ramb's articles are brief introductions to the functions**. The book holds the detail, with case examples on
+  ramb's bundled data, augmented by specific Icelandic subsets only where those sets cannot show the point. The
+  chapters start from the articles' own examples;
+- the cases **compare methods** and ask **what happens when a source is missing** (no logbook, no port list, sparse
+  pings), with graphics throughout;
+- **skeletons first**: sections down to subsubsections, with the cases outlined as bullets.
 
-- *Vessels: linking feeds*. Seed: ramb's `vessels` article. Sources: decision 146.
-- *Pings: label, never drop, and the ping rate*: the flags, then the rate that sets how far down a track can go,
-  interpolation and downsampling, devices and gaps. Seeds: fishyweb's `notes/whacky-positions.qmd` (its vessel tracks
-  go to Part V or become aggregates) and ramb's `tools` article. Sources: decision 067, TODO 88; the reports' polling
-  and resolution rows.
-- *Trips: port calls, voyages, and trips from gaps*. Seed: ramb's `trips` article. Sources: plan 031, decisions
-  058-065, 147, 149; trips from gaps and device power.
-- *Records: windows, sets and hauls*. Seed: ramb's `sets` article. Sources: decisions 088, 091, 094.
-- *Gear: the sources, one vocabulary, several gears*. Seed: ramb's `gear` article. Sources: the reports' FAO,
-  BENTHIS, DATSU and métier rows, and their multi-gear trips.
-- *Fishing*. Sources: decisions 093, 101; the reports' classification work. To write.
-- *Validation: how each answer is checked*: the band across the rows (labelled tracks, observers, electronic
-  monitoring, gear sensors, and the metrics that come from them). Its tests in detail are appendix B. To write.
-- *Effort*: hours, kW-hours, pressure, static gear (soak, hauls) and fishing days. Sources: decision 099; the
-  reports' effort rows. To write.
-- *Catch*. Seed: ramb's `catch` article. Sources: decisions 100, 102.
-- *Products: grids, the data call's delivery, and its checks*. Seed: `one_flow.qmd`'s "7. Products". Sources: the
-  reports' c-squares, delivery and QC rows; `products/ices_vms_datacall/`; the material below. To write.
+The files are `docs/flow_*.qmd`. Each runs: the problem; what the groups say (from the reading map); from ramb's
+articles; the sources, best first (one section per box and band, each with its cases); methods compared; what if a
+source is missing; checking it; the data call's way; with ramb; not yet in ramb. Data first and code last, folded
+(§5).
+
+1. *Vessel: whose track is it?* (`flow_vessel.qmd`). Seed: ramb's `vessels` article. Sources: decision 146.
+2. *Pings: label, never drop, and the ping rate* (`flow_pings.qmd`). Seeds: ramb's `trips` article (step 0, the
+   trouble pings, the dense and sparse feeds), its `tools` article, and fishyweb's `notes/whacky-positions.qmd`.
+   Sources: decision 067, TODO 88.
+3. *Trips: from port to port* (`flow_trip.qmd`). Seed: ramb's `trips` article (the five rules, the maps). Sources:
+   plan 031, decisions 058-065, 147, 149.
+4. *Records: hauls, days and trips* (`flow_record.qmd`). Seed: ramb's `sets` article. Sources: decisions 088, 091, 094.
+5. *Gear: what was in the water* (`flow_gear.qmd`). Seed: ramb's `gear` article.
+6. *Fishing: was the vessel fishing?* (`flow_fishing.qmd`). There is no ramb article yet. Sources: decisions 093, 101.
+7. *Effort: how much fishing* (`flow_effort.qmd`). There is no ramb article yet. Sources: decision 099.
+8. *Catch: whose fish, where* (`flow_catch.qmd`). Seed: ramb's `catch` article. Sources: decisions 100, 102.
+9. *Products: from the fixes to maps and deliveries* (`flow_products.qmd`). Seed: ramb's `tools` article ("Space and
+   grids"), and the sources still to find above.
+10. *Validation: how each answer is checked* (`flow_validation.qmd`). Seed: ramb's `sets` article (ping rates, what
+    the labels say). Its tests in detail are appendix B.
+
+All ten are written as skeletons (2026-10-20).
 
 **Part III — The groups**
 
@@ -229,8 +241,10 @@ Later meetings are appended, one chapter each.
   site's "ICES VMS datacall: present → dplyr (→ duckdb)", `notes_duckdbfs-vs-duckspatial.md`, ramb's `flow`
   article. Sources: decisions 073, 111, 144; the reading map's code trail.
 
-**Part V — Background: the Icelandic data** (published with the rest, under ask c's rule; §6; background material,
-not the book's subject, §3)
+**Appendices — the Icelandic data** (maintainer, 2026-10-20: "the Icelandic data should all go into an Appendix (or
+possibly be a separate book)"). They are published with the rest, under ask c's rule (§6), as background material,
+not the book's subject (§3). They follow the full grammar in the book's appendices. A separate book remains an
+option.
 
 - *Sources*: `afli-tables`, `source-schemas`, `grammar_logbooks`, `skipaskra`, `stk_data-inspection`, `on_ais`,
   `ports`.
@@ -282,12 +296,12 @@ The planning worth doing is per chapter, not per book. A Part I-III chapter runs
 8. sources: the reports, decisions and plans it distils, linked (fishycode and ramb are public).
 
 Every chapter carries the AI-use callout the docs pages already use, and a review line (who reviewed it and when),
-so machine and human text stay distinguishable. Part V chapters keep the manual's shape: the source, its defects,
+so machine and human text stay distinguishable. The Icelandic appendices keep the manual's shape: the source, its defects,
 what the build does, the columns and their basis.
 
 ## 6. One edition, and what may be published with it
 
-**Answered (ask c, maintainer 2026-10-19):** all of the Icelandic part (Part V) may be public "as long as no data goes with it". What that
+**Answered (ask c, maintainer 2026-10-19):** all of the Icelandic part (now the appendices) may be public "as long as no data goes with it". What that
 means:
 
 - **Rendered figures and tables** from the data may be published.
@@ -346,14 +360,16 @@ cleaner unit to publish, but the Icelandic part would have left the code it docu
 ## 8. Rules
 
 - **No chapter before its text.** fishyweb's mess is a scaffold: menus first, then 26 outlines to fill them. A
-  chapter enters `_quarto.yml` when it is written, and nowhere else (§10, check 2).
+  chapter enters `_quarto.yml` when it has text. Since 2026-10-20 (the maintainer asked for skeletons), a skeleton
+  counts: sections down to subsubsections, with the planned cases as bullets. An empty heading or "To be filled in"
+  does not (§10, check 2).
 - **Record → book, one way.** A finding made while writing goes to a decision or TODO first, then into the chapter.
   The book never holds a fact the record does not.
 - **Working notes are not sources.** Claude's memory files and side sessions' notes folders are scratch. Text worth
   a chapter reaches a decision first.
-- **ramb's articles move; they are not copied.** Each is deleted from ramb, in a ramb commit, once its chapter is in
-  the book. ramb keeps its README, the reference, one "Get started" article that runs the flow on one bundled set,
-  and a link to the book. TODO 91 (the pkgdown index) folds in.
+- **ramb's articles stay, as brief introductions to the functions** (maintainer, 2026-10-20). The book gives the
+  detail and the cases, starting from the articles' examples; an article and its chapter link to each other. This
+  replaces the first rule, that the articles would move into the book. TODO 91 (the pkgdown index) is unchanged.
 - **The groups' words first**, and project terms mapped in the grammar chapter (§3).
 - **Pinned to ramb.** The book runs whatever ramb is installed, and `freeze: auto` does not re-run a chapter when
   ramb changes. After 2026-10-19's renames (decision 147), a frozen chapter would show the old names. So the preface
@@ -417,8 +433,8 @@ alongside step 1.
 3. **`check_book()`** (§10), wired into `check_bookkeeping()`.
 4. **The gap file** (§9), seeded from `one_flow.qmd` and from the reading map's asks; `one_flow.qmd`'s two tables are
    then generated from it; the status diagram decided.
-5. **fishyweb's five pages in**: the data dictionary, species 445 and trawl footprint to Part V; whacky positions to
-   the pings chapter (generic, public data) and Part V (the tracks); the AIS trip tutorial checked against ramb 2026.10.19.2's
+5. **fishyweb's five pages in**: the data dictionary, species 445 and trawl footprint to the appendices; whacky positions to
+   the pings chapter (generic, public data) and the appendices (the tracks); the AIS trip tutorial checked against ramb 2026.10.19.2's
    names, then into the trips chapter or dropped. Settle 27b35ff and the untracked note; archive fishyweb; close or redirect
    plan 002 and TODO 16.
 6. **ramb's seven articles into Part II**, one at a time, each deleted from ramb when its chapter lands; ramb's "Get
@@ -641,7 +657,7 @@ redoing the extraction).
   (§7).
 - b. **URL:** `heima.hafro.is/~einarhj/fishybook`. The internal edition was to be served "locally only", but ask c
   made it unnecessary.
-- c. **What may be published:** all of the Icelandic part (now Part V), "as long as no data goes with it": rendered figures and tables, no
+- c. **What may be published:** all of the Icelandic part (now the appendices), "as long as no data goes with it": rendered figures and tables, no
   data files. Asked further: an interactive widget counts as data, so vessel-level data are shown as static figures
   (§6).
 - d. **The four leftover pages:** removed, with git keeping them.

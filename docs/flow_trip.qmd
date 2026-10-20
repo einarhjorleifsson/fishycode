@@ -1,0 +1,103 @@
+# Trips: from port to port {#sec-trip}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 1, *Trip* (`assign_trip`). Its sources, best first: the declared trip (logbook) → the landing
+(`T2`, and `T1` if given) → the voyage from port calls on the track → gaps and the device's power. The band below it:
+**link and reconcile**, since trips, landings and voyages are linked many-to-many.
+
+## The problem
+
+- A trip groups pings and records: everything a vessel did between leaving port and returning.
+- Declared dates are not arrival times. The logbook's return can be written in advance, and the landing's date is
+  when the fish were sold. Only the track measures the arrival.
+- Many small boats have no port list, no logbook, and some no tracker that runs in port.
+
+## What the groups say
+
+- A fishing trip runs from leaving port to arriving in port with fishing in between, and several trips can fall on
+  one day (WKSSFGEO 2022, p. 13).
+- Trips from harbour polygons in the Danish data (WKSSFGEO 2022, p. 9); anchoring sites for small-scale fleets
+  (WGSFD 2025a, p. 45).
+- Trips cut at gaps (WGSFD 2025a, p. 32); trip ends from the device's power (WKSSFGEO2 2023, pp. 20-21).
+- Cleaning logbook trips (WGSFD 2025a, pp. 14-15); trips without pings kept apart (WGSFD 2025a, p. 24); merging tracks
+  with logbooks and sales notes (WGSFD 2025a, p. 50); the low match of tracks to sales notes (WKSSFGEO2 2023, p. 4).
+- Linking logbook and VMS by vessel and date (WGSFD 2013, pp. 13-14).
+
+## From ramb's articles
+
+- *trips* ("Step 1: cut the track into voyages", "Putting the trip back on the pings"): `rb_create_voyages()` and
+  `rb_create_port_calls()` on `dansk`, with the methods compared; `rb_add_voyages()` back onto the pings.
+- *trips* ("The cut, in maps"): interactive maps of the cut, one layer per trip. These can stay interactive, since
+  the data are public.
+  - "Two clean trips": `EX_3`, September 2020, two voyages out of port 917.
+  - "When the rules disagree": `EX_10`, July 2014, out of port 141. The runs rule cuts seven voyages that year and
+    jepol five, and the difference is one afternoon.
+- *trips* (closing note): `rb_add_logbook_trip()` builds the VMS-to-logbook crosswalk.
+
+## The sources, best first
+
+### Declared trip: the logbook
+
+- Case: logbook trips laid over the track; where the declared return differs from the arrival on the track.
+  - Augment: a garbled Icelandic subset, since no ramb set carries declared trips.
+  - Graphic: one vessel-month, with track-based voyages above and declared trips below on a shared time axis.
+
+### Landing: the sales note
+
+- Case: a weekly landing that covers several daily trips (many-to-one).
+  - Graphic: the landings as dots on the voyage timeline, with arrows to the trips they cover.
+
+### Voyage: from port calls on the track
+
+- Case: port calls and voyages cut from `dansk` with `dansk_harbours`. Data: ramb's `rb_create_port_calls()` and
+  `rb_create_voyages()`.
+  - Graphic: a map of the voyages; a timeline of port calls and voyages for one vessel.
+
+### Gaps and device power
+
+- Case: inshore VMS with no port list, cut at gaps. Data: `wkssfgeo2_irl_gillnets`, `wkssfgeo2_irl_pots`.
+  - Graphic: the ping interval along the track, with the cut where the gap exceeds the threshold.
+
+### The band: link and reconcile
+
+- Case: trips, landings and voyages linked many-to-many, and the arrival taken from the track.
+  - Graphic: a link diagram for one vessel-week.
+
+## Methods compared
+
+- One track, five trip finders: `dwell`, `runs`, `jepol` (DTU), `cnr` (CNR-IRBIM) and `iapesca` (Ifremer). Data:
+  `dansk` and `dansk_harbours`; the published trips `wkssfgeo_cnr_dansk_trips` and `wkssfgeo_cnr_dansk_ping_trips`
+  as a check. Start from the trips article's `EX_10` afternoon, where runs and jepol part ways.
+  - Graphic: the trips of each method as rows of bars on one time axis, and a table of agreement.
+- Port polygons against learned mooring sites. Data: `wkssfgeo_adriatic_passive` and `wkssfgeo_cnr_med_harbours`.
+
+## What if a source is missing
+
+- No port list: trips from gaps and stops only. Show how many trips merge or split against the full answer.
+- No logbook: voyages only, with no declared trips to reconcile.
+- Sparse pings: port calls missed when the tracker is silent in port. Show this by thinning `dansk`.
+
+## Checking it
+
+- Labelled trips in the workshops' sets (`wkssfgeo_pt_gps`, `wkssfgeo2_irl_pots`): the share of trips matched within
+  ±10 % of their duration.
+
+## In the ICES data call
+
+- The data call takes trips from the logbook and ties pings to them by time. It is a clean design where logbooks
+  are complete, and this chapter shows what it misses where they are not.
+
+## With ramb
+
+- `rb_create_port_calls()`, `rb_create_voyages()`, `rb_add_voyages()`, `rb_link_trip_voyages()`,
+  `rb_link_trip_landings()`, `rb_link_trip_logbook()`, `rb_detect_crosses_year()`.
+
+## Not yet in ramb
+
+- Declared times reconciled with the track (`rb_reconcile_time`, planned); mooring sites learned from the track; the
+  Irish gap rule and the power-on rule as methods.

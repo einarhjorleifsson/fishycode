@@ -1,0 +1,90 @@
+# Vessel: whose track is it? {#sec-vessel}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** the first row, *Vessel* (`assign_vessel`). Its sources, best first: the vessel's own track where
+two feeds agree → the register's dated MMSI → the vessel's logbook or landing on the day → continuity of the same
+device. An id that no source resolves keeps its pings, with vessel "none".
+
+## The problem
+
+- A transmitter is not a vessel. An MMSI or a tracker id can move between vessels, a vessel can change it, and
+  a small boat may carry none.
+- Every later step needs the vessel: its engine power, its gear, its logbook, its landings.
+
+## What the groups say
+
+- MMSI as the AIS link, and its pitfalls: one radio, many vessels, spoofing (WGSFD 2019, p. 6; WGSFD 2022, p. 8).
+- Linking AIS to the fleet register (WGSFD 2015, p. 43; WGSFD 2016, p. 63; WGSFD 2018, pp. 10, 27).
+- A call to have vessel ids added to AIS by the authorities (WGSFD 2019, p. 20; WGSFD 2022, p. 22).
+- The vessel id behind the Danish AIS example data (WKSSFGEO 2022, p. 9); GFW's identification of fishing vessels
+  (WKSSFGEO2 2023, p. 43); satellite detection of vessels that transmit nothing (WKSSFGEO2 2023, pp. 4-5).
+
+## From ramb's articles
+
+- *vessels* ("A small example", "The scores"): the Italian pot vessel `wkssfgeo2_it_pots` as one feed, and a second
+  feed with three ids: **A**, the same vessel heard every three minutes and slightly off; **B**, a vessel steaming 800 m
+  abreast a minute behind (a pair trawler, a tender); **C**, a vessel on the same ground a day later. The scores of
+  `rb_link_vessel_tracks()` tell them apart. This is the core case of the first section below.
+- *tools* ("Values and identifiers"): `rb_classify_mmsi()` and `rb_lookup_mmsi_country()` on a few MMSI.
+
+## The sources, best first
+
+### Own track: two feeds agree
+
+- Case: the vessels article's feeds A, B and C against the Italian pot vessel (`wkssfgeo2_it_pots`): the same
+  vessel, a vessel alongside, and the same ground a day later.
+  - Graphic: the three candidates overlaid on the unit's track, coloured by score; distance against time lag for each.
+- Case: the same on a fleet, with `wkssfgeo_cnr_ais` (six Adriatic vessels) split into two pseudo-feeds.
+
+### Register: dated MMSI
+
+- Case: an MMSI used by two hulls in turn. Data: a simulated register with dated MMSI periods over ramb's `dansk`
+  tracks.
+  - Graphic: a timeline per MMSI, one bar per hull and period, with the pings drawn on it.
+- Augment if needed: a garbled subset of the Icelandic register's MMSI history, to show a real reuse.
+
+### Logbook or landing on the day
+
+- Case: a track with no register match, resolved by the vessel that declared a trip that day from that port.
+  - Graphic: the candidate vessels' trips and the unknown track on one timeline.
+
+### Continuity: the same device
+
+- Case: a device that goes silent and reappears, assumed to be the same vessel until evidence says otherwise.
+  - Graphic: the gap on a map, with the speed needed to bridge it.
+
+## Methods compared
+
+- Matching by co-location against matching by register alone. The graphic is a confusion table and the tracks they
+  disagree on.
+
+## What if a source is missing
+
+- No register: who can still be identified, and by what. A share-of-pings bar for each source left.
+- Only one feed: what co-location can no longer catch.
+- No vessel id at all (small boats): the track stays anonymous. Show what can still be said about effort without
+  the vessel's power or gear.
+
+## Checking it
+
+- A vessel's own track against its declared trips: does the vessel leave port when its logbook says it does?
+
+## In the ICES data call
+
+- The data call takes it as given that VMS and logbook share one vessel id. That holds where the authorities link
+  them, and the chapter shows what it takes where they do not.
+
+## With ramb
+
+- `rb_link_vessel_tracks()`, `rb_classify_mmsi()`, `rb_lookup_mmsi_country()`. The ramb article gives the brief
+  introduction; this chapter gives the cases.
+
+## Not yet in ramb
+
+- The time-bounded join of vessel to pings (`rb_add_vessel`, planned).
+- Satellite detections as a source.

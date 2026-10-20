@@ -1,0 +1,100 @@
+# Records: hauls, days and trips {#sec-record}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 2, *Record* (`assign_record`). Its sources, best first: a haul with event times (`t1`–`t4`) →
+a haul with positions → a period in an area → the whole trip as one record. The band below it is **two-way**: records
+also take positions and times from the track.
+
+## The problem
+
+- A ping needs the logbook record that covers it, whatever that record's resolution is.
+- Records come as single hauls with times, as days in a rectangle, or as a whole trip. Each must say which.
+- Static gear complicates it: a set and its haul can be days and voyages apart, and sets interleave.
+
+## What the groups say
+
+- Fishing event, operation, haul and set defined (WKSSFGEO 2022, p. 14).
+- High, medium and low resolved logbooks: hauls with times, daily rectangles, trip-level records typical of
+  small-scale fleets (WGSFD 2025a, pp. 12-13).
+- Haul start and end in logbooks, and what the logged times mean (WGSFD 2016, p. 59; WGSFD 2018, p. 17); missing tow
+  ends imputed (WGSFD 2019, p. 9; WGSFD 2022, p. 11).
+- Logbook effort spread to c-squares (WGSFD 2015, pp. 46-47); dropping invalid logbooks loses coverage (WGSFD 2025a,
+  p. 29); logbooks for all vessels as one option (WKSSFGEO2 2023, p. 65).
+
+## From ramb's articles
+
+- *sets* ("Labelled tracks"): the three labelled sets with set and haul labels, the Italian pot vessel
+  (`wkssfgeo2_it_pots`), two Portuguese pot vessels (`wkssfgeo_pt_gps`) and four Malagasy drive-in gillnet fishers
+  (`ird_mg_gillnet`), with pings a minute apart or closer.
+- *sets* ("The variants, at five ping rates"): the tracks thinned to one ping per 2, 5, 10 and 30 minutes.
+- *sets* ("What the labels say"): dense pot tracks and the run in to the buoy; drive-in gillnets, where the same
+  guard is wrong; sparse tracks rescued by the haul's declared positions (`method = c("pings", "record")`).
+- *trips* (closing note): `rb_add_logbook_trip()`, the crosswalk from pings to declared trips.
+
+## The sources, best first
+
+### Haul with event times (`t1`–`t4`)
+
+- Case: the survey tows of March 2019, recorded with start and end times. Data: `trawlsurvey` and `trawlsurveytows`.
+  - Graphic: the windows `t1`–`t4` on the track's speed profile, with the pings inside each window coloured.
+
+### Haul with positions
+
+- Case: a haul known only by where it started and ended. Data: `trawlsurveytows` with the times removed.
+  - Graphic: the pings near the haul line, picked by distance and day.
+
+### A period in an area
+
+- Case: a daily record in an ICES rectangle. Data: simulated daily records over `dansk`.
+  - Graphic: the day's pings in the rectangle, all sharing one record.
+
+### The whole trip as one record
+
+- Case: a trip-level record, as small-scale fleets often keep. Data: `wkssfgeo_pt_gps` with its trips.
+
+### The band: two-way
+
+- Case: a haul's position taken from the pings inside its window. Data: `trawlsurvey`.
+  - Graphic: the declared position beside the position from the track.
+
+### Sets and hauls of static gear
+
+- Case: sets paired with their hauls, the earlier pass along the same line. Data: `wkssfgeo2_it_pots` (labelled sets
+  and hauls), `ird_mg_gillnet`.
+  - Graphic: sets and hauls drawn as lines on a map, with arrows from each haul to its set.
+
+## Methods compared
+
+- Event times against haul positions against period×area for the same vessel. Graphic: the pings each method
+  assigns, and the share that agree.
+- Set↔haul pairing by iapesca's method against a buffer-and-overlap method (Mendo et al. 2023).
+
+## What if a source is missing
+
+- Haul times dropped: from `t1`–`t4` to positions only, then to the day only. Show what each step loses on the
+  survey tows.
+- No logbook at all: records reconstructed from the track's phases (see @sec-fishing).
+
+## Checking it
+
+- Survey tows as ground truth: the share of tow pings that each lower resolution still assigns correctly.
+
+## In the ICES data call
+
+- The data call ties a ping to the log event of its date, else the record with most catch. A haul-time match exists
+  in its code and is switched off.
+
+## With ramb
+
+- `rb_create_record_windows()`, `rb_create_record_pings()`, `rb_link_record_pings()`, `rb_add_record()`,
+  `rb_limit_record_duration()`, `rb_link_record_events()`, `rb_create_record_stretches()`,
+  `rb_link_record_stretches()`, `rb_link_record_sets()`.
+
+## Not yet in ramb
+
+- Windows from haul positions; trip-level records; declared `t1`–`t4` reconciled with the track.

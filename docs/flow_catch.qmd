@@ -1,0 +1,86 @@
+# Catch: whose fish, where {#sec-catch}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 6, *Catch* (`share_catch`). Its units, finest first: a haul (logbook catch) → a period in an
+area (logbook catch) → a trip or landing → several trips (a weekly landing). The band below it: **catch can be
+coarser than the activity**. Each unit's catch is shared over the fishing pings it covers, by effort.
+
+## The problem
+
+- Catch is recorded at whatever unit the record has. To map it, it must be spread over the pings that caught it,
+  with kilograms in equal to kilograms out.
+- Value follows the catch, and often comes from a different record (the sales note).
+
+## What the groups say
+
+- Landings weight and value per cell (WGSFD 2013, p. 30); landings by species in the data call (WGSFD 2014, p. 15).
+- A caveat on daily landings in one rectangle (WGSFD 2016, p. 10); sandeel coverage and mismatch (WGSFD 2016, p. 67).
+- Value from logbooks rather than landings (WGSFD 2018, pp. 58-59); the value of landings put onto logbook and VMS
+  (WGSFD 2019, p. 90).
+- Catch from first sales notes (WKSSFGEO2 2023, p. 6); filters before landings are dispatched (WGSFD 2025a,
+  pp. 22-23); the match levels of `splitAmongPings` (WGSFD 2025a, pp. 24-25).
+
+## From ramb's articles
+
+- *catch* ("How the sharing works", "A worked example"): one vessel, one trip, twelve pings over two days and two
+  rectangles, with one non-fishing ping that must receive nothing; `rb_share_catch(method = "eflalo")`. It is the
+  chapter's opening case, drawn as a picture of each kilogram's path.
+
+## The units, finest first
+
+### A haul
+
+- Case: survey catch shared over each tow's pings. Data: `trawlsurvey`, `trawlsurveytows` and the survey catch
+  (`is_smb_biological.csv`, cleared by its owner).
+  - Graphic: cod per ping along a few tows; cod per tow on the map.
+
+### A period in an area
+
+- Case: a daily catch shared over the day's fishing pings in its rectangle. Data: simulated daily catch over `dansk`.
+  - Graphic: the same catch on the map at two resolutions, haul against day.
+
+### A trip or a landing
+
+- Case: a trip's landing shared over all its fishing pings.
+
+### Several trips: a weekly landing
+
+- Case: one landing covering several day trips. Data: simulated, on `wkssfgeo_pt_gps` trips.
+  - Graphic: the landing split across trips by effort.
+
+### The band: coarser than the activity
+
+- Case: catch with no fishing ping at its level moves up a level, so the total is kept.
+  - Graphic: a flow diagram of kilograms from records to pings, kg in = kg out.
+
+## Methods compared
+
+- Sharing by effort against sharing equally per ping. Graphic: the two maps and their difference.
+- ramb's units against the data call's day → rectangle → trip match (`method = "eflalo"`).
+
+## What if a source is missing
+
+- No logbook catch: landings only, shared over the trip. Show the map coarsen.
+- No landings value: weight only. The money stays a stated gap (@sec-at-sea).
+
+## Checking it
+
+- Kilograms in equal kilograms out, per unit and in total, with a bar for anything that moved up a level.
+
+## In the ICES data call
+
+- `splitAmongPings` shares by day, then rectangle, then trip, weighted by interval. ramb keeps that order as one of
+  its methods.
+
+## With ramb
+
+- `rb_add_catch_units()`, `rb_build_catch_units()`, `rb_share_catch()` (with `method = "eflalo"`).
+
+## Not yet in ramb
+
+- Catch shared over several trips (a weekly landing), planned for `rb_share_catch()`.

@@ -1,0 +1,89 @@
+# Effort: how much fishing {#sec-effort}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 5, *Effort* (`assign_effort`). Its measures, richest first: pressure (with gear size) → static
+gear (soak, hauls) → kW-hours (with engine power) → hours (pings only) → fishing days (days at sea). Fishing pings
+only.
+
+## The problem
+
+- Effort is what the groups map most. 269 of the reading map's topic rows fall on this row, in all 13 reports.
+- Each measure needs something more than the last. Hours need only pings, kW-hours need the engine, swept area
+  needs the gear's width, and static-gear effort needs the gear itself.
+
+## What the groups say
+
+- Surface area trawled per cell (WGSFD 2013, p. 5); swept area with standard gear values (WGSFD 2014, p. 37); swept
+  area from gear width (WKSSFGEO 2022, p. 9).
+- Making effort comparable across years (WGSFD 2014, p. 8); AIS gaps inflate fishing hours (WGSFD 2019, p. 11).
+- Days at sea, effort and capacity (WKSSFGEO 2022, pp. 12, 15); fishing days across three sources (WKSSFGEO2 2023,
+  pp. 56-57).
+- Effort for passive gears: track length against time at sea, and soak time (WKSSFGEO2 2023, p. 5); vessel effort
+  against gear effort (WKSSFGEO2 2023, p. 26).
+
+## From ramb's articles
+
+- No article on effort yet. The *flow* article names `rb_cap_effort()`, and *gear* gives the widths that pressure
+  needs.
+
+## The measures, richest first
+
+### Pressure, with gear size
+
+- Case: swept area of the survey tows, from BENTHIS widths. Data: `trawlsurveytows`, `trawlsurvey`,
+  `benthis_parameters`.
+  - Graphic: the swept area of each tow as a ribbon on the map; swept area against tow length.
+
+### Static gear: soak and hauls
+
+- Case: soak time per set, and hauls counted per trip. Data: `wkssfgeo2_it_pots`, `wkssfgeo2_irl_pots`.
+  - Graphic: soak time distribution; hauls per trip against hours at sea.
+
+### kW-hours
+
+- Case: hours times engine power. Data: `dansk` with a simulated register of power.
+  - Graphic: kW-hours by vessel.
+
+### Hours
+
+- Case: the interval to the next ping, with long gaps capped. Data: `dansk`.
+  - Graphic: hours per ping, uncapped against capped; the share of effort in long gaps.
+
+### Fishing days
+
+- Case: calendar days with fishing, per vessel. Data: every ramb set with fishing labels.
+  - Graphic: fishing days against hours fished, one dot per vessel-month.
+
+## Methods compared
+
+- Hours by ping interval against hours by track length per cell. Graphic: the two maps side by side.
+- The three fishing-day definitions (logbook date, sales note, track). Graphic: one bar per definition for the same
+  vessels.
+
+## What if a source is missing
+
+- No engine power: hours only. No gear width: no pressure. No gear: no static-gear effort. Show a table of which
+  measures survive.
+- Sparse pings: hours inflated across gaps. Show by thinning `dansk`.
+
+## Checking it
+
+- Effort from the track against effort from the logbook for the same trips.
+
+## In the ICES data call
+
+- The data call takes the interval within the trip, kW-hours, and swept area (sfdSAR), in 0.05° c-squares.
+
+## With ramb
+
+- `rb_add_effort()`, `rb_cap_effort()`, `rb_calc_step_time()`, `rb_predict_gear_width()`, `rb_fill_gear_width()`.
+
+## Not yet in ramb
+
+- Static-gear pressure (net length × soak time); hours apportioned by track length per cell; fishing days as a
+  function.

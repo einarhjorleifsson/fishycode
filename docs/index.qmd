@@ -13,15 +13,18 @@ the ones we were in the room for.
 
 This book gathers that work in one place, ordered by the problem rather than by the meeting.
 
-- **Its centre is one flow, drawn as a diagram** in the first chapter. Each ping gets its vessel, its trip, its
+- **Its centre is one flow, drawn as a diagram** in the second chapter, and its main part has one chapter per row
+  of that diagram. Each ping gets its vessel, its trip, its
   record, its gear, whether it was fishing, its effort and its share of the catch. Each comes from the best source the
   data offer, with a fallback when that source is missing, and a note of which source answered.
 - **Each chapter starts from what the groups wrote**, cited by report and page. Then it sets out the problem, the ways
   others have approached it, and code that does it.
 
-The code is [ramb](https://github.com/einarhjorleifsson/ramb), an R package for that flow. Its examples run on public
-data: the workshops' own example sets, which ship with ramb. The Icelandic data that fishycode builds appear as
-background, one country's data among others, used where they show something the public sets cannot.
+The code is [ramb](https://github.com/einarhjorleifsson/ramb), an R package for that flow. ramb's own articles are
+brief introductions to its functions; this book gives the detail, with case examples that compare methods and ask
+what happens when a logbook, a port list or a dense track is missing. The cases run on public data: the workshops'
+own example sets, which ship with ramb. The Icelandic data that fishycode builds are kept in the appendices, as
+background, and enter a chapter only where they show something the public sets cannot.
 
 The book is for the members of WGSFD and WKSSFGEO, and for anyone joining the work. It is young: most of its chapters
 are still to be written, and the groups will, with luck, keep giving it more to say.

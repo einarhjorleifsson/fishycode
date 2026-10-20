@@ -1,0 +1,91 @@
+# Fishing: was the vessel fishing? {#sec-fishing}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 4, *Fishing?* (`assign_fishing`). Its sources, best first: the haul window (`t1`–`t4`) with
+speed → the phases of a dense track → a track model (mixtures, hidden Markov models) → the gear's speed range. Pings
+judged not fishing are labelled, not removed.
+
+## The problem
+
+- Of everything the groups have written, this question has had the most pages. Of the reading map's topic rows,
+  190 fall on this row, in 12 reports.
+- Speed alone confuses fishing with slow steaming, and currents shift speed profiles. Static gear is fished by a
+  vessel that is setting or hauling, not towing.
+
+## What the groups say
+
+- The first speed mode by kernel density (WGSFD 2013, pp. 13-14); tide currents in speed profiles (WGSFD 2013,
+  pp. 15-16).
+- Speed histograms by gear (WGSFD 2015, p. 30); the speed filter is unsuited near harbours (WGSFD 2015, p. 52);
+  winch pressure tests the speed rule (WGSFD 2014, p. 38).
+- State-space models (WGSFD 2015, p. 43); HMM classification of iVMS pings (WKSSFGEO 2022, p. 7); a framework for
+  choosing a machine-learning method (WKSSFGEO2 2023, p. 2).
+- Fishing status by speed and trajectory (WKSSFGEO2 2023, p. 3); the Delmoges netter data and resolution (WKSSFGEO2
+  2023, p. 4); a hauler sensor to detect fishing (WKSSFGEO2 2023, p. 1).
+
+## From ramb's articles
+
+- No article on fishing yet. The *flow* article lists `rb_add_fishing()`. The examples here would become that
+  article's short version.
+- *sets* gives the labelled tracks that the fishing methods are scored on (@sec-validation).
+
+## The sources, best first
+
+### The haul window, with speed
+
+- Case: survey tows as windows, with speed inside them. Data: `trawlsurvey` (with `behaviour`) and `trawlsurveytows`.
+  - Graphic: a speed time series with the windows shaded; speed histograms inside and outside the windows.
+
+### Phases of a dense track
+
+- Case: setting, soaking and hauling read from dense GPS. Data: `wkssfgeo2_it_pots` (labelled sets and hauls),
+  `ird_mg_gillnet`.
+  - Graphic: the track coloured by phase; speed and turning angle by phase.
+
+### A track model
+
+- Case: a Gaussian mixture and a hidden Markov model on the same track. Data: `creel`, `dansk`.
+  - Graphic: the state each model assigns, along the track; the fitted speed distributions.
+
+### The gear's speed range
+
+- Case: a fixed speed range per gear. Data: `dansk` with BENTHIS gear groups.
+  - Graphic: a speed histogram with the range marked, and the pings it accepts on a map.
+
+## Methods compared
+
+- Speed rule, mixture, HMM and random forest on the same labelled tracks. Data: `wkssfgeo_pt_gps`,
+  `wkssfgeo2_irl_pots`, `wkssfgeo_adriatic_passive`.
+  - Graphic: a confusion table per method, and accuracy against ping rate as one line per method.
+- The fix's own speed against the median over ±10 minutes (`rb_calc_speed_smooth()`). Graphic: the pings that change
+  state.
+
+## What if a source is missing
+
+- No logbook windows: the track decides alone. Show the same survey day with and without the tow windows.
+- Sparse pings: thin a labelled track and watch accuracy fall, method by method.
+- No gear: the speed rule needs the gear's range. Show what a gear-free model does instead.
+
+## Checking it
+
+- See @sec-validation: labelled tracks, observers and sensors, with misclassification by speed, method and ping rate.
+
+## In the ICES data call
+
+- The data call fits a Gaussian mixture per towed métier and uses a set speed range for other gears. That is a
+  sensible default for towed fleets with logbooks.
+
+## With ramb
+
+- `rb_add_fishing()` (methods "window", "speed", and the cascade), `rb_calc_speed()`, `rb_calc_speed_smooth()`,
+  `rb_number_runs()`. The track models are in the sibling package fishymodel.
+
+## Not yet in ramb
+
+- The track models as methods (`"gmm"`, `"embc"`, `"hmm"`); learned classifiers with movement features; fishing
+  speeds learned from the data (`rb_build_fishing_speeds`).

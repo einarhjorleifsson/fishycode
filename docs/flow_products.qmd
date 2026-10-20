@@ -1,0 +1,70 @@
+# Products: from the fixes to maps and deliveries {#sec-products}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 7, *Products*, made from the fixes: a grid (c-squares) → the data call's delivery → the
+quality of submissions. Because every fix keeps its labels and basis, a product can be remade at another grid,
+period or definition without redoing the flow.
+
+## The problem
+
+- What most people see is not the fixes but a map or a table made from them.
+- A product's grid, period and definitions decide what it can show, and what it hides.
+
+## What the groups say
+
+- Low and high resolution grids (WGSFD 2013, pp. 4-5); harbour, steaming and land pings in aggregates (WGSFD 2014,
+  p. 7).
+- One joint data call (WGSFD 2014, p. 15); national processing routes differ (WGSFD 2014, p. 6).
+- A standardised QC script and maps (WGSFD 2019, p. 2); online submission with a format check (WGSFD 2022, p. 1); the
+  data call's R workflow in three blocks (WGSFD 2025a, p. 11).
+- The products' uses and the indicators drawn from the grid: decision 152's proposals for this row, still to decide.
+
+## From ramb's articles
+
+- *tools* ("Space and grids"): `rb_detect_in_polygons()` on `dansk` and its harbours;
+  `rb_encode_ices_rectangle()`, robust against the vmstools method; `rb_bin_midpoint()` with 0.5° bins and their
+  rectangles.
+
+## The products
+
+### A grid: c-squares
+
+- Case: one fishing effort map at 0.05°, 0.01° and an ICES rectangle. Data: `dansk` effort from @sec-effort.
+  - Graphic: three maps side by side; the share of cells with fishing at each resolution.
+
+### The data call's delivery
+
+- Case: the delivered tables built from the fixes. Data: simulated, from `dansk`.
+  - Graphic: a sample of the delivered table, with each column traced to its fix-level source.
+
+### Quality of submissions
+
+- Case: the checks a submitter sees before ICES uses the data. Graphic: the QC report's standard plots on the
+  simulated delivery.
+
+## Methods compared
+
+- Gridding by midpoint against gridding by track length. Graphic: the effort map both ways.
+
+## What if a source is missing
+
+- No catch: effort maps only. No gear width: no swept-area ratio. Show which products survive each gap.
+
+## Sources still to find
+
+- The maintainer's products on the published site (the fishtrawl footprint, the data call QC report, the posts).
+- ICES's products from the data call, on ICES's web pages; WGSFD outputs that enter ICES advice.
+- Publications from the WGSFD and WKSSFGEO collaborations.
+
+## With ramb
+
+- `rb_bin_midpoint()`, `rb_encode_ices_rectangle()`, `rb_sum_across()`, `rb_summarise_track()`.
+
+## Not yet in ramb
+
+- C-square codes; a check of a delivery.

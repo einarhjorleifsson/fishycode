@@ -1,0 +1,92 @@
+# Gear: what was in the water {#sec-gear}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** row 3, *Gear* (`assign_gear`). Its sources, best first: the logbook record → the landing
+declaration → the licence or gear register → predicted from the track. The band below it: **gear codes are mapped
+to one vocabulary** (FAO, DATSU, métier), and **a trip may use several gears**.
+
+## The problem
+
+- Gear decides how fishing looks on the track, how fast the gear fishes, and what it does to the seabed.
+- Gear codes differ between sources and countries, and a small boat may use several gears on one trip.
+
+## What the groups say
+
+- Métier levels: level 4 instead of level 6 (WGSFD 2013, p. 6); a métier look-up table (WGSFD 2015, p. 21).
+- Métiers mapped to BENTHIS gear groups (WGSFD 2014, p. 34; WGSFD 2015, pp. 29-30); OSPAR and HELCOM groupings
+  (WGSFD 2014, p. 9).
+- Gear from sales notes (WKSSFGEO 2022, p. 9; WKSSFGEO2 2023, p. 3); gear sources that can be linked to AIS (WGSFD
+  2019, pp. 7-8).
+- Gear identified from the track by machine learning (WKSSFGEO 2022, pp. 6-7); gear groups from GFW's vessel class
+  (WKSSFGEO2 2023, p. 44).
+- No fixed gear per vessel-year in small-scale fleets (WKSSFGEO2 2023, p. 4).
+
+## From ramb's articles
+
+- *gear* ("Métier codes"): `rb_extract_metier()` pulling the gear and level 5 out of métier codes;
+  `rb_get_gear_vocabulary()` for the ICES lists; `metier5_benthis_lookup`.
+- *gear* ("The BENTHIS parameters", "Predicting gear width"): `benthis_parameters`, and `rb_predict_gear_width()` on a
+  small fleet of six métiers (otter trawls, a gillnet, a dredge, a Danish seine), each with length and engine power.
+
+## The sources, best first
+
+### The logbook record
+
+- Case: gear and mesh as declared; métier codes extracted. Data: `rb_extract_metier()` on simulated logbook codes.
+  - Graphic: the métier hierarchy (level 4 to 6) as a tree, with counts.
+
+### The landing declaration
+
+- Case: a sales note's gear when the logbook has none.
+
+### The licence or gear register
+
+- Case: the gears a vessel is licensed for, as a constraint.
+  - Augment: an Icelandic licence subset, garbled.
+
+### Predicted from the track
+
+- Case: telling pots from dredges by movement alone. Data: `wkssfgeo_pt_gps` and `wkssfgeo2_pt_gps` (labelled pots and
+  dredges).
+  - Graphic: speed and turning distributions by gear; the predicted gear against the label.
+
+### The band: one vocabulary, several gears
+
+- Case: FAO and métier codes mapped to BENTHIS groups. Data: `metier5_benthis_lookup`, `benthis_parameters`.
+  - Graphic: a mapping chart from métier to BENTHIS group.
+- Case: a trip that switches gear. Graphic: the track coloured by gear, with the switch marked.
+
+## Methods compared
+
+- Gear width from BENTHIS (`rb_predict_gear_width()`) against the declared width. Graphic: width against vessel
+  power, by gear group.
+
+## What if a source is missing
+
+- No logbook gear: fall back to the landing, then the licence, then the track. Show how the share of pings with a
+  known gear drops at each step.
+- No gear at all: fishing read from the track pattern alone, and pressure left empty (see @sec-effort).
+
+## Checking it
+
+- Predicted gear against labelled gear in the workshops' sets: a confusion table.
+
+## In the ICES data call
+
+- The data call takes the logbook's métier, checks it against ICES's lists, and takes widths from the user, then
+  BENTHIS, then a default.
+
+## With ramb
+
+- `rb_extract_metier()`, `rb_get_gear_vocabulary()`, `rb_predict_gear_width()`, `rb_fill_gear_width()`,
+  `rb_standardise_gear_meshsize()`.
+
+## Not yet in ramb
+
+- Gear predicted from the track; a licence register as a source; gear per operation on multi-gear trips
+  (`rb_add_gear`, on hold).

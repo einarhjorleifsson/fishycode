@@ -1,0 +1,69 @@
+# Validation: how each answer is checked {#sec-validation}
+
+::: {.callout-note}
+**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
+§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
+not yet written. Reviewed by: nobody yet.
+:::
+
+**In the diagram:** the band down the side, from trip to catch. Every answer is checked where something better is
+known: labelled tracks, observers, electronic monitoring (EM), gear sensors.
+
+## The problem
+
+- Each row gives an answer for every ping, with a basis. Without a check, nobody knows how often it is right.
+- The check needs data the rest of the fleet lacks, so it is measured on the well-recorded part and carried to the
+  rest.
+
+## What the groups say
+
+- AIS as validation (WGSFD 2014, p. 33); an AIS method validated with logbooks (WGSFD 2015, pp. 43-44); AIS needs
+  logbooks for validation (WGSFD 2019, p. 16).
+- GPS plotters for validation (WGSFD 2016, p. 240); validation from observers and EM (WGSFD 2025a, p. 50).
+- Observer data and EM defined (WKSSFGEO 2022, p. 16); expert-labelled tracks, logbooks and observers, gear sensors,
+  and validation metrics (WKSSFGEO 2022, pp. 22-25).
+- Validation types of the example data (WKSSFGEO2 2023, p. 16); an observer annotation protocol (WKSSFGEO2 2023,
+  pp. 23-24).
+
+## From ramb's articles
+
+- *sets* ("The variants, at five ping rates", "What the labels say"): a found set is right when its pings overlap the
+  true set run. Its scores by ping rate are the first validation table of the book.
+
+## What checks what
+
+### Labelled tracks
+
+- Case: the workshops' labelled sets as ground truth. Data: `ird_mg_gillnet`, `wkssfgeo2_it_pots`,
+  `wkssfgeo_pt_gps`, `wkssfgeo2_pt_gps`, `wkssfgeo2_irl_pots`, `wkssfgeo2_irl_gillnets`.
+  - Graphic: one panel per set, the track coloured by label.
+
+### Survey tows
+
+- Case: tows with start and end times as fishing truth for towed gear. Data: `trawlsurvey`.
+
+### Observers and EM
+
+- Case: what an observer records that a tracker cannot. Sources: the reports; no ramb set yet.
+
+### Gear sensors
+
+- Case: a hauler counter marking hauls. Sources: WKSSFGEO2 2023, p. 1; data to find.
+
+## Measures
+
+- Accuracy, kappa and F-score; trips matched within ±10 % of their duration (WKSSFGEO 2022, pp. 22-25).
+  - Graphic: a confusion table, and accuracy by method and ping rate.
+
+## What if the check is missing
+
+- With no labelled data, compare the methods of each row with one another. Agreement is not accuracy, but
+  disagreement shows where to look.
+
+## With ramb
+
+- The labelled example sets, read with `rb_read_example()`.
+
+## Not yet in ramb
+
+- Scoring as a function (accuracy, kappa, F-score, trip matching).

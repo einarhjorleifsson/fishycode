@@ -1,6 +1,7 @@
-# The book of plan 033. A chapter is listed here only once its text exists (plan 033 §8), so the
-# parts hold the pages written so far: the part "The flow, row by row" has none yet. A book renders
-# only its listed chapters; notes_duckdbfs-vs-duckspatial.md is a seed (§4, chapter 5), not one.
+# The book of plan 033. Its main part is one chapter per row of the flow diagram, each with a section per box
+# (the horizontal elements), as skeletons first (maintainer, 2026-10-20). Cases use ramb's example data; the
+# Icelandic data are all in the appendices. A book renders only its listed chapters; notes_duckdbfs-vs-duckspatial.md
+# is a seed for the tools chapter, not one.
 project:
   type: book
 
@@ -15,36 +16,46 @@ book:
       chapters:
         - at_sea.qmd
         - one_flow.qmd
+    - part: "The flow, row by row"
+      chapters:
+        - flow_vessel.qmd
+        - flow_pings.qmd
+        - flow_trip.qmd
+        - flow_record.qmd
+        - flow_gear.qmd
+        - flow_fishing.qmd
+        - flow_effort.qmd
+        - flow_catch.qmd
+        - flow_products.qmd
+        - flow_validation.qmd
     - part: "The groups"
       chapters:
         - wkssfgeo.qmd
-    - part: "Background: the Icelandic data"
-      chapters:
-        # sources
-        - afli-tables.qmd
-        - source-schemas.md
-        - grammar_logbooks.qmd
-        - skipaskra.qmd
-        - stk_data-inspection.qmd
-        - on_ais.qmd
-        - ports.md
-        # building the data
-        - pipeline.qmd
-        - merge.qmd
-        - afli-backentry.qmd
-        - landings-match.qmd
-        - landings_match2.qmd
-        - ais_trail.qmd
-        - output-schema.md
-        # defects and corrections
-        - wacky-tracks_recovery.qmd
-        - afli-dropped-stations.qmd
-        - qc_fs_afladagbok_2025.qmd
-        - convert-bugs.qmd
-        # how the data are used
-        - datacall-strategy.qmd
   appendices:
     - grammar.qmd
+    # the Icelandic data: sources
+    - afli-tables.qmd
+    - source-schemas.md
+    - grammar_logbooks.qmd
+    - skipaskra.qmd
+    - stk_data-inspection.qmd
+    - on_ais.qmd
+    - ports.md
+    # the Icelandic data: building the data
+    - pipeline.qmd
+    - merge.qmd
+    - afli-backentry.qmd
+    - landings-match.qmd
+    - landings_match2.qmd
+    - ais_trail.qmd
+    - output-schema.md
+    # the Icelandic data: defects and corrections
+    - wacky-tracks_recovery.qmd
+    - afli-dropped-stations.qmd
+    - qc_fs_afladagbok_2025.qmd
+    - convert-bugs.qmd
+    # the Icelandic data: how they are used
+    - datacall-strategy.qmd
 
 format:
   html:
