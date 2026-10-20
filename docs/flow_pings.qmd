@@ -1,10 +1,38 @@
 # Pings: label, never drop, and the ping rate {#sec-pings}
 
 ::: {.callout-note}
-**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
-§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
-not yet written. Reviewed by: nobody yet.
+**Drafted by AI, in part.** "The tests, in order" was written by Claude (Anthropic) on 2026-10-20, on ramb's example
+data. The other sections are still a skeleton, outlined from the maintainer's direction (plan 033 §4) and the reading
+map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
+
+```{r setup}
+#| include: false
+# quarto's R may start in a C locale; keep characters such as the degree sign intact
+invisible(Sys.setlocale("LC_CTYPE", "en_US.UTF-8"))
+library(tidyverse)
+library(ramb)
+library(patchwork)
+
+# the Danish tracks (WKSSFGEO), in the grammar's column names, a ping every ten seconds
+dansk <- rb_read_example("dansk") |> collect() |>
+  rename(vid = vessel_id, time = time_stamp) |>
+  arrange(vid, time)
+harbours <- rb_read_example("dansk_harbours") |> collect()
+harbours <- sf::st_sf(port_id = harbours$SI_HARB,
+                      geometry = sf::st_as_sfc(structure(harbours$geometry, class = "WKB"), crs = 4326))
+
+# implied speed of each ping against its predecessor, in knots
+implied_kn <- function(d) {
+  d |> arrange(time) |>
+    mutate(dt = as.numeric(difftime(time, lag(time), units = "secs")),
+           kn = rb_calc_distance(lag(lon), lag(lat), lon, lat) / dt * 1.94384)
+}
+flag_colours <- c(kept = "grey70", forward = "#C0504D", vmask = "#E69F00", duplicate = "#4F81BD",
+                  invalid = "black")
+log_kn <- scale_y_log10(breaks = c(0.01, 0.1, 1, 10, 100, 1000), labels = c("0.01", "0.1", "1", "10", "100", "1000"))
+theme_set(theme_minimal())
+```
 
 **In the diagram:** the second row, *Flag pings* (`flag_pings`). Its tests run in order, each on pings not yet flagged:
 invalid (placeholder) → duplicate (second feed) → impossible (set aside) → port (kept in the trail). The band below
@@ -40,39 +68,284 @@ keep the gaps and the device.
 
 ## The tests, in order
 
+Every test in this row adds a label to the ping and removes nothing. The labels are applied in order, and each test
+looks only at pings the earlier ones have left unflagged. At the end, the flagged pings sit in their own table and
+the rest go on to the trip. Pings in equal pings out, and every one of them can still be inspected.
+
 ### Invalid: placeholders
 
-- Case: positions at (0, 0), on land, or outside the area; times in the future. Data: ramb's `whacks1` (a made-up
-  track with impossible positions), plus placeholders added to `creel`.
-  - Graphic: the track with flagged points in red, and a count of each flag.
+A placeholder is a position that was never a fix: a receiver that has not found its satellites, or a database that
+fills an empty field with zeros. The most famous is (0, 0), a spot in the Gulf of Guinea that geographers call Null
+Island. In raw tracking data it can look like the busiest fishing ground on Earth. `rb_flag_ping_invalid()` catches
+two kinds. The first is a longitude equal to its latitude, which (0, 0) is. The second is a position outside the
+globe.
+
+ramb's example sets are clean in this respect: not one of their pings is a placeholder. So the case below plants
+three in a real day of a Danish vessel, at the times a receiver might lose its fix (@fig-invalid, @tbl-invalid).
+
+```{r}
+#| label: fig-invalid
+#| fig-cap: "One day of a Danish vessel (`dansk`, EX_3, 18 September 2020), with three planted placeholders. Left: the track as it would be drawn with them, by way of Null Island. Right: the same day once they are labelled `invalid` and set aside."
+#| fig-height: 3.6
+day <- dansk |> filter(vid == "EX_3", as_date(time) == as.Date("2020-09-18")) |>
+  select(vid, time, lon, lat, speed)
+planted <- day |> slice(c(800, 1900, 3000)) |>
+  mutate(lon = c(0, 0, 181), lat = c(0, 0, 57), time = time + 1)
+day_raw <- bind_rows(day, planted) |> arrange(time) |> rb_flag_ping_invalid()
+world <- map_data("world")
+p1 <- ggplot() +
+  geom_polygon(data = world, aes(long, lat, group = group), fill = "grey90") +
+  geom_path(data = day_raw |> filter(abs(lon) <= 180), aes(lon, lat), colour = "#C0504D", linewidth = 0.3) +
+  annotate("point", x = 0, y = 0, shape = 4, size = 3) +
+  annotate("text", x = 2, y = -4, label = "Null Island", hjust = 0, size = 3) +
+  coord_quickmap(xlim = c(-20, 25), ylim = c(-8, 62)) +
+  labs(x = NULL, y = NULL, title = "as recorded")
+p2 <- ggplot(day_raw |> filter(is.na(ping_flag)), aes(lon, lat)) +
+  geom_path(colour = "grey40", linewidth = 0.3) +
+  coord_quickmap() +
+  labs(x = NULL, y = NULL, title = "placeholders set aside")
+p1 + p2
+```
+
+```{r}
+#| label: tbl-invalid
+#| tbl-cap: "The planted pings and the label each one gets. The longitude of 181 is outside the globe; the two at (0, 0) have a longitude equal to their latitude."
+day_raw |> filter(!is.na(ping_flag)) |>
+  transmute(time = format(time, "%H:%M:%S"), lon, lat, ping_flag) |>
+  knitr::kable()
+```
 
 ### Duplicate: the second feed
 
-- Case: the dense and sparse feeds of `EX_10` in `dansk` (the trips article). Run without the duplicate flag, the speed
-  test flags five innocent dense pings; run with it first, none.
-  - Graphic: implied speed against time, coloured by feed, before and after; the time and distance between
-    neighbouring pings, with the duplicates as a cluster near zero.
+A vessel can be heard by more than one system at once: two AIS receivers, AIS and VMS, a national feed and a
+regional one. Each report arrives twice, seconds and metres apart, and the copy is not always a perfect copy. The
+groups met this early on, with national and NEAFC data overlapping (WGSFD 2015, pp. 12-13), and the workshops merged
+feeds into one series (WKSSFGEO 2022, p. 9).
+
+The `dansk` data hold a clear case on one vessel, `EX_10`, on 19 July 2014. Most of the day is a dense stream: a
+ping every ten seconds, steady and self-consistent. Mixed into it is a sparse stream, a ping a minute, always at 39 or
+40 seconds past the minute, whose positions lie a little off the dense track. The data carry no column naming the
+feed, so the feed is read from that cadence here. Real data would name it.
+
+Order matters (@fig-duplicate). Run the speed test alone, and each sparse ping makes the next honest dense ping look
+like a jump, so innocent pings are flagged. Flag the copies first, with the dense stream given priority, and the
+speed test then finds only the one real spike.
+
+```{r}
+#| label: fig-duplicate
+#| fig-cap: "Vessel EX_10 on 19 July 2014 (`dansk`): the implied speed of each ping against the one before it, coloured by its label, with the 25-knot ceiling dashed. Top: the speed test alone. Bottom: duplicates flagged first, with the dense feed given priority; every sparse ping is labelled `duplicate`, and only the true spike is flagged by speed."
+#| fig-height: 5.5
+two <- dansk |> filter(vid == "EX_10", as_date(time) == as.Date("2014-07-19")) |>
+  select(vid, time, lon, lat) |>
+  mutate(feed = if_else(second(time) %in% c(39, 40), "sparse", "dense"))
+alone <- two |> rb_flag_ping_impossible(method = "clean")
+first <- two |> rb_flag_ping_duplicate(priority = c("dense", "sparse"), feed = feed, max_dt_s = 15) |>
+  rb_flag_ping_impossible(method = "clean")
+show <- function(x, title) {
+  x |> implied_kn() |> filter(!is.na(kn)) |>
+    mutate(label = coalesce(ping_flag, "kept")) |>
+    arrange(label != "kept") |>
+    ggplot(aes(time, kn, colour = label)) +
+    geom_point(size = 0.7, show.legend = TRUE) +
+    geom_hline(yintercept = 25, linetype = 2, colour = "grey50") +
+    log_kn +
+    scale_colour_manual(values = flag_colours, limits = c("kept", "duplicate", "forward", "vmask")) +
+    labs(x = NULL, y = "implied speed (kn, log)", colour = NULL, title = title)
+}
+show(alone, "speed test alone") / show(first, "duplicates flagged first") +
+  plot_layout(guides = "collect")
+```
+
+```{r}
+#| label: tbl-duplicate
+#| tbl-cap: "The same day: the labels each feed's pings get, with and without the duplicate test run first."
+bind_rows(alone |> mutate(order = "speed test alone"),
+          first |> mutate(order = "duplicates first")) |>
+  count(order, feed, label = coalesce(ping_flag, "kept")) |>
+  pivot_wider(names_from = label, values_from = n, values_fill = 0) |>
+  knitr::kable()
+```
 
 ### Impossible: set aside
 
-- Case: jumps that need impossible speeds. Data: `whacks1`, and the whacky positions of fishyweb's note (positions
-  real, ids garbled).
-  - Graphic: the track before and after, with the speed of each step.
+A position the vessel cannot have reached, at the speed it would have needed, is flagged and set aside.
+`rb_flag_ping_impossible()` measures each ping against the last one it kept, with a ceiling of 25 knots by default.
+On the morning of 6 October 2013 the same vessel, `EX_10`, was halfway through a three-day trip. Sixteen of its 34
+pings that morning leap up to tens of kilometres off the grounds and back within minutes, while the speed it reported
+stayed near six knots (@fig-impossible). A flagged ping can sit below the ceiling in the speed plot, and a kept one
+above it: the test measures each ping against the last ping it kept, not against its raw neighbour, so the return to
+the track after a spike is judged against the last good position.
+
+```{r}
+#| label: fig-impossible
+#| fig-cap: "Vessel EX_10, 6 October 2013, 05:00 to 13:30 (`dansk`). Left: the track as recorded (grey) and once the impossible pings are set aside (blue), with those pings in red. Right: each ping's implied speed, log scale; the spikes sit far above the 25-knot ceiling."
+#| fig-height: 4
+morning <- dansk |>
+  filter(vid == "EX_10", time >= as.POSIXct("2013-10-06 05:00", tz = "UTC"),
+         time <= as.POSIXct("2013-10-06 13:30", tz = "UTC")) |>
+  select(vid, time, lon, lat) |>
+  rb_flag_ping_impossible(method = "clean")
+q1 <- ggplot(morning, aes(lon, lat)) +
+  geom_path(colour = "grey60") +
+  geom_path(data = morning |> filter(is.na(ping_flag)), colour = "#4F81BD", linewidth = 0.8) +
+  geom_point(data = morning |> filter(!is.na(ping_flag)), colour = "#C0504D", size = 1.5) +
+  coord_quickmap() +
+  labs(x = NULL, y = NULL)
+q2 <- morning |> implied_kn() |> filter(!is.na(kn)) |>
+  mutate(label = coalesce(ping_flag, "kept")) |>
+  ggplot(aes(time, kn, colour = label)) +
+  geom_point() +
+  geom_hline(yintercept = 25, linetype = 2, colour = "grey50") +
+  log_kn +
+  scale_colour_manual(values = flag_colours) +
+  labs(x = NULL, y = "implied speed (kn, log)", colour = NULL)
+q1 + q2
+```
+
+How well does the test do when the answer is known? `whacks1` is a short track made up for the purpose: 46 pings, 12
+of them deliberately misplaced. The five methods of `rb_flag_ping_impossible()` differ in how much of the
+surrounding track they consult (@tbl-whacks). On this track, the forward and sequential methods flag exactly the
+twelve. The default, `"clean"`, and `"sda"` also catch all twelve, but take four good pings with them. `"fwdbwd"`
+finds two. One small made-up track does not decide between methods; the comparison over real labelled tracks is
+@sec-validation's.
+
+```{r}
+#| label: tbl-whacks
+#| tbl-cap: "The five methods on `whacks1`, a made-up track of 46 pings with 12 known misplacements."
+w <- rb_read_example("whacks1") |> collect() |> mutate(vid = as.character(vid))
+map_dfr(c("clean", "sda", "forward", "fwdbwd", "sequential"), function(m) {
+  f <- rb_flag_ping_impossible(w, method = m)
+  tibble(method = m, flagged = sum(!is.na(f$ping_flag)),
+         `misplaced, caught` = sum(!is.na(f$ping_flag) & f$whacks),
+         `good, flagged` = sum(!is.na(f$ping_flag) & !f$whacks))
+}) |> knitr::kable()
+```
+
+Across the whole of `dansk`, 395,558 pings, the default test flags `r format(sum(!is.na(rb_flag_ping_impossible(dansk, method = "clean")$ping_flag)), big.mark = ",")`:
+about one in two thousand. Few, but each one bends a line on a map.
 
 ### Port: kept in the trail
 
-- Case: pings inside a harbour polygon labelled with the port, not dropped. Data: `dansk` and `dansk_harbours`;
-  the Mediterranean list `wkssfgeo_cnr_med_harbours` with `wkssfgeo_cnr_ais`.
-  - Graphic: one harbour at close zoom, with the pings inside it coloured.
+A ping inside a harbour polygon is not wrong. It is a vessel in port, and the next row needs it, because trips are cut
+on port calls. `rb_flag_ping_port()` gives such a ping the port's id and keeps it in the trail. The groups have
+argued both ways here: harbour and steaming pings left in the aggregates (WGSFD 2014, p. 7), points in harbours and in
+boat parking areas (WKSSFGEO 2022, p. 19), and mooring sites found from the track where no list exists (WKSSFGEO2
+2023, p. 6).
+
+In `dansk`, about one ping in six is in port (@fig-port). A vessel at the quay with its transmitter on reports a ping
+every ten seconds all night, which is why the share is so high, and three of the fourteen vessels spend most of their
+pings tied up. Dropping port pings would hide that, and the trip row would lose the port calls it is cut on.
+
+```{r}
+#| label: fig-port
+#| fig-cap: "Pings in port (`dansk`, with `dansk_harbours`). Left: the busiest harbour of the data, its polygon and the pings inside it. Right: the share of each vessel's pings in port."
+#| fig-height: 4
+clean <- dansk |> select(vid, time, lon, lat) |>
+  rb_flag_ping_impossible(method = "clean") |> filter(is.na(ping_flag)) |>
+  rb_flag_ping_port(harbours)
+top <- clean |> filter(!is.na(port_id)) |> count(port_id, sort = TRUE) |> slice(1) |> pull(port_id)
+poly <- harbours |> filter(port_id == top)
+bb <- sf::st_bbox(poly)
+near <- clean |> filter(between(lon, bb["xmin"] - 0.01, bb["xmax"] + 0.01),
+                        between(lat, bb["ymin"] - 0.005, bb["ymax"] + 0.005))
+r1 <- ggplot() +
+  geom_sf(data = poly, fill = "#E69F00", alpha = 0.3, colour = "#E69F00") +
+  geom_point(data = near, aes(lon, lat, colour = !is.na(port_id)), size = 0.3) +
+  scale_colour_manual(values = c(`TRUE` = "#C0504D", `FALSE` = "grey60"), labels = c("at sea", "in port"), name = NULL) +
+  labs(x = NULL, y = NULL)
+r2 <- clean |> group_by(vid) |> summarise(in_port = mean(!is.na(port_id))) |>
+  ggplot(aes(in_port, reorder(vid, in_port))) +
+  geom_col(fill = "#E69F00") +
+  scale_x_continuous(labels = scales::label_percent()) +
+  labs(x = "pings in port", y = NULL)
+r1 + r2 + plot_layout(widths = c(1.3, 1))
+```
 
 ### The band: the ping rate
 
-- Case: one dense track thinned step by step, from 30 s to 2 h. Data: `wkssfgeo2_pt_gps` (dense GPS).
-  - Graphic: small multiples of the same trip at each rate.
-- Case: the ping interval of every ramb example set on one plot, from GPS loggers to inshore VMS.
-  - Graphic: a distribution of intervals per dataset (log scale). This is the book's one picture of data scarcity.
-- Case: interpolation to a regular series, linear against a spline that uses course and speed. Data: `creel`.
-  - Graphic: the two interpolations over the true dense track.
+How often a vessel reports decides how far down the diagram its track can go. Every member state polls its VMS at its
+own rate (WGSFD 2025a, p. 3). The group now recommends about a ping every 30 seconds for small vessels (WGSFD 2025b,
+p. 14), and takes "high resolution" to mean a ping every ten minutes or less (WGSFD 2025b, p. 23).
+
+ramb's example sets span most of that range (@fig-intervals): from ten seconds in the Danish data and thirty in the
+Portuguese GPS loggers, to ten minutes in the Irish inshore VMS and the survey tracks. None of them is as sparse as
+the hourly or two-hourly VMS that much of the ICES data call still rests on. That case has to be made by thinning a
+dense track.
+
+```{r}
+#| label: fig-intervals
+#| fig-cap: "The interval between consecutive pings in each of ramb's example sets, log scale. The dashed lines mark one and two hours, the polling of classic VMS."
+#| fig-height: 4.5
+std <- function(s) {
+  x <- rb_read_example(s) |> collect()
+  x <- switch(s,
+    dansk = rename(x, vid = vessel_id, time = time_stamp),
+    wkssfgeo_adriatic_passive = rename(x, vid = vessel_id, time = time_stamp),
+    wkssfgeo_cnr_ais = rename(x, vid = MMSI, time = datetime),
+    creel = rename(x, vid = id),
+    x)
+  x |> transmute(set = s, vid = as.character(vid), time)
+}
+sets <- c("dansk", "wkssfgeo_pt_gps", "wkssfgeo2_pt_gps", "creel", "ird_mg_gillnet", "wkssfgeo2_it_pots",
+          "wkssfgeo_adriatic_passive", "wkssfgeo_cnr_ais", "wkssfgeo2_irl_pots", "wkssfgeo2_irl_gillnets", "trawlsurvey")
+intervals <- map_dfr(sets, std) |>
+  arrange(set, vid, time) |>
+  group_by(set, vid) |>
+  mutate(minutes = as.numeric(difftime(time, lag(time), units = "mins"))) |>
+  ungroup() |>
+  filter(minutes > 0)
+ggplot(intervals, aes(minutes, reorder(set, minutes, median))) +
+  geom_boxplot(outlier.size = 0.2, outlier.alpha = 0.2, fill = "grey90") +
+  geom_vline(xintercept = c(60, 120), linetype = 2, colour = "#C0504D") +
+  scale_x_log10(breaks = c(0.1, 1, 10, 60, 1440), labels = c("6 s", "1 min", "10 min", "1 h", "1 day")) +
+  labs(x = "interval between pings", y = NULL)
+```
+
+Thinning shows what a lower rate costs. One day of a Danish vessel, recorded every ten seconds, is cut down to one ping
+a minute, every ten minutes, every hour and every two hours (@fig-thin). At ten minutes the day's shape is still
+there. At an hour it is a sketch. At two hours it is a few straight lines across the ground the vessel worked.
+
+```{r}
+#| label: fig-thin
+#| fig-cap: "One day of vessel EX_3 (`dansk`, 18 September 2020), at its own ten-second rate and thinned to one ping a minute, every ten minutes, every hour and every two hours."
+#| fig-height: 2.3
+thin <- function(x, mins) x |> mutate(b = as.numeric(time) %/% (mins * 60)) |>
+  distinct(vid, b, .keep_all = TRUE) |> select(-b)
+rates <- c(`10 s` = 0, `1 min` = 1, `10 min` = 10, `1 h` = 60, `2 h` = 120)
+thinned <- imap_dfr(rates, function(m, nm) (if (m == 0) day else thin(day, m)) |> mutate(rate = nm)) |>
+  mutate(rate = factor(rate, names(rates)))
+ggplot(thinned, aes(lon, lat)) +
+  geom_path(colour = "grey40", linewidth = 0.3) +
+  geom_point(data = thinned |> filter(rate %in% c("1 h", "2 h", "10 min")), size = 0.6, colour = "#C0504D") +
+  facet_wrap(~ rate, nrow = 1) +
+  coord_quickmap() +
+  theme(axis.text = element_blank()) +
+  labs(x = NULL, y = NULL)
+```
+
+Interpolation puts positions back between the pings that remain. The question is how far off they land
+(@fig-interp). Here each thinned track is interpolated in a straight line back to the original ten-second times, with
+`rb_interpolate_track()`, and compared with where the vessel really was. A ping a minute misses by a metre or two. At
+ten minutes the typical miss is about 20 metres, but one in ten is off by more than 250. At an hour the typical miss is
+about 700 metres, and at two hours about two kilometres, with the worst several kilometres away. Straight lines know
+nothing of a vessel's turns. An interpolation that uses the vessel's course and speed does better (a cubic Hermite
+spline, which the workshops used), and is not yet in ramb.
+
+```{r}
+#| label: fig-interp
+#| fig-cap: "How far a straight-line interpolation lands from the true position, for the same day thinned to each rate (log scale). Times before the first or after the last remaining ping cannot be interpolated and are left out."
+#| fig-height: 3
+miss <- imap_dfr(rates[-1], function(m, nm) {
+  ip <- rb_interpolate_track(day |> select(vid, time), thin(day, m) |> select(vid, time, lon, lat), by = "vid")
+  tibble(rate = nm, metres = rb_calc_distance(day$lon, day$lat, ip$lon, ip$lat))
+}) |>
+  filter(!is.na(metres)) |>
+  mutate(rate = factor(rate, names(rates)[-1]))
+ggplot(miss, aes(metres, rate)) +
+  geom_boxplot(outlier.size = 0.3, outlier.alpha = 0.3, fill = "grey90") +
+  scale_x_log10(labels = scales::label_comma(), breaks = c(1, 10, 100, 1000, 10000)) +
+  labs(x = "distance from the true position (m, log)", y = "thinned to")
+```
 
 ## Methods compared
 

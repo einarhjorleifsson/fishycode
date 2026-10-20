@@ -1,10 +1,45 @@
 # Trips: from port to port {#sec-trip}
 
 ::: {.callout-note}
-**Skeleton, drafted by AI.** Outlined by Claude (Anthropic) on 2026-10-20 from the maintainer's direction (plan 033
-§4) and the reading map of the groups' reports (`ices_reports.yml`). The sections and the case examples are planned,
-not yet written. Reviewed by: nobody yet.
+**Drafted by AI, in part.** "The sources, best first" was written by Claude (Anthropic) on 2026-10-20. It uses ramb's
+example data, and, where those hold no declared trips or landings, one Icelandic trawler's 2019 (background, figures
+only). The other sections are still a skeleton, outlined from the maintainer's direction (plan 033 §4) and the
+reading map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
+
+```{r setup}
+#| include: false
+invisible(Sys.setlocale("LC_CTYPE", "en_US.UTF-8"))
+library(tidyverse)
+library(duckdbfs)
+library(ramb)
+library(patchwork)
+source("../R/paths.R")
+theme_set(theme_minimal())
+
+## ramb's Danish tracks and harbours, flagged as in the previous chapter --------------------------------------
+dansk <- rb_read_example("dansk") |> collect() |>
+  rename(vid = vessel_id, time = time_stamp) |> arrange(vid, time)
+harbours <- rb_read_example("dansk_harbours") |> collect()
+harbours <- sf::st_sf(port_id = harbours$SI_HARB,
+                      geometry = sf::st_as_sfc(structure(harbours$geometry, class = "WKB"), crs = 4326))
+pings <- dansk |> rb_flag_ping_invalid() |> rb_flag_ping_impossible(method = "clean") |>
+  filter(is.na(ping_flag)) |> rb_flag_ping_port(harbours)
+
+## One Icelandic trawler's 2019, as fishycode builds it (background) ------------------------------------------
+TRAWLER <- 1277
+lb_trips <- open_dataset(fd_curated("logbook", "trip.parquet")) |>
+  filter(vid == TRAWLER, year(T1) == 2019, is.na(twin) | twin != "duplicate") |>
+  select(.tid, schema, T1, T2) |> collect()
+ais_voyages <- open_dataset(fd_curated("ais", "voyage.parquet")) |>
+  filter(vid == TRAWLER, year == 2019) |> collect()
+trip_voyage <- open_dataset(fd_curated("link", "trip_voyage.parquet")) |>
+  filter(vid == TRAWLER, year == 2019) |> select(.tid, schema, voyage_id, T2_ais) |> collect()
+landings <- open_dataset(fd_curated("landing", "landings.parquet")) |>
+  filter(vid == TRAWLER, year(date) == 2019) |> select(.lid, date) |> collect()
+trip_landing <- open_dataset(fd_curated("logbook", "lid_map.parquet")) |>
+  filter(schema == "afli") |> collect() |> semi_join(lb_trips, by = c(".tid", "schema"))
+```
 
 **In the diagram:** row 1, *Trip* (`assign_trip`). Its sources, best first: the declared trip (logbook) → the landing
 (`T2`, and `T1` if given) → the voyage from port calls on the track → gaps and the device's power. The band below it:
@@ -41,32 +76,175 @@ not yet written. Reviewed by: nobody yet.
 
 ## The sources, best first
 
+A trip is everything a vessel did between leaving port and coming back. The best source for it is a declared trip in
+a logbook, with its departure and return. Next come the landing (its date and port) and the vessel's own track, cut
+into voyages at its port calls. Last come the silences in the track, where no port list exists. The cases below use
+ramb's example data where those hold the source, and one Icelandic trawler where they do not: no ramb set carries a
+logbook trip or a landing. The trawler is the one from @sec-at-sea, followed through 2019.
+
 ### Declared trip: the logbook
 
-- Case: logbook trips laid over the track; where the declared return differs from the arrival on the track.
-  - Augment: a garbled Icelandic subset, since no ramb set carries declared trips.
-  - Graphic: one vessel-month, with track-based voyages above and declared trips below on a shared time axis.
+The logbook declares when the trip started and ended. Many logbooks, the Icelandic one among them, give only the
+dates. The trawler's May 2019 shows what that means (@fig-trip-may). The track says the first trip ended with the
+vessel in port at 09:54 on 5 May. The logbook gives 6 May, the day the catch was landed. Where one trip ends and the
+next begins on the same day, the dates alone cannot say which pings belong to which.
+
+```{r}
+#| label: fig-trip-may
+#| fig-cap: "One Icelandic trawler, May 2019: its voyages from the track (exact times), its logbook trips (dates only) and its landings (dates). The track measures the arrival; the declarations give the day, often the landing day."
+#| fig-height: 2.6
+rows <- c("voyage (track)", "logbook trip", "landing")
+bars <- bind_rows(
+  ais_voyages |> transmute(row = rows[1], from = T1, to = T2),
+  lb_trips |> transmute(row = rows[2], from = T1, to = T2)
+) |> filter(from >= as.POSIXct("2019-05-01", tz = "UTC"), from < as.POSIXct("2019-06-01", tz = "UTC")) |>
+  arrange(row, from) |>
+  group_by(row) |> mutate(shade = if_else(row_number() %% 2 == 1, "a", "b")) |> ungroup() |>
+  mutate(row = factor(row, rev(rows)), fill = paste(row, shade))
+dots <- landings |> filter(month(date) == 5) |> transmute(row = factor(rows[3], rev(rows)), at = as.POSIXct(date) + hours(12))
+ggplot() +
+  geom_segment(data = bars, aes(x = from, xend = to, y = row, yend = row, colour = fill), linewidth = 5) +
+  geom_point(data = dots, aes(at, row), size = 3, colour = "#4F81BD") +
+  scale_colour_manual(values = c("voyage (track) a" = "grey20", "voyage (track) b" = "grey55",
+                                 "logbook trip a" = "#E69F00", "logbook trip b" = "#F5C26B"), guide = "none") +
+  scale_x_datetime(date_breaks = "3 days", date_labels = "%d %b") +
+  labs(x = NULL, y = NULL)
+```
+
+Over the whole year (@fig-trip-dates, left), the logbook's return date is the arrival day for most trips, the next
+day for some, and a few days off for a handful. A declared date is a day, and the wrong day often enough that it
+cannot place the arrival.
 
 ### Landing: the sales note
 
-- Case: a weekly landing that covers several daily trips (many-to-one).
-  - Graphic: the landings as dots on the voyage timeline, with arrows to the trips they cover.
+The landing is recorded by the buyer or the authority, not the skipper, and carries the date the catch was weighed or
+sold. For the trawler, every 2019 trip has exactly one landing. Most fall on the day the track brings it into port,
+some on the day after, and a few further off (@fig-trip-dates, right). A landing can also cover several trips, as a
+weekly sales note does in many small-scale fisheries. This trawler has none, and that case is added with simulated
+data.
+
+```{r}
+#| label: fig-trip-dates
+#| fig-cap: "The trawler's 2019: how many days after the track's arrival the logbook gives the return (left) and the landing is dated (right)."
+#| fig-height: 2.8
+arrive <- trip_voyage |> transmute(.tid, schema, arrived = as_date(T2_ais))
+d_lb <- lb_trips |> inner_join(arrive, by = c(".tid", "schema")) |>
+  transmute(days = as.numeric(as_date(T2) - arrived), what = "logbook return")
+d_la <- trip_landing |> inner_join(arrive, by = c(".tid", "schema")) |>
+  transmute(days = as.numeric(date_land - arrived), what = "landing date")
+bind_rows(d_lb, d_la) |>
+  mutate(what = factor(what, c("logbook return", "landing date"))) |>
+  ggplot(aes(days)) +
+  geom_bar(fill = "grey40") +
+  facet_wrap(~ what) +
+  scale_x_continuous(breaks = -5:5) +
+  labs(x = "days after the track's arrival", y = "trips")
+```
 
 ### Voyage: from port calls on the track
 
-- Case: port calls and voyages cut from `dansk` with `dansk_harbours`. Data: ramb's `rb_create_port_calls()` and
-  `rb_create_voyages()`.
-  - Graphic: a map of the voyages; a timeline of port calls and voyages for one vessel.
+The track needs no declaration. Wherever the vessel stays in port long enough, that is a port call, and a voyage runs
+from one port call to the next. ramb finds the port calls with `rb_create_port_calls()` and cuts the voyages with
+`rb_create_voyages()`. Here a port call needs four hours in port, the rule ramb's flow uses (`method = "dwell"`). One
+Danish vessel's September 2020 has five port calls and six voyages (@fig-voyage-map, @fig-voyage-time). A short stop
+in port, under four hours, does not end a voyage.
+
+```{r}
+#| label: fig-voyage-map
+#| fig-cap: "One Danish vessel (`dansk`, EX_3), September 2020: its voyages cut at port calls of four hours or more, each in its own colour, with the harbour polygon."
+#| fig-height: 4.5
+ex <- pings |> filter(vid == "EX_3", time >= as.POSIXct("2020-09-01", tz = "UTC"),
+                      time < as.POSIXct("2020-10-01", tz = "UTC"))
+calls <- rb_create_port_calls(ex, ports = harbours, method = "dwell", min_dwell_h = 4)
+voyages <- rb_create_voyages(ex, port_calls = calls, method = "dwell")
+ex_v <- ex |> rb_add_voyages(voyages, port_calls = calls)
+ggplot() +
+  geom_sf(data = harbours |> filter(port_id %in% calls$port_id), fill = "#E69F00", alpha = 0.4, colour = NA) +
+  geom_path(data = ex_v |> filter(!is.na(trip_id)) |> arrange(trip_id, time),
+            aes(lon, lat, colour = factor(trip_id), group = trip_id),
+            linewidth = 0.4) +
+  scale_colour_brewer(palette = "Dark2", name = "voyage") +
+  labs(x = NULL, y = NULL)
+```
+
+```{r}
+#| label: fig-voyage-time
+#| fig-cap: "The same month on a time axis: speed from the track, the port calls (orange) and the voyages between them (grey)."
+#| fig-height: 3
+g1 <- ggplot(ex, aes(time, speed, colour = !is.na(port_id))) +
+  geom_point(size = 0.2) +
+  scale_colour_manual(values = c(`TRUE` = "#E69F00", `FALSE` = "grey50"), labels = c("at sea", "in port"), name = NULL) +
+  labs(x = NULL, y = "speed (kn)")
+g2 <- ggplot() +
+  geom_segment(data = calls, aes(x = T_in, xend = T_out, y = "port call", yend = "port call"),
+               colour = "#E69F00", linewidth = 4) +
+  geom_segment(data = voyages, aes(x = T1, xend = T2, y = "voyage", yend = "voyage"),
+               colour = "grey30", linewidth = 4) +
+  labs(x = NULL, y = NULL)
+g1 / g2 + plot_layout(heights = c(2, 1))
+```
 
 ### Gaps and device power
 
-- Case: inshore VMS with no port list, cut at gaps. Data: `wkssfgeo2_irl_gillnets`, `wkssfgeo2_irl_pots`.
-  - Graphic: the ping interval along the track, with the cut where the gap exceeds the threshold.
+Many small boats have no port list, and some trackers stop reporting in port. Then the trip can only be read from the
+silences: a gap longer than some hours ends one trip and starts the next (WGSFD 2025a, p. 32). ramb's Irish inshore
+VMS (`wkssfgeo2_irl_gillnets`) is such a set: four gillnetters, a ping every ten minutes at sea, and long silences
+between trips.
+The provider marks 136 trips. A silence of two to four hours cuts the track into exactly those 136 trips. A shorter
+threshold splits trips at short gaps at sea, and a longer one merges trips that follow each other closely
+(@fig-gap-rule).
+
+```{r}
+#| label: fig-gap-rule
+#| fig-cap: "Trips from silences alone, Irish inshore VMS (`wkssfgeo2_irl_gillnets`). Left: the number of trips a gap rule finds at each threshold, against the provider's 136 (dashed). Right: one vessel's first months, each provider trip in its own colour, with the gaps over four hours marked."
+#| fig-height: 3.4
+irl <- rb_read_example("wkssfgeo2_irl_gillnets") |> collect() |> mutate(vid = as.character(vid)) |> arrange(vid, time)
+cut_at <- function(x, h) x |> group_by(vid) |>
+  mutate(gap = as.numeric(difftime(time, lag(time), units = "hours")), seg = cumsum(is.na(gap) | gap > h)) |> ungroup()
+found <- map_dfr(c(1, 2, 4, 8, 12, 24), function(h) tibble(hours = h, trips = nrow(distinct(cut_at(irl, h), vid, seg))))
+n_provider <- nrow(distinct(irl, vid, trip))
+h1 <- ggplot(found, aes(hours, trips)) +
+  geom_hline(yintercept = n_provider, linetype = 2, colour = "grey50") +
+  geom_line() + geom_point() +
+  scale_x_continuous(breaks = c(1, 2, 4, 8, 12, 24)) +
+  labs(x = "silence that ends a trip (hours)", y = "trips found")
+one <- irl |> filter(vid == first(vid)) |> filter(time < min(time) + days(60)) |> cut_at(4)
+h2 <- ggplot(one, aes(time, lat, colour = factor(trip))) +
+  geom_point(size = 0.3, show.legend = FALSE) +
+  geom_vline(data = one |> filter(gap > 4), aes(xintercept = time), colour = "grey70", linewidth = 0.2) +
+  labs(x = NULL, y = "latitude")
+h1 + h2 + plot_layout(widths = c(1, 1.6))
+```
+
+Not every trip finder treats a silence as an end. CNR-IRBIM's finder (`method = "cnr"`) joins two voyages across a
+silence unless the silence starts and ends inside a coastal zone it is given. Without that zone, as here, it joins
+the Irish trips into a handful of long ones. That is a design choice for trackers that drop out at sea, not a fault,
+and the comparison of methods below returns to it. A tracker that logs its own power marks trip ends directly, when
+it is switched off and on (WKSSFGEO2 2023, pp. 20-21). Such a log is held outside ramb for now.
 
 ### The band: link and reconcile
 
-- Case: trips, landings and voyages linked many-to-many, and the arrival taken from the track.
-  - Graphic: a link diagram for one vessel-week.
+Logbook trips, landings and voyages are linked to each other, not chosen between. One logbook trip can match two
+voyages, two trips can share one voyage, and a voyage can carry no trip at all. Over 2019 the trawler's 61 logbook
+trips each match one voyage, and two voyages carry two trips each (@tbl-links). Six voyages carry none. Four are
+short moves of under two hours, one of them between two neighbouring ports, and the other two are a passage to
+Reykjavík and back. A voyage is any movement; a trip is a fishing trip.
+
+```{r}
+#| label: tbl-links
+#| tbl-cap: "The trawler's 2019: how its logbook trips, voyages and landings link up."
+tibble(
+  link = c("logbook trips", "voyages", "voyages with one logbook trip", "voyages with two logbook trips",
+           "voyages with no logbook trip", "landings", "logbook trips with one landing"),
+  n = c(nrow(lb_trips), nrow(ais_voyages), sum(table(trip_voyage$voyage_id) == 1),
+        sum(table(trip_voyage$voyage_id) == 2), sum(!ais_voyages$voyage_id %in% trip_voyage$voyage_id),
+        nrow(landings), sum(table(trip_landing$.tid) == 1))
+) |> knitr::kable()
+```
+
+The reconciled trip takes its departure and arrival from the track and keeps the declarations linked to it. That
+table is an output of this row, never fed back to redo the declarations' own match: the dates that linked them are
+the very dates the track corrects.
 
 ## Methods compared
 

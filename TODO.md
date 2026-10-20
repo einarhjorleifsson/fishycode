@@ -189,7 +189,9 @@ real track under either filter - 84 fishing vessels, all under 12 m, 8,433 real 
 a per-vessel limit, or not flagging a leg the vessel's own recorded speed confirms); the forward scan accepts the
 first ping after a gap of more than 4 h untested (vid 2657, 2017); sparse tracks (vid 1186, 2023). Shown on
 simulated tracks in the review package (github.com/einarhjorleifsson/test): vmask erodes good track beside a burst
-moved along the heading (8 good pings lost), and a burst within reach of the last good ping is partly kept. fishyweb `notes/whacky-positions.qmd`
+moved along the heading (8 good pings lost), and a burst within reach of the last good ping is partly kept. On ramb's own
+`whacks1` (12 misplaced of 46 pings): `"clean"` and `"sda"` flag the 12 and 4 good pings beside them, `"forward"` and
+`"sequential"` exactly the 12, `"fwdbwd"` only 2 (the book's Pings chapter, 2026-10-20). fishyweb `notes/whacky-positions.qmd`
 is untracked and shows vessel tracks, so the disclosure rule comes first.
 A third fast-vessel option, to revisit later (from Ifremer's iapesca, 2026-10-09, not built): a run of 3+ legs over 25 kn
 whose two-ping legs are fast too is real running - in June 2023 it held 1,115 of the filter's 8,942 flags, recorded SOG > 20 kn on 90-98 %; needs a speed cap (decision 078).
