@@ -39,6 +39,7 @@
 # condition_basis), and the trips cut at landings in Iceland (curate/aflaskeyti_trip.R: T1_basis, T2_basis).
 # Station type: station.parquet carries station_type (operation / event) and
 # station_type_basis, read per vessel, year and gear (decision 084).
+# Set times: a logbook app's placeholder t1 is NA in fishing_sample.parquet, t1_placeholder TRUE (decision 157).
 
 library(tidyverse)
 library(duckdbfs)
@@ -321,6 +322,20 @@ station_type <- st_base |>
 merged_station <- merged_station |>
   left_join(station_type, by = c(".sid", "schema"), relationship = "one-to-one")
 
+# Placeholder set times --------------------------------------------------------
+# Trackwell's logbook app fills the set time with the haul start less 270 min (or 1,710 min), cut to the minute
+# (curate/corrections/logbook_set_placeholder.yml, decision 157). Such a t1 is not the skipper's: it becomes NA and
+# t1_placeholder says why; the value as recorded stays in staging/. After the twins, which compare t1 as recorded.
+# The soak and effort made from it before curate/ (fs_afladagbok's static duration_m is t4 - t1) are left as they
+# are: t1_placeholder marks them too.
+to_minute <- function(t) t - as.numeric(t) %% 60
+is_offset <- function(t1, t3, m) !is.na(t1) & !is.na(t3) &
+  (t1 == to_minute(t3 - m * 60) | t3 == to_minute(t1 + m * 60))
+merged_fishing_sample <- merged_fishing_sample |>
+  mutate(t1_placeholder = schema %in% c("afli", "fs_afladagbok", "adb") &
+           (is_offset(t1, t3, 270) | is_offset(t1, t3, 1710)),
+         t1 = if_else(t1_placeholder, NA_POSIXct_, t1))
+
 # Summary ----------------------------------------------------------------------
 cat(sprintf("afli stations (filtered):   %d\n", nrow(afli_station)))
 cat(sprintf("  of them read from fs_afli: %d of %d\n", nrow(afli_fs_kept), nrow(afli_fs_station)))
@@ -346,6 +361,9 @@ cat("\nTwin records (curate/corrections/logbook_twin.yml), stations and trips:\n
 merged_station |> filter(!is.na(twin)) |> count(schema, twin) |>
   pivot_wider(names_from = twin, values_from = n, values_fill = 0L) |> print()
 merged_trip |> filter(!is.na(twin)) |> count(schema, twin, has_twin_of = !is.na(twin_of)) |> print()
+
+cat("\nPlaceholder set times (curate/corrections/logbook_set_placeholder.yml), t1 set to NA:\n")
+merged_fishing_sample |> filter(t1_placeholder) |> count(schema, gear) |> print()
 
 cat("\nYear-by-year station source (2018+):\n")
 merged_station |>

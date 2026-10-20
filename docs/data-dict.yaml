@@ -2686,7 +2686,8 @@ tables:
         range: [0000-12-30T00:00:00, 2026-04-08T20:31:48]
         description: >
           Event 1: gear deployment starts (lowercase - event-level time, per
-          curate/decisions/010-time-variable-naming.md).
+          curate/decisions/010-time-variable-naming.md). NA where the logbook app
+          filled it as a placeholder (t1_placeholder).
         todo: |
           - Needs a `time_zone`?
       - name: t3
@@ -2955,6 +2956,14 @@ tables:
           TRUE for pre-1980 records with .sid > 2,500,000 - retrospective back-entries
           rather than contemporaneous records (afli only; NA for fs_afladagbok). See
           docs/afli-backentry.qmd.
+      - name: t1_placeholder
+        type: boolean
+        description: >
+          TRUE where the recorded set time was Trackwell's placeholder, the haul start
+          (t3) less 270 or 1,710 min cut to the minute, so t1 is NA here
+          (curate/corrections/logbook_set_placeholder.yml, decision 157). On these
+          stations the logbook knows no soak: fs_afladagbok's static duration_m (t4 - t1),
+          effort_duration and effort, and an afli soak of 4.5 h, carry the offset.
   - name: logbook_lid_map
     source:
       parquet: ../../fishydata/curated/logbook/lid_map.parquet

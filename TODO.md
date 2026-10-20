@@ -847,24 +847,21 @@ session to classify them was proposed on 2026-10-20 (read-only; overview links p
 treats each.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
-**status:** open · **needs: maintainer** — the correction's design, and whether to ask Trackwell or Fiskistofa · **see:**
-decision 157, plan 031 §3.11 and asks i-k, TODO 72 (item 8), `$FISHYDATA/archive/2026-10-todo103/`
+**status:** in progress · **needs: maintainer** — whether to ask Trackwell or Fiskistofa (a draft email waits) · **see:**
+decision 157, `curate/corrections/logbook_set_placeholder.yml`, plan 035, plan 031 §3.11 and asks i-k, TODO 72 (item 8),
+`$FISHYDATA/archive/2026-10-todo103/`
 
-Origin found (decision 157, measured by Claude 2026-10-20, not yet checked by a person): the static-gear set time 270
-min before the haul start is in the raw dumps, from Trackwell's logbook only (afli's electronic logbook, fs_afladagbok,
-adb), a required field filled. The AIS track shows the set is the placeholder (at 270 and 1,710 min); the haul start on
-those stations is degraded, not fake; 1,440-min soaks look real. Other placeholders: a set copied from the trip's
-departure (27 % of jigging stations), from the haul start or end, or at 00:00. They are a third of decision 155's
-stations in a port call, not the multi-gear voyages. Any soak or set phase read from these `t1` is the offset, not the
-logbook's (`station_window`'s set, plan 013's pressure as quantity × soak).
+Origin found (decision 157): Trackwell's logbook fills the static-gear set time with the haul start less 270 or 1,710
+min. The correction is coded (maintainer, 2026-10-20): `t1` NA and `t1_placeholder` in `fishing_sample.parquet`, those
+two offsets only, the soak and effort columns left and flagged. Plan 035 fills the set from the track where it is
+needed, if its test passes.
 
-Left: a correction in `curate/corrections/` (which patterns; remove `t1` keeping the original, or flag: on static
-gear only a synthesised set window goes, on jiggers the window's start, 6,494 falling to a day window; fs_afladagbok's
-duration and effort and afli's `klst` carry the offset before `curate/`; the 270-min haul start flagged or kept), and
-the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained).
+Left: the correction built (with plan 035's rebuild or the next one); the other placeholder patterns (a set copied from
+the departure, the haul times or 00:00) left as recorded by the maintainer's choice; the gillnet set times in a port
+call with no pattern (9-40 % of recorded sets, unexplained).
 
-**check:** a correction in `curate/corrections/` flags or replaces the placeholder times, or a decision says why not;
-and the gillnet set times in port explained or listed.
+**check:** `curated/logbook/fishing_sample.parquet` carries `t1_placeholder` with the counts of the correction's
+`affects_rows`, and no placeholder `t1`; and the gillnet set times in port explained or listed.
 
 ## 104. The vessel overview draws hauls from the flow's windows
 **status:** open · **see:** plan 030, decision 143, `curated/logbook/station_window.parquet`, `products/vessel_overview/`

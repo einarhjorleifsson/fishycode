@@ -1,0 +1,46 @@
+id: logbook_set_placeholder
+title: a static-gear set time 270 or 1,710 min before the haul start is a logbook app's placeholder; t1 is set to NA and flagged
+status: coded 2026-10-20 in curate/logbook.R, not yet built into curated/ (the rebuild waits on plan 035's measure)
+applies_to:
+  - curated/logbook/fishing_sample.parquet   # t1 (NA where a placeholder), t1_placeholder
+affects_rows: >-
+  77,953 stations, counted by replaying the rule on the build of 2026-10-20: afli 54,623 (LLS 41,966, GNS 12,640,
+  LHM 17), fs_afladagbok 18,412 (LLS 13,925, GNS 4,184, GND 303), adb 4,918; 72,043 at 270 min and 5,910 at 1,710.
+  By the windows' gear (the landing's, where it overrides the logbook's): static 77,191, towed 322 (318 already a day
+  window), jigged 143, other 5, none 292 (281 of them duplicate twins).
+implementation: curate/logbook.R, section "Placeholder set times" (after the twins, which compare t1 as recorded)
+discovered: 2026-10-20, TODO 103 (decision 157)
+decided_by: >-
+  the maintainer, 2026-10-20: set t1 to NA where it is the placeholder, with one flag column; the 270 and 1,710-min
+  offsets only, not the other placeholder patterns; the soak and effort columns left as they are, the flag marking
+  them; the value as recorded is kept in staging/ and raw/, not beside t1. The flow fills the set from the track where
+  the logbook has none (plan 035), if that is measured to be good enough.
+
+rule: >-
+  In afli, fs_afladagbok and adb, whatever the gear: t1 equals t3 less 270 (or 1,710) min cut to the minute, or t3
+  equals t1 plus 270 (or 1,710) min cut to the minute. Both directions, because afli stores both times to the minute
+  and fs_afladagbok's set carries no seconds while its haul start does. aflaskeyti is not checked: no Trackwell rows.
+
+evidence: >-
+  Decision 157 (measured by Claude, not yet checked by a person): the offset is in the raw dumps, from Trackwell's
+  logbook only (afli's electronic logbook, negative visir; fs_afladagbok's ws_veidiferd.uppruni; adb's trip source);
+  no other maker's rows carry it; in adb no maker sends a haul start without a set time, so the field is required and
+  each maker fills it its own way. On the AIS track the set time is the placeholder (in a port call, or at hauling
+  speed, far more often than other set times), the haul start is degraded but real, and 1,440-min soaks are real.
+
+what_it_changes: >-
+  station_window (ramb::rb_create_record_windows): a static station's set window is drawn from t1 only, so these
+  stations lose their synthesised set window (set fixes are never fishing); the haul window comes from t3 and t4 as
+  before. A jigging station's window starts at t4 less the duration, else the day. link_station_event links no set
+  start, voyage_gear and allocation_audit no longer place the station by a fake time of day. The fixes' fishing
+  flags, effort and catch come from the haul windows and are hardly changed (decision 157: 174 haul windows moved).
+
+not_corrected: >-
+  The other placeholder patterns of decision 157 (a set copied from the trip's departure, from the haul start or end,
+  00:00) stay as recorded. fs_afladagbok's static duration_m (t4 - t1), its effort_duration and effort, and afli's
+  klst of 4.5 h on these stations still carry the offset: where t1_placeholder is TRUE, no logbook soak is known.
+
+related:
+  - curate/decisions/157-static-set-times-are-a-logbook-apps-placeholder.md
+  - curate/plans/035-set-times-from-the-track.md
+  - TODO.md item 103
