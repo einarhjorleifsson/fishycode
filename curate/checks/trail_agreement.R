@@ -9,6 +9,9 @@
 # be the same trip (same `.tid` and same schema). Disagreement flags a bad link, a bad station window, or a
 # vessel with two logbook records at once. Also the share of fixes by `n_tid_voyage` (0 = no logbook trip on the
 # voyage or the fix is in no voyage; 1 = one; 2+ = trips share the voyage, `.tid_voyage` is NA).
+# The agreement is counted only where a fix has both, so it misses the fixes on a station whose voyage names no trip
+# (8.8 % of the fixes on a station on 2026-10-20, against 0.5 % disagreeing): allocation_audit.R's `fix_trip` counts
+# every fix on a station in one outcome.
 
 library(dplyr)
 

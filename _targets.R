@@ -687,6 +687,14 @@ list(
              fd_curated("check", "vessel_activity.parquet"))
   }, format = "file"),
 
+  # Every link the flow makes, tested against the records' own times, every record counted (after decision 154).
+  tar_target(check_allocation_audit, {
+    logbook; lid_map; landing; logbook_gear; gear; ais_voyage; port_call; trip_voyage; station_window; voyage_gear
+    ais_trail; ais_catch
+    produces("curate/checks/allocation_audit.R",
+             fd_curated("check", "allocation_audit.parquet"))
+  }, format = "file"),
+
   # Logbook stations that find a fix in the trail, by year and gear (plan 011 Phase 5).
   tar_target(check_trail_sid_coverage, {
     ais_trail; station_window

@@ -789,3 +789,21 @@ pelagic tow from a bottom one, and bottom depth and temperature per haul are env
 
 **check:** decided whether the sensor readings become a product or a QC check, and recorded which column measures what.
 
+## 101. Allocation errors the audit finds: the choices left (decision 155)
+**status:** open · **needs: maintainer** — which of the fixes below to make · **see:** decision 155,
+`curate/checks/allocation_audit.R`, TODO 90
+
+`check_allocation_audit` tests every link the flow makes against the records' own times. Built: a station's voyage
+gear by its own time. Left, measured on 2026-10-20:
+- the trail's `.tid_voyage` comes from the trip's one voyage: a voyage holding a trip's stations by time names none;
+- stations deleted in the source (`eytt_deleted`, 352, 4,238 t) still count in `lid_map`'s trip catch, the catch by
+  species and `landed_logged`, but not in the windows, `voyage_gear` or `ais_catch`;
+- 57 t on 43 stations with no window never reach `ais_catch`, not even on a coarser unit;
+- a station's date is outside its trip's days for 3.5 % of adb and 3.0 % of fs_afladagbok stations;
+- a station's time is in a port call for 7.4 % of fs_afladagbok and 5.9 % of adb timed stations (port calls over AIS
+  silences, nets set on an earlier trip), and 3 % of exactly matched trips land before their voyage ended: TODO 90's
+  evidence;
+- the method as a generic ramb tool.
+
+**check:** each item built or declined, and `allocation_audit.parquet` read after the rebuild.
+
