@@ -122,6 +122,8 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
 - plan 016 §4 step 7's 14 mobile-ids whose MMSI passed to another hull;
 - plan 022 §3's 43 co-location units, the 41 key rows the register gives to another vessel, the 37 `mobile_vid`
   claims, and §5.1's 5 port codes;
+- plan 031 §3.11's records the track contradicts (2026-10-20): 1,006 landings and 1,482 logbook trip ends whose
+  vessel is heard that day but never within 10 km of the port (`$FISHYDATA/archive/2026-10-plan031-step4/results/`);
 - after plan 021 step 6: the foreign hulls (plan 021 step 7, TODO 65) with mids 101843, 147141, 102481 and 102527
   (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before).
 
@@ -186,7 +188,8 @@ The switch and the rebuild downstream of it are done (decision 067). Of the 208 
 more, the 62 vessel-years that also keep a longer track were looked at: placeholder positions are now flagged first
 (`curate/corrections/ais_invalid_position.yml`). Left, none blocking (decision 067): vessels faster than 25 kn lose
 real track under either filter - 84 fishing vessels, all under 12 m, 8,433 real pings, steaming only (needs a choice:
-a per-vessel limit, or not flagging a leg the vessel's own recorded speed confirms); the forward scan accepts the
+a per-vessel limit, or not flagging a leg the vessel's own recorded speed confirms; a per-vessel ceiling is measured
+in TODO 99); the forward scan accepts the
 first ping after a gap of more than 4 h untested (vid 2657, 2017); sparse tracks (vid 1186, 2023). Shown on
 simulated tracks in the review package (github.com/einarhjorleifsson/test): vmask erodes good track beside a burst
 moved along the heading (8 good pings lost), and a burst within reach of the last good ping is partly kept. On ramb's own
@@ -359,17 +362,19 @@ dated list, or a decision says why not; and `mmsi_icelandic_registry` carries a 
 
 Items 0-3 and 5 are built and on the data. Items 4 and 6-9 are built in part, and item 10 not at all (decisions
 099-103). What is left of each is in the plan:
-- 4, records checked against the operations the track shows;
+- 4, records checked against the operations the track shows: in part, decision 155's allocation audit tests each
+  link by the records' own times;
 - 6, which vessels fish (the vessel row; the classes are TODO 49);
 - 7, records without pings: the 1990-2006 logbook (3.5 M records, start positions only) needs a target of its own,
   since the years before 1990 are out of scope (decision 103);
 - 8, static gear: `rb_link_record_sets()` is in ramb, measured on labelled and Icelandic 2023 hauls (decision 146),
-  but its run on the Icelandic static hauls and pressure as quantity × soak are not built (decision 103). Its defaults
+  but its run on the Icelandic static hauls and pressure as quantity × soak are not built (decision 103); a soak
+  from `t1` is suspect, since `t1` is `t3` less 270 min on 71,306 static stations (TODO 103). Its defaults
   and a set made inside another haul's window wait for the maintainer (decision 146). ramb a68d1f6 is not pushed or
   installed: GitHub must include LFS objects in archives first, and `whack_demo.R` then reads `rb_read_example()`;
 - 9, track models for fishing;
 - 10, declared times reconciled with the track (`rb_reconcile_time()`): unblocked by decision 104's ground truth,
-  not in ramb.
+  not in ramb; plan 031 §3.11 measures where logbook times and the track's port calls disagree, mostly by 1-3 h.
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
@@ -434,7 +439,8 @@ own fixes (its voyage link sees only unclaimed landings). Measured 2026-10-17 (p
 landings at the same port (68.8 kt), 1,246 (30.2 kt) came with the vessel in port, 490 of them (23.0 kt) also in the
 logbook, so counted twice; 8,376 (31.2 kt) came after it fished again. Another port or 2-7 days later adds 1,529
 (65.4 kt). Plan 027 proposes plan 025's `withdrawn` first, a flow table `trip_landing` read by `ais_catch.R`, and
-the voyage link given every landing. Nothing changed in the pipeline.
+the voyage link given every landing. Nothing changed in the pipeline. Seen again in plan 031 §3.11 (2026-10-20): 4,870
+trips are matched to a landing the vessel made at a call before the trip's last station.
 
 **check:** a trip's further landings join it (plan 027 §5), and kg on the fixes, raised, equals kg landed per vessel
 and year within the ratio of vessel-years with no second landing (plan 027 §6).
@@ -539,7 +545,8 @@ for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
 - It kept a 24 kn jump between the copy and the live track, under its fixed 25 kn.
 
 The reload is a labelled test: its receipt lag marks the truth, and is never a filter input. Candidates:
-- a per-vessel speed limit, from the vessel's own recorded speed;
+- a per-vessel speed limit, from the vessel's own recorded speed (measured in TODO 99, 2026-10-20: 132,380 steps
+  under 25 kn but over the vessel's own ceiling, 8,196 out and back);
 - splitting a vessel's pings into chains that are each consistent;
 - zigzags judged over a window;
 - each leg's displacement against its reported speed and course.
@@ -566,8 +573,9 @@ vessel overview's QC lane keeps its 30 min threshold.
 flag on the fixes that the overview's lane reads.
 
 ## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
-**status:** open · **see:** `curate/plans/031-voyages-from-any-data.md` (asks a-h answered 2026-10-19; g is TODO 92),
-decision 144, TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), plan 011
+**status:** open · **needs: maintainer** — plan 031's asks i-k (step 4) · **see:**
+`curate/plans/031-voyages-from-any-data.md` (asks a-h answered 2026-10-19; g is TODO 92), decisions 144 and 155,
+TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), TODO 101, plan 011
 
 The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
 whole, with what is now known of the data. The goal is a generic voyage finder for any data: pings with landings
@@ -575,29 +583,22 @@ only, logbooks only, both or neither, and several gears in a voyage.
 
 Measured, in plan 031 §3.2-3.6: `port_stay` misses calls in four ways, the departure radius the clear fault, which a
 time budget fixes; 42 % of the landings with no stay disagree with the track on the port; a fifth of the voyages with
-several logbook trips are one sea trip that the date-only logbook splits by day. A voyage whose gears tie is a sign of
-a wrong voyage allocation, since two gears on one voyage are rare (the maintainer, 2026-10-20): 242 of the 601
-voyages with several gear labels tie, 185 of them with several logbook trips (decision 154).
+several logbook trips are one sea trip that the date-only logbook splits by day. The rest of the plan: the cascade
+(§4.0), the pitfalls (§3.7: no stays and no warning without a port list, calls abroad never stays, short voyages
+dropped), outside code (§3.8) and the robustness bench (§4.8, step 2).
 
-The rest of plan 031:
-- §4.0, the design: the problem as a cascade (ports, stays, voyages, trips with no track, link and reconcile), each
-  attribute with a basis.
-- §3.7, the pitfalls, among them: no stays and no warning without a port list; calls abroad never stays (40,117
-  vessel-days at foreign ports); short voyages dropped.
-- §3.8, outside code: iapesca and the CNR code.
-- §4.8, a robustness bench, step 2: methods (ramb's, Danish, Irish, Italian, iapesca, learned ports) scored on the
-  Icelandic witnesses and other fleets' example data (vmstools, iapesca, WKSSFGEO), with records, ports or pings taken away.
+The threads it gathers: the STK key (TODO 25); the trail and its delivery (TODO 27b); AIS where records are missing
+(TODO 49); a landing over two days (TODO 81, plan 027); the gear read from the track (TODO 86); gaps judged against
+coverage (TODO 89).
 
-The threads it gathers:
-- the STK key, TODO 25;
-- the trail and its delivery, TODO 27b;
-- AIS where records are missing, TODO 49;
-- a landing over two days, TODO 81 and plan 027;
-- the gear read from the track, TODO 86, and gaps judged against coverage, TODO 89.
-
-Step 3 done (§3.10, ramb 2026.10.19.3, f2492db, not pushed), with STK and ASTD apart. Next: step 4, records as evidence
-(§4.2); open from step 3: ramb's defaults against the plan's choices, a short voyage by time rather than pings, the
-weak `gap_budget`, and gap rules that hold only for a feed silent in port (TODO 89's coverage model).
+Step 3 done (§3.10, ramb 2026.10.19.3, f2492db, not pushed), with STK and ASTD apart. Step 4 measured 2026-10-20 against
+decision 155's allocation audit, read-only (§3.11): a landing placing a call where the track reaches its port resolves
+a third of the trips landed before their voyage ended and lifts landings with a call at their port from 94.1 % to
+97.0 %; a logbook time at sea inside a call is mostly a disagreement of times, not a hidden voyage (ask i); the
+audit's static-gear time is a 270-min offset (ask j); the tied multi-gear voyages are not missed calls. Open from
+step 3: ramb's defaults against the plan's choices, a short voyage by time rather than pings (thin voyages measured
+2026-10-20, `$FISHYDATA/archive/2026-10-todo98/scripts/thin_voyages.R`), the weak `gap_budget`, and gap rules that
+hold only for a feed silent in port (TODO 89's coverage model).
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
@@ -727,6 +728,9 @@ The demo (`$FISHYDATA/exports/vessel_demo_2018-06/`) was tested from `file://` i
 only. Safari cannot be driven without `safaridriver --enable`. Under MFRI's data policy (gagnastefna), confidential data
 leave MFRI only on an agreed basis.
 
+The bundle was built before the haul layer left the map and before the map showed voyages only (2026-10-20): rerun
+`Rscript products/exports/vessel_demo.R` before it is sent.
+
 **check:** the demo opens and loads a vessel in Safari and in Edge on Windows, and the agreement it went under is
 written in decision 153.
 
@@ -795,15 +799,89 @@ pelagic tow from a bottom one, and bottom depth and temperature per haul are env
 
 `check_allocation_audit` tests every link the flow makes against the records' own times. Built: a station's voyage
 gear by its own time. Left, measured on 2026-10-20:
-- the trail's `.tid_voyage` comes from the trip's one voyage: a voyage holding a trip's stations by time names none;
+- the trail's `.tid_voyage` comes from the trip's one voyage: a voyage holding a trip's stations by time names none
+  (plan 031 §3.11: records placing calls would move 4,592 more stations off their trip's one voyage; ask f: many-to-many);
 - stations deleted in the source (`eytt_deleted`, 352, 4,238 t) still count in `lid_map`'s trip catch, the catch by
   species and `landed_logged`, but not in the windows, `voyage_gear` or `ais_catch`;
 - 57 t on 43 stations with no window never reach `ais_catch`, not even on a coarser unit;
 - a station's date is outside its trip's days for 3.5 % of adb and 3.0 % of fs_afladagbok stations;
-- a station's time is in a port call for 7.4 % of fs_afladagbok and 5.9 % of adb timed stations (port calls over AIS
-  silences, nets set on an earlier trip), and 3 % of exactly matched trips land before their voyage ended: TODO 90's
-  evidence;
+- a station's time is in a port call for 7.4 % of fs_afladagbok and 5.9 % of adb timed stations, and 3 % of exactly
+  matched trips land before their voyage ended: TODO 90's evidence, read in plan 031 §3.11 (most of the first are a
+  static-gear set time 270 min before the haul, ask j, or an hour from the call's ends; 4,870 of the second are a
+  trip matched to a landing made before it finished, TODO 81);
+- a flag on `voyage_gear` for voyages with several gear labels (a count per voyage): a tie reads as a wrong
+  allocation, and `arg_max()` names either tied gear, so 5 voyages differ run to run; now, or with TODO 90;
+- two landing-to-voyage rules not compared: `voyage_gear`'s window plus 7 days, and `ais_catch`'s
+  `ramb::rb_link_trip_landings()`; a candidate link for the audit;
 - the method as a generic ramb tool.
 
 **check:** each item built or declined, and `allocation_audit.parquet` read after the rebuild.
+
+## 102. Logbook trips that overlap another trip of the same vessel
+**status:** open · **see:** plan 031 §3.11, decisions 094 and 155, TODO 101
+
+Found 2026-10-20 (plan 031 step 4), read-only: trips of one vessel and schema that overlap another by over an hour,
+twins (decision 094) left out: afli 21,220 (1.3 %, 4,092 with three or more others), fs_afladagbok 4,116 (2.7 %, mostly
+2022-2025; vids 2880, 2400, 2657, 2328, 1831 most), adb 624. vid 7373 logs up to seven trips a day on 2023-04-30 and
+05-01, one jigging haul each and 0-0.01 t, before the coastal jigging season and with no landing; the track is in port.
+Counted as pairs (decision 155's session, `$FISHYDATA/archive/2026-10-voyage-gear/scripts/multigear.R`): afli
+40,051 pairs on 979 vessels, fs_afladagbok 3,321 on 686, adb 449 on 184.
+Such trips cut port calls in plan 031's R2 (679 cuts) and make tied multi-gear voyages (16 of 323). Not known: which
+are resubmissions decision 094 misses, several boats' logbooks under one vid, test entries, or real overlaps. A
+session to classify them was proposed on 2026-10-20 (read-only; overview links per class).
+
+**check:** a decision or correction says what the overlapping trips are, by class with counts, and how the flow
+treats each.
+
+## 103. A static-gear set time that is the haul less 270 minutes
+**status:** open · **needs: maintainer** — plan 031 ask j · **see:** plan 031 §3.11 and ask j, TODO 72 (item 8),
+`curated/logbook/fishing_sample.parquet`, `curated/logbook/station_window.parquet`
+
+Measured 2026-10-20, read-only: on 71,306 static-gear stations `t3 - t1` is exactly 270 min, in afli, adb and
+fs_afladagbok alike, and the median soak of all static stations is 4.5 h in each schema; 5,902 more are 1,710 min
+(28.5 h), and 210, 330 and 150 min are the next commonest. In 45,572 of them `t1` falls in a port call before the haul,
+and 25,106 have the vessel heard in port then. No fishycode code sets it (searched for 270 and 4.5); where it comes
+from, the source or its entry form, is not known. It makes decision 155's audit count a set time as a time at sea,
+and any soak or set phase read from `t1` on these stations is the offset, not the logbook's (`station_window`'s set,
+and plan 013's pressure as quantity × soak).
+
+**check:** the origin of the offset is known, and a correction in `curate/corrections/` flags or replaces the set time
+on these stations, or a decision says why not.
+
+## 104. The vessel overview draws hauls from the flow's windows
+**status:** open · **see:** plan 030, decision 143, `curated/logbook/station_window.parquet`, `products/vessel_overview/`
+
+Found 2026-10-20 (the overview session): the overview reads a haul's `t1`-`t4` itself, so a date-only haul is a
+hairline at midnight and draws false warnings ("hauls without fishing pings"), while the flow is right (vid 1416,
+trip 103167526: 73 of 74 pings on hauls). It should draw `station_window`'s windows (`w_start`, `w_end`, `phase`,
+`win_basis`; a date-only haul as a day window) and count a haul's pings by the `.sid` each fix carries on the trail.
+Also: the trip table should open on the page holding the window's trips, not the newest.
+
+**check:** the overview draws hauls from `station_window` and counts their pings by `.sid`; vid 1416's trip 103167526
+shows no false warning; the trip table opens on the window's trips.
+
+## 105. A date-only haul's day window, stretched past midnight along its fishing stretch
+**status:** open · **see:** decision 092 (`rb_cut_record_stretches()`, `rb_link_record_stretches()`), decision 091 (one
+fix, one record), `$FISHYDATA/archive/2026-10-todo98/scripts/` (`day_expand.R`, `day_expand_smooth.R`)
+
+Every one of the 2,438,223 date-only hauls has the window 00:00 to 00:00. Scoped 2026-10-20 with raw speed (2010, 2015,
+2021): 1.1-2.4 % of those with pings cross midnight into unclaimed fishing pings, a median 0.6-0.8 h, 90 % within
+3-4.5 h; purse seine and trawl often, hand line and gillnet rarely. Proposed: stretch the day window along the fishing
+stretch it sits in with ramb's stretch functions, the day as the prior, one fix one record. Not redone with the ±10 min
+smoothed speed. The maintainer: reported `t2`/`t3` are not truth; the independent witness proposed is the research
+survey tows (the channel and biota dump scripts are committed, 5cec0f4; the dump is the maintainer's to run).
+
+**check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
+
+## 106. afli haul end longitude is the latitude with its sign flipped
+**status:** open · **see:** `sources/afli/convert.R`, `$FISHYDATA/archive/2026-10-todo98/scripts/haul_ends.R`; no
+correction covers it yet (`afli_coords.yml` is the logger's DDMMmm fault)
+
+Found 2026-10-20 (the overview session): 143,548 hauls, 21 % of hauls with both ends, have `lon2 = -lat2`, mostly afli
+2010-2012 (2011: 69,023 of 69,192). The flow never reads `lon2`/`lat2` (hauls meet pings by time), so effort and catch
+are unaffected; an analyst reading end positions is not. Not checked: whether raw afli `x2`/`y2` or the adapter's
+`geoconvert` makes it.
+
+**check:** the source of the fault is known, and a correction in `curate/corrections/` flags or recovers the end
+positions, keeping the originals.
 

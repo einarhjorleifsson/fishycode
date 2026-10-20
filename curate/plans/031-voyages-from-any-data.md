@@ -4,7 +4,7 @@
 (§3.6, §3.9, §3.10, with STK and ASTD apart);
 the cascade (§4.0), the other pitfalls (§3.7), outside code (§3.8) and the robustness bench (§4.8) added the same
 day; step 3's code is in ramb (2026.10.19.3, f2492db), nothing in fishycode built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
-the voyage definition ·
+the voyage definition; step 4 measured 2026-10-20 against decision 155's allocation audit (§3.11), asks i-k open ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 062, 063, 074, 078, 101 and 144, plan 011 (port stays), plan 013 (ramb's
 steps, and its table of logic doubts), plan 017 (foreign ports), plan 022 §4 (STK's own voyages, TODO 68), plan 025
 (the first weighing bounds `T2`), `docs/one_flow.qmd` (step 1, trip, and step 3, gear), `docs/ports.md`,
@@ -18,7 +18,7 @@ names. The parts measured before the rename (the lists above, §3.1-3.6, step 1)
 
 Drafted with AI assistance (Claude) on 2026-10-19, at the maintainer's request. The numbers below were measured by
 Claude (AI); a person has not yet checked them. §3.7, §3.8, §4.0, §4.7 and §4.8 were written by Claude the same day,
-in a second session, and §3.10 in a third. They draw on the maintainer's outline of the problem (§4.0) and points on robustness (§4.8), on
+in a second session, and §3.10 in a third; §3.11, the amendments to §4.2 and asks i-k by Claude on 2026-10-20. They draw on the maintainer's outline of the problem (§4.0) and points on robustness (§4.8), on
 the code and on the record.
 
 **Measured** (read-only, scripts and output in scratch only):
@@ -291,7 +291,7 @@ Read 2026-10-19. Decision 078 read the rest on 2026-10-09. None of it is in ramb
 
 ### 3.9 Step 2: the robustness bench, measured
 
-Run 2026-10-19, read-only; scripts and output in the session's scratch. The design is §4.8.
+Run 2026-10-19, read-only; scripts and output in `$FISHYDATA/archive/2026-10-plan031/`. The design is §4.8.
 - **Scoring:**
   - *found* is the share of witnessed landings (a landing that a logbook trip end or an STK arrival puts at the same
     port group within a day) with a stay at that group on the landing day or the day before;
@@ -426,7 +426,7 @@ across, on boundaries with a ping within 6 h either side.
 ### 3.10 Step 3: the time budget and the minimum from the data, measured
 
 Run 2026-10-19 by Claude (AI), read-only. ramb was loaded from source with the step's code before its commit (2026.10.19.3, f2492db,
-§4.1, §4.7). Scripts and output are in the session's scratch. Pings are `ping_clean`'s recorded fixes of vessels with
+§4.1, §4.7). Scripts and output are in `$FISHYDATA/archive/2026-10-plan031/`. Pings are `ping_clean`'s recorded fixes of vessels with
 landings that year, with the `einar` ports and `port_radius`'s departure radius. STK's port events are left out, so v0
 is today's rules without them.
 - **2010:** STK pings only.
@@ -624,6 +624,102 @@ feed's ping rate does not weigh:
 - No fix is left without a voyage when `min_pings = 1`. That is shown on made-up tracks in ramb's tests, not
   counted here.
 
+### 3.11 Step 4: records as evidence, measured against the allocation audit
+
+Run 2026-10-20 by Claude (AI), read-only, on the build of that day (13cb696), against the cases decision 155's
+`check_allocation_audit` found. Scripts, the diagnosis queries and the results are in
+`$FISHYDATA/archive/2026-10-plan031-step4/`. A scratch copy of `ais_voyage.R`'s cut and `link_trip_voyage.R`'s link
+(ramb 2026.10.19.2, as built) gives back `voyage.parquet` (1,430,712 voyages) and `trip_voyage.parquet` (830,498 links)
+exactly from the built port calls, so the differences below come from the port calls alone. Step 3's time budget is
+not in them.
+
+**What the audit's three cases are.**
+- *A timed station in a port call* (73,635):
+  - The audit takes a station's first time of day, which on static gear is the set, `t1`. `t3 - t1` is exactly 270 min
+    on 71,306 static-gear stations (28.5 h on 5,902), in afli, adb and fs_afladagbok alike: a fixed offset no
+    fishycode code sets (TODO 103), not a recorded set time. 45,572 of the 73,635 are such a set time, in a call that ends before the haul.
+  - On the times the vessel must be at its gear (hauling `t3`, `t4` for static gear; `t1`-`t4` for other gear),
+    29,590 timed stations lie in a call. Of the 46,531 with any such time in a call: 29,744 lie within an hour of the
+    call's start or end (22,889 jigging: the logbook and STK's port event an hour apart); 3,090 have the vessel heard
+    in port within 3 h either side (the record's time is wrong); 13,363 lie in a silence of 3 h or more.
+  - vid 7373, decision 155's example: the call of 281 days at Patreksfjörður (2022-07-24 to 2023-05-01) holds no
+    landing. Its 16 trips fall in its last six days, up to seven a day, one haul each and 0-0.01 t, before the
+    coastal jigging season opened on 2 May. The call ends at the first landing. These entries do not describe the
+    vessel's fishing; the call is right.
+- *A trip landed before the voyage holding its last station ended* (15,210):
+  - 4,870 have a call at the landing port that day already, before the trip's last station: the trip is matched to a
+    landing the vessel made before it finished fishing (TODO 81's link), not a missed call;
+  - of the 9,384 with no call that day, the track is at the landing port under 2 h or for one ping in 6,349, near it
+    over 2 h in 1,828, never within 10 km in 449; 643 have no ping that day and 378 a port off the list.
+- *Tied multi-gear voyages* (323 of 761, stations placed by their own time as `voyage_gear` places them since decision
+  155): 56 are one trip logging two gears (50 with no time of day), 16 are trips overlapping in time, 24 trips in
+  sequence with a landing day inside the voyage, and 227 trips in sequence with no landing day inside it.
+
+**The rules tried.**
+- **R1, a record places a call** (§4.2, asks a and c). A landing or a logbook trip end (vessel, date, port) that no
+  call at its port meets on that day or the day before places one where the track reaches the port that day: a run of
+  pings within 2 km of it, else a silence whose time budget at 6 knots leaves time there. The call spans the budget.
+  - Of 1,053,108 records, 87,247 meet no call: 61,439 of 987,869 landings (6 %), and 25,808 of 65,239 logbook trip
+    ends (40 %).
+  - 29,657 calls are placed: 27,313 from a landing's run of pings (22,430 of them under 2 h, ask c's short call),
+    1,592 in a silence (median 9-12 h), and 1,019 from logbook trip ends.
+  - Not placed: the vessel not heard that day (27,959 landings); a call at another port (3,137 landings, and 18,805
+    logbook ends, whose arrival port or date is often not the landing's); heard but never within 10 km of the port
+    (1,006 landings and 1,482 logbook ends). The last are the list §4.2 sends to a check and to the key review
+    (TODO 25).
+- **R2, a time at sea cuts a call** (new). A station time at sea, as above, more than an hour inside a call, with the
+  vessel silent 3 h or more around it, cuts the call. The trip's times in that silence become a voyage with no pings,
+  basis `logbook`.
+  - 10,836 cuts in 9,536 calls, holding 13,767 stations.
+  - Their depth in the call: 4,976 lie 1-3 h from its start or end (median call 20 h), 1,691 3-6 h, 2,649 6-24 h, and
+    1,520 a day or more. Near the ends, the logbook's time and the track disagree. vid 7417 on 9 May 2023 steamed
+    into Sandgerði at 17 knots, and its pings and STK's arrival event agree on 11:29; its jigging station ends at
+    13:05 and its trip at 13:17:40, to the second, likely when the logbook was sent.
+  - A landing dated strictly between the call's first and last days backs 1,708 cuts, all in calls of over a day.
+  - 679 rest on trips that overlap another trip of the same vessel and schema, the kind of vid 7373. Across the
+    logbook such overlaps are 21,220 afli trips (1.3 %) and 4,116 fs_afladagbok trips (2.7 %).
+
+**Against the audit**, all years. A: R1. B: R1, and R2 where a landing backs it. C: R1 and every R2 cut.
+
+| outcome | built | A | B | C |
+|---|---|---|---|---|
+| landings with a call at their port that day or the day before | 926,422 (94.1 %) | 955,597 (97.0 %) | 955,597 | 955,597 |
+| trip landed before the voyage ended | 15,210 | 10,216 | 10,227 | 10,735 |
+| trip landed on the voyage's end day, same port | 341,296 | 351,477 | 352,498 | 354,884 |
+| trip landed on the voyage's end day, another port | 11,326 | 5,553 | 5,569 | 5,698 |
+| timed station in a port call (the audit's first time) | 73,635 | 74,026 | 71,393 | 65,136 |
+| timed station in a port call (haul times for static gear) | 29,590 | 29,977 | 27,154 | 20,172 |
+| timed station in its trip's voyage | 1,689,028 | 1,684,436 | 1,686,500 | 1,689,234 |
+| timed station in another voyage | 113,160 | 114,675 | 115,146 | 118,604 |
+| voyages | 1,430,712 | 1,441,603 | 1,443,311 | 1,452,439 |
+| voyages with 2+ logbook trips | 24,799 | 21,935 | 21,954 | 22,133 |
+| tied multi-gear voyages | 323 | 328 | 327 | 326 |
+| recorded fixes in neither a voyage nor a call | 822,840 | 847,599 | 847,599 | 847,599 |
+
+**What it shows.**
+- **R1 does what §4.2 meant it to.** A third of the trips landed before their voyage ended are resolved, those landed
+  at another port halve, and landings with a call at their port rise from 94.1 % to 97.0 %. Of the 10,216 left,
+  about 4,870 are TODO 81's link (a call at the landing port before the trip's last station), which no call fixes.
+- **R1 makes the one-voyage trip link cost more.** It splits voyages, and a trip still goes to the one it overlaps
+  most, so 4,592 stations leave their trip's voyage. The link wants to be many-to-many (§4.4, ask f), TODO 101's
+  first item. Splits also leave pieces under 10 pings, which the cut drops: 24,759 more recorded fixes lose their
+  voyage (§3.7 item 3; §4.7 keeps them).
+- **R2 is mostly a disagreement of times, not a hidden voyage.** At its loosest (C) it takes the stations in a call
+  from 29,590 to 20,172, but 46 % of its cuts lie 1-3 h from the call's ends, and some rest on trips no vessel could
+  make. With a landing as the second witness (B) it moves 2,436 stations and rests on two records.
+- **Neither touches the tied voyages** (323 to 326-328). At the resolution of a landing's day they are not missed
+  calls: one trip with two gears, overlapping trips, or two trips of different gears with no landing day inside the
+  voyage. A
+  tie points to a wrong allocation for the 16 overlapping trips and perhaps the 24 with a landing day inside; the
+  others want the logbook itself examined, the 56 one-trip ties above all.
+
+**Not measured in this step:** R1 with step 3's time budget and the valley's minimum; R1 with a confirmation window of
+the landing day only (a call the evening before now meets a landing); the effect on `voyage_gear`, the trail and
+`ais_catch`, which waits for the rebuild (step 7). Thin voyages, a voyage of a few pings far apart, which the
+maintainer asked about on 2026-10-20, were measured the same day by another session
+(`$FISHYDATA/archive/2026-10-todo98/scripts/thin_voyages.R`): 2,777 voyages average over a day between pings and
+20,288 hold a silence of over 3 days, the gap classes of §4.7.
+
 ## 4. The design (proposal)
 
 A generic voyage finder, with Iceland as one configuration of it.
@@ -701,7 +797,8 @@ explicit, so it scales with the ping interval:
 A landing, a logbook trip end (its declared port and date) or a port-state visit says the vessel was at a port on a
 date.
 - **Confirm:** where the track can reach that port on that date (§4.1's budget), the record supports a stay. The
-  stay's `basis` names it: `landing`, `logbook`.
+  stay's `basis` names it: `landing`, `logbook`. A record is met by a call at its port on its day or the day before
+  (plan 025: the weighing's date is sometimes a day late); measured in §3.11 (R1).
 - **A call under the minimum on a landing day** is a call of its own: it cuts the voyage and is labelled short
   (ask c, answered 2026-10-19), so an analyst can merge it back. Below X, only a record makes a call; X decides only
   the calls nobody recorded.
@@ -713,6 +810,13 @@ date.
   - the wrong port or date in the record;
   - another vessel's track (it feeds the STK key review, TODO 25);
   - a landing trucked from another port.
+- **A time at sea against a call** (§3.11, R2; ask i). A logbook station's time deep in a call over a silence says
+  the vessel was not in port then. The time is the one at which the vessel is at its gear: hauling (`t3`, `t4`) on
+  static gear, any of `t1`-`t4` on other gear. A static set time is not such a time: on 71,306 stations it is the haul
+  less 270 min (ask j). Alone the record is weak: 46 % of such cuts lie 1-3 h from the call's ends, where the
+  logbook's time and the track's disagree, and some belong to trips no vessel could make (vid 7373). Proposed: it cuts
+  the call only where a landing is dated inside the call, the cut becoming a voyage with no pings, basis `logbook`;
+  every other one is listed in the check with the records the track contradicts.
 - **Order:** the evidence order follows the maintainer's judgement of the records: landing over logbook.
 - **A recorded value can be wrong** (maintainer, 2026-10-19), the logbook's above all. So no record is the truth that a
   method is judged by. §4.8 scores every record source against the others.
@@ -977,7 +1081,8 @@ step:
    and open labels. Not done: the gap classes (they wait on TODO 89), the other lists (ask g became TODO 92), and the
    all-year counts, which wait for the rebuild.
 4. **Records as evidence** (landings, then logbook trip ends), with step 3's measures, and the records the track
-   contradicts listed for the key review.
+   contradicts listed for the key review. *Measured 2026-10-20 against decision 155's allocation audit, §3.11: R1 (a
+   record places a call) and R2 (a time at sea cuts one), read-only, in scratch. Asks i-k; nothing built.*
 5. **The gear set** (`voyage_gear` in ramb and fishycode), landing first. Measure fishing flags and catch against
    now: the catch must stay equal in every vessel-year (kg in = kg out).
 6. **Simulated scenarios in ramb's tests:** dense AIS, hourly VMS, sparse STK; landings only, logbook only, neither;
@@ -1005,7 +1110,8 @@ step:
 
 ## 7. Asks
 
-All answered by the maintainer on 2026-10-19 (ask h looked up the same day). The answers are written into §4.
+Asks a-h were answered by the maintainer on 2026-10-19 (ask h looked up the same day), and the answers are written
+into §4. Asks i-k are open (2026-10-20, from step 4, §3.11).
 
 a. **May a landing make a stay** where the pings alone fall short of the minimum, given the track reaches the port
    that day? Or should it only confirm, and flag?
@@ -1029,3 +1135,17 @@ h. **Landing port code 159:** 7,305 landings of 145 vessels in 2007-2026 carry i
    gives it no name.
    *Answer, looked up in the dump:* "Gámur/Sigling", container or sailing abroad, in `ask.londunarstadir` and
    `kvoti.stadur` (port class E; 150 "Ýmsir staðir" is class F). It names no port (§4.2).
+i. **May a logbook time at sea cut a port call the track made?** (§3.11, R2; §4.2.) A station time more than an hour
+   inside a call, with the vessel silent 3 h or more around it:
+   - *only where a landing is dated strictly inside the call* (recommended): 1,708 cuts, 2,436 stations leave port
+     calls, and every cut rests on two records;
+   - *always*: 10,836 cuts, 9,418 stations leave port calls, but 46 % of the cuts lie 1-3 h from the call's ends, where
+     the logbook's time and the track disagree, and 679 rest on trips that overlap another trip of the same vessel;
+   - *never*: such stations are listed in the check only.
+j. **The allocation audit's time at sea for static gear:** a station's hauling times (`t3`, `t4`) instead of its first
+   time of day, since `t1` is `t3` less 270 min on 71,306 static-gear stations (§3.11). Its stations in a port call go
+   from 73,635 to 29,590. Recommended: yes; and the 270-min set time becomes a correction of its own, since
+   `station_window` carries it as the set, and a soak read from it is the offset, not the logbook's.
+k. **Step 4 into ramb:** R1, and R2 as ask i decides, in `rb_create_port_calls(records = )`, each call with its `basis`
+   (`landing`, `logbook`) and the unplaced records returned for the check; tested on made-up data and against §3.11's
+   numbers in scratch; ramb not pushed and fishycode not rebuilt until step 7. Recommended: yes.
