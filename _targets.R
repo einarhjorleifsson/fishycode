@@ -429,6 +429,8 @@ list(
                         fd_raw("oracle", "adb", "trap_v.parquet"),
                         fd_raw("oracle", "adb", "surrounding_net_v.parquet"),
                         fd_raw("oracle", "adb", "catch.parquet")), format = "file"),
+  # adb's own gear crosswalk (its code -> the new gid), read by logbook_gear (plan 034), not by the adapter
+  tar_target(adb_gear_code, fd_raw("oracle", "adb", "fishing_gear.parquet"), format = "file"),
   tar_target(adb, {
     dictionary; gear; adb_raw
     produces("sources/adb/convert.R",
@@ -584,9 +586,9 @@ list(
   }, format = "file"),
 
   # Correction, not part of the adapter: each station's gear, the landing's where it names one (decision 066,
-  # plan 014 3j; was adb's alone).
+  # plan 014 3j; was adb's alone), adb's own read through its crosswalk (plan 034).
   tar_target(logbook_gear, {
-    logbook; lid_map; landing; gear
+    logbook; lid_map; landing; gear; adb_gear_code
     produces("curate/corrections/logbook_gear.R", fd_curated("logbook", "gear.parquet"))
   }, format = "file"),
 

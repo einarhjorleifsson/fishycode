@@ -35,9 +35,12 @@ avoid collision with the logbook `.tid`.
 ### Logbook trips
 
 `data/logbooks/trip.parquet` is the merged `afli` + `fs_afladagbok` output (see
-[Merge](merge.qmd)). Trips with no catch and foreign vessels (vid 3700–4999)
-are excluded before matching. The arrival port `hid` and its name `port` are
-used as the port key.
+[Merge](merge.qmd)). Foreign vessels (vid 3700–4999) are excluded before
+matching. Trips with no logbook catch take part in steps 1–5 and 9 only, after
+the trips with catch have been through steps 1–8, on the landings those left
+(plan 034): some sources log trips with no catch at all, such as 2020's
+hand-line trips entered in the app. The arrival port `hid` and its name `port`
+are used as the port key.
 
 ### Foreign vessels
 
@@ -49,7 +52,8 @@ unmatched count.
 
 ## Matching strategy {#sec-matching}
 
-The cascade works in eight steps of decreasing key specificity. Each step
+The cascade works in eight steps of decreasing key specificity, and a ninth
+that matches by time (@sec-order). Each step
 operates only on trips and landings **not yet consumed** by earlier steps, and
 accepts only **unambiguous** matches — exactly one `.lid` candidate per
 `.tid`. The helper used throughout:
@@ -162,6 +166,23 @@ Yield is small (~36 matches), but confidence is high: two independent signals
 agree — a large `.tid`/date mismatch and a unique landing on the expected date.
 The `date_error_days` column on unmatched trips in `lid_map.parquet` is the
 primary value of this step: a QA diagnostic for identifying suspect entries.
+
+### Step 9: the match by time {#sec-order}
+
+Steps 1–8 look at each record by its date alone. Step 9 looks at a vessel's
+trips and landings in order (the maintainer, 2026-10-20; plan 034). The pairs
+matched so far are anchors, at their landing's date. Between two anchors of a
+vessel, the trips left unmatched (by the date of `T2`, with or without catch)
+and the landings left unmatched (with weight) are paired in order, the first
+with the first, where their numbers agree and the order is defined (no two of
+the landings on one date, no two of the trips with one `T2`). A pair more than
+14 days apart is not kept. `match_type` is `09 order`.
+
+It reaches trips the date steps cannot: a freezer trawler's trip declared to
+end on 8 June with its landing dated 5 June (3 days apart), or one whose landing
+was registered on 23 July, after the vessel had sailed again on 21 July. Where the numbers differ,
+nothing is paired. A full alignment, with skips, is a later step, measured
+first.
 
 ## Results {#sec-results}
 

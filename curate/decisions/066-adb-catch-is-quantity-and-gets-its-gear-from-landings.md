@@ -1,6 +1,8 @@
 # 066 — adb catch is `quantity`, adb gear comes from the landing, and the catch is also kept as whole weight
 
-*2026-10-03. Closes TODO 20. Adds `target`, `target2`, `s1`, `s2` to the trail.*
+*2026-10-03. Closes TODO 20. Adds `target`, `target2`, `s1`, `s2` to the trail. The gear half superseded 2026-10-20 by
+decision 154: adb's code is the old code, read through adb's own table, and the landing's gear wins where it names
+one.*
 
 ## Found
 

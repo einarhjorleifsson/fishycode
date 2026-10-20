@@ -118,6 +118,12 @@ defect_3_gear_coding:
     strictly better than mapping adb codes against reference/gear.parquet, which
     is impossible: codes 92/99/91/29 are valid only as gear$map, code 10 only as
     gear$gid, and codes 53/51 as neither.
+  resolved: >-
+    2026-10-20, decision 154: adb's code is the old code (the GEAR schema's
+    fishing_gear_no), and adb's own table fishing_gear maps it to the new gid,
+    53 and 51 included; read so in curate/corrections/logbook_gear.R. Today's
+    reference/gear.parquet holds every adb code but 53 and 51 among its old
+    rows, and agrees with adb's table on all of them.
 
 blocked: TODO.md item 1 (wire adb into the logbook merge) - closed 2026-09-23,
   see curate/decisions/023-adb-wired-into-logbook.md

@@ -52,3 +52,8 @@ fishing_rule: >-
   AIS fixes with no speed); none is outside a window. In recorded OTB tow windows, fishing among fixes with a speed: gps 91.5 %,
   astd 91.3 %, stk 89.1 %, emodnet 89.8 % (was 70 % for gps with the placeholder counted as not fishing); gps NA 23.3 %.
   The independent R check in docs/ais_trail.qmd, which recomputes the rule per fix, renders and passes.
+
+revised_2026_10_20: >-
+  The jump from 0.1 % to 12-39 % in 2020-2023 is explained: from mid-2020 the logger writes speed in whole m/s, so a
+  towing 1-2 m/s is cut to 1 and looks like the placeholder. Those fixes are now left out of the track altogether
+  (logger_whole_degrees.yml), so the rule here acts again only on the pre-2020 placeholder.

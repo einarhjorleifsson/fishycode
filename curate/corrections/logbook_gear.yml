@@ -1,8 +1,8 @@
 id: logbook_gear
-title: a logbook station's gear is the landing's where the landing names one gear; adb stations carry none of their own
-status: applied - every schema since plan 014 3j (2026-10-09, the maintainer's rule); adb 20,274 of 20,530 stations (2026-10-03, decision 066)
+title: a logbook station's gear is the landing's where the landing names one gear; adb's own is read through adb's own code table
+status: applied - every schema since plan 014 3j (2026-10-09, the maintainer's rule); adb 20,274 of 20,530 stations (2026-10-03, decision 066); adb's own gear read since plan 034 (decision 154, code in 2026-10-20, rebuild pending)
 applies_to:
-  - curated/logbook/fishing_sample.parquet   # every schema; adb has no gear of its own
+  - curated/logbook/fishing_sample.parquet   # every schema; adb's gid is empty there, its code in gid_old
 affects_rows: 20530
 implementation: curate/corrections/logbook_gear.R (curate/corrections/adb_gear.R, adb only, until plan 014)
 plan_014_rule: >-
@@ -15,12 +15,20 @@ plan_014_rule: >-
   were compared), adb 20,275; the largest changes GNS_GAD -> GNS_LUM 18,844, OTB_DEF -> DRB_DES 18,383,
   GNS_GAD -> GNS_MON 11,010, SDN_DEF -> DRB_DES 7,219.
 
+plan_034_rule: >-
+  Decision 154 (2026-10-20): adb's code is the old code, the GEAR schema's fishing_gear_no, and adb's own table
+  raw/oracle/adb/fishing_gear.parquet maps it to the FS number, the new gid (53 -> 15 DRB_DES, 51 -> 16 FPO_DEF; the
+  other codes as gear.parquet's old code). gear.parquet's gid for adb is that translation, gid_basis recorded; the
+  landing's gear still wins where it names one. In a read-only trial: adb 86,224 recorded, 2,663 reconstructed, 0
+  none (before: 86,385 reconstructed, 2,502 none). Only code 99, gear not recorded (1 station), has no row.
+
 defect:
   summary: >-
     adb's own gear code does not resolve against reference/gear.parquet (see
     adb_vs_fs_afladagbok.yml defect_3), so adb stations have gid, gear, target and
     target2 NA and are invisible to every gear-dependent step (station windows,
-    the trail's fishing flag).
+    the trail's fishing flag). Overturned by decision 154: the code resolves through
+    adb's own table (plan_034_rule above).
   see: curate/decisions/066-adb-catch-is-quantity-and-gets-its-gear-from-landings.md
 
 method:

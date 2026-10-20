@@ -186,7 +186,9 @@ emn <-
 # a real speed preferred over the 1.000 m/s placeholder (curate/corrections/logger_speed_placeholder.yml); a
 # fix stamped to several stations keeps no single station (sid_gps NA, n_sid_gps counts them). Where the two
 # tables disagree, gps1's value is taken, and between stations the lowest .sid's: any_value() chose
-# arbitrarily, which moved 165 speeds of 2019 between runs (plan 014).
+# arbitrarily, which moved 165 speeds of 2019 between runs (plan 014). A fix whose own reading is in whole degrees is
+# left out: from mid-2020 the loggers write position to the degree and speed to the m/s (maintainer, 2026-10-20;
+# curate/corrections/logger_whole_degrees.yml).
 MS_TO_KN <- 1 / 0.514444
 LOGGER_PLACEHOLDER_MS <- 1
 gps_src <- function(YR) {
@@ -198,7 +200,10 @@ gps_src <- function(YR) {
     SELECT vid, time, \".sid\" AS sid, sensor_src, lon, lat, dt_sec, heading,
            speed * %f AS speed_kn_raw,
            CASE WHEN abs(speed - %f) < 1e-6 THEN NULL ELSE speed * %f END AS speed_kn
-    FROM read_parquet('%s/*.parquet') WHERE lon IS NOT NULL AND lat IS NOT NULL AND vid IS NOT NULL),
+    FROM read_parquet('%s/*.parquet') WHERE lon IS NOT NULL AND lat IS NOT NULL AND vid IS NOT NULL
+      -- a reading in whole degrees comes from the loggers that, from mid-2020, cut position to whole degrees and speed
+      -- to whole m/s: left out of the track (curate/corrections/logger_whole_degrees.yml)
+      AND NOT coalesce(w_lat = round(w_lat) AND w_lon = round(w_lon), false)),
   g1 AS (
     SELECT vid, time, sid, arg_min(lon, sensor_src) AS lon, arg_min(lat, sensor_src) AS lat, arg_min(dt_sec, sensor_src) AS dt_sec,
            arg_min(heading, sensor_src) FILTER (WHERE heading IS NOT NULL) AS heading,

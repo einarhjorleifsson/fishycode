@@ -229,12 +229,8 @@ function layers() {
     id: 'pings', data: tr.pingData, radiusUnits: 'meters', getRadius: 400, radiusMinPixels: 2, radiusMaxPixels: 6,
     pickable: true, extensions: [FILTER], filterRange: range,
   }));
-  L.push(new deck.LineLayer({
-    id: 'stations', data: S.stations, getSourcePosition: (d) => [d.lon1, d.lat1], getTargetPosition: (d) => [d.lon2, d.lat2],
-    getColor: (d) => (d.tid === S.trip ? [220, 30, 30, 255] : [20, 20, 20, 210]), getWidth: 3, pickable: true,
-    getFilterValue: (d) => hours(d.t1), extensions: [FILTER], filterRange: range,
-    updateTriggers: { getColor: S.trip, getFilterValue: tr.t0 },
-  }));
+  // The logbook's positions are never drawn: the map holds the AIS track alone, and a haul meets the pings by time
+  // only, on the chart (maintainer, 2026-10-20: logbook positions must never join the AIS feed)
   L.push(new deck.ScatterplotLayer({
     id: 'last', data: [tr.n - 1], getPosition: (i) => [tr.lon[i], tr.lat[i]], radiusUnits: 'meters', getRadius: 3000,
     radiusMinPixels: 4, radiusMaxPixels: 20, getFillColor: [255, 0, 240, 128], pickable: true,
@@ -266,7 +262,6 @@ function getTooltip({ layer, index, object }) {
     return { html: `<b>${fmtHours(cellHours(pts))} fishing hours</b><br>${pts.length} fishing pings in this hexagon (${hexKm()} km)` };
   }
   if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage_id}` : 'the track between ports' };
-  if (layer.id === 'stations' && object) return { html: `haul on ${esc(object.day)}, ${esc(object.gear)}, ${num(object.kg)} kg<br>gear in ${fmt(object.t1)}, out ${fmt(object.t4)}` };
   return null;
 }
 // The map's frame for a time span. A vessel that fished in it is framed on its fishing, not its steaming (maintainer,
@@ -701,6 +696,7 @@ async function selectTrip(tid, schema, opts = {}) {
     await renderTrips();
   } else markSelected();
   if (opts.scroll) row()?.scrollIntoView({ block: 'nearest' });
+  setHash();
 }
 // A landing no logbook trip claims: the window on the AIS voyage that ended there, else on the landing's days
 function selectLanding(r) {
@@ -740,7 +736,7 @@ async function loadRange(from, to) {
       coalesce(target, '') AS target, coalesce(gear_basis, '') AS gear_basis, strftime(date, '%Y-%m-%d') AS day, z1, z2, station_type, duration_m, effort, effort_unit,
       coalesce(c.kg, 0)::DOUBLE AS kg
     FROM stations s LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
-    WHERE lon1 IS NOT NULL AND lat1 IS NOT NULL ORDER BY t1`);
+    ORDER BY t1`);
   S.hauls = S.stations.map((h) => ({ ...h, a: h.t1, b: h.t4 }));
   // the flow's voyages and port calls, each from its table: the lanes and the presets draw them as they are
   S.voy = hasTrail ? await rows(`SELECT year, voyage_id AS id, epoch_ms(T1)::DOUBLE AS a, epoch_ms(T2)::DOUBLE AS b, pid1, pid2,
@@ -1262,6 +1258,8 @@ const isoMin = (ms) => new Date(ms).toISOString().slice(0, 16);
 function hashFor(vid) {
   const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, pts: P.pts ? 1 : 0, tab: tabOn(), mode: S.mode });
   if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
+  // the selected logbook trip as ".tid|schema": a link then opens that trip with its hauls (maintainer, 2026-10-20)
+  if (S.trip && S.selKey) q.set('trip', S.selKey);
   return q.toString();
 }
 function setHash() {
@@ -1289,7 +1287,11 @@ function fromHash() {
   if (['0', '1'].includes(h.get('pts'))) P.pts = h.get('pts') === '1';
   markPicked();
   if (!Number.isInteger(vid)) return;
-  choose(vid).then(() => { if (h.get('bench')) bench(); }).catch((e) => status(String(e)));
+  const trip = h.get('trip') || '', cut = trip.lastIndexOf('|');
+  choose(vid).then(async () => {
+    if (cut > 0) await selectTrip(trip.slice(0, cut), trip.slice(cut + 1), { open: true, scroll: true });
+    if (h.get('bench')) bench();
+  }).catch((e) => status(String(e)));
 }
 window.addEventListener('hashchange', fromHash);
 

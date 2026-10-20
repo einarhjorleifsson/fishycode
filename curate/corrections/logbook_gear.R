@@ -1,12 +1,13 @@
 # logbook_gear.R — the gear each logbook station is fished with: the logbook's, or the landing's.
 # Side: preprocessing (logbook and landings). See plan 014.
 #
-# Input:  curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gid, gear, target, target2)
+# Input:  curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gid, gid_old, gear, target, target2)
 #         curated/logbook/lid_map.parquet         (.tid, schema, .lid: the trip's landing)
 #         curated/landing/catch.parquet           (.lid, gid, schema: agf in the new gear code, lods in the old)
 #         curated/reference/gear.parquet          (new: gid, gear, target, target2; old: gid -> map, the new gid)
-# Output: curated/logbook/gear.parquet  one row per station: .sid, schema, gid (the logbook's, never changed),
-#         gid_landing, gid_used, metier, gear, target, target2 (of gid_used), gid_basis
+#         raw/oracle/adb/fishing_gear.parquet     (adb's own crosswalk: fishing_gear_no, adb's code -> id, the new gid)
+# Output: curated/logbook/gear.parquet  one row per station: .sid, schema, gid (the logbook's; adb's read from its
+#         gid_old), gid_landing, gid_used, metier, gear, target, target2 (of gid_used), gid_basis
 #
 # Plan 014 3j, the maintainer's rule (2026-10-09): the landing's gear is more often right and finer than the
 # logbook's, so wherever the trip's landing names exactly one gear the station is fished with it. Two cautions
@@ -16,9 +17,15 @@
 #     code (gear.parquet, version old: map) before anything is compared.
 #   * gears are compared as a metier label, gear + target2 (OTB_NEP, GNS_LUM, LLS_DEF), not as a code: Lína,
 #     Landbeitt lína and Línutrekt are all LLS_DEF and do not disagree. A landing names one gear when its gears
-#     share one label; the logbook's gid is kept when the labels agree. Where the landing names several gears, or there is no landing, the logbook's gear stays. A
-# station with no gear of its own (adb: its code does not resolve, adb_vs_fs_afladagbok.yml) takes the landing's
-# when there is one, as adb_gear.R did for adb alone until plan 014.
+#     share one label; the logbook's gid is kept when the labels agree. Where the landing names several gears, or
+#     there is no landing, the logbook's gear stays.
+#
+# adb records its gear in the old code system, the GEAR schema's number, and leaves gid empty (fishing_sample.parquet
+# keeps it so, the code in gid_old). adb's own table, fishing_gear, maps that number to the FS number, the new gid
+# (plan 034 §7 a): 53 dredge -> 15, 51 crab trap -> 16, and it agrees with gear.parquet's old code wherever both hold
+# a code. Read through it, adb's gear is the logbook's own (recorded), its labels the reference's, and the landing's
+# still wins as for any schema. Code 99, gear not recorded, has no row there and keeps no gear. Until plan 034 adb's
+# code was thought not to resolve (decision 066), and an adb station took a gear only from its landing.
 #   gid_basis  recorded       the logbook's own gear (agreeing with the landing, or no single landing gear)
 #              reconstructed  the landing's gear, where the logbook's differs or is missing
 #              none           no gear from either
@@ -31,9 +38,21 @@ gr <- gref |> filter(version == "new", !is.na(gear)) |> distinct(gid, .keep_all 
   transmute(gid = as.integer(gid), gear, target, target2, metier = paste(gear, target2, sep = "_"))
 old_new <- gref |> filter(version == "old", !is.na(map)) |> distinct(gid, .keep_all = TRUE) |>
   transmute(gid_old = as.integer(gid), gid_new = as.integer(map))
+# adb's code (the GEAR number) -> the FS number, the new gid: one each, though a code is listed once per gear type
+adb_code <- nanoparquet::read_parquet(fd_raw("oracle", "adb", "fishing_gear.parquet")) |>
+  distinct(gid_old = as.integer(fishing_gear_no), gid_adb = as.integer(id))
+stopifnot(!anyDuplicated(adb_code$gid_old))
 fs <- duckdbfs::open_dataset(fd_curated("logbook", "fishing_sample.parquet")) |>
-  select(.sid, .tid, schema, gid, gear, target, target2) |> collect() |>
-  mutate(gid = as.integer(gid)) |>
+  select(.sid, .tid, schema, gid, gid_old, gear, target, target2) |> collect() |>
+  mutate(gid = as.integer(gid), gid_old = as.integer(gid_old)) |>
+  left_join(adb_code, by = "gid_old") |>
+  mutate(adb_own = schema == "adb" & is.na(gid) & !is.na(gid_adb),
+         gid = if_else(adb_own, gid_adb, gid)) |>
+  left_join(gr |> select(gid, gear_r = gear, target_r = target, target2_r = target2), by = "gid") |>
+  mutate(gear    = if_else(adb_own, gear_r, gear),
+         target  = if_else(adb_own, target_r, target),
+         target2 = if_else(adb_own, target2_r, target2)) |>
+  select(.sid, .tid, schema, gid, gear, target, target2) |>
   left_join(gr |> select(gid, metier_lb = metier), by = "gid")
 lm <- duckdbfs::open_dataset(fd_curated("logbook", "lid_map.parquet")) |> select(.tid, schema, .lid) |> collect()
 # the landing's gears in the new code: lods carries the old one
@@ -66,4 +85,5 @@ print(chg |> count(schema, metier_lb, metier, sort = TRUE) |> head(15))
 out |> write_curated(
   fd_curated("logbook", "gear.parquet"),
   inputs = c(fd_curated("logbook", "fishing_sample.parquet"), fd_curated("logbook", "lid_map.parquet"),
-             fd_curated("landing", "catch.parquet"), fd_curated("reference", "gear.parquet")))
+             fd_curated("landing", "catch.parquet"), fd_curated("reference", "gear.parquet"),
+             fd_raw("oracle", "adb", "fishing_gear.parquet")))

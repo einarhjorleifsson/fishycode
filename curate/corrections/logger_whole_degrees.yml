@@ -1,0 +1,41 @@
+id: logger_whole_degrees
+title: from mid-2020 the afli GPS logger writes position in whole degrees and speed in whole m/s; those fixes leave the track
+status: code written 2026-10-20, not built - the AIS chain is rebuilt from ais_ping_union with plan 034's rebuild (TODO 98)
+applies_to:
+  - "raw/oracle/afli/sjalfvirkir_maelar/ (gps1, columns breidd, lengd, skip_hradi)"
+  - "curated/logbook/sensor_gps (NOT changed, w_lat, w_lon and speed stay as read)"
+  - staging/ais/ping_union and everything built from it (the gps feed)
+affects_rows: >-
+  4,851,556 logger fixes on the trail of 2019-2024 (2026-10-20): 35 in 2019, 1,190,491 in 2020, and every one of
+  2021 (2,567,350), 2022 (1,055,800), 2023 (37,579) and 2024 (301). About 1,600 raw readings of 2019 to May 2020 too.
+implementation: "curate/ais_ping_union.R, gps_src(): a fix whose w_lat and w_lon are both whole numbers is not read"
+discovered: "2026-10-20, in the vessel overview (vid 2173, 2020, the logger's line against ASTD's), asked by the maintainer"
+
+mechanism: >-
+  The logger table changed in Oracle in mid-2020: position is stored to the whole degree and speed to the whole m/s,
+  as in w_lat 67, w_lon -21 where ASTD has 67.38, -21.83 at the same moment, and 6 m/s (11.7 kn) where ASTD has 11.8-12.6
+  kn. It went logger by logger: no logbook station mixes whole and decimal readings, and the share of whole-degree
+  fixes rose from 3 % on 2020-06-20 to 100 % from 2020-07-20 (gps1). A few loggers did so earlier (about 1,600 fixes on
+  3-20 stations a month, 2019 to April 2020). The second table (gps2, rafr_sjalfvirkir_maelar) keeps decimals and ends
+  in July 2020. The dump is not the cause: Oracle declares the columns plain NUMBER, which the dumper reads as exact
+  decimals, and earlier rows of the same column and file keep theirs. Bottom depth (whole metres throughout) and bottom
+  temperature (decimals throughout) are not affected.
+
+detection: >-
+  Per raw reading: breidd = round(breidd) AND lengd = round(lengd). Every whole-degree fix has a whole speed too; the
+  whole speeds beside decimal positions are ordinary values (0).
+
+effect: >-
+  The positions on the track were never the logger's (curate/logbook_sensor_gps.R interpolates them from AIS), so the
+  defect reached the product through speed and through the logger's place in the track: the whole-m/s speeds (a towing
+  1-2 m/s cut to 1, which logger_speed_placeholder.yml then took for a placeholder), and the logger fixes interpolated
+  across long silences of the 2026-10-09 track, 1,234 of which sit more than 5 km from the recorded track (TODO 98).
+
+repair: >-
+  Excluded, not repaired (maintainer, 2026-10-20: "if there is a general problem with the gps after 2020 I suggest we
+  should just exclude those data"). The rule is the reading itself, not a date, so the decimal fixes of June and July 2020
+  stay. curated/logbook/sensor_gps keeps every fix, with its depth and temperature.
+
+verified: >-
+  gps_src() alone on 2026-10-20: 2019 keeps 2,657,660 fixes; 2020 keeps 1,371,152, the last on 2020-07-23 17:21; 2021
+  keeps none. Scripts in $FISHYDATA/archive/2026-10-todo98/scripts/. Not yet built into the track.

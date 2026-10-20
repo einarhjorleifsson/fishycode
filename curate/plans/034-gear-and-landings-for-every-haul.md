@@ -1,7 +1,9 @@
 # 034 — A gear for every haul: adb's own codes, the trip–landing match by time, and landings to voyages
 
-**status:** proposal — measured 2026-10-20 (read-only, on the data of the builds of 2026-10-17 to 2026-10-19); nothing
-built; six asks (§6) before a session executes it · **2026-10-20** · **see:** TODO 97, plan 014 3j (the landing's gear
+**status:** partly built — measured 2026-10-20 (read-only, on the data of the builds of 2026-10-17 to
+2026-10-19); the six asks (§6) answered by the maintainer the same day (§7), each as recommended; steps 1-4 coded and
+tried read-only (decision 154), not committed; the rebuild (step 5) and the checks of §5 held by the maintainer until
+they are home (TODO 97) · **2026-10-20** · **see:** TODO 97, plan 014 3j (the landing's gear
 first), decision 066 (adb's gear left empty), decision 094 (twins), decision 143 (the previous trip's gear in the
 vessel overview), plan 031 and TODO 90 (the voyage definition), TODO 81 (a catch landed over two days),
 `curate/corrections/adb_vs_fs_afladagbok.yml` (defect 3), `sources/adb/convert.R`, `curate/link_lid_map.R`,
@@ -189,3 +191,43 @@ c. The match by time: equal counts between anchors only, and within how many day
 d. Trips with no catch into the date steps: yes? Who or what makes GAFL's automatic trips, and are they fishing trips?
 e. Landings to voyages: G = 7 days, and stop counting landings for a voyage the vessel was at sea on all day?
 f. When to rebuild, given the run from `lid_map` to `ais_catch`.
+
+## 7. Answered (the maintainer, 2026-10-20)
+
+*Recorded by Claude from the maintainer's answers in chat the same day, one round, each the option Claude recommended.
+The facts found while preparing the asks, and "To settle in the build", are Claude's, for review.*
+
+a. **adb's own table.** Every adb code is read through adb's own crosswalk, `raw/oracle/adb/fishing_gear.parquet`
+   ("between FS and GEAR fishing gear numbers"): adb's code is the GEAR number (`raw/oracle/gear/fishing_gear.parquet`),
+   and the FS number it maps to is the new `gid`. So 53, "Dregin plógur" (GEAR: dredge, ISSCFG 0410), is FS 15
+   (DRB_DES), and 51, "Krabbagildra" (trap, 0820), is FS 16 (FPO_DEF), as the landings say. On the 11 codes it shares
+   with the reference's old code the two agree. Through it, 88,886 of the 88,887 adb stations resolve. The one left is
+   code 99, "Óskráð veiðarfæri" (gear not recorded), which keeps no gear.
+b. **`gid_basis` "recorded"**: it is the logbook's own gear, written in the old code. `gid_old` stays in
+   `fishing_sample.parquet`, so the translation can be traced.
+c. **Equal counts between anchors only, within 14 days** (2,227 of the 2,524 pairs). The full alignment is a later
+   step, measured first.
+   Follow-up, the same evening: no weight check on `09 order` ("Do not check weights"), though 100 of its 1,590 pairs
+   differ in weight by more than 3 times (decision 154).
+d. **Yes**, trips with no catch go into steps 1-5. The question about GAFL falls away: no "FRA GAFLI" or
+   "FRA GAFLI - AUTO" trip reaches the merged logbook (0 in `trip.parquet`, 2021-2026). The "… - GAFL AUTO" trips that
+   do (1,608 in 2026) all have catch, and all but one are matched. The trips with no catch that matter are 2020's app
+   trips, fs_afladagbok's in 2021-2023, afli's in 2020 and about 137 adb trips in 2026.
+e. **G = 7 days**, and a landing dated on a day the vessel was at sea all day no longer counts for that voyage.
+f. **Now, in this session**, from a clean tree. The work left uncommitted was committed first, as it stood (5c129eb,
+   the vessel demo; fb3f3e8, this plan). The maintainer then held the rebuild until they are home (same day).
+
+**To settle in the build** (Claude's reading):
+
+- The crosswalk is read in `logbook_gear.R` where the dump put it, tracked by a file target of its own
+  (`adb_gear_code`), so the adapter and the merged logbook are not rebuilt. In `gear.parquet` adb's `gid` is the
+  translated code, and its labels (gear, target, target2) are the reference's for that code.
+- Step 8 (the expected date) keeps `catch > 0`, as before, so its yield changes only through the landings that earlier
+  steps now take.
+- `09 order` takes every unmatched trip (with or without catch) and every unmatched landing with weight. Anchors are
+  the matched pairs at their landing's date, and trips (by their `T2` date) and landings lie strictly between two of
+  them. A gap pairs only where the numbers agree, and only where the order is defined: no two of its landings on one
+  date and no two of its trips with one `T2`. A pair is kept within 14 days.
+- `voyage_gear.R` gives a landing its voyage before as measured in §3.4: the last voyage ended by the end of the
+  landing's day. A voyage with no landing in its window takes those landings within 7 days of its end date. The days
+  go in `landing_gap_d`, which is empty for a landing in the window.

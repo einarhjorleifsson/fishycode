@@ -150,16 +150,16 @@ catch <-
 # the fishing operation, joined on .sid. That mismatch is why adb could never be
 # merged: curate/logbook.R binds FOUR tables and adb supplied three.
 #
-# gid is deliberately left NA here. adb's gear coding is its own and does not
-# resolve against reference/gear.parquet - measured over 628,314 stations,
-# codes 92/99/91/29 are valid only as gear$map, code 10 only as gear$gid, and
-# codes 53/51 (6,654 rows) match neither. The converter's own effort logic keys
-# on those raw codes (gid %in% c(6,7,14), and dredge_v "covers gid 5,6,7,51,53"),
-# so they mean something inside adb and something else outside it. Assigning
-# gear from them would mislabel it. The raw code is preserved verbatim as
-# gid_old; the unified gid is filled downstream from the LANDINGS gear code,
-# which does resolve cleanly - all 25 of its distinct values match gear$gid.
-# See curate/decisions/066.
+# gid is left NA here and adb's code is kept verbatim as gid_old. That code is
+# the old gear code, the GEAR schema's fishing_gear_no, which the converter's
+# own effort logic keys on (gid %in% c(6,7,14), and dredge_v "covers gid
+# 5,6,7,51,53"). adb's own table fishing_gear maps it to the FS number, the new
+# gid: 53 dredge -> 15, 51 crab trap -> 16, and the rest as reference/gear.parquet's
+# old code does. curate/corrections/logbook_gear.R reads it through that table
+# (plan 034, 2026-10-20), and the landing's gear still wins where it names one.
+# Decision 066 found the code did not resolve against the reference as it read
+# it then (6,654 rows of 53/51 in neither), so until plan 034 an adb station's
+# gear came only from its landing.
 
 station_narrow <-
   station |>

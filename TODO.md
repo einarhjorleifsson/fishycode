@@ -731,12 +731,72 @@ leave MFRI only on an agreed basis.
 written in decision 153.
 
 ## 97. A gear for every haul: adb's own codes, the match by time, landings to voyages (plan 034)
-**status:** open · **needs: maintainer** — asks a-f of plan 034 §6, then a session to execute it · **see:** plan 034,
-decision 066, plan 014 3j, plan 031 / TODO 90
+**status:** open — the rebuild running (2026-10-20, the maintainer's word) · **see:** plan 034 (§7 answered),
+decision 154
 
-Found 2026-10-20 in the vessel overview (vid 2173, 2026): hauls with no gear get no window, so no pings on them and,
-where the voyage has no gear either, no fishing flag. adb's gear is readable as the old code (97.5 % agree with the
-landings); `lid_map` drops trips with no logbook catch; matching in order between matched trips and landings to the
-voyage before them add more. Measurements in plan 034 §3, scripts in `$FISHYDATA/archive/2026-10-plan034/`.
+The code is in and tried read-only (decision 154). Left: commit, with TODO 98's logger change in the same commit
+(the maintainer, 2026-10-20: "go with plan 34"); fingerprint; `tar_invalidate()` `ais_ping_union`, `lid_map`,
+`logbook_gear`, `voyage_gear` (script edits are invisible to targets); `tar_make_isolated(names = )` over the 22
+targets downstream of them, the AIS chain from `ais_ping_union` included (about 2 h); the checks of plan 034 §5 and
+TODO 98 on the rebuilt tables. `09 order` checks no weight (the maintainer, 2026-10-20).
 
 **check:** plan 034 §5.
+
+## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
+**status:** open · **needs: maintainer** — keep the pre-2020 logger in the track or not; redo `sensor_gps` or not ·
+**see:** decision 075, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
+TODO 99
+
+The maintainer's rule (2026-10-20): logbook positions never join the AIS feed; the vessel overview's haul layer is gone.
+`ais_ping_union.R` still joins the afli GPS logger (`provider = gps`, frozen `curated/logbook/sensor_gps`): the
+logger's time, speed and heading, with lon/lat interpolated once from the AIS track of 2026-10-09.
+
+Decided the same day: from mid-2020 the logger writes position in whole degrees and speed in whole m/s, and those
+fixes leave the track (`logger_whole_degrees.yml`; code written, not built). That removes 4.85 M of the trail's
+8.86 M logger fixes of 2019-2024 and 1,234 of its 2,071 that sit over 5 km from the recorded track.
+
+Left: the rest of the 2,095 off-track fixes (vid 2173 2019-mid 2020, vid 2411 2013-2020) come from interpolating
+across silences of the old track (no gap limit: 101,982 fixes span over 6 h). Options: take the logger out of the
+track, keeping its speed and heading in a side table by time; or redo `sensor_gps` (a once fix, by decision) on
+today's track with a gap limit. Either needs a rebuild from `ais_ping_union`, best with plan 034's. The logger's
+other readings (depth, temperature) are TODO 100. Scripts: `$FISHYDATA/archive/2026-10-todo98/`.
+
+**check:** decided; no logger fix in the trail more than 5 km from a recorded ping at the same moment, or none at all.
+
+## 99. The whack test does not test interpolated positions against recorded ones
+**status:** open · **see:** TODO 98, `curate/ais_ping_clean.R`, decision 067
+
+`ais_ping_clean.R` runs the impossible-step test on recorded positions only, since an interpolated (`reconstructed`)
+position was assumed to lie on the track. When the track it was drawn from differs from today's, it does not: vid
+2173's logger fixes ran up to 270 km beside ASTD's. Found by a check outside the flow: each reconstructed fix against
+the recorded pings at the same moment (bracketing pings within 15 min, linear interpolation), flagged over 5 km. On
+the trail of 2026-10-20 it flags 2,095 of 26.8 M logger fixes and nothing else, all years in about two minutes
+(`$FISHYDATA/archive/2026-10-todo98/scripts/gps_scope.R`). Proposed: that test in the cleaning step, as a flag on
+any reconstructed position, generic for ramb (`rb_flag_ping_*`), whatever TODO 98 decides for the logger.
+
+**check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
+
+## 100. The logbook's sensor readings: what they measure, and whether they can time a haul
+**status:** open · **needs: maintainer** — is this worth a product, and which sensor tables to read · **see:** TODO 98,
+`curated/logbook/sensor_gps`, `raw/oracle/afli/toga.parquet`, `raw/oracle/afli/lineha.parquet`
+
+The maintainer's idea (2026-10-20): a gear sensor, such as the headline depth, shows when a trawl goes down and comes
+up, and so could check the logbook's t1-t4. Measured the same day, read-only, in the logger (`sjalfvirkir_maelar`,
+2008-2023, about 250 vessels a year): `botndypi` is the echosounder's depth under the vessel (filled 97-99 % at every
+speed, steaming too; follows GEBCO, median ratio 0.95-0.98; longliners and purse seiners have it; pelagic trawlers
+none). `hofudlinudypi` (headline depth) is next to empty: 19,264 fixes of 1-2 vessels in 2010-2013 and 2017, a copy
+of the bottom depth in 2010-2011; no longliner. Its hauls carry t2 and t3: in 2012 (about 700 hauls, pelagic) the
+headline is 71 m in the half hour before t2, 132 m between t2 and t3 and 9 m in the half hour after t3, the gear
+coming up; 2013 weaker (114, 104, 58 m); 2017 (one deep pelagic trawler, 580-680 m) no step. A test set for the
+tow windows, not a general check.
+`botnhiti` (filled 82-100 %) does not step when the gear reaches or leaves the bottom (2015 OTB: change between fixes
+across t2 or t3 the same as inside the tow, median 0; same level inside and outside), so it is not on the gear;
+the hull's sea temperature, most likely, which is not checked. So the logger cannot time a haul beyond its speed.
+
+Not yet read: the per-haul sensor values of `afli.toga` and `rafr_toga` (headline depth and temperature at the start and
+end, bottom and surface temperature, the sensor `nemi`, doors, headline length), `lineha` (bottom, surface and air
+temperature) and `fs_afladagbok.ws_veidi` (depth at start and end). They cannot time a haul either, but may tell a
+pelagic tow from a bottom one, and bottom depth and temperature per haul are environmental data in their own right.
+
+**check:** decided whether the sensor readings become a product or a QC check, and recorded which column measures what.
+
