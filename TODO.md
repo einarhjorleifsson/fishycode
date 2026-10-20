@@ -729,3 +729,14 @@ leave MFRI only on an agreed basis.
 
 **check:** the demo opens and loads a vessel in Safari and in Edge on Windows, and the agreement it went under is
 written in decision 153.
+
+## 97. A gear for every haul: adb's own codes, the match by time, landings to voyages (plan 034)
+**status:** open · **needs: maintainer** — asks a-f of plan 034 §6, then a session to execute it · **see:** plan 034,
+decision 066, plan 014 3j, plan 031 / TODO 90
+
+Found 2026-10-20 in the vessel overview (vid 2173, 2026): hauls with no gear get no window, so no pings on them and,
+where the voyage has no gear either, no fishing flag. adb's gear is readable as the old code (97.5 % agree with the
+landings); `lid_map` drops trips with no logbook catch; matching in order between matched trips and landings to the
+voyage before them add more. Measurements in plan 034 §3, scripts in `$FISHYDATA/archive/2026-10-plan034/`.
+
+**check:** plan 034 §5.
