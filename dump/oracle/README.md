@@ -9,7 +9,7 @@ Oracle holds them, through ROracle. The logs sit in the same tree, so copying `r
 A full run takes hours: start it with `nohup`, from the shell or from R, and leave it.
 
 The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes, dw, ufs, gear, orri, vessel,
-ops_einarhj, logbook, agf, ask, kvoti, adb, fs_afladagbok, afli, fs_afli, stk. Each is one script,
+channel, ops_einarhj, logbook, agf, ask, kvoti, adb, fs_afladagbok, afli, fs_afli, biota, stk. Each is one script,
 `dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` is not a schema: it lists what else
 Oracle holds (section 13).
 
@@ -144,7 +144,7 @@ write the same files. `all.R` and `run_dump()` refuse a schema that is still bei
 
 ## 9. Done
 
-A full run's `_all.log` ends with `done: 20 of 20 schemas exited 0`, and `dump_status()` says `finished` for each.
+A full run's `_all.log` ends with `done: 22 of 22 schemas exited 0`, and `dump_status()` says `finished` for each.
 Each schema then has its `_overview_tables.parquet` (what was written, skipped and failed, and why) and a
 `_data-dict.yaml`.
 
