@@ -1,20 +1,21 @@
 id: logbook_set_placeholder
 title: a static-gear set time 270 or 1,710 min before the haul start is a logbook app's placeholder; t1 is set to NA and flagged
-status: coded 2026-10-20 in curate/logbook.R, not yet built into curated/ (the rebuild waits on plan 035's measure)
+status: coded 2026-10-20 in curate/logbook.R, not yet built into curated/ (with the next rebuild from logbook; plan 035, which would have filled the set from the track, failed its test, decision 158)
 applies_to:
   - curated/logbook/fishing_sample.parquet   # t1 (NA where a placeholder), t1_placeholder
 affects_rows: >-
   77,953 stations, counted by replaying the rule on the build of 2026-10-20: afli 54,623 (LLS 41,966, GNS 12,640,
   LHM 17), fs_afladagbok 18,412 (LLS 13,925, GNS 4,184, GND 303), adb 4,918; 72,043 at 270 min and 5,910 at 1,710.
   By the windows' gear (the landing's, where it overrides the logbook's): static 77,191, towed 322 (318 already a day
-  window), jigged 143, other 5, none 292 (281 of them duplicate twins).
+  window), jigged 143, other 5, none 292 (281 of them duplicate twins). A test merge of curate/logbook.R into scratch
+  (2026-10-20) gave these counts, changed t1 on no other row and no other column.
 implementation: curate/logbook.R, section "Placeholder set times" (after the twins, which compare t1 as recorded)
 discovered: 2026-10-20, TODO 103 (decision 157)
 decided_by: >-
   the maintainer, 2026-10-20: set t1 to NA where it is the placeholder, with one flag column; the 270 and 1,710-min
   offsets only, not the other placeholder patterns; the soak and effort columns left as they are, the flag marking
   them; the value as recorded is kept in staging/ and raw/, not beside t1. The flow fills the set from the track where
-  the logbook has none (plan 035), if that is measured to be good enough.
+  the logbook has none (plan 035), if that is measured to be good enough. It was not (decision 158): nothing fills it.
 
 rule: >-
   In afli, fs_afladagbok and adb, whatever the gear: t1 equals t3 less 270 (or 1,710) min cut to the minute, or t3
@@ -22,11 +23,12 @@ rule: >-
   and fs_afladagbok's set carries no seconds while its haul start does. aflaskeyti is not checked: no Trackwell rows.
 
 evidence: >-
-  Decision 157 (measured by Claude, not yet checked by a person): the offset is in the raw dumps, from Trackwell's
+  Decisions 157 and 158 (measured by Claude, not yet checked by a person): the offset is in the raw dumps, from Trackwell's
   logbook only (afli's electronic logbook, negative visir; fs_afladagbok's ws_veidiferd.uppruni; adb's trip source);
   no other maker's rows carry it; in adb no maker sends a haul start without a set time, so the field is required and
   each maker fills it its own way. On the AIS track the set time is the placeholder (in a port call, or at hauling
   speed, far more often than other set times), the haul start is degraded but real, and 1,440-min soaks are real.
+  In afli it is already in the XML the app sent (50,281 of 50,282 rows), from Trackwell's Fishing Log 2.7 on (2014).
 
 what_it_changes: >-
   station_window (ramb::rb_create_record_windows): a static station's set window is drawn from t1 only, so these

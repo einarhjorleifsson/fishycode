@@ -1,14 +1,15 @@
 # 035 — Set times from the track where the logbook has none
 
-**status:** proposal — written 2026-10-20 before the measure of §3 was run; §4 is built only if §3's test passes ·
-**2026-10-20** · **see:** TODO 103, decision 157, `curate/corrections/logbook_set_placeholder.yml`, decision 146 (the
+**status:** abandoned — §3's test, fixed before the run, failed for every gear (2026-10-20, decision 158): the set
+stays the logbook's or none, and §4 is not built · **2026-10-20** · **see:** TODO 103, decision 157, `curate/corrections/logbook_set_placeholder.yml`, decision 146 (the
 set finder), TODO 72 item 8, `curate/station_window.R`, ramb `rb_link_record_sets()`
 
 Drafted with AI assistance (Claude) on 2026-10-20: the cascade is the maintainer's ("use the logbook's set where it is
 real, the track's where it is not"), the test, its threshold and the design of §4 are Claude's, written before any
 number of §3 was seen. The maintainer asked Claude to build §4 and rebuild without him if the test passes.
 
-**Measured:** nothing yet; §3 is filled in after the run. **Assumed:** that a logbook set time which is no placeholder,
+**Measured:** §3, by Claude (AI) on the build of 2026-10-20 (data of 5cec0f4), ramb 2026.10.19.2; a person has not yet
+checked it. Scripts and results in `$FISHYDATA/archive/2026-10-plan035/`. **Assumed:** that a logbook set time which is no placeholder,
 lies outside a port call and has a ping within 15 min after it is the skipper's (decision 157's "ok", which is not
 contradicted by the track, not proven by it); that the finder does as well on the placeholder stations, whose haul
 start is degraded (decision 157), as on the well-recorded ones (checked only indirectly, §3).
@@ -46,7 +47,37 @@ item 8). The fishing fixes, their effort and their catch come from the haul wind
 
 ## 3. Results
 
-(Filled in after the run.)
+261,370 static hauls (t3 < t4, no duplicate twin, 2008-2026) were given to the finder, year by year. Their set times:
+placeholder at 270 or 1,710 min 77,171; other placeholders 2,646; out of range 753; none 113; candidates 180,687, of
+which 27,807 fail the track (21,690 in a port call, the rest no ping within 15 min). **Truth: 152,880 hauls** (LLS
+98,814, GNS and GND 53,651, FPO 415).
+
+The test, 2015-2025, in % of all truth hauls (`within 60` = the found set start within 60 min of the real `t1`; `none`
+= no set found; the baseline is `t3` less the vessel's median real soak):
+
+| gear | n | variant | within 60 | within 30 | off | none | baseline within 60 | pass |
+|---|---|---|---|---|---|---|---|---|
+| LLS | 50,855 | defaults | 28.6 | 20.7 | 70.2 | 1.2 | 57.9 | no |
+| LLS | | no cap | **53.7** | 40.5 | 45.1 | 1.2 | 57.9 | no |
+| LLS | | skip the run in, no cap | 53.5 | 40.0 | 43.4 | 3.1 | 57.9 | no |
+| GNS | 32,530 | defaults | 20.9 | 15.8 | 76.5 | 2.5 | 23.1 | no |
+| GNS | | no cap | 21.6 | 16.3 | 75.8 | 2.5 | 23.1 | no |
+| GNS | | skip the run in, no cap | **31.7** | 25.1 | 63.4 | 4.9 | 23.1 | no |
+| FPO | 415 | defaults | **3.6** | 2.2 | 94.5 | 1.9 | 88.7 | no |
+
+- **No gear passes.** The best longline variant is right on about half the hauls and below the vessel's own typical
+  soak (57.9 %); the gillnet one is above its baseline by 8.6 points but right on under a third; on pots the finder is
+  almost never right, while the typical soak is (88.7 %). All years 2008-2026 give the same picture (LLS 54.6 %, GNS
+  30.1 %).
+- **Where it misses** (best variant, signed error of the found start, 2015-2025): longlines are late, 1-3 h on 19.9 %
+  and 3-6 h on 8.1 % of hauls; gillnets are early, a day or more on 23.0 % (an earlier pass over the same spot, where
+  nets are set again) and 6-24 h late on 7.0 %. The finder and the baseline are both right on 32.5 % of longline
+  hauls, either on 79.1 %.
+- **By year** the longline share is 47-60 % and the gillnet share 13-38 %, with no trend that would pass in a subset.
+- **On the placeholder stations** (not tested) the longline finder's soak is within 60 min of the vessel's typical
+  soak on 32.2 %, against 41.8 % on the truth hauls: it does worse where it would be used, as assumed possible above.
+- **Decision 146's Icelandic score is superseded.** It scored against declared `t1`, a placeholder on 57 % of 2023
+  longline sets; against real set times the defaults are right on 28.6 % of longlines, and no cap almost doubles it.
 
 ## 4. The build, if a gear passes
 

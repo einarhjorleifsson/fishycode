@@ -404,6 +404,15 @@ list(
              fd_staging("afli", "depth.parquet"))
   }, format = "file"),
 
+  # Correction (curate/corrections/afli_end_longitude.yml): the end longitude the logbook sent, where Oracle holds the
+  # end latitude in its place; a side table joined onto afli_station by curate/logbook.R.
+  tar_target(afli_xml_raw, fd_raw("oracle", "fs_afli", "afladagb_xml_mottaka.parquet"), format = "file"),
+  tar_target(afli_end_longitude, {
+    afli; afli_raw; afli_xml_raw
+    produces("curate/corrections/afli_end_longitude.R",
+             fd_staging("afli", "end_longitude.parquet"))
+  }, format = "file"),
+
   tar_target(fs_afladagbok_raw, c(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_veidi.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_dragnot_varpa.parquet"),
@@ -554,7 +563,7 @@ list(
   # Precedence, recorded once in curate/decisions/: afli where it exists, then
   # fs_afladagbok through its dump end, then adb beyond it.
   tar_target(logbook, {
-    afli; afli_depth_units; fs_afladagbok; adb; adb_lon_sign
+    afli; afli_depth_units; afli_end_longitude; fs_afladagbok; adb; adb_lon_sign
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),

@@ -32,7 +32,8 @@
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
 # keep the original recorded value, z1_basis/z2_basis says which happened.
 # Longitude: adb's dropped west sign is fixed by curate/corrections/
-# adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis).
+# adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis), and afli's end longitude where Oracle holds the
+# end latitude by curate/corrections/afli_end_longitude.R (lon2_raw/lon2_basis).
 # aflaskeyti: three corrections and the trips, each a side table (plan 026): the swapped positions
 # (aflaskeyti_coordinates.R: lon1_raw, lat1_raw, lon2_raw, lat2_raw, coord_flag), the Faroese summer times
 # (aflaskeyti_local_time.R: t_shift_min, time_basis), the state of each weight (aflaskeyti_weight.R:
@@ -66,6 +67,7 @@ afli_station        <- duckdbfs::open_dataset(fd_staging("afli", "station.parque
 afli_fishing_sample <- duckdbfs::open_dataset(fd_staging("afli", "fishing_sample.parquet")) |> collect()
 afli_catch          <- duckdbfs::open_dataset(fd_staging("afli", "catch.parquet")) |> collect()
 afli_depth          <- duckdbfs::open_dataset(fd_staging("afli", "depth.parquet")) |> collect()
+afli_end_lon        <- duckdbfs::open_dataset(fd_staging("afli", "end_longitude.parquet")) |> collect()
 
 fs_trip           <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "trip.parquet")) |> collect()
 fs_station        <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "station.parquet")) |> collect()
@@ -95,6 +97,11 @@ ers_weight         <- duckdbfs::open_dataset(fd_staging("aflaskeyti", "weight.pa
 afli_station <- afli_station |>
   select(-z1, -z2) |>
   left_join(afli_depth, by = ".sid")
+# afli: the end longitude the logbook sent, where Oracle holds the end latitude in its place
+# (curate/corrections/afli_end_longitude.R); lon2_raw/lon2_basis keep what happened.
+afli_station <- afli_station |>
+  select(-lon2) |>
+  left_join(afli_end_lon, by = ".sid", relationship = "one-to-one")
 
 # fs_afladagbok: uniformly fathoms (no drift window), so a flat conversion with
 # basis = "reconstructed"; NA stays NA, basis NA.
@@ -379,7 +386,7 @@ logbook_inputs <- c(
   unlist(lapply(c("afli", "fs_afladagbok", "adb"), \(s)
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
-  fd_staging("afli", "depth.parquet"), fd_staging("adb", "lon_sign.parquet"),
+  fd_staging("afli", "depth.parquet"), fd_staging("afli", "end_longitude.parquet"), fd_staging("adb", "lon_sign.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
                   "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
 merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)

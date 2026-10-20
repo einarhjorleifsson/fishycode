@@ -224,3 +224,7 @@ Measured the same evening in a second session, read-only, on the parent session'
 TODO 103: the correction (which patterns; remove or flag, static gear and jiggers apart; the soak and effort columns
 made before `curate/`), the gillnet set times in port with no pattern, and whether to ask Trackwell or Fiskistofa. Plan 031's asks i-k
 stay the maintainer's.
+
+Followed by decision 158 (the same night): the correction was chosen and coded
+(`curate/corrections/logbook_set_placeholder.yml`), the track's set finder failed plan 035's test, and the XML each
+logbook sent shows that Trackwell's app writes the 270-min set time (Fishing Log 2.7, from 2014).

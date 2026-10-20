@@ -3542,7 +3542,9 @@ tables:
           - -20.9215
           - -4.14266666666667
         description: >
-          End longitude as originally recorded.
+          End longitude as originally recorded (adb, and afli since
+          curate/corrections/afli_end_longitude.yml: the adapter's value, -lat2 where
+          Oracle holds the end latitude in its place).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3556,9 +3558,12 @@ tables:
             `enum` and `examples` to `values`.
       - name: lon2_basis
         type: string
-        examples: [recorded]
+        examples: [recorded, reconstructed, none]
         description: >
-          How lon2 was obtained.
+          How lon2 was obtained: "recorded"; "reconstructed" (adb's west sign restored,
+          or afli's end longitude taken from the record the logbook sent); "none" (afli,
+          the stored value was the end latitude and the sent record could not give it,
+          so lon2 is NA).
         todo: |
           - Only 1 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
