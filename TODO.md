@@ -575,7 +575,9 @@ only, logbooks only, both or neither, and several gears in a voyage.
 
 Measured, in plan 031 §3.2-3.6: `port_stay` misses calls in four ways, the departure radius the clear fault, which a
 time budget fixes; 42 % of the landings with no stay disagree with the track on the port; a fifth of the voyages with
-several logbook trips are one sea trip that the date-only logbook splits by day.
+several logbook trips are one sea trip that the date-only logbook splits by day. A voyage whose gears tie is a sign of
+a wrong voyage allocation, since two gears on one voyage are rare (the maintainer, 2026-10-20): 242 of the 601
+voyages with several gear labels tie, 185 of them with several logbook trips (decision 154).
 
 The rest of plan 031:
 - §4.0, the design: the problem as a cascade (ports, stays, voyages, trips with no track, link and reconcile), each
@@ -583,10 +585,8 @@ The rest of plan 031:
 - §3.7, the pitfalls, among them: no stays and no warning without a port list; calls abroad never stays (40,117
   vessel-days at foreign ports); short voyages dropped.
 - §3.8, outside code: iapesca and the CNR code.
-- §4.8, a robustness bench, step 2:
-  - methods (ramb's, Danish, Irish, Italian, iapesca, learned ports) scored on the Icelandic witnesses, the logbook
-    among them, and on other fleets' example data (vmstools, iapesca, WKSSFGEO);
-  - with records, ports or pings taken away.
+- §4.8, a robustness bench, step 2: methods (ramb's, Danish, Irish, Italian, iapesca, learned ports) scored on the
+  Icelandic witnesses and other fleets' example data (vmstools, iapesca, WKSSFGEO), with records, ports or pings taken away.
 
 The threads it gathers:
 - the STK key, TODO 25;
@@ -730,18 +730,6 @@ leave MFRI only on an agreed basis.
 **check:** the demo opens and loads a vessel in Safari and in Edge on Windows, and the agreement it went under is
 written in decision 153.
 
-## 97. A gear for every haul: adb's own codes, the match by time, landings to voyages (plan 034)
-**status:** open — the rebuild running (2026-10-20, the maintainer's word) · **see:** plan 034 (§7 answered),
-decision 154
-
-The code is in and tried read-only (decision 154). Left: commit, with TODO 98's logger change in the same commit
-(the maintainer, 2026-10-20: "go with plan 34"); fingerprint; `tar_invalidate()` `ais_ping_union`, `lid_map`,
-`logbook_gear`, `voyage_gear` (script edits are invisible to targets); `tar_make_isolated(names = )` over the 22
-targets downstream of them, the AIS chain from `ais_ping_union` included (about 2 h); the checks of plan 034 §5 and
-TODO 98 on the rebuilt tables. `09 order` checks no weight (the maintainer, 2026-10-20).
-
-**check:** plan 034 §5.
-
 ## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
 **status:** open · **needs: maintainer** — keep the pre-2020 logger in the track or not; redo `sensor_gps` or not ·
 **see:** decision 075, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
@@ -752,13 +740,14 @@ The maintainer's rule (2026-10-20): logbook positions never join the AIS feed; t
 logger's time, speed and heading, with lon/lat interpolated once from the AIS track of 2026-10-09.
 
 Decided the same day: from mid-2020 the logger writes position in whole degrees and speed in whole m/s, and those
-fixes leave the track (`logger_whole_degrees.yml`; code written, not built). That removes 4.85 M of the trail's
-8.86 M logger fixes of 2019-2024 and 1,234 of its 2,071 that sit over 5 km from the recorded track.
+fixes leave the track (`logger_whole_degrees.yml`; built 2026-10-20 at c7fa8c7, decision 154). That removed 4.85 M of
+the trail's 8.86 M logger fixes of 2019-2024 (and 15 of 2008) and 1,234 of its 2,071 over 5 km from the recorded
+track; 837 remain (2019-2020).
 
 Left: the rest of the 2,095 off-track fixes (vid 2173 2019-mid 2020, vid 2411 2013-2020) come from interpolating
 across silences of the old track (no gap limit: 101,982 fixes span over 6 h). Options: take the logger out of the
 track, keeping its speed and heading in a side table by time; or redo `sensor_gps` (a once fix, by decision) on
-today's track with a gap limit. Either needs a rebuild from `ais_ping_union`, best with plan 034's. The logger's
+today's track with a gap limit. Either needs a rebuild from `ais_ping_union`. The logger's
 other readings (depth, temperature) are TODO 100. Scripts: `$FISHYDATA/archive/2026-10-todo98/`.
 
 **check:** decided; no logger fix in the trail more than 5 km from a recorded ping at the same moment, or none at all.

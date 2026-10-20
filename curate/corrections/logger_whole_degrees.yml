@@ -1,6 +1,6 @@
 id: logger_whole_degrees
 title: from mid-2020 the afli GPS logger writes position in whole degrees and speed in whole m/s; those fixes leave the track
-status: code written 2026-10-20, not built - the AIS chain is rebuilt from ais_ping_union with plan 034's rebuild (TODO 98)
+status: applied - built 2026-10-20 at c7fa8c7 with plan 034's rebuild from ais_ping_union (decision 154); 4,851,571 fixes left the trail, 15 of them in 2008
 applies_to:
   - "raw/oracle/afli/sjalfvirkir_maelar/ (gps1, columns breidd, lengd, skip_hradi)"
   - "curated/logbook/sensor_gps (NOT changed, w_lat, w_lon and speed stay as read)"

@@ -1,7 +1,7 @@
 # 154 — A gear for every haul: adb's own gear codes, trips with no catch, the match by time, and landings after the voyage
 
-*2026-10-20. Executes plan 034 (asks answered the same day, §7). Supersedes the gear half of decision 066. The code is
-in; the rebuild from `lid_map` to `ais_catch` waits for the maintainer, who held it that afternoon.*
+*2026-10-20. Executes plan 034 (asks answered the same day, §7). Supersedes the gear half of decision 066. Committed
+at c7fa8c7 together with TODO 98's logger exclusion, and rebuilt that evening (below).*
 
 - **Who chose.** The maintainer: the rules of plan 034 §2 (where a trip is matched, its hauls' gear is the landing's;
   adb has gears in the old code system; no fallback to the previous trip's gear; match by time, not by instant) and
@@ -20,7 +20,7 @@ plógur") is 15, DRB_DES, and 51 ("Krabbagildra") is 16, FPO_DEF. On the 11 code
 code the two agree. Only code 99 ("Óskráð veiðarfæri", gear not recorded, one station) has no row. Decision 066's catch
 half stands.
 
-## Done (code, uncommitted at the time of writing)
+## Done (code, c7fa8c7)
 
 - **`curate/corrections/logbook_gear.R`.** adb's `gid_old` is read through adb's table as the logbook's own gear,
   `gid_basis` "recorded", with the reference's labels. The landing's gear still wins where it names one.
@@ -74,12 +74,36 @@ reading the one before it. `station_window` ran too. Nothing under `$FISHYDATA` 
   (§3.4: 2,476), at 2-7 days; 486 lose their landing gear to the at-sea rule (§3.4: 528 before the addition); 195 with
   none and 616 with a landing's now have a logbook gear, through adb's own codes.
 
-## Not done
+## Rebuilt (2026-10-20, c7fa8c7, ramb 2026.10.19.2)
 
-- The rebuild, by name from a clean tree, and the checks of plan 034 §5 on it. It runs together with TODO 98's change
-  to `curate/ais_ping_union.R` (the afli GPS logger's whole-degree fixes left out, 2020 on), which rebuilds the AIS
-  chain from `ais_ping_union`; so the voyages of 2019-2024 move for reasons of their own, and the counts after mix the
-  two. The checks: pings and fishing flags on vid 2173's
-  hauls, in the vessel overview too; `gid_basis` by source and year in the product; voyages gaining and losing a
-  landing gear, counted on the rebuilt tables. The 50 `09 order` pairs are read in the trial's `lid_map`, which the
-  rebuild reproduces from the same inputs.
+The commit carried TODO 98's change too: `curate/ais_ping_union.R` leaves out a logger fix whose own reading is whole
+degrees (`logger_whole_degrees.yml`). So the rebuild began at `ais_ping_union`, with `ais_ping_union`, `lid_map`,
+`logbook_gear` and `voyage_gear` invalidated by hand: 22 targets, by name, from a clean tree (`fd.dirty` false;
+`.claude/launch.json`, the desktop app's preview config, added to `.git/info/exclude`). It ended "ALL DONE" in 1 h 47
+min (`ais_trail` 31.5, `ais_ping_clean` 20.0, `ais_catch` 19.3, `ais_voyage` 14.6, `ais_ping_tag` 10.2). Fingerprints
+before and after (`R/fingerprint.R`; 856 and 853 files) and the scripts and results of the checks are in
+`$FISHYDATA/archive/2026-10-plan034/` (`scripts/checks_after.R`, `checks_after.txt`, `before/`).
+
+- **Plan 034's tables are the trial's**: `lid_map` (826,383 rows), `gear.parquet` (7,311,365) and
+  `station_window.parquet` (7,563,255) equal it row for row; `voyage_gear` gives the same counts by basis (none ->
+  landing 2,481, landing -> none 486) and gains the column `landing_gap_d`. Among voyages that keep their basis, a
+  handful choose another gear than in the trial (82 against 80 `ambiguous`): `arg_max()` picks arbitrarily between
+  gears with the same count of stations. Not given a tie-break: a tie is a sign of a wrong voyage allocation, since two
+  gears on one voyage are rare (the maintainer, 2026-10-20). By gear label (gear + target2), 601 voyages carry several
+  gears and 242 of them tie, 185 with several logbook trips on the voyage, which points to a port call missed between
+  them; 57 hold one trip. Taken up in TODO 90, the voyage definition.
+- **vid 2173**: voyages 6 and 7 (11 May and 20 June 2026) now have 8,626 and 6,090 fixes on a haul (none before), 8,121
+  and 5,912 of them fishing by the window, and 9,572 and 6,286 by the flow (voyage 7 had none at all). The vessel
+  overview, restarted, shows both trips with their hauls and fishing, matched to their landings of 733.7 t and
+  817.2 t; a link with `trip=` opens the trip of 11 May.
+- **The trail**: fixes on an adb haul 5,058,837 -> 5,195,086, of them flagged fishing by the flow 4,132,338 ->
+  4,238,695; by the voyage's gear basis, `none` 61.52 M -> 61.74 M fixes and `landing` 27.62 M -> 27.01 M, the
+  logger exclusion counted in.
+- **The logger exclusion (TODO 98)**: the trail lost 4,851,571 fixes: 4,851,556 in 2019-2024, as counted beforehand
+  (1,190,491 in 2020, all of 2021-2024), and 15 in 2008, whole-degree readings there too, since the rule is the
+  reading, not a date. No `gps` fix whose reading is whole degrees is left on the trail; 4,006,381 logger fixes remain
+  (2019-2020), and 837 of them sit over 5 km from the recorded track (2,071 before). Voyages and port calls are
+  unchanged (the logger does not cut them); `ping`, `ping_clean`, `ping_tagged`, `ping_union`, `trail`,
+  `trail_match` and `catch` changed in the years the logger reached, and three partition files of 2020-2021 are gone.
+- **The checks** `landed_logged`, `trail_agreement` and `trail_sid_coverage` changed; `port_call_logbook`,
+  `survey_tow_times`, `vessel_activity` and `voyage_sharing` are the same.

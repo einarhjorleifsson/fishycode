@@ -1,9 +1,8 @@
 # 034 — A gear for every haul: adb's own codes, the trip–landing match by time, and landings to voyages
 
-**status:** partly built — measured 2026-10-20 (read-only, on the data of the builds of 2026-10-17 to
-2026-10-19); the six asks (§6) answered by the maintainer the same day (§7), each as recommended; steps 1-4 coded and
-tried read-only (decision 154), not committed; the rebuild (step 5) and the checks of §5 held by the maintainer until
-they are home (TODO 97) · **2026-10-20** · **see:** TODO 97, plan 014 3j (the landing's gear
+**status:** executed — measured 2026-10-20; the six asks (§6) answered by the maintainer the same day (§7), each as
+recommended, and no weight check on `09 order`; built and rebuilt that evening at c7fa8c7 with TODO 98's logger
+exclusion, the checks of §5 passed (decision 154) · **2026-10-20** · **see:** TODO 97, plan 014 3j (the landing's gear
 first), decision 066 (adb's gear left empty), decision 094 (twins), decision 143 (the previous trip's gear in the
 vessel overview), plan 031 and TODO 90 (the voyage definition), TODO 81 (a catch landed over two days),
 `curate/corrections/adb_vs_fs_afladagbok.yml` (defect 3), `sources/adb/convert.R`, `curate/link_lid_map.R`,
