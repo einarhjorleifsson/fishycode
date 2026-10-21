@@ -253,7 +253,12 @@ origin_in_the_sent_record:
     second of arc (dd + mm/60 + ss/3600). Seconds 0-39 occur 2.02 times as often per value as 40-59, in latitude and
     longitude and in 2008-2012 as in 2013-2024: the rollover of hundredths 60-99 onto 0-39. So the misdecoding
     happens before sending, in the app or the device, not in Fiskistofa's loading, and the XML cannot recover it (as
-    it did afli's end longitude). Longitude is sent unsigned up to 2010 and signed west from 2011 (28 % negative in
+    it did afli's end longitude). It is in every app version that sent logger fixes, never fixed: SeaData Fishing
+    Log 2.0 (2.76 M fixes, ratio 2.00), Trackwell Fishing Log 2.6 (6.90 M, 2.01) and 2.7 (19.05 M, 2.02), and the
+    0.24 M from messages naming no app (1.99). No other maker's logger track is in the dumps: fs_afladagbok and adb
+    hold station positions only (fs_afladagbok.fishing_spot, 31,785 rows, is a position per fishing spot). The
+    device's own readings could only come from Trackwell (asked in a draft kept out of git,
+    $FISHYDATA/archive/2026-10-plan035/trackwell.yml); the AIS track can choose between the two candidates above. Longitude is sent unsigned up to 2010 and signed west from 2011 (28 % negative in
     2011, 95-98 % from 2015). The messages' GPS_DATA elements are the device's NMEA sentences ($GPGLL, $GPGGA) with
     positions in degrees and decimal minutes (6455.1410,N): the undamaged form, but a sentence per message or station,
     not a track (sources/afli/xml.R parses them).
