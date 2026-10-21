@@ -942,3 +942,24 @@ with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback s
 
 **check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
 (its JSON whole) or left out in a decision.
+
+## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
+**status:** open · **needs: maintainer** — whether the page's column tables go and its other sections stay ·
+**see:** decision 029, items 51 and 94
+
+The curated logbook tables (`curated/logbook/{trip,station,fishing_sample,catch}.parquet`) are described column by
+column twice: in `docs/data-dict.yaml` (decision 029), which `data-dict validate-meta` checks against the files, and
+in the four column tables of the book appendix `docs/output-schema.md`, carried over from the predecessor repository
+and written for afli and fs_afladagbok. The dictionary was brought up to the build at de25239 on 2026-10-21 (all 94
+columns, the ten of plan 026 among them); the page's tables list fewer columns than the files hold. Two copies of one
+fact drift (AGENTS.md).
+
+Proposal (Claude, 2026-10-21): delete the page's four column tables, and the paragraphs above them that repeat the
+dictionary, and point to `docs/data-dict.yaml` for the columns. Keep what the dictionary does not hold: the renaming
+dictionary (`wk_translate()`), the timestamp population by schema and gear class, the effort units by gear class,
+the duration caps, and the afli `aggregate.parquet` section. Also open: whether the book should carry the dictionary
+as a page of its own (`data-dict render` writes one self-contained HTML page), so that the book's readers still see
+the columns.
+
+**check:** the maintainer has decided; `docs/output-schema.md` then holds no column table that `docs/data-dict.yaml`
+describes, or a decision says why both stay.
