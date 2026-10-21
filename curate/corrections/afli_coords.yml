@@ -245,6 +245,18 @@ west_sign_in_the_recovery:
     own working copy and says so. If afli_coords.R is ever adopted this must be fixed
     at source first.
 
+origin_in_the_sent_record:
+  tested: 2026-10-21, by Claude (AI), read-only; not yet checked by a person
+  finding: >-
+    The fault is already in the XML each logbook app sent (fs_afli.afladagb_xml_mottaka, 30,861,596 <LOG> entries,
+    2008-2024): <STADSETNING BREIDD=".." LENGD=".."/> holds decimal degrees, never radians, and every one is a whole
+    second of arc (dd + mm/60 + ss/3600). Seconds 0-39 occur 2.02 times as often per value as 40-59, in latitude and
+    longitude and in 2008-2012 as in 2013-2024: the rollover of hundredths 60-99 onto 0-39. So the misdecoding
+    happens before sending, in the app or the device, not in Fiskistofa's loading, and the XML cannot recover it (as
+    it did afli's end longitude). Longitude is sent unsigned up to 2010 and signed west from 2011 (28 % negative in
+    2011, 95-98 % from 2015). The messages' GPS_DATA elements are the device's NMEA sentences ($GPGLL, $GPGGA) with
+    positions in degrees and decimal minutes (6455.1410,N): the undamaged form, but a sentence per message or station,
+    not a track (sources/afli/xml.R parses them).
 does_not_extend_to_the_station_tables:
   tested: 2026-09-23
   question: >-
