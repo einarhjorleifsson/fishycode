@@ -1,5 +1,5 @@
-# ufs — the Directorate of Fisheries' reference tables, every table and view as Oracle holds it, except persons and
-# user logs (plan 018).
+# ufs — the Directorate of Fisheries' reference tables, every table and view as Oracle holds it, except Oracle's
+# own Java tables (plan 018).
 #
 # Input:  Oracle ufs
 # Output: raw/oracle/ufs/: <name>.parquet per table and view, _overview_tables.parquet,
@@ -15,17 +15,16 @@
 # valid from and to).
 # About 0.6 M rows in all. The _jn tables are Oracle Designer's change journals; they name the Oracle user who made
 # each change, as ask's do.
-# Left out: the register of persons and companies (adilar and its journal, commented "Þjóðskrá!"), the views that
-# add owners' kennitala and names to the vessel tables (skipasaga_v, skipaskra_v, skip_aukaadilar_v; the base tables
-# keep the ids), the user and session logs and IP addresses (iptolur, log_*, notenda_log_*, errlog), and Oracle's own
-# Java tables. fishycode has no use for them, and _data-dict.yaml would copy examples of each (as for orri).
+# The register of persons and companies (adilar and its journal, commented "Þjóðskrá!"), the views that add owners'
+# kennitala and names to the vessel tables (skipasaga_v, skipaskra_v, skip_aukaadilar_v: who owned and ran each
+# vessel when), and the user and session logs and IP addresses (iptolur, log_*, notenda_log_*, errlog) were left out
+# from 2026-10-17 to 2026-10-21. Oracle's own Java tables still are.
+# Persons' data are dumped since 2026-10-21 (maintainer): kennitala may be carried up to curated/ (2026-10-18), under
+# $FISHYDATA only and never published; _data-dict.yaml holds examples of their values there too.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
 dump_oracle_schema(con, "ufs", fd_raw("oracle", "ufs"),
-                   skip = c("adilar", "adilar_jn", "skipasaga_v", "skipaskra_v", "skip_aukaadilar_v",
-                            "iptolur", "log_adgerdir", "log_adgerdir_master", "log_info", "log_info_v",
-                            "log_info_timi_mism_v", "log_kerfi", "log_kerfi_config", "notenda_log_stig",
-                            "notenda_log_stig_jn", "errlog", "create$java$lob$table", "java$options"),
+                   skip = c("create$java$lob$table", "java$options"),
                    script = "dump/oracle/ufs.R")

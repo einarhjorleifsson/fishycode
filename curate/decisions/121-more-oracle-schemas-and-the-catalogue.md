@@ -35,6 +35,8 @@ names, and its logs; `uv`'s staff; `dw`'s owner tables; `fs_afli`'s recipients, 
 e-mails. fishycode has no use for them, and `_data-dict.yaml` copies examples of every column. `dw`'s four copies of
 the landings (15 M rows) are left out as copies. Each script names what it leaves out.
 
+Overturned for persons by decision 159 (2026-10-21): orri's, ufs's, uv's and fs_afli's are dumped; dw's skips stay.
+
 **Not changed:** the dumps made before hold such tables: `afli`'s copies of the same contact tables, and the
 vessel register's owners. Whether to drop them is not asked here.
 

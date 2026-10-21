@@ -1,5 +1,4 @@
-# fs_afli — the Directorate of Fisheries' copy of the logbook schema, every table as Oracle holds it, except contact
-# details (plan 018).
+# fs_afli — the Directorate of Fisheries' copy of the logbook schema, every table as Oracle holds it (plan 018).
 #
 # Input:  Oracle fs_afli
 # Output: raw/oracle/fs_afli/: <name>.parquet per table, _overview_tables.parquet, _overview_fields.parquet,
@@ -17,17 +16,17 @@
 # Dumped to be compared with afli. afladagbok_sidast_breytt (6.9 M rows: when each logbook record last changed) is
 # not in afli.
 # Set as afli.R is: sjalfvirkir_maelar by year of timi, and the XML table only through ROracle.
-# Left out: names, addresses, kennitala, phone numbers and e-mail of logbook recipients, applicants, agents and
-# skippers (afladagbok_afhending, ra_umsoknir_skip, ra_umsoknir_umbodsmenn, rafr_afladagb_skipstjorar_t,
-# vefthj_stofn_uppruni) and the e-mails (ra_email_skeyti). The comparison needs none of them, and fishycode has no
-# use for them (as for orri). afli's dump holds afli's copies of these tables.
+# The names, addresses, kennitala, phone numbers and e-mail of logbook recipients, applicants, agents and skippers
+# (afladagbok_afhending, ra_umsoknir_skip, ra_umsoknir_umbodsmenn, rafr_afladagb_skipstjorar_t, vefthj_stofn_uppruni)
+# and the e-mails (ra_email_skeyti) were left out from 2026-10-17 to 2026-10-21. The e-mails are LOBs, which RJDBC
+# fetches one row at a time: through ROracle only, as afli's copy (afli.R).
+# Persons' data are dumped since 2026-10-21 (maintainer): kennitala may be carried up to curated/ (2026-10-18), under
+# $FISHYDATA only and never published; _data-dict.yaml holds examples of their values there too.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
 dump_oracle_schema(con, "fs_afli", fd_raw("oracle", "fs_afli"),
-                   skip = c("afladagbok_afhending", "ra_umsoknir_skip", "ra_umsoknir_umbodsmenn",
-                            "rafr_afladagb_skipstjorar_t", "vefthj_stofn_uppruni", "ra_email_skeyti"),
-                   skip_rjdbc = "afladagb_xml_mottaka",
+                   skip_rjdbc = c("afladagb_xml_mottaka", "ra_email_skeyti"),
                    partition = list(sjalfvirkir_maelar = "timi"),
                    script = "dump/oracle/fs_afli.R")
