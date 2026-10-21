@@ -890,8 +890,8 @@ Every one of the 2,438,223 date-only hauls has the window 00:00 to 00:00. Scoped
 3-4.5 h; purse seine and trawl often, hand line and gillnet rarely. Proposed: stretch the day window along the fishing
 stretch it sits in with ramb's stretch functions, the day as the prior, one fix one record. Not redone with the ±10 min
 smoothed speed. The maintainer: reported `t2`/`t3` are not truth; the independent witness proposed is the research
-survey tows: channel was dumped on the server on 2026-10-21 but for three tables (two redone by the geometry
-fallbacks of 6a579d4, one view broken in Oracle); biota waits for the same run (TODO 109).
+survey tows: channel (41 of 42, one view broken in Oracle) and biota (96 of 96) are dumped and in `raw/oracle/` since
+2026-10-21 (decision 159).
 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
 
@@ -930,19 +930,15 @@ and when each record was closed (`FAERSLA_LOKUD`, never loaded), a witness of co
 **check:** the draft decided; if adopted, built, and `afli_end_longitude` folded into it; `KLST` and `FAERSLA_LOKUD`
 and `TOGTIMI` taken from the sent record or declined in a decision.
 
-## 109. The server dump after decision 159: compare, adopt, rebuild
-**status:** open · **needs: maintainer** — the run on the server · **see:** decision 159, `dump/oracle/README.md`
-(sections on the server, the watcher and `compare_dumps()`), TODO 105
+## 110. The Oracle dumper's open ends after the run of 2026-10-21
+**status:** open · **see:** decision 159 ("The run of 2026-10-21"), `R/run_dump.R`, `R/dump_oracle.R`,
+`dump/oracle/fs_afladagbok.R`
 
-To run on the server after `git pull` (decision 159's scripts and the geometry fallbacks of 6a579d4): channel (its
-three failed tables, `--resume`), biota (whole), and orri, ufs, uv and fs_afli again for their persons' tables, or a
-full dump of every schema. Then each schema compared with the Mac's copy (`compare_dumps()`), every difference
-explained before it replaces `raw/oracle/<schema>/`, and the targets that read a changed table rebuilt.
-Run 2026-10-21 on the server: biota whole (96 objects, 05:48); channel 41 of 42 (06:55, `target_species_v` broken in
-Oracle); ufs's 16 opened tables (10:43). orri, uv and fs_afli were skipped by `all.R --resume`, since
-`.dump_finished()` (`R/run_dump.R`) counts a deliberately skipped object as finished; their opened tables need
-`run_dump(c("orri", "uv", "fs_afli"), resume = TRUE)`, and `.dump_finished()` a fix for a shrunk skip list. Still not
-dumped: `fs_afladagbok.takt_json_form` (6,912 Taktikal JSON forms with a file; a CLOB with NULs).
+`all.R --resume` skips a schema whose last run exited 0 with nothing failed, and `.dump_finished()` counts a
+deliberately skipped object as finished: orri, uv and fs_afli were skipped although decision 159 had opened tables
+in them (done by hand with `run_dump(..., resume = TRUE)`). It should count a schema unfinished whose overview lists
+an object as skipped that its script no longer skips. And `fs_afladagbok.takt_json_form` (6,912 Taktikal JSON forms
+with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 and CHAR only.
 
-**check:** every schema of the run compared and adopted (or the difference recorded), and the rebuild done or
-declared not needed.
+**check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
+(its JSON whole) or left out in a decision.
