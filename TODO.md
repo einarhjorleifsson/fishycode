@@ -942,3 +942,17 @@ with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback s
 
 **check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
 (its JSON whole) or left out in a decision.
+
+## 112. The catch's disposition, code 159 'Gámur/Sigling' and agf's `afdrif`, carried to the trip (plan 036)
+**status:** open · **needs: maintainer** — plan 036's seven asks (§5), above all b (the 159 landing kept apart and
+joined to its trip, or folded into the home landing) · **see:** `curate/plans/036-catch-disposition.md`,
+`$FISHYDATA/archive/2026-10-landing-disposition/`, TODO 81, plan 027, decision 031
+
+159 is not a port but what became of the catch: exported unprocessed in a container, or landed abroad (the maintainer,
+2026-10-21). LODS keeps that part as a landing of its own at 159 to 2013-08, 717 kt over 1992-2013; agf records it per
+row as `afdrif` U from 2013-09, and lacks it before. The study found no double counting: agf equals LODS's home
+landing on 4,439 of 4,447 shared vessel-days, and the logbook's catch is 1.004 times home + 159. fishycode drops
+`afdrif`, gives 159 no name, and `lid_map` leaves the 159 part off 4,073 trips (107.6 kt).
+
+**check:** the asks answered in the plan; landings, trips and their catch carry a disposition with a basis, landed kg
+unchanged, and those trips' logged over landed near 1.0; or the plan parked or abandoned in its header.
