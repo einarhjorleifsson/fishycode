@@ -74,7 +74,7 @@ came in), and its in-house edits are unmarked.
 
 | Element (grammar) | Sent layer | Later layers | Read today |
 |---|---|---|---|
-| fs_afladagbok 2020-2025 (trip, station, sample, observation) | its forms by the Taktikal route (`takt_json_form`, 6,912, JSON and a file); Trackwell's own messages are not in Oracle | `ws_*` (the system of record) and its change tables (`ws_*_breytingar`), then adb (derived, decision 160) | `ws_*` |
+| fs_afladagbok 2020-2025 (trip, station, sample, observation) | its forms by the Taktikal route (`takt_json_form`, 6,912, JSON and a file); Trackwell's own messages are not in Oracle | `ws_*` (the system of record) and its change tables (`ws_*_breytingar`), then adb (derived, decision 160: whether its 423 stations before 2025-11-19 exist upstream is being traced) | `ws_*` |
 | Foreign ERS reports 2014-2018 | `dw.dw_aflaskeyti` | none dumped | yes (plan 026) |
 | Landing confirmations (declarations ashore) | in the logbook messages (`LONDUN`) | none | no |
 | Landings (declarations ashore) | the weighings: `ask` (weighing notes, 2007/08 to 2020-07-22), `agf` continuing its ids; `LODS` before 2007 | the landing totals, kvoti's and dw's copies | the landings (plans 007, 023, 025; plan 036 on the disposition) |
@@ -171,7 +171,15 @@ read):
   classed: unit, precision, defect, resend, in-house edit.
 - A scratch build of the merge against the built tables: which columns change, on which rows. The flow reads times
   and catch, not positions or depth, so the effort and catch on the fixes move only where a time or a catch moves.
-- The rebuild, fingerprinted before and after, as for decisions 158 and 160.
+- The rebuild, fingerprinted before and after, as for decisions 158 and 160, and **the catch accounted for kilogram
+  by kilogram**: the catch shared onto the fixes, per catch unit and approach, before and after, every unit in one
+  outcome (unchanged, moved, new, gone) and the total's change decomposed into them. Decision 160's rebuild moved
+  253 t no prediction had foreseen; its trace (`$FISHYDATA/archive/2026-10-catch-253t/`, a scratch store rebuilt as
+  before, the rise reproduced to the kilogram) is the method.
+- **Where a removed or replaced source's records came from:** when a layer is dropped or demoted (as adb before
+  2025-11-19 was, decision 160), its records are traced to the upstream layer they were derived from, one outcome
+  each (found, and how they differ there; or found in no dumped schema). Records found nowhere mean the layer has an
+  upstream not yet dumped.
 
 ## 7. Asks
 
