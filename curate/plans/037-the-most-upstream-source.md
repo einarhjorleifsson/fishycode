@@ -203,6 +203,10 @@ classed and counted, and each class turned into a check of fishycode's own, scor
 it would have made. The years after the expert's last edit (2023) are the years nobody corrected: those checks are
 what stands in for him there.
 
+The domain-expert group is that one account alone (the maintainer, 2026-10-21: most of the other accounts' records
+cannot be attributed to a person). The other accounts' edits are not presumed an expert's: they are classed and judged
+by their evidence like any other difference between the layers.
+
 a. The principle of §1, with its two qualifications, as AGENTS.md's rule.
 b. The layer recorded as a column per field group, or as one provenance table (station, field, layer, basis, reason).
 c. The precedence table of §4 as a starting point, field group by field group; in particular whether an in-house edit
