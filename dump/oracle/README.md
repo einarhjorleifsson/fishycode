@@ -8,8 +8,9 @@ The dump writes every table and view of every schema in `dump/oracle/` to `$FISH
 Oracle holds them, through ROracle. The logs sit in the same tree, so copying `raw/oracle/` copies the whole sweep.
 A full run takes hours: start it with `nohup`, from the shell or from R, and leave it.
 
-The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes, dw, ufs, gear, orri, vessel,
-channel, ops_einarhj, logbook, agf, ask, kvoti, adb, fs_afladagbok, afli, fs_afli, biota, stk. Each is one script,
+The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes, dw, dwstg, fiskist, ufs, gear,
+orri, vessel, channel, ops_einarhj, logbook, fiskifelagid, agf, ask, vor, kvoti, kvotix, adb, fs_afladagbok, afli,
+fs_afli, biota, stk (dwstg, fiskist, fiskifelagid, vor and kvotix prepared 2026-10-21 for plan 037, not yet run). Each is one script,
 `dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` is not a schema: it lists what else
 Oracle holds (section 13).
 

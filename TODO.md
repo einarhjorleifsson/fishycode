@@ -1013,7 +1013,7 @@ holds them for 2.11 M of 4.16 M. fs_afladagbok and adb keep the state already (`
 where the whole weight is computed; or a decision says why not.
 
 ## 115. The most upstream source, value by value, through the grammar (plan 037)
-**status:** open · **needs: maintainer** — plan 037's seven asks (§7) · **see:** `curate/plans/037-the-most-upstream-source.md`,
+**status:** open · **needs: maintainer** — plan 037's eight asks (§7) · **see:** `curate/plans/037-the-most-upstream-source.md`,
 `docs/grammar.qmd`, TODO 108, 110, 113, 114, decisions 158 and 160, `$FISHYDATA/archive/2026-10-plan037/`
 
 The maintainer's principle (2026-10-21): each value from the most upstream layer that holds it, when it states its

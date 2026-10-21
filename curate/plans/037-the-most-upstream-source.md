@@ -1,7 +1,7 @@
 # 037 — The most upstream source, value by value: layers from raw to curated, in the grammar's terms
 
 **status:** proposal — written 2026-10-21, scoped the same evening; nothing built; TODO 113 and 114 paused for it;
-asks in §7 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
+asks in §7, the TODO items it touches in §8 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
 110, 113, 114, decisions 157, 158 and 160, plans 023, 025, 028, 029 and 036, `curate/corrections/afli_end_longitude.yml`,
 `curate/corrections/afli_coords.yml`, `$FISHYDATA/archive/2026-10-xml-oracle-map/`, `2026-10-xml-inventory/`,
 `2026-10-xml-positions/`, `2026-10-time-offsets/`, `2026-10-time-offsets-towed/`, `2026-10-landing-confirmations/`,
@@ -49,6 +49,15 @@ afli's electronic logbook passes through three layers, each of which adds or los
 | **sent** | `fs_afli.afladagb_xml_mottaka` (565,192 messages, 1.44 M records; a superset of `afli`'s copy by 81,454 messages after 2020-07-28) | everything the app sent: positions to the arc-second, the end position (`POS_END`), depths, catch as logged with its state (`SLAEGT`), soak hours and nights, tow time, hooks and baiting, when the record was closed, the landing confirmation, the app and its version | the app's own defects (above) |
 | **loaded** | `rafr_stofn`, `rafr_lineha`, `rafr_toga`, `rafr_afli`, `rafr_sjalfvirkir_maelar` | the record id, the load | positions to the minute, the end position never loaded, the start depth converted to fathoms and the end left in metres, the end longitude overwritten by the latitude (2010-2012), the soak rounded up, the catch's logged weight and state on only part of the rows |
 | **edited / moved** | `afli.stofn`, `lineha`, `toga`, `afli` | in-house corrections: another gear on 30,026 records, another landing date or port on 101,087; the flag `breytt_eftir_lokun` on 166,538 of 1,275,274 electronic stations (13 %); `fs_afli.afladagbok_sidast_breytt` times each record's last change; the statistical rectangle computed where missing | the Danish seine's tow time dropped (105,879), the depth divided by 1.8288 a second time (11,956), the soak rounded a second time (13,637 and 6,104), the catch's logged weight and state not moved |
+
+**Who edited.** `rafr_stofn` names the account that last changed each record (`sbg`, `sbt`). Of the 166,538 records
+marked edited after closing, one account made 125,381 (75 %), 2008-2023, and three accounts nearly all the rest; the two
+busiest accounts overall made no marked edit (most likely the loading). The maintainer (2026-10-21): the person behind
+it had a deep knowledge of the fishery and checked the data the old way, by comparing sources and asking the captains.
+So the in-house edits are an expert's corrections with evidence behind them: they win where they apply, and they are
+labels, a set of records an expert judged wrong and put right, against which an automatic check (gear from the
+landing, the trip-to-landing match on dates and ports, the station's place) can be scored. Accounts were counted, not
+named.
 
 Resends are rare and in-house edits common. Of the 1.44 M sent records, 91.3 % were loaded as sent; 4,598 (0.3 %)
 are older versions of a record sent again; 107,189 the same version sent again in another message; 14,267 never
@@ -119,7 +128,7 @@ read):
   | Field group (grammar) | Precedence, as measured | Evidence |
   |---|---|---|
   | Identification | the loaded ids (they key every link) | §2 |
-  | Design (gear, target) | edited, then sent | gear corrected in-house on 30,026 |
+  | Design (gear, target) | edited, then sent | gear corrected in-house on 30,026, three quarters of the edits by one expert |
   | Temporal envelope | sent = loaded (equal to the second); edited where marked; placeholders flagged on any layer | decisions 157, 158; time-offset studies |
   | Spatial envelope | sent (arc-second, the end position), unless edited | map; xml-positions draft |
   | Configuration (hooks, nets, mesh, baiting) | sent (some never loaded) | map |
@@ -141,12 +150,14 @@ read):
 
 0. **Dump what is missing and warranted:** `kvotix`, `vor` and `dwstg` (with their persons' columns kept as decision
    159 says); the four failing views with Icelandic date settings; `takt_json_form` (TODO 110). Look at
-   `fiskist.ttrail` before deciding.
+   `fiskist.ttrail` before deciding. The scripts are prepared (2026-10-21, not run): `dump/oracle/{kvotix,vor,dwstg,
+   fiskist,fiskifelagid}.R`, in the run order of `R/run_dump.R`.
 1. **The grammar's precedence table and provenance column,** and the consumers reading the whole weight by name, on the
    current sources (no new layer yet): the change that makes later phases additive.
 2. **afli's sent layer** (`sources/afli_sent/`), and the curated choice per field group for afli's electronic records;
    `afli_end_longitude` retires; TODO 108, 113 and 114 close here, with the TODO 113 and 114 notes' findings (decimal
-   commas, the three key forms, the per-vessel unit test, the catch semantics).
+   commas, the three key forms, the per-vessel unit test, the catch semantics). The in-house edits are scored as
+   labels against the automatic checks that would have caught them.
 3. **The landings' layers:** the weighings over the totals where they differ, the in-house edits from `kvotix`, the
    disposition from `vor` and plan 036.
 4. **fs_afladagbok's forms and change tables, the ERS staging, the closures, the licences** (plans 028, 029 for the
@@ -170,3 +181,16 @@ d. Phase 0: dump `kvotix`, `vor` and `dwstg`; look at `fiskist.ttrail`; leave th
 e. `catch` as the weight as logged in every source, the whole weight by name for every consumer (phase 1).
 f. The latest version of each sent record, and the 14,267 never loaded left out or staged with a flag.
 g. The paused TODO 113 and 114 work folded into phase 2, those items closed by it.
+h. The TODO items of §8 linked to the plan's phases as they stand, or folded into it (closed when their phase is).
+
+## 8. The TODO items this plan touches
+
+Not folded (each keeps its own check); listed so that a phase is built with them in view:
+
+| Phase | Items |
+|---|---|
+| 0, the dumps | 110 (the dumper's open ends: `--resume`, `takt_json_form`) |
+| 1, the grammar's names and dictionary | 111 (`output-schema.md`'s column tables), 51 (`data-dict.yaml` against the spec) |
+| 2, afli's layers | 108, 113, 114 (folded); 70 (afli.afli's malformed stored numbers); 75 (trips and rows lost between the layers, decision 098); 79 (every source station accounted for, plan 024); 98 and 100 (the logger and the sensor readings, layers of afli too); 103 and 107 (the app-made values, whose flags the precedence reads) |
+| 3, the landings | 74 (each period's source, plans 023 and 025), 81 (a catch landed over two days), 112 (plan 036, the disposition) |
+| 4, the rest | 62 (foreign logbooks, through `dwstg`), 68 and 87 (stk's other tables; the reports reloaded by hand, an in-house layer of the track), 73 (fs_afladagbok's tables, plans 019 and 020), 83 and 84 (the vessels and the licences, plans 028 and 029) |
