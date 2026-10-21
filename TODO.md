@@ -927,6 +927,10 @@ be flagged (TODO 107). But Oracle lost the Danish seine's tow duration (`togtimi
 56,326 records, so afli's `duration_m` is too long on 61,992 longline stations (median 31 min) and 4,215 jigging ones;
 and when each record was closed (`FAERSLA_LOKUD`, never loaded), a witness of computed times.
 
+The full element-by-element map of message against Oracle (`$FISHYDATA/archive/2026-10-xml-oracle-map/`, its
+recommendations 1-8) and the landing confirmations as trip ends (`../2026-10-landing-confirmations/`: 93.6 % match a
+landing; Oracle's record-to-confirmation link often names a later trip) feed this item; depth and catch are 113, 114.
+
 **check:** the draft decided; if adopted, built, and `afli_end_longitude` folded into it; `KLST` and `FAERSLA_LOKUD`
 and `TOGTIMI` taken from the sent record or declined in a decision.
 
@@ -977,3 +981,31 @@ landing on 4,439 of 4,447 shared vessel-days, and the logbook's catch is 1.004 t
 
 **check:** the asks answered in the plan; landings, trips and their catch carry a disposition with a basis, landed kg
 unchanged, and those trips' logged over landed near 1.0; or the plan parked or abandoned in its header.
+
+## 113. afli's end depth `z2` is 1.83 times the depth sent, on 946,197 electronic stations
+**status:** open · **needs: maintainer** — depth from the sent record for electronic stations (TODO 108) · **see:**
+`curate/corrections/afli_depth_units.R`, decision 022, `$FISHYDATA/archive/2026-10-xml-oracle-map/` (README,
+"What fishycode should take from the message", item 1)
+
+Measured 2026-10-21 by Claude, read-only (not yet checked by a person): Oracle's loader converted the sent start
+depth (`DYPI`) to fathoms but kept the end depth (`DYPI_LOK`) in metres on 974,721 records. `afli_depth_units.R`
+classifies a vessel-period as fathoms from `z1` against GEBCO and multiplies `z2` by the same 1.8288, so `z2` is 1.829
+times the sent metres on 946,197 stations; `z1` is left at 0.547 of the sent metres on 4,205, and both are converted
+on 37,196 whose app sent the value as is. GEBCO confirms the end depth is metres in every app. Proposed in the map:
+take `DYPI` and `DYPI_LOK` from the message as metres for the electronic records, and keep the per-vessel test for
+the paper ones and for Fishing Log 2.6 in 2010-2012. The flow reads no depth; an analyst does.
+
+**check:** `z1` and `z2` of afli's electronic stations equal the sent metres (or a decision says why not), and
+`afli_depth_units.yml` says which stations it still converts.
+
+## 114. afli's catch on gutted items is a computed whole weight labelled `recorded`
+**status:** open · **needs: maintainer** — keep the weight as logged, its state and the whole weight with a basis ·
+**see:** `curate/catch_by_species_station.R`, `$FISHYDATA/archive/2026-10-xml-oracle-map/` (item 5), plan 036
+
+Measured 2026-10-21 by Claude, read-only (not yet checked by a person): on 2.65 M afli catch items logged gutted,
+afli's `afli.afli` holds round(gutted × 1.25) for every species, and `catch_by_species_station.R` labels it
+`recorded`. The weight as logged and its state (`AFLI@SLAEGT`) are in the sent message for every item; `rafr_afli`
+holds them for 2.11 M of 4.16 M. fs_afladagbok and adb keep the state already (`astand`, `condition`).
+
+**check:** every logbook catch row carries the weight as logged, its state and the whole weight, with basis `derived`
+where the whole weight is computed; or a decision says why not.
