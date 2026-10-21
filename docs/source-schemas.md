@@ -1,26 +1,30 @@
 # logbooks — Raw data source schemas
 
-> Load this file when working on raw data, convert scripts, or the dictionary.
+*Carried over from the predecessor repository. Updated with AI assistance (Claude) on 2026-10-21: the paths, the
+dumps' table counts and sizes, the afli section's reading of `fs_afli` (decision 124), and the adb and `logbook`
+sections. How the merge uses each source is in [merge.qmd](merge.qmd) (decision 160).*
 
 Raw data live in `$FISHYDATA/raw/` and are never in git. Each Oracle schema is
 dumped as it is to `raw/oracle/<schema>/` by `dump/oracle/<schema>.R`, through
 `dump_oracle_schema()` (`R/dump_oracle.R`; decision 105, plan 018), with an
-overview, the columns' types and comments, and a `_data-dict.yaml`. The paths
-below are from before the restructuring.
+overview, the columns' types and comments, and a `_data-dict.yaml`. Each
+adapter, `sources/<schema>/convert.R`, writes `staging/<schema>/`, and
+`curate/logbook.R` merges the logbook schemas into `curated/logbook/`.
 
-Dump sizes: `data-dump/ais/` ~149 GB, `data-dump/logbooks/` ~3.4 GB,
-`data-dump/aux/` ~2.4 GB, `data-dump/landings/` ~797 MB.
+Dump sizes on 2026-10-21: `raw/oracle/afli/` 5.0 GB, `raw/oracle/fs_afli/`
+5.6 GB, `raw/oracle/fs_afladagbok/` 66 MB, `raw/oracle/adb/` 191 MB.
 
 ---
 
 ## `fs_afladagbok/` — FisheryScan digital logbooks (static dump)
 
-Modern electronic submission format from Fiskistofa; records through 2025-12.
-Converted by `data-raw/logbooks/01_fs_afladagbok_convert.R` →
-`data-raw/logbooks/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet`.
+Modern electronic submission format from Fiskistofa; a one-time dump whose
+records end on 2025-11-28, thinning from 2025-11-19 (decisions 125, 160).
+Converted by `sources/fs_afladagbok/convert.R` →
+`staging/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet`.
 
-The dump holds 27 tables (plus `_overview_tables` / `_overview_views`); the eight
-below are the ones the convert script reads. The rest are change-log tables
+The dump (`raw/oracle/fs_afladagbok/`) holds 32 tables and views; the eight
+below are the ones the adapter reads. The rest include change-log tables
 (`*_breytingar`), seaweed (`ws_thang_thari`), bycatch (`ws_medafli`,
 `mammals_birds`), traceability (`ws_rekjanleiki`), and `ws_stofn_*` gear-detail
 lookups.
@@ -83,12 +87,16 @@ and `_overview_fields.parquet`). Full inventory in `afli-tables.qmd`.
 | Early electronic submissions | `rafr_stofn`, `rafr_afli`, `rafr_toga`, … | ~2000–2022 |
 | Mandatory digital + compliance | `afladagb_skil`/`_linur`, `afladagb_xml_mottaka` | 2014–2021 |
 
-Converted by `data-raw/logbooks/01_afli_convert.R` →
-`data-raw/logbooks/afli/{trip,station,fishing_sample,catch,aggregate}.parquet`.
+Converted by `sources/afli/convert.R` →
+`staging/afli/{trip,station,fishing_sample,sensor,catch,aggregate}.parquet`.
+Since decision 124 the adapter also reads `fs_afli`, the Directorate's copy of
+the schema: the deletion flag from `fs_afli.rafr_stofn`, and the paper stations
+of `fs_afli.stofn` that `afli.stofn` lacks, with their detail rows (the merge's
+tier 2b, [merge.qmd](merge.qmd)).
 Coordinates in `stofn.parquet` stored in DDMM integer format; converted via
 `geo::geoconvert.1()` (×100 before passing in; longitude negated for West).
 
-**Tables used by `01_afli_convert.R`:**
+**Tables used by `sources/afli/convert.R`** (from `afli`, and from `fs_afli` as above):
 
 | Table (parquet) | Description |
 |---|---|
@@ -99,7 +107,7 @@ Coordinates in `stofn.parquet` stored in DDMM integer format; converted via
 | `gildra.parquet` | Trap records |
 | `hringn.parquet` | Purse seine / ring net records |
 
-**Additional key tables (not used by convert script):**
+**Additional key tables of `afli` (not read by the adapter):**
 
 | Table (parquet) | Rows | Description |
 |---|---|---|
@@ -113,6 +121,9 @@ Coordinates in `stofn.parquet` stored in DDMM integer format; converted via
 | `afladagb_skil.parquet` | 9,961 | Compliance master table (from Jan 2014) |
 | `afladagb_skil_linur.parquet` | 46,561 | Compliance detail by fishing month |
 | `rafr_hledsla_log.parquet` | 6,595,396 | Oracle import run log; Icelandic-language messages |
+
+`fs_afli`'s `afladagb_xml_mottaka` is read by `curate/corrections/afli_end_longitude.R`, and the two logger
+tables by `curate/logbook_sensor_gps.R`, a one-time fix (plan 014).
 
 **Raw column vocabulary (afli system → unified name):**
 
@@ -134,15 +145,13 @@ Coordinates in `stofn.parquet` stored in DDMM integer format; converted via
 
 ## `gear/` — gear code vocabulary (hand-maintained)
 
-Script: `data-raw/DATASET_gear-codes.R`  
-Output: `data/gear/gear_mapping.parquet`  
-Reference: `data-dump/species/asfis.parquet` (loaded but not yet used). The raw
-gear dump `data-dump/gear/` (`gear_fishing_gear`, `gear_gear_category`,
-`gear_isscfg`, `gear_veidarfaeri_v`, `orri_veidarfaeri`, `orri_veidarfaeri_ny`)
-is produced by `data-dump/gear/DUMP_gear.R` but the mapping itself is
-hand-maintained in the script.
+Script: `reference/gear/mapping.R`  
+Output: `curated/reference/gear.parquet` (the predecessor's `gear_mapping`)  
+Reference: `raw/oracle/asfis/asfis.parquet` (loaded but not yet used). The raw
+gear dump, `raw/oracle/gear/` (20 tables), is produced by `dump/oracle/gear.R`,
+but the mapping itself is hand-maintained in the script.
 
-The `gear_mapping` table maps codes between the two schemas and assigns ICES
+The gear table maps codes between the two schemas and assigns ICES
 metier vocabulary. One row per gear per version.
 
 | Column | Description |
@@ -166,26 +175,32 @@ not appear in actual `afli` logbook data (`stofn.parquet`).
 
 ---
 
-## `adb/` — live-streaming feed (in-house conversion)
+## `adb/` — a view of the same e-logbook, derived in-house
 
-Current live feed from Fiskistofa, converted in-house to partially emulate the
-historical `afli` format. Data content effectively the same as `fs_afladagbok`,
-just restructured differently. **Uses the old (afli-era) gear code system** —
-gear codes stored in `gid_old` in converted output; `gid` derived via
-`gear_mapping` (old→new) at merge time.
+A schema of MFRI's Oracle that re-serves the Directorate's e-logbook in a layout
+that partly emulates `afli`, derived from fs_afladagbok and other schemas, and
+running on past the dump's end: 467,635 of fs_afladagbok's station ids are in
+adb (decision 125), and adb adds errors of its own (decision 160), among them a
+dropped west sign (`curate/corrections/adb_vs_fs_afladagbok.yml`). **Uses the
+old (afli-era) gear code system**: the adapter keeps the code as `gid_old` and
+leaves `gid` empty, and `curate/corrections/logbook_gear.R` reads adb's own
+crosswalk (`fishing_gear`) to the new gid (plan 034).
 
-Converted by `data-raw/logbooks/01_adb_convert.R` →
-`data-raw/logbooks/adb/*.parquet`. The dump holds 26 tables.
-`01_adb_convert_brute-force.R` is an alternative reader kept for reference.
+Converted by `sources/adb/convert.R` →
+`staging/adb/{trip,station,fishing_sample,catch}.parquet`. The dump
+(`raw/oracle/adb/`) holds 32 tables and views. `sources/adb/convert_brute_force.R`
+is an alternative reader kept for reference.
 
-`adb_files` is still built by `_targets.R`, but the merge is **two-tier**
-(`afli` > `fs_afladagbok`) and does not read the adb output.
+The merge reads adb only from 2025-11-19, where fs_afladagbok's dump thins and
+ends, for the vessel-days no higher tier holds (tier 3, decision 160): see
+[merge.qmd](merge.qmd).
 
 ---
 
-## `logbook/` — experimental restructuring (not in use)
+## `logbook/` — trial work, not a source
 
-Path: `data-dump/logbooks/logbook/`. Experimental re-layout of `fs_afladagbok`.
-Not actively developed; no conversion script planned. Eleven tables:
-`trip`, `station`, `catch`, `trawl`, `seine_net`, `surr_net`, `net`, `dredge`,
-`hook_line`, `trap`, `diving`.
+Path: `raw/oracle/logbook/`, dumped by `dump/oracle/logbook.R`. Trial work, not
+a source (maintainer, 2026-10-21): its `trip` is a derived afli trip table
+(`system` is `afli` in all its 1,097,466 rows). Nothing in fishycode reads it.
+Twelve tables: `trip`, `station`, `catch`, `bycatch`, `trawl`, `seine_net`,
+`purse_seine`, `net`, `dredge`, `hook_line`, `trap`, `diving`.
