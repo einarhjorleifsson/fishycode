@@ -477,7 +477,7 @@ list(
     produces("curate/corrections/aflaskeyti_local_time.R", fd_staging("aflaskeyti", "time.parquet"))
   }, format = "file"),
   tar_target(aflaskeyti_trip, {
-    aflaskeyti; aflaskeyti_local_time; landing; afli; fs_afladagbok; adb
+    aflaskeyti; aflaskeyti_local_time; landing; afli; fs_afladagbok
     produces("curate/aflaskeyti_trip.R",
              fd_staging("aflaskeyti", "trip_landing.parquet"),
              fd_staging("aflaskeyti", "station_trip.parquet"))

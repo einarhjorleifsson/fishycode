@@ -4,7 +4,7 @@
 # Input:  staging/aflaskeyti/{station,trip}.parquet   (.sid, .tid; the adapter's runs give the vid)
 #         staging/aflaskeyti/time.parquet             (t1-t4 in UTC; curate/corrections/aflaskeyti_local_time.R)
 #         curated/landing/{landings,catch}.parquet    (.lid, vid, date, hid, pid; kg)
-#         staging/{afli,fs_afladagbok,adb}/trip.parquet (vid, T1, T2: the Icelandic logbook trips)
+#         staging/{afli,fs_afladagbok}/trip.parquet (vid, T1, T2: the Icelandic logbook trips)
 # Output: staging/aflaskeyti/trip_landing.parquet     (.tid, vid, T1, T1_basis, hid1, T2, T2_basis, hid2, pid2,
 #                                                      source, schema) — replaces the adapter's trips
 #         staging/aflaskeyti/station_trip.parquet     (.sid, .tid)
@@ -24,10 +24,10 @@
 #      abroad, or later than LANDING_MAX_D days);
 #   3. T1 is the trip's first haul time, basis "synthesised": a bound on departure, never a departure.
 # A landing of no weight (a changed or reversed landing, plan 025) does not cut a trip. Nor does a landing after a
-# haul that lies inside an Icelandic logbook trip of the same vessel (staged afli, fs_afladagbok or adb; from T1 to
-# the day after T2): the haul is a day that trip's logbook lacks, and the landing is that trip's. The first scratch
-# merge had Icelandic vessel 2903's one haul of 2018-05-08 take, at lid_map's exact step, the landing its afli trip
-# of 2018-05-05..10 matched at one day off (plan 026 §11).
+# haul that lies inside an Icelandic logbook trip of the same vessel (staged afli or fs_afladagbok, from T1 to the
+# day after T2; adb is used only where fs_afladagbok's dump ends, decision 160): the haul is a day that trip's logbook
+# lacks, and the landing is that trip's. The first scratch merge had Icelandic vessel 2903's one haul of 2018-05-08
+# take, at lid_map's exact step, the landing its afli trip of 2018-05-05..10 matched at one day off (plan 026 §11).
 
 library(dplyr)
 library(lubridate)
@@ -58,7 +58,7 @@ land <- od(fd_curated("landing", "landings.parquet")) |>
   select(.lid, schema_land = schema, vid, date, hid, pid, kg)
 
 # hauls inside an Icelandic logbook trip: they claim no landing -----------------------------------------------------
-lb_trip <- bind_rows(lapply(c("afli", "fs_afladagbok", "adb"), \(s)
+lb_trip <- bind_rows(lapply(c("afli", "fs_afladagbok"), \(s)
   duckdbfs::open_dataset(fd_staging(s, "trip.parquet")) |>
     filter(vid %in% !!unique(haul$vid), !is.na(T1), !is.na(T2)) |>
     select(vid, T1, T2) |>

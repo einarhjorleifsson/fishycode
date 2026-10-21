@@ -8,7 +8,7 @@
 #   Tier 1 — if (vid, date) present in afli                        → use afli
 #   Tier 2 — not in afli, but present in fs_afladagbok             → use fs_afladagbok
 #   Tier 2b — not in either, and an afli station read from fs_afli  → use it (decision 124)
-#   Tier 3 — not in afli or fs_afladagbok, present in adb          → use adb
+#   Tier 3 — not in afli or fs_afladagbok, present in adb from ADB_DATE_MIN on → use adb
 #   Tier 4 — in none of them, present in aflaskeyti                → use aflaskeyti (plan 026): the foreign
 #            vessels' hauls of 2014-2018, and the Icelandic vessels' hauls on vessel-days their logbook lacks
 #
@@ -16,18 +16,17 @@
 #   afli > fs_afladagbok: afli mobile-gear timing is derived from the on-bottom
 #   clock; when fs_afladagbok was instigated, timestamps and/or duration were
 #   missing in fs_afladagbok.
-#   fs_afladagbok > adb: adb has no fishing_sample detail of its own (gid is
-#   NA - see sources/adb/convert.R) and exists to extend coverage past
-#   fs_afladagbok's static dump, not to compete with it: it fills the
-#   vessel-days afli and fs_afladagbok lack, whatever the date.
+#   fs_afladagbok > adb: fs_afladagbok is the dump of the e-logbook; adb is
+#   derived from it and from other schemas, with errors of its own, and is
+#   read only for the dates the dump no longer covers (decision 160).
 #
 # Date bounds applied:
 #   afli          — no lower bound; upper: <= DATE_MAX
 #   fs_afladagbok — lower: >= FS_DATE_MIN; upper: <= FS_DATE_MAX (static dump)
-#   adb           — lower: >= ADB_DATE_MIN, a floor against adb's impossible
-#                   dates, not a handover (decision 125); upper: <= DATE_MAX.
-#                   Which of fs_afladagbok and adb holds a vessel-day is the
-#                   tier anti-join's to decide.
+#   adb           — lower: >= ADB_DATE_MIN, the day fs_afladagbok's dump starts
+#                   to thin (decision 160); upper: <= DATE_MAX. From that day
+#                   the tier anti-join decides which of the two holds a
+#                   vessel-day, since the dump goes on to 2025-11-28.
 #
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
 # keep the original recorded value, z1_basis/z2_basis says which happened.
@@ -48,10 +47,9 @@ library(duckdbfs)
 # Parameters -------------------------------------------------------------------
 FS_DATE_MIN  <- as.Date("2020-01-01")
 FS_DATE_MAX  <- as.Date("2025-12-31")
-# Decision 125: fs_afladagbok's dump ends on 2025-11-28 and thins from 11-19, so a handover on a date dropped the
-# vessel-days it never received (December 2025 whole). adb before 2020 is misdated: years 3 to 2018, 99 of its
-# 108 stations off their own trip's dates.
-ADB_DATE_MIN <- FS_DATE_MIN
+# Decision 160: adb only for the dates fs_afladagbok's dump no longer covers. The dump holds 99-100 % of adb's
+# vessel-days up to 2025-11-19, then 95 % falling to 3 % on 11-28; what it lacks before 11-19 is strays.
+ADB_DATE_MIN <- as.Date("2025-11-19")
 DATE_MAX     <- as.Date("2026-12-31")
 # curate/decisions/022-depth-unit-is-metres.md: product-wide depth is metres.
 # fs_afladagbok has no drift (curate/corrections/afli_depth_units.yml baseline) -
@@ -192,8 +190,8 @@ afli_fishing_sample <- afli_fishing_sample |> semi_join(afli_station |> distinct
 afli_catch          <- afli_catch          |> semi_join(afli_station |> distinct(.sid), by = ".sid")
 
 # Tier 3: adb — vessel-days not covered by afli or fs_afladagbok --------------
-# fs_afladagbok and adb are copies of one e-logbook (the same station ids), so until fs_afladagbok's dump ends this
-# keeps only the vessel-days that neither afli nor the dump holds, and after it almost all of adb.
+# fs_afladagbok and adb are copies of one e-logbook (the same station ids), so from ADB_DATE_MIN until the dump ends
+# this keeps only the vessel-days the dump never received, and after it almost all of adb.
 tier12_vid_date <- bind_rows(afli_vid_date, fs_only_vid_date, afli_fs_vid_date)
 
 adb_only_station <- adb_station |>
