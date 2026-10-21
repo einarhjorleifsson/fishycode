@@ -68,15 +68,23 @@ de25239 (decision 158), whole rows and keys (`scripts/04_compare_scratch.R`, `sc
 Decision 125 found 66 of its 417 adb stations of 2020-2024 to be copies of fs_afladagbok stations carrying another
 vessel or day than their fs_afladagbok copy, probably afli hauls entered again; those go too.
 
+## Built 2026-10-21
+
+On the maintainer's go, at f05de18 with ramb 2026.10.19.2: the 20 targets from `aflaskeyti_trip` and `logbook` through
+`ais_catch` and the checks, 17:15-18:00 (`tar_make_isolated()`, names given; `mbl_photo` left out). Fingerprints,
+summaries and checks before and after in `$FISHYDATA/archive/2026-10-decision160/`; the before fingerprints of
+`logbook`'s own files, which `tar_meta` dropped when it was invalidated, are in `../2026-10-adb-handover/before/`.
+Every rebuilt file is stamped f05de18, `fd.dirty` false; nothing is outdated after it but `mbl_photo`.
+
+- **As the scratch test said:** no adb station before 2025-11-19; adb stations -423 (2020 -360, 2021 -32, 2022 -24,
+  2024 -1, 2025 -6), trips -367, catch -117 rows and -81.2 t; afli, fs_afladagbok and aflaskeyti unchanged, as are
+  `aflaskeyti`'s staging, the placeholder set times and afli's end longitudes.
+- **Downstream:** 429 windows fewer; 34,992 trail fixes lose their window and 316 their `fishing_flow` (2020-2025);
+  30 of the trail's 233 month files change. The allocation audit's stations in a port call 49,163 to 49,121.
+- **Not traced:** the catch on the fixes rises by 253 t of 27.9 Mt (the audit: "on fixes" +269 t, "on a unit with no
+  fix" -15.7 t).
+
 ## Not done here
 
-- The build. Invalidated by hand (`targets` cannot see a script edit): `logbook`. Outdated with it, 20 targets:
-  `aflaskeyti_trip`, `logbook`, `lid_map`, `logbook_gear`, `catch_by_species_station`, `catch_by_species_trip`,
-  `station_window`, `trip_voyage`, `station_event`, `ais_trail`, `voyage_gear`, `ais_catch`, `check_port_call_logbook`,
-  `check_voyage_sharing`, `check_vessel_activity`, `check_trail_agreement`, `check_trail_sid_coverage`,
-  `check_landed_logged`, `check_allocation_audit`, `check_survey_tow_times`. The fingerprints of `logbook`'s and
-  `aflaskeyti_trip`'s files before it are in `$FISHYDATA/archive/2026-10-adb-handover/before/`.
-- `docs/output-schema.md`, `docs/source-schemas.md` and `docs/grammar_logbooks.qmd` still describe the merge before
-  the restructuring (adb left out), as decision 125 noted for the first.
 - `products/exports/bjarki_table.R`, a legacy export carried over from the old trees, reads Oracle's adb directly
   through `mar`; it is not part of the build and is left as it is.
