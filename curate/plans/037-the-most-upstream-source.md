@@ -151,7 +151,9 @@ read):
 0. **Dump what is missing and warranted:** `kvotix`, `vor` and `dwstg` (with their persons' columns kept as decision
    159 says); the four failing views with Icelandic date settings; `takt_json_form` (TODO 110). Look at
    `fiskist.ttrail` before deciding. The scripts are prepared (2026-10-21, not run): `dump/oracle/{kvotix,vor,dwstg,
-   fiskist,fiskifelagid}.R`, in the run order of `R/run_dump.R`.
+   fiskist,fiskifelagid}.R`, in the run order of `R/run_dump.R`. The maintainer dumps these five the old way
+   (2026-10-21); they are also the baseline of omar2's pilot (its plan 001, *Next*), after which the next full refresh
+   may go through omar2.
 1. **The grammar's precedence table and provenance column,** and the consumers reading the whole weight by name, on the
    current sources (no new layer yet): the change that makes later phases additive.
 2. **afli's sent layer** (`sources/afli_sent/`), and the curated choice per field group for afli's electronic records;
