@@ -81,8 +81,14 @@ Every rebuilt file is stamped f05de18, `fd.dirty` false; nothing is outdated aft
   `aflaskeyti`'s staging, the placeholder set times and afli's end longitudes.
 - **Downstream:** 429 windows fewer; 34,992 trail fixes lose their window and 316 their `fishing_flow` (2020-2025);
   30 of the trail's 233 month files change. The allocation audit's stations in a port call 49,163 to 49,121.
-- **Not traced:** the catch on the fixes rises by 253 t of 27.9 Mt (the audit: "on fixes" +269 t, "on a unit with no
-  fix" -15.7 t).
+- **Traced afterwards** (a side session, stopped before it finished writing up; `$FISHYDATA/archive/2026-10-catch-253t/`,
+  measured by Claude, not yet checked by a person): the catch on the fixes rose by 253 t (268.7 t on the fixes)
+  because the landings `lid_map` had matched to the removed adb trips are now unclaimed and shared onto fixes by the
+  voyage route. And the decision's assumption holds only in part: of the 368 adb trips removed or with stations
+  removed, 26 are copies of a kept afli or fs_afladagbok trip and 1 names a kept afli trip, but 321 are adb's own app
+  trips found in neither (320 with no catch logged) and 19 adb's own records with catch (Trackwell books, vendor
+  trials, one paper logbook). So before 2025-11-19 adb is not only derived: it holds records of its own, from an
+  entry route not dumped. Whether those 340 trips and their landings should come back is plan 037's (§3.1).
 
 ## Not done here
 

@@ -81,7 +81,7 @@ came in), and its in-house edits are unmarked.
 
 | Element (grammar) | Sent layer | Later layers | Read today |
 |---|---|---|---|
-| fs_afladagbok 2020-2025 (trip, station, sample, observation) | its forms by the Taktikal route (`takt_json_form`, 6,912, JSON and a file); Trackwell's own messages are not in Oracle | `ws_*` (the system of record) and its change tables (`ws_*_breytingar`), then adb (derived, decision 160: whether its 423 stations before 2025-11-19 exist upstream is being traced) | `ws_*` |
+| fs_afladagbok 2020-2025 (trip, station, sample, observation) | its forms by the Taktikal route (`takt_json_form`, 6,912, JSON and a file); Trackwell's own messages are not in Oracle | `ws_*` (the system of record) and its change tables (`ws_*_breytingar`), then adb, derived in part: of the 368 adb trips decision 160 removed, 27 are copies of afli or fs_afladagbok trips, but 340 are adb's own (321 app trips, 320 of them with no catch; 19 with catch: Trackwell books, vendor trials, one paper logbook), from an entry route not dumped (decision 160, traced) | `ws_*` |
 | Foreign ERS reports 2014-2018 | `dw.dw_aflaskeyti` | none dumped | yes (plan 026) |
 | Landing confirmations (declarations ashore) | in the logbook messages (`LONDUN`) | none | no |
 | Landings (declarations ashore) | the weighings: `ask` (weighing notes, 2007/08 to 2020-07-22), `agf` continuing its ids; `LODS` before 2007 | the landing totals, kvoti's and dw's copies | the landings (plans 007, 023, 025; plan 036 on the disposition) |
