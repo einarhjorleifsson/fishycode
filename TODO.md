@@ -929,6 +929,8 @@ To run on the server after `git pull` (decision 159's scripts and the geometry f
 three failed tables, `--resume`), biota (whole), and orri, ufs, uv and fs_afli again for their persons' tables, or a
 full dump of every schema. Then each schema compared with the Mac's copy (`compare_dumps()`), every difference
 explained before it replaces `raw/oracle/<schema>/`, and the targets that read a changed table rebuilt.
+Run 2026-10-21 with `--resume channel biota orri ufs uv fs_afli`. Still not dumped: `fs_afladagbok.takt_json_form`
+(6,912 Taktikal JSON forms with a file): a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 only.
 
 **check:** every schema of the run compared and adopted (or the difference recorded), and the rebuild done or
 declared not needed.
