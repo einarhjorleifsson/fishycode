@@ -904,11 +904,12 @@ draft (not committed): after decision 158, static set times still sit on a half-
 start (about 32,600 stations), at 24 h (5,315) and beside the 270-min placeholder (3,023); haul lengths are rounded
 to whole hours at entry. Towed gear: the paper logbook's tow times are the skipper's rounding (42 % of starts on the
 hour), the electronic logbook holds a few app dummies. The sent XML holds the same values (TODO 108): they can be
-flagged, not recovered from it.
+flagged, not recovered from it. A defect beside them: adb's `duration_m` is empty on its trawls and dredges (32,329
+OTB, 1,367 OTM, 2,174 DRB), since the adapter computes it from `tow_start`, which adb leaves empty.
 
 **check:** each draft decided and recorded (correction, flag or no action), or declined in a decision.
 
-## 108. afli's station positions, soak hours and record times from the record the logbook sent
+## 108. afli's positions, Danish-seine tow times, soak hours and record times from the record the logbook sent
 **status:** open · **needs: maintainer** — the draft correction · **see:** `curate/corrections/afli_end_longitude.yml`,
 `$FISHYDATA/archive/2026-10-xml-positions/` (README, `draft/afli_sent_positions.{R,yml}`),
 `$FISHYDATA/archive/2026-10-xml-inventory/`
@@ -919,13 +920,15 @@ arc-second and stored to the minute (805,383 more precise); Oracle's loader turn
 of Greenwich east (905). No output of the flow changes, only `station.parquet`'s positions. The draft correction
 would replace `afli_end_longitude`'s side table. The inventory also found 81,454 messages after 2020-07-28 only in
 fs_afli's copy, and `afli.rafr_mottaka_view` failing (ORA-01843) though its table is dumped.
-Times: `t1`-`t4` equal the sent record to the second (221,253 records; `../2026-10-time-offsets/`), so the XML cannot
-mend them (TODO 107). It does hold two time values: the soak (`KLST`), which Oracle rounded up to a whole hour on
-56,326 records 2008-2020, so afli's `duration_m` is too long on 61,992 longline stations (a median 31 min) and 4,215
-jigging ones; and when each record was closed (`FAERSLA_LOKUD`, never loaded), a witness of computed times.
+Times: static gear's `t1`-`t4` equal the sent record to the second (221,253 records), so its app-made values can only
+be flagged (TODO 107). But Oracle lost the Danish seine's tow duration (`togtimi`) on 106,045 electronic stations
+(2008-2013, 2015), whose tow end `t3 = t2 + togtimi` is therefore missing; the sent `TOGTIMI` gives it back on 99,028
+(median 49 min; `../2026-10-time-offsets-towed/`). Also: the soak (`KLST`), rounded up to a whole hour by Oracle on
+56,326 records, so afli's `duration_m` is too long on 61,992 longline stations (median 31 min) and 4,215 jigging ones;
+and when each record was closed (`FAERSLA_LOKUD`, never loaded), a witness of computed times.
 
 **check:** the draft decided; if adopted, built, and `afli_end_longitude` folded into it; `KLST` and `FAERSLA_LOKUD`
-taken from the sent record or declined in a decision.
+and `TOGTIMI` taken from the sent record or declined in a decision.
 
 ## 109. The server dump after decision 159: compare, adopt, rebuild
 **status:** open · **needs: maintainer** — the run on the server · **see:** decision 159, `dump/oracle/README.md`
