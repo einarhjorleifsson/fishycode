@@ -849,8 +849,8 @@ treats each.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
 **status:** open · **needs: maintainer** — whether to send the draft to Trackwell (and Fiskistofa) · **see:**
-decisions 157 and 158, `curate/corrections/logbook_set_placeholder.yml`, `curate/issues/trackwell.yml`, plan 031 §3.11
-and asks i-k, `$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/`
+decisions 157 and 158, `curate/corrections/logbook_set_placeholder.yml`, plan 031 §3.11 and asks i-k,
+`$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/` (the draft, `trackwell.yml`, kept out of git)
 
 Origin found and corrected (decisions 157, 158): Trackwell's app (Fishing Log 2.7, from 2014) sends the static-gear set
 time as the haul start less 270 or 1,710 min; those `t1` are NA and flagged since the rebuild of 2026-10-21. Nothing

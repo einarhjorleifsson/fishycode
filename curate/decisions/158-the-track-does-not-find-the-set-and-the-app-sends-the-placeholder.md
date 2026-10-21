@@ -45,14 +45,17 @@ places decision 157's rise of 2015, and answers its note that afli names no make
 - `curate/corrections/logbook_set_placeholder.yml` stands as coded: a placeholder `t1` is NA, and nothing fills it.
   `station_window` draws no set window there; the soak stays unknown. Plan 035 is abandoned; its §4 is not built.
 - No rebuild was run that night: the maintainer tied it to a passing test. The maintainer asked for it the next morning (below).
-- The draft to Trackwell (`curate/issues/trackwell.yml`) now says the app sends the value.
+- The draft to Trackwell now says the app sends the value. It is kept out of git at the maintainer's word
+  (2026-10-21), in `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`.
 
 ## The rebuild of 2026-10-21
 
 On the maintainer's go, at de25239 with ramb 2026.10.19.2: `afli_xml_raw`, `afli_end_longitude`, `logbook` and the 18
 targets after it through `ais_catch` and the checks, 06:00-06:41 (`tar_make_isolated()`, names given, `mbl_photo` left
 out). Fingerprints and summaries before and after, and the checks, in `$FISHYDATA/archive/2026-10-plan035/` (`before/`,
-`after/`, `scripts/rebuild_*.R`, `rebuild.log`). Every rebuilt file is stamped de25239, `fd.dirty` false.
+`after/`, `scripts/rebuild_*.R`, `rebuild.log`). Every rebuilt file is stamped de25239, `fd.dirty` false. Before the
+push the unpushed commits were rewritten to take the draft out of git: de25239 is 452f83e in the published history,
+979dd7f is 4655171, and the two differ only by that file (`git diff --name-status`), so the stamp names the same code.
 
 - **The corrections, as declared:** 77,953 placeholder set times NA (adb 4,918, afli 54,623, fs_afladagbok 18,412), none
   left; afli's end longitude 136,798 recovered, 7,570 NA, no afli station with `lon2 = -lat2`.
