@@ -40,6 +40,13 @@ known, precision**; a downstream layer is a witness. Two things qualify it:
 So the choice is made per value, by the field group the value belongs to, and every chosen value says which layer it
 came from.
 
+**It is bookkeeping, not modelling** (the maintainer, 2026-10-21: "an accountant exercise, not a random forest
+model"). Every record and every kilogram is accounted for: placed in one outcome, and every difference between layers
+explained (unit, precision, defect, resend, in-house edit). An agreement rate is not a pass, however high: 99.9 % that
+matches says nothing of the 0.1 % that does not, which is listed record by record, explained or marked unexplained.
+Statistics only test in the background (a unit test on depths against GEBCO, the track against a time); they never
+replace the account.
+
 ## 2. The layers, measured for afli's electronic logbook
 
 afli's electronic logbook passes through three layers, each of which adds or loses something:
@@ -166,6 +173,8 @@ read):
    last two).
 
 ## 6. What is measured before each phase is built
+
+The pass is that everything is accounted for (§1), not a rate.
 
 - The new staged layer against the layer below, field by field, every record in one outcome, each difference
   classed: unit, precision, defect, resend, in-house edit.
