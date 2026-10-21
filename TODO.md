@@ -983,7 +983,8 @@ landing on 4,439 of 4,447 shared vessel-days, and the logbook's catch is 1.004 t
 unchanged, and those trips' logged over landed near 1.0; or the plan parked or abandoned in its header.
 
 ## 113. afli's end depth `z2` is 1.83 times the depth sent, on 946,197 electronic stations
-**status:** open · **needs: maintainer** — depth from the sent record for electronic stations (TODO 108) · **see:**
+**status:** parked · **needs: maintainer** — plan 037 (paused 2026-10-21 for it; findings and scripts in
+`$FISHYDATA/archive/2026-10-plan037/`) · **see:**
 `curate/corrections/afli_depth_units.R`, decision 022, `$FISHYDATA/archive/2026-10-xml-oracle-map/` (README,
 "What fishycode should take from the message", item 1)
 
@@ -999,7 +1000,8 @@ the paper ones and for Fishing Log 2.6 in 2010-2012. The flow reads no depth; an
 `afli_depth_units.yml` says which stations it still converts.
 
 ## 114. afli's catch on gutted items is a computed whole weight labelled `recorded`
-**status:** open · **needs: maintainer** — keep the weight as logged, its state and the whole weight with a basis ·
+**status:** parked · **needs: maintainer** — plan 037 (paused 2026-10-21 for it; findings in
+`$FISHYDATA/archive/2026-10-plan037/`) ·
 **see:** `curate/catch_by_species_station.R`, `$FISHYDATA/archive/2026-10-xml-oracle-map/` (item 5), plan 036
 
 Measured 2026-10-21 by Claude, read-only (not yet checked by a person): on 2.65 M afli catch items logged gutted,
@@ -1009,3 +1011,15 @@ holds them for 2.11 M of 4.16 M. fs_afladagbok and adb keep the state already (`
 
 **check:** every logbook catch row carries the weight as logged, its state and the whole weight, with basis `derived`
 where the whole weight is computed; or a decision says why not.
+
+## 115. The most upstream source, value by value, through the grammar (plan 037)
+**status:** open · **needs: maintainer** — plan 037's seven asks (§7) · **see:** `curate/plans/037-the-most-upstream-source.md`,
+`docs/grammar.qmd`, TODO 108, 110, 113, 114, decisions 158 and 160, `$FISHYDATA/archive/2026-10-plan037/`
+
+The maintainer's principle (2026-10-21): each value from the most upstream layer that holds it, when it states its
+unit and keeps more or known precision; a resend or an in-house edit, being later and deliberate, wins. Scoped the same
+evening: afli's electronic logbook has three layers (sent, loaded, edited), in-house edits are common (13 %) and
+resends rare; `kvotix`, `vor` and `dwstg` are not dumped and seem to warrant it. Proposed: one adapter per layer into
+the grammar's tables, the choice per field group only in `curate/`, the layer recorded beside the basis.
+
+**check:** the asks answered in the plan; its phases built or the plan parked or abandoned in its header.
