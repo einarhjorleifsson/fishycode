@@ -938,8 +938,11 @@ To run on the server after `git pull` (decision 159's scripts and the geometry f
 three failed tables, `--resume`), biota (whole), and orri, ufs, uv and fs_afli again for their persons' tables, or a
 full dump of every schema. Then each schema compared with the Mac's copy (`compare_dumps()`), every difference
 explained before it replaces `raw/oracle/<schema>/`, and the targets that read a changed table rebuilt.
-Run 2026-10-21 with `--resume channel biota orri ufs uv fs_afli`. Still not dumped: `fs_afladagbok.takt_json_form`
-(6,912 Taktikal JSON forms with a file): a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 only.
+Run 2026-10-21 on the server: biota whole (96 objects, 05:48); channel 41 of 42 (06:55, `target_species_v` broken in
+Oracle); ufs's 16 opened tables (10:43). orri, uv and fs_afli were skipped by `all.R --resume`, since
+`.dump_finished()` (`R/run_dump.R`) counts a deliberately skipped object as finished; their opened tables need
+`run_dump(c("orri", "uv", "fs_afli"), resume = TRUE)`, and `.dump_finished()` a fix for a shrunk skip list. Still not
+dumped: `fs_afladagbok.takt_json_form` (6,912 Taktikal JSON forms with a file; a CLOB with NULs).
 
 **check:** every schema of the run compared and adopted (or the difference recorded), and the rebuild done or
 declared not needed.
