@@ -5037,19 +5037,26 @@ tables:
       - name: .sid
         type: number
         range: [-10556515003, -379]
-        examples: [-1274128, -998904, -660870, -332830, -69492]
+        examples: [-1274128, -998904, -660872, -332853, -69942]
         description: >
-          The record this copy is a copy of, as staged (station.parquet's .sid): Oracle's
-          rafr_stofn.visir, or -(10^10 + .xid of the record's first copy) where Oracle holds no
-          version of it. NA for a copy in a test message that belongs to no loaded record. A copy
-          that is the source of two rafr_stofn rows (n_sid 2) has the lesser.
+          The record this copy is a copy of, as staged (station.parquet's .sid). NA for a copy in a
+          test message that belongs to no loaded record.
+      - name: .sid_loaded
+        type: number
+        range: [-1326693, -379]
+        examples: [-1260779, -997000, -667422, -337826, -73548]
+        description: >
+          The rafr_stofn row this copy was loaded as (the lesser of two for the 34 copies Oracle
+          loaded twice); NA where Oracle did not load it. With .sid it maps every rafr_stofn row
+          found in its message to its staged record: 15,916 rows are another version of a record,
+          or the same version loaded again, and not the record's .sid.
       - name: n_sid
         type: number
         range: [0, 2]
-        examples: [1]
+        examples: [0, 1]
         description: >
-          How many staged records (rafr_stofn rows) the copy is a copy of: 2 for the 34 sent
-          records Oracle loaded twice, 0 for test-message copies of nothing.
+          How many rafr_stofn rows the copy was loaded as: 2 for the 34 sent records Oracle loaded
+          twice from one message, 0 for copies Oracle did not load.
       - name: copy_loaded
         type: boolean
         description: >
@@ -5065,7 +5072,7 @@ tables:
       - name: .xid_staged
         type: number
         range: [107001, 566147001]
-        examples: [14996041, 94010001, 244175120, 401236003, 534550001]
+        examples: [15120001, 94024007, 244175120, 401236003, 534550001]
         description: >
           The staged copy of its record (the highest VERSION, then the copy Oracle loaded, then the
           last received).
@@ -5087,20 +5094,21 @@ tables:
           This copy is the one staged for its record.
       - name: outcome
         type: enum
-        values: ["loaded", "loaded, a newer version sent", "never loaded", "newer than the loaded one", "older version", "repeated in the message", "same haul as a loaded record, another VISIR", "same version, other message", "test message"]
+        values: ["loaded", "loaded, a newer version sent", "loaded, the same version staged from another message", "never loaded", "newer than the loaded one", "older version", "repeated in the message", "same haul as a loaded record, another VISIR", "same version, other message", "test message"]
         description: >
           What became of the copy, one each: "loaded" (Oracle loaded it, and it is staged); "newer
           than the loaded one" (staged: a later version than the one Oracle loaded); "never loaded"
           (staged: Oracle holds no version of the record); "loaded, a newer version sent" (Oracle
-          loaded it, a later version is staged); "older version" (a later version of its record was
-          sent); "same version, other message" (its record's version is staged from another copy);
-          "same haul as a loaded record, another VISIR" (not loaded, and not a version of a loaded
-          record by VISIR and date, but the same vessel, date, gear section and a sent time as a
-          loaded record: the haul sent again under another number, kept with that record and never
-          staged); "repeated in the message" (the same VISIR and VERSION again in its message);
-          "test message" (in a test message, and a version of no loaded record). A copy is a
-          version of a loaded record when it has the same vessel and VISIR and a date within 31
-          days of that record's loaded copy.
+          loaded it as a row of its own, and a later version is staged); "loaded, the same version
+          staged from another message" (Oracle loaded the same version twice, from two messages);
+          "older version" (a later version of its record was sent); "same version, other message"
+          (its record's version is staged from another copy); "same haul as a loaded record,
+          another VISIR" (not loaded, and not a version of a loaded record by VISIR and date, but
+          the same vessel, date, gear section and a sent time as a loaded record: the haul sent
+          again under another number, kept with that record and never staged); "repeated in the
+          message" (the same VISIR and VERSION again in its message); "test message" (in a test
+          message, and a version of no loaded record). A copy is a version of a loaded record when
+          it has the same vessel and VISIR and a date within 31 days of that record's loaded copy.
       - name: schema
         type: enum
         values: ["afli"]
@@ -5135,7 +5143,7 @@ tables:
       - name: .tid
         type: number
         range: [-10556246012, -379]
-        examples: [-1277334, -1037781, -743140, -439992, -129184]
+        examples: [-1277340, -1037782, -743146, -440001, -129183]
         description: >
           Trip key: the least Oracle .sid among its records, so it equals the edited layer's .tid
           where the grouping is the same; the least .sid where Oracle loaded none of them.
@@ -5217,25 +5225,28 @@ tables:
       - name: .sid
         type: number
         range: [-10556515003, -379]
-        examples: [-1274798, -1008061, -674784, -341490, -74254]
+        examples: [-1274920, -1008235, -675683, -342301, -74427]
         description: >
-          Station key: Oracle's rafr_stofn.visir of the record (= the edited layer's .sid), found
-          through the record's message id, VERSION and VISIR in one of its three forms
-          (record.key_form); -(10^10 + .xid of the record's first copy) where Oracle holds no
-          version of it, outside every Oracle id. Unique.
+          Station key. Where Oracle loaded the record: rafr_stofn.visir of its row, found through
+          the message id, VERSION and VISIR in one of its three forms (record.key_form). Oracle
+          loads some versions as rows of their own, so a vessel's loaded rows of one VISIR within
+          31 days are one record, and its .sid is the row loaded from its highest version (then the
+          last received). It is the edited layer's .sid on 1,273,587 of the 1,302,406 records
+          Oracle loaded (Claude, 2026-10-21); record.parquet maps every other row. Where Oracle
+          holds no version: -(10^10 + .xid of the record's first copy), outside every Oracle id.
+          Unique.
       - name: .tid
         type: number
         range: [-10556246012, -379]
-        examples: [-1272209, -1005483, -673799, -341097, -74469]
+        examples: [-1272319, -1005643, -674698, -341994, -74204]
         description: >
           The trip (trip.parquet).
       - name: .xid
         type: number
         range: [107001, 566147001]
-        examples: [16014031, 98516074, 251697003, 406821001, 535764009]
+        examples: [16035025, 98847025, 252044034, 406843002, 535760004]
         description: >
-          The staged copy (record.parquet). Not unique: the 34 sent records Oracle loaded twice are
-          staged under both .sid.
+          The staged copy (record.parquet). Unique.
       - name: date
         type: datetime
         time_zone: naive
@@ -5245,7 +5256,7 @@ tables:
       - name: lon1
         type: number
         range: [-180.0833333, 174.9719444]
-        examples: [-26.3425000, -24.1000000, -22.5983333, -17.3500000, -11.8036111]
+        examples: [-26.33333333, -24.09833330, -22.59888890, -17.36666667, -11.81666667]
         description: >
           Start longitude, decimal degrees, as sent: STOFN/POS@LON (decimal degrees to the
           arc-second, west negative), else STOFN/STADSETNING@LENGD (the older apps' DDMM, west
@@ -5254,14 +5265,14 @@ tables:
       - name: lat1
         type: number
         range: [-66.2333333, 90.98333333]
-        examples: [63.2000000, 63.8441667, 64.9500000, 66.2177778, 67.0850000]
+        examples: [63.20000000, 63.84611110, 64.95000000, 66.21722220, 67.08333333]
         description: >
           Start latitude, decimal degrees, as sent: STOFN/POS@LAT, else STOFN/STADSETNING@BREIDD
           (DDMM).
       - name: lon2
         type: number
         range: [-180, 180]
-        examples: [-26.20888890, -24.06666667, -22.58277780, -17.54444440, -11.71611110]
+        examples: [-26.20000000, -24.06666667, -22.57833330, -17.55611110, -11.72777780]
         description: >
           End longitude, decimal degrees, as sent: STOFN/POS_END@LON (never loaded by Oracle), else
           STOFN/STADSETNING_LOK@LENGD (DDMM; the value Oracle overwrote with the end latitude on
@@ -5269,7 +5280,7 @@ tables:
       - name: lat2
         type: number
         range: [-65.6027778, 90]
-        examples: [63.19555560, 63.86666667, 64.97972220, 66.25888890, 67.10722220]
+        examples: [63.19805560, 63.86666667, 64.98138890, 66.25833330, 67.10555560]
         description: >
           End latitude, decimal degrees, as sent: STOFN/POS_END@LAT, else
           STOFN/STADSETNING_LOK@BREIDD (DDMM).
@@ -5305,7 +5316,7 @@ tables:
       - name: z1_raw
         type: number
         range: [-1, 14795]
-        examples: [27.432, 75.000, 141.000, 238.000, 516.000]
+        examples: [27.432, 75.000, 140.000, 238.000, 514.000]
         description: >
           Start depth, STOFN/DYPI as sent (decimal commas read as points). Its unit is not decided
           here: SeaData 1.x sent fathoms, the later apps mostly metres, Fishing Log 2.6 and 2.7
@@ -5314,7 +5325,7 @@ tables:
       - name: z2_raw
         type: number
         range: [-2, 1047281]
-        examples: [23.04287996, 77.00000000, 146.00000000, 244.00000000, 531.00000000]
+        examples: [23.89631996, 77.00000000, 146.00000000, 243.00000000, 530.00000000]
         description: >
           End depth, STOFN/DYPI_LOK as sent; unit as z1_raw. Some values are negative as sent.
       - name: record_closed
@@ -5336,7 +5347,7 @@ tables:
           The staged copy's VERSION.
       - name: n_versions
         type: number
-        range: [1, 9]
+        range: [1, 12]
         examples: [1]
         description: >
           Distinct VERSIONs sent of the record under its own VISIR.
@@ -5367,7 +5378,14 @@ tables:
         range: [1, 12]
         examples: [1]
         description: >
-          The VERSION Oracle loaded; NA where it loaded none.
+          The VERSION of the copy loaded as the record's .sid row; NA where Oracle loaded none.
+      - name: n_oracle_rows
+        type: number
+        range: [0, 12]
+        examples: [1]
+        description: >
+          rafr_stofn rows that hold the record: more than 1 where Oracle loaded several versions,
+          or one version twice, as rows of their own (14,370 records); 0 where it loaded none.
       - name: schema
         type: enum
         values: ["afli"]
@@ -5403,19 +5421,19 @@ tables:
       - name: .tid
         type: number
         range: [-10556246012, -379]
-        examples: [-1272209, -1005483, -673799, -341097, -74469]
+        examples: [-1272319, -1005643, -674698, -341994, -74204]
         description: >
           The trip.
       - name: .sid
         type: number
         range: [-10556515003, -379]
-        examples: [-1274798, -1008061, -674784, -341490, -74254]
+        examples: [-1274920, -1008235, -675683, -342301, -74427]
         description: >
           The station.
       - name: .xid
         type: number
         range: [107001, 566147001]
-        examples: [16014031, 98516074, 251697003, 406821001, 535764009]
+        examples: [16035025, 98847025, 252044034, 406843002, 535760004]
         description: >
           The staged copy (record.parquet).
       - name: gid_old
@@ -5503,14 +5521,14 @@ tables:
       - name: duration_h
         type: number
         range: [-6354.48, 704572.5]
-        examples: [1.28, 3.50, 4.49, 5.85, 24.00]
+        examples: [1.29, 3.50, 4.49, 5.83, 24.00]
         description: >
           Hours (LINA@KLST, FAERI@KLST) as sent, unrounded; negative where the app sent it so
           (Fishing Log 2.6's jigs).
       - name: effort_count
         type: number
         range: [0, 39500090]
-        examples: [1, 19000]
+        examples: [1, 18920]
         description: >
           What fishes at once: 1 for towed gear and seines, hooks for longlines (n_total), nets or
           jigs.
@@ -5522,13 +5540,13 @@ tables:
       - name: effort_duration
         type: number
         range: [0.0004166666667, 2159]
-        examples: [0.1870833333, 1.0000000000, 130.0000000000, 268.0000000000, 470.0000000000]
+        examples: [0.1870833333, 1.0000000000, 129.0000000000, 267.0000000000, 469.0000000000]
         description: >
           duration_m in effort_unit's time unit (derived).
       - name: effort
         type: number
         range: [0, 6813765.525]
-        examples: [1, 38, 206, 332, 4000]
+        examples: [1.000000, 38.000000, 206.000000, 332.000000, 3973.958333]
         description: >
           effort_count x effort_duration (derived).
       - name: .checks
@@ -5606,7 +5624,7 @@ tables:
       - name: g_mesh
         type: number
         range: [0, 203000]
-        examples: [30.0, 135.0, 153.0, 228.6]
+        examples: [30.0, 135.0, 155.0, 228.6]
         description: >
           Mesh, mm: DRAGNOT, PLOGUR element MOSKVI; NET@MOSKVI; HRINGNOT/NOT@MOSKVI.
       - name: g_width
@@ -5625,7 +5643,7 @@ tables:
       - name: g_length
         type: number
         range: [0, 30969]
-        examples: [0, 230, 1160]
+        examples: [0, 214, 1160]
         description: >
           Dredge length (PLOG_STAERD@LENGD); gillnet fleet length, nets x mean net length
           (NET@FJOLDI x NET@MEDAL_LENGD_NETA, derived); purse seine length (NOT@L_NOTAR, metres as
@@ -5664,7 +5682,7 @@ tables:
       - name: n_total
         type: number
         range: [0, 39500090]
-        examples: [7140, 14400, 17600, 33880, 42888]
+        examples: [7200, 14400, 17600, 33750, 42872]
         description: >
           Longline hooks: LINA/FJ_KROKA, else LINA@ONGLAR x LINA@FJ_BJODA (derived).
       - name: n_total_basis
@@ -5681,7 +5699,7 @@ tables:
       - name: n_lost
         type: number
         range: [1, 90]
-        examples: [1, 2, 5, 20, 70]
+        examples: [1, 2, 5, 15, 70]
         description: >
           Nets lost (NET@FJ_TAP_NETA).
       - name: twin_gear
@@ -5722,13 +5740,13 @@ tables:
       - name: .sid
         type: number
         range: [-10556515003, -379]
-        examples: [-1275419, -1002982, -660783, -335583, -71218]
+        examples: [-1275458, -1002748, -661278, -336225, -71214]
         description: >
           The station.
       - name: .xid
         type: number
         range: [107001, 566147001]
-        examples: [15386140, 95637001, 244141006, 403501006, 536233028]
+        examples: [15386101, 95785001, 244280002, 403441004, 536213007]
         description: >
           The staged copy (record.parquet).
       - name: sid
@@ -5740,7 +5758,7 @@ tables:
       - name: catch
         type: number
         range: [-330, 7999999]
-        examples: [10, 100, 310, 1350, 7509]
+        examples: [10, 100, 310, 1350, 7500]
         description: >
           Weight, kg, as logged (AFLI/AFLI), in the state `condition` names; summed over the items
           of one species and state in the record.
@@ -5764,7 +5782,7 @@ tables:
       - name: mean_weight_g
         type: number
         range: [1, 500000]
-        examples: [770, 1800, 2965, 4221, 150000]
+        examples: [770, 1800, 2966, 4222, 150000]
         description: >
           Mean weight, g (AFLI/MEDALTHYNGD), where the row is one item.
       - name: schema

@@ -215,34 +215,48 @@ dbExecute(con, "CREATE TEMP TABLE lm AS
   QUALIFY row_number() OVER (PARTITION BY rs.visir ORDER BY k.f, x.rec) = 1")
 
 
-# A copy Oracle did not load belongs to a loaded record when it has the same vessel (the message's SKIP_NR) and
-# VISIR and a fishing date (VEDAGS) within 31 days of that record's loaded copy: the apps reuse their VISIR numbers
-# years apart, so the number alone is no identity. Of several, the nearest in date, then in time received.
-# Failing that, it is the same haul as a loaded record sent under another VISIR (an app renumbering its records)
-# when the vessel, the date and the gear section are the same and so is a time the app sent: the on-bottom or the
-# purse seine's clock time (HHMM), or the set, haul or jig start (to the second). Such a copy is kept with that
-# record but never staged: its VERSION counts another number's versions. A start position alone is not enough
-# (40 records): consecutive hauls can share it.
+# Oracle loads some versions of one record as rows of their own (mostly two versions in one message, the older
+# deleted): 14,337 records hold 30,219 rows (the visir-reuse-account notes of 2026-10-21). A vessel's loaded rows of
+# one VISIR whose dates lie within 31 days of each other are therefore one record, and its .sid is the row loaded from
+# its highest version (then the last received). The apps reuse their VISIR numbers years apart, so the number alone
+# is no identity.
+# A copy Oracle did not load belongs to a loaded record when it has the same vessel (the message's SKIP_NR) and VISIR
+# and a fishing date (VEDAGS) within 31 days of one of that record's loaded copies; of several, the nearest in date,
+# then in time received. Failing that, it is the same haul as a loaded record sent under another VISIR (an app
+# renumbering its records) when the vessel, the date and the gear section are the same and so is a time the app sent:
+# the on-bottom or the purse seine's clock time (HHMM), or the set, haul or jig start (to the second). Such a copy is
+# kept with that record but never staged: its VERSION counts another number's versions. A start position alone is not
+# enough (40 records): consecutive hauls can share it.
 # The copies of a record Oracle never loaded are grouped by vessel and VISIR the same way: a gap of more than 31
 # days between consecutive dates starts another record. A copy in a test message (gerd = 9) is a version of a
 # loaded record or of nothing. A copy repeated in its message belongs to the record of its first copy.
 WINDOW <- 31
 dbExecute(con, "CREATE TEMP TABLE lc AS
-  SELECT lm.visir, x.mid, x.rec, x.vid, x.visir_sent, x.vedags, x.received, x.section, x.i_botni, x.klukkan,
-    x.logn_hefst, x.drattur_hefst, x.upphaf_veida
+  SELECT lm.visir, lm.key_form, x.mid, x.rec, x.xid, x.vid, x.visir_sent, x.vedags, x.received, x.version, x.section,
+    x.i_botni, x.klukkan, x.logn_hefst, x.drattur_hefst, x.upphaf_veida
   FROM lm JOIN x USING (mid, rec)")
+dbExecute(con, sprintf("CREATE TEMP TABLE lg AS
+  WITH o AS (SELECT *, CASE WHEN date_diff('day', lag(vedags) OVER w, vedags) <= %d THEN 0 ELSE 1 END brk
+             FROM lc WINDOW w AS (PARTITION BY vid, visir_sent ORDER BY vedags NULLS LAST, visir)),
+       c AS (SELECT *, sum(brk) OVER (PARTITION BY vid, visir_sent ORDER BY vedags NULLS LAST, visir) cl FROM o)
+  SELECT visir, mid, rec, xid, key_form, version,
+    first_value(visir) OVER (PARTITION BY vid, visir_sent, cl ORDER BY version DESC, received DESC, visir) ident,
+    count(*) OVER (PARTITION BY vid, visir_sent, cl) n_rows
+  FROM c", WINDOW))
 dbExecute(con, sprintf("CREATE TEMP TABLE um AS
-  SELECT u.mid, u.rec, lc.visir
+  SELECT u.mid, u.rec, lg.ident
   FROM x u JOIN lc ON lc.vid = u.vid AND lc.visir_sent = u.visir_sent
     AND abs(date_diff('day', u.vedags, lc.vedags)) <= %d
+  JOIN lg ON lg.visir = lc.visir
   WHERE u.copy_no = 1 AND (u.mid, u.rec) NOT IN (SELECT (mid, rec) FROM lm)
   QUALIFY row_number() OVER (PARTITION BY u.mid, u.rec ORDER BY abs(date_diff('day', u.vedags, lc.vedags)),
     abs(date_diff('second', u.received, lc.received)), lc.visir) = 1", WINDOW))
 dbExecute(con, "CREATE TEMP TABLE hm AS
-  SELECT u.mid, u.rec, lc.visir
+  SELECT u.mid, u.rec, lg.ident
   FROM x u JOIN lc ON lc.vid = u.vid AND lc.vedags = u.vedags AND lc.section = u.section
     AND (lc.i_botni = u.i_botni OR lc.klukkan = u.klukkan OR lc.logn_hefst = u.logn_hefst
          OR lc.drattur_hefst = u.drattur_hefst OR lc.upphaf_veida = u.upphaf_veida)
+  JOIN lg ON lg.visir = lc.visir
   WHERE u.copy_no = 1 AND (u.mid, u.rec) NOT IN (SELECT (mid, rec) FROM lm)
     AND (u.mid, u.rec) NOT IN (SELECT (mid, rec) FROM um)
   QUALIFY row_number() OVER (PARTITION BY u.mid, u.rec ORDER BY abs(date_diff('second', u.received, lc.received)),
@@ -256,66 +270,71 @@ dbExecute(con, sprintf("CREATE TEMP TABLE nl AS
              FROM n WINDOW w AS (PARTITION BY vid, visir_sent ORDER BY vedags NULLS LAST, xid)),
        c AS (SELECT *, sum(brk) OVER (PARTITION BY vid, visir_sent ORDER BY vedags NULLS LAST, xid) cl FROM o)
   SELECT mid, rec, -(1e10 + min(xid) OVER (PARTITION BY vid, visir_sent, cl)) ident FROM c", WINDOW))
-# c1: the record(s) of every first copy, and how it was found; the loaded copy of a sent record that became two
-# rafr_stofn rows has two
+# c1: the record of every first copy, how it was found, and the rafr_stofn row(s) it was loaded as (a sent record
+# Oracle loaded twice from one message has two, the 34)
 dbExecute(con, "CREATE TEMP TABLE c1 AS
-  SELECT mid, rec, visir ident, true copy_loaded, key_form, 'loaded' via FROM lm
-  UNION ALL SELECT mid, rec, visir, false, NULL, 'visir' FROM um
-  UNION ALL SELECT mid, rec, visir, false, NULL, 'haul' FROM hm
-  UNION ALL SELECT mid, rec, ident, false, NULL, 'never' FROM nl")
+  SELECT mid, rec, ident, true copy_loaded, key_form, 'loaded' via, visir sid_loaded FROM lg
+  UNION ALL SELECT mid, rec, ident, false, NULL, 'visir', NULL FROM um
+  UNION ALL SELECT mid, rec, ident, false, NULL, 'haul', NULL FROM hm
+  UNION ALL SELECT mid, rec, ident, false, NULL, 'never', NULL FROM nl")
 dbExecute(con, "CREATE TEMP TABLE cr AS
   SELECT c1.* FROM c1
   UNION ALL
-  SELECT x.mid, x.rec, c1.ident, false, NULL, c1.via FROM x
+  SELECT x.mid, x.rec, c1.ident, false, NULL, c1.via, NULL FROM x
   JOIN x x0 ON x0.mid = x.mid AND x0.visir_sent = x.visir_sent AND x0.version = x.version AND x0.copy_no = 1
   JOIN c1 ON c1.mid = x0.mid AND c1.rec = x0.rec
   WHERE x.copy_no > 1")
-# The staged copy of each record: the highest VERSION, then the copy Oracle loaded, then the last received
+# the copy loaded as the record's .sid row, and how many rafr_stofn rows the record holds
+dbExecute(con, "CREATE TEMP TABLE vl AS SELECT ident, version version_loaded, xid xid_loaded, n_rows n_oracle_rows
+  FROM lg WHERE visir = ident")
+# The staged copy of each record: the highest VERSION, then the copy loaded as its .sid row, then any copy Oracle
+# loaded, then the last received
 dbExecute(con, "CREATE TEMP TABLE sc AS
-  SELECT cr.ident, x.mid, x.rec, x.xid, x.version FROM cr JOIN x USING (mid, rec)
+  SELECT cr.ident, x.mid, x.rec, x.xid, x.version FROM cr JOIN x USING (mid, rec) LEFT JOIN vl USING (ident)
   WHERE x.copy_no = 1 AND cr.via <> 'haul'
-  QUALIFY row_number() OVER (PARTITION BY cr.ident ORDER BY x.version DESC, cr.copy_loaded DESC, x.received DESC,
-    x.mid DESC, x.rec DESC) = 1")
-dbExecute(con, "CREATE TEMP TABLE vl AS SELECT c1.ident, x.version version_loaded FROM c1 JOIN x USING (mid, rec)
-  WHERE c1.copy_loaded")
+  QUALIFY row_number() OVER (PARTITION BY cr.ident ORDER BY x.version DESC, coalesce(x.xid = vl.xid_loaded, false) DESC,
+    cr.copy_loaded DESC, x.received DESC, x.mid DESC, x.rec DESC) = 1")
 
 # One outcome per sent copy; a copy that is the source of two rafr_stofn rows is one row, with n_sid = 2
 dbExecute(con, "CREATE TEMP TABLE fate AS
-  WITH c AS (SELECT mid, rec, min(ident) ident, count(DISTINCT ident) n_sid, bool_or(copy_loaded) copy_loaded,
-                    min(key_form) key_form, min(via) via FROM cr GROUP BY ALL)
+  WITH c AS (SELECT mid, rec, min(ident) ident, count(DISTINCT sid_loaded) n_sid, min(sid_loaded) sid_loaded,
+                    bool_or(copy_loaded) copy_loaded, min(key_form) key_form, min(via) via FROM cr GROUP BY ALL)
   SELECT x.xid, x.mid, x.rec, x.vid, x.visir_sent, x.version, x.vedags, x.received, x.test_message, x.app,
-    x.app_version, c.ident, coalesce(c.n_sid, 0) n_sid, coalesce(c.copy_loaded, false) copy_loaded, c.key_form,
-    sc.xid xid_staged, sc.version version_staged, vl.version_loaded, coalesce(sc.xid = x.xid, false) staged,
-    CASE WHEN x.copy_no > 1                       THEN 'repeated in the message'
-         WHEN c.ident IS NULL                     THEN 'test message'
-         WHEN c.via = 'haul'                      THEN 'same haul as a loaded record, another VISIR'
-         WHEN sc.xid = x.xid AND c.copy_loaded    THEN 'loaded'
-         WHEN sc.xid = x.xid AND c.ident > -1e9   THEN 'newer than the loaded one'
-         WHEN sc.xid = x.xid                      THEN 'never loaded'
-         WHEN c.copy_loaded                       THEN 'loaded, a newer version sent'
-         WHEN x.version < sc.version              THEN 'older version'
+    x.app_version, c.ident, c.sid_loaded, coalesce(c.n_sid, 0) n_sid, coalesce(c.copy_loaded, false) copy_loaded,
+    c.key_form, sc.xid xid_staged, sc.version version_staged, vl.version_loaded, coalesce(sc.xid = x.xid, false) staged,
+    CASE WHEN x.copy_no > 1                          THEN 'repeated in the message'
+         WHEN c.ident IS NULL                        THEN 'test message'
+         WHEN c.via = 'haul'                         THEN 'same haul as a loaded record, another VISIR'
+         WHEN sc.xid = x.xid AND c.copy_loaded       THEN 'loaded'
+         WHEN sc.xid = x.xid AND c.ident > -1e9      THEN 'newer than the loaded one'
+         WHEN sc.xid = x.xid                         THEN 'never loaded'
+         WHEN c.copy_loaded AND x.version < sc.version THEN 'loaded, a newer version sent'
+         WHEN c.copy_loaded                          THEN 'loaded, the same version staged from another message'
+         WHEN x.version < sc.version                 THEN 'older version'
          ELSE 'same version, other message' END outcome
   FROM x LEFT JOIN c USING (mid, rec) LEFT JOIN sc ON sc.ident = c.ident LEFT JOIN vl ON vl.ident = c.ident")
 stopifnot(q("SELECT count(*) n FROM fate")$n == q("SELECT count(*) n FROM x")$n,
           q("SELECT count(*) n FROM (SELECT ident FROM sc GROUP BY 1 HAVING count(*) > 1)")$n == 0)
 
 # Staged records ---------------------------------------------------------------
-# One row per record and .sid: Oracle's visir, or -(10^10 + xid) of the record's first copy where Oracle holds no
-# version of it, outside every Oracle id (rafr_stofn's run from -1,326,693 to -379, afli.stofn's from
-# -2,768,723,449), so that no key is NA and none can be taken for another layer's station.
+# One row per record: .sid is Oracle's visir of the record's row (above), or -(10^10 + xid) of the record's first
+# copy where Oracle holds no version of it, outside every Oracle id (rafr_stofn's run from -1,326,693 to -379,
+# afli.stofn's from -2,768,723,449), so that no key is NA and none can be taken for another layer's station.
 say("staged records")
-rec <- q("SELECT sc.ident \".sid\", vl.version_loaded, x.* EXCLUDE (copy_no)
+rec <- q("SELECT sc.ident \".sid\", vl.version_loaded, vl.xid_loaded, vl.n_oracle_rows, x.* EXCLUDE (copy_no)
           FROM sc JOIN x USING (mid, rec) LEFT JOIN vl ON vl.ident = sc.ident") |>
   as_tibble() |>
   rename(.xid = xid) |>
-  mutate(loaded      = .sid > -1e9,
-         copy_loaded = loaded & version == version_loaded,
-         schema      = SCHEMA,
-         layer       = LAYER)
+  mutate(loaded        = .sid > -1e9,
+         copy_loaded   = loaded & .xid == xid_loaded,
+         n_oracle_rows = coalesce(as.integer(n_oracle_rows), 0L),
+         schema        = SCHEMA,
+         layer         = LAYER) |>
+  select(-xid_loaded)
 # copies under the record's own VISIR (its versions and resends), and copies of the same haul under another
 n_versions <- q("SELECT cr.ident \".sid\", count(DISTINCT x.version) FILTER (WHERE cr.via <> 'haul') n_versions,
-                   count(*) FILTER (WHERE cr.via <> 'haul') n_copies,
-                   count(*) FILTER (WHERE cr.via = 'haul') n_other_visir
+                   count(DISTINCT x.xid) FILTER (WHERE cr.via <> 'haul') n_copies,
+                   count(DISTINCT x.xid) FILTER (WHERE cr.via = 'haul') n_other_visir
                  FROM cr JOIN x USING (mid, rec) GROUP BY 1") |>
   mutate(across(-.sid, as.integer))
 rec <- rec |> left_join(n_versions, by = ".sid", relationship = "one-to-one")
@@ -375,7 +394,7 @@ station <-
          z2_raw = dypi_lok) |>
   select(.sid, .tid, .xid, date, lon1, lat1, lon2, lat2, pos1_form, pos2_form, sq, ssq, sq_basis, z1_raw, z2_raw,
          record_closed, edited_after_closing, version, n_versions, n_copies, n_other_visir, loaded, copy_loaded,
-         version_loaded, schema, layer, app, app_version)
+         version_loaded, n_oracle_rows, schema, layer, app, app_version)
 
 # Fishing sample --------------------------------------------------------------
 ## Timing ----------------------------------------------------------------------
@@ -524,11 +543,13 @@ landing_confirmation <-
 record <- q("SELECT * FROM fate") |>
   as_tibble() |>
   transmute(.xid = xid, mid, rec, vid, visir_sent, version, date = as_datetime(vedags), received, test_message,
-            .sid = ident, n_sid = as.integer(n_sid), copy_loaded, key_form, .xid_staged = xid_staged, version_staged,
+            .sid = ident, .sid_loaded = sid_loaded, n_sid = as.integer(n_sid), copy_loaded, key_form,
+            .xid_staged = xid_staged, version_staged,
             version_loaded, staged, outcome, schema = SCHEMA, layer = LAYER, app, app_version)
 
 # Report ----------------------------------------------------------------------
-rafr <- q("SELECT count(*) n_rafr, count(*) FILTER (WHERE visir IN (SELECT visir FROM lm)) found FROM rs")
+rafr <- q("SELECT count(*) n_rafr, count(*) FILTER (WHERE visir IN (SELECT visir FROM lm)) found,
+              count(*) FILTER (WHERE visir IN (SELECT ident FROM sc)) staged_sid FROM rs")
 items <- q("SELECT (SELECT sum(n_afli) FROM x) n_afli_tags, (SELECT count(*) FROM ci) items,
              (SELECT count(*) FILTER (WHERE sid IS NULL OR slaegt IS NULL OR catch IS NULL) FROM ci) items_incomplete")
 dbDisconnect(con, shutdown = TRUE)
@@ -540,8 +561,10 @@ print(record |> count(outcome, staged) |> arrange(desc(n)), n = 20)
 cat("\nloaded copies by the form of the id in Oracle (1 as sent, 2 negated, 3 -(1e6 + id)):\n")
 print(record |> filter(copy_loaded) |> count(key_form))
 cat("\nrafr_stofn rows:", rafr$n_rafr, "; found in their message:", rafr$found, "; not:", rafr$n_rafr - rafr$found,
-    "\n")
-cat("copies keying two rafr_stofn rows:", sum(record$n_sid > 1), "\n")
+    "\n  of those found, the staged record's .sid:", rafr$staged_sid, "; another row of a staged record:",
+    rafr$found - rafr$staged_sid, "\n")
+cat("copies loaded as two rafr_stofn rows:", sum(record$n_sid > 1), "; staged records Oracle holds as several rows:",
+    sum(station$n_oracle_rows > 1), "\n")
 cat("\nstaged stations:", nrow(station), "; Oracle holds a version:", sum(station$loaded),
     "; the staged copy is the one loaded:", sum(station$copy_loaded), "\n")
 cat("catch: <AFLI> item containers", items$n_afli_tags, "; items read", items$items,
@@ -556,7 +579,8 @@ print(fishing_sample |> count(section, gear) |>
 cat("\nlanding confirmations:", nrow(landing_confirmation), "\n")
 
 # Export -----------------------------------------------------------------------
-stopifnot(!anyDuplicated(station$.sid), !anyDuplicated(fishing_sample$.sid), !anyDuplicated(trip$.tid),
+stopifnot(!anyDuplicated(station$.sid), !anyDuplicated(station$.xid), !anyDuplicated(fishing_sample$.sid),
+          !anyDuplicated(trip$.tid),
           !anyDuplicated(record$.xid))
 record               |> duckdbfs::write_dataset(OUT("record.parquet"))
 trip                 |> duckdbfs::write_dataset(OUT("trip.parquet"))
