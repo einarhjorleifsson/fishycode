@@ -11,6 +11,10 @@ the maintainer's request) as a general note for any sea-going trip. These are th
 logbooks (`afli`, `fs_afladagbok`, `adb`) and to this repository. The next step, a review of how the logbooks are
 restructured in the light of the general grammar, revises this page.*
 
+*Corrected with AI assistance (Claude) on 2026-10-21: the effort duration and the table of what is recorded, which
+gave `fs_afladagbok`'s mobile gear `t1` and `t4` where it has `t2` and `t3`; the table now holds the shares measured
+on the merged `fishing_sample` (build de25239).*
+
 ## The Icelandic trip and the AIS trail
 
 In this project the AIS stream is consolidated from four sources (STK domestic
@@ -27,15 +31,20 @@ data volumes.
 ### Effort duration
 
 The theoretically correct effort interval is `t3 − t2` for all gear classes:
-deployment-end to retrieval-start. For mobile gear in the `afli` schema, t2 is
-derived from `ibotni` (the recorded gear-on-bottom time) and t3 from t2 +
-logged duration, so the interval is exact. In `fs_afladagbok`, t3 is absent
-for mobile gear (OTB/OTM/DRB); duration is approximated as `t4 − t1` (full
-operation from warp-entry to retrieval end), which overestimates the active
-tow time by the warp-out and warp-in intervals. For static gear, `t2` (last
-hook/net in) is never recorded in either schema; soak time is therefore
-approximated as `t3 − t1` — the interval from first-hook-in to first-hook-hauled
-— which overestimates true soak time by the deployment duration `t2 − t1`.
+deployment-end to retrieval-start. For mobile gear both schemas record it, and
+neither records t1 or t4. In `afli`, t2 is derived from `ibotni` (the recorded
+gear-on-bottom time) and t3 from t2 + logged duration. In `fs_afladagbok` the
+skipper enters the start and end of active fishing, `upphaf_timi` (gear fully
+deployed) and `lok_timi` (retrieval starts), which the adapter reads as t2 and
+t3; its duration is `t3 − t2` (`sources/fs_afladagbok/convert.R`). The end
+time came late: no `fs_afladagbok` trawl record carries `lok_timi` before 2022,
+54 % do in 2022, and nearly all from 2023 ([merge.qmd](merge.qmd)). For static
+gear, `t2` (last hook/net in) is never recorded in either schema; soak time is
+therefore approximated as `t3 − t1` — the interval from first-hook-in to
+first-hook-hauled — which overestimates true soak time by the deployment
+duration `t2 − t1`. Neither adapter uses it: `afli`'s duration is the soak as
+logged, in days or hours, and `fs_afladagbok`'s is `t4 − t1`, which adds the
+hauling time too.
 
 ### What is typically recorded
 
@@ -43,20 +52,28 @@ The table below summarises what is available in practice across the two source
 schemas. Gear code entry errors exist in both systems — a record nominally coded
 as mobile gear may occasionally represent a static operation and vice versa —
 so the timestamp pattern of a record is a useful cross-check on the declared
-gear code.
+gear code. The shares are of the stations in the merged `fishing_sample`
+(build de25239). Those of `fs_afladagbok` are of the stations the merge takes
+from it, on the vessel-days `afli` lacks: of its 58,337 trawl records without
+`lok_timi`, 1,152 are among them.
 
-| Label | Mobile (trawl/dredge) | Jig / handline | Static (net / longline) |
+| Label | Mobile (trawl/seine/dredge) | Jig / handline | Static (net / longline) |
 |---|---|---|---|
-| `t1` | `afli`: absent; `fs_afladagbok`: always present | Rarely | Usually (`afli`); always present (`fs_afladagbok`) |
-| `t2` | `afli`: derived from `ibotni` (gear-on-bottom hhmm); `fs_afladagbok`: absent | Rarely | Never in either schema |
-| `t3` | `afli`: derived (t2 + duration); `fs_afladagbok`: absent for OTB/OTM/DRB, always = t1 for SDN | Rarely | Usually (`afli`); always present (`fs_afladagbok`) |
-| `t4` | `afli`: absent; `fs_afladagbok`: always present | Rarely | Usually (`afli`); always present (`fs_afladagbok`) |
+| `t1` | Never in either schema | `afli`: almost never; `fs_afladagbok`: always (`upphaf_timi`) | `afli`: electronic stations only, 62 % of their longline and 79 % of their gillnet; `fs_afladagbok`: `upphaf_timi`, 49 % and 83 % |
+| `t2` | `afli`: derived from `ibotni` (gear-on-bottom hhmm), 99 % of bottom trawl; `fs_afladagbok`: `upphaf_timi`, always | Never in either schema | Never in either schema |
+| `t3` | `afli`: derived (t2 + duration), 95 % of bottom trawl, 11 % of Danish seine; `fs_afladagbok`: `lok_timi`, 99 % | `afli`: electronic stations only, 3 % of all; `fs_afladagbok`: never | `afli`: electronic stations only, 90 % and 97 %; `fs_afladagbok`: `milli_timi`, 95 % and 85 % |
+| `t4` | Never in either schema | `afli`: as `t3`; `fs_afladagbok`: `lok_timi`, 80 % | `afli`: as `t3`; `fs_afladagbok`: `lok_timi`, 95 % and 88 % |
+
+Where a static gear's recorded set time is a placeholder, `t1` is `NA` and
+`t1_placeholder` is true: 51 % of `fs_afladagbok`'s longline stations and 27 %
+of `afli`'s electronic ones.
 
 For jigs, the canonical expectation is t2 and t3 (fishing start and end); with
 three distinct timestamps the interpretation is t1, t2, t3. In practice the
 `afli` jig records carry timestamps in only ~3% of rows, so effort is almost
 always derived from the logged duration (`klst`) rather than timestamp
-differences.
+differences. `fs_afladagbok`'s jig records carry `upphaf_timi` and `lok_timi`,
+read as t1 and t4, and their duration is `t4 − t1`.
 
 ## The sensor layer — multiple tables at different levels
 

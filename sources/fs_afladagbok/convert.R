@@ -55,8 +55,10 @@ trip <- trip |>
 # then convert raw integer coordinates to decimal degrees.
 # After this block `source` has: .sid .tid gid t1 t3 t4 lon1 lat1 lon2 lat2
 # z1 z2 n_lost date schema.
-# Raw columns: upphaf_timi→t1, milli_timi→t3, lok_timi→t4.
-# t3 (milli_timi) is absent for OTB/OTM/DRB; for SDN it always equals t1.
+# t1, t3, t4 here are the dictionary's names for upphaf_timi, milli_timi, lok_timi, not yet
+# the grammar's: fishing_sample below remaps them by gear class, mobile gear taking
+# upphaf_timi as t2 and lok_timi as t3. milli_timi is empty for OTB/OTM/DRB and equals
+# upphaf_timi for SDN.
 source <-
   duckdbfs::open_dataset(fd_raw("oracle", "fs_afladagbok", "ws_veidi.parquet")) |> collect() |>
   wk_translate(dictionary) |>
