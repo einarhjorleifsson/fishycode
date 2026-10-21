@@ -246,8 +246,9 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # adb.fishing_station's location (SDO_GEOMETRY) failed every earlier dump; afli's XML table needed its own query.
 # The WKT is cast to VARCHAR2: as a CLOB, each of fishing_station's 690,912 rows left a temporary LOB in the session,
 # and the next query waited on Oracle for over 15 min (2026-10-15), most likely while it freed them. A geometry whose
-# WKT passes 4,000 characters then fails loudly (ORA-22835) rather than being cut. An XML document is longer than
-# that, so it stays a CLOB, read on a connection of its own that is closed before the LOBs are released.
+# WKT passes 4,000 characters then fails loudly (ORA-22835) rather than being cut, and its table is read again with
+# the WKT as a CLOB (dump_oracle_table()). An XML document is longer than that, so it stays a CLOB, read on a
+# connection of its own that is closed before the LOBs are released.
 .oracle_text <- c(SDO_GEOMETRY = "TO_CHAR(SDO_UTIL.TO_WKTGEOMETRY(%s))", XMLTYPE = "XMLSERIALIZE(DOCUMENT %s AS CLOB)")
 .oracle_lob <- "XMLTYPE"
 
@@ -259,8 +260,12 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # and then x == 60.3 is FALSE. A whole NUMBER (scale 0) is exact either way. The columns in `native` come as the driver
 # returns them: Oracle cannot write some of their values as text (dump_oracle_table()). The columns in `nul` come
 # without their NUL characters, which R cannot hold (.oracle_nul()); in Oracle, '' is NULL, so REPLACE drops them.
-.oracle_query <- function(con, table, fields, numbers_as_text = FALSE, native = character(), nul = character()) {
+# `geometry` is how an SDO_GEOMETRY comes: "text" (WKT, at most 4,000 characters), "clob" (WKT of any length) or
+# "parts" (as stored, .oracle_parts()).
+.oracle_query <- function(con, table, fields, numbers_as_text = FALSE, native = character(), nul = character(),
+                          geometry = "text") {
   conv <- c(.oracle_text, if (numbers_as_text) c(NUMBER = "TO_CHAR(%s)"))
+  if (geometry == "clob") conv["SDO_GEOMETRY"] <- "SDO_UTIL.TO_WKTGEOMETRY(%s)"
   decimal <- .oracle_driver(con) == "ROracle" & fields$data_type %in% "NUMBER" & !(fields$data_scale %in% 0) &
              !fields$column %in% native
   renamed <- !is.null(fields$oracle_column) && any(fields$column != tolower(fields$oracle_column))
@@ -270,14 +275,43 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   fields <- fields[o, ]
   decimal <- decimal[o]
   quoted <- .oracle_name(fields)
+  parts <- geometry == "parts"
   cols <- vapply(seq_len(nrow(fields)), function(i) {
     q <- quoted[i]
+    if (parts && fields$data_type[i] %in% "SDO_GEOMETRY") return(.oracle_parts(q, fields$column[i]))
     f <- if (decimal[i]) "TO_CHAR(%s)" else if (fields$column[i] %in% nul) "REPLACE(%s, CHR(0), '')"
          else conv[fields$data_type[i]]
     paste(if (is.na(f)) q else sprintf(f, q), "AS", sprintf('"%s"', fields$column[i]))
   }, "")
-  dplyr::tbl(con, dplyr::sql(sprintf("SELECT %s FROM %s", paste(cols, collapse = ", "), .oracle_ref(table)))) |>
+  from <- paste0(.oracle_ref(table), if (parts) " t")
+  dplyr::tbl(con, dplyr::sql(sprintf("SELECT %s FROM %s", paste(cols, collapse = ", "), from))) |>
     dplyr::rename_with(tolower)
+}
+
+# An SDO_GEOMETRY as Oracle stores it, for a table where Oracle cannot write one as WKT: channel.station holds 148,842
+# lines (gtype 2002) whose element type, 1003, is a polygon's, and TO_WKTGEOMETRY raises ORA-13199 (hafdruna,
+# 2026-10-21). Each geometry becomes seven columns: <col>_gtype, _srid, the point's _x, _y and _z, and _elem_info and
+# _ordinates as comma-separated lists. Every number comes through TO_CHAR with a decimal point whatever the session's
+# territory, since a comma separates the lists; .oracle_parts_typed() makes numbers of the first five. An attribute is
+# reached only through a table alias (t, .oracle_query()), and Oracle rejects these subqueries in a GROUP BY. LISTAGG
+# raises ORA-01489 past 4,000 bytes rather than cut a geometry; station's hold 4 ordinates at most.
+.oracle_parts <- function(quoted, column) {
+  g <- paste0("t.", quoted)
+  num <- function(x) sprintf("TO_CHAR(%s, 'TM9', 'NLS_NUMERIC_CHARACTERS=''.,''')", x)
+  arr <- function(a) sprintf("(SELECT LISTAGG(%s, ',') WITHIN GROUP (ORDER BY ROWNUM) FROM TABLE(%s.%s) e)",
+                             num("e.COLUMN_VALUE"), g, a)
+  expr <- c(num(paste0(g, c(".SDO_GTYPE", ".SDO_SRID", ".SDO_POINT.X", ".SDO_POINT.Y", ".SDO_POINT.Z"))),
+            arr("SDO_ELEM_INFO"), arr("SDO_ORDINATES"))
+  paste(expr, "AS", sprintf('"%s_%s"', column, c("gtype", "srid", "x", "y", "z", "elem_info", "ordinates")),
+        collapse = ", ")
+}
+
+.oracle_parts_typed <- function(d, geo) {
+  for (g in geo) {
+    for (p in c("gtype", "srid")) d[[paste0(g, "_", p)]] <- as.integer(d[[paste0(g, "_", p)]])
+    for (p in c("x", "y", "z")) d[[paste0(g, "_", p)]] <- as.numeric(d[[paste0(g, "_", p)]])
+  }
+  d
 }
 
 # Columns as a query must name them: Oracle's own spelling, quoted.
@@ -356,6 +390,10 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # note says which, and how many of their values Oracle holds that came through empty.
 # A table with NUL characters in its text fails in R itself ("embedded nul in string"): it is fetched once more with
 # them removed from the columns that hold them, and the note says which and in how many values (.oracle_nul()).
+# A table whose geometry's WKT passes 4,000 characters (ORA-22835: channel.country, one of 17 at 26,220) is fetched
+# once more with the WKT as a CLOB, on a connection of its own, as XMLTYPE is (.oracle_text). A table with a geometry
+# Oracle cannot write as WKT at all (a spatial error, ORA-13000 to 13499: channel.station's ORA-13199) is fetched with
+# each geometry as stored (.oracle_parts()), and so is one whose CLOB fetch fails so. The note says which.
 # Returns the rows written, with the note, if any, as attribute "note".
 dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
   if (is.null(fields)) {
@@ -363,18 +401,44 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
     fields <- oracle_fields(con, x[1], x[2])
   }
   if (is.null(run)) run <- .dump_run(con, NA_character_)
-  fetch <- function(numbers_as_text, native = character(), nul = character()) {
-    if (any(fields$data_type %in% .oracle_lob)) {
+  fetch <- function(numbers_as_text, native = character(), nul = character(), geometry = "text") {
+    if (any(fields$data_type %in% .oracle_lob) || geometry == "clob") {
       lc <- dump_connect()
-      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text, native, nul)),
+      tryCatch(.oracle_collect(lc, .oracle_query(lc, table, fields, numbers_as_text, native, nul, geometry)),
                finally = DBI::dbDisconnect(lc))
     } else {
-      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text, native, nul))
+      .oracle_collect(con, .oracle_query(con, table, fields, numbers_as_text, native, nul, geometry))
     }
   }
+  clean <- function(e) gsub("\033\\[[0-9;]*m", "", conditionMessage(e))
+  geo <- fields$column[fields$data_type %in% "SDO_GEOMETRY"]
   note <- NA_character_
   d <- tryCatch(fetch(FALSE), error = function(e) {
-    msg <- gsub("\033\\[[0-9;]*m", "", conditionMessage(e))
+    msg <- clean(e)
+    if (length(geo) && grepl("ORA-22835", msg)) {
+      message(sprintf("%s: a WKT passes 4,000 characters (ORA-22835) - fetching %s again as a CLOB", table,
+                      paste(geo, collapse = ", ")))
+      d <- tryCatch(fetch(FALSE, geometry = "clob"), error = function(e) e)
+      if (!inherits(d, "error")) {
+        long <- vapply(geo, function(g) max(c(0, nchar(d[[g]])), na.rm = TRUE), 0)
+        note <<- sprintf(paste("%s read as WKT in a CLOB, on a connection of its own: a WKT passes 4,000 characters",
+                               "(ORA-22835)"), paste(sprintf("%s (longest %s characters)", geo,
+                                                             format(long, big.mark = ",", trim = TRUE)),
+                                                     collapse = ", "))
+        return(d)
+      }
+      e <- d
+      msg <- clean(e)
+    }
+    if (length(geo) && grepl("ORA-13[0-4][0-9]{2}", msg)) {
+      # ASCII only: through RJDBC the message ends in Java's encoding of a NUL (C0 80), which went into the note
+      ora <- regmatches(msg, regexpr("ORA-13[0-4][0-9]{2}:[ -~]*", msg, useBytes = TRUE))
+      note <<- sprintf(paste("Oracle cannot write %s as WKT (%s): read as stored, each in <column>_gtype, _srid,",
+                             "_x, _y, _z (its point), _elem_info and _ordinates (comma-separated, in Oracle's order)"),
+                       paste(geo, collapse = ", "), ora)
+      message(sprintf("%s: %s - fetching again", table, note))
+      return(.oracle_parts_typed(fetch(FALSE, geometry = "parts"), geo))
+    }
     if (grepl("embedded nul|null byte", msg)) {
       nul <- .oracle_nul(con, table, fields)
       if (!length(nul)) stop(e)
