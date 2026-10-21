@@ -1,6 +1,6 @@
 id: logbook_set_placeholder
 title: a static-gear set time 270 or 1,710 min before the haul start is a logbook app's placeholder; t1 is set to NA and flagged
-status: coded 2026-10-20 in curate/logbook.R, not yet built into curated/ (with the next rebuild from logbook; plan 035, which would have filled the set from the track, failed its test, decision 158)
+status: applied and rebuilt 2026-10-21 at de25239 (decision 158), the counts below exactly; nothing fills the set, since plan 035's track set failed its test (decision 158)
 applies_to:
   - curated/logbook/fishing_sample.parquet   # t1 (NA where a placeholder), t1_placeholder
 affects_rows: >-

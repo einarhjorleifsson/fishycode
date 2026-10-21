@@ -1,6 +1,6 @@
 id: afli_end_longitude
 title: afli's electronic-logbook haul end longitude is a copy of the end latitude (2010-2012); recovered from the record the logbook sent
-status: coded 2026-10-20, not yet built into curated/ (with the next rebuild from logbook)
+status: applied and rebuilt 2026-10-21 at de25239 (decision 158), the counts below exactly; no afli station with lon2 = -lat2 left; TODO 106 closed
 applies_to:
   - staging/afli/end_longitude.parquet     # the side table: .sid, lon2, lon2_raw, lon2_basis
   - curated/logbook/station.parquet        # lon2 (recovered or NA), lon2_raw, lon2_basis on afli rows

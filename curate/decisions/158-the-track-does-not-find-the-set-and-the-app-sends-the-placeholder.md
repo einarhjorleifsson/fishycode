@@ -1,10 +1,11 @@
 # 158 — The track's set finder does not recover the real set times, and Trackwell's app sends the 270-min placeholder
 
 *2026-10-20. Plan 035's test, fixed before the run, failed for every gear: the set start of a static-gear station is
-the logbook's or none, and nothing was rebuilt. Measured read-only on the build of 2026-10-20 (data of 5cec0f4).*
+the logbook's or none. Measured read-only on the build of 2026-10-20 (data of 5cec0f4); the two corrections were built
+on 2026-10-21 (below).*
 
 - **Who asked.** The maintainer, on TODO 103: blank the placeholder set times (done in code, 4945290), then give a
-  station the track's set where the logbook has none, if its error is acceptable, and rebuild without him if so.
+  station the track's set where the logbook has none, if its error is acceptable, and rebuild unattended if so.
   The test and its threshold were written into plan 035 and committed before any number was seen.
 - **Who did the work.** Claude (Anthropic): the measurements and this record. **Every number below was measured by
   Claude (AI); a person has not yet checked them.** Scripts and results in `$FISHYDATA/archive/2026-10-plan035/`.
@@ -43,12 +44,36 @@ places decision 157's rise of 2015, and answers its note that afli names no make
 
 - `curate/corrections/logbook_set_placeholder.yml` stands as coded: a placeholder `t1` is NA, and nothing fills it.
   `station_window` draws no set window there; the soak stays unknown. Plan 035 is abandoned; its §4 is not built.
-- No rebuild was run: the maintainer tied it to a passing test. The correction (and TODO 106's, coded the same night)
-  enter the data with the next rebuild from `logbook`.
+- No rebuild was run that night: the maintainer tied it to a passing test. The maintainer asked for it the next morning (below).
 - The draft to Trackwell (`curate/issues/trackwell.yml`) now says the app sends the value.
+
+## The rebuild of 2026-10-21
+
+On the maintainer's go, at de25239 with ramb 2026.10.19.2: `afli_xml_raw`, `afli_end_longitude`, `logbook` and the 18
+targets after it through `ais_catch` and the checks, 06:00-06:41 (`tar_make_isolated()`, names given, `mbl_photo` left
+out). Fingerprints and summaries before and after, and the checks, in `$FISHYDATA/archive/2026-10-plan035/` (`before/`,
+`after/`, `scripts/rebuild_*.R`, `rebuild.log`). Every rebuilt file is stamped de25239, `fd.dirty` false.
+
+- **The corrections, as declared:** 77,953 placeholder set times NA (adb 4,918, afli 54,623, fs_afladagbok 18,412), none
+  left; afli's end longitude 136,798 recovered, 7,570 NA, no afli station with `lon2 = -lat2`.
+- **Unchanged content:** trip, catch, gear, `lid_map`, `trip_voyage`, both `catch_by_species` tables and four checks.
+  Changed: fishing_sample and station (the two corrections only), `station_window`, `station_event`, `voyage_gear`, 209 of
+  the trail's 233 month files, the catch on the fixes and four checks.
+- **Windows:** 76,654 static set windows fewer; jig, tow and day windows move by 1-4.
+- **The trail:** 2,328,557 fixes leave the set phase (6,070,499 to 3,741,942) and now lie in no window. The fishing flag
+  of the windows (`fishing`) is all but unchanged (jig -5,195, day +565). The flow's own flag (`fishing_flow`) rises by
+  643,298 fixes (0.46 %), 2014-2026: fixes no window holds are judged by their voyage's gear and speed range, and 27.8 %
+  of the fixes the false set windows held now pass it. Whether that is fishing (hauling a line the logbook does not
+  record) or slow steaming between sets is not measured.
+- **Catch on the fixes:** 27.9 Mt before and after; 12.2 t moved off the fixes (2019 and 2020) into the audit's "other
+  difference" (each approach); the rows per year shift with the fishing fixes.
+- **The audit:** stations whose first time of day lies in a port call 73,635 to 49,163 (decision 157 replayed 49,862
+  with every placeholder pattern out); stations in their trip's voyage +24,324; trips whose last station is in no
+  voyage 72,092 to 51,079. 333 voyages change gear, 688 their gear's basis.
 
 ## Open
 
+- The 643,298 fixes the voyage rule now calls fishing where a false set window stood: hauling or steaming.
 - A better set finder, if static effort as quantity × soak is built (TODO 72 item 8): the longline misses are late
   passes, the gillnet ones earlier visits to the same spot. The vessel's typical soak does as well on longlines and
   far better on pots, though it says nothing about where the set was.

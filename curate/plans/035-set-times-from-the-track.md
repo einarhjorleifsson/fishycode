@@ -6,7 +6,7 @@ set finder), TODO 72 item 8, `curate/station_window.R`, ramb `rb_link_record_set
 
 Drafted with AI assistance (Claude) on 2026-10-20: the cascade is the maintainer's ("use the logbook's set where it is
 real, the track's where it is not"), the test, its threshold and the design of §4 are Claude's, written before any
-number of §3 was seen. The maintainer asked Claude to build §4 and rebuild without him if the test passes.
+number of §3 was seen. The maintainer asked Claude to build §4 and rebuild unattended if the test passes.
 
 **Measured:** §3, by Claude (AI) on the build of 2026-10-20 (data of 5cec0f4), ramb 2026.10.19.2; a person has not yet
 checked it. Scripts and results in `$FISHYDATA/archive/2026-10-plan035/`. **Assumed:** that a logbook set time which is no placeholder,

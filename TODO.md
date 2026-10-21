@@ -848,22 +848,21 @@ session to classify them was proposed on 2026-10-20 (read-only; overview links p
 treats each.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
-**status:** in progress · **needs: maintainer** — whether to send the draft to Trackwell (and Fiskistofa) · **see:**
+**status:** open · **needs: maintainer** — whether to send the draft to Trackwell (and Fiskistofa) · **see:**
 decisions 157 and 158, `curate/corrections/logbook_set_placeholder.yml`, `curate/issues/trackwell.yml`, plan 031 §3.11
 and asks i-k, `$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/`
 
-Origin found (decisions 157, 158): Trackwell's app (Fishing Log 2.7, from 2014) sends the static-gear set time as the
-haul start less 270 or 1,710 min. The correction is coded (maintainer, 2026-10-20): `t1` NA and `t1_placeholder` in
-`fishing_sample.parquet`, those two offsets only, the soak and effort columns left and flagged. Nothing fills the set:
-the track's set finder failed plan 035's test (decision 158).
+Origin found and corrected (decisions 157, 158): Trackwell's app (Fishing Log 2.7, from 2014) sends the static-gear set
+time as the haul start less 270 or 1,710 min; those `t1` are NA and flagged since the rebuild of 2026-10-21. Nothing
+fills the set (plan 035 failed its test).
 
-Left: the correction built, with the next rebuild from `logbook`; the other placeholder patterns (a set copied from the
-departure, the haul times or 00:00) left as recorded by the maintainer's choice; the gillnet set times in a port call
-with no pattern (9-40 % of recorded sets, unexplained); the draft to Trackwell sent or dropped.
+Left: the 643,298 fixes the voyage rule now calls fishing where a false set window stood, hauling or steaming (decision
+158); the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as recorded by
+the maintainer's choice; the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained);
+the draft to Trackwell sent or dropped.
 
-**check:** `curated/logbook/fishing_sample.parquet` carries `t1_placeholder` with the counts of the correction's
-`affects_rows`, and no placeholder `t1`; the gillnet set times in port explained or listed; `trackwell.yml`'s `sent`
-filled or the draft dropped.
+**check:** the freed fixes' `fishing_flow` judged in a decision; the gillnet set times in port explained or listed;
+`trackwell.yml`'s `sent` filled or the draft dropped.
 
 ## 104. The vessel overview draws hauls from the flow's windows
 **status:** open · **see:** plan 030, decision 143, `curated/logbook/station_window.parquet`, `products/vessel_overview/`
@@ -889,16 +888,3 @@ smoothed speed. The maintainer: reported `t2`/`t3` are not truth; the independen
 survey tows (the channel and biota dump scripts are committed, 5cec0f4; the dump is the maintainer's to run).
 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
-
-## 106. afli haul end longitude is the latitude with its sign flipped
-**status:** in progress · **see:** `curate/corrections/afli_end_longitude.yml`, `curate/corrections/afli_end_longitude.R`,
-`$FISHYDATA/archive/2026-10-plan035/scripts/end_longitude_*.R`
-
-Source found 2026-10-20: Oracle's `afli.stofn` and `fs_afli.rafr_stofn` hold the end latitude in `lengd_lok` on 144,368
-electronic-logbook stations (2010-2012 mostly), while the XML the logbook sent holds the right end longitude. The
-correction is coded: 136,798 recovered from the sent record, 7,570 set to NA, `lon2_raw`/`lon2_basis` kept. Not built:
-it enters the data with the next rebuild from `logbook`. Fiskistofa could be told (not drafted).
-
-**check:** `curated/logbook/station.parquet` has no afli station with `lon2 = -lat2`, and its `lon2_basis` counts match
-the correction's `affects_rows`.
-
