@@ -46,6 +46,16 @@ details: >
   (`ais_catch`, `ais_voyage_gear`, the three checks, and the trail's effort,
   fishing-flow and voyage-gear columns); TODO 51.
 
+  2026-10-21: the ten columns of the curated logbook tables the file lacked added
+  by Claude (AI-assisted), from the scripts that make them and the schema of the
+  build at de25239: trip T1_basis, T2_basis (curate/aflaskeyti_trip.R); station
+  lat1_raw, lat2_raw (curate/corrections/aflaskeyti_coordinates.R);
+  fishing_sample target (the gear mapping), t_shift_min, time_basis
+  (curate/corrections/aflaskeyti_local_time.R); catch condition, catch_whole (the
+  adapters) and condition_basis (curate/corrections/aflaskeyti_weight.R). The four
+  tables' descriptions now name aflaskeyti (plan 026), and logbook_catch's grain is
+  (station, species, condition).
+
 tables:
   - name: ais_voyage
     source:
@@ -2457,12 +2467,17 @@ tables:
     source:
       parquet: ../../fishydata/curated/logbook/catch.parquet
     description: >
-      One row per species per logbook station (fishing operation). Orphan catch
-      records with no matching station are dropped via inner_join. Merged across
-      the three logbook source systems (afli, fs_afladagbok, adb). Every row is
-      kept, including those of duplicate twins (station.twin = "duplicate"): sum
-      it only after leaving those stations out, or use catch_by_species_station,
-      which already does.
+      One row per logbook station (fishing operation), species and condition: afli
+      and aflaskeyti have one row per species, fs_afladagbok and adb more than one
+      where a species was recorded in two states (sources/fs_afladagbok/convert.R,
+      sources/adb/convert.R group by .sid, sid and condition). Orphan catch records
+      with no matching station are dropped via inner_join. Merged across the four
+      logbook source systems (afli, fs_afladagbok, adb, aflaskeyti; curate/logbook.R).
+      `catch` is the weight in the state `condition` names, not always whole fish:
+      catch_by_species_station holds the whole-fish weight. Every row is kept,
+      including those of duplicate twins (station.twin = "duplicate"): sum it only
+      after leaving those stations out, or use catch_by_species_station, which
+      already does.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -2494,7 +2509,12 @@ tables:
         range: [0, 9999999]
         examples: [103, 7473, 16171, 29250, 1020000]
         description: >
-          Total catch, kg, summed within (.sid, sid).
+          Catch, kg, as the logbook recorded it, summed within (.sid, sid, condition).
+          fs_afladagbok and adb: the weight in the state `condition` names (fs's `magn`,
+          adb's `quantity`), gutted weight where it is GUTT. afli: the whole weight
+          (curate/catch_by_species_station.R, measured against fs_afladagbok). aflaskeyti:
+          the weight reported as live weight, which some Icelandic vessels report gutted
+          (condition GUTT; curate/corrections/aflaskeyti_weight.R).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -2502,15 +2522,51 @@ tables:
             - constraints: [required] # all values present
       - name: schema
         type: string
-        examples: [adb, afli, fs_afladagbok]
+        examples: [adb, afli, aflaskeyti, fs_afladagbok]
         description: >
           Which logbook source system this record came from: "afli", "fs_afladagbok",
-          or "adb".
+          "adb", or "aflaskeyti" (the ERS catch reports, plan 026).
         todo: |
-          - Only 3 distinct values. Is this an enum? If so change `string` to
+          - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: condition
+        type: enum
+        values: [GUTT, UNGU, RELE]
+        description: >
+          The state the `catch` weight is in: "GUTT" gutted, "UNGU" ungutted (whole),
+          "RELE" released. fs_afladagbok: the source's `astand` (S, O, L) recoded to adb's
+          codes (sources/fs_afladagbok/convert.R); adb: its own `condition`, NA on the
+          rows that record none. afli: NA, its `catch` is already the whole weight.
+          aflaskeyti: set by curate/corrections/aflaskeyti_weight.R (decision 126, plan
+          026 §7; see condition_basis): UNGU for the foreign vessels, whose reports say
+          live weight; for the Icelandic vessels, read per vessel and species from their
+          hauls matched to the afli logbook (GUTT where the logbook holds 1.25 times the
+          reported weight, UNGU where it holds the same), UNGU for a species round on
+          every matched vessel, NA where there is no evidence.
+      - name: catch_whole
+        type: number
+        range: [0, 800000]
+        examples: [8, 50, 150, 650, 3086]
+        description: >
+          Whole-fish (round) weight, kg, where it is recorded; NA, not 0, where it is
+          not. fs_afladagbok: the source's `afli`, adb: its `weight`, summed like
+          `catch`; both are NULL for about 98 % of rows from 2023
+          (sources/fs_afladagbok/convert.R, sources/adb/convert.R). aflaskeyti: `catch`
+          where condition is UNGU, NA where it is GUTT or unknown
+          (curate/corrections/aflaskeyti_weight.R). afli: NA (its `catch` is the whole
+          weight). catch_by_species_station's catch_round fills the gaps.
+      - name: condition_basis
+        type: enum
+        values: [recorded, derived, none]
+        description: >
+          How `condition` was obtained, aflaskeyti only
+          (curate/corrections/aflaskeyti_weight.R): "recorded" on the foreign vessels'
+          rows; "derived" on the Icelandic vessels', from their hauls matched to the
+          afli logbook; "none" where nothing says (condition NA; taken as round by
+          catch_by_species_station). NA for the other schemas: fs_afladagbok's and
+          adb's condition is the source's own, and afli has none.
   - name: logbook_catch_by_species_trip
     source:
       parquet: ../../fishydata/curated/logbook/catch_by_species_trip.parquet
@@ -2596,7 +2652,9 @@ tables:
       One row per fishing operation (1:1 with logbook_station; join on .sid) -
       gear, effort and timing detail kept separate from station's spatial/temporal
       envelope so station stays narrow. Gear-specific columns are NA where not
-      applicable to that gear class. Merged across afli, fs_afladagbok and adb.
+      applicable to that gear class. Merged across afli, fs_afladagbok, adb and
+      aflaskeyti (curate/logbook.R); aflaskeyti's t1-t4 are in UTC, moved from local
+      time where they were reported in it (t_shift_min, time_basis).
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -2632,11 +2690,11 @@ tables:
             `examples` is appropriate.
       - name: schema
         type: string
-        examples: [adb, afli, fs_afladagbok]
+        examples: [adb, afli, aflaskeyti, fs_afladagbok]
         description: >
           Which logbook source system this record came from.
         todo: |
-          - Only 3 distinct values. Is this an enum? If so change `string` to
+          - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
@@ -2660,6 +2718,16 @@ tables:
         description: >
           ICES gear-type code (e.g. "OTB", "LLS"), resolved from gid via the gear
           mapping.
+      - name: target
+        type: string
+        examples: [CRU, DEF, DES, MOL, SPF]
+        description: >
+          ICES TargetAssemblage code of the station's gear (e.g. "DEF", "SPF", "CRU"),
+          joined with gear and target2 from the gear mapping
+          (reference/gear/mapping.R, curated/reference/gear.parquet) in each adapter.
+          NA where the mapping gives none: all of adb, whose gid is NA here (its gear is
+          read later, in logbook_gear by curate/corrections/logbook_gear.R, plan 034),
+          and a few afli stations.
       - name: target2
         type: string
         examples: [ARI, ECH, KEL, SCL, XXX]
@@ -2956,6 +3024,25 @@ tables:
           TRUE for pre-1980 records with .sid > 2,500,000 - retrospective back-entries
           rather than contemporaneous records (afli only; NA for fs_afladagbok). See
           docs/afli-backentry.qmd.
+      - name: t_shift_min
+        type: number
+        range: [-60, 0]
+        examples: [-60, 0]
+        description: >
+          Minutes added to the reported t1-t4 to bring them to UTC, aflaskeyti only
+          (curate/corrections/aflaskeyti_local_time.R, plan 026 §3b): -60 for a
+          Faroese vessel's haul started in Faroese summer time (the EU rule: 01:00 UTC
+          on the last Sunday of March to 01:00 UTC on the last Sunday of October), 0
+          for every other haul. t1-t4 here are already moved; the time as reported is
+          t - t_shift_min. NA for the other schemas.
+      - name: time_basis
+        type: enum
+        values: [recorded, reconstructed]
+        description: >
+          How t1-t4 were obtained, aflaskeyti only
+          (curate/corrections/aflaskeyti_local_time.R): "reconstructed" where
+          t_shift_min is not 0 (moved from local time to UTC), "recorded" otherwise.
+          NA for the other schemas.
       - name: t1_placeholder
         type: boolean
         description: >
@@ -3323,7 +3410,12 @@ tables:
     description: >
       One row per fishing operation (station) - narrow spatial/temporal envelope
       only; gear and effort detail is in logbook_fishing_sample (join on
-      .sid/.tid). Merged across afli, fs_afladagbok and adb.
+      .sid/.tid). Merged in curate/logbook.R across afli, fs_afladagbok, adb and
+      aflaskeyti, tier by tier on (vid, date): afli; then fs_afladagbok; then the
+      paper stations only fs_afli holds (decision 124); then adb; then aflaskeyti,
+      the ERS catch reports of 2014-2018 (plan 026: the foreign vessels' hauls, and
+      the Icelandic vessels' hauls on vessel-days their logbook lacks). Each source's
+      date bounds are in curate/logbook.R's head.
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -3433,11 +3525,11 @@ tables:
             `examples` is appropriate.
       - name: schema
         type: string
-        examples: [adb, afli, fs_afladagbok]
+        examples: [adb, afli, aflaskeyti, fs_afladagbok]
         description: >
           Which logbook source system this station came from.
         todo: |
-          - Only 3 distinct values. Is this an enum? If so change `string` to
+          - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
@@ -3510,16 +3602,20 @@ tables:
             `enum` and `examples` to `values`.
       - name: coord_flag
         type: string
-        examples: [meridian, south, west]
+        examples: [lat_lon_swapped, meridian, south, west]
         description: >
-          Suspect-coordinate QC label - "meridian", "west", "south", or NA. Flags
-          only; does not filter. fs_afladagbok only.
+          Coordinate label. fs_afladagbok: a suspect-coordinate QC label, "meridian",
+          "west", "south", or NA; it flags only and does not filter. aflaskeyti:
+          "lat_lon_swapped" on every station, whose latitude and longitude were put back
+          in their places (curate/corrections/aflaskeyti_coordinates.R, decision 126;
+          the source's values are in lon1_raw, lat1_raw, lon2_raw, lat2_raw). NA for afli
+          and adb.
         todo: |
-          - Only 3 distinct values. Is this an enum? If so change `string` to
+          - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
       - name: lon1_raw
         type: number
-        range: [-15563.3333333333, 23.909000000000002]
+        range: [-66064, 89.983]
         examples:
           - -66.10666666666665
           - -24.619333333333326
@@ -3527,14 +3623,17 @@ tables:
           - -21.124833333333328
           - -11.53983333333333
         description: >
-          Start longitude as originally recorded, before coordinate correction - kept
-          alongside lon1.
+          Start longitude as the source holds it, before coordinate correction - kept
+          alongside lon1. adb: before its dropped west sign was restored
+          (curate/corrections/adb_vs_fs_afladagbok.R). aflaskeyti: the source's start
+          longitude column, which holds the latitude, so lat1 is this value
+          (curate/corrections/aflaskeyti_coordinates.R). NA for afli and fs_afladagbok.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
       - name: lon2_raw
         type: number
-        range: [-242.213333333333, -1.0511666666666701]
+        range: [-66064, 80.86667]
         examples:
           - -66.10666666666665
           - -24.68566666666666
@@ -3544,15 +3643,37 @@ tables:
         description: >
           End longitude as originally recorded (adb, and afli since
           curate/corrections/afli_end_longitude.yml: the adapter's value, -lat2 where
-          Oracle holds the end latitude in its place).
+          Oracle holds the end latitude in its place). aflaskeyti: the source's end
+          longitude column, which holds the latitude, so lat2 is this value
+          (curate/corrections/aflaskeyti_coordinates.R).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
+      - name: lat1_raw
+        type: number
+        range: [-179.517, 37.203]
+        examples: [-24.2, -18.4, -16.8, -13.1, -10.7]
+        description: >
+          Start latitude as the source holds it, before coordinate correction, aflaskeyti
+          only (NA for the other schemas). dw_aflaskeyti has latitude and longitude
+          swapped on every row (curate/corrections/aflaskeyti_coordinates.R, decision
+          126): its start latitude column holds the longitude, so lon1 is this value.
+          Kept beside the corrected lat1, never overwritten.
+      - name: lat2_raw
+        type: number
+        range: [-36.15, 37.203]
+        examples: [-24.1, -18.3, -16.7, -13.0, -10.7]
+        description: >
+          End latitude as the source holds it, before coordinate correction, aflaskeyti
+          only (NA for the other schemas): the source's end latitude column, which holds
+          the longitude, so lon2 is this value (curate/corrections/aflaskeyti_coordinates.R).
       - name: lon1_basis
         type: string
         examples: [reconstructed, recorded]
         description: >
           How lon1 was obtained: "recorded", "reconstructed", or "synthesised".
+          aflaskeyti: "recorded", the source's own value taken from the column it was
+          put in (curate/corrections/aflaskeyti_coordinates.R).
         todo: |
           - Only 2 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
@@ -3560,10 +3681,10 @@ tables:
         type: string
         examples: [recorded, reconstructed, none]
         description: >
-          How lon2 was obtained: "recorded"; "reconstructed" (adb's west sign restored,
-          or afli's end longitude taken from the record the logbook sent); "none" (afli,
-          the stored value was the end latitude and the sent record could not give it,
-          so lon2 is NA).
+          How lon2 was obtained: "recorded" (aflaskeyti's too, taken from the column it
+          was put in); "reconstructed" (adb's west sign restored, or afli's end longitude
+          taken from the record the logbook sent); "none" (afli, the stored value was the
+          end latitude and the sent record could not give it, so lon2 is NA).
         todo: |
           - Only 1 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
@@ -3607,9 +3728,11 @@ tables:
     description: >
       One row per fishing trip (voyage) as reported to the logbook system. .tid
       origin differs by schema: afli derives it as min(.sid) within (vid, T2,
-      hid2); fs_afladagbok takes it directly from the source system's own trip id.
-      Merged across afli, fs_afladagbok and adb (three-tier precedence: afli where
-      it exists, then fs_afladagbok, then adb beyond fs_afladagbok's dump end).
+      hid2); fs_afladagbok takes it directly from the source system's own trip id;
+      aflaskeyti, whose catch reports hold no trip, gets its trips from
+      curate/aflaskeyti_trip.R. Merged in curate/logbook.R across afli,
+      fs_afladagbok, adb and aflaskeyti: a trip is kept when one of its stations is
+      (see logbook_station for the tiers).
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -3619,7 +3742,9 @@ tables:
         description: >
           Trip identifier. afli: derived as min(.sid) within (vid, T2, hid2).
           fs_afladagbok: taken directly from the source system's own trip id
-          (ws_veidiferd.id).
+          (ws_veidiferd.id). aflaskeyti: the .sid of the trip's first haul, a trip being
+          a vessel's hauls up to a landing in Iceland or a gap of 48 h
+          (curate/aflaskeyti_trip.R).
         todo: |
           - Specify `constraints`. Some options suggested by the data (distinct
             count is approximate):
@@ -3640,7 +3765,8 @@ tables:
         time_zone: naive
         range: [0006-03-30T00:00:00, 2026-04-08T20:30:10]
         description: >
-          Departure time (or earliest fishing date, for afli).
+          Departure time (or earliest fishing date, for afli; the first haul's time, for
+          aflaskeyti, see T1_basis).
         todo: |
           - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:
@@ -3650,7 +3776,7 @@ tables:
         range: [0, 291]
         examples: [0, 53, 89, 117, 291]
         description: >
-          Departure harbour id; NA for afli.
+          Departure harbour id; NA for afli and aflaskeyti.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3659,7 +3785,8 @@ tables:
         time_zone: naive
         range: [0201-07-23T00:00:00, 2026-04-09T09:17:52]
         description: >
-          Landing date/time.
+          Landing date/time (for aflaskeyti the date of the landing in Iceland that ends
+          the trip, or NA; see T2_basis).
         todo: |
           - Needs a `time_zone`?
       - name: hid2
@@ -3682,12 +3809,12 @@ tables:
             `examples` is appropriate.
       - name: schema
         type: string
-        examples: [adb, afli, fs_afladagbok]
+        examples: [adb, afli, aflaskeyti, fs_afladagbok]
         description: >
-          Which logbook source system this trip came from: "afli", "fs_afladagbok", or
-          "adb".
+          Which logbook source system this trip came from: "afli", "fs_afladagbok",
+          "adb", or "aflaskeyti" (the ERS catch reports, plan 026).
         todo: |
-          - Only 3 distinct values. Is this an enum? If so change `string` to
+          - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
@@ -3716,7 +3843,24 @@ tables:
           - Reiknistofa fiskmarkaða raun - Skrifstofa VES
           - Trackwell raun - Skrifstofa VES - GAFL AUTO
         description: >
-          Source system tag within the fs_afladagbok schema; NA for afli.
+          Source system tag within the fs_afladagbok schema; "ERS DCA (dw_aflaskeyti)"
+          for aflaskeyti; NA for afli.
+      - name: T1_basis
+        type: enum
+        values: [synthesised]
+        description: >
+          How T1 was obtained, aflaskeyti only (curate/aflaskeyti_trip.R, plan 026 §4):
+          "synthesised", the trip's first haul time, a bound on departure, never a
+          departure. NA for the other schemas.
+      - name: T2_basis
+        type: enum
+        values: [reconstructed, none]
+        description: >
+          How T2 was obtained, aflaskeyti only (curate/aflaskeyti_trip.R, plan 026 §4):
+          "reconstructed" where the trip ends at a landing in Iceland within 7 days of
+          its last haul and before the next, T2 its date and hid2/pid2 its port; "none"
+          where it ends at a gap of 48 h or more with no such landing (landed abroad,
+          or later), T2 NA. NA for the other schemas.
       - name: twin
         type: enum
         values: [kept, duplicate]
@@ -4854,7 +4998,7 @@ relationships:
   #   logbook_station..sid   = logbook_fishing_sample..sid (one-to-one)
   #     docs/output-schema.md — gear/effort detail kept in its own table
   #   logbook_station..sid   = logbook_catch..sid          (one-to-many)
-  #     docs/output-schema.md — catch recorded one row per species
+  #     curate/logbook.R — catch recorded one row per species and condition
   #   link_trip_voyage..tid  = logbook_trip..tid            (one-to-one)
   #     curate/link_trip_voyage.R:70 (`row_number() ... rn = 1` per tid).
   #     Rebuilt 2026-09-25 (curate/decisions/028) — now carries `year`/`trip`
@@ -4949,7 +5093,7 @@ glossary:
   schema: >
     Which source system a row came from. Two independent, non-interchangeable
     uses of this same column name exist in this dictionary: the logbook
-    tables' `"afli"`/`"fs_afladagbok"`/`"adb"` (see `docs/output-schema.md`),
+    tables' `"afli"`/`"fs_afladagbok"`/`"adb"`/`"aflaskeyti"` (see `curate/logbook.R`),
     and `landing_catch`/`landing_landings`'s `"agf"`/`"lods"`
     (`curate/plans/007`). `curate/link_lid_map.R` and
     `curate/catch_by_species_trip.R` join both together, so a landings-side
