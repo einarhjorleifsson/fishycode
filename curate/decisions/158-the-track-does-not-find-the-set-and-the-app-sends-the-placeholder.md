@@ -46,7 +46,8 @@ places decision 157's rise of 2015, and answers its note that afli names no make
   `station_window` draws no set window there; the soak stays unknown. Plan 035 is abandoned; its §4 is not built.
 - No rebuild was run that night: the maintainer tied it to a passing test. The maintainer asked for it the next morning (below).
 - The draft to Trackwell now says the app sends the value. It is kept out of git at the maintainer's word
-  (2026-10-21), in `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`.
+  (2026-10-21), in `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`; later that day it was rewritten to lead with
+  the logger's positions, misdecoded in every app version (`curate/corrections/afli_coords.yml`).
 
 ## The rebuild of 2026-10-21
 
@@ -76,7 +77,10 @@ push the unpushed commits were rewritten to take the draft out of git: de25239 i
 
 ## Open
 
-- The 643,298 fixes the voyage rule now calls fishing where a false set window stood: hauling or steaming.
+- The 643,298 fixes the voyage rule now calls fishing where a false set window stood: measured the same day in a side
+  session (`$FISHYDATA/archive/2026-10-freed-fixes/`, a decision draft): mostly a soak's drift, and a property of the
+  voyage rule on every static voyage, not of the placeholder (TODO 103).
+- Other app-made fixed values in the set times and haul lengths, static and towed gear: TODO 107.
 - A better set finder, if static effort as quantity × soak is built (TODO 72 item 8): the longline misses are late
   passes, the gillnet ones earlier visits to the same spot. The vessel's typical soak does as well on longlines and
   far better on pots, though it says nothing about where the set was.

@@ -756,6 +756,10 @@ track, keeping its speed and heading in a side table by time; or redo `sensor_gp
 today's track with a gap limit. Either needs a rebuild from `ais_ping_union`. The logger's
 other readings (depth, temperature) are TODO 100. Scripts: `$FISHYDATA/archive/2026-10-todo98/`.
 
+Found 2026-10-21 (`curate/corrections/afli_coords.yml`, `origin_in_the_sent_record`): the logger's DDMMmm-as-seconds
+fault is already in the XML each app sent, in every version 2008-2024 (SeaData 2.0, Trackwell 2.6, 2.7), so the XML
+cannot repair it; Trackwell is asked whether the devices' readings survive (the draft of TODO 103).
+
 **check:** decided; no logger fix in the trail more than 5 km from a recorded ping at the same moment, or none at all.
 
 ## 99. The whack test does not test interpolated positions against recorded ones
@@ -856,10 +860,11 @@ Origin found and corrected (decisions 157, 158): Trackwell's app (Fishing Log 2.
 time as the haul start less 270 or 1,710 min; those `t1` are NA and flagged since the rebuild of 2026-10-21. Nothing
 fills the set (plan 035 failed its test).
 
-Left: the 643,298 fixes the voyage rule now calls fishing where a false set window stood, hauling or steaming (decision
-158); the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as recorded by
+Left: the 643,298 fixes the voyage rule now calls fishing where a false set window stood (decision 158): measured
+2026-10-21, a soak's drift more than hauling, and a property of the voyage rule on every static voyage (about 344 k h of
+longline fishing); a decision draft in `$FISHYDATA/archive/2026-10-freed-fixes/` asks whether soak drift is fishing; the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as recorded by
 the maintainer's choice; the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained);
-the draft to Trackwell sent or dropped.
+the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
 
 **check:** the freed fixes' `fishing_flow` judged in a decision; the gillnet set times in port explained or listed;
 `trackwell.yml`'s `sent` filled or the draft dropped.
@@ -885,6 +890,45 @@ Every one of the 2,438,223 date-only hauls has the window 00:00 to 00:00. Scoped
 3-4.5 h; purse seine and trawl often, hand line and gillnet rarely. Proposed: stretch the day window along the fishing
 stretch it sits in with ramb's stretch functions, the day as the prior, one fix one record. Not redone with the ±10 min
 smoothed speed. The maintainer: reported `t2`/`t3` are not truth; the independent witness proposed is the research
-survey tows (the channel and biota dump scripts are committed, 5cec0f4; the dump is the maintainer's to run).
+survey tows: channel was dumped on the server on 2026-10-21 but for three tables (two redone by the geometry
+fallbacks of 6a579d4, one view broken in Oracle); biota waits for the same run (TODO 109).
 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
+
+## 107. App-made fixed values left in the logbook times, static and towed gear
+**status:** open · **needs: maintainer** — the drafts' decisions · **see:** decision 157, TODO 103,
+`$FISHYDATA/archive/2026-10-time-offsets/`, `$FISHYDATA/archive/2026-10-time-offsets-towed/`
+
+Measured 2026-10-21 by Claude, read-only, in two side sessions (not yet checked by a person), each with a decision
+draft (not committed): after decision 158, static set times still sit on a half-hour grid computed from the haul
+start (about 32,600 stations), at 24 h (5,315) and beside the 270-min placeholder (3,023); haul lengths are rounded
+to whole hours at entry. Towed gear: the paper logbook's tow times are the skipper's rounding (42 % of starts on the
+hour), the electronic logbook holds a few app dummies.
+
+**check:** each draft decided and recorded (correction, flag or no action), or declined in a decision.
+
+## 108. afli's station positions from the record the logbook sent
+**status:** open · **needs: maintainer** — the draft correction · **see:** `curate/corrections/afli_end_longitude.yml`,
+`$FISHYDATA/archive/2026-10-xml-positions/` (README, `draft/afli_sent_positions.{R,yml}`),
+`$FISHYDATA/archive/2026-10-xml-inventory/`
+
+Measured 2026-10-21 by Claude, read-only (not yet checked by a person): the apps send the haul's end (`POS_END`,
+2011-2024) and Oracle never loads it, so 814,598 afli stations would gain an end position; the start is sent to the
+arc-second and stored to the minute (805,383 more precise); Oracle's loader turns a west longitude within a degree
+of Greenwich east (905). No output of the flow changes, only `station.parquet`'s positions. The draft correction
+would replace `afli_end_longitude`'s side table. The inventory also found 81,454 messages after 2020-07-28 only in
+fs_afli's copy, and `afli.rafr_mottaka_view` failing (ORA-01843) though its table is dumped.
+
+**check:** the draft decided; if adopted, built, and `afli_end_longitude` folded into it.
+
+## 109. The server dump after decision 159: compare, adopt, rebuild
+**status:** open · **needs: maintainer** — the run on the server · **see:** decision 159, `dump/oracle/README.md`
+(sections on the server, the watcher and `compare_dumps()`), TODO 105
+
+To run on the server after `git pull` (decision 159's scripts and the geometry fallbacks of 6a579d4): channel (its
+three failed tables, `--resume`), biota (whole), and orri, ufs, uv and fs_afli again for their persons' tables, or a
+full dump of every schema. Then each schema compared with the Mac's copy (`compare_dumps()`), every difference
+explained before it replaces `raw/oracle/<schema>/`, and the targets that read a changed table rebuilt.
+
+**check:** every schema of the run compared and adopted (or the difference recorded), and the rebuild done or
+declared not needed.

@@ -116,7 +116,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   corrected `lon`/`lat`.
 - **Kennitala may be carried up to and including `curated/`** (maintainer, 2026-10-18, a general rule), under
   `$FISHYDATA` only: never in this repo, `docs/`, or anything published. What a public source prints (owners,
-  addresses, phones) is kept the same way (decision 130).
+  addresses, phones) is kept the same way (decision 130), and the Oracle dumps take persons' tables too (decision
+  159). Read them by counts and columns; never print their rows into a session.
 - **The written record is enforced, not promised.** `check_bookkeeping()`
   (`R/check_bookkeeping.R`) verifies every rule the three `README.md` files
   assert: records indexed, index rows resolving, no finished item left in
