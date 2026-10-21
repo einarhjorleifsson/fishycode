@@ -1,7 +1,7 @@
 # 037 — The most upstream source, value by value: layers from raw to curated, in the grammar's terms
 
 **status:** proposal — written 2026-10-21, scoped the same evening; nothing built; TODO 113 and 114 paused for it;
-asks in §7, the TODO items it touches in §8 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
+asks in §7 (a, b, c and e answered 2026-10-21), the TODO items it touches in §8 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
 110, 113, 114, decisions 157, 158 and 160, plans 023, 025, 028, 029 and 036, `curate/corrections/afli_end_longitude.yml`,
 `curate/corrections/afli_coords.yml`, `$FISHYDATA/archive/2026-10-xml-oracle-map/`, `2026-10-xml-inventory/`,
 `2026-10-xml-positions/`, `2026-10-time-offsets/`, `2026-10-time-offsets-towed/`, `2026-10-landing-confirmations/`,
@@ -191,6 +191,17 @@ The pass is that everything is accounted for (§1), not a rate.
   upstream not yet dumped.
 
 ## 7. Asks
+
+Answered by the maintainer on 2026-10-21: a (the principle, taken as stated), b (a column per field group), c (below)
+and e (`catch` as logged everywhere). Open: d, f, g, h.
+
+**c, in the maintainer's words:** where the expert edited, the expert wins; "but we want also to learn how / why he
+won (landings data, ...) ... because if we know, we have added to our own domain knowledge. and that is important to
+know, because once [he] retired, it got lost." So the edits are not only taken: each is explained from the evidence
+that most likely led to it (the landing's date, port and gear; the track; the vessel's other records), the reasons
+classed and counted, and each class turned into a check of fishycode's own, scored on how many of the expert's edits
+it would have made. The years after the expert's last edit (2023) are the years nobody corrected: those checks are
+what stands in for him there.
 
 a. The principle of §1, with its two qualifications, as AGENTS.md's rule.
 b. The layer recorded as a column per field group, or as one provenance table (station, field, layer, basis, reason).
