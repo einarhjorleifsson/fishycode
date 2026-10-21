@@ -56,6 +56,13 @@ details: >
   tables' descriptions now name aflaskeyti (plan 026), and logbook_catch's grain is
   (station, species, condition).
 
+  2026-10-21: the six tables of afli's sent layer (staging/afli_sent, plan 037)
+  added by Claude (AI-assisted), from sources/afli_sent/convert.R and a scratch
+  build of it (ranges and examples from that build; the store holds none until the
+  afli_sent target is built). The first staging tables here: nothing in curated/
+  carries the sent layer yet, and its consumers (curate/, plan 037 phase 2) need
+  its columns written down first.
+
 tables:
   - name: ais_voyage
     source:
@@ -4963,6 +4970,905 @@ tables:
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
 
+  - name: staging_afli_sent_record
+    source:
+      parquet: ../../fishydata/staging/afli_sent/record.parquet
+    description: >
+      One row per record (FAERSLA) of every message afli's electronic logbook apps sent
+      (fs_afli.afladagb_xml_mottaka, 565,192 messages, 2002-2024): what became of each copy. A record
+      is sent again when changed (a higher VERSION) and sometimes unchanged in another message; the
+      latest version of each record is the one staged in the other tables of staging/afli_sent. Plan
+      037's sent layer; sources/afli_sent/convert.R.
+    columns:
+      - name: .xid
+        type: number
+        range: [16001, 566147001]
+        examples: [14998007, 94505017, 246855001, 404210005, 534606002]
+        description: >
+          The copy's key: its message id x 1000 + its ordinal in the message (`mid`, `rec`).
+      - name: mid
+        type: number
+        range: [16, 566147]
+        examples: [14998, 94505, 246855, 404210, 534606]
+        description: >
+          The message (afladagb_xml_mottaka.id).
+      - name: rec
+        type: number
+        range: [1, 533]
+        examples: [1, 2, 6, 13, 55]
+        description: >
+          The record's ordinal in its message, from 1.
+      - name: vid
+        type: number
+        range: [5, 9999]
+        examples: [1019, 1451, 1976, 2586, 2893]
+        description: >
+          The vessel: the message's SKIP_NR as sent. Oracle's receipt (skip_nr) is NULL on 11,440
+          copies whose message names it.
+      - name: visir_sent
+        type: number
+        range: [-15834, 116372682]
+        examples: [112, 932, 3032, 8645, 78552860]
+        description: >
+          The record's VISIR as sent: the app's own number, reused by the apps years apart, so not
+          an identity alone.
+      - name: version
+        type: number
+        range: [0, 20]
+        examples: [1]
+        description: >
+          The record's VERSION as sent.
+      - name: date
+        type: datetime
+        time_zone: naive
+        range: [1899-12-30T00:00:00, 2099-11-01T00:00:00]
+        description: >
+          The fishing date (STOFN/VEDAGS) as sent, at 00:00: a date only.
+      - name: received
+        type: datetime
+        time_zone: naive
+        range: [2002-12-05T10:32:14, 2024-07-12T14:59:03]
+        description: >
+          When Oracle received the message (afladagb_xml_mottaka.snt).
+      - name: test_message
+        type: boolean
+        description: >
+          The message is marked a test (afladagb_xml_mottaka.gerd = 9).
+      - name: .sid
+        type: number
+        range: [-10556515003, -379]
+        examples: [-1274128, -998904, -660870, -332830, -69492]
+        description: >
+          The record this copy is a copy of, as staged (station.parquet's .sid): Oracle's
+          rafr_stofn.visir, or -(10^10 + .xid of the record's first copy) where Oracle holds no
+          version of it. NA for a copy in a test message that belongs to no loaded record. A copy
+          that is the source of two rafr_stofn rows (n_sid 2) has the lesser.
+      - name: n_sid
+        type: number
+        range: [0, 2]
+        examples: [1]
+        description: >
+          How many staged records (rafr_stofn rows) the copy is a copy of: 2 for the 34 sent
+          records Oracle loaded twice, 0 for test-message copies of nothing.
+      - name: copy_loaded
+        type: boolean
+        description: >
+          This copy is the one Oracle loaded: the source of a rafr_stofn row (its
+          xml_sending_visir, xml_faerslu_version and xml_faerslu_visir).
+      - name: key_form
+        type: number
+        range: [1, 3]
+        examples: [1]
+        description: >
+          Where copy_loaded: the form of the sent VISIR in rafr_stofn.xml_faerslu_visir, tried in
+          this order: 1 as sent, 2 negated, 3 -(1,000,000 + VISIR) (2003-2011).
+      - name: .xid_staged
+        type: number
+        range: [107001, 566147001]
+        examples: [14996041, 94010001, 244175120, 401236003, 534550001]
+        description: >
+          The staged copy of its record (the highest VERSION, then the copy Oracle loaded, then the
+          last received).
+      - name: version_staged
+        type: number
+        range: [1, 20]
+        examples: [1]
+        description: >
+          The staged copy's VERSION.
+      - name: version_loaded
+        type: number
+        range: [1, 12]
+        examples: [1]
+        description: >
+          The VERSION of the record's copy Oracle loaded; NA where Oracle loaded none.
+      - name: staged
+        type: boolean
+        description: >
+          This copy is the one staged for its record.
+      - name: outcome
+        type: enum
+        values: ["loaded", "loaded, a newer version sent", "never loaded", "newer than the loaded one", "older version", "repeated in the message", "same haul as a loaded record, another VISIR", "same version, other message", "test message"]
+        description: >
+          What became of the copy, one each: "loaded" (Oracle loaded it, and it is staged); "newer
+          than the loaded one" (staged: a later version than the one Oracle loaded); "never loaded"
+          (staged: Oracle holds no version of the record); "loaded, a newer version sent" (Oracle
+          loaded it, a later version is staged); "older version" (a later version of its record was
+          sent); "same version, other message" (its record's version is staged from another copy);
+          "same haul as a loaded record, another VISIR" (not loaded, and not a version of a loaded
+          record by VISIR and date, but the same vessel, date, gear section and a sent time as a
+          loaded record: the haul sent again under another number, kept with that record and never
+          staged); "repeated in the message" (the same VISIR and VERSION again in its message);
+          "test message" (in a test message, and a version of no loaded record). A copy is a
+          version of a loaded record when it has the same vessel and VISIR and a date within 31
+          days of that record's loaded copy.
+      - name: schema
+        type: enum
+        values: ["afli"]
+        description: >
+          The source system: always "afli" (the layer is in `layer`).
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 <c2><a7>2): always
+          "sent", the XML the app sent.
+      - name: app
+        type: enum
+        values: ["SeaData - Fishing Log", "SeaData - Fishing Logbook", "Trackwell - SeaData - Fishing Log", "Trackwell - TrackWell - Fishing Log", "Trackwell - Trackwell - Fishing Log", "XML Spy"]
+        description: >
+          The app that sent the message, its HUGBUNADUR without the version (e.g. "Trackwell -
+          TrackWell - Fishing Log"); NA on the 4,400 messages that name none (Oracle's receipt
+          names none for them either).
+      - name: app_version
+        type: string
+        examples: ["1.1.0.0", "1.3.0.0", "2.6.26.0", "2.7.0.0", "4.4"]
+        description: >
+          The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+  - name: staging_afli_sent_trip
+    source:
+      parquet: ../../fishydata/staging/afli_sent/trip.parquet
+    description: >
+      One row per trip of afli's electronic records as sent, derived as sources/afli/convert.R derives
+      afli's: the staged records of a vessel that share the landing date and port they were sent with
+      (STOFN/LONDUN). Plan 037's sent layer; sources/afli_sent/convert.R.
+    columns:
+      - name: .tid
+        type: number
+        range: [-10556246012, -379]
+        examples: [-1277334, -1037781, -743140, -439992, -129184]
+        description: >
+          Trip key: the least Oracle .sid among its records, so it equals the edited layer's .tid
+          where the grouping is the same; the least .sid where Oracle loaded none of them.
+      - name: vid
+        type: number
+        range: [5, 9999]
+        examples: [967, 1636, 2457, 2732, 2893]
+        description: >
+          The vessel, the message's SKIP_NR.
+      - name: T1
+        type: datetime
+        time_zone: naive
+        range: [1899-12-30T00:00:00, 2024-06-27T00:00:00]
+        description: >
+          The trip's first fishing date (VEDAGS), at 00:00: no departure is sent.
+      - name: T2
+        type: datetime
+        time_zone: naive
+        range: [2001-10-03T00:00:00, 2024-06-27T00:00:00]
+        description: >
+          The landing date its records were sent with (STOFN/LONDUN@DAGSETNING), at 00:00. Oracle
+          replaces it on loading with the landing confirmation's on many records, and in-house
+          edits change it again: the edited layer's differs on 133,174 of 1,274,136 shared stations
+          (Claude, 2026-10-21).
+      - name: hid2
+        type: number
+        range: [-1, 3477]
+        examples: [11, 21, 65, 97, 147]
+        description: >
+          The landing port its records were sent with (STOFN/LONDUN@HOFN), afli's port code.
+      - name: n_crew
+        type: number
+        range: [-4, 99]
+        examples: [2, 3, 4, 9, 15]
+        description: >
+          Crew (STOFN/AHOFN) of the trip's key record (the one whose .sid is .tid).
+      - name: schema
+        type: enum
+        values: ["afli"]
+        description: >
+          The source system: always "afli" (the layer is in `layer`).
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 <c2><a7>2): always
+          "sent", the XML the app sent.
+      - name: app
+        type: enum
+        values: ["SeaData - Fishing Log", "SeaData - Fishing Logbook", "Trackwell - SeaData - Fishing Log", "Trackwell - TrackWell - Fishing Log", "Trackwell - Trackwell - Fishing Log", "XML Spy"]
+        description: >
+          The app that sent the message, its HUGBUNADUR without the version (e.g. "Trackwell -
+          TrackWell - Fishing Log"); NA on the 4,400 messages that name none (Oracle's receipt
+          names none for them either).
+      - name: app_version
+        type: string
+        examples: ["1.1.0.0", "1.1.9.0", "2.6.26.0", "2.7.1.0", "4.4"]
+        description: >
+          The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+      - name: port
+        type: string
+        examples: ["Akranes", "F<U+00E1>skr<U+00FA><U+00F0>sfj<U+00F6>r<U+00F0>ur", "Keflav<U+00ED>k", "Stykkish<U+00F3>lmur", "<U+00DE><U+00F3>rsh<U+00F6>fn"]
+        description: >
+          The landing port's name (curated/reference/port.parquet).
+      - name: pid2
+        type: string
+        examples: ["IS-AKR", "IS-DRA", "IS-HVM", "IS-SAN", "IS-VPN"]
+        description: >
+          The landing port in the standard port key.
+  - name: staging_afli_sent_station
+    source:
+      parquet: ../../fishydata/staging/afli_sent/station.parquet
+    description: >
+      One row per staged record of afli's electronic logbook as the apps sent it: the latest version of
+      each record (see record.parquet). Plan 037's sent layer, keyed so that .sid is the edited layer's
+      (staging/afli/station.parquet) wherever Oracle loaded the record; values only from the message,
+      nothing from the loaded or edited layers. sources/afli_sent/convert.R.
+    columns:
+      - name: .sid
+        type: number
+        range: [-10556515003, -379]
+        examples: [-1274798, -1008061, -674784, -341490, -74254]
+        description: >
+          Station key: Oracle's rafr_stofn.visir of the record (= the edited layer's .sid), found
+          through the record's message id, VERSION and VISIR in one of its three forms
+          (record.key_form); -(10^10 + .xid of the record's first copy) where Oracle holds no
+          version of it, outside every Oracle id. Unique.
+      - name: .tid
+        type: number
+        range: [-10556246012, -379]
+        examples: [-1272209, -1005483, -673799, -341097, -74469]
+        description: >
+          The trip (trip.parquet).
+      - name: .xid
+        type: number
+        range: [107001, 566147001]
+        examples: [16014031, 98516074, 251697003, 406821001, 535764009]
+        description: >
+          The staged copy (record.parquet). Not unique: the 34 sent records Oracle loaded twice are
+          staged under both .sid.
+      - name: date
+        type: datetime
+        time_zone: naive
+        range: [1899-12-30T00:00:00, 2099-11-01T00:00:00]
+        description: >
+          The fishing date (STOFN/VEDAGS) as sent, at 00:00.
+      - name: lon1
+        type: number
+        range: [-180.0833333, 174.9719444]
+        examples: [-26.3425000, -24.1000000, -22.5983333, -17.3500000, -11.8036111]
+        description: >
+          Start longitude, decimal degrees, as sent: STOFN/POS@LON (decimal degrees to the
+          arc-second, west negative), else STOFN/STADSETNING@LENGD (the older apps' DDMM, west
+          positive, read as sources/afli/convert.R reads Oracle's). Placeholders such as 0 are kept
+          as sent.
+      - name: lat1
+        type: number
+        range: [-66.2333333, 90.98333333]
+        examples: [63.2000000, 63.8441667, 64.9500000, 66.2177778, 67.0850000]
+        description: >
+          Start latitude, decimal degrees, as sent: STOFN/POS@LAT, else STOFN/STADSETNING@BREIDD
+          (DDMM).
+      - name: lon2
+        type: number
+        range: [-180, 180]
+        examples: [-26.20888890, -24.06666667, -22.58277780, -17.54444440, -11.71611110]
+        description: >
+          End longitude, decimal degrees, as sent: STOFN/POS_END@LON (never loaded by Oracle), else
+          STOFN/STADSETNING_LOK@LENGD (DDMM; the value Oracle overwrote with the end latitude on
+          many 2010-2012 records, decision 158).
+      - name: lat2
+        type: number
+        range: [-65.6027778, 90]
+        examples: [63.19555560, 63.86666667, 64.97972220, 66.25888890, 67.10722220]
+        description: >
+          End latitude, decimal degrees, as sent: STOFN/POS_END@LAT, else
+          STOFN/STADSETNING_LOK@BREIDD (DDMM).
+      - name: pos1_form
+        type: enum
+        values: ["ddmm", "degrees"]
+        description: >
+          The start position's form: "degrees" (POS) or "ddmm" (STADSETNING, to the minute); NA
+          where none was sent.
+      - name: pos2_form
+        type: enum
+        values: ["ddmm", "degrees"]
+        description: >
+          The end position's form, as pos1_form.
+      - name: sq
+        type: number
+        range: [-12632, 3230]
+        examples: [319, 372, 474, 623, 719]
+        description: >
+          Statistical rectangle (reitur), derived from lat1, lon1 (geo::d2r, as Oracle derives
+          rafr_stofn.reitur).
+      - name: ssq
+        type: number
+        range: [1, 4]
+        examples: [1, 2, 3, 4]
+        description: >
+          Sub-rectangle (smareitur, 1-4), derived from lat1, lon1 (geo::d2sr).
+      - name: sq_basis
+        type: enum
+        values: ["derived"]
+        description: >
+          "derived" where sq and ssq are computed, "none" where no start position was sent.
+      - name: z1_raw
+        type: number
+        range: [-1, 14795]
+        examples: [27.432, 75.000, 141.000, 238.000, 516.000]
+        description: >
+          Start depth, STOFN/DYPI as sent (decimal commas read as points). Its unit is not decided
+          here: SeaData 1.x sent fathoms, the later apps mostly metres, Fishing Log 2.6 and 2.7
+          fathoms on some vessels in some periods (the TODO 113 notes); the per-vessel-period unit
+          test is curate/'s.
+      - name: z2_raw
+        type: number
+        range: [-2, 1047281]
+        examples: [23.04287996, 77.00000000, 146.00000000, 244.00000000, 531.00000000]
+        description: >
+          End depth, STOFN/DYPI_LOK as sent; unit as z1_raw. Some values are negative as sent.
+      - name: record_closed
+        type: datetime
+        time_zone: naive
+        range: [2000-11-29T13:12:44, 2095-09-05T04:38:25]
+        description: >
+          When the record was closed in the app (FAERSLA_LOKUD), never loaded by Oracle.
+      - name: edited_after_closing
+        type: boolean
+        description: >
+          STOFN@BREYTT_EFTIR_LOKUN as sent: true where the app marked the record changed after
+          closing (669 copies); NA where absent. Oracle stores it as 0.
+      - name: version
+        type: number
+        range: [1, 20]
+        examples: [1]
+        description: >
+          The staged copy's VERSION.
+      - name: n_versions
+        type: number
+        range: [1, 9]
+        examples: [1]
+        description: >
+          Distinct VERSIONs sent of the record under its own VISIR.
+      - name: n_copies
+        type: number
+        range: [1, 606]
+        examples: [1, 2]
+        description: >
+          Copies of the record sent under its own VISIR (versions, resends and repeats).
+      - name: n_other_visir
+        type: number
+        range: [0, 10]
+        examples: [0]
+        description: >
+          Copies of the same haul sent under another VISIR (record.outcome "same haul as a loaded
+          record, another VISIR").
+      - name: loaded
+        type: boolean
+        description: >
+          Oracle holds a version of the record (.sid is Oracle's).
+      - name: copy_loaded
+        type: boolean
+        description: >
+          The staged copy is the one Oracle loaded; false on the 5 records whose latest version
+          Oracle did not load.
+      - name: version_loaded
+        type: number
+        range: [1, 12]
+        examples: [1]
+        description: >
+          The VERSION Oracle loaded; NA where it loaded none.
+      - name: schema
+        type: enum
+        values: ["afli"]
+        description: >
+          The source system: always "afli" (the layer is in `layer`).
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 <c2><a7>2): always
+          "sent", the XML the app sent.
+      - name: app
+        type: enum
+        values: ["SeaData - Fishing Log", "SeaData - Fishing Logbook", "Trackwell - SeaData - Fishing Log", "Trackwell - TrackWell - Fishing Log", "Trackwell - Trackwell - Fishing Log", "XML Spy"]
+        description: >
+          The app that sent the message, its HUGBUNADUR without the version (e.g. "Trackwell -
+          TrackWell - Fishing Log"); NA on the 4,400 messages that name none (Oracle's receipt
+          names none for them either).
+      - name: app_version
+        type: string
+        examples: ["1.1.0.0", "1.1.9.0", "2.6.26.0", "2.7.1.0", "4.4"]
+        description: >
+          The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+  - name: staging_afli_sent_fishing_sample
+    source:
+      parquet: ../../fishydata/staging/afli_sent/fishing_sample.parquet
+    description: >
+      One row per station of staging/afli_sent/station.parquet: the fishing sample as the app sent it,
+      in the shape of staging/afli/fishing_sample.parquet. The gear section the app sent (one per
+      record) gives the times and dimensions; the gear code sent (STOFN/VEIDARF) the gear class and
+      effort unit. sources/afli_sent/convert.R.
+    columns:
+      - name: .tid
+        type: number
+        range: [-10556246012, -379]
+        examples: [-1272209, -1005483, -673799, -341097, -74469]
+        description: >
+          The trip.
+      - name: .sid
+        type: number
+        range: [-10556515003, -379]
+        examples: [-1274798, -1008061, -674784, -341490, -74254]
+        description: >
+          The station.
+      - name: .xid
+        type: number
+        range: [107001, 566147001]
+        examples: [16014031, 98516074, 251697003, 406821001, 535764009]
+        description: >
+          The staged copy (record.parquet).
+      - name: gid_old
+        type: number
+        range: [1, 38]
+        examples: [1, 5, 6, 9]
+        description: >
+          Gear code as sent (STOFN/VEIDARF), the old code list.
+      - name: gid
+        type: number
+        range: [2, 15]
+        examples: [2, 6, 11, 12]
+        description: >
+          Gear code, the new list (curated/reference/gear.parquet, version old: map).
+      - name: gear
+        type: enum
+        values: ["DRB", "GNS", "LHM", "LLS", "OTB", "OTM", "PS", "SDN"]
+        description: >
+          Gear class (ICES), from gid_old.
+      - name: target
+        type: enum
+        values: ["CRU", "DEF", "MOL", "SPF"]
+        description: >
+          Target from the gear mapping.
+      - name: target2
+        type: enum
+        values: ["ARI", "CAP", "DEF", "HER", "NEP", "SHR", "SPF"]
+        description: >
+          Target species group from the gear mapping.
+      - name: section
+        type: enum
+        values: ["BOTNVARPA", "DRAGNOT", "FAERI", "FLOTVARPA", "HRINGNOT", "HUMARVARPA", "LINA", "NET", "PLOGUR", "RAEKJUVARPA"]
+        description: >
+          The gear section the app sent: BOTNVARPA, FLOTVARPA, HUMARVARPA, RAEKJUVARPA, DRAGNOT,
+          PLOGUR (towed), LINA, NET, FAERI (static and jigs) or HRINGNOT (purse seine).
+      - name: t1
+        type: datetime
+        time_zone: naive
+        range: [0001-01-01T00:00:00, 2024-01-04T03:00:15]
+        description: >
+          Set start (LINA, NET: LOGN_HEFST), to the second.
+      - name: t2
+        type: datetime
+        time_zone: naive
+        range: [1899-12-30T00:00:00, 2099-11-01T23:09:00]
+        description: >
+          On-bottom time: the fishing date at I_BOTNI (towed gear) or KLUKKAN (purse seine), HHMM.
+      - name: t3
+        type: datetime
+        time_zone: naive
+        range: [1899-12-30T00:01:00, 2099-11-02T08:11:00]
+        description: >
+          Haul start (LINA, NET: DRATTUR_HEFST; FAERI: UPPHAF_VEIDA, where Oracle loads it and so
+          where the edited layer has it); towed gear: t2 + duration_m (derived).
+      - name: t4
+        type: datetime
+        time_zone: naive
+        range: [2002-09-03T18:06:00, 2098-03-29T12:25:00]
+        description: >
+          Haul end (LINA, NET: DRATTUR_LYKUR; FAERI: LOK_VEIDA).
+      - name: duration_m
+        type: number
+        range: [0.6, 10080]
+        examples: [24, 86, 222, 312, 1080]
+        description: >
+          Duration, minutes: TOGTIMI (towed gear), else NAETUR x 1440 or KLST x 60 (static gear and
+          jigs), as sent; NA where it is 0 or less or implausible (R/duration_limit.R).
+      - name: duration_m_raw
+        type: number
+        range: [-381268.8, 42276528]
+        examples: [23, 85, 221, 312, 1152]
+        description: >
+          The duration before the plausibility limit.
+      - name: .duration_source
+        type: enum
+        values: ["data", "implausible", "missing"]
+        description: >
+          data, missing or implausible (R/duration_limit.R).
+      - name: duration_d
+        type: number
+        range: [0.1, 29358.7]
+        examples: [0.2, 0.5, 1.0, 1.2, 5.0]
+        description: >
+          Nights soaked (NET@NAETUR) as sent, unrounded (Oracle rounds it, TODO 108).
+      - name: duration_h
+        type: number
+        range: [-6354.48, 704572.5]
+        examples: [1.28, 3.50, 4.49, 5.85, 24.00]
+        description: >
+          Hours (LINA@KLST, FAERI@KLST) as sent, unrounded; negative where the app sent it so
+          (Fishing Log 2.6's jigs).
+      - name: effort_count
+        type: number
+        range: [0, 39500090]
+        examples: [1, 19000]
+        description: >
+          What fishes at once: 1 for towed gear and seines, hooks for longlines (n_total), nets or
+          jigs.
+      - name: effort_unit
+        type: enum
+        values: ["gear-minutes", "hook-days", "jig-hours", "net-days", "setting"]
+        description: >
+          gear-minutes, setting, hook-days, net-days or jig-hours, by gear class.
+      - name: effort_duration
+        type: number
+        range: [0.0004166666667, 2159]
+        examples: [0.1870833333, 1.0000000000, 130.0000000000, 268.0000000000, 470.0000000000]
+        description: >
+          duration_m in effort_unit's time unit (derived).
+      - name: effort
+        type: number
+        range: [0, 6813765.525]
+        examples: [1, 38, 206, 332, 4000]
+        description: >
+          effort_count x effort_duration (derived).
+      - name: .checks
+        type: enum
+        values: ["end time missing", "end time overlaps next", "ok", "start time missing", "start time overlaps previous"]
+        description: >
+          The overlap label of osfd::fd_flag_time_overlaps on t2, t3 per vessel, as in
+          sources/afli/convert.R.
+      - name: schema
+        type: enum
+        values: ["afli"]
+        description: >
+          The source system: always "afli" (the layer is in `layer`).
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 <c2><a7>2): always
+          "sent", the XML the app sent.
+      - name: app
+        type: enum
+        values: ["SeaData - Fishing Log", "SeaData - Fishing Logbook", "Trackwell - SeaData - Fishing Log", "Trackwell - TrackWell - Fishing Log", "Trackwell - Trackwell - Fishing Log", "XML Spy"]
+        description: >
+          The app that sent the message, its HUGBUNADUR without the version (e.g. "Trackwell -
+          TrackWell - Fishing Log"); NA on the 4,400 messages that name none (Oracle's receipt
+          names none for them either).
+      - name: app_version
+        type: string
+        examples: ["1.1.0.0", "1.1.9.0", "2.6.26.0", "2.7.1.0", "4.4"]
+        description: >
+          The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+      - name: t1_basis
+        type: enum
+        values: ["none", "recorded"]
+        description: >
+          "recorded" or "none".
+      - name: t2_basis
+        type: enum
+        values: ["none", "recorded"]
+        description: >
+          "recorded" or "none".
+      - name: t3_basis
+        type: enum
+        values: ["derived", "none", "recorded"]
+        description: >
+          "recorded" (sent), "derived" (t2 + duration_m) or "none".
+      - name: t4_basis
+        type: enum
+        values: ["none", "recorded"]
+        description: >
+          "recorded" or "none".
+      - name: duration_m_basis
+        type: enum
+        values: ["none", "recorded"]
+        description: >
+          "recorded" (as sent, in minutes) or "none".
+      - name: n_units
+        type: number
+        range: [0, 999]
+        examples: [5, 14, 28, 36, 96]
+        description: >
+          Tubs (LINA@FJ_BJODA), nets (NET@FJOLDI) or jigs (FAERI@FJOLDI). Not the two-trawl flag
+          (see twin_gear), which the edited layer holds here.
+      - name: bottom_type
+        type: enum
+        values: ["sandur"]
+        description: >
+          Bottom type (PLOGUR/BOTNGERD), dredges.
+      - name: catch_nperkg
+        type: number
+        range: [0, 999]
+        examples: [130, 168, 200, 246, 300]
+        description: >
+          Shrimp count per kg (RAEKJUVARPA/FJ_I_KILO).
+      - name: g_mesh
+        type: number
+        range: [0, 203000]
+        examples: [30.0, 135.0, 153.0, 228.6]
+        description: >
+          Mesh, mm: DRAGNOT, PLOGUR element MOSKVI; NET@MOSKVI; HRINGNOT/NOT@MOSKVI.
+      - name: g_width
+        type: number
+        range: [3, 3]
+        examples: [3]
+        description: >
+          Dredge width (PLOGUR/PLOG_STAERD@BREIDD).
+      - name: g_height
+        type: number
+        range: [0, 999]
+        examples: [12, 30, 40, 50, 110]
+        description: >
+          Dredge height (PLOG_STAERD@HAED); net height (NET@HAED); purse seine depth (NOT@D_NOTAR,
+          metres as sent: Oracle converts it to fathoms).
+      - name: g_length
+        type: number
+        range: [0, 30969]
+        examples: [0, 230, 1160]
+        description: >
+          Dredge length (PLOG_STAERD@LENGD); gillnet fleet length, nets x mean net length
+          (NET@FJOLDI x NET@MEDAL_LENGD_NETA, derived); purse seine length (NOT@L_NOTAR, metres as
+          sent: Oracle converts it to fathoms).
+      - name: length_togle
+        type: number
+        range: [2, 16459]
+        examples: [677, 1829, 2195, 2560, 2926]
+        description: >
+          Danish seine rope length (DRAGNOT/TOG_LENGD), metres as sent: Oracle converts it to
+          fathoms, so the edited layer's is in fathoms.
+      - name: length_virle
+        type: number
+        range: [0, 0]
+        examples: [0]
+        description: >
+          Danish seine wire length (DRAGNOT/VIR_LENGD).
+      - name: mesh_vod
+        type: number
+        range: [0, 800]
+        examples: [100, 135, 155]
+        description: >
+          Danish seine wing mesh (DRAGNOT/MOSKVI_VOD).
+      - name: length_headline
+        type: number
+        range: [0, 1234]
+        examples: [20, 55, 60, 65, 70]
+        description: >
+          Danish seine headline (DRAGNOT/HOFLINULENGD).
+      - name: length_fotreipi
+        type: number
+        range: [0, 999]
+        examples: [1, 2, 3]
+        description: >
+          Danish seine footrope (DRAGNOT/FOTREIPI).
+      - name: n_total
+        type: number
+        range: [0, 39500090]
+        examples: [7140, 14400, 17600, 33880, 42888]
+        description: >
+          Longline hooks: LINA/FJ_KROKA, else LINA@ONGLAR x LINA@FJ_BJODA (derived).
+      - name: n_total_basis
+        type: enum
+        values: ["derived", "none", "recorded"]
+        description: >
+          "recorded", "derived" or "none".
+      - name: n_per_unit
+        type: number
+        range: [0, 13000]
+        examples: [4, 450, 1000, 1250, 1650]
+        description: >
+          Hooks per tub (LINA@ONGLAR); hooks per jig line (FAERI@FJ_KROKA, never loaded by Oracle).
+      - name: n_lost
+        type: number
+        range: [1, 90]
+        examples: [1, 2, 5, 20, 70]
+        description: >
+          Nets lost (NET@FJ_TAP_NETA).
+      - name: twin_gear
+        type: boolean
+        description: >
+          Two trawls at once (TVO_VEIDARF), as sent.
+      - name: bait
+        type: number
+        range: [1, 967]
+        examples: [30, 55]
+        description: >
+          Bait code (LINA@BEITA).
+      - name: hook_type
+        type: number
+        range: [0, 999]
+        examples: [1, 2, 3, 4, 6]
+        description: >
+          Hook type code (LINA/KROKAR@GERD), never loaded by Oracle.
+      - name: hook_size
+        type: number
+        range: [0, 99]
+        examples: [7, 12, 15]
+        description: >
+          Hook size (LINA/KROKAR@STAERD), never loaded by Oracle.
+      - name: hand_baited
+        type: boolean
+        description: >
+          Hand-baited (LINA/HANDBEITT, FAERI/HANDBEITT), never loaded by Oracle.
+  - name: staging_afli_sent_catch
+    source:
+      parquet: ../../fishydata/staging/afli_sent/catch.parquet
+    description: >
+      One row per staged station, species and state: the catch as logged in the message (AFLI items),
+      never a whole weight. Plan 037 <c2><a7>4 and its ask e: the observation is the catch as logged
+      with its state; Oracle's whole weight (round(gutted x 1.25) for every species) and any other
+      factor are curate/'s. sources/afli_sent/convert.R.
+    columns:
+      - name: .sid
+        type: number
+        range: [-10556515003, -379]
+        examples: [-1275419, -1002982, -660783, -335583, -71218]
+        description: >
+          The station.
+      - name: .xid
+        type: number
+        range: [107001, 566147001]
+        examples: [15386140, 95637001, 244141006, 403501006, 536233028]
+        description: >
+          The staged copy (record.parquet).
+      - name: sid
+        type: number
+        range: [0, 99999]
+        examples: [1, 2, 5, 13, 41]
+        description: >
+          Species code (AFLI/TEGUND) as sent.
+      - name: catch
+        type: number
+        range: [-330, 7999999]
+        examples: [10, 100, 310, 1350, 7509]
+        description: >
+          Weight, kg, as logged (AFLI/AFLI), in the state `condition` names; summed over the items
+          of one species and state in the record.
+      - name: condition
+        type: enum
+        values: ["GUTT", "UNGU"]
+        description: >
+          "GUTT" gutted (AFLI@SLAEGT true), "UNGU" ungutted (false), adb's codes as in
+          curated/logbook/catch.
+      - name: catch_basis
+        type: enum
+        values: ["recorded"]
+        description: >
+          "recorded".
+      - name: n_items
+        type: number
+        range: [1, 2]
+        examples: [1]
+        description: >
+          Items summed into the row.
+      - name: mean_weight_g
+        type: number
+        range: [1, 500000]
+        examples: [770, 1800, 2965, 4221, 150000]
+        description: >
+          Mean weight, g (AFLI/MEDALTHYNGD), where the row is one item.
+      - name: schema
+        type: enum
+        values: ["afli"]
+        description: >
+          The source system: always "afli" (the layer is in `layer`).
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 <c2><a7>2): always
+          "sent", the XML the app sent.
+      - name: app
+        type: enum
+        values: ["SeaData - Fishing Log", "SeaData - Fishing Logbook", "Trackwell - SeaData - Fishing Log", "Trackwell - TrackWell - Fishing Log", "Trackwell - Trackwell - Fishing Log", "XML Spy"]
+        description: >
+          The app that sent the message, its HUGBUNADUR without the version (e.g. "Trackwell -
+          TrackWell - Fishing Log"); NA on the 4,400 messages that name none (Oracle's receipt
+          names none for them either).
+      - name: app_version
+        type: string
+        examples: ["1.1.0.0", "1.1.9.0", "2.6.26.0", "2.7.1.0", "4.4"]
+        description: >
+          The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+  - name: staging_afli_sent_landing_confirmation
+    source:
+      parquet: ../../fishydata/staging/afli_sent/landing_confirmation.parquet
+    description: >
+      One row per landing confirmation the apps sent: a message of its own
+      (afladagb_xml_mottaka.londun_faersla L, 275,973), one LONDUN each. The skipper's declaration of a
+      landing (vessel, date, port), with the period its records cover. Not a trip: TIMAB_FRA is the
+      first fishing date, not a departure. sources/afli_sent/convert.R.
+    columns:
+      - name: mid
+        type: number
+        range: [32, 566156]
+        examples: [31519, 144594, 286008, 426290, 538115]
+        description: >
+          The message (afladagb_xml_mottaka.id).
+      - name: vid
+        type: number
+        range: [5, 9999]
+        examples: [968, 1636, 2457, 2732, 2894]
+        description: >
+          The vessel, the message's SKIP_NR.
+      - name: T2
+        type: datetime
+        time_zone: naive
+        range: [2002-01-21T00:00:00, 2024-06-27T00:00:00]
+        description: >
+          Landing date (LONDUN@DAGSETNING), at 00:00.
+      - name: hid2
+        type: number
+        range: [-1, 3477]
+        examples: [11, 21, 67, 97, 147]
+        description: >
+          Landing port (LONDUN@HOFN), afli's port code.
+      - name: pid2
+        type: string
+        examples: ["IS-AKR", "IS-DRA", "IS-HVM", "IS-SAN", "IS-VPN"]
+        description: >
+          The landing port in the standard port key.
+      - name: period_from
+        type: datetime
+        time_zone: naive
+        range: [0001-01-01T00:00:00, 2024-06-27T00:00:00]
+        description: >
+          TIMAB_FRA, at 00:00: the first fishing date of the records it confirms.
+      - name: period_to
+        type: datetime
+        time_zone: naive
+        range: [0001-01-01T00:00:00, 2099-11-01T00:00:00]
+        description: >
+          TIMAB_TIL, at 00:00: the end of that period.
+      - name: received
+        type: datetime
+        time_zone: naive
+        range: [2002-12-11T11:48:42, 2024-07-12T14:59:20]
+        description: >
+          When Oracle received the message (snt).
+      - name: schema
+        type: enum
+        values: ["afli"]
+        description: >
+          The source system: always "afli" (the layer is in `layer`).
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 <c2><a7>2): always
+          "sent", the XML the app sent.
+      - name: app
+        type: enum
+        values: ["SeaData - Fishing Log", "SeaData - Fishing Logbook", "Trackwell - SeaData - Fishing Log", "Trackwell - TrackWell - Fishing Log", "Trackwell - Trackwell - Fishing Log"]
+        description: >
+          The app that sent the message, its HUGBUNADUR without the version (e.g. "Trackwell -
+          TrackWell - Fishing Log"); NA on the 4,400 messages that name none (Oracle's receipt
+          names none for them either).
+      - name: app_version
+        type: string
+        examples: ["1.1.0.0", "1.3.0.0", "2.6.26.0", "2.7.0.0", "2.7.9.0"]
+        description: >
+          The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
 relationships:
   # vessel.vid is a measured, clean primary key (7,043 rows, 7,043 distinct
   # vid, checked 2026-09-25) so these four are the only relationships in this

@@ -1,6 +1,7 @@
 # 037 — The most upstream source, value by value: layers from raw to curated, in the grammar's terms
 
-**status:** proposal — written 2026-10-21, scoped the same evening; nothing built; TODO 113 and 114 paused for it;
+**status:** proposal — written 2026-10-21, scoped the same evening; nothing built in the store; the sent layer's
+adapter written the same night and run on a scratch store only (§2.1); TODO 113 and 114 paused for it;
 asks in §7 (a, b, c and e answered 2026-10-21), the TODO items it touches in §8 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
 110, 113, 114, decisions 157, 158 and 160, plans 023, 025, 028, 029 and 036, `curate/corrections/afli_end_longitude.yml`,
 `curate/corrections/afli_coords.yml`, `$FISHYDATA/archive/2026-10-xml-oracle-map/`, `2026-10-xml-inventory/`,
@@ -71,6 +72,32 @@ are older versions of a record sent again; 107,189 the same version sent again i
 loaded (most with no readable record id); 257 test messages. A record is found in its message by three forms of its
 id (as sent, negated, and −(1,000,000 + id)); the end-longitude correction of decision 158 knows only the first, and
 its pattern misses records spanning lines.
+
+### 2.1 The sent layer staged (2026-10-21)
+
+*Written and measured by Claude (AI) on a scratch store; not checked by a person. The full account, cell by cell,
+is in the side-session notes of 2026-10-21 (`afli-sent-adapter.md`).* `sources/afli_sent/convert.R` (target
+`afli_sent`) stages every record of the messages onto the grammar's tables, the latest version of each, keyed to
+`rafr_stofn.visir` so that `.sid` is the edited layer's; nothing in `curate/` reads it yet. Two findings change the
+record counts above:
+
+- **The apps reuse their record numbers (VISIR) years apart:** 25,850 (vessel, VISIR) pairs key two or more
+  `rafr_stofn` rows. A copy is taken as a version of a loaded record only with the same vessel, VISIR and a fishing
+  date within 31 days.
+- **The apps resend a haul under a new number:** 7,911 unloaded copies have the vessel, date, gear section and a sent
+  time (on-bottom, set, haul or jig start) of a loaded record, mostly its position and depth too. They are kept with
+  it, never staged.
+
+Every sent copy (1,444,695) in one outcome: loaded 1,318,283; the same version in another message 99,557; never loaded
+14,759 (staged with `loaded` false: 13,990 have no loaded record of the vessel that day); the same haul under another
+VISIR 7,911; older version 3,629; test message 454; repeated in its message 92; loaded with a newer version sent 5,
+and that newer version 5. The 1,318,288 loaded copies and the key forms equal the map's; 23,853 copies are classed
+otherwise than in the map, each for a listed reason (number reuse, resends under another number, the receipt's
+missing vessel, the map's per-copy counting of unloaded records). `rafr_stofn`'s 1,318,780 rows: 1,318,322 have their
+sent record staged, 458 (2010-2011) do not. The edited layer's 1,275,274 electronic stations: 1,274,136 have their
+sent record staged, 692 have no `rafr_stofn` row, 446 a row whose message holds no record with its keys. Of the
+staged records Oracle loaded, 44,186 are not in the edited layer: 40,143 in afli's `rafr_stofn` never moved to
+afli.stofn (16,592 deleted, 23,551 not, the latter unexplained here) and 4,043 in fs_afli's `rafr_stofn` only.
 
 The paper logbook has one layer only (`afli.*`, with `afli.mottaka`, 509,774 rows, a register of when the paper books
 came in), and its in-house edits are unmarked.
