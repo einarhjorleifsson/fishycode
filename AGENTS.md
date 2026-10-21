@@ -136,6 +136,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   wearing a done marker.
   An item that cannot move without the maintainer carries **`needs: maintainer`**;
   `check_bookkeeping()` lists those at the end of its report.
+- **Checks are bookkeeping, not modelling** (maintainer, 2026-10-21: "an accountant exercise, not a random forest
+  model"). Every record and every kilogram is placed in one outcome, the unjudgeable included, and every difference
+  is explained or listed as unexplained (decision 155's audit is the method). An agreement rate is never a pass,
+  however high; statistics only test in the background.
 - **Every inferred value carries a `basis`**, its provenance (`"recorded"` / `"derived"` /
   `"reconstructed"` / `"synthesised"`, or `"none"` when no source has it). `derived` =
   computed from recorded values of the same record (`t2` + duration); modifiers such as
