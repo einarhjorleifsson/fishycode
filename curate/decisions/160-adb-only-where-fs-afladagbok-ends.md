@@ -1,7 +1,9 @@
 # 160 — adb is read only for the dates fs_afladagbok's dump no longer covers, from 2025-11-19
 
 *2026-10-21. Supersedes decision 125's floor: `ADB_DATE_MIN` is the day fs_afladagbok's dump starts to thin, no longer
-`FS_DATE_MIN`. From that day on decision 125's vessel-day rule stands. Tested on a scratch `$FISHYDATA`; not built.*
+`FS_DATE_MIN`. From that day on decision 125's vessel-day rule stands. Tested on a scratch `$FISHYDATA`; not built.
+Amended 2026-10-22: adb is loaded from the Directorate, not derived from fs_afladagbok (the last section); the rule
+stands.*
 
 - **Who decided.** The maintainer, 2026-10-21, as a general rule: adb is not used downstream except for the dates
   fs_afladagbok no longer covers. fs_afladagbok is the dump of record; adb is derived from it and from other
@@ -94,3 +96,44 @@ Every rebuilt file is stamped f05de18, `fd.dirty` false; nothing is outdated aft
 
 - `products/exports/bjarki_table.R`, a legacy export carried over from the old trees, reads Oracle's adb directly
   through `mar`; it is not part of the build and is left as it is.
+
+## adb's origin above was wrong (amended 2026-10-22)
+
+This record called adb derived from fs_afladagbok and other schemas, re-serving it ("Who decided", "Why"). It is not
+derived from the fs_afladagbok schema dumped here: adb is a second copy of the Directorate's e-logbook, loaded from
+the Directorate beside it, and it holds sources fs_afladagbok's dump has none of. Checked on the dumps by Claude (Anthropic), 2026-10-22, after a colleague's
+comparison of the layers; not checked by a person. The text above is kept as it was.
+
+- **Oracle's comments.** `adb.fishing_trip.batch_day`: "The query day from Fiskistofa that returns the information
+  about the trip"; `adb.catch.source_id`: "Id of the source record from Directorate of Fisheries";
+  `fishing_trip.source`: "Origin of catch log, ID is retrieved from Auth0 login" (fs_afladagbok's `ws_veidiferd.uppruni`
+  carries the same comment).
+- **One record, two copies.** adb's trip number is the Directorate's: before 2025-11-19, 205,787 of the 206,252 adb
+  trips from sources fs_afladagbok also holds carry an fs_afladagbok trip id (`ws_veidiferd.id`) with the same source
+  and vessel. The shared station ids, times and depths of "Why" are that, not a derivation; the depth 1.8288 times
+  fs_afladagbok's is the view fishycode reads (`station_v`), while the table `fishing_station` keeps fs_afladagbok's
+  fathoms (equal on all 96,687 shared stations of 2023).
+- **Sources fs_afladagbok lacks.** 56,623 adb trips, 2020-2023 (and 10 in 2026), are from sources `ws_veidiferd` has
+  no trip of: `TRACKWELL BAEKUR` 26,210, `PAPPÍR` 20,993, `APP TÖFLUR` 9,374 and a few small ones. Every adb trip of
+  2020 is one of them.
+- **The load.** That a service on MFRI's side loads adb nightly at 03:00, for the day before and from every source, is
+  the word of Hafró's systems knowledge base (`kb-hafro-kerfi`: adb.md, fiskistofa-mirror-service.md; word of mouth and
+  its read of a run log that is not dumped), not verified. The dump agrees as far as it can: each trip has one
+  `batch_day`, a calendar day, and every day from 2025-11-19 to 2026-10-15 has one but 2025-12-24 and 25; it keeps no
+  load time (`registered` is the trip's own registration time, never after its `batch_day`).
+- **The maintainer's account** (2026-10-22), not verified on the dump: adb gets its recent data from Fiskistofa, most
+  likely with Fiskistofa's fs_afladagbok system as the source, built by Java no one at hand understands; it fed the new
+  data into `afli`'s format, mapping the new gear codes into the old ones, with mapping problems of its own. That fits
+  the shared trip ids, and adb running on after the dump thins from 2025-11-19 points to Fiskistofa's live system
+  feeding it, not the copy dumped here.
+
+**The 340 trips "from an entry route not dumped"** (traced afterwards, above;
+`$FISHYDATA/archive/2026-10-catch-253t/results/removed_trips_by_kind.csv`). This explains 335 of them: the 321 app
+trips are `APP TÖFLUR`, and of the 19 with catch 13 are `TRACKWELL BAEKUR` and 1 `PAPPÍR`, all sources the
+Directorate delivered to adb and fs_afladagbok's dump never held. The records are dumped, in adb; the route is the
+Directorate's delivery to adb, which no dump shows. The other 5 (`Trackwell raun` 2, `Fontos raun` 2, `Marína raun` 1)
+are from sources fs_afladagbok holds, but not these trips; why is open.
+
+**What stands.** The rule, adb only from 2025-11-19, is the maintainer's and is not reopened here. Of the 368 adb trips
+it removed before that day, 335 are records of sources the dump never received, not adb's own errors; whether they
+should come back is plan 037's (§3.1), as above.

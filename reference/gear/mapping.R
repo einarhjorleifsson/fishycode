@@ -6,8 +6,11 @@
 # Notes on gear codes (gid) by data-source (schema):
 #  schema afli:         uses historical gear code values (version == "old" below)
 #  schema fs_afladagbok: uses the new code values       (version == "new" below)
-#  schema adb:          a messy in-house attempt to convert new codes to historical;
-#                       no attempt is made here to fix that mess
+#  schema adb:          the GEAR schema's codes (GEAR.FISHING_GEAR), the historical ones and a few of its
+#                       own (51 crab trap, 53 every dredge, 124, 125); adb's table fishing_gear maps them to
+#                       the new (FS) codes and agrees with `map` below on all 16 codes they share
+#                       (dump of 2026-10-16, checked by Claude, not by a person). curate/corrections/
+#                       logbook_gear.R reads that table (decision 154)
 
 # NOTES:
 # * Downstream analysis
@@ -99,6 +102,9 @@ gear_mapping <-
       "old",      26,    "Dragnót 120 mm",    11,   "SDN",  "DEF",  "DEF",
       "old",      29,       "Rauðmaganet",     4,   "GNS",  "DEF",  "LUM",
       "old",      35,    "Dragnót 155 mm",    11,    "SDN", "DEF",  "DEF",
+      # 38's target (ARI, quahog) does not hold for afli's 38 in 2017-18: the in-house gear edits made it the
+      # dredge for sea cucumber (14,696 stations), sea urchin (832) and whelk (787), where the list has 40 and
+      # 39 (archive/2026-10-afli-layers, edits_gear; measured by Claude, not checked by a person)
       "old",      38,    "Kúffisksplógur",    15,   "DRB",  "MOL",  "ARI",
       "old",      39,  "Beitukóngsgildra",    16,   "FPO",  "MOL",  "WHL",
       "old",      40,    "Ígulkeraplógur",    15,   "DRB",  "DES",  "ECH",

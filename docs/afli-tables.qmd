@@ -14,8 +14,37 @@ library(ggplot2)
 
 ## Overview
 
-The `afli` Oracle schema is Fiskistofa's primary operational catch-and-effort
-database. Its 96 tables span five decades of Icelandic fishing records, and its
+The `afli` Oracle schema is the legacy logbook database, held in MFRI's Oracle
+database (`dump/oracle/afli.R`: "MFRI's logbooks"). Fiskistofa (the Directorate
+of Fisheries) collects the logbooks. Whose `afli` is depends on the period, and
+only part of it is verified:
+
+- *The maintainer's account* (2026-10-22), not verified on the dump: MFRI
+  started `afli`; Fiskistofa took it over formally in the 1990s, but an MFRI
+  employee did most of its curation until 2018. Then came the `rafr_` tables,
+  whose data were fed into `afli`.
+- *On the dump* (Claude, 2026-10-22, not checked by a person): `stofn`'s newest
+  fishing day is 2024-06-27 (13 stations in 2024, 1,889 in 2023). The 166,214
+  electronic stations with `breytt_eftir_lokun` set were moved into `afli` from
+  2020-09-03 to 2024-07-13 (`fs_afli.rafr_stofn.hledsla_dags`), and none was
+  moved between 2020-07-20 and that day (plan 037 §2). The in-house corrections,
+  values differing from both the sent and the loaded one, stop with the records
+  of 2018 (plan 037 §2), which fits the account above.
+- *Per Hafró's systems knowledge base* (`kb-hafro-kerfi`, fiskistofa-mirror.md
+  and fiskistofa-logbooks-landings.md), not verified against Oracle: a batch on
+  MFRI's side, `kerfi/speglun_fiskistofa`, calls Fiskistofa's web services once a
+  night for the day two days back and writes thirteen `afli` tables, deleting and
+  inserting the day's records by `visir`; its code parses only the service's
+  `eldriBaekur` (older books). In the KB's read of its run log the `afladagbok`
+  key first ran on 2020-09-04, which fits the moves above; the account it runs as
+  was created on 2021-05-04.
+
+So "Fiskistofa's database" and "MFRI's logbooks" are both partly right: MFRI's
+for where it lives and, by the maintainer's account, who started it and curated
+it to 2018; Fiskistofa's for who has held it formally since the 1990s (the same
+account) and, by the KB, whose service has fed it since 2020-09.
+
+Its 96 tables span five decades of Icelandic fishing records, and its
 structure reflects the successive layers of technology through which logbook
 data have been collected: paper forms, early electronic entry, XML-based digital
 submissions, and on-board automatic loggers.
@@ -167,8 +196,13 @@ One row per species per station. Oracle comment: *"Sameiginleg fyrir öll
 veiðarfæri"* (common to all gear types). Like `stofn`, this is a consolidated
 master table: 11.6M positive-visir (paper-era) rows plus 4.1M negative-visir
 (electronic-era) rows, the latter overlapping with `rafr_afli`. Columns:
-`visir` (→ `stofn`), `tegund` (species code), `magn` (catch weight), `afli`
-(catch in standard units), `astand` (condition: S = poor, L = good).
+`visir` (→ `stofn`), `tegund` (species code), `magn` (catch weight, gutted or
+ungutted as `astand` says), `afli` (kg, ungutted), `astand` (S = slægt, gutted;
+O = óslægt, ungutted). Those are Oracle's comments, and `astand` holds only S, O
+or NULL (`afli`: O on 172,105 rows, S on 434; `rafr_afli`: O on 616,357, S on
+961,085; counted by Claude on the dump, 2026-10-22). L (sleppt, released) is
+fs_afladagbok's third state (`ws_afli.astand`), and adb's RELE (decision 066),
+not afli's.
 
 **15,674,405** catch rows total; `visir` is the join key to `stofn`.
 
@@ -252,6 +286,33 @@ dump, suggesting they record rare events or optional supplementary fields.
 | `rafr_stofn_spendyr_fuglar` | 68 | Marine mammal / bird detail |
 | `rafr_stofn_aths_skipstjora` | 45 | Skipper's remarks |
 | `rafr_stofn_aths_eftirlit_t` | 13 | Inspector's remarks |
+
+`rafr_stofn_aths_skipstjora` is the code list of the skipper's remark,
+`athugas` in `stofn` and `rafr_stofn` (Oracle: "Athugasemd skipstjóra, vísar í
+ATHUGASEMDIR"), keyed by `id`. Read from the dump by Claude (2026-10-22), not
+checked by a person:
+
+| `id` | `aths` |
+|---|---|
+| 0 | Engin athugasemd (no remark) |
+| 1 | Fast (snagged) |
+| 2 | Fast og rifið (snagged and torn) |
+| 3 | Rifið (torn) |
+| 4 | Slitin höfuðlína, fiskilína, höfuðlínuleggur, kolllína |
+| 5 | Óklárt |
+| 6 | Slitinn leggur, bakstroffa, klafaleggur, rossstautur, dauðaleggur |
+| 7 | Slitinn grandari, fótreipi |
+| 8 | Botnlaus poki, gat á poka (codend open or holed) |
+| 9 | Fráleyst |
+| 10 | Slitinn togvír (broken warp) |
+| 11 | Tapað troll (trawl lost) |
+| 12 | Brotin togvinda (broken winch) |
+| 13 | Vélarbilun (engine failure) |
+| 14 | Bilað stýri (steering failure) |
+| 20 | Tvö troll (two trawls) |
+| 21-34 | Tvö troll with remark 1-14 (`id` − 20) |
+| 40 | Tvílembingar |
+| 41-54 | Tvílembingar with remark 1-14 (`id` − 40) |
 
 ---
 
@@ -571,9 +632,19 @@ are therefore the authoritative source for fishing data.
   direct-load. Since decision 124 the flag is read from fs_afli's copy of
   `rafr_stofn`, which runs to 2024, so the direct-load stations carry it too.
 
-- **`snt`/`sng`/`sbt`/`sbg` audit columns.** Nearly all electronic tables
-  carry these four columns (stamped-name/time, approved-name/time). They record
-  who entered and who approved each row but are not needed for catch analysis.
+- **`snt`/`sng`/`sbt`/`sbg` row stamps.** The loaded tables (`rafr_stofn`,
+  `rafr_toga`, `rafr_lineha`, `rafr_hringn`, `rafr_afli` and a few more) carry
+  them; `afli`'s own `stofn`, `afli`, `toga`, `lineha` and `hringn` do not. On
+  the `rafr_` tables Oracle has no comment on them; where it has one (`afli`'s
+  `afladagb_skil`, `ask`'s `fravik`), `snt` and `sng` are the row's creation time
+  and creator ("Tímastimpill nýskráningar færslu", "stimpill nýr gerandi"), `sbt`
+  and `sbg` its last change and last changer ("Tímastimpill síðustu breytingar
+  færslu", "stimpill breytt gerandi"). Nothing marks an approval: in `rafr_stofn`
+  `sbt` is later than `snt` on 1,149,009 of 1,149,278 rows, `sbg` equals `sng`
+  on only 95,222, and `sbt` equals the move date `hledsla_dags` on 428,208. So
+  `sbg`/`sbt` name the row's last changer (the move into `afli`, a later landing
+  confirmation or an edit in `rafr_`), never who edited `afli` (plan 037 §2).
+  Counted by Claude on the dump, 2026-10-22, not checked by a person.
 
 - **Views (`v_*`).** Five view definitions are present in the dump
   (`v_afli`, `v_stofn`, `v_toga`, `v_net`, `v_rafr_skil`) but were exported

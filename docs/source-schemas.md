@@ -175,13 +175,69 @@ not appear in actual `afli` logbook data (`stofn.parquet`).
 
 ---
 
-## `adb/` — a view of the same e-logbook, derived in-house
+## `adb/` — a second copy of the Directorate's e-logbook
 
-A schema of MFRI's Oracle that re-serves the Directorate's e-logbook in a layout
-that partly emulates `afli`, derived from fs_afladagbok and other schemas, and
-running on past the dump's end: 467,635 of fs_afladagbok's station ids are in
-adb (decision 125), and adb adds errors of its own (decision 160), among them a
-dropped west sign (`curate/corrections/adb_vs_fs_afladagbok.yml`). **Uses the
+A schema of MFRI's Oracle that holds the Directorate's e-logbook in a layout
+that partly emulates `afli`, running on past the end of fs_afladagbok's dump. It
+is loaded from the Directorate, not derived from the fs_afladagbok schema dumped
+here (corrected 2026-10-22; decision 160). Oracle's comments say so: `fishing_trip.batch_day` is
+"The query day from Fiskistofa that returns the information about the trip",
+`catch.source_id` the "Id of the source record from Directorate of Fisheries",
+and `fishing_trip.source` the logbook's origin, "retrieved from Auth0 login". On
+the dump (Claude, 2026-10-22, not checked by a person):
+
+- adb's trip number is the Directorate's: before 2025-11-19, 205,787 of the
+  206,252 adb trips from sources fs_afladagbok also holds carry an
+  fs_afladagbok trip id (`ws_veidiferd.id`) with the same source and vessel.
+- adb holds sources fs_afladagbok's trip table has none of: 56,623 trips,
+  2020-2023 (and 10 in 2026), among them paper logbooks (`PAPPÍR`, 20,993),
+  Trackwell's books (`TRACKWELL BAEKUR`, 26,210) and an app batch of April 2021
+  (`APP TÖFLUR`, 9,374). Every adb trip of 2020 is from one of them.
+- Every trip has a `batch_day`, a calendar day: every day from 2025-11-19 to
+  2026-10-15 but 2025-12-24 and 25, and before that 35 days missing since
+  2020-01-03 (2020-07-21 to 08-05, eleven of 24-25 December and 1 January, and
+  eight others).
+  The dump keeps no load time: `registered` is the trip's own registration time,
+  spread over the day, on its `batch_day` for 285,922 of 306,537 trips and never
+  after it.
+
+That a service loads it nightly at 03:00, for the day before and from every
+source, is Hafró's systems knowledge base's (`kb-hafro-kerfi`: adb.md,
+fiskistofa-mirror-service.md, partly word of mouth, partly its read of a run log
+that is not dumped); not verified here beyond the one `batch_day` a day. The KB
+also has it, by word of mouth, that the service is a Java Spring project
+(`services/fiskistofa-mirror`) on an MFRI host, logging from 2023-02-20, which
+the GitLab listing it read does not show (web-services.md).
+
+*The maintainer's account* (2026-10-22), not verified on the dump: adb gets its
+recent data from Fiskistofa, most likely with Fiskistofa's fs_afladagbok system
+as the source; the Java that builds it is understood by no one at hand. It tried
+to feed the new data into `afli`'s format, mapping Fiskistofa's new gear codes
+into the old ones among other things, with mapping problems of its own (those on
+record: `curate/corrections/adb_vs_fs_afladagbok.yml`, depth in metres in the
+view fishycode reads, `station_v`, while the table `fishing_station` keeps
+fs_afladagbok's fathoms, and a longitude without its sign). The table holds most
+positions as ddmmss (six digits, from 2020; Oracle's comment says ddmm); the view
+`station_v` decodes them as minutes with two decimals, which the digits
+contradict, up to about 0.4′ off. Checked on 2023 by Claude (2026-10-22, not
+checked by a person): the table's depth equals fs_afladagbok's on all 96,687
+shared stations and the view's is 1.8288 times it; of the 92,945 six-digit
+latitudes the last two digits are 59 or less on all but 111, and of the 91,429
+six-digit longitudes on all but 76, where hundredths of a minute would put about
+four in ten above 59. When
+Fiskistofa started fs_afladagbok, and how, he is unsure; MFRI obtained the dump
+of it from Fiskistofa only recently. This fits the dump: the shared trip ids
+above, and adb running on after fs_afladagbok's dump thins from 2025-11-19
+(decision 160), which points to Fiskistofa's live system feeding adb, not the
+fs_afladagbok copy dumped here. On that dump (Claude, 2026-10-22, not checked by
+a person) fs_afladagbok's stations (`ws_veidi.upphaf_timi`) number 57 in 2019,
+660 in 2020, 77,824 in 2021 and 93,471-102,820 a year in 2022-2025 (and a few
+in junk years), and its change table (`ws_veidi_breytingar.skraningartimi`)
+runs from 2022-01-04 to 2024-04-29 but for 6 rows.
+
+467,635 of fs_afladagbok's station ids are in adb (decision 125), and adb has
+defects fs_afladagbok lacks (decision 160), among them a dropped west sign
+(`curate/corrections/adb_vs_fs_afladagbok.yml`). **Uses the
 old (afli-era) gear code system**: the adapter keeps the code as `gid_old` and
 leaves `gid` empty, and `curate/corrections/logbook_gear.R` reads adb's own
 crosswalk (`fishing_gear`) to the new gid (plan 034).
