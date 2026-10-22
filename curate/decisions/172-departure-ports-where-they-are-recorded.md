@@ -45,6 +45,23 @@ table wanted downstream. Written by Claude (AI); every number is Claude's, measu
    fs_afladagbok trips (102,878 of 108,592) and 94.6 % of adb's. STK agrees with AIS on 95.2 % of afli trips
    (264,304 of 277,555).
 
+## The departure time comes with the port
+
+Measured the same day (`09_times.R`). Every witness that gives a departure port also gives a departure datetime:
+- the logbook's own: a datetime on 152,430 of 153,795 fs_afladagbok trips and 37,602 of 37,847 adb trips. afli's T1
+  is a day only, and the first fishing day rather than the departure;
+- AIS: a datetime on every linked voyage;
+- STK: a datetime where it has no port too. For afli trips of 2008-2020 there are 535,272 STK times against 261,287
+  STK ports, because the out-events kept the time after they lost the port in 2014, until STK ends in 2021-02;
+- the quota system's and the phone records' out and in events: datetimes, not yet joined to trips.
+
+Where two witnesses meet, their times sit close:
+- AIS against the logbook's own datetime: a median of 13-14 minutes; 76-77 % within 1 hour and 92-94 % within 12
+  hours (fs_afladagbok 146,435 trips, adb 37,101);
+- STK against AIS on afli trips (553,197): a median of 10 minutes; 73 % within 1 hour and 86 % within 12 hours. The
+  14 % beyond 12 hours is likely the two cutting different voyages around the same trip, not checked;
+- afli's first fishing day against the AIS departure: the same day on 83 %, AIS a day or more earlier on 16 %.
+
 ## What it means for the trip table
 
 No source gives a full trip table with departure ports. A departure port can be put on nearly every logbook trip from
@@ -54,9 +71,10 @@ No source gives a full trip table with departure ports. A departure port can be 
 - STK's recorded voyage and the quota system's trip records (2003-09 to 2013 with a port; times to 2021);
 - the phone records.
 
-Before 2003-09 there is none, but for 2000-2001 phone calls. Which witness ranks first where they disagree (about
-5 %), and whether the departure time (T1) comes with it, is a design choice. It is TODO 121, beside TODO 68 (STK's
-voyages against the track).
+Before 2003-09 there is none, but for 2000-2001 phone calls. The departure time (T1) comes with the port, so the
+cascade gives a departure datetime and port together. Which witness ranks first where they disagree (about 5 % on the
+port, 23-27 % beyond an hour on the time) is a design choice. It is TODO 121, beside TODO 68 (STK's voyages against
+the track).
 
 ## Left open
 
