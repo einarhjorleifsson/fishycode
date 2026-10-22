@@ -1150,3 +1150,24 @@ it. What reads the reconciled times downstream is decision 174's open end.
 **check:** every trip in `curated/logbook/trip.parquet` (twins left out) has a row in `trip_reconciled.parquet`, with a
 departure and a return, time and port or `none`, each with its basis, and every disagreement between witnesses counted
 in one outcome.
+
+## 123. The landings flow, from the first record to now: one cascade, the same output in every period (plan 039)
+**status:** open · **needs: maintainer** — plan 039's asks a-h (§11), above all a (a new plan, or an amendment of
+plan 023) and e (`lid_map`'s 2007-09-01 bound lifted first, with plan 038) · **see:**
+`curate/plans/039-the-landings-flow.md`, plans 023, 025, 036, 037 and 038, TODO 74, 112, 119,
+`$FISHYDATA/archive/2026-10-lods-upstream/`, `$FISHYDATA/archive/2026-10-landings-flow/`
+
+Plan 039 sets the landings' layers period by period, with a basis and a layer on every value and one output shape:
+- vessel-month totals for 1966 to 1992-08 (`fiskifelagid`, `vor`);
+- LODS 1 with the container tables to 2007-08, and ask's columns in July and August 2007;
+- agf with ask's columns to 2020-07-22 (plan 025 §4);
+- agf alone after.
+
+Found while writing it: `link_lid_map.R` reads landings from 2007-09-01 only. So 613,679 afli trips of 1992-09 to
+2006 that meet a landing by vessel, day and port have none. And January to August 2007's landings sit on the fixes
+beside their trips' logged catch. Plan 038's split (the logbook flow) is answered in plan 039 §0: agreed, with three
+additions. Nothing built.
+
+**check:** the asks answered in the plan; every period's landings in the same columns with a basis and a layer, and
+each layer's landings and kilograms in one outcome per period (plan 039 §9); or the plan parked or abandoned in its
+header.
