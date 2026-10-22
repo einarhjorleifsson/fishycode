@@ -72,6 +72,17 @@ them: they win where they apply, and they are labels, a set of records an expert
 which an automatic check (gear from the landing, the trip-to-landing match on dates and ports, the station's place) can
 be scored. Accounts are counted, not named.
 
+**The expert's edits, measured** (2026-10-22, `09_expert.R`, the account from `FISHYDATA_EXPERT_ACCOUNT`; a lower bound,
+measured by Claude, not checked by a person). The expert's account last changed 638,621 stations, records of 2003-2019,
+and on 94,404 of them afli differs from both the sent and the loaded value: 109,543 fields, 61 % of the corrections,
+mostly records of 2011-2018 (none after 2018). Landing date 30,009 (86 % from the landing registry), gear 26,068 (81 %
+from the catch's main species), catch 22,369 (nephrops tails to whole weight 17,969, the landed species 2,833), port
+3,913, positions 4,751, and a tail of times, mesh and gear dimensions. Four checks would have made most of them: C1b
+(nephrops to whole weight where the landing says whole) 17,638 of 18,051, G2 (gear from the main species) 22,775 of
+26,068, L1 (landing date from the registry) 24,901 of 30,009, P2 (a position over 20 km from AIS) 2,927 of 3,420.
+Where the expert left a station alone, L1 would change 17,111 and P2 13,635: those are to be classed, missed or right
+as they were. Tables in `$FISHYDATA/archive/2026-10-afli-layers/` (README, "The expert's edits").
+
 Resends are rare and in-house edits common. Of the 1.44 M sent records, 91.3 % were loaded as sent; 4,598 (0.3 %)
 are older versions of a record sent again; 107,189 the same version sent again in another message; 14,267 never
 loaded (most with no readable record id); 257 test messages. A record is found in its message by three forms of its

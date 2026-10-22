@@ -546,7 +546,8 @@ measured.
 before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open · **see:** TODO 38, decisions 067, 069, 078 and 143, plan 031 §3.7 item 12 (what the filter leaves near
+**status:** open · **needs: maintainer** — the prototype's §10 (the floor, the forward stage, ramb's version, adoption) ·
+**see:** TODO 38, decisions 067, 069, 078, 143 and 164, plan 031 §3.7 item 12 (what the filter leaves near
 harbours: about 6,000 fixes, mostly STK port event rows)
 
 "the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
@@ -563,8 +564,11 @@ The reload is a labelled test: its receipt lag marks the truth, and is never a f
 
 Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported (`forward`
 99.7 %, `vmask` 54 %), and 2,780 kept pings are contradicted; 63 % of the supported removals are cross-feed legs within
-0.3 nm, so a feed-aware floor and a two-sided rule are candidates too. A prototype re-run on 2016 and 2026 is in
-`~/R/Pakkar/ramb_wt_whack` (branch `whack-feed-aware-evidence`, uncommitted).
+0.3 nm. A prototype re-run on 2016 and 2026 (2026-10-22; `$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`):
+with the defaults it equals `ping_whacky` ping for ping; a distance floor between feeds (0.3 nm) frees 22 % (2016) and
+80 % (2026) of the false removals and loses no true one (0.5 nm: 24 % and 97 %); a two-sided forward stage does almost
+nothing. Its ramb changes, opt-in arguments `feed`, `noise_nm`, `evidence`, are uncommitted in `~/R/Pakkar/ramb_wt_whack`
+(branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer.
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. TODO 38 keeps the filter's other loose ends.
 

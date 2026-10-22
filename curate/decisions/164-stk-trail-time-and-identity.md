@@ -17,8 +17,10 @@ leaves go to TODO 88 (the whack) and TODO 117 (what the flow takes from STK).*
 - **The whacks against an independent receiver** (ASTD/ASTDB within 60 s, 2013-2026). Of 337,375 removed pings with a
   witness, 254,361 (75 %) are supported (`forward` 99.7 %, `vmask` 54 %); of 20.0 M kept, 2,780 are contradicted. 63 %
   of the supported removals have only cross-feed legs within 0.3 nm: a feed-aware distance floor would keep every
-  confirmed catch and 36.5 % of the false removals. That is scored on counts; a prototype re-run in ramb is in hand
-  (`~/R/Pakkar/ramb_wt_whack`, branch `whack-feed-aware-evidence`).
+  confirmed catch and 36.5 % of the false removals. Scored on counts first; then a prototype re-run in ramb on 2016 and 2026
+  (2026-10-22, `prototype/` in the study's folder): the floor at 0.3 nm frees 22 % and 80 % of the false removals and
+  loses no true one, and a two-sided forward stage does almost nothing. The ramb changes are opt-in and uncommitted
+  (`~/R/Pakkar/ramb_wt_whack`, branch `whack-feed-aware-evidence`); the choices are TODO 88's.
 - **`I`/`U` rows are events, not fixes.** 66.8 % of the contradicted pings are `I`/`U`-flagged; 115 positions each used
   by 10 or more units hold 482,668 `U` pings, regional port markers within 2 km of the polygon for 94 %; `I` jumps lie
   inside their own harbour with at-sea neighbours the witness contradicts. Against 154,146 labelled landings the events
