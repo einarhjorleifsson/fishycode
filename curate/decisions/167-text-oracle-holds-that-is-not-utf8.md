@@ -2,7 +2,9 @@
 
 *2026-10-22. Asked by the session of decision 166, whose check found kvoti without a `_data-dict.yaml`. Written by
 Claude (AI). The scan, the code and the test are Claude's and have not been checked by a person. Nothing under
-`$FISHYDATA` was changed: the files stay as they are until the maintainer re-dumps them (below).*
+`$FISHYDATA` was changed: the files stay as they are until the maintainer re-dumps them (below). **Re-dumped and
+adopted 2026-10-22:** both files read whole in DuckDB with the dumper's note naming the bytes, and kvoti has its
+`_data-dict.yaml` (`$FISHYDATA/archive/raw-oracle-redump_2026-10-22/README.md`).*
 
 ## Found
 

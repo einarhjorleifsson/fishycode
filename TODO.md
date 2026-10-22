@@ -975,13 +975,12 @@ an object as skipped that its script no longer skips. And `fs_afladagbok.takt_js
 with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 and CHAR only.
 The overview rows of `stk.trail` (20,681,877 of 303,795,653 rows) and `afli.sjalfvirkir_maelar` are still stale after
 9ef7596 (decision 164): recompute or re-dump. `simalinu` was dumped through RJDBC with `dirty = true` (decision 162):
-a server run replaces it. `kvoti.kvotategundir_heiti_jn` and `ops_einarhj.ices_landed_catch` hold text that is not
-UTF-8, which DuckDB refuses whole (decision 167). The dumper now writes it valid, but a resume keeps both files: on
-hafdruna, `run_dump(c("kvoti", "ops_einarhj"))`, then sync and `compare_dumps()`.
+a server run replaces it. Decision 167's two files are done: kvoti and ops_einarhj were re-dumped on hafdruna and
+adopted on 2026-10-22, DuckDB reads both whole and kvoti has its `_data-dict.yaml`
+(`$FISHYDATA/archive/raw-oracle-redump_2026-10-22/README.md`).
 
 **check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
-(its JSON whole) or left out in a decision; every partitioned table's overview row equals its files; DuckDB reads
-both files of decision 167 whole, and kvoti has its `_data-dict.yaml`.
+(its JSON whole) or left out in a decision; every partitioned table's overview row equals its files.
 
 ## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
 **status:** open · **needs: maintainer** — whether the page's column tables go and its other sections stay ·
@@ -1107,8 +1106,10 @@ layer stages no haul twice.
 `sources/lods/convert.R` now reads `kvoti.lods_slaegt` in its own units (herring, capelin and blue whiting in tonnes).
 The built `curated/landing/` still holds those three species at 1/1000 for the lods-only trips (19,087 kt to 2006,
 736 kt in 2007); every other value of the scratch run equals the build. `lods_raw` points at the
-table, so `lods`, `landing` and everything after them are outdated. The kvoti re-dump changes `lods_raw` again, so one
-rebuild covers both: fingerprint first, then build from `lods` by name.
+table, so `lods`, `landing` and everything after them are outdated. The kvoti re-dump of 2026-10-22 is adopted
+(TODO 110; 1,721 new and 143 revised `lods_slaegt` rows, landings since 2026-08-27), so the rebuild can run now:
+fingerprint first, then build from `lods` by name. The re-dump also outdated `port`, the MMSI and vessel chain and
+the AIS ping chain, mostly from re-stamped files (59 targets in all).
 
 **check:** the built lods catch equals the scratch run of decision 169 (or the re-dump's differences are explained);
 `docs/data-dict.yaml` describes `hid_origin` and `catch_gutted` and no longer calls `landing_catch.catch` wrong;
