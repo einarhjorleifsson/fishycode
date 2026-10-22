@@ -5230,11 +5230,12 @@ tables:
           Station key. Where Oracle loaded the record: rafr_stofn.visir of its row, found through
           the message id, VERSION and VISIR in one of its three forms (record.key_form). Oracle
           loads some versions as rows of their own, so a vessel's loaded rows of one VISIR within
-          31 days are one record, and its .sid is the row loaded from its highest version (then the
-          last received). It is the edited layer's .sid on 1,273,587 of the 1,302,406 records
-          Oracle loaded (Claude, 2026-10-21); record.parquet maps every other row. Where Oracle
-          holds no version: -(10^10 + .xid of the record's first copy), outside every Oracle id.
-          Unique.
+          31 days are one record. Its .sid is the one row Oracle did not delete (rafr_stofn.eytt 0)
+          where exactly one is (plan 037 ask i, option b, 2026-10-22), else the row loaded from its
+          highest version (then the last received); sid_row says which. It is the edited layer's
+          .sid on 1,273,674 of the 1,302,406 records Oracle loaded (Claude, 2026-10-22);
+          record.parquet maps every other row. Where Oracle holds no version: -(10^10 + .xid of the
+          record's first copy), outside every Oracle id. Unique.
       - name: .tid
         type: number
         range: [-10556246012, -379]
@@ -5371,8 +5372,8 @@ tables:
       - name: copy_loaded
         type: boolean
         description: >
-          The staged copy is the one Oracle loaded; false on the 5 records whose latest version
-          Oracle did not load.
+          The staged copy is the one loaded as the record's .sid row; false on the 5 records whose
+          latest version Oracle did not load.
       - name: version_loaded
         type: number
         range: [1, 12]
@@ -5386,6 +5387,14 @@ tables:
         description: >
           rafr_stofn rows that hold the record: more than 1 where Oracle loaded several versions,
           or one version twice, as rows of their own (14,370 records); 0 where it loaded none.
+      - name: sid_row
+        type: enum
+        values: ["latest", "only", "undeleted"]
+        description: >
+          Which of Oracle's rows .sid is: "only" (the record's one row), "undeleted" (the one row
+          of several that Oracle did not delete, rafr_stofn.eytt 0), "latest" (of several, none or
+          more than one undeleted: the row loaded from the highest version); NA where Oracle loaded
+          none.
       - name: schema
         type: enum
         values: ["afli"]

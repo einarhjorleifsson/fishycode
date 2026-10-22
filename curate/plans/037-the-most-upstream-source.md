@@ -92,8 +92,9 @@ it yet. Three findings set what a record is:
   a trip, and no account the message names (software key, skipper) makes it unique. A copy is a version of a record
   only with the same vessel, VISIR and a fishing date within 31 days.
 - **Oracle loads some versions as rows of their own** (mostly two versions in one message, the older deleted):
-  14,370 records hold 30,286 rows. A vessel's loaded rows of one VISIR within 31 days are one record, staged once; its
-  `.sid` is the row loaded from its highest version.
+  14,370 records hold 30,286 rows. A vessel's loaded rows of one VISIR within 31 days are one record, staged once. Its
+  `.sid` is the one row Oracle did not delete (`eytt` 0) where exactly one is (13,547 records; ask i, option b), else
+  the row loaded from its highest version (823); the column `sid_row` says which.
 - **The apps resend a haul under a new number:** 7,911 unloaded copies have the vessel, date, gear section and a sent
   time of a loaded record, mostly its position and depth too. They are kept with it, never staged.
 
@@ -105,9 +106,11 @@ The 1,318,288 loaded copies and the key forms equal the map's; 23,404 copies are
 each for a listed reason (number reuse, resends under another number, the receipt's missing vessel, the map's
 per-copy counting of unloaded records). `rafr_stofn`'s 1,318,780 rows: 1,302,406 are a staged record's `.sid`, 15,916
 another row of one, 458 (2010-2011) are not found in their message. The edited layer's 1,275,274 electronic stations:
-1,273,587 are a staged record's `.sid`; 549 another row of one (on 434 of them the edited layer holds the record's
-`.sid` too, a duplicate there; on 115 it kept an older row than the latest version's); 692 have no `rafr_stofn` row;
-446 a row whose message holds no record with its keys. Of the 1,302,406 staged records Oracle loaded, 28,704 have no
+1,273,674 are a staged record's `.sid`; 462 another row of one (on 434 of them the edited layer holds the record's
+`.sid` too, a duplicate there; on 28 only another row, reached through `record.parquet`'s `.sid_loaded`); 692 have no
+`rafr_stofn` row; 446 a row whose message holds no record with its keys. Option b (2026-10-22) changed 90 keys: 87
+records now meet their edited station by `.sid`, and on 3 the edited layer holds both rows and the key moved to the
+undeleted one. Of the 1,302,406 staged records Oracle loaded, 28,704 have no
 row in the edited layer: 26,695 in afli's `rafr_stofn` never moved to afli.stofn (3,182 deleted, 23,513 not, the
 latter unexplained here) and 2,009 in fs_afli's `rafr_stofn` only.
 
@@ -233,7 +236,7 @@ The pass is that everything is accounted for (§1), not a rate.
 
 Answered by the maintainer on 2026-10-21: a (the principle, taken as stated), b (a column per field group), c (below)
 and e (`catch` as logged everywhere). d by the run of 2026-10-21 (decision 162; the failing views and `takt_json_form`
-stay with TODO 110). Open: f, g, h, i.
+stay with TODO 110). i on 2026-10-22 (below). Open: f, g, h.
 
 **c, in the maintainer's words:** where the expert edited, the expert wins; "but we want also to learn how / why he
 won (landings data, ...) ... because if we know, we have added to our own domain knowledge. and that is important to
@@ -264,6 +267,10 @@ i. The sent layer's key where Oracle loaded one record as several rows (the adap
    older version Oracle deleted but moved. Keep the latest version's row, the 115 reached through `record.parquet`'s
    `.sid_loaded`; or key on the one undeleted row where there is exactly one (90 keys change, 87 of the 115 then meet
    by `.sid`, none lost, 28 left to the join). Measured by Claude, not checked by a person.
+   **Answered 2026-10-22**, the maintainer: "merge the sent-layer branch, go with option b". Built the same day:
+   90 keys changed, 87 of the 115 meet their edited station by `.sid`, 28 are left to the join, and no staged record
+   lost its edited station (on 3 the edited layer holds both rows, and the key moved to the undeleted one). Measured
+   by Claude on a scratch store, not checked by a person.
 
 ## 8. The TODO items this plan touches
 

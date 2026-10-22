@@ -1,13 +1,14 @@
 # afli's electronic logbook as the apps sent it: the sent layer on the grammar's tables (plan 037)
 # Side: preprocessing (afli). See plan 014.
 # Input:  raw/oracle/fs_afli/afladagb_xml_mottaka.parquet   (the messages: id, sending, snt, gerd)
-#         raw/oracle/fs_afli/rafr_stofn.parquet             (visir and each record's message keys, nothing else)
+#         raw/oracle/fs_afli/rafr_stofn.parquet             (visir, each record's message keys, and eytt)
 #         curated/reference/{gear,gear_window,port}.parquet
 # Output: staging/afli_sent/{record,trip,station,fishing_sample,catch,landing_confirmation}.parquet
 #
 # One layer only (plan 037 §4): every value here is what an app sent, and nothing is taken from the loaded
 # (rafr_*) or edited (afli.*) layers. rafr_stofn is read for the key alone, so that .sid is the edited layer's
-# and curate/ can take either layer station by station. Nothing in curate/ reads these tables yet, and the
+# and curate/ can take either layer station by station: its deletion flag (eytt) only chooses between Oracle's rows
+# of one record (plan 037 ask i). Nothing in curate/ reads these tables yet, and the
 # adapter chooses between nothing: the units of the depths and the other choices are curate/'s.
 #
 # The messages hold the skipper's kennitala and name, the software key and free text (decision 159; MFRI's data
@@ -203,7 +204,7 @@ say("keys and outcomes")
 # rafr_stofn row is the load of one sent record: its message id, version and VISIR. A copy repeated in its message
 # (same VISIR and VERSION) is matched once, the first.
 dbExecute(con, sprintf("CREATE TEMP TABLE rs AS SELECT visir, xml_sending_visir mid, xml_faerslu_visir xv,
-  xml_faerslu_version xver FROM read_parquet('%s')", fd_raw("oracle", "fs_afli", "rafr_stofn.parquet")))
+  xml_faerslu_version xver, eytt FROM read_parquet('%s')", fd_raw("oracle", "fs_afli", "rafr_stofn.parquet")))
 dbExecute(con, "CREATE TEMP TABLE x1 AS
   SELECT *, row_number() OVER (PARTITION BY mid, visir_sent, x.version ORDER BY rec) copy_no FROM x")
 dbExecute(con, "DROP TABLE x; ALTER TABLE x1 RENAME TO x")
@@ -217,9 +218,11 @@ dbExecute(con, "CREATE TEMP TABLE lm AS
 
 # Oracle loads some versions of one record as rows of their own (mostly two versions in one message, the older
 # deleted): 14,370 records hold 30,286 rows ($FISHYDATA/archive/2026-10-plan037/visir-reuse/). A vessel's loaded rows of
-# one VISIR whose dates lie within 31 days of each other are therefore one record, and its .sid is the row loaded from
-# its highest version (then the last received). The apps reuse their VISIR numbers years apart, so the number alone
-# is no identity.
+# one VISIR whose dates lie within 31 days of each other are therefore one record. Its .sid is the one row Oracle did
+# not delete (rafr_stofn.eytt 0) where exactly one is, the row the edited layer keeps (the maintainer, 2026-10-22:
+# plan 037 ask i, option b); otherwise the row loaded from its highest version (then the last received). That is the
+# one place the adapter reads the loaded layer beyond the key, and only to choose between Oracle's own keys
+# (sid_row). The apps reuse their VISIR numbers years apart, so the number alone is no identity.
 # A copy Oracle did not load belongs to a loaded record when it has the same vessel (the message's SKIP_NR) and VISIR
 # and a fishing date (VEDAGS) within 31 days of one of that record's loaded copies; of several, the nearest in date,
 # then in time received. Failing that, it is the same haul as a loaded record sent under another VISIR (an app
@@ -232,17 +235,23 @@ dbExecute(con, "CREATE TEMP TABLE lm AS
 # loaded record or of nothing. A copy repeated in its message belongs to the record of its first copy.
 WINDOW <- 31
 dbExecute(con, "CREATE TEMP TABLE lc AS
-  SELECT lm.visir, lm.key_form, x.mid, x.rec, x.xid, x.vid, x.visir_sent, x.vedags, x.received, x.version, x.section,
-    x.i_botni, x.klukkan, x.logn_hefst, x.drattur_hefst, x.upphaf_veida
-  FROM lm JOIN x USING (mid, rec)")
+  SELECT lm.visir, lm.key_form, rs.eytt, x.mid, x.rec, x.xid, x.vid, x.visir_sent, x.vedags, x.received, x.version,
+    x.section, x.i_botni, x.klukkan, x.logn_hefst, x.drattur_hefst, x.upphaf_veida
+  FROM lm JOIN x USING (mid, rec) JOIN rs USING (visir)")
 dbExecute(con, sprintf("CREATE TEMP TABLE lg AS
   WITH o AS (SELECT *, CASE WHEN date_diff('day', lag(vedags) OVER w, vedags) <= %d THEN 0 ELSE 1 END brk
              FROM lc WINDOW w AS (PARTITION BY vid, visir_sent ORDER BY vedags NULLS LAST, visir)),
        c AS (SELECT *, sum(brk) OVER (PARTITION BY vid, visir_sent ORDER BY vedags NULLS LAST, visir) cl FROM o)
   SELECT visir, mid, rec, xid, key_form, version,
-    first_value(visir) OVER (PARTITION BY vid, visir_sent, cl ORDER BY version DESC, received DESC, visir) ident,
-    count(*) OVER (PARTITION BY vid, visir_sent, cl) n_rows
-  FROM c", WINDOW))
+    CASE WHEN sum(CASE WHEN eytt = 0 THEN 1 ELSE 0 END) OVER g = 1 AND count(*) OVER g > 1
+         THEN max(CASE WHEN eytt = 0 THEN visir END) OVER g
+         ELSE first_value(visir) OVER (PARTITION BY vid, visir_sent, cl ORDER BY version DESC, received DESC, visir)
+    END ident,
+    CASE WHEN count(*) OVER g = 1 THEN 'only'
+         WHEN sum(CASE WHEN eytt = 0 THEN 1 ELSE 0 END) OVER g = 1 THEN 'undeleted'
+         ELSE 'latest' END sid_row,
+    count(*) OVER g n_rows
+  FROM c WINDOW g AS (PARTITION BY vid, visir_sent, cl)", WINDOW))
 dbExecute(con, sprintf("CREATE TEMP TABLE um AS
   SELECT u.mid, u.rec, lg.ident
   FROM x u JOIN lc ON lc.vid = u.vid AND lc.visir_sent = u.visir_sent
@@ -285,8 +294,8 @@ dbExecute(con, "CREATE TEMP TABLE cr AS
   JOIN c1 ON c1.mid = x0.mid AND c1.rec = x0.rec
   WHERE x.copy_no > 1")
 # the copy loaded as the record's .sid row, and how many rafr_stofn rows the record holds
-dbExecute(con, "CREATE TEMP TABLE vl AS SELECT ident, version version_loaded, xid xid_loaded, n_rows n_oracle_rows
-  FROM lg WHERE visir = ident")
+dbExecute(con, "CREATE TEMP TABLE vl AS SELECT ident, version version_loaded, xid xid_loaded, n_rows n_oracle_rows,
+  sid_row FROM lg WHERE visir = ident")
 # The staged copy of each record: the highest VERSION, then the copy loaded as its .sid row, then any copy Oracle
 # loaded, then the last received
 dbExecute(con, "CREATE TEMP TABLE sc AS
@@ -321,7 +330,8 @@ stopifnot(q("SELECT count(*) n FROM fate")$n == q("SELECT count(*) n FROM x")$n,
 # copy where Oracle holds no version of it, outside every Oracle id (rafr_stofn's run from -1,326,693 to -379,
 # afli.stofn's from -2,768,723,449), so that no key is NA and none can be taken for another layer's station.
 say("staged records")
-rec <- q("SELECT sc.ident \".sid\", vl.version_loaded, vl.xid_loaded, vl.n_oracle_rows, x.* EXCLUDE (copy_no)
+rec <- q("SELECT sc.ident \".sid\", vl.version_loaded, vl.xid_loaded, vl.n_oracle_rows, vl.sid_row,
+            x.* EXCLUDE (copy_no)
           FROM sc JOIN x USING (mid, rec) LEFT JOIN vl ON vl.ident = sc.ident") |>
   as_tibble() |>
   rename(.xid = xid) |>
@@ -394,7 +404,7 @@ station <-
          z2_raw = dypi_lok) |>
   select(.sid, .tid, .xid, date, lon1, lat1, lon2, lat2, pos1_form, pos2_form, sq, ssq, sq_basis, z1_raw, z2_raw,
          record_closed, edited_after_closing, version, n_versions, n_copies, n_other_visir, loaded, copy_loaded,
-         version_loaded, n_oracle_rows, schema, layer, app, app_version)
+         version_loaded, n_oracle_rows, sid_row, schema, layer, app, app_version)
 
 # Fishing sample --------------------------------------------------------------
 ## Timing ----------------------------------------------------------------------
@@ -565,6 +575,8 @@ cat("\nrafr_stofn rows:", rafr$n_rafr, "; found in their message:", rafr$found, 
     rafr$found - rafr$staged_sid, "\n")
 cat("copies loaded as two rafr_stofn rows:", sum(record$n_sid > 1), "; staged records Oracle holds as several rows:",
     sum(station$n_oracle_rows > 1), "\n")
+cat("the row each staged record is keyed on (sid_row):\n")
+print(station |> count(sid_row))
 cat("\nstaged stations:", nrow(station), "; Oracle holds a version:", sum(station$loaded),
     "; the staged copy is the one loaded:", sum(station$copy_loaded), "\n")
 cat("catch: <AFLI> item containers", items$n_afli_tags, "; items read", items$items,
