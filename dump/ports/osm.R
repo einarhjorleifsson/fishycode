@@ -1,5 +1,5 @@
 # OpenStreetMap harbour features, global.
-# Output: raw/ports/ports_osm.gpkg, raw/ports/ports_osm.fgb
+# Output: raw/ports/ports_osm.gpkg
 library(osmdata)
 library(sf)
 library(dplyr)
@@ -18,4 +18,3 @@ osm <-
   janitor::remove_constant() |>
   select(osm_id, name, harbour, geometry, everything())
 osm |> write_sf(fd_raw("ports", "ports_osm.gpkg"), delete_dsn = TRUE)
-osm |> write_sf(fd_raw("ports", "ports_osm.fgb"), delete_dsn = TRUE)
