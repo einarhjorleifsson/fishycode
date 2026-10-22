@@ -1090,3 +1090,17 @@ explained. Some may be a haul loaded twice; some genuinely missing hauls (as TOD
 **check:** each of the 23,513 in one outcome (a copy of a moved record, a missing haul, unexplained), and the sent
 layer stages no haul twice.
 
+
+## 119. Rebuild the landings on decision 169's lods fix
+**status:** open · **needs: maintainer** — the rebuild, best with the kvoti re-dump of TODO 110 · **see:** decision 169,
+`$FISHYDATA/archive/2026-10-lods-oslaegt/`, TODO 110, 112
+
+`sources/lods/convert.R` now reads `kvoti.lods_slaegt` in its own units (herring, capelin and blue whiting in tonnes)
+and leaves the export surcharge out. The built `curated/landing/` still holds those three species at 1/1000 for the
+lods-only trips (19,087 kt to 2006, 736 kt in 2007) and the surcharge subtracted (−66.9 kt). `lods_raw` points at the
+table, so `lods`, `landing` and everything after them are outdated. The kvoti re-dump changes `lods_raw` again, so one
+rebuild covers both: fingerprint first, then build from `lods` by name.
+
+**check:** the built lods catch equals the scratch run of decision 169 (or the re-dump's differences are explained);
+`docs/data-dict.yaml` describes `hid_origin` and `catch_gutted` and no longer calls `landing_catch.catch` wrong;
+`tar_outdated()` shows nothing of the landing chain.

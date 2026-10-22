@@ -48,9 +48,13 @@ ports <- duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> coll
 collapse_catch <- function(catch) {
   if (!"kfteg" %in% names(catch)) catch <- catch |> mutate(kfteg = NA_integer_)
   if (!"komunr" %in% names(catch)) catch <- catch |> mutate(komunr = NA_integer_)
+  # lods only (decision 169): the port an export was landed at, and the gutted weight; NA for agf
+  if (!"hid_origin" %in% names(catch)) catch <- catch |> mutate(hid_origin = NA_integer_)
+  if (!"catch_gutted" %in% names(catch)) catch <- catch |> mutate(catch_gutted = NA_real_)
   catch |>
-    group_by(.tid_land, schema, sid, gid, stid, kfteg) |>
-    summarise(catch = sum(catch, na.rm = TRUE), komunr = first(komunr), .groups = "drop") |>
+    group_by(.tid_land, schema, sid, gid, stid, kfteg, hid_origin) |>
+    summarise(catch = sum(catch, na.rm = TRUE), catch_gutted = sum(catch_gutted),
+              komunr = first(komunr), .groups = "drop") |>
     rename(.lid = .tid_land)
 }
 

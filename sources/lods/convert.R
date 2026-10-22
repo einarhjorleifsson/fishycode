@@ -5,15 +5,23 @@
 # source-shaped staging tables agf produces. Merged with agf in
 # curate/landing.R, which also does the hid -> pid port join.
 #
-# Input:  raw/oracle/kvoti/lods_oslaegt.parquet
+# Input:  raw/oracle/kvoti/lods_slaegt.parquet
 # Output: staging/landing/lods/landings.parquet
 #         staging/landing/lods/catch.parquet
 #
-# lods_londun (the separate header file) is not read here: lods_oslaegt
+# The table, not the view lods_oslaegt on it, which drops upprunahofn and the
+# gutted weight and rounds (decision 169). Its own rules, kept here:
+# herring, capelin and blue whiting (fteg 30, 31, 34) are in tonnes, every
+# other species in kg; gerd 'A' is the quota surcharge on unprocessed exports
+# (negative, at hofn 159, to 2013), not fish, so it is left out; gerd 'V' (the
+# 2 % water deduction) is fish. upprunahofn is the port an export (hofn 159)
+# was landed at, kept per catch row as hid_origin: a few export days have two.
+#
+# lods_londun (the separate header file) is not read here: lods_slaegt
 # already carries its own skip_nr/hofn/l_dags per row, and curate/plans/007
 # measured that lods_londun's and lods_oslaegt's own distinct komunr counts
 # don't fully agree (1,189,262 vs 1,257,245) - joining through lods_londun
-# would risk orphaning rows lods_oslaegt alone does not.
+# would risk orphaning rows lods_slaegt alone does not.
 #
 # fteg -> sid, kfteg -> stid: curate/plans/007 §5. kfteg equals stid directly
 # only where kfteg == fteg (the "default stock" convention both systems use,
@@ -36,7 +44,6 @@
 # komunr itself is kept, under its own name, as an informational field only -
 # never destroy the original, but it is not part of any key here.
 
-library(nanoparquet)
 library(tidyverse)
 
 SCHEMA <- "lods"
@@ -58,14 +65,21 @@ hash_id <- function(vid, date, hid) {
   ((p1 * 65536 + p2) * 65536 + p3) * 16 + p4
 }
 
+TONNES <- c(30L, 31L, 34L)  # Oracle's own views lods_slaegt_v and lods_slaegt_kg_v multiply these by 1000
+
 lods <-
-  read_parquet(fd_raw("oracle", "kvoti", "lods_oslaegt.parquet")) |>
+  duckdbfs::open_dataset(fd_raw("oracle", "kvoti", "lods_slaegt.parquet")) |>
+  select(skip_nr, hofn, upprunahofn, komunr, l_dags, gerd, fteg, kfteg, veidarf, magn, magn_oslaegt) |>
+  filter(is.na(gerd) | gerd != "A") |>
+  collect() |>
+  mutate(kg = if_else(fteg %in% TONNES, 1000, 1)) |>
   transmute(komunr, vid = skip_nr, date = as_date(l_dags),
-            hid = hofn, gid = veidarf, sid = fteg, kfteg,
+            hid = hofn, hid_origin = upprunahofn, gid = veidarf, sid = fteg, kfteg,
             stid = if_else(!is.na(kfteg) & kfteg == sid, kfteg, NA_integer_),
-            catch = magn_oslaegt) |>
-  group_by(vid, date, hid, gid, sid, stid, kfteg) |>
+            catch = magn_oslaegt * kg, catch_gutted = magn * kg) |>
+  group_by(vid, date, hid, hid_origin, gid, sid, stid, kfteg) |>
   summarise(catch = sum(catch, na.rm = TRUE),
+            catch_gutted = sum(catch_gutted, na.rm = TRUE),
             komunr = min(komunr),
             .groups = "drop") |>
   mutate(.tid_land = hash_id(vid, date, hid), .before = "vid") |>
@@ -77,7 +91,7 @@ landings <-
 
 catch <-
   lods |>
-  select(.tid_land, komunr, gid, sid, stid, kfteg, catch, schema)
+  select(.tid_land, komunr, gid, sid, stid, kfteg, hid_origin, catch, catch_gutted, schema)
 
 landings |> duckdbfs::write_dataset(fd_staging("landing", "lods", "landings.parquet"))
 catch    |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch.parquet"))

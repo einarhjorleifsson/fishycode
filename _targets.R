@@ -511,7 +511,7 @@ list(
              fd_staging("landing", "agf", "catch.parquet"))
   }, format = "file"),
 
-  tar_target(lods_raw, fd_raw("oracle", "kvoti", "lods_oslaegt.parquet"), format = "file"),
+  tar_target(lods_raw, fd_raw("oracle", "kvoti", "lods_slaegt.parquet"), format = "file"),
   tar_target(lods, {
     lods_raw
     produces("sources/lods/convert.R",

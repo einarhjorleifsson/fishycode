@@ -2135,6 +2135,12 @@ tables:
           Landed weight, kg (magn óslægt / lods' own magn_oslaegt - the
           ungutted/round-weight equivalent in both systems, not the gutted
           weight `agf` separately records as `magn_slaegt` - curate/plans/007).
+          **Wrong for `lods` in the build of 2026-10-21 and earlier (decision
+          169):** its herring, capelin and blue whiting (`sid` 30, 31, 34) are
+          tonnes, not kg (19,087 kt to 2006 and 736 kt in 2007 held as 19.8),
+          and lods' export surcharge (`gerd` A, −66.9 kt, 1992-2013) is
+          subtracted as if it were catch. Both are fixed at the next rebuild of
+          `lods`.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -2150,9 +2156,10 @@ tables:
       it has a trip, `lods` fills in the rest (curate/plans/007 §2). Date
       range 1992-09-01 to present: `lods` extends coverage back before `agf`'s
       2007-09-01 start, but only to 1992-09-01 in practice - `sources/lods/
-      convert.R` reads `lods_oslaegt` (self-sufficient, avoids an orphan-join
-      risk against `lods_londun`'s own header table), and `lods_oslaegt`
-      itself starts 1992-09-01. `lods_londun` alone goes back to 1915-11-21
+      convert.R` reads `lods_slaegt` (self-sufficient, avoids an orphan-join
+      risk against `lods_londun`'s own header table; until decision 169 the
+      view `lods_oslaegt` on it), and `lods_slaegt` itself starts 1992-09-01.
+      `lods_londun` alone goes back to 1915-11-21
       (59 rows, 52 vessels, 1915-1992-08-31) - not currently captured, flagged
       not fixed (curate/plans/007).
     todo: |

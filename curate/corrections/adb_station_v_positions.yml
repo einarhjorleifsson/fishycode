@@ -68,7 +68,7 @@ not_fixed_here: >-
   latitude not ending in 00 carry the hundredths reading, while the digits are seconds. Its trip rule (a last two digits
   of 60 or more) puts a trip holding a rounded-up 60 in hundredths (23 kept stations). 59 of its 9,184 kept stations
   with a four- or five-digit longitude beside a six-digit latitude lie beyond 30°. The other Oracle views the flow
-  reads: agf.aflagrunnur_v, kvoti.lods_oslaegt, kvoti.strandveidileyfi_v, vessel.vessel_v, vessel.vessel_hist_v and
+  reads: agf.aflagrunnur_v, kvoti.lods_oslaegt (its table since decision 169), kvoti.strandveidileyfi_v, vessel.vessel_v, vessel.vessel_hist_v and
   adb's trip_v, trawl_and_seine_net_v, dredge_v, line_and_net_v, trap_v and surrounding_net_v; the dump holds no view
   definitions (ALL_VIEWS.TEXT), so each can be judged only against its tables.
 
