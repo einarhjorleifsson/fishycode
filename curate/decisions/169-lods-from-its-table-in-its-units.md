@@ -24,13 +24,21 @@ view's 9,978,840 rows are equal to it. Read as the adapter read it:
    takes the surcharge off again: its median against the rest of the landing is −0.133 (= −0.15/1.15), later −0.091
    (= −0.10/1.10). K + A equals the container system's own sold weight on 83,304 landing x species keys of 1998-2006
    (`g_tegundir.sala`, 193.1 kt, K alone 214.6 kt) and 31,257 of 1992-1995 (`g_farmur.sala`, 136.4 kt, K alone
-   157.9 kt). So the sum over every `gerd` is the catch, as the adapter had it before this decision.
+   157.9 kt), and 18,858 of 1995-1998 (`g_i_gam`/`g_sala`/`g_solumagn`). Where the export came from settles it
+   (`g_skip.for_fra`, 1998-2016). Straight into a container or sailed abroad (S): K + A = the weight sold for 210,919
+   of 212,265 keys (368.8 kt; K alone 394.6). From a processing plant (V): K + A = 0 for 344 of 387, since that catch
+   is already in a domestic landing and the 159 rows carry only its surcharge. The older tables, which keep no
+   `for_fra`, show the same two shapes (5,113 and 4,604 keys with K + A = 0). So the sum over every `gerd` counts the
+   catch once and the surcharge never, as the adapter had it before this decision; leaving A out added 10-15 % to
+   straight exports and counted plant exports twice.
 3. **The water deduction is catch.** `gerd` 'V' (2 % on pelagics) is kept: with it a landing matches agf within 1 %
    on 99.99 % of shared keys, without it on 5 %.
 4. **`ROUND()` cost nothing that matters.** The tonne species are stored as whole tonnes, and for the rest it moves the
    total by +231 t over 1992-2026.
 5. **The view drops `upprunahofn`**, the port an export (`hofn` 159, "gámar/sigling") was landed at: 360,991 of the
-   518,863 rows at 159 carry it, 56 ports. Everywhere else it equals `hofn`. 168 export days have two or three.
+   518,863 rows at 159 carry it, 56 ports. Everywhere else it equals `hofn`. 168 export days have two or three. It is
+   empty for every container landing before 1998, where the container tables keep the port (`i_gam.lhofn` for 8,049 of
+   17,211, `g_i_gam.l_hofn` for all 10,275): for plan 036 / TODO 112.
 6. **`magn_oslaegt` is derived**: `kvutil.i_oslaegt(fteg, l_dags, veidisvaedi) * magn`, by the table's trigger. `magn`
    is the gutted weight, itself converted from product weights (`lods_fragang`).
 
