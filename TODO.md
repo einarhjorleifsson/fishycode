@@ -1095,9 +1095,9 @@ layer stages no haul twice.
 **status:** open · **needs: maintainer** — the rebuild, best with the kvoti re-dump of TODO 110 · **see:** decision 169,
 `$FISHYDATA/archive/2026-10-lods-oslaegt/`, TODO 110, 112
 
-`sources/lods/convert.R` now reads `kvoti.lods_slaegt` in its own units (herring, capelin and blue whiting in tonnes)
-and leaves the export surcharge out. The built `curated/landing/` still holds those three species at 1/1000 for the
-lods-only trips (19,087 kt to 2006, 736 kt in 2007) and the surcharge subtracted (−66.9 kt). `lods_raw` points at the
+`sources/lods/convert.R` now reads `kvoti.lods_slaegt` in its own units (herring, capelin and blue whiting in tonnes).
+The built `curated/landing/` still holds those three species at 1/1000 for the lods-only trips (19,087 kt to 2006,
+736 kt in 2007); every other value of the scratch run equals the build. `lods_raw` points at the
 table, so `lods`, `landing` and everything after them are outdated. The kvoti re-dump changes `lods_raw` again, so one
 rebuild covers both: fingerprint first, then build from `lods` by name.
 

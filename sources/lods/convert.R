@@ -12,9 +12,11 @@
 # The table, not the view lods_oslaegt on it, which drops upprunahofn and the
 # gutted weight and rounds (decision 169). Its own rules, kept here:
 # herring, capelin and blue whiting (fteg 30, 31, 34) are in tonnes, every
-# other species in kg; gerd 'A' is the quota surcharge on unprocessed exports
-# (negative, at hofn 159, to 2013), not fish, so it is left out; gerd 'V' (the
-# 2 % water deduction) is fish. upprunahofn is the port an export (hofn 159)
+# other species in kg. Every gerd is summed: at hofn 159 (exports, to 2013)
+# the K row is the weight sold abroad plus the export surcharge (x 1.15, later
+# 1.10) and the negative A row takes the surcharge off again, so K + A is the
+# container system's own sold weight (decision 169, amended); gerd 'V' (the
+# 2 % water deduction) is fish too. upprunahofn is the port an export (hofn 159)
 # was landed at, kept per catch row as hid_origin: a few export days have two.
 #
 # lods_londun (the separate header file) is not read here: lods_slaegt
@@ -69,8 +71,7 @@ TONNES <- c(30L, 31L, 34L)  # Oracle's own views lods_slaegt_v and lods_slaegt_k
 
 lods <-
   duckdbfs::open_dataset(fd_raw("oracle", "kvoti", "lods_slaegt.parquet")) |>
-  select(skip_nr, hofn, upprunahofn, komunr, l_dags, gerd, fteg, kfteg, veidarf, magn, magn_oslaegt) |>
-  filter(is.na(gerd) | gerd != "A") |>
+  select(skip_nr, hofn, upprunahofn, komunr, l_dags, fteg, kfteg, veidarf, magn, magn_oslaegt) |>
   collect() |>
   mutate(kg = if_else(fteg %in% TONNES, 1000, 1)) |>
   transmute(komunr, vid = skip_nr, date = as_date(l_dags),

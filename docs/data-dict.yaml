@@ -2137,10 +2137,8 @@ tables:
           weight `agf` separately records as `magn_slaegt` - curate/plans/007).
           **Wrong for `lods` in the build of 2026-10-21 and earlier (decision
           169):** its herring, capelin and blue whiting (`sid` 30, 31, 34) are
-          tonnes, not kg (19,087 kt to 2006 and 736 kt in 2007 held as 19.8),
-          and lods' export surcharge (`gerd` A, −66.9 kt, 1992-2013) is
-          subtracted as if it were catch. Both are fixed at the next rebuild of
-          `lods`.
+          tonnes, not kg (19,087 kt to 2006 and 736 kt in 2007 held as 19.8).
+          Fixed at the next rebuild of `lods`.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
