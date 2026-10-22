@@ -3,7 +3,7 @@
 **status:** proposal — written 2026-10-22 at the maintainer's request (the whole landings flow planned as one, not
 period by period); measured read-only the same day, on top of the upstream study; nothing built; plan 038's split (the
 logbook flow) answered here, agreed with three additions (§0); eight asks in §11 (TODO 123) · **2026-10-22** ·
-**see:** plan 038 (the logbook flow, written beside this one), plans 007, 023, 025, 027, 036 and 037, decisions 031,
+**see:** plan 038 (the logbook flow, written beside this one), plans 007, 023, 025, 027, 036, 037 and 040, decisions 031,
 155, 169 (as amended) and 172-174, TODO 74, 81, 112, 119, 121 and 122,
 `$FISHYDATA/archive/2026-10-lods-upstream/README.md` ("the study"), `2026-10-lods-oslaegt/`,
 `2026-10-landing-disposition/`, `2026-10-landings-flow/` (this plan's scripts `01`-`06`)
@@ -353,6 +353,11 @@ and nearly all rows of 2017-2024; another writer for most of 2025 and 2026. Befo
 6. **The witness account** (§5).
 7. **The rebuild** from `landing` through `ais_catch`, by name, with fingerprints first and the kilograms accounted
    for (plan 037 §6).
+
+Plan 040's phase 2 runs inside steps 3 to 5 (the maintainer, 2026-10-22): each adapter written or opened here writes,
+in the same change, its source columns' overlay in `dump/oracle/meta/<schema>.yml` (LODS's units and their tonnes,
+the container tables' and `gerd`'s and `for_fra`'s code labels, ask's and agf's weights, with their evidence and an
+`assert` each) and its staging dictionary, the ledger of the conversions it makes.
 
 ## 9. Checks (done when)
 

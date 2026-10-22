@@ -3,7 +3,7 @@
 **status:** proposal — written 2026-10-22 at the maintainer's request; nothing built or changed; the baseline measured
 read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0); nine asks
 open (§9, TODO 122) · **2026-10-22** · **see:** `docs/one_flow.qmd` (the cascade and what is built where),
-`docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037 and 039
+`docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037, 039 and 040
 
 Drafted with AI assistance (Claude) on 2026-10-22. The maintainer asked whether to plan the full logbook flow next,
 after decisions 170-174. Every number below is Claude's and has not been checked by a person.
@@ -336,6 +336,11 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
 Each phase follows plan 037 §6: a scratch build, the catch traced kilogram by kilogram, a decision record, then the
 maintainer's build by name. Phases 2 and 3 come before 4 because TODO 121 is coded and its readers are the open
 question now. Phase 4 is larger, and phase 1 measures it.
+
+Plan 040's phase 2 runs inside every phase here (the maintainer, 2026-10-22): whoever opens a reader writes, in the
+same change, its source columns' overlay in `dump/oracle/meta/<schema>.yml` (measure and units, position format,
+sign and precision, code labels, the evidence, an `assert` per claim the data can test) and its adapter's staging
+dictionary, the ledger of the conversions it makes.
 
 ## 9. Asks
 
