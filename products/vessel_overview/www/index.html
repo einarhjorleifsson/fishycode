@@ -177,11 +177,11 @@
       <div id="map">
         <div id="mapctl">
           <span class="lbl">window</span>
-          <span class="seg" id="pts" title="the window's pings as points on their line, the line alone, or neither">
-            <button data-pts="1" class="on">points</button><button data-pts="0">line only</button><button data-pts="none">none</button></span>
-          <span class="lbl">outside it</span>
-          <span class="seg" id="bg" title="what the map shows besides the window's pings">
-            <button data-bg="none" class="on">nothing</button><button data-bg="hex" title="the hexagons' size follows the zoom">fishing hours</button><button data-bg="track">track</button></span>
+          <span class="seg" title="the window's pings, each a point coloured by its speed, and the line joining them: each on or off">
+            <button data-lay="points" class="on">points</button><button data-lay="line" class="on">line</button></span>
+          <span class="lbl">around it</span>
+          <span class="seg" title="what the map shows besides the window: each on or off">
+            <button data-lay="hex">fishing hours</button><button data-lay="track" title="the whole loaded track, every voyage">track</button></span>
           <button id="fit" title="frame the map on the window again, after you moved it: on the fishing, where the vessel fished in it">Fit</button>
         </div>
         <div id="hexlegend" style="display:none"></div>

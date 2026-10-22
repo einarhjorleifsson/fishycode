@@ -172,3 +172,16 @@ points, line only, or none.
 - The address carries the choice as `pts=1`, `0` or `none`. Older links keep their meaning.
 - Checked in the browser pane on vid 1977's 2025: none with fishing hours left the hexagons alone, the speed legend
   went, and the subtitle followed each of four choices.
+
+## Amended 2026-10-22: the map's layers as buttons, each on or off
+
+"or you could think of clickable options, then none can go. that is also for the hex" (maintainer). This replaces the
+section above:
+- The map's bar now has four buttons, each on or off: points and line for the window; fishing hours and track around
+  it. Any mix can be drawn, such as fishing hours with the whole track. All off leaves the last position heard.
+- The subtitle names what is drawn.
+- The address says `lay=points,line,hex,track`. An address with the earlier `pts` and `bg` opens as it did.
+- Checked in the browser pane on vid 1977's 2025:
+  - an old link with `bg=hex&pts=none` opened as fishing hours alone;
+  - the four buttons combined as expected, the subtitle following each mix;
+  - all four on drew the points, the line, the hexagons and the track, with both legends.

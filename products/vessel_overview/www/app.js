@@ -105,19 +105,20 @@ function lower(a, x, key = (v) => v) {
 const S = { vid: null, name: '', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null, haul: null, haulOpen: false,
             tripSel: new Set(), haulSel: new Set(),
             stations: [], hauls: [], wins: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
-            history: false, about: {}, assumed: null, assumedBase: null, bg: 'none', ready: false };
+            history: false, about: {}, assumed: null, assumedBase: null, ready: false };
 // The user's choices (maintainer, 2026-10-18: "if one selects a new vessel - all the users selections besides the new
 // vessels should be preserved"). The page starts on these defaults; from then on each choice the user makes is the
 // default for the next vessel. They are in the address too, so a reload or a shared link keeps them, with the open tab.
 //   years: 'latest' (the vessel's last year on AIS), 'all', or 'from-to'
 //   win: 'last' (the last n trips and the current one), 'month', 'range' (the loaded years), or 'custom' (a to b)
-//   bg: what the map shows outside the window ('none', 'hex', 'track')
-//   pts: the window's pings as points on their line ('1'), the line alone ('0'), or neither ('none'), which leaves the map
-//        to what it shows outside the window (maintainer, 2026-10-22: "you want a 'none' in addition to the point/line
-//        option")
+//   lay: what the map draws, each on or off (maintainer, 2026-10-22: "you could think of clickable options, then none can
+//        go. that is also for the hex"): the window's 'points' and the 'line' joining them, and around the window the
+//        fishing hours in hexagons ('hex') and the whole 'track'. All off leaves the last position heard.
 //   open: the panels open (PANELS); the rest are folded to their bars
 const PANELS = ['lanes', 'activity', 'trips', 'pings'];
-const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, bg: 'none', pts: '1', open: new Set(['activity', 'trips']) };
+const LAYERS = ['points', 'line', 'hex', 'track'];
+const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, lay: new Set(['points', 'line']), open: new Set(['activity', 'trips']) };
+const drawn = (k) => P.lay.has(k);
 // The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
 // a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
 // using the logbooks"). The previous logbook trip's gear only where that landing records none ("if a logbook is missing
@@ -197,7 +198,7 @@ const deckgl = new deck.Deck({
   onViewStateChange: ({ viewState }) => {
     const before = hexKm();
     view.zoom = viewState.zoom; view.latitude = viewState.latitude;
-    if (S.bg === 'hex' && hexKm() !== before) { S.hexDom = null; render(); }
+    if (drawn('hex') && hexKm() !== before) { S.hexDom = null; render(); }
   },
   getTooltip, onHover: ({ layer, index }) => { if (layer && layer.id === 'pings' && index >= 0) setHover(index, 'map'); },
   layers: basemap ? [basemap] : [],
@@ -209,23 +210,23 @@ function layers() {
   if (!tr || !tr.n) return L;
   const range = [hours(S.win[0]), hours(S.win[1])];
   // outside the window: the whole loaded track, its fishing hours in hexagons, or nothing but the window's pings
-  if (S.bg === 'track') L.push(new deck.PathLayer({
+  if (drawn('track')) L.push(new deck.PathLayer({
     id: 'track', data: tr.paths, getPath: (d) => d.path, widthUnits: 'meters', getWidth: 300, widthMinPixels: 1,
     widthMaxPixels: 5, getColor: [70, 80, 100, 90], pickable: true, autoHighlight: true, highlightColor: [0, 0, 0, 149],
   }));
   // fishing effort per hexagon: fixed cells, a quantity and a legend, where a heat map would only smooth (maintainer:
   // "hex-layer instead of heatmap may be better science"). The cells are regular on the Web Mercator map, sized by the
   // zoom (hexKm) and coloured by viridis, a step per decade of hours (hexLayer)
-  if (S.bg === 'hex' && tr.fish.length) {
+  if (drawn('hex') && tr.fish.length) {
     const km = hexKm();
     if (km !== S.hexKm) { S.hexKm = km; S.hexDom = null; }   // hexagons of another size: their decades learnt again
     if (S.hexDom) $('hexlegend').innerHTML = hexLegend(S.hexDom, km);
     L.push(hexLayer('hex', tr.fish, (d) => d.p, cellHours, km, S.hexDom, (dom) => { S.hexDom = dom; render(); }));
   }
   // the points can be turned off (maintainer, 2026-10-18: "turn off any ping points"); the line is then drawn stronger,
-  // so the track stays plain. With 'none' the window is not drawn: the map shows what it shows outside it
-  const dots = P.pts === '1';
-  if (P.pts !== 'none') L.push(new deck.LineLayer({
+  // so the track stays plain. With both off the window is not drawn: the map shows what it shows around it
+  const dots = drawn('points');
+  if (drawn('line')) L.push(new deck.LineLayer({
     id: 'window-line', data: tr.lineData, getColor: dots ? [40, 50, 70, 80] : [30, 40, 60, 220], getWidth: dots ? 1 : 1.5,
     widthUnits: 'pixels', extensions: [FILTER2], filterRange: [range, range], updateTriggers: { getColor: dots, getWidth: dots },
   }));
@@ -302,7 +303,7 @@ function fitTo(a, b, glide = false) {
     view.zoom = 8; view.latitude = cy;
     deckgl.setProps({ initialViewState: { longitude: cx, latitude: cy, zoom: 8 } });
   }
-  if (S.bg === 'hex') render();   // the hexagons' size follows the zoom
+  if (drawn('hex')) render();   // the hexagons' size follows the zoom
 }
 
 // The speed chart ----------------------------------------------------------------------------------------------------
@@ -632,19 +633,25 @@ const hexLegend = ([a, b], km) => {
   return `effort per ${km} km hexagon, in hours (log scale): ${at(a)}${cols.map((c, k) =>
     `<span class="sw" style="background:rgb(${c.join(',')});margin:0 2px" title="${fmtHours(10 ** (a + k))} to ${fmtHours(10 ** (a + k + 1))} hours"></span>${at(a + k + 1)}`).join('')}`;
 };
-function showBg() {
-  $('hexlegend').style.display = S.bg === 'hex' ? '' : 'none';
+function showLayers() {
+  const hex = drawn('hex') && S.tr?.fish.length > 0;
+  $('hexlegend').style.display = hex ? '' : 'none';
   S.hexDom = null;
-  $('speedlegend').style.display = P.pts === '1' ? '' : 'none';
-  $('where-note').textContent = { 1: 'the AIS track in the window, each ping coloured by its speed', 0: 'the AIS track in the window',
-                                  none: "the window's track not drawn" }[P.pts] + { none: '', hex: '; fishing hours around it', track: '; the whole track around it' }[S.bg];
-  $('bg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.bg === S.bg));
-  $('pts').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.pts === P.pts));
+  $('speedlegend').style.display = drawn('points') ? '' : 'none';
+  // the map's subtitle names what it draws
+  const inside = drawn('points') ? (drawn('line') ? 'the AIS track in the window, each ping coloured by its speed' : "the window's pings, coloured by their speed")
+    : drawn('line') ? 'the AIS track in the window' : "the window's track not drawn";
+  const around = [hex && 'fishing hours', drawn('track') && 'the whole track'].filter(Boolean);
+  $('where-note').textContent = inside + (around.length ? `; ${around.join(' and ')} around it` : '');
+  document.querySelectorAll('#mapctl [data-lay]').forEach((x) => x.classList.toggle('on', drawn(x.dataset.lay)));
   render();
 }
-$('pts').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
-  P.pts = b.dataset.pts;
-  showBg();
+// each of the map's layers is a button, on or off
+document.querySelectorAll('#mapctl [data-lay]').forEach((b) => b.addEventListener('click', () => {
+  if (b.disabled) return;
+  const k = b.dataset.lay;
+  if (P.lay.has(k)) P.lay.delete(k); else P.lay.add(k);
+  showLayers();
   setHash();
 }));
 
@@ -702,12 +709,6 @@ $('ntrips').addEventListener('change', () => { P.n = +$('ntrips').value; preset(
 $('month').addEventListener('click', preset('month', () => show(S.tr.t1 - 30 * DAY, S.tr.t1)));
 $('all').addEventListener('click', preset('range', () => show(S.tr.t0, S.tr.t1)));
 $('fit').addEventListener('click', () => S.tr && fitTo(S.win[0], S.win[1]));
-$('bg').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
-  if (b.disabled) return;
-  S.bg = P.bg = b.dataset.bg;
-  showBg();
-  setHash();
-}));
 $('all-years').addEventListener('click', () => {
   if (!S.vid || !S.years.length) return;
   P.years = 'all';
@@ -924,12 +925,11 @@ async function loadRange(from, to) {
   S.lanes = laneLists();
   if (S.tr) makeLanes();
   $('all').textContent = `Whole range: ${S.from === S.to ? S.from : `${S.from}–${S.to}`}`;
-  const hexb = $('bg').querySelector('[data-bg="hex"]'), fished = S.tr && S.tr.fish.length > 0;
+  const hexb = document.querySelector('#mapctl [data-lay="hex"]'), fished = S.tr && S.tr.fish.length > 0;
   hexb.disabled = !fished;
   hexb.title = fished ? `${num(S.tr.fish.reduce((s, d) => s + d.h, 0))} fishing hours in ${S.tr.fish.length.toLocaleString('en-GB')} pings, these years`
                       : 'no fishing ping in these years';
-  S.bg = P.bg === 'hex' && !fished ? 'none' : P.bg;   // the user's choice stays for the next vessel that fished
-  showBg();
+  showLayers();   // the user's choice of fishing hours stays for the next vessel that fished
   applyWin();
   S.tripPage = S.tr ? windowPage() : 0;
   await renderTrips();
@@ -1881,7 +1881,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer'
 // The address holds the vessel and every choice: the years, the window, the map's background, the tab, the open panels
 const isoMin = (ms) => new Date(ms).toISOString().slice(0, 16);
 function hashFor(vid) {
-  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, pts: P.pts, tab: tabOn(),
+  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, lay: LAYERS.filter(drawn).join(','), tab: tabOn(),
                                   open: PANELS.filter(isOpen).join(',') });
   if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
   // the selected logbook trip as ".tid|schema": a link then opens that trip with its hauls (maintainer, 2026-10-20)
@@ -1911,8 +1911,13 @@ function fromHash() {
   const n = parseInt(h.get('n'), 10);
   if ([...$('ntrips').options].some((o) => +o.value === n)) P.n = n;
   $('ntrips').value = P.n;
-  if (['none', 'hex', 'track'].includes(h.get('bg'))) P.bg = h.get('bg');
-  if (['0', '1', 'none'].includes(h.get('pts'))) P.pts = h.get('pts');
+  // what the map draws; an address of before these were buttons says pts (1 points and line, 0 the line, none neither)
+  // and bg (none, hex or track)
+  if (h.has('lay')) P.lay = new Set(h.get('lay').split(',').filter((k) => LAYERS.includes(k)));
+  else if (h.has('pts') || h.has('bg')) {
+    P.lay = new Set({ 1: ['points', 'line'], 0: ['line'], none: [] }[h.get('pts') ?? '1'] || ['points', 'line']);
+    if (['hex', 'track'].includes(h.get('bg'))) P.lay.add(h.get('bg'));
+  }
   markPicked();
   if (!Number.isInteger(vid)) return;
   // the trips and hauls the link names, one or several, each as .tid|schema and .sid|schema
