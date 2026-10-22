@@ -1,8 +1,8 @@
 # harbour_codes.R — the crosswalk from Iceland's landing-harbour code (hid) to the standard harbour key (pid).
 # Side: preprocessing (ports). See plan 014.
 #
-# Input:  raw/oracle/agf/aflagrunnur_v.parquet    the hid codes, names and new codes (hafnarnumer_id) the landings use
-#         raw/oracle/agf/aflagrunnur.parquet      every hid a landing uses (the view drops some, below)
+# Input:  raw/oracle/agf/aflagrunnur.parquet      every hid a landing uses
+#         raw/oracle/ask/londunarstadir.parquet   the landing system's port list: each hid's name and new code (id)
 #         raw/oracle/kvoti/stadur.parquet         Fiskistofa's place list, the code authority
 #         staging/ports/ports_all.gpkg            the pid of each Iceland polygon (source "einar"), by hid
 # Output: curated/reference/port.parquet           one row per hid: hid, port, pid, hafnarnumer_id
@@ -13,14 +13,13 @@
 library(sf)
 library(nanoparquet)
 library(tidyverse)
-# The view looks vessels up in the Directorate's UFS tables, frozen since 2020, and drops the landings of those it
-# does not know (decision 110). Only the base table has every code a landing uses: 168 (Bretland, one landing in 2022)
-# is in it alone. The view has the names and the new codes, so both are read.
+# The tables, not the view aflagrunnur_v (decision 175): its party and vessel joins drop landings, and with them code
+# 168 (Bretland, one landing in 2022). Its port names and new codes are londunarstadir's, which names every code.
 harbours <-
-  read_parquet(fd_raw("oracle", "agf", "aflagrunnur_v.parquet")) |>
-  select(starts_with("hafnar")) |>
+  read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet"), col_select = "hafnarnumer") |>
   distinct() |>
-  full_join(read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet"), col_select = "hafnarnumer") |> distinct(),
+  left_join(read_parquet(fd_raw("oracle", "ask", "londunarstadir.parquet")) |>
+              select(hafnarnumer, hafnarnumer_id = id, hafnarnumer_heiti = heiti),
             by = "hafnarnumer") |>
   rename(hid = hafnarnumer) |>
   arrange(hid)
@@ -78,5 +77,5 @@ ports <-
   select(-hafnarnumer_heiti, -port_kvoti, -port_stadur)
 ports |> write_curated(
   fd_curated("reference", "port.parquet"),
-  inputs = c(fd_raw("oracle", "agf", "aflagrunnur_v.parquet"), fd_raw("oracle", "agf", "aflagrunnur.parquet"),
+  inputs = c(fd_raw("oracle", "agf", "aflagrunnur.parquet"), fd_raw("oracle", "ask", "londunarstadir.parquet"),
              fd_raw("oracle", "kvoti", "stadur.parquet"), fd_staging("ports", "ports_all.gpkg")))

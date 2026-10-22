@@ -7,7 +7,7 @@
 #                                                the Oracle snapshots behind the old archive's sources 1-4 (until plan 018
 #                                                copied to raw/mmsi/oracle_*.parquet, whose names stay their `source`)
 #         raw/oracle/vessel/vessel_mmsi.parquet  Oracle's current MMSI table, dated by the register's last change
-#         raw/oracle/vessel/vessel_v.parquet     that date (max valid_from)
+#         raw/oracle/vessel/vessel.parquet       that date (max valid_from)
 #         raw/vessels/mmsi_iceland_archieves.parquet   the old archive, for its hand-set windows only: 46 rows on 23 MMSIs
 #                                                handed from one hull to another, set in 2024 partly from the STK track
 #         overrides/mmsi_list_errors.csv, overrides/mmsi_broadcast.csv   confirmed rows only
@@ -92,7 +92,7 @@ snaps <- bind_rows(lapply(snap_files, function(f) {
 }))
 
 ## Oracle's current table ---------------------------------------------------------------------------------------------
-v <- read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet"))
+v <- read_parquet(fd_raw("oracle", "vessel", "vessel.parquet"))     # the table, not the view vessel_v (decision 175)
 REGISTER_DATE <- as.Date(max(v$valid_from, na.rm = TRUE))   # the register's last change, not the dump date
 oracle_now <- read_parquet(fd_raw("oracle", "vessel", "vessel_mmsi.parquet")) |>
   transmute(mmsi = as_mmsi(mmsi_no), sknr = as.character(registration_no),
@@ -230,6 +230,6 @@ print(two |> select(vid, sknr, mmsi, nafn, sources), n = Inf)
 
 print(mmsi |> count(mmsi_cat, window_basis, basis), n = Inf)
 write_curated(mmsi, fd_curated("vessel", "mmsi.parquet"),
-              inputs = c(xl, snap_files, fd_raw("oracle", "vessel", "vessel_mmsi.parquet"), fd_raw("oracle", "vessel", "vessel_v.parquet"),
+              inputs = c(xl, snap_files, fd_raw("oracle", "vessel", "vessel_mmsi.parquet"), fd_raw("oracle", "vessel", "vessel.parquet"),
                          fd_raw("vessels", "mmsi_iceland_archieves.parquet"),
                          "overrides/mmsi_list_errors.csv", "overrides/mmsi_broadcast.csv"))

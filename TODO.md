@@ -1107,34 +1107,28 @@ layer stages no haul twice.
 The built `curated/landing/` still holds those three species at 1/1000 for the lods-only trips (19,087 kt to 2006,
 736 kt in 2007); every other value of the scratch run equals the build. `lods_raw` points at the
 table, so `lods`, `landing` and everything after them are outdated. The kvoti re-dump of 2026-10-22 is adopted
-(TODO 110; 1,721 new and 143 revised `lods_slaegt` rows, landings since 2026-08-27), so the rebuild can run now:
-fingerprint first, then build from `lods` by name. The re-dump also outdated `port`, the MMSI and vessel chain and
-the AIS ping chain, mostly from re-stamped files (59 targets in all).
+(TODO 110; 1,721 new and 143 revised `lods_slaegt` rows, landings since 2026-08-27), so the rebuild can run now.
+The re-dump also outdated `port`, the MMSI and vessel chain and the AIS ping chain, mostly from re-stamped files, and
+decision 175 three more (62 targets in all). **Prepared:** `$FISHYDATA/archive/2026-10-rebuild-prep/README.md`, with
+the fingerprint before taken, the build by name in three steps (about 2.5 h) and the checks after scripted.
 
 **check:** the built lods catch equals the scratch run of decision 169 (or the re-dump's differences are explained);
 `docs/data-dict.yaml` describes `hid_origin` and `catch_gutted` and no longer calls `landing_catch.catch` wrong;
 `tar_outdated()` shows nothing of the landing chain.
 
 ## 120. Readers still on Oracle views (the rule "tables, not views")
-**status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, 170,
+**status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, 170, 175,
 `$FISHYDATA/archive/2026-10-views-todo120/README.md`
 
-The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. Found the same day by
-scanning every script for the Oracle objects it reads, 11 scripts read a view; adb's switched (decision 170). The
-other four views were rebuilt from their tables the same day, row by row, and none hides a conversion (0 rows differ;
-`vessel_v`'s engine power by float noise on 4). What the readers would gain:
+The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. adb's adapter switched
+(decision 170), and the five main-project readers of `agf.aflagrunnur_v` and `vessel.vessel_v` (decision 175; built
+with TODO 119's rebuild). The views left were rebuilt from their tables the same day, row by row, none differing:
 
-- `reference/ports/harbour_codes.R`, `reference/ports/port_code.R` read `agf.aflagrunnur_v`, which drops landings
-  through its party and vessel joins (sellers, buyers, receivers or vessel history missing in `ufs`; 24 % of 2026),
-  not its code tables. Both take only the port codes: `aflagrunnur LEFT JOIN ask.londunarstadir` gives 79, all named,
-  against the view's 78. Code 168 enters `port_code.parquet`, and `harbour_codes.R`'s patch for it goes.
-- `reference/vessels/mmsi.R`, `reference/vessels/registry.R`, `reference/vessels/vessel_year.R` read `vessel.vessel_v`.
-  Read from `vessel` and the one or two tables each needs, the output is identical, without the owners' data.
-- In the `once` project, so only at a redo by decision: `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`),
-  `reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`).
-
-When: just before the rebuild the kvoti and ops$einarhj re-dump forces (TODO 110, 119), which outdates the port and
-vessel chains anyway. Every curated file is stamped, so a switch on its own would rebuild to the AIS flow for nothing.
+- In the `once` project, so only at a redo by decision: `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`:
+  `vessel_hist` without its six `hist_*` audit columns), `reference/vessels/skipaskra_evidence.R` and
+  `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`: `veidileyfi` with `svaedi` SA to SD).
+- `sources/adb/convert_brute_force.R`, outside the build ("kept for reference", `docs/source-schemas.md`), reads adb's
+  views from `staging/data-dump/`, which no longer exists (found 2026-10-22): delete it, or a decision keeps it.
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
 

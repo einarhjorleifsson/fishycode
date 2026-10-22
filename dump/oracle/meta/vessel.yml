@@ -1,0 +1,154 @@
+$version: 0.1.0
+name: vessel
+tables:
+  - name: vessel
+    details: |
+      The Icelandic ship register's current values, one row per hull. fishycode reads it with vessel_identification,
+      vessel_measurement and vessel_engines, joined on vessel_id as the view vessel_v joined them
+      (reference/vessels/mmsi.R, registry.R, vessel_year.R; decision 175). vessel_v also joins vessel_fishery, the
+      owners' data, which fishycode does not read.
+      Evidence: 7,047 rows (dump of 2026-10-16, measured 2026-10-22).
+    columns:
+      - name: vessel_id
+        type: number(id)
+        constraints: [primary_key]
+        details: |
+          The key the other vessel_* tables refer to.
+          Evidence: Oracle's comment; 7,047 distinct in 7,047 rows (dump of 2026-10-16).
+      - name: registration_no
+        label: Registration number (skipaskrárnúmer), fishycode's vid
+        type: number(id)
+        constraints: [required, unique]
+        details: |
+          NUMBER(4,0). A hull keeps its number for life, except foreign hulls (3700-4999), whose numbers are reused.
+          0 is not a hull (registry.R leaves it out).
+          Evidence: Oracle's column definition (_code/all_tab_columns.parquet); 7,047 distinct in 7,047 rows, 0-9855
+          (dump of 2026-10-16).
+      - name: valid_from
+        type: datetime
+        time_zone: UTC
+        details: |
+          An Oracle DATE, always midnight: the day the hull's current values took effect, not a time of day. 1901-01-01
+          is a placeholder. mmsi.R dates the register by the largest (its last change, not the dump date).
+          Evidence: 0 of 7,047 with a time of day, 1901-01-01 to 2026-06-16 (dump of 2026-10-16); decision 111 for UTC.
+      - name: usage_category_no
+        label: Usage category
+        type: number(id)
+        details: |
+          The code of usage_category (its English name in eng_name). NULL on 1,300 hulls, 1,290 of them foreign; 0 on
+          one hull, a code usage_category does not hold.
+          Evidence: Oracle's comment; counts of the dump of 2026-10-16.
+      - name: power_kw
+        label: The vessel's power
+        type: number(quantity)
+        units: kW
+        details: |
+          0 on 1,156 hulls and NULL on 1,300: no value. registry.R sets 0 to NA, and vessel_year.R takes only a value
+          above 0.
+          Evidence: Oracle's comment ("(KW)"); counts of the dump of 2026-10-16.
+      - name: status
+        label: The hull's status on the register
+        type: enum
+        values:
+          'Á aðalskipaskrá': on the main register
+          'Afmáð': struck off the register
+          'Erlent': foreign
+          'Í þurrleigu': bareboat-chartered out
+          'Ekki vitað': not known
+          'Óskilgreint': not defined
+        details: |
+          registry.R takes 'Erlent' as foreign: all of 3700-4999, and 3699.
+          Evidence: the six values of the dump of 2026-10-16 (Afmáð 3,490, Á aðalskipaskrá 2,244, Erlent 1,290, Ekki
+          vitað 11, Óskilgreint 11, Í þurrleigu 1); the labels are fishycode's reading of the Icelandic.
+  - name: vessel_identification
+    columns:
+      - name: vessel_id
+        type: number(id)
+        constraints: [required, unique]
+        details: |
+          One row per hull, as vessel_v's join assumes.
+          Evidence: 7,047 distinct in 7,047 rows (dump of 2026-10-16).
+      - name: region_acronym
+        label: Region letters of the local sign (e.g. ÍS)
+        details: |
+          registry.R makes the local sign (uid) from it and region_no, zero-padded to three digits.
+      - name: region_no
+        label: Number of the local sign
+        details: |
+          Text in Oracle. registry.R takes a value above 0 only.
+  - name: vessel_measurement
+    constraints:
+      - assert: max_length IS NULL OR round(max_length, 2) = max_length
+        description: length overall is stored with at most two decimals; 0 of 7,047 rows fail on the dump of 2026-10-16.
+    columns:
+      - name: vessel_id
+        type: number(id)
+        constraints: [required, unique]
+        details: |
+          One row per hull, as vessel_v's join assumes.
+          Evidence: 7,047 distinct in 7,047 rows (dump of 2026-10-16).
+      - name: max_length
+        label: Length overall
+        type: number(quantity)
+        units: m
+        details: |
+          0 on 1,350 hulls and NULL on 309: no value (vessel_year.R takes only a value above 0). At most two decimals.
+          Evidence: Oracle's comment ("in meters"); counts of the dump of 2026-10-16.
+      - name: brutto_grt
+        label: Gross register tonnage
+        type: number(quantity)
+        units: GRT
+        details: |
+          Evidence: Oracle's comment ("size in Grt").
+      - name: brutto_weight_tons
+        label: Gross tonnage
+        type: number(quantity)
+        units: GT
+        details: |
+          Oracle's comment calls it a weight in tons; gross tonnage is a volume index.
+        todo: |
+          The unit is read from the name; not checked against the register's printed editions.
+      - name: netto_weight_tons
+        label: Net tonnage
+        type: number(quantity)
+        units: NT
+        details: |
+          Oracle's comment calls it a weight in tons; net tonnage is a volume index.
+  - name: vessel_engines
+    details: |
+      One row per engine. registry.R counts a hull's engines and sums their power, as vessel_v did (decision 175).
+    constraints:
+      - assert: power IS NULL OR round(power, 2) = power
+        description: power is stored with at most two decimals; 0 of 6,912 rows fail on the dump of 2026-10-16.
+    columns:
+      - name: vessel_id
+        type: number(id)
+        constraints: [required]
+        details: |
+          Evidence: 5,903 hulls in 6,912 rows, every one in vessel (dump of 2026-10-16).
+      - name: power
+        label: The engine's power
+        type: number(quantity)
+        units: kW
+        details: |
+          NUMBER with no declared scale, stored with at most two decimals. Oracle sums it exactly; a sum of doubles is
+          off by up to 6e-14 kW, so registry.R rounds the sum to two decimals to equal vessel_v's. NULL on 1,300 rows;
+          3 rows of 10,000 kW or more (the largest 100,000), which look like placeholders.
+          Evidence: Oracle's column definition (_code/all_tab_columns.parquet); the unit as vessel.power_kw's; counts of
+          the dump of 2026-10-16.
+  - name: usage_category
+    columns:
+      - name: usage_category_no
+        type: number(id)
+        constraints: [primary_key]
+        details: |
+          Evidence: Oracle's comment ("primary key"); 57 distinct in 57 rows (dump of 2026-10-16).
+relationships:
+  - join: vessel_identification.vessel_id = vessel.vessel_id
+    cardinality: one-to-one
+  - join: vessel_measurement.vessel_id = vessel.vessel_id
+    cardinality: one-to-one
+  - join: vessel_engines.vessel_id = vessel.vessel_id
+    cardinality: many-to-one
+  - join: vessel.usage_category_no = usage_category.usage_category_no
+    cardinality: many-to-one

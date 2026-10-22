@@ -28,7 +28,7 @@
 # 2024-10-25
 #  * consolidation, review and addition of older code
 # INPUT ------------------------------------------------------------------------
-# raw/oracle/vessel/vessel_v.parquet, curated/vessel/mmsi.parquet,
+# raw/oracle/vessel/{vessel,vessel_identification,vessel_measurement,vessel_engines}.parquet, curated/vessel/mmsi.parquet,
 # curated/vessel/register/registered.parquet (the hull's runs on the register)
 # OUTPUT -----------------------------------------------------------------------
 # curated/vessel/vessel.parquet - one row per vid
@@ -73,8 +73,22 @@ mmsi_ISL |>
   ungroup() |>
   filter(n.mmsi > 1) |>
   knitr::kable(caption = "Vessel with more than one MMSI (expect none: one per vid)")
+# The tables, joined as the view vessel_v joined them (decision 175): one row per vessel in each, and the engines
+# counted and summed. Oracle sums the stored power exactly, at most two decimals; a sum of doubles is off by 6e-14 on 4.
+vt <- function(t) read_parquet(fd_raw("oracle", "vessel", paste0(t, ".parquet")))
+engines <-
+  vt("vessel_engines") |>
+  group_by(vessel_id) |>
+  summarise(engines_count = as.numeric(n()),
+            engines_total_power = if (all(is.na(power))) NA_real_ else round(sum(power, na.rm = TRUE), 2),
+            .groups = "drop")
 vessel_ISL <-
-  read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet")) |>
+  vt("vessel") |>
+  left_join(vt("vessel_identification") |> select(vessel_id, call_sign, region_acronym, region_no), by = "vessel_id") |>
+  left_join(vt("vessel_measurement") |> select(vessel_id, max_length, brutto_grt, brutto_weight_tons, netto_weight_tons),
+            by = "vessel_id") |>
+  left_join(engines, by = "vessel_id") |>
+  mutate(engines_count = coalesce(engines_count, 0)) |>
   dplyr::select(vid = registration_no,
                 status,
                 vessel = name,
@@ -202,7 +216,9 @@ vessel_ISL <-
 vessel_ISL |>
   mutate(kw = ifelse(kw == 0, NA, kw)) |>
   write_curated(fd_curated("vessel", "vessel.parquet"),
-                inputs = c(fd_curated("vessel", "mmsi.parquet"), fd_raw("oracle", "vessel", "vessel_v.parquet"),
+                inputs = c(fd_curated("vessel", "mmsi.parquet"),
+                           fd_raw("oracle", "vessel", paste0(c("vessel", "vessel_identification", "vessel_measurement",
+                                                                "vessel_engines"), ".parquet")),
                            fd_curated("vessel", "register", "registered.parquet")))
 
 

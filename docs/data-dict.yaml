@@ -4399,11 +4399,11 @@ tables:
     source:
       parquet: ../../fishydata/curated/reference/port_code.parquet
     description: >
-      One row per distinct harbour-code/name combination found in the raw
-      aflagrunnur (Icelandic landings) source. A narrower, source-specific harbour
-      table with no join to geometry or to the global pid port registry - distinct
-      from reference/port and reference/port_geometry
-      (reference/ports/harbours.R).
+      One row per harbour code used in the raw aflagrunnur (Icelandic landings)
+      table, named from the landing system's port list ask.londunarstadir
+      (decision 175). A narrower, source-specific harbour table with no join to
+      geometry or to the global pid port registry - distinct from reference/port
+      and reference/port_geometry (reference/ports/port_code.R).
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -4426,8 +4426,9 @@ tables:
         range: [1, 140]
         examples: [1, 29, 52, 69, 140]
         description: >
-          The newer/alternate harbour-number field (hafnarnumer_id) from the same
-          source table; its relationship to hid beyond common source is ungrounded.
+          The landing system's own id for the code (ask.londunarstadir.id, which
+          aflagrunnur_v called hafnarnumer_id), one per hid; fs_afladagbok records
+          its ports by it.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -4437,7 +4438,7 @@ tables:
         type: string
         examples: [Akranes, Færeyjar, Keflavík, Siglufjörður, Þórshöfn]
         description: >
-          Harbour name, from aflagrunnur's hafnarnumer_heiti column.
+          Harbour name, ask.londunarstadir.heiti.
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required, unique] # all values distinct & present
@@ -4488,8 +4489,9 @@ tables:
         type: number(id)
         examples: [1, 29, 52, 69, 140]
         description: >
-          Ungrounded - not produced by reference/ports/harbour_codes.R as read; needs
-          a maintainer check.
+          The landing system's own id for the hid (ask.londunarstadir.id, decision
+          175); sources/fs_afladagbok/convert.R maps the e-logbook's ports to hid by
+          it. Set on the 79 codes agf's landings use, NA on the rest.
   - name: reference_port_geometry
     source:
       parquet: ../../fishydata/curated/reference/port_geometry.parquet

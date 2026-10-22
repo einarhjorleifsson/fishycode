@@ -124,8 +124,8 @@ list(
 
   # harbour_codes.R reads the pids from staging/ports/ports_all.gpkg; without the edge
   # it could run before ports_all and read the old file (decision 082).
-  tar_target(port_raw, c(fd_raw("oracle", "agf", "aflagrunnur_v.parquet"),
-                         fd_raw("oracle", "agf", "aflagrunnur.parquet"),
+  tar_target(port_raw, c(fd_raw("oracle", "agf", "aflagrunnur.parquet"),
+                         fd_raw("oracle", "ask", "londunarstadir.parquet"),
                          fd_raw("oracle", "kvoti", "stadur.parquet")), format = "file"),
   tar_target(port, {
     ports_iceland
@@ -135,7 +135,8 @@ list(
              fd_curated("reference", "port.parquet"))
   }, format = "file"),
 
-  tar_target(port_code_raw, fd_raw("oracle", "agf", "aflagrunnur_v.parquet"), format = "file"),
+  tar_target(port_code_raw, c(fd_raw("oracle", "agf", "aflagrunnur.parquet"),
+                              fd_raw("oracle", "ask", "londunarstadir.parquet")), format = "file"),
   tar_target(port_code, {
     port_code_raw
     produces("reference/ports/port_code.R", fd_curated("reference", "port_code.parquet"))
@@ -201,7 +202,10 @@ list(
                          fd_raw("oracle", "ops_einarhj", "mmsi_icelandic_registry.parquet"),
                          fd_raw("oracle", "vessel", "vessel_mmsi.parquet"), fd_raw("vessels", "mmsi_iceland_archieves.parquet"),
                          "overrides/mmsi_list_errors.csv", "overrides/mmsi_broadcast.csv"), format = "file"),
-  tar_target(vessel_raw, c(fd_raw("oracle", "vessel", "vessel_v.parquet"),
+  # The `vessel` schema's tables, not its view vessel_v (decision 175): mmsi.R takes vessel, vessel_year.R vessel and
+  # vessel_measurement, registry.R those with vessel_identification and vessel_engines.
+  tar_target(vessel_raw, c(fd_raw("oracle", "vessel", paste0(c("vessel", "vessel_identification", "vessel_measurement",
+                                                                "vessel_engines"), ".parquet")),
                            fd_raw("external", "hreidar", "data-raw", "HREIDAR_Islensk_skip.xlsx")), format = "file"),
   tar_target(mmsi, {
     mmsi_raw; vessel_raw

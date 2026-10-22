@@ -1,0 +1,16 @@
+$version: 0.1.0
+name: agf
+tables:
+  - name: aflagrunnur
+    columns:
+      - name: hafnarnumer
+        label: Landing port code (fishycode's hid)
+        type: number(id)
+        constraints: [required]
+        details: |
+          The port of landing as the landing system codes it. Its name and the system's own port id are in
+          ask.londunarstadir (hafnarnumer, heiti, id), where reference/ports/port_code.R and harbour_codes.R look them up
+          (decision 175). The view aflagrunnur_v joins the same table, but its party and vessel joins drop landings and
+          with them code 168.
+          Evidence: 79 codes in 5,392,528 rows, none NULL, every one in ask.londunarstadir (dump of 2026-10-16, measured
+          2026-10-22).

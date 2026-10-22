@@ -1,0 +1,28 @@
+$version: 0.1.0
+name: ask
+tables:
+  - name: londunarstadir
+    details: |
+      The landing system's port list: one row per port code, with its name and the system's own id. fishycode reads
+      hafnarnumer, id and heiti (reference/ports/port_code.R, harbour_codes.R; decision 175).
+      Evidence: 140 rows, hafnarnumer and id each distinct (dump of 2026-10-16, measured 2026-10-22).
+    columns:
+      - name: id
+        label: Port id in the landing system (aflagrunnur_v's hafnarnumer_id)
+        type: number(id)
+        constraints: [required, unique]
+        details: |
+          Not the port code. fs_afladagbok records its ports by this id (ws_veidiferd.upphafshofn, londunarhofn), and
+          sources/fs_afladagbok/convert.R maps them to hafnarnumer through curated/reference/port.parquet.
+          Evidence: 140 distinct in 140 rows, 1-144 (dump of 2026-10-16).
+      - name: hafnarnumer
+        label: Port code (fishycode's hid)
+        type: number(id)
+        constraints: [required, unique]
+        details: |
+          The code agf.aflagrunnur.hafnarnumer and the other landing tables carry.
+          Evidence: 140 distinct in 140 rows; all 79 codes agf.aflagrunnur uses are here (dump of 2026-10-16).
+      - name: heiti
+        label: Port name
+        details: |
+          Evidence: set on all 140 rows (dump of 2026-10-16).

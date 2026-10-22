@@ -9,7 +9,7 @@
 #         curated/vessel/register/vessel_measurement_hist.parquet  length overall (max_length)
 #         curated/vessel/register/decision.parquet                 the witnesses of each value
 #         staging/hreidar/vessel_year.parquet                      Hreiðar's segment (Megingerð), 2007-2021
-#         raw/oracle/vessel/vessel_v.parquet                       the `vessel` schema's current values: hulls the register
+#         raw/oracle/vessel/{vessel,vessel_measurement}.parquet    the `vessel` schema's current values: hulls the register
 #                                                                   does not carry (foreign, never on the main register)
 # Output: curated/vessel/vessel_year.parquet - one row per vid (in the `vessel` schema) and year, 2007 to this year
 #
@@ -52,7 +52,10 @@ series <- function(tab, col, value_col = col, numeric = TRUE) {
     select(vid, a, b, value, source)
 }
 
-v <- read_parquet(fd_raw("oracle", "vessel", "vessel_v.parquet")) |>
+# the tables, not the view vessel_v (decision 175)
+v <- read_parquet(fd_raw("oracle", "vessel", "vessel.parquet")) |>
+  left_join(read_parquet(fd_raw("oracle", "vessel", "vessel_measurement.parquet")) |> select(vessel_id, max_length),
+            by = "vessel_id") |>
   transmute(vid = as.integer(registration_no), mclass_now = as.integer(usage_category_no),
             kw_now = num(power_kw), loa_now = num(max_length))
 grid <- tidyr::expand_grid(vid = v$vid, year = YEARS) |> mutate(d = as.Date(paste0(year, "-07-01")))
@@ -118,4 +121,5 @@ print(vessel_year |> count(year > 2021, mclass_basis) |> tidyr::pivot_wider(name
 
 write_curated(vessel_year, fd_curated("vessel", "vessel_year.parquet"),
               inputs = c(f_reg("vessel_hist"), f_reg("vessel_engines_hist"), f_reg("vessel_measurement_hist"), f_reg("decision"),
-                         fd_staging("hreidar", "vessel_year.parquet"), fd_raw("oracle", "vessel", "vessel_v.parquet")))
+                         fd_staging("hreidar", "vessel_year.parquet"), fd_raw("oracle", "vessel", "vessel.parquet"),
+                         fd_raw("oracle", "vessel", "vessel_measurement.parquet")))
