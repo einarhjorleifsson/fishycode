@@ -9,7 +9,7 @@
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
 # Prepared 2026-10-21 (plan 037 §3.3, the maintainer's request to have the missing schemas that seem to warrant it
-# ready), not yet run. Judged from raw/oracle/_catalogue/objects.parquet: 1 table, ttrail, 1.8 M rows: a track of some
+# ready); run on the server 2026-10-21 at c27886a and adopted (decision 162). Judged from raw/oracle/_catalogue/objects.parquet: 1 table, ttrail, 1.8 M rows: a track of some
 # kind, to be looked at before deciding whether it is wanted.
 # Its columns were not read before the script was written (Oracle did not answer that evening). Persons' data are
 # kept (decision 159); _data-dict.yaml under $FISHYDATA holds examples of them.

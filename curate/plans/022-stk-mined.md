@@ -506,7 +506,7 @@ column. fishycode reads only `trail` and `mobile`.
 | `mobile` | record | 34,580 | 2003-08 to 2026-08 | mobileid 34,580; localid 4,159; globalid 34,579 | the unit register: each unit's current `localid`, `globalid` and registration; fishycode reads it (`stk_mobile()`) |
 | `stk_ge_group_ships` | record | 1,782 |  | ship_no 1,415; group_id 23; id 1,782 | the groups' vessel numbers (fishery, regime, flag); no dates |
 | `tilk_stk` | record | 5,924,175 | 2004-01 to 2020-09 | trailid 5,924,175; skip_nr 2,178; harborid 219; hofn 75 | port events (out 1, in 2): trailid, `skip_nr` (the vid), STK and numeric port; trailid in the trail from 2008 |
-| `tilk_vss` | record | 170,355 | 2010-05 to 2013-03 | skip_nr 2,065; hofn 72; id 170,355 | the Coast Guard's phone notifications (Oracle's comment) |
+| `tilk_vss` | record | 170,355 | 2010-05 to 2013-03 | skip_nr 2,065; hofn 72; id 170,355 | the Coast Guard's phone notifications (Oracle's comment); not the line-incentive check's phone line, which is `simalinu.tilk_linu_sokn` (decision 163) |
 | `trail` | record | 303,795,653 | 2007-01 to 2026-10 (and 11,515 rows in 2003-2006) | trailid 303.8 M; mobileid; harborid | the trail: one row per position, trailid unique; fishycode reads it (`stk_trail()`) |
 | `trail_deleted_rows` | record | 414,467 | 2003-09 to 2003-12 | trailid 414,467; mobileid 976; harborid 86 | positions removed from the trail in the 2003 clean-up; none in the trail |
 | `vms_skip_ar` | record | 2,034 | 2007 to 2011 | skipnr 616; ar 5 | export list: vessel by year, mostly under 12 m |

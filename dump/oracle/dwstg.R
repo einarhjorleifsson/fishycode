@@ -9,7 +9,7 @@
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
 # Prepared 2026-10-21 (plan 037 §3.3, the maintainer's request to have the missing schemas that seem to warrant it
-# ready), not yet run. Judged from raw/oracle/_catalogue/objects.parquet: 20 tables, 69,922 rows: the ERS hauls, logs and
+# ready); run on the server 2026-10-21 at c27886a and adopted (decision 162). Judged from raw/oracle/_catalogue/objects.parquet: 20 tables, 69,922 rows: the ERS hauls, logs and
 # species before dw_aflaskeyti (stg_catch_haul_hst, stg_catch_log_hst, stg_catch_species_hst), their error tables
 # (catch_*_error) and port notifications (stg_port_notification_hst). Wanted as the layer upstream of the ERS
 # reports fishycode reads (plan 026), with what was rejected.

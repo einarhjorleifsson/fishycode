@@ -9,7 +9,7 @@
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
 # Prepared 2026-10-21 (plan 037 §3.3, the maintainer's request to have the missing schemas that seem to warrant it
-# ready), not yet run. Judged from raw/oracle/_catalogue/objects.parquet: 28 tables and 1 view, 22.0 M rows by Oracle's
+# ready); run on the server 2026-10-21 at c27886a and adopted (decision 162). Judged from raw/oracle/_catalogue/objects.parquet: 28 tables and 1 view, 22.0 M rows by Oracle's
 # estimates: the logs of the landings' changes (log_lods, 2.6 M, the master of log_lods2_londun and others), the
 # landing notifications (log_ivln_tilkynning_londun, 1.7 M), the catch error checks (kvoti_afli_villutekk, 90,739;
 # its detail 272,883), the quota-status history (kv_stada_saga, 13.9 M) and the vessel-history log (log_skipasaga).

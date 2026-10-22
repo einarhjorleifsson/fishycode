@@ -18,9 +18,9 @@ The inventory, the measurements and the design are Claude's.
 **Measured** (by Claude, read-only, not yet checked by a person): §2 and §3, from Oracle's catalogue
 (`raw/oracle/_catalogue/objects.parquet`, 112 schemas), the column types of every dumped table, the side studies cited,
 and the TODO 113 and 114 sessions' notes. **Assumed:** that a value an app sent is what the skipper entered unless a
-defect is measured; that a value changed in-house after loading was changed on purpose; that the undumped schemas of
-§3.3 hold what their table names and Oracle's comments say (their columns were not read: Oracle did not answer on the
-evening of 2026-10-21).
+defect is measured; that a value changed in-house after loading was changed on purpose; that the schemas of §3.3 not
+yet read hold what their table names and Oracle's comments say (six were dumped on 2026-10-21, decision 162; none is
+read yet).
 
 ## 1. The principle, sharpened by the scoping
 
@@ -55,16 +55,21 @@ afli's electronic logbook passes through three layers, each of which adds or los
 |---|---|---|---|
 | **sent** | `fs_afli.afladagb_xml_mottaka` (565,192 messages, 1.44 M records; a superset of `afli`'s copy by 81,454 messages after 2020-07-28) | everything the app sent: positions to the arc-second, the end position (`POS_END`), depths, catch as logged with its state (`SLAEGT`), soak hours and nights, tow time, hooks and baiting, when the record was closed, the landing confirmation, the app and its version | the app's own defects (above) |
 | **loaded** | `rafr_stofn`, `rafr_lineha`, `rafr_toga`, `rafr_afli`, `rafr_sjalfvirkir_maelar` | the record id, the load | positions to the minute, the end position never loaded, the start depth converted to fathoms and the end left in metres, the end longitude overwritten by the latitude (2010-2012), the soak rounded up, the catch's logged weight and state on only part of the rows |
-| **edited / moved** | `afli.stofn`, `lineha`, `toga`, `afli` | in-house corrections: another gear on 30,026 records, another landing date or port on 101,087; the flag `breytt_eftir_lokun` on 166,538 of 1,275,274 electronic stations (13 %); `fs_afli.afladagbok_sidast_breytt` times each record's last change; the statistical rectangle computed where missing | the Danish seine's tow time dropped (105,879), the depth divided by 1.8288 a second time (11,956), the soak rounded a second time (13,637 and 6,104), the catch's logged weight and state not moved |
+| **edited / moved** | `afli.stofn`, `lineha`, `toga`, `afli` | in-house corrections: another gear on 30,026 records, another landing date or port on 101,087; in all, a value differing from both the sent and the loaded one on 178,778 fields of 152,555 stations (12 %), records of 2003-2018; the flag `breytt_eftir_lokun` marks the move into afli from 2020-09 on, not an edit; `fs_afli.afladagbok_sidast_breytt` times each record's last change; the statistical rectangle computed where missing | the Danish seine's tow time dropped (105,879), the depth divided by 1.8288 a second time (11,956), the soak rounded a second time (13,637 and 6,104), the catch's logged weight and state not moved |
 
-**Who edited.** `rafr_stofn` names the account that last changed each record (`sbg`, `sbt`). Of the 166,538 records
-marked edited after closing, one account made 125,381 (75 %), 2008-2023, and three accounts nearly all the rest; the two
-busiest accounts overall made no marked edit (most likely the loading). The maintainer (2026-10-21): the person behind
-it had a deep knowledge of the fishery and checked the data the old way, by comparing sources and asking the captains.
-So the in-house edits are an expert's corrections with evidence behind them: they win where they apply, and they are
-labels, a set of records an expert judged wrong and put right, against which an automatic check (gear from the
-landing, the trip-to-landing match on dates and ports, the station's place) can be scored. Accounts were counted, not
-named.
+**Who edited.** afli keeps no editor. `rafr_stofn` names the account that last changed each loaded record (`sbg`,
+`sbt`): the move into afli, a later confirmation or an edit in `rafr_`, so an account is the row's last changer, not
+the author of an afli edit. The flag `breytt_eftir_lokun` is not an edit mark either: it is set on all 166,214 stations
+moved into afli from 2020-09 on, by any account, and on 324 moved before (recounted on the dump, 2026-10-22). This
+plan first read the flag as edits after closing, three quarters of them by one account; those were that account's
+moves, equal to the loaded values but 47 ports. The in-house corrections are found by comparing the layers: 178,778
+fields of 152,555 stations, records of 2003-2018 (landing date mostly from the registry, gear from the catch, nephrops
+weights; `$FISHYDATA/archive/2026-10-afli-layers/`, measured by Claude, not checked by a person). The maintainer
+(2026-10-21): the person behind the corrections had a deep knowledge of the fishery and checked the data the old way,
+by comparing sources and asking the captains. So the in-house edits are an expert's corrections with evidence behind
+them: they win where they apply, and they are labels, a set of records an expert judged wrong and put right, against
+which an automatic check (gear from the landing, the trip-to-landing match on dates and ports, the station's place) can
+be scored. Accounts are counted, not named.
 
 Resends are rare and in-house edits common. Of the 1.44 M sent records, 91.3 % were loaded as sent; 4,598 (0.3 %)
 are older versions of a record sent again; 107,189 the same version sent again in another message; 14,267 never
@@ -102,18 +107,19 @@ examined.
 - `fs_afladagbok.takt_json_form`: a CLOB with NUL characters (TODO 110).
 - Deliberate skips: ask's guarded `*_sec_v` views, dw's landings copies, Oracle's own tables.
 
-### 3.3 Not dumped, and whether it seems to warrant it
+### 3.3 Dumped for this plan, and the rest
 
-Twenty-two of 112 schemas are dumped. Of the rest, by table names, Oracle's row estimates and comments (columns not
-read):
+Twenty-eight of 112 schemas are dumped, six of them on 2026-10-21 (decision 162); none of the six is read yet. The
+rest are judged by table names, Oracle's row estimates and comments (columns not read):
 
-| Schema | What it seems to hold | Warrants a dump? |
+| Schema | What it holds | Warrants a dump? |
 |---|---|---|
-| `kvotix` (28 tables, 22 M rows) | logs of the landings' changes (`log_lods`, 2.6 M, master of `log_lods2_londun` and others), landing notifications (`log_ivln_tilkynning_londun`, 1.7 M), the catch error checks (`kvoti_afli_villutekk`, 90,739, and detail 272,883), quota-status history (13.9 M), vessel-history log (708,703) | **yes**: the in-house edits of the landings, the error checks behind them and the notifications are the layers above the landings that fishycode lacks |
-| `vor` (46 tables, 24.6 M) | weighings (`vigt` 4.0 M, `vigt_linur` 12.9 M), the catch's disposition (`radstafanir` 143,798, lines 1.4 M), resale, market reports (`mark_skyrslur` 5.7 M), fish-market auction data (`rsf_markadur`, `rsf_markadur_xml`), LODS summaries | **yes**: a second record of the weighings and the disposition (plan 036), and the value |
-| `dwstg` (20 tables, 70 k) | the staging behind `dw_aflaskeyti`: ERS hauls, logs and species, their error tables, port notifications | **yes**: the layer upstream of the ERS reports fishycode reads, with what was rejected |
-| `fiskifelagid` (3 tables, 2.3 M) | the weighing and disposition registers of 1966-1981, landed catch before 1994 | for the history only (before the AIS) |
-| `fiskist` (1 table, 1.8 M) | `ttrail`: a track of some kind | look first |
+| `kvotix` | **dumped** (29 objects, 22,101,309 rows): the landings' before-images indexed by `log_lods` (2.6 M), the line-incentive history (1.7 M, its recomputation only, decision 163), the catch error checks (90,739 and 272,883), the register's change log (708,703); ends 2020-07 | yes: the in-house edits of the landings and the checks behind them, the layers above the landings that fishycode lacks |
+| `vor` | **dumped** (97 objects, 176,889,601 rows): weighings, the catch's disposition (plan 036), market reports, files received, auction XML; 1982 to 2020-07, but `samantekt_a_lods` to 2026-10-19 from a source not yet known | yes: a second record of the weighings and the disposition, and the value |
+| `dwstg` | **dumped** (20 tables, 69,922 rows): ERS messages as staged, 2014-01 to 2018-06, with deletes and rejected rows | yes: the layer upstream of the ERS reports fishycode reads |
+| `fiskifelagid` | **dumped** (3 tables, 2,265,200 rows): registers of 1966-1981, landed catch 1982-1993 | for the history only |
+| `fiskist` | **dumped** (1 table, 1,803,610 rows): `ttrail`, 731 mobile ids over 22 hours of 2008-09-22/23 | a one-off extract |
+| `simalinu` | **dumped**, through RJDBC (7 tables, 275,378 rows): the line vessels' phone notifications, `tilk_linu_sokn` (263,326, 2004-2014) | the phone times of the line-incentive check (decision 163) |
 | `siritar` (5 tables, 4.6 M) | temperature and Scanmar sensors, station documents: survey sensors | only for the survey tows (TODO 105) |
 | `channel_log`, `biota_log`, `fresh_log` | change logs of the survey schemas | only if the surveys' edits matter |
 | `veidibok`, the `ops$` schemas, the science schemas | freshwater angling, personal work, biology | no |
@@ -135,7 +141,7 @@ read):
   | Field group (grammar) | Precedence, as measured | Evidence |
   |---|---|---|
   | Identification | the loaded ids (they key every link) | §2 |
-  | Design (gear, target) | edited, then sent | gear corrected in-house on 30,026, three quarters of the edits by one expert |
+  | Design (gear, target) | edited, then sent | gear corrected in-house on 30,026 |
   | Temporal envelope | sent = loaded (equal to the second); edited where marked; placeholders flagged on any layer | decisions 157, 158; time-offset studies |
   | Spatial envelope | sent (arc-second, the end position), unless edited | map; xml-positions draft |
   | Configuration (hooks, nets, mesh, baiting) | sent (some never loaded) | map |
@@ -157,9 +163,8 @@ read):
 
 0. **Dump what is missing and warranted:** `kvotix`, `vor` and `dwstg` (with their persons' columns kept as decision
    159 says); the four failing views with Icelandic date settings; `takt_json_form` (TODO 110). Look at
-   `fiskist.ttrail` before deciding. The scripts are prepared (2026-10-21, not run): `dump/oracle/{kvotix,vor,dwstg,
-   fiskist,fiskifelagid}.R`, in the run order of `R/run_dump.R`. The maintainer dumps these five the old way
-   (2026-10-21); they are also the baseline of omar2's pilot (its plan 001, *Next*), after which the next full refresh
+   `fiskist.ttrail` before deciding. The five, `dump/oracle/{kvotix,vor,dwstg,fiskist,fiskifelagid}.R`, were
+   run on the server on 2026-10-21 and adopted, with simalinu (decision 162); they are also the baseline of omar2's pilot (its plan 001, *Next*), after which the next full refresh
    may go through omar2.
 1. **The grammar's precedence table and provenance column,** and the consumers reading the whole weight by name, on the
    current sources (no new layer yet): the change that makes later phases additive.
@@ -193,19 +198,22 @@ The pass is that everything is accounted for (§1), not a rate.
 ## 7. Asks
 
 Answered by the maintainer on 2026-10-21: a (the principle, taken as stated), b (a column per field group), c (below)
-and e (`catch` as logged everywhere). Open: d, f, g, h.
+and e (`catch` as logged everywhere). d by the run of 2026-10-21 (decision 162; the failing views and `takt_json_form`
+stay with TODO 110). Open: f, g, h, i.
 
 **c, in the maintainer's words:** where the expert edited, the expert wins; "but we want also to learn how / why he
 won (landings data, ...) ... because if we know, we have added to our own domain knowledge. and that is important to
 know, because once [he] retired, it got lost." So the edits are not only taken: each is explained from the evidence
 that most likely led to it (the landing's date, port and gear; the track; the vessel's other records), the reasons
 classed and counted, and each class turned into a check of fishycode's own, scored on how many of the expert's edits
-it would have made. The years after the expert's last edit (2023) are the years nobody corrected: those checks are
+it would have made. The years after the corrections end (records of 2018) are the years nobody corrected: those checks are
 what stands in for him there.
 
-The domain-expert group is that one account alone (the maintainer, 2026-10-21: most of the other accounts' records
-cannot be attributed to a person). The other accounts' edits are not presumed an expert's: they are classed and judged
-by their evidence like any other difference between the layers.
+The domain-expert group is one account, which the maintainer knows and Claude is not to know (2026-10-21: "only
+ops$XXX counts - i know, but you are not allowed to know"). The scripts read it from `FISHYDATA_EXPERT_ACCOUNT`, set by
+the maintainer in the project's git-ignored `.Renviron`, and never print it. Since afli keeps no editor, its edits are
+found only on the rows that account last changed: a lower bound. The other accounts' edits are not presumed an
+expert's: they are classed and judged by their evidence like any other difference between the layers.
 
 a. The principle of §1, with its two qualifications, as AGENTS.md's rule.
 b. The layer recorded as a column per field group, or as one provenance table (station, field, layer, basis, reason).
@@ -216,6 +224,12 @@ e. `catch` as the weight as logged in every source, the whole weight by name for
 f. The latest version of each sent record, and the 14,267 never loaded left out or staged with a flag.
 g. The paused TODO 113 and 114 work folded into phase 2, those items closed by it.
 h. The TODO items of §8 linked to the plan's phases as they stand, or folded into it (closed when their phase is).
+i. The sent layer's key where Oracle loaded one record as several rows (the adapter on branch
+   `claude/plan037-afli-sent-1f2f63`, not merged): on 115 edited stations the edited layer holds another row than the
+   staged one, 99 the same version loaded again from a later message (Oracle deleted the staged row on 87) and 16 an
+   older version Oracle deleted but moved. Keep the latest version's row, the 115 reached through `record.parquet`'s
+   `.sid_loaded`; or key on the one undeleted row where there is exactly one (90 keys change, 87 of the 115 then meet
+   by `.sid`, none lost, 28 left to the join). Measured by Claude, not checked by a person.
 
 ## 8. The TODO items this plan touches
 

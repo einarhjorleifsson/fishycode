@@ -52,7 +52,8 @@ vessel register's owners. Whether to drop them is not asked here.
 ## Found, not dumped
 
 - `bathymetry.olex_island`: 20.1 M Olex depth soundings around Iceland (2016), finer than GEBCO near the coast.
-- `fiskist.ttrail`: 1.8 M positions with the STK trail's columns; its time span and source are not known.
+- `fiskist.ttrail`: 1.8 M positions with the STK trail's columns; its time span and source are not known. Dumped
+  2026-10-21 (decision 162): 731 mobile ids over 22 hours of 2008-09-22/23; its source is still not known.
 - `fiskifelagid`: landings 1966-1981 by vessel, and before 1994 by vessel, gear, month and port. Decision 103 puts the
   years before 1990 out of scope.
 - `kvotix` (quota and landing logs), `itis` and `worms` (taxonomies; `taxon` carries WoRMS ids), `channel`, `biota`,

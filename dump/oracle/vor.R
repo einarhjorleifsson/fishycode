@@ -9,7 +9,7 @@
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
 # Prepared 2026-10-21 (plan 037 §3.3, the maintainer's request to have the missing schemas that seem to warrant it
-# ready), not yet run. Judged from raw/oracle/_catalogue/objects.parquet: 46 tables and 51 views, 24.6 M rows: weighings
+# ready); run on the server 2026-10-21 at c27886a and adopted (decision 162). Judged from raw/oracle/_catalogue/objects.parquet: 46 tables and 51 views, 24.6 M rows: weighings
 # (vigt 4.0 M, vigt_linur 12.9 M), the catch's disposition (radstafanir 143,798, its lines 1.4 M), resale
 # (endursala), market reports (mark_skyrslur 5.7 M), the fish markets' auction data (rsf_markadur, with
 # rsf_markadur_xml) and summaries against LODS. Wanted as a second record of the weighings and the disposition

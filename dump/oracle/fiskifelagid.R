@@ -9,7 +9,7 @@
 # The password comes from the macOS keychain, so it runs in your own terminal, not in Claude's.
 #
 # Prepared 2026-10-21 (plan 037 §3.3, the maintainer's request to have the missing schemas that seem to warrant it
-# ready), not yet run. Judged from raw/oracle/_catalogue/objects.parquet: 3 tables, 2.3 M rows: the weighing register and the
+# ready); run on the server 2026-10-21 at c27886a and adopted (decision 162). Judged from raw/oracle/_catalogue/objects.parquet: 3 tables, 2.3 M rows: the weighing register and the
 # disposition register of 1966-1981 (vigtarskra66_81, radstofunarskra66_81) and landed catch before 1994
 # (landed_catch_pre94). Wanted for the history only, before the AIS.
 # Its columns were not read before the script was written (Oracle did not answer that evening). Persons' data are

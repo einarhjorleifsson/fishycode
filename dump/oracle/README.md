@@ -8,9 +8,10 @@ The dump writes every table and view of every schema in `dump/oracle/` to `$FISH
 Oracle holds them, through ROracle. The logs sit in the same tree, so copying `raw/oracle/` copies the whole sweep.
 A full run takes hours: start it with `nohup`, from the shell or from R, and leave it.
 
-The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes, dw, dwstg, fiskist, ufs, gear,
+The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes, dw, dwstg, fiskist, simalinu, ufs, gear,
 orri, vessel, channel, ops_einarhj, logbook, fiskifelagid, agf, ask, vor, kvoti, kvotix, adb, fs_afladagbok, afli,
-fs_afli, biota, stk (dwstg, fiskist, fiskifelagid, vor and kvotix prepared 2026-10-21 for plan 037, not yet run). Each is one script,
+fs_afli, biota, stk (dwstg, fiskist, fiskifelagid, vor and kvotix first run 2026-10-21 on the server for plan 037's phase 0; simalinu that
+evening through RJDBC from the Mac; decision 162). Each is one script,
 `dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` is not a schema: it lists what else
 Oracle holds (section 13).
 
@@ -145,7 +146,7 @@ write the same files. `all.R` and `run_dump()` refuse a schema that is still bei
 
 ## 9. Done
 
-A full run's `_all.log` ends with `done: 22 of 22 schemas exited 0`, and `dump_status()` says `finished` for each.
+A full run's `_all.log` ends with `done: 28 of 28 schemas exited 0`, and `dump_status()` says `finished` for each.
 Each schema then has its `_overview_tables.parquet` (what was written, skipped and failed, and why) and a
 `_data-dict.yaml`.
 

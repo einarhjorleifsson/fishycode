@@ -94,8 +94,8 @@ the key (decision 053), so 53 of them are in the key and heard, and 148 are fore
 the AIS era with no key row and no ping from any provider in the union:** 96 registered vessels (9 with an MMSI, 67
 landing in 2013 or later) and 11 landings placeholders. A vessel name is never used to
 match, and the MMSI route is already taken, since the union takes ASTD, astdB and EMODnet by MMSI. What is left is to
-say why each has no track: no transponder (a small boat), an STK unit the key leaves without a vid (plan 022 §3), or a
-missed match.
+say why each has no track: no transponder (a small boat), an STK unit the key leaves without a vid (plan 022 §3;
+decision 161's units name 32 of these vids by an identifier), or a missed match.
 
 **The divers (from TODO 67):** 8009 (the register's útgerðarflokkur "Kafarar") and very likely 8008 land only with gear
 23 "Kafari", about 14 t on 152 landing rows, and have no hull. Mark them as divers, through an override that names the
@@ -125,7 +125,8 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
 - plan 031 §3.11's records the track contradicts (2026-10-20): 1,006 landings and 1,482 logbook trip ends whose
   vessel is heard that day but never within 10 km of the port (`$FISHYDATA/archive/2026-10-plan031-step4/results/`);
 - after plan 021 step 6: the foreign hulls (plan 021 step 7, TODO 65) with mids 101843, 147141, 102481 and 102527
-  (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before).
+  (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before); the STK units with no vid
+  are measured whole in decision 161 (TODO 116).
 
 The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
 proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a
@@ -260,8 +261,8 @@ Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** in progress · **needs: maintainer** — decision 115's `vessel_ais_link` is built (decision 129: 655,184
-rows on the redone STK key, with its review list of 3,023 rows), so next is the first vid allocation,
+**status:** in progress · **needs: maintainer** — decision 115's `vessel_ais_link` is built (last 2026-10-18 at e2f741f,
+decision 144: 655,183 rows, with its review list of 3,030 rows), so next is the first vid allocation,
 `allocate_vids(dry_run = FALSE)`, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
 PAME's answer on ASTD (asked 2026-10-17, §6 h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
 plans 008, 016 and 017, decisions 114-115 and 118, TODO 15 and 25
@@ -275,7 +276,8 @@ The 52 links in `overrides/vessel_ais_link.csv` for 50 of the 59 `foreign_vid_ca
 2026-10-17; 9 stay held. Left from that review: 19 of them (class B) rest on the hand-made STK call-sign sheet
 `overrides/stk_foreign_mid_vid.csv`, whose entries want checking; 27 MMSIs carrying a linked hull's IMO would still get
 a second vid (a change to `curate/vessel_ais_link.R`); the STK key is wrong for mids 101843, 147141, 102481 and 102527
-(reused call signs, step 7's redo, TODO 25); foreign vids 3777 (a duplicate of 3756), 4077 and 3792 are not one hull each.
+(reused call signs, step 7's redo, TODO 25); foreign vids 3777 (a duplicate of 3756), 4077 and 3792 are not one hull each;
+decision 161 widens this to 42 call signs, each held by 2-3 foreign landing vids over the same days.
 
 **From TODO 22:** a ping with no vid is still dropped before the voyages: STK by the key's join
 (`sources/stk/convert.R:31`, `curate/ais_ping_union.R:78`), the other feeds by the MMSI periods
@@ -299,7 +301,9 @@ trail ids at both ends. It is of value three ways (maintainer): voyages before m
 track; recorded departures and arrivals to check, or correct, the voyages and stays cut from the track; and a
 departure time (T1) for logbook trips and landings, with its own basis. The comparison is plan 022 §4. The voyages
 it needs were rebuilt on 2026-10-16 (decision 112); it waits for the maintainer's go. Ask 4: whether
-`leidangrar_ctrl`'s windows mark the survey tows of chartered vessels in the trail (plan 022 §5.1).
+`leidangrar_ctrl`'s windows mark the survey tows of chartered vessels in the trail (plan 022 §5.1). Since then
+(decisions 163, 164): `tilk_stk` carries the vessel from 2003 and alone supports 57-77 thousand stays a year in
+2004-2007; `trail_multi_rectime_v` is 99.6 % exact copies; `tilk_stk.trailid` is the line-incentive check's link.
 
 **check:** each stk table besides the trail has a line saying what it holds, its time span and keys, and whether
 fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.parquet` on a sample of vessels, the
@@ -392,12 +396,14 @@ the fishing sample (`gear_part` prototyped for fs).
 
 ## 74. The landings: trip, gear and catch from each period's source (plans 023 and 025), and plan 007's two questions
 **status:** open · **needs: maintainer** — plan 023 §8 asks 1 (who knows what feeds LODS 1 and agf since 2020) and 2
-(the write-up), plan 025 §6 asks 1 (factory-vessel live weight) and 2 (when to build), plan 007 §6 questions 1 and 3
-· **see:** `curate/plans/023-landings-trip-gear-catch.md`, `curate/plans/025-ask-mined.md`,
+(the write-up), plan 025 §6 asks 1 (factory-vessel live weight) and 2 (when to build), plan 007 §6 questions 1 and 3,
+and a DBA or KVOTI's owner to run `$FISHYDATA/archive/2026-10-ivln/get_source_ivln.sql` · **see:** `curate/plans/023-landings-trip-gear-catch.md`, `curate/plans/025-ask-mined.md`,
 `curate/plans/007-landings-merge-agf-lods.md` §6, decision 031, plan 022
 
 Plan 023 has the inventory and the columns of ask, kvoti and agf measured, and nothing built. Its §6, each landing to
-its trip from four sources, builds on plan 022 §4 (TODO 68). Plan 007's merge is built (decision 031), with two
+its trip from five sources, builds on plan 022 §4 (TODO 68). The fifth is the line-incentive check's link of 154,146
+landings to STK events (decision 163), with 9,716 arrivals at another time and 7,446 landings with no logbook trip
+unexplained. Plan 007's merge is built (decision 031), with two
 questions left: a `curate/checks/` report of every trip where agf and lods disagree, since agf wins on disagreement
 and the merge cannot show an agf defect; and keying `link_lid_map.R` and `catch_by_species_trip.R` on
 `(.lid, schema_land)`, not `.lid` alone. Plan 025 has ask mined whole and its design chosen (agf's rows, ask's
@@ -531,10 +537,13 @@ The Oracle database crashed around 2026-10-11 and the reports were loaded by han
 
 The fix is a declared correction in `curate/corrections/`, before the whack filter: a corrected time beside the
 original, and the duplicates flagged. The maintainer: the dump's order may help. Then the AIS chain is rebuilt, with the
-maintainer's go. Other periods with the same signature, a long receipt lag, are to be looked for.
+maintainer's go. Other periods with the same signature are listed (decision 164): 18 mass-delivery days 2007-2026
+(3,745,293 late pings; this reload 927,058, 1-5 days late), a re-import in 2012, stuck-date units in 2016. The dump's
+order is receipt order (20 inversions), so it adds nothing to `recdate`. Which days carry day-shifted copies is not
+measured.
 
 **check:** a corrections entry (`.yml` and `.R`) for the reload; the trail's jumps on 2026-10-11 to 10-14 counted
-before and after; other such periods listed or ruled out.
+before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
 **status:** open · **see:** TODO 38, decisions 067, 069, 078 and 143, plan 031 §3.7 item 12 (what the filter leaves near
@@ -551,6 +560,11 @@ The reload is a labelled test: its receipt lag marks the truth, and is never a f
 - splitting a vessel's pings into chains that are each consistent;
 - zigzags judged over a window;
 - each leg's displacement against its reported speed and course.
+
+Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported (`forward`
+99.7 %, `vmask` 54 %), and 2,780 kept pings are contradicted; 63 % of the supported removals are cross-feed legs within
+0.3 nm, so a feed-aware floor and a two-sided rule are candidates too. A prototype re-run on 2016 and 2026 is in
+`~/R/Pakkar/ramb_wt_whack` (branch `whack-feed-aware-evidence`, uncommitted).
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. TODO 38 keeps the filter's other loose ends.
 
@@ -781,7 +795,8 @@ mid-run. Over the whole trail (vessels with 1,000+ at-sea pings a year): 132,380
 vessel's own ceiling, 8,196 of them out and back, 400-800 vessels a year. A second witness: each ping's reported
 speed against the step's implied speed (two pings both at rest yet far apart), with care, since a harbour-to-harbour
 run with no ping between rightly reports 0 at both ends (most of vid 1417's 31). Positions shared exactly by many
-vessels are berths, not ghosts. The maintainer's idea: a second pass within voyages, for the tests that need one; the
+vessels are berths, not ghosts, but for STK's `U` pings: 115 positions each used by 10 or more units hold 482,668
+of them, regional port markers, not the vessel's place (decision 164). The maintainer's idea: a second pass within voyages, for the tests that need one; the
 per-vessel ceiling and the speed check need no voyage, so they can go in the first pass with no circularity.
 Scripts: `$FISHYDATA/archive/2026-10-todo98/scripts/` (fan1417.R, voyage_gaps_ceiling.R).
 
@@ -943,9 +958,12 @@ deliberately skipped object as finished: orri, uv and fs_afli were skipped altho
 in them (done by hand with `run_dump(..., resume = TRUE)`). It should count a schema unfinished whose overview lists
 an object as skipped that its script no longer skips. And `fs_afladagbok.takt_json_form` (6,912 Taktikal JSON forms
 with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 and CHAR only.
+The overview rows of `stk.trail` (20,681,877 of 303,795,653 rows) and `afli.sjalfvirkir_maelar` are still stale after
+9ef7596 (decision 164): recompute or re-dump. `simalinu` was dumped through RJDBC with `dirty = true` (decision 162):
+a server run replaces it.
 
 **check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
-(its JSON whole) or left out in a decision.
+(its JSON whole) or left out in a decision; every partitioned table's overview row equals its files.
 
 ## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
 **status:** open · **needs: maintainer** — whether the page's column tables go and its other sections stay ·
@@ -1018,8 +1036,47 @@ where the whole weight is computed; or a decision says why not.
 
 The maintainer's principle (2026-10-21): each value from the most upstream layer that holds it, when it states its
 unit and keeps more or known precision; a resend or an in-house edit, being later and deliberate, wins. Scoped the same
-evening: afli's electronic logbook has three layers (sent, loaded, edited), in-house edits are common (13 %) and
-resends rare; `kvotix`, `vor` and `dwstg` are not dumped and seem to warrant it. Proposed: one adapter per layer into
+evening: afli's electronic logbook has three layers (sent, loaded, edited), in-house corrections are common (12 % of
+stations, records of 2003-2018) and resends rare; the five schemas found missing were dumped that evening (phase 0, decision 162). Proposed: one adapter per layer into
 the grammar's tables, the choice per field group only in `curate/`, the layer recorded beside the basis.
+The sent layer's adapter is built on branch `claude/plan037-afli-sent-1f2f63`, not merged (its key: ask i).
 
 **check:** the asks answered in the plan; its phases built or the plan parked or abandoned in its header.
+
+## 116. STK units with no vid: from the archive study to the key
+**status:** open · **needs: maintainer** — decision 161's D1-D10, and whether "not before plan 021 step 6" means step 4
+(the vids come from step 4) · **see:** decision 161, `$FISHYDATA/archive/2026-10-stk-unlinked-units/`, plan 021 step 7,
+TODO 25, 65
+
+14,709 key units (27.9 M pings) have no vid, each in one outcome; mostly foreign, named by the global id. They are not
+ready for the vessel list: no route leads from an STK unit to a hull, and the ledger is empty. After the first
+allocation (TODO 65) the hulls of 6,360 of them have vids; their units link only at a `once` redo. Before it, the
+classification becomes a `once` check on the crosswalk's keys, and Claude drafts the review lists (D2, D3, D4, D7, D10)
+for the maintainer to confirm into `overrides/`.
+
+**check:** every key unit with no vid has a row and an outcome in the check; the redo's decision says which got a vid,
+which await review, and which stay `unkeyed` with a reason.
+
+## 117. What the flow takes from STK beyond the position: events, receipt time, `U` positions
+**status:** open · **needs: maintainer** — the decisions of the trail-order study's §12 (1, 2 and 4-7, 9, 10) ·
+**see:** decision 164, `$FISHYDATA/archive/2026-10-stk-trail-order/README.md` §12, decisions 059 and 075,
+`sources/stk/event.R`, `curate/port_call.R`, TODO 68, 88
+
+STK's `I`/`U` rows are events, not track fixes: `U` positions sit at regional port markers and `I` jumps inside their own
+harbour. The events are clean in 2004-2011 and from 2017, noisy in 2012-2016, the junk per unit, so `EVENT_FROM` 2017
+and the dropped jump test rest on 2017 on only. To decide: a `stk_receipt` side table (receipt time, lag and identity
+classes) or nothing; `U` positions kept out of the whack and the track; the event cut as a year, a jump test or a
+per-unit screen; port calls from `tilk_stk` for 2004 to mid-2007; the Oracle reads and the questions for STK.
+
+**check:** each decision recorded, and what is chosen built or declined.
+
+## 118. afli's loaded hauls that never reached `afli.stofn`
+**status:** open · **see:** plan 037 §2.1 (on branch `claude/plan037-afli-sent-1f2f63`), TODO 75, decision 098
+
+Of the records Oracle loaded, 26,695 in afli's `rafr_stofn` never moved to `afli.stofn`: 3,182 deleted, 23,513 not,
+and why is unexplained. The sent layer stages all of them, so once it is read they enter the logbook unless
+explained. Some may be a haul loaded twice; some genuinely missing hauls (as TODO 75's lost trips).
+
+**check:** each of the 23,513 in one outcome (a copy of a moved record, a missing haul, unexplained), and the sent
+layer stages no haul twice.
+

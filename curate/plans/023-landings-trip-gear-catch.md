@@ -79,7 +79,7 @@ Across the sources:
   - ask's `vigtanir`: each weighing's time;
   - LODS: the landing day.
 
-  So a landing gives the end of its trip; the start comes from one of the four sources in §6. The landing's times
+  So a landing gives the end of its trip; the start comes from one of the five sources in §6. The landing's times
   may bound the arrival more tightly than its day.
 - **The gear:**
   - agf's `veidarfaeri`;
@@ -117,11 +117,11 @@ Measured: which vessels and years each covers, and how its trips match its landi
 table, 2003-2017, the trips are matched with STK's, by vessel and dates. That is also a second check of the
 notifications, beside the trail's (plan 022 §4).
 
-## 6. At the end: each landing to its trip, from four sources
+## 6. At the end: each landing to its trip, from five sources
 
 Once plan 022 has checked STK's trip table and put its notifications on vessels, and each period's landings are
 settled (§3), each landing is matched with the trip that ends at it, by vessel, port and time. The trip comes from
-each of four sources:
+each of five sources:
 1. **The logbook trip,** where a logbook records the trip and its departure. It is read from `curated/`, not from the
    logbook schemas:
    - `logbook/trip.parquet`: `T1`, the departure, and `T2`, the return, with their ports. Twin trips are left out,
@@ -131,6 +131,8 @@ each of four sources:
 2. **kvoti's trip tables** (§5), 1991-2017.
 3. **STK's notifications** (`tilk_stk_allt`), 2003-2021.
 4. **The voyages cut from the track,** 2007 on.
+5. **The line-incentive check's own link** (`kvoti.ivln_tilkynning_londun`, 2004-2020, decision 163): the quota
+   system's date-and-port rule names the voyage a landing belongs to, not its time.
 
 The result, for each period and kind of vessel:
 - how often the sources find the same trip for a landing;
