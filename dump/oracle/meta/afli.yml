@@ -1,0 +1,123 @@
+# afli — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-22 by Claude (AI) from the corrections afli_depth_units and afli_end_longitude, TODO 113 and 114, and
+# the dump of 2026-10-16; not yet checked by a person. fs_afli holds copies of these tables (sources/afli/convert.R
+# reads both): its overlay comes with plan 038 (plan 040, phase 2).
+$version: 0.1.0
+name: afli
+tables:
+  - name: stofn
+    details: |
+      One row per station (haul) of the logbook, paper and electronic, 1950 on. Read by sources/afli/convert.R.
+      Positions are whole minutes, ddmm and dddmm, longitude west positive. The start depth is fathoms, except some
+      electronic records of 2010-2012 stored in metres; the end depth of the electronic records is metres (TODO 113).
+    definitions:
+      - name: breidd_dd
+        label: Start latitude, decimal degrees
+        expr: FLOOR(ABS(breidd) / 100) + MOD(ABS(breidd), 100) / 60
+      - name: lengd_dd
+        label: Start longitude, decimal degrees, east positive
+        expr: CASE WHEN lengd > 0 THEN -1 ELSE 1 END * (FLOOR(ABS(lengd) / 100) + MOD(ABS(lengd), 100) / 60)
+        description: As sources/afli/convert.R reads it (-geoconvert.1(lengd * 100)); a negative value comes out east.
+      - name: dypi_m
+        label: Start depth, m
+        expr: dypi * 1.8288
+        description: >-
+          For the stations in fathoms. curate/corrections/afli_depth_units.R finds, vessel by vessel, the ones of
+          2010-2012 already in metres, against GEBCO.
+    constraints:
+      - assert: lengd_lok IS NULL OR lengd_lok <> breidd_lok
+        description: >-
+          The end longitude is not the end latitude. Expected false on 144,368 rows (dump of 2026-10-16), all electronic
+          stations: 2008 235, 2009 1,251, 2010 47,455, 2011 69,185, 2012 26,216, 2013-2017 26. There lengd_lok is a copy
+          of breidd_lok; the longitude sent is in the logbook's message (correction afli_end_longitude, decision 158).
+      - assert: >-
+          AVG(CASE WHEN dypi BETWEEN 1 AND 1500 AND dypi_lok BETWEEN 1 AND 2700 THEN dypi_lok END) > 1.5 * AVG(CASE WHEN dypi BETWEEN 1 AND 1500 AND dypi_lok BETWEEN 1 AND 2700 THEN dypi END)
+        description: >-
+          A scale check: where both depths are recorded (electronic records, 2008 on), the end depth is metres beside a
+          start depth in fathoms, so its mean is about 1.83 times the start's (1.86 from 2013 on the dump of
+          2026-10-16). Oracle's loader converted the sent start depth to fathoms but not the end depth (TODO 113).
+    columns:
+      - name: breidd
+        label: Start latitude
+        constraints:
+          - assert: MOD(ABS(breidd), 100) < 60
+            description: >-
+              ddmm: the last two digits are whole minutes. Expected false on 1,864 rows (dump of 2026-10-16), whose
+              minutes are 60 or more.
+        details: |
+          ddmm, four digits (Oracle's comment), north; whole minutes, about 1.8 km. 258 values are not four digits
+          (dump of 2026-10-16), down to -6545. In decimal degrees: breidd_dd.
+      - name: lengd
+        label: Start longitude
+        constraints:
+          - assert: MOD(ABS(lengd), 100) < 60
+            description: >-
+              dddmm: the last two digits are whole minutes. Expected false on 2,276 rows (dump of 2026-10-16).
+        details: |
+          dddmm, west positive (Oracle's comment: "Vestur lengd"); whole minutes, about 0.8 km of longitude at 65 N.
+          48,411 values are negative (dump of 2026-10-16), read as east. In decimal degrees: lengd_dd.
+      - name: breidd_lok
+        label: End latitude
+        details: As breidd.
+      - name: lengd_lok
+        label: End longitude
+        details: |
+          As lengd, but on 144,368 electronic stations of 2008-2017 a copy of breidd_lok (the table's first assertion;
+          correction afli_end_longitude).
+      - name: dypi
+        label: Start depth
+        type: number(quantity)
+        units: fathom; m on some electronic records of 2010-2012
+        constraints:
+          - assert: AVG(CASE WHEN dypi BETWEEN 1 AND 1500 THEN dypi END) < 150
+            description: >-
+              A scale check: the mean is 112 fathoms on the dump of 2026-10-16; in metres it would be near 200.
+        details: |
+          Fathoms (Oracle's comment: "Dýpi í föðmum"), converted by Oracle's loader from the metres the electronic
+          logbooks send, except on 37,196 stations of 2010-2012 whose app sent the value as is: metres. The yearly mean
+          rises from 93 fathoms in 2009 to 127 in 2011 and returns to 98 in 2013 (dump of 2026-10-16).
+          Evidence: correction afli_depth_units (the vessel-by-vessel test against GEBCO); TODO 113;
+          $FISHYDATA/archive/2026-10-xml-oracle-map/.
+      - name: dypi_lok
+        label: End depth
+        type: number(quantity)
+        units: m
+        details: |
+          Metres on the electronic records: the loader did not convert it as it converted dypi (974,721 records; TODO
+          113). curate/corrections/afli_depth_units.R multiplies it by 1.8288 where it converts dypi, so curated z2 is
+          1.83 times the depth sent on 946,197 stations (TODO 113, open).
+          Evidence: the end depth against GEBCO is metres in every app (TODO 113); the table's second assertion.
+      - name: vedags
+        label: Fishing day
+        time_zone: UTC
+        details: A day; every value is at midnight (dump of 2026-10-16).
+  - name: afli
+    details: |
+      One row per station and species. afli is the ungutted weight in kg. Where the catch was logged gutted, it is
+      round(gutted x 1.25), for every species, and labelled recorded in the curated catch (TODO 114). astand says so on
+      434 rows only: on 15,501,866 of 15,674,405 it is empty (dump of 2026-10-16), and the state as logged is only in
+      the logbook's message (AFLI@SLAEGT; rafr_afli for 2.11 M of 4.16 M items).
+    columns:
+      - name: afli
+        label: Catch, ungutted
+        type: number(quantity)
+        units: kg
+        constraints:
+          - assert: astand IS NULL OR astand <> 'S' OR afli = ROUND(magn * 1.25)
+            description: >-
+              A gutted weight is made ungutted x 1.25, rounded. Holds on all 434 rows marked S (dump of 2026-10-16).
+        details: |
+          Evidence: Oracle's comment ("Afli í kg, óslægt"); TODO 114; $FISHYDATA/archive/2026-10-xml-oracle-map/ (item 5).
+      - name: magn
+        label: Catch in the state astand gives
+        type: number(quantity)
+        units: kg
+        details: Evidence - Oracle's comment (astand says whether gutted or not).
+      - name: astand
+        label: State of the catch
+        type: enum
+        values:
+          'S': gutted
+          'O': ungutted
+        details: |
+          Evidence: Oracle's comment ("S = slægt, O = óslægt"). Empty on all but 172,539 rows (dump of 2026-10-16).

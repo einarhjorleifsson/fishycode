@@ -1,0 +1,93 @@
+# stk — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-22 by Claude (AI) from R/stk_trail.R, decision 164 and the correction ais_invalid_position, on the
+# dump of 2026-10-16; not yet checked by a person. Oracle has no comment on the trail's columns.
+$version: 0.1.0
+name: stk
+tables:
+  - name: trail
+    details: |
+      The STK vessel monitoring trail, 2003 on, dumped by year of recdate (the receipt time). Read through stk_trail()
+      (R/stk_trail.R), which converts the radians to degrees and the speed to knots. A row whose in_out_of_harbor is
+      set is a port event, not a fix (decision 164).
+    definitions:
+      - name: lon
+        label: Longitude, decimal degrees
+        expr: poslon * 180 / 3.141592653589793
+      - name: lat
+        label: Latitude, decimal degrees
+        expr: poslat * 180 / 3.141592653589793
+      - name: speed_kn
+        label: Speed, knots
+        expr: speed * 3600 / 1852
+      - name: heading_deg
+        label: Heading, degrees
+        expr: heading * 180 / 3.141592653589793
+    constraints:
+      - assert: poslon IS NULL OR poslat IS NULL OR poslon <> poslat
+        description: >-
+          A position has its longitude apart from its latitude. Expected false on 22,733 rows (dump of 2026-10-16):
+          placeholders, 6,893 at (0, 0) and 3 beside it, 15,822 with both at 56-76 degrees (mostly 2012), 15 at -1
+          degree (2010). The ping union drops them before cleaning (correction ais_invalid_position).
+    columns:
+      - name: poslat
+        label: Latitude
+        type: number(quantity)
+        units: rad
+        constraints:
+          - assert: ABS(poslat) <= 1.5707963268
+            description: >-
+              Radians: within a quarter turn of the equator, as no latitude in degrees of the Icelandic area would be.
+              Holds on every row of the dump of 2026-10-16.
+        details: |
+          Radians, north positive, ten decimals (Oracle declares NUMBER(14,10)), finer than a metre. In degrees: lat.
+          Evidence: R/stk_trail.R; the old dump computed degrees in Oracle the same way.
+      - name: poslon
+        label: Longitude
+        type: number(quantity)
+        units: rad
+        details: |
+          Radians, east positive. 2,401 values lie beyond half a turn (dump of 2026-10-16). In degrees: lon.
+          Evidence: R/stk_trail.R.
+      - name: speed
+        label: Speed over ground
+        type: number(quantity)
+        units: m/s
+        details: In knots, speed_kn. Evidence - R/stk_trail.R (x 3600 / 1852).
+      - name: heading
+        label: Heading
+        type: number(quantity)
+        units: rad
+        details: In degrees, heading_deg. Evidence - R/stk_trail.R.
+        todo: >-
+          991,201 values exceed a full turn (2 pi), up to 12.04 (dump of 2026-10-16); what they are is not established.
+      - name: in_out_of_harbor
+        label: Port event
+        type: enum
+        values:
+          'I': into port
+          'U': out of port
+        details: |
+          Set on 13,147,352 rows (dump of 2026-10-16), empty on the fixes. A row with a code is STK's own port event
+          (decision 164), read by sources/stk/event.R; harborid names the port.
+      - name: harborid
+        label: STK port
+        details: |
+          The port code of a port event, joined to stk_hafnir; also set on 116,422 rows without an event code (dump of
+          2026-10-16).
+      - name: posdate
+        label: Position time
+        time_zone: UTC
+        details: Iceland's clock is UTC. stk_trail() calls it time.
+      - name: recdate
+        label: Receipt time
+        time_zone: UTC
+        details: The time STK received the report; the year partition is its year.
+  - name: stk_hafnir
+    details: STK's ports, the code table of trail.harborid; stad_nr is the port's number elsewhere.
+    columns:
+      - name: harborid
+        constraints: [primary_key]
+relationships:
+  - join: trail.harborid = stk_hafnir.harborid
+    cardinality: many-to-one
+    description: The port of a port event, in STK's own port table.

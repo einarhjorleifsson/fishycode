@@ -640,10 +640,25 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
 }
 
 # The schema in data-dict's format, beside the files: Oracle's comments, types from the files, ranges from the whole
-# file and examples from its first 10,000 rows. Examples are data, so the yaml is handled as the data are.
-.write_data_dict <- function(out_dir, schema, objects, fields, run) {
+# file and examples from its first 10,000 rows (from the whole file where those hold none). Examples are data, so the
+# yaml is handled as the data are. The hand-kept overlay (dump/oracle/meta/<folder>.yml, plan 040) is laid over it by
+# .data_dict_merge() (R/data_dict.R); one that cannot be read is named in the dictionary's todo, and the dictionary is
+# written without it, so a faulty overlay never costs a dump its dictionary. `rewritten` is set by rewrite_data_dict().
+#
+# Two of the spec's errors were the writer's (plan 040 §2, measured 2026-10-22):
+#   S12  a datetime's range written "2003-06-18 17:56:20", or "2003-06-18" at midnight: it is ISO 8601 with Z, or
+#        zoneless where the overlay gives a time_zone; and text examples that YAML 1.2 reads as numbers, unquoted by
+#        R's yaml (1.1) writer ("62E5", "1e5"), which are now always quoted
+#   S07  a column with no examples or range: one with no value in the whole file is kept by name only, with Oracle's
+#        declared type in details and a todo (plan 040, ask f, the reversible option: the next dump with a value
+#        types it again); one whose values all lie past the first 10,000 rows takes its examples from the whole file
+# Returns, invisibly, one row per column: its type, the values the file holds, and whether the first 10,000 rows held
+# one (plan 040 §5).
+.write_data_dict <- function(out_dir, schema, objects, fields, run, overlay = .data_dict_overlay(basename(out_dir)),
+                             rewritten = NULL) {
+  num_type <- "^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|DOUBLE|DECIMAL)"
   dd_type <- function(t) {
-    if (grepl("^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|DOUBLE|DECIMAL)", t)) "number"
+    if (grepl(num_type, t)) "number"
     else if (grepl("^TIMESTAMP", t)) "datetime"
     else if (t == "DATE") "date"
     else if (t == "BOOLEAN") "boolean"
@@ -654,33 +669,74 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
       x <- as.numeric(x); w <- x[!is.na(x)]
       return(if (length(w) && all(w == round(w)) && all(abs(w) < 2^31)) as.integer(x) else x)
     }
+    if (type == "datetime") return(.dd_datetime(x))
+    if (type == "date") return(format(as.Date(x), "%Y-%m-%d"))
     x <- as.character(x)
-    ifelse(nchar(x) > 60, paste0(substr(x, 1, 57), "..."), x)
+    lapply(ifelse(nchar(x) > 60, paste0(substr(x, 1, 57), "..."), x), function(v) structure(v, quoted = TRUE))
   }
+  declared <- function(f) {
+    if (!nrow(f) || is.na(f$data_type)) return("not in Oracle's catalogue")
+    if (f$data_type %in% "NUMBER" && !is.na(f$data_precision))
+      return(sprintf("NUMBER(%s,%s)", f$data_precision, ifelse(is.na(f$data_scale), 0, f$data_scale)))
+    f$data_type
+  }
+  q <- function(...) sprintf('"%s"', gsub('"', '""', paste0(...)))
   con <- .duckdb_quiet()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   written <- objects[objects$status %in% "written", ]
+  # an overview row kept by a resume can name a file no longer there: stk's three views of the whole trail (TODO 110)
+  there <- vapply(seq_len(nrow(written)), function(i) if (isTRUE(written$partitioned[i]))
+    length(Sys.glob(file.path(out_dir, written$name[i], "*", "*.parquet"))) > 0
+    else file.exists(file.path(out_dir, paste0(written$name[i], ".parquet"))), NA)
+  gone <- written$name[!there]
+  written <- written[there, ]
+  seen <- list()
   tables <- lapply(seq_len(nrow(written)), function(i) {
     nm  <- written$name[i]
-    src <- if (written$partitioned[i]) file.path(nm, "*", "*.parquet") else paste0(nm, ".parquet")
+    src <- if (isTRUE(written$partitioned[i])) file.path(nm, "*", "*.parquet") else paste0(nm, ".parquet")
     rp  <- sprintf("read_parquet(%s, hive_partitioning = false)", .sql_string(file.path(out_dir, src)))
     desc <- DBI::dbGetQuery(con, paste("DESCRIBE SELECT * FROM", rp))
     types <- vapply(desc$column_type, dd_type, "")
     ranged <- desc$column_name[types %in% c("number", "datetime", "date")]
-    rng <- if (length(ranged)) DBI::dbGetQuery(con, sprintf("SELECT %s FROM %s", paste(
-      sprintf("min(\"%s\") AS \"min_%s\", max(\"%s\") AS \"max_%s\"", ranged, ranged, ranged, ranged),
-      collapse = ", "), rp)) else NULL
+    # a float's NaN sorts above every number in DuckDB, and a range may not hold one
+    bound <- function(f, cn, ct) if (grepl("^(FLOAT|DOUBLE)", ct)) sprintf("%s(CASE WHEN isnan(%s) THEN NULL ELSE %s END)", f, q(cn), q(cn))
+                                 else sprintf("%s(%s)", f, q(cn))
+    agg <- c(sprintf("count(%s) AS %s", q(desc$column_name), q("n_", desc$column_name)),
+             unlist(lapply(which(desc$column_name %in% ranged), function(j) {
+               cn <- desc$column_name[j]; ct <- desc$column_type[j]
+               c(paste(bound("min", cn, ct), "AS", q("min_", cn)), paste(bound("max", cn, ct), "AS", q("max_", cn)))
+             })))
+    stat <- DBI::dbGetQuery(con, sprintf("SELECT count(*) AS %s, %s FROM %s", q("rows_"), paste(agg, collapse = ", "), rp))
     head <- DBI::dbGetQuery(con, sprintf("SELECT * FROM %s LIMIT 10000", rp))
     fl <- fields[fields$table == nm, ]
     cols <- lapply(seq_len(nrow(desc)), function(j) {
       cn <- desc$column_name[j]; ty <- types[[j]]
       cm <- fl$comments[match(cn, fl$column)]
+      cm <- if (is.na(cm) || !nzchar(cm)) "No comment in Oracle." else cm
+      n  <- as.numeric(stat[[paste0("n_", cn)]])
+      ex <- head[[cn]][!is.na(head[[cn]])]
+      seen[[length(seen) + 1]] <<- data.frame(table = nm, column = cn, type = ty, rows = as.numeric(stat$rows_),
+                                              values = n, in_head = length(ex) > 0)
+      if (n == 0)
+        return(list(name = cn, description = cm,
+                    details = sprintf("Oracle declares %s. No value in this dump, so it is listed by name only.",
+                                      declared(fl[match(cn, fl$column), ])),
+                    todo = "No value in this dump: typed, with examples, when a dump holds one."))
       e <- list(name = cn, type = ty)
-      r <- if (cn %in% ranged && !is.null(rng)) c(rng[[paste0("min_", cn)]], rng[[paste0("max_", cn)]])
-      if (length(r) && !anyNA(r)) e$range <- as.list(show(r, ty))
-      ex <- unique(head[[cn]][!is.na(head[[cn]])])
-      if (length(ex) && ty %in% c("number", "string")) e$examples <- as.list(show(utils::head(ex, 5), ty))
-      e$description <- if (is.na(cm) || !nzchar(cm)) "No comment in Oracle." else cm
+      if (cn %in% ranged) {
+        r <- c(stat[[paste0("min_", cn)]], stat[[paste0("max_", cn)]])
+        if (length(r) == 2 && !anyNA(r)) e$range <- as.list(show(r, ty))
+      }
+      if (ty %in% c("number", "string")) {
+        ex <- unique(ex)
+        if (ty == "number") ex <- ex[is.finite(as.numeric(ex))]
+        if (!length(ex))
+          ex <- DBI::dbGetQuery(con, sprintf("SELECT DISTINCT %s AS v FROM %s WHERE %s IS NOT NULL%s LIMIT 5",
+                                             q(cn), rp, q(cn), if (ty == "number") sprintf(" AND isfinite(%s)", q(cn))
+                                             else ""))$v
+        if (length(ex)) e$examples <- as.list(show(utils::head(ex, 5), ty))
+      }
+      e$description <- cm
       e
     })
     e <- list(name = nm, source = list(parquet = src),
@@ -696,9 +752,22 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
                                    schema, run$dumped, run$script, substr(run$commit, 1, 7)),
              details = paste("Written by dump_oracle_schema() (R/dump_oracle.R, plan 018). Descriptions are Oracle's own",
                              "table and column comments. Ranges cover the whole file; examples come from its first",
-                             "10,000 rows and may hold personal data, so this file is handled as the data are."),
+                             "10,000 rows, or from the whole file where those hold none, and may hold personal data,",
+                             "so this file is handled as the data are. Types, units, code labels, evidence and",
+                             "assertions where they are known come from the overlay",
+                             paste0("dump/oracle/meta/", basename(out_dir), ".yml"), "(plan 040)."),
              tables = tables)
+  if (!is.null(rewritten))
+    dd$details <- paste0(dd$details, sprintf(" Rewritten from the dump's files on %s by rewrite_data_dict(), commit %s.",
+                                             rewritten$at, substr(rewritten$commit, 1, 7)))
+  if (length(gone))
+    dd$todo <- paste0("Written by the dump's overview, but not on disk, so left out: ", paste(gone, collapse = ", "), ".")
+  dd <- tryCatch(.data_dict_merge(dd, overlay), error = function(e) {
+    dd$todo <- paste("The overlay could not be laid over this dictionary:", conditionMessage(e))
+    dd
+  })
   yaml::write_yaml(dd, file.path(out_dir, "_data-dict.yaml"))
+  invisible(do.call(rbind, seen))
 }
 
 # What a resumed run keeps of table `nm`: NULL to dump it again, else its rows, seconds and stamps. A table is kept when

@@ -1,0 +1,160 @@
+# kvoti — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-22 by Claude (AI) from decision 169 (amended) and the dump of 2026-10-22; not yet checked by a person.
+# The labels are Claude's translations of Oracle's code tables (plan 040, ask c).
+$version: 0.1.0
+name: kvoti
+tables:
+  - name: lods_slaegt
+    details: |
+      Read by sources/lods/convert.R: the landings of 1992-2007 (decision 169, amended). One row per landing, species,
+      gear and kind of catch (gerd). Herring, capelin and blue whiting (fteg 30, 31, 34) are in tonnes, every other
+      species in kg; every gerd is summed into the catch.
+
+      Evidence: Oracle's views lods_slaegt_v and lods_slaegt_kg_v multiply magn by 1000 for fteg 30, 31 and 34
+      (raw/oracle/kvoti/_code/all_views.parquet), the comment on thorskigildi says the cod equivalents are computed
+      from kg where magn is in tonnes, and the two assertions below test it on every row; decision 169.
+    definitions:
+      - name: magn_oslaegt_kg
+        label: Ungutted weight, kg
+        expr: magn_oslaegt * CASE WHEN fteg IN (30, 31, 34) THEN 1000 ELSE 1 END
+        description: The ungutted weight in kg, the tonnes of herring, capelin and blue whiting (fteg 30, 31, 34) x 1000.
+      - name: magn_kg
+        label: Gutted weight, kg
+        expr: magn * CASE WHEN fteg IN (30, 31, 34) THEN 1000 ELSE 1 END
+        description: The gutted weight in kg, as magn_oslaegt_kg.
+    constraints:
+      - assert: fteg NOT IN (30, 31, 34) OR magn = 0 OR thorskigildi = 0 OR thorskigildi / magn >= 10
+        description: >-
+          Herring, capelin and blue whiting are in tonnes: their cod equivalents, in kg, are magn x 1000 x a factor of
+          at least 0.01, so at least 10 times magn. Holds on every row of the dump of 2026-10-22 (capelin of 2025 at
+          exactly 10).
+      - assert: fteg IN (30, 31, 34) OR magn = 0 OR thorskigildi / magn <= 12
+        description: >-
+          Every other species is in kg: its cod equivalents are magn x a factor of at most 11.7 (fteg 40, Norway
+          lobster). Holds on every row of the dump of 2026-10-22.
+    columns:
+      - name: magn_oslaegt
+        label: Ungutted weight
+        type: number(quantity)
+        units: kg; t where fteg is 30, 31 or 34
+        details: |
+          In kg: the definition magn_oslaegt_kg. Read as kg throughout until decision 169: the lods-only landings held
+          19,087 kt of the three species to 2006 as 19.1.
+          Evidence: Oracle's comment (magn_oslaegt is in magn's unit), the views lods_slaegt_v and lods_slaegt_kg_v,
+          the table's assertions; decision 169.
+      - name: magn
+        label: Gutted weight
+        type: number(quantity)
+        units: kg; t where fteg is 30, 31 or 34
+        details: |
+          In kg: the definition magn_kg. Evidence as for magn_oslaegt.
+      - name: thorskigildi
+        label: Cod equivalents
+        type: number(quantity)
+        units: kg cod equivalent
+        details: |
+          Computed from kg whatever magn's unit: magn x 1000 x the species' factor where magn is in tonnes.
+          Evidence: Oracle's comment.
+      - name: fteg
+        label: Species
+        type: number(id)
+        details: |
+          The species code. 30 herring, 31 capelin and 34 blue whiting are in tonnes in magn and magn_oslaegt.
+      - name: gerd
+        label: Kind of catch
+        type: enum
+        values:
+          'K': counted against quota
+          'S': not counted against quota
+          'U': undersized fish, taken off the quota count (undersized-fish rule)
+          'L': taken off the quota count under the line-halving rule
+          'H': VS catch, formerly MFRI catch, not counted against the vessel's catch quota (regulation 698/2012)
+          'A': export surcharge taken off again; magn is negative
+          'V': 2 % water deduction in Norwegian spring-spawning herring, blue whiting and mackerel
+          'B': spoiled catch
+        details: |
+          Every gerd is fish and is summed into the catch. At port 159 (exports, to 2013) K is the weight sold abroad
+          with the export surcharge (x 1.15 to about 1998, x 1.10 after), and the negative A row takes it off again, so
+          K + A is the container system's own sold weight (decision 169, amended; $FISHYDATA/archive/2026-10-lods-upstream).
+          The code table kvoti.gerd, in Oracle's words: K "Afli til kvóta"; S "Slægður afli, sem reiknast ekki til
+          kvóta"; U "Afli sem er dreginn frá kvóta vegna undirmálsreglu"; L "Afli sem er dreginn frá kvóta vegna
+          línuhelmingunarreglu"; H "Vs-afli (áður Hafró-afli). Aflinn reiknast ekki til aflamarks skips (Reglugerð nr.
+          698/2012)"; A "Álag vegna útflutnings (magn er mínus tala í færslu þar sem gerd er A)"; V "Vatnsfrádrag 2% í
+          norsk-íslenskri síld, kolmunna og makríl"; B "Skemmdur afli".
+      - name: veidisvaedi
+        label: Fishing area
+        type: enum
+        values:
+          'I': inside the Icelandic limit
+          'U': outside the Icelandic limit
+          'D': Dohrn Bank
+          'R': Reykjanes Ridge, outside
+          'P': Reykjanes Ridge, inside
+          'G': East Greenland
+          'C': Canada
+          'L': Flemish Cap
+          'V': Flemish Cap, division 3L
+          'B': Barents Sea
+          'X': Norwegian zone
+          'Y': Russian zone
+          'O': Faroe Islands
+          'H': Svalbard
+          'J': Jan Mayen
+          'T': EU waters
+          'F': inshore, in the fjords
+          'M': off Snæfellsnes
+          'E': Breiðafjörður, northern area
+          'Q': Breiðafjörður, southern area
+          'S': southern area (dab and witch)
+          'N': northern area (dab and witch)
+          'A': Austurmið
+          'K': Kolluáll
+        details: |
+          Labels from the code table kvoti.veidisv (its texti and ath). Oracle's comment on the column names four
+          (I, U, R, D); the table holds 24, of which 13 are used here (dump of 2026-10-22).
+      - name: hofn
+        label: Port of landing
+        type: number(id)
+        details: |
+          The port code; 159 is "Gámur/Sigling", catch exported unprocessed in a container or landed abroad, a
+          disposition rather than a port (plan 036), whose port of landing is upprunahofn.
+      - name: upprunahofn
+        label: Port first landed
+        type: number(id)
+        details: For catch exported unprocessed (hofn 159), the port where it was first landed. Evidence - Oracle's comment.
+      - name: l_dags
+        label: Landing day
+        time_zone: UTC
+        details: |
+          A day: every value is at midnight (dump of 2026-10-22). Iceland's clock is UTC.
+  - name: g_skip
+    columns:
+      - name: for_fra
+        label: Where the exported catch came from
+        type: enum
+        values:
+          'S': straight into a container, or sailed abroad with the catch
+          'V': from a processing plant
+          'F': not described in Oracle's comment
+        details: |
+          At port 159, K + A is the weight sold for S (210,919 of 212,265 landing x species keys) and 0 for V (344 of
+          387), whose catch is already in a domestic landing (decision 169, amended).
+          Evidence: Oracle's comment ("V: fór frá vinnslustöð; S: beint í gám eða siglt með aflann").
+        todo: F, on 19,143 of 73,043 rows (dump of 2026-10-22), is not in Oracle's comment; its meaning is not established.
+  - name: gerd
+    details: The code table of lods_slaegt.gerd, with Oracle's Icelandic text in lysing.
+    columns:
+      - name: gerd
+        constraints: [primary_key]
+  - name: veidisv
+    details: The code table of lods_slaegt.veidisvaedi, with Oracle's Icelandic text in texti and ath.
+    columns:
+      - name: veidisvaedi
+        constraints: [primary_key]
+relationships:
+  - join: lods_slaegt.gerd = gerd.gerd
+    cardinality: many-to-one
+    description: The kind of catch, in kvoti's code table.
+  - join: lods_slaegt.veidisvaedi = veidisv.veidisvaedi
+    cardinality: many-to-one
+    description: The fishing area, in kvoti's code table.

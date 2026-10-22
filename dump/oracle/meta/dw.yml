@@ -1,0 +1,63 @@
+# dw — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-22 by Claude (AI) from decision 126 and the corrections aflaskeyti_coordinates, aflaskeyti_weight and
+# aflaskeyti_local_time, on the dump of 2026-10-17; not yet checked by a person.
+$version: 0.1.0
+name: dw
+tables:
+  - name: dw_aflaskeyti
+    details: |
+      The ERS catch messages of 2014-2018, Icelandic, Faroese and Norwegian vessels: one row per haul and species.
+      Read by sources/aflaskeyti/convert.R (plan 026). Its latitude and longitude columns are swapped on every row
+      (correction aflaskeyti_coordinates), some Icelandic vessels report gutted weight as live
+      (aflaskeyti_weight), and Faroese summer times are local (aflaskeyti_local_time).
+    columns:
+      - name: lengd_byrjun
+        label: Start latitude (Oracle names it longitude)
+        constraints:
+          - assert: lengd_byrjun BETWEEN 50 AND 90
+            description: >-
+              The column Oracle calls the start longitude holds the start latitude: every value is 59.8-90.0 degrees
+              north on the dump of 2026-10-17.
+        details: |
+          Decimal degrees, north. The latitude, though named longitude: with the columns swapped,
+          4,716 Icelandic hauls agree with their logbook station to a median of 0.005 degrees, read as named they are
+          53 degrees off (decision 126).
+          Evidence: correction aflaskeyti_coordinates; decision 126.
+      - name: lengd_endir
+        label: End latitude (Oracle names it longitude)
+        constraints:
+          - assert: lengd_endir BETWEEN 50 AND 90
+            description: >-
+              As lengd_byrjun. Expected false on 1 row (dump of 2026-10-17), a Norwegian haul at -64.867.
+        details: As lengd_byrjun.
+      - name: breidd_byrjun
+        label: Start longitude (Oracle names it latitude)
+        details: |
+          Decimal degrees, east positive, -179.5 to 37.2 on the dump of 2026-10-17: the longitude, though named latitude.
+          Evidence: correction aflaskeyti_coordinates.
+      - name: breidd_endir
+        label: End longitude (Oracle names it latitude)
+        details: As breidd_byrjun.
+      - name: afli_kg
+        label: Catch
+        type: number(quantity)
+        units: kg
+        details: |
+          Live weight by every row's note, but some Icelandic vessels report demersal catch gutted (correction
+          aflaskeyti_weight, plan 026 §7). The weight landed in Iceland is 0.98-1.13 of it, never near 1.25 (decision
+          126).
+      - name: afli_athugasemd
+        label: Note on the catch
+        constraints:
+          - assert: afli_athugasemd = 'live weight in kg.'
+            description: Every row says its weight is live weight in kg (dump of 2026-10-17).
+      - name: lengd_hols
+        label: Haul duration
+        type: number(quantity)
+        units: min
+        details: Evidence - Oracle's comment ("Lengd hols í mínútum"). The adapter reads it as the tow's duration.
+      - name: dagsetning_hols_dt
+        label: Haul time
+        details: |
+          Not UTC throughout: Faroese summer times are local (correction aflaskeyti_local_time), so no time zone is
+          declared.

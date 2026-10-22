@@ -1,9 +1,12 @@
 # 040 — What each column means, in its metadata: units, formats, precision and codes, at raw, staging and curated
 
-**status:** proposal — written 2026-10-22 at the maintainer's request; the three layers measured read-only the same
-day (§2); nothing built; ask a answered (§6) · **2026-10-22** · **see:** plans 037, 038 and 039, TODO 51, 110, 111, 113, 114, 119 and 120,
-decisions 029, 109, 111, 165, 166, 169 and 170, `docs/grammar.qmd` (Units), `docs/data-dict.yaml`, `R/dump_oracle.R`,
-`R/write_curated.R`, `curate/corrections/`
+**status:** partly built — phase 1 built 2026-10-22 (decision 176): the overlay's format (`dump/oracle/meta/README.md`),
+the dumper's merge and its S12 and S07 fixes, `rewrite_data_dict()` and `check_data_dict()` (`R/data_dict.R`), overlays
+seeded for kvoti, adb, afli, dw and stk, all tested on clones of the dumps; the real raw dictionaries not yet rewritten
+(the maintainer's go); written 2026-10-22 at the maintainer's request, the three layers measured read-only the same day
+(§2); ask a answered, f implemented in its reversible form (§6) · **2026-10-22** · **see:** plans 037, 038 and 039,
+TODO 51, 110, 111, 113, 114, 119, 120 and 124, decisions 029, 109, 111, 165, 166, 169, 170 and 176, `docs/grammar.qmd`
+(Units), `docs/data-dict.yaml`, `R/dump_oracle.R`, `R/data_dict.R`, `R/write_curated.R`, `curate/corrections/`
 
 Drafted with AI assistance (Claude) on 2026-10-22. The aim and the split of the work are the maintainer's: "the yaml
 metadata, run via the data-dict, and there the unit is important to keep account of"; "also important to keep track
@@ -121,7 +124,9 @@ adapter wrote.
 1. **The convention and its machinery** (now, alongside plans 038 and 039, touching none of their files). The overlay's
    format and place; the dumper's merge, its S12 and S07 faults, the checks at adoption; the overlay seeded with the
    cases of §1, each already established in a decision or correction. Done when the 27 raw files and kvoti's validate,
-   and the seeded `assert`s pass, or fail where §1 says they should, on the current dumps.
+   and the seeded `assert`s pass, or fail where §1 says they should, on the current dumps. **Built 2026-10-22
+   (decision 176)**, on clones: all 28 dictionaries rewritten validate, every seeded check comes out as its
+   description says. The measurements of §5 are in the decision. Left: rewriting the real dictionaries.
 2. **Filled in by plans 038 and 039.** Whoever opens a reader writes its columns' overlay and its adapter's staging
    dictionary, as the rule "tables, not views" is applied (AGENTS.md). Both plans say so in their §8.
 3. **The curated layer** (after plans 038 and 039): §3.3.
@@ -149,7 +154,8 @@ c. The labels' language: English labels with Oracle's Icelandic kept beside them
 d. Whether a failing `assert` blocks a dump's adoption, or is reported and explained after.
 e. Which curated tables need a dictionary: all 105, or all but the checks, whose columns are the check's own.
 f. A column with no values in a dump: drop its `examples` requirement by typing it from Oracle's declaration only, or
-   mark it with a `todo` until it has values.
+   mark it with a `todo` until it has values. **Implemented in the reversible form, to be confirmed (decision 176):**
+   the column is named, not typed, with Oracle's declared type in `details` and a `todo`, until a dump holds a value.
 
 ## 7. The TODO items this plan touches
 

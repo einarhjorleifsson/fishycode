@@ -1,0 +1,175 @@
+# adb — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-22 by Claude (AI) from decisions 165, 170 and 171 and the dump of 2026-10-16; not yet checked by a
+# person. adb is read only from 2025-11-19 (decision 160); the claims below are tested on every row it holds.
+$version: 0.1.0
+name: adb
+tables:
+  - name: fishing_station
+    details: |
+      One row per station of the electronic logbook, the Directorate of Fisheries' records copied into MFRI's codes
+      (decision 171). Read by sources/adb/convert.R from the table, not the view station_v, whose reading of the
+      positions is wrong (decision 165; correction adb_station_v_positions).
+
+      Positions are integers whose digit count gives their form, read by decode_logbook_position() and
+      logbook_position_hundredths() (R/logbook_position.R). Depths are fathoms, converted by curate/logbook.R.
+    definitions:
+      - name: latitude_dd
+        label: Start latitude, decimal degrees
+        expr: >-
+          CASE WHEN ABS(latitude) >= 1000000 THEN FLOOR(ABS(latitude) / 100000) + MOD(ABS(latitude), 100000) / 60000
+          WHEN ABS(latitude) >= 100000 THEN FLOOR(ABS(latitude) / 10000) + MOD(FLOOR(ABS(latitude) / 100), 100) / 60
+          + MOD(ABS(latitude), 100) / 3600
+          WHEN ABS(latitude) >= 10000 THEN FLOOR(ABS(latitude) / 1000) + MOD(ABS(latitude), 1000) / 600
+          WHEN ABS(latitude) >= 1000 THEN FLOOR(ABS(latitude) / 100) + MOD(ABS(latitude), 100) / 60
+          WHEN ABS(latitude) BETWEEN 10 AND 99 THEN ABS(latitude) END
+        description: >-
+          The latitude by its digit count: seven ddmm.mmm, six ddmmss, five ddmm.m, four ddmm, two whole degrees, any
+          other length none. decode_logbook_position() also drops a value beyond 85 degrees, and reads six digits as
+          ddmm.hh on the trips logbook_position_hundredths() names, which one table cannot tell.
+      - name: longitude_dd
+        label: Start longitude, decimal degrees, east positive
+        expr: >-
+          CASE WHEN longitude > 0 THEN -1 ELSE 1 END *
+          CASE WHEN ABS(longitude) >= 1000000 OR ABS(latitude) >= 1000000
+          THEN FLOOR(ABS(longitude) / 100000) + MOD(ABS(longitude), 100000) / 60000
+          WHEN ABS(longitude) >= 100000 OR ABS(latitude) >= 100000 THEN FLOOR(ABS(longitude) / 10000)
+          + MOD(FLOOR(ABS(longitude) / 100), 100) / 60 + MOD(ABS(longitude), 100) / 3600
+          WHEN ABS(longitude) >= 10000 OR ABS(latitude) >= 10000 THEN FLOOR(ABS(longitude) / 1000) + MOD(ABS(longitude), 1000) / 600
+          WHEN ABS(longitude) >= 1000 OR ABS(latitude) >= 1000 THEN FLOOR(ABS(longitude) / 100) + MOD(ABS(longitude), 100) / 60
+          WHEN ABS(latitude) BETWEEN 10 AND 99 AND ABS(longitude) < 100 THEN ABS(longitude) END
+        description: >-
+          A longitude no longer than its latitude is in the latitude's form with its leading zeros dropped (4119 beside
+          a six-digit latitude is 0 41' 19"); a longer one in the form of its own length. Positive is west, so the sign
+          is turned. decode_logbook_position() also drops a value beyond 178 degrees.
+      - name: depth_m
+        label: Start depth, m
+        expr: depth * 1.8288
+      - name: depth_end_m
+        label: End depth, m
+        expr: depth_end * 1.8288
+    columns:
+      - name: latitude
+        label: Start latitude
+        constraints:
+          - assert: ABS(latitude) NOT BETWEEN 100000 AND 999999 OR MOD(ABS(latitude), 100) <= 60
+            description: >-
+              Six digits are ddmmss, so the last two are seconds: at most 60, which Reiknistofa fiskmarkaða's app
+              writes where it rounds up. Expected false on 157 rows (dump of 2026-10-16): the trips whose six digits
+              are ddmm.hh, from Taktikal's app (134) and Marína's (23); none from any other app.
+          - assert: ABS(latitude) NOT BETWEEN 1000 AND 999999 OR MOD(FLOOR(ABS(latitude) / CASE WHEN ABS(latitude) >= 100000 THEN 100 WHEN ABS(latitude) >= 10000 THEN 10 ELSE 1 END), 100) < 60
+            description: >-
+              Four to six digits carry whole minutes in their third and fourth digits, below 60. Expected false on
+              3,183 rows (dump of 2026-10-16), from every app: five digits 1,515, six 756, four 912.
+        details: |
+          The form by digit count, on the dump of 2026-10-16: six digits 556,577 rows (ddmmss; ddmm.hh on Taktikal's
+          trips and 51 of Marína's), four 102,789 (ddmm), two 23,064 (whole degrees), five 7,088 (ddmm.m), seven 790
+          (ddmm.mmm), one, three or eight 321, none 382. Precision: seconds, about 30 m; whole minutes, about 1.8 km;
+          whole degrees, about 111 km. North; 84 values are negative. In decimal degrees: the definition latitude_dd.
+          Evidence: Trackwell's last two digits are never above 59 (0 of 673,010 latitudes), Marína's peak at 15, 30
+          and 45 (decision 165); Oracle's comment ("ddmm") and the view station_v (ddmm.hh) misread the six digits.
+        todo: >-
+          3,183 values of four to six digits have minutes of 60 or more (the second assertion), on every app's trips;
+          whether they are another form or entry errors is not established.
+      - name: longitude
+        label: Start longitude
+        constraints:
+          - assert: ABS(longitude) NOT BETWEEN 100000 AND 999999 OR MOD(ABS(longitude), 100) <= 60
+            description: >-
+              Six digits are ddmmss. Expected false on 175 rows (dump of 2026-10-16), all on the trips whose six digits
+              are ddmm.hh, from Taktikal's app (144) and Marína's (31).
+        details: |
+          The form of the latitude beside it, or of its own length where that is longer (longitude_dd). Positive is
+          west, as station_v read it; 54,967 negative values (dump of 2026-10-16) are mostly a west entered with a
+          minus, which curate/corrections/adb_vs_fs_afladagbok.R restores.
+          Evidence: decision 165; correction adb_vs_fs_afladagbok.
+      - name: latitude_end
+        label: End latitude
+        details: As latitude.
+      - name: longitude_end
+        label: End longitude
+        details: As longitude.
+      - name: depth
+        label: Start depth
+        type: number(quantity)
+        units: fathom
+        constraints:
+          - assert: AVG(CASE WHEN depth BETWEEN 1 AND 1500 THEN depth END) < 150
+            description: >-
+              A scale check, not a proof: the mean depth is 91 fathoms (166 m) on the dump of 2026-10-16; in metres it
+              would be near 170.
+        details: |
+          In metres: depth_m, x 1.8288, as curate/logbook.R converts it (decision 165).
+          Evidence: Oracle's comment ("fathom/ftm"); the same values as fs_afladagbok's ws_veidi, in fathoms, on the
+          stations both hold (decision 165).
+      - name: depth_end
+        label: End depth
+        type: number(quantity)
+        units: fathom
+        details: |
+          In metres: depth_end_m. Its mean is 1.47 times depth's (dump of 2026-10-16).
+          Evidence: Oracle's comment ("fathom/ftm").
+        todo: >-
+          On the trips whose source is TRACKWELL (2019-2024), 56,507 of 94,793 stations with both depths have depth_end
+          1.6-2.1 times depth, as afli's end depth is metres beside a start depth in fathoms (TODO 113); on
+          "Trackwell raun" (2022-2026) 188,727 of 250,381 are within 0.8-1.25. Whether depth_end is metres on those
+          trips is not established; they are before 2025-11-19, outside adb's period in the flow (decision 160).
+      - name: fishing_start
+        label: Start of fishing or towing
+        time_zone: UTC
+        details: Iceland's clock is UTC. Values from year 3 to 2031 are in the table (dump of 2026-10-16).
+      - name: fishing_end
+        label: End of fishing or towing
+        time_zone: UTC
+  - name: trawl_and_seine_net
+    details: |
+      Read by sources/adb/convert.R for the bridle (decision 170). The view trawl_and_seine_net_v converts the headline
+      from feet (x 0.3048) and the bridle and rope from fathoms (x 1.8288).
+    definitions:
+      - name: headline_m
+        label: Headline length, m
+        expr: headline * 0.3048
+      - name: bridle_m
+        label: Bridle length, m
+        expr: bridle * 1.8288
+      - name: rope_m
+        label: Rope length, m
+        expr: rope * 1.8288
+    columns:
+      - name: headline
+        label: Headline length
+        type: number(quantity)
+        units: ft
+        constraints:
+          - assert: AVG(CASE WHEN headline > 0 THEN headline END) > 100
+            description: >-
+              A scale check: a bottom trawl's headline is some 25-60 m, 80-200 feet; the median is 161 on the dump of
+              2026-10-16. In metres the mean would be below 100.
+        details: |
+          Evidence: Oracle's comment ("foot"); the view trawl_and_seine_net_v (x 0.3048); decision 170.
+      - name: bridle
+        label: Bridle length
+        type: number(quantity)
+        units: fathom
+        details: |
+          The trawl's gear_width in staging (sources/adb/convert.R), x 1.8288. Median 44 fathoms (dump of 2026-10-16).
+          Evidence: Oracle's comment ("fathom/ftm"); the view (x 1.8288); decision 170.
+      - name: rope
+        label: Rope length
+        type: number(quantity)
+        units: fathom
+        details: |
+          Evidence: Oracle's comment ("fathom/ftm"); the view (x 1.8288).
+  - name: dredge
+    definitions:
+      - name: width_m
+        label: Dredge width, m
+        expr: width * 0.3048
+    columns:
+      - name: width
+        label: Dredge width
+        type: number(quantity)
+        units: ft
+        details: |
+          Five values on the dump of 2026-10-16: 3 (5,776 rows, the app's default), 2.5, 2, 25 and 0.5. The view
+          dredge_v took a foot as 0.3042 m, a garbled 0.3048 (decision 170).
+          Evidence: fs_afladagbok's ws_plogur comments say "fet" (feet); decision 170. Oracle's comment names no unit.

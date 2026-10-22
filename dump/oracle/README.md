@@ -194,6 +194,22 @@ o <- nanoparquet::read_parquet(fd_raw("oracle_server", "kvoti", "_overview_table
 o[o$status == "failed", c("name", "error")]
 ```
 
+Then the dump's dictionary (plan 040). The dump wrote `_data-dict.yaml` with the overlay
+`dump/oracle/meta/<schema>.yml` of the commit the server ran; rewrite it with the overlay as it is here, from the
+dump's own files, and check it:
+
+```r
+rewrite_data_dict(fd_raw("oracle_server", "kvoti"))
+check_data_dict(fd_raw("oracle_server", "kvoti"))
+```
+
+`check_data_dict()` runs data-dict's `validate-spec`, then `validate-data` on the tables the overlay gives an
+assertion or a code list, and prints each check with its counts. `NEWS` marks one that fails otherwise than its
+description expects (`Expected false on N rows`, `dump/oracle/meta/README.md`): a source that changed a unit, a
+format or a code shows there. Each is explained before the dump replaces the Mac's, as a difference in
+`compare_dumps()` is; whether one blocks the swap is plan 040's ask d. The tool is the binary
+`datadict::dd_install()` puts in R's cache.
+
 ## 12. Schemas added or widened since the last full run
 
 On 2026-10-17 orri and ops_einarhj were widened to the whole schema, and taxon, fs_ufs, uv, rdbes, dw, ufs and

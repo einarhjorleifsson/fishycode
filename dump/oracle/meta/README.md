@@ -52,11 +52,13 @@ Per column, what applies of:
   that depends on another column is said in `units` and given as a table `definition` holding the value in standard
   units (`<column>_kg`, `<column>_m`, `<column>_dd` for decimal degrees). A definition is parsed and type-checked,
   never evaluated, and its name may not be a column's.
-- **Codes.** A short set as `type: enum` with `values` a map from code to an English `label`. Oracle's Icelandic
+- **Codes.** A short set of text codes as `type: enum` with `values` a map from code to an English label (an enum
+  is text: a numeric code stays `number(id)`). Oracle's Icelandic
   comment stays the column's `description`, written by the dump; the code table's own Icelandic text goes in
   `details`. A code whose meaning is not established gets a label saying so and a `todo`. An enum is a test: a value
   outside the map fails the data check (D04). A long or changing list (species, gear, ports) stays `number(id)`, with
-  a `relationship` to its code table.
+  a `relationship` to its code table. A `many-to-one` relationship needs the code table's key marked
+  (`constraints: [primary_key]` on its column, in this file), or the spec refuses it (S06).
 - **Positions.** The stored form and sign in `details` (decimal degrees, ddmm.mm, a ddmmss integer; west positive or
   negative; datum where stated), the precision (whole minutes, about 1.8 km of latitude; hundredths of a minute, about
   18 m; seconds, about 30 m), per period where it changes, and the decoding as a `definition`.
@@ -65,11 +67,15 @@ Per column, what applies of:
 - **`label`** where the name is cryptic, in English.
 - **Evidence** in `details`, a line starting `Evidence:`: Oracle's comment, a view or trigger (`raw/oracle/<schema>/_code/`),
   a data test with its date and counts, a decision or correction.
-- **`constraints`** with an `assert` for each claim the data can test, in data-dict's expression language: one table
-  at a time, row-level or aggregate. Each has a `description` with the claim and its result on the dump it was tested
-  on. A known defect is bounded in the assert (by period, code or source) so that the assert passes on the dump it was
-  tested on, and a failing assert at adoption is news; where it cannot be bounded within the table, the description
-  gives the count expected to fail.
+- **`constraints`** with an `assert` for each claim the data can test, in data-dict's expression language
+  (https://data-dict.tidyverse.org/expressions.html): one table at a time, row-level or aggregate, a date
+  written as a quoted string (`vedags >= '2013-01-01'`), no `PI()` or `SIGN()`. Each has a `description` with the
+  claim and its result on the dump it was tested on. Two kinds:
+  - a claim about form or unit, which holds on every row (`ABS(poslat) <= 1.5707963268`: radians), or a scale check
+    over the table (`AVG(...) < 150`: fathoms, not metres), said to be one in its description, never a proof;
+  - a known defect, checked by the claim the data should meet, so that it fails on the defect's rows. Its
+    description says **`Expected false on N rows`**, with the dump's date, and `check_data_dict()` reads that count:
+    a different count, an enum value outside the map, or an assertion that cannot be evaluated is news.
 - **`todo`** for what is not established. It is reported as a warning (S31), never an error.
 
 ## What the merge does

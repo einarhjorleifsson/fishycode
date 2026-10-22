@@ -1180,19 +1180,16 @@ each layer's landings and kilograms in one outcome per period (plan 039 §9); or
 header.
 
 ## 124. What each column means, in its metadata: units, formats, precision and codes (plan 040)
-**status:** open · **needs: maintainer** — plan 040's asks b-f (§6; a answered: `dump/oracle/meta/`) and the go for
-phase 1 · **see:**
-`curate/plans/040-metadata-at-three-layers.md`, TODO 51, 110, plans 037-039
+**status:** open · **needs: maintainer** — the go to rewrite the real raw dictionaries, and plan 040's asks b-f (§6;
+a answered, f implemented in its reversible form) · **see:**
+`curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, TODO 51, 110, plans 037-039
 
-None of the three layers records units, position formats, precision or code meanings for a machine (measured
-2026-10-22): the 27 raw dictionaries type every number plain `number` and carry no `units` (289 of 7,181 numeric
-columns name a unit in Oracle's comment; 21 files fail the spec, mostly the dumper's datetime format), staging has no
-dictionary at all, and `docs/data-dict.yaml` covers 41 of 105 curated tables with no units and 223 spec errors.
-Every unit, format and code defect found so far (decisions 164, 165, 169, 170; the afli, aflaskeyti and STK
-corrections) was stated upstream only in free text. Plan 040 proposes a hand-kept overlay per Oracle schema, merged
-by the dumper and checked at each dump's adoption; a dictionary beside each adapter's output; and the curated
-dictionary made valid and carried in the files. Phase 1 runs alongside plans 038 and 039, which fill the overlay as
-they open each reader; the curated layer follows them.
+Phase 1 is built (decision 176): the overlay `dump/oracle/meta/<schema>.yml`, merged by the dumper and by
+`rewrite_data_dict()`, and checked at a dump's adoption by `check_data_dict()` (`dump/oracle/README.md` §11). On
+clones of the dumps all 28 raw dictionaries validate once rewritten (3 do as written), and every seeded check (kvoti,
+adb, afli, dw, stk; agf, ask and vessel from decision 175) comes out as its description says. The real
+`raw/oracle/*/_data-dict.yaml` are not rewritten yet. Phase 2 is inside plans 038 and 039; the curated layer after
+them.
 
-**check:** the asks answered in the plan; the raw dictionaries validate with their overlays and their asserts run at
-adoption; or the plan parked or abandoned in its header.
+**check:** the real raw dictionaries rewritten and validating; the asks answered in the plan; or the plan parked or
+abandoned in its header.
