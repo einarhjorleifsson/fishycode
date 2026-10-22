@@ -597,7 +597,7 @@ The intervals between pings at sea grow offshore, where only satellites receive 
 
 So a fixed threshold mostly flags coverage. A gap flag should judge a gap against the intervals usual for its distance
 offshore or area, its receiver and its year. The trail has no distance offshore, so this is flow work. Until then, the
-vessel overview's QC lane keeps its 30 min threshold.
+vessel overview's lane of AIS gaps at sea (its activity record, decision 178) keeps its 30 min threshold.
 
 **check:** a plan or decision with the grouping that explains the intervals, measured over several years, and a gap
 flag on the fixes that the overview's lane reads.
@@ -758,8 +758,8 @@ The demo (`$FISHYDATA/exports/vessel_demo_2018-06/`) was tested from `file://` i
 only. Safari cannot be driven without `safaridriver --enable`. Under MFRI's data policy (gagnastefna), confidential data
 leave MFRI only on an agreed basis.
 
-The bundle was built before the haul layer left the map and before the map showed voyages only (2026-10-20): rerun
-`Rscript products/exports/vessel_demo.R` before it is sent.
+Rebuilt on 2026-10-22 from 6b69323 with the page of decisions 177-179, and checked over HTTP in Chromium; the key is
+unchanged (the same 30 vessels, numbers and windows). Rebuild it again if the page changes before it is sent.
 
 **check:** the demo opens and loads a vessel in Safari and in Edge on Windows, and the agreement it went under is
 written in decision 153.
@@ -1126,7 +1126,7 @@ Built in code and tested on a scratch store (decisions 173, 174): `ramb::rb_add_
 the witnesses staged (`stk_voyage`, `quota_trip`, `phone_call`) and the flow step `trip_reconciled` →
 `curated/link/trip_reconciled.parquet`, ranked AIS, own, STK, quota, phone at both ends, the landing last for the
 return. Seven new targets are outdated beside the 29 of the pending rebuild; `tar_make_isolated()` builds them with
-it. What reads the reconciled times downstream is decision 174's open end.
+it. What reads the reconciled times downstream is decision 174's open end; the vessel overview is one reader (TODO 125).
 
 **check:** every trip in `curated/logbook/trip.parquet` (twins left out) has a row in `trip_reconciled.parquet`, with a
 departure and a return, time and port or `none`, each with its basis, and every disagreement between witnesses counted
@@ -1178,3 +1178,18 @@ raw dictionaries were rewritten with it on 2026-10-22: all valid, every check of
 dw, stk; agf, ask, vessel) as described. Phase 2 is inside plans 038 and 039; the curated layer after them.
 
 **check:** the asks answered in the plan; or the plan parked or abandoned in its header.
+
+## 125. The vessel overview after the rebuild: the reconciled trip, the landing's origin, two checks left
+**status:** open · **see:** plan 030 §7, decisions 169, 173, 174, 177-179, TODO 119, 121
+
+Left by the overview's session of 2026-10-22.
+- **The reconciled trip, when `curated/link/trip_reconciled.parquet` is built** (TODO 121):
+  - each trip's departure and return, time and port, with the witness that gave each, beside the logbook's T1 and T2;
+  - the trip's band on the chart from them.
+- **The landing's port of origin**, lods' `hid_origin` (decision 169), on the landing lines once the landings rebuild
+  carries it (TODO 119).
+- **Not checked in the browser pane**, which was hidden: Play, and the map's tooltip. A person should try both.
+- **On hold (maintainer):** a hexagon colour scale pinned across vessels, as the History axis is.
+
+**check:** the trip table and chart show `trip_reconciled`'s times and ports with their witness; the landing lines show
+`hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.

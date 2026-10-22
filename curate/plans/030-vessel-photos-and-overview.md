@@ -435,3 +435,70 @@ g. **The register panel until plan 028 step 6:** `vessel.parquet` for today and 
 h. **The R service, DuckDB in the browser, or both** (§4.1, measured 2026-10-18)? Recommended: both, the R service
    serving the vessel's rows and DuckDB-WASM in the page reading them. **Answered 2026-10-18: both** (decision 137,
    amended).
+
+## 7. As built: from the parquet files to the page
+
+*Written 2026-10-22 by Claude (AI-assisted), at the maintainer's request, as the app stands after decisions 177-179. A
+person has not yet checked it. The decisions hold the reasons and the measurements.*
+
+### 7.1 The parquet files, read where they lie in `$FISHYDATA`
+
+- **The AIS track:** `curated/ais/trail/year=…/month=…/*.parquet`, about 585 M fixes split by month. Each fix carries
+  its voyage, its port call, its logbook trip and haul (`.tid`, `.sid`), its phase, `fishing_flow` and `hours` (its time
+  step to the next fix, the effort).
+- **Voyages and port calls:** `curated/ais/voyage.parquet` and `port_call.parquet`.
+- **The logbook:** `curated/logbook/` trip, station, fishing_sample, gear, station_window (each haul's windows) and
+  catch, and lid_map (which logbook trip each landing came from).
+- **The landings:** `curated/landing/` landings and catch.
+- **The register:** `curated/vessel/vessel.parquet`, and its history to 2023-12-19.
+- **The photos:** `staging/mbl/photo.parquet`, and the image files it lists.
+
+### 7.2 The R service: `server.R` and `api.R`, on 127.0.0.1:8790 only
+
+- One DuckDB connection reads the parquet files in place. Nothing is copied or written.
+- The browser can only ask fixed questions (the endpoints), with a vessel number, a year range or a count. It never
+  sends SQL.
+- Each answer is one vessel's rows, filtered by `vid` and cut to an allowlist of columns. Kennitala, addresses and
+  phones are never in it, and `check.R` tests that (decision 139).
+- A few answers are prepared on the server:
+  - the vessel list for the search, built once at the start;
+  - each haul's windows from `station_window` (decision 177);
+  - for the History tab, the fishing hours per month, and per month in cells of about 1 km (decision 179).
+- Each answer goes back as one small compressed parquet file, 17 KB to 1.7 MB for a vessel-year. A version header lets
+  the page say plainly when the server is older than it.
+
+### 7.3 The page loads them: `www/index.html` and `www/app.js`
+
+- The service sends the page with the Mapbox token filled in. The libraries are pinned versions from jsdelivr:
+  DuckDB-WASM, deck.gl and uPlot.
+- When a vessel and its years are chosen, the page fetches their answers together. DuckDB-WASM in the browser holds
+  each one as a table.
+- SQL in the page joins them: trips with their hauls and catch, hauls with their windows, and landings with their
+  trips through lid_map.
+- The track goes into typed arrays: time, position, speed, fishing flag, hours, and the haul each fix carries. Running
+  counts, each trip's span and each haul's pings are worked out once.
+
+### 7.4 The views, all in the browser
+
+- **One shared state:** the time window, the chosen trips and hauls, the open panels and the map's layers.
+- **Where (deck.gl):** the graphics card filters the pings to the window, so moving it sends nothing to the server.
+  - The layers, each a checkbox: points, line, fishing hours in hexagons (coloured by decade on a log scale), and the
+    whole track.
+  - No logbook position is ever drawn (decision 156).
+- **When (uPlot):** the speed chart, with trip bands, haul bars and landing triangles, and the activity record's lanes
+  folded under it. A drag or a click on it sets the window.
+- **The cards and the table:** the window's activity, and the trip table, each trip with its landings under it. A trip
+  opens into its hauls, and a haul into every field of its record (decision 178).
+- **The History tab:** effort and catch per month on an axis pinned from 2007-09, and hexagons for the months chosen
+  (decision 179).
+- **The server is asked again** only for another vessel or other years. A window move redraws in a median of 17 ms on
+  the busiest vessel-year (147,432 pings).
+- **The address holds the state**, so a reload or a copied link opens the same view.
+
+### 7.5 The demo bundle: `products/exports/vessel_demo.R`
+
+- It takes the same endpoints, narrowed to a window, writes their answers into script files, and puts them beside the
+  same page (decision 153).
+- It opens with a double-click, with no server. The vessels are anonymised, and the key to them is kept outside the
+  folder.
+- It was rebuilt in `$FISHYDATA/exports/` on 2026-10-22 from 6b69323. The key is unchanged.
