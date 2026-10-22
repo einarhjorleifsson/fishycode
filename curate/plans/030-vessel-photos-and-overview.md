@@ -4,9 +4,10 @@
 photo index (decision 138), rebuilt on the whole set (decision 145); step 2's scraper written, a new scrape closed by
 mbl's bot check (decision 141); steps 3 and 4, the R service and the page, in two modes, Overview and Quality control
 (decisions 139, 140, 143); step 5, the 1,589 missing photos fetched again by their logged URLs (decision 145); asks
-a-h answered (decision 137); since then a demo that opens from a file (153), the map on the AIS voyages alone (156), and
-hauls drawn from the flow's windows with the layout of 2026-10-22 (177)
-· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137-141, 143, 145, 153, 156 and 177,
+a-h answered (decision 137); since then a demo that opens from a file (153), the map on the AIS voyages alone (156),
+hauls drawn from the flow's windows with the layout of 2026-10-22 (177), and the two modes merged into one view of panels
+that fold, with a search box and links to copy (178)
+· **2026-10-18** · **see:** plan 028 (§3.6, §7), plan 001 (§3, §4), decisions 049, 105, 130, 132, 137-141, 143, 145, 153, 156, 177 and 178,
 `sources/mbl/register.R`, `dump/vessels/faroe.R`, `products/publish.R`; outside this repo `~/stasi/fishyshiny/` and the
 maintainer's `ShinyApps/asjo/` (the map's model, §4.2)
 

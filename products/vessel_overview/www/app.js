@@ -1,15 +1,13 @@
-// The vessel overview page's script (plan 030 step 4; decisions 140 and 143). One vessel at a time, over a range of
-// years. The R service sends each panel's rows once, as parquet; DuckDB-WASM holds them, and every interaction runs
-// here with no further request (decision 137, ask h).
+// The vessel overview page's script (plan 030 step 4; decisions 140, 143, 177 and 178). One vessel at a time, over a
+// range of years. The R service sends each panel's rows once, as parquet; DuckDB-WASM holds them, and every interaction
+// runs here with no further request (decision 137, ask h).
 //
-// Two modes on one page (maintainer, 2026-10-18: "the user could be a quality control person or just a layman"):
-// - Overview, in plain words: a summary, the map, the speed chart with trips, hauls and landings marked, and a trip
-//   table that opens into its hauls.
-// - Quality control: the same, and every record with its basis; an event lane on the chart's time axis (logbook trip,
-//   setting, fishing, hauling, landing, port calls, voyages, the flow's fishing flag, AIS gaps); per-trip warnings
-//   where the logbook's hauls and the pings' fishing flag disagree; and the pings of the window.
-// The map, the chart, the lane and the slider share one time window. The map's layers follow the maintainer's asjo app
-// (plan 030 §4.2). Internal use only: the photos are a newspaper's.
+// One view (decision 178; maintainer, 2026-10-22), where two modes were (decision 143): Where | When always on top, then
+// panels that fold, the summary first and the details on expanding. The fishing is the subject, the vessel its context:
+// the speed chart with its activity record (the lanes), the window's activity, hauls and landings, the trips with their
+// records and checks, and the window's pings. The map, the chart, the lanes, the cards and the slider share one time
+// window. The map's layers follow the maintainer's asjo app (plan 030 §4.2). Internal use only: the photos are a
+// newspaper's.
 import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm';
 
 const $ = (id) => document.getElementById(id);
@@ -25,10 +23,11 @@ const dstr = (ms) => (ms == null ? '' : new Date(ms).toISOString().slice(0, 10))
 const esc = (x) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sqlstr = (x) => `'${String(x).replace(/'/g, "''")}'`;
 const num = (x, d = 0) => (x == null || x === '' || Number.isNaN(x) ? '' : Number(x).toLocaleString('en-GB', { maximumFractionDigits: d }));
+const many = (n, one, more = `${one}s`) => `${num(n)} ${n === 1 ? one : more}`;
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-22.1';
+const API = '2026-10-22.2';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -36,10 +35,6 @@ function banner(html) {
   b.innerHTML = html;
 }
 window.addEventListener('unhandledrejection', (e) => banner(`Something went wrong: ${esc(e.reason?.message || e.reason)}`));
-
-// The choices stay in view under the header as the page scrolls
-const stickTop = () => { $('p-controls').style.top = `${document.querySelector('header').offsetHeight}px`; };
-stickTop(); window.addEventListener('resize', stickTop);
 
 // DuckDB-WASM ---------------------------------------------------------------------------------------------------------
 status('starting DuckDB');
@@ -107,18 +102,20 @@ function lower(a, x, key = (v) => v) {
 }
 
 // State ----------------------------------------------------------------------------------------------------------------
-const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null, haul: null,
+const S = { vid: null, name: '', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null, haul: null, haulOpen: false,
             stations: [], hauls: [], wins: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
             history: false, about: {}, assumed: null, assumedBase: null, bg: 'none', ready: false };
 // The user's choices (maintainer, 2026-10-18: "if one selects a new vessel - all the users selections besides the new
 // vessels should be preserved"). The page starts on these defaults; from then on each choice the user makes is the
-// default for the next vessel. They are in the address too, so a reload or a shared link keeps them. Mode and tab are
-// S.mode and the open tab.
+// default for the next vessel. They are in the address too, so a reload or a shared link keeps them, with the open tab.
 //   years: 'latest' (the vessel's last year on AIS), 'all', or 'from-to'
 //   win: 'last' (the last n trips and the current one), 'month', 'range' (the loaded years), or 'custom' (a to b)
 //   bg: what the map shows outside the window ('none', 'hex', 'track')
 //   pts: whether the window's pings are drawn as points, or only the line between them
-const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, bg: 'none', pts: true };
+//   open: the panels open (PANELS); the rest are folded to their bars
+const PANELS = ['lanes', 'activity', 'hauls', 'landings', 'trips', 'pings'];
+const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, bg: 'none', pts: true,
+            open: new Set(['activity', 'hauls', 'landings', 'trips']) };
 // The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
 // a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
 // using the logbooks"). The previous logbook trip's gear only where that landing records none ("if a logbook is missing
@@ -136,7 +133,7 @@ function gearAfter(t) {   // { gear, landing: the day of the landing that gives 
 }
 const gearAt = (t, recorded) => (recorded ? { gear: recorded, recorded: true } : gearAfter(t) || { gear: '' });
 const gearWords = (g) => (g.landing ? `${g.gear}, as the landing of ${g.landing} records it` : `${g.gear}, assumed as on the previous logbook trip`);
-const qc = () => S.mode === 'qc';
+const isOpen = (k) => P.open.has(k);
 
 // The map ------------------------------------------------------------------------------------------------------------
 const INFERNO = [[0, 0, 4], [40, 11, 84], [101, 21, 110], [159, 42, 99], [212, 72, 66], [245, 125, 21], [250, 193, 39], [252, 255, 164]];
@@ -166,6 +163,9 @@ const basemap = TILES
     })
   : null;
 $('attrib').textContent = TILES ? TILES[1] : 'no basemap: MAPBOX_TOKEN is not set';
+// the pings' colours, named on the map: what a colour means is never left to be guessed
+$('speedlegend').innerHTML = `speed 0<span class="ramp" style="background:linear-gradient(to right, ${
+  INFERNO.map((c) => `rgb(${c.join(',')})`).join(', ')})"></span>12+ knots`;
 
 // The map's shape is fixed, the same for every vessel, mode and window; only the zoom changes (maintainer, 2026-10-18:
 // "the aspect ratio of the 'leaflet' should be fixed across vessel ... the zoom level is the only thing that can
@@ -251,7 +251,7 @@ function getTooltip({ layer, index, object }) {
     const i = layer.id === 'last' ? tr.n - 1 : index;
     if (!(i >= 0 && i < tr.n)) return null;   // a pick left from a track no longer loaded
     const head = layer.id === 'last' ? `<b>${esc(S.name)} (${S.vid})</b><br>last position heard<br>` : '';
-    const what = tr.fishing[i] ? (qc() ? 'fishing_flow' : 'fishing') : (tr.port_call_id[i] >= 0 ? 'in port' : 'at sea');
+    const what = tr.fishing[i] ? 'fishing (fishing_flow)' : (tr.port_call_id[i] >= 0 ? 'in port' : 'at sea, not fishing');
     const g = gearAt(tr.t[i], tr.gear[i]);
     const gear = g.gear ? `, ${esc(g.recorded ? g.gear : gearWords(g))}` : '';
     return { html: `${head}<b>${fmt(tr.t[i])} UTC</b><br>${num(tr.speed[i], 1)} knots, heading ${num(tr.heading[i])}°<br>` +
@@ -261,7 +261,7 @@ function getTooltip({ layer, index, object }) {
     const pts = object.points || [];
     return { html: `<b>${fmtHours(cellHours(pts))} fishing hours</b><br>${pts.length} fishing pings in this hexagon (${hexKm()} km)` };
   }
-  if (layer.id === 'track' && object) return { text: qc() ? `voyage ${object.voyage_id}` : 'the track between ports' };
+  if (layer.id === 'track' && object) return { text: `the track between ports (voyage ${object.voyage_id})` };
   return null;
 }
 // The map's frame for a time span. A vessel that fished in it is framed on its fishing, not its steaming (maintainer,
@@ -303,14 +303,12 @@ function fitTo(a, b, glide = false) {
 // The speed chart ----------------------------------------------------------------------------------------------------
 let plot = null, lanes = null, cursorFromMap = false;
 const SYNC = uPlot.sync('vessel');
-// In Quality control the speed chart and the event lane share one left gutter (axis and its label), so a time falls at
-// the same x in both. In Overview there is no lane: the gutter holds only the speed's values, the legend names the unit,
-// and the data get the width (maintainer, 2026-10-22: "make margin smaller so there more space for viewing the data")
-const GUTTER = { size: 118, labelSize: 18, labelFont: '600 11px system-ui', font: '11px system-ui' };
-const PADDING = [8, 28, null, null];   // a fixed right margin: the chart's last time label no longer widens only the chart
-const speedAxis = () => (qc() ? { ...GUTTER, label: `knots (cap ${SPEED_CAP})` }
-                              : { size: 24, gap: 3, ticks: { size: 4 }, font: GUTTER.font });
-const padding = () => (qc() ? PADDING : [8, 18, null, 2]);
+// The speed chart and the activity record's lanes share one narrow left gutter, the speed's values only, so a time falls
+// at the same x in both and the data get the width (maintainer, 2026-10-22: "make margin smaller so there more space
+// for viewing the data"). The lanes carry their names inside; the legend names the unit.
+const FONT = '11px system-ui';
+const AXIS = { size: 24, gap: 3, ticks: { size: 4 }, font: FONT };
+const PADDING = [8, 18, null, 2];   // a fixed right margin, the same for both, for the last time label
 const inside = (arr, t, maxDur) => { for (let i = lower(arr, t - maxDur, (d) => d.a); i < arr.length && arr[i].a <= t; i++) if (arr[i].b >= t) return arr[i]; return null; };
 const tripAt = (t) => inside(S.trips, t, 120 * DAY);
 
@@ -351,30 +349,25 @@ function drawMarks(u) {
   ctx.restore();
 }
 const PHASE_WORDS = { set: 'setting the gear', tow: 'towing', haul: 'hauling', jig: 'jigging', logbook: 'gear in the water' };
-function describe(t) {   // what is going on at time t, in the mode's words
+function describe(t) {   // what is going on at time t, in words, with the records' ids in brackets
   const tp = tripAt(t), hw = inside(S.wins, t, S.wins.maxDur || 0), hl = hw?.h, out = [`${fmt(t)} UTC`];
-  if (qc()) {
-    if (tp) out.push(`trip ${tp.tid} (${tp.schema}) ${fmt(tp.T1)} – ${fmt(tp.T2)}`);
-    if (hl) out.push(`haul ${hl.sid}: ${hw.phase} window ${fmt(hw.a)} – ${fmt(hw.b)} (${hw.basis}), ${hl.gear}, ${num(hl.kg)} kg`);
-  } else {
-    if (tp) out.push(`on a fishing trip, ${dstr(tp.T1)} to ${dstr(tp.T2)}: ${tp.n} hauls, ${num(tp.kg / 1000, 1)} t`);
-    if (hl) out.push(hw.phase === 'day' ? `a haul on this day (${hl.gear}; the logbook gives its date only), ${num(hl.kg)} kg`
-      : `${PHASE_WORDS[hw.phase] || 'gear in the water'} (${hl.gear}), ${num(hl.kg)} kg caught in this haul`);
-    const g = !tp && !hl && gearAfter(t);
-    if (!tp && !hl) out.push(g ? `no logbook yet; gear ${gearWords(g)}` : 'no fishing trip in the logbook at this time');
-  }
-  const g = qc() && !tp && gearAfter(t);
-  if (g) out.push(`after the last logbook trip (${S.assumed.tid}): gear ${gearWords(g)}`);
+  if (tp) out.push(`on a logbook trip, ${dstr(tp.T1)} to ${dstr(tp.T2)}: ${tp.n} hauls, ${num(tp.kg / 1000, 1)} t (trip ${tp.tid}, ${tp.schema})`);
+  if (hl) out.push(`${hw.phase === 'day' ? 'a haul on this day, the logbook gives its date only' : PHASE_WORDS[hw.phase] || 'gear in the water'}: ` +
+                   `${hl.gear || 'gear not known'}, ${num(hl.kg)} kg (haul ${hl.sid}, ${hw.phase} window, ${hw.basis})`);
+  const g = !tp && gearAfter(t);
+  if (g) out.push(`no logbook yet; gear ${gearWords(g)} (after trip ${S.assumed.tid})`);
+  else if (!tp && !hl) out.push('no logbook trip at this time');
   return out.join(' · ');
 }
 // The chart's speed is capped at 15 knots (maintainer, 2026-10-18: vessels rarely go above 12-15 knots, and fishing is
 // well below that): a ping above it is drawn at the cap, and the hover text gives its real speed
 const SPEED_CAP = 15, PLOT_H = 230;
-// In Overview the chart is as tall as the map beside it, less the When panel's other lines, so the two end together: the
-// width the narrower gutter saved went to Where, which made the map taller (maintainer, 2026-10-22). Never under PLOT_H,
-// and PLOT_H in Quality control, where the lanes make When the taller, or on one column.
+const HOVER_HINT = $('hoverinfo').textContent;   // the page's own words, while no time is under the cursor
+// The chart is as tall as the map beside it, less the When panel's other lines, so the two end together: the width the
+// narrower gutter saved went to Where, which made the map taller (maintainer, 2026-10-22). Never under PLOT_H, and
+// PLOT_H on one column.
 function plotH() {
-  if (qc() || !$('p-map').offsetParent || matchMedia('(max-width: 1000px)').matches) return PLOT_H;
+  if (!$('p-map').offsetParent || matchMedia('(max-width: 1000px)').matches) return PLOT_H;
   return Math.max(PLOT_H, $('p-map').offsetHeight - ($('p-chart').offsetHeight - $('plot').offsetHeight));
 }
 // The speed line is drawn trip by trip (maintainer, 2026-10-18: "the when time-speed graph should be segmentized by trip
@@ -401,11 +394,11 @@ function makePlot() {
   const tr = S.tr;
   plot?.destroy();
   plot = new uPlot({
-    width: $('plot').clientWidth || 600, height: plotH(), legend: { show: false }, padding: padding(),
+    width: $('plot').clientWidth || 600, height: plotH(), legend: { show: false }, padding: PADDING,
     scales: { x: { time: true }, y: { range: [0, SPEED_CAP] } },
     series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false }, gaps: tripGaps },
              { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false, gaps: tripGaps }],
-    axes: [{ font: GUTTER.font }, speedAxis()],
+    axes: [{ font: FONT }, AXIS],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
     hooks: {
       drawClear: [drawTrips], draw: [drawMarks],
@@ -416,7 +409,7 @@ function makePlot() {
         setWindow(a, b, 'plot');
       }],
       setCursor: [(u) => {
-        if (u.cursor.left == null || u.cursor.left < 0) { $('hoverinfo').textContent = ''; return; }
+        if (u.cursor.left == null || u.cursor.left < 0) { $('hoverinfo').textContent = HOVER_HINT; return; }
         $('hoverinfo').textContent = describe(u.posToVal(u.cursor.left, 'x') * 1000);
         if (!cursorFromMap && u.cursor.idx != null) setHover(u.cursor.idx, 'plot');
       }],
@@ -436,12 +429,15 @@ function clickToSelect(u) {
   });
 }
 
-// The event lane (Quality control) -------------------------------------------------------------------------------------
+// The activity record: one lane per kind of record on the chart's time axis, folded under the chart until opened ---------
+// Each lane is named inside itself, above its bars, so the chart and the lanes keep one narrow gutter and nothing is
+// drawn over the data. A lane's colour is its kind's everywhere on the page.
 const LANES = [
-  ['logbook trip', 'trip', '#1f6feb88'], ['set window', 'set', '#9aa5b1'], ['tow, haul, jig', 'fish', '#2e7d32'],
-  ['day (date only)', 'day', '#a5d6a7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'call', '#5d6b78'],
-  ['voyage', 'voy', '#4a7bd0'], ['fishing_flow', 'flow', '#d62728'], ['AIS gap at sea', 'gap', '#111827'],
+  ['logbook trip', 'trip', '#1f6feb88'], ['haul: setting', 'set', '#9aa5b1'], ['haul: towing, hauling, jigging', 'fish', '#2e7d32'],
+  ['haul: date only', 'day', '#a5d6a7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'call', '#5d6b78'],
+  ['voyage', 'voy', '#4a7bd0'], ['fishing (fishing_flow)', 'flow', '#d62728'], ['AIS gap at sea', 'gap', '#111827'],
 ];
+const LANE_H = 20;
 function laneLists() {   // every lane as intervals {a, b} sorted by a, with its longest interval for the search
   const tr = S.tr, L = { trip: S.trips, set: [], fish: [], day: [], land: [], call: [], voy: [], flow: [], gap: [] };
   // the hauls' windows as the flow made them (station_window), one lane for the set, one for the attended phases
@@ -471,11 +467,13 @@ function laneLists() {   // every lane as intervals {a, b} sorted by a, with its
 }
 function drawLanes(u) {
   const { ctx } = u, { left, top, width, height } = u.bbox, x0 = u.scales.x.min * 1000, x1 = u.scales.x.max * 1000;
-  const rowH = height / LANES.length;
+  const rowH = height / LANES.length, px = devicePixelRatio || 1;
   ctx.save(); ctx.beginPath(); ctx.rect(left, top, width, height); ctx.clip();
-  LANES.forEach(([, key, colour], r) => {
-    const arr = S.lanes[key], y = top + r * rowH + rowH * 0.2, h = rowH * 0.6;
+  ctx.font = `${10 * px}px system-ui`; ctx.textBaseline = 'top'; ctx.textAlign = 'left';   // uPlot leaves its axes' 'right'
+  LANES.forEach(([label, key, colour], r) => {
+    const arr = S.lanes[key], y = top + r * rowH + rowH * 0.5, h = rowH * 0.42;
     ctx.fillStyle = r % 2 ? '#fafbfc' : '#f1f3f5'; ctx.fillRect(left, top + r * rowH, width, rowH);
+    ctx.fillStyle = '#5d6b78'; ctx.fillText(label, left + 4 * px, top + r * rowH + 1 * px);
     for (let i = lower(arr, x0 - arr.maxDur, (d) => d.a); i < arr.length && arr[i].a <= x1; i++) {
       const d = arr[i];
       if (d.b < x0) continue;
@@ -489,14 +487,13 @@ function drawLanes(u) {
 }
 function makeLanes() {
   lanes?.destroy(); lanes = null;
-  if (!qc() || !S.tr) return;
+  if (!isOpen('lanes') || !S.tr) return;
   const tr = S.tr, n = LANES.length;
   lanes = new uPlot({
-    width: $('lanes').clientWidth || 600, height: 22 * n + 30, legend: { show: false }, padding: PADDING,
+    width: $('lanes').clientWidth || 600, height: LANE_H * n + 8, legend: { show: false }, padding: [4, PADDING[1], 4, PADDING[3]],
     scales: { x: { time: true, min: S.win[0] / 1000, max: S.win[1] / 1000 }, y: { range: [0, n] } },
     series: [{}, { show: false }],
-    axes: [{ show: false }, { ...GUTTER, label: 'events', splits: () => LANES.map((_, i) => n - i - 0.5), values: () => LANES.map((l) => l[0]),
-                              grid: { show: false }, ticks: { show: false } }],
+    axes: [{ show: false }, { ...AXIS, splits: () => [], values: () => [], grid: { show: false }, ticks: { show: false } }],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false }, y: false },
     hooks: {
       draw: [drawLanes],
@@ -511,7 +508,7 @@ function makeLanes() {
         const t = u.posToVal(u.cursor.left, 'x') * 1000, r = Math.min(n - 1, Math.floor(u.cursor.top / (u.bbox.height / devicePixelRatio / n)));
         const [label, key] = LANES[r], d = inside(S.lanes[key], t, S.lanes[key].maxDur);
         const what = !d ? 'nothing' : key === 'trip' ? `trip ${d.tid}, T1 ${fmt(d.T1)} – T2 ${fmt(d.T2)}`
-          : d.h ? `haul ${d.h.sid} ${d.phase} window, ${fmt(d.a)} – ${fmt(d.b)} (${d.basis})` : key === 'land' ? `landing on ${dstr(d.a)}, ${num(d.d.t, 2)} t`
+          : d.h ? `haul ${d.h.sid}, ${d.phase} window ${fmt(d.a)} – ${fmt(d.b)} (${d.basis})` : key === 'land' ? `landing on ${dstr(d.a)}, ${num(d.d.t, 2)} t`
           : key === 'gap' ? `no ping for ${num((d.b - d.a) / 6e4)} min` : `${fmt(d.a)} – ${fmt(d.b)}${d.id != null && key !== 'flow' ? ` (id ${d.id})` : ''}`;
         $('hoverinfo').textContent = `${describe(t)} · lane ${label}: ${what}`;
       }],
@@ -521,7 +518,7 @@ function makeLanes() {
 }
 function fitPanels() {
   plot?.setSize({ width: $('plot').clientWidth, height: plotH() });
-  lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
+  lanes?.setSize({ width: $('lanes').clientWidth, height: LANE_H * LANES.length + 8 });
 }
 // the chart follows its panel's width, which a scroll bar's coming and going also moves
 new ResizeObserver(() => requestAnimationFrame(fitPanels)).observe($('p-chart'));
@@ -551,14 +548,17 @@ function setWindow(a, b, source) {
   if (source !== 'slider') { $('wfrom').value = a / 1000; $('wto').value = b / 1000; }
   plot.setScale('x', { min: a / 1000, max: b / 1000 });
   lanes?.setScale('x', { min: a / 1000, max: b / 1000 });
-  $('window-label').textContent = `${fmt(a)} – ${fmt(b)} UTC`;
+  const days = Math.round(((b - a) / DAY) * 10) / 10;
+  $('window-label').textContent = `${fmt(a)} – ${fmt(b)} UTC (${num(days, 1)} ${days === 1 ? 'day' : 'days'})`;
+  $('pings-sum').textContent = `${(lower(tr.t, b + 1) - lower(tr.t, a)).toLocaleString('en-GB')} pings`;
   afterRender = () => {
     const ms = performance.now() - t0;
     $('perf').textContent = `redraw ${Math.round(ms)} ms, ${tr.n.toLocaleString('en-GB')} pings loaded`;
     if (onRedraw) { const f = onRedraw; onRedraw = null; f(ms); }
   };
   render();
-  if (qc()) { clearTimeout(pingTimer); pingTimer = setTimeout(() => { S.pingPage = 0; renderPings(); }, 150); }
+  // the window's cards and pings follow it, once it rests
+  clearTimeout(pingTimer); pingTimer = setTimeout(() => { S.pingPage = 0; renderCards(); renderPings(); }, 150);
   if (source === 'plot' || source === 'slider') {
     P.win = 'custom'; P.a = a; P.b = b; markPicked();
     clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 300);   // Safari refuses many replaceState calls in a row
@@ -596,6 +596,7 @@ const hexLegend = (lo, hi) => {
 };
 function showBg() {
   $('hexlegend').style.display = S.bg === 'hex' ? '' : 'none';
+  $('speedlegend').style.display = P.pts ? '' : 'none';
   $('bg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.bg === S.bg));
   $('pts').querySelectorAll('button').forEach((x) => x.classList.toggle('on', (x.dataset.pts === '1') === P.pts));
   render();
@@ -705,12 +706,12 @@ async function selectTrip(tid, schema, opts = {}) {
     d = S.trips.find((x) => x.tid === tid);
     if (!d) return;
   }
-  S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`; S.haul = null;
+  S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`; S.haul = null; S.haulOpen = false;
   showTab('now');
   const [a, b] = [d.a, d.b];   // the trip and the hauls it attends, which the logbook may put outside T1-T2
   if (S.tr) { fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false); }
   if (opts.open) { if (opts.only) S.expanded = new Set(); S.expanded.add(S.selKey); }
-  const row = () => document.querySelector(`#trips tr[data-key="${CSS.escape(S.selKey)}"]`);
+  const row = () => document.querySelector(`#trips tr.trip[data-key="${CSS.escape(S.selKey)}"]`);
   if (opts.open || !row()) {   // from the chart or the History tab: the row on its page
     S.tripPage = Math.floor(tripRows().findIndex((r) => r.key === S.selKey) / TRIPS_PER_PAGE);
     await renderTrips();
@@ -718,21 +719,29 @@ async function selectTrip(tid, schema, opts = {}) {
   if (opts.scroll) row()?.scrollIntoView({ block: 'nearest' });
   setHash();
 }
-// One haul of the chosen trip: the window, the map's frame and the chart on it alone, as a trip's row does for the trip
-// (maintainer, 2026-10-22: "if the user selects a single event within a trip the graphs would update accordingly"). Its
-// span is that of its windows (station_window): a date-only haul is its day.
-function selectHaul(h) {
-  S.haul = h.key;
-  document.querySelectorAll('#trips tr.haul').forEach((row) => row.classList.toggle('sel', row.dataset.key === h.key));
+// One haul: the window, the map's frame and the chart on it alone, as a trip's row does for the trip (maintainer,
+// 2026-10-22: "if the user selects a single event within a trip the graphs would update accordingly"), its trip opened
+// in the table and its record opened under its row, every field (decision 178). Its span is that of its windows
+// (station_window): a date-only haul is its day. A second click on the chosen haul closes its record.
+async function selectHaul(h, opts = {}) {
+  if (S.haul === h.key && S.haulOpen && !opts.open) { S.haulOpen = false; await renderTrips(); renderCards(); return; }
+  const d = S.trips.find((x) => x.tid === h.tid && x.schema === h.schema);
+  if (d) {
+    S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`; S.expanded = new Set([S.selKey]);
+    S.tripPage = Math.max(0, Math.floor(tripRows().findIndex((r) => r.key === S.selKey) / TRIPS_PER_PAGE));
+  }
+  S.haul = h.key; S.haulOpen = true;
   if (S.tr) {
     const pad = h.dateOnly ? 0 : 30 * 6e4;
     fitTo(h.a - 2 * pad, h.b + 2 * pad); setWindow(h.a - pad, h.b + pad); plot.redraw(false); lanes?.redraw(false);
   }
+  await renderTrips();
+  if (opts.scroll) document.querySelector(`#trips tr.haul[data-key="${CSS.escape(h.key)}"]`)?.scrollIntoView({ block: 'nearest' });
   setHash();
 }
 // A landing no logbook trip claims: the window on the AIS voyage that ended there, else on the landing's days
 function selectLanding(r) {
-  S.trip = null; S.selKey = r.key; S.haul = null;
+  S.trip = null; S.selKey = r.key; S.haul = null; S.haulOpen = false;
   if (S.tr) {
     const near = voyages().filter((w) => w.b >= r.d - DAY && w.b <= r.d + 2 * DAY)
       .sort((x, y) => Math.abs(x.b - r.d - 12 * HOUR) - Math.abs(y.b - r.d - 12 * HOUR))[0];
@@ -742,7 +751,7 @@ function selectLanding(r) {
   markSelected();
 }
 function markSelected() {
-  document.querySelectorAll('#trips tr[data-key]').forEach((row) => row.classList.toggle('sel', row.dataset.key === S.selKey));
+  document.querySelectorAll('#trips tr.trip').forEach((row) => row.classList.toggle('sel', row.dataset.key === S.selKey));
 }
 
 // The years of trail, trips, hauls and landings --------------------------------------------------------------------
@@ -762,8 +771,7 @@ async function loadRange(from, to) {
     FROM trips t LEFT JOIN stations s USING (".tid", schema)
     LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
     WHERE t.T1 IS NOT NULL AND t.T2 IS NOT NULL GROUP BY ALL ORDER BY T1`);
-  S.stations = await rows(`SELECT s.".tid" AS tid, s.schema, s.".sid" AS sid, lon1, lat1, coalesce(lon2, lon1) AS lon2,
-      coalesce(lat2, lat1) AS lat2, epoch_ms(date)::DOUBLE AS d0, epoch_ms(t1)::DOUBLE AS t1, epoch_ms(t2)::DOUBLE AS t2,
+  S.stations = await rows(`SELECT s.".tid" AS tid, s.schema, s.".sid" AS sid, lon1, lat1, lon2, lat2, epoch_ms(date)::DOUBLE AS d0, epoch_ms(t1)::DOUBLE AS t1, epoch_ms(t2)::DOUBLE AS t2,
       epoch_ms(t3)::DOUBLE AS t3, epoch_ms(t4)::DOUBLE AS t4, coalesce(gear, '') AS gear,
       coalesce(target, '') AS target, coalesce(gear_basis, '') AS gear_basis, strftime(date, '%Y-%m-%d') AS day, z1, z2, station_type, duration_m, effort, effort_unit,
       coalesce(c.kg, 0)::DOUBLE AS kg
@@ -823,9 +831,9 @@ async function loadRange(from, to) {
     d.landedT = d.landed.reduce((x, l) => x + l.t, 0);
   }
   const inTable = new Set(S.trips.map((d) => `${d.tid}|${d.schema}`));
-  S.landOnly = L.filter((l) => { const k = linked.get(`${l.lid}|${l.schema}`); return !k || !inTable.has(`${k.tid}|${k.schema}`); })
-    .map((l) => ({ ...l, kind: 'landing', key: `L${l.lid}|${l.schema}`, link: linked.get(`${l.lid}|${l.schema}`) || null }));
-  S.expanded = new Set(); S.tripPage = 0; S.trip = null; S.selKey = null; S.haul = null;
+  S.landRows = L.map((l) => ({ ...l, kind: 'landing', key: `L${l.lid}|${l.schema}`, link: linked.get(`${l.lid}|${l.schema}`) || null }));
+  S.landOnly = S.landRows.filter((l) => !l.link || !inTable.has(`${l.link.tid}|${l.link.schema}`));
+  S.expanded = new Set(); S.tripPage = 0; S.trip = null; S.selKey = null; S.haul = null; S.haulOpen = false;
   if (hasTrail) await buildTrail(); else { S.tr = null; plot?.destroy(); plot = null; lanes?.destroy(); lanes = null; $('window-label').textContent = ''; render(); }
   tripChecks();
   S.lanes = laneLists();
@@ -841,7 +849,8 @@ async function loadRange(from, to) {
   S.tripPage = S.tr ? windowPage() : 0;
   await renderTrips();
   renderSummary();
-  if (qc()) renderPings();
+  renderCards();
+  renderPings();
   setHash();
   status(`${S.from}–${S.to}: ${S.tr ? S.tr.n.toLocaleString('en-GB') + ' pings, ' : 'no AIS, '}${S.trips.length} trips, ` +
          `${S.stations.length} hauls, ${S.landings.length} landings · ${Math.round(performance.now() - t)} ms`);
@@ -981,8 +990,9 @@ const warnings = (d) => {
   if (d.haulsOutside) w.push(`<span class="badge bad">${d.haulsOutside} haul${d.haulsOutside > 1 ? 's' : ''} attended outside T1-T2</span>`);
   if (d.haulsNoFishing) w.push(`<span class="badge warn">${d.haulsNoFishing} haul${d.haulsNoFishing > 1 ? 's' : ''} without fishing pings</span>`);
   if (d.fishOutside > 0) w.push(`<span class="badge warn">${d.fishOutside} fishing pings on no haul of the trip</span>`);
-  return w.length ? w.join('') : '<span class="badge ok">agree</span>';
+  return w.length ? w.join('') : '<span class="badge ok">✓ agree</span>';
 };
+const hasChecks = (d) => d.pings === 0 || d.haulsOutside || d.haulsNoFishing || d.fishOutside > 0;
 
 // The trip table: logbook trips with what they landed, and landings no trip claims, newest first. A click selects a
 // row (window, map, chart) and opens it, closing the others: the trip's logbook records, and what it landed (maintainer,
@@ -1002,8 +1012,15 @@ function windowPage() {
   if (k < 0) k = order.findIndex((r) => r.end <= b);
   return Math.max(0, Math.floor(k / TRIPS_PER_PAGE));
 }
+// A copy-link button (maintainer, 2026-10-22): the address of the view, or of one trip or haul in it, to report a case
+// with. The years in the link are those loaded, so the record is in them.
+const linkBtn = (attrs) => `<button class="linkbtn" ${attrs} title="copy a link to it">🔗</button>`;
+const topCodes = (sp) => (sp || '').split(', ').slice(0, 3).map((x) => x.split(':')[0]).join(', ');
 async function renderTrips() {
-  const order = tripRows(), total = order.length;
+  const order = tripRows(), total = order.length, warn = S.trips.filter(hasChecks).length;
+  $('trips-sum').textContent = `${many(S.trips.length, 'logbook trip')}${S.trips.length ? `, ${num(warn)} with checks` : ''} · ` +
+    `${many((S.landOnly || []).length, 'landing')} without a trip in these years`;
+  if (!isOpen('trips')) return;
   if (!total) { $('trips').innerHTML = '<div class="note">No logbook trip or landing in these years.</div>'; return; }
   const pages = Math.ceil(total / TRIPS_PER_PAGE);
   S.tripPage = Math.max(0, Math.min(S.tripPage, pages - 1));
@@ -1015,35 +1032,28 @@ async function renderTrips() {
     if (sids) for (const r of await rows(`SELECT ".sid" AS sid, string_agg(sid::VARCHAR || ': ' || round(catch)::VARCHAR, ', ' ORDER BY catch DESC) AS sp
         FROM station_catch WHERE ".sid" IN (${sids}) GROUP BY 1`)) species.set(r.sid, r.sp);
   }
-  const ov = !qc();
-  const head = ov
-    ? ['', 'departure', 'return', 'days', 'port', 'hauls', 'logbook (t)', 'landed (t)']
-    : ['', 'trip (.tid)', 'schema', 'T1', 'T2', 'T1 / T2 basis', 'port', 'hauls', 'logbook (t)', 'landed (t)', 'lid_map', 'pings', 'on its hauls', 'fishing pings', 'checks'];
-  const numc = new Set(ov ? [3, 5, 6, 7] : [7, 8, 9, 11, 12, 13]);
+  const head = ['', 'departure', 'return', 'days', 'port', 'hauls', 'logbook (t)', 'landed (t)', 'checks: logbook against pings', ''];
+  const numc = new Set([3, 5, 6, 7]);
   const cell = (c, i) => `<td${numc.has(i + 1) ? ' class="n"' : ''}>${c}</td>`;
   let html = `<table><tr>${head.map((h, i) => `<th${numc.has(i) ? ' class="n"' : ''}>${h}</th>`).join('')}</tr>`;
   for (const d of page) {
-    const isOpen = S.expanded.has(d.key);
+    const isOpenRow = S.expanded.has(d.key);
     let cells;
     if (d.kind === 'trip') {
       const land = d.landed.length ? num(d.landedT, 2) : '';
-      cells = ov
-        ? [dstr(d.T1), dstr(d.T2), num((d.b - d.a) / DAY, 1), esc(d.port), d.n, num(d.kg / 1000, 2), land]
-        : [esc(d.tid), esc(d.schema), fmt(d.T1), fmt(d.T2), `${esc(d.b1 ?? '')} / ${esc(d.b2 ?? '')}`, esc(d.port), d.n,
-           num(d.kg / 1000, 2), land, esc(d.landed.map((l) => l.match).join(', ')), d.pings ?? '', d.onHauls ?? '', d.fishPings ?? '', warnings(d)];
+      cells = [dstr(d.T1), dstr(d.T2), num((d.b - d.a) / DAY, 1), esc(d.port), d.n, num(d.kg / 1000, 2), land, warnings(d),
+               linkBtn(`data-link-trip="${esc(d.key)}"`)];
     } else {   // a landing no logbook trip of the range claims
       const g = !d.gear && gearAfter(d.d);
       const gear = d.gear ? ` ${esc(d.gear)}` : g
         ? ` <span class="badge warn" title="the landing records no gear: the previous logbook trip's (decision 143)">gear assumed ${esc(g.gear)}</span>` : '';
       const why = `<span class="badge">${d.link ? 'logbook trip in another year' : 'no logbook'}</span>${gear}`;
-      cells = ov
-        ? ['', d.day, '', esc(d.port), '', why, num(d.t, 2)]
-        : [why, esc(d.schema), '', d.day, '', esc(d.port), '', '', num(d.t, 2),
-           esc(d.link ? `${d.link.match_type} → ${d.link.tid}` : 'none'), '', '', '', '<span class="badge bad">landing without a trip in these years</span>'];
+      cells = ['', d.day, '', esc(d.port), '', why, num(d.t, 2), '', ''];
     }
-    html += `<tr class="click${d.key === S.selKey ? ' sel' : ''}" data-key="${esc(d.key)}" title="click: show it on the map and chart, with its records">` +
-      `<td><span class="caret" data-open="1">${isOpen ? '▾' : '▸'}</span></td>${cells.map(cell).join('')}</tr>`;
-    if (isOpen) html += `<tr class="sub"><td colspan="${head.length}">${d.kind === 'trip' ? haulTable(d, species) + landedTable(d.landed) : landingOnly(d)}</td></tr>`;
+    html += `<tr class="click trip${d.key === S.selKey ? ' sel' : ''}" data-key="${esc(d.key)}" title="click: show it on the map and chart, with its records">` +
+      `<td><span class="caret" data-open="1">${isOpenRow ? '▾' : '▸'}</span></td>${cells.map(cell).join('')}</tr>`;
+    if (isOpenRow) html += `<tr class="sub"><td colspan="${head.length}">${d.kind === 'trip'
+      ? tripDetails(d) + haulTable(d, species) + landedTable(d.landed) : landingOnly(d)}</td></tr>`;
   }
   html += '</table>';
   if (pages > 1) html += `<div class="pager"><button data-d="-1" ${S.tripPage === 0 ? 'disabled' : ''}>‹ newer</button>
@@ -1051,7 +1061,7 @@ async function renderTrips() {
     <button data-d="1" ${S.tripPage >= pages - 1 ? 'disabled' : ''}>older ›</button></div>`;
   $('trips').innerHTML = html;
   const toggle = (key) => { if (S.expanded.has(key)) S.expanded.delete(key); else S.expanded.add(key); renderTrips(); };
-  $('trips').querySelectorAll('tr.click[data-key]').forEach((row) => {
+  $('trips').querySelectorAll('tr.trip').forEach((row) => {
     const r = page.find((x) => x.key === row.dataset.key);
     row.addEventListener('click', (e) => {
       if (e.target.dataset.open) { toggle(r.key); return; }
@@ -1063,47 +1073,146 @@ async function renderTrips() {
   $('trips').querySelectorAll('tr.haul').forEach((row) => row.addEventListener('click', (e) => {
     e.stopPropagation();
     const h = S.hauls.find((x) => x.key === row.dataset.key);
-    if (h) selectHaul(h);
+    if (h) selectHaul(h).catch((err) => status(String(err)));
   }));
+  bindLinks($('trips'));
   $('trips').querySelectorAll('.pager button').forEach((b) => b.addEventListener('click', () => { S.tripPage += +b.dataset.d; renderTrips(); }));
 }
+// a trip's record: its ids, its times as recorded with their basis, and how its pings meet its hauls
+const tripDetails = (d) => `<div class="note">trip ${esc(d.tid)} (${esc(d.schema)}) · departure ${fmt(d.T1)}${d.b1 ? ` (${esc(d.b1)})` : ''}
+  · return ${fmt(d.T2)}${d.b2 ? ` (${esc(d.b2)})` : ''} · ${d.pings == null ? 'no AIS loaded'
+  : `${d.pings} pings in the trip, ${d.onHauls} on its hauls, ${d.fishPings} fishing`}</div>`;
 const landedTable = (landed) => `<h3>Landed</h3>` + (!landed.length ? '<div class="note">No landing is linked to this trip.</div>'
-  : landed.map((l) => `<div>${esc(l.day)} in ${esc(l.port)}, ${esc(l.gear)}: <b>${num(l.t, 2)} t</b> · ${esc(l.sp)}${qc()
-      ? ` <span class="note">(.lid ${esc(l.lid)}, ${esc(l.schema)}, lid_map ${esc(l.match)})</span>` : ''}</div>`).join(''));
-const landingOnly = (d) => `<h3>Landed</h3><div>${esc(d.day)} in ${esc(d.port)}, ${esc(d.gear)}: <b>${num(d.t, 2)} t</b> · ${esc(d.sp)}${qc()
-    ? ` <span class="note">(.lid ${esc(d.lid)}, ${esc(d.schema)})</span>` : ''}</div>
+  : landed.map((l) => `<div>${esc(l.day)} in ${esc(l.port)}, ${esc(l.gear)}: <b>${num(l.t, 2)} t</b> · ${esc(l.sp)}
+      <span class="note">(landing ${esc(l.lid)}, ${esc(l.schema)}; lid_map ${esc(l.match)})</span></div>`).join(''));
+const landingOnly = (d) => `<h3>Landed</h3><div>${esc(d.day)} in ${esc(d.port)}, ${esc(d.gear)}: <b>${num(d.t, 2)} t</b> · ${esc(d.sp)}
+    <span class="note">(landing ${esc(d.lid)}, ${esc(d.schema)})</span></div>
   <div class="note">${d.link ? `lid_map links it to logbook trip ${esc(d.link.tid)}, outside the loaded years.`
     : 'No logbook trip is linked to this landing, so there are no logbook records to show.'}${!d.gear && gearAfter(d.d)
     ? ` The landing records no gear, so it is assumed to be <b>${esc(gearAfter(d.d).gear)}</b>, as on the previous logbook trip (returned ${esc(S.assumed.day)}).` : ''}</div>`;
 // A haul's window as text: a day as its date; else its phase, start and end, the end's date only where it differs
 const winText = (w) => (w.phase === 'day' ? `day ${dstr(w.a)}`
   : `${w.phase} ${fmt(w.a)} – ${dstr(w.a) === dstr(w.b) ? fmt(w.b).slice(11) : fmt(w.b)}`);
+// the swatch of a haul's main window, the colour its bar has on the chart
+const haulSwatch = (h) => `<span class="sw" style="background:${WIN_COLOUR[(h.att[0] || h.wins[0]).phase] || '#9aa5b1'}"></span>`;
+// A trip's hauls: a row each, in plain words, with its pings; a click frames it and opens its record under it
 function haulTable(d, species) {
-  if (!d.hauls.length) return '<h3>Logbook records</h3><div class="note">No haul is recorded for this trip.</div>';
-  const row = (h, title) => `<tr class="click haul${h.key === S.haul ? ' sel' : ''}" data-key="${esc(h.key)}" title="${title}">`;
-  if (!qc()) {
-    // gear in and out are the haul's windows, as on the chart: a haul with a date alone is that day
-    return `<h3>Logbook records (${d.hauls.length}): click one to see it alone</h3><table><tr><th>gear in</th><th>gear out</th><th>gear</th><th class="n">depth (m)</th><th class="n">catch (kg)</th><th>main species (codes)</th></tr>` +
-      d.hauls.map((h) => `${row(h, 'show this haul alone on the chart and map')}<td>${h.dateOnly ? dstr(h.a) : fmt(h.a)}</td>
-        <td>${h.dateOnly ? '<span class="note">the logbook gives the date only</span>' : fmt(h.b)}</td><td>${esc(h.gear)}</td>
-        <td class="n">${num(h.z1)}</td><td class="n">${num(h.kg)}</td><td>${esc((species.get(h.sid) || '').split(', ').slice(0, 3).map((x) => x.split(':')[0]).join(', '))}</td></tr>`).join('') + '</table>';
-  }
-  return `<h3>Logbook records (${d.hauls.length})</h3><table><tr><th>.sid</th><th>type</th><th>t1</th><th>t2</th><th>t3</th><th>t4</th><th>windows (station_window)</th><th>gear / target</th><th class="n">min</th>
-    <th>effort</th><th>start</th><th>end</th><th class="n">z1-z2</th><th class="n" title="the pings carrying this .sid">pings</th><th class="n" title="fishing pings carrying this .sid, its set window left out">fishing pings</th><th>catch kg by species</th></tr>` +
-    d.hauls.map((h) => `${row(h, 'frame this haul alone')}<td>${h.sid}</td><td>${esc(h.station_type)}</td>
-      <td>${fmt(h.t1)}</td><td>${fmt(h.t2)}</td><td>${fmt(h.t3)}</td><td>${fmt(h.t4)}</td>
-      <td>${h.wins.map((w) => `${esc(winText(w))} <span class="note">${esc(w.basis)}</span>`).join('<br>')}</td>
-      <td>${esc(h.gear) || '<span class="badge warn">none</span>'} ${esc(h.target)}${h.gear_basis && h.gear_basis !== 'recorded' ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}</td>
-      <td class="n">${num(h.duration_m)}</td><td>${num(h.effort, 1)} ${esc(h.effort_unit)}</td>
-      <td>${num(h.lat1, 3)}, ${num(h.lon1, 3)}</td><td>${num(h.lat2, 3)}, ${num(h.lon2, 3)}</td><td class="n">${num(h.z1)}-${num(h.z2)}</td>
-      <td class="n">${h.pings ?? ''}</td><td class="n">${h.fish == null ? '' : h.fish === 0 ? '<span class="badge warn">0</span>' : h.fish}</td>
-      <td>${esc(species.get(h.sid) || '')}</td></tr>`).join('') + '</table>';
+  if (!d.hauls.length) return '<h3>Hauls</h3><div class="note">No haul is recorded for this trip.</div>';
+  return `<h3>Hauls (${d.hauls.length}): click one to see it alone, with its record</h3><table><tr><th></th><th>gear in</th><th>gear out</th>
+    <th>gear</th><th class="n">depth (m)</th><th class="n">catch (kg)</th><th>main species (codes)</th>
+    <th class="n" title="the pings carrying this haul's .sid">pings</th><th class="n" title="of them fishing (fishing_flow), its set window left out">fishing</th><th></th></tr>` +
+    d.hauls.map((h) => {
+      const recOpen = h.key === S.haul && S.haulOpen;
+      return `<tr class="click haul${h.key === S.haul ? ' sel' : ''}" data-key="${esc(h.key)}" title="show this haul alone on the chart and map, with its record">
+        <td><span class="caret">${recOpen ? '▾' : '▸'}</span>${haulSwatch(h)}</td><td>${h.dateOnly ? dstr(h.a) : fmt(h.a)}</td>
+        <td>${h.dateOnly ? '<span class="note">date only</span>' : fmt(h.b)}</td><td>${esc(h.gear) || '<span class="badge warn">no gear</span>'}</td>
+        <td class="n">${num(h.z1)}</td><td class="n">${num(h.kg)}</td><td>${esc(topCodes(species.get(h.sid)))}</td>
+        <td class="n">${h.pings ?? ''}</td><td class="n">${h.fish == null ? '' : h.fish === 0 ? '<span class="badge warn">0</span>' : h.fish}</td>
+        <td>${linkBtn(`data-link-haul="${esc(h.key)}"`)}</td></tr>` +
+        (recOpen ? `<tr class="rec"><td colspan="10">${haulRecord(h, species)}</td></tr>` : '');
+    }).join('') + '</table>';
+}
+// Every field of a haul's record (decision 178): its ids, the logbook's times, the windows the flow gave it, its gear with
+// its basis, its effort, its positions as written (never drawn on the map: decision 156), its depth, pings and catch
+function haulRecord(h, species) {
+  const f = [
+    ['record', `haul ${esc(h.sid)} of trip ${esc(h.tid)} (${esc(h.schema)})${h.station_type ? `, ${esc(h.station_type)}` : ''}`],
+    ['logbook times', ['t1', 't2', 't3', 't4'].map((k) => `${k} ${h[k] == null ? '—' : fmt(h[k])}`).join(' · ')],
+    ['windows (station_window)', h.wins.map((w) => `${esc(winText(w))} <span class="note">${esc(w.basis)}</span>`).join('<br>')],
+    ['gear', `${esc(h.gear) || 'none'} ${esc(h.target)}${h.gear_basis ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}`],
+    ['duration · effort', `${h.duration_m == null ? '—' : `${num(h.duration_m)} min`} · ${h.effort == null ? '—' : `${num(h.effort, 1)} ${esc(h.effort_unit)}`}`],
+    ['positions, as written', `start ${h.lat1 == null ? '—' : `${num(h.lat1, 3)}, ${num(h.lon1, 3)}`} · end ${h.lat2 == null ? '—'
+      : `${num(h.lat2, 3)}, ${num(h.lon2, 3)}`} <span class="note">(the logbook's; never drawn on the map)</span>`],
+    ['depth (m)', h.z1 == null && h.z2 == null ? '—' : `${num(h.z1)}${h.z2 != null ? ` – ${num(h.z2)}` : ''}`],
+    ['pings', h.pings == null ? 'no AIS loaded' : `${h.pings} carrying its .sid, ${h.fish} of them fishing (its set window left out)`],
+    ['catch (kg by species code)', esc(species.get(h.sid) || 'none recorded')],
+  ];
+  return `<dl>${f.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 }
 
-// The pings of the window (Quality control) -----------------------------------------------------------------------------
+// The window's cards: its activity, its hauls and its landings, drawn again once the window rests (decision 178) ---------
+function renderCards() {
+  if (!S.vid) return;
+  // the window; with no AIS in the loaded years, those years
+  const tr = S.tr, [a, b] = tr ? S.win : [Date.UTC(S.from, 0, 1), Date.UTC(S.to + 1, 0, 1)];
+  // a haul's windows and a landing's day are half-open: one that only touches the window's edge is not in it
+  const hs = S.hauls.filter((h) => (h.b > a && h.a < b) || (h.a === h.b && h.a >= a && h.a <= b));
+  const ls = (S.landRows || []).filter((l) => l.d + DAY > a && l.d < b);
+  $('hauls-sum').textContent = `the logbook's stations: ${num(hs.length)}`;
+  $('landings-sum').textContent = `${num(ls.length)}, ${num(ls.reduce((s, l) => s + l.t, 0), 1)} t`;
+  if (isOpen('activity')) renderActivity(a, b, hs, ls);
+  if (isOpen('hauls')) {
+    const shown = hs.slice(0, 300);
+    $('c-hauls').innerHTML = !hs.length ? '<div class="note">No haul in the window.</div>'
+      : `<div class="scroll"><table><tr><th></th><th>start</th><th>end</th><th>gear</th><th class="n">pings</th><th class="n">fishing</th>
+          <th class="n">catch (kg)</th></tr>${shown.map((h) => `<tr class="click haul${h.key === S.haul ? ' sel' : ''}" data-key="${esc(h.key)}"
+          title="haul ${esc(h.sid)}: show it alone, with its record"><td>${haulSwatch(h)}</td><td>${h.dateOnly ? dstr(h.a) : fmt(h.a)}</td>
+          <td>${h.dateOnly ? '<span class="note">date only</span>' : fmt(h.b).slice(5)}</td><td>${esc(h.gear) || '<span class="badge warn">no gear</span>'}</td>
+          <td class="n">${h.pings ?? ''}</td><td class="n">${h.fish == null ? '' : h.fish === 0 ? '<span class="badge warn">0</span>' : h.fish}</td>
+          <td class="n">${num(h.kg)}</td></tr>`).join('')}</table></div>${hs.length > shown.length ? `<div class="note">the first ${shown.length} of ${hs.length}; narrow the window for the rest</div>` : ''}`;
+    $('c-hauls').querySelectorAll('tr.haul').forEach((row) => row.addEventListener('click', () => {
+      const h = S.hauls.find((x) => x.key === row.dataset.key);
+      if (h) selectHaul(h, { open: true }).catch((err) => status(String(err)));
+    }));
+  }
+  if (isOpen('landings')) {
+    $('c-landings').innerHTML = !ls.length ? '<div class="note">No landing in the window.</div>'
+      : `<div class="scroll"><table><tr><th></th><th>day</th><th>port</th><th>gear</th><th class="n">t</th><th>main species</th><th>logbook trip</th></tr>${
+        ls.map((l) => `<tr class="click land" data-key="${esc(l.key)}" title="landing ${esc(l.lid)} (${esc(l.schema)}): show its trip, or the voyage it ended">
+          <td><span class="tri"></span></td><td>${esc(l.day)}</td><td>${esc(l.port)}</td><td>${esc(l.gear)}</td><td class="n">${num(l.t, 2)}</td>
+          <td>${esc(topCodes(l.sp))}</td><td>${l.link ? `<span title="lid_map ${esc(l.link.match_type)}: trip ${esc(l.link.tid)}">linked</span>`
+            : '<span class="badge">none</span>'}</td></tr>`).join('')}</table></div>`;
+    $('c-landings').querySelectorAll('tr.land').forEach((row) => row.addEventListener('click', () => {
+      const l = S.landRows.find((x) => x.key === row.dataset.key);
+      const d = l?.link && S.trips.find((x) => x.tid === l.link.tid && x.schema === l.link.schema);
+      if (d) selectTrip(d.tid, d.schema, { open: true, only: true }).catch((err) => status(String(err)));
+      else if (l) { selectLanding(l); if ((S.landOnly || []).includes(l)) { S.expanded = new Set([l.key]); renderTrips(); } }
+    }));
+  }
+}
+// The window's activity: time at sea and in port by the flow's port calls, its fishing in hours (the trail's effort) and
+// by gear, its hauls and logged catch, its landings, and where the logbook and the pings part
+function renderActivity(a, b, hs, ls) {
+  const tr = S.tr, span = b - a;
+  let pings = 0, fish = 0, fishH = 0, noHaul = 0;
+  const byGear = new Map();
+  if (tr) {
+    const i0 = lower(tr.t, a), i1 = lower(tr.t, b + 1);
+    pings = i1 - i0;
+    for (let i = i0; i < i1; i++) {
+      if (!tr.fishing[i]) continue;
+      fish++; fishH += tr.h[i];
+      const g = tr.gear[i] || 'gear not known';
+      byGear.set(g, (byGear.get(g) || 0) + tr.h[i]);
+      if (!tr.haulKey[i]) noHaul++;
+    }
+  }
+  const calls = (S.portCalls || []).filter((c) => c.b >= a && c.a <= b);
+  const inPort = calls.reduce((s, c) => s + Math.max(0, Math.min(b, c.b) - Math.max(a, c.a)), 0);
+  const voy = voyages().filter((v) => v.b >= a && v.a <= b).length;
+  const trips = S.trips.filter((d) => d.b > a && d.a < b);
+  const kg = hs.reduce((s, h) => s + h.kg, 0), landT = ls.reduce((s, l) => s + l.t, 0);
+  const gears = [...byGear].sort((x, y) => y[1] - x[1]).map(([g, x]) => `${esc(g)} ${num(x, 1)} h`).join(' · ');
+  const hGear = new Map(); for (const h of hs) hGear.set(h.gear || 'no gear', (hGear.get(h.gear || 'no gear') || 0) + 1);
+  const noFish = hs.filter((h) => h.fish === 0).length;
+  const sw = (c) => `<span class="sw" style="background:${c}"></span>`;
+  const rows = [
+    ['time', `${num(span / HOUR, 0)} h: ${num((span - inPort) / HOUR, 0)} h at sea, ${sw('#5d6b78')}${num(inPort / HOUR, 0)} h in port (${many(calls.length, 'port call')}) · ${many(voy, 'voyage')}`],
+    ['AIS', tr ? many(pings, 'ping') : 'no AIS in these years'],
+    ['fishing', tr ? `${sw('#d62728')}<b>${num(fishH, 1)} h</b> (${many(fish, 'ping')})${gears ? `<br><span class="note">by the pings' gear: ${gears}</span>` : ''}` : '—'],
+    ['logbook', `${many(trips.length, 'trip')} · ${sw('#2e7d32')}${many(hs.length, 'haul')}${hGear.size ? ` (${[...hGear].map(([g, n]) => `${num(n)} ${esc(g)}`).join(', ')})` : ''} · <b>${num(kg / 1000, 2)} t</b> logged`],
+    ['landed', `<span class="tri"></span>${many(ls.length, 'landing')} · <b>${num(landT, 2)} t</b>`],
+    ['logbook against pings', !tr ? '—' : (noFish || noHaul) ? [noFish ? `<span class="badge warn">${many(noFish, 'haul')} with no fishing ping</span>` : '',
+      noHaul ? `<span class="badge warn">${many(noHaul, 'fishing ping')} on no haul</span>` : ''].join(' ')
+      : '<span class="badge ok">✓ every haul has fishing pings, every fishing ping a haul</span>'],
+  ];
+  $('c-activity').innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+}
+
+// The pings of the window, every column, when its panel is open ---------------------------------------------------------
 const PINGS_PER_PAGE = 100;
 async function renderPings() {
-  if (!qc()) return;
+  if (!isOpen('pings') || !S.vid) return;
   if (!S.tr) { $('pings').innerHTML = '<div class="note">No AIS in these years.</div>'; return; }
   const [a, b] = S.win, i0 = lower(S.tr.t, a), i1 = lower(S.tr.t, b + 1), total = i1 - i0;
   const P = await rows(`SELECT epoch_ms(time)::DOUBLE AS ms, strftime(time, '%Y-%m-%d %H:%M:%S') AS t, round(lat, 4)::DOUBLE AS lat,
@@ -1122,7 +1231,8 @@ async function renderPings() {
   $('pings').querySelectorAll('.pager button').forEach((x) => x.addEventListener('click', () => { S.pingPage += +x.dataset.d; renderPings(); }));
 }
 
-// About this vessel: a strip of two lines on the Activity tab, the whole on the Vessel tab, in the mode's words ------------
+// The vessel in one line beside the tabs, and in full on the Vessel tab: the fishing is the page's subject, the vessel its
+// context (maintainer, 2026-10-22: "the fishing science is the focus not the vessel per se")
 function renderSummary() {
   const A = S.about || {}, v = V.find((x) => x.vid === S.vid) || {}, tr = S.tr;
   if (!S.vid) return;
@@ -1130,31 +1240,22 @@ function renderSummary() {
     ? `${fmt(tr.t1)} UTC, ${tr.port_call_id[tr.n - 1] >= 0 ? 'in port' : 'at sea'}` : (v.last_ping || 'never');
   const tonnes = S.landings.reduce((s, d) => s + d.t, 0), range = S.from === S.to ? `${S.from}` : `${S.from}–${S.to}`;
   const kind = A.use ? A.use.toLowerCase() : 'vessel';
-  const parts = [A.loa && `${num(A.loa, 1)} m long`, A.built && `built ${A.built}`, A.home && `home port ${A.home}`].filter(Boolean);
-  const warn = S.trips.filter((d) => d.pings === 0 || d.haulsOutside || d.haulsNoFishing || d.fishOutside > 0).length;
-  if (!qc()) {
-    $('strip-info').innerHTML = `<div><b>${esc(S.name || 'vid ' + S.vid)}</b>, a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''}.</div>
-      <div class="note">Last heard on AIS ${esc(lastHeard)} · last landing ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}
-      · ${range}: ${S.trips.length} fishing trips, ${num(tonnes, 1)} t landed${S.assumed ? ` · no logbook since ${esc(S.assumed.day)}: gear ${esc(gearWords(gearAfter(S.assumed.until) || { gear: '—' }))}` : ''}</div>`;
-    $('summary').innerHTML = `<p><b>${esc(S.name || 'vid ' + S.vid)}</b> is a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''}.</p><ul>
-      <li>Last heard on AIS: ${esc(lastHeard)}.</li>
-      <li>Last landing: ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}.</li>
-      <li>In ${range}: ${S.trips.length} fishing trips in the logbook, ${num(tonnes, 1)} t landed in ${S.landings.length} landings.</li></ul>
-      <div class="note">${BUNDLE ? `${esc(BUNDLE)}: the register is left out.` : 'Type, length and home port from the register (history to 2023-12-19).'} Species are shown as codes.</div>`;
-  } else {
-    $('strip-info').innerHTML = `<div>vid ${S.vid}${BUNDLE ? '' : ` · ${esc(v.cs || 'no call sign')} · MMSI ${esc(v.mmsi || '—')} · ${esc(A.use || 'use not in the register')}`}
-      · on the trail ${v.first_year ?? '—'} – ${esc(v.last_ping || '—')} · last landing ${esc(v.last_landing || '—')}</div>
-      <div class="note">${range}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips (${warn} with checks), ${S.stations.length} hauls,
-      ${S.landings.length} landings${S.assumed ? ` · after trip ${esc(S.assumed.tid)}: gear ${esc(gearWords(gearAfter(S.assumed.until) || { gear: '—' }))}` : ''}</div>`;
-    $('summary').innerHTML = `<dl><dt>vid</dt><dd>${S.vid}</dd>${BUNDLE ? '' : `<dt>call sign</dt><dd>${esc(v.cs)}</dd><dt>MMSI</dt><dd>${esc(v.mmsi)}</dd>`}
-      <dt>on the trail</dt><dd>${v.first_year ?? '—'} – ${esc(v.last_ping || '—')}</dd><dt>last landing</dt><dd>${esc(v.last_landing || '—')}</dd>
-      <dt>loaded</dt><dd>${range}: ${tr ? tr.n.toLocaleString('en-GB') : 0} pings, ${S.trips.length} trips, ${S.stations.length} hauls, ${S.landings.length} landings</dd>
-      <dt>trips with checks</dt><dd>${warn} of ${S.trips.length}</dd><dt>usage (register)</dt><dd>${esc(A.use || '—')}</dd>
-      <dt>last logbook trip</dt><dd>${S.assumedBase ? `${esc(S.assumedBase.tid)}, T2 ${esc(S.assumedBase.day)}` : '—'}${S.assumed ? `; to the last landing the gear is the landings' (the last records ${esc(S.assumed.landingGear || 'none')}), the previous trip's ${esc(S.assumed.gear || 'none')}` : ''}</dd></dl>`;
-  }
+  const parts = [A.loa && `${num(A.loa, 1)} m`, A.built && `built ${A.built}`, A.home && `home port ${A.home}`].filter(Boolean);
+  const gear = S.assumed ? ` · no logbook since ${esc(S.assumed.day)}: gear ${esc(gearWords(gearAfter(S.assumed.until) || { gear: '—' }))}` : '';
+  $('vline').innerHTML = `a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''} · last heard on AIS ${esc(lastHeard)} · ` +
+    `last landing ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}${gear}`;
+  $('summary').innerHTML = `<p><b>${esc(S.name || 'vid ' + S.vid)}</b> is a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''}.</p>
+    <dl>${BUNDLE ? '' : `<dt>call sign</dt><dd>${esc(v.cs || '—')}</dd><dt>MMSI</dt><dd>${esc(v.mmsi || '—')}</dd><dt>IMO</dt><dd>${esc(v.imo || '—')}</dd>
+    <dt>local sign</dt><dd>${esc(v.uid || '—')}</dd>`}<dt>vid</dt><dd>${S.vid}</dd>
+    <dt>on AIS</dt><dd>${v.first_year ?? '—'} – ${esc(v.last_ping || '—')}; last heard ${esc(lastHeard)}</dd>
+    <dt>last landing</dt><dd>${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}</dd>
+    <dt>in ${range}</dt><dd>${S.trips.length} logbook trips, ${S.stations.length} hauls, ${num(tonnes, 1)} t landed in ${S.landings.length} landings</dd>
+    <dt>last logbook trip</dt><dd>${S.assumedBase ? `${esc(S.assumedBase.tid)}, returned ${esc(S.assumedBase.day)}` : '—'}${S.assumed
+      ? `; to the last landing the gear is the landings' (the last records ${esc(S.assumed.landingGear || 'none')}), else the previous trip's ${esc(S.assumed.gear || 'none')}` : ''}</dd></dl>
+    <div class="note">${BUNDLE ? `${esc(BUNDLE)}: the register is left out.` : 'Type, length and home port from the register (history to 2023-12-19).'} Species are shown as codes.</div>`;
 }
 
-// Photos (the Vessel tab, and the thumb on the Activity tab), the vessel's basics, the last landing ---------------------
+// Photos (the Vessel tab), the vessel's basics, the last landing ----------------------------------------------------
 let photos = [], photoAt = 0;
 const photoUrl = (p) => `/photo?vid=${S.vid}&file=${encodeURIComponent(p.file)}`;
 function showPhoto() {
@@ -1170,7 +1271,6 @@ function showPhoto() {
 async function renderNow() {
   photos = await rows(`SELECT file, kind, exif_artist, strftime(exif_date, '%Y-%m-%d') AS exif_date FROM photos ORDER BY best DESC, kind, image_no`);
   photoAt = 0; showPhoto();
-  $('thumb').innerHTML = photos.length ? `<img src="${photoUrl(photos[0])}" alt="${esc(S.name || 'vessel ' + S.vid)}">` : '<span>no photo</span>';
   const u = (await rows(`SELECT usage_category AS use, construction_year AS built FROM a_vessel ORDER BY valid_from DESC LIMIT 1`))[0] || {};
   const h = (await rows(`SELECT home_port FROM a_ident ORDER BY valid_from DESC LIMIT 1`))[0] || {};
   const r = (await rows(`SELECT loa FROM a_register`))[0] || {};
@@ -1272,7 +1372,7 @@ async function pageTrips() {
   bindPager('h-trips', 'trip', total, pageTrips);
 }
 
-// Tabs and modes --------------------------------------------------------------------------------------------------------
+// Tabs and the panels that fold ------------------------------------------------------------------------------------------
 const TABS = ['now', 'vessel', 'history'];
 const tabOn = () => TABS.find((t) => $(t).classList.contains('on')) || 'now';
 function showTab(name) {
@@ -1283,33 +1383,71 @@ function showTab(name) {
   setHash();
 }
 for (const t of TABS) $(`tab-${t}`).addEventListener('click', () => showTab(t));
-$('thumb').addEventListener('click', () => showTab('vessel'));
 function relayout() {
   fitPanels();
   if (S.tr) { fitTo(S.win[0], S.win[1]); render(); }
 }
-async function setMode(m) {
-  S.mode = m;
-  document.body.classList.toggle('qc', m === 'qc');
-  $('mode-ov').classList.toggle('on', m === 'ov'); $('mode-qc').classList.toggle('on', m === 'qc');
-  setHash();
-  // while a vessel is still loading, its tables are not all there: the load draws the panels in the new mode itself
-  if (!S.vid || !S.ready) return;
-  lanes?.destroy(); lanes = null;
-  if (S.tr) { makePlot(); plot.setScale('x', { min: S.win[0] / 1000, max: S.win[1] / 1000 }); }   // the gutter is the mode's
-  if (m === 'qc' && S.tr) { makeLanes(); S.pingPage = 0; await renderPings(); }
-  requestAnimationFrame(relayout);
-  renderSummary();
-  await renderTrips();
+// A panel folds to its bar and opens on a click (maintainer, 2026-10-22: "expandable panels allows thing to be more
+// compact"). Which are open is the user's choice, carried to the next vessel and kept in the address. A panel is drawn
+// only while open.
+function showFolds() {
+  document.querySelectorAll('[data-panel]').forEach((el) => el.classList.toggle('closed', !P.open.has(el.dataset.panel)));
 }
-$('mode-ov').addEventListener('click', () => setMode('ov'));
-$('mode-qc').addEventListener('click', () => setMode('qc'));
+function setOpen(k, on) {
+  if (on) P.open.add(k); else P.open.delete(k);
+  showFolds();
+  if (k === 'lanes') { if (on) makeLanes(); else { lanes?.destroy(); lanes = null; } }
+  if (on && S.ready) {
+    if (k === 'pings') { S.pingPage = 0; renderPings(); }
+    if (k === 'trips') renderTrips();
+    if (['activity', 'hauls', 'landings'].includes(k)) renderCards();
+  }
+  requestAnimationFrame(fitPanels);
+  setHash();
+}
+document.querySelectorAll('[data-panel] > .fold-bar').forEach((bar) => bar.addEventListener('click', () => {
+  const k = bar.parentElement.dataset.panel;
+  setOpen(k, !P.open.has(k));
+}));
+
+// Copying a link: to the view, or to one trip or haul in it -----------------------------------------------------------
+function linkTo(extra = {}) {
+  const q = new URLSearchParams(hashFor(S.vid));
+  q.set('years', `${S.from}-${S.to}`); q.delete('trip'); q.delete('haul');
+  for (const [k, v] of Object.entries(extra)) if (v) q.set(k, v);
+  return `${location.href.split('#')[0]}#${q}`;
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+async function copyLink(url, what) {
+  try { await navigator.clipboard.writeText(url); toast(`Link to ${what} copied`); }
+  catch (e) { window.prompt(`Copy the link to ${what}:`, url); }   // a page without clipboard access
+}
+function bindLinks(el) {
+  el.querySelectorAll('[data-link-trip]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation(); copyLink(linkTo({ trip: b.dataset.linkTrip }), `trip ${b.dataset.linkTrip.split('|')[0]}`);
+  }));
+  el.querySelectorAll('[data-link-haul]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const h = S.hauls.find((x) => x.key === b.dataset.linkHaul);
+    if (h) copyLink(linkTo({ trip: `${h.tid}|${h.schema}`, haul: h.key }), `haul ${h.sid}`);
+  }));
+}
+$('copy-view').addEventListener('click', () => {
+  if (!S.vid) return;
+  copyLink(linkTo(S.trip ? { trip: S.selKey, haul: S.haul } : {}), 'this view');
+});
 
 // Choosing a vessel ----------------------------------------------------------------------------------------------------
 async function choose(vid) {
   S.ready = false;
   status(`loading vid ${vid}`);
-  S.vid = vid; S.trip = null; S.selKey = null; S.haul = null; S.tr = null; S.history = false; S.vesselTab = false; render();
+  S.vid = vid; S.trip = null; S.selKey = null; S.haul = null; S.haulOpen = false; S.tr = null; S.history = false; S.vesselTab = false; render();
+  remember(vid);
   const v = V.find((x) => x.vid === vid);
   S.name = v?.vessel || '';
   $('title').textContent = `${S.name || 'vid ' + vid}${S.name ? ' · vid ' + vid : ''}${v?.cs ? ' · ' + v.cs : ''}`;
@@ -1341,8 +1479,9 @@ async function choose(vid) {
 let V = [], sortKey = 'last_ping', sortDir = -1;
 function renderList() {
   const q = $('filter').value.trim().toLowerCase(), trail = $('f-trail').checked, photo = $('f-photo').checked, since = $('f-landed').value;
+  const fq = fold(q);
   let X = V.filter((v) => (!trail || v.last_ping) && (!photo || v.photo) && (!since || (v.last_landing && v.last_landing >= since)) &&
-    (!q || `${v.vid} ${v.vessel} ${v.cs} ${v.mmsi}`.toLowerCase().includes(q)));
+    (!fq || fold(`${v.vid} ${v.vessel} ${v.cs} ${v.mmsi} ${v.imo} ${v.uid} ${v.names}`).includes(fq)));
   const key = (v) => v[sortKey] ?? '';
   X.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * sortDir);
   $('list-count').textContent = `${X.length.toLocaleString('en-GB')} vessels${X.length > 300 ? ' — the first 300 are shown; type to narrow' : ''}. Click one to open it.`;
@@ -1361,13 +1500,100 @@ function renderList() {
 }
 for (const id of ['filter', 'f-trail', 'f-photo', 'f-landed']) $(id).addEventListener('input', renderList);
 $('open-list').addEventListener('click', () => { $('drawer').classList.add('on'); renderList(); $('filter').focus(); });
+
+// The search (maintainer, 2026-10-22: "check what marinetraffic.com does - it allows for search on anything ... and when
+// you type the choices then narrows as the user is typing"): one box for the vid, the name, the call sign, MMSI, IMO, the
+// local sign and the register's former names. An identifier typed whole comes first, then names that start with the
+// text, then names that hold it, then identifiers that start with it, then former names; the most recently heard first
+// within each. Icelandic letters match their plain spelling (þ th, ð d, æ ae, accents dropped), so 'thor' finds Þór.
+function fold(x) {
+  return String(x ?? '').toLowerCase().replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+const tight = (x) => fold(x).replace(/[\s.-]/g, '');
+let SX = [];
+const searchIndex = () => { SX = V.map((v) => ({ v, name: fold(v.vessel), names: fold(v.names), ids: [String(v.vid), tight(v.cs), tight(v.mmsi), tight(v.imo), tight(v.uid)] })); };
+function search(text) {
+  const f = fold(text).trim(), t = tight(text), out = [];
+  if (!f) return out;
+  for (const x of SX) {
+    let rank = 9;
+    if (t && x.ids.some((id) => id && id === t)) rank = 0;
+    else if (x.name.startsWith(f)) rank = 1;
+    else if (x.name.split(/\s+/).some((w) => w.startsWith(f))) rank = 2;
+    else if (x.name.includes(f)) rank = 3;
+    else if (t && x.ids.some((id) => id && id.startsWith(t))) rank = 4;
+    else if (x.names.includes(f)) rank = 5;
+    if (rank < 9) out.push({ ...x, rank });
+  }
+  return out.sort((p, r) => p.rank - r.rank || (r.v.last_ping || '').localeCompare(p.v.last_ping || '') || p.v.vid - r.v.vid);
+}
+function mark(text, f) {   // the text with its first match of f in bold, matched on the folded spelling
+  const s = String(text ?? '');
+  if (!f) return esc(s);
+  let folded = ''; const at = [];
+  for (let i = 0; i < s.length; i++) for (const c of fold(s[i])) { folded += c; at.push(i); }
+  const k = folded.indexOf(f);
+  if (k < 0) return esc(s);
+  const a = at[k], b = at[k + f.length - 1] + 1;
+  return `${esc(s.slice(0, a))}<mark>${esc(s.slice(a, b))}</mark>${esc(s.slice(b))}`;
+}
+// The vessels opened lately, in this browser only: the search shows them before anything is typed
+const RECENT = 'vessel-overview.recent';
+function recent() { try { return JSON.parse(localStorage.getItem(RECENT) || '[]'); } catch (e) { return []; } }
+function remember(vid) { try { localStorage.setItem(RECENT, JSON.stringify([vid, ...recent().filter((x) => x !== vid)].slice(0, 8))); } catch (e) { /* no storage */ } }
+let found = [], foundAt = 0;
+const SHOW = 12;
+function renderResults() {
+  const text = $('q').value, f = fold(text).trim(), t = tight(text);
+  found = f ? search(text) : recent().map((vid) => SX.find((x) => x.v.vid === vid)).filter(Boolean);
+  foundAt = Math.min(foundAt, Math.max(0, Math.min(found.length, SHOW) - 1));
+  const row = (x, i) => {
+    const v = x.v, former = x.rank === 5 ? (v.names || '').split(' · ').find((n) => fold(n).includes(f)) : null;
+    const ids = [v.cs && `call sign ${mark(v.cs, t)}`, v.mmsi && `MMSI ${mark(v.mmsi, t)}`, v.imo && `IMO ${mark(v.imo, t)}`,
+                 v.uid && `local sign ${mark(v.uid, t)}`].filter(Boolean).join(' · ');
+    return `<div class="res${i === foundAt ? ' on' : ''}" role="option" data-vid="${v.vid}">
+      <div><b>${mark(v.vessel || `vid ${v.vid}`, f)}</b> <span class="note">vid ${mark(v.vid, t)}</span></div>
+      <div class="sub">${ids ? `${ids} · ` : ''}${v.last_ping ? `last heard ${esc(v.last_ping)}` : 'never heard on AIS'}${v.last_landing ? ` · last landing ${esc(v.last_landing)}` : ''}</div>
+      ${former ? `<div class="sub">a former name: ${mark(former, f)}</div>` : ''}</div>`;
+  };
+  $('results').innerHTML = (f ? '' : `<div class="head">${found.length ? 'opened lately' : 'type a name or a number'}</div>`) +
+    found.slice(0, SHOW).map(row).join('') +
+    (f && !found.length ? '<div class="foot note">No vessel matches.</div>' : '') +
+    `<div class="foot">${f && found.length > SHOW ? `${found.length - SHOW} more: type on, or ` : ''}<a href="#" id="to-list">browse every vessel in a list</a></div>`;
+  $('results').hidden = false;
+  $('results').querySelectorAll('.res').forEach((el) => el.addEventListener('mousedown', (e) => { e.preventDefault(); openVessel(+el.dataset.vid); }));
+  $('to-list').addEventListener('mousedown', (e) => {
+    e.preventDefault(); $('results').hidden = true; $('filter').value = $('q').value;
+    $('drawer').classList.add('on'); renderList(); $('filter').focus();
+  });
+}
+function openVessel(vid) {
+  $('results').hidden = true; $('q').value = ''; $('q').blur();
+  location.hash = hashFor(vid);
+}
+$('q').addEventListener('input', () => { foundAt = 0; renderResults(); });
+$('q').addEventListener('focus', renderResults);
+$('q').addEventListener('blur', () => { $('results').hidden = true; });
+$('q').addEventListener('keydown', (e) => {
+  const n = Math.min(found.length, SHOW);
+  if (e.key === 'ArrowDown' && n) { foundAt = (foundAt + 1) % n; renderResults(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp' && n) { foundAt = (foundAt - 1 + n) % n; renderResults(); e.preventDefault(); }
+  else if (e.key === 'Enter' && n) openVessel(found[foundAt].v.vid);
+  else if (e.key === 'Escape') $('q').blur();
+});
+// '/' goes to the search from anywhere but a field
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) { e.preventDefault(); $('q').focus(); }
+});
 $('close-list').addEventListener('click', () => $('drawer').classList.remove('on'));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer').classList.remove('on'); });
 
-// The address holds the vessel and every choice: the years, the window, the map's background, the tab and the mode ---
+// The address holds the vessel and every choice: the years, the window, the map's background, the tab, the open panels
 const isoMin = (ms) => new Date(ms).toISOString().slice(0, 16);
 function hashFor(vid) {
-  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, pts: P.pts ? 1 : 0, tab: tabOn(), mode: S.mode });
+  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, bg: P.bg, pts: P.pts ? 1 : 0, tab: tabOn(),
+                                  open: PANELS.filter(isOpen).join(',') });
   if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
   // the selected logbook trip as ".tid|schema": a link then opens that trip with its hauls (maintainer, 2026-10-20)
   if (S.trip && S.selKey) q.set('trip', S.selKey);
@@ -1383,9 +1609,10 @@ function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1));
   const vid = parseInt(h.get('vid'), 10), tab = TABS.includes(h.get('tab')) && !(BUNDLE && h.get('tab') === 'vessel') ? h.get('tab') : 'now';
   for (const t of TABS) { $(t).classList.toggle('on', t === tab); $(`tab-${t}`).classList.toggle('on', t === tab); }
-  S.mode = h.get('mode') === 'qc' ? 'qc' : 'ov';
-  document.body.classList.toggle('qc', S.mode === 'qc');
-  $('mode-ov').classList.toggle('on', S.mode === 'ov'); $('mode-qc').classList.toggle('on', S.mode === 'qc');
+  // the open panels; an address of before decision 178 says mode=qc, which showed the lanes and the pings
+  if (h.has('open')) P.open = new Set(h.get('open').split(',').filter((k) => PANELS.includes(k)));
+  if (h.get('mode') === 'qc') { P.open.add('lanes'); P.open.add('pings'); }
+  showFolds();
   // the choices; an address of before 2026-10-18 gives the years as from and to
   const years = h.get('years') || (h.get('from') && h.get('to') ? `${h.get('from')}-${h.get('to')}` : null);
   if (years && /^(latest|all|\d{4}-\d{4})$/.test(years)) P.years = years;
@@ -1418,7 +1645,7 @@ async function bench() {
     out.push(await new Promise((res) => { onRedraw = res; setWindow(b - 30 * DAY, b); }));
   }
   const sorted = [...out].sort((a, b) => a - b);
-  const r = { mode: S.mode, pings: tr.n, moves: 20, median_ms: Math.round(sorted[10]), max_ms: Math.round(sorted[19]), each_ms: out.map(Math.round) };
+  const r = { lanes: isOpen('lanes'), pings: tr.n, moves: 20, median_ms: Math.round(sorted[10]), max_ms: Math.round(sorted[19]), each_ms: out.map(Math.round) };
   document.body.dataset.bench = JSON.stringify(r);
   status(`bench: median ${r.median_ms} ms, max ${r.max_ms} ms, ${r.pings} pings`);
   return r;
@@ -1427,9 +1654,12 @@ window.overviewBench = bench;   // for the checks in plan 030: run it from the c
 
 // Start ----------------------------------------------------------------------------------------------------------------
 await ingest('vessels', await fetchParquet('vessels', {}));
-V = await rows(`SELECT vid, coalesce(vessel, '') AS vessel, coalesce(cs, '') AS cs, coalesce(mmsi, '') AS mmsi, first_year,
+V = await rows(`SELECT vid, coalesce(vessel, '') AS vessel, coalesce(cs, '') AS cs, coalesce(mmsi, '') AS mmsi,
+    coalesce(imo, '') AS imo, coalesce(uid, '') AS uid, coalesce(names, '') AS names, first_year,
     strftime(last_ping, '%Y-%m-%d') AS last_ping, strftime(last_landing, '%Y-%m-%d') AS last_landing, photo FROM vessels`);
+searchIndex();
+showFolds();
 for (let y = new Date().getUTCFullYear(); y >= 1992; y--) $('f-landed').insertAdjacentHTML('beforeend', `<option value="${y}-01-01">${y}</option>`);
 status(BUNDLE ? `${BUNDLE}: ${V.length} vessels` : `${V.length.toLocaleString('en-GB')} vessels`);
-if (BUNDLE) { $('f-photo').closest('label').hidden = true; $('filter').placeholder = 'type a number'; }
+if (BUNDLE) { $('f-photo').closest('label').hidden = true; $('filter').placeholder = 'type a number'; $('q').placeholder = 'Search: a vessel number or name'; }
 if (location.hash.length > 1) fromHash(); else { $('drawer').classList.add('on'); renderList(); $('filter').focus(); }

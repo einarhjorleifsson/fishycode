@@ -25,13 +25,14 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-22.1"
+API_VERSION <- "2026-10-22.2"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
 
 ALLOW <- list(
-  vessels  = c("vid", "vessel", "cs", "mmsi", "imo", "status", "first_year", "last_ping", "last_landing", "photo"),
+  vessels  = c("vid", "vessel", "cs", "mmsi", "imo", "uid", "names", "status", "first_year", "last_ping", "last_landing",
+               "photo"),
   register = c("vid", "vessel", "cs", "mmsi", "imo", "uid", "flag", "status", "mclass", "loa", "kw", "n_engines",
                "kw_total", "grt", "bwt", "nwt", "yh1", "yh2", "mmsi_t1", "mmsi_t2", "note_date", "note_fate",
                "register", "source"),
@@ -81,19 +82,24 @@ scope <- function(p, col, order) if (ranged(p)) sprintf("AND year(%s) BETWEEN %d
 
 # The SQL of each endpoint, for one vid; `p` holds the query string's other values, already checked
 SQL <- list(
-  # Every vessel the register or the trail knows, with what the list shows: first year and last ping on the trail,
-  # last landing, and whether there is a photo. About a second; the app keeps the answer until it is restarted.
+  # Every vessel the register or the trail knows, with what the list and the search show: the identifiers, the local
+  # sign and the names the annual register gave it (to 2023-12-19), first year and last ping on the trail, last landing,
+  # and whether there is a photo. About a second; the app keeps the answer until it is restarted.
   vessels  = function(vid, p) sprintf(
-    "WITH v AS (SELECT vid, vessel, cs, mmsi, imo, status FROM %s),
+    "WITH v AS (SELECT vid, vessel, cs, mmsi, imo, uid, status FROM %s),
+          nm AS (SELECT registration_no AS vid, string_agg(DISTINCT name, ' · ' ORDER BY name) AS names FROM %s
+                 WHERE name IS NOT NULL GROUP BY 1),
           tr AS (SELECT vid, min(year)::INTEGER AS first_year, CAST(max(time) AS DATE) AS last_ping FROM %s GROUP BY vid),
           l AS (SELECT vid, max(date) AS last_landing FROM %s GROUP BY vid),
           ph AS (SELECT vid, true AS photo FROM %s WHERE best GROUP BY vid)
-     SELECT coalesce(v.vid, tr.vid) AS vid, v.vessel, v.cs, v.mmsi, v.imo, v.status, tr.first_year, tr.last_ping,
-            l.last_landing, coalesce(ph.photo, false) AS photo
+     SELECT coalesce(v.vid, tr.vid) AS vid, v.vessel, v.cs, v.mmsi, v.imo, v.uid, nm.names, v.status, tr.first_year,
+            tr.last_ping, l.last_landing, coalesce(ph.photo, false) AS photo
      FROM v FULL JOIN tr ON v.vid = tr.vid
      LEFT JOIN l ON l.vid = coalesce(v.vid, tr.vid) LEFT JOIN ph ON ph.vid = coalesce(v.vid, tr.vid)
+     LEFT JOIN nm ON nm.vid = coalesce(v.vid, tr.vid)
      ORDER BY vid",
-    src("curated", "vessel", "vessel.parquet"), TRAIL(), src("curated", "landing", "landings.parquet"),
+    src("curated", "vessel", "vessel.parquet"), src("curated", "vessel", "skipaskra", "vessel_hist.parquet"), TRAIL(),
+    src("curated", "landing", "landings.parquet"),
     src("staging", "mbl", "photo.parquet")),
   register = function(vid, p) sprintf("SELECT * FROM %s WHERE vid = %d", src("curated", "vessel", "vessel.parquet"), vid),
   hist     = function(vid, p) {

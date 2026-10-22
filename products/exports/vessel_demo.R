@@ -133,7 +133,8 @@ for (i in seq_len(nrow(pick))) {
 duckdb::duckdb_register(con, "pick", pick[c("vid", "n")])
 vessels <- answer(con, "vessels", 0L, inner = sprintf(
   "SELECT k.n AS vid, 'Vessel ' || lpad(k.n::VARCHAR, 2, '0') AS vessel, nullif(v.cs, v.cs) AS cs,
-          nullif(v.mmsi, v.mmsi) AS mmsi, nullif(v.imo, v.imo) AS imo, nullif(v.status, v.status) AS status,
+          nullif(v.mmsi, v.mmsi) AS mmsi, nullif(v.imo, v.imo) AS imo, nullif(v.uid, v.uid) AS uid,
+          nullif(v.names, v.names) AS names, nullif(v.status, v.status) AS status,
           s.first_year, s.last_ping, s.last_landing, false AS photo
    FROM (%s) v JOIN pick k ON k.vid = v.vid JOIN stats s ON s.vid = v.vid ORDER BY k.n", SQL$vessels(0L, list())))
 empty <- c(list(photos = answer(con, "photos", 0L, where = "FALSE"), register = answer(con, "register", 0L, where = "FALSE")),
@@ -169,9 +170,9 @@ readme <- c(
   "Unzip the folder and double-click `index.html`. It opens in your web browser (a recent Chrome, Edge, Firefox or",
   "Safari). Nothing to install. It needs the internet: the libraries come from cdn.jsdelivr.net and the map from Esri.",
   "Keep `index.html` and the `data` folder together.", "",
-  "Choose a vessel, then move the time window with the slider, the chart or the trip table. *Overview* describes the",
-  "vessel in plain words; *Quality control* shows every record with its basis, and where the logbook and the AIS track",
-  "disagree.", "",
+  "Choose a vessel, then move the time window with the slider, the chart or the trip table. The cards under the map and",
+  "chart give the window's activity, hauls and landings. Every panel folds to its bar: open the activity record under the",
+  "chart, a trip for its hauls, a haul for every field of its record, where the logbook and the AIS track disagree.", "",
   "## What is in it", "",
   sprintf("- The vessels: %d of those with a logbook trip on an AIS voyage overlapping %s, drawn at random within",
           nrow(pick), MONTH_NAME),
@@ -197,10 +198,10 @@ stopifnot(
   "a vessel has no ping" = all(report$pings > 0),
   "a vessel has no logbook trip" = all(report$trips > 0),
   "the list is not the draw" = nrow(v) == nrow(pick) && setequal(v$vid, pick$n),
-  "the list names a vessel" = all(is.na(v$cs) & is.na(v$mmsi) & is.na(v$imo) & is.na(v$status)),
+  "the list names a vessel" = all(is.na(v$cs) & is.na(v$mmsi) & is.na(v$imo) & is.na(v$uid) & is.na(v$names) & is.na(v$status)),
   "a register answer is not empty" = all(vapply(empty, nrows, 0) == 0),
   "a vessel's answer carries a vessel column" =
-    !any(c("vid", "vessel", "cs", "mmsi", "imo", "name", PERSONAL) %in%
+    !any(c("vid", "vessel", "cs", "mmsi", "imo", "uid", "name", "names", PERSONAL) %in%
            unlist(ALLOW[setdiff(names(ALLOW), c("vessels", "register", "photos", grep("^hist_", names(ALLOW), value = TRUE)))])))
 cat(sprintf("%s: %.1f MB, zipped %.1f MB; the key is %s\n", out,
             sum(file.size(list.files(out, recursive = TRUE, full.names = TRUE))) / 2^20, file.size(zipfile) / 2^20, keyfile))
