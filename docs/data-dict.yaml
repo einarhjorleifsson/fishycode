@@ -2475,6 +2475,118 @@ tables:
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+  - name: link_trip_departure
+    source:
+      parquet: ../../fishydata/curated/link/trip_departure.parquet
+    description: >
+      One row per logbook trip (twins left out): its departure time (T1) and port (pid1), each from the
+      best-ranked witness that holds one - the AIS voyage, the logbook's own, STK, the quota system's
+      records, the phone calls (the maintainer's ranking; decision 173, TODO 121) - with the witness, the
+      basis and one outcome per field. Each witness's own values are kept beside the chosen ones.
+      curate/trip_departure.R, ramb::rb_add_trip_time(). The declared T1 stays in logbook_trip.
+    columns:
+      - name: .tid
+        type: string
+        description: >
+          Logbook trip id (with schema, the key of logbook_trip).
+      - name: schema
+        type: string
+        description: >
+          The logbook the trip comes from.
+      - name: vid
+        type: number
+        description: >
+          Vessel identifier.
+      - name: T1
+        type: datetime
+        time_zone: naive
+        description: >
+          The departure: the best-ranked witness's time; NA where no witness holds one.
+      - name: T1_from
+        type: string
+        description: >
+          The witness T1 came from: ais, own, stk, quota or phone.
+      - name: T1_basis
+        type: string
+        description: >
+          reconstructed (ais), recorded (the others), none.
+      - name: T1_n
+        type: number
+        description: >
+          How many witnesses hold a departure time.
+      - name: T1_outcome
+        type: string
+        description: >
+          none, one (a single witness), agree (every witness within 1 hour of T1), differ.
+      - name: T1_spread_s
+        type: number
+        description: >
+          The largest distance in seconds from T1 to another witness's time.
+      - name: pid1
+        type: string
+        description: >
+          The departure port (standard pid): the best-ranked witness's port; it may come from another witness than T1.
+      - name: pid1_from
+        type: string
+        description: >
+          The witness pid1 came from.
+      - name: pid1_basis
+        type: string
+        description: >
+          reconstructed (ais), recorded (the others), none.
+      - name: pid1_n
+        type: number
+        description: >
+          How many witnesses hold a departure port.
+      - name: pid1_outcome
+        type: string
+        description: >
+          none, one, agree (every witness names the same port), differ.
+      - name: T1_ais
+        type: datetime
+        time_zone: naive
+        description: >
+          The departure time of the AIS voyage linked to the trip (link_trip_voyage).
+      - name: pid1_ais
+        type: string
+        description: >
+          The departure port of the same witness.
+      - name: T1_own
+        type: datetime
+        time_zone: naive
+        description: >
+          The departure time of the logbook's own (fs_afladagbok and adb only; adb's port 0 is a placeholder, read as missing).
+      - name: pid1_own
+        type: string
+        description: >
+          The departure port of the same witness.
+      - name: T1_stk
+        type: datetime
+        time_zone: naive
+        description: >
+          The departure time of the latest STK recorded voyage containing the trip (staging_stk_voyage).
+      - name: pid1_stk
+        type: string
+        description: >
+          The departure port of the same witness.
+      - name: T1_quota
+        type: datetime
+        time_zone: naive
+        description: >
+          The departure time of the quota system's record of the trip's landing (staging_quota_trip, through lid_map).
+      - name: pid1_quota
+        type: string
+        description: >
+          The departure port of the same witness.
+      - name: T1_phone
+        type: datetime
+        time_zone: naive
+        description: >
+          The departure time of the latest valid phone out-call on T1's day or up to 3 days before (staging_phone_call).
+      - name: pid1_phone
+        type: string
+        description: >
+          The departure port of the same witness.
   - name: logbook_catch
     source:
       parquet: ../../fishydata/curated/logbook/catch.parquet
@@ -5901,6 +6013,184 @@ tables:
         examples: ["1.1.0.0", "1.3.0.0", "2.6.26.0", "2.7.0.0", "2.7.9.0"]
         description: >
           The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+  - name: staging_stk_voyage
+    source:
+      parquet: ../../fishydata/staging/stk/voyage.parquet
+    description: >
+      One row per STK recorded voyage (stk.tilk_stk_allt, 2003-09 to 2021-02), port to port. Ports from
+      the events' STK codes through stk_hid_pid, else the numeric port; STK's out-events carry no port
+      from 2014. sources/stk/voyage.R; a departure witness (decision 173).
+    columns:
+      - name: vid
+        type: number
+        description: >
+          The vessel (skip_nr).
+      - name: T1
+        type: datetime
+        time_zone: naive
+        description: >
+          Time out of port.
+      - name: T2
+        type: datetime
+        time_zone: naive
+        description: >
+          Time into port.
+      - name: pid1
+        type: string
+        description: >
+          Departure port (pid), or NA.
+      - name: pid2
+        type: string
+        description: >
+          Arrival port (pid), or NA.
+      - name: pid1_from
+        type: string
+        description: >
+          harborid (the event's STK code) or hofn (the numeric port).
+      - name: pid2_from
+        type: string
+        description: >
+          As pid1_from, for the arrival.
+      - name: trailid_out
+        type: number
+        description: >
+          The out-event's trailid (stk.tilk_stk).
+      - name: trailid_in
+        type: number
+        description: >
+          The in-event's trailid.
+  - name: staging_quota_trip
+    source:
+      parquet: ../../fishydata/staging/quota_trip/trip.parquet
+    description: >
+      One row per trip record of the quota system: a landing tied to the vessel's departure and return,
+      for the line incentive (kvoti.ivln_tilkynning_londun, 2004-2020) and coastal fishing
+      (kvoti.strandveidar, 2009-2023). The regime and the landing's gear go with it.
+      sources/quota_trip/convert.R (decision 173).
+    columns:
+      - name: regime
+        type: string
+        description: >
+          line_incentive or coastal.
+      - name: vid
+        type: number
+        description: >
+          The vessel (the landing's skip_nr).
+      - name: date
+        type: date
+        description: >
+          The landing day (lods_londun.l_dags).
+      - name: hid
+        type: number
+        description: >
+          The landing port, in the landing system's numbers (hofn).
+      - name: komunr
+        type: number
+        description: >
+          The landing's number (komunr); with hid, its key in kvoti.lods_londun.
+      - name: gid_landing
+        type: number
+        description: >
+          The landing's gear code (lods_londun.veidarf): 1, longline, on the line incentive's.
+      - name: linu_ivilnun
+        type: number
+        description: >
+          The landing's line-incentive flag (1 or 2: hand-baited longline; 0 not).
+      - name: T1
+        type: datetime
+        time_zone: naive
+        description: >
+          Departure: the STK out-event's time, else the phone line's.
+      - name: T1_from
+        type: string
+        description: >
+          stk or phone.
+      - name: pid1
+        type: string
+        description: >
+          Departure port (pid), or NA.
+      - name: pid1_from
+        type: string
+        description: >
+          harborid, hofn or phone.
+      - name: T2
+        type: datetime
+        time_zone: naive
+        description: >
+          Return: the STK in-event's time, else the phone line's.
+      - name: T2_from
+        type: string
+        description: >
+          stk or phone.
+      - name: pid2
+        type: string
+        description: >
+          Return port (pid), or NA.
+      - name: pid2_from
+        type: string
+        description: >
+          harborid, hofn or phone.
+      - name: invalid
+        type: boolean
+        description: >
+          Coastal fishing's er_ogild (the record is invalid); NA for the line incentive.
+      - name: stk_out
+        type: number
+        description: >
+          The STK out-event's trailid.
+      - name: stk_in
+        type: number
+        description: >
+          The STK in-event's trailid.
+      - name: phone_out
+        type: number
+        description: >
+          The phone line's out-call id (simalinu.tilk_linu_sokn).
+      - name: phone_in
+        type: number
+        description: >
+          The phone line's in-call id.
+  - name: staging_phone_call
+    source:
+      parquet: ../../fishydata/staging/phone_call/call.parquet
+    description: >
+      One row per phone notification of leaving or entering port: the Coast Guard's (stk.tilk_vss),
+      the line-incentive phone line (simalinu.tilk_linu_sokn) and the days-at-sea boats
+      (kvoti.tilkynning_sokn). sources/phone_call/convert.R (decision 173).
+    columns:
+      - name: system
+        type: string
+        description: >
+          coast_guard, line_phone or days_at_sea.
+      - name: id
+        type: number
+        description: >
+          The call's id in its system (none for days_at_sea).
+      - name: vid
+        type: number
+        description: >
+          The vessel.
+      - name: time
+        type: datetime
+        time_zone: naive
+        description: >
+          When the call was made.
+      - name: io
+        type: string
+        description: >
+          out or in (adgerd 1 or 2); NA otherwise.
+      - name: hid
+        type: number
+        description: >
+          The port, in the landing system's numbers.
+      - name: pid
+        type: string
+        description: >
+          The port (pid), or NA.
+      - name: valid
+        type: boolean
+        description: >
+          The system's own flag (gild 1); NA for the Coast Guard's calls.
 relationships:
   # vessel.vid is a measured, clean primary key (7,043 rows, 7,043 distinct
   # vid, checked 2026-09-25) so these four are the only relationships in this

@@ -540,6 +540,31 @@ list(
     produces("sources/stk/event.R", fd_staging("ais", "stk_event.parquet"))
   }, format = "file"),
 
+  # The departure witnesses beside the track and the logbook (decisions 172, 173): STK's recorded voyages, the quota
+  # system's trip records (line incentive, coastal fishing) and the phone notifications.
+  tar_target(stk_voyage_raw, c(fd_raw("oracle", "stk", "tilk_stk_allt.parquet"),
+                               fd_raw("oracle", "stk", "tilk_stk.parquet")), format = "file"),
+  tar_target(stk_voyage, {
+    stk_voyage_raw; stk_hid_pid; port
+    produces("sources/stk/voyage.R", fd_staging("stk", "voyage.parquet"))
+  }, format = "file"),
+  tar_target(quota_trip_raw, c(fd_raw("oracle", "kvoti", "ivln_tilkynning_londun.parquet"),
+                               fd_raw("oracle", "kvoti", "strandveidar.parquet"),
+                               fd_raw("oracle", "kvoti", "lods_londun.parquet"),
+                               fd_raw("oracle", "stk", "tilk_stk.parquet"),
+                               fd_raw("oracle", "simalinu", "tilk_linu_sokn.parquet")), format = "file"),
+  tar_target(quota_trip, {
+    quota_trip_raw; stk_hid_pid; port
+    produces("sources/quota_trip/convert.R", fd_staging("quota_trip", "trip.parquet"))
+  }, format = "file"),
+  tar_target(phone_call_raw, c(fd_raw("oracle", "stk", "tilk_vss.parquet"),
+                               fd_raw("oracle", "simalinu", "tilk_linu_sokn.parquet"),
+                               fd_raw("oracle", "kvoti", "tilkynning_sokn.parquet")), format = "file"),
+  tar_target(phone_call, {
+    phone_call_raw; port
+    produces("sources/phone_call/convert.R", fd_staging("phone_call", "call.parquet"))
+  }, format = "file"),
+
   # ── Vessel trail ────────────────────────────────────────────────────────────
   # The four-layer model: merge measured positions, remove whacky points,
   # interpolate within trips, derive voyages and tie them to logbook trips.
@@ -594,6 +619,14 @@ list(
     logbook; ais_voyage
     produces("curate/link_trip_voyage.R",
              fd_curated("link", "trip_voyage.parquet"))
+  }, format = "file"),
+
+  # Every logbook trip's departure, time and port, from ranked witnesses: the AIS voyage, the logbook's own, STK, the
+  # quota system's records, the phone calls (TODO 121, decision 173; ramb::rb_add_trip_time()).
+  tar_target(trip_departure, {
+    logbook; trip_voyage; lid_map; stk_voyage; quota_trip; phone_call; port
+    produces("curate/trip_departure.R",
+             fd_curated("link", "trip_departure.parquet"))
   }, format = "file"),
 
   # One row per (logbook station, phase): when the vessel is busy with it (plan 010).

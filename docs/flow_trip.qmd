@@ -277,5 +277,5 @@ the very dates the track corrects.
 
 ## Not yet in ramb
 
-- Declared times reconciled with the track (`rb_reconcile_time`, planned); mooring sites learned from the track; the
+- The return (`T2`) reconciled with the track, as `rb_add_trip_time()` does the departure; mooring sites learned from the track; the
   Irish gap rule and the power-on rule as methods.

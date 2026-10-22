@@ -1128,19 +1128,16 @@ vessel chains anyway. Every curated file is stamped, so a switch on its own woul
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
 
-## 121. A departure port for every logbook trip: the cascade of witnesses
-**status:** open · **needs: maintainer** — the ranking where witnesses disagree ·
-**see:** decision 172, `$FISHYDATA/archive/2026-10-adb-departure-port/`, TODO 68, plan 022 §4
+## 121. A departure port and time for every logbook trip: build the cascade
+**status:** open · **needs: maintainer** — the build, with the pending rebuild of TODO 119 and decisions 165, 170 ·
+**see:** decisions 172, 173, `$FISHYDATA/archive/2026-10-adb-departure-port/`
 
-No source holds a full trip table with departure ports: the landings (ask, agf, lods, vor) are landing events. The
-logbook's own port exists only for fs_afladagbok's and adb's apps that send one (from 2021); adb's 0 is a placeholder.
-Witnesses: the AIS voyage (`link/trip_voyage.pid1_ais`, from 2008), STK's recorded voyages (`stk.tilk_stk_allt`,
-2003-09 to 2021-02, a port to 2013), the quota system's trip records (line incentive 2004-2020, coastal fishing
-2009-2023, days-at-sea boats 1996-2001, keyed by landing) and the phone records. Together they give a port to nearly
-every trip from 2004, each with a departure datetime (afli's own T1 is only the first fishing day); they agree on the
-port to about 95 %, on the time to a median of 10-14 minutes. Before building: rank the
-witnesses (what the 5 % disagreements are), read adb's `hid1` 0 as missing, give adb's ports a `pid`, and join the
-quota system's records to the trips through `lid_map`.
+Built in code and tested on a scratch store (decision 173): `ramb::rb_add_trip_time()` (ramb 2026.10.22.1), the
+witnesses staged (`stk_voyage`, `quota_trip`, `phone_call`) and the flow step `trip_departure` →
+`curated/link/trip_departure.parquet`, ranked AIS, own, STK, quota, phone. Seven new targets are outdated beside the
+29 of the pending rebuild; `tar_make_isolated()` builds them with it. What reads the departure downstream, and the
+return (`T2`) the same way, are decision 173's open ends.
 
-**check:** every trip in `curated/logbook/trip.parquet` has a departure port and time or `none`, each with its basis, and every
-disagreement between witnesses is counted in one outcome.
+**check:** every trip in `curated/logbook/trip.parquet` (twins left out) has a row in `trip_departure.parquet`, with a
+departure port and time or `none`, each with its basis, and every disagreement between witnesses counted in one
+outcome.
