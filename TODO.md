@@ -413,10 +413,10 @@ zero-kg landings that the Directorate withdrew.
 The maintainer, 2026-10-22: landings after 2020-07-22 come from agf ("we may then not have all the variables we have
 in ask, but that is life"). MFRI's ask ends on that day (all of it imported 2021-04-28, not a dump gap) and agf is
 derived from it; the landing numbers go on after it (the Directorate's register, Gafl or what replaced it). So after
-2020 the first weighing time
-(the bound on `T2`), gross weights, deductions, weighing notes and credit history are lost, and agf's live
-weight of factory vessels in the last two years or so may still change when agf rewrites them. Before 2007 the top layer is
-kvoti's `lods_afli` with the container tables, which hold ~4.5 kt of 1995-1998 exports `lods_slaegt` lacks.
+2020 the first weighing time (the bound on `T2`), gross weights, deductions, weighing notes and credit history are
+lost, and agf's live weight of factory vessels in the last two years or so may still change when agf rewrites them.
+Before 2007 the top layer is kvoti's `lods_afli` with the container tables, which hold ~4.5 kt of 1995-1998 exports
+`lods_slaegt` lacks.
 Evidence: `$FISHYDATA/archive/2026-10-lods-upstream/README.md` (§1-6).
 
 **check:** the asks of plans 023 and 025 are answered in the plans, and each is built, parked or abandoned in its
