@@ -1104,3 +1104,22 @@ rebuild covers both: fingerprint first, then build from `lods` by name.
 **check:** the built lods catch equals the scratch run of decision 169 (or the re-dump's differences are explained);
 `docs/data-dict.yaml` describes `hid_origin` and `catch_gutted` and no longer calls `landing_catch.catch` wrong;
 `tar_outdated()` shows nothing of the landing chain.
+
+## 120. Readers still on Oracle views (the rule "tables, not views")
+**status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, `$FISHYDATA/archive/2026-10-adb-views/`
+
+The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. Found the same day by
+scanning every script for the Oracle objects it reads, 11 scripts still read a view:
+
+- `sources/adb/convert.R`: `trip_v` and five gear views. Read against their tables the same day: plain subsets or
+  unit factors, `dredge_v`'s feet factor 0.3042 (0.2 % low).
+- `reference/ports/harbour_codes.R`, `reference/ports/port_code.R`: `agf.aflagrunnur_v`, which drops a rising share
+  of agf's rows since 2021 through code tables frozen in 2020.
+- `reference/vessels/mmsi.R`, `reference/vessels/registry.R`, `reference/vessels/vessel_year.R`: `vessel.vessel_v`.
+- In the `once` project, so only at a redo by decision: `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`),
+  `reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`).
+
+Each switch first rebuilds the view from its table and the view's text (`_code/all_views.parquet`), row by row, as
+decision 169 did, and says what differs.
+
+**check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
