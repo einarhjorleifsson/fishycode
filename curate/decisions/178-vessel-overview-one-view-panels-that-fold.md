@@ -185,3 +185,54 @@ section above:
   - an old link with `bg=hex&pts=none` opened as fishing hours alone;
   - the four buttons combined as expected, the subtitle following each mix;
   - all four on drew the points, the line, the hexagons and the track, with both legends.
+
+## Amended 2026-10-22: the clicks gone through one by one
+
+"i am not seeing the check boxes. and the interactivity now is a bit 'quirky'"; "there is just something odd with this
+version - possibly did too many things at the same time. go through this step by step"; "check all user clicks,
+including the trip/event table for quirks" (maintainer). Each step below was changed alone and checked in the browser
+pane on vid 1977 before the next. Code, checks and this section by Claude (AI-assisted).
+
+1. **The table jumped from under the cursor.** A click on a trip closed the trip open above it, so the clicked row moved
+   up the page: 3,343 px when the closed trip listed its 77 hauls. A clicked row, trip or haul, now stays where it was
+   on the screen while the table redraws.
+   - Checked: a trip below and above an open one, a haul, and the same haul again each moved 0 px.
+2. **The map's layers are checkboxes**, each named: points and line for the window, fishing hours and track around it.
+   The buttons of the section above looked like the old choice of one.
+3. **The hexagons flashed other colours.** They were drawn once to learn their range, then again on its decades, at
+   every zoom step and every new window.
+   - The decades are now found before the hexagons are drawn: the effort is summed in square cells of a hexagon's area,
+     and the smallest and largest cell give the decades. The hexagons are drawn once.
+   - The colours are kept between redraws, so a redraw with the same decades does not recolour.
+   - Checked: the legend's decades were set in the same moment as the draw, and the same after it.
+4. **The clicks, one by one.** Found and fixed:
+   - a landing with no trip left the address naming the trip chosen before it;
+   - with a haul chosen, a click on its trip's row closed the trip and left the window, the black haul and the address
+     on the haul. It now returns to the whole trip; a second click closes it;
+   - Escape and a click elsewhere did not close the search's choices. They do now, whether or not the box keeps its
+     focus;
+   - a click on a trip's band on the chart, or on its lane, did nothing unless the mouse had moved over the chart first.
+     The click's own position is now read, on the History charts too;
+   - a window dragged after choosing a trip was lost on reload: the trip's window came back instead.
+   - The page now knows what set the window (a preset, a drag or the slider, or a choice). The address keeps a dragged
+     window with the choice and drops a window the choice set, since the choice brings it back. A preset is outlined
+     only while the window is its own.
+   - Copied links name what they show. The view's link carries its window exactly, and a trip's or a haul's link the
+     record alone.
+
+   Checked, each by its own action in the pane:
+   - the presets, the number of trips, the slider and Fit;
+   - every fold;
+   - a trip, the same trip again, its caret, a landing line, a landing with no trip;
+   - a haul, the same haul again, Shift- and ⌘-click on hauls and trips, clear;
+   - the copy-link buttons and paging;
+   - the pings panel and its paging, the four checkboxes, the search with '/', arrows and Escape, the vessel list;
+   - the years, the Vessel and History tabs;
+   - on History: drag, a month's click, Whole history, Reset view, Open in Activity, a trip in its list (loading its
+     year), paging;
+   - a drag and a click on the chart and the lanes, with the mouse moved there first as a hand does;
+   - a reload after choosing a trip, and after dragging once a trip was chosen.
+
+   No console error in any of them.
+- **Not checked:** Play, and the map's tooltip. The pane was hidden, which gives the page no animation frames, and the
+  pointer the tests drive does not reach deck.gl's picking in that state.

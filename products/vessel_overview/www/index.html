@@ -113,6 +113,11 @@
             align-items: center; pointer-events: none; font-size: 11px; }
   #mapctl > * { pointer-events: auto; }
   #mapctl .seg { background: #ffffffe8; }
+  /* the map's layers, each a checkbox: on or off, any mix (maintainer, 2026-10-22) */
+  #mapctl .chk { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px 1px 3px; background: #ffffffe8;
+                 border: 1px solid var(--line); border-radius: 5px; cursor: pointer; color: var(--ink); }
+  #mapctl .chk input { margin: 0; cursor: pointer; }
+  #mapctl .chk:has(input:disabled) { opacity: .5; cursor: default; }
   #mapctl .seg button, #mapctl > button { padding: 1px 7px; font-size: 11px; }
   #mapctl .lbl { background: #ffffffd0; border-radius: 4px; padding: 0 4px; color: var(--muted); }
   #mapctl #fit { margin-left: auto; background: #ffffffe8; }
@@ -177,11 +182,11 @@
       <div id="map">
         <div id="mapctl">
           <span class="lbl">window</span>
-          <span class="seg" title="the window's pings, each a point coloured by its speed, and the line joining them: each on or off">
-            <button data-lay="points" class="on">points</button><button data-lay="line" class="on">line</button></span>
+          <label class="chk" title="the window's pings, each a point coloured by its speed"><input type="checkbox" data-lay="points" checked>points</label>
+          <label class="chk" title="the line joining the window's pings"><input type="checkbox" data-lay="line" checked>line</label>
           <span class="lbl">around it</span>
-          <span class="seg" title="what the map shows besides the window: each on or off">
-            <button data-lay="hex">fishing hours</button><button data-lay="track" title="the whole loaded track, every voyage">track</button></span>
+          <label class="chk"><input type="checkbox" data-lay="hex">fishing hours</label>
+          <label class="chk" title="the whole loaded track, every voyage"><input type="checkbox" data-lay="track">track</label>
           <button id="fit" title="frame the map on the window again, after you moved it: on the fishing, where the vessel fished in it">Fit</button>
         </div>
         <div id="hexlegend" style="display:none"></div>

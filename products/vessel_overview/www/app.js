@@ -104,6 +104,9 @@ function lower(a, x, key = (v) => v) {
 // State ----------------------------------------------------------------------------------------------------------------
 const S = { vid: null, name: '', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null, haul: null, haulOpen: false,
             tripSel: new Set(), haulSel: new Set(),
+            // what set the window: 'preset' (a button, or the user's window carried from the last vessel), 'user' (a drag
+            // or the slider), or 'choice' (a trip, haul or landing chosen); the address and the buttons follow it
+            winBy: 'preset',
             stations: [], hauls: [], wins: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
             history: false, about: {}, assumed: null, assumedBase: null, ready: false };
 // The user's choices (maintainer, 2026-10-18: "if one selects a new vessel - all the users selections besides the new
@@ -219,9 +222,12 @@ function layers() {
   // zoom (hexKm) and coloured by viridis, a step per decade of hours (hexLayer)
   if (drawn('hex') && tr.fish.length) {
     const km = hexKm();
-    if (km !== S.hexKm) { S.hexKm = km; S.hexDom = null; }   // hexagons of another size: their decades learnt again
-    if (S.hexDom) $('hexlegend').innerHTML = hexLegend(S.hexDom, km);
-    L.push(hexLayer('hex', tr.fish, (d) => d.p, cellHours, km, S.hexDom, (dom) => { S.hexDom = dom; render(); }));
+    if (km !== S.hexKm || !S.hexDom) {   // hexagons of another size, or other points: their decades found again
+      S.hexKm = km;
+      S.hexDom = decadesOf(tr.fish.length, (i) => tr.fish[i].p[0], (i) => tr.fish[i].p[1], (i) => tr.fish[i].h, km, view.latitude);
+      $('hexlegend').innerHTML = hexLegend(S.hexDom, km);
+    }
+    L.push(hexLayer('hex', tr.fish, (d) => d.p, cellHours, km, S.hexDom));
   }
   // the points can be turned off (maintainer, 2026-10-18: "turn off any ping points"); the line is then drawn stronger,
   // so the track stays plain. With both off the window is not drawn: the map shows what it shows around it
@@ -423,14 +429,17 @@ function makePlot() {
   }, [tr.ts, tr.plotSpeed, tr.fishSpeed], $('plot'));
   clickToSelect(plot);
 }
+// the time under a mouse event on a chart, from the event itself: a click with no move before it leaves the chart's
+// own cursor off the chart
+const timeAt = (u, e) => u.posToVal(e.clientX - u.over.getBoundingClientRect().left, 'x') * 1000;
 // a click (not a drag) on a trip selects it
 function clickToSelect(u) {
   let down = null;
   u.over.addEventListener('mousedown', (e) => { down = e.clientX; });
   u.over.addEventListener('mouseup', (e) => {
     const x = down; down = null;
-    if (x == null || Math.abs(e.clientX - x) > 3 || u.cursor.left == null) return;
-    const tp = tripAt(u.posToVal(u.cursor.left, 'x') * 1000);
+    if (x == null || Math.abs(e.clientX - x) > 3) return;
+    const tp = tripAt(timeAt(u, e));
     if (tp) selectTrip(tp.tid, tp.schema, { scroll: false }).catch((err) => status(String(err)));
   });
 }
@@ -566,7 +575,7 @@ function setWindow(a, b, source) {
   // the window's cards and pings follow it, once it rests
   clearTimeout(pingTimer); pingTimer = setTimeout(() => { S.pingPage = 0; renderCards(); renderPings(); }, 150);
   if (source === 'plot' || source === 'slider') {
-    P.win = 'custom'; P.a = a; P.b = b; markPicked();
+    P.win = 'custom'; P.a = a; P.b = b; S.winBy = 'user'; markPicked();
     clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 300);   // Safari refuses many replaceState calls in a row
     // the map follows a window chosen on the chart or the slider (maintainer, 2026-10-18: "the zoom should be dynamic
     // here"), framed as at the start, on the fishing in it: at once after a drag, once the slider rests
@@ -606,7 +615,6 @@ const fmtHours = (x) => (x < 10 ? Number(x.toPrecision(2)).toString() : Math.rou
 // maintainer: "lets hold on that").
 const VIRIDIS9 = ['#440154', '#472d7b', '#3b528b', '#2c728e', '#21918c', '#28ae80', '#5ec962', '#addc30', '#fde725']
   .map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
-const VIRIDIS = VIRIDIS9.filter((_, i) => i % 2 === 0).slice(0, 4).concat([VIRIDIS9[6], VIRIDIS9[8]]);   // six steps, before the domain is known
 function viridis(n) {   // n colours spread over viridis, the first dark and the last yellow
   if (n === 1) return [VIRIDIS9[4]];
   return Array.from({ length: n }, (_, k) => {
@@ -615,17 +623,32 @@ function viridis(n) {   // n colours spread over viridis, the first dark and the
   });
 }
 const decades = ([lo, hi]) => { const a = Math.max(Math.log10(HEX_MIN_H), Math.floor(lo)); return [a, Math.max(a + 1, Math.ceil(hi - 1e-9))]; };
-// A hexagon layer whose colours step by decade. The first draw learns the hexagons' range (dom null); onDomain then
-// receives its decades, and the layer is drawn again on them. Changing the domain recolours, it does not re-aggregate.
-function hexLayer(id, data, getPosition, sumHours, km, dom, onDomain) {
+// The decades of a set of points' hexagons, found before the hexagons are drawn, so they are drawn once, on their own
+// colours (a first draw to learn the range, then a second on it, flashed other colours at every zoom step). The points'
+// hours are summed in square cells of a hexagon's area on the map's projection, about the hexagons' own sums; the
+// smallest and the largest cell give the decades, and a hexagon beyond them takes the end colour.
+function decadesOf(n, lonAt, latAt, hoursAt, km, lat0) {
+  const R = 6378137, side = (1000 * km * 1.612) / Math.cos((lat0 * Math.PI) / 180), cells = new Map();
+  for (let i = 0; i < n; i++) {
+    const x = Math.floor((R * lonAt(i) * Math.PI) / 180 / side);
+    const y = Math.floor((R * Math.log(Math.tan(Math.PI / 4 + (latAt(i) * Math.PI) / 360))) / side);
+    const k = x * 1e7 + y;
+    cells.set(k, (cells.get(k) || 0) + hoursAt(i));
+  }
+  let lo = Infinity, hi = -Infinity;
+  for (const v of cells.values()) { const l = Math.log10(Math.max(v, HEX_MIN_H)); if (l < lo) lo = l; if (l > hi) hi = l; }
+  return cells.size ? decades([lo, hi]) : decades([-2, -2]);
+}
+// A hexagon layer whose colours step by decade, on decades already known (decadesOf); its colours kept for those
+// decades, so a redraw with the same decades does not recolour
+const RANGES = new Map();
+function hexLayer(id, data, getPosition, sumHours, km, dom) {
+  const key = dom.join();
+  if (!RANGES.has(key)) RANGES.set(key, viridis(dom[1] - dom[0]));
   return new deck.HexagonLayer({
     id, data, getPosition, getColorValue: (pts) => Math.log10(Math.max(sumHours(pts), HEX_MIN_H)),
     extruded: false, radius: 1000 * km, coverage: 0.94, opacity: 0.75, pickable: true, upperPercentile: 100,
-    colorDomain: dom, colorRange: dom ? viridis(dom[1] - dom[0]) : VIRIDIS,
-    onSetColorDomain: (got) => {
-      const d = decades(got);
-      if (!dom || d[0] !== dom[0] || d[1] !== dom[1]) setTimeout(() => onDomain(d), 0);   // after this draw
-    },
+    colorDomain: dom, colorRange: RANGES.get(key),
   });
 }
 const hexLegend = ([a, b], km) => {
@@ -643,20 +666,23 @@ function showLayers() {
     : drawn('line') ? 'the AIS track in the window' : "the window's track not drawn";
   const around = [hex && 'fishing hours', drawn('track') && 'the whole track'].filter(Boolean);
   $('where-note').textContent = inside + (around.length ? `; ${around.join(' and ')} around it` : '');
-  document.querySelectorAll('#mapctl [data-lay]').forEach((x) => x.classList.toggle('on', drawn(x.dataset.lay)));
+  document.querySelectorAll('#mapctl [data-lay]').forEach((x) => { x.checked = drawn(x.dataset.lay); });
   render();
 }
-// each of the map's layers is a button, on or off
-document.querySelectorAll('#mapctl [data-lay]').forEach((b) => b.addEventListener('click', () => {
-  if (b.disabled) return;
-  const k = b.dataset.lay;
-  if (P.lay.has(k)) P.lay.delete(k); else P.lay.add(k);
+// each of the map's layers is a checkbox, on or off
+document.querySelectorAll('#mapctl [data-lay]').forEach((b) => b.addEventListener('change', () => {
+  if (b.checked) P.lay.add(b.dataset.lay); else P.lay.delete(b.dataset.lay);
   showLayers();
   setHash();
 }));
 
 // Presets: each sets the window and centres the map on it
-function show(a, b) { if (!S.tr) return; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); }
+function show(a, b) { if (!S.tr) return; S.winBy = 'preset'; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); markPicked(); }
+// the window on what was chosen (a trip, hauls, a landing): framed on the map, and the presets no longer outlined
+function frameChoice(a, b, fa = a, fb = b) {
+  if (!S.tr) return;
+  S.winBy = 'choice'; fitTo(fa, fb); setWindow(a, b); plot.redraw(false); lanes?.redraw(false); markPicked();
+}
 // The flow's voyages (curate/ais_voyage.R), oldest first; keyed by year and number, which restarts each year
 const voyages = () => S.voy || [];
 // "Last N trips" is the last N finished trips and then the current one (maintainer, 2026-10-18: "the 'last trip' should
@@ -700,8 +726,8 @@ function applyWin() {
   else showLastTrips();
   markPicked();
 }
-function markPicked() {
-  for (const [id, w] of [['last-trips', 'last'], ['month', 'month'], ['all', 'range']]) $(id).classList.toggle('picked', P.win === w);
+function markPicked() {   // a preset is outlined while the window is its own
+  for (const [id, w] of [['last-trips', 'last'], ['month', 'month'], ['all', 'range']]) $(id).classList.toggle('picked', P.win === w && S.winBy === 'preset');
 }
 const preset = (w, f) => () => { if (!S.tr) return; P.win = w; markPicked(); f(); setHash(); };
 $('last-trips').addEventListener('click', preset('last', showLastTrips));
@@ -752,7 +778,7 @@ async function selectTrip(tid, schema, opts = {}) {
   S.tripSel = new Set([S.selKey]); S.haulSel = new Set();
   showTab('now');
   const [a, b] = [d.a, d.b];   // the trip and the hauls it attends, which the logbook may put outside T1-T2
-  if (S.tr) { fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false); }
+  if (!opts.keepWindow) frameChoice(a - HOUR, b + HOUR, a, b);
   if (opts.open) { if (opts.only) S.expanded = new Set(); S.expanded.add(S.selKey); }
   const row = () => document.querySelector(`#trips tr.trip[data-key="${CSS.escape(S.selKey)}"]`);
   if (opts.open || !row()) {   // from the chart or the History tab: the row on its page
@@ -777,7 +803,7 @@ async function selectHaul(h, opts = {}) {
   S.tripSel = new Set(d ? [d.key] : []); S.haulSel = new Set([h.key]);
   if (S.tr) {
     const pad = h.dateOnly ? 0 : 30 * 6e4;
-    fitTo(h.a - 2 * pad, h.b + 2 * pad); setWindow(h.a - pad, h.b + pad); plot.redraw(false); lanes?.redraw(false);
+    if (!opts.keepWindow) frameChoice(h.a - pad, h.b + pad, h.a - 2 * pad, h.b + 2 * pad);
   }
   await renderTrips();
   if (opts.scroll) document.querySelector(`#trips tr.haul[data-key="${CSS.escape(h.key)}"]`)?.scrollIntoView({ block: 'nearest' });
@@ -790,9 +816,10 @@ function selectLanding(r) {
     const near = voyages().filter((w) => w.b >= r.d - DAY && w.b <= r.d + 2 * DAY)
       .sort((x, y) => Math.abs(x.b - r.d - 12 * HOUR) - Math.abs(y.b - r.d - 12 * HOUR))[0];
     const [a, b] = near ? [near.a, near.b] : [r.d - DAY, r.d + 2 * DAY];
-    fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false);
+    frameChoice(a - HOUR, b + HOUR, a, b);
   }
   markSelected();
+  setHash();
 }
 function markSelected() {
   document.querySelectorAll('#trips tr.trip, #trips tr.landrow').forEach((row) => row.classList.toggle('sel', isChosen(row.dataset.key)));
@@ -807,7 +834,7 @@ const run = (order, from, to) => {
   const i = order.indexOf(from), j = order.indexOf(to);
   return i < 0 || j < 0 ? [to] : order.slice(Math.min(i, j), Math.max(i, j) + 1);
 };
-async function chooseTrips(keys, anchor) {
+async function chooseTrips(keys, anchor, keepWindow = false) {
   const ds = keys.map((k) => S.tripOf.get(k)).filter(Boolean);
   S.haulSel = new Set(); S.haul = null; S.haulOpen = false;
   if (!ds.length) { S.tripSel = new Set(); S.trip = null; S.selKey = null; await renderTrips(); setHash(); return; }
@@ -816,11 +843,11 @@ async function chooseTrips(keys, anchor) {
   S.trip = an.tid; S.selKey = an.key;
   if (S.tr) {
     const a = Math.min(...ds.map((d) => d.a)), b = Math.max(...ds.map((d) => d.b));
-    fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false);
+    if (!keepWindow) frameChoice(a - HOUR, b + HOUR, a, b);
   }
   await renderTrips(); setHash();
 }
-async function chooseHauls(keys, anchor) {
+async function chooseHauls(keys, anchor, keepWindow = false) {
   const hs = keys.map((k) => S.haulOf.get(k)).filter(Boolean);
   if (!hs.length) { S.haulSel = new Set(); S.haul = null; S.haulOpen = false; await renderTrips(); setHash(); return; }
   S.haulSel = new Set(hs.map((h) => h.key)); S.haul = anchor && S.haulSel.has(anchor) ? anchor : hs.at(-1).key;
@@ -831,7 +858,7 @@ async function chooseHauls(keys, anchor) {
   if (ts.length) { const d = S.tripOf.get(ts.at(-1)); S.trip = d.tid; S.selKey = d.key; }
   if (S.tr) {
     const pad = hs.every((h) => h.dateOnly) ? 0 : 30 * 6e4, a = Math.min(...hs.map((h) => h.a)), b = Math.max(...hs.map((h) => h.b));
-    fitTo(a - 2 * pad, b + 2 * pad); setWindow(a - pad, b + pad); plot.redraw(false); lanes?.redraw(false);
+    if (!keepWindow) frameChoice(a - pad, b + pad, a - 2 * pad, b + 2 * pad);
   }
   await renderTrips(); setHash();
 }
@@ -927,7 +954,7 @@ async function loadRange(from, to) {
   $('all').textContent = `Whole range: ${S.from === S.to ? S.from : `${S.from}–${S.to}`}`;
   const hexb = document.querySelector('#mapctl [data-lay="hex"]'), fished = S.tr && S.tr.fish.length > 0;
   hexb.disabled = !fished;
-  hexb.title = fished ? `${num(S.tr.fish.reduce((s, d) => s + d.h, 0))} fishing hours in ${S.tr.fish.length.toLocaleString('en-GB')} pings, these years`
+  hexb.closest('label').title = fished ? `${num(S.tr.fish.reduce((s, d) => s + d.h, 0))} fishing hours in ${S.tr.fish.length.toLocaleString('en-GB')} pings, these years`
                       : 'no fishing ping in these years';
   showLayers();   // the user's choice of fishing hours stays for the next vessel that fished
   applyWin();
@@ -1165,39 +1192,52 @@ async function renderTrips() {
     ${S.tripPage * TRIPS_PER_PAGE + 1}–${Math.min(total, (S.tripPage + 1) * TRIPS_PER_PAGE)} of ${total}
     <button data-d="1" ${S.tripPage >= pages - 1 ? 'disabled' : ''}>older ›</button></div>`;
   $('trips').innerHTML = html;
-  const toggle = (key) => { if (S.expanded.has(key)) S.expanded.delete(key); else S.expanded.add(key); renderTrips(); };
+  const toggle = (key) => { if (S.expanded.has(key)) S.expanded.delete(key); else S.expanded.add(key); return renderTrips(); };
   $('trips').querySelectorAll('tr.trip, tr.landrow').forEach((row) => {
     const r = page.find((x) => x.key === row.dataset.key);
     row.addEventListener('click', (e) => {
-      if (e.target.dataset.open) { toggle(r.key); return; }
-      if (r.kind === 'trip' && (e.shiftKey || e.metaKey || e.ctrlKey)) {   // several trips
-        window.getSelection()?.removeAllRanges();
-        const order = tripRows().filter((x) => x.kind === 'trip').map((x) => x.key);
-        const keys = e.shiftKey && S.selKey && S.tripOf.has(S.selKey) ? run(order, S.selKey, r.key) : toggled(S.tripSel, r.key);
-        chooseTrips(keys, e.shiftKey ? S.selKey : r.key).catch((err) => status(String(err)));
-        return;
-      }
-      if (r.key === S.selKey && S.tripSel.size <= 1 && S.expanded.has(r.key)) { toggle(r.key); return; }   // the chosen row, open: close it
-      if (r.kind === 'trip') selectTrip(r.tid, r.schema, { open: true, only: true }).catch((err) => status(String(err)));
-      else { selectLanding(r); S.expanded = new Set([r.key]); renderTrips(); }
+      const act = () => {
+        if (e.target.dataset.open) return toggle(r.key);
+        if (r.kind === 'trip' && (e.shiftKey || e.metaKey || e.ctrlKey)) {   // several trips
+          window.getSelection()?.removeAllRanges();
+          const order = tripRows().filter((x) => x.kind === 'trip').map((x) => x.key);
+          const keys = e.shiftKey && S.selKey && S.tripOf.has(S.selKey) ? run(order, S.selKey, r.key) : toggled(S.tripSel, r.key);
+          return chooseTrips(keys, e.shiftKey ? S.selKey : r.key);
+        }
+        // the chosen trip, open and chosen whole: close it; with a haul of it chosen, the whole trip again
+        if (r.key === S.selKey && S.tripSel.size <= 1 && S.expanded.has(r.key) && !S.haulSel.size) return toggle(r.key);
+        if (r.kind === 'trip') return selectTrip(r.tid, r.schema, { open: true, only: true });
+        selectLanding(r); S.expanded = new Set([r.key]); return renderTrips();
+      };
+      keepInPlace(`#trips tr.trip[data-key="${CSS.escape(r.key)}"]`, act).catch((err) => status(String(err)));
     });
   });
   $('trips').querySelectorAll('tr.haul').forEach((row) => row.addEventListener('click', (e) => {
     e.stopPropagation();
     const h = S.haulOf.get(row.dataset.key);
     if (!h) return;
-    if (e.shiftKey || e.metaKey || e.ctrlKey) {   // several hauls: a run within the trip, or one added or removed
-      window.getSelection()?.removeAllRanges();
-      const order = (S.tripOf.get(h.tkey)?.hauls || []).map((x) => x.key);
-      const keys = e.shiftKey && S.haul && order.includes(S.haul) ? run(order, S.haul, h.key) : toggled(S.haulSel, h.key);
-      chooseHauls(keys, e.shiftKey ? S.haul : h.key).catch((err) => status(String(err)));
-      return;
-    }
-    selectHaul(h).catch((err) => status(String(err)));
+    const act = () => {
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {   // several hauls: a run within the trip, or one added or removed
+        window.getSelection()?.removeAllRanges();
+        const order = (S.tripOf.get(h.tkey)?.hauls || []).map((x) => x.key);
+        const keys = e.shiftKey && S.haul && order.includes(S.haul) ? run(order, S.haul, h.key) : toggled(S.haulSel, h.key);
+        return chooseHauls(keys, e.shiftKey ? S.haul : h.key);
+      }
+      return selectHaul(h);
+    };
+    keepInPlace(`#trips tr.haul[data-key="${CSS.escape(h.key)}"]`, act).catch((err) => status(String(err)));
   }));
   $('trips').querySelector('#clear-chosen')?.addEventListener('click', () => chooseTrips([]).catch((err) => status(String(err))));
   bindLinks($('trips'));
   $('trips').querySelectorAll('.pager button').forEach((b) => b.addEventListener('click', () => { S.tripPage += +b.dataset.d; renderTrips(); }));
+}
+// A clicked row stays where it was on the screen while the table is drawn again around it: a trip closing above it would
+// otherwise pull it up from under the cursor, by thousands of pixels when that trip listed its hauls
+async function keepInPlace(selector, act) {
+  const y0 = document.querySelector(selector)?.getBoundingClientRect().top;
+  await act();
+  const y1 = document.querySelector(selector)?.getBoundingClientRect().top;
+  if (y0 != null && y1 != null && Math.abs(y1 - y0) > 1) window.scrollBy(0, y1 - y0);
 }
 // the trips chosen, summed, when there are several
 function chosenTrips() {
@@ -1560,8 +1600,8 @@ function histChart(el, series, data) {
   u.over.addEventListener('mousedown', (e) => { down = e.clientX; });
   u.over.addEventListener('mouseup', (e) => {
     const x = down; down = null;
-    if (x == null || Math.abs(e.clientX - x) > 3 || u.cursor.left == null || u.cursor.left < 0) return;
-    const m = MONTH(u.posToVal(u.cursor.left, 'x') * 1000);
+    if (x == null || Math.abs(e.clientX - x) > 3) return;
+    const m = MONTH(timeAt(u, e));
     setHistRange(m, addMonths(m, 1));
   });
   return u;
@@ -1630,15 +1670,18 @@ const histHours = (pts) => pts.reduce((x, d) => x + H.c.h[cellRow(d)], 0);
 function renderHistoryMap(keep = false) {
   if (!H.deck) return;
   const r = H.range;
-  if (!keep) {   // the months' rows, and the decades learnt again from them
+  if (!keep) {   // the months' rows, and their decades found again
     H.rows = r ? H.cells.filter((i) => H.c.m[i] >= r[0] && H.c.m[i] < r[1]) : H.cells;
     H.dom = null;
   }
-  const L = H.base ? [H.base] : [], km = histKm();
-  if (H.rows.length) {
-    L.push(hexLayer('h-hex', H.rows, (i) => [H.c.lon[i], H.c.lat[i]], histHours, km, H.dom, (dom) => {
-      H.dom = dom; $('h-hexlegend').innerHTML = hexLegend(dom, km); renderHistoryMap(true);
-    }));
+  const L = H.base ? [H.base] : [], km = histKm(), rows = H.rows;
+  if (rows.length) {
+    if (!H.dom || km !== H.km) {
+      H.km = km;
+      H.dom = decadesOf(rows.length, (k) => H.c.lon[rows[k]], (k) => H.c.lat[rows[k]], (k) => H.c.h[rows[k]], km, H.view.latitude);
+      $('h-hexlegend').innerHTML = hexLegend(H.dom, km);
+    }
+    L.push(hexLayer('h-hex', rows, (i) => [H.c.lon[i], H.c.lat[i]], histHours, km, H.dom));
   } else $('h-hexlegend').textContent = 'no fishing on the trail in these months';
   H.deck.setProps({ layers: L });
 }
@@ -1699,9 +1742,12 @@ document.querySelectorAll('[data-panel] > .fold-bar').forEach((bar) => bar.addEv
 }));
 
 // Copying a link: to the view, or to one trip or haul in it -----------------------------------------------------------
-function linkTo(extra = {}) {
+// A link names what it shows: the view, its window as it stands; a trip or a haul, the record alone, whose window opens
+// on it. Either names the loaded years, so the record is in them.
+function linkTo(extra = {}, view = false) {
   const q = new URLSearchParams(hashFor(S.vid));
-  q.set('years', `${S.from}-${S.to}`); q.delete('trip'); q.delete('haul');
+  q.set('years', `${S.from}-${S.to}`); q.delete('trip'); q.delete('haul'); q.delete('a'); q.delete('b');
+  if (view && S.tr) { q.set('win', 'custom'); q.set('a', isoMin(S.win[0])); q.set('b', isoMin(S.win[1])); } else q.set('win', 'last');
   for (const [k, v] of Object.entries(extra)) if (v) q.set(k, v);
   return `${location.href.split('#')[0]}#${q}`;
 }
@@ -1727,7 +1773,7 @@ function bindLinks(el) {
 }
 $('copy-view').addEventListener('click', () => {
   if (!S.vid) return;
-  copyLink(linkTo({ trip: [...S.tripSel].join(','), haul: [...S.haulSel].join(',') }), 'this view');
+  copyLink(linkTo({ trip: [...S.tripSel].join(','), haul: [...S.haulSel].join(',') }, true), 'this view');
 });
 
 // Choosing a vessel ----------------------------------------------------------------------------------------------------
@@ -1869,7 +1915,7 @@ $('q').addEventListener('keydown', (e) => {
   if (e.key === 'ArrowDown' && n) { foundAt = (foundAt + 1) % n; renderResults(); e.preventDefault(); }
   else if (e.key === 'ArrowUp' && n) { foundAt = (foundAt - 1 + n) % n; renderResults(); e.preventDefault(); }
   else if (e.key === 'Enter' && n) openVessel(found[foundAt].v.vid);
-  else if (e.key === 'Escape') $('q').blur();
+  else if (e.key === 'Escape') { $('results').hidden = true; $('q').blur(); }
 });
 // '/' goes to the search from anywhere but a field
 document.addEventListener('keydown', (e) => {
@@ -1877,13 +1923,18 @@ document.addEventListener('keydown', (e) => {
 });
 $('close-list').addEventListener('click', () => $('drawer').classList.remove('on'));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer').classList.remove('on'); });
+// the search's choices close on a click anywhere else, even where the box keeps its focus
+document.addEventListener('mousedown', (e) => { if (!$('search').contains(e.target)) $('results').hidden = true; });
 
 // The address holds the vessel and every choice: the years, the window, the map's background, the tab, the open panels
 const isoMin = (ms) => new Date(ms).toISOString().slice(0, 16);
 function hashFor(vid) {
-  const q = new URLSearchParams({ vid, years: P.years, win: P.win, n: P.n, lay: LAYERS.filter(drawn).join(','), tab: tabOn(),
+  // a window a choice set comes back with the choice, so it is not stored; one the user set after choosing is (a and b),
+  // and a link with both keeps it
+  const win = S.winBy === 'choice' && P.win === 'custom' && (S.tripSel.size || S.haulSel.size) ? 'last' : P.win;
+  const q = new URLSearchParams({ vid, years: P.years, win, n: P.n, lay: LAYERS.filter(drawn).join(','), tab: tabOn(),
                                   open: PANELS.filter(isOpen).join(',') });
-  if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
+  if (win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
   // the selected logbook trip as ".tid|schema": a link then opens that trip with its hauls (maintainer, 2026-10-20)
   if (S.tripSel.size) q.set('trip', [...S.tripSel].join(','));
   if (S.haulSel.size) q.set('haul', [...S.haulSel].join(','));   // and hauls of them, each as .sid|schema
@@ -1923,13 +1974,15 @@ function fromHash() {
   // the trips and hauls the link names, one or several, each as .tid|schema and .sid|schema
   const keys = (k) => (h.get(k) || '').split(',').filter((x) => x.lastIndexOf('|') > 0);
   const tripKeys = keys('trip'), haulKeys = keys('haul');
+  // a link with a window of its own (custom) and a choice keeps the window; else the window opens on the choice
+  const keepWindow = P.win === 'custom';
   choose(vid).then(async () => {
     if (tripKeys.length === 1) {
       const cut = tripKeys[0].lastIndexOf('|');
-      await selectTrip(tripKeys[0].slice(0, cut), tripKeys[0].slice(cut + 1), { open: true, scroll: true });
-    } else if (tripKeys.length > 1) await chooseTrips(tripKeys);
-    if (haulKeys.length === 1 && S.haulOf.get(haulKeys[0])) await selectHaul(S.haulOf.get(haulKeys[0]), { open: true });
-    else if (haulKeys.length > 1) await chooseHauls(haulKeys);
+      await selectTrip(tripKeys[0].slice(0, cut), tripKeys[0].slice(cut + 1), { open: true, scroll: true, keepWindow });
+    } else if (tripKeys.length > 1) await chooseTrips(tripKeys, null, keepWindow);
+    if (haulKeys.length === 1 && S.haulOf.get(haulKeys[0])) await selectHaul(S.haulOf.get(haulKeys[0]), { open: true, keepWindow });
+    else if (haulKeys.length > 1) await chooseHauls(haulKeys, null, keepWindow);
     if (h.get('bench')) bench();
   }).catch((e) => status(String(e)));
 }
