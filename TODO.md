@@ -728,8 +728,8 @@ Measured 2026-10-19, read-only:
   `ais_trail.R` and `logbook_sensor_gps.R` clear the whole output; `ais_ping_clean.R` and `ais_voyage.R` clear the
   years they write; `ais_ping_union.R` and `ais_ping_tag.R` write a fixed 2007:2026.
 - **Mixed schemas, not stale:** `ping_union` 2025-2026 store `dt_sec`, `sid_gps` and `n_sid_gps` as INT32 (DOUBLE,
-  INT64 elsewhere); 7 `astd` months carry an extra `ship_id`; `raw/ais/trail2/year=2014` (2026-05-07, read by no code)
-  has no parquet footer.
+  INT64 elsewhere); 7 `astd` months carry an extra `ship_id`. (`raw/ais/trail2/`, read by no code, is in the Trash:
+  decision 168.)
 
 **Proposal.** (a) In `convert.R`, `unlink(fd_staging("ais", "stk"), recursive = TRUE)` before the write, as
 `ais_catch.R` does. (b) `targets` cannot see that edit, so with the next AIS rebuild, from a clean tree: fingerprint,
