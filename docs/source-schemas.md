@@ -192,7 +192,10 @@ the dump (Claude, 2026-10-22, not checked by a person):
 - adb holds sources fs_afladagbok's trip table has none of: 56,623 trips,
   2020-2023 (and 10 in 2026), among them paper logbooks (`PAPPÍR`, 20,993),
   Trackwell's books (`TRACKWELL BAEKUR`, 26,210) and an app batch of April 2021
-  (`APP TÖFLUR`, 9,374). Every adb trip of 2020 is from one of them.
+  (`APP TÖFLUR`, 9,374). Every adb trip of 2020 is from one of them. They are
+  in dumps we hold all the same (decision 171): `APP TÖFLUR` is fs_afladagbok's
+  tour app (`tour`, `fishing_spot`), and the other two are afli's `stofn`
+  records.
 - Every trip has a `batch_day`, a calendar day: every day from 2025-11-19 to
   2026-10-15 but 2025-12-24 and 25, and before that 35 days missing since
   2020-01-03 (2020-07-21 to 08-05, eleven of 24-25 December and 1 January, and
@@ -209,7 +212,7 @@ also has it, by word of mouth, that the service is a Java Spring project
 (`services/fiskistofa-mirror`) on an MFRI host, logging from 2023-02-20, which
 the GitLab listing it read does not show (web-services.md).
 
-*The maintainer's account* (2026-10-22), not verified on the dump: adb gets its
+*The maintainer's account* (2026-10-22), checked on the dump since (decision 171, below): adb gets its
 recent data from Fiskistofa, most likely with Fiskistofa's fs_afladagbok system
 as the source; the Java that builds it is understood by no one at hand. It tried
 to feed the new data into `afli`'s format, mapping Fiskistofa's new gear codes
@@ -234,6 +237,21 @@ a person) fs_afladagbok's stations (`ws_veidi.upphaf_timi`) number 57 in 2019,
 660 in 2020, 77,824 in 2021 and 93,471-102,820 a year in 2022-2025 (and a few
 in junk years), and its change table (`ws_veidi_breytingar.skraningartimi`)
 runs from 2022-01-04 to 2024-04-29 but for 6 rows.
+
+**Checked against the dumps** (decision 171; Claude, 2026-10-22, not checked by
+a person). adb's trip, station, catch and five gear tables are fs_afladagbok's
+`ws_*` tables column for column, with Oracle's comments translated, the same ids
+and units, and the codes mapped to MFRI's through adb's `fishing_gear`, `port`
+and `species`. Before 2025-11-19, 600,072 of adb's 600,315 stations have their
+record in a dump we hold: 465,341 in `ws_veidi`, 134,303 in afli's `stofn`
+(`TRACKWELL BAEKUR`, `PAPPÍR`), 428 in the tour app's `fishing_spot`
+(`APP TÖFLUR`). On the values both hold, adb's tables are an exact copy (the
+catch: 5,362,572 t in equal groups on each side). Where they part, fs_afladagbok
+is the better copy. adb writes bottom trawl for shrimp and Nephrops trawl
+(5,200 stations, 2019-2024), drops the dredge's weight and the trap's type,
+writes 0 where fs has no value, and lacks 31,954 t of 2019-2021 catch. adb has
+one thing fs lacks: a departure port on 94,467 trips of sources fs gives none
+for, of unknown origin. fs_afladagbok's last registration is 2025-12-12.
 
 467,635 of fs_afladagbok's station ids are in adb (decision 125), and adb has
 defects fs_afladagbok lacks (decision 160), among them a dropped west sign

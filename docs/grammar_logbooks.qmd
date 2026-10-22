@@ -189,7 +189,7 @@ calculations if not removed.
 | **Temporal resolution** | Minutes (on-bottom clock) | Minutes (electronic timestamps) | Minutes (electronic timestamps) | Day (`LE_CDAT`); rarely `t2`/`t3` |
 | **Catch format** | Long | Long | Long | Wide (`LE_KG_<SP>` columns) |
 
-^†^ `adb` is a view of the same e-logbook as `fs_afladagbok`, derived in-house and running on past the end of fs_afladagbok's dump. The merged output (`curated/logbook/`) reads it only from 2025-11-19, where that dump thins and ends (decision 160; [merge.qmd](merge.qmd)); its gear is crosswalked by `curate/corrections/logbook_gear.R` (plan 034).
+^†^ `adb` is MFRI's nightly copy of the Directorate of Fisheries' logbook records, read from the Directorate by Java code and put into MFRI's codes. Its e-logbook part is `fs_afladagbok`'s tables field for field, and it runs on past the end of fs_afladagbok's dump (decision 171). The merged output (`curated/logbook/`) reads it only from 2025-11-19, where that dump thins and ends (decision 160; [merge.qmd](merge.qmd)); its gear is crosswalked by `curate/corrections/logbook_gear.R` (plan 034).
 
 The gear code unification for the Icelandic schemas is handled by the gear
 table (`curated/reference/gear.parquet`, `reference/gear/mapping.R`; the

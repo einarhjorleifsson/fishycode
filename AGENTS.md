@@ -105,8 +105,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   `duplicate` in `station.parquet`, and a trip submitted again is `duplicate` in `trip.parquet`. Every sum, count and
   link leaves duplicates out; a new consumer of the logbook must too. `same_time` records are kept.
 - **adb only where fs_afladagbok ends** (maintainer, decision 160): fs_afladagbok is the dump of record of the
-  e-logbook, and adb, derived from it, is read only from 2025-11-19, when the dump starts to thin. Before that day a
-  reader, a test or a comparison takes fs_afladagbok.
+  e-logbook, a copy from the Directorate fed no longer (last registration 2025-12-12). adb is MFRI's nightly copy of
+  the Directorate's records, read by Java code no one at hand knows and put into MFRI's codes: fs_afladagbok's tables
+  field for field, with losses of its own (decision 171). It is read only from 2025-11-19, when the dump starts to
+  thin. Before that day a reader, a test or a comparison takes fs_afladagbok.
 
 ## Rules
 

@@ -53,7 +53,7 @@ adapter in `sources/`:
 |---|---|---|---|
 | **afli** | `sources/afli/convert.R` | paper 1950 – 2022; electronic 2003 – 2024 | The legacy Oracle logbook; the historical record. A negative `.sid` is an electronic logbook station (1.28 M), a positive one a paper station (5.57 M) |
 | **fs_afladagbok** | `sources/fs_afladagbok/convert.R` | 2020 – 2025-11-28 | A one-time dump of the Directorate of Fisheries' e-logbook |
-| **adb** | `sources/adb/convert.R` | 2025-11-19 – present | A view of the same e-logbook derived from fs_afladagbok and other schemas, read only where the dump ends (decision 160) |
+| **adb** | `sources/adb/convert.R` | 2025-11-19 – present | MFRI's copy of the Directorate's logbook records in MFRI's codes, fs_afladagbok's tables field for field (decision 171), read only where the dump ends (decision 160) |
 | **aflaskeyti** | `sources/aflaskeyti/convert.R` | 2014-01 – 2018-06 | ERS catch reports exchanged with Norway and the Faroes: foreign vessels' hauls in Icelandic waters (@sec-ers) |
 
 # Source priority
