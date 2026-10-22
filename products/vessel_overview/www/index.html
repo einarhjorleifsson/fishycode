@@ -39,10 +39,11 @@
   main { grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 16px; }
   #vessel { grid-template-columns: minmax(300px, 460px) 1fr; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-  /* Where | When: one split for every vessel, mode and window (maintainer, 2026-10-18), set here and only here. minmax(0, )
-     keeps a column's content (the chart's canvas, a long legend) from widening it. The map's shape is fixed in app.js
-     (MAP_RATIO); its height follows its width. */
-  #where-when { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  /* Where | When: one split for every vessel, mode and window (maintainer, 2026-10-18), set here and only here: two fifths
+     and three since the chart's left margin was narrowed (maintainer, 2026-10-22), a third and two thirds before.
+     minmax(0, ) keeps a column's content (the chart's canvas, a long legend) from widening it. The map's shape is fixed
+     in app.js (MAP_RATIO); its height follows its width. */
+  #where-when { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
   section.controls { position: sticky; top: 52px; z-index: 15; }
   #trips, #pings { overflow-x: auto; }   /* wide QC tables scroll sideways */
   /* the vessel in two lines, its photo as a thumb at the right; a click on it opens the Vessel tab */
@@ -75,6 +76,16 @@
   dt { color: var(--muted); } dd { margin: 0; }
   #map { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 6px; overflow: hidden; background: #e8edf1; }
   #attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
+  /* what the map shows, on the map (maintainer, 2026-10-22): a bar along its top, the hexagons' legend at its foot */
+  #mapctl { position: absolute; top: 6px; left: 6px; right: 6px; z-index: 2; display: flex; flex-wrap: wrap; gap: 4px 6px;
+            align-items: center; pointer-events: none; font-size: 11px; }
+  #mapctl > * { pointer-events: auto; }
+  #mapctl .seg { background: #ffffffe8; }
+  #mapctl .seg button, #mapctl > button { padding: 1px 7px; font-size: 11px; }
+  #mapctl .lbl { background: #ffffffd0; border-radius: 4px; padding: 0 4px; color: var(--muted); }
+  #mapctl #fit { margin-left: auto; background: #ffffffe8; }
+  #hexlegend { position: absolute; left: 6px; bottom: 18px; z-index: 2; background: #ffffffe0; border-radius: 4px; padding: 1px 5px;
+               font-size: 10px; max-width: calc(100% - 12px); }
   #plot, #lanes { margin-top: 6px; }
   #hoverinfo { min-height: 18px; font-size: 12px; color: var(--ink); }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 4px; }
@@ -130,14 +141,6 @@
           <option>7</option><option>8</option><option>9</option><option>10</option><option>15</option><option>20</option></select></span>
         <button id="month" title="the window and the map on the last 30 days">Last month</button>
         <button id="all" title="the window and the map on every loaded year">Whole range</button>
-        <button id="fit" title="frame the map on the window again, after you moved it: on the fishing, where the vessel fished in it">Fit map</button>
-        <span class="note" style="margin-left:8px">In the window</span>
-        <span class="seg" id="pts" title="the window's pings as points on the line, or the line alone">
-          <button data-pts="1" class="on">points</button><button data-pts="0">line only</button></span>
-        <span class="note" style="margin-left:8px">Outside the window</span>
-        <span class="seg" id="bg" title="what the map shows besides the window's pings">
-          <button data-bg="none" class="on">nothing</button><button data-bg="hex" title="the hexagons' size follows the zoom">fishing hours</button><button data-bg="track">track</button></span>
-        <span id="hexlegend" class="note" style="display:none"></span>
       </div>
       <div class="window"><span class="note">Window</span><b id="window-label" style="font-size:13px"></b><span id="perf" class="note"></span>
         <span class="note ov-only">· the map shows the vessel's voyages in this window, time in port left out: drag across the speed chart or move the slider to change it, and hover on the chart to see the vessel at that moment</span></div>
@@ -145,7 +148,19 @@
     <div class="row2" id="where-when">
     <section id="p-map">
       <h2>Where</h2>
-      <div id="map"><div id="attrib"></div></div>
+      <div id="map">
+        <div id="mapctl">
+          <span class="lbl">window</span>
+          <span class="seg" id="pts" title="the window's pings as points on the line, or the line alone">
+            <button data-pts="1" class="on">points</button><button data-pts="0">line only</button></span>
+          <span class="lbl">outside it</span>
+          <span class="seg" id="bg" title="what the map shows besides the window's pings">
+            <button data-bg="none" class="on">nothing</button><button data-bg="hex" title="the hexagons' size follows the zoom">fishing hours</button><button data-bg="track">track</button></span>
+          <button id="fit" title="frame the map on the window again, after you moved it: on the fishing, where the vessel fished in it">Fit</button>
+        </div>
+        <div id="hexlegend" style="display:none"></div>
+        <div id="attrib"></div>
+      </div>
     </section>
     <section id="p-chart">
       <h2>When</h2>
@@ -153,18 +168,19 @@
       <div id="lanes" class="qc-only"></div>
       <div id="hoverinfo"></div>
       <div class="legend ov-only">
-        <span><span class="sw" style="background:#1f6feb"></span>speed (knots)</span>
+        <span><span class="sw" style="background:#1f6feb"></span>speed (knots, drawn at most 15)</span>
         <span><span class="sw" style="background:#d62728"></span>fishing, as estimated from speed and the logbook</span>
         <span><span class="sw" style="background:#1f6feb33"></span>a fishing trip in the logbook (click it)</span>
-        <span><span class="sw" style="background:#9aa5b1"></span>a haul: gear in the water</span>
-        <span><span class="sw" style="background:#2e7d32"></span>fishing, where the logbook gives the times</span>
+        <span>a haul in the logbook: <span class="sw" style="background:#9aa5b1"></span>setting the gear
+          <span class="sw" style="background:#2e7d32"></span>towing or hauling <span class="sw" style="background:#a5d6a7"></span>its date only</span>
         <span><span class="tri"></span>a landing</span>
       </div>
       <div class="legend qc-only">
         <span><span class="sw" style="background:#1f6feb"></span>speed</span>
         <span><span class="sw" style="background:#d62728"></span>fishing_flow</span>
         <span><span class="sw" style="background:#1f6feb33"></span>logbook trip T1-T2</span>
-        <span><span class="sw" style="background:#9aa5b1"></span>haul t1-t4</span><span><span class="sw" style="background:#2e7d32"></span>t2-t3</span>
+        <span>haul windows (station_window): <span class="sw" style="background:#9aa5b1"></span>set <span class="sw" style="background:#2e7d32"></span>tow, haul, jig
+          <span class="sw" style="background:#a5d6a7"></span>day</span>
         <span><span class="tri"></span>landing (date)</span>
         <span>lanes: one row per record kind, on the same time axis; AIS gap at sea: over 30 min without a ping, time lying in port not counted</span>
       </div>
@@ -177,10 +193,10 @@
     <section id="p-trips">
       <h2>Trips and landings in these years</h2>
       <div class="help ov-only">Fishing trips from the logbook, with what each landed, and landings with no logbook trip.
-        Click a row to see it on the map and chart; double-click it, or the ▸, to list its hauls and what it landed.</div>
+        Click a row to see it on the map and chart and to list its hauls; click a haul to see that haul alone.</div>
       <div class="help qc-only">Logbook trips with the pings inside them and their landings through lid_map, and the landings
-        no trip of these years claims. Warnings compare the logbook's hauls with the flow's fishing flag on the pings.
-        Click to select; double-click or ▸ to open every record.</div>
+        no trip of these years claims. A haul's pings are those carrying its .sid; warnings compare them with the flow's
+        fishing flag. Click a row to select it and open its records; click a record to frame it alone.</div>
       <div id="trips"></div>
     </section>
     <section id="p-pings" class="qc-only">

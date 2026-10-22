@@ -3,7 +3,8 @@
 #
 # Input:  curated/vessel/vessel.parquet; curated/vessel/skipaskra/vessel_hist, vessel_identification_hist,
 #         vessel_measurement_hist, vessel_owners_hist, vessel_fishery_hist, vessel_event; curated/landing/landings,
-#         catch; curated/logbook/trip, station, fishing_sample, catch; curated/ais/trail/; curated/reference/gear, port;
+#         catch; curated/logbook/trip, station, fishing_sample, gear, station_window, catch; curated/ais/trail/;
+#         curated/reference/gear, port;
 #         staging/mbl/photo.parquet and the image files it lists
 # Output: nothing written. Each endpoint answers as parquet (zstd), which DuckDB-WASM reads in the page (ask h).
 #
@@ -14,6 +15,8 @@
 # - A landing's gear code is the new one for agf and the old one for lods (curate/corrections/logbook_gear.R), so
 #   its name comes from the version of the gear table that matches its schema.
 # - Twin records (decision 094): trips and stations marked `duplicate` are left out.
+# - A haul is drawn and its pings counted by the windows the flow gives it (curated/logbook/station_window, one row per
+#   phase, a date-only haul as its day) and the `.sid` each fix carries, not by the logbook's own t1-t4 (decision 177).
 # - A haul's gear is the settled one of curated/logbook/gear.parquet (`gid_used`, with `gid_basis` as `gear_basis`):
 #   the fishing sample has none for adb, which the landings fill (curate/corrections/logbook_gear.R).
 # - The register history stops on 2023-12-19 (plan 028 step 6 is not built); the page labels it (ask g).
@@ -22,7 +25,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-19.1"
+API_VERSION <- "2026-10-22.1"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -49,6 +52,7 @@ ALLOW <- list(
   stations = c(".sid", ".tid", "schema", "date", "t1", "t2", "t3", "t4", "lon1", "lat1", "lon2", "lat2", "z1", "z2",
                "station_type", "gid", "gear", "gear_basis", "target", "duration_m", "effort", "effort_unit"),
   station_catch = c(".sid", "schema", "sid", "catch", "catch_whole", "condition"),
+  windows  = c(".sid", "schema", ".tid", "phase", "w_start", "w_end", "win_basis"),
   trail_years = c("year", "n", "time_first", "time_last"),
   trail    = c("time", "lon", "lat", "speed", "heading", "provider", "voyage_id", "port_call_id", ".tid", "schema", ".sid", "gear",
                "phase", "fishing_flow", "hours"),
@@ -122,6 +126,11 @@ SQL <- list(
   station_catch = function(vid, p) sprintf(
     "WITH s AS (%s) SELECT c.* FROM %s c JOIN (SELECT \".sid\", schema FROM s) USING (\".sid\", schema)",
     SQL$stations(vid, p), src("curated", "logbook", "catch.parquet")),
+  # The windows the flow gives each haul (curate/station_window.R): one row per (station, phase), half-open, never
+  # overlapping but for day windows; a date-only haul is its day. A duplicate twin has none.
+  windows  = function(vid, p) sprintf(
+    "WITH t AS (%s) SELECT w.* FROM %s w JOIN t USING (\".tid\", schema) WHERE w.vid = %d ORDER BY w.w_start",
+    SQL$trips(vid, p), src("curated", "logbook", "station_window.parquet"), vid),
   trail_years = function(vid, p) sprintf(
     "SELECT year::INTEGER AS year, count(*) AS n, min(time) AS time_first, max(time) AS time_last FROM %s
      WHERE vid = %d GROUP BY year ORDER BY year", TRAIL(), vid),

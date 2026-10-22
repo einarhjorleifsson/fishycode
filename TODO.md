@@ -899,18 +899,6 @@ the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
 **check:** the freed fixes' `fishing_flow` judged in a decision; the gillnet set times in port explained or listed;
 `trackwell.yml`'s `sent` filled or the draft dropped.
 
-## 104. The vessel overview draws hauls from the flow's windows
-**status:** open · **see:** plan 030, decision 143, `curated/logbook/station_window.parquet`, `products/vessel_overview/`
-
-Found 2026-10-20 (the overview session): the overview reads a haul's `t1`-`t4` itself, so a date-only haul is a
-hairline at midnight and draws false warnings ("hauls without fishing pings"), while the flow is right (vid 1416,
-trip 103167526: 73 of 74 pings on hauls). It should draw `station_window`'s windows (`w_start`, `w_end`, `phase`,
-`win_basis`; a date-only haul as a day window) and count a haul's pings by the `.sid` each fix carries on the trail.
-Also: the trip table should open on the page holding the window's trips, not the newest.
-
-**check:** the overview draws hauls from `station_window` and counts their pings by `.sid`; vid 1416's trip 103167526
-shows no false warning; the trip table opens on the window's trips.
-
 ## 105. A date-only haul's day window, stretched past midnight along its fishing stretch
 **status:** open · **see:** decision 092 (`rb_cut_record_stretches()`, `rb_link_record_stretches()`), decision 091 (one
 fix, one record), `$FISHYDATA/archive/2026-10-todo98/scripts/` (`day_expand.R`, `day_expand_smooth.R`)

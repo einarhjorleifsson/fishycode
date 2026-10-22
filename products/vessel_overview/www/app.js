@@ -28,7 +28,7 @@ const num = (x, d = 0) => (x == null || x === '' || Number.isNaN(x) ? '' : Numbe
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-19.1';
+const API = '2026-10-22.1';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -107,8 +107,8 @@ function lower(a, x, key = (v) => v) {
 }
 
 // State ----------------------------------------------------------------------------------------------------------------
-const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null,
-            stations: [], hauls: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
+const S = { vid: null, name: '', mode: 'ov', from: null, to: null, tr: null, win: [0, 0], hover: -1, trip: null, haul: null,
+            stations: [], hauls: [], wins: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
             history: false, about: {}, assumed: null, assumedBase: null, bg: 'none', ready: false };
 // The user's choices (maintainer, 2026-10-18: "if one selects a new vessel - all the users selections besides the new
 // vessels should be preserved"). The page starts on these defaults; from then on each choice the user makes is the
@@ -285,9 +285,10 @@ function fitTo(a, b, glide = false) {
   // a vessel in port for the whole window gives a single point: give the box a least size, about 2 km
   const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hx = Math.max((x1 - x0) / 2, 0.02), hy = Math.max((y1 - y0) / 2, 0.01);
   const { width, height } = $('map').getBoundingClientRect();
+  const pad = Math.min(40, width / 4, height / 4);   // and room for the bar of choices along the map's top
   try {
     const v = new deck.WebMercatorViewport({ width: Math.max(width, 200), height: Math.max(height, 200) })
-      .fitBounds([[cx - hx, cy - hy], [cx + hx, cy + hy]], { padding: Math.min(40, width / 4, height / 4) });
+      .fitBounds([[cx - hx, cy - hy], [cx + hx, cy + hy]], { padding: { top: pad + 24, bottom: pad, left: pad, right: pad } });
     view.zoom = Math.min(v.zoom, 11); view.latitude = v.latitude;
     // after a choice on the chart the map glides to its frame, so the eye follows where the window went
     deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: view.zoom,
@@ -302,9 +303,14 @@ function fitTo(a, b, glide = false) {
 // The speed chart ----------------------------------------------------------------------------------------------------
 let plot = null, lanes = null, cursorFromMap = false;
 const SYNC = uPlot.sync('vessel');
-// The speed chart and the event lane share one left gutter (axis and its label), so a time falls at the same x in both
+// In Quality control the speed chart and the event lane share one left gutter (axis and its label), so a time falls at
+// the same x in both. In Overview there is no lane: the gutter holds only the speed's values, the legend names the unit,
+// and the data get the width (maintainer, 2026-10-22: "make margin smaller so there more space for viewing the data")
 const GUTTER = { size: 118, labelSize: 18, labelFont: '600 11px system-ui', font: '11px system-ui' };
 const PADDING = [8, 28, null, null];   // a fixed right margin: the chart's last time label no longer widens only the chart
+const speedAxis = () => (qc() ? { ...GUTTER, label: `knots (cap ${SPEED_CAP})` }
+                              : { size: 24, gap: 3, ticks: { size: 4 }, font: GUTTER.font });
+const padding = () => (qc() ? PADDING : [8, 18, null, 2]);
 const inside = (arr, t, maxDur) => { for (let i = lower(arr, t - maxDur, (d) => d.a); i < arr.length && arr[i].a <= t; i++) if (arr[i].b >= t) return arr[i]; return null; };
 const tripAt = (t) => inside(S.trips, t, 120 * DAY);
 
@@ -320,19 +326,22 @@ function drawTrips(u) {   // bands behind the speed line, one per logbook trip
   }
   ctx.restore();
 }
-function drawMarks(u) {   // hauls as bars at the top, landings as triangles at the bottom
+// Hauls as bars at the top, from the windows the flow gives them (curate/station_window.R), not the logbook's own t1-t4,
+// so a haul with a date alone is its day, not a hairline at midnight (decision 177): setting in grey; towing, hauling or
+// jigging in green; a day in pale green. The chosen trip's in red, the chosen haul's in black. Landings are triangles at
+// the bottom.
+const WIN_COLOUR = { set: '#9aa5b1', tow: '#2e7d32', haul: '#2e7d32', jig: '#2e7d32', day: '#a5d6a7', logbook: '#9aa5b1' };
+const winColour = (w) => (w.h.key === S.haul ? '#111827' : w.h.tid === S.trip && w.phase !== 'set'
+  ? (w.phase === 'day' ? '#ef9a9a' : '#b71c1c') : WIN_COLOUR[w.phase] || '#9aa5b1');
+function drawMarks(u) {
   const { ctx } = u, { left, top, width, height } = u.bbox, x0 = u.scales.x.min * 1000, x1 = u.scales.x.max * 1000;
   const px = devicePixelRatio || 1, h = 6 * px;
   ctx.save(); ctx.beginPath(); ctx.rect(left, top, width, height); ctx.clip();
-  for (let i = lower(S.hauls, x0 - 7 * DAY, (d) => d.a); i < S.hauls.length && S.hauls[i].a <= x1; i++) {
-    const d = S.hauls[i];
-    if (d.b < x0) continue;
-    const a = u.valToPos(d.a / 1000, 'x', true), b = u.valToPos(d.b / 1000, 'x', true);
-    ctx.fillStyle = '#9aa5b1'; ctx.fillRect(a, top + 2 * px, Math.max(px, b - a), h);
-    if (d.t2 != null && d.t3 != null) {
-      const c = u.valToPos(d.t2 / 1000, 'x', true), e = u.valToPos(d.t3 / 1000, 'x', true);
-      ctx.fillStyle = d.tid === S.trip ? '#b71c1c' : '#2e7d32'; ctx.fillRect(c, top + 2 * px, Math.max(px, e - c), h);
-    }
+  for (let i = lower(S.wins, x0 - (S.wins.maxDur || 0), (d) => d.a); i < S.wins.length && S.wins[i].a <= x1; i++) {
+    const w = S.wins[i];
+    if (w.b < x0) continue;
+    const a = u.valToPos(w.a / 1000, 'x', true), b = u.valToPos(w.b / 1000, 'x', true);
+    ctx.fillStyle = winColour(w); ctx.fillRect(a, top + 2 * px, Math.max(px, b - a), h);
   }
   ctx.fillStyle = '#e07b00';
   for (let i = lower(S.landings, x0 - DAY, (d) => d.d); i < S.landings.length && S.landings[i].d <= x1; i++) {
@@ -341,14 +350,16 @@ function drawMarks(u) {   // hauls as bars at the top, landings as triangles at 
   }
   ctx.restore();
 }
+const PHASE_WORDS = { set: 'setting the gear', tow: 'towing', haul: 'hauling', jig: 'jigging', logbook: 'gear in the water' };
 function describe(t) {   // what is going on at time t, in the mode's words
-  const tp = tripAt(t), hl = inside(S.hauls, t, 7 * DAY), out = [`${fmt(t)} UTC`];
+  const tp = tripAt(t), hw = inside(S.wins, t, S.wins.maxDur || 0), hl = hw?.h, out = [`${fmt(t)} UTC`];
   if (qc()) {
-    if (tp) out.push(`trip ${tp.tid} (${tp.schema}) ${fmt(tp.a)} – ${fmt(tp.b)}`);
-    if (hl) out.push(`haul ${hl.sid}: t1 ${fmt(hl.t1)}, t2 ${fmt(hl.t2)}, t3 ${fmt(hl.t3)}, t4 ${fmt(hl.t4)}, ${hl.gear}, ${num(hl.kg)} kg`);
+    if (tp) out.push(`trip ${tp.tid} (${tp.schema}) ${fmt(tp.T1)} – ${fmt(tp.T2)}`);
+    if (hl) out.push(`haul ${hl.sid}: ${hw.phase} window ${fmt(hw.a)} – ${fmt(hw.b)} (${hw.basis}), ${hl.gear}, ${num(hl.kg)} kg`);
   } else {
-    if (tp) out.push(`on a fishing trip, ${dstr(tp.a)} to ${dstr(tp.b)}: ${tp.n} hauls, ${num(tp.kg / 1000, 1)} t`);
-    if (hl) out.push(`gear in the water (${hl.gear}), ${num(hl.kg)} kg caught in this haul`);
+    if (tp) out.push(`on a fishing trip, ${dstr(tp.T1)} to ${dstr(tp.T2)}: ${tp.n} hauls, ${num(tp.kg / 1000, 1)} t`);
+    if (hl) out.push(hw.phase === 'day' ? `a haul on this day (${hl.gear}; the logbook gives its date only), ${num(hl.kg)} kg`
+      : `${PHASE_WORDS[hw.phase] || 'gear in the water'} (${hl.gear}), ${num(hl.kg)} kg caught in this haul`);
     const g = !tp && !hl && gearAfter(t);
     if (!tp && !hl) out.push(g ? `no logbook yet; gear ${gearWords(g)}` : 'no fishing trip in the logbook at this time');
   }
@@ -359,6 +370,13 @@ function describe(t) {   // what is going on at time t, in the mode's words
 // The chart's speed is capped at 15 knots (maintainer, 2026-10-18: vessels rarely go above 12-15 knots, and fishing is
 // well below that): a ping above it is drawn at the cap, and the hover text gives its real speed
 const SPEED_CAP = 15, PLOT_H = 230;
+// In Overview the chart is as tall as the map beside it, less the When panel's other lines, so the two end together: the
+// width the narrower gutter saved went to Where, which made the map taller (maintainer, 2026-10-22). Never under PLOT_H,
+// and PLOT_H in Quality control, where the lanes make When the taller, or on one column.
+function plotH() {
+  if (qc() || !$('p-map').offsetParent || matchMedia('(max-width: 1000px)').matches) return PLOT_H;
+  return Math.max(PLOT_H, $('p-map').offsetHeight - ($('p-chart').offsetHeight - $('plot').offsetHeight));
+}
 // The speed line is drawn trip by trip (maintainer, 2026-10-18: "the when time-speed graph should be segmentized by trip
 // - i.e. not a line between entry to harbour to exit from harbour"). A ping in port has no point (plotSpeed is null), and
 // the line breaks where the voyage changes; within one voyage it is joined, across an AIS gap too ("you can show a
@@ -383,11 +401,11 @@ function makePlot() {
   const tr = S.tr;
   plot?.destroy();
   plot = new uPlot({
-    width: $('plot').clientWidth || 600, height: PLOT_H, legend: { show: false }, padding: PADDING,
+    width: $('plot').clientWidth || 600, height: plotH(), legend: { show: false }, padding: padding(),
     scales: { x: { time: true }, y: { range: [0, SPEED_CAP] } },
     series: [{}, { label: 'speed', stroke: '#1f6feb', width: 1, points: { show: false }, gaps: tripGaps },
              { label: 'fishing', stroke: '#d62728', width: 1.5, points: { show: false }, spanGaps: false, gaps: tripGaps }],
-    axes: [{ font: GUTTER.font }, { ...GUTTER, label: `knots (cap ${SPEED_CAP})` }],
+    axes: [{ font: GUTTER.font }, speedAxis()],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
     hooks: {
       drawClear: [drawTrips], draw: [drawMarks],
@@ -420,17 +438,14 @@ function clickToSelect(u) {
 
 // The event lane (Quality control) -------------------------------------------------------------------------------------
 const LANES = [
-  ['logbook trip', 'trip', '#1f6feb88'], ['setting t1-t2', 'set', '#9aa5b1'], ['fishing t2-t3', 'fish', '#2e7d32'],
-  ['hauling t3-t4', 'haul', '#7b5ea7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'call', '#5d6b78'],
+  ['logbook trip', 'trip', '#1f6feb88'], ['set window', 'set', '#9aa5b1'], ['tow, haul, jig', 'fish', '#2e7d32'],
+  ['day (date only)', 'day', '#a5d6a7'], ['landing', 'land', '#e07b00'], ['in port (port call)', 'call', '#5d6b78'],
   ['voyage', 'voy', '#4a7bd0'], ['fishing_flow', 'flow', '#d62728'], ['AIS gap at sea', 'gap', '#111827'],
 ];
 function laneLists() {   // every lane as intervals {a, b} sorted by a, with its longest interval for the search
-  const tr = S.tr, L = { trip: S.trips, set: [], fish: [], haul: [], land: [], call: [], voy: [], flow: [], gap: [] };
-  for (const h of S.hauls) {
-    if (h.t1 != null && h.t2 != null) L.set.push({ a: h.t1, b: h.t2, h });
-    if (h.t2 != null && h.t3 != null) L.fish.push({ a: h.t2, b: h.t3, h });
-    if (h.t3 != null && h.t4 != null) L.haul.push({ a: h.t3, b: h.t4, h });
-  }
+  const tr = S.tr, L = { trip: S.trips, set: [], fish: [], day: [], land: [], call: [], voy: [], flow: [], gap: [] };
+  // the hauls' windows as the flow made them (station_window), one lane for the set, one for the attended phases
+  for (const w of S.wins) (w.phase === 'set' ? L.set : w.phase === 'day' ? L.day : L.fish).push(w);
   for (const d of S.landings) L.land.push({ a: d.d, b: d.d + DAY, d });
   if (tr) {
     // a run of the fishing flag, ended by a gap in the AIS
@@ -465,7 +480,8 @@ function drawLanes(u) {
       const d = arr[i];
       if (d.b < x0) continue;
       const a = u.valToPos(d.a / 1000, 'x', true), b = u.valToPos(d.b / 1000, 'x', true);
-      ctx.fillStyle = key === 'trip' && d.tid === S.trip ? '#d6272888' : key === 'voy' ? (d.id % 2 ? '#4a7bd0' : '#8ab4f8') : colour;
+      ctx.fillStyle = key === 'trip' && d.tid === S.trip ? '#d6272888' : key === 'voy' ? (d.id % 2 ? '#4a7bd0' : '#8ab4f8')
+        : d.h && d.h.key === S.haul ? '#111827' : colour;
       ctx.fillRect(a, y, Math.max(key === 'land' ? 3 : 1, b - a), h);
     }
   });
@@ -494,8 +510,8 @@ function makeLanes() {
         if (u.cursor.left == null || u.cursor.left < 0 || u.cursor.top == null || u.cursor.top < 0) return;
         const t = u.posToVal(u.cursor.left, 'x') * 1000, r = Math.min(n - 1, Math.floor(u.cursor.top / (u.bbox.height / devicePixelRatio / n)));
         const [label, key] = LANES[r], d = inside(S.lanes[key], t, S.lanes[key].maxDur);
-        const what = !d ? 'nothing' : key === 'trip' ? `trip ${d.tid}, ${fmt(d.a)} – ${fmt(d.b)}`
-          : d.h ? `haul ${d.h.sid}, ${fmt(d.a)} – ${fmt(d.b)}` : key === 'land' ? `landing on ${dstr(d.a)}, ${num(d.d.t, 2)} t`
+        const what = !d ? 'nothing' : key === 'trip' ? `trip ${d.tid}, T1 ${fmt(d.T1)} – T2 ${fmt(d.T2)}`
+          : d.h ? `haul ${d.h.sid} ${d.phase} window, ${fmt(d.a)} – ${fmt(d.b)} (${d.basis})` : key === 'land' ? `landing on ${dstr(d.a)}, ${num(d.d.t, 2)} t`
           : key === 'gap' ? `no ping for ${num((d.b - d.a) / 6e4)} min` : `${fmt(d.a)} – ${fmt(d.b)}${d.id != null && key !== 'flow' ? ` (id ${d.id})` : ''}`;
         $('hoverinfo').textContent = `${describe(t)} · lane ${label}: ${what}`;
       }],
@@ -504,7 +520,7 @@ function makeLanes() {
   clickToSelect(lanes);
 }
 function fitPanels() {
-  plot?.setSize({ width: $('plot').clientWidth, height: PLOT_H });
+  plot?.setSize({ width: $('plot').clientWidth, height: plotH() });
   lanes?.setSize({ width: $('lanes').clientWidth, height: 22 * LANES.length + 30 });
 }
 // the chart follows its panel's width, which a scroll bar's coming and going also moves
@@ -689,11 +705,11 @@ async function selectTrip(tid, schema, opts = {}) {
     d = S.trips.find((x) => x.tid === tid);
     if (!d) return;
   }
-  S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`;
+  S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`; S.haul = null;
   showTab('now');
-  const [a, b] = d.span || [d.a, d.b];   // the trip and every haul of it, which the logbook may put outside T1-T2
+  const [a, b] = [d.a, d.b];   // the trip and the hauls it attends, which the logbook may put outside T1-T2
   if (S.tr) { fitTo(a, b); setWindow(a - HOUR, b + HOUR); plot.redraw(false); lanes?.redraw(false); }
-  if (opts.open) S.expanded.add(S.selKey);
+  if (opts.open) { if (opts.only) S.expanded = new Set(); S.expanded.add(S.selKey); }
   const row = () => document.querySelector(`#trips tr[data-key="${CSS.escape(S.selKey)}"]`);
   if (opts.open || !row()) {   // from the chart or the History tab: the row on its page
     S.tripPage = Math.floor(tripRows().findIndex((r) => r.key === S.selKey) / TRIPS_PER_PAGE);
@@ -702,9 +718,21 @@ async function selectTrip(tid, schema, opts = {}) {
   if (opts.scroll) row()?.scrollIntoView({ block: 'nearest' });
   setHash();
 }
+// One haul of the chosen trip: the window, the map's frame and the chart on it alone, as a trip's row does for the trip
+// (maintainer, 2026-10-22: "if the user selects a single event within a trip the graphs would update accordingly"). Its
+// span is that of its windows (station_window): a date-only haul is its day.
+function selectHaul(h) {
+  S.haul = h.key;
+  document.querySelectorAll('#trips tr.haul').forEach((row) => row.classList.toggle('sel', row.dataset.key === h.key));
+  if (S.tr) {
+    const pad = h.dateOnly ? 0 : 30 * 6e4;
+    fitTo(h.a - 2 * pad, h.b + 2 * pad); setWindow(h.a - pad, h.b + pad); plot.redraw(false); lanes?.redraw(false);
+  }
+  setHash();
+}
 // A landing no logbook trip claims: the window on the AIS voyage that ended there, else on the landing's days
 function selectLanding(r) {
-  S.trip = null; S.selKey = r.key;
+  S.trip = null; S.selKey = r.key; S.haul = null;
   if (S.tr) {
     const near = voyages().filter((w) => w.b >= r.d - DAY && w.b <= r.d + 2 * DAY)
       .sort((x, y) => Math.abs(x.b - r.d - 12 * HOUR) - Math.abs(y.b - r.d - 12 * HOUR))[0];
@@ -726,22 +754,47 @@ async function loadRange(from, to) {
   const yrs = { vid: S.vid, from: S.from, to: S.to };
   const hasTrail = S.years.some((y) => y >= S.from && y <= S.to);
   await loadAll([...(hasTrail ? [['trail', 'trail', yrs], ['voyages', 'voyages', yrs], ['port_calls', 'port_calls', yrs]] : []),
-                 ['trips', 'trips', yrs], ['stations', 'stations', yrs],
+                 ['trips', 'trips', yrs], ['stations', 'stations', yrs], ['windows', 'windows', yrs],
                  ['station_catch', 'station_catch', yrs], ['landings', 'landings', yrs]]);
-  S.trips = await rows(`SELECT t.".tid" AS tid, t.schema, epoch_ms(t.T1)::DOUBLE AS a, epoch_ms(t.T2)::DOUBLE AS b,
+  S.trips = await rows(`SELECT t.".tid" AS tid, t.schema, epoch_ms(t.T1)::DOUBLE AS T1, epoch_ms(t.T2)::DOUBLE AS T2,
       coalesce(t.port, '') AS port, t.T1_basis AS b1, t.T2_basis AS b2, count(s.".sid")::INTEGER AS n,
       coalesce(sum(c.kg), 0)::DOUBLE AS kg
     FROM trips t LEFT JOIN stations s USING (".tid", schema)
     LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
-    WHERE t.T1 IS NOT NULL AND t.T2 IS NOT NULL GROUP BY ALL ORDER BY a`);
+    WHERE t.T1 IS NOT NULL AND t.T2 IS NOT NULL GROUP BY ALL ORDER BY T1`);
   S.stations = await rows(`SELECT s.".tid" AS tid, s.schema, s.".sid" AS sid, lon1, lat1, coalesce(lon2, lon1) AS lon2,
-      coalesce(lat2, lat1) AS lat2, epoch_ms(coalesce(t1, date))::DOUBLE AS t1, epoch_ms(t2)::DOUBLE AS t2,
-      epoch_ms(t3)::DOUBLE AS t3, epoch_ms(coalesce(t4, t3, t2, t1, date))::DOUBLE AS t4, coalesce(gear, '') AS gear,
+      coalesce(lat2, lat1) AS lat2, epoch_ms(date)::DOUBLE AS d0, epoch_ms(t1)::DOUBLE AS t1, epoch_ms(t2)::DOUBLE AS t2,
+      epoch_ms(t3)::DOUBLE AS t3, epoch_ms(t4)::DOUBLE AS t4, coalesce(gear, '') AS gear,
       coalesce(target, '') AS target, coalesce(gear_basis, '') AS gear_basis, strftime(date, '%Y-%m-%d') AS day, z1, z2, station_type, duration_m, effort, effort_unit,
       coalesce(c.kg, 0)::DOUBLE AS kg
     FROM stations s LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
-    ORDER BY t1`);
-  S.hauls = S.stations.map((h) => ({ ...h, a: h.t1, b: h.t4 }));
+    ORDER BY coalesce(t1, date)`);
+  // Each haul's windows as the flow made them (curate/station_window.R): it is drawn, framed and judged by them, and its
+  // pings are those carrying its .sid (decision 177). The logbook's t1-t4 stay as recorded, for Quality control to read. A
+  // haul with no window (none is expected: a duplicate twin's trip is left out) keeps its logbook times.
+  const byKey = new Map();
+  for (const w of await rows(`SELECT ".sid" AS sid, schema, phase, epoch_ms(w_start)::DOUBLE AS a, epoch_ms(w_end)::DOUBLE AS b,
+      win_basis AS basis FROM windows ORDER BY w_start`)) {
+    const k = `${w.sid}|${w.schema}`;
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(w);
+  }
+  S.wins = [];
+  S.hauls = S.stations.map((s) => {
+    const h = { ...s, key: `${s.sid}|${s.schema}` };
+    h.wins = (byKey.get(h.key) || []).map((w) => ({ a: w.a, b: w.b, phase: w.phase, basis: w.basis, h }));
+    if (!h.wins.length) {
+      const a = h.t1 ?? h.t2 ?? h.t3 ?? h.d0;
+      h.wins = [{ a, b: h.t4 ?? h.t3 ?? h.t2 ?? a, phase: 'logbook', basis: 'no window: the logbook times', h }];
+    }
+    h.a = Math.min(...h.wins.map((w) => w.a)); h.b = Math.max(...h.wins.map((w) => w.b));
+    h.dateOnly = h.wins.every((w) => w.phase === 'day');
+    S.wins.push(...h.wins);
+    return h;
+  }).sort((x, y) => x.a - y.a);
+  S.wins.sort((x, y) => x.a - y.a);
+  S.wins.maxDur = S.wins.reduce((m, w) => Math.max(m, w.b - w.a), 0);
+  tripSpans();
   // the flow's voyages and port calls, each from its table: the lanes and the presets draw them as they are
   S.voy = hasTrail ? await rows(`SELECT year, voyage_id AS id, epoch_ms(T1)::DOUBLE AS a, epoch_ms(T2)::DOUBLE AS b, pid1, pid2,
       n_pings FROM voyages ORDER BY T1`) : [];
@@ -772,7 +825,7 @@ async function loadRange(from, to) {
   const inTable = new Set(S.trips.map((d) => `${d.tid}|${d.schema}`));
   S.landOnly = L.filter((l) => { const k = linked.get(`${l.lid}|${l.schema}`); return !k || !inTable.has(`${k.tid}|${k.schema}`); })
     .map((l) => ({ ...l, kind: 'landing', key: `L${l.lid}|${l.schema}`, link: linked.get(`${l.lid}|${l.schema}`) || null }));
-  S.expanded = new Set(); S.tripPage = 0; S.trip = null; S.selKey = null;
+  S.expanded = new Set(); S.tripPage = 0; S.trip = null; S.selKey = null; S.haul = null;
   if (hasTrail) await buildTrail(); else { S.tr = null; plot?.destroy(); plot = null; lanes?.destroy(); lanes = null; $('window-label').textContent = ''; render(); }
   tripChecks();
   S.lanes = laneLists();
@@ -785,6 +838,7 @@ async function loadRange(from, to) {
   S.bg = P.bg === 'hex' && !fished ? 'none' : P.bg;   // the user's choice stays for the next vessel that fished
   showBg();
   applyWin();
+  S.tripPage = S.tr ? windowPage() : 0;
   await renderTrips();
   renderSummary();
   if (qc()) renderPings();
@@ -796,7 +850,8 @@ async function buildTrail() {
   const tbl = await conn.query(`SELECT epoch_ms(time)::DOUBLE AS t, lon::FLOAT AS lon, lat::FLOAT AS lat,
       coalesce(speed, 0)::FLOAT AS speed, coalesce(heading, 0)::FLOAT AS heading, coalesce(voyage_id, -1)::INTEGER AS voyage_id,
       coalesce(port_call_id, -1)::INTEGER AS port_call_id, coalesce(fishing_flow, false)::INTEGER AS fishing, coalesce(gear, '') AS gear,
-      coalesce("hours", 0)::FLOAT AS h
+      coalesce("hours", 0)::FLOAT AS h, coalesce(".sid", -1)::DOUBLE AS sid, coalesce(schema, '') AS sch,
+      coalesce(phase, '') AS phase
     FROM trail WHERE lon IS NOT NULL AND lat IS NOT NULL ORDER BY time`);
   const col = (k) => tbl.getChild(k).toArray();
   const tr = { n: tbl.numRows, t: col('t'), lon: col('lon'), lat: col('lat'), speed: col('speed'), heading: col('heading'),
@@ -827,6 +882,20 @@ async function buildTrail() {
   // not pings, so a stretch the AIS reported often does not count for more than one it reported seldom
   tr.fish = [];
   for (let i = 0; i < tr.n; i++) if (tr.fishing[i]) tr.fish.push({ p: [tr.lon[i], tr.lat[i]], h: tr.h[i] });
+  // Each fix's haul, by the .sid the flow gave it (one fix, one record: decision 090), so a haul's pings are counted as the
+  // flow placed them, not by the logbook's times (decision 177). Its fishing pings leave out its set window: a net or a line
+  // is judged on its hauling, a set may be made on an earlier trip.
+  const sid = col('sid'), sch = col('sch'), phase = col('phase');
+  tr.haulKey = new Array(tr.n); tr.bySid = new Map();
+  for (let i = 0; i < tr.n; i++) {
+    const k = sid[i] >= 0 ? `${sid[i]}|${sch[i]}` : '';
+    tr.haulKey[i] = k;
+    if (!k) continue;
+    let c = tr.bySid.get(k);
+    if (!c) tr.bySid.set(k, (c = { n: 0, fish: 0 }));
+    c.n++;
+    if (tr.fishing[i] && phase[i] !== 'set') c.fish++;
+  }
   const m = Math.max(tr.n - 1, 0);   // segment i joins ping i to ping i + 1; both must be in the window
   // the map draws voyages only (maintainer, 2026-10-20): a ping in no voyage, in port above all, is left out, and a
   // segment is drawn within one voyage; the chart keeps every ping
@@ -859,35 +928,49 @@ const reloadYears = () => {
 $('from').addEventListener('change', reloadYears);
 $('to').addEventListener('change', reloadYears);
 
-// Where the logbook and the pings disagree, per trip (Quality control). Linear: prefix sums over the sorted pings.
-// A haul is judged on the window the vessel attends it (docs/grammar.qmd): hauling, t3-t4, for static gear, whose
-// nets or lines may be set on an earlier trip; the tow, t2-t3, for towed gear; t1-t4 where the gear is not known.
-const STATIC = new Set(['GNS', 'GND', 'GTR', 'GTN', 'GEN', 'LLS', 'LLD', 'FPO', 'FPN', 'FYK']);
-const MOBILE = new Set(['OTB', 'OTM', 'OTT', 'PTB', 'PTM', 'TBB', 'SDN', 'SSC', 'SPR', 'PS', 'DRB', 'HMD', 'LHM', 'LHP', 'LTL']);
-function attended(h) {
-  if (STATIC.has(h.gear)) return { a: h.t3 ?? h.t1, b: h.t4, rule: 'static: t3-t4' };
-  if (MOBILE.has(h.gear)) return { a: h.t2 ?? h.t1, b: h.t3 ?? h.t4, rule: 'towed: t2-t3' };
-  return { a: h.t1, b: h.t4, rule: 'gear unknown: t1-t4' };
+// Where the logbook and the pings disagree, per trip (Quality control). A haul is judged by the windows the flow gives it
+// (station_window, which applies the gear's rule) and by the pings carrying its .sid (decision 177): a static gear on its
+// hauling, since nets and lines may be set on an earlier trip; a towed gear on its tow; a date-only haul on its day.
+// A trip spans its T1-T2 and the windows its hauls are attended in, so a trip known by its dates alone is its days, as a
+// date-only haul is its day (decision 177). Its band on the chart, its pings, the presets and its frame use that span (a, b);
+// the table shows T1 and T2 as recorded. A set window is left out: a net may be set on an earlier trip.
+function tripSpans() {
+  const byTrip = new Map();
+  for (const h of S.hauls) {
+    h.att = h.wins.filter((w) => w.phase !== 'set');
+    if (!h.att.length) h.att = h.wins;
+    const k = `${h.tid}|${h.schema}`;
+    if (!byTrip.has(k)) byTrip.set(k, []);
+    byTrip.get(k).push(h);
+  }
+  for (const d of S.trips) {
+    d.hauls = byTrip.get(`${d.tid}|${d.schema}`) || [];
+    const att = d.hauls.flatMap((h) => h.att);
+    d.a = Math.min(d.T1, ...att.map((w) => w.a)); d.b = Math.max(d.T2, ...att.map((w) => w.b));
+  }
+  S.trips.sort((x, y) => x.a - y.a);
 }
 function tripChecks() {
-  const tr = S.tr, byTrip = new Map();
-  for (const h of S.hauls) { if (!byTrip.has(h.tid)) byTrip.set(h.tid, []); byTrip.get(h.tid).push(h); }
-  const count = (a, b) => (tr ? lower(tr.t, b + 1) - lower(tr.t, a) : 0);
-  const fishing = (a, b) => (tr ? tr.fishCum[lower(tr.t, b + 1)] - tr.fishCum[lower(tr.t, a)] : 0);
+  const tr = S.tr, SLACK = 15 * 6e4;   // T1 and T2 are often given to the quarter hour
   for (const d of S.trips) {
-    const hs = (byTrip.get(d.tid) || []).filter((h) => h.schema === d.schema);
-    d.hauls = hs;
-    for (const h of hs) h.att = attended(h);
-    const SLACK = 15 * 6e4;   // T1 and T2 are often given to the quarter hour
-    d.haulsOutside = hs.filter((h) => h.att.a < d.a - SLACK || h.att.b > d.b + SLACK).length;
-    d.span = [Math.min(d.a, ...hs.map((h) => h.t1)), Math.max(d.b, ...hs.map((h) => h.t4))];
+    const hs = d.hauls;
+    for (const h of hs) {
+      const c = tr?.bySid.get(h.key);
+      h.pings = tr ? c?.n ?? 0 : null; h.fish = tr ? c?.fish ?? 0 : null;
+    }
+    // a window the haul is attended in lies outside T1-T2; a day only where it misses T1-T2 altogether, since T1 and T2
+    // may be dates too
+    d.haulsOutside = hs.filter((h) => h.att.some((w) => (w.phase === 'day' ? w.b <= d.T1 || w.a > d.T2
+      : w.a < d.T1 - SLACK || w.b > d.T2 + SLACK))).length;
     if (!tr || d.b < tr.t0 || d.a > tr.t1) { d.pings = null; continue; }
-    d.pings = count(d.a, d.b); d.fishPings = fishing(d.a, d.b);
-    d.haulsNoFishing = hs.filter((h) => fishing(h.att.a, h.att.b) === 0).length;
-    // fishing pings of the trip outside every haul's attended window: the trip's fishing minus the fishing in their union
-    const iv = hs.map((h) => [h.att.a, h.att.b]).sort((x, y) => x[0] - y[0]), merged = [];
-    for (const [a, b] of iv) { if (merged.length && a <= merged.at(-1)[1]) merged.at(-1)[1] = Math.max(merged.at(-1)[1], b); else merged.push([a, b]); }
-    d.fishOutside = d.fishPings - merged.reduce((s, [a, b]) => s + fishing(Math.max(a, d.a), Math.min(b, d.b)), 0);
+    // the trip's pings, those on its own hauls, and its fishing pings on none of them
+    const i0 = lower(tr.t, d.a), i1 = lower(tr.t, d.b + 1), own = new Set(hs.map((h) => h.key));
+    d.pings = i1 - i0; d.fishPings = tr.fishCum[i1] - tr.fishCum[i0]; d.onHauls = 0; d.fishOutside = 0;
+    for (let i = i0; i < i1; i++) {
+      if (own.has(tr.haulKey[i])) d.onHauls++;
+      else if (tr.fishing[i]) d.fishOutside++;
+    }
+    d.haulsNoFishing = hs.filter((h) => h.fish === 0).length;
   }
 }
 const warnings = (d) => {
@@ -897,18 +980,27 @@ const warnings = (d) => {
   if (d.n === 0) w.push('<span class="badge warn">no haul recorded</span>');
   if (d.haulsOutside) w.push(`<span class="badge bad">${d.haulsOutside} haul${d.haulsOutside > 1 ? 's' : ''} attended outside T1-T2</span>`);
   if (d.haulsNoFishing) w.push(`<span class="badge warn">${d.haulsNoFishing} haul${d.haulsNoFishing > 1 ? 's' : ''} without fishing pings</span>`);
-  if (d.fishOutside > 0) w.push(`<span class="badge warn">${d.fishOutside} fishing pings outside hauls</span>`);
+  if (d.fishOutside > 0) w.push(`<span class="badge warn">${d.fishOutside} fishing pings on no haul of the trip</span>`);
   return w.length ? w.join('') : '<span class="badge ok">agree</span>';
 };
 
 // The trip table: logbook trips with what they landed, and landings no trip claims, newest first. A click selects a
-// row (window, map, chart); a double-click, or the caret, opens it: the trip's logbook records, and what it landed
-// (maintainer, 2026-10-18: "the trip/logbooks all in one").
+// row (window, map, chart) and opens it, closing the others: the trip's logbook records, and what it landed (maintainer,
+// 2026-10-18: "the trip/logbooks all in one"; 2026-10-22: a "dropdown" of the trip's events on a click). A click on a
+// record frames that haul alone. The caret opens or closes a row without choosing it.
 const TRIPS_PER_PAGE = 25;
 function tripRows() {
   const trips = S.trips.map((d) => ({ ...d, kind: 'trip', key: `${d.tid}|${d.schema}`, end: d.b }));
   const lands = (S.landOnly || []).map((l) => ({ ...l, end: l.d + 12 * HOUR }));
   return [...trips, ...lands].sort((x, y) => y.end - x.end);
+}
+// The page of the table that holds the window's trips, so the table opens on them, not on the newest (decision 177): the
+// newest row that overlaps the window, else the newest before it
+function windowPage() {
+  const order = tripRows(), [a, b] = S.win;
+  let k = order.findIndex((r) => (r.kind === 'trip' ? r.a : r.d) <= b && r.end >= a);
+  if (k < 0) k = order.findIndex((r) => r.end <= b);
+  return Math.max(0, Math.floor(k / TRIPS_PER_PAGE));
 }
 async function renderTrips() {
   const order = tripRows(), total = order.length;
@@ -926,8 +1018,8 @@ async function renderTrips() {
   const ov = !qc();
   const head = ov
     ? ['', 'departure', 'return', 'days', 'port', 'hauls', 'logbook (t)', 'landed (t)']
-    : ['', 'trip (.tid)', 'schema', 'T1', 'T2', 'T1 / T2 basis', 'port', 'hauls', 'logbook (t)', 'landed (t)', 'lid_map', 'pings', 'fishing pings', 'checks'];
-  const numc = new Set(ov ? [3, 5, 6, 7] : [7, 8, 9, 11, 12]);
+    : ['', 'trip (.tid)', 'schema', 'T1', 'T2', 'T1 / T2 basis', 'port', 'hauls', 'logbook (t)', 'landed (t)', 'lid_map', 'pings', 'on its hauls', 'fishing pings', 'checks'];
+  const numc = new Set(ov ? [3, 5, 6, 7] : [7, 8, 9, 11, 12, 13]);
   const cell = (c, i) => `<td${numc.has(i + 1) ? ' class="n"' : ''}>${c}</td>`;
   let html = `<table><tr>${head.map((h, i) => `<th${numc.has(i) ? ' class="n"' : ''}>${h}</th>`).join('')}</tr>`;
   for (const d of page) {
@@ -936,9 +1028,9 @@ async function renderTrips() {
     if (d.kind === 'trip') {
       const land = d.landed.length ? num(d.landedT, 2) : '';
       cells = ov
-        ? [dstr(d.a), dstr(d.b), num((d.b - d.a) / DAY, 1), esc(d.port), d.n, num(d.kg / 1000, 2), land]
-        : [esc(d.tid), esc(d.schema), fmt(d.a), fmt(d.b), `${esc(d.b1 ?? '')} / ${esc(d.b2 ?? '')}`, esc(d.port), d.n,
-           num(d.kg / 1000, 2), land, esc(d.landed.map((l) => l.match).join(', ')), d.pings ?? '', d.fishPings ?? '', warnings(d)];
+        ? [dstr(d.T1), dstr(d.T2), num((d.b - d.a) / DAY, 1), esc(d.port), d.n, num(d.kg / 1000, 2), land]
+        : [esc(d.tid), esc(d.schema), fmt(d.T1), fmt(d.T2), `${esc(d.b1 ?? '')} / ${esc(d.b2 ?? '')}`, esc(d.port), d.n,
+           num(d.kg / 1000, 2), land, esc(d.landed.map((l) => l.match).join(', ')), d.pings ?? '', d.onHauls ?? '', d.fishPings ?? '', warnings(d)];
     } else {   // a landing no logbook trip of the range claims
       const g = !d.gear && gearAfter(d.d);
       const gear = d.gear ? ` ${esc(d.gear)}` : g
@@ -947,9 +1039,9 @@ async function renderTrips() {
       cells = ov
         ? ['', d.day, '', esc(d.port), '', why, num(d.t, 2)]
         : [why, esc(d.schema), '', d.day, '', esc(d.port), '', '', num(d.t, 2),
-           esc(d.link ? `${d.link.match_type} → ${d.link.tid}` : 'none'), '', '', '<span class="badge bad">landing without a trip in these years</span>'];
+           esc(d.link ? `${d.link.match_type} → ${d.link.tid}` : 'none'), '', '', '', '<span class="badge bad">landing without a trip in these years</span>'];
     }
-    html += `<tr class="click${d.key === S.selKey ? ' sel' : ''}" data-key="${esc(d.key)}" title="click: show it on the map and chart · double-click: its records">` +
+    html += `<tr class="click${d.key === S.selKey ? ' sel' : ''}" data-key="${esc(d.key)}" title="click: show it on the map and chart, with its records">` +
       `<td><span class="caret" data-open="1">${isOpen ? '▾' : '▸'}</span></td>${cells.map(cell).join('')}</tr>`;
     if (isOpen) html += `<tr class="sub"><td colspan="${head.length}">${d.kind === 'trip' ? haulTable(d, species) + landedTable(d.landed) : landingOnly(d)}</td></tr>`;
   }
@@ -963,14 +1055,15 @@ async function renderTrips() {
     const r = page.find((x) => x.key === row.dataset.key);
     row.addEventListener('click', (e) => {
       if (e.target.dataset.open) { toggle(r.key); return; }
-      if (r.kind === 'trip') selectTrip(r.tid, r.schema).catch((err) => status(String(err))); else selectLanding(r);
+      if (r.key === S.selKey && S.expanded.has(r.key)) { toggle(r.key); return; }   // the chosen row, open: close it
+      if (r.kind === 'trip') selectTrip(r.tid, r.schema, { open: true, only: true }).catch((err) => status(String(err)));
+      else { selectLanding(r); S.expanded = new Set([r.key]); renderTrips(); }
     });
-    row.addEventListener('dblclick', (e) => { if (!e.target.dataset.open) { window.getSelection()?.removeAllRanges(); toggle(r.key); } });
   });
   $('trips').querySelectorAll('tr.haul').forEach((row) => row.addEventListener('click', (e) => {
     e.stopPropagation();
-    const h = S.hauls.find((x) => String(x.sid) === row.dataset.sid);
-    if (h && S.tr) { fitTo(h.t1 - HOUR, h.t4 + HOUR); setWindow(h.t1 - 30 * 6e4, h.t4 + 30 * 6e4); }
+    const h = S.hauls.find((x) => x.key === row.dataset.key);
+    if (h) selectHaul(h);
   }));
   $('trips').querySelectorAll('.pager button').forEach((b) => b.addEventListener('click', () => { S.tripPage += +b.dataset.d; renderTrips(); }));
 }
@@ -982,21 +1075,29 @@ const landingOnly = (d) => `<h3>Landed</h3><div>${esc(d.day)} in ${esc(d.port)},
   <div class="note">${d.link ? `lid_map links it to logbook trip ${esc(d.link.tid)}, outside the loaded years.`
     : 'No logbook trip is linked to this landing, so there are no logbook records to show.'}${!d.gear && gearAfter(d.d)
     ? ` The landing records no gear, so it is assumed to be <b>${esc(gearAfter(d.d).gear)}</b>, as on the previous logbook trip (returned ${esc(S.assumed.day)}).` : ''}</div>`;
+// A haul's window as text: a day as its date; else its phase, start and end, the end's date only where it differs
+const winText = (w) => (w.phase === 'day' ? `day ${dstr(w.a)}`
+  : `${w.phase} ${fmt(w.a)} – ${dstr(w.a) === dstr(w.b) ? fmt(w.b).slice(11) : fmt(w.b)}`);
 function haulTable(d, species) {
   if (!d.hauls.length) return '<h3>Logbook records</h3><div class="note">No haul is recorded for this trip.</div>';
-  const fishIn = (h) => (S.tr && h.att ? S.tr.fishCum[lower(S.tr.t, h.att.b + 1)] - S.tr.fishCum[lower(S.tr.t, h.att.a)] : null);
+  const row = (h, title) => `<tr class="click haul${h.key === S.haul ? ' sel' : ''}" data-key="${esc(h.key)}" title="${title}">`;
   if (!qc()) {
-    return `<h3>Logbook records (${d.hauls.length})</h3><table><tr><th>gear in</th><th>gear out</th><th>gear</th><th class="n">depth (m)</th><th class="n">catch (kg)</th><th>main species (codes)</th></tr>` +
-      d.hauls.map((h) => `<tr class="click haul" data-sid="${h.sid}" title="show this haul on the chart and map"><td>${fmt(h.t1)}</td><td>${fmt(h.t4)}</td><td>${esc(h.gear)}</td>
+    // gear in and out are the haul's windows, as on the chart: a haul with a date alone is that day
+    return `<h3>Logbook records (${d.hauls.length}): click one to see it alone</h3><table><tr><th>gear in</th><th>gear out</th><th>gear</th><th class="n">depth (m)</th><th class="n">catch (kg)</th><th>main species (codes)</th></tr>` +
+      d.hauls.map((h) => `${row(h, 'show this haul alone on the chart and map')}<td>${h.dateOnly ? dstr(h.a) : fmt(h.a)}</td>
+        <td>${h.dateOnly ? '<span class="note">the logbook gives the date only</span>' : fmt(h.b)}</td><td>${esc(h.gear)}</td>
         <td class="n">${num(h.z1)}</td><td class="n">${num(h.kg)}</td><td>${esc((species.get(h.sid) || '').split(', ').slice(0, 3).map((x) => x.split(':')[0]).join(', '))}</td></tr>`).join('') + '</table>';
   }
-  return `<h3>Logbook records (${d.hauls.length})</h3><table><tr><th>.sid</th><th>type</th><th>t1</th><th>t2</th><th>t3</th><th>t4</th><th>gear / target</th><th class="n">min</th>
-    <th>effort</th><th>start</th><th>end</th><th class="n">z1-z2</th><th>judged on</th><th class="n">fishing pings</th><th>catch kg by species</th></tr>` +
-    d.hauls.map((h) => { const f = fishIn(h); return `<tr class="click haul" data-sid="${h.sid}"><td>${h.sid}</td><td>${esc(h.station_type)}</td>
-      <td>${fmt(h.t1)}</td><td>${fmt(h.t2)}</td><td>${fmt(h.t3)}</td><td>${fmt(h.t4)}</td><td>${esc(h.gear) || '<span class="badge warn">none</span>'} ${esc(h.target)}${h.gear_basis && h.gear_basis !== 'recorded' ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}</td>
+  return `<h3>Logbook records (${d.hauls.length})</h3><table><tr><th>.sid</th><th>type</th><th>t1</th><th>t2</th><th>t3</th><th>t4</th><th>windows (station_window)</th><th>gear / target</th><th class="n">min</th>
+    <th>effort</th><th>start</th><th>end</th><th class="n">z1-z2</th><th class="n" title="the pings carrying this .sid">pings</th><th class="n" title="fishing pings carrying this .sid, its set window left out">fishing pings</th><th>catch kg by species</th></tr>` +
+    d.hauls.map((h) => `${row(h, 'frame this haul alone')}<td>${h.sid}</td><td>${esc(h.station_type)}</td>
+      <td>${fmt(h.t1)}</td><td>${fmt(h.t2)}</td><td>${fmt(h.t3)}</td><td>${fmt(h.t4)}</td>
+      <td>${h.wins.map((w) => `${esc(winText(w))} <span class="note">${esc(w.basis)}</span>`).join('<br>')}</td>
+      <td>${esc(h.gear) || '<span class="badge warn">none</span>'} ${esc(h.target)}${h.gear_basis && h.gear_basis !== 'recorded' ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}</td>
       <td class="n">${num(h.duration_m)}</td><td>${num(h.effort, 1)} ${esc(h.effort_unit)}</td>
-      <td>${num(h.lat1, 3)}, ${num(h.lon1, 3)}</td><td>${num(h.lat2, 3)}, ${num(h.lon2, 3)}</td><td class="n">${num(h.z1)}-${num(h.z2)}</td><td>${esc(h.att?.rule ?? '')}</td>
-      <td class="n">${f == null ? '' : f === 0 ? '<span class="badge warn">0</span>' : f}</td><td>${esc(species.get(h.sid) || '')}</td></tr>`; }).join('') + '</table>';
+      <td>${num(h.lat1, 3)}, ${num(h.lon1, 3)}</td><td>${num(h.lat2, 3)}, ${num(h.lon2, 3)}</td><td class="n">${num(h.z1)}-${num(h.z2)}</td>
+      <td class="n">${h.pings ?? ''}</td><td class="n">${h.fish == null ? '' : h.fish === 0 ? '<span class="badge warn">0</span>' : h.fish}</td>
+      <td>${esc(species.get(h.sid) || '')}</td></tr>`).join('') + '</table>';
 }
 
 // The pings of the window (Quality control) -----------------------------------------------------------------------------
@@ -1194,7 +1295,9 @@ async function setMode(m) {
   setHash();
   // while a vessel is still loading, its tables are not all there: the load draws the panels in the new mode itself
   if (!S.vid || !S.ready) return;
-  if (m === 'qc' && S.tr) { makeLanes(); S.pingPage = 0; await renderPings(); } else { lanes?.destroy(); lanes = null; }
+  lanes?.destroy(); lanes = null;
+  if (S.tr) { makePlot(); plot.setScale('x', { min: S.win[0] / 1000, max: S.win[1] / 1000 }); }   // the gutter is the mode's
+  if (m === 'qc' && S.tr) { makeLanes(); S.pingPage = 0; await renderPings(); }
   requestAnimationFrame(relayout);
   renderSummary();
   await renderTrips();
@@ -1206,7 +1309,7 @@ $('mode-qc').addEventListener('click', () => setMode('qc'));
 async function choose(vid) {
   S.ready = false;
   status(`loading vid ${vid}`);
-  S.vid = vid; S.trip = null; S.selKey = null; S.tr = null; S.history = false; S.vesselTab = false; render();
+  S.vid = vid; S.trip = null; S.selKey = null; S.haul = null; S.tr = null; S.history = false; S.vesselTab = false; render();
   const v = V.find((x) => x.vid === vid);
   S.name = v?.vessel || '';
   $('title').textContent = `${S.name || 'vid ' + vid}${S.name ? ' · vid ' + vid : ''}${v?.cs ? ' · ' + v.cs : ''}`;
@@ -1268,6 +1371,7 @@ function hashFor(vid) {
   if (P.win === 'custom') { q.set('a', isoMin(P.a)); q.set('b', isoMin(P.b)); }
   // the selected logbook trip as ".tid|schema": a link then opens that trip with its hauls (maintainer, 2026-10-20)
   if (S.trip && S.selKey) q.set('trip', S.selKey);
+  if (S.trip && S.haul) q.set('haul', S.haul);   // and one haul of it, as .sid|schema
   return q.toString();
 }
 function setHash() {
@@ -1298,6 +1402,8 @@ function fromHash() {
   const trip = h.get('trip') || '', cut = trip.lastIndexOf('|');
   choose(vid).then(async () => {
     if (cut > 0) await selectTrip(trip.slice(0, cut), trip.slice(cut + 1), { open: true, scroll: true });
+    const hk = S.trip && h.get('haul'), hh = hk && S.hauls.find((x) => x.key === hk);
+    if (hh) selectHaul(hh);
     if (h.get('bench')) bench();
   }).catch((e) => status(String(e)));
 }

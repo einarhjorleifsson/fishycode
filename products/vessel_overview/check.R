@@ -32,7 +32,8 @@ asks <- c(list(c("vessels", "")), lapply(c(2757L, 3739L, 2652L), function(v) {
        c("stations", paste0(base, "&n=10")), c("station_catch", paste0(base, "&n=10")), c("trail_years", base),
        c("trail", base), c("photos", base), c("trail", paste0(base, "&from=2024&to=2026")),
        c("landings", all), c("trips", all), c("trip_summary", all), c("stations", paste0(base, "&from=2025&to=2026")),
-       c("station_catch", paste0(base, "&from=2025&to=2026")), c("landing_trips", base), c("landings", paste0(base, "&n=1")),
+       c("station_catch", paste0(base, "&from=2025&to=2026")), c("windows", paste0(base, "&n=10")),
+       c("windows", paste0(base, "&from=2025&to=2026")), c("landing_trips", base), c("landings", paste0(base, "&n=1")),
        c("voyages", paste0(base, "&from=2024&to=2026")), c("port_calls", paste0(base, "&from=2024&to=2026")),
        c("voyages", paste0(base, "&n=5")), c("port_calls", paste0(base, "&n=5")))
 }) |> unlist(recursive = FALSE),

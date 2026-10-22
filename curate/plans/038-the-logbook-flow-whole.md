@@ -272,7 +272,7 @@ another voyage than their trip's, and 23,398 afli, 21,844 fs_afladagbok and 3,87
 - TODO 72's items 4, 8, 9 and 10. Item 10, declared `t1`-`t4` reconciled with the track, is the station-level
   counterpart of `trip_reconciled`;
 - TODO 98 and 100 (the logger, the sensors);
-- TODO 104 (the vessel overview draws the flow's windows);
+- TODO 104 (the vessel overview draws the flow's windows), closed by decision 177;
 - TODO 86 and 49 (gear from the track; voyages with neither record);
 - plan 020 (gear quantity, which static-gear pressure needs).
 

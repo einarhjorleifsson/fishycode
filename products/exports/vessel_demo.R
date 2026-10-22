@@ -11,8 +11,8 @@
 # - The vessels: those with a logbook trip on an AIS voyage that overlaps the month (the trail's .tid on the voyage's
 #   pings), drawn at random within their main gear (the gear of most of their hauls on those trips), N_BY_GEAR of each.
 # - A vessel's window runs from the start of its first voyage overlapping the month to the end of its last. Kept as
-#   they are: the pings, voyages and port calls in it, the logbook trips overlapping it or on its pings, their hauls
-#   and catch, and the landings in it or linked to those trips. Record ids (.tid, .sid, .lid) and ports are kept.
+#   they are: the pings, voyages and port calls in it, the logbook trips overlapping it or on its pings, their hauls,
+#   the hauls' windows and catch, and the landings in it or linked to those trips. Record ids (.tid, .sid, .lid) and ports are kept.
 # - Anonymised: the vid becomes 1-n in random order and the name "Vessel <n>"; call sign, MMSI, IMO, the register, its
 #   history and the photos are left out. A track can still be matched to public AIS: the folder goes to a colleague
 #   under an agreement and is never published (plan 001).
@@ -112,6 +112,7 @@ for (i in seq_len(nrow(pick))) {
     trips = answer(con, "trips", vid, p, in_kt),
     stations = answer(con, "stations", vid, p, in_kt),
     station_catch = answer(con, "station_catch", vid, p, sprintf("%s IN (SELECT key FROM ks)", SID)),
+    windows = answer(con, "windows", vid, p, in_kt),
     landings = answer(con, "landings", vid, p, sprintf("%s IN (SELECT key FROM kl)", LID)),
     trip_summary = answer(con, "trip_summary", vid, p, in_kt),
     landing_trips = answer(con, "landing_trips", vid, p, in_kt),
