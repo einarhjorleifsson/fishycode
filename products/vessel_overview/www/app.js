@@ -27,7 +27,7 @@ const many = (n, one, more = `${one}s`) => `${num(n)} ${n === 1 ? one : more}`;
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-22.2';
+const API = '2026-10-22.3';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -152,7 +152,8 @@ const TILES = TOKEN.startsWith('pk.')
   ? [`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/256/{z}/{x}/{y}?access_token=${TOKEN}`, '© Mapbox © OpenStreetMap', 19]
   : BUNDLE ? ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
               'Tiles © Esri: Esri, HERE, Garmin, © OpenStreetMap contributors', 16] : null;
-const basemap = TILES
+// a basemap layer for each map: a layer belongs to one deck
+const makeBasemap = () => (TILES
   ? new deck.TileLayer({
       id: 'basemap', minZoom: 0, maxZoom: TILES[2], tileSize: 256,
       data: TILES[0],
@@ -161,7 +162,8 @@ const basemap = TILES
         return new deck.BitmapLayer(props, { data: null, image: props.data, bounds: [west, south, east, north] });
       },
     })
-  : null;
+  : null);
+const basemap = makeBasemap();
 $('attrib').textContent = TILES ? TILES[1] : 'no basemap: MAPBOX_TOKEN is not set';
 // the pings' colours, named on the map: what a colour means is never left to be guessed
 $('speedlegend').innerHTML = `speed 0<span class="ramp" style="background:linear-gradient(to right, ${
@@ -178,12 +180,12 @@ const GROUNDS = [[-27.5, 62.5], [-11.5, 67.5]];
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const MAP_RATIO = ((GROUNDS[1][0] - GROUNDS[0][0]) * Math.PI) / 180 / (merc(GROUNDS[1][1]) - merc(GROUNDS[0][1]));
 $('map').style.aspectRatio = String(MAP_RATIO);
-// The zoom the map is at, for the hexagons' size
+// The zoom a map is at, for the hexagons' size
 const view = { zoom: 5, latitude: 65 };
-function groundsView() {
-  const { width, height } = $('map').getBoundingClientRect();
+function groundsView(el = $('map'), at = view) {   // the fishing grounds' frame for a map element
+  const { width, height } = el.getBoundingClientRect();
   const v = new deck.WebMercatorViewport({ width: Math.max(width, 200), height: Math.max(height, 200) }).fitBounds(GROUNDS, { padding: 10 });
-  view.zoom = v.zoom; view.latitude = v.latitude;
+  at.zoom = v.zoom; at.latitude = v.latitude;
   return { longitude: v.longitude, latitude: v.latitude, zoom: v.zoom };
 }
 let afterRender = null;
@@ -580,8 +582,8 @@ $('wto').addEventListener('input', slider);
 const HEXCOL = ['#440154', '#414487', '#2a788e', '#22a884', '#7ad151', '#fde725'];
 const VIRIDIS = HEXCOL.map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
 const HEX_STEPS = [0.25, 0.5, 1, 2, 5, 10, 20, 50];
-function hexKm() {
-  const mpp = (2 * Math.PI * 6378137 * Math.cos((view.latitude * Math.PI) / 180)) / (512 * 2 ** view.zoom);
+function hexKm(at = view) {
+  const mpp = (2 * Math.PI * 6378137 * Math.cos((at.latitude * Math.PI) / 180)) / (512 * 2 ** at.zoom);
   const km = (12 * mpp) / 1000;
   return HEX_STEPS.reduce((b, x) => (Math.abs(Math.log(x / km)) < Math.abs(Math.log(b / km)) ? x : b));
 }
@@ -589,9 +591,9 @@ const HEX_MIN_H = 0.01;   // a cell of less, a ping or two of a few seconds, is 
 const cellHours = (pts) => pts.reduce((s, d) => s + ((d.source || d).h || 0), 0);   // a picked cell wraps its points
 const fmtHours = (x) => (x < 10 ? Number(x.toPrecision(2)).toString() : Math.round(x).toLocaleString('en-GB'));
 // the legend in hours: the ends of the scale, and each colour's range on hovering it
-const hexLegend = (lo, hi) => {
+const hexLegend = (lo, hi, km = hexKm()) => {
   const step = (hi - lo) / HEXCOL.length, at = (k) => fmtHours(10 ** (lo + k * step));
-  return `fishing hours per ${hexKm()} km hexagon, log scale: ${at(0)} ${HEXCOL.map((c, k) =>
+  return `fishing hours per ${km} km hexagon, log scale: ${at(0)} ${HEXCOL.map((c, k) =>
     `<span class="sw" style="background:${c};margin:0" title="${at(k)} to ${at(k + 1)} hours"></span>`).join('')} ${at(HEXCOL.length)}`;
 };
 function showBg() {
@@ -1326,7 +1328,9 @@ async function renderHistory() {
   if (S.history) return;
   status(`loading the history of vid ${S.vid}`);
   const t = performance.now(), all = { vid: S.vid, from: 1900, to: 2100 };
-  await loadAll([['h_landings', 'landings', all], ['h_trips', 'trip_summary', all]]);
+  await loadAll([['h_landings', 'landings', all], ['h_trips', 'trip_summary', all],
+                 ['h_effort', 'history_effort', { vid: S.vid }], ['h_cells', 'history_cells', { vid: S.vid }]]);
+  await buildHistory();
   const ly = await rows(`SELECT year(date)::INTEGER AS y, count(DISTINCT (".lid", schema))::INTEGER AS n,
       round(sum(catch) / 1000, 1)::DOUBLE AS t FROM h_landings GROUP BY 1 ORDER BY 1 DESC`);
   $('h-land-years').innerHTML = table([['y', 'year'], ['n', 'landings', true], ['t', 'tonnes', true]], ly.map((x) => ({ ...x, t: num(x.t, 1) })), { empty: 'no landing' });
@@ -1371,6 +1375,163 @@ async function pageTrips() {
   }));
   bindPager('h-trips', 'trip', total, pageTrips);
 }
+
+// The History tab's Where and When (decision 179) -------------------------------------------------------------------------
+// The vessel's whole history on a time axis pinned from 2007-09 to now and on the fishing grounds' fixed frame, the same
+// for every vessel (maintainer, 2026-10-22: "pin the x-axis always from [2007]-09 to the present irrespective of how long
+// the vessel has been in that history. do the same for the hex"), so that two vessels read alike. When: fishing hours
+// per month from the trail, and tonnes per month, landed and logged (the logbook's trips, by the month they returned).
+// Where: the fishing hours of the months chosen, in hexagons of 5 km or more, since the service sums them in cells of
+// about 2.5 km. A drag or a click on a chart chooses months; the map follows. A bundle holds one window: its axis is
+// that window's months.
+const MONTH = (ms) => { const d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1); };
+const addMonths = (ms, k) => { const d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + k, 1); };
+const ym = (ms) => new Date(ms).toISOString().slice(0, 7);
+const H = { t0: Date.UTC(2007, 8, 1), t1: addMonths(MONTH(Date.now()), 1), range: null, deck: null, base: null,
+            view: { zoom: 5, latitude: 65 }, cells: [], effort: null, catch: null };
+const H_AXIS = { size: 40, gap: 3, ticks: { size: 4 }, font: FONT };
+const histKm = () => Math.max(5, hexKm(H.view));
+async function buildHistory() {
+  const eff = await rows(`SELECT epoch_ms(month)::DOUBLE AS m, pings::INTEGER AS n, fishing_pings::INTEGER AS fp,
+      fishing_hours::DOUBLE AS fh FROM h_effort`);
+  const land = await rows(`SELECT epoch_ms(date_trunc('month', date))::DOUBLE AS m, (sum(catch) / 1000)::DOUBLE AS t FROM h_landings GROUP BY 1`);
+  const logd = await rows(`SELECT epoch_ms(date_trunc('month', T2))::DOUBLE AS m, (sum(catch) / 1000)::DOUBLE AS t
+      FROM h_trips WHERE T2 IS NOT NULL GROUP BY 1`);
+  const tbl = await conn.query(`SELECT epoch_ms(month)::DOUBLE AS m, lon::FLOAT AS lon, lat::FLOAT AS lat, hours::FLOAT AS h FROM h_cells`);
+  const cm = tbl.getChild('m').toArray(), lon = tbl.getChild('lon').toArray(), lat = tbl.getChild('lat').toArray(), ch = tbl.getChild('h').toArray();
+  H.cells = Array.from({ length: tbl.numRows }, (_, i) => ({ m: cm[i], p: [lon[i], lat[i]], h: ch[i] }));
+  if (BUNDLE) {
+    const ms = [...eff, ...land].map((r) => r.m);
+    if (ms.length) { H.t0 = Math.min(...ms); H.t1 = addMonths(Math.max(...ms), 1); }
+  }
+  H.months = [];
+  for (let m = H.t0; m < H.t1; m = addMonths(m, 1)) H.months.push(m);
+  const by = (list) => new Map(list.map((r) => [r.m, r]));
+  const E = by(eff), Lm = by(land), Gm = by(logd);
+  H.x = H.months.map((m) => (m + addMonths(m, 1)) / 2000);   // a month's bar at its middle, in seconds
+  H.fh = H.months.map((m) => E.get(m)?.fh ?? null);
+  H.n = H.months.map((m) => E.get(m)?.n ?? null);
+  H.fp = H.months.map((m) => E.get(m)?.fp ?? null);
+  H.land = H.months.map((m) => Lm.get(m)?.t ?? null);
+  H.logged = H.months.map((m) => Gm.get(m)?.t ?? null);
+  H.range = null;
+  makeHistoryCharts();
+  makeHistoryMap();
+  showHistoryRange();
+}
+function histChart(el, series, data) {
+  const u = new uPlot({
+    width: el.clientWidth || 600, height: 150, legend: { show: false }, padding: [6, 14, null, 2],
+    scales: { x: { time: true, range: () => [H.t0 / 1000, H.t1 / 1000] }, y: { range: (v, lo, hi) => [0, hi > 0 ? hi * 1.05 : 1] } },
+    series: [{}, ...series],
+    axes: [{ font: FONT }, H_AXIS],
+    cursor: { sync: { key: 'history' }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
+    hooks: {
+      drawClear: [drawHistRange],
+      setSelect: [(c) => {
+        if (c.select.width < 3) return;
+        const a = c.posToVal(c.select.left, 'x') * 1000, b = c.posToVal(c.select.left + c.select.width, 'x') * 1000;
+        c.setSelect({ left: 0, width: 0, top: 0, height: 0 }, false);
+        setHistRange(MONTH(a), addMonths(MONTH(b), 1));
+      }],
+      setCursor: [histHover],
+    },
+  }, [H.x, ...data], el);
+  let down = null;   // a click, not a drag, chooses the month under it
+  u.over.addEventListener('mousedown', (e) => { down = e.clientX; });
+  u.over.addEventListener('mouseup', (e) => {
+    const x = down; down = null;
+    if (x == null || Math.abs(e.clientX - x) > 3 || u.cursor.left == null || u.cursor.left < 0) return;
+    const m = MONTH(u.posToVal(u.cursor.left, 'x') * 1000);
+    setHistRange(m, addMonths(m, 1));
+  });
+  return u;
+}
+function makeHistoryCharts() {
+  H.effort?.destroy(); H.catch?.destroy();
+  const bars = uPlot.paths.bars({ size: [0.85, 40] });
+  H.effort = histChart($('h-effort'), [{ label: 'fishing hours', fill: '#d62728b3', stroke: '#d62728', width: 0, paths: bars, points: { show: false } }], [H.fh]);
+  H.catch = histChart($('h-catch'), [
+    { label: 'landed (t)', fill: '#e07b00b3', stroke: '#e07b00', width: 0, paths: bars, points: { show: false } },
+    { label: 'logged (t)', stroke: '#2e7d32', width: 0, points: { show: true, size: 5, width: 0, fill: '#2e7d32' } },
+  ], [H.land, H.logged]);
+}
+function drawHistRange(u) {   // the months chosen, shaded on both charts
+  if (!H.range) return;
+  const { ctx } = u, { top, height } = u.bbox;
+  const a = u.valToPos(H.range[0] / 1000, 'x', true), b = u.valToPos(H.range[1] / 1000, 'x', true);
+  ctx.save(); ctx.fillStyle = 'rgba(31,111,235,0.14)'; ctx.fillRect(a, top, Math.max(2, b - a), height); ctx.restore();
+}
+const H_HINT = $('h-hover').textContent;
+function histHover(u) {
+  const i = u.cursor.idx;
+  if (u.cursor.left == null || u.cursor.left < 0 || i == null) { $('h-hover').textContent = H_HINT; return; }
+  $('h-hover').textContent = `${ym(H.months[i])}: ` + [H.fh[i] == null ? 'no AIS' : `${num(H.fh[i], 1)} fishing hours (${many(H.fp[i], 'fishing ping')} of ${num(H.n[i])})`,
+    `${H.land[i] == null ? 'no landing' : `${num(H.land[i], 1)} t landed`}`, `${H.logged[i] == null ? 'no logbook trip returned' : `${num(H.logged[i], 1)} t logged`}`].join(' · ');
+}
+function setHistRange(a, b) {
+  H.range = a == null ? null : [Math.max(a, H.t0), Math.min(b, H.t1)];
+  if (H.range && H.range[0] >= H.range[1]) H.range = null;
+  H.effort?.redraw(false); H.catch?.redraw(false);
+  showHistoryRange();
+}
+function showHistoryRange() {
+  const [a, b] = H.range || [H.t0, H.t1];
+  const label = addMonths(a, 1) === b ? ym(a) : `${ym(a)} – ${ym(addMonths(b, -1))}`;
+  const sum = (arr) => H.months.reduce((s, m, i) => s + (m >= a && m < b ? arr[i] || 0 : 0), 0);
+  $('h-range').textContent = `${H.range ? label : `every month, ${label}`}: ${num(sum(H.fh), 0)} fishing hours · ` +
+    `${num(sum(H.land), 1)} t landed · ${num(sum(H.logged), 1)} t logged`;
+  $('h-range-where').textContent = H.range ? label : `every month, ${label}`;
+  $('h-open').disabled = !H.range;
+  renderHistoryMap();
+}
+function makeHistoryMap() {
+  const v = groundsView($('hmap'), H.view);
+  if (H.deck) { H.deck.setProps({ initialViewState: v }); return; }
+  H.base = makeBasemap();
+  H.deck = new deck.Deck({
+    parent: $('hmap'), controller: true, initialViewState: v,
+    onViewStateChange: ({ viewState }) => {
+      const before = histKm();
+      H.view.zoom = viewState.zoom; H.view.latitude = viewState.latitude;
+      if (histKm() !== before) renderHistoryMap();
+    },
+    getTooltip: ({ layer, object }) => (layer?.id === 'h-hex' && object
+      ? { html: `<b>${fmtHours(cellHours(object.points || []))} fishing hours</b> in this ${histKm()} km hexagon<br>${$('h-range-where').textContent}` } : null),
+    layers: H.base ? [H.base] : [],
+  });
+  $('h-attrib').textContent = TILES ? TILES[1] : '';
+}
+function renderHistoryMap() {
+  if (!H.deck) return;
+  const r = H.range, pts = r ? H.cells.filter((c) => c.m >= r[0] && c.m < r[1]) : H.cells;
+  const L = H.base ? [H.base] : [];
+  if (pts.length) {
+    L.push(new deck.HexagonLayer({
+      id: 'h-hex', data: pts, getPosition: (d) => d.p, getColorValue: (q) => Math.log10(Math.max(cellHours(q), HEX_MIN_H)),
+      extruded: false, radius: 1000 * histKm(), coverage: 0.94, opacity: 0.75, pickable: true, upperPercentile: 100,
+      colorRange: VIRIDIS, onSetColorDomain: ([lo, hi]) => { $('h-hexlegend').innerHTML = hexLegend(lo, hi, histKm()); },
+    }));
+  } else $('h-hexlegend').textContent = 'no fishing on the trail in these months';
+  H.deck.setProps({ layers: L });
+}
+$('h-all').addEventListener('click', () => setHistRange(null));
+$('h-fit').addEventListener('click', () => {
+  if (!H.deck) return;
+  H.deck.setProps({ initialViewState: { ...groundsView($('hmap'), H.view), transitionDuration: 300 } });
+  renderHistoryMap();
+});
+// the months chosen, on the Activity tab with their pings: their years loaded, the window on them
+$('h-open').addEventListener('click', () => {
+  if (!H.range) return;
+  const [a, b] = H.range, y0 = new Date(a).getUTCFullYear(), y1 = new Date(b - 1).getUTCFullYear();
+  P.years = `${y0}-${y1}`; P.win = 'custom'; P.a = a; P.b = b;
+  showTab('now');
+  loadRange(y0, y1).catch((e) => status(String(e)));
+});
+new ResizeObserver(() => requestAnimationFrame(() => {
+  for (const [u, el] of [[H.effort, 'h-effort'], [H.catch, 'h-catch']]) if (u && $(el).clientWidth) u.setSize({ width: $(el).clientWidth, height: 150 });
+})).observe($('h-chart-sec'));
 
 // Tabs and the panels that fold ------------------------------------------------------------------------------------------
 const TABS = ['now', 'vessel', 'history'];

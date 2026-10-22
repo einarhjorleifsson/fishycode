@@ -4,7 +4,7 @@
 # Input:  curated/vessel/vessel.parquet; curated/vessel/skipaskra/vessel_hist, vessel_identification_hist,
 #         vessel_measurement_hist, vessel_owners_hist, vessel_fishery_hist, vessel_event; curated/landing/landings,
 #         catch; curated/logbook/trip, station, fishing_sample, gear, station_window, catch; curated/ais/trail/;
-#         curated/reference/gear, port;
+#         curated/reference/gear, port (the trail also summed by month, and by month and cell, for the History tab);
 #         staging/mbl/photo.parquet and the image files it lists
 # Output: nothing written. Each endpoint answers as parquet (zstd), which DuckDB-WASM reads in the page (ask h).
 #
@@ -25,7 +25,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-22.2"
+API_VERSION <- "2026-10-22.3"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -55,6 +55,8 @@ ALLOW <- list(
   station_catch = c(".sid", "schema", "sid", "catch", "catch_whole", "condition"),
   windows  = c(".sid", "schema", ".tid", "phase", "w_start", "w_end", "win_basis"),
   trail_years = c("year", "n", "time_first", "time_last"),
+  history_effort = c("month", "pings", "fishing_pings", "fishing_hours"),
+  history_cells  = c("month", "lon", "lat", "hours", "pings"),
   trail    = c("time", "lon", "lat", "speed", "heading", "provider", "voyage_id", "port_call_id", ".tid", "schema", ".sid", "gear",
                "phase", "fishing_flow", "hours"),
   photos   = c("image_no", "kind", "file", "width", "height", "exif_date", "exif_artist", "best", "use"),
@@ -137,6 +139,20 @@ SQL <- list(
   windows  = function(vid, p) sprintf(
     "WITH t AS (%s) SELECT w.* FROM %s w JOIN t USING (\".tid\", schema) WHERE w.vid = %d ORDER BY w.w_start",
     SQL$trips(vid, p), src("curated", "logbook", "station_window.parquet"), vid),
+  # The vessel's whole history on the trail, small enough for the page (decision 179): per month, its pings and its
+  # fishing in hours (the trail's `hours`, the effort of a fishing fix); and its fishing hours per month in cells of
+  # 0.025 degrees of latitude by 0.05 of longitude (about 2.8 by 2.4 km at 65 N), which the History tab's hexagons sum.
+  # p$time narrows them to a time span: the demo bundle's window, never a request's.
+  history_effort = function(vid, p) sprintf(
+    "SELECT CAST(date_trunc('month', time) AS DATE) AS month, count(*) AS pings,
+            count(*) FILTER (WHERE fishing_flow) AS fishing_pings,
+            coalesce(sum(hours) FILTER (WHERE fishing_flow), 0) AS fishing_hours
+     FROM %s WHERE vid = %d AND (%s) GROUP BY 1 ORDER BY 1", TRAIL(), vid, p$time %||% "TRUE"),
+  history_cells = function(vid, p) sprintf(
+    "SELECT CAST(date_trunc('month', time) AS DATE) AS month, round(lon / 0.05) * 0.05 AS lon,
+            round(lat / 0.025) * 0.025 AS lat, coalesce(sum(hours), 0) AS hours, count(*) AS pings
+     FROM %s WHERE vid = %d AND fishing_flow AND lon IS NOT NULL AND lat IS NOT NULL AND (%s)
+     GROUP BY ALL ORDER BY 1", TRAIL(), vid, p$time %||% "TRUE"),
   trail_years = function(vid, p) sprintf(
     "SELECT year::INTEGER AS year, count(*) AS n, min(time) AS time_first, max(time) AS time_last FROM %s
      WHERE vid = %d GROUP BY year ORDER BY year", TRAIL(), vid),

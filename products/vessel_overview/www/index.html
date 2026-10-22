@@ -104,8 +104,8 @@
   dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
   dt { color: var(--muted); } dd { margin: 0; }
   .cards .scroll { max-height: 300px; }
-  #map { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 6px; overflow: hidden; background: #e8edf1; }
-  #attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
+  #map, #hmap { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 6px; overflow: hidden; background: #e8edf1; }
+  #attrib, #h-attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
   /* what the map shows, on the map (maintainer, 2026-10-22): a bar along its top, the hexagons' legend at its foot */
   #mapctl { position: absolute; top: 6px; left: 6px; right: 6px; z-index: 2; display: flex; flex-wrap: wrap; gap: 4px 6px;
             align-items: center; pointer-events: none; font-size: 11px; }
@@ -114,9 +114,14 @@
   #mapctl .seg button, #mapctl > button { padding: 1px 7px; font-size: 11px; }
   #mapctl .lbl { background: #ffffffd0; border-radius: 4px; padding: 0 4px; color: var(--muted); }
   #mapctl #fit { margin-left: auto; background: #ffffffe8; }
-  #hexlegend, #speedlegend { position: absolute; left: 6px; z-index: 2; background: #ffffffe0; border-radius: 4px; padding: 1px 5px;
+  #hexlegend, #speedlegend, #h-hexlegend { position: absolute; left: 6px; z-index: 2; background: #ffffffe0; border-radius: 4px; padding: 1px 5px;
                              font-size: 10px; max-width: calc(100% - 12px); }
-  #speedlegend { bottom: 2px; } #hexlegend { bottom: 22px; }
+  #speedlegend, #h-hexlegend { bottom: 2px; } #hexlegend { bottom: 22px; }
+  #hmapctl { position: absolute; top: 6px; right: 6px; z-index: 2; }
+  #hmapctl button { padding: 1px 7px; font-size: 11px; background: #ffffffe8; }
+  /* the History tab: its Where | When across both columns, the tables under them */
+  #history > .span { grid-column: 1 / -1; }
+  #h-effort, #h-catch { margin-top: 2px; }
   #speedlegend .ramp { display: inline-block; width: 80px; height: 8px; border-radius: 2px; vertical-align: middle; margin: 0 4px; }
   #plot { margin-top: 4px; }
   #hoverinfo { min-height: 18px; font-size: 12px; color: var(--ink); }
@@ -248,6 +253,34 @@
 </main>
 
 <main id="history" class="tab">
+  <!-- Where | When over the vessel's whole history, on a time axis pinned from 2007-09 to now and the fishing grounds'
+       fixed frame, the same for every vessel (decision 179) -->
+  <div class="row2 span" id="h-where-when">
+    <section id="h-map-sec">
+      <h2>Where<span class="note">fishing hours in hexagons, <span id="h-range-where">every month</span></span></h2>
+      <div id="hmap">
+        <div id="hmapctl"><button id="h-fit" title="the fishing grounds around Iceland, the same frame for every vessel">Reset view</button></div>
+        <div id="h-hexlegend"></div>
+        <div id="h-attrib"></div>
+      </div>
+    </section>
+    <section id="h-chart-sec">
+      <div class="head">
+        <h2>When</h2><span class="note">every month from 2007-09 to now, the same axis for every vessel</span>
+        <span class="grow"></span>
+        <button id="h-all" title="every month, on the map too">Whole history</button>
+        <button id="h-open" title="load the chosen months on the Activity tab, with their pings" disabled>Open in Activity</button>
+      </div>
+      <div class="wline"><span class="note">drag across a chart, or click a month, to choose; the map shows their fishing</span>
+        <b id="h-range"></b></div>
+      <h3><span class="sw" style="background:#d62728"></span>Fishing effort: hours fishing per month (AIS, fishing_flow)</h3>
+      <div id="h-effort"></div>
+      <h3>Catch: tonnes per month, <span class="sw" style="background:#e07b00"></span>landed and
+        <span class="sw" style="background:#2e7d32;width:6px;height:6px;border-radius:3px"></span>logged (by the month the logbook trip returned)</h3>
+      <div id="h-catch"></div>
+      <div id="h-hover" class="note">Hover on a chart: the month's effort and catch.</div>
+    </section>
+  </div>
   <div class="col">
     <section><h2>Landings by year</h2><div id="h-land-years" class="scroll"></div></section>
     <section><h2>All landings</h2><div id="h-land"></div></section>

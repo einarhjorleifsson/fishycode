@@ -104,6 +104,8 @@ for (i in seq_len(nrow(pick))) {
   last_trip <- sprintf("%s = (SELECT key FROM kt ORDER BY T2 DESC NULLS LAST, key DESC LIMIT 1)", TID)
   a <- list(
     trail = answer(con, "trail", vid, p, in_win),
+    history_effort = answer(con, "history_effort", vid, c(p, list(time = in_win))),
+    history_cells = answer(con, "history_cells", vid, c(p, list(time = in_win))),
     trail_years = answer(con, "trail_years", vid, p, inner = sprintf(
       "SELECT year(time)::INTEGER AS year, count(*) AS n, min(time) AS time_first, max(time) AS time_last FROM (%s)
        WHERE %s GROUP BY 1 ORDER BY 1", SQL$trail(vid, p), in_win)),
