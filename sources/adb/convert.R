@@ -1,6 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
-# Input: raw/oracle/adb/*.parquet
+# Input: raw/oracle/adb/{trip_v,fishing_trip,fishing_station,trawl_and_seine_net_v,dredge_v,line_and_net_v,trap_v,
+#        surrounding_net_v,catch}.parquet
 # Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
 library(whack) # pak::pak("einarhjorleifsson/whack)
@@ -20,8 +21,21 @@ trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "trip_v.parquet")) |> col
   mutate(schema = SCHEMA)
 
 # base -------------------------------------------------------------------------
+# The table, not Oracle's view station_v: the view reads every six-digit position as ddmm.hh where the digits are
+# ddmmss (curate/corrections/adb_station_v_positions.yml). decode_logbook_position() (R/logbook_position.R) reads them
+# and turns the longitude's sign as the view did. Depth is the table's fathoms, as fs_afladagbok's; curate/logbook.R
+# converts both. Renamed to the view's names, which the dictionary holds.
+trip_source <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) |>
+  select(trip_id = id, source) |> collect()
+
 base <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "station_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_station.parquet")) |> collect() |>
+  rename(station_id = fishing_station_id, trip_id = fishing_trip_id, gear_no = fishing_gear_no) |>
+  left_join(trip_source, by = "trip_id", relationship = "many-to-one") |>
+  mutate(hundredths = logbook_position_hundredths(trip_id, source, latitude, longitude, latitude_end, longitude_end),
+         pos1 = decode_logbook_position(latitude, longitude, hundredths),
+         pos2 = decode_logbook_position(latitude_end, longitude_end, hundredths),
+         latitude = pos1$lat, longitude = pos1$lon, latitude_end = pos2$lat, longitude_end = pos2$lon) |>
   wk_translate(dictionary) |>
   mutate(date = as_date(coalesce(t1, t3, t4))) |>
   select(.tid, .sid, gid, date,

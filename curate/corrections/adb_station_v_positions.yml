@@ -1,0 +1,77 @@
+id: adb_station_v_positions
+title: Oracle's view adb.station_v reads the e-logbook's six-digit positions as ddmm.hh; the digits are ddmmss
+status: >-
+  implemented 2026-10-22 (decision 165), not built: sources/adb/convert.R reads the table adb.fishing_station through
+  R/logbook_position.R instead of the view. A scratch run of the adapter, adb_vs_fs_afladagbok.R and curate/logbook.R
+  gave the counts below. The rebuild (adb and everything after it) is the maintainer's call. All numbers are Claude's,
+  measured on the dump of the adb schema, not checked by a person.
+applies_to:
+  - staging/adb/station.parquet            # lat1, lon1, lat2, lon2 decoded from the table; z1, z2 the table's fathoms
+  - curated/logbook/station.parquet        # adb rows: positions; z1_raw, z2_raw now fathoms, z1_basis, z2_basis "reconstructed"
+affects_rows: >-
+  Of adb's 88,464 stations in curated/logbook/station.parquet (2025-11-19 on, decision 160), the start position of
+  85,901 moves (of 88,444 with one in both runs), the end position of 64,889 (of 65,732). Nothing else in the four
+  curated tables changes: trip, fishing_sample and catch are identical, and so are the other sources' stations.
+implementation: >-
+  R/logbook_position.R (decode_logbook_position(), logbook_position_hundredths()), called by sources/adb/convert.R.
+  Reading the stored form is the adapter's work, as sources/fs_afladagbok/convert.R does for the same integers, so
+  there is no side table; the view's values stay in raw/oracle/adb/station_v.parquet. curate/logbook.R converts adb's
+  depth from fathoms as it does fs_afladagbok's.
+discovered: >-
+  2026-10-22, checking the kb-hafro-kerfi knowledge base against the dumps (a lead, not checked); confirmed on the dump
+  the same day. reference/dictionary.R had said "wrong convertion in many cases" beside adb's latitude and longitude.
+
+defect: >-
+  station_v is fishing_station row for row (691,011 rows, the same station and trip ids and times). The table holds
+  the positions as integers (Oracle's comment: "(ddmm)"), the view as decimal degrees. The view reads every six-digit
+  value as dd + mm.hh/60: 1,757,437 of the 1,763,309 six-digit values of the four coordinates agree with that reading.
+  It reads a shorter longitude beside a six-digit latitude the same way (4119 as 0°41.19', 40014 as 4°00.14'), and a
+  longitude longer than its latitude in the latitude's form, which gives longitudes of 112° to 235° (a five-digit
+  latitude beside a six-digit longitude). It turns the sign of every longitude, and gives depth as the table's fathoms
+  x 1.8288 (on all 687,039 depths).
+
+evidence: >-
+  The last two digits of a six-digit value are seconds, not hundredths: hundredths would put about 40 % of them at 60-99.
+  From 2022, of the values whose last two digits are not 00: Trackwell's app, 0 of 673,010 latitudes and 0 of 661,449
+  longitudes above 59; Fontos's and Fishtech's, none; nine apps with fewer than 300 values each, 2 of 525.
+  Reiknistofa fiskmarkaða's app, 210,
+  all exactly 60: a rounded-up 60 seconds, which ddmmss arithmetic reads right. Marína's app peaks at 15, 30 and 45
+  (6,808, 6,405 and 6,069 times): quarter minutes written as seconds. Only Taktikal's app (FRA TAKTIKAL, 2021-2023)
+  sends hundredths: 296 of 903 above 59; and 51 of Marína's trips (2023-05 to 2024-06) hold a value of 61-99.
+  fs_afladagbok holds the same integers (ws_veidi upphaf_breidd, upphaf_lengd, lok_breidd, lok_lengd): adb's table
+  equals it on 467,567 of the 467,635 shared stations. So the shared stations test that a reading is applied
+  consistently; they cannot tell which reading is true. The digits do.
+
+rule: >-
+  R/logbook_position.R. The latitude's digit count gives the record's form: seven digits ddmm.mmm, six ddmmss (ddmm.hh
+  on a Taktikal trip or a trip holding a last two digits of 61-99), five ddmm.m, four ddmm, two whole degrees, any
+  other NA. A longitude no longer than its latitude is in the same form with its leading zeros dropped; a longer one
+  in the form of its own length. NA beyond 85° or 178°. A latitude's sign is dropped (84 negative start latitudes, 16
+  of them kept). A positive longitude is west, so the sign is turned as the view turned it, and
+  adb_vs_fs_afladagbok.R's restore of a west entered as minus applies unchanged. On the four-, two- and seven-digit
+  forms the rule agrees with the view; on the seven-digit form the view drops the thousandths (at most 17 m).
+
+what_it_changes: >-
+  Scratch run of 2026-10-22 against curated/logbook/station.parquet as built: of the start positions that move, 10 %
+  move less than 162 m, half less than 400 m, 90 % less than 684 m, 99 % less than 765 m; 4 move 0.8-5 km and 64 more
+  than 5 km, from longitudes of 112-180° or a latitude of -7° to Icelandic waters (a few keep a latitude of 44°, 55° or
+  80° that was wrong before). The end positions alike: half less than 412 m, 53 more than 5 km. 6 start and 3 end
+  latitudes become NA: three-digit ones the view read as whole degrees (616 as 62°, 530 as 53°, 640 as 64°, 100 as
+  10°), and 85°05' and 88°, beyond the 85° limit. No longitude beyond
+  90° is left (52 start and 54 end before). Depth: the same values to 2e-12 m; z1_raw is now the fathoms recorded and
+  z1_basis "reconstructed", as fs_afladagbok's. lon1_basis changes on 1 station. The flow never reads a logbook
+  position (hauls meet pings by time), so effort and catch on the fixes do not change; maps and positions do.
+
+not_fixed_here: >-
+  sources/fs_afladagbok/convert.R reads the same integers its own way. Its DDM_SOURCES list reads every Marína trip as
+  ddmm.hh: in curated/logbook/station.parquet all 7,710 kept fs_afladagbok stations from Marína's app with a six-digit
+  latitude not ending in 00 carry the hundredths reading, while the digits are seconds. Its trip rule (a last two digits
+  of 60 or more) puts a trip holding a rounded-up 60 in hundredths (23 kept stations). 59 of its 9,184 kept stations
+  with a four- or five-digit longitude beside a six-digit latitude lie beyond 30°. The other Oracle views the flow
+  reads: agf.aflagrunnur_v, kvoti.lods_oslaegt, kvoti.strandveidileyfi_v, vessel.vessel_v, vessel.vessel_hist_v and
+  adb's trip_v, trawl_and_seine_net_v, dredge_v, line_and_net_v, trap_v and surrounding_net_v; the dump holds no view
+  definitions (ALL_VIEWS.TEXT), so each can be judged only against its tables.
+
+related:
+  - curate/corrections/adb_vs_fs_afladagbok.yml   # adb's dropped west sign (still applies) and its depth units
+  - curate/decisions/160-adb-only-where-fs-afladagbok-ends.md

@@ -55,8 +55,9 @@ DATE_MAX     <- as.Date("2026-12-31")
 # fs_afladagbok has no drift (curate/corrections/afli_depth_units.yml baseline) -
 # a flat conversion is enough; afli's vessel-by-vessel drift needs its own
 # correction, curate/corrections/afli_depth_units.R, run beforehand. adb is
-# already metres (same decision) - no conversion, just basis columns for
-# consistency across the merged table.
+# fathoms too: its adapter reads the table, not the view station_v that gave
+# metres (curate/corrections/adb_station_v_positions.yml), and it is converted
+# the same way.
 FATHOM_TO_M <- 1.8288
 
 # Load -------------------------------------------------------------------------
@@ -101,22 +102,22 @@ afli_station <- afli_station |>
   select(-lon2) |>
   left_join(afli_end_lon, by = ".sid", relationship = "one-to-one")
 
-# fs_afladagbok: uniformly fathoms (no drift window), so a flat conversion with
+# fs_afladagbok and adb: uniformly fathoms (no drift window), so a flat conversion with
 # basis = "reconstructed"; NA stays NA, basis NA.
-fs_station <- fs_station |>
-  mutate(z1_raw = z1, z2_raw = z2,
-         z1 = z1_raw * FATHOM_TO_M, z2 = z2_raw * FATHOM_TO_M,
-         z1_basis = if_else(is.na(z1_raw), NA_character_, "reconstructed"),
-         z2_basis = if_else(is.na(z2_raw), NA_character_, "reconstructed"))
+fathoms_to_metres <- function(station) {
+  station |>
+    mutate(z1_raw = z1, z2_raw = z2,
+           z1 = z1_raw * FATHOM_TO_M, z2 = z2_raw * FATHOM_TO_M,
+           z1_basis = if_else(is.na(z1_raw), NA_character_, "reconstructed"),
+           z2_basis = if_else(is.na(z2_raw), NA_character_, "reconstructed"))
+}
+fs_station <- fs_station |> fathoms_to_metres()
 
-# adb: already metres (decision 022) - basis columns only, no conversion.
-# Longitude: replace lon1/lon2 with adb_vs_fs_afladagbok.R's sign-corrected
+# adb: longitude: replace lon1/lon2 with adb_vs_fs_afladagbok.R's sign-corrected
 # value, keep lon1_raw/lon2_raw/lon1_basis/lon2_basis (never overwrite the
 # original - AGENTS.md).
 adb_station <- adb_station |>
-  mutate(z1_raw = z1, z2_raw = z2,
-         z1_basis = if_else(is.na(z1_raw), NA_character_, "recorded"),
-         z2_basis = if_else(is.na(z2_raw), NA_character_, "recorded")) |>
+  fathoms_to_metres() |>
   select(-lon1, -lon2) |>
   left_join(adb_lon_sign |> select(.sid, lon1, lon2, lon1_raw, lon2_raw, lon1_basis, lon2_basis),
             by = ".sid")

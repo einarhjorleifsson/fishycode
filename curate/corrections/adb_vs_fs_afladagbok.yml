@@ -67,6 +67,13 @@ defect_1_depth_units:
     decision 022. Also per decision 022: exclude pelagic gear
     (gid %in% pelagic_gids, curate/link_lid_map.R) from any GEBCO-ratio
     measurement - fishing depth in the water column is not seabed depth.
+  amended_2026_10_22: >-
+    The metres were Oracle's view station_v, which the adapter read: its depth is
+    the table adb.fishing_station's fathoms x 1.8288 on all 687,039 depths. Since
+    adb_station_v_positions.yml the adapter reads the table, so adb's depth is
+    fathoms like fs_afladagbok's and curate/logbook.R converts both the same way
+    (same metres; z1_raw fathoms, z1_basis "reconstructed"). defect_2's sign rule
+    still applies: the adapter turns the longitude's sign as the view did.
 
 defect_2_longitude_sign:
   summary: adb drops the west sign on longitude for roughly a tenth of records.
