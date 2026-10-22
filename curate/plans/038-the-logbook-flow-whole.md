@@ -319,7 +319,8 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
 
 ## 8. Order of work
 
-0. **The pending rebuild** (the maintainer's): TODO 119 and 121 with decisions 165, 169 and 170, 36 targets.
+0. **The pending rebuild** (the maintainer's): TODO 119 and 121 with decisions 165, 169 and 170, 36 targets. **Done
+   2026-10-22** (62 targets with the re-dump and decision 175; decision 180).
    Fingerprints are taken before and after, and the audit is read after. Nothing else is built before it.
 1. **The instruments:** plan 024's `station_fate` (TODO 79) and §7.1's `catch_unit`. Every staging station and every
    logged kilogram is then in one outcome, so each later change shows as a move between outcomes.

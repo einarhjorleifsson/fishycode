@@ -335,7 +335,7 @@ and nearly all rows of 2017-2024; another writer for most of 2025 and 2026. Befo
 
 ## 8. Order of work
 
-0. **The pending rebuild** (TODO 119 and 121; plan 038 §8 step 0). TODO 119 fixes today's LODS units and depends on
+0. **The pending rebuild** (TODO 119 and 121; plan 038 §8 step 0). **Done 2026-10-22** (decision 180). TODO 119 fixes today's LODS units and depends on
    nothing here. It is best done with the kvoti re-dump (TODO 110).
 1. **Measure what §10 assumes.** Read-only:
    - period 0's tables: their units, which is upstream, what they include, and their overlap with LODS in 1992-1993;

@@ -1087,30 +1087,13 @@ explained. Some may be a haul loaded twice; some genuinely missing hauls (as TOD
 layer stages no haul twice.
 
 
-## 119. Rebuild the landings on decision 169's lods fix
-**status:** open · **needs: maintainer** — the rebuild, best with the kvoti re-dump of TODO 110 · **see:** decision 169,
-`$FISHYDATA/archive/2026-10-lods-oslaegt/`, TODO 110, 112
-
-`sources/lods/convert.R` now reads `kvoti.lods_slaegt` in its own units (herring, capelin and blue whiting in tonnes).
-The built `curated/landing/` still holds those three species at 1/1000 for the lods-only trips (19,087 kt to 2006,
-736 kt in 2007); every other value of the scratch run equals the build. `lods_raw` points at the
-table, so `lods`, `landing` and everything after them are outdated. The kvoti re-dump of 2026-10-22 is adopted
-(TODO 110; 1,721 new and 143 revised `lods_slaegt` rows, landings since 2026-08-27), so the rebuild can run now.
-The re-dump also outdated `port`, the MMSI and vessel chain and the AIS ping chain, mostly from re-stamped files, and
-decision 175 three more (62 targets in all). **Prepared:** `$FISHYDATA/archive/2026-10-rebuild-prep/README.md`, with
-the fingerprint before taken, the build by name in three steps (about 2.5 h) and the checks after scripted.
-
-**check:** the built lods catch equals the scratch run of decision 169 (or the re-dump's differences are explained);
-`docs/data-dict.yaml` describes `hid_origin` and `catch_gutted` and no longer calls `landing_catch.catch` wrong;
-`tar_outdated()` shows nothing of the landing chain.
-
 ## 120. Readers still on Oracle views (the rule "tables, not views")
 **status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, 170, 175,
 `$FISHYDATA/archive/2026-10-views-todo120/README.md`
 
 The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. adb's adapter switched
 (decision 170), and the five main-project readers of `agf.aflagrunnur_v` and `vessel.vessel_v` (decision 175; built
-with TODO 119's rebuild); adb's legacy reader was deleted (decision 175). Left: three readers in the `once` project,
+in decision 180's rebuild); adb's legacy reader was deleted (decision 175). Left: three readers in the `once` project,
 so switched only at a redo by decision, their views rebuilt from their tables the same day, row by row, none differing:
 `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`: `vessel_hist` without its six `hist_*` audit columns),
 `reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`:
@@ -1118,23 +1101,9 @@ so switched only at a redo by decision, their views rebuilt from their tables th
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
 
-## 121. Departure and return, time and port, for every logbook trip: build the cascade
-**status:** open · **needs: maintainer** — the build, with the pending rebuild of TODO 119 and decisions 165, 170 ·
-**see:** decisions 172, 173, 174, `$FISHYDATA/archive/2026-10-adb-departure-port/`
-
-Built in code and tested on a scratch store (decisions 173, 174): `ramb::rb_add_trip_time()` (ramb 2026.10.22.2),
-the witnesses staged (`stk_voyage`, `quota_trip`, `phone_call`) and the flow step `trip_reconciled` →
-`curated/link/trip_reconciled.parquet`, ranked AIS, own, STK, quota, phone at both ends, the landing last for the
-return. Seven new targets are outdated beside the 29 of the pending rebuild; `tar_make_isolated()` builds them with
-it. What reads the reconciled times downstream is decision 174's open end; the vessel overview is one reader (TODO 125).
-
-**check:** every trip in `curated/logbook/trip.parquet` (twins left out) has a row in `trip_reconciled.parquet`, with a
-departure and a return, time and port or `none`, each with its basis, and every disagreement between witnesses counted
-in one outcome.
-
 ## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
 **status:** open · **needs: maintainer** — plan 038's asks a-i (§9); a, the split, agreed with plan 039 · **see:**
-`curate/plans/038-the-logbook-flow-whole.md`, TODO 121, decisions 155 and 172-174
+`curate/plans/038-the-logbook-flow-whole.md`, decisions 155, 172-174 and 180
 
 Plan 038 places every open piece of the logbook flow in one order: the sources and their layers, the merge, the trip ↔
 landing link, the reconciled trip, the stations on the fixes, effort and catch. Each piece keeps its own TODO item.
@@ -1180,16 +1149,52 @@ dw, stk; agf, ask, vessel) as described. Phase 2 is inside plans 038 and 039; th
 **check:** the asks answered in the plan; or the plan parked or abandoned in its header.
 
 ## 125. The vessel overview after the rebuild: the reconciled trip, the landing's origin, two checks left
-**status:** open · **see:** plan 030 §7, decisions 169, 173, 174, 177-179, TODO 119, 121
+**status:** open · **see:** plan 030 §7, decisions 169, 173, 174, 177-180
 
 Left by the overview's session of 2026-10-22.
-- **The reconciled trip, when `curated/link/trip_reconciled.parquet` is built** (TODO 121):
+- **The reconciled trip**, `curated/link/trip_reconciled.parquet`, built 2026-10-22 (decision 180):
   - each trip's departure and return, time and port, with the witness that gave each, beside the logbook's T1 and T2;
   - the trip's band on the chart from them.
-- **The landing's port of origin**, lods' `hid_origin` (decision 169), on the landing lines once the landings rebuild
-  carries it (TODO 119).
+- **The landing's port of origin**, lods' `hid_origin` (decision 169), on the landing lines; the landings carry it
+  since decision 180.
 - **Not checked in the browser pane**, which was hidden: Play, and the map's tooltip. A person should try both.
 - **On hold (maintainer):** a hexagon colour scale pinned across vessels, as the History axis is.
 
 **check:** the trip table and chart show `trip_reconciled`'s times and ports with their witness; the landing lines show
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
+
+## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
+**status:** open · **needs: maintainer** — the representation below, and the AIS check's go · **see:**
+`$FISHYDATA/archive/2026-10-afli-minutes60/README.md` (scripts 01-10), TODO 108, 124, plan 040, decision 165,
+decision 180, `R/logbook_position.R`, `curate/corrections/afli_coords.yml`, `afli_end_longitude.yml`
+
+Found 2026-10-22 from the rebuild's `error > 60 min` lines (decision 180), measured with the maintainer:
+
+- **afli:**
+  - a rectangle-only record until the mid-1980s (1950-84: 87 % of stations have no position, only `reitur`; never
+    filled in at a centre); the changeover is 1985-89, when the quarter (`smareitur`) appears;
+  - manual entry (paper) varies by record: hand rounding to 10 minutes, about 1,200 rectangle-centre fills (1990s
+    mostly), 61-99 "minutes" (about 1,600, unexplained: the rectangle cannot decide, and at the quarter they look
+    like neither reading);
+  - the `rafr_` loader rounded electronic positions to the minute, so exactly 60 means no carry, and the sent record
+    holds the arc-second (TODO 108);
+- **e-logbooks** (fs_afladagbok, adb):
+  - precision by app and year: whole minutes (the old TRACKWELL route), seconds (Trackwell raun and most later apps),
+    mixed within Taktikal and Jóhann Gíslason, hundredths on Taktikal and Marína 2023;
+  - STOKKUR (2021-22, 23,362 stations) reports whole degrees, a cell's corner; no app reports centre points;
+  - end positions are missing on all stations for most apps.
+
+Proposed:
+- each end kept as reported: a point with its precision; a cell (whole degree, rectangle, quarter) with lon/lat NA and
+  the cell recorded; or nothing, basis "none";
+- a derived centre only in a column of its own;
+- a per-row column naming the kind and precision;
+- the formats and precision by source, app and period in the overlays (plan 040; a new fs_afladagbok overlay);
+- per-app checks in `curate/checks/`.
+
+Open: corner or midpoint, truncated or rounded, for the whole degrees and the centre fills, and the 61-99 values,
+judged against the vessel's AIS track that day (the maintainer). A diagnostic; logbook positions never join the
+track.
+
+**check:** each source's ends in one kind (point, cell, none), with counts by source, app and period; the overlays
+state the formats and precision; the AIS check reported.

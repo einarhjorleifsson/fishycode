@@ -2127,23 +2127,41 @@ tables:
           it is ever useful for tracing a row back to its loading batch.
         todo: |
           - Specify `constraints`. Some options suggested by the data.
+      - name: hid_origin
+        type: number
+        examples: [1, 11, 13, 17, 43]
+        description: >
+          `lods` only (NA for `agf`): the port an export at `hid` 159 ("gámar/
+          sigling", exported unprocessed) was landed at, lods' `upprunahofn`;
+          equal to `hid` elsewhere. Kept per catch row, since an export day can
+          have several (decision 169). Empty for container exports before 1998,
+          whose port the container tables keep.
       - name: catch
         type: number
-        range: [-203018, 3652803]
+        range: [-1545000, 5199000]
         examples: [72.62, 3728.75, 22678, 48292, 2001002]
         description: >
           Landed weight, kg (magn óslægt / lods' own magn_oslaegt - the
           ungutted/round-weight equivalent in both systems, not the gutted
           weight `agf` separately records as `magn_slaegt` - curate/plans/007).
-          **Wrong for `lods` in the build of 2026-10-21 and earlier (decision
-          169):** its herring, capelin and blue whiting (`sid` 30, 31, 34) are
-          tonnes, not kg (19,087 kt to 2006 and 736 kt in 2007 held as 19.8).
-          Fixed at the next rebuild of `lods`.
+          For `lods`, read from the table `lods_slaegt`: herring, capelin and
+          blue whiting (`sid` 30, 31, 34), which lods keeps in tonnes, are
+          converted to kg, and every `gerd` is summed, the export surcharge's A
+          rows included (decision 169, built 2026-10-22, decision 180).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: catch_gutted
+        type: number
+        range: [-1545000, 5199000]
+        examples: [6, 32, 131, 491, 2433]
+        description: >
+          `lods` only (NA for `agf`): the gutted weight, kg, lods' `magn` (itself
+          converted from product weights by Oracle's factors), with the same
+          tonnes-to-kg rule as `catch`. `catch` is this times lods' ungutting
+          factor (decision 169).
   - name: landing_landings
     source:
       parquet: ../../fishydata/curated/landing/landings.parquet
