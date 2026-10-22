@@ -262,8 +262,7 @@ crosswalk (`fishing_gear`) to the new gid (plan 034).
 
 Converted by `sources/adb/convert.R` →
 `staging/adb/{trip,station,fishing_sample,catch}.parquet`. The dump
-(`raw/oracle/adb/`) holds 32 tables and views. `sources/adb/convert_brute_force.R`
-is an alternative reader kept for reference.
+(`raw/oracle/adb/`) holds 32 tables and views.
 
 The merge reads adb only from 2025-11-19, where fs_afladagbok's dump thins and
 ends, for the vessel-days no higher tier holds (tier 3, decision 160): see

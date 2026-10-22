@@ -1122,13 +1122,11 @@ the fingerprint before taken, the build by name in three steps (about 2.5 h) and
 
 The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. adb's adapter switched
 (decision 170), and the five main-project readers of `agf.aflagrunnur_v` and `vessel.vessel_v` (decision 175; built
-with TODO 119's rebuild). The views left were rebuilt from their tables the same day, row by row, none differing:
-
-- In the `once` project, so only at a redo by decision: `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`:
-  `vessel_hist` without its six `hist_*` audit columns), `reference/vessels/skipaskra_evidence.R` and
-  `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`: `veidileyfi` with `svaedi` SA to SD).
-- `sources/adb/convert_brute_force.R`, outside the build ("kept for reference", `docs/source-schemas.md`), reads adb's
-  views from `staging/data-dump/`, which no longer exists (found 2026-10-22): delete it, or a decision keeps it.
+with TODO 119's rebuild); adb's legacy reader was deleted (decision 175). Left: three readers in the `once` project,
+so switched only at a redo by decision, their views rebuilt from their tables the same day, row by row, none differing:
+`curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`: `vessel_hist` without its six `hist_*` audit columns),
+`reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`:
+`veidileyfi` with `svaedi` SA to SD).
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
 

@@ -5,7 +5,7 @@ main-project readers still on a view. Written by Claude (AI) in a session starte
 code, the scratch runs and the overlay entries are Claude's and have not been checked by a person. Decided and
 committed, not built: the rebuild is the maintainer's (`$FISHYDATA/archive/2026-10-rebuild-prep/README.md`). The views
 were rebuilt from their tables the same day, read-only (`$FISHYDATA/archive/2026-10-views-todo120/`). Dumps of
-2026-10-16 (agf, ask, vessel).*
+2026-10-16 (agf, ask, vessel). **Extended the same day:** adb's legacy reader deleted, at the maintainer's word.*
 
 ## Found
 
@@ -66,6 +66,15 @@ port ids to codes, and none of fs_afladagbok's 207,189 trips has port id 136. `p
 the build. So the switch changes no other output; it outdates `port_code_raw`, `port_code` and `vessel_raw` beside
 the 59 targets the re-dump had outdated (62 in all), whose rebuild is one build. `find -newer` on the real store after
 the runs: nothing written outside `archive/2026-10-rebuild-prep/`.
+
+## adb's legacy reader deleted
+
+The scan of every script for the views it reads found one more outside the build: `sources/adb/convert_brute_force.R`,
+an alternative adb reader migrated from `~/stasi/logbooks` (`01_adb_convert_brute-force.R`, decision 001's file
+migration) and "kept for reference" (`docs/source-schemas.md`). It read seven of adb's views (`trip_v`, `station_v`
+and five gear views) from `staging/data-dump/`, which no longer exists, so it could not run. No target, script or page
+used it. The maintainer said to delete it (2026-10-22), and `docs/source-schemas.md` no longer names it; git history
+keeps it. `sources/adb/convert.R` is adb's one reader, on tables since decisions 165 and 170.
 
 ## Left open
 
