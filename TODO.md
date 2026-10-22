@@ -1039,7 +1039,8 @@ unit and keeps more or known precision; a resend or an in-house edit, being late
 evening: afli's electronic logbook has three layers (sent, loaded, edited), in-house corrections are common (12 % of
 stations, records of 2003-2018) and resends rare; the five schemas found missing were dumped that evening (phase 0, decision 162). Proposed: one adapter per layer into
 the grammar's tables, the choice per field group only in `curate/`, the layer recorded beside the basis.
-The sent layer's adapter is built on branch `claude/plan037-afli-sent-1f2f63`, not merged (its key: ask i).
+The sent layer's adapter (`sources/afli_sent/convert.R`, target `afli_sent`) is merged, its key settled by ask i
+(option b, 2026-10-22); run on a scratch store only, not built in the store, and read by nothing in `curate/` yet.
 
 **check:** the asks answered in the plan; its phases built or the plan parked or abandoned in its header.
 
