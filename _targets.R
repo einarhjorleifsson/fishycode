@@ -443,15 +443,14 @@ list(
              fd_staging("fs_afladagbok", "catch.parquet"))
   }, format = "file"),
 
-  # The stations from the table, not the view station_v, which misreads the positions (adb_station_v_positions.yml)
-  tar_target(adb_raw, c(fd_raw("oracle", "adb", "trip_v.parquet"),
-                        fd_raw("oracle", "adb", "fishing_trip.parquet"),
+  # Tables, not views (decision 170); station_v misreads the positions (adb_station_v_positions.yml)
+  tar_target(adb_raw, c(fd_raw("oracle", "adb", "fishing_trip.parquet"),
                         fd_raw("oracle", "adb", "fishing_station.parquet"),
-                        fd_raw("oracle", "adb", "trawl_and_seine_net_v.parquet"),
-                        fd_raw("oracle", "adb", "dredge_v.parquet"),
-                        fd_raw("oracle", "adb", "line_and_net_v.parquet"),
-                        fd_raw("oracle", "adb", "trap_v.parquet"),
-                        fd_raw("oracle", "adb", "surrounding_net_v.parquet"),
+                        fd_raw("oracle", "adb", "trawl_and_seine_net.parquet"),
+                        fd_raw("oracle", "adb", "dredge.parquet"),
+                        fd_raw("oracle", "adb", "line_and_net.parquet"),
+                        fd_raw("oracle", "adb", "trap.parquet"),
+                        fd_raw("oracle", "adb", "surrounding_net.parquet"),
                         fd_raw("oracle", "adb", "catch.parquet")), format = "file"),
   # adb's own gear crosswalk (its code -> the new gid), read by logbook_gear (plan 034), not by the adapter
   tar_target(adb_gear_code, fd_raw("oracle", "adb", "fishing_gear.parquet"), format = "file"),

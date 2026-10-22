@@ -1,7 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
-# Input: raw/oracle/adb/{trip_v,fishing_trip,fishing_station,trawl_and_seine_net_v,dredge_v,line_and_net_v,trap_v,
-#        surrounding_net_v,catch}.parquet
+# Input: raw/oracle/adb/{fishing_trip,fishing_station,trawl_and_seine_net,dredge,line_and_net,trap,surrounding_net,
+#        catch}.parquet
 # Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
 library(whack) # pak::pak("einarhjorleifsson/whack)
@@ -14,8 +14,14 @@ SCHEMA <- "adb"
 dictionary <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet")) |> collect() |>
   filter(schema == SCHEMA)
 
+# Every Oracle object read here is a table, never a view (AGENTS.md, Rules; decision 170). Each is renamed to its
+# former view's names, which the dictionary holds, and the view's unit factors are done in R.
+
 # trip -------------------------------------------------------------------------
-trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "trip_v.parquet")) |> collect() |>
+# trip_v's trip_id is the table's VARCHAR id, not its fishing_trip_id. Only the columns used: the table holds persons'
+# data (vessel_gsm, company_ssn).
+trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) |>
+  select(trip_id = id, vessel_no, departure, departure_port_no, landing, landing_port_no) |> collect() |>
   wk_translate(dictionary) |>
   select(.tid, vid, T1, hid1, T2, hid2) |>
   mutate(schema = SCHEMA)
@@ -50,8 +56,11 @@ base <-
 ##   times needed for the calculations.
 
 ## mobile (trawl / seine-net) --------------------------------------------------
+##   The bridle is in fathoms, converted as trawl_and_seine_net_v did.
 mobile_aux <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "trawl_and_seine_net_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "trawl_and_seine_net.parquet")) |>
+  select(station_id = fishing_station_id, bridle) |> collect() |>
+  mutate(bridle_length = bridle * 1.8288) |>
   wk_translate(dictionary) |>                  # station_id → .sid; bridle_length → sweeps
   inner_join(base |> select(.sid, gid, t3, t4), by = ".sid") |>
   mutate(
@@ -71,9 +80,12 @@ mobile_aux <-
   select(.sid, effort, effort_unit, towtime, gear_width)
 
 ## dredge (plógur) -------------------------------------------------------------
-##   dredge_v covers gid 5, 6, 7, 51, 53 that are absent from trawl_and_seine_net_v
+##   dredge covers gid 5, 6, 7, 51, 53 that are absent from trawl_and_seine_net.
+##   The width is in feet (fs_afladagbok's ws_plogur says "fet"); dredge_v took a foot as 0.3042 m.
 dredge_aux <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "dredge_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "dredge.parquet")) |>
+  select(station_id = fishing_station_id, width) |> collect() |>
+  mutate(width = width * 0.3048) |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid, t3, t4), by = ".sid") |>
   mutate(
@@ -86,7 +98,8 @@ dredge_aux <-
 
 ## static (longline / gillnet / handline) --------------------------------------
 static_aux <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "line_and_net_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "line_and_net.parquet")) |>
+  select(station_id = fishing_station_id, hooks, nets) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid, gid, t3, t4), by = ".sid") |>
   mutate(
@@ -108,7 +121,8 @@ static_aux <-
 
 ## traps -----------------------------------------------------------------------
 trap_aux <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "trap_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "trap.parquet")) |>
+  select(station_id = fishing_station_id, number_of_traps) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid, t3, t4), by = ".sid") |>
   mutate(
@@ -120,7 +134,8 @@ trap_aux <-
 
 ## seine / surrounding net -----------------------------------------------------
 seine_aux <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "surrounding_net_v.parquet")) |> collect() |>
+  duckdbfs::open_dataset(fd_raw("oracle", "adb", "surrounding_net.parquet")) |>
+  select(station_id = fishing_station_id) |> collect() |>
   wk_translate(dictionary) |>
   inner_join(base |> select(.sid), by = ".sid") |>
   mutate(effort = 1, effort_unit = "setting") |>
@@ -166,7 +181,7 @@ catch <-
 #
 # gid is left NA here and adb's code is kept verbatim as gid_old. That code is
 # the old gear code, the GEAR schema's fishing_gear_no, which the converter's
-# own effort logic keys on (gid %in% c(6,7,14), and dredge_v "covers gid
+# own effort logic keys on (gid %in% c(6,7,14), and dredge "covers gid
 # 5,6,7,51,53"). adb's own table fishing_gear maps it to the FS number, the new
 # gid: 53 dredge -> 15, 51 crab trap -> 16, and the rest as reference/gear.parquet's
 # old code does. curate/corrections/logbook_gear.R reads it through that table
