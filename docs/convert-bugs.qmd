@@ -10,6 +10,11 @@ date: 2026-04-11
 > discovered. The convention has since been reset to `t1`–`t4` (see
 > `grammar.qmd` §5.2). The bugs and fixes described here are unchanged; only
 > the column names differ in current scripts.
+>
+> The scripts then read Oracle's `adb` views (`trawl_and_seine_net_v`,
+> `dredge_v`, ...), as the code examples show. The adapter reads their tables
+> since decision 170, and so do the tables computed on this page, which come
+> out the same as from the views (checked by Claude (AI), 2026-10-22).
 
 Both `scripts/01_adb_convert.R` and `scripts/01_fs_afladagbok_convert.R` shared
 two bugs that caused a large fraction of fishing stations to be silently dropped
@@ -47,23 +52,23 @@ yet populated upstream.
 ### Why stations are absent from aux tables
 
 Absence is a genuine upstream data sparsity issue, not a processing error.  For
-the `adb` schema, the trawl auxiliary table (`trawl_and_seine_net_v`) is
+the `adb` schema, the trawl auxiliary table (`trawl_and_seine_net`) is
 completely unpopulated for gid 6 trips in 2020–2021:
 
 ```{r}
 #| label: tbl-aux-coverage
-#| tbl-cap: "gid 6 coverage in trawl_and_seine_net_v by year"
+#| tbl-cap: "gid 6 coverage in trawl_and_seine_net by year"
 here::i_am("docs/convert-bugs.qmd")
 source(here::here("R/paths.R"))
 library(nanoparquet)
 library(tidyverse)
 
-station_v <- read_parquet(fd_raw("oracle", "adb", "station_v.parquet"))
-trawl     <- read_parquet(fd_raw("oracle", "adb", "trawl_and_seine_net_v.parquet"))
+station <- read_parquet(fd_raw("oracle", "adb", "fishing_station.parquet"))
+trawl   <- read_parquet(fd_raw("oracle", "adb", "trawl_and_seine_net.parquet"))
 
-station_v |>
-  filter(gear_no == 6) |>
-  mutate(in_trawl = station_id %in% trawl$station_id,
+station |>
+  filter(fishing_gear_no == 6) |>
+  mutate(in_trawl = fishing_station_id %in% trawl$fishing_station_id,
          year     = year(fishing_start)) |>
   count(year, in_trawl) |>
   tidyr::spread(in_trawl, n, fill = 0) |>
@@ -145,28 +150,29 @@ mutate(date = as_date(coalesce(t0, t1, t2)))
 
 ## Additional bugs fixed in `01_adb_convert.R`
 
-### Missing `dredge_v` aux table
+### Missing `dredge` aux table
 
-The `adb` script had no gear block for `dredge_v.parquet`.  This table covers
-gid 5, 6, 7, 51, and 53 stations that are absent from `trawl_and_seine_net_v`
-(the two tables are mutually exclusive — zero station_id overlaps):
+The `adb` script had no gear block for the dredge table (then read as the view
+`dredge_v`).  This table covers gid 5, 6, 7, 51, and 53 stations that are
+absent from `trawl_and_seine_net` (the two tables are mutually exclusive — zero
+station id overlaps):
 
 ```{r}
 #| label: tbl-dredge
-#| tbl-cap: "dredge_v gear code coverage"
-dredge <- read_parquet(fd_raw("oracle", "adb", "dredge_v.parquet"))
-station_v |>
-  filter(station_id %in% dredge$station_id) |>
-  count(gear_no) |>
+#| tbl-cap: "dredge gear code coverage"
+dredge <- read_parquet(fd_raw("oracle", "adb", "dredge.parquet"))
+station |>
+  filter(fishing_station_id %in% dredge$fishing_station_id) |>
+  count(fishing_gear_no) |>
   knitr::kable(col.names = c("gid", "n"))
 ```
 
 ### Wrong gear code filters
 
 The `traps` block filtered on `gid %in% c(18, 39)` — codes from the legacy
-`afli` schema.  In the `adb` system trap records carry gid 51 (`trap_v` holds
+`afli` schema.  In the `adb` system trap records carry gid 51 (`trap` holds
 428 such stations).  The `static` block covered only gid 1–3; gid codes 11,
-25, 29, 91, and 92 also appear in `line_and_net_v` and were excluded.
+25, 29, 91, and 92 also appear in `line_and_net` and were excluded.
 
 ### `difftime(t2, t2, ...)` typo
 

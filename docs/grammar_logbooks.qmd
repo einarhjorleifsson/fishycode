@@ -181,8 +181,8 @@ calculations if not removed.
 
 | | `afli` | `fs_afladagbok` | `adb`^†^ | EU eflalo |
 |-|--------|-----------------|-------|-----------|
-| **Trip key** | Derived: `min(.sid)` per `(vid, T2, hid2)` | `ws_veidiferd.id` | `trip_v.trip_id` | Derived: `consecutive_id()` on `FT_DDAT`/`FT_LDAT` |
-| **Station key** | `stofn.visir` | `ws_veidi.id` | `station_v.station_id` | `.eid` (row number — not a true station) |
+| **Trip key** | Derived: `min(.sid)` per `(vid, T2, hid2)` | `ws_veidiferd.id` | `fishing_trip.id` | Derived: `consecutive_id()` on `FT_DDAT`/`FT_LDAT` |
+| **Station key** | `stofn.visir` | `ws_veidi.id` | `fishing_station.fishing_station_id` | `.eid` (row number — not a true station) |
 | **Station concept** | Individual fishing operation | Individual fishing operation | Individual fishing operation | Aggregate: trip × gear × day × rectangle |
 | **Gear code** | Legacy integer (old) | New integer (canonical) | Legacy integer (old), crosswalked to the new by adb's own table | ICES metier string (e.g. `OTB`, `LLS`) |
 | **Spatial resolution** | GPS (metres) | GPS (metres) | GPS (variable quality) | ICES rectangle (~50 km) |

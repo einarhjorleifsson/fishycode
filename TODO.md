@@ -1117,7 +1117,6 @@ still do:
 - `reference/vessels/mmsi.R`, `reference/vessels/registry.R`, `reference/vessels/vessel_year.R`: `vessel.vessel_v`.
 - In the `once` project, so only at a redo by decision: `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`),
   `reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`).
-- Outside the scan, a book page: `docs/convert-bugs.qmd` reads adb's `station_v` and `trawl_and_seine_net_v`.
 
 Each switch first rebuilds the view from its table and the view's text (`_code/all_views.parquet`), row by row, as
 decision 169 did, and says what differs.

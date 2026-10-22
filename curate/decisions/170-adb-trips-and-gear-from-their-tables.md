@@ -31,6 +31,12 @@ type tables' names are not needed, and `fishing_trip` holds persons' data (`vess
 conversions done in R are the bridle x 1.8288 (it becomes `sweeps` and the trawl's `gear_width`) and the dredge width
 x **0.3048** (the dredge's `gear_width`). No adb view is read any more.
 
+The book follows. `docs/convert-bugs.qmd` computes its two adb tables (gid 6 coverage of the trawl table, the dredge
+table's gear codes) from `fishing_station`, `trawl_and_seine_net` and `dredge`; they come out identical to the views'.
+`docs/grammar_logbooks.qmd` gives adb's keys as `fishing_trip.id` and `fishing_station.fishing_station_id`,
+`docs/output-schema.md` the trip key, and `docs/source-schemas.md` says `station_v` was read until decision 165. All
+four pages render.
+
 ## Checked
 
 The HEAD adapter and the new one, each run into its own scratch `$FISHYDATA` (`raw/` and `curated/reference` linked),
@@ -69,6 +75,4 @@ maintainer's to run (`tar_make_isolated()`).
 
 - TODO 120's other readers still on views (`agf.aflagrunnur_v`, `vessel.vessel_v`, `vessel.vessel_hist_v`,
   `kvoti.strandveidileyfi_v`).
-- Two book pages still name adb's views: `docs/convert-bugs.qmd` reads `station_v` and `trawl_and_seine_net_v` in
-  its code, and `docs/grammar_logbooks.qmd` gives adb's keys as `trip_v.trip_id` and `station_v.station_id`.
 - The trawl's `gear_width` is the bridle (sweep) length, not a width (noticed in the archive's README; unchanged here).

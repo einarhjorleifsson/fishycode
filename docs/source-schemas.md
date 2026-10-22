@@ -215,7 +215,7 @@ as the source; the Java that builds it is understood by no one at hand. It tried
 to feed the new data into `afli`'s format, mapping Fiskistofa's new gear codes
 into the old ones among other things, with mapping problems of its own (those on
 record: `curate/corrections/adb_vs_fs_afladagbok.yml`, depth in metres in the
-view fishycode reads, `station_v`, while the table `fishing_station` keeps
+view `station_v`, which fishycode read until decision 165, while the table `fishing_station` keeps
 fs_afladagbok's fathoms, and a longitude without its sign). The table holds most
 positions as ddmmss (six digits, from 2020; Oracle's comment says ddmm); the view
 `station_v` decodes them as minutes with two decimals, which the digits

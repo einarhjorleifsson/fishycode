@@ -48,7 +48,7 @@ schema-level dictionary). Dictionary is currently **154 entries**: `afli` 98,
 One row per fishing trip (voyage). `.tid` origin differs by schema:
 - `afli`: derived as `min(.sid)` within `(vid, T2, hid2)` — not a raw source column; `T1` is the minimum fishing date within the trip.
 - `fs_afladagbok`: taken directly from `ws_veidiferd.id`.
-- `adb`: `trip_v.trip_id`; `aflaskeyti`: its trips are cut at landings in Iceland by `curate/aflaskeyti_trip.R`
+- `adb`: `fishing_trip.id` (the view `trip_v`'s `trip_id`, decision 170); `aflaskeyti`: its trips are cut at landings in Iceland by `curate/aflaskeyti_trip.R`
   (plan 026).
 
 | Column | Type | Description |
