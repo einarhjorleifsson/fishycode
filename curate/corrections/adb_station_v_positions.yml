@@ -69,8 +69,13 @@ not_fixed_here: >-
   of 60 or more) puts a trip holding a rounded-up 60 in hundredths (23 kept stations). 59 of its 9,184 kept stations
   with a four- or five-digit longitude beside a six-digit latitude lie beyond 30°. The other Oracle views the flow
   reads: agf.aflagrunnur_v, kvoti.lods_oslaegt (its table since decision 169), kvoti.strandveidileyfi_v, vessel.vessel_v, vessel.vessel_hist_v and
-  adb's trip_v, trawl_and_seine_net_v, dredge_v, line_and_net_v, trap_v and surrounding_net_v; the dump holds no view
-  definitions (ALL_VIEWS.TEXT), so each can be judged only against its tables.
+  adb's trip_v, trawl_and_seine_net_v, dredge_v, line_and_net_v, trap_v and surrounding_net_v. When this was written
+  the dump held no view definitions. Since decision 166 it does (raw/oracle/adb/_code/all_views.parquet), and
+  station_v's text shows where the misreading lives: every position goes through ADB.LATLON2DEC(LATITUDE, LONGITUDE,
+  'LAT'/'LON'), a function the dump account cannot read (one of decision 166's 12 hidden). The text also has the depth
+  as DEPTH*1.8288, and the longitude aliased LATITUDE; the view's own column list names it right. adb's other six views
+  were read against their tables on 2026-10-22 ($FISHYDATA/archive/2026-10-adb-views/): plain subsets or right unit
+  factors, but dredge_v takes feet as 0.3042 m (0.2 % low), on dimensions mostly the app's default of 3.
 
 related:
   - curate/corrections/adb_vs_fs_afladagbok.yml   # adb's dropped west sign (still applies) and its depth units
