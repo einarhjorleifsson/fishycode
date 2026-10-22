@@ -58,9 +58,12 @@
      and three (maintainer, 2026-10-22). minmax(0, ) keeps a column's content (the chart's canvas, a long legend) from
      widening it. The map's shape is fixed in app.js (MAP_RATIO); its height follows its width. */
   #where-when { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
-  /* the window's cards: its activity, its hauls, its landings */
-  .cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.15fr); gap: 12px; align-items: start; }
-  .cards td { white-space: nowrap; }
+  /* under Where | When: the window's activity, and the trips, the page's central piece */
+  .cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr); gap: 12px; align-items: start; }
+  /* a trip's landings, one line each under it; the rows in the window carry a blue edge */
+  tr.landrow > td { color: var(--muted); font-size: 11px; padding-top: 0; border-bottom-style: dotted; }
+  tr.inwin > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  .edge { display: inline-block; width: 3px; height: 11px; background: var(--accent); vertical-align: middle; margin-right: 3px; }
   #trips, #pings { overflow-x: auto; }   /* wide tables scroll sideways */
   @media (max-width: 1000px) { main, .row2, #where-when, .cards { grid-template-columns: 1fr !important; } #status { max-width: 100%; } }
   /* on a phone the header wraps to several lines: it scrolls away rather than covering the page */
@@ -103,7 +106,6 @@
   .badge.ok { background: #e8f5e9; color: #2e7d32; }
   dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
   dt { color: var(--muted); } dd { margin: 0; }
-  .cards .scroll { max-height: 300px; }
   #map, #hmap { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 6px; overflow: hidden; background: #e8edf1; }
   #attrib, #h-attrib { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: #333; background: #ffffffb0; padding: 0 4px; z-index: 2; }
   /* what the map shows, on the map (maintainer, 2026-10-22): a bar along its top, the hexagons' legend at its foot */
@@ -223,18 +225,17 @@
   </div>
   <div class="cards">
     <section class="fold" data-panel="activity"><h2 class="fold-bar"><span class="caret"></span>Activity in the window<span class="note">time, effort, catch</span></h2><div class="fold-body" id="c-activity"></div></section>
-    <section class="fold" data-panel="hauls"><h2 class="fold-bar"><span class="caret"></span>Hauls in the window<span id="hauls-sum" class="note">the logbook's stations</span></h2><div class="fold-body" id="c-hauls"></div></section>
-    <section class="fold" data-panel="landings"><h2 class="fold-bar"><span class="caret"></span>Landings in the window<span id="landings-sum" class="note"></span></h2><div class="fold-body" id="c-landings"></div></section>
+    <section id="p-trips" class="fold" data-panel="trips">
+      <h2 class="fold-bar"><span class="caret"></span>Trips and their landings<span id="trips-sum" class="note"></span></h2>
+      <div class="fold-body">
+        <div class="help">The trip is the unit: each logbook trip with its landings under it, and the landings
+          no trip claims. <span class="edge"></span>marks the trips in the window. Click a trip, or one of its landings, to show it on
+          the map and chart and list its hauls, the logbook's stations; click a haul to frame it alone, with its record.
+          Shift-click chooses a run of trips or hauls, ⌘- or Ctrl-click adds or removes one.</div>
+        <div id="trips"></div>
+      </div>
+    </section>
   </div>
-  <section id="p-trips" class="fold" data-panel="trips">
-    <h2 class="fold-bar"><span class="caret"></span>Trips and landings in these years<span id="trips-sum" class="note"></span></h2>
-    <div class="fold-body">
-      <div class="help">Fishing trips from the logbook, with what each landed and how its records meet the pings, and landings with no
-        logbook trip. Click a trip to see it on the map and chart and to list its hauls; click a haul to see it alone, with
-        every field of its record.</div>
-      <div id="trips"></div>
-    </div>
-  </section>
   <section id="p-pings" class="fold closed" data-panel="pings">
     <h2 class="fold-bar"><span class="caret"></span>Pings in the window<span id="pings-sum" class="note"></span></h2>
     <div class="fold-body"><div id="pings"></div></div>
@@ -276,7 +277,8 @@
       <h3><span class="sw" style="background:#d62728"></span>Fishing effort: hours fishing per month (AIS, fishing_flow)</h3>
       <div id="h-effort"></div>
       <h3>Catch: tonnes per month, <span class="sw" style="background:#e07b00"></span>landed and
-        <span class="sw" style="background:#2e7d32;width:6px;height:6px;border-radius:3px"></span>logged (by the month the logbook trip returned)</h3>
+        <span class="sw" style="background:#2e7d32;width:6px;height:6px;border-radius:3px"></span>logged, both in the month the logbook trip
+        returned (a landing with no trip in its own month)</h3>
       <div id="h-catch"></div>
       <div id="h-hover" class="note">Hover on a chart: the month's effort and catch.</div>
     </section>

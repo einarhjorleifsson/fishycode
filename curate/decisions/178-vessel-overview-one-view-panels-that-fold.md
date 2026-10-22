@@ -122,3 +122,42 @@ to copy by hand.
   lanes add one canvas draw per move, over the intervals in the window.
 - A person using the page.
 - Safari, Windows and a phone (TODO 96 has the demo's share of this).
+
+## Amended 2026-10-22: the trip at the centre, with its landings and its events; several chosen at once
+
+The maintainer, after decision 179's amendment tied landings to their trips:
+- "if the trip is the central piece, we should then having the landings record related to trips as a table. then
+  clicking on any trip/landings we would explode the event (station) related to that trip. then the user could also just
+  click on each event";
+- "even allow for selecting a number of trips or if within a trip a number of events".
+
+Code, checks and this section by Claude (AI-assisted). Only the page changed.
+
+- **The trip table is the centre**: under Where | When, beside the activity card, two fifths and three of the row.
+  - Each logbook trip has its landings under it, one line each through `lid_map` (day, port, gear, tonnes, the five
+    largest species). The landings no trip claims keep rows of their own.
+  - A click on a trip, or on one of its landings, chooses the trip and opens its hauls, the logbook's stations. A click
+    on a haul frames it alone with its record.
+  - The rows in the window carry a blue edge, which follows the window once it rests. Where none of them is on the page
+    shown, the table turns to the page that holds them.
+  - The table is not filtered to the window. A click on a trip moves the window to that trip, so a filtered list would
+    shrink to it.
+  - The cards "Hauls in the window" and "Landings in the window" are gone. The table holds both, and the activity card
+    keeps the window's sums. Their panel names in old addresses are ignored.
+- **Several at once**, as a list does it, for trips and for the hauls of a trip:
+  - Shift-click chooses the run from the last row clicked, and ⌘- or Ctrl-click adds or removes one;
+  - the window spans what is chosen and the map frames it. The chart and the lanes draw the trips' bands and hauls red
+    and the chosen hauls black;
+  - a line sums them: the trips' dates, hauls and tonnes logged and landed; the hauls' span, kilograms, pings and
+    fishing pings;
+  - a haul's record opens only when it is chosen alone;
+  - the address and the copied link carry every one chosen (`trip=` and `haul=`, comma-separated). A link with several
+    reopens them.
+- **Checked** in the browser pane on vid 1977's 2025:
+  - Shift-click from the 2nd trip to the 5th chose 4 trips, with the window 2025-08-10 to 11-23 (301 hauls,
+    1,463.68 t logged, 1,739.08 t landed);
+  - ⌘-click took one out, leaving 3 (225 hauls), and the link reopened those 3;
+  - within one trip, Shift-click chose hauls 2-5 and Ctrl-click added the 8th: 5 hauls, 34,388 kg, 774 pings, 768
+    fishing, with the window on them;
+  - a click on a landing line opened its trip's 77 hauls;
+  - no console error.

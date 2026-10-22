@@ -67,3 +67,46 @@ stay under them.
   one zooms out. Pinning the frame is the maintainer's rule, so the page does not fit the map to such a vessel.
 - The colour scale is per vessel: the same colour is not the same number of hours on two vessels. A scale pinned across
   vessels, like the axis, is the maintainer's call.
+
+## Amended 2026-10-22: finer hexagons, the effort named, the colours by decade, the landings with their trips
+
+The maintainer, after using the tab:
+- "lets hold on" pinning the colour scale;
+- "provide higher hex-resolution at any zoom that is now in place";
+- "use the effort (time steps / dt) rather than number of pings";
+- "show the colour scale on a log scale";
+- "we want to operate on the trip window. now it is the landing window - that is 'misleading'".
+
+Code, checks and this section by Claude (AI-assisted). Both tabs changed. The service changed too (API version
+2026-10-22.4).
+
+- **Finer hexagons.** On both maps a hexagon is now about 6 pixels from centre to corner, half the 12 of decision 143,
+  rounded to a step from 0.1 to 50 km.
+  - The History cells are now 0.01° by 0.02° (about 1.1 by 0.95 km), and History hexagons go down to 2 km.
+  - Measured as month × cell rows: vid 1977 has 338,026 rows (1.2 MB, 0.18 s), and vid 1416 100,609.
+  - Cells of about 0.5 km would be 604,889 rows (1.8 MB) for vid 1977. They were not taken: the browser re-sums the
+    hexagons at every zoom step and every choice of months.
+  - At the grounds' frame the History map now draws 5 km hexagons where it drew 10 km.
+- **The effort was already the time steps.** Both maps summed the trail's `hours`: each fishing fix's time step to the
+  next fix in its voyage, capped (`ramb::rb_add_effort`). That is not a count of pings. The page now says so:
+  - the legend reads "effort per … km hexagon, in hours";
+  - a hexagon's tooltip gives its hours of fishing effort, "the time steps of its N fishing pings".
+- **The colours by decade, on a log scale the legend shows.** A hexagon's colour is the decade its hours fall in:
+  0.01-0.1, 0.1-1, 1-10 and so on, from the decade of the smallest hexagon to that of the largest. Viridis spreads over
+  as many steps as there are decades, and the legend labels every bound (0.01 · 0.1 · 1 · 10 · 100 · 1,000 · 10,000).
+  - The first draw learns the hexagons' range. They are then recoloured on its decades, which does not sum them again.
+  - The steps are still each vessel's own (not pinned).
+- **The landings go with their trips.** On the Activity tab, "Landings in the window" and the activity card's "landed"
+  are now the landings of the logbook trips that overlap the window, through `lid_map`, whenever they landed.
+  - A landing that no trip of the loaded years claims goes by its own day.
+  - Each landing row names its trip's dates.
+  - On the History tab, landed tonnes are counted in the month the landing's trip returned, as the logged tonnes are,
+    so the two compare month by month. Where a landing links several trips, the last trip's month is used. A landing
+    with no trip keeps its own month.
+  - The landing triangles on the chart and the landing lane stay at the landing's day: they are the event itself.
+- **Checked** in the browser pane:
+  - vid 1977's History map: 5 km hexagons, decades 0.01 to 10,000 hours;
+  - its Activity map over 2025: 10 km hexagons, 0.01 to 1,000 hours;
+  - a window on one haul of 2025-10-02: before, "No landing in the window"; now the trip's landing of 2025-10-26,
+    421.6 t;
+  - `check.R` passes (91 answers, 10 refusals); the demo builds.

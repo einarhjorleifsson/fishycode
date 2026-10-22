@@ -25,7 +25,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-22.3"
+API_VERSION <- "2026-10-22.4"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -140,8 +140,9 @@ SQL <- list(
     "WITH t AS (%s) SELECT w.* FROM %s w JOIN t USING (\".tid\", schema) WHERE w.vid = %d ORDER BY w.w_start",
     SQL$trips(vid, p), src("curated", "logbook", "station_window.parquet"), vid),
   # The vessel's whole history on the trail, small enough for the page (decision 179): per month, its pings and its
-  # fishing in hours (the trail's `hours`, the effort of a fishing fix); and its fishing hours per month in cells of
-  # 0.025 degrees of latitude by 0.05 of longitude (about 2.8 by 2.4 km at 65 N), which the History tab's hexagons sum.
+  # fishing in hours (the trail's `hours`: each fix's time step to the next, capped, its effort); and its fishing hours
+  # per month in cells of 0.01 degrees of latitude by 0.02 of longitude (about 1.1 by 0.95 km at 65 N), which the
+  # History tab's hexagons sum (vid 1977, the busiest: 338,026 rows, 1.0 MB).
   # p$time narrows them to a time span: the demo bundle's window, never a request's.
   history_effort = function(vid, p) sprintf(
     "SELECT CAST(date_trunc('month', time) AS DATE) AS month, count(*) AS pings,
@@ -149,10 +150,10 @@ SQL <- list(
             coalesce(sum(hours) FILTER (WHERE fishing_flow), 0) AS fishing_hours
      FROM %s WHERE vid = %d AND (%s) GROUP BY 1 ORDER BY 1", TRAIL(), vid, p$time %||% "TRUE"),
   history_cells = function(vid, p) sprintf(
-    "SELECT CAST(date_trunc('month', time) AS DATE) AS month, round(lon / 0.05) * 0.05 AS lon,
-            round(lat / 0.025) * 0.025 AS lat, coalesce(sum(hours), 0) AS hours, count(*) AS pings
+    "SELECT CAST(date_trunc('month', time) AS DATE) AS month, (round(lon / 0.02) * 0.02)::FLOAT AS lon,
+            (round(lat / 0.01) * 0.01)::FLOAT AS lat, coalesce(sum(hours), 0)::FLOAT AS hours, count(*)::INTEGER AS pings
      FROM %s WHERE vid = %d AND fishing_flow AND lon IS NOT NULL AND lat IS NOT NULL AND (%s)
-     GROUP BY ALL ORDER BY 1", TRAIL(), vid, p$time %||% "TRUE"),
+     GROUP BY ALL ORDER BY 1, 2, 3", TRAIL(), vid, p$time %||% "TRUE"),
   trail_years = function(vid, p) sprintf(
     "SELECT year::INTEGER AS year, count(*) AS n, min(time) AS time_first, max(time) AS time_last FROM %s
      WHERE vid = %d GROUP BY year ORDER BY year", TRAIL(), vid),
