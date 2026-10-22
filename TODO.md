@@ -956,7 +956,7 @@ landing; Oracle's record-to-confirmation link often names a later trip) feed thi
 and `TOGTIMI` taken from the sent record or declined in a decision.
 
 ## 110. The Oracle dumper's open ends after the run of 2026-10-21
-**status:** open · **see:** decision 159 ("The run of 2026-10-21"), `R/run_dump.R`, `R/dump_oracle.R`,
+**status:** open · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
 `dump/oracle/fs_afladagbok.R`
 
 `all.R --resume` skips a schema whose last run exited 0 with nothing failed, and `.dump_finished()` counts a
@@ -966,10 +966,13 @@ an object as skipped that its script no longer skips. And `fs_afladagbok.takt_js
 with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 and CHAR only.
 The overview rows of `stk.trail` (20,681,877 of 303,795,653 rows) and `afli.sjalfvirkir_maelar` are still stale after
 9ef7596 (decision 164): recompute or re-dump. `simalinu` was dumped through RJDBC with `dirty = true` (decision 162):
-a server run replaces it.
+a server run replaces it. `kvoti.kvotategundir_heiti_jn` and `ops_einarhj.ices_landed_catch` hold text that is not
+UTF-8, which DuckDB refuses whole (decision 167). The dumper now writes it valid, but a resume keeps both files: on
+hafdruna, `run_dump(c("kvoti", "ops_einarhj"))`, then sync and `compare_dumps()`.
 
 **check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
-(its JSON whole) or left out in a decision; every partitioned table's overview row equals its files.
+(its JSON whole) or left out in a decision; every partitioned table's overview row equals its files; DuckDB reads
+both files of decision 167 whole, and kvoti has its `_data-dict.yaml`.
 
 ## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
 **status:** open · **needs: maintainer** — whether the page's column tables go and its other sections stay ·

@@ -10,8 +10,8 @@
 #                                     comments, with types, ranges and examples from the files written
 #         Every parquet file carries fd.* stamps in its key/value metadata, read by curated_provenance():
 #         fd.source, fd.dumped (the dump's start, its version marker), fd.rows, fd.driver, fd.script, fd.commit, fd.dirty,
-#         and fd.note when a column could not be read as the others are (dump_oracle_table()); the note is also in the
-#         overview's `note` and the table's `details` in _data-dict.yaml.
+#         and fd.note when a column could not be read as the others are (dump_oracle_table()) or held text that is not
+#         UTF-8 (.utf8_valid()); the note is also in the overview's `note` and the table's `details` in _data-dict.yaml.
 #
 # Definitions only: targets sources R/ wholesale, so nothing here may connect at load.
 #
@@ -298,8 +298,13 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
 # (2026-10-17).
 .sql_string <- function(x) paste0("'", gsub("'", "''", x, fixed = TRUE), "'")
 
-# Write a frame as parquet (plain TIMESTAMP) with fd.* stamps in its key/value metadata.
+# Write a frame as parquet (plain TIMESTAMP) with fd.* stamps in its key/value metadata. Text that is not valid UTF-8
+# is made valid first and the note says so (.utf8_valid()), as does the note of a frame made valid before. Returns the
+# note written, NA for none, invisibly.
 .write_raw <- function(d, path, source, run, note = NA_character_) {
+  d <- .utf8_valid(d)
+  note <- paste(stats::na.omit(c(note, attr(d, "note"))), collapse = "; ")
+  if (!nzchar(note)) note <- NA_character_
   kv <- c("fd.source" = source, "fd.dumped" = run$dumped, "fd.rows" = as.character(nrow(d)),
           "fd.driver" = run$driver, "fd.script" = run$script, "fd.commit" = run$commit, "fd.dirty" = run$dirty,
           "fd.note" = note)
@@ -310,7 +315,58 @@ dump_connect <- function(driver = Sys.getenv("FD_DUMP_DRIVER", "RJDBC"), heap = 
   duckdb::duckdb_register(con, "d", d)
   meta <- paste(sprintf("%s: %s", .sql_string(names(kv)), .sql_string(unname(kv))), collapse = ", ")
   DBI::dbExecute(con, sprintf("COPY d TO %s (FORMAT parquet, KV_METADATA {%s})", .sql_string(path), meta))
-  invisible(path)
+  invisible(note)
+}
+
+# Oracle can hold text that is not UTF-8 in a UTF-8 database: bytes stored as a client sent them, most likely one that
+# said UTF-8 and sent Latin-1, which no driver converts on the way out. DuckDB then refuses the whole parquet file,
+# since its text must be UTF-8. Two files of the dumps of 2026-10-16/17 did so: kvoti.kvotategundir_heiti_jn, whose
+# insert of 2019-06-28 holds "Makr\xEDll" (Latin-1 í; the table corrected it an hour later), so that kvoti's
+# _data-dict.yaml was never written, and ops$einarhj.ices_landed_catch (decision 167). A byte that is not part of a
+# valid UTF-8 sequence is read as Windows-1252 (Latin-1 with printable 0x80-0x9F), or as Latin-1 where 1252 has no
+# character; valid sequences are kept. The note names the columns, the values and the bytes, so the bytes Oracle holds
+# can be told. Returns d, with the note as attribute "note" when a value was changed.
+.utf8_valid <- function(d) {
+  said <- character()
+  for (v in names(d)[vapply(d, is.character, NA)]) {
+    x <- d[[v]]
+    bad <- which(!is.na(x) & !validUTF8(x))
+    if (!length(bad)) next
+    fixed <- lapply(x[bad], .utf8_repair)
+    d[[v]][bad] <- vapply(fixed, `[[`, "", 1)
+    bytes <- sort(unique(unlist(lapply(fixed, `[[`, 2))))
+    said[v] <- sprintf("%s (%s %s; bytes %s)", v, format(length(bad), big.mark = ",", trim = TRUE),
+                       if (length(bad) == 1) "value" else "values", paste(bytes, collapse = " "))
+  }
+  if (length(said))
+    attr(d, "note") <- paste("text not valid UTF-8, as Oracle holds it, in", paste(said, collapse = ", "),
+                             "- each byte outside a valid UTF-8 sequence read as Windows-1252")
+  d
+}
+
+# One string, its stray bytes read as Windows-1252: the string and the stray bytes in hex.
+.utf8_repair <- function(s) {
+  b <- charToRaw(s)
+  n <- length(b)
+  out <- character(); stray <- character()
+  i <- 1L
+  while (i <= n) {
+    x <- as.integer(b[i])
+    k <- if (x < 0x80) 1L else if (x >= 0xC2 && x <= 0xDF) 2L else if (x >= 0xE0 && x <= 0xEF) 3L
+         else if (x >= 0xF0 && x <= 0xF4) 4L else 0L
+    if (k && i + k - 1L <= n && validUTF8(rawToChar(b[i:(i + k - 1L)]))) {
+      out <- c(out, rawToChar(b[i:(i + k - 1L)]))
+      i <- i + k
+      next
+    }
+    ch <- iconv(rawToChar(b[i]), "CP1252", "UTF-8")
+    if (is.na(ch)) ch <- iconv(rawToChar(b[i]), "latin1", "UTF-8")
+    out <- c(out, ch); stray <- c(stray, sprintf("%02X", x))
+    i <- i + 1L
+  }
+  s <- paste(out, collapse = "")
+  Encoding(s) <- "UTF-8"
+  list(s, stray)
 }
 
 # Columns the driver cannot fetch are read as text in Oracle's own form: SDO_GEOMETRY as WKT, XMLTYPE as the document.
@@ -539,7 +595,7 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
     cased <- paste(sprintf('"%s" is %s here', fields$oracle_column[ren], fields$column[ren]), collapse = ", ")
     note <- paste(stats::na.omit(c(note, paste("names that differ only in case in Oracle:", cased))), collapse = "; ")
   }
-  .write_raw(d, path, table, run, note)
+  note <- .write_raw(d, path, table, run, note)
   message(sprintf("%s: %s rows", table, format(nrow(d), big.mark = ",")))
   if (!is.na(note)) message("  ", note)
   structure(nrow(d), note = note)
@@ -548,12 +604,13 @@ dump_oracle_table <- function(con, table, path, fields = NULL, run = NULL) {
 # A table too big for one collect(), by calendar year of `column`, to <dir>/year=<y>/data_0.parquet. A year is fetched
 # again until it has been dumped after it ended, read from the partition's own fd.dumped stamp: a year dumped while
 # it was running is completed on the next run, whatever the column (a logger may record nothing on 31 December).
-# Returns the rows written in this run.
+# Returns the rows written in this run, with the notes of its years, if any, as attribute "note".
 dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
   q <- .oracle_query(con, table, fields)
   span <- .oracle_collect(con, q |> dplyr::summarise(a = min(.data[[column]], na.rm = TRUE), b = max(.data[[column]], na.rm = TRUE)))
   years <- seq(as.integer(format(as.POSIXct(span$a), "%Y")), as.integer(format(as.POSIXct(span$b), "%Y")))
   n <- 0
+  notes <- character()
   for (y in years) {
     f <- file.path(dir, paste0("year=", y), "data_0.parquet")
     if (file.exists(f)) {
@@ -571,11 +628,15 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
       dplyr::filter(.data[[column]] >= to_date(!!sprintf("%d-01-01", y), "YYYY-MM-DD"),
                     .data[[column]] <  to_date(!!sprintf("%d-01-01", y + 1), "YYYY-MM-DD")))
     d <- .oracle_numbers(d, fields)
-    .write_raw(d, f, table, run)
+    nt <- .write_raw(d, f, table, run)
     message(sprintf("%s, %d: %s rows", table, y, format(nrow(d), big.mark = ",")))
+    if (!is.na(nt)) {
+      message("  ", nt)
+      notes <- c(notes, sprintf("%d: %s", y, nt))
+    }
     n <- n + nrow(d)
   }
-  n
+  if (length(notes)) structure(n, note = paste(notes, collapse = "; ")) else n
 }
 
 # The schema in data-dict's format, beside the files: Oracle's comments, types from the files, ranges from the whole
@@ -698,7 +759,9 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   objects <- oracle_objects(con, schema)
   if (length(bad <- setdiff(c(tables, skip, skip_rjdbc, names(partition)), objects$name)))
     stop("not in ", schema, ": ", paste(bad, collapse = ", "), call. = FALSE)
-  fields <- oracle_fields(con, schema)
+  # Oracle's comments are made valid here, not only in their file: _data-dict.yaml takes them from memory, and
+  # yaml::write_yaml() aborts R on text that is not UTF-8 (2026-10-22)
+  fields <- .utf8_valid(oracle_fields(con, schema))
   .write_raw(fields, file.path(out_dir, "_overview_fields.parquet"), paste0(schema, " columns"), run)
 
   n <- nrow(objects)
@@ -767,7 +830,8 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
 
   objects <- objects |>
     dplyr::mutate(rows = rows, status = status, error = error, note = note, seconds = seconds) |>
-    dplyr::bind_cols(stamp)
+    dplyr::bind_cols(stamp) |>
+    .utf8_valid()
   .write_raw(objects, ov_path, paste0(schema, " objects"), run)
   dd <- tryCatch(.write_data_dict(out_dir, schema, objects, fields, run), error = function(e) e)
   if (inherits(dd, "error")) message("  _data-dict.yaml not written: ", conditionMessage(dd))
