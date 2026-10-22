@@ -1106,19 +1106,24 @@ rebuild covers both: fingerprint first, then build from `lods` by name.
 `tar_outdated()` shows nothing of the landing chain.
 
 ## 120. Readers still on Oracle views (the rule "tables, not views")
-**status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, 170
+**status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, 170,
+`$FISHYDATA/archive/2026-10-views-todo120/README.md`
 
 The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. Found the same day by
-scanning every script for the Oracle objects it reads, 11 scripts read a view; adb's switched (decision 170), these
-still do:
+scanning every script for the Oracle objects it reads, 11 scripts read a view; adb's switched (decision 170). The
+other four views were rebuilt from their tables the same day, row by row, and none hides a conversion (0 rows differ;
+`vessel_v`'s engine power by float noise on 4). What the readers would gain:
 
-- `reference/ports/harbour_codes.R`, `reference/ports/port_code.R`: `agf.aflagrunnur_v`, which drops a rising share
-  of agf's rows since 2021 through code tables frozen in 2020.
-- `reference/vessels/mmsi.R`, `reference/vessels/registry.R`, `reference/vessels/vessel_year.R`: `vessel.vessel_v`.
+- `reference/ports/harbour_codes.R`, `reference/ports/port_code.R` read `agf.aflagrunnur_v`, which drops landings
+  through its party and vessel joins (sellers, buyers, receivers or vessel history missing in `ufs`; 24 % of 2026),
+  not its code tables. Both take only the port codes: `aflagrunnur LEFT JOIN ask.londunarstadir` gives 79, all named,
+  against the view's 78. Code 168 enters `port_code.parquet`, and `harbour_codes.R`'s patch for it goes.
+- `reference/vessels/mmsi.R`, `reference/vessels/registry.R`, `reference/vessels/vessel_year.R` read `vessel.vessel_v`.
+  Read from `vessel` and the one or two tables each needs, the output is identical, without the owners' data.
 - In the `once` project, so only at a redo by decision: `curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`),
   `reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`).
 
-Each switch first rebuilds the view from its table and the view's text (`_code/all_views.parquet`), row by row, as
-decision 169 did, and says what differs.
+When: just before the rebuild the kvoti and ops$einarhj re-dump forces (TODO 110, 119), which outdates the port and
+vessel chains anyway. Every curated file is stamped, so a switch on its own would rebuild to the AIS flow for nothing.
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
