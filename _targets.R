@@ -413,6 +413,19 @@ list(
              fd_staging("afli", "end_longitude.parquet"))
   }, format = "file"),
 
+  # afli's sent layer (plan 037): the records as the apps sent them, keyed to rafr_stofn's visir (in afli_raw) so
+  # that .sid is the edited layer's. Read by nothing in curate/ yet.
+  tar_target(afli_sent, {
+    gear; gear_window; port; afli_raw; afli_xml_raw
+    produces("sources/afli_sent/convert.R",
+             fd_staging("afli_sent", "record.parquet"),
+             fd_staging("afli_sent", "trip.parquet"),
+             fd_staging("afli_sent", "station.parquet"),
+             fd_staging("afli_sent", "fishing_sample.parquet"),
+             fd_staging("afli_sent", "catch.parquet"),
+             fd_staging("afli_sent", "landing_confirmation.parquet"))
+  }, format = "file"),
+
   tar_target(fs_afladagbok_raw, c(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_veidi.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_dragnot_varpa.parquet"),
