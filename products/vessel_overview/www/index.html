@@ -173,12 +173,12 @@
        focus, not the vessel: the window's activity, hauls and landings, the trips and the pings. -->
   <div class="row2" id="where-when">
     <section id="p-map">
-      <h2>Where<span class="note">the AIS track in the window, each ping coloured by its speed</span></h2>
+      <h2>Where<span class="note" id="where-note">the AIS track in the window, each ping coloured by its speed</span></h2>
       <div id="map">
         <div id="mapctl">
           <span class="lbl">window</span>
-          <span class="seg" id="pts" title="the window's pings as points on the line, or the line alone">
-            <button data-pts="1" class="on">points</button><button data-pts="0">line only</button></span>
+          <span class="seg" id="pts" title="the window's pings as points on their line, the line alone, or neither">
+            <button data-pts="1" class="on">points</button><button data-pts="0">line only</button><button data-pts="none">none</button></span>
           <span class="lbl">outside it</span>
           <span class="seg" id="bg" title="what the map shows besides the window's pings">
             <button data-bg="none" class="on">nothing</button><button data-bg="hex" title="the hexagons' size follows the zoom">fishing hours</button><button data-bg="track">track</button></span>

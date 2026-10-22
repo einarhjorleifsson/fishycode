@@ -161,3 +161,14 @@ Code, checks and this section by Claude (AI-assisted). Only the page changed.
     fishing, with the window on them;
   - a click on a landing line opened its trip's 77 hauls;
   - no console error.
+
+## Amended 2026-10-22: the window's track can be left off the map
+
+"you want a 'none' in addition to the point/line option in the where plot" (maintainer). The choice on the map is now
+points, line only, or none.
+- With none, the map draws nothing of the window's track and shows only what lies outside it: fishing hours in
+  hexagons, the whole track, or nothing. The last position heard and the hover marker stay.
+- The map's subtitle names what it shows, for each choice inside the window and outside it.
+- The address carries the choice as `pts=1`, `0` or `none`. Older links keep their meaning.
+- Checked in the browser pane on vid 1977's 2025: none with fishing hours left the hexagons alone, the speed legend
+  went, and the subtitle followed each of four choices.
