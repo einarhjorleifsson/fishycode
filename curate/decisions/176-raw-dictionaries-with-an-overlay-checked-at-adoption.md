@@ -3,8 +3,9 @@
 *2026-10-22. Plan 040, phase 1. The maintainer chose the place of the overlay (`dump/oracle/meta/`, ask a) and the
 phasing (the convention now; plans 038 and 039 fill it as they open each reader; the curated layer after them).
 Written by Claude (AI) in a session started from another Claude session; the code, the overlays, the measurements and
-this record are Claude's and have not been checked by a person. Committed locally, not pushed. Nothing under
-`$FISHYDATA` was written: every rewrite and check ran on APFS clones of `raw/oracle/` in the session's scratch space.*
+this record are Claude's and have not been checked by a person. Committed locally, not pushed. Built and tested on
+APFS clones of `raw/oracle/` in the session's scratch space; later the same day, on the maintainer's go ("go ahead and
+rewrite the real raw dictionaries"), the 28 real dictionaries were rewritten (§ Rewritten).*
 
 ## What it settles
 
@@ -90,11 +91,18 @@ The sibling session's overlays for agf, ask and vessel (decision 175) pass the s
 (`test_dump_oracle.R` 42, `test_dump_oracle_code.R` 47, `test_dump_oracle_text.R` 29, `test_logbook_position.R` 17)
 pass. No target calls a changed function (`_targets.R`, `_targets_once.R`).
 
+## Rewritten
+
+On the maintainer's go, 2026-10-22, `rewrite_data_dict()` then `check_data_dict()` on every schema in `raw/oracle/`
+(`$FISHYDATA/archive/raw-oracle-data-dict_2026-10-22/`: `rewrite.R`, its log and results, and `before/`, the 28
+dictionaries as the dumps wrote them, for undoing one). About 2 minutes in all. Only the 28 `_data-dict.yaml` files
+changed under `raw/oracle/`. All 28 validate with no error (2,866 warnings: a `todo` per empty column and per open
+question, and fiskist's S16); the 26 checks of the eight overlays (these five, and agf, ask and vessel of decision 175)
+come out as their descriptions say, none NEWS. The column counts are those measured on the clones: 2,859 of 21,128
+empty, 744 with values only past the first 10,000 rows.
+
 ## Not done
 
-- The real `raw/oracle/*/_data-dict.yaml` are not rewritten: that waits for the maintainer's go, then
-  `for (s in list.files(fd_raw("oracle"), pattern = "^[^_]")) rewrite_data_dict(fd_raw("oracle", s))` (a few seconds a
-  schema, kvoti 16 s, stk 4 s).
 - Asks b-f of plan 040 stay open (c: the labels here are Claude's translations; d: whether NEWS blocks a swap).
 - The overlays cover the seeded columns only. fs_afli's copies of afli's tables, fs_afladagbok, agf's other readers
   and the rest come with plans 038 and 039 (phase 2).

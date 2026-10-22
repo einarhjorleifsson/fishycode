@@ -1168,16 +1168,13 @@ each layer's landings and kilograms in one outcome per period (plan 039 §9); or
 header.
 
 ## 124. What each column means, in its metadata: units, formats, precision and codes (plan 040)
-**status:** open · **needs: maintainer** — the go to rewrite the real raw dictionaries, and plan 040's asks b-f (§6;
-a answered, f implemented in its reversible form) · **see:**
-`curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, TODO 51, 110, plans 037-039
+**status:** open · **needs: maintainer** — plan 040's asks b-f (§6; a answered, f implemented in its reversible form)
+· **see:** `curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, TODO 51, 110,
+plans 037-039
 
 Phase 1 is built (decision 176): the overlay `dump/oracle/meta/<schema>.yml`, merged by the dumper and by
-`rewrite_data_dict()`, and checked at a dump's adoption by `check_data_dict()` (`dump/oracle/README.md` §11). On
-clones of the dumps all 28 raw dictionaries validate once rewritten (3 do as written), and every seeded check (kvoti,
-adb, afli, dw, stk; agf, ask and vessel from decision 175) comes out as its description says. The real
-`raw/oracle/*/_data-dict.yaml` are not rewritten yet. Phase 2 is inside plans 038 and 039; the curated layer after
-them.
+`rewrite_data_dict()`, and checked at a dump's adoption by `check_data_dict()` (`dump/oracle/README.md` §11). The 28
+raw dictionaries were rewritten with it on 2026-10-22: all valid, every check of the eight overlays (kvoti, adb, afli,
+dw, stk; agf, ask, vessel) as described. Phase 2 is inside plans 038 and 039; the curated layer after them.
 
-**check:** the real raw dictionaries rewritten and validating; the asks answered in the plan; or the plan parked or
-abandoned in its header.
+**check:** the asks answered in the plan; or the plan parked or abandoned in its header.

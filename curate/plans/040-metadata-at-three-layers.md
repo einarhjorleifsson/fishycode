@@ -2,8 +2,8 @@
 
 **status:** partly built — phase 1 built 2026-10-22 (decision 176): the overlay's format (`dump/oracle/meta/README.md`),
 the dumper's merge and its S12 and S07 fixes, `rewrite_data_dict()` and `check_data_dict()` (`R/data_dict.R`), overlays
-seeded for kvoti, adb, afli, dw and stk, all tested on clones of the dumps; the real raw dictionaries not yet rewritten
-(the maintainer's go); written 2026-10-22 at the maintainer's request, the three layers measured read-only the same day
+seeded for kvoti, adb, afli, dw and stk, tested on clones of the dumps, and the 28 real raw dictionaries rewritten
+with them on the maintainer's go the same day; written 2026-10-22 at the maintainer's request, the three layers measured read-only the same day
 (§2); ask a answered, f implemented in its reversible form (§6) · **2026-10-22** · **see:** plans 037, 038 and 039,
 TODO 51, 110, 111, 113, 114, 119, 120 and 124, decisions 029, 109, 111, 165, 166, 169, 170 and 176, `docs/grammar.qmd`
 (Units), `docs/data-dict.yaml`, `R/dump_oracle.R`, `R/data_dict.R`, `R/write_curated.R`, `curate/corrections/`
@@ -126,7 +126,8 @@ adapter wrote.
    cases of §1, each already established in a decision or correction. Done when the 27 raw files and kvoti's validate,
    and the seeded `assert`s pass, or fail where §1 says they should, on the current dumps. **Built 2026-10-22
    (decision 176)**, on clones: all 28 dictionaries rewritten validate, every seeded check comes out as its
-   description says. The measurements of §5 are in the decision. Left: rewriting the real dictionaries.
+   description says. The measurements of §5 are in the decision. The real dictionaries rewritten the same day, on
+   the maintainer's go: all 28 validate, every check as described.
 2. **Filled in by plans 038 and 039.** Whoever opens a reader writes its columns' overlay and its adapter's staging
    dictionary, as the rule "tables, not views" is applied (AGENTS.md). Both plans say so in their §8.
 3. **The curated layer** (after plans 038 and 039): §3.3.
