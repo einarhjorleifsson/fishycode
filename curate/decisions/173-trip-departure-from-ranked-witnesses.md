@@ -2,7 +2,10 @@
 
 *2026-10-22. The maintainer's choices: "rank AIS first, then own, then STK; build TODO 121"; the logic as a ramb step
 with a thin fishycode caller; the quota system's records and the phone calls below STK; scratch-tested and committed,
-the real build left to the pending rebuild. He added that the quota system's records matter beyond the departure:
+the real build left to the pending rebuild. Extended the same day by decision 174: the return (T2, pid2) from the same
+witnesses, a date-only value giving way to a time on its day; the step and its table are renamed `trip_reconciled`
+(`curate/trip_reconciled.R`, `curated/link/trip_reconciled.parquet`). The names below are those of this record's day.
+He added that the quota system's records matter beyond the departure:
 "the line incentive has then a special longline gear code in the landings". Written by Claude (AI); the code and
 the scratch run are Claude's and have not been checked by a person. Not built. The witnesses are measured in
 decision 172.*

@@ -2475,15 +2475,16 @@ tables:
             `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-  - name: link_trip_departure
+  - name: link_trip_reconciled
     source:
-      parquet: ../../fishydata/curated/link/trip_departure.parquet
+      parquet: ../../fishydata/curated/link/trip_reconciled.parquet
     description: >
-      One row per logbook trip (twins left out): its departure time (T1) and port (pid1), each from the
-      best-ranked witness that holds one - the AIS voyage, the logbook's own, STK, the quota system's
-      records, the phone calls (the maintainer's ranking; decision 173, TODO 121) - with the witness, the
-      basis and one outcome per field. Each witness's own values are kept beside the chosen ones.
-      curate/trip_departure.R, ramb::rb_add_trip_time(). The declared T1 stays in logbook_trip.
+      One row per logbook trip (twins left out): its departure (T1, pid1) and return (T2, pid2), time and
+      port, each from the best-ranked witness that holds one - the AIS voyage, the logbook's own, STK, the
+      quota system's records, the phone calls, and for the return the landing (the maintainer's ranking;
+      decisions 173, 174, TODO 121) - with the witness, the basis and one outcome per field. A value that is a
+      date only gives way to a time on that day. Each witness's own values are kept beside the chosen ones.
+      curate/trip_reconciled.R, ramb::rb_add_trip_time(). The declared T1, T2 stay in logbook_trip.
     columns:
       - name: .tid
         type: string
@@ -2505,11 +2506,15 @@ tables:
       - name: T1_from
         type: string
         description: >
-          The witness T1 came from: ais, own, stk, quota or phone.
+          The witness T1 came from: ais, own, stk, quota, phone.
       - name: T1_basis
         type: string
         description: >
           reconstructed (ais), recorded (the others), none.
+      - name: T1_day
+        type: boolean
+        description: >
+          TRUE where T1 is a date only (no witness gave a time on that day).
       - name: T1_n
         type: number
         description: >
@@ -2517,11 +2522,11 @@ tables:
       - name: T1_outcome
         type: string
         description: >
-          none, one (a single witness), agree (every witness within 1 hour of T1), differ.
+          none, one (a single witness), agree (every witness within 1 hour, or on the same day where either is a date only), differ.
       - name: T1_spread_s
         type: number
         description: >
-          The largest distance in seconds from T1 to another witness's time.
+          The largest distance in seconds from T1 to another witness's time (by date where either is a date only).
       - name: pid1
         type: string
         description: >
@@ -2542,51 +2547,154 @@ tables:
         type: string
         description: >
           none, one, agree (every witness names the same port), differ.
+      - name: T2
+        type: datetime
+        time_zone: naive
+        description: >
+          The return: the best-ranked witness's time; NA where no witness holds one.
+      - name: T2_from
+        type: string
+        description: >
+          The witness T2 came from: ais, own, stk, quota, phone, landing.
+      - name: T2_basis
+        type: string
+        description: >
+          reconstructed (ais), recorded (the others), none.
+      - name: T2_day
+        type: boolean
+        description: >
+          TRUE where T2 is a date only (no witness gave a time on that day).
+      - name: T2_n
+        type: number
+        description: >
+          How many witnesses hold a return time.
+      - name: T2_outcome
+        type: string
+        description: >
+          none, one (a single witness), agree (every witness within 1 hour, or on the same day where either is a date only), differ.
+      - name: T2_spread_s
+        type: number
+        description: >
+          The largest distance in seconds from T2 to another witness's time (by date where either is a date only).
+      - name: pid2
+        type: string
+        description: >
+          The return port (standard pid): the best-ranked witness's port; it may come from another witness than T2.
+      - name: pid2_from
+        type: string
+        description: >
+          The witness pid2 came from.
+      - name: pid2_basis
+        type: string
+        description: >
+          reconstructed (ais), recorded (the others), none.
+      - name: pid2_n
+        type: number
+        description: >
+          How many witnesses hold a return port.
+      - name: pid2_outcome
+        type: string
+        description: >
+          none, one, agree (every witness names the same port), differ.
       - name: T1_ais
         type: datetime
         time_zone: naive
         description: >
-          The departure time of the AIS voyage linked to the trip (link_trip_voyage).
+          T1 of the AIS voyage linked to the trip (link_trip_voyage).
       - name: pid1_ais
         type: string
         description: >
-          The departure port of the same witness.
+          pid1 of the same witness.
       - name: T1_own
         type: datetime
         time_zone: naive
         description: >
-          The departure time of the logbook's own (fs_afladagbok and adb only; adb's port 0 is a placeholder, read as missing).
+          T1 of the logbook's own (T1: fs_afladagbok and adb only; T2: afli too, its landing day; adb's port 0 read as missing).
       - name: pid1_own
         type: string
         description: >
-          The departure port of the same witness.
+          pid1 of the same witness.
       - name: T1_stk
         type: datetime
         time_zone: naive
         description: >
-          The departure time of the latest STK recorded voyage containing the trip (staging_stk_voyage).
+          T1 of the latest STK recorded voyage containing the trip (staging_stk_voyage).
       - name: pid1_stk
         type: string
         description: >
-          The departure port of the same witness.
+          pid1 of the same witness.
       - name: T1_quota
         type: datetime
         time_zone: naive
         description: >
-          The departure time of the quota system's record of the trip's landing (staging_quota_trip, through lid_map).
+          T1 of the quota system's record of the trip's landing (staging_quota_trip, through lid_map).
       - name: pid1_quota
         type: string
         description: >
-          The departure port of the same witness.
+          pid1 of the same witness.
       - name: T1_phone
         type: datetime
         time_zone: naive
         description: >
-          The departure time of the latest valid phone out-call on T1's day or up to 3 days before (staging_phone_call).
+          T1 of the latest valid phone call out (T1) or in (T2) within 3 days before the trip's own day (staging_phone_call).
       - name: pid1_phone
         type: string
         description: >
-          The departure port of the same witness.
+          pid1 of the same witness.
+      - name: T2_ais
+        type: datetime
+        time_zone: naive
+        description: >
+          T2 of the AIS voyage linked to the trip (link_trip_voyage).
+      - name: pid2_ais
+        type: string
+        description: >
+          pid2 of the same witness.
+      - name: T2_own
+        type: datetime
+        time_zone: naive
+        description: >
+          T2 of the logbook's own (T1: fs_afladagbok and adb only; T2: afli too, its landing day; adb's port 0 read as missing).
+      - name: pid2_own
+        type: string
+        description: >
+          pid2 of the same witness.
+      - name: T2_stk
+        type: datetime
+        time_zone: naive
+        description: >
+          T2 of the latest STK recorded voyage containing the trip (staging_stk_voyage).
+      - name: pid2_stk
+        type: string
+        description: >
+          pid2 of the same witness.
+      - name: T2_quota
+        type: datetime
+        time_zone: naive
+        description: >
+          T2 of the quota system's record of the trip's landing (staging_quota_trip, through lid_map).
+      - name: pid2_quota
+        type: string
+        description: >
+          pid2 of the same witness.
+      - name: T2_phone
+        type: datetime
+        time_zone: naive
+        description: >
+          T2 of the latest valid phone call out (T1) or in (T2) within 3 days before the trip's own day (staging_phone_call).
+      - name: pid2_phone
+        type: string
+        description: >
+          pid2 of the same witness.
+      - name: T2_landing
+        type: datetime
+        time_zone: naive
+        description: >
+          T2 of the trip's landing (lid_map): its day and port.
+      - name: pid2_landing
+        type: string
+        description: >
+          pid2 of the same witness.
   - name: logbook_catch
     source:
       parquet: ../../fishydata/curated/logbook/catch.parquet

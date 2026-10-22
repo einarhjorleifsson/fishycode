@@ -395,8 +395,8 @@ the fishing sample (`gear_part` prototyped for fs).
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
 ## 74. The landings: trip, gear and catch from each period's source (plans 023 and 025), and plan 007's two questions
-**status:** open · **needs: maintainer** — plan 023 §8 asks 1 (who knows what feeds LODS 1 and agf since 2020) and 2
-(the write-up), plan 025 §6 asks 1 (factory-vessel live weight) and 2 (when to build), plan 007 §6 questions 1 and 3,
+**status:** open · **needs: maintainer** — plan 023 §8 asks 1 (who knows what feeds LODS 1 and agf since 2020; only nice to know since the
+maintainer's choice below) and 2 (the write-up), plan 025 §6 asks 1 (factory-vessel live weight) and 2 (when to build), plan 007 §6 questions 1 and 3,
 and a DBA or KVOTI's owner to run `$FISHYDATA/archive/2026-10-ivln/get_source_ivln.sql` · **see:** `curate/plans/023-landings-trip-gear-catch.md`, `curate/plans/025-ask-mined.md`,
 `curate/plans/007-landings-merge-agf-lods.md` §6, decision 031, plan 022
 
@@ -409,6 +409,15 @@ and the merge cannot show an agf defect; and keying `link_lid_map.R` and `catch_
 `(.lid, schema_land)`, not `.lid` alone. Plan 025 has ask mined whole and its design chosen (agf's rows, ask's
 columns, a weighing table), nothing built: its first weighing time bounds `T2` to the hour for 2007-2020, and agf keeps
 zero-kg landings that the Directorate withdrew.
+
+The maintainer, 2026-10-22: landings after 2020-07-22 come from agf ("we may then not have all the variables we have
+in ask, but that is life"). MFRI's ask ends on that day (all of it imported 2021-04-28, not a dump gap) and agf is
+derived from it; the landing numbers go on after it (the Directorate's register, Gafl or what replaced it). So after
+2020 the first weighing time
+(the bound on `T2`), gross weights, deductions, weighing notes and credit history are lost, and agf's live
+weight of factory vessels in the last two years or so may still change when agf rewrites them. Before 2007 the top layer is
+kvoti's `lods_afli` with the container tables, which hold ~4.5 kt of 1995-1998 exports `lods_slaegt` lacks.
+Evidence: `$FISHYDATA/archive/2026-10-lods-upstream/README.md` (§1-6).
 
 **check:** the asks of plans 023 and 025 are answered in the plans, and each is built, parked or abandoned in its
 header; and plan 007's questions 1 and 3 are answered in a decision.
@@ -1128,16 +1137,16 @@ vessel chains anyway. Every curated file is stamped, so a switch on its own woul
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
 
-## 121. A departure port and time for every logbook trip: build the cascade
+## 121. Departure and return, time and port, for every logbook trip: build the cascade
 **status:** open · **needs: maintainer** — the build, with the pending rebuild of TODO 119 and decisions 165, 170 ·
-**see:** decisions 172, 173, `$FISHYDATA/archive/2026-10-adb-departure-port/`
+**see:** decisions 172, 173, 174, `$FISHYDATA/archive/2026-10-adb-departure-port/`
 
-Built in code and tested on a scratch store (decision 173): `ramb::rb_add_trip_time()` (ramb 2026.10.22.1), the
-witnesses staged (`stk_voyage`, `quota_trip`, `phone_call`) and the flow step `trip_departure` →
-`curated/link/trip_departure.parquet`, ranked AIS, own, STK, quota, phone. Seven new targets are outdated beside the
-29 of the pending rebuild; `tar_make_isolated()` builds them with it. What reads the departure downstream, and the
-return (`T2`) the same way, are decision 173's open ends.
+Built in code and tested on a scratch store (decisions 173, 174): `ramb::rb_add_trip_time()` (ramb 2026.10.22.2),
+the witnesses staged (`stk_voyage`, `quota_trip`, `phone_call`) and the flow step `trip_reconciled` →
+`curated/link/trip_reconciled.parquet`, ranked AIS, own, STK, quota, phone at both ends, the landing last for the
+return. Seven new targets are outdated beside the 29 of the pending rebuild; `tar_make_isolated()` builds them with
+it. What reads the reconciled times downstream is decision 174's open end.
 
-**check:** every trip in `curated/logbook/trip.parquet` (twins left out) has a row in `trip_departure.parquet`, with a
-departure port and time or `none`, each with its basis, and every disagreement between witnesses counted in one
-outcome.
+**check:** every trip in `curated/logbook/trip.parquet` (twins left out) has a row in `trip_reconciled.parquet`, with a
+departure and a return, time and port or `none`, each with its basis, and every disagreement between witnesses counted
+in one outcome.

@@ -621,12 +621,13 @@ list(
              fd_curated("link", "trip_voyage.parquet"))
   }, format = "file"),
 
-  # Every logbook trip's departure, time and port, from ranked witnesses: the AIS voyage, the logbook's own, STK, the
-  # quota system's records, the phone calls (TODO 121, decision 173; ramb::rb_add_trip_time()).
-  tar_target(trip_departure, {
+  # Every logbook trip's departure and return, time and port, from ranked witnesses: the AIS voyage, the logbook's own,
+  # STK, the quota system's records, the phone calls, and for the return the landing (TODO 121, decisions 173, 174;
+  # ramb::rb_add_trip_time()).
+  tar_target(trip_reconciled, {
     logbook; trip_voyage; lid_map; stk_voyage; quota_trip; phone_call; port
-    produces("curate/trip_departure.R",
-             fd_curated("link", "trip_departure.parquet"))
+    produces("curate/trip_reconciled.R",
+             fd_curated("link", "trip_reconciled.parquet"))
   }, format = "file"),
 
   # One row per (logbook station, phase): when the vessel is busy with it (plan 010).
