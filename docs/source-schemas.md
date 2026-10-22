@@ -249,9 +249,9 @@ record in a dump we hold: 465,341 in `ws_veidi`, 134,303 in afli's `stofn`
 catch: 5,362,572 t in equal groups on each side). Where they part, fs_afladagbok
 is the better copy. adb writes bottom trawl for shrimp and Nephrops trawl
 (5,200 stations, 2019-2024), drops the dredge's weight and the trap's type,
-writes 0 where fs has no value, and lacks 31,954 t of 2019-2021 catch. adb has
-one thing fs lacks: a departure port on 94,467 trips of sources fs gives none
-for, of unknown origin. fs_afladagbok's last registration is 2025-12-12.
+writes 0 where fs has no value, and lacks 31,954 t of 2019-2021 catch. Where fs has no departure port, adb's is
+0, a placeholder its port map reads as "Skarðsstöð" (decision 172).
+fs_afladagbok's last registration is 2025-12-12.
 
 467,635 of fs_afladagbok's station ids are in adb (decision 125), and adb has
 defects fs_afladagbok lacks (decision 160), among them a dropped west sign

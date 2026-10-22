@@ -1127,3 +1127,19 @@ When: just before the rebuild the kvoti and ops$einarhj re-dump forces (TODO 110
 vessel chains anyway. Every curated file is stamped, so a switch on its own would rebuild to the AIS flow for nothing.
 
 **check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
+
+## 121. A departure port for every logbook trip: the cascade of witnesses
+**status:** open · **needs: maintainer** — the ranking where witnesses disagree, and whether T1 comes with the port ·
+**see:** decision 172, `$FISHYDATA/archive/2026-10-adb-departure-port/`, TODO 68, plan 022 §4
+
+No source holds a full trip table with departure ports: the landings (ask, agf, lods, vor) are landing events. The
+logbook's own port exists only for fs_afladagbok's and adb's apps that send one (from 2021); adb's 0 is a placeholder.
+Witnesses: the AIS voyage (`link/trip_voyage.pid1_ais`, from 2008), STK's recorded voyages (`stk.tilk_stk_allt`,
+2003-09 to 2021-02, a port to 2013), the quota system's trip records (line incentive 2004-2020, coastal fishing
+2009-2023, days-at-sea boats 1996-2001, keyed by landing) and the phone records. Together they give a port to nearly
+every trip from 2004; they agree with each other and with the logbook's own to about 95 %. Before building: rank the
+witnesses (what the 5 % disagreements are), read adb's `hid1` 0 as missing, give adb's ports a `pid`, and join the
+quota system's records to the trips through `lid_map`.
+
+**check:** every trip in `curated/logbook/trip.parquet` has a departure port or `none`, each with its basis, and every
+disagreement between witnesses is counted in one outcome.
