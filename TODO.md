@@ -1151,6 +1151,20 @@ it. What reads the reconciled times downstream is decision 174's open end.
 departure and a return, time and port or `none`, each with its basis, and every disagreement between witnesses counted
 in one outcome.
 
+## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
+**status:** open · **needs: maintainer** — plan 038's asks a-i (§9); a, the split, agreed with plan 039 · **see:**
+`curate/plans/038-the-logbook-flow-whole.md`, TODO 121, decisions 155 and 172-174
+
+Plan 038 places every open piece of the logbook flow in one order: the sources and their layers, the merge, the trip ↔
+landing link, the reconciled trip, the stations on the fixes, effort and catch. Each piece keeps its own TODO item.
+It designs two things no record does yet: what reads `trip_reconciled` (decision 174's open end), and every logged
+kilogram in one catch unit and one outcome in every year. 54 % of the logbook's kilograms are logged before 2007 and
+are in no unit (measured 2026-10-22). Also measured: 6,991 tour-app trips (9.2 kt) on vessel-days no curated source
+holds since decision 160.
+
+**check:** the asks answered in the plan; each of its phases built, or declined in a decision; the plan executed,
+parked or abandoned in its header.
+
 ## 123. The landings flow, from the first record to now: one cascade, the same output in every period (plan 039)
 **status:** open · **needs: maintainer** — plan 039's asks a-h (§11), above all a (a new plan, or an amendment of
 plan 023) and e (`lid_map`'s 2007-09-01 bound lifted first, with plan 038) · **see:**
