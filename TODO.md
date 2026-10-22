@@ -568,7 +568,9 @@ Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can
 with the defaults it equals `ping_whacky` ping for ping; a distance floor between feeds (0.3 nm) frees 22 % (2016) and
 80 % (2026) of the false removals and loses no true one (0.5 nm: 24 % and 97 %); a two-sided forward stage does almost
 nothing. Its ramb changes, opt-in arguments `feed`, `noise_nm`, `evidence`, are uncommitted in `~/R/Pakkar/ramb_wt_whack`
-(branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer.
+(branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer. Its follow-up (§8c): the
+STK-ASTD offset on moving vessels is a time lag, the ASTD position behind (within ±3 s in 2017-2020, 30-120 s on 72 %
+of 2026's pairs), so no single floor fits every year; a clock correction needs a third time reference.
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. TODO 38 keeps the filter's other loose ends.
 
