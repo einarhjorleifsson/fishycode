@@ -12,8 +12,8 @@ The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes
 orri, vessel, channel, ops_einarhj, logbook, fiskifelagid, agf, ask, vor, kvoti, kvotix, adb, fs_afladagbok, afli,
 fs_afli, biota, stk (dwstg, fiskist, fiskifelagid, vor and kvotix first run 2026-10-21 on the server for plan 037's phase 0; simalinu that
 evening through RJDBC from the Mac; decision 162). Each is one script,
-`dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` is not a schema: it lists what else
-Oracle holds (section 13).
+`dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` and `code.R` are not schemas: the first
+lists what else Oracle holds (section 13), the second keeps the SQL behind each dumped schema (section 14).
 
 ## 1. Get the code
 
@@ -226,3 +226,18 @@ Rscript dump/oracle/catalogue.R
 lists every table and view the account can see, in every schema, with Oracle's comment, row estimate and number of
 columns, to `raw/oracle/_catalogue/objects.parquet`. It reads the data dictionary only, in about a minute, and prints
 each schema's size and whether it has a dump script. `all.R` and `sync.sh` leave it out.
+
+## 14. The SQL behind the schemas
+
+```bash
+Rscript dump/oracle/code.R
+```
+
+keeps, for every dumped schema, what Oracle's data dictionary holds of its definitions, in
+`raw/oracle/<schema>/_code/`: the text of its views and materialized views, the stored PL/SQL the account may see
+(line by line), its triggers, synonyms and dependencies, its objects with their status and last change, and its
+columns with their defaults and comments (the fields table). One parquet file per dictionary view
+(`all_views.parquet`, `all_source.parquet`, ...), and `_overview.parquet` with what each returned, or Oracle's
+refusal. Schema names after the script take only those (`Rscript dump/oracle/code.R adb`). It reads the dictionary
+only, in under 3 minutes, and its log is `raw/oracle/_logs/<time>_code.log`. Run it on the Mac: the text is LONG,
+which RJDBC reads and ROracle cannot. `all.R` and `sync.sh` leave it out. Why it is so: decision 166.

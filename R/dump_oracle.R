@@ -112,6 +112,77 @@ oracle_catalogue <- function(con) {
     tibble::as_tibble()
 }
 
+# The SQL behind a schema's objects, from the data dictionary: one query per dictionary view below, its columns named
+# (a column the database lacks fails the query, ORA-00904), the schema's rows only. Each view shows what the account
+# may see. Views and their text whatever the owner, since SELECT ANY TABLE reaches them: all 1,574 outside Oracle's
+# own schemas (2026-10-22). Stored PL/SQL (ALL_SOURCE) only where the account owns it or may execute it. DBA_VIEWS,
+# DBA_SOURCE and DBMS_METADATA.GET_DDL are refused (ORA-00942, ORA-31603: no SELECT_CATALOG_ROLE).
+# A view's text, a materialized view's query, a trigger's body and a column's default are LONG. RJDBC reads them
+# whole: every view's text as long as TEXT_LENGTH says (all 617 of the dumped schemas, 2026-10-22). TEXT_VC cut 27 of
+# the views at 4,000 bytes, and ROracle cannot fetch a LONG at all (oracle_fields()). A query with a LONG is fetched a
+# row at a time, about 55 ms a row (2026-10-22), so a column's default (`long`) is read in a second query, only where
+# Oracle says there is one, and joined on: the 21,869 columns of the dumped schemas would take 20 minutes.
+# A trigger is the schema's when it owns the trigger or its table, so one on another dumped schema's table is in both
+# files. A synonym is the schema's when it owns it, or when it is a public one naming the schema's object.
+.oracle_code <- list(
+  all_objects = list(
+    cols = c("OWNER", "OBJECT_NAME", "SUBOBJECT_NAME", "OBJECT_TYPE", "STATUS", "CREATED", "LAST_DDL_TIME"),
+    where = "OWNER = %1$s", order = "OBJECT_TYPE, OBJECT_NAME, SUBOBJECT_NAME"),
+  all_tab_columns = list(
+    cols = c("OWNER", "TABLE_NAME", "COLUMN_NAME", "COLUMN_ID", "DATA_TYPE", "DATA_TYPE_OWNER", "DATA_LENGTH",
+             "CHAR_LENGTH", "CHAR_USED", "DATA_PRECISION", "DATA_SCALE", "NULLABLE", "IDENTITY_COLUMN",
+             "DEFAULT_ON_NULL", "DEFAULT_LENGTH"),
+    where = "OWNER = %1$s", order = "TABLE_NAME, COLUMN_ID",
+    long = list(col = "DATA_DEFAULT", by = c("TABLE_NAME", "COLUMN_NAME"), when = "DEFAULT_LENGTH > 0")),
+  all_col_comments = list(
+    cols = c("OWNER", "TABLE_NAME", "COLUMN_NAME", "COMMENTS"),
+    where = "OWNER = %1$s", order = "TABLE_NAME, COLUMN_NAME"),
+  all_views = list(
+    cols = c("OWNER", "VIEW_NAME", "TEXT_LENGTH", "TEXT"),
+    where = "OWNER = %1$s", order = "VIEW_NAME"),
+  all_mviews = list(
+    cols = c("OWNER", "MVIEW_NAME", "CONTAINER_NAME", "QUERY_LEN", "QUERY", "MASTER_LINK", "REFRESH_MODE",
+             "REFRESH_METHOD", "BUILD_MODE", "LAST_REFRESH_TYPE", "LAST_REFRESH_DATE", "STALENESS", "COMPILE_STATE"),
+    where = "OWNER = %1$s", order = "MVIEW_NAME"),
+  all_source = list(
+    cols = c("OWNER", "NAME", "TYPE", "LINE", "TEXT"),
+    where = "OWNER = %1$s", order = "NAME, TYPE, LINE"),
+  all_triggers = list(
+    cols = c("OWNER", "TRIGGER_NAME", "TRIGGER_TYPE", "TRIGGERING_EVENT", "TABLE_OWNER", "BASE_OBJECT_TYPE",
+             "TABLE_NAME", "COLUMN_NAME", "REFERENCING_NAMES", "WHEN_CLAUSE", "STATUS", "DESCRIPTION", "ACTION_TYPE",
+             "TRIGGER_BODY"),
+    where = "OWNER = %1$s OR TABLE_OWNER = %1$s", order = "OWNER, TRIGGER_NAME"),
+  all_synonyms = list(
+    cols = c("OWNER", "SYNONYM_NAME", "TABLE_OWNER", "TABLE_NAME", "DB_LINK"),
+    where = "OWNER = %1$s OR (OWNER = 'PUBLIC' AND TABLE_OWNER = %1$s)", order = "OWNER, SYNONYM_NAME"),
+  all_dependencies = list(
+    cols = c("OWNER", "NAME", "TYPE", "REFERENCED_OWNER", "REFERENCED_NAME", "REFERENCED_TYPE",
+             "REFERENCED_LINK_NAME", "DEPENDENCY_TYPE"),
+    where = "OWNER = %1$s", order = "NAME, TYPE, REFERENCED_OWNER, REFERENCED_NAME, REFERENCED_TYPE")
+)
+
+# One dictionary view of .oracle_code (`source`, e.g. "all_views"), for one schema, as Oracle holds it: names in lower
+# case, as the dumps have them; the text whole, as the driver returns it.
+oracle_code <- function(con, schema, source) {
+  s <- .oracle_code[[source]]
+  if (is.null(s)) stop("not a dictionary view oracle_code() reads: ", source, call. = FALSE)
+  where <- sprintf(s$where, .sql_string(toupper(schema)))
+  get <- function(cols, where, order) {
+    sql <- sprintf("SELECT %s FROM SYS.%s WHERE %s%s", paste0('"', cols, '"', collapse = ", "), toupper(source), where,
+                   if (is.null(order)) "" else paste(" ORDER BY", order))
+    DBI::dbGetQuery(con, sql) |> dplyr::rename_with(tolower) |> tibble::as_tibble()
+  }
+  d <- get(s$cols, where, s$order)
+  if (!is.null(s$long)) {
+    l <- get(c("OWNER", s$long$by, s$long$col), sprintf("(%s) AND %s", where, s$long$when), NULL)
+    d <- dplyr::left_join(d, l, by = tolower(c("OWNER", s$long$by)), relationship = "one-to-one")
+  }
+  num <- c("text_length", "query_len", "line", "column_id", "data_length", "char_length", "data_precision",
+           "data_scale", "default_length")
+  for (v in intersect(num, names(d))) d[[v]] <- as.numeric(d[[v]])
+  d
+}
+
 # The connection every dump uses, through RJDBC (Oracle's JDBC driver, in Java) or ROracle (Oracle's client library).
 # The driver comes from FD_DUMP_DRIVER, which run_dump(driver = ) sets, so a dump script, its reconnect and its LOB
 # connection all use one driver. RJDBC is the default: it is the only one on the Mac (decisions 106, 109).
@@ -712,4 +783,106 @@ dump_oracle_schema <- function(con, schema, out_dir, tables = NULL, skip = chara
   if (length(failed)) message("  failed: ", paste(failed, collapse = ", "))
   if (length(stale))  message("  not from this dump (older files kept): ", paste(stale, collapse = ", "))
   invisible(objects)
+}
+
+# The SQL behind a schema (oracle_code()), to <out_dir>/<view>.parquet, one file per dictionary view of .oracle_code,
+# and <out_dir>/_overview.parquet: per view, the rows written, or the refusal with Oracle's code, and notes. An empty
+# view is written: it is a result. A view that fails writes nothing, and the file of an earlier run stays, as in
+# dump_oracle_schema(). A query that fails on a dead connection is tried once more on a new one from `connect`.
+# Returns the overview, invisibly.
+dump_oracle_code <- function(con, schema, out_dir, script = NA_character_, connect = dump_connect) {
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  run <- .dump_run(con, script)
+  src <- names(.oracle_code)
+  n <- length(src)
+  rows <- rep(NA_real_, n); status <- rep(NA_character_, n); error <- rep(NA_character_, n)
+  seconds <- rep(NA_real_, n)
+  got <- list()
+  for (i in seq_len(n)) {
+    t0 <- Sys.time()
+    r <- tryCatch(oracle_code(con, schema, src[i]), error = function(e) e)
+    if (inherits(r, "error") && !.oracle_alive(con)) {
+      message(sprintf("%s %s: the connection is lost - reconnecting and trying once more", schema, src[i]))
+      con <- connect()
+      r <- tryCatch(oracle_code(con, schema, src[i]), error = function(e) e)
+    }
+    seconds[i] <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    if (inherits(r, "error")) {
+      status[i] <- "failed"
+      error[i]  <- .oracle_error(r)
+    } else {
+      got[[src[i]]] <- r
+      rows[i] <- nrow(r)
+      status[i] <- "written"
+    }
+  }
+  note <- .oracle_code_notes(got, schema)
+  for (s in names(got))
+    .write_raw(got[[s]], file.path(out_dir, paste0(s, ".parquet")), paste(schema, s), run, note[[s]])
+  ov <- data.frame(owner = tolower(schema), source = src, rows = rows, status = status, error = error,
+                   note = unname(note[src]), seconds = seconds, dumped = run$dumped, script = run$script,
+                   commit = run$commit, dirty = run$dirty, driver = run$driver)
+  .write_raw(ov, file.path(out_dir, "_overview.parquet"), paste(schema, "code"), run)
+
+  said <- ifelse(status == "written", format(rows, big.mark = ",", trim = TRUE), paste0("FAILED (", error, ")"))
+  message(sprintf("%s: %s", schema, paste(src, said, collapse = ", ")))
+  for (i in which(!is.na(ov$note))) message("  ", src[i], ": ", ov$note[i])
+  kept <- src[status == "failed" & file.exists(file.path(out_dir, paste0(src, ".parquet")))]
+  if (length(kept)) message("  not from this dump (older files kept): ", paste(kept, collapse = ", "))
+  invisible(ov)
+}
+
+# Oracle's own message (ORA-nnnnn and its text) without the wrappers of R and the driver, or the whole message when
+# there is none: ROracle's "unsupported column type" is not Oracle's. ASCII only, as in dump_oracle_table().
+.oracle_error <- function(e) {
+  msg <- gsub("\033\\[[0-9;]*m", "", conditionMessage(e))
+  ora <- regmatches(msg, gregexpr("ORA-[0-9]{5}:[ -~]*", msg, useBytes = TRUE))[[1]]
+  ora <- trimws(sub(" *https?://.*$", "", ora))
+  if (length(ora)) paste(unique(ora), collapse = " | ") else trimws(gsub("[[:space:]]+", " ", msg))
+}
+
+# What the overview says of a dictionary view beyond its rows: whether each LONG text is as long as Oracle says
+# (TEXT_LENGTH, QUERY_LEN, DEFAULT_LENGTH, in bytes), and which of the schema's code objects have no line in
+# all_source (listed in all_objects, or depended on by the schema's own objects). NA where there is nothing to say.
+.oracle_code_notes <- function(got, schema) {
+  note <- stats::setNames(rep(NA_character_, length(.oracle_code)), names(.oracle_code))
+  some <- function(x, k = 20) paste(c(utils::head(x, k), if (length(x) > k) sprintf("and %d more", length(x) - k)),
+                                    collapse = ", ")
+  key <- function(name, type) if (length(name)) paste0(name, " (", type, ")") else character()
+  # a row with neither a text nor a length (a column with no default) has nothing to check
+  whole <- function(d, name, text, len) {
+    if (is.null(d)) return(NA_character_)
+    d <- d[!is.na(d[[text]]) | !is.na(d[[len]]), ]
+    if (!nrow(d)) return(NA_character_)
+    b <- ifelse(is.na(d[[text]]), 0, nchar(d[[text]], type = "bytes"))
+    off <- which(is.na(d[[len]]) | b != d[[len]])
+    if (!length(off)) return(sprintf("%s whole on all %d (bytes equal %s)", text, nrow(d), toupper(len)))
+    label <- if (length(name) > 1) paste(d[[name[1]]], d[[name[2]]], sep = ".") else d[[name]]
+    sprintf("%s not as long as %s on %d of %d: %s", text, toupper(len), length(off), nrow(d),
+            some(sprintf("%s (%s bytes of %s)", label[off], b[off], d[[len]][off])))
+  }
+  note[["all_tab_columns"]] <- whole(got$all_tab_columns, c("table_name", "column_name"), "data_default",
+                                     "default_length")
+  note[["all_views"]]  <- whole(got$all_views, "view_name", "text", "text_length")
+  note[["all_mviews"]] <- whole(got$all_mviews, "mview_name", "query", "query_len")
+  tr <- got$all_triggers
+  if (!is.null(tr) && any(is.na(tr$trigger_body)))
+    note[["all_triggers"]] <- sprintf("no body on %d of %d: %s", sum(is.na(tr$trigger_body)), nrow(tr),
+                                      some(tr$trigger_name[is.na(tr$trigger_body)]))
+  sc <- got$all_source
+  if (!is.null(sc)) {
+    code <- c("FUNCTION", "PROCEDURE", "PACKAGE", "PACKAGE BODY", "TYPE", "TYPE BODY")
+    o  <- got$all_objects
+    dp <- got$all_dependencies
+    o  <- if (is.null(o)) NULL else o[o$object_type %in% code, ]
+    dp <- if (is.null(dp)) NULL else dp[dp$referenced_owner %in% toupper(schema) & dp$referenced_type %in% code, ]
+    shown  <- unique(key(sc$name, sc$type))
+    hidden <- sort(setdiff(unique(c(key(o$object_name, o$object_type), key(dp$referenced_name, dp$referenced_type))),
+                           shown))
+    if (length(shown) || length(hidden))
+      note[["all_source"]] <- paste0(sprintf("source of %d code objects", length(shown)),
+        if (length(hidden)) sprintf("; no line for %d that all_objects lists or the schema's objects depend on: %s",
+                                    length(hidden), some(hidden)))
+  }
+  note
 }

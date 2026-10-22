@@ -202,13 +202,13 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
 }
 
 # The schemas with a dump script, in the order a full run takes them: a small one first, to fail fast; stk last.
-# all.R runs them, and catalogue.R lists every schema without dumping one.
+# all.R runs them; catalogue.R lists every schema without dumping one, and code.R keeps the SQL behind each.
 .dump_schemas <- function(root = .repo_root()) {
   order <- c("asfis", "taxon", "fs_ufs", "uv", "rdbes", "dw", "dwstg", "fiskist", "simalinu", "ufs", "gear", "orri",
              "vessel", "channel", "ops_einarhj", "logbook", "fiskifelagid", "agf", "ask", "vor", "kvoti", "kvotix",
              "adb", "fs_afladagbok", "afli", "fs_afli", "biota", "stk")
   scripts <- setdiff(sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$")),
-                     c("all", "catalogue"))
+                     c("all", "catalogue", "code"))
   c(intersect(order, scripts), setdiff(scripts, order))
 }
 

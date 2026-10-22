@@ -10,7 +10,7 @@
 # A schema counts as finished when its _logs/ holds a .exit file, the exit code its run writes last; it is then
 # copied once. A new file is the signal because the macOS SMB client can show a file the server keeps appending to
 # without its newest lines (the run's _all.log, 2026-10-16), while a new file appears at once. The schemas are those
-# with a script beside this one, but all.R and catalogue.R. It stops when all are copied, or after one whose run failed as a whole (the dump
+# with a script beside this one, but all.R, catalogue.R and code.R. It stops when all are copied, or after one whose run failed as a whole (the dump
 # stops there too). Made for a fresh run: after a --resume, run it again once the dump is done. Run it again any
 # time: rsync copies only what changed. Every minute by default; SYNC_EVERY=<seconds> changes that.
 # SYNC_EXCLUDE="<name> ..." leaves files of those names out of the copy, e.g. stk's three copies of the whole trail
@@ -23,7 +23,7 @@ EVERY=${SYNC_EVERY:-60}
 EXCL=""
 for p in ${SYNC_EXCLUDE:-}; do EXCL="$EXCL --exclude=$p"; done
 HERE=$(cd "$(dirname "$0")" && pwd)
-SCHEMAS=$(cd "$HERE" && ls *.R | sed 's/[.]R$//' | grep -v -e '^all$' -e '^catalogue$')
+SCHEMAS=$(cd "$HERE" && ls *.R | sed 's/[.]R$//' | grep -v -e '^all$' -e '^catalogue$' -e '^code$')
 mkdir -p "$TO"
 LOG="$TO/_sync.log"
 say() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG"; }
