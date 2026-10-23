@@ -316,19 +316,19 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
 ## 79. Every source station and trip accounted for in the logbook merge (plan 024)
-**status:** open · **see:** `curate/plans/024-logbook-station-fate.md` (§6 answered 2026-10-23), plan 038 §8 step 1
+**status:** open · coded and checked on a scratch store, built with the next logbook rebuild · **see:** decision 194,
+`curate/plans/024-logbook-station-fate.md`, plan 038 §8 step 1
 
-`curate/logbook.R` drops staging stations by date bounds and (vid, date) tiers, and nothing records them: a dropped
-station is simply absent from `curated/logbook`. Plan 024 proposes `curated/logbook/station_fate.parquet`, written by
-the merge, one row per staging station with whether it is kept and, if not, why, and measures what it would hold on
-the build of 2026-10-16: 702,988 stations dropped (8,131 kt as recorded), 99 % of held vessel-days copies of what is
-kept. The maintainer, 2026-10-23: written by the merge, with round weight and `day_match`; a `trip_fate` beside it;
-the adapters' own drops later, each its own ledger; coded and checked on a scratch store now, built in the store with
-the next rebuild that touches the logbook (plan 037 phase 1).
+Coded and checked on a scratch store (decision 194; Claude's, not yet checked by a person). `curate/logbook.R` writes
+`curated/logbook/station_fate.parquet` (8,013,418 staging stations of afli, fs_afladagbok, adb and aflaskeyti) and
+`trip_fate.parquet` (2,175,609 trips), each with the rule that dropped it, and stops unless the account adds up. The
+whole weight is one function, `R/whole_weight.R`. The four logbook tables and `catch_by_species_station` come out
+identical to the store's. Not built, on the maintainer's word: the build is the next rebuild that touches the logbook
+(plan 037 phase 1). Until then `tar_outdated()` lists `logbook` and the 19 targets after it; build them together. The
+adapters' own drops come later, each its own ledger.
 
-**check:** `curated/logbook/station_fate.parquet` and `trip_fate.parquet` exist, one row per staging station and
-trip of every source the merge reads, their invariants (staging kg = kept + dropped per source) checked by the merge,
-the counts recounted on that build; a decision records it.
+**check:** both files in the store, built with that rebuild; the merge's invariants held in its log; plan 024 §2's
+counts (decision 194) recounted on it, with the differences explained; `docs/merge.qmd` renders its section.
 
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
 **status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,

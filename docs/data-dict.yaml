@@ -76,6 +76,11 @@ details: >
   reader sees (curate/issues/data-dict.yml). The landing tables' `date` columns
   are still `number` with day counts from the first draft (decision 029).
 
+  2026-10-23: `logbook_station_fate` and `logbook_trip_fate` added by Claude
+  (AI-assisted), not checked by a person, from curate/logbook.R and a scratch
+  build of it (plan 024, TODO 79; ranges and examples from that build, since the
+  store holds neither until the logbook is rebuilt).
+
 tables:
   - name: ais_voyage
     source:
@@ -4357,6 +4362,216 @@ tables:
         description: >
           For a "duplicate" trip, the .tid (same schema) of the kept trip, when all
           its stations repeat that one trip. NA otherwise.
+  - name: logbook_station_fate
+    source:
+      parquet: ../../fishydata/curated/logbook/station_fate.parquet
+    description: >
+      One row per staging station of every logbook source the merge reads, kept in
+      logbook_station or not, and why (curate/logbook.R, plan 024): afli with its
+      two copies, fs_afladagbok, adb and aflaskeyti. Written by the merge beside its
+      four tables, from the same inputs; each date bound and tier keeps the stations
+      it drops, and the merge stops unless one row per staging station, the
+      in_curated rows exactly logbook_station's keys, and per schema staging kg =
+      kept kg + dropped kg with kept kg = logbook_catch's. Stations dropped before
+      staging, by the adapters, are not here (plan 024 ask d). Not yet in the store:
+      built with the next rebuild of the logbook (TODO 79); the ranges and examples
+      are from a scratch build of 2026-10-23.
+    constraints:
+      - assert: (in_curated AND reason IS NULL) OR (NOT in_curated AND reason IS NOT NULL)
+        description: A station is kept, or dropped by a rule the merge names.
+      - assert: in_curated OR held_by IS NOT NULL OR day_match IS NULL
+        description: day_match is set only where a tier holds the vessel-day.
+      - assert: NOT in_curated OR (held_by IS NULL AND day_match IS NULL)
+        description: held_by and day_match describe dropped stations only.
+      - assert: (kg IS NULL AND kg_whole_basis = 'none') OR (kg IS NOT NULL AND kg_whole_basis <> 'none')
+        description: A station with no catch row has basis "none".
+    columns:
+      - name: .sid
+        type: number
+        constraints: [primary_key]
+        range: [-2768723449, 10630176826]
+        examples: [-2768723449, 988051, 27291001, 75704587, 10630176826]
+        description: >
+          The staging station id, as in logbook_station; unique with schema.
+      - name: .tid
+        type: string
+        constraints: [required]
+        examples: ["-1000003", "101712642", "105676308", "27373278", "99999 - Marína raun"]
+        description: >
+          The station's staging trip, as in logbook_station (character). aflaskeyti's
+          is curate/aflaskeyti_trip.R's trip, the one the merge reads.
+      - name: schema
+        type: enum
+        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        constraints: [primary_key]
+        description: >
+          The logbook source system, as in logbook_station.
+      - name: copy
+        type: enum
+        values: [afli, fs_afli]
+        description: >
+          afli only: the copy of the schema the station was read from (decision 124);
+          an fs_afli station is kept only on a vessel-day no other tier above it
+          holds (tier 2b). NA for the other schemas.
+      - name: vid
+        type: number
+        range: [-422, 69479]
+        examples: [-422, 1487, 2666, 6455, 69479]
+        description: >
+          The vessel of the tier key, from the station's staging trip. NA on 21 afli
+          stations, all kept; a vessel-day with no vessel is never held.
+      - name: date
+        type: datetime
+        time_zone: naive
+        constraints: [required]
+        range: [0003-03-24T00:00:00, 2031-08-22T00:00:00]
+        description: >
+          The station's date, the other half of the tier key, as in logbook_station.
+          The dates before 1950 and after the dumps are the misdated stations the
+          bounds drop.
+      - name: kg
+        type: number
+        range: [0, 10999998]
+        examples: [0, 9281, 18587, 29761, 10999998]
+        description: >
+          The station's catch as recorded, kg, summed over its staging catch rows
+          (logbook_catch's `catch`, mixed states); NA when it has no catch row.
+      - name: kg_whole
+        type: number
+        range: [0, 10999998]
+        examples: [0, 6297, 12893.75, 22938, 10999998]
+        description: >
+          The station's whole weight, kg, by calc_whole_weight() (R/whole_weight.R),
+          the rule of logbook_catch_by_species_station's catch_round: catch_whole
+          where recorded, GUTT / 0.8, as recorded otherwise. The scale on which a
+          dropped e-logbook station and a kept afli one can be compared. NA when the
+          station has no catch row.
+      - name: kg_whole_basis
+        type: enum
+        values: [recorded, reconstructed, synthesised, none]
+        constraints: [required]
+        description: >
+          The weakest basis of the station's catch rows: "reconstructed" where a GUTT
+          weight was divided by 0.8, "synthesised" where a row of an e-logbook or the
+          ERS reports names no condition, "recorded" otherwise, "none" with no catch
+          row.
+      - name: in_curated
+        type: boolean
+        constraints: [required]
+        description: >
+          TRUE when the station is in logbook_station (read from the stations the
+          merge writes, not from its rules).
+      - name: reason
+        type: enum
+        values: [date_before, date_after, date_missing, vessel_day_held]
+        description: >
+          Why a station is not in logbook_station; NA when it is. "date_before" and
+          "date_after": outside its source's date bounds (curate/logbook.R's head;
+          adb from 2025-11-19, decision 160; each source capped at the day after its
+          dump, decision 181); "date_missing": no date; "vessel_day_held": a tier
+          above holds its vessel-day (afli, then fs_afladagbok, fs_afli's paper
+          stations, adb, aflaskeyti).
+      - name: held_by
+        type: enum
+        values: [afli, fs_afladagbok, fs_afli, adb, aflaskeyti]
+        description: >
+          For a dropped station, the tier whose kept stations hold its vessel-day in
+          logbook_station: for "vessel_day_held" the tier that won, for a date drop
+          whether the vessel-day reached the product from another source. The tiers'
+          vessel-days are disjoint, so there is at most one. NA when the station is
+          kept or no tier holds its vessel-day.
+      - name: day_match
+        type: enum
+        values: [equal, held_more, dropped_more]
+        description: >
+          On a held vessel-day, the whole weight this source dropped there against
+          the whole weight kept there: "equal" within 1 % of the larger, else which
+          side holds more. Row against row: duplicate twins count on both sides,
+          since twins are judged only on the merged tables, so a record entered twice
+          that both copies of the e-logbook hold is equal. NA when held_by is NA.
+  - name: logbook_trip_fate
+    source:
+      parquet: ../../fishydata/curated/logbook/trip_fate.parquet
+    description: >
+      One row per staging trip of every logbook source the merge reads, kept in
+      logbook_trip or not, and why (curate/logbook.R, plan 024): afli, fs_afladagbok,
+      adb, and aflaskeyti's trips as curate/aflaskeyti_trip.R cuts them. A trip is
+      kept while one of its stations is; a trip with no staging station, which
+      logbook_station_fate cannot show, is "no_station". The merge stops unless one
+      row per staging trip and the in_curated rows are exactly logbook_trip's keys.
+      Not yet in the store: built with the next rebuild of the logbook (TODO 79); the
+      ranges and examples are from a scratch build of 2026-10-23.
+    constraints:
+      - assert: (in_curated AND reason IS NULL AND n_kept > 0) OR (NOT in_curated AND reason IS NOT NULL AND n_kept = 0)
+        description: A trip is kept exactly when one of its stations is.
+      - assert: n_kept <= n_station
+      - assert: reason <> 'no_station' OR n_station = 0
+    columns:
+      - name: .tid
+        type: string
+        constraints: [primary_key]
+        examples: ["-1", "101835439", "106216277", "27571903", "99999 - Marína raun"]
+        description: >
+          The staging trip id, as in logbook_trip (character); unique with schema.
+      - name: schema
+        type: enum
+        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        constraints: [primary_key]
+        description: >
+          The logbook source system, as in logbook_trip.
+      - name: vid
+        type: number
+        range: [-422, 69479]
+        examples: [-422, 1530, 2793, 6458, 69479]
+        description: >
+          Vessel identifier, from the staging trip.
+      - name: T1
+        type: datetime
+        time_zone: UTC
+        constraints: [required]
+        range: [0006-03-30T00:00:00, 2030-01-24T00:30:00]
+        description: >
+          Departure, from the staging trip, as in logbook_trip.
+      - name: T2
+        type: datetime
+        time_zone: UTC
+        range: [0201-07-23T00:00:00, 2026-10-16T00:00:00]
+        description: >
+          Return, from the staging trip, as in logbook_trip.
+      - name: n_station
+        type: number
+        constraints: [required]
+        range: [0, 376]
+        examples: [0, 48, 96, 145, 376]
+        description: >
+          The trip's staging stations, in logbook_station_fate.
+      - name: n_kept
+        type: number
+        constraints: [required]
+        range: [0, 376]
+        examples: [0, 48, 96, 145, 376]
+        description: >
+          Of them, the stations in logbook_station. A kept trip with n_kept below
+          n_station is split: some of its stations went to a tier above.
+      - name: kg
+        type: number
+        range: [0, 11111109]
+        examples: [0, 26395, 64948, 124275, 11111109]
+        description: >
+          The catch as recorded of the trip's staging stations, kg, kept and dropped;
+          NA when none of them has a catch row.
+      - name: in_curated
+        type: boolean
+        constraints: [required]
+        description: >
+          TRUE when the trip is in logbook_trip.
+      - name: reason
+        type: enum
+        values: [date_before, date_after, date_missing, vessel_day_held, mixed, no_station]
+        description: >
+          Why a trip is not in logbook_trip; NA when it is. Its stations' reason
+          (logbook_station_fate.reason) when they all went for one, "mixed" when they
+          went for different reasons, "no_station" when it has no staging station.
   - name: reference_area_h3
     source:
       parquet: ../../fishydata/curated/reference/area_h3.parquet

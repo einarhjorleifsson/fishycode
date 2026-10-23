@@ -619,7 +619,7 @@ list(
   # staging/ → curated/. Where cross-source decisions live.
 
   # Precedence, recorded once in curate/decisions/: afli where it exists, then
-  # fs_afladagbok through its dump end, then adb beyond it.
+  # fs_afladagbok through its dump end, then adb beyond it. With the fate of every staging station and trip (plan 024).
   tar_target(logbook, {
     afli; afli_depth_units; afli_end_longitude; fs_afladagbok; adb; adb_lon_sign
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
@@ -627,7 +627,9 @@ list(
              fd_curated("logbook", "trip.parquet"),
              fd_curated("logbook", "station.parquet"),
              fd_curated("logbook", "fishing_sample.parquet"),
-             fd_curated("logbook", "catch.parquet"))
+             fd_curated("logbook", "catch.parquet"),
+             fd_curated("logbook", "station_fate.parquet"),
+             fd_curated("logbook", "trip_fate.parquet"))
   }, format = "file"),
 
   # L4 of the vessel-trail model: tie logbook trips to AIS port-to-port

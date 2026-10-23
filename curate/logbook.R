@@ -3,7 +3,8 @@
 # Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti}/{trip,station,fishing_sample,catch}.parquet, and the side
 #         tables named under "Load"; the dump stamps (fd.dumped, never the rows) of raw/oracle/{afli,fs_afli}/stofn,
 #         adb/fishing_station and dw/dw_aflaskeyti, for the date caps
-# Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet
+# Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet, and the fate of every staging station and trip:
+#         curated/logbook/station_fate.parquet, trip_fate.parquet (plan 024)
 #
 # Decision rule (tiered priority):
 #   Tier 1 — if (vid, date) present in afli                        → use afli
@@ -42,6 +43,9 @@
 # Station type: station.parquet carries station_type (operation / event) and
 # station_type_basis, read per vessel, year and gear (decision 084).
 # Set times: a logbook app's placeholder t1 is NA in fishing_sample.parquet, t1_placeholder TRUE (decision 157).
+# Fate (plan 024): one row per staging station of every source and one per staging trip, kept or dropped, and why.
+# Each date bound and tier keeps the stations it drops, so its rule is stated once; the merge checks that the account
+# adds up (kg in = kept + dropped, per source) and stops otherwise.
 
 library(tidyverse)
 library(duckdbfs)
@@ -149,11 +153,50 @@ ers_catch <- ers_catch |>
   left_join(ers_weight, by = c(".sid", "sid"), relationship = "one-to-one")
 stopifnot(!anyNA(ers_station$.tid), !anyNA(ers_station$lat1), all(ers_station$.tid %in% ers_trip$.tid))
 
+# Fate: every staging station and trip -----------------------------------------
+# The rows of station_fate and trip_fate, taken before any rule drops one: each station with its tier key (`vid` from
+# its staging trip, `date`), each trip, and each station's catch as recorded (`kg`) and whole weight
+# (R/whole_weight.R), summed from the whole staging catch, so a catch row no station carries shows as kg missing.
+# aflaskeyti's trips are curate/aflaskeyti_trip.R's, the ones the merge reads. The catch is summed in DuckDB, from the
+# staged files and aflaskeyti's corrected weights: 7.8 M stations take 37 s in dplyr and 1.3 s there, with the same
+# result, and no second copy of 19 M catch rows is held in memory.
+tier_key <- function(station, trip) {
+  station |>
+    select(.sid, .tid, schema, any_of("copy"), date) |>
+    left_join(trip |> select(.tid, vid), by = ".tid", relationship = "many-to-one") |>
+    mutate(.tid = as.character(.tid))
+}
+fate_station <- bind_rows(tier_key(afli_station, afli_trip), tier_key(fs_station, fs_trip),
+                          tier_key(adb_station, adb_trip), tier_key(ers_station, ers_trip))
+fate_trip <- bind_rows(lapply(list(afli_trip, fs_trip, adb_trip, ers_trip), \(t)
+  t |> transmute(.tid = as.character(.tid), schema, vid, T1, T2)))
+fate_catch <- Reduce(union_all, list(
+  duckdbfs::open_dataset(fd_staging("afli", "catch.parquet")) |>
+    transmute(.sid, schema, condition = NA_character_, catch, catch_whole = NA_real_),
+  duckdbfs::open_dataset(fd_staging("fs_afladagbok", "catch.parquet")) |> select(.sid, schema, condition, catch, catch_whole),
+  duckdbfs::open_dataset(fd_staging("adb", "catch.parquet")) |> select(.sid, schema, condition, catch, catch_whole),
+  ers_catch |> select(.sid, schema, condition, catch, catch_whole) |> duckdbfs::as_dataset()))
+fate_kg <- fate_catch |>
+  calc_whole_weight(by = c(".sid", "schema"), kg = sum(as.numeric(catch), na.rm = TRUE)) |>
+  rename(kg_whole = whole_weight, kg_whole_basis = whole_weight_basis) |>
+  collect()
+staging_kg <- fate_catch |> summarise(staging = sum(as.numeric(catch), na.rm = TRUE), .by = schema) |> collect()
+
 # Apply date bounds ------------------------------------------------------------
-afli_station <- afli_station |> filter(date <= AFLI_DATE_MAX)
-fs_station   <- fs_station   |> filter(date >= FS_DATE_MIN, date <= FS_DATE_MAX)
-adb_station  <- adb_station  |> filter(date >= ADB_DATE_MIN, date <= ADB_DATE_MAX)
-ers_station  <- ers_station  |> filter(date <= ERS_DATE_MAX)
+# A station outside its source's bounds goes, and `dropped` keeps it with the bound it broke. An NA bound is none.
+out_of_bounds <- function(date, lo, hi) {
+  case_when(is.na(date) ~ "date_missing", date < lo ~ "date_before", date > hi ~ "date_after")
+}
+afli_station <- afli_station |> mutate(.reason = out_of_bounds(date, as.Date(NA), AFLI_DATE_MAX))
+fs_station   <- fs_station   |> mutate(.reason = out_of_bounds(date, FS_DATE_MIN, FS_DATE_MAX))
+adb_station  <- adb_station  |> mutate(.reason = out_of_bounds(date, ADB_DATE_MIN, ADB_DATE_MAX))
+ers_station  <- ers_station  |> mutate(.reason = out_of_bounds(date, as.Date(NA), ERS_DATE_MAX))
+dropped <- list(date = bind_rows(lapply(list(afli_station, fs_station, adb_station, ers_station), \(s)
+  s |> filter(!is.na(.reason)) |> select(.sid, schema, .reason))))
+afli_station <- afli_station |> filter(is.na(.reason)) |> select(-.reason)
+fs_station   <- fs_station   |> filter(is.na(.reason)) |> select(-.reason)
+adb_station  <- adb_station  |> filter(is.na(.reason)) |> select(-.reason)
+ers_station  <- ers_station  |> filter(is.na(.reason)) |> select(-.reason)
 
 # Subset all tables to stations/trips surviving the date filter
 afli_trip           <- afli_trip           |> semi_join(afli_station |> distinct(.tid), by = ".tid")
@@ -168,6 +211,13 @@ adb_trip           <- adb_trip           |> semi_join(adb_station |> distinct(.t
 adb_fishing_sample <- adb_fishing_sample |> semi_join(adb_station |> distinct(.sid), by = ".sid")
 adb_catch          <- adb_catch          |> semi_join(adb_station |> distinct(.sid), by = ".sid")
 
+# A tier keeps the stations on vessel-days no tier above it holds (`held`); the others go to `dropped`, so one rule
+# makes both.
+split_held <- function(station, held) {
+  list(kept = station |> anti_join(held, by = c("vid", "date")),
+       held = station |> semi_join(held, by = c("vid", "date")) |> transmute(.sid, schema, .reason = "vessel_day_held"))
+}
+
 # Tier 1: afli — full coverage, less the stations read from fs_afli -------------
 afli_fs_station <- afli_station |> filter(copy == "fs_afli")
 afli_station    <- afli_station |> filter(copy == "afli")
@@ -176,9 +226,11 @@ afli_vid_date <- afli_station |>
   distinct(vid, date)
 
 # Tier 2: fs_afladagbok — vessel-days not covered by afli ----------------------
-fs_only_station_vid <- fs_station |>
+fs_tier <- fs_station |>
   left_join(fs_trip |> select(.tid, vid), by = ".tid") |>
-  anti_join(afli_vid_date, by = c("vid", "date"))
+  split_held(afli_vid_date)
+fs_only_station_vid <- fs_tier$kept
+dropped$fs_afladagbok <- fs_tier$held
 
 fs_only_vid_date <- fs_only_station_vid |> distinct(vid, date)
 fs_only_station  <- fs_only_station_vid |> select(-vid)
@@ -193,9 +245,11 @@ fs_only_catch          <- fs_catch          |> semi_join(fs_sids_kept, by = ".si
 # Tier 2b: the paper stations only fs_afli holds -------------------------------
 # Where afli or fs_afladagbok has the vessel-day, they are the same hauls entered again (decision 123): of the
 # 17 such stations, 14 carry the same kg as a station already there, and one has no catch.
-afli_fs_kept <- afli_fs_station |>
+afli_fs_tier <- afli_fs_station |>
   left_join(afli_trip |> select(.tid, vid), by = ".tid") |>
-  anti_join(bind_rows(afli_vid_date, fs_only_vid_date), by = c("vid", "date"))
+  split_held(bind_rows(afli_vid_date, fs_only_vid_date))
+afli_fs_kept <- afli_fs_tier$kept
+dropped$fs_afli <- afli_fs_tier$held
 afli_fs_vid_date <- afli_fs_kept |> distinct(vid, date)
 afli_station <- bind_rows(afli_station, afli_fs_kept |> select(-vid))
 
@@ -208,10 +262,11 @@ afli_catch          <- afli_catch          |> semi_join(afli_station |> distinct
 # this keeps only the vessel-days the dump never received, and after it almost all of adb.
 tier12_vid_date <- bind_rows(afli_vid_date, fs_only_vid_date, afli_fs_vid_date)
 
-adb_only_station <- adb_station |>
+adb_tier <- adb_station |>
   left_join(adb_trip |> select(.tid, vid), by = ".tid") |>
-  anti_join(tier12_vid_date, by = c("vid", "date")) |>
-  select(-vid)
+  split_held(tier12_vid_date)
+adb_only_station <- adb_tier$kept |> select(-vid)
+dropped$adb <- adb_tier$held
 
 adb_sids_kept <- adb_only_station |> distinct(.sid)
 adb_tids_kept <- adb_only_station |> distinct(.tid)
@@ -228,10 +283,11 @@ tier123_vid_date <- bind_rows(
   tier12_vid_date,
   adb_only_station |> left_join(adb_trip |> select(.tid, vid), by = ".tid") |> distinct(vid, date))
 
-ers_only_station <- ers_station |>
+ers_tier <- ers_station |>
   left_join(ers_trip |> select(.tid, vid), by = ".tid") |>
-  anti_join(tier123_vid_date, by = c("vid", "date")) |>
-  select(-vid)
+  split_held(tier123_vid_date)
+ers_only_station <- ers_tier$kept |> select(-vid)
+dropped$aflaskeyti <- ers_tier$held
 
 ers_sids_kept <- ers_only_station |> distinct(.sid)
 ers_tids_kept <- ers_only_station |> distinct(.tid)
@@ -355,6 +411,100 @@ merged_fishing_sample <- merged_fishing_sample |>
            (is_offset(t1, t3, 270) | is_offset(t1, t3, 1710)),
          t1 = if_else(t1_placeholder, NA_POSIXct_, t1))
 
+# Station and trip fate --------------------------------------------------------
+# The sources' samples and catch are in the merged tables now, and are freed first: with them kept, the merge and its
+# fate peaked at 21 GB of a 24 GB machine (2026-10-23).
+rm(afli_fishing_sample, afli_catch, fs_fishing_sample, fs_catch, fs_only_fishing_sample, fs_only_catch,
+   adb_fishing_sample, adb_catch, adb_only_fishing_sample, adb_only_catch, ers_fishing_sample, ers_catch,
+   ers_only_fishing_sample, ers_only_catch, afli_depth, afli_end_lon, adb_lon_sign, fs_tier, adb_tier, ers_tier,
+   afli_fs_tier, fs_only_station_vid, tw, tw_sig, st_base)
+invisible(gc())
+
+# Every staging station in one outcome (plan 024 §4). `in_curated` is read from the stations written, `reason` from
+# the rule that dropped it. `held_by` is the tier whose kept stations hold the dropped station's vessel-day: the tiers'
+# vessel-days are disjoint, so there is at most one, and a vessel-day with no vessel is never held. `day_match` sets
+# the whole weight the source dropped on that vessel-day against the whole weight kept there, row against row: twins
+# are judged only on the merged tables, so the kept side keeps its duplicates (decision 094) as the dropped side does.
+# A record entered twice that both copies of the e-logbook hold is then equal; leaving duplicates out of the kept side
+# only made 786 of adb's 799 such vessel-days against fs_afladagbok look like more dropped than kept (2026-10-23).
+DAY_MATCH_TOL <- 0.01
+station_fate <- fate_station |>
+  left_join(fate_kg, by = c(".sid", "schema"), relationship = "one-to-one") |>
+  left_join(merged_station |> distinct(.sid, schema) |> mutate(in_curated = TRUE),
+            by = c(".sid", "schema"), relationship = "one-to-one") |>
+  left_join(bind_rows(dropped), by = c(".sid", "schema"), relationship = "one-to-one") |>
+  mutate(in_curated     = coalesce(in_curated, FALSE),
+         kg_whole_basis = coalesce(kg_whole_basis, "none"),
+         reason         = case_when(in_curated & is.na(.reason) ~ NA_character_,
+                                    !in_curated & !is.na(.reason) ~ .reason,
+                                    .default = "other"))
+kept_day <- station_fate |>
+  filter(in_curated, !is.na(vid)) |>
+  distinct(vid, date, held_by = if_else(schema == "afli", copy, schema))
+stopifnot("two tiers hold one vessel-day" = !anyDuplicated(kept_day[c("vid", "date")]))
+kept_day_whole <- station_fate |>
+  filter(in_curated, !is.na(vid)) |>
+  summarise(held_whole = sum(kg_whole, na.rm = TRUE), .by = c(vid, date))
+station_fate <- station_fate |>
+  left_join(kept_day, by = c("vid", "date"), na_matches = "never", relationship = "many-to-one") |>
+  mutate(held_by = if_else(in_curated, NA_character_, held_by))
+day_match <- station_fate |>
+  filter(!in_curated, !is.na(held_by)) |>
+  summarise(dropped_whole = sum(kg_whole, na.rm = TRUE), .by = c(schema, copy, vid, date)) |>
+  left_join(kept_day_whole, by = c("vid", "date"), relationship = "many-to-one") |>
+  mutate(held_whole = coalesce(held_whole, 0),
+         day_match  = case_when(abs(dropped_whole - held_whole) <= DAY_MATCH_TOL * pmax(dropped_whole, held_whole) ~ "equal",
+                                held_whole > dropped_whole ~ "held_more",
+                                .default = "dropped_more"))
+station_fate <- station_fate |>
+  left_join(day_match |> select(schema, copy, vid, date, day_match),
+            by = c("schema", "copy", "vid", "date"), relationship = "many-to-one") |>
+  select(.sid, .tid, schema, copy, vid, date, kg, kg_whole, kg_whole_basis, in_curated, reason, held_by, day_match)
+
+# A trip is kept while one of its stations is. A dropped trip takes its stations' reason, `mixed` when they went for
+# different reasons, and `no_station` when it never had one.
+trip_station <- station_fate |>
+  summarise(n_station = n(), n_kept = sum(in_curated), n_catch = sum(!is.na(kg)), kg = sum(kg, na.rm = TRUE),
+            .by = c(.tid, schema))
+trip_reason <- station_fate |>
+  filter(!in_curated) |>
+  distinct(.tid, schema, reason) |>
+  add_count(.tid, schema) |>
+  distinct(.tid, schema, .reason = if_else(n == 1, reason, "mixed"))
+trip_fate <- fate_trip |>
+  left_join(trip_station, by = c(".tid", "schema"), relationship = "one-to-one") |>
+  left_join(trip_reason, by = c(".tid", "schema"), relationship = "one-to-one") |>
+  left_join(merged_trip |> distinct(.tid, schema) |> mutate(in_curated = TRUE),
+            by = c(".tid", "schema"), relationship = "one-to-one") |>
+  mutate(n_station  = coalesce(n_station, 0L),
+         n_kept     = coalesce(n_kept, 0L),
+         kg         = if_else(coalesce(n_catch, 0L) > 0, kg, NA_real_),
+         in_curated = coalesce(in_curated, FALSE),
+         reason     = case_when(in_curated & n_kept > 0 ~ NA_character_,
+                                !in_curated & n_station == 0 ~ "no_station",
+                                !in_curated & n_kept == 0 & !is.na(.reason) ~ .reason,
+                                .default = "other")) |>
+  select(.tid, schema, vid, T1, T2, n_station, n_kept, kg, in_curated, reason)
+
+# The fate's invariants: the merge stops rather than write an account that does not add up.
+fate_kg_check <- station_fate |>
+  summarise(kept = sum(kg[in_curated], na.rm = TRUE), dropped = sum(kg[!in_curated], na.rm = TRUE), .by = schema) |>
+  full_join(staging_kg, by = "schema") |>
+  full_join(merged_catch |> summarise(curated = sum(as.numeric(catch), na.rm = TRUE), .by = schema), by = "schema") |>
+  mutate(across(c(kept, dropped, staging, curated), \(x) coalesce(x, 0)))
+stopifnot(
+  "a staging station has no fate row, or two" =
+    nrow(station_fate) == nrow(fate_station) && !anyDuplicated(station_fate[c(".sid", "schema")]),
+  "a staging trip has no fate row, or two" =
+    nrow(trip_fate) == nrow(fate_trip) && !anyDuplicated(trip_fate[c(".tid", "schema")]),
+  "a station's trip is not a staging trip" = nrow(anti_join(trip_station, fate_trip, by = c(".tid", "schema"))) == 0,
+  "in_curated is not curated/logbook/station's keys" = sum(station_fate$in_curated) == nrow(merged_station),
+  "in_curated is not curated/logbook/trip's keys" = sum(trip_fate$in_curated) == nrow(merged_trip),
+  "staging kg is not kept + dropped" = all(fate_kg_check$staging == fate_kg_check$kept + fate_kg_check$dropped),
+  "kept kg is not curated/logbook/catch's" = all(fate_kg_check$kept == fate_kg_check$curated),
+  "a station or trip is dropped by no rule (reason other)" =
+    !any(station_fate$reason %in% "other") && !any(trip_fate$reason %in% "other"))
+
 # Summary ----------------------------------------------------------------------
 cat(sprintf("afli stations (filtered):   %d\n", nrow(afli_station)))
 cat(sprintf("  of them read from fs_afli: %d of %d\n", nrow(afli_fs_kept), nrow(afli_fs_station)))
@@ -384,6 +534,15 @@ merged_trip |> filter(!is.na(twin)) |> count(schema, twin, has_twin_of = !is.na(
 cat("\nPlaceholder set times (curate/corrections/logbook_set_placeholder.yml), t1 set to NA:\n")
 merged_fishing_sample |> filter(t1_placeholder) |> count(schema, gear) |> print()
 
+cat("\nStation fate (station_fate.parquet), stations and kt as recorded, by schema and reason:\n")
+station_fate |>
+  summarise(stations = n(), kt = round(sum(kg, na.rm = TRUE) / 1e6, 2), .by = c(schema, reason, held_by)) |>
+  arrange(schema, reason, held_by) |>
+  print(n = 50)
+cat("\nTrip fate (trip_fate.parquet), trips by schema and reason:\n")
+trip_fate |> count(schema, reason) |> pivot_wider(names_from = schema, values_from = n, values_fill = 0L) |> print()
+print(fate_kg_check)
+
 cat("\nYear-by-year station source (2018+):\n")
 merged_station |>
   mutate(yr = lubridate::year(date)) |>
@@ -405,3 +564,5 @@ merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),   
 merged_station        |> write_curated(fd_curated("logbook", "station.parquet"),        inputs = logbook_inputs)
 merged_fishing_sample |> write_curated(fd_curated("logbook", "fishing_sample.parquet"), inputs = logbook_inputs)
 merged_catch          |> write_curated(fd_curated("logbook", "catch.parquet"),          inputs = logbook_inputs)
+station_fate          |> write_curated(fd_curated("logbook", "station_fate.parquet"),   inputs = logbook_inputs)
+trip_fate             |> write_curated(fd_curated("logbook", "trip_fate.parquet"),      inputs = logbook_inputs)

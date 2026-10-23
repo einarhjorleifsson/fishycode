@@ -1,6 +1,8 @@
 # 024 — Every source station accounted for: what the logbook merge keeps, drops, and why
 
-**status:** proposal — measured on the build of 2026-10-16, nothing built (2026-10-17); §6 asks answered 2026-10-23 (TODO 79)
+**status:** partly built — steps 1-3 coded and checked on a scratch store, step 4 (the build) waits for the next
+logbook rebuild (decision 194, 2026-10-23; TODO 79); measured on the build of 2026-10-16 (2026-10-17); §6 asks answered
+2026-10-23
 · **2026-10-17**
 · **see:** `curate/logbook.R`, decisions 023, 094, 123 and 124, TODO 77, 78 and 80
 

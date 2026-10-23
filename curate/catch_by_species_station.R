@@ -10,20 +10,11 @@
 # (the species code; the trail's `.sid` is the station). One row per (station, species) however many
 # conditions the logbook recorded.
 #
-# The logbook records a weight in the STATE the fish were landed in (`condition`: GUTT, UNGU, RELE), and
-# the whole-fish weight (`catch_whole`) only until 2022: fs_afladagbok fills `afli` for ~98 % of rows
-# thereafter NOT at all. Measured on the 1.39 M (station, species) rows adb shares with fs_afladagbok:
-# GUTT weight is 0.80 of the whole weight (5-95 % range 0.789-0.80), UNGU and RELE are 1.00.
-#   catch_round = catch_whole           where recorded                          basis "recorded"
-#               = catch / 0.8           GUTT, no whole weight                   basis "reconstructed"
-#               = catch                 UNGU, RELE, or the old afli schema      basis "recorded"
-#               = catch                 no condition at all (adb bycatch rows)  basis "synthesised"
-# The afli schema records whole weight: on the 167,320 (vessel, date, species) the afli and fs_afladagbok
-# logbooks share, afli equals fs's whole weight (`afli`) in 99.6 % of 166,713 comparable cases, and equals
-# the GUTT weight / 0.8 (median ratio 1.250) and the UNGU weight (1.000) otherwise (measured 2026-10-03).
-# `catch_recorded` is the sum as recorded (mixed states), `catch_released` the part in condition RELE
-# (already inside catch_round). The station's basis is the weakest of its rows: synthesised >
-# reconstructed > recorded.
+# The whole weight is calc_whole_weight()'s (R/whole_weight.R), the one copy of the rule, which the logbook merge's
+# fate table also uses (plan 024): GUTT / 0.8 where no whole weight is recorded, as recorded otherwise. Its columns
+# keep their names here: `catch_round` is the whole weight, `round_basis` its basis. `catch_recorded` is the sum as
+# recorded (mixed states), `catch_released` the part in condition RELE (already inside catch_round). The station's
+# basis is the weakest of its rows: synthesised > reconstructed > recorded.
 #
 # A duplicate twin (curate/corrections/logbook_twin.yml) has no rows here: its catch is its kept record's, entered
 # again, so a sum over this table counts it once. catch.parquet keeps every row.
@@ -37,24 +28,15 @@ dbExecute(con, sprintf("SET temp_directory = '%s'", spill))
 src <- fd_curated("logbook", "catch.parquet")
 stf <- fd_curated("logbook", "station.parquet")
 
-sql <- sprintf("
-  WITH r AS (
-    SELECT \".sid\", schema, sid, condition, catch,
-           CASE WHEN catch_whole IS NOT NULL THEN catch_whole
-                WHEN condition = 'GUTT' THEN catch / 0.8
-                ELSE catch END AS cr,
-           CASE WHEN catch_whole IS NOT NULL THEN 1
-                WHEN condition = 'GUTT' THEN 2
-                WHEN condition IS NULL AND schema <> 'afli' THEN 3
-                ELSE 1 END AS b
-    FROM read_parquet('%s') c
-    ANTI JOIN (SELECT \".sid\", schema FROM read_parquet('%s') WHERE twin = 'duplicate') d USING (\".sid\", schema))
-  SELECT \".sid\", schema, sid,
-         sum(catch) AS catch_recorded,
-         sum(cr) FILTER (WHERE condition = 'RELE') AS catch_released,
-         sum(cr) AS catch_round,
-         CASE max(b) WHEN 1 THEN 'recorded' WHEN 2 THEN 'reconstructed' ELSE 'synthesised' END AS round_basis
-  FROM r GROUP BY \".sid\", schema, sid", src, stf)
+duplicate <- dplyr::tbl(con, dplyr::sql(sprintf(
+  "SELECT \".sid\", schema FROM read_parquet('%s') WHERE twin = 'duplicate'", stf)))
+sql <- dplyr::tbl(con, dplyr::sql(sprintf("SELECT * FROM read_parquet('%s')", src))) |>
+  dplyr::anti_join(duplicate, by = c(".sid", "schema")) |>
+  calc_whole_weight(by = c(".sid", "schema", "sid"),
+                    catch_recorded = sum(catch, na.rm = TRUE),
+                    catch_released = sum(dplyr::if_else(condition == "RELE", whole_weight, NA), na.rm = TRUE)) |>
+  dplyr::rename(catch_round = whole_weight, round_basis = whole_weight_basis) |>
+  dbplyr::sql_render()
 
 n <- write_curated_sql(con, sql, fd_curated("logbook", "catch_by_species_station.parquet"),
                        inputs = c(src, stf), order_by = "schema, \".sid\", sid")

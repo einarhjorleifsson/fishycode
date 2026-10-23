@@ -41,7 +41,8 @@ merged_catch   <- read_parquet(fd_curated("logbook", "catch.parquet"))
 *Updated with AI assistance (Claude) on 2026-10-17: the overview, the source priority, the date bounds, the record
 counts, the timing table and its note on `t1` after `t4`, known limitation 2, and @sec-ers. On 2026-10-21: adb's
 coverage, priority and date bound (decision 160); and the times of fs_afladagbok's mobile gear, in why afli takes
-priority, the timing table and known limitation 3, measured on the build at de25239.*
+priority, the timing table and known limitation 3, measured on the build at de25239. On 2026-10-23:
+@sec-fate, what the merge keeps and drops (plan 024).*
 
 # Overview
 
@@ -247,6 +248,126 @@ Both are coerced to character in the merged output so the column type is
 uniform. Downstream joins should key on `(schema, .sid)` or `(schema, .tid)`
 to avoid cross-schema collisions.
 
+# What the merge keeps and drops {#sec-fate}
+
+*Drafted with AI assistance (Claude), 2026-10-23, not yet checked by a person (plan 024, decision 194).*
+
+A date bound or a tier drops a staging station, and until now nothing said so: the station was simply absent from
+`curated/logbook`. The merge now writes, beside its four tables, the fate of every staging station and trip it reads:
+
+- **`station_fate.parquet`**: one row per staging station of afli (both copies), fs_afladagbok, adb and aflaskeyti,
+  kept or not. `in_curated` says whether it is in `station.parquet`, and `reason` why not: `date_before`,
+  `date_after` or `date_missing` (its source's date bounds), or `vessel_day_held` (a tier above holds its
+  vessel-day). `held_by` names the tier whose stations hold a dropped station's vessel-day in the product, if one
+  does. `kg` is its catch as recorded, `kg_whole` its whole weight by `catch_by_species_station`'s rule
+  (`R/whole_weight.R`), with `kg_whole_basis`. On a held vessel-day, `day_match` says whether the whole weight the
+  source dropped there equals the whole weight kept (within 1 %), or which side holds more.
+- **`trip_fate.parquet`**: one row per staging trip, with its stations counted and kept, and its reason when
+  dropped: that of its stations, `mixed` when they went for different reasons, or `no_station` for a trip that never
+  had one, which a table of stations cannot see.
+
+The merge checks the account before it writes, and stops otherwise: one row per staging station and per trip; the
+stations and trips `in_curated` are exactly those written; per source, the staging kg is the kept kg plus the
+dropped, and the kept kg is `catch.parquet`'s; no station or trip is dropped by a rule the merge does not name. A
+date bound stands in for a tier where one source is a copy of another (adb before 2025-11-19, decision 160):
+`held_by` and `day_match` say whether such a vessel-day reached the product from another source, and as the same
+catch. Drops made before staging, by the adapters, are not here (plan 024, ask d).
+
+```{r}
+#| label: load-fate
+fate_file <- fd_path("curated", "logbook", "station_fate.parquet")
+has_fate  <- file.exists(fate_file)
+if (has_fate) {
+  station_fate <- read_parquet(fate_file) |>
+    mutate(source = if_else(schema == "afli", paste0("afli (", copy, ")"), schema))
+  trip_fate <- read_parquet(fd_path("curated", "logbook", "trip_fate.parquet"))
+}
+```
+
+```{r}
+#| label: fate-missing
+#| output: asis
+if (!has_fate) cat("*The fate tables are not in this build yet: they are written with the next rebuild of the",
+                   "logbook (TODO 79). Decision 194 holds their counts on a scratch build.*\n")
+```
+
+```{r}
+#| label: tbl-fate-reason
+#| tbl-cap: "Staging stations by source and what the merge did with them"
+#| eval: !expr has_fate
+#| include: !expr has_fate
+
+station_fate |>
+  mutate(reason = coalesce(reason, "kept"),
+         held_by = if_else(in_curated, "", coalesce(held_by, "none"))) |>
+  summarise(stations = n(), kt = sum(kg, na.rm = TRUE) / 1e6, .by = c(source, reason, held_by)) |>
+  arrange(source, reason != "kept", reason, held_by) |>
+  gt(groupname_col = "source") |>
+  fmt_number(columns = stations, decimals = 0, use_seps = TRUE) |>
+  fmt_number(columns = kt, decimals = 1, use_seps = TRUE) |>
+  cols_label(held_by = "vessel-day held by", kt = "kt as recorded")
+```
+
+```{r}
+#| label: tbl-fate-year
+#| tbl-cap: "Dropped stations by year: the rule, and the tier holding the vessel-day"
+#| eval: !expr has_fate
+#| include: !expr has_fate
+
+last_kept <- max(year(station_fate$date[station_fate$in_curated]), na.rm = TRUE)
+station_fate |>
+  filter(!in_curated) |>
+  mutate(yr   = year(date),
+         year = case_when(yr < 2019 ~ "before 2019", yr > last_kept ~ paste("after", last_kept),
+                          .default = as.character(yr)),
+         year = factor(year, c("before 2019", 2019:last_kept, paste("after", last_kept))),
+         drop = paste0(source, ", ", reason, ": ", coalesce(held_by, "not held"))) |>
+  count(year, drop) |>
+  arrange(drop) |>
+  pivot_wider(names_from = drop, values_from = n, values_fill = 0L) |>
+  arrange(year) |>
+  gt() |>
+  fmt_number(columns = -year, decimals = 0, use_seps = TRUE)
+```
+
+```{r}
+#| label: tbl-fate-day-match
+#| tbl-cap: "Held vessel-days: the whole weight a source dropped against the whole weight kept there"
+#| eval: !expr has_fate
+#| include: !expr has_fate
+
+station_fate |>
+  filter(!is.na(day_match)) |>
+  distinct(source, reason, held_by, vid, date, day_match) |>
+  count(source, reason, held_by, day_match) |>
+  pivot_wider(names_from = day_match, values_from = n, values_fill = 0L) |>
+  mutate(vessel_days = equal + held_more + dropped_more, equal_pct = 100 * equal / vessel_days) |>
+  relocate(vessel_days, .after = held_by) |>
+  gt() |>
+  fmt_number(columns = c(vessel_days, equal, held_more, dropped_more), decimals = 0, use_seps = TRUE) |>
+  fmt_number(columns = equal_pct, decimals = 1) |>
+  cols_label(held_by = "held by", vessel_days = "vessel-days", held_more = "kept more",
+             dropped_more = "dropped more", equal_pct = "equal (%)")
+```
+
+Both sides are counted row for row, duplicate twins included: twins are judged only on the merged tables
+(@sec-twins). A record entered twice that both copies of the e-logbook hold is therefore `equal`, and one entered
+twice in one source only shows as more catch on that side.
+
+```{r}
+#| label: tbl-fate-trips
+#| tbl-cap: "Staging trips by source and what the merge did with them"
+#| eval: !expr has_fate
+#| include: !expr has_fate
+
+trip_fate |>
+  mutate(reason = coalesce(reason, if_else(n_kept < n_station, "kept, some stations dropped", "kept"))) |>
+  count(schema, reason) |>
+  pivot_wider(names_from = schema, values_from = n, values_fill = 0L) |>
+  gt() |>
+  fmt_number(columns = -reason, decimals = 0, use_seps = TRUE)
+```
+
 # Timing quality
 
 Timing columns are in `fishing_sample`; `station` holds only the spatial and
@@ -308,7 +429,7 @@ class records a tow count rather than timestamps; effort for SDN is per
 setting. The `afli` FPO (traps) rate of ~46% reflects sparse soak-time
 recording in the legacy system.
 
-# Twin records
+# Twin records {#sec-twins}
 
 Some stations are one operation entered twice: the same vessel, the same t1–t4 and the
 same catch (`curate/corrections/logbook_twin.yml`, decision 094). In `fs_afladagbok`,
