@@ -21,7 +21,8 @@
 # overrides/ais_key_segments_reviewed.csv, an input of the segment table.
 #
 # d2 is a DATE and the last day of a stretch runs to its end; consumers join half-open on d2 + 1
-# (sources/stk/convert.R, curate/ais_ping_union.R).
+# (sources/stk/convert.R, curate/ais_ping_union.R), and a mid's last stretch, if d2_is_open, without end: SENTINEL is an
+# arbitrary open-end date, not an end (decision 183).
 
 library(dplyr)
 library(nanoparquet)

@@ -74,8 +74,12 @@ stk_raw <- stk_trail()
 stk_src <- function(YR) {
   union_all(stk_raw |> filter(year == YR),
             stk_raw |> filter(year != YR, year(time) == YR)) |>
-    # half-open on d2 + 1: d2 is a date, and a period's last day runs to its end (see sources/stk/convert.R)
-    inner_join(vid |> select(vid, mmsi, mid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1L),
+    # half-open on d2 + 1: d2 is a date, and a period's last day runs to its end; a mid's last stretch, if open
+    # (d2_is_open), has no end (see sources/stk/convert.R)
+    inner_join(vid |> select(vid, mmsi, mid, d1, d2, d2_is_open) |>
+                 group_by(mid) |> mutate(open = d2_is_open & d1 == max(d1, na.rm = TRUE)) |> ungroup() |>
+                 filter(!is.na(vid)) |>
+                 mutate(d2e = if_else(open, dplyr::sql("'infinity'::DATE"), d2 + 1L)),
                by = join_by(mid, time >= d1, time < d2e)) |>
     select(vid, mmsi, time, lon, lat, speed, heading)
 }

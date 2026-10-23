@@ -27,9 +27,16 @@ vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
 # each mid may map to different vessels over time as transponders are reused.
 stk_trail() |>
   # d2 is a DATE and a segment's last day runs to its end: half-open on d2 + 1, or every ping after 00:00 on
-  # the last day of a period falls between two periods and is lost
-  inner_join(vid |> select(vid, mmsi, mid, loid, glid, d1, d2) |> filter(!is.na(vid)) |> mutate(d2e = d2 + 1L),
-             by = join_by(mid, time >= d1, time < d2e)) |>
+  # the last day of a period falls between two periods and is lost. An open stretch (d2_is_open) has no end: its d2
+  # is an arbitrary open-end date, which as an end would drop every later ping (decision 183). Only a mid's last
+  # stretch is open; the flag is also on two stretches that a later one follows. d2e stays in the output as it was.
+  inner_join(vid |> select(vid, mmsi, mid, loid, glid, d1, d2, d2_is_open) |>
+               group_by(mid) |> mutate(open = d2_is_open & d1 == max(d1, na.rm = TRUE)) |> ungroup() |>
+               filter(!is.na(vid)) |>
+               mutate(d2e = d2 + 1L, .end = if_else(open, dplyr::sql("'infinity'::DATE"), d2e)) |>
+               select(-d2_is_open, -open),
+             by = join_by(mid, time >= d1, time < .end)) |>
+  select(-.end) |>
   mutate(year = year(time)) |>
   arrange(vid, time) |>
   group_by(year) |>
