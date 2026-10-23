@@ -2,7 +2,7 @@
 
 **status:** partly built — step 0 (2026-10-02) and step 4 (gear codes on the trail, decision 085); steps 1–2 not taken
 up (decision 093); step 3 (the last haul) not taken up, since §2d and §2k found no unclosed last haul (2026-10-23, Claude's audit, not checked by a person); ask (1) answered 2026-10-23 (decision 201: tows judged against `uv`'s dated regulation areas, which also give step 5 its
-baseline); measured 2026-10-23 (§2m: `uv` holds closures but not the trawl limits; a gillnet floor of 0.2 kn recommended); step 5 and the layer open (TODO 34) · **2026-10-02** · **see:** plan `010-ping-activity-link.md` (§2, §11), plan `004-behavioural-fishing-windows.md`,
+baseline); the gillnet floor measured 2026-10-23 (§2m: 0.2 kn recommended); step 5 and the layer open (TODO 34) · **2026-10-02** · **see:** plan `010-ping-activity-link.md` (§2, §11), plan `004-behavioural-fishing-windows.md`,
 `reference/gear/windows.R` (the gear `s1`/`s2`), `R/trail_sql.R` (`fishing`), `curate/station_window.R`; the exploratory post
 `fishyweb/blog/posts/trawl-footprint/index.qmd` (draft, not rendering).
 
@@ -196,27 +196,21 @@ l. **Vessel × gear for the stretch pairing, and over what period, 2026-10-14** 
      - Danish seine wants no shift until it has a phase model.
    - *Outcome* (maintainer, 2026-10-14, asking whether this beats the status quo): the vessel × gear shift is not taken up. The gain is agreement with the logbook, not accuracy, and does not pay for a table, a fallback and an exception. `fishing` tests the ±10 min speed instead (decision 093).
 
-m. **`uv`'s regulation areas against the recorded tows, and a gillnet floor, 2026-10-23** (decision 201's measurement; Claude (AI), read-only on the build of 2026-10-22 and
-   the `uv` dump of 2026-10-17, **not checked by a person**). Scripts, tables, the scratch layer and a README in `$FISHYDATA/archive/2026-10-todo34-uv-areas/`.
-   - *What `uv` holds.* `hnit` is ddmm.hh integers, west positive (the last two digits are hundredths of a minute: 3,319 latitudes end in 60-99; the areas' texts agree), in `hnit.id` order;
-     a draft overlay for plan 040 is in the folder. `uv` stopped in 2020 (last start 2020-09-15). Each of the 5,948 areas is in one outcome: not a towed-gear area 3,323, expired before 2007 2,025,
-     undated 101 (88 repealed with no end), unreadable 56, unjudged 30 (the text neither bans nor permits), used 413. Closed or open is free text, read by rule. Used, per gear: fish trawl 290
-     closed (221 real-time closures), 1 open (ended 2007-04-04); shrimp 51 / 2; nephrops 27 / 6 (the lobster areas of 188/2020); Danish seine 100 / 7. Vessel length or power is never a column:
-     it is in the text of 13 used areas, none for the fish trawl (the last, 362/2003, trawlers of 26 m or less, ended 2006). **Not in `uv`: the general trawl limits (the 12 nm line from the
-     baseline and the areas inside it opened to smaller trawlers), and anything after 2020-09-15.**
-   - *The tows* (57.6 M recorded tow fixes, gid 6, 7, 8, 11, each in one outcome): neither 95.9 %, suspect (in a closure with no condition) 0.57 %, in a closure with a condition 2.86 %,
-     in a closure and an open area 0.17 %, expected 0.53 %. Fish trawl: suspect 0.12 % in 2007-2019, 0.93 % in 2021-2026 (open-ended 959/2019 areas offshore, 34-52 vessels each: a rule
-     changed after 2020 that `uv` never got, more likely than violations). **The stand-in's population is not judged:** of 115,155 fish-trawl tow fixes within 5 km of the coast, 1,785 are in
-     a closure and none in an open area; in §2j's north-west box all 42,684 are in no area (14 % of the fish and shrimp trawl fixes there, as §2j found). 53 % are from vessels under 20 m.
-     The geometry holds where it can be tested: 93 % of nephrops tow fixes since 2020 lie in the lobster areas. Danish seine's 3.8 % suspect is mostly Faxaflói, whose seasonal exception for
-     vessels under 24 m did not build.
-   - *Gillnet floor* (gid 1-4, 22; the recorded hauls' ±10 min median, 5.25 M fixes): p01 0.16, p05 0.35, p10 0.48 kn (0.10 / 0.30 / 0.40 among those the flow calls fishing); p05 0.20-0.50
-     by year, lower since 2022. A floor of 0.2 kn loses 1.85 % of the fishing haul fixes and stops 97.8 % of the fishing fixes in port calls (92 k of 97 k h), 29 % of the soak and 23 % of
-     voyage-rule fishing on voyages without a haul; 10 of 289 vessels lose over a fifth of their hauls. At 0.3 kn: 6.0 %, 98.2 %, 34 %, 26 %, and 79 vessels.
-   - *Recommended* (Claude's, for the maintainer): this bears out decision 201's amendment (the layer from the coming shapefiles, `uv` as history). Before building, check that the
-     shapefiles hold what `uv` lacks: the trawl limits with their vessel classes and dates, the areas opened to smaller trawlers, the closures since 2020-09. Build the layer from them,
-     with `uv` as its 2007-2020 closure history and its polarity, conditions and repeal dates from a reviewed override (600 areas listed). Keep the 5 km stand-in until the layer exists,
-     and no trail flag from `uv` alone. The gillnet floor at 0.2 kn.
+m. **A gillnet speed floor from the recorded hauls, 2026-10-23** (decision 201; Claude (AI), read-only on the build of 2026-10-22, **not checked by a person**). Script, tables and a
+   README in `$FISHYDATA/archive/2026-10-todo34-uv-areas/`. The declared gillnet ranges (gid 1-4, 22) start at 0 kn, so a stopped gillnetter passes the speed test (decision 198).
+   - *Every gillnet fix in one class* (23,419,323 fixes in a gillnet window or on a gillnet voyage, 2007-2026; the account closes in every year; the recomputed ±10 min median reproduces
+     `fishing` and `fishing_flow` on every fix). Fishing today: 10,641,382 fixes, 876 k h. A floor can touch 10.6 M of them: recorded hauls at sea 3.54 M, other gillnet windows 2.18 M,
+     windows in a port call 344 k (97 k h), and the voyage rule's passes (no-haul voyages 3.52 M, soaks 630 k, hauling-like 283 k, after the last haul 80 k). Sets, fixes with no speed and
+     the voyage rule's fails cannot change.
+   - *The recorded hauls' median speed* (5.24 M fixes at sea): p01 0.16, p05 0.35, p10 0.48 kn; among those the flow calls fishing 0.10 / 0.30 / 0.40. p05 by year 0.20-0.50, lower since
+     2022 (0.25-0.32). Speeds step on STK's 0.1 kn grid.
+   - *Candidate floors* (share of today's fishing fixes stopped): at 0.2 kn the hauls lose 1.85 % (8.8 k of 249 k h) and 9 of 287 vessels over a fifth of theirs; 97.8 % of the port-call
+     fixes go (92 k h), 29 % of the soaks, 23 % of the no-haul voyages; 230 k of 876 k fishing hours in all. At 0.3 kn (near the 5th percentile decision 201 named): 6.0 %, 78 vessels, 98.3 %,
+     34 %, 26 %. At 0.1 kn: 1.2 %, 8 vessels, 96.5 %, 28 %, 23 %.
+   - *Recommended* (Claude's, for the maintainer): **0.2 kn** for gid 1-4 and 22, its basis the recorded hauls. Above it the haul loss triples for half a point more of the port fixes. A rule
+     that no fix in a port call is fishing would remove those whatever their speed: a separate choice.
+   - *Note:* `uv`'s regulation areas were measured the same morning before the task was narrowed (an inventory, a scratch layer, the tows scored). They are kept as a note in the
+     folder's `uv_note/`, a basis for nothing; `uv`'s holdings are recorded in decision 201.
 
 ## 3. Proposal
 
@@ -250,14 +244,11 @@ DAG, and here the range comes only from recorded windows, never from windows the
 4. **Keep fish, nephrops and shrimp apart** everywhere (`gid` onto the trail so no join is needed downstream), and carry the landing's gear beside the logbook's as a **check, never an overwrite**
    (`gid_landing`, `gear_agrees`): §2j shows 93–99 % agreement, so the disagreeing 1–7 % is a short list to look at, not a population to relabel.
 5. **12 mile limit.** Needs a legal line (baselines), which is not in `$FISHYDATA`. Until then a 22.2 km buffer on the Natural Earth
-   coast is an *approximation* and a lower bound (the legal line lies further out across fjords and bays). `uv` does not hold it either
-   (§2m, 2026-10-23).
+   coast is an *approximation* and a lower bound (the legal line lies further out across fjords and bays).
 
 ## 4. Open, for the maintainer
 
 - Whether fish-trawl tows of small vessels near the coast (§2j) are permitted, so the flag can say "suspect" or "expected"; and a fjord polygon, since 5 km from the coast is a crude stand-in.
-  *Answered by decision 201 (the layer from the coming shapefiles, `uv` as history); measured in §2m: `uv` can say suspect for 2007-2020 but holds no area opened to the fish trawl
-  and no trawl limits, so what is left to ask is the gillnet floor's value (2026-10-23).*
 - Where to get the baseline / 12 nm polygon (`staging/aux/`), and whether tows of a fish trawl inside it are errors in the logbook gear
   or illegal fishing: that is not ours to label.
 - How far down the hierarchy to go (gear and target, size class, vessel), per year or not; the quantiles.

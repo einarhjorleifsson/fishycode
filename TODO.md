@@ -132,11 +132,10 @@ Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in reco
 
 **Asked of the maintainer:** (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in). The same baseline serves the plan's step 5, the 12-mile limit. **Answered:** (2) the declared ranges stay, and `fishing` tests the ±10 min median speed instead of a vessel-shifted range (decision 093); (3) the gear codes on the trail (decision 085).
 
-**Measured 2026-10-23** (plan 012 §2m; Claude's, not checked by a person; `$FISHYDATA/archive/2026-10-todo34-uv-areas/`):
-`uv` holds closures, not the trawl limits. It has no area opened to the fish trawl after 2007 and nothing after
-2020-09-15, and of 115,155 fish-trawl tow fixes within 5 km of the coast it judges 1,785, none as expected. It can be
-the shapefiles' 2007-2020 closure history, with its polarity read by a person (600 areas listed). The gillnet floor
-(decision 198's 0 kn): 0.2 kn recommended; it loses 1.9 % of fishing haul fixes and stops 98 % of those in port calls.
+**The gillnet floor, measured 2026-10-23** (plan 012 §2m; Claude's, not checked by a person;
+`$FISHYDATA/archive/2026-10-todo34-uv-areas/`): every gillnet fix in one class; the recorded hauls' p01/p05/p10 are
+0.16/0.35/0.48 kn. 0.2 kn recommended: it loses 1.85 % of the fishing haul fixes and stops 98 % of the fishing fixes
+in port calls and 23-29 % of the voyage rule's on soaks and haul-less voyages. A `uv` note is kept in `uv_note/`.
 
 The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen; the end looks late on some last tows, not early), and the plan's step 3 is marked not taken up (2026-10-23, Claude's audit, not checked by a person).
 
