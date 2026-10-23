@@ -1,7 +1,7 @@
 # 015 — The ICES VMS datacall from the curated trail
 
-**status:** proposal — nothing built; effort and catch per fix have been built since (decisions 101–102), so §4 c and e
-want restating · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
+**status:** proposal — nothing built; effort and catch per fix have been built since (decisions 101–102); §4 e-h
+answered 2026-10-23 (decision 202), a-d and i held for a metier study · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
 (`rb_assign_effort`, `rb_share_catch`), decision 095
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
@@ -95,6 +95,12 @@ them. The choice is **§4 i**.
   `R/trail_sql.R` / `ramb::rb_assign_record()`, so the trail itself improves, but it is a trail rebuild. For `LE`,
   FishingDays sums to one per vessel-day either way. Only where the day's catch and position fall differs.
   Recommended: (ii) for the trail, (i) in `LE` for comparability with 2025.
+
+**Answered 2026-10-23** (the maintainer, decision 202): e and f, the curated catch and the trail's kW with its basis, 2025's
+equal shares beside them for the comparison; g, a stable vid → `ISnnnn` key, never renumbered; h, by hand per delivery
+into `$FISHYDATA/exports/ices_vms_datacall/<call year>/` with a manifest. **Held:** a, the metier 6 (2025's lookup was
+typed by hand, the mesh is unreliable, and MFRI's RDBES uploads assign metiers too: a read-only study first), and with
+it b, c, d and i.
 
 ## 5. Steps
 
