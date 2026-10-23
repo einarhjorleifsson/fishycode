@@ -130,6 +130,15 @@ lookup and every number: `$FISHYDATA/archive/2026-10-metier6/README.md`.*
   gear: 2-3 % of bottom trawl (10-80 mm), 34 % of fs shrimp trawls (135 mm), 4-19 % of nets (10 and 20 mm
   placeholders). The class changes within a trip on ≤ 1.7 % of trawl trips, 7-13 % of cod-net trips. Where the
   logbook's and the landing's gear differ, the mesh mostly sides with one (trawl logged, shrimp landed, fs: 38 mm).
+- **The official lists** (added the same day, on the maintainer's notes that icesVocab "has calls to check for
+  metiers" and that these lists "may not cover what is in practice in Iceland"). The datacall's scripts
+  (`ices-eg/ICES-VMS-and-Logbook-Data-Call`, `main` and the 2026 branch) check no area: `LE_MET` against
+  `icesVocab::getCodeList("Metier6_FishingActivity")` and against the RCG list pooled over its regions, and all of
+  2025's codes pass both. The area check is `icesVocab::getCodeDetail()`, a code's `ICES_Area` parents, which equal
+  rdbes's list area for area. Icelandic practice the codes leave out in Iceland's areas: twin trawls are allowed
+  (`OTT`) but the gear codes do not carry them, though the logbooks record two or more trawls on about 8.4 M fishing
+  fixes (most Nephrops trawling); triple rigs (`OTP`, 147 k fixes), the Nephrops panels, sea cucumber and sea urchin
+  dredges (`DRB_DES` is for other areas), seaweed harvesting (21 k fixes) and diving have no code there.
 - **So** where a gear's regulation fixes the class (bottom trawl, seine, Nephrops, shrimp), every legal mesh lies in
   one class and the recorded mesh only confirms it; it decides only where the regulation leaves the class open: nets
   (120-219 or ≥ 220 mm; 31.5 % of cod-net fixes ≥ 220), pelagic trawl, purse seine, and Nephrops if 100 mm counts.
@@ -159,10 +168,14 @@ fishing fix in 27.5.a.2; the target from the gear code alone.
   of its fixes at 100 mm or more (bottom trawl 0.17 %, seine 0.09 %).
 - **a2.** Targets the gear code cannot give: dredges (`DRB_MOL`, though sea cucumber is no mollusc), pelagic trawls of
   100 mm or more (`OTM_DEF`, oceanic redfish, 1.4-3.5 % of pelagic fixes), traps by their catch.
-- **a3.** Selection devices: afli records a 22 mm grid on 75 % of shrimp stations and fs a bycatch grid on 98 %, and
-  `OTB_CRU_32-69_2_22` is allowed in 27.5.a; the Nephrops panels have no allowed code there. `0_0` for the first
-  delivery?
-- **a4.** Which allowed list: rdbes's (analysed in Oracle on 2025-10-23) or the call's own.
+- **a3.** Rigging and selection devices: twin trawls as `OTT` from `tvo_veidarf` (afli 0/1, fs the number of trawls;
+  the coding read from the values); afli records a 22 mm grid on 75 % of shrimp stations and fs a bycatch grid on
+  98 %, and `OTB_CRU_32-69_2_22` is allowed in 27.5.a; the Nephrops panels have no allowed code there. `OTB` and `0_0`
+  for the first delivery?
+- **a4.** Which list decides, and what goes out where Icelandic practice has no code in its area: the nearest code
+  the area allows with the practice in the basis, a code the datacall's own checks accept though the area does not
+  (`DRB_DES`, `HMS_SWD`), or a request to ICES for the codes? rdbes's copy of the area list is of 2025-10-23; the
+  vocabulary's is live.
 - **a5.** A dated regulation table in `reference/gear` (gear, target, legal mesh, from, to, the regulation), and
   afli's codend mesh carried into `g_mesh` (or `gear_part`, plan 020).
 
