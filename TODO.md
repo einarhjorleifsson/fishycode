@@ -140,17 +140,18 @@ The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen;
 ---
 
 ## 49. AIS as a qualifier where the logbook or the landings are missing
-**status:** open · **needs: maintainer** — whether to qualify them, and the classes · **see:** plan 014 §1, decision 103
+**status:** open · **see:** plan 014 §1, decisions 103 and 200, TODO 86
 
 Preprocessing reads no AIS (decision 075), but some AIS tracks may be truly fishing with no logbook or even landing
-behind them. Counted (plan 013 rows 5-6; decision 103): voyages with neither are 29-43 % a year since 2017, most by
-vessels that land nothing all year; `curated/check/vessel_activity.parquet` suggests a class for each such
-vessel-year (whale watching and aquaculture explain 69,198 of 108,505 such voyages in 2021-2025). The flow gives a
-voyage with neither no gear, so no speed range and no fishing: whether it should qualify the rest is the
-maintainer's.
+behind them. Since 2017, 50,329 of fishing vessels' 509,230 voyages have neither (4.1 M hours), and every voyage of the
+vessels that land nothing (whale watching 76,802, aquaculture service 52,111, other 78,587); today such a voyage's fixes
+come out not fishing with no reason. Decided 2026-10-23 (decision 200): a fishing vessel's voyage with no record is
+undecided (fishing NA, reason "no record") until TODO 86 reads the gear from the track; whale watching and
+aquaculture service are classes by rule from the port lists, not fishing, basis `derived`; "other" is sorted by the
+register's usage class (decision 119, plan 028) and the rest listed for a person. Built with the AIS batch.
 
-**check:** a decision says whether the flow qualifies voyages with neither a logbook trip nor a landing, and the
-suggested classes of `vessel_activity` are confirmed through an override or dropped.
+**check:** the trail's fishing columns say undecided with a reason on fishing vessels' voyages with no record; the two
+classes named on their vessels' voyages; "other" sorted, its remainder listed.
 
 ## 62. Foreign vessels' logbooks for Icelandic waters
 **status:** in progress · **needs: maintainer** — where the 2019-2025 ones are: Norway's open ERS data for the
