@@ -251,6 +251,11 @@ repos.
 - **Base R pipe** `|>`, not `%>%`.
 - **Date-times are UTC.** Both targets projects set `TZ=UTC`: the dumps hold plain TIMESTAMPs in UTC, which
   `nanoparquet::read_parquet()` would otherwise read in the session's zone (decision 111).
+- **An open end is NA in a written table** (maintainer, decision 184). A far date may stand in for it inside a
+  computation only, turned back to NA before writing (`reference/vessels/vessel_register.R`). Never a near date. Older
+  tables keep theirs: the STK key's and the MMSI periods' 2028-12-24 is an arbitrary open-end date, which every reader
+  treats as open (decision 183), and `vessel_sign` and `vessel_class` write 2099-12-31. A source's own end is kept as
+  given.
 - **`duckdbfs` for parquet I/O.** Never `library(arrow)` in a pipeline script —
   arrow and nanoparquet write `TIMESTAMP WITH TIME ZONE`, which DuckDB cannot
   subtract. `duckdbfs::write_dataset` writes plain `TIMESTAMP`.

@@ -1238,7 +1238,7 @@ with an alias for a release, as in decision 147; then fishycode's columns and AG
 decision.
 
 ## 129. The crosswalk ends an open STK stretch on 2028-12-25
-**status:** open · **see:** decision 183, `curate/vessel_ais_link.R`
+**status:** open · **see:** decisions 183, 184, `curate/vessel_ais_link.R`
 
 `vessel_ais_link.R` copies each stretch of the STK key with `t2 = day_after(d2)`, so an open stretch (`d2_is_open`)
 ends 2028-12-25 00:00 in `curated/vessel/vessel_ais_link.parquet`, where the crosswalk's own convention is NA for open.
