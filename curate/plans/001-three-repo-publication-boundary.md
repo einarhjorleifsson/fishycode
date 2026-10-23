@@ -1,8 +1,8 @@
 # 001 — the three-repo publication boundary
 
 **Status:** proposal — §4 done (fishycode public since 2026-10-16); §3 answered (decision 118, and plan 033's ask c
-on 2026-10-19: rendered figures and tables may be published, data files may not); §5 answered but for where
-`fishydata` lives and its backup, which waits on the maintainer (TODO 15). `fishyweb`'s role passes to the book of
+on 2026-10-19: rendered figures and tables may be published, data files may not); §5 answered: `fishydata` stays
+on this laptop for now, and its essentials are to be copied to MFRI once IT names the place (decision 187, TODO 15). `fishyweb`'s role passes to the book of
 plan 033. **Drafted:** 2026-09-22, from the maintainer's statement of intent.
 
 **Measured vs assumed.** The repository facts below — remote state, commit counts, the
@@ -112,6 +112,8 @@ Measured 2026-09-22:
 
 - Where does `fishydata` actually live once it leaves this laptop, and does that home
   have a backup story? 404 GB.
+  *Answered 2026-10-23 (decision 187): on this laptop for now (552 GB by then); the backup is `raw/`, `archive/`, the
+  `once` outputs and `exports/` (about 230 GB) copied to MFRI, where IT says (TODO 15, blocked on that).*
 - Does `fishyweb` read `fishydata` directly, or only pre-rendered extracts committed to
   it? The answer determines whether the disclosure rule is enforced once at export or
   on every page build.

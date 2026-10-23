@@ -29,24 +29,18 @@ does it twice.
 
 ---
 
-## 15. The three-repo publication boundary
-**status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
+## 15. `fishydata`'s backup: the essentials to MFRI, where IT says
+**status:** blocked · **needs: maintainer** — a talk with MFRI's IT about where the copy goes · **see:**
+`curate/plans/001-three-repo-publication-boundary.md` §5, decision 187
 
-`fishycode` public on GitHub, `fishydata` never public; the open web page that was to be `fishyweb` is now the book of
-plan 033. The design, the evidence and the open questions are in plan 001. **Answered 2026-10-16 (§4):** fishycode is
-public (`github.com/einarhjorleifsson/fishycode`), with its history as it was, so that history is now fixed; the
-Mapbox token in it is revoked (maintainer) and out of the working tree. **§3 answered:** the three-vessel rule applies
-only to the ICES VMS datacall (maintainer, 2026-10-17), and on 2026-10-19 (plan 033 ask c) rendered figures and tables
-may be published but no data file, an interactive widget counts as data, and no personal data. **§5 answered in
-part:** the book renders from `$FISHYDATA` on this machine and only its pages are published; ramb is public.
+The rest of plan 001 is answered (decisions 118, 187; plan 033 ask c). The maintainer, 2026-10-23: the store stays on
+this laptop for now, and its backup will be the essentials copied to MFRI: `raw/`, `archive/`, the `once` outputs and
+`exports/`, about 230 GB of 552 (`staging/` and `curated/` rebuild from them). Until IT names the place nothing backs
+it up; the Mac has no Time Machine destination. The home is revisited when free disk falls below about 50 GB (112 GB
+on 2026-10-23). Decision 018's layout is kept and documented (`docs/pipeline.qmd`).
 
-**Still asked of the maintainer (§5):** where `fishydata` lives once it leaves this laptop, and whether it is backed
-up (404 GB). `fishyweb` has local commits that wait for a remote (27b35ff, the plan 014 names; from TODO 52), now
-settled by plan 033 step 5. Also the maintainer's, left by decision 018 and carried nowhere: one table, one directory,
-since `open_dataset()` on a layer directory of the sweep silently stacks unrelated tables (Claude's audit of
-2026-10-23, not checked by a person).
-
-**check:** the questions of plan 001 §3 and §5 are answered in the plan, and decision 018's layout is decided.
+**check:** the essentials are copied on a schedule to the place IT names, the first copy is verified file by file,
+and plan 001 §5 says where.
 
 ---
 

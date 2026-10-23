@@ -10,6 +10,12 @@ correct them, using what the other sources say. Data move through three layers:
 - **staging:** each source tidied into a common shape, still one source at a time.
 - **curated:** the sources merged, linked and corrected. This is the product.
 
+**Open one table at a time.** Each table is a file of its own (`curated/logbook/trip.parquet`) or, when it is
+partitioned, a directory of its own (`curated/ais/trail/`). A layer directory such as `curated/logbook/` holds several
+unrelated tables side by side. Opened whole (`open_dataset("curated/logbook")`), it does not fail: it stacks them under
+the first file's columns and returns a plausible table that is wrong. The data dictionary (`docs/data-dict.yaml`) names
+each table's path.
+
 Below are the steps in the order the data flow through them. The exact build order, and
 which script does what, is in `_targets.R`.
 
