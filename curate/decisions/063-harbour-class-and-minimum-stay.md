@@ -3,6 +3,10 @@
 *2026-10-01. TODO 33 started; plan 011 §3.6. The class table is built; the minimum stay per class is built as a parameter and
 tested; the default is unchanged (4 h for all), so `curated/ais/harbour_stay` and the voyages are as in decision 061.*
 
+*Superseded, noted 2026-10-23 from Claude's audit of the decision records (not yet checked by a person): decision 074
+(the maintainer, 2026-10-09) gives harbours no class and one minimum stay for all, and decision 077 (step 3b) built it:
+`harbour_class` removed, one 2 h minimum. Kept for the reasoning and the measurements.*
+
 ## What was built
 
 `reference/ports/harbour_class.R` → `curated/reference/harbour_class.parquet` (target `harbour_class`): one row per `einar`

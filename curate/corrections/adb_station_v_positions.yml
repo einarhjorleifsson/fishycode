@@ -1,10 +1,11 @@
 id: adb_station_v_positions
 title: Oracle's view adb.station_v reads the e-logbook's six-digit positions as ddmm.hh; the digits are ddmmss
 status: >-
-  implemented 2026-10-22 (decision 165), not built: sources/adb/convert.R reads the table adb.fishing_station through
+  implemented 2026-10-22 (decision 165) and built the same day in the rebuild of decision 180 (adb in staging and its
+  88,464 stations in the logbook changed, as expected): sources/adb/convert.R reads the table adb.fishing_station through
   R/logbook_position.R instead of the view. A scratch run of the adapter, adb_vs_fs_afladagbok.R and curate/logbook.R
-  gave the counts below. The rebuild (adb and everything after it) is the maintainer's call. All numbers are Claude's,
-  measured on the dump of the adb schema, not checked by a person.
+  gave the counts below. All numbers are Claude's, measured on the dump of the adb schema, not checked by a person; the
+  status was brought up to date on 2026-10-23 from Claude's audit of the record.
 applies_to:
   - staging/adb/station.parquet            # lat1, lon1, lat2, lon2 decoded from the table; z1, z2 the table's fathoms
   - curated/logbook/station.parquet        # adb rows: positions; z1_raw, z2_raw now fathoms, z1_basis, z2_basis "reconstructed"

@@ -1,11 +1,16 @@
 id: station_time_whole_day
 title: stations with no recorded fishing times are given a whole-day t1/t2 window, unflagged
-status: open - declared and located in code, repair decided, NOT implemented
+status: >-
+  repaired in this repo's own producer, as decided: curate/station_window.R (plan 010, built into the trail by
+  decision 065) gives a station with no usable times a `day` window with win_basis "synthesised", one row per station
+  (no aggregation), and the trail carries win_basis. The build of 2026-10-22 holds 2,437,871 day windows, all
+  synthesised (counted 2026-10-23 by Claude in an audit of the record, not checked by a person). station-for-ais.parquet
+  below is fishyweb's, never built here.
 applies_to:
   - curated/logbook/station-for-ais.parquet   (t1, t2)   -- no producer in this repo yet; see curate/plans/002-the-last-mile.md
   - the enriched ping table, which inherits t1/t2 from it
-affects_rows: unmeasured - needs $FISHYDATA, which was unset when this was written
-implementation: none yet
+affects_rows: 2,437,871 day windows in curated/logbook/station_window.parquet (build of 2026-10-22; counted 2026-10-23); unmeasured when this was written
+implementation: curate/station_window.R (plan 010), not a corrections/ script
 discovered: 2026-09-22
 
 origin: >-

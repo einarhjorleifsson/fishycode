@@ -4,6 +4,10 @@
 exists, use that"). Written by Claude (AI-assisted). Measured read-only on staging; tested by running the merge
 against a scratch `$FISHYDATA`, and nothing under `$FISHYDATA` was written. Not built; that is TODO 77's build.*
 
+*Floor superseded 2026-10-21 by decision 160 (noted 2026-10-23 from Claude's audit of the decision records, not yet
+checked by a person): `ADB_DATE_MIN` is 2025-11-19, the day fs_afladagbok's dump starts to thin, no longer
+`FS_DATE_MIN`. From that day this record's vessel-day rule stands.*
+
 ## What was wrong
 
 `curate/logbook.R` read adb only from `ADB_DATE_MIN` = `FS_DATE_MAX` + 1 = 2026-01-01, on the ground that

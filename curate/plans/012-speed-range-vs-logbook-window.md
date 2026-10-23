@@ -1,7 +1,7 @@
 # 012 — Speed range and the logbook time window: which one defines "fishing"?
 
 **status:** partly built — step 0 (2026-10-02) and step 4 (gear codes on the trail, decision 085); steps 1–2 not taken
-up (decision 093); step 3 (the last haul), step 5 (12 nm, needs a baseline) and ask (1) open (TODO 34) · **2026-10-02** · **see:** plan `010-ping-activity-link.md` (§2, §11), plan `004-behavioural-fishing-windows.md`,
+up (decision 093); step 3 (the last haul) not taken up, since §2d and §2k found no unclosed last haul (2026-10-23, Claude's audit, not checked by a person); step 5 (12 nm, needs a baseline) and ask (1) open (TODO 34) · **2026-10-02** · **see:** plan `010-ping-activity-link.md` (§2, §11), plan `004-behavioural-fishing-windows.md`,
 `reference/gear/windows.R` (the gear `s1`/`s2`), `R/trail_sql.R` (`fishing`), `curate/station_window.R`; the exploratory post
 `fishyweb/blog/posts/trawl-footprint/index.qmd` (draft, not rendering).
 
@@ -222,7 +222,8 @@ DAG, and here the range comes only from recorded windows, never from windows the
    (`trail_match`, the docs) is rerun in full; the maintainer has accepted that.
 3. **Test the window by the speed.** For each tow, run length of towing speed just outside the recorded ends. Compare last tows with
    others (§2d). If the maintainer's hypothesis holds the last tow's speed run extends past its end; the response is a flagged
-   extension (`win_basis = "extended"`), never an overwrite.
+   extension (`win_basis = "extended"`), never an overwrite. *Not taken up (2026-10-23, Claude's audit, not checked by a
+   person): §2d and §2k already answer it; no unclosed last haul is seen, and the end looks late on some last tows.*
 4. **Keep fish, nephrops and shrimp apart** everywhere (`gid` onto the trail so no join is needed downstream), and carry the landing's gear beside the logbook's as a **check, never an overwrite**
    (`gid_landing`, `gear_agrees`): §2j shows 93–99 % agreement, so the disagreeing 1–7 % is a short list to look at, not a population to relabel.
 5. **12 mile limit.** Needs a legal line (baselines), which is not in `$FISHYDATA`. Until then a 22.2 km buffer on the Natural Earth

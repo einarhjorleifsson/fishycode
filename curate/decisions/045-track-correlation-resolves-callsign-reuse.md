@@ -2,6 +2,11 @@
 
 *2026-09-28. Extends decision 044 and `curate/corrections/ais_key_callsign_reuse.yml`.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). The `TFRA` anomaly
+below is not a bug. Decision 050 placed mid 101892's 2007-2013 stretch on vid 1511 by its own logbook stations and
+landings; the call sign TFRA is the mid's label, carried by 1511 in 2017-2021 (register), and vid 159 holds TFRA from
+2021-10.*
+
 ## Method
 
 Decision 044 found 18 vids with real STK mobile-ids sharing their call sign,

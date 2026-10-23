@@ -350,7 +350,7 @@ here:
 - fishycode is already public, so the source is no more exposed than `docs/` is today. `_book/` is added to
   `.gitignore` beside `_freeze/` and `_site/` (step 2).
 
-`fishyweb` gives its five real pages to the book (step 4). Its unpushed commit and untracked note are settled, and it
+`fishyweb` gives its five real pages to the book (step 5). Its unpushed commit and untracked note are settled, and it
 is archived read-only, as `kaenugardr` was (decision 006). The open web page of plan 001 becomes the book. Plan 002 and
 TODO 16 are closed or redirected in that commit.
 

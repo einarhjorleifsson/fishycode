@@ -1,6 +1,6 @@
 id: aflaskeyti_coordinates
 title: dw_aflaskeyti's latitude and longitude columns are swapped on every row
-status: implemented 2026-10-17, not built (plan 026, built with TODO 77)
+status: implemented 2026-10-17 (plan 026), built 2026-10-17 with the logbook half of the rebuild (decision 127) and on the fixes with the AIS half (decision 129); noted 2026-10-23 from Claude's audit of the record, not checked by a person
 applies_to:
   - staging/aflaskeyti/station.parquet          (lon1, lat1, lon2, lat2 as Oracle names them)
   - staging/aflaskeyti/coordinates.parquet      (new: .sid, lon1, lat1, lon2, lat2, lon1_raw, lat1_raw, lon2_raw, lat2_raw, lon1_basis, lon2_basis, coord_flag)

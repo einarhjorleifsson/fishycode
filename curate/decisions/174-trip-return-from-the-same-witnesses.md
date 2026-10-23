@@ -5,6 +5,11 @@ below STK's, "why have different approach for T1, pid1 and T2, pid2?". Written b
 scratch run are Claude's and have not been checked by a person. Not built. Extends decision 173; its table is renamed
 `trip_reconciled`.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). Built 2026-10-22 in
+decision 180. As at the departure (decision 173), the `ais` witness is the one voyage `trip_voyage` links: for a trip
+that spans several voyages, its AIS `T2` is that voyage's end, not the trip's. Decision 155 counted 13,084 trips with
+timed stations in two or more voyages (TODO 90, TODO 101).*
+
 ## Why one approach
 
 The only argument for a different ranking was that a logbook's return may be written before the trip ends

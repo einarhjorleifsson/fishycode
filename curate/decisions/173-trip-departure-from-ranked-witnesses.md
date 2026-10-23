@@ -10,6 +10,12 @@ He added that the quota system's records matter beyond the departure:
 the scratch run are Claude's and have not been checked by a person. Not built. The witnesses are measured in
 decision 172.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). Built 2026-10-22 in
+decision 180. The `ais` witness is the one voyage `trip_voyage` links, the one the trip overlaps most: for a trip that
+spans several voyages, its AIS `T1` (and `T2`, decision 174) are that voyage's bounds, not the trip's. Decision 155
+counted 13,084 trips with timed stations in two or more voyages. The many-to-many link is TODO 90 (plan 031 ask f)
+and the first item of TODO 101.*
+
 ## Built in code
 
 - **ramb 2026.10.22.1, `rb_add_trip_time()`** (step 1, a builder). It is the step `docs/one_flow.qmd` planned as

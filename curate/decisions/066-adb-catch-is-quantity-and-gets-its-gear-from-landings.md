@@ -4,6 +4,11 @@
 decision 154: adb's code is the old code, read through adb's own table, and the landing's gear wins where it names
 one.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). "`catch_round` for
+afli is therefore `recorded`" below does not hold: on gutted items afli's `afli.afli` holds round(gutted × 1.25), a
+computed whole weight, and the weight as logged and its state are in the message the logbook sent (TODO 114, parked
+for plan 037).*
+
 ## Found
 
 - adb's `weight` is fs_afladagbok's `afli` (whole-fish weight) and `quantity` is fs's `magn` (weight in the state `condition`/`astand` names): equal on 100 % of the

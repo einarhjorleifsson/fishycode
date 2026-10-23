@@ -5,6 +5,10 @@ by Claude (AI-assisted), run against `$FISHYDATA` as it stands; nothing was writ
 it. Scratch scripts were not kept — the numbers below are the record. 2026-10-14: `~/stasi/hreidar` moved into `raw/external/hreidar/` (plan 016;
 the two copies were byte-identical); the old path is a symlink to it, for `fishydata_2024-2026`'s script that reads it.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). Finding 2 is fixed:
+since decision 144 (2026-10-18), `registry.R` takes `yh1`/`yh2` from the ship register's history of plan 028, the
+first and last year on the register, no longer from Hreiðar's `Skskr.nr.`.*
+
 ## Finding 1 — the workbook is already in the pipeline
 
 `raw/external/hreidar/data-raw/HREIDAR_Islensk_skip.xlsx` is byte-identical (md5

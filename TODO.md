@@ -67,21 +67,23 @@ part:** the book renders from `$FISHYDATA` on this machine and only its pages ar
 
 **Still asked of the maintainer (§5):** where `fishydata` lives once it leaves this laptop, and whether it is backed
 up (404 GB). `fishyweb` has local commits that wait for a remote (27b35ff, the plan 014 names; from TODO 52), now
-settled by plan 033 step 4.
+settled by plan 033 step 5. Also the maintainer's, left by decision 018 and carried nowhere: one table, one directory,
+since `open_dataset()` on a layer directory of the sweep silently stacks unrelated tables (Claude's audit of
+2026-10-23, not checked by a person).
 
-**check:** the questions of plan 001 §3 and §5 are answered in the plan.
+**check:** the questions of plan 001 §3 and §5 are answered in the plan, and decision 018's layout is decided.
 
 ---
 
 ## 16. `~/stasi/fishyweb` — port the last mile
-**status:** open · **see:** `curate/plans/002-the-last-mile.md`, plan 033 step 4, items 15 and 94
+**status:** open · **see:** `curate/plans/002-the-last-mile.md`, plan 033 step 5, items 15 and 94
 
 `fishyweb` was to be the third repo of plan 001, keeping its 22 `ramb/` posts (maintainer, 2026-09-22). Since
 2026-10-19 its role passes to the book of plan 033: its five real pages move into `docs/`, its 26 outlines are dropped,
 and it is archived read-only. The disclosure rule this item waited on is answered (item 15, plan 033 ask c). The posts
 of `~/stasi/fishyweb_2026-09-24` are sources for chapters, read against ramb's present names.
 
-**check:** plan 033 step 4 done: fishyweb's five pages in the book and fishyweb archived; plan 002 closed or
+**check:** plan 033 step 5 done: fishyweb's five pages in the book and fishyweb archived; plan 002 closed or
 redirected.
 
 ---
@@ -111,9 +113,8 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075
 
 The first redo is decision 128 (2026-10-17): SKB as vid 100000 + n, MMSIs broadcast after their window, the coverage
-fills and a boundary override for mid 108982. The rest waits for the next one. For each list Claude drafts the
-witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter
-`overrides/`:
+fills and a boundary override for mid 108982; the rest waits for this one. For each list Claude drafts the witnesses and
+a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter `overrides/`:
 - the audit's 426 discrepancy rows on 254 mids, the 1,051 rows no witness reaches, and `ais_key_resolution`'s
   proposals (decision 128);
 - the 32 stretches filled with a neighbour outside its registered lifetime (34,514 pings, 12 before 2009), on which
@@ -129,15 +130,16 @@ witnesses and a proposed verdict per row, and the maintainer confirms (plan 022 
   are measured whole in decision 161 (TODO 116).
 
 The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
-proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a
-rule admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest
-`vessel_hist_v` date or `yh1` (the first year on the register since decision 144): the latest row's is a
-re-registration, which made most list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's
-`tar_outdated()` lists the key and its checks again. That is the cycle, not a reason to build: the key changes only here.
-
-The annual register's matrix parse is fixed in code, not yet in data: build years and a legend entry had been read
-as vids (22 rows, 2018-2022). The redo invalidates `skipaskra` by hand, since `targets` cannot see the edit; in a
-scratch run 6,891 pings on 3 mids change vid (`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`).
+proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a rule
+admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest `vessel_hist_v`
+date or `yh1` (the first year on the register since decision 144): the latest row's is a re-registration, which made most
+list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's `tar_outdated()` lists the key and
+its checks again. That is the cycle, not a reason to build: the key changes only here. The annual register's matrix parse
+is fixed in code, not yet in data: build years and a legend entry had been read as vids (22 rows, 2018-2022). The redo
+invalidates `skipaskra` by hand, since `targets` cannot see the edit; in a scratch run 6,891 pings on 3 mids change vid
+(`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`). Also for the redo (Claude's audit of 2026-10-23, not checked by
+a person): the register's call signs and `yh2` NA in the key (decisions 136, 142, 144); decision 047's W2 scores logbook
+positions against the track (decision 156's rule), and W3 learns its own hid → pid crosswalk beside `stk_hid_pid`.
 
 **check:** a decision record states the redo; every row of each list is resolved through `overrides/` or carries a
 stated reason; `ais_key_coverage` stays at 0 unassigned pings.
@@ -167,7 +169,7 @@ reproduces that delivery and is the baseline for the comparison. Removed and res
 delivery and supersedes it, every synthesised window carries `win_basis`, and no directory under
 `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
-## 34. Trawl speed ranges, the logbook-gear check and the last haul (plan 012)
+## 34. Trawl speed ranges near the coast: ask (1) of plan 012
 **status:** open · **needs: maintainer** — ask (1) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`, decisions 085 and 093
 
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
@@ -176,9 +178,9 @@ Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in reco
 
 `uv`'s regulation areas (decisions 121 and 122) may hold the trawl limits; not checked.
 
-Open, not blocked: whether the last haul of a trip is left unclosed. Not seen at the window level (§2d) or in the logger's speed after `t3` (§2k); the logbook end looks late on some last tows, not early.
+The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen; the end looks late on some last tows, not early), and the plan's step 3 is marked not taken up (2026-10-23, Claude's audit, not checked by a person).
 
-**check:** the answer to (1) is recorded in a decision, and plan 012 says whether the last haul is left unclosed.
+**check:** the answer to (1) is recorded in a decision.
 
 ---
 
@@ -286,6 +288,11 @@ decision 161 widens this to 42 call signs, each held by 2-3 foreign landing vids
 no landing in Iceland) and f (ports abroad), and whether a dominant IMO (99 % of the IMO pings, 176 of the 636
 `two_imos` segments) may be linked by rule rather than one override each (decision 115).
 
+Before the first allocation: `R/trail_sql.R:122` marks every fix of a vid >= 100000 as leisure (basis `skb`, decision
+119), so foreign vids 200000 + n would be read as SKB boats. And `curated/check/ais_key_foreign_candidates.parquet`
+(decisions 039-043, run by hand) was built 2026-09-27 and never since, so it predates the key of decision 128
+(Claude's audit of 2026-10-23, not checked by a person).
+
 **check:** plan 021 §7, and plan 017 §7's check that a foreign vessel's ping reaches `curated/ais/voyage.parquet` with
 a voyage key and `pid1`/`pid2` resolved.
 
@@ -364,22 +371,24 @@ dated list, or a decision says why not; and `mmsi_icelandic_registry` carries a 
 **status:** open · **see:** `curate/plans/013-ramb-one-flow.md` ("What is left, in order"), decisions 099-104, ramb
 53519ee
 
-Items 0-3 and 5 are built and on the data. Items 4 and 6-9 are built in part, and item 10 not at all (decisions
-099-103). What is left of each is in the plan:
+Items 0-3 and 5 are built and on the data. Items 4 and 6-10 are built in part (decisions 099-103, 173-174). What is
+left of each is in the plan:
 - 4, records checked against the operations the track shows: in part, decision 155's allocation audit tests each
   link by the records' own times;
 - 6, which vessels fish (the vessel row; the classes are TODO 49);
-- 7, records without pings: the 1990-2006 logbook (3.5 M records, start positions only) needs a target of its own,
-  since the years before 1990 are out of scope (decision 103);
+- 7, records without pings: the 1990-2006 logbook (3.5 M records, start positions only) needs a target of its own;
+  decision 103 left the years before 1990 out of scope, now plan 038's ask e;
 - 8, static gear: `rb_link_record_sets()` is in ramb, but against real set times it is right (within 60 min) on
   about half the longlines and a third of the gillnets, no better than the vessel's typical soak (decision 158,
   superseding 146's Icelandic score), so it is not run; pressure as quantity × soak is not built (decision 103), and
   a placeholder `t1` is NA (TODO 103). Its defaults and a set made inside another haul's window wait for the
-  maintainer (decision 146). ramb a68d1f6 is not pushed or
-  installed: GitHub must include LFS objects in archives first, and `whack_demo.R` then reads `rb_read_example()`;
+  maintainer (decision 146). ramb a68d1f6 is on origin/main and installed as 2026.10.22.2 (checked by Claude
+  2026-10-23);
 - 9, track models for fishing;
-- 10, declared times reconciled with the track (`rb_reconcile_time()`): unblocked by decision 104's ground truth,
-  not in ramb; plan 031 §3.11 measures where logbook times and the track's port calls disagree, mostly by 1-3 h.
+- 10, declared times reconciled with the track: a trip's departure and return are `rb_add_trip_time()` (the step
+  planned as `rb_reconcile_time()`, decisions 173-174, built in 180); a haul's times against the track are not built
+  (decision 104's ground truth; plan 031 §3.11: logbook times and the port calls disagree mostly by 1-3 h). Brought
+  up to date from Claude's audit of 2026-10-23, not checked by a person.
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
@@ -390,7 +399,8 @@ Items 0-3 and 5 are built and on the data. Items 4 and 6-9 are built in part, an
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
 objects against the grammar (the tour app, the port translation, implausible catch, mammal and bird bycatch, the depth
 unit by app). Plan 020 keeps the gear detail and the environment that the adapters fold away, as tidy tables beside
-the fishing sample (`gear_part` prototyped for fs).
+the fishing sample (`gear_part` prototyped for fs). For plan 020: the trawl's `gear_width` is the bridle (sweep)
+length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23, not checked by a person).
 
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
@@ -629,6 +639,9 @@ audit's static-gear time is a 270-min offset (ask j); the tied multi-gear voyage
 step 3: ramb's defaults against the plan's choices, a short voyage by time rather than pings (thin voyages measured
 2026-10-20, `$FISHYDATA/archive/2026-10-todo98/scripts/thin_voyages.R`), the weak `gap_budget`, and gap rules that
 hold only for a feed silent in port (TODO 89's coverage model).
+Also unflagged: `port_call.parquet`'s 13,510 event-only calls (2017-2026), which cut no voyage (decisions 060, 061),
+and Hornvík's anchorage stops, port calls since one 2 h minimum (decisions 074, 077), never marked as no trip's end
+(Claude's audit of 2026-10-23, not checked by a person).
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
@@ -637,8 +650,9 @@ hold only for a feed silent in port (TODO 89's coverage model).
 
 Built in ramb and fishycode on 2026-10-19 (decision 147), and fishycode's tables rebuilt on ramb's keys the same day
 (decision 149): `port_call.parquet`, `port_call_id`, `voyage_id`. Left: ramb's `_pkgdown.yml` reference index still
-lists the twelve old names. It belongs to the session writing ramb's `sets` and `vessels` articles, uncommitted; a
-patch waits beside `naming-renames-done.md` in the side-session notes of 2026-10-19 (`ramb-pkgdown-renames.patch`).
+lists the twelve old names. It belongs to the session writing ramb's `sets` and `vessels` articles, uncommitted. The
+patch once named here (`ramb-pkgdown-renames.patch`) is not on disk (Claude's audit of 2026-10-23); ramb's
+`R/renamed.R` holds the old-to-new map.
 
 **check:** `pkgdown::build_site()` in ramb finds every exported function in the reference index.
 
@@ -857,8 +871,13 @@ gear by its own time. Left, measured on 2026-10-20:
   matched trips land before their voyage ended: TODO 90's evidence, read in plan 031 §3.11 (most of the first are a
   static-gear set time 270 min before the haul, ask j, or an hour from the call's ends; 4,870 of the second are a
   trip matched to a landing made before it finished, TODO 81);
-- a flag on `voyage_gear` for voyages with several gear labels (a count per voyage): a tie reads as a wrong
-  allocation, and `arg_max()` names either tied gear, so 5 voyages differ run to run; now, or with TODO 90;
+- a flag on `voyage_gear` for voyages with several gear labels (a count per voyage); now, or with TODO 90. Decision
+  154 read a tie as a wrong allocation, but plan 031 step 4 found most of the 323 tied voyages are not missed calls (16
+  overlapping trips, perhaps 24 more); `arg_max()` has no tie-break, so 5 voyages differ run to run (Claude's audit
+  of 2026-10-23, not checked by a person);
+- pelagic transfers (decisions 103, 104): 2,548 trip-species landed 2-300 times their log (1.0 against 0.19 Mt); the
+  `raise_factor` puts one vessel's catch on another's fixes, and the proposed flag for these trips is not built
+  (Claude's audit of 2026-10-23, not checked by a person);
 - two landing-to-voyage rules not compared: `voyage_gear`'s window plus 7 days, and `ais_catch`'s
   `ramb::rb_link_trip_landings()`; a candidate link for the audit;
 - the method as a generic ramb tool.
@@ -877,6 +896,9 @@ Counted as pairs (decision 155's session, `$FISHYDATA/archive/2026-10-voyage-gea
 Such trips cut port calls in plan 031's R2 (679 cuts) and make tied multi-gear voyages (16 of 323). Not known: which
 are resubmissions decision 094 misses, several boats' logbooks under one vid, test entries, or real overlaps. A
 session to classify them was proposed on 2026-10-20 (read-only; overview links per class).
+Decision 094's open ends belong here too: its 6,035 same-time stations, which their equal times cannot place apart,
+and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), where which arrival is right is untested
+(Claude's audit of 2026-10-23, not checked by a person).
 
 **check:** a decision or correction says what the overlapping trips are, by class with counts, and how the flow
 treats each.
@@ -910,6 +932,8 @@ stretch it sits in with ramb's stretch functions, the day as the prior, one fix 
 smoothed speed. The maintainer: reported `t2`/`t3` are not truth; the independent witness proposed is the research
 survey tows: channel (41 of 42, one view broken in Oracle) and biota (96 of 96) are dumped and in `raw/oracle/` since
 2026-10-21 (decision 159).
+Not all day windows are date-only: 994,500 afli tows (198,373 from 2007) hold a timed start and no end and still get
+the day (decision 083 (b): ramb needs an end or a duration); counted 2026-10-23 by Claude, not checked by a person.
 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
 
@@ -1081,10 +1105,14 @@ per-unit screen; port calls from `tilk_stk` for 2004 to mid-2007; the Oracle rea
 
 Of the records Oracle loaded, 26,695 in afli's `rafr_stofn` never moved to `afli.stofn`: 3,182 deleted, 23,513 not,
 and why is unexplained. The sent layer stages all of them, so once it is read they enter the logbook unless
-explained. Some may be a haul loaded twice; some genuinely missing hauls (as TODO 75's lost trips).
+explained. Some may be a haul loaded twice; some genuinely missing hauls (as TODO 75's lost trips). Decision 098
+already ruled on these hauls (23,570 live rows absent from `stofn`): not admitted, since adding them overshoots the
+landing and most are the same hauls submitted again. Also open from decision 171: whether adb's 243 stations before
+2025-11-19 with no counterpart, and the 14 `TRACKWELL BAEKUR` and `PAPPÍR` trips decision 160 removed, are in afli's
+adapter's output (both added from Claude's audit of 2026-10-23, not checked by a person).
 
-**check:** each of the 23,513 in one outcome (a copy of a moved record, a missing haul, unexplained), and the sent
-layer stages no haul twice.
+**check:** each of the 23,513 in one outcome (a copy of a moved record, a missing haul, unexplained), judged by
+decision 098's rule or by a decision that overturns it; and the sent layer stages no haul twice.
 
 
 ## 120. Readers still on Oracle views (the rule "tables, not views")
@@ -1110,7 +1138,11 @@ landing link, the reconciled trip, the stations on the fixes, effort and catch. 
 It designs two things no record does yet: what reads `trip_reconciled` (decision 174's open end), and every logged
 kilogram in one catch unit and one outcome in every year. 54 % of the logbook's kilograms are logged before 2007 and
 are in no unit (measured 2026-10-22). Also measured: 6,991 tour-app trips (9.2 kt) on vessel-days no curated source
-holds since decision 160.
+holds. That is TODO 73's unread tour app, not decision 160: adb's 9,374 `APP TÖFLUR` trips carry 428 stations and 2
+catch rows, so the catch never came in through adb (counted 2026-10-23 by Claude, not checked by a person).
+For the sources' layer: decision 057's duration limit runs inside three adapters (afli, afli_sent, fs_afladagbok), a
+correction outside `curate/`, and fs_afladagbok's then blanks the recorded end time behind it (`duration_m_raw` keeps
+the span) (Claude's audit of 2026-10-23, not checked by a person).
 
 **check:** the asks answered in the plan; each of its phases built, or declined in a decision; the plan executed,
 parked or abandoned in its header.
@@ -1184,19 +1216,19 @@ Found 2026-10-22 from the rebuild's `error > 60 min` lines (decision 180), measu
   - precision by app and year: whole minutes (the old TRACKWELL route), seconds (Trackwell raun and most later apps),
     mixed within Taktikal and Jóhann Gíslason, hundredths on Taktikal and Marína 2023;
   - STOKKUR (2021-22, 23,362 stations) reports whole degrees, a cell's corner; no app reports centre points;
-  - end positions are missing on all stations for most apps.
+  - end positions are missing on all stations for most apps;
+  - decision 165, left open: fs_afladagbok's adapter reads all 7,710 kept Marína stations as hundredths, a trip with
+    a carried 60 too (23), and leaves 59 with a 4-5 digit longitude past 30° (Claude's audit, not checked by a person).
 
 Proposed:
 - each end kept as reported: a point with its precision; a cell (whole degree, rectangle, quarter) with lon/lat NA and
   the cell recorded; or nothing, basis "none";
-- a derived centre only in a column of its own;
-- a per-row column naming the kind and precision;
+- a derived centre only in a column of its own, and a per-row column naming the kind and precision;
 - the formats and precision by source, app and period in the overlays (plan 040; a new fs_afladagbok overlay);
 - per-app checks in `curate/checks/`.
 
 Open: corner or midpoint, truncated or rounded, for the whole degrees and the centre fills, and the 61-99 values,
-judged against the vessel's AIS track that day (the maintainer). A diagnostic; logbook positions never join the
-track.
+judged against the vessel's AIS track that day (the maintainer). A diagnostic; logbook positions never join the track.
 
 **check:** each source's ends in one kind (point, cell, none), with counts by source, app and period; the overlays
 state the formats and precision; the AIS check reported.
@@ -1215,6 +1247,10 @@ with verbs and nouns that match. In the grammar:
 - seven clashes (event, reconstructed, sample, set, unit, window, allocation);
 - eleven synonyms (`station_type` and `resolution`, ping and fix, track and trail, share and split, …);
 - two mirrors reserved (decode, thin).
+
+Also for the review: decision 012's `entity_class` basis disagrees with the grammar's table: a name pattern (a rule)
+is `reconstructed`, a matched vid (another source) `recorded`, the hand list `synthesised` (Claude's audit of
+2026-10-23, not checked by a person).
 
 Decided: **split** for an additive total divided by a key (the maintainer), so `rb_share_catch()` is to become
 `rb_split_catch()`. Nothing is renamed yet.

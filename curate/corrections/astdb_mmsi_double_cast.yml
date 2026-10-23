@@ -1,6 +1,6 @@
 id: astdb_mmsi_double_cast
 title: astdB's mmsi is a double, so casting it to text appends ".0" and the whole feed drops out of the union
-status: confirmed - measured, repair implemented 2026-09-22, rebuild pending
+status: fixed - repair implemented 2026-09-22 and built; on the build of 2026-10-22 (decision 180) staging/ais/ping_union holds 11,078,284 astdB rows, none with a decimal point in its mmsi (counted 2026-10-23 by Claude in an audit of the record, not checked by a person)
 applies_to:
   - staging/ais/astdB
   - staging/ais/ping_union

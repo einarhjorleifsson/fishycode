@@ -6,6 +6,10 @@ Nothing is written under `$FISHYDATA` yet: the source still lives in `~/stasi/sk
 copied in too (the ~1,000 vessel photos, the logs) and `~/stasi/skipaskra` moved to the Trash: `raw/external/skipaskra/`
 is now the one copy (plan 016). Its Faroese scrape (`færeyjar/`) moved on to `raw/external/fro/scrape/`, beside the data.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). The 2018-2022 route
+from the page matrices was validated below, but it misread 22 rows: build years and a legend entry were read as vids.
+The parse is fixed in code, not yet in data; the STK key's next redo takes it (TODO 25).*
+
 ## What it is
 
 The Icelandic ship register as published every year (Skipaskra, the `data-raw/skipaskra_tabulized_matrix_*.rds` matrices are its

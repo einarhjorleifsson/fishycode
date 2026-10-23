@@ -1,7 +1,7 @@
 # 002 — The last mile: what still has to be built before the sweep is usable
 
 **status:** partly built — steps 1 and 5 done (decisions 010, 011, 070); the tail built as the trail by plan 010
-(decisions 065, 085, 101); the species lookup is TODO 10; the fishyweb port is now plan 033 step 4 (fishyweb's pages into the book, TODO 94) · **2026-09-22** ·
+(decisions 065, 085, 101); the species lookup is TODO 10; the fishyweb port is now plan 033 step 5 (fishyweb's pages into the book, TODO 94) · **2026-09-22** ·
 **see:** `TODO.md` item 16,
 plan `001-three-repo-publication-boundary.md`
 

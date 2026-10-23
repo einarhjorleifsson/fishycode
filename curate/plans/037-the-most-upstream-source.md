@@ -132,7 +132,10 @@ another row of one, 458 (2010-2011) are not found in their message. The edited l
 records now meet their edited station by `.sid`, and on 3 the edited layer holds both rows and the key moved to the
 undeleted one. Of the 1,302,406 staged records Oracle loaded, 28,704 have no
 row in the edited layer: 26,695 in afli's `rafr_stofn` never moved to afli.stofn (3,182 deleted, 23,513 not, the
-latter unexplained here) and 2,009 in fs_afli's `rafr_stofn` only.
+latter unexplained here) and 2,009 in fs_afli's `rafr_stofn` only. Decision 098 ruled on these hauls on 2026-10-14
+(23,570 live rows absent from `stofn`): not admitted, since they overshoot the landing and are mostly the same hauls
+submitted again; reading them from the sent layer into the logbook reopens that rule (TODO 118; noted 2026-10-23,
+Claude's audit, not checked by a person).
 
 The paper logbook has one layer only (`afli.*`, with `afli.mottaka`, 509,774 rows, a register of when the paper books
 came in), and its in-house edits are unmarked.

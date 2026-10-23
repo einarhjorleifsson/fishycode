@@ -5,6 +5,12 @@ their guidance on the user's feel ("things have to be intuitive", "clear"; "the 
 or just a layman that is curious"). Design, code, checks and this record by Claude (AI-assisted). A person has not yet
 used the new page.*
 
+*Superseded in part, noted 2026-10-23 from Claude's audit of the decision records (not yet checked by a person). The
+two modes became one view (decision 178; an old `mode=qc` link is still honoured). The map shows the AIS voyages alone
+(decision 156, which removed the haul layer added with plan 034). Hauls and trips are drawn from the flow's windows,
+and the page's own gear lists (static, towed) are gone (decision 177). "Stays" are port calls since decision 149: the
+`stays` endpoint is `port_calls`, `port_stay.parquet` is `port_call.parquet`.*
+
 ## Asked, and what was built
 
 | asked | built |

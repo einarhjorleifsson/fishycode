@@ -5,6 +5,12 @@ an agreed design; built, measured and recorded by Claude (AI-assisted), in ramb 
 of its origin: not pushed, not installed. The data on disk are still built with 2026.10.15.1 (AGENTS.md). Working
 files: `$FISHYDATA/archive/2026-10-16-ramb-proximity/` (README).*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). The Icelandic score
+of `rb_link_record_sets()` below is superseded by decision 158 (plan 035's test on 152,880 static hauls with a real
+set time: within 60 min on 53.7 % of longlines, 31.7 % of gillnets, 3.6 % of pots; not run). The push and install
+are done: a68d1f6 is on ramb's origin/main, and the installed ramb is 2026.10.22.2 (0c3020b), which contains it;
+`curate/checks/whack_demo.R` reads `rb_read_example("whacks1")`.*
+
 ## Built in ramb
 
 Two tasks, two functions, one private engine (`.rb_near_pairs()`, `R/near.R`): every pair of points within a

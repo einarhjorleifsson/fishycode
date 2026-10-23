@@ -2,6 +2,12 @@
 
 *Decided and implemented 2026-09-23. Closes TODO.md item 1.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). The tiers and the
+vessel-day anti-join stand; adb's window does not. `ADB_DATE_MIN = FS_DATE_MAX + 1` was replaced by decision 125's
+floor (`FS_DATE_MIN`), then by decision 160's 2025-11-19, the day fs_afladagbok's dump starts to thin. Decision 171
+found adb to be the Directorate's records in MFRI's codes, not a view of fs_afladagbok, and kept 160's rule. The
+premise that adb needs no depth conversion was also replaced (decision 165).*
+
 ## The merge is now three-tier
 
 `curate/logbook.R` merges `afli`, `fs_afladagbok` and `adb` by the priority the

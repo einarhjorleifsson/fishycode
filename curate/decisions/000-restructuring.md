@@ -1,5 +1,13 @@
 # Restructuring `logbooks/` + `fishydata/`
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). Since written: D1's
+fixed archive date and read-only archives were dropped by decision 097 (the old repos stay writable, still not to be
+edited). D2's rule (`fs_afladagbok` the source, `adb` its live view, read beyond the dump's end) was replaced by
+decision 160 (adb only from 2025-11-19) and decision 171 (adb is the Directorate's records in MFRI's codes, not a view
+of fs_afladagbok). Step 5 is done in other forms: `station_type` on the merged station table (decision 084), and
+`FS_DATE_MAX` no longer the handover (decisions 023, 125, 160). Step 8, as re-scoped below, is done: the trail
+(decision 065) and every trip's departure and return (decisions 173, 174, built in 180).*
+
 ## Context
 
 **The goal.** A *sweep of parquet files* an analyst opens and works with directly — no

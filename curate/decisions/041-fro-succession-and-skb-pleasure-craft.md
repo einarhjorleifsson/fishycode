@@ -3,6 +3,10 @@
 *2026-09-27. Plan `008-north-atlantic-vessel-registry.md` §7, refining Phase 3/6;
 one finding (SKB) is Icelandic, outside plan 008's own scope.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). `TFUT` (mid 133558)
+is not a holder missing from our sources: it is vid 2173, TÓMAS ÞORVALDSSON, on MMSI 251017000, whose `yh2` of 1995
+was stale (decisions 052, 117; 144 replaced `yh2` with the register's last year).*
+
 ## The FRO fix was too simple — a 3-way chain exposed it
 
 Decision 040 closed each shared call sign's non-current row at the *current*

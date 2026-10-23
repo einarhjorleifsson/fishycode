@@ -2,6 +2,10 @@
 
 *2026-10-01. Maintainer's decision on the recommendation of decision 063. Written before the rebuild.*
 
+*Superseded, noted 2026-10-23 from Claude's audit of the decision records (not yet checked by a person): decision 074
+drops the harbour class, and decision 077 (step 3b) built one 2 h minimum stay for every harbour. The 2 h of the
+landing class became the minimum for all.*
+
 `harbour_stay.R`: `G_LANDING` defaults to 2 h (was 4 h); every harbour whose class that year (`harbour_class`) is `landing` has a 2 h
 minimum stay, all others 4 h. Gear and vessel size are not used (decision 063 discussion: landings are the yardstick, not an input;
 a size or day-boat rule would trim about 10,000 of the 70,000 added stays, not built). Rebuilt: `harbour_class`, `harbour_stay`,

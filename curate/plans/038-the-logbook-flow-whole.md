@@ -117,8 +117,11 @@ a declared precedence per field group. This plan does not restate it. Source by 
   tour-app trips (7,864 fishing spots, 9.2 kt without 10 catch rows over 20 t; most of them in 2020) fall on
   vessel-days that no curated source holds. Decision 171 found 9,374 of plan 019's 9,821 unimported tour trips in
   adb as `APP TÖFLUR`. adb is no longer read before 2025-11-19 (decision 160), so the tour app is now the only route
-  in. Whether these trips entered through adb before decision 160 is not measured here. Plan 019's asks 2-7 and plan
-  020 (`gear_part`, `environment`) stand as written. The change tables (`ws_*_breytingar`) are plan 037 phase 4.
+  in. Whether these trips entered through adb before decision 160 is not measured here. *Counted 2026-10-23 by
+  Claude, not checked by a person:* adb's 9,374 `APP TÖFLUR` trips carry 428 stations and 2 catch rows, so their
+  catch never entered through adb; the 9.2 kt is the unread tour app, not a loss of decision 160. Plan 019's asks
+  2-7 and plan 020 (`gear_part`, `environment`) stand as written. The change tables (`ws_*_breytingar`) are plan 037
+  phase 4.
 - **adb** (MFRI's copy of the Directorate's records, decision 171), from 2025-11-19 only (decision 160), and read
   from tables, not views (decisions 165, 170). Open:
   - its ports have no `pid` in `curated/logbook/trip.parquet` (decision 172), so each reader maps them itself (ask f);
@@ -228,7 +231,9 @@ landing last for `T2`.
 - the quota regime and gear on the trips (ask d);
 - adb's `pid` (ask f);
 - `trip_voyage` gives a trip one voyage, so the AIS witness of a trip that spans voyages is one voyage's bounds. That
-  is TODO 90 (plan 031 ask f, many-to-many) and the first item of TODO 101;
+  is TODO 90 (plan 031 ask f, many-to-many) and the first item of TODO 101. On such a trip `T1` and `T2` from AIS are
+  the bounds of the one linked voyage, not the trip's; decision 155 counted 13,084 trips with timed stations in two or
+  more voyages (noted 2026-10-23 from Claude's audit, not checked by a person; also in decisions 173 and 174);
 - TODO 117 (what the voyages take from STK's events).
 
 ### 5.1 What reads the reconciled trip (proposed)
@@ -353,7 +358,10 @@ d. **The quota system's regime, gear and hand-baited flag:** carried onto the tr
    also be a witness in `logbook_gear`, below the logbook's own gear and the landing's?
 e. **The kilograms accounted** (§7.1): from 1990, decision 103's scope (recommended), or from 1950. Should afli's
    199.4 kt of monthly summaries be month × square units, or left out?
-f. **adb's ports:** mapped to `pid` in the merge (recommended), or by each reader.
+f. **adb's ports:** mapped to `pid` in the merge (recommended), or by each reader. Either way adb's departure port 0
+   is a placeholder, not Skarðsstöð: 5,094 adb trips in `trip.parquet` have `hid1` 0 (decision 172), and the merge
+   keeps it as a port; `trip_reconciled` already reads it as missing (decision 174). Noted 2026-10-23 from Claude's
+   audit, not checked by a person.
 g. **The order of §8.**
 h. **adb's conversion faults** (decision 171): a check in `curate/checks/` that the records read from 2025-11-19 do
    not carry them (recommended), or none.

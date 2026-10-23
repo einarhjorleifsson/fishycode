@@ -2,6 +2,13 @@
 
 *Decided by the maintainer 2026-09-23. Settles the gate on TODO items 1 and 1b.*
 
+*Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). Two premises below no
+longer hold; the rule (metres, `_raw` and `_basis` beside them) stands. `z2` is not in `z1`'s unit on afli's
+electronic stations: Oracle's loader kept the sent end depth in metres, so converting `z2` with `z1` makes it 1.83
+times the depth sent on 946,197 stations (TODO 113). And adb does not record metres: its table holds fathoms, which
+the view `station_v` had converted; since decision 165 (built in 180) `curate/logbook.R` converts adb's depth like
+fs_afladagbok's, basis "reconstructed".*
+
 ## The decision
 
 `z1`/`z2` are declared in **metres**, product-wide, in every merged and curated
