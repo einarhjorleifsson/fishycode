@@ -160,8 +160,9 @@ and only counts and patterns are written here.
   logbooks; `ops$sigfus` is added to the dump (d57a8ee).
 - **Fishing-ground names:** no logbook record has a place-name field (fs, adb and the XML hold positions only; afli
   codes a ground, `stofn.skiki`). The notes name 6,887 places; 507 used 3 times or more lie within 10 km of their
-  stations' median, 128 of the frequent ones in no MFRI list (`orri.ornefni`, `afli.skikar`): a gazetteer of the
-  skippers' own grounds, mostly Danish seine off the south coast and bottom trawl (README §3.6).
+  stations' median, 122 of the frequent ones in no MFRI list (`orri.ornefni`, `ops$sigfus.ornefni`, `afli.skikar`): a
+  gazetteer of the skippers' own grounds, mostly Danish seine off the south coast and bottom trawl (README §3.6).
+  `ops$sigfus.ornefni` (dumped 2026-10-23) adds 307 names to orri's but positions for only 238, few near the grounds.
 - **Proposed for staging**, basis `derived`, keyed on (`.sid`, `schema`): `station_note` (the text, class and tags);
   `remark` (one code list for afli's `athugas` and the e-logbook's code texts); `transfer` (catching vid and station,
   receiving vid, date, species, kg); `released`; `sample`. Asks a-d in the README's §5.
