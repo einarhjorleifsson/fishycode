@@ -1169,9 +1169,10 @@ the trip's; a window made from them has basis `synthesised` (the label's name is
 
 Cases (Claude's measure, 2026-10-23, not checked by a person):
 - Marína and Taktikal, handline: one station per trip, departure to return (23,359 windows), the trip's catch. Its
-  window is the AIS voyage already; the speed test drops the steaming, but slow time that is not jigging counts: a
-  median 9 % more fishing hours per trip than the same vessels' haul-timed trips. Trip-level; the surplus documented,
-  not corrected.
+  window is the AIS voyage already; the speed test drops the steaming, and the flow marks fishing on 96 % of the
+  voyage's handline-speed hours, against 87 % under a haul-timed window. Whether that extra slow time is fishing is
+  not known (the haul window is the skipper's, not a witness); matched by vessel and month (75 cases) the trip-timed
+  trips hold no more fishing hours (median 0.91 times). Trip-level.
 - Marína and Taktikal, nets and lines (1,519): the set at the departure, the haul ending at the return. Trip-level; the
   set time set aside, as decision 206 does with Trackwell's departure copies.
 - STOKKUR (2020-22): one station per trip, at the landing, its position a rounded whole degree (decision 211).
