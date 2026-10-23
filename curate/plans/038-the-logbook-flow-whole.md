@@ -334,21 +334,37 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    2026-10-22** (62 targets with the re-dump and decision 175; decision 180).
    Fingerprints are taken before and after, and the audit is read after. Nothing else is built before it.
 1. **The instruments:** plan 024's `station_fate` (TODO 79) and §7.1's `catch_unit`. Every staging station and every
-   logged kilogram is then in one outcome, so each later change shows as a move between outcomes.
+   logged kilogram is then in one outcome, so each later change shows as a move between outcomes. **`station_fate` and
+   `trip_fate` built 2026-10-23** (decision 205); `catch_unit` not yet.
 1b. **The link's lower bound lifted** (from step 3, ask g, decision 191): `lid_map` reads landings from the start of
    LODS, not 2007-09-01, so January-August 2007's landings stop being shared on the fixes beside their trips' logged
    catch. Rebuilt by name from `lid_map`, the catch traced kilogram by kilogram. **Coded 2026-10-23** (decision 203),
    traced on a scratch store; built with the logbook chain, as decision 194 asks, by the command in the record.
-2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; coded, decision 193, the build left); then
+   **Built 2026-10-23** (decision 205).
+1c. **Catch the landing contradicts, flagged before any catch moves** (decision 210 item 3, decision 214; draft
+   2026-10-23, Claude, for the maintainer): a station's kilograms of a species far above what its trip landed of it
+   (with no landing, beyond the gear and species' own range) flagged in the merge, never corrected, and kept on the
+   fixes, marked (the maintainer, 2026-10-23): the flag goes with its kilograms onto the fixes, a column of
+   `curated/ais/catch`, so an analyst can leave them out, and kg in = kg out holds either way. The margin is measured
+   first, every trip in one outcome
+   against its landing matched by vessel and day (as `$FISHYDATA/archive/2026-10-trip-time-stations/recheck/
+   05_against_landings.R` did for the trip-timed apps), and chosen with the maintainer. First known cases: STOKKUR's 6
+   net and line stations of 23.1 kt, 11.3 kt of it on fixes today (decision 214). A scratch build, the catch traced.
+2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; decision 193, built 2026-10-23 in decision
+   205); then
    §5.1's readers a-e, each measured on a scratch store, then built (asks b, c). adb's `pid` goes into the merge (ask
    f), and the quota regime and gear onto the trips (ask d).
 3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 123); the month step
    before LODS (§4). Then plan 027's `trip_landing` on the reconciled trips
    (TODO 81), plan 036's disposition through it (TODO 112), and `ais_catch.R` reading it.
-4. **The sources:** plan 037 phase 1, then plan 019's tour app (TODO 73), then plan 037 phase 2 (TODO 108, 113, 114,
-   118, 75), then TODO 62 when the data come.
-5. **The stations:** TODO 103's freed fixes, then 105, 107, 101's remaining items, 102's classes, and TODO 72's
-   items 8 and 10.
+4. **The sources:** plan 037 phase 1, then plan 019's tour app (TODO 73), its spot time read as the end of fishing
+   (decision 214), then plan 037 phase 2 (TODO 108, 113, 114, 118, 75), then TODO 62 when the data come. The logbooks'
+   positions by kind (decisions 207 and 211, TODO 126, parked) fit anywhere in this phase, since the flow reads no
+   logbook position: the adapters' decoding and `R/logbook_position.R`, each end's kind and precision, the per-app
+   check.
+5. **The stations:** TODO 103's freed fixes, then 105, 107 (decision 206) with 137 (decision 214: the records timed as
+   the trip resolved to it, the AIS voyage their window), since both change the windows, then 101's remaining items,
+   102's classes, and TODO 72's items 8 and 10.
 
 Each phase follows plan 037 §6: a scratch build, the catch traced kilogram by kilogram, a decision record, then the
 maintainer's build by name. Phases 2 and 3 come before 4 because TODO 121 is coded and its readers are the open
@@ -400,8 +416,8 @@ None is folded in: each keeps its own check, and each is built in its step's pha
 
 | Step | Items |
 |---|---|
-| L1 sources and layers | 62, 70, 73 (plans 019, 020), 75, 98, 100, 110, 115 (plan 037; 108, 113 and 114 in it since decision 189), 118, 120 (in 25 since decision 185) |
-| L2 merge | 79 (plan 024), 102, 103, 107, 111 |
+| L1 sources and layers | 62, 70, 73 (plans 019, 020), 75, 98, 100, 110, 115 (plan 037; 108, 113 and 114 in it since decision 189), 118, 120 (in 25 since decision 185), 126 (decisions 207, 211) |
+| L2 merge | 79 (plan 024), 102, 103, 107, 111, 137 (decision 214), 138 |
 | L3 the link | 74 and 123 (plan 039), 81 (plan 027), 112 (plan 036) |
 | L4 the trip | 121, 90 (plan 031), 117 |
 | L5 stations on fixes | 34, 72 (items 4, 8-10), 86, 101, 104, 105 |

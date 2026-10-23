@@ -1028,8 +1028,8 @@ tracks, every position in one outcome, and wrote the overlays (merged into the r
   six-digit latitudes.
 
 Left:
-- the representation built in the adapters and the merge, `R/logbook_position.R` with it (decision 211, "Left"), as a
-  step of the logbook batch, a scratch build first;
+- the representation built in the adapters and the merge, `R/logbook_position.R` with it (decision 211, "Left"), in
+  plan 038 §8's phase 4, a scratch build first;
 - the per-app check `curate/checks/logbook_position_forms.R` (proposed in decision 211).
 
 **check:** each source's ends in one kind (point, cell, none) in `curated/logbook/station.parquet`, with counts by source,
@@ -1174,7 +1174,7 @@ their window is the AIS voyage under both approaches, their catch unit the trip;
 (set aside and flagged, as decision 206 does); catch the landing contradicts is flagged (decision 210). Three witnesses
 agree: the AIS track, the landings and the digits. Open: whether the slow time a trip-long window adds is fishing.
 
-Left, as a step of the logbook batch, a scratch build first:
+Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
 - each group's resolution on these records in the merge (time: the trip or the day; place: a point or a 1-degree
   cell); the stamped times set aside and flagged;
 - the voyage as their window in the flow, under both approaches; STOKKUR's 8.8 kt of net and line catch, today on no

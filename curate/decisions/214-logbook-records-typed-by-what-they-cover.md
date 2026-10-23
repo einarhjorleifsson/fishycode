@@ -3,7 +3,8 @@
 *2026-10-23. The maintainer's go ("go"), on Claude's recommendation, for TODO 137. The framing is the maintainer's:
 some apps mix up what is a trip and what is a station. The study and its re-check are Claude's (AI), read-only, not
 checked by a person: `$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts 00-10, `recheck/` with its
-README and scripts 01-05). Nothing is built.*
+README and scripts 01-05). Nothing is built. **Amended 2026-10-23:** catch the landing contradicts stays on the fixes,
+marked, not kept off them (the maintainer: "keep flagged catch on the fixes but marked").*
 
 ## Chosen
 
@@ -20,8 +21,8 @@ README and scripts 01-05). Nothing is built.*
   window. Its catch unit is the trip, checked against the trip's landing as now.
 - **No haul window is made from a departure, landing or midnight stamp.** Such a time is set aside (NA) and flagged,
   the value kept in its own column, as decision 206 does with Trackwell's departure copies.
-- **Catch the landing contradicts is flagged, not corrected,** and kept off the fixes: decision 210's implausible-catch
-  flag, which this makes urgent (below).
+- **Catch the landing contradicts is flagged, not corrected,** and stays on the fixes, marked, so an analyst can leave
+  it out: decision 210's implausible-catch flag, which this makes urgent (below); plan 038 §8, step 1c.
 - **The tour app's spot time is the end of fishing** (decision 210's build): t4 = the spot time, t1 = t4 - its hours at
   sea, basis `synthesised`; not plan 019 §4's t1 = the spot time.
 - **Left open:** whether the slow time a trip-long window adds is fishing. Documented, not corrected.
