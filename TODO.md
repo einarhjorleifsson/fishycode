@@ -126,14 +126,17 @@ delivery and supersedes it, every synthesised window carries `win_basis`, and no
 `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
 ## 34. Trawl speed ranges near the coast: ask (1) of plan 012
-**status:** blocked (the regulation and shoreline shapefiles, coming) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
+**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the gillnet floor's value (0.2 kn recommended, plan 012 §2m) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
 
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
 
 **Asked of the maintainer:** (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in). The same baseline serves the plan's step 5, the 12-mile limit. **Answered:** (2) the declared ranges stay, and `fishing` tests the ±10 min median speed instead of a vessel-shifted range (decision 093); (3) the gear codes on the trail (decision 085).
 
-`uv`'s regulation areas (decisions 121 and 122) may hold the trawl limits; not checked. Also for the ranges (decision
-198): the declared gillnet range starts at 0 kn, so any stopped gillnetter on a gillnet voyage passes the voyage rule.
+**Measured 2026-10-23** (plan 012 §2m; Claude's, not checked by a person; `$FISHYDATA/archive/2026-10-todo34-uv-areas/`):
+`uv` holds closures, not the trawl limits. It has no area opened to the fish trawl after 2007 and nothing after
+2020-09-15, and of 115,155 fish-trawl tow fixes within 5 km of the coast it judges 1,785, none as expected. It can be
+the shapefiles' 2007-2020 closure history, with its polarity read by a person (600 areas listed). The gillnet floor
+(decision 198's 0 kn): 0.2 kn recommended; it loses 1.9 % of fishing haul fixes and stops 98 % of those in port calls.
 
 The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen; the end looks late on some last tows, not early), and the plan's step 3 is marked not taken up (2026-10-23, Claude's audit, not checked by a person).
 
