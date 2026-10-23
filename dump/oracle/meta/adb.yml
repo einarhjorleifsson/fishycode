@@ -1,6 +1,6 @@
 # adb — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
-# Seeded 2026-10-22 by Claude (AI) from decisions 165, 170 and 171 and the dump of 2026-10-16; not yet checked by a
-# person. adb is read only from 2025-11-19 (decision 160); the claims below are tested on every row it holds.
+# Seeded 2026-10-22 by Claude (AI) from decisions 165, 170 and 171 and the dump of 2026-10-16, the positions' forms by
+# app added 2026-10-23 from TODO 126's AIS check (decision 211); not yet checked by a person. adb is read only from 2025-11-19 (decision 160); the claims below are tested on every row it holds.
 $version: 0.1.0
 name: adb
 tables:
@@ -67,9 +67,13 @@ tables:
           whole degrees, about 111 km. North; 84 values are negative. In decimal degrees: the definition latitude_dd.
           Evidence: Trackwell's last two digits are never above 59 (0 of 673,010 latitudes), Marína's peak at 15, 30
           and 45 (decision 165); Oracle's comment ("ddmm") and the view station_v (ddmm.hh) misread the six digits.
-        todo: >-
-          3,183 values of four to six digits have minutes of 60 or more (the second assertion), on every app's trips;
-          whether they are another form or entry errors is not established.
+          The forms by app are fs_afladagbok's (its overlay, ws_veidi.upphaf_breidd): this table holds the same
+          integers on the stations both hold, and the AIS check of decision 211 judged them there. In adb's own period
+          (2025-11-19 on), the rule's reading lies on the vessel's track for Trackwell raun on 96 %, Fontos raun 87 %,
+          Marína raun 81 % and Reiknistofa fiskmarkaða raun 72 % of the start positions judged (a sample of up to 600 an
+          app and year). Of the second assertion's 3,183, the four- and five-digit ones are mostly the minutes written
+          without their leading zero (Trackwell raun and Jóhann Gíslason raun, 2022-2023, before adb's period) and
+          TRACKWELL's 546 exactly 60, a carry; 30 four- and five-digit latitudes fall in adb's period.
       - name: longitude
         label: Start longitude
         constraints:
@@ -116,7 +120,10 @@ tables:
       - name: fishing_start
         label: Start of fishing or towing
         time_zone: UTC
-        details: Iceland's clock is UTC. Values from year 3 to 2031 are in the table (dump of 2026-10-16).
+        details: |
+          Iceland's clock is UTC. Values from year 3 to 2031 are in the table (dump of 2026-10-16). On Marína's trips
+          it is the trip's departure (4,961 of 4,961 stations from 2025-11-19), not the time of the start position, as in
+          fs_afladagbok (its overlay, ws_veidi.upphaf_timi; decision 211).
       - name: fishing_end
         label: End of fishing or towing
         time_zone: UTC

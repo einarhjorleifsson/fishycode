@@ -1000,40 +1000,35 @@ Left by the overview's session of 2026-10-22.
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
-**status:** open (decided 2026-10-23, decision 207; the AIS check running) · **see:**
-`$FISHYDATA/archive/2026-10-afli-minutes60/README.md` (scripts 01-10), TODO 115 (from 108), 124, plan 040, decision 165,
-decision 180, `R/logbook_position.R`, `curate/corrections/afli_coords.yml`, `afli_end_longitude.yml`
+**status:** open (decided 2026-10-23, decision 207; the AIS check done, decision 211) · **needs: maintainer** — the go to
+rewrite the raw dictionaries, and the logbook batch's build · **see:** decisions 207 and 211,
+`$FISHYDATA/archive/2026-10-todo126-ais-check/README.md`, `$FISHYDATA/archive/2026-10-afli-minutes60/README.md`,
+`dump/oracle/meta/{afli,adb,fs_afladagbok}.yml`, `curate/corrections/afli_end_three_digits.yml`, `R/logbook_position.R`,
+decision 165, TODO 115, 124, plan 040
 
-Found 2026-10-22 from the rebuild's `error > 60 min` lines (decision 180), measured with the maintainer:
+Decision 207 chose the representation: each end a point with its precision, a cell (lon/lat NA, the cell recorded), or
+nothing (basis "none"); a derived centre only in its own column; a per-row column naming the kind and precision; the
+formats in the overlays; per-app checks in `curate/checks/`.
 
-- **afli:**
-  - a rectangle-only record until the mid-1980s (1950-84: 87 % of stations have no position, only `reitur`; never
-    filled in at a centre); the changeover is 1985-89, when the quarter (`smareitur`) appears;
-  - manual entry (paper) varies by record: hand rounding to 10 minutes, about 1,200 rectangle-centre fills (1990s
-    mostly), 61-99 "minutes" (about 1,600, unexplained: the rectangle cannot decide, and at the quarter they look
-    like neither reading);
-  - the `rafr_` loader rounded electronic positions to the minute, so exactly 60 means no carry, and the sent record
-    holds the arc-second (TODO 115, from 108);
-- **e-logbooks** (fs_afladagbok, adb):
-  - precision by app and year: whole minutes (the old TRACKWELL route), seconds (Trackwell raun and most later apps),
-    mixed within Taktikal and Jóhann Gíslason, hundredths on Taktikal and Marína 2023;
-  - STOKKUR (2021-22, 23,362 stations) reports whole degrees, a cell's corner; no app reports centre points;
-  - end positions are missing on all stations for most apps;
-  - decision 165, left open: fs_afladagbok's adapter reads all 7,710 kept Marína stations as hundredths, a trip with
-    a carried 60 too (23), and leaves 59 with a 4-5 digit longitude past 30° (Claude's audit, not checked by a person).
+Decision 211 (Claude's AIS check, read-only, not checked by a person) judged the ambiguous kinds against the vessels'
+tracks, every position in one outcome, and wrote the overlays (tested on clones):
+- STOKKUR's whole degrees are rounded to the nearest degree, a 1-degree cell centred on the value, not a corner;
+- afli's exactly 60 is a carry; its 60-99 end values are three digits, a haul end at minute 9-10 stored by the loader
+  as degrees and minute run together (decodable, ± a quarter minute); its 61-99 start values and zeros are none;
+- about a quarter of afli's paper positions at a rectangle's centre (from 2007) are fills, the rest real;
+- Marína's six digits are seconds by the digits (the track cannot tell, its times being the trip's), ~0.5 km;
+- Trackwell raun's and Jóhann Gíslason's four- and five-digit latitudes (2022-23) are unpadded decimal minutes, which
+  `decode_logbook_position()` misreads; Taktikal holds exchanged latitude and longitude, and ddmm longitudes beside
+  six-digit latitudes.
 
-Proposed:
-- each end kept as reported: a point with its precision; a cell (whole degree, rectangle, quarter) with lon/lat NA and
-  the cell recorded; or nothing, basis "none";
-- a derived centre only in a column of its own, and a per-row column naming the kind and precision;
-- the formats and precision by source, app and period in the overlays (plan 040; a new fs_afladagbok overlay);
-- per-app checks in `curate/checks/`.
+Left:
+- the representation built in the adapters and the merge, `R/logbook_position.R` with it (decision 211, "Left"), as a
+  step of the logbook batch, a scratch build first;
+- the per-app check `curate/checks/logbook_position_forms.R` (proposed in decision 211);
+- the real raw dictionaries rewritten with the three overlays (`rewrite_data_dict()`, the maintainer's go).
 
-Open: corner or midpoint, truncated or rounded, for the whole degrees and the centre fills, and the 61-99 values,
-judged against the vessel's AIS track that day (the maintainer). A diagnostic; logbook positions never join the track.
-
-**check:** each source's ends in one kind (point, cell, none), with counts by source, app and period; the overlays
-state the formats and precision; the AIS check reported.
+**check:** each source's ends in one kind (point, cell, none) in `curated/logbook/station.parquet`, with counts by source,
+app and period; the overlays merged into the raw dictionaries; the per-app check built.
 
 ## 127. Names in the grammar and in ramb: the review of every noun and act (pending)
 **status:** open · **needs: maintainer** — the review, rule by rule and item by item · **see:**

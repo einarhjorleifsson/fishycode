@@ -1,0 +1,40 @@
+id: afli_end_three_digits
+title: afli's electronic haul ends at minute 9-10 of a degree are stored as three digits, degrees and minute run together and rounded; the adapter reads them as 6-7 degrees
+status: declared, not implemented - found 2026-10-23 by TODO 126's AIS check (decision 211); the reading is in the overlay, the repair waits for the representation of decision 207 in the adapter
+applies_to:
+  - "raw/oracle/afli/stofn.parquet (breidd_lok, lengd_lok), and fs_afli's copy"
+  - "curated/logbook/station.parquet (afli rows: lat2, lon2)"
+affects_rows: >-
+  Dump of 2026-10-16: 2,319 end latitudes (1,082 ending in 9, 1,135 in 0, 102 other) and 1,837 end longitudes that are
+  not a copy of the latitude (840, 769, 228), on electronic records, 2,282 of the latitudes in 2008-2013. In curated, 2,349
+  afli lat2 lie between 0 and 10 degrees. Beside them, 2,176 end latitudes are 0 (2,175 with the end longitude 0 too),
+  curated as lat2 0: no end position, basis "none".
+implementation: "none yet; the decoding is the overlay's definitions breidd_lok_dd and lengd_lok_dd (dump/oracle/meta/afli.yml)"
+discovered: >-
+  2026-10-23, by Claude (AI), in the AIS check of TODO 126 ($FISHYDATA/archive/2026-10-todo126-ais-check/, scripts 07,
+  10, 11); the study of 2026-10-22 had counted them among the 60-99 minutes. Not yet checked by a person.
+
+defect: >-
+  An end position of a haul at minute 9 to 10 of its degree is stored as three digits: the degrees and the minute, with
+  its decimals, run together and rounded, as 64 and 9.2 to 649 and 64 and 9.7 to 650 (most likely Oracle's loader of the
+  electronic records). A value ending in 9 is the degree and 9.0-9.5 minutes; one ending in 0 is 9.5-10 minutes of the
+  degree below. sources/afli/convert.R reads them as ddmm (geoconvert.1), 6 and 49 or 50 minutes.
+
+evidence: >-
+  Against the vessel's AIS track in the haul's window, one coordinate at a time (the track's range widened by 2 km),
+  where the haul's start lies on the track: latitudes ending in 9, 978 of 998 in range read as dd 09'; ending in 0, 984
+  of 1,006 read as (dd - 1) 10'; longitudes 740 of 756 and 669 of 689. Ordinary four-digit end values of the same
+  records pass the same test on 97 %. At the haul's end time the track lies at minute 8.9-9.6 and 9.4-10.1 of the degree
+  (10th-90th percentile; 295 and 455 with a time), 451 of 455 a degree below the stored one.
+
+rule: >-
+  Three digits ending in 9: v %/% 10 + 9.25/60, precision a quarter of a minute; ending in 0: v %/% 10 - 1 + 9.75/60;
+  other three digits: none for a latitude, dmm for a longitude (under 10 degrees). A zero: none. The value read stays in
+  lat2_raw and lon2_raw, and a basis beside each end says "reconstructed" (AGENTS.md: a correction adds columns).
+
+what_it_changes: >-
+  Only end positions an analyst reads in station.parquet. The flow never reads lon2/lat2: hauls meet the pings by time.
+
+related:
+  - curate/corrections/afli_end_longitude.yml   # the end longitude copied from the end latitude, 2008-2017
+  - curate/decisions/207-haul-end-positions-by-kind.md

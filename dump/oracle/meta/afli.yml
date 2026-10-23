@@ -1,6 +1,7 @@
 # afli — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
 # Seeded 2026-10-22 by Claude (AI) from the corrections afli_depth_units and afli_end_longitude, TODO 113 and 114, and
-# the dump of 2026-10-16; not yet checked by a person. fs_afli holds copies of these tables (sources/afli/convert.R
+# the dump of 2026-10-16; the positions' forms added 2026-10-23 from TODO 126's AIS check (decision 211); not yet checked
+# by a person. fs_afli holds copies of these tables (sources/afli/convert.R
 # reads both): its overlay comes with plan 038 (plan 040, phase 2).
 $version: 0.1.0
 name: afli
@@ -10,6 +11,18 @@ tables:
       One row per station (haul) of the logbook, paper and electronic, 1950 on. Read by sources/afli/convert.R.
       Positions are whole minutes, ddmm and dddmm, longitude west positive. The start depth is fathoms, except some
       electronic records of 2010-2012 stored in metres; the end depth of the electronic records is metres (TODO 113).
+
+      What a position is, by period (the study of 2026-10-22, $FISHYDATA/archive/2026-10-afli-minutes60/, and the AIS
+      check of decision 211):
+      - to 1984 the record is the statistical rectangle (reitur) alone on 87-89 % of stations, a cell of 0.5 x 1
+        degree; positions become the norm over 1985-89, when the quarter (smareitur) appears;
+      - electronic records (a rafr_stofn row): the minute the sent position was rounded to by Oracle's loader, 60 its
+        rounding without a carry;
+      - paper records: whole minutes as typed, part rounded by hand to 10 minutes, and some filled in at the declared
+        rectangle's centre. 8,802 start positions lie on a centre to the minute (5,452 of them 1990-99, before any AIS).
+        From 2007 the track judges them: 53 % of paper ones are real points on it, against 71 % of paper positions
+        elsewhere; 24 % lie off it with the vessel inside the declared rectangle (15 % elsewhere), so about a quarter
+        are fills. Electronic ones are real (91 % on the track, as elsewhere).
     definitions:
       - name: breidd_dd
         label: Start latitude, decimal degrees
@@ -18,6 +31,25 @@ tables:
         label: Start longitude, decimal degrees, east positive
         expr: CASE WHEN lengd > 0 THEN -1 ELSE 1 END * (FLOOR(ABS(lengd) / 100) + MOD(ABS(lengd), 100) / 60)
         description: As sources/afli/convert.R reads it (-geoconvert.1(lengd * 100)); a negative value comes out east.
+      - name: breidd_lok_dd
+        label: End latitude, decimal degrees, the loader's three digits decoded
+        expr: >-
+          CASE WHEN ABS(breidd_lok) BETWEEN 100 AND 999 AND MOD(ABS(breidd_lok), 10) = 9 THEN FLOOR(ABS(breidd_lok) / 10) + 9.25 / 60
+          WHEN ABS(breidd_lok) BETWEEN 100 AND 999 AND MOD(ABS(breidd_lok), 10) = 0 THEN FLOOR(ABS(breidd_lok) / 10) - 1 + 9.75 / 60
+          WHEN ABS(breidd_lok) >= 1000 AND MOD(ABS(breidd_lok), 100) <= 60 THEN FLOOR(ABS(breidd_lok) / 100) + MOD(ABS(breidd_lok), 100) / 60 END
+        description: >-
+          Three digits are an end at minute 9 to 10 of the degree (breidd_lok's details): ending in 9, 9.0-9.5 minutes;
+          ending in 0, 9.5-10 minutes of the degree below. Any other three digits, and a zero, are none.
+      - name: lengd_lok_dd
+        label: End longitude, decimal degrees, east positive, the loader's three digits decoded
+        expr: >-
+          CASE WHEN lengd_lok = breidd_lok THEN NULL ELSE CASE WHEN lengd_lok > 0 THEN -1 ELSE 1 END *
+          CASE WHEN ABS(lengd_lok) BETWEEN 100 AND 999 AND MOD(ABS(lengd_lok), 10) = 9 THEN FLOOR(ABS(lengd_lok) / 10) + 9.25 / 60
+          WHEN ABS(lengd_lok) BETWEEN 100 AND 999 AND MOD(ABS(lengd_lok), 10) = 0 THEN FLOOR(ABS(lengd_lok) / 10) - 1 + 9.75 / 60
+          WHEN ABS(lengd_lok) >= 100 AND MOD(ABS(lengd_lok), 100) <= 60 THEN FLOOR(ABS(lengd_lok) / 100) + MOD(ABS(lengd_lok), 100) / 60 END END
+        description: >-
+          As breidd_lok_dd; other three digits are dmm, a longitude under 10 degrees. A copy of the end latitude is none
+          here; correction afli_end_longitude recovers most from the sent record.
       - name: dypi_m
         label: Start depth, m
         expr: dypi * 1.8288
@@ -40,30 +72,71 @@ tables:
       - name: breidd
         label: Start latitude
         constraints:
-          - assert: MOD(ABS(breidd), 100) < 60
+          - assert: MOD(ABS(breidd), 100) <= 60
             description: >-
-              ddmm: the last two digits are whole minutes. Expected false on 1,864 rows (dump of 2026-10-16), whose
-              minutes are 60 or more.
+              ddmm: the last two digits are whole minutes, 60 a carry. Expected false on 153 rows (dump of 2026-10-16),
+              whose minutes are 61-99.
         details: |
           ddmm, four digits (Oracle's comment), north; whole minutes, about 1.8 km. 258 values are not four digits
           (dump of 2026-10-16), down to -6545. In decimal degrees: breidd_dd.
+          Exactly 60 (1,711, nearly all Trackwell's electronic records, from 2010) is a rounding without the carry:
+          read as the next degree it falls in the range of the vessel's track in the haul's window on 1,677 (the only
+          reading on 1,656), under another reading only on 10, none 22, no AIS 2 (decision 211). breidd_dd reads it
+          right.
+          61-99 (147 four-digit values, paper, 2015-2022): no reading fits most. Judged one coordinate at a time against
+          the track's range in the window, hundredths of a degree alone fit 31, the minutes without their leading zero
+          13, 60 too many 7, the digits swapped 4, the carry 2, several 43, none 40 (against 10 % of ordinary paper
+          values), no AIS 7. To be none (basis "none"), the value kept. breidd_dd turns them into a coordinate.
+          Three digits (109, 97 of them electronic from 2014): no reading fits most (the minutes' tens with a trailing
+          zero dropped 17, none 80).
       - name: lengd
         label: Start longitude
         constraints:
-          - assert: MOD(ABS(lengd), 100) < 60
+          - assert: MOD(ABS(lengd), 100) <= 60
             description: >-
-              dddmm: the last two digits are whole minutes. Expected false on 2,276 rows (dump of 2026-10-16).
+              dddmm: the last two digits are whole minutes, 60 a carry. Expected false on 288 rows (dump of 2026-10-16),
+              whose minutes are 61-99.
         details: |
           dddmm, west positive (Oracle's comment: "Vestur lengd"); whole minutes, about 0.8 km of longitude at 65 N.
           48,411 values are negative (dump of 2026-10-16), read as east. In decimal degrees: lengd_dd.
+          Exactly 60 (1,988, 1,948 of them four-digit) is a carry, as breidd's: of the four-digit ones, in the track's
+          range read so on 1,923 (the only reading on 1,696), under another reading only on 12, none 10, no AIS 3
+          (decision 211). 61-99 (282 four-digit, paper, 2015-2022): hundredths of a degree alone fit 85,
+          the unpadded minutes 9, 60 too many 9, the digits swapped 4, the carry 5, several 103, none 57, no AIS 10. To
+          be none, the value kept.
       - name: breidd_lok
         label: End latitude
-        details: As breidd.
+        constraints:
+          - assert: breidd_lok IS NULL OR ABS(breidd_lok) NOT BETWEEN 100 AND 999
+            description: >-
+              An end latitude has four digits. Expected false on 2,319 rows (dump of 2026-10-16), the loader's three
+              digits (details), electronic, 2,282 of them 2008-2013.
+          - assert: breidd_lok IS NULL OR breidd_lok <> 0
+            description: Expected false on 2,176 rows (dump of 2026-10-16), a zero for no end position, 2,175 with lengd_lok zero too.
+          - assert: ABS(breidd_lok) < 1000 OR MOD(ABS(breidd_lok), 100) < 60
+            description: Four digits are whole minutes; none at 60 or more (dump of 2026-10-16).
+        details: |
+          As breidd, on electronic records only. Three digits are not a position in any of breidd's forms but the end of
+          a haul at minute 9 to 10 of its degree, stored as the degrees and the minute with its decimals run together and
+          rounded (64 and 9.7 to 650), a fault of Oracle's loader most likely: ending in 9 (1,082), the degree and 9.0-9.5
+          minutes; ending in 0 (1,135), 9.5-10 minutes of the degree below; others 102. Where the haul's start lies on the
+          vessel's track, the track's range holds the first reading on 978 of 998 and the second on 984 of 1,006; at the
+          haul's end time the track lies at 8.9-9.6 and 9.4-10.1 minutes (10th-90th percentile, the 66 and 67 degree ones
+          with a time; decision 211). Read so
+          in breidd_lok_dd. The adapter reads them as 6-7 degrees: 2,349 curated lat2 lie between 0 and 10, and the zeros
+          are curated as 0 (2,176).
       - name: lengd_lok
         label: End longitude
+        constraints:
+          - assert: lengd_lok IS NULL OR lengd_lok = breidd_lok OR ABS(lengd_lok) NOT BETWEEN 100 AND 999
+            description: >-
+              Expected false on 1,837 rows (dump of 2026-10-16): the loader's three digits (breidd_lok's details), 840
+              ending in 9 and 769 in 0, and 228 others, most of them dmm, a longitude under 10 degrees.
         details: |
           As lengd, but on 144,368 electronic stations of 2008-2017 a copy of breidd_lok (the table's first assertion;
-          correction afli_end_longitude).
+          correction afli_end_longitude). Three digits that are not a copy carry breidd_lok's fault: where the haul's
+          start lies on the track, its range holds the reading of a 9 on 740 of 756 and of a 0 on 669 of 689 (decision
+          211). Read so in lengd_lok_dd.
       - name: dypi
         label: Start depth
         type: number(quantity)

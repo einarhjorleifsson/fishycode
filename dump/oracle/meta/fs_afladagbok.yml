@@ -1,0 +1,145 @@
+# fs_afladagbok — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-23 by Claude (AI) from TODO 126's AIS check (decision 211; $FISHYDATA/archive/2026-10-todo126-ais-check/),
+# decision 165 and the study of 2026-10-22 ($FISHYDATA/archive/2026-10-afli-minutes60/), on the dump of 2026-10-16;
+# not yet checked by a person. fs_afladagbok is read up to 2025-11-18, adb after (decision 160).
+$version: 0.1.0
+name: fs_afladagbok
+tables:
+  - name: ws_veidi
+    details: |
+      One row per station of the Directorate's electronic logbook, 2019-2025, read by sources/fs_afladagbok/convert.R.
+      The positions are integers whose form depends on the app that sent them, ws_veidiferd.uppruni, which this table
+      does not hold. The forms by app are under upphaf_breidd, each judged against the vessel's own AIS track
+      (decision 211): the reading of R/logbook_position.R (decode_logbook_position(), the digit count) on the track or
+      not, and if not, which reading is. An assertion here tests one table; the checks by app join the trip
+      (curate/checks/, proposed in decision 211).
+    definitions:
+      - name: upphaf_breidd_dd
+        label: Start latitude, decimal degrees, by its digit count
+        expr: >-
+          CASE WHEN ABS(upphaf_breidd) >= 1000000 THEN FLOOR(ABS(upphaf_breidd) / 100000) + MOD(ABS(upphaf_breidd), 100000) / 60000
+          WHEN ABS(upphaf_breidd) >= 100000 THEN FLOOR(ABS(upphaf_breidd) / 10000) + MOD(FLOOR(ABS(upphaf_breidd) / 100), 100) / 60
+          + MOD(ABS(upphaf_breidd), 100) / 3600
+          WHEN ABS(upphaf_breidd) >= 10000 THEN FLOOR(ABS(upphaf_breidd) / 1000) + MOD(ABS(upphaf_breidd), 1000) / 600
+          WHEN ABS(upphaf_breidd) >= 1000 THEN FLOOR(ABS(upphaf_breidd) / 100) + MOD(ABS(upphaf_breidd), 100) / 60
+          WHEN ABS(upphaf_breidd) BETWEEN 10 AND 99 THEN ABS(upphaf_breidd) END
+        description: >-
+          decode_logbook_position()'s rule: seven digits ddmm.mmm, six ddmmss, five ddmm.m, four ddmm, two whole
+          degrees. Wrong for the forms upphaf_breidd's details name by app (Taktikal's hundredths, the unpadded minutes,
+          the swapped records), which one table cannot tell; two digits are a cell, not a point.
+    columns:
+      - name: upphaf_breidd
+        label: Start latitude
+        constraints:
+          - assert: ABS(upphaf_breidd) NOT BETWEEN 100000 AND 999999 OR MOD(ABS(upphaf_breidd), 100) <= 60
+            description: >-
+              Six digits are ddmmss, the last two seconds: at most 60, a rounded-up carry. Expected false on 158 rows
+              (dump of 2026-10-16), the ddmm.hh of FRA TAKTIKAL (134), Marína raun (23) and Trackwell raun (1), whose
+              hundredths the AIS track confirms (decision 211).
+          - assert: >-
+              ABS(upphaf_breidd) NOT BETWEEN 1000 AND 99999 OR
+              MOD(FLOOR(ABS(upphaf_breidd) / CASE WHEN ABS(upphaf_breidd) >= 10000 THEN 10 ELSE 1 END), 100) <= 60
+            description: >-
+              Four or five digits carry whole minutes in their third and fourth, 60 a carry (TRACKWELL's 546). Expected
+              false on 1,885 rows (dump of 2026-10-16): Trackwell raun 1,557 and Jóhann Gíslason raun 276, the minutes
+              written without their leading zero (6681 for 66 8.1'), and FRA TAKTIKAL 35, Marína raun 15, others 2. Only
+              the part of that form whose first minute digit is 6-9 fails here; the rest passes for ddmm or ddmm.m.
+          - assert: upphaf_breidd IS NULL OR upphaf_breidd = 0 OR ABS(upphaf_breidd) >= 1000
+            description: >-
+              A point has at least four digits. Expected false on 23,518 rows (dump of 2026-10-16): two digits on
+              23,429, whole degrees, a cell (STOKKUR 23,362, Marína raun 46, others 21), and one or three on 89.
+          - assert: ABS(upphaf_breidd) < 10000000
+            description: Expected false on 50 rows (dump of 2026-10-16), FRA TAKTIKAL's eight digits, a form not established.
+        details: |
+          The forms by app (ws_veidiferd.uppruni), judged against the vessels' AIS tracks by Claude on 2026-10-23,
+          read-only (decision 211): a sample of up to 600 start positions per app, digit count and year, each reading
+          measured to the track's path in the station's own window (its times, an hour either side) where the app's
+          times are the position's, else the trip's, else the day; on the track = within 2 km (100 m for seconds). The
+          count of stations is the dump's (upphaf_breidd's digits); "the rule" is the definition upphaf_breidd_dd.
+          - TRACKWELL (the old route), 2019-2024: four digits (96,283), whole minutes, ~1.8 km; exactly 60 a carry
+            (546). The rule fits 98-100 % a year.
+          - Trackwell raun, 2021-2025: six digits (311,910), ddmmss, seconds (~30 m): the rule fits 92-96 %, half
+            within 15 m of the path; the seconds reading is the nearer on 92 % where the two lie 200 m apart. Five
+            (5,448) and four digits (740), mostly 2022-2023: degrees, then the minutes as a decimal with the point and
+            the leading zero dropped (64312 for 64 3.12', 6631 for 66 3.1'), on 60-81 % of the four-digit ones and 35-58 %
+            of the five-digit; ddmm.m on 19-39 % of the five-digit. The digit count cannot tell the two. A six-digit
+            longitude beside them is often ddmm.hh.
+          - Jóhann Gíslason raun, 2019-2023: six digits (1,537), the rule fits 42-54 %; five (782) and four (117), the
+            rule 0-18 %, the unpadded minutes most of the rest.
+          - FRA TAKTIKAL, 2021-2023: four (5,146), seven (789), six (743), five (240) and eight digits (50); the rule
+            fits 67-77 %. Six digits are ddmm.hh on the trips holding 61-99 (the hundredths reading the nearer on 83 %);
+            latitude and longitude exchanged on some records (22-36 per digit pattern in the sample); a four-digit longitude
+            beside a six-digit latitude is ddmm, not the latitude's form with leading zeros dropped (the rule 0 %).
+          - Marína raun, 2023-2025: six digits (13,319), 90 % ending in 00, 15, 30 or 45: whole or quarter minutes
+            written as seconds (decision 165). The track cannot tell seconds from hundredths (the seconds reading the
+            nearer on 50.8 %, 95 % interval 49.1-52.5, of 3,411 judged), since its times are the trip's and the path of
+            a handline day covers the ground the two differ by; the digits decide for seconds. Precision about 0.5 km:
+            the nearer reading lies a median 448 m from the path. On the trips with 61-99 the hundredths reading is the
+            nearer (22 of 29). Five digits (584) ddmm.m, the rule 82 %; two digits (47) whole degrees.
+          - STOKKUR, 2020-2022: two digits (23,362), whole degrees rounded to the nearest: the vessel's at-work
+            position lies within half a degree of the reported one on 14,491 of 19,096 stations judged (75.9 %), the
+            offsets spread evenly over -0.5 to 0.5 and falling off beyond; a corner explains 2,405 (truncated 1,344,
+            floored 1,061), none 2,200; no AIS 4,266. A cell, 1 x 1 degree, centred on the value.
+          - Fontos raun (2019-2025, 5,387), Fishtech raun (2023-2025, 540), Reiknistofa fiskmarkaða raun (2024-2025,
+            2,527): six digits, ddmmss; the rule fits 79 %, 56 % and 57 % (no AIS 21 % on Fishtech; Reiknistofa a
+            median 0.4-0.8 km from the path).
+          North; a negative value is the latitude with a minus.
+          Evidence: decision 211 (the AIS check), decision 165 (the digits), the study of 2026-10-22 (08, 10).
+      - name: upphaf_lengd
+        label: Start longitude
+        constraints:
+          - assert: ABS(upphaf_lengd) NOT BETWEEN 100000 AND 999999 OR MOD(ABS(upphaf_lengd), 100) <= 60
+            description: >-
+              Six digits are ddmmss. Expected false on 178 rows (dump of 2026-10-16): FRA TAKTIKAL 144, Marína raun
+              31, Trackwell raun 3, the ddmm.hh trips.
+        details: |
+          In the latitude's form; a shorter one is that form with its leading zeros dropped (decode_logbook_position),
+          except on FRA TAKTIKAL's records, where a four-digit longitude beside a six-digit latitude is ddmm. Positive is
+          west, as the adapter reads it; a west entered with a minus is restored there (lon > 10.75 in Icelandic
+          latitudes). Of the 77 stations whose four- or five-digit longitude beside a six-digit latitude the adapter puts
+          past 30 degrees (decision 165 counted 59 of them on an older build), 13 are latitude and longitude exchanged (12
+          of them FRA TAKTIKAL's), 5 the leading zeros dropped, 59 on the track under no reading (a lost degree, mostly).
+          Evidence: decision 211.
+      - name: lok_breidd
+        label: End latitude
+        details: |
+          As upphaf_breidd. Missing on 200,745 of 469,881 stations (dump of 2026-10-16), on all of them for most apps
+          (the study of 2026-10-22, 10).
+      - name: lok_lengd
+        label: End longitude
+        details: As upphaf_lengd.
+      - name: upphaf_timi
+        label: Start of fishing or towing
+        time_zone: UTC
+        details: |
+          Not always the time of the start position (decision 211; dump of 2026-10-16):
+          - Trackwell raun, Fontos and Fishtech: the station's own; the vessel is at the start position within 15
+            minutes of it on 58-66 % (the end position at lok_timi, Trackwell raun: 81 %). Reiknistofa fiskmarkaða's
+            on 23 %, a median 0.6 hours off.
+          - Marína raun (13,543 of 13,543) and FRA TAKTIKAL (6,632 of 7,005): the trip's departure
+            (ws_veidiferd.upphafstimi); the vessel reaches the start position a median 5-5.5 hours later, and lok_timi
+            is the return. One handline station per trip. Jóhann Gíslason raun: the departure on 553 of 2,431, the
+            position reached a median 4.3 hours after the start.
+          - STOKKUR: one time, within 10 minutes of the landing on 18,565 of 23,362; no end time.
+          - TRACKWELL (the old route): midnight on all 96,210, a day only; 44,059 are the departure's day.
+          Years from 3 to 2031 are in the column.
+      - name: lok_timi
+        label: End of fishing or towing
+        time_zone: UTC
+        details: As upphaf_timi; empty on every STOKKUR station.
+  - name: ws_veidiferd
+    details: |
+      One row per trip. Holds persons' columns (skip_farsimi, utgerd_kt), which no reader of fishycode selects.
+    columns:
+      - name: uppruni
+        label: The app or route that sent the trip
+        details: |
+          The position and time forms depend on it (ws_veidi, upphaf_breidd and upphaf_timi). An app's own records
+          and its "- GAFL AUTO" and "- Skrifstofa VES" routes share its forms in the sample of decision 211.
+      - name: upphafstimi
+        label: Departure
+        time_zone: UTC
+      - name: londunardagur
+        label: Landing
+        time_zone: UTC
+        details: A midnight on 58,173 of 207,189 trips (dump of 2026-10-16), a day only.
