@@ -321,6 +321,8 @@ shrimp grid's bar spacing and the square-mesh window are folded away too; fs shr
 fs and adb nets a 10 mm placeholder. The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
 `$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
 vid found for 98 %; afli's 40,967 summary stations are logbook records left unread. **needs: maintainer** for its asks a-d.
+The ground-name gazetteer (plan 020 §6, README §3.6; 507 tight grounds, 128 in no MFRI list) is parked until
+`ops$sigfus` is dumped (`dump/oracle/ops_sigfus.R`): its `ornefni` set against the names, then a person's read of them.
 
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
