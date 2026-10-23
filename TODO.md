@@ -102,7 +102,7 @@ rerun after each redo, every same-track or partial case settled or stated; decis
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
-the metier (TODO 131, 133) and its mapping to icesVocab at delivery, with which list decides (decision 212), and plan 015 §4 b-d and i (e-h answered, decision 202) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
+the metier (TODO 131, 133, parked 2026-10-23) and its mapping to icesVocab at delivery, with which list decides (decision 212), and plan 015 §4 b-d and i (e-h answered, decision 202) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
 
 Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
 trip (`.tid_voyage`) on fixes outside every window. Open: the datacall. `products/ices_vms_datacall/build.R` is the
@@ -1078,7 +1078,8 @@ To answer per code: which list is right, and whether the third group's lists sho
 says so (a list taken, or a code's note).
 
 ## 131. The Icelandic metier per fishing operation: gear, target, mesh, rigging and devices, each with a basis
-**status:** open · **needs: maintainer** — ask a2 of plan 015 §4 a (the target where the gear code gives none) ·
+**status:** parked (the maintainer, 2026-10-23: "park this / put on hold") · **needs: maintainer** — ask a2 of
+plan 015 §4 a (the target where the gear code gives none) ·
 **see:** decision 212, `curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised,
 `$FISHYDATA/archive/2026-10-metier6/README.md`, TODO 133, TODO 27b (the mapping to ICES's codes), plan 020 (`gear_part`)
 
@@ -1095,7 +1096,8 @@ Nephrops panels, sea cucumber and urchin dredges, seaweed, diving; TODO 132 fold
 outcome; the operations where the recorded mesh disagrees with the regulation listed.
 
 ## 133. The legal mesh by gear and date, from the regulations themselves (`reference/gear`)
-**status:** open · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised (ask a5), TODO 131,
+**status:** parked (the maintainer, 2026-10-23: "park this / put on hold") · **see:**
+`curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised (ask a5), TODO 131,
 decision 212 (the regulation's mesh first)
 
 The metier takes the mesh class from the regulation where the regulation fixes one (decision 212), and the values are

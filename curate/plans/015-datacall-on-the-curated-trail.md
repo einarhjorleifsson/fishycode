@@ -3,7 +3,8 @@
 **status:** proposal — nothing built; effort and catch per fix have been built since (decisions 101–102); §4 e-h
 answered 2026-10-23 (decision 202), a-d and i held for a metier study; §4 a revised from that study the same day (a
 rule proposed); a1 answered and the metier made Iceland's own, mapped to ICES's codes at delivery (decision 212), a2
-and the list held · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
+and the list held; the metier parked the same day (TODO 131, 133)
+· **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
 (`rb_assign_effort`, `rb_share_catch`), decision 095
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
