@@ -20,9 +20,10 @@ vessel at sea, each fix says:
 
 **The main output is the link** (maintainer, decision 215): the user chooses a
 filter over the linked fixes (the speed range, the time window, both, or another);
-the effort is the sum of the kept fixes' dt, the catch is split over them by the
-same dt, and ramb's split keeps every kilogram in one outcome whatever the filter.
-The flow's own filters, `fishing` and `fishing_flow`, are presets.
+the effort is the sum of the kept fixes' dt, and the catch, or any additive quantity
+the record reports (value, hooks, nets, logged soak hours), is split over them by the
+same dt, labels inherited; ramb's split keeps every unit in one outcome whatever the
+filter. The flow's own filters, `fishing` and `fishing_flow`, are presets.
 
 Each value carries the path and basis it came from. All six steps of the flow
 belong here, effort and catch included (maintainer, 2026-10-14).

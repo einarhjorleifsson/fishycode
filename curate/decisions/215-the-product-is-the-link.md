@@ -3,7 +3,9 @@
 *2026-10-23. The maintainer's framing; its details drafted by Claude (AI) and left to Claude ("proceed - and i trust
 your decision"). Nothing is built; nothing in the store changes. **Amended 2026-10-23:** the effort is summed from
 the dt of the fixes the filter keeps (the maintainer: "the effort will be calculated from each ping dt value that
-remains after the filter (s, t, ...)").*
+remains after the filter (s, t, ...)"); and any additive quantity the record reports is split the same way (the
+maintainer: "one may even split effort reported in the logbooks across the 'filtered pings', number of hooks, nets,
+catch value, ...").*
 
 ## The maintainer's words
 
@@ -31,6 +33,12 @@ the gear's speed range (s1 to s2), by the time window (t1 to t4), by a mixture o
 - **Effort follows the filter:** each fix carries its dt, the time it stands for (`hours`, kW-hours), fishing or not
   (in June 2021 on 2,562,552 of 2,572,712 fixes). The effort of an event is the sum of dt over the fixes the user's
   filter keeps, and the same dt is the split's key, so effort and catch come from one choice.
+- **Any additive quantity is split, not only the catch:** the kilograms, the value, the hooks, the nets, the effort
+  the logbook reports (soak or tow hours), each over the kept fixes by the key, its parts adding up to the event's
+  total; a label (gear, metier, port) is inherited, as is a non-additive value (a price, a mesh size). This is the
+  grammar's rule for moving a value between units (`docs/grammar.qmd`, "Moving a value between units"); the kind of
+  each variable is declared once, in the data dictionary. Every unit of an additive quantity is in one outcome, as the
+  kilograms are.
 - **Flags travel with their event:** catch the landing contradicts (plan 038 §8 step 1c) and the records typed by what
   they cover (decision 214) are marked on the links, so the user's filter can leave them out or keep them.
 
@@ -42,6 +50,8 @@ the gear's speed range (s1 to s2), by the time window (t1 to t4), by a mixture o
 - **The landing on the fixes:** a landing reaches the fixes today only inside the catch step, through the voyages it
   ended (`ais_catch.R`'s `landing_trip` units, `ramb::rb_link_trip_landings()`), or through its logbook trip
   (`lid_map`, `trip_voyage`). The link product needs it on the fix itself (plan 038 L3 and L5).
+- **ramb's split** takes `kg` and one `value` column today (`rb_share_catch(kg =, value =)`); it is to take any
+  additive column, with the account kept for each (with ramb's renames after TODO 127's names review).
 - **The book** (`docs/flow_catch.qmd`, `docs/one_flow.qmd`): the split shown as the user's step, the presets as
   examples (plan 033).
 
