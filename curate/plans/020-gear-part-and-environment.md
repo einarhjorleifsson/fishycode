@@ -129,3 +129,35 @@ gear's main part in `gear_part` (nets, hooks, traps, jigs).
 5. **`environment`.** Build it now from afli? (Start and end as columns `temp1_…`/`temp2_…` is settled by the grammar's
    numeric suffix.)
 6. **The free-text note** (`athugasemd_txt`, e.g. "11 lúður"). On `fishing_sample`, or left in raw?
+
+## 6. The free-text notes, classified (2026-10-23)
+
+Claude's read-only study of question 6 (answered in decision 210), not checked by a person; every number, rule and
+script is in `$FISHYDATA/archive/2026-10-logbook-notes/README.md`. Notes may name people: they stay under `$FISHYDATA`,
+and only counts and patterns are written here.
+
+- **Where:** 104,590 notes in the counting set: fs (23,885, 2020-2025; adb's 5,223 from 2025-11-19, decision 160),
+  afli's `stofn.aths_texti` (52,755, 1953-2023) and 15,053 more the apps sent that Oracle never stored, the purse seine's
+  `athskipst` (2,342), the lumpsucker effort notes (5,042, 1977-2015) and the bycatch tables (290). None in the tour app.
+- **The rules:** 73 regular expressions in 18 classes, with the spellings found (makríll, makrill, mak, mac; dælt,
+  dlt, baelt; sleppt, slept, sleft); 3.1 % stay "other", mostly fishing-ground names. 45 % of fs's notes are exactly
+  afli's coded remark (`stofn.athugas`: gear trouble 1-14, "Tvö troll" 20-34, "Tvílembingar" 40-54) written as text by
+  Trackwell, so the two can share one code list.
+- **Transfers:** 7,262 notes; a partner vid for 98 % of the e-logbook's, by register number, call sign, district
+  number or name (flagged), the routes agreeing on 91 %. In the e-logbook the receiver logs pumped catch, not the
+  catcher (1,890 of 1,899 matched pairs): 70-100 kt of pelagic catch a year sits on the receiver's station, its catcher
+  named in 97 %. Decision 199's carrier trips have a note naming the catcher in 15-27 %. The maintainer (2026-10-23):
+  the catch stays on the vessel that caught it; the landing goes with the vid of the vessel that landed it.
+- **Samples:** survey notes find their MFRI survey sample (`channel`) in 88-100 %; other sample notes a sample of the
+  same vessel within 2 days in 55-66 %, mostly the crew's (category 4). `rdbes` cannot be joined (encrypted vessel).
+- **Released halibut:** 869 notes; the station records halibut on 19 of 275 fs ones, so it is outside the recorded
+  catch. fs and adb also record a released condition (RELE, 158-190 t of halibut a year since 2022), which sits inside
+  `catch_round`.
+- **afli's 40,967 summary stations** (stamped "Frá OPS$SIGFUS.GAMALL_HUMAR, samantekt", shrimp, Danish seine) are
+  logbook catch by vessel, month and square, not landings. The adapter sets them aside in
+  `staging/afli/aggregate.parquet`, which nothing reads. For Nephrops 1986-99 they repeat afli's hauls (double
+  counting if summed); elsewhere they are the only record (175 kt). The maintainer (2026-10-23): they belong in the
+  logbooks; `ops$sigfus` is added to the dump (d57a8ee).
+- **Proposed for staging**, basis `derived`, keyed on (`.sid`, `schema`): `station_note` (the text, class and tags);
+  `remark` (one code list for afli's `athugas` and the e-logbook's code texts); `transfer` (catching vid and station,
+  receiving vid, date, species, kg); `released`; `sample`. Asks a-d in the README's §5.

@@ -307,7 +307,7 @@ left of each is in the plan:
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
 ## 73. Plans 019 and 020: the fs_afladagbok tables, gear detail and environment
-**status:** open (asks answered 2026-10-23, decision 210; the notes study running) · **see:**
+**status:** open (asks answered 2026-10-23, decision 210; the notes classified, plan 020 §6) · **see:**
 `curate/plans/019-fs-afladagbok-mined.md`, `curate/plans/020-gear-part-and-environment.md`
 
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
@@ -318,7 +318,9 @@ length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23,
 metier study (plan 015 §4 a, 2026-10-23): afli's adapter reads `toga` but leaves `g_mesh` empty for OTB and OTM,
 though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; `tvo_veidarf` (twin trawls), the
 shrimp grid's bar spacing and the square-mesh window are folded away too; fs shrimp trawls carry 135 mm on 34 %, and
-fs and adb nets a 10 mm placeholder.
+fs and adb nets a 10 mm placeholder. The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
+`$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
+vid found for 98 %; afli's 40,967 summary stations are logbook records left unread. **needs: maintainer** for its asks a-d.
 
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
