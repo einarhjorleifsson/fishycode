@@ -1248,3 +1248,17 @@ fix is `t2` NA on a mid's last stretch if open, the rule of decision 183. It cha
 that target's next rebuild.
 
 **check:** no STK row of the crosswalk ends on the open-end date, and its other rows are unchanged.
+
+## 130. The species reference's unmatched lists: a person's read of the 30 codes
+**status:** parked · **needs: maintainer** — paused 2026-10-23 at the maintainer's word · **see:** decision 182
+
+`curated/reference/species.parquet` takes a code's values only from the lists that mean the same taxon as its first
+list (ufs, else orri). On 30 codes a list could not be matched: its values are kept in the `_other` columns, never
+taken (`lists_unmatched`). Read by Claude on 2026-10-23, not by a person, they fall in three groups: another species
+under the code (278, 953, 445 in afli, 165, 901, 556, 613, 905, 162, 409, 410, 645; unsure 641, 236, 213), a
+catch-all or another rank (55, 29, 184, 20, 50, 147, 190, 324, 658, 732, 316), and the same name the matching rule
+missed (185, 271, 738, 1035). Only 9 are in the catch tables, and of weight only the catch-alls 55, 29, 184 and 20.
+To answer per code: which list is right, and whether the third group's lists should be taken.
+
+**check:** each of the 30 codes answered in decision 182, and `reference/species/species.R` changed where an answer
+says so (a list taken, or a code's note).

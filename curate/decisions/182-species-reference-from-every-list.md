@@ -118,4 +118,5 @@ LIMIT 5`, which gives other values on each run.
 ## Open
 
 - Nothing reads `species.parquet` yet.
-- A person to read the 30 `lists_unmatched` codes and the notes, above all 278, 953, 445 and 999.
+- A person to read the 30 `lists_unmatched` codes and the notes, above all 278, 953, 445 and 999: TODO 130, parked
+  2026-10-23.
