@@ -15,6 +15,11 @@
 # NA, and so is a value beyond 85° or 178°. A latitude's sign is dropped. A positive longitude is west, so the sign is
 # turned, as station_v turned it; curate/corrections/adb_vs_fs_afladagbok.R then restores the west entered as minus.
 #
+# Not every app keeps to the digit count (decision 211, against the AIS track): Trackwell raun's and Jóhann Gíslason's
+# four- and five-digit latitudes of 2022-23 are degrees then minutes with the leading zero dropped (6631 is 66°03.1'),
+# Taktikal exchanges latitude and longitude on some records and writes a four-digit longitude beside a six-digit
+# latitude as ddmm, and two digits are a cell (STOKKUR rounds to the nearest degree). Reading them is TODO 126's.
+#
 # Oracle's view adb.station_v reads every six-digit value as ddmm.hh, which the digits contradict for all but one app
 # (curate/corrections/adb_station_v_positions.yml).
 
