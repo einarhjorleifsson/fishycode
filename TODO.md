@@ -1119,7 +1119,9 @@ parked or abandoned in its header.
 **status:** open · **needs: maintainer** — plan 039's asks a-h (§11), above all a (a new plan, or an amendment of
 plan 023) and e (`lid_map`'s 2007-09-01 bound lifted first, with plan 038) · **see:**
 `curate/plans/039-the-landings-flow.md`, plans 023, 025, 036, 037 and 038, TODO 74, 112, 119,
-`$FISHYDATA/archive/2026-10-lods-upstream/`, `$FISHYDATA/archive/2026-10-landings-flow/`
+`$FISHYDATA/archive/2026-10-lods-upstream/`, `$FISHYDATA/archive/2026-10-landings-flow/`,
+`$FISHYDATA/archive/2026-10-fiskifelagid/` (period 0's tables, variable by variable, with a draft overlay; parked by
+the maintainer 2026-10-22, its asks a-f in its README §9)
 
 Plan 039 sets the landings' layers period by period, with a basis and a layer on every value and one output shape:
 - vessel-month totals for 1966 to 1992-08 (`fiskifelagid`, `vor`);
