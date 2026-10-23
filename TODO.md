@@ -102,7 +102,7 @@ rerun after each redo, every same-track or partial case settled or stated; decis
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
-plan 015 §4 a-d and i, held for a metier study (e-h answered, decision 202) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
+plan 015 §4 a's asks a1-a5 (the metier study, §4 a revised 2026-10-23), and b-d and i (e-h answered, decision 202) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
 
 Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
 trip (`.tid_voyage`) on fixes outside every window. Open: the datacall. `products/ices_vms_datacall/build.R` is the
@@ -111,8 +111,8 @@ current `ping_union` does not have (`.sid`, `s1`/`s2`, `t1`/`t2`, `met6`, `dt`, 
 a `station-for-ais.parquet` nothing here builds, and `agf_gid`/`met6` that `gear.parquet` lacks.
 Repointing it means building its inputs from the curated tables. Built since 2026-10-14: the trail's `fishing`
 (decision 093), `hours` and `kw_hours` on each fix (decision 101), and catch per fix in `curated/ais/catch` (decisions
-101-102). Not built: metier 6 from the mesh size (the trail's `metier` column is there, its level not checked; `rdbes.metier`,
-the allowed metiers by area and mesh range, is dumped next, decision 121), swept
+101-102). Not built: metier 6 (the trail's `metier` is the house label gear + target2; a rule with a basis per operation is
+proposed in plan 015 §4 a revised, from Claude's read-only study in `$FISHYDATA/archive/2026-10-metier6/`), swept
 area from distance and gear width, habitat and depth by spatial join, and the logbook (LE) table without duplicate twins.
 
 Plan 015 designs it, checked against the 2025 delivery. Also open: whether to store a sorted wide trail (maintainer).

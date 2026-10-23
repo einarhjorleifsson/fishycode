@@ -1,7 +1,8 @@
 # 015 — The ICES VMS datacall from the curated trail
 
 **status:** proposal — nothing built; effort and catch per fix have been built since (decisions 101–102); §4 e-h
-answered 2026-10-23 (decision 202), a-d and i held for a metier study · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
+answered 2026-10-23 (decision 202), a-d and i held for a metier study; §4 a revised from that study the same day (a
+rule proposed, asks a1-a5 open) · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
 (`rb_assign_effort`, `rb_share_catch`), decision 095
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
@@ -38,7 +39,7 @@ It also writes into the repo (`here("ices-datacall/2025/...")`), which `AGENTS.m
 | the fishing fixes | `between(speed, s1, s2)` and `between(time, t1, t2)`, `whack == FALSE`, `.cid > 0` (at sea) | trail `fishing` TRUE (clean fixes only), `stay` NULL | built |
 | Year, Month, Csquare (0.05°) | fix time, `vmstools::CSquare` | the same | built; `rb_encode_csquare` is planned in ramb (plan 013) |
 | MetierL4, L5 | `gear_mapping` by `agf_gid` | trail `gear`, `target` (the landing's gear where it names one, plan 014 3j) | built |
-| MetierL6 | `gear_mapping.met6` by `agf_gid`, plus a hard-coded OTB_CRU fix | no `met6` anywhere; mesh size is in `fishing_sample.g_mesh` | **§4 a** |
+| MetierL6 | `gear_mapping.met6` by `agf_gid`, plus a hard-coded OTB_CRU fix | no `met6` anywhere (the trail's `metier` is the house label gear + target2, `OTB_NEP`); the mesh is in the logbooks' raw gear tables | **§4 a**, revised |
 | VesselLengthRange, AverageVesselLength | `vessels_iceland.loa` | `vessel.loa` | 95.7 % of vessels |
 | AveragekW, kWFishingHour | `vessels_iceland.kw_total` | `vessel.kw_total` | **65.3 % of vessels** (§4 f) |
 | Habitat, Depth | old trail `.msfd_bbht`, `.depth` | `staging/ais/ping_tagged` `bbht`, `depth` (from `area_h3`, H3 res 8), joined on (vid, time) | depth 100 %, habitat 61.9 % of cells |
@@ -74,10 +75,8 @@ them. The choice is **§4 i**.
 
 ## 4. Choices for the maintainer
 
-- **a. Metier 6.** (i) Read 2025's gid → `met6` lookup off the old trail and keep it as a column of
-  `reference/gear` (comparable with 2025). (ii) Derive the mesh class from `g_mesh`: recorded for 96-100 % of SDN,
-  GNS and DRB but 14-17 % of OTB and OTM. (iii) (i) with (ii) where the mesh is recorded. Recommended: (iii),
-  reporting how often each source decides.
+- **a. Metier 6.** Revised 2026-10-23 below (§4 a revised), after a read-only study; the options of 2026-10-14 rested
+  on a coverage of `g_mesh` that the study found wrong for OTB and OTM.
 - **b. Years.** 2009 to the last full year, as 2025 did 2009-2024?
 - **c. Effort per fix.** 2025 dropped intervals over 2 h or under 5 s. Keep that, or cap with `ramb::rb_cap_effort()`?
   Recommended: keep 2025's rule for the first comparison.
@@ -101,6 +100,71 @@ equal shares beside them for the comparison; g, a stable vid → `ISnnnn` key, n
 into `$FISHYDATA/exports/ices_vms_datacall/<call year>/` with a manifest. **Held:** a, the metier 6 (2025's lookup was
 typed by hand, the mesh is unreliable, and MFRI's RDBES uploads assign metiers too: a read-only study first), and with
 it b, c, d and i.
+
+### §4 a revised (2026-10-23): metier 6
+
+*A read-only study by Claude (Anthropic), not yet checked by a person, on the maintainer's words of 2026-10-23
+(2025's lookup "was sort of made upon the fly"; "the mesh reporting in the logbooks is notorious") and the point that
+the metier may be the regulation's rather than each haul's declaration. Scripts, the row-by-row account of 2025's
+lookup and every number: `$FISHYDATA/archive/2026-10-metier6/README.md`.*
+
+**Measured** (2009-2025 unless said; fishing fixes are the trail's `fishing`, 105.6 M, with the ICES area of
+`ping_tagged.fao`):
+- **2025's lookup** (`00_DATASET_gear.R`, four commits from 2025-07-15 to the day of delivery) is keyed on the
+  landing's gear and assumes one mesh class per gear: the unbounded `>0` for nets, pelagic trawl, purse seine, dredge
+  and traps, `>=120` for bottom trawl and seine, `90-99_1_120` for Nephrops, `40-54` for shrimp. On the old trail
+  94.2 % of 2025's VE fishing fixes carry a code allowed in their area by rdbes's list; 5.66 % do not: the shrimp code
+  in 27.5.a.2 (4.25 M; the class allowed there is 32-69), `DRB_DES` (0.68 M; `DRB_MOL` and `DRB_CRU` are allowed) and
+  `HMS_SWD`. The list moves: rdbes's copy of 2024-10-23 has other ranges and none of 2025's bounded codes for 27.5.a.2.
+- **MFRI's RDBES upload** is a 2024 pelagic pilot: 61 fishing operations carry a metier 6, the commercial tables
+  none. Its views call `metier6(area, gear, target, mesh)` with the mesh from adb's logbook table and the target set to
+  SPF; the function is hidden from the dump account, and on all 61 it acts as the narrowest allowed range holding the
+  mesh in the operation's area. Each row in one outcome: the 61 agree with 2025 at level 5 and disagree at level 6
+  (2025's is the unbounded code); the commercial tables (1,435 rows) and the trip and match tables (562) are not
+  comparable.
+- **The logbooks' mesh** is recorded on 92-100 % of trawl, seine and cod-net stations in afli and fs_afladagbok
+  (lumpfish and monkfish nets 67-75 %; none from the STOKKUR, TRACKWELL and FRA TAKTIKAL apps), and heaps at the
+  regulation's values: bottom trawl 100/135/155 mm on 75-94 %, seine 87-95 %, Nephrops 80 (82 %) and 100 (11-15 %),
+  shrimp 36-42, nets on half-inch steps. The 14-17 % of 2026-10-14 for OTB and OTM was `g_mesh`, which the afli adapter
+  leaves empty although afli's `toga` holds the codend mesh on 99-100 % of bottom-trawl stations. Impossible for the
+  gear: 2-3 % of bottom trawl (10-80 mm), 34 % of fs shrimp trawls (135 mm), 4-19 % of nets (10 and 20 mm
+  placeholders). The class changes within a trip on ≤ 1.7 % of trawl trips, 7-13 % of cod-net trips. Where the
+  logbook's and the landing's gear differ, the mesh mostly sides with one (trawl logged, shrimp landed, fs: 38 mm).
+- **So** where a gear's regulation fixes the class (bottom trawl, seine, Nephrops, shrimp), every legal mesh lies in
+  one class and the recorded mesh only confirms it; it decides only where the regulation leaves the class open: nets
+  (120-219 or ≥ 220 mm; 31.5 % of cod-net fixes ≥ 220), pelagic trawl, purse seine, and Nephrops if 100 mm counts.
+
+**Proposed rule**, per fishing operation, with `met6_basis`, the first that answers:
+1. `rdbes`, RDBES's own code for the operation;
+2. gear and target from `gid_used` (the landing's gear where it names one, decisions 085 and 154), dredge as
+   `DRB_MOL` and other gear as `MIS_MIS`, the codes allowed in 27.5.a;
+3. the mesh: `regulation` where the regulation fixes the class (the legal mesh: bottom trawl 135, Nephrops 80, shrimp
+   36, seine 135 mm); `recorded` where it does not and the mesh lies in the gear's trusted range; else `vessel usual`
+   (its median trusted mesh for the gear that year), `fleet usual`, `unbounded` (`>0`); `gear has no mesh` for lines
+   and jigs (`0_0_0`); none where no code is allowed (diving, seaweed);
+4. the code, the narrowest allowed range holding the mesh in the fix's ICES area, with selection device `0_0`.
+
+Applied (`unit_metier.parquet`): of the fishing fixes, regulation 47.0 %, gear without mesh 42.8 %, recorded 8.3 %,
+unbounded 0.85 %, vessel usual 0.58 %, fleet usual 0.40 %, RDBES 2,206 fixes, no code allowed 21 k (seaweed), no gear
+38 k; every fix with a gear gets a code allowed in its area. Against 2025 (2009-2024): agree 81.8 %, another mesh
+class 17.4 %, another target 0.8 %. It gives RDBES's code on all 61 operations. By year and gear:
+`rule_basis_by_year.csv`, `rule_basis_by_gear.csv`.
+
+**Assumed:** the regulation's values (543/2002 as a model read island.is; 964/2019 for shrimp and 188/2020 for
+Nephrops not read; the seine's 135 mm from the records); `metier6()` from 61 pelagic operations; stations with no
+fishing fix in 27.5.a.2; the target from the gear code alone.
+
+**Asks a1-a5** (the maintainer's):
+- **a1.** Regulation first or recorded first for the regulated gears? Only Nephrops moves: recorded first puts 18.6 %
+  of its fixes at 100 mm or more (bottom trawl 0.17 %, seine 0.09 %).
+- **a2.** Targets the gear code cannot give: dredges (`DRB_MOL`, though sea cucumber is no mollusc), pelagic trawls of
+  100 mm or more (`OTM_DEF`, oceanic redfish, 1.4-3.5 % of pelagic fixes), traps by their catch.
+- **a3.** Selection devices: afli records a 22 mm grid on 75 % of shrimp stations and fs a bycatch grid on 98 %, and
+  `OTB_CRU_32-69_2_22` is allowed in 27.5.a; the Nephrops panels have no allowed code there. `0_0` for the first
+  delivery?
+- **a4.** Which allowed list: rdbes's (analysed in Oracle on 2025-10-23) or the call's own.
+- **a5.** A dated regulation table in `reference/gear` (gear, target, legal mesh, from, to, the regulation), and
+  afli's codend mesh carried into `g_mesh` (or `gear_part`, plan 020).
 
 ## 5. Steps
 
