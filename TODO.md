@@ -576,17 +576,6 @@ and Hornvík's anchorage stops, port calls since one 2 h minimum (decisions 074,
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
-## 91. Names by output shape: `rb_create_*` for a table, `rb_add_*` for columns, "port call" for a stay (plan 032)
-**status:** in progress · **see:** `curate/plans/032-names-by-output-shape.md`, decisions 147 and 149
-
-Built in ramb and fishycode on 2026-10-19 (decision 147), and fishycode's tables rebuilt on ramb's keys the same day
-(decision 149): `port_call.parquet`, `port_call_id`, `voyage_id`. Left: ramb's `_pkgdown.yml` reference index still
-lists the twelve old names. It belongs to the session writing ramb's `sets` and `vessels` articles, uncommitted. The
-patch once named here (`ramb-pkgdown-renames.patch`) is not on disk (Claude's audit of 2026-10-23); ramb's
-`R/renamed.R` holds the old-to-new map.
-
-**check:** `pkgdown::build_site()` in ramb finds every exported function in the reference index.
-
 ## 92. Ports abroad: the independent lists as a second port tier, tested
 **status:** open · **see:** plan 031 §3.7 item 2 (calls abroad), §3.9 (the port-list scenarios), §4.3; its ask g
 

@@ -6,7 +6,7 @@ row and a chapter on the products' uses proposed, not made), §4 revised; asks a
 `docs/` converted in place keeping its name, one edition at `~einarhj/fishybook` with the Icelandic part in it (no data
 files, vessel data static), the title *From pings to effort and catch*; step 2 done (decision 151): `docs/` renders as a
 book from the pages that exist; steps 3-9 open, and decision 152's proposals wait for the maintainer · **2026-10-19** · **see:** TODO 94; plan 001 (the three-repo boundary: what `fishyweb` was to
-be) and plan 002 (its port list), TODO 15 and 16; TODO 91 (ramb's pkgdown index); TODO 93 and decision 148 (the
+be) and plan 002 (its port list), TODO 15 and 16; decision 186 (ramb's pkgdown index); TODO 93 and decision 148 (the
 workshops' data); `docs/one_flow.qmd`, `docs/wkssfgeo.qmd`
 
 *Written by Claude (AI-assisted) from a discussion with the maintainer, 2026-10-19. §2 and the Quarto tests in §6
@@ -369,7 +369,7 @@ cleaner unit to publish, but the Icelandic part would have left the code it docu
   a chapter reaches a decision first.
 - **ramb's articles stay, as brief introductions to the functions** (maintainer, 2026-10-20). The book gives the
   detail and the cases, starting from the articles' examples; an article and its chapter link to each other. This
-  replaces the first rule, that the articles would move into the book. TODO 91 (the pkgdown index) is unchanged.
+  replaces the first rule, that the articles would move into the book. The pkgdown index (TODO 91, closed by decision 186) is unchanged.
 - **The groups' words first**, and project terms mapped in the grammar chapter (§3).
 - **Pinned to ramb.** The book runs whatever ramb is installed, and `freeze: auto` does not re-run a chapter when
   ramb changes. After 2026-10-19's renames (decision 147), a frozen chapter would show the old names. So the preface

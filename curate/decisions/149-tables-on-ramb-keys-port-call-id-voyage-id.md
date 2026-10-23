@@ -7,7 +7,8 @@ maintainer's word ("Yes, commit your 25 files"). It was built by name from a cle
 147, which renamed ramb's functions and left the tables to this rebuild.*
 
 *Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person): TODO 91 is not
-closed. It stays open for ramb's `_pkgdown.yml` reference index, which still lists the old names.*
+closed. It stays open for ramb's `_pkgdown.yml` reference index, which still lists the old names. Closed by
+decision 186 the same day.*
 
 ## Decided (the maintainer)
 

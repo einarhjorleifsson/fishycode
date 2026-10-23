@@ -91,5 +91,5 @@ voyages, with the exception in e. `AGENTS.md` (Terms), `docs/grammar.qmd` and `d
   ping and trail columns `stay` → `port_call_id` and `voyage` → `voyage_id`, and their readers (the vessel overview,
   `docs/ais_trail.qmd`, the checks). This is a rebuild of its own, kept in TODO 91.
 - **ramb's `_pkgdown.yml`**, which belongs to another session's uncommitted work, still lists the old names in its
-  reference index, so a pkgdown build fails until it lists the new ones.
+  reference index, so a pkgdown build fails until it lists the new ones. Done 2026-10-23 (decision 186).
 - The one-call `rb_add_voyages(pings, method = …)` of plan 032 §4 was not built.
