@@ -651,7 +651,8 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
 #        R's yaml (1.1) writer ("62E5", "1e5"), which are now always quoted
 #   S07  a column with no examples or range: one with no value in the whole file is kept by name only, with Oracle's
 #        declared type in details and a todo (plan 040, ask f, the reversible option: the next dump with a value
-#        types it again); one whose values all lie past the first 10,000 rows takes its examples from the whole file
+#        types it again); one whose values all lie past the first 10,000 rows takes its examples from the whole file,
+#        the five smallest: a DISTINCT alone returns them in a different order each run, and a rewrite moved them
 # Returns, invisibly, one row per column: its type, the values the file holds, and whether the first 10,000 rows held
 # one (plan 040 §5).
 .write_data_dict <- function(out_dir, schema, objects, fields, run, overlay = .data_dict_overlay(basename(out_dir)),
@@ -731,7 +732,7 @@ dump_oracle_by_year <- function(con, table, dir, column, fields, run) {
         ex <- unique(ex)
         if (ty == "number") ex <- ex[is.finite(as.numeric(ex))]
         if (!length(ex))
-          ex <- DBI::dbGetQuery(con, sprintf("SELECT DISTINCT %s AS v FROM %s WHERE %s IS NOT NULL%s LIMIT 5",
+          ex <- DBI::dbGetQuery(con, sprintf("SELECT DISTINCT %s AS v FROM %s WHERE %s IS NOT NULL%s ORDER BY v LIMIT 5",
                                              q(cn), rp, q(cn), if (ty == "number") sprintf(" AND isfinite(%s)", q(cn))
                                              else ""))$v
         if (length(ex)) e$examples <- as.list(show(utils::head(ex, 5), ty))

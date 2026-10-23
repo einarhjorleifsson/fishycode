@@ -27,7 +27,7 @@ landing <- data.frame(
   area = rep(c("I", "Y", "N"), length.out = n),
   rect = rep(c("62E5", "58C2", "1e5"), length.out = n),
   kg = c(NaN, seq_len(n - 1) * 1.5),
-  late = c(rep(NA, 10002), 7, 8, 9),
+  late = c(rep(NA, 10002), 9, 7, 8),                 # out of order: the examples come sorted
   empty = NA_character_, empty_id = NA_real_,
   lon = c(rep(1, 5), seq(6, n)), lat = c(rep(1, 5), seq(6, n) + 1))
 fd$.write_raw(landing, file.path(dir, "landing.parquet"), "toy.landing", run)
@@ -105,7 +105,7 @@ testthat::test_that("the writer's S12 and S07 faults are gone, without an overla
   testthat::expect_null(e$type)
   testthat::expect_match(e$details, "Oracle declares VARCHAR2")
   testthat::expect_match(e$todo, "No value in this dump")
-  testthat::expect_equal(sort(unlist(col(dd, "landing", "late")$examples)), 7:9)   # past the first 10,000 rows
+  testthat::expect_equal(unlist(col(dd, "landing", "late")$examples), 7:9)   # past the first 10,000 rows, in order
   testthat::expect_false(any(is.nan(unlist(col(dd, "landing", "kg")$range))))
   testthat::expect_false("gone" %in% vapply(dd$tables, `[[`, "", "name"))
   testthat::expect_match(dd$todo, "not on disk, so left out: gone")
