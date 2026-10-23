@@ -205,7 +205,7 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
 # all.R runs them; catalogue.R lists every schema without dumping one, and code.R keeps the SQL behind each.
 .dump_schemas <- function(root = .repo_root()) {
   order <- c("asfis", "taxon", "fs_ufs", "uv", "rdbes", "dw", "dwstg", "fiskist", "simalinu", "ufs", "gear", "orri",
-             "vessel", "channel", "ops_einarhj", "logbook", "fiskifelagid", "agf", "ask", "vor", "kvoti", "kvotix",
+             "vessel", "channel", "ops_einarhj", "ops_sigfus", "logbook", "fiskifelagid", "agf", "ask", "vor", "kvoti", "kvotix",
              "adb", "fs_afladagbok", "afli", "fs_afli", "biota", "stk")
   scripts <- setdiff(sub("[.]R$", "", list.files(file.path(root, "dump", "oracle"), pattern = "[.]R$")),
                      c("all", "catalogue", "code"))
@@ -242,7 +242,7 @@ dump_check <- function(schema = NULL, driver = Sys.getenv("FD_DUMP_DRIVER", "ROr
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   say(TRUE, "connected through %s; the date%s check passed", .oracle_driver(con), if (driver == "ROracle") " and text" else "")
   for (s in if (is.null(schema)) .dump_schemas(root) else schema) {
-    o <- if (s == "ops_einarhj") "ops$einarhj" else s
+    o <- sub("^ops_", "ops$", s)
     n <- tryCatch(c(nrow(oracle_objects(con, o)), nrow(oracle_fields(con, o))), error = function(e) e)
     if (inherits(n, "error")) say(FALSE, "%s: %s", s, conditionMessage(n))
     else say(n[1] > 0 && n[2] > 0, "%s: %d tables and views, %d columns read from the catalogue", s, n[1], n[2])
