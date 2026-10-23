@@ -3,7 +3,8 @@
 **status:** proposal — written 2026-10-22 at the maintainer's request; nothing built or changed; the baseline measured
 read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0) and
 confirmed; every ask of §9 answered 2026-10-23 (decision 191; TODO 122); step 1b coded, checked on a scratch store, not
-built (decision 203) · **2026-10-22** · **see:** `docs/one_flow.qmd` (the cascade and what is built where),
+built (decision 203); §6-§7 rewritten 2026-10-23 for decision 215 (the product is the link) · **2026-10-22** ·
+**see:** `docs/one_flow.qmd` (the cascade and what is built where),
 `docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037, 039 and 040
 
 Drafted with AI assistance (Claude) on 2026-10-22. The maintainer asked whether to plan the full logbook flow next,
@@ -260,45 +261,98 @@ d. **`trip_landing`** (§4).
 e. **The audit:** the station ↔ trip and trip ↔ landing tests read the reconciled times too, beside the declared
    ones.
 
-## 6. L5: the stations on the fixes
+## 6. L5: the link, every fix to the events it may belong to (decision 215)
+
+**The product** (decision 215, the maintainer, 2026-10-23): the linked track, each fix with the logbook and landing
+events it may belong to and the evidence for each link. Splitting the effort, the catch and any other additive quantity
+over the fixes is the user's step (§7), and the flow's own filters are presets.
 
 **Built:**
 - `logbook_gear` (the gear and metier of each station);
-- `station_window`, one row per station and phase, with `win_basis`, one fix to one record (decisions 090, 091);
-- `station_event`, the fix that bounds each event (decision 088);
-- `voyage_gear`, each station on the voyage of its own time (decision 155);
-- the trail: `fishing` (the window and the ±10 min median speed, decision 093) and `fishing_flow` (the window, else the
-  voyage gear's speed range, decision 101).
+- `station_window`, one row per station and phase, with `win_basis` (decisions 090, 091); `station_event`, the fix
+  that bounds each event (decision 088); `voyage_gear`, each station on the voyage of its own time (decision 155);
+- the trail, one row per fix: its port call and voyage; the voyage's logbook trip where it has exactly one
+  (`.tid_voyage`); the station whose window holds it, with its gear, phase and `win_basis`, and the gear's speed range
+  (`s1`, `s2`); its speed; its dt (`hours`, `kw_hours`), on every fix; and the presets `fishing` (the window and the
+  ±10 min median speed, decision 093) and `fishing_flow` (the window, else the voyage gear's speed range, decision 101);
+- `trail_match`, one row per fix and claiming station, the single claims too: the candidates. A fix that two or more
+  windows claim is left unassigned on the trail (decision 090's rule as ramb applies it).
 
-**Measured:** 7,486,172 window rows. Recorded windows: 4,355,860 tows, 259,038 hauls and 96,743 jigs. Synthesised:
-2,437,872 day windows (33 % of the rows), 189,586 sets and 6,152 hauls. 123,753 tows are capped. From 2008, 97-98 %
-of the stations of every Icelandic logbook have a fix. The audit puts 92,673 afli stations by their own time in
+**Measured:** 7,486,172 window rows (recorded: 4,355,860 tows, 259,038 hauls, 96,743 jigs; synthesised: 2,437,872 day
+windows, 189,586 sets, 6,152 hauls; 123,753 tows capped). Every fix in one outcome (Claude, 2026-10-23, not checked by
+a person; `$FISHYDATA/archive/2026-10-todo126-ais-check/13_link_account.R`):
+
+| The fix | 2015 | 2023 | 2023, hours |
+|---|---:|---:|---:|
+| in a port call | 15,206,638 | 18,961,951 | 3,138,361 |
+| at sea, no voyage | 37,182 | 39,556 | 6,553 |
+| claimed by two or more windows, unassigned (its candidates in `trail_match`) | 987,687 | 86,820 | 5,731 |
+| in one station's window | 10,354,949 | 5,062,319 | 456,619 |
+| no window; the voyage has one logbook trip | 4,829,900 | 3,577,692 | 292,689 |
+| no window; the voyage has several trips | 220,784 | 279,940 | 23,958 |
+| no window, no trip: a leisure boat | 138,796 | 266,764 | 49,581 |
+| no window, no trip | 4,540,739 | 4,932,600 | 679,591 |
+| all | 36,316,675 | 33,207,642 | 4,653,083 |
+
+The voyages against the landings (same vessel, the voyage's end day): in 2023, of 67,840 voyages, 32,835 end at a
+landing that day at the same port, 1,149 at another port, 5,373 have one a day before or after, and 28,483 none within
+a day (2015: 47,015, 1,552, 7,992 and 21,628 of 78,187). The audit puts 92,673 afli stations by their own time in
 another voyage than their trip's, and 23,398 afli, 21,844 fs_afladagbok and 3,879 adb stations in a port call.
+
+**Proposed** (decision 215):
+a. **The landing on the fix.** A landing reaches the fixes today only inside the catch step (`ais_catch.R`'s
+   `landing_trip` units) or through its logbook trip (`lid_map`, `trip_voyage`). The trail gets the landing's key
+   (`.lid` and its schema) on the fixes of the voyage that ended at it, with the basis of the link: through the
+   logbook trip (`lid_map`, then plan 027's `trip_landing`, §4), else the voyage-landing match
+   `ramb::rb_link_trip_landings()` already makes. After `trip_landing` (phase 3).
+b. **`trail_match` is the candidate link** and is documented as part of the product: every fix with every station
+   whose window holds it, with the evidence columns; the trail's single assignment is the default beside it.
+c. **Flags on the links:** decision 214's resolution of the records timed as the trip, and step 1c's flag on catch the
+   landing contradicts, are carried with the station onto the trail and `trail_match`, so a filter can keep or leave
+   them.
+d. **The fixes' account in the audit:** every fix in one outcome, as above, each year, so that a change shows as a move
+   between outcomes, as `station_fate` does for the stations (an instrument of step 1).
 
 **Open:**
 - TODO 105 (the day window stretched along its fishing stretch, judged by the survey tows);
-- TODO 103 (the 643,298 freed fixes) and 107;
+- TODO 103 (the 643,298 freed fixes), 107 and 137 (decisions 206 and 214);
 - TODO 101's remaining items;
 - TODO 34 (speed ranges, the last haul);
 - TODO 72's items 4, 8, 9 and 10. Item 10, declared `t1`-`t4` reconciled with the track, is the station-level
   counterpart of `trip_reconciled`;
 - TODO 98 and 100 (the logger, the sensors);
-- TODO 104 (the vessel overview draws the flow's windows), closed by decision 177;
 - TODO 86 and 49 (gear from the track; voyages with neither record);
 - plan 020 (gear quantity, which static-gear pressure needs).
 
-**Proposed:** no new design. The order is in §8.
-
-## 7. L6: effort and catch on the fixes
+## 7. L6: effort and the split, the user's step (decision 215)
 
 **Built:**
-- `hours` and `kw_hours` on every fix (decision 101);
-- the catch per fishing fix, unit, species and approach, with `raise_factor` (decisions 100, 102). Its units are a
-  timed station, a vessel-day of untimed stations, a logbook trip, and a landing with no logbook trip. Kg in equals
-  kg out per year and approach, and the script stops if not.
+- the dt on every fix (`hours`, `kw_hours`; decision 101), whatever the filter;
+- the split, `ramb::rb_share_catch()`: a filter (any logical column), a key (`hours`), and units by level
+  (`ramb::rb_add_catch_units()`: a timed station, a vessel-day of untimed stations, a logbook trip, a landing with no
+  logbook trip). A unit with no fix the filter keeps moves up a level, then to the vessel's month, and is otherwise
+  kept with no time and basis `none`. It takes the kilograms and one value column;
+- the presets: `curated/ais/catch` holds the split under `fishing` and `fishing_flow`, with `raise_factor` (decisions
+  100, 102). Kg in equals kg out per year and preset, and the script stops if not.
 
-**Measured:** §1. 22,414.6 kt of logged catch is on fixes. 908.3 kt is on units with no fix. Everything before 2007,
-27.6 Mt, is in no unit.
+**Measured:** §1. 22,414.6 kt of logged catch is on fixes, 908.3 kt on units with no fix, and everything before 2007,
+27.6 Mt, in no unit. Beside the kilograms the logbook reports an effort with its unit on nearly every station (2023:
+gear-minutes on 48,103 stations, jig-hours 18,639, settings 15,704, hook-days 7,813, net-days 7,015, trap-hours 6), the
+gear count (`n_units`) and the gear lost (`n_lost`). The landings hold kilograms and no value: `curated/landing/catch`
+has none, and no table of the agf dump has a value column (Claude, 2026-10-23, `13_link_account.R`).
+
+**Proposed** (decision 215):
+a. **The events, as a table** (step 1, §7.1 widened): every unit (station, vessel-day, trip, landing) with its additive
+   quantities (kilograms by species, the logged effort in its unit, the gear count, the gear lost, a value where a
+   source has one) and its labels (gear, metier, the flags), at its resolution, with its place and time.
+b. **The split for any additive column** (ramb): the user's filter over the linked fixes and a key (the dt by
+   default). Each additive quantity is split over the kept fixes, its parts adding up to the unit's total and every unit
+   of it in one outcome; labels are inherited (`docs/grammar.qmd`, "Moving a value between units"); a unit's effort is
+   the sum of its kept fixes' dt (and kW-hours). The functions are renamed after TODO 127's review.
+c. **The presets through it:** `fishing` and `fishing_flow` as two filters, `curated/ais/catch` their output as now,
+   read by the datacall (decision 202) and the maps, and documented as worked examples beside others (the speed alone,
+   the window alone, both).
+d. **The book** (plan 033, `docs/flow_catch.qmd`): the user's step shown with those examples.
 
 **Open:**
 - TODO 81 (raising to every landing of a trip; 23.0 kt counted twice);
@@ -310,7 +364,7 @@ another voyage than their trip's, and 23,398 afli, 21,844 fs_afladagbok and 3,87
 - TODO 62 (foreign logbooks);
 - TODO 27b (plan 015, the data call from the trail).
 
-### 7.1 Every logged kilogram in one unit, every year (proposed)
+### 7.1 Every logged kilogram in one unit, every year (proposed; widened in §7 a to every additive quantity)
 
 The aim's second done-criterion: every kilogram sits on fixes, or explicitly on a coarser unit. Today that holds
 only from 2007. Proposed: the catch units become a table of their own, `curated/logbook/catch_unit.parquet`, written
@@ -333,8 +387,9 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
 0. **The pending rebuild** (the maintainer's): TODO 119 and 121 with decisions 165, 169 and 170, 36 targets. **Done
    2026-10-22** (62 targets with the re-dump and decision 175; decision 180).
    Fingerprints are taken before and after, and the audit is read after. Nothing else is built before it.
-1. **The instruments:** plan 024's `station_fate` (TODO 79) and §7.1's `catch_unit`. Every staging station and every
-   logged kilogram is then in one outcome, so each later change shows as a move between outcomes. **`station_fate` and
+1. **The instruments:** plan 024's `station_fate` (TODO 79), §7.1's `catch_unit` (the events table of §7 a) and the
+   fixes' account (§6 d). Every staging station, every logged kilogram and every fix is then in one outcome, so each
+   later change shows as a move between outcomes. **`station_fate` and
    `trip_fate` built 2026-10-23** (decision 205); `catch_unit` not yet.
 1b. **The link's lower bound lifted** (from step 3, ask g, decision 191): `lid_map` reads landings from the start of
    LODS, not 2007-09-01, so January-August 2007's landings stop being shared on the fixes beside their trips' logged
@@ -356,7 +411,8 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    f), and the quota regime and gear onto the trips (ask d).
 3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 123); the month step
    before LODS (§4). Then plan 027's `trip_landing` on the reconciled trips
-   (TODO 81), plan 036's disposition through it (TODO 112), and `ais_catch.R` reading it.
+   (TODO 81), plan 036's disposition through it (TODO 112), and `ais_catch.R` reading it. Then the landing on the fix
+   (§6 a).
 4. **The sources:** plan 037 phase 1, then plan 019's tour app (TODO 73), its spot time read as the end of fishing
    (decision 214), then plan 037 phase 2 (TODO 108, 113, 114, 118, 75), then TODO 62 when the data come. The logbooks'
    positions by kind (decisions 207 and 211, TODO 126, parked) fit anywhere in this phase, since the flow reads no
@@ -365,10 +421,14 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
 5. **The stations:** TODO 103's freed fixes, then 105, 107 (decision 206) with 137 (decision 214: the records timed as
    the trip resolved to it, the AIS voyage their window), since both change the windows, then 101's remaining items,
    102's classes, and TODO 72's items 8 and 10.
+6. **The split (decision 215):** ramb's split for any additive column, with the effort as the kept fixes' dt (§7 b);
+   the presets re-expressed through it (§7 c); `trail_match` and the flags documented as the link (§6 b, c); the
+   book's worked examples (§7 d).
 
-Decision 215 (2026-10-23): the main output is the link from each fix to its events; splitting the catch is the user's
-step, with the flow's `fishing` and `fishing_flow` as presets. L5 and L6 (§6, §7) are to be rewritten around it, and the
-landing put on the fix (L3, L5).
+Decision 215 (2026-10-23): the main output is the link from each fix to its events; splitting the effort, the catch and
+any additive quantity is the user's step, with the flow's `fishing` and `fishing_flow` as presets. L5 and L6 (§6, §7)
+are rewritten around it the same day; its work is in steps 1 (the fixes' account, the events table), 3 (the landing on
+the fix) and 6 (the split).
 
 Each phase follows plan 037 §6: a scratch build, the catch traced kilogram by kilogram, a decision record, then the
 maintainer's build by name. Phases 2 and 3 come before 4 because TODO 121 is coded and its readers are the open

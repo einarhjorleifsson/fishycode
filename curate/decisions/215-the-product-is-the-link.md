@@ -45,8 +45,8 @@ the gear's speed range (s1 to s2), by the time window (t1 to t4), by a mixture o
 ## What it changes
 
 - **`AGENTS.md`** states the aim this way (this change).
-- **Plan 038's L5 and L6** (§6 the stations on the fixes, §7 effort and catch) are to be rewritten around the link,
-  with `curated/ais/catch` as the presets applied (TODO 122).
+- **Plan 038's L5 and L6** (§6 the stations on the fixes, §7 effort and catch) rewritten around the link the same day,
+  with `curated/ais/catch` as the presets applied; the work in its steps 1, 3 and 6 (TODO 122).
 - **The landing on the fixes:** a landing reaches the fixes today only inside the catch step, through the voyages it
   ended (`ais_catch.R`'s `landing_trip` units, `ramb::rb_link_trip_landings()`), or through its logbook trip
   (`lid_map`, `trip_voyage`). The link product needs it on the fix itself (plan 038 L3 and L5).

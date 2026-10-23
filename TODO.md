@@ -947,7 +947,8 @@ Built 2026-10-23 (decision 205): step 1's fate tables (TODO 79 closed), step 1b'
 −998.7 kt) and the reconciled trip across voyages (decision 193). Next (§8, decision 191): §7.1's catch units, then the
 five readers of `trip_reconciled`. afli's monthly summaries, which decision 191 e made units of §7.1, are designed
 as logbook stations in plan 041, parked (TODO 136). Decision 215: the main output is the link from each fix to its
-events, the split the user's step with `fishing` and `fishing_flow` as presets; L5 and L6 to be rewritten around it.
+events, the split the user's step with `fishing` and `fishing_flow` as presets; L5 and L6 rewritten for it (plan 038
+§6-§7), the work in its steps 1, 3 and 6.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
