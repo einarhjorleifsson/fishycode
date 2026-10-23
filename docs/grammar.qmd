@@ -10,7 +10,10 @@ bibliography: references.bib
 *Rewritten on 2026-10-15 with AI assistance (Claude), at the maintainer's request, as a general note for any
 sea-going trip. The parts specific to the Icelandic logbooks moved to [The Icelandic logbooks in the
 grammar](grammar_logbooks.qmd). The port-call term and the name mapping were added with AI assistance (Claude) on
-2026-10-19 (decision 147). Decisions recorded here are the maintainer's.*
+2026-10-19 (decision 147). The parts of "Resolution and provenance" on field groups, moving a value between units,
+values known in part, the coarser unit, layer and coverage, and the section "Names under review", were drafted with
+AI assistance (Claude) on 2026-10-22 at the maintainer's request. The maintainer chose the word "split"; the rest has
+not yet been reviewed (TODO 127). Decisions recorded here are the maintainer's.*
 
 A vessel leaves port, does things at sea, and comes back. A trawler tows its gear, a longliner sets and hauls, a
 research vessel trawls and lowers a CTD at survey stations, an oceanographic cruise samples plankton along a section,
@@ -357,6 +360,19 @@ sea, and the landing is weighed. Keeping the two streams apart is what makes the
 
 # Resolution and provenance
 
+Four questions place a value:
+
+- **what it covers**: its resolution;
+- **how it was obtained**: its basis;
+- **which source gave it**: its layer;
+- **how much of its population that source holds**: its coverage.
+
+The answers change with the period and the place, even within one source. A record office may keep a vessel's month
+for decades, then drop the vessel, then record the day. Its neighbour may have kept the day all along. A single
+method fits no such history. A cascade does: for each value the best source present answers, the next one where it is
+missing, and the value carries which answered ([the one-flow document](one_flow.qmd)). The sections below give the
+terms the cascade records.
+
 ## What a row covers {#sec-resolution}
 
 Systems resolve the hierarchy to different depths:
@@ -383,6 +399,101 @@ Aggregates can be kept two ways:
 Aggregates are sometimes stored among real operations in the same table. A free-text comment column is often the only
 sign, so it should be read before anything else in a conversion.
 
+## What each field group covers {#sec-resolution-groups}
+
+A row's `station_type` says what the row covers as a whole. Its field groups (@sec-field-groups) can each be resolved
+to a different depth. A historical register of weighed landings may know the vessel, the month, the buying station's
+port, the gear and the species, but no day and no position. The same office's later tables may drop the vessel for
+some years. A modern landing knows the hour. The depth of each group is a property of the source in a period and a
+place, not of the source for ever.
+
+| field group | from finest to coarsest |
+|---|---|
+| identification (the vessel) | a hull (`vid`) · a class or fleet segment · `none` |
+| temporal envelope | an instant · a day · a set of days within a period · a month · a year |
+| spatial envelope | a position · a rectangle or sub-rectangle · an area · a port · `none` |
+| configuration (the gear) | the gear as configured · a gear code · a gear class · `none` |
+| observation (the catch) | the sample's, as the row: per operation, day × rectangle, trip, landing, month or year |
+
+Where a source's depth differs between groups, or changes within the source over time, each group carries its own
+resolution beside its basis and its layer: `<group>_resolution` (the unit its value was recorded on), `<group>_basis`
+and `<group>_layer` (for example `time_resolution`, `place_resolution`). These are three more columns per group on the
+same row, not a table of their own. The row stays one observation with one column per variable, as tidy data asks
+[@wickham2014]. Provenance is a variable describing how the group was observed. The group names are a proposal, not
+yet fixed.
+
+### Moving a value between units {#sec-moving}
+
+A value recorded on one unit is often needed on another:
+- a trip's gear on each of its fixes;
+- a landing's weight on the hauls of its trip;
+- the fixes' hours in a grid cell.
+
+How a value moves depends on its kind. The kind is declared once per variable, in the data dictionary:
+
+- **additive**: the parts add up to the whole (a weight, a count, hours, a value in money);
+- **non-additive**: a price, a rate, a mean, a density;
+- **a label**: a gear, a port, a species.
+
+| moving to | additive | non-additive, or a label |
+|---|---|---|
+| finer units | **split** by a key: the parts sum to the whole | **inherited**: each part takes the whole's value |
+| coarser units | **aggregated**: summed | **aggregated**: a weighted mean, or the most frequent label |
+| between observations | — | **interpolated**: estimated from the observations either side |
+
+No column of its own is needed for the move. It follows from three things already there:
+- the value's own resolution (`<group>_resolution`);
+- the row's resolution;
+- the variable's kind.
+
+A value whose own unit is coarser than the row's was split or inherited. One whose unit is finer was aggregated. One
+whose unit is the same is as recorded.
+
+**A split needs a key**: what weighs the parts, such as fishing hours, logged weight or equal shares. The key goes in
+its own column, `<group>_key`, and the value's basis says whose key it was:
+
+- `derived`: the record's own values;
+- `reconstructed`: the same unit's data in another source, for example a landing split over the vessel's own fixes by
+  their hours;
+- `synthesised`: a rule, or other units' data, for example equal shares, or the hauls that other vessels logged in the
+  same month and port.
+
+Raising a sample to a census total is a split, with the sample as the key.
+
+**Down and back up returns the value.**
+- The parts of a split aggregate to the total they came from.
+- Inherited copies aggregate to the parent's value.
+
+Every step that moves a value can be held to that test. For additive quantities it is the rule that every kilogram
+logged or landed is counted once (@sec-coarser-unit). An interpolated value has no such round trip. It passes through
+the observations, and its basis is `synthesised`.
+
+### Known in part: bounds and sets {#sec-partial}
+
+Some values are known only in part. Two forms are common:
+
+- **a bound**: the departure was after the last landing and before the first haul. It is two columns (`T1_from`,
+  `T1_to`) that close to a point where the evidence allows.
+- **a set**: the vessel landed on the 3rd, the 9th and the 22nd of the month, but the month's weight is one total. It
+  is a child table with one row per member (unit × day), holding no share of the quantity.
+
+In a set, the weight stays on the parent. A step may split it only by a key (@sec-moving).
+
+Neither form is forced to a point, and neither is dropped: a bound is better than a guessed time, and a set of days is
+better than none.
+
+### The coarser unit {#sec-coarser-unit}
+
+Every quantity logged or landed ends on some unit. Where the processing cannot reach the finest unit, the quantity
+stays on the finest it can reach, and the row's resolution says which: a vessel-month with no day, a port-month with no
+vessel. That is an outcome, not a gap. Its basis is that of its source, and its sum is part of every total. `none` is
+for a value no source has. A quantity that a source has is never `none`, however coarse.
+
+Strictly, a landing, a vessel-month and a port-month are three observational units, and tidy data would give each its
+own table [@wickham2014]. The grammar allows that (above). Where totals must close (every kilogram in once, every
+kilogram out once), it prefers one table with `resolution`, and empty keys where a level is not resolved: a sum over
+one table cannot lose a kilogram between two. The departure from strict tidiness is deliberate.
+
 ## Basis: where a value came from
 
 Every value the processing infers carries a **basis**:
@@ -395,10 +506,42 @@ Every value the processing infers carries a **basis**:
 | `synthesised` | from a rule or a typical value |
 | `none` | no source has it |
 
-Modifiers (such as `capped`) go in their own column.
+Modifiers (such as `capped`) go in their own column. A split value takes the basis of its key (@sec-moving).
 
 **The original is never destroyed.** A correction adds columns, and the source value stays beside the corrected one
 (`lon1_raw` beside `lon1`).
+
+## Layer: which source gave it {#sec-layer}
+
+The basis says how a value was obtained. The **layer** says which source gave it: the system, the table and the copy
+(a weighing register, an electronic logbook, a dump of a given date). Where several sources hold the same value, the
+cascade takes the best one present, and the layer records which answered. Like the basis, it is kept per field group
+(`<group>_layer`).
+
+The order of the sources, best first, is declared in a table, per period and field group, not written into code. A
+better source found later then changes a row of that table, not the processing.
+
+**Lineage.** Sources are often copies of one another: a national statistic compiled from a register, or a database fed
+each night from another. A **witness**, a source read only to check another, confirms a value only if its lineage is
+independent of the source it checks. Agreement between two copies of one record shows that the columns mean what they
+are read to mean. It does not show that the record is right. A source's lineage, as far as it is known, belongs to its
+description.
+
+## Coverage: census or sample {#sec-coverage}
+
+A stream is a **census** where it holds every unit of its population (every landing weighed, every vessel above a size
+carrying AIS). It is a **sample** where it holds some: an observer programme, or logbooks kept by some vessels only.
+
+Coverage belongs to a stream in a period and a place, not to the stream for ever. Logbooks that were a sample become a
+census once they are mandatory and electronic. Coverage is measured as the share of a census that the sample holds,
+counted in units or in weight. It is kept with the stream's description, per period and place, and reaches the rows
+through the basis.
+
+Two rules follow:
+
+- **Totals come from a census.** A sample places them (where, when, with what gear), but does not add to them.
+- **Where a sample places a census quantity, the quantity is split with the sample as the key.** The basis then says
+  whose sample it was (@sec-moving).
 
 ## Units
 
@@ -434,6 +577,9 @@ dictionary, and the source value stays in the raw dump.
 | `catch` | observation | weight, kg |
 | `schema` | every table | the source system |
 | `basis` (and `<column>_basis`) | any | where a value came from |
+| `resolution` (and `<group>_resolution`) | any | what a row, or one of its field groups, covers (@sec-resolution-groups) |
+| `<group>_layer` | any | which source gave a field group (@sec-layer) |
+| `<group>_key` | any | what weighed a split (@sec-moving) |
 
 ## The conventions
 
@@ -447,6 +593,110 @@ dictionary, and the source value stays in the raw dump.
   gets its own name (`.lid` for landings), and the link between two systems is a crosswalk of inferred matches, never a
   shared column. Where one table holds records from several systems, its keys are `(key, schema)`: two systems'
   ids are never one value space, whatever their numbers.
+
+## Names under review {#sec-naming-review}
+
+::: {.callout-warning}
+## Review pending (TODO 127)
+
+This section is a proposal. It was drafted with AI assistance (Claude) on 2026-10-22 and has not been reviewed. Only
+the word **split** is decided (the maintainer). Every other rule and name below waits for the maintainer, item by
+item. Until then the names in use stay as they are, here and in ramb. Some passages of this document use words the
+review would change; they are listed under "Clashes".
+:::
+
+Names are the hardest thing to change later. This review covers the grammar's nouns and the verbs of the functions
+that apply it (ramb), and holds them to one set of rules.
+
+### The rules proposed
+
+1. **One concept, one word; one word, one concept**, across everything a reader sees together: this grammar, the
+   one-flow document and ramb.
+2. **The part of speech follows the job:**
+   - verbs name functions;
+   - nouns name tables, columns and levels, and are the values that say *what a thing is* (`operation`, `trip`,
+     `month`);
+   - past participles are the values that say *how a value came to be* (`recorded`, `split`);
+   - adjectives are the values of a property.
+3. **One root through its forms.** The verb, the noun and the participle of a concept share a root (to split, a split,
+   split; to reconstruct, a reconstruction, reconstructed). A label then names the act that made it.
+4. **Acts that mirror each other get words that pair**: keep and drop, encode and decode, split and aggregate, link and
+   assign.
+5. **A name in use changes only for a strong reason**:
+   - a *clash*: one word, two meanings, in front of the same reader;
+   - a *synonym*: two words for one concept.
+6. **Plain words over jargon**, avoiding words with a strong other meaning in statistics or in fisheries management:
+   *allocate* (quota), *distribution* (probability), *transfer* (quota transfer).
+
+Decided already, and kept: a flow step's function takes a **shape verb** that says what comes back. `create` returns a
+table of its own, `add` the input with columns added, `flag` a flag column, and `link` a table of pairs (ramb's naming
+rule). A tool takes an **act verb**, and the act a step performs is said in its title and in the labels it writes. The
+review gives the act verbs a vocabulary.
+
+### The acts
+
+| act | verb | noun | participle | mirror | in use now |
+|---|---|---|---|---|---|
+| take data from storage | read | reading | read | write | `rb_read_*` |
+| map values through a reference table | look up | lookup | looked up | — | `rb_lookup_mmsi_country` |
+| change units of measure | convert | conversion | converted | convert back | `rb_convert_speed` |
+| bring codes or forms to a standard | standardise | standardisation | standardised | — | `rb_standardise_gear_meshsize` |
+| turn coordinates into a code | encode | encoding | encoded | decode (missing) | `rb_encode_ices_rectangle` |
+| take part of a code | extract | extraction | extracted | — | `rb_extract_metier` |
+| compute a measure from a row or series | calculate (`calc`) | calculation | → basis `derived` | — | `rb_calc_*` |
+| put a value in a class by a rule | classify | classification | classified | — | `rb_classify_mmsi`, `rb_add_fishing` |
+| estimate a value from a model | predict | prediction | predicted | — | `rb_predict_gear_width` |
+| replace a missing value | fill | filling | filled | — | `rb_fill_gear_width`, `rb_pad_harbour` |
+| mark a row with a judgement, keep it | flag | flag | flagged | — | `rb_flag_*` |
+| bound a value | cap | cap | capped | — | `rb_cap_*`, `rb_limit_record_duration` |
+| keep or drop rows by a condition | keep, drop | — | kept, dropped | each other | `rb_keep_in_polygons`, `rb_drop_in_polygons` |
+| test a condition, return yes or no | detect | detection | detected | — | `rb_detect_*`, `rb_check_trip_crosses_year` |
+| cut a series into intervals | segment | segment | segmented | — | `rb_create_voyages`, `rb_create_port_calls`, … |
+| relate entities, candidates many to many | link | link | linked | assign | `rb_link_*` |
+| resolve a link to one | assign | assignment | assigned | link | `rb_add_record`, `rb_add_voyages` |
+| an additive total down, by a key | **split** (decided) | split | split | aggregate | `rb_share_catch` |
+| a non-additive value or label down, unchanged | inherit | inheritance | inherited | aggregate | the `rb_add_*` that join a parent's columns |
+| combine up: sum, weighted mean, mode | aggregate | aggregation | aggregated | split, inherit | `*_aggregate` (@sec-resolution) |
+| estimate between observations | interpolate | interpolation | interpolated | thin (missing) | `rb_interpolate*` |
+| take the best source present, fall back | cascade | cascade | → `<group>_layer` | — | the design (@sec-layer) |
+| make two accounts agree, explain the rest | reconcile | reconciliation | reconciled | — | fishycode's reconciled trips |
+| check every record against witnesses | audit | audit | audited | — | fishycode's audits |
+| show | plot, peek, summarise | plot, summary | — | — | `rb_plot_*`, `rb_peek`, `rb_summarise_track` |
+
+### Clashes: one word, two meanings
+
+| word | meaning 1 | meaning 2 | proposal |
+|---|---|---|---|
+| **event** | `station_type = "event"`: an aggregate over trip × gear × day × rectangle | the four events `t1`-`t4` | `daily_aggregate`, beside `monthly_aggregate` and `annual_aggregate` |
+| **reconstructed** | `station_type`: a station built from the track | the basis: a value from another source | `reconstruction` (the noun, rule 3), or the station's basis (see `station_type` below) |
+| **sample** | the level: one act at a station | coverage: census or sample (@sec-coverage) | coverage values `full` and `partial` |
+| **set** | static gear: set and haul | "a set of days" (@sec-partial) | "a list of days" |
+| **unit** | the thing a value belongs to (@sec-moving) | units of measure (the section "Units") | that section becomes "Units of measure" |
+| **window** | the location window `w1`, `w2` | the time a vessel is busy with a logbook record (ramb's record windows) | "location window" and "record window", each said in full |
+| **allocation** | an audit of every link and split the flow makes | quota allocation; in accounting, a whole item to one place | "flow audit", or kept and defined |
+
+### Synonyms: two words, one concept
+
+| words | concept | proposal |
+|---|---|---|
+| `station_type` / `resolution` | what a row covers (@sec-resolution says they are one) | one column, `resolution`, with one value set (`operation`, `day`, `month`, `year`, `trip`, …); how the station was obtained moves to its basis |
+| ping / fix / position | one position report of a vessel | one word |
+| track / trail | the positions of a vessel over time | **track** for the positions as received (the stream), **trail** for the track with its labels (the product) |
+| record / station, sample | a logbook entry at any resolution | ramb's `record` is this grammar's station with its fishing sample (the collapsed case), said in the name mapping (@sec-streams) |
+| assign / add | a flow step that adds columns | the one-flow document's sketch takes ramb's names (`add_*`, `split_catch`) |
+| share / split | an additive total down by a key | `split` (decided) |
+| check / detect | test a condition | `detect`; `check` only where nothing changes but a warning |
+| cap / limit | bound a value | `cap` clips; a judgement against a limit is a `flag` |
+| get / read / look up | fetch reference data | `read` and `look up` |
+| fill / pad | replace a missing value | `fill`, with where (the ends) as an argument |
+| field groups / column prefixes | the groups of @sec-field-groups and the prefixes of @sec-resolution-groups | one mapping: identification `vessel_`, temporal envelope `time_`, spatial envelope `place_`, configuration `gear_`, observation `catch_` |
+
+Port and harbour stay as decided: "port" is the place word, and two ramb functions keep "harbour".
+
+### Mirrors not yet needed
+
+**decode** (a rectangle to its centre or bounds) and **thin** (down-sampling a track) are the mirrors of encode and
+interpolate. Neither exists. The names are reserved here so that each pairs with its mirror when it comes.
 
 # Scope
 

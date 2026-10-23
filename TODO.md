@@ -1198,3 +1198,28 @@ track.
 
 **check:** each source's ends in one kind (point, cell, none), with counts by source, app and period; the overlays
 state the formats and precision; the AIS check reported.
+
+## 127. Names in the grammar and in ramb: the review of every noun and act (pending)
+**status:** open · **needs: maintainer** — the review, rule by rule and item by item · **see:**
+`docs/grammar.qmd` (section "Names under review", and the parts of "Resolution and provenance" drafted 2026-10-22),
+`docs/one_flow.qmd`, ramb's `AGENTS.md` (naming), decision 147
+
+Drafted 2026-10-22 with the maintainer, who asked for a review of every process, abstract and independent of the data,
+with verbs and nouns that match. In the grammar:
+- six rules: one word per concept; the part of speech by job (verbs for functions, nouns for things, participles for
+  how a value came to be); one root through verb, noun and participle; mirrored acts paired; a name in use changed
+  only for a clash or a synonym; plain words;
+- the acts, each with verb, noun, participle and mirror;
+- seven clashes (event, reconstructed, sample, set, unit, window, allocation);
+- eleven synonyms (`station_type` and `resolution`, ping and fix, track and trail, share and split, …);
+- two mirrors reserved (decode, thin).
+
+Decided: **split** for an additive total divided by a key (the maintainer), so `rb_share_catch()` is to become
+`rb_split_catch()`. Nothing is renamed yet.
+
+After the review: the grammar's text follows (three clashes are in its own new parts: sample, set, unit); then the
+one-flow document's sketch and summary ("The grammar, in brief") and the cascade diagram; then ramb's renames, each
+with an alias for a release, as in decision 147; then fishycode's columns and AGENTS.md's terms.
+
+**check:** every item answered in the grammar's section, the section's callout removed, and the renames listed in a
+decision.
