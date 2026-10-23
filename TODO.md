@@ -1153,3 +1153,37 @@ and read first (plan 041 §6); its seven asks come before any code.
 
 **check:** unparked by the maintainer, the asks answered in the plan, the adapter and merge built by name, and
 `station_fate`'s account closing with the summaries in it.
+
+## 137. Stations timed as the trip, the landing or midnight: what their windows should be
+**status:** open · **needs: maintainer** — the draft's four proposals · **see:**
+`$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts 00-09, `draft_decision.md`), decision 211 ("Found
+in passing"), decisions 206 and 210, plan 019 §4
+
+Some e-logbook apps store other times than the haul's (Claude's measure, 2026-10-23, not checked by a person):
+- Marína and Taktikal log one handline station per trip, timed departure to return (23,359 windows). The window is
+  the AIS voyage; the speed test drops the steaming, but slow time that is not jigging counts as fishing: a median 9 %
+  more fishing hours per trip than the same vessels' haul-timed trips, slightly more near the harbour.
+- Their net and line stations (1,519) have the set at the departure. STOKKUR's 3,930 net and line stations (set at the
+  landing) and the old TRACKWELL route's 225 static ones (midnight) have no haul window, so no fishing fix: 8.8 kt and
+  1.2 kt move up to the trip or the vessel's month.
+- Decision 210's tour app, which replaces STOKKUR, also times its spots at the landing.
+
+The draft proposes: (1) the handline window kept, labelled as the trip's, basis `synthesised`, the surplus documented,
+not corrected; (2) the dummy set times set NA and flagged as decision 206 does, STOKKUR's and TRACKWELL's stations on
+their day window; (3) STOKKUR's handline stations on their day window until decision 210 is built; (4) the tour time
+read as the landing (t4 = the spot time, t1 = t4 - hours), not plan 019 §4's mapping.
+
+**check:** each proposal chosen or declined in a decision, and what is chosen built with the logbook batch.
+
+## 138. Three window and twin faults found beside TODO 137
+**status:** open · **needs: maintainer** — what to do with each · **see:**
+`$FISHYDATA/archive/2026-10-trip-time-stations/` ("Separate" in `draft_decision.md`), decisions 094 and 206
+
+Claude's measure, 2026-10-23, not checked by a person:
+- Fontos's, Trackwell raun's and Fishtech's handline landing dummies: 3,460 stations with a window under 2 min, outside
+  decision 206's 0-4 min rule (static hauls and towed gear only);
+- 125 Marína trips entered again with other catch, outside decision 094's twin rule (same t1-t4 and catch);
+- the nets' speed range starts at 0, so moored fixes pass the speed test in any net window (Marína's and Taktikal's
+  nets: 2.8-4.6 % of their catch on fixes in port).
+
+**check:** each decided (a correction, a twin rule, a speed range) or declined in a decision.
