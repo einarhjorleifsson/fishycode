@@ -416,6 +416,14 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    of the species and at least 1 t more: 8,703 (trip, species) pairs, 294 kt, 0.6 % of the logged catch. "None of the
    species" waits for a crosswalk of the logbook's codes to the landings' (as 445 to 40 in
    `curate/catch_by_species_trip.R`'s notes), and a trip with no landing for the gear and species' own range.
+   The comparison is of the taxon: 830 is herring of the Atlanto-Scandian stock (norsk-íslensk síld), 30 herring of
+   the Icelandic stock, and the stock is a dimension of its own (the maintainer, 2026-10-23: herring's populations
+   overlap in space, unlike Barents Sea and Icelandic cod). Both sources carry it, the logbook in its species code,
+   the landings in `stid` (3001 with quota species 38 and 39 "NÍ-Síld"; 30) and lods' `kfteg`; where both state it they
+   agree on most (logbook 30: 2,438.6 kt landed as 30, 105.6 as NÍ; 830: 1,943.9 as NÍ, 16.6 as 30; 1,133.8 kt of 830
+   landed with no stock). Taxon and stock are to be two fields on both sides, the stock checked on its own. In agf's
+   stock table only herring has stocks of one area told apart by the record; shrimp's and scallops' stocks by fjord
+   follow from the position.
 2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; decision 193, built 2026-10-23 in decision
    205); then
    §5.1's readers a-e, each measured on a scratch store, then built (asks b, c). adb's `pid` goes into the merge (ask
