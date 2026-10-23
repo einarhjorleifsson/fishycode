@@ -3,7 +3,7 @@
 **status:** executed — asks a-e answered by the maintainer on 2026-10-19 (§7): `create` for a table, `add` for
 columns, "port call" for a stay; ramb renamed (2026.10.19.2) and fishycode's callers on the new names the same day
 (decision 147), and fishycode's tables rebuilt on the new keys the same evening (decision 149); not pushed; ramb's
-pkgdown index on the new names 2026-10-23 (decision 186; ramb committed, not pushed) ·
+pkgdown index on the new names 2026-10-23 (decision 186; ramb 8a0ae92, pushed) ·
 **2026-10-19** · **see:** decision 186, decision 075 (the terms port, stay,
 voyage), plan 013 (ramb's steps and its step registry), plan 014 (the flow as thin callers of ramb), plan 031 (the
 voyage cascade and its bench), ramb `AGENTS.md` (naming), ramb `R/registry.R`

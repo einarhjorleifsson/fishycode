@@ -2,8 +2,8 @@
 
 *2026-10-23. Claude's status review of the day picked this as a quick win, and the maintainer asked for it to be
 started. The edit, the checks and this record are by Claude (AI-assisted) and have not been checked by a person. ramb is
-committed locally at 8a0ae92, **not pushed**: pushing to GitHub is the maintainer's go. Nothing in fishycode's code
-changed, and nothing needs rebuilding. Closes TODO 91, plan 032's last open end (decisions 147, 149).*
+committed at 8a0ae92 and pushed to GitHub the same day on the maintainer's word ("yes, push ramb"). Nothing in
+fishycode's code changed, and nothing needs rebuilding. Closes TODO 91, plan 032's last open end (decisions 147, 149).*
 
 ## Found
 
@@ -43,7 +43,6 @@ changed, and nothing needs rebuilding. Closes TODO 91, plan 032's last open end 
 
 ## Open
 
-- **Push ramb 8a0ae92** (the maintainer's go). The published site shows the new index once it is rebuilt from that
-  commit and published.
+- **The published site** shows the new index once it is rebuilt from 8a0ae92 and published.
 - The aliases and their internal page are removed at ramb's next release, under its rule of one release of aliases. That
   is not part of this decision.
