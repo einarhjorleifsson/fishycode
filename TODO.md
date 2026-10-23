@@ -1005,8 +1005,8 @@ Left by the overview's session of 2026-10-22.
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
-**status:** open (decided 2026-10-23, decision 207; the AIS check done, decision 211) · **needs: maintainer** — the logbook
-batch's build · **see:** decisions 207 and 211,
+**status:** parked (the maintainer, 2026-10-23: "park this for now"; decided in 207, checked in 211)
+· **needs: maintainer** — the logbook batch's build · **see:** decisions 207 and 211,
 `$FISHYDATA/archive/2026-10-todo126-ais-check/README.md`, `$FISHYDATA/archive/2026-10-afli-minutes60/README.md`,
 `dump/oracle/meta/{afli,adb,fs_afladagbok}.yml`, `curate/corrections/afli_end_three_digits.yml`, `R/logbook_position.R`,
 decision 165, TODO 115, 124, plan 040
@@ -1155,7 +1155,8 @@ and read first (plan 041 §6); its seven asks come before any code.
 `station_fate`'s account closing with the summaries in it.
 
 ## 137. Stations timed as the trip, the landing or midnight: what their windows should be
-**status:** open · **needs: maintainer** — the draft's four proposals · **see:**
+**status:** parked (the maintainer, 2026-10-23: "park this for now") · **needs: maintainer** — the draft's four
+proposals · **see:**
 `$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts 00-09, `draft_decision.md`), decision 211 ("Found
 in passing"), decisions 206 and 210, plan 019 §4
 
@@ -1176,7 +1177,8 @@ read as the landing (t4 = the spot time, t1 = t4 - hours), not plan 019 §4's ma
 **check:** each proposal chosen or declined in a decision, and what is chosen built with the logbook batch.
 
 ## 138. Three window and twin faults found beside TODO 137
-**status:** open · **needs: maintainer** — what to do with each · **see:**
+**status:** parked (the maintainer, 2026-10-23: "park this for now") · **needs: maintainer** — what to do with
+each · **see:**
 `$FISHYDATA/archive/2026-10-trip-time-stations/` ("Separate" in `draft_decision.md`), decisions 094 and 206
 
 Claude's measure, 2026-10-23, not checked by a person:
