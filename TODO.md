@@ -945,7 +945,7 @@ the span) (Claude's audit of 2026-10-23, not checked by a person).
 Built 2026-10-23 (decision 205): step 1's fate tables (TODO 79 closed), step 1b's bound (2007's double count gone,
 −998.7 kt) and the reconciled trip across voyages (decision 193). Next (§8, decision 191): §7.1's catch units, then the
 five readers of `trip_reconciled`. afli's monthly summaries, which decision 191 e made units of §7.1, are designed
-as logbook stations in plan 041 (asks a-g for the maintainer).
+as logbook stations in plan 041, parked (TODO 136).
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
@@ -1136,3 +1136,18 @@ carriers named. Its seven asks come before any code.
 **check:** unparked by the maintainer, the asks answered in the plan, the link and the move built by name, and the
 audit's transhipment account read after the build.
 
+## 136. afli's monthly summaries back in the logbook, each kilogram once (plan 041)
+**status:** parked (the maintainer, 2026-10-23: "park this / put on hold") · **needs: maintainer** — the seven asks
+of plan 041 · **see:** `curate/plans/041-afli-monthly-summaries-in-the-logbook.md`, decisions 084 and 191 e, TODO 73
+and 122, `$FISHYDATA/archive/2026-10-afli-summaries/`, `$FISHYDATA/archive/2026-10-logbook-notes/` §3.1
+
+afli holds 40,967 monthly summary stations (Nephrops 1960-1999, shrimp 1953-1986, Danish seine 1960-1966; 199.4 kt).
+Each is a vessel × month × square or shrimp area, dated the 15th. The adapter sets them aside in
+`staging/afli/aggregate.parquet`, which nothing reads; the maintainer (2026-10-23) wants them in the logbooks. Plan
+041 designs them as stations of type `monthly_aggregate` on a vessel-month trip with no dates. A summary leaves where
+afli's hauls of its cell hold 95 % of its kg (Nephrops 1986-1999 repeats its hauls), and stays less the hauls where
+they hold less: 173.0 kt kept (Claude's measure, not checked by a person). `ops$sigfus`, their source, is to be dumped
+and read first (plan 041 §6); its seven asks come before any code.
+
+**check:** unparked by the maintainer, the asks answered in the plan, the adapter and merge built by name, and
+`station_fate`'s account closing with the summaries in it.

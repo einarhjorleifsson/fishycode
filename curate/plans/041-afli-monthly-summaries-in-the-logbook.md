@@ -1,7 +1,7 @@
 # 041 — afli's monthly summaries back in the logbook: a coarser unit, each kilogram once
 
-**status:** proposal — written 2026-10-23 at the maintainer's request; measured read-only the same day; nothing built
-or changed; asks a-g (§7) for the maintainer before any code · **2026-10-23** · **see:** plan 020 §6 and
+**status:** parked (the maintainer, 2026-10-23: "park this / put on hold") — written and measured read-only
+2026-10-23; nothing built or changed; asks a-g (§7) open (TODO 136) · **2026-10-23** · **see:** plan 020 §6 and
 `$FISHYDATA/archive/2026-10-logbook-notes/README.md` §3.1 (where the summaries were found), plan 038 §7.1 and decision
 191 e (the catch units), plan 039 §2 (period 0, the landings' own vessel-months), decisions 084 and 094,
 `docs/grammar.qmd` (§ What a row covers, § The coarser unit), `$FISHYDATA/archive/2026-10-afli-summaries/` (this
