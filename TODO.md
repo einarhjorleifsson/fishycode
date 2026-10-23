@@ -130,7 +130,8 @@ Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in reco
 
 **Asked of the maintainer:** (1) whether fish-trawl tows of small vessels near the coast are permitted, so a flag can say "suspect" or "expected", and where a baseline or fjord polygon can come from (5 km from the coast is a stand-in). The same baseline serves the plan's step 5, the 12-mile limit. **Answered:** (2) the declared ranges stay, and `fishing` tests the ±10 min median speed instead of a vessel-shifted range (decision 093); (3) the gear codes on the trail (decision 085).
 
-`uv`'s regulation areas (decisions 121 and 122) may hold the trawl limits; not checked.
+`uv`'s regulation areas (decisions 121 and 122) may hold the trawl limits; not checked. Also for the ranges (decision
+198): the declared gillnet range starts at 0 kn, so any stopped gillnetter on a gillnet voyage passes the voyage rule.
 
 The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen; the end looks late on some last tows, not early), and the plan's step 3 is marked not taken up (2026-10-23, Claude's audit, not checked by a person).
 
@@ -750,21 +751,22 @@ and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), whe
 treats each.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
-**status:** open · **needs: maintainer** — whether to send the draft to Trackwell (and Fiskistofa) · **see:**
-decisions 157 and 158, `curate/corrections/logbook_set_placeholder.yml`, plan 031 §3.11 and asks i-k,
+**status:** open · **needs: maintainer** — send the Trackwell draft and record it (chosen 2026-10-23) · **see:**
+decisions 157, 158 and 198, `curate/corrections/logbook_set_placeholder.yml`, plan 031 §3.11 and asks i-k,
 `$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/` (the draft, `trackwell.yml`, kept out of git)
 
 Origin found and corrected (decisions 157, 158): Trackwell's app (Fishing Log 2.7, from 2014) sends the static-gear set
 time as the haul start less 270 or 1,710 min; those `t1` are NA and flagged since the rebuild of 2026-10-21. Nothing
 fills the set (plan 035 failed its test).
 
-Left: the 643,298 fixes the voyage rule now calls fishing where a false set window stood (decision 158): measured
-2026-10-21, a soak's drift more than hauling, and a property of the voyage rule on every static voyage (about 344 k h of
-longline fishing); a decision draft in `$FISHYDATA/archive/2026-10-freed-fixes/` asks whether soak drift is fishing; the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as recorded by
-the maintainer's choice; the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained);
+Decided 2026-10-23 (decision 198): slow drift during a soak is not fishing on the vessel's fixes unless hauling-like,
+on every static voyage (about 201 k h longline and 47 k h gillnet less); built in `R/trail_sql.R` with the AIS batch.
+Left: that build; the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as
+recorded by the maintainer's choice; the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained);
 the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
 
-**check:** the freed fixes' `fishing_flow` judged in a decision; the gillnet set times in port explained or listed;
+**check:** decision 198's rule built and the trail's `fishing_flow` traced before and after; the gillnet set times in
+port explained or listed;
 `trackwell.yml`'s `sent` filled or the draft dropped.
 
 ## 105. A date-only haul's day window, stretched past midnight along its fishing stretch
