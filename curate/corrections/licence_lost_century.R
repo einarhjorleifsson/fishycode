@@ -32,8 +32,9 @@ fix <- dates |>
          flag = if_else(ok, "lost_century", "lost_century_unresolved")) |>
   select(table, record, column, value_raw, value, flag)
 
-stopifnot("a resolved date lies outside 1991-2026" =
-            all(between(year(fix$value[!is.na(fix$value)]), 1991, 2026)))
+# no resolved date in a later year than this run's (decision 181); a fixed 2026 stood here
+stopifnot("a resolved date lies outside 1991 to the current year" =
+            all(between(year(fix$value[!is.na(fix$value)]), 1991, year(Sys.time()))))
 cat(sprintf("licence lost century: %d dates, %d resolved, %d left for review\n",
             nrow(fix), sum(!is.na(fix$value)), sum(is.na(fix$value))))
 print(count(fix, table, flag))

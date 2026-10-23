@@ -42,7 +42,8 @@ h3 <- open_dataset(fd_curated("reference", "area_h3.parquet")) |> select(h3, dep
 
 ais <-
   open_dataset(fd_staging("ais", "ping_union"))
-years <- 2007:2026
+# every year the union wrote (decision 181); a fixed 2007:2026 stood here
+years <- ais |> distinct(year) |> collect() |> pull(year) |> as.integer() |> sort()
 for(y in 1:length(years)) {
   tic()
   YR <- years[y]

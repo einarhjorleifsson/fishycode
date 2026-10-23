@@ -1,7 +1,8 @@
 # Merge afli (legacy), fs_afladagbok, adb and the ERS catch reports (aflaskeyti) into unified logbook tables.
 # Side: preprocessing (logbook). See plan 014.
 # Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti}/{trip,station,fishing_sample,catch}.parquet, and the side
-#         tables named under "Load"
+#         tables named under "Load"; the dump stamps (fd.dumped, never the rows) of raw/oracle/{afli,fs_afli}/stofn,
+#         adb/fishing_station and dw/dw_aflaskeyti, for the date caps
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet
 #
 # Decision rule (tiered priority):
@@ -21,12 +22,13 @@
 #   read only for the dates the dump no longer covers (decision 160).
 #
 # Date bounds applied:
-#   afli          — no lower bound; upper: <= DATE_MAX
+#   afli          — no lower bound; upper: <= AFLI_DATE_MAX, the day after its dump
 #   fs_afladagbok — lower: >= FS_DATE_MIN; upper: <= FS_DATE_MAX (static dump)
 #   adb           — lower: >= ADB_DATE_MIN, the day fs_afladagbok's dump starts
-#                   to thin (decision 160); upper: <= DATE_MAX. From that day
-#                   the tier anti-join decides which of the two holds a
-#                   vessel-day, since the dump goes on to 2025-11-28.
+#                   to thin (decision 160); upper: <= ADB_DATE_MAX, the day after
+#                   its dump. From that day the tier anti-join decides which of
+#                   the two holds a vessel-day, since the dump goes on to 2025-11-28.
+#   aflaskeyti    — no lower bound; upper: <= ERS_DATE_MAX, the day after its dump
 #
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
 # keep the original recorded value, z1_basis/z2_basis says which happened.
@@ -50,7 +52,18 @@ FS_DATE_MAX  <- as.Date("2025-12-31")
 # Decision 160: adb only for the dates fs_afladagbok's dump no longer covers. The dump holds 99-100 % of adb's
 # vessel-days up to 2025-11-19, then 95 % falling to 3 % on 11-28; what it lacks before 11-19 is strays.
 ADB_DATE_MIN <- as.Date("2025-11-19")
-DATE_MAX     <- as.Date("2026-12-31")
+# Decision 181: no haul is later than the copy it was read from. Each source is capped at the day after its dump began
+# (fd.dumped; a dump can run past midnight), which leaves out the dates entered in the future (26 adb stations,
+# 2027-2031) and lets each new year in, where the fixed 2026-12-31 that stood here would have dropped it.
+dump_day_after <- function(schema, table) {
+  m <- curated_provenance(fd_raw("oracle", schema, table))
+  d <- as.Date(substr(m$value[m$key == "fd.dumped"], 1, 10))
+  stopifnot("a logbook dump carries no fd.dumped stamp" = length(d) == 1 && !is.na(d))
+  d + 1L
+}
+AFLI_DATE_MAX <- max(dump_day_after("afli", "stofn.parquet"), dump_day_after("fs_afli", "stofn.parquet"))
+ADB_DATE_MAX  <- dump_day_after("adb", "fishing_station.parquet")
+ERS_DATE_MAX  <- dump_day_after("dw", "dw_aflaskeyti.parquet")
 # curate/decisions/022-depth-unit-is-metres.md: product-wide depth is metres.
 # fs_afladagbok has no drift (curate/corrections/afli_depth_units.yml baseline) -
 # a flat conversion is enough; afli's vessel-by-vessel drift needs its own
@@ -137,10 +150,10 @@ ers_catch <- ers_catch |>
 stopifnot(!anyNA(ers_station$.tid), !anyNA(ers_station$lat1), all(ers_station$.tid %in% ers_trip$.tid))
 
 # Apply date bounds ------------------------------------------------------------
-afli_station <- afli_station |> filter(date <= DATE_MAX)
+afli_station <- afli_station |> filter(date <= AFLI_DATE_MAX)
 fs_station   <- fs_station   |> filter(date >= FS_DATE_MIN, date <= FS_DATE_MAX)
-adb_station  <- adb_station  |> filter(date >= ADB_DATE_MIN, date <= DATE_MAX)
-ers_station  <- ers_station  |> filter(date <= DATE_MAX)
+adb_station  <- adb_station  |> filter(date >= ADB_DATE_MIN, date <= ADB_DATE_MAX)
+ers_station  <- ers_station  |> filter(date <= ERS_DATE_MAX)
 
 # Subset all tables to stations/trips surviving the date filter
 afli_trip           <- afli_trip           |> semi_join(afli_station |> distinct(.tid), by = ".tid")

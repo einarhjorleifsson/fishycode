@@ -30,7 +30,8 @@ library(duckdb)
 MEM     <- "12GB"
 THREADS <- 3
 
-ping_union_duplicate_keys <- function(years = 2007:2026,
+# years: every year the union holds by default (decision 181); a fixed 2007:2026 stood here
+ping_union_duplicate_keys <- function(years = NULL,
                                       split_by_month = 2017L,
                                       tmp_dir = tempdir()) {
 
@@ -59,6 +60,8 @@ FROM g GROUP BY 1,2", src, extra_where, label)
   }
 
   out <- list()
+  if (is.null(years))
+    years <- sort(as.integer(sub("year=", "", list.files(fd_staging("ais", "ping_union"), pattern = "^year="))))
 
   for (YR in years) {
     src   <- sprintf("%s/year=%d/*.parquet", fd_staging("ais", "ping_union"), YR)

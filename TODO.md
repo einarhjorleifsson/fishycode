@@ -1225,3 +1225,17 @@ with an alias for a release, as in decision 147; then fishycode's columns and AG
 
 **check:** every item answered in the grammar's section, the section's callout removed, and the renames listed in a
 decision.
+
+## 128. The key's open-end marker 2028-12-24 cuts STK pings from 2028-12-25
+**status:** open · **see:** decision 181
+
+An open stretch of `curated/vessel/vessel_ais_key.parquet` ends on `SENTINEL` 2028-12-24, the MMSI archive's marker
+(`reference/vessels/{mmsi,identity,ais_key_cascade,ais_key}.R`), and `sources/stk/convert.R` and
+`curate/ais_ping_union.R` join `time < d2 + 1`. From 2028-12-25 every STK ping on an open stretch (3,143 of the segment
+table's 3,365 rows end on the marker) loses its vid and is dropped, with no error: decision 027's class, two years off.
+The MMSI feeds are safe (`ais_ping_union.R` and `vessel_ais_link.R` open the last window themselves). Either the two
+joins read `d2_is_open` as open-ended (main project; no output differs before 2028-12-25), or the key writes an open
+end itself at the next `once` redo (TODO 25).
+
+**check:** no join of the key ends an open stretch at a date; on a scratch store, an STK ping dated after 2028-12-24 on
+an open stretch keeps its vid.

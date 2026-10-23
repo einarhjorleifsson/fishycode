@@ -175,10 +175,14 @@ tibble(
 
 | Source | Lower bound | Upper bound | Rationale |
 |---|---|---|---|
-| `afli` | none | 2026-12-31 | Reliable across the full historical period |
+| `afli` | none | the day after its dump | Reliable across the full historical period |
 | `fs_afladagbok` | 2020-01-01 | 2025-12-31 | Static dump; its records end on 2025-11-28 (decision 125) |
-| `adb` | 2025-11-19 | 2026-12-31 | The day fs_afladagbok's dump starts to thin; to its end on 2025-11-28 the tiers decide (decision 160) |
-| `aflaskeyti` | none | 2026-12-31 | The records run from 2014-01-20 to 2018-06-08 |
+| `adb` | 2025-11-19 | the day after its dump | The day fs_afladagbok's dump starts to thin; to its end on 2025-11-28 the tiers decide (decision 160) |
+| `aflaskeyti` | none | the day after its dump | The records run from 2014-01-20 to 2018-06-08 |
+
+The upper bound of each source still fed is the day after its dump began, read from the dump's stamp (`fd.dumped`):
+no haul is later than the copy it was read from. It leaves out the dates entered in the future (26 adb stations dated
+2027-2031) and lets each new year in (decision 181).
 
 ## Decision rule
 

@@ -262,7 +262,11 @@ d_for <- function(YR) {
 # write out --------------------------------------------------------------------
 # Partition by year so downstream queries can apply partition pruning.
 # The loop materialises one year at a time to keep peak memory manageable.
-years <- 2007:2026
+# From 2007 to the newest year a feed holds (decision 181): a ping whose time is later (2106 ...) is left out, and a
+# new year comes in with its first partition, where the fixed 2007:2026 that stood here would have dropped it.
+partition_years <- function(dir) as.integer(sub("year=", "", list.files(dir, pattern = "^year=")))
+years <- 2007:max(partition_years(fd_raw("oracle", "stk", "trail")), partition_years(fd_staging("ais", "astd")),
+                  partition_years(fd_staging("ais", "astdB")), partition_years(fd_curated("logbook", "sensor_gps")))
 for(y in 1:length(years)) {
   YR <- years[y]
   print(YR)

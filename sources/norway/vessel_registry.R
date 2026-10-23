@@ -17,8 +17,9 @@ library(purrr)
 library(nanoparquet)
 
 p <- fd_raw("external", "nor", "norway_vessel-registry.xlsx")
-years <- as.character(2001:2022)
-stopifnot(all(years %in% excel_sheets(p)))
+# every year sheet the workbook holds, oldest first (decision 181); a fixed 2001:2022 stood here
+years <- sort(grep("^[0-9]{4}$", excel_sheets(p), value = TRUE))
+stopifnot(length(years) > 0)
 
 nor <-
   purrr::map(years, function(yr) {

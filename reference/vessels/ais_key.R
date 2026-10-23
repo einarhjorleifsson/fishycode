@@ -5,6 +5,7 @@
 #         curated/vessel/vessel_ais_key_cascade.parquet  identifiers and entity class of every mobile-id; rows of the
 #                                                        mobile-ids the segment table does not cover (navaids, buoys, ...)
 #         curated/vessel/{vessel,vessel_identity}.parquet  MMSI of the vid at the time
+#         raw/oracle/stk/trail                           the names of its year partitions only, for n_years
 # Output: curated/vessel/vessel_ais_key.parquet          same columns as before the switch; one row per segment
 #         curated/vessel/vessel_ais_device.parquet       gear devices and the vid that carries each: NOT in the key
 #
@@ -26,7 +27,9 @@ library(dplyr)
 library(nanoparquet)
 
 SENTINEL <- as.Date("2028-12-24")
-seg <- read_parquet(fd_curated("check", "ais_key_segments.parquet")) |> mutate(mid = as.numeric(mid), d1 = as.Date(d1), d2 = as.Date(d2))
+# n_years counts a stretch's years to the newest year of the STK dump at most (decision 181); a fixed 2026 stood here
+END_YEAR <- max(as.integer(sub("year=", "", list.files(fd_raw("oracle", "stk", "trail"), pattern = "^year="))))
+seg <-read_parquet(fd_curated("check", "ais_key_segments.parquet")) |> mutate(mid = as.numeric(mid), d1 = as.Date(d1), d2 = as.Date(d2))
 casc <- read_parquet(fd_curated("vessel", "vessel_ais_key_cascade.parquet"))
 ident <- read_parquet(fd_curated("vessel", "vessel_identity.parquet")) |>
   transmute(vid = as.integer(vid), mmsi, t1 = as.Date(t1), t2 = as.Date(t2)) |> filter(!is.na(mmsi))
@@ -44,7 +47,7 @@ mm <- seg |> filter(!is.na(vid)) |> select(mid, seg_no, vid, d1, d2) |>
 rows <- seg |>
   left_join(ids, by = "mid") |> left_join(mm, by = c("mid", "seg_no")) |> left_join(reg, by = "vid") |>
   transmute(mid, loid, glid, pings = as.integer(pings),
-            n_years = as.integer(pmax(1L, as.integer(format(pmin(d2, as.Date("2026-12-31")), "%Y")) - as.integer(format(d1, "%Y")) + 1L)),
+            n_years = as.integer(pmax(1L, pmin(as.integer(format(d2, "%Y")), END_YEAR) - as.integer(format(d1, "%Y")) + 1L)),
             d1, d2, vid = as.integer(vid), no = as.integer(seg_no),
             step = paste0("segment: ", source), entity_class = coalesce(entity_class, "vessel"),
             basis = if_else(source == "foreign: kept override", "recorded", "reconstructed"),
