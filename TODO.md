@@ -944,7 +944,8 @@ the span) (Claude's audit of 2026-10-23, not checked by a person).
 
 Built 2026-10-23 (decision 205): step 1's fate tables (TODO 79 closed), step 1b's bound (2007's double count gone,
 −998.7 kt) and the reconciled trip across voyages (decision 193). Next (§8, decision 191): §7.1's catch units, then the
-five readers of `trip_reconciled`.
+five readers of `trip_reconciled`. afli's monthly summaries, which decision 191 e made units of §7.1, are designed
+as logbook stations in plan 041 (asks a-g for the maintainer).
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
