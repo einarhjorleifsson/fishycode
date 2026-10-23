@@ -405,6 +405,17 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    against its landing matched by vessel and day (as `$FISHYDATA/archive/2026-10-trip-time-stations/recheck/
    05_against_landings.R` did for the trip-timed apps), and chosen with the maintainer. First known cases: STOKKUR's 6
    net and line stations of 23.1 kt, 11.3 kt of it on fixes today (decision 214). A scratch build, the catch traced.
+   **Measured 2026-10-23** (Claude, not checked by a person; `$FISHYDATA/archive/2026-10-todo126-ais-check/
+   14_catch_vs_landing.R`): every (trip, species) with logged catch, 50,954 kt, in one outcome against what its linked
+   landings (`lid_map`, with the landing's schema) hold of the species. The codes must be compared as the landings
+   record them: herring logged as 830 (Síld/norsk-íslensk síld) is landed as 30, which alone put 3.8 Mt under "none
+   of this species"; catch let go (codes -30, -31, -34, 55.6 kt) is never landed and set aside. So compared: within
+   10 % 32,506 kt; logged 0.5-0.9 or 1.1-2 times 11,218 kt; half or less 313 kt; 2-10 times 993 kt; 10-100 times
+   179 kt; over 100 times 118 kt; landing linked but none of the species 710 kt (a crosswalk question first); no
+   landing linked 4,861 kt (mostly before 2007). **Proposed margin:** logged more than 10 times what the trip landed
+   of the species and at least 1 t more: 8,703 (trip, species) pairs, 294 kt, 0.6 % of the logged catch. "None of the
+   species" waits for a crosswalk of the logbook's codes to the landings' (as 445 to 40 in
+   `curate/catch_by_species_trip.R`'s notes), and a trip with no landing for the gear and species' own range.
 2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; decision 193, built 2026-10-23 in decision
    205); then
    §5.1's readers a-e, each measured on a scratch store, then built (asks b, c). adb's `pid` goes into the merge (ask
