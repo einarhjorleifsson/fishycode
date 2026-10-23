@@ -5,7 +5,7 @@
 #
 # Every adb note, whatever its date: before 2025-11-19 adb is fs_afladagbok's copy note for note, and the merge keeps
 # fs's station there (decision 160), so curate/station_note.R flags which notes the logbook keeps. The catch row's note
-# (catch.note) is put on its station. A note may name a person: never printed (decision 159; MFRI's data policy).
+# (catch.note) is put on its station.
 
 library(tidyverse)
 library(duckdbfs)

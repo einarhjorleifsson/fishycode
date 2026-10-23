@@ -4,8 +4,7 @@
 # Output: staging/fs_afladagbok/note.parquet  .sid, schema, note_field, note: one row per station and field with a note
 #
 # The station's note (ws_veidi.athugasemd_txt) and the mammal and bird bycatch note (ws_medafli.ath, one per animal
-# record, so a station may hold several). A note may name a person: never printed (decision 159; MFRI's data policy).
-# curate/station_note.R classifies them.
+# record, so a station may hold several). curate/station_note.R classifies them.
 
 library(tidyverse)
 library(duckdbfs)

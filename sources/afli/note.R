@@ -9,7 +9,7 @@
 # bycatch notes (medafli.ath, spendyr.aths). The lumpsucker effort table (grasl_sokn) has no station: its notes carry
 # the vessel and day, and an empty .sid. The loaded layer's rafr_ tables are left out: their notes moved to these
 # tables, and the sent layer's (staging/afli_sent/note.parquet) holds what the apps sent.
-# A note may name a person: never printed (decision 159; MFRI's data policy). curate/station_note.R classifies them.
+# curate/station_note.R classifies them.
 
 library(tidyverse)
 library(duckdbfs)

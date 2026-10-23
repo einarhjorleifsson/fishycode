@@ -13,8 +13,8 @@
 #
 # The messages hold the skipper's kennitala and name, the software key and free text (decision 159; MFRI's data
 # policy). Elements are read by name only. The kennitala, the name and the key are not read. The free text of a
-# record (STOFN/ATHS_TEXTI, HRINGNOT/ATHS) goes to note.parquet alone, as entered (decision 213; decision 210: the
-# text stays in staging), and no printed line holds it. DuckDB's spill directory may hold the raw text while the
+# record (STOFN/ATHS_TEXTI, HRINGNOT/ATHS) goes to note.parquet, as entered (decision 213; decision 210: the text
+# stays in staging). DuckDB's spill directory may hold the raw text while the
 # queries run; it is under $FISHYDATA and removed at the end.
 #
 # A record (FAERSLA) is sent again when it is changed (a higher VERSION) and sometimes again unchanged, in another
@@ -604,7 +604,7 @@ print(fishing_sample |> count(section, gear) |>
                !(section == "LINA" & gear == "LLS") & !(section == "NET" & gear %in% c("GNS", "GND")) &
                !(section == "FAERI" & gear == "LHM") & !(section == "HRINGNOT" & gear == "PS")), n = 40)
 cat("\nlanding confirmations:", nrow(landing_confirmation), "\n")
-cat("notes (free text, counted only):", nrow(note), "\n")
+cat("notes:", nrow(note), "\n")
 print(note |> count(note_field))
 
 # Export -----------------------------------------------------------------------

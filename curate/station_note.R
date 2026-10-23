@@ -7,7 +7,7 @@
 #         .sid schema note_field vid date note_class note_tags note_species in_logbook basis
 #
 # One row per station, schema and note field (the lumpsucker effort notes have no station: vid and date instead).
-# The text stays in staging (decision 210); a note may name a person (decision 159). The rules are R/logbook_notes.R.
+# The text stays in staging (decision 210). The rules are R/logbook_notes.R.
 # in_logbook: the merge kept that station (curate/logbook.R), so a join on (.sid, schema) to curated/logbook/station
 # finds it; adb's notes before 2025-11-19 are fs_afladagbok's copies (decision 160) and are FALSE. A note the app sent
 # that afli.stofn holds unchanged (folded alike) is the same note and is left out; one Oracle lost or changed is kept,

@@ -19,8 +19,8 @@ build by name; written and built by Claude (AI), not checked by a person. It car
 - **The classes in `curated/logbook/station_note.parquet`** (`curate/station_note.R`, target `station_note`): station,
   schema, field, class, tags, species named, `in_logbook` (the merge kept that station: adb's notes before 2025-11-19
   are fs's copies, decision 160) and basis `derived`. No text. A sent note that afli.stofn holds unchanged is left out.
-- **afli_sent reads two free-text elements**, into `note.parquet` only; the kennitala, the name and the software key
-  stay unread, and no printed line holds a note (decision 159).
+- **afli_sent reads two free-text elements** into `note.parquet`; the kennitala, the name and the software key stay
+  unread.
 
 ## Not here
 

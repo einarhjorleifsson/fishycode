@@ -76,6 +76,9 @@ details: >
   reader sees (curate/issues/data-dict.yml). The landing tables' `date` columns
   are still `number` with day counts from the first draft (decision 029).
 
+  2026-10-23: `logbook_station_note` and the four staging note tables added by Claude
+  (AI-assisted), not checked by a person (decision 213).
+
   2026-10-23: `logbook_station_fate` and `logbook_trip_fate` added by Claude
   (AI-assisted), not checked by a person, from curate/logbook.R and a scratch
   build of it (plan 024, TODO 79; ranges and examples from that build, since the
@@ -4572,6 +4575,78 @@ tables:
           Why a trip is not in logbook_trip; NA when it is. Its stations' reason
           (logbook_station_fate.reason) when they all went for one, "mixed" when they
           went for different reasons, "no_station" when it has no staging station.
+  - name: logbook_station_note
+    source:
+      parquet: ../../fishydata/curated/logbook/station_note.parquet
+    description: >
+      Every logbook note classified (decision 213, curate/station_note.R): one row per station, schema
+      and note field, with the note's main class, its tags and the species it names, read from the
+      text by the rules of R/logbook_notes.R (note_classes() gives the classes in priority order). The
+      text itself stays in staging (staging/*/note.parquet; decision 210). Join on (.sid, schema) to
+      logbook_station where in_logbook. Claude's work of 2026-10-23, not checked by a person.
+    columns:
+      - name: .sid
+        type: number
+        range: [-10416294023, 106299655]
+        examples: [153696, 228410, 251834, 285426, 329893]
+        description: >
+          The station, as in logbook_station; empty for the lumpsucker effort notes, which have none.
+      - name: schema
+        type: enum
+        values: [afli, fs_afladagbok, adb]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: note_field
+        type: enum
+        values: [ws_veidi.athugasemd_txt, ws_medafli.ath, fishing_station.note, catch.note,
+                 stofn.aths_texti, hringn.athskipst, medafli.ath, spendyr.aths, grasl_sokn.athugasemd,
+                 STOFN/ATHS_TEXTI, HRINGNOT/ATHS]
+        constraints: [required]
+        description: >
+          The table and column the note came from; the two upper-case ones are what afli's apps sent
+          (the sent layer) where afli.stofn does not hold the same note.
+      - name: vid
+        type: number
+        range: [189, 21072]
+        examples: [189, 2319, 6202, 7076, 21072]
+        description: >
+          The vessel, for the lumpsucker effort notes only (grasl_sokn.skipnr).
+      - name: date
+        type: date
+        range: [1977-06-28, 2015-07-31]
+        description: >
+          The day, for the lumpsucker effort notes only (grasl_sokn.vedags).
+      - name: note_class
+        type: enum
+        values: [provenance, record_status, transfer, pair_trawl, released, sample_research,
+                 sensitive_bycatch, gear_lost, gear_trouble, twin_trawl, catch, gear_config, effort_time,
+                 place, environment, admin, unclear, other]
+        constraints: [required]
+        description: >
+          The main class: the first class, in this order, that any of the note's tags belongs to.
+      - name: note_tags
+        type: string
+        examples: ["twin_trawl", "snagged,place_name", "transfer,vessel_callsign,species_amount"]
+        description: >
+          Every tag that matched, comma-separated (empty where none did).
+      - name: note_species
+        type: string
+        examples: ["mackerel", "halibut", "Greenland shark"]
+        description: >
+          The species the note names, comma-separated (note_species() gives the names and codes).
+      - name: in_logbook
+        type: boolean
+        constraints: [required]
+        description: >
+          The merge kept this station (it is in logbook_station). adb's notes before 2025-11-19 are
+          fs_afladagbok's copies and FALSE (decision 160); afli's monthly summary stations are FALSE.
+      - name: basis
+        type: enum
+        values: [derived]
+        constraints: [required]
+        description: >
+          Read from free text, never recorded.
   - name: reference_area_h3
     source:
       parquet: ../../fishydata/curated/reference/area_h3.parquet
@@ -7175,6 +7250,131 @@ tables:
         examples: ["1.1.0.0", "1.3.0.0", "2.6.26.0", "2.7.0.0", "2.7.9.0"]
         description: >
           The app's version, the numbers ending HUGBUNADUR (e.g. "2.6.7.0").
+  - name: staging_fs_afladagbok_note
+    source:
+      parquet: ../../fishydata/staging/fs_afladagbok/note.parquet
+    description: >
+      fs_afladagbok's free-text notes as entered (sources/fs_afladagbok/note.R, decision 213): the station's
+      and the bycatch record's. Classified in logbook_station_note.
+    columns:
+      - name: .sid
+        type: number
+        range: [1197, 477870]
+        examples: [51413, 51414, 51502, 51503, 51504]
+        description: >
+          The station, as in the source's staging station table.
+      - name: schema
+        type: string
+        examples: ["fs_afladagbok", "adb", "afli"]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: note_field
+        type: string
+        examples: ["ws_veidi.athugasemd_txt", "stofn.aths_texti", "STOFN/ATHS_TEXTI"]
+        constraints: [required]
+        description: >
+          The table and column (or the sent element) the note came from.
+      - name: note
+        type: string
+        examples: ["Tvö troll", "Fast og rifið", "Hafróprufa", "Tapað veiðarfæri"]
+        constraints: [required]
+        description: >
+          The note as entered.
+  - name: staging_adb_note
+    source:
+      parquet: ../../fishydata/staging/adb/note.parquet
+    description: >
+      adb's free-text notes as entered (sources/adb/note.R, decision 213): the station's and the catch
+      row's, every date. Classified in logbook_station_note.
+    columns:
+      - name: .sid
+        type: number
+        range: [-1132110, 106299655]
+        examples: [51411, 51412, 51413, 51414, 51502]
+        description: >
+          The station, as in the source's staging station table.
+      - name: schema
+        type: string
+        examples: ["fs_afladagbok", "adb", "afli"]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: note_field
+        type: string
+        examples: ["ws_veidi.athugasemd_txt", "stofn.aths_texti", "STOFN/ATHS_TEXTI"]
+        constraints: [required]
+        description: >
+          The table and column (or the sent element) the note came from.
+      - name: note
+        type: string
+        examples: ["Tvö troll", "Fast og rifið", "Hafróprufa", "Tapað veiðarfæri"]
+        constraints: [required]
+        description: >
+          The note as entered.
+  - name: staging_afli_note
+    source:
+      parquet: ../../fishydata/staging/afli/note.parquet
+    description: >
+      afli's free-text notes as entered (sources/afli/note.R, decision 213), from afli's two copies as its
+      adapter reads them: the station's, the purse seine skipper's, the bycatch notes, and the lumpsucker
+      effort notes (vid and date, no station). Classified in logbook_station_note.
+    columns:
+      - name: .sid
+        type: number
+        range: [-1326275, 106299655]
+        examples: [-1293775, -1293774, -1293773, -1293771, -1293770]
+        description: >
+          The station, as in the source's staging station table. Empty for the lumpsucker effort notes.
+      - name: schema
+        type: string
+        examples: ["fs_afladagbok", "adb", "afli"]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: note_field
+        type: string
+        examples: ["ws_veidi.athugasemd_txt", "stofn.aths_texti", "STOFN/ATHS_TEXTI"]
+        constraints: [required]
+        description: >
+          The table and column (or the sent element) the note came from.
+      - name: note
+        type: string
+        examples: ["Tvö troll", "Fast og rifið", "Hafróprufa", "Tapað veiðarfæri"]
+        constraints: [required]
+        description: >
+          The note as entered.
+  - name: staging_afli_sent_note
+    source:
+      parquet: ../../fishydata/staging/afli_sent/note.parquet
+    description: >
+      The free text afli's apps sent on the staged record (STOFN/ATHS_TEXTI, HRINGNOT/ATHS;
+      sources/afli_sent/convert.R, decision 213). Classified in logbook_station_note.
+    columns:
+      - name: .sid
+        type: number
+        range: [-10416294023, -3562]
+        examples: [-1303771, -1303770, -1303675, -1303655, -1303649]
+        description: >
+          The station, as in the source's staging station table.
+      - name: schema
+        type: string
+        examples: ["fs_afladagbok", "adb", "afli"]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: note_field
+        type: string
+        examples: ["ws_veidi.athugasemd_txt", "stofn.aths_texti", "STOFN/ATHS_TEXTI"]
+        constraints: [required]
+        description: >
+          The table and column (or the sent element) the note came from.
+      - name: note
+        type: string
+        examples: ["Tvö troll", "Fast og rifið", "Hafróprufa", "Tapað veiðarfæri"]
+        constraints: [required]
+        description: >
+          The note as entered.
   - name: staging_stk_voyage
     source:
       parquet: ../../fishydata/staging/stk/voyage.parquet
