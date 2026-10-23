@@ -177,6 +177,29 @@ a convert script. Aggregate rows mixed into a station table will silently
 inflate record counts, distort effort distributions, and corrupt swept-area
 calculations if not removed.
 
+## A concrete case: records that cover a trip, and positions that are cells
+
+The monthly aggregates above at least carry a comment. Some electronic logbooks hold records in a station's shape whose
+content is coarser than one operation, and nothing in the record says so (decisions 211 and 214). The times and the
+position say it, once they are read against the vessel's own AIS track and its landings:
+
+| The record says (values illustrative) | What it covers, and the witness | How the grammar writes it |
+|---|---|---|
+| Marína, handline: one station, start 05:03, end 15:27 | the trip: the start is the departure, the end the return; the window is the AIS voyage, the catch the day's landing | trip × gear: the time group at the trip, the fishing a bound within it, found on the track |
+| STOKKUR: one time, 15:26; position 65, 23 | the trip, entered at the landing; the nearest whole degree | trip × gear: the time a bound, departure to landing; the place a 1-degree cell centred on the value, lon/lat NA |
+| the old TRACKWELL route: start 00:00:00 | a day | day × gear: the time group at the day; a midnight is not an instant |
+| Taktikal, gillnet: set at 05:03 | the departure copied into the set | not a value: NA and flagged, basis `none` |
+| the tour app: a spot at 15:26, 8 hours at sea | the end of fishing, at the landing | t4 = 15:26, t1 = t4 − 8 h, basis `synthesised` |
+| `afli`, paper: 64°15', 22°30', the centre of its declared rectangle | perhaps only the rectangle: of such positions since 2007, about a quarter are fills | a point flagged as possibly a cell; any centre in a column of its own |
+| `afli`, electronic end latitude: 649 | 64°09.0-09.5': the degrees and the minute run together by the loader | a point, basis `reconstructed`, precision a quarter of a minute |
+| `afli`, paper start latitude: 6586 | nothing reliable: no reading lies on the track | none, basis `none`; the value kept |
+
+The practical lesson, beside the aggregates': a record's shape does not say what it covers. Read its times against
+the trip (is the start the departure, the one time the landing, the time a midnight?), its position against its
+digits, and both against the vessel's track and its landings before treating it as an operation. A trip taken for a
+haul gets a window where no haul was: STOKKUR's net and line stations were given a one-hour set window at the landing,
+and none of their catch reached a fishing fix.
+
 ## How data systems map onto the grammar
 
 | | `afli` | `fs_afladagbok` | `adb`^†^ | EU eflalo |

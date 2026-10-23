@@ -1055,7 +1055,13 @@ is `reconstructed`, a matched vid (another source) `recorded`, the hand list `sy
 2026-10-23, not checked by a person).
 
 Decided: **split** for an additive total divided by a key (the maintainer), so `rb_share_catch()` is to become
-`rb_split_catch()`. Nothing is renamed yet.
+`rb_split_catch()`. Nothing is renamed yet. For the review (the maintainer, 2026-10-23, decision 214): an event can
+be any construct, "even a single ping", an operation, day × rectangle × gear, day × gear, ...; `event`'s fixed trip ×
+gear × day × rectangle is too narrow; what kind of event a row is, is its resolution (its groups' resolutions).
+Candidates (Claude, 2026-10-23): "event" in Darwin Core's sense (an action at some place during some time, at any
+scale, nested by a parent event), and its "grain" (what one row represents: its groups' resolutions combined); a
+lumped catch × species × year is an event of grain year × species. Set aside: record (ramb's station), unit (a clash),
+cell (odd for a ping), observation (the grammar's catch).
 
 After the review: the grammar's text follows (three clashes are in its own new parts: sample, set, unit); then the
 one-flow document's sketch and summary ("The grammar, in brief") and the cascade diagram; then ramb's renames, each
@@ -1156,40 +1162,29 @@ and read first (plan 041 §6); its seven asks come before any code.
 `station_fate`'s account closing with the summaries in it.
 
 ## 137. A record's resolution by what it covers: e-logbook stations that hold a trip or a day
-**status:** open · **needs: maintainer** — the rule, and each case below · **see:**
-`$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts, draft decision, `recheck/`), decisions 206, 210 and
-211 ("Found in passing"), plan 019 §4, `docs/grammar.qmd` ("What a row covers"), TODO 73, 127, 138
+**status:** open (decided 2026-10-23, decision 214) · **needs: maintainer** — the logbook batch's build · **see:**
+decision 214, `$FISHYDATA/archive/2026-10-trip-time-stations/` (README, `recheck/`), decisions 206, 210 and 211,
+TODO 73, 127, 138
 
-**The rule** (the maintainer's framing, 2026-10-23: some apps mix up what is a trip and what is a station): a logbook
-record is typed by what its times and position cover, not by the table it sits in. A station whose times are the
-trip's departure and return, its landing, or a date is a trip- or day-level record (`station_type`, the grammar's
-resolution), not an operation, and the flow treats it at that level: the trip or the day is its window and its catch
-unit, and no haul window is made from a departure, landing or midnight stamp. The times stay as recorded, labelled as
-the trip's; a window made from them has basis `synthesised` (the label's name is TODO 127's). The AIS voyage gives a
-trip-level record its real bounds and its slow stretches the fishing, as `fishing_flow` already does with no window.
+Decision 214 (the maintainer's go on Claude's recommendation): a record is typed by what its times and position
+cover. Marína's and Taktikal's stations (departure to return), STOKKUR's (the landing; a 1-degree cell), the old
+TRACKWELL route's (midnight) and the tour app's spots (the landing) are resolved to the trip or the day, not to an
+operation:
+their window is the AIS voyage under both approaches, their catch unit the trip; no haul window is made from a stamp
+(set aside and flagged, as decision 206 does); catch the landing contradicts is flagged (decision 210). Three witnesses
+agree: the AIS track, the landings and the digits. Open: whether the slow time a trip-long window adds is fishing.
 
-Cases (Claude's measure, 2026-10-23, not checked by a person):
-- Marína and Taktikal, handline: one station per trip, departure to return (23,359 windows), the trip's catch. Its
-  window is the AIS voyage (re-checked: a median 7 min either side, 99-100 % of it covered); the speed test drops the
-  steaming, and the flow marks fishing on 96 % of the voyage's handline-speed hours, against 87 % under a haul window.
-  Whether the extra slow time is fishing is not known (the haul window is the skipper's); matched by vessel and month
-  (75 cases) these trips hold no more fishing hours (median 0.91 times). Trip-level.
-- Marína and Taktikal, nets and lines (1,519): the set at the departure, the haul ending at the return (the study's,
-  not re-checked). Trip-level; the set time set aside, as decision 206 does with Trackwell's departure copies.
-- STOKKUR (2020-22): one station per trip, at the landing, its position a rounded whole degree (decision 211).
-  Trip-level and a cell. Its 3,930 net and line stations get no fishing fix in their own windows (0 of 23,787 fixes).
-  Of their plausible 8.8 kt, under `fishing` 6.7 kt stays unplaced and 1.6 kt goes to the vessel's month; under
-  `fishing_flow` 7.2 kt lands on the trip's fixes. Six more stations log 23.1 kt of entry errors, 11.3 kt of which sits
-  on fixes today (decision 210's implausible-catch flag, TODO 73).
-- The old TRACKWELL route: midnight only. Day-level; its 225 static stations get no fix (1.2 kt; the study's, not
-  re-checked).
-- Decision 210's tour app, which replaces STOKKUR, also times its spots at the landing (24,404 of 31,785). On the track
-  the vessel is at the spot a median 1.5 h before that time, and the hours at sea fit before it (81 %), not after
-  (16 %): read as the end (t4 = the spot time, t1 = t4 - hours), not plan 019 §4's mapping.
-- Possibly the same: TODO 138's 3,460 handline windows under 2 minutes (stamped at entry?), to be measured.
+Left, as a step of the logbook batch, a scratch build first:
+- each group's resolution on these records in the merge (time: the trip or the day; place: a point or a 1-degree
+  cell); the stamped times set aside and flagged;
+- the voyage as their window in the flow, under both approaches; STOKKUR's 8.8 kt of net and line catch, today on no
+  fix (6.7 kt) or the vessel's month (1.6 kt) under `fishing`, measured onto its trip;
+- decision 210's implausible-catch flag before any catch moves (11.3 kt of entry errors sits on fixes today);
+- the tour app read with t4 = the spot time (decision 210's build);
+- the windows, fishing fixes and catch traced before and after.
 
-**check:** the rule chosen or declined in a decision; if chosen, `station_type` set on these records in the merge and
-the flow's window and catch unit following it, built with the logbook batch.
+**check:** a scratch build, then the store's, with these records typed and windowed as decision 214 says, STOKKUR's
+catch on its trips, and the before-and-after trace recorded in a decision.
 
 ## 138. Three window and twin faults found beside TODO 137
 **status:** parked (the maintainer, 2026-10-23: "park this for now") · **needs: maintainer** — what to do with

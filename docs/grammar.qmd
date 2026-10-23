@@ -397,7 +397,9 @@ Aggregates can be kept two ways:
   times. This keeps one table, at the cost of a precision that is not there, and it must be flagged.
 
 Aggregates are sometimes stored among real operations in the same table. A free-text comment column is often the only
-sign, so it should be read before anything else in a conversion.
+sign, so it should be read before anything else in a conversion. Sometimes the times are the sign: a record whose start
+is the trip's departure and whose end its return, or whose one time is the landing or a midnight, covers the trip or
+the day, whatever table it sits in. The Icelandic cases are in the appendix on the logbooks.
 
 ## What each field group covers {#sec-resolution-groups}
 
