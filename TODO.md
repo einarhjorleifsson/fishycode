@@ -65,28 +65,25 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 ---
 
 ## 25. The next STK key redo (`once` project): the review lists
-**status:** open · **needs: maintainer** — to confirm the drafted verdicts row by row · **see:** decision 128; plans
-009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075
+**status:** open · **needs: maintainer** — the 49 refreshed verdicts one by one, and the hull start and MMSI gap after the
+refresh's counts · **see:** decision 128; plans 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075
 
 The first redo is decision 128 (2026-10-17); the rest waits for this one. For each list Claude drafts the witnesses
-and a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter `overrides/`:
-- the audit's 426 discrepancy rows on 254 mids, the 1,051 rows no witness reaches, and `ais_key_resolution`'s
-  proposals (decision 128);
-- the 32 stretches filled with a neighbour outside its registered lifetime (34,514 pings, 12 before 2009), on which
-  decision 048's review of the stretches for a person is redone;
-- vid 7570's MMSI 251477540: the hull was struck in 2018, and the MMSI is heard in west Iceland 2021-24;
-- plan 016 §4 step 7's 14 mobile-ids whose MMSI passed to another hull;
-- plan 022 §3's 43 co-location units, the 41 key rows the register gives to another vessel, the 37 `mobile_vid`
-  claims, and §5.1's 5 port codes;
-- plan 031 §3.11's records the track contradicts (2026-10-20): 1,006 landings and 1,482 logbook trip ends whose
-  vessel is heard that day but never within 10 km of the port (`$FISHYDATA/archive/2026-10-plan031-step4/results/`);
-- after plan 021 step 6: the foreign hulls (step 7, TODO 65) with mids 101843, 147141, 102481 and 102527 (reused call
-  signs), and routes M1/M2 (plan 022 §7 ask 3: not before); the STK units with no vid (decision 161, TODO 116).
+and a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter `overrides/`.
+This redo's lists (each in the drafts' README): (1) the audit's 426 discrepancy rows (254 mids) and
+`ais_key_resolution`'s proposals; (2) the 32 fills outside a neighbour's registered lifetime (34,514 pings; decision
+048's review redone); (3) vid 7570's MMSI 251477540; (4) the MMSIs passed to another hull (plan 016 §4 step 7); (5)
+plan 022 §3's co-location units, register rows, `mobile_vid` claims and §5.1's port codes. Later redos: the 1,051 rows
+no witness reaches, plan 031 §3.11's contradicted records (1,006 landings, 1,482 trip ends,
+`$FISHYDATA/archive/2026-10-plan031-step4/results/`), the foreign hulls with mids 101843, 147141, 102481 and 102527
+and routes M1/M2 (after plan 021 step 6), the STK units with no vid (decision 161, TODO 116).
 
 The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
-proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a rule
-admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest `vessel_hist_v`
-date or `yh1` (decision 144): the latest row's is a re-registration, which made most list 2 fills. `once`'s
+proposals, the rest `leave` or `no vid`. The maintainer, 2026-10-23: lists 1-5 only, refreshed first (`$FISHYDATA/archive/2026-10-23-key-redo-refresh/`); `leave` rows
+confirmed as a class, the 47 vid and 2 no-vid rows one by one. Approved for `ais_key_segments.R`: a "no vessel" form in
+the reviewed table, and a reviewed row brings its mid into scope (5 rows of list 5a), one changing nothing reported.
+After the refresh's counts: the hull start from the earliest register date or `yh1`, not the latest row's
+re-registration (most list 2 fills), and who keeps TODO 82's MMSI gap. `once`'s
 `tar_outdated()` lists the key since decision 129: the cycle, not a reason to build. The register's matrix parse is fixed
 in code, not in data (build years and a legend read as vids, 22 rows, 2018-2022): the redo invalidates `skipaskra` by
 hand, and 6,891 pings on 3 mids change vid (`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`). Also for the redo
