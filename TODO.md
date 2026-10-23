@@ -65,36 +65,38 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 ---
 
 ## 25. The next STK key redo (`once` project): the review lists
-**status:** open · **needs: maintainer** — the 49 refreshed verdicts one by one, and the hull start and MMSI gap after the
-refresh's counts · **see:** decision 128; plans 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075
+**status:** open · **needs: maintainer** — the go for the redo's build, once its code is in (review done 2026-10-23) ·
+**see:** decisions 128 and 195; plans 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075;
+`$FISHYDATA/archive/2026-10-23-key-redo-refresh/`
 
-The first redo is decision 128 (2026-10-17); the rest waits for this one. For each list Claude drafts the witnesses
-and a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter `overrides/`.
-This redo's lists (each in the drafts' README): (1) the audit's 426 discrepancy rows (254 mids) and
-`ais_key_resolution`'s proposals; (2) the 32 fills outside a neighbour's registered lifetime (34,514 pings; decision
-048's review redone); (3) vid 7570's MMSI 251477540; (4) the MMSIs passed to another hull (plan 016 §4 step 7); (5)
-plan 022 §3's co-location units, register rows, `mobile_vid` claims and §5.1's port codes. Later redos: the 1,051 rows
-no witness reaches, plan 031 §3.11's contradicted records (1,006 landings, 1,482 trip ends,
-`$FISHYDATA/archive/2026-10-plan031-step4/results/`), the foreign hulls with mids 101843, 147141, 102481 and 102527
-and routes M1/M2 (after plan 021 step 6), the STK units with no vid (decision 161, TODO 116).
+Lists 1-5 of the drafts of 2026-10-17 (the audit's discrepancies and `ais_key_resolution`'s proposals, the 32 fills
+outside a neighbour's lifetime, vid 7570's MMSI, the MMSIs passed to another hull, plan 022 §3's co-location units,
+register rows, `mobile_vid` claims and port codes) were refreshed and reviewed by the maintainer on 2026-10-23, each
+case checked in the vessel overview (`verdicts_2026-10-23.csv`, decision 195): 18 reviewed rows are in
+`overrides/ais_key_segments_reviewed.csv`; 23 proposals the hull-start rule gives by itself; 5 settled by today's
+table; 3 "no vessel" (mids 101776, 147514, 147796) and a device aboard 1421, then 3011 (mid 124288) wait for forms.
 
-The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
-proposals, the rest `leave` or `no vid`. The maintainer, 2026-10-23: lists 1-5 only, refreshed first (`$FISHYDATA/archive/2026-10-23-key-redo-refresh/`); `leave` rows
-confirmed as a class, the 47 vid and 2 no-vid rows one by one. Approved for `ais_key_segments.R`: a "no vessel" form in
-the reviewed table, and a reviewed row brings its mid into scope (5 rows of list 5a), one changing nothing reported.
-After the refresh's counts: the hull start from the earliest register date or `yh1`, not the latest row's
-re-registration (most list 2 fills), and who keeps TODO 82's MMSI gap. `once`'s
-`tar_outdated()` lists the key since decision 129: the cycle, not a reason to build. The register's matrix parse is fixed
-in code, not in data (build years and a legend read as vids, 22 rows, 2018-2022): the redo invalidates `skipaskra` by
-hand, and 6,891 pings on 3 mids change vid (`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`). Also for the redo
-(Claude's audit of 2026-10-23, not checked by a person): the register's call signs and `yh2` NA in the key (decisions
-136, 142, 144); decision 047's W2 scores logbook positions against the track (decision 156's rule), and W3 learns its
-own hid → pid crosswalk beside `stk_hid_pid`. **From TODO 120** (decision 185): the three `once` readers still on views
-switch here (`ais_key_segments.R`, `skipaskra_evidence.R`, `skipaskra_discrepancy.R`), each view already rebuilt from
-its table with no row differing (`$FISHYDATA/archive/2026-10-views-todo120/README.md`).
+The redo's code, approved 2026-10-23 (decision 195), in `ais_key_segments.R` and the `once` readers:
+- a "no vessel" form in the reviewed table, and a device form with its carrier (decision 053);
+- a reviewed row brings its mid into scope (mids 130145, 133483, 145250); one that changes nothing is reported;
+- a hull starts at its earliest `vessel_hist` date (variant a1), not the latest row's re-registration;
+- **from TODO 82:** a later holder's MMSI window opens no earlier than its first register date, the previous holder
+  keeping the gap (patch in `$FISHYDATA/archive/2026-10-17-mmsi-window/`: MMSI 251764110's 87,372 pings of
+  2017-02..2018-01 go from 7873 to 2608); later holders 3009 and 7764 are in neither `vessel_hist_v` nor `vessel.parquet`;
+- the register's matrix parse fixed in data (`skipaskra` invalidated by hand; 6,891 pings on 3 mids change vid); its
+  call signs and `yh2` NA (decisions 136, 142, 144); W2's logbook positions, W3's own hid → pid crosswalk (decision 047);
+- **from TODO 120** (decision 185): `ais_key_segments.R`, `skipaskra_evidence.R` and `skipaskra_discrepancy.R` read
+  their tables, not views;
+- vids 7845, 2953 and 7855 need vessel rows (only the MMSI archive knows them).
 
-**check:** a decision record states the redo; every row of each list is resolved through `overrides/` or carries a
-stated reason; `ais_key_coverage` stays at 0 unassigned pings; no `once` script reads an Oracle view.
+`once`'s `tar_outdated()` lists the key since decision 129: the cycle, not a reason to build. Later redos: the 1,051
+audit rows no witness reaches, today's audit's 85 new rows, plan 031 §3.11's contradicted records (1,006 landings,
+1,482 trip ends), the foreign hulls with mids 101843, 147141, 102481, 102527 and routes M1/M2 (after plan 021 step 6),
+the STK units with no vid (decision 161, TODO 116).
+
+**check:** a decision record states the redo; every row of lists 1-5 resolved through `overrides/` or a stated reason;
+`ais_key_coverage` at 0 unassigned pings; no `once` script reads a view; no MMSI window opens before its hull's first
+register date, MMSI 251764110's gap pings on 2608, and 3009 and 7764 resolved or stated.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
@@ -345,24 +347,6 @@ trips are matched to a landing the vessel made at a call before the trip's last 
 **check:** a trip's further landings join it (plan 027 §5), and kg on the fixes, raised, equals kg landed per vessel
 and year within the ratio of vessel-years with no second landing (plan 027 §6).
 
-## 82. MMSI windows that open before the hull exists
-**status:** open · **needs: maintainer** — whether the gap goes to the previous holder or to no vid, and whether to
-apply the patch · **see:** plan 016, decision 128, `reference/vessels/mmsi.R`, `reference/vessels/identity.R`,
-`$FISHYDATA/archive/2026-10-17-mmsi-window/`
-
-Measured read-only by Claude, 2026-10-17. Of the 24 vessel MMSIs with more than one holder, 18 later holders'
-hand-set windows open 1.9-14.5 years before the hull's first register date. One has pings in the gap: 87,372 ASTDB and
-EMODnet pings of MMSI 251764110 carry vid 7873 from 2017-02 to 2018-01, but they are the sold hull 2608 in northern
-Norway. 79,721 of them reach `curated/ais/trail` (2 voyages, no catch). None falls in W1's box, and the key's MMSI tier
-gives the same vids. The drafted rule: a later holder's window opens no earlier than its first register date, and the
-previous holder keeps the gap (decision 128's rule), with the given dates kept and a `proposed` correction. The patch
-(4 files) and its note are in the archive above, not applied. It outdates the AIS half (about 2 h) and the `once` key
-targets. Found beside it: the later holders 3009 (MMSI 251179000) and 7764 (251846940) are in neither `vessel_hist_v`
-nor `vessel.parquet`, so `identity.R` drops them and the earlier holders keep those MMSIs for all time.
-
-**check:** no MMSI window opens before its hull's first register date, or the maintainer's alternative is recorded;
-MMSI 251764110's pings of 2017-02 to 2018-01 carry vid 2608 (or none); 3009 and 7764 are resolved or stated.
-
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
 **status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
 (editions outside 2004-2022) · **see:**
@@ -468,6 +452,8 @@ offset on moving vessels is a time lag that varies by year, so no single floor f
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
 (the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
 078), the forward scan's first ping after a 4 h gap, sparse tracks, and vmask eroding good track beside a burst.
+Kept by the filter, found 2026-10-23 in the vessel overview (TODO 25's review): vid 2654's ping of 2013-09-13 05:19
+at 8.55N 180W, and vid 7438's of 2009-07-09 12:59 at 64.2333N 22.4W (rounded, speed and heading 0).
 
 **check:** a plan with the current filter's recall and precision on the reload's days, the candidates compared on
 those days and on normal ones, and a recommendation, with a verdict on TODO 38's fast-vessel, gap and sparse cases.

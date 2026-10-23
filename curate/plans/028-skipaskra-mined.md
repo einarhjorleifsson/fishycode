@@ -397,7 +397,7 @@ system change.
 | MarineTraffic sheets (§3.8) | 36 and 14 Icelandic MMSIs | 2019-08 to 2024-06 | no |
 
 `curated/vessel/mmsi.parquet` (4,228 holder periods, plan 016) is `mmsi.R`'s product. Its windows come from list
-dates and notes, with a few hand-set (TODO 82).
+dates and notes, with a few hand-set (TODO 25, from 82).
 
 ### 3.8 The MarineTraffic sheets (`raw/external/marinetraffic/`)
 

@@ -478,7 +478,7 @@ at 2023-12-19 (decision 132):
 Each is measured when it is built, in its own plan or TODO item:
 - **The register** (plan 028): licences as witnesses in the evidence table and checks.
 - **Settling conflicts in building the AIS side**, in the `once` key: which of two hulls on one mobile-id or MMSI held
-  a licence that day (`ais_key_twins`, `ais_key_split_candidates`, the MMSI windows of TODO 82), and foreign hulls
+  a licence that day (`ais_key_twins`, `ais_key_split_candidates`, the MMSI windows of TODO 25, from 82), and foreign hulls
   allowed to fish in Icelandic waters.
 - **Gear ambiguities in the logbooks and landings:** a gear that requires a licence (lumpfish nets, Danish seine,
   dredges for scallop or sea cucumber) set against the licences held, beside `logbook_gear.yml`'s rule.
