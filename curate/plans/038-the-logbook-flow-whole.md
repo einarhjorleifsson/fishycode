@@ -191,7 +191,7 @@ catch, and step 9 matches by order. The landing's date, port and `pid` are carri
 **Open:**
 - TODO 81 (plan 027: a trip's further landings, the flow table `trip_landing`, asks a-d);
 - TODO 112 (plan 036: the 159 part off 4,073 trips, 107.6 kt);
-- TODO 74, with the landings plan: plan 007's question 3 (the link keys on `.lid` alone; 104,192 ids are shared
+- TODO 123 (TODO 74 folded in), with the landings plan: plan 007's question 3 (the link keys on `.lid` alone; 104,192 ids are shared
   between agf and lods) and plan 025's `withdrawn` (631 trips matched to zero-kg landings);
 - the link before 2007-09: the bound's lifting, proposed by plan 039 (its ask e) and built here, and the month step,
   designed here (plan 039 §0, additions 1 and 2);
@@ -335,7 +335,7 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
 2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b); then §5.1's readers a-e, each measured on
    a scratch store, then built (asks b, c). adb's `pid` goes into the
    merge (ask f), and the quota regime and gear onto the trips (ask d).
-3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 74); the month step
+3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 123); the month step
    before LODS (§4). Then plan 027's `trip_landing` on the reconciled trips
    (TODO 81), plan 036's disposition through it (TODO 112), and `ais_catch.R` reading it.
 4. **The sources:** plan 037 phase 1, then plan 019's tour app (TODO 73), then plan 037 phase 2 (TODO 108, 113, 114,

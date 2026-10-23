@@ -1,7 +1,7 @@
 # 036 — The catch's disposition: at home, exported, or landed abroad, carried from the landings to the trip
 
 **status:** proposal — measured 2026-10-21 (read-only); nothing built; seven asks open (TODO 112) · **2026-10-21** ·
-**see:** TODO 112, TODO 81 and plan 027 (a trip landed in two pieces), TODO 74 and plans 007, 023 and 025 (the
+**see:** TODO 112, TODO 81 and plan 027 (a trip landed in two pieces), TODO 123 and plans 007, 023, 025 and 039 (the
 landings), TODO 92 (ports abroad), decision 031 (the agf/LODS merge), `sources/aflagrunnur/convert.R`,
 `sources/lods/convert.R`, `curate/landing.R`, `reference/ports/port_code.R`, `curate/link_lid_map.R`,
 `curate/catch_by_species_trip.R`, `curate/ais_catch.R`

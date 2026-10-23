@@ -15,7 +15,7 @@ Final, current state after two in-flight corrections (below): `landing_landings`
 rows with distinct-combo count exactly matching row count, zero `.lid`
 collisions anywhere (cross-schema or within `lods`), `lid_map` 786,731 matched
 trips, `catch_by_species_trip`'s cod control ratio median 1.017 (documented
-expectation ~1.02). §6's questions 1 and 3 remain open (question 2 was resolved; TODO 74).
+expectation ~1.02). §6's questions 1 and 3 remain open (question 2 was resolved; TODO 123 since decision 192).
 The decision record for the whole plan is decision 031.
 
 **Two things found and fixed while building steps 2–3, neither previously

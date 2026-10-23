@@ -310,5 +310,5 @@ Not folded (each keeps its own check); listed so that a phase is built with them
 | 0, the dumps | 110 (the dumper's open ends: `--resume`, `takt_json_form`) |
 | 1, the grammar's names and dictionary | 111 (`output-schema.md`'s column tables), 51 (`data-dict.yaml` against the spec) |
 | 2, afli's layers | 108, 113, 114 (folded); 70 (afli.afli's malformed stored numbers); 75 (trips and rows lost between the layers, decision 098); 79 (every source station accounted for, plan 024); 98 and 100 (the logger and the sensor readings, layers of afli too); 103 and 107 (the app-made values, whose flags the precedence reads) |
-| 3, the landings | 74 (each period's source, plans 023 and 025), 81 (a catch landed over two days), 112 (plan 036, the disposition) |
+| 3, the landings | 123 (plan 039, with 74 folded in), 81 (a catch landed over two days), 112 (plan 036, the disposition) |
 | 4, the rest | 62 (foreign logbooks, through `dwstg`), 68 and 87 (stk's other tables; the reports reloaded by hand, an in-house layer of the track), 73 (fs_afladagbok's tables, plans 019 and 020), 83 and 84 (the vessels and the licences, plans 028 and 029) |

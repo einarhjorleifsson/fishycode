@@ -2,9 +2,10 @@
 
 **status:** proposal — written 2026-10-22 at the maintainer's request (the whole landings flow planned as one, not
 period by period); measured read-only the same day, on top of the upstream study; nothing built; plan 038's split (the
-logbook flow) answered here, agreed with three additions (§0); eight asks in §11 (TODO 123) · **2026-10-22** ·
+logbook flow) answered here, agreed with three additions (§0); every ask of §11 answered 2026-10-23 (decisions 191,
+192; TODO 123) · **2026-10-22** ·
 **see:** plan 038 (the logbook flow, written beside this one), plans 007, 023, 025, 027, 036, 037 and 040, decisions 031,
-155, 169 (as amended) and 172-174, TODO 74, 81, 112, 119, 121 and 122,
+155, 169 (as amended) and 172-174, TODO 81, 112, 119, 121 and 122,
 `$FISHYDATA/archive/2026-10-lods-upstream/README.md` ("the study"), `2026-10-lods-oslaegt/`,
 `2026-10-landing-disposition/`, `2026-10-landings-flow/` (this plan's scripts `01`-`06`)
 
@@ -82,7 +83,7 @@ The proposal is quoted in plan 038's own words (its §0):
 
 Decided by the maintainer:
 - agf's rows with ask's columns for 2007-09 to 2020-07 (plan 025 §4, 2026-10-17);
-- agf alone after 2020-07-22 (TODO 74, 2026-10-22);
+- agf alone after 2020-07-22 (the maintainer, 2026-10-22; TODO 123, from 74);
 - Oracle tables, not views (AGENTS.md);
 - every `gerd` summed, A included (decision 169, amended).
 
@@ -402,3 +403,9 @@ e. **`lid_map`'s bound**, with plan 038 (which owns the link): lifted first, as 
 f. **Period 0:** month rows in `curated/landing` with `resolution` (recommended), or a table of their own.
 g. **Period 4:** `provisional` on the last two years, or the fingerprints alone.
 h. **`kvotix`'s LODS logs:** measured before the build (step 1, recommended), or after it.
+
+**Answered 2026-10-23** (the maintainer, decision 192): a a new plan, this one, replacing plan 023 §3, TODO 74 folded
+into TODO 123; b `lods_slaegt`'s conversion of its time, the recomputation a witness; c the roe as weighed and the
+whole fish from it, before 2006 with ask's 2006 factor carried back and flagged; d the container tables' sold weight,
+K + A the witness; f month rows in `curated/landing`, built when `fiskifelagid` is unparked; g a `provisional`
+modifier; h measured before the build.

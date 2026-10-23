@@ -1,7 +1,7 @@
 # 025 — ask mined whole: landing times, what agf changed, and what the rest holds
 
 **status:** proposal — measured 2026-10-17; §4's design chosen by the maintainer the same day (agf's rows, ask's
-columns, a weighing table), nothing built; §6 asks 1 and 2 open (TODO 74) · **2026-10-17** · **see:** plan 023 (the
+columns, a weighing table), nothing built; §4 taken into plan 039 (decision 192); §6 asks 1 and 2 carried by TODO 123 · **2026-10-17** · **see:** plan 023 (the
 landings by period: this measures its §3 and §4 for ask), plan 022 (stk mined, the form followed here), plan 018 (the
 dump), plan 007 (fishycode's landings), decisions 031, 094 and 109
 

@@ -304,34 +304,6 @@ length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23,
 
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
-## 74. The landings: trip, gear and catch from each period's source (plans 023 and 025), and plan 007's two questions
-**status:** open · **needs: maintainer** — plan 023 §8 asks 1 (who knows what feeds LODS 1 and agf since 2020; only nice to know since the
-maintainer's choice below) and 2 (the write-up), plan 025 §6 asks 1 (factory-vessel live weight) and 2 (when to build), plan 007 §6 questions 1 and 3,
-and a DBA or KVOTI's owner to run `$FISHYDATA/archive/2026-10-ivln/get_source_ivln.sql` · **see:** `curate/plans/023-landings-trip-gear-catch.md`, `curate/plans/025-ask-mined.md`,
-`curate/plans/007-landings-merge-agf-lods.md` §6, decision 031, plan 022
-
-Plan 023 has the inventory and the columns of ask, kvoti and agf measured, and nothing built. Its §6, each landing to
-its trip from five sources, builds on plan 022 §4 (TODO 68). The fifth is the line-incentive check's link of 154,146
-landings to STK events (decision 163), with 9,716 arrivals at another time and 7,446 landings with no logbook trip
-unexplained. Plan 007's merge is built (decision 031), with two
-questions left: a `curate/checks/` report of every trip where agf and lods disagree, since agf wins on disagreement
-and the merge cannot show an agf defect; and keying `link_lid_map.R` and `catch_by_species_trip.R` on
-`(.lid, schema_land)`, not `.lid` alone. Plan 025 has ask mined whole and its design chosen (agf's rows, ask's
-columns, a weighing table), nothing built: its first weighing time bounds `T2` to the hour for 2007-2020, and agf keeps
-zero-kg landings that the Directorate withdrew.
-
-The maintainer, 2026-10-22: landings after 2020-07-22 come from agf ("we may then not have all the variables we have
-in ask, but that is life"). MFRI's ask ends on that day (all of it imported 2021-04-28, not a dump gap) and agf is
-derived from it; the landing numbers go on after it (the Directorate's register, Gafl or what replaced it). So after
-2020 the first weighing time (the bound on `T2`), gross weights, deductions, weighing notes and credit history are
-lost, and agf's live weight of factory vessels in the last two years or so may still change when agf rewrites them.
-Before 2007 the top layer is kvoti's `lods_afli` with the container tables, which hold ~4.5 kt of 1995-1998 exports
-`lods_slaegt` lacks.
-Evidence: `$FISHYDATA/archive/2026-10-lods-upstream/README.md` (§1-6).
-
-**check:** the asks of plans 023 and 025 are answered in the plans, and each is built, parked or abandoned in its
-header; and plan 007's questions 1 and 3 are answered in a decision.
-
 ## 75. Afli trips lost whole, and the rows before 2007-09 (decision 098's open ends)
 **status:** open · **see:** `curate/decisions/098-dropped-afli-hauls-not-admitted.md` ("Open"), plan 005
 
@@ -989,27 +961,31 @@ Next (§8, decision 191): step 1's instruments (TODO 79), then step 1b, `lid_map
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
 ## 123. The landings flow, from the first record to now: one cascade, the same output in every period (plan 039)
-**status:** open · **needs: maintainer** — plan 039's asks a-d and f-h (§11), above all a (a new plan, or an amendment
-of plan 023); e answered through plan 038 (decision 191) · **see:**
-`curate/plans/039-the-landings-flow.md`, plans 023, 025, 036, 037 and 038, TODO 74, 112, 119,
-`$FISHYDATA/archive/2026-10-lods-upstream/`, `$FISHYDATA/archive/2026-10-landings-flow/`,
-`$FISHYDATA/archive/2026-10-fiskifelagid/` (period 0's tables, variable by variable, with a draft overlay; parked by
-the maintainer 2026-10-22, its asks a-f in its README §9)
+**status:** open · **needs: maintainer** — outside asks only: who at the Directorate knows what feeds LODS 1 and agf
+since 2020 and whether agf's factory-vessel live weight is the yield measured on board (plans 023, 025), and a DBA or
+KVOTI's owner to run `$FISHYDATA/archive/2026-10-ivln/get_source_ivln.sql` · **see:**
+`curate/plans/039-the-landings-flow.md` (asks answered, decisions 191 and 192), plans 007, 023, 025, 036, 037 and 038,
+TODO 112, 119, `$FISHYDATA/archive/2026-10-lods-upstream/`, `2026-10-landings-flow/`, `2026-10-fiskifelagid/` (period
+0's tables with a draft overlay; parked by the maintainer 2026-10-22, its asks a-f in its README §9)
 
 Plan 039 sets the landings' layers period by period, with a basis and a layer on every value and one output shape:
-- vessel-month totals for 1966 to 1992-08 (`fiskifelagid`, `vor`);
-- LODS 1 with the container tables to 2007-08, and ask's columns in July and August 2007;
-- agf with ask's columns to 2020-07-22 (plan 025 §4);
-- agf alone after.
+vessel-month totals for 1966 to 1992-08 (`fiskifelagid`, `vor`; built when unparked); LODS 1 with the container
+tables to 2007-08, and ask's columns in July and August 2007; agf with ask's columns to 2020-07-22 (plan 025 §4); agf
+alone after (the maintainer, 2026-10-22: "that is life"). Every ask is answered (decision 192): LODS's conversion of
+its time, lumpsucker's roe with the whole fish derived (2006's factor carried back, flagged), the exports from the
+container tables, a `provisional` flag on the last two years, `kvotix`'s logs measured first. `lid_map`'s 2007-09-01
+bound is lifted as plan 038's step 1b (decision 191). Nothing built.
 
-Found while writing it: `link_lid_map.R` reads landings from 2007-09-01 only. So 613,679 afli trips of 1992-09 to
-2006 that meet a landing by vessel, day and port have none. And January to August 2007's landings sit on the fixes
-beside their trips' logged catch. Plan 038's split (the logbook flow) is answered in plan 039 §0: agreed, with three
-additions. Nothing built.
+**From TODO 74** (decision 192): plan 023 §3 is superseded by plan 039 and plan 025 §4 taken into it. Plan 007's
+questions: 1, a report of every landing where agf and LODS disagree (agf wins, so the merge cannot show an agf
+defect), carried by plan 039 §5's witness account; 3, `link_lid_map.R` and `catch_by_species_trip.R` keyed on
+(`.lid`, `schema_land`), plan 038 step 3. Plan 023 §6's fifth source of a landing's trip, the line-incentive check's
+link of 154,146 landings to STK events (decision 163; 9,716 arrivals at another time, 7,446 landings with no logbook
+trip, unexplained), builds on plan 022 §4 (TODO 68).
 
-**check:** the asks answered in the plan; every period's landings in the same columns with a basis and a layer, and
-each layer's landings and kilograms in one outcome per period (plan 039 §9); or the plan parked or abandoned in its
-header.
+**check:** every period's landings in the same columns with a basis and a layer, and each layer's landings and
+kilograms in one outcome per period (plan 039 §9); plan 007's questions 1 and 3 answered in a decision; or the plan
+parked or abandoned in its header.
 
 ## 124. What each column means, in its metadata: units, formats, precision and codes (plan 040)
 **status:** open · **needs: maintainer** — plan 040's asks b-f (§6; a answered, f implemented in its reversible form)
