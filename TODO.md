@@ -66,7 +66,7 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 
 ## 25. The next STK key redo (`once` project): the review lists
 **status:** open · **needs: maintainer** — the go for the redo's build, once its code is in (review done 2026-10-23) ·
-**see:** decisions 128 and 195; plans 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075;
+**see:** decisions 128, 195 and 204; plans 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075;
 `$FISHYDATA/archive/2026-10-23-key-redo-refresh/`
 
 Lists 1-5 of the drafts of 2026-10-17 (the audit's discrepancies and `ais_key_resolution`'s proposals, the 32 fills
@@ -93,12 +93,12 @@ audit rows no witness reaches, today's audit's 85 new rows, plan 031 §3.11's co
 1,482 trip ends), the foreign hulls with mids 101843, 147141, 102481, 102527 and routes M1/M2 (after plan 021 step 6),
 the STK units with no vid (decision 161, TODO 116). **Fix by fix** against the MMSI feeds (2026-10-23, Claude's, not
 checked; `$FISHYDATA/archive/2026-10-stk-key-crosscheck/` §6): 213 cases, 16 settled. For this redo: mids 100137 (1136
-to about 2013-11-13), 101084 (off 2212 in 2022-09/10), 101780, 108629; later: other feeds at one place, two MMSIs.
+to about 2013-11-13), 101780, 108629, and decision 204's 50 "no vessel" rows; later: 6 undecided, two MMSIs.
 
 **check:** a decision record states the redo; every row of lists 1-5 resolved through `overrides/` or a stated reason;
 `ais_key_coverage` at 0 unassigned pings; no `once` script reads a view; no MMSI window opens before its hull's first
 register date, MMSI 251764110's gap pings on 2608, and 3009 and 7764 resolved or stated; **proposed:** that cross-check
-rerun after each redo, every same-track or partial case settled or stated.
+rerun after each redo, every same-track or partial case settled or stated; decision 204's rows in `overrides/`.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
