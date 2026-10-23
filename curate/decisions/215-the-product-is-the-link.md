@@ -1,7 +1,9 @@
 # 215 — The main output is the link from each fix to the events it may belong to; splitting the catch is the user's step, the flow's filters presets
 
 *2026-10-23. The maintainer's framing; its details drafted by Claude (AI) and left to Claude ("proceed - and i trust
-your decision"). Nothing is built; nothing in the store changes.*
+your decision"). Nothing is built; nothing in the store changes. **Amended 2026-10-23:** the effort is summed from
+the dt of the fixes the filter keeps (the maintainer: "the effort will be calculated from each ping dt value that
+remains after the filter (s, t, ...)").*
 
 ## The maintainer's words
 
@@ -26,8 +28,9 @@ the gear's speed range (s1 to s2), by the time window (t1 to t4), by a mixture o
 - **The flow's own filters are presets:** `fishing` (the window alone) and `fishing_flow` (the window, else the voyage
   gear's speed), applied in `curated/ais/catch`. They stay as references, for the ICES datacall and the maps, and as
   worked examples of the user's step; they are not the product.
-- **Effort stays on the fixes, fishing or not** (hours, kW-hours; in June 2021 on 2,562,552 of 2,572,712 fixes): it
-  does not depend on the filter, so the user's split can use it as its key.
+- **Effort follows the filter:** each fix carries its dt, the time it stands for (`hours`, kW-hours), fishing or not
+  (in June 2021 on 2,562,552 of 2,572,712 fixes). The effort of an event is the sum of dt over the fixes the user's
+  filter keeps, and the same dt is the split's key, so effort and catch come from one choice.
 - **Flags travel with their event:** catch the landing contradicts (plan 038 §8 step 1c) and the records typed by what
   they cover (decision 214) are marked on the links, so the user's filter can leave them out or keep them.
 

@@ -13,14 +13,16 @@ vessel at sea, each fix says:
 - which logbook and landing events it may belong to (the station with its gear
   and phase, the trip, the voyage, the landing), with the evidence for each link
   (the window and its basis, the fix's speed against the gear's speed range);
-- the effort it stands for (hours, kW-hours, pressure);
+- the time it stands for, its dt, from which the effort (hours, kW-hours,
+  pressure) is summed over the fixes a filter keeps;
 - under each of the flow's filters, whether it was fishing and its share of the
   catch (kg by species).
 
-**The main output is the link** (maintainer, decision 215): splitting the catch is
-the user's step, a filter they choose (the speed range, the time window, both, or
-another) and a key, and ramb's split keeps every kilogram in one outcome whatever
-the filter. The flow's own filters, `fishing` and `fishing_flow`, are presets.
+**The main output is the link** (maintainer, decision 215): the user chooses a
+filter over the linked fixes (the speed range, the time window, both, or another);
+the effort is the sum of the kept fixes' dt, the catch is split over them by the
+same dt, and ramb's split keeps every kilogram in one outcome whatever the filter.
+The flow's own filters, `fishing` and `fishing_flow`, are presets.
 
 Each value carries the path and basis it came from. All six steps of the flow
 belong here, effort and catch included (maintainer, 2026-10-14).
