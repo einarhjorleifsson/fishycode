@@ -1,8 +1,9 @@
 # 216 — Catch the trip's landing contradicts is flagged, never corrected, and carried onto the fixes as `kg_flagged`
 
 *2026-10-23. The maintainer's margin ("follow the proposal") and rule that flagged catch stays on the fixes, marked;
-the code and every number below by Claude (AI), not checked by a person. Coded and checked on a scratch store; not
-built. Plan 038 §8 step 1c; decision 210 item 3; decision 214.*
+the code and every number below by Claude (AI), not checked by a person. Coded and checked on a scratch store, then
+built the same evening on the maintainer's go ("proceed with the build"). Plan 038 §8 step 1c; decision 210 item 3;
+decision 214.*
 
 ## Chosen
 
@@ -22,7 +23,7 @@ built. Plan 038 §8 step 1c; decision 210 item 3; decision 214.*
   species' own range, and a landing that holds none of the species (710 kt), which needs a crosswalk of the
   logbook's codes to the landings' first. Both are left in plan 038 §8 step 1c.
 
-## Built
+## Coded
 
 `curate/corrections/catch_landing_contradicted.{yml,R}` (target `catch_landing_contradicted`, preprocessing: it
 reads no AIS), `curate/ais_catch.R` (reads the flag, writes `kg_flagged`), `_targets.R`, and the two entries in
@@ -39,7 +40,7 @@ The checks are in `$FISHYDATA/archive/2026-10-todo126-ais-check/15*.R` with thei
   rule and kg > 0. By what the trip landed of the species: 5,807 pairs landed 100 kg or more (278.6 kt logged),
   2,436 landed 10-100 kg, 457 landed 1-10 kg, and 3 landed under 1 kg (10 t). Those three rest on positive landing
   rows of nearly no weight, so they are flagged as the rule says.
-- **The catch, 2015, 2021 and 2023:**
+- **The catch, 2015, 2021 and 2023 (the scratch build):**
   - Rows the same as the stored catch: 76,199,810, 44,433,100 and 39,145,149. Each row matches the stored one on
     every label column, with kg equal to 1e-6 and the raise factor to 1e-9. In 2021, the year traced closest, the
     kg differ by under 1.2e-10, the order of summing.
@@ -53,8 +54,27 @@ The checks are in `$FISHYDATA/archive/2026-10-todo126-ais-check/15*.R` with thei
   landed, 999,999 of species 2 against 872). The other four (45559-45561, the 11,111 t trip, and 59912) are not:
   their trips have no linked landing, so they wait for the range rule.
 
-## The build
+## Built 2026-10-23
 
-The build is the maintainer's: `tar_make_isolated(names = c("catch_landing_contradicted", "ais_catch"))`.
-`tar_outdated()` on those two names lists only those two (2026-10-23), so nothing upstream is rebuilt with them. Then
-`check_sync()`, and `kg_flagged` summed against `catch_flag` per year, as above.
+At 8ee3be2 with ramb 2026.10.22.2, by `tar_make_isolated(names = c("catch_landing_contradicted", "ais_catch",
+"check_allocation_audit"))`. The audit is the one target downstream of `ais_catch`, and those three were all that
+`tar_outdated()` listed. `ais_catch` took 19 min 42 s. Every output is stamped at 8ee3be2 with `fd.dirty` false, and
+`tar_outdated()` is empty since. The log and the checks are `$FISHYDATA/archive/2026-10-todo126-ais-check/16*`.
+
+- **The flag:** as on the scratch store, 87,838 rows on 8,703 pairs, 293.7 kt.
+- **The catch, every year (2007-2026), against an account taken before the build:**
+  - The same 1,047,929,607 rows in the same 667 cells (year, approach, source, shared level, basis). An order-free
+    hash of every label column is the same in all 20 years, and so are the raise factors.
+  - The kilograms in a cell move by at most 1.4e-4 kg, the order of summing; two reads of the same files differ as
+    much.
+  - Kg in equals kg out for both columns in all 80 vessel-year groups.
+- **Every flagged kilogram of 2007 on is in one outcome.** 166,752.9 t sit on the catch, equal to the flag's by the
+  year of the station's window under both approaches (ais_catch takes a station by its window's start). 69.3 t, five
+  (station, species) rows with no window (one of 2009, four of 2022), are not in the catch at all, like any station
+  with no window (the audit's outcome "a station with no window"). The flagged catch logged before 2007 (127 kt) is in
+  no unit, as all that period's catch is (plan 038 §1).
+- **`kg_flagged` lies between 0 and `kg` on every row with `kg` of 0 or more.** 13,329 rows of 2007-2013 carry
+  negative `kg`: landings' own negative rows (lods), shared as they are, where `kg_flagged` is 0.
+- **The allocation audit:** the same 1,895 rows, and every column's hash the same but `amount`'s and `share`'s. Its
+  printed summary equals the 16:25 build's (`$FISHYDATA/archive/2026-10-23-rebuild/rebuild.log`), so these moved
+  in the last bits of sums of kilograms.

@@ -991,11 +991,11 @@ tables:
         type: number
         examples: [0.40, 1.58, 4.04, 11.7, 108]
         description: >
-          The part of `kg` that the trip's landing contradicts (logbook_catch_flag, plan 038 §8 step 1c): shared
-          over the same fixes with the same weights as the kilograms, so 0 ≤ kg_flagged ≤ kg, and 0 on the
-          landing's rows. Nothing is corrected; leaving the flagged catch out is the analyst's filter
-          (sum(kg - kg_flagged)). Not yet in the store: built with the next rebuild of ais_catch; the examples are
-          a scratch build's of 2026-10-23 (2015, 2021, 2023; the flagged rows' deciles 1, 3, 5, 7, 9).
+          The part of `kg` that the trip's landing contradicts (logbook_catch_flag, plan 038 §8 step 1c, decision
+          216): shared over the same fixes with the same weights as the kilograms, so 0 ≤ kg_flagged ≤ kg where kg
+          is 0 or more, and 0 on the landing's rows (some of lods', 2007-2013, carry negative kg). Nothing is
+          corrected; leaving the flagged catch out is the analyst's filter (sum(kg - kg_flagged)). The examples are
+          the flagged rows' deciles 1, 3, 5, 7 and 9 in 2015, 2021 and 2023.
       - name: catch_basis
         type: enum
         values: [derived, none]
@@ -3150,8 +3150,7 @@ tables:
       the kilograms stay in logbook_catch and on the fixes, where ais_catch carries them as `kg_flagged`. The
       landings are those lid_map links to the trip, with the landing's own schema. Duplicate twins and catch let
       go (negative codes) are left out. A trip with no linked landing, or whose landing holds none of the species,
-      is not judged here. Not yet in the store: built with the next rebuild; the ranges are a scratch build's of
-      2026-10-23 (87,838 rows on 8,703 trip-species pairs, 294 kt).
+      is not judged here. Built 2026-10-23: 87,838 rows on 8,703 trip-species pairs, 294 kt.
     constraints:
       - assert: trip_kg_landed > 0 AND trip_kg_logged > 10 * trip_kg_landed AND trip_kg_logged - trip_kg_landed >= 1000
         description: The margin, on every row.

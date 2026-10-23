@@ -3,8 +3,8 @@
 **status:** proposal — written 2026-10-22 at the maintainer's request; nothing built or changed; the baseline measured
 read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0) and
 confirmed; every ask of §9 answered 2026-10-23 (decision 191; TODO 122); step 1b coded, checked on a scratch store, not
-built (decision 203); §6-§7 rewritten 2026-10-23 for decision 215 (the product is the link); step 1c coded, checked on
-a scratch store, not built (decision 216) · **2026-10-22** ·
+built (decision 203); §6-§7 rewritten 2026-10-23 for decision 215 (the product is the link); step 1c built
+(decision 216) · **2026-10-22** ·
 **see:** `docs/one_flow.qmd` (the cascade and what is built where),
 `docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037, 039 and 040
 
@@ -428,7 +428,8 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    **Coded 2026-10-23** (decision 216, the maintainer: "follow the proposal"): the margin as proposed, compared by
    taxon, the flag in `curated/logbook/catch_flag.parquet` and on the fixes as `kg_flagged` in `curated/ais/catch`;
    checked on a scratch store for 2015, 2021 and 2023 (the catch otherwise unchanged, kg in = kg out for both
-   columns); built by the command in the record. Two of STOKKUR's six known cases are flagged; the other four have
+   columns); **built 2026-10-23** (decision 216), every flagged kilogram of 2007 on in one outcome. Two of STOKKUR's
+   six known cases are flagged; the other four have
    no linked landing. Left in this step: the trips with no linked landing (the gear and species' range) and the
    landings that hold none of the species (the crosswalk), each measured before it is coded.
 2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; decision 193, built 2026-10-23 in decision

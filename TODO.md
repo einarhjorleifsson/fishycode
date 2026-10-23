@@ -929,8 +929,8 @@ held haul, a missing haul, unexplained) and its admission decided per class; and
 
 
 ## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
-**status:** open · **needs: maintainer** — step 1c's build (decision 216) · **see:**
-`curate/plans/038-the-logbook-flow-whole.md` (asks answered 2026-10-23, decision 191), decisions 155, 172-174 and 180
+**status:** open · **see:** `curate/plans/038-the-logbook-flow-whole.md` (asks answered 2026-10-23, decision 191),
+decisions 155, 172-174 and 180
 
 Plan 038 places every open piece of the logbook flow in one order: the sources and their layers, the merge, the trip ↔
 landing link, the reconciled trip, the stations on the fixes, effort and catch. Each piece keeps its own TODO item.
@@ -948,9 +948,9 @@ Built 2026-10-23 (decision 205): step 1's fate tables (TODO 79 closed), step 1b'
 five readers of `trip_reconciled`. afli's monthly summaries, which decision 191 e made units of §7.1, are designed
 as logbook stations in plan 041, parked (TODO 136). Decision 215: the main output is the link from each fix to its
 events, the split the user's step with `fishing` and `fishing_flow` as presets; L5 and L6 rewritten for it (plan 038
-§6-§7), the work in its steps 1, 3 and 6. Step 1c coded (decision 216): catch the trip's landing contradicts
-(over 10 times the landed, and 1 t more; 8,703 trip-species pairs, 294 kt) flagged, and carried onto the fixes as
-`kg_flagged`; checked on a scratch store, built by the command in the record.
+§6-§7), the work in its steps 1, 3 and 6. Step 1c built 2026-10-23 (decision 216): catch the trip's landing
+contradicts (over 10 times the landed, and 1 t more; 8,703 trip-species pairs, 294 kt) flagged, and carried onto
+the fixes as `kg_flagged`.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
@@ -1183,7 +1183,7 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
   cell); the stamped times set aside and flagged;
 - the voyage as their window in the flow, under both approaches; STOKKUR's 8.8 kt of net and line catch, today on no
   fix (6.7 kt) or the vessel's month (1.6 kt) under `fishing`, measured onto its trip;
-- decision 210's implausible-catch flag: coded where the trip has a linked landing (decision 216, not built), which
+- decision 210's implausible-catch flag: built where the trip has a linked landing (decision 216), which
   flags two of STOKKUR's six entry errors; the other four have no linked landing and wait for the gear and species'
   own range (plan 038 §8 step 1c);
 - the tour app read with t4 = the spot time (decision 210's build);

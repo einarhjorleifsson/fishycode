@@ -1,13 +1,13 @@
 id: catch_landing_contradicted
 title: logged catch the trip's landing contradicts (more than 10 times what the trip landed of the species, and at least 1 t more), flagged and kept on the fixes, marked
-status: coded 2026-10-23, checked on a scratch store, not built (plan 038 §8 step 1c; decision 216)
+status: built 2026-10-23 (plan 038 §8 step 1c; decision 216)
 applies_to:
   - curated/logbook/catch_flag.parquet   # one row per flagged (station, species): the flag, never a corrected value
   - curated/ais/catch                    # kg_flagged: the flagged kilograms of each row, shared as the kilograms are
 affects_rows: >-
   Measured 2026-10-23 on the store as built that day (Claude, not checked by a person;
   $FISHYDATA/archive/2026-10-todo126-ais-check/14_catch_vs_landing.R): 8,703 (trip, species) pairs, 294 kt of the
-  50,954 kt logged. Their stations and the kilograms on the fixes: the scratch build's numbers are in decision 216.
+  50,954 kt logged. Their stations and the kilograms on the fixes, as built: decision 216.
 implementation: curate/corrections/catch_landing_contradicted.R (target catch_landing_contradicted); carried by curate/ais_catch.R
 discovered: >-
   Decision 210 (item 3) asked for implausible catch to be flagged against the trip's landing; decision 214 found its
