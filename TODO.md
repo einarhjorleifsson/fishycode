@@ -152,24 +152,6 @@ maintainer's.
 **check:** a decision says whether the flow qualifies voyages with neither a logbook trip nor a landing, and the
 suggested classes of `vessel_activity` are confirmed through an override or dropped.
 
-## 51. `docs/data-dict.yaml` fails the current data-dict spec
-**status:** open · **see:** decision 029
-
-Decision 029 validated it with zero errors; the tool's spec has moved on (data-dict 0.0.3, `datadict::dd_install()`).
-On 2026-10-15 a table-level `primary_key` the spec does not allow was moved into `details`, the tables and columns of
-decisions 099-104 were added (`ais_catch`, `ais_voyage_gear`, `check_landed_logged`, `check_survey_tow_times`,
-`check_vessel_activity`, 16 trail and trail_match columns), and the trail's `.tid` columns were corrected to text:
-141 errors, none in the new entries (130 `S07`: a number or string column without `examples`, a datetime without
-`range`; 11 `S28`: the types `timestamp` and `double`). `validate-meta` stops at any spec error in the file; on a
-scratch copy of the seven tables touched it passes with no warning. The tool reads no `*` glob, so a partitioned
-table names one representative file (decision 029).
-Plan 016's tables are built (decision 112) and not in the file yet (checked 2026-10-17): `vessel/mmsi`,
-`vessel/vessel_year`, `vessel/vessel_class`, `vessel/vessel_sign`, the columns `status`, `foreign`, `register` in
-`vessel.parquet` and `kw_basis`, `leisure`, `leisure_basis` on the trail.
-
-**check:** `data-dict validate-spec docs/data-dict.yaml` and `validate-meta` pass with zero errors, and the tables of
-plan 016 are in the file.
-
 ## 62. Foreign vessels' logbooks for Icelandic waters
 **status:** in progress · **needs: maintainer** — where the 2019-2025 ones are: Norway's open ERS data for the
 Norwegian half, an extract from Fiskistofa for the rest ·
@@ -903,7 +885,7 @@ adopted on 2026-10-22, DuckDB reads both whole and kvoti has its `_data-dict.yam
 
 ## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
 **status:** open · **needs: maintainer** — whether the page's column tables go and its other sections stay ·
-**see:** decision 029, items 51 and 94
+**see:** decisions 029 and 188, item 94
 
 The curated logbook tables (`curated/logbook/{trip,station,fishing_sample,catch}.parquet`) are described column by
 column twice: in `docs/data-dict.yaml` (decision 029), which `data-dict validate-meta` checks against the files, and
@@ -1065,8 +1047,8 @@ header.
 
 ## 124. What each column means, in its metadata: units, formats, precision and codes (plan 040)
 **status:** open · **needs: maintainer** — plan 040's asks b-f (§6; a answered, f implemented in its reversible form)
-· **see:** `curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, TODO 51, 110,
-plans 037-039
+· **see:** `curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, decision 188, TODO
+110, plans 037-039
 
 Phase 1 is built (decision 176): the overlay `dump/oracle/meta/<schema>.yml`, merged by the dumper and by
 `rewrite_data_dict()`, and checked at a dump's adoption by `check_data_dict()` (`dump/oracle/README.md` §11). The 28

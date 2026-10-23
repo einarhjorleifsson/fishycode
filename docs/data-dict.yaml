@@ -63,6 +63,19 @@ details: >
   carries the sent layer yet, and its consumers (curate/, plan 037 phase 2) need
   its columns written down first.
 
+  2026-10-23: brought up to the data-dict 0.0.3 spec by Claude (AI-assisted), not
+  checked by a person (TODO 51, decision 188). Plan 016's tables added
+  (`vessel_mmsi`, `vessel_year`, `vessel_class`, `vessel_sign`), with the columns
+  the files had gained; the missing `examples` and `range` were filled from each
+  table's file; a partitioned table's are from its one representative file. The
+  examples hold no person's name, address or kennitala: such columns are
+  `display: restricted`, with made-up examples. `validate-spec` passes with no
+  error. `validate-meta` reports 17 errors, all one cause: every DATE column in
+  these files is written by DuckDB without a Parquet LogicalType, and data-dict
+  0.0.3 reads it as `number`. Those columns stay `date`, which is what every other
+  reader sees (curate/issues/data-dict.yml). The landing tables' `date` columns
+  are still `number` with day counts from the first draft (decision 029).
+
 tables:
   - name: ais_voyage
     source:
@@ -115,13 +128,12 @@ tables:
             - constraints: [required] # all values present
       - name: T1
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [2007-06-01T00:00:44, 2026-04-27T09:57:54]
         description: >
           Voyage start: the vessel leaves harbour (trip-level time, uppercase per
           curate/decisions/010-time-variable-naming.md).
         todo: |
-          - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data (distinct
             count is approximate):
             - constraints: [required, unique] # values look distinct & present
@@ -129,12 +141,11 @@ tables:
             - constraints: [required] # all values present
       - name: T2
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [2007-06-01T03:26:45, 2026-04-27T12:26:14]
         description: >
           Voyage end: the vessel returns to harbour.
         todo: |
-          - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data (distinct
             count is approximate):
             - constraints: [required, unique] # values look distinct & present
@@ -142,11 +153,13 @@ tables:
             - constraints: [required] # all values present
       - name: pid1
         type: string
+        examples: [FO-ANI, IS-BOA, IS-HOF, IS-PUR, IS-VPN]
         description: >
           Departure port: the port id (pid) of the port call before the voyage. An AIS table has no
           `hid`, which is a source's own code (plan 014).
       - name: pid2
         type: string
+        examples: [FO-ANI, IS-BOL, IS-HOF, IS-RAU, IS-VPN]
         description: >
           Arrival port: the port id (pid) of the port call after the voyage.
       - name: n_pings
@@ -204,12 +217,11 @@ tables:
             - constraints: [required] # all values present
       - name: time
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [2023-01-01T00:00:01, 2023-12-31T23:59:55]
         description: >
           Timestamp of the position fix.
         todo: |
-          - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: lon
@@ -302,6 +314,7 @@ tables:
           polygons); NA when the vessel is at sea.
       - name: port_call_id
         type: number
+        examples: [43, 586, 1208, 2589, 7275]
         description: >
           The port call the ping falls in: a key, with `vid`, into curated/ais/port_call.parquet; NA at
           sea. The call's port, times and duration are in that table, not on the ping (plan 014; `stay`
@@ -319,34 +332,50 @@ tables:
             - constraints: [required] # all values present
       - name: voyage_id
         type: number
+        examples: [1, 95, 189, 284, 379]
         description: >
           The voyage the ping belongs to: a key, with `vid` and `year`, into
           curated/ais/voyage.parquet; NA outside every voyage (`voyage` until decision 149).
       - name: speed_raw
         type: number
+        examples: [0, 1.28332, 3.59628, 5.15476, 102.2]
         description: >
           The speed as the feed gave it, knots; `speed` is NA where this is no vessel speed.
       - name: pos_basis
         type: string
+        examples: [recorded]
         description: >
           recorded (AIS) or reconstructed (the gps logger: interpolated from the AIS track once,
           a frozen input). Only recorded positions shape the track (plan 014).
       - name: speed_basis
         type: string
+        examples: [derived, recorded]
         description: >
           recorded (stk, gps), derived (astd, astdB, emodnet: distance over time) or placeholder.
       - name: dt_sec
         type: number
+        examples: [2, 2627, 5295, 11104, 7679133]
         description: >
           gps only: the AIS gap, seconds, the position was interpolated across.
+        details: >
+          No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
+          the representative file holds none; the examples are from every partition.
       - name: sid_gps
         type: number
+        examples: [-1157137, -951839, -732856, -477228, -40920]
         description: >
           gps only: the logbook station the logger fix is stamped to, when exactly one.
+        details: >
+          No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
+          the representative file holds none; the examples are from every partition.
       - name: n_sid_gps
         type: number
+        examples: [1, 3, 7, 12, 30]
         description: >
           gps only: how many stations the logger fix is stamped to.
+        details: >
+          No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
+          the representative file holds none; the examples are from every partition.
   - name: ais_port_call
     source:
       parquet: ../../fishydata/curated/ais/port_call.parquet
@@ -358,35 +387,50 @@ tables:
     columns:
       - name: vid
         type: number
+        examples: [10, 2471, 4777, 7121, 100999]
         description: >
           Vessel registration number.
       - name: pid
         type: string
+        examples: [FO-ANI, IS-BLO, IS-HNR, IS-PUR, IS-VPN]
         description: >
           Standard harbour key (`pid`) of the polygon the vessel was in or within 2 km of.
       - name: year
         type: number
+        examples: [2007, 2011, 2016, 2021, 2026]
         description: >
           Year of `T_in`. A port call over New Year belongs to the year it began.
       - name: T_in
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2007-06-01T00:00:12, 2026-10-16T14:00:08]
         description: >
           First ping of the port call (or the `I` event of a pair), UTC.
       - name: T_out
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2007-06-01T08:08:32, 2026-10-16T17:11:31]
         description: >
           Last ping of the port call, or the first ping after the gap that ends it (or the `U` event), UTC. A
           port call that ends in the next year's first ping is cut there.
       - name: dur_h
         type: number
+        examples: [2, 40.9256, 94.4975, 215.549, 16136.6]
         description: >
           Elapsed hours, `T_out - T_in`. At least 2 by construction (decision 074).
       - name: rule
         type: string
+        examples: [event_pair, gap_near_port, tag_span, tag_then_gap]
         description: >
           The strongest evidence present: `event_pair` > `tag_then_gap` > `tag_span` > `gap_near_harbour`.
       - name: evidence
         type: string
+        examples:
+          - event_pair
+          - event_pair+gap_near_port+tag_span+tag_then_gap
+          - event_pair+tag_then_gap
+          - gap_near_port+tag_span+tag_then_gap
+          - tag_then_gap
         description: >
           Every rule that fired, joined with `+`. `tag_then_gap`: two consecutive pings at the harbour 2 h
           or more apart, one inside the polygon. `gap_near_harbour`: the same with neither inside.
@@ -394,28 +438,38 @@ tables:
           then `U` at the same harbour 2 h or more apart, both `io_ok` and kept by `ping_clean`, used from
           2017 only.
       - name: T_in_ping
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2007-06-01T00:00:12, 2026-10-16T14:00:08]
         description: >
           Start of the port call according to the ping rules; NA when only an event pair evidences it.
       - name: T_out_ping
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2007-06-01T08:08:32, 2026-10-16T17:11:31]
         description: >
           End of the port call according to the ping rules; NA when only an event pair evidences it.
       - name: T_in_ev
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2017-01-01T00:30:21, 2026-10-16T14:00:08]
         description: >
           `I` event time; NA when no event pair evidences the port call. Beside `T_in_ping` it shows how far
           the two sources agree (median 0 s at the start, 72 s at the end in 2019).
       - name: T_out_ev
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2017-01-01T11:52:54, 2026-10-16T17:02:43]
         description: >
           `U` event time; NA when no event pair evidences the port call.
       - name: basis
         type: string
+        examples: [reconstructed]
         description: >
           `reconstructed`: inferred from positions, not recorded.
       - name: port_call_id
         type: number
+        examples: [1, 2121, 4243, 6364, 8485]
         description: >
           The port call's key within the vessel, numbered by T_in over all years (plan 014), so a call over New
           Year keeps one number; pings carry it (`stay` until decision 149).
@@ -433,66 +487,85 @@ tables:
     columns:
       - name: vid
         type: number
+        examples: [108, 2560, 6070, 7221, 100951]
         description: >
           Vessel registration number.
       - name: mmsi
         type: string
+        examples: ["251003000", "251280340", "251473440", "251803110", "251990961"]
         description: >
           MMSI of the AIS ping; NA for a GPS logger fix.
       - name: time
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2024-06-01T00:00:04, 2024-06-30T23:59:58]
         description: >
           Time of the fix, UTC.
       - name: lon
         type: number
+        examples: [-54.3471, -23.892, -22.2534, -17.9914, 135.357]
         description: >
           Longitude.
       - name: lat
         type: number
+        examples: [35.7348, 64.233, 65.6537, 66.2139, 70.4771]
         description: >
           Latitude.
       - name: speed
         type: number
+        examples: [0, 0.0101744, 0.0688308, 3.89288, 39.9]
         description: >
           Cleaned speed in knots; NA where the source value was implausible (above 40 kn) and for a
           logger speed of exactly 1.000 m/s, which is a placeholder (`speed_basis = placeholder`).
       - name: speed_raw
         type: number
+        examples: [0, 0.0101749, 0.0688592, 3.8931, 102.3]
         description: >
           Speed as received, converted to knots.
       - name: heading
         type: number
+        examples: [0, 88.7, 178.6, 270.1, 511]
         description: >
           Heading.
       - name: cog
         type: number
+        examples: [0, 89.9, 180, 270, 360]
         description: >
           Course over ground.
       - name: provider
         type: string
+        examples: [astd, astdB, stk]
         description: >
           `stk`, `astd`, `astdB`, `emodnet` or `gps` (the onboard logger).
       - name: pos_basis
         type: string
+        examples: [recorded]
         description: >
           `recorded` for an AIS position, `reconstructed` for a logger fix interpolated from the AIS
           track.
       - name: speed_basis
         type: string
+        examples: [derived, recorded]
         description: >
           `recorded`, `derived` (ASTD speed is derived from distance over time) or `placeholder` (a
           logger fix whose speed was exactly 1.000 m/s; `speed` is NA and `speed_raw` keeps the value).
       - name: dt_sec
         type: number
+        examples: [2, 2627, 5295, 11104, 7679133]
         description: >
           Logger fix: seconds to the previous logger fix; NA for AIS pings.
+        details: >
+          No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
+          the representative file holds none; the examples are from every partition.
       - name: port_call_id
         type: number
+        examples: [1, 761, 1540, 2584, 7489]
         description: >
           Key of the port call the fix is in (curated/ais/port_call.parquet, with `vid`); NA at sea (`stay`
           until decision 149).
       - name: voyage_id
         type: number
+        examples: [1, 63, 126, 189, 278]
         description: >
           Key of the AIS voyage (curated/ais/voyage.parquet, with `vid` and `year`; `voyage` until decision 149).
       - name: .tid_voyage
@@ -503,24 +576,29 @@ tables:
           logbook trip is on the voyage, else NA.
       - name: schema_voyage
         type: string
+        examples: [afli, fs_afladagbok]
         description: >
           Logbook source (`afli`, `fs_afladagbok`, `adb`) of `.tid_voyage`; `.tid` is unique only within a
           schema.
       - name: n_tid_voyage
         type: number
+        examples: [0, 1, 2, 4, 5]
         description: >
           Logbook trips linked to the fix's voyage: 0 = none or the fix is in no voyage, 1 = one, more
           than 1 = trips share the voyage (3-4 % of linked voyages).
       - name: n_sid
         type: number
+        examples: [0, 1]
         description: >
           Number of logbook station windows that contain the fix (0 = none).
       - name: .sid
         type: number
+        examples: [-1326692, 329366, 332269, 335191, 384496]
         description: >
           The logbook station; filled only when `n_sid` is 1. A station is (.sid, schema).
       - name: schema
         type: string
+        examples: [afli, fs_afladagbok]
         description: >
           Logbook source of the station.
       - name: .tid
@@ -530,6 +608,7 @@ tables:
           The logbook trip of the station, from the station window; filled only when `n_sid` is 1.
       - name: gear
         type: string
+        examples: [DRB, FPO, LHM, OTB, SDN]
         description: >
           Gear code of the station.
       - name: target
@@ -570,6 +649,7 @@ tables:
           "none".
       - name: gear_class
         type: string
+        examples: [jigged, other, static, towed]
         description: >
           `static`, `towed`, `jigged` or `other`.
       - name: s1
@@ -586,18 +666,22 @@ tables:
           Upper end of the station gear's fishing speed range, knots. Filled only when `n_sid` is 1.
       - name: phase
         type: string
+        examples: [day, jig, set, tow]
         description: >
           `tow`, `haul`, `set`, `jig` or `day`.
       - name: phase_frac
         type: number
+        examples: [0, 0.247166, 0.497686, 0.749907, 0.999979]
         description: >
           How far through the phase window the fix is (0-1); NA for `day`.
       - name: win_basis
         type: string
+        examples: [capped, derived, recorded, synthesised]
         description: >
           How the station window was drawn (`recorded`, `derived`, `capped`, `synthesised`).
       - name: events
         type: string
+        examples: [t1, t1+t3, t1+t4, t2, t3+t4]
         description: >
           The times the station recorded (t1..t4).
       - name: nearest_event
@@ -674,16 +758,53 @@ tables:
         values: [derived, none]
         description: >
           `derived` where `hours` is computed, `none` where there are no hours.
+      - name: kw_basis
+        type: enum
+        values:
+          register: the ship register's power on 1 July of the fix's year
+          register_later: the register's earliest power after that day (a hull registered later)
+          register_earlier: the register's last power before it (a hull struck before)
+          current: the `vessel` schema's current power, for a hull the register never carries
+          none: no power known
+        description: >
+          Where the kW behind `kw_hours` came from: the engine power of the fix's own year in
+          curated/vessel/vessel_year.parquet (plan 016), whose `kw_basis` this is. NA where the vessel has no
+          row there, as an SKB pleasure craft (reference/vessels/vessel_year.R).
       - name: sid_gps
         type: number
+        examples: [-1157137, -951839, -732856, -477228, -40920]
         description: >
           The logger's own station reference for a GPS fix.
+        details: >
+          No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
+          the representative file holds none; the examples are from every partition.
       - name: n_sid_gps
         type: number
+        examples: [1, 3, 7, 12, 30]
         description: >
           Stations the logger fix refers to.
+        details: >
+          No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
+          the representative file holds none; the examples are from every partition.
+      - name: leisure
+        type: boolean
+        description: >
+          TRUE for a fix outside any logbook record (`.sid` empty) of a boat in a frístundaveiðar class at the
+          time (curated/vessel/vessel_class.parquet), an SKB pleasure craft (vid 100000 and up), or a sailing,
+          pleasure or recreational-fishing usage type that year (mclass 60, 62, 68 in vessel_year); FALSE
+          otherwise, and always FALSE inside a logbook record (plan 016 §7 b, R/trail_sql.R).
+      - name: leisure_basis
+        type: enum
+        values:
+          class: a frístundaveiðar class at the time of the fix
+          skb: an SKB pleasure craft
+          usage: a sailing, pleasure or recreational-fishing usage type that year
+        description: >
+          Which rule made `leisure` TRUE, the first that holds in the order above; NA where `leisure` is
+          FALSE.
       - name: metier
         type: string
+        examples: [DRB_DES, GNS_GAD, HMS_SWD, OTB_DEF, SDN_DEF]
         description: >
           The station's gear as a metier label, gear_target2 (e.g. OTB_NEP); the label the flow
           works from (plan 014). Filled only when `n_sid == 1`.
@@ -698,18 +819,23 @@ tables:
     columns:
       - name: vid
         type: number
+        examples: [741, 2532, 6261, 7097, 9852]
         description: >
           Vessel registration number.
       - name: time
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2024-06-01T00:05:28, 2024-06-30T23:59:55]
         description: >
           Time of the fix, UTC.
       - name: .sid
         type: number
+        examples: [-1326692, 329366, 332269, 335191, 384496]
         description: >
           The logbook station.
       - name: schema
         type: string
+        examples: [afli, fs_afladagbok]
         description: >
           Logbook source; the station is (.sid, schema).
       - name: .tid
@@ -719,6 +845,7 @@ tables:
           The station's logbook trip.
       - name: gear
         type: string
+        examples: [DRB, FPO, LHM, OTB, SDN]
         description: >
           Gear code.
       - name: target
@@ -733,38 +860,49 @@ tables:
           Finer target of the station's gear (the last part of `metier`), as in logbook_gear.
       - name: gear_class
         type: string
+        examples: [jigged, other, static, towed]
         description: >
           `static`, `towed`, `jigged` or `other`.
       - name: phase
         type: string
+        examples: [day, jig, set, tow]
         description: >
           `tow`, `haul`, `set`, `jig` or `day`.
       - name: phase_frac
         type: number
+        examples: [0, 0.247166, 0.497686, 0.749907, 0.999979]
         description: >
           Position within the phase window (0-1); NA for `day`.
       - name: win_basis
         type: string
+        examples: [capped, derived, recorded, synthesised]
         description: >
           How the window was drawn.
       - name: events
         type: string
+        examples: [t1, t1+t3, t1+t4, t2, t3+t4]
         description: >
           The times the station recorded.
       - name: s1
         type: number
+        examples: [0, 0.025, 0.25, 1.2, 2.625]
         description: >
           Lower speed bound of the gear's fishing range, knots.
       - name: s2
         type: number
+        examples: [1.4, 1.7, 2.75, 3, 6]
         description: >
           Upper speed bound.
       - name: w_start
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2024-05-31T22:56:04, 2024-06-30T23:53:00]
         description: >
           Start of the window.
       - name: w_end
-        type: timestamp
+        type: datetime
+        time_zone: UTC
+        range: [2024-06-01T04:43:10, 2024-07-01T11:44:19]
         description: >
           End of the window.
       - name: fishing
@@ -774,6 +912,7 @@ tables:
           ±10 min is inside [s1, s2] (decision 093).
       - name: metier
         type: string
+        examples: [DRB_DES, GNS_GAD, HMS_SWD, OTB_DEF, SDN_DEF]
         description: >
           The station's gear as a metier label, gear_target2 (e.g. OTB_NEP).
   - name: ais_catch
@@ -924,6 +1063,14 @@ tables:
           `logbook`: the logbook trip's stations, one speed range. `ambiguous`: its stations use gears with
           different speed ranges, so no range and only the windows decide. `landing`: no logbook trip, the
           landing's main gear. `none`: neither.
+      - name: landing_gap_d
+        type: number(quantity)
+        units: days
+        range: [2, 7]
+        description: >
+          For a `landing` gear taken from landings after the voyage: the days from the voyage's end date to
+          the first of those landings. NA for a landing within the voyage and for every other basis
+          (curate/voyage_gear.R, decision 154).
   - name: check_afli_rafr_stofn_corroboration
     source:
       parquet: ../../fishydata/curated/check/afli_rafr_stofn_corroboration.parquet
@@ -1092,10 +1239,9 @@ tables:
     description: >
       One row per vessel with at least one live electronic logbook submission,
       2003-2019. Measures how many of that vessel's live submissions never reached
-      afli's merged stofn table, and grades whether a per-vessel figure computed
-      from the curated logbook is usable at all. REPORTS only - no repair to the
-      curated logbook has been implemented
-      (curate/corrections/afli_rafr_stofn_stations_dropped.yml).
+      afli's merged stofn table, in bands (`share_absent`). REPORTS only: the absent
+      rows are not admitted (decision 098), so nothing in the curated logbook is
+      repaired from them (curate/corrections/afli_rafr_stofn_stations_dropped.yml).
     todo: |
       - Record a `primary_key`, if present.
     columns:
@@ -1191,29 +1337,19 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
-      - name: severity
-        type: string
-        examples:
-          - "at or near the 2.1% baseline"
-          - high
-          - material
-          - severe - a quarter or more absent
+      - name: share_absent
+        type: enum
+        values:
+          - under 5 % absent
+          - 5-10 % absent
+          - 10-25 % absent
+          - a quarter or more absent
           - too few stations to judge
         description: >
-          Reporting-floor category from pct_lost and stations_electronic:
-          too-few-to-judge, severe, high, material, or near baseline.
-        todo: |
-          - Only 5 distinct values. Is this an enum? If so change `string` to
-            `enum` and `examples` to `values`.
-          - Specify `constraints`. Some options suggested by the data:
-            - constraints: [required] # all values present
-      - name: usable
-        type: boolean
-        description: >
-          TRUE only if the vessel has >=50 electronic stations and <5% lost.
-        todo: |
-          - Specify `constraints`. Some options suggested by the data:
-            - constraints: [required] # all values present
+          pct_lost in bands; "too few stations to judge" below 50 electronic stations, where one lost row moves
+          the percentage by whole points. A report, not a verdict on the vessel: decision 098 found the landings
+          show these trips complete without the absent rows, and dropped the check's `usable` flag and its
+          severity grades (curate/checks/afli_rafr_stofn_loss.R).
   - name: check_ais_key_landings
     source:
       parquet: ../../fishydata/curated/check/ais_key_landings.parquet
@@ -1627,30 +1763,37 @@ tables:
     columns:
       - name: vid
         type: number
+        examples: [-422, 2471, 4398, 7044, 100999]
         description: >
           Vessel registration number.
       - name: year
         type: number
+        examples: [2008, 2012, 2017, 2021, 2026]
         description: >
           Calendar year.
       - name: n_port_call
         type: number
+        examples: [0, 105, 211, 322, 1104]
         description: >
           Port calls that began in the year, all evidence.
       - name: n_port_call_ping
         type: number
+        examples: [0, 104, 209, 314, 598]
         description: >
           Of those, port calls with ping evidence (the general rules, any provider).
       - name: n_port_call_ev
         type: number
+        examples: [0, 94, 188, 291, 1104]
         description: >
           Of those, port calls with an event-pair behind them (2017 on).
       - name: n_trip
         type: number
+        examples: [0, 61, 123, 184, 292]
         description: >
           Distinct logbook trips (afli and fs_afladagbok) beginning in the year.
       - name: n_landing_days
         type: number
+        examples: [0, 64, 128, 193, 304]
         description: >
           Distinct landing dates (agf and lods) in the year.
   - name: check_voyage_sharing
@@ -1664,47 +1807,58 @@ tables:
     columns:
       - name: version
         type: string
+        examples: [after, before]
         description: >
           `before` (archived 2026-10-01) or `after` (current).
       - name: schema
         type: string
+        examples: [adb, aflaskeyti, afli, fs_afladagbok]
         description: >
           Logbook source: `afli`, `fs_afladagbok` or `adb`.
       - name: year
         type: number
+        examples: [2008, 2012, 2017, 2021, 2026]
         description: >
           Year of the logbook trip's start.
       - name: n_trips
         type: number
+        examples: [12, 665, 35428, 45884, 54139]
         description: >
           Logbook trips with a vessel.
       - name: linked
         type: number
+        examples: [0, 0.959939, 0.982913, 0.98938, 1]
         description: >
           Share of those trips with an AIS voyage.
       - name: shared
         type: number
+        examples: [0, 0.0659707, 0.204545, 0.513163, 0.88338]
         description: >
           Share of linked trips whose voyage also carries another logbook trip (a share of TRIPS; the
           share of voyages is in decision 061).
       - name: arr_match
         type: number
+        examples: [0.5, 0.88297, 0.919007, 0.938315, 1]
         description: >
           Share of linked trips whose voyage arrival harbour equals the logbook landing harbour (`pid2`).
       - name: n_voyages
         type: number
+        examples: [4563, 46177, 62397, 71470, 83412]
         description: >
           AIS voyages that year (same for every schema).
       - name: gt3d
         type: number
+        examples: [0.0531962, 0.060213, 0.0873513, 0.179734, 0.500724]
         description: >
           Share of the year's voyages lasting more than 3 days.
       - name: gt7d
         type: number
+        examples: [0.0152772, 0.0200787, 0.0280677, 0.0832288, 0.332677]
         description: >
           Share lasting more than 7 days.
       - name: med_h
         type: number
+        examples: [8.6725, 9.79417, 10.5375, 12.075, 72.5561]
         description: >
           Median voyage length in hours.
   - name: check_trail_agreement
@@ -1718,34 +1872,42 @@ tables:
     columns:
       - name: year
         type: number
+        examples: [2007, 2011, 2016, 2021, 2026]
         description: >
           Year of the fix.
       - name: n_fixes
         type: number
+        examples: [2972515, 8744870, 29658394, 37419003, 70167047]
         description: >
           Fixes.
       - name: n_voyage0
         type: number
+        examples: [782375, 2050229, 20162199, 24301048, 46859101]
         description: >
           Fixes with no logbook trip on the voyage (or in no voyage).
       - name: n_voyage1
         type: number
+        examples: [1891032, 6219967, 8471583, 16253748, 22426107]
         description: >
           Fixes whose voyage carries exactly one logbook trip.
       - name: n_voyage_shared
         type: number
+        examples: [299108, 486341, 552685, 623635, 915632]
         description: >
           Fixes whose voyage carries several logbook trips.
       - name: n_station_tid
         type: number
+        examples: [1641229, 4555586, 5234163, 11611082, 14340087]
         description: >
           Fixes with a station `.tid`.
       - name: n_both
         type: number
+        examples: [1357170, 4168136, 4920823, 10534603, 13314988]
         description: >
           Fixes with both `.tid` and `.tid_voyage`.
       - name: n_agree
         type: number
+        examples: [1345537, 4152222, 4913865, 10476578, 13263849]
         description: >
           Of those, fixes where they are the same trip (same id and schema).
   - name: check_trail_sid_coverage
@@ -1760,46 +1922,57 @@ tables:
     columns:
       - name: year
         type: number
+        examples: [0, 1976, 1993, 2009, 2026]
         description: >
           Year the station's first window starts.
       - name: schema
         type: string
+        examples: [adb, aflaskeyti, afli, fs_afladagbok]
         description: >
           `afli` or `fs_afladagbok`.
       - name: gear_class
         type: string
+        examples: [jigged, other, static, towed]
         description: >
           Gear class of the station.
       - name: n_stations
         type: number
+        examples: [1, 1067, 15667, 40282, 231431]
         description: >
           Logbook stations with a vessel.
       - name: n_any
         type: number
+        examples: [0, 432, 11622, 24301, 106782]
         description: >
           Stations matched by at least one fix, any phase.
       - name: n_tier1
         type: number
+        examples: [0, 766, 10957, 27726, 79239]
         description: >
           Stations matched through a tow, haul, set or jig window.
       - name: n_heard
         type: number
+        examples: [0, 491, 14377, 26026, 108111]
         description: >
           Stations whose vessel has any fix in the trail that year.
       - name: n_any_heard
         type: number
+        examples: [0, 491, 12837, 24337, 106782]
         description: >
           Of those, matched by any fix.
       - name: n_tier1_heard
         type: number
+        examples: [0, 788, 12836, 31122, 79239]
         description: >
           Of those, matched through a recorded-time window.
       - name: n_tw
         type: number
+        examples: [0, 865, 17681, 68724, 183039]
         description: >
           Stations with a recorded-time window (the logbook gave usable times).
       - name: n_tw_matched
         type: number
+        examples: [0, 766, 10957, 27726, 79239]
         description: >
           Of those, matched by a fix.
   - name: check_landed_logged
@@ -2050,7 +2223,7 @@ tables:
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: schema
-        type: string
+        type: enum
         values: [agf, lods]
         description: >
           Which source system this row came from: "agf" (aflagrunnur, live
@@ -2201,7 +2374,7 @@ tables:
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: schema
-        type: string
+        type: enum
         values: [agf, lods]
         description: >
           Which source system this trip came from: "agf" or "lods" - see
@@ -2286,8 +2459,9 @@ tables:
         description: >
           Which event time: the column name in station_window.parquet.
       - name: event_time
-        type: string
-        examples: ["2023-06-01 04:12:00"]
+        type: datetime
+        time_zone: naive
+        range: [0000-12-30T00:00:00, 2026-10-15T20:33:00]
         description: >
           The event time as the station window reads it (adb's towed start and end already moved to t2/t3).
       - name: event_basis
@@ -2302,8 +2476,9 @@ tables:
           "suspect_clock" for a clock value far commoner than its neighbours, which reads as "time unknown": afli
           set starts at 23:59, fs_afladagbok tow starts at 00:00. NA otherwise. Still matched.
       - name: time
-        type: string
-        examples: ["2023-06-01 04:13:05"]
+        type: datetime
+        time_zone: UTC
+        range: [2007-06-01T00:01:57, 2026-10-15T20:26:39]
         description: >
           The bounding fix's time (in curated/ais/ping); NA when it lies more than an hour from the event, or
           went to a nearer event of another station or phase (ping_lost).
@@ -2320,7 +2495,6 @@ tables:
           track can place the event. 0 when a fix falls on it, NA when the track does not reach both sides.
       - name: ping_lost
         type: boolean
-        examples: [false, true]
         description: >
           TRUE when the bounding fix, within the hour, went to a nearer event of another station or of the other
           phase of this one (decision 091); time and dt_s are then NA, and gap_s says how sparse the track was.
@@ -2394,32 +2568,32 @@ tables:
             - constraints: [required] # all values present
       - name: T1_ais
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [2007-06-01T00:02:30, 2026-04-08T06:27:53]
         description: >
           AIS voyage start time - an independently measured alternative to the
           logbook's own T1, sitting alongside it under the _ais suffix rather than
           overwriting it.
         todo: |
-          - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: T2_ais
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [2007-06-01T08:59:52, 2026-04-27T12:25:56]
         description: >
           AIS voyage end time.
         todo: |
-          - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: pid1_ais
         type: string
+        examples: [FO-ANI, IS-DJU, IS-HUA, IS-REK, IS-VPN]
         description: >
           Departure port id of the linked voyage.
       - name: pid2_ais
         type: string
+        examples: [FO-ANI, IS-DPV, IS-HVL, IS-REY, IS-VPN]
         description: >
           Arrival port id of the linked voyage.
       - name: n_pings
@@ -2506,27 +2680,33 @@ tables:
     columns:
       - name: .tid
         type: string
+        examples: ["-1000003", "101421515", "104744733", "26839553", "99999"]
         description: >
           Logbook trip id (with schema, the key of logbook_trip).
       - name: schema
         type: string
+        examples: [adb, aflaskeyti, afli, fs_afladagbok]
         description: >
           The logbook the trip comes from.
       - name: vid
         type: number
+        examples: [-422, 1484, 2666, 6455, 69479]
         description: >
           Vessel identifier.
       - name: T1
         type: datetime
         time_zone: naive
+        range: [0006-03-30T00:00:00, 2026-10-15T09:20:11]
         description: >
           The departure: the best-ranked witness's time; NA where no witness holds one.
       - name: T1_from
         type: string
+        examples: [ais, phone, quota, stk]
         description: >
           The witness T1 came from: ais, own, stk, quota, phone.
       - name: T1_basis
         type: string
+        examples: [none, reconstructed, recorded]
         description: >
           reconstructed (ais), recorded (the others), none.
       - name: T1_day
@@ -2535,47 +2715,58 @@ tables:
           TRUE where T1 is a date only (no witness gave a time on that day).
       - name: T1_n
         type: number
+        examples: [0, 2, 3, 4]
         description: >
           How many witnesses hold a departure time.
       - name: T1_outcome
         type: string
+        examples: [agree, differ, none, one]
         description: >
           none, one (a single witness), agree (every witness within 1 hour, or on the same day where either is a date only), differ.
       - name: T1_spread_s
         type: number
+        examples: [0, 26852, 52259, 91459, 40656410]
         description: >
           The largest distance in seconds from T1 to another witness's time (by date where either is a date only).
       - name: pid1
         type: string
+        examples: [FO-ANI, IS-DPV, IS-HUA, IS-REY, IS-VPN]
         description: >
           The departure port (standard pid): the best-ranked witness's port; it may come from another witness than T1.
       - name: pid1_from
         type: string
+        examples: [ais, phone, quota, stk]
         description: >
           The witness pid1 came from.
       - name: pid1_basis
         type: string
+        examples: [none, reconstructed, recorded]
         description: >
           reconstructed (ais), recorded (the others), none.
       - name: pid1_n
         type: number
+        examples: [0, 2, 3, 4]
         description: >
           How many witnesses hold a departure port.
       - name: pid1_outcome
         type: string
+        examples: [agree, differ, none, one]
         description: >
           none, one, agree (every witness names the same port), differ.
       - name: T2
         type: datetime
         time_zone: naive
+        range: [0202-11-01T00:00:00, 2026-10-16T17:15:25]
         description: >
           The return: the best-ranked witness's time; NA where no witness holds one.
       - name: T2_from
         type: string
+        examples: [ais, landing, own, quota, stk]
         description: >
           The witness T2 came from: ais, own, stk, quota, phone, landing.
       - name: T2_basis
         type: string
+        examples: [none, reconstructed, recorded]
         description: >
           reconstructed (ais), recorded (the others), none.
       - name: T2_day
@@ -2584,133 +2775,163 @@ tables:
           TRUE where T2 is a date only (no witness gave a time on that day).
       - name: T2_n
         type: number
+        examples: [0, 1, 3, 4, 6]
         description: >
           How many witnesses hold a return time.
       - name: T2_outcome
         type: string
+        examples: [agree, differ, none, one]
         description: >
           none, one (a single witness), agree (every witness within 1 hour, or on the same day where either is a date only), differ.
       - name: T2_spread_s
         type: number
+        examples: [0, 17340, 41806, 89138, 57275942400]
         description: >
           The largest distance in seconds from T2 to another witness's time (by date where either is a date only).
       - name: pid2
         type: string
+        examples: [FO-ANI, IS-DPV, IS-HVA, IS-REY, IS-VPN]
         description: >
           The return port (standard pid): the best-ranked witness's port; it may come from another witness than T2.
       - name: pid2_from
         type: string
+        examples: [ais, own, quota, stk]
         description: >
           The witness pid2 came from.
       - name: pid2_basis
         type: string
+        examples: [none, reconstructed, recorded]
         description: >
           reconstructed (ais), recorded (the others), none.
       - name: pid2_n
         type: number
+        examples: [0, 1, 3, 4, 6]
         description: >
           How many witnesses hold a return port.
       - name: pid2_outcome
         type: string
+        examples: [agree, differ, none, one]
         description: >
           none, one, agree (every witness names the same port), differ.
       - name: T1_ais
         type: datetime
         time_zone: naive
+        range: [2007-06-01T00:09:08, 2026-10-15T09:20:11]
         description: >
           T1 of the AIS voyage linked to the trip (link_trip_voyage).
       - name: pid1_ais
         type: string
+        examples: [FO-ANI, IS-DJU, IS-HUA, IS-REK, IS-VPN]
         description: >
           pid1 of the same witness.
       - name: T1_own
         type: datetime
         time_zone: naive
+        range: [0006-03-30T00:00:00, 2026-10-15T17:45:13]
         description: >
           T1 of the logbook's own (T1: fs_afladagbok and adb only; T2: afli too, its landing day; adb's port 0 read as missing).
       - name: pid1_own
         type: string
+        examples: [IS-AKR, IS-DRA, IS-HVM, IS-SAD, IS-VPN]
         description: >
           pid1 of the same witness.
       - name: T1_stk
         type: datetime
         time_zone: naive
+        range: [2003-09-08T14:38:54, 2021-02-08T05:49:04]
         description: >
           T1 of the latest STK recorded voyage containing the trip (staging_stk_voyage).
       - name: pid1_stk
         type: string
+        examples: [IS-AED, IS-FLA, IS-HVM, IS-SAN, IS-VPN]
         description: >
           pid1 of the same witness.
       - name: T1_quota
         type: datetime
         time_zone: naive
+        range: [2007-09-01T01:55:25, 2021-02-06T08:16:24]
         description: >
           T1 of the quota system's record of the trip's landing (staging_quota_trip, through lid_map).
       - name: pid1_quota
         type: string
+        examples: [IS-AED, IS-FEY, IS-HVM, IS-SAD, IS-VPN]
         description: >
           pid1 of the same witness.
       - name: T1_phone
         type: datetime
         time_zone: naive
+        range: [1996-02-01T06:14:00, 2014-09-01T07:54:13]
         description: >
           T1 of the latest valid phone call out (T1) or in (T2) within 3 days before the trip's own day (staging_phone_call).
       - name: pid1_phone
         type: string
+        examples: [IS-AKR, IS-DPV, IS-HOL, IS-RFJ, IS-VPN]
         description: >
           pid1 of the same witness.
       - name: T2_ais
         type: datetime
         time_zone: naive
+        range: [2007-06-01T10:15:15, 2026-10-16T17:15:25]
         description: >
           T2 of the AIS voyage linked to the trip (link_trip_voyage).
       - name: pid2_ais
         type: string
+        examples: [FO-ANI, IS-DPV, IS-HVL, IS-REY, IS-VPN]
         description: >
           pid2 of the same witness.
       - name: T2_own
         type: datetime
         time_zone: naive
+        range: [0201-07-23T00:00:00, 2026-10-16T00:00:00]
         description: >
           T2 of the logbook's own (T1: fs_afladagbok and adb only; T2: afli too, its landing day; adb's port 0 read as missing).
       - name: pid2_own
         type: string
+        examples: [IS-AKR, IS-EYR, IS-HOR, IS-SAD, IS-VPN]
         description: >
           pid2 of the same witness.
       - name: T2_stk
         type: datetime
         time_zone: naive
+        range: [2003-09-09T14:17:24, 2021-02-08T05:49:53]
         description: >
           T2 of the latest STK recorded voyage containing the trip (staging_stk_voyage).
       - name: pid2_stk
         type: string
+        examples: [FO-FUG, IS-EYR, IS-HUA, IS-RFJ, IS-VPN]
         description: >
           pid2 of the same witness.
       - name: T2_quota
         type: datetime
         time_zone: naive
+        range: [2007-09-01T12:32:18, 2021-02-06T18:12:29]
         description: >
           T2 of the quota system's record of the trip's landing (staging_quota_trip, through lid_map).
       - name: pid2_quota
         type: string
+        examples: [IS-AED, IS-ESF, IS-HRI, IS-SAD, IS-VPN]
         description: >
           pid2 of the same witness.
       - name: T2_phone
         type: datetime
         time_zone: naive
+        range: [1996-02-01T16:02:00, 2014-08-31T17:02:11]
         description: >
           T2 of the latest valid phone call out (T1) or in (T2) within 3 days before the trip's own day (staging_phone_call).
       - name: pid2_phone
         type: string
+        examples: [IS-AKR, IS-DRA, IS-HOR, IS-RFJ, IS-VPN]
         description: >
           pid2 of the same witness.
       - name: T2_landing
         type: datetime
         time_zone: naive
+        range: [2007-09-01T00:00:00, 2026-10-17T00:00:00]
         description: >
           T2 of the trip's landing (lid_map): its day and port.
       - name: pid2_landing
         type: string
+        examples: [IS-AKR, IS-DRA, IS-HRI, IS-RHA, IS-VPN]
         description: >
           pid2 of the same witness.
   - name: logbook_catch
@@ -2848,6 +3069,13 @@ tables:
         examples: ["-1007642", "-648142", "103733035", "105785128", "79358526"]
         description: >
           Logbook trip id.
+      - name: schema
+        type: enum
+        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        description: >
+          The logbook source of the trip: `.tid` is unique only within a schema, so the trip is (.tid,
+          schema) (TODO 41). NA on a row from the landings alone, where the full join found no logbook catch
+          of that species on the landing (curate/catch_by_species_trip.R).
       - name: .lid
         type: number
         range: [-981361, 9900000]
@@ -3000,30 +3228,24 @@ tables:
             `examples` is appropriate.
       - name: t1
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [0000-12-30T00:00:00, 2026-04-08T20:31:48]
         description: >
           Event 1: gear deployment starts (lowercase - event-level time, per
           curate/decisions/010-time-variable-naming.md). NA where the logbook app
           filled it as a placeholder (t1_placeholder).
-        todo: |
-          - Needs a `time_zone`?
       - name: t3
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [1962-09-30T16:00:00, 2026-04-08T18:17:00]
         description: >
           Event 3: gear retrieval starts.
-        todo: |
-          - Needs a `time_zone`?
       - name: t4
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [0004-07-20T00:00:00, 2200-04-27T00:00:00]
         description: >
           Event 4: gear retrieval ends.
-        todo: |
-          - Needs a `time_zone`?
       - name: .duration_source
         type: string
         examples: [data, implausible, missing]
@@ -3031,14 +3253,12 @@ tables:
           "data" (duration read directly), "implausible" (above the gear's plausible maximum,
           gear_window.dur_max_min; duration_m is then NA and the raw value is in duration_m_raw), or "missing".
       - name: duration_m_raw
-        type: double
+        type: number(quantity)
+        units: minutes
+        range: [-1061366400, 93618000]
         description: >-
           Operation duration, minutes, exactly as the source gave it, before the plausibility
           limit. NA where the source has none. Not present for the adb schema.
-
-        todo: |
-          - Only 3 distinct values. Is this an enum? If so change `string` to
-            `enum` and `examples` to `values`.
       - name: effort_count
         type: number
         range: [-1, 580800]
@@ -3099,12 +3319,10 @@ tables:
             `examples` is appropriate.
       - name: t2
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [1962-09-30T10:00:00, 2025-11-28T09:30:44]
         description: >
           Event 2: gear deployment ends / gear reaches bottom.
-        todo: |
-          - Needs a `time_zone`?
       - name: .t2_source
         type: string
         examples: [data, derived]
@@ -3376,22 +3594,27 @@ tables:
             - constraints: [required] # all values present
       - name: schema_land
         type: string
+        examples: [agf, lods]
         description: >
           The landing's system: agf or lods.
       - name: date_land
         type: date
+        range: [2007-09-01, 2026-10-17]
         description: >
           The landing's own date (not the shifted copy a cascade step matched).
       - name: hid_land
         type: number
+        examples: [1, 57, 95, 135, 300]
         description: >
           The landing's port code (hid), the landing system's own.
       - name: pid_land
         type: string
+        examples: [IS-AKR, IS-DRA, IS-HRI, IS-RHA, IS-VPN]
         description: >
           The landing's port id (pid).
       - name: n_trips
         type: number
+        examples: [1, 4, 9, 20, 85]
         description: >
           Trips on the landing; above 1 is a declared many-to-many (plan 014).
   - name: logbook_gear
@@ -3405,43 +3628,53 @@ tables:
     columns:
       - name: .sid
         type: number
+        examples: [-2768723449, 1724114, 27711063, 75779829, 10630176826]
         description: >
           The station.
       - name: schema
         type: string
+        examples: [adb, aflaskeyti, afli, fs_afladagbok]
         description: >
           The logbook system: afli, fs_afladagbok or adb. `.sid` is unique only within it.
       - name: gid
         type: number
+        examples: [1, 6, 12, 19, 25]
         description: >
           The logbook's own gear code (new coding); NA for adb, whose code does not resolve.
       - name: gid_landing
         type: number
+        examples: [1, 6, 12, 17, 25]
         description: >
           The linked landing's gear (new coding), where the landing names one metier.
       - name: gid_used
         type: number
+        examples: [1, 6, 12, 19, 25]
         description: >
           The gear the flow uses: gid_landing where its metier differs from the logbook's or the logbook
           has none, otherwise gid.
       - name: metier
         type: string
+        examples: [DIV_DES, GND_SPF, HMS_SWD, OTB_DEF, SDN_DEF]
         description: >
           gid_used as a metier label, gear_target2 (e.g. OTB_NEP, GNS_LUM, LLS_DEF).
       - name: gear
         type: string
+        examples: [DIV, GND, LHM, OTB, SDN]
         description: >
           Gear code of gid_used.
       - name: target
         type: string
+        examples: [CRU, DEF, DWF, MOL, SWD]
         description: >
           Target group of gid_used.
       - name: target2
         type: string
+        examples: [ARI, DES, HER, SCL, XXX]
         description: >
           Finer target of gid_used.
       - name: gid_basis
         type: string
+        examples: [none, reconstructed, recorded]
         description: >
           recorded (the logbook's gear), reconstructed (the landing's) or none.
   - name: logbook_sensor_gps
@@ -3969,6 +4202,7 @@ tables:
           everywhere, but the AIS track cannot tell it from its twin.
       - name: twin_of
         type: number
+        examples: [-1322871, 140434, 248612, 2766209, 101625326]
         description: >
           For a "duplicate" twin, the .sid (same schema) of the kept record it
           repeats. NA otherwise.
@@ -4012,13 +4246,12 @@ tables:
             `examples` is appropriate.
       - name: T1
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [0006-03-30T00:00:00, 2026-04-08T20:30:10]
         description: >
           Departure time (or earliest fishing date, for afli; the first haul's time, for
           aflaskeyti, see T1_basis).
         todo: |
-          - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: hid1
@@ -4032,13 +4265,11 @@ tables:
             `examples` is appropriate.
       - name: T2
         type: datetime
-        time_zone: naive
+        time_zone: UTC
         range: [0201-07-23T00:00:00, 2026-04-09T09:17:52]
         description: >
           Landing date/time (for aflaskeyti the date of the landing in Iceland that ends
           the trip, or NA; see T2_basis).
-        todo: |
-          - Needs a `time_zone`?
       - name: hid2
         type: number
         range: [-1, 3477]
@@ -4122,6 +4353,7 @@ tables:
           counts.
       - name: twin_of
         type: string
+        examples: ["-1148350", "143617", "67079", "91434", "99993"]
         description: >
           For a "duplicate" trip, the .tid (same schema) of the kept trip, when all
           its stations repeat that one trip. NA otherwise.
@@ -4224,48 +4456,59 @@ tables:
     columns:
       - name: pid
         type: string
+        examples: [FO-ANI, IS-BES, IS-HNR, IS-PUR, IS-VPN]
         description: >
           Standard harbour key.
       - name: port
         type: string
+        examples: [Akranes, "Grímsey", Lopra, "Skáli", "Þórshöfn"]
         description: >
           Standard harbour name.
       - name: r_in_m
         type: number
+        examples: [2000]
         description: >
           Arrival radius in metres, the same for every harbour (2000).
       - name: r_out_m
         type: number
+        examples: [2000, 2628.51, 3155.96, 3356.44, 4064.79]
         description: >
           Departure radius in metres: p95 of the `U` ping's distance from the polygon over the harbour's
           real pairs, between 2000 and 6000; 2000 where there are fewer than 100 pairs.
       - name: basis
         type: string
+        examples: [reconstructed, synthesised]
         description: >
           `reconstructed` = measured from at least 100 pairs; `synthesised` = the 2000 m default.
       - name: n_pairs
         type: number
+        examples: [0, 90, 943, 14949, 78510]
         description: >
           Real `I`->`U` pairs behind the harbour: adjacent, same harbour, 4 h or more apart, both `io_ok`
           and kept, 2008-2025.
       - name: d_p50
         type: number
+        examples: [0, 78.3474, 134.866, 239.279, 1508.67]
         description: >
           Median distance in metres of the `U` ping from the polygon, pairs within the 6000 m cap.
       - name: d_p90
         type: number
+        examples: [0, 353.11, 663.912, 1099.16, 4316.06]
         description: >
           90th percentile of the same.
       - name: d_p95
         type: number
+        examples: [0, 488.032, 811.212, 1292.29, 4477.88]
         description: >
           95th percentile of the same: the unclamped `r_out_m`.
       - name: share_gt_r_in
         type: number
+        examples: [0, 0.0102041, 0.0215054, 0.0415335, 0.564103]
         description: >
           Share of the harbour's pairs whose `U` ping is beyond `r_in_m`.
       - name: share_gt_cap
         type: number
+        examples: [0, 0.00533447, 0.00901393, 0.0216501, 0.375]
         description: >
           Share beyond the 6000 m cap; treated as bad events and left out of the percentiles.
   - name: reference_dictionary
@@ -4798,15 +5041,17 @@ tables:
       also covers a foreign-vessel range (vid 3700-4999) whose flag is inferred
       from uid's country prefix. Registry rows with vid == 0 are excluded. This is
       the base registry other vessel tables are built from
-      (reference/vessels/registry.R).
+      (reference/vessels/registry.R). Since plan 016 it also holds the SKB
+      pleasure craft of the MMSI lists, as vid 100000 + their number
+      (`register` skb).
     todo: |
       - What population? All vessels ever registered, or only those with
         logbook/landings/AIS activity?
     columns:
       - name: vid
         type: number
-        range: [1, 9855]
-        examples: [103, 1873, 4462, 5842, 9043]
+        range: [1, 102772]
+        examples: [103, 1873, 4462, 5842, 9043, 100002]
         constraints: [primary_key]
         description: >
           Vessel identifier — the one column spelled the same in every
@@ -4814,25 +5059,19 @@ tables:
         todo: |
           - Pick a more specific numeric type (currently generic `number`).
       - name: yh1
-        type: number
-        range: [1860, 2021]
-        examples: [1860, 1934, 1965, 1990, 2021]
+        type: number(ordinal)
+        range: [1860, 2023]
         description: >
-          First year the hull appears in Hreiðar's historical vessel-year list
-          (external, last updated 2021).
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
+          First year on the ship register (curated/vessel/register/registered.parquet): the runs of the
+          register's editions and of Hreiðar's years in use, the `vessel` schema's after 2023-12-19 (plan 028,
+          decisions 136, 142). Until 2026-10-18 it was Hreiðar's first year (reference/vessels/registry.R).
+          NA where the register has no run for the hull.
       - name: yh2
-        type: number
-        range: [1935, 2021]
-        examples: [1935, 1978, 1993, 2005, 2021]
+        type: number(ordinal)
+        range: [1935, 2026]
         description: >
-          Last year the hull appears in that list - a censoring horizon (never exceeds
-          2021), not necessarily the year the vessel ceased to exist.
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
+          Last year on the ship register: the year of the last day of the hull's last run. NA while the hull is
+          on the register at the dump, and where it has no run.
       - name: mmsi
         type: string
         examples:
@@ -4876,14 +5115,12 @@ tables:
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: source
-        type: string
-        examples: [ISL]
+        type: enum
+        values: [ISL, SKB]
         description: >
-          Registry source label; always "ISL" here (only the Icelandic registry is
-          compiled into this table).
+          Registry source label: "ISL" for the Icelandic ship register, "SKB" for an SKB pleasure craft
+          (`register` skb, plan 016 §5).
         todo: |
-          - Only 1 distinct values. Is this an enum? If so change `string` to
-            `enum` and `examples` to `values`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
       - name: .id
@@ -4897,6 +5134,13 @@ tables:
             `examples` is appropriate.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: status
+        type: string
+        examples: ["Afmáð", "Ekki vitað", Erlent, "Í þurrleigu", "Óskilgreint"]
+        description: >
+          The hull's status in the `vessel` schema (vessel.status), as Oracle writes it: Á aðalskipaskrá (on
+          the main register), Afmáð (struck off), Erlent (foreign; see `foreign`), and a few others. NA for an
+          SKB pleasure craft, which the schema does not hold (reference/vessels/registry.R).
       - name: mclass
         type: number
         range: [0, 6304]
@@ -4972,6 +5216,11 @@ tables:
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
+      - name: foreign
+        type: boolean
+        description: >
+          TRUE where `status` is Erlent, the register's own word for a foreign hull: all of vid 3700-4999, and
+          3699. Taken from the status, not the vid range (plan 016, reference/vessels/registry.R).
       - name: mmsi_t1
         type: date
         range: [2007-06-01, 2021-01-01]
@@ -5008,6 +5257,14 @@ tables:
         todo: |
           - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
+      - name: register
+        type: enum
+        values:
+          skipaskra: the ship register, the `vessel` schema's tables
+          skb: an SKB pleasure craft from the MMSI lists, as vid 100000 + its number
+        description: >
+          Where the row comes from (plan 016 §5, reference/vessels/registry.R). An SKB code is a registration,
+          not a hull: one has been reused after a sale (SKB905), and one covers a tender (SKB225).
   - name: vessel_ais_key
     source:
       parquet: ../../fishydata/curated/vessel/vessel_ais_key.parquet
@@ -5105,6 +5362,14 @@ tables:
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+      - name: d2_is_open
+        type: boolean
+        description: >
+          TRUE on a mobile-id's last stretch, which has no end: its d2 is then the arbitrary open-end date
+          2028-12-24, not an end, and consumers join the stretch without one (decision 183;
+          curate/ais_ping_union.R, sources/stk/convert.R). On a segment row it is d2 at or after that date
+          (reference/vessels/ais_key.R); on a row kept from the cascade, the mid's last period unless a clean
+          handover closed it (reference/vessels/ais_key_cascade.R).
       - name: vid
         type: number
         range: [-7830, 9853]
@@ -5148,6 +5413,18 @@ tables:
         todo: |
           - Only 12 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
+      - name: tier
+        type: enum
+        values:
+          A: physical, or reviewed by a person
+          B: the registry or the logbook
+          C: the landings
+          D: continuity
+          E: a kept foreign override
+        description: >
+          The grade of the evidence in `step` (reference/vessels/ais_key.R, from the segment table's grade).
+          NA on 17,357 of the 17,358 rows kept from the cascade, for mobile-ids the segment table does not
+          cover (counted 2026-10-23).
       - name: entity_class
         type: string
         examples:
@@ -5398,6 +5675,365 @@ tables:
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
 
+  - name: vessel_mmsi
+    source:
+      parquet: ../../fishydata/curated/vessel/mmsi.parquet
+    description: >
+      The Icelandic MMSI archive: one row per MMSI and holder period, rebuilt from every source held (the
+      Fjarskiptastofa lists, the Oracle snapshots, the `vessel` schema's MMSI table, the old archive's
+      hand-set windows and the confirmed corrections), each row evidence with its sources and dates (plan
+      016 §4 step 1, reference/vessels/mmsi.R). An MMSI has one holder at a time: the script stops on an
+      overlap. vessel.parquet takes one current vessel MMSI per vid from here.
+    details: >
+      Windows from list dates are coarse: the sources are dated 2019, 2020, 2022 and 2024-26. A
+      single-holder MMSI is opened to all time by curate/ais_ping_union.R anyway, so the windows matter
+      where an MMSI has several holders. Added 2026-10-23 by Claude (AI-assisted), from the script and the
+      built file (TODO 51).
+    columns:
+      - name: mmsi
+        type: string
+        examples: ["002510000", "251361540", "251808940", "992511096", "992518001"]
+        constraints: [primary_key]
+        description: >
+          Maritime Mobile Service Identity, as text. With `zombie_no`, the row's key.
+      - name: mmsi_cat
+        type: string
+        examples: [Child vessel, Navigational aid, SAR aircraft, testing, vessel]
+        description: >
+          What the MMSI is: ramb::rb_classify_mmsi() from its digits, with a few set by hand (a SAR
+          aircraft, test transmitters).
+      - name: sknr
+        type: string
+        examples: ["0133", "2480", "6171", "7331", SKBXXX]
+        description: >
+          The holder's registration number as the source writes it ("0741"), or an SKB pleasure craft's code.
+      - name: vid
+        type: number(id)
+        examples: [12, 2427, 6134, 7295, 102772]
+        description: >
+          The holder: the registration number as an integer ("0741" and 741 are one hull), or for an SKB
+          pleasure craft 100000 + its number (plan 016 §5). NA where the holder is not a numbered hull.
+      - name: cs
+        type: string
+        examples: [TFA, TFET, TFJQ, TFRK, TFZZ]
+        description: >
+          Call sign, as the sources give it.
+      - name: nafn
+        type: string
+        display: restricted
+        examples: [VESSEL NAME, Company ehf, Buoy name]
+        description: >
+          The name in the list: a vessel's name, or for a station, buoy or test transmitter its owner's,
+          sometimes with an address. The examples are made up.
+      - name: note
+        type: string
+        display: restricted
+        examples: [Afskráður 1.1.2020, Seldur 15.3.2018, Sökk 2011]
+        description: >
+          The list's free-text note (athugasemdir), or Oracle's, from which `note_date` and `note_fate` are
+          read. It can name a buyer. The examples are made up.
+      - name: note_date
+        type: date
+        range: [1997-02-21, 2026-02-04]
+        description: >
+          The date read from the note (day, month, year); NA where it has none.
+      - name: note_fate
+        type: enum
+        values:
+          Fórst: lost (sank or burnt)
+          Niðurrif: scrapped
+          Seldur: sold
+          Afskráður: deregistered
+          Úr rekstri: out of service
+        description: >
+          The hull's fate read from the note's words; NA where the note names none.
+      - name: mmsi_t1
+        type: date
+        range: [2007-06-01, 2026-06-16]
+        description: >
+          Start of the holder period: 2007-06-01 (STK begins) for an MMSI's first holder; for a later holder
+          the day after the previous holder's deregistration date in its note, else the first source it
+          appears in. A hand-set window of the old archive, or a correction, takes precedence.
+      - name: mmsi_t2
+        type: date
+        range: [2007-06-01, 2028-12-24]
+        description: >
+          End of the holder period: the day before the next holder; for the last holder its deregistration
+          date from the note, else open while the latest list or Oracle has it, else the last source it
+          appears in. Open is written 2028-12-24, the archive's open-end marker kept so its readers need not
+          change, which every reader takes as open (decision 183).
+      - name: zombie_no
+        type: number(ordinal)
+        range: [1, 3]
+        constraints: [primary_key]
+        description: >
+          The holder's order on the MMSI, 1 for its first. With `mmsi`, the row's key.
+      - name: first_seen
+        type: date
+        range: [2019-06-27, 2026-06-16]
+        description: >
+          Date of the first source the MMSI and holder appear in together.
+      - name: last_seen
+        type: date
+        range: [2019-06-27, 2026-06-16]
+        description: >
+          Date of the last source they appear in together.
+      - name: current
+        type: boolean
+        description: >
+          The latest list or Oracle has the pair, and the note does not say the hull is struck, scrapped or
+          lost.
+      - name: sources
+        type: string
+        examples:
+          - list_2024-08-21+list_2024-11-07+list_2025-04-10
+          - list_2024-08-21+list_2024-11-07+list_2025-04-10+list_2026-03-09+oracle_mmsi_icelandic_registry+oracle_vessel_mmsi_20190627+oracle_vessel_mmsi_20201215
+          - list_2024-08-21+list_2024-11-07+list_2025-04-10+oracle_mmsi_icelandic_registry+oracle_vessel_mmsi_20190627+oracle_vessel_mmsi_20201215+oracle_vessel_mmsi_20220405
+          - oracle_mmsi_icelandic_registry+oracle_vessel_mmsi
+          - overrides/mmsi_broadcast.csv
+        description: >
+          The sources the pair appears in, joined by "+": a list as `list_<date>`, the Oracle snapshots by
+          name, or the correction file.
+      - name: window_basis
+        type: enum
+        values:
+          default: the open defaults, 2007-06-01 to open
+          list: dated by a list's date
+          note: dated by a note's deregistration date
+          reconstructed: a hand-set window of the old archive, or a correction
+        description: >
+          Where the window's dates came from.
+      - name: basis
+        type: enum
+        values: [recorded, reconstructed]
+        description: >
+          `reconstructed` for a broadcast MMSI put in by a confirmed correction
+          (curate/corrections/mmsi_broadcast_unregistered.yml), else `recorded`.
+  - name: vessel_year
+    source:
+      parquet: ../../fishydata/curated/vessel/vessel_year.parquet
+    description: >
+      One row per vid in the `vessel` schema and year, 2007 to the build's year: the usage type, engine power
+      and length in force that year, each with its basis and witnesses (plan 016 §4 step 5, plan 028 step 7,
+      reference/vessels/vessel_year.R). vessel.parquet holds today's values for every year; the effort on a
+      fix is kW x hours, so the trail takes the kW of the fix's own year from here. SKB pleasure craft are not
+      in the register and have no row.
+    details: >
+      Each attribute takes the first that has it: `register` (the register's value in force on 1 July),
+      `register_later` (its earliest value after that day, a hull registered later), `register_earlier` (its
+      last before it, a hull struck before), `current` (the `vessel` schema's current value, for a hull the
+      register never carries), or `none`. Added 2026-10-23 by Claude (AI-assisted), from the script and the
+      built file (TODO 51).
+    columns:
+      - name: vid
+        type: number(id)
+        examples: [0, 1796, 4329, 6108, 9855]
+        constraints: [primary_key]
+        description: >
+          Vessel identifier. With `year`, the row's key (the script stops otherwise).
+      - name: year
+        type: number(ordinal)
+        range: [2007, 2026]
+        constraints: [primary_key]
+        description: >
+          Calendar year.
+      - name: mclass
+        type: number(id)
+        examples: [0, 44, 58, 69, 6304]
+        description: >
+          The `vessel` schema's usage-category code (the register PDFs' printed types mapped to it, decision
+          136).
+      - name: usage
+        type: string
+        examples:
+          - "A - FLUTNINGASKIP - ANNAÐ"
+          - "FRÍSTUNDAFISKISKIP"
+          - "Nótaveiði/Skuttog ari"
+          - "Skólaskip"
+          - "Þangskurðar‐ prammi"
+        description: >
+          The register's usage type as text; NA unless `mclass_basis` is `register`.
+      - name: mclass_basis
+        type: enum
+        values: [register, register_later, register_earlier, current, none]
+        description: >
+          Where `mclass` came from (see the table's details).
+      - name: mclass_source
+        type: string
+        examples: ["", vessel]
+        description: >
+          The witnesses of `mclass` in the register's decisions, as source families joined by "+" (pdf,
+          hreidar, vessel, kvoti...); empty where the decisions name none, NA where the basis is not the
+          register.
+      - name: segment
+        type: string
+        examples: [Distant waters, Multi, Other, Stern, other]
+        description: >
+          Hreiðar's segment (Megingerð), 2007-2021 (staging/hreidar/vessel_year.parquet); NA after 2021 and
+          where his list has none.
+      - name: kw
+        type: number(quantity)
+        units: kW
+        range: [1, 12000]
+        description: >
+          The vessel's power (power_kw); the main engine's power stands in where power_kw is missing.
+      - name: kw_basis
+        type: enum
+        values: [register, register_later, register_earlier, current, none]
+        description: >
+          Where `kw` came from (see the table's details).
+      - name: kw_source
+        type: string
+        examples: [hreidar, review, vessel]
+        description: >
+          The witnesses of `kw`, as for `mclass_source`.
+      - name: loa
+        type: number(quantity)
+        units: m
+        range: [0.1, 172.95]
+        description: >
+          Length overall (max_length).
+      - name: loa_basis
+        type: enum
+        values: [register, register_later, register_earlier, current, none]
+        description: >
+          Where `loa` came from (see the table's details).
+      - name: loa_source
+        type: string
+        examples: [hreidar, hreidar+pdf, hreidar+vessel, pdf, vessel]
+        description: >
+          The witnesses of `loa`, as for `mclass_source`.
+  - name: vessel_class
+    source:
+      parquet: ../../fishydata/curated/vessel/vessel_class.parquet
+    description: >
+      The fisheries-management class of each vessel over time (aflamark, krókaaflamark, strandveiðar,
+      frístundaveiðar, ...): one row per vid and class period, [t1, t2) in whole days, from the ship
+      register's history (plan 028 step 7, reference/vessels/vessel_class.R). A licence class, not the usage
+      type (that is vessel_year's `mclass`): a boat in a frístundaveiðar class at the time of a fix is leisure
+      fishing (the trail's `leisure`), and a boat with a fishing class and AIS but no logbook or landings in a
+      year is a coverage gap (plan 016 §4 step 5).
+    details: >
+      Consecutive stretches of one class that touch are merged, and a gap (time off the register) is kept.
+      The class names come from the code table, not the register's `operational_category`. Added 2026-10-23
+      by Claude (AI-assisted), from the script and the built file (TODO 51).
+    columns:
+      - name: vid
+        type: number(id)
+        examples: [1, 1824, 2982, 6621, 9854]
+        constraints: [primary_key]
+        description: >
+          Vessel identifier. With `t1`, the row's key: the script stops on overlapping periods.
+      - name: class_code
+        type: number(id)
+        examples: [-14, 2, 20, 90, 101]
+        description: >
+          The register's class code (operational_category_no).
+      - name: t1
+        type: date
+        range: [1901-01-01, 2026-05-08]
+        constraints: [primary_key]
+        description: >
+          First day of the period.
+      - name: t2
+        type: date
+        range: [1962-01-01, 2099-12-31]
+        description: >
+          The day after the period ends (exclusive). The last class is open, written 2099-12-31, and is
+          carried, not observed, after `observed_to`.
+      - name: class_name
+        type: string
+        examples:
+          - Aflamarksheimild
+          - "Hvalveiðiskip"
+          - "Rækjubátur í Arnarfirði"
+          - "Sóknarheimild"
+          - "Þróunarsjóður"
+        description: >
+          The class's name, from the code table (vessel.operational_category); a code the table lacks takes
+          the name the `vessel` schema's rows give it.
+      - name: leisure
+        type: boolean
+        description: >
+          TRUE for the frístundaveiðar classes (codes -11, 89, 95).
+      - name: observed_to
+        type: date
+        range: [2026-06-16, 2026-06-16]
+        description: >
+          The `vessel` schema's last change in its history tables: after it a class is carried, not observed.
+      - name: basis
+        type: string
+        examples: [recorded]
+        description: >
+          The register's basis of the merged stretches, joined by "+".
+  - name: vessel_sign
+    source:
+      parquet: ../../fishydata/curated/vessel/vessel_sign.parquet
+    description: >
+      Call sign, local sign (ÍS-8) and name of each vessel over time: one row per kind, mark, vid and period
+      [t1, t2), from the ship register's history (plan 016 §4 step 6b, plan 028 step 7,
+      reference/vessels/vessel_sign.R). A vid is the hull for life; its marks wander between hulls, and hulls
+      change name. A name is history for a reader, never a key: one name is on many hulls at once.
+    details: >
+      The register chooses one value per hull and column at a time and keeps it only while the hull is on
+      the register, so a hull holds one mark of a kind at a time. Across hulls a call sign or local sign
+      gets one holder at a time, bar a few periods flagged `conflict`. The examples show codes only. Added
+      2026-10-23 by Claude (AI-assisted), from the script and the built file (TODO 51).
+    columns:
+      - name: kind
+        type: enum
+        values:
+          cs: call sign
+          uid: local sign (region letters and number)
+          name: the vessel's name
+        description: >
+          Which mark the row holds.
+      - name: key
+        type: string
+        examples: [GK274, KO253, SH444, VS006, TFAA, TFKN, TFZZ]
+        description: >
+          The mark for matching: upper case, Icelandic letters folded (Í -> I, Þ -> TH, ...), a local sign as
+          letters and a 3-digit number (IS008, as vessel.parquet's `uid`).
+      - name: vid
+        type: number(id)
+        examples: [1, 1230, 2475, 6492, 9855]
+        description: >
+          Vessel identifier.
+      - name: value
+        type: string
+        examples: [GK-78, RE-48, SU-840, TFAA, TFKN]
+        description: >
+          The mark as the register writes it (TFBR, ÍS-8, a name in upper case).
+      - name: t1
+        type: date
+        range: [1860-01-01, 2026-05-08]
+        description: >
+          First day of the period.
+      - name: t2
+        type: date
+        range: [1861-01-02, 2099-12-31]
+        description: >
+          The day after the period ends (exclusive); 2099-12-31 is open.
+      - name: source
+        type: string
+        examples: [hreidar, hreidar+kvoti.skipasaga+vessel, kvoti.skipasaga+pdf, pdf+samgongustofa, vessel]
+        description: >
+          The witnesses of the value in the register's decisions, joined by "+": pdf, hreidar,
+          kvoti.skipasaga, ufs.skip_jn, vessel, samgongustofa, mbl.
+      - name: window
+        type: enum
+        values:
+          source: one stretch of the register
+          merged: consecutive stretches of one value
+          cut: closed where the next holder took the mark
+          conflict: two hulls on one mark at once, for a reader to settle
+        description: >
+          How the period was made.
+      - name: basis
+        type: string
+        examples: [recorded]
+        description: >
+          The register's basis.
   - name: staging_afli_sent_record
     source:
       parquet: ../../fishydata/staging/afli_sent/record.parquet
@@ -6334,40 +6970,49 @@ tables:
     columns:
       - name: vid
         type: number
+        examples: [0, 2072, 5668, 6811, 9999]
         description: >
           The vessel (skip_nr).
       - name: T1
         type: datetime
         time_zone: naive
+        range: [2003-09-08T14:31:26, 2021-02-08T07:00:43]
         description: >
           Time out of port.
       - name: T2
         type: datetime
         time_zone: naive
+        range: [2003-09-08T14:26:42, 2021-02-08T06:29:03]
         description: >
           Time into port.
       - name: pid1
         type: string
+        examples: [FO-EDI, IS-FEY, IS-HVS, IS-RFJ, IS-VPN]
         description: >
           Departure port (pid), or NA.
       - name: pid2
         type: string
+        examples: [FO-ANI, IS-DRA, IS-HVA, IS-REJ, IS-VPN]
         description: >
           Arrival port (pid), or NA.
       - name: pid1_from
         type: string
+        examples: [harborid, hofn]
         description: >
           harborid (the event's STK code) or hofn (the numeric port).
       - name: pid2_from
         type: string
+        examples: [harborid, hofn]
         description: >
           As pid1_from, for the arrival.
       - name: trailid_out
         type: number
+        examples: [-7533184, 45276868, 96404589, 148785798, 213748162]
         description: >
           The out-event's trailid (stk.tilk_stk).
       - name: trailid_in
         type: number
+        examples: [-6739380, 39971521, 77164462, 140255992, 213746854]
         description: >
           The in-event's trailid.
   - name: staging_quota_trip
@@ -6381,64 +7026,79 @@ tables:
     columns:
       - name: regime
         type: string
+        examples: [coastal, line_incentive]
         description: >
           line_incentive or coastal.
       - name: vid
         type: number
+        examples: [72, 2428, 6190, 6996, 9853]
         description: >
           The vessel (the landing's skip_nr).
       - name: date
         type: date
+        range: [2004-02-01, 2023-07-11]
         description: >
           The landing day (lods_londun.l_dags).
       - name: hid
         type: number
+        examples: [1, 55, 87, 121, 291]
         description: >
           The landing port, in the landing system's numbers (hofn).
       - name: komunr
         type: number
+        examples: [-892574, -644047, -409493, -174119, 9855687]
         description: >
           The landing's number (komunr); with hid, its key in kvoti.lods_londun.
       - name: gid_landing
         type: number
+        examples: [1, 3, 17, 29, 91]
         description: >
           The landing's gear code (lods_londun.veidarf): 1, longline, on the line incentive's.
       - name: linu_ivilnun
         type: number
+        examples: [0, 1, 2]
         description: >
           The landing's line-incentive flag (1 or 2: hand-baited longline; 0 not).
       - name: T1
         type: datetime
         time_zone: naive
+        range: [2004-02-01T00:34:02, 2021-02-08T03:58:26]
         description: >
           Departure: the STK out-event's time, else the phone line's.
       - name: T1_from
         type: string
+        examples: [phone, stk]
         description: >
           stk or phone.
       - name: pid1
         type: string
+        examples: [IS-AED, IS-FLA, IS-HVL, IS-SAD, IS-VPN]
         description: >
           Departure port (pid), or NA.
       - name: pid1_from
         type: string
+        examples: [harborid, hofn, phone]
         description: >
           harborid, hofn or phone.
       - name: T2
         type: datetime
         time_zone: naive
+        range: [2004-02-01T13:34:27, 2021-02-08T06:00:21]
         description: >
           Return: the STK in-event's time, else the phone line's.
       - name: T2_from
         type: string
+        examples: [phone, stk]
         description: >
           stk or phone.
       - name: pid2
         type: string
+        examples: [IS-AED, IS-ESF, IS-HRI, IS-RHA, IS-VPN]
         description: >
           Return port (pid), or NA.
       - name: pid2_from
         type: string
+        examples: [harborid, hofn, phone]
         description: >
           harborid, hofn or phone.
       - name: invalid
@@ -6447,18 +7107,22 @@ tables:
           Coastal fishing's er_ogild (the record is invalid); NA for the line incentive.
       - name: stk_out
         type: number
+        examples: [-7533184, 48479950, 85615010, 148392436, 213740908]
         description: >
           The STK out-event's trailid.
       - name: stk_in
         type: number
+        examples: [-6739380, 48496362, 85655731, 148499377, 213745697]
         description: >
           The STK in-event's trailid.
       - name: phone_out
         type: number
+        examples: [5, 66728, 132974, 198506, 263688]
         description: >
           The phone line's out-call id (simalinu.tilk_linu_sokn).
       - name: phone_in
         type: number
+        examples: [17, 66841, 133008, 198543, 263690]
         description: >
           The phone line's in-call id.
   - name: staging_phone_call
@@ -6471,31 +7135,38 @@ tables:
     columns:
       - name: system
         type: string
+        examples: [coast_guard, days_at_sea, line_phone]
         description: >
           coast_guard, line_phone or days_at_sea.
       - name: id
         type: number
+        examples: [5, 65910, 131802, 197781, 263690]
         description: >
           The call's id in its system (none for days_at_sea).
       - name: vid
         type: number
+        examples: [0, 2309, 6037, 6948, 52123]
         description: >
           The vessel.
       - name: time
         type: datetime
         time_zone: naive
+        range: [0007-12-09T03:29:00, 2014-12-14T00:28:00]
         description: >
           When the call was made.
       - name: io
         type: string
+        examples: [in, out]
         description: >
           out or in (adgerd 1 or 2); NA otherwise.
       - name: hid
         type: number
+        examples: [0, 41, 79, 117, 999]
         description: >
           The port, in the landing system's numbers.
       - name: pid
         type: string
+        examples: [IS-AKR, IS-ESF, IS-HOR, IS-RFJ, IS-VPN]
         description: >
           The port (pid), or NA.
       - name: valid

@@ -1,0 +1,45 @@
+# Issues for data-dict (https://github.com/tidyverse/data-dict), found while bringing docs/data-dict.yaml up to the
+# 0.0.3 spec (TODO 51, decision 188). Drafted 2026-10-23 by Claude (AI) for the maintainer of fishycode; not checked by
+# a person and not sent. The reprex was run with the binary datadict::dd_install() puts in R's user cache, on a scratch
+# file, and its output is pasted below.
+
+repository: tidyverse/data-dict
+version: data-dict 0.0.3 (the R package datadict 0.1.0)
+environment: macOS (Darwin 25.6.0), R with duckdb 1.5.6 and nanoparquet
+sent: no
+sent_how: ""
+
+issues:
+  - title: "A Parquet DATE written without a LogicalType is read as `number`"
+    labels: [bug]
+    body: |
+      DuckDB 1.5.6 writes a DATE column as INT32 with the ConvertedType DATE and no LogicalType. data-dict reads such a
+      column as `number` (`describe`, `draft`), and `validate-meta` then reports M01 on a column declared `date`. The
+      same date written with a LogicalType (here by nanoparquet) reads as `date`. The Parquet format keeps
+      ConvertedType for backward compatibility and says readers should still honour it, and DuckDB's files are common.
+
+      ```r
+      con <- DBI::dbConnect(duckdb::duckdb())
+      DBI::dbExecute(con, "COPY (SELECT DATE '2024-01-31' AS d) TO 'duckdb.parquet' (FORMAT parquet)")
+      nanoparquet::write_parquet(data.frame(d = as.Date("2024-01-31")), "nanoparquet.parquet")
+      DBI::dbGetQuery(con, "SELECT file_name, type, converted_type, logical_type FROM parquet_schema('*.parquet')
+                             WHERE name = 'd'")
+      #>              file_name  type converted_type logical_type
+      #> 1      duckdb.parquet INT32           DATE         <NA>
+      #> 2 nanoparquet.parquet INT32           DATE   DateType()
+      ```
+      ```
+      $ data-dict describe duckdb.parquet
+      d — number
+      $ data-dict describe nanoparquet.parquet
+      d — date
+      ```
+
+      In a dictionary of 56 tables written by DuckDB, each of the 17 DATE columns declared `date` fails `validate-meta`
+      this way. Typing them `number` to pass would misstate them for every other reader, and a `draft` of such a file
+      gives a `number` column whose `range` is in days since 1970-01-01.
+
+      **Suggested remedy.** Map INT32 with ConvertedType DATE to `date` when no LogicalType is present, as the Parquet
+      spec's backward-compatibility rules describe.
+
+      *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
