@@ -1157,30 +1157,35 @@ and read first (plan 041 §6); its seven asks come before any code.
 
 ## 137. A record's resolution by what it covers: e-logbook stations that hold a trip or a day
 **status:** open · **needs: maintainer** — the rule, and each case below · **see:**
-`$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts 00-09, `draft_decision.md`), decision 211 ("Found
-in passing"), decisions 206 and 210, plan 019 §4, `docs/grammar.qmd` ("What a row covers"), TODO 127 (names), 138
+`$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts, draft decision, `recheck/`), decisions 206, 210 and
+211 ("Found in passing"), plan 019 §4, `docs/grammar.qmd` ("What a row covers"), TODO 73, 127, 138
 
 **The rule** (the maintainer's framing, 2026-10-23: some apps mix up what is a trip and what is a station): a logbook
 record is typed by what its times and position cover, not by the table it sits in. A station whose times are the
 trip's departure and return, its landing, or a date is a trip- or day-level record (`station_type`, the grammar's
 resolution), not an operation, and the flow treats it at that level: the trip or the day is its window and its catch
 unit, and no haul window is made from a departure, landing or midnight stamp. The times stay as recorded, labelled as
-the trip's; a window made from them has basis `synthesised` (the label's name is TODO 127's).
+the trip's; a window made from them has basis `synthesised` (the label's name is TODO 127's). The AIS voyage gives a
+trip-level record its real bounds and its slow stretches the fishing, as `fishing_flow` already does with no window.
 
 Cases (Claude's measure, 2026-10-23, not checked by a person):
 - Marína and Taktikal, handline: one station per trip, departure to return (23,359 windows), the trip's catch. Its
-  window is the AIS voyage already; the speed test drops the steaming, and the flow marks fishing on 96 % of the
-  voyage's handline-speed hours, against 87 % under a haul-timed window. Whether that extra slow time is fishing is
-  not known (the haul window is the skipper's, not a witness); matched by vessel and month (75 cases) the trip-timed
-  trips hold no more fishing hours (median 0.91 times). Trip-level.
-- Marína and Taktikal, nets and lines (1,519): the set at the departure, the haul ending at the return. Trip-level; the
-  set time set aside, as decision 206 does with Trackwell's departure copies.
+  window is the AIS voyage (re-checked: a median 7 min either side, 99-100 % of it covered); the speed test drops the
+  steaming, and the flow marks fishing on 96 % of the voyage's handline-speed hours, against 87 % under a haul window.
+  Whether the extra slow time is fishing is not known (the haul window is the skipper's); matched by vessel and month
+  (75 cases) these trips hold no more fishing hours (median 0.91 times). Trip-level.
+- Marína and Taktikal, nets and lines (1,519): the set at the departure, the haul ending at the return (the study's,
+  not re-checked). Trip-level; the set time set aside, as decision 206 does with Trackwell's departure copies.
 - STOKKUR (2020-22): one station per trip, at the landing, its position a rounded whole degree (decision 211).
-  Trip-level and a cell. Its 3,930 net and line stations now get no fishing fix (8.8 kt moves up to the trip or the
-  vessel's month).
-- The old TRACKWELL route: midnight only. Day-level; its 225 static stations lose their fixes the same way (1.2 kt).
-- Decision 210's tour app, which replaces STOKKUR, also times its spots at the landing: read as the end (t4 = the spot
-  time, t1 = t4 - hours), not plan 019 §4's mapping.
+  Trip-level and a cell. Its 3,930 net and line stations get no fishing fix in their own windows (0 of 23,787 fixes).
+  Of their plausible 8.8 kt, under `fishing` 6.7 kt stays unplaced and 1.6 kt goes to the vessel's month; under
+  `fishing_flow` 7.2 kt lands on the trip's fixes. Six more stations log 23.1 kt of entry errors, 11.3 kt of which sits
+  on fixes today (decision 210's implausible-catch flag, TODO 73).
+- The old TRACKWELL route: midnight only. Day-level; its 225 static stations get no fix (1.2 kt; the study's, not
+  re-checked).
+- Decision 210's tour app, which replaces STOKKUR, also times its spots at the landing (24,404 of 31,785). On the track
+  the vessel is at the spot a median 1.5 h before that time, and the hours at sea fit before it (81 %), not after
+  (16 %): read as the end (t4 = the spot time, t1 = t4 - hours), not plan 019 §4's mapping.
 - Possibly the same: TODO 138's 3,460 handline windows under 2 minutes (stamped at entry?), to be measured.
 
 **check:** the rule chosen or declined in a decision; if chosen, `station_type` set on these records in the merge and
