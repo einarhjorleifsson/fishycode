@@ -1000,8 +1000,8 @@ Left by the overview's session of 2026-10-22.
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
-**status:** open (decided 2026-10-23, decision 207; the AIS check done, decision 211) · **needs: maintainer** — the go to
-rewrite the raw dictionaries, and the logbook batch's build · **see:** decisions 207 and 211,
+**status:** open (decided 2026-10-23, decision 207; the AIS check done, decision 211) · **needs: maintainer** — the logbook
+batch's build · **see:** decisions 207 and 211,
 `$FISHYDATA/archive/2026-10-todo126-ais-check/README.md`, `$FISHYDATA/archive/2026-10-afli-minutes60/README.md`,
 `dump/oracle/meta/{afli,adb,fs_afladagbok}.yml`, `curate/corrections/afli_end_three_digits.yml`, `R/logbook_position.R`,
 decision 165, TODO 115, 124, plan 040
@@ -1011,7 +1011,7 @@ nothing (basis "none"); a derived centre only in its own column; a per-row colum
 formats in the overlays; per-app checks in `curate/checks/`.
 
 Decision 211 (Claude's AIS check, read-only, not checked by a person) judged the ambiguous kinds against the vessels'
-tracks, every position in one outcome, and wrote the overlays (tested on clones):
+tracks, every position in one outcome, and wrote the overlays (merged into the raw dictionaries the same day):
 - STOKKUR's whole degrees are rounded to the nearest degree, a 1-degree cell centred on the value, not a corner;
 - afli's exactly 60 is a carry; its 60-99 end values are three digits, a haul end at minute 9-10 stored by the loader
   as degrees and minute run together (decodable, ± a quarter minute); its 61-99 start values and zeros are none;
@@ -1024,11 +1024,10 @@ tracks, every position in one outcome, and wrote the overlays (tested on clones)
 Left:
 - the representation built in the adapters and the merge, `R/logbook_position.R` with it (decision 211, "Left"), as a
   step of the logbook batch, a scratch build first;
-- the per-app check `curate/checks/logbook_position_forms.R` (proposed in decision 211);
-- the real raw dictionaries rewritten with the three overlays (`rewrite_data_dict()`, the maintainer's go).
+- the per-app check `curate/checks/logbook_position_forms.R` (proposed in decision 211).
 
 **check:** each source's ends in one kind (point, cell, none) in `curated/logbook/station.parquet`, with counts by source,
-app and period; the overlays merged into the raw dictionaries; the per-app check built.
+app and period; the per-app check built.
 
 ## 127. Names in the grammar and in ramb: the review of every noun and act (pending)
 **status:** open · **needs: maintainer** — the review, rule by rule and item by item · **see:**

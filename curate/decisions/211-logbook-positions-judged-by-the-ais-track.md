@@ -3,7 +3,8 @@
 *2026-10-23. TODO 126's AIS check, on the maintainer's go (decision 207). Done by Claude (AI), read-only, on the dumps
 of 2026-10-16 and the trail rebuilt the same day (decision 205); not yet checked by a person. Scripts, logs and every
 count: `$FISHYDATA/archive/2026-10-todo126-ais-check/README.md`. Nothing in the flow, the adapters or `curated/`
-changed: logbook positions never join the track.*
+changed: logbook positions never join the track. **Amended 2026-10-23:** the three raw dictionaries rewritten with
+the overlays on the maintainer's go ("rewrite the three raw dictionaries with the overlays").*
 
 ## How
 
@@ -51,9 +52,11 @@ position of each kind is in one outcome.
   `lengd_lok_dd`; the centre fills and the rectangle-only period in the table's details.
 - `adb.yml`: the latitude's open `todo` answered (the 3,183 overflows), the rule's fit per app in adb's period
   (Trackwell raun 96 %, Fontos 87 %, Marína 81 %, Reiknistofa 72 %), Marína's start time the departure.
-- Tested on clones of the three dumps: `validate-spec` 0 errors (only the dumps' S31 todos), every assertion fails on
-  exactly the rows its description says. The real dictionaries are not rewritten: that is `rewrite_data_dict()` on
-  `raw/oracle/{afli,adb,fs_afladagbok}`, the maintainer's go, as in decision 176.
+- Tested on clones of the three dumps, then the real dictionaries rewritten with `rewrite_data_dict()` (at baa1c08)
+  and checked with `check_data_dict()`: `validate-spec` 0 errors (only the dumps' S31 todos), no news, every assertion
+  failing on exactly the rows its description says (afli 39 checks, adb 23, fs_afladagbok 38). Property by property,
+  only the overlays' properties changed, and the generated `examples` of 126 columns, which `.write_data_dict()` draws
+  from an unordered `LIMIT 10000` (and a `DISTINCT ... LIMIT 5` fallback) and so reshuffles on every rewrite.
 
 ## The per-app checks (proposed, not built)
 
@@ -77,4 +80,4 @@ independent witness; (4) on demand, this AIS diagnostic. A check, never an input
 The representation built in the adapters and the merge (decision 207), with `R/logbook_position.R`: the three-digit
 ends decoded (`afli_end_three_digits`), afli's 61-99 starts and zeros none, STOKKUR's cell, fs_afladagbok's adapter
 reading Marína and the 60-trips as seconds, the unpadded minutes and Taktikal's exchanged and ddmm longitudes; the
-per-app check; the real dictionaries rewritten.
+per-app check.
