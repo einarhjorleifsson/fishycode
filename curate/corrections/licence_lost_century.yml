@@ -27,5 +27,5 @@ repair: >-
   original). Read by reference/vessels/licence_evidence.R, which flags the evidence row.
 
 test: >-
-  Every resolved value lies in 1991-2026, within 366 days of its entry stamp, and no resolved revocation ends
-  before it starts unless it did so as typed.
+  Every resolved value lies in 1991 to the year of the run (a fixed 2026 until decision 181), within 366 days of its
+  entry stamp, and no resolved revocation ends before it starts unless it did so as typed.
