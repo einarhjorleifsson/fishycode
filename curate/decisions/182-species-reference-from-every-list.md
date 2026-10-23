@@ -1,8 +1,8 @@
 # 182 — A species reference from every list: one row per code, each value from the first list that means the code's taxon
 
 *2026-10-23. Closes TODO 10. Written by Claude (AI) in a session started from another Claude session; the script, the
-rule that matches the lists and every count below are Claude's and have not been checked by a person. Built on a
-scratch store only: building `species` in the store is the maintainer's go (the command is at the end).*
+rule that matches the lists and every count below are Claude's and have not been checked by a person. **Built in
+the store the same day** on the maintainer's go, at d73b4e3 (below).*
 
 ## Found
 
@@ -101,9 +101,15 @@ labels, the codes' meanings and two asserts (an FAO code has three letters: expe
   `docs/data-dict.yaml`: 223 spec errors before and after (TODO 51), none in the new entry; its data check passes on the
   scratch file.
 
+## Built
+
+2026-10-23, on the maintainer's go: `tar_make_isolated(names = "species")` at d73b4e3, a clean tree, built
+`species_raw` and `species` (9 s). The only file written is `curated/reference/species.parquet` (`fd.dirty` false),
+identical to the scratch build; the check gave 1,367 codes and all 518 (table, schema, code) resolved; `species` is not
+outdated since.
+
 ## Open
 
-- `tar_make_isolated(names = "species")` builds `species_raw` and `species` in the store (2 targets; the scratch build
-  took seconds). Nothing reads `species.parquet` yet.
+- Nothing reads `species.parquet` yet.
 - A person to read the 30 `lists_unmatched` codes and the notes, above all 278, 953, 445 and 999.
 - Rewriting the eight real dictionaries with the new overlays (`rewrite_data_dict()`), as decision 176's were.
