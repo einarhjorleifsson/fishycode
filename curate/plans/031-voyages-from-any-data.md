@@ -4,7 +4,8 @@
 (§3.6, §3.9, §3.10, with STK and ASTD apart);
 the cascade (§4.0), the other pitfalls (§3.7), outside code (§3.8) and the robustness bench (§4.8) added the same
 day; step 3's code is in ramb (2026.10.19.3, f2492db), nothing in fishycode built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
-the voyage definition; step 4 measured 2026-10-20 against decision 155's allocation audit (§3.11), asks i-k open ·
+the voyage definition; step 4 measured 2026-10-20 against decision 155's allocation audit (§3.11), asks i-k answered 2026-10-23 with the
+radius's retirement for the time budget (decision 197) ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 062, 063, 074, 078, 101 and 144, plan 011 (port stays), plan 013 (ramb's
 steps, and its table of logic doubts), plan 017 (foreign ports), plan 022 §4 (STK's own voyages, TODO 68), plan 025
 (the first weighing bounds `T2`), `docs/one_flow.qmd` (step 1, trip, and step 3, gear), `docs/ports.md`,
@@ -1111,7 +1112,8 @@ step:
 ## 7. Asks
 
 Asks a-h were answered by the maintainer on 2026-10-19 (ask h looked up the same day), and the answers are written
-into §4. Asks i-k are open (2026-10-20, from step 4, §3.11).
+into §4. Asks i-k were answered on 2026-10-23 as Claude's revised recommendations below (decision 197), and the frozen
+departure radius retires for the time budget, applied with the AIS batch.
 
 a. **May a landing make a stay** where the pings alone fall short of the minimum, given the track reaches the port
    that day? Or should it only confirm, and flag?

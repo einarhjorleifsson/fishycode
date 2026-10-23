@@ -475,8 +475,8 @@ vessel overview's lane of AIS gaps at sea (its activity record, decision 178) ke
 flag on the fixes that the overview's lane reads.
 
 ## 90. The voyage definition revisited: stays, records, trips and gears together (plan 031)
-**status:** open · **needs: maintainer** — plan 031's asks i-k (step 4) · **see:**
-`curate/plans/031-voyages-from-any-data.md` (asks a-h answered 2026-10-19; g is TODO 92), decisions 144 and 155,
+**status:** open · **see:** `curate/plans/031-voyages-from-any-data.md` (asks answered, a-h 2026-10-19, i-k 2026-10-23;
+g is TODO 92), decision 197, decisions 144 and 155,
 TODO 25, TODO 27b, TODO 49, TODO 81 (and plan 027), TODO 101, plan 011
 
 The maintainer (2026-10-19): the issue is broader than the gear of a voyage, so revisit the voyage definition as a
@@ -493,17 +493,18 @@ The threads it gathers: the STK key (TODO 25); the trail and its delivery (TODO 
 (TODO 49); a landing over two days (TODO 81, plan 027); the gear read from the track (TODO 86); gaps judged against
 coverage (TODO 89).
 
-Step 3 done (§3.10, ramb 2026.10.19.3, f2492db, not pushed), with STK and ASTD apart. Step 4 measured 2026-10-20 against
-decision 155's allocation audit, read-only (§3.11): a landing placing a call where the track reaches its port resolves
-a third of the trips landed before their voyage ended and lifts landings with a call at their port from 94.1 % to
-97.0 %; a logbook time at sea inside a call is mostly a disagreement of times, not a hidden voyage (ask i); the
-audit's static-gear time is a 270-min offset (ask j); the tied multi-gear voyages are not missed calls. Open from
+Step 3 done (§3.10, in ramb), step 4 measured 2026-10-20 (§3.11: a landing placing a call lifts landings with a call
+at their port from 94.1 % to 97.0 %; a logbook time at sea inside a call is mostly a disagreement of times). Open from
 step 3: ramb's defaults against the plan's choices, a short voyage by time rather than pings (thin voyages measured
 2026-10-20, `$FISHYDATA/archive/2026-10-todo98/scripts/thin_voyages.R`), the weak `gap_budget`, and gap rules that
 hold only for a feed silent in port (TODO 89's coverage model).
 Also unflagged: `port_call.parquet`'s 13,510 event-only calls (2017-2026), which cut no voyage (decisions 060, 061),
 and Hornvík's anchorage stops, port calls since one 2 h minimum (decisions 074, 077), never marked as no trip's end
 (Claude's audit of 2026-10-23, not checked by a person).
+
+Decided 2026-10-23 (decision 197): the frozen departure radius retires for the time budget, applied with the AIS batch
+after the key redo; a logbook time cuts a call only with its trip's own landing; records as evidence into ramb on four
+conditions; the audit judges static gear by all its times.
 
 **check:** a voyage definition decided and built for every data situation of plan 031 §4.6, or the item parked.
 
