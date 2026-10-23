@@ -1,8 +1,8 @@
 # 038 — The logbook flow, whole: from each logbook source to its trips, stations and catch on the AIS fixes
 
 **status:** proposal — written 2026-10-22 at the maintainer's request; nothing built or changed; the baseline measured
-read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0); nine asks
-open (§9, TODO 122) · **2026-10-22** · **see:** `docs/one_flow.qmd` (the cascade and what is built where),
+read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0) and
+confirmed; every ask of §9 answered 2026-10-23 (decision 191; TODO 122) · **2026-10-22** · **see:** `docs/one_flow.qmd` (the cascade and what is built where),
 `docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037, 039 and 040
 
 Drafted with AI assistance (Claude) on 2026-10-22. The maintainer asked whether to plan the full logbook flow next,
@@ -329,10 +329,14 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    Fingerprints are taken before and after, and the audit is read after. Nothing else is built before it.
 1. **The instruments:** plan 024's `station_fate` (TODO 79) and §7.1's `catch_unit`. Every staging station and every
    logged kilogram is then in one outcome, so each later change shows as a move between outcomes.
-2. **The trip:** §5.1's readers a-c, measured on a scratch store, then built (asks b, c). adb's `pid` goes into the
+1b. **The link's lower bound lifted** (from step 3, ask g, decision 191): `lid_map` reads landings from the start of
+   LODS, not 2007-09-01, so January-August 2007's landings stop being shared on the fixes beside their trips' logged
+   catch. Rebuilt by name from `lid_map`, the catch traced kilogram by kilogram.
+2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b); then §5.1's readers a-e, each measured on
+   a scratch store, then built (asks b, c). adb's `pid` goes into the
    merge (ask f), and the quota regime and gear onto the trips (ask d).
-3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 74); `lid_map`'s
-   lower bound lifted, and the month step before LODS (§4). Then plan 027's `trip_landing` on the reconciled trips
+3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 74); the month step
+   before LODS (§4). Then plan 027's `trip_landing` on the reconciled trips
    (TODO 81), plan 036's disposition through it (TODO 112), and `ais_catch.R` reading it.
 4. **The sources:** plan 037 phase 1, then plan 019's tour app (TODO 73), then plan 037 phase 2 (TODO 108, 113, 114,
    118, 75), then TODO 62 when the data come.
@@ -367,6 +371,12 @@ h. **adb's conversion faults** (decision 171): a check in `curate/checks/` that 
    not carry them (recommended), or none.
 i. **kvoti's `veidiferdir` and `nyting_haus`** (13,097 trips) as trip witnesses: measured first, and staged if they
    hold a departure. Or left out.
+
+**Answered 2026-10-23** (the maintainer, decision 191): a confirmed; b all five readers, each after a scratch measure,
+once the multi-voyage case is fixed; c no trip and a flag; d onto the trip, and the quota gear a witness in
+`logbook_gear`; e from 1950, as accounting only, the monthly summaries as vessel × month × rectangle units after a
+duplicate check; f mapped in the merge, port 0 NA; g as written but the lower bound lifted right after step 1 (step
+1b); h the check, as recommended; i measured first.
 
 ## 10. The TODO items this plan touches
 

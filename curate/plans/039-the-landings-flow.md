@@ -397,7 +397,8 @@ c. **Lumpsucker:** the roe as weighed and the whole fish computed from it, in ev
 d. **The exports to 2013-08:** the container tables' sold weight (recommended), with `lods_slaegt`'s K + A as the
    witness; or the reverse.
 e. **`lid_map`'s bound**, with plan 038 (which owns the link): lifted first, as a step of its own, before the sources
-   change (recommended).
+   change (recommended). **Answered 2026-10-23** through plan 038's ask g (decision 191): lifted right after plan
+   038's step 1.
 f. **Period 0:** month rows in `curated/landing` with `resolution` (recommended), or a table of their own.
 g. **Period 4:** `provisional` on the last two years, or the fingerprints alone.
 h. **`kvotix`'s LODS logs:** measured before the build (step 1, recommended), or after it.

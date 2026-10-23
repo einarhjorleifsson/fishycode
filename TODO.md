@@ -969,8 +969,8 @@ held haul, a missing haul, unexplained) and its admission decided per class; and
 
 
 ## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
-**status:** open · **needs: maintainer** — plan 038's asks a-i (§9); a, the split, agreed with plan 039 · **see:**
-`curate/plans/038-the-logbook-flow-whole.md`, decisions 155, 172-174 and 180
+**status:** open · **see:** `curate/plans/038-the-logbook-flow-whole.md` (asks answered 2026-10-23, decision 191),
+decisions 155, 172-174 and 180
 
 Plan 038 places every open piece of the logbook flow in one order: the sources and their layers, the merge, the trip ↔
 landing link, the reconciled trip, the stations on the fixes, effort and catch. Each piece keeps its own TODO item.
@@ -983,12 +983,14 @@ For the sources' layer: decision 057's duration limit runs inside three adapters
 correction outside `curate/`, and fs_afladagbok's then blanks the recorded end time behind it (`duration_m_raw` keeps
 the span) (Claude's audit of 2026-10-23, not checked by a person).
 
-**check:** the asks answered in the plan; each of its phases built, or declined in a decision; the plan executed,
-parked or abandoned in its header.
+Next (§8, decision 191): step 1's instruments (TODO 79), then step 1b, `lid_map`'s lower bound lifted, which ends
+2007's double count on the fixes; then `trip_reconciled`'s multi-voyage fix before its five readers switch.
+
+**check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
 ## 123. The landings flow, from the first record to now: one cascade, the same output in every period (plan 039)
-**status:** open · **needs: maintainer** — plan 039's asks a-h (§11), above all a (a new plan, or an amendment of
-plan 023) and e (`lid_map`'s 2007-09-01 bound lifted first, with plan 038) · **see:**
+**status:** open · **needs: maintainer** — plan 039's asks a-d and f-h (§11), above all a (a new plan, or an amendment
+of plan 023); e answered through plan 038 (decision 191) · **see:**
 `curate/plans/039-the-landings-flow.md`, plans 023, 025, 036, 037 and 038, TODO 74, 112, 119,
 `$FISHYDATA/archive/2026-10-lods-upstream/`, `$FISHYDATA/archive/2026-10-landings-flow/`,
 `$FISHYDATA/archive/2026-10-fiskifelagid/` (period 0's tables, variable by variable, with a draft overlay; parked by
