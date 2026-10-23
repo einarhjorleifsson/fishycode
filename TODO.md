@@ -632,8 +632,8 @@ unchanged (the same 30 vessels, numbers and windows). Rebuild it again if the pa
 written in decision 153.
 
 ## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
-**status:** open · **needs: maintainer** — keep the pre-2020 logger in the track or not; redo `sensor_gps` or not ·
-**see:** decision 075, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
+**status:** open (decided 2026-10-23, decision 196: re-interpolated in the flow on every build, with a gap limit
+measured first) · **needs: maintainer** — the gap limit, from the measurement · **see:** decisions 075 and 196, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
 TODO 99
 
 The maintainer's rule (2026-10-20): logbook positions never join the AIS feed; the vessel overview's haul layer is gone.
@@ -656,7 +656,8 @@ Found 2026-10-21 (`curate/corrections/afli_coords.yml`, `origin_in_the_sent_reco
 fault is already in the XML each app sent, in every version 2008-2024 (SeaData 2.0, Trackwell 2.6, 2.7), so the XML
 cannot repair it; Trackwell is asked whether the devices' readings survive (the draft of TODO 103).
 
-**check:** decided; no logger fix in the trail more than 5 km from a recorded ping at the same moment, or none at all.
+**check:** the gap limit chosen from its measurement; the logger interpolated on each build's cleaned track, `sensor_gps`
+retired; no logger fix in the trail more than 5 km from a recorded ping at the same moment.
 
 ## 99. The whack test does not test interpolated positions against recorded ones
 **status:** open · **see:** TODO 98, TODO 88, `curate/ais_ping_clean.R`, decision 067
@@ -806,7 +807,8 @@ an object as skipped that its script no longer skips. And `fs_afladagbok.takt_js
 with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 and CHAR only.
 The overview rows of `stk.trail` (20,681,877 of 303,795,653 rows) and `afli.sjalfvirkir_maelar` are still stale after
 9ef7596 (decision 164): recompute or re-dump. `simalinu` was dumped through RJDBC with `dirty = true` (decision 162):
-a server run replaces it. Decision 167's two files are done: kvoti and ops_einarhj were re-dumped on hafdruna and
+a server run replaces it. The next dump run also makes decision 196's three read-only STK reads (`ALL_SEQUENCES` for the
+trail's sequence, `ALL_OBJECTS.CREATED` for its trigger and sequence, a count of `stk.trail`). Decision 167's two files are done: kvoti and ops_einarhj were re-dumped on hafdruna and
 adopted on 2026-10-22, DuckDB reads both whole and kvoti has its `_data-dict.yaml`
 (`$FISHYDATA/archive/raw-oracle-redump_2026-10-22/README.md`).
 
@@ -891,8 +893,8 @@ for the maintainer to confirm into `overrides/`.
 which await review, and which stay `unkeyed` with a reason.
 
 ## 117. What the flow takes from STK beyond the position: events, receipt time, `U` positions
-**status:** open · **needs: maintainer** — the decisions of the trail-order study's §12 (1, 2 and 4-7, 9, 10) ·
-**see:** decision 164, `$FISHYDATA/archive/2026-10-stk-trail-order/README.md` §12, decisions 059 and 075,
+**status:** open · **needs: maintainer** — outside only: the questions for STK (§12 decision 10) · **see:** decisions
+164 and 196, `$FISHYDATA/archive/2026-10-stk-trail-order/README.md` §12, decisions 059 and 075,
 `sources/stk/event.R`, `curate/port_call.R`, TODO 68, 88
 
 STK's `I`/`U` rows are events, not track fixes: `U` positions sit at regional port markers and `I` jumps inside their own
@@ -900,6 +902,10 @@ harbour. The events are clean in 2004-2011 and from 2017, noisy in 2012-2016, th
 and the dropped jump test rest on 2017 on only. To decide: a `stk_receipt` side table (receipt time, lag and identity
 classes) or nothing; `U` positions kept out of the whack and the track; the event cut as a year, a jump test or a
 per-unit screen; port calls from `tilk_stk` for 2004 to mid-2007; the Oracle reads and the questions for STK.
+**Decided 2026-10-23 (decision 196):** I/U rows are events, never fixes (a `U` position or one at a shared marker never
+reaches the whack or the track); `stk_receipt` as a side table, the lag a label; events screened per unit, not cut at
+2017; port calls for 2004 to mid-2007 from events; dwell from the commercial AIS in port, else the I → U pair; each unit's
+class in `stk_receipt`; the three Oracle reads in the next dump run (TODO 110). Each is a step of its own, scratch first.
 
 **check:** each decision recorded, and what is chosen built or declined.
 
