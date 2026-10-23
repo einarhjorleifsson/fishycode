@@ -1,8 +1,8 @@
 # 042 — Pumped catch back on the vessel that caught it: a link from the logbooks' notes
 
-**status:** proposal — measured 2026-10-23 (read-only, `$FISHYDATA/archive/2026-10-transhipment/`); nothing built;
-seven asks open (TODO 135) · **2026-10-23** · **see:** plan 020 §6 and
-`$FISHYDATA/archive/2026-10-logbook-notes/README.md` (§3.2, ask a), decisions 103, 104, 199 and 210, TODO 73 and 101,
+**status:** parked (the maintainer, 2026-10-23: put on hold) — measured 2026-10-23 (read-only,
+`$FISHYDATA/archive/2026-10-transhipment/`); nothing built; seven asks open (TODO 135) · **2026-10-23** ·
+**see:** plan 020 §6 and `$FISHYDATA/archive/2026-10-logbook-notes/README.md` (§3.2, ask a), decisions 103, 104, 199 and 210, TODO 73 and 101,
 plan 038 §7, `curate/catch_by_species_station.R`, `curate/ais_catch.R`, `curate/checks/allocation_audit.R`
 
 Drafted with AI assistance (Claude) on 2026-10-23, in a session started by another Claude session to design and then

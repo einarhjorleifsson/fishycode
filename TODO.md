@@ -1122,8 +1122,9 @@ item is taken up.
 trip, haul or landing, or the item parked.
 
 ## 135. Pumped catch back on the vessel that caught it (plan 042)
-**status:** open · **needs: maintainer** · **see:** `curate/plans/042-pumped-catch-on-the-catcher.md`, decisions 199
-and 210, TODO 73 and 101, `$FISHYDATA/archive/2026-10-transhipment/`
+**status:** parked (the maintainer, 2026-10-23: "park this / put on hold") · **needs: maintainer** — the seven asks
+of plan 042 · **see:** `curate/plans/042-pumped-catch-on-the-catcher.md`, decisions 199 and 210, TODO 73 and 101,
+`$FISHYDATA/archive/2026-10-transhipment/`
 
 The maintainer's rule of 2026-10-23: in the logbooks the catch stays on the vessel that caught it; the landing keeps
 the vid of the vessel that landed it. In the e-logbook the carrier logs pelagic catch pumped from another vessel on a
@@ -1132,6 +1133,6 @@ person). Plan 042 designs the notes into staging, a link from them (preprocessin
 station read by `catch_by_species_station` and `ais_catch` only, raising by the carrier's landing, and decision 199's
 carriers named. Its seven asks come before any code.
 
-**check:** the asks answered in the plan, the link and the move built by name, and the audit's transhipment account
-read after the build.
+**check:** unparked by the maintainer, the asks answered in the plan, the link and the move built by name, and the
+audit's transhipment account read after the build.
 
