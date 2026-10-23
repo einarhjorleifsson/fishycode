@@ -710,6 +710,14 @@ list(
              fd_curated("logbook", "catch_by_species_trip.parquet"))
   }, format = "file"),
 
+  # Correction (curate/corrections/catch_landing_contradicted.yml): logged catch the trip's landing contradicts,
+  # flagged, never corrected (plan 038 §8 step 1c).
+  tar_target(catch_landing_contradicted, {
+    logbook; lid_map; landing
+    produces("curate/corrections/catch_landing_contradicted.R",
+             fd_curated("logbook", "catch_flag.parquet"))
+  }, format = "file"),
+
   # ── Checks ──────────────────────────────────────────────────────────────────
   # Cross-source disagreement. These REPORT: they emit a table into
   # curated/check/ and correct nothing. Reasoning from landings back onto the vid
@@ -761,7 +769,7 @@ list(
 
   # The catch on the fixes, per catch unit and approach (plan 013 item 2, decision 100).
   tar_target(ais_catch, {
-    ais_trail; station_window; logbook; lid_map; landing
+    ais_trail; station_window; logbook; lid_map; landing; catch_landing_contradicted
     produces("curate/ais_catch.R", fd_curated("ais", "catch"))
   }, format = "file"),
 

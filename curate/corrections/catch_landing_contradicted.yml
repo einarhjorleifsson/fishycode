@@ -1,0 +1,39 @@
+id: catch_landing_contradicted
+title: logged catch the trip's landing contradicts (more than 10 times what the trip landed of the species, and at least 1 t more), flagged and kept on the fixes, marked
+status: coded 2026-10-23, checked on a scratch store, not built (plan 038 §8 step 1c; decision 216)
+applies_to:
+  - curated/logbook/catch_flag.parquet   # one row per flagged (station, species): the flag, never a corrected value
+  - curated/ais/catch                    # kg_flagged: the flagged kilograms of each row, shared as the kilograms are
+affects_rows: >-
+  Measured 2026-10-23 on the store as built that day (Claude, not checked by a person;
+  $FISHYDATA/archive/2026-10-todo126-ais-check/14_catch_vs_landing.R): 8,703 (trip, species) pairs, 294 kt of the
+  50,954 kt logged. Their stations and the kilograms on the fixes: the scratch build's numbers are in decision 216.
+implementation: curate/corrections/catch_landing_contradicted.R (target catch_landing_contradicted); carried by curate/ais_catch.R
+discovered: >-
+  Decision 210 (item 3) asked for implausible catch to be flagged against the trip's landing; decision 214 found its
+  first cases (STOKKUR's 6 net and line stations, 23.1 kt, 11.3 kt of it on fixes); the maintainer chose the margin
+  ("follow the proposal", 2026-10-23) and that flagged catch stays on the fixes, marked.
+
+defect: >-
+  A logbook entry's kilograms of a species far above what the trip landed of it: digits repeated or slipped
+  (11,000 t logged on a trip that landed 5.3 t), the wrong unit, a station entered twice under other keys.
+
+rule: >-
+  Per (logbook trip, species): the trip's logged kilograms of the species (duplicate twins left out, decision 094)
+  against what its landings linked through lid_map (with the landing's own schema) hold of it. The logbook's codes are
+  compared as the landings record them (830, herring of the Atlanto-Scandian stock, as 30; the stock is not compared
+  here). Flagged where the trip has a linked landing that holds some of the species, and the logged kilograms are more
+  than 10 times the landed and at least 1,000 kg more. Every station of the trip with the species is flagged. Catch
+  let go (negative codes) is never landed and never flagged. Not flagged here, to be judged otherwise: a trip with no
+  linked landing (the gear and species' own range), and a landing that holds none of the species (a crosswalk of the
+  logbook's codes to the landings' first).
+
+what_it_changes: >-
+  Nothing is corrected or moved. The flagged kilograms stay on the fixes they are shared over; `curated/ais/catch`
+  gains `kg_flagged`, the part of each row's kilograms that is flagged, so an analyst can leave it out (decision 215:
+  the user's filter). Kg in equals kg out for both columns.
+
+related:
+  - curate/decisions/216-catch-the-landing-contradicts-flagged.md
+  - curate/decisions/214-logbook-records-typed-by-what-they-cover.md
+  - curate/plans/038-the-logbook-flow-whole.md   # §8 step 1c

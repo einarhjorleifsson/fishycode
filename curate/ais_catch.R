@@ -7,12 +7,16 @@
 #         curated/logbook/trip.parquet              (.tid, vid, T1, T2, twin)
 #         curated/logbook/catch.parquet             (.sid, schema, sid = species, catch kg)
 #         curated/logbook/lid_map.parquet           (the landings that have a logbook trip)
+#         curated/logbook/catch_flag.parquet        (the catch its landing contradicts; corrections/catch_landing_contradicted)
 #         curated/landing/landings.parquet          (.lid, schema, vid, date)
 #         curated/landing/catch.parquet             (.lid, schema, sid = species, catch kg)
 #         curated/ais/voyage.parquet                (vid, year, voyage_id, T1, T2, pid2: the landings' voyages)
 # Output: curated/ais/catch/year=Y/part_00G.parquet  one file per vessel group (vid modulo 4)
 #         one row per (fishing fix, unit, species, approach): vid, time, unit_id, resolution, shared_unit_id,
-#         shared_resolution, species, kg, catch_basis, approach, source, raise_factor
+#         shared_resolution, species, kg, kg_flagged, catch_basis, approach, source, raise_factor
+#
+# kg_flagged is the part of a row's kg that the trip's landing contradicts (plan 038 §8 step 1c), shared with the same
+# weights as kg (ramb's `value`): flagged catch stays on the fixes, marked, so an analyst can leave it out.
 #
 # The units (ramb::rb_add_catch_units(), decision 100), by level:
 #   1  a station with a timed window (tow, haul, set, jig): its windows; overlapping ones would merge
@@ -63,11 +67,12 @@ if (!nzchar(Sys.getenv("SCATCH_YEARS"))) unlink(out_dir, recursive = TRUE)
 
 dup_s <- od("logbook", "station.parquet") |> filter(twin %in% "duplicate") |> select(.sid, schema)
 lm <- od("logbook", "lid_map.parquet") |> distinct(.lid, schema = schema_land)
+fl <- od("logbook", "catch_flag.parquet") |> distinct(.sid, schema, sid) |> mutate(flagged = TRUE)
 inputs <- c(fd_curated("logbook", "station_window.parquet"), fd_curated("logbook", "station.parquet"),
             fd_curated("ais", "voyage.parquet"),
             fd_curated("logbook", "trip.parquet"), fd_curated("logbook", "catch.parquet"),
             fd_curated("logbook", "lid_map.parquet"), fd_curated("landing", "landings.parquet"),
-            fd_curated("landing", "catch.parquet"))
+            fd_curated("landing", "catch.parquet"), fd_curated("logbook", "catch_flag.parquet"))
 
 for (yr in years) {
   y0 <- as.POSIXct(sprintf("%d-01-01", yr), tz = "UTC")
@@ -107,10 +112,13 @@ for (yr in years) {
   catch_all <- union_all(
     od("logbook", "catch.parquet") |>
       semi_join(win, by = c(".sid", "schema")) |>
-      transmute(id = paste0("S|", schema, "|", as.character(.sid)), species = sid, kg = as.numeric(catch)),
+      left_join(fl, by = c(".sid", "schema", "sid")) |>
+      transmute(id = paste0("S|", schema, "|", as.character(.sid)), species = sid, kg = as.numeric(catch),
+                kg_flagged = if_else(coalesce(flagged, FALSE), as.numeric(catch), as.numeric(0))),
     od("landing", "catch.parquet") |>
       semi_join(ld |> filter(date >= !!d0), by = c(".lid", "schema")) |>
-      transmute(id = paste0("L|", schema, "|", as.character(.lid)), species = sid, kg = as.numeric(catch))
+      transmute(id = paste0("L|", schema, "|", as.character(.lid)), species = sid, kg = as.numeric(catch),
+                kg_flagged = as.numeric(0))
   ) |> filter(!is.na(kg))
   kg_year <- catch_all |> summarise(kg = sum(kg)) |> pull(kg)
   st <- od("logbook", "station.parquet") |> anti_join(dup_s, by = c(".sid", "schema")) |> select(.sid, schema, .tid)
@@ -137,8 +145,10 @@ for (yr in years) {
     catch <- catch_all |> semi_join(units |> distinct(id), by = "id") |> dplyr::compute()
     kg_in <- catch |> summarise(kg = sum(kg)) |> pull(kg)
     kg_in <- if (is.na(kg_in)) 0 else kg_in
+    kgf_in <- catch |> summarise(kg = sum(kg_flagged)) |> pull(kg)
+    kgf_in <- if (is.na(kgf_in)) 0 else kgf_in
     shared <- lapply(c("fishing", "fishing_flow"), function(a)
-      ramb::rb_share_catch(in_g(trail_y), units, catch, key = "id", fishing = a))
+      ramb::rb_share_catch(in_g(trail_y), units, catch, key = "id", value = "kg_flagged", fishing = a))
     # the raising factor, per trip and species, onto the units of the logbook
     ut <- units |> filter(substr(id, 1, 2) == "S|") |>
       mutate(schema = dbplyr::sql("split_part(id, '|', 2)"),
@@ -154,10 +164,12 @@ for (yr in years) {
     f <- file.path(out_dir, paste0("year=", yr), sprintf("part_%03d.parquet", g + 1L))
     n <- write_curated_sql(con, as.character(dbplyr::sql_render(res)), f, inputs = c(inputs, part),
                            order_by = "vid, time, approach")
-    kg_out <- DBI::dbGetQuery(con, sprintf("SELECT approach, sum(kg) AS kg FROM read_parquet('%s') GROUP BY approach", f))
-    message(sprintf("%d group %d: %s rows; kg in %.0f, out %s", yr, g, format(n, big.mark = ","), kg_in,
-                    paste(sprintf("%s %.0f", kg_out$approach, kg_out$kg), collapse = ", ")))
-    if (any(abs(kg_out$kg - kg_in) > 1e-6 * max(1, kg_in))) {
+    kg_out <- DBI::dbGetQuery(con, sprintf("SELECT approach, sum(kg) AS kg, sum(kg_flagged) AS kgf FROM read_parquet('%s')
+                                            GROUP BY approach", f))
+    message(sprintf("%d group %d: %s rows; kg in %.0f, out %s; flagged in %.0f, out %s", yr, g, format(n, big.mark = ","),
+                    kg_in, paste(sprintf("%s %.0f", kg_out$approach, kg_out$kg), collapse = ", "),
+                    kgf_in, paste(sprintf("%s %.0f", kg_out$approach, kg_out$kgf), collapse = ", ")))
+    if (any(abs(kg_out$kg - kg_in) > 1e-6 * max(1, kg_in)) || any(abs(kg_out$kgf - kgf_in) > 1e-6 * max(1, kgf_in))) {
       stop("ais_catch: ", yr, " group ", g, " kilograms out differ from kilograms in")
     }
     kg_done <- kg_done + kg_in
