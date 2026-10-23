@@ -702,34 +702,23 @@ pelagic tow from a bottom one, and bottom depth and temperature per haul are env
 
 **check:** decided whether the sensor readings become a product or a QC check, and recorded which column measures what.
 
-## 101. Allocation errors the audit finds: the choices left (decision 155)
-**status:** open · **needs: maintainer** — which of the fixes below to make · **see:** decision 155,
-`curate/checks/allocation_audit.R`, TODO 90
+## 101. Allocation errors the audit finds: the fixes chosen (decisions 155, 199)
+**status:** open · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
 
-`check_allocation_audit` tests every link the flow makes against the records' own times. Built: a station's voyage
-gear by its own time. Left, measured on 2026-10-20:
-- the trail's `.tid_voyage` comes from the trip's one voyage: a voyage holding a trip's stations by time names none
-  (plan 031 §3.11: records placing calls would move 4,592 more stations off their trip's one voyage; ask f: many-to-many);
-- stations deleted in the source (`eytt_deleted`, 352, 4,238 t) still count in `lid_map`'s trip catch, the catch by
-  species and `landed_logged`, but not in the windows, `voyage_gear` or `ais_catch`;
-- 57 t on 43 stations with no window never reach `ais_catch`, not even on a coarser unit;
-- a station's date is outside its trip's days for 3.5 % of adb and 3.0 % of fs_afladagbok stations;
-- a station's time is in a port call for 7.4 % of fs_afladagbok and 5.9 % of adb timed stations, and 3 % of exactly
-  matched trips land before their voyage ended: TODO 90's evidence, read in plan 031 §3.11 (most of the first are a
-  static-gear set time 270 min before the haul, ask j, or an hour from the call's ends; 4,870 of the second are a
-  trip matched to a landing made before it finished, TODO 81);
-- a flag on `voyage_gear` for voyages with several gear labels (a count per voyage); now, or with TODO 90. Decision
-  154 read a tie as a wrong allocation, but plan 031 step 4 found most of the 323 tied voyages are not missed calls (16
-  overlapping trips, perhaps 24 more); `arg_max()` has no tie-break, so 5 voyages differ run to run (Claude's audit
-  of 2026-10-23, not checked by a person);
-- pelagic transfers (decisions 103, 104): 2,548 trip-species landed 2-300 times their log (1.0 against 0.19 Mt); the
-  `raise_factor` puts one vessel's catch on another's fixes, and the proposed flag for these trips is not built
-  (Claude's audit of 2026-10-23, not checked by a person);
-- two landing-to-voyage rules not compared: `voyage_gear`'s window plus 7 days, and `ais_catch`'s
-  `ramb::rb_link_trip_landings()`; a candidate link for the audit;
-- the method as a generic ramb tool.
+`check_allocation_audit` tests every link the flow makes against the records' own times (decision 155). The maintainer
+chose the fixes on 2026-10-23 (decision 199); each is built as a step with a scratch build and the catch traced:
+- stations deleted in the source (352, 4,238 t) out of every sum and link, kept in `station_fate` as deleted;
+- pelagic transfer trips (2,548 trip-species landed 2-300 times their log) flagged and not raised: the excess landed
+  weight to an outcome of its own in `ais_catch`;
+- `voyage_gear` deterministic (tie-break by kilograms, then gear code; `gid` and gear class from one row; a count of
+  gear labels per voyage), with the AIS batch;
+- catch on stations with no window (57 t, 43 stations) to the vessel-day or trip unit (plan 038 §7.1);
+- a flag in the merge on stations dated outside their trip's days (3.5 % adb, 3.0 % fs_afladagbok);
+- the two landing-to-voyage rules compared in the audit (`voyage_gear`'s window + 7 days, `rb_link_trip_landings()`).
+Parked: the audit as a generic ramb tool, until plan 038's phases are built. Answered elsewhere: the trail's trip from
+one voyage (plan 038 step 2, decision 193); station times in port calls (decision 197, TODO 81).
 
-**check:** each item built or declined, and `allocation_audit.parquet` read after the rebuild.
+**check:** each chosen fix built (or declined in a decision), and `allocation_audit.parquet` read after the rebuild.
 
 ## 102. Logbook trips that overlap another trip of the same vessel
 **status:** open · **see:** plan 031 §3.11, decisions 094 and 155, TODO 101
