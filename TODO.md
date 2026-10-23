@@ -345,18 +345,20 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
 
-## 79. Every source station accounted for in the logbook merge (plan 024)
-**status:** open · **needs: maintainer** — the go, and plan 024's four asks (§6) · **see:**
-`curate/plans/024-logbook-station-fate.md`
+## 79. Every source station and trip accounted for in the logbook merge (plan 024)
+**status:** open · **see:** `curate/plans/024-logbook-station-fate.md` (§6 answered 2026-10-23), plan 038 §8 step 1
 
 `curate/logbook.R` drops staging stations by date bounds and (vid, date) tiers, and nothing records them: a dropped
 station is simply absent from `curated/logbook`. Plan 024 proposes `curated/logbook/station_fate.parquet`, written by
 the merge, one row per staging station with whether it is kept and, if not, why, and measures what it would hold on
 the build of 2026-10-16: 702,988 stations dropped (8,131 kt as recorded), 99 % of held vessel-days copies of what is
-kept.
+kept. The maintainer, 2026-10-23: written by the merge, with round weight and `day_match`; a `trip_fate` beside it;
+the adapters' own drops later, each its own ledger; coded and checked on a scratch store now, built in the store with
+the next rebuild that touches the logbook (plan 037 phase 1).
 
-**check:** `curated/logbook/station_fate.parquet` exists, has one row per staging station, and reproduces plan 024
-§2's counts; a decision records it.
+**check:** `curated/logbook/station_fate.parquet` and `trip_fate.parquet` exist, one row per staging station and
+trip of every source the merge reads, their invariants (staging kg = kept + dropped per source) checked by the merge,
+the counts recounted on that build; a decision records it.
 
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
 **status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,

@@ -1,6 +1,6 @@
 # 024 — Every source station accounted for: what the logbook merge keeps, drops, and why
 
-**status:** proposal — measured on the build of 2026-10-16, nothing built (2026-10-17); §6 asks open (TODO 79)
+**status:** proposal — measured on the build of 2026-10-16, nothing built (2026-10-17); §6 asks answered 2026-10-23 (TODO 79)
 · **2026-10-17**
 · **see:** `curate/logbook.R`, decisions 023, 094, 123 and 124, TODO 77, 78 and 80
 
@@ -157,3 +157,10 @@ default). No fs_afladagbok or adb station has an NA `vid` today, but 21 afli sta
 - **(c)** The 78,870 staging trips with no station: a `trip_fate` beside it, or out of scope.
 - **(d)** The drops before staging (the afli adapter's 23,570 stations, decision 098; `fs_afli`'s 1,898 electronic
   stations, which are not read, decisions 123-124): later, each adapter writing its own, or never.
+
+**Answered 2026-10-23** (the maintainer, in a status review run by Claude): (a) written by the merge, as recommended;
+(b) with round weight and `day_match`, the rule one function in `R/` (the grammar's whole weight, plan 037 ask e);
+(c) a `trip_fate` beside it, one row per staging trip; (d) later, each adapter its own ledger. The go: coded and
+checked on a scratch store now, built in the store with the next rebuild that touches the logbook (plan 037 phase 1),
+not on its own. Since this plan was measured the merge has a fourth source (the ERS reports, decision 127) and adb's
+lower bound is 2025-11-19 (decision 160), so §2's counts are recounted on the current build, not reproduced.
