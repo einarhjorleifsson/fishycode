@@ -371,6 +371,15 @@ h. **adb's conversion faults** (decision 171): a check in `curate/checks/` that 
    not carry them (recommended), or none.
 i. **kvoti's `veidiferdir` and `nyting_haus`** (13,097 trips) as trip witnesses: measured first, and staged if they
    hold a departure. Or left out.
+   *Measured 2026-10-23 by Claude, read-only, not checked by a person* (`$FISHYDATA/archive/2026-10-kvoti-trip-witness/`,
+   README): **not worth staging.** Both hold a departure day, never a time, and no departure port (`hofn` is the
+   landing port). They are complete for a small fleet, most likely processing vessels: 24-53 vessels and 0.6-1.5 % of
+   afli's trips a year. Where `nyting_haus` meets a logbook trip with an AIS departure (4,995 afli trips, 2007-2017),
+   its start is the AIS departure day on 37.8 % and within a day on 73.8 %. That is no better than afli's first fishing
+   day on the same trips (26.9 %, 77.5 %; more than 3 days off on 13.2 % against kvoti's 16.2 %). Before 2004 they
+   would date 5,124 of the 786,737 afli trips with no departure witness (0.65 %). There they cannot be checked:
+   `veidiferdir` (1991-1998) predates AIS. Every kvoti trip falls in one outcome: 4,997 meet a logbook trip with an AIS
+   departure, 564 one with another witness, 6,920 one with none, 575 meet none and 41 have no valid dates.
 
 **Answered 2026-10-23** (the maintainer, decision 191): a confirmed; b all five readers, each after a scratch measure,
 once the multi-voyage case is fixed; c no trip and a flag; d onto the trip, and the quota gear a witness in
