@@ -10,9 +10,17 @@
 where and when each vessel fished, with what gear, and what it caught. For every
 vessel at sea, each fix says:
 
-- whether it was fishing, and with what gear;
+- which logbook and landing events it may belong to (the station with its gear
+  and phase, the trip, the voyage, the landing), with the evidence for each link
+  (the window and its basis, the fix's speed against the gear's speed range);
 - the effort it stands for (hours, kW-hours, pressure);
-- its share of the catch (kg by species).
+- under each of the flow's filters, whether it was fishing and its share of the
+  catch (kg by species).
+
+**The main output is the link** (maintainer, decision 215): splitting the catch is
+the user's step, a filter they choose (the speed range, the time window, both, or
+another) and a key, and ramb's split keeps every kilogram in one outcome whatever
+the filter. The flow's own filters, `fishing` and `fishing_flow`, are presets.
 
 Each value carries the path and basis it came from. All six steps of the flow
 belong here, effort and catch included (maintainer, 2026-10-14).
@@ -24,7 +32,8 @@ analyses beyond both.
 
 It is done when:
 
-1. every fix is accounted for: fishing, not fishing, or undecided, with why;
+1. every fix is accounted for: the events it may belong to, or none, with why;
+   and under each preset filter fishing, not fishing, or undecided;
 2. every kilogram logged or landed sits on fixes, or explicitly on a coarser
    unit (kg in = kg out);
 3. each path's error is known, measured on the well-recorded part of the data.

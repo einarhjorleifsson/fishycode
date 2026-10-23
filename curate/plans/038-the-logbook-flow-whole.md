@@ -366,6 +366,10 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    the trip resolved to it, the AIS voyage their window), since both change the windows, then 101's remaining items,
    102's classes, and TODO 72's items 8 and 10.
 
+Decision 215 (2026-10-23): the main output is the link from each fix to its events; splitting the catch is the user's
+step, with the flow's `fishing` and `fishing_flow` as presets. L5 and L6 (§6, §7) are to be rewritten around it, and the
+landing put on the fix (L3, L5).
+
 Each phase follows plan 037 §6: a scratch build, the catch traced kilogram by kilogram, a decision record, then the
 maintainer's build by name. Phases 2 and 3 come before 4 because TODO 121 is coded and its readers are the open
 question now. Phase 4 is larger, and phase 1 measures it.
