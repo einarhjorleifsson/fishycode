@@ -1,8 +1,9 @@
 # 037 — The most upstream source, value by value: layers from raw to curated, in the grammar's terms
 
-**status:** proposal — written 2026-10-21, scoped the same evening; nothing built in the store; the sent layer's
-adapter written the same night and run on a scratch store only (§2.1); TODO 113 and 114 paused for it;
-asks in §7 (a, b, c and e answered 2026-10-21), the TODO items it touches in §8 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
+**status:** proposal — written 2026-10-21, scoped the same evening; the sent layer's adapter written the same
+night and staged in the store since decision 180 (§2.1), read by nothing in `curate/` yet; every ask of §7 answered
+(a-e 2026-10-21, i 2026-10-22, f-h 2026-10-23, decision 189; TODO 108, 113 and 114 folded into phase 2), the TODO
+items it touches in §8 · **2026-10-21** · **see:** `docs/grammar.qmd` (the grammar of sea-going observational data), TODO 108,
 110, 113, 114, decisions 157, 158 and 160, plans 023, 025, 028, 029 and 036, `curate/corrections/afli_end_longitude.yml`,
 `curate/corrections/afli_coords.yml`, `$FISHYDATA/archive/2026-10-xml-oracle-map/`, `2026-10-xml-inventory/`,
 `2026-10-xml-positions/`, `2026-10-time-offsets/`, `2026-10-time-offsets-towed/`, `2026-10-landing-confirmations/`,
@@ -259,7 +260,7 @@ The pass is that everything is accounted for (§1), not a rate.
 
 Answered by the maintainer on 2026-10-21: a (the principle, taken as stated), b (a column per field group), c (below)
 and e (`catch` as logged everywhere). d by the run of 2026-10-21 (decision 162; the failing views and `takt_json_form`
-stay with TODO 110). i on 2026-10-22 (below). Open: f, g, h.
+stay with TODO 110). i on 2026-10-22 (below). f, g and h on 2026-10-23 (below, decision 189).
 
 **c, in the maintainer's words:** where the expert edited, the expert wins; "but we want also to learn how / why he
 won (landings data, ...) ... because if we know, we have added to our own domain knowledge. and that is important to
@@ -282,8 +283,13 @@ c. The precedence table of §4 as a starting point, field group by field group; 
 d. Phase 0: dump `kvotix`, `vor` and `dwstg`; look at `fiskist.ttrail`; leave the rest.
 e. `catch` as the weight as logged in every source, the whole weight by name for every consumer (phase 1).
 f. The latest version of each sent record, and the 14,267 never loaded left out or staged with a flag.
+   **Answered 2026-10-23:** the latest version staged; the never-loaded (14,759 on the store's build) staged with
+   `loaded = FALSE`, kept out of the logbook and each classed before admission (TODO 118, decision 189). They are in
+   the dump, in the sent messages; Oracle's loader never wrote them into `rafr_`.
 g. The paused TODO 113 and 114 work folded into phase 2, those items closed by it.
+   **Answered 2026-10-23:** yes, with TODO 108 as well; the three checks are in TODO 115. Decision 098 holds in phase 2.
 h. The TODO items of §8 linked to the plan's phases as they stand, or folded into it (closed when their phase is).
+   **Answered 2026-10-23:** linked as they stand, not folded.
 i. The sent layer's key where Oracle loaded one record as several rows (the adapter on branch
    `claude/plan037-afli-sent-1f2f63`, not merged): on 115 edited stations the edited layer holds another row than the
    staged one, 99 the same version loaded again from a later message (Oracle deleted the staged row on 87) and 16 an

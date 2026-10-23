@@ -831,36 +831,11 @@ Measured 2026-10-21 by Claude, read-only, in two side sessions (not yet checked 
 draft (not committed): after decision 158, static set times still sit on a half-hour grid computed from the haul
 start (about 32,600 stations), at 24 h (5,315) and beside the 270-min placeholder (3,023); haul lengths are rounded
 to whole hours at entry. Towed gear: the paper logbook's tow times are the skipper's rounding (42 % of starts on the
-hour), the electronic logbook holds a few app dummies. The sent XML holds the same values (TODO 108): they can be
+hour), the electronic logbook holds a few app dummies. The sent XML holds the same values (TODO 115, from 108): they can be
 flagged, not recovered from it. A defect beside them: adb's `duration_m` is empty on its trawls and dredges (32,329
 OTB, 1,367 OTM, 2,174 DRB), since the adapter computes it from `tow_start`, which adb leaves empty.
 
 **check:** each draft decided and recorded (correction, flag or no action), or declined in a decision.
-
-## 108. afli's positions, Danish-seine tow times, soak hours and record times from the record the logbook sent
-**status:** open · **needs: maintainer** — the draft correction · **see:** `curate/corrections/afli_end_longitude.yml`,
-`$FISHYDATA/archive/2026-10-xml-positions/` (README, `draft/afli_sent_positions.{R,yml}`),
-`$FISHYDATA/archive/2026-10-xml-inventory/`
-
-Measured 2026-10-21 by Claude, read-only (not yet checked by a person): the apps send the haul's end (`POS_END`,
-2011-2024) and Oracle never loads it, so 814,598 afli stations would gain an end position; the start is sent to the
-arc-second and stored to the minute (805,383 more precise); Oracle's loader turns a west longitude within a degree
-of Greenwich east (905). No output of the flow changes, only `station.parquet`'s positions. The draft correction
-would replace `afli_end_longitude`'s side table. The inventory also found 81,454 messages after 2020-07-28 only in
-fs_afli's copy, and `afli.rafr_mottaka_view` failing (ORA-01843) though its table is dumped.
-Times: static gear's `t1`-`t4` equal the sent record to the second (221,253 records), so its app-made values can only
-be flagged (TODO 107). But Oracle lost the Danish seine's tow duration (`togtimi`) on 106,045 electronic stations
-(2008-2013, 2015), whose tow end `t3 = t2 + togtimi` is therefore missing; the sent `TOGTIMI` gives it back on 99,028
-(median 49 min; `../2026-10-time-offsets-towed/`). Also: the soak (`KLST`), rounded up to a whole hour by Oracle on
-56,326 records, so afli's `duration_m` is too long on 61,992 longline stations (median 31 min) and 4,215 jigging ones;
-and when each record was closed (`FAERSLA_LOKUD`, never loaded), a witness of computed times.
-
-The full element-by-element map of message against Oracle (`$FISHYDATA/archive/2026-10-xml-oracle-map/`, its
-recommendations 1-8) and the landing confirmations as trip ends (`../2026-10-landing-confirmations/`: 93.6 % match a
-landing; Oracle's record-to-confirmation link often names a later trip) feed this item; depth and catch are 113, 114.
-
-**check:** the draft decided; if adopted, built, and `afli_end_longitude` folded into it; `KLST` and `FAERSLA_LOKUD`
-and `TOGTIMI` taken from the sent record or declined in a decision.
 
 ## 110. The Oracle dumper's open ends after the run of 2026-10-21
 **status:** open · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
@@ -915,49 +890,33 @@ landing on 4,439 of 4,447 shared vessel-days, and the logbook's catch is 1.004 t
 **check:** the asks answered in the plan; landings, trips and their catch carry a disposition with a basis, landed kg
 unchanged, and those trips' logged over landed near 1.0; or the plan parked or abandoned in its header.
 
-## 113. afli's end depth `z2` is 1.83 times the depth sent, on 946,197 electronic stations
-**status:** parked · **needs: maintainer** — plan 037 (paused 2026-10-21 for it; findings and scripts in
-`$FISHYDATA/archive/2026-10-plan037/`) · **see:**
-`curate/corrections/afli_depth_units.R`, decision 022, `$FISHYDATA/archive/2026-10-xml-oracle-map/` (README,
-"What fishycode should take from the message", item 1)
-
-Measured 2026-10-21 by Claude, read-only (not yet checked by a person): Oracle's loader converted the sent start
-depth (`DYPI`) to fathoms but kept the end depth (`DYPI_LOK`) in metres on 974,721 records. `afli_depth_units.R`
-classifies a vessel-period as fathoms from `z1` against GEBCO and multiplies `z2` by the same 1.8288, so `z2` is 1.829
-times the sent metres on 946,197 stations; `z1` is left at 0.547 of the sent metres on 4,205, and both are converted
-on 37,196 whose app sent the value as is. GEBCO confirms the end depth is metres in every app. Proposed in the map:
-take `DYPI` and `DYPI_LOK` from the message as metres for the electronic records, and keep the per-vessel test for
-the paper ones and for Fishing Log 2.6 in 2010-2012. The flow reads no depth; an analyst does.
-
-**check:** `z1` and `z2` of afli's electronic stations equal the sent metres (or a decision says why not), and
-`afli_depth_units.yml` says which stations it still converts.
-
-## 114. afli's catch on gutted items is a computed whole weight labelled `recorded`
-**status:** parked · **needs: maintainer** — plan 037 (paused 2026-10-21 for it; findings in
-`$FISHYDATA/archive/2026-10-plan037/`) ·
-**see:** `curate/catch_by_species_station.R`, `$FISHYDATA/archive/2026-10-xml-oracle-map/` (item 5), plan 036
-
-Measured 2026-10-21 by Claude, read-only (not yet checked by a person): on 2.65 M afli catch items logged gutted,
-afli's `afli.afli` holds round(gutted × 1.25) for every species, and `catch_by_species_station.R` labels it
-`recorded`. The weight as logged and its state (`AFLI@SLAEGT`) are in the sent message for every item; `rafr_afli`
-holds them for 2.11 M of 4.16 M. fs_afladagbok and adb keep the state already (`astand`, `condition`).
-
-**check:** every logbook catch row carries the weight as logged, its state and the whole weight, with basis `derived`
-where the whole weight is computed; or a decision says why not.
-
 ## 115. The most upstream source, value by value, through the grammar (plan 037)
-**status:** open · **needs: maintainer** — plan 037's eight asks (§7) · **see:** `curate/plans/037-the-most-upstream-source.md`,
-`docs/grammar.qmd`, TODO 108, 110, 113, 114, decisions 158 and 160, `$FISHYDATA/archive/2026-10-plan037/`
+**status:** open · **see:** `curate/plans/037-the-most-upstream-source.md`, `docs/grammar.qmd`, decisions 158, 160,
+162, 180 and 189, TODO 110 and 118, `$FISHYDATA/archive/2026-10-plan037/`, `2026-10-xml-oracle-map/`
 
 The maintainer's principle (2026-10-21): each value from the most upstream layer that holds it, when it states its
-unit and keeps more or known precision; a resend or an in-house edit, being later and deliberate, wins. Scoped the same
-evening: afli's electronic logbook has three layers (sent, loaded, edited), in-house corrections are common (12 % of
-stations, records of 2003-2018) and resends rare; the five schemas found missing were dumped that evening (phase 0, decision 162). Proposed: one adapter per layer into
-the grammar's tables, the choice per field group only in `curate/`, the layer recorded beside the basis.
-The sent layer's adapter (`sources/afli_sent/convert.R`, target `afli_sent`) is merged, its key settled by ask i
-(option b, 2026-10-22); run on a scratch store only, not built in the store, and read by nothing in `curate/` yet.
+unit and keeps more or known precision; a resend or an in-house edit, being later and deliberate, wins. afli's
+electronic logbook has three layers (sent, loaded, edited): one adapter per layer into the grammar's tables, the choice
+per field group only in `curate/`, the layer beside the basis. Every ask of §7 is answered (f-h 2026-10-23, decision
+189). The sent layer (`sources/afli_sent/`) is in the store since decision 180, read by nothing in `curate/` yet. Next:
+phase 1 (the precedence table, the provenance column, consumers reading the whole weight by name), then phase 2.
 
-**check:** the asks answered in the plan; its phases built or the plan parked or abandoned in its header.
+**Phase 2 closes three folded items** (decision 189; measured 2026-10-21 by Claude, not yet checked by a person):
+- **TODO 108:** the sent end position (`POS_END`, 814,598 afli stations; `afli_end_longitude` retires), start
+  positions to the arc-second (805,383), west longitudes Oracle turned east (905), the Danish seine's tow time Oracle
+  lost (`TOGTIMI`: t3 back on 99,028 of 106,045), the soak unrounded (`KLST`: `duration_m` too long on 61,992
+  longline and 4,215 jigging stations), each record's closing time (`FAERSLA_LOKUD`); the draft correction in
+  `$FISHYDATA/archive/2026-10-xml-positions/draft/`, the towed times in `../2026-10-time-offsets-towed/`.
+- **TODO 113:** afli's end depth `z2` is 1.83 times the sent metres on 946,197 electronic stations (Oracle kept
+  `DYPI_LOK` in metres; `afli_depth_units.R` converts it as fathoms, decision 022): both depths from the message, the
+  per-vessel test kept for paper records and for Fishing Log 2.6 in 2010-2012.
+- **TODO 114:** on 2.65 M afli catch items logged gutted, round(gutted × 1.25) is labelled `recorded`; the weight as
+  logged and its state are in every sent item.
+
+**check:** each phase built or declined in a decision, or the plan parked or abandoned in its header; with phase 2,
+afli's end positions, tow times, soak and closing times from the sent record (or declined), `afli_end_longitude`
+folded in; `z1`/`z2` of afli's electronic stations equal the sent metres, `afli_depth_units.yml` saying which it still
+converts; every logbook catch row carries the weight as logged, its state and the whole weight, `derived` where computed.
 
 ## 116. STK units with no vid: from the archive study to the key
 **status:** open · **needs: maintainer** — decision 161's D1-D10, and whether "not before plan 021 step 6" means step 4
@@ -986,8 +945,8 @@ per-unit screen; port calls from `tilk_stk` for 2004 to mid-2007; the Oracle rea
 
 **check:** each decision recorded, and what is chosen built or declined.
 
-## 118. afli's loaded hauls that never reached `afli.stofn`
-**status:** open · **see:** plan 037 §2.1 (on branch `claude/plan037-afli-sent-1f2f63`), TODO 75, decision 098
+## 118. afli's hauls in a layer but not in `afli.stofn`: loaded but never moved, and sent but never loaded
+**status:** open · **see:** plan 037 §2.1, TODO 75, decisions 098 and 189
 
 Of the records Oracle loaded, 26,695 in afli's `rafr_stofn` never moved to `afli.stofn`: 3,182 deleted, 23,513 not,
 and why is unexplained. The sent layer stages all of them, so once it is read they enter the logbook unless
@@ -995,10 +954,18 @@ explained. Some may be a haul loaded twice; some genuinely missing hauls (as TOD
 already ruled on these hauls (23,570 live rows absent from `stofn`): not admitted, since adding them overshoots the
 landing and most are the same hauls submitted again. Also open from decision 171: whether adb's 243 stations before
 2025-11-19 with no counterpart, and the 14 `TRACKWELL BAEKUR` and `PAPPÍR` trips decision 160 removed, are in afli's
-adapter's output (both added from Claude's audit of 2026-10-23, not checked by a person).
+adapter's output (both added from Claude's audit of 2026-10-23, not checked by a person). Decision 098 holds in
+phase 2 (the maintainer, 2026-10-23, decision 189).
+
+**Sent but never loaded** (plan 037 ask f, decision 189): 14,759 records of the sent messages that Oracle's loader never
+wrote into `rafr_` (168 vessels, 2001-2022, 142.8 kt as logged), staged with `loaded = FALSE` and kept out of the
+logbook. Measured 2026-10-23 by Claude: 2,890 (31.7 kt) on a vessel-day the curated logbook holds, likely copies; about
+11,650 (111 kt) on vessel-days it lacks, and 7,771 of those with catch have the vessel's landing within 0-3 days; 10
+dated 2096-2099.
 
 **check:** each of the 23,513 in one outcome (a copy of a moved record, a missing haul, unexplained), judged by
-decision 098's rule or by a decision that overturns it; and the sent layer stages no haul twice.
+decision 098's rule or by a decision that overturns it; each of the 14,759 never loaded in one outcome (a copy of a
+held haul, a missing haul, unexplained) and its admission decided per class; and the sent layer stages no haul twice.
 
 
 ## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
@@ -1071,7 +1038,7 @@ Left by the overview's session of 2026-10-22.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
 **status:** open · **needs: maintainer** — the representation below, and the AIS check's go · **see:**
-`$FISHYDATA/archive/2026-10-afli-minutes60/README.md` (scripts 01-10), TODO 108, 124, plan 040, decision 165,
+`$FISHYDATA/archive/2026-10-afli-minutes60/README.md` (scripts 01-10), TODO 115 (from 108), 124, plan 040, decision 165,
 decision 180, `R/logbook_position.R`, `curate/corrections/afli_coords.yml`, `afli_end_longitude.yml`
 
 Found 2026-10-22 from the rebuild's `error > 60 min` lines (decision 180), measured with the maintainer:
@@ -1083,7 +1050,7 @@ Found 2026-10-22 from the rebuild's `error > 60 min` lines (decision 180), measu
     mostly), 61-99 "minutes" (about 1,600, unexplained: the rectangle cannot decide, and at the quarter they look
     like neither reading);
   - the `rafr_` loader rounded electronic positions to the minute, so exactly 60 means no carry, and the sent record
-    holds the arc-second (TODO 108);
+    holds the arc-second (TODO 115, from 108);
 - **e-logbooks** (fs_afladagbok, adb):
   - precision by app and year: whole minutes (the old TRACKWELL route), seconds (Trackwell raun and most later apps),
     mixed within Taktikal and Jóhann Gíslason, hundredths on Taktikal and Marína 2023;

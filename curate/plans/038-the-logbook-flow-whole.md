@@ -62,7 +62,7 @@ and plan 039 §0 answers it, quoting it word for word. The answer is quoted here
 
 | Step | Scripts (side) | Output | ramb | Built |
 |---|---|---|---|---|
-| L1 sources and layers | `sources/{afli,afli_sent,fs_afladagbok,adb,aflaskeyti}/`; the trip witnesses `sources/{stk/voyage,quota_trip,phone_call}/` (preprocessing) | `staging/<source>/` | — | the logbooks; `afli_sent` staged on a scratch store and read by nothing (plan 037); the trip witnesses coded, not built (TODO 121) |
+| L1 sources and layers | `sources/{afli,afli_sent,fs_afladagbok,adb,aflaskeyti}/`; the trip witnesses `sources/{stk/voyage,quota_trip,phone_call}/` (preprocessing) | `staging/<source>/` | — | the logbooks; `afli_sent` staged in the store (decision 180) and read by nothing (plan 037); the trip witnesses coded, not built (TODO 121) |
 | L2 merge and corrections | `curate/logbook.R`, `curate/aflaskeyti_trip.R`, `curate/corrections/`, `logbook_gear.R`, `catch_by_species_station.R` (preprocessing) | `curated/logbook/{trip,station,fishing_sample,catch,gear,catch_by_species_station}` | — | built |
 | L3 trip ↔ landing | `curate/link_lid_map.R`, `catch_by_species_trip.R` (preprocessing) | `curated/logbook/{lid_map,catch_by_species_trip}` | — | built |
 | L4 the trip reconciled | `curate/link_trip_voyage.R`, `curate/trip_reconciled.R` (flow, step 1) | `curated/link/{trip_voyage,trip_reconciled}` | `rb_link_trip_voyages`, `rb_add_trip_time` | `trip_voyage` built; `trip_reconciled` coded, not built (TODO 121) |
@@ -161,7 +161,7 @@ records (decision 094), the station type (decision 084) and the placeholder set 
 - TODO 79 (plan 024's `station_fate`, asks a-d);
 - TODO 102 (trips overlapping another trip of the same vessel: afli 21,220, fs_afladagbok 4,116, adb 624);
 - TODO 103 and 107 (app-made times);
-- TODO 113 and 114 (parked for plan 037);
+- TODO 113 and 114 (in TODO 115 since decision 189);
 - TODO 111 (the column tables in `docs/output-schema.md`);
 - adb's `pid` (ask f).
 
@@ -297,7 +297,7 @@ another voyage than their trip's, and 23,398 afli, 21,844 fs_afladagbok and 3,87
 **Open:**
 - TODO 81 (raising to every landing of a trip; 23.0 kt counted twice);
 - TODO 112 (the disposition);
-- TODO 114 (the catch as logged, the whole weight by name; plan 037 phase 1);
+- TODO 114, in TODO 115 since decision 189 (the catch as logged, the whole weight by name; plan 037 phase 1);
 - TODO 101 (4.2 kt deleted in the source, 57 t with no window);
 - TODO 72 item 8 (static-gear pressure, blocked by the placeholder set times, decision 158);
 - TODO 24 (vessels never heard on AIS);
@@ -374,7 +374,7 @@ None is folded in: each keeps its own check, and each is built in its step's pha
 
 | Step | Items |
 |---|---|
-| L1 sources and layers | 62, 70, 73 (plans 019, 020), 75, 98, 100, 108, 110, 113, 114, 115 (plan 037), 118, 120 (in 25 since decision 185) |
+| L1 sources and layers | 62, 70, 73 (plans 019, 020), 75, 98, 100, 110, 115 (plan 037; 108, 113 and 114 in it since decision 189), 118, 120 (in 25 since decision 185) |
 | L2 merge | 79 (plan 024), 102, 103, 107, 111 |
 | L3 the link | 74 and 123 (plan 039), 81 (plan 027), 112 (plan 036) |
 | L4 the trip | 121, 90 (plan 031), 117 |
