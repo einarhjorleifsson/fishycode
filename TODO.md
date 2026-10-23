@@ -1155,27 +1155,35 @@ and read first (plan 041 §6); its seven asks come before any code.
 **check:** unparked by the maintainer, the asks answered in the plan, the adapter and merge built by name, and
 `station_fate`'s account closing with the summaries in it.
 
-## 137. Stations timed as the trip, the landing or midnight: what their windows should be
-**status:** parked (the maintainer, 2026-10-23: "park this for now") · **needs: maintainer** — the draft's four
-proposals · **see:**
+## 137. A record's resolution by what it covers: e-logbook stations that hold a trip or a day
+**status:** open · **needs: maintainer** — the rule, and each case below · **see:**
 `$FISHYDATA/archive/2026-10-trip-time-stations/` (README, scripts 00-09, `draft_decision.md`), decision 211 ("Found
-in passing"), decisions 206 and 210, plan 019 §4
+in passing"), decisions 206 and 210, plan 019 §4, `docs/grammar.qmd` ("What a row covers"), TODO 127 (names), 138
 
-Some e-logbook apps store other times than the haul's (Claude's measure, 2026-10-23, not checked by a person):
-- Marína and Taktikal log one handline station per trip, timed departure to return (23,359 windows). The window is
-  the AIS voyage; the speed test drops the steaming, but slow time that is not jigging counts as fishing: a median 9 %
-  more fishing hours per trip than the same vessels' haul-timed trips, slightly more near the harbour.
-- Their net and line stations (1,519) have the set at the departure. STOKKUR's 3,930 net and line stations (set at the
-  landing) and the old TRACKWELL route's 225 static ones (midnight) have no haul window, so no fishing fix: 8.8 kt and
-  1.2 kt move up to the trip or the vessel's month.
-- Decision 210's tour app, which replaces STOKKUR, also times its spots at the landing.
+**The rule** (the maintainer's framing, 2026-10-23: some apps mix up what is a trip and what is a station): a logbook
+record is typed by what its times and position cover, not by the table it sits in. A station whose times are the
+trip's departure and return, its landing, or a date is a trip- or day-level record (`station_type`, the grammar's
+resolution), not an operation, and the flow treats it at that level: the trip or the day is its window and its catch
+unit, and no haul window is made from a departure, landing or midnight stamp. The times stay as recorded, labelled as
+the trip's; a window made from them has basis `synthesised` (the label's name is TODO 127's).
 
-The draft proposes: (1) the handline window kept, labelled as the trip's, basis `synthesised`, the surplus documented,
-not corrected; (2) the dummy set times set NA and flagged as decision 206 does, STOKKUR's and TRACKWELL's stations on
-their day window; (3) STOKKUR's handline stations on their day window until decision 210 is built; (4) the tour time
-read as the landing (t4 = the spot time, t1 = t4 - hours), not plan 019 §4's mapping.
+Cases (Claude's measure, 2026-10-23, not checked by a person):
+- Marína and Taktikal, handline: one station per trip, departure to return (23,359 windows), the trip's catch. Its
+  window is the AIS voyage already; the speed test drops the steaming, but slow time that is not jigging counts: a
+  median 9 % more fishing hours per trip than the same vessels' haul-timed trips. Trip-level; the surplus documented,
+  not corrected.
+- Marína and Taktikal, nets and lines (1,519): the set at the departure, the haul ending at the return. Trip-level; the
+  set time set aside, as decision 206 does with Trackwell's departure copies.
+- STOKKUR (2020-22): one station per trip, at the landing, its position a rounded whole degree (decision 211).
+  Trip-level and a cell. Its 3,930 net and line stations now get no fishing fix (8.8 kt moves up to the trip or the
+  vessel's month).
+- The old TRACKWELL route: midnight only. Day-level; its 225 static stations lose their fixes the same way (1.2 kt).
+- Decision 210's tour app, which replaces STOKKUR, also times its spots at the landing: read as the end (t4 = the spot
+  time, t1 = t4 - hours), not plan 019 §4's mapping.
+- Possibly the same: TODO 138's 3,460 handline windows under 2 minutes (stamped at entry?), to be measured.
 
-**check:** each proposal chosen or declined in a decision, and what is chosen built with the logbook batch.
+**check:** the rule chosen or declined in a decision; if chosen, `station_type` set on these records in the merge and
+the flow's window and catch unit following it, built with the logbook batch.
 
 ## 138. Three window and twin faults found beside TODO 137
 **status:** parked (the maintainer, 2026-10-23: "park this for now") · **needs: maintainer** — what to do with
