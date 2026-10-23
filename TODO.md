@@ -102,7 +102,7 @@ rerun after each redo, every same-track or partial case settled or stated; decis
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
-the metier, TODO 131-133 (plan 015 §4 a revised 2026-10-23), and plan 015 §4 b-d and i (e-h answered, decision 202) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
+the metier (TODO 131, 133) and its mapping to icesVocab at delivery, with which list decides (decision 212), and plan 015 §4 b-d and i (e-h answered, decision 202) · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` (the datacall), `curate/plans/010-ping-activity-link.md` §7, §10-§12b, decisions 095 and 118
 
 Built: `gear_window`, `station_window`, `curated/ais/trail` (AIS + the gps logger feed, plan 014), with the voyage's
 trip (`.tid_voyage`) on fixes outside every window. Open: the datacall. `products/ices_vms_datacall/build.R` is the
@@ -1072,41 +1072,28 @@ To answer per code: which list is right, and whether the third group's lists sho
 **check:** each of the 30 codes answered in decision 182, and `reference/species/species.R` changed where an answer
 says so (a list taken, or a code's note).
 
-## 131. Metier 6 for the datacall: the rule's choices (plan 015 §4 a)
-**status:** open · **needs: maintainer** — asks a1, a2 and a4 of plan 015 §4 a · **see:**
-`curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised, `$FISHYDATA/archive/2026-10-metier6/README.md`, TODO 27b
+## 131. The Icelandic metier per fishing operation: gear, target, mesh, rigging and devices, each with a basis
+**status:** open · **needs: maintainer** — ask a2 of plan 015 §4 a (the target where the gear code gives none) ·
+**see:** decision 212, `curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised,
+`$FISHYDATA/archive/2026-10-metier6/README.md`, TODO 133, TODO 27b (the mapping to ICES's codes), plan 020 (`gear_part`)
 
-A rule is proposed from Claude's read-only study of 2026-10-23, not checked by a person: per fishing operation RDBES's
-code, else the regulation's mesh class where the regulation fixes one, else the recorded mesh, the vessel's or the
-fleet's usual mesh, or the unbounded code, each with its basis and checked against the codes allowed in the fix's ICES
-area. Open: (a1) regulation or recorded mesh first for the regulated gears (only Nephrops moves: 18.6 % of its fixes
-at 100 mm or more); (a2) the targets the gear code cannot give (dredges, pelagic trawls of 100 mm or more as
-`OTM_DEF`, traps by their catch); (a4) which list decides: the vocabulary's live area links
-(`icesVocab::getCodeDetail()`) or rdbes's copy of 2025-10-23. The datacall's own scripts check no area.
+The flow carries Iceland's own metier, and a datacall maps it to icesVocab when it is answered (decision 212, the
+maintainer). Plan 015 §4 a revised proposed an ICES-coded rule from Claude's read-only study of 2026-10-23. It is to be
+redrawn in Icelandic terms: gear and target from `gid_used`; the mesh from the regulation where it fixes the class
+(a1, answered: the recorded mesh a witness, disagreements listed), else the recorded mesh, the vessel's or fleet's
+usual one, or none; rigging (`tvo_veidarf`) and selection devices (grids, panels) as recorded. RDBES's code is a
+witness. Open: (a2) the target for the three gear codes that name none, Plógur, Flotvarpa and Gildra (dredges,
+pelagic trawl, traps): from the catch, or left unnamed. The practices ICES's lists leave out (twin and triple rigs,
+Nephrops panels, sea cucumber and urchin dredges, seaweed, diving; TODO 132 folded in) are kept as recorded here.
 
-**check:** the answers recorded in plan 015 §4 a; the datacall's fishing fixes carry `met6` and `met6_basis`, each fix
-in one outcome against the list the call names.
-
-## 132. Icelandic practice the official metier codes leave out (plan 015 §4 a)
-**status:** open · **needs: maintainer** — asks a3 and a4 of plan 015 §4 a: whether to ask ICES for codes, and what is
-delivered meanwhile · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised,
-`$FISHYDATA/archive/2026-10-metier6/README.md` §5
-
-The maintainer, 2026-10-23: the ICES lists are the official ones and "may not cover what is in practice in Iceland".
-Measured by Claude on the fishing fixes of 2009-2025, not checked by a person: twin trawls, recorded in `tvo_veidarf`
-on about 8.4 M (`OTT` is allowed, but the gear codes never give it); triple rigs on 147 k (`OTP` is not allowed in
-Iceland's areas); the Nephrops trawl's square-mesh panels of 200 mm or more on 3.08 M (no allowed 70-89 code with a
-panel); sea cucumber and sea urchin dredges, within 0.84 M dredge fixes (only `DRB_MOL`, `DRB_CRU` and `HMD_MOL` are
-allowed); seaweed harvesting (21 k) and diving (no code). The shrimp grid has one (`OTB_CRU_32-69_2_22`).
-`tvo_veidarf`'s coding (afli 0/1, fs the number of trawls) is read from the values, not confirmed.
-
-**check:** each practice has a code allowed in Iceland's areas (`icesVocab::getCodeDetail()`), or a decision says what
-is delivered for it and why.
+**check:** a2 answered; the fishing fixes carry the Icelandic metier and its basis, every fishing operation in one
+outcome; the operations where the recorded mesh disagrees with the regulation listed.
 
 ## 133. The legal mesh by gear and date, from the regulations themselves (`reference/gear`)
-**status:** open · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised (ask a5), TODO 131
+**status:** open · **see:** `curate/plans/015-datacall-on-the-curated-trail.md` §4 a revised (ask a5), TODO 131,
+decision 212 (the regulation's mesh first)
 
-The proposed metier rule takes the mesh class from the regulation where the regulation fixes one, and the values are
+The metier takes the mesh class from the regulation where the regulation fixes one (decision 212), and the values are
 constants in a study script: bottom trawl 135, Nephrops 80, shrimp 36 and Danish seine 135 mm, the last assumed from
 the records. They come from a model's summary of reglugerð 543/2002 on island.is; 964/2019 (shrimp) and 188/2020
 (Nephrops) returned 403 and were not read, and the seine's and the gillnets' regulations were not looked for. A dated

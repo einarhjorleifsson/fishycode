@@ -2,7 +2,8 @@
 
 **status:** proposal — nothing built; effort and catch per fix have been built since (decisions 101–102); §4 e-h
 answered 2026-10-23 (decision 202), a-d and i held for a metier study; §4 a revised from that study the same day (a
-rule proposed, asks a1-a5 open) · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
+rule proposed); a1 answered and the metier made Iceland's own, mapped to ICES's codes at delivery (decision 212), a2
+and the list held · **2026-10-14** · **see:** TODO 27b (8 folded in, decision 118), plans 002, 010 (§7), 013
 (`rb_assign_effort`, `rb_share_catch`), decision 095
 
 Drafted with AI assistance (Claude) on 2026-10-14, at the maintainer's request, from read-only checks of the code
@@ -178,6 +179,20 @@ fishing fix in 27.5.a.2; the target from the gear code alone.
   vocabulary's is live.
 - **a5.** A dated regulation table in `reference/gear` (gear, target, legal mesh, from, to, the regulation), and
   afli's codend mesh carried into `g_mesh` (or `gear_part`, plan 020).
+
+**Answered 2026-10-23** (decision 212, the maintainer's; TODO 132 folded into TODO 131):
+- **The metier is Iceland's own.** "Once we get to answering ICES datacalls we map the 'icelandic' metier system to
+  the icesVocab." The flow carries gear, target, mesh, rigging and devices as practised and recorded, each with its
+  basis (TODO 131). This plan's datacall maps them to ICES's codes when it is answered. So the rule above is redrawn:
+  steps 2 and 3 give the Icelandic metier; step 1 (RDBES's code) is a witness; step 4 (the narrowest allowed range in
+  the fix's area) is the mapping's. a3's rigs, grids and panels are kept as recorded, and their codes are the
+  mapping's.
+- **a1. The regulation first.** The recorded mesh is a witness, and the operations where it disagrees are listed.
+- **a4.** What is delivered where practice has no code, and whether to ask ICES, are decided with the mapping. Which
+  list decides is held ("needs further thought").
+- **a2** is held ("may need some further thought"). In Icelandic terms it concerns the three gear codes that name no
+  target: Plógur, Flotvarpa and Gildra.
+- **a5** stands as TODO 133.
 
 ## 5. Steps
 
