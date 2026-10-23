@@ -1,6 +1,7 @@
 # 020 — Gear detail and environment as tidy tables beside the fishing sample
 
-**status:** proposal — `gear_part` prototyped for fs_afladagbok in scratch, nothing in the pipeline changed ·
+**status:** proposal — `gear_part` prototyped for fs_afladagbok in scratch, nothing in the pipeline changed; §5 answered
+2026-10-23 (decision 210) ·
 **2026-10-15** · **see:** plan 019 (fs_afladagbok mined), plan 018 (the dumps), `docs/grammar.qmd` (field groups,
 sensor layer), decision 022 (depth in metres)
 

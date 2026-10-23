@@ -307,7 +307,7 @@ left of each is in the plan:
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
 ## 73. Plans 019 and 020: the fs_afladagbok tables, gear detail and environment
-**status:** open · **needs: maintainer** — plan 019 §6 asks 1-7, plan 020 §5 questions 1-6 · **see:**
+**status:** open (asks answered 2026-10-23, decision 210; the notes study running) · **see:**
 `curate/plans/019-fs-afladagbok-mined.md`, `curate/plans/020-gear-part-and-environment.md`
 
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
@@ -332,21 +332,6 @@ nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87
 2004), and whether those are copies is unknown.
 
 **check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
-
-## 79. Every source station and trip accounted for in the logbook merge (plan 024)
-**status:** open · coded and checked on a scratch store, built with the next logbook rebuild · **see:** decision 194,
-`curate/plans/024-logbook-station-fate.md`, plan 038 §8 step 1
-
-Coded and checked on a scratch store (decision 194; Claude's, not yet checked by a person). `curate/logbook.R` writes
-`curated/logbook/station_fate.parquet` (8,013,418 staging stations of afli, fs_afladagbok, adb and aflaskeyti) and
-`trip_fate.parquet` (2,175,609 trips), each with the rule that dropped it, and stops unless the account adds up. The
-whole weight is one function, `R/whole_weight.R`. The four logbook tables and `catch_by_species_station` come out
-identical to the store's. Not built, on the maintainer's word: the build is the next rebuild that touches the logbook
-(plan 037 phase 1). Until then `tar_outdated()` lists `logbook` and the 19 targets after it; build them together. The
-adapters' own drops come later, each its own ledger.
-
-**check:** both files in the store, built with that rebuild; the merge's invariants held in its log; plan 024 §2's
-counts (decision 194) recounted on it, with the differences explained; `docs/merge.qmd` renders its section.
 
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
 **status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,
@@ -790,7 +775,7 @@ the day (decision 083 (b): ramb needs an end or a duration); counted 2026-10-23 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
 
 ## 107. App-made fixed values left in the logbook times, static and towed gear
-**status:** open · **needs: maintainer** — the drafts' decisions · **see:** decision 157, TODO 103,
+**status:** open (decided 2026-10-23, decision 206) · **see:** decisions 157 and 206, TODO 103,
 `$FISHYDATA/archive/2026-10-time-offsets/`, `$FISHYDATA/archive/2026-10-time-offsets-towed/`
 
 Measured 2026-10-21 by Claude, read-only, in two side sessions (not yet checked by a person), each with a decision
@@ -844,8 +829,7 @@ the columns.
 describes, or a decision says why both stay.
 
 ## 112. The catch's disposition, code 159 'Gámur/Sigling' and agf's `afdrif`, carried to the trip (plan 036)
-**status:** open · **needs: maintainer** — plan 036's seven asks (§5), above all b (the 159 landing kept apart and
-joined to its trip, or folded into the home landing) · **see:** `curate/plans/036-catch-disposition.md`,
+**status:** open (asks answered 2026-10-23, decision 208: apart, joined through `trip_landing`) · **see:** `curate/plans/036-catch-disposition.md`,
 `$FISHYDATA/archive/2026-10-landing-disposition/`, TODO 81, plan 027, decision 031
 
 159 is not a port but what became of the catch: exported unprocessed in a container, or landed abroad (the maintainer,
@@ -954,10 +938,9 @@ For the sources' layer: decision 057's duration limit runs inside three adapters
 correction outside `curate/`, and fs_afladagbok's then blanks the recorded end time behind it (`duration_m_raw` keeps
 the span) (Claude's audit of 2026-10-23, not checked by a person).
 
-Next (§8, decision 191): step 1's instruments (TODO 79), then step 1b, `lid_map`'s lower bound lifted, which ends
-2007's double count on the fixes (coded, decision 203, built with the logbook chain); then `trip_reconciled`'s
-build with its multi-voyage fix (coded, decision 193: 16,184 trips spanned, 24,813 flagged; the command in the
-record) before its five readers switch.
+Built 2026-10-23 (decision 205): step 1's fate tables (TODO 79 closed), step 1b's bound (2007's double count gone,
+−998.7 kt) and the reconciled trip across voyages (decision 193). Next (§8, decision 191): §7.1's catch units, then the
+five readers of `trip_reconciled`.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
@@ -991,8 +974,7 @@ kilograms in one outcome per period (plan 039 §9); plan 007's questions 1 and 3
 parked or abandoned in its header.
 
 ## 124. What each column means, in its metadata: units, formats, precision and codes (plan 040)
-**status:** open · **needs: maintainer** — plan 040's asks b-f (§6; a answered, f implemented in its reversible form)
-· **see:** `curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, decision 188, TODO
+**status:** open (plan 040's asks answered 2026-10-23, decision 209) · **see:** `curate/plans/040-metadata-at-three-layers.md`, decision 176, `dump/oracle/meta/README.md`, decision 188, TODO
 110, plans 037-039
 
 Phase 1 is built (decision 176): the overlay `dump/oracle/meta/<schema>.yml`, merged by the dumper and by
@@ -1018,7 +1000,7 @@ Left by the overview's session of 2026-10-22.
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
-**status:** open · **needs: maintainer** — the representation below, and the AIS check's go · **see:**
+**status:** open (decided 2026-10-23, decision 207; the AIS check running) · **see:**
 `$FISHYDATA/archive/2026-10-afli-minutes60/README.md` (scripts 01-10), TODO 115 (from 108), 124, plan 040, decision 165,
 decision 180, `R/logbook_position.R`, `curate/corrections/afli_coords.yml`, `afli_end_longitude.yml`
 
@@ -1138,3 +1120,18 @@ table (gear, target, part, legal mesh, from, to, the regulation and its article)
 `regulation` basis cite its source over the years the datacall asks for.
 
 **check:** `reference/gear` holds the table with a source on every row, read by a person, and the metier rule reads it.
+
+## 134. Commercial sampling: samples from a trip or haul, and their measurements, in the grammar
+**status:** open · **see:** decision 210 (plan 019 ask 4), `docs/grammar.qmd` (observation, sample), TODO 127,
+`raw/oracle/biota/`, `raw/oracle/channel/`, `raw/oracle/rdbes/` (`sample`, `biological_variable`,
+`frequency_measure`)
+
+The maintainer, 2026-10-23: following the grammar for protected bycatch (every measure the source holds) opens a
+pending step, commercial sampling: a sample taken from a trip or haul and then measured (lengths, and more). MFRI's
+samples are dumped (biota, channel, and its RDBES upload tables), and the logbook notes name samples for MFRI
+("prufa", "hafróprufa", "sýni"; decision 210's notes study links them). Nothing is measured yet; a plan comes when the
+item is taken up.
+
+**check:** a plan that maps the samples and their measurements to the grammar's tables and links each sample to its
+trip, haul or landing, or the item parked.
+
