@@ -1,32 +1,40 @@
 id: catch_landing_contradicted
-title: logged catch the trip's landing contradicts (more than 10 times what the trip landed of the species, and at least 1 t more), flagged and kept on the fixes, marked
-status: built 2026-10-23 (plan 038 §8 step 1c; decision 216)
+title: logged catch the landings contradict (more than 10 times the trip's landing of the species, or with no landing the largest landing of the species or of the vessel, and at least 1 t more), flagged and kept on the fixes, marked
+status: rule 1 built 2026-10-23 (decision 216); rule 2 coded 2026-10-23, built with the complete rebuild (decision 217); plan 038 §8 step 1c
 applies_to:
   - curated/logbook/catch_flag.parquet   # one row per flagged (station, species): the flag, never a corrected value
   - curated/ais/catch                    # kg_flagged: the flagged kilograms of each row, shared as the kilograms are
 affects_rows: >-
   Measured 2026-10-23 on the store as built that day (Claude, not checked by a person;
   $FISHYDATA/archive/2026-10-todo126-ais-check/14_catch_vs_landing.R): 8,703 (trip, species) pairs, 294 kt of the
-  50,954 kt logged. Their stations and the kilograms on the fixes, as built: decision 216.
+  50,954 kt logged. Their stations and the kilograms on the fixes, as built: decision 216. Rule 2, measured the same
+  day ($FISHYDATA/archive/2026-10-todo126-ais-check/17*.R): 28 of the 684,246 (trip, species) pairs with no linked
+  landing, 22.3 kt of their 4,861 kt; decision 217.
 implementation: curate/corrections/catch_landing_contradicted.R (target catch_landing_contradicted); carried by curate/ais_catch.R
 discovered: >-
   Decision 210 (item 3) asked for implausible catch to be flagged against the trip's landing; decision 214 found its
   first cases (STOKKUR's 6 net and line stations, 23.1 kt, 11.3 kt of it on fixes); the maintainer chose the margin
-  ("follow the proposal", 2026-10-23) and that flagged catch stays on the fixes, marked.
+  ("follow the proposal", 2026-10-23) and that flagged catch stays on the fixes, marked; and for the trips with no
+  linked landing both witnesses (2026-10-23).
 
 defect: >-
-  A logbook entry's kilograms of a species far above what the trip landed of it: digits repeated or slipped
-  (11,000 t logged on a trip that landed 5.3 t), the wrong unit, a station entered twice under other keys.
+  A logbook entry's kilograms of a species far above what the trip landed of it, or with no landing above what any
+  vessel ever landed of the species or the vessel ever landed: digits repeated or slipped (9,999,999 kg of cod on a
+  trip that landed 4.2 t; 11,111 t of a species no landing has held more than 211 kg of), the wrong unit, a station
+  entered twice under other keys.
 
 rule: >-
   Per (logbook trip, species): the trip's logged kilograms of the species (duplicate twins left out, decision 094)
-  against what its landings linked through lid_map (with the landing's own schema) hold of it. The logbook's codes are
-  compared as the landings record them (830, herring of the Atlanto-Scandian stock, as 30; the stock is not compared
-  here). Flagged where the trip has a linked landing that holds some of the species, and the logged kilograms are more
-  than 10 times the landed and at least 1,000 kg more. Every station of the trip with the species is flagged. Catch
-  let go (negative codes) is never landed and never flagged. Not flagged here, to be judged otherwise: a trip with no
-  linked landing (the gear and species' own range), and a landing that holds none of the species (a crosswalk of the
-  logbook's codes to the landings' first).
+  against a witness, flagged where they are more than 10 times the witness and at least 1,000 kg more. Rule 1
+  (landing_contradicts): the trip has a landing linked through lid_map (with the landing's own schema) that holds
+  some of the species; the witness is what it holds. Rule 2 (largest_landing_exceeded): the trip has no linked
+  landing; the witnesses are the largest landing of the species by any vessel, any year and source, and the vessel's
+  own largest landing of all species where 50 landing records or more stand behind it and it weighs over 0; either
+  flags. The logbook's codes are compared as the landings record them (830, herring of the Atlanto-Scandian stock, as
+  30; the stock is not compared here). Every station of the trip with the species is flagged. Catch let go
+  (negative codes) is never landed and never flagged. Not flagged here: a linked landing that holds none of the
+  species (a crosswalk of the logbook's codes to the landings' first), and a species no landing has ever held
+  (999 among them).
 
 what_it_changes: >-
   Nothing is corrected or moved. The flagged kilograms stay on the fixes they are shared over; `curated/ais/catch`
@@ -35,5 +43,6 @@ what_it_changes: >-
 
 related:
   - curate/decisions/216-catch-the-landing-contradicts-flagged.md
+  - curate/decisions/217-catch-above-the-largest-landing-flagged.md
   - curate/decisions/214-logbook-records-typed-by-what-they-cover.md
   - curate/plans/038-the-logbook-flow-whole.md   # §8 step 1c

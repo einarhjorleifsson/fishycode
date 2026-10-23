@@ -950,7 +950,8 @@ as logbook stations in plan 041, parked (TODO 136). Decision 215: the main outpu
 events, the split the user's step with `fishing` and `fishing_flow` as presets; L5 and L6 rewritten for it (plan 038
 §6-§7), the work in its steps 1, 3 and 6. Step 1c built 2026-10-23 (decision 216): catch the trip's landing
 contradicts (over 10 times the landed, and 1 t more; 8,703 trip-species pairs, 294 kt) flagged, and carried onto
-the fixes as `kg_flagged`.
+the fixes as `kg_flagged`; rule 2 coded (decision 217), catch above the largest landing of
+its species or vessel on trips with no linked landing. Left in 1c: the landings that hold none of the species.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
@@ -1183,9 +1184,8 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
   cell); the stamped times set aside and flagged;
 - the voyage as their window in the flow, under both approaches; STOKKUR's 8.8 kt of net and line catch, today on no
   fix (6.7 kt) or the vessel's month (1.6 kt) under `fishing`, measured onto its trip;
-- decision 210's implausible-catch flag: built where the trip has a linked landing (decision 216), which
-  flags two of STOKKUR's six entry errors; the other four have no linked landing and wait for the gear and species'
-  own range (plan 038 §8 step 1c);
+- decision 210's implausible-catch flag: built where the trip has a linked landing (decision 216), two of
+  STOKKUR's six entry errors; the other four by rule 2 (decision 217, coded), on trips with no linked landing;
 - the tour app read with t4 = the spot time (decision 210's build);
 - the windows, fishing fixes and catch traced before and after.
 

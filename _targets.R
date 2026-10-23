@@ -710,8 +710,8 @@ list(
              fd_curated("logbook", "catch_by_species_trip.parquet"))
   }, format = "file"),
 
-  # Correction (curate/corrections/catch_landing_contradicted.yml): logged catch the trip's landing contradicts,
-  # flagged, never corrected (plan 038 §8 step 1c).
+  # Correction (curate/corrections/catch_landing_contradicted.yml): logged catch the landings contradict, flagged,
+  # never corrected (plan 038 §8 step 1c).
   tar_target(catch_landing_contradicted, {
     logbook; lid_map; landing
     produces("curate/corrections/catch_landing_contradicted.R",
