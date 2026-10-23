@@ -124,7 +124,7 @@ delivery and supersedes it, every synthesised window carries `win_basis`, and no
 `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
 ## 34. Trawl speed ranges near the coast: ask (1) of plan 012
-**status:** open · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
+**status:** blocked (the regulation and shoreline shapefiles, coming) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2k), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
 
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
 
@@ -138,8 +138,10 @@ The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen;
 **Answered 2026-10-23 (decision 201):** coastal trawling is permitted in places by regulation; tows are judged
 `expected` or `suspect` against `uv`'s dated regulation areas for their gear, measured first (what `uv` holds for bottom
 trawl, a dated layer, the tows scored), the layer also serving step 5; the gillnet floor is set from recorded hauls.
+Amended the same day: the layer waits for the proper regulation and shoreline shapefiles the maintainer says are coming
+(`uv`'s dated areas perhaps as their history); the gillnet floor is measured now.
 
-**check:** the dated layer built from `uv` and the tows flagged against it; the gillnet floor set from recorded hauls.
+**check:** the layer built from the shapefiles and the tows flagged against it; the gillnet floor set from recorded hauls.
 
 ---
 

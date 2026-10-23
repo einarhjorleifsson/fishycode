@@ -4,6 +4,10 @@
 asked by Claude (AI) in a status review of the repository. Nothing is measured or built yet; the facts about `uv` below
 were read the same day, read-only, from the dump.*
 
+*Amended later the same day: the maintainer says proper shapefiles of the regulation areas and the shoreline will be
+available soon. The layer is built from them when they come, not from `uv` now; `uv`'s dated areas may serve as the
+history the shapefiles lack. The judgement of coastal tows and the gillnet floor stand as chosen below.*
+
 ## Chosen
 
 - **Small vessels may tow a fish trawl near the coast in places, by regulation.** A coastal tow is judged against the
