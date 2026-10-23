@@ -956,7 +956,8 @@ correction outside `curate/`, and fs_afladagbok's then blanks the recorded end t
 the span) (Claude's audit of 2026-10-23, not checked by a person).
 
 Next (§8, decision 191): step 1's instruments (TODO 79), then step 1b, `lid_map`'s lower bound lifted, which ends
-2007's double count on the fixes; then `trip_reconciled`'s multi-voyage fix before its five readers switch.
+2007's double count on the fixes; then `trip_reconciled`'s build with its multi-voyage fix (coded, decision 193:
+16,184 trips spanned, 24,813 flagged; the command in the record) before its five readers switch.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 

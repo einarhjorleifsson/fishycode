@@ -642,9 +642,9 @@ list(
 
   # Every logbook trip's departure and return, time and port, from ranked witnesses: the AIS voyage, the logbook's own,
   # STK, the quota system's records, the phone calls, and for the return the landing (TODO 121, decisions 173, 174;
-  # ramb::rb_add_trip_time()).
+  # ramb::rb_add_trip_time()). The AIS witness spans the voyages the trip's stations lie in by their own times.
   tar_target(trip_reconciled, {
-    logbook; trip_voyage; lid_map; stk_voyage; quota_trip; phone_call; port
+    logbook; ais_voyage; trip_voyage; lid_map; stk_voyage; quota_trip; phone_call; port
     produces("curate/trip_reconciled.R",
              fd_curated("link", "trip_reconciled.parquet"))
   }, format = "file"),

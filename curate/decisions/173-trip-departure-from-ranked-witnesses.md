@@ -14,7 +14,8 @@ decision 172.*
 decision 180. The `ais` witness is the one voyage `trip_voyage` links, the one the trip overlaps most: for a trip that
 spans several voyages, its AIS `T1` (and `T2`, decision 174) are that voyage's bounds, not the trip's. Decision 155
 counted 13,084 trips with timed stations in two or more voyages. The many-to-many link is TODO 90 (plan 031 ask f)
-and the first item of TODO 101.*
+and the first item of TODO 101. Fixed in code by decision 193, not yet built: the witness spans the voyages the trip's
+stations lie in.*
 
 ## Built in code
 

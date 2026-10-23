@@ -230,10 +230,12 @@ landing last for `T2`.
 - what reads the result (§5.1);
 - the quota regime and gear on the trips (ask d);
 - adb's `pid` (ask f);
-- `trip_voyage` gives a trip one voyage, so the AIS witness of a trip that spans voyages is one voyage's bounds. That
-  is TODO 90 (plan 031 ask f, many-to-many) and the first item of TODO 101. On such a trip `T1` and `T2` from AIS are
-  the bounds of the one linked voyage, not the trip's; decision 155 counted 13,084 trips with timed stations in two or
-  more voyages (noted 2026-10-23 from Claude's audit, not checked by a person; also in decisions 173 and 174);
+- the AIS witness of a trip that spans voyages: **coded 2026-10-23, not built** (decision 193, ask b; Claude's, not
+  checked by a person). It was the one voyage `trip_voyage` links, so on such a trip `T1` and `T2` from AIS were one
+  voyage's bounds. Now it is the span of the voyages the trip's stations lie in by their own times (voyage_gear's link):
+  16,184 trips spanned, and 24,813 flagged `overlap` (the span holds another trip; the linked voyage kept). On the
+  spanned trips the departure median against the logbook's own falls from 430-438 to 19-22 min. Left: the build, by
+  name, and the flagged trips, which wait for TODO 102's classes; the many-to-many link stays TODO 90 (plan 031 ask f);
 - TODO 117 (what the voyages take from STK's events).
 
 ### 5.1 What reads the reconciled trip (proposed)
@@ -332,9 +334,9 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
 1b. **The link's lower bound lifted** (from step 3, ask g, decision 191): `lid_map` reads landings from the start of
    LODS, not 2007-09-01, so January-August 2007's landings stop being shared on the fixes beside their trips' logged
    catch. Rebuilt by name from `lid_map`, the catch traced kilogram by kilogram.
-2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b); then §5.1's readers a-e, each measured on
-   a scratch store, then built (asks b, c). adb's `pid` goes into the
-   merge (ask f), and the quota regime and gear onto the trips (ask d).
+2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; coded, decision 193, the build left); then
+   §5.1's readers a-e, each measured on a scratch store, then built (asks b, c). adb's `pid` goes into the merge (ask
+   f), and the quota regime and gear onto the trips (ask d).
 3. **The link:** with plan 039, `withdrawn` and `lid_map` keyed on (`.lid`, `schema_land`) (TODO 123); the month step
    before LODS (§4). Then plan 027's `trip_landing` on the reconciled trips
    (TODO 81), plan 036's disposition through it (TODO 112), and `ais_catch.R` reading it.

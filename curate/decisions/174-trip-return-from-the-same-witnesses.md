@@ -8,7 +8,8 @@ scratch run are Claude's and have not been checked by a person. Not built. Exten
 *Amended 2026-10-23, from Claude's audit of the decision records (not yet checked by a person). Built 2026-10-22 in
 decision 180. As at the departure (decision 173), the `ais` witness is the one voyage `trip_voyage` links: for a trip
 that spans several voyages, its AIS `T2` is that voyage's end, not the trip's. Decision 155 counted 13,084 trips with
-timed stations in two or more voyages (TODO 90, TODO 101).*
+timed stations in two or more voyages (TODO 90, TODO 101). Fixed in code by decision 193, not yet built: the witness
+spans the voyages the trip's stations lie in.*
 
 ## Why one approach
 
