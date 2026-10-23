@@ -1030,8 +1030,8 @@ Left:
 app and period; the per-app check built.
 
 ## 127. Names in the grammar and in ramb: the review of every noun and act (pending)
-**status:** open · **needs: maintainer** — the review, rule by rule and item by item · **see:**
-`docs/grammar.qmd` (section "Names under review", and the parts of "Resolution and provenance" drafted 2026-10-22),
+**status:** parked (the maintainer, 2026-10-23: "lets hold this TODO") · **needs: maintainer** — the review, rule by
+rule and item by item · **see:** `docs/grammar.qmd` (section "Names under review", and the parts of "Resolution and provenance" drafted 2026-10-22),
 `docs/one_flow.qmd`, ramb's `AGENTS.md` (naming), decision 147
 
 Drafted 2026-10-22 with the maintainer, who asked for a review of every process, abstract and independent of the data,
