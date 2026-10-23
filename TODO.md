@@ -176,16 +176,17 @@ Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** in progress · **needs: maintainer** — decision 115's `vessel_ais_link` is built (last 2026-10-18 at e2f741f,
-decision 144: 655,183 rows, with its review list of 3,030 rows), so next is the first vid allocation,
-`allocate_vids(dry_run = FALSE)`, and its readings confirmed; the Directorate of Fisheries asked about MMSI (§6 d);
-PAME's answer on ASTD (asked 2026-10-17, §6 h) · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
+**status:** in progress · **needs: maintainer** — the go for the crosswalk's rebuild and the first
+`allocate_vids(dry_run = FALSE)` once the fixes below are in; the Directorate of Fisheries (MMSI, §6 d) and PAME (ASTD,
+§6 h) have not answered · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
 plans 008, 016 and 017, decisions 114-115 and 118, TODO 15 and 25
 
 The maintainer asked on 2026-10-15 for a registry of every vessel the pings carry, not only the Icelandic ones. Plan 021
 proposes one integer `vid` per hull and a crosswalk from each feed identity to it. Its asks are answered (a revised and
 c amended 2026-10-17, i answered the same day: a vid is kept when a hull's key changes). Step 1 is built (decision 114),
-steps 2-4 are code checked in scratch (decision 115).
+steps 2-4 are code (decision 115), the crosswalk built 2026-10-18 (decision 144). The maintainer, 2026-10-23: decision
+115's readings 1-6 and 8 confirmed; a dominant IMO (99 % of a `two_imos` segment's IMO pings) takes it by rule (176 of
+636); before allocating, the 27 MMSIs below get their linked hull's vid and TODO 129's open end is fixed, then a dry run.
 
 The 52 links in `overrides/vessel_ais_link.csv` for 50 of the 59 `foreign_vid_candidate` MMSIs were confirmed on
 2026-10-17; 9 stay held. Left from that review: 19 of them (class B) rest on the hand-made STK call-sign sheet
@@ -198,10 +199,9 @@ decision 161 widens this to 42 call signs, each held by 2-3 foreign landing vids
 (`sources/stk/convert.R:31`, `curate/ais_ping_union.R:78`), the other feeds by the MMSI periods
 (`curate/ais_ping_union.R:62`). A foreign hull reaches the voyages once the union reads the crosswalk (plan 021 step 6);
 `ports_all` already holds the ports abroad. Also open (maintainer): plan 017's asks e (gear for a foreign voyage with
-no landing in Iceland) and f (ports abroad), and whether a dominant IMO (99 % of the IMO pings, 176 of the 636
-`two_imos` segments) may be linked by rule rather than one override each (decision 115).
+no landing in Iceland) and f (ports abroad).
 
-Before the first allocation: `R/trail_sql.R:122` marks every fix of a vid >= 100000 as leisure (basis `skb`, decision
+Before the union reads the crosswalk (step 6): `R/trail_sql.R:122` marks every fix of a vid >= 100000 as leisure (basis `skb`, decision
 119), so foreign vids 200000 + n would be read as SKB boats. And `curated/check/ais_key_foreign_candidates.parquet`
 (decisions 039-043, run by hand) was built 2026-09-27 and never since, so it predates the key of decision 128
 (Claude's audit of 2026-10-23, not checked by a person). **From TODO 129** (decision 185): `vessel_ais_link.R` copies

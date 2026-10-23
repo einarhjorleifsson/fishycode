@@ -2,8 +2,9 @@
 
 **status:** partly built — §6 answered 2026-10-16 ((a) revised 2026-10-17), step 1 built (decision 114), steps 2-4 code,
 checked in scratch (decision 115), §6 c amended 2026-10-17, §6 i answered 2026-10-17; 52 links confirmed
-(`overrides/vessel_ais_link.csv`); decision 115's crosswalk built (2026-10-18, decision 144); the first vid allocation and
-decision 115's readings wait on the maintainer (TODO 65); the STK units with no vid measured (decision 161) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 65 and 25 (17, 22 and 63 closed or folded); decisions
+(`overrides/vessel_ais_link.csv`); decision 115's crosswalk built (2026-10-18, decision 144); decision 115's readings
+confirmed and a dominant IMO linked by rule (2026-10-23); the first vid allocation waits on two crosswalk fixes and the
+maintainer's go (TODO 65); the STK units with no vid measured (decision 161) · **2026-10-15** · **see:** plans 008, 016, 017; TODO 65 and 25 (17, 22 and 63 closed or folded); decisions
 015, 036–043, 067, 107; `curate/corrections/astd_2026_imo_only.yml`
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request: "a comprehensive vessel registry for

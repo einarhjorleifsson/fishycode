@@ -7,6 +7,13 @@ before that allocation, since a vid given cannot be taken back. Revised the same
 clean handovers are cut at the ping boundary and only overlaps held (§6 c amended), and what a vid does when a hull's
 key changes is put to the maintainer as an open ask (§6 i), not decided here.*
 
+*Confirmed 2026-10-23 by the maintainer, in a status review run by Claude: Claude's readings 1-6 and 8 below stand as
+the crosswalk's rules. Also answered: in an overlapping `two_imos` segment, an IMO with 99 % or more of the segment's
+IMO pings takes it by rule (176 of the 636), the rest stay held. Before the first allocation the crosswalk is fixed for
+the 27 MMSIs that carry the IMO of a hull already linked to a foreign vid (reading 4 extended to the reviewed foreign
+links) and for TODO 129's open STK end, rebuilt, and dry-run again (TODO 65). The Directorate of Fisheries and PAME had
+not answered.*
+
 ## What was built
 
 | step | code | output | time on the data |
