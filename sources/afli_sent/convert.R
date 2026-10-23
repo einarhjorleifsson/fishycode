@@ -3,7 +3,7 @@
 # Input:  raw/oracle/fs_afli/afladagb_xml_mottaka.parquet   (the messages: id, sending, snt, gerd)
 #         raw/oracle/fs_afli/rafr_stofn.parquet             (visir, each record's message keys, and eytt)
 #         curated/reference/{gear,gear_window,port}.parquet
-# Output: staging/afli_sent/{record,trip,station,fishing_sample,catch,landing_confirmation}.parquet
+# Output: staging/afli_sent/{record,trip,station,fishing_sample,catch,landing_confirmation,note}.parquet
 #
 # One layer only (plan 037 §4): every value here is what an app sent, and nothing is taken from the loaded
 # (rafr_*) or edited (afli.*) layers. rafr_stofn is read for the key alone, so that .sid is the edited layer's
@@ -12,8 +12,10 @@
 # adapter chooses between nothing: the units of the depths and the other choices are curate/'s.
 #
 # The messages hold the skipper's kennitala and name, the software key and free text (decision 159; MFRI's data
-# policy). Elements are read by name only, and none of those is read: no output or printed line holds them. DuckDB's
-# spill directory may hold the raw text while the queries run; it is under $FISHYDATA and removed at the end.
+# policy). Elements are read by name only. The kennitala, the name and the key are not read. The free text of a
+# record (STOFN/ATHS_TEXTI, HRINGNOT/ATHS) goes to note.parquet alone, as entered (decision 213; decision 210: the
+# text stays in staging), and no printed line holds it. DuckDB's spill directory may hold the raw text while the
+# queries run; it is under $FISHYDATA and removed at the end.
 #
 # A record (FAERSLA) is sent again when it is changed (a higher VERSION) and sometimes again unchanged, in another
 # message. Every sent copy is kept in record.parquet with what became of it; the latest version of each record is
@@ -101,6 +103,7 @@ fields <- c(
   st_lok_lengd  = at(st, "STADSETNING_LOK", "LENGD"),
   londun_dags   = at(st, "LONDUN", "DAGSETNING"),
   londun_hofn   = at(st, "LONDUN", "HOFN"),
+  aths_texti    = el(st, "ATHS_TEXTI"),
   # towed gear (BOTNVARPA, FLOTVARPA, HUMARVARPA, RAEKJUVARPA, DRAGNOT, PLOGUR)
   i_botni       = el(g, "I_BOTNI"),
   togtimi       = el(g, "TOGTIMI"),
@@ -142,7 +145,8 @@ fields <- c(
   kast_nr       = el(g, "KAST_NR"),
   not_l         = at(g, "NOT", "L_NOTAR"),
   not_d         = at(g, "NOT", "D_NOTAR"),
-  not_moskvi    = at(g, "NOT", "MOSKVI"))
+  not_moskvi    = at(g, "NOT", "MOSKVI"),
+  hringnot_aths = el(g, "ATHS"))
 dbExecute(con, sprintf("CREATE TEMP TABLE xt AS
   WITH m AS (SELECT id, regexp_extract_all(sending, '%s') fl FROM read_parquet('%s')),
        f AS (SELECT id::INTEGER mid, unnest(fl) fx, generate_subscripts(fl, 1)::INTEGER rec FROM m),
@@ -172,7 +176,8 @@ casts <- c(visir_sent = dbl, version = int, record_closed = tms, edited_after_cl
            fj_bjoda = num, beita = int, fj_kroka_el = num, faeri_fj_kroka = num, fjoldi = num, net_haed = num,
            net_lengd = num, net_moskvi = num, fj_tap_neta = num, krokar_gerd = int, krokar_staerd = int,
            handbeitt = lgl, logn_hefst = tms, drattur_hefst = tms, drattur_lykur = tms, upphaf_veida = tms,
-           lok_veida = tms, klukkan = int, kast_nr = int, not_l = num, not_d = num, not_moskvi = num)
+           lok_veida = tms, klukkan = int, kast_nr = int, not_l = num, not_d = num, not_moskvi = num,
+           aths_texti = function(x) x, hringnot_aths = function(x) x)
 stopifnot(setequal(names(casts), names(fields)))
 dbExecute(con, sprintf("CREATE TEMP TABLE x AS
   SELECT xt.mid, xt.rec, xt.mid * 1000 + xt.rec xid, m.vid, m.received, m.test_message, m.app, m.app_version,
@@ -557,6 +562,16 @@ record <- q("SELECT * FROM fate") |>
             .xid_staged = xid_staged, version_staged,
             version_loaded, staged, outcome, schema = SCHEMA, layer = LAYER, app, app_version)
 
+# Note ------------------------------------------------------------------------
+# The staged record's free text, one row per element sent (decision 213); curate/station_note.R classifies it.
+note <- rec |>
+  select(.sid, .xid, STOFN_ATHS_TEXTI = aths_texti, HRINGNOT_ATHS = hringnot_aths) |>
+  pivot_longer(c(STOFN_ATHS_TEXTI, HRINGNOT_ATHS), names_to = "note_field", values_to = "note") |>
+  filter(!is.na(note)) |>
+  mutate(note_field = sub("_", "/", note_field), schema = SCHEMA, layer = LAYER) |>
+  select(.sid, .xid, schema, layer, note_field, note) |>
+  arrange(.sid, note_field)
+
 # Report ----------------------------------------------------------------------
 rafr <- q("SELECT count(*) n_rafr, count(*) FILTER (WHERE visir IN (SELECT visir FROM lm)) found,
               count(*) FILTER (WHERE visir IN (SELECT ident FROM sc)) staged_sid FROM rs")
@@ -589,6 +604,8 @@ print(fishing_sample |> count(section, gear) |>
                !(section == "LINA" & gear == "LLS") & !(section == "NET" & gear %in% c("GNS", "GND")) &
                !(section == "FAERI" & gear == "LHM") & !(section == "HRINGNOT" & gear == "PS")), n = 40)
 cat("\nlanding confirmations:", nrow(landing_confirmation), "\n")
+cat("notes (free text, counted only):", nrow(note), "\n")
+print(note |> count(note_field))
 
 # Export -----------------------------------------------------------------------
 stopifnot(!anyDuplicated(station$.sid), !anyDuplicated(station$.xid), !anyDuplicated(fishing_sample$.sid),
@@ -600,3 +617,4 @@ station              |> duckdbfs::write_dataset(OUT("station.parquet"))
 fishing_sample       |> duckdbfs::write_dataset(OUT("fishing_sample.parquet"))
 catch                |> duckdbfs::write_dataset(OUT("catch.parquet"))
 landing_confirmation |> duckdbfs::write_dataset(OUT("landing_confirmation.parquet"))
+note                 |> duckdbfs::write_dataset(OUT("note.parquet"))

@@ -321,6 +321,7 @@ shrimp grid's bar spacing and the square-mesh window are folded away too; fs shr
 fs and adb nets a 10 mm placeholder. The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
 `$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
 vid found for 98 %; afli's 40,967 summary stations are logbook records left unread. **needs: maintainer** for its asks a-d.
+Built (decision 213): the notes in staging per source, their classes in `curated/logbook/station_note`.
 The ground-name gazetteer (plan 020 §6, README §3.6; 507 tight grounds, 122 in no MFRI list, `ops$sigfus.ornefni`
 included since its dump of 2026-10-23) is parked for a person's read of the names.
 

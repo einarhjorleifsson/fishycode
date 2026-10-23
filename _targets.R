@@ -442,7 +442,8 @@ list(
              fd_staging("afli_sent", "station.parquet"),
              fd_staging("afli_sent", "fishing_sample.parquet"),
              fd_staging("afli_sent", "catch.parquet"),
-             fd_staging("afli_sent", "landing_confirmation.parquet"))
+             fd_staging("afli_sent", "landing_confirmation.parquet"),
+             fd_staging("afli_sent", "note.parquet"))
   }, format = "file"),
 
   tar_target(fs_afladagbok_raw, c(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet"),
@@ -480,6 +481,26 @@ list(
              fd_staging("adb", "station.parquet"),
              fd_staging("adb", "fishing_sample.parquet"),
              fd_staging("adb", "catch.parquet"))
+  }, format = "file"),
+
+  # The logbooks' free-text notes as entered, one table per source (decision 213; the text stays in staging, decision
+  # 210); classified by station_note below.
+  tar_target(fs_afladagbok_note_raw, fd_raw("oracle", "fs_afladagbok", c("ws_veidi.parquet", "ws_medafli.parquet")),
+             format = "file"),
+  tar_target(fs_afladagbok_note, {
+    fs_afladagbok_note_raw
+    produces("sources/fs_afladagbok/note.R", fd_staging("fs_afladagbok", "note.parquet"))
+  }, format = "file"),
+  tar_target(afli_note_raw, c(unlist(lapply(c("afli", "fs_afli"), \(s)
+                                fd_raw("oracle", s, paste0(c("stofn", "hringn", "medafli", "spendyr"), ".parquet")))),
+                              fd_raw("oracle", "afli", "grasl_sokn.parquet")), format = "file"),
+  tar_target(afli_note, {
+    afli_note_raw
+    produces("sources/afli/note.R", fd_staging("afli", "note.parquet"))
+  }, format = "file"),
+  tar_target(adb_note, {
+    adb_raw
+    produces("sources/adb/note.R", fd_staging("adb", "note.parquet"))
   }, format = "file"),
 
   # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
@@ -630,6 +651,12 @@ list(
              fd_curated("logbook", "catch.parquet"),
              fd_curated("logbook", "station_fate.parquet"),
              fd_curated("logbook", "trip_fate.parquet"))
+  }, format = "file"),
+
+  # Every logbook note classified (decision 213): class, tags and species, keyed on the station, without the text.
+  tar_target(station_note, {
+    fs_afladagbok_note; afli_note; adb_note; afli_sent; logbook
+    produces("curate/station_note.R", fd_curated("logbook", "station_note.parquet"))
   }, format = "file"),
 
   # L4 of the vessel-trail model: tie logbook trips to AIS port-to-port
