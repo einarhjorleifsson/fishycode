@@ -142,6 +142,21 @@ list(
     produces("reference/ports/port_code.R", fd_curated("reference", "port_code.parquet"))
   }, format = "file"),
 
+  # Every species code's names, FAO code and WoRMS id, from each list that holds the code (decision 182). species.R
+  # also reads the curated catch tables, for a check that every code resolves: not inputs.
+  tar_target(species_raw, c(fd_raw("oracle", "ufs", "fisktegundir.parquet"),
+                            fd_raw("oracle", "orri", c("fisktegundir.parquet", "fao_fisktegund_vorpun.parquet")),
+                            fd_raw("oracle", "taxon", c("species.parquet", "taxon.parquet")),
+                            fd_raw("oracle", "kvoti", "lods_fteg.parquet"),
+                            fd_raw("oracle", "afli", "fiskar.parquet"),
+                            fd_raw("oracle", "adb", "species.parquet"),
+                            fd_raw("oracle", "fs_ufs", c("landing_species.parquet", "fisktegundir.parquet")),
+                            fd_raw("oracle", "asfis", "asfis.parquet")), format = "file"),
+  tar_target(species, {
+    species_raw
+    produces("reference/species/species.R", fd_curated("reference", "species.parquet"))
+  }, format = "file"),
+
   # Geometry validation of the raw spatial layers. Its outputs go to
   # staging/aux_valid/; shapes.R then crops and buffers them into staging/aux/.
   # The two stages were separate directories in the old tree (data-raw/aux vs

@@ -121,3 +121,16 @@ tables:
           'O': ungutted
         details: |
           Evidence: Oracle's comment ("S = slægt, O = óslægt"). Empty on all but 172,539 rows (dump of 2026-10-16).
+  - name: fiskar
+    details: |
+      afli's species list, read by reference/species/species.R (decision 182). Its codes are the shared numbering but
+      for three of its own (-30, -31, -34: herring, capelin and blue whiting let go), and 445 is its own meaning
+      (Slitinn humar, Norway lobster broken; the other lists name a sea spider). afli's catch uses 999 and 0, which
+      this list does not hold.
+    columns:
+      - name: f_numer
+        label: Species code
+        type: number(id)
+        constraints: [primary_key]
+      - name: f_nafn
+        label: Icelandic name

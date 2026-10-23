@@ -1,0 +1,34 @@
+# ufs — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-23 by Claude (AI) for reference/species/species.R (decision 182), from the dump of 2026-10-17; not yet
+# checked by a person.
+$version: 0.1.0
+name: ufs
+tables:
+  - name: fisktegundir
+    details: |
+      Read by reference/species/species.R: the Directorate's list of landed species, 331 codes, first in the species
+      reference (decision 182). The landings (agf) code by it, and both they and the electronic logbook
+      (fs_afladagbok) use codes only it holds (1128, 954). A second copy, fs_ufs.fisktegundir, differs on 31 rows, most
+      of them FAO codes this copy has and that one lacks.
+    constraints:
+      - assert: fao_kodi IS NULL OR LENGTH(fao_kodi) = 3
+        description: >-
+          An FAO 3-alpha code has three letters. Expected false on 1 row (PO, code 606, a code cut short), dump of
+          2026-10-17.
+    columns:
+      - name: fisktegund
+        label: Species code
+        type: number(id)
+        constraints: [primary_key]
+        details: The code the landings carry (agf's sid). The table's own key is id.
+      - name: heiti
+        label: Icelandic name
+      - name: enskt_heiti
+        label: English name
+      - name: latneskt_heiti
+        label: Scientific name
+        details: Mostly without author; the genus alone on some rows (Raja for 12 and 15).
+      - name: fao_kodi
+        label: FAO 3-alpha code
+        details: |
+          Filled on 102 rows. Two are not in the dumped ASFIS list (asfis.asfis of 2026-10-16): QGF (131) and PO (606).

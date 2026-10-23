@@ -29,31 +29,6 @@ does it twice.
 
 ---
 
-## 10. `reference/species` is an empty directory
-**status:** open
-**see:** `curate/decisions/019-the-check-layer-exists.md`
-
-This item's other half (`curated/check/`) closed in decision 019. What is left is the species reference.
-`reference/species/` is an empty directory and `curated/reference/` has no species table, so nothing in the sweep
-resolves a species code to a name. Every other reference domain — gear, ports, geo, vessels — has one.
-
-**Raw holds no proper list (measured 2026-10-17).** Each source has a partial list of its own: `afli/fiskar` (68
-codes), `adb/species` (410), `kvoti/lods_fteg` (125) and `kvoti/stadall_fisktegundir_v` (74, the only one with
-English and scientific names); `asfis/asfis` is FAO's list, with no Icelandic code. Together they resolve every
-`sid` in `curated/logbook/catch` and `curated/landing/catch` but 9 codes (11 by schema): afli's 999 (74,706 rows,
-143,586 t, 0.32 % of afli kg) and 0, lods' 0, agf's 665, 533, 278, 1128, fs_afladagbok's 665, 269, 954, 901 (almost
-no kg). Not checked: that the lists name a shared code alike, and an Icelandic code → FAO 3-alpha link (none in raw
-beyond the 74 scientific names).
-
-**Dumped 2026-10-17 (decisions 121-122), not yet read:** `taxon` (`tegund_v`: names, WoRMS id, FAO 3-alpha), `orri` whole
-(`fisktegundir`, `fao_fisktegund_vorpun`), `ufs.fisktegundir` (the landed species, with FAO code) and
-`fs_ufs.landing_species` (landings code to orri code, taxon number, WoRMS id and target assemblage).
-
-**check:** `curated/reference/species.parquet` exists and the catch tables' species
-codes all resolve against it.
-
----
-
 ## 15. The three-repo publication boundary
 **status:** open · **needs: maintainer** · **see:** `curate/plans/001-three-repo-publication-boundary.md`
 

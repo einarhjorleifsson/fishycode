@@ -1,0 +1,17 @@
+# asfis — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-23 by Claude (AI) for reference/species/species.R (decision 182), from the dump of 2026-10-16; not yet
+# checked by a person. reference/gear/mapping.R reads the table too.
+$version: 0.1.0
+name: asfis
+tables:
+  - name: asfis
+    details: |
+      FAO's ASFIS list of species. Read by reference/species/species.R (decision 182) for the valid FAO 3-alpha codes,
+      and for the code of a taxon.species row by its taxocode.
+    columns:
+      - name: code_3a
+        label: FAO 3-alpha code
+        constraints: [primary_key]
+      - name: taxocode
+        label: FAO taxonomic code
+        constraints: [required, unique]

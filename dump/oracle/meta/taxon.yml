@@ -1,0 +1,68 @@
+# taxon — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-23 by Claude (AI) for reference/species/species.R (decision 182), from the dump of 2026-10-17; not yet
+# checked by a person.
+$version: 0.1.0
+name: taxon
+tables:
+  - name: species
+    details: |
+      Read by reference/species/species.R: MFRI's species register, one row per species code, the numbering the
+      logbooks and landings share (decision 182). Its view tegund_v joins taxon for the WoRMS id and asfis.asfis for
+      the FAO 3-alpha code; species.R does the same from the tables.
+
+      Evidence: the view's text (raw/oracle/taxon/_code/all_views.parquet); decision 182.
+    columns:
+      - name: species_no
+        label: Species code
+        type: number(id)
+        constraints: [primary_key]
+        details: |
+          The code the logbooks and landings carry (sid). 645 codes are also in orri.fisktegundir and most are named
+          alike; some are another species (278: Brandháfur here, Bretahveðnir - 1 in ufs.fisktegundir; 613, 556).
+          adb's species_no is this number.
+          Evidence: adb.species's comment ("BIOTA species number"); decision 182.
+      - name: name
+        label: Icelandic name
+      - name: sci_name
+        label: Scientific name
+        details: At the rank taxon_rank gives, without author.
+      - name: eng_name
+        label: English name
+      - name: taxon_rank
+        label: Taxonomic rank
+        details: |
+          Species on 850 rows, Genus 138, Family 184, higher ranks the rest (dump of 2026-10-17). OrSpeciesder, on one
+          row, is a typing slip.
+      - name: taxon_unit_id
+        label: Taxon unit
+        type: number(id)
+        details: |
+          The row's unit in taxon.taxon, for the WoRMS id. Empty on 41 rows; 5 others have no row in taxon.taxon (dump
+          of 2026-10-17).
+      - name: taxocode
+        label: FAO taxonomic code
+        details: The key of asfis.asfis, for the FAO 3-alpha code. Filled on 453 rows, every one in asfis.asfis.
+  - name: taxon
+    columns:
+      - name: taxon_unit_id
+        type: number(id)
+        constraints: [primary_key]
+      - name: taxon_source
+        label: Source of the taxon record
+        type: enum
+        values:
+          'WORMS': World Register of Marine Species
+          'ITIS': Integrated Taxonomic Information System
+          'NATT': not established
+        todo: NATT (2 rows, dump of 2026-10-17) is not described in Oracle; its meaning is not established.
+      - name: taxon_source_id
+        label: Id in the source
+        type: number(id)
+        details: |
+          The AphiaID where taxon_source is WORMS, ITIS's TSN where it is ITIS. Empty on 2 WORMS rows (dump of
+          2026-10-17).
+          Evidence: Oracle's comment.
+relationships:
+  - join: species.taxon_unit_id = taxon.taxon_unit_id
+    cardinality: many-to-one
+    description: The species' taxon unit, with its source and its id there.

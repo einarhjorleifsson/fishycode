@@ -173,3 +173,20 @@ tables:
           Five values on the dump of 2026-10-16: 3 (5,776 rows, the app's default), 2.5, 2, 25 and 0.5. The view
           dredge_v took a foot as 0.3042 m, a garbled 0.3048 (decision 170).
           Evidence: fs_afladagbok's ws_plogur comments say "fet" (feet); decision 170. Oracle's comment names no unit.
+  - name: species
+    details: |
+      Read by reference/species/species.R (decision 182): the Directorate's species codes (id) mapped to MFRI's
+      (species_no), several to one (950 Rauðmagi and 951 Grásleppa to 48, 278 to 512, 901 to 55). adb's catch carries
+      species_no. A code's name in adb is the row whose id is the code, else the code's only row. id is not unique:
+      bycatch (catch_type BYCA) numbers its own from 1 (1 langreyður, mapped to 1001).
+      Evidence: Oracle's comments ("FS species number", "BIOTA species number").
+    columns:
+      - name: id
+        label: The Directorate's species code
+        type: number(id)
+      - name: name
+        label: Icelandic name
+      - name: species_no
+        label: Species code (MFRI)
+        type: number(id)
+        details: Empty on 14 rows, corals and sponges among them (dump of 2026-10-16).

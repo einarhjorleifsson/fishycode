@@ -4605,6 +4605,189 @@ tables:
             `type`.
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
+  - name: reference_species
+    source:
+      parquet: ../../fishydata/curated/reference/species.parquet
+    description: >
+      One row per species code (sid) of the logbooks and landings, and of every list that holds one: its Icelandic,
+      English and scientific names, FAO 3-alpha code and WoRMS id (reference/species/species.R, decision 182). Each
+      value is taken from the first list in a declared order (ufs.fisktegundir, orri.fisktegundir, taxon.species, ...)
+      whose record of the code means the same taxon as the code's anchor list; `<field>_layer` names the table,
+      `<field>_basis` how it was obtained, and `<field>_other` keeps what the other lists say where it differs. Every
+      sid in logbook_catch and landing_catch has a name or a `note` saying why not. adb's sid is MFRI's number
+      (taxon.species), the other systems' the Directorate's; the two agree on every code adb uses.
+      Built by Claude (AI-assisted), 2026-10-23; not yet checked by a person.
+    columns:
+      - name: sid
+        type: number
+        constraints: [primary_key]
+        range: [-34, 1730]
+        examples: [1, 30, 41, 278, 999]
+        description: >
+          Species code, as in logbook_catch and landing_catch. -30, -31 and -34 are afli's own (catch let go); 0 is
+          named by no list.
+      - name: name
+        type: string
+        examples: [Þorskur, Kolmunni, Geisladiskur, "'Annað'", Bretahveðnir - 1]
+        description: >
+          Icelandic name, as the list in name_layer records it. NA for 0 only.
+      - name: name_layer
+        type: enum
+        values: [ufs.fisktegundir, orri.fisktegundir, taxon.species, kvoti.lods_fteg, afli.fiskar, adb.species,
+                 fs_ufs.fisktegundir]
+        description: >
+          The list the name is from; the order of the values is the order the lists are taken in. The first list
+          holding the code is the code's anchor: it says which taxon the code means.
+      - name: name_basis
+        type: enum
+        values: [recorded, none]
+        description: >
+          "recorded" (the list holds it for the code), "none" (no list does).
+      - name: name_other
+        type: string
+        examples: ["orri.fisktegundir: Brandháfur; taxon.species: Brandháfur", "taxon.species: Steinkórallar"]
+        description: >
+          The other lists' names for the code that do not agree with `name` ("<schema>.<table>: <name>", "; "
+          between). Names agree when they share a part ("A / B", "A, B") ignoring case, accents and rank words
+          (ætt, ættkvísl, ógreindur), are two letters apart, or one abbreviates the other.
+      - name: name_differs
+        type: boolean
+        description: >
+          name_other is not empty: the lists name the code differently.
+      - name: name_en
+        type: string
+        examples: [Cod, Blue whiting, Black dogfish, Sea belt, hooded seal]
+        description: >
+          English name, as recorded (case varies).
+      - name: name_en_layer
+        type: enum
+        values: [ufs.fisktegundir, orri.fisktegundir, taxon.species, fs_ufs.landing_species, fs_ufs.fisktegundir]
+        description: >
+          The list the English name is from, in the order taken.
+      - name: name_en_basis
+        type: enum
+        values: [recorded, none]
+        description: >
+          As name_basis.
+      - name: name_en_other
+        type: string
+        examples: ["fs_ufs.fisktegundir: Grey gurnard", "orri.fisktegundir: Iceland cyprine; taxon.species: Iceland cyprine"]
+        description: >
+          The other lists' English names that do not agree with name_en, as name_other.
+      - name: name_en_differs
+        type: boolean
+        description: >
+          name_en_other is not empty.
+      - name: name_sci
+        type: string
+        examples: [Gadus morhua, Micromesistius poutassou, Macrouridae, Thysanoessa, Sebastes sp.]
+        description: >
+          Scientific name, at the rank the list gives (species, genus, family or higher); with its author where it
+          comes from orri.fisktegundir.
+      - name: name_sci_layer
+        type: enum
+        values: [taxon.species, orri.fisktegundir, ufs.fisktegundir, fs_ufs.landing_species, fs_ufs.fisktegundir]
+        description: >
+          The list the scientific name is from, in the order taken: taxon.species first, whose names are checked
+          against WoRMS.
+      - name: name_sci_basis
+        type: enum
+        values: [recorded, none]
+        description: >
+          As name_basis.
+      - name: name_sci_other
+        type: string
+        examples: ["ufs.fisktegundir: Raja; fs_ufs.fisktegundir: Raja", "fs_ufs.fisktegundir: Eutrigla gurnardus"]
+        description: >
+          The other lists' scientific names whose genus and epithet differ from name_sci's (authors and "sp."
+          ignored), as name_other.
+      - name: name_sci_differs
+        type: boolean
+        description: >
+          name_sci_other is not empty.
+      - name: fao_3a
+        type: string
+        examples: [COD, WHB, RTX, SAU, LQX]
+        description: >
+          FAO 3-alpha code, one in FAO's ASFIS list (asfis.asfis). A code that several FAO codes are folded into
+          (20, 55, 305 in orri.fao_fisktegund_vorpun) takes none of them.
+      - name: fao_3a_layer
+        type: enum
+        values: [ufs.fisktegundir, orri.fao_fisktegund_vorpun, asfis.asfis, fs_ufs.fisktegundir]
+        description: >
+          The table the code is from, in the order taken; asfis.asfis by taxon.species's taxocode for the code.
+      - name: fao_3a_basis
+        type: enum
+        values: [recorded, derived, none]
+        description: >
+          "recorded" (the list holds the FAO code for the species code), "derived" (asfis.asfis's code for the
+          taxocode taxon.species records), "none".
+      - name: fao_3a_other
+        type: string
+        examples: ["orri.fao_fisktegund_vorpun: RED", "ufs.fisktegundir: QGF (not in ASFIS)"]
+        description: >
+          The other tables' FAO codes for the species code, where they differ; "(not in ASFIS)" marks one ASFIS does
+          not hold, which is never taken.
+      - name: fao_3a_differs
+        type: boolean
+        description: >
+          fao_3a_other is not empty.
+      - name: worms_id
+        type: number
+        range: [51, 1434803]
+        examples: [126436, 126439, 107276, 110679, 126392]
+        description: >
+          WoRMS AphiaID of the taxon.
+      - name: worms_id_layer
+        type: enum
+        values: [fs_ufs.landing_species, taxon.taxon]
+        description: >
+          The table the id is from, in the order taken; taxon.taxon by taxon.species's taxon unit for the code.
+      - name: worms_id_basis
+        type: enum
+        values: [recorded, derived, none]
+        description: >
+          "recorded" (fs_ufs.landing_species holds it for the code), "derived" (taxon.taxon's id for the unit
+          taxon.species records), "none".
+      - name: worms_id_other
+        type: string
+        examples: ["taxon.taxon: 140111", "fs_ufs.landing_species: 126436"]
+        description: >
+          The other tables' ids where they differ or were not taken, as name_other.
+      - name: worms_id_differs
+        type: boolean
+        description: >
+          worms_id_other is not empty.
+      - name: taxon_rank
+        type: string
+        examples: [Species, Genus, Family, Order, Class]
+        description: >
+          The rank of taxon.species's record, where it means the anchor's taxon. One value, OrSpeciesder, is the
+          register's typing slip.
+      - name: target_assemblage
+        type: enum
+        values: [ANA, CAT, CEP, CRU, DEF, DWF, DWS, LPF, MAM, MIS, MOL, NK, SPF, SWD]
+        description: >
+          The target assemblage fs_ufs.landing_species gives the code (ICES's codes and some of its own; labels in
+          dump/oracle/meta/fs_ufs.yml).
+      - name: lists
+        type: string
+        examples: [ufs orri taxon landing_species fs_ufs, orri, afli, taxon, ufs fs_ufs]
+        description: >
+          The lists that hold the code: ufs, orri, taxon, lods, afli, adb, landing_species, fs_ufs.
+      - name: lists_unmatched
+        type: string
+        examples: [orri taxon, taxon, afli, adb, landing_species]
+        description: >
+          The lists whose record of the code could not be matched to the anchor's taxon (another species, or a
+          catch-all in other words): their values are in the `_other` columns, never taken. Not a verdict: a person
+          has not checked them.
+      - name: note
+        type: string
+        examples: ["No list names it: a species not entered (afli, lods).", "Bleikja (Arctic char): named by ufs only."]
+        description: >
+          Why a code is declared: named by no list (0), afli's own codes (-30, -31, -34, 999, 445), codes the lists
+          mean differently (278, 953, 165, 901), and the codes TODO 10 found unnamed (665, 533, 269, 1128, 954).
   - name: vessel
     source:
       parquet: ../../fishydata/curated/vessel/vessel.parquet
@@ -6330,6 +6513,10 @@ relationships:
   - join: landing_landings.vid = vessel.vid
     cardinality: many-to-one
   - join: vessel_ais_key.vid = vessel.vid
+    cardinality: many-to-one
+  - join: logbook_catch.sid = reference_species.sid
+    cardinality: many-to-one
+  - join: landing_catch.sid = reference_species.sid
     cardinality: many-to-one
 
   # Every relationship below this line is real (each join key exists and is

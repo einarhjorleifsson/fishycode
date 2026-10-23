@@ -151,6 +151,20 @@ tables:
     columns:
       - name: veidisvaedi
         constraints: [primary_key]
+  - name: lods_fteg
+    details: |
+      lods' species list, read whole by reference/species/species.R (decision 182); the view lods_fteg_v keeps the rows
+      shown on the web (birting_vefur = 1).
+      Evidence: the view's text (raw/oracle/kvoti/_code/all_views.parquet).
+    columns:
+      - name: fisktegund
+        label: Species code
+        type: number(id)
+        constraints: [primary_key]
+        details: lods' landings carry it as fteg. lods also uses 0, which no list holds.
+      - name: heiti
+        label: Icelandic name
+        details: Abbreviated on some rows (Annar flatf.); 953 is Skötuselur 2 here, Langhali in ufs.fisktegundir.
 relationships:
   - join: lods_slaegt.gerd = gerd.gerd
     cardinality: many-to-one

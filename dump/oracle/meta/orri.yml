@@ -1,0 +1,46 @@
+# orri — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-23 by Claude (AI) for reference/species/species.R (decision 182), from the dump of 2026-10-17; not yet
+# checked by a person. The gear tables orri also holds come with their reader's overlay.
+$version: 0.1.0
+name: orri
+tables:
+  - name: fisktegundir
+    details: |
+      Read by reference/species/species.R: orri's species list, 686 codes, second to ufs.fisktegundir in the species
+      reference (decision 182). kvoti's view stadall_fisktegundir_v is 74 of its rows, chosen by a list of codes in the
+      view's text, so kvoti's standard list is read from this table.
+
+      Evidence: the view's text (raw/oracle/kvoti/_code/all_views.parquet).
+    columns:
+      - name: tegund
+        label: Species code
+        type: number(id)
+        constraints: [primary_key]
+        details: |
+          The code the logbooks and landings carry (sid).
+          Evidence: kvoti.lods_fteg's comment (its codes are the codes of this table).
+      - name: heiti
+        label: Icelandic name
+        details: |
+          Not a species name on some rows: 165 says not to use the number (use 125), 699 that a name is missing.
+      - name: enskt_heiti
+        label: English name
+      - name: visindaheiti
+        label: Scientific name
+        details: Often with its author; misspelt on some rows (Chionoecetes opillo, 720).
+  - name: fao_fisktegund_vorpun
+    details: |
+      FAO 3-alpha codes onto orri's codes, many to one: code 20 ('Ósundurliðað') takes 5 FAO codes, 55 ('Annað') 9 and
+      305 two. species.R takes an FAO code for a species code only where it is the code's only one.
+    columns:
+      - name: fao_species_code
+        label: FAO 3-alpha code
+        constraints: [primary_key]
+        details: MIX and VAP are not in the dumped ASFIS list (asfis.asfis of 2026-10-16).
+      - name: fisktegund
+        label: Species code
+        type: number(id)
+relationships:
+  - join: fao_fisktegund_vorpun.fisktegund = fisktegundir.tegund
+    cardinality: many-to-one
+    description: The orri code each FAO code is mapped onto.

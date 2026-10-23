@@ -326,8 +326,8 @@ Measured on this machine, with the files in the OS cache. A cold start was not m
   - A vessel-month since 2024: median 479 pings, max 20,637.
   - The months 2026-07 to 2026-10 hold 0.55-0.98 M pings, against 2.4-5.1 M in the months before, with as many
     vessels. The latest trail is the sparsest. The cause was not measured.
-- **Names for codes.** Gear and port come from `curated/reference/gear` and `port`. There is no species reference
-  (TODO 10), so species show as codes until it is built.
+- **Names for codes.** Gear and port come from `curated/reference/gear` and `port`. The species reference (decision 182)
+  is not read yet, so species show as codes.
 - **A vessel is chosen** by vid, name, call sign or MMSI. Names are for reading only; the app keys on `vid`.
 - **Beyond `asjo`'s layers (§4.2):** the latest trips' logbook stations, and the vessel's stays in port.
 

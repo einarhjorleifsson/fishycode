@@ -1,0 +1,82 @@
+# fs_ufs — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
+# Seeded 2026-10-23 by Claude (AI) for reference/species/species.R (decision 182), from the dump of 2026-10-17; not yet
+# checked by a person.
+$version: 0.1.0
+name: fs_ufs
+tables:
+  - name: fisktegundir
+    details: |
+      Read by reference/species/species.R, last in the species reference (decision 182): a copy of ufs.fisktegundir
+      that differs on 31 rows. Where they differ ufs has an FAO code this copy lacks, or this copy another value (45
+      Beitukóngur: Eutrigla gurnardus here, Buccinum undatum in ufs).
+    constraints:
+      - assert: fao_kodi IS NULL OR LENGTH(fao_kodi) = 3
+        description: >-
+          An FAO 3-alpha code has three letters. Expected false on 2 rows (48 for code 48, PO for 606), dump of
+          2026-10-17.
+    columns:
+      - name: fisktegund
+        label: Species code
+        type: number(id)
+        constraints: [primary_key]
+        details: The table's own key is id.
+      - name: heiti
+        label: Icelandic name
+      - name: enskt_heiti
+        label: English name
+      - name: latneskt_heiti
+        label: Scientific name
+      - name: fao_kodi
+        label: FAO 3-alpha code
+  - name: landing_species
+    details: |
+      Read by reference/species/species.R (decision 182): a species code's taxon in MFRI's register (taxon.species),
+      its WoRMS id and its ICES target assemblage. Two halves: 120 rows keyed by orri's code (fteg, source Landings)
+      and 49 by ufs's (fisktegund, source Logbook); 115 rows carry both, always equal, and 4 codes are in both halves
+      with the same values (dump of 2026-10-17). name, eng_name and sci_name are the register's for species_no, not
+      the code's own; 901 (platfiskur1) gives cod with no species_no.
+    columns:
+      - name: fteg
+        label: Species code (orri)
+        type: number(id)
+      - name: fisktegund
+        label: Species code (ufs)
+        type: number(id)
+      - name: name
+        label: Icelandic name in taxon.species
+      - name: eng_name
+        label: English name
+      - name: sci_name
+        label: Scientific name
+      - name: worms_id
+        label: WoRMS AphiaID
+        type: number(id)
+        details: |
+          Equal to taxon.taxon's id for the species_no on all 141 rows where both have one (dumps of 2026-10-17).
+      - name: target_assemblage
+        label: Target assemblage
+        type: enum
+        values:
+          'ANA': anadromous fish
+          'CAT': catadromous fish
+          'CEP': cephalopods
+          'CRU': crustaceans
+          'DEF': demersal fish
+          'DWF': deep-water fish (grenadiers, Greenland halibut, Greenland shark)
+          'DWS': deep-water species (here lanternfishes, pearlside and other mesopelagic fish)
+          'LPF': large pelagic fish
+          'MAM': marine mammals
+          'MIS': miscellaneous
+          'MOL': molluscs
+          'NK ': not known
+          'SPF': small pelagic fish
+          'SWD': seaweed
+        details: |
+          Labels by the species each code is given (dump of 2026-10-17): DEF, SPF, LPF, CRU, MOL, CEP, ANA, CAT and DWS
+          are ICES's assemblage codes; MAM, SWD, MIS, NK and DWF may be this table's own. NK is stored with a trailing
+          space on all 11 of its rows.
+        todo: Whether MAM, SWD, MIS, NK and DWF are in ICES's list is not checked.
+relationships:
+  - join: landing_species.fisktegund = fisktegundir.fisktegund
+    cardinality: many-to-one
+    description: The ufs code's row in this schema's copy of the Directorate's list.
