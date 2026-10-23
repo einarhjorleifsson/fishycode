@@ -351,8 +351,8 @@ here:
   `.gitignore` beside `_freeze/` and `_site/` (step 2).
 
 `fishyweb` gives its five real pages to the book (step 5). Its unpushed commit and untracked note are settled, and it
-is archived read-only, as `kaenugardr` was (decision 006). The open web page of plan 001 becomes the book. Plan 002 and
-TODO 16 are closed or redirected in that commit.
+is archived read-only, as `kaenugardr` was (decision 006). The open web page of plan 001 becomes the book. Plan 002 is
+closed or redirected in that commit (TODO 16 is in TODO 94 since decision 185).
 
 *Not chosen:* `fishyweb` renamed `fishybook`, as its own repo (the maintainer's first framing). It would have been a
 cleaner unit to publish, but the Icelandic part would have left the code it documents.
@@ -436,7 +436,7 @@ alongside step 1.
 5. **fishyweb's five pages in**: the data dictionary, species 445 and trawl footprint to the appendices; whacky positions to
    the pings chapter (generic, public data) and the appendices (the tracks); the AIS trip tutorial checked against ramb 2026.10.19.2's
    names, then into the trips chapter or dropped. Settle 27b35ff and the untracked note; archive fishyweb; close or redirect
-   plan 002 and TODO 16.
+   plan 002 (TODO 16 is in TODO 94 since decision 185).
 6. **ramb's seven articles into Part II**, one at a time, each deleted from ramb when its chapter lands; ramb's "Get
    started"; `distance-2026-10-12.qmd` to appendix B.
 7. **The 2026 meeting folder** moved under `$FISHYDATA/raw/external/ices/` with its provenance, after a checksum check

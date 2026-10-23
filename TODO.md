@@ -50,19 +50,6 @@ since `open_dataset()` on a layer directory of the sweep silently stacks unrelat
 
 ---
 
-## 16. `~/stasi/fishyweb` — port the last mile
-**status:** open · **see:** `curate/plans/002-the-last-mile.md`, plan 033 step 5, items 15 and 94
-
-`fishyweb` was to be the third repo of plan 001, keeping its 22 `ramb/` posts (maintainer, 2026-09-22). Since
-2026-10-19 its role passes to the book of plan 033: its five real pages move into `docs/`, its 26 outlines are dropped,
-and it is archived read-only. The disclosure rule this item waited on is answered (item 15, plan 033 ask c). The posts
-of `~/stasi/fishyweb_2026-09-24` are sources for chapters, read against ramb's present names.
-
-**check:** plan 033 step 5 done: fishyweb's five pages in the book and fishyweb archived; plan 002 closed or
-redirected.
-
----
-
 ## 24. Icelandic vessels that land fish but are never heard on AIS
 **status:** open · **see:** decisions 110, 117 and 118, `curate/checks/ais_key_landings.R`
 
@@ -87,9 +74,8 @@ found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_
 **status:** open · **needs: maintainer** — to confirm the drafted verdicts row by row · **see:** decision 128; plans
 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075
 
-The first redo is decision 128 (2026-10-17): SKB as vid 100000 + n, MMSIs broadcast after their window, the coverage
-fills and a boundary override for mid 108982; the rest waits for this one. For each list Claude drafts the witnesses and
-a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter `overrides/`:
+The first redo is decision 128 (2026-10-17); the rest waits for this one. For each list Claude drafts the witnesses
+and a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); confirmed rows enter `overrides/`:
 - the audit's 426 discrepancy rows on 254 mids, the 1,051 rows no witness reaches, and `ais_key_resolution`'s
   proposals (decision 128);
 - the 32 stretches filled with a neighbour outside its registered lifetime (34,514 pings, 12 before 2009), on which
@@ -100,24 +86,24 @@ a proposed verdict per row, and the maintainer confirms (plan 022 §7 ask 5); co
   claims, and §5.1's 5 port codes;
 - plan 031 §3.11's records the track contradicts (2026-10-20): 1,006 landings and 1,482 logbook trip ends whose
   vessel is heard that day but never within 10 km of the port (`$FISHYDATA/archive/2026-10-plan031-step4/results/`);
-- after plan 021 step 6: the foreign hulls (plan 021 step 7, TODO 65) with mids 101843, 147141, 102481 and 102527
-  (reused call signs), and routes M1/M2 (plan 022 §7 ask 3, the maintainer: not before); the STK units with no vid
-  are measured whole in decision 161 (TODO 116).
+- after plan 021 step 6: the foreign hulls (step 7, TODO 65) with mids 101843, 147141, 102481 and 102527 (reused call
+  signs), and routes M1/M2 (plan 022 §7 ask 3: not before); the STK units with no vid (decision 161, TODO 116).
 
 The drafts (2026-10-17) are in `$FISHYDATA/archive/2026-10-17-key-redo/review/`, with a README: 47 distinct `vid`
 proposals, the rest `leave` or `no vid`. Before they can act, `ais_key_segments.R` needs a form for "no vessel", a rule
 admitting mids named only by a reviewed row (5 rows of list 5a), and the hull start from the earliest `vessel_hist_v`
-date or `yh1` (the first year on the register since decision 144): the latest row's is a re-registration, which made most
-list 2 fills. Decision 129 rebuilt the union on the new key, so the `once` project's `tar_outdated()` lists the key and
-its checks again. That is the cycle, not a reason to build: the key changes only here. The annual register's matrix parse
-is fixed in code, not yet in data: build years and a legend entry had been read as vids (22 rows, 2018-2022). The redo
-invalidates `skipaskra` by hand, since `targets` cannot see the edit; in a scratch run 6,891 pings on 3 mids change vid
-(`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`). Also for the redo (Claude's audit of 2026-10-23, not checked by
-a person): the register's call signs and `yh2` NA in the key (decisions 136, 142, 144); decision 047's W2 scores logbook
-positions against the track (decision 156's rule), and W3 learns its own hid → pid crosswalk beside `stk_hid_pid`.
+date or `yh1` (decision 144): the latest row's is a re-registration, which made most list 2 fills. `once`'s
+`tar_outdated()` lists the key since decision 129: the cycle, not a reason to build. The register's matrix parse is fixed
+in code, not in data (build years and a legend read as vids, 22 rows, 2018-2022): the redo invalidates `skipaskra` by
+hand, and 6,891 pings on 3 mids change vid (`$FISHYDATA/archive/2026-10-17-skipaskra-vid/NOTE.md`). Also for the redo
+(Claude's audit of 2026-10-23, not checked by a person): the register's call signs and `yh2` NA in the key (decisions
+136, 142, 144); decision 047's W2 scores logbook positions against the track (decision 156's rule), and W3 learns its
+own hid → pid crosswalk beside `stk_hid_pid`. **From TODO 120** (decision 185): the three `once` readers still on views
+switch here (`ais_key_segments.R`, `skipaskra_evidence.R`, `skipaskra_discrepancy.R`), each view already rebuilt from
+its table with no row differing (`$FISHYDATA/archive/2026-10-views-todo120/README.md`).
 
 **check:** a decision record states the redo; every row of each list is resolved through `overrides/` or carries a
-stated reason; `ais_key_coverage` stays at 0 unassigned pings.
+stated reason; `ais_key_coverage` stays at 0 unassigned pings; no `once` script reads an Oracle view.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
@@ -158,27 +144,6 @@ The last haul is answered by plan 012 §2d and §2k (no unclosed last haul seen;
 **check:** the answer to (1) is recorded in a decision.
 
 ---
-
-## 38. Loose ends of the `whack_clean()` switch
-**status:** open · **see:** `curate/decisions/067-whacky-positions-are-labelled-by-whack-clean.md`, fishyweb `notes/whacky-positions.qmd`
-
-The switch and the rebuild downstream of it are done (decision 067). Of the 208 vessels where the new filter flags
-more, the 62 vessel-years that also keep a longer track were looked at: placeholder positions are now flagged first
-(`curate/corrections/ais_invalid_position.yml`). Left, none blocking (decision 067): vessels faster than 25 kn lose
-real track under either filter - 84 fishing vessels, all under 12 m, 8,433 real pings, steaming only (needs a choice:
-a per-vessel limit, or not flagging a leg the vessel's own recorded speed confirms; a per-vessel ceiling is measured
-in TODO 99); the forward scan accepts the
-first ping after a gap of more than 4 h untested (vid 2657, 2017); sparse tracks (vid 1186, 2023). Shown on
-simulated tracks in the review package (github.com/einarhjorleifsson/test): vmask erodes good track beside a burst
-moved along the heading (8 good pings lost), and a burst within reach of the last good ping is partly kept. On ramb's own
-`whacks1` (12 misplaced of 46 pings): `"clean"` and `"sda"` flag the 12 and 4 good pings beside them, `"forward"` and
-`"sequential"` exactly the 12, `"fwdbwd"` only 2 (the book's Pings chapter, 2026-10-20). fishyweb `notes/whacky-positions.qmd`
-is untracked and shows vessel tracks, so the disclosure rule comes first.
-A third fast-vessel option, to revisit later (from Ifremer's iapesca, 2026-10-09, not built): a run of 3+ legs over 25 kn
-whose two-ping legs are fast too is real running - in June 2023 it held 1,115 of the filter's 8,942 flags, recorded SOG > 20 kn on 90-98 %; needs a speed cap (decision 078).
-
-**check:** decision 067 records a verdict on the fast-vessel, gap and sparse-track cases, and
-`notes/whacky-positions.qmd` is committed or removed.
 
 ## 49. AIS as a qualifier where the logbook or the landings are missing
 **status:** open · **needs: maintainer** — whether to qualify them, and the classes · **see:** plan 014 §1, decision 103
@@ -266,10 +231,12 @@ no landing in Iceland) and f (ports abroad), and whether a dominant IMO (99 % of
 Before the first allocation: `R/trail_sql.R:122` marks every fix of a vid >= 100000 as leisure (basis `skb`, decision
 119), so foreign vids 200000 + n would be read as SKB boats. And `curated/check/ais_key_foreign_candidates.parquet`
 (decisions 039-043, run by hand) was built 2026-09-27 and never since, so it predates the key of decision 128
-(Claude's audit of 2026-10-23, not checked by a person).
+(Claude's audit of 2026-10-23, not checked by a person). **From TODO 129** (decision 185): `vessel_ais_link.R` copies
+the STK key's stretches with `t2 = day_after(d2)`, so an open stretch ends 2028-12-25 in the crosswalk, whose rule is NA
+for open (decision 184); with its next rebuild, `t2` NA on a mid's last open stretch (decision 183's rule).
 
 **check:** plan 021 §7, and plan 017 §7's check that a foreign vessel's ping reaches `curated/ais/voyage.parquet` with
-a voyage key and `pid1`/`pid2` resolved.
+a voyage key and `pid1`/`pid2` resolved; no STK row of the crosswalk ends on the open-end date.
 
 ## 68. stk's tables besides the trail: what they hold, and which fishycode should read
 **status:** open · **needs: maintainer** — the go for plan 022 §4, and its asks 1 (who knows what STK's export and
@@ -290,19 +257,6 @@ it needs were rebuilt on 2026-10-16 (decision 112); it waits for the maintainer'
 **check:** each stk table besides the trail has a line saying what it holds, its time span and keys, and whether
 fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.parquet` on a sample of vessels, the
 result recorded in a decision or a plan.
-
-## 69. Partitioned outputs keep partitions a rebuild no longer writes
-**status:** open · **see:** decision 111
-
-`duckdbfs::write_dataset()` replaces the partitions it writes and leaves the others. `staging/ais/stk` held
-`year=1970` and `year=2006` from the build of 2026-09-23 (3 rows), which every reader of it takes in. Any partitioned
-output can carry an older build's rows the same way. Clear the directory before each write, or check for it.
-Measured after the rebuild of 2026-10-16 (decision 112): of the eight partitioned outputs it wrote, only
-`staging/ais/stk` holds files older than the build (those two). Measured again 2026-10-19, every partitioned dataset:
-TODO 95 (only `year=2006` is left).
-
-**check:** no partitioned output under `staging/` or `curated/` holds a partition its last build did not write, and
-the scripts that write them make sure of it.
 
 ## 70. `afli.afli`: which stored values `TO_CHAR` rejects
 **status:** open · **needs: maintainer** — the query in plan 018 §3, run against Oracle · **see:**
@@ -541,8 +495,8 @@ before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
 **status:** open · **needs: maintainer** — the prototype's §10 (the floor, the forward stage, ramb's version, adoption) ·
-**see:** TODO 38, decisions 067, 069, 078, 143 and 164, plan 031 §3.7 item 12 (what the filter leaves near
-harbours: about 6,000 fixes, mostly STK port event rows)
+**see:** decisions 067, 069, 078, 143, 164 and 185 (TODO 38 folded in), TODO 99, plan 031 §3.7 item 12 (what the
+filter leaves near harbours: about 6,000 fixes, mostly STK port event rows)
 
 "the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
 for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
@@ -550,8 +504,9 @@ for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
 - It kept a 24 kn jump between the copy and the live track, under its fixed 25 kn.
 
 The reload is a labelled test: its receipt lag marks the truth, and is never a filter input. Candidates:
-- a per-vessel speed limit, from the vessel's own recorded speed (measured in TODO 99, 2026-10-20: 132,380 steps
-  under 25 kn but over the vessel's own ceiling, 8,196 out and back);
+- a per-vessel speed limit, from the vessel's own recorded speed (99.9th percentile at sea + 3 kn; 2026-10-20: 132,380
+  steps under 25 kn but over it, 8,196 out and back, 400-800 vessels a year; vid 1417, a 7-knot boat, 132 steps). It
+  needs no voyage, so it goes in the first pass (decision 185 keeps TODO 99's measurement);
 - splitting a vessel's pings into chains that are each consistent;
 - zigzags judged over a window;
 - each leg's displacement against its reported speed and course.
@@ -562,14 +517,15 @@ Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can
 with the defaults it equals `ping_whacky` ping for ping; a distance floor between feeds (0.3 nm) frees 22 % (2016) and
 80 % (2026) of the false removals and loses no true one (0.5 nm: 24 % and 97 %); a two-sided forward stage does almost
 nothing. Its ramb changes, opt-in arguments `feed`, `noise_nm`, `evidence`, are uncommitted in `~/R/Pakkar/ramb_wt_whack`
-(branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer. Its follow-up (§8c): the
-STK-ASTD offset on moving vessels is a time lag, the ASTD position behind (within ±3 s in 2017-2020, 30-120 s on 72 %
-of 2026's pairs), so no single floor fits every year; a clock correction needs a third time reference.
+(branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer. Its §8c: the STK-ASTD
+offset on moving vessels is a time lag that varies by year, so no single floor fits every year.
 
-The filter is in ramb, so a candidate is judged by its WGSFD-wide use. TODO 38 keeps the filter's other loose ends.
+The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
+(the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
+078), the forward scan's first ping after a 4 h gap, sparse tracks, and vmask eroding good track beside a burst.
 
 **check:** a plan with the current filter's recall and precision on the reload's days, the candidates compared on
-those days and on normal ones, and a recommendation.
+those days and on normal ones, and a recommendation, with a verdict on TODO 38's fast-vessel, gap and sparse cases.
 
 ## 89. AIS gaps at sea judged against coverage
 **status:** open · **see:** decision 143 (intervals at sea by distance offshore and provider), plan 030
@@ -672,21 +628,18 @@ The asks:
 reason.
 
 ## 94. fishybook: one Quarto book for the groups' thinking, ramb's methods and the Icelandic data (plan 033)
-**status:** open · **see:** `curate/plans/033-fishybook.md`, plans 001 and 002, items 15, 16 and 91
+**status:** open · **see:** `curate/plans/033-fishybook.md`, plans 001 and 002, items 15 and 91; TODO 16 folded in
+(decision 185)
 
 The maintainer, 2026-10-19: replace the doc spaces with one Quarto book, *From pings to effort and catch*, for the
 members of WGSFD and WKSSFGEO. Its main text is generic (the problem, the approach, the ramb code, on example data). It
 consolidates the groups' reports, and it is the guide to what ramb can do and still lacks. Technical tests go in
 appendices, and the Icelandic data manual is its own part. ramb keeps only what it takes to run it.
 
-Asks a-f answered the same day (plan 033 §12):
-
-- `docs/` converted in place, keeping its name;
-- one edition, at `~einarhj/fishybook`;
-- Part IV public: rendered figures and tables, no data files; widgets count as data, so vessel data are static and
-  interactive figures use ramb's example sets;
-- the four leftover pages removed;
-- the 2026 meeting folder moved, and cited once published.
+Asks a-f answered the same day (plan 033 §12): `docs/` converted in place; one edition, at `~einarhj/fishybook`; Part
+IV public as rendered figures and tables, no data files (widgets count as data, so vessel data are static and
+interactive figures use ramb's example sets); the four leftover pages removed; the 2026 meeting folder moved, cited
+once published.
 
 **Step 1 done** (decisions 150, 152). All 13 reports are in the reading map `docs/ices_reports.yml` (1,777 topic
 rows, 511 code rows). The diagram held as the centre and was amended as version 3, and §4 was revised. Over all 13,
@@ -702,13 +655,17 @@ Open:
   appendices. The skeletons wait for the maintainer's review, then their cases are written, graphics first;
 - chapter 1 (`docs/at_sea.qmd`) is drafted and waits for the maintainer's review. Its gap: the fisher's money, since
   no landing value or cost is in the data held; find a public price source or leave it stated;
-- steps 3-9.
+- steps 3-9. Step 5 holds TODO 16 (folded in, decision 185): `fishyweb`'s five real pages into the book, its 26
+  outlines dropped, its unpushed 27b35ff and untracked `notes/whacky-positions.qmd` (vessel tracks: the disclosure rule
+  first) settled, `fishyweb` archived read-only and plan 002 closed or redirected; the posts of
+  `~/stasi/fishyweb_2026-09-24` are sources for chapters, read against ramb's present names.
 
-**check:** decision 152's proposals are decided, and `check_book()` runs in `check_bookkeeping()` (plan 033 step 3).
+**check:** decision 152's proposals are decided, `check_book()` runs in `check_bookkeeping()` (plan 033 step 3), and
+step 5 is done: fishyweb's pages in the book, fishyweb archived, plan 002 closed or redirected.
 
 ## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
-**status:** open · **needs: maintainer** — approve the fix below and when to rebuild `stk` clean · **see:** TODO 69 (the
-same defect, every output), decision 151, `docs/stk_data-inspection.qmd`
+**status:** open · **needs: maintainer** — approve the fix below and when to rebuild `stk` clean · **see:** decision 185 (TODO
+69, the same defect in every output, folded in), decision 151, `docs/stk_data-inspection.qmd`
 
 Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 rows from the build of 2026-09-23 (vid 2618,
 an `I` at HFN, 2006-12-31 12:28), without the column `d2e` the rebuild of 2026-10-17 wrote into the other 27
@@ -724,7 +681,7 @@ Measured 2026-10-19, read-only:
   targets write, this is the only file older than its target's last build. `convert.R` is the one writer that clears
   nothing and takes its years from the data (`group_by(year)`, junk years such as 1936 and 2106 included). `ais_catch.R`,
   `ais_trail.R` and `logbook_sensor_gps.R` clear the whole output; `ais_ping_clean.R` and `ais_voyage.R` clear the
-  years they write; `ais_ping_union.R` and `ais_ping_tag.R` write a fixed 2007:2026.
+  years they write; `ais_ping_union.R` and `ais_ping_tag.R` write the feeds' years (decision 181).
 - **Mixed schemas, not stale:** `ping_union` 2025-2026 store `dt_sec`, `sid_gps` and `n_sid_gps` as INT32 (DOUBLE,
   INT64 elsewhere); 7 `astd` months carry an extra `ship_id`. (`raw/ais/trail2/`, read by no code, is in the Trash:
   decision 168.)
@@ -734,10 +691,11 @@ Measured 2026-10-19, read-only:
 `tar_invalidate("stk")`, then `tar_make_isolated(names = )` on the 15 targets from `stk` down (`stk_event`,
 `port_call`, `ais_voyage`, `ais_trail`, `ais_catch`, `station_event` and 8 small ones), ~75 min at their last build
 times. Only `stk` and `stk_event` should change in content; the rest is re-stamped. `once`'s `port_radius` is outdated
-already and stays frozen. (c) The STK page drops `unify_schemas`, and this item closes with TODO 69.
+already and stays frozen. (c) The STK page drops `unify_schemas`.
 
 **check:** every partition of `staging/ais/stk` is from the latest build, the writer clears what it no longer writes,
-`stk_event` has no 2006 row, and the STK page no longer needs `unify_schemas`.
+`stk_event` has no 2006 row, and the STK page no longer needs `unify_schemas`; and (TODO 69's check) no partitioned
+output under `staging/` or `curated/` holds a partition its last build did not write, its writer making sure of it.
 
 ## 96. The vessel demo: Safari, Windows, and the basis for sending it
 **status:** open · **needs: maintainer** — a Mac with Safari's remote automation on, or a person, and a Windows machine;
@@ -781,7 +739,7 @@ cannot repair it; Trackwell is asked whether the devices' readings survive (the 
 **check:** decided; no logger fix in the trail more than 5 km from a recorded ping at the same moment, or none at all.
 
 ## 99. The whack test does not test interpolated positions against recorded ones
-**status:** open · **see:** TODO 98, `curate/ais_ping_clean.R`, decision 067
+**status:** open · **see:** TODO 98, TODO 88, `curate/ais_ping_clean.R`, decision 067
 
 `ais_ping_clean.R` runs the impossible-step test on recorded positions only, since an interpolated (`reconstructed`)
 position was assumed to lie on the track. When the track it was drawn from differs from today's, it does not: vid
@@ -792,17 +750,8 @@ all years in about two minutes
 (`$FISHYDATA/archive/2026-10-todo98/scripts/gps_scope.R`). Proposed: that test in the cleaning step, as a flag on
 any reconstructed position, generic for ramb (`rb_flag_ping_*`), whatever TODO 98 decides for the logger.
 
-Also measured 2026-10-20 (vid 1417, Bjössi Sör, a 7-knot boat out of Húsavík): the test's one ceiling, `KN_MAX` 25 kn,
-lets a slow vessel's whacks through. With the vessel's own ceiling (99.9th percentile of its at-sea reported speed + 3
-kn: 15.3 kn) 132 of its steps are flagged, 42 out and back; the typical one is a ping 3 km off the track reporting 0 kn
-mid-run. Over the whole trail (vessels with 1,000+ at-sea pings a year): 132,380 steps under 25 kn but over the
-vessel's own ceiling, 8,196 of them out and back, 400-800 vessels a year. A second witness: each ping's reported
-speed against the step's implied speed (two pings both at rest yet far apart), with care, since a harbour-to-harbour
-run with no ping between rightly reports 0 at both ends (most of vid 1417's 31). Positions shared exactly by many
-vessels are berths, not ghosts, but for STK's `U` pings: 115 positions each used by 10 or more units hold 482,668
-of them, regional port markers, not the vessel's place (decision 164). The maintainer's idea: a second pass within voyages, for the tests that need one; the
-per-vessel ceiling and the speed check need no voyage, so they can go in the first pass with no circularity.
-Scripts: `$FISHYDATA/archive/2026-10-todo98/scripts/` (fan1417.R, voyage_gaps_ceiling.R).
+The per-vessel speed ceiling measured here (vid 1417; 132,380 steps over the vessel's own ceiling) is now in TODO
+88 (decision 185).
 
 **check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
 
@@ -1090,20 +1039,6 @@ adapter's output (both added from Claude's audit of 2026-10-23, not checked by a
 decision 098's rule or by a decision that overturns it; and the sent layer stages no haul twice.
 
 
-## 120. Readers still on Oracle views (the rule "tables, not views")
-**status:** open · **see:** AGENTS.md (Rules), decisions 165, 166, 169, 170, 175,
-`$FISHYDATA/archive/2026-10-views-todo120/README.md`
-
-The maintainer's rule of 2026-10-22: a reader takes the table and does in R what the view did. adb's adapter switched
-(decision 170), and the five main-project readers of `agf.aflagrunnur_v` and `vessel.vessel_v` (decision 175; built
-in decision 180's rebuild); adb's legacy reader was deleted (decision 175). Left: three readers in the `once` project,
-so switched only at a redo by decision, their views rebuilt from their tables the same day, row by row, none differing:
-`curate/checks/ais_key_segments.R` (`vessel.vessel_hist_v`: `vessel_hist` without its six `hist_*` audit columns),
-`reference/vessels/skipaskra_evidence.R` and `curate/checks/skipaskra_discrepancy.R` (`kvoti.strandveidileyfi_v`:
-`veidileyfi` with `svaedi` SA to SD).
-
-**check:** no script in `sources/`, `reference/`, `curate/` or `R/` reads a view, or a decision says why one still does.
-
 ## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
 **status:** open · **needs: maintainer** — plan 038's asks a-i (§9); a, the split, agreed with plan 039 · **see:**
 `curate/plans/038-the-logbook-flow-whole.md`, decisions 155, 172-174 and 180
@@ -1236,18 +1171,6 @@ with an alias for a release, as in decision 147; then fishycode's columns and AG
 
 **check:** every item answered in the grammar's section, the section's callout removed, and the renames listed in a
 decision.
-
-## 129. The crosswalk ends an open STK stretch on 2028-12-25
-**status:** open · **see:** decisions 183, 184, `curate/vessel_ais_link.R`
-
-`vessel_ais_link.R` copies each stretch of the STK key with `t2 = day_after(d2)`, so an open stretch (`d2_is_open`)
-ends 2028-12-25 00:00 in `curated/vessel/vessel_ais_link.parquet`, where the crosswalk's own convention is NA for open.
-Nothing reads its STK periods yet (`R/allocate_vids.R` and `check_vessel_ais_link_routes` read the MMSI rows); a reader
-that joined STK pings on them would drop every ping from 2028-12-25, as the two joins of decision 183 would have. The
-fix is `t2` NA on a mid's last stretch if open, the rule of decision 183. It changes the crosswalk, so it goes with
-that target's next rebuild.
-
-**check:** no STK row of the crosswalk ends on the open-end date, and its other rows are unchanged.
 
 ## 130. The species reference's unmatched lists: a person's read of the 30 codes
 **status:** parked · **needs: maintainer** — paused 2026-10-23 at the maintainer's word · **see:** decision 182

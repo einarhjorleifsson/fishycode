@@ -374,7 +374,7 @@ None is folded in: each keeps its own check, and each is built in its step's pha
 
 | Step | Items |
 |---|---|
-| L1 sources and layers | 62, 70, 73 (plans 019, 020), 75, 98, 100, 108, 110, 113, 114, 115 (plan 037), 118, 120 |
+| L1 sources and layers | 62, 70, 73 (plans 019, 020), 75, 98, 100, 108, 110, 113, 114, 115 (plan 037), 118, 120 (in 25 since decision 185) |
 | L2 merge | 79 (plan 024), 102, 103, 107, 111 |
 | L3 the link | 74 and 123 (plan 039), 81 (plan 027), 112 (plan 036) |
 | L4 the trip | 121, 90 (plan 031), 117 |

@@ -145,8 +145,8 @@ Every script in a targets project is on one of three sides, and says which in a 
 - **Oracle tables, not views** (maintainer, 2026-10-22, a general rule). A reader takes the table and does in R what
   the view did. A view's conversions can be wrong (adb's `station_v` positions, decision 165; lods' tonnes read as kg,
   decision 169), and the code it calls may be hidden from the dump account (decision 166). Its text is in
-  `raw/oracle/<schema>/_code/all_views.parquet`. New code reads tables. A reader still on a view (TODO 120) switches
-  when it is next opened, with the view rebuilt from its table first.
+  `raw/oracle/<schema>/_code/all_views.parquet`. New code reads tables. A reader still on a view (the three `once`
+  readers, TODO 25) switches when it is next opened, with the view rebuilt from its table first.
 - **Every inferred value carries a `basis`**, its provenance (`"recorded"` / `"derived"` /
   `"reconstructed"` / `"synthesised"`, or `"none"` when no source has it). `derived` =
   computed from recorded values of the same record (`t2` + duration); modifiers such as
