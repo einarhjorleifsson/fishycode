@@ -208,7 +208,9 @@ n_eligible <- trip |>
   filter(as.Date(T1) >= as.Date("2007-09-01")) |>
   nrow()
 
-lid_map |>
+# the link reads landings from 1992-09 (decision 203): the matches are counted in the denominator's window too
+trip |>
+  filter(as.Date(T1) >= as.Date("2007-09-01"), !is.na(match_type)) |>
   count(match_type) |>
   mutate(cumulative = cumsum(n),
          pct        = round(100 * n / n_eligible, 1),

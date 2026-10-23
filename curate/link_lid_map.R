@@ -59,17 +59,13 @@ ORDER_MAX_DAYS      <- 14L        # step 9: a pair at most this many days apart 
 # id within the group, per source) happens upstream in curate/landing.R, not
 # here - this script only reads the already-collapsed curated table.
 #
-# No upper date bound - the earlier `date <= ymd("2025-12-12")` was a literal
-# carried over verbatim from the pre-restructuring codebase (git blame:
-# bde740b, "Migrate code from both archives"), never revisited, and paired
-# with nothing on the `trip` side below (which was always unbounded). It
-# silently dropped every 2026 landings match once FS_DATE_MAX's handover to
-# adb went live (curate/decisions/023) - measured 2026-09-23: 4,962 adb trips
-# in trip.parquet, 0 reaching lid_map. See
-# curate/decisions/027-lid_map-drops-upper-date-bound.md.
+# No date bound. The upper one, `date <= ymd("2025-12-12")`, dropped every 2026 landing (decision 027). The lower one,
+# `date >= ymd("2007-09-01")`, was agf's first day, from the old code that read agf alone; it stayed when lods came in
+# from 1992-09-01 (decision 031), so no trip before it had a landing, and ais_catch.R shared January-August 2007's
+# landings on the fixes beside their own trips' logged catch (decision 191, plan 038 step 1b).
 land <-
   duckdbfs::open_dataset(fd_curated("landing", "landings.parquet")) |> collect() |>
-  filter(vid > 0, date >= ymd("2007-09-01")) |>
+  filter(vid > 0) |>
   # Renamed to schema_land: curate/plans/007 added a landings-side `schema`
   # (agf/lods), which otherwise collides with this script's own `schema`
   # (the logbook source system, afli/fs_afladagbok/adb) once trip and land
@@ -271,6 +267,9 @@ approx_fs <- build_approx(matched_trip |>
 
 unmatched_post7 <- trip |>
   filter(!.tk %in% c(m1$.tk, m2$.tk, m3$.tk, m4$.tk, m5$.tk, m6$.tk, m7$.tk), catch > 0) |>
+  # Kept when the landings' lower bound went (plan 038 step 1b). A trip with no landing in reach looks misdated: with
+  # the bound, 188 trips of January-August 2007 took landings 37 to 1,726 days later here, 187 of which have their own.
+  # Over every year, 93 trips from before 1992-09, where no landing is held, would do the same to later landings.
   filter(year(date) >= 2007) |>
   mutate(tid_num = as.numeric(.tid)) |>
   mutate(expected_date = date_origin + case_when(

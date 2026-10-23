@@ -2,7 +2,8 @@
 
 **status:** proposal — written 2026-10-22 at the maintainer's request; nothing built or changed; the baseline measured
 read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0) and
-confirmed; every ask of §9 answered 2026-10-23 (decision 191; TODO 122) · **2026-10-22** · **see:** `docs/one_flow.qmd` (the cascade and what is built where),
+confirmed; every ask of §9 answered 2026-10-23 (decision 191; TODO 122); step 1b coded, checked on a scratch store, not
+built (decision 203) · **2026-10-22** · **see:** `docs/one_flow.qmd` (the cascade and what is built where),
 `docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037, 039 and 040
 
 Drafted with AI assistance (Claude) on 2026-10-22. The maintainer asked whether to plan the full logbook flow next,
@@ -207,6 +208,9 @@ Two changes to `lid_map` itself, from plan 039 §0:
 - **The lower bound goes** (plan 039's ask e, built here). `lid_map` reads the landings of every period plan 039
   supplies, LODS from 1992-09 with the same nine steps. The 2007 surplus on the fixes is the measure that the bound is gone. Before it is built, the
   steps are run on 1992-09 to 2007-08 in scratch, and each trip lands in one outcome: matched by step, or none.
+  Coded and so checked on 2026-10-23 (decision 203): June-August 2007's landing path on the fixes falls from 70-96 kt
+  a month to 5-7 kt, and every match from 2007-09 on is unchanged. Step 8 keeps 2007 on, and the looser steps agree
+  less well with the landed weight in 1992-2006 than later.
 - **A month step for the years before LODS.** `fiskifelagid` (1966-1981) and `vor` (1982 to 1992-08) give a vessel's
   month, not a landing. A new last step joins a vessel's trips whose `T2` falls in a month to that month's row, many
   to one, as `match_type` `10 month`, with `n_trips` as for any shared landing. The catch then compares by
@@ -333,7 +337,8 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    logged kilogram is then in one outcome, so each later change shows as a move between outcomes.
 1b. **The link's lower bound lifted** (from step 3, ask g, decision 191): `lid_map` reads landings from the start of
    LODS, not 2007-09-01, so January-August 2007's landings stop being shared on the fixes beside their trips' logged
-   catch. Rebuilt by name from `lid_map`, the catch traced kilogram by kilogram.
+   catch. Rebuilt by name from `lid_map`, the catch traced kilogram by kilogram. **Coded 2026-10-23** (decision 203),
+   traced on a scratch store; built with the logbook chain, as decision 194 asks, by the command in the record.
 2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; coded, decision 193, the build left); then
    §5.1's readers a-e, each measured on a scratch store, then built (asks b, c). adb's `pid` goes into the merge (ask
    f), and the quota regime and gear onto the trips (ask d).

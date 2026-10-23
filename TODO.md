@@ -949,8 +949,9 @@ correction outside `curate/`, and fs_afladagbok's then blanks the recorded end t
 the span) (Claude's audit of 2026-10-23, not checked by a person).
 
 Next (§8, decision 191): step 1's instruments (TODO 79), then step 1b, `lid_map`'s lower bound lifted, which ends
-2007's double count on the fixes; then `trip_reconciled`'s build with its multi-voyage fix (coded, decision 193:
-16,184 trips spanned, 24,813 flagged; the command in the record) before its five readers switch.
+2007's double count on the fixes (coded, decision 203, built with the logbook chain); then `trip_reconciled`'s
+build with its multi-voyage fix (coded, decision 193: 16,184 trips spanned, 24,813 flagged; the command in the
+record) before its five readers switch.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
 
@@ -968,14 +969,16 @@ tables to 2007-08, and ask's columns in July and August 2007; agf with ask's col
 alone after (the maintainer, 2026-10-22: "that is life"). Every ask is answered (decision 192): LODS's conversion of
 its time, lumpsucker's roe with the whole fish derived (2006's factor carried back, flagged), the exports from the
 container tables, a `provisional` flag on the last two years, `kvotix`'s logs measured first. `lid_map`'s 2007-09-01
-bound is lifted as plan 038's step 1b (decision 191). Nothing built.
+bound is lifted in code as plan 038's step 1b (decision 203, not built); ask e's check of the steps' tolerances on
+1992-2006 is in it. Nothing built.
 
 **From TODO 74** (decision 192): plan 023 §3 is superseded by plan 039 and plan 025 §4 taken into it. Plan 007's
 questions: 1, a report of every landing where agf and LODS disagree (agf wins, so the merge cannot show an agf
 defect), carried by plan 039 §5's witness account; 3, `link_lid_map.R` and `catch_by_species_trip.R` keyed on
-(`.lid`, `schema_land`), plan 038 step 3. Plan 023 §6's fifth source of a landing's trip, the line-incentive check's
-link of 154,146 landings to STK events (decision 163; 9,716 arrivals at another time, 7,446 landings with no logbook
-trip, unexplained), builds on plan 022 §4 (TODO 68).
+(`.lid`, `schema_land`), plan 038 step 3 (no `.lid` is shared across schemas in `curated/landing` today, decision
+203). Plan 023 §6's fifth source of a landing's trip, the line-incentive check's link of 154,146 landings to STK
+events (decision 163; 9,716 arrivals at another time, 7,446 landings with no logbook trip, unexplained), builds on
+plan 022 §4 (TODO 68).
 
 **check:** every period's landings in the same columns with a basis and a layer, and each layer's landings and
 kilograms in one outcome per period (plan 039 §9); plan 007's questions 1 and 3 answered in a decision; or the plan
