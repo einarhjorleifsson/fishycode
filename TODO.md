@@ -85,18 +85,20 @@ The redo's code, approved 2026-10-23 (decision 195), in `ais_key_segments.R` and
   2017-02..2018-01 go from 7873 to 2608); later holders 3009 and 7764 are in neither `vessel_hist_v` nor `vessel.parquet`;
 - the register's matrix parse fixed in data (`skipaskra` invalidated by hand; 6,891 pings on 3 mids change vid); its
   call signs and `yh2` NA (decisions 136, 142, 144); W2's logbook positions, W3's own hid → pid crosswalk (decision 047);
-- **from TODO 120** (decision 185): `ais_key_segments.R`, `skipaskra_evidence.R` and `skipaskra_discrepancy.R` read
-  their tables, not views;
+- **from TODO 120** (decision 185): `ais_key_segments.R`, `skipaskra_evidence.R`, `skipaskra_discrepancy.R` read tables;
 - vids 7845, 2953 and 7855 need vessel rows (only the MMSI archive knows them).
 
 `once`'s `tar_outdated()` lists the key since decision 129: the cycle, not a reason to build. Later redos: the 1,051
 audit rows no witness reaches, today's audit's 85 new rows, plan 031 §3.11's contradicted records (1,006 landings,
 1,482 trip ends), the foreign hulls with mids 101843, 147141, 102481, 102527 and routes M1/M2 (after plan 021 step 6),
-the STK units with no vid (decision 161, TODO 116).
+the STK units with no vid (decision 161, TODO 116). **Fix by fix** against the MMSI feeds (2026-10-23, Claude's, not
+checked; `$FISHYDATA/archive/2026-10-stk-key-crosscheck/` §6): 213 cases, 16 settled. For this redo: mids 100137 (1136
+to about 2013-11-13), 101084 (off 2212 in 2022-09/10), 101780, 108629; later: other feeds at one place, two MMSIs.
 
 **check:** a decision record states the redo; every row of lists 1-5 resolved through `overrides/` or a stated reason;
 `ais_key_coverage` at 0 unassigned pings; no `once` script reads a view; no MMSI window opens before its hull's first
-register date, MMSI 251764110's gap pings on 2608, and 3009 and 7764 resolved or stated.
+register date, MMSI 251764110's gap pings on 2608, and 3009 and 7764 resolved or stated; **proposed:** that cross-check
+rerun after each redo, every same-track or partial case settled or stated.
 
 ## 27b. Link pings to trips and fishing activity (the `trail`), and deliver from it
 **status:** in progress - phases 0-3 built; the trail rebuilt 2026-10-16 (decision 112) · **needs: maintainer** —
