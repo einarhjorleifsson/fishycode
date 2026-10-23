@@ -52,5 +52,6 @@ Two kinds of end follow other rules:
 
 ## Left
 
-- The crosswalk's STK rows, which break the rule today (TODO 129).
+- The crosswalk's STK rows, which break the rule today (TODO 129). Code since decision 190; the file on disk follows
+  with the crosswalk's rebuild.
 - New code follows the rule (`AGENTS.md`, Coding conventions).

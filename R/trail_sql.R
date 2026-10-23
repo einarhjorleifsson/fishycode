@@ -117,12 +117,13 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
            r.hours, r.kw_hours, r.interval_flag, r.effort_basis, r.kw_basis, r.sid_gps, r.n_sid_gps,
            -- leisure (plan 016 §7 b): a fix outside any logbook record, of a boat in a frístundaveiðar class at the
            -- time, or of a sailing, pleasure or recreational-fishing type that year (60, 62, 68), or an SKB boat
+           -- (vid 100000 + n; the ledger's 200000 + n are other hulls, plan 021 §4)
            CASE WHEN r.\".sid\" IS NOT NULL THEN FALSE
                 WHEN EXISTS (SELECT 1 FROM cl WHERE cl.vid = r.vid AND r.time >= cl.t1 AND r.time < cl.t2) THEN TRUE
-                WHEN r.vid >= 100000 OR vy.mclass IN (60, 62, 68) THEN TRUE ELSE FALSE END AS leisure,
+                WHEN r.vid BETWEEN 100000 AND 199999 OR vy.mclass IN (60, 62, 68) THEN TRUE ELSE FALSE END AS leisure,
            CASE WHEN r.\".sid\" IS NOT NULL THEN NULL
                 WHEN EXISTS (SELECT 1 FROM cl WHERE cl.vid = r.vid AND r.time >= cl.t1 AND r.time < cl.t2) THEN 'class'
-                WHEN r.vid >= 100000 THEN 'skb'
+                WHEN r.vid BETWEEN 100000 AND 199999 THEN 'skb'
                 WHEN vy.mclass IN (60, 62, 68) THEN 'usage' END AS leisure_basis
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage_id = r.voyage_id
            LEFT JOIN vy ON vy.vid = r.vid

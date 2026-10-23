@@ -177,21 +177,22 @@ foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
 **status:** in progress · **needs: maintainer** — the go for the crosswalk's rebuild and the first
-`allocate_vids(dry_run = FALSE)` once the fixes below are in; the Directorate of Fisheries (MMSI, §6 d) and PAME (ASTD,
-§6 h) have not answered · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
-plans 008, 016 and 017, decisions 114-115 and 118, TODO 15 and 25
+`allocate_vids(dry_run = FALSE)`, by the commands in decision 190; the Directorate of Fisheries (MMSI, §6 d) and PAME
+(ASTD, §6 h) have not answered · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
+plans 008, 016 and 017, decisions 114-115, 118 and 190, TODO 15 and 25
 
 The maintainer asked on 2026-10-15 for a registry of every vessel the pings carry, not only the Icelandic ones. Plan 021
 proposes one integer `vid` per hull and a crosswalk from each feed identity to it. Its asks are answered (a revised and
 c amended 2026-10-17, i answered the same day: a vid is kept when a hull's key changes). Step 1 is built (decision 114),
 steps 2-4 are code (decision 115), the crosswalk built 2026-10-18 (decision 144). The maintainer, 2026-10-23: decision
-115's readings 1-6 and 8 confirmed; a dominant IMO (99 % of a `two_imos` segment's IMO pings) takes it by rule (176 of
-636); before allocating, the 27 MMSIs below get their linked hull's vid and TODO 129's open end is fixed, then a dry run.
+115's readings 1-6 and 8 confirmed. The fixes asked for before allocating are code, checked in scratch only (decision
+190, Claude's, not checked by a person): a dominant IMO takes a `two_imos` segment (172 of 176), the 27 MMSIs with a
+reviewed foreign link's IMO reach its vid, the STK rows' open end is NA, the trail's SKB range ends at 199999. The dry
+run on the scratch crosswalk gives 379,912 hulls.
 
 The 52 links in `overrides/vessel_ais_link.csv` for 50 of the 59 `foreign_vid_candidate` MMSIs were confirmed on
 2026-10-17; 9 stay held. Left from that review: 19 of them (class B) rest on the hand-made STK call-sign sheet
-`overrides/stk_foreign_mid_vid.csv`, whose entries want checking; 27 MMSIs carrying a linked hull's IMO would still get
-a second vid (a change to `curate/vessel_ais_link.R`); the STK key is wrong for mids 101843, 147141, 102481 and 102527
+`overrides/stk_foreign_mid_vid.csv`, whose entries want checking; the STK key is wrong for mids 101843, 147141, 102481 and 102527
 (reused call signs, step 7's redo, TODO 25); foreign vids 3777 (a duplicate of 3756), 4077 and 3792 are not one hull each;
 decision 161 widens this to 42 call signs, each held by 2-3 foreign landing vids over the same days.
 
@@ -201,12 +202,9 @@ decision 161 widens this to 42 call signs, each held by 2-3 foreign landing vids
 `ports_all` already holds the ports abroad. Also open (maintainer): plan 017's asks e (gear for a foreign voyage with
 no landing in Iceland) and f (ports abroad).
 
-Before the union reads the crosswalk (step 6): `R/trail_sql.R:122` marks every fix of a vid >= 100000 as leisure (basis `skb`, decision
-119), so foreign vids 200000 + n would be read as SKB boats. And `curated/check/ais_key_foreign_candidates.parquet`
-(decisions 039-043, run by hand) was built 2026-09-27 and never since, so it predates the key of decision 128
-(Claude's audit of 2026-10-23, not checked by a person). **From TODO 129** (decision 185): `vessel_ais_link.R` copies
-the STK key's stretches with `t2 = day_after(d2)`, so an open stretch ends 2028-12-25 in the crosswalk, whose rule is NA
-for open (decision 184); with its next rebuild, `t2` NA on a mid's last open stretch (decision 183's rule).
+`curated/check/ais_key_foreign_candidates.parquet` (decisions 039-043, run by hand) was built 2026-09-27 and never
+since, so it predates the key of decision 128 (Claude's audit of 2026-10-23, not checked by a person). Decision 190's
+"Left" has two smaller ends of the dominant rule.
 
 **check:** plan 021 §7, and plan 017 §7's check that a foreign vessel's ping reaches `curated/ais/voyage.parquet` with
 a voyage key and `pid1`/`pid2` resolved; no STK row of the crosswalk ends on the open-end date.

@@ -14,6 +14,9 @@ the 27 MMSIs that carry the IMO of a hull already linked to a foreign vid (readi
 links) and for TODO 129's open STK end, rebuilt, and dry-run again (TODO 65). The Directorate of Fisheries and PAME had
 not answered.*
 
+*The fixes are code since 2026-10-23, checked in scratch only (decision 190): the dominant IMO, the reviewed links' IMOs,
+the STK open end, and the trail's SKB bound. The rebuild and the first allocation are the maintainer's.*
+
 ## What was built
 
 | step | code | output | time on the data |

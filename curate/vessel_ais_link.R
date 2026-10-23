@@ -20,7 +20,8 @@
 #   1. an MMSI in the Icelandic archive is its registry vid, in the archive's periods, opened at both ends and cut where
 #      the holder changes, exactly as curate/ais_ping_union.R reads it. Nothing below touches such an MMSI;
 #   2. else an IMO with a valid check digit: the register's (EU, Faroese) for that MMSI at the time, else the feed's
-#      own (§6 c, basis `broadcast`). An IMO that is a registry vid's is that vid: the vid is the keel, as an IMO is;
+#      own (§6 c, basis `broadcast`). An IMO that is a registry vid's is that vid: the vid is the keel, as an IMO is.
+#      So is the IMO of an MMSI that a reviewed link (below) puts on a registry vid;
 #   3. else the register's own id (EU CFR, Faroese id), matched by MMSI. Norway's register has no MMSI and ASTD no call
 #      sign, so Norway is reached only through an IMO until GFW's Vessels API pass (below);
 #   4. else the MMSI itself (`mmsi_<n>`, basis `broadcast`).
@@ -28,7 +29,8 @@
 # that after them: an MMSI is one hull until the evidence splits it (§4), and those years carry basis `reconstructed`.
 #
 # Held out, with no hull until overrides/vessel_ais_link.csv gives one (§6 c), an MMSI-year where:
-#   - the feed claims two or more valid IMOs (`two_imos`), or the registers give two ids (`register_two_ids`);
+#   - the feed claims two or more valid IMOs (`two_imos`), or the registers give two ids (`register_two_ids`). An IMO
+#     with 99 % or more of the segment's IMO pings takes it by rule (the maintainer, 2026-10-23): `imo_flag` `dominant`;
 #   - the IMO it claims is claimed by another MMSI at the same time: the first and last pings of that IMO on the two
 #     overlap by a day or more (`imo_two_mmsis`). A reflag the same day is not. So is an IMO that reaches a registry
 #     vid while that vid holds an Icelandic MMSI, by the archive's dates;
@@ -47,10 +49,12 @@ library(duckdbfs)
 library(nanoparquet)
 
 # Periods are half-open UTC timestamps, [t1, t2): a handover is cut at the first ping of the new holder, and a date
-# period of a registry runs to the end of its last day. NA is open; these stand in for it in comparisons only.
+# period of a registry runs to the end of its last day. NA is open; these stand in for it in comparisons only. The end
+# is infinity, not a far date: the STK key has stretches to 2106 (decision 183).
 T_OPEN1 <- as.POSIXct("1900-01-01", tz = "UTC")
-T_OPEN2 <- as.POSIXct("2101-01-01", tz = "UTC")
+T_OPEN2 <- .POSIXct(Inf, tz = "UTC")
 OVERLAP_DAYS <- 1
+DOMINANT <- 0.99   # the share of a segment's IMO pings with which one IMO takes it over the others
 day_start <- function(d) as.POSIXct(as.Date(d), tz = "UTC")      # a date's first instant
 day_after <- function(d) as.POSIXct(as.Date(d) + 1L, tz = "UTC")  # the instant after an inclusive end date
 year_start <- function(y) as.POSIXct(paste0(y, "-01-01"), tz = "UTC")
@@ -122,16 +126,43 @@ vf <- read_parquet(fd_curated("vessel", "vessel_identity_foreign.parquet")) |>
   mutate(mmsi = trimws(mmsi), cs = toupper(trimws(cs)),
          r1 = coalesce(day_start(t1), T_OPEN1), r2 = coalesce(day_after(t2), T_OPEN2))
 
-# An IMO that is a registry vid's names that vid. An IMO on two vids (8817540: 1352 and 2220), or a vid with two IMOs
-# (vessel.parquet and vessel_identity disagreeing), names no vid: one of them is wrong, and a person says which.
-imo_vid <- bind_rows(v |> select(vid, imo), vi |> select(vid, imo)) |>
+# The reviewed links, applied below (after the computed ones) and read here for the IMOs they give a registry vid.
+# A confirmed row replaces whatever was computed for that MMSI in [t1, t2) (UTC; a date is its first instant, an empty
+# field is open); hull `none` says it is no vessel. An accessory (a net relay, a tender) takes its ship's hull with role
+# `accessory` (§6 b).
+as_utc <- function(x) as.POSIXct(ifelse(nchar(x) == 10, paste(x, "00:00:00"), x), tz = "UTC", format = "%Y-%m-%d %H:%M:%S")
+ov <- readr::read_csv("overrides/vessel_ais_link.csv", col_types = readr::cols(.default = "c")) |>
+  filter(decision == "confirmed") |>
+  mutate(t1 = as_utc(t1), t2 = as_utc(t2))
+stopifnot(all(ov$feed == "mmsi"), all(ov$role %in% c("vessel", "accessory")),
+          all(grepl("^(vid|imo|mmsi|eu|fro)_|^none$", ov$hull)))
+
+# An IMO that is a registry vid's names that vid. So does the IMO of an MMSI that a reviewed link puts on a registry vid
+# (the maintainer, 2026-10-23): the one IMO it carries in the link's period, from the feeds or a register. A foreign vid
+# (3699-4999) has none in vessel.parquet, and without this an MMSI carrying the same hull's IMO (the vessel sold abroad)
+# would get a hull and a vid of its own. A reviewed link whose MMSI carries two IMOs in its period gives none. An IMO on
+# two vids (8817540: 1352 and 2220), or a vid with two IMOs (vessel.parquet and vessel_identity disagreeing), names no
+# vid: one of them is wrong, and a person says which.
+imo_vid_reg <- bind_rows(v |> select(vid, imo), vi |> select(vid, imo)) |>
   filter(!is.na(vid), is_valid_imo(imo)) |> distinct()
+ov_vid <- ov |> filter(startsWith(hull, "vid_")) |>
+  transmute(mmsi = feed_id, vid = as.integer(sub("^vid_", "", hull)), o1 = coalesce(t1, T_OPEN1), o2 = coalesce(t2, T_OPEN2))
+imo_vid_ov <- bind_rows(
+  ov_vid |> inner_join(iy, by = "mmsi", relationship = "many-to-many") |>
+    filter(t_first < o2, t_last >= o1) |> select(mmsi, vid, o1, imo),
+  ov_vid |> inner_join(vf |> filter(source %in% c("eu", "fro"), is_valid_imo(external_id)), by = "mmsi",
+                       relationship = "many-to-many") |>
+    filter(r1 < o2, r2 > o1) |> transmute(mmsi, vid, o1, imo = external_id)) |>
+  distinct() |>
+  group_by(mmsi, vid, o1) |> filter(n() == 1) |> ungroup() |>
+  distinct(vid, imo)
+imo_vid <- bind_rows(imo_vid_reg, imo_vid_ov) |> distinct()
 imo_registry_conflict <- imo_vid |>
   filter(imo %in% imo[duplicated(imo)] | vid %in% vid[duplicated(vid)]) |> pull(imo) |> unique()
 imo_vid <- imo_vid |> filter(!imo %in% imo_registry_conflict)
 
-# Every IMO a register holds, for plan 021 §2.2's route 4 ("the IMO in a register")
-imo_in_register <- unique(c(imo_vid$imo, vf$imo[is_valid_imo(vf$imo)]))
+# Every IMO a register holds, for plan 021 §2.2's route 4 ("the IMO in a register"); a reviewed link is not a register
+imo_in_register <- unique(c(imo_vid$imo[imo_vid$imo %in% imo_vid_reg$imo], vf$imo[is_valid_imo(vf$imo)]))
 
 # Foreign vids (Oracle's `Erlent`): reachable only through a call sign, which a register may hold with an MMSI
 fvid_cs <- v |> filter(foreign, !is.na(cs)) |> transmute(cs = toupper(trimws(cs)), fvid = vid) |> distinct()
@@ -215,7 +246,8 @@ s_imo <- sc |> filter(!is.na(imo)) |> group_by(seg, imo) |>
   summarise(p = sum(pings), f = min(t_first), l = max(t_last), .groups = "drop") |>
   group_by(seg) |> arrange(desc(p), .by_group = TRUE) |>
   summarise(n_imo = n(), imo_feed = first(imo), imo_share = first(p) / sum(p), imo_f = first(f), imo_l = first(l),
-            imos = paste(imo, collapse = ";"), .groups = "drop")
+            imos = paste(imo, collapse = ";"), imo_other = if (n() > 1) paste(imo[-1], collapse = ";") else NA_character_,
+            .groups = "drop")
 # The segment's names, all of them for the comparison, the most frequent to show
 s_name <- sc |> filter(!is.na(name)) |> group_by(seg, name) |> summarise(p = sum(pings), .groups = "drop") |>
   group_by(seg) |> arrange(desc(p), .by_group = TRUE) |>
@@ -261,11 +293,15 @@ a <- seg |>
   left_join(fcand_s, by = "seg") |>
   left_join(twin, by = c("mmsi", "year", imo_feed = "imo")) |>
   mutate(n_reg = coalesce(n_reg, 0L), n_imo = coalesce(n_imo, 0L), gfw = coalesce(gfw, FALSE),
-         twin_with = if_else(n_imo == 1, twin_with, NA_character_),
+         # IMOs that overlap hold a segment out, unless one has 99 % or more of its IMO pings: that one takes it
+         dominant = n_imo >= 2 & imo_share >= DOMINANT,
+         one_imo = n_imo == 1 | dominant,
+         twin_with = if_else(one_imo, twin_with, NA_character_),
          reg_imo = n_reg == 1 & is_valid_imo(reg_id),
-         imo = case_when(reg_imo ~ reg_id, n_imo == 1 ~ imo_feed),
-         link = case_when(reg_imo ~ "register_imo", n_imo == 1 ~ "feed_imo", n_reg == 1 ~ "register_id"),
-         imo_differs = reg_imo & n_imo == 1 & imo_feed != reg_id) |>
+         imo = case_when(reg_imo ~ reg_id, one_imo ~ imo_feed),
+         link = case_when(reg_imo ~ "register_imo", one_imo ~ "feed_imo", n_reg == 1 ~ "register_id"),
+         imo_differs = reg_imo & one_imo & imo_feed != reg_id,
+         imo_flag = if_else(dominant, "dominant", NA_character_)) |>
   left_join(imo_vid |> transmute(imo, rvid = vid), by = "imo")
 vid_twin <- a |> filter(!is.na(rvid)) |>
   transmute(seg, rvid, f = coalesce(imo_f, s1), l = coalesce(imo_l, s2)) |>
@@ -276,7 +312,7 @@ a <- a |>
   left_join(vid_twin, by = "seg") |>
   mutate(twin_with = coalesce(twin_with, vid_twin),
          held = case_when(n_reg >= 2 ~ "register_two_ids",
-                          n_imo >= 2 ~ "two_imos",
+                          n_imo >= 2 & !dominant ~ "two_imos",
                           !is.na(twin_with) ~ "imo_two_mmsis",
                           imo %in% imo_registry_conflict ~ "imo_registry_conflict",
                           !is.na(fvids) & is.na(rvid) ~ "foreign_vid_candidate"),
@@ -338,6 +374,9 @@ a <- a |>
                            !own & !startsWith(hull, "mmsi_") ~ "reconstructed",
                            link %in% c("register_imo", "register_id") ~ "recorded",
                            TRUE ~ "broadcast"),
+         imo_flag = case_when(!is.na(held) | startsWith(hull, "mmsi_") ~ NA_character_,
+                              own ~ imo_flag,
+                              TRUE ~ imo_flag[src]),
          register = paste0(coalesce(reg_source, ""), if_else(gfw, if_else(is.na(reg_source), "gfw", ";gfw"), "")),
          register = na_if(register, ""),
          # the other keys this MMSI has had in the segment, for allocate_vids() (§6 i)
@@ -359,11 +398,11 @@ keys_minus <- function(alt, hull) {
 }
 nonisl <- a |>
   arrange(mmsi, s1) |>
-  mutate(rk = paste(mmsi, hull, link, basis, held, register, sep = "|"),
+  mutate(rk = paste(mmsi, hull, link, basis, imo_flag, held, register, sep = "|"),
          run = cumsum(rk != lag(rk, default = ""))) |>
   group_by(run) |>
   summarise(mmsi = first(mmsi), t1 = first(s1), t2 = last(s2), cut = first(cut), hull = first(hull), link = first(link),
-            basis = first(basis), held = first(held), register = first(register),
+            basis = first(basis), imo_flag = first(imo_flag), held = first(held), register = first(register),
             feeds = feeds_of(any(astd, na.rm = TRUE), any(astd_b, na.rm = TRUE), any(emodnet, na.rm = TRUE)),
             alt = paste(alt, collapse = ";"), .groups = "drop") |>
   mutate(alt_keys = mapply(keys_minus, alt, hull, USE.NAMES = FALSE)) |>
@@ -372,7 +411,8 @@ nonisl <- a |>
             vid_reason = if_else(!is.na(held), "held_out", NA_character_), held, register, role = "vessel",
             # the hull's IMO: its key, or the registry vid's that the IMO reached; a register-id or broadcast hull has none
             imo = if_else(!is.na(hull) & startsWith(hull, "imo_"), sub("^imo_", "", hull), vimo),
-            feeds, alt_keys)
+            # `dominant`: the segment's feed claimed other IMOs too, and this one took it with 99 % of the IMO pings
+            imo_flag, feeds, alt_keys)
 
 ## MMSIs that name no vessel ------------------------------------------------------------------------------------------------
 invalid <- my |> filter(kind != "ship", !mmsi %in% isl_mmsi) |>
@@ -389,16 +429,7 @@ isl <- isl |> left_join(my |> group_by(mmsi) |> summarise(feeds = feeds_of(any(a
 link <- bind_rows(isl, nonisl, invalid) |>
   mutate(mmsi_kind = mmsi_kind(feed_id, mid))
 
-## Reviewed links (overrides/vessel_ais_link.csv) -------------------------------------------------------------------------
-# A confirmed row replaces whatever was computed for that MMSI in [t1, t2) (UTC; a date is its first instant, an empty
-# field is open); hull `none` says it is no vessel. An accessory (a net relay, a tender) takes its ship's hull with role
-# `accessory` (§6 b).
-as_utc <- function(x) as.POSIXct(ifelse(nchar(x) == 10, paste(x, "00:00:00"), x), tz = "UTC", format = "%Y-%m-%d %H:%M:%S")
-ov <- readr::read_csv("overrides/vessel_ais_link.csv", col_types = readr::cols(.default = "c")) |>
-  filter(decision == "confirmed") |>
-  mutate(t1 = as_utc(t1), t2 = as_utc(t2))
-stopifnot(all(ov$feed == "mmsi"), all(ov$role %in% c("vessel", "accessory")),
-          all(grepl("^(vid|imo|mmsi|eu|fro)_|^none$", ov$hull)))
+## Reviewed links (overrides/vessel_ais_link.csv, read above) ---------------------------------------------------------------
 for (i in seq_len(nrow(ov))) {
   o <- ov[i, ]
   o1 <- coalesce(o$t1, T_OPEN1); o2 <- coalesce(o$t2, T_OPEN2)
@@ -415,9 +446,13 @@ for (i in seq_len(nrow(ov))) {
 }
 
 ## STK: the frozen key, as it is ------------------------------------------------------------------------------------------
+# A mid's last stretch, if open, has no end: NA, not the key's open-end date (decisions 183, 184). Its other stretches end
+# where the key ends them, the two open ones that a one-day stretch follows included (mids 102543, 103872).
 key <- read_parquet(fd_curated("vessel", "vessel_ais_key.parquet"))
 stk <- key |>
-  transmute(feed = "stk", feed_id = format(mid, scientific = FALSE, trim = TRUE), t1 = day_start(d1), t2 = day_after(d2), vid,
+  group_by(mid) |> mutate(open_end = d2_is_open & d1 == max(d1)) |> ungroup() |>
+  transmute(feed = "stk", feed_id = format(mid, scientific = FALSE, trim = TRUE), t1 = day_start(d1),
+            t2 = if_else(open_end, as.POSIXct(NA, tz = "UTC"), day_after(d2)), vid,
             hull = if_else(!is.na(vid), paste0("vid_", vid), NA_character_),
             link = if_else(!is.na(vid), "stk_key", NA_character_), basis = if_else(!is.na(vid), basis, NA_character_),
             vid_reason = case_when(!is.na(vid) ~ NA_character_,
@@ -447,7 +482,7 @@ link <- link |>
   bind_rows(stk) |>
   mutate(imo_register = !is.na(imo) & imo %in% imo_in_register) |>
   select(feed, feed_id, t1, t2, cut, vid, vid_reason, hull, link, basis, held, role, mmsi_kind, register, imo,
-         imo_register, feeds, alt_keys) |>
+         imo_flag, imo_register, feeds, alt_keys) |>
   arrange(feed, feed_id, coalesce(t1, T_OPEN1))
 
 ## Checks (plan 021 §7) ------------------------------------------------------------------------------------------------------
@@ -468,18 +503,19 @@ if (anyDuplicated(iv$imo)) stop("vessel_ais_link: an IMO on two vids: ", paste(h
 if (anyDuplicated(iv$vid)) stop("vessel_ais_link: a vid with two IMOs: ", paste(head(iv$vid[duplicated(iv$vid)]), collapse = ", "))
 
 ## What a person should look at -------------------------------------------------------------------------------------------
-# Every segment held out, and the links that stand but rest on less: a register IMO the feed contradicts, a cut at a
-# handover, a carried-over segment's split by name
+# Every segment held out, and the links that stand but rest on less: a register IMO the feed contradicts, an IMO taken
+# by its share over the others the feed claimed (`imo_other`), a cut at a handover, a carried-over segment's split by name
 review <- a |>
-  filter(!is.na(held) | imo_differs | split | !is.na(cut)) |>
+  filter(!is.na(held) | imo_differs | dominant | split | !is.na(cut)) |>
   mutate(reason = coalesce(held, if_else(imo_differs, "register_feed_imo_differ", NA_character_),
+                           if_else(dominant, "dominant_imo", NA_character_),
                            if_else(split, "split_by_name", NA_character_), cut),
          held_out = !is.na(held)) |>
   left_join(iy |> group_by(mmsi, year) |> arrange(desc(pings), .by_group = TRUE) |>
               summarise(imo_claims = paste0(imo, " (", pings, " pings, ", format(t_first, "%Y-%m-%d %H:%M"), " to ",
                                             format(t_last, "%Y-%m-%d %H:%M"), ")", collapse = "; "), .groups = "drop"),
             by = c("mmsi", "year")) |>
-  transmute(mmsi, year, s1, s2, reason, held_out, hull, imo_claims, imo_share, twin_with, reg_ids, fvids, name = names,
+  transmute(mmsi, year, s1, s2, reason, held_out, hull, imo_claims, imo_share, imo_other, twin_with, reg_ids, fvids, name = names,
             split_from, src_name, src_s1, pings, hours, hours_box, feeds = feeds_of(coalesce(astd, FALSE), coalesce(astd_b, FALSE),
                                                                             coalesce(emodnet, FALSE))) |>
   arrange(desc(hours_box), mmsi, s1)
