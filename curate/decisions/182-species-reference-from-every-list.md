@@ -108,8 +108,14 @@ labels, the codes' meanings and two asserts (an FAO code has three letters: expe
 identical to the scratch build; the check gave 1,367 codes and all 518 (table, schema, code) resolved; `species` is not
 outdated since.
 
+The eight raw dictionaries the overlays touch were then rewritten the same day on the maintainer's go
+(`$FISHYDATA/archive/raw-oracle-data-dict_2026-10-23/`: the old files in `before/`, the script, its log and results).
+All eight validate with no error, every check of their overlays (decision 176's and these) comes out as described and
+none is NEWS, and only the eight files changed under `raw/`. Besides the overlays' text, 180 columns took other
+examples: those with no value in the file's first 10,000 rows take theirs from an unordered `SELECT DISTINCT ...
+LIMIT 5`, which gives other values on each run.
+
 ## Open
 
 - Nothing reads `species.parquet` yet.
 - A person to read the 30 `lists_unmatched` codes and the notes, above all 278, 953, 445 and 999.
-- Rewriting the eight real dictionaries with the new overlays (`rewrite_data_dict()`), as decision 176's were.
