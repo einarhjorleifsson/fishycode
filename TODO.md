@@ -1241,6 +1241,8 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   with the track (decisions 173, 174);
 - the flow diagram's vessel row draws only ping → vessel: the vessel's curation and its links to the MMSI, the
   logbooks and the landings are missing (`docs/figures/one_flow_cascade_v3.svg`, plan 033);
+- the station table carries the logbook's gear as recorded (`fishing_sample`), not the landing-corrected `gid_used`
+  of `curated/logbook/gear.parquet` (the effort map met it, decision 220);
 - skills for the user, later (maintainer).
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
@@ -1258,3 +1260,22 @@ of handline trips, of vessels that log that year; landbeitt lína has the same b
 
 **check:** the missing trips are read from a source the maintainer names, or the gap is declared where the analyst
 reads it (the landing outcome of TODO 140).
+
+## 142. Haul windows that hold steaming or a position jump: what the spread effort map shows
+**status:** open · **see:** decision 219, TODO 140, TODO 103, `$FISHYDATA/archive/2026-10-effort-map/` (README)
+
+Found 2026-10-24 (Claude's, read-only, not checked by a person): the effort map prototype spreads each fishing fix's
+hours along the line to its next fix (same vessel and voyage, gaps up to 30 min), and draws a few hauls across land
+or all the way to harbour. Over the whole trail, `fishing` fixes whose segment to the next fix implies:
+- 8-20 knots, steaming inside a window: 528,603 fixes, 30,825 h (0.34 % of fishing hours); 16,820 h of it in `day`
+  windows (`synthesised`), 12,834 h in windows with recorded times;
+- over 20 knots, an isolated position away from the track: 31,741 fixes, 624 h (0.01 %), 26,383 of them in `tow`
+  windows with recorded times.
+Fixes whose own speed is over 8 knots: 198,423, 7,946 h. Inside a window neither preset applies a speed range:
+`fishing_flow` is `fishing` there (2019: every window fix over 8 knots is `fishing_flow` TRUE).
+
+Open: which are windows bounded too wide (a day window that holds the steaming to and from port, a haul end logged
+late), and which are positions the impossible-ping filter keeps. The effort is small; on a map each one is a line.
+
+**check:** a decision says how a haul window is bounded where the track leaves the gear's speed range, and what is
+done with a position jump inside a window; the counts above are rerun after it.

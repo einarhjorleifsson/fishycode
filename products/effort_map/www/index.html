@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Effort map</title>
+<!-- The effort map (decision 220): the base grid's effort as vector tiles from app.R, run by server.R or effort_map.R. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; font: 13px/1.35 system-ui, sans-serif; color: #222; background: #fff; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(255,255,255,.94); padding: 10px 12px;
+           border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); width: 250px; }
+  .panel h1 { font-size: 14px; margin: 0 0 8px; }
+  .row { display: flex; align-items: center; gap: 6px; margin: 5px 0; }
+  .row label { width: 58px; color: #555; }
+  .row select, .row input[type=range] { flex: 1; min-width: 0; }
+  .years select { flex: 1; }
+  .range .val { width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
+  button { font: inherit; padding: 2px 8px; }
+  .legend { margin-top: 8px; }
+  .bar { height: 10px; border-radius: 2px; }
+  #hist { display: block; width: 100%; height: 44px; margin-top: 2px; }
+  .ends { display: flex; justify-content: space-between; color: #555; font-variant-numeric: tabular-nums; }
+  #status { color: #777; margin-top: 6px; min-height: 1.3em; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h1>Fishing effort</h1>
+  <div class="row"><label for="preset">Fishing</label>
+    <select id="preset">
+      <option value="fishing">in a haul window</option>
+      <option value="fishing_flow">window, else voyage gear's speed</option>
+    </select></div>
+  <div class="row"><label for="gid">Gear</label><select id="gid"><option value="">all gears</option></select></div>
+  <div class="row years"><label>Years</label><select id="y1"></select><span>–</span><select id="y2"></select></div>
+  <div class="row"><label for="metric">Metric</label>
+    <select id="metric">
+      <option value="h_km2">hours per km²</option>
+      <option value="kwh_km2">kW-hours per km²</option>
+    </select></div>
+  <div class="row"><label for="px">Cells</label>
+    <select id="px">
+      <option value="0.5" title="Tiles up to 25 MB when zoomed out (zoom 5-8); from zoom 9 the same as fine">finer (heavy)</option>
+      <option value="1" selected>fine</option>
+      <option value="2">coarser</option>
+    </select></div>
+  <div class="row"><label for="palette">Colours</label><select id="palette"></select></div>
+  <div class="row"><label for="stretch">Stretch</label>
+    <select id="stretch" title="How the colours are spread between floor and cap">
+      <option value="even">even on a log scale</option>
+      <option value="equal">equal shares of the cells in view</option>
+    </select></div>
+  <div class="row range"><label for="lo">Floor</label><input id="lo" type="range" min="-4" max="5" step="0.01"><span class="val" id="loval"></span></div>
+  <div class="row range"><label for="hi">Cap</label><input id="hi" type="range" min="-4" max="5" step="0.01"><span class="val" id="hival"></span></div>
+  <div class="row"><button id="fit" title="Floor and cap at the 2nd and 98th percentiles of the cells in view">Fit to view</button></div>
+  <div class="legend" title="The colour scale on a log axis, and below it the cells in view: values below the floor and above the cap in the end bars">
+    <div class="bar" id="bar"></div><canvas id="hist"></canvas><div class="ends"><span id="lolab"></span><span id="midlab"></span><span id="hilab"></span></div></div>
+  <div id="status"></div>
+</div>
+<script>
+// Each light (low) to dark (high), nine steps. The first ten change lightness steadily (OKLab L, checked 2026-10-24);
+// the last two are terrain palettes kept to compare, whose lightness rises and falls.
+const PALETTES = [
+  { id: "magma", label: "magma", source: "viridisLite", colors: ["#FCFDBF", "#FEC287", "#FB8861", "#E65164", "#B63679", "#822681", "#51127C", "#1D1147", "#000004"] },
+  { id: "viridis", label: "viridis", source: "viridisLite", colors: ["#FDE725", "#AADC32", "#5DC863", "#27AD81", "#21908C", "#2C728E", "#3B528B", "#472D7B", "#440154"] },
+  { id: "plasma", label: "plasma", source: "viridisLite", colors: ["#F0F921", "#FDC328", "#F89441", "#E56B5D", "#CC4678", "#A92395", "#7E03A8", "#4C02A1", "#0D0887"] },
+  { id: "deep", label: "deep", source: "tidyterra whitebox", colors: ["#FEFED7", "#EBF7B1", "#C5E7B4", "#7ECCBB", "#40B5C3", "#1D90BF", "#215DA7", "#243493", "#081C57"] },
+  { id: "scotland", label: "scotland", source: "tidyterra princess", colors: ["#E6CCAD", "#A98066", "#6C3B27", "#493835", "#173442", "#0F2531", "#071720", "#051017", "#01060B"] },
+  { id: "population_dens", label: "population_dens", source: "tidyterra grass", colors: ["#FFFFFF", "#AF6419", "#8B4010", "#83370E", "#7A2E0C", "#72250B", "#6A1C08", "#621104", "#5A0400"] },
+  { id: "etopo1_bathy", label: "etopo1_bathy", source: "tidyterra hypso", colors: ["#BCE6FF", "#55D7FF", "#34BFFF", "#17A0FC", "#176EF2", "#0026DE", "#0010CD", "#1505AF", "#1A0089"] },
+  { id: "colombia_bathy", label: "colombia_bathy", source: "tidyterra hypso", colors: ["#C6ECFF", "#8FD5FF", "#53BCF2", "#1B9FD3", "#017FB3", "#015F92", "#013F72", "#002B5E", "#001E50"] },
+  { id: "gn_yl", label: "gn_yl", source: "tidyterra whitebox", colors: ["#FFFFCC", "#E7F6B2", "#CEEB9E", "#B3DF91", "#93D283", "#70C274", "#46AC5D", "#218C49", "#006837"] },
+  { id: "blues", label: "blues", source: "tidyterra grass", colors: ["#FFFFFF", "#EEE2FF", "#DCC4FF", "#C8A8FF", "#B38BFF", "#9B6FFF", "#7E52FF", "#5932FF", "#0000FF"] },
+  { id: "high_relief", label: "high_relief (lightness not steady)", source: "tidyterra whitebox", colors: ["#488737", "#96B170", "#E2DBAB", "#E4C793", "#E4B47B", "#CDA886", "#B69C90", "#DBCCC6", "#FFFFFF"] },
+  { id: "bcyr", label: "bcyr (lightness not steady)", source: "tidyterra grass", colors: ["#0000FF", "#5377FF", "#4FC8FF", "#6CFFE7", "#C4FF9E", "#F3FF47", "#FFD100", "#FF8800", "#FF0000"] }
+];
+const $ = id => document.getElementById(id);
+const fmt = v => v >= 100 ? Math.round(v).toLocaleString("en") : v >= 1 ? v.toFixed(1) : v.toPrecision(2);
+let fitted = false, popup = null, gridVersion = 0, tileError = "";
+let viewVals = [];   // log10 of the metric in the cells in view, sorted, from the last fit
+let histVals = [];   // the same, for the histogram, from the last time the map settled
+
+function tileUrl() {
+  const q = new URLSearchParams({ preset: $("preset").value, px: $("px").value, y1: $("y1").value, y2: $("y2").value,
+                                  v: gridVersion });
+  if ($("gid").value) q.set("gid", $("gid").value);
+  return `${location.origin}/tiles/{z}/{x}/{y}.pbf?${q}`;
+}
+
+const colors = () => (PALETTES.find(p => p.id === $("palette").value) ?? PALETTES[0]).colors;
+
+// The colour stops, as [log10 value, colour]: evenly spaced between floor and cap, or at the quantiles of the cells in
+// view that lie between them, so that each colour covers an equal share of those cells
+function stops() {
+  const c = colors(), n = c.length;
+  let lo = +$("lo").value, hi = +$("hi").value;
+  if (hi <= lo) hi = lo + 0.05;
+  let v = c.map((_, i) => lo + i * (hi - lo) / (n - 1));
+  const sub = viewVals.filter(x => x >= lo && x <= hi);
+  if ($("stretch").value === "equal" && sub.length >= 2 * n) {
+    v = c.map((_, i) => sub[Math.min(sub.length - 1, Math.round(i * (sub.length - 1) / (n - 1)))]);
+    for (let i = 1; i < n; i++) v[i] = Math.max(v[i], v[i - 1] + 1e-6);   // interpolate needs rising stops
+  }
+  return v.map((x, i) => [x, c[i]]);
+}
+
+// The colour at log10 value x, as the map draws it: linear in RGB between stops, the end colours beyond them
+function colorAt(x, s) {
+  if (x <= s[0][0]) return s[0][1];
+  for (let i = 1; i < s.length; i++) if (x <= s[i][0]) {
+    const f = (x - s[i - 1][0]) / (s[i][0] - s[i - 1][0]);
+    const a = s[i - 1][1].match(/\w\w/g).map(h => parseInt(h, 16)), b = s[i][1].match(/\w\w/g).map(h => parseInt(h, 16));
+    return `rgb(${a.map((v, k) => Math.round(v + f * (b[k] - v))).join(",")})`;
+  }
+  return s[s.length - 1][1];
+}
+
+function drawHist() {
+  const cv = $("hist"), r = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * r; cv.height = h * r;
+  const g = cv.getContext("2d"); g.scale(r, r); g.clearRect(0, 0, w, h);
+  if (!histVals.length) return;
+  let lo = +$("lo").value, hi = +$("hi").value; if (hi <= lo) hi = lo + 0.05;
+  const nb = 48, n = new Array(nb).fill(0), s = stops();
+  for (const x of histVals) n[Math.max(0, Math.min(nb - 1, Math.floor((x - lo) / (hi - lo) * nb)))]++;
+  const top = Math.max(...n);
+  n.forEach((k, i) => {
+    g.fillStyle = colorAt(lo + (i + 0.5) * (hi - lo) / nb, s);
+    const bh = k ? Math.max(1, k / top * (h - 1)) : 0;
+    g.fillRect(i * w / nb, h - bh, w / nb - 0.5, bh);
+  });
+}
+
+function colorExpr() {
+  // values below the floor take the first colour and above the cap the last: interpolate clamps at its ends
+  return ["interpolate", ["linear"], ["log10", ["max", ["to-number", ["get", $("metric").value]], 1e-9]], ...stops().flat()];
+}
+
+function paint() {
+  $("loval").textContent = fmt(10 ** +$("lo").value);
+  $("hival").textContent = fmt(10 ** +$("hi").value);
+  $("lolab").textContent = "≤ " + fmt(10 ** +$("lo").value);
+  $("hilab").textContent = "≥ " + fmt(10 ** +$("hi").value);
+  // the bar on the histogram's log axis: each colour where its stop lies
+  const s = stops(), lo = s[0][0], hi = s[s.length - 1][0];
+  $("midlab").textContent = fmt(10 ** ((lo + hi) / 2));
+  $("bar").style.background = `linear-gradient(to right, ${s.map(([x, c]) => `${c} ${(100 * (x - lo) / (hi - lo)).toFixed(1)}%`).join(",")})`;
+  drawHist();
+  if (map.getLayer("effort")) map.setPaintProperty("effort", "fill-color", colorExpr());
+}
+
+function fitToView() {
+  const m = $("metric").value;
+  const v = map.queryRenderedFeatures({ layers: ["effort"] })
+    .map(f => +f.properties[m]).filter(x => x > 0).map(Math.log10).sort((a, b) => a - b);
+  if (v.length < 10) return;
+  viewVals = v;
+  const q = p => v[Math.min(v.length - 1, Math.floor(p * v.length))];
+  $("lo").value = q(0.02).toFixed(2);
+  $("hi").value = q(0.98).toFixed(2);
+  paint();
+}
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  center: [-19, 65], zoom: 5, hash: true
+});
+// a page laid out after the map was made (a tab opened in the background) left the canvas at 400 x 300
+new ResizeObserver(() => map.resize()).observe($("map"));
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+map.addControl(new maplibregl.ScaleControl(), "bottom-right");
+// the style's load event, caught once: map.loaded() is false again while any tile loads, so it cannot tell
+const styleLoaded = new Promise(resolve => map.once("load", resolve));
+
+for (const p of PALETTES) $("palette").append(new Option(`${p.label} · ${p.source}`, p.id));
+
+Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => {
+  gridVersion = meta.v;
+  for (const g of meta.gears) {
+    const o = document.createElement("option");
+    o.value = g.gid;
+    o.textContent = `${g.name ?? "gear " + g.gid}${g.fao ? " (" + g.fao + ")" : ""}`;
+    $("gid").append(o);
+  }
+  for (let y = meta.y1; y <= meta.y2; y++) {
+    $("y1").append(new Option(y, y)); $("y2").append(new Option(y, y));
+  }
+  $("y1").value = meta.y1; $("y2").value = meta.y2;
+  $("lo").value = -1; $("hi").value = 2;
+  // the first view from the address (effort_map() in R writes it): a value the page does not offer is left out
+  const q = new URLSearchParams(location.search);
+  if (q.get("gid") && ![...$("gid").options].some(o => o.value === q.get("gid")))
+    $("gid").append(new Option(`gears ${q.get("gid")}`, q.get("gid")));
+  for (const k of ["preset", "gid", "y1", "y2", "metric", "px", "palette", "stretch"])
+    if (q.get(k) !== null && [...$(k).options].some(o => o.value === q.get(k))) $(k).value = q.get(k);
+  if (+q.get("floor") > 0 && +q.get("cap") > +q.get("floor")) {
+    $("lo").value = Math.log10(+q.get("floor")); $("hi").value = Math.log10(+q.get("cap"));
+    fitted = true;   // a floor and cap given are kept, not fitted to the view
+  }
+  const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
+  map.addSource("effort", { type: "vector", tiles: [tileUrl()], minzoom: 2, maxzoom: 12 });
+  map.addLayer({ id: "effort", type: "fill", source: "effort", "source-layer": "cells",
+                 paint: { "fill-color": colorExpr(), "fill-opacity": 0.85, "fill-antialias": false } }, firstSymbol);
+  paint();
+});
+
+for (const id of ["preset", "gid", "y1", "y2", "px"])
+  $(id).addEventListener("change", () => {
+    if (+$("y1").value > +$("y2").value) [$("y1").value, $("y2").value] = [$("y2").value, $("y1").value];
+
+    popup?.remove();
+    tileError = "";
+    map.getSource("effort")?.setTiles([tileUrl()]);   // before the first load, start() reads the filters itself
+  });
+$("metric").addEventListener("change", () => { sampleView(); paint(); fitToView(); });
+$("lo").addEventListener("input", paint);
+$("palette").addEventListener("change", paint);
+$("stretch").addEventListener("change", () => { viewVals.length ? paint() : fitToView(); });
+$("hi").addEventListener("input", paint);
+$("fit").addEventListener("click", fitToView);
+
+map.on("dataloading", () => { $("status").textContent = "loading tiles…"; });
+// a refused tile would otherwise leave the map blank without a word (an older server, 2026-10-24)
+map.on("error", e => {
+  const s = e.error?.status;
+  if (s) $("status").textContent = tileError = `the server refused tiles (HTTP ${s}): restart it, it may be an older version`;
+});
+function sampleView() {
+  if (!map.getLayer("effort")) return;
+  const m = $("metric").value;
+  histVals = map.queryRenderedFeatures({ layers: ["effort"] }).map(f => +f.properties[m]).filter(x => x > 0).map(Math.log10);
+  // an equal stretch with a floor and cap from the address has no fit to take its shares from: the first view gives them
+  if (!viewVals.length && histVals.length >= 10) { viewVals = [...histVals].sort((a, b) => a - b); paint(); }
+  drawHist();
+}
+
+map.on("idle", () => {
+  sampleView();
+  $("status").textContent = tileError || `zoom ${map.getZoom().toFixed(1)}`;
+  if (!fitted && map.getLayer("effort")) { fitted = true; fitToView(); }
+});
+
+map.on("click", "effort", e => {
+  const p = e.features[0].properties;
+  popup?.remove();
+  popup = new maplibregl.Popup({ closeButton: false })
+    .setLngLat(e.lngLat)
+    .setHTML(`<b>${fmt(+p.h_km2)}</b> hours per km²<br>${fmt(+p.kwh_km2)} kW-hours per km²<br>${(+p.n).toLocaleString("en")} fixes`)
+    .addTo(map);
+});
+map.on("mouseenter", "effort", () => { map.getCanvas().style.cursor = "pointer"; });
+map.on("mouseleave", "effort", () => { map.getCanvas().style.cursor = ""; });
+</script>
+</body>
+</html>
