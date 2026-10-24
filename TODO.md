@@ -1278,17 +1278,21 @@ late), and which are positions the impossible-ping filter keeps. The effort is s
 **check:** a decision says how a haul window is bounded where the track leaves the gear's speed range, and what is
 done with a position jump inside a window; the counts above are rerun after it.
 
-## 144. Place names after version 1: the originals, two dumps, the lanes, the Oracle gazetteers, a person's read
-**status:** open · **needs: maintainer** — plan 043 asks a and f; whether the effort lanes go flow-side · **see:**
-`curate/plans/044-place-name-gazetteer.md` §2, `curate/plans/043-place-names-staged.md` §6, decisions 221-223
+## 144. Place names after version 2: the originals, two dumps, the lanes and footprints, the review loop
+**status:** open · **needs: maintainer** — run the merki and fiskmerki dumps; plan 043 ask a; whether the effort lanes go
+flow-side · **see:**
+`curate/plans/044-place-name-gazetteer.md` §2 and §4, `curate/plans/043-place-names-staged.md` §6, decisions 221-224
 
-Staged (decision 222) and curated as version 1 (decision 223; Claude's build, not checked by a person). Open:
+Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224; Claude's build, not checked by a person). Open:
 - the originals still in `~/stasi/ornefni` (plan 043 ask a): moved under the one-home rule, or the ornefni repo's
   git as the home of `data-md/` and the hand-made workbooks, with raw holding snapshots;
-- `fiskar.ornefni` and `fiskmerki.endurheimtur` dumped as single tables (ask f);
-- the lanes (plan 043 §3.4): effort since 2023 under each name's tows, which reads the AIS trail, so flow side;
-- the Oracle gazetteers (`ops$sigfus.ornefni`, `afli.skikar`, `brei_nofn`) as sources of `curated/place_name/`;
-- footprints drawn from the seabed's feature or the effort ridges, not the positions alone;
-- a person's read of the keys: spellings the key does not join (Grovens, Gróves, Gróens), abbreviations.
+- the schemas `merki` and `fiskmerki` dumped whole (ask f; maintainer, 2026-10-24): the scripts are ready
+  (`dump/oracle/merki.R`, `fiskmerki.R`, in the run order), the run is yours (keychain), e.g. `Rscript dump/oracle/all.R
+  merki fiskmerki` on the server; then `dump/oracle/code.R merki fiskmerki`. The recaptures' `ORRI.ORNEFNI` picks
+  (`NAFN-HEITI`) are the cross-check the 2022 extract lacks. `fiskar.ornefni` is not asked for;
+- the lanes (plan 043 §3.4) and footprints drawn from the seabed's features or the effort ridges (flow side for effort);
+- the review loop: a draft per key in the data-md template's fields (spellings, candidate synonyms, class, parent,
+  places), corrected by a person and read back from `overrides/`; the 1,206 candidates and 270 disagreements first;
+- the hazard class against the effort: a weak tendency (decision 224), to test again on more marks.
 
 **check:** each item done and recorded in a decision, or dropped by the maintainer, and plan 044's status agrees.
