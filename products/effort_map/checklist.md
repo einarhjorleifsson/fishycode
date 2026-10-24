@@ -84,6 +84,12 @@ How to test:
 - **P3** `ports=1` in the address, and from `effort_map(ports = TRUE)`; kept through a base map change; ticking it off
   and on writes the address.
 
+## The config (plan 046 step 5)
+
+- **K1** The page's groups, layers, texts, palettes and base maps come from `www/config.json`, written into the page
+  by `app.R` and served at `/config.json`; an edit to it shows on a reload, with no restart; a server older than the
+  page sends no config, and the page says to restart it.
+
 ## Errors
 
 - **E1** A refused tile: the status line says so, with the HTTP status and the server's reason; a server older than
@@ -132,3 +138,11 @@ How to test:
   running server as older (R2, on a real server). Found on the way: the reference's `unlocode` is a flag (the pid is
   the port's UN/LOCODE), not a code, so the popup says so; Reykjavík's port is one multipolygon (the old harbour and
   Sundahöfn) with its point in Sundahöfn; 4 OpenStreetMap areas are invalid geometries, drawn as they are.
+- **2026-10-24, plan 046 step 5** (uncommitted, on top of 2963436). Claude's run in the browser pane; for part of it
+  the page was hidden (the app's window not in front), so the map drew slowly and those checks waited longer. Every
+  item run again and passing, K1 new: L1-L5, F1-F5, C1-C5, M1-M5, S1-S6, B1, P1-P3, A1-A8, E1, E2 (the names' missing
+  text from the config), R1-R4 (`effort_map()` now reads the palettes and base maps from `config.json`). Two faults
+  found and fixed on the way: with the ports row the sidebar could scroll, and a scrollbar appearing (an ⓘ opened)
+  moved every button 15 px left, so a second click missed (now `scrollbar-gutter: stable`); and a page opened with the
+  effort off never fitted its colours when the effort was turned on (the first fit now waits for cells). The copy test
+  put a link on the maintainer's clipboard again.

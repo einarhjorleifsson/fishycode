@@ -2,7 +2,7 @@
 # by its arguments, with the page's controls to go on from there.
 # Decision 220.
 #
-# Input:  tiles.R, ports.R, app.R and what they read
+# Input:  tiles.R, ports.R, app.R and what they read; www/config.json, the page's palettes and base maps
 # Output: effort_map(), effort_map_stop(); a server on 127.0.0.1:<port> in this R session, in the background
 #
 # Use, from the fishycode root (an RStudio project opens there):
@@ -63,13 +63,9 @@ effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing
                        center = c(-19, 65), zoom = 5, port = 8791, viewer = TRUE) {
   preset <- match.arg(preset); metric <- match.arg(metric); cells <- match.arg(cells); stretch <- match.arg(stretch)
   lang <- match.arg(lang)
-  page <- readLines(file.path(.effort_map$dir, "www", "index.html"), warn = FALSE, encoding = "UTF-8")
-  palettes <- regmatches(page, regexpr('(?<=\\{ id: ")[^"]+(?=", label: )', page, perl = TRUE))   # the page's PALETTES
-  if (!palette %in% palettes) stop("palette is one of ", paste(palettes, collapse = ", "), call. = FALSE)
-  block <- page[seq(grep("^const BASEMAPS = \\[", page), length(page))]                          # the page's BASEMAPS
-  block <- block[seq_len(grep("^\\];", block)[1])]
-  bases <- regmatches(block, regexpr('(?<=\\{ id: ")[^"]+', block, perl = TRUE))
-  if (!base %in% bases) stop("base is one of ", paste(bases, collapse = ", "), call. = FALSE)
+  config <- jsonlite::fromJSON(file.path(.effort_map$dir, "www", "config.json"))   # the page's palettes and base maps
+  if (!palette %in% config$palettes$id) stop("palette is one of ", paste(config$palettes$id, collapse = ", "), call. = FALSE)
+  if (!base %in% config$basemaps$id) stop("base is one of ", paste(config$basemaps$id, collapse = ", "), call. = FALSE)
   if (!is.null(opacity) && !(is.numeric(opacity) && opacity >= 0 && opacity <= 100))
     stop("opacity is a percentage, 0 to 100", call. = FALSE)
   gid <- NULL

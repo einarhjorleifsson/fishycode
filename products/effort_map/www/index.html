@@ -18,7 +18,7 @@
   #map { position: absolute; top: 0; bottom: 0; left: var(--side); right: 0; }
   #side header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
   #side header h1 { font-size: 15px; margin: 0; flex: 1; }
-  #groups { flex: 1; overflow-y: auto; }
+  #groups { flex: 1; overflow-y: auto; scrollbar-gutter: stable; }   /* a scrollbar appearing moves nothing */
   details.group > summary { list-style: none; cursor: pointer; background: var(--bar); color: #fff; padding: 7px 12px;
                             border-bottom: 1px solid #fff; user-select: none; }
   details.group > summary::-webkit-details-marker { display: none; }
@@ -50,8 +50,6 @@
   .swatches { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 2px 0 4px 22px; color: var(--muted); }
   .swatches span { display: inline-flex; align-items: center; gap: 5px; }
   .swatches i { display: inline-block; width: 14px; height: 10px; }
-  .swatches i.area { background: rgba(217,130,43,.3); border: 1.2px solid #b35c0f; }
-  .swatches i.dot { width: 8px; height: 8px; border-radius: 50%; background: #d9822b; border: 1px solid #fff; box-shadow: 0 0 0 .5px #b35c0f; }
   #copylink { border: 0; background: none; cursor: pointer; font-size: 15px; padding: 0 4px; }
   .langs button { border: 1px solid var(--line); background: #fff; color: var(--muted); padding: 1px 6px; cursor: pointer; }
   .langs button + button { border-left: 0; }
@@ -76,238 +74,114 @@
     <span class="langs"><button data-lang="is">IS</button><button data-lang="en">EN</button></span>
     <button id="close" data-tt="close">✕</button></header>
   <div id="groups">
-    <details class="group" id="g-effort" open>
-      <summary data-t="gEffort"></summary>
-      <div class="body">
-        <div class="layer" id="lyr-effort">
-          <div class="head"><input id="effort" type="checkbox" checked><label for="effort" data-t="lyrEffort"></label>
-            <span class="count"></span><button class="info-btn" data-info="info-effort" data-tt="infoTip">ⓘ</button></div>
-          <div class="info" id="info-effort" data-t="infoEffort" hidden></div>
-          <div class="when-on">
-            <div class="row"><label for="preset" data-t="fishing"></label>
-              <select id="preset">
-                <option value="fishing" data-t="presetFishing"></option>
-                <option value="fishing_flow" data-t="presetFlow"></option>
-              </select></div>
-            <div class="row"><label for="gid" data-t="gear"></label><select id="gid"><option value="" data-t="allGears"></option></select></div>
-            <div class="row years"><label data-t="years"></label><select id="y1"></select><span>–</span><select id="y2"></select></div>
-            <div class="row"><label for="metric" data-t="metric"></label>
-              <select id="metric">
-                <option value="h_km2" data-t="hKm2"></option>
-                <option value="kwh_km2" data-t="kwhKm2"></option>
-              </select></div>
-            <div class="row"><label for="px" data-t="cells"></label>
-              <select id="px">
-                <option value="0.5" data-t="pxFiner" data-tt="pxFinerTip"></option>
-                <option value="1" data-t="pxFine" selected></option>
-                <option value="2" data-t="pxCoarser"></option>
-              </select></div>
-            <div class="sub" data-t="colour"></div>
-            <div class="row"><label for="palette" data-t="colours"></label><select id="palette"></select></div>
-            <div class="row"><label for="stretch" data-t="stretch"></label>
-              <select id="stretch" data-tt="stretchTip">
-                <option value="even" data-t="sEven"></option>
-                <option value="equal" data-t="sEqual"></option>
-              </select></div>
-            <div class="row range"><label for="lo" data-t="floor"></label><input id="lo" type="range" min="-4" max="5" step="any"><span class="val" id="loval"></span></div>
-            <div class="row range"><label for="hi" data-t="cap"></label><input id="hi" type="range" min="-4" max="5" step="any"><span class="val" id="hival"></span></div>
-            <div class="row range"><label for="opacity" data-t="opacity"></label><input id="opacity" type="range" min="0" max="100" step="1" value="85"><span class="val" id="opval">85 %</span></div>
-            <div class="row"><button id="fit" data-t="fit" data-tt="fitTip"></button></div>
-            <div class="legend" data-tt="legendTip">
-              <div class="bar" id="bar"></div><canvas id="hist"></canvas><div class="ends"><span id="lolab"></span><span id="midlab"></span><span id="hilab"></span></div></div>
-          </div>
-        </div>
-      </div>
-    </details>
-    <details class="group" id="g-ref" open>
-      <summary data-t="gRef"></summary>
-      <div class="body">
-        <div class="layer off" id="lyr-ports">
-          <div class="head"><input id="ports" type="checkbox"><label for="ports" data-t="lyrPorts"></label>
-            <span class="count" id="portsinfo"></span><button class="info-btn" data-info="info-ports" data-tt="infoTip">ⓘ</button></div>
-          <div class="info" id="info-ports" data-t="infoPorts" hidden></div>
-          <div class="when-on swatches"><span><i class="area"></i><span data-t="portArea"></span></span>
-            <span><i class="dot"></i><span data-t="portPoint"></span></span></div>
-        </div>
-        <div class="layer" id="lyr-names">
-          <div class="head"><input id="names" type="checkbox" checked><label for="names" data-t="lyrNames"></label>
-            <span class="count" id="namesinfo"></span><button class="info-btn" data-info="info-names" data-tt="infoTip">ⓘ</button></div>
-          <div class="info" id="info-names" data-t="infoNames" hidden></div>
-        </div>
-      </div>
-    </details>
     <details class="group" id="g-base">
       <summary data-t="gBase"></summary>
       <div class="body" id="bases"></div>
     </details>
     <details class="group about" id="g-about">
       <summary data-t="gAbout"></summary>
-      <div class="body"><p data-t="about1"></p><p data-t="about2"></p></div>
+      <div class="body" id="about"></div>
     </details>
   </div>
   <div id="status"></div>
 </aside>
+<!-- the effort layer's own controls, put under its row by the page (a layer of kind "effort" in the config) -->
+<template id="effort-controls">
+<div class="when-on">
+  <div class="row"><label for="preset" data-t="fishing"></label>
+    <select id="preset">
+      <option value="fishing" data-t="presetFishing"></option>
+      <option value="fishing_flow" data-t="presetFlow"></option>
+    </select></div>
+  <div class="row"><label for="gid" data-t="gear"></label><select id="gid"><option value="" data-t="allGears"></option></select></div>
+  <div class="row years"><label data-t="years"></label><select id="y1"></select><span>–</span><select id="y2"></select></div>
+  <div class="row"><label for="metric" data-t="metric"></label>
+    <select id="metric">
+      <option value="h_km2" data-t="hKm2"></option>
+      <option value="kwh_km2" data-t="kwhKm2"></option>
+    </select></div>
+  <div class="row"><label for="px" data-t="cells"></label>
+    <select id="px">
+      <option value="0.5" data-t="pxFiner" data-tt="pxFinerTip"></option>
+      <option value="1" data-t="pxFine" selected></option>
+      <option value="2" data-t="pxCoarser"></option>
+    </select></div>
+  <div class="sub" data-t="colour"></div>
+  <div class="row"><label for="palette" data-t="colours"></label><select id="palette"></select></div>
+  <div class="row"><label for="stretch" data-t="stretch"></label>
+    <select id="stretch" data-tt="stretchTip">
+      <option value="even" data-t="sEven"></option>
+      <option value="equal" data-t="sEqual"></option>
+    </select></div>
+  <div class="row range"><label for="lo" data-t="floor"></label><input id="lo" type="range" min="-4" max="5" step="any"><span class="val" id="loval"></span></div>
+  <div class="row range"><label for="hi" data-t="cap"></label><input id="hi" type="range" min="-4" max="5" step="any"><span class="val" id="hival"></span></div>
+  <div class="row range"><label for="opacity" data-t="opacity"></label><input id="opacity" type="range" min="0" max="100" step="1" value="85"><span class="val" id="opval">85 %</span></div>
+  <div class="row"><button id="fit" data-t="fit" data-tt="fitTip"></button></div>
+  <div class="legend" data-tt="legendTip">
+    <div class="bar" id="bar"></div><canvas id="hist"></canvas><div class="ends"><span id="lolab"></span><span id="midlab"></span><span id="hilab"></span></div></div>
+</div>
+</template>
+<!-- the config (config.json), written in by app.R as it serves the page -->
+<script id="config" type="application/json">__CONFIG__</script>
 <script>
-// Each light (low) to dark (high), nine steps. The first ten change lightness steadily (OKLab L, checked 2026-10-24);
-// the last two are terrain palettes kept to compare, whose lightness rises and falls.
-const PALETTES = [
-  { id: "magma", label: "magma", source: "viridisLite", colors: ["#FCFDBF", "#FEC287", "#FB8861", "#E65164", "#B63679", "#822681", "#51127C", "#1D1147", "#000004"] },
-  { id: "viridis", label: "viridis", source: "viridisLite", colors: ["#FDE725", "#AADC32", "#5DC863", "#27AD81", "#21908C", "#2C728E", "#3B528B", "#472D7B", "#440154"] },
-  { id: "plasma", label: "plasma", source: "viridisLite", colors: ["#F0F921", "#FDC328", "#F89441", "#E56B5D", "#CC4678", "#A92395", "#7E03A8", "#4C02A1", "#0D0887"] },
-  { id: "deep", label: "deep", source: "tidyterra whitebox", colors: ["#FEFED7", "#EBF7B1", "#C5E7B4", "#7ECCBB", "#40B5C3", "#1D90BF", "#215DA7", "#243493", "#081C57"] },
-  { id: "scotland", label: "scotland", source: "tidyterra princess", colors: ["#E6CCAD", "#A98066", "#6C3B27", "#493835", "#173442", "#0F2531", "#071720", "#051017", "#01060B"] },
-  { id: "population_dens", label: "population_dens", source: "tidyterra grass", colors: ["#FFFFFF", "#AF6419", "#8B4010", "#83370E", "#7A2E0C", "#72250B", "#6A1C08", "#621104", "#5A0400"] },
-  { id: "etopo1_bathy", label: "etopo1_bathy", source: "tidyterra hypso", colors: ["#BCE6FF", "#55D7FF", "#34BFFF", "#17A0FC", "#176EF2", "#0026DE", "#0010CD", "#1505AF", "#1A0089"] },
-  { id: "colombia_bathy", label: "colombia_bathy", source: "tidyterra hypso", colors: ["#C6ECFF", "#8FD5FF", "#53BCF2", "#1B9FD3", "#017FB3", "#015F92", "#013F72", "#002B5E", "#001E50"] },
-  { id: "gn_yl", label: "gn_yl", source: "tidyterra whitebox", colors: ["#FFFFCC", "#E7F6B2", "#CEEB9E", "#B3DF91", "#93D283", "#70C274", "#46AC5D", "#218C49", "#006837"] },
-  { id: "blues", label: "blues", source: "tidyterra grass", colors: ["#FFFFFF", "#EEE2FF", "#DCC4FF", "#C8A8FF", "#B38BFF", "#9B6FFF", "#7E52FF", "#5932FF", "#0000FF"] },
-  { id: "high_relief", label: "high_relief (lightness not steady)", source: "tidyterra whitebox", colors: ["#488737", "#96B170", "#E2DBAB", "#E4C793", "#E4B47B", "#CDA886", "#B69C90", "#DBCCC6", "#FFFFFF"] },
-  { id: "bcyr", label: "bcyr (lightness not steady)", source: "tidyterra grass", colors: ["#0000FF", "#5377FF", "#4FC8FF", "#6CFFE7", "#C4FF9E", "#F3FF47", "#FFD100", "#FF8800", "#FF0000"] }
-];
-// The base maps: Carto's vector styles, Esri's raster tiles, or none. A change keeps the effort and the names, through
-// setStyle's transformStyle
-const BASEMAPS = [
-  { id: "light", style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" },
-  { id: "voyager", style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json" },
-  { id: "dark", style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" },
-  { id: "ocean", maxzoom: 13,
-    tiles: "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}" },
-  { id: "satellite", maxzoom: 19,
-    tiles: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" },
-  { id: "none" }
-];
-// Every text on the page, in Icelandic and English (maintainer, plan 046 ask a). Gear names are the reference's own,
-// Icelandic in both: `reference/gear` has no English names.
-const T = {
-  title: { en: "Fishing effort", is: "Veiðisókn" },
-  menu: { en: "Layers and filters", is: "Lög og síur" },
-  close: { en: "Close", is: "Loka" },
-  infoTip: { en: "About this layer", is: "Um lagið" },
-  gEffort: { en: "Effort", is: "Sókn" },
-  lyrEffort: { en: "Fishing effort", is: "Veiðisókn" },
-  infoEffort: {
-    en: "Hours of fishing per km² (or kW-hours) from the AIS trail's fishing fixes, the user tables v0 (decision 219). " +
-        "Each fix's hours are spread along the track to its next fix, and summed by cell, gear, year and preset " +
-        "(decision 220). The gear is the haul's, corrected by the landing's. A cell is about one screen pixel at each zoom.",
-    is: "Veiðistundir á km² (eða kílóvattstundir) úr veiðipunktum AIS-ferilsins, notendatöflum v0 (ákvörðun 219). " +
-        "Stundum hvers punkts er dreift eftir ferlinum að næsta punkti og þær lagðar saman eftir reit, veiðarfæri, ári " +
-        "og forsendu (ákvörðun 220). Veiðarfærið er halsins, leiðrétt eftir lönduninni. Reitur er um einn skjápunktur " +
-        "við hvern aðdrátt." },
-  fishing: { en: "Fishing", is: "Veiðar" },
-  presetFishing: { en: "in a haul window", is: "innan hals" },
-  presetFlow: { en: "window, else voyage gear's speed", is: "hal, annars hraði veiðarfæris" },
-  gear: { en: "Gear", is: "Veiðarfæri" },
-  allGears: { en: "all gears", is: "öll veiðarfæri" },
-  gearN: { en: "gear", is: "veiðarfæri" },
-  years: { en: "Years", is: "Ár" },
-  metric: { en: "Metric", is: "Mælikvarði" },
-  hKm2: { en: "hours per km²", is: "klst. á km²" },
-  kwhKm2: { en: "kW-hours per km²", is: "kWst á km²" },
-  fixes: { en: "fixes", is: "staðsetningar" },
-  cells: { en: "Cells", is: "Reitir" },
-  pxFiner: { en: "finer (heavy)", is: "fínni (þungt)" },
-  pxFinerTip: { en: "Tiles up to 38 MB when zoomed out (zoom 5-8); from zoom 9 the same as fine",
-                is: "Kortatíglar allt að 38 MB í fjarlægð (aðdráttur 5-8); frá aðdrætti 9 eins og fínir" },
-  pxFine: { en: "fine", is: "fínir" },
-  pxCoarser: { en: "coarser", is: "grófari" },
-  colour: { en: "Colour", is: "Litir" },
-  colours: { en: "Colours", is: "Litaskali" },
-  stretch: { en: "Stretch", is: "Dreifing" },
-  stretchTip: { en: "How the colours are spread between floor and cap", is: "Hvernig litunum er dreift milli lágmarks og hámarks" },
-  sEven: { en: "even on a log scale", is: "jöfn á lograkvarða" },
-  sEqual: { en: "equal shares of the cells in view", is: "jafnir hlutar reita í sýn" },
-  floor: { en: "Floor", is: "Lágmark" },
-  cap: { en: "Cap", is: "Hámark" },
-  opacity: { en: "Opacity", is: "Þekja" },
-  fit: { en: "Fit to view", is: "Laga að sýn" },
-  fitTip: { en: "Floor and cap at the 2nd and 98th percentiles of the cells in view",
-            is: "Lágmark og hámark við 2. og 98. hundraðsmark reita í sýn" },
-  legendTip: { en: "The colour scale on a log axis, and below it the cells in view: values below the floor and above the cap in the end bars",
-               is: "Litaskalinn á lograkvarða og undir honum reitir í sýn: gildi undir lágmarki og yfir hámarki í endasúlunum" },
-  gRef: { en: "Reference layers", is: "Viðmiðunarlög" },
-  lyrNames: { en: "Place names", is: "Örnefni" },
-  infoNames: {
-    en: "The place-name gazetteer (plan 044): each name at the median of its positions, from the zoom that suits its " +
-        "size (broad names first), with its footprint where it has one. Click a name for its counts.",
-    is: "Örnefnaskráin (áætlun 044): hvert nafn við miðgildi staðsetninga sinna, frá þeim aðdrætti sem hæfir stærð þess " +
-        "(víð nöfn fyrst), með fótspori þar sem það er til. Smelltu á nafn til að sjá talningar." },
-  namesN: { en: n => `${n} names`, is: n => `${n} örnefni` },
-  lyrPorts: { en: "Ports", is: "Hafnir" },
-  infoPorts: {
-    en: "Every port of the reference (curated/reference/port_geometry), by pid, the key the logbooks, landings and AIS " +
-        "data join on: one geometry each, from the sources in their order. Iceland's and the Faroes' areas are drawn by " +
-        "hand; elsewhere they come from GISCO, EMODnet, OpenStreetMap, Global Fishing Watch and others. An area shows " +
-        "from zoom 8, a point further out. A port call is measured against the area (decision 074).",
-    is: "Allar hafnir viðmiðunartöflunnar (curated/reference/port_geometry), eftir pid, lyklinum sem afladagbækur, " +
-        "landanir og AIS-gögn tengjast á: ein lögun hver, úr heimildunum í forgangsröð. Svæði íslenskra og færeyskra " +
-        "hafna eru teiknuð í höndunum; annars staðar koma þau frá GISCO, EMODnet, OpenStreetMap, Global Fishing Watch " +
-        "og fleirum. Svæði sést frá aðdrætti 8, punktur fjær. Hafnarkoma er mæld við svæðið (ákvörðun 074)." },
-  portsN: { en: n => `${n} ports`, is: n => `${n} hafnir` },
-  portArea: { en: "port area", is: "hafnarsvæði" },
-  portPoint: { en: "port, a point", is: "höfn, punktur" },
-  hid: { en: "port code (logbooks, landings)", is: "hafnarnúmer (afladagbækur, landanir)" },
-  source: { en: "source", is: "heimild" },
-  pidLocode: { en: "pid is its UN/LOCODE", is: "pid er UN/LOCODE hafnarinnar" },
-  no: { en: "no", is: "nei" },
-  noGaz: { en: "no gazetteer on this server", is: "engin örnefnaskrá á þessum þjóni" },
-  gBase: { en: "Base map", is: "Grunnkort" },
-  b_light: { en: "Light (Carto Positron)", is: "Ljóst (Carto Positron)" },
-  b_voyager: { en: "Colour (Carto Voyager)", is: "Litað (Carto Voyager)" },
-  b_dark: { en: "Dark (Carto Dark Matter)", is: "Dökkt (Carto Dark Matter)" },
-  b_ocean: { en: "Ocean (Esri)", is: "Haf (Esri)" },
-  b_satellite: { en: "Satellite (Esri)", is: "Gervihnattamynd (Esri)" },
-  b_none: { en: "None", is: "Ekkert" },
-  gAbout: { en: "About", is: "Um kortið" },
-  about1: {
-    en: "Where Icelandic vessels fished, from their AIS tracks linked to the logbooks and landings: fishycode's effort " +
-        "map (decision 220), in the layout of plan 046.",
-    is: "Hvar íslensk skip voru að veiðum, samkvæmt AIS-ferlum þeirra tengdum afladagbókum og löndunum: sóknarkort " +
-        "fishycode (ákvörðun 220), í útliti áætlunar 046." },
-  about2: { en: "Built from vessel-level data: for use inside MFRI only.",
-            is: "Unnið úr gögnum um einstök skip: aðeins til nota innan Hafrannsóknastofnunar." },
-  loading: { en: "loading tiles…", is: "sæki kortatígla…" },
-  zoom: { en: "zoom", is: "aðdráttur" },
-  refused: { en: s => `the server refused tiles (HTTP ${s})`, is: s => `þjónninn hafnaði kortatíglum (HTTP ${s})` },
-  older: { en: (a, b) => `the server is an older version (${a}) than this page (${b}): restart it`,
-           is: (a, b) => `þjónninn er eldri útgáfa (${a}) en síðan (${b}): endurræstu hann` },
-  positions: { en: "positions", is: "staðsetningar" },
-  usedIn: { en: "used in", is: "í heimildum" },
-  spellings: { en: "spellings", is: "rithættir" },
-  terrain: { en: "terrain word", is: "landslagsorð" },
-  depth: { en: "depth (GEBCO, m)", is: "dýpi (GEBCO, m)" },
-  mainGear: { en: "main gear", is: "helsta veiðarfæri" },
-  spread: { en: "spread, r80 (km)", is: "dreifing, r80 (km)" },
-  liesIn: { en: "lies in", is: "liggur í" },
-  namesWithin: { en: "names within", is: "nöfn innan" },
-  klass: { en: "class", is: "flokkur" },
-  agree: { en: "sources agree", is: "heimildir sammála" },
-  yes: { en: "yes", is: "já" },
-  apart: { en: "no: they place it apart", is: "nei: þær staðsetja það sitt á hvað" },
-  places: { en: "places with this name", is: "staðir með þessu nafni" },
-  thisPlace: { en: "this is place", is: "þetta er staður" },
-  fromZoom: { en: "shown from zoom", is: "sýnt frá aðdrætti" },
-  maybe: { en: "maybe also", is: "ef til vill líka" },
-  copyLink: { en: "Copy a link to this view", is: "Afrita tengil á þessa sýn" },
-  copied: { en: "link copied", is: "tengill afritaður" },
-  notCopied: { en: "the browser refused to copy the link", is: "vafrinn leyfði ekki að afrita tengilinn" }
-};
+// What the page shows comes from its config (config.json, plan 046 step 5): the texts in Icelandic and English (plan 046
+// ask a; gear names are the reference's own, Icelandic in both), the palettes (light to dark; the first ten change
+// lightness steadily, OKLab L checked 2026-10-24), the base maps, and the groups and layers. This script is the engine.
+let CONFIG;
+try { CONFIG = JSON.parse(document.getElementById("config").textContent); }
+catch (err) {
+  document.body.innerHTML = "<p style='padding:2em'>The server did not send the page's config: restart it (an older " +
+                            "server.R or effort_map() may be running).</p>";
+  throw err;
+}
+const T = CONFIG.texts, PALETTES = CONFIG.palettes, BASEMAPS = CONFIG.basemaps;
+for (const b of BASEMAPS) T["b_" + b.id] = b.label;
+const LAYERS = CONFIG.layers, OTHER = LAYERS.filter(l => l.kind !== "effort");
+const SOURCES = new Set(LAYERS.map(l => l.id));   // each layer's source is named by its id
 let LANG = "en";
 let addressRead = false, userColour = false, addressTimer = 0;   // the address (plan 046 step 3), see addressNow()
-let portsCount = 0;      // the reference's ports, from /meta; 0 when the server has none
-let namesCount = null;   // the gazetteer's labels, for the language switch; -1 when the server has none
-const tr = (k, ...a) => { const t = T[k]?.[LANG] ?? T[k]?.en ?? k; return typeof t === "function" ? t(...a) : t; };
+const counts = {};      // a layer's features, for the text beside it; -1 when the server has none of them
+let FONT = ["Open Sans Regular"];   // the first style's label font, for the layers' labels on any base map
+const tr = (k, ...a) => a.reduce((t, v, i) => t.replaceAll(`{${i + 1}}`, v), T[k]?.[LANG] ?? T[k]?.en ?? k);
 // Icelandic numbers have a decimal comma and a dot for thousands, as German ones: a browser without Icelandic number
 // data (the desktop app's pane, 2026-10-24) formats "is" as English, so German stands in for it there
 const IS_NUM = Intl.NumberFormat.supportedLocalesOf(["is"]).length ? "is-IS" : "de-DE";
 const loc = () => LANG === "is" ? IS_NUM : "en";
 const $ = id => document.getElementById(id);
-const APP = 5;   // the version of app.R this page is written for: its APP_VERSION, changed together
+const APP = 6;   // the version of app.R this page is written for: its APP_VERSION, changed together
 const fmt = v => v >= 100 ? Math.round(v).toLocaleString(loc())
   : v >= 1 ? v.toLocaleString(loc(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
   : (+v.toPrecision(2)).toLocaleString(loc(), { maximumSignificantDigits: 2 });
 let fitted = false, popup = null, gridVersion = 0, tileError = "";
 let viewVals = [];   // log10 of the metric in the cells in view, sorted, from the last fit
 let histVals = [];   // the same, for the histogram, from the last time the map settled
+
+// A layer's row: its checkbox, label, count and ⓘ, its info, and under it when on the effort's controls or the legend
+const swatch = w => w.dot
+  ? `<i style="width:8px;height:8px;border-radius:50%;background:${w.dot};border:1px solid #fff;box-shadow:0 0 0 .5px ${w.stroke ?? w.dot}"></i>`
+  : `<i style="background:${w.fill};border:1.2px solid ${w.stroke ?? w.fill}"></i>`;
+function layerRow(l) {
+  const row = document.createElement("div");
+  row.className = "layer" + (l.visible ? "" : " off");
+  row.id = "lyr-" + l.id;
+  row.innerHTML = `<div class="head"><input id="${l.id}" type="checkbox"${l.visible ? " checked" : ""}>` +
+    `<label for="${l.id}" data-t="${l.label}"></label><span class="count" id="${l.id}info"></span>` +
+    `<button class="info-btn" data-info="info-${l.id}" data-tt="infoTip">ⓘ</button></div>` +
+    `<div class="info" id="info-${l.id}" data-t="${l.info}" hidden></div>`;
+  if (l.kind === "effort") row.append($("effort-controls").content.cloneNode(true));
+  if (l.legend) row.insertAdjacentHTML("beforeend", `<div class="when-on swatches">${l.legend.map(x =>
+    `<span>${swatch(x.swatch)}<span data-t="${x.label}"></span></span>`).join("")}</div>`);
+  return row;
+}
+for (const g of CONFIG.groups) {
+  const d = document.createElement("details");
+  d.className = "group"; d.id = "g-" + g.id; d.open = !!g.open;
+  d.innerHTML = `<summary data-t="${g.title}"></summary><div class="body"></div>`;
+  for (const id of g.layers) d.querySelector(".body").append(layerRow(LAYERS.find(l => l.id === id)));
+  $("groups").insertBefore(d, $("g-base"));
+}
+for (const k of CONFIG.about) $("about").insertAdjacentHTML("beforeend", `<p data-t="${k}"></p>`);
+$("side").querySelector("h1").dataset.t = CONFIG.title;
 
 function tileUrl() {
   const q = new URLSearchParams({ preset: $("preset").value, px: $("px").value, y1: $("y1").value, y2: $("y2").value,
@@ -388,19 +262,20 @@ function fitToView() {
   const m = $("metric").value;
   const v = map.queryRenderedFeatures({ layers: ["effort"] })
     .map(f => +f.properties[m]).filter(x => x > 0).map(Math.log10).sort((a, b) => a - b);
-  if (v.length < 10) return;
+  if (v.length < 10) return false;
   viewVals = v;
   widen(v[0], v[v.length - 1]);
   const q = p => v[Math.min(v.length - 1, Math.floor(p * v.length))];
   $("lo").value = q(0.02).toFixed(2);
   $("hi").value = q(0.98).toFixed(2);
   paint();
+  return true;
 }
 
 const map = new maplibregl.Map({
   container: "map",
   style: BASEMAPS[0].style,
-  center: [-19, 65], zoom: 5, hash: true
+  center: CONFIG.view.center, zoom: CONFIG.view.zoom, hash: true
 });
 // a page laid out after the map was made (a tab opened in the background) left the canvas at 400 x 300
 new ResizeObserver(() => map.resize()).observe($("map"));
@@ -419,12 +294,11 @@ const zoomText = () => `${tr("zoom")} ${map.getZoom().toLocaleString(loc(), { mi
 function applyLang(l) {
   LANG = l === "is" ? "is" : "en";
   document.documentElement.lang = LANG;
-  document.title = tr("title");
+  document.title = tr(CONFIG.title);
   for (const el of document.querySelectorAll("[data-t]")) el.textContent = tr(el.dataset.t);
   for (const el of document.querySelectorAll("[data-tt]")) el.title = tr(el.dataset.tt);
   for (const b of document.querySelectorAll("[data-lang]")) b.classList.toggle("on", b.dataset.lang === LANG);
-  if (portsCount) $("portsinfo").textContent = tr("portsN", portsCount.toLocaleString(loc()));
-  if (namesCount !== null) $("namesinfo").textContent = namesCount < 0 ? tr("noGaz") : tr("namesN", namesCount.toLocaleString(loc()));
+  for (const l of OTHER) countText(l);
   if (!tileError && map.getLayer("effort")) $("status").textContent = zoomText();   // map.loaded() is false while tiles load
   popup?.remove();
   paint();
@@ -440,18 +314,19 @@ function baseStyle(b) {
   if (!b.tiles) return { version: 8, sources: {}, layers };
   return { version: 8, layers: [...layers, { id: "base", type: "raster", source: "base" }],
            sources: { base: { type: "raster", tiles: [b.tiles], tileSize: 256, maxzoom: b.maxzoom,
-                              attribution: "Tiles © Esri and its sources" } } };
+                              attribution: b.attribution ?? "" } } };
 }
 function setBase(id) {
   const b = BASEMAPS.find(x => x.id === id) ?? BASEMAPS[0];
   map.setStyle(baseStyle(b), { transformStyle: (prev, next) => {
     if (!prev) return next;
-    const own = prev.layers.filter(l => l.id === "effort" || NAME_LAYERS.includes(l.id) || PORT_LAYERS.includes(l.id));
-    const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => ["effort", "names", "ports"].includes(k)));
+    const own = prev.layers.filter(l => SOURCES.has(l.source));
+    const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => SOURCES.has(k)));
     const i = next.layers.findIndex(l => l.type === "symbol");
-    const effort = own.filter(l => l.id === "effort"), names = own.filter(l => l.id !== "effort");   // ports, then names
-    const layers = i < 0 ? [...next.layers, ...effort, ...names]
-                         : [...next.layers.slice(0, i), ...effort, ...next.layers.slice(i), ...names];
+    // the effort under the base's labels, the other layers over them in their order
+    const effort = own.filter(l => l.source === "effort"), rest = own.filter(l => l.source !== "effort");
+    const layers = i < 0 ? [...next.layers, ...effort, ...rest]
+                         : [...next.layers.slice(0, i), ...effort, ...next.layers.slice(i), ...rest];
     return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers };
   } });
 }
@@ -488,9 +363,11 @@ Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => 
   if (q.get("opacity") !== null && q.get("opacity") !== "" && +q.get("opacity") >= 0 && +q.get("opacity") <= 100) {
     $("opacity").value = Math.round(+q.get("opacity")); $("opval").textContent = `${$("opacity").value} %`;
   }
-  if (q.get("effort") === "0") { $("effort").checked = false; $("lyr-effort").classList.add("off"); }
-  if (q.get("names") === "0") $("names").checked = false;
-  if (q.get("ports") === "1") $("ports").checked = true;
+  // a layer on by default is turned off by id=0, one off by default on by id=1
+  for (const l of LAYERS) if (q.get(l.id) === (l.visible ? "0" : "1")) {
+    $(l.id).checked = !l.visible; $("lyr-" + l.id).classList.toggle("off", !$(l.id).checked);
+  }
+  FONT = map.getStyle().layers.find(l => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"] ?? FONT;
   const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
   map.addSource("effort", { type: "vector", tiles: [tileUrl()], minzoom: 2, maxzoom: 12 });
   map.addLayer({ id: "effort", type: "fill", source: "effort", "source-layer": "cells",
@@ -498,8 +375,7 @@ Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => 
                  paint: { "fill-color": colorExpr(), "fill-opacity": +$("opacity").value / 100, "fill-antialias": false } },
                firstSymbol);
   paint();
-  addPorts(meta.ports ?? 0);
-  addNames();
+  for (const l of OTHER) addLayer(l, meta);
   const base = BASEMAPS.find(b => b.id === q.get("base"));
   if (base && base !== BASEMAPS[0]) { document.querySelector(`#bases input[value="${base.id}"]`).checked = true; setBase(base.id); }
   addressRead = true;
@@ -522,9 +398,7 @@ function addressNow() {
   put("stretch", $("stretch").value, "even");
   if (userColour) { q.set("floor", +(10 ** +$("lo").value).toPrecision(3)); q.set("cap", +(10 ** +$("hi").value).toPrecision(3)); }
   put("opacity", $("opacity").value, "85");
-  if (!$("effort").checked) q.set("effort", "0");
-  if (!$("names").checked) q.set("names", "0");
-  if ($("ports").checked) q.set("ports", "1");
+  for (const l of LAYERS) if (!$(l.id).disabled && $(l.id).checked !== !!l.visible) q.set(l.id, $(l.id).checked ? "1" : "0");
   put("base", document.querySelector("#bases input:checked")?.value, BASEMAPS[0].id);
   put("lang", LANG, "en");
   const qs = q.toString().replace(/%2C/g, ",");
@@ -539,75 +413,68 @@ $("copylink").addEventListener("click", () => {
   navigator.clipboard.writeText(location.href).then(() => say(tr("copied")), () => say(tr("notCopied")));
 });
 
-// The ports (plan 046 step 4), as vector tiles from ports.R, if the server has them
-const PORT_LAYERS = ["ports-area", "ports-line", "ports-dot", "ports-label"];
-function addPorts(n) {
-  portsCount = n;
-  if (!n) { $("ports").checked = false; $("ports").disabled = true; $("lyr-ports").classList.add("off"); return; }
-  $("portsinfo").textContent = tr("portsN", n.toLocaleString(loc()));
-  const font = map.getStyle().layers.find(l => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"] ?? ["Open Sans Regular"];
-  map.addSource("ports", { type: "vector", tiles: [`${location.origin}/ports/{z}/{x}/{y}.pbf?v=${APP}`], minzoom: 2, maxzoom: 14 });
-  const big = ["any", ["<", ["zoom"], 8], ["==", ["get", "kind"], "point"]];
-  map.addLayer({ id: "ports-area", type: "fill", source: "ports", "source-layer": "ports", minzoom: 8,
-                 filter: ["==", ["get", "kind"], "area"], paint: { "fill-color": "#d9822b", "fill-opacity": 0.3 } });
-  map.addLayer({ id: "ports-line", type: "line", source: "ports", "source-layer": "ports", minzoom: 8,
-                 paint: { "line-color": "#b35c0f", "line-width": 1.2 } });
-  map.addLayer({ id: "ports-dot", type: "circle", source: "ports", "source-layer": "port_points", filter: big,
-                 paint: { "circle-color": "#d9822b", "circle-stroke-color": "#fff", "circle-stroke-width": 1,
-                          "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 2, 8, 4, 12, 5] } });
-  map.addLayer({ id: "ports-label", type: "symbol", source: "ports", "source-layer": "port_points", minzoom: 7,
-                 layout: { "text-field": ["get", "port"], "text-font": font, "text-size": 11, "text-offset": [0, 0.9],
-                           "text-anchor": "top", "text-optional": true },
-                 paint: { "text-color": "#7a3d06", "text-halo-color": "#fff", "text-halo-width": 1.2 } });
-  showPorts();
+// A layer of the config other than the effort: vector tiles from the server ("vector", its count from /meta) or a
+// GeoJSON file ("geojson", its count from the file), drawn by its styles over the base map's labels; a layer the server
+// does not have is disabled, with its "missing" text
+function addLayer(l, meta) {
+  const draw = () => {
+    for (const st of l.style) {
+      const spec = { ...st, source: l.id };
+      if (spec.type === "symbol" && spec.layout?.["text-field"] && !spec.layout["text-font"]) spec.layout = { ...spec.layout, "text-font": FONT };
+      map.addLayer(spec);
+    }
+    showLayer(l); countText(l);
+  };
+  if (l.kind === "vector") {
+    const n = l.count?.meta ? meta[l.count.meta] ?? 0 : 1;
+    if (!n) return missing(l);
+    counts[l.id] = n;
+    map.addSource(l.id, { type: "vector", tiles: [`${location.origin}${l.tiles}?v=${APP}`], minzoom: l.minzoom, maxzoom: l.maxzoom });
+    draw();
+  } else if (l.kind === "geojson") {
+    fetch(l.data).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(data => {
+      map.addSource(l.id, { type: "geojson", data });
+      const w = l.count?.where;
+      counts[l.id] = w ? data.features.filter(f => f.properties[w[0]] === w[1]).length : data.features.length;
+      draw();
+    }).catch(() => missing(l));
+  }
 }
-function showPorts() {
-  $("lyr-ports").classList.toggle("off", !$("ports").checked);
-  for (const id of PORT_LAYERS) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", $("ports").checked ? "visible" : "none");
+function missing(l) {
+  $(l.id).disabled = true; $("lyr-" + l.id).classList.add("off");
+  counts[l.id] = -1; countText(l);
 }
-$("ports").addEventListener("change", () => { popup?.remove(); showPorts(); });
-function portPopup(e) {
+function countText(l) {
+  const n = counts[l.id];
+  if (n === undefined) return;
+  $(l.id + "info").textContent = n < 0 ? (l.missing ? tr(l.missing) : "") : l.count?.text ? tr(l.count.text, n.toLocaleString(loc())) : "";
+}
+function showLayer(l) {
+  $("lyr-" + l.id).classList.toggle("off", !$(l.id).checked);
+  for (const st of l.style) if (map.getLayer(st.id)) map.setLayoutProperty(st.id, "visibility", $(l.id).checked ? "visible" : "none");
+}
+for (const l of OTHER) $(l.id).addEventListener("change", () => { popup?.remove(); showLayer(l); });
+
+// A click on a layer's feature: its title field and fields, a value through `values` into a text; the names keep their
+// own popup (plan 044). Registered top layer first, so the topmost feature under the click speaks and the rest keep quiet
+function featurePopup(l, e) {
+  if (l.popup.formatter === "names") return namePopup(e);
   const p = e.features[0].properties;
   const line = (k, v) => v === undefined || v === null || v === "" || v === "null" ? "" : `<br>${k}: ${esc(v)}`;
+  const val = f => f.values?.[p[f.field]] ? tr(f.values[p[f.field]]) : p[f.field];
   popup?.remove();
-  popup = new maplibregl.Popup({ closeButton: false, maxWidth: "300px" }).setLngLat(e.lngLat)
-    .setHTML(`<b>${esc(p.port)}</b>${line("pid", p.pid)}${line(tr("hid"), p.hid)}${line(tr("pidLocode"), { yes: tr("yes"), no: tr("no") }[p.unlocode] ?? p.unlocode)}` +
-             `${line(tr("source"), p.source)}`)
+  popup = new maplibregl.Popup({ closeButton: false, maxWidth: l.popup.maxWidth ?? "300px" }).setLngLat(e.lngLat)
+    .setHTML(`<b>${esc(p[l.popup.title])}</b>${l.popup.fields.map(f => line(tr(f.label), val(f))).join("")}`)
     .addTo(map);
 }
+for (const l of [...OTHER].reverse()) for (const id of l.popup?.click ?? []) {
+  map.on("click", id, e => { if (e.originalEvent.featureShown) return; e.originalEvent.featureShown = true; featurePopup(l, e); });
+  map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
+}
 
-// The place-name gazetteer (plan 044), if the server has it: footprints as outlines, names as labels, the most used
-// drawn first where labels collide
-const NAME_LAYERS = ["names-foot", "names-line", "names-label"];
-function addNames() {
-  // the font of the first style's labels, read before a base map from the address replaces that style
-  const font = map.getStyle().layers.find(l => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"] ?? ["Open Sans Regular"];
-  fetch("/place_names.geojson").then(r => r.ok ? r.json() : Promise.reject(r.status)).then(data => {
-    map.addSource("names", { type: "geojson", data });
-    // a name from its minimum zoom (plan 044 §4.3), its footprint a zoom earlier; text size by level
-    const shown = ["<=", ["coalesce", ["get", "min_zoom"], 11], ["zoom"]];
-    const isFoot = ["all", ["==", ["get", "kind"], "footprint"], ["<=", ["-", ["coalesce", ["get", "min_zoom"], 11], 1], ["zoom"]]];
-    map.addLayer({ id: "names-foot", type: "fill", source: "names", filter: isFoot,
-                   paint: { "fill-color": "#1f5f8b", "fill-opacity": 0.05 } });
-    map.addLayer({ id: "names-line", type: "line", source: "names", filter: isFoot,
-                   paint: { "line-color": "#1f5f8b", "line-width": 0.8, "line-opacity": 0.55 } });
-    map.addLayer({ id: "names-label", type: "symbol", source: "names", filter: ["all", ["==", ["get", "kind"], "label"], shown],
-                   layout: { "text-field": ["get", "name"], "text-font": font,
-                             "symbol-sort-key": ["+", ["*", 100000, ["coalesce", ["get", "level"], 4]], ["-", 0, ["get", "n"]]],
-                             "text-size": ["match", ["coalesce", ["get", "level"], 4], 1, 15, 2, 13.5, 3, 12, 11] },
-                   paint: { "text-color": "#0b3954", "text-halo-color": "#fff", "text-halo-width": 1.3 } });
-    const n = data.features.filter(f => f.properties.kind === "label").length;
-    namesCount = n;
-    $("namesinfo").textContent = tr("namesN", n.toLocaleString(loc()));
-    showNames();
-  }).catch(() => { $("names").disabled = true; namesCount = -1; $("namesinfo").textContent = tr("noGaz"); });
-}
-function showNames() {
-  $("lyr-names").classList.toggle("off", !$("names").checked);
-  for (const id of NAME_LAYERS) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", $("names").checked ? "visible" : "none");
-}
-$("names").addEventListener("change", showNames);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+// The place-name gazetteer's popup (plan 044): its lines depend on each other, so it is code, not config
 function namePopup(e) {
   const p = e.features[0].properties;
   const line = (k, v) => v === undefined || v === null || v === "" || v === "null" ? "" : `<br>${k}: ${esc(v)}`;
@@ -621,18 +488,6 @@ function namePopup(e) {
              `${+p.n_places > 1 ? line(tr("places"), p.n_places + (p.place ? " (" + tr("thisPlace") + " " + p.place + ")" : "")) : ""}` +
              `${line(tr("fromZoom"), p.min_zoom)}${line(tr("maybe"), p.synonyms)}`)
     .addTo(map);
-}
-for (const id of ["names-label", "names-foot"]) {
-  // the label is asked first: a footprint under a clicked label keeps quiet, as the effort does
-  map.on("click", id, e => { if (e.originalEvent.nameShown) return; e.originalEvent.nameShown = true; namePopup(e); });
-  map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
-  map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
-}
-for (const id of ["ports-label", "ports-dot", "ports-area"]) {
-  // registered after the names': a name under the click speaks first, then a port, then the effort
-  map.on("click", id, e => { if (e.originalEvent.nameShown) return; e.originalEvent.nameShown = true; portPopup(e); });
-  map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
-  map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
 }
 
 for (const id of ["preset", "gid", "y1", "y2", "px"])
@@ -691,11 +546,12 @@ function sampleView() {
 map.on("idle", () => {
   sampleView();
   $("status").textContent = tileError || zoomText();
-  if (!fitted && map.getLayer("effort")) { fitted = true; fitToView(); }
+  // the first fit waits for cells to fit to: a page opened with the effort off fits when it is turned on
+  if (!fitted && map.getLayer("effort") && $("effort").checked) fitted = fitToView();
 });
 
 map.on("click", "effort", e => {
-  if (e.originalEvent.nameShown) return;   // a name under the click has its own popup
+  if (e.originalEvent.featureShown) return;   // a layer's feature over the cell has spoken
   const p = e.features[0].properties;
   popup?.remove();
   popup = new maplibregl.Popup({ closeButton: false })

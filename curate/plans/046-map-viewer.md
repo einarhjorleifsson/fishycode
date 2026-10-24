@@ -4,7 +4,7 @@
 the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
 (the checklist and the bench, every item passing, three faults left for step 2); step 2 done the same day (the
 sidebar, six base maps, the three faults, Icelandic and English); step 3 done the same day (the whole state in the
-address); step 4's ports layer done the same day · **2026-10-24** · **see:** decision 220, plan 030
+address); step 4's ports layer and step 5, the config split out, done the same day · **2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -187,10 +187,16 @@ pane visible where an animation frame matters.
      vector tiles from DuckDB by `products/effort_map/ports.R` (the table loaded once in 0.3 s; a tile in under 10
      ms): areas and lines from zoom 8, a point on every port further out, names from zoom 7, off by default. The
      route is `/ports/{z}/{x}/{y}.pbf` beside the effort's, which is untouched; the app's version is 5.
-5. **The config split out:**
-   - the page reads its layers from `/config.json`;
-   - the effort map's layer list leaves `index.html`;
-   - the page is unchanged against step 1's list.
+5. **The config split out** (done 2026-10-24; item K1 in `checklist.md`):
+   - `products/effort_map/www/config.json` holds what the page shows: the groups and layers (each with its label,
+     info, legend, default on/off, source, MapLibre styles and popup fields), the texts in both languages ({1}, {2}
+     filled in by the page), the palettes and the base maps. `app.R` writes it into the page as it serves it, so the
+     page needs no request before it starts, and serves it at `/config.json`; the app's version is 6;
+   - the page is the engine: it builds the sidebar from the config and handles a `vector` or `geojson` layer
+     generically (adding, showing, counting, its popup, the address, a base map change). The effort's controls (a
+     layer of kind `effort`) and the place names' popup stay page code;
+   - the page is unchanged against step 1's list: every item run again and passing, two faults fixed on the way
+     (`checklist.md`, the run of step 5).
 6. **Into ramb:**
    - the engine, the service's skeleton and the R constructors move to ramb;
    - fishycode's effort map is rebuilt on them, its own code down to the layer definitions and the tile SQL;

@@ -1,0 +1,940 @@
+{
+ "_comment": "The effort map's layers, texts, palettes and base maps (plan 046 step 5): what the page shows. The page (index.html) is the engine that shows it; app.R writes this file into the page as it serves it, and at /config.json. A text is a key of `texts`, in Icelandic and English; {1}, {2} are filled in by the page.",
+ "title": "title",
+ "view": {
+  "center": [
+   -19,
+   65
+  ],
+  "zoom": 5
+ },
+ "about": [
+  "about1",
+  "about2"
+ ],
+ "groups": [
+  {
+   "id": "effort",
+   "title": "gEffort",
+   "open": true,
+   "layers": [
+    "effort"
+   ]
+  },
+  {
+   "id": "ref",
+   "title": "gRef",
+   "open": true,
+   "layers": [
+    "ports",
+    "names"
+   ]
+  }
+ ],
+ "layers": [
+  {
+   "id": "effort",
+   "kind": "effort",
+   "label": "lyrEffort",
+   "info": "infoEffort",
+   "visible": true
+  },
+  {
+   "id": "ports",
+   "kind": "vector",
+   "label": "lyrPorts",
+   "info": "infoPorts",
+   "visible": false,
+   "tiles": "/ports/{z}/{x}/{y}.pbf",
+   "minzoom": 2,
+   "maxzoom": 14,
+   "count": {
+    "meta": "ports",
+    "text": "portsN"
+   },
+   "legend": [
+    {
+     "swatch": {
+      "fill": "rgba(217,130,43,.3)",
+      "stroke": "#b35c0f"
+     },
+     "label": "portArea"
+    },
+    {
+     "swatch": {
+      "dot": "#d9822b",
+      "stroke": "#b35c0f"
+     },
+     "label": "portPoint"
+    }
+   ],
+   "style": [
+    {
+     "id": "ports-area",
+     "type": "fill",
+     "source-layer": "ports",
+     "minzoom": 8,
+     "filter": [
+      "==",
+      [
+       "get",
+       "kind"
+      ],
+      "area"
+     ],
+     "paint": {
+      "fill-color": "#d9822b",
+      "fill-opacity": 0.3
+     }
+    },
+    {
+     "id": "ports-line",
+     "type": "line",
+     "source-layer": "ports",
+     "minzoom": 8,
+     "paint": {
+      "line-color": "#b35c0f",
+      "line-width": 1.2
+     }
+    },
+    {
+     "id": "ports-dot",
+     "type": "circle",
+     "source-layer": "port_points",
+     "filter": [
+      "any",
+      [
+       "<",
+       [
+        "zoom"
+       ],
+       8
+      ],
+      [
+       "==",
+       [
+        "get",
+        "kind"
+       ],
+       "point"
+      ]
+     ],
+     "paint": {
+      "circle-color": "#d9822b",
+      "circle-stroke-color": "#fff",
+      "circle-stroke-width": 1,
+      "circle-radius": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       3,
+       2,
+       8,
+       4,
+       12,
+       5
+      ]
+     }
+    },
+    {
+     "id": "ports-label",
+     "type": "symbol",
+     "source-layer": "port_points",
+     "minzoom": 7,
+     "layout": {
+      "text-field": [
+       "get",
+       "port"
+      ],
+      "text-size": 11,
+      "text-offset": [
+       0,
+       0.9
+      ],
+      "text-anchor": "top",
+      "text-optional": true
+     },
+     "paint": {
+      "text-color": "#7a3d06",
+      "text-halo-color": "#fff",
+      "text-halo-width": 1.2
+     }
+    }
+   ],
+   "popup": {
+    "click": [
+     "ports-label",
+     "ports-dot",
+     "ports-area"
+    ],
+    "title": "port",
+    "maxWidth": "300px",
+    "fields": [
+     {
+      "field": "pid",
+      "label": "pid"
+     },
+     {
+      "field": "hid",
+      "label": "hid"
+     },
+     {
+      "field": "unlocode",
+      "label": "pidLocode",
+      "values": {
+       "yes": "yes",
+       "no": "no"
+      }
+     },
+     {
+      "field": "source",
+      "label": "source"
+     }
+    ]
+   }
+  },
+  {
+   "id": "names",
+   "kind": "geojson",
+   "label": "lyrNames",
+   "info": "infoNames",
+   "visible": true,
+   "data": "/place_names.geojson",
+   "missing": "noGaz",
+   "count": {
+    "where": [
+     "kind",
+     "label"
+    ],
+    "text": "namesN"
+   },
+   "style": [
+    {
+     "id": "names-foot",
+     "type": "fill",
+     "filter": [
+      "all",
+      [
+       "==",
+       [
+        "get",
+        "kind"
+       ],
+       "footprint"
+      ],
+      [
+       "<=",
+       [
+        "-",
+        [
+         "coalesce",
+         [
+          "get",
+          "min_zoom"
+         ],
+         11
+        ],
+        1
+       ],
+       [
+        "zoom"
+       ]
+      ]
+     ],
+     "paint": {
+      "fill-color": "#1f5f8b",
+      "fill-opacity": 0.05
+     }
+    },
+    {
+     "id": "names-line",
+     "type": "line",
+     "filter": [
+      "all",
+      [
+       "==",
+       [
+        "get",
+        "kind"
+       ],
+       "footprint"
+      ],
+      [
+       "<=",
+       [
+        "-",
+        [
+         "coalesce",
+         [
+          "get",
+          "min_zoom"
+         ],
+         11
+        ],
+        1
+       ],
+       [
+        "zoom"
+       ]
+      ]
+     ],
+     "paint": {
+      "line-color": "#1f5f8b",
+      "line-width": 0.8,
+      "line-opacity": 0.55
+     }
+    },
+    {
+     "id": "names-label",
+     "type": "symbol",
+     "filter": [
+      "all",
+      [
+       "==",
+       [
+        "get",
+        "kind"
+       ],
+       "label"
+      ],
+      [
+       "<=",
+       [
+        "coalesce",
+        [
+         "get",
+         "min_zoom"
+        ],
+        11
+       ],
+       [
+        "zoom"
+       ]
+      ]
+     ],
+     "layout": {
+      "text-field": [
+       "get",
+       "name"
+      ],
+      "symbol-sort-key": [
+       "+",
+       [
+        "*",
+        100000,
+        [
+         "coalesce",
+         [
+          "get",
+          "level"
+         ],
+         4
+        ]
+       ],
+       [
+        "-",
+        0,
+        [
+         "get",
+         "n"
+        ]
+       ]
+      ],
+      "text-size": [
+       "match",
+       [
+        "coalesce",
+        [
+         "get",
+         "level"
+        ],
+        4
+       ],
+       1,
+       15,
+       2,
+       13.5,
+       3,
+       12,
+       11
+      ]
+     },
+     "paint": {
+      "text-color": "#0b3954",
+      "text-halo-color": "#fff",
+      "text-halo-width": 1.3
+     }
+    }
+   ],
+   "popup": {
+    "click": [
+     "names-label",
+     "names-foot"
+    ],
+    "formatter": "names",
+    "maxWidth": "320px"
+   }
+  }
+ ],
+ "basemaps": [
+  {
+   "id": "light",
+   "label": {
+    "en": "Light (Carto Positron)",
+    "is": "Ljóst (Carto Positron)"
+   },
+   "style": "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+  },
+  {
+   "id": "voyager",
+   "label": {
+    "en": "Colour (Carto Voyager)",
+    "is": "Litað (Carto Voyager)"
+   },
+   "style": "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
+  },
+  {
+   "id": "dark",
+   "label": {
+    "en": "Dark (Carto Dark Matter)",
+    "is": "Dökkt (Carto Dark Matter)"
+   },
+   "style": "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+  },
+  {
+   "id": "ocean",
+   "label": {
+    "en": "Ocean (Esri)",
+    "is": "Haf (Esri)"
+   },
+   "maxzoom": 13,
+   "attribution": "Tiles © Esri and its sources",
+   "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}"
+  },
+  {
+   "id": "satellite",
+   "label": {
+    "en": "Satellite (Esri)",
+    "is": "Gervihnattamynd (Esri)"
+   },
+   "maxzoom": 19,
+   "attribution": "Tiles © Esri and its sources",
+   "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+  },
+  {
+   "id": "none",
+   "label": {
+    "en": "None",
+    "is": "Ekkert"
+   }
+  }
+ ],
+ "palettes": [
+  {
+   "id": "magma",
+   "label": "magma",
+   "source": "viridisLite",
+   "colors": [
+    "#FCFDBF",
+    "#FEC287",
+    "#FB8861",
+    "#E65164",
+    "#B63679",
+    "#822681",
+    "#51127C",
+    "#1D1147",
+    "#000004"
+   ]
+  },
+  {
+   "id": "viridis",
+   "label": "viridis",
+   "source": "viridisLite",
+   "colors": [
+    "#FDE725",
+    "#AADC32",
+    "#5DC863",
+    "#27AD81",
+    "#21908C",
+    "#2C728E",
+    "#3B528B",
+    "#472D7B",
+    "#440154"
+   ]
+  },
+  {
+   "id": "plasma",
+   "label": "plasma",
+   "source": "viridisLite",
+   "colors": [
+    "#F0F921",
+    "#FDC328",
+    "#F89441",
+    "#E56B5D",
+    "#CC4678",
+    "#A92395",
+    "#7E03A8",
+    "#4C02A1",
+    "#0D0887"
+   ]
+  },
+  {
+   "id": "deep",
+   "label": "deep",
+   "source": "tidyterra whitebox",
+   "colors": [
+    "#FEFED7",
+    "#EBF7B1",
+    "#C5E7B4",
+    "#7ECCBB",
+    "#40B5C3",
+    "#1D90BF",
+    "#215DA7",
+    "#243493",
+    "#081C57"
+   ]
+  },
+  {
+   "id": "scotland",
+   "label": "scotland",
+   "source": "tidyterra princess",
+   "colors": [
+    "#E6CCAD",
+    "#A98066",
+    "#6C3B27",
+    "#493835",
+    "#173442",
+    "#0F2531",
+    "#071720",
+    "#051017",
+    "#01060B"
+   ]
+  },
+  {
+   "id": "population_dens",
+   "label": "population_dens",
+   "source": "tidyterra grass",
+   "colors": [
+    "#FFFFFF",
+    "#AF6419",
+    "#8B4010",
+    "#83370E",
+    "#7A2E0C",
+    "#72250B",
+    "#6A1C08",
+    "#621104",
+    "#5A0400"
+   ]
+  },
+  {
+   "id": "etopo1_bathy",
+   "label": "etopo1_bathy",
+   "source": "tidyterra hypso",
+   "colors": [
+    "#BCE6FF",
+    "#55D7FF",
+    "#34BFFF",
+    "#17A0FC",
+    "#176EF2",
+    "#0026DE",
+    "#0010CD",
+    "#1505AF",
+    "#1A0089"
+   ]
+  },
+  {
+   "id": "colombia_bathy",
+   "label": "colombia_bathy",
+   "source": "tidyterra hypso",
+   "colors": [
+    "#C6ECFF",
+    "#8FD5FF",
+    "#53BCF2",
+    "#1B9FD3",
+    "#017FB3",
+    "#015F92",
+    "#013F72",
+    "#002B5E",
+    "#001E50"
+   ]
+  },
+  {
+   "id": "gn_yl",
+   "label": "gn_yl",
+   "source": "tidyterra whitebox",
+   "colors": [
+    "#FFFFCC",
+    "#E7F6B2",
+    "#CEEB9E",
+    "#B3DF91",
+    "#93D283",
+    "#70C274",
+    "#46AC5D",
+    "#218C49",
+    "#006837"
+   ]
+  },
+  {
+   "id": "blues",
+   "label": "blues",
+   "source": "tidyterra grass",
+   "colors": [
+    "#FFFFFF",
+    "#EEE2FF",
+    "#DCC4FF",
+    "#C8A8FF",
+    "#B38BFF",
+    "#9B6FFF",
+    "#7E52FF",
+    "#5932FF",
+    "#0000FF"
+   ]
+  },
+  {
+   "id": "high_relief",
+   "label": "high_relief (lightness not steady)",
+   "source": "tidyterra whitebox",
+   "colors": [
+    "#488737",
+    "#96B170",
+    "#E2DBAB",
+    "#E4C793",
+    "#E4B47B",
+    "#CDA886",
+    "#B69C90",
+    "#DBCCC6",
+    "#FFFFFF"
+   ]
+  },
+  {
+   "id": "bcyr",
+   "label": "bcyr (lightness not steady)",
+   "source": "tidyterra grass",
+   "colors": [
+    "#0000FF",
+    "#5377FF",
+    "#4FC8FF",
+    "#6CFFE7",
+    "#C4FF9E",
+    "#F3FF47",
+    "#FFD100",
+    "#FF8800",
+    "#FF0000"
+   ]
+  }
+ ],
+ "texts": {
+  "title": {
+   "en": "Fishing effort",
+   "is": "Veiðisókn"
+  },
+  "menu": {
+   "en": "Layers and filters",
+   "is": "Lög og síur"
+  },
+  "close": {
+   "en": "Close",
+   "is": "Loka"
+  },
+  "infoTip": {
+   "en": "About this layer",
+   "is": "Um lagið"
+  },
+  "gEffort": {
+   "en": "Effort",
+   "is": "Sókn"
+  },
+  "lyrEffort": {
+   "en": "Fishing effort",
+   "is": "Veiðisókn"
+  },
+  "infoEffort": {
+   "en": "Hours of fishing per km² (or kW-hours) from the AIS trail's fishing fixes, the user tables v0 (decision 219). Each fix's hours are spread along the track to its next fix, and summed by cell, gear, year and preset (decision 220). The gear is the haul's, corrected by the landing's. A cell is about one screen pixel at each zoom.",
+   "is": "Veiðistundir á km² (eða kílóvattstundir) úr veiðipunktum AIS-ferilsins, notendatöflum v0 (ákvörðun 219). Stundum hvers punkts er dreift eftir ferlinum að næsta punkti og þær lagðar saman eftir reit, veiðarfæri, ári og forsendu (ákvörðun 220). Veiðarfærið er halsins, leiðrétt eftir lönduninni. Reitur er um einn skjápunktur við hvern aðdrátt."
+  },
+  "fishing": {
+   "en": "Fishing",
+   "is": "Veiðar"
+  },
+  "presetFishing": {
+   "en": "in a haul window",
+   "is": "innan hals"
+  },
+  "presetFlow": {
+   "en": "window, else voyage gear's speed",
+   "is": "hal, annars hraði veiðarfæris"
+  },
+  "gear": {
+   "en": "Gear",
+   "is": "Veiðarfæri"
+  },
+  "allGears": {
+   "en": "all gears",
+   "is": "öll veiðarfæri"
+  },
+  "gearN": {
+   "en": "gear",
+   "is": "veiðarfæri"
+  },
+  "years": {
+   "en": "Years",
+   "is": "Ár"
+  },
+  "metric": {
+   "en": "Metric",
+   "is": "Mælikvarði"
+  },
+  "hKm2": {
+   "en": "hours per km²",
+   "is": "klst. á km²"
+  },
+  "kwhKm2": {
+   "en": "kW-hours per km²",
+   "is": "kWst á km²"
+  },
+  "fixes": {
+   "en": "fixes",
+   "is": "staðsetningar"
+  },
+  "cells": {
+   "en": "Cells",
+   "is": "Reitir"
+  },
+  "pxFiner": {
+   "en": "finer (heavy)",
+   "is": "fínni (þungt)"
+  },
+  "pxFinerTip": {
+   "en": "Tiles up to 38 MB when zoomed out (zoom 5-8); from zoom 9 the same as fine",
+   "is": "Kortatíglar allt að 38 MB í fjarlægð (aðdráttur 5-8); frá aðdrætti 9 eins og fínir"
+  },
+  "pxFine": {
+   "en": "fine",
+   "is": "fínir"
+  },
+  "pxCoarser": {
+   "en": "coarser",
+   "is": "grófari"
+  },
+  "colour": {
+   "en": "Colour",
+   "is": "Litir"
+  },
+  "colours": {
+   "en": "Colours",
+   "is": "Litaskali"
+  },
+  "stretch": {
+   "en": "Stretch",
+   "is": "Dreifing"
+  },
+  "stretchTip": {
+   "en": "How the colours are spread between floor and cap",
+   "is": "Hvernig litunum er dreift milli lágmarks og hámarks"
+  },
+  "sEven": {
+   "en": "even on a log scale",
+   "is": "jöfn á lograkvarða"
+  },
+  "sEqual": {
+   "en": "equal shares of the cells in view",
+   "is": "jafnir hlutar reita í sýn"
+  },
+  "floor": {
+   "en": "Floor",
+   "is": "Lágmark"
+  },
+  "cap": {
+   "en": "Cap",
+   "is": "Hámark"
+  },
+  "opacity": {
+   "en": "Opacity",
+   "is": "Þekja"
+  },
+  "fit": {
+   "en": "Fit to view",
+   "is": "Laga að sýn"
+  },
+  "fitTip": {
+   "en": "Floor and cap at the 2nd and 98th percentiles of the cells in view",
+   "is": "Lágmark og hámark við 2. og 98. hundraðsmark reita í sýn"
+  },
+  "legendTip": {
+   "en": "The colour scale on a log axis, and below it the cells in view: values below the floor and above the cap in the end bars",
+   "is": "Litaskalinn á lograkvarða og undir honum reitir í sýn: gildi undir lágmarki og yfir hámarki í endasúlunum"
+  },
+  "gRef": {
+   "en": "Reference layers",
+   "is": "Viðmiðunarlög"
+  },
+  "lyrNames": {
+   "en": "Place names",
+   "is": "Örnefni"
+  },
+  "infoNames": {
+   "en": "The place-name gazetteer (plan 044): each name at the median of its positions, from the zoom that suits its size (broad names first), with its footprint where it has one. Click a name for its counts.",
+   "is": "Örnefnaskráin (áætlun 044): hvert nafn við miðgildi staðsetninga sinna, frá þeim aðdrætti sem hæfir stærð þess (víð nöfn fyrst), með fótspori þar sem það er til. Smelltu á nafn til að sjá talningar."
+  },
+  "namesN": {
+   "en": "{1} names",
+   "is": "{1} örnefni"
+  },
+  "lyrPorts": {
+   "en": "Ports",
+   "is": "Hafnir"
+  },
+  "infoPorts": {
+   "en": "Every port of the reference (curated/reference/port_geometry), by pid, the key the logbooks, landings and AIS data join on: one geometry each, from the sources in their order. Iceland's and the Faroes' areas are drawn by hand; elsewhere they come from GISCO, EMODnet, OpenStreetMap, Global Fishing Watch and others. An area shows from zoom 8, a point further out. A port call is measured against the area (decision 074).",
+   "is": "Allar hafnir viðmiðunartöflunnar (curated/reference/port_geometry), eftir pid, lyklinum sem afladagbækur, landanir og AIS-gögn tengjast á: ein lögun hver, úr heimildunum í forgangsröð. Svæði íslenskra og færeyskra hafna eru teiknuð í höndunum; annars staðar koma þau frá GISCO, EMODnet, OpenStreetMap, Global Fishing Watch og fleirum. Svæði sést frá aðdrætti 8, punktur fjær. Hafnarkoma er mæld við svæðið (ákvörðun 074)."
+  },
+  "portsN": {
+   "en": "{1} ports",
+   "is": "{1} hafnir"
+  },
+  "portArea": {
+   "en": "port area",
+   "is": "hafnarsvæði"
+  },
+  "portPoint": {
+   "en": "port, a point",
+   "is": "höfn, punktur"
+  },
+  "hid": {
+   "en": "port code (logbooks, landings)",
+   "is": "hafnarnúmer (afladagbækur, landanir)"
+  },
+  "source": {
+   "en": "source",
+   "is": "heimild"
+  },
+  "pidLocode": {
+   "en": "pid is its UN/LOCODE",
+   "is": "pid er UN/LOCODE hafnarinnar"
+  },
+  "no": {
+   "en": "no",
+   "is": "nei"
+  },
+  "noGaz": {
+   "en": "no gazetteer on this server",
+   "is": "engin örnefnaskrá á þessum þjóni"
+  },
+  "gBase": {
+   "en": "Base map",
+   "is": "Grunnkort"
+  },
+  "gAbout": {
+   "en": "About",
+   "is": "Um kortið"
+  },
+  "about1": {
+   "en": "Where Icelandic vessels fished, from their AIS tracks linked to the logbooks and landings: fishycode's effort map (decision 220), in the layout of plan 046.",
+   "is": "Hvar íslensk skip voru að veiðum, samkvæmt AIS-ferlum þeirra tengdum afladagbókum og löndunum: sóknarkort fishycode (ákvörðun 220), í útliti áætlunar 046."
+  },
+  "about2": {
+   "en": "Built from vessel-level data: for use inside MFRI only.",
+   "is": "Unnið úr gögnum um einstök skip: aðeins til nota innan Hafrannsóknastofnunar."
+  },
+  "loading": {
+   "en": "loading tiles…",
+   "is": "sæki kortatígla…"
+  },
+  "zoom": {
+   "en": "zoom",
+   "is": "aðdráttur"
+  },
+  "refused": {
+   "en": "the server refused tiles (HTTP {1})",
+   "is": "þjónninn hafnaði kortatíglum (HTTP {1})"
+  },
+  "older": {
+   "en": "the server is an older version ({1}) than this page ({2}): restart it",
+   "is": "þjónninn er eldri útgáfa ({1}) en síðan ({2}): endurræstu hann"
+  },
+  "positions": {
+   "en": "positions",
+   "is": "staðsetningar"
+  },
+  "usedIn": {
+   "en": "used in",
+   "is": "í heimildum"
+  },
+  "spellings": {
+   "en": "spellings",
+   "is": "rithættir"
+  },
+  "terrain": {
+   "en": "terrain word",
+   "is": "landslagsorð"
+  },
+  "depth": {
+   "en": "depth (GEBCO, m)",
+   "is": "dýpi (GEBCO, m)"
+  },
+  "mainGear": {
+   "en": "main gear",
+   "is": "helsta veiðarfæri"
+  },
+  "spread": {
+   "en": "spread, r80 (km)",
+   "is": "dreifing, r80 (km)"
+  },
+  "liesIn": {
+   "en": "lies in",
+   "is": "liggur í"
+  },
+  "namesWithin": {
+   "en": "names within",
+   "is": "nöfn innan"
+  },
+  "klass": {
+   "en": "class",
+   "is": "flokkur"
+  },
+  "agree": {
+   "en": "sources agree",
+   "is": "heimildir sammála"
+  },
+  "yes": {
+   "en": "yes",
+   "is": "já"
+  },
+  "apart": {
+   "en": "no: they place it apart",
+   "is": "nei: þær staðsetja það sitt á hvað"
+  },
+  "places": {
+   "en": "places with this name",
+   "is": "staðir með þessu nafni"
+  },
+  "thisPlace": {
+   "en": "this is place",
+   "is": "þetta er staður"
+  },
+  "fromZoom": {
+   "en": "shown from zoom",
+   "is": "sýnt frá aðdrætti"
+  },
+  "maybe": {
+   "en": "maybe also",
+   "is": "ef til vill líka"
+  },
+  "copyLink": {
+   "en": "Copy a link to this view",
+   "is": "Afrita tengil á þessa sýn"
+  },
+  "copied": {
+   "en": "link copied",
+   "is": "tengill afritaður"
+  },
+  "notCopied": {
+   "en": "the browser refused to copy the link",
+   "is": "vafrinn leyfði ekki að afrita tengilinn"
+  }
+ }
+}

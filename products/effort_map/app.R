@@ -1,11 +1,14 @@
 # app.R — the effort map's web app: the page, /meta and the vector tiles, as an httpuv app.
 # Decision 220. Used by server.R (a terminal) and effort_map.R (an R session).
 #
-# Input:  the base grid `grid` (grid.R), the page in the folder `www`; $FISHYDATA/curated/reference/gear.parquet;
+# Input:  the base grid `grid` (grid.R), the page and its config in the folder `www` (index.html, config.json, plan 046
+#         step 5); $FISHYDATA/curated/reference/gear.parquet;
 #         effort_tile() from tiles.R and ports_load(), port_tile() from ports.R, sourced by the caller with this file;
 #         $FISHYDATA/curated/place_name/place_name.parquet (plan 044), read once if it is there
 # Output: effort_map_app(con, grid, www), an httpuv app:
-#   /                                   the page; its query string sets the first view (effort_map.R)
+#   /                                   the page, with its config written in; its query string sets the first view
+#                                       (effort_map.R)
+#   /config.json                        the page's config: its layers, texts, palettes and base maps
 #   /meta                               the gears (with their hours), the years, the grid's version and the app's, and
 #                                       the number of ports (0 without them), as JSON
 #   /place_names.geojson                the gazetteer's names: a footprint per name that has one (kind footprint) and a
@@ -16,7 +19,7 @@
 #                                       one vector tile (tiles.R); gid, y1/y2 and px may be left out
 #   /ports/{z}/{x}/{y}.pbf              one vector tile of the ports (ports.R, plan 046 step 4); 404 without them
 
-APP_VERSION <- 5L     # what effort_map.R asks of a server on its port, and the page's APP: changed together
+APP_VERSION <- 6L     # what effort_map.R asks of a server on its port, and the page's APP: changed together
 PX <- c(0.5, 1, 2)    # the page's cell sizes, in screen pixels per cell
 
 effort_map_app <- function(con, grid, www) {
@@ -85,14 +88,19 @@ effort_map_app <- function(con, grid, www) {
     v <- as.integer(x)
     if (v < lo || v > hi) NULL else v
   }
+  read_text <- function(f) paste(readLines(file.path(www, f), warn = FALSE, encoding = "UTF-8"), collapse = "\n")
   reply <- function(status, body, type = "text/plain; charset=utf-8", headers = list())
     list(status = status, headers = c(list(`Content-Type` = type), headers), body = body)
 
   list(call = function(req) {
     path <- req$PATH_INFO
     if (req$REQUEST_METHOD != "GET") return(reply(405L, "GET only"))
-    if (path == "/") return(reply(200L, paste(readLines(file.path(www, "index.html"), warn = FALSE, encoding = "UTF-8"),
-                                              collapse = "\n"), "text/html; charset=utf-8", list(`Cache-Control` = "no-store")))
+    # both read at each request, so an edit shows on a reload; "</" escaped, so the config cannot close its script tag
+    if (path == "/") return(reply(200L, sub("__CONFIG__", gsub("</", "<\\/", read_text("config.json"), fixed = TRUE),
+                                            read_text("index.html"), fixed = TRUE),
+                                  "text/html; charset=utf-8", list(`Cache-Control` = "no-store")))
+    if (path == "/config.json") return(reply(200L, read_text("config.json"), "application/json; charset=utf-8",
+                                             list(`Cache-Control` = "no-store")))
     # v, the grid's write time, goes into the tile address, so a rebuilt grid is not hidden by the browser's cache
     if (path == "/meta") return(reply(200L, as.character(jsonlite::toJSON(c(meta, v = as.numeric(file.mtime(grid))),
                                                                          auto_unbox = TRUE, digits = NA)),
