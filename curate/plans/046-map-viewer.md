@@ -1,6 +1,7 @@
 # 046 — Map viewers: the effort map in a Vefsjá-like shell on the same tile engine, then R functions in ramb
 
-**status:** partly built — written 2026-10-24 at the maintainer's request; the effort map, Vefsjá's served scripts and
+**status:** executed — written 2026-10-24 at the maintainer's request, its seven steps done the same day (decision
+227); the effort map, Vefsjá's served scripts and
 the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
 (the checklist and the bench, every item passing, three faults left for step 2); step 2 done the same day (the
 sidebar, six base maps, the three faults, Icelandic and English); step 3 done the same day (the whole state in the
@@ -221,6 +222,12 @@ pane visible where an animation frame matters.
      the run of step 6). Next is step 7, a second view on the kit unedited (one voyage's fixes).
 7. **A second consumer** (ask c): one vessel-voyage's fixes from the trail, as points and lines, on the kit with no
    edit to the engine. This is the test that the kit is generic.
+   - **Done 2026-10-24:** `products/voyage_map/voyage_map.R`, `voyage_map(vid, year, voyage)` (by default the vessel's
+     last voyage with fishing): the track as a line (`ST_MakeLine` in time order) and the fixes as points coloured by
+     fishing, with a popup, both through `rb_map_tiles_table()`, from ramb's functions alone. It needed no new feature
+     of the kit and found one fault in it: a vector layer's tiles kept one address across server starts, so a voyage
+     served after another on the same port was drawn from the browser's cache. Fixed in ramb 2026.10.24.2 (the
+     server's start in the tiles' address, GeoJSON not cached), checked by serving two voyages in turn.
 
 ## 5. Checks
 
