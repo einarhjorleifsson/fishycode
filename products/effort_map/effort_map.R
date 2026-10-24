@@ -10,6 +10,7 @@
 #   effort_map()                                                     # all gears and years
 #   effort_map(gear = "OTB", years = 2015:2020, palette = "deep", stretch = "equal")
 #   effort_map(gear = 6, center = c(-24.5, 66.3), zoom = 8, floor = 1, cap = 300)
+#   effort_map(lang = "is", base = "ocean", opacity = 60, names = FALSE)
 #   effort_map_stop()
 #
 # The server answers while the console is idle: a map waits while R runs something else. A server already on the port
@@ -56,11 +57,19 @@ effort_map_stop <- function() {
 # gear: gear ids, FAO codes ("OTB" is every bottom trawl) or Icelandic names, as in curated/reference/gear (new codes)
 effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing_flow"), metric = c("hours", "kw_hours"),
                        cells = c("fine", "finer", "coarser"), palette = "magma", stretch = c("even", "equal"),
-                       floor = NULL, cap = NULL, center = c(-19, 65), zoom = 5, port = 8791, viewer = TRUE) {
+                       floor = NULL, cap = NULL, opacity = NULL, names = TRUE, base = "light", lang = c("en", "is"),
+                       center = c(-19, 65), zoom = 5, port = 8791, viewer = TRUE) {
   preset <- match.arg(preset); metric <- match.arg(metric); cells <- match.arg(cells); stretch <- match.arg(stretch)
+  lang <- match.arg(lang)
   page <- readLines(file.path(.effort_map$dir, "www", "index.html"), warn = FALSE, encoding = "UTF-8")
   palettes <- regmatches(page, regexpr('(?<=\\{ id: ")[^"]+(?=", label: )', page, perl = TRUE))   # the page's PALETTES
   if (!palette %in% palettes) stop("palette is one of ", paste(palettes, collapse = ", "), call. = FALSE)
+  block <- page[seq(grep("^const BASEMAPS = \\[", page), length(page))]                          # the page's BASEMAPS
+  block <- block[seq_len(grep("^\\];", block)[1])]
+  bases <- regmatches(block, regexpr('(?<=\\{ id: ")[^"]+', block, perl = TRUE))
+  if (!base %in% bases) stop("base is one of ", paste(bases, collapse = ", "), call. = FALSE)
+  if (!is.null(opacity) && !(is.numeric(opacity) && opacity >= 0 && opacity <= 100))
+    stop("opacity is a percentage, 0 to 100", call. = FALSE)
   gid <- NULL
   if (length(gear)) {
     ref <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> dplyr::collect()
@@ -75,7 +84,8 @@ effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing
   q <- c(preset = preset, gid = if (length(gid)) paste(gid, collapse = ","),
          y1 = if (length(years)) min(years), y2 = if (length(years)) max(years),
          metric = c(hours = "h_km2", kw_hours = "kwh_km2")[[metric]], px = c(fine = "1", finer = "0.5", coarser = "2")[[cells]],
-         palette = palette, stretch = stretch, floor = floor, cap = cap)
+         palette = palette, stretch = stretch, floor = floor, cap = cap, opacity = opacity,
+         names = if (!names) "0", base = if (base != "light") base, lang = if (lang != "en") lang)
   url <- sprintf("http://localhost:%d/?%s#%s/%s/%s", port,
                  paste(names(q), vapply(q, utils::URLencode, "", reserved = TRUE), sep = "=", collapse = "&"),
                  zoom, center[2], center[1])

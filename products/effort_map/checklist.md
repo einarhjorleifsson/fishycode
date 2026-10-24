@@ -50,6 +50,13 @@ How to test:
 - **A3** A `gid` the list does not hold (several gears, `6,7`) is added under the gears' names and FAO codes
   ("Botnvarpa, Humarvarpa (OTB)"; plan 046 step 2).
 - **A4** A value the page does not offer is left out, and the default stands.
+- **A5** Every control writes its value into the address as it changes, a value at its default left out; the position
+  stays in the hash, MapLibre's; a value the page does not offer is dropped from the address on load (plan 046 step 3).
+- **A6** A reload, or the copied link opened afresh, gives the same view: every control, layer, opacity, base map,
+  language and position.
+- **A7** Floor and cap enter the address only when set by hand (a slider, "Fit to view") or given in it; a metric
+  change, which refits, takes them out; a given value is kept exactly (`cap=300` stays 300).
+- **A8** 🔗 copies the address and says so in the status line.
 
 ## Sidebar (plan 046 step 2)
 
@@ -80,6 +87,8 @@ How to test:
 - **R2** A server of the same version already on the port (from `server.R`) is used as it is; an older one stops with
   a message.
 - **R3** A palette the page does not have, a gear nothing matches, or a floor not below the cap: an error that says so.
+- **R4** `effort_map(lang = "is", base = "ocean", opacity = 60, names = FALSE)` opens the view with them; a base or
+  opacity the page does not take stops with a message.
 
 ## Runs
 
@@ -101,3 +110,9 @@ How to test:
   - Language: S6 new and passing. The pane's browser has no Icelandic number data and formatted "is" as English, so
     German, the same format, stands in where the browser lacks it.
   Tile times not rerun: `tiles.R` and the tile route are untouched, and `app.R` changed in a comment only.
+- **2026-10-24, plan 046 step 3** (uncommitted, on top of ed1f7f0). Claude's run in the browser pane, visible; not
+  checked by a person. A5-A8 and R4 new and passing; R1-R3, M2 (the names' labels on a base from the address), S5 (the
+  phone header with 🔗) and E2 run again and passing. Two faults found and fixed on the way: a cap from the address came
+  back rounded by the slider's 0.01 step on the log scale (300 as 302), now `step="any"`; and a language switch while
+  tiles loaded left the status line in the old language. The copy test put a link on the maintainer's clipboard.
+  Tile times not rerun: the tile code is untouched.

@@ -3,7 +3,8 @@
 **status:** partly built — written 2026-10-24 at the maintainer's request; the effort map, Vefsjá's served scripts and
 the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
 (the checklist and the bench, every item passing, three faults left for step 2); step 2 done the same day (the
-sidebar, six base maps, the three faults, Icelandic and English) · **2026-10-24** · **see:** decision 220, plan 030
+sidebar, six base maps, the three faults, Icelandic and English); step 3 done the same day (the whole state in the
+address) · **2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -172,10 +173,13 @@ pane visible where an animation frame matters.
    - the three faults step 1 found, fixed: the sliders widen to the values at hand (kW-hours passed 10^5); several
      gears show by name and FAO code; a refused tile shows the server's reason, and an older server is named by the
      app version the page and `app.R` share (`APP`, `APP_VERSION`).
-3. **The address:**
-   - every control in the query string, and the position in the hash;
-   - `effort_map()` writes the same address;
-   - a reload or a copied link gives the same view.
+3. **The address** (done 2026-10-24; items A5-A8 and R4 in `checklist.md`):
+   - every control in the query string as it changes, a value at its default left out, and the position in the hash;
+     a value the page does not offer is dropped on load;
+   - floor and cap only once set by hand or given, so a link without them fits to its own view;
+   - a 🔗 button copies the link;
+   - `effort_map()` writes the same address, with `lang`, `base`, `opacity` and `names` added;
+   - a reload or a copied link opened afresh gives the same view, checked control by control.
 4. **Reference layers** (ask b): the ports first, with their info and legend. Further layers come one per step,
    as GeoJSON or as tiles from DuckDB (EUSM's 3.2 M polygons only as tiles).
 5. **The config split out:**

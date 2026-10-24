@@ -47,6 +47,7 @@
   #status { color: #777; padding: 6px 12px; border-top: 1px solid var(--line); min-height: 1.3em; }
   .about p { margin: 4px 0 8px; }
   #bases label { display: flex; align-items: center; gap: 6px; margin: 3px 0; cursor: pointer; }
+  #copylink { border: 0; background: none; cursor: pointer; font-size: 15px; padding: 0 4px; }
   .langs button { border: 1px solid var(--line); background: #fff; color: var(--muted); padding: 1px 6px; cursor: pointer; }
   .langs button + button { border-left: 0; }
   .langs button.on { background: var(--bar); border-color: var(--bar); color: #fff; }
@@ -66,6 +67,7 @@
 <button id="menu" data-tt="menu">☰</button>
 <aside id="side">
   <header><h1 data-t="title"></h1>
+    <button id="copylink" data-tt="copyLink">🔗</button>
     <span class="langs"><button data-lang="is">IS</button><button data-lang="en">EN</button></span>
     <button id="close" data-tt="close">✕</button></header>
   <div id="groups">
@@ -102,8 +104,8 @@
                 <option value="even" data-t="sEven"></option>
                 <option value="equal" data-t="sEqual"></option>
               </select></div>
-            <div class="row range"><label for="lo" data-t="floor"></label><input id="lo" type="range" min="-4" max="5" step="0.01"><span class="val" id="loval"></span></div>
-            <div class="row range"><label for="hi" data-t="cap"></label><input id="hi" type="range" min="-4" max="5" step="0.01"><span class="val" id="hival"></span></div>
+            <div class="row range"><label for="lo" data-t="floor"></label><input id="lo" type="range" min="-4" max="5" step="any"><span class="val" id="loval"></span></div>
+            <div class="row range"><label for="hi" data-t="cap"></label><input id="hi" type="range" min="-4" max="5" step="any"><span class="val" id="hival"></span></div>
             <div class="row range"><label for="opacity" data-t="opacity"></label><input id="opacity" type="range" min="0" max="100" step="1" value="85"><span class="val" id="opval">85 %</span></div>
             <div class="row"><button id="fit" data-t="fit" data-tt="fitTip"></button></div>
             <div class="legend" data-tt="legendTip">
@@ -255,9 +257,13 @@ const T = {
   places: { en: "places with this name", is: "staðir með þessu nafni" },
   thisPlace: { en: "this is place", is: "þetta er staður" },
   fromZoom: { en: "shown from zoom", is: "sýnt frá aðdrætti" },
-  maybe: { en: "maybe also", is: "ef til vill líka" }
+  maybe: { en: "maybe also", is: "ef til vill líka" },
+  copyLink: { en: "Copy a link to this view", is: "Afrita tengil á þessa sýn" },
+  copied: { en: "link copied", is: "tengill afritaður" },
+  notCopied: { en: "the browser refused to copy the link", is: "vafrinn leyfði ekki að afrita tengilinn" }
 };
 let LANG = "en";
+let addressRead = false, userColour = false, addressTimer = 0;   // the address (plan 046 step 3), see addressNow()
 let namesCount = null;   // the gazetteer's labels, for the language switch; -1 when the server has none
 const tr = (k, ...a) => { const t = T[k]?.[LANG] ?? T[k]?.en ?? k; return typeof t === "function" ? t(...a) : t; };
 // Icelandic numbers have a decimal comma and a dot for thousands, as German ones: a browser without Icelandic number
@@ -388,9 +394,10 @@ function applyLang(l) {
   for (const el of document.querySelectorAll("[data-tt]")) el.title = tr(el.dataset.tt);
   for (const b of document.querySelectorAll("[data-lang]")) b.classList.toggle("on", b.dataset.lang === LANG);
   if (namesCount !== null) $("namesinfo").textContent = namesCount < 0 ? tr("noGaz") : tr("namesN", namesCount.toLocaleString(loc()));
-  if (!tileError && map.loaded()) $("status").textContent = zoomText();
+  if (!tileError && map.getLayer("effort")) $("status").textContent = zoomText();   // map.loaded() is false while tiles load
   popup?.remove();
   paint();
+  if (addressRead) writeAddress();
 }
 for (const b of document.querySelectorAll("[data-lang]")) b.addEventListener("click", () => applyLang(b.dataset.lang));
 applyLang(new URLSearchParams(location.search).get("lang"));
@@ -445,23 +452,66 @@ Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => 
   if (+q.get("floor") > 0 && +q.get("cap") > +q.get("floor")) {
     widen(Math.log10(+q.get("floor")), Math.log10(+q.get("cap")));
     $("lo").value = Math.log10(+q.get("floor")); $("hi").value = Math.log10(+q.get("cap"));
-    fitted = true;   // a floor and cap given are kept, not fitted to the view
+    fitted = userColour = true;   // a floor and cap given are kept, not fitted to the view
   }
+  if (q.get("opacity") !== null && q.get("opacity") !== "" && +q.get("opacity") >= 0 && +q.get("opacity") <= 100) {
+    $("opacity").value = Math.round(+q.get("opacity")); $("opval").textContent = `${$("opacity").value} %`;
+  }
+  if (q.get("effort") === "0") { $("effort").checked = false; $("lyr-effort").classList.add("off"); }
+  if (q.get("names") === "0") $("names").checked = false;
   const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
   map.addSource("effort", { type: "vector", tiles: [tileUrl()], minzoom: 2, maxzoom: 12 });
   map.addLayer({ id: "effort", type: "fill", source: "effort", "source-layer": "cells",
+                 layout: { visibility: $("effort").checked ? "visible" : "none" },
                  paint: { "fill-color": colorExpr(), "fill-opacity": +$("opacity").value / 100, "fill-antialias": false } },
                firstSymbol);
   paint();
   addNames();
+  const base = BASEMAPS.find(b => b.id === q.get("base"));
+  if (base && base !== BASEMAPS[0]) { document.querySelector(`#bases input[value="${base.id}"]`).checked = true; setBase(base.id); }
+  addressRead = true;
+  addressNow();   // the address as the page took it: a value it does not offer is dropped
+});
+
+// The page's state in its address (plan 046 step 3): every control away from its default; the position is in the hash,
+// MapLibre's. Floor and cap go in only once set by hand or given, so a link without them fits to its own view.
+function addressNow() {
+  if (!addressRead) return;
+  const q = new URLSearchParams();
+  const put = (k, v, d) => { if (v != null && v !== "" && v !== d) q.set(k, v); };
+  put("preset", $("preset").value, "fishing");
+  put("gid", $("gid").value, "");
+  const ys = [...$("y1").options].map(o => o.value);
+  if ($("y1").value !== ys[0] || $("y2").value !== ys[ys.length - 1]) { q.set("y1", $("y1").value); q.set("y2", $("y2").value); }
+  put("metric", $("metric").value, "h_km2");
+  put("px", $("px").value, "1");
+  put("palette", $("palette").value, PALETTES[0].id);
+  put("stretch", $("stretch").value, "even");
+  if (userColour) { q.set("floor", +(10 ** +$("lo").value).toPrecision(3)); q.set("cap", +(10 ** +$("hi").value).toPrecision(3)); }
+  put("opacity", $("opacity").value, "85");
+  if (!$("effort").checked) q.set("effort", "0");
+  if (!$("names").checked) q.set("names", "0");
+  put("base", document.querySelector("#bases input:checked")?.value, BASEMAPS[0].id);
+  put("lang", LANG, "en");
+  const qs = q.toString().replace(/%2C/g, ",");
+  history.replaceState(history.state, "", `${location.pathname}${qs ? "?" + qs : ""}${location.hash}`);
+}
+function writeAddress() { clearTimeout(addressTimer); addressTimer = setTimeout(addressNow, 150); }
+$("side").addEventListener("change", writeAddress);
+$("side").addEventListener("input", writeAddress);
+$("copylink").addEventListener("click", () => {
+  addressNow();
+  const say = t => { $("status").textContent = t; setTimeout(() => { $("status").textContent = tileError || zoomText(); }, 2500); };
+  navigator.clipboard.writeText(location.href).then(() => say(tr("copied")), () => say(tr("notCopied")));
 });
 
 // The place-name gazetteer (plan 044), if the server has it: footprints as outlines, names as labels, the most used
 // drawn first where labels collide
 const NAME_LAYERS = ["names-foot", "names-line", "names-label"];
 function addNames() {
+  // the font of the first style's labels, read before a base map from the address replaces that style
+  const font = map.getStyle().layers.find(l => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"] ?? ["Open Sans Regular"];
   fetch("/place_names.geojson").then(r => r.ok ? r.json() : Promise.reject(r.status)).then(data => {
-    const font = map.getStyle().layers.find(l => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"] ?? ["Open Sans Regular"];
     map.addSource("names", { type: "geojson", data });
     // a name from its minimum zoom (plan 044 §4.3), its footprint a zoom earlier; text size by level
     const shown = ["<=", ["coalesce", ["get", "min_zoom"], 11], ["zoom"]];
@@ -516,12 +566,12 @@ for (const id of ["preset", "gid", "y1", "y2", "px"])
     tileError = "";
     map.getSource("effort")?.setTiles([tileUrl()]);   // before the first load, start() reads the filters itself
   });
-$("metric").addEventListener("change", () => { sampleView(); paint(); fitToView(); });
-$("lo").addEventListener("input", paint);
+$("metric").addEventListener("change", () => { userColour = false; sampleView(); paint(); fitToView(); });
+$("lo").addEventListener("input", () => { userColour = true; paint(); });
 $("palette").addEventListener("change", paint);
 $("stretch").addEventListener("change", () => { viewVals.length ? paint() : fitToView(); });
-$("hi").addEventListener("input", paint);
-$("fit").addEventListener("click", fitToView);
+$("hi").addEventListener("input", () => { userColour = true; paint(); });
+$("fit").addEventListener("click", () => { userColour = true; fitToView(); writeAddress(); });
 
 // The effort layer on or off (its controls and legend shown only when on, as Vefsjá's layers), and its opacity
 $("effort").addEventListener("change", () => {
