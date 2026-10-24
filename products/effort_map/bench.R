@@ -14,7 +14,7 @@
 
 source("R/paths.R")
 source("products/effort_map/tiles.R")
-source("products/effort_map/app.R")     # PX, the page's cell sizes
+PX <- c(0.5, 1, 2)   # the page's cell sizes: map.json's filter px
 
 label <- commandArgs(trailingOnly = TRUE)[1]
 if (is.na(label)) label <- "run"

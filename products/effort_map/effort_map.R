@@ -1,8 +1,9 @@
 # effort_map.R — the effort map from an R session: effort_map() opens a view in RStudio's Viewer (or a browser), set
 # by its arguments, with the page's controls to go on from there.
-# Decision 220.
+# Decision 220, plan 046.
 #
-# Input:  tiles.R, ports.R, app.R and what they read; www/config.json, the page's palettes and base maps
+# Input:  tiles.R, map.R and what they read; ramb's map viewer (rb_map_serve(), rb_map_palettes(), rb_map_basemaps();
+#         ramb >= 2026.10.24.1)
 # Output: effort_map(), effort_map_stop(); a server on 127.0.0.1:<port> in this R session, in the background
 #
 # Use, from the fishycode root (an RStudio project opens there):
@@ -14,7 +15,7 @@
 #   effort_map_stop()
 #
 # The server answers while the console is idle: a map waits while R runs something else. A server already on the port
-# from server.R (a terminal) is used as it is, if it is this version of the app.
+# from server.R (a terminal) is used as it is, if it is ramb's viewer serving the effort map.
 
 source("R/paths.R")
 source("R/write_curated.R")    # read_curated_sf(), for the place names
@@ -23,16 +24,15 @@ source("R/write_curated.R")    # read_curated_sf(), for the place names
 .effort_map$dir <- "products/effort_map"
 .effort_map$grid <- fd_path("products", "effort_map", "grid.parquet")
 sys.source(file.path(.effort_map$dir, "tiles.R"), envir = .effort_map)
-sys.source(file.path(.effort_map$dir, "ports.R"), envir = .effort_map)
-sys.source(file.path(.effort_map$dir, "app.R"), envir = .effort_map)
+sys.source(file.path(.effort_map$dir, "map.R"), envir = .effort_map)
 
 effort_map_start <- function(port = 8791) {
   e <- .effort_map
-  if (!is.null(e$server) && identical(e$port, port)) return(invisible(port))
+  if (identical(e$port, port)) return(invisible(port))
   effort_map_stop()
   found <- suppressWarnings(tryCatch(jsonlite::fromJSON(sprintf("http://127.0.0.1:%d/meta", port)),
                                      error = function(err) NULL))
-  if (!is.null(found) && identical(as.integer(found$app), e$APP_VERSION)) {
+  if (!is.null(found) && !is.null(found$engine) && !is.null(found$layers$effort)) {
     message("using the effort map already running on port ", port)
     return(invisible(port))
   }
@@ -40,8 +40,7 @@ effort_map_start <- function(port = 8791) {
                             call. = FALSE)
   e$con <- DBI::dbConnect(duckdb::duckdb())
   invisible(DBI::dbExecute(e$con, "LOAD spatial"))
-  e$server <- tryCatch(httpuv::startServer("127.0.0.1", port, e$effort_map_app(e$con, e$grid, file.path(e$dir, "www"))),
-                       error = function(err) stop("port ", port, " is taken: give another port", call. = FALSE))
+  ramb::rb_map_serve(e$effort_map_build(e$con, e$grid), port = port, open = FALSE)
   e$port <- port
   message("effort map on http://localhost:", port, ", answering while the console is idle; effort_map_stop() ends it")
   invisible(port)
@@ -49,9 +48,9 @@ effort_map_start <- function(port = 8791) {
 
 effort_map_stop <- function() {
   e <- .effort_map
-  if (!is.null(e$server)) httpuv::stopServer(e$server)
+  if (!is.null(e$port)) ramb::rb_map_stop(e$port)
   if (!is.null(e$con)) DBI::dbDisconnect(e$con, shutdown = TRUE)
-  e$server <- e$con <- e$port <- NULL
+  e$con <- e$port <- NULL
   invisible()
 }
 
@@ -63,9 +62,10 @@ effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing
                        center = c(-19, 65), zoom = 5, port = 8791, viewer = TRUE) {
   preset <- match.arg(preset); metric <- match.arg(metric); cells <- match.arg(cells); stretch <- match.arg(stretch)
   lang <- match.arg(lang)
-  config <- jsonlite::fromJSON(file.path(.effort_map$dir, "www", "config.json"))   # the page's palettes and base maps
-  if (!palette %in% config$palettes$id) stop("palette is one of ", paste(config$palettes$id, collapse = ", "), call. = FALSE)
-  if (!base %in% config$basemaps$id) stop("base is one of ", paste(config$basemaps$id, collapse = ", "), call. = FALSE)
+  palettes <- vapply(ramb::rb_map_palettes(), `[[`, "", "id")   # the viewer's palettes and base maps
+  bases <- vapply(ramb::rb_map_basemaps(), `[[`, "", "id")
+  if (!palette %in% palettes) stop("palette is one of ", paste(palettes, collapse = ", "), call. = FALSE)
+  if (!base %in% bases) stop("base is one of ", paste(bases, collapse = ", "), call. = FALSE)
   if (!is.null(opacity) && !(is.numeric(opacity) && opacity >= 0 && opacity <= 100))
     stop("opacity is a percentage, 0 to 100", call. = FALSE)
   gid <- NULL

@@ -86,9 +86,10 @@ How to test:
 
 ## The config (plan 046 step 5)
 
-- **K1** The page's groups, layers, texts, palettes and base maps come from `www/config.json`, written into the page
-  by `app.R` and served at `/config.json`; an edit to it shows on a reload, with no restart; a server older than the
-  page sends no config, and the page says to restart it.
+- **K1** The page's groups, layers and texts come from `map.json` (the palettes and base maps from ramb's defaults),
+  read by `map.R` when the server starts and written into ramb's page by `rb_map_serve()`, and served at
+  `/config.json`; a server that sends no config makes the page say to restart it. (Step 5's `www/config.json` was read
+  at each request, so an edit showed on a reload; since step 6 an edit to `map.json` needs a restart.)
 
 ## Errors
 
@@ -100,8 +101,8 @@ How to test:
 
 - **R1** `effort_map(gear = "OTB", years = 2015:2020, palette = "deep", stretch = "equal")` opens the view with those
   values; `effort_map_stop()` ends the server.
-- **R2** A server of the same version already on the port (from `server.R`) is used as it is; an older one stops with
-  a message.
+- **R2** A server of ramb's viewer serving the effort map already on the port (from `server.R`) is used as it is; any
+  other (an older effort map) stops with a message.
 - **R3** A palette the page does not have, a gear nothing matches, or a floor not below the cap: an error that says so.
 - **R4** `effort_map(lang = "is", base = "ocean", opacity = 60, names = FALSE)` opens the view with them; a base or
   opacity the page does not take stops with a message.
@@ -146,3 +147,14 @@ How to test:
   moved every button 15 px left, so a second click missed (now `scrollbar-gutter: stable`); and a page opened with the
   effort off never fitted its colours when the effort was turned on (the first fit now waits for cells). The copy test
   put a link on the maintainer's clipboard again.
+- **2026-10-24, plan 046 step 6** (on top of f74fa96; ramb 2026.10.24.1, run from a scratch library, then pushed as
+  817fc1a and installed from GitHub, where the page loaded again as before). The effort map rebuilt on ramb's viewer (`map.json`, `map.R`; `app.R`, `ports.R` and `www/`
+  retired), run on port 8795 beside the old page on 8791. Claude's run in the browser pane; the pane was closed twice
+  during it, and the page then never started (MapLibre's `load` waits for a drawn frame): those checks were run again
+  with it open. Every item run again and passing on the rebuilt map, with the same numbers as the old page on the same
+  views (the fit, the sliders, the gear labels, the place names' popup line for line). E1's refused tile now shows
+  ramb's reason (`px is 0.5, 1, 2`); R2 refused the old page's server on 8791 as an older effort map. Tile times through
+  ramb's route against the old route, the same 30 tiles at zoom 6-8: median 225 against 226 ms, worst 645 against 617
+  ms; the bytes of one tile vary between two fetches from the same server (by up to 0.25 %, DuckDB's parallel sums), so
+  no byte comparison is made. One fault found and fixed on the way: the ports' count text was lost in the move to
+  `map.json`.

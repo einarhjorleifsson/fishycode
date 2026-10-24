@@ -1,5 +1,5 @@
 {
- "_comment": "The effort map's layers, texts, palettes and base maps (plan 046 step 5): what the page shows. The page (index.html) is the engine that shows it; app.R writes this file into the page as it serves it, and at /config.json. A text is a key of `texts`, in Icelandic and English; {1}, {2} are filled in by the page.",
+ "_comment": "The effort map's layers, groups and texts (plan 046 steps 5-6): what ramb's map viewer shows, read by map.R, which adds each layer's tiles or data. Texts are in Icelandic and English; the viewer's own texts are English in ramb and given here in Icelandic; a base map's label is b_<id>. {1} and {field} are filled in by the page.",
  "title": "title",
  "view": {
   "center": [
@@ -12,6 +12,17 @@
   "about1",
   "about2"
  ],
+ "languages": [
+  "is",
+  "en"
+ ],
+ "language": "en",
+ "locales": {
+  "is": [
+   "is-IS",
+   "de-DE"
+  ]
+ },
  "groups": [
   {
    "id": "effort",
@@ -34,10 +45,105 @@
  "layers": [
   {
    "id": "effort",
-   "kind": "effort",
+   "kind": "grid",
    "label": "lyrEffort",
    "info": "infoEffort",
-   "visible": true
+   "visible": true,
+   "source_layer": "cells",
+   "minzoom": 2,
+   "maxzoom": 12,
+   "opacity": 85,
+   "filters": [
+    {
+     "id": "preset",
+     "label": "fishing",
+     "options": [
+      {
+       "value": "fishing",
+       "label": "presetFishing"
+      },
+      {
+       "value": "fishing_flow",
+       "label": "presetFlow"
+      }
+     ]
+    },
+    {
+     "id": "gid",
+     "label": "gear",
+     "options": [
+      {
+       "value": "",
+       "label": "allGears"
+      }
+     ],
+     "meta": true,
+     "unnamed": "gearN"
+    },
+    {
+     "id": "years",
+     "type": "range",
+     "label": "years",
+     "params": [
+      "y1",
+      "y2"
+     ]
+    },
+    {
+     "id": "metric",
+     "type": "metric",
+     "label": "metric"
+    },
+    {
+     "id": "px",
+     "label": "cells",
+     "default": "1",
+     "options": [
+      {
+       "value": "0.5",
+       "label": "pxFiner",
+       "tip": "pxFinerTip"
+      },
+      {
+       "value": "1",
+       "label": "pxFine"
+      },
+      {
+       "value": "2",
+       "label": "pxCoarser"
+      }
+     ]
+    }
+   ],
+   "metrics": [
+    {
+     "field": "h_km2",
+     "label": "hKm2"
+    },
+    {
+     "field": "kwh_km2",
+     "label": "kwhKm2"
+    }
+   ],
+   "popup": {
+    "fields": [
+     {
+      "field": "h_km2",
+      "label": "hKm2",
+      "format": "value"
+     },
+     {
+      "field": "kwh_km2",
+      "label": "kwhKm2",
+      "format": "value"
+     },
+     {
+      "field": "n",
+      "label": "fixes",
+      "format": "count"
+     }
+    ]
+   }
   },
   {
    "id": "ports",
@@ -45,13 +151,8 @@
    "label": "lyrPorts",
    "info": "infoPorts",
    "visible": false,
-   "tiles": "/ports/{z}/{x}/{y}.pbf",
    "minzoom": 2,
    "maxzoom": 14,
-   "count": {
-    "meta": "ports",
-    "text": "portsN"
-   },
    "legend": [
     {
      "swatch": {
@@ -195,6 +296,9 @@
       "label": "source"
      }
     ]
+   },
+   "count": {
+    "text": "portsN"
    }
   },
   {
@@ -203,7 +307,6 @@
    "label": "lyrNames",
    "info": "infoNames",
    "visible": true,
-   "data": "/place_names.geojson",
    "missing": "noGaz",
    "count": {
     "where": [
@@ -375,256 +478,73 @@
      "names-label",
      "names-foot"
     ],
-    "formatter": "names",
-    "maxWidth": "320px"
+    "title": "name",
+    "maxWidth": "320px",
+    "fields": [
+     {
+      "field": "n",
+      "label": "positions",
+      "format": "count"
+     },
+     {
+      "field": "sources",
+      "label": "usedIn"
+     },
+     {
+      "field": "spellings",
+      "label": "spellings"
+     },
+     {
+      "field": "terrain",
+      "label": "terrain"
+     },
+     {
+      "field": "depth",
+      "label": "depth"
+     },
+     {
+      "field": "gear",
+      "label": "mainGear"
+     },
+     {
+      "field": "r80",
+      "label": "spread"
+     },
+     {
+      "field": "parent",
+      "label": "liesIn"
+     },
+     {
+      "field": "children",
+      "label": "namesWithin"
+     },
+     {
+      "field": "class",
+      "label": "klass"
+     },
+     {
+      "field": "outcome",
+      "label": "agree",
+      "values": {
+       "confirmed": "agreeYes",
+       "disagree": "agreeNo"
+      }
+     },
+     {
+      "field": "n_places",
+      "label": "places",
+      "template": "placesOf"
+     },
+     {
+      "field": "min_zoom",
+      "label": "fromZoom"
+     },
+     {
+      "field": "synonyms",
+      "label": "maybe"
+     }
+    ]
    }
-  }
- ],
- "basemaps": [
-  {
-   "id": "light",
-   "label": {
-    "en": "Light (Carto Positron)",
-    "is": "Ljóst (Carto Positron)"
-   },
-   "style": "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-  },
-  {
-   "id": "voyager",
-   "label": {
-    "en": "Colour (Carto Voyager)",
-    "is": "Litað (Carto Voyager)"
-   },
-   "style": "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
-  },
-  {
-   "id": "dark",
-   "label": {
-    "en": "Dark (Carto Dark Matter)",
-    "is": "Dökkt (Carto Dark Matter)"
-   },
-   "style": "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-  },
-  {
-   "id": "ocean",
-   "label": {
-    "en": "Ocean (Esri)",
-    "is": "Haf (Esri)"
-   },
-   "maxzoom": 13,
-   "attribution": "Tiles © Esri and its sources",
-   "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}"
-  },
-  {
-   "id": "satellite",
-   "label": {
-    "en": "Satellite (Esri)",
-    "is": "Gervihnattamynd (Esri)"
-   },
-   "maxzoom": 19,
-   "attribution": "Tiles © Esri and its sources",
-   "tiles": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-  },
-  {
-   "id": "none",
-   "label": {
-    "en": "None",
-    "is": "Ekkert"
-   }
-  }
- ],
- "palettes": [
-  {
-   "id": "magma",
-   "label": "magma",
-   "source": "viridisLite",
-   "colors": [
-    "#FCFDBF",
-    "#FEC287",
-    "#FB8861",
-    "#E65164",
-    "#B63679",
-    "#822681",
-    "#51127C",
-    "#1D1147",
-    "#000004"
-   ]
-  },
-  {
-   "id": "viridis",
-   "label": "viridis",
-   "source": "viridisLite",
-   "colors": [
-    "#FDE725",
-    "#AADC32",
-    "#5DC863",
-    "#27AD81",
-    "#21908C",
-    "#2C728E",
-    "#3B528B",
-    "#472D7B",
-    "#440154"
-   ]
-  },
-  {
-   "id": "plasma",
-   "label": "plasma",
-   "source": "viridisLite",
-   "colors": [
-    "#F0F921",
-    "#FDC328",
-    "#F89441",
-    "#E56B5D",
-    "#CC4678",
-    "#A92395",
-    "#7E03A8",
-    "#4C02A1",
-    "#0D0887"
-   ]
-  },
-  {
-   "id": "deep",
-   "label": "deep",
-   "source": "tidyterra whitebox",
-   "colors": [
-    "#FEFED7",
-    "#EBF7B1",
-    "#C5E7B4",
-    "#7ECCBB",
-    "#40B5C3",
-    "#1D90BF",
-    "#215DA7",
-    "#243493",
-    "#081C57"
-   ]
-  },
-  {
-   "id": "scotland",
-   "label": "scotland",
-   "source": "tidyterra princess",
-   "colors": [
-    "#E6CCAD",
-    "#A98066",
-    "#6C3B27",
-    "#493835",
-    "#173442",
-    "#0F2531",
-    "#071720",
-    "#051017",
-    "#01060B"
-   ]
-  },
-  {
-   "id": "population_dens",
-   "label": "population_dens",
-   "source": "tidyterra grass",
-   "colors": [
-    "#FFFFFF",
-    "#AF6419",
-    "#8B4010",
-    "#83370E",
-    "#7A2E0C",
-    "#72250B",
-    "#6A1C08",
-    "#621104",
-    "#5A0400"
-   ]
-  },
-  {
-   "id": "etopo1_bathy",
-   "label": "etopo1_bathy",
-   "source": "tidyterra hypso",
-   "colors": [
-    "#BCE6FF",
-    "#55D7FF",
-    "#34BFFF",
-    "#17A0FC",
-    "#176EF2",
-    "#0026DE",
-    "#0010CD",
-    "#1505AF",
-    "#1A0089"
-   ]
-  },
-  {
-   "id": "colombia_bathy",
-   "label": "colombia_bathy",
-   "source": "tidyterra hypso",
-   "colors": [
-    "#C6ECFF",
-    "#8FD5FF",
-    "#53BCF2",
-    "#1B9FD3",
-    "#017FB3",
-    "#015F92",
-    "#013F72",
-    "#002B5E",
-    "#001E50"
-   ]
-  },
-  {
-   "id": "gn_yl",
-   "label": "gn_yl",
-   "source": "tidyterra whitebox",
-   "colors": [
-    "#FFFFCC",
-    "#E7F6B2",
-    "#CEEB9E",
-    "#B3DF91",
-    "#93D283",
-    "#70C274",
-    "#46AC5D",
-    "#218C49",
-    "#006837"
-   ]
-  },
-  {
-   "id": "blues",
-   "label": "blues",
-   "source": "tidyterra grass",
-   "colors": [
-    "#FFFFFF",
-    "#EEE2FF",
-    "#DCC4FF",
-    "#C8A8FF",
-    "#B38BFF",
-    "#9B6FFF",
-    "#7E52FF",
-    "#5932FF",
-    "#0000FF"
-   ]
-  },
-  {
-   "id": "high_relief",
-   "label": "high_relief (lightness not steady)",
-   "source": "tidyterra whitebox",
-   "colors": [
-    "#488737",
-    "#96B170",
-    "#E2DBAB",
-    "#E4C793",
-    "#E4B47B",
-    "#CDA886",
-    "#B69C90",
-    "#DBCCC6",
-    "#FFFFFF"
-   ]
-  },
-  {
-   "id": "bcyr",
-   "label": "bcyr (lightness not steady)",
-   "source": "tidyterra grass",
-   "colors": [
-    "#0000FF",
-    "#5377FF",
-    "#4FC8FF",
-    "#6CFFE7",
-    "#C4FF9E",
-    "#F3FF47",
-    "#FFD100",
-    "#FF8800",
-    "#FF0000"
-   ]
   }
  ],
  "texts": {
@@ -904,17 +824,9 @@
    "en": "yes",
    "is": "já"
   },
-  "apart": {
-   "en": "no: they place it apart",
-   "is": "nei: þær staðsetja það sitt á hvað"
-  },
   "places": {
    "en": "places with this name",
    "is": "staðir með þessu nafni"
-  },
-  "thisPlace": {
-   "en": "this is place",
-   "is": "þetta er staður"
   },
   "fromZoom": {
    "en": "shown from zoom",
@@ -935,6 +847,42 @@
   "notCopied": {
    "en": "the browser refused to copy the link",
    "is": "vafrinn leyfði ekki að afrita tengilinn"
+  },
+  "b_light": {
+   "en": "Light (Carto Positron)",
+   "is": "Ljóst (Carto Positron)"
+  },
+  "b_voyager": {
+   "en": "Colour (Carto Voyager)",
+   "is": "Litað (Carto Voyager)"
+  },
+  "b_dark": {
+   "en": "Dark (Carto Dark Matter)",
+   "is": "Dökkt (Carto Dark Matter)"
+  },
+  "b_ocean": {
+   "en": "Ocean (Esri)",
+   "is": "Haf (Esri)"
+  },
+  "b_satellite": {
+   "en": "Satellite (Esri)",
+   "is": "Gervihnattamynd (Esri)"
+  },
+  "b_none": {
+   "en": "None",
+   "is": "Ekkert"
+  },
+  "agreeYes": {
+   "en": "yes ({families})",
+   "is": "já ({families})"
+  },
+  "agreeNo": {
+   "en": "no: they place it apart ({families})",
+   "is": "nei: þær staðsetja það sitt á hvað ({families})"
+  },
+  "placesOf": {
+   "en": "{n_places} (this is place {place})",
+   "is": "{n_places} (þetta er staður {place})"
   }
  }
 }

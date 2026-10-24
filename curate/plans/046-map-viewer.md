@@ -4,7 +4,8 @@
 the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
 (the checklist and the bench, every item passing, three faults left for step 2); step 2 done the same day (the
 sidebar, six base maps, the three faults, Icelandic and English); step 3 done the same day (the whole state in the
-address); step 4's ports layer and step 5, the config split out, done the same day · **2026-10-24** · **see:** decision 220, plan 030
+address); step 4's ports layer and step 5, the config split out, done the same day; step 6 done the same day (ramb 2026.10.24.1,
+817fc1a, pushed and installed from GitHub on the maintainer's word) · **2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -197,10 +198,27 @@ pane visible where an animation frame matters.
      layer of kind `effort`) and the place names' popup stay page code;
    - the page is unchanged against step 1's list: every item run again and passing, two faults fixed on the way
      (`checklist.md`, the run of step 5).
-6. **Into ramb:**
-   - the engine, the service's skeleton and the R constructors move to ramb;
-   - fishycode's effort map is rebuilt on them, its own code down to the layer definitions and the tile SQL;
-   - ramb's tests draw its example pings as a `tiles` layer without `$FISHYDATA`.
+6. **Into ramb** (the boundary chosen by the maintainer, 2026-10-24, each as recommended):
+   - **ramb:** the engine (`inst/map/index.html`) with three layer kinds: `grid` (the effort layer made general: a
+     tile layer coloured by a chosen numeric field, with filters declared in the config, one per map for now),
+     `vector` and `geojson`; the R functions `rb_map_layer()`, `rb_map_group()`, `rb_map()` (the config),
+     `rb_map_serve()` and `rb_map_stop()` (httpuv in the background, fixed routes, parameters checked before any
+     SQL); one generic helper serving a DuckDB table of geometries as tiles (`ports.R` made general); httpuv and
+     jsonlite in Suggests. The engine's own texts are English; a config adds languages;
+   - **fishycode:** the grid (`grid.R`), the effort's tile SQL (`tiles.R`) passed in as a function, the layer list
+     written with the R functions, and the Icelandic texts. The place names' popup becomes plain fields prepared
+     in the GeoJSON (agreement, other places, names within), shown by the generic popup with templates;
+   - ramb's tests serve and query a map of an example dataset without `$FISHYDATA`; fishycode's checklist is run
+     again; ramb is pushed and installed from GitHub only on the maintainer's word.
+   - **Built 2026-10-24:** ramb 2026.10.24.1 (817fc1a, pushed; installed with `remotes::install_git()`, so its example
+     data arrive whole and `RemoteSha` names the commit): `inst/map/index.html` (the engine, generalised from step 5's
+     page), `R/map.R` (`rb_map_layer()`, `rb_map_group()`, `rb_map()`, `rb_map_serve()`, `rb_map_stop()`,
+     `rb_map_tiles_table()`, `rb_map_palettes()`, `rb_map_basemaps()`), `tests/testthat/test-map.R` (48 expectations
+     on `dansk` and `dansk_harbours`; the full suite 149 tests, none failing; R CMD check with no errors, the one
+     warning R's own `Boolean.h`, known, and the notes ramb had before). fishycode: `products/effort_map/map.json`
+     and `map.R` build the map; `server.R` and `effort_map.R` serve it; `app.R`, `ports.R` and `www/` are retired. Every
+     checklist item passes on the rebuilt map, with the old page's numbers; the tile times are the same (`checklist.md`,
+     the run of step 6). Next is step 7, a second view on the kit unedited (one voyage's fixes).
 7. **A second consumer** (ask c): one vessel-voyage's fixes from the trail, as points and lines, on the kit with no
    edit to the engine. This is the test that the kit is generic.
 
