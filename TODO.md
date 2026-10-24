@@ -1241,8 +1241,6 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   with the track (decisions 173, 174);
 - the flow diagram's vessel row draws only ping → vessel: the vessel's curation and its links to the MMSI, the
   logbooks and the landings are missing (`docs/figures/one_flow_cascade_v3.svg`, plan 033);
-- the station table carries the logbook's gear as recorded (`fishing_sample`), not the landing-corrected `gid_used`
-  of `curated/logbook/gear.parquet` (the effort map met it, decision 220);
 - skills for the user, later (maintainer).
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.

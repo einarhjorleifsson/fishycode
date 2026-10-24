@@ -45,4 +45,4 @@ libraries):
 - How the product is versioned (TODO 140): the grid is rebuilt from v0's trail by hand, after a rebuild.
 - The page does not write its filters into its address, so a link shows the place, not the gear or years.
 - Haul windows that hold steaming or a position jump draw lines across land and to harbour (TODO 142).
-- The v0 station table still carries the logbook's gear as recorded (TODO 140).
+- The v0 station table carried the logbook's gear as recorded: corrected the same day (decision 219, amended).

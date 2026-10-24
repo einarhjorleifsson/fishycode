@@ -3,7 +3,8 @@
 *2026-10-24. The maintainer: "I want to start playing around with the products as-is", so that "experience gained from
 that can provide a user-feedback loop to the whole process", and on the version: "it is very important that in the
 next round we start thinking about the dataproduct version". Built, checked and written by Claude (AI), not checked by
-a person.*
+a person. **Amended 2026-10-24:** the station table's gear is the pipeline's corrected one, `gid_used` (decision 220
+found the logbook's own showing sea cucumber dredging as bottom trawl).*
 
 ## What was built
 
@@ -19,7 +20,10 @@ a person.*
   - `trip` (1,853,260): `trip_reconciled`'s departure and return, times and ports, with `_basis`, `_from` and `_day`;
     `n_crew`; the trip's landing from `lid_map` (`.lid`, `schema_land`), one at most per trip.
   - `station` (7,301,169): the station with its fishing sample (one per station) and the trip's vid, less the `_raw`
-    and internal columns.
+    and internal columns, and its gear from `curated/logbook/gear.parquet`, under the AIS trail's names: `gid_used`,
+    the logbook's gear corrected by the landing's (plan 014 3j; 160,407 stations take the landing's), with
+    `gid_basis`; `gid` and `gid_landing` as each records it; `gear`, `target`, `target2` those of `gid_used`. Until
+    the amendment the table carried the logbook's gear as recorded.
   - `catch` (16,997,458): the kept stations' catch.
   Duplicate twins (decision 094) are out of all three: 9,773 stations, and the trips `trip_reconciled` leaves out.
 - The keys are curated's, unchanged: a record by (id, schema), a landing by (`.lid`, schema).

@@ -3,7 +3,7 @@
 # lacks is found by using it; the improvements, and how a data product is versioned, are the next round.
 #
 # Input:  curated/vessel/{vessel,vessel_year}.parquet, curated/landing/{landings,catch}.parquet,
-#         curated/logbook/{trip,station,fishing_sample,catch,lid_map}.parquet, curated/link/trip_reconciled.parquet,
+#         curated/logbook/{trip,station,fishing_sample,gear,catch,lid_map}.parquet, curated/link/trip_reconciled.parquet,
 #         curated/ais/{trail,catch,voyage.parquet}, curated/reference/{species,gear,port}.parquet
 # Output: $FISHYDATA/products/v0/
 #           vessel/     vessel.parquet, vessel_year.parquet                       (links)
@@ -19,7 +19,10 @@
 # - Only the logbook tables are written, since no curated table is right for a user as it stands: duplicate twins
 #   left out (decision 094); the trip's departure and return, times and ports, the reconciled ones (trip_reconciled,
 #   decisions 173, 174), each with its basis and witness (`_from`), `T1_day`/`T2_day` TRUE where it is known to the
-#   day only; the trip's landing (lid_map) on the trip; a station's fishing sample joined to it, with the vessel.
+#   day only; the trip's landing (lid_map) on the trip; a station's fishing sample joined to it, with the vessel, and
+#   its gear as the pipeline uses it: `gid_used`, the logbook's gear corrected by the landing's (gear.parquet, plan 014
+#   3j), with `gid_basis`; `gid` and `gid_landing` as each records it; `gear`, `target`, `target2` those of `gid_used`,
+#   the names the AIS trail gives them (decision 219, amended 2026-10-24).
 # - Keys as in curated/: vid; a logbook record by (.tid, schema) or (.sid, schema), never the id alone; a landing by
 #   (.lid, schema), on the trip (.lid, schema_land). The AIS trail carries .tid, .sid and schema.
 # - write_curated_sql() writes under curated/ only, so the written tables are copied here with its stamps
@@ -96,19 +99,22 @@ write_product(trip_user |> arrange(vid, T2), "logbook/trip.parquet",
 
 ## Station ---------------------------------------------------------------------
 station <- open_dataset(lb("station.parquet")) |> not_duplicate()
+gear <- open_dataset(lb("gear.parquet")) |>
+  select(.sid, schema, gid_used, gid_basis, gid, gid_landing, gear, target, target2)
 sample <- open_dataset(lb("fishing_sample.parquet")) |>
-  select(.sid, schema, gid, gear, target, target2, t1, t2, t3, t4, t1_placeholder, time_basis, duration_m,
+  select(.sid, schema, t1, t2, t3, t4, t1_placeholder, time_basis, duration_m,
          effort, effort_unit, effort_count, effort_duration, n_units, g_mesh, g_width, g_height, g_length)
 
 station_user <- station |>
   select(.sid, .tid, schema, date, lon1, lat1, lon2, lat2, lon1_basis, lon2_basis, sq, ssq,
          z1, z2, z1_basis, z2_basis, station_type, station_type_basis, eytt_deleted) |>
   inner_join(trip |> select(.tid, schema, vid), by = c(".tid", "schema")) |>
+  left_join(gear, by = c(".sid", "schema")) |>
   left_join(sample, by = c(".sid", "schema")) |>
   relocate(vid, .after = schema)
 stopifnot(count(station_user) |> pull(n) == count(station) |> pull(n))
 write_product(station_user |> arrange(vid, date, t1), "logbook/station.parquet",
-              c(lb("station.parquet"), lb("fishing_sample.parquet"), lb("trip.parquet")))
+              c(lb("station.parquet"), lb("gear.parquet"), lb("fishing_sample.parquet"), lb("trip.parquet")))
 
 ## Catch -----------------------------------------------------------------------
 catch_user <- open_dataset(lb("catch.parquet")) |>
