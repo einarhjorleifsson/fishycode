@@ -2,7 +2,7 @@
 # by its arguments, with the page's controls to go on from there.
 # Decision 220.
 #
-# Input:  tiles.R, app.R and what they read
+# Input:  tiles.R, ports.R, app.R and what they read
 # Output: effort_map(), effort_map_stop(); a server on 127.0.0.1:<port> in this R session, in the background
 #
 # Use, from the fishycode root (an RStudio project opens there):
@@ -10,7 +10,7 @@
 #   effort_map()                                                     # all gears and years
 #   effort_map(gear = "OTB", years = 2015:2020, palette = "deep", stretch = "equal")
 #   effort_map(gear = 6, center = c(-24.5, 66.3), zoom = 8, floor = 1, cap = 300)
-#   effort_map(lang = "is", base = "ocean", opacity = 60, names = FALSE)
+#   effort_map(lang = "is", base = "ocean", opacity = 60, names = FALSE, ports = TRUE)
 #   effort_map_stop()
 #
 # The server answers while the console is idle: a map waits while R runs something else. A server already on the port
@@ -23,6 +23,7 @@ source("R/write_curated.R")    # read_curated_sf(), for the place names
 .effort_map$dir <- "products/effort_map"
 .effort_map$grid <- fd_path("products", "effort_map", "grid.parquet")
 sys.source(file.path(.effort_map$dir, "tiles.R"), envir = .effort_map)
+sys.source(file.path(.effort_map$dir, "ports.R"), envir = .effort_map)
 sys.source(file.path(.effort_map$dir, "app.R"), envir = .effort_map)
 
 effort_map_start <- function(port = 8791) {
@@ -57,7 +58,8 @@ effort_map_stop <- function() {
 # gear: gear ids, FAO codes ("OTB" is every bottom trawl) or Icelandic names, as in curated/reference/gear (new codes)
 effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing_flow"), metric = c("hours", "kw_hours"),
                        cells = c("fine", "finer", "coarser"), palette = "magma", stretch = c("even", "equal"),
-                       floor = NULL, cap = NULL, opacity = NULL, names = TRUE, base = "light", lang = c("en", "is"),
+                       floor = NULL, cap = NULL, opacity = NULL, names = TRUE, ports = FALSE, base = "light",
+                       lang = c("en", "is"),
                        center = c(-19, 65), zoom = 5, port = 8791, viewer = TRUE) {
   preset <- match.arg(preset); metric <- match.arg(metric); cells <- match.arg(cells); stretch <- match.arg(stretch)
   lang <- match.arg(lang)
@@ -85,7 +87,7 @@ effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing
          y1 = if (length(years)) min(years), y2 = if (length(years)) max(years),
          metric = c(hours = "h_km2", kw_hours = "kwh_km2")[[metric]], px = c(fine = "1", finer = "0.5", coarser = "2")[[cells]],
          palette = palette, stretch = stretch, floor = floor, cap = cap, opacity = opacity,
-         names = if (!names) "0", base = if (base != "light") base, lang = if (lang != "en") lang)
+         names = if (!names) "0", ports = if (ports) "1", base = if (base != "light") base, lang = if (lang != "en") lang)
   url <- sprintf("http://localhost:%d/?%s#%s/%s/%s", port,
                  paste(names(q), vapply(q, utils::URLencode, "", reserved = TRUE), sep = "=", collapse = "&"),
                  zoom, center[2], center[1])

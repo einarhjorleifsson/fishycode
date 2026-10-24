@@ -2,22 +2,25 @@
 # Decision 220. Used by server.R (a terminal) and effort_map.R (an R session).
 #
 # Input:  the base grid `grid` (grid.R), the page in the folder `www`; $FISHYDATA/curated/reference/gear.parquet;
-#         effort_tile() from tiles.R, sourced by the caller with this file; $FISHYDATA/curated/place_name/place_name.parquet
-#         (plan 044), read once if it is there
+#         effort_tile() from tiles.R and ports_load(), port_tile() from ports.R, sourced by the caller with this file;
+#         $FISHYDATA/curated/place_name/place_name.parquet (plan 044), read once if it is there
 # Output: effort_map_app(con, grid, www), an httpuv app:
 #   /                                   the page; its query string sets the first view (effort_map.R)
-#   /meta                               the gears (with their hours), the years, the grid's version and the app's, as JSON
+#   /meta                               the gears (with their hours), the years, the grid's version and the app's, and
+#                                       the number of ports (0 without them), as JSON
 #   /place_names.geojson                the gazetteer's names: a footprint per name that has one (kind footprint) and a
 #                                       label at each name's median position (kind label), with its minimum zoom and
 #                                       level, class, cross-check and candidate synonyms, and a label at each other
 #                                       place of a name that means several (place.parquet); 404 without the gazetteer
 #   /tiles/{z}/{x}/{y}.pbf?preset=fishing|fishing_flow&gid=6,7&y1=2015&y2=2020&px=1
 #                                       one vector tile (tiles.R); gid, y1/y2 and px may be left out
+#   /ports/{z}/{x}/{y}.pbf              one vector tile of the ports (ports.R, plan 046 step 4); 404 without them
 
-APP_VERSION <- 4L     # what effort_map.R asks of a server on its port, and the page's APP: changed together
+APP_VERSION <- 5L     # what effort_map.R asks of a server on its port, and the page's APP: changed together
 PX <- c(0.5, 1, 2)    # the page's cell sizes, in screen pixels per cell
 
 effort_map_app <- function(con, grid, www) {
+  n_ports <- ports_load(con)
   meta <- local({
     g <- DBI::dbGetQuery(con, sprintf(
       "SELECT g.gid, any_value(r.\"veiðarfæri\") AS name, any_value(r.gear) AS fao, sum(g.h) AS h
@@ -25,7 +28,7 @@ effort_map_app <- function(con, grid, www) {
        WHERE g.preset = 'fishing' AND g.gid IS NOT NULL GROUP BY g.gid ORDER BY h DESC",
       grid, fd_curated("reference", "gear.parquet")))
     y <- DBI::dbGetQuery(con, sprintf("SELECT min(year) AS y1, max(year) AS y2 FROM read_parquet('%s')", grid))
-    list(gears = g, y1 = y$y1, y2 = y$y2, app = APP_VERSION)
+    list(gears = g, y1 = y$y1, y2 = y$y2, app = APP_VERSION, ports = n_ports)
   })
 
   # The gazetteer's names as GeoJSON, made once: its footprints and a label point per name with a position
@@ -97,6 +100,15 @@ effort_map_app <- function(con, grid, www) {
     if (path == "/place_names.geojson")
       return(if (is.null(place_names)) reply(404L, "no gazetteer: build curated/place_name (plan 044)")
              else reply(200L, place_names, "application/geo+json; charset=utf-8", list(`Cache-Control` = "no-store")))
+    p <- regmatches(path, regexec("^/ports/([0-9]+)/([0-9]+)/([0-9]+)[.]pbf$", path))[[1]]
+    if (length(p) == 4) {
+      if (n_ports == 0) return(reply(404L, "no ports: build curated/reference/port_geometry.parquet"))
+      z <- whole(p[2], 0L, 16L)
+      if (is.null(z)) return(reply(400L, "z is 0-16"))
+      x <- whole(p[3], 0L, 2L^z - 1L); y <- whole(p[4], 0L, 2L^z - 1L)
+      if (is.null(x) || is.null(y)) return(reply(400L, "x and y lie in the zoom's range"))
+      return(reply(200L, port_tile(con, z, x, y), "application/vnd.mapbox-vector-tile", list(`Cache-Control` = "max-age=3600")))
+    }
     m <- regmatches(path, regexec("^/tiles/([0-9]+)/([0-9]+)/([0-9]+)[.]pbf$", path))[[1]]
     if (length(m) != 4) return(reply(404L, "not found"))
     z <- whole(m[2], 0L, 16L)

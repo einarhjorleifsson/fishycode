@@ -74,6 +74,16 @@ How to test:
   under the effort and the names; the effort's colours, filters, opacity and on/off, and the names' on/off, are kept
   through a change; filters, clicks and "Fit to view" work after it.
 
+## Ports (plan 046 step 4)
+
+- **P1** Ports, off by default: ticked, every port of the reference as tiles, the area (and lines) from zoom 8, a dot
+  on every port further out and on a port that is only a point, names from zoom 7; "N ports" beside it, and its legend
+  (area, point) under it.
+- **P2** A click on a port: its name, pid, port code, whether the pid is its UN/LOCODE, and source, in the page's
+  language; a place name over it speaks first, and an effort cell under it stays quiet.
+- **P3** `ports=1` in the address, and from `effort_map(ports = TRUE)`; kept through a base map change; ticking it off
+  and on writes the address.
+
 ## Errors
 
 - **E1** A refused tile: the status line says so, with the HTTP status and the server's reason; a server older than
@@ -116,3 +126,9 @@ How to test:
   back rounded by the slider's 0.01 step on the log scale (300 as 302), now `step="any"`; and a language switch while
   tiles loaded left the status line in the old language. The copy test put a link on the maintainer's clipboard.
   Tile times not rerun: the tile code is untouched.
+- **2026-10-24, plan 046 step 4** (uncommitted, on top of 79e2d1c). Claude's run in the browser pane, visible; not
+  checked by a person. P1-P3 new and passing; M1 (an effort cell beside the ports), B1 (satellite) and S6 run again and
+  passing. The app's version went from 4 to 5 with the new route: before the restart, `effort_map()` refused the
+  running server as older (R2, on a real server). Found on the way: the reference's `unlocode` is a flag (the pid is
+  the port's UN/LOCODE), not a code, so the popup says so; Reykjavík's port is one multipolygon (the old harbour and
+  Sundahöfn) with its point in Sundahöfn; 4 OpenStreetMap areas are invalid geometries, drawn as they are.

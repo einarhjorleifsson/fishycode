@@ -10,6 +10,7 @@
 source("R/paths.R")
 source("R/write_curated.R")    # read_curated_sf(), for the place names
 source("products/effort_map/tiles.R")
+source("products/effort_map/ports.R")
 source("products/effort_map/app.R")
 
 PORT <- as.integer(Sys.getenv("EFFORT_MAP_PORT", "8791"))

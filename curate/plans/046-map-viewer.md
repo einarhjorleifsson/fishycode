@@ -4,7 +4,7 @@
 the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
 (the checklist and the bench, every item passing, three faults left for step 2); step 2 done the same day (the
 sidebar, six base maps, the three faults, Icelandic and English); step 3 done the same day (the whole state in the
-address) · **2026-10-24** · **see:** decision 220, plan 030
+address); step 4's ports layer done the same day · **2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -182,6 +182,11 @@ pane visible where an animation frame matters.
    - a reload or a copied link opened afresh gives the same view, checked control by control.
 4. **Reference layers** (ask b): the ports first, with their info and legend. Further layers come one per step,
    as GeoJSON or as tiles from DuckDB (EUSM's 3.2 M polygons only as tiles).
+   - **The ports** (done 2026-10-24; items P1-P3 in `checklist.md`): `curated/reference/port_geometry.parquet`, 18,009
+     ports worldwide, one geometry each (6,606 points, 11,392 areas, 11 lines), 77 MB as GeoJSON, so served as
+     vector tiles from DuckDB by `products/effort_map/ports.R` (the table loaded once in 0.3 s; a tile in under 10
+     ms): areas and lines from zoom 8, a point on every port further out, names from zoom 7, off by default. The
+     route is `/ports/{z}/{x}/{y}.pbf` beside the effort's, which is untouched; the app's version is 5.
 5. **The config split out:**
    - the page reads its layers from `/config.json`;
    - the effort map's layer list leaves `index.html`;

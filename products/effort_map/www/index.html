@@ -47,6 +47,11 @@
   #status { color: #777; padding: 6px 12px; border-top: 1px solid var(--line); min-height: 1.3em; }
   .about p { margin: 4px 0 8px; }
   #bases label { display: flex; align-items: center; gap: 6px; margin: 3px 0; cursor: pointer; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 2px 0 4px 22px; color: var(--muted); }
+  .swatches span { display: inline-flex; align-items: center; gap: 5px; }
+  .swatches i { display: inline-block; width: 14px; height: 10px; }
+  .swatches i.area { background: rgba(217,130,43,.3); border: 1.2px solid #b35c0f; }
+  .swatches i.dot { width: 8px; height: 8px; border-radius: 50%; background: #d9822b; border: 1px solid #fff; box-shadow: 0 0 0 .5px #b35c0f; }
   #copylink { border: 0; background: none; cursor: pointer; font-size: 15px; padding: 0 4px; }
   .langs button { border: 1px solid var(--line); background: #fff; color: var(--muted); padding: 1px 6px; cursor: pointer; }
   .langs button + button { border-left: 0; }
@@ -117,6 +122,13 @@
     <details class="group" id="g-ref" open>
       <summary data-t="gRef"></summary>
       <div class="body">
+        <div class="layer off" id="lyr-ports">
+          <div class="head"><input id="ports" type="checkbox"><label for="ports" data-t="lyrPorts"></label>
+            <span class="count" id="portsinfo"></span><button class="info-btn" data-info="info-ports" data-tt="infoTip">ⓘ</button></div>
+          <div class="info" id="info-ports" data-t="infoPorts" hidden></div>
+          <div class="when-on swatches"><span><i class="area"></i><span data-t="portArea"></span></span>
+            <span><i class="dot"></i><span data-t="portPoint"></span></span></div>
+        </div>
         <div class="layer" id="lyr-names">
           <div class="head"><input id="names" type="checkbox" checked><label for="names" data-t="lyrNames"></label>
             <span class="count" id="namesinfo"></span><button class="info-btn" data-info="info-names" data-tt="infoTip">ⓘ</button></div>
@@ -220,6 +232,23 @@ const T = {
     is: "Örnefnaskráin (áætlun 044): hvert nafn við miðgildi staðsetninga sinna, frá þeim aðdrætti sem hæfir stærð þess " +
         "(víð nöfn fyrst), með fótspori þar sem það er til. Smelltu á nafn til að sjá talningar." },
   namesN: { en: n => `${n} names`, is: n => `${n} örnefni` },
+  lyrPorts: { en: "Ports", is: "Hafnir" },
+  infoPorts: {
+    en: "Every port of the reference (curated/reference/port_geometry), by pid, the key the logbooks, landings and AIS " +
+        "data join on: one geometry each, from the sources in their order. Iceland's and the Faroes' areas are drawn by " +
+        "hand; elsewhere they come from GISCO, EMODnet, OpenStreetMap, Global Fishing Watch and others. An area shows " +
+        "from zoom 8, a point further out. A port call is measured against the area (decision 074).",
+    is: "Allar hafnir viðmiðunartöflunnar (curated/reference/port_geometry), eftir pid, lyklinum sem afladagbækur, " +
+        "landanir og AIS-gögn tengjast á: ein lögun hver, úr heimildunum í forgangsröð. Svæði íslenskra og færeyskra " +
+        "hafna eru teiknuð í höndunum; annars staðar koma þau frá GISCO, EMODnet, OpenStreetMap, Global Fishing Watch " +
+        "og fleirum. Svæði sést frá aðdrætti 8, punktur fjær. Hafnarkoma er mæld við svæðið (ákvörðun 074)." },
+  portsN: { en: n => `${n} ports`, is: n => `${n} hafnir` },
+  portArea: { en: "port area", is: "hafnarsvæði" },
+  portPoint: { en: "port, a point", is: "höfn, punktur" },
+  hid: { en: "port code (logbooks, landings)", is: "hafnarnúmer (afladagbækur, landanir)" },
+  source: { en: "source", is: "heimild" },
+  pidLocode: { en: "pid is its UN/LOCODE", is: "pid er UN/LOCODE hafnarinnar" },
+  no: { en: "no", is: "nei" },
   noGaz: { en: "no gazetteer on this server", is: "engin örnefnaskrá á þessum þjóni" },
   gBase: { en: "Base map", is: "Grunnkort" },
   b_light: { en: "Light (Carto Positron)", is: "Ljóst (Carto Positron)" },
@@ -264,6 +293,7 @@ const T = {
 };
 let LANG = "en";
 let addressRead = false, userColour = false, addressTimer = 0;   // the address (plan 046 step 3), see addressNow()
+let portsCount = 0;      // the reference's ports, from /meta; 0 when the server has none
 let namesCount = null;   // the gazetteer's labels, for the language switch; -1 when the server has none
 const tr = (k, ...a) => { const t = T[k]?.[LANG] ?? T[k]?.en ?? k; return typeof t === "function" ? t(...a) : t; };
 // Icelandic numbers have a decimal comma and a dot for thousands, as German ones: a browser without Icelandic number
@@ -271,7 +301,7 @@ const tr = (k, ...a) => { const t = T[k]?.[LANG] ?? T[k]?.en ?? k; return typeof
 const IS_NUM = Intl.NumberFormat.supportedLocalesOf(["is"]).length ? "is-IS" : "de-DE";
 const loc = () => LANG === "is" ? IS_NUM : "en";
 const $ = id => document.getElementById(id);
-const APP = 4;   // the version of app.R this page is written for: its APP_VERSION, changed together
+const APP = 5;   // the version of app.R this page is written for: its APP_VERSION, changed together
 const fmt = v => v >= 100 ? Math.round(v).toLocaleString(loc())
   : v >= 1 ? v.toLocaleString(loc(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
   : (+v.toPrecision(2)).toLocaleString(loc(), { maximumSignificantDigits: 2 });
@@ -393,6 +423,7 @@ function applyLang(l) {
   for (const el of document.querySelectorAll("[data-t]")) el.textContent = tr(el.dataset.t);
   for (const el of document.querySelectorAll("[data-tt]")) el.title = tr(el.dataset.tt);
   for (const b of document.querySelectorAll("[data-lang]")) b.classList.toggle("on", b.dataset.lang === LANG);
+  if (portsCount) $("portsinfo").textContent = tr("portsN", portsCount.toLocaleString(loc()));
   if (namesCount !== null) $("namesinfo").textContent = namesCount < 0 ? tr("noGaz") : tr("namesN", namesCount.toLocaleString(loc()));
   if (!tileError && map.getLayer("effort")) $("status").textContent = zoomText();   // map.loaded() is false while tiles load
   popup?.remove();
@@ -415,10 +446,10 @@ function setBase(id) {
   const b = BASEMAPS.find(x => x.id === id) ?? BASEMAPS[0];
   map.setStyle(baseStyle(b), { transformStyle: (prev, next) => {
     if (!prev) return next;
-    const own = prev.layers.filter(l => l.id === "effort" || NAME_LAYERS.includes(l.id));
-    const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => k === "effort" || k === "names"));
+    const own = prev.layers.filter(l => l.id === "effort" || NAME_LAYERS.includes(l.id) || PORT_LAYERS.includes(l.id));
+    const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => ["effort", "names", "ports"].includes(k)));
     const i = next.layers.findIndex(l => l.type === "symbol");
-    const effort = own.filter(l => l.id === "effort"), names = own.filter(l => l.id !== "effort");
+    const effort = own.filter(l => l.id === "effort"), names = own.filter(l => l.id !== "effort");   // ports, then names
     const layers = i < 0 ? [...next.layers, ...effort, ...names]
                          : [...next.layers.slice(0, i), ...effort, ...next.layers.slice(i), ...names];
     return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers };
@@ -459,6 +490,7 @@ Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => 
   }
   if (q.get("effort") === "0") { $("effort").checked = false; $("lyr-effort").classList.add("off"); }
   if (q.get("names") === "0") $("names").checked = false;
+  if (q.get("ports") === "1") $("ports").checked = true;
   const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
   map.addSource("effort", { type: "vector", tiles: [tileUrl()], minzoom: 2, maxzoom: 12 });
   map.addLayer({ id: "effort", type: "fill", source: "effort", "source-layer": "cells",
@@ -466,6 +498,7 @@ Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => 
                  paint: { "fill-color": colorExpr(), "fill-opacity": +$("opacity").value / 100, "fill-antialias": false } },
                firstSymbol);
   paint();
+  addPorts(meta.ports ?? 0);
   addNames();
   const base = BASEMAPS.find(b => b.id === q.get("base"));
   if (base && base !== BASEMAPS[0]) { document.querySelector(`#bases input[value="${base.id}"]`).checked = true; setBase(base.id); }
@@ -491,6 +524,7 @@ function addressNow() {
   put("opacity", $("opacity").value, "85");
   if (!$("effort").checked) q.set("effort", "0");
   if (!$("names").checked) q.set("names", "0");
+  if ($("ports").checked) q.set("ports", "1");
   put("base", document.querySelector("#bases input:checked")?.value, BASEMAPS[0].id);
   put("lang", LANG, "en");
   const qs = q.toString().replace(/%2C/g, ",");
@@ -504,6 +538,43 @@ $("copylink").addEventListener("click", () => {
   const say = t => { $("status").textContent = t; setTimeout(() => { $("status").textContent = tileError || zoomText(); }, 2500); };
   navigator.clipboard.writeText(location.href).then(() => say(tr("copied")), () => say(tr("notCopied")));
 });
+
+// The ports (plan 046 step 4), as vector tiles from ports.R, if the server has them
+const PORT_LAYERS = ["ports-area", "ports-line", "ports-dot", "ports-label"];
+function addPorts(n) {
+  portsCount = n;
+  if (!n) { $("ports").checked = false; $("ports").disabled = true; $("lyr-ports").classList.add("off"); return; }
+  $("portsinfo").textContent = tr("portsN", n.toLocaleString(loc()));
+  const font = map.getStyle().layers.find(l => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"] ?? ["Open Sans Regular"];
+  map.addSource("ports", { type: "vector", tiles: [`${location.origin}/ports/{z}/{x}/{y}.pbf?v=${APP}`], minzoom: 2, maxzoom: 14 });
+  const big = ["any", ["<", ["zoom"], 8], ["==", ["get", "kind"], "point"]];
+  map.addLayer({ id: "ports-area", type: "fill", source: "ports", "source-layer": "ports", minzoom: 8,
+                 filter: ["==", ["get", "kind"], "area"], paint: { "fill-color": "#d9822b", "fill-opacity": 0.3 } });
+  map.addLayer({ id: "ports-line", type: "line", source: "ports", "source-layer": "ports", minzoom: 8,
+                 paint: { "line-color": "#b35c0f", "line-width": 1.2 } });
+  map.addLayer({ id: "ports-dot", type: "circle", source: "ports", "source-layer": "port_points", filter: big,
+                 paint: { "circle-color": "#d9822b", "circle-stroke-color": "#fff", "circle-stroke-width": 1,
+                          "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 2, 8, 4, 12, 5] } });
+  map.addLayer({ id: "ports-label", type: "symbol", source: "ports", "source-layer": "port_points", minzoom: 7,
+                 layout: { "text-field": ["get", "port"], "text-font": font, "text-size": 11, "text-offset": [0, 0.9],
+                           "text-anchor": "top", "text-optional": true },
+                 paint: { "text-color": "#7a3d06", "text-halo-color": "#fff", "text-halo-width": 1.2 } });
+  showPorts();
+}
+function showPorts() {
+  $("lyr-ports").classList.toggle("off", !$("ports").checked);
+  for (const id of PORT_LAYERS) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", $("ports").checked ? "visible" : "none");
+}
+$("ports").addEventListener("change", () => { popup?.remove(); showPorts(); });
+function portPopup(e) {
+  const p = e.features[0].properties;
+  const line = (k, v) => v === undefined || v === null || v === "" || v === "null" ? "" : `<br>${k}: ${esc(v)}`;
+  popup?.remove();
+  popup = new maplibregl.Popup({ closeButton: false, maxWidth: "300px" }).setLngLat(e.lngLat)
+    .setHTML(`<b>${esc(p.port)}</b>${line("pid", p.pid)}${line(tr("hid"), p.hid)}${line(tr("pidLocode"), { yes: tr("yes"), no: tr("no") }[p.unlocode] ?? p.unlocode)}` +
+             `${line(tr("source"), p.source)}`)
+    .addTo(map);
+}
 
 // The place-name gazetteer (plan 044), if the server has it: footprints as outlines, names as labels, the most used
 // drawn first where labels collide
@@ -554,6 +625,12 @@ function namePopup(e) {
 for (const id of ["names-label", "names-foot"]) {
   // the label is asked first: a footprint under a clicked label keeps quiet, as the effort does
   map.on("click", id, e => { if (e.originalEvent.nameShown) return; e.originalEvent.nameShown = true; namePopup(e); });
+  map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
+}
+for (const id of ["ports-label", "ports-dot", "ports-area"]) {
+  // registered after the names': a name under the click speaks first, then a port, then the effort
+  map.on("click", id, e => { if (e.originalEvent.nameShown) return; e.originalEvent.nameShown = true; portPopup(e); });
   map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
   map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
 }
