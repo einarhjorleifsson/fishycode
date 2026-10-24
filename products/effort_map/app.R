@@ -14,7 +14,7 @@
 #   /tiles/{z}/{x}/{y}.pbf?preset=fishing|fishing_flow&gid=6,7&y1=2015&y2=2020&px=1
 #                                       one vector tile (tiles.R); gid, y1/y2 and px may be left out
 
-APP_VERSION <- 4L     # what effort_map.R asks of a server it finds on its port
+APP_VERSION <- 4L     # what effort_map.R asks of a server on its port, and the page's APP: changed together
 PX <- c(0.5, 1, 2)    # the page's cell sizes, in screen pixels per cell
 
 effort_map_app <- function(con, grid, www) {

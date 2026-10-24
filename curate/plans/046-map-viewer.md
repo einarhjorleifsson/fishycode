@@ -2,7 +2,8 @@
 
 **status:** partly built — written 2026-10-24 at the maintainer's request; the effort map, Vefsjá's served scripts and
 the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
-(the checklist and the bench, every item passing, three faults left for step 2) · **2026-10-24** · **see:** decision 220, plan 030
+(the checklist and the bench, every item passing, three faults left for step 2); step 2 done the same day (the
+sidebar, six base maps, the three faults, Icelandic and English) · **2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -156,13 +157,21 @@ pane visible where an animation frame matters.
      pixel "up to 25 MB in 1.3 s". At zoom 8 the default cell (0.002°) is not a multiple of 0.005°, so it is read
      from the fine grid, and is slower than zoom 7's.
    Every later step is checked against both.
-2. **The shell, effort map only:**
-   - the sidebar in Vefsjá's shape: Effort (filters, colour, legend), Base map (choice, opacity), About;
+2. **The shell, effort map only** (done 2026-10-24, in four parts, each tested before the next; the run in
+   `checklist.md`):
+   - the sidebar in Vefsjá's shape: groups that fold (Effort, Reference layers, Base map, About), the effort layer's
+     checkbox with its controls, legend and an opacity slider shown under it when on, an ⓘ per layer, and on a phone
+     a drawer behind ☰ (items S1-S5). Vefsjá's single slider scales its overlays, not its base, so the opacity is the
+     layer's;
+   - six base maps (Carto Positron, Voyager, Dark Matter; Esri Ocean and satellite; none), changed by MapLibre's
+     `setStyle` with `transformStyle`, so the effort's and the names' state survive a change (B1);
+   - Icelandic and English by a switch, `?lang=is` at load, numbers in the language's format (S6). Gear names stay
+     Icelandic: `reference/gear` has no English names;
    - the effort map's code moved in;
    - `tiles.R` and the tile route untouched;
-   - the three faults step 1 found: the cap slider's range (10^5 at most) is below kW-hours' 98th percentile, so a fit
-     stops short; several gears show as ids ("gears 6,7,8"), not names; a refused tile is always blamed on an older
-     server, a wrong address included.
+   - the three faults step 1 found, fixed: the sliders widen to the values at hand (kW-hours passed 10^5); several
+     gears show by name and FAO code; a refused tile shows the server's reason, and an older server is named by the
+     app version the page and `app.R` share (`APP`, `APP_VERSION`).
 3. **The address:**
    - every control in the query string, and the position in the hash;
    - `effort_map()` writes the same address;

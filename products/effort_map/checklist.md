@@ -23,7 +23,8 @@ How to test:
 - **F1** Preset: `fishing` ↔ `fishing_flow`.
 - **F2** Gear: one gear, then "all gears" again.
 - **F3** Years: a from-year after the to-year is swapped.
-- **F4** Metric: hours ↔ kW-hours per km²; the histogram is resampled and floor and cap refitted, with no tile reload.
+- **F4** Metric: hours ↔ kW-hours per km²; the histogram is resampled and floor and cap refitted, with no tile reload;
+  the sliders reach the fitted values (plan 046 step 2).
 - **F5** Cells: finer, fine, coarser.
 
 ## Colour (no tile reload)
@@ -46,12 +47,30 @@ How to test:
 
 - **A1** `?preset=&gid=&y1=&y2=&metric=&px=&palette=&stretch=` sets the first view.
 - **A2** `floor` and `cap` set the colour range and are kept, not refitted, on the first idle.
-- **A3** A `gid` the list does not hold (several gears, `6,7`) is added as "gears 6,7".
+- **A3** A `gid` the list does not hold (several gears, `6,7`) is added under the gears' names and FAO codes
+  ("Botnvarpa, Humarvarpa (OTB)"; plan 046 step 2).
 - **A4** A value the page does not offer is left out, and the default stands.
+
+## Sidebar (plan 046 step 2)
+
+- **S1** The effort layer's checkbox: off hides the layer, its controls and its legend; on brings them back, with the
+  histogram redrawn.
+- **S2** Opacity: the effort layer's opacity follows the slider, its value beside it.
+- **S3** A layer's ⓘ opens its info, and a second click closes it.
+- **S4** A group folds and unfolds; its layers stay as they are.
+- **S5** At 375 px wide: the map fills the screen with no side scroll; ☰ opens the sidebar as a drawer, ✕ closes it;
+  a control in the drawer works, and the map answers clicks after.
+- **S6** Language: IS | EN switches every text, tooltip, status and popup label, and the numbers' format (5,0 and
+  9.554 in Icelandic); `?lang=is` sets it at load. Gear names are the reference's, Icelandic in both.
+
+- **B1** Base map: each of the six (Positron, Voyager, Dark Matter, Esri Ocean, Esri satellite, none) is drawn
+  under the effort and the names; the effort's colours, filters, opacity and on/off, and the names' on/off, are kept
+  through a change; filters, clicks and "Fit to view" work after it.
 
 ## Errors
 
-- **E1** A refused tile: the status line says so, with the HTTP status.
+- **E1** A refused tile: the status line says so, with the HTTP status and the server's reason; a server older than
+  the page (its `/meta` app version) is named as such (plan 046 step 2).
 - **E2** A server with no gazetteer: the names checkbox is disabled, "no gazetteer on this server".
 
 ## From R (`effort_map.R`)
@@ -72,3 +91,13 @@ How to test:
   - A3, R1: several gears show as their ids ("gears 6,7,8"), not their names;
   - E1: the message says the server may be an older version for every refused tile, a wrong address included.
   Tile times: `$FISHYDATA/products/effort_map/bench/2026-10-24_baseline.csv` (summary in plan 046 §4, step 1).
+- **2026-10-24, plan 046 step 2** (uncommitted, on top of da3c2ba), in four parts, each tested before the next. Claude's
+  runs in the browser pane, visible; not checked by a person.
+  - The sidebar: L1-L5, F1-F5, C1-C5, M1-M5, A1-A4, E1, E2, R1-R3 pass again; S1-S5 new and passing. A drag in the
+    test tool lasts 16 ms, so MapLibre's inertia carries the map far past it: the tool's flick, not the page's.
+  - Base maps: B1 new and passing, for all six, with the effort's and the names' state kept through each change.
+  - The three faults of step 1, fixed: F4 (the sliders widen to the values, from a fit or the address), A3 (gears by
+    name), E1 (the server's reason, or an older server named).
+  - Language: S6 new and passing. The pane's browser has no Icelandic number data and formatted "is" as English, so
+    German, the same format, stands in where the browser lacks it.
+  Tile times not rerun: `tiles.R` and the tile route are untouched, and `app.R` changed in a comment only.

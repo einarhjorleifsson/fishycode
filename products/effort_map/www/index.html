@@ -4,17 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Effort map</title>
-<!-- The effort map (decision 220): the base grid's effort as vector tiles from app.R, run by server.R or effort_map.R. -->
+<!-- The effort map (decision 220, plan 046): the base grid's effort as vector tiles from app.R, run by server.R or
+     effort_map.R. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
+  /* Plan 046: Vefsjá's shape (vefsja.is), a sidebar of groups that fold, each layer with its info and, when ticked, its
+     controls and legend under it; behind a menu button on a phone */
+  :root { --side: 310px; --bar: #2c5d87; --bar-hover: #234b6d; --line: #dde2e7; --muted: #5f6b76; }
   html, body { margin: 0; height: 100%; font: 13px/1.35 system-ui, sans-serif; color: #222; background: #fff; }
-  #map { position: absolute; inset: 0; }
-  .panel { position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(255,255,255,.94); padding: 10px 12px;
-           border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.25); width: 250px; }
-  .panel h1 { font-size: 14px; margin: 0 0 8px; }
+  #side { position: absolute; top: 0; bottom: 0; left: 0; width: var(--side); z-index: 3; background: #fff;
+          box-shadow: 1px 0 5px rgba(0,0,0,.2); display: flex; flex-direction: column; }
+  #map { position: absolute; top: 0; bottom: 0; left: var(--side); right: 0; }
+  #side header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  #side header h1 { font-size: 15px; margin: 0; flex: 1; }
+  #groups { flex: 1; overflow-y: auto; }
+  details.group > summary { list-style: none; cursor: pointer; background: var(--bar); color: #fff; padding: 7px 12px;
+                            border-bottom: 1px solid #fff; user-select: none; }
+  details.group > summary::-webkit-details-marker { display: none; }
+  details.group > summary::before { content: "▸"; display: inline-block; width: 1.1em; transition: transform .15s; }
+  details.group[open] > summary::before { transform: rotate(90deg); }
+  details.group > summary:hover { background: var(--bar-hover); }
+  .body { padding: 6px 12px 10px; }
+  .layer + .layer { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 4px; }
+  .layer .head { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+  .layer .head label { font-weight: 600; }
+  .layer .head .count { flex: 1; color: var(--muted); }
+  .info-btn { border: 0; background: none; color: var(--bar); cursor: pointer; padding: 0 2px; font-size: 15px; }
+  .info { color: #333; background: #f3f5f7; border-radius: 4px; padding: 6px 8px; margin: 2px 0 6px; }
+  .layer.off .when-on { display: none; }
+  .sub { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin: 10px 0 2px; }
   .row { display: flex; align-items: center; gap: 6px; margin: 5px 0; }
-  .row label { width: 58px; color: #555; }
+  .row label { width: 74px; color: var(--muted); }
   .row select, .row input[type=range] { flex: 1; min-width: 0; }
   .years select { flex: 1; }
   .range .val { width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
@@ -22,48 +43,96 @@
   .legend { margin-top: 8px; }
   .bar { height: 10px; border-radius: 2px; }
   #hist { display: block; width: 100%; height: 44px; margin-top: 2px; }
-  .ends { display: flex; justify-content: space-between; color: #555; font-variant-numeric: tabular-nums; }
-  #status { color: #777; margin-top: 6px; min-height: 1.3em; }
-  .maplibregl-popup { z-index: 3; }   /* in front of the panel */
+  .ends { display: flex; justify-content: space-between; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #status { color: #777; padding: 6px 12px; border-top: 1px solid var(--line); min-height: 1.3em; }
+  .about p { margin: 4px 0 8px; }
+  #bases label { display: flex; align-items: center; gap: 6px; margin: 3px 0; cursor: pointer; }
+  .langs button { border: 1px solid var(--line); background: #fff; color: var(--muted); padding: 1px 6px; cursor: pointer; }
+  .langs button + button { border-left: 0; }
+  .langs button.on { background: var(--bar); border-color: var(--bar); color: #fff; }
+  #menu, #close { display: none; }
+  @media (max-width: 700px) {
+    #map { left: 0; }
+    #side { width: min(330px, 90vw); transform: translateX(-105%); transition: transform .2s; }
+    body.side-open #side { transform: none; }
+    #menu { display: block; position: absolute; top: 10px; left: 10px; z-index: 2; font-size: 18px; line-height: 1;
+            padding: 6px 10px; background: #fff; border: 0; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+    #close { display: block; border: 0; background: none; font-size: 18px; cursor: pointer; }
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="panel">
-  <h1>Fishing effort</h1>
-  <div class="row"><label for="preset">Fishing</label>
-    <select id="preset">
-      <option value="fishing">in a haul window</option>
-      <option value="fishing_flow">window, else voyage gear's speed</option>
-    </select></div>
-  <div class="row"><label for="gid">Gear</label><select id="gid"><option value="">all gears</option></select></div>
-  <div class="row years"><label>Years</label><select id="y1"></select><span>–</span><select id="y2"></select></div>
-  <div class="row"><label for="metric">Metric</label>
-    <select id="metric">
-      <option value="h_km2">hours per km²</option>
-      <option value="kwh_km2">kW-hours per km²</option>
-    </select></div>
-  <div class="row"><label for="px">Cells</label>
-    <select id="px">
-      <option value="0.5" title="Tiles up to 25 MB when zoomed out (zoom 5-8); from zoom 9 the same as fine">finer (heavy)</option>
-      <option value="1" selected>fine</option>
-      <option value="2">coarser</option>
-    </select></div>
-  <div class="row"><label for="palette">Colours</label><select id="palette"></select></div>
-  <div class="row"><label for="stretch">Stretch</label>
-    <select id="stretch" title="How the colours are spread between floor and cap">
-      <option value="even">even on a log scale</option>
-      <option value="equal">equal shares of the cells in view</option>
-    </select></div>
-  <div class="row range"><label for="lo">Floor</label><input id="lo" type="range" min="-4" max="5" step="0.01"><span class="val" id="loval"></span></div>
-  <div class="row range"><label for="hi">Cap</label><input id="hi" type="range" min="-4" max="5" step="0.01"><span class="val" id="hival"></span></div>
-  <div class="row"><button id="fit" title="Floor and cap at the 2nd and 98th percentiles of the cells in view">Fit to view</button></div>
-  <div class="row" title="The place-name gazetteer (plan 044): each name at the median of its positions, from the zoom that suits its size (broad names first), with its footprint where it has one; click a name for its counts">
-    <label for="names">Names</label><input id="names" type="checkbox" checked><span id="namesinfo" style="color:#777"></span></div>
-  <div class="legend" title="The colour scale on a log axis, and below it the cells in view: values below the floor and above the cap in the end bars">
-    <div class="bar" id="bar"></div><canvas id="hist"></canvas><div class="ends"><span id="lolab"></span><span id="midlab"></span><span id="hilab"></span></div></div>
+<button id="menu" data-tt="menu">☰</button>
+<aside id="side">
+  <header><h1 data-t="title"></h1>
+    <span class="langs"><button data-lang="is">IS</button><button data-lang="en">EN</button></span>
+    <button id="close" data-tt="close">✕</button></header>
+  <div id="groups">
+    <details class="group" id="g-effort" open>
+      <summary data-t="gEffort"></summary>
+      <div class="body">
+        <div class="layer" id="lyr-effort">
+          <div class="head"><input id="effort" type="checkbox" checked><label for="effort" data-t="lyrEffort"></label>
+            <span class="count"></span><button class="info-btn" data-info="info-effort" data-tt="infoTip">ⓘ</button></div>
+          <div class="info" id="info-effort" data-t="infoEffort" hidden></div>
+          <div class="when-on">
+            <div class="row"><label for="preset" data-t="fishing"></label>
+              <select id="preset">
+                <option value="fishing" data-t="presetFishing"></option>
+                <option value="fishing_flow" data-t="presetFlow"></option>
+              </select></div>
+            <div class="row"><label for="gid" data-t="gear"></label><select id="gid"><option value="" data-t="allGears"></option></select></div>
+            <div class="row years"><label data-t="years"></label><select id="y1"></select><span>–</span><select id="y2"></select></div>
+            <div class="row"><label for="metric" data-t="metric"></label>
+              <select id="metric">
+                <option value="h_km2" data-t="hKm2"></option>
+                <option value="kwh_km2" data-t="kwhKm2"></option>
+              </select></div>
+            <div class="row"><label for="px" data-t="cells"></label>
+              <select id="px">
+                <option value="0.5" data-t="pxFiner" data-tt="pxFinerTip"></option>
+                <option value="1" data-t="pxFine" selected></option>
+                <option value="2" data-t="pxCoarser"></option>
+              </select></div>
+            <div class="sub" data-t="colour"></div>
+            <div class="row"><label for="palette" data-t="colours"></label><select id="palette"></select></div>
+            <div class="row"><label for="stretch" data-t="stretch"></label>
+              <select id="stretch" data-tt="stretchTip">
+                <option value="even" data-t="sEven"></option>
+                <option value="equal" data-t="sEqual"></option>
+              </select></div>
+            <div class="row range"><label for="lo" data-t="floor"></label><input id="lo" type="range" min="-4" max="5" step="0.01"><span class="val" id="loval"></span></div>
+            <div class="row range"><label for="hi" data-t="cap"></label><input id="hi" type="range" min="-4" max="5" step="0.01"><span class="val" id="hival"></span></div>
+            <div class="row range"><label for="opacity" data-t="opacity"></label><input id="opacity" type="range" min="0" max="100" step="1" value="85"><span class="val" id="opval">85 %</span></div>
+            <div class="row"><button id="fit" data-t="fit" data-tt="fitTip"></button></div>
+            <div class="legend" data-tt="legendTip">
+              <div class="bar" id="bar"></div><canvas id="hist"></canvas><div class="ends"><span id="lolab"></span><span id="midlab"></span><span id="hilab"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </details>
+    <details class="group" id="g-ref" open>
+      <summary data-t="gRef"></summary>
+      <div class="body">
+        <div class="layer" id="lyr-names">
+          <div class="head"><input id="names" type="checkbox" checked><label for="names" data-t="lyrNames"></label>
+            <span class="count" id="namesinfo"></span><button class="info-btn" data-info="info-names" data-tt="infoTip">ⓘ</button></div>
+          <div class="info" id="info-names" data-t="infoNames" hidden></div>
+        </div>
+      </div>
+    </details>
+    <details class="group" id="g-base">
+      <summary data-t="gBase"></summary>
+      <div class="body" id="bases"></div>
+    </details>
+    <details class="group about" id="g-about">
+      <summary data-t="gAbout"></summary>
+      <div class="body"><p data-t="about1"></p><p data-t="about2"></p></div>
+    </details>
+  </div>
   <div id="status"></div>
-</div>
+</aside>
 <script>
 // Each light (low) to dark (high), nine steps. The first ten change lightness steadily (OKLab L, checked 2026-10-24);
 // the last two are terrain palettes kept to compare, whose lightness rises and falls.
@@ -81,8 +150,125 @@ const PALETTES = [
   { id: "high_relief", label: "high_relief (lightness not steady)", source: "tidyterra whitebox", colors: ["#488737", "#96B170", "#E2DBAB", "#E4C793", "#E4B47B", "#CDA886", "#B69C90", "#DBCCC6", "#FFFFFF"] },
   { id: "bcyr", label: "bcyr (lightness not steady)", source: "tidyterra grass", colors: ["#0000FF", "#5377FF", "#4FC8FF", "#6CFFE7", "#C4FF9E", "#F3FF47", "#FFD100", "#FF8800", "#FF0000"] }
 ];
+// The base maps: Carto's vector styles, Esri's raster tiles, or none. A change keeps the effort and the names, through
+// setStyle's transformStyle
+const BASEMAPS = [
+  { id: "light", style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" },
+  { id: "voyager", style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json" },
+  { id: "dark", style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" },
+  { id: "ocean", maxzoom: 13,
+    tiles: "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}" },
+  { id: "satellite", maxzoom: 19,
+    tiles: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" },
+  { id: "none" }
+];
+// Every text on the page, in Icelandic and English (maintainer, plan 046 ask a). Gear names are the reference's own,
+// Icelandic in both: `reference/gear` has no English names.
+const T = {
+  title: { en: "Fishing effort", is: "Veiðisókn" },
+  menu: { en: "Layers and filters", is: "Lög og síur" },
+  close: { en: "Close", is: "Loka" },
+  infoTip: { en: "About this layer", is: "Um lagið" },
+  gEffort: { en: "Effort", is: "Sókn" },
+  lyrEffort: { en: "Fishing effort", is: "Veiðisókn" },
+  infoEffort: {
+    en: "Hours of fishing per km² (or kW-hours) from the AIS trail's fishing fixes, the user tables v0 (decision 219). " +
+        "Each fix's hours are spread along the track to its next fix, and summed by cell, gear, year and preset " +
+        "(decision 220). The gear is the haul's, corrected by the landing's. A cell is about one screen pixel at each zoom.",
+    is: "Veiðistundir á km² (eða kílóvattstundir) úr veiðipunktum AIS-ferilsins, notendatöflum v0 (ákvörðun 219). " +
+        "Stundum hvers punkts er dreift eftir ferlinum að næsta punkti og þær lagðar saman eftir reit, veiðarfæri, ári " +
+        "og forsendu (ákvörðun 220). Veiðarfærið er halsins, leiðrétt eftir lönduninni. Reitur er um einn skjápunktur " +
+        "við hvern aðdrátt." },
+  fishing: { en: "Fishing", is: "Veiðar" },
+  presetFishing: { en: "in a haul window", is: "innan hals" },
+  presetFlow: { en: "window, else voyage gear's speed", is: "hal, annars hraði veiðarfæris" },
+  gear: { en: "Gear", is: "Veiðarfæri" },
+  allGears: { en: "all gears", is: "öll veiðarfæri" },
+  gearN: { en: "gear", is: "veiðarfæri" },
+  years: { en: "Years", is: "Ár" },
+  metric: { en: "Metric", is: "Mælikvarði" },
+  hKm2: { en: "hours per km²", is: "klst. á km²" },
+  kwhKm2: { en: "kW-hours per km²", is: "kWst á km²" },
+  fixes: { en: "fixes", is: "staðsetningar" },
+  cells: { en: "Cells", is: "Reitir" },
+  pxFiner: { en: "finer (heavy)", is: "fínni (þungt)" },
+  pxFinerTip: { en: "Tiles up to 38 MB when zoomed out (zoom 5-8); from zoom 9 the same as fine",
+                is: "Kortatíglar allt að 38 MB í fjarlægð (aðdráttur 5-8); frá aðdrætti 9 eins og fínir" },
+  pxFine: { en: "fine", is: "fínir" },
+  pxCoarser: { en: "coarser", is: "grófari" },
+  colour: { en: "Colour", is: "Litir" },
+  colours: { en: "Colours", is: "Litaskali" },
+  stretch: { en: "Stretch", is: "Dreifing" },
+  stretchTip: { en: "How the colours are spread between floor and cap", is: "Hvernig litunum er dreift milli lágmarks og hámarks" },
+  sEven: { en: "even on a log scale", is: "jöfn á lograkvarða" },
+  sEqual: { en: "equal shares of the cells in view", is: "jafnir hlutar reita í sýn" },
+  floor: { en: "Floor", is: "Lágmark" },
+  cap: { en: "Cap", is: "Hámark" },
+  opacity: { en: "Opacity", is: "Þekja" },
+  fit: { en: "Fit to view", is: "Laga að sýn" },
+  fitTip: { en: "Floor and cap at the 2nd and 98th percentiles of the cells in view",
+            is: "Lágmark og hámark við 2. og 98. hundraðsmark reita í sýn" },
+  legendTip: { en: "The colour scale on a log axis, and below it the cells in view: values below the floor and above the cap in the end bars",
+               is: "Litaskalinn á lograkvarða og undir honum reitir í sýn: gildi undir lágmarki og yfir hámarki í endasúlunum" },
+  gRef: { en: "Reference layers", is: "Viðmiðunarlög" },
+  lyrNames: { en: "Place names", is: "Örnefni" },
+  infoNames: {
+    en: "The place-name gazetteer (plan 044): each name at the median of its positions, from the zoom that suits its " +
+        "size (broad names first), with its footprint where it has one. Click a name for its counts.",
+    is: "Örnefnaskráin (áætlun 044): hvert nafn við miðgildi staðsetninga sinna, frá þeim aðdrætti sem hæfir stærð þess " +
+        "(víð nöfn fyrst), með fótspori þar sem það er til. Smelltu á nafn til að sjá talningar." },
+  namesN: { en: n => `${n} names`, is: n => `${n} örnefni` },
+  noGaz: { en: "no gazetteer on this server", is: "engin örnefnaskrá á þessum þjóni" },
+  gBase: { en: "Base map", is: "Grunnkort" },
+  b_light: { en: "Light (Carto Positron)", is: "Ljóst (Carto Positron)" },
+  b_voyager: { en: "Colour (Carto Voyager)", is: "Litað (Carto Voyager)" },
+  b_dark: { en: "Dark (Carto Dark Matter)", is: "Dökkt (Carto Dark Matter)" },
+  b_ocean: { en: "Ocean (Esri)", is: "Haf (Esri)" },
+  b_satellite: { en: "Satellite (Esri)", is: "Gervihnattamynd (Esri)" },
+  b_none: { en: "None", is: "Ekkert" },
+  gAbout: { en: "About", is: "Um kortið" },
+  about1: {
+    en: "Where Icelandic vessels fished, from their AIS tracks linked to the logbooks and landings: fishycode's effort " +
+        "map (decision 220), in the layout of plan 046.",
+    is: "Hvar íslensk skip voru að veiðum, samkvæmt AIS-ferlum þeirra tengdum afladagbókum og löndunum: sóknarkort " +
+        "fishycode (ákvörðun 220), í útliti áætlunar 046." },
+  about2: { en: "Built from vessel-level data: for use inside MFRI only.",
+            is: "Unnið úr gögnum um einstök skip: aðeins til nota innan Hafrannsóknastofnunar." },
+  loading: { en: "loading tiles…", is: "sæki kortatígla…" },
+  zoom: { en: "zoom", is: "aðdráttur" },
+  refused: { en: s => `the server refused tiles (HTTP ${s})`, is: s => `þjónninn hafnaði kortatíglum (HTTP ${s})` },
+  older: { en: (a, b) => `the server is an older version (${a}) than this page (${b}): restart it`,
+           is: (a, b) => `þjónninn er eldri útgáfa (${a}) en síðan (${b}): endurræstu hann` },
+  positions: { en: "positions", is: "staðsetningar" },
+  usedIn: { en: "used in", is: "í heimildum" },
+  spellings: { en: "spellings", is: "rithættir" },
+  terrain: { en: "terrain word", is: "landslagsorð" },
+  depth: { en: "depth (GEBCO, m)", is: "dýpi (GEBCO, m)" },
+  mainGear: { en: "main gear", is: "helsta veiðarfæri" },
+  spread: { en: "spread, r80 (km)", is: "dreifing, r80 (km)" },
+  liesIn: { en: "lies in", is: "liggur í" },
+  namesWithin: { en: "names within", is: "nöfn innan" },
+  klass: { en: "class", is: "flokkur" },
+  agree: { en: "sources agree", is: "heimildir sammála" },
+  yes: { en: "yes", is: "já" },
+  apart: { en: "no: they place it apart", is: "nei: þær staðsetja það sitt á hvað" },
+  places: { en: "places with this name", is: "staðir með þessu nafni" },
+  thisPlace: { en: "this is place", is: "þetta er staður" },
+  fromZoom: { en: "shown from zoom", is: "sýnt frá aðdrætti" },
+  maybe: { en: "maybe also", is: "ef til vill líka" }
+};
+let LANG = "en";
+let namesCount = null;   // the gazetteer's labels, for the language switch; -1 when the server has none
+const tr = (k, ...a) => { const t = T[k]?.[LANG] ?? T[k]?.en ?? k; return typeof t === "function" ? t(...a) : t; };
+// Icelandic numbers have a decimal comma and a dot for thousands, as German ones: a browser without Icelandic number
+// data (the desktop app's pane, 2026-10-24) formats "is" as English, so German stands in for it there
+const IS_NUM = Intl.NumberFormat.supportedLocalesOf(["is"]).length ? "is-IS" : "de-DE";
+const loc = () => LANG === "is" ? IS_NUM : "en";
 const $ = id => document.getElementById(id);
-const fmt = v => v >= 100 ? Math.round(v).toLocaleString("en") : v >= 1 ? v.toFixed(1) : v.toPrecision(2);
+const APP = 4;   // the version of app.R this page is written for: its APP_VERSION, changed together
+const fmt = v => v >= 100 ? Math.round(v).toLocaleString(loc())
+  : v >= 1 ? v.toLocaleString(loc(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+  : (+v.toPrecision(2)).toLocaleString(loc(), { maximumSignificantDigits: 2 });
 let fitted = false, popup = null, gridVersion = 0, tileError = "";
 let viewVals = [];   // log10 of the metric in the cells in view, sorted, from the last fit
 let histVals = [];   // the same, for the histogram, from the last time the map settled
@@ -156,12 +342,19 @@ function paint() {
   if (map.getLayer("effort")) map.setPaintProperty("effort", "fill-color", colorExpr());
 }
 
+// The floor and cap sliders reach the values at hand: kW-hours per km² pass the first range's 10^5 (plan 046 step 1)
+function widen(lo, hi) {
+  const a = Math.min(-4, Math.floor(lo)), b = Math.max(5, Math.ceil(hi));
+  for (const id of ["lo", "hi"]) { $(id).min = Math.min(+$(id).min, a); $(id).max = Math.max(+$(id).max, b); }
+}
+
 function fitToView() {
   const m = $("metric").value;
   const v = map.queryRenderedFeatures({ layers: ["effort"] })
     .map(f => +f.properties[m]).filter(x => x > 0).map(Math.log10).sort((a, b) => a - b);
   if (v.length < 10) return;
   viewVals = v;
+  widen(v[0], v[v.length - 1]);
   const q = p => v[Math.min(v.length - 1, Math.floor(p * v.length))];
   $("lo").value = q(0.02).toFixed(2);
   $("hi").value = q(0.98).toFixed(2);
@@ -170,7 +363,7 @@ function fitToView() {
 
 const map = new maplibregl.Map({
   container: "map",
-  style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  style: BASEMAPS[0].style,
   center: [-19, 65], zoom: 5, hash: true
 });
 // a page laid out after the map was made (a tab opened in the background) left the canvas at 400 x 300
@@ -181,13 +374,57 @@ map.addControl(new maplibregl.ScaleControl(), "bottom-right");
 const styleLoaded = new Promise(resolve => map.once("load", resolve));
 
 for (const p of PALETTES) $("palette").append(new Option(`${p.label} · ${p.source}`, p.id));
+for (const b of BASEMAPS)
+  $("bases").insertAdjacentHTML("beforeend",
+    `<label><input type="radio" name="base" value="${b.id}"${b === BASEMAPS[0] ? " checked" : ""}><span data-t="b_${b.id}"></span></label>`);
+
+// The page's language: every [data-t] text and [data-tt] tooltip, then the texts drawn by code
+const zoomText = () => `${tr("zoom")} ${map.getZoom().toLocaleString(loc(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+function applyLang(l) {
+  LANG = l === "is" ? "is" : "en";
+  document.documentElement.lang = LANG;
+  document.title = tr("title");
+  for (const el of document.querySelectorAll("[data-t]")) el.textContent = tr(el.dataset.t);
+  for (const el of document.querySelectorAll("[data-tt]")) el.title = tr(el.dataset.tt);
+  for (const b of document.querySelectorAll("[data-lang]")) b.classList.toggle("on", b.dataset.lang === LANG);
+  if (namesCount !== null) $("namesinfo").textContent = namesCount < 0 ? tr("noGaz") : tr("namesN", namesCount.toLocaleString(loc()));
+  if (!tileError && map.loaded()) $("status").textContent = zoomText();
+  popup?.remove();
+  paint();
+}
+for (const b of document.querySelectorAll("[data-lang]")) b.addEventListener("click", () => applyLang(b.dataset.lang));
+applyLang(new URLSearchParams(location.search).get("lang"));
+
+// A raster base or none has no glyphs of its own: the names' labels keep the previous style's (Carto's fonts)
+function baseStyle(b) {
+  if (b.style) return b.style;
+  const layers = [{ id: "base-bg", type: "background", paint: { "background-color": "#eef0f2" } }];
+  if (!b.tiles) return { version: 8, sources: {}, layers };
+  return { version: 8, layers: [...layers, { id: "base", type: "raster", source: "base" }],
+           sources: { base: { type: "raster", tiles: [b.tiles], tileSize: 256, maxzoom: b.maxzoom,
+                              attribution: "Tiles © Esri and its sources" } } };
+}
+function setBase(id) {
+  const b = BASEMAPS.find(x => x.id === id) ?? BASEMAPS[0];
+  map.setStyle(baseStyle(b), { transformStyle: (prev, next) => {
+    if (!prev) return next;
+    const own = prev.layers.filter(l => l.id === "effort" || NAME_LAYERS.includes(l.id));
+    const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => k === "effort" || k === "names"));
+    const i = next.layers.findIndex(l => l.type === "symbol");
+    const effort = own.filter(l => l.id === "effort"), names = own.filter(l => l.id !== "effort");
+    const layers = i < 0 ? [...next.layers, ...effort, ...names]
+                         : [...next.layers.slice(0, i), ...effort, ...next.layers.slice(i), ...names];
+    return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers };
+  } });
+}
+$("bases").addEventListener("change", e => { popup?.remove(); setBase(e.target.value); });
 
 Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => {
   gridVersion = meta.v;
   for (const g of meta.gears) {
     const o = document.createElement("option");
     o.value = g.gid;
-    o.textContent = `${g.name ?? "gear " + g.gid}${g.fao ? " (" + g.fao + ")" : ""}`;
+    o.textContent = `${g.name ?? tr("gearN") + " " + g.gid}${g.fao ? " (" + g.fao + ")" : ""}`;
     $("gid").append(o);
   }
   for (let y = meta.y1; y <= meta.y2; y++) {
@@ -197,18 +434,24 @@ Promise.all([fetch("/meta").then(r => r.json()), styleLoaded]).then(([meta]) => 
   $("lo").value = -1; $("hi").value = 2;
   // the first view from the address (effort_map() in R writes it): a value the page does not offer is left out
   const q = new URLSearchParams(location.search);
-  if (q.get("gid") && ![...$("gid").options].some(o => o.value === q.get("gid")))
-    $("gid").append(new Option(`gears ${q.get("gid")}`, q.get("gid")));
+  if (q.get("gid") && ![...$("gid").options].some(o => o.value === q.get("gid"))) {
+    const gs = q.get("gid").split(",").map(id => meta.gears.find(g => String(g.gid) === id) ?? { gid: id });
+    const fao = [...new Set(gs.map(g => g.fao).filter(Boolean))];
+    $("gid").append(new Option(`${gs.map(g => g.name ?? tr("gearN") + " " + g.gid).join(", ")}${fao.length ? " (" + fao.join(", ") + ")" : ""}`,
+                               q.get("gid")));
+  }
   for (const k of ["preset", "gid", "y1", "y2", "metric", "px", "palette", "stretch"])
     if (q.get(k) !== null && [...$(k).options].some(o => o.value === q.get(k))) $(k).value = q.get(k);
   if (+q.get("floor") > 0 && +q.get("cap") > +q.get("floor")) {
+    widen(Math.log10(+q.get("floor")), Math.log10(+q.get("cap")));
     $("lo").value = Math.log10(+q.get("floor")); $("hi").value = Math.log10(+q.get("cap"));
     fitted = true;   // a floor and cap given are kept, not fitted to the view
   }
   const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
   map.addSource("effort", { type: "vector", tiles: [tileUrl()], minzoom: 2, maxzoom: 12 });
   map.addLayer({ id: "effort", type: "fill", source: "effort", "source-layer": "cells",
-                 paint: { "fill-color": colorExpr(), "fill-opacity": 0.85, "fill-antialias": false } }, firstSymbol);
+                 paint: { "fill-color": colorExpr(), "fill-opacity": +$("opacity").value / 100, "fill-antialias": false } },
+               firstSymbol);
   paint();
   addNames();
 });
@@ -233,11 +476,13 @@ function addNames() {
                              "text-size": ["match", ["coalesce", ["get", "level"], 4], 1, 15, 2, 13.5, 3, 12, 11] },
                    paint: { "text-color": "#0b3954", "text-halo-color": "#fff", "text-halo-width": 1.3 } });
     const n = data.features.filter(f => f.properties.kind === "label").length;
-    $("namesinfo").textContent = `${n.toLocaleString("en")} names`;
+    namesCount = n;
+    $("namesinfo").textContent = tr("namesN", n.toLocaleString(loc()));
     showNames();
-  }).catch(() => { $("names").disabled = true; $("namesinfo").textContent = "no gazetteer on this server"; });
+  }).catch(() => { $("names").disabled = true; namesCount = -1; $("namesinfo").textContent = tr("noGaz"); });
 }
 function showNames() {
+  $("lyr-names").classList.toggle("off", !$("names").checked);
   for (const id of NAME_LAYERS) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", $("names").checked ? "visible" : "none");
 }
 $("names").addEventListener("change", showNames);
@@ -247,13 +492,13 @@ function namePopup(e) {
   const line = (k, v) => v === undefined || v === null || v === "" || v === "null" ? "" : `<br>${k}: ${esc(v)}`;
   popup?.remove();
   popup = new maplibregl.Popup({ closeButton: false, maxWidth: "320px" }).setLngLat(e.lngLat)
-    .setHTML(`<b>${esc(p.name)}</b>${line("positions", (+p.n).toLocaleString("en"))}${line("used in", p.sources)}` +
-             `${line("spellings", p.spellings)}${line("terrain word", p.terrain)}${line("depth (GEBCO, m)", p.depth)}` +
-             `${line("main gear", p.gear)}${line("spread, r80 (km)", p.r80)}${line("lies in", p.parent)}` +
-             `${+p.children > 0 ? line("names within", p.children) : ""}${line("class", p.class)}` +
-             `${line("sources agree", p.outcome === "confirmed" ? "yes (" + p.families + ")" : p.outcome === "disagree" ? "no: they place it apart (" + p.families + ")" : p.outcome)}` +
-             `${+p.n_places > 1 ? line("places with this name", p.n_places + (p.place ? " (this is place " + p.place + ")" : "")) : ""}` +
-             `${line("shown from zoom", p.min_zoom)}${line("maybe also", p.synonyms)}`)
+    .setHTML(`<b>${esc(p.name)}</b>${line(tr("positions"), (+p.n).toLocaleString(loc()))}${line(tr("usedIn"), p.sources)}` +
+             `${line(tr("spellings"), p.spellings)}${line(tr("terrain"), p.terrain)}${line(tr("depth"), p.depth)}` +
+             `${line(tr("mainGear"), p.gear)}${line(tr("spread"), p.r80)}${line(tr("liesIn"), p.parent)}` +
+             `${+p.children > 0 ? line(tr("namesWithin"), p.children) : ""}${line(tr("klass"), p.class)}` +
+             `${line(tr("agree"), p.outcome === "confirmed" ? tr("yes") + " (" + p.families + ")" : p.outcome === "disagree" ? tr("apart") + " (" + p.families + ")" : p.outcome)}` +
+             `${+p.n_places > 1 ? line(tr("places"), p.n_places + (p.place ? " (" + tr("thisPlace") + " " + p.place + ")" : "")) : ""}` +
+             `${line(tr("fromZoom"), p.min_zoom)}${line(tr("maybe"), p.synonyms)}`)
     .addTo(map);
 }
 for (const id of ["names-label", "names-foot"]) {
@@ -278,11 +523,34 @@ $("stretch").addEventListener("change", () => { viewVals.length ? paint() : fitT
 $("hi").addEventListener("input", paint);
 $("fit").addEventListener("click", fitToView);
 
-map.on("dataloading", () => { $("status").textContent = "loading tiles…"; });
+// The effort layer on or off (its controls and legend shown only when on, as Vefsjá's layers), and its opacity
+$("effort").addEventListener("change", () => {
+  const on = $("effort").checked;
+  $("lyr-effort").classList.toggle("off", !on);
+  popup?.remove();
+  if (map.getLayer("effort")) map.setLayoutProperty("effort", "visibility", on ? "visible" : "none");
+  if (on) paint();   // the histogram's canvas had no width while hidden
+});
+$("opacity").addEventListener("input", () => {
+  $("opval").textContent = `${$("opacity").value} %`;
+  if (map.getLayer("effort")) map.setPaintProperty("effort", "fill-opacity", +$("opacity").value / 100);
+});
+for (const b of document.querySelectorAll(".info-btn"))
+  b.addEventListener("click", () => { const el = $(b.dataset.info); el.hidden = !el.hidden; });
+// on a phone the sidebar is a drawer over the map
+$("menu").addEventListener("click", () => document.body.classList.add("side-open"));
+$("close").addEventListener("click", () => document.body.classList.remove("side-open"));
+
+map.on("dataloading", () => { $("status").textContent = tr("loading"); });
 // a refused tile would otherwise leave the map blank without a word (an older server, 2026-10-24)
-map.on("error", e => {
+map.on("error", async e => {
   const s = e.error?.status;
-  if (s) $("status").textContent = tileError = `the server refused tiles (HTTP ${s}): restart it, it may be an older version`;
+  if (!s || tileError) return;
+  tileError = tr("refused", s);
+  const why = await e.error.body?.text?.().catch(() => "") ?? "";
+  const app = await fetch("/meta").then(r => r.json()).then(m => m.app).catch(() => null);
+  tileError = app !== APP ? tr("older", app ?? "?", APP) : `${tr("refused", s)}${why ? ": " + why : ""}`;
+  $("status").textContent = tileError;
 });
 function sampleView() {
   if (!map.getLayer("effort")) return;
@@ -295,7 +563,7 @@ function sampleView() {
 
 map.on("idle", () => {
   sampleView();
-  $("status").textContent = tileError || `zoom ${map.getZoom().toFixed(1)}`;
+  $("status").textContent = tileError || zoomText();
   if (!fitted && map.getLayer("effort")) { fitted = true; fitToView(); }
 });
 
@@ -305,7 +573,7 @@ map.on("click", "effort", e => {
   popup?.remove();
   popup = new maplibregl.Popup({ closeButton: false })
     .setLngLat(e.lngLat)
-    .setHTML(`<b>${fmt(+p.h_km2)}</b> hours per km²<br>${fmt(+p.kwh_km2)} kW-hours per km²<br>${(+p.n).toLocaleString("en")} fixes`)
+    .setHTML(`<b>${fmt(+p.h_km2)}</b> ${tr("hKm2")}<br>${fmt(+p.kwh_km2)} ${tr("kwhKm2")}<br>${(+p.n).toLocaleString(loc())} ${tr("fixes")}`)
     .addTo(map);
 });
 map.on("mouseenter", "effort", () => { map.getCanvas().style.cursor = "pointer"; });
