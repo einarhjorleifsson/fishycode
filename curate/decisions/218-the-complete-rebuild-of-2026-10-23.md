@@ -62,8 +62,9 @@ exists.
 - **733 rebuilt at 916b901.**
   - 25 are clean, built up to 22:53:58.
   - 708 are stamped `fd.dirty` true, all built from 23:38 on. At 23:07 an untracked folder,
-    `docs/figures/gagnakvorn/`, appeared in the repo. It is not Claude's, and nothing the pipeline reads is in it, so
-    these files are what a clean tree gives. Their stamps say dirty until the next build from a clean tree.
+    `docs/figures/gagnakvorn/`, appeared in the repo: another session's figure in progress (the data grinder
+    cartoon, left uncommitted on purpose). Nothing the pipeline reads is in it, so these files are what a clean tree
+    gives. Their stamps say dirty until the next build from a clean tree.
 - **62 not rebuilt:**
   - the `once` project's frozen outputs: the STK key and its checks, the GPS logger positions, the port radius and the
     register's history;
