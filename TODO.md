@@ -1224,3 +1224,37 @@ Downstream, three trail months and two catch files moved. The choice is the step
 voyage, which gear), or a tie read as no decision (`ambiguous`, as `n_rng` already does for the speed range).
 
 **check:** each step run twice gives identical files, and the rule is written in the step's header.
+
+## 140. The user tables after v0: the user's feedback, the product's version, and the design
+**status:** open · **needs: maintainer** — the feedback is the maintainer's use of v0 · **see:** decision 219, TODO 102,
+plan 027
+
+v0 (`$FISHYDATA/products/v0/`, decision 219) is in use by the maintainer as an end user. The next round, in this order:
+how a data product is versioned ("very important", 2026-10-24; v0's links follow every rebuild), the maintainer's
+feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
+- two joins every table supports: by key, and `join_by(vid, between(time, T1, T2))`, which needs a vessel's trip
+  intervals exclusive (TODO 102) and a window for every landing;
+- a landing window table with every landing in one outcome (a trip; a further landing of a trip, plan 027; the vessel
+  logs that year but this landing has no trip; the vessel never logs; foreign), T1 and T2 with a basis. The logic is
+  inside `curate/ais_catch.R` (units `landing_trip` and `landing`);
+- `T2_basis` `reconstructed` for the track's time: the label, or the ranking where the e-logbook's own time agrees
+  with the track (decisions 173, 174);
+- the flow diagram's vessel row draws only ping → vessel: the vessel's curation and its links to the MMSI, the
+  logbooks and the landings are missing (`docs/figures/one_flow_cascade_v3.svg`, plan 033);
+- skills for the user, later (maintainer).
+
+**check:** a decision records how a product is versioned, and the plan for the user tables is written.
+
+## 141. Handline trips missing from every logbook source, September 2020 to March 2021
+**status:** open · **needs: maintainer** — does the Directorate hold the small boats' logbooks of those months? ·
+**see:** decision 219, TODO 140
+
+Found 2026-10-24 (quick counts, read-only, Claude's): 82-93 % of handline landings from September 2020 to March 2021
+have no logbook trip, against 1-12 % a month in 2019. afli's handline stations fall from 2,854 in August 2020 to 124
+in September and 8 in December, and fs_afladagbok holds almost none until April 2021 (838, then 4,554 in May). afli,
+adb and afli_sent hold the same 8-9,000 stations a month of all gears through March 2021, so no source held fills it,
+and the merge drops none (380, all on days another source holds). Beside the hole, the summers of 2020-22 lack 12-25 %
+of handline trips, of vessels that log that year; landbeitt lína has the same bump (15-16 % in 2020-21).
+
+**check:** the missing trips are read from a source the maintainer names, or the gap is declared where the analyst
+reads it (the landing outcome of TODO 140).

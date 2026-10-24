@@ -14,6 +14,7 @@
 #   curated/    merged-shaped parquet       the sweep — the product
 #   published/  versioned releases          tiers A+B only, mirrored to the web
 #   exports/    deliveries to others        one-off files (products/exports/), not mirrored
+#   products/   the user tables             products/user_tables.R; v0 links into curated/ (decision 219)
 
 fishydata_root <- function() {
   root <- Sys.getenv("FISHYDATA", unset = NA_character_)
