@@ -1297,3 +1297,14 @@ Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with th
 
 **check:** each item done and recorded in a decision, or dropped by the maintainer, and plans 044's and 045's statuses
 agree.
+
+## 145. Map viewers: the effort map in a Vefsjá-like shell, then R functions in ramb (plan 046)
+**status:** open · **needs: maintainer** — plan 046's asks a-e (language, reference layers, the second view, names
+and home, comparison) · **see:** `curate/plans/046-map-viewer.md`, decision 220, plan 030
+
+The pages so far were made on the fly, each with its own panel and state. Plan 046 takes Vefsjá's ideas (one config of
+grouped layers, info and legend per layer, the phone layout) onto the effort map's engine: MapLibre, vector tiles from
+DuckDB, colours in the browser. Then the generic parts go into ramb as R functions, with the effort map rebuilt on
+them. The first product is the effort map; place names, GeoServer and DuckDB 2.0 are out (maintainer, 2026-10-24).
+
+**check:** plan 046 §5 holds, and a decision records what was built.
