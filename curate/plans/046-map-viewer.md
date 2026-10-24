@@ -1,8 +1,8 @@
 # 046 — Map viewers: the effort map in a Vefsjá-like shell on the same tile engine, then R functions in ramb
 
-**status:** proposal — written 2026-10-24 at the maintainer's request; the effort map, Vefsjá's served scripts and the
-installed DuckDB measured the same day (read-only); every ask answered the same day (§6); nothing built ·
-**2026-10-24** · **see:** decision 220, plan 030
+**status:** partly built — written 2026-10-24 at the maintainer's request; the effort map, Vefsjá's served scripts and
+the installed DuckDB measured the same day (read-only); every ask answered the same day (§6); step 1 done the same day
+(the checklist and the bench, every item passing, three faults left for step 2) · **2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -140,14 +140,29 @@ the `rb_` prefix, in ramb (ask d). The final names still go through the review o
 One at a time. After each step, every click path is tested before the next (the overview's lesson, plan 030), with the
 pane visible where an animation frame matters.
 
-1. **The baseline:**
-   - §1.1's controls written out as a checklist of click paths;
-   - decision 220's tile timings remeasured on a fixed set of tiles (zoom 5-8, cells 0.5, 1 and 2).
+1. **The baseline** (done 2026-10-24, at f74e4ef):
+   - §1.1's controls written out as 29 click paths in `products/effort_map/checklist.md`, where each run is logged.
+     All 29 pass on the page as it stands;
+   - `products/effort_map/bench.R` times a fixed set of tiles (279 tiles at zoom 5-8 over the grounds, cells 0.5, 1
+     and 2, no filter and bottom trawl 2015-2020; `$FISHYDATA/products/effort_map/bench/`). The worst tiles, no filter:
+
+     | cells | median | 95th percentile | worst | largest |
+     |---|---|---|---|---|
+     | 0.5 px | 0.17-0.34 s | 0.44-1.44 s | 1.72 s (zoom 7) | 37.8 MB |
+     | 1 px | 0.08-0.15 s | 0.19-0.48 s | 0.60 s (zoom 8) | 9.8 MB |
+     | 2 px | 0.04-0.09 s | 0.10-0.11 s | 0.12 s | 1.65 MB |
+
+     Decision 220's figures came from fewer tiles and understate the worst: one pixel "3.5-5 MB in 0.2-0.5 s", half a
+     pixel "up to 25 MB in 1.3 s". At zoom 8 the default cell (0.002°) is not a multiple of 0.005°, so it is read
+     from the fine grid, and is slower than zoom 7's.
    Every later step is checked against both.
 2. **The shell, effort map only:**
    - the sidebar in Vefsjá's shape: Effort (filters, colour, legend), Base map (choice, opacity), About;
    - the effort map's code moved in;
-   - `tiles.R` and the tile route untouched.
+   - `tiles.R` and the tile route untouched;
+   - the three faults step 1 found: the cap slider's range (10^5 at most) is below kW-hours' 98th percentile, so a fit
+     stops short; several gears show as ids ("gears 6,7,8"), not names; a refused tile is always blamed on an older
+     server, a wrong address included.
 3. **The address:**
    - every control in the query string, and the position in the hash;
    - `effort_map()` writes the same address;
