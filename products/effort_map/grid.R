@@ -1,14 +1,18 @@
 # grid.R — the effort map's base grid: the trail's fishing effort summed by 0.001-degree cell, gear, year and preset,
-# each fix's hours spread along the line to its next fix.
-# Decision 220.
+# each fix's hours spread along the line to its next fix; or, with the argument `fixes`, each fix's hours in its own
+# cell, the grid the page shows with its interpolation switch off.
+# Decision 220; the second grid since the maintainer's ask of 2026-10-24 (the original data beside the interpolated).
 #
 # Input:  $FISHYDATA/products/v0/ais/trail (vid, voyage_id, time, lon, lat, fishing, fishing_flow, gid_used, gid_voyage,
 #         hours, kw_hours)
 # Output: $FISHYDATA/products/effort_map/grid.parquet
 #         preset, gid, year, ix, iy (the cell's south-west corner in thousandths of a degree), h, kwh,
-#         n (the fixes, each counted in the cell of its first step); grid_005.parquet, the same on 0.005-degree cells
+#         n (the fixes, each counted in the cell of its first step); grid_005.parquet, the same on 0.005-degree cells;
+#         with `fixes`, grid_fixes.parquet and grid_fixes_005.parquet, the same with no spreading
 #
-# Run from the fishycode root, after a rebuild of the trail (about 4 min):  Rscript products/effort_map/grid.R
+# Run from the fishycode root, after a rebuild of the trail (about 4 min each):
+#   Rscript products/effort_map/grid.R          # interpolated
+#   Rscript products/effort_map/grid.R fixes    # each fix in its own cell
 #
 # The gear of a fix: `gid_used`, the haul's, under `fishing` (the haul window); `gid_used` or else `gid_voyage` under
 # `fishing_flow`, whose fixes outside a window are judged by the voyage gear's speed range. `gid_used` is the logbook's
@@ -23,13 +27,14 @@
 
 source("R/paths.R")
 
+FIXES       <- identical(commandArgs(trailingOnly = TRUE)[1], "fixes")
 STEP_MIN    <- 1
-MAX_GAP_MIN <- 30
+MAX_GAP_MIN <- if (FIXES) 0 else 30
 
 con <- DBI::dbConnect(duckdb::duckdb())
 invisible(DBI::dbExecute(con, sprintf("SET temp_directory = '%s'", file.path(tempdir(), "duckdb_temp"))))
 trail_dir <- fd_path("products", "v0", "ais", "trail")
-out <- fd_path("products", "effort_map", "grid.parquet")
+out <- fd_path("products", "effort_map", if (FIXES) "grid_fixes.parquet" else "grid.parquet")
 dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 years <- sort(as.integer(sub("^year=", "", list.files(trail_dir, pattern = "^year=[0-9]+$"))))
 
@@ -42,7 +47,7 @@ cells <- function(year, preset, gear) sprintf("
     WINDOW w AS (PARTITION BY vid, voyage_id ORDER BY time)),
   s AS (
     SELECT gid, lon, lat, lon2, lat2, hrs, kwh,
-           voyage_id IS NOT NULL AND time2 IS NOT NULL AND date_diff('second', time, time2) <= %5$d * 60 AS spread,
+           %5$d > 0 AND voyage_id IS NOT NULL AND time2 IS NOT NULL AND date_diff('second', time, time2) <= %5$d * 60 AS spread,
            CASE WHEN spread THEN greatest(1, CAST(ceil(date_diff('second', time, time2) / (%6$d * 60.0)) AS INTEGER))
                 ELSE 1 END AS k
     FROM f WHERE keep),

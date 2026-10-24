@@ -12,6 +12,7 @@
 #   effort_map(gear = "OTB", years = 2015:2020, palette = "deep", stretch = "equal")
 #   effort_map(gear = 6, center = c(-24.5, 66.3), zoom = 8, floor = 1, cap = 300)
 #   effort_map(lang = "is", base = "ocean", opacity = 60, names = FALSE, ports = TRUE)
+#   effort_map(gear = "OTB", interpolate = FALSE)                   # each fix's hours where the fix is
 #   effort_map_stop()
 #
 # The server answers while the console is idle: a map waits while R runs something else. A server already on the port
@@ -56,7 +57,8 @@ effort_map_stop <- function() {
 
 # gear: gear ids, FAO codes ("OTB" is every bottom trawl) or Icelandic names, as in curated/reference/gear (new codes)
 effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing_flow"), metric = c("hours", "kw_hours"),
-                       cells = c("fine", "finer", "coarser"), palette = "magma", stretch = c("even", "equal"),
+                       cells = c("fine", "finer", "coarser"), interpolate = TRUE, palette = "magma",
+                       stretch = c("even", "equal"),
                        floor = NULL, cap = NULL, opacity = NULL, names = TRUE, ports = FALSE, base = "light",
                        lang = c("en", "is"),
                        center = c(-19, 65), zoom = 5, port = 8791, viewer = TRUE) {
@@ -82,6 +84,7 @@ effort_map <- function(gear = NULL, years = NULL, preset = c("fishing", "fishing
   q <- c(preset = preset, gid = if (length(gid)) paste(gid, collapse = ","),
          y1 = if (length(years)) min(years), y2 = if (length(years)) max(years),
          metric = c(hours = "h_km2", kw_hours = "kwh_km2")[[metric]], px = c(fine = "1", finer = "0.5", coarser = "2")[[cells]],
+         interp = if (!isTRUE(interpolate)) "off",
          palette = palette, stretch = stretch, floor = floor, cap = cap, opacity = opacity,
          names = if (!names) "0", ports = if (ports) "1", base = if (base != "light") base, lang = if (lang != "en") lang)
   url <- sprintf("http://localhost:%d/?%s#%s/%s/%s", port,

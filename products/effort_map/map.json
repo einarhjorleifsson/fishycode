@@ -113,6 +113,23 @@
        "label": "pxCoarser"
       }
      ]
+    },
+    {
+     "id": "interp",
+     "label": "interp",
+     "default": "on",
+     "options": [
+      {
+       "value": "on",
+       "label": "interpOn",
+       "tip": "interpOnTip"
+      },
+      {
+       "value": "off",
+       "label": "interpOff",
+       "tip": "interpOffTip"
+      }
+     ]
     }
    ],
    "metrics": [
@@ -883,6 +900,26 @@
   "placesOf": {
    "en": "{n_places} (this is place {place})",
    "is": "{n_places} (þetta er staður {place})"
+  },
+  "interp": {
+   "en": "Interpolation",
+   "is": "Brúun"
+  },
+  "interpOn": {
+   "en": "on: along the track",
+   "is": "á: eftir ferlinum"
+  },
+  "interpOff": {
+   "en": "off: each fix where it is",
+   "is": "af: hver staðsetning þar sem hún er"
+  },
+  "interpOnTip": {
+   "en": "Each fishing fix's hours spread along the line to its next fix, in 1-minute steps, where the gap is 30 minutes or less (decision 220)",
+   "is": "Stundum hvers veiðipunkts dreift eftir línunni að næsta punkti, í 1 mínútu skrefum, þar sem bilið er 30 mínútur eða minna (ákvörðun 220)"
+  },
+  "interpOffTip": {
+   "en": "Each fishing fix's hours in the cell of the fix itself, as the track records it",
+   "is": "Stundir hvers veiðipunkts í reit punktsins sjálfs, eins og ferillinn skráir hann"
   }
  }
 }

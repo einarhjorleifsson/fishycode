@@ -26,6 +26,9 @@ How to test:
 - **F4** Metric: hours ↔ kW-hours per km²; the histogram is resampled and floor and cap refitted, with no tile reload;
   the sliders reach the fitted values (plan 046 step 2).
 - **F5** Cells: finer, fine, coarser.
+- **F6** Interpolation: on (the default, each fishing fix's hours spread along the track) ↔ off (each fix's hours in
+  its own cell, the grid of `grid.R fixes`); the tiles reload, the address carries `interp=off`, and the totals are
+  the same either way. Left out of the page when the fixes grid is not built.
 
 ## Colour (no tile reload)
 
@@ -158,3 +161,8 @@ How to test:
   ms; the bytes of one tile vary between two fetches from the same server (by up to 0.25 %, DuckDB's parallel sums), so
   no byte comparison is made. One fault found and fixed on the way: the ports' count text was lost in the move to
   `map.json`.
+- **2026-10-24, the interpolation switch** (decision 228; uncommitted, on top of 95bf81a). Claude's run on the server
+  only: the session was not open in a window, so the page could not draw. F6's server side passes: the config carries
+  the filter in both languages, on by default; tiles come back both ways (16 tiles at zoom 6-9, median 253 ms off
+  against 353 ms on); `interp=maybe` is refused with the server's reason; `effort_map(interpolate = FALSE)` writes
+  `interp=off`. The two grids' totals are equal. The click in the page waits for the window.

@@ -3,7 +3,9 @@
 # Decision 220, plan 046.
 #
 # Input:  products/effort_map/map.json; the base grid (grid.R) and effort_tile() from tiles.R, sourced by the caller;
-#         $FISHYDATA/curated/reference/gear.parquet; $FISHYDATA/curated/reference/port_geometry.parquet (the ports);
+#         grid_fixes.parquet beside it, the same with each fix in its own cell (`grid.R fixes`), for the interpolation
+#         switch, which is left out without it; $FISHYDATA/curated/reference/gear.parquet;
+#         $FISHYDATA/curated/reference/port_geometry.parquet (the ports);
 #         $FISHYDATA/curated/place_name/place_name.parquet, place.parquet and synonym.parquet (plan 044), if they are
 #         there; read_curated_sf() (R/write_curated.R)
 # Output: effort_map_build(con, grid), an rb_map for rb_map_serve(): the effort as a grid layer (its filters checked
@@ -12,6 +14,13 @@
 # run from the fishycode root, as server.R and effort_map.R are
 effort_map_build <- function(con, grid, json = file.path("products", "effort_map", "map.json")) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  # the interpolation switch needs the grid of fixes alone
+  if (!file.exists(fixes_grid(grid))) {
+    spec$layers <- lapply(spec$layers, function(l) {
+      if (identical(l$id, "effort")) l$filters <- Filter(function(f) !identical(f$id, "interp"), l$filters)
+      l
+    })
+  }
   extra <- list(
     effort = list(tiles = effort_tiles(con, grid), meta = function() effort_meta(con, grid)),
     ports = list(tiles = ports_tiles(con)),
@@ -30,10 +39,14 @@ effort_map_build <- function(con, grid, json = file.path("products", "effort_map
   )))
 }
 
-# The effort: ramb has checked the filters' values against map.json and effort_meta() before they arrive here
+# The grid with each fix's hours in its own cell, beside the interpolated one
+fixes_grid <- function(grid) sub("[.]parquet$", "_fixes.parquet", grid)
+
+# The effort: ramb has checked the filters' values against map.json and effort_meta() before they arrive here.
+# Interpolation off reads the grid of fixes alone.
 effort_tiles <- function(con, grid) {
   function(z, x, y, p) {
-    effort_tile(con, grid, z, x, y,
+    effort_tile(con, if (identical(p$interp, "off")) fixes_grid(grid) else grid, z, x, y,
                 preset = if (is.null(p$preset)) "fishing" else p$preset,
                 gid = if (!is.null(p$gid)) as.integer(strsplit(p$gid, ",", fixed = TRUE)[[1]]),
                 y1 = if (!is.null(p$y1)) as.integer(p$y1), y2 = if (!is.null(p$y2)) as.integer(p$y2),
@@ -52,7 +65,7 @@ effort_meta <- function(con, grid) {
     grid, fd_curated("reference", "gear.parquet")))
   y <- DBI::dbGetQuery(con, sprintf("SELECT min(year) AS y1, max(year) AS y2 FROM read_parquet('%s')", grid))
   list(options = list(gid = g[c("value", "name", "code")]), ranges = list(years = c(y$y1, y$y2)),
-       v = as.numeric(file.mtime(grid)))
+       v = max(as.numeric(file.mtime(c(grid, fixes_grid(grid)))), na.rm = TRUE))
 }
 
 # The ports: every port of the reference, its area or line, and a point on each for the far zooms
