@@ -1,7 +1,8 @@
 # 046 — Map viewers: the effort map in a Vefsjá-like shell on the same tile engine, then R functions in ramb
 
 **status:** proposal — written 2026-10-24 at the maintainer's request; the effort map, Vefsjá's served scripts and the
-installed DuckDB measured the same day (read-only); nothing built · **2026-10-24** · **see:** decision 220, plan 030
+installed DuckDB measured the same day (read-only); every ask answered the same day (§6); nothing built ·
+**2026-10-24** · **see:** decision 220, plan 030
 §7, decision 153, TODO 140, TODO 142
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. What §1 calls measured, Claude
@@ -131,9 +132,8 @@ a copied link gives the same view. This closes decision 220's "not done".
 
 ### 3.3 Names
 
-Placeholders until the review of names (TODO 127): `rb_map_layer()`, `rb_map_group()`, `rb_map()` (open a view),
-`rb_map_serve()`, `rb_map_write()` (a static folder). A viewer is not a flow step, so whether it takes the `rb_` prefix
-at all is part of ask d.
+`rb_map_layer()`, `rb_map_group()`, `rb_map()` (open a view), `rb_map_serve()`, `rb_map_write()` (a static folder):
+the `rb_` prefix, in ramb (ask d). The final names still go through the review of TODO 127.
 
 ## 4. Steps
 
@@ -152,9 +152,8 @@ pane visible where an animation frame matters.
    - every control in the query string, and the position in the hash;
    - `effort_map()` writes the same address;
    - a reload or a copied link gives the same view.
-4. **Reference layers** (ask b), one per step:
-   - each with its info and legend, as GeoJSON or as tiles from DuckDB;
-   - EUSM's 3.2 M polygons can only go as tiles.
+4. **Reference layers** (ask b): the ports first, with their info and legend. Further layers come one per step,
+   as GeoJSON or as tiles from DuckDB (EUSM's 3.2 M polygons only as tiles).
 5. **The config split out:**
    - the page reads its layers from `/config.json`;
    - the effort map's layer list leaves `index.html`;
@@ -163,8 +162,8 @@ pane visible where an animation frame matters.
    - the engine, the service's skeleton and the R constructors move to ramb;
    - fishycode's effort map is rebuilt on them, its own code down to the layer definitions and the tile SQL;
    - ramb's tests draw its example pings as a `tiles` layer without `$FISHYDATA`.
-7. **A second consumer** (ask c): one more view on the kit with no edit to the engine. This is the test that the kit
-   is generic.
+7. **A second consumer** (ask c): one vessel-voyage's fixes from the trail, as points and lines, on the kit with no
+   edit to the engine. This is the test that the kit is generic.
 
 ## 5. Checks
 
@@ -177,24 +176,25 @@ The plan is done when:
 - ramb passes R CMD check with tests that need no data;
 - a second view runs on the engine unedited.
 
-## 6. Asks
+## 6. Asks, answered
 
-- **a. Language of the page:** Icelandic as Vefsjá, English, or both by a switch? Recommended: both, with the labels
-  in the config.
-- **b. Which reference layers first?** On hand:
-  - ports (`curated/reference/port_geometry.parquet`);
+All answered by the maintainer on 2026-10-24: a, c, d and e as recommended; b had no recommendation.
+
+- **a. Language:** both Icelandic and English, by a switch on the page, with the labels in the config.
+- **b. Reference layers:** the ports first (`curated/reference/port_geometry.parquet`). Also on hand, not chosen for
+  now:
   - GEBCO depth (`staging/aux/gebco.fgb`);
-  - ICES areas (`staging/aux/ices_areas_500m-buffer.fgb`);
-  - EUSM habitats (`staging/aux/eusm.fgb`);
-  - ICES rectangles (ramb).
+  - ICES areas (`staging/aux/ices_areas_500m-buffer.fgb`) and ICES rectangles (ramb);
+  - EUSM habitats (`staging/aux/eusm.fgb`).
   The regulation areas of `uv` (decision 201) are not yet a layer. The coastline, the EEZ and the 12 nm line are not
   on hand.
-- **c. The second consumer** (step 7): one vessel-voyage's fixes from the trail; the effort by year as a layer to
-  compare; or the vessel overview's map, the hardest.
-- **d. Names, and the home:** the function names (with TODO 127), whether a viewer takes the `rb_` prefix, and when
-  it would leave ramb for a package of its own.
-- **e. Comparison:** two selections side by side, or their difference (two periods, two gears)? Vefsjá has neither.
-  Version 1, or later?
+- **c. The second consumer** (step 7): one vessel-voyage's fixes from the trail. Not chosen: the effort by year as a
+  layer to compare, and the vessel overview's map.
+- **d. Home and names:** in ramb, as `rb_map_layer()`, `rb_map_group()`, `rb_map()`, `rb_map_serve()` and
+  `rb_map_write()`. The final names still go through the review of TODO 127. The kit moves to a package of its own if
+  it grows past what a flow library should carry, or gains users outside ramb's.
+- **e. Comparison:** later. Version 1 shows one selection; two selections side by side, or their difference, come
+  after step 7.
 
 ## 7. Not in this plan
 

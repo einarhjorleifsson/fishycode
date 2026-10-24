@@ -1299,8 +1299,7 @@ Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with th
 agree.
 
 ## 145. Map viewers: the effort map in a Vefsjá-like shell, then R functions in ramb (plan 046)
-**status:** open · **needs: maintainer** — plan 046's asks a-e (language, reference layers, the second view, names
-and home, comparison) · **see:** `curate/plans/046-map-viewer.md`, decision 220, plan 030
+**status:** open · **see:** `curate/plans/046-map-viewer.md` (asks answered 2026-10-24, §6), decision 220, plan 030
 
 The pages so far were made on the fly, each with its own panel and state. Plan 046 takes Vefsjá's ideas (one config of
 grouped layers, info and legend per layer, the phone layout) onto the effort map's engine: MapLibre, vector tiles from
