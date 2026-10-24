@@ -8,6 +8,7 @@
 # The port is 8791, or EFFORT_MAP_PORT. It listens on 127.0.0.1 only: vessel data, for internal use.
 
 source("R/paths.R")
+source("R/write_curated.R")    # read_curated_sf(), for the place names
 source("products/effort_map/tiles.R")
 source("products/effort_map/app.R")
 

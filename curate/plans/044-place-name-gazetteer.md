@@ -2,7 +2,8 @@
 
 **status:** partly built — written 2026-10-24 at the maintainer's request ("once you are done with staging can you go and
 proceed to curation?", plan 043 ask h), on top of plan 043's staged tables (decision 222); version 1 (§1) built the same
-day (decision 223); §2 open (TODO 144) · **2026-10-24** · **see:** plan 043 §3.4, decisions 221-223,
+day (decision 223), version 2 (§4) the same afternoon (decision 224); the seabed and effort footprints, the lanes and
+the review loop open (TODO 144) · **2026-10-24** · **see:** plan 043 §3.4, decisions 221-224,
 `$FISHYDATA/archive/2026-10-ornefni/` (scripts 01-05)
 
 Drafted with AI assistance (Claude) on 2026-10-24. The design is Claude's, from plan 043 §3.4's preliminary check, and
@@ -57,3 +58,63 @@ a person has not yet checked it. **Measured:** plan 043 §2-§3 and the staged t
 - Every staged row is in one outcome: an occurrence, or not with its reason.
 - Every occurrence has a key, and every key a row in `place_name`.
 - The counts are rerun against plan 043 §3.4 (nesting 21 %, the spellings of Litli banki and Tungan grouped).
+
+## 4. Version 2 (built 2026-10-24, decision 224): levels for zoom, classes, synonyms, cross-checks, from what is at hand
+
+The maintainer, 2026-10-24: broader names at low zoom and finer ones as one zooms in; provenance and cross-checks in
+the processing; spellings checked, entries that are not place names classed out, synonyms thought of; the ornefni
+repo's own lists as placeholders; the effort map and GEBCO; and "proceed with what we got for now", so no new Oracle
+dump. Measured the same day (Claude's, read-only):
+- LMÍ's sea names carry a size class (Stórt 22, Mið 1,023, Lítið 730) and a display scale (10-2,000).
+- `ops$sigfus.ornefni` has a recorded position on 238 of 2,881 names and a sub-square on 2,359, and comes with a coarse
+  ladder: coast region (`landsvaedi`, 7 codes), sea area (`hafsvaedi`, 1-9), square, sub-square.
+- `afli.afli_skikar` gives MFRI's coarse grounds (`heiti`, 1,470 squares), and `brei_nofn` with `ops$sigfus.fj_reitir`
+  places 428 Breiðafjörður names.
+- A rough class over Trackwell's and the plotter's spellings: 2,674 single names (470,359 uses), 197 composites, 108
+  descriptions (a distance or bearing), 53 depths or numbers ("63-4fm"), 6 plotter defaults ("Event 0261").
+- The tag app writes `NAFN-HEITI` from `ORRI.ORNEFNI` into a recapture (kb-hafro-kerfi), but the 2022 extract holds 1
+  such pick: the cross-check through recaptures waits for a dump of `fiskmerki.endurheimtur` (plan 043 ask f).
+
+**Assumed:**
+- that a sub-square's parts and a mini-square's (`orreitur`) are numbered alike (from `geo::sr2d()`: 1 north-west,
+  2 north-east, 3 south-west, 4 south-east), checked on the parts alone;
+- that a name's extent sets the zoom at which it can first be read.
+
+**Proposed.** The square tables give the coarse areas their footprints, a spelling gets a class, a key gets a level, a
+minimum zoom and an outcome, and spellings close in letters and in place become candidate synonyms, never merged:
+1. **Oracle's place tables as a source.**
+   - What: `sources/ornefni/oracle_name.R` → `staging/ornefni/oracle_name.parquet`. It takes `ops$sigfus.ornefni` (orri's
+     names and 307 more), `afli.afli_skikar` and `brei_nofn`, read where the dump put them.
+   - Positions: recorded where given (degrees, minutes, seconds); else the sub-square's or mini-square's centre, basis
+     `derived`, kind `square`.
+2. **A class per spelling.**
+   - The classes: `name`, `composite` (two names, or a name and a qualifier), `description` (a distance or a bearing), `depth`
+     (a number, with or without a unit or range), `default` (a plotter's own label), `placeholder`.
+   - Depths, defaults and placeholders are not occurrences.
+   - The plotter's number rule is widened to depth ranges.
+3. **Levels and a minimum zoom per key.**
+   - The extent: the larger of the positions' r80 and half the footprint's diagonal.
+   - LMÍ's size class and display scale, where the name is LMÍ's, take precedence.
+   - The coarse grounds of `afli_skikar` and LMÍ's Stórt sit at the top.
+   - A child shows no earlier than its parent.
+4. **Lexical parents.** A composite whose key holds a well-used key (`Tungan Reykjafj.áll` holds `reykjafjardaral`) records
+   it beside the footprint parent.
+5. **Candidate synonyms.**
+   - What qualifies: two keys within an edit distance of 2 (3 for long keys) whose positions overlap (a shared footprint
+     cell, or medians within 10 km).
+   - Explicit relations, beside them: LMÍ's `tvinefni`, the articles' synonyms, the dictionary readings.
+   - Output: `curated/place_name/synonym.parquet`, every candidate with its evidence, for a person's read; nothing is
+     merged.
+6. **A cross-check per key.**
+   - The independent source families that support it (Trackwell, plotter, LMÍ, Oracle, sjókort, recaptures, articles,
+     documents).
+   - Whether their medians agree (within the larger of 5 km and the key's r80).
+   - The outcome: `confirmed` (two or more families agree), `single`, or `disagree`.
+7. **The map.**
+   - Names appear from their minimum zoom, sized by level.
+   - The popup adds the class, the outcome and the candidate synonyms.
+
+**Not in version 2:**
+- footprints drawn from the seabed or the effort ridges, and the lanes (flow side);
+- the review loop: drafts in the `data-md` template's fields, corrected by a person and read back from `overrides/`;
+- any new dump.

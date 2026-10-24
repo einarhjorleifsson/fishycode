@@ -16,6 +16,7 @@
 # from server.R (a terminal) is used as it is, if it is this version of the app.
 
 source("R/paths.R")
+source("R/write_curated.R")    # read_curated_sf(), for the place names
 
 .effort_map <- new.env()
 .effort_map$dir <- "products/effort_map"

@@ -320,19 +320,26 @@ list(
     produces("sources/ornefni/article_record.R", fd_staging("ornefni", "article_record.parquet")) }, format = "file"),
   tar_target(ornefni_document_name, { ornefni_raw
     produces("sources/ornefni/document_name.R", fd_staging("ornefni", "document_name.parquet")) }, format = "file"),
+  # Oracle's own place tables, read where the dump put them (plan 044 §4.1)
+  tar_target(ornefni_oracle_raw, c(fd_raw("oracle", "ops_sigfus", c("ornefni.parquet", "fj_reitir.parquet")),
+                                   fd_raw("oracle", "orri", "ornefni.parquet"),
+                                   fd_raw("oracle", "afli", c("afli_skikar.parquet", "brei_nofn.parquet"))), format = "file"),
+  tar_target(ornefni_oracle_name, { ornefni_oracle_raw
+    produces("sources/ornefni/oracle_name.R", fd_staging("ornefni", "oracle_name.parquet")) }, format = "file"),
   # The place-name gazetteer from them (plan 044): every occurrence of a name, the spellings under one key, and one
   # row per key. Trackwell's hauls take their gear from the logbook; the names go on no haul.
   tar_target(place_name_evidence, {
     ornefni_trackwell_haul; ornefni_trackwell_area; ornefni_plotter_mark; ornefni_plotter_track; ornefni_chart_name
     ornefni_lmi_name; ornefni_recapture_place; ornefni_recapture_reading; ornefni_name_dictionary; ornefni_fiskislod
-    ornefni_article_record; ornefni_document_name; station_window; logbook_gear
+    ornefni_article_record; ornefni_document_name; ornefni_oracle_name; station_window; logbook_gear
     produces("curate/place_name_evidence.R", fd_curated("place_name", "evidence.parquet"),
              fd_curated("place_name", "variant.parquet"), fd_curated("place_name", "outcome.parquet"))
   }, format = "file"),
   tar_target(place_name_gebco, fd_raw("aux", "gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif"), format = "file"),
   tar_target(place_name, {
-    place_name_evidence; place_name_gebco
-    produces("curate/place_name.R", fd_curated("place_name", "place_name.parquet"))
+    place_name_evidence; place_name_gebco; ornefni_lmi_name; ornefni_raw
+    produces("curate/place_name.R", fd_curated("place_name", "place_name.parquet"),
+             fd_curated("place_name", "synonym.parquet"))
   }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and

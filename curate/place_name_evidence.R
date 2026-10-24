@@ -3,7 +3,7 @@
 #
 # Input:  staging/ornefni/{trackwell_haul, trackwell_area, plotter_mark, plotter_track, chart_name, lmi_name,
 #         recapture_place, recapture_reading, name_dictionary, drawn_area, fiskislod, article_record,
-#         document_name}.parquet; curated/logbook/{station_window, gear}.parquet (the gear of Trackwell's hauls)
+#         document_name, oracle_name}.parquet; curated/logbook/{station_window, gear}.parquet (the gear of Trackwell's hauls)
 # Output: curated/place_name/evidence.parquet - one row per occurrence, keyed on (`source_table`, `source_key`)
 #         curated/place_name/variant.parquet  - one row per spelling (`name`), with its key
 #         curated/place_name/outcome.parquet  - every staged row in one outcome: an occurrence, or not and why
@@ -23,6 +23,12 @@
 # keeps its letters fits it, that name replaces it (`name_repaired`, rule `repaired`). The hand readings (the
 # dictionary's `reading`, an article's synonyms) are kept beside a spelling in variant.parquet as relations, never
 # merged into its key: a reading often names the broader place (plan 043 §3.4).
+#
+# `class` (plan 044 §4.2): each spelling is a `name`, a `composite` (two names, or a name and a qualifier such as
+# "vestan v."; a hyphen after Litli-, Austur- and the like is part of one name), a `description` (a distance or a bearing: "14 sjm blettur V klöpp"), or not a place name: a `depth`
+# (a number or a range, with or without a unit), a plotter's `default` label ("Event 0261") or a `placeholder`. The last
+# three are counted in outcome.parquet and left out. Oracle's square-placed rows carry the square's size (`square_w`,
+# `square_h`, degrees), so the gazetteer can draw a coarse ground from its squares.
 #
 # Trackwell's gear: its haul matched to a curated logbook station on vid and start minute (Trackwell t1 = the
 # station's t2, else t1, else t3; the measure of plan 043 §3.1), and the station's `gid_used`. The names go on no
@@ -72,14 +78,12 @@ ev_th <- th |> filter(!name_placeholder) |> left_join(gear, by = "row") |>
             lon = ifelse(is.na(lon2), lon1, (lon1 + lon2) / 2), lat = ifelse(is.na(lat2), lat1, (lat1 + lat2) / 2),
             position_basis = ifelse(is.na(lon2), position_basis, "derived"), position_kind = "point", time = t1,
             vessel = vessel_raw, vid, gid = as.integer(gid_used), gear, weight = 1L)
-account("trackwell_haul", "occurrence", nrow(ev_th))
 account("trackwell_haul", "placeholder (FROM SHIP)", sum(th$name_placeholder))
 
 ta <- st("trackwell_area")
 ev_ta <- ta |> filter(!name_placeholder) |>
   transmute(source = "trackwell", source_table = "trackwell_area", source_key = as.character(row), name, lon, lat,
             position_basis, position_kind, weight = n_haul, summary = TRUE)
-account("trackwell_area", "occurrence (summary)", nrow(ev_ta))
 account("trackwell_area", "placeholder (Ekkert valið)", sum(ta$name_placeholder))
 
 # The plotter ---------------------------------------------------------------------------------------------------------
@@ -89,7 +93,6 @@ ev_pm <- pm[!is.na(pm$name) & !pm$name_is_number & !no_letter, ] |>
   transmute(source = "plotter", source_table = "plotter_mark", source_key = paste(file, mark, sep = ":"), name, lon, lat,
             position_basis, position_kind, time = if_else(time_placeholder | time_suspect, as.POSIXct(NA), time),
             weight = 1L, text_lost)
-account("plotter_mark", "occurrence", nrow(ev_pm))
 account("plotter_mark", "no name", sum(is.na(pm$name)))
 account("plotter_mark", "a number, not a name", sum(!is.na(pm$name) & pm$name_is_number))
 account("plotter_mark", "a symbol, not a name", sum(no_letter))
@@ -99,20 +102,17 @@ account("plotter_track", "a track point, no name", nrow(st("plotter_track")))
 ch <- st_sf("chart_name"); xy <- point_of(sf::st_geometry(ch))
 ev_ch <- tibble(source = "sjokort", source_table = "chart_name", source_key = as.character(ch$row), name = ch$name,
                 lon = xy[, 1], lat = xy[, 2], position_basis = "recorded", position_kind = "line", weight = 1L)
-account("chart_name", "occurrence", nrow(ev_ch))
 
 lm <- st_sf("lmi_name"); sea <- grepl("^Sjávar", lm$class)
 xy <- point_of(sf::st_geometry(lm)[sea])
 ev_lm <- tibble(source = "lmi", source_table = "lmi_name", source_key = as.character(lm$row[sea]), name = lm$name[sea],
                 lon = xy[, 1], lat = xy[, 2], position_basis = "recorded", position_kind = "polygon", weight = 1L,
                 lmi_class = lm$class[sea], lmi_feature = lm$feature[sea])
-account("lmi_name", "occurrence (a sea name)", sum(sea))
 account("lmi_name", "a land or lake name", sum(!sea))
 
 dr <- st_sf("drawn_area"); xy <- point_of(sf::st_geometry(dr))
 ev_dr <- tibble(source = "qgis", source_table = "drawn_area", source_key = as.character(dr$row), name = dr$name,
                 lon = xy[, 1], lat = xy[, 2], position_basis = "recorded", position_kind = "drawn", weight = 1L)
-account("drawn_area", "occurrence", nrow(ev_dr))
 account("fiskislod", "derived from the recapture readings", nrow(st_sf("fiskislod")))
 
 # Recaptures: the hand readings are the names, the recapture gives the position ---------------------------------------
@@ -123,7 +123,6 @@ ev_rr <- read_name |> filter(!is.na(name)) |>
   transmute(source = "fiskmerki", source_table = "recapture_reading", source_key = paste(file, recapture_id, sep = ":"),
             name, lon, lat, position_basis, position_kind = "point", weight = 1L)
 account("recapture_place", "a description, read in recapture_reading", nrow(rp))
-account("recapture_reading", "occurrence (a reading)", nrow(ev_rr))
 account("recapture_reading", "not read", sum(is.na(read_name$name)))
 
 # Text: articles and documents ----------------------------------------------------------------------------------------
@@ -131,18 +130,26 @@ ar <- st("article_record")
 ev_ar <- ar |> filter(!is.na(name)) |>
   transmute(source = "article", source_table = "article_record", source_key = file, name, position_basis = "none",
             position_kind = "text", weight = 1L)
-account("article_record", "occurrence", nrow(ev_ar))
 account("article_record", "no name", sum(is.na(ar$name)))
 
 dn <- st("document_name")
 ev_dn <- dn |>
   transmute(source, source_table = "document_name", source_key = paste(document, entry, sep = ":"), name, lon, lat,
             position_basis, position_kind, weight = 1L, isor_group = group, region = class_filled)
-account("document_name", "occurrence", nrow(ev_dn))
 account("name_dictionary", "a hand reading, a relation in variant.parquet", nrow(st("name_dictionary")))
 
+# Oracle's place tables: the gazetteer, the coarse grounds, Breiðafjörður (plan 044 §4.1) ---------------------------
+on <- st("oracle_name")
+ev_on <- on |> filter(!is.na(name)) |> mutate(okey = paste(source_table, row, sep = ":"), otab = source_table) |>
+  transmute(source = "oracle", source_table = "oracle_name", source_key = okey, name,
+            lon, lat, position_basis, position_kind, weight = 1L, description, oracle_table = otab,
+            oracle_region = region, sea_area, skiki,
+            square_w = case_when(position_kind != "square" ~ NA_real_, !is.na(mini_part) ~ 0.25, !is.na(square_part) ~ 0.5, TRUE ~ 1),
+            square_h = square_w / 2)
+account("oracle_name", "no name", sum(is.na(on$name)))
+
 # Together, the repair and the key ----------------------------------------------------------------------------------
-ev <- bind_rows(ev_th, ev_ta, ev_pm, ev_ch, ev_lm, ev_dr, ev_rr, ev_ar, ev_dn) |>
+ev <- bind_rows(ev_th, ev_ta, ev_pm, ev_ch, ev_lm, ev_dr, ev_rr, ev_ar, ev_dn, ev_on) |>
   mutate(summary = coalesce(summary, FALSE), text_lost = coalesce(text_lost, FALSE),
          lon = ifelse(position_basis == "none", NA, lon), lat = ifelse(position_basis == "none", NA, lat),
          position_flag = case_when(is.na(lon) | is.na(lat) ~ NA_character_,
@@ -160,6 +167,30 @@ ev <- ev |>
          key = name_key(coalesce(name_repaired, name))) |>
   relocate(name_repaired, key, .after = name)
 
+# A class per spelling (plan 044 §4.2): depths, plotter defaults and placeholders are not place names ------------------
+# A hyphen after one of these is part of a single name (Litli-Banki, Austur-Grænland), not a join of two
+PREFIX <- "(^|\\s)(Litli|Litla|Litlu|Stóri|Stóra|Stóru|Vestur|Austur|Norður|Suður|Ytri|Innri|Nyrðri|Syðri|Mið|Gamli|Gamla|Nýi|Nýja|Efri|Neðri|Fremri)-"
+name_class <- function(x) {
+  x <- trimws(x)
+  case_when(
+    x %in% c("FROM SHIP", "Ekkert valið") ~ "placeholder",
+    grepl("^[+-]?[0-9]+([.,][0-9]+)?(\\s*[-–/]\\s*[0-9]+([.,][0-9]+)?)?\\s*[.]?\\s*(fa|f|fm|faðm[a-zð]*|m)?[.]?$", x, ignore.case = TRUE) ~ "depth",
+    grepl("^(event|mark|wpt|waypoint|punktur|mob|pt)\\s*[0-9]+$", x, ignore.case = TRUE) ~ "default",
+    grepl("[0-9]+([.,][0-9]+)?\\s*(sjm|sml|sm|sjómíl\\w*|mílu\\w*|mílna|míl|mil|nm|km|m)\\b", x, ignore.case = TRUE) |
+      grepl("\\b(N|S|A|V|NV|NA|SV|SA|NNV|NNA|SSV|SSA|VNV|VSV|ANA|ASA)\\.?\\s+(af|úr|frá|við|undan)\\b", x) ~ "description",
+    grepl("[,/]|\\s-\\s|\\b(vestan|austan|norðan|sunnan)\\s+(v\\.|við)", x) |
+      (grepl("[[:lower:]]-[[:upper:]]", x) & !grepl(PREFIX, x)) ~ "composite",
+    TRUE ~ "name")
+}
+ev <- ev |> mutate(class = name_class(name), .after = key)
+not_name <- ev$class %in% c("depth", "default", "placeholder")
+excluded <- ev[not_name, ] |> count(source_table, class)
+for (i in seq_len(nrow(excluded))) account(excluded$source_table[i], paste0("not a place name (", excluded$class[i], ")"), excluded$n[i])
+ev <- ev[!not_name, ]
+final <- ev |> count(source_table)
+for (i in seq_len(nrow(final)))
+  account(final$source_table[i], if (final$source_table[i] == "trackwell_area") "occurrence (summary)" else "occurrence", final$n[i])
+
 # Spellings, with the hand readings as relations ----------------------------------------------------------------------
 dict <- st("name_dictionary") |> filter(!is.na(name), !is.na(reading)) |>
   group_by(name) |> summarise(reading = paste(sort(unique(c(reading, na.omit(reading2)))), collapse = "; "), .groups = "drop")
@@ -168,7 +199,7 @@ syn <- ar |> filter(!is.na(name), !is.na(synonyms)) |>
   mutate(synonym = squeeze(synonym)) |> filter(!is.na(synonym)) |>
   group_by(name = synonym) |> summarise(synonym_of = paste(sort(unique(.data$name)), collapse = "; "), .groups = "drop")
 variant <- ev |> group_by(name) |>
-  summarise(key = first(key), rule = if_else(any(!is.na(name_repaired)), "repaired", "key"),
+  summarise(key = first(key), class = first(class), rule = if_else(any(!is.na(name_repaired)), "repaired", "key"),
             repaired_to = first(name_repaired), n = n(), n_positioned = sum(position_basis != "none" & !summary),
             n_vessel = n_distinct(vessel, na.rm = TRUE), sources = paste(sort(unique(source)), collapse = ", "),
             .groups = "drop") |>
@@ -179,7 +210,7 @@ outcome <- bind_rows(outcomes)
 # Check and write -----------------------------------------------------------------------------------------------------
 staged <- c(trackwell_haul = nrow(th), trackwell_area = nrow(ta), plotter_mark = nrow(pm), chart_name = nrow(ch),
             lmi_name = nrow(lm), drawn_area = nrow(dr), recapture_reading = nrow(rr), article_record = nrow(ar),
-            document_name = nrow(dn))
+            document_name = nrow(dn), oracle_name = nrow(on))
 got <- outcome |> filter(source_table %in% names(staged)) |> group_by(source_table) |> summarise(rows = sum(rows))
 stopifnot("every staged row in one outcome" = all(got$rows == staged[got$source_table]), length(got$rows) == length(staged),
           !anyNA(ev$key), !any(ev$key == ""), !anyDuplicated(ev[c("source_table", "source_key")]))
@@ -192,7 +223,8 @@ cat("spellings", nrow(variant), " keys", n_distinct(variant$key), " lost-letter 
     " with a hand reading", sum(!is.na(variant$reading)), " synonyms", sum(!is.na(variant$synonym_of)), "\n")
 
 inputs <- c(fd_path("staging", "ornefni", paste0(c("trackwell_haul", "trackwell_area", "plotter_mark", "chart_name", "lmi_name",
-  "recapture_place", "recapture_reading", "name_dictionary", "drawn_area", "article_record", "document_name"), ".parquet")),
+  "recapture_place", "recapture_reading", "name_dictionary", "drawn_area", "article_record", "document_name",
+  "oracle_name"), ".parquet")),
   fd_curated("logbook", "station_window.parquet"), fd_curated("logbook", "gear.parquet"))
 write_curated(ev, fd_curated("place_name", "evidence.parquet"), inputs = inputs)
 write_curated(variant, fd_curated("place_name", "variant.parquet"), inputs = inputs)

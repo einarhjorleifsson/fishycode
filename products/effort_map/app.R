@@ -2,14 +2,19 @@
 # Decision 220. Used by server.R (a terminal) and effort_map.R (an R session).
 #
 # Input:  the base grid `grid` (grid.R), the page in the folder `www`; $FISHYDATA/curated/reference/gear.parquet;
-#         effort_tile() from tiles.R, sourced by the caller with this file
+#         effort_tile() from tiles.R, sourced by the caller with this file; $FISHYDATA/curated/place_name/place_name.parquet
+#         (plan 044), read once if it is there
 # Output: effort_map_app(con, grid, www), an httpuv app:
 #   /                                   the page; its query string sets the first view (effort_map.R)
 #   /meta                               the gears (with their hours), the years, the grid's version and the app's, as JSON
+#   /place_names.geojson                the gazetteer's names: a footprint per name that has one (kind footprint) and a
+#                                       label at each name's median position (kind label), with its minimum zoom and
+#                                       level, class, cross-check and candidate synonyms, and a label at each other
+#                                       place of a name that means several (place.parquet); 404 without the gazetteer
 #   /tiles/{z}/{x}/{y}.pbf?preset=fishing|fishing_flow&gid=6,7&y1=2015&y2=2020&px=1
 #                                       one vector tile (tiles.R); gid, y1/y2 and px may be left out
 
-APP_VERSION <- 2L     # what effort_map.R asks of a server it finds on its port
+APP_VERSION <- 4L     # what effort_map.R asks of a server it finds on its port
 PX <- c(0.5, 1, 2)    # the page's cell sizes, in screen pixels per cell
 
 effort_map_app <- function(con, grid, www) {
@@ -21,6 +26,50 @@ effort_map_app <- function(con, grid, www) {
       grid, fd_curated("reference", "gear.parquet")))
     y <- DBI::dbGetQuery(con, sprintf("SELECT min(year) AS y1, max(year) AS y2 FROM read_parquet('%s')", grid))
     list(gears = g, y1 = y$y1, y2 = y$y2, app = APP_VERSION)
+  })
+
+  # The gazetteer's names as GeoJSON, made once: its footprints and a label point per name with a position
+  place_names <- local({
+    f <- fd_curated("place_name", "place_name.parquet")
+    if (!file.exists(f)) return(NULL)
+    p <- read_curated_sf(f)
+    d <- sf::st_drop_geometry(p)
+    parent <- d$name[match(d$parent_key, d$key)]
+    src <- grep("^n_(trackwell|plotter|lmi|sjokort|fiskmerki|article|skjalfandi|isor|qgis)$", names(d), value = TRUE)
+    used <- apply(d[src], 1, function(r) paste(sprintf("%s %s", sub("^n_", "", src[r > 0]), r[r > 0]), collapse = ", "))
+    syn <- fd_curated("place_name", "synonym.parquet")
+    syn_txt <- if (file.exists(syn)) {
+      y <- nanoparquet::read_parquet(syn)
+      y <- rbind(data.frame(key = y$key_a, other = y$name_b, relation = y$relation),
+                 data.frame(key = y$key_b, other = y$name_a, relation = y$relation))
+      y <- y[!is.na(y$other), ]
+      vapply(split(sprintf("%s (%s)", y$other, gsub("_", " ", y$relation)), y$key), function(v) paste(head(v, 6), collapse = "; "), "")
+    } else character()
+    props <- data.frame(key = d$key, name = d$name, n = d$n_positioned, sources = used, terrain = d$terrain,
+                        depth = round(d$depth_m), gear = d$gear, parent = parent, children = d$n_children,
+                        r80 = round(d$r80_km, 1), spellings = d$n_spelling, min_zoom = d$min_zoom, level = d$level,
+                        class = d$class, outcome = d$outcome, families = d$families, n_places = d$n_places,
+                        synonyms = unname(syn_txt[d$key]))
+    foot <- sf::st_sf(props, kind = "footprint", geometry = sf::st_geometry(p))[!sf::st_is_empty(p), ]
+    lx <- if ("label_lon" %in% names(d)) d$label_lon else d$lon      # a square-placed name is written on the sea
+    ly <- if ("label_lat" %in% names(d)) d$label_lat else d$lat
+    has <- !is.na(lx)
+    lab <- sf::st_sf(props[has, ], kind = "label",
+                     geometry = sf::st_sfc(lapply(which(has), function(i) sf::st_point(c(lx[i], ly[i]))), crs = 4326))
+    # a name's other places (two bays called Hlöðuvík) get a label each, at the place's median
+    pl_file <- fd_curated("place_name", "place.parquet")
+    other <- if (file.exists(pl_file)) {
+      pl <- nanoparquet::read_parquet(pl_file); pl <- pl[!pl$main, ]
+      i <- match(pl$key, props$key)
+      sf::st_sf(props[i, ], kind = "label", geometry = sf::st_sfc(lapply(seq_len(nrow(pl)), function(k) sf::st_point(c(pl$lon[k], pl$lat[k]))),
+                                                                  crs = 4326))
+    }
+    lab$place <- 1L
+    if (!is.null(other)) other$place <- pl$place
+    tmp <- tempfile(fileext = ".geojson")
+    sf::st_write(rbind(foot |> transform(place = NA_integer_), lab, other), tmp, driver = "GeoJSON", quiet = TRUE,
+                 layer_options = "COORDINATE_PRECISION=5")
+    paste(readLines(tmp, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
   })
 
   parse_query <- function(q) {
@@ -45,6 +94,9 @@ effort_map_app <- function(con, grid, www) {
     if (path == "/meta") return(reply(200L, as.character(jsonlite::toJSON(c(meta, v = as.numeric(file.mtime(grid))),
                                                                          auto_unbox = TRUE, digits = NA)),
                                        "application/json; charset=utf-8", list(`Cache-Control` = "no-store")))
+    if (path == "/place_names.geojson")
+      return(if (is.null(place_names)) reply(404L, "no gazetteer: build curated/place_name (plan 044)")
+             else reply(200L, place_names, "application/geo+json; charset=utf-8", list(`Cache-Control` = "no-store")))
     m <- regmatches(path, regexec("^/tiles/([0-9]+)/([0-9]+)/([0-9]+)[.]pbf$", path))[[1]]
     if (length(m) != 4) return(reply(404L, "not found"))
     z <- whole(m[2], 0L, 16L)

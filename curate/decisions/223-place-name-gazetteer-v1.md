@@ -1,7 +1,8 @@
 # 223 — The place-name gazetteer, version 1: every source's names under one key, with footprints, seabed and levels
 
 *2026-10-24. The maintainer: "once you are done with staging can you go and proceed to curation?" (plan 043 ask h,
-plan 044). Built, checked and written by Claude (AI), not checked by a person.*
+plan 044). Built, checked and written by Claude (AI), not checked by a person. **Amended 2026-10-24:** rebuilt at
+7f3ad19 on a clean tree, so the stamps say `fd.dirty` false; the names shown on the effort map (below).*
 
 ## What was built
 
@@ -52,5 +53,12 @@ built by name, so `tar_outdated()` is empty.
   - the lanes from the effort map, which are flow-side;
   - the Oracle gazetteers;
   - footprints drawn from the seabed or the effort ridges.
-- **fd.dirty is true** in the stamps: the tree held uncommitted work (this session's and another's) when they were
-  written.
+
+## Seen on the effort map
+
+At the maintainer's "let's take a view": `products/effort_map/app.R` (version 3) serves the gazetteer once as
+`/place_names.geojson`, holding the footprints (1,281) and a label at each name's median position (4,247). The page
+draws them over the effort: outlines, and names with the most used drawn first where labels collide. A "Names" checkbox turns them off,
+and a click on a name shows its counts, sources, spellings, terrain word, depth, gear, spread and the broader name it
+lies in. Popups now open in front of the panel. Checked in the browser: off Húnaflói the names sit on the effort's
+lanes and edges. A plotter depth mark ("63-4fm") shows that the number rule misses depth ranges (TODO 144).

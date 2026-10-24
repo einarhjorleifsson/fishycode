@@ -10,7 +10,8 @@
 # modification time. A mark in several files is a row in each.
 # - The three large GPX files lost the Icelandic letters: "?" stands in their place. `text_lost` flags a "?" in the
 #   name, `comment_text_lost` in the comment. The TimeZero export (2021) keeps the letters (ask c of plan 043).
-# - `name_is_number`: a name that is a number, with or without a unit (depths or marks rather than names).
+# - `name_is_number`: a name that is a number or a range of numbers, with or without a unit ("120", "63-4fm", "350-450":
+#   depths or marks rather than names; ranges since plan 044 §4.2).
 # - `time_placeholder`: dated 1984-12-31, the plotter's date for a mark with none set (49,348 marks).
 #   `time_suspect`: any other time before 1985 or after 2022-11-10, the last delivery (8,284 marks, to 2033).
 # - TimeZero's geometry, decoded here and verified on the 191 marks of the same name in `nofn og flok.gpx` (within
@@ -29,7 +30,8 @@ GPX <- sort(list.files(DIR, "[.]gpx$", recursive = TRUE), method = "radix")
 TZX <- file.path("GS_nofn-og-flok_2022-10-18", c("Nöfn", "Nöfn og flök"), "UserObjects.json")
 LAST <- as.POSIXct("2022-11-10 23:59:59", tz = "UTC")
 squeeze <- function(x) { x <- gsub("\\s+", " ", trimws(x)); x[x %in% ""] <- NA; x }
-is_number <- function(x) grepl("^[+-]?[0-9]+([.,][0-9]+)?\\s*(fa|f|fm|m)?[.]?$", trimws(x), ignore.case = TRUE)
+is_number <- function(x) grepl("^[+-]?[0-9]+([.,][0-9]+)?(\\s*[-–/]\\s*[0-9]+([.,][0-9]+)?)?\\s*(fa|f|fm|faðm[a-zð]*|m)?[.]?$",
+                                trimws(x), ignore.case = TRUE)
 
 # GPX ----------------------------------------------------------------------------------------------------------------
 gpx <- bind_rows(lapply(GPX, function(f) {
