@@ -4,6 +4,7 @@
 # is a seed for the tools chapter, not one.
 project:
   type: book
+  pre-render: fetch_figures.R   # the book's images, from $FISHYDATA
 
 book:
   title: "From pings to effort and catch"

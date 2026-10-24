@@ -13,6 +13,9 @@ _book/
 /.quarto/
 **/*.quarto_ipynb
 
+# The book's images, copied from $FISHYDATA at render (docs/fetch_figures.R)
+docs/figures/fd/
+
 # Data never lives in this repo. It lives under $FISHYDATA — see R/paths.R.
 # These patterns are belt-and-braces: the failure being designed out is a
 # 360 GB tree accumulating inside a git repo again.
