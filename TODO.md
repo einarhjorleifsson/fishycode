@@ -1277,3 +1277,18 @@ late), and which are positions the impossible-ping filter keeps. The effort is s
 
 **check:** a decision says how a haul window is bounded where the track leaves the gear's speed range, and what is
 done with a position jump inside a window; the counts above are rerun after it.
+
+## 144. Place names after version 1: the originals, two dumps, the lanes, the Oracle gazetteers, a person's read
+**status:** open · **needs: maintainer** — plan 043 asks a and f; whether the effort lanes go flow-side · **see:**
+`curate/plans/044-place-name-gazetteer.md` §2, `curate/plans/043-place-names-staged.md` §6, decisions 221-223
+
+Staged (decision 222) and curated as version 1 (decision 223; Claude's build, not checked by a person). Open:
+- the originals still in `~/stasi/ornefni` (plan 043 ask a): moved under the one-home rule, or the ornefni repo's
+  git as the home of `data-md/` and the hand-made workbooks, with raw holding snapshots;
+- `fiskar.ornefni` and `fiskmerki.endurheimtur` dumped as single tables (ask f);
+- the lanes (plan 043 §3.4): effort since 2023 under each name's tows, which reads the AIS trail, so flow side;
+- the Oracle gazetteers (`ops$sigfus.ornefni`, `afli.skikar`, `brei_nofn`) as sources of `curated/place_name/`;
+- footprints drawn from the seabed's feature or the effort ridges, not the positions alone;
+- a person's read of the keys: spellings the key does not join (Grovens, Gróves, Gróens), abbreviations.
+
+**check:** each item done and recorded in a decision, or dropped by the maintainer, and plan 044's status agrees.

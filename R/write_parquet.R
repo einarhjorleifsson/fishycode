@@ -27,3 +27,23 @@ write_parquet_group <- function(d, path) {
   DBI::dbExecute(con, sprintf("COPY grp TO '%s' (FORMAT parquet)", path))
   invisible(path)
 }
+
+# write_parquet_sf() — an sf frame to a staging parquet: the geometry as WKB under its own column name, and that name
+# and the CRS in the file's metadata (fd.geometry, fd.crs) as write_curated() records them, so read_curated_sf()
+# reads it back. No provenance stamps: write_curated() keeps those, and its guard, for curated/ (plan 043).
+write_parquet_sf <- function(d, path) {
+  stopifnot(inherits(d, "sf"))
+  geom <- attr(d, "sf_column")
+  crs  <- sf::st_crs(d)$wkt
+  wkb  <- unclass(sf::st_as_binary(sf::st_geometry(d)))
+  d <- as.data.frame(sf::st_drop_geometry(d))
+  d[[geom]] <- wkb
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb::duckdb_register(con, "grp", d)
+  kv <- c("fd.geometry" = geom, "fd.crs" = crs)
+  meta <- paste(sprintf("%s: %s", shQuote(names(kv), type = "sh"), shQuote(unname(kv), type = "sh")), collapse = ", ")
+  DBI::dbExecute(con, sprintf("COPY grp TO %s (FORMAT parquet, KV_METADATA {%s})", shQuote(path, type = "sh"), meta))
+  invisible(path)
+}

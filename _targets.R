@@ -57,6 +57,8 @@ fro_files <- sort(list.files(fd_raw("external", "fro"), "^vid-.*[.]csv$", full.n
 mbl_photo_files <- input_files("raw", "external", "skipaskra", "jpg", pattern = "[.]jpg$")
 mbl_photo_recovered <- sort(list.files(fd_raw("external", "skipaskra"), "^mbl-photo-recover_.*[.]csv$", full.names = TRUE),
                             method = "radix")
+# The place names of the ornefni repo (plan 043, decision 221), every file its adapters read.
+ornefni_files <- input_files("raw", "external", "ornefni", pattern = "[.](csv|xlsx|gpx|json|shp|dbf|gpkg|pdf|md)$")
 
 # produces() and frozen_input() are in R/source_script.R, shared with _targets_once.R.
 # source_script() sources with encoding = "UTF-8", which is not optional: the scripts
@@ -286,6 +288,51 @@ list(
   tar_target(mbl_photo, {
     mbl_photo_raw
     produces("sources/mbl/photo.R", fd_staging("mbl", "photo.parquet"))
+  }, format = "file"),
+
+  # The place names of fishing grounds, one source-shaped table per dataset of the ornefni repo (plan 043). Nothing in
+  # the flow reads them; curate/place_name_evidence.R does.
+  tar_target(ornefni_raw, ornefni_files, format = "file"),
+  tar_target(ornefni_trackwell_haul, { ornefni_raw
+    produces("sources/ornefni/trackwell_haul.R", fd_staging("ornefni", "trackwell_haul.parquet")) }, format = "file"),
+  tar_target(ornefni_trackwell_area, { ornefni_raw
+    produces("sources/ornefni/trackwell_area.R", fd_staging("ornefni", "trackwell_area.parquet")) }, format = "file"),
+  tar_target(ornefni_plotter_mark, { ornefni_raw
+    produces("sources/ornefni/plotter_mark.R", fd_staging("ornefni", "plotter_mark.parquet")) }, format = "file"),
+  tar_target(ornefni_plotter_track, { ornefni_raw
+    produces("sources/ornefni/plotter_track.R", fd_staging("ornefni", "plotter_track.parquet")) }, format = "file"),
+  tar_target(ornefni_chart_name, { ornefni_raw
+    produces("sources/ornefni/chart_name.R", fd_staging("ornefni", "chart_name.parquet")) }, format = "file"),
+  tar_target(ornefni_lmi_name, { ornefni_raw
+    produces("sources/ornefni/lmi_name.R", fd_staging("ornefni", "lmi_name.parquet")) }, format = "file"),
+  tar_target(ornefni_recapture_place, { ornefni_raw
+    produces("sources/ornefni/recapture_place.R", fd_staging("ornefni", "recapture_place.parquet")) }, format = "file"),
+  tar_target(ornefni_recapture_reading, { ornefni_raw
+    produces("sources/ornefni/recapture_reading.R", fd_staging("ornefni", "recapture_reading.parquet")) }, format = "file"),
+  tar_target(ornefni_name_dictionary, { ornefni_raw
+    produces("sources/ornefni/name_dictionary.R",
+             fd_staging("ornefni", "name_dictionary.parquet"), fd_staging("ornefni", "tag_word.parquet")) }, format = "file"),
+  tar_target(ornefni_fiskislod, { ornefni_raw
+    produces("sources/ornefni/fiskislod.R", fd_staging("ornefni", "fiskislod.parquet"),
+             fd_staging("ornefni", "drawn_area.parquet")) },
+    format = "file"),
+  tar_target(ornefni_article_record, { ornefni_raw
+    produces("sources/ornefni/article_record.R", fd_staging("ornefni", "article_record.parquet")) }, format = "file"),
+  tar_target(ornefni_document_name, { ornefni_raw
+    produces("sources/ornefni/document_name.R", fd_staging("ornefni", "document_name.parquet")) }, format = "file"),
+  # The place-name gazetteer from them (plan 044): every occurrence of a name, the spellings under one key, and one
+  # row per key. Trackwell's hauls take their gear from the logbook; the names go on no haul.
+  tar_target(place_name_evidence, {
+    ornefni_trackwell_haul; ornefni_trackwell_area; ornefni_plotter_mark; ornefni_plotter_track; ornefni_chart_name
+    ornefni_lmi_name; ornefni_recapture_place; ornefni_recapture_reading; ornefni_name_dictionary; ornefni_fiskislod
+    ornefni_article_record; ornefni_document_name; station_window; logbook_gear
+    produces("curate/place_name_evidence.R", fd_curated("place_name", "evidence.parquet"),
+             fd_curated("place_name", "variant.parquet"), fd_curated("place_name", "outcome.parquet"))
+  }, format = "file"),
+  tar_target(place_name_gebco, fd_raw("aux", "gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif"), format = "file"),
+  tar_target(place_name, {
+    place_name_evidence; place_name_gebco
+    produces("curate/place_name.R", fd_curated("place_name", "place_name.parquet"))
   }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
