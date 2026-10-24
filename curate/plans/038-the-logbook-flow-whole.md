@@ -3,8 +3,8 @@
 **status:** proposal — written 2026-10-22 at the maintainer's request; nothing built or changed; the baseline measured
 read-only on the store as built at f05de18 (§1); the split with plan 039 agreed between the sessions (§0) and
 confirmed; every ask of §9 answered 2026-10-23 (decision 191; TODO 122); step 1b coded, checked on a scratch store, not
-built (decision 203); §6-§7 rewritten 2026-10-23 for decision 215 (the product is the link); step 1c's rule 1
-built, rule 2 coded (decisions 216, 217) · **2026-10-22** ·
+built (decision 203); §6-§7 rewritten 2026-10-23 for decision 215 (the product is the link); step 1c's two
+rules built (decisions 216, 217; the complete rebuild, decision 218) · **2026-10-22** ·
 **see:** `docs/one_flow.qmd` (the cascade and what is built where),
 `docs/grammar.qmd`, TODO 121 and decisions 155, 160 and 165-174, plans 019, 020, 024, 026, 027, 031, 036, 037, 039 and 040
 
@@ -432,7 +432,8 @@ The audit sums the outcomes to the logged total of each year. Effort is unchange
    six known cases are flagged; the other four have
    no linked landing. **Rule 2 coded 2026-10-23** (decision 217): on a trip with no linked landing, catch more than 10
    times the largest landing of its species, or of its vessel where 50 landing records stand behind it, and 1 t more
-   (28 pairs, 22.3 kt, the other four among them); built with the complete rebuild. Left in this step: the landings
+   (28 pairs, 22.3 kt, the other four among them); built with the complete rebuild (decision 218). Left in this
+   step: the landings
    that hold none of the species (the crosswalk), measured before it is coded.
 2. **The trip:** first `trip_reconciled`'s multi-voyage case fixed (ask b; decision 193, built 2026-10-23 in decision
    205); then

@@ -1,7 +1,8 @@
 # 217 — On a trip with no linked landing, catch above the largest landing of its species or of its vessel is flagged
 
 *2026-10-23. The maintainer chose the witnesses ("both witnesses"); the measurement, the code and every number below
-are by Claude (AI), not checked by a person. A second rule of decision 216's correction; plan 038 §8 step 1c.*
+are by Claude (AI), not checked by a person. A second rule of decision 216's correction; plan 038 §8 step 1c. Built
+with the complete rebuild of decision 218.*
 
 ## Why a second rule
 
@@ -55,4 +56,7 @@ real `$FISHYDATA` was written. `$FISHYDATA/archive/2026-10-todo126-ais-check/18*
 
 ## Built
 
-With the complete rebuild of decision 218.
+With the complete rebuild of decision 218, at 916b901. `catch_flag` holds 88,113 rows, rule 2's 275 as on the scratch
+store. All 316.0 kt the two rules flag is in one outcome. 187,184.4 t are on the catch, equal to the flag in every year
+of the station's window under both approaches. 69.3 t are on five (station, species) rows with no window. 128,753.6 t
+are logged before 2007, where no unit exists.

@@ -1,6 +1,6 @@
 id: catch_landing_contradicted
 title: logged catch the landings contradict (more than 10 times the trip's landing of the species, or with no landing the largest landing of the species or of the vessel, and at least 1 t more), flagged and kept on the fixes, marked
-status: rule 1 built 2026-10-23 (decision 216); rule 2 coded 2026-10-23, built with the complete rebuild (decision 217); plan 038 §8 step 1c
+status: built 2026-10-23, rule 1 (decision 216) and rule 2 (decision 217, with the complete rebuild of decision 218); plan 038 §8 step 1c
 applies_to:
   - curated/logbook/catch_flag.parquet   # one row per flagged (station, species): the flag, never a corrected value
   - curated/ais/catch                    # kg_flagged: the flagged kilograms of each row, shared as the kilograms are

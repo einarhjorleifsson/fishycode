@@ -190,16 +190,12 @@ Every script in a targets project is on one of three sides, and says which in a 
   with `win_opened_by` and `ping_lost` (decision 091), `window_s` for the ±10 min fishing speed (decision 093), and the effort, the
   fishing cascade, the catch units, the landing links and the stable units of 2026.10.14.6-.14 (decisions 099-102), and the names by
   output shape of 2026.10.19.2 (`rb_create_*()`, `rb_add_*()`, port calls; decision 147), and `rb_add_trip_time()` of
-  2026.10.22.2 (a trip's departure and return from ranked witnesses; decisions 173, 174): so ≥ 2026.10.22.2. The data on disk were built with ramb 2026.10.15.1: every
-  target the rebuild of 2026-10-16 reached (decision 112), from the raw readers and plan 016's vessel tables to
-  `ais_catch`, the foreign vessel tables of 2026-10-17 (decision 114), and both halves of the rebuild of 2026-10-17: the logbook, landings and vessel half (decision 127), and the AIS chain on the STK key redone that day (decision 129). The register, its four readers (`vessel_sign`, `vessel_class`, `vessel_year`, `vessel`) and the AIS chain through `ais_catch` were rebuilt again on 2026-10-18 and 2026-10-19, at e2f741f (decision 144), with the same ramb. The AIS flow from `port_call` through `ais_catch`, with its checks, was rebuilt once more on 2026-10-19 at 72183bd with ramb 2026.10.19.2, when the tables took ramb's keys (decision 149). On 2026-10-20, at c7fa8c7 with the same ramb, the AIS chain from `ais_ping_union` through `ais_catch` and the logbook's `lid_map`, `logbook_gear`, `station_window` and `catch_by_species_trip`, with their checks (22 targets), were rebuilt for plan 034 and the logger exclusion (decision 154); `voyage_gear` through `ais_catch` and the checks again that evening at 5cec0f4 (decision 155). On 2026-10-21, at de25239 (452f83e in the published history, decision 158) with the same ramb, `logbook` (with `afli_end_longitude`) and everything after it through `ais_catch` and the checks (21 targets) were rebuilt for the placeholder set times and afli's end longitude (decision 158); and at f05de18 the same 20 for decision 160, adb only from 2025-11-19. On 2026-10-22, at 003b194 with ramb 2026.10.22.2 (0c3020b, installed from GitHub), 62 targets were rebuilt in three steps (decision 180): the port codes and the vessel register from their tables (175), lods in its own units (169), adb from its tables (165, 170), the kvoti and ops$einarhj re-dump, the departure and return of every trip (`trip_reconciled`, 173-174), the AIS chain through `ais_catch` and its checks, and afli's sent layer for the first time; `tar_outdated()` is empty since. On 2026-10-23, at f7c82eb with the same ramb, the logbook chain (`logbook` through `ais_catch` and its
-  checks, 20 targets) was rebuilt for the fate tables, every landing in the link and the reconciled trip across voyages
-  (decision 205); `tar_outdated()` is empty again. That evening, at 8ee3be2 with the same ramb, the flag on catch the
-  landing contradicts, `ais_catch` (with `kg_flagged`) and the allocation audit were built (decision 216); `tar_outdated()`
-  is empty since. The geometry and lookup targets it did not reach (`ports_iceland`, `ports_all`, `dictionary`, `shapes_raw`,
-  `shapes`, `area_h3`, `lookups`) are from the rebuild of 2026-10-13 with 2026.10.13.3 (decision 086). In the `once`
-  project the STK key and its checks are the redo of 2026-10-17 (decision 128), and the register's history the build of 2026-10-18 at e2f741f (decision 144); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the towing-stretch pairing (decision 092), which nothing here
-  calls.
+  2026.10.22.2 (a trip's departure and return from ranked witnesses; decisions 173, 174): so ≥ 2026.10.22.2. The data on disk: every
+  target of the main project was rebuilt from raw on 2026-10-23 at 916b901 with ramb 2026.10.22.2 (0c3020b), and
+  `tar_outdated()` is empty since (decision 218; the partial rebuilds before it are recorded in decisions 086-216). In
+  the `once` project the STK key and its checks are the redo of 2026-10-17 (decision 128), and the register's history
+  the build of 2026-10-18 at e2f741f (decision 144); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the
+  towing-stretch pairing (decision 092), which nothing here calls.
   `targets` does not track ramb, so a ramb change shows up in no
   `tar_outdated()`: compare fingerprints (`R/fingerprint.R`) before and after a rebuild.
 

@@ -3,7 +3,10 @@
 *2026-10-23. Plan 021 step 4, TODO 65. The maintainer approved the four changes on 2026-10-23 (decision 115's note of
 that day). The code, the checks and this record are Claude's (AI), written in a session started from another Claude
 session, and have not been checked by a person. Checked on a scratch `$FISHYDATA` only. Nothing was built in the store,
-and no vid was allocated: the rebuild and the first allocation are the maintainer's (commands below).*
+and no vid was allocated: the rebuild and the first allocation are the maintainer's (commands below). **Built
+2026-10-24** with the complete rebuild the maintainer asked for (decision 218): the crosswalk 655,202 rows, its review
+2,611, as the scratch result; the dry run 379,912 hulls (200001-579912, 0 inherited). Nothing allocated: the
+commands below from the dry run on.*
 
 ## Chosen
 

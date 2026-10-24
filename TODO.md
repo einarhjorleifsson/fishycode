@@ -190,8 +190,9 @@ Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
 foreign catch on the record path where a logbook exists.
 
 ## 65. A vessel registry for every ping, whatever the flag
-**status:** in progress · **needs: maintainer** — the go for the crosswalk's rebuild and the first
-`allocate_vids(dry_run = FALSE)`, by the commands in decision 190; the Directorate of Fisheries (MMSI, §6 d) and PAME
+**status:** in progress · **needs: maintainer** — the first `allocate_vids(dry_run = FALSE)`, by decision 190's
+commands from the dry run on (the crosswalk was rebuilt with the complete rebuild, decision 218: 655,202 rows, the
+dry run 379,912 hulls); the Directorate of Fisheries (MMSI, §6 d) and PAME
 (ASTD, §6 h) have not answered · **see:** `curate/plans/021-vessel-registry-for-every-ping.md`,
 plans 008, 016 and 017, decisions 114-115, 118 and 190, TODO 15 and 25
 
@@ -950,7 +951,7 @@ as logbook stations in plan 041, parked (TODO 136). Decision 215: the main outpu
 events, the split the user's step with `fishing` and `fishing_flow` as presets; L5 and L6 rewritten for it (plan 038
 §6-§7), the work in its steps 1, 3 and 6. Step 1c built 2026-10-23 (decision 216): catch the trip's landing
 contradicts (over 10 times the landed, and 1 t more; 8,703 trip-species pairs, 294 kt) flagged, and carried onto
-the fixes as `kg_flagged`; rule 2 coded (decision 217), catch above the largest landing of
+the fixes as `kg_flagged`; rule 2 built (decision 217), catch above the largest landing of
 its species or vessel on trips with no linked landing. Left in 1c: the landings that hold none of the species.
 
 **check:** each of its phases built, or declined in a decision; the plan executed, parked or abandoned in its header.
@@ -1185,7 +1186,7 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
 - the voyage as their window in the flow, under both approaches; STOKKUR's 8.8 kt of net and line catch, today on no
   fix (6.7 kt) or the vessel's month (1.6 kt) under `fishing`, measured onto its trip;
 - decision 210's implausible-catch flag: built where the trip has a linked landing (decision 216), two of
-  STOKKUR's six entry errors; the other four by rule 2 (decision 217, coded), on trips with no linked landing;
+  STOKKUR's six entry errors; the other four by rule 2 (decision 217, built), on trips with no linked landing;
 - the tour app read with t4 = the spot time (decision 210's build);
 - the windows, fishing fixes and catch traced before and after.
 
@@ -1205,3 +1206,21 @@ Claude's measure, 2026-10-23, not checked by a person:
   nets: 2.8-4.6 % of their catch on fixes in port).
 
 **check:** each decided (a correction, a twin rule, a speed range) or declined in a decision.
+
+## 139. Two steps whose result depends on the run: ties in `trip_reconciled` and `voyage_gear`
+**status:** open · **see:** decision 218, `$FISHYDATA/archive/2026-10-23-complete-rebuild/` (`ties.R`,
+`trip_reconciled_runs.R`), TODO 121
+
+The complete rebuild of 2026-10-23 changed these two steps' outputs with identical inputs and code (decision 218,
+Claude's, not checked by a person). Each picks one of several equal candidates, and the database may pick another on
+another run:
+- `curate/trip_reconciled.R`'s STK witness, `row_number() … ORDER BY s.T1 DESC`: on 36 of 730,505 trips, two
+  latest-starting STK voyages disagree on the return, and 32 of those take their T2 from STK;
+- `curate/voyage_gear.R`'s `arg_max(gid, n)`: 506 of 825,075 voyages with a logbook vote tie (208 across gear
+  classes), and 8 of 185,515 in the landings vote. `gear_class`, `s1` and `s2` are separate `arg_max`es, so on a
+  tie they can come from different gears.
+
+Downstream, three trail months and two catch files moved. The choice is the step's owner's: a fixed tie-break (which
+voyage, which gear), or a tie read as no decision (`ambiguous`, as `n_rng` already does for the speed range).
+
+**check:** each step run twice gives identical files, and the rule is written in the step's header.

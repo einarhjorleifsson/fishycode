@@ -3152,8 +3152,9 @@ tables:
       landing where 50 landing records or more stand behind it; decision 217). A flag, never a corrected value: the
       kilograms stay in logbook_catch and on the fixes, where ais_catch carries them as `kg_flagged`. The landings
       are those lid_map links to the trip, with the landing's own schema. Duplicate twins and catch let go (negative
-      codes) are left out. A linked landing that holds none of the species is not judged here. Rule 1 built
-      2026-10-23 (87,838 rows on 8,703 trip-species pairs, 294 kt); rule 2 adds 275 rows on 28 pairs, 22.3 kt.
+      codes) are left out. A linked landing that holds none of the species is not judged here. Built
+      2026-10-23 (decision 218): rule 1 87,838 rows on 8,703 trip-species pairs, 294 kt; rule 2 275 rows on 28 pairs,
+      22.3 kt.
     constraints:
       - assert: flag <> 'landing_contradicts' OR (witness = 'trip_landing' AND trip_kg_landed > 0 AND trip_kg_logged > 10 * trip_kg_landed AND trip_kg_logged - trip_kg_landed >= 1000)
         description: Rule 1's margin.
