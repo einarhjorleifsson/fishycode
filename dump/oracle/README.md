@@ -12,7 +12,7 @@ The schemas, in the order a full run takes them: asfis, taxon, fs_ufs, uv, rdbes
 orri, vessel, channel, ops_einarhj, ops_sigfus, merki, logbook, fiskifelagid, agf, ask, vor, kvoti, kvotix, adb, fs_afladagbok,
 afli, fs_afli, fiskmerki, biota, stk (dwstg, fiskist, fiskifelagid, vor and kvotix first run 2026-10-21 on the server for plan 037's phase 0; simalinu that
 evening through RJDBC from the Mac; decision 162; ops_sigfus first run 2026-10-23 on the server, its 47 tables whole, 60 of its
-62 views invalid in Oracle, ORA-04063; merki and fiskmerki added 2026-10-24 for the place names, TODO 144, not yet run). Each is one script,
+62 views invalid in Oracle, ORA-04063; merki and fiskmerki added and run 2026-10-24 for the place names, decision 225; fiskmerki skips two views). Each is one script,
 `dump/oracle/<schema>.R`, which says what it leaves out and why. `catalogue.R` and `code.R` are not schemas: the first
 lists what else Oracle holds (section 13), the second keeps the SQL behind each dumped schema (section 14).
 

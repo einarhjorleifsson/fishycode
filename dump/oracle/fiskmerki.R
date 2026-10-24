@@ -22,8 +22,14 @@
 #   - finnendur 3,250 (finders), the *_jn journals, and code tables.
 # - Persons: finnendur and finnendur_texti hold persons (names, kennitala, addresses, letters). Read them by counts and
 #   columns only (decision 159).
+# - Left out, both views over tables dumped whole (tables, not views: AGENTS.md), after the first run of 2026-10-24:
+#   - rafaudkenni_summur_v fails inside Oracle (ORA-01722, invalid number), with its numbers fetched as text too;
+#   - rafgogn_v, over rafgogn's 19.8 M readings, gave no row in ten minutes and was stopped. Its SQL text is in
+#     _code/ (dump/oracle/code.R).
+#   That run was stopped there and finished with --resume, which kept the 48 files it had written.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 
 con <- dump_connect()
-dump_oracle_schema(con, "fiskmerki", fd_raw("oracle", "fiskmerki"), script = "dump/oracle/fiskmerki.R")
+dump_oracle_schema(con, "fiskmerki", fd_raw("oracle", "fiskmerki"), skip = c("rafaudkenni_summur_v", "rafgogn_v"),
+                   script = "dump/oracle/fiskmerki.R")

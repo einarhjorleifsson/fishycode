@@ -2,8 +2,9 @@
 # Side: preprocessing (place names). See plan 044; plan 043; decision 222.
 #
 # Input:  staging/ornefni/{trackwell_haul, trackwell_area, plotter_mark, plotter_track, chart_name, lmi_name,
-#         recapture_place, recapture_reading, name_dictionary, drawn_area, fiskislod, article_record,
-#         document_name, oracle_name}.parquet; curated/logbook/{station_window, gear}.parquet (the gear of Trackwell's hauls)
+#         recapture_place, recapture_reading, tag_recapture, tag_release, name_dictionary, drawn_area, fiskislod,
+#         article_record, document_name, oracle_name, channel_name, uv_area}.parquet; curated/logbook/{station_window,
+#         gear}.parquet (the gear of Trackwell's hauls)
 # Output: curated/place_name/evidence.parquet - one row per occurrence, keyed on (`source_table`, `source_key`)
 #         curated/place_name/variant.parquet  - one row per spelling (`name`), with its key
 #         curated/place_name/outcome.parquet  - every staged row in one outcome: an occurrence, or not and why
@@ -12,9 +13,12 @@
 # a polygon's point on surface (`lon`, `lat`, as the row's basis), its time and vessel. `position_flag` marks a
 # position kept as given but used for nothing: `impossible` (latitude over 90 or longitude over 180: 22 of Trackwell's
 # hauls) or `at zero` (both within a degree of 0). Not occurrences, each counted:
-# the plotter's numbers, symbols ("!!") and unnamed marks, placeholders ("FROM SHIP", "Ekkert valið"), LMÍ's land and lake names, the
-# recapture texts (descriptions: their hand readings are the occurrences), the fiskislóð hulls (derived from those
-# readings) and the plotter's tracks (no names). Trackwell's picklist summary (trackwell_area) is an occurrence per name
+# the plotter's numbers, symbols ("!!") and unnamed marks, placeholders ("FROM SHIP", "Ekkert valið"), LMÍ's land and
+# lake names, the 2022 extract of the recaptures (recapture_place: the dump's tag_recapture holds them), a second hand
+# reading of a recapture, a finder's text with no name matched, or relative to one, or naming two, the fiskislóð hulls
+# (derived from the readings), the plotter's tracks (no names), and a record entered twice (an inspector's sample of a
+# Trackwell haul, a tagging group at its own channel station, a name picked from orri at orri's position). A recapture
+# is one occurrence at most. Trackwell's picklist summary (trackwell_area) is an occurrence per name
 # with `summary` TRUE: it repeats the hauls, so no count or position statistic reads it.
 #
 # The key groups spellings of one place: lower case, accents and Icelandic letters folded (ð d, þ th, æ ae), everything
@@ -26,7 +30,8 @@
 #
 # `class` (plan 044 §4.2): each spelling is a `name`, a `composite` (two names, or a name and a qualifier such as
 # "vestan v."; a hyphen after Litli-, Austur- and the like is part of one name), a `description` (a distance or a bearing: "14 sjm blettur V klöpp"), or not a place name: a `depth`
-# (a number or a range, with or without a unit), a plotter's `default` label ("Event 0261") or a `placeholder`. The last
+# (a number or a range, with or without a unit), a plotter's `default` label ("Event 0261") or a `placeholder`
+# ("FROM SHIP", "Ekkert valið", a survey's "hringferð"). The last
 # three are counted in outcome.parquet and left out. Oracle's square-placed rows carry the square's size (`square_w`,
 # `square_h`, degrees), so the gazetteer can draw a coarse ground from its squares.
 #
@@ -115,15 +120,29 @@ ev_dr <- tibble(source = "qgis", source_table = "drawn_area", source_key = as.ch
                 lon = xy[, 1], lat = xy[, 2], position_basis = "recorded", position_kind = "drawn", weight = 1L)
 account("fiskislod", "derived from the recapture readings", nrow(st_sf("fiskislod")))
 
-# Recaptures: the hand readings are the names, the recapture gives the position ---------------------------------------
-rp <- st("recapture_place"); rr <- st("recapture_reading")
-read_name <- rr |> mutate(name = coalesce(reading, fiskislod)) |>
-  left_join(rp |> select(recapture_id, lon, lat, position_basis), by = "recapture_id")
-ev_rr <- read_name |> filter(!is.na(name)) |>
+# Tags: the hand readings name a recapture, the dump places it; the tagging groups' names ------------------------------
+# One occurrence per recapture: its reading in ornefni_endurheimtur.xlsx, else trial2's fiskislóð, else its text matched
+# to a name below. Both workbooks read the ornefni repo's extracts of 2022 (recapture_place), whose recaptures are all
+# in the dump (tag_recapture): the dump gives the position, as it stands now.
+rp <- st("recapture_place"); rr <- st("recapture_reading"); tr <- st("tag_recapture"); tl <- st("tag_release")
+stopifnot("the 2022 extract's recaptures are in the dump" = all(rp$recapture_id %in% tr$recapture_id[tr$recapture_table == "endurheimtur"]))
+pos_tr <- tr |> filter(recapture_table == "endurheimtur") |>
+  select(recapture_id, lon, lat, position_basis, position_kind, square_w, square_h, time)
+read_name <- rr |> mutate(name = if_else(file == "ornefni_endurheimtur.xlsx", reading, fiskislod),
+                          first = file == "ornefni_endurheimtur.xlsx")
+read_first <- read_name$recapture_id[read_name$first & !is.na(read_name$name)]
+second <- !read_name$first & !is.na(read_name$name) & read_name$recapture_id %in% read_first
+ev_rr <- read_name[!is.na(read_name$name) & !second, ] |> left_join(pos_tr, by = "recapture_id") |>
   transmute(source = "fiskmerki", source_table = "recapture_reading", source_key = paste(file, recapture_id, sep = ":"),
-            name, lon, lat, position_basis, position_kind = "point", weight = 1L)
-account("recapture_place", "a description, read in recapture_reading", nrow(rp))
+            name, lon, lat, position_basis, position_kind, square_w, square_h, time, weight = 1L)
+account("recapture_place", "the 2022 extract of tag_recapture, read in recapture_reading", nrow(rp))
 account("recapture_reading", "not read", sum(is.na(read_name$name)))
+account("recapture_reading", "a second reading of a recapture read in ornefni_endurheimtur.xlsx", sum(second))
+read_ids <- unique(read_name$recapture_id[!is.na(read_name$name)])
+
+ev_tl <- tl |>
+  transmute(source = "fiskmerki", source_table = "tag_release", source_key = as.character(link_id), name, lon, lat,
+            position_basis, position_kind, time, weight = 1L, square_w, square_h)
 
 # Text: articles and documents ----------------------------------------------------------------------------------------
 ar <- st("article_record")
@@ -148,8 +167,14 @@ ev_on <- on |> filter(!is.na(name)) |> mutate(okey = paste(source_table, row, se
             square_h = square_w / 2)
 account("oracle_name", "no name", sum(is.na(on$name)))
 
+# channel: the fishing-area names on MFRI's sampling stations (plan 044 §4.1) -----------------------------------------
+cn <- st("channel_name")
+ev_cn <- cn |>
+  transmute(source = "channel", source_table = "channel_name", source_key = as.character(station_id), name, lon, lat,
+            position_basis, position_kind, time = station_date, weight = 1L, square_w, square_h, channel_categories = categories)
+
 # Together, the repair and the key ----------------------------------------------------------------------------------
-ev <- bind_rows(ev_th, ev_ta, ev_pm, ev_ch, ev_lm, ev_dr, ev_rr, ev_ar, ev_dn, ev_on) |>
+ev <- bind_rows(ev_th, ev_ta, ev_pm, ev_ch, ev_lm, ev_dr, ev_rr, ev_tl, ev_ar, ev_dn, ev_on, ev_cn) |>
   mutate(summary = coalesce(summary, FALSE), text_lost = coalesce(text_lost, FALSE),
          lon = ifelse(position_basis == "none", NA, lon), lat = ifelse(position_basis == "none", NA, lat),
          position_flag = case_when(is.na(lon) | is.na(lat) ~ NA_character_,
@@ -173,7 +198,7 @@ PREFIX <- "(^|\\s)(Litli|Litla|Litlu|Stóri|Stóra|Stóru|Vestur|Austur|Norður|
 name_class <- function(x) {
   x <- trimws(x)
   case_when(
-    x %in% c("FROM SHIP", "Ekkert valið") ~ "placeholder",
+    x %in% c("FROM SHIP", "Ekkert valið") | tolower(x) %in% c("hringferð") ~ "placeholder",   # a survey's round trip
     grepl("^[+-]?[0-9]+([.,][0-9]+)?(\\s*[-–/]\\s*[0-9]+([.,][0-9]+)?)?\\s*[.]?\\s*(fa|f|fm|faðm[a-zð]*|m)?[.]?$", x, ignore.case = TRUE) ~ "depth",
     grepl("^(event|mark|wpt|waypoint|punktur|mob|pt)\\s*[0-9]+$", x, ignore.case = TRUE) ~ "default",
     grepl("[0-9]+([.,][0-9]+)?\\s*(sjm|sml|sm|sjómíl\\w*|mílu\\w*|mílna|míl|mil|nm|km|m)\\b", x, ignore.case = TRUE) |
@@ -187,9 +212,166 @@ not_name <- ev$class %in% c("depth", "default", "placeholder")
 excluded <- ev[not_name, ] |> count(source_table, class)
 for (i in seq_len(nrow(excluded))) account(excluded$source_table[i], paste0("not a place name (", excluded$class[i], ")"), excluded$n[i])
 ev <- ev[!not_name, ]
-final <- ev |> count(source_table)
+
+# Repeats: one record entered twice is one occurrence ----------------------------------------------------------------
+# An inspector's or a fisherman's channel sample of a haul Trackwell logged carries the skipper's name: a channel station
+# with a Trackwell haul of the same key on the same day within 0.02 x 0.01 degrees (about 1 km) is that haul again.
+# A tagging group named at a channel station that names it the same is that station again.
+th_day <- ev |> filter(source_table == "trackwell_haul", position_basis != "none", is.na(position_flag)) |>
+  transmute(key, day = as.Date(time), tlon = lon, tlat = lat)
+ch_rep <- ev |> filter(source_table == "channel_name", position_basis != "none") |>
+  transmute(source_key, key, day = as.Date(time), lon, lat) |>
+  inner_join(th_day, by = c("key", "day"), relationship = "many-to-many") |>
+  filter(abs(lon - tlon) <= 0.02, abs(lat - tlat) <= 0.01) |> distinct(source_key)
+tl_rep <- tl |> inner_join(cn |> select(station_id, cname = name), by = "station_id") |>
+  filter(name_key(name) == name_key(cname)) |> distinct(source_key = as.character(link_id))
+account("channel_name", "the same haul as a Trackwell haul (same name, day and spot)", nrow(ch_rep))
+account("tag_release", "the same station's fishing area (channel_name)", nrow(tl_rep))
+ev <- ev |> filter(!(source_table == "channel_name" & source_key %in% ch_rep$source_key),
+                   !(source_table == "tag_release" & source_key %in% tl_rep$source_key))
+
+# The recaptures no one read: the finder's text matched to a name, through its inflection -----------------------------
+# A name in a finder's text is often inflected after a preposition: "út af Hellissandi" (Hellissandur), "í Faxaflóa",
+# "á Halanum" (Halinn). A name's word, folded, loses an article ending (-inn, -inum, -unni, -isins ...) and then a case
+# ending (-ur, -i, -s, -a, -u, -ar, -um), keeping three letters, with the stem changes of fjörður (firði, fjarðar),
+# höfn, strönd, sjór and ey, before a doubled letter is made single. A text's word is read every way an ending allows
+# ("grunni" is grunn + i, not gr + unni), and a reading that meets a name's stem matches. A text's words are matched to the stems of the names the other sources attest (class
+# `name`, keys of four letters or more and no digit, not a bare terrain word, alone or after a compass word: kantur, horn,
+# blettur, Norðurkantur ...; not a phrase that opens with "á" or "í" or holds a word of relation: "Út af Ólafsvík"),
+# the longest run first. Halinn is no bare word: alone it is the ground off the Westfjords.
+# The text is an occurrence of the name when it holds exactly one, standing alone or after "á" or "í"; after a word of
+# relation (af, við, undan, fyrir sunnan ...) it places the catch relative to that name, not in it, and is counted
+# apart, as is a text naming two places, and a name picked from orri at orri's position (a repeat of oracle_name). `name` is the name matched, `text` the finder's words, `name_match` "key"
+# when the text's key is the name's, else "inflected". Tested on the hand readings below.
+ART <- c("arinnar", "urinnar", "innar", "unnar", "isins", "inum", "anum", "unum", "sins", "inni", "unni", "inu", "ina",
+         "una", "ins", "ans", "inn", "ann", "nir", "nar", "num", "id", "in", "an")             # the article, after the case
+CASE <- c("ar", "ur", "ir", "um", "s", "i", "a", "u")
+BARE <- c("kantur", "horn", "grunn", "hryggur", "dýpi", "djúp", "áll", "banki", "flak", "hraun", "flös", "bolli", "brún", "vík", "renna", "hóll", "eyri", "sker", "rif", "bót", "bugt", "blettur", "svæði", "hola", "gat", "leir",
+          "bakki", "tunga", "dalur", "kambur", "slóð", "mið", "botn", "flói", "fjörður", "sund", "rás", "háls", "hæð", "nef",
+          "klettur", "steinn", "boði", "grjót", "barð", "barmur", "brekka", "ból", "hryggir")
+RELATION <- c("af", "vid", "undan", "fra", "fyrir", "utan", "innan", "framan", "ofan", "nedan", "naelaegt", "nalaegt", "milli",
+              "hja", "austan", "vestan", "nordan", "sunnan", "austar", "vestar", "nordar", "sunnar")
+fold <- function(x) {                                # name_key() without making a doubled letter single
+  x <- tolower(x); x <- gsub("ð", "d", x); x <- gsub("þ", "th", x); x <- gsub("æ", "ae", x)
+  gsub("[^a-z0-9?]", "", chartr("áéíóúýöäåøü", "aeiouyoaaou", x))
+}
+single <- function(x) gsub("([a-z])\\1+", "\\1", x)
+strip <- function(k, suf, keep) { for (x in suf) if (endsWith(k, x) && nchar(k) - nchar(x) >= keep) return(substr(k, 1, nchar(k) - nchar(x))); k }
+base <- function(k) {
+  k <- sub("(fjord|fird|fjard)", "fjord", k); k <- sub("hafn", "hofn", k); k <- sub("strand", "strond", k)
+  k <- sub("sjav(ar)?$", "sjo", k); k <- sub("sjor$", "sjo", k); sub("eyj", "ey", k)
+}
+word_stem <- function(k) single(strip(strip(base(k), ART, 4), CASE, 3))  # a name's stem: article, then case, off
+word_stems <- function(k) {                          # a text word's readings: "grunni" is grunn + i, not gr + unni
+  k <- base(k); unique(single(c(strip(strip(k, ART, 4), CASE, 3), strip(k, CASE, 3), strip(k, ART, 4), k)))
+}
+words_of <- function(x) lapply(strsplit(x, "[^[:alnum:]]+"), function(w) { w <- fold(w); w[!is.na(w) & w != ""] })
+bare <- paste0("^(nordur|sudur|austur|vestur|inri|ytri|nydri|sydri|litli|litla|stori|stora|mid)?(",
+               paste(unique(vapply(fold(BARE), word_stem, "")), collapse = "|"), ")$")
+voc <- ev |> filter(class == "name", nchar(key) >= 4, !grepl("[0-9]", key)) |> count(name, key) |>
+  mutate(stem = vapply(words_of(name), function(w) paste(vapply(w, word_stem, ""), collapse = " "), ""),
+         phrase = vapply(words_of(name), function(w) w[1] %in% c("a", "i", "ut", "inni", "uti") || any(w %in% RELATION), NA)) |>
+  filter(nchar(gsub(" ", "", stem)) >= 4, !grepl(bare, gsub(" ", "", stem)), !phrase) |>
+  group_by(stem) |> slice_max(n, n = 1, with_ties = FALSE) |> ungroup()
+name_hits <- function(text) {                        # per text: each name found, its first word's place, the word before
+  lapply(words_of(text), function(w) {
+    cand <- lapply(w, word_stems); hit <- character(0); at <- integer(0); used <- integer(0)
+    if (length(w)) for (n in min(4, length(w)):1) for (i in seq_len(length(w) - n + 1)) {
+      span <- i:(i + n - 1)
+      if (any(span %in% used)) next
+      combos <- do.call(paste, c(expand.grid(cand[span], stringsAsFactors = FALSE), sep = " "))
+      j <- match(combos, voc$stem); j <- j[!is.na(j)]
+      if (length(j)) { hit <- c(hit, voc$name[j[1]]); at <- c(at, i); used <- c(used, span) }
+    }
+    tibble(name = hit, start = at, prev = ifelse(at > 1, w[pmax(at - 1, 1)], ""))
+  })
+}
+match_name <- function(text) {                       # the name matched, or why not: "relative", "several", NA
+  vapply(name_hits(text), function(d) {
+    u <- unique(d$name)
+    if (length(u) > 1) "several" else if (length(u) == 1 && any(d$prev %in% RELATION)) "relative" else if (length(u) == 1) u else NA_character_
+  }, "")
+}
+trm <- tr |> filter(!(recapture_table == "endurheimtur" & recapture_id %in% read_ids)) |>
+  mutate(m = match_name(text), number = grepl("^[0-9 .,-]+$", text))
+ev_tr <- trm |> filter(!m %in% c("several", "relative"), !is.na(m), !number) |>
+  transmute(source = "fiskmerki", source_table = "tag_recapture", source_key = paste(recapture_table, recapture_id, sep = ":"),
+            name = m, text, name_match = if_else(name_key(text) == name_key(m), "key", "inflected"), lon, lat,
+            position_basis, position_kind, time, weight = 1L, square_w, square_h,
+            summary = FALSE, text_lost = FALSE, key = name_key(m), class = "name")
+# A name picked in the app from orri.ornefni brings orri's position with it: that recapture repeats the Oracle row
+orri_pos <- ev |> filter(source_table == "oracle_name", position_basis != "none") |> distinct(key, olon = lon, olat = lat)
+picked <- ev_tr |> filter(position_basis != "none") |> inner_join(orri_pos, by = "key", relationship = "many-to-many") |>
+  filter(abs(lon - olon) < 1e-4, abs(lat - olat) < 1e-4) |> distinct(source_key)
+ev_tr <- ev_tr |> filter(!source_key %in% picked$source_key)
+account("tag_recapture", "a name picked from orri, at orri's position (oracle_name holds it)", nrow(picked))
+account("tag_recapture", "read in recapture_reading", sum(tr$recapture_table == "endurheimtur" & tr$recapture_id %in% read_ids))
+account("tag_recapture", "a number (an orri row)", sum(trm$number))
+account("tag_recapture", "relative to a named place", sum(trm$m %in% "relative" & !trm$number))
+account("tag_recapture", "two names or more", sum(trm$m %in% "several" & !trm$number))
+account("tag_recapture", "no name matched", sum(is.na(trm$m) & !trm$number))
+
+# uv: the closures' and regulated areas' grounds -----------------------------------------------------------------------
+# An area's text is its explanation, else its form's (a real-time closure), else the second explanation, else the form's
+# place, cut at its first sentence (the rest draws the boundary from landmarks). Unlike a finder's text, each name after
+# "á" or "í", or opening the text, is an occurrence: "á Eyjagrunni í Húnaflóa" lies on Eyjagrunn and in Húnaflói. A name
+# after a word of relation only ("norður af Skaga") places the area relative to it. Rivers' works, salmon nets at the
+# shore (named by their farm), fish farms' licences and discarded entries are not sea grounds. The position is the outline's point on surface; a polygon over 2,500 km2, larger than a
+# statistical square, is kind `area`. An area naming the same keys at the same point as an earlier one (a closure
+# renewed, a repealed regulation's copy) repeats it.
+uva <- st_sf("uv_area")
+NOT_SEA <- c("Rusl", "LaxSil_AðrarFramkvæmdir", "LaxSil_Efnistaka", "Netalögn", "Fiskeldisstöðvar")
+first_clause <- function(x) {
+  x <- sub("^\\s*[0-9]+\\s*\\.?\\s*gr\\.?\\s*", "", x)
+  vapply(strsplit(x, "\\.\\s+(?=\\p{Lu})", perl = TRUE), function(z) if (length(z)) z[1] else NA_character_, "")
+}
+has <- uva$outline != "none"
+xy <- matrix(NA_real_, nrow(uva), 2); xy[has, ] <- point_of(sf::st_geometry(uva)[has])
+ua <- sf::st_drop_geometry(uva) |>
+  mutate(lon = xy[, 1], lat = xy[, 2], text = first_clause(coalesce(skyring, form_text, fs_skyring, form_place)),
+         position_kind = case_when(outline == "polygon" & area_km2 > 2500 ~ "area", outline == "none" ~ NA_character_,
+                                   TRUE ~ outline),
+         position_basis = case_when(outline == "none" ~ "none", outline == "point" ~ "recorded", TRUE ~ "derived"),
+         sea = !type %in% NOT_SEA)
+uh <- name_hits(ifelse(ua$sea, ua$text, NA_character_))
+ua$names <- lapply(uh, function(d) unique(d$name[d$prev %in% c("i", "a") | d$start == 1]))
+ua$relative <- vapply(uh, function(d) any(d$prev %in% RELATION), NA)
+ua <- ua |> arrange(date_from, area_id) |>
+  mutate(n_names = lengths(names),
+         sig = ifelse(n_names > 0, paste(vapply(names, function(n) paste(sort(name_key(n)), collapse = "+"), ""),
+                                         round(lon, 3), round(lat, 3)), NA_character_),
+         repeat_ = !is.na(sig) & duplicated(sig))
+ev_uv <- ua |> filter(n_names > 0, !repeat_) |> tidyr::unnest_longer(names, values_to = "name", indices_to = "k") |>
+  transmute(source = "uv", source_table = "uv_area", source_key = paste(area_id, k, sep = ":"), name, text,
+            name_match = if_else(vapply(seq_along(name), function(i) grepl(name_key(name[i]), name_key(text[i]), fixed = TRUE), NA),
+                                 "key", "inflected"),
+            lon, lat, position_basis, position_kind, time = date_from, weight = 1L, summary = FALSE, text_lost = FALSE,
+            key = name_key(name), class = "name", uv_type = type)
+account("uv_area", "a river's works, a salmon net, a fish farm or a discarded entry: not a sea ground", sum(!ua$sea))
+account("uv_area", "no text", sum(ua$sea & is.na(ua$text)))
+account("uv_area", "no name matched", sum(ua$sea & !is.na(ua$text) & ua$n_names == 0 & !ua$relative))
+account("uv_area", "relative to a named place", sum(ua$sea & !is.na(ua$text) & ua$n_names == 0 & ua$relative))
+account("uv_area", "a repeat of an earlier area (the same names at the same point)", sum(ua$repeat_))
+account("uv_area", "occurrence", sum(ua$n_names == 1 & !ua$repeat_))
+account("uv_area", "occurrences, one per name (two names or more)", sum(ua$n_names > 1 & !ua$repeat_))
+
+# The test: the rule against the readings of 2022, where a person read the text
+edits <- function(a, b) mapply(function(x, y) if (is.na(x) || is.na(y)) NA_real_ else drop(adist(x, y)), a, b, USE.NAMES = FALSE)
+test <- read_name |> filter(first, !is.na(name)) |> mutate(m = match_name(text)) |>
+  mutate(ms = voc$stem[match(m, voc$name)], rs = vapply(words_of(name), function(w) paste(vapply(w, word_stem, ""), collapse = " "), ""),
+         ed = edits(gsub(" ", "", ms), gsub(" ", "", rs)),
+         outcome = case_when(grepl(bare, gsub(" ", "", rs)) ~ "the reading is a bare terrain word",
+                             is.na(m) ~ "no name matched", m == "several" ~ "two names or more",
+                             m == "relative" ~ "relative to a named place", ms == rs ~ "the reading",
+                             ed <= 3 ~ "the reading, spelt otherwise", TRUE ~ "another name"))
+print(knitr::kable(count(test, outcome), caption = "the inflection match against the hand readings (ornefni_endurheimtur.xlsx)"))
+ev <- bind_rows(ev, ev_tr, ev_uv)
+
+final <- ev |> filter(source_table != "uv_area") |> count(source_table, name_match)       # uv's are counted by area above
 for (i in seq_len(nrow(final)))
-  account(final$source_table[i], if (final$source_table[i] == "trackwell_area") "occurrence (summary)" else "occurrence", final$n[i])
+  account(final$source_table[i], case_when(final$source_table[i] == "trackwell_area" ~ "occurrence (summary)",
+                                           final$name_match[i] %in% "inflected" ~ "occurrence (inflected)",
+                                           TRUE ~ "occurrence"), final$n[i])
 
 # Spellings, with the hand readings as relations ----------------------------------------------------------------------
 dict <- st("name_dictionary") |> filter(!is.na(name), !is.na(reading)) |>
@@ -209,8 +391,9 @@ outcome <- bind_rows(outcomes)
 
 # Check and write -----------------------------------------------------------------------------------------------------
 staged <- c(trackwell_haul = nrow(th), trackwell_area = nrow(ta), plotter_mark = nrow(pm), chart_name = nrow(ch),
-            lmi_name = nrow(lm), drawn_area = nrow(dr), recapture_reading = nrow(rr), article_record = nrow(ar),
-            document_name = nrow(dn), oracle_name = nrow(on))
+            lmi_name = nrow(lm), drawn_area = nrow(dr), recapture_place = nrow(rp), recapture_reading = nrow(rr),
+            tag_recapture = nrow(tr), tag_release = nrow(tl), article_record = nrow(ar), document_name = nrow(dn),
+            oracle_name = nrow(on), channel_name = nrow(cn), uv_area = nrow(uva))
 got <- outcome |> filter(source_table %in% names(staged)) |> group_by(source_table) |> summarise(rows = sum(rows))
 stopifnot("every staged row in one outcome" = all(got$rows == staged[got$source_table]), length(got$rows) == length(staged),
           !anyNA(ev$key), !any(ev$key == ""), !anyDuplicated(ev[c("source_table", "source_key")]))
@@ -224,7 +407,7 @@ cat("spellings", nrow(variant), " keys", n_distinct(variant$key), " lost-letter 
 
 inputs <- c(fd_path("staging", "ornefni", paste0(c("trackwell_haul", "trackwell_area", "plotter_mark", "chart_name", "lmi_name",
   "recapture_place", "recapture_reading", "name_dictionary", "drawn_area", "article_record", "document_name",
-  "oracle_name"), ".parquet")),
+  "oracle_name", "channel_name", "tag_recapture", "tag_release", "uv_area"), ".parquet")),
   fd_curated("logbook", "station_window.parquet"), fd_curated("logbook", "gear.parquet"))
 write_curated(ev, fd_curated("place_name", "evidence.parquet"), inputs = inputs)
 write_curated(variant, fd_curated("place_name", "variant.parquet"), inputs = inputs)

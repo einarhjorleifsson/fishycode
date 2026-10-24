@@ -12,8 +12,9 @@
 #
 # - `name`: the commonest spelling of the key among those that keep their letters. `class`: the commonest class of its
 #   occurrences (name, composite, description). `n_<source>`: occurrences by source (Trackwell's summary not counted).
-# - Position. An occurrence's precision is 1 (a point, a line, a polygon, a drawn area), 2 (a square's centre: Oracle's)
-#   or 3 (an area's centre); a key takes its positions of its best precision (`precision`), the summary and flagged
+# - Position. An occurrence's precision is 1 (a point, a tow's midpoint, a line, a polygon, a drawn area), 2 (a square's
+#   centre: Oracle's, channel's and the recaptures' unread positions) or 3 (an area's centre: uv's polygons over
+#   2,500 km2); a key takes its positions of its best precision (`precision`), the summary and flagged
 #   positions left out. Places: the positions are cut into clusters (single linkage, 30 km; 40 km for squares); a
 #   place holds 10 % of them and two or more (any cluster, for a key of three positions or fewer); `n_places`. The main
 #   place has the most, then the most support (occurrences of any precision and source within 30 km); a key with no such cluster (its positions all strays) takes its largest. `lon`, `lat`: the main place's median; `r80_km`: the distance from it within which 80 % of its
@@ -41,7 +42,7 @@
 #   floor(log2(3969 / size in km)), within 4-12; else 11, a fine name shown late. A child shows no earlier than its
 #   parent. `level` 1-4 bins it (≤ 5, 6-7, 8-9, ≥ 10).
 # - Cross-check (plan 044 §4.6): `families` (the independent sources with a position: trackwell, plotter, lmi, oracle,
-#   sjokort, fiskmerki, qgis, skjalfandi) and `n_text` (articles, ÍSOR). Two families agree when their medians lie
+#   sjokort, fiskmerki, qgis, skjalfandi, channel, uv) and `n_text` (articles, ÍSOR). Two families agree when their medians lie
 #   within the larger of 5 km and the key's r80, plus the mean of the two families' own r80, plus half a square for a
 #   square-placed family (15 km) or an area's (40 km): a broad area's sources sit apart inside it. `outcome`: several
 #   places (two places or more), confirmed (two or more families, all agreeing), disagree (two or more, some not: a
@@ -49,7 +50,7 @@
 # - synonym.parquet: `relation` `spelling` (two positioned keys within an edit distance of 2, 1 for keys under 5
 #   letters or a square-placed key, 3 for keys of 10 or more both with 5 positions or more, whose medians lie within
 #   10 km, 20 km if square-placed;
-#   not two names that differ only in digits or in a direction word; a key holding the other is left to the lexical
+#   not two names that differ in their digits or in a direction (a word, or a compass abbreviation: S, SV, NA ...); a key holding the other is left to the lexical
 #   parent), `article` (the same with a definite article's ending: tunga, tungan), `lmi_alt` (LMÍ's
 #   alternative name), `article_synonym` (an article's synonyms), `dictionary_reading` (the ornefni dictionary's reading,
 #   often a broader name). `n_synonym` in place_name counts a key's candidates.
@@ -74,7 +75,7 @@ terrain <- function(x) { x <- tolower(x)
             grepl("dýpi|dypi|djúp|áll|ál$|ál |all$|all |dalur|dal$|gljúf|renna|pytt|hola", x) ~ "deep",
             grepl("grunn|bank|flak|fláki", x) ~ "bank", grepl("horn", x) ~ "horn",
             grepl("vík|fjörður|fjord|flói|vogur", x) ~ "bay", TRUE ~ "other") }
-rank_of <- function(kind) case_when(kind %in% c("point", "line", "polygon", "drawn") ~ 1L, kind == "square" ~ 2L,
+rank_of <- function(kind) case_when(kind %in% c("point", "track", "line", "polygon", "drawn") ~ 1L, kind == "square" ~ 2L,
                                     kind == "area" ~ 3L, TRUE ~ NA_integer_)
 mode1 <- function(x) { x <- x[!is.na(x)]; if (length(x)) names(sort(table(x), decreasing = TRUE))[1] else NA_character_ }
 
@@ -265,6 +266,7 @@ pairs <- fam |> inner_join(fam |> select(key, source2 = source, flon2 = flon, fl
   filter(source < source2) |>
   mutate(d = km(flon, flat, flon2, flat2),
          agree = d <= pmax(5, r80_km) + (fr80 + fr802) / 2 + TOL[as.character(frank)] + TOL[as.character(frank2)])
+stopifnot("every placed position has a precision" = !anyNA(placed$rank))
 check <- fam |> group_by(key) |> summarise(families = paste(sort(source), collapse = ", "), n_families = n(), .groups = "drop") |>
   left_join(pairs |> group_by(key) |> summarise(all_agree = all(agree), max_family_km = max(d), .groups = "drop"), by = "key")
 text_n <- ev |> filter(source %in% c("article", "isor")) |> count(key, name = "n_text")
@@ -278,8 +280,10 @@ outcome <- tibble(key = unique(ev$key)) |> left_join(check, by = "key") |> left_
 # Candidate synonyms --------------------------------------------------------------------------------------------------
 # Not one place: names that differ only in their digits (numbered marks: "Gamall 31", "Gamall 34") or in a direction
 # ("6 sml austari", "6 sml vestari")
-DIRECTION <- "austar|vestar|nyrðr|syðr|ytr|innr|eystr|vestr|norðar|sunnar|efr|neðr|austur|vestur|norður|suður"
+DIRECTION <- "austan|vestan|norðan|sunnan|austar|vestar|nyrðr|syðr|ytr|innr|eystr|vestr|norðar|sunnar|efr|neðr|austur|vestur|norður|suður"
 dir_of <- function(x) { m <- regmatches(tolower(x), regexpr(DIRECTION, tolower(x))); if (length(m)) m else "" }
+COMPASS <- "\\b(NNA|NNV|SSA|SSV|ANA|ASA|VNV|VSV|NA|NV|SA|SV|N|S|A|V)\\b"           # "S af Malarrifi", "SV af Malarrifi"
+compass_of <- function(x) { m <- regmatches(x, regexpr(COMPASS, x)); if (length(m)) m else "" }
 w <- where |> filter(precision <= 2) |> mutate(bx = floor(lon / 0.3), by = floor(lat / 0.15))
 near <- w |> select(key, lon, lat, precision, bx, by) |>
   cross_join(tidyr::expand_grid(dx = -1:1, dy = -1:1)) |> mutate(bx = bx + dx, by = by + dy) |>
@@ -294,7 +298,9 @@ art <- mapply(function(a, b) { l <- if (nchar(a) < nchar(b)) c(a, b) else c(b, a
                                startsWith(l[2], l[1]) && substring(l[2], nchar(l[1]) + 1) %in% ARTICLE }, near$key, near$key2)
 nm0 <- setNames(pref$name, pref$key)
 same_letters <- gsub("[0-9]", "", near$key) == gsub("[0-9]", "", near$key2)
-other_dir <- mapply(function(a, b) dir_of(nm0[[a]]) != dir_of(nm0[[b]]), near$key, near$key2)
+other_dir <- mapply(function(a, b) dir_of(nm0[[a]]) != dir_of(nm0[[b]]) || compass_of(nm0[[a]]) != compass_of(nm0[[b]]) ||
+                      (grepl("[0-9]", nm0[[a]]) && grepl("[0-9]", nm0[[b]]) && gsub("[^0-9]", "", nm0[[a]]) != gsub("[^0-9]", "", nm0[[b]])),
+                    near$key, near$key2)
 spell <- near |> mutate(held = held, art = art, short = short, digits_only = same_letters, other_dir = other_dir) |>
   left_join(where |> select(key, n1 = n_positioned), by = "key") |> left_join(where |> select(key2 = key, n2 = n_positioned), by = "key2") |>
   filter(!digits_only, !other_dir,

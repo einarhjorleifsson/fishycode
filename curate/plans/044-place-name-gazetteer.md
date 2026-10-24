@@ -2,8 +2,9 @@
 
 **status:** partly built — written 2026-10-24 at the maintainer's request ("once you are done with staging can you go and
 proceed to curation?", plan 043 ask h), on top of plan 043's staged tables (decision 222); version 1 (§1) built the same
-day (decision 223), version 2 (§4) the same afternoon (decision 224); the seabed and effort footprints, the lanes and
-the review loop open (TODO 144) · **2026-10-24** · **see:** plan 043 §3.4, decisions 221-224,
+day (decision 223), version 2 (§4) the same afternoon (decision 224), with the tagging databases and channel (§5,
+decision 225) and uv (§6, decision 226); the seabed and effort footprints, the lanes and the review loop carried by
+plan 045 (TODO 144) · **2026-10-24** · **see:** plan 043 §3.4, plan 045, decisions 221-226,
 `$FISHYDATA/archive/2026-10-ornefni/` (scripts 01-05)
 
 Drafted with AI assistance (Claude) on 2026-10-24. The design is Claude's, from plan 043 §3.4's preliminary check, and
@@ -118,3 +119,32 @@ minimum zoom and an outcome, and spellings close in letters and in place become 
 - footprints drawn from the seabed or the effort ridges, and the lanes (flow side);
 - the review loop: drafts in the `data-md` template's fields, corrected by a person and read back from `overrides/`;
 - any new dump.
+
+## 5. The tagging databases and channel (built 2026-10-24, decision 225)
+
+The maintainer had `merki` and `fiskmerki` dumped (plan 043 ask f) and pointed to `channel`'s fishing areas; then: a
+noun has four endings in the singular, and the ornefni repo's files may now be repeated. **Measured** (decision 225):
+the recaptures' positions are DDMM.mm points; `merki`'s place fields repeat `fiskmerki`'s; 1,794 recaptures carry an
+orri name at orri's position; 1,330 channel samples are Trackwell hauls again. **Assumed:** that a name after "á" or
+"í" lies where the fish was caught, and one after a word of relation (af, við, undan …) does not. **Built:**
+1. `channel_name`, `tag_recapture`, `tag_release` staged, positions as their sources give them.
+2. A finder's text matched to an attested name through its article and case endings, tested on the 2022 hand readings;
+   a relative or two-name text counted, not used.
+3. One occurrence per record: a recapture once, a copy (an orri pick, an inspector's sample of a logged haul, a tagging
+   group at its own station) left to the original.
+
+**Not in §5:** irregular inflection (BÍN declined by the maintainer, 2026-10-24).
+
+## 6. uv's closures and regulated areas (built 2026-10-24, decision 226)
+
+The maintainer: "think you have at least the schema uv to mine", then the whole process repeated with it. **Measured**
+(decision 226): an area's code is no name, its explanation and a real-time closure's form name the ground beside the
+area's outline; the forms hold persons. **Assumed:** that an area's first sentence names its ground, and that a name
+after "á" or "í" there contains the area. **Built:**
+1. `uv_area` staged, one row per area with its outline; the forms' place phrase only.
+2. Every name after "á" or "í" in the first sentence an occurrence, at the outline's point on surface; nested names
+   each; a relative name counted, not used; an area repeating an earlier one's names and point counted once.
+3. The match mended for every source: endings off before a doubled letter is made single, and phrases out of the
+   vocabulary.
+
+**Not in §6:** uv's outlines as footprints (a closure's box is not its ground's edge).

@@ -326,12 +326,28 @@ list(
                                    fd_raw("oracle", "afli", c("afli_skikar.parquet", "brei_nofn.parquet"))), format = "file"),
   tar_target(ornefni_oracle_name, { ornefni_oracle_raw
     produces("sources/ornefni/oracle_name.R", fd_staging("ornefni", "oracle_name.parquet")) }, format = "file"),
+  tar_target(ornefni_channel_raw, fd_raw("oracle", "channel", c("station.parquet", "sample.parquet", "sample_category.parquet")),
+             format = "file"),
+  tar_target(ornefni_channel_name, { ornefni_channel_raw
+    produces("sources/ornefni/channel_name.R", fd_staging("ornefni", "channel_name.parquet")) }, format = "file"),
+  tar_target(ornefni_tag_raw, c(fd_raw("oracle", "fiskmerki", c("endurheimtur.parquet", "endurheimtur_otengt.parquet",
+                                                               "groupmerk.parquet", "groupmerk_stodvar.parquet")),
+                                fd_raw("oracle", "channel", c("sample.parquet", "station.parquet"))), format = "file"),
+  tar_target(ornefni_tag_recapture, { ornefni_tag_raw
+    produces("sources/ornefni/tag_recapture.R", fd_staging("ornefni", "tag_recapture.parquet")) }, format = "file"),
+  tar_target(ornefni_tag_release, { ornefni_tag_raw
+    produces("sources/ornefni/tag_release.R", fd_staging("ornefni", "tag_release.parquet")) }, format = "file"),
+  tar_target(ornefni_uv_raw, fd_raw("oracle", "uv", c("veidisvaedi.parquet", "hnit.parquet", "veidisv_veidarf.parquet",
+                                                       "veidarfa.parquet", "skyndilokanir_xml_input.parquet")), format = "file"),
+  tar_target(ornefni_uv_area, { ornefni_uv_raw
+    produces("sources/ornefni/uv_area.R", fd_staging("ornefni", "uv_area.parquet")) }, format = "file"),
   # The place-name gazetteer from them (plan 044): every occurrence of a name, the spellings under one key, and one
   # row per key. Trackwell's hauls take their gear from the logbook; the names go on no haul.
   tar_target(place_name_evidence, {
     ornefni_trackwell_haul; ornefni_trackwell_area; ornefni_plotter_mark; ornefni_plotter_track; ornefni_chart_name
     ornefni_lmi_name; ornefni_recapture_place; ornefni_recapture_reading; ornefni_name_dictionary; ornefni_fiskislod
-    ornefni_article_record; ornefni_document_name; ornefni_oracle_name; station_window; logbook_gear
+    ornefni_article_record; ornefni_document_name; ornefni_oracle_name; ornefni_channel_name; ornefni_tag_recapture
+    ornefni_tag_release; ornefni_uv_area; station_window; logbook_gear
     produces("curate/place_name_evidence.R", fd_curated("place_name", "evidence.parquet"),
              fd_curated("place_name", "variant.parquet"), fd_curated("place_name", "outcome.parquet"))
   }, format = "file"),
