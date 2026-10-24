@@ -166,3 +166,8 @@ How to test:
   the filter in both languages, on by default; tiles come back both ways (16 tiles at zoom 6-9, median 253 ms off
   against 353 ms on); `interp=maybe` is refused with the server's reason; `effort_map(interpolate = FALSE)` writes
   `interp=off`. The two grids' totals are equal. The click in the page waits for the window.
+- **2026-10-24, F6 in the page** (307993a; ramb 2026.10.24.3, b56cb7a, installed from GitHub). Claude's run in the
+  browser pane, the server started afresh. F6 passes: off sets the address to `interp=off` and the effort source's tile
+  address to `interp=off`, on drops it from the address again (the default); the tiles reload each way, 70,251 cells
+  drawn off against 73,239 on at zoom 5 (all years); at zoom 11 on 2025's fishing west of the Westfjords, off shows the
+  scattered fixes and on the tows as lines. No error in the console.

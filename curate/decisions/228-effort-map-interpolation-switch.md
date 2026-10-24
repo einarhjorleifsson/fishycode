@@ -2,7 +2,8 @@
 
 *2026-10-24. The maintainer, on the effort grid being interpolated always (decision 220): "user should be able to have
 a choice to show the original data vs the interpolated data". Built, measured and written by Claude (AI); not checked
-by a person. The switch was checked on the server, not clicked in the page: the session was not open in a window.*
+by a person. The switch was checked on the server first, and clicked in the page later the same evening (checklist
+F6, its run log).*
 
 ## What was built
 
@@ -12,7 +13,7 @@ by a person. The switch was checked on the server, not clicked in the page: the 
 - **The switch:** an "Interpolation" filter of the effort layer (`map.json`), "on" by default, so the page and every
   link look as before. "Off" reads the fixes grid (`map.R`). It goes into the address as `interp=off`, and from R as
   `effort_map(interpolate = FALSE)`. The page leaves it out when the fixes grid is not built.
-- **The checklist's F6.**
+- **The checklist's F6**, passed in the page: off draws the scattered fixes, on the tows as lines (zoom 11, 2025).
 
 ## What was measured
 
@@ -26,6 +27,4 @@ by a person. The switch was checked on the server, not clicked in the page: the 
 
 ## Not done
 
-- **A click in the page.** The page side is the same generic filter as the others, already tested; F6 waits for a run
-  with the window open.
 - **The fixes grid is rebuilt by hand** after a rebuild of the trail, like the interpolated one (TODO 140).
