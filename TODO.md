@@ -1297,3 +1297,16 @@ Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with th
 
 **check:** each item done and recorded in a decision, or dropped by the maintainer, and plans 044's and 045's statuses
 agree.
+
+## 145. The flow on one vessel: ramb's map viewer built around the flow diagram (plan 047)
+**status:** open · **needs: maintainer** — plan 047's asks a-g (the vessel overview's place, the default span, how far
+the user operates, which mode first, example data with catch, names, a public demo) · **see:**
+`curate/plans/047-flow-map-one-vessel.md`, plan 046, decisions 215, 227, plan 030 §7
+
+The maintainer, 2026-10-25: the next round of `rb_map` centred on the diagram's rows, so that a user can take one vessel
+and follow the whole process in the app, from the flagged pings to the split catch. Plan 047 proposes a step panel, a
+track layer held in the browser, a timeline linked to the map and the user's filter carried through effort and catch;
+as built from `curated/` in fishycode, live from the `rb_` steps in ramb. Nothing built.
+
+**check:** plan 047's seven steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
+and its status agrees with its index row.
