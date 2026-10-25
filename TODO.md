@@ -1306,7 +1306,8 @@ the user operates, which mode first, example data with catch, names, a public de
 The maintainer, 2026-10-25: the next round of `rb_map` centred on the diagram's rows, so that a user can take one vessel
 and follow the whole process in the app, from the flagged pings to the split catch. Plan 047 proposes a step panel, a
 track layer held in the browser, a timeline linked to the map and the user's filter carried through effort and catch;
-as built from `curated/` in fishycode, live from the `rb_` steps in ramb. Nothing built.
+as built from `curated/` in fishycode, live from the `rb_` steps in ramb. None of its steps built; ramb 2026.10.25.4's
+`rb_map_pings()` and `rb_map_track()` are parts they can use, and ask f is answered for those two names (§8).
 
 **check:** plan 047's seven steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.

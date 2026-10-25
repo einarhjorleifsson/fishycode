@@ -1,8 +1,9 @@
 # 047 — The flow on one vessel: ramb's map viewer built around the flow diagram, a vessel followed from its pings to its catch
 
-**status:** proposal — written 2026-10-25 at the maintainer's request; nothing built; the viewer, the flow document,
-the trail and the vessel overview measured the same day (read-only); the other viewers in §1.6 are leads from a web
-search, not tried · **2026-10-25** · **see:** plan 046 and decision 227 (the viewer), decision 215 (the product is the
+**status:** proposal — written 2026-10-25 at the maintainer's request; none of its steps built; the viewer, the flow
+document, the trail and the vessel overview measured the same day (read-only); the other viewers in §1.6 are leads
+from a web search, not tried; later the same day ramb gained parts its steps can use, and step 1 one of its
+measurements (§8) · **2026-10-25** · **see:** plan 046 and decision 227 (the viewer), decision 215 (the product is the
 link), `docs/one_flow.qmd` and its diagram (version 3), plan 030 §7 (the vessel overview), plan 033 (the book), plan
 013 (ramb's steps), TODO 145
 
@@ -257,3 +258,28 @@ Taken from the other viewers (§1.6), for a later round of the viewer:
 - a time slider on the effort map's grid.
 
 Also left out: more than one vessel at a time, and logbook positions (decision 156).
+
+## 8. Since written (later on 2026-10-25)
+
+*Built in ramb by Claude (AI) at the maintainer's request, each piece checked in a browser and by R CMD check, and
+recorded in ramb's NEWS (2026.10.25.2 to .4). None of the plan's steps is done; these are parts they can use.*
+
+- **The quick look as layers that compose** (ramb 2026.10.25.4). `rb_map_pings()` draws pings as points coloured by a
+  column. `rb_map_track()` joins them into each vessel's line, broken at silences of over `gap_h` hours, and with a
+  column cut into runs of its value, each run joined to the next. A second `rb_map_track()` adds a second track by
+  another column, each a layer turned on and off in the page. A map is served when printed at a console:
+  `pings |> rb_map_track(fishing_flow) |> rb_map_track(provider) |> rb_map_pings(c(fishing_flow, provider, speed))`.
+- **A choice in the page** (`rb_map_layer(variants =)`): styles to choose between under a layer, kept in the address,
+  with nothing fetched again. The pings' "Colour by" uses it.
+- **For step 1, measured:** vid 1977's 2025 (147,432 fixes, the largest vessel-year, §1.4) as vector tiles from
+  DuckDB. The map is built in about 1 s and its first-view tile, 6.4 MB, comes in 0.12 s. With the line cut at every
+  ping (147,395 runs) it takes 0.6 s and 3.4 MB. So a vessel-year can be drawn from tiles without being held in the
+  browser. A timeline linked to the map (§2.2) still needs the fixes in the browser, with the overview's 17 ms window
+  move as the mark (§1.5).
+- **For step 2:** the as-built prototype can be these functions over the trail's columns, one vessel and year, a track
+  or pings layer per row. Tried on vid 1977: the Fishing row's `fishing_flow` as a coloured track and as a colour of
+  the pings, beside `provider` and `speed`. Untried: the other rows' columns, such as `voyage_id`, `phase` and
+  `fishing_flow_basis`. What the functions lack for the plan: the order of steps, the accounting per step, and the
+  timeline.
+- **Ask f, in part:** the layer functions' names, `rb_map_pings()` and `rb_map_track()`, are the maintainer's
+  (2026-10-25). The app's own name is still open.
