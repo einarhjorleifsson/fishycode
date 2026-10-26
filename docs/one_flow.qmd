@@ -447,12 +447,14 @@ on [their own page](wkssfgeo.qmd).
 ### The workshops' wish list
 
 What the two ICES workshops on small-scale fisheries asked for, and where it stands (G1 = WKSSFGEO 2021, G2 =
-WKSSFGEO2 2023; pages as printed; read 2026-10-19, decision 148). "Nowhere" means in none of ramb, fishymodel or
+WKSSFGEO2 2023; pages as printed; read 2026-10-19, decision 148). The EU project EM4SSF (2025-2028) asks for more in
+its deliverables, cited by number and section (D1.1 data management plan, D2.1 tracking-data format, D2.2 observer
+template; read 2026-10-26, decision 229): the last nine rows are its own. "Nowhere" means in none of ramb, fishymodel or
 fishycode.
 
 | Wish | Asked in | Where it stands |
 |---|---|---|
-| Duplicates, positions on land, computed against reported speed, smoothed speed | G1 p. 17-19 | ramb: `rb_flag_ping_duplicate`, `rb_detect_in_polygons`, `rb_calc_speed`, `rb_calc_speed_smooth` |
+| Duplicates, positions on land, computed against reported speed, smoothed speed | G1 p. 17-19; D1.1 §8.1 | ramb: `rb_flag_ping_duplicate`, `rb_detect_in_polygons`, `rb_calc_speed`, `rb_calc_speed_smooth` |
 | Interpolation that uses course and speed (cubic Hermite) | G1 p. 19 | ramb has linear interpolation only (`rb_interpolate_track`); the cubic Hermite spline is in vmstools and the WKSSFGEO code |
 | Downsampling, and how results change with the ping rate | G1 p. 19-20, 39; G2 p. 37 | nowhere as a function; plan 031's bench thins pings in scratch |
 | Trips from harbour polygons | G1 p. 19-20 | ramb: `dwell`, `runs`, `jepol` (DTU), `cnr`, `iapesca` |
@@ -462,15 +464,24 @@ fishycode.
 | Mixture models, EMbC, HMM | G1 p. 21; G2 p. 19-20, 29 | fishymodel: `fm_gaussian`, `fm_gaussian_binary_clustering`, `fm_hidden_markov_step`, `fm_hidden_markov_step_and_turn` |
 | Random forests and other learned classifiers, with movement features | G1 p. 26; G2 p. 2-3, 26, 30-36 | nowhere; iapesca, CNR-IRBIM's SoftwareX code (Python) and Samarão et al. 2025 have them |
 | Gear from the track | G1 p. 6-7, 38 | nowhere; CNR-IRBIM's Adriatic model, Lattanzi et al. 2026, GFW's `vessel-classification` |
-| Sets, hauls and soak time | G1 p. 29-30; G2 p. 30-36 | ramb: `rb_link_record_sets` (iapesca's method), which on Icelandic static gear does not recover real set times (decision 158); Mendo et al. 2023's method is not in ramb |
+| Sets, hauls and soak time | G1 p. 29-30; G2 p. 30-36; D2.2 | ramb: `rb_link_record_sets` (iapesca's method), which on Icelandic static gear does not recover real set times (decision 158); Mendo et al. 2023's method is not in ramb |
 | Hours fished, kW-hours, swept area | G1 p. 27-28 | ramb: `rb_add_effort`, `rb_predict_gear_width` |
-| Days at sea, fishing days, hours at sea | G1 p. 12-13, 27 | nowhere as a function |
-| Net length from hauling, haul counts, the three-level set/haul indicator, static-gear pressure | G1 p. 28-30 | nowhere; `rb_add_effort`'s pressure is for towed gear only |
+| Days at sea, fishing days, hours at sea | G1 p. 12-13, 27; D2.1 §2.1 | nowhere as a function |
+| Net length from hauling, haul counts, the three-level set/haul indicator, static-gear pressure | G1 p. 28-30; D2.1 §2.1 | nowhere; `rb_add_effort`'s pressure is for towed gear only |
 | Hours spread over grid cells by track length | WKSSFGEO2 code | nowhere |
-| Grids at 0.01° or 100-1000 m | G1 p. 40; G2 p. 70 | ramb: `rb_bin_midpoint` (any cell size), `rb_encode_ices_rectangle`; c-squares in the ICES data call |
+| Grids at 0.01° or 100-1000 m | G1 p. 40; G2 p. 70; D1.1 §3.1.4 | ramb: `rb_bin_midpoint` (any cell size), `rb_encode_ices_rectangle`; c-squares in the ICES data call |
 | Open labelled data as a common benchmark | G2 p. 8, 72 | ramb's example data (the [workshops' sets](wkssfgeo.qmd)); more in `$FISHYDATA/raw/external` (decision 148, TODO 93) |
-| Scoring: accuracy, kappa, F-score; trips matched within ±10 % of duration | G1 p. 22-25, 52-57 | nowhere as a function; plan 031's bench, in scratch |
-| Anonymising tracks for sharing | G2 p. 8 | nowhere |
+| Scoring: accuracy, kappa, F-score; trips matched within ±10 % of duration | G1 p. 22-25, 52-57; D2.2 §1 | nowhere as a function; plan 031's bench, in scratch |
+| Anonymising tracks for sharing | G2 p. 8; D1.1 §6.1 | nowhere |
+| EM4SSF's exchange format, read and written: raw fixes (`VESSEL_ID`, `DATE_TIME`, `LATITUDE`, `LONGITUDE`, `SPEED`, `COG`, `HEADING`, `DATA_SOURCE`) and processed ones (`TRIP_ID`, `ACTIVITY_ID`, `ACTIVITY`, `GEAR`, each with a `_SOURCE`) | D2.1 tables 1-2 | nowhere; ramb's WKSSFGEO examples are renamed in its `data-raw/` only |
+| The source of each trip, operation, activity and gear: logbook, observer, analysis, sensor, other | D2.1 table 3 | nowhere; ramb's `basis` says how a value was obtained, not where it came from, and ramb has no observer or sensor as a source of records |
+| One activity code on every fix: fishing (setting, hauling, shooting) or not (steaming, harbour, searching, transport, transhipment) | D2.1 table 4 | nowhere as one code; the pieces are in ramb (port calls, record phases, `rb_add_fishing`); nothing stands behind searching, transport or transhipment; ramb's example sets keep each source's own labels |
+| Observer events one row each, a hauling linked to its setting by event number | D2.2 | nowhere; ramb's records are one row per station with t1-t4 (`rb_create_record_windows`), and nothing pairs events into records |
+| Gear size as recorded: net panels and their width, pots and their spacing, hooks; trawls or dredges towed at once | D2.2 | nowhere; `rb_predict_gear_width` covers towed gear's width only (BENTHIS) |
+| Soak as fishing time, as Implementing Regulation (EU) 2025/2196 defines it; the vessel's effort apart from the gear's | D2.1 §2.1 | nowhere; `rb_add_effort` gives each fix its time, and a soak while the vessel is elsewhere is not a sum over its fixes |
+| A summary of each dataset: vessels, valid and invalid trips, the most events in a trip, length and engine power, trips' distance and duration | D2.1 §2.1 (Rufino et al. 2023 Table 1) | in part: `rb_summarise_track` (pings, speed, step distance and duration, voyages, ports); no vessel attributes, event counts or trip validity |
+| Course and depth limits; gaps in a track reported | D1.1 §8.1 | nowhere; ramb tests positions and speed only, and a gap only restarts `rb_flag_ping_impossible`'s scan |
+| Maps safe to publish: vessels counted in each cell, too few masked | D1.1 §3.1.4, §6.1 | nowhere in ramb; fishycode applies ICES's three-vessel rule in `products/ices_vms_datacall/` only |
 
 ## Version 3: what the groups' reports added (2026-10-19)
 
