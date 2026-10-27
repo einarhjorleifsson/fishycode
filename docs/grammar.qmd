@@ -13,7 +13,9 @@ grammar](grammar_logbooks.qmd). The port-call term and the name mapping were add
 2026-10-19 (decision 147). The parts of "Resolution and provenance" on field groups, moving a value between units,
 values known in part, the coarser unit, layer and coverage, and the section "Names under review", were drafted with
 AI assistance (Claude) on 2026-10-22 at the maintainer's request. The maintainer chose the word "split"; the rest has
-not yet been reviewed (TODO 127). Decisions recorded here are the maintainer's.*
+not yet been reviewed (TODO 127). The section "Events between and around the four" was drafted with AI assistance
+(Claude) on 2026-10-26, from a cruise protocol the maintainer gave, translated by Claude (decision 230); it has not
+been reviewed. Decisions recorded here are the maintainer's.*
 
 A vessel leaves port, does things at sea, and comes back. A trawler tows its gear, a longliner sets and hauls, a
 research vessel trawls and lowers a CTD at survey stations, an oceanographic cruise samples plankton along a section,
@@ -193,6 +195,75 @@ From the events:
   - joining the track on `[w1, w2]` then needs no rule per gear.
 - **Overlaps.** Within one vessel, deployment windows `[t1, t2]` cannot overlap, and neither can hauling windows
   `[t3, t4]`. Outer windows `[t1, t4]` can: a longliner sets a new line while an earlier one soaks.
+
+### Events between and around the four {#sec-event-sequence}
+
+The four events are the ones every gear shares, not the only ones there are. A protocol can record more: events
+between the four, which split a phase, and events around them, which bound the vessel's work at the station. Each pair
+of consecutive events bounds a phase. The four events and the active interval keep their meaning whatever else is
+recorded.
+
+**A trawl station, A to J.** A cruise protocol for measuring the energy a tow takes splits every tow into ten actions,
+so that the phases can be compared between tows (its section 5.1, translated; decision 230). The officer on watch
+presses each action's button on the bridge as the action begins.
+
+| Action | The protocol | Grammar | Phase that follows |
+|---|---|---|---|
+| A | Station begins: the vessel on, or turning onto, the shooting course, at or reaching shooting speed | before `t1`: the station opens | approach, gear on deck |
+| B | Gear out: the codend in the sea (its codline end or all of it); the gear shot | `t1` | the net shot |
+| C | Doors veered: the doors set off, the warp paid out | between `t1` and `t2` | descent |
+| D | Tow begins: all the warp out, the gear settles on the bottom; the station's start entered in Hafriti | `t2` | the tow |
+| E | Hauling begins, the tow ends; the station's end entered in Hafriti | `t3`, as recorded | warp hauled in, the gear still on the bottom |
+| F | Off the bottom: hauling stops, the vessel at towing speed on its course until the trawl deforms too much, 5 min at most | `t3`, as defined above | off-bottom tow |
+| G | Hauling resumes | between `t3` and `t4` | warp up |
+| H | Doors at the gallows | between `t3` and `t4` | the net hauled aboard |
+| I | All in: all the gear on board; the vessel back on the tow's course and towing speed for 3 to 5 min, or longer | `t4` | a run without gear |
+| J | Station ends | after `t4`: the station closes | |
+
+The run from I to J gives the vessel's energy use at towing speed without gear: the baseline subtracted from the tow's
+to give the energy the trawl takes. It is repeated at every station, since it varies with weather and current. The
+protocol gives no purpose for F to G; towing off the bottom may separate the bottom contact from the gear's drag in the
+water (a reading, not the protocol's).
+
+Three things follow for the grammar:
+
+- **For towed gear, `t3` covers two events.** The table of the four events defines it as off the bottom (F), but
+  Hafriti and the Icelandic e-logbook ([The Icelandic logbooks in the grammar](grammar_logbooks.qmd)) record the start
+  of hauling (E). Between the two the gear is still on the bottom, probably still fishing, while the vessel slows.
+  Which one `t3` means is open (TODO 146); a recorded `t3` is the start of hauling.
+- **A and J bound the station, B to I the sample.** The vessel is busy with the station before the gear goes in and
+  after it is out. Where A and J are recorded, the station's `s1` and `s2` are times of their own, wider than the
+  sample's, not bounds derived from it.
+- **A phase may exist only to measure something.** I to J is no part of fishing, and likely neither is F to G. A
+  speed filter cannot tell I to J from the tow: the same course and speed, with no gear. Where a record holds such
+  phases, a filter over the fixes keeps or drops them by name.
+
+**A longline along A to J.** A longline takes the vessel twice, to set and to haul, with the soak between; meanwhile
+the vessel sets other lines, steams or lies in port. Each trawl action has a counterpart, and A to J opens twice:
+
+| Trawl | Longline | Grammar |
+|---|---|---|
+| A station begins | at the start of the set, on setting course and speed | before `t1` |
+| B gear out | first buoy and buoy line in | `t1` |
+| C doors veered | first anchor out; the mainline and hooks start paying out | between `t1` and `t2` |
+| D tow begins | end anchor out, last buoy in: the soak starts | `t2` |
+| — | the soak, the vessel elsewhere | `[t2, t3]` |
+| A, again | back at a buoy: the approach to the haul | before `t3` |
+| E hauling begins | first buoy on board: hauling starts | `t3` |
+| F off the bottom | first anchor up, first hooks at the line hauler | between `t3` and `t4` |
+| G hauling resumes | no counterpart in a normal haul; when the line parts, the vessel steams to the other end and hauls from there | between `t3` and `t4` |
+| H doors at the gallows | last anchor on board | between `t3` and `t4` |
+| I all in | last buoy on board | `t4` |
+| J station ends | leaves for the next line | after `t4` |
+
+Gillnets and pots follow the same sequence, with nets or pots in place of hooks. The `set` and `haul` windows of
+`rb_create_record_windows()` already cover B to D and E to I.
+
+**A line fishes hook by hook.** A trawl fishes as one unit from `t2` to `t3`. Each hook fishes from its own set,
+between `t1` and `t2`, to its own haul, between `t3` and `t4`. So every hook soaks at least `t3 − t2` and at most
+`t4 − t1`. With steady setting and hauling, the mean soak per hook is `(t3 + t4)/2 − (t1 + t2)/2`, whichever end is
+hauled first. `t3 − t1`, used where `t2` is not recorded, differs from that mean by half the difference between the
+hauling time `t4 − t3` and the setting time `t2 − t1`.
 
 ### The fishing sample
 

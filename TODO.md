@@ -1312,6 +1312,23 @@ as built from `curated/` in fishycode, live from the `rb_` steps in ramb. None o
 **check:** plan 047's seven steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.
 
+## 146. The events of a fishing operation beyond `t1`-`t4`: what `t3` means, and the A to J protocol's source
+**status:** open · **needs: maintainer** — three answers · **see:** `docs/grammar.qmd` (section "Events between and
+around the four"), decision 230, TODO 127
+
+The maintainer, 2026-10-26, gave a cruise protocol's ten bridge actions per tow (A to J) to extend the grammar's
+fishing operation; the section and decision 230 match a longline to it. Open:
+- (a) for towed gear, is `t3` the start of hauling (E, what Hafriti and `fs_afladagbok` record) or off the bottom
+  (F, as the grammar's table defines it)? The grammar says, for now, that a recorded `t3` is the start of hauling;
+- (b) which cruise the protocol is from, and whether its A to J presses, with the engine or fuel data, are kept;
+  if so, they measure the E to F gap on towed gear;
+- (c) whether the protocol's translation may stay in the published book.
+
+Names for the events between and around the four go to TODO 127's review.
+
+**check:** the grammar's table of the four events names one event for towed gear's `t3`, and decision 230 names the
+protocol's cruise and says whether its records exist and may be published.
+
 ## 147. Voyages that still hold several logbook trips after the time budget: what they are
 **status:** open · **see:** plan 031 §3.2, §3.6, §3.10, decision 197, TODO 90
 
