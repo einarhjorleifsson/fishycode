@@ -11,6 +11,14 @@ commit: 1b7248c0dc2b29df814cc2b92f914764320b8405
 environment: R 4.5.2, sf 1.1.3, GEOS 3.13.0, s2 1.1.13, lwgeom 0.2.17
 sent: 2026-10-19
 sent_how: personal email to the author (Quarto document and HTML), not filed on GitHub
+moved_to: https://gitlab.ifremer.fr/iapesca/r-packages_iapesca   # the live package; the GitHub copy is deprecated (its author, 2026-10-26)
+response: |
+  The author answered by email on 2026-10-20 and 2026-10-22: fixed in GitLab work item #14, commits bb145a9
+  (2026-10-21) and 1882892 (2026-10-22). Read against main at 1882892 on 2026-10-27 (decision 232), in the order below:
+  s2 off, fixed (Check_sfObject); min.stop, fixed in 2023 (3edff8f), before this was sent; the buffer cap, fixed as
+  suggested; CalcSpeed's duplicates, changed, not as suggested (any second fix at the same second is dropped);
+  CleanSpuriousSpeeds' NA rows, fixed in 2023 (df901f9); Char2Time at midnight, fixed (a missing time step still gives
+  speed 0); the faster harbour test, in part (sparse st_intersects, no buffered harbours passed in).
 
 shared_setup: |
   ```r
