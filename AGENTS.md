@@ -47,6 +47,24 @@ The work is split in two (maintainer, 2026-10-14):
   spectrum, from pings alone to hauls with times (`docs/one_flow.qmd`).
 - **fishycode** is the scripts that apply them to the Icelandic data.
 
+**Why the view is wider than Iceland** (maintainer, 2026-10-27). Putting the Icelandic
+data through a generic flow has one narrow aim, the ICES VMS datacall's delivery.
+Programming that flow, from raw data to delivery, took a broad view for two purposes:
+generic functions that others may find useful (ramb), and other data, which may be
+poorer or richer than Iceland's. Other workflows are read three ways:
+
+- **Methods come from the code we have mined**: the ICES datacall's own code with
+  vmstools and sfdSAR, the WKSSFGEO repositories, iapesca, CNR-IRBIM's, Mendo et al.'s,
+  GFW's pipe-anchorages, WorldFish's Peskas and `ssf-ai-toolkit` (decisions 078, 148,
+  231). The aim is to fold them all under one umbrella, the one flow: ramb recodes a
+  method and checks it against that code, and copies nothing.
+- **Documents give asks and definitions**: the ICES reports (decisions 150, 152),
+  papers, and EM4SSF's deliverables (decision 229; no code yet). They shape the
+  diagram's rows and the wish list, not the methods.
+- **Other datasets are test cases**, alternatives to the Icelandic data (decision 148).
+  They are not yet all gathered locally, nor systematically: what is in
+  `raw/external/` and ramb's example data, and what is still asked for, is in TODO 93.
+
 **Each step is a cascade** (`docs/one_flow.qmd`): ping by ping, it takes the best
 source it has, falls back when that is missing, and records which source
 answered (the basis). The path differs between datasets, and within one dataset
