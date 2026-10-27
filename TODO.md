@@ -1311,3 +1311,28 @@ as built from `curated/` in fishycode, live from the `rb_` steps in ramb. None o
 
 **check:** plan 047's seven steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.
+
+## 147. Voyages that still hold several logbook trips after the time budget: what they are
+**status:** open · **see:** plan 031 §3.2, §3.6, §3.10, decision 197, TODO 90
+
+Plan 031 §3.10: the time budget cuts the voyages that hold two or more logbook trips from 2,203 to 815 in 2010 and from
+1,078 to 815 in 2018. That is 1.1-1.3 % of each year's voyages, and at least 1,630 trips a year, about 3.5 % of them (a
+lower bound from the plan's numbers, not counted). Not all are errors. Before the budget, over every year (§3.2):
+- 48 % held a port call of 2 h or more that the rules missed;
+- 31 % only touches under 2 h;
+- 20 % no port call at all: one sea trip that a date-only logbook splits by day, where the voyage is right.
+
+How the 815 divide among these is not measured; the plan leaves it to the AIS rebuild (step 7). The maintainer asked
+for it as an item on 2026-10-27.
+
+Count each remaining voyage in one outcome, the unjudgeable too (decision 155's method):
+- a port call the budget still misses;
+- a call under 2 h, and whether a landing or logbook end confirms it;
+- one sea trip split by date;
+- the track and the records disagree on the port or the vessel.
+
+Read-only, either on 2010 and 2018 with plan 031's step-3 scripts (`$FISHYDATA/archive/2026-10-plan031/scripts/step3/`),
+or on every year once step 7 has rebuilt the port calls.
+
+**check:** the remaining voyages with several logbook trips, of 2010 and 2018 or of every year after step 7, are counted
+into these outcomes with every voyage in one, and the counts are in plan 031 §3.10 or a decision.
