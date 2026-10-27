@@ -104,7 +104,15 @@ re-sort the rows by time, two return a data.table from a data.frame, and `Cluste
 time order. `Calc_NetsThresholds` resets the caller's random seed, and s2 stays switched on after an error. The same test
 on five ramb functions: the two ping flags keep class and order; `rb_add_effort` returns a tibble from a data.frame,
 re-sorted, and `rb_create_voyages` a tibble; none changed the session; ramb's DuckDB keeps its extensions in
-`~/.duckdb`, shared across sessions.
+`~/.duckdb`, shared across sessions. *Amended a third time the same day:* before sending, at the maintainer's request,
+every issue was checked again from scratch (the `checked` field of `batch_2026_10_27`): a fresh clone, every reprex rerun
+as written, every cited line re-read, each suggested fix tried on a patched copy, and an independent AI reader asked to
+refute each one. That corrected six of them: a wrong cause in the Danish seine, an unsafe fix for `CleanMemory`, the
+wrong side of a join in `Sacrois2Eflalo`, a false sentence about R CMD check, `Positions2Tacsat` and `assign_lsTabs`
+dropped as documented behaviour, and two cases added (`Sacrois2Eflalo` loses a whole vessel missing from FPC when
+there are several; `CleanMemory` is called by two other functions). `CalcTurningAngle` became an issue of its own:
+nine drafts. Each points, where it can, to what ramb does at its pushed commit `9a67e0d`. The same day iapesca 1.3 was
+installed in R from GitLab at `1882892`, replacing the stale 0.1.
 
 - `ICES_rectangle` does not skip the letter I (30-40° E gives `I`, where ICES has `J`), does not pad rows 1-9 to two
   digits, and gives the A column 6-9 where ICES has 0-3.

@@ -198,7 +198,15 @@ batch_2026_10_27:
   repository: https://gitlab.ifremer.fr/iapesca/r-packages_iapesca
   commit: 1882892c74f950155222367b00043311f684f4e0
   environment: R 4.5.2, sf 1.1.3 (GEOS 3.13.0, GDAL 3.8.5, PROJ 9.5.1), data.table 1.18.6.1, dbscan 1.2.7, mapplots 1.5.3,
-    ramb 2026.10.25.5; iapesca 1.3 installed from the clone into a scratch library, each reprex run in an empty folder
+    ramb 2026.10.25.5 (9a67e0d, the version pushed to GitHub); iapesca 1.3 installed from a fresh clone of main at 1882892
+  checked: |
+    2026-10-27, at the maintainer's request to double-check every issue from scratch before sending. A fresh clone of
+    GitLab main (still 1882892) installed into a new scratch library; every reprex extracted from this file and run as
+    written, each in a new R session and an empty folder, its output compared line by line with the one printed here;
+    every line number and quoted line re-read in the clone; each suggested fix applied to a copy of the package and its
+    reprex rerun; and an independent AI reader asked to refute each issue, whose corrections (a wrong cause in the Danish
+    seine, an unsafe fix for CleanMemory, the wrong side of a join, a false sentence about R CMD check, two unfair points
+    and two cases missed) were each checked by running before they were taken in. Drafted by Claude (AI); not sent.
   sent: no
   sent_how: ""
   not_drafted: |
@@ -211,11 +219,11 @@ batch_2026_10_27:
     library(iapesca)
     ```
   issues:
-    - title: "ICES_rectangle() uses the letter I, does not pad rows 1-9, and numbers the A column 6-9"
+    - title: "ICES_rectangle(): the letter I, rows 1-9 unpadded, the A column, and codes outside the grid"
       labels: [bug]
       body: |
-        ICES rectangles skip the letter I in the longitude band, write the row with two digits, and number the A column
-        (44° W to 40° W) 0 to 3. `ICES_rectangle()` does none of the three:
+        ICES rectangles skip the letter I, write the row with two digits, number the A column (44° W to 40° W) 0 to 3,
+        and exist only from 44° W to 69° E and 36° N to 85° N. `ICES_rectangle()` does none of the four:
         ```r
         pts <- data.frame(lon = c(-21.5, 5.5, 35.5, -43.5, -7.5), lat = c(64.25, 56.25, 70.25, 60.25, 36.25))
         data.frame(pts, iapesca = ICES_rectangle(pts$lon, pts$lat), mapplots = mapplots::ices.rect2(pts$lon, pts$lat))
@@ -225,22 +233,29 @@ batch_2026_10_27:
         #> 3  35.5 70.25    69I5     69J5
         #> 4 -43.5 60.25    49A6     49A0
         #> 5  -7.5 36.25     1E2     01E2
+        ICES_rectangle(c(-49.5, 5.5), c(60.25, 87.25))   # outside the grid
+        #> [1] "49A0"  "103F5"
         ```
-        Everything east of 30° E takes the letter before its own, and `ICESRect_Grids()` and `Rasterize_FE2ICESRect()`
-        inherit it.
+        Everything east of 30° E takes the letter before its own. The valid range (line 29) reaches 50° W and 89° N, so
+        49.5° W gets `49A0`, the name of the rectangle at 44-43° W, and 87° N a three-digit row. `ICESRect_Grids()`
+        (line 83) and `Rasterize_FE2ICESRect()` inherit all of it.
 
-        **Suggested remedy.** Skip I in the letter (`LETTERS[-9]`), `sprintf("%02d", row)`, and the A column's own
-        numbering; or take a lookup such as `mapplots::ices.rect2()`'s.
+        **Suggested remedy.** Skip I (`LETTERS[-9]`), `sprintf("%02d", row)`, number the A column `floor(lon + 44)`, and
+        give NA outside 44° W to 69° E and 36° N to 85° N. A function written that way agrees with
+        `mapplots::ices.rect2()` on all 553,700 points of a 0.1° grid over that area; the current one on 61 %.
+        (`mapplots` is not a dependency of iapesca; the rule above needs none.)
+
+        **In ramb**, `rb_encode_ices_rectangle()` does this: it skips I (`R/ices_rectangle.R`, [lines 72-74](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ices_rectangle.R#L72-L74))
+        and gives NA outside the grid ([line 82](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ices_rectangle.R#L82)); ramb at 9a67e0d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
-    - title: "CleanMemory() deletes files in the working directory, not in the temporary one"
+    - title: "CleanMemory() deletes files in the working directory, and Positions2CIBBRiNA() and match_Obs2Pos() call it"
       labels: [bug]
       body: |
         `CleanMemory()` runs `unlink(list.files(tempdir()), recursive = TRUE)`. `list.files()` returns bare names, so
-        `unlink()` looks for them in the working directory: any file or folder there that shares a name with an entry
-        of `tempdir()` is deleted, and the temporary files are left. `BackgroundMapWithCountries()` has the same line
-        twice (lines 48 and 71).
+        `unlink()` looks for them in the working directory: any file or folder there that shares a name with an entry of
+        `tempdir()` is deleted, and the temporary files are left.
         ```r
         # in an empty working directory
         writeLines("tmp", file.path(tempdir(), "notes.txt"))
@@ -250,14 +265,23 @@ batch_2026_10_27:
         #> working_dir     tempdir
         #>       FALSE        TRUE
         ```
-        **Suggested remedy.** `unlink(list.files(tempdir(), full.names = TRUE), recursive = TRUE)`.
+        Users need not call it themselves: `Positions2CIBBRiNA()` calls it (lines 152 and 411), and `match_Obs2Pos()`
+        once per observation (line 178). `BackgroundMapWithCountries()` has the same line twice (lines 48 and 71).
+
+        **Suggested remedy.** Not `full.names = TRUE`: that empties the whole session's temporary folder, including files
+        other packages still use there (terra, which iapesca uses, keeps rasters in it). Instead, let each function that
+        downloads or writes temporary files use a folder of its own (`td <- tempfile(); dir.create(td)`) and remove only
+        that (`unlink(td, recursive = TRUE)`, in `on.exit()`), and let `CleanMemory()` keep to `gc()`.
+
+        **In ramb**, a function that needs temporary files makes its own folder with `tempfile()` and leaves the rest of
+        the session's temporary folder alone (`R/ping.R`, [lines 78-79](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L78-L79)); ramb at 9a67e0d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
     - title: "Process_TripPositions() fails with harbours and no resampling: object 'trip.path.w.heading' not found"
       labels: [bug]
       body: |
-        The example of `?Process_TripPositions` without `resampling` (its default, `NULL`) stops:
+        The example's call of `?Process_TripPositions` without `resampling` (its default, `NULL`) stops:
         ```r
         data(positions); data(harbours)
         pos.sf <- df2sfp(positions[positions$FISHING_TRIP_FK %in% 18529291, ], coords = c("LONGITUDE", "LATITUDE"))
@@ -265,19 +289,21 @@ batch_2026_10_27:
         #> Error in FUN(X[[i]], ...) : object 'trip.path.w.heading' not found
         ```
         In the branch where trips are detected and neither `resampling` nor `CalcFeatures` is set, line 167 reads
-        `FT.path <- trip.path.w.heading`; the object made two lines above is `FT.path.w.heading`.
-        `globalVariables('trip.path.w.heading')` keeps R CMD check from reporting it.
+        `FT.path <- trip.path.w.heading`; the object made on the line above is `FT.path.w.heading`.
 
-        **Suggested remedy.** `FT.path <- FT.path.w.heading`, and drop the name from `globalVariables()`.
+        **Suggested remedy.** `FT.path <- FT.path.w.heading` on line 167; the name `trip.path.w.heading` can then also
+        leave `globalVariables()` (`R/global_variables.R`, line 1). With that one change the call above returns the
+        trip's track and path.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
     - title: "Calc_VesselFE() counts the days of non-fishing operations as fishing days"
       labels: [bug]
       body: |
-        The documentation defines a fishing day as a calendar day in which a fishing activity takes place. The code
-        counts the distinct start and end dates of every operation of the trip, `NotFishing` included. On the package's
-        own example, four of the eight trips get a day more than the dates on which they set or hauled:
+        The documentation defines a fishing day as a calendar day in which a fishing activity takes place (line 10). The
+        code counts the distinct start and end dates of every operation of the trip, `NotFishing` included (lines
+        137-144). On the package's own example, four of the eight trips get a day more than the dates on which they set
+        or hauled:
         ```r
         data(positions)
         fe <- Calc_VesselFE(Traj_Desc(positions, add.group = "FishingOperation"))
@@ -295,17 +321,21 @@ batch_2026_10_27:
         #> 7        18569376           6                  5
         #> 8        18569377           4                  3
         ```
-        A day crossed in the middle of an operation is also not counted, since only its start and end dates are read.
+        By reading, two more: a day crossed in the middle of an operation is not counted, since only its start and end
+        dates are read; and a trip with no fishing operation would leave the result, since the days are joined to it with
+        an inner `merge()` (lines 149-155).
 
-        **Suggested remedy.** Count the dates of the operations whose category is not `NotFop.category`, every date
-        from each one's start to its end.
+        **Suggested remedy.** Count, per trip, every date from start to end of each operation whose category is not
+        `NotFop.category`, and give a trip with none 0. Written that way it gives the `dates_with_fishing` column above
+        for all eight trips.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
-    - title: "Sacrois2Eflalo() drops kilograms without a message: species coded NA, and vessel-years missing from FPC"
+    - title: "Sacrois2Eflalo() loses kilograms without a message: a vessel missing from FPC among several, a species coded NA, a vessel-year missing"
       labels: [bug]
       body: |
-        On the example the kilograms add up, but two ordinary gaps in the input lose catch silently:
+        The function means to keep vessels missing from the fleet register (lines 148-162, "If FPC is missing, add
+        vessel_ids..."), and on the example the kilograms add up. Three gaps in the input still lose catch silently:
         ```r
         data(sacrois); data(fpc); data(harbours)
         kg_out <- function(e) { e <- as.data.frame(e); sum(as.matrix(e[, grep("^LE_KG_", names(e))]), na.rm = TRUE) }
@@ -313,31 +343,48 @@ batch_2026_10_27:
         c(kg_in, kg_out(Sacrois2Eflalo(sacrois, fpc, harbours)))
         #> [1] 21189.13 21189.13
 
+        # 1. a second vessel, missing from FPC
+        b <- sacrois; b$VESSEL_FK <- "NAVIRE_0999"; b$MAREE_ID <- b$MAREE_ID + 1e8; b$SEQ_ID <- b$SEQ_ID + 1e8
+        two <- rbind(sacrois, b); e1 <- Sacrois2Eflalo(two, fpc, harbours)
+        c(sum(two$QUANT_POIDS_VIF_SACROIS, na.rm = TRUE), kg_out(e1), length(unique(e1$FT_REF)))
+        #> [1] 42378.26 21189.13     8.00                      # its 8 trips and all its kg are gone
+
+        # 2. one species code missing
         i <- which(sacrois$QUANT_POIDS_VIF_SACROIS > 100)[1]
-        s2 <- sacrois; s2$ESP_COD_FAO[i] <- NA                 # one species code missing
+        s2 <- sacrois; s2$ESP_COD_FAO[i] <- NA
         c(kg_in, kg_out(Sacrois2Eflalo(s2, fpc, harbours)))
         #> [1] 21189.13 21044.13                               # its 145 kg are gone
 
-        e3 <- Sacrois2Eflalo(sacrois, fpc[fpc$AN_REF == 2021, ], harbours)   # FPC lacks the vessel's 2022 row
+        # 3. FPC lacks the vessel's 2022 row
+        e3 <- Sacrois2Eflalo(sacrois, fpc[fpc$AN_REF == 2021, ], harbours)
         c(kg_in, kg_out(e3), length(unique(e3$FT_REF)))
-        #> [1] 21189.13  4609.82     2                         # 6 of 8 trips and 78 % of the kg are gone
+        #> [1] 21189.13  4609.82     2.00                      # 6 of 8 trips and 78 % of the kg are gone
         ```
-        The first loss is in `Pivot_Table()` (`sort(unique())` leaves NA out of the categories); the second in the
-        inner joins (`merge(..., all = FALSE)`).
+        1. Line 150 tests `navs.ids %in% eflalo.VE$VE_REF` on the data.table, not on its column, so with more than one
+           vessel the missing one is never added (with that vessel alone it is).
+        2. `Pivot_Table()` (line 59) leaves NA out of the categories.
+        3. The joins are inner (`merge(..., all = FALSE)` in `mergeDTs()`, line 53); at line 214 the fleet register is on
+           the left, so a trip whose vessel-year it lacks is dropped.
 
-        **Suggested remedy.** Keep NA as a category of its own (e.g. `LE_KG_NA`), join the fleet register with
-        `all.x = TRUE`, and warn with the trips and kilograms that are dropped or left without vessel details.
+        **Suggested remedy.** 1: `navs.ids$VESSEL_FK` in line 150 (with that change case 1 keeps all 16 trips and every
+        kilogram). 2: `sort(unique(x), na.last = TRUE)` in `Pivot_Table()`, which gives `LE_KG_NA` and `LE_EURO_NA`
+        (`Calc_VesselFE()`, its other caller, replaces NA first, so it is unaffected). 3: keep every trip in the join
+        with the fleet register (`all.y = TRUE` there, or the trips on the left), and warn with the trips left without
+        vessel details. With 2 and 3, cases 2 and 3 return every kilogram and all eight trips. Also, the documentation
+        (line 10) promises a data.frame "if vmstools is installed", but the function no longer calls vmstools.
+
+        **In ramb**, the catch split ends with kilograms out equal to kilograms in: what finds no place moves up a level,
+        and what finds none at all is kept with basis "none" (`R/catch.R`, [lines 157-160](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/catch.R#L157-L160));
+        ramb at 9a67e0d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
-    - title: "Detect_DanishSeineOperations(): a harbour stay makes the whole trip 'fishing' and duplicates its positions"
+    - title: "Detect_DanishSeineOperations(): a harbour stay relabels the steaming as 'fishing' and doubles the operations' rows"
       labels: [bug]
       body: |
-        Any cluster of slow positions is taken for an anchor point, a vessel moored in harbour included. For each cluster
-        the positions between its first and its last visit are labelled, so a harbour cluster labels the whole trip
-        "fishing"; and each position gets one row per cluster, so the output has more rows than the input. The
-        package's example, with each trip starting and ending with 2 h in a harbour 30 km away (a fix a minute, speed 0,
-        each a few metres apart):
+        Any cluster of slow positions is taken for an anchor point, a vessel moored in harbour included, and for each
+        cluster the positions between its first and its last visit are labelled. The package's example, with each trip
+        starting and ending with 2 h in a harbour 30 km away (a fix a minute, speed 0, each a few metres apart):
         ```r
         data(positions_danishseiner)
         d <- positions.danishseiner
@@ -369,13 +416,46 @@ batch_2026_10_27:
         #> 5         374    1100         240     1714    1083
         #> 7         433    1125         240     1798    1158
         ```
-        Even the example as shipped returns 920 rows for trip 7's 918. The duplicates come from `rbindlist()` over the
-        clusters (lines 131-147) and the `st_join()` on geometry that puts the labels back (line 166). The DBSCAN radius
-        is also fixed at `eps = 0.001` in degrees (line 118), which is about 111 m north-south and less east-west.
+        In trip 2 the 235 positions at sea outside the operations (the steaming), `not_fishing` before, become `fishing`,
+        and the 672 inside the operations each appear twice, once with their own label and once as `fishing`: 327 + 235 +
+        672 = 1234. The doubling comes from binding the rows of each cluster (lines 129-148). Separately, the example as
+        shipped returns 920 rows for trip 7's 918: two of its positions share a coordinate, and the `st_join()` on
+        geometry that puts the labels back (line 166) gives each both labels. The DBSCAN radius is fixed at
+        `eps = 0.001` in degrees (line 118), about 111 m north-south and less east-west.
+
+        This arises only when harbour time is in the trip: `Detect_FishingTrips()` drops positions in harbour by default
+        (`keepPointsInHarb = FALSE`), so it needs trips cut another way or `keepPointsInHarb = TRUE`.
 
         **Suggested remedy.** Leave out slow clusters inside a harbour buffer (the package already takes `Harbours`
-        elsewhere), give each position one label (e.g. the cluster whose visits enclose it most narrowly), join the
-        labels back by row id rather than by geometry, and take `eps` in metres on projected coordinates.
+        elsewhere), give each position one label (e.g. from the cluster whose visits enclose it most narrowly), join the
+        labels back by row id rather than by geometry, and take `eps` in metres on projected coordinates. (Suggestions;
+        not tried here.)
+
+        **In ramb**, positions in port carry a label of their own (`rb_flag_ping_port()`, `R/ping.R`,
+        [line 421](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L421)), and labels go back onto the positions by a row number, not by
+        geometry ([line 113](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L113)); ramb at 9a67e0d.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "CalcTurningAngle() puts the angles on the wrong positions when the input is not in time order, and stops on a repeated time"
+      labels: [bug]
+      body: |
+        `CalcTurningAngle()` computes the angles on rows that `CleanSpuriousSpeeds()` has sorted (and may have thinned),
+        then writes them onto the rows in the order given:
+        ```r
+        data(positions); set.seed(1)
+        one <- positions[positions$FISHING_TRIP_FK %in% 18529291, ]; one$.rid <- seq_len(nrow(one))
+        shuf <- one[sample(nrow(one)), ]
+        a_sorted <- CalcTurningAngle(df2sfp(one)); a_shuf <- CalcTurningAngle(df2sfp(shuf))
+        m <- merge(sf::st_drop_geometry(a_sorted)[, c(".rid", "TURN.deg")], sf::st_drop_geometry(a_shuf)[, c(".rid", "TURN.deg")], by = ".rid")
+        sum(abs(m$TURN.deg.x - m$TURN.deg.y) < 1e-9)   # angles that land on their own position
+        #> [1] 1
+        dup <- rbind(one, one[100, ]); dup <- dup[order(dup$DATE_TIME), ]
+        CalcTurningAngle(df2sfp(dup))                   # input in time order, one time repeated
+        #> Error in `[[<-.data.frame`(...) : replacement has 416 rows, data has 417
+        ```
+        **Suggested remedy.** Compute on the cleaned, sorted copy and join the angles back by a row id, NA where a row was
+        removed.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
@@ -385,7 +465,7 @@ batch_2026_10_27:
         A caller's next step (selecting columns, joining, binding rows) depends on the class and order it handed in.
         Run on one trip of `positions`, its rows shuffled, with a row id carried along:
         ```r
-        data(positions); data(harbours); data(sacrois); data(fpc); set.seed(1)
+        data(positions); data(harbours); set.seed(1)
         one <- positions[positions$FISHING_TRIP_FK %in% 18529291, ]; one$.rid <- seq_len(nrow(one))
         shuf <- one[sample(nrow(one)), ]; p_sf <- df2sfp(shuf, coords = c("LONGITUDE", "LATITUDE"))
         order_kept <- function(out, input) identical(out$.rid, input$.rid[input$.rid %in% out$.rid])
@@ -393,22 +473,25 @@ batch_2026_10_27:
         order_kept(CalcDist(p_sf), p_sf)                                          #> FALSE
         order_kept(CleanSpuriousSpeeds(p_sf), p_sf)                               #> FALSE
         order_kept(Detect_FishingTrips(p_sf, Harbours = harbours)$trip.path, p_sf) #> FALSE
-        class(Positions2Tacsat(shuf))                    #> "data.table" "data.frame"   (given a data.frame)
-        class(Sacrois2Eflalo(sacrois, fpc, harbours))    #> "data.table" "data.frame"   (given a data.frame)
         Clustering_BivariateBinary(shuf)                 #> Error: max(): object has no elements
         ```
-        The first four return the rows sorted by time. `CalcCOG()` and `CalcTurningAngle()` keep the order given, but
-        by reading they compute each course between rows as given, so they need input sorted by time without saying
-        so. `Clustering_BivariateBinary()` works on the same trip in time order. An sf object comes back an sf object
-        throughout.
+        The first four return the rows sorted by time (`CleanSpuriousSpeeds()` only when it computes the speed itself).
+        `CalcCOG()` keeps the order given and computes each course between rows as given, so it needs input in time order
+        without saying so. `Clustering_BivariateBinary()`, documented to take a data.frame, works on the same trip in time
+        order. An sf object comes back an sf object throughout, and `Positions2Tacsat()`'s data.table is documented, with
+        `as.df = TRUE` for a data.frame.
 
-        **Suggested rule.** Sort internally when a method needs time order, then put the rows back in the order they
-        came (a row id does it), and return the input's class: `data.table::setDF()` before returning when the input was
-        a data.frame.
+        **Suggested rule.** Where nothing else is documented, sort internally when a method needs time order, then put
+        the rows back in the order they came (a row id does it), and return the input's class.
+
+        **In ramb**, the ping flags return the class and the row order they were given (`rb_flag_ping_invalid()` and
+        `rb_flag_ping_impossible()`, `R/ping.R`, [line 136](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L136) and
+        [line 294](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L294)); ramb at 9a67e0d. Not yet everywhere: its `rb_add_effort()` re-sorts
+        and returns a tibble for a data.frame, which is being fixed.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
-    - title: "Some functions leave the caller's session changed: the random seed, s2 after an error, files in the working directory"
+    - title: "Some functions leave the caller's session changed: the random seed, s2 after an error, a map file in the working directory"
       labels: [enhancement]
       body: |
         A function should leave the session as it found it, on error too. Three cases:
@@ -427,13 +510,23 @@ batch_2026_10_27:
         sf::sf_use_s2()
         #> [1] TRUE                         # it was FALSE before the call
         ```
-        3. By reading: `plot_FE()`, `plot_Paths()` and `plot_Trip()` save the background map as `BgMap*.rds` in
-        `getwd()` by default (`path = getwd()`, `rm.BgMap = FALSE`); `assign_lsTabs()` assigns into `globalenv()` by
-        default; `plot_CART_tree()` sets `options(warn = -1)` and restores it without `on.exit()`.
+        With the default `seed = NULL`, case 1 seeds from the clock (line 78), so the caller's `set.seed()` no longer
+        makes the rest of a script reproducible. Case 2: `Check_sfObject()` turns s2 on with
+        `on.exit(sf::sf_use_s2(TRUE))` (line 63), so the change outlives it, and the callers restore the old value only
+        at their end. 3, by reading: `plot_FE()` and `plot_Paths()` save the background map as `BgMap*.rds` in `getwd()`
+        by default (`Create.BgMap = TRUE`, `path = getwd()`), and an existing `BgMap.rds` there is read back whatever the
+        area (`plot_FE.R`, lines 98-100), so a later plot of another area from the same folder gets the old map.
+        `plot_CART_tree()` sets `options(warn = -1)` and restores it without `on.exit()` (lines 40 and 48).
 
-        **Suggested remedy.** `Check_sfObject()` turns s2 on with `on.exit(sf::sf_use_s2(TRUE))`, so the change outlives
-        it; set it in each caller with `old <- sf::sf_use_s2(TRUE); on.exit(sf::sf_use_s2(old), add = TRUE)`, which runs
-        on error too. Seed inside with `withr::with_seed()`, or save and restore `.Random.seed`. Write files to
-        `tempdir()` unless the caller gives a path, and restore options with `on.exit()`.
+        **Suggested remedy.** In each caller, `old <- sf::sf_use_s2(TRUE); on.exit(sf::sf_use_s2(old), add = TRUE)`,
+        which runs on error too (`sf_use_s2()` returns the old value). Seed inside with `withr::with_seed()`, or save
+        and restore `.Random.seed`. Write the map to `tempdir()` unless the caller gives a path, and restore options with
+        `on.exit()`.
+
+        **In ramb**, no function sets `sf_use_s2()`: distances are computed on ramb's own sphere or ellipsoid, so results
+        never depend on that option (`R/trip.R`, [lines 1520-1523](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/trip.R#L1520-L1523)); options are
+        restored with `on.exit()` ([`R/example.R`, lines 116-117](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/example.R#L116-L117)); and the map
+        viewer names its temporary tables without drawing random numbers, so the caller's stream does not move
+        ([`R/map.R`, lines 873-874](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/map.R#L873-L874)); ramb at 9a67e0d.
 
         *Found and drafted with the help of an AI assistant (Claude); cases 1 and 2 checked by running the code above.*
