@@ -449,8 +449,11 @@ on [their own page](wkssfgeo.qmd).
 What the two ICES workshops on small-scale fisheries asked for, and where it stands (G1 = WKSSFGEO 2021, G2 =
 WKSSFGEO2 2023; pages as printed; read 2026-10-19, decision 148). The EU project EM4SSF (2025-2028) asks for more in
 its deliverables, cited by number and section (D1.1 data management plan, D2.1 tracking-data format, D2.2 observer
-template; read 2026-10-26, decision 229): the last nine rows are its own. "Nowhere" means in none of ramb, fishymodel or
-fishycode.
+template; read 2026-10-26, decision 229): the nine rows after the workshops' are its own. WorldFish's Peskas pipelines
+have built some things neither asked for, cited by function (Timor = `peskas.timor.data.pipeline`, coasts = its hub
+`peskas.coasts`, ssfaitk = WorldFish's `ssf-ai-toolkit`, the classifier coasts runs; read 2026-10-27, decision 231):
+the last six rows are theirs. "Nowhere" means in none of ramb,
+fishymodel or fishycode.
 
 | Wish | Asked in | Where it stands |
 |---|---|---|
@@ -462,16 +465,16 @@ fishycode.
 | Harbours without drawn polygons: mooring sites, beaches | G1 p. 16, 19; G2 p. 6, 24 | nowhere; Mendo et al. 2024's workflow and GFW's `pipe-anchorages` do it; plan 031 §4.3 |
 | Fishing from speed rules | G1 p. 21 | ramb: `rb_add_fishing(method = "speed")` |
 | Mixture models, EMbC, HMM | G1 p. 21; G2 p. 19-20, 29 | fishymodel: `fm_gaussian`, `fm_gaussian_binary_clustering`, `fm_hidden_markov_step`, `fm_hidden_markov_step_and_turn` |
-| Random forests and other learned classifiers, with movement features | G1 p. 26; G2 p. 2-3, 26, 30-36 | nowhere; iapesca, CNR-IRBIM's SoftwareX code (Python) and Samarão et al. 2025 have them |
-| Gear from the track | G1 p. 6-7, 38 | nowhere; CNR-IRBIM's Adriatic model, Lattanzi et al. 2026, GFW's `vessel-classification` |
+| Random forests and other learned classifiers, with movement features | G1 p. 26; G2 p. 2-3, 26, 30-36 | nowhere; iapesca, CNR-IRBIM's SoftwareX code (Python) and Samarão et al. 2025 have them; ssfaitk has a random forest scored only on its training data, and Peskas runs its hand-weighted rule score instead, never scored (decision 231) |
+| Gear from the track | G1 p. 6-7, 38 | nowhere; CNR-IRBIM's Adriatic model, Lattanzi et al. 2026, GFW's `vessel-classification`; labels in ssfaitk: 8,223 Zanzibar trips in seven gear groups, each the boat's gear (source and terms not stated; decision 231) |
 | Sets, hauls and soak time | G1 p. 29-30; G2 p. 30-36; D2.2 | ramb: `rb_link_record_sets` (iapesca's method), which on Icelandic static gear does not recover real set times (decision 158); Mendo et al. 2023's method is not in ramb |
 | Hours fished, kW-hours, swept area | G1 p. 27-28 | ramb: `rb_add_effort`, `rb_predict_gear_width` |
 | Days at sea, fishing days, hours at sea | G1 p. 12-13, 27; D2.1 §2.1 | nowhere as a function |
 | Net length from hauling, haul counts, the three-level set/haul indicator, static-gear pressure | G1 p. 28-30; D2.1 §2.1 | nowhere; `rb_add_effort`'s pressure is for towed gear only |
 | Hours spread over grid cells by track length | WKSSFGEO2 code | nowhere |
 | Grids at 0.01° or 100-1000 m | G1 p. 40; G2 p. 70; D1.1 §3.1.4 | ramb: `rb_bin_midpoint` (any cell size), `rb_encode_ices_rectangle`; c-squares in the ICES data call |
-| Open labelled data as a common benchmark | G2 p. 8, 72 | ramb's example data (the [workshops' sets](wkssfgeo.qmd)); more in `$FISHYDATA/raw/external` (decision 148, TODO 93) |
-| Scoring: accuracy, kappa, F-score; trips matched within ±10 % of duration | G1 p. 22-25, 52-57; D2.2 §1 | nowhere as a function; plan 031's bench, in scratch |
+| Open labelled data as a common benchmark | G2 p. 8, 72 | ramb's example data (the [workshops' sets](wkssfgeo.qmd)); more in `$FISHYDATA/raw/external` (decision 148, TODO 93); in ssfaitk, Kenyan tracks with an observer's label on each fix: 193,934 fixes, 239 trips, 548 hauls, 2015-2018, fishing, searching and sailing apart (source and terms not stated; decision 231) |
+| Scoring: accuracy, kappa, F-score; trips matched within ±10 % of duration | G1 p. 22-25, 52-57; D2.2 §1 | nowhere as a function; plan 031's bench, in scratch; ssfaitk shows why whole trips must be held out: its random forest's 0.96 is scored on its training data, and an earlier rule score reached 0.54 on the Kenyan labels (decision 231) |
 | Anonymising tracks for sharing | G2 p. 8; D1.1 §6.1 | nowhere |
 | EM4SSF's exchange format, read and written: raw fixes (`VESSEL_ID`, `DATE_TIME`, `LATITUDE`, `LONGITUDE`, `SPEED`, `COG`, `HEADING`, `DATA_SOURCE`) and processed ones (`TRIP_ID`, `ACTIVITY_ID`, `ACTIVITY`, `GEAR`, each with a `_SOURCE`) | D2.1 tables 1-2 | nowhere; ramb's WKSSFGEO examples are renamed in its `data-raw/` only |
 | The source of each trip, operation, activity and gear: logbook, observer, analysis, sensor, other | D2.1 table 3 | nowhere; ramb's `basis` says how a value was obtained, not where it came from, and ramb has no observer or sensor as a source of records |
@@ -482,6 +485,12 @@ fishycode.
 | A summary of each dataset: vessels, valid and invalid trips, the most events in a trip, length and engine power, trips' distance and duration | D2.1 §2.1 (Rufino et al. 2023 Table 1) | in part: `rb_summarise_track` (pings, speed, step distance and duration, voyages, ports); no vessel attributes, event counts or trip validity |
 | Course and depth limits; gaps in a track reported | D1.1 §8.1 | nowhere; ramb tests positions and speed only, and a gap only restarts `rb_flag_ping_impossible`'s scan |
 | Maps safe to publish: vessels counted in each cell, too few masked | D1.1 §3.1.4, §6.1 | nowhere in ramb; fishycode applies ICES's three-vessel rule in `products/ices_vms_datacall/` only |
+| Catch per hour fitted across trips: a trip's catch is the sum over its cells of hours times the cell's rate, the rates solved by non-negative least squares, species by species | coasts `run_nnls_cpue()` | nowhere; `rb_share_catch` shares a unit's catch by its fixes' hours, one rate within the unit |
+| Raising to what was not sampled, each value's fallback named and its error stated: boats × days fished × catch per day (FAO ARTFISH), the compound relative error at 90 % graded pass, warn or fail | coasts `raise_catch_fao()`, `compound_re()` | nowhere; fishycode places unplaced kilograms on a coarser unit and raises nothing, and the effort of vessels with landings but no track is not estimated |
+| The effort held in long intervals, reported | coasts `prepare_tracks_for_effort()` (on its trackers, intervals over 1 h are 0.6 % of the data and half the fishing hours) | ramb flags each capped interval (`rb_add_effort`'s `interval_flag`); nothing reports the share; counted once on the trail (decision 231): under the `fishing` preset, intervals over 1 h are 0.17 % of fixes and 3.1 % of hours |
+| A provider's re-issued trips: the same points under two trip ids, whole or in part | coasts `index_trip_duplicates()`, `drop_overlapping_pings()` | nowhere; `rb_flag_ping_duplicate` finds a second feed's copy of a ping, not a feed repeating itself under new keys |
+| A versioned release: one DOI and a version per release, the codebook from the column dictionary (an undescribed column stops it), the shape checked against an earlier release (names, columns and types fail; numbers are only reported) | Timor `upload_dataverse()`, `check_portal_contract()` | in part: fishycode's `R/fingerprint.R` compares two builds and fails nothing; `manifest.yml` is unbuilt (decision 000, step 7) |
+| Movement features on every fix: turning angle; speed's mean and variation over a time window; straightness, sinuosity and radius of gyration over a distance window | ssfaitk `statistical_effort_v3.py` (branch `plug-R`) | nowhere in ramb; fishymodel's step-and-turn HMM uses turning angles inside its fit only |
 
 ## Version 3: what the groups' reports added (2026-10-19)
 
