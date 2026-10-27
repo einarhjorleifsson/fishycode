@@ -5,6 +5,10 @@
 # Each reprex was run against r-packages_iapesca at 1b7248c (2022-11-16), first by sourcing its R/ folder, then with
 # the package installed by the maintainer (library(iapesca)): the same output both ways. Each body carries its own
 # reprex; the combined script stayed in the drafting session's notes and is not kept.
+#
+# A second batch, `batch_2026_10_27` at the end, is in iapesca 1.3 on Ifremer's GitLab: found by reading it
+# (decision 232), then each confirmed by running its reprex against the package installed from the clone at 1882892
+# into a scratch library. Drafted by Claude (AI), not yet reviewed by the maintainer, not sent.
 
 repository: JulRodrigu/r-packages_iapesca
 commit: 1b7248c0dc2b29df814cc2b92f914764320b8405
@@ -189,3 +193,247 @@ issues:
       DuckDB SQL ran on 395,558 positions of 14 vessels in 1.1 s, and gave the same trips position for position.
 
       *Drafted with the help of an AI assistant (Claude).*
+
+batch_2026_10_27:
+  repository: https://gitlab.ifremer.fr/iapesca/r-packages_iapesca
+  commit: 1882892c74f950155222367b00043311f684f4e0
+  environment: R 4.5.2, sf 1.1.3 (GEOS 3.13.0, GDAL 3.8.5, PROJ 9.5.1), data.table 1.18.6.1, dbscan 1.2.7, mapplots 1.5.3,
+    ramb 2026.10.25.5; iapesca 1.3 installed from the clone into a scratch library, each reprex run in an empty folder
+  sent: no
+  sent_how: ""
+  not_drafted: |
+    Read in decision 232 and not confirmed: CalcThresholds() leaves its limits NA when GaussianQt is missing, but it is
+    internal and every caller passes GaussianQt, so no user reaches it. Four more are design points for discussion, not
+    defects: Spatialize_FE's interval per ping, Retrieve_SettingOperations matching not one to one, match_Obs2Pos not
+    telling "not observed" from "observed, not fishing", and headings as atan2(dy, dx) averaged linearly.
+  shared_setup: |
+    ```r
+    library(iapesca)
+    ```
+  issues:
+    - title: "ICES_rectangle() uses the letter I, does not pad rows 1-9, and numbers the A column 6-9"
+      labels: [bug]
+      body: |
+        ICES rectangles skip the letter I in the longitude band, write the row with two digits, and number the A column
+        (44° W to 40° W) 0 to 3. `ICES_rectangle()` does none of the three:
+        ```r
+        pts <- data.frame(lon = c(-21.5, 5.5, 35.5, -43.5, -7.5), lat = c(64.25, 56.25, 70.25, 60.25, 36.25))
+        data.frame(pts, iapesca = ICES_rectangle(pts$lon, pts$lat), mapplots = mapplots::ices.rect2(pts$lon, pts$lat))
+        #>     lon   lat iapesca mapplots
+        #> 1 -21.5 64.25    57C8     57C8
+        #> 2   5.5 56.25    41F5     41F5
+        #> 3  35.5 70.25    69I5     69J5
+        #> 4 -43.5 60.25    49A6     49A0
+        #> 5  -7.5 36.25     1E2     01E2
+        ```
+        Everything east of 30° E takes the letter before its own, and `ICESRect_Grids()` and `Rasterize_FE2ICESRect()`
+        inherit it.
+
+        **Suggested remedy.** Skip I in the letter (`LETTERS[-9]`), `sprintf("%02d", row)`, and the A column's own
+        numbering; or take a lookup such as `mapplots::ices.rect2()`'s.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "CleanMemory() deletes files in the working directory, not in the temporary one"
+      labels: [bug]
+      body: |
+        `CleanMemory()` runs `unlink(list.files(tempdir()), recursive = TRUE)`. `list.files()` returns bare names, so
+        `unlink()` looks for them in the working directory: any file or folder there that shares a name with an entry
+        of `tempdir()` is deleted, and the temporary files are left. `BackgroundMapWithCountries()` has the same line
+        twice (lines 48 and 71).
+        ```r
+        # in an empty working directory
+        writeLines("tmp", file.path(tempdir(), "notes.txt"))
+        writeLines("mine", "notes.txt")
+        CleanMemory()
+        c(working_dir = file.exists("notes.txt"), tempdir = file.exists(file.path(tempdir(), "notes.txt")))
+        #> working_dir     tempdir
+        #>       FALSE        TRUE
+        ```
+        **Suggested remedy.** `unlink(list.files(tempdir(), full.names = TRUE), recursive = TRUE)`.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "Process_TripPositions() fails with harbours and no resampling: object 'trip.path.w.heading' not found"
+      labels: [bug]
+      body: |
+        The example of `?Process_TripPositions` without `resampling` (its default, `NULL`) stops:
+        ```r
+        data(positions); data(harbours)
+        pos.sf <- df2sfp(positions[positions$FISHING_TRIP_FK %in% 18529291, ], coords = c("LONGITUDE", "LATITUDE"))
+        Process_TripPositions(pos.sf, Harbours = harbours)
+        #> Error in FUN(X[[i]], ...) : object 'trip.path.w.heading' not found
+        ```
+        In the branch where trips are detected and neither `resampling` nor `CalcFeatures` is set, line 167 reads
+        `FT.path <- trip.path.w.heading`; the object made two lines above is `FT.path.w.heading`.
+        `globalVariables('trip.path.w.heading')` keeps R CMD check from reporting it.
+
+        **Suggested remedy.** `FT.path <- FT.path.w.heading`, and drop the name from `globalVariables()`.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "Calc_VesselFE() counts the days of non-fishing operations as fishing days"
+      labels: [bug]
+      body: |
+        The documentation defines a fishing day as a calendar day in which a fishing activity takes place. The code
+        counts the distinct start and end dates of every operation of the trip, `NotFishing` included. On the package's
+        own example, four of the eight trips get a day more than the dates on which they set or hauled:
+        ```r
+        data(positions)
+        fe <- Calc_VesselFE(Traj_Desc(positions, add.group = "FishingOperation"))
+        fop <- positions[positions$FishingOperation != "NotFishing", ]
+        truth <- aggregate(list(dates_with_fishing = substr(fop$DATE_TIME, 1, 10)),
+                           list(FISHING_TRIP_FK = fop$FISHING_TRIP_FK), function(x) length(unique(x)))
+        merge(fe[, c("FISHING_TRIP_FK", "FishingDays")], truth)
+        #>   FISHING_TRIP_FK FishingDays dates_with_fishing
+        #> 1        18483451           2                  2
+        #> 2        18483452           2                  2
+        #> 3        18483453           3                  2
+        #> 4        18529291           5                  5
+        #> 5        18569373           4                  3
+        #> 6        18569374           2                  2
+        #> 7        18569376           6                  5
+        #> 8        18569377           4                  3
+        ```
+        A day crossed in the middle of an operation is also not counted, since only its start and end dates are read.
+
+        **Suggested remedy.** Count the dates of the operations whose category is not `NotFop.category`, every date
+        from each one's start to its end.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "Sacrois2Eflalo() drops kilograms without a message: species coded NA, and vessel-years missing from FPC"
+      labels: [bug]
+      body: |
+        On the example the kilograms add up, but two ordinary gaps in the input lose catch silently:
+        ```r
+        data(sacrois); data(fpc); data(harbours)
+        kg_out <- function(e) { e <- as.data.frame(e); sum(as.matrix(e[, grep("^LE_KG_", names(e))]), na.rm = TRUE) }
+        kg_in <- sum(sacrois$QUANT_POIDS_VIF_SACROIS, na.rm = TRUE)
+        c(kg_in, kg_out(Sacrois2Eflalo(sacrois, fpc, harbours)))
+        #> [1] 21189.13 21189.13
+
+        i <- which(sacrois$QUANT_POIDS_VIF_SACROIS > 100)[1]
+        s2 <- sacrois; s2$ESP_COD_FAO[i] <- NA                 # one species code missing
+        c(kg_in, kg_out(Sacrois2Eflalo(s2, fpc, harbours)))
+        #> [1] 21189.13 21044.13                               # its 145 kg are gone
+
+        e3 <- Sacrois2Eflalo(sacrois, fpc[fpc$AN_REF == 2021, ], harbours)   # FPC lacks the vessel's 2022 row
+        c(kg_in, kg_out(e3), length(unique(e3$FT_REF)))
+        #> [1] 21189.13  4609.82     2                         # 6 of 8 trips and 78 % of the kg are gone
+        ```
+        The first loss is in `Pivot_Table()` (`sort(unique())` leaves NA out of the categories); the second in the
+        inner joins (`merge(..., all = FALSE)`).
+
+        **Suggested remedy.** Keep NA as a category of its own (e.g. `LE_KG_NA`), join the fleet register with
+        `all.x = TRUE`, and warn with the trips and kilograms that are dropped or left without vessel details.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "Detect_DanishSeineOperations(): a harbour stay makes the whole trip 'fishing' and duplicates its positions"
+      labels: [bug]
+      body: |
+        Any cluster of slow positions is taken for an anchor point, a vessel moored in harbour included. For each cluster
+        the positions between its first and its last visit are labelled, so a harbour cluster labels the whole trip
+        "fishing"; and each position gets one row per cluster, so the output has more rows than the input. The
+        package's example, with each trip starting and ending with 2 h in a harbour 30 km away (a fix a minute, speed 0,
+        each a few metres apart):
+        ```r
+        data(positions_danishseiner)
+        d <- positions.danishseiner
+        run <- function(d) {
+          p <- Detect_DanishSeineOperations(df2sfp(d, coords = c("LONGITUDE", "LATITUDE")), Col.time = "DATE_TIME",
+                 Col.speed = "SPEED", columns.ref = c("VESSEL_ID", "TRIP_ID"), minAnchorPoints = 50,
+                 anchorBuffer = 250, speed.anchor.thd = c(0, 1), update.positions.qualif = TRUE)$processed.pos
+          x <- as.data.frame.matrix(table(p$TRIP_ID, p$ACTIVITY))
+          x$rows_out <- rowSums(x); x$rows_in <- as.vector(table(d$TRIP_ID)[rownames(x)]); x
+        }
+        add_port <- function(t) {
+          t <- t[order(t$DATE_TIME), ]
+          t0 <- as.POSIXct(t$DATE_TIME[1], tz = "UTC"); t1 <- as.POSIXct(t$DATE_TIME[nrow(t)], tz = "UTC")
+          port <- function(times) data.frame(VESSEL_ID = t$VESSEL_ID[1], TRIP_ID = t$TRIP_ID[1],
+            DATE_TIME = format(times, "%Y-%m-%d %H:%M:%S"),
+            LONGITUDE = t$LONGITUDE[1] + 0.27 + runif(length(times), -1e-4, 1e-4),
+            LATITUDE = t$LATITUDE[1] + runif(length(times), -1e-4, 1e-4), GEAR = t$GEAR[1], SPEED = "0.0000")
+          rbind(port(t0 - 120 * 60 + (0:119) * 60), t, port(t1 + (1:120) * 60))
+        }
+        set.seed(1)
+        run(d)
+        #>   anchorpoint fishing not_fishing rows_out rows_in
+        #> 2         345     327         235      907     907
+        #> 5         374     257         212      843     843
+        #> 7         433     205         282      920     918
+        run(do.call(rbind, lapply(split(d, d$TRIP_ID), add_port)))
+        #>   anchorpoint fishing not_fishing rows_out rows_in
+        #> 2         345    1234         240     1819    1147
+        #> 5         374    1100         240     1714    1083
+        #> 7         433    1125         240     1798    1158
+        ```
+        Even the example as shipped returns 920 rows for trip 7's 918. The duplicates come from `rbindlist()` over the
+        clusters (lines 131-147) and the `st_join()` on geometry that puts the labels back (line 166). The DBSCAN radius
+        is also fixed at `eps = 0.001` in degrees (line 118), which is about 111 m north-south and less east-west.
+
+        **Suggested remedy.** Leave out slow clusters inside a harbour buffer (the package already takes `Harbours`
+        elsewhere), give each position one label (e.g. the cluster whose visits enclose it most narrowly), join the
+        labels back by row id rather than by geometry, and take `eps` in metres on projected coordinates.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "Functions should return the class and row order they were given"
+      labels: [enhancement]
+      body: |
+        A caller's next step (selecting columns, joining, binding rows) depends on the class and order it handed in.
+        Run on one trip of `positions`, its rows shuffled, with a row id carried along:
+        ```r
+        data(positions); data(harbours); data(sacrois); data(fpc); set.seed(1)
+        one <- positions[positions$FISHING_TRIP_FK %in% 18529291, ]; one$.rid <- seq_len(nrow(one))
+        shuf <- one[sample(nrow(one)), ]; p_sf <- df2sfp(shuf, coords = c("LONGITUDE", "LATITUDE"))
+        order_kept <- function(out, input) identical(out$.rid, input$.rid[input$.rid %in% out$.rid])
+        order_kept(CalcSpeed(p_sf), p_sf)                                         #> FALSE
+        order_kept(CalcDist(p_sf), p_sf)                                          #> FALSE
+        order_kept(CleanSpuriousSpeeds(p_sf), p_sf)                               #> FALSE
+        order_kept(Detect_FishingTrips(p_sf, Harbours = harbours)$trip.path, p_sf) #> FALSE
+        class(Positions2Tacsat(shuf))                    #> "data.table" "data.frame"   (given a data.frame)
+        class(Sacrois2Eflalo(sacrois, fpc, harbours))    #> "data.table" "data.frame"   (given a data.frame)
+        Clustering_BivariateBinary(shuf)                 #> Error: max(): object has no elements
+        ```
+        The first four return the rows sorted by time. `CalcCOG()` and `CalcTurningAngle()` keep the order given, but
+        by reading they compute each course between rows as given, so they need input sorted by time without saying
+        so. `Clustering_BivariateBinary()` works on the same trip in time order. An sf object comes back an sf object
+        throughout.
+
+        **Suggested rule.** Sort internally when a method needs time order, then put the rows back in the order they
+        came (a row id does it), and return the input's class: `data.table::setDF()` before returning when the input was
+        a data.frame.
+
+        *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
+
+    - title: "Some functions leave the caller's session changed: the random seed, s2 after an error, files in the working directory"
+      labels: [enhancement]
+      body: |
+        A function should leave the session as it found it, on error too. Three cases:
+        ```r
+        # 1. Calc_NetsThresholds() resets the caller's random-number stream (set.seed(seed + k), line 81)
+        pos <- df2sfp(positions, coords = c("LONGITUDE", "LATITUDE"))
+        nets <- Create_NetsByBoat(traj = pos)$Nets
+        after <- function(user_seed) { set.seed(user_seed); invisible(Calc_NetsThresholds(ls.Nets = nets, seed = 221107)); runif(1) }
+        c(after(1), after(2))
+        #> [1] 0.6325031 0.6325031          # the same draw whatever seed the caller had set
+
+        # 2. s2 is restored only when the function succeeds
+        one <- positions[positions$FISHING_TRIP_FK %in% 18529291, ]
+        sf::sf_use_s2(FALSE)
+        try(Process_TripPositions(df2sfp(one), Harbours = harbours))      # fails (the issue above)
+        sf::sf_use_s2()
+        #> [1] TRUE                         # it was FALSE before the call
+        ```
+        3. By reading: `plot_FE()`, `plot_Paths()` and `plot_Trip()` save the background map as `BgMap*.rds` in
+        `getwd()` by default (`path = getwd()`, `rm.BgMap = FALSE`); `assign_lsTabs()` assigns into `globalenv()` by
+        default; `plot_CART_tree()` sets `options(warn = -1)` and restores it without `on.exit()`.
+
+        **Suggested remedy.** `Check_sfObject()` turns s2 on with `on.exit(sf::sf_use_s2(TRUE))`, so the change outlives
+        it; set it in each caller with `old <- sf::sf_use_s2(TRUE); on.exit(sf::sf_use_s2(old), add = TRUE)`, which runs
+        on error too. Seed inside with `withr::with_seed()`, or save and restore `.Random.seed`. Write files to
+        `tempdir()` unless the caller gives a path, and restore options with `on.exit()`.
+
+        *Found and drafted with the help of an AI assistant (Claude); cases 1 and 2 checked by running the code above.*

@@ -90,7 +90,21 @@ extension is downloaded at first use, which a colleague behind an institutional 
 
 ## Read, not run (for its author)
 
-As read on main at `1882892`; none has a reprex yet.
+As read on main at `1882892`. *Amended the same day, at the maintainer's go:* the seven that looked like bugs were run
+against iapesca 1.3, installed from the clone into a scratch library. Six reproduce and are drafted, unsent, as
+`batch_2026_10_27` in `curate/issues/iapesca.yml`: the ICES rectangles, `CleanMemory`'s `unlink`, `Process_TripPositions`,
+`Calc_VesselFE`'s fishing days, `Sacrois2Eflalo` (a species coded NA loses its kilograms; a fleet register missing the
+vessel's 2022 row drops 6 of the example's 8 trips and 78 % of its kilograms; the example itself adds up) and the Danish
+seine (with 2 h in harbour at each end of a trip, every fix at sea becomes "fishing" and each trip's rows go from about
+1,100 to 1,800, one per slow cluster). `CalcThresholds` is dropped: it is internal and every caller passes `GaussianQt`.
+The other four below are design points, kept for discussion. *Amended again the same day:* the maintainer's two rules
+for any function, that it returns the class and row order it was given, and that it leaves the caller's session as it
+found it (no `setwd()` without an `on.exit()` back), were tested on iapesca and drafted as two more issues. Four functions
+re-sort the rows by time, two return a data.table from a data.frame, and `Clustering_BivariateBinary` fails on rows not in
+time order. `Calc_NetsThresholds` resets the caller's random seed, and s2 stays switched on after an error. The same test
+on five ramb functions: the two ping flags keep class and order; `rb_add_effort` returns a tibble from a data.frame,
+re-sorted, and `rb_create_voyages` a tibble; none changed the session; ramb's DuckDB keeps its extensions in
+`~/.duckdb`, shared across sessions.
 
 - `ICES_rectangle` does not skip the letter I (30-40° E gives `I`, where ICES has `J`), does not pad rows 1-9 to two
   digits, and gives the A column 6-9 where ICES has 0-3.
@@ -116,4 +130,4 @@ As read on main at `1882892`; none has a reprex yet.
 - `docs/one_flow.qmd`, "What exists, and where": the iapesca entries now read the live package; three wish-list rows
   name what it has (static-gear effort, days at sea and fishing days, observer operations on fixes).
 - Not done, for the maintainer: whether ramb's trip method and set finder follow iapesca 1.3, and ramb's reference to
-  the GitHub copy (`R/trip.R`); whether the defects above go to iapesca's author as issues with reprexes.
+  the GitHub copy (`R/trip.R`); whether and how the six drafted issues are sent to iapesca's author.
