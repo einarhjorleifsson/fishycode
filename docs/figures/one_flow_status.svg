@@ -1,103 +1,134 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="840" viewBox="0 0 680 840" role="img">
-<title>One flow: who has each piece (2026-10-09)</title>
-<desc>Rows are the pipeline from vessel identity and ping flagging through trip, record, gear, fishing, effort and catch; boxes are each step's sources, best first. A dashed band under trip links and reconciles sources many-to-many; a dashed band under record notes the two-way flow; a dashed band under catch states that catch units can be coarser than the activity. Version 2, 2026-10-08, drafted by Claude (Anthropic); human review pending.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="980" viewBox="0 0 1000 980" role="img">
+<title>One flow: who has each piece (2026-10-27)</title>
+<desc>Version 3 of the flow diagram, its boxes coloured by the most advanced home of each piece: built in ramb (or its sibling fishymodel), built in fishycode only, planned, coded or decided but not built, elsewhere only, or nowhere. A dot marks a piece that fishycode's build fills on its data, as rebuilt on 2026-10-23 (decision 218). A column on the right lists, row by row, what is decided and waits for the next build. Drawn 2026-10-27 by Claude (Anthropic) from ramb 2026.10.25.5's exports, the fishycode targets that call them, and the decision records; human review pending.</desc>
 <style>
   .bg  { fill: #FFFFFF; }
   .box { fill: #F1EFE8; stroke: #5F5E5A; stroke-width: 0.5; }
   .band { fill: #F1EFE8; stroke: #5F5E5A; stroke-width: 0.5; stroke-dasharray: 4 3; }
   .th  { font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; fill: #444441; }
   .ts  { font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; fill: #5F5E5A; }
+  .rs  { font-family: Helvetica, Arial, sans-serif; font-size: 11.5px; font-weight: 400; fill: #444441; }
   .arr { stroke: #5F5E5A; stroke-width: 1.5; fill: none; }
   .s-ramb  { fill: #DCEBD5; stroke: #4F7A43; }
   .s-fishy { fill: #D7E5F2; stroke: #3E6A8C; }
   .s-plan  { fill: #F7E6C4; stroke: #9A6B22; }
   .s-else  { fill: #EDEDEA; stroke: #8A8984; stroke-dasharray: 3 2; }
   .s-none  { fill: #FFFFFF; stroke: #8A8984; stroke-dasharray: 3 2; }
+  .dot { fill: #444441; }
   .lg  { font-family: Helvetica, Arial, sans-serif; font-size: 11.5px; fill: #444441; }
 </style>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<rect class="bg" x="0" y="0" width="680" height="840"/>
+<rect class="bg" x="0" y="0" width="1000" height="980"/>
+
+<text class="th" x="844" y="28" text-anchor="middle">Decided, not built</text>
 
 <!-- the vertical line: steps -->
 <rect class="box" x="40" y="40" width="126" height="44" rx="6"/><text class="th" x="103" y="61" text-anchor="middle">Vessel</text><text class="ts" x="103" y="77" text-anchor="middle">assign_vessel</text>
 <rect class="box" x="40" y="100" width="126" height="44" rx="6"/><text class="th" x="103" y="121" text-anchor="middle">Flag pings</text><text class="ts" x="103" y="137" text-anchor="middle">flag_pings</text>
-<rect class="box" x="40" y="160" width="126" height="44" rx="6"/><text class="th" x="103" y="181" text-anchor="middle">1. Trip</text><text class="ts" x="103" y="197" text-anchor="middle">assign_trip</text>
-<rect class="box" x="40" y="272" width="126" height="44" rx="6"/><text class="th" x="103" y="293" text-anchor="middle">2. Record</text><text class="ts" x="103" y="309" text-anchor="middle">assign_record</text>
-<rect class="box" x="40" y="370" width="126" height="44" rx="6"/><text class="th" x="103" y="391" text-anchor="middle">3. Gear</text><text class="ts" x="103" y="407" text-anchor="middle">assign_gear</text>
-<rect class="box" x="40" y="430" width="126" height="44" rx="6"/><text class="th" x="103" y="451" text-anchor="middle">4. Fishing?</text><text class="ts" x="103" y="467" text-anchor="middle">assign_fishing</text>
-<rect class="box" x="40" y="490" width="126" height="44" rx="6"/><text class="th" x="103" y="511" text-anchor="middle">5. Effort</text><text class="ts" x="103" y="527" text-anchor="middle">assign_effort</text>
-<rect class="box" x="40" y="550" width="126" height="44" rx="6"/><text class="th" x="103" y="571" text-anchor="middle">6. Catch</text><text class="ts" x="103" y="587" text-anchor="middle">share_catch</text>
+<rect class="box" x="40" y="212" width="126" height="44" rx="6"/><text class="th" x="103" y="233" text-anchor="middle">1. Trip</text><text class="ts" x="103" y="249" text-anchor="middle">assign_trip</text>
+<rect class="box" x="40" y="324" width="126" height="44" rx="6"/><text class="th" x="103" y="345" text-anchor="middle">2. Record</text><text class="ts" x="103" y="361" text-anchor="middle">assign_record</text>
+<rect class="box" x="40" y="422" width="126" height="44" rx="6"/><text class="th" x="103" y="443" text-anchor="middle">3. Gear</text><text class="ts" x="103" y="459" text-anchor="middle">assign_gear</text>
+<rect class="box" x="40" y="534" width="126" height="44" rx="6"/><text class="th" x="103" y="555" text-anchor="middle">4. Fishing?</text><text class="ts" x="103" y="571" text-anchor="middle">assign_fishing</text>
+<rect class="box" x="40" y="594" width="126" height="44" rx="6"/><text class="th" x="103" y="615" text-anchor="middle">5. Effort</text><text class="ts" x="103" y="631" text-anchor="middle">assign_effort</text>
+<rect class="box" x="40" y="654" width="126" height="44" rx="6"/><text class="th" x="103" y="675" text-anchor="middle">6. Catch</text><text class="ts" x="103" y="691" text-anchor="middle">share_catch</text>
+<rect class="box" x="40" y="766" width="126" height="44" rx="6"/><text class="th" x="103" y="787" text-anchor="middle">7. Products</text><text class="ts" x="103" y="803" text-anchor="middle">from the fixes</text>
 
 <line x1="103" y1="84" x2="103" y2="98" class="arr" marker-end="url(#arrow)"/>
-<line x1="103" y1="144" x2="103" y2="158" class="arr" marker-end="url(#arrow)"/>
-<line x1="103" y1="204" x2="103" y2="270" class="arr" marker-end="url(#arrow)"/>
-<line x1="103" y1="316" x2="103" y2="368" class="arr" marker-end="url(#arrow)"/>
-<line x1="103" y1="414" x2="103" y2="428" class="arr" marker-end="url(#arrow)"/>
-<line x1="103" y1="474" x2="103" y2="488" class="arr" marker-end="url(#arrow)"/>
-<line x1="103" y1="534" x2="103" y2="548" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="144" x2="103" y2="210" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="256" x2="103" y2="322" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="368" x2="103" y2="420" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="466" x2="103" y2="532" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="578" x2="103" y2="592" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="638" x2="103" y2="652" class="arr" marker-end="url(#arrow)"/>
+<line x1="103" y1="698" x2="103" y2="764" class="arr" marker-end="url(#arrow)"/>
 
 <!-- vessel: best first -->
-<rect class="box s-fishy" x="176" y="40" width="108" height="44" rx="6"/><text class="th" x="230" y="61" text-anchor="middle">own track</text><text class="ts" x="230" y="77" text-anchor="middle">feeds agree</text>
-<rect class="box s-fishy" x="292" y="40" width="108" height="44" rx="6"/><text class="th" x="346" y="61" text-anchor="middle">register</text><text class="ts" x="346" y="77" text-anchor="middle">dated MMSI</text>
-<rect class="box s-fishy" x="408" y="40" width="108" height="44" rx="6"/><text class="th" x="462" y="61" text-anchor="middle">logbook</text><text class="ts" x="462" y="77" text-anchor="middle">or landing</text>
-<rect class="box s-fishy" x="524" y="40" width="108" height="44" rx="6"/><text class="th" x="578" y="61" text-anchor="middle">continuity</text><text class="ts" x="578" y="77" text-anchor="middle">same device</text>
+<rect class="box s-ramb" x="176" y="40" width="108" height="44" rx="6"/><text class="th" x="230" y="61" text-anchor="middle">own track</text><text class="ts" x="230" y="77" text-anchor="middle">feeds agree</text><circle class="dot" cx="277" cy="47" r="3.5"/>
+<rect class="box s-fishy" x="292" y="40" width="108" height="44" rx="6"/><text class="th" x="346" y="61" text-anchor="middle">register</text><text class="ts" x="346" y="77" text-anchor="middle">dated MMSI</text><circle class="dot" cx="393" cy="47" r="3.5"/>
+<rect class="box s-fishy" x="408" y="40" width="108" height="44" rx="6"/><text class="th" x="462" y="61" text-anchor="middle">logbook</text><text class="ts" x="462" y="77" text-anchor="middle">or landing</text><circle class="dot" cx="509" cy="47" r="3.5"/>
+<rect class="box s-fishy" x="524" y="40" width="108" height="44" rx="6"/><text class="th" x="578" y="61" text-anchor="middle">continuity</text><text class="ts" x="578" y="77" text-anchor="middle">same device</text><circle class="dot" cx="625" cy="47" r="3.5"/>
+<rect class="box s-plan" x="728" y="40" width="232" height="44" rx="6"/><text class="rs" x="844" y="59" text-anchor="middle">the STK key's redo (195, 204)</text><text class="rs" x="844" y="75" text-anchor="middle">a vid for every hull (190)</text>
 
 <!-- flag pings: in order, not a fallback -->
-<rect class="box s-ramb" x="176" y="100" width="100" height="44" rx="6"/><text class="th" x="226" y="121" text-anchor="middle">invalid</text><text class="ts" x="226" y="137" text-anchor="middle">placeholder</text>
-<rect class="box s-ramb" x="292" y="100" width="100" height="44" rx="6"/><text class="th" x="342" y="121" text-anchor="middle">duplicate</text><text class="ts" x="342" y="137" text-anchor="middle">second feed</text>
-<rect class="box s-ramb" x="408" y="100" width="100" height="44" rx="6"/><text class="th" x="458" y="121" text-anchor="middle">impossible</text><text class="ts" x="458" y="137" text-anchor="middle">set aside</text>
-<rect class="box s-ramb" x="524" y="100" width="100" height="44" rx="6"/><text class="th" x="574" y="121" text-anchor="middle">port</text><text class="ts" x="574" y="137" text-anchor="middle">in the trail</text>
+<rect class="box s-ramb" x="176" y="100" width="100" height="44" rx="6"/><text class="th" x="226" y="121" text-anchor="middle">invalid</text><text class="ts" x="226" y="137" text-anchor="middle">placeholder</text><circle class="dot" cx="269" cy="107" r="3.5"/>
+<rect class="box s-ramb" x="292" y="100" width="100" height="44" rx="6"/><text class="th" x="342" y="121" text-anchor="middle">duplicate</text><text class="ts" x="342" y="137" text-anchor="middle">second feed</text><circle class="dot" cx="385" cy="107" r="3.5"/>
+<rect class="box s-ramb" x="408" y="100" width="100" height="44" rx="6"/><text class="th" x="458" y="121" text-anchor="middle">impossible</text><text class="ts" x="458" y="137" text-anchor="middle">set aside</text><circle class="dot" cx="501" cy="107" r="3.5"/>
+<rect class="box s-ramb" x="524" y="100" width="100" height="44" rx="6"/><text class="th" x="574" y="121" text-anchor="middle">port</text><text class="ts" x="574" y="137" text-anchor="middle">in the trail</text><circle class="dot" cx="617" cy="107" r="3.5"/>
 <line x1="276" y1="122" x2="290" y2="122" class="arr" marker-end="url(#arrow)"/>
 <line x1="392" y1="122" x2="406" y2="122" class="arr" marker-end="url(#arrow)"/>
 <line x1="508" y1="122" x2="522" y2="122" class="arr" marker-end="url(#arrow)"/>
+<rect class="band s-ramb" x="176" y="152" width="456" height="44" rx="6"/><text class="ts" x="404" y="171" text-anchor="middle">The ping rate sets how far down a track can go: interpolate</text><text class="ts" x="404" y="188" text-anchor="middle">or downsample to a regular series; gaps and device kept</text><circle class="dot" cx="625" cy="159" r="3.5"/>
 
 <!-- trip -->
-<rect class="box s-ramb" x="176" y="160" width="108" height="44" rx="6"/><text class="th" x="230" y="181" text-anchor="middle">declared trip</text><text class="ts" x="230" y="197" text-anchor="middle">logbook</text>
-<rect class="box s-fishy" x="292" y="160" width="108" height="44" rx="6"/><text class="th" x="346" y="181" text-anchor="middle">landing</text><text class="ts" x="346" y="197" text-anchor="middle">T2, T1 if given</text>
-<rect class="box s-ramb" x="408" y="160" width="108" height="44" rx="6"/><text class="th" x="462" y="181" text-anchor="middle">voyage</text><text class="ts" x="462" y="197" text-anchor="middle">port stays</text>
-<rect class="band s-plan" x="176" y="212" width="340" height="44" rx="6"/><text class="th" x="346" y="233" text-anchor="middle">Link and reconcile T2</text><text class="ts" x="346" y="249" text-anchor="middle">many-to-many: trips, landings, voyages</text>
+<rect class="box s-ramb" x="176" y="212" width="108" height="44" rx="6"/><text class="th" x="230" y="233" text-anchor="middle">declared trip</text><text class="ts" x="230" y="249" text-anchor="middle">logbook</text><circle class="dot" cx="277" cy="219" r="3.5"/>
+<rect class="box s-ramb" x="292" y="212" width="108" height="44" rx="6"/><text class="th" x="346" y="233" text-anchor="middle">landing</text><text class="ts" x="346" y="249" text-anchor="middle">T2, T1 if given</text><circle class="dot" cx="393" cy="219" r="3.5"/>
+<rect class="box s-ramb" x="408" y="212" width="108" height="44" rx="6"/><text class="th" x="462" y="233" text-anchor="middle">voyage</text><text class="ts" x="462" y="249" text-anchor="middle">port calls</text><circle class="dot" cx="509" cy="219" r="3.5"/>
+<rect class="box s-ramb" x="524" y="212" width="108" height="44" rx="6"/><text class="th" x="578" y="233" text-anchor="middle">gaps</text><text class="ts" x="578" y="249" text-anchor="middle">device power</text>
+<rect class="band s-ramb" x="176" y="264" width="456" height="44" rx="6"/><text class="th" x="404" y="285" text-anchor="middle">Link and reconcile T1, T2</text><text class="ts" x="404" y="301" text-anchor="middle">many-to-many: trips, landings, voyages</text><circle class="dot" cx="625" cy="271" r="3.5"/>
+<rect class="box s-plan" x="728" y="212" width="232" height="44" rx="6"/><text class="rs" x="844" y="231" text-anchor="middle">port calls by a time budget,</text><text class="rs" x="844" y="247" text-anchor="middle">the departure radius retired (197)</text>
 
 <!-- logbook record -->
-<rect class="box s-ramb" x="176" y="272" width="108" height="44" rx="6"/><text class="th" x="230" y="293" text-anchor="middle">haul</text><text class="ts" x="230" y="309" text-anchor="middle">with t1–t4</text>
-<rect class="box s-else" x="292" y="272" width="108" height="44" rx="6"/><text class="th" x="346" y="293" text-anchor="middle">haul</text><text class="ts" x="346" y="309" text-anchor="middle">with positions</text>
-<rect class="box s-ramb" x="408" y="272" width="108" height="44" rx="6"/><text class="th" x="462" y="293" text-anchor="middle">period</text><text class="ts" x="462" y="309" text-anchor="middle">× area</text>
-<rect class="box s-else" x="524" y="272" width="108" height="44" rx="6"/><text class="th" x="578" y="293" text-anchor="middle">trip</text><text class="ts" x="578" y="309" text-anchor="middle">one record</text>
-<rect class="band s-fishy" x="176" y="324" width="456" height="30" rx="6"/><text class="ts" x="404" y="343" text-anchor="middle">Two-way: records also take positions and times from the track</text>
+<rect class="box s-ramb" x="176" y="324" width="108" height="44" rx="6"/><text class="th" x="230" y="345" text-anchor="middle">haul</text><text class="ts" x="230" y="361" text-anchor="middle">with t1–t4</text><circle class="dot" cx="277" cy="331" r="3.5"/>
+<rect class="box s-none" x="292" y="324" width="108" height="44" rx="6"/><text class="th" x="346" y="345" text-anchor="middle">haul</text><text class="ts" x="346" y="361" text-anchor="middle">with positions</text>
+<rect class="box s-ramb" x="408" y="324" width="108" height="44" rx="6"/><text class="th" x="462" y="345" text-anchor="middle">period</text><text class="ts" x="462" y="361" text-anchor="middle">× area</text><circle class="dot" cx="509" cy="331" r="3.5"/>
+<rect class="box s-plan" x="524" y="324" width="108" height="44" rx="6"/><text class="th" x="578" y="345" text-anchor="middle">trip</text><text class="ts" x="578" y="361" text-anchor="middle">one record</text>
+<rect class="band s-ramb" x="176" y="376" width="456" height="30" rx="6"/><text class="ts" x="404" y="395" text-anchor="middle">Two-way: records also take positions and times from the track</text><circle class="dot" cx="625" cy="383" r="3.5"/>
+<rect class="box s-plan" x="728" y="324" width="232" height="44" rx="6"/><text class="rs" x="844" y="343" text-anchor="middle">records typed by what they cover (214)</text><text class="rs" x="844" y="359" text-anchor="middle">app dummies (206), haul ends (207)</text>
 
 <!-- gear -->
-<rect class="box s-fishy" x="176" y="370" width="108" height="44" rx="6"/><text class="th" x="230" y="391" text-anchor="middle">logbook</text><text class="ts" x="230" y="407" text-anchor="middle">record</text>
-<rect class="box s-fishy" x="292" y="370" width="108" height="44" rx="6"/><text class="th" x="346" y="391" text-anchor="middle">landing</text><text class="ts" x="346" y="407" text-anchor="middle">declaration</text>
-<rect class="box s-none" x="408" y="370" width="108" height="44" rx="6"/><text class="th" x="462" y="391" text-anchor="middle">licence</text><text class="ts" x="462" y="407" text-anchor="middle">gear register</text>
-<rect class="box s-else" x="524" y="370" width="108" height="44" rx="6"/><text class="th" x="578" y="391" text-anchor="middle">predicted</text><text class="ts" x="578" y="407" text-anchor="middle">from the track</text>
+<rect class="box s-fishy" x="176" y="422" width="108" height="44" rx="6"/><text class="th" x="230" y="443" text-anchor="middle">logbook</text><text class="ts" x="230" y="459" text-anchor="middle">record</text><circle class="dot" cx="277" cy="429" r="3.5"/>
+<rect class="box s-fishy" x="292" y="422" width="108" height="44" rx="6"/><text class="th" x="346" y="443" text-anchor="middle">landing</text><text class="ts" x="346" y="459" text-anchor="middle">declaration</text><circle class="dot" cx="393" cy="429" r="3.5"/>
+<rect class="box s-plan" x="408" y="422" width="108" height="44" rx="6"/><text class="th" x="462" y="443" text-anchor="middle">licence</text><text class="ts" x="462" y="459" text-anchor="middle">gear register</text>
+<rect class="box s-else" x="524" y="422" width="108" height="44" rx="6"/><text class="th" x="578" y="443" text-anchor="middle">predicted</text><text class="ts" x="578" y="459" text-anchor="middle">from the track</text>
+<rect class="band s-ramb" x="176" y="474" width="456" height="44" rx="6"/><text class="ts" x="404" y="493" text-anchor="middle">Gear codes mapped to one vocabulary (FAO, DATSU, métier);</text><text class="ts" x="404" y="510" text-anchor="middle">a trip may use several gears</text>
+<rect class="box s-plan" x="728" y="422" width="232" height="44" rx="6"/><text class="rs" x="844" y="441" text-anchor="middle">a deterministic voyage gear (199)</text><text class="rs" x="844" y="457" text-anchor="middle">métier mapped to ICES codes (212)</text>
 
 <!-- fishing -->
-<rect class="box s-ramb" x="176" y="430" width="108" height="44" rx="6"/><text class="th" x="230" y="451" text-anchor="middle">haul window</text><text class="ts" x="230" y="467" text-anchor="middle">t1–t4 + speed</text>
-<rect class="box s-plan" x="292" y="430" width="108" height="44" rx="6"/><text class="th" x="346" y="451" text-anchor="middle">phases</text><text class="ts" x="346" y="467" text-anchor="middle">dense track</text>
-<rect class="box s-plan" x="408" y="430" width="108" height="44" rx="6"/><text class="th" x="462" y="451" text-anchor="middle">track model</text><text class="ts" x="462" y="467" text-anchor="middle">mixture, HMM</text>
-<rect class="box s-plan" x="524" y="430" width="108" height="44" rx="6"/><text class="th" x="578" y="451" text-anchor="middle">speed range</text><text class="ts" x="578" y="467" text-anchor="middle">of the gear</text>
+<rect class="box s-ramb" x="176" y="534" width="108" height="44" rx="6"/><text class="th" x="230" y="555" text-anchor="middle">haul window</text><text class="ts" x="230" y="571" text-anchor="middle">t1–t4 + speed</text><circle class="dot" cx="277" cy="541" r="3.5"/>
+<rect class="box s-ramb" x="292" y="534" width="108" height="44" rx="6"/><text class="th" x="346" y="555" text-anchor="middle">phases</text><text class="ts" x="346" y="571" text-anchor="middle">dense track</text>
+<rect class="box s-ramb" x="408" y="534" width="108" height="44" rx="6"/><text class="th" x="462" y="555" text-anchor="middle">track model</text><text class="ts" x="462" y="571" text-anchor="middle">mixture, HMM</text>
+<rect class="box s-ramb" x="524" y="534" width="108" height="44" rx="6"/><text class="th" x="578" y="555" text-anchor="middle">speed range</text><text class="ts" x="578" y="571" text-anchor="middle">of the gear</text><circle class="dot" cx="625" cy="541" r="3.5"/>
+<rect class="box s-plan" x="728" y="534" width="232" height="44" rx="6"/><text class="rs" x="844" y="553" text-anchor="middle">no record: undecided (200)</text><text class="rs" x="844" y="569" text-anchor="middle">soak drift is not fishing (198)</text>
 
 <!-- effort -->
-<rect class="box s-plan" x="176" y="490" width="108" height="44" rx="6"/><text class="th" x="230" y="511" text-anchor="middle">pressure</text><text class="ts" x="230" y="527" text-anchor="middle">+ gear size</text>
-<rect class="box s-plan" x="292" y="490" width="108" height="44" rx="6"/><text class="th" x="346" y="511" text-anchor="middle">kW-hours</text><text class="ts" x="346" y="527" text-anchor="middle">+ engine kW</text>
-<rect class="box s-plan" x="408" y="490" width="108" height="44" rx="6"/><text class="th" x="462" y="511" text-anchor="middle">hours</text><text class="ts" x="462" y="527" text-anchor="middle">pings only</text>
+<rect class="box s-ramb" x="176" y="594" width="86" height="44" rx="6"/><text class="th" x="219" y="615" text-anchor="middle">pressure</text><text class="ts" x="219" y="631" text-anchor="middle">+ gear size</text>
+<rect class="box s-plan" x="268" y="594" width="86" height="44" rx="6"/><text class="th" x="311" y="615" text-anchor="middle">static gear</text><text class="ts" x="311" y="631" text-anchor="middle">soak, hauls</text>
+<rect class="box s-ramb" x="360" y="594" width="86" height="44" rx="6"/><text class="th" x="403" y="615" text-anchor="middle">kW-hours</text><text class="ts" x="403" y="631" text-anchor="middle">+ engine kW</text><circle class="dot" cx="439" cy="601" r="3.5"/>
+<rect class="box s-ramb" x="452" y="594" width="86" height="44" rx="6"/><text class="th" x="495" y="615" text-anchor="middle">hours</text><text class="ts" x="495" y="631" text-anchor="middle">pings only</text><circle class="dot" cx="531" cy="601" r="3.5"/>
+<rect class="box s-none" x="544" y="594" width="88" height="44" rx="6"/><text class="th" x="588" y="615" text-anchor="middle">fishing days</text><text class="ts" x="588" y="631" text-anchor="middle">days at sea</text>
 
 <!-- catch -->
-<rect class="box s-fishy" x="176" y="550" width="108" height="44" rx="6"/><text class="th" x="230" y="571" text-anchor="middle">haul</text><text class="ts" x="230" y="587" text-anchor="middle">logbook catch</text>
-<rect class="box s-plan" x="292" y="550" width="108" height="44" rx="6"/><text class="th" x="346" y="571" text-anchor="middle">period × area</text><text class="ts" x="346" y="587" text-anchor="middle">logbook catch</text>
-<rect class="box s-plan" x="408" y="550" width="108" height="44" rx="6"/><text class="th" x="462" y="571" text-anchor="middle">trip</text><text class="ts" x="462" y="587" text-anchor="middle">or landing</text>
-<rect class="box s-plan" x="524" y="550" width="108" height="44" rx="6"/><text class="th" x="578" y="571" text-anchor="middle">several trips</text><text class="ts" x="578" y="587" text-anchor="middle">weekly landing</text>
-<rect class="band s-plan" x="176" y="602" width="456" height="44" rx="6"/><text class="ts" x="404" y="621" text-anchor="middle">Catch can be coarser than the activity: each unit's catch</text><text class="ts" x="404" y="638" text-anchor="middle">is shared over the fishing pings it covers, by effort</text>
+<rect class="box s-ramb" x="176" y="654" width="108" height="44" rx="6"/><text class="th" x="230" y="675" text-anchor="middle">haul</text><text class="ts" x="230" y="691" text-anchor="middle">logbook catch</text><circle class="dot" cx="277" cy="661" r="3.5"/>
+<rect class="box s-ramb" x="292" y="654" width="108" height="44" rx="6"/><text class="th" x="346" y="675" text-anchor="middle">period × area</text><text class="ts" x="346" y="691" text-anchor="middle">logbook catch</text><circle class="dot" cx="393" cy="661" r="3.5"/>
+<rect class="box s-ramb" x="408" y="654" width="108" height="44" rx="6"/><text class="th" x="462" y="675" text-anchor="middle">trip</text><text class="ts" x="462" y="691" text-anchor="middle">or landing</text><circle class="dot" cx="509" cy="661" r="3.5"/>
+<rect class="box s-plan" x="524" y="654" width="108" height="44" rx="6"/><text class="th" x="578" y="675" text-anchor="middle">several trips</text><text class="ts" x="578" y="691" text-anchor="middle">weekly landing</text>
+<rect class="band s-ramb" x="176" y="706" width="456" height="44" rx="6"/><text class="ts" x="404" y="725" text-anchor="middle">Catch can be coarser than the activity: each unit's catch</text><text class="ts" x="404" y="742" text-anchor="middle">is shared over the fishing pings it covers, by effort</text><circle class="dot" cx="625" cy="713" r="3.5"/>
+<rect class="box s-plan" x="728" y="654" width="232" height="44" rx="6"/><text class="rs" x="844" y="673" text-anchor="middle">every kilogram in a catch unit (191)</text><text class="rs" x="844" y="689" text-anchor="middle">transfer trips' excess apart (199)</text>
+
+<!-- products: from the fixes -->
+<rect class="box s-ramb" x="176" y="766" width="108" height="44" rx="6"/><text class="th" x="230" y="787" text-anchor="middle">grid</text><text class="ts" x="230" y="803" text-anchor="middle">any cell size</text><circle class="dot" cx="277" cy="773" r="3.5"/>
+<rect class="box s-else" x="292" y="766" width="108" height="44" rx="6"/><text class="th" x="346" y="787" text-anchor="middle">data call</text><text class="ts" x="346" y="803" text-anchor="middle">delivery</text>
+<rect class="box s-else" x="408" y="766" width="108" height="44" rx="6"/><text class="th" x="462" y="787" text-anchor="middle">quality</text><text class="ts" x="462" y="803" text-anchor="middle">of submissions</text>
+<rect class="box s-ramb" x="524" y="766" width="108" height="44" rx="6"/><text class="th" x="578" y="787" text-anchor="middle">map viewer</text><text class="ts" x="578" y="803" text-anchor="middle">rb_map</text><circle class="dot" cx="625" cy="773" r="3.5"/>
+<rect class="box s-plan" x="728" y="766" width="232" height="44" rx="6"/><text class="rs" x="844" y="785" text-anchor="middle">the data call from the curated</text><text class="rs" x="844" y="801" text-anchor="middle">catch and kW (202)</text>
+
+<!-- validation: across the rows -->
+<rect class="band s-fishy" x="648" y="212" width="64" height="538" rx="6"/><circle class="dot" cx="705" cy="219" r="3.5"/>
+<text class="th" x="674" y="481" text-anchor="middle" transform="rotate(-90 674 481)">Validate each answer</text>
+<text class="ts" x="692" y="481" text-anchor="middle" transform="rotate(-90 692 481)">allocation audit · fates · survey tows · flags</text>
 
 <!-- bottom bar -->
-<rect class="box" x="40" y="662" width="592" height="90" rx="6"/>
-<text class="th" x="336" y="686" text-anchor="middle">Every ping is accounted for: impossible ones are set aside</text>
-<text class="ts" x="336" y="705" text-anchor="middle">all others stay in the trail, labelled with each step's result and its basis</text>
-<text class="ts" x="336" y="723" text-anchor="middle">basis: recorded · derived · reconstructed · synthesised · none (no source left)</text>
-<text class="ts" x="336" y="741" text-anchor="middle">ambiguity kept as counts (n_records, n_trips)</text>
+<rect class="box" x="40" y="826" width="920" height="90" rx="6"/>
+<text class="th" x="500" y="850" text-anchor="middle">Every ping is accounted for: impossible ones are set aside</text>
+<text class="ts" x="500" y="869" text-anchor="middle">all others stay in the trail, labelled with each step's result and its basis</text>
+<text class="ts" x="500" y="887" text-anchor="middle">basis: recorded · derived · reconstructed · synthesised · none (no source left)</text>
+<text class="ts" x="500" y="905" text-anchor="middle">ambiguity kept as counts (n_records, n_trips)</text>
+
 <!-- legend -->
-<rect class="box s-ramb" x="40" y="800" width="16" height="14" rx="3"/><text class="lg" x="62" y="811">built in ramb</text>
-<rect class="box s-fishy" x="152" y="800" width="16" height="14" rx="3"/><text class="lg" x="174" y="811">built in fishycode only</text>
-<rect class="box s-plan" x="318" y="800" width="16" height="14" rx="3"/><text class="lg" x="340" y="811">planned in ramb</text>
-<rect class="box s-else" x="446" y="800" width="16" height="14" rx="3"/><text class="lg" x="468" y="811">elsewhere only</text>
-<rect class="box s-none" x="566" y="800" width="16" height="14" rx="3"/><text class="lg" x="588" y="811">nowhere</text>
+<rect class="box s-ramb" x="40" y="932" width="16" height="14" rx="3"/><text class="lg" x="62" y="943">built in ramb or fishymodel</text>
+<rect class="box s-fishy" x="236" y="932" width="16" height="14" rx="3"/><text class="lg" x="258" y="943">built in fishycode only</text>
+<rect class="box s-plan" x="410" y="932" width="16" height="14" rx="3"/><text class="lg" x="432" y="943">planned, coded or decided; not built</text>
+<rect class="box s-else" x="672" y="932" width="16" height="14" rx="3"/><text class="lg" x="694" y="943">elsewhere only</text>
+<rect class="box s-none" x="808" y="932" width="16" height="14" rx="3"/><text class="lg" x="830" y="943">nowhere</text>
+<circle class="dot" cx="48" cy="961" r="4"/><text class="lg" x="62" y="965">on fishycode's data: filled by the rebuild of 2026-10-23 (decision 218), and nothing in the flow's code changed since</text>
 </svg>

@@ -91,7 +91,8 @@ WGSFD reports in all, since the group reported in multi-year cycles.
 - **The six reports of 2013-2018.** Their texts are ready. They reproduce only with permission, so they are
   paraphrased.
 - **`docs/figures/one_flow_status.svg`** colours the version-2 boxes only. Whether its colours come from the gap file
-  is plan 033 step 4.
+  is plan 033 step 4. *Amended 2026-10-27:* redrawn by hand on the version-3 boxes, at the maintainer's request; the
+  gap file is still step 4.
 - **The WGSFD 2026 meeting folder**, to be moved and mined (plan 033 step 7).
 - **Themes the readers coined twice** ("vmes" and "vulnerable marine ecosystems") are left as written. They are
   merged when the old reports are read.

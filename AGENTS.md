@@ -55,8 +55,9 @@ catch to every ping. The diagram `docs/figures/one_flow_cascade_v3.svg` is this
 design in one picture (rows the steps, boxes the sources, best first, closed by the
 products made from the fixes, with validation across the rows). It was amended from
 version 2 on a reading of seven ICES reports (decision 150), and is the centre of
-the book of plan 033. `docs/figures/one_flow_status.svg` colours version 2's boxes by
-where each is built.
+the book of plan 033. `docs/figures/one_flow_status.svg` colours version 3's boxes by
+where each is built, marks what fishycode's build fills, and lists what is decided and not
+built (hand-drawn, 2026-10-27).
 
 The Icelandic data are rich, but their resolution differs by period, by record
 and by variable, and most of them are not exactly right. The AIS track is most
