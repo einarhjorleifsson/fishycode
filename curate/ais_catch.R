@@ -98,7 +98,8 @@ for (yr in years) {
     transmute(vkey = paste(as.character(vid), as.character(year), as.character(voyage_id)), vid, T1, T2, pid2)
   lk <- ramb::rb_link_trip_landings(vy, ld |> select(.lid, schema, vid, date, pid), trip_key = "vkey",
                                     landing_key = c(".lid", "schema"), port_trip = "pid2", port_landing = "pid",
-                                    since_previous_days = 14)
+                                    since_previous_days = 14) |>
+    collect() # lazy voyages give lazy links since ramb 2026.10.27
   lkv <- dplyr::copy_to(con, as.data.frame(lk[, c("vkey", ".lid", "schema")]), overwrite = TRUE,
                         name = paste0("lk_", yr))
   ev_lv <- vy |> inner_join(lkv, by = "vkey") |>
