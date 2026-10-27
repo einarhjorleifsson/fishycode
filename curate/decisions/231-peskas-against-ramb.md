@@ -4,7 +4,8 @@
 then asked "care to clone peskas.coasts", and then "clone https://github.com/WorldFishCenter/ssf-ai-toolkit and mine it
 with respect to our project". Claude (AI) read the three repositories against ramb 2026.10.25.5 (9a67e0d). It ran the
 counts under "Checked on our data" and on the toolkit's labelled files, and wrote this record and the new wish-list rows
-in `docs/one_flow.qmd`. No person has checked them. Nothing went into ramb.*
+in `docs/one_flow.qmd`. No person has checked them. Nothing went into ramb. Amended the same day at the maintainer's
+request: the shore-filter line named the departure radius, which decision 197 retires; it now names the time budget.*
 
 ## What was read
 
@@ -117,7 +118,11 @@ These are the first five of the six new rows in the wish list of `docs/one_flow.
   not fishing (decision 229). The Kenyan labels keep the two apart, so either reading can be scored.
 - **Not of use.**
   - The shore filter. Removing fishing within 0.25-0.5 km of the coast would remove inshore fishing in Iceland
-    (lumpfish nets); ports and their departure radius serve better.
+    (lumpfish nets). Port calls serve better: they say which port the vessel was in, and fishing near the shore stays
+    fishing. They are found from the port polygons and, by decision 197, a time budget: a silence near a port is a call
+    when, less the time to sail from the last fix to the port and from the port to the next fix, it still reaches the
+    minimum stay. The budget holds at any ping rate. It replaces the frozen departure radius, and is decided but not
+    yet built.
   - The trip phases on `main`, not in production: the first and last 5 % of fixes, or those within 1 km of a trip's
     ends, are never fishing. It stands in for a port list.
   - The gear and vessel predictors, which are stubs (a logistic regression on a trip's duration, distance and mean
