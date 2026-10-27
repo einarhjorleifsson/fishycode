@@ -65,6 +65,10 @@ Found beyond the workshops (decision 148), in `$FISHYDATA/raw/external/`, not in
 
 Which of these go into ramb is TODO 93.
 
+Not obtainable (decision 148): Timor-Leste's tracks from Peskas (WorldFish). About 350 small boats have carried GPS
+trackers from Pelagic Data Systems since 2018, and there is no AIS. Only the landings are public. Peskas' code is
+read in decision 231.
+
 ::: {.callout-note collapse="true"}
 ## Checked against the code (2026-10-19)
 

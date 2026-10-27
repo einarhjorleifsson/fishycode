@@ -4,7 +4,8 @@
 found. A Claude session (AI) did the search, the downloads (each on the maintainer's go), the checks and this
 record; no person has checked the counts yet. Nothing went into ramb (the maintainer). The data are under
 `$FISHYDATA/raw/external/` and are not tracked. Each folder's `README-provenance.txt` gives every URL, DOI, licence and
-checksum, and is the reference for the files.*
+checksum, and is the reference for the files. Amended 2026-10-27 at the maintainer's request: Timor-Leste's tracks
+added under "Not obtainable".*
 
 ## What exists for testing, and where
 
@@ -26,6 +27,17 @@ left out by the maintainer's choice.
   PT_CCM_2021_GP) were never on GitHub. Only the chairs (Rufino, Mendo) can release them.
 - **The Gabon HMM data** (Cardiec et al. 2020, PLoS ONE): the paper's Dryad share link returns HTTP 422.
 - **Guillot et al. 2017's HMM-VMS code**: the link returns 404, and the Danish data were never shared.
+- **Timor-Leste's tracks** (Peskas, earlier PeskAAS: WorldFish with the ministry of fisheries; Tilley et al. 2020, PLoS
+  ONE, PMC7665685).
+  - Since 2018 about 350 small boats have carried solar GPS trackers from Pelagic Data Systems. There is no AIS.
+  - The tracks are read from Pelagic Data Systems with credentials that are never published.
+  - What is public is landings: a monthly `timor_landings.csv` on Harvard Dataverse, a dashboard, and an API of landing
+    records. No data statement covers the tracks.
+  - This search found Peskas on 2026-10-19, but it was left out of this record then. The web was checked again on
+    2026-10-27, with the same result.
+  - To get the tracks, ask WorldFish or the ministry, and expect a data-sharing agreement.
+  - The code is public and was read against ramb in decision 231. That decision also found labelled Kenyan and Zanzibar
+    tracks in WorldFish's `ssf-ai-toolkit`.
 - **Not used, with reasons:** a 5-vessel Italian file in WKSSFGEO2's history (`ITA_SSF_WKSSFGEO2_CNR_Annon.csv`, added
   4292d67, removed f04e3bd) was removed by CNR-IRBIM, so ask them before using it. Lattanzi et al. 2026's gear
   data (figshare 29647448) hold only a 2 KB sample.
