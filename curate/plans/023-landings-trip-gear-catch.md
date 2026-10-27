@@ -167,4 +167,20 @@ That ranking says where a landing can be given its trip's start, and from what.
 
 1. **Where the knowledge sits:** who at the Directorate of Fisheries or MFRI IT knows what feeds LODS 1 and agf since
    2020?
+   - **A lead to verify** (2026-10-24, from the `kb-hafro-kerfi` knowledge base of Hafró's legacy systems; recorded
+     2026-10-27). Claude (AI) read it, and no person has checked it.
+     - A nightly batch on MFRI's side copies Fiskistofa's data. It rewrites `LODS_SLAEGT` by `komunr`,
+       `AGF.AFLAGRUNNUR` by `londun_id` and the afli tables by `visir`.
+     - agf's own database jobs rebuild only the landings found in `ASK.LANDANIR`, which ends on 2020-07-22. Every
+       newer agf row comes from the batch.
+     - Both landings tables were emptied and reloaded from Fiskistofa's files in May 2025 (ticket UT-350). That
+       would explain the stamps of 2025-05-13 (decision 169).
+     - The batch's setup script turns off the triggers that would stamp new rows, which is why LODS rows from 2021
+       carry no write time.
+   - **Checked against the dumps:** only the triggers. In the kvoti dump of 2026-10-22
+     (`raw/oracle/kvoti/_code/all_triggers.parquet`), the six on `LODS_LONDUN` and `LODS_SLAEGT` are `DISABLED`, and
+     the two on `LODS_AFLI` are `ENABLED`.
+   - **Not checked:** the batch itself, its keys, and the 2025 reload. The knowledge base's history is partly
+     second-hand (its map of the landings eras is one colleague's account), so the batch's owner at MFRI IT is the person
+     to confirm it.
 2. **The write-up:** findings here, in plan 019's form, or a plan for each piece that turns out to matter?

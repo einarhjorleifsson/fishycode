@@ -4,7 +4,9 @@
 actions), and asked to include it in the grammar's thinking of a fishing operation and to match, for example, a
 longline along it, the protocol translated to English by its letters A to J. Claude (AI) translated it, matched the
 longline and wrote the section "Events between and around the four" in `docs/grammar.qmd` and this record. No person
-has checked them. Nothing went into ramb or the pipeline.*
+has checked them. Nothing went into ramb or the pipeline. Amended 2026-10-27: the maintainer answered TODO 146 (c),
+"The A-J protocol translation may stay public"; it had been pushed to the public repository the same day, before the
+answer.*
 
 ## What the protocol records
 

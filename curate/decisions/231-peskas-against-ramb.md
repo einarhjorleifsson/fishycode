@@ -5,7 +5,8 @@ then asked "care to clone peskas.coasts", and then "clone https://github.com/Wor
 with respect to our project". Claude (AI) read the three repositories against ramb 2026.10.25.5 (9a67e0d). It ran the
 counts under "Checked on our data" and on the toolkit's labelled files, and wrote this record and the new wish-list rows
 in `docs/one_flow.qmd`. No person has checked them. Nothing went into ramb. Amended the same day at the maintainer's
-request: the shore-filter line named the departure radius, which decision 197 retires; it now names the time budget.*
+request: the shore-filter line named the departure radius, which decision 197 retires; it now names the time budget.
+Amended again the same day: where the toolkit's example data were copied (under "What was read").*
 
 ## What was read
 
@@ -14,6 +15,11 @@ request: the shore-filter line named the departure radius, which decision 197 re
 | `peskas.timor.data.pipeline` | 5.8.1, 619c3fa of 2026-10-26 | `~/R/Pakkar/peskas.timor.data.pipeline`, put there by the maintainer | 8,168 of R |
 | `coasts` (repo `peskas.coasts`) | 4.24.1, dcf8a2c of 2026-10-21 | `~/R/Pakkar/peskas.coasts`, cloned 2026-10-27 with its whole history (142 commits) | 14,448 of R |
 | `ssf-ai-toolkit` (Python package `ssfaitk`) | 0.1.0, 845f5c1 of 2026-04-30; Peskas installs branch `plug-R`, 325d264 of 2026-03-05 | `~/R/Pakkar/ssf-ai-toolkit`, cloned 2026-10-27 (18 commits on `main`, 32 on `plug-R`) | 11,587 of Python outside `backup/`, on `main` |
+
+The toolkit's example data were copied on 2026-10-27, at the maintainer's request, to
+`$FISHYDATA/raw/external/worldfish/ssf-ai-toolkit/`. That is every data file on `main` (845f5c1): 56 files, 113 MB,
+kept in the repository's folders, with a `README.txt` saying what each group is. The clones in `~/R/Pakkar` are
+untouched. The maintainer, the same day: these are public data.
 
 All three are WorldFish's and public on GitHub: the two R packages under the GPL, the toolkit under Apache 2.0. Timor's
 pipeline is thin: every function that is not Timor's own
