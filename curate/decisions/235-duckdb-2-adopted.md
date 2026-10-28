@@ -4,7 +4,8 @@
 potential risk, but nothing that we have is yet used by other people." Run and written by Claude (AI); every number
 comes from its runs, and no person has checked them. Plan 046 §7 had left DuckDB 2.0 for later and said what taking it
 up needs: its own change, step 1's tile timings before and after, and the pipeline's fingerprints. Working files, each
-with the command that reruns it: `$FISHYDATA/archive/2026-10-28-duckdb2/`.*
+with the command that reruns it: `$FISHYDATA/archive/2026-10-28-duckdb2/`. Amended the same day: ramb's one failing
+test fixed (ramb `ca57d64`), on the maintainer's go after checking it could run beside another session's job.*
 
 ## What was installed
 
@@ -65,8 +66,13 @@ database files is one-way (2.0's cannot be opened by 1.5), and none is used: no 
   skipped under both. One errors under 2.0 only: "an extension installs offline". It copies the smallest installed
   extension into an extension folder. That is h3, a community extension, and 2.0 refuses its signature
   (`allow_unsigned_extensions`) unless the `.info` file that records its origin is copied with it. A core extension
-  (icu) copied alone loads under 2.0, and h3 with its `.info` loads too. 1.5.6 loaded h3 alone. ramb's message for
-  this case also names the core repository's URL, which has no h3 (TODO 150).
+  (icu) copied alone loads under 2.0, and h3 with its `.info` loads too. 1.5.6 loaded h3 alone. ramb itself loads
+  core extensions only (`spatial` and `httpfs`, six calls of `.rb_extension()`), for which its offline route and
+  message are right; only the test's pick was wrong. Fixed the same day in ramb `ca57d64` (2026.10.28.2): the test
+  copies the smallest core extension (`installed_from = 'core'`), and a comment in `R/connection.R` records 2.0's
+  rule. Run from a scratch library: 225 tests, none failing or erroring, 3 skipped, under 2.0.0 and 1.5.6 alike; the
+  offline test ran its 8 expectations under both. It ran beside another session's `vessel_bundle.R`, which loads no
+  ramb and no extension.
 - **The effort map's tiles** (plan 046 step 1's bench, three interleaved runs per engine in fresh processes,
   `bench_summary.R`):
   - total 302 s under 2.0 against 297 s under 1.5.6 (1.02), and the slowest single run was 2.0's third (334 s);
@@ -82,6 +88,7 @@ database files is one-way (2.0's cannot be opened by 1.5), and none is used: no 
 - **The complete rebuild under 2.0** (TODO 150). The data on disk are still 1.5.6's (decision 218). It waits for a
   clean tree: the vessel overview had another session's uncommitted edits when this was written, and
   `write_curated()` would stamp every file built meanwhile as dirty.
-- **ramb's offline route for a community extension** (TODO 150).
+- **ramb `ca57d64` on GitHub.** It was committed, not pushed, when this was written. R's library keeps 2026.10.28.1
+  (`dfd693d`), which runs the same code, until it is installed from GitHub after the push.
 - **The vessel overview's server**, started before the switch, still runs on the 1.5.6 library it loaded until it is
   restarted. Its page's DuckDB-WASM is another engine, pinned from jsdelivr, and is untouched.
