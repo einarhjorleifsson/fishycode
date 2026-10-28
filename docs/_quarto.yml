@@ -62,7 +62,7 @@ format:
   html:
     theme: flatly
     css: styles.css
-    toc: true
+    toc: false   # no contents list beside the text; styles.css hides it where a page turns it on
     toc-depth: 3
     message: false
     warning: false

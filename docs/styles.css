@@ -1,1 +1,5 @@
 /* css styles */
+
+/* No contents list beside the text (maintainer, 2026-10-28). `toc: false` in _quarto.yml covers most pages; six
+   turn it on in their own front matter, and editing those would re-run their frozen code. */
+#quarto-margin-sidebar { display: none; }
