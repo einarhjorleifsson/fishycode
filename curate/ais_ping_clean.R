@@ -1,7 +1,7 @@
 # ais_ping_clean.R — L2 of the vessel-trail model: label whacky positions, keep the rest.
 # Side: flow, step 0. See plan 014.
 #
-# Input:  staging/ais/ping_tagged   (merged pings + pid harbour tag + H3)
+# Input:  staging/ais/ping_tagged   (merged pings + pid harbour tag)
 # Output: staging/ais/ping_clean    (same columns, whacky positions dropped)
 #         staging/ais/ping_whacky   (the dropped pings, same columns plus `whack_stage`: "invalid",
 #                                    "duplicate", "vmask", "spike" or "forward" - which step took them out)
@@ -82,7 +82,7 @@ for (yr in years) {
   base <- ais |>
     filter(year == yr, !is.na(vid)) |>
     select(vid, mmsi, time, lon, lat, speed, speed_raw, heading, cog, provider, pos_basis, speed_basis,
-           dt_sec, sid_gps, n_sid_gps, pid, h3, depth, bbht, fao, year)
+           dt_sec, sid_gps, n_sid_gps, pid, year)
 
   vid_n  <- base |> count(vid) |> collect() |> arrange(desc(n))
   groups <- split(vid_n$vid, cumsum(as.numeric(vid_n$n)) %/% BATCH_PINGS)

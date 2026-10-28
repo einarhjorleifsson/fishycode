@@ -1,8 +1,9 @@
-# h3_index.R — build the H3 resolution-8 lookup used for all AIS spatial tagging.
-# Side: preprocessing (geo). See plan 014.
+# area_h3.R — the H3 resolution-8 lookup of depth, habitat and ICES area that tagged every AIS ping until plan 049.
+# Side: the ICES datacall, not wired: moved out of the flow by plan 049 (2026-10-28), until plan 015 wires it. Was
+# reference/geo/h3_index.R; the flow keeps its GEBCO part alone (reference/geo/depth_h3.R) for afli_depth_units.
 #
 # Input:  raw/aux/gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif
-#         staging/aux/eusm.fgb, staging/aux/ices_areas_500m-buffer.fgb
+#         staging/aux/eusm.fgb, staging/aux/ices_areas_500m-buffer.fgb   from area_layers.R here
 # Output: curated/reference/area_h3.parquet   (26,160,965 cells: h3, depth, bbht, fao)
 #
 # The raster was recorded as missing from 2026-09-20 to 2026-09-22 and this script

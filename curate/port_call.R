@@ -64,6 +64,14 @@ q <- function(sql) DBI::dbGetQuery(con, sql)
 x <- function(sql) DBI::dbExecute(con, sql)
 
 clean_dir <- file.path(fd_staging("ais", "ping_clean"), "year=*", "**", "*.parquet")
+# the years' own folders, never a filter on the year: DuckDB 2.0 estimates such a filter at about 1 row, and the joins
+# below could then be built on the pings (decision 235, plan 049); a year with no folder is left out
+clean_years <- function(ys) {
+  ys <- ys[dir.exists(file.path(fd_staging("ais", "ping_clean"), paste0("year=", ys)))]
+  if (!length(ys)) return(NULL)
+  sprintf("read_parquet([%s])", paste0("'", file.path(fd_staging("ais", "ping_clean"), paste0("year=", ys), "**", "*.parquet"),
+                                        "'", collapse = ", "))
+}
 event_f   <- fd_staging("ais", "stk_event.parquet")
 YEARS     <- as.integer(strsplit(Sys.getenv("STAY_YEARS", ""), ",")[[1]])
 ALL       <- !length(YEARS)
@@ -87,20 +95,18 @@ ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M)
 
 stay_year <- function(yr) {
   # pings of the year plus the neighbouring years' boundary pings
-  seq_yr <- dplyr::tbl(con, dplyr::sql(glue::glue("
-    WITH c AS (SELECT vid, time, lon, lat, year FROM read_parquet('{clean_dir}', hive_partitioning = true)
-               WHERE year BETWEEN {yr - 1L} AND {yr + 1L} AND pos_basis = 'recorded')
-    SELECT vid, time, lon, lat FROM c WHERE year = {yr}
-    UNION ALL SELECT vid, time, lon, lat FROM c WHERE year = {yr - 1L}
-              QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time DESC) = 1
-    UNION ALL SELECT vid, time, lon, lat FROM c WHERE year = {yr + 1L}
-              QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time) = 1")))
+  part <- function(y, last) {
+    if (is.null(clean_years(y))) return(NULL)
+    glue::glue("SELECT vid, time, lon, lat FROM {clean_years(y)} WHERE pos_basis = 'recorded'",
+               if (is.na(last)) "" else " QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time{if (last) ' DESC' else ''}) = 1")
+  }
+  seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(part(yr, NA), part(yr - 1L, TRUE), part(yr + 1L, FALSE)),
+                                             collapse = "\n    UNION ALL ")))
   # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both ok and kept by step 0
   ev <- if (yr >= EVENT_FROM) dplyr::tbl(con, dplyr::sql(glue::glue("
     SELECT e.vid, e.time, e.io, e.hid_pid AS port_id, (e.io_ok AND c.vid IS NOT NULL) AS good
     FROM read_parquet('{event_f}') e
-    LEFT JOIN (SELECT DISTINCT vid, time FROM read_parquet('{clean_dir}', hive_partitioning = true)
-               WHERE year BETWEEN {yr - 1L} AND {yr + 1L}) c USING (vid, time)
+    LEFT JOIN (SELECT DISTINCT vid, time FROM {clean_years(yr + -1:1)}) c USING (vid, time)
     WHERE e.year BETWEEN {yr - 1L} AND {yr + 1L}"))) else NULL
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
   ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,

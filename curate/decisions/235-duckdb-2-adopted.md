@@ -8,7 +8,8 @@ with the command that reruns it: `$FISHYDATA/archive/2026-10-28-duckdb2/`. Amend
 test fixed (ramb `ca57d64`), on the maintainer's go after checking it could run beside another session's job.
 Amended again the same day: the rebuild stopped at `gear` (it reads the web) and at `ais_ping_tag` (2.0's estimate of a
 partition filter); both found and the second fixed, on the maintainer's "Run the checks", "Test it" and "Apply and
-resume".*
+resume". Amended a third time the same day: the rebuild hung at `ais_ping_tag` 2020; the cause was ramb's port flag,
+not 2.0, and the area layers left the flow (plan 049, decision 239).*
 
 ## What was installed
 
@@ -88,7 +89,7 @@ database files is one-way (2.0's cannot be opened by 1.5), and none is used: no 
   their sizes across engines say nothing. The vessel overview's server, started by another hand at 11:38, was up
   during the bench.
 
-## The rebuild under 2.0 (TODO 150): stopped twice, both causes found
+## The rebuild under 2.0 (TODO 150): stopped three times, every cause found
 
 Started 2026-10-28 at 13:33 UTC at `ba1d53d` under `nohup` and `caffeinate` (`rebuild.sh`, decision 218's method:
 fingerprint, invalidate every target, build, fingerprint, compare).
@@ -122,12 +123,19 @@ fingerprint, invalidate every target, build, fingerprint, compare).
    `staging/ais/ping_tagged` truncated; `ais_ping_tag` was rebuilt under 1.5.6 at 15:55 to repair it (all 20 years
    read, each with the union's rows), and is rebuilt under 2.0 with the fix in the resume. The same filter on a
    partition is in `ais_ping_clean.R`, `ais_voyage.R`, `port_call.R` and `R/trail_sql.R`; they are left as they are
-   until one fails.
+   until one fails. (Decision 239: only `port_call.R` joined after such a filter, and it now reads the folders.)
+3. **`ais_ping_tag` hung at 2020** under the fix's settings (14 GB, 4 threads): from about 17:16 UTC the workers sat
+   idle and the client waited (`hang_sample_ais_ping_tag_2020.txt`), until the kill at 18:26. The killed run left
+   year 2020 of `staging/ais/ping_tagged` truncated and 53 GB of spill in R's temporary folder, which was removed.
+   Decision 239 found the cause in the query, not in 2.0. The stack is DuckDB issue #26720's, a window written by
+   `COPY` under a memory limit, reproduced on 1.5.x as well. ramb's port flag ran two windows over every ping, at
+   15-23 GB a year under either engine, and was rewritten without them (ramb 2026.10.28.3, 1-4 GB). The area join
+   left the flow with the layers (plan 049).
 
 ## Not done
 
-- **The rest of the rebuild under 2.0** (TODO 150): `ais_ping_tag` again with the fix and 19 targets after it, then
-  the fingerprint after and the comparison. It waits for a clean tree, since `write_curated()` stamps every file
-  built under edits as dirty.
+- **The rest of the rebuild under 2.0** (TODO 150): after decision 239, `shapes`, `depth_h3`, `afli_depth_units`,
+  STK's three targets below `shapes`, `ais_ping_tag` and the 16 after it; then the fingerprint after and the
+  comparison. It waits for a clean tree, since `write_curated()` stamps every file built under edits as dirty.
 - **The vessel overview's server**, started before the switch, still runs on the 1.5.6 library it loaded until it is
   restarted. Its page's DuckDB-WASM is another engine, pinned from jsdelivr, and is untouched.

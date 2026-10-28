@@ -44,7 +44,7 @@ It also writes into the repo (`here("ices-datacall/2025/...")`), which `AGENTS.m
 | MetierL6 | `gear_mapping.met6` by `agf_gid`, plus a hard-coded OTB_CRU fix | no `met6` anywhere (the trail's `metier` is the house label gear + target2, `OTB_NEP`); the mesh is in the logbooks' raw gear tables | **§4 a**, revised |
 | VesselLengthRange, AverageVesselLength | `vessels_iceland.loa` | `vessel.loa` | 95.7 % of vessels |
 | AveragekW, kWFishingHour | `vessels_iceland.kw_total` | `vessel.kw_total` | **65.3 % of vessels** (§4 f) |
-| Habitat, Depth | old trail `.msfd_bbht`, `.depth` | `staging/ais/ping_tagged` `bbht`, `depth` (from `area_h3`, H3 res 8), joined on (vid, time) | depth 100 %, habitat 61.9 % of cells |
+| Habitat, Depth | old trail `.msfd_bbht`, `.depth` | the datacall's own: `products/ices_vms_datacall/area_h3.R` (H3 res 8), on the fishing fixes alone; `staging/ais/ping_tagged` carried `bbht`, `depth` and `fao` until plan 049 | depth 100 %, habitat 61.9 % of cells (measured on `ping_tagged`) |
 | No_Records, FishingHour, AverageInterval | `dt` (s to the previous fix); rows with `dt` > 2 h or < 5 s dropped | trail `dt_sec` | built; the rule **§4 c** |
 | AverageFishingSpeed | `speed` | trail `speed` | built |
 | SweptArea, AverageGearWidth | `dd` (distance to the previous fix) × width from the logbook, missing widths set by gear (100, 45, 60, 2 m) and capped | distance from consecutive fixes; `fishing_sample.g_width` | width recorded for **17 % of OTB, 18 % of DRB** (§4 d) |
@@ -200,7 +200,9 @@ fishing fix in 27.5.a.2; the target from the gear code alone.
 1. **Rebuild 2025's `VE` from the old trail** with the 2025 rules, leaving swept area and width out (their logbook
    input is gone). Keep it as the baseline in `$FISHYDATA/archive/2025-ices-datacall/`.
 2. **The fishing-fix table**: the trail's fishing fixes with distance to the previous fix, habitat, depth, metier 6,
-   vessel and gear width. One DuckDB pass per year.
+   vessel and gear width. One DuckDB pass per year. Habitat, depth and the ICES area come from the area layers the
+   datacall now makes itself (`products/ices_vms_datacall/`: `shapes_raw.R`, `area_layers.R`, `area_h3.R`, not wired;
+   plan 049 moved them out of the flow).
 3. **`VE` and `LE`** in the 2025 format, with the ICES vocabulary checks of 2025 (`icesVocab`). AnonymizedVesselID is
    filled where a cell has fewer than three vessels; that is the call's own rule, and no other suppression applies.
 4. **Compare with 2025** by year × MetierL4:

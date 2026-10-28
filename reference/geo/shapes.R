@@ -1,70 +1,28 @@
+# shapes.R — the port polygons the flow tags pings with, cropped to the ICES areas' box.
 # Side: preprocessing (geo). See plan 014.
+#
+# Input:  curated/reference/port_geometry.parquet   from reference/ports/ports_all.R
+# Output: staging/aux/ports.{gpkg,fgb}               read by curate/ais_ping_tag.R and reference/ports/stk_hid_pid.R
+#
+# Until plan 049 this script also wrote the ICES areas with a 500 m coastal buffer, the EUSM habitats and the GEBCO depth
+# bands. Those are the ICES datacall's (products/ices_vms_datacall/area_layers.R), so only the box is kept here: the
+# buffered ICES areas' bounding box as they last built it (2026-10-28), so the ports come out the same.
+
 library(sf)
 library(tidyverse)
-library(mapview)
 
-# Shoreline --------------------------------------------------------------------
-# Shoreline is imperfect - here create a 500 meter buffer inland, so that
-#  fisheries close to shore not allocated as points-on-land in downstream
-#  analysis.
+ices_box <- st_bbox(c(xmin = -44.009436955761288, ymin = 35.995461513687637,
+                      xmax = 68.764211089664045, ymax = 89.004724200724098), crs = st_crs(4326))
 
-sf_use_s2(FALSE)
-# The source is EPSG:3857, whose unit is a metre only at the equator (scale factor sec(lat)):
-# a 500 buffer there was 215 m on the ground at 64.5N and 171 m at 70N. EPSG:3035 (LAEA
-# Europe) gives 498-500 m across the ICES area and within 4 % at its corners (Greenland, 80N).
-ices_raw <- read_sf(fd_raw("aux", "ICES_Areas_20160601_cut_dense_3857.gpkg")) |>
-  st_transform(3035)
-
-# 1. Buffer the union — only external (coastal) boundaries expand
-original_union <- st_union(ices_raw)
-# nQuadSegs set to 2 to reduce the number of vertices
-union_buf      <- st_buffer(original_union, dist = 500, nQuadSegs = 2)
-
-# 2. Coastal strip = new area only
-coast_strip <- st_difference(union_buf, original_union)
-
-# 3. Assign coastal strip pieces to each polygon via individual buffer
-#    Use st_filter first to avoid all-pairs intersection
-coast_assigned <- ices_raw |>
-  st_buffer(500) |>
-  st_filter(coast_strip) |>                        # only polygons touching the coast
-  st_intersection(coast_strip)                     # clip to coast strip only
-
-# 4. Union each polygon with its coastal strip piece
-ices_extended <- bind_rows(
-  select(ices_raw, Area_Full),
-  select(coast_assigned, Area_Full)
-) |>
-  group_by(Area_Full) |>
-  summarise(geom = st_union(geom), .groups = "drop")
-
-ices_extended <- ices_extended |>
-  st_transform(4326) |>
-  st_cast("MULTIPOLYGON") |>
-  rename(fao = Area_Full)
-ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"), delete_dsn = TRUE)
-ices_extended |> write_sf(fd_staging("aux", "ices_areas_500m-buffer.fgb"), delete_dsn = TRUE)
-
-# eusm -------------------------------------------------------------------------
-# reference/geo/shapes_raw.R has already filtered and repaired it (staging/aux_valid/, EPSG:4326).
-# This block used to repeat that from raw/aux/eusm.rds - the same three make_valid passes over
-# 2.2 M polygons, most of this target's 15 minutes - and so never read its declared input.
-eusm <-
-  read_sf(fd_staging("aux_valid", "eusm.gpkg")) |>
-  st_crop(st_bbox(ices_extended))
-# .fgb only: both readers (h3_index.R, products/exports/astd_iseez.R) take it; the 2 GB .gpkg copy is gone
-eusm |> write_sf(fd_staging("aux", "eusm.fgb"), delete_dsn = TRUE)
-# gebco ------------------------------------------------------------------------
-read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.gpkg"), delete_dsn = TRUE)
-read_sf(fd_staging("aux_valid", "gebco.gpkg")) |> write_sf(fd_staging("aux", "gebco.fgb"), delete_dsn = TRUE)
 # ports ------------------------------------------------------------------------
 # One row per physical port, already deduplicated across the nine sources by
 # reference/ports/ports_all.R, which resolves overlaps by source priority
 # inside a spatial cluster. The hardcoded source filter this replaced -
 #   filter(source %in% c("einar","gfw")) then drop gfw where pid starts IS/FO
 # - was a crude hand version of that same rule, applied in the wrong place.
+sf_use_s2(FALSE)
 ports <-
   read_curated_sf(fd_curated("reference", "port_geometry.parquet")) |>
-  st_crop(st_bbox(read_sf(fd_staging("aux", "ices_areas_500m-buffer.gpkg"))))
+  st_crop(ices_box)
 ports |> write_sf(fd_staging("aux", "ports.gpkg"), delete_dsn = TRUE)
 ports |> write_sf(fd_staging("aux", "ports.fgb"), delete_dsn = TRUE)

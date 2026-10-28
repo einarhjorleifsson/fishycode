@@ -159,27 +159,14 @@ list(
     produces("reference/species/species.R", fd_curated("reference", "species.parquet"))
   }, format = "file"),
 
-  # Geometry validation of the raw spatial layers. Its outputs go to
-  # staging/aux_valid/; shapes.R then crops and buffers them into staging/aux/.
-  # The two stages were separate directories in the old tree (data-raw/aux vs
-  # data/aux) and must stay separate, or shapes.R overwrites its own input.
-  tar_target(shapes_raw, produces(
-    "reference/geo/shapes_raw.R",
-    fd_staging("aux_valid", "ices_areas.gpkg"),
-    fd_staging("aux_valid", "gebco.gpkg"),
-    fd_staging("aux_valid", "eusm.gpkg")), format = "file"),
-
   # Port polygons are now produced by the ports_all target above, so targets can
   # see when they change. Previously this read a hand copy of kaenugardr's
   # output, which is why a corrected geometry did not propagate. This only crops
-  # and buffers them.
+  # them. The ICES areas, EUSM habitats and GEBCO depth bands it and shapes_raw made until plan 049 are the ICES
+  # datacall's (products/ices_vms_datacall/, not wired).
   tar_target(shapes, {
-    shapes_raw
     ports_all
-    produces("reference/geo/shapes.R",
-             fd_staging("aux", "ports.fgb"),
-             fd_staging("aux", "ices_areas_500m-buffer.fgb"),
-             fd_staging("aux", "eusm.fgb"))
+    produces("reference/geo/shapes.R", fd_staging("aux", "ports.fgb"))
   }, format = "file"),
 
   # STK's own harbour code -> the standard pid (plan 011 §3.2). Seeded from where each
@@ -193,13 +180,12 @@ list(
              fd_curated("reference", "stk_hid_pid.parquet"))
   }, format = "file"),
 
-  # h3_index.R reads staging/aux/eusm.fgb and ices_areas_500m-buffer.fgb, both written by
-  # shapes; without this edge a changed habitat or area layer never reached area_h3. Coarse
-  # on purpose: a rewrite changes the bytes of even an unchanged .fgb, so no file target
-  # could tell a real change from a rewrite.
-  tar_target(area_h3, {
-    shapes
-    produces("reference/geo/h3_index.R", fd_curated("reference", "area_h3.parquet"))
+  # GEBCO's depth per H3 cell, for afli_depth_units alone (plan 049; the habitat and ICES area it carried as area_h3
+  # went to the datacall).
+  tar_target(gebco_raster, fd_raw("aux", "gebco_2026_n89.0_s35.0_w-45.0_e69.0_geotiff.tif"), format = "file"),
+  tar_target(depth_h3, {
+    gebco_raster
+    produces("reference/geo/depth_h3.R", fd_curated("reference", "depth_h3.parquet"))
   }, format = "file"),
 
   # Country codes, maritime identification digits, call-sign prefixes.
@@ -488,7 +474,7 @@ list(
   # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
   # afli_station by curate/logbook.R, never written back into station.parquet.
   tar_target(afli_depth_units, {
-    afli; area_h3
+    afli; depth_h3
     produces("curate/corrections/afli_depth_units.R",
              fd_staging("afli", "depth.parquet"))
   }, format = "file"),
@@ -695,7 +681,7 @@ list(
   }, format = "file"),
 
   tar_target(ais_ping_tag, {
-    ais_ping_union; shapes; area_h3
+    ais_ping_union; shapes
     produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
   }, format = "file"),
 

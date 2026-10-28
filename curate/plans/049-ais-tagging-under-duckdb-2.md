@@ -1,8 +1,8 @@
 # 049 — The AIS tagging under DuckDB 2.0: EUSM, GEBCO and the ICES areas out of the flow, a port flag without windows, and tests before the rebuild resumes
 
-**status:** proposal — written 2026-10-28 at the maintainer's request, after the rebuild under DuckDB 2.0 (TODO 150)
-hung in `ais_ping_tag` at year 2020; the four asks answered the same day, each as recommended (§5); none of
-its steps built · **measured** (§1), by Claude the
+**status:** partly built — written 2026-10-28 at the maintainer's request, after the rebuild under DuckDB 2.0 (TODO
+150) hung in `ais_ping_tag` at year 2020; the four asks answered the same day, each as recommended (§5); steps 1-3 and
+5 done the same day (decision 239), step 4, the rebuild, is TODO 150 · **measured** (§1), by Claude the
 same day: the readers of the area columns by search, the targets' times from `tar_meta()`, the stack sample of the
 hang, DuckDB's release notes and issues, duckdbfs's code; the memory and plans of decision 235 · **assumed** (§2): that
 the port flag can drop its windows and give every ping the same port, and that without them and the area join the

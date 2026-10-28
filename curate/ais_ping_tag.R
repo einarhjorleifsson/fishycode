@@ -1,9 +1,8 @@
-# ais_ping_tag.R — tag every merged ping with its harbour polygon and its H3 cell's depth, habitat and ICES area.
+# ais_ping_tag.R — tag every merged ping with its port polygon.
 # Side: flow, step 0. See plan 014.
 #
 # Input:  staging/ais/ping_union              all pings, from curate/ais_ping_union.R
 #         staging/aux/ports.fgb               harbour polygons (pid, hid)
-#         curated/reference/area_h3.parquet   H3 resolution-8 cell -> depth, bbht, fao
 # Output: staging/ais/ping_tagged             partitioned by year
 #
 # Two scripts, union then tag, on purpose: the union is 44 GB, and the tagging must be rerunnable
@@ -11,22 +10,17 @@
 #
 # The port tag is ramb::rb_flag_ping_port() (plan 013 phase 2, renamed in plan 014): a ping inside two polygons takes the
 # smaller one, where the spatial join it replaced kept both and doubled the ping. The point geometry the join
-# left in every row (`geom`) is no longer written; nothing read it.
+# left in every row (`geom`) is no longer written; nothing read it. The H3 cell's depth, habitat and ICES area were
+# put on every ping here until plan 049; they are the ICES datacall's (products/ices_vms_datacall/).
 
 library(duckdbfs)
 library(tidyverse)
 library(tictoc)
-library(h3)
 duckdbfs::load_spatial()
-# DuckDB 2.0 (decision 235): a cap below the machine's 24 GB, as curate/ais_catch.R; at the default (80 %) 2017
-# peaked at 23 GB, at 14 GB it took 16 GB and ran faster
-con <- duckdbfs::cached_connection()
+# DuckDB's defaults: ramb 2026.10.28.3's port flag takes 1-4 GB a year where its window took 15-23 GB, so decision 235's
+# cap is gone (plan 049); a spill folder that exists, as duckdbfs's does not
 configure_duckdb_temp()
-DBI::dbExecute(con, "SET memory_limit = '14GB'")
-DBI::dbExecute(con, "SET preserve_insertion_order = false")
-DBI::dbExecute(con, "SET threads = 4")
 ports <- sf::read_sf(fd_staging("aux", "ports.fgb")) |> transmute(port_id = pid, hid)
-h3 <- open_dataset(fd_curated("reference", "area_h3.parquet")) |> select(h3, depth, bbht, fao)
 
 # write out --------------------------------------------------------------------
 # Partition by year so downstream queries can apply partition pruning.
@@ -60,8 +54,6 @@ for(y in 1:length(years)) {
   open_dataset(file.path(fd_staging("ais", "ping_union"), paste0("year=", YR))) |>
     ramb::rb_flag_ping_port(ports, keep = "hid") |>
     rename(pid = port_id) |>
-    mutate(h3 = h3_latlng_to_cell_string(lat, lon, 8L)) |>
-    left_join(h3, by = "h3") |>
     duckdbfs::write_dataset(fd_staging("ais", "ping_tagged"), partitioning = c("year"), format = "parquet")
   toc()
 }

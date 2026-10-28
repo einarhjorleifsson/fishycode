@@ -3,7 +3,7 @@
 # unit (metres, curate/decisions/022-depth-unit-is-metres.md).
 #
 # Input:  staging/afli/{station,trip,fishing_sample}.parquet
-#         curated/reference/{area_h3,gear}.parquet
+#         curated/reference/{depth_h3,gear}.parquet
 # Output: staging/afli/depth.parquet  (.sid, z1, z2, z1_raw, z2_raw,
 #         z1_basis, z2_basis) — a side table, joined onto station.parquet by
 #         whoever merges afli into the logbook (curate/logbook.R). station.parquet
@@ -67,7 +67,7 @@ trip <- open_dataset(fd_staging("afli", "trip.parquet")) |>
 gear_sid <- open_dataset(fd_staging("afli", "fishing_sample.parquet")) |>
   select(.sid, gid, gear, t1, t2, t3, t4)
 
-gebco <- open_dataset(fd_curated("reference", "area_h3.parquet")) |>
+gebco <- open_dataset(fd_curated("reference", "depth_h3.parquet")) |>
   select(h3, gebco_depth = depth)
 
 pelagic_gears <- c("OTM", "PS", "HMS")
