@@ -72,7 +72,7 @@ database files is one-way (2.0's cannot be opened by 1.5), and none is used: no 
   copies the smallest core extension (`installed_from = 'core'`), and a comment in `R/connection.R` records 2.0's
   rule. Run from a scratch library: 225 tests, none failing or erroring, 3 skipped, under 2.0.0 and 1.5.6 alike; the
   offline test ran its 8 expectations under both. It ran beside another session's `vessel_bundle.R`, which loads no
-  ramb and no extension.
+  ramb and no extension. Pushed on the maintainer's go and installed from GitHub (`RemoteSha` `ca57d64`).
 - **The effort map's tiles** (plan 046 step 1's bench, three interleaved runs per engine in fresh processes,
   `bench_summary.R`):
   - total 302 s under 2.0 against 297 s under 1.5.6 (1.02), and the slowest single run was 2.0's third (334 s);
@@ -88,7 +88,5 @@ database files is one-way (2.0's cannot be opened by 1.5), and none is used: no 
 - **The complete rebuild under 2.0** (TODO 150). The data on disk are still 1.5.6's (decision 218). It waits for a
   clean tree: the vessel overview had another session's uncommitted edits when this was written, and
   `write_curated()` would stamp every file built meanwhile as dirty.
-- **ramb `ca57d64` on GitHub.** It was committed, not pushed, when this was written. R's library keeps 2026.10.28.1
-  (`dfd693d`), which runs the same code, until it is installed from GitHub after the push.
 - **The vessel overview's server**, started before the switch, still runs on the 1.5.6 library it loaded until it is
   restarted. Its page's DuckDB-WASM is another engine, pinned from jsdelivr, and is untouched.
