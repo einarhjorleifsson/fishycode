@@ -1370,3 +1370,24 @@ whack filter kept the event as a ping (699,084 port calls lean on events, 13,510
 
 **check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.
+
+## 149. ramb's set finder fails badly on pots and sparse tracks: amend it, or let the data choose
+**status:** open — next: its own ramb session, once ramb is pushed and the note to iapesca's author is sent (the
+maintainer, 2026-10-28) · **see:**
+decisions 234, 158 and 146, TODO 72 item 8, `$FISHYDATA/archive/2026-10-mendo-vs-iapesca/` (the harness)
+
+The maintainer, 2026-10-28: a method that fails badly on a dataset is amended; methods may be scored against each
+other; one method robust across data richness, or one chosen by the data. `rb_link_record_sets()` (iapesca 1.3) gets
+33 of 56 dense pot sets, little from 10 min on, and 56 of 72 drive-in gillnets with its 1-hour floor (decision 234).
+In ramb, in order:
+- classify the ~22 wrong pot sets: run-in to the buoy, other passes over the line, or the truth rule's pick;
+- per haul, whether ramb and Mendo DK err on different hauls (both right, one, neither), before any agreement score;
+- a choice by the data (ping rate, soak against the floor), its basis recorded on the output;
+- `key` checked unique, with a guiding message (repeated ids ran 13+ min with no warning).
+- the acceptance rule as an option of this function (a minimum share of the line covered), measured, not a second
+  method; Mendo's two samples as an agreement test (decision 234, items 2 and 3).
+
+Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check reopens that if the two err apart.
+
+**check:** each of the five is done in ramb and measured on all its labelled tracks at five ping rates, or recorded
+as not done, in a decision.

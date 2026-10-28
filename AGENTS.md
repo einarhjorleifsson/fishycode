@@ -57,7 +57,11 @@ poorer or richer than Iceland's. Other workflows are read three ways:
   vmstools and sfdSAR, the WKSSFGEO repositories, iapesca, CNR-IRBIM's, Mendo et al.'s,
   GFW's pipe-anchorages, WorldFish's Peskas and `ssf-ai-toolkit` (decisions 078, 148,
   231). The aim is to fold them all under one umbrella, the one flow: ramb recodes a
-  method and checks it against that code, and copies nothing.
+  method and checks it against that code, and copies nothing. It recodes only for a
+  reason (maintainer, 2026-10-28, decision 234): a lazy flow at the flow's scale, a
+  vastly faster run, measured as a ratio, or an original that exists only as scripts or
+  PDFs (checked against its output, listed in ramb's `inst/COPYRIGHTS`); otherwise
+  users are pointed to the original.
 - **Documents give asks and definitions**: the ICES reports (decisions 150, 152),
   papers, and EM4SSF's deliverables (decision 229; no code yet). They shape the
   diagram's rows and the wish list, not the methods.
