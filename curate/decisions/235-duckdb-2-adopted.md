@@ -5,7 +5,10 @@ potential risk, but nothing that we have is yet used by other people." Run and w
 comes from its runs, and no person has checked them. Plan 046 §7 had left DuckDB 2.0 for later and said what taking it
 up needs: its own change, step 1's tile timings before and after, and the pipeline's fingerprints. Working files, each
 with the command that reruns it: `$FISHYDATA/archive/2026-10-28-duckdb2/`. Amended the same day: ramb's one failing
-test fixed (ramb `ca57d64`), on the maintainer's go after checking it could run beside another session's job.*
+test fixed (ramb `ca57d64`), on the maintainer's go after checking it could run beside another session's job.
+Amended again the same day: the rebuild stopped at `gear` (it reads the web) and at `ais_ping_tag` (2.0's estimate of a
+partition filter); both found and the second fixed, on the maintainer's "Run the checks", "Test it" and "Apply and
+resume".*
 
 ## What was installed
 
@@ -34,7 +37,7 @@ test fixed (ramb `ca57d64`), on the maintainer's go after checking it could run 
 - The parquet writer's SNAPPY.
 - `hash()` of an integer, a string, a double and a timestamp, to the digit.
 
-**Changed: four things a new script must know.**
+**Changed: five things a new script must know.**
 1. **Axis order in spatial.** `ST_Distance_Spheroid` (and the other `_Spheroid` functions) stops unless
    `geometry_always_xy` is set. Nothing in fishycode calls them. ramb's `ST_Transform` calls pass
    `always_xy := true`, and its map tests pass. A new script sets `SET geometry_always_xy = true`
@@ -48,6 +51,8 @@ test fixed (ramb `ca57d64`), on the maintainer's go after checking it could run 
    schema comparison will show any file this reaches.
 4. **The single-arrow lambda is off.** `x -> x + 1` stops in the binder; `lambda x: x + 1` works under both. Nothing
    here uses the arrow (plan 046 §7, checked again).
+5. **A filter on a partition column is estimated at about 1 row** (found in the rebuild, below). A query that joins
+   reads the partition's own folder rather than filtering the dataset, or the join may be built on the wrong side.
 
 The other changes in the [migration guide](https://duckdb.org/docs/2.0/operations_manual/migration) touch nothing
 here. `~` and `!~` now match partially (no SQL here uses them), and `X'…'` literals are now BLOB. The removed
@@ -83,10 +88,46 @@ database files is one-way (2.0's cannot be opened by 1.5), and none is used: no 
   their sizes across engines say nothing. The vessel overview's server, started by another hand at 11:38, was up
   during the bench.
 
+## The rebuild under 2.0 (TODO 150): stopped twice, both causes found
+
+Started 2026-10-28 at 13:33 UTC at `ba1d53d` under `nohup` and `caffeinate` (`rebuild.sh`, decision 218's method:
+fingerprint, invalidate every target, build, fingerprint, compare).
+
+1. **`gear` reads the web.** The build stopped at target 70 of 145: `reference/gear/mapping.R` checks the gear codes
+   against three ICES vocabularies with `icesVocab::getCodeList()` (`vocab.ices.dk`), and the machine was offline. A
+   search of the pipeline's scripts for URLs had missed it, since the package holds the address. Decision 218, which
+   named `lookups` as the one target reaching outside, is corrected. Resumed online at 14:21 (`resume.sh`).
+2. **`ais_ping_tag` ran out of memory under 2.0**, at year 2015 (19.1 GiB of 19.1 GiB), target 57 of the 76 resumed.
+   Measured on year 2015 alone, to a scratch folder (`check_parts.R`, `tag_year.R`, their logs):
+   - 1.5.6 ran the query in 33 s (20.3 GB peak) at DuckDB's default limit, and in 40 s (15.2 GB) under
+     `curate/ais_catch.R`'s settings (a 14 GB cap, no insertion order, 4 threads, a spill folder). 2.0 failed one run
+     in two at the default, and every run under the cap (2015 twice, 2017 once).
+   - Each part alone passed under 2.0 under the cap: `ramb::rb_flag_ping_port()`, its spatial join without its window
+     functions, its two window functions without the join, the h3 depth join. The windows took 15.4 GB under 2.0
+     against 7.5 GB under 1.5.6.
+   - The plans differ (`plan_v156_full.txt`, `plan_v200_full.txt`). 2.0 estimates `year = 2015` on the
+     hive-partitioned `ping_union` at about 1 row (1.5.6: about 3.0 million; true 36,791,290), and the whole dataset
+     at about 60 million (true 589,267,384). It then builds the spatial join's index over the pings instead of the
+     10,062 port polygons.
+
+   So the trigger is 2.0's estimate of a filter on a partition column. Our side makes the query heavy on either
+   engine: ramb's two window functions run over every column of a year to number the rows and to pick one port for
+   the rare ping inside two polygons, and the script chains them and the h3 join in one query. Nothing found says
+   2.0.1 changes the estimate.
+
+   The fix, in `curate/ais_ping_tag.R`: read each year's own folder rather than filter the dataset, under
+   `ais_catch.R`'s settings. Under 2.0, year 2015 took 39 s (15.0 GB) and 2017, the largest, 101 s (16.0 GB); at the
+   default limit 2017 peaked at 23.1 GB of the machine's 24. The output is the same as 1.5.6's to the row and to each
+   of its 22 columns' hashes for both years (`compare_file.R`). The failed run had left year 2015 of
+   `staging/ais/ping_tagged` truncated; `ais_ping_tag` was rebuilt under 1.5.6 at 15:55 to repair it (all 20 years
+   read, each with the union's rows), and is rebuilt under 2.0 with the fix in the resume. The same filter on a
+   partition is in `ais_ping_clean.R`, `ais_voyage.R`, `port_call.R` and `R/trail_sql.R`; they are left as they are
+   until one fails.
+
 ## Not done
 
-- **The complete rebuild under 2.0** (TODO 150). The data on disk are still 1.5.6's (decision 218). It waits for a
-  clean tree: the vessel overview had another session's uncommitted edits when this was written, and
-  `write_curated()` would stamp every file built meanwhile as dirty.
+- **The rest of the rebuild under 2.0** (TODO 150): `ais_ping_tag` again with the fix and 19 targets after it, then
+  the fingerprint after and the comparison. It waits for a clean tree, since `write_curated()` stamps every file
+  built under edits as dirty.
 - **The vessel overview's server**, started before the switch, still runs on the 1.5.6 library it loaded until it is
   restarted. Its page's DuckDB-WASM is another engine, pinned from jsdelivr, and is untouched.

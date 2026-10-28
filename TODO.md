@@ -1400,14 +1400,15 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 as not done, in a decision.
 
 ## 150. DuckDB 2.0: the complete rebuild under it
-**status:** open · **needs: maintainer** — the go for a three-hour rebuild with the machine on and the tree clean ·
-**see:** decisions 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (its fingerprint and compare scripts)
+**status:** in progress — stopped twice and resumed, waiting for a clean tree · **see:** decisions 235 and 218,
+`$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
 
-R's DuckDB is 2.0.0 since 2026-10-28, and every file of the store reads the same under it; the data were built under
-1.5.6. The rebuild as decision 218's: `git status` clean and staying so (no other session editing the repo while it
-runs), fingerprint first (`fingerprint.R v200` already holds the store as it is), then
-`tar_invalidate(everything())` and `tar_make_isolated()` under `caffeinate`, fingerprint after, every file in one
-outcome. A schema `INTEGER` -> `"NULL"` is decision 235's change 3. Then `products/user_tables.R` and the effort map's
-`grid.R` again. ramb's half (its one failing test) was done the same day in ramb `ca57d64`.
+Started 2026-10-28 at 13:33 UTC, decision 218's method: fingerprint (`fingerprint_before.rds`), every target
+invalidated, built one by one, fingerprint after, every file in one outcome. 126 of 146 targets are built under 2.0.
+It stopped at `gear` (offline; it reads ICES's vocabularies) and at `ais_ping_tag` (out of memory: 2.0 estimates a
+partition filter at about 1 row), now fixed in `curate/ais_ping_tag.R` (decision 235). Left: `ais_ping_tag` again,
+invalidated by hand since `targets` cannot see the edit, and 19 targets after it, by `resume.sh`, never `rebuild.sh`
+(it would fingerprint the half-built store as before), with the tree clean and staying so. A schema `INTEGER` ->
+`"NULL"` is decision 235's change 3. Then `products/user_tables.R` and the effort map's `grid.R` again.
 
 **check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome.

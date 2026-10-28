@@ -18,6 +18,13 @@ library(tidyverse)
 library(tictoc)
 library(h3)
 duckdbfs::load_spatial()
+# DuckDB 2.0 (decision 235): a cap below the machine's 24 GB, as curate/ais_catch.R; at the default (80 %) 2017
+# peaked at 23 GB, at 14 GB it took 16 GB and ran faster
+con <- duckdbfs::cached_connection()
+configure_duckdb_temp()
+DBI::dbExecute(con, "SET memory_limit = '14GB'")
+DBI::dbExecute(con, "SET preserve_insertion_order = false")
+DBI::dbExecute(con, "SET threads = 4")
 ports <- sf::read_sf(fd_staging("aux", "ports.fgb")) |> transmute(port_id = pid, hid)
 h3 <- open_dataset(fd_curated("reference", "area_h3.parquet")) |> select(h3, depth, bbht, fao)
 
@@ -48,8 +55,9 @@ for(y in 1:length(years)) {
   tic()
   YR <- years[y]
   print(YR)
-  ais |>
-    filter(year == YR) |>
+  # the year's own folder, not a filter on the dataset: DuckDB 2.0 estimates such a filter at about 1 row and builds
+  # the port join on the pings, which ran out of memory (decision 235)
+  open_dataset(file.path(fd_staging("ais", "ping_union"), paste0("year=", YR))) |>
     ramb::rb_flag_ping_port(ports, keep = "hid") |>
     rename(pid = port_id) |>
     mutate(h3 = h3_latlng_to_cell_string(lat, lon, 8L)) |>

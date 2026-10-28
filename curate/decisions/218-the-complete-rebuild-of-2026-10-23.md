@@ -1,7 +1,8 @@
 # 218 — The complete rebuild of 2026-10-23: every target of the main project from raw at 916b901
 
 *2026-10-24. The maintainer: "i want this session to end with a complete rebuild", then "Every target from raw". Run,
-checked and written by Claude (AI), not checked by a person. The `once` project was not touched.*
+checked and written by Claude (AI), not checked by a person. The `once` project was not touched. Amended
+2026-10-28: `gear` reaches the web too (decision 235).*
 
 ## Run
 
@@ -13,8 +14,10 @@ checked and written by Claude (AI), not checked by a person. The `once` project 
 - The before meta also held six targets the pipeline no longer has (`port_stay`, `check_port_stay_logbook`,
   `annual_call_sign`, `vessel_sign_raw`, `vessel_class_raw`, `vessel_hist_raw`). Their files are still on disk and were
   not rebuilt.
-- **The one target that reaches outside:** `lookups` reads two Wikipedia pages, the ISO 3166 country codes and the
-  ITU prefixes, as its header says. Nothing is sent.
+- **The targets that reach outside:** `lookups` reads two Wikipedia pages, the ISO 3166 country codes and the
+  ITU prefixes, as its header says. Nothing is sent. *Corrected 2026-10-28 (decision 235):* `gear` reads three ICES
+  vocabularies through `icesVocab::getCodeList()` (`vocab.ices.dk`); a search for URLs missed it, since the package
+  holds the address, and the rebuild under DuckDB 2.0 stopped there offline.
 - **The log and every check:** `$FISHYDATA/archive/2026-10-23-complete-rebuild/`.
 
 ## Every file in one outcome

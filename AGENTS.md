@@ -307,7 +307,8 @@ repos.
 - **`purrr::map()` must be qualified** — `duckdbfs` loads `maps`, which masks it.
 - **DuckDB 2.0** (decision 235): `SET geometry_always_xy = true` before a `_Spheroid` function; `//` and `%` by zero
   stop, so guard the divisor or use `TRY()`; a bare `NULL` (dbplyr's `NA`) is written as type `"NULL"`, so cast it;
-  lambdas are `lambda x: …`, never `x -> …`.
+  lambdas are `lambda x: …`, never `x -> …`; a filter on a partition column is estimated at about 1 row, so a query
+  that joins reads the partition's own folder (`curate/ais_ping_tag.R`).
 - **Comments**: non-obvious reasons only; every script head states input and output.
 - **Section headers**: single-dash style only.
   ```r
