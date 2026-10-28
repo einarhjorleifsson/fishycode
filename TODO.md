@@ -1402,8 +1402,8 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 as not done, in a decision.
 
 ## 150. DuckDB 2.0: the complete rebuild under it
-**status:** in progress — stopped twice and resumed, waiting for a clean tree · **see:** decisions 235 and 218,
-`$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
+**status:** in progress — stopped three times; paused 2026-10-28 for plan 049 · **see:** plan 049, decisions 235
+and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
 
 Started 2026-10-28 at 13:33 UTC, decision 218's method: fingerprint (`fingerprint_before.rds`), every target
 invalidated, built one by one, fingerprint after, every file in one outcome. 126 of 146 targets are built under 2.0.
@@ -1411,7 +1411,9 @@ It stopped at `gear` (offline; it reads ICES's vocabularies) and at `ais_ping_ta
 partition filter at about 1 row), now fixed in `curate/ais_ping_tag.R` (decision 235). Left: `ais_ping_tag` again,
 invalidated by hand since `targets` cannot see the edit, and 19 targets after it, by `resume.sh`, never `rebuild.sh`
 (it would fingerprint the half-built store as before), with the tree clean and staying so. A schema `INTEGER` ->
-`"NULL"` is decision 235's change 3. Then `products/user_tables.R` and the effort map's `grid.R` again.
+`"NULL"` is decision 235's change 3. Then `products/user_tables.R` and the effort map's `grid.R` again. The third stop:
+`ais_ping_tag` hung at 2020 under the 14 GB cap and was killed; that year of `ping_tagged` is truncated, and 17
+targets are outdated. Plan 049 takes the area layers out and tests the tagging before the resume.
 
 **check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome.
 
