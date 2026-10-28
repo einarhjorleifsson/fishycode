@@ -1,6 +1,7 @@
 # stk — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
 # Seeded 2026-10-22 by Claude (AI) from R/stk_trail.R, decision 164 and the correction ais_invalid_position, on the
-# dump of 2026-10-16; not yet checked by a person. Oracle has no comment on the trail's columns.
+# dump of 2026-10-16; not yet checked by a person. Oracle has no comment on the trail's columns. The trail's three
+# streams and the heading's meaning were added 2026-10-27 by Claude (AI) from data tests; not yet checked by a person.
 $version: 0.1.0
 name: stk
 tables:
@@ -9,7 +10,38 @@ tables:
       The STK vessel monitoring trail, 2003 on, dumped by year of recdate (the receipt time). Read through stk_trail()
       (R/stk_trail.R), which converts the radians to degrees and the speed to knots. A row whose in_out_of_harbor is
       set is a port event, not a fix (decision 164).
+
+      Three streams under one mobileid, which no column tells apart: msgtype (0), comsystemid (100) and mobile's type
+      (0) and comsystem (100) are the same on every row. They part by the grid of the position (the definitions
+      on_ais_grid and on_centiminute_grid) and by their signatures. Fixes only, distances to the nearest Icelandic
+      port's centre; the names are what the signatures fit, not established:
+      - AIS: on a ten-thousandth of a minute (AIS's resolution) and not on a hundredth. 11.8 M fixes in 2006-2010,
+        118 M in 2020-2026. Every 10 minutes (median); 89-95 % within 50 nm to 2019, and 19.5 % beyond 200 nm in
+        2020-2026. Satellite AIS from 2020: in the open ocean (Irminger Sea 57-62 N 36-27 W, Norwegian Sea 65-69.5 N
+        5 W-3 E) 15-2,360 AIS fixes a year to 2019, 10,809-29,019 a year from 2020.
+      - Centiminute, VMS: on a hundredth of a minute. In 2006-2010 1.5 M fixes, hourly (median 60 minutes), 81 % at
+        whole minutes, 20 % beyond 200 nm, and the most of the open-ocean fixes every year to 2019. From 2011 mostly
+        every 10-12 minutes, and from 2013 near the coast (76-80 % within 50 nm): 6.2 M fixes in 2013-2019, 8.8 M in
+        2020-2026. Not all VMS: 0.67 % of it in 2006-2010 is AIS's 511.
+      - No grid, STK's own shore-received units: on none of 1e-5 degree, a thousandth of a minute, radians to 1e-6
+        to 1e-8. In 2006-2011 20.9 M fixes, 76 % of all in 2007, 44 % in 2010, 20 % in 2011; every 9.5-14.5
+        minutes (95 %), 99.8 % within 50 nm. From 2012 7,620-25,275 a year, hourly (median), half beyond 200 nm, the
+        farthest (500 nm and more) mostly in the Barents Sea.
+      In 2007-2010, 4,488 mobileid-years send both gridded and ungridded fixes, 2,074 only ungridded, 1,145 only
+      gridded. AIS class is in no column. In the ping union, 2014-2024, 48.3 % of the STK fixes with a vid are of
+      vessel-years ASTD hears only in astdB (its Class B feed), 45.4 % only in astd (its main feed, taken to be Class
+      A), 1.2 % in both and 5.1 % in neither. Evidence: data tests of 2026-10-27 on the dump of 2026-10-16.
     definitions:
+      - name: on_ais_grid
+        label: Position on a ten-thousandth of a minute (AIS's resolution); true of the centiminute grid too
+        expr: >-
+          ABS(poslat * 34377467.7078 - ROUND(poslat * 34377467.7078)) < 0.02 AND
+          ABS(poslon * 34377467.7078 - ROUND(poslon * 34377467.7078)) < 0.02
+      - name: on_centiminute_grid
+        label: Position on a hundredth of a minute
+        expr: >-
+          ABS(poslat * 343774.677078 - ROUND(poslat * 343774.677078)) < 0.0002 AND
+          ABS(poslon * 343774.677078 - ROUND(poslon * 343774.677078)) < 0.0002
       - name: lon
         label: Longitude, decimal degrees
         expr: poslon * 180 / 3.141592653589793
@@ -40,7 +72,9 @@ tables:
               Holds on every row of the dump of 2026-10-16.
         details: |
           Radians, north positive, ten decimals (Oracle declares NUMBER(14,10)), finer than a metre. In degrees: lat.
-          Evidence: R/stk_trail.R; the old dump computed degrees in Oracle the same way.
+          The grid tells the stream (the table's details): a ten-thousandth of a minute (about 0.2 m) for AIS, a
+          hundredth (about 18 m) for the centiminute stream, none for STK's own units.
+          Evidence: R/stk_trail.R; the old dump computed degrees in Oracle the same way; data tests of 2026-10-27.
       - name: poslon
         label: Longitude
         type: number(quantity)
@@ -57,18 +91,69 @@ tables:
         label: Heading
         type: number(quantity)
         units: rad
-        details: In degrees, heading_deg. Evidence - R/stk_trail.R.
+        constraints:
+          - assert: heading < 6.28318
+            description: >-
+              A heading is under a full turn. Expected false on 991,213 rows (dump of 2026-10-16), all but 12 codes and
+              not headings: 987,974 at 511 degrees (2007-2010 only), 2,717 at 360.0, 498 at 360.1-690.0 (65 at 409.5,
+              the top of AIS's 12-bit course field) and 12 at exactly 10 rad (2006). The 12 are within 0.0002 degrees
+              under 360 (2013-2026), north or the 360.0 code, which the assertion cannot tell apart.
+          - assert: ABS(heading - 8.91863) > 0.00001 OR posdate < '2010-06-09T17:41:00'
+            description: >-
+              AIS true heading's 511 code ends with the switch to course over ground at 2010-06-09 17:40. A claim about
+              form, tested on the dump of 2026-10-16.
+        details: |
+          Radians, nearly all in whole tenths of a degree. In degrees: heading_deg. One field holding two quantities,
+          by stream and date (the streams are in the table's details):
+          - AIS to 2010-06-09 17:40: true heading, in whole degrees, 511 when not available (ITU-R M.1371). In
+            2006-2010 (the switch included) 7.5 % of the AIS fixes are 511, and 78 % of the values above 0 and under
+            a full turn are whole degrees. Of the 1,205 mobileid-years with 200 gridded fixes (centiminute included)
+            above 2 knots before the switch, 1,022 are 90 % whole degrees or more, and 128 others are 95 % 511.
+          - AIS from then: course over ground. The switch is STK's, not the units': 511 is in every hour of 2010-06-09
+            up to the 17:00 hour and in none after, and the last 511 of each of the 308 units that sent one falls at
+            17:38-17:40 (95th percentile to latest). Matched to the same AIS message in astdB (2014-2024) and EMODnet
+            (2017), 344,282 fixes of 1,791 vessels (EMODnet's missing heading is -1, astdB's 511): where that message
+            had both, the STK value is its course in 18,744 of 19,735 and its heading alone in 12; where it had only a
+            course, that course in 303,202 of 303,624; where only a heading, that heading in 3 of 1,888. A unit may
+            send its course in whole degrees: on 12 vessel-years in the match whose STK values are 90 % whole degrees
+            or more, the STK value is the message's course in 1,815 of 1,865 (that course is whole degrees in 99.8 %).
+          - Centiminute: in whole degrees (99 % of the values above 0 in 2006-2010, 93-97 % later), course as VMS
+            reports it; exactly 0 on 23 % of the fixes in 2006-2010 and 71-89 % from 2013.
+          - No grid: course in tenths (90 % of the values above 0 in 2006-2012), exactly 0 on 42-66 %; from 2013 63-66
+            % whole degrees. Neither of the last two has an outside source to test it against.
+          A full turn or more is a code for "not available", not a value: 511 degrees true heading's, 360.0 course
+          over ground's (3600 tenths). Exactly 0 is mostly a stationary fix's (0.0-0.4 % of the fixes above 3 knots in
+          each year), and stands in for a missing course too: where the matched AIS message had no course, the STK
+          value is 0 in 5,293 of 20,923.
+          Evidence: R/stk_trail.R; data tests of 2026-10-27 on the dump of 2026-10-16.
         todo: >-
-          991,201 values exceed a full turn (2 pi), up to 12.04 (dump of 2026-10-16); what they are is not established.
+          Not established: what the centiminute and ungridded streams are beyond their signatures, what their course
+          is beyond its resolution, a fix's AIS class, and what STK wrote in the other 15,630 fixes whose AIS message
+          had no course. stk_trail() and the trail carry the field as heading, both quantities and the codes included,
+          and no stream.
       - name: in_out_of_harbor
         label: Port event
         type: enum
         values:
           'I': into port
           'U': out of port
+        constraints:
+          - assert: in_out_of_harbor IS NULL OR in_out_of_harbor <> 'U' OR harborid IS NOT NULL OR posdate >= '2013-01-01T00:00:00'
+            description: >-
+              A U without a port code is the second row of a doubled U, which begins in 2013. A claim about form,
+              tested on the dump of 2026-10-16.
         details: |
           Set on 13,147,352 rows (dump of 2026-10-16), empty on the fixes. A row with a code is STK's own port event
-          (decision 164), read by sources/stk/event.R; harborid names the port.
+          (decision 164), read by sources/stk/event.R; harborid names the port. An event is a row of its own, not a
+          flagged fix: under 0.5 % of the events of 2007-2026 share their instant with a fix of the same unit
+          (centiminute U up to 24 %). It comes from the three streams (the table's details) and carries its stream's
+          values: AIS events 511 on 14-23 % to the switch, course in tenths after; ungridded events of 2007-2012 the
+          tenths of STK's units. From 2013 the ungridded events (1.1 M) are made by STK at a port's marker: 98.5-99.4 %
+          at one of 3,351 positions used by 10 or more units, with speed and heading 0. From 2013 a U is mostly two
+          rows at one instant, one with the port code and one without (45-50 % of U rows have none, 0 % before). The
+          codes alternate: I -> U 3.41 M and U -> I 3.41 M against I -> I 105 thousand and U -> U 47 thousand in
+          2013-2026; I -> I is 15 % of the I of 2007-2012. tilk_stk is these events with the vessel's number.
+          Evidence: data tests of 2026-10-28 on the dump of 2026-10-16.
       - name: harborid
         label: STK port
         details: |
@@ -77,7 +162,15 @@ tables:
       - name: posdate
         label: Position time
         time_zone: UTC
-        details: Iceland's clock is UTC. stk_trail() calls it time.
+        details: |
+          Iceland's clock is UTC. stk_trail() calls it time. No time-zone offset in any stream: against recdate the
+          median lag is 0 (AIS), 2.3-2.6 minutes (centiminute, 2006-2010) and 0.1 (no grid), and the negative lags lie no
+          nearer whole hours than chance (6.5 % within 2 minutes, chance 6.7 %), in summer as in winter; against ASTD at
+          the same position (moving AIS fixes, 2016, 2021, 2024) 95-99 % agree within a minute and 0.18 % or fewer sit a
+          whole hour or two off, as many ahead as behind. One clock episode: 2009-09-14 to 2009-10-05, 247 thousand AIS
+          fixes have posdate 2.8-2.9 minutes after recdate (49 % of September's AIS fixes), and the AIS stream's whack
+          rate that September is 3.64 % against 0.10-0.90 % around it. Which clock was off is not established.
+          Evidence: data tests of 2026-10-28 on the dump of 2026-10-16; decision 233.
       - name: recdate
         label: Receipt time
         time_zone: UTC
