@@ -112,7 +112,13 @@ wrong side of a join in `Sacrois2Eflalo`, a false sentence about R CMD check, `P
 dropped as documented behaviour, and two cases added (`Sacrois2Eflalo` loses a whole vessel missing from FPC when
 there are several; `CleanMemory` is called by two other functions). `CalcTurningAngle` became an issue of its own:
 nine drafts. Each points, where it can, to what ramb does at its pushed commit `9a67e0d`. The same day iapesca 1.3 was
-installed in R from GitLab at `1882892`, replacing the stale 0.1.
+installed in R from GitLab at `1882892`, replacing the stale 0.1. *Amended 2026-10-28:* ramb 2026.10.28 (`ab0504f`) follows iapesca
+1.3 in both methods below, the maintainer's call, and `cab18b7` mended the trip query's two joins (12 to 169 times
+iapesca's speed, timed in the ramb session); ramb 2026.10.27 (`1dd94af`) applies the two rules to every export, so
+`rb_add_effort` and `rb_create_voyages` now return the class and row order they are given (ramb's etiquette tests pass
+on the installed `cab18b7`, and `rb_add_effort` was run here on a shuffled data.frame). The drafts' pointers were
+re-pinned from `9a67e0d` to `dfd693d` (2026.10.28.1, pushed), each line re-read there. On ramb's labelled tracks the 1.3 set finder fails
+badly on pots and at 10-minute pings (decision 234).
 
 - `ICES_rectangle` does not skip the letter I (30-40° E gives `I`, where ICES has `J`), does not pad rows 1-9 to two
   digits, and gives the A column 6-9 where ICES has 0-3.
@@ -137,5 +143,5 @@ installed in R from GitLab at `1882892`, replacing the stale 0.1.
 - `curate/issues/iapesca.yml` records the new home and the outcome of each issue.
 - `docs/one_flow.qmd`, "What exists, and where": the iapesca entries now read the live package; three wish-list rows
   name what it has (static-gear effort, days at sea and fishing days, observer operations on fixes).
-- Not done, for the maintainer: whether ramb's trip method and set finder follow iapesca 1.3, and ramb's reference to
-  the GitHub copy (`R/trip.R`); whether and how the six drafted issues are sent to iapesca's author.
+- Not done, for the maintainer: whether and how the drafted issues are sent to iapesca's author. ramb's trip method and
+  set finder follow iapesca 1.3 since 2026-10-28, and its references point at the GitLab package (see the amendment).

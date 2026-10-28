@@ -198,7 +198,8 @@ batch_2026_10_27:
   repository: https://gitlab.ifremer.fr/iapesca/r-packages_iapesca
   commit: 1882892c74f950155222367b00043311f684f4e0
   environment: R 4.5.2, sf 1.1.3 (GEOS 3.13.0, GDAL 3.8.5, PROJ 9.5.1), data.table 1.18.6.1, dbscan 1.2.7, mapplots 1.5.3,
-    ramb 2026.10.25.5 (9a67e0d, the version pushed to GitHub); iapesca 1.3 installed from a fresh clone of main at 1882892
+    ramb 2026.10.25.5 (9a67e0d; the pointers re-pinned to 2026.10.28.1, dfd693d, on 2026-10-28); iapesca 1.3 installed
+    from a fresh clone of main at 1882892
   checked: |
     2026-10-27, at the maintainer's request to double-check every issue from scratch before sending. A fresh clone of
     GitLab main (still 1882892) installed into a new scratch library; every reprex extracted from this file and run as
@@ -207,6 +208,9 @@ batch_2026_10_27:
     reprex rerun; and an independent AI reader asked to refute each issue, whose corrections (a wrong cause in the Danish
     seine, an unsafe fix for CleanMemory, the wrong side of a join, a false sentence about R CMD check, two unfair points
     and two cases missed) were each checked by running before they were taken in. Drafted by Claude (AI); not sent.
+    2026-10-28: the ramb pointers re-pinned from 9a67e0d to dfd693d (2026.10.28.1, pushed), each pointed line re-read
+    there; ramb's etiquette tests pass on cab18b7 and its full suite on dfd693d, and rb_add_effort() run on a shuffled
+    data.frame gives a data.frame back in the input's row order.
   sent: no
   sent_how: ""
   not_drafted: |
@@ -245,8 +249,8 @@ batch_2026_10_27:
         `mapplots::ices.rect2()` on all 553,700 points of a 0.1° grid over that area; the current one on 61 %.
         (`mapplots` is not a dependency of iapesca; the rule above needs none.)
 
-        **In ramb**, `rb_encode_ices_rectangle()` does this: it skips I (`R/ices_rectangle.R`, [lines 72-74](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ices_rectangle.R#L72-L74))
-        and gives NA outside the grid ([line 82](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ices_rectangle.R#L82)); ramb at 9a67e0d.
+        **In ramb**, `rb_encode_ices_rectangle()` does this: it skips I (`R/ices_rectangle.R`, [lines 72-74](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ices_rectangle.R#L72-L74))
+        and gives NA outside the grid ([line 82](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ices_rectangle.R#L82)); ramb at dfd693d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
@@ -274,7 +278,7 @@ batch_2026_10_27:
         that (`unlink(td, recursive = TRUE)`, in `on.exit()`), and let `CleanMemory()` keep to `gc()`.
 
         **In ramb**, a function that needs temporary files makes its own folder with `tempfile()` and leaves the rest of
-        the session's temporary folder alone (`R/ping.R`, [lines 78-79](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L78-L79)); ramb at 9a67e0d.
+        the session's temporary folder alone (`R/ping.R`, [lines 78-79](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ping.R#L78-L79)); ramb at dfd693d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
@@ -374,8 +378,8 @@ batch_2026_10_27:
         (line 10) promises a data.frame "if vmstools is installed", but the function no longer calls vmstools.
 
         **In ramb**, the catch split ends with kilograms out equal to kilograms in: what finds no place moves up a level,
-        and what finds none at all is kept with basis "none" (`R/catch.R`, [lines 157-160](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/catch.R#L157-L160));
-        ramb at 9a67e0d.
+        and what finds none at all is kept with basis "none" (`R/catch.R`, [lines 169-172](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/catch.R#L169-L172));
+        ramb at dfd693d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
@@ -432,8 +436,8 @@ batch_2026_10_27:
         not tried here.)
 
         **In ramb**, positions in port carry a label of their own (`rb_flag_ping_port()`, `R/ping.R`,
-        [line 421](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L421)), and labels go back onto the positions by a row number, not by
-        geometry ([line 113](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L113)); ramb at 9a67e0d.
+        [line 421](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ping.R#L421)), and labels go back onto the positions by a row number, not by
+        geometry ([line 113](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ping.R#L113)); ramb at dfd693d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
@@ -485,9 +489,11 @@ batch_2026_10_27:
         the rows back in the order they came (a row id does it), and return the input's class.
 
         **In ramb**, the ping flags return the class and the row order they were given (`rb_flag_ping_invalid()` and
-        `rb_flag_ping_impossible()`, `R/ping.R`, [line 136](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L136) and
-        [line 294](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/ping.R#L294)); ramb at 9a67e0d. Not yet everywhere: its `rb_add_effort()` re-sorts
-        and returns a tibble for a data.frame, which is being fixed.
+        `rb_flag_ping_impossible()`, `R/ping.R`, [line 136](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ping.R#L136) and
+        [line 294](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/ping.R#L294)). Until this read ramb broke the rule too: `rb_add_effort()`
+        re-sorted and returned a tibble for a data.frame. Since ramb 2026.10.27 every exported function that takes a table
+        returns its input's class and order, checked on shuffled input over all of them
+        ([`tests/testthat/test-etiquette.R`](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/tests/testthat/test-etiquette.R)); ramb at dfd693d.
 
         *Found and drafted with the help of an AI assistant (Claude); checked by running the code above.*
 
@@ -524,9 +530,12 @@ batch_2026_10_27:
         `on.exit()`.
 
         **In ramb**, no function sets `sf_use_s2()`: distances are computed on ramb's own sphere or ellipsoid, so results
-        never depend on that option (`R/trip.R`, [lines 1520-1523](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/trip.R#L1520-L1523)); options are
-        restored with `on.exit()` ([`R/example.R`, lines 116-117](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/example.R#L116-L117)); and the map
-        viewer names its temporary tables without drawing random numbers, so the caller's stream does not move
-        ([`R/map.R`, lines 873-874](https://github.com/einarhjorleifsson/ramb/blob/9a67e0d/R/map.R#L873-L874)); ramb at 9a67e0d.
+        never depend on that option (`R/trip.R`, [lines 1599-1602](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/trip.R#L1599-L1602)); options are
+        restored with `on.exit()` ([`R/example.R`, lines 122-123](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/example.R#L122-L123)); and ramb
+        names its temporary tables without drawing random numbers, so the caller's stream does not move
+        ([`R/trip.R`, lines 23-25](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/R/trip.R#L23-L25)). Until this read ramb broke the rule too: it named
+        its temporary DuckDB tables with `sample()`. Since ramb 2026.10.27 it does not, and its tests check every
+        exported function for a change to the session, on error too
+        ([`tests/testthat/helper-etiquette.R`](https://github.com/einarhjorleifsson/ramb/blob/dfd693d/tests/testthat/helper-etiquette.R)); ramb at dfd693d.
 
         *Found and drafted with the help of an AI assistant (Claude); cases 1 and 2 checked by running the code above.*

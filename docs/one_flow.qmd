@@ -26,7 +26,8 @@ of seven ICES reports (`ices_reports.yml`, decision 150). The revision of 2026-1
 records named above; the gagnakvörn's new labels, boat and sacks by Claude with the maintainer, who chose every label;
 the drawing is Hammer's. The status figure and "What exists, and where" of 2026-10-27 by Claude, from ramb
 2026.10.25.5's exports, the fishycode targets that call them, `TODO.md` and the decision records; iapesca's entries the
-same day from a reading of its live repository (decision 232). Human review pending.*
+same day from a reading of its live repository (decision 232); the iapesca and set-finder lines of 2026-10-28 by Claude,
+from ramb 2026.10.28 and decision 234. Human review pending.*
 
 ![*Gagnakvörn*, the data grinder: Hammer's drawing of 1996, adapted for fishydata with his permission. The stakeholder goes in at the top, and the register, logbooks, landings and AIS are thrown in after. The machine flags, chops, grinds, links and splits, and the curated barrel is sent to ICES. What the data call drops on the way sits in the barrels below the filter: lost in aggregation.](figures/fd/gagnakvorn.png){fig-alt="A hand-drawn machine: a small fishing boat labelled STAKEHOLDER drops into a hopper, sacks labelled REGISTER, LOGBOOKS, LANDINGS and AIS fly in after it, and the data pass a ping flagger, a voyage chopper, a haul grinder, a candidate flattener, a link mixer and a filter into a patched barrel labelled CURATED, sent to ICES."}
 
@@ -431,8 +432,9 @@ decisions 229, 231 and 232). ramb has three pieces recoded from it:
 - Ifremer's trip finder (`iapesca`);
 - iapesca's set ↔ haul pairing (`rb_link_record_sets`).
 
-The last two follow iapesca's 2022 copy on GitHub, which is dead; the package lives on Ifremer's GitLab (version 1.3), and
-both methods have changed there (decision 232).
+The last two follow iapesca 1.3 since ramb 2026.10.28; the package lives on Ifremer's GitLab, not on its dead GitHub copy
+(decision 232). On ramb's labelled tracks the set finder fails badly on pots and at 10-minute pings, and Mendo et al.
+2023's is no better at any ping rate (decision 234).
 
 Each was checked against the published code. Nothing outside ramb is copied into it. The workshops' example data are
 on [their own page](wkssfgeo.qmd).
@@ -493,7 +495,7 @@ fishymodel or fishycode.
 | Mixture models, EMbC, HMM | G1 p. 21; G2 p. 19-20, 29 | fishymodel: `fm_gaussian`, `fm_gaussian_binary_clustering`, `fm_hidden_markov_step`, `fm_hidden_markov_step_and_turn` |
 | Random forests and other learned classifiers, with movement features | G1 p. 26; G2 p. 2-3, 26, 30-36 | nowhere; iapesca, CNR-IRBIM's SoftwareX code (Python) and Samarão et al. 2025 have them; ssfaitk has a random forest scored only on its training data, and Peskas runs its hand-weighted rule score instead, never scored (decision 231) |
 | Gear from the track | G1 p. 6-7, 38 | nowhere; CNR-IRBIM's Adriatic model, Lattanzi et al. 2026, GFW's `vessel-classification`; labels in ssfaitk: 8,223 Zanzibar trips in seven gear groups, each the boat's gear (source and terms not stated; decision 231) |
-| Sets, hauls and soak time | G1 p. 29-30; G2 p. 30-36; D2.2 | ramb: `rb_link_record_sets` (iapesca's 2022 method), which on Icelandic static gear does not recover real set times (decision 158); iapesca 1.3's own looks back 1-240 h over up to 11 trips and scores a pass by its length along the line (decision 232); Mendo et al. 2023's method is not in ramb |
+| Sets, hauls and soak time | G1 p. 29-30; G2 p. 30-36; D2.2 | ramb: `rb_link_record_sets` (iapesca 1.3's method since ramb 2026.10.28: back 1-240 h over up to 11 trips, a pass scored by its length along the line; decision 232), which on Icelandic static gear does not recover real set times (decision 158) and on ramb's labelled tracks gets 33 of 56 dense pot sets (decision 234); Mendo et al. 2023's method is no better and not in ramb (decision 234) |
 | Hours fished, kW-hours, swept area | G1 p. 27-28 | ramb: `rb_add_effort`, `rb_predict_gear_width` |
 | Days at sea, fishing days, hours at sea | G1 p. 12-13, 27; D2.1 §2.1 | nowhere in ramb; iapesca 1.3 has days at sea as `floor(hours / 24) + 1` per trip (`FE_TimeAtSea`) and fishing days by the dates of every operation, fishing or not (`Calc_VesselFE`; decision 232) |
 | Net length from hauling, haul counts, the three-level set/haul indicator, static-gear pressure | G1 p. 28-30; D2.1 §2.1 | nowhere in ramb, whose pressure is for towed gear only; iapesca 1.3 builds nets from hauling fixes the fisher labelled, and gives their length, the nets hauled and set, soak quantiles and length × soak per net (`Create_Nets`, `Calc_VesselFE`, `Spatialize_FE`; decision 232) |
