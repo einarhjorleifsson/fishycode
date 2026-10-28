@@ -104,8 +104,34 @@ All 92 outputs of a year agree on all three, whatever the form, engine, setting 
 
 The geo targets that left took 22 minutes of today's build (`tar_meta()`).
 
+## The resume: `port_call` runs away under 2.0, now and then
+
+The resume (`resume.sh`, `build_resume_3.log`) built 21 of its 36 targets, `ais_ping_tag` included. It then stopped
+at `port_call` 2018, which wrote 74.4 GiB of spill in about 75 seconds, to DuckDB's default limit of 90 % of the free
+disk. DuckDB removed the spill when the query failed.
+
+**The other targets.** `ais_ping_clean` kept and flagged the same pings as on 2026-10-23, to the ping (580,639,236
+kept, 8,552,088 flagged in the same classes). It took 45 minutes against 19.6 then; that is not explained.
+
+**Diagnosed alone** (`run_port_call.sh`, `replay_port_call.sh`, `explain_repeat.R`, their logs):
+
+- **The year alone passes.** 2018 by itself under 2.0 ran in 29 s at 9.8 GB, with the 88,183 port calls of
+  2026-10-23. The query as it was before this record took 87 s and 19.9 GB under 2.0.
+- **So does the whole run.** 2007-2018 in one session, as the target runs them, passed under 2.0.
+- **But not every time.** 2017-2018, the first two years that use STK's events, five times in fresh processes under
+  2.0 with the spill capped at 20 GB: one run filled the cap in 2017 within 14 s, the other four ran in 31 s.
+- **1.5.6 does not.** The same replay eight times under 1.5.6: all eight in 31-32 s at about 10 GB.
+- **The plan is the same.** 2.0 planned the query the same way in 11 EXPLAINs across four sessions. The runaway is in
+  execution: the same plan, data and query that pass in 30 s now and then grow without bound.
+
+So this stop is DuckDB 2.0's own, unlike the tagging's: 2 of 8 runs under 2.0, none of 8 under 1.5.6. It is not
+known which operator runs away. Untried:
+
+- splitting the query to find it;
+- other settings (threads, insertion order);
+- DuckDB 2.0.1.
+
 ## Not done
 
-- **The rest of the rebuild under 2.0** (TODO 150). It now includes `shapes`, `depth_h3` and `afli_depth_units`, and
-  STK's three targets below `shapes`.
+- **The rest of the rebuild** (TODO 150): `port_call` and the 14 targets after it.
 - **DuckDB issues.** Neither the partition estimate nor the hang has gone to DuckDB as a reprex.

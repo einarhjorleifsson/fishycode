@@ -1402,16 +1402,17 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 as not done, in a decision.
 
 ## 150. DuckDB 2.0: the complete rebuild under it
-**status:** in progress — stopped three times, every cause found (decisions 235, 239) · **see:** plan 049, decisions
-239, 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
+**status:** in progress — stopped four times; the fourth, `port_call` under 2.0, is DuckDB's (decision 239) · **see:**
+plan 049, decisions 239, 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
 
 Started 2026-10-28 at 13:33 UTC, decision 218's method: fingerprint (`fingerprint_before.rds`), every target
 invalidated, built one by one, fingerprint after, every file in one outcome. It stopped at `gear` (offline; it reads
 ICES's vocabularies), at `ais_ping_tag` (out of memory: 2.0 estimates a partition filter at about 1 row; decision 235)
 and again at `ais_ping_tag` 2020 (a hang). The cause of the last two was ramb's port flag, now light, and the area
-layers left the flow (plan 049, decision 239). Year 2020 of `ping_tagged` is truncated until the resume. Left: the 16
-outdated targets plus `shapes`, `depth_h3`, `afli_depth_units` and STK's three below `shapes`, by `resume.sh`, never
-`rebuild.sh` (it would fingerprint the half-built store as before), with the tree clean and staying so. A schema
+layers left the flow (plan 049, decision 239). The resume of 2026-10-28 20:00 built 21 targets through
+`ais_ping_clean`, then `port_call` ran away under 2.0 (74 GB of spill); in replays 2 of 8 runs under 2.0 did so and
+none of 8 under 1.5.6. Left: `port_call` and 14 targets after it, by `resume.sh`, never `rebuild.sh` (it would
+fingerprint the half-built store as before), with the tree clean and staying so. A schema
 `INTEGER` -> `"NULL"` is decision 235's change 3; `ping_tagged` and `ping_clean` lose four columns (decision 239). Then
 `products/user_tables.R` and the effort map's `grid.R` again.
 
