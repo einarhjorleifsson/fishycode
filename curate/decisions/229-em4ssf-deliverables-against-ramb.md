@@ -3,7 +3,8 @@
 *2026-10-26. The maintainer asked for the folder `~/stasi/EM4SSF` to be mined: "are they not trying to do the same as is
 now in ramb. anything in ramb that may be missing". Claude (AI) read the five deliverables against ramb 2026.10.25.5
 (9a67e0d) and wrote this record and the new wish-list rows in `docs/one_flow.qmd`. No person has checked them.
-Nothing went into ramb.*
+Nothing went into ramb. Amended 2026-10-28: the project has since shared its WP2 code privately. It is Mendo et al.
+2024's published workflow in D2.1's format (decision 238), so "no code yet" now means no code of its own.*
 
 ## What the folder holds
 
