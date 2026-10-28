@@ -317,9 +317,10 @@ unit by app). Plan 020 keeps the gear detail and the environment that the adapte
 the fishing sample (`gear_part` prototyped for fs). For plan 020: the trawl's `gear_width` is the bridle (sweep)
 length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23, not checked by a person). From the
 metier study (plan 015 §4 a, 2026-10-23): afli's adapter reads `toga` but leaves `g_mesh` empty for OTB and OTM,
-though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; `tvo_veidarf` (twin trawls), the
-shrimp grid's bar spacing and the square-mesh window are folded away too; fs shrimp trawls carry 135 mm on 34 %, and
-fs and adb nets a 10 mm placeholder. The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
+though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; the shrimp grid's bar spacing and
+the square-mesh window are folded away too (`tvo_veidarf`, the twin trawls, sits in `n_units`: TODO 153); fs shrimp
+trawls carry 135 mm on 34 %, and fs and adb nets a 10 mm placeholder.
+The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
 `$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
 vid found for 98 %; afli's 40,967 summary stations are logbook records left unread. **needs: maintainer** for its asks a-d.
 Built (decision 213): the notes in staging per source, their classes in `curated/logbook/station_note`.
@@ -797,7 +798,8 @@ start (about 32,600 stations), at 24 h (5,315) and beside the 270-min placeholde
 to whole hours at entry. Towed gear: the paper logbook's tow times are the skipper's rounding (42 % of starts on the
 hour), the electronic logbook holds a few app dummies. The sent XML holds the same values (TODO 115, from 108): they can be
 flagged, not recovered from it. A defect beside them: adb's `duration_m` is empty on its trawls and dredges (32,329
-OTB, 1,367 OTM, 2,174 DRB), since the adapter computes it from `tow_start`, which adb leaves empty.
+OTB, 1,367 OTM, 2,174 DRB), since the adapter computes it from `tow_start`, which adb leaves empty. Its shot and haul
+sit in `fishing_sample` as `t1`/`t4` but in `station_window` as `t2`/`t3` (Claude, 2026-10-28).
 
 **check:** each draft decided and recorded (correction, flag or no action), or declined in a decision.
 
@@ -1413,19 +1415,48 @@ invalidated by hand since `targets` cannot see the edit, and 19 targets after it
 
 **check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome.
 
-## 155. EM4SSF's shared code: the time zone to ask its authors, and the trace to redo as the code grows
-**status:** open · **needs: maintainer** — the question to the project's WP2 authors (a) · **see:** decisions 238 and
-229, `~/stasi/em4ssf` (private, outside the repo), `raw/external/mendo2024`
+## 152. Nephrops logged as tails, counted as whole weight
+**status:** open · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
+`R/whole_weight.R`
 
-Decision 238 traced the code EM4SSF shares privately to Mendo et al. 2024's published supplements. There is no new
-method so far. Two things are left:
-- **(a) The time zone of `DATE_TIME`.** D2.1 gives its format (ISO 8601, no offset) but not its zone (D2.1 §2.1,
-  tables 1-2). The shared R reads it in the zone of the paper's Scottish case, so trips cut by calendar day depend on
-  that choice. This was read from the code, not run. It is a question for the format's authors, through the project,
-  not a `curate/issues/` note, since the code is not public.
-- **(b) The trace again as the code grows.** The repositories will change up to and at the Ancona hackathon (November
-  2026). Pull both, then trace each new or changed script by 238's method. A script with no public origin is EM4SSF's
-  own and is read under 238's rule.
+Raised 2026-10-28 by an MFRI colleague's check of the new mar (version 2026-10-27) for the Nephrops catch and CPUE
+series; measured here the same day by Claude, read-only, not checked by a person. Some vessels log Nephrops (sid 40) as
+tails. afli as read here carries a conversion to whole weight in 2007-2018 (x 3.3, the colleague says): these vessels'
+ratio is about 1 then. Nothing converts the rest, and `catch_round` gives them basis `recorded`. Per trip (one trip
+per landing, `lid_map`), logbook over landed weight in 2019-2026 has a median of 0.28 (vid 173), 0.34 (1645), 0.35
+(1752) and 0.30 (2048), 239 trips, against about 1.0 for every other vessel. vid 1645 logged tails in 2004-2006 too
+(0.28-0.30, 40 of 42 trips), outside the conversion's years. `catch_flag` flags 2 of these trips. Not looked at: other
+vessels' 55-91 trips a year in 2000-2002 with less than half the landed weight.
 
-**check:** (a) D2.1's zone for `DATE_TIME` is known, from the authors or a later D2.1; and (b) every script at the
-repositories' newest commit after the hackathon has its origin in decision 238 (amended).
+**check:** a correction in `curate/corrections/` converts tail weight to whole weight on the trips a rule finds, with
+its own basis, or a decision declines it and the defect is declared where the analyst reads the catch.
+
+## 153. The twin-trawl flag: one name and one coding, and adb's read too
+**status:** open · **see:** TODO 73 (plan 020), decision 212, `sources/afli/convert.R`,
+`sources/fs_afladagbok/convert.R`, `sources/adb/convert.R`
+
+From the same check (2026-10-28, Claude, read-only). Trawl effort here is tow minutes x 1 (`effort_count = 1`), so the
+new mar's fault, effort = tow minutes x the flag, is not ours. But the flag sits in `n_units` under two codings:
+afli's `tvo_veidarf` is 0/1 (single/twin; bottom trawl since 2000: 1.26 M zeros, 116 k ones), fs_afladagbok's is the
+number of trawls (1/2/3), and adb's `trawl_and_seine_net.two_fg` (1/2/3) is not read, so from 2025-11-19 there is
+none. For other gears `n_units` counts nets, traps or lines. The app may also carry the count from tow to tow: in adb
+no Nephrops or shrimp trawl trip (196) changes `two_fg` within the trip, against 721 of 9,501 bottom-trawl trips, and
+vid 2048's 65 Nephrops tows of May 2026 all hold 2 and identical gear dimensions, though the crew's station sheets
+record one trawl on seven of them (11-13 May, the colleague's source). AIS does not tell a single rig from a twin.
+
+**check:** one column, the number of trawls, with one coding from afli, fs_afladagbok and adb and a basis, named in
+`docs/grammar.qmd`, `n_units` no longer holding it, and the carried-forward count declared or flagged.
+
+## 154. fs_afladagbok's old feed holds the start time only
+**status:** open · **see:** TODO 107, TODO 141, decision 160, `$FISHYDATA/raw/oracle/fs_afladagbok/ws_veidi.parquet`
+
+From the same check (2026-10-28, Claude, read-only). `ws_veidiferd.uppruni` splits `ws_veidi`: the upper-case
+`TRACKWELL` and `STOKKUR` trips (2019-2023; 77,806 of 2021's 77,824 stations) have no `lok_timi` and no row in
+`ws_dragnot_varpa`; the `<vendor> raun` trips (from January 2022) and `FRA TAKTIKAL` have both. The change log adds
+none. The logbook merge takes afli first, so 2021's trawls keep their tow times (99.9 %); the 22,363 fs_afladagbok
+stations it keeps in 2021, on vessel-days afli lacks, are handline 18,876, gillnet 2,712 and longline 769, with a
+start and no end (11 with a duration). Not checked: whether `afli_sent` or another source holds their ends, and what
+the upper-case feed is (it looks like the pre-2022 e-logbook copied into the new database).
+
+**check:** the ends read from a source that holds them, or their absence declared (basis `none`) where the analyst
+reads the haul times.
