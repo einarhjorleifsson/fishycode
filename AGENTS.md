@@ -63,8 +63,9 @@ poorer or richer than Iceland's. Other workflows are read three ways:
   PDFs (checked against its output, listed in ramb's `inst/COPYRIGHTS`); otherwise
   users are pointed to the original.
 - **Documents give asks and definitions**: the ICES reports (decisions 150, 152),
-  papers, and EM4SSF's deliverables (decision 229; the code it shares is Mendo et al.'s, decision 238). They shape the
-  diagram's rows and the wish list, not the methods.
+  papers, EM4SSF's deliverables (decision 229; the code it shares is Mendo et al.'s, decision 238), and Global Fishing
+  Watch's vessel tracking guide (decision 237). They shape the diagram's rows and
+  the wish list, not the methods.
 - **Other datasets are test cases**, alternatives to the Icelandic data (decision 148).
   They are not yet all gathered locally, nor systematically: what is in
   `raw/external/` and ramb's example data, and what is still asked for, is in TODO 93.
