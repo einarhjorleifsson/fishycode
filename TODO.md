@@ -903,6 +903,7 @@ per-unit screen; port calls from `tilk_stk` for 2004 to mid-2007; the Oracle rea
 reaches the whack or the track); `stk_receipt` as a side table, the lag a label; events screened per unit, not cut at
 2017; port calls for 2004 to mid-2007 from events; dwell from the commercial AIS in port, else the I → U pair; each unit's
 class in `stk_receipt`; the three Oracle reads in the next dump run (TODO 110). Each is a step of its own, scratch first.
+Plan 048 (TODO 148) builds three of them: the event rows out of the track, the per-unit screen, and no cut at 2017.
 
 **check:** each decision recorded, and what is chosen built or declined.
 
@@ -1354,3 +1355,18 @@ or on every year once step 7 has rebuilt the port calls.
 
 **check:** the remaining voyages with several logbook trips, of 2010 and 2018 or of every year after step 7, are counted
 into these outcomes with every voyage in one, and the counts are in plan 031 §3.10 or a decision.
+
+## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
+**status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); next is step 1, the scratch
+measurements · **see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196 and 233, TODOs 88 and 117
+
+The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
+events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
+Plan 048: `stk_trail()` gives `stream`, `heading` and `cog`; the union drops STK's event rows but an `I` inside its own
+port, and every provider's codes become NA; a generic ramb step, `rb_flag_port_event()`, judges any recorded port
+event by position, sequence, the cleaned track and its sending unit, so `port_call.R` no longer asks whether the
+whack filter kept the event as a ping (699,084 port calls lean on events, 13,510 on events alone; 904,187 of STK's
+1,351,745 whacks are event rows). Then the chain from the union down is rebuilt.
+
+**check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
+and its status agrees with its index row.
