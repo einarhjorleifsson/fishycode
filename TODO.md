@@ -627,17 +627,24 @@ output under `staging/` or `curated/` holds a partition its last build did not w
 
 ## 96. The vessel demo: Safari, Windows, and the basis for sending it
 **status:** open · **needs: maintainer** — a Mac with Safari's remote automation on, or a person, and a Windows machine;
-and the agreement under which the folder goes · **see:** decision 153, `products/exports/vessel_demo.R`
+and the agreement under which the folder goes · **see:** decisions 153, 236, `products/exports/vessel_demo.R`,
+`vessel_bundle.R`
 
 The demo (`$FISHYDATA/exports/vessel_demo_2018-06/`) was tested from `file://` in headless Chrome and Firefox on macOS
 only. Safari cannot be driven without `safaridriver --enable`. Under MFRI's data policy (gagnastefna), confidential data
 leave MFRI only on an agreed basis.
 
 Rebuilt on 2026-10-22 from 6b69323 with the page of decisions 177-179, and checked over HTTP in Chromium; the key is
-unchanged (the same 30 vessels, numbers and windows). Rebuild it again if the page changes before it is sent.
+unchanged (the same 30 vessels, numbers and windows). Rebuild it again if the page changes before it is sent; it does
+not yet hold the page of decision 236.
+
+The named 2024 bundle (decision 236) was built on 2026-10-28 and moved by Finder to `/Volumes/einarhj` (not seen there:
+macOS denied both Claude and the maintainer's Terminal that volume). It stays inside MFRI; who reads it is the share
+folder's permissions.
 
 **check:** the demo opens and loads a vessel in Safari and in Edge on Windows, and the agreement it went under is
-written in decision 153.
+written in decision 153; the 2024 bundle is complete on the share (2,163 files, 2.2 GB) and loads a vessel from there
+in Edge on Windows.
 
 ## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
 **status:** open (decided 2026-10-23, decision 196: re-interpolated in the flow on every build, with a gap limit
