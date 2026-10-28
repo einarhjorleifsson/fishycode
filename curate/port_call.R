@@ -102,11 +102,15 @@ stay_year <- function(yr) {
   }
   seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(part(yr, NA), part(yr - 1L, TRUE), part(yr + 1L, FALSE)),
                                              collapse = "\n    UNION ALL ")))
-  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both ok and kept by step 0
+  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both ok and kept by step 0.
+  # The pings are narrowed to the events' (vid, time) before the DISTINCT: over all three years' pings (165 million
+  # groups) it ran away in spill under DuckDB 2.0 now and then (decision 239); the result is the same.
   ev <- if (yr >= EVENT_FROM) dplyr::tbl(con, dplyr::sql(glue::glue("
     SELECT e.vid, e.time, e.io, e.hid_pid AS port_id, (e.io_ok AND c.vid IS NOT NULL) AS good
     FROM read_parquet('{event_f}') e
-    LEFT JOIN (SELECT DISTINCT vid, time FROM {clean_years(yr + -1:1)}) c USING (vid, time)
+    LEFT JOIN (SELECT DISTINCT p.vid, p.time FROM {clean_years(yr + -1:1)} p
+               SEMI JOIN read_parquet('{event_f}') k ON k.vid = p.vid AND k.time = p.time
+                 AND k.year BETWEEN {yr - 1L} AND {yr + 1L}) c USING (vid, time)
     WHERE e.year BETWEEN {yr - 1L} AND {yr + 1L}"))) else NULL
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
   ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,

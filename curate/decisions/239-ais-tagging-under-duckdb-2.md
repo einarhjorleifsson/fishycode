@@ -124,14 +124,34 @@ kept, 8,552,088 flagged in the same classes). It took 45 minutes against 19.6 th
 - **The plan is the same.** 2.0 planned the query the same way in 11 EXPLAINs across four sessions. The runaway is in
   execution: the same plan, data and query that pass in 30 s now and then grow without bound.
 
-So this stop is DuckDB 2.0's own, unlike the tagging's: 2 of 8 runs under 2.0, none of 8 under 1.5.6. It is not
-known which operator runs away. Untried:
+So this stop is DuckDB 2.0's own, unlike the tagging's: 2 of 8 runs under 2.0, none of 8 under 1.5.6.
 
-- splitting the query to find it;
-- other settings (threads, insertion order);
-- DuckDB 2.0.1.
+**The operator, found the same night** (the maintainer: "Dig into 2.0 first"; `pc_stage.R`, `replay_sampled3.sh`,
+`replay_sampled_logs/t1.sample.txt`, `check_ev_semi.R`):
+
+- **The spill is real**, and fast: about 2 GB a second to the cap.
+- **Its source.** A stack sample taken while it grew shows a hash aggregate fed by a Parquet scan, evicting to
+  temporary files. In this query that is the events input's `SELECT DISTINCT vid, time` over three years of
+  `ping_clean` (165 million groups).
+- **Alone it is fine.** That DISTINCT ran in under a second even at a 1 GB limit, 15 times in 15. So did the events
+  input and the pings input. It runs away only inside the whole query, beside its windows and spatial join.
+- **The fix in `port_call.R`.** The pings are narrowed to the events' (vid, time) by a semi join before the DISTINCT.
+  The events input is the same in rows, good flags and hash for 2017, 2018 and 2026 under both engines, and three
+  times faster. The full replay then passed 15 times in 15 under 2.0, with no spill and the same port calls; it had
+  run away in 5 of 21 runs before.
+- **Settings are no cure.** On synthetic data (`synth/`, no MFRI data in it), the old query ran away under 2.0 in:
+  - 1 of 18 runs at the defaults;
+  - 5 of 10 with 4 threads;
+  - 1 of 10 without insertion order.
+
+  Under 1.5.6, none of 10.
+- **To DuckDB.** That reprex, and one for the partition estimate (2.0: about 1 row; 1.5.6: the partition's
+  55,000,000), are drafted in `curate/issues/duckdb.yml`, not sent.
 
 ## Not done
 
-- **The rest of the rebuild** (TODO 150): `port_call` and the 14 targets after it.
+- **The rest of the rebuild** (TODO 150): `port_call` and the 14 targets after it, resumed under 2.0 the night of
+  2026-10-28 on the maintainer's "Yes, resume under 2.0".
+- **Whether to keep 2.0 now or wait for 2.0.1**: a battery of the heavy steps under both engines, at this machine's
+  defaults and at 4 GB and 4 threads, after the rebuild (`bench_small.sh`).
 - **DuckDB issues.** Neither the partition estimate nor the hang has gone to DuckDB as a reprex.

@@ -1402,7 +1402,7 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 as not done, in a decision.
 
 ## 150. DuckDB 2.0: the complete rebuild under it
-**status:** in progress — stopped four times; the fourth, `port_call` under 2.0, is DuckDB's (decision 239) · **see:**
+**status:** in progress — stopped four times; the fourth, DuckDB 2.0's, worked around in `port_call.R` (decision 239) · **see:**
 plan 049, decisions 239, 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
 
 Started 2026-10-28 at 13:33 UTC, decision 218's method: fingerprint (`fingerprint_before.rds`), every target
