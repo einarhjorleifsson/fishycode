@@ -117,7 +117,8 @@ forced-labour work, and the satellite look-up table for spoofing checks (`pipe-s
 
 ## Not done
 
-- Nothing built in ramb, and no `TODO.md` item opened. Which wishes to build is the maintainer's choice. By the
+- Nothing built in ramb. Which wishes to build is the maintainer's choice; TODO 151 holds it and the two
+  measurements below (opened 2026-10-28). By the
   project's rule (`AGENTS.md`), a document gives asks and definitions, not methods. GFW's code for gaps, encounters
   and loitering exists (above) but was not read beyond its READMEs.
 - Not measured: the Icelandic tracks against the guide's numbers, such as the ping interval of each stream and year, or

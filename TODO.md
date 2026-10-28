@@ -1415,6 +1415,24 @@ invalidated by hand since `targets` cannot see the edit, and 19 targets after it
 
 **check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome.
 
+## 151. Global Fishing Watch's vessel tracking guide: which wishes to build, and the two measurements it asks for
+**status:** open · **needs: maintainer** — which of the four wishes to build, and in what order · **see:** decision
+237, `docs/one_flow.qmd` (the wish list's four last rows), `$FISHYDATA/raw/external/gfw/vessel-tracking-guide-2026/`
+
+The guide (GFW, 2026) was read against fishycode and ramb on 2026-10-28 (decision 237), and four wishes were added to
+the wish list: a silence in one feed checked against another; each record's length against its ping interval (an
+interval no longer than a quarter of the event); entering and leaving any zone, as port calls already are; encounters
+and loitering. GFW's code for gaps, encounters and loitering (`pipe-gaps`, `pipe-encounters`, `pipe-loitering`) was
+read by its READMEs only. A document gives asks, not methods (`AGENTS.md`): a wish built is recoded only for a reason
+(decision 234).
+
+Open, needing no decision:
+- the ping interval of each AIS stream and year, measured on the Icelandic tracks;
+- the share of logbook records shorter than four ping intervals, by gear and year.
+
+**check:** a decision records the two measurements, and each of the four wishes built, put in a plan, or set aside
+by the maintainer.
+
 ## 152. Nephrops logged as tails, counted as whole weight
 **status:** open · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
 `R/whole_weight.R`
