@@ -443,7 +443,7 @@ The reload is a labelled test: its receipt lag marks the truth, and is never a f
 - a per-vessel speed limit, from the vessel's own recorded speed (99.9th percentile at sea + 3 kn; 2026-10-20: 132,380
   steps under 25 kn but over it, 8,196 out and back, 400-800 vessels a year; vid 1417, a 7-knot boat, 132 steps). It
   needs no voyage, so it goes in the first pass (decision 185 keeps TODO 99's measurement);
-- splitting a vessel's pings into chains that are each consistent;
+- splitting a vessel's pings into chains that are each consistent, e.g. one per STK stream (decision 233, plan 048);
 - zigzags judged over a window;
 - each leg's displacement against its reported speed and course.
 
