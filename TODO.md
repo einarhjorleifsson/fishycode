@@ -1404,8 +1404,8 @@ as not done, in a decision.
 **see:** decisions 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (its fingerprint and compare scripts)
 
 R's DuckDB is 2.0.0 since 2026-10-28, and every file of the store reads the same under it; the data were built under
-1.5.6. The rebuild as decision 218's: `git status` clean and staying so (another session's vessel-overview edits were
-uncommitted on 2026-10-28), fingerprint first (`fingerprint.R v200` already holds the store as it is), then
+1.5.6. The rebuild as decision 218's: `git status` clean and staying so (no other session editing the repo while it
+runs), fingerprint first (`fingerprint.R v200` already holds the store as it is), then
 `tar_invalidate(everything())` and `tar_make_isolated()` under `caffeinate`, fingerprint after, every file in one
 outcome. A schema `INTEGER` -> `"NULL"` is decision 235's change 3. Then `products/user_tables.R` and the effort map's
 `grid.R` again. ramb's half (its one failing test) was done the same day in ramb `ca57d64`.
