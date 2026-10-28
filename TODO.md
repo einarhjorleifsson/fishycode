@@ -1391,3 +1391,21 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 
 **check:** each of the five is done in ramb and measured on all its labelled tracks at five ping rates, or recorded
 as not done, in a decision.
+
+## 150. DuckDB 2.0: the complete rebuild under it, and ramb's offline route for a community extension
+**status:** open · **needs: maintainer** — the go for a three-hour rebuild with the machine on and the tree clean ·
+**see:** decisions 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (its fingerprint and compare scripts)
+
+R's DuckDB is 2.0.0 since 2026-10-28, and every file of the store reads the same under it; the data were built under
+1.5.6. Open:
+- **The rebuild**, as decision 218's: `git status` clean and staying so (another session's vessel-overview edits were
+  uncommitted on 2026-10-28), fingerprint first (`fingerprint.R v200` already holds the store as it is), then
+  `tar_invalidate(everything())` and `tar_make_isolated()` under `caffeinate`, fingerprint after, every file in one
+  outcome. A schema `INTEGER` -> `"NULL"` is decision 235's change 3. Then `products/user_tables.R` and the effort
+  map's `grid.R` again.
+- **ramb:** under 2.0 a community extension (h3) copied into the extension folder loads only with its `.info` file;
+  `.rb_extension()`'s offline route and message say so, the message gives the community repository's URL for a
+  community extension, and the test `an extension installs offline` passes under 2.0 (it errors now).
+
+**check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome, and
+ramb's tests pass under 2.0 with none erroring.

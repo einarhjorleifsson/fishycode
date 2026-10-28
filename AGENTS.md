@@ -215,8 +215,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   output shape of 2026.10.19.2 (`rb_create_*()`, `rb_add_*()`, port calls; decision 147), and `rb_add_trip_time()` of
   2026.10.22.2 (a trip's departure and return from ranked witnesses; decisions 173, 174): so ≥ 2026.10.22.2. The effort
   map needs the map viewer of 2026.10.24.1 (`rb_map_*()`, plan 046), which nothing in the pipeline calls. The data on disk: every
-  target of the main project was rebuilt from raw on 2026-10-23 at 916b901 with ramb 2026.10.22.2 (0c3020b), and
-  `tar_outdated()` is empty since (decision 218; the partial rebuilds before it are recorded in decisions 086-216). In
+  target of the main project was rebuilt from raw on 2026-10-23 at 916b901 with ramb 2026.10.22.2 (0c3020b) and DuckDB
+  1.5.6, and `tar_outdated()` is empty since (decision 218; the partial rebuilds before it are recorded in decisions
+  086-216). R's DuckDB is 2.0.0 since 2026-10-28, compiled from CRAN's source; every file reads the same under it, and
+  the rebuild under it is TODO 150 (decision 235). In
   the `once` project the STK key and its checks are the redo of 2026-10-17 (decision 128), and the register's history
   the build of 2026-10-18 at e2f741f (decision 144); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the
   towing-stretch pairing (decision 092), which nothing here calls.
@@ -302,6 +304,9 @@ repos.
   optional integer column and shifts its values up: 157,501 of Hreiðar's 164,164 years came back as another row's
   (decision 144). Read the whole file, then `select()`.
 - **`purrr::map()` must be qualified** — `duckdbfs` loads `maps`, which masks it.
+- **DuckDB 2.0** (decision 235): `SET geometry_always_xy = true` before a `_Spheroid` function; `//` and `%` by zero
+  stop, so guard the divisor or use `TRY()`; a bare `NULL` (dbplyr's `NA`) is written as type `"NULL"`, so cast it;
+  lambdas are `lambda x: …`, never `x -> …`.
 - **Comments**: non-obvious reasons only; every script head states input and output.
 - **Section headers**: single-dash style only.
   ```r

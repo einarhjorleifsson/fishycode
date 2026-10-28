@@ -274,5 +274,6 @@ All answered by the maintainer on 2026-10-24: a, c, d and e as recommended; b ha
   - the spatial extension is published for v2.0.0 on this Mac, and h3 as a community extension;
   - no SQL in fishycode or ramb uses the single-arrow lambda that 2.0 turns off.
   When it is taken up: its own change, step 1's tile timings before and after, and the pipeline's fingerprints.
+  Taken up 2026-10-28 (decision 235): the tiles 1.02 in total, the rebuild still to run (TODO 150).
 - **The haul windows that draw lines across land** (TODO 142) and the product's versioning (TODO 140): data, not the
   viewer.
