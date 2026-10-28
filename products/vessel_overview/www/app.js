@@ -14,9 +14,13 @@ const $ = (id) => document.getElementById(id);
 const TOKEN = document.querySelector('meta[name="mapbox-token"]').content;
 // Bundle mode (products/exports/vessel_demo.R): the page is opened as a file, with no service. Each vessel's answers are
 // in a script beside it, data/v<vid>.js, as the service would give them for the bundle's window; the meta tag says what
-// the bundle holds. Its vessels are anonymised: no register, photos, call sign or MMSI.
+// the bundle holds. Its vessels are anonymised (no register, photos, call sign or MMSI) unless a meta tag bundle-names says
+// "shown" (products/exports/vessel_bundle.R: named, with the register, and no photos). A bundle holds one window of time,
+// which the page loads whole and opens on.
 const BUNDLE = document.querySelector('meta[name="bundle"]')?.content || '';
+const ANON = !!BUNDLE && document.querySelector('meta[name="bundle-names"]')?.content !== 'shown';
 document.body.classList.toggle('bundle', !!BUNDLE);
+document.body.classList.toggle('anon', ANON);
 const status = (msg) => { $('status').textContent = msg; };
 const fmt = (ms) => (ms == null ? '' : new Date(ms).toISOString().slice(0, 16).replace('T', ' '));
 const dstr = (ms) => (ms == null ? '' : new Date(ms).toISOString().slice(0, 10));
@@ -120,7 +124,7 @@ const S = { vid: null, name: '', from: null, to: null, tr: null, win: [0, 0], ho
 //   open: the panels open (PANELS); the rest are folded to their bars
 const PANELS = ['lanes', 'activity', 'trips', 'pings'];
 const LAYERS = ['points', 'line', 'hex', 'track'];
-const P = { years: 'latest', win: 'last', n: 3, a: null, b: null, lay: new Set(['points', 'line']), open: new Set(['activity', 'trips']) };
+const P = { years: 'latest', win: BUNDLE ? 'range' : 'last', n: 3, a: null, b: null, lay: new Set(['points', 'line']), open: new Set(['activity', 'trips']) };
 const drawn = (k) => P.lay.has(k);
 // The gear after the last logbook trip, where no logbook covers the time (decision 143). The landing's own gear first:
 // a time takes the gear of the next landing (maintainer, 2026-10-18: "the gear is in the 'last landing', better than
@@ -866,6 +870,7 @@ async function chooseHauls(keys, anchor, keepWindow = false) {
 // The years of trail, trips, hauls and landings --------------------------------------------------------------------
 async function loadRange(from, to) {
   const t = performance.now();
+  if (BUNDLE && S.years.length) { from = S.years[0]; to = S.years.at(-1); }   // a bundle answers its whole window
   S.from = Math.min(from, to); S.to = Math.max(from, to);
   $('from').value = S.from; $('to').value = S.to;
   status(`loading ${S.from}–${S.to}`);
@@ -1399,14 +1404,14 @@ function renderSummary() {
   $('vline').innerHTML = `a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''} · last heard on AIS ${esc(lastHeard)} · ` +
     `last landing ${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}${gear}`;
   $('summary').innerHTML = `<p><b>${esc(S.name || 'vid ' + S.vid)}</b> is a ${esc(kind)}${parts.length ? ', ' + esc(parts.join(', ')) : ''}.</p>
-    <dl>${BUNDLE ? '' : `<dt>call sign</dt><dd>${esc(v.cs || '—')}</dd><dt>MMSI</dt><dd>${esc(v.mmsi || '—')}</dd><dt>IMO</dt><dd>${esc(v.imo || '—')}</dd>
+    <dl>${ANON ? '' : `<dt>call sign</dt><dd>${esc(v.cs || '—')}</dd><dt>MMSI</dt><dd>${esc(v.mmsi || '—')}</dd><dt>IMO</dt><dd>${esc(v.imo || '—')}</dd>
     <dt>local sign</dt><dd>${esc(v.uid || '—')}</dd>`}<dt>vid</dt><dd>${S.vid}</dd>
     <dt>on AIS</dt><dd>${v.first_year ?? '—'} – ${esc(v.last_ping || '—')}; last heard ${esc(lastHeard)}</dd>
     <dt>last landing</dt><dd>${A.lastLanding ? esc(A.lastLanding) : 'none recorded'}</dd>
     <dt>in ${range}</dt><dd>${S.trips.length} logbook trips, ${S.stations.length} hauls, ${num(tonnes, 1)} t landed in ${S.landings.length} landings</dd>
     <dt>last logbook trip</dt><dd>${S.assumedBase ? `${esc(S.assumedBase.tid)}, returned ${esc(S.assumedBase.day)}` : '—'}${S.assumed
       ? `; to the last landing the gear is the landings' (the last records ${esc(S.assumed.landingGear || 'none')}), else the previous trip's ${esc(S.assumed.gear || 'none')}` : ''}</dd></dl>
-    <div class="note">${BUNDLE ? `${esc(BUNDLE)}: the register is left out.` : 'Type, length and home port from the register (history to 2023-12-19).'} Species are shown as codes.</div>`;
+    <div class="note">${ANON ? `${esc(BUNDLE)}: the register is left out.` : 'Type, length and home port from the register (history to 2023-12-19).'} Species are shown as codes.</div>`;
 }
 
 // Photos (the Vessel tab), the vessel's basics, the last landing ----------------------------------------------------
@@ -1414,7 +1419,7 @@ let photos = [], photoAt = 0;
 const photoUrl = (p) => `/photo?vid=${S.vid}&file=${encodeURIComponent(p.file)}`;
 function showPhoto() {
   const p = photos[photoAt];
-  if (!p) { $('photo-body').innerHTML = '<div class="note">No photo of this vessel in the 2022 mbl scrape.</div>'; return; }
+  if (!p) { $('photo-body').innerHTML = `<div class="note">${BUNDLE ? 'The photos are left out of this bundle.' : 'No photo of this vessel in the 2022 mbl scrape.'}</div>`; return; }
   const credit = [p.exif_artist ? `Photo: ${p.exif_artist}` : 'Photographer not given', 'mbl.is, 200 mílur',
                   p.exif_date ? `taken ${p.exif_date}` : 'date unknown, before 2022-12-28'].join(' · ');
   $('photo-body').innerHTML = `<img src="${photoUrl(p)}" alt="${esc(S.name || 'vessel ' + S.vid)}">
@@ -1822,7 +1827,7 @@ function renderList() {
   $('list-count').textContent = `${X.length.toLocaleString('en-GB')} vessels${X.length > 300 ? ' — the first 300 are shown; type to narrow' : ''}. Click one to open it.`;
   const cols = [['vid', 'number'], ['vessel', 'name'], ['cs', 'call sign'], ['mmsi', 'MMSI'], ['first_year', 'on AIS since'],
                 ['last_ping', 'last heard'], ['last_landing', 'last landing'], ['photo', 'photo']]
-    .filter(([k]) => !BUNDLE || !['cs', 'mmsi', 'photo'].includes(k));
+    .filter(([k]) => !(ANON && ['cs', 'mmsi'].includes(k)) && !(BUNDLE && k === 'photo'));
   X = X.slice(0, 300);
   $('list').innerHTML = `<table><tr>${cols.map(([k, h]) => `<th data-k="${k}" title="sort">${h}${k === sortKey ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr>` +
     X.map((v) => `<tr class="click" data-vid="${v.vid}">${cols.map(([k]) => `<td>${esc(k === 'photo' ? (v.photo ? '✓' : '') : v[k])}</td>`).join('')}</tr>`).join('') + '</table>';
@@ -1947,7 +1952,7 @@ function setHash() {
 }
 function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  const vid = parseInt(h.get('vid'), 10), tab = TABS.includes(h.get('tab')) && !(BUNDLE && h.get('tab') === 'vessel') ? h.get('tab') : 'now';
+  const vid = parseInt(h.get('vid'), 10), tab = TABS.includes(h.get('tab')) && !(ANON && h.get('tab') === 'vessel') ? h.get('tab') : 'now';
   for (const t of TABS) { $(t).classList.toggle('on', t === tab); $(`tab-${t}`).classList.toggle('on', t === tab); }
   // the open panels; an address of before decision 178 says mode=qc, which showed the lanes and the pings
   if (h.has('open')) P.open = new Set(h.get('open').split(',').filter((k) => PANELS.includes(k)));
@@ -2013,5 +2018,6 @@ searchIndex();
 showFolds();
 for (let y = new Date().getUTCFullYear(); y >= 1992; y--) $('f-landed').insertAdjacentHTML('beforeend', `<option value="${y}-01-01">${y}</option>`);
 status(BUNDLE ? `${BUNDLE}: ${V.length} vessels` : `${V.length.toLocaleString('en-GB')} vessels`);
-if (BUNDLE) { $('f-photo').closest('label').hidden = true; $('filter').placeholder = 'type a number'; $('q').placeholder = 'Search: a vessel number or name'; }
+if (BUNDLE) { $('f-photo').closest('label').hidden = true; $('from').disabled = $('to').disabled = true; }
+if (ANON) { $('filter').placeholder = 'type a number'; $('q').placeholder = 'Search: a vessel number or name'; }
 if (location.hash.length > 1) fromHash(); else { $('drawer').classList.add('on'); renderList(); $('filter').focus(); }
