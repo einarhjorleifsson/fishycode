@@ -244,6 +244,10 @@ TODOs 152-154 close into the decision record.
   main findings (one source per year; effort from misread counts; catch with no state; records dropped or counted
   twice; conversions), with asks for read access to the build code and to the live e-logbook tables, and the month-end
   gap. The full list stays in `$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §8.
+  **On hold, with ask f (maintainer, 2026-10-29):** no email to the new mar's author and no push of fishycode for a
+  while, to avoid a feedback loop between the two merges. His reply of the same day is read in
+  `$FISHYDATA/archive/2026-10-29-rafn-mail/rafn-mail.md`; the answer drafted there (§7) is kept, not sent. His builds
+  after the email are read as partly ours (decision 243).
 - h. *Answered (maintainer, 2026-10-29):* move it downstream. "The decision taken at the time was ad-hoc. we deal with
   this issue downstream when it comes to joining things to ais etc." The sample keeps the recorded times and
   durations and flags what is above the gear's limit (`.duration_source` `implausible`); `judged_time_sql()`
@@ -521,10 +525,17 @@ Oracle. Not checked by a person.
     54 kt, 2021-2023).
 - **757 against 655 closed.** Both now hold the same 773 afli stations with Nephrops in 2021.
 - **Trips split between sources: afli first per vessel-day stays.** 19,721 real trips of 2020-2024 are held by both
-  afli and fs_afladagbok, and our tiers take afli whole on all but 20. Record by record (2021-2023), the tiers lose 289
-  hauls (2.3 kt) on 75 vessel-days where the e-logbook holds more hauls than afli. A clean whole-trip choice would lose
-  335 or 587, and the new mar's, as built, keeps 4,675 twice. No TODO: a haul-level tie that keeps the 289 is drafted
-  in §8 of the comparison, should the maintainer want them.
+  afli and fs_afladagbok, and our tiers take afli whole on all but 20. Record by record (2021-2023), the tiers drop 289
+  e-logbook hauls (2.3 kt) on 75 vessel-days afli holds. *Corrected the same day* (`$FISHYDATA/archive/2026-10-29-rafn-mail/rafn-mail.md`
+  §10):
+  - 216 of them (2,153 t) are the e-logbook's own resubmitted `Trackwell raun` copies;
+  - 36 hold no catch;
+  - the landing does not need 21;
+  - so the loss is at most 8 hauls, 43.7 t.
+
+  The second round's other counts (335 or 587 lost by a clean whole-trip choice) hold the same copies. The new mar's
+  build, as it stands, keeps 4,675 twice. No TODO: a haul-level tie would add the copies back. afli first now stands on
+  witnesses neither copy produced (decision 243).
 - **Leads:**
   - the tour app: the new mar reads 7,434 tour-app stations of 2020-2021 (10.3 kt) that our merge does not, a first
     outside reading for decision 210's unbuilt step (TODO 73);

@@ -1484,14 +1484,15 @@ method so far. Two things are left:
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open · **needs: maintainer** — plan 050's ask f (with the new mar's author) · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+**status:** open · **needs: maintainer** — plan 050's ask f (with the new mar's author; on hold with ask g, 2026-10-29) · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
 TODO 152, decision 240 (153 and 154 closed)
 
 Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
 gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Step 1, the comparison with the new
 mar's merged logbook, done the same day (plan 050 §6; its leads TODOs 136, 160 and 162, decisions 241 and 242). Left: step 5, the tails,
 held for plan 051 (TODO 152); ask f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's
-build drops month-end trips); ask g done: the findings emailed to its author 2026-10-29.
+build drops month-end trips); ask g done: the findings emailed to its author 2026-10-29. His reply is read
+(decision 243); no further email and no push of fishycode for a while (maintainer, 2026-10-29).
 
 **check:** plan 050 executed or parked, with a decision record.
 
@@ -1528,7 +1529,9 @@ Proposed: the id as a witness column on every link and the resolver for swaps an
 landing side dumped from the table first, never read from the S3 parquet.
 The landing side cannot be rebuilt from our dumps (`$FISHYDATA/archive/2026-10-29-rafn-mail/rafn-mail.md` §3): from
 2022-10, same vessel and day gives 82.5 % of the landings' ids and the vessel's last trip 3.4 %; the other 14.1 % are
-the landing system's choices at the weighing, kept only in `ops$rafn.rekjanleikanumer`.
+the landing system's choices at the weighing, kept only in `ops$rafn.rekjanleikanumer`. No dumped table holds the
+landing side, ask included (it ends 2020-07-31, before the ids begin); the ids on the new mar's afli trips are its
+author's own join by vessel and landing day, not a source value (decision 243).
 
 **check:** the maintainer's choice; if taken, the table dumped, the witness and the two resolvers built and measured,
 every trip in one outcome, in a decision.
