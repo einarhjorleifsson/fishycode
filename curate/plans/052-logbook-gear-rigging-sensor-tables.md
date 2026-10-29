@@ -142,11 +142,25 @@ and the loader kept neither (the XML map).
 | purse seine (8,487) | length, depth, mesh, set number and time | sea state 77-81 % (−1 on half) |
 | dredge (170) | door columns as 1 | its own dimensions empty in `rafr_` |
 
-**Units.** Oracle's comments are wrong on three columns. `rafr_toga.hoflina` (headline) is commented as feet and
-`grandarar` (sweeps) as fathoms; the XML schema says metres for both, and the loader copied them as sent. On the 51
-vessels that fished bottom trawl in afli's last e-logbook years (2019-20) and in fs_afladagbok's first (2021-22), fs's
-headline over afli's is 3.28 (quartiles 3.27-3.29, feet per metre) and fs's sweeps over afli's 0.549 (0.544-0.556,
-metres per fathom) (`08`). So afli holds metres and fs feet and fathoms, as fs's own comments say. `rafr_lineha.moskvi`
+**Units.** Oracle's comments disagree with the evidence on three columns. `rafr_toga.hoflina` (headline) is commented
+as feet and `grandarar` (sweeps) as fathoms. Three things point to metres for most of afli's values:
+
+- **The schema.** The XML schema the apps were given says metres for both (`HOFLINULENGD`, `GRANDARAR`). The loader
+  stored the sent value unchanged on 1,063,611 headlines and 819,805 sweeps (the XML map). A schema says what the app
+  was to send, not what the skipper typed.
+- **The same vessels in fs.** 51 vessels fished bottom trawl in afli's last e-logbook years (2019-20) and in
+  fs_afladagbok's first (2021-22). Per vessel, fs's median headline over afli's is 3.28 (quartiles 3.27-3.29, feet per
+  metre) and its sweeps 0.549 (0.544-0.556, metres per fathom) (`08`). fs's own comments say feet and fathoms. The
+  ratio shows that the two systems differ by the unit factor; which side is metres comes from the comments and the
+  schema. The factor fits 36 vessels' headlines and 34 vessels' sweeps. The other headlines range 2.3-6.7 and the
+  other sweeps 0.31-1.5: gear changed, or values were typed differently. None of the 51 has the same headline in
+  both, and 2 the same sweeps (`12`).
+- **Within afli.** Bottom-trawl medians by app are 45 and 47 m headline (Trackwell, SeaData). Of 791 year-to-year
+  steps in a vessel's medians, 2 headline and 13 sweep steps match the unit factor (`12`): a unit switch on a few
+  vessels is possible and not yet looked at.
+
+So afli is read as metres, the exceptions to be found vessel by vessel (step 1), and fs as feet and fathoms.
+`rafr_lineha.moskvi`
 (gillnet mesh) is commented as inches and the schema says inches, but the values are mm (203.2 = 8 in, 228.6 = 9 in;
 median 203). Converted by the loader from what was sent (the XML map): the Danish seine's rope and the purse seine's
 length and depth (metres to fathoms), and the pelagic headline depth (metres to fathoms on 51 %, kept as sent on 49 %,
@@ -441,7 +455,8 @@ catch's side with plan 036's or 038's next change, not to these tables.
 1. **The overlay and the code lists.** Units, codes and evidence for every column of `rafr_toga`, `rafr_lineha`,
    `rafr_hringn`, the edited copies, `ws_*` and adb's gear tables, in `dump/oracle/meta/` (plan 040). The code lists
    in `reference/gear/`. Measured first: the gillnet's length unit (decision 210 item 2), the dredge's dimensions, the
-   headline depth's unit per app version (from the sent layer, which names the element).
+   headline depth's unit per app version (from the sent layer, which names the element), and the afli vessels whose
+   headline or sweeps step by the unit factor (`12`).
 2. **afli.** `sources/afli/convert.R` writes `staging/afli/{gear_part,rigging_part,sensor_summary}.parquet`: `rafr_` for
    the e-logbook records, the edited layer for the rest. `rafr_` keeps what the edit emptied (the Danish seine's
    surface temperature and tow time). `sources/afli_sent/convert.R` adds the sent elements the loader lost or rounded
