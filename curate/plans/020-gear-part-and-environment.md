@@ -5,6 +5,8 @@
 **2026-10-15** · **see:** plan 019 (fs_afladagbok mined), plan 018 (the dumps), `docs/grammar.qmd` (field groups,
 sensor layer), decision 022 (depth in metres)
 
+**Superseded for the gear tables' design by plan 052** (2026-10-29): gear, rigging and sensor tables on afli's `rafr_`.
+
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request. The design choices in §2 are the
 maintainer's, and the questions in §5 are for the maintainer.
 

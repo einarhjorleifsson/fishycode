@@ -1545,3 +1545,20 @@ stations lie east of 10.75° E south of 67.66° N: 35 before 2000, 66 in 2000-20
 None was judged (counted 2026-10-29 by Claude, not checked by a person).
 
 **check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.
+
+## 163. The logbook's gear, rigging and sensor tables (plan 052)
+**status:** open · **needs: maintainer** — plan 052's asks a-h (§7): the gear and rigging line, two tables or one,
+`environment` as a pivot, TODO 98's logger question (ask d), the logger's lost dates, placeholders, the undocumented
+columns, the streams' home · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, plan 020,
+TODOs 73, 98, 100, 131, 140
+
+The maintainer (2026-10-29): structure the logbook product by gear, rigging and sensors, prototyped on afli's `rafr_`
+layer, which fs_afladagbok thinned. Measured by Claude the same day, read-only, not checked by a person
+(`$FISHYDATA/archive/2026-10-29-gear-rigging-sensor/`): fs and adb keep 21 of `rafr_`'s 55 filled gear, rigging, sensor
+and environment columns and no sensor value; afli's headline and sweeps are metres, not what Oracle's comments say; the
+logger's echosounder depth is in no product; `fishing_sample.length_fotreipi` holds a code. Proposed: `gear_part`,
+`rigging_part`, `sensor_summary`, and `vessel_sensor` (the logger as a store beside the AIS stores, AIS being one
+vessel sensor: the maintainer, 2026-10-29); it would take plan 020's half of TODO 73 and close TODO 100.
+
+**check:** the asks answered in the plan; the four tables built, every source column and station in one outcome, and
+`effort_count` unchanged; a decision record.
