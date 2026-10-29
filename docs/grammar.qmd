@@ -273,6 +273,7 @@ A fishing sample adds the gear and the effort to `t1`-`t4`:
 |---|---|---|
 | `gid` | int / chr | gear code |
 | `gear` | chr | gear class (ICES ISSCFG / métier codes: `OTB`, `LLS`, `GNS`, …) |
+| `gear_code` | chr | the gear code's letter twin, `XXX_YYY`: the general gear and the target, one to each code and no two codes alike (`OTB_NEP`, `LLS_LBL`) |
 | `duration_m` | dbl | the active interval, minutes |
 | `effort_count` | dbl | what fishes at once: hooks, nets, jigs, traps; 1 for a single towed gear |
 | `effort_duration` | dbl | the duration in the unit of `effort_unit` |

@@ -1,7 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
 # Input: raw/oracle/adb/{fishing_trip,fishing_station,trawl_and_seine_net,dredge,line_and_net,trap,surrounding_net,
-#        catch}.parquet
+#        catch,fishing_gear}.parquet; curated/reference/gear.parquet
 # Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
 library(whack) # pak::pak("einarhjorleifsson/whack)
@@ -179,16 +179,23 @@ catch <-
 # the fishing operation, joined on .sid. That mismatch is why adb could never be
 # merged: curate/logbook.R binds FOUR tables and adb supplied three.
 #
-# gid is left NA here and adb's code is kept verbatim as gid_old. That code is
-# the old gear code, the GEAR schema's fishing_gear_no, which the converter's
-# own effort logic keys on (gid %in% c(6,7,14), and dredge "covers gid
-# 5,6,7,51,53"). adb's own table fishing_gear maps it to the FS number, the new
-# gid: 53 dredge -> 15, 51 crab trap -> 16, and the rest as reference/gear.parquet's
-# old code does. curate/corrections/logbook_gear.R reads it through that table
-# (plan 034, 2026-10-20), and the landing's gear still wins where it names one.
-# Decision 066 found the code did not resolve against the reference as it read
-# it then (6,654 rows of 53/51 in neither), so until plan 034 an adb station's
-# gear came only from its landing.
+# adb writes the old gear code, the GEAR schema's fishing_gear_no, which the
+# converter's own effort logic keys on (gid %in% c(6,7,14), and dredge "covers
+# gid 5,6,7,51,53"); it is kept verbatim as gid_old. adb's conversion from the
+# FS number is undone here, where it enters (plan 050 step 4): adb's own table
+# fishing_gear maps the code back to the FS number, the new gid, as afli and
+# fs_afladagbok carry it (53 dredge -> 15, 51 crab trap -> 16, the rest as
+# reference/gear.parquet's old code). Back through it, every station adb shares
+# with fs_afladagbok from 2025 on has fs's code; the 5,256 wrong and 432 coded 99
+# are 2019-2024, which the merge takes from fs_afladagbok (decision 160). Code
+# 99, gear not recorded, has no row there and keeps no gear. The landing's gear
+# still wins where it names one (curate/corrections/logbook_gear.R).
+# A code is listed once per gear type, with the same FS number.
+gear_code <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_gear.parquet")) |>
+  distinct(gid_old = as.integer(fishing_gear_no), gid = as.integer(id)) |> collect()
+stopifnot(!anyDuplicated(gear_code$gid_old))
+gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |>
+  filter(version == "new") |> select(gid, gear, target, target2)
 
 station_narrow <-
   station |>
@@ -196,13 +203,14 @@ station_narrow <-
 
 fishing_sample <-
   station |>
+  mutate(gid_old = as.integer(gid), .keep = "unused") |>
+  left_join(gear_code, by = "gid_old", relationship = "many-to-one") |>
+  left_join(gear_mapping, by = "gid", relationship = "many-to-one") |>
   transmute(
     .tid, .sid,
-    gid_old = as.integer(gid),      # adb's own coding, kept verbatim
-    gid     = NA_real_,             # filled downstream from landings
-    gear    = NA_character_,
-    target  = NA_character_,
-    target2 = NA_character_,
+    gid_old,                        # adb's own coding, kept verbatim
+    gid     = as.numeric(gid),
+    gear, target, target2,
     t1,
     t2 = as.POSIXct(NA),            # adb records no deployment-end time
     t3, t4,

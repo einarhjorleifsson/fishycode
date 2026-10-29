@@ -21,8 +21,8 @@
 #   decisions 173, 174), each with its basis and witness (`_from`), `T1_day`/`T2_day` TRUE where it is known to the
 #   day only; the trip's landing (lid_map) on the trip; a station's fishing sample joined to it, with the vessel, and
 #   its gear as the pipeline uses it: `gid_used`, the logbook's gear corrected by the landing's (gear.parquet, plan 014
-#   3j), with `gid_basis`; `gid` and `gid_landing` as each records it; `gear`, `target`, `target2` those of `gid_used`,
-#   the names the AIS trail gives them (decision 219, amended 2026-10-24).
+#   3j), with `gid_basis`; `gid` and `gid_landing` as each records it; `gear`, `target`, `target2` and `gear_code` (its
+#   letter twin, plan 050) those of `gid_used`, the names the AIS trail gives them (decision 219, amended 2026-10-24).
 # - Keys as in curated/: vid; a logbook record by (.tid, schema) or (.sid, schema), never the id alone; a landing by
 #   (.lid, schema), on the trip (.lid, schema_land). The AIS trail carries .tid, .sid and schema.
 # - write_curated_sql() writes under curated/ only, so the written tables are copied here with its stamps
@@ -100,7 +100,7 @@ write_product(trip_user |> arrange(vid, T2), "logbook/trip.parquet",
 ## Station ---------------------------------------------------------------------
 station <- open_dataset(lb("station.parquet")) |> not_duplicate()
 gear <- open_dataset(lb("gear.parquet")) |>
-  select(.sid, schema, gid_used, gid_basis, gid, gid_landing, gear, target, target2)
+  select(.sid, schema, gid_used, gid_basis, gid, gid_landing, gear, target, target2, gear_code)
 sample <- open_dataset(lb("fishing_sample.parquet")) |>
   select(.sid, schema, t1, t2, t3, t4, t1_placeholder, time_basis, duration_m,
          effort, effort_unit, effort_count, effort_duration, n_units, g_mesh, g_width, g_height, g_length)

@@ -188,10 +188,11 @@ ms <- match_dates(trip |> filter(catch > 0), land)
 m1 <- ms[[1]]; m2 <- ms[[2]]; m3 <- ms[[3]]; m4 <- ms[[4]]; m5 <- ms[[5]]
 
 ## Steps 6–7: catch-weight matching --------------------------------------------
-# gear_mapping has multiple rows per gid (old/new code versions); derive the
-# pelagic flag directly from the known gid set rather than joining on gear name.
+# The pelagic gears' gids in the new code, which fishing_sample's gid holds for every schema. Both versions' codes
+# together put Nephrops trawl (new 7), shrimp trawl (8) and the longlines (12, 13, 21) here as well, since the old
+# code uses those numbers for pelagic gears: 292 of the 335 step-7 links were theirs (plan 050, 2026-10-29).
 pelagic_gids <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |>
-  filter(gear %in% c("OTM", "PS", "HMS")) |>
+  filter(version == "new", gear %in% c("OTM", "PS", "HMS")) |>
   distinct(gid) |>
   pull(gid)
 

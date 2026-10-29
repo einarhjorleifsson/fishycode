@@ -2,7 +2,7 @@
 # Side: preprocessing (logbook). See plan 014.
 # Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti}/{trip,station,fishing_sample,catch}.parquet, and the side
 #         tables named under "Load"; the dump stamps (fd.dumped, never the rows) of raw/oracle/{afli,fs_afli}/stofn,
-#         adb/fishing_station and dw/dw_aflaskeyti, for the date caps
+#         adb/fishing_station and dw/dw_aflaskeyti, for the date caps; curated/reference/gear.parquet (gear_code)
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet, and the fate of every staging station and trip:
 #         curated/logbook/station_fate.parquet, trip_fate.parquet (plan 024)
 #
@@ -411,6 +411,15 @@ merged_fishing_sample <- merged_fishing_sample |>
            (is_offset(t1, t3, 270) | is_offset(t1, t3, 1710)),
          t1 = if_else(t1_placeholder, NA_POSIXct_, t1))
 
+# Gear code --------------------------------------------------------------------
+# The letter twin of the new gid, one each (curated/reference/gear.parquet, plan 050): of the logbook's own gear, as
+# `gear` here is. The landing's correction carries the code of the gear it uses (curate/corrections/logbook_gear.R).
+gear_code <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> filter(version == "new") |>
+  select(gid, gear_code) |> collect()
+merged_fishing_sample <- merged_fishing_sample |>
+  left_join(gear_code, by = "gid", relationship = "many-to-one") |>
+  relocate(gear_code, .after = target2)
+
 # Station and trip fate --------------------------------------------------------
 # The sources' samples and catch are in the merged tables now, and are freed first: with them kept, the merge and its
 # fate peaked at 21 GB of a 24 GB machine (2026-10-23).
@@ -558,6 +567,7 @@ logbook_inputs <- c(
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
   fd_staging("afli", "depth.parquet"), fd_staging("afli", "end_longitude.parquet"), fd_staging("adb", "lon_sign.parquet"),
+  fd_curated("reference", "gear.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
                   "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
 merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)

@@ -106,10 +106,11 @@ Gear-specific columns are `NA` where not applicable.
 |---|---|---|
 | `.tid` | chr | Trip identifier |
 | `.sid` | dbl | Station identifier (PK = FK to `station`) |
-| `gid` | dbl | Gear type code — "new" version; unified across schemas. `NA` for `adb`, whose gear is read through adb's own crosswalk into `curated/logbook/gear.parquet` (`curate/corrections/logbook_gear.R`, plan 034) |
+| `gid` | dbl | Gear type code — "new" version; unified across schemas. For `adb`, read back from its own code through adb's crosswalk by its adapter (plan 050); the landing-corrected gear is `gid_used` in `curated/logbook/gear.parquet` |
 | `gid_old` | int | Counterpart old-version gear code; `NA` where no mapping exists. For `adb`, its own code as recorded |
 | `gear` | chr | ICES GearType code (e.g. `"OTB"`, `"LLS"`) |
 | `target2` | chr | Custom Icelandic target code |
+| `gear_code` | chr | The gear code's letter twin, `XXX_YYY` (general gear, target), one to each `gid` (plan 050) |
 | `t1` | datetime | Gear deployment starts (Event 1) |
 | `t2` | datetime | Gear deployment ends / gear on bottom (Event 2) |
 | `t3` | datetime | Gear retrieval starts (Event 3) |

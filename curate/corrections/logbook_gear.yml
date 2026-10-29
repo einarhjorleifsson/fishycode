@@ -2,7 +2,7 @@ id: logbook_gear
 title: a logbook station's gear is the landing's where the landing names one gear; adb's own is read through adb's own code table
 status: applied - every schema since plan 014 3j (2026-10-09, the maintainer's rule); adb 20,274 of 20,530 stations (2026-10-03, decision 066); adb's own gear read since plan 034 (decision 154, code in 2026-10-20, rebuild pending)
 applies_to:
-  - curated/logbook/fishing_sample.parquet   # every schema; adb's gid is empty there, its code in gid_old
+  - curated/logbook/fishing_sample.parquet   # every schema; adb's gid read back from its code by its adapter (plan 050 step 4)
 affects_rows: 20530
 implementation: curate/corrections/logbook_gear.R (curate/corrections/adb_gear.R, adb only, until plan 014)
 plan_014_rule: >-
@@ -21,6 +21,8 @@ plan_034_rule: >-
   other codes as gear.parquet's old code). gear.parquet's gid for adb is that translation, gid_basis recorded; the
   landing's gear still wins where it names one. In a read-only trial: adb 86,224 recorded, 2,663 reconstructed, 0
   none (before: 86,385 reconstructed, 2,502 none). Only code 99, gear not recorded (1 station), has no row.
+  Plan 050 step 4 (2026-10-29) moved the translation into sources/adb/convert.R, where adb's conversion enters, so
+  fishing_sample.parquet carries adb's gid, gear and target as it does every schema's, and this script reads it so.
 
 defect:
   summary: >-

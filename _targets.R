@@ -528,10 +528,10 @@ list(
                         fd_raw("oracle", "adb", "trap.parquet"),
                         fd_raw("oracle", "adb", "surrounding_net.parquet"),
                         fd_raw("oracle", "adb", "catch.parquet")), format = "file"),
-  # adb's own gear crosswalk (its code -> the new gid), read by logbook_gear (plan 034), not by the adapter
+  # adb's own gear crosswalk (its code -> the new gid), read by the adapter (plan 050 step 4; by logbook_gear before)
   tar_target(adb_gear_code, fd_raw("oracle", "adb", "fishing_gear.parquet"), format = "file"),
   tar_target(adb, {
-    dictionary; gear; adb_raw
+    dictionary; gear; adb_raw; adb_gear_code
     produces("sources/adb/convert.R",
              fd_staging("adb", "trip.parquet"),
              fd_staging("adb", "station.parquet"),
@@ -698,7 +698,7 @@ list(
   # Precedence, recorded once in curate/decisions/: afli where it exists, then
   # fs_afladagbok through its dump end, then adb beyond it. With the fate of every staging station and trip (plan 024).
   tar_target(logbook, {
-    afli; afli_depth_units; afli_end_longitude; fs_afladagbok; adb; adb_lon_sign
+    afli; afli_depth_units; afli_end_longitude; fs_afladagbok; adb; adb_lon_sign; gear
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),
@@ -747,9 +747,9 @@ list(
   }, format = "file"),
 
   # Correction, not part of the adapter: each station's gear, the landing's where it names one (decision 066,
-  # plan 014 3j; was adb's alone), adb's own read through its crosswalk (plan 034).
+  # plan 014 3j; was adb's alone). adb's own gear is read by its adapter since plan 050 step 4.
   tar_target(logbook_gear, {
-    logbook; lid_map; landing; gear; adb_gear_code
+    logbook; lid_map; landing; gear
     produces("curate/corrections/logbook_gear.R", fd_curated("logbook", "gear.parquet"))
   }, format = "file"),
 

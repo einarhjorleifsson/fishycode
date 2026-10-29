@@ -1435,7 +1435,7 @@ Open, needing no decision:
 by the maintainer.
 
 ## 152. Nephrops logged as tails, counted as whole weight
-**status:** open · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
+**status:** open (coded 2026-10-29 on branch `plan-050-step5-tails`, plan 050 step 5; held for the review of whole weight) · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
 `R/whole_weight.R`
 
 Raised 2026-10-28 by an MFRI colleague's check of the new mar (version 2026-10-27) for the Nephrops catch and CPUE
@@ -1498,7 +1498,7 @@ method so far. Two things are left:
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open · **needs: maintainer** — plan 050's asks b and c · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+**status:** open · **needs: maintainer** — plan 050's ask b · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
 TODOs 152, 153, 154
 
 Plan 050 rechecked the colleague's five issues on the store of 2026-10-28. It carries TODOs 152-154 and two defects

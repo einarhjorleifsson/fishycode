@@ -116,6 +116,20 @@ gear_mapping <-
       "old",      99,  "Óskráð veiðarfæri",   17,    "MIS",  "DWF",  "DWF") |>
   mutate(gid = as.integer(gid),
          map = as.integer(map))
+# gear_code: the letter twin of the new gid, one each (maintainer, 2026-10-29, plan 050). XXX the general gear, YYY
+# the target: gear + target2 where that pair is the gid's alone, and named by the maintainer where it is not or where
+# the gid has no gear. The old codes have none: each is read through `map` to the new gid first.
+gear_mapping <- gear_mapping |>
+  mutate(gear_code = case_when(version != "new" ~ NA_character_,
+                               gid ==  4 ~ "GNS_LUR",   # Rauðmaganet; Grásleppunet (3) keeps GNS_LUM
+                               gid == 13 ~ "LLS_LBL",   # Landbeitt lína
+                               gid == 21 ~ "LLS_TRK",   # Línutrekt
+                               gid == 18 ~ "AQU_CAG",   # Eldiskví
+                               gid == 20 ~ "AQU_MUS",   # Kræklingalína
+                               .default = paste(gear, target2, sep = "_")))
+stopifnot("every new gid has one gear_code, and no two share one" =
+            with(filter(gear_mapping, version == "new"),
+                 !anyNA(gear_code) && !anyDuplicated(gear_code) && !anyDuplicated(gid)))
 
 # check validity ---------------------------------------------------------------
 gear_mapping |>

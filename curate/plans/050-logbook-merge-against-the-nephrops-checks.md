@@ -1,7 +1,10 @@
 # 050 — The logbook merge against a colleague's Nephrops checks: the count of trawls, the 2021 ends, tails, adb's gear in the merge, and the new mar's merge compared
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; nothing built; asks a and d answered the same
-day (§5), and steps 2-6 need not wait for step 1 (maintainer) · **measured** (§1), by Claude the
+**status:** partly built — written 2026-10-29 at the maintainer's request; asks a and d answered the same
+day (§5), and steps 2-6 need not wait for step 1 (maintainer); step 4, `lid_map`'s pelagic set and `gear_code` coded the
+same day and run in a scratch store against the live one (§6), not yet in the live store (step 7); step 5 (ask c
+answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
+its factor belongs to a review of whole weight across species, periods and databases · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
@@ -22,7 +25,15 @@ using the newer source from 2021+. which has its faults." Later the same day, on
 one count column for all gears - so for longline it is number of hooks, nets number of nets, pots number of pots,
 towed gear number of trawls. i think we already have that thinking in the grammar"; "the adb is an inhouse
 convertion. it messed up the gear code, trying to convert gear to the legacy gear code […] instead of us trying to
-move things in the other direction in our merge."
+move things in the other direction in our merge." Then, while step 4 was coded: "we want the merged product to have
+the 'home-made' XXX-YYY letter code as well. the XXX is the general gear, the YYY is more related to the 'target'.
+these should have a perfect match with the new numerical gear code"; and "the logbook gear recording is generally less
+accurate than what is in the landings database for the corresponding trip. … the final merged logbook records (those
+that users will use) should have that double cross-checking correction." And when step 5 was built: "the whole weight
+(un-gutted) vs gutted weight is a big issue on its own … the convertion factors may have changed over time. this
+includes all species, the landings databasis and the logbook databases. and then how lumpfish roe barrel weight is
+converted to ungutted weight! wander if we need to take a broader review on that rather than doing some quickfix
+here, just on nephrops."
 
 ## 1. What is measured
 
@@ -155,13 +166,28 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
    and `gear` as afli and fs_afladagbok do, which is exact for every station read (§1). `logbook_gear.R` drops its
    adb path, which amends decision 154. Then the station type of adb is recounted by gear, with no longline `event`.
    A note for adb's author asks for the FS code beside the legacy one, and gives the 2019-2024 collapse.
-5. **Tails** (TODO 152). A correction, `curate/corrections/logbook_nephrops_tails.{yml,R}`, finds the trips by a
-   rule (logbook over landed per vessel and period, which needs ask c). It converts their Nephrops to whole weight
-   in a column of its own, with basis `reconstructed`, and keeps the weight as logged.
+   - **`lid_map`'s pelagic set** with it. `curate/link_lid_map.R` took the pelagic gears' gids from both code
+     versions, while `fishing_sample`'s gid is the new code. So Nephrops trawl (new 7), shrimp trawl (8) and the
+     longlines (12, 13, 21) went to the loose weight step (07) as pelagic: 292 of its 335 links. Step 4 gives adb new
+     codes too, so the set is taken from the new code alone.
+   - **`gear_code`** (the maintainer, above). The new code's letter twin, `XXX_YYY`: the general gear and the target.
+     It is `gear` + `target2` where that pair is the gid's alone, and the maintainer's choice where it is not or where
+     there is no gear: Rauðmaganet (4) GNS_LUR, Landbeitt lína (13) LLS_LBL, Línutrekt (21) LLS_TRK, Eldiskví (18)
+     AQU_CAG, Kræklingalína (20) AQU_MUS. It lives in `reference/gear/mapping.R`, which stops unless each of the 25
+     new codes has one and no two share one. The merge carries the logbook's own code beside `gear`. `gear.parquet`
+     carries the code of `gid_used`, the landing's gear where the landing names one, as do the v0 user tables, which
+     already took that cross-checked gear. `logbook_gear.R` still compares by `gear` + `target2`, so Lína and Landbeitt
+     lína do not disagree.
+5. **Tails** (TODO 152; ask c). A correction, `curate/corrections/logbook_nephrops_tails.{yml,R}`, finds the trips
+   by declared vessel and period, guarded by the trip's own ratio, and writes a side table after `lid_map`.
+   `calc_whole_weight()` takes its factor, so the per-station whole weight and v0's catch rows have it. `catch` stays
+   the weight as logged (§6). *Held on branch `plan-050-step5-tails` (maintainer, 2026-10-29):* which trips were logged
+   as tails stands, and the 3.3 waits for the review of whole weight, which sets every factor from one table.
 6. **The 2021 ends** (TODO 154). Look for the 22,363 fs-only stations' ends in `afli_sent`. Otherwise declare them
    basis `none` where the analyst reads the haul times.
 7. **Rebuild** the logbook and what reads it, with fingerprints before and after (`R/fingerprint.R`), and the merge's
-   fate account rerun. Then a decision record.
+   fate account rerun. `targets` cannot see the script edits, so `gear`, `adb`, `logbook`, `lid_map` and `logbook_gear`
+   are invalidated by hand. `products/user_tables.R` is rerun after. Then a decision record.
 
 Steps 2-6 do not wait for step 1. Each one is checked alone before the next.
 
@@ -177,7 +203,48 @@ TODOs 152-154 close into the decision record.
 - a. *Answered (maintainer, 2026-10-29):* one count for every gear, which is the grammar's `effort_count` (step 2).
 - b. Whether the count being a trip setting is flagged (proposed) or left as recorded with a note. The new mar's author
   calls issue 5 the Directorate's data.
-- c. The tail rule: the factor (3.3?), and whether a trip qualifies by its own ratio or by its vessel and period.
-  This includes vid 1645 in 2000-2006, outside afli's converted years.
+- c. *Answered (maintainer, 2026-10-29):* vessel and period at x 3.3, then, when the measurement found whole-weight
+  trips inside the periods, the period with a trip guard. The periods were narrowed from the measurement: vid 1645
+  logged whole weight in 2002-2003, so its early period is 2004-2006, not the 2000-2006 first proposed.
 - d. *Answered (maintainer, 2026-10-29):* the fault is adb's conversion to the legacy code, and it is undone where it
   enters, at the adapter (step 4).
+
+## 6. Built so far
+
+**Step 4, `lid_map`'s pelagic set and `gear_code`**, coded 2026-10-29. They were run by Claude in a scratch store: the
+gear reference, the adb adapter, the merge, `lid_map` and `logbook_gear`, each in its own R session, on the live
+store's other inputs. Each output was compared with the live store's, read-only, and the real store was untouched.
+Not checked by a person.
+
+- **Unchanged:** the reference but for `gear_code` (25 codes, one to each new gid). adb's staging but for its gear
+  columns. Every merged table's rows and every other column.
+- **adb's gid** is filled on all 88,464 merged stations, equal on every one to the gid `logbook_gear.R` read before.
+  `gid_used` and `gid_basis` are equal for every adb station.
+- **Station type:** 3,826 adb longlines `event` → `operation`, with 11 left `event` where the logbook's own gear is not
+  a longline and the landing's is. adb gillnets 350 → `operation` and 117 → `event`, handlines 41 and 36. fs_afladagbok
+  gillnets 224 → `operation`, on vessel-years whose gear group adb's stations now join.
+- **`lid_map`:** the loose step holds 45 links (335 before). Of its 292 non-pelagic trips, 255 keep their landing
+  through the tight step (06) or the order step (09), and one goes to another landing. 43 trips lose their landing:
+  32 longline, 7 shrimp trawl and 3 Nephrops trawl from the loose step, and one longline from step 09. 33 gain one:
+  30 by the tight step, 3 by order. No landing passes from a lost link to a gained one, so this is the tolerance, not a
+  swap. adb's 2 pelagic trips go to the loose step.
+- **`gear.parquet`:** 14 afli stations change their gear with their trip's landing. `gear_code` pairs one-to-one
+  with `gid_used` (24 gids, 24 codes). 5 stations have no gear.
+
+**Step 5, the tails**, coded 2026-10-29 and run the same way, then held on branch `plan-050-step5-tails`, not in main: the merge again, `catch_by_species_trip`, the correction,
+`catch_by_species_station`, and v0's catch rows built as `products/user_tables.R` builds them.
+
+- **The rule** (`curate/corrections/logbook_nephrops_tails.yml`): vids 173, 1752 and 2048 from 2019, vid 1645 in
+  2004-2006 and from 2019; factor 3.3 on the weight as logged; guard 0.55. The tails of adb's vid 2048 are logged as
+  GUTT, and the factor replaces the gutted rule there.
+- **Every candidate trip in one outcome:** 283 trips, 267 `tails` and 2 `tails_no_landing` (2,110 stations,
+  converted), and 14 `whole` (79 stations, as logged).
+- **Unchanged:** the merge's tables and fates, since `calc_whole_weight()`'s factor branch is unused there. All
+  16,989,795 other per-station rows.
+- **Changed:** the 2,110 converted rows, from 126.7 t to 413.9 t, basis `reconstructed`. Per trip, sid 40's whole
+  weight over landed (median), before → after: vid 173 0.28 → 0.92, 1645 0.32 → 1.05, 1752 0.34 → 1.13,
+  2048 0.30 → 0.94. The whole trips stay as they were (0.62-1.22).
+- **v0's catch:** one row per catch row, as before (16,997,458), now with `catch_round`, `round_basis` and
+  `round_factor`. 2,110 rows carry the factor: afli 2,047, fs_afladagbok 13, adb 50.
+- **Found on the way:** `station.parquet`'s `date` is a date-time. The correction's first run compared it with Dates and
+  found no candidate, so it now stops on an empty set.
