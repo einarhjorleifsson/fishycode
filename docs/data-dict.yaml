@@ -2199,6 +2199,179 @@ tables:
         values: [derived]
         description: >
           Always `derived`: computed, not recorded or reviewed.
+  - name: check_logbook_part_station
+    source:
+      parquet: ../../fishydata/curated/check/logbook_part_station.parquet
+    description: >
+      Every station logbook_station holds in one outcome per table (rows, none, duplicate,
+      not_in_source), by schema, copy, year and gear; and, under table 'effort_count', fishing_sample's
+      effort_count against the count logbook_rigging_part gives (curate/logbook_part.R). Claude's work of
+      2026-10-29 (plan 052, decision 244), not checked by a person.
+    columns:
+      - name: table
+        type: enum
+        values: ["effort_count", "gear_part", "rigging_part", "sensor_summary"]
+        constraints: [required]
+        description: >
+          gear_part, rigging_part, sensor_summary, or effort_count.
+      - name: schema
+        type: enum
+        values: ["adb", "aflaskeyti", "afli", "fs_afladagbok"]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: copy
+        type: enum
+        values: ["afli", "fs_afli"]
+        description: >
+          afli's copy (afli, fs_afli); empty for the other sources and for effort_count.
+      - name: year
+        type: number
+        range: [1950, 2026]
+        examples: [1979, 1986, 1992, 1999, 2026]
+        description: >
+          The station's year; empty for effort_count.
+      - name: gear
+        type: enum
+        values: ["DIV", "DRB", "FPO", "GND", "GNS", "HMS", "LHM", "LHP", "LLS", "OTB", "OTM", "PS", "SDN"]
+        description: >
+          The station's gear (ICES).
+      - name: outcome
+        type: enum
+        values: ["differs", "duplicate", "equal", "neither", "none", "not_in_source", "rigging_part only", "rows", "synthesised, no rigging count"]
+        constraints: [required]
+        description: >
+          rows; none (the source records such values, the station holds none); duplicate (a twin,
+          left out); not_in_source. For effort_count: equal, differs, synthesised with no rigging
+          count, neither, fishing_sample only, rigging_part only.
+      - name: stations
+        type: number
+        range: [1, 3809739]
+        examples: [275, 1175, 5248, 42127, 55020]
+        constraints: [required]
+        description: >
+          Stations.
+      - name: rows
+        type: number
+        range: [0, 759211]
+        examples: [0, 23647, 24984, 42127, 47046]
+        description: >
+          Rows of the table for them; empty for effort_count.
+  - name: check_logbook_part_column
+    source:
+      parquet: ../../fishydata/curated/check/logbook_part_column.parquet
+    description: >
+      Every column of every source table and layer read by sources/*/part.R, and what became of its
+      values: its rows and values, then each value in one outcome (empty, other_gear_table, gear_outside,
+      placeholder, unknown_code, unparsed, implausible) and, of the rest, used or lost to a better layer,
+      equal to the answer or not. A column the map does not use has its rows and values only. Claude's
+      work of 2026-10-29 (plan 052, decision 244), not checked by a person.
+    columns:
+      - name: schema
+        type: enum
+        values: ["adb", "afli", "fs_afladagbok"]
+        constraints: [required]
+        description: >
+          The source system.
+      - name: layer
+        type: string
+        examples: ["adb.trap", "adb.trawl_and_seine_net", "afli.stofn", "adb.fishing_station", "adb.diving"]
+        constraints: [required]
+        description: >
+          The table and copy.
+      - name: lr
+        type: number
+        range: [1, 5]
+        examples: [1, 2, 3, 4, 5]
+        constraints: [required]
+        description: >
+          The layer's rank, best first.
+      - name: table
+        type: enum
+        values: ["diving", "dredge", "fishing_station", "gildra", "hringn", "line_and_net", "lineha", "sent", "stofn", "surrounding_net", "toga", "trap", "trawl_and_seine_net", "ws_dragnot_varpa", "ws_gildra", "ws_hringn", "ws_kofun", "ws_linanethandf", "ws_plogur", "ws_veidi", "xml"]
+        constraints: [required]
+        description: >
+          The table as the map names it.
+      - name: column
+        type: string
+        examples: ["fj_faera", "pole_and_lines", "lost_fishing_gear", "botn_gerd", "pl_breidd"]
+        constraints: [required]
+        description: >
+          The column.
+      - name: n_rows
+        type: number
+        range: [0, 6885574]
+        examples: [0, 8673, 34290, 169502, 267040]
+        constraints: [required]
+        description: >
+          Rows of the table.
+      - name: n_value
+        type: number
+        range: [0, 6885534]
+        examples: [0, 7405, 34831, 44332, 64702]
+        constraints: [required]
+        description: >
+          Non-empty values.
+      - name: n_empty
+        type: number
+        range: [0, 726611]
+        examples: [0, 53, 3285, 3479, 56379]
+        description: >
+          A form's empty field (0, or a blank).
+      - name: n_other_gear_table
+        type: number
+        range: [0, 65337]
+        examples: [0, 31, 53, 167, 371]
+        description: >
+          In another gear's table than the station's: left when the gear was corrected (not carried).
+      - name: n_gear_outside
+        type: number
+        range: [0, 157864]
+        examples: [0, 8, 42, 275, 14894]
+        description: >
+          On a gear the column does not describe.
+      - name: n_placeholder
+        type: number
+        range: [0, 429390]
+        examples: [0, 652, 28846, 41278, 57029]
+        description: >
+          Placeholders.
+      - name: n_unknown_code
+        type: number
+        range: [0, 13196]
+        examples: [0, 4257, 6521, 8340, 13196]
+        description: >
+          Codes in no code list.
+      - name: n_unparsed
+        type: number
+        range: [0, 0]
+        examples: [0]
+        description: >
+          Text that does not read as a number.
+      - name: n_implausible
+        type: number
+        range: [0, 118022]
+        examples: [0, 466, 8130, 11767, 14270]
+        description: >
+          Outside the physical range: kept and flagged.
+      - name: n_used
+        type: number
+        range: [0, 6324368]
+        examples: [0, 54275, 97641, 107024, 217848]
+        description: >
+          Values that answer (per measure).
+      - name: n_lost_equal
+        type: number
+        range: [0, 1270957]
+        examples: [0, 51682, 64702, 137641, 601834]
+        description: >
+          Lost to a better layer or column holding the same value.
+      - name: n_lost_differs
+        type: number
+        range: [0, 94684]
+        examples: [0, 31, 260, 4044, 94684]
+        description: >
+          Lost to a better layer or column holding another value (afli: the edit's changes to rafr_).
   - name: landing_catch
     source:
       parquet: ../../fishydata/curated/landing/catch.parquet
@@ -4711,6 +4884,495 @@ tables:
         constraints: [required]
         description: >
           Read from free text, never recorded.
+  - name: logbook_gear_part
+    source:
+      parquet: ../../fishydata/curated/logbook/gear_part.parquet
+    description: >
+      The netting and what is fixed to it (plan 052, asks a and b; curate/logbook_part.R): one row per
+      station and part, one column per measure in SI units, for the stations logbook_station holds,
+      duplicate twins left out (decision 094). afli from its loaded rafr_ tables, the sent layer where
+      the loader lost a value, and its edited tables for the rest; fs_afladagbok and adb from their gear
+      tables. A 0 is a form's empty field: no value. A row in another gear's table than the station's is
+      not carried. No time. staging/<schema>/gear_part.parquet has the same columns. Claude's work of
+      2026-10-29 (plan 052, decision 244), not checked by a person.
+    columns:
+      - name: .sid
+        type: number
+        range: [-1326693, 1129982833]
+        examples: [-621818, -551918, 460216, 31758883, 33646752]
+        constraints: [required]
+        description: >
+          The station, as in logbook_station.
+      - name: schema
+        type: enum
+        values: ["adb", "afli", "fs_afladagbok"]
+        constraints: [required]
+        description: >
+          The logbook source system. Join on (.sid, schema), never .sid alone.
+      - name: part
+        type: enum
+        values: ["bait", "beitufrakast", "belly", "codend", "codend_2", "dredge", "footrope", "gear", "grid", "hand_baiting", "headline", "hook", "net", "panel", "seine", "square_codend", "square_window", "trap"]
+        constraints: [required]
+        description: >
+          The part of the gear or its rigging (docs/grammar.qmd, Configuration): one row per station
+          and part.
+      - name: "n"
+        type: number
+        range: [1, 50225]
+        examples: [275, 1175, 5000, 9999, 35235]
+        description: >
+          How many of the part: hooks per tub (hook, longline) or per jig line (hook, handline), the
+          Danish seine's panels (panel); the units fished at once (rig: trawls or dredges), set or
+          hauled (unit: nets, tubs, jigs, traps, divers); the hooks in all (hook_total).
+      - name: length_m
+        type: number
+        range: [0.3048, 8000]
+        examples: [429.768, 545.897, 608, 1852, 2330]
+        description: >
+          Length, metres: the headline, sweeps, ropes and wires, the codend, a seine. Empty where the
+          unit is not known (unit_raw).
+      - name: width_m
+        type: number
+        examples: []
+        description: >
+          Width, metres (a dredge). Empty where the unit is not known.
+      - name: height_m
+        type: number
+        range: [1.8288, 1805.03]
+        examples: [16.4592, 85.9536, 138.9890, 197.5100, 429.7680]
+        description: >
+          Height or depth, metres (a purse seine's depth, a dredge). Empty where the unit is not
+          known.
+      - name: height_meshes
+        type: number
+        range: [-1, 99]
+        examples: [33, 34, 42, 53, 58]
+        description: >
+          A gillnet's height counted in meshes.
+      - name: circumference_m
+        type: number
+        range: [1, 9999]
+        examples: [608, 999, 1054, 1852, 2330]
+        description: >
+          Circumference, metres (a trawl at the wing-belly join).
+      - name: weight_kg
+        type: number
+        range: [10, 500]
+        examples: [10, 15, 50, 300, 500]
+        description: >
+          Weight, kg (doors, a dredge).
+      - name: area_m2
+        type: number
+        examples: []
+        description: >
+          Area, square metres (doors).
+      - name: mesh_size_mm
+        type: number
+        range: [1, 2678]
+        examples: [72, 109, 262.5, 267, 275]
+        description: >
+          Mesh size, mm (codend, belly, a gillnet, a seine, a dredge; the Danish seine's body mesh on
+          net).
+      - name: mesh_size_min_mm
+        type: number
+        range: [1, 500]
+        examples: [33, 42, 44, 50, 80]
+        description: >
+          A pelagic trawl's smallest mesh, mm (afli moskvi_minnsti; its meaning read from the
+          values).
+      - name: mesh_size_max_mm
+        type: number
+        range: [1, 200000]
+        examples: [3000, 5000, 13000, 62000, 63000]
+        description: >
+          A pelagic trawl's largest mesh, mm (afli moskvi_staersti; its meaning read from the
+          values).
+      - name: meshes_around
+        type: number
+        range: [1, 9674]
+        examples: [783, 999, 2330, 2800, 3220]
+        description: >
+          Circumference counted in meshes (codend, a shrimp trawl's net).
+      - name: bar_spacing_mm
+        type: number
+        range: [1, 600]
+        examples: [3, 42, 50, 60, 80]
+        description: >
+          A grid's bar spacing, mm.
+      - name: mesh_orientation
+        type: enum
+        values: ["T0", "T45", "T90"]
+        description: >
+          How the mesh hangs: T0, T45, T90 (afli 0, 45, 90).
+      - name: size
+        type: string
+        examples: ["22", "6", "24", "11", "14"]
+        description: >
+          A size on the source's own scale: a hook's number (afli's sent KROKAR@STAERD).
+      - name: material
+        type: string
+        examples: ["1.sló", "sakka", "Handfæragarn", "Advanti", "pe"]
+        description: >
+          The gear's material, as typed (fs_afladagbok, adb; 151 spellings).
+      - name: type
+        type: string
+        examples: ["juvenile", "steel_bobbins", "small_shrimp_juvenile", "ez_w", "other"]
+        description: >
+          The part's type in one list across the sources (reference_gear_part_code): the footrope,
+          codend, grid, hook, bait, dredge, trap and seine types; the rig (single, twin, triple,
+          pair) and the unit (net, tub, jig, trap, diver).
+      - name: type_raw
+        type: string
+        examples: ["¿_antroll", "Flottroll-Atlantica", "Egersund 2016", "ÞAN HELIX", "Egersund flottroll"]
+        description: >
+          The type as the source holds it: its code, or a name as typed (a pelagic trawl's name on
+          part gear).
+      - name: present
+        type: boolean
+        description: >
+          For a part fitted or not: a square-mesh window or codend, hand-baiting.
+      - name: length_raw
+        type: number
+        range: [0.2, 8000]
+        examples: [275, 608, 1493, 1852, 2330]
+        description: >
+          The length as recorded, in unit_raw.
+      - name: width_raw
+        type: number
+        range: [0.5, 25]
+        examples: [3, 4, 8, 14, 16]
+        description: >
+          The width as recorded, in unit_raw.
+      - name: height_raw
+        type: number
+        range: [0.2, 987]
+        examples: [72, 109, 275, 974, 980]
+        description: >
+          The height as recorded, in unit_raw.
+      - name: unit_raw
+        type: enum
+        values: ["fathom", "ft", "m", "unknown"]
+        description: >
+          The unit the row's lengths were recorded in (m, ft, fathom), or 'unknown' (a gillnet's mean
+          length, a dredge's size: decision 210 item 2), where the metres are empty.
+      - name: basis
+        type: enum
+        values: ["none", "reconstructed", "recorded"]
+        constraints: [required]
+        description: >
+          The least certain basis of the row's values: recorded, derived (tubs x hooks per tub; the
+          rig from the twin flag and the skipper's remark, decision 241), reconstructed (a column
+          whose meaning is read from its values, plan 052 ask g), or none (a raw value with no SI
+          value).
+      - name: layer
+        type: string
+        examples: ["afli_sent + afli.rafr_lineha", "afli_sent + fs_afli.rafr_lineha", "adb.trawl_and_seine_net", "adb.fishing_station", "fs_afladagbok.ws_gildra"]
+        constraints: [required]
+        description: >
+          Every table that gave one of the row's values, best first, joined by ' + ' (afli: the sent
+          layer and message, rafr_ loaded, edited; afli and fs_afli copies).
+      - name: flag
+        type: string
+        examples: ["n=110.0: meaning_unknown", "n=70.0: meaning_unknown", "weight_kg=10: implausible", "n=40000.0: meaning_unknown", "n=25000.0: meaning_unknown"]
+        description: >
+          Each value kept but not to be used: 'measure=raw value: why' (implausible, unknown_code,
+          meaning_unknown, per_jig_or_total), joined by '; '.
+  - name: logbook_rigging_part
+    source:
+      parquet: ../../fishydata/curated/logbook/rigging_part.parquet
+    description: >
+      What joins the units to the vessel and to each other, and how many are fished at once (plan 052,
+      asks a and b; curate/logbook_part.R): the rig, the unit and its count, the hooks in all, doors,
+      sweeps, upper bridles, ropes and wires. One row per station and part, the shape of
+      logbook_gear_part; same stations, same sources. effort_count is still fishing_sample's;
+      check_logbook_part_station sets the two against each other. Claude's work of 2026-10-29 (plan 052,
+      decision 244), not checked by a person.
+    columns:
+      - name: .sid
+        type: number
+        range: [-2768723449, 10630176826]
+        examples: [-621818, -551918, 460216, 2743942, 31758883]
+        constraints: [required]
+        description: >
+          The station, as in logbook_station.
+      - name: schema
+        type: enum
+        values: ["adb", "afli", "fs_afladagbok"]
+        constraints: [required]
+        description: >
+          The logbook source system. Join on (.sid, schema), never .sid alone.
+      - name: part
+        type: enum
+        values: ["door", "hook_total", "rig", "rope", "sweep", "unit", "upper_bridle", "wire"]
+        constraints: [required]
+        description: >
+          The part of the gear or its rigging (docs/grammar.qmd, Configuration): one row per station
+          and part.
+      - name: "n"
+        type: number
+        range: [-1, 580800]
+        examples: [21375, 33712, 36111, 36329, 41111]
+        description: >
+          How many of the part: hooks per tub (hook, longline) or per jig line (hook, handline), the
+          Danish seine's panels (panel); the units fished at once (rig: trawls or dredges), set or
+          hauled (unit: nets, tubs, jigs, traps, divers); the hooks in all (hook_total).
+      - name: length_m
+        type: number
+        range: [-2, 18105.1]
+        examples: [267, 275, 1499.62, 2207.36, 2640.79]
+        description: >
+          Length, metres: the headline, sweeps, ropes and wires, the codend, a seine. Empty where the
+          unit is not known (unit_raw).
+      - name: width_m
+        type: number
+        examples: []
+        description: >
+          Width, metres (a dredge). Empty where the unit is not known.
+      - name: height_m
+        type: number
+        examples: []
+        description: >
+          Height or depth, metres (a purse seine's depth, a dredge). Empty where the unit is not
+          known.
+      - name: height_meshes
+        type: number
+        examples: []
+        description: >
+          A gillnet's height counted in meshes.
+      - name: circumference_m
+        type: number
+        examples: []
+        description: >
+          Circumference, metres (a trawl at the wing-belly join).
+      - name: weight_kg
+        type: number
+        range: [-1, 9999]
+        examples: [275, 2330, 2800, 3380, 5000]
+        description: >
+          Weight, kg (doors, a dredge).
+      - name: area_m2
+        type: number
+        range: [1, 999]
+        examples: [2.3, 2.4, 16.7, 75.2, 999]
+        description: >
+          Area, square metres (doors).
+      - name: mesh_size_mm
+        type: number
+        examples: []
+        description: >
+          Mesh size, mm (codend, belly, a gillnet, a seine, a dredge; the Danish seine's body mesh on
+          net).
+      - name: mesh_size_min_mm
+        type: number
+        examples: []
+        description: >
+          A pelagic trawl's smallest mesh, mm (afli moskvi_minnsti; its meaning read from the
+          values).
+      - name: mesh_size_max_mm
+        type: number
+        examples: []
+        description: >
+          A pelagic trawl's largest mesh, mm (afli moskvi_staersti; its meaning read from the
+          values).
+      - name: meshes_around
+        type: number
+        examples: []
+        description: >
+          Circumference counted in meshes (codend, a shrimp trawl's net).
+      - name: bar_spacing_mm
+        type: number
+        examples: []
+        description: >
+          A grid's bar spacing, mm.
+      - name: mesh_orientation
+        type: string
+        examples: []
+        description: >
+          How the mesh hangs: T0, T45, T90 (afli 0, 45, 90).
+      - name: size
+        type: string
+        examples: []
+        description: >
+          A size on the source's own scale: a hook's number (afli's sent KROKAR@STAERD).
+      - name: material
+        type: string
+        examples: []
+        description: >
+          The gear's material, as typed (fs_afladagbok, adb; 151 spellings).
+      - name: type
+        type: enum
+        values: ["diver", "jig", "net", "pair", "single", "trap", "triple", "tub", "twin"]
+        description: >
+          The part's type in one list across the sources (reference_gear_part_code): the footrope,
+          codend, grid, hook, bait, dredge, trap and seine types; the rig (single, twin, triple,
+          pair) and the unit (net, tub, jig, trap, diver).
+      - name: type_raw
+        type: string
+        examples: ["3", "2", "1"]
+        description: >
+          The type as the source holds it: its code, or a name as typed (a pelagic trawl's name on
+          part gear).
+      - name: present
+        type: boolean
+        description: >
+          For a part fitted or not: a square-mesh window or codend, hand-baiting.
+      - name: length_raw
+        type: number
+        range: [-2, 9900]
+        examples: [109, 267, 275, 980, 2800]
+        description: >
+          The length as recorded, in unit_raw.
+      - name: width_raw
+        type: number
+        examples: []
+        description: >
+          The width as recorded, in unit_raw.
+      - name: height_raw
+        type: number
+        examples: []
+        description: >
+          The height as recorded, in unit_raw.
+      - name: unit_raw
+        type: enum
+        values: ["fathom", "m"]
+        description: >
+          The unit the row's lengths were recorded in (m, ft, fathom), or 'unknown' (a gillnet's mean
+          length, a dredge's size: decision 210 item 2), where the metres are empty.
+      - name: basis
+        type: enum
+        values: ["derived", "recorded"]
+        constraints: [required]
+        description: >
+          The least certain basis of the row's values: recorded, derived (tubs x hooks per tub; the
+          rig from the twin flag and the skipper's remark, decision 241), reconstructed (a column
+          whose meaning is read from its values, plan 052 ask g), or none (a raw value with no SI
+          value).
+      - name: layer
+        type: string
+        examples: ["adb.trap", "adb.trawl_and_seine_net", "afli.stofn", "fs_afladagbok.ws_gildra", "fs_afli.rafr_lineha"]
+        constraints: [required]
+        description: >
+          Every table that gave one of the row's values, best first, joined by ' + ' (afli: the sent
+          layer and message, rafr_ loaded, edited; afli and fs_afli copies).
+      - name: flag
+        type: string
+        examples: ["n=650: implausible", "n=6506: implausible", "n=162500.0: implausible", "n=22.0: implausible", "area_m2=92.0: implausible"]
+        description: >
+          Each value kept but not to be used: 'measure=raw value: why' (implausible, unknown_code,
+          meaning_unknown, per_jig_or_total), joined by '; '.
+  - name: logbook_sensor_summary
+    source:
+      parquet: ../../fishydata/curated/logbook/sensor_summary.parquet
+    description: >
+      The per-haul readings (plan 052, ask c; curate/logbook_part.R): one row per station, quantity,
+      place, moment and instrument. afli only; fs_afladagbok and adb record no reading but the water
+      depth, which stays on logbook_station (z1, z2). The grammar's wide environment is a pivot of it
+      (products/v0 logbook/environment.parquet). Claude's work of 2026-10-29 (plan 052, decision 244),
+      not checked by a person.
+    columns:
+      - name: .sid
+        type: number
+        range: [-2768723449, 10499300688]
+        examples: [-621818, -551918, 31758883, 33646752, 76473459]
+        constraints: [required]
+        description: >
+          The station, as in logbook_station.
+      - name: schema
+        type: enum
+        values: ["afli"]
+        constraints: [required]
+        description: >
+          The logbook source system.
+      - name: quantity
+        type: enum
+        values: ["bottom_type", "depth", "fitted", "sea_state", "temperature", "wind_direction", "wind_force", "wind_speed"]
+        constraints: [required]
+        description: >
+          What was read: temperature, depth (the gear's), wind_speed, wind_direction, wind_force,
+          sea_state, bottom_type, or fitted (a sensor was on the gear: value 1, or 0 where the record
+          says not).
+      - name: place
+        type: enum
+        values: ["air", "bottom", "gear", "headline", "surface"]
+        constraints: [required]
+        description: >
+          Where: bottom, headline, surface, air, gear (the gear's depth; the catch sensor's and the
+          sounder's place).
+      - name: moment
+        type: enum
+        values: ["1", "2"]
+        description: >
+          When: 1 at the start, 2 at the end; empty for a fitted sensor.
+      - name: mount
+        type: enum
+        values: ["gear", "vessel"]
+        description: >
+          On what: the vessel or the gear (a bottom or headline reading is made at depth); empty for
+          an observation.
+      - name: instrument
+        type: enum
+        values: ["catch_sensor", "headline_sensor", "observed", "sounder", "unknown"]
+        constraints: [required]
+        description: >
+          With what: headline_sensor, catch_sensor, sounder, observed (sea state, Beaufort, the
+          bottom), unknown.
+      - name: value
+        type: number
+        range: [-100, 9999]
+        examples: [0, 2.660, 138.989, 429.768, 608]
+        description: >
+          The reading in SI (unit); empty for a placeholder (a 0.0 temperature, a headline depth of 0
+          or 1, a sea state or wind speed of -1, a wind direction of 0 with no wind) and where the
+          unit is not known.
+      - name: unit
+        type: enum
+        values: ["Beaufort", "code", "degC", "degree", "m", "m/s", "yes_no"]
+        constraints: [required]
+        description: >
+          The unit of value: degC, m, m/s, degree, Beaufort, code (sea_state and bottom_type: the
+          source's code list), yes_no.
+      - name: value_raw
+        type: number
+        range: [-100, 9999]
+        examples: [0, 2.66, 3.19, 3.65, 608]
+        description: >
+          The reading as recorded.
+      - name: unit_raw
+        type: enum
+        values: ["Beaufort", "code", "degC", "degree", "fathom", "fathom or m, by record", "j/n", "m", "m/s", "text"]
+        constraints: [required]
+        description: >
+          The unit as recorded: the headline depth's is m or fathom by the element the app sent (read
+          from the message), and 'fathom or m, by record' where only the loaded value is held.
+      - name: type
+        type: enum
+        values: ["furuno", "marport", "sonar"]
+        description: >
+          A fitted sounder's make or kind in one list (reference_gear_part_code, list sounder).
+      - name: type_raw
+        type: string
+        examples: ["SIMRAD", "SONARD", "LODRETTUR", "SONAR", "SONAR LÓÐR"]
+        description: >
+          The sounder's make or kind as typed.
+      - name: basis
+        type: enum
+        values: ["none", "recorded"]
+        constraints: [required]
+        description: >
+          recorded, or none where the reading has no SI value for want of its unit.
+      - name: layer
+        type: string
+        examples: ["afli.stofn", "fs_afli.rafr_lineha", "afli.toga", "afli.rafr_lineha", "afli.rafr_hringn"]
+        constraints: [required]
+        description: >
+          The table that gave the reading: afli's message (fs_afli.afladagb_xml_mottaka), sent layer,
+          rafr_ (loaded) or edited tables.
+      - name: flag
+        type: string
+        examples: ["unknown_code", "implausible", "placeholder"]
+        description: >
+          placeholder, implausible (outside the quantity's physical range: kept, not to be used) or
+          unknown_code.
   - name: reference_area_h3
     source:
       parquet: ../../fishydata/curated/reference/area_h3.parquet
@@ -5010,6 +5672,203 @@ tables:
         description: >
           Author-defined finer-grained target/species-group code, not a standard ICES
           vocabulary.
+  - name: reference_gear_part_map
+    source:
+      parquet: ../../fishydata/curated/reference/gear_part_map.parquet
+    description: >
+      Every gear, rigging and per-haul sensor column of the logbook sources in one row (and one per gear
+      where its meaning depends on it): the table, part and measure (or quantity) it fills, or why it is
+      not used; its unit, factor to SI, plausible range and code list (reference/gear/part_map.R, plan
+      052). The one record of these columns' units; sources/*/part.R read it. Claude's work of 2026-10-29
+      (plan 052, decision 244), not checked by a person.
+    columns:
+      - name: map_id
+        type: number
+        range: [1, 266]
+        examples: [42, 53, 57, 72, 109]
+        constraints: [required]
+        description: >
+          The row's number.
+      - name: schema
+        type: enum
+        values: ["adb", "afli", "fs_afladagbok"]
+        constraints: [required]
+        description: >
+          The source system.
+      - name: table
+        type: enum
+        values: ["diving", "dredge", "fishing_spot", "fishing_station", "gildra", "hringn", "line_and_net", "lineha", "sent", "stofn", "surrounding_net", "toga", "trap", "trawl_and_seine_net", "ws_dragnot_varpa", "ws_gildra", "ws_hringn", "ws_kofun", "ws_linanethandf", "ws_plogur", "ws_veidi"]
+        constraints: [required]
+        description: >
+          The table without its layer: afli's toga is rafr_toga (loaded) and toga (edited); sent is
+          the sent layer's fishing_sample.
+      - name: column
+        type: string
+        examples: ["fj_faera", "pole_and_lines", "lost_fishing_gear", "botn_gerd", "pl_breidd"]
+        constraints: [required]
+        description: >
+          The source column ('*' for every column of a table not read).
+      - name: use
+        type: enum
+        values: ["gear_part", "key", "not_used", "rigging_part", "sensor_summary"]
+        constraints: [required]
+        description: >
+          gear_part, rigging_part, sensor_summary, key, or not_used (note says why).
+      - name: part
+        type: enum
+        values: ["bait", "beitufrakast", "belly", "codend", "codend_2", "door", "dredge", "footrope", "gear", "grid", "hand_baiting", "headline", "hook", "hook_total", "net", "panel", "rig", "rope", "seine", "square_codend", "square_window", "sweep", "trap", "unit", "upper_bridle", "wire"]
+        description: >
+          The part it fills (gear_part, rigging_part).
+      - name: measure
+        type: enum
+        values: ["area_m2", "bar_spacing_mm", "circumference_m", "height_m", "height_meshes", "length_m", "material", "mesh_orientation", "mesh_size_max_mm", "mesh_size_min_mm", "mesh_size_mm", "meshes_around", "n", "present", "size", "type", "type_raw", "weight_kg", "width_m"]
+        description: >
+          The measure it fills.
+      - name: gears
+        type: enum
+        values: ["!LHM", "!LHM,!LLS", "!LLS", "DRB", "LHM", "LLS", "OTB", "OTB,OTM", "OTB,OTM,DRB", "OTB,OTM,SDN", "OTM", "SDN"]
+        description: >
+          The station gears (ICES) the row applies to, comma-separated; '!X' excludes X; empty for
+          any.
+      - name: rank
+        type: number
+        range: [1, 2]
+        examples: [1, 2]
+        constraints: [required]
+        description: >
+          Within a table, which of two columns of one measure answers first.
+      - name: unit_raw
+        type: enum
+        values: ["Beaufort", "code", "count", "degC", "degree", "fathom", "fathom or m, by record", "ft", "j/n", "kg", "m", "m/s", "m2", "meshes", "mm", "text", "unknown"]
+        description: >
+          The unit the source holds it in, by the evidence in note.
+      - name: to_si
+        type: number
+        range: [0.3048, 1.8288]
+        examples: [0.3048, 1, 1.8288]
+        description: >
+          The factor to SI; empty where the unit is not known.
+      - name: zero
+        type: enum
+        values: ["empty", "placeholder", "value"]
+        constraints: [required]
+        description: >
+          What a 0 is: empty (a form's empty field), value, or placeholder.
+      - name: placeholder
+        type: string
+        examples: ["-1", "0,1"]
+        description: >
+          Other raw values read as placeholders, comma-separated.
+      - name: min_si
+        type: number
+        range: [-40, 50]
+        examples: [-40, 0, 2, 3, 50]
+        description: >
+          Below it a value is implausible (kept, flagged).
+      - name: max_si
+        type: number
+        range: [3, 100000]
+        examples: [3, 50, 60, 3000, 5000]
+        description: >
+          Above it a value is implausible.
+      - name: code_list
+        type: enum
+        values: ["bait", "bottom_type", "codend_type", "dredge_type", "footrope", "grid", "hook_type", "mesh_orientation", "rig", "sea_state", "seine_type", "sounder", "trap_type", "yes_no"]
+        description: >
+          Its code list in reference_gear_part_code.
+      - name: basis
+        type: enum
+        values: ["reconstructed", "recorded"]
+        constraints: [required]
+        description: >
+          recorded, or reconstructed where the column's meaning is read from its values (plan 052 ask
+          g).
+      - name: flag
+        type: string
+        examples: ["per_jig_or_total", "meaning_unknown"]
+        description: >
+          A flag every value of the column carries (meaning_unknown, per_jig_or_total).
+      - name: type_fixed
+        type: enum
+        values: ["diver", "jig", "net", "trap", "tub"]
+        description: >
+          The type a count's unit takes (net, tub, jig, trap, diver).
+      - name: quantity
+        type: enum
+        values: ["bottom_type", "depth", "fitted", "sea_state", "temperature", "wind_direction", "wind_force", "wind_speed"]
+        description: >
+          sensor_summary's quantity.
+      - name: place
+        type: enum
+        values: ["air", "bottom", "gear", "headline", "surface"]
+        description: >
+          sensor_summary's place.
+      - name: moment
+        type: enum
+        values: ["1", "2"]
+        description: >
+          sensor_summary's moment.
+      - name: mount
+        type: enum
+        values: ["gear", "vessel"]
+        description: >
+          sensor_summary's mount.
+      - name: instrument
+        type: enum
+        values: ["catch_sensor", "headline_sensor", "observed", "sounder", "unknown"]
+        description: >
+          sensor_summary's instrument.
+      - name: special
+        type: boolean
+        constraints: [required]
+        description: >
+          Built by the source script itself, not by the generic reading (afli's rig from the twin
+          flag and the remark).
+      - name: note
+        type: string
+        examples: ["fathoms throughout: sent so before 2011, sent in metres and converted by the loader after (the XML map)", "fs_afli's copy only: 1 on 98,248 rows, a loader's mark (read on), not a value of the haul", "feet by the comment; one vessel's constants (3 x 3 x 3, 2.5 x 3.6 x 0.2), the unit unverified", "a station field: sources/adb/convert.R's", "the pelagic trawl's largest mesh, read from the values (ask g)"]
+        description: >
+          Why, and the evidence: the reason a column is not used, its unit's evidence, what its
+          values show.
+  - name: reference_gear_part_code
+    source:
+      parquet: ../../fishydata/curated/reference/gear_part_code.parquet
+    description: >
+      The code lists of logbook_gear_part, logbook_rigging_part and logbook_sensor_summary: each source's
+      code, the one list's type, and the label as the source has it (reference/gear/part_map.R). Claude's
+      work of 2026-10-29 (plan 052, decision 244), not checked by a person.
+    columns:
+      - name: list
+        type: enum
+        values: ["bait", "bottom_type", "codend_type", "dredge_type", "footrope", "grid", "hook_type", "mesh_orientation", "rig", "sea_state", "seine_type", "sounder", "trap_type", "yes_no"]
+        constraints: [required]
+        description: >
+          The list.
+      - name: schema
+        type: enum
+        values: ["adb", "afli", "fs_afladagbok"]
+        constraints: [required]
+        description: >
+          The source whose code it is.
+      - name: code
+        type: string
+        examples: ["22", "0", "6", "10005", "24"]
+        constraints: [required]
+        description: >
+          The code as the source holds it.
+      - name: type
+        type: string
+        examples: ["22", "wide_gap", "juvenile", "0", "steel_bobbins"]
+        constraints: [required]
+        description: >
+          The type in one list across the sources (for bait, bottom_type and sea_state, afli's own
+          code).
+      - name: label
+        type: string
+        examples: ["Kúfiskur / kúfskel", "Trönusíli", "Stórsjór, ölduhæð 6-9m", "Hörpudiskur", "Hnullungar"]
+        constraints: [required]
+        description: >
+          The source's label.
   - name: reference_port_code
     source:
       parquet: ../../fishydata/curated/reference/port_code.parquet

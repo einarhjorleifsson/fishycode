@@ -253,3 +253,45 @@ told `implausible = TRUE`. Otherwise `.duration_source` is `"data"` (a recorded 
 read from `fs_afli` (2b), then adb (only from 2025-11-19, decision 160), then aflaskeyti (plan 026). The tiers,
 the date bounds, the rationale and the record counts are in [merge.qmd](merge.qmd), which computes its counts from
 the files; the landings match then writes `curated/logbook/lid_map.parquet` (`curate/link_lid_map.R`).
+
+## Gear, rigging and sensors (`gear_part`, `rigging_part`, `sensor_summary`)
+
+*Added with AI assistance (Claude) on 2026-10-29 (plan 052, decision 244); not checked by a person.*
+
+Three tables beside `fishing_sample` in `curated/logbook/`, keyed on (`.sid`, `schema`) for the stations the merge
+keeps, duplicate twins left out (decision 094). They carry no time. Each source's own are
+`staging/<schema>/{gear_part,rigging_part,sensor_summary}.parquet` (`sources/<schema>/part.R`), bound by
+`curate/logbook_part.R`. `docs/grammar.qmd` (Configuration, Environment) gives the shape; `docs/data-dict.yaml`
+every column.
+
+- **`gear_part`**: the netting and what is fixed to it, one row per station and part (`headline`, `codend`, `net`,
+  `footrope`, `grid`, `hook`, `dredge`, `seine`, …), one column per measure in SI units.
+- **`rigging_part`**: what joins the units to the vessel and to each other, and how many: `rig` (single, twin,
+  triple, pair; `n` the units fished at once), `unit` (nets, tubs, jigs, traps, divers), `hook_total`, `door`,
+  `sweep`, `upper_bridle`, `rope`, `wire`.
+- **`sensor_summary`**: one row per station and reading (`quantity`, `place`, `moment`, `instrument`): the
+  temperatures, the headline depth, wind, sea state, the bottom, and which sensors were fitted. afli only: fs_afladagbok
+  and adb hold no reading but the water depth, which stays on the station (`z1`, `z2`).
+
+**Where each value comes from.** `curated/reference/gear_part_map.parquet` names every column of every source table in
+one outcome: the part and measure it fills, its unit and factor to SI, the gears it applies to, its plausible range and
+code list, or why it is not used. afli is read from its loaded `rafr_` tables first (afli's copy, then fs_afli's for
+2020-07 to 2023), the values the loader lost from the sent messages (hook type and size, hand-baiting, hooks per jig,
+the dredge's size, the headline depth), and its edited tables for the rest (the paper years); per measure the best
+layer holding a value answers, and `layer` names every table a row's values came from. fs_afladagbok and adb are read
+from their gear tables (adb from 2025-11-19, as the merge has it).
+
+**Units.** afli's headline and sweeps are metres (not the feet and fathoms of Oracle's comments; plan 052 §2), its
+gillnet mesh mm (not inches), its Danish seine rope and wire and its purse seine's length and depth fathoms.
+fs_afladagbok's and adb's headline is feet, their sweeps, rope and the purse seine's length and depth fathoms. The
+headline depth is metres or fathoms by the element the app sent, read per record from the message. A gillnet's mean
+length and a dredge's size are kept raw (`length_raw`, `unit_raw` "unknown"), with no metres, until their unit is
+measured (decision 210 item 2).
+
+**Flags.** A value outside its plausible range is kept and flagged `implausible`; an unknown code `unknown_code`.
+In `sensor_summary` a placeholder (a temperature of 0.0, a headline depth of 0 or 1, a sea state or wind speed of -1,
+a wind direction of 0 with no wind) keeps `value_raw` and has no `value`. A 0 in a gear or rigging measure is a form's
+empty field: no value. A row in another gear's table than the station's (left there when the station's gear was
+corrected and the old row not deleted) is not carried. `curated/check/logbook_part_column.parquet` counts every
+source column's values by outcome; `curated/check/logbook_part_station.parquet` puts every kept station in one outcome
+per table, and sets `effort_count` read from `rigging_part` against `fishing_sample`'s.

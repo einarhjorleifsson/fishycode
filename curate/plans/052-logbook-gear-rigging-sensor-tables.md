@@ -1,6 +1,8 @@
 # 052 — The logbook's gear, rigging and sensors: four tables designed on afli's `rafr_` layer
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; nothing built · **measured** (§1-§3), by Claude
+**status:** partly built — written 2026-10-29 at the maintainer's request; its asks answered the same evening (§7);
+`gear_part`, `rigging_part` and `sensor_summary` built the same night, independent of the set times (decision 244);
+`vessel_sensor` waits for asks d and e · **measured** (§1-§3), by Claude
 the same day, read-only on the dumps of 2026-10-16/17 and the store, not checked by a person: six grammars mined into
 one union of terms; afli's `rafr_` gear tables, their edited copies, and fs_afladagbok's and adb's gear tables, column
 by column; the per-haul sensor values and the logger · **assumed** (§4): the meaning of seven undocumented columns, two
@@ -511,6 +513,21 @@ catch's side with plan 036's or 038's next change, not to these tables.
    later.
 
 ## 7. Asks
+
+**Answered by the maintainer, 2026-10-29**, each as proposed (asked by Claude with AskUserQuestion; the answers are
+the maintainer's choices among the options put, recorded here by Claude):
+
+- a: the line as §1 draws it.
+- b: two tables, `gear_part` and `rigging_part`, of one shape.
+- c: `sensor_summary` long; `environment` a pivot made for the user tables, not stored.
+- d and e: deferred, and with them `vessel_sensor`, so that the tables built now carry no times (the maintainer: the
+  tables "should be independent of the time issue", TODO 164). `sensor_gps` stays as it is.
+- f: a placeholder keeps its raw value with `flag = placeholder` and no SI value.
+- g: the undocumented columns used as §2 reads them, basis `reconstructed` for the meaning, the reading in the code
+  list; `beitufrakast`, whose meaning is unknown, kept as recorded and flagged.
+- h: `curated/vessel_sensor/`, by provider and year, when it is built.
+
+The asks as put:
 
 - a. **The line between gear and rigging** as §1 draws it: the net and what is fixed to it (mesh, codend, headline,
   footrope, floats, kite, grids, windows, hooks, bait) is gear; what connects the units to the vessel and to each

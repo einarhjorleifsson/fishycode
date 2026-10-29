@@ -1547,23 +1547,22 @@ None was judged (counted 2026-10-29 by Claude, not checked by a person).
 
 **check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.
 
-## 163. The logbook's gear, rigging and sensor tables (plan 052)
-**status:** open · **needs: maintainer** — plan 052's asks a-h (§7): the gear and rigging line, two tables or one,
-`environment` as a pivot, TODO 98's logger question (ask d), the logger's lost dates, placeholders, the undocumented
-columns, the streams' home · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, plan 020,
-TODOs 73, 98, 100, 131, 140
+## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
+**status:** open · **needs: maintainer** — where afli's edited layer changed a value its loaded `rafr_` layer holds,
+which answers (decision 244: `rafr_` for now) · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`,
+decision 244, TODOs 98, 100, 140, 164
 
-The maintainer (2026-10-29): structure the logbook product by gear, rigging and sensors, prototyped on afli's `rafr_`
-layer, which fs_afladagbok thinned. Measured by Claude the same day, read-only, not checked by a person
-(`$FISHYDATA/archive/2026-10-29-gear-rigging-sensor/`): fs and adb keep 21 of `rafr_`'s 55 filled gear, rigging, sensor
-and environment columns and no sensor value; afli's headline and sweeps have held one unit since first recorded (1988),
-read as metres, though Oracle's comments name feet and fathoms, perhaps the units first intended; the logger's
-echosounder depth is in no product; `fishing_sample.length_fotreipi` holds a code. Proposed: `gear_part`,
-`rigging_part`, `sensor_summary`, and `vessel_sensor` (the logger as a store beside the AIS stores, AIS being one vessel
-sensor: the maintainer, 2026-10-29); it would take plan 020's half of TODO 73 and close TODO 100.
+Built 2026-10-29 (decision 244), not checked by a person: `curated/logbook/{gear_part,rigging_part,sensor_summary}`,
+every source column and kept station in one outcome. Left:
+- **The edit against `rafr_`**: the twin flag (3,295 loaded 1, edited 0), hooks per tub (450 loaded, 20 edited), nets
+  (230, 30), the afli route's square window (about 91,000 edited "fitted", sent not). Decide before `effort_count`
+  reads `rigging_part` (3,976 afli stations would move); then `g_*` out a release later (decision 210 item 3).
+- **`vessel_sensor`** (`curated/vessel_sensor/`, ask h) with asks d and e, after the set times (TODO 164, plan 053).
+- **Plan 052 step 1's remainder**: the units in the overlay (`dump/oracle/meta/`), ICES vocabularies as code-list
+  columns, the gillnet's length and the dredge's size measured, door areas above 40 m² (12,736; square feet?).
 
-**check:** the asks answered in the plan; the four tables built, every source column and station in one outcome, and
-`effort_count` unchanged; a decision record.
+**check:** the edit question decided; `effort_count` read from `rigging_part` with the change accounted for;
+`vessel_sensor` built or declined; a decision record.
 
 ## 164. The set time by app: which `t1` opens a set window
 **status:** open · **needs: maintainer** — choices a-c · **see:** TODO 103, decisions 157, 158, 206, 211 and 242,

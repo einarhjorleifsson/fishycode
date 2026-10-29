@@ -3,12 +3,15 @@
 # lacks is found by using it; the improvements, and how a data product is versioned, are the next round.
 #
 # Input:  curated/vessel/{vessel,vessel_year}.parquet, curated/landing/{landings,catch}.parquet,
-#         curated/logbook/{trip,station,fishing_sample,gear,catch,lid_map}.parquet, curated/link/trip_reconciled.parquet,
+#         curated/logbook/{trip,station,fishing_sample,gear,catch,lid_map,gear_part,rigging_part,sensor_summary}.parquet,
+#         curated/link/trip_reconciled.parquet,
 #         curated/ais/{trail,catch,voyage.parquet}, curated/reference/{species,gear,port}.parquet
 # Output: $FISHYDATA/products/v0/
 #           vessel/     vessel.parquet, vessel_year.parquet                       (links)
 #           landing/    landing.parquet, catch.parquet                            (links)
-#           logbook/    trip.parquet, station.parquet, catch.parquet              (written)
+#           logbook/    trip.parquet, station.parquet, catch.parquet,             (written)
+#                       environment.parquet
+#                       gear_part.parquet, rigging_part.parquet, sensor_summary.parquet (links)
 #           ais/        trail/, catch/, voyage.parquet                            (links)
 #           reference/  species.parquet, gear.parquet, port.parquet               (links)
 #
@@ -64,6 +67,10 @@ if (length(list.files(fd_path("curated", "ais", "catch"), recursive = TRUE))) {
   system2("rm", c("-f", shQuote(file.path(OUT, "ais", "catch")))) # a link left from a store that held it
 }
 invisible(link_curated("ais/voyage.parquet",          "ais", "voyage.parquet"))
+# The gear, rigging and per-haul sensor tables (plan 052, decision 244): duplicates are already out
+invisible(link_curated("logbook/gear_part.parquet",      "logbook", "gear_part.parquet"))
+invisible(link_curated("logbook/rigging_part.parquet",   "logbook", "rigging_part.parquet"))
+invisible(link_curated("logbook/sensor_summary.parquet", "logbook", "sensor_summary.parquet"))
 invisible(link_curated("reference/species.parquet",   "reference", "species.parquet"))
 invisible(link_curated("reference/gear.parquet",      "reference", "gear.parquet"))
 invisible(link_curated("reference/port.parquet",      "reference", "port.parquet"))
@@ -127,3 +134,21 @@ catch_user <- open_dataset(lb("catch.parquet")) |>
   semi_join(station, by = c(".sid", "schema")) |>
   select(.sid, schema, sid, catch, catch_whole, condition)
 write_product(catch_user, "logbook/catch.parquet", c(lb("catch.parquet"), lb("station.parquet")))
+
+## Environment ------------------------------------------------------------------
+# The grammar's wide environment, a pivot of sensor_summary's readings of the sea and the air (plan 052 ask c): one row
+# per station with any. A value flagged (implausible, unknown code) or a placeholder is left out; sensor_summary keeps
+# it raw. The water depth is the station's (z1, z2), the headline's depth the gear's (sensor_summary, place "gear").
+env_col <- c(temp1_bottom = "temperature|bottom|1", temp2_bottom = "temperature|bottom|2",
+             temp1_headline = "temperature|headline|1", temp2_headline = "temperature|headline|2",
+             temp1_surface = "temperature|surface|1", temp2_surface = "temperature|surface|2",
+             temp1_air = "temperature|air|1", wind_direction = "wind_direction|air|1", wind_force = "wind_force|air|1",
+             wind_speed = "wind_speed|air|1", sea_state = "sea_state|surface|1", bottom_type = "bottom_type|bottom|1")
+env_user <- open_dataset(lb("sensor_summary.parquet")) |>
+  filter(is.na(flag), !is.na(value)) |>
+  mutate(k = paste(quantity, place, moment, sep = "|")) |>
+  filter(k %in% !!unname(env_col)) |>
+  group_by(.sid, schema) |>
+  summarise(!!!lapply(env_col, \(k) rlang::expr(max(if_else(k == !!k, value, NA_real_), na.rm = TRUE))),
+            .groups = "drop")
+write_product(env_user, "logbook/environment.parquet", lb("sensor_summary.parquet"))

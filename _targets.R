@@ -104,6 +104,20 @@ list(
              fd_curated("reference", "gear_window.parquet"))
   }, format = "file"),
 
+  # Every gear, rigging and per-haul sensor column of the logbooks in one outcome, with its unit and code list (plan 052,
+  # decision 244). The labels of the code lists are the sources' own.
+  tar_target(gear_part_map_raw, c(
+    fd_raw("oracle", "afli", paste0("rafr_stofn_", c("fotreipi", "gerd_poka", "skiljugerd", "gerd_kroka", "beita_t",
+                                                     "sjolag", "botngerd"), ".parquet")),
+    fd_raw("oracle", "fs_afladagbok", paste0("ws_stofn_", c("gerd_plogs", "tegund_gildru", "tegund_notar"), ".parquet")),
+    fd_raw("oracle", "adb", paste0(c("dredge_type", "trap_type", "surrounding_net_type"), ".parquet"))), format = "file"),
+  tar_target(gear_part_map, {
+    gear_part_map_raw
+    produces("reference/gear/part_map.R",
+             fd_curated("reference", "gear_part_map.parquet"),
+             fd_curated("reference", "gear_part_code.parquet"))
+  }, format = "file"),
+
   # Harbour geometry. kaenugardr was absorbed on 2026-09-21 (decision 006), so
   # these are produced here rather than hand-copied in as an artifact.
   #
@@ -538,6 +552,45 @@ list(
              fd_staging("adb", "catch.parquet"))
   }, format = "file"),
 
+  # The gear, rigging and per-haul sensor values by part and reading, per source (plan 052, decision 244): afli from its
+  # loaded rafr_ layer, the sent layer where the loader lost a value, and the edited layer for the rest. They read no
+  # time, so the set-time work (TODO 164) leaves them as they are.
+  tar_target(afli_part_raw, unlist(lapply(c("afli", "fs_afli"), \(s)
+                              fd_raw("oracle", s, paste0("rafr_", c("stofn", "toga", "lineha", "hringn"), ".parquet")))),
+             format = "file"),
+  tar_target(afli_part, {
+    gear; gear_part_map; afli_raw; afli_part_raw; afli_xml_raw; afli_sent
+    produces("sources/afli/part.R",
+             fd_staging("afli", "gear_part.parquet"),
+             fd_staging("afli", "rigging_part.parquet"),
+             fd_staging("afli", "sensor_summary.parquet"),
+             fd_staging("afli", "part_column.parquet"))
+  }, format = "file"),
+  tar_target(fs_afladagbok_part_raw, fd_raw("oracle", "fs_afladagbok",
+                                            paste0(c("ws_veidi", "ws_dragnot_varpa", "ws_plogur", "ws_linanethandf",
+                                                     "ws_gildra", "ws_hringn", "ws_kofun"), ".parquet")),
+             format = "file"),
+  tar_target(fs_afladagbok_part, {
+    gear; gear_part_map; fs_afladagbok_part_raw
+    produces("sources/fs_afladagbok/part.R",
+             fd_staging("fs_afladagbok", "gear_part.parquet"),
+             fd_staging("fs_afladagbok", "rigging_part.parquet"),
+             fd_staging("fs_afladagbok", "sensor_summary.parquet"),
+             fd_staging("fs_afladagbok", "part_column.parquet"))
+  }, format = "file"),
+  tar_target(adb_part_raw, fd_raw("oracle", "adb", paste0(c("fishing_station", "fishing_gear", "trawl_and_seine_net",
+                                                            "dredge", "line_and_net", "trap", "surrounding_net",
+                                                            "diving"), ".parquet")),
+             format = "file"),
+  tar_target(adb_part, {
+    gear; gear_part_map; adb_part_raw
+    produces("sources/adb/part.R",
+             fd_staging("adb", "gear_part.parquet"),
+             fd_staging("adb", "rigging_part.parquet"),
+             fd_staging("adb", "sensor_summary.parquet"),
+             fd_staging("adb", "part_column.parquet"))
+  }, format = "file"),
+
   # The logbooks' free-text notes as entered, one table per source (decision 213; the text stays in staging, decision
   # 210); classified by station_note below.
   tar_target(fs_afladagbok_note_raw, fd_raw("oracle", "fs_afladagbok", c("ws_veidi.parquet", "ws_medafli.parquet")),
@@ -706,6 +759,18 @@ list(
              fd_curated("logbook", "catch.parquet"),
              fd_curated("logbook", "station_fate.parquet"),
              fd_curated("logbook", "trip_fate.parquet"))
+  }, format = "file"),
+
+  # The gear, rigging and per-haul sensor tables for the stations the merge keeps, duplicates out (plan 052, decision
+  # 243), with every station's outcome and every source column's account. Nothing reads them in the pipeline.
+  tar_target(logbook_part, {
+    afli_part; fs_afladagbok_part; adb_part; logbook
+    produces("curate/logbook_part.R",
+             fd_curated("logbook", "gear_part.parquet"),
+             fd_curated("logbook", "rigging_part.parquet"),
+             fd_curated("logbook", "sensor_summary.parquet"),
+             fd_curated("check", "logbook_part_station.parquet"),
+             fd_curated("check", "logbook_part_column.parquet"))
   }, format = "file"),
 
   # Every logbook note classified (decision 213): class, tags and species, keyed on the station, without the text.

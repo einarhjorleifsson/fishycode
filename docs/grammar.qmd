@@ -70,9 +70,9 @@ answers give the field groups:
 | **Design** | the station | before | survey and stratum, protocol, the planned operation, what the catch is processed as (DATRAS `DataType`); for commercial fishing, the target or licence where recorded |
 | **Temporal envelope** | the station | after | start and end of the time the vessel was occupied |
 | **Spatial envelope** | the station | after | positions at start and end, statistical rectangle |
-| **Configuration** | the sample | before | how the gear or instrument is set up: mesh, door weight, headline and sweep length, number of hooks or nets, a CTD's sensor suite, a plankton net's mouth area |
+| **Configuration** | the sample | before | how the gear or instrument is set up: the gear (mesh, headline, codend, hooks) and its rigging (doors, sweeps, warp, the number of nets, hooks or trawls fished at once), a CTD's sensor suite, a plankton net's mouth area |
 | **In-situ measurement** | the sample | during | what the deployed gear or instrument itself measured: door spread, wing spread, net opening, flowmeter counts |
-| **Execution** | the sample | during | how the vessel worked it: speed over ground, course, distance, warp out, the depth the gear worked at |
+| **Execution** | the sample | during | how the vessel worked it: speed over ground, course, distance, the depth the gear worked at |
 | **Environment** | the sea | during | the state of the sea and air, whether or not anything was deployed: water depth, temperatures, salinity, wind, sea state, currents, ice |
 | **Outcome** | the sample | after | valid or not, why disrupted, gear lost, record edited |
 | **Observation** | the sample's product | after | catch, individuals, profile bins, counts |
@@ -292,7 +292,7 @@ choices. The times and the count are the observation, with the record's own dura
 Other sample types have their own measure of effort: volume filtered for a plankton net, distance sailed for an
 acoustic transect, time watched for a visual watch.
 
-## Configuration: one row per part, one column per measure {#sec-configuration}
+## Configuration: gear and rigging, one row per part, one column per measure {#sec-configuration}
 
 How a gear or instrument is set up is the field group that differs most between gears. A trawl has doors, sweeps, a
 headline and a codend. A gillnet fleet has a number of nets, their length, their height and their mesh. A longline has
@@ -301,32 +301,54 @@ would hold mostly empty columns, and a column such as "width" or "length" would 
 
 The grammar instead **harmonises by measure**:
 
-- **Rows:** a configuration row is one *part* of the gear at one sample (codend, net, hook, door, sweep, headline,
-  dredge, trap, seine, grid, square window).
+- **Rows:** a configuration row is one *part* of the gear or its rigging at one sample (codend, net, hook, door,
+  sweep, headline, dredge, trap, seine, grid, square window).
 - **Columns:** one column per *measure*, the same column for the same measure whatever the part or the gear. A mesh
   size is a mesh size on a codend, a gillnet or a seine, and a count is a count of nets, hooks, traps or trawls.
 
+**Gear and rigging, two tables of one shape** (plan 052, asks a and b, the maintainer, 2026-10-29: "things like mesh
+size belong to the gear, things like warp to the rigging"). The **gear** is one unit that catches: the netting and
+what is fixed to it, set when the unit is built or fitted, which decides what it catches and how it meets the bottom.
+The **rigging** is what connects the units to the vessel and to each other, and how many units are fished at once; the
+same unit can be fished with other rigging.
+
+| Parts | Table | Why |
+|---|---|---|
+| `gear` (its name, material), `net` (body mesh, largest and smallest mesh, meshes around, circumference, a gillnet's height and length), `codend`, `codend_2`, `belly`, `headline`, `footrope` (with its groundgear), `float`, `kite`, `grid`, `square_window`, `square_codend`, `panel`, `hook` (per tub or per jig line: type, size), `bait`, `hand_baiting`, `dredge`, `seine`, `trap` | `gear_part` | the netting and what is fixed to it |
+| `rig` (`single`, `twin`, `triple`, `pair`; `n` the units fished at once), `unit` (`net`, `tub`, `jig`, `trap`, `diver`; `n` set or hauled), `hook_total`, `door`, `sweep`, `bridle`, `upper_bridle`, `rope`, `wire`, `warp`, `tickler`, `chain_mat`, `clump` | `rigging_part` | what joins the units to the vessel and to each other, and how many |
+| a sensor on the gear (on the headline, a catch sensor) | neither | a sensor: `sensor_summary`, its `mount` the gear (@sec-environment) |
+
+DATRAS's `Rigging` code list splits on this line: its groundrope kinds go to the gear, its ticklers and chain mats to
+the rigging. Warp is rigging: its length, diameter and density are set before the haul (HH's `Warplngt` and `Warpdia`
+under Configuration, below). The depth it brings the gear to is execution, the gear depth.
+
 | Column | Type | Meaning |
 |---|---|---|
-| `.sid` (or `.smid`) | | the sample |
-| `part` | chr | `gear`, `codend`, `net`, `hook`, `line`, `jig`, `trap`, `door`, `sweep`, `headline`, `footrope`, `rope`, `dredge`, `seine`, `grid`, `square_window`, … |
-| `n` | dbl | how many of the part |
+| `.sid` (or `.smid`), `schema` | | the sample |
+| `part` | chr | above |
+| `n` | dbl | how many of the part: hooks per tub or per jig line, panels; the units fished at once (`rig`), set or hauled (`unit`), the hooks in all (`hook_total`) |
 | `length_m`, `width_m`, `height_m` | dbl | dimensions, metres |
 | `height_meshes` | dbl | height counted in meshes |
+| `circumference_m` | dbl | circumference, metres |
 | `weight_kg`, `area_m2` | dbl | weight, area |
-| `mesh_size_mm` | dbl | mesh size, millimetres |
-| `mesh_orientation` | chr | `T0`, `T45`, `T90` |
+| `mesh_size_mm`, `mesh_size_min_mm`, `mesh_size_max_mm` | dbl | mesh size, millimetres; a pelagic trawl's smallest and largest |
 | `meshes_around` | dbl | circumference in meshes |
-| `type` | chr | the source's own type code or name (grid type, dredge type) |
+| `bar_spacing_mm` | dbl | a grid's bars, millimetres |
+| `mesh_orientation` | chr | `T0`, `T45`, `T90` |
+| `type`, `type_raw` | chr | the type in one list across the sources (`curated/reference/gear_part_code.parquet`), and the source's own code or name as it holds it |
+| `size` | chr | a size on the source's own scale (a hook's number) |
 | `material` | chr | as recorded |
 | `present` | lgl | for a part that is either fitted or not |
+| `length_raw`, `width_raw`, `height_raw`, `unit_raw` | dbl, chr | the lengths as recorded and their unit; where the unit is not known, `unit_raw` says so and the metres are empty |
+| `basis`, `layer`, `flag` | chr | as for every value (@sec-layer): the least certain basis of the row's values, every table that gave one, and each value kept but not to be used, named with its raw value and why |
 
-A part with no recorded measure has no row. A trawl haul becomes five or six rows (gear, codend, doors, sweeps,
-headline), and a gillnet set one or two (net, gear). The count that is `effort_count` on the sample is the `n` of the
-gear's working part (nets, hooks, traps, jigs). For an instrument the same shape serves: part `sensor`, `type` the
-sensor, `n` its count.
+A part with no recorded measure has no row, and a 0 in a measure is a form's empty field, not a measure. A trawl haul
+becomes a headline, a codend, a footrope and a grid in `gear_part`, and doors, sweeps and the rig in `rigging_part`; a
+gillnet set a net and a unit. The count that is `effort_count` on the sample is a read of the rigging: a towed gear's
+`rig`, the nets, jigs or traps of its `unit`, a longline's `hook_total`. For an instrument the same shape serves: part
+`sensor`, `type` the sensor, `n` its count.
 
-## Environment
+## Environment {#sec-environment}
 
 The state of the sea and air at the station, recorded whether or not anything was deployed: one row per station. A
 variable read at both ends of the station takes the numeric suffix (1 at the start, 2 at the end), as positions do.
@@ -347,6 +369,14 @@ variable read at both ends of the station takes the numeric suffix (1 at the sta
 
 A full profile (a CTD cast, a temperature chain) is not a row here but a sample with its own observations, one per
 depth bin. A single value at the station is environment, and a sequence is a sample.
+
+**Stored long** (plan 052, ask c): the readings of a station are `sensor_summary`, one row per station, `quantity`,
+`place`, `moment` and `instrument`, with `mount` (the vessel or the gear), `value` in SI with its `unit`,
+`value_raw` and `unit_raw` as recorded, and `basis`, `layer` and `flag`. The wide table above is its pivot, made for
+the user tables and not stored twice. Water depth stays on the station (`z1`, `z2`), its one home. A depth on the gear
+(a pelagic trawl's headline) is the gear depth, `place` `gear`, never the water depth. A placeholder (a temperature of
+0.0, a headline depth of 0 or 1) keeps its raw value and has no SI value. A `fitted` row says a sensor was on the gear,
+not what it read.
 
 ## Observation
 
@@ -408,6 +438,12 @@ Continuous recordings that span stations (sea-surface temperature and salinity, 
 stream keyed on (`vid`, `time`, `instrument_id`). They are attributed to a station only where the time is unambiguous.
 A logger on the gear itself, recording only while the gear fishes, is a sample instead (`sample_type = "logger"`), with
 its readings as observations.
+
+A station's summary of a vessel sensor (the water depth at the start and end) and the sensor's stream are one sensor:
+the stream is the summary's witness. afli's logger (`sjalfvirkir_maelar`: the echosounder's depth, speed, heading, wind)
+is such a stream. Its home is to be `curated/vessel_sensor/`, by provider and year, the AIS stores and the logger as
+peers on the pings' key (`vid`, `time`, `provider`), joined to the fixes by vessel and time in the analysis (plan 052,
+ask h). It waits for asks d and e, the logger's positions and its readings dated 1899, which touch the set times.
 
 ## Declarations ashore
 
