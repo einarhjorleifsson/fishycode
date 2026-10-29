@@ -505,3 +505,32 @@ a person.
     from 2025-11-19). 801 hold a number of animals, not a weight, and enter the merged catch at 0 kg; 13 weigh 753 kg.
 - **The new mar's faults** found here (`merge-vs-merge.md` §9) join ask g's list (`mar-package.md` §8).
 
+**Step 1, second round**, 2026-10-29, by Claude in a side session, on both rebuilt merges: ours at ed59740 (decision
+241), the new mar's rebuild of the same day (afli read after 2020 where it holds the trip, whole trips from one source,
+the LODS key fixed) (`$FISHYDATA/archive/2026-10-29-mar-logbook-v2/merge-vs-merge.md`). Read-only, aggregates only, no
+Oracle. Not checked by a person.
+
+- **The account.** Ours 7,301,171 stations, theirs 7,191,313, 7,120,888 shared (7,022,715 in the first round).
+  2021-2022 are now mostly shared, and every afli station of ours from 2021 is in theirs.
+- **Their faults** (`mar-package.md` §8, now 23):
+  - fixed: the twin flag as a count, the repeated gear rows, and 2021's tow ends where they take afli;
+  - changed: the catch state, an estimated series for pelagics, the file layouts and the tour app;
+  - still there: thirteen, among them the LODS pelagics in tonnes as kg, the e-logbook positions, the month-end trips
+    and afli's catchless hauls;
+  - new: the same afli station held twice (7,885 stations, 68 kt), and both trips of one real trip kept (4,675 hauls,
+    54 kt, 2021-2023).
+- **757 against 655 closed.** Both now hold the same 773 afli stations with Nephrops in 2021.
+- **Trips split between sources: afli first per vessel-day stays.** 19,721 real trips of 2020-2024 are held by both
+  afli and fs_afladagbok, and our tiers take afli whole on all but 20. Record by record (2021-2023), the tiers lose 289
+  hauls (2.3 kt) on 75 vessel-days where the e-logbook holds more hauls than afli. A clean whole-trip choice would lose
+  335 or 587, and the new mar's, as built, keeps 4,675 twice. No TODO: a haul-level tie that keeps the 289 is drafted
+  in §8 of the comparison, should the maintainer want them.
+- **Leads:**
+  - the tour app: the new mar reads 7,434 tour-app stations of 2020-2021 (10.3 kt) that our merge does not, a first
+    outside reading for decision 210's unbuilt step (TODO 73);
+  - their `estimated` series for pelagic stations from 2021 (4,014 kt beside the logged catch) spreads the landing's
+    catch over stations, as `ais_catch.R` does over fixes: a comparison per trip would test both;
+  - their Nephrops tails × 3.3 on 1,786 rows of 2019-2026, against the tails on branch `plan-050-step5-tails`, when
+    plan 051 sets the factor;
+  - unexplained, as in the first round: 361 afli stations their build lacks (60.6 kt; 328 purse-seine sets of
+    2002-2008) and 664 e-logbook stations of ours not in the live (12.7 kt).

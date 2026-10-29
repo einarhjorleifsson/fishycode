@@ -320,6 +320,8 @@ metier study (plan 015 §4 a, 2026-10-23): afli's adapter reads `toga` but leave
 though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; the shrimp grid's bar spacing and
 the square-mesh window are folded away too (`tvo_veidarf`, the twin trawls, is read as the count since decision 240); fs shrimp
 trawls carry 135 mm on 34 %, and fs and adb nets a 10 mm placeholder.
+The tour app (decision 210, not built): the new mar reads 7,434 of its stations of 2020-2021 (10.3 kt) that our merge
+does not, a first outside reading to compare the build with (plan 050 §6, step 1's second round).
 The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
 `$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
 vid found for 98 %; afli's 40,967 summary stations are logbook records left unread. **needs: maintainer** for its asks a-d.
@@ -1493,14 +1495,17 @@ build drops month-end trips); ask g done: the findings emailed to its author 202
 **check:** plan 050 executed or parked, with a decision record.
 
 ## 157. Whole weight: one factor table for the logbooks and the landings (plan 051)
-**status:** open · **needs: maintainer** — plan 051's asks a-d · **see:** `curate/plans/051-whole-weight-one-factor-table.md`,
-TODOs 114, 115, 152, plan 050 step 5
+**status:** open · **needs: maintainer** — plan 051's asks a-e, and the questions for HV 2020-33's authors, James Kennedy
+and Sigurður Þór Jónsson (`$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft, not sent) · **see:**
+`curate/plans/051-whole-weight-one-factor-table.md`, TODOs 114, 115, 152, plan 050 step 5
 
 The logbooks store whole weight as gutted × 1.25 for every species, while the landings apply a factor per species,
 state and period (cod 1.25 to 1997, then 1.1905; flatfish 1.087; lumpfish roe 3.030, 3.788, then 3.401). So the same
 gutted fish is 0-15 % heavier logged than landed. Plan 051 proposes one factor table that both read. Plan 050's
 Nephrops tails wait for it on their branch. For ask c: from 2025-11-19 adb writes every lumpfish as 48, and Grásleppa
-(951) and Rauðmagi (950) cannot be told apart there, not even by the gear (plan 050 §6).
+(951) and Rauðmagi (950) cannot be told apart there, not even by the gear (plan 050 §6). Steps 1-2 measured
+2026-10-29 (plan 051 §1): a lumpfish barrel is 0.472 t of fish by MFRI, and barrels are only in afli's own lumpfish
+logbook (1977-2016), which no source of the product reads as catch yet (ask c).
 
 **check:** plan 051 executed or parked, with a decision record.
 

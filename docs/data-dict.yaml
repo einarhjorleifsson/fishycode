@@ -937,6 +937,8 @@ tables:
       curate/ais_catch.R; partitioned by `year` (the partition key, not a column in the files), one file per
       vessel group (vid modulo 4). `unit_id` is unique within a year only. `source` names one representative
       file, 2024's first vessel group; open the whole table with open_dataset() on curated/ais/catch.
+      Not in the store since 2026-10-29 (the maintainer: "remove the curated product for ais catch"; decision
+      241): rebuilds leave it out, and it is built only when asked.
     columns:
       - name: vid
         type: number
