@@ -314,7 +314,8 @@ left of each is in the plan:
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
 objects against the grammar (the tour app, the port translation, implausible catch, mammal and bird bycatch, the depth
 unit by app). Plan 020 keeps the gear detail and the environment that the adapters fold away, as tidy tables beside
-the fishing sample (`gear_part` prototyped for fs). For plan 020: the trawl's `gear_width` is the bridle (sweep)
+the fishing sample (`gear_part` prototyped for fs; to be redone on afli's `rafr_` layer, which fs thinned: the
+maintainer, 2026-10-29). For plan 020: the trawl's `gear_width` is the bridle (sweep)
 length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23, not checked by a person). From the
 metier study (plan 015 §4 a, 2026-10-23): afli's adapter reads `toga` but leaves `g_mesh` empty for OTB and OTM,
 though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; the shrimp grid's bar spacing and

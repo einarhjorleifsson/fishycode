@@ -1,7 +1,7 @@
 # 020 — Gear detail and environment as tidy tables beside the fishing sample
 
 **status:** proposal — `gear_part` prototyped for fs_afladagbok in scratch, nothing in the pipeline changed; §5 answered
-2026-10-23 (decision 210) ·
+2026-10-23 (decision 210); the prototype is to be afli's `rafr_` layer, not fs_afladagbok (maintainer, 2026-10-29, §3) ·
 **2026-10-15** · **see:** plan 019 (fs_afladagbok mined), plan 018 (the dumps), `docs/grammar.qmd` (field groups,
 sensor layer), decision 022 (depth in metres)
 
@@ -82,6 +82,21 @@ gear's main part in `gear_part` (nets, hooks, traps, jigs).
 
 ## 3. The fs prototype, measured
 
+**Set aside as the prototype (maintainer, 2026-10-29):** "absolutely not, use afli.rafr_ as the prototype. the
+fs_afladagbok thinned everything." The gear tables (`gear_part`, and the rigging and sensor tables the maintainer
+asked for the same day, TODO 140) are designed on afli's electronic layer as received, `raw/oracle/afli/rafr_*`
+(2003-2020, 1.15 M stations; counted by Claude, not checked by a person):
+
+- `rafr_toga`, 53 columns on 0.93 M tows: codend, belly, largest and smallest mesh, codend type and length, footrope,
+  grid type and bar spacing, square-mesh window, doors, bridles, headline, warp, the twin rig, and the headline's
+  depth and temperature at the start and end;
+- `rafr_lineha`, 28 columns on 0.21 M sets: hooks, tubs, nets and their length and height, nights, bait, units lost,
+  the haul's start and end, and the temperatures;
+- `rafr_hringn`: the purse seine's length, depth and mesh; `rafr_stofn`'s code tables name the footropes, hooks,
+  codends, grids and gears.
+
+fs_afladagbok and adb then fill what they hold. The fs prototype below stays as a measure of what fs keeps.
+
 `gear_part` for fs, from the `ws_*` gear tables and the tour app's `fishing_spot` (plan 019), written to scratch:
 
 - **Coverage:** 1,470,122 rows (15 columns) for 381,653 of fs's 501,666 operations. The other 120,013 operations
@@ -108,7 +123,7 @@ gear's main part in `gear_part` (nets, hooks, traps, jigs).
 
 ## 4. Steps
 
-1. **fs:** `sources/fs_afladagbok/convert.R` writes `staging/fs_afladagbok/gear_part.parquet`, after plan 018 phase 3
+1. **fs** (after afli's design, above): `sources/fs_afladagbok/convert.R` writes `staging/fs_afladagbok/gear_part.parquet`, after plan 018 phase 3
    has pointed it at `raw/oracle/fs_afladagbok/`, together with plan 019's tour app.
 2. **afli:** `sources/afli/convert.R` writes `gear_part` and `environment` from its own tables. adb gets `gear_part`
    from its own tables if it stays a tier.
