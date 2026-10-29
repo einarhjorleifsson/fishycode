@@ -1555,10 +1555,11 @@ TODOs 73, 98, 100, 131, 140
 The maintainer (2026-10-29): structure the logbook product by gear, rigging and sensors, prototyped on afli's `rafr_`
 layer, which fs_afladagbok thinned. Measured by Claude the same day, read-only, not checked by a person
 (`$FISHYDATA/archive/2026-10-29-gear-rigging-sensor/`): fs and adb keep 21 of `rafr_`'s 55 filled gear, rigging, sensor
-and environment columns and no sensor value; afli's headline and sweeps are most likely metres, not what Oracle's comments say; the
-logger's echosounder depth is in no product; `fishing_sample.length_fotreipi` holds a code. Proposed: `gear_part`,
-`rigging_part`, `sensor_summary`, and `vessel_sensor` (the logger as a store beside the AIS stores, AIS being one
-vessel sensor: the maintainer, 2026-10-29); it would take plan 020's half of TODO 73 and close TODO 100.
+and environment columns and no sensor value; afli's headline and sweeps have held one unit since first recorded (1988),
+read as metres, though Oracle's comments name feet and fathoms, perhaps the units first intended; the logger's
+echosounder depth is in no product; `fishing_sample.length_fotreipi` holds a code. Proposed: `gear_part`,
+`rigging_part`, `sensor_summary`, and `vessel_sensor` (the logger as a store beside the AIS stores, AIS being one vessel
+sensor: the maintainer, 2026-10-29); it would take plan 020's half of TODO 73 and close TODO 100.
 
 **check:** the asks answered in the plan; the four tables built, every source column and station in one outcome, and
 `effort_count` unchanged; a decision record.

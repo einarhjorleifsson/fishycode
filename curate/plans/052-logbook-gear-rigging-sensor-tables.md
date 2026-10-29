@@ -142,7 +142,10 @@ and the loader kept neither (the XML map).
 | purse seine (8,487) | length, depth, mesh, set number and time | sea state 77-81 % (−1 on half) |
 | dredge (170) | door columns as 1 | its own dimensions empty in `rafr_` |
 
-**Units: the headline and the sweeps.** Oracle's comments on afli say feet (`hoflina`) and fathoms (`grandarar`).
+**Units: the headline and the sweeps.** Oracle's comments on afli say feet (`hoflina`) and fathoms (`grandarar`). A
+comment may hold the unit intended when the column was made and stay so while the values changed (the maintainer,
+2026-10-29). So the unit is a property of a period and a source, measured on the values, and the comment is one
+witness of its period, not a fault.
 
 - **The schema** (`13`, all 37 versions of `afli.afladagb_schema`, 2002-2017). Sweeps are documented "í metrum" in
   every version. The headline carries no unit in versions 1-29 (2002-10-31 to 2010-09-30) and "í metrum" from version
@@ -169,26 +172,31 @@ Read as an account:
 
 - **fs and afli hold one value in two units.** On the same vessel and day (a), every one of 331 fs hauls holds the
   XML value in feet and in fathoms, none the same number. Across the change of system (b), no fs headline equals an
-  afli value of the same vessel, and 17,157 are one in feet. Which side is metres rests on the documents: the schema
-  (metres) and fs's own comments (feet, fathoms) agree; afli's Oracle comment is the one against.
+  afli value of the same vessel, and 17,157 are one in feet. Which side is metres rests on the documents of this
+  period: the schema (metres) and fs's own comments (feet, fathoms) agree.
 - **No unit changed in 2011** (c): no headline sent after the schema first said metres is a conversion of one the
   vessel sent before. The 1,230 sweep conversions there are not read as unit switches until listed: a vessel with
   sweeps of both 55 and 100 makes one by chance (100 ÷ 1.8288 = 54.7).
 - **Paper and electronic share the unit** (d): 155,131 electronic headlines equal a paper value of the same vessel,
-  1,620 are conversions. So afli's paper headline is metres too, if the electronic one is. The comment's feet may be
-  older than any record here; nothing in the data supports it.
-- **Not yet explained:** the 5,551 and 3,115 fs hauls of (b) that match nothing the vessel sent to afli (new gear
-  after two years, or another vessel's), the 12,909 headlines of (c), and the conversions of (c) and (d). Step 1 lists
+  1,620 are conversions. So afli's paper headline is metres too, if the electronic one is.
+- **No year changed the unit** (`16`; every bottom-trawl record against the same vessel's values the year before,
+  1988-2023 for the headline, 1990-2023 for the sweeps). In every year most records equal a value of the year before;
+  the most conversions in a year are 998 headlines (2004, against 53,621 equal) and 2,267 sweeps (2000, against
+  46,707). So the values have held one unit since they were first recorded. If feet were ever intended, it was
+  before 1988, when the column was empty. A switch made in a vessel's first year, or vessel by vessel over many
+  years, would not show here; the conversions are listed in step 1.
+- **Not yet explained:** the 5,551 and 3,115 fs hauls of (b) that match nothing the vessel sent to afli (new gear after
+  two years, or another vessel's), the 12,909 headlines of (c), and the conversions of (c), (d) and `16`. Step 1 lists
   them vessel by vessel. A test outside both systems, the gear itself, is not made here.
 
 So afli's headline and sweeps are read as metres and fs's as feet and fathoms, with those lists open.
 
-**Other units.** `rafr_lineha.moskvi` (gillnet mesh) is commented as inches and the schema says "tommum", but the values
-are mm: of 59,557 values the commonest are 203 (14,386), 200 (7,746), 203.2 (4,186, 8 in), 150 (2,469) and 228.6
-(2,268, 9 in) (`03`). Converted by the loader from what was sent (the XML map): the Danish seine's rope and the purse
-seine's length and depth (metres to fathoms, from 2011), and the pelagic headline depth (metres to fathoms on 51 %,
-kept as sent on 49 %, by app version). Codend length, door area, circumference and upper bridles are metres, by the
-schema.
+**Other units.** `rafr_lineha.moskvi` (gillnet mesh) is commented as inches and the schema says "tommum", the unit
+gillnets are sized in, but the values the apps sent are mm: of 59,557 values the commonest are 203 (14,386), 200
+(7,746), 203.2 (4,186, 8 in), 150 (2,469) and 228.6 (2,268, 9 in) (`03`). Converted by the loader from what was sent
+(the XML map): the Danish seine's rope and the purse seine's length and depth (metres to fathoms, from 2011), and the
+pelagic headline depth (metres to fathoms on 51 %, kept as sent on 49 %, by app version). Codend length, door area,
+circumference and upper bridles are metres, by the schema.
 
 **Every column in one class** (`09`, the map `counts/09_column_map.tsv`; a column is filled where some value is neither
 null nor a placeholder held on every row):
@@ -340,8 +348,8 @@ gap limit still to be measured (decision 196). The options:
 - That a 0.0 temperature and a headline depth of 1 or 0 are placeholders. They stand far above the neighbouring
   values, but a true 0 °C occurs.
 - That the logger's `botnhiti` is the hull's temperature.
-- That the edited layer's paper rows hold what the paper held, in the units of the comments. Paper-era units are not
-  tested here.
+- That the edited layer's paper rows hold what the paper held. Their headline and sweeps are tested against the
+  electronic records and year by year (`15`, `16`); the other paper columns' units are not tested here.
 
 ## 5. The design
 
@@ -418,8 +426,9 @@ per station, duplicates out, decision 094). The fourth is a stream of the vessel
   XML schema, `15`'s account, the loader's conversion found in the XML map, GEBCO for water depth.
 - **A value whose unit is unknown** keeps `value_raw` and gets no SI value, basis `none`, until measured (the gillnet's
   length, the dredge's dimensions).
-- **Afli's comments that the evidence contradicts** (headline, sweeps, gillnet mesh) are corrected in the overlay,
-  with the evidence, not in Oracle.
+- **Oracle's comments stay as they are**, the unit intended when a column was made. Where the values hold another
+  unit (afli's headline, sweeps and gillnet mesh), the overlay records the unit by period with its evidence, and
+  names the comment as the period's intended unit.
 
 **Basis and witness.** `recorded` for a value as the source holds it, a unit conversion included. `derived` for one
 computed from the same record (total hooks from tubs × hooks per tub; the start-end mean). `reconstructed` for a unit
