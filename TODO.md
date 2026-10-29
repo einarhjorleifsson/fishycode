@@ -772,7 +772,8 @@ recorded by the maintainer's choice; the gillnet set times in a port call with n
 the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
 A lead (decision 242): afli's own electronic set times on nets and lines of 2019-2020 miss the set position by the
 track on 45 % (far or in port), leaning to a set logged 1-3 h before the vessel reaches the gear: decision 157's
-departure copies, or more.
+departure copies, or more. By app, 2022-2026: only Trackwell raun writes a set time; the rest copy another time or
+a date into `t1`, and 4,798 merged stations still open a set window from it (TODO 164).
 
 **check:** decision 198's rule built and the trail's `fishing_flow` traced before and after; the gillnet set times in
 port explained or listed;
@@ -1563,3 +1564,27 @@ sensor: the maintainer, 2026-10-29); it would take plan 020's half of TODO 73 an
 
 **check:** the asks answered in the plan; the four tables built, every source column and station in one outcome, and
 `effort_count` unchanged; a decision record.
+
+## 164. The set time by app: which `t1` opens a set window
+**status:** open · **needs: maintainer** — choices a-c · **see:** TODO 103, decisions 157, 158, 206, 211 and 242,
+`curate/corrections/logbook_set_placeholder.yml`, `$FISHYDATA/archive/2026-10-29-static-set-time/findings.md`
+
+Measured 2026-10-29 by Claude in a side session, read-only, not checked by a person: every one of the e-logbook's
+69,506 static stations of 2022-2026 in one outcome. Only Trackwell raun writes a set time, and only where it is typed
+(in port 3-10 %, near the set position 63-68 %). Every other app copies another time or a date into `t1`: Marína and
+FRA TAKTIKAL the departure, STOKKUR the landing, the afli route 00:00, Reiknistofa fiskmarkaða, Fishtech and Jóhann
+Gíslason the haul start, Fontos the previous haul's end. Trackwell's stamped form (seconds) holds most of the gillnet
+sets in port. In the merge, 29,976 stations have a `t1` that is not a set; 23,130 are blanked, and 4,798 still open a
+set window (59,635 fixes, 9,111 in port). For 631 it is the station's only window. The choices:
+
+- a. Extend `logbook_set_placeholder.yml` to 270 min + k whole days (k ≥ 0, ±1 min): 1,625 more merged Trackwell raun
+  gillnets, beside decision 206's 831.
+- b. A per-app rule: `t1` NA and flagged where the app writes no set time (3,230 merged stations of the other apps, and
+  Trackwell raun's 1,160 copies), or the maintainer's earlier "left as recorded" kept.
+- c. A station whose only time is a date or a landing (STOKKUR 445, the afli route's 231) gets a day window, not a set
+  window (decision 242, amended).
+
+Open beside them: Trackwell raun's stamped form, whose logged position fits the track hours after its times (11,228
+stations), and 28 haul windows cut to nothing by a set window with the same start.
+
+**check:** a decision on a-c; the windows and `station_event` traced before and after.

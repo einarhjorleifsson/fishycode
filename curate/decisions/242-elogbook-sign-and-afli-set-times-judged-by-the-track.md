@@ -3,7 +3,8 @@
 *2026-10-29. TODO 159, from the comparison of fishycode's merged logbook with the new mar's (plan 050 step 1,
 `$FISHYDATA/archive/2026-10-29-mar-logbook/merge-vs-merge.md` §4.3 and §4.7). Measured by Claude (AI) in a read-only
 side session, `$FISHYDATA/archive/2026-10-29-track-checks/` (`findings.md`, its scripts and counts); no person has
-checked the numbers. Nothing in the code changes.*
+checked the numbers. Nothing in the code changes. **Amended the same day:** the merge still reads the afli route's
+midnight as a set time on 231 stations (below).*
 
 The track is a witness only: each logbook position is measured against the vessel's own fixes, and no logbook position
 is joined to the AIS product (decision 211).
@@ -46,7 +47,18 @@ afli's electronic logbook (`visir` < 0), not the paper record that §4.3 of the 
   13.5 %: these 3,007 are ordinary afli set times. At midnight the gillnet boats are in port four times in five.
 
 The merge's tier 1 (afli first per vessel and date) stands. A 00:00 start in the Directorate's 2021-2023 records of the
-afli route is a date and is never read as a set time; nothing reads it as one now.
+afli route is a date and is never read as a set time. ~~Nothing reads it as one now.~~ One reader does: see the
+amendment below.
+
+## Amended 2026-10-29: the midnight is still read on 231 stations
+
+From the study of the e-logbook's static set times by app (Claude, read-only, not checked by a person;
+`$FISHYDATA/archive/2026-10-29-static-set-time/findings.md` §6). The merge keeps 231 afli-route (`TRACKWELL`) stations
+of 2022-05-25 to 06-15 from the e-logbook, whose `t1` is that midnight. `curate/station_window.R` draws a set window
+from it and no day window, since `ramb::rb_create_record_windows()` gives a day window only to a station with no usable
+time. For 194 of them that false set window is the only window, so their catch has no fishing window to sit on. The
+same holds for 413 STOKKUR stations (`t1` the landing) and 24 FRA TAKTIKAL ones. The rule above stands; reading it is
+TODO 164's choice (c): a station whose only time is a date or a landing gets a day window, not a set window.
 
 ## Leads
 
