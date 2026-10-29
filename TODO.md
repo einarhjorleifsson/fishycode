@@ -1605,6 +1605,7 @@ fathoms; the new mar's live build drops trips registered on a month's last day (
 app profile (`curate/corrections/logbook_app_profile.yml`) that `curate/` reads, values kept with per-field flags that
 the windows leave out, and a check that lists a new app or a moved share; the app names leave the adapters' code. It
 would fold in TODO 164's choices a-c, TODO 103's other patterns, TODO 107's unbuilt items and TODO 126's per-app forms.
+Step 3 drafted the same day: 45 rows in `curate/corrections/logbook_app_profile.yml`, none reviewed; ask a is that read.
 
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.

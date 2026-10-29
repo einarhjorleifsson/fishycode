@@ -1,6 +1,7 @@
 # 053 — The e-logbook feed: every app's quirks found by rule, in one app profile, and the feed's seams
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day, nothing built ·
+**status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
+drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none reviewed, none applied); nothing built ·
 **measured** (§1-§3), by Claude in a read-only side session, not checked by a person, in counts only, every number in a
 file of `$FISHYDATA/archive/2026-10-29-elogbook-feed/` (`findings.md`; `counts/tables.md` renders the tables below from
 the count files; `counts/q00_inventory.tsv` is §1): every station of fs_afladagbok, of adb where fs_afladagbok lacks it,
@@ -328,7 +329,10 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
 1. **Measure** (done 2026-10-29, §1-§3).
 2. **Carry the app** on every staged station and fishing sample (fs, adb, the afli route with its version; afli's edited
    layer through `rafr_stofn`'s message key), base name and suffix apart.
-3. **Draft the rows** from §1-§2, one per finding, each with its count file; a person reviews them (ask a).
+3. **Draft the rows** from §1-§2, one per finding, each with its count file; a person reviews them (ask a). *Drafted
+   2026-10-29:* `curate/corrections/logbook_app_profile.yml`, 45 rows (20 flag, 10 note, 8 none, 4 read as, 3
+   convert), each with its scope (the app's every value, or the values showing the pattern), its evidence and the ask
+   that governs it; `reviewed` is null on all. Nothing reads the file yet.
 4. **The check**, tested to give this archive's counts on the store of 2026-10-29.
 5. **The flags** in `curate/logbook.R` after the twins, from `R/logbook_app_profile.R`; the placeholder section goes.
 6. **The windows** (`curate/station_window.R`, `judged_time_sql()`) read the flags; the fallback window.

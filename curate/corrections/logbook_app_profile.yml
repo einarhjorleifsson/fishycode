@@ -1,0 +1,844 @@
+id: logbook_app_profile
+title: each logbook app's habits, field by field, found by rule; values kept as recorded and flagged (plan 053)
+status: >-
+  drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); no row is
+  reviewed and none applies; not implemented (no logbook_app_profile.R yet, nothing reads this file)
+applies_to:
+  - curated/logbook/fishing_sample.parquet   # t1_flag ... t4_flag, the rule's id (proposed)
+  - curated/logbook/station.parquet          # pos_flag, z_unit with z1_basis, z2_flag (proposed)
+  - curated/logbook/trip.parquet             # T1_flag: a departure that copies a station's time (proposed)
+  - curated/logbook/station_window.parquet   # a flagged time opens and closes no window
+implementation: >-
+  none yet. Plan 053 steps 2 and 5-8: the app carried on every staged station (fs ws_veidiferd.uppruni, adb
+  fishing_trip.source, the afli route's message software and version), R/logbook_app_profile.R applied in
+  curate/logbook.R after the twins, curate/station_window.R and judged_time_sql() (R/duration_limit.R) reading the
+  flags, the adapters' position decoders reading the `read_as` rows
+discovered: 2026-10-29, plan 053 (from decisions 157, 158, 206, 210, 211, 242, 243 and TODOs 103, 107, 126, 164)
+decided_by: nobody yet; plan 053 asks a-h
+evidence: >-
+  $FISHYDATA/archive/2026-10-29-elogbook-feed/ (findings.md; counts/tables.md renders every count file named below).
+  Measured by Claude (AI) on the dumps of 2026-10-16 and the store of 2026-10-29, read-only; not checked by a person.
+  "merged" counts the stations the merge holds (fs_afladagbok, and adb from 2025-11-19), duplicate twins out.
+
+vocabulary:
+  app: >-
+    the trip's uppruni (fs_afladagbok) or source (adb), trimmed, with the suffixes " - GAFL AUTO" and " - Skrifstofa
+    VES" taken off; on the afli route the message's software and its major.minor version. "*" is any app.
+  scope: >-
+    app = every value of the field for that app and period; value = only the values that show the pattern (an
+    equality within 1 min, 10 min for the landing, unless the row says otherwise)
+  holds: >-
+    recorded | copy:<field> (equal to another field, and that field is the true one) | trip:<departure|return|landing>
+    (the trip's time, not the station's) | placeholder | date | derived | default:<value> | unit:<unit> |
+    form:<form> | sign:<convention> | precision:<value>
+  action: >-
+    flag = the flag column is set and the windows and durations leave the value out (the judged_time_sql() model);
+    note = the flag is set and the value is still used (a weak sign, for analysts); read_as = the adapter reads the
+    stored form this way; convert = a unit converted, the original kept, basis reconstructed; none = checked, nothing
+    done, or done elsewhere as named
+  reviewed: null until a person has read the row's evidence and agreed its reading and action
+
+rows:
+
+  # Times -------------------------------------------------------------------------------------------------------------
+
+  - id: T1
+    quirk: the static set time is the haul start less 270 or 1,710 min, cut to the minute (Trackwell's placeholder)
+    scope: value
+    apps: ["*"]           # seen only in Trackwell's apps: Trackwell raun, and Fishing Log 2.7 on the afli route
+    feeds: [afli, fs_afladagbok, adb]
+    period: [null, null]
+    gear: [static, jig]
+    field: t1
+    holds: placeholder
+    rule: t3 - t1 is 270 or 1,710 min exactly, cut to the minute, in either direction (logbook_set_placeholder.yml)
+    action: flag
+    flag: placeholder
+    today: t1 set to NA and t1_placeholder TRUE (curate/logbook.R); ask b would keep the value with the flag
+    evidence: counts/x08_placeholder_flag.tsv, x09 (afli 54,623, fs_afladagbok 18,412, adb 4,918 flagged)
+    ask: b
+    reviewed: null
+
+  - id: T2
+    quirk: the same placeholder a minute off (269, 271, 1,709, 1,711 min)
+    scope: value
+    apps: [Trackwell raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: [static]
+    field: t1
+    holds: placeholder
+    rule: t3 - t1 within 1 min of 270 or 1,710, and not exact
+    action: flag
+    flag: placeholder
+    today: nothing (decision 206 chose it; not built)
+    evidence: counts/x09_placeholder_class_vs_flag.tsv (822 merged; fs 700, adb 122)
+    ask: a
+    reviewed: null
+
+  - id: T3
+    quirk: the placeholder with 2 to 40 whole days added
+    scope: value
+    apps: [Trackwell raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: [static]
+    field: t1
+    holds: placeholder
+    rule: t3 - t1 = 270 + k x 1,440 min, k >= 2, within 1 min
+    action: flag
+    flag: placeholder
+    today: nothing (TODO 164 a)
+    evidence: >-
+      counts/x09_placeholder_class_vs_flag.tsv (1,626 merged; fs 1,337, adb 289); ../2026-10-29-static-set-time/
+      counts/c06_placeholder_days.tsv (the vessel near the set position at t1 on 7-13 %)
+    ask: a
+    reviewed: null
+
+  - id: T4-marina
+    quirk: the station's start is the trip's departure; the app writes no set or jig start
+    scope: app
+    apps: [Marína raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2023-02-01, null]
+    gear: ["*"]
+    field: t1
+    holds: "trip: departure"
+    action: flag
+    flag: trip_time
+    window: the trip's window, bounded by its departure and return, basis derived (ask c); else the day
+    today: >-
+      nothing; the jig window runs from the departure to the return already, so the change is its basis, not its
+      span; a static station gets a set window at the departure
+    evidence: >-
+      counts/x02_times_port_calls.tsv (t1 within 1 h of the vessel leaving port: fs 91 %, adb 94 %); p01 (equal to
+      the departure 96-100 %, a date on the rest); q01 (18,697 merged, every one a departure or a date)
+    ask: c
+    reviewed: null
+
+  - id: T4-taktikal
+    quirk: the station's start is the trip's departure
+    scope: app
+    apps: [FRA TAKTIKAL]
+    feeds: [fs_afladagbok]
+    period: [2021-01-01, 2023-12-31]
+    gear: ["*"]
+    field: t1
+    holds: "trip: departure"
+    action: flag
+    flag: trip_time
+    window: as T4-marina
+    today: nothing
+    evidence: >-
+      counts/x02_times_port_calls.tsv (within 1 h of leaving port 77 %); p01 (the departure 85-90 %, a date 6-7 %);
+      p12 (6,967 merged)
+    ask: c
+    reviewed: null
+
+  - id: T10
+    quirk: the station's end is the trip's return
+    scope: app
+    apps: [Marína raun, FRA TAKTIKAL]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-01-01, null]
+    gear: ["*"]
+    field: t4
+    holds: "trip: return"
+    action: flag
+    flag: trip_time
+    window: as T4-marina
+    today: nothing
+    evidence: >-
+      counts/x02_times_port_calls.tsv (t4 within 1 h of the vessel reaching port: Marína 84 % in both feeds,
+      Taktikal 73 %; the landing field, in port mid-call 86-93 %, is a weighing time or a date)
+    note: >-
+      Marína's static t3 is recorded (98 %, near on 48 %): its haul window would keep t3 and lose t4, so it needs an
+      end; reviewed with ask c
+    ask: c
+    reviewed: null
+
+  - id: T5
+    quirk: the station's one time is the trip's landing, or a departure equal to it
+    scope: app
+    apps: [STOKKUR]
+    feeds: [fs_afladagbok]
+    period: [2020-04-01, 2022-03-31]
+    gear: ["*"]
+    field: t1
+    holds: "trip: landing"
+    action: flag
+    flag: copy_landing
+    window: the day, basis synthesised (TODO 164 c)
+    today: >-
+      nothing; a static station gets a set window as its only window (3,907 merged), a jig station the day
+    evidence: >-
+      counts/p01_times_app_gear.tsv (the landing 52-58 %, a departure 23-34 %); x02 (on its 776 stations of 2022,
+      within 1 h of reaching port 56 %); w01 (far 54-93 % against a 1-degree cell); q01; p12 (23,132 merged)
+    ask: a
+    reviewed: null
+
+  - id: T6-app
+    quirk: the static set time is the haul start or end, the trip's departure or its landing; the app writes no set
+    scope: app
+    apps: [Reiknistofa fiskmarkaða raun, Fishtech raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2023-01-01, null]
+    gear: [static]
+    field: t1
+    holds: "copy: t3, t4, departure or landing"
+    action: flag
+    flag: copy_haul          # or copy_departure, copy_landing, by the equality found
+    today: nothing; the set window is cut to nothing or opens at the port
+    evidence: counts/p01_times_app_gear.tsv (all classes copies); q01 (Reiknistofa 452 merged, Fishtech 208)
+    ask: a
+    reviewed: null
+
+  - id: T6-value
+    quirk: the static set time equals the haul start or end
+    scope: value
+    apps: ["*"]               # merged: Trackwell raun 754, Jóhann Gíslason 62, Fontos 3, Fiskistofa 2
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [static]
+    field: t1
+    holds: "copy: t3 or t4"
+    action: flag
+    flag: copy_haul
+    today: nothing; on 28 stations the haul window is cut to nothing by a set window with the same start (TODO 164)
+    evidence: counts/q01_t1_caught.tsv; w01 (near as the haul start is)
+    ask: a
+    reviewed: null
+
+  - id: T7
+    quirk: the static set time is the vessel's previous haul end
+    scope: value
+    apps: [Fontos raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2022-05-01, null]
+    gear: [static]
+    field: t1
+    holds: "copy: the previous station's t4"
+    action: flag
+    flag: copy_previous
+    note: >-
+      Trackwell raun's 98 merged resets are near on 61-66 % and may be real sets made on the spot: T7 does not take
+      them; a person decides
+    today: nothing
+    evidence: >-
+      counts/p01_times_app_gear.tsv (Fontos 71 %); w01 (Fontos far 70 %; Trackwell raun near 61-66 %); q01 (Fontos 341
+      merged)
+    ask: a
+    reviewed: null
+
+  - id: T8
+    quirk: a time that is a date (00:00:00)
+    scope: value
+    apps: ["*"]               # TRACKWELL on every value; Marína, Taktikal, Trackwell raun on some
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [t1, t2, t3, t4]
+    holds: date
+    action: flag
+    flag: date
+    window: the day, basis synthesised (as a date-only record)
+    today: twins leave dates out; a set window at midnight; afli first where it holds the vessel-day
+    evidence: >-
+      counts/q01_t1_caught.tsv (t1 1,520 merged); q02 (t2 1,552 merged: fs 1,530, mostly TRACKWELL's tows; adb 22)
+    ask: a
+    reviewed: null
+
+  - id: T11
+    quirk: the trip's departure copies a station's time (the first tow or haul start); the station's time is right
+    scope: value
+    apps: [Trackwell raun, Fontos raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: ["*"]
+    field: T1                 # the trip's departure, not the station's time
+    holds: "copy: a station's t2 or t3 (Trackwell raun), t1 (Fontos's jigs)"
+    action: flag
+    flag: copy_station
+    today: >-
+      trip_reconciled takes the AIS departure first (decisions 172-174); decision 206 chose to blank the tow start
+      instead (not built), which this row reverses
+    evidence: >-
+      counts/w01_times_track.tsv (Trackwell raun tows and seine sets whose start equals the departure: near 92-97 %;
+      static t3 equal to it: near 87-91 %; Fontos's jig t1 equal to it: near 65-78 %); x02 (those tow starts at sea
+      72-77 %); inventory T11 (8,665 such times near)
+    ask: d
+    reviewed: null
+
+  - id: T11-station
+    quirk: a tow start, seine set or haul start equal to the trip's departure
+    scope: value
+    apps: [Trackwell raun, Fontos raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: ["*"]
+    field: [t1, t2, t3]
+    holds: recorded
+    action: none              # the departure is the copy (T11)
+    evidence: as T11; q02 (Trackwell raun t2 3,064, static t3 6,293 merged)
+    ask: d
+    reviewed: null
+
+  - id: T12
+    quirk: a set time stamped with seconds; in port on a quarter, its position saved later
+    scope: value
+    apps: [Trackwell raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: [static]
+    field: t1
+    holds: recorded
+    rule: second(t1) <> 0 and not T1-T3
+    action: note
+    flag: stamped
+    today: nothing
+    evidence: >-
+      counts/w01_times_track.tsv (stamped: near 30-35 %, in port 25-26 %; typed: near 63-73 %, in port 4-8 %); q01
+      (11,291 merged); ../2026-10-29-static-set-time/findings.md §4
+    ask: e
+    reviewed: null
+
+  - id: T13
+    quirk: the set computed from the haul start less a soak in half hours
+    scope: value
+    apps: ["*"]               # Trackwell raun 2,875 merged, Jóhann Gíslason 13, Fontos 3, Fiskistofa 2
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [static]
+    field: t1
+    holds: derived
+    rule: t3 - t1 a positive multiple of 30 min with the same seconds, and not T1-T3
+    action: note
+    flag: derived_grid
+    basis: derived            # decision 206, with a precision modifier of half an hour
+    today: nothing (decision 206, not built)
+    evidence: counts/q01_t1_caught.tsv (2,893 merged); w01 (near 42-50 %)
+    ask: a
+    reviewed: null
+
+  - id: T14
+    quirk: a tow, seine set or haul of 0-4 min, its start and end pressed together
+    scope: value
+    apps: ["*"]               # Trackwell raun almost all
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [t2, t3]
+    holds: "copy: the other end"
+    rule: towed and seine t3 - t2 <= 4 min; static t4 - t3 <= 4 min
+    action: flag
+    flag: pressed
+    window: the day, basis synthesised (decision 206)
+    note: the start lies at the gear (near 96-97 %); only the span is lost
+    today: nothing (decision 206, not built)
+    evidence: counts/q02_t_other_caught.tsv (4,810 merged); w01
+    ask: a
+    reviewed: null
+
+  - id: T15
+    quirk: the afli route's set time is the trip's departure
+    scope: value
+    apps: [Fishing Log 2.6]
+    feeds: [afli]
+    period: [null, null]
+    gear: [static]
+    field: t1
+    holds: "trip: departure"
+    action: flag
+    flag: copy_departure
+    today: nothing (decision 157 left it as recorded); needs the afli route's version on afli's stations (step 2)
+    evidence: >-
+      counts/p01_times_app_gear.tsv (4,787 as sent, all versions); w01 (in port 96 % of the 154 judged, 2019-2024)
+    ask: a
+    reviewed: null
+
+  - id: T16
+    quirk: a static set time equal to the trip's departure or landing, or to the entry time, on an app that writes sets
+    scope: value
+    apps: [Trackwell raun, Jóhann Gíslason raun, Fontos raun]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [static]
+    field: t1
+    holds: "copy: departure, landing or entry time"
+    action: flag
+    flag: copy_departure      # or copy_landing, copy_entry
+    today: nothing; a set window at the port or at the record's saving
+    evidence: counts/q01_t1_caught.tsv (Trackwell raun 169, 63, 76; Jóhann Gíslason 23, 1; Fontos 35, 7 merged)
+    ask: a
+    reviewed: null
+
+  - id: T17
+    quirk: a jig start equal to the trip's departure (the track does not say which is the copy)
+    scope: value
+    apps: [Trackwell raun, Jóhann Gíslason raun, Reiknistofa fiskmarkaða raun, Fishtech raun]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [jig]
+    field: t1
+    holds: "copy: departure (undecided)"
+    action: note
+    flag: equals_departure
+    today: nothing
+    evidence: >-
+      counts/w01_times_track.tsv (Trackwell raun near 55-67 %, in port 16-20 %; Jóhann Gíslason far 55 %, in port
+      34 %; Reiknistofa near 40-52 %); q01 (Trackwell raun 1,631, Reiknistofa 742, Jóhann Gíslason 520, Fishtech 67
+      merged); Fontos's are T11
+    ask: a
+    reviewed: null
+
+  - id: T18
+    quirk: a haul or jig end equal to the trip's landing or the entry time (the record closed at the haul's end)
+    scope: value
+    apps: [Trackwell raun, Jóhann Gíslason raun, Reiknistofa fiskmarkaða raun, Fishtech raun]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [static, jig]
+    field: t4
+    holds: "copy: landing or entry time"
+    action: note
+    flag: equals_landing      # or equals_entry
+    today: nothing
+    evidence: >-
+      counts/w01_times_track.tsv (Trackwell raun static near 66-86 %, jigs near 45-81 %); q02 (Trackwell raun
+      static 10,015 and 4,123, jigs 18,369 and 12,077 merged)
+    ask: a
+    reviewed: null
+
+  - id: T18-fontos
+    quirk: the jig end is the trip's landing, at the vessel's arrival on half
+    scope: value
+    apps: [Fontos raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2022-05-01, null]
+    gear: [jig, static]
+    field: t4
+    holds: "trip: landing"
+    action: flag
+    flag: copy_landing
+    today: nothing; the jig window runs to the landing
+    evidence: >-
+      counts/x02_times_port_calls.tsv (t4 within 1 h of reaching port 50-51 %); q02 (6,130 jig, 420 static merged)
+    ask: a
+    reviewed: null
+
+  - id: T19
+    quirk: Trackwell raun's tows and seine sets, start and end
+    scope: app
+    apps: [Trackwell raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: [towed, seine]
+    field: [t2, t3]
+    holds: recorded
+    action: none
+    note: >-
+      near on 92-99 % in every class, a t3 equal to the entry time included (the record saved at the tow's end);
+      the share with seconds falls from 95 % of tow starts in 2022 to 35 % in 2026, so later reviews read it by year
+    evidence: counts/w01_times_track.tsv; tables.md (the tow starts with seconds, by year)
+    ask: a
+    reviewed: null
+
+  # Windows --------------------------------------------------------------------------------------------------------
+
+  - id: W1
+    quirk: a station left with no usable time
+    scope: value
+    apps: ["*"]
+    feeds: [afli, fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: window
+    rule: every time NA or flagged (action flag); a trip_time station takes its trip's window if ask c says so
+    action: flag
+    window: the day, basis synthesised
+    today: >-
+      ramb::rb_create_record_windows() draws a set window from any t1, so 3,632 merged stations whose only time is a
+      date, a landing or a departure have a false set window and no other (TODO 164 c); STOKKUR's 544 static stations
+      with a time with seconds are the same
+    evidence: counts/q01_t1_caught.tsv (only window a set window)
+    ask: c
+    reviewed: null
+
+  # Positions ------------------------------------------------------------------------------------------------------
+
+  - id: P1
+    quirk: the longitude's sign convention differs by app
+    scope: app
+    apps: ["*"]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: lon
+    holds: >-
+      "sign: west positive, east negative" (Trackwell raun, Marína raun, Reiknistofa fiskmarkaða raun, FRA TAKTIKAL,
+      TRACKWELL); "sign: true, west negative" (Fontos raun, STOKKUR, Jóhann Gíslason raun, Fishtech raun, the tour
+      app)
+    action: none              # the sign rule reads both: fs adapter step 3, curate/corrections/adb_vs_fs_afladagbok.R
+    evidence: counts/p03_positions.tsv; w03_sign_track.tsv (as read nearer 337,996; the mirror nearer 1)
+    ask: a
+    reviewed: null
+
+  - id: P2
+    quirk: whole degrees, rounded to the nearest degree
+    scope: app
+    apps: [STOKKUR]
+    feeds: [fs_afladagbok]
+    period: [2020-04-01, 2022-03-31]
+    gear: ["*"]
+    field: [lat, lon]
+    holds: "form: whole degrees"
+    action: read_as
+    read_as: a 1-degree cell centred on the value (decision 211)
+    flag: cell_1deg
+    today: sources/fs_afladagbok/convert.R names STOKKUR and reads a point
+    evidence: counts/p03_positions.tsv (23,362)
+    ask: a
+    reviewed: null
+
+  - id: P3
+    quirk: hundredths of a minute, and other digit forms
+    scope: app
+    apps: [FRA TAKTIKAL]
+    feeds: [fs_afladagbok]
+    period: [2021-01-01, 2023-12-31]
+    gear: ["*"]
+    field: [lat, lon]
+    holds: "form: six digits ddmm.hh; four digits ddmm; seven digits ddmm.mmm; latitude and longitude exchanged on some"
+    action: read_as
+    read_as: by digit count as above; an exchanged pair read back (decision 211)
+    today: >-
+      R/logbook_position.R names TAKTIKAL for the six digits; the exchanged pairs and four-digit longitudes beside
+      six-digit latitudes not read
+    evidence: >-
+      counts/p03_positions.tsv (four digits 5,146, seven 789, six 609, five 240, six ending 61-99 134, eight 50);
+      q03 (the seven-digit positions decode to none on 48 % of those judged)
+    ask: a
+    reviewed: null
+
+  - id: P3-value
+    quirk: a trip whose six-digit positions end in 61-99, impossible as seconds
+    scope: value
+    apps: ["*"]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [lat, lon]
+    holds: "form: ddmm.hh"
+    action: read_as
+    today: logbook_position_hundredths() (R/logbook_position.R), as now
+    evidence: decision 211; counts/p03_positions.tsv
+    ask: a
+    reviewed: null
+
+  - id: P4
+    quirk: four- and five-digit latitudes, degrees then decimal minutes with the leading zero dropped (6631 = 66 03.1)
+    scope: value
+    apps: [Trackwell raun, Jóhann Gíslason raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2022-01-01, 2023-12-31]
+    gear: ["*"]
+    field: lat
+    holds: "form: dd + m.m, leading zero dropped"
+    action: read_as
+    today: nothing; read as ddmm and ddmm.m, far on the track (TODO 126)
+    evidence: >-
+      counts/q03_position_form_track.tsv (Trackwell raun five digits far 74 %, four 80 %; Jóhann Gíslason 72-80 %;
+      six digits near 88 %); p03 (Trackwell raun 5,472 and 742, Jóhann Gíslason 782 and 117); decision 211 (35-81 %)
+    note: the reading is decision 211's; test it on the track before it applies
+    ask: a
+    reviewed: null
+
+  - id: P5
+    quirk: seconds only at 00, 15, 30 or 45 (a quarter-minute grid, about 0.5 km)
+    scope: app
+    apps: [Marína raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2023-02-01, null]
+    gear: ["*"]
+    field: [lat, lon]
+    holds: "precision: quarter minute"
+    action: note
+    flag: quarter_minute
+    today: nothing
+    evidence: counts/p03_positions.tsv (16,973 of 19,097); decision 211
+    ask: a
+    reviewed: null
+
+  - id: P6-app
+    quirk: the end position a copy of the start
+    scope: app
+    apps: [Reiknistofa fiskmarkaða raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2024-06-01, null]
+    gear: ["*"]
+    field: [lat2, lon2]
+    holds: "copy: lat1, lon1"
+    action: flag
+    flag: end_copy            # the end position none
+    today: nothing
+    evidence: counts/p03_positions.tsv (5,736 of 5,736)
+    ask: a
+    reviewed: null
+
+  - id: P6-value
+    quirk: the end position equal to the start
+    scope: value
+    apps: [Trackwell raun, Jóhann Gíslason raun]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [lat2, lon2]
+    holds: "copy: lat1, lon1 (or a station with one position)"
+    action: note
+    flag: end_copy
+    today: nothing
+    evidence: counts/p03_positions.tsv (Trackwell raun 7,614, Jóhann Gíslason 357)
+    ask: a
+    reviewed: null
+
+  - id: P7
+    quirk: the position saved when the record is closed, not at its times
+    scope: value
+    apps: [Trackwell raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
+    gear: [jig, static]
+    field: [lat, lon]
+    rule: jigs, and static stations whose set time carries seconds (T12)
+    holds: "precision: saved late"
+    action: note
+    flag: saved_late
+    today: nothing
+    evidence: >-
+      counts/x03_jig_distance.tsv (the logged position within 5 km of the vessel at the entry time 49 % and 68 %,
+      at t1 29 % and 34 %); ../2026-10-29-static-set-time/counts/c15_stamped_positions.tsv
+    ask: e
+    reviewed: null
+
+  - id: P8
+    quirk: east sent for west (afli route, ddmm, six vessels)
+    scope: value
+    apps: [Fishing Log 2.6]
+    feeds: [afli_sent]
+    period: [2010-10-01, 2015-04-30]
+    gear: ["*"]
+    field: lon
+    holds: "sign: east for west"
+    action: note              # nothing reads afli_sent; afli's edited layer has it right
+    today: afli's edited layer has 957 of the 961 merged stations on the right side
+    evidence: counts/t07_afli_route_mirror.tsv (987; witness Trackwell's own copy)
+    ask: a
+    reviewed: null
+
+  # Depth -----------------------------------------------------------------------------------------------------------
+
+  - id: D1
+    quirk: integer fathoms, where the app holds metres
+    scope: app
+    apps: [Trackwell raun, TRACKWELL]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [z1, z2]
+    holds: "unit: fathoms"
+    action: convert           # x 1.8288, z1_raw kept, basis reconstructed, as now
+    today: fathoms_to_metres() in curate/logbook.R, for every fs_afladagbok and adb station
+    evidence: >-
+      counts/t05_depth.tsv, t06 (Trackwell's own metres 1.829 times the sent value, 14,629 of 14,978 hauls); q05 (by
+      GEBCO 643 vessels read fathoms, 47 metres, 177 mixed)
+    ask: a
+    reviewed: null
+
+  - id: D2
+    quirk: metres, read as fathoms
+    scope: app
+    apps: [Marína raun, FRA TAKTIKAL]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [z1, z2]
+    holds: "unit: metres"
+    action: convert           # x 1, basis recorded; a vessel GEBCO reads as fathoms takes D1's row by vessel-period
+    today: nothing; converted x 1.8288 (decision 210's fs_depth_units, not built)
+    evidence: >-
+      counts/q05_depth_unit_vessel.tsv (Marína 221 vessels read metres, 18 fathoms, 43 mixed; Taktikal 119, 35, 24);
+      w04
+    ask: a
+    reviewed: null
+
+  - id: D3
+    quirk: the unit mixed within an app
+    scope: app
+    apps: [Fontos raun, Reiknistofa fiskmarkaða raun, Jóhann Gíslason raun, Fishtech raun]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: [z1, z2]
+    holds: "unit: by vessel-period"
+    action: convert           # per vessel-period against GEBCO, as afli_depth_units.R; fathoms where it cannot tell
+    today: converted x 1.8288
+    evidence: >-
+      counts/q05_depth_unit_vessel.tsv (vessels reading fathoms, metres, mixed: Fontos 90, 16, 18; Reiknistofa 66, 24,
+      40; Jóhann Gíslason 34, 2, 21; Fishtech 6, 0, 1)
+    ask: a
+    reviewed: null
+
+  - id: D4
+    quirk: a depth of 0 for none
+    scope: app
+    apps: [STOKKUR]
+    feeds: [fs_afladagbok]
+    period: [2020-04-01, 2022-03-31]
+    gear: ["*"]
+    field: z1
+    holds: "default: 0"
+    action: flag
+    flag: default_zero        # the depth none
+    today: read as 0 m
+    evidence: counts/p05_depth.tsv (23,362 of 23,362)
+    ask: a
+    reviewed: null
+
+  - id: D5
+    quirk: the end depth a copy of the start
+    scope: app
+    apps: [Reiknistofa fiskmarkaða raun]
+    feeds: [fs_afladagbok, adb]
+    period: [2024-06-01, null]
+    gear: ["*"]
+    field: z2
+    holds: "copy: z1"
+    action: flag
+    flag: end_copy
+    today: nothing
+    evidence: >-
+      counts/p05_depth.tsv (5,736 of 5,736; value-level on Trackwell raun 24,877, Jóhann Gíslason 524, TRACKWELL 413,
+      kept)
+    ask: a
+    reviewed: null
+
+  # Count, catch, ids ----------------------------------------------------------------------------------------------
+
+  - id: C1
+    quirk: no count sent
+    scope: app
+    apps: [Trackwell raun, TRACKWELL]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [OTM, SDN, PS, "OTB (TRACKWELL)"]
+    field: effort_count
+    holds: "default: none"
+    action: none              # add_effort_count(): 1, basis synthesised (decision 240), as now
+    evidence: >-
+      counts/p06_count.tsv; x04 (midwater trawl: nothing sent in every vessel-year)
+    ask: a
+    reviewed: null
+
+  - id: C2
+    quirk: the count of trawls or dredges, per tow
+    scope: app
+    apps: [Trackwell raun]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: [OTB, DRB]
+    field: effort_count
+    holds: recorded
+    action: none
+    evidence: >-
+      counts/x04_towed_count_vessel_year.tsv (fs bottom trawl vessel-years: always 1 167, always 2 or more 22, varying
+      57)
+    ask: a
+    reviewed: null
+
+  - id: K1
+    quirk: the catch state as the app writes it (UNGU on nearly every row for the small-boat apps)
+    scope: app
+    apps: [Marína raun, Fontos raun, STOKKUR, FRA TAKTIKAL]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: condition
+    holds: recorded
+    action: none              # the factor is plan 051's
+    evidence: counts/p09_catch_state.tsv; w05 (logged over landed in 0.8-1.25 on 86-92 % of trips; STOKKUR 76 %)
+    ask: a
+    reviewed: null
+
+  - id: K2
+    quirk: lumpfish, Grásleppa (951) and Rauðmagi (950) both written 48
+    scope: app
+    apps: ["*"]               # adb's species map, not an app's
+    feeds: [adb]
+    period: [2025-11-19, null]
+    gear: ["*"]
+    field: species
+    holds: "default: 48"
+    action: note
+    flag: lumpfish_950_or_951
+    today: nothing (plan 051 ask c)
+    evidence: >-
+      counts/f07_adb_species_lumpfish.tsv (3,159 rows from 2025-11-19); f08 (fs_afladagbok 951 on 8,895 rows, 950 on
+      1,992)
+    ask: a
+    reviewed: null
+
+  - id: I1
+    quirk: a trip sent again, its stations exact copies under another trip id
+    scope: value
+    apps: ["*"]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: station
+    holds: "copy: another station"
+    action: none              # logbook_twin flags them duplicate, as now
+    evidence: counts/p14_copies_by_twin.tsv (3,865 merged duplicates; 208 more outside the merge, decision 243)
+    ask: a
+    reviewed: null
+
+  - id: I4
+    quirk: a vendor's trial, trips never landed, most on one vessel
+    scope: value
+    apps: [Fishtech raun, Reiknistofa fiskmarkaða raun, Fontos raun]
+    feeds: [fs_afladagbok]
+    period: [2023-01-01, 2025-12-31]
+    gear: ["*"]
+    field: trip
+    rule: proposed, an app's trips with no landing, 20 or more on one vessel within a year (to be measured)
+    holds: "default: a trial"
+    action: note
+    flag: trial
+    today: nothing, kept
+    evidence: counts/x05_unlanded_trips.tsv (Fishtech 110 of 347, 93 on one vessel; Reiknistofa 95, 48; Fontos 159, 27)
+    ask: h
+    reviewed: null
+
+  # Apps no row profiles yet ---------------------------------------------------------------------------------------
+
+  - id: U1
+    quirk: an app that appears with no row
+    scope: app
+    apps: [Skráningar.com - Jón Arnar Gestsson - Afladagbók, Fiskistofa raun, GAFL BÓK UPPFÆRÐ FRÁ TAKTIKAL]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
+    gear: ["*"]
+    field: "*"
+    holds: unknown
+    action: none              # the value rows (T1, T6-value, T8, T13, T14, P3-value, I1) apply; the check lists it
+    evidence: >-
+      counts/p12_merge_twin.tsv (Skráningar.com 8 stations from 2026-09-30, t1 the departure on all 8: q01;
+      Fiskistofa raun 15; GAFL BÓK 2)
+    ask: a
+    reviewed: null
+
+related:
+  - curate/plans/053-elogbook-feed-app-profile.md
+  - curate/corrections/logbook_set_placeholder.yml   # T1, superseded here once this applies
+  - curate/corrections/adb_vs_fs_afladagbok.yml      # P1's sign rule
+  - curate/corrections/logbook_twin.yml              # I1
+  - TODO.md items 103, 107, 126, 164, 165
