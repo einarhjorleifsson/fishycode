@@ -51,7 +51,8 @@ ALLOW <- list(
   landings = c(".lid", "schema", "date", "pid", "port", "gid", "gear", "gear_name", "sid", "catch"),
   trips    = c(".tid", "schema", "T1", "T2", "pid1", "pid2", "port", "n_crew", "source", "T1_basis", "T2_basis"),
   stations = c(".sid", ".tid", "schema", "date", "t1", "t2", "t3", "t4", "lon1", "lat1", "lon2", "lat2", "z1", "z2",
-               "station_type", "gid", "gear", "gear_basis", "target", "duration_m", "effort", "effort_unit"),
+               "station_type", "gid", "gear", "gear_basis", "target", "duration_m", "duration_source",
+               "effort_count", "effort_count_unit"),
   station_catch = c(".sid", "schema", "sid", "catch", "catch_whole", "condition"),
   windows  = c(".sid", "schema", ".tid", "phase", "w_start", "w_end", "win_basis"),
   trail_years = c("year", "n", "time_first", "time_last"),
@@ -126,7 +127,7 @@ SQL <- list(
   stations = function(vid, p) sprintf(
     "WITH t AS (%s)
      SELECT s.*, f.t1, f.t2, f.t3, f.t4, g.gid_used AS gid, g.gear, g.gid_basis AS gear_basis, g.target, f.duration_m,
-            f.effort, f.effort_unit
+            f.\".duration_source\" AS duration_source, f.effort_count, f.effort_count_unit
      FROM %s s JOIN t USING (\".tid\", schema) LEFT JOIN %s f USING (\".sid\", schema) LEFT JOIN %s g USING (\".sid\", schema)
      WHERE s.twin IS NULL OR s.twin <> 'duplicate' ORDER BY s.date DESC",
     SQL$trips(vid, p), src("curated", "logbook", "station.parquet"), src("curated", "logbook", "fishing_sample.parquet"),

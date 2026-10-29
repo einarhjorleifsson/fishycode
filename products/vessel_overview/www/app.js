@@ -887,7 +887,7 @@ async function loadRange(from, to) {
     WHERE t.T1 IS NOT NULL AND t.T2 IS NOT NULL GROUP BY ALL ORDER BY T1`);
   S.stations = await rows(`SELECT s.".tid" AS tid, s.schema, s.".sid" AS sid, lon1, lat1, lon2, lat2, epoch_ms(date)::DOUBLE AS d0, epoch_ms(t1)::DOUBLE AS t1, epoch_ms(t2)::DOUBLE AS t2,
       epoch_ms(t3)::DOUBLE AS t3, epoch_ms(t4)::DOUBLE AS t4, coalesce(gear, '') AS gear,
-      coalesce(target, '') AS target, coalesce(gear_basis, '') AS gear_basis, strftime(date, '%Y-%m-%d') AS day, z1, z2, station_type, duration_m, effort, effort_unit,
+      coalesce(target, '') AS target, coalesce(gear_basis, '') AS gear_basis, strftime(date, '%Y-%m-%d') AS day, z1, z2, station_type, duration_m, duration_source, effort_count, effort_count_unit,
       coalesce(c.kg, 0)::DOUBLE AS kg
     FROM stations s LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
     ORDER BY coalesce(t1, date)`);
@@ -1289,14 +1289,23 @@ function haulTable(d, species) {
     }).join('') + '</table>';
 }
 // Every field of a haul's record (decision 178): its ids, the logbook's times, the windows the flow gave it, its gear with
-// its basis, its effort, its positions as written (never drawn on the map: decision 156), its depth, pings and catch
+// its basis, its duration and count, its positions as written (never drawn on the map: decision 156), its depth, pings and catch
+// The duration the record gives, or the one its times give (a tow t2 → t3, a set t1 → t4): the product stores no
+// effort, and the e-logbook no duration (plan 050 asks e and h). A flagged one is shown, and marked.
+function haulDuration(h) {
+  const flag = h.duration_source === 'implausible' ? ' <span class="note">(above the limit, or below 0)</span>' : '';
+  if (h.duration_m != null) return `${num(h.duration_m)} min <span class="note">recorded</span>${flag}`;
+  if (h.t2 != null && h.t3 != null) return `${num((h.t3 - h.t2) / 60000)} min <span class="note">t2 → t3</span>${flag}`;
+  if (h.t1 != null && h.t4 != null) return `${num((h.t4 - h.t1) / 60000)} min <span class="note">t1 → t4</span>${flag}`;
+  return '—';
+}
 function haulRecord(h, species) {
   const f = [
     ['record', `haul ${esc(h.sid)} of trip ${esc(h.tid)} (${esc(h.schema)})${h.station_type ? `, ${esc(h.station_type)}` : ''}`],
     ['logbook times', ['t1', 't2', 't3', 't4'].map((k) => `${k} ${h[k] == null ? '—' : fmt(h[k])}`).join(' · ')],
     ['windows (station_window)', h.wins.map((w) => `${esc(winText(w))} <span class="note">${esc(w.basis)}</span>`).join('<br>')],
     ['gear', `${esc(h.gear) || 'none'} ${esc(h.target)}${h.gear_basis ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}`],
-    ['duration · effort', `${h.duration_m == null ? '—' : `${num(h.duration_m)} min`} · ${h.effort == null ? '—' : `${num(h.effort, 1)} ${esc(h.effort_unit)}`}`],
+    ['duration · count', `${haulDuration(h)} · ${h.effort_count == null ? '—' : `${num(h.effort_count)} ${esc(h.effort_count_unit)}`}`],
     ['positions, as written', `start ${h.lat1 == null ? '—' : `${num(h.lat1, 3)}, ${num(h.lon1, 3)}`} · end ${h.lat2 == null ? '—'
       : `${num(h.lat2, 3)}, ${num(h.lon2, 3)}`} <span class="note">(the logbook's; never drawn on the map)</span>`],
     ['depth (m)', h.z1 == null && h.z2 == null ? '—' : `${num(h.z1)}${h.z2 != null ? ` – ${num(h.z2)}` : ''}`],

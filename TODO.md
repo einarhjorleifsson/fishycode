@@ -318,7 +318,7 @@ the fishing sample (`gear_part` prototyped for fs). For plan 020: the trawl's `g
 length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23, not checked by a person). From the
 metier study (plan 015 §4 a, 2026-10-23): afli's adapter reads `toga` but leaves `g_mesh` empty for OTB and OTM,
 though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; the shrimp grid's bar spacing and
-the square-mesh window are folded away too (`tvo_veidarf`, the twin trawls, sits in `n_units`: TODO 153); fs shrimp
+the square-mesh window are folded away too (`tvo_veidarf`, the twin trawls, is read as the count since decision 240); fs shrimp
 trawls carry 135 mm on 34 %, and fs and adb nets a 10 mm placeholder.
 The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
 `$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
@@ -1456,36 +1456,6 @@ vessels' 55-91 trips a year in 2000-2002 with less than half the landed weight.
 **check:** a correction in `curate/corrections/` converts tail weight to whole weight on the trips a rule finds, with
 its own basis, or a decision declines it and the defect is declared where the analyst reads the catch.
 
-## 153. The twin-trawl flag: one name and one coding, and adb's read too
-**status:** open (coded 2026-10-29 as plan 050 step 2, run in a scratch store; not yet in the live store) · **see:** TODO 73 (plan 020), decision 212, `sources/afli/convert.R`,
-`sources/fs_afladagbok/convert.R`, `sources/adb/convert.R`
-
-From the same check (2026-10-28, Claude, read-only). Trawl effort here is tow minutes x 1 (`effort_count = 1`), so the
-new mar's fault, effort = tow minutes x the flag, is not ours. But the flag sits in `n_units` under two codings:
-afli's `tvo_veidarf` is 0/1 (single/twin; bottom trawl since 2000: 1.26 M zeros, 116 k ones), fs_afladagbok's is the
-number of trawls (1/2/3), and adb's `trawl_and_seine_net.two_fg` (1/2/3) is not read, so from 2025-11-19 there is
-none. For other gears `n_units` counts nets, traps or lines. The app may also carry the count from tow to tow: in adb
-no Nephrops or shrimp trawl trip (196) changes `two_fg` within the trip, against 721 of 9,501 bottom-trawl trips, and
-vid 2048's 65 Nephrops tows of May 2026 all hold 2 and identical gear dimensions, though the crew's station sheets
-record one trawl on seven of them (11-13 May, the colleague's source). AIS does not tell a single rig from a twin.
-
-**check:** one column, the number of trawls, with one coding from afli, fs_afladagbok and adb and a basis, named in
-`docs/grammar.qmd`, `n_units` no longer holding it, and the carried-forward count declared or flagged.
-
-## 154. fs_afladagbok's old feed holds the start time only
-**status:** open (plan 050 step 6, 2026-10-29: neither afli_sent nor adb holds the ends; declared in `docs/output-schema.md`; closes with step 7's record) · **see:** TODO 107, TODO 141, decision 160, `$FISHYDATA/raw/oracle/fs_afladagbok/ws_veidi.parquet`
-
-From the same check (2026-10-28, Claude, read-only). `ws_veidiferd.uppruni` splits `ws_veidi`: the upper-case
-`TRACKWELL` and `STOKKUR` trips (2019-2023; 77,806 of 2021's 77,824 stations) have no `lok_timi` and no row in
-`ws_dragnot_varpa`; the `<vendor> raun` trips (from January 2022) and `FRA TAKTIKAL` have both. The change log adds
-none. The logbook merge takes afli first, so 2021's trawls keep their tow times (99.9 %); the 22,363 fs_afladagbok
-stations it keeps in 2021, on vessel-days afli lacks, are handline 18,876, gillnet 2,712 and longline 769, with a
-start and no end (11 with a duration). Not checked: whether `afli_sent` or another source holds their ends, and what
-the upper-case feed is (it looks like the pre-2022 e-logbook copied into the new database).
-
-**check:** the ends read from a source that holds them, or their absence declared (basis `none`) where the analyst
-reads the haul times.
-
 ## 155. EM4SSF's shared code: the time zone to ask its authors, and the trace to redo as the code grows
 **status:** open · **needs: maintainer** — the question to the project's WP2 authors (a) · **see:** decisions 238 and
 229, `~/stasi/em4ssf` (private, outside the repo), `raw/external/mendo2024`
@@ -1505,12 +1475,13 @@ repositories' newest commit after the hackathon has its origin in decision 238 (
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
 **status:** open · **needs: maintainer** — plan 050's asks f and g · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
-TODOs 152, 153, 154
+TODO 152, decision 240 (153 and 154 closed)
 
-Plan 050 rechecked the colleague's five issues on the store of 2026-10-28. It carries TODOs 152-154 and two defects
-found in passing: afli's dredges with effort 0 (13,396, from the 0/1 twin flag), and adb's gear missing from the
-station type (3,836 longlines typed `event`). Its step 1 compares our merge with the new mar's merged logbook when it
-arrives, to test whether that merge cuts afli at 2020.
+Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
+gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Left: step 1's comparison with the new
+mar's merged logbook, both halves (a session started 2026-10-29); step 5, the tails, held for plan 051 (TODO 152); ask
+f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's build drops month-end trips); ask
+g, its candidate defects for its author.
 
 **check:** plan 050 executed or parked, with a decision record.
 

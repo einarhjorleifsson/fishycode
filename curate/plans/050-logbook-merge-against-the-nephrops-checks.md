@@ -6,7 +6,8 @@ same day and run in a scratch store against the live one (§6), not yet in the l
 answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
 its factor belongs to a review of whole weight across species, periods and databases (plan 051); step 2 (ask b
 answered) and step 6 the same day, run in the scratch store (§6); step 1's e-logbook half the same day, in a side
-session over the new mar's parquet (§6), its afli half open; asks e-g open (§5) · **measured** (§1), by Claude the
+session over the new mar's parquet (§6), its afli half open; asks e and h answered, f and g open (§5); step 7 done
+the same day: the store rebuilt from 93dfbdb (decision 240) · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
@@ -203,7 +204,7 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
    `logbook`, `lid_map`, `logbook_gear`, `station_window`, `voyage_gear`, `trip_reconciled` and
    `check_allocation_audit` are invalidated by hand. `products/user_tables.R` is rerun after, and
    the vessel overview's haul line moves from `effort` to the count in the same step (`products/vessel_overview/api.R`
-   and `www/app.js` read the live store), with its click paths tested. Then a decision record.
+   and `www/app.js` read the live store), with its click paths tested. Then a decision record. *Done 2026-10-29: decision 240.*
 
 Steps 2-6 do not wait for step 1. Each one is checked alone before the next.
 
