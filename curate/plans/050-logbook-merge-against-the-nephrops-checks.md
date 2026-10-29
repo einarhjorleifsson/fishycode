@@ -240,8 +240,10 @@ TODOs 152-154 close into the decision record.
   and the user guides), which the maintainer's git credentials do not reach. Then a plan
   of its own: the live tables in place of the dump and adb. The live build loses month-end trips (§6), so it can replace
   the dump and adb only once that is fixed upstream; the fault is for the new mar's author (ask g).
-- g. Whether and when the new mar's candidate defects (`$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §8)
-  go to its author, as `curate/issues/`.
+- g. *Answered (maintainer, 2026-10-29):* sent. The maintainer emailed the new mar's author the same day: the five
+  main findings (one source per year; effort from misread counts; catch with no state; records dropped or counted
+  twice; conversions), with asks for read access to the build code and to the live e-logbook tables, and the month-end
+  gap. The full list stays in `$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §8.
 - h. *Answered (maintainer, 2026-10-29):* move it downstream. "The decision taken at the time was ad-hoc. we deal with
   this issue downstream when it comes to joining things to ais etc." The sample keeps the recorded times and
   durations and flags what is above the gear's limit (`.duration_source` `implausible`); `judged_time_sql()`

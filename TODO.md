@@ -1478,14 +1478,14 @@ method so far. Two things are left:
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open · **needs: maintainer** — plan 050's asks f and g · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+**status:** open · **needs: maintainer** — plan 050's ask f (with the new mar's author) · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
 TODO 152, decision 240 (153 and 154 closed)
 
 Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
 gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Step 1, the comparison with the new
 mar's merged logbook, done the same day (plan 050 §6; its leads are TODOs 136, 158 and 159). Left: step 5, the tails,
 held for plan 051 (TODO 152); ask f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's
-build drops month-end trips); ask g, the new mar's faults for its author.
+build drops month-end trips); ask g done: the findings emailed to its author 2026-10-29.
 
 **check:** plan 050 executed or parked, with a decision record.
 
