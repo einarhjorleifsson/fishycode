@@ -1525,6 +1525,9 @@ step 05, `vid_date ±2` (162 of 191 contradicted; 85 to 23).
 
 Proposed: the id as a witness column on every link and the resolver for swaps and step 05, not a step of its own; its
 landing side dumped from the table first, never read from the S3 parquet.
+The landing side cannot be rebuilt from our dumps (`$FISHYDATA/archive/2026-10-29-rafn-mail/rafn-mail.md` §3): from
+2022-10, same vessel and day gives 82.5 % of the landings' ids and the vessel's last trip 3.4 %; the other 14.1 % are
+the landing system's choices at the weighing, kept only in `ops$rafn.rekjanleikanumer`.
 
 **check:** the maintainer's choice; if taken, the table dumped, the witness and the two resolvers built and measured,
 every trip in one outcome, in a decision.
