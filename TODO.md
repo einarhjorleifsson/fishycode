@@ -1496,3 +1496,14 @@ method so far. Two things are left:
 
 **check:** (a) D2.1's zone for `DATE_TIME` is known, from the authors or a later D2.1; and (b) every script at the
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
+
+## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
+**status:** open · **needs: maintainer** — plan 050's asks a-d · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+TODOs 152, 153, 154
+
+Plan 050 rechecked the colleague's five issues on the store of 2026-10-28. It carries TODOs 152-154 and two defects
+found in passing: afli's dredges with effort 0 (13,396, from the 0/1 twin flag), and adb's gear missing from the
+station type (3,836 longlines typed `event`). Its step 1 compares our merge with the new mar's merged logbook when it
+arrives, to test whether that merge cuts afli at 2020.
+
+**check:** plan 050 executed or parked, with a decision record.
