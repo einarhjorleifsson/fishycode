@@ -216,11 +216,13 @@ Every script in a targets project is on one of three sides, and says which in a 
   output shape of 2026.10.19.2 (`rb_create_*()`, `rb_add_*()`, port calls; decision 147), and `rb_add_trip_time()` of
   2026.10.22.2 (a trip's departure and return from ranked witnesses; decisions 173, 174): so ≥ 2026.10.22.2. The effort
   map needs the map viewer of 2026.10.24.1 (`rb_map_*()`, plan 046), which nothing in the pipeline calls. The data on disk: every
-  target of the main project was rebuilt from raw on 2026-10-23 at 916b901 with ramb 2026.10.22.2 (0c3020b) and DuckDB
-  1.5.6, and `tar_outdated()` is empty since (decision 218; the partial rebuilds before it are recorded in decisions
-  086-216). R's DuckDB is 2.0.0 since 2026-10-28, compiled from CRAN's source; every file reads the same under it, and
-  the rebuild under it is TODO 150 (decision 235). The AIS tagging wants 2026.10.28.3, whose port flag has no windows:
-  an older one gives the same ports at 15-23 GB a year (decision 239). In
+  target of the main project was rebuilt from raw on 2026-10-28 with ramb 2026.10.28.3 (5a01d76) and DuckDB 2.0.0, and
+  compared file by file with the build of 2026-10-23 under 1.5.6 (decision 239; that build is decision 218, the partial
+  rebuilds before it decisions 086-216). R's DuckDB is 1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has
+  three regressions, each worked around in the code (decision 239), and its build from CRAN's source is kept at
+  ~/Library/R/duckdb-2.0.0, for `R_LIBS=`. Each engine reads every file the other wrote (decisions 235, 239). The AIS
+  tagging wants 2026.10.28.3, whose port flag has no windows: an older one gives the same ports at 15-23 GB a year
+  (decision 239). In
   the `once` project the STK key and its checks are the redo of 2026-10-17 (decision 128), and the register's history
   the build of 2026-10-18 at e2f741f (decision 144); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the
   towing-stretch pairing (decision 092), which nothing here calls.

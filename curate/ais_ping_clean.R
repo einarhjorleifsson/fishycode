@@ -41,7 +41,7 @@ FEED     <- c(stk = 1, astd = 2, astdB = 3, emodnet = 4)   # priority; stk wins,
 METHOD   <- "rb_flag_ping-2026-10-14:invalid+duplicate+clean,recorded-only+tie,total-order"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
-years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
+years <- ais |> distinct(year) |> collect() |> pull(year) |> as.integer() |> sort()
 
 out    <- fd_staging("ais", "ping_clean")
 out_w  <- fd_staging("ais", "ping_whacky")

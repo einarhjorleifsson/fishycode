@@ -1403,16 +1403,19 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 **check:** each of the five is done in ramb and measured on all its labelled tracks at five ping rates, or recorded
 as not done, in a decision.
 
-## 150. DuckDB 2.0: the complete rebuild under it
-**status:** in progress — rebuilt and compared under 2.0 the night of 2026-10-28 (decision 239) · **see:**
-plan 049, decisions 239, 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
+## 150. DuckDB 2.0: 1.5.6 until 2.0.1, then measured again
+**status:** open — R's default back to 1.5.6 on 2026-10-29, after the rebuild under 2.0.0 (decision 239) · **see:**
+plan 049, decisions 239, 235 and 218, `curate/issues/duckdb.yml`, `$FISHYDATA/archive/2026-10-28-duckdb2/`
+(`bench_small.sh`, `synth/`, the fingerprints and their logs)
 
-Started 2026-10-28 at 13:33 UTC, decision 218's method, and finished at 23:57 after four stops, each cause found
-(decisions 235, 239). The before and after are compared with every file in one outcome (decision 239). Left: which
-engine from now on (decision 239 recommends 1.5.6 until 2.0.1), and `products/user_tables.R` and the effort map's
-`grid.R` again.
+The store was rebuilt from raw under 2.0.0 on 2026-10-28 and compared with the build of 2026-10-23, every file in one
+outcome (decision 239). 2.0.0 has three regressions, each worked around in the code. The maintainer chose 1.5.6 until
+2.0.1 (due 2026-11-18); 2.0.0's build is kept at ~/Library/R/duckdb-2.0.0. Open:
+- `bench_small.sh` and the reprexes again at 2.0.1, under both engines;
+- `products/user_tables.R` and the effort map's `grid.R` again, on the store of 2026-10-28;
+- the three drafts to DuckDB, whether and how to send them (the maintainer's call).
 
-**check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome.
+**check:** a decision records 2.0.1 against 1.5.6 on the battery and the reprexes, and which engine builds from then on.
 
 ## 151. Global Fishing Watch's vessel tracking guide: which wishes to build, and the two measurements it asks for
 **status:** open · **needs: maintainer** — which of the four wishes to build, and in what order · **see:** decision

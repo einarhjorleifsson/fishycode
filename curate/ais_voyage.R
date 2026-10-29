@@ -53,7 +53,7 @@ VIDS <- if (nzchar(Sys.getenv("AIS_TRIP_VIDS"))) as.integer(strsplit(Sys.getenv(
 # -- Data ----------------------------------------------------------------------
 
 ais   <- open_dataset(fd_staging("ais", "ping_clean"))
-years <- ais |> distinct(year) |> collect() |> pull(year) |> sort()
+years <- ais |> distinct(year) |> collect() |> pull(year) |> as.integer() |> sort()
 
 stays <- duckdbfs::open_dataset(fd_curated("ais", "port_call.parquet")) |> collect() |>
   filter(!EXCLUDE_EVENT_ONLY | evidence != "event_pair") |>

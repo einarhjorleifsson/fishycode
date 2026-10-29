@@ -215,7 +215,7 @@ Every run passed, but one of the old-query reprexes under 2.0 at the defaults.
 
 **What 2.0.0 costs and gives.**
 
-- **Robustness: three regressions**, each worked around in our code:
+- **Robustness: three regressions**, each worked around in our code (the third only on 2026-10-29, below):
   - the spill runaway in a hash aggregate (worse with fewer threads: 5 of 10 runs at 4 threads);
   - a filter on a partition estimated at 1 row;
   - no partition pruning through a view on a DOUBLE literal.
@@ -225,14 +225,33 @@ Every run passed, but one of the old-query reprexes under 2.0 at the defaults.
   query (TODO 139), not something to rely on.
 - **The parser** takes `column` as a keyword, so a column of that name must be quoted.
 
+## 2026-10-29: R's default back to 1.5.6 until 2.0.1
 
-- **Which engine from now on**, the maintainer's call, the night's numbers above. Recommended (Claude):
-  - wait for 2.0.1 (2026-11-18) for builds, R's default back to 1.5.6;
-  - keep the store as built and checked, and keep the workarounds, which cost 1.5.6 nothing;
-  - rerun `bench_small.sh` and the reprexes at 2.0.1.
-- **Years as integers in `filter(year == …)`** wherever a year comes from duckdbfs (at least `ais_ping_clean.R` and
-  `ais_voyage.R`), so that 2.0 prunes.
+The maintainer, the morning after: "Switch R's default DuckDB back to 1.5.6 until 2.0.1, 2) set year to integer", and
+"what about read_parquet vs open_dataset?". Done by Claude the same morning.
+
+- **The engine.** R's library holds CRAN's 1.5.6 binary again, copied from `~/Library/R/duckdb-1.5.6`. The build of
+  2.0.0 from source is kept at `~/Library/R/duckdb-2.0.0`, the same `duckdb.so` as was in R's library. The store is
+  kept as built under 2.0.0. 1.5.6 reads all of it (`fingerprint_after_v156`, `compare_after_v200_v156.log`): 8,084
+  files and 8,868,758,417 rows. 8,080 files are the same under both engines. The other 4 are `ping_union` and
+  `ping_tagged` in the two years whose `dt_sec`, `sid_gps` and `n_sid_gps` are all empty. 2.0 wrote those columns as
+  type `"NULL"` (decision 235, change 3), and 1.5.6 reads them as INTEGER, the type every other year has.
+- **Years as integers** in `curate/ais_ping_clean.R` and `curate/ais_voyage.R`, as `curate/ais_ping_tag.R` already
+  had them. The filter keeps the same rows. Otherwise the year is used only in paths, messages and `match()`, and
+  `ais_ping_clean`'s completion markers do not hash it, so nothing is to be rebuilt. `curate/logbook_sensor_gps.R`
+  also filters the pings through a view on a double year. It is a frozen one-time fix, so it is left as it is.
+- **`read_parquet()` or `open_dataset()`: neither is the cause.** duckdbfs's `open_dataset()` makes a view over
+  `read_parquet()`, and a view costs nothing in itself.
+  - The 1-row estimate comes with `read_parquet()` too. So a query that joins reads the year's folder, whichever
+    function reads it.
+  - The lost pruning comes only through the view and only with a DOUBLE year. So an integer year is the fix, and
+    `open_dataset()` stays (duckdbfs for parquet I/O, `AGENTS.md`).
+  - `read_parquet()` stays where a script writes its SQL by hand (`curate/port_call.R`).
+
+## Not done
+
+- **2.0.1 against 1.5.6** (due 2026-11-18): `bench_small.sh` and the reprexes again, then which engine builds
+  (TODO 150).
 - **A cast of `ais_ping_union.R`'s bare NAs** (decision 235, change 3).
-- **`products/user_tables.R` and the effort map's `grid.R`** again (TODO 150).
-- **The three DuckDB drafts** (`curate/issues/duckdb.yml`), whether and how to send them.
-- **DuckDB issues.** Neither the partition estimate nor the hang has gone to DuckDB as a reprex.
+- **`products/user_tables.R` and the effort map's `grid.R`** again, on the store of 2026-10-28 (TODO 150).
+- **The three DuckDB drafts** (`curate/issues/duckdb.yml`): whether and how to send them is the maintainer's call.
