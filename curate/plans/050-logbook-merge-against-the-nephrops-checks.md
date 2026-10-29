@@ -235,7 +235,9 @@ TODOs 152-154 close into the decision record.
   effort with the interval, the count and the unit as arguments (§6). The colleague's email had said the same: "keep
   plain tow minutes and a harmonised twin flag (or number of trawls), and leave any gear factor to the user".
 - f. How fishycode reaches the live `fs_afladagbok` tables, to dump them source-shaped (the new mar's parquet is
-  already interpreted): which account, and whether they are the `ws_*` tables of the dump. For Rafn or IT. Then a plan
+  already interpreted): which account, and whether they are the `ws_*` tables of the dump. For Rafn or IT. With it,
+  read access to the new mar's build code (`mfriops/Landings`: `build_logbook_parquet.py`, `build_landings_parquet.py`
+  and the user guides), which the maintainer's git credentials do not reach. Then a plan
   of its own: the live tables in place of the dump and adb. The live build loses month-end trips (§6), so it can replace
   the dump and adb only once that is fixed upstream; the fault is for the new mar's author (ask g).
 - g. Whether and when the new mar's candidate defects (`$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §8)
@@ -488,6 +490,8 @@ a person.
     each to be checked against the track: TODO 159.
   - Our station date is afli's fishing date (`vedags`), theirs the first logged time, which leaves 1.32 M undated:
     `docs/output-schema.md` says so.
+  - The Directorate's trip-to-landing id (`trace_id`) as a witness for `lid_map`: TODO 160.
+  - The e-logbook's trial trips and test values (STOKKUR 2021's 3,703,703 kg line is in the merge): TODO 161.
 - **adb's lumpfish code cannot be read back.** From 2025-11-19 adb writes MFRI's 48 (Hrognkelsi) for the Directorate's
   951 (Grásleppa).
   - adb's own `species` table maps three codes into 48: 951, 950 (Rauðmagi) and 48.

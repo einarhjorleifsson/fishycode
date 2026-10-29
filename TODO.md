@@ -1528,3 +1528,29 @@ days. The track can say which is right in each case, as it did for the position 
 positions themselves are never joined to it.
 
 **check:** both counted against the track, every station in one outcome, and each rule kept or changed with a decision.
+
+## 160. The Directorate's link of trip to landing as a witness for `lid_map`
+**status:** open · **see:** `curate/link_lid_map.R`, `$FISHYDATA/raw/oracle/fs_afladagbok/ws_rekjanleiki.parquet`,
+`$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §6, plan 050 §6
+
+From the reading of the new mar (2026-10-29, Claude, read-only). The Directorate links a logbook trip to its landing
+with a traceability id (`trace_id`): in the new mar's landings from 2021 (21 k of 46 k landings in 2021, all from
+2023), and 85-92 % of its logbook trips of 2023-2026 find theirs, 57 % in 2021. fishycode builds its own link
+(`lid_map`, steps 01-09) and reads no such id. Our dump holds `ws_rekjanleiki` (trip id, change time,
+`rekjanleiki_id`): presumably the same link on the logbook side; where the landings' side sits is not checked.
+
+**check:** the id found on both sides in our dumps, and `lid_map`'s links set against it, every trip in one outcome.
+
+## 161. Trial and test records in the e-logbook: flag them
+**status:** open · **see:** `$FISHYDATA/archive/2026-10-29-mar-logbook/live-vs-dump.md` §4,
+`curate/corrections/catch_landing_contradicted.R`, `AGENTS.md` (an extreme value is flagged, not corrected)
+
+From the same reading. The dump holds a few hundred unlanded trips a year from a few vessels per software vendor, which
+look like the vendors' trials (Fishtech raun 2023: 96 trips of one vessel; Reiknistofa fiskmarkaða raun 2024-2025),
+and STOKKUR's 340 two-minute trips of 2021 with test weights, one catch line of 3,703,703 kg, which is in the merge.
+The merge holds catch lines of 1,000 t or more: afli 100 (3 flagged by `catch_flag`), fs_afladagbok 39 (11), adb 5
+(2). Many may be real pelagic sets; values of repeated digits (9,999,999; 7,999,999; 3,703,703) look like tests.
+
+**check:** the trial trips and test values named by a rule, flagged in `curated/` and left as recorded, every one in
+one outcome.
+
