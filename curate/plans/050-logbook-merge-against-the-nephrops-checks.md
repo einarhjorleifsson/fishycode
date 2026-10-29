@@ -4,7 +4,7 @@
 day (§5), and steps 2-6 need not wait for step 1 (maintainer); step 4, `lid_map`'s pelagic set and `gear_code` coded the
 same day and run in a scratch store against the live one (§6), not yet in the live store (step 7); step 5 (ask c
 answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
-its factor belongs to a review of whole weight across species, periods and databases · **measured** (§1), by Claude the
+its factor belongs to a review of whole weight across species, periods and databases (plan 051) · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
@@ -182,7 +182,7 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
    by declared vessel and period, guarded by the trip's own ratio, and writes a side table after `lid_map`.
    `calc_whole_weight()` takes its factor, so the per-station whole weight and v0's catch rows have it. `catch` stays
    the weight as logged (§6). *Held on branch `plan-050-step5-tails` (maintainer, 2026-10-29):* which trips were logged
-   as tails stands, and the 3.3 waits for the review of whole weight, which sets every factor from one table.
+   as tails stands, and the 3.3 waits for the review of whole weight (plan 051), which sets every factor from one table.
 6. **The 2021 ends** (TODO 154). Look for the 22,363 fs-only stations' ends in `afli_sent`. Otherwise declare them
    basis `none` where the analyst reads the haul times.
 7. **Rebuild** the logbook and what reads it, with fingerprints before and after (`R/fingerprint.R`), and the merge's

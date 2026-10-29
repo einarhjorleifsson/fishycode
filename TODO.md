@@ -1435,7 +1435,7 @@ Open, needing no decision:
 by the maintainer.
 
 ## 152. Nephrops logged as tails, counted as whole weight
-**status:** open (coded 2026-10-29 on branch `plan-050-step5-tails`, plan 050 step 5; held for the review of whole weight) · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
+**status:** open (coded 2026-10-29 on branch `plan-050-step5-tails`, plan 050 step 5; held for plan 051) · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
 `R/whole_weight.R`
 
 Raised 2026-10-28 by an MFRI colleague's check of the new mar (version 2026-10-27) for the Nephrops catch and CPUE
@@ -1507,3 +1507,14 @@ station type (3,836 longlines typed `event`). Its step 1 compares our merge with
 arrives, to test whether that merge cuts afli at 2020.
 
 **check:** plan 050 executed or parked, with a decision record.
+
+## 157. Whole weight: one factor table for the logbooks and the landings (plan 051)
+**status:** open · **needs: maintainer** — plan 051's asks a-d · **see:** `curate/plans/051-whole-weight-one-factor-table.md`,
+TODOs 114, 115, 152, plan 050 step 5
+
+The logbooks store whole weight as gutted × 1.25 for every species, while the landings apply a factor per species,
+state and period (cod 1.25 to 1997, then 1.1905; flatfish 1.087; lumpfish roe 3.030, 3.788, then 3.401). So the same
+gutted fish is 0-15 % heavier logged than landed. Plan 051 proposes one factor table that both read. Plan 050's
+Nephrops tails wait for it on their branch.
+
+**check:** plan 051 executed or parked, with a decision record.
