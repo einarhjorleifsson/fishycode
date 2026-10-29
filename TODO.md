@@ -1174,6 +1174,10 @@ afli's hauls of its cell hold 95 % of its kg (Nephrops 1986-1999 repeats its hau
 they hold less: 173.0 kt kept (Claude's measure, not checked by a person). `ops$sigfus`, their source, is to be dumped
 and read first (plan 041 §6); its seven asks come before any code.
 
+The comparison with the new mar's merge (2026-10-29, plan 050 §6) adds that the summaries hold the only Nephrops of
+1973-1985 (1.2-2.7 kt a year) and nearly the only shrimp before 1975, and that in 1986-1999 they repeat the hauls (the
+new mar reads them as stations, so its Nephrops of those years is counted twice).
+
 **check:** unparked by the maintainer, the asks answered in the plan, the adapter and merge built by name, and
 `station_fate`'s account closing with the summaries in it.
 
@@ -1478,10 +1482,10 @@ repositories' newest commit after the hackathon has its origin in decision 238 (
 TODO 152, decision 240 (153 and 154 closed)
 
 Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
-gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Left: step 1's comparison with the new
-mar's merged logbook, both halves (a session started 2026-10-29); step 5, the tails, held for plan 051 (TODO 152); ask
-f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's build drops month-end trips); ask
-g, its candidate defects for its author.
+gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Step 1, the comparison with the new
+mar's merged logbook, done the same day (plan 050 §6; its leads are TODOs 136, 158 and 159). Left: step 5, the tails,
+held for plan 051 (TODO 152); ask f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's
+build drops month-end trips); ask g, the new mar's faults for its author.
 
 **check:** plan 050 executed or parked, with a decision record.
 
@@ -1492,6 +1496,35 @@ TODOs 114, 115, 152, plan 050 step 5
 The logbooks store whole weight as gutted × 1.25 for every species, while the landings apply a factor per species,
 state and period (cod 1.25 to 1997, then 1.1905; flatfish 1.087; lumpfish roe 3.030, 3.788, then 3.401). So the same
 gutted fish is 0-15 % heavier logged than landed. Plan 051 proposes one factor table that both read. Plan 050's
-Nephrops tails wait for it on their branch.
+Nephrops tails wait for it on their branch. For ask c: from 2025-11-19 adb writes every lumpfish as 48, and Grásleppa
+(951) and Rauðmagi (950) cannot be told apart there, not even by the gear (plan 050 §6).
 
 **check:** plan 051 executed or parked, with a decision record.
+
+## 158. afli's tow remarks and its tows without catch: a flag for a broken tow, and a witness for the count of trawls
+**status:** open · **see:** plan 050 §6, `$FISHYDATA/archive/2026-10-29-mar-logbook/merge-vs-merge.md` §3 and §8,
+decision 240, TODO 73
+
+From the comparison with the new mar's merge (2026-10-29, Claude, read-only). afli's `stofn.athugas`, the skipper's
+coded remark, is read nowhere (`sources/afli/note.R` reads the free text, `aths_texti`). It marks a mishap (snagged,
+torn, holed codend) on 279,000 tows, a twin trawl (codes 20, 21-34) on 65,000 and pair trawling (40, 41-54) on 1,500:
+a flag for a broken tow, and a second witness for the count of trawls that decision 240 reads from `tvo_veidarf`. The
+merge keeps afli's 153,351 hauls with no catch row (to 2020), as it should. 36 % of them are zeros where a mishap is
+logged, the rest a mix. From 1996 afli holds no tow without catch, so its effort lacks the empty tows. 564 trips have
+no haul with catch but a landed catch (19 kt): catch records lost. As `AGENTS.md` has it, these are flagged, not
+corrected.
+
+**check:** the remark read with its codes named; a flag per haul (mishap, no catch, neither); the 564 trips flagged;
+the absence of empty tows from 1996 said where the analyst reads the effort.
+
+## 159. Two e-logbook values to check against the track: the longitude's sign, and the set time of afli's 2021 nets and lines
+**status:** open · **see:** plan 050 §6, `$FISHYDATA/archive/2026-10-29-mar-logbook/merge-vs-merge.md` §4.3 and §4.7,
+TODO 126, decision 211
+
+From the same comparison. On 2,995 e-logbook stations our longitude's sign differs from the new mar's: our adapters
+turn it (`sources/fs_afladagbok/convert.R`, `curate/corrections/adb_vs_fs_afladagbok.R`), theirs does not. On 3,007
+nets and lines of 2021 that the merge takes from afli, afli's set time `t1` and the Directorate's differ by hours to
+days. The track can say which is right in each case, as it did for the position format (decision 211); the logbook
+positions themselves are never joined to it.
+
+**check:** both counted against the track, every station in one outcome, and each rule kept or changed with a decision.

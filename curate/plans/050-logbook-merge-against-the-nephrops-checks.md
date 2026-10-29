@@ -6,8 +6,8 @@ same day and run in a scratch store against the live one (§6), not yet in the l
 answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
 its factor belongs to a review of whole weight across species, periods and databases (plan 051); step 2 (ask b
 answered) and step 6 the same day, run in the scratch store (§6); step 1's e-logbook half the same day, in a side
-session over the new mar's parquet (§6), its afli half open; asks e and h answered, f and g open (§5); step 7 done
-the same day: the store rebuilt from 93dfbdb (decision 240) · **measured** (§1), by Claude the
+session over the new mar's parquet (§6), then the whole of step 1 on the rebuilt store; asks e and h answered, f and g
+open (§5); step 7 done the same day: the store rebuilt from 93dfbdb (decision 240); step 5 held for plan 051 · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
@@ -159,8 +159,8 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
    `$FISHYDATA/archive/2026-10-29-mar-logbook/`. Per year and source, each vessel-day and station goes in one
    outcome (both, ours only, theirs only, unjudgeable). On the shared ones: times, the count of trawls, the gear, and
    the Nephrops catch, with each difference explained or listed as unexplained. This tests §2's hypothesis and the
-   655-against-757 gap. The asks to the new mar's author go out from its result, with links. *E-logbook half done
-   2026-10-29 (§6); the afli half, 1950-2020 by `visir`, is open.*
+   655-against-757 gap. The asks to the new mar's author go out from its result, with links. *Done 2026-10-29 (§6): the
+   e-logbook half, then the whole comparison on the rebuilt store.*
 2. **One count, `effort_count`, the grammar's** (TODO 153; ask a). The number fishing at once, for every gear and
    source: hooks, nets, jigs, traps, and for towed gear the number of trawls or dredges.
    - afli's `tvo_veidarf` 0/1 becomes 1/2, basis `derived`. fs_afladagbok's count is read as recorded, with no
@@ -458,4 +458,44 @@ store.
     stay out of the merge, in the fate table with reason `date_after`: the date is the key that places the record.
   - The 77,953 app placeholder set times stay NA with `t1_placeholder` (decision 157): a value the app made up.
   - aflaskeyti's 63 hauls of duration 0 stay NA with `implausible`; its adapter is not part of this step.
+
+**Step 1, the whole comparison**, 2026-10-29, by Claude in a side session, on the store rebuilt at 93dfbdb. Every
+station, trip and vessel-day of both merged logbooks is put in one outcome, by year and source, and the shared records
+are compared field by field (`$FISHYDATA/archive/2026-10-29-mar-logbook/merge-vs-merge.md`, `scripts/mvm_*.py`; the
+new mar's afli rows of 1950-2020 copied to `live/afli_*.parquet`). Read-only, aggregates only, no Oracle. Not checked by
+a person.
+
+- **The account.** Ours 7,301,171 stations, theirs 7,166,387, 7,022,715 shared.
+  - On the shared ones these are equal but for named causes: gear, times (to the second, same slot), tow time, depth,
+    and catch (species by species, to the kilogram, 16.55 M of 16.61 M station-species rows).
+  - Their positions are rounded to 6 decimals, and their e-logbook ones are read as decimal minutes.
+- **Which records each keeps.**
+  - Theirs lacks afli's 153,351 hauls without a catch row, and afli after 2020.
+  - Ours leaves out their 96,461 e-logbook stations of 2021-2022 on afli's vessel-days (afli first, kept).
+  - Theirs reads afli's 34,066 monthly summaries as stations, so Nephrops 1986-1999 is counted twice.
+  - Unexplained: 366 afli stations missing from theirs (60.6 kt), 328 of them purse-seine sets of 2002-2008.
+- **757 against 655** is placed. Ours is afli's hauls of 2021, theirs the e-logbook's entry of the same vessel-days.
+- **The catchless tows.**
+  - Zeros where afli logs a mishap (36 %).
+  - Otherwise a mix of zeros and catch not keyed: about a third of a tow's catch each, against the trip's landing.
+  - From 1996 afli holds no tow without catch.
+- **Leads for fishycode** (`merge-vs-merge.md` §8), checked in the main session the same day:
+  - afli's monthly summaries are the only Nephrops of 1973-1985 and nearly the only shrimp before 1975 (TODO 136,
+    plan 041, parked).
+  - The skipper's coded remark `stofn.athugas` is read nowhere (the notes read `aths_texti`). With it, the catchless
+    tows and the 564 trips with no catch on a haul but a landed catch (19 kt): TODO 158.
+  - The e-logbook's longitude sign on 2,995 stations, and the set time of 3,007 afli-route nets and lines of 2021,
+    each to be checked against the track: TODO 159.
+  - Our station date is afli's fishing date (`vedags`), theirs the first logged time, which leaves 1.32 M undated:
+    `docs/output-schema.md` says so.
+- **adb's lumpfish code cannot be read back.** From 2025-11-19 adb writes MFRI's 48 (Hrognkelsi) for the Directorate's
+  951 (Grásleppa).
+  - adb's own `species` table maps three codes into 48: 951, 950 (Rauðmagi) and 48.
+  - On the stations adb shares with fs_afladagbok, its 8,419 lines of 48 stand for fs's 8,289 of 951 and 1,863 of 950.
+  - The gear does not separate them: on grásleppunet stations fs holds 951 on 7,784, 950 on 1,652 and 48 on 1,515.
+  - The species reference gives all three one species (*Cyclopterus lumpus*, LUM, WoRMS 127214), so totals by species
+    are unaffected. The market category, which plan 051's lumpfish factor needs, is lost: noted in TODO 157.
+  - adb's catch also carries the bird and mammal bycatch that fs_afladagbok keeps apart (code 1000 and up, 814 lines
+    from 2025-11-19). 801 hold a number of animals, not a weight, and enter the merged catch at 0 kg; 13 weigh 753 kg.
+- **The new mar's faults** found here (`merge-vs-merge.md` §9) join ask g's list (`mar-package.md` §8).
 

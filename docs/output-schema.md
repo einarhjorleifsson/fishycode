@@ -85,7 +85,7 @@ gear and effort detail is in `fishing_sample.parquet`.
 |---|---|---|
 | `.tid` | chr | Trip identifier |
 | `.sid` | dbl | Station identifier |
-| `date` | datetime | Fishing date |
+| `date` | datetime | Fishing date: afli's own (`vedags`), the e-logbook's first time. The new mar dates a station by its first logged time, which leaves 1.32 M afli stations undated (plan 050 §6) |
 | `lon1`, `lat1` | dbl | Start position (decimal degrees) |
 | `lon2`, `lat2` | dbl | End position (decimal degrees) |
 | `sq` | int | Statistical square [1–999]; `afli` only — `NA` for the other schemas |
