@@ -1498,7 +1498,7 @@ method so far. Two things are left:
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open · **needs: maintainer** — plan 050's asks a-d · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+**status:** open · **needs: maintainer** — plan 050's asks b and c · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
 TODOs 152, 153, 154
 
 Plan 050 rechecked the colleague's five issues on the store of 2026-10-28. It carries TODOs 152-154 and two defects

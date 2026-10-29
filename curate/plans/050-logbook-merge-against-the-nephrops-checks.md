@@ -1,8 +1,10 @@
 # 050 — The logbook merge against a colleague's Nephrops checks: the count of trawls, the 2021 ends, tails, adb's gear in the merge, and the new mar's merge compared
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; nothing built · **measured** (§1), by Claude the
+**status:** proposal — written 2026-10-29 at the maintainer's request; nothing built; asks a and d answered the same
+day (§5), and steps 2-6 need not wait for step 1 (maintainer) · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
-afli dump, the curated landings, adb's `trawl_and_seine_net`; it redoes the check of 2026-10-28 (539ba46, TODOs
+afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
+adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
 152-154), made on the build of 2026-10-23 · **assumed** (§2): what the new mar's merge does, which is inferred from
 the colleague's figures until its product arrives · **see:** TODOs 107, 152, 153, 154, decisions 084, 154, 160,
 `curate/logbook.R`, `curate/corrections/logbook_gear.R`
@@ -16,7 +18,11 @@ Nephrops logged as tails not converted to whole weight from 2019; (4) the detail
 2000-2007; (5) seven single-trawl tows of vid 2048 in May 2026 logged as twin. The new mar's author answered that 1-4
 are errors to be fixed and 5 comes from the Directorate's data. The maintainer, 2026-10-29: "Review the merge script
 used here in light of the issues raised"; "my hypothesis is that [the new mar's merge] drops off the afli data in 2020,
-using the newer source from 2021+. which has its faults."
+using the newer source from 2021+. which has its faults." Later the same day, on the asks: "should we not have just
+one count column for all gears - so for longline it is number of hooks, nets number of nets, pots number of pots,
+towed gear number of trawls. i think we already have that thinking in the grammar"; "the adb is an inhouse
+convertion. it messed up the gear code, trying to convert gear to the legacy gear code […] instead of us trying to
+move things in the other direction in our merge."
 
 ## 1. What is measured
 
@@ -88,6 +94,33 @@ cannot get that type in afli or fs_afladagbok. The same pooling touches gillnets
 vessel that fishes two gears in a year. What this does to the windows downstream is not measured. `gear.parquet`
 is built from `logbook`, so the merge cannot read it without a cycle.
 
+**The count, per source and gear** (after ask a). The grammar already has the one count: `effort_count`, "what
+fishes at once: hooks, nets, jigs, traps; 1 for a single towed gear" (`docs/grammar.qmd`, the fishing sample).
+`n_units` is not in the grammar. Beyond the adapters, only `products/user_tables.R` reads it. In the merge:
+
+- **afli and fs_afladagbok** fill `effort_count` for the passive gears: hooks (longline, median 13,440 and 18,000),
+  nets, jigs and traps. Towed gear is 1 on every station, the twin trawl included. fs_afladagbok's adapter says
+  "n_units unreliable, assume 1". The exception is afli's dredges, which take the 0/1 flag (the 13,396 above).
+- **adb** fills it on none of its 88,464 stations. Its raw tables hold every count: `line_and_net.hooks`, `nets`
+  and `pole_and_lines`, `trap.number_of_traps`, `dredge.two_dredges` and `trawl_and_seine_net.two_fg`. Its
+  `effort_unit` is its own vocabulary ("hours towed", "netnights", "hookhours"), several per gear.
+- **aflaskeyti** fills it on none of its 3,058 stations.
+
+**adb's gear code, there and back** (after ask d). adb writes the legacy code (`fishing_station.fishing_gear_no`
+only) and its map `fishing_gear` gives each legacy code one FS id: Nót and Plógur repeat, with the same id. On the
+stations fs_afladagbok also holds, adb's code read back through the map gives fs's FS code on:
+
+| period | recovered | wrong | not in the map |
+|---|---:|---:|---:|
+| 2019-2024 | 368,940 | 5,256 | 432 |
+| 2025 to 11-18 | 90,672 | 0 | 0 |
+| 2025-11-19 on | 2,200 | 0 | 0 |
+
+The wrong ones are decision 171's collapse: shrimp trawl (FS 8) and Nephrops trawl (FS 7) written as bottom trawl,
+4,352 and 848. Landbeitt lína and Línutrekt (FS 13, 21) are written as 99. All of them fall in years the merge takes
+from fs_afladagbok (decision 160). From 2025-11-19, where adb is the only source, Nephrops trawl (legacy 9, 103
+stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
+
 ## 2. What is assumed
 
 - That the new mar's `afladagbok.ws_veidi` is the table dumped here as `raw/oracle/fs_afladagbok/ws_veidi.parquet`.
@@ -105,15 +138,23 @@ is built from `logbook`, so the merge cannot read it without a cycle.
    outcome (both, ours only, theirs only, unjudgeable). On the shared ones: times, the count of trawls, the gear, and
    the Nephrops catch, with each difference explained or listed as unexplained. This tests §2's hypothesis and the
    655-against-757 gap. The asks to the new mar's author go out from its result, with links.
-2. **One count of trawls** (TODO 153). It is a new column, not `n_units`, with one coding from afli (0 → 1, 1 → 2,
-   basis `derived`), fs_afladagbok and adb (`two_fg` read, basis `recorded`). It goes in `docs/grammar.qmd`. Trawl
-   effort stays tow minutes x 1, and any gear factor (1.8 for twin Nephrops trawls) is left to the user. The
-   count is constant within every adb Nephrops trip, so it is flagged as the trip's setting, not the tow's.
-3. **Dredge effort** never 0: afli's dredge `effort_count` is taken from step 2's count, not from `tvo_veidarf`.
-   Recount the 13,396.
-4. **adb's gear in the merge.** The adb adapter reads its own crosswalk (`raw/oracle/adb/fishing_gear.parquet`, a
-   table of the same source, so the adapter rule holds) to fill `gid` and `gear` as afli and fs_afladagbok do.
-   `logbook_gear.R` then drops its adb path. Recount the station type of adb by gear: no longline `event`.
+2. **One count, `effort_count`, the grammar's** (TODO 153; ask a). The number fishing at once, for every gear and
+   source: hooks, nets, jigs, traps, and for towed gear the number of trawls or dredges.
+   - afli's `tvo_veidarf` 0/1 becomes 1/2, basis `derived`. fs_afladagbok's count is read as recorded, with no
+     "assume 1". adb's six counts are read, and its units mapped to the grammar's. aflaskeyti stays `none`.
+   - A new `effort_count_basis` says which. `effort` stays `effort_count × effort_duration`, as the grammar has it,
+     so a twin tow counts twice its minutes. A gear factor (1.8 for twin Nephrops trawls) is the user's to apply
+     from the two columns.
+   - `n_units` leaves the fishing sample, and `products/user_tables.R` changes with it.
+   - afli's dredges come out of this step too: the 13,396 with effort 0 are recounted.
+   - The trip setting, ask b.
+3. *(Folded into step 2: the dredges' count is the same column.)*
+4. **adb's gear at the adapter** (ask d). adb's conversion to the legacy code is where the fault lies, so it is undone
+   where it enters: the adb adapter reads its legacy code back to the FS code through adb's own map
+   (`raw/oracle/adb/fishing_gear.parquet`, a table of the same source, so the adapter rule holds). It fills `gid`
+   and `gear` as afli and fs_afladagbok do, which is exact for every station read (§1). `logbook_gear.R` drops its
+   adb path, which amends decision 154. Then the station type of adb is recounted by gear, with no longline `event`.
+   A note for adb's author asks for the FS code beside the legacy one, and gives the 2019-2024 collapse.
 5. **Tails** (TODO 152). A correction, `curate/corrections/logbook_nephrops_tails.{yml,R}`, finds the trips by a
    rule (logbook over landed per vessel and period, which needs ask c). It converts their Nephrops to whole weight
    in a column of its own, with basis `reconstructed`, and keeps the weight as logged.
@@ -127,16 +168,16 @@ Steps 2-6 do not wait for step 1. Each one is checked alone before the next.
 ## 4. What it changes
 
 `sources/afli/convert.R`, `sources/fs_afladagbok/convert.R`, `sources/adb/convert.R` (the count, the dredge
-effort, adb's gear), `curate/corrections/logbook_gear.R`, a new correction pair, `docs/grammar.qmd`, and every target
-downstream of `logbook`. `curate/logbook.R` itself changes only if step 4 is done in the merge instead of the adapter.
+effort, adb's gear), `curate/corrections/logbook_gear.R`, a new correction pair, `docs/grammar.qmd` (`effort_count_basis`),
+`products/user_tables.R` (`n_units` gone), and every target downstream of `logbook`. `curate/logbook.R` itself changes only if step 4 is done in the merge instead of the adapter.
 TODOs 152-154 close into the decision record.
 
 ## 5. Asks
 
-- a. The count column's name. `n_trawls` is proposed, or one name for every gear that tows several units at once
-  (trawls, dredges).
+- a. *Answered (maintainer, 2026-10-29):* one count for every gear, which is the grammar's `effort_count` (step 2).
 - b. Whether the count being a trip setting is flagged (proposed) or left as recorded with a note. The new mar's author
   calls issue 5 the Directorate's data.
 - c. The tail rule: the factor (3.3?), and whether a trip qualifies by its own ratio or by its vessel and period.
   This includes vid 1645 in 2000-2006, outside afli's converted years.
-- d. Step 4 in the adapter (proposed) or in the merge.
+- d. *Answered (maintainer, 2026-10-29):* the fault is adb's conversion to the legacy code, and it is undone where it
+  enters, at the adapter (step 4).
