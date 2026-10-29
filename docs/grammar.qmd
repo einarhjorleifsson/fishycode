@@ -278,6 +278,8 @@ A fishing sample adds the gear and the count to `t1`-`t4`:
 | `effort_count` | dbl | what fishes at once: hooks, nets, jigs, traps, and the trawls or dredges of a towed gear (1 for one) |
 | `effort_count_basis` | chr | the count's basis: `recorded`, `derived` from the record's other values (a twin flag, sets × hooks per set), `synthesised` (one gear, for a towed gear or a seine that records no count), or `none` |
 | `effort_count_unit` | chr | what is counted: `trawls`, `dredges`, `seines`, `hooks`, `nets`, `jigs`, `traps` |
+| `rig` | chr | how a towed gear is rigged where the record says: `twin` (two trawls), `pair` (one trawl towed by two vessels) |
+| `mishap` | chr | what went wrong with the haul where the record says (snagged, torn, codend holed, trawl lost, …): a flag, the haul as recorded |
 | `w1`, `w2` | datetime | the location window |
 | `z1_gear`, `z2_gear` | dbl | the depth the gear worked at, m (execution) |
 | `n_lost` | int | gear lost (outcome) |

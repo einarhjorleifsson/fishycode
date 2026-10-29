@@ -3154,26 +3154,28 @@ tables:
       are those lid_map links to the trip, with the landing's own schema. Duplicate twins and catch let go (negative
       codes) are left out. A linked landing that holds none of the species is not judged here. Built
       2026-10-23 (decision 218): rule 1 87,838 rows on 8,703 trip-species pairs, 294 kt; rule 2 275 rows on 28 pairs,
-      22.3 kt.
+      22.3 kt. Rule 3, `landed_not_logged` (TODO 158): the trip has a linked landing that holds catch and no station
+      of the trip holds any; one row per (trip, species landed), with no station (`.sid`, `sid` and `kg` NA).
     constraints:
       - assert: flag <> 'landing_contradicts' OR (witness = 'trip_landing' AND trip_kg_landed > 0 AND trip_kg_logged > 10 * trip_kg_landed AND trip_kg_logged - trip_kg_landed >= 1000)
         description: Rule 1's margin.
       - assert: flag <> 'largest_landing_exceeded' OR (trip_kg_landed IS NULL AND ((species_kg_largest > 0 AND trip_kg_logged > 10 * species_kg_largest AND trip_kg_logged - species_kg_largest >= 1000) OR (trip_kg_logged > 10 * vessel_kg_largest AND trip_kg_logged - vessel_kg_largest >= 1000)))
         description: Rule 2's margin, on either witness.
-      - assert: sid = sid_landing OR (sid = 830 AND sid_landing = 30)
+      - assert: flag = 'landed_not_logged' OR sid = sid_landing OR (sid = 830 AND sid_landing = 30)
         description: The logbook's code, compared as the landings record it.
-      - assert: kg > 0 AND sid >= 0
+      - assert: flag = 'landed_not_logged' OR (kg > 0 AND sid >= 0)
         description: Catch kept, with a weight.
+      - assert: flag <> 'landed_not_logged' OR (".sid" IS NULL AND sid IS NULL AND kg IS NULL AND trip_kg_logged = 0 AND trip_kg_landed > 0)
+        description: Rule 3, a trip with no catch logged and a landing that holds some.
     columns:
       - name: .sid
         type: number
-        constraints: [primary_key]
         description: >
-          The station, as in logbook_station; unique with schema.
+          The station, as in logbook_station; unique with schema. A row is one (schema, .sid, sid) for rules 1 and 2,
+          and one (schema, .tid, sid_landing) for rule 3, whose `.sid` is NA.
       - name: schema
         type: enum
         values: [afli, fs_afladagbok, adb, aflaskeyti]
-        constraints: [primary_key]
         description: >
           The logbook source system, as in logbook_station.
       - name: .tid
@@ -3182,9 +3184,8 @@ tables:
           The station's logbook trip, as in logbook_station: the trip whose logged kilograms are compared.
       - name: sid
         type: number
-        constraints: [primary_key]
         description: >
-          Species, the logbook's code, as in logbook_catch.
+          Species, the logbook's code, as in logbook_catch. NA on rule 3's rows.
       - name: kg
         type: number
         range: [1, 9999999]
@@ -3204,8 +3205,8 @@ tables:
         type: number
         range: [0, 139024]
         description: >
-          Rule 1: what the trip's linked landings hold of `sid_landing`, kg. Over 0 on every row of the rule; three
-          pairs rest on a positive landing row under 1 kg. NA on rule 2's rows.
+          Rules 1 and 3: what the trip's linked landings hold of `sid_landing`, kg. Over 0 on every row of the rules;
+          three pairs rest on a positive landing row under 1 kg. NA on rule 2's rows.
       - name: species_kg_largest
         type: number
         range: [210.87, 3572991]
@@ -3393,6 +3394,19 @@ tables:
         description: >
           What effort_count counts. Apart from the duration's unit, so that effort can be
           recombined (hook-hours as well as hook-days).
+      - name: rig
+        type: enum
+        values: [twin, pair]
+        description: >
+          How a towed gear is rigged where the record says (afli only: the skipper's remark,
+          stofn.athugas, codes 20-34 two trawls, 40-54 a pair trawl). A twin rig counts two
+          trawls in effort_count (TODO 158).
+      - name: mishap
+        type: string
+        examples: [snagged, torn, codend holed, trawl lost]
+        description: >
+          What went wrong with the haul, from the skipper's remark (afli only, 14 values). A flag:
+          the haul and its catch stay as recorded.
       - name: t2
         type: datetime
         time_zone: UTC

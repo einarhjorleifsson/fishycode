@@ -81,6 +81,21 @@ source <-
   select(.sid, .tid, vid, gid, date, lon1, lat1, lon2, lat2, sq, ssq, z1, z2,
          T1, hid1, T2, hid2, n_crew, schema, eytt_deleted, copy)
 
+## The skipper's remark (stofn.athugas) ------------------------------------------
+# A code of afli's table ATHUGASEMDIR (`rafr_stofn_aths_skipstjora`). Its twenties are the rig: 0-14 names none, 20-34
+# two trawls ("Tvö troll"), 40-54 a pair trawl ("Tvílembingar", two vessels towing one trawl); the rest is the mishap,
+# 0 none. 0 is "no remark", not "one trawl" (plan 050 §6, TODO 158). Kept as recorded and named: the rig is a witness
+# for the count of trawls below, the mishap a flag, never a correction.
+MISHAP <- c("snagged", "snagged and torn", "torn", "headline or fishing line broken", "fouled",
+            "leg or bridle broken", "sweep or footrope broken", "codend holed", "released", "warp broken",
+            "trawl lost", "winch broken", "engine failure", "steering failure")
+remark <-
+  bind_rows(stofn_afli |> select(.sid = visir, athugas), stofn_fs |> select(.sid = visir, athugas)) |>
+  filter(!is.na(athugas)) |>
+  transmute(.sid,
+            rig = case_when(athugas %/% 20 == 1 ~ "twin", athugas %/% 20 == 2 ~ "pair"),
+            mishap = MISHAP[na_if(as.integer(athugas %% 20), 0L)])
+
 # Helper: station keys with ICES gear labels, used in aux table joins below
 stofn_gear <- source |>
   select(.sid, gid) |>
@@ -163,18 +178,22 @@ timing <-
 # (R/logbook_effort.R): hooks, nets, jigs, traps, and the trawls or dredges of a towed gear. n_units keeps the gear
 # table's own value in staging. Its basis is "recorded", or "derived" where it is made from the record's other
 # values: a longline's sets × hooks per set, and a towed gear's tvo_veidarf, a flag, 0 one gear and 1 two (plan
-# 050 §6: per vessel, afli's share flagged follows fs_afladagbok's share counted 2 or more).
-twin_count <- function(flag) case_when(flag == 0 ~ 1, flag == 1 ~ 2)
+# 050 §6: per vessel, afli's share flagged follows fs_afladagbok's share counted 2 or more), with the skipper's remark
+# as a second witness: two where either says two (the maintainer, 2026-10-29, TODO 158; the remark says two trawls on
+# 19,783 bottom-trawl tows with no flag and on 5,484 flagged 0).
+twin_count <- function(flag, rig) case_when(rig %in% "twin" | flag %in% 1 ~ 2, flag %in% 0 ~ 1)
 dims <-
   bind_rows(
     # OTB / OTM / DRB — trawl, dredge / plow
     aux_mobile |>
       filter(gear %in% c("OTB", "OTM")) |>
-      mutate(effort_count = twin_count(n_units), effort_count_basis = "derived") |>
+      left_join(remark |> select(.sid, rig), by = ".sid") |>
+      mutate(effort_count = twin_count(n_units, rig), effort_count_basis = "derived") |>
       select(.sid, n_units, effort_count, effort_count_basis, bottom_type, catch_nperkg),
     aux_mobile |>
       filter(gear == "DRB") |>
-      mutate(effort_count = twin_count(n_units), effort_count_basis = "derived") |>
+      left_join(remark |> select(.sid, rig), by = ".sid") |>
+      mutate(effort_count = twin_count(n_units, rig), effort_count_basis = "derived") |>
       select(.sid, n_units, effort_count, effort_count_basis,
              g_mesh = mesh, g_width = width_plow, g_height = height_plow, g_length = length_plow,
              bottom_type, catch_nperkg),
@@ -293,7 +312,8 @@ fishing_sample <- fishing_sample |>
 
 ## Join gear dimensions --------------------------------------------------------
 fishing_sample <- fishing_sample |>
-  left_join(dims |> select(-effort_count, -effort_count_basis), by = ".sid")
+  left_join(dims |> select(-effort_count, -effort_count_basis), by = ".sid") |>
+  left_join(remark, by = ".sid", relationship = "many-to-one")
 
 
 ## Back-entry flag -------------------------------------------------------------

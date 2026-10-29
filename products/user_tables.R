@@ -103,7 +103,7 @@ gear <- open_dataset(lb("gear.parquet")) |>
   select(.sid, schema, gid_used, gid_basis, gid, gid_landing, gear, target, target2, gear_code)
 sample <- open_dataset(lb("fishing_sample.parquet")) |>
   select(.sid, schema, t1, t2, t3, t4, t1_placeholder, time_basis, duration_m, duration_m_raw, .duration_source,
-         effort_count, effort_count_basis, effort_count_unit, g_mesh, g_width, g_height, g_length)
+         effort_count, effort_count_basis, effort_count_unit, rig, mishap, g_mesh, g_width, g_height, g_length)
 
 station_user <- station |>
   select(.sid, .tid, schema, date, lon1, lat1, lon2, lat2, lon1_basis, lon2_basis, sq, ssq,
