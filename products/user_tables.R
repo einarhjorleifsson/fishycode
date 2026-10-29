@@ -58,8 +58,11 @@ invisible(link_curated("landing/catch.parquet",       "landing", "catch.parquet"
 invisible(link_curated("ais/trail",                   "ais", "trail"))
 # The AIS catch is built only when asked, and is not in the store since 2026-10-29 (decision 241). fd_path(), not
 # fd_curated(), which would create the directory it names
-if (length(list.files(fd_path("curated", "ais", "catch"), recursive = TRUE)))
+if (length(list.files(fd_path("curated", "ais", "catch"), recursive = TRUE))) {
   invisible(link_curated("ais/catch", "ais", "catch"))
+} else if (nzchar(Sys.readlink(file.path(OUT, "ais", "catch")))) {
+  system2("rm", c("-f", shQuote(file.path(OUT, "ais", "catch")))) # a link left from a store that held it
+}
 invisible(link_curated("ais/voyage.parquet",          "ais", "voyage.parquet"))
 invisible(link_curated("reference/species.parquet",   "reference", "species.parquet"))
 invisible(link_curated("reference/gear.parquet",      "reference", "gear.parquet"))
