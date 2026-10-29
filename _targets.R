@@ -526,12 +526,11 @@ list(
                         fd_raw("oracle", "adb", "dredge.parquet"),
                         fd_raw("oracle", "adb", "line_and_net.parquet"),
                         fd_raw("oracle", "adb", "trap.parquet"),
-                        fd_raw("oracle", "adb", "surrounding_net.parquet"),
                         fd_raw("oracle", "adb", "catch.parquet")), format = "file"),
   # adb's own gear crosswalk (its code -> the new gid), read by the adapter (plan 050 step 4; by logbook_gear before)
   tar_target(adb_gear_code, fd_raw("oracle", "adb", "fishing_gear.parquet"), format = "file"),
   tar_target(adb, {
-    dictionary; gear; adb_raw; adb_gear_code
+    dictionary; gear; gear_window; adb_raw; adb_gear_code
     produces("sources/adb/convert.R",
              fd_staging("adb", "trip.parquet"),
              fd_staging("adb", "station.parquet"),

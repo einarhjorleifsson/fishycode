@@ -119,12 +119,13 @@ Gear-specific columns are `NA` where not applicable.
 | `.duration_source` | chr | `"data"`, `"capped"`, or `"missing"` |
 | `.t2_source`, `.t3_source` | chr | `"data"` or `"derived"` — whether the timestamp came from a raw column or was computed |
 | `.checks` | chr | Convert-time validation notes |
-| `effort_count` | dbl | Count component of effort (hooks, nets, jigs, trap units, or gear count) |
-| `effort_duration` | dbl | Time component in the natural unit of `effort_unit` |
+| `effort_count` | dbl | The one count (plan 050 step 2): hooks, nets, jigs, traps, or the trawls or dredges of a towed gear |
+| `effort_count_basis` | chr | `"recorded"`, `"derived"` (afli's twin flag 0/1 as 1/2; a longline's sets × hooks per set), `"synthesised"` (1 for a towed gear or seine that records none), `"none"`. A count is as recorded: an e-logbook's count of trawls may be the app's value carried from the last haul, as for vid 2048's single tows of May 2026 logged as twin (plan 050, ask b) |
+| `effort_count_unit` | chr | What is counted: `"trawls"`, `"dredges"`, `"seines"`, `"hooks"`, `"nets"`, `"jigs"`, `"traps"` |
+| `effort_duration` | dbl | Time component, in `effort_duration_unit` |
+| `effort_duration_unit` | chr | `"minutes"`, `"hours"`, `"days"`, or `"settings"` (seines). Kept apart from the count's unit so effort can be recombined, e.g. hook-hours (maintainer, 2026-10-29) |
 | `effort_unit` | chr | Unit label: `"gear-minutes"`, `"hook-days"`, `"net-days"`, `"jig-hours"`, `"trap-hours"`, `"setting"` |
 | `effort` | dbl | `effort_count × effort_duration` |
-| `n_units` | dbl | Number of gear units (nets, hook sets, traps, trawls) |
-| `n_total` | dbl | Total hooks for LLS (`fj_kroka`, or `n_hooks_per_set × n_sets`) |
 | `n_per_unit` | dbl | Hooks per set (LLS) or hooks per jig (LHM) |
 | `n_lost` | dbl | Number of lost gear pieces (`fs_afladagbok` only) |
 | `g_mesh` | dbl | Mesh size |
@@ -152,6 +153,9 @@ Reworked 2026-04-22 (`t0`–`t3` → `t1`–`t4`) and again 2026-05-06 for
 | `afli` static (LLS/GNS/GND) | `logn_hefst` | `NA` | `drattur_hefst` | `drattur_lykur` | `t4 − t1` (approx soak) |
 | `fs_afladagbok` mobile | `NA` | `upphaf_timi` | `lok_timi` | `NA` | `t3 − t2` |
 | `fs_afladagbok` static (LLS/GNS/GND/LHM/FPO) | `upphaf_timi` | `NA` | `milli_timi` | `lok_timi` | `t4 − t1` (approx soak) |
+| `adb` | as `fs_afladagbok` (its `fishing_start`, `tow_start`, `fishing_end` are `upphaf_timi`, `milli_timi`, `lok_timi`; read the same way since plan 050 step 2, `R/logbook_effort.R`) | | | | |
+
+**The 2021 ends.** fs_afladagbok's 2021 feed (`ws_veidiferd.uppruni` TRACKWELL, STOKKUR) has a start and no end. The merge keeps 22,359 of its stations, on vessel-days afli lacks (handline 18,884, gillnet 2,710, longline 763). Their `t3`/`t4` are NA and `.duration_source` is `"missing"`. Neither afli's sent messages nor adb holds the ends (plan 050 step 6).
 
 Notes:
 - **SDN in `fs_afladagbok`** is treated as mobile. If `milli_timi` ≠ `upphaf_timi`

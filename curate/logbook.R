@@ -320,6 +320,16 @@ merged_fishing_sample <- bind_rows(
 
 merged_catch <- bind_rows(afli_catch, fs_only_catch, adb_only_catch, ers_only_catch)
 
+# The count -------------------------------------------------------------------
+# One count, effort_count, with its basis from the adapters (R/logbook_effort.R, plan 050 step 2). The sources' own
+# counts stay in staging: n_units (afli's twin flag, a longline's sets, fs's tvo_veidarf) and n_total (afli's hooks,
+# now effort_count). aflaskeyti records none.
+merged_fishing_sample <- merged_fishing_sample |>
+  select(-n_units, -n_total) |>
+  mutate(effort_count_basis = coalesce(effort_count_basis, "none"))
+stopifnot("a count has a basis, and only a missing count has none" =
+            with(merged_fishing_sample, all(is.na(effort_count) == (effort_count_basis == "none"))))
+
 # Twin records -----------------------------------------------------------------
 # One operation entered as two or more stations (curate/corrections/logbook_twin.yml, decision 094). A twin
 # group is the stations of one vessel, in one schema, with identical t1-t4, at least one of them a time of day:
@@ -401,8 +411,8 @@ merged_station <- merged_station |>
 # Trackwell's logbook app fills the set time with the haul start less 270 min (or 1,710 min), cut to the minute
 # (curate/corrections/logbook_set_placeholder.yml, decision 157). Such a t1 is not the skipper's: it becomes NA and
 # t1_placeholder says why; the value as recorded stays in staging/. After the twins, which compare t1 as recorded.
-# The soak and effort made from it before curate/ (fs_afladagbok's static duration_m is t4 - t1) are left as they
-# are: t1_placeholder marks them too.
+# The soak and effort made from it before curate/ (fs_afladagbok's and adb's static duration_m is t4 - t1) are left
+# as they are: t1_placeholder marks them too.
 to_minute <- function(t) t - as.numeric(t) %% 60
 is_offset <- function(t1, t3, m) !is.na(t1) & !is.na(t3) &
   (t1 == to_minute(t3 - m * 60) | t3 == to_minute(t1 + m * 60))

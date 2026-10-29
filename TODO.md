@@ -1451,7 +1451,7 @@ vessels' 55-91 trips a year in 2000-2002 with less than half the landed weight.
 its own basis, or a decision declines it and the defect is declared where the analyst reads the catch.
 
 ## 153. The twin-trawl flag: one name and one coding, and adb's read too
-**status:** open · **see:** TODO 73 (plan 020), decision 212, `sources/afli/convert.R`,
+**status:** open (coded 2026-10-29 as plan 050 step 2, run in a scratch store; not yet in the live store) · **see:** TODO 73 (plan 020), decision 212, `sources/afli/convert.R`,
 `sources/fs_afladagbok/convert.R`, `sources/adb/convert.R`
 
 From the same check (2026-10-28, Claude, read-only). Trawl effort here is tow minutes x 1 (`effort_count = 1`), so the
@@ -1467,7 +1467,7 @@ record one trawl on seven of them (11-13 May, the colleague's source). AIS does 
 `docs/grammar.qmd`, `n_units` no longer holding it, and the carried-forward count declared or flagged.
 
 ## 154. fs_afladagbok's old feed holds the start time only
-**status:** open · **see:** TODO 107, TODO 141, decision 160, `$FISHYDATA/raw/oracle/fs_afladagbok/ws_veidi.parquet`
+**status:** open (plan 050 step 6, 2026-10-29: neither afli_sent nor adb holds the ends; declared in `docs/output-schema.md`; closes with step 7's record) · **see:** TODO 107, TODO 141, decision 160, `$FISHYDATA/raw/oracle/fs_afladagbok/ws_veidi.parquet`
 
 From the same check (2026-10-28, Claude, read-only). `ws_veidiferd.uppruni` splits `ws_veidi`: the upper-case
 `TRACKWELL` and `STOKKUR` trips (2019-2023; 77,806 of 2021's 77,824 stations) have no `lok_timi` and no row in

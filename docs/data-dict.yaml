@@ -3364,17 +3364,35 @@ tables:
         range: [-1061366400, 93618000]
         description: >-
           Operation duration, minutes, exactly as the source gave it, before the plausibility
-          limit. NA where the source has none. Not present for the adb schema.
+          limit. NA where the source has none.
       - name: effort_count
         type: number
         range: [-1, 580800]
         examples: [87, 20311, 36445, 42309, 148800]
         description: >
-          Count component of effort (hooks, nets, jigs, trap units, or gear count,
-          depending on gear class).
+          The one count (plan 050 step 2): what fishes at once - hooks, nets, jigs,
+          traps, or the trawls or dredges of a towed gear. Its basis is effort_count_basis.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
+      - name: effort_count_basis
+        type: enum
+        values: [recorded, derived, synthesised, none]
+        description: >
+          How effort_count was obtained: recorded; derived from the record's other values
+          (afli's twin flag 0/1 as 1/2, a longline's sets x hooks per set); synthesised (1
+          for a towed gear or a seine that records no count); none.
+      - name: effort_count_unit
+        type: enum
+        values: [trawls, dredges, seines, hooks, nets, jigs, traps]
+        description: >
+          What effort_count counts. Apart from the duration's unit, so that effort can be
+          recombined (hook-hours as well as hook-days).
+      - name: effort_duration_unit
+        type: enum
+        values: [minutes, hours, days, settings]
+        description: >
+          The unit of effort_duration; settings for a seine (one per setting).
       - name: effort_unit
         type: string
         examples:
@@ -3460,16 +3478,6 @@ tables:
         todo: |
           - Only 5 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
-      - name: n_units
-        type: number
-        range: [-1, 96000]
-        examples: [3, 5000, 21489, 34560, 50820]
-        description: >
-          Number of gear units deployed (nets, hook sets, traps, trawls - meaning
-          depends on gear class).
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
       - name: bottom_type
         type: string
         examples: ["1", grjót, hraun, linur, sandur]
@@ -3562,15 +3570,6 @@ tables:
         examples: [0, 1, 3, 6, 999]
         description: >
           SDN net footrope length (afli only).
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
-      - name: n_total
-        type: number
-        range: [0, 580800]
-        examples: [88, 24513, 38136, 43063, 272000]
-        description: >
-          Total hooks for LLS gear (fj_kroka, or n_hooks_per_set x n_sets).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.

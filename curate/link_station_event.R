@@ -2,8 +2,7 @@
 # Side: flow, step 2. See plan 013 (phase 4: reconcile declared times with the track) and decision 088.
 #
 # Input:  curated/ais/ping/year=*                  the fixes (vid, time)
-#         curated/logbook/station_window.parquet   t1-t4 per station as the windows read them (adb's towed start
-#                                                  and end already moved to t2/t3)
+#         curated/logbook/station_window.parquet   t1-t4 per station as the windows read them
 #         curated/logbook/fishing_sample.parquet   afli's .t3_source: a tow end computed from the towing time
 # Output: curated/link/station_event.parquet       one row per (station, event time present)
 #

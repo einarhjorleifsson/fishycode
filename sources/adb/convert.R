@@ -1,7 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
-# Input: raw/oracle/adb/{fishing_trip,fishing_station,trawl_and_seine_net,dredge,line_and_net,trap,surrounding_net,
-#        catch,fishing_gear}.parquet; curated/reference/gear.parquet
+# Input: raw/oracle/adb/{fishing_trip,fishing_station,trawl_and_seine_net,dredge,line_and_net,trap,catch,
+#        fishing_gear}.parquet; curated/reference/{gear,gear_window}.parquet
 # Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
 library(whack) # pak::pak("einarhjorleifsson/whack)
@@ -50,103 +50,50 @@ base <-
          z1, z2)
 
 # aux tables -------------------------------------------------------------------
-## Each block computes effort for its gear class and selects only
-##   .sid, effort, effort_unit, and any gear-specific columns (towtime,
-##   gear_width).  All inner_joins are on .sid only; base carries gid and
-##   times needed for the calculations.
+## Each block reads one gear table's count and dimensions, as fs_afladagbok's adapter reads the same fields
+## (equal on every station both hold: two_fg = tvo_veidarf, two_dredges = ws_plogur's tvo_veidarf, hooks, nets and
+## pole_and_lines = fj_kroka, fj_dreginna_neta and fj_faera, number_of_traps = fj_gildra; plan 050 §6). The effort
+## is the grammar's, made in the fishing sample below. adb's own units ("hours towed", "netnights", "hookhours"),
+## made here until plan 050 step 2, are gone with it.
 
 ## mobile (trawl / seine-net) --------------------------------------------------
-##   The bridle is in fathoms, converted as trawl_and_seine_net_v did.
+##   The bridle is in fathoms, converted as trawl_and_seine_net_v did. two_fg counts the trawls.
 mobile_aux <-
   duckdbfs::open_dataset(fd_raw("oracle", "adb", "trawl_and_seine_net.parquet")) |>
-  select(station_id = fishing_station_id, bridle) |> collect() |>
+  select(station_id = fishing_station_id, bridle, two_fg) |> collect() |>
   mutate(bridle_length = bridle * 1.8288) |>
   wk_translate(dictionary) |>                  # station_id → .sid; bridle_length → sweeps
-  inner_join(base |> select(.sid, gid, t3, t4), by = ".sid") |>
-  mutate(
-    towtime = as.numeric(difftime(t4, t3, units = "mins")),
-    effort = case_when(
-      gid %in% c(6, 7, 14) ~ towtime / 60,
-      gid == 5              ~ 1,
-      .default = NA_real_
-    ),
-    effort_unit = case_when(
-      gid %in% c(6, 7, 14) ~ "hours towed",
-      gid == 5              ~ "setting",
-      .default = NA_character_
-    ),
-    gear_width = if_else(!is.na(sweeps), sweeps, NA_real_)
-  ) |>
-  select(.sid, effort, effort_unit, towtime, gear_width)
+  select(.sid, n_gear = two_fg, gear_width = sweeps)
 
 ## dredge (plógur) -------------------------------------------------------------
-##   dredge covers gid 5, 6, 7, 51, 53 that are absent from trawl_and_seine_net.
 ##   The width is in feet (fs_afladagbok's ws_plogur says "fet"); dredge_v took a foot as 0.3042 m.
 dredge_aux <-
   duckdbfs::open_dataset(fd_raw("oracle", "adb", "dredge.parquet")) |>
-  select(station_id = fishing_station_id, width) |> collect() |>
+  select(station_id = fishing_station_id, width, two_dredges) |> collect() |>
   mutate(width = width * 0.3048) |>
   wk_translate(dictionary) |>
-  inner_join(base |> select(.sid, t3, t4), by = ".sid") |>
-  mutate(
-    towtime   = as.numeric(difftime(t4, t3, units = "mins")),
-    effort    = towtime / 60,
-    effort_unit = "hours towed",
-    gear_width  = width
-  ) |>
-  select(.sid, effort, effort_unit, towtime, gear_width)
+  select(.sid, n_gear = two_dredges, gear_width = width)
 
 ## static (longline / gillnet / handline) --------------------------------------
 static_aux <-
   duckdbfs::open_dataset(fd_raw("oracle", "adb", "line_and_net.parquet")) |>
-  select(station_id = fishing_station_id, hooks, nets) |> collect() |>
+  select(station_id = fishing_station_id, hooks, nets, pole_and_lines) |> collect() |>
   wk_translate(dictionary) |>
-  inner_join(base |> select(.sid, gid, t3, t4), by = ".sid") |>
-  mutate(
-    dt = as.numeric(difftime(t4, t3, units = "hours")),
-    effort = case_when(
-      gid == 1                             ~ hooks,
-      gid %in% c(2, 11, 25, 29, 91, 92)   ~ nets * dt / 24,
-      gid == 3                             ~ dt,
-      .default = NA_real_
-    ),
-    effort_unit = case_when(
-      gid == 1                             ~ "hooks",
-      gid %in% c(2, 11, 25, 29, 91, 92)   ~ "netnights",
-      gid == 3                             ~ "hookhours",
-      .default = NA_character_
-    )
-  ) |>
-  select(.sid, effort, effort_unit)
+  select(.sid, n_hooks = hooks, n_nets = nets, n_jigs = pole_and_lines)
 
 ## traps -----------------------------------------------------------------------
 trap_aux <-
   duckdbfs::open_dataset(fd_raw("oracle", "adb", "trap.parquet")) |>
   select(station_id = fishing_station_id, number_of_traps) |> collect() |>
   wk_translate(dictionary) |>
-  inner_join(base |> select(.sid, t3, t4), by = ".sid") |>
-  mutate(
-    dt          = as.numeric(difftime(t4, t3, units = "hours")),
-    effort      = number_of_traps * dt,
-    effort_unit = "traphours"
-  ) |>
-  select(.sid, effort, effort_unit)
-
-## seine / surrounding net -----------------------------------------------------
-seine_aux <-
-  duckdbfs::open_dataset(fd_raw("oracle", "adb", "surrounding_net.parquet")) |>
-  select(station_id = fishing_station_id) |> collect() |>
-  wk_translate(dictionary) |>
-  inner_join(base |> select(.sid), by = ".sid") |>
-  mutate(effort = 1, effort_unit = "setting") |>
-  select(.sid, effort, effort_unit)
+  select(.sid, n_traps = number_of_traps)
 
 # station table ----------------------------------------------------------------
 station <-
   base |>
   left_join(
-    bind_rows(mobile_aux, dredge_aux, static_aux, trap_aux, seine_aux),
-    by = ".sid"
+    bind_rows(mobile_aux, dredge_aux, static_aux, trap_aux),
+    by = ".sid", relationship = "one-to-one"
   ) |>
   mutate(schema = SCHEMA) |>
   arrange(date, .sid, t1, t3, t4)
@@ -179,9 +126,9 @@ catch <-
 # the fishing operation, joined on .sid. That mismatch is why adb could never be
 # merged: curate/logbook.R binds FOUR tables and adb supplied three.
 #
-# adb writes the old gear code, the GEAR schema's fishing_gear_no, which the
-# converter's own effort logic keys on (gid %in% c(6,7,14), and dredge "covers
-# gid 5,6,7,51,53"); it is kept verbatim as gid_old. adb's conversion from the
+# adb writes the old gear code, the GEAR schema's fishing_gear_no; it is kept
+# verbatim as gid_old (the converter's own effort keyed on it until plan 050
+# step 2). adb's conversion from the
 # FS number is undone here, where it enters (plan 050 step 4): adb's own table
 # fishing_gear maps the code back to the FS number, the new gid, as afli and
 # fs_afladagbok carry it (53 dredge -> 15, 51 crab trap -> 16, the rest as
@@ -201,25 +148,33 @@ station_narrow <-
   station |>
   select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, schema)
 
+gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
+
+# adb's times are fs_afladagbok's, field for field, and are read as that adapter reads them (R/logbook_effort.R):
+# fishing_start, tow_start and fishing_end are t1, t3 and t4 here, as the dictionary names them. Until plan 050
+# step 2 they were kept as read, and a towed gear's start and end sat in t1 and t4 with no duration;
+# curate/station_window.R moved them. The count is read per gear, and the effort made as afli's and fs's.
 fishing_sample <-
   station |>
   mutate(gid_old = as.integer(gid), .keep = "unused") |>
   left_join(gear_code, by = "gid_old", relationship = "many-to-one") |>
   left_join(gear_mapping, by = "gid", relationship = "many-to-one") |>
+  mutate(gid = as.numeric(gid)) |>
+  elogbook_times(gear_window) |>
+  mutate(effort_count = recorded_count(case_when(gear %in% c("OTB", "OTM", "DRB") ~ n_gear,
+                                                 gear == "LLS"                    ~ n_hooks,
+                                                 gear %in% c("GNS", "GND")        ~ n_nets,
+                                                 gear == "LHM"                    ~ n_jigs,
+                                                 gear == "FPO"                    ~ n_traps)),
+         effort_count_basis = if_else(is.na(effort_count), NA_character_, "recorded")) |>
+  add_effort() |>
   transmute(
     .tid, .sid,
     gid_old,                        # adb's own coding, kept verbatim
-    gid     = as.numeric(gid),
-    gear, target, target2,
-    t1,
-    t2 = as.POSIXct(NA),            # adb records no deployment-end time
-    t3, t4,
-    duration_m = as.numeric(towtime),   # towtime is already minutes
-    effort_count    = NA_integer_,
-    effort_duration = NA_real_,
-    effort_unit,
-    effort = as.numeric(effort),
-    n_units = NA_integer_,
+    gid, gear, target, target2,
+    t1, t2, t3, t4,
+    duration_m, duration_m_raw, .duration_source,
+    effort_count, effort_count_basis, effort_count_unit, effort_duration, effort_duration_unit, effort_unit, effort,
     n_lost  = NA_integer_,
     g_mesh   = NA_real_,
     g_width  = as.numeric(gear_width),

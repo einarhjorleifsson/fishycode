@@ -158,68 +158,64 @@ timing <-
   ) |>
   filter(!if_all(-.sid, is.na))
 
-## Gear dimensions + effort inputs ---------------------------------------------
-# One row per station; columns vary by gear class (NA elsewhere). effort_count
-# and effort_unit are derived here alongside gear dimensions — they share the
-# same source columns (hook counts, net counts, trap counts, etc.).
+## Gear dimensions + the count ------------------------------------------------
+# One row per station; columns vary by gear class (NA elsewhere). effort_count is the grammar's one count
+# (R/logbook_effort.R): hooks, nets, jigs, traps, and the trawls or dredges of a towed gear. n_units keeps the gear
+# table's own value in staging. Its basis is "recorded", or "derived" where it is made from the record's other
+# values: a longline's sets × hooks per set, and a towed gear's tvo_veidarf, a flag, 0 one gear and 1 two (plan
+# 050 §6: per vessel, afli's share flagged follows fs_afladagbok's share counted 2 or more).
+twin_count <- function(flag) case_when(flag == 0 ~ 1, flag == 1 ~ 2)
 dims <-
   bind_rows(
-    # OTB / OTM — gear dimension documentation pending
+    # OTB / OTM / DRB — trawl, dredge / plow
     aux_mobile |>
       filter(gear %in% c("OTB", "OTM")) |>
-      # I think we can assume that this is always 1
-      mutate(effort_count = 1L,
-             effort_unit  = "gear-minutes") |>
-      select(.sid, n_units, effort_count, effort_unit, bottom_type, catch_nperkg),
-    # DRB — dredge / plow
+      mutate(effort_count = twin_count(n_units), effort_count_basis = "derived") |>
+      select(.sid, n_units, effort_count, effort_count_basis, bottom_type, catch_nperkg),
     aux_mobile |>
       filter(gear == "DRB") |>
-      mutate(effort_count = coalesce(as.integer(n_units), 1L),
-             effort_unit  = "gear-minutes") |>
-      select(.sid, n_units, effort_count, effort_unit,
+      mutate(effort_count = twin_count(n_units), effort_count_basis = "derived") |>
+      select(.sid, n_units, effort_count, effort_count_basis,
              g_mesh = mesh, g_width = width_plow, g_height = height_plow, g_length = length_plow,
              bottom_type, catch_nperkg),
     # SDN — Danish seine (effort is per setting, not time-based)
     aux_mobile |>
       filter(gear == "SDN") |>
-      mutate(effort_count = 1L, effort_unit = "setting") |>
-      select(.sid, effort_count, effort_unit,
-             g_mesh = mesh, length_togle, length_virle, mesh_vod, length_headline, length_fotreipi),
+      select(.sid, g_mesh = mesh, length_togle, length_virle, mesh_vod, length_headline, length_fotreipi),
     # LLS — longline
     aux_static |>
       filter(gear == "LLS") |>
       mutate(n_total = case_when(!is.na(n_hooks)                          ~ n_hooks,
                                  !is.na(n_hooks_per_set) & !is.na(n_sets) ~ n_hooks_per_set * n_sets),
-             effort_count = n_total,
-             effort_unit  = "hook-days") |>
+             effort_count = recorded_count(n_total),
+             effort_count_basis = if_else(is.na(n_hooks), "derived", "recorded")) |>
       filter(!if_all(c(n_hooks, n_hooks_per_set, n_sets), is.na)) |>
       select(.sid, n_total, n_per_unit = n_hooks_per_set, n_units = n_sets,
-             effort_count, effort_unit),
+             effort_count, effort_count_basis),
     # GNS / GND — gillnet
     aux_static |>
       filter(gear %in% c("GNS", "GND")) |>
       mutate(n_units      = n_nets,
              length       = n_nets * mean_gillnet_length,
-             effort_count = n_units,
-             effort_unit  = "net-days") |>
+             effort_count = recorded_count(n_units),
+             effort_count_basis = "recorded") |>
       select(.sid, n_units, g_mesh = mesh, g_height, g_length = length, n_lost,
-             effort_count, effort_unit),
+             effort_count, effort_count_basis),
     # LHM — handline / jig
     aux_static |>
       filter(gear == "LHM") |>
-      mutate(effort_count = n_jigs, effort_unit = "jig-hours") |>
+      mutate(effort_count = recorded_count(n_jigs), effort_count_basis = "recorded") |>
       select(.sid, n_units = n_jigs, n_per_unit = n_hooks,
-             effort_count, effort_unit),
+             effort_count, effort_count_basis),
     # FPO — traps
     aux_trap |>
-      mutate(effort_count = n_units, effort_unit = "trap-hours") |>
-      select(.sid, n_units, effort_count, effort_unit),
+      mutate(effort_count = recorded_count(n_units), effort_count_basis = "recorded") |>
+      select(.sid, n_units, effort_count, effort_count_basis),
     # PS — purse seine / ring net (effort is per set)
     aux_seine |>
-      mutate(effort_count = 1L, effort_unit = "setting") |>
-      select(.sid, effort_count, effort_unit,
-             g_mesh = mesh, g_length, g_height)
-  )
+      select(.sid, g_mesh = mesh, g_length, g_height)
+  ) |>
+  mutate(effort_count_basis = if_else(is.na(effort_count), NA_character_, effort_count_basis))
 
 
 ## Duration limits -------------------------------------------------------------
@@ -243,18 +239,9 @@ fishing_sample <-
                               NA_real_, duration_m)) |>
   # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R)
   apply_duration_limit(gear_window) |>
-  # Effort: two-component — effort = effort_count × effort_duration
-  left_join(dims |> select(.sid, effort_count, effort_unit), by = ".sid") |>
-  mutate(effort_duration = case_when(
-    effort_unit == "gear-minutes" ~ duration_m,
-    effort_unit == "hook-days"    ~ duration_m / (60 * 24),
-    effort_unit == "net-days"     ~ duration_m / (60 * 24),
-    effort_unit == "jig-hours"    ~ duration_m / 60,
-    effort_unit == "trap-hours"   ~ duration_m / 60,
-    effort_unit == "setting"      ~ 1,
-    .default = NA_real_
-  ),
-  effort = effort_count * effort_duration)
+  # Effort: two-component — effort = effort_count × effort_duration (R/logbook_effort.R)
+  left_join(dims |> select(.sid, effort_count, effort_count_basis), by = ".sid") |>
+  add_effort()
 
 
 ## Timestamps ------------------------------------------------------------------
@@ -305,7 +292,7 @@ fishing_sample <- fishing_sample |>
 
 ## Join gear dimensions --------------------------------------------------------
 fishing_sample <- fishing_sample |>
-  left_join(dims |> select(-effort_count, -effort_unit), by = ".sid")
+  left_join(dims |> select(-effort_count, -effort_count_basis), by = ".sid")
 
 
 ## Back-entry flag -------------------------------------------------------------

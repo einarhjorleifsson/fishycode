@@ -78,13 +78,9 @@ CREATE TABLE base AS
 SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.metier, ag.gear, ag.target,
        ag.target2,
        CAST(ag.gid_used AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
-       -- adb keeps the raw start/end as t1/t4 whatever the gear (its gear is unknown in the adapter). For a
-       -- towed gear fs_afladagbok maps them to t2/t3 and leaves t1/t4 NA; the same on the 1.4 M shared
-       -- stations (adb t1 = fs t2, adb t4 = fs t3, 100 %). Without this every 2026 tow was a day window.
-       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN NULL ELSE f.t1 END AS t1,
-       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN f.t1 ELSE f.t2 END AS t2,
-       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN f.t4 ELSE f.t3 END AS t3,
-       CASE WHEN f.schema = 'adb' AND g.gear_class = 'towed' THEN NULL ELSE f.t4 END AS t4, f.duration_m,
+       -- adb's towed start and end were moved to t2/t3 here until plan 050 step 2; its adapter reads them as
+       -- fs_afladagbok's does now (R/logbook_effort.R).
+       f.t1, f.t2, f.t3, f.t4, f.duration_m,
        st.date
 FROM fs f
 JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
@@ -97,7 +93,7 @@ WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS 
 # The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts
 # above, the day fallback - are ramb::rb_create_record_windows() (plan 014 phase 2 ported what stood here; ramb
 # 2026.10.14.2 made the windows exclusive, decision 091). This script supplies the Icelandic base: the vessel
-# per trip, adb's gear from the landing, and adb's t1/t4 moved to t2/t3 for towed gear.
+# per trip, and adb's gear from the landing.
 
 sw <- ramb::rb_create_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
   dplyr::select(.sid, schema, .tid, vid, metier, gear, target, target2, gid, gear_class, phase, w_start, w_end,

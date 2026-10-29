@@ -4,7 +4,8 @@
 day (§5), and steps 2-6 need not wait for step 1 (maintainer); step 4, `lid_map`'s pelagic set and `gear_code` coded the
 same day and run in a scratch store against the live one (§6), not yet in the live store (step 7); step 5 (ask c
 answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
-its factor belongs to a review of whole weight across species, periods and databases (plan 051) · **measured** (§1), by Claude the
+its factor belongs to a review of whole weight across species, periods and databases (plan 051); step 2 (ask b
+answered) and step 6 the same day, run in the scratch store (§6) · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
@@ -158,7 +159,8 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
      from the two columns.
    - `n_units` leaves the fishing sample, and `products/user_tables.R` changes with it.
    - afli's dredges come out of this step too: the 13,396 with effort 0 are recounted.
-   - The trip setting, ask b.
+   - Ask b: a note, no column. adb's times are read as fs_afladagbok's with it, since its effort needs the grammar's
+     duration (§6).
 3. *(Folded into step 2: the dredges' count is the same column.)*
 4. **adb's gear at the adapter** (ask d). adb's conversion to the legacy code is where the fault lies, so it is undone
    where it enters: the adb adapter reads its legacy code back to the FS code through adb's own map
@@ -201,8 +203,12 @@ TODOs 152-154 close into the decision record.
 ## 5. Asks
 
 - a. *Answered (maintainer, 2026-10-29):* one count for every gear, which is the grammar's `effort_count` (step 2).
-- b. Whether the count being a trip setting is flagged (proposed) or left as recorded with a note. The new mar's author
-  calls issue 5 the Directorate's data.
+- b. *Answered (maintainer, 2026-10-29):* first "Yes, flag them", as proposed. Then the measurement found that no
+  source holds the count once per trip: on towed gear it changes within 558 of fs_afladagbok's 8,266 trips of two or
+  more counted stations, 722 of adb's 10,014 (`two_fg`), and 1,505 of afli's 35,933 in 2008-2019 (801 of 158,677
+  before 2008). Given that, the maintainer chose the note, with no column: the count is as recorded, and an
+  e-logbook's may be the app's value carried from the last haul (issue 5). A flag of constant counts would mark about
+  95 % of trips. The new mar's author calls issue 5 the Directorate's data.
 - c. *Answered (maintainer, 2026-10-29):* vessel and period at x 3.3, then, when the measurement found whole-weight
   trips inside the periods, the period with a trip guard. The periods were narrowed from the measurement: vid 1645
   logged whole weight in 2002-2003, so its early period is 2004-2006, not the 2000-2006 first proposed.
@@ -248,3 +254,50 @@ Not checked by a person.
   `round_factor`. 2,110 rows carry the factor: afli 2,047, fs_afladagbok 13, adb 50.
 - **Found on the way:** `station.parquet`'s `date` is a date-time. The correction's first run compared it with Dates and
   found no candidate, so it now stops on an empty set.
+
+**Step 2, one count**, coded 2026-10-29 and run the same way, on top of step 4: the three adapters, the merge and
+`station_window`. Every output was compared with step 4's scratch output (the merge, adb) or the live store's (afli's and fs_afladagbok's
+staging, `station_window`), read-only. The real store was untouched. Not checked by a person.
+
+- **The rule** (`R/logbook_effort.R`, shared by afli, fs_afladagbok and adb). `effort_count` is what fishes at once,
+  with `effort_count_basis`: `recorded`, `derived`, `synthesised` (one gear, for a towed gear or a seine that records
+  none) or `none`. A count of 0 is no count. The count's unit and the duration's are columns of their own,
+  `effort_count_unit` and `effort_duration_unit` (maintainer, 2026-10-29: so hook-hours can be made as well as
+  hook-days). `n_units` and `n_total` stay in staging and leave the merge.
+- **afli's twin flag** (`tvo_veidarf`, 0/1 on trawls and dredges; one station holds 5): 0 is one gear and 1 two, basis
+  `derived`. Per vessel with 50 or more counted tows, afli 2018-2022 against fs_afladagbok from 2022: 40 of 42 vessels
+  that afli almost never flags log one trawl in fs_afladagbok, and 4 of 6 it almost always flags log two or more. No
+  vessel flagged in afli is single in fs_afladagbok. On shared vessel-days fs_afladagbok has no count (its 2021-2022
+  feed has no `ws_dragnot_varpa` row), so the check is per vessel, not per tow.
+- **adb's counts** equal fs_afladagbok's on every station both hold: `two_fg` 217,569, `two_dredges` 4,578, hooks,
+  nets and jigs 124,737, traps 65.
+- **The count changes within trips in every source** (ask b): 558 of fs_afladagbok's 8,266 towed trips of two or more
+  counted stations, 722 of adb's 10,014, and 1,505 of afli's 35,933 in 2008-2019 (801 of 158,677 before 2008).
+- **adb's times.** `elogbook_times()` reads them as fs_afladagbok's adapter does: a towed start and end in `t2` and `t3`,
+  the duration, and the duration limit. adb's towed stations had no duration and no effort until now. `station_window.R`
+  no longer moves them. Its tow windows are the same on 51,288 of 51,292. 604 adb hauls differ because their own gear
+  is towed (584 dredges, 20 Danish seines) and their landing's is static (traps). The adapter now reads their times by
+  the logbook's own gear, as fs_afladagbok's 1,588 and afli's 876 dredges with a trap landing already are. 117 set or
+  haul windows lose an end to the duration limit, which adb now takes as fs_afladagbok does.
+- **Unchanged:** every staged and merged table but the fishing sample's effort columns (and adb's times). Every
+  station's type, and every `station_window` row of afli, fs_afladagbok and aflaskeyti.
+- **Changed:**
+  - afli's dredges with effort 0, 13,351 → 0.
+  - The effort's sum: afli's bottom trawl ×1.041 (142,572 twin tows), dredges ×1.034, and fs_afladagbok's bottom trawl
+    ×1.24 (30,406 tows of 2 or 3).
+  - adb's towed stations gain an effort: bottom trawl 32,626, Danish seine as before, dredge 2,682, midwater 1,367.
+  - adb's passive gears now take fs_afladagbok's units and soak (`t4 - t1`). Before, adb's own units ran from the haul's
+    start, so the sums are not comparable.
+  - Basis on the towed and seine stations: afli 3.90 M `derived`, 1.64 M `synthesised`; fs_afladagbok 155 k
+    `recorded`, 70 k `synthesised`.
+  - Stations with no count: afli 4,758, fs_afladagbok 23,855, aflaskeyti 3,058.
+
+**Step 6, the 2021 ends.** The merge's 22,359 fs_afladagbok stations of 2021 (duplicates left out) are handline
+18,884, gillnet 2,710, longline 763 and 2 trawls: each with a start, and 11 with an end. Neither source holds the rest:
+- **afli's sent messages** (`staging/afli_sent`): 29 of their 748 vessels appear there in 2020-2022, and none on the
+  same vessel-day or with a start within a minute.
+- **adb**, which shares the station ids: it holds 22,063 of them, with 12 ends.
+
+So their ends are not recorded anywhere we hold. They stay NA, with `.duration_source` `missing`, and
+`docs/output-schema.md` says so where the haul times are described.
+

@@ -211,55 +211,51 @@ aux_seine <-
 
 # Fishing sample --------------------------------------------------------------
 
-## Gear dimensions + effort inputs ---------------------------------------------
-# One row per station; gear-specific columns NA where not applicable.
-# effort_count and effort_unit are derived here alongside gear dimensions —
-# they share the same source columns.
+## Gear dimensions + the count ------------------------------------------------
+# One row per station; gear-specific columns NA where not applicable. effort_count is the grammar's one count
+# (R/logbook_effort.R): hooks, nets, jigs, traps, and the trawls (tvo_veidarf, 1-3) or dredges of a towed gear,
+# each as recorded. n_units keeps the gear table's own count in staging.
 dims <-
   bind_rows(
-    # OTB / OTM — bottom and midwater trawl; n_units unreliable, assume 1
+    # OTB / OTM — bottom and midwater trawl; tvo_veidarf counts the trawls (1, 2 or 3; NA on every OTM)
     aux_mobile |>
       filter(gear %in% c("OTB", "OTM")) |>
-      mutate(effort_count = 1L,
-             effort_unit  = "gear-minutes") |>
-      select(.sid, n_units, g_mesh, g_width, effort_count, effort_unit),
+      mutate(effort_count = recorded_count(n_units)) |>
+      select(.sid, n_units, g_mesh, g_width, effort_count),
     # SDN — Danish seine (effort is per setting, not time-based)
     aux_mobile |>
       filter(gear == "SDN") |>
-      mutate(effort_count = 1L, effort_unit = "setting") |>
-      select(.sid, g_mesh, g_length, effort_count, effort_unit),
-    # DRB — dredge / plow
+      select(.sid, g_mesh, g_length),
+    # DRB — dredge / plow; tvo_veidarf counts the dredges
     aux_dredge |>
-      mutate(effort_count = coalesce(as.integer(n_units), 1L),
-             effort_unit  = "gear-minutes") |>
-      select(.sid, n_units, g_mesh, g_width, g_length, g_height, effort_count, effort_unit),
+      mutate(effort_count = recorded_count(n_units)) |>
+      select(.sid, n_units, g_mesh, g_width, g_length, g_height, effort_count),
     # LLS — longline (gid 12 Lína, 13 Landbeitt lína, 21 Línutrekt)
     aux_static |>
       filter(gear == "LLS") |>
-      mutate(effort_count = n_hooks, effort_unit = "hook-days") |>
-      select(.sid, n_units = n_hooks, effort_count, effort_unit),
+      mutate(effort_count = recorded_count(n_hooks)) |>
+      select(.sid, n_units = n_hooks, effort_count),
     # GNS / GND — gillnet
     aux_static |>
       filter(gear %in% c("GNS", "GND")) |>
       mutate(n_units      = n_nets,
              g_length     = n_nets * mean_gillnet_length,
-             effort_count = n_units,
-             effort_unit  = "net-days") |>
-      select(.sid, n_units, g_mesh, g_height, g_length, effort_count, effort_unit),
+             effort_count = recorded_count(n_units)) |>
+      select(.sid, n_units, g_mesh, g_height, g_length, effort_count),
     # LHM — handline / jig
     aux_static |>
       filter(gear == "LHM") |>
-      mutate(effort_count = n_jigs, effort_unit = "jig-hours") |>
-      select(.sid, n_units = n_jigs, effort_count, effort_unit),
+      mutate(effort_count = recorded_count(n_jigs)) |>
+      select(.sid, n_units = n_jigs, effort_count),
     # FPO — traps
     aux_trap |>
-      mutate(effort_count = n_units, effort_unit = "trap-hours") |>
-      select(.sid, n_units, effort_count, effort_unit),
+      mutate(effort_count = recorded_count(n_units)) |>
+      select(.sid, n_units, effort_count),
     # PS — purse seine (effort is per setting)
     aux_seine |>
-      mutate(effort_count = 1L, effort_unit = "setting") |>
-      select(.sid, g_mesh, g_length, g_height, effort_count, effort_unit)
-  )
+      select(.sid, g_mesh, g_length, g_height)
+  ) |>
+  mutate(effort_count_basis = if_else(is.na(effort_count), NA_character_, "recorded"))
 
 ## Duration limits -------------------------------------------------------------
 # The plausible maximum per gear is reference/gear/windows.R (gear_window.dur_max_min),
@@ -272,86 +268,17 @@ fishing_sample <-
   source |>
   select(.tid, .sid, gid, t1, t3, t4, date, n_lost, schema) |>
   left_join(gear_mapping |> select(gid, gid_old = map, gear, target, target2), by = "gid") |>
-  # Remap raw ws_veidi timestamps to the unified t1–t4 grammar.
-  # Raw columns: upphaf_timi → t1_raw, milli_timi → t3_raw, lok_timi → t4_raw.
-  #
-  # Mobile (OTB/OTM/DRB/SDN):
-  #   upphaf_timi = deployment ends (warp fully out / gear on bottom) → t2
-  #   lok_timi    = retrieval starts (warp coming in)                 → t3
-  #   t1 and t4 are not recorded                                      → NA
-  #   SDN exception: if milli_timi ≠ upphaf_timi (3 distinct timestamps)
-  #   interpret as t1=upphaf_timi, t2=milli_timi, t3=lok_timi.
-  #   In current data milli_timi == upphaf_timi for 100% of SDN rows.
-  #
-  # Static (LLS/GNS/GND/LHM/FPO):
-  #   upphaf_timi = deployment starts → t1
-  #   milli_timi  = retrieval starts  → t3
-  #   lok_timi    = retrieval ends    → t4
-  #   t2 (deployment ends) not recorded → NA
-  mutate(
-    .t1_raw   = t1,
-    .t3_raw   = t3,
-    .t4_raw   = t4,
-    .mob_3ts  = gear %in% c("OTB", "OTM", "DRB", "SDN") &
-                !is.na(.t3_raw) & .t3_raw != .t1_raw,
-    t1 = case_when(
-      gear %in% c("OTB", "OTM", "DRB")     ~ NA_POSIXct_,
-      gear == "SDN" & !.mob_3ts             ~ NA_POSIXct_,
-      gear == "SDN" &  .mob_3ts             ~ .t1_raw,
-      .default                              = .t1_raw
-    ),
-    t2 = case_when(
-      gear %in% c("OTB", "OTM", "DRB")     ~ .t1_raw,
-      gear == "SDN" & !.mob_3ts             ~ .t1_raw,
-      gear == "SDN" &  .mob_3ts             ~ .t3_raw,
-      .default                              = NA_POSIXct_
-    ),
-    t3 = case_when(
-      gear %in% c("OTB", "OTM", "DRB", "SDN") ~ .t4_raw,
-      .default                                  = .t3_raw
-    ),
-    t4 = case_when(
-      gear %in% c("OTB", "OTM", "DRB", "SDN") ~ NA_POSIXct_,
-      .default                                  = .t4_raw
-    )
-  ) |>
-  select(-c(.t1_raw, .t3_raw, .t4_raw, .mob_3ts)) |>
-  # Duration:
-  #   Mobile (OTB/OTM/DRB/SDN): t3 − t2 (= lok_timi − upphaf_timi)
-  #   Static (LLS/GNS/GND/LHM/FPO): t4 − t1 (approximate; true soak =
-  #     t3 − t1, but including hauling is consistent with afli treatment)
-  mutate(duration_m = case_when(
-    gear %in% c("OTB", "OTM", "DRB", "SDN")         ~
-      as.numeric(difftime(t3, t2, units = "mins")),
-    gear %in% c("LLS", "GNS", "GND", "LHM", "FPO")  ~
-      as.numeric(difftime(t4, t1, units = "mins")),
-    .default = NA_real_
-  )) |>
-  # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R). The
-  # end time that produced it is not believed either: a mobile tow's t3 and a static
-  # set's t4 are set to NA with it, so no window is drawn from an impossible span.
-  apply_duration_limit(gear_window) |>
-  mutate(t3 = if_else(.duration_source == "implausible" & gear %in% c("OTB", "OTM", "DRB", "SDN"), NA_POSIXct_, t3),
-         t4 = if_else(.duration_source == "implausible" & gear %in% c("LLS", "GNS", "GND", "LHM", "FPO"), NA_POSIXct_, t4)) |>
+  # Raw ws_veidi times to the grammar's t1-t4, the duration and its limit (R/logbook_effort.R): upphaf_timi,
+  # milli_timi and lok_timi are t1, t3 and t4 here, as the dictionary names them.
+  elogbook_times(gear_window) |>
   # Effort: two-component — effort = effort_count × effort_duration
-  left_join(dims |> select(.sid, effort_count, effort_unit), by = ".sid") |>
-  mutate(
-    effort_duration = case_when(
-      effort_unit == "gear-minutes" ~ duration_m,
-      effort_unit == "hook-days"    ~ duration_m / (60 * 24),
-      effort_unit == "net-days"     ~ duration_m / (60 * 24),
-      effort_unit == "jig-hours"    ~ duration_m / 60,
-      effort_unit == "trap-hours"   ~ duration_m / 60,
-      effort_unit == "setting"      ~ 1,
-      .default = NA_real_
-    ),
-    effort = effort_count * effort_duration
-  ) |>
+  left_join(dims |> select(.sid, effort_count, effort_count_basis), by = ".sid") |>
+  add_effort() |>
   # Gear dimensions
-  left_join(dims |> select(-effort_count, -effort_unit), by = ".sid") |>
+  left_join(dims |> select(-effort_count, -effort_count_basis), by = ".sid") |>
   select(.tid, .sid, gid, gid_old, gear, target, target2, t1, t2, t3, t4, date,
          duration_m, duration_m_raw, .duration_source,
-         effort_count, effort_duration, effort_unit, effort,
+         effort_count, effort_count_basis, effort_count_unit, effort_duration, effort_duration_unit, effort_unit, effort,
          n_units, n_lost, g_mesh, g_width, g_length, g_height,
          schema) |>
   select(-date)
