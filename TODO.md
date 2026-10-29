@@ -1412,7 +1412,6 @@ The store was rebuilt from raw under 2.0.0 on 2026-10-28 and compared with the b
 outcome (decision 239). 2.0.0 has three regressions, each worked around in the code. The maintainer chose 1.5.6 until
 2.0.1 (due 2026-11-18); 2.0.0's build is kept at ~/Library/R/duckdb-2.0.0. Open:
 - `bench_small.sh` and the reprexes again at 2.0.1, under both engines;
-- `products/user_tables.R` and the effort map's `grid.R` again, on the store of 2026-10-28;
 - the three drafts to DuckDB, whether and how to send them (the maintainer's call).
 
 **check:** a decision records 2.0.1 against 1.5.6 on the battery and the reprexes, and which engine builds from then on.

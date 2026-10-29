@@ -247,11 +247,22 @@ The maintainer, the morning after: "Switch R's default DuckDB back to 1.5.6 unti
   - The lost pruning comes only through the view and only with a DOUBLE year. So an integer year is the fix, and
     `open_dataset()` stays (duckdbfs for parquet I/O, `AGENTS.md`).
   - `read_parquet()` stays where a script writes its SQL by hand (`curate/port_call.R`).
+- **The user tables and the effort map rebuilt on the store of 2026-10-28**, under 1.5.6 (the maintainer: "Yes,
+  rerun both"). These were `products/user_tables.R` (6 s), the effort map's `grid.R` (244 s) and `grid.R fixes` (64 s).
+  Both grid runs peaked at 23 GB of this Mac's 24. Each was summarised before and after (`v0_rerun.R`,
+  `v0_rerun_compare.log`):
+  - v0's `station` and `catch` are the same. `trip` has the same rows, with only `T2` moved. This is TODO 139's STK
+    tie, inherited from `trip_reconciled`'s `T2` and `T2_stk`, which moved in the rebuild: 36 trips have two
+    latest-starting STK voyages that disagree on the return, counted again today.
+  - Each of the four grids holds the same hours under `fishing`, in every gear and year. Under `fishing_flow`, 66
+    of each grid's 731 preset-gear-years changed. 194 of 11,606,380 hours moved between gears, and no year's total
+    moved by more than 1.1 hours. This is TODO 139's `voyage_gear` tie: `fishing_flow` takes the voyage's gear and
+    its speed range outside a haul's window. `grid.R`'s own check holds: the grid's hours, kW-hours and fixes are the
+    trail's.
 
 ## Not done
 
 - **2.0.1 against 1.5.6** (due 2026-11-18): `bench_small.sh` and the reprexes again, then which engine builds
   (TODO 150).
 - **A cast of `ais_ping_union.R`'s bare NAs** (decision 235, change 3).
-- **`products/user_tables.R` and the effort map's `grid.R`** again, on the store of 2026-10-28 (TODO 150).
 - **The three DuckDB drafts** (`curate/issues/duckdb.yml`): whether and how to send them is the maintainer's call.
