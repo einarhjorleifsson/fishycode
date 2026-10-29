@@ -1548,21 +1548,20 @@ None was judged (counted 2026-10-29 by Claude, not checked by a person).
 **check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.
 
 ## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
-**status:** open · **needs: maintainer** — where afli's edited layer changed a value its loaded `rafr_` layer holds,
-which answers (decision 244: `rafr_` for now) · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`,
-decision 244, TODOs 98, 100, 140, 164
+**status:** open · **needs: maintainer** — asks d and e (the logger's positions and its readings dated 1899), after the
+set times · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decision 244, TODOs 98, 100, 140, 164
 
 Built 2026-10-29 (decision 244), not checked by a person: `curated/logbook/{gear_part,rigging_part,sensor_summary}`,
-every source column and kept station in one outcome. Left:
-- **The edit against `rafr_`**: the twin flag (3,295 loaded 1, edited 0), hooks per tub (450 loaded, 20 edited), nets
-  (230, 30), the afli route's square window (about 91,000 edited "fitted", sent not). Decide before `effort_count`
-  reads `rigging_part` (3,976 afli stations would move); then `g_*` out a release later (decision 210 item 3).
+every source column and kept station in one outcome; afli's edited layer answers before `rafr_` to 2018 and where
+the domain expert's account last changed the station (the maintainer). Left:
+- **`effort_count` from `rigging_part`** (51 afli stations would move, each explained in decision 244), then `g_*` out
+  a release later (decision 210 item 3).
 - **`vessel_sensor`** (`curated/vessel_sensor/`, ask h) with asks d and e, after the set times (TODO 164, plan 053).
 - **Plan 052 step 1's remainder**: the units in the overlay (`dump/oracle/meta/`), ICES vocabularies as code-list
   columns, the gillnet's length and the dredge's size measured, door areas above 40 m² (12,736; square feet?).
 
-**check:** the edit question decided; `effort_count` read from `rigging_part` with the change accounted for;
-`vessel_sensor` built or declined; a decision record.
+**check:** `effort_count` read from `rigging_part`, the change accounted for; `vessel_sensor` built or declined; a
+decision record.
 
 ## 164. The set time by app: which `t1` opens a set window
 **status:** open · **needs: maintainer** — choices a-c · **see:** TODO 103, decisions 157, 158, 206, 211 and 242,

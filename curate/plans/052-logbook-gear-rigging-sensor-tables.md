@@ -526,6 +526,10 @@ the maintainer's choices among the options put, recorded here by Claude):
 - g: the undocumented columns used as §2 reads them, basis `reconstructed` for the meaning, the reading in the code
   list; `beitufrakast`, whose meaning is unknown, kept as recorded and flagged.
 - h: `curated/vessel_sensor/`, by provider and year, when it is built.
+- Asked after the first build (the edit against `rafr_`, which §5 left open): the maintainer, the same night, "manual
+  edits at least done <= 2018 are [the expert's account] - i trust him". So the edited layer answers before `rafr_` on
+  records to 2018 and wherever the expert's account last changed the station, `rafr_` on the afli route's import of 2019
+  on (decision 244).
 
 The asks as put:
 

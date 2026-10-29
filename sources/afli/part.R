@@ -13,8 +13,12 @@
 # turned to fathoms on some records and not on others); the loaded rafr_ tables, afli's copy and then fs_afli's for the
 # records afli's lacks (2020-07 to 2023, the afli route); the edited tables, afli's and then fs_afli's for the paper
 # stations afli lacks, as sources/afli/convert.R reads them (decision 124). Per measure the best layer holding a value
-# answers. The edit's changes to a value rafr_ holds are counted in part_column.parquet, not taken: rafr_ is the
-# prototype (the maintainer, 2026-10-29). Water depth stays on the station (z1, z2): one home, TODO 113.
+# answers. Where the edit changed a value rafr_ holds, the edit answers on every record to 2018 and on every station the
+# domain expert's account last changed (the maintainer, 2026-10-29: the manual edits to 2018 are his, "i trust him";
+# plan 037 §1), and rafr_ answers elsewhere: the afli route's import of 2019 on, which set the square window on 94,635
+# tows the apps sent without one. The account is read from FISHYDATA_EXPERT_ACCOUNT (the project's git-ignored
+# .Renviron), handed to DuckDB as a parameter and never printed or written, as plan 037's scripts do. The rafr_ value
+# lost to an edit is counted in part_column.parquet. Water depth stays on the station (z1, z2): one home, TODO 113.
 #
 # The tables carry no time, and read none: plan 052's tables are independent of the set times (TODO 164).
 
@@ -24,6 +28,9 @@ suppressPackageStartupMessages({
 })
 
 SCHEMA <- "afli"
+EXPERT <- Sys.getenv("FISHYDATA_EXPERT_ACCOUNT")
+if (!nzchar(trimws(EXPERT))) stop("FISHYDATA_EXPERT_ACCOUNT is not set (the maintainer sets it in the project's .Renviron). ",
+                                  "afli's layer order depends on it; not guessing.", call. = FALSE)
 OUT    <- function(f) fd_staging("afli", f)
 WORK   <- OUT("_part")
 unlink(WORK, recursive = TRUE)
@@ -98,6 +105,26 @@ part_read(con, "afli_sent", SCHEMA, "sent", "afli_sent", 1L)
 say("settle %s values", format(q("SELECT count(*) n FROM lraw")$n, big.mark = ","))
 part_settle(con)
 
+## Which layer answers first: the edit, or what was loaded ----------------------------------------------------------
+# Every layer's rank is set as if rafr_ came first (rafr_ 2-3, edited 4-5); on the stations where the edit answers first
+# (`ef`: a record to 2018, or one the expert's account last changed) the two swap. The sent layer and the message (1)
+# stay first: they hold what the loader lost or changed, which neither has.
+dbExecute(con, "CREATE TEMP TABLE ex AS SELECT upper(trim(?::VARCHAR)) a", params = list(EXPERT))
+rm(EXPERT)
+dbExecute(con, sprintf("CREATE TABLE ef AS
+  SELECT visir sid, bool_or(upper(trim(sbg)) = (SELECT a FROM ex)) expert, bool_or(year(vedags) <= 2018) to_2018
+  FROM (SELECT visir, sbg, vedags FROM %1$s UNION ALL
+        SELECT visir, sbg, vedags FROM %2$s WHERE visir NOT IN (SELECT visir FROM %1$s))
+  GROUP BY visir HAVING coalesce(bool_or(upper(trim(sbg)) = (SELECT a FROM ex)), false) OR coalesce(bool_or(year(vedags) <= 2018), false)",
+  raw("afli", "rafr_stofn"), raw("fs_afli", "rafr_stofn")))
+dbExecute(con, "DROP TABLE ex")
+EDIT_LR <- "CASE lr WHEN 2 THEN 4 WHEN 3 THEN 5 WHEN 4 THEN 2 WHEN 5 THEN 3 ELSE lr END"
+eff_lr <- function(lr, sid) vapply(lr, \(l) sprintf("CASE WHEN %2$s IN (SELECT sid FROM ef) THEN %3$s ELSE %1$s END", l,
+                                                     sid, gsub("lr", l, EDIT_LR, fixed = TRUE)), "")
+n_swap <- dbExecute(con, sprintf("UPDATE lp SET lr = %s WHERE sid IN (SELECT sid FROM ef)", EDIT_LR))
+print(q("SELECT expert, to_2018, count(*) stations FROM ef GROUP BY ALL ORDER BY ALL"))
+say("the edit first on those stations: %s values reranked", format(n_swap, big.mark = ","))
+
 # Three rules that read more than one column ---------------------------------------------------------------------------
 ## Calm: a wind direction of 0 with no wind --------------------------------------------------------------------------
 # On the paper records the compass has eight points and 360 is north; 0 goes with Beaufort 0 on 314,692 of 343,260
@@ -128,10 +155,10 @@ dbExecute(con, sprintf("CREATE TABLE rig AS
          WHEN remark = 'pair' THEN 'remark' END n_from
   FROM x JOIN sg ON sg.visir = x.sid
   WHERE sg.gear IN ('OTB', 'OTM', 'DRB') AND (flag IS NOT NULL OR remark IS NOT NULL)",
-  paste(sprintf("SELECT \".sid\" sid, '%s' layer, %d lr, tvo_veidarf FROM \"%s\" WHERE tvo_veidarf IS NOT NULL",
-                toga_layers$layer, toga_layers$lr, toga_layers$layer), collapse = " UNION ALL "),
-  paste(sprintf("SELECT \".sid\" sid, '%s' layer, %d lr, athugas FROM \"%s\" WHERE athugas IS NOT NULL",
-                stofn_lr$layer, stofn_lr$lr, stofn_lr$layer), collapse = " UNION ALL ")))
+  paste(sprintf("SELECT \".sid\" sid, '%s' layer, %s lr, tvo_veidarf FROM \"%s\" WHERE tvo_veidarf IS NOT NULL",
+                toga_layers$layer, eff_lr(toga_layers$lr, "\".sid\""), toga_layers$layer), collapse = " UNION ALL "),
+  paste(sprintf("SELECT \".sid\" sid, '%s' layer, %s lr, athugas FROM \"%s\" WHERE athugas IS NOT NULL",
+                stofn_lr$layer, eff_lr(stofn_lr$lr, "\".sid\""), stofn_lr$layer), collapse = " UNION ALL ")))
 rig_row <- function(measure, value) sprintf("
   SELECT sid, gear, CASE n_from WHEN 'flag' THEN f_layer ELSE r_layer END layer,
     CASE n_from WHEN 'flag' THEN f_lr ELSE r_lr END lr,
@@ -148,13 +175,13 @@ print(q("SELECT flag, remark, n, n_from, count(*) stations FROM rig GROUP BY ALL
 ## Hooks in all: tubs x hooks per tub where the record gives no total -------------------------------------------------
 line_layers <- LAYERS |> filter(map_table == "lineha")
 part_add(con, paste(sprintf("
-  SELECT \".sid\" sid, gear, '%1$s' layer, %2$d lr, 'lineha' tbl, 'onglar*bjod' col, 'rigging_part' \"use\",
+  SELECT \".sid\" sid, gear, '%1$s' layer, %2$s lr, 'lineha' tbl, 'onglar*bjod' col, 'rigging_part' \"use\",
     'hook_total' part, 'n' measure, 2 cr,
     CASE WHEN onglar::DOUBLE * bjod BETWEEN 10 AND 100000 THEN 'ok' ELSE 'implausible' END status,
     CAST(onglar::DOUBLE * bjod AS VARCHAR) raw_txt, onglar::DOUBLE * bjod raw_num, onglar::DOUBLE * bjod num,
     'count' unit_raw, 'derived' basis,
     CASE WHEN onglar::DOUBLE * bjod BETWEEN 10 AND 100000 THEN NULL ELSE 'implausible' END flag
-  FROM \"%1$s\" WHERE gear = 'LLS' AND onglar > 0 AND bjod > 0", line_layers$layer, line_layers$lr),
+  FROM \"%1$s\" WHERE gear = 'LLS' AND onglar > 0 AND bjod > 0", line_layers$layer, eff_lr(line_layers$lr, "\".sid\"")),
   collapse = " UNION ALL "))
 
 ## The headline depth as sent ----------------------------------------------------------------------------------------

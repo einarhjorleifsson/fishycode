@@ -2246,7 +2246,7 @@ tables:
           count, neither, fishing_sample only, rigging_part only.
       - name: stations
         type: number
-        range: [1, 3809739]
+        range: [1, 3813197]
         examples: [275, 1175, 5248, 42127, 55020]
         constraints: [required]
         description: >
@@ -2351,25 +2351,25 @@ tables:
       - name: n_implausible
         type: number
         range: [0, 118022]
-        examples: [0, 466, 8130, 11767, 14270]
+        examples: [0, 361, 466, 8130, 14270]
         description: >
           Outside the physical range: kept and flagged.
       - name: n_used
         type: number
-        range: [0, 6324368]
-        examples: [0, 54275, 97641, 107024, 217848]
+        range: [0, 7456022]
+        examples: [0, 1175, 6087, 97641, 98191]
         description: >
           Values that answer (per measure).
       - name: n_lost_equal
         type: number
-        range: [0, 1270957]
-        examples: [0, 51682, 64702, 137641, 601834]
+        range: [0, 973803]
+        examples: [0, 43230, 567663, 594036, 767523]
         description: >
           Lost to a better layer or column holding the same value.
       - name: n_lost_differs
         type: number
         range: [0, 94684]
-        examples: [0, 31, 260, 4044, 94684]
+        examples: [0, 43, 80, 3910, 94684]
         description: >
           Lost to a better layer or column holding another value (afli: the edit's changes to rafr_).
   - name: landing_catch
@@ -5069,8 +5069,10 @@ tables:
         examples: ["afli_sent + afli.rafr_lineha", "afli_sent + fs_afli.rafr_lineha", "adb.trawl_and_seine_net", "adb.fishing_station", "fs_afladagbok.ws_gildra"]
         constraints: [required]
         description: >
-          Every table that gave one of the row's values, best first, joined by ' + ' (afli: the sent
-          layer and message, rafr_ loaded, edited; afli and fs_afli copies).
+          Every table that gave one of the row's values, best first, joined by ' + '. afli: the sent
+          layer and its message first; then its edited tables on records to 2018 and where the domain
+          expert last changed the station, its loaded rafr_ tables first elsewhere (decision 244);
+          afli's and fs_afli's copies.
       - name: flag
         type: string
         examples: ["n=110.0: meaning_unknown", "n=70.0: meaning_unknown", "weight_kg=10: implausible", "n=40000.0: meaning_unknown", "n=25000.0: meaning_unknown"]
@@ -5252,8 +5254,10 @@ tables:
         examples: ["adb.trap", "adb.trawl_and_seine_net", "afli.stofn", "fs_afladagbok.ws_gildra", "fs_afli.rafr_lineha"]
         constraints: [required]
         description: >
-          Every table that gave one of the row's values, best first, joined by ' + ' (afli: the sent
-          layer and message, rafr_ loaded, edited; afli and fs_afli copies).
+          Every table that gave one of the row's values, best first, joined by ' + '. afli: the sent
+          layer and its message first; then its edited tables on records to 2018 and where the domain
+          expert last changed the station, its loaded rafr_ tables first elsewhere (decision 244);
+          afli's and fs_afli's copies.
       - name: flag
         type: string
         examples: ["n=650: implausible", "n=6506: implausible", "n=162500.0: implausible", "n=22.0: implausible", "area_m2=92.0: implausible"]
@@ -5362,7 +5366,7 @@ tables:
           recorded, or none where the reading has no SI value for want of its unit.
       - name: layer
         type: string
-        examples: ["afli.stofn", "fs_afli.rafr_lineha", "afli.toga", "afli.rafr_lineha", "afli.rafr_hringn"]
+        examples: ["afli.stofn", "fs_afli.rafr_lineha", "afli.lineha", "afli.toga", "afli.rafr_lineha"]
         constraints: [required]
         description: >
           The table that gave the reading: afli's message (fs_afli.afladagb_xml_mottaka), sent layer,
@@ -5768,7 +5772,7 @@ tables:
       - name: max_si
         type: number
         range: [3, 100000]
-        examples: [3, 50, 60, 3000, 5000]
+        examples: [3, 50, 3000, 5000, 9000]
         description: >
           Above it a value is implausible.
       - name: code_list

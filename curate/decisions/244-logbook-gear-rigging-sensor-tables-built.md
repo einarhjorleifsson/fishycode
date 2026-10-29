@@ -57,12 +57,13 @@ holds none (net mesh, square window: read as empty) and lost the dredge's weight
 
 ## How each value is chosen (the cascade)
 
-afli's layers, best first (plan 052 §5, plan 037): what the apps sent, where the loader lost or changed it (from
+afli's layers (plan 052 §5, plan 037): what the apps sent, where the loader lost or changed it (from
 `staging/afli_sent`: hook type and size, hand-baiting, hooks per jig line, the dredge's size, the bottom; and the
-headline depth, read from the message itself); the loaded `rafr_` tables, afli's copy and then fs_afli's for the
-records afli's lacks (2020-07 to 2023: 134,276 towing rows, the afli route's detail, which fs_afladagbok thinned);
-the edited tables, afli's and then fs_afli's paper stations. Per measure the best layer holding a value answers;
-`layer` names every table a row's values came from.
+headline depth, read from the message itself), always first; the loaded `rafr_` tables, afli's copy and then
+fs_afli's for the records afli's lacks (2020-07 to 2023: 134,276 towing rows, the afli route's detail, which
+fs_afladagbok thinned); the edited tables, afli's and then fs_afli's paper stations. Between the loaded and the edited
+layer the maintainer's rule decides (below). Per measure the best layer holding a value answers; `layer` names every
+table a row's values came from.
 
 **Gear rows left behind by a correction** (the maintainer's hypothesis, 2026-10-29: when a station's gear was
 corrected, the row in the old gear's table may not have been deleted). Confirmed in kind: no station is in two of
@@ -106,17 +107,32 @@ apps' 1s and the sentinels 9999, -99, 990 (sea water -3 to 25 °C, air -40 to 35
   comment says metres, its values are fs's) and a dredge's size (fs's comment says feet; one vessel's constants
   3 x 3 x 3 and 2.5 x 3.6 x 0.2). fs's dredge weight of 10 kg (3,980 hauls) is flagged implausible.
 
-## The edit's changes, counted, not taken
+## Where the edit changed a value `rafr_` holds: the expert's edits answer
 
-Where afli's edited layer holds another value than `rafr_`, `rafr_` answers (the plan's order; `part_column`'s
-`n_lost_differs`): the twin flag (3,295 tows loaded 1 and edited 0, 49 the other way, 33 the edit lacks), the Danish
-seine rope 6,701,
-the headline 4,044, the door weight 3,243, the codend mesh 3,151 + 2,064, the gillnet mesh 2,131, the sweeps 1,863,
-the tubs 487 and hooks per tub 455, and the square window on the afli route: the edited layer says fitted on about
-91,000 tows of 2020-2023 where the record as sent says not (fs, the same e-logbook, has the field on 105 operations),
-which looks like an import's mapping, not a correction. The edit corrects some values (a gillnet set loaded with 230
-nets, edited 30) and degrades others (longline tubs loaded with 450 hooks, edited 20, which today's count of 480 hooks
-reads). Which layer answers where they differ is the maintainer's call (TODO 163).
+The first build took `rafr_` before the edit, as plan 052 §5 has it, and counted the edit's changes: the twin flag
+(3,295 tows loaded 1 and edited 0, 49 the other way), the Danish seine rope 6,701, the headline 4,044, the door weight
+3,243, the codend mesh 3,151 + 2,064, the gillnet mesh 2,131, the sweeps 1,863, the tubs 487 and hooks per tub 455, and
+the square window. Some looked like corrections (a gillnet set loaded with 230 nets, edited 30), some not (longline tubs
+loaded with 450 hooks, edited 20).
+
+The maintainer, 2026-10-29, on that order: "think we may need to revert that, manual edits at least done <= 2018 are
+[the expert's account] - i trust him". Who changed what was then measured by plan 037's method: the domain expert's account read
+from `FISHYDATA_EXPERT_ACCOUNT` in the git-ignored `.Renviron`, passed to DuckDB as a parameter and never printed or
+written, against the last changer of the station's `rafr_stofn` row (afli keeps no editor, so a lower bound). Counted
+per column, the disagreements on records to 2018 lie on stations the expert last changed (twin flag 1,454, headline
+2,176, codend mesh 2,175) and on others' (1,893, 1,776, and the rope's 6,570). On records of 2019 on, the afli route's
+import, almost all are other accounts', dominated by the square window and square-mesh codend set to fitted on 94,635
+tows the apps sent without one (fs_afladagbok, the same e-logbook, holds the field on 105 operations): an import's
+mapping, not an edit. 648,245 stations of records to 2018 and 3,590 of 2019 were last changed by the expert's account.
+
+**The rule** (`sources/afli/part.R`): the edited layer answers before `rafr_` on every record to 2018 and on every
+station the expert's account last changed (1,014,398 stations), `rafr_` before the edit elsewhere (the import of 2019
+on). The sent layer and the message stay first, for what the loader lost or changed. Where the edit emptied a value,
+`rafr_` still fills it (the Danish seine's surface temperature and tow time, plan 052 §2). The `rafr_` values lost to
+an edit are counted in `part_column` (`n_lost_differs` on the `rafr_` layers: rope 6,700, codend mesh 4,141 + 3,068,
+headline 3,910, door weight 3,214, gillnet mesh 2,131, sweeps 1,834), and the edit's square windows lost to `rafr_`,
+94,684. The rule was relayed to the plan-053 session: the afli route's edited values, set times included, are an
+import's, and the expert's corrections are labels a rule can be scored against (plan 037 §1).
 
 ## Checks
 
@@ -124,23 +140,24 @@ reads). Which layer answers where they differ is the maintainer's call (TODO 163
   layer (`check_logbook_part_column`): afli 488 columns over its 19 layer tables (202 read, the rest listed with their
   reason), fs 48 (32 read), adb 48 (28 read); every afli value read (71.6 M) in one outcome.
 - **`effort_count` read from `rigging_part`** (a towed gear's rig, a longline's hooks in all, the nets, jigs and
-  traps) equals `fishing_sample`'s on every fs_afladagbok and adb station, and on afli's but 3,976, each explained:
-  3,856 where the edited layer, which today's count reads, changed or lacks the value `rafr_` holds (3,378 twin flags,
-  418 longlines' hooks or tubs, 30 gillnets' nets, 29 jig counts, 1 dredge), and 120 where it dropped the skipper's
-  twin remark. 5 of them have a count only in `rigging_part` (two jig counts of -1, flagged). A towed gear or seine
-  with no count recorded is `synthesised, no rigging count` (fishing_sample's one gear).
+  traps) equals `fishing_sample`'s on every fs_afladagbok and adb station, and on afli's but 51, each explained: 44
+  records of 2019 on where `rafr_` answers by the rule and the edited layer, which today's count reads, changed or lacks
+  the value (33 twin flags fs_afli's copy holds, 6 twin remarks, 5 longlines); 5 records to 2018 where the edit emptied
+  a value `rafr_` fills (a twin flag, a dredge's, 2 longlines', a jig count); and 2 jig counts of -1 on paper records,
+  flagged, which today's count leaves out. With `rafr_` first everywhere they were 3,976. A towed gear or seine with no
+  count recorded is `synthesised, no rigging count` (fishing_sample's one gear).
 - **Against plan 052 §2** (afli's `rafr_` stations, eytt 0): stations holding a temperature or headline depth
-  538,135 (§3: 537,584; the 822 depths from the messages, and the ranges -3 to 25 °C against -2.5 to 20); a fitted flag
-  only 263,250 (263,827); readings by place within 0.2 % of the study's (e.g. bottom at the start 398,885 against
-  398,804). fs's operations with a part 349,857 (349,868). Bottom trawl's headline, doors, sweeps 97.5-97.6 % against
+  538,306 (§3: 537,584; the 822 depths from the messages, the edit's values, and the ranges -3 to 25 °C against -2.5 to
+  20); a fitted flag only 263,153 (263,827); readings by place within 1.1 % of the study's (e.g. bottom at the start
+  399,116 against 399,063). fs's operations with a part 349,857 (349,868). Bottom trawl's headline, doors, sweeps 97.5-97.6 % against
   100 %: the 13,482 recoded as dredges.
 - `docs/data-dict.yaml`'s seven new entries pass `data-dict validate-spec`, `validate-meta` and `validate-data`.
 
 ## What is left (TODO 163)
 
 - `vessel_sensor` and asks d and e, after the set times (TODO 164, plan 053).
-- Which afli layer answers where the edit changed a value (above), before `effort_count` reads `rigging_part`; then
-  `effort_count` from `rigging_part`, and the `g_*` columns out a release later (decision 210 item 3).
+- `effort_count` read from `rigging_part` (51 afli stations would move, above), and the `g_*` columns out a release
+  later (decision 210 item 3).
 - Plan 052 step 1's remainder: the units in the metadata overlay (`dump/oracle/meta/`; for now the map is their one
   record), the ICES vocabularies as columns of the code lists, the gillnet's length and the dredge's size measured,
   §2's unexplained headline and sweep records listed by vessel. Door areas above 40 m² (12,736 tows) may be square

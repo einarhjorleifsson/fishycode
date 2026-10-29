@@ -277,8 +277,10 @@ every column.
 one outcome: the part and measure it fills, its unit and factor to SI, the gears it applies to, its plausible range and
 code list, or why it is not used. afli is read from its loaded `rafr_` tables first (afli's copy, then fs_afli's for
 2020-07 to 2023), the values the loader lost from the sent messages (hook type and size, hand-baiting, hooks per jig,
-the dredge's size, the headline depth), and its edited tables for the rest (the paper years); per measure the best
-layer holding a value answers, and `layer` names every table a row's values came from. fs_afladagbok and adb are read
+the dredge's size, the headline depth), and its edited tables (the paper years). Where the edit changed a loaded value,
+the edit answers on records to 2018 and wherever the domain expert last changed the station (his manual corrections,
+trusted by the maintainer), the loaded value on the afli route's import of 2019 on; per measure the best layer holding
+a value answers, and `layer` names every table a row's values came from. fs_afladagbok and adb are read
 from their gear tables (adb from 2025-11-19, as the merge has it).
 
 **Units.** afli's headline and sweeps are metres (not the feet and fathoms of Oracle's comments; plan 052 §2), its
