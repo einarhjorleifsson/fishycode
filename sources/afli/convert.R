@@ -234,14 +234,16 @@ fishing_sample <-
   left_join(gear_mapping |> select(gid_old = gid, gid = map, gear, target, target2),
             by = "gid_old") |>
   left_join(timing, by = ".sid") |>
-  # OTB NEP pre-2000: duration appears to be recorded in hours not minutes
-  mutate(duration_m = if_else(gear == "OTB" & target2 == "NEP" & year(date) <= 1999,
-                              NA_real_, duration_m)) |>
-  # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R)
-  apply_duration_limit(gear_window) |>
-  # Effort: two-component — effort = effort_count × effort_duration (R/logbook_effort.R)
+  # The Nephrops tow times before 2000 were blanked here as "recorded in hours not minutes" until plan 050
+  # (2026-10-29). They are minutes: median 270-300, 95 % at or below 360, in every five years from 1965 (132,740 tows
+  # to 1999), as after 2000. The gear's limit below takes the 10 above 720 minutes.
+  # A duration above the gear's limit is flagged and kept (R/duration_limit.R; plan 050 ask h). The tow end made
+  # from it below is left out where the times are read.
+  flag_duration_limit(gear_window) |>
+  # The count (R/logbook_effort.R). The effort is made from the times, the recorded duration and the count by
+  # calc_effort(), not stored.
   left_join(dims |> select(.sid, effort_count, effort_count_basis), by = ".sid") |>
-  add_effort()
+  add_effort_count()
 
 
 ## Timestamps ------------------------------------------------------------------
@@ -254,7 +256,8 @@ fishing_sample <- fishing_sample |>
   mutate(t2 = NA_POSIXct_) |>
   mutate(.t2_source = if_else(!is.na(hhmm), "data", "derived"),
          .t3_source = if_else(!is.na(t3),   "data", "derived"),
-         duration_m = if_else(duration_m <= 0, NA_real_, duration_m),
+         # A tow time of 0 or less (35 tows) is kept and flagged implausible, as any value out of range is (plan 050
+         # ask h); it was NA here until then.
          # 00:00-00:59 is a time like any other: hour 0 holds 185,943 tow starts, between hour 23's 158,605 and
          # hour 1's 160,769. A `>= 100` here dropped them all until 2026-10-14 (decision 087).
          hhmm = if_else(!is.na(hhmm) & hhmm >= 0, hhmm, NA_real_),
@@ -272,8 +275,9 @@ fishing_sample <- fishing_sample |>
 ## Overlap QC ------------------------------------------------------------------
 # Label each operation against its neighbours on the same vessel in `.checks`
 # (on t2/t3, so it effectively tests mobile gear: static gear has no t2 and is
-# labelled "start time missing"). The label is a flag; only an impossible interval
-# (start after or equal to end) loses its times. Until 2026-10-13 every label but
+# labelled "start time missing"). The label is a flag, and since plan 050 ask h (2026-10-29) only a flag: an
+# impossible interval (start after or equal to end, from a tow time of 0 or less) kept its times blanked until then,
+# and its end is now left out where the times are read (R/duration_limit.R). Until 2026-10-13 every label but
 # "ok" blanked t2 and t3 (decision 083), which on the 2026-10-09 build dropped
 #   217,816 recorded static-gear haul starts (t3; the haul is t3 to t4),
 #   1,087,355 recorded tow starts with no duration (t2), and
@@ -284,10 +288,7 @@ fishing_sample <- fishing_sample |>
   inner_join(trip |> select(.tid, vid) |> distinct(), by = ".tid") |>
   arrange(vid, date, t2) |>
   osfd::fd_flag_time_overlaps(t2, t3, by = vid) |>
-  mutate(.impossible = .checks %in% c("start after end", "start equals end"),
-         t2 = if_else(.impossible, NA, t2),
-         t3 = if_else(.impossible, NA, t3)) |>
-  select(-vid, -.impossible)
+  select(-vid)
 
 
 ## Join gear dimensions --------------------------------------------------------

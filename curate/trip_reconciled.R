@@ -63,11 +63,12 @@ dbExecute(con, sprintf("CREATE TEMP TABLE port AS SELECT hid, pid FROM read_parq
 # vessel's voyages do not overlap, so a time is in the last voyage to start by it, if that has not ended.
 dbExecute(con, sprintf("CREATE TEMP TABLE v AS SELECT vid, year, voyage_id, T1, T2, pid1, pid2 FROM read_parquet('%s')",
                        inputs[["ais"]]))
-dbExecute(con, sprintf("CREATE TEMP TABLE st AS SELECT s.\".tid\", s.schema, t.vid, fs.t1, fs.t2, fs.t3, fs.t4
+# The end an implausible duration ran to is left out (R/duration_limit.R, plan 050 ask h).
+dbExecute(con, sprintf("CREATE TEMP TABLE st AS SELECT s.\".tid\", s.schema, t.vid, fs.t1, fs.t2, %s AS t3, %s AS t4
   FROM read_parquet('%s') s JOIN read_parquet('%s') fs ON fs.\".sid\" = s.\".sid\" AND fs.schema = s.schema
   JOIN trip t ON t.\".tid\" = s.\".tid\" AND t.schema = s.schema
   WHERE s.twin IS DISTINCT FROM 'duplicate' AND NOT coalesce(fs.eytt_deleted, false) AND t.vid IS NOT NULL",
-  inputs[["station"]], inputs[["sample"]]))
+  judged_time_sql("t3"), judged_time_sql("t4"), inputs[["station"]], inputs[["sample"]]))
 dbExecute(con, "CREATE TEMP TABLE sv AS
   WITH ev AS (SELECT * FROM (SELECT \".tid\", schema, vid, unnest([t1, t2, t3, t4]) AS ts FROM st)
               WHERE ts IS NOT NULL AND CAST(ts AS TIME) <> TIME '00:00:00')

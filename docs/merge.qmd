@@ -16,6 +16,7 @@ execute:
 #| label: load-packages
 here::i_am("docs/merge.qmd")
 source(here::here("R/paths.R"))
+source(here::here("R/logbook_effort.R"))
 library(tidyverse)
 library(nanoparquet)
 library(gt)
@@ -35,6 +36,8 @@ fs_fs      <- read_parquet(fd_staging("fs_afladagbok", "fishing_sample.parquet")
 merged_trip    <- read_parquet(fd_curated("logbook", "trip.parquet"))
 merged_station <- read_parquet(fd_curated("logbook", "station.parquet"))
 merged_fs      <- read_parquet(fd_curated("logbook", "fishing_sample.parquet"))
+# the duration as the product makes it (plan 050): from the times, else the duration the record gives
+merged_fs      <- calc_effort(merged_fs, unit = "minutes")
 merged_catch   <- read_parquet(fd_curated("logbook", "catch.parquet"))
 ```
 
@@ -107,7 +110,7 @@ merged_fs |>
     `t2 (%)` = round(mean(!is.na(t2)) * 100, 1),
     `t3 (%)` = round(mean(!is.na(t3)) * 100, 1),
     `t4 (%)` = round(mean(!is.na(t4)) * 100, 1),
-    `duration_m (%)` = round(mean(!is.na(duration_m)) * 100, 1),
+    `duration (%)` = round(mean(!is.na(effort_duration)) * 100, 1),
     .groups = "drop"
   ) |>
   arrange(Gear, Schema) |>
@@ -125,8 +128,8 @@ merged_fs |>
 In the merged output both schemas have `t2` for nearly every bottom-trawl
 (OTB) station, `afli` 99 % and `fs_afladagbok` 100 %, and `t3` for 95 % and
 99 %, since of `fs_afladagbok`'s 58,337 trawl records without `lok_timi` only
-1,152 are on vessel-days `afli` lacks. In both, `duration_m` is the tow on the
-seabed: the logged tow time in `afli`, `t3 − t2` in `fs_afladagbok`.
+1,152 are on vessel-days `afli` lacks. In both, the duration is the tow on the
+seabed, `t3 − t2`: in `afli` the logged tow time makes `t3`, in `fs_afladagbok` it is recorded (`calc_effort()`).
 
 A secondary reason is historical span: `afli` covers ~1950 to the present,
 and the merged output inherits that full historical depth from it directly.
@@ -408,15 +411,15 @@ them out.
 
 ```{r}
 #| label: tbl-duration-coverage
-#| tbl-cap: "duration_m availability (%) and median value (hours) by schema and gear"
+#| tbl-cap: "Duration availability (%) and median value (hours) by schema and gear: from the times, else the duration the record gives (calc_effort())"
 
 merged_fs |>
   filter(gear %in% c("OTB", "OTM", "DRB", "SDN", "LLS", "GNS", "GND", "LHM", "FPO")) |>
   group_by(Schema = schema, Gear = gear) |>
   summarise(
     Stations       = n(),
-    `duration available (%)` = round(mean(!is.na(duration_m)) * 100, 1),
-    `median duration (h)`    = round(median(duration_m, na.rm = TRUE) / 60, 1),
+    `duration available (%)` = round(mean(!is.na(effort_duration)) * 100, 1),
+    `median duration (h)`    = round(median(effort_duration, na.rm = TRUE) / 60, 1),
     .groups = "drop"
   ) |>
   arrange(Gear, Schema) |>
@@ -425,8 +428,8 @@ merged_fs |>
 ```
 
 `afli` SDN (Dragnót) shows low duration availability (~11%) because that gear
-class records a tow count rather than timestamps; effort for SDN is per
-setting. The `afli` FPO (traps) rate of ~46% reflects sparse soak-time
+class records a tow count rather than timestamps; a Danish seine's setting is
+its row. The `afli` FPO (traps) rate of ~46% reflects sparse soak-time
 recording in the legacy system.
 
 # Twin records {#sec-twins}
@@ -653,20 +656,20 @@ merged_catch |>
 
 3. **Mobile gear timing in fs_afladagbok before 2023**: its trawl records
    (OTB, OTM) carry no end time (`lok_timi`) before 2022 and 54 % in 2022, so
-   they have no `t3` and no `duration_m`. All but 1,152 of them are on
+   they have no `t3`, and no duration can be made from their times. All but 1,152 of them are on
    vessel-days `afli` holds, which the merge takes from `afli`. From 2023 the end
-   time is all but complete, and `duration_m` is `t3 − t2`, the tow on the
-   seabed, as in `afli`.
+   time is all but complete, and the tow on the seabed is `t3 − t2`, as in `afli`
+   (made by `calc_effort()`; the e-logbook stores no `duration_m`, plan 050).
 
 4. **DRB duration in fs_afladagbok suspiciously short**: median ~18 minutes
    for dredge operations, which is atypically brief. How `upphaf_timi` and
    `lok_timi` are populated for plow gear in the Fiskistofa system is not
    fully understood.
 
-5. **~54 k OTB stations (2021–2022) missing effort data**: these `fs_afladagbok`
-   records have no matching row in `ws_dragnot_varpa`, so `effort_unit = NA`
-   and `effort = NA`. This is a completeness gap in the source data, not a
-   processing error.
+5. **~54 k OTB stations (2021–2022) with no gear row**: these `fs_afladagbok`
+   records have no matching row in `ws_dragnot_varpa`, so no count of trawls is
+   recorded. Since plan 050 step 2 they take one trawl, `effort_count_basis`
+   `synthesised`, and their effort is made from their times like any other's.
 
 6. **Wacky coordinate error in afli logger positions**: automatic logger
    positions (`rafr_sjalfvirkir_maelar.parquet`) are affected by a systematic

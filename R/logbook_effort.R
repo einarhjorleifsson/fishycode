@@ -1,20 +1,28 @@
-# logbook_effort.R — the e-logbook's times in the grammar's slots, and the effort, for the logbook adapters.
+# logbook_effort.R — the e-logbook's times in the grammar's slots, the count, and the effort made from them.
 #
 # Input:  a fishing_sample-shaped frame with the new `gid` and its `gear` (ICES); elogbook_times() also the
 #         e-logbook's three times as read into t1, t3, t4 (upphaf_timi, milli_timi, lok_timi) and gear_window
-#         (curated/reference/gear_window.parquet); add_effort() also duration_m, effort_count and effort_count_basis
-# Output: the same frame; elogbook_times() with t1-t4 in the grammar's slots, duration_m, duration_m_raw and
-#         .duration_source; add_effort() with the units of the count and of the duration, effort_duration,
-#         effort_unit and effort, and the count filled
+#         (curated/reference/gear_window.parquet); add_effort_count() also effort_count and effort_count_basis;
+#         calc_effort() a fishing sample as curated/logbook/fishing_sample.parquet holds it, in memory
+# Output: the same frame; elogbook_times() with t1-t4 in the grammar's slots as recorded, and duration_m NA with the
+#         span's verdict in .duration_source and duration_m_raw; add_effort_count() with the count filled, its basis and
+#         its unit; calc_effort() with effort_duration, effort_duration_unit, effort_duration_basis, effort and
+#         effort_unit
 #
 # fs_afladagbok and adb are copies of one e-logbook, field for field (decision 171), so its times are read once
 # here. Until plan 050 step 2 adb kept them as read, and curate/station_window.R moved its towed ones.
 #
 # The count is the grammar's `effort_count`: what fishes at once, hooks, nets, jigs, traps, and the trawls or
 # dredges of a towed gear (plan 050 step 2). Each adapter reads its own and says how in `effort_count_basis`.
-# add_effort() gives a towed gear or a seine that records none the one gear (basis "synthesised"), and leaves a
-# passive gear's NA (basis "none"). The unit follows the gear, so a station without its gear table's row still has
-# its unit and duration. afli, fs_afladagbok and adb share both.
+# add_effort_count() gives a towed gear or a seine that records none the one gear (basis "synthesised"), and leaves a
+# passive gear's NA (basis "none").
+#
+# The effort is not stored (plan 050 ask e, maintainer, 2026-10-29). The times are the observation, and the count;
+# which interval is the duration (a longline's t1 → t4 or t3 → t4), whether a twin tow counts twice, and in which
+# unit, are the analyst's choices, which calc_effort() takes as arguments. A sample stores a duration only where its
+# record gives one: afli's tow time, its jigs' hours or nights, aflaskeyti's haul length. The e-logbook gives times,
+# so its duration_m is NA, and .duration_source says "times" (or "missing", or "implausible": the span of its times
+# above the gear's limit, flagged and kept). duration_m_raw keeps that span.
 
 LOGBOOK_ONE_GEAR <- c("OTB", "OTM", "DRB", "SDN", "PS")
 LOGBOOK_NA_TIME <- .POSIXct(NA_real_, tz = "UTC")
@@ -53,23 +61,19 @@ elogbook_times <- function(d, gear_window) {
       t3 = dplyr::case_when(gear %in% mobile ~ .t4_raw, .default = .t3_raw),
       t4 = dplyr::case_when(gear %in% mobile ~ LOGBOOK_NA_TIME, .default = .t4_raw)) |>
     dplyr::select(-c(.t1_raw, .t3_raw, .t4_raw, .mob_3ts)) |>
-    # Duration:
-    #   Mobile (OTB/OTM/DRB/SDN): t3 − t2 (= lok_timi − upphaf_timi)
-    #   Static (LLS/GNS/GND/LHM/FPO): t4 − t1 (approximate; true soak =
-    #     t3 − t1, but including hauling is consistent with afli treatment)
+    # The span the limit judges: a tow t3 − t2, a set t4 − t1, its whole length.
     dplyr::mutate(duration_m = dplyr::case_when(
       gear %in% mobile ~ as.numeric(difftime(t3, t2, units = "mins")),
       gear %in% static ~ as.numeric(difftime(t4, t1, units = "mins")),
       .default = NA_real_)) |>
-    # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R). The
-    # end time that produced it is not believed either: a mobile tow's t3 and a static
-    # set's t4 are set to NA with it, so no window is drawn from an impossible span.
-    apply_duration_limit(gear_window) |>
-    dplyr::mutate(t3 = dplyr::if_else(.duration_source == "implausible" & gear %in% mobile, LOGBOOK_NA_TIME, t3),
-                  t4 = dplyr::if_else(.duration_source == "implausible" & gear %in% static, LOGBOOK_NA_TIME, t4))
+    # The span is judged against the gear's limit and flagged (R/duration_limit.R); the times stay as recorded, and
+    # a consumer of them leaves out the end an implausible span ran to (judged_time_sql()).
+    flag_duration_limit(gear_window, zero_ok = TRUE) |>
+    dplyr::mutate(.duration_source = dplyr::if_else(.duration_source == "data", "times", .duration_source),
+                  duration_m = NA_real_)
 }
 
-add_effort <- function(d) {
+add_effort_count <- function(d) {
   d |>
     dplyr::mutate(
       .one = is.na(effort_count) & gear %in% LOGBOOK_ONE_GEAR,
@@ -77,32 +81,52 @@ add_effort <- function(d) {
       effort_count_basis = dplyr::case_when(.one                ~ "synthesised",
                                             is.na(effort_count) ~ "none",
                                             .default            = effort_count_basis),
-      # The count's unit and the duration's are columns of their own (maintainer, 2026-10-29), so the analyst can
-      # recombine them: hook-hours as well as hook-days. effort_unit names their product, as before.
       effort_count_unit = dplyr::case_when(gear %in% c("OTB", "OTM")  ~ "trawls",
                                            gear == "DRB"              ~ "dredges",
                                            gear %in% c("SDN", "PS")   ~ "seines",
                                            gear == "LLS"              ~ "hooks",
                                            gear %in% c("GNS", "GND")  ~ "nets",
                                            gear == "LHM"              ~ "jigs",
-                                           gear == "FPO"              ~ "traps"),
-      effort_duration_unit = dplyr::case_when(gear %in% c("OTB", "OTM", "DRB")   ~ "minutes",
-                                              gear %in% c("SDN", "PS")           ~ "settings",
-                                              gear %in% c("LLS", "GNS", "GND")   ~ "days",
-                                              gear %in% c("LHM", "FPO")          ~ "hours"),
-      effort_duration = dplyr::case_when(effort_duration_unit == "minutes"  ~ duration_m,
-                                         effort_duration_unit == "hours"    ~ duration_m / 60,
-                                         effort_duration_unit == "days"     ~ duration_m / (60 * 24),
-                                         effort_duration_unit == "settings" ~ 1),
-      effort_unit = dplyr::case_when(gear %in% c("OTB", "OTM", "DRB") ~ "gear-minutes",
-                                     gear %in% c("SDN", "PS")         ~ "setting",
-                                     gear == "LLS"                    ~ "hook-days",
-                                     gear %in% c("GNS", "GND")        ~ "net-days",
-                                     gear == "LHM"                    ~ "jig-hours",
-                                     gear == "FPO"                    ~ "trap-hours"),
-      effort = effort_count * effort_duration) |>
+                                           gear == "FPO"              ~ "traps")) |>
     dplyr::select(-.one)
 }
 
 # A recorded count, or NA where it is none: 0 gear does not fish.
 recorded_count <- function(n) dplyr::if_else(n > 0, as.numeric(n), NA_real_)
+
+# The effort of each sample, by the analyst's choices:
+#   from, to   the interval, as two of "t1".."t4" for every row; by default a mobile gear's t2 → t3 and a static
+#              gear's t1 → t4, the whole set from shooting to the end of hauling (a longline's soak alone is t1 → t3)
+#   by_count   TRUE multiplies the duration by effort_count (hook-hours; a twin tow twice its time), FALSE leaves the
+#              gear's time alone
+#   unit       "hours", "minutes" or "days"
+#   implausible  FALSE leaves out what the duration limit flagged (.duration_source "implausible"): the end it ran to
+#              and the duration, as the windows do (R/duration_limit.R); TRUE keeps them as recorded
+# Where the interval's times are missing, the record's own duration (duration_m) stands in, so afli's tows and jigs
+# keep theirs. effort_duration_basis says which: "times", "recorded", or "none". A seine's setting is its row: count
+# them for settings. In memory only (difftime is not translated to SQL): collect() a lazy table first.
+calc_effort <- function(sample, from = NULL, to = NULL, by_count = TRUE, unit = c("hours", "minutes", "days"),
+                        implausible = FALSE) {
+  unit <- match.arg(unit)
+  per_minute <- c(minutes = 1, hours = 60, days = 1440)[[unit]]
+  mobile <- c("OTB", "OTM", "DRB", "SDN")
+  if (!implausible) {
+    bad <- sample$.duration_source %in% "implausible"
+    sample$t3[bad & sample$gear %in% mobile] <- NA
+    sample$t4[bad & sample$gear %in% c("LLS", "GNS", "GND", "LHM", "FPO") & sample$schema %in% c("fs_afladagbok", "adb")] <- NA
+    sample$duration_m[bad] <- NA
+  }
+  t_from <- if (is.null(from)) dplyr::if_else(sample$gear %in% mobile, sample$t2, sample$t1) else sample[[from]]
+  t_to   <- if (is.null(to))   dplyr::if_else(sample$gear %in% mobile, sample$t3, sample$t4) else sample[[to]]
+  span <- as.numeric(difftime(t_to, t_from, units = "mins"))
+  span <- dplyr::if_else(span >= 0, span, NA_real_)
+  sample |>
+    dplyr::mutate(
+      effort_duration_basis = dplyr::case_when(!is.na(span)       ~ "times",
+                                               !is.na(duration_m) ~ "recorded",
+                                               .default           = "none"),
+      effort_duration = dplyr::coalesce(span, duration_m) / per_minute,
+      effort_duration_unit = unit,
+      effort = if (by_count) effort_count * effort_duration else effort_duration,
+      effort_unit = if (by_count) paste0(sub("s$", "", effort_count_unit), "-", unit) else unit)
+}

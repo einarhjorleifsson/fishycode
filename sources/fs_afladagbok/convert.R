@@ -21,13 +21,6 @@ harbours <-
   select(hid_new = hafnarnumer_id, port, hid, pid) |>
   drop_na(hid_new, hid, port)
 
-# Sources known to encode coordinates in DDM (degrees-decimal-minutes).
-# All others default to DMS classification via row-level signal.
-DDM_SOURCES <- c(
-  "FRA TAKTIKAL", "FRA TAKTIKAL - GAFL AUTO",
-  "Marína raun",  "Marína raun - GAFL AUTO", "Marína raun - Skrifstofa VES",
-  "GAFL BÓK UPPFÆRÐ FRÁ TAKTIKAL"
-)
 
 
 
@@ -64,32 +57,15 @@ source <-
   wk_translate(dictionary) |>
   rename(.sid = id) |>
   select(-c(breytt, skraningartimi, snt, veidarfaeri_efni, athugasemd_txt)) |>
-  # uppruni is not in ws_veidi; join from trip to enable DDM_SOURCES classification
+  # uppruni is not in ws_veidi; join from trip for the coordinate format and STOKKUR's cells
   left_join(trip |> select(.tid, source), by = ".tid") |>
 
   ## Classify coordinate format -------------------------------------------------
-  # Rule 1 (row-level): last-2-digits of normalised y1 ≥ 60 is impossible in DMS
-  #   → definitive DDM evidence; lifted to trip level.
-  # Rule 2 (source prior): known DDM sources classified unconditionally.
-  mutate(
-    ny1    = nchar(as.character(abs(y1))),
-    y1_det = case_when(
-      ny1 == 6 ~ as.numeric(abs(y1)),
-      ny1 == 5 ~ abs(y1) * 10,
-      ny1 == 4 ~ abs(y1) * 100,
-      ny1 == 2 & source == "STOKKUR" ~ abs(y1) * 10000,
-      .default = as.numeric(abs(y1))
-    ),
-    ddm_signal = !is.na(y1_det) & (y1_det %% 100 >= 60)
-  ) |>
-  group_by(.tid) |>
-  mutate(trip_ddm = any(ddm_signal, na.rm = TRUE)) |>
-  ungroup() |>
-  mutate(coord_fmt = case_when(
-    trip_ddm | source %in% DDM_SOURCES ~ "ddm",
-    .default = "dms"
-  )) |>
-  select(-ny1, -y1_det, -ddm_signal, -trip_ddm) |>
+  # adb's rule, the same e-logbook (R/logbook_position.R, decision 211): a trip's six-digit positions are ddmm.hh when
+  # its app is Taktikal's or one of its four values ends in 61-99, impossible as seconds; ddmmss otherwise. Until plan
+  # 050 (2026-10-29) Marína raun was read as ddmm.hh on its app alone: its six-digit latitudes of 2024-2025 never end
+  # in 60 or above (0 of 9,269), so they are seconds.
+  mutate(coord_fmt = if_else(logbook_position_hundredths(.tid, source, y1, x1, y2, x2), "ddm", "dms")) |>
 
   ## Convert to decimal degrees -------------------------------------------------
   # Step 1: normalise all coordinates to 6-digit DDMMSS / DDMMmm integers.
@@ -271,14 +247,14 @@ fishing_sample <-
   # Raw ws_veidi times to the grammar's t1-t4, the duration and its limit (R/logbook_effort.R): upphaf_timi,
   # milli_timi and lok_timi are t1, t3 and t4 here, as the dictionary names them.
   elogbook_times(gear_window) |>
-  # Effort: two-component — effort = effort_count × effort_duration
+  # The count (R/logbook_effort.R). The effort is made from the times and the count by calc_effort(), not stored.
   left_join(dims |> select(.sid, effort_count, effort_count_basis), by = ".sid") |>
-  add_effort() |>
+  add_effort_count() |>
   # Gear dimensions
   left_join(dims |> select(-effort_count, -effort_count_basis), by = ".sid") |>
   select(.tid, .sid, gid, gid_old, gear, target, target2, t1, t2, t3, t4, date,
          duration_m, duration_m_raw, .duration_source,
-         effort_count, effort_count_basis, effort_count_unit, effort_duration, effort_duration_unit, effort_unit, effort,
+         effort_count, effort_count_basis, effort_count_unit,
          n_units, n_lost, g_mesh, g_width, g_length, g_height,
          schema) |>
   select(-date)

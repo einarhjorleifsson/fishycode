@@ -115,17 +115,13 @@ Gear-specific columns are `NA` where not applicable.
 | `t2` | datetime | Gear deployment ends / gear on bottom (Event 2) |
 | `t3` | datetime | Gear retrieval starts (Event 3) |
 | `t4` | datetime | Gear retrieval ends (Event 4) |
-| `duration_m` | dbl | Operation duration (minutes) — see the table below |
-| `.duration_source` | chr | `"data"`, `"capped"`, or `"missing"` |
+| `duration_m` | dbl | The duration the record gives as a duration (minutes), as recorded; NA for the e-logbook, whose records give times — see below |
+| `.duration_source` | chr | `"data"` (a recorded duration), `"times"` (the e-logbook: make it from `t1`-`t4`), `"missing"`, or `"implausible"` (above the gear's limit, flagged and kept; see below) |
 | `.t2_source`, `.t3_source` | chr | `"data"` or `"derived"` — whether the timestamp came from a raw column or was computed |
 | `.checks` | chr | Convert-time validation notes |
 | `effort_count` | dbl | The one count (plan 050 step 2): hooks, nets, jigs, traps, or the trawls or dredges of a towed gear |
 | `effort_count_basis` | chr | `"recorded"`, `"derived"` (afli's twin flag 0/1 as 1/2; a longline's sets × hooks per set), `"synthesised"` (1 for a towed gear or seine that records none), `"none"`. A count is as recorded: an e-logbook's count of trawls may be the app's value carried from the last haul, as for vid 2048's single tows of May 2026 logged as twin (plan 050, ask b) |
 | `effort_count_unit` | chr | What is counted: `"trawls"`, `"dredges"`, `"seines"`, `"hooks"`, `"nets"`, `"jigs"`, `"traps"` |
-| `effort_duration` | dbl | Time component, in `effort_duration_unit` |
-| `effort_duration_unit` | chr | `"minutes"`, `"hours"`, `"days"`, or `"settings"` (seines). Kept apart from the count's unit so effort can be recombined, e.g. hook-hours (maintainer, 2026-10-29) |
-| `effort_unit` | chr | Unit label: `"gear-minutes"`, `"hook-days"`, `"net-days"`, `"jig-hours"`, `"trap-hours"`, `"setting"` |
-| `effort` | dbl | `effort_count × effort_duration` |
 | `n_per_unit` | dbl | Hooks per set (LLS) or hooks per jig (LHM) |
 | `n_lost` | dbl | Number of lost gear pieces (`fs_afladagbok` only) |
 | `g_mesh` | dbl | Mesh size |
@@ -149,10 +145,10 @@ Reworked 2026-04-22 (`t0`–`t3` → `t1`–`t4`) and again 2026-05-06 for
 
 | Schema · class | t1 | t2 | t3 | t4 | `duration_m` |
 |---|---|---|---|---|---|
-| `afli` mobile | `NA` | from `ibotni` (hhmm, gear on bottom) | `t2 + duration_m` (from `togtimi`) | `NA` | `t3 − t2` (tow time) |
-| `afli` static (LLS/GNS/GND) | `logn_hefst` | `NA` | `drattur_hefst` | `drattur_lykur` | `t4 − t1` (approx soak) |
-| `fs_afladagbok` mobile | `NA` | `upphaf_timi` | `lok_timi` | `NA` | `t3 − t2` |
-| `fs_afladagbok` static (LLS/GNS/GND/LHM/FPO) | `upphaf_timi` | `NA` | `milli_timi` | `lok_timi` | `t4 − t1` (approx soak) |
+| `afli` mobile | `NA` | from `ibotni` (hhmm, gear on bottom) | `t2 + duration_m` (from `togtimi`) | `NA` | `togtimi` (tow time) |
+| `afli` static (LLS/GNS/GND) | `logn_hefst` | `NA` | `drattur_hefst` | `drattur_lykur` | as recorded (`klst`, `naetur`) |
+| `fs_afladagbok` mobile | `NA` | `upphaf_timi` | `lok_timi` | `NA` | `NA` (from the times) |
+| `fs_afladagbok` static (LLS/GNS/GND/LHM/FPO) | `upphaf_timi` | `NA` | `milli_timi` | `lok_timi` | `NA` (from the times) |
 | `adb` | as `fs_afladagbok` (its `fishing_start`, `tow_start`, `fishing_end` are `upphaf_timi`, `milli_timi`, `lok_timi`; read the same way since plan 050 step 2, `R/logbook_effort.R`) | | | | |
 
 **The 2021 ends.** fs_afladagbok's 2021 feed (`ws_veidiferd.uppruni` TRACKWELL, STOKKUR) has a start and no end. The merge keeps 22,359 of its stations, on vessel-days afli lacks (handline 18,884, gillnet 2,710, longline 763). Their `t3`/`t4` are NA and `.duration_source` is `"missing"`. Neither afli's sent messages nor adb holds the ends (plan 050 step 6).
@@ -164,8 +160,8 @@ Notes:
   `milli_timi == upphaf_timi` for 100% of SDN rows.
 - **LHM in `afli`** carries timestamps in `lineha` for only ~3% of rows;
   duration comes from `klst` / `naetur` instead.
-- Static `duration_m` includes hauling (`t4 − t1`) rather than true soak
-  (`t3 − t1`), for consistency between the two schemas.
+- A static set's duration is the analyst's choice: `t1` → `t4` (shooting to the end of hauling), `t1` → `t3` (the
+  soak) or `t3` → `t4` (the hauling), by `calc_effort(from, to)`.
 
 ---
 
@@ -217,65 +213,37 @@ coordinates:
 
 ---
 
-## Effort units by gear class
+## The count and the effort
 
-`effort = effort_count × effort_duration`. Both convert scripts dispatch on the
-**ICES `gear` code**, not on the numeric `gid` — the gear code is resolved from
-`gear_mapping` first, so the same block serves both schemas.
+The sample stores the count, not the effort (plan 050, ask e, 2026-10-29). `effort_count` is what fishes at once,
+read by each adapter from its own fields (`R/logbook_effort.R`):
 
-| ICES `gear` | `effort_count` (afli) | `effort_count` (fs_afladagbok) | `effort_unit` |
+| ICES `gear` | `effort_count_unit` | afli | fs_afladagbok, adb |
 |---|---|---|---|
-| OTB, OTM | `1L` (`n_units` unreliable) | `1L` | `"gear-minutes"` |
-| DRB | `coalesce(n_units, 1L)` | `coalesce(n_units, 1L)` | `"gear-minutes"` |
-| SDN | `1L` | `1L` | `"setting"` |
-| LLS | `n_total` = `n_hooks`, else `n_hooks_per_set × n_sets` | `n_hooks` (`fj_kroka`) | `"hook-days"` |
-| GNS, GND | `n_units` = `n_nets` (`dregin`) | `n_units` = `n_nets` (`fj_dreginna_neta`) | `"net-days"` |
-| LHM | `n_jigs` (`faeri`) | `n_jigs` (`fj_faera`) | `"jig-hours"` |
-| FPO | `n_units` (`gildrur`) | `n_units` (`fj_gildra`) | `"trap-hours"` |
-| PS | `1L` | `1L` | `"setting"` |
+| OTB, OTM | `trawls` | `tvo_veidarf` 0/1 as 1/2 (`derived`) | `tvo_veidarf` / `two_fg` (`recorded`) |
+| DRB | `dredges` | `tvo_veidarf` 0/1 as 1/2 (`derived`) | `ws_plogur.tvo_veidarf` / `two_dredges` |
+| SDN, PS | `seines` | 1 (`synthesised`) | 1 (`synthesised`) |
+| LLS | `hooks` | `fj_kroka`, else hooks per set × sets (`derived`) | `fj_kroka` / `hooks` |
+| GNS, GND | `nets` | `dregin` | `fj_dreginna_neta` / `nets` |
+| LHM | `jigs` | `faeri` | `fj_faera` / `pole_and_lines` |
+| FPO | `traps` | `gildrur` | `fj_gildra` / `number_of_traps` |
 
-`effort_duration` is derived identically in both scripts from the capped
-`duration_m` (minutes):
+A towed gear or a seine with no count recorded takes 1 (`synthesised`); a passive gear's missing or 0 count is NA
+(`none`). The effort is made from the times, the record's own duration and the count, with the analyst's choices,
+by `calc_effort(sample, from, to, by_count, unit)`: by default a mobile gear's `t2` → `t3` and a static gear's `t1` →
+`t4`, `duration_m` where those times are missing, times the count, in hours.
 
-| `effort_unit` | `effort_duration` |
-|---|---|
-| `"gear-minutes"` | `duration_m` |
-| `"hook-days"`, `"net-days"` | `duration_m / (60 × 24)` |
-| `"jig-hours"`, `"trap-hours"` | `duration_m / 60` |
-| `"setting"` | `1` |
+### The duration and its limit
 
-> SDN and PS record a duration but their effort is per setting, so
-> `effort_duration = 1` regardless of `duration_m`.
-
-### Duration caps
-
-Maximum plausible operation duration; anything above is capped and
-`.duration_source` set to `"capped"`. The two schemas key their caps differently.
-
-**`afli` — keyed by (`gear`, `target2`), hours:**
-
-| gear | target2 | cap | gear | target2 | cap |
-|---|---|---|---|---|---|
-| OTB | DEF | 10 | GNS | DEF / LUM / MON / GHL | 168 (7 d) |
-| OTB | NEP | 8 | GND | SPF | 1 |
-| OTB | SHR | 16 | LLS | DEF | 24 |
-| OTM | SPF / XXX | 24 | LHM | DEF | 24 |
-| DRB | ARI | 4 *(suspiciously low — CHECK)* | FPO | GAD / CRB / WHL | 480 (20 d) |
-| DRB | ECH / SCL | 12 | SDN | DEF | 3 |
-
-**`fs_afladagbok` — keyed by `gid`, hours:**
-
-| gid | gear | cap | gid | gear | cap |
-|---|---|---|---|---|---|
-| 1 Skötuselsnet | GNS | 168 | 11 Dragnót | SDN | 4 |
-| 2 Þorskfisknet | GNS | 168 | 12 Lína | LLS | 24 |
-| 3 Grásleppunet | GNS | 168 | 13 Landbeitt lína | LLS | 24 |
-| 4 Rauðmaganet | GNS | 168 | 14 Handfæri | LHM | 24 |
-| 5 Reknet | GND | 24 | 15 Plógur | DRB | 20 |
-| 6 Botnvarpa | OTB | 12 | 16 Gildra | FPO | 480 |
-| 7 Humarvarpa | OTB | 12 | 21 Línutrekt | LLS | 24 |
-| 8 Rækjuvarpa | OTB | 16 | 22 Grálúðunet | GNS | 168 |
-| 9 Flotvarpa | OTM | 30 | | | |
+`duration_m` is the duration the record gives as a duration: afli's tow time (`togtimi`) and its jigs' hours or
+nights, aflaskeyti's haul length. The e-logbook gives times, not a duration, so its `duration_m` is NA and
+`.duration_source` is `"times"`. Each duration, or for the e-logbook the span of its times (a tow `t3 − t2`, a set
+`t4 − t1`), is judged against the gear's plausible maximum, `dur_max_min` in `curated/reference/gear_window.parquet`
+(`R/duration_limit.R`). Above it `.duration_source` is `"implausible"`, a flag: the times and the duration stay as
+recorded (plan 050 ask h, 2026-10-29; until then decision 057 set them NA here). The limit is applied where the times
+are read: the windows, the voyage links and the audit leave out the end a flagged duration ran to (a mobile gear's
+`t3`, the e-logbook's static `t4`) and the duration, through `judged_time_sql()`, and so does `calc_effort()` unless
+told `implausible = TRUE`. Otherwise `.duration_source` is `"data"` (a recorded duration), `"times"` or `"missing"`.
 
 ## Merged output (`curated/logbook/`)
 

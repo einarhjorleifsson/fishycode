@@ -46,13 +46,16 @@ dbExecute(con, sprintf("CREATE TEMP TABLE old_new AS
 dbExecute(con, sprintf("CREATE TEMP TABLE v AS SELECT vid, year, voyage_id, T1, T2 FROM read_parquet(%s)", f("ais", "voyage.parquet")))
 dbExecute(con, sprintf("CREATE TEMP TABLE tvid AS SELECT \".tid\" AS tid, schema, any_value(vid) AS vid FROM read_parquet(%s)
   WHERE vid IS NOT NULL GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1", f("logbook", "trip.parquet")))
+# The end an implausible duration ran to is left out (R/duration_limit.R, plan 050 ask h).
 dbExecute(con, sprintf("CREATE TEMP TABLE st AS
-  SELECT s.\".sid\" AS sid, s.schema, s.\".tid\" AS tid, tvid.vid, CAST(g.gid_used AS INTEGER) AS gid, fs.t1, fs.t2, fs.t3, fs.t4
+  SELECT s.\".sid\" AS sid, s.schema, s.\".tid\" AS tid, tvid.vid, CAST(g.gid_used AS INTEGER) AS gid, fs.t1, fs.t2,
+         %s AS t3, %s AS t4
   FROM read_parquet(%s) s
   JOIN read_parquet(%s) g ON g.\".sid\" = s.\".sid\" AND g.schema = s.schema
   JOIN read_parquet(%s) fs ON fs.\".sid\" = s.\".sid\" AND fs.schema = s.schema
   JOIN tvid ON tvid.tid = s.\".tid\" AND tvid.schema = s.schema
   WHERE s.twin IS DISTINCT FROM 'duplicate' AND NOT coalesce(fs.eytt_deleted, false) AND g.gid_used IS NOT NULL",
+  judged_time_sql("t3"), judged_time_sql("t4"),
   f("logbook", "station.parquet"), f("logbook", "gear.parquet"), f("logbook", "fishing_sample.parquet")))
 # a vessel's voyages do not overlap: an event is in the last voyage to start by its time, if that has not ended
 dbExecute(con, "CREATE TEMP TABLE evt AS

@@ -47,7 +47,8 @@ x("CREATE TEMP TABLE t AS SELECT \".tid\" AS tid, schema, any_value(vid) AS vid,
 x("CREATE TEMP TABLE s AS SELECT st.\".sid\" AS sid, st.\".tid\" AS tid, st.schema, st.date, coalesce(%s, %s, %s, %s) AS ts
    FROM %s st JOIN %s fs ON fs.\".sid\" = st.\".sid\" AND fs.schema = st.schema
    WHERE st.twin IS DISTINCT FROM 'duplicate' AND NOT coalesce(fs.eytt_deleted, false)",
-  tod("fs.t1"), tod("fs.t2"), tod("fs.t3"), tod("fs.t4"), f("logbook", "station.parquet"), f("logbook", "fishing_sample.parquet"))
+  tod("fs.t1"), tod("fs.t2"), tod(judged_time_sql("t3")), tod(judged_time_sql("t4")), f("logbook", "station.parquet"),
+  f("logbook", "fishing_sample.parquet"))
 x("CREATE TEMP TABLE sv AS SELECT s.*, t.vid FROM s JOIN t USING (tid, schema) WHERE t.vid IS NOT NULL")
 x("CREATE TEMP TABLE v AS SELECT vid, year, voyage_id, T1, T2, pid2 FROM %s", f("ais", "voyage.parquet"))
 x("CREATE TEMP TABLE pc AS SELECT vid, T_in, T_out FROM %s", f("ais", "port_call.parquet"))

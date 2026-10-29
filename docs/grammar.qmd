@@ -267,24 +267,25 @@ hauling time `t4 − t3` and the setting time `t2 − t1`.
 
 ### The fishing sample
 
-A fishing sample adds the gear and the effort to `t1`-`t4`:
+A fishing sample adds the gear and the count to `t1`-`t4`:
 
 | Column | Type | Meaning |
 |---|---|---|
 | `gid` | int / chr | gear code |
 | `gear` | chr | gear class (ICES ISSCFG / métier codes: `OTB`, `LLS`, `GNS`, …) |
 | `gear_code` | chr | the gear code's letter twin, `XXX_YYY`: the general gear and the target, one to each code and no two codes alike (`OTB_NEP`, `LLS_LBL`) |
-| `duration_m` | dbl | the active interval, minutes |
+| `duration_m` | dbl | the duration the record gives as a duration, minutes (a tow time, hours, nights); NA where it gives times |
 | `effort_count` | dbl | what fishes at once: hooks, nets, jigs, traps, and the trawls or dredges of a towed gear (1 for one) |
 | `effort_count_basis` | chr | the count's basis: `recorded`, `derived` from the record's other values (a twin flag, sets × hooks per set), `synthesised` (one gear, for a towed gear or a seine that records no count), or `none` |
 | `effort_count_unit` | chr | what is counted: `trawls`, `dredges`, `seines`, `hooks`, `nets`, `jigs`, `traps` |
-| `effort_duration` | dbl | the duration in the unit of `effort_duration_unit` |
-| `effort_duration_unit` | chr | `minutes`, `hours`, `days`, or `settings` for a seine. Apart from the count's unit, so that effort can be recombined (hook-hours as well as hook-days) |
-| `effort_unit` | chr | the product's unit: `gear-minutes`, `hook-days`, `net-days`, `jig-hours`, `trap-hours`, `setting` |
-| `effort` | dbl | `effort_count × effort_duration` |
 | `w1`, `w2` | datetime | the location window |
 | `z1_gear`, `z2_gear` | dbl | the depth the gear worked at, m (execution) |
 | `n_lost` | int | gear lost (outcome) |
+
+The effort is a measure made from the sample, not a column of it: which interval is the duration (a longline's `t1` →
+`t4`, its soak `t1` → `t3`, or its hauling `t3` → `t4`), whether a twin tow counts twice, and the unit are the analyst's
+choices. The times and the count are the observation, with the record's own duration where it gives one and no times.
+`calc_effort()` makes it with those choices as arguments, as `calc_whole_weight()` makes the whole weight.
 
 Other sample types have their own measure of effort: volume filtered for a plankton net, distance sailed for an
 acoustic transect, time watched for a visual watch.
@@ -646,7 +647,7 @@ dictionary, and the source value stays in the raw dump.
 | `t1`-`t4` | sample | the four events |
 | `w1`, `w2` | fishing sample | the location window |
 | `gid`, `gear` | fishing sample | gear code, gear class |
-| `effort_count`, `effort_duration`, `effort_unit`, `effort` | fishing sample | effort |
+| `effort_count`, `effort_count_basis`, `effort_count_unit` | fishing sample | effort |
 | `z1_gear`, `z2_gear` | sample | the depth the gear worked at |
 | `part`, `n`, `length_m`, …, `mesh_size_mm` | configuration | @sec-configuration |
 | `z1`, `z2`, `temp1_surface`, … | environment | the state of the sea |

@@ -5,7 +5,8 @@ day (§5), and steps 2-6 need not wait for step 1 (maintainer); step 4, `lid_map
 same day and run in a scratch store against the live one (§6), not yet in the live store (step 7); step 5 (ask c
 answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
 its factor belongs to a review of whole weight across species, periods and databases (plan 051); step 2 (ask b
-answered) and step 6 the same day, run in the scratch store (§6) · **measured** (§1), by Claude the
+answered) and step 6 the same day, run in the scratch store (§6); step 1's e-logbook half the same day, in a side
+session over the new mar's parquet (§6), its afli half open; asks e-g open (§5) · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs
@@ -35,6 +36,14 @@ that users will use) should have that double cross-checking correction." And whe
 includes all species, the landings databasis and the logbook databases. and then how lumpfish roe barrel weight is
 converted to ungutted weight! wander if we need to take a broader review on that rather than doing some quickfix
 here, just on nephrops."
+
+In the side session that read the new mar (2026-10-29, as it recorded them): Rafn reads the live `fs_afladagbok`, not a
+dump, and so mostly bypasses adb; "what needs to be done is to check the fs_afladagbok dump we have vs the live tables
+accessible by mar. They 1) may not be the same, 2) Me and Rafn may have interpreted the data differently." fishycode
+wants in the end to bypass adb ("it is and has always been a mess"), and keeps afli first per vessel and date. With
+twin trawling, the duration and `t1`-`t4` are the fishing duration whatever the number of trawls, and the analyst
+decides downstream whether to multiply; "in the downstream processing the user may want to define effort e.g. of
+longlines using the duration t1 -> t4. some other may want to use t3->t4 as duration."
 
 ## 1. What is measured
 
@@ -149,13 +158,15 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
    `$FISHYDATA/archive/2026-10-29-mar-logbook/`. Per year and source, each vessel-day and station goes in one
    outcome (both, ours only, theirs only, unjudgeable). On the shared ones: times, the count of trawls, the gear, and
    the Nephrops catch, with each difference explained or listed as unexplained. This tests §2's hypothesis and the
-   655-against-757 gap. The asks to the new mar's author go out from its result, with links.
+   655-against-757 gap. The asks to the new mar's author go out from its result, with links. *E-logbook half done
+   2026-10-29 (§6); the afli half, 1950-2020 by `visir`, is open.*
 2. **One count, `effort_count`, the grammar's** (TODO 153; ask a). The number fishing at once, for every gear and
    source: hooks, nets, jigs, traps, and for towed gear the number of trawls or dredges.
    - afli's `tvo_veidarf` 0/1 becomes 1/2, basis `derived`. fs_afladagbok's count is read as recorded, with no
      "assume 1". adb's six counts are read, and its units mapped to the grammar's. aflaskeyti stays `none`.
    - A new `effort_count_basis` says which. `effort` stays `effort_count × effort_duration`, as the grammar has it,
-     so a twin tow counts twice its minutes. A gear factor (1.8 for twin Nephrops trawls) is the user's to apply
+     so a twin tow counts twice its minutes. A gear factor (1.8 for twin Nephrops trawls, the colleague's "standard
+     factor" in the email of 2026-10-29) is the user's to apply
      from the two columns.
    - `n_units` leaves the fishing sample, and `products/user_tables.R` changes with it.
    - afli's dredges come out of this step too: the 13,396 with effort 0 are recounted.
@@ -188,8 +199,11 @@ stations) and shrimp trawl (14, 1,012) map back right, and no station holds 99.
 6. **The 2021 ends** (TODO 154). Look for the 22,363 fs-only stations' ends in `afli_sent`. Otherwise declare them
    basis `none` where the analyst reads the haul times.
 7. **Rebuild** the logbook and what reads it, with fingerprints before and after (`R/fingerprint.R`), and the merge's
-   fate account rerun. `targets` cannot see the script edits, so `gear`, `adb`, `logbook`, `lid_map` and `logbook_gear`
-   are invalidated by hand. `products/user_tables.R` is rerun after. Then a decision record.
+   fate account rerun. `targets` cannot see the script edits, so `gear`, `afli`, `afli_sent`, `fs_afladagbok`, `adb`,
+   `logbook`, `lid_map`, `logbook_gear`, `station_window`, `voyage_gear`, `trip_reconciled` and
+   `check_allocation_audit` are invalidated by hand. `products/user_tables.R` is rerun after, and
+   the vessel overview's haul line moves from `effort` to the count in the same step (`products/vessel_overview/api.R`
+   and `www/app.js` read the live store), with its click paths tested. Then a decision record.
 
 Steps 2-6 do not wait for step 1. Each one is checked alone before the next.
 
@@ -214,6 +228,24 @@ TODOs 152-154 close into the decision record.
   logged whole weight in 2002-2003, so its early period is 2004-2006, not the 2000-2006 first proposed.
 - d. *Answered (maintainer, 2026-10-29):* the fault is adb's conversion to the legacy code, and it is undone where it
   enters, at the adapter (step 4).
+
+- e. *Answered (maintainer, 2026-10-29):* drop the stored effort. The fishing sample keeps `t1`-`t4`, the count with
+  its unit and basis, and a recorded duration where the record gives one; `calc_effort()` makes the duration and the
+  effort with the interval, the count and the unit as arguments (§6). The colleague's email had said the same: "keep
+  plain tow minutes and a harmonised twin flag (or number of trawls), and leave any gear factor to the user".
+- f. How fishycode reaches the live `fs_afladagbok` tables, to dump them source-shaped (the new mar's parquet is
+  already interpreted): which account, and whether they are the `ws_*` tables of the dump. For Rafn or IT. Then a plan
+  of its own: the live tables in place of the dump and adb. The live build loses month-end trips (§6), so it can replace
+  the dump and adb only once that is fixed upstream; the fault is for the new mar's author (ask g).
+- g. Whether and when the new mar's candidate defects (`$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §8)
+  go to its author, as `curate/issues/`.
+- h. *Answered (maintainer, 2026-10-29):* move it downstream. "The decision taken at the time was ad-hoc. we deal with
+  this issue downstream when it comes to joining things to ais etc." The sample keeps the recorded times and
+  durations and flags what is above the gear's limit (`.duration_source` `implausible`); `judged_time_sql()`
+  (`R/duration_limit.R`) leaves out the end a flagged duration ran to where the times are read: `station_window.R`,
+  `voyage_gear.R`, `trip_reconciled.R`, `allocation_audit.R`, and `calc_effort()` by default. Before, the limit had been
+  set for the windows as well as the effort (plan 010 §12, decision 057). It flags about 4,000 of 7.3 M stations, nearly
+  half of them afli gillnets soaking 7-10 days.
 
 ## 6. Built so far
 
@@ -300,4 +332,129 @@ staging, `station_window`), read-only. The real store was untouched. Not checked
 
 So their ends are not recorded anywhere we hold. They stay NA, with `.duration_source` `missing`, and
 `docs/output-schema.md` says so where the haul times are described.
+
+**Step 1, the e-logbook half**, 2026-10-29, by Claude in a side session: the R package mar at `~/R/Pakkar/mar`
+(b5763ef) and the parquet it reads on `s3://prod-parquet-vocal-mule/`, in aggregates. Findings, counts and scripts in
+`$FISHYDATA/archive/2026-10-29-mar-logbook/` (`mar-package.md`); the live e-logbook's rows of 2021 on in its `live/`.
+No Oracle. Not checked by a person.
+
+- **The hypothesis holds.** The new mar's logbook is afli to 2020 and the live e-logbook from 2021 (to 2026-10-25),
+  cut by the trip's landing year, with no adb and no aflaskeyti. Its build code (`mfriops/Landings`) is not reachable.
+- **The five issues placed:**
+  - (1) afli's 0/1 flag enters as a count, so `effort` is 0 on 2.21 M single trawls to 2007.
+  - (2) 2021 is the e-logbook alone: its 655 Nephrops stations, the colleague's count, have no end, where ours come
+    from afli.
+  - (3) The catch is `magn` as logged, with no state and no factor.
+  - (4) The Nephrops landings equal ours to the kilogram. But the LODS pelagics are read in tonnes as kg, so 1994-2006
+    hold about a third of the catch.
+  - (5) `two_fg` 2 on all 65 of vid 2048's May stations, from the source.
+- **The live e-logbook against our dump**, by the Directorate's ids (the same as our `.sid`):
+  - 2021: the live holds 29,964 stations the dump lacks (all but 116 in adb; their towed days lie on afli's).
+  - 2022-2025: the dump holds 2,382-4,354 stations a year (30-51 kt) that the live does not, most of them in our
+    merge, with no record of the vessel that day in the live.
+  - 2026: the live covers 80,590 of adb's 83,223 stations, plus 1,397 adb lacks.
+- **Read the same** as ours: gear, towed times, Danish seine, depth as recorded, `magn`, the twin count.
+- **Read differently:**
+  - Positions: the new mar reads the 6-digit integers as decimal minutes. They are seconds, so ours holds.
+  - Static soak: the new mar takes `t3 - t1`, ours `t4 - t1`. The grammar's soak is `t3 - t1` where `t2` is missing.
+- **Leads for fishycode:**
+  - afli's pre-2000 Nephrops tow times: `sources/afli/convert.R` blanks 132,730 tows whose `togtimi` looks sound
+    (median 300 min). The implausible values are on the 26,412 without `tvo_veidarf`.
+  - The coordinate-format prior reads about 2.2-2.8 k stations a year (2023-2025) as decimal minutes, with little
+    sign of it.
+  - The dump-only stations of 2022-2025 (above).
+  - adb's missing tow ends are mended by step 2.
+
+**Ask e, and two leads from step 1**, coded 2026-10-29 and run the same way: the three adapters, the merge and
+`station_window`, compared with the step-2 scratch run.
+
+- **No stored effort.** `effort`, `effort_unit`, `effort_duration` and `effort_duration_unit` leave the adapters, the
+  merge and v0's station table. The count, its unit and its basis stay.
+  - `duration_m` is the record's own duration: afli's 5.63 M and aflaskeyti's 2,179.
+  - It is NA for the e-logbook, whose `.duration_source` is `times` (fs_afladagbok 347,871, adb 87,886).
+  - v0 gains `duration_m_raw` and `.duration_source`.
+  - `calc_effort()` (`R/logbook_effort.R`) makes the effort. It equals step 2's stored effort wherever both use the
+    same interval. It differs on:
+    - 23,016 e-logbook sets whose set time is the app's placeholder (`t1_placeholder`): the stored effort had a soak
+      from it, `calc_effort()` has none;
+    - 149,141 afli static sets with times, where it takes `t1` → `t4` over the recorded nights or hours, and 866
+      that gain an effort from their times;
+    - 223 afli and 176 e-logbook sets whose span is zero, negative or missing, where it gives none.
+- **afli's Nephrops tows to 1999.** The rule that blanked them ("hours not minutes") is gone. Their `togtimi` is
+  minutes, median 270-300 and 95 % at or below 360 in every five years from 1965.
+  - 132,684 of 132,741 tows keep their duration and 131,517 a tow end; the limit takes 10.
+  - 131,501 of afli's window rows change with them.
+  - Their overlap labels change: 121,990 `end time missing` → `ok`, and 9,527 now overlap a neighbour.
+  - 156 afli stations change their twin flag: the restored ends tell twins apart.
+- **fs_afladagbok's coordinate format** is read by adb's rule (`logbook_position_hundredths()`, decision 211): Taktikal,
+  or a six-digit value ending in 61-99 in any of the four.
+  - Marína raun was read as hundredths of a minute on its app alone. Its six-digit latitudes of 2024-2025 never end
+    in 60 or above (0 of 9,269), so 8,482 of its stations of 2023-2025 move to seconds, by 0.2' median. 436 move
+    the other way, on evidence in a longitude or an end position.
+  - Trackwell raun 2022-2023 (2,162 stations) and Jóhann Gíslason raun 2022-2023 (325) were read as hundredths on a
+    signal from their four- and five-digit latitudes, which are degrees and minutes (decision 211). They are now read
+    as seconds.
+  - Reiknistofa's 23 stations with a rounded 60 are seconds too.
+- **Unchanged:** every other column and table. `station_window` differs on 11 e-logbook handlines, from `jig` to
+  `day`: their old window was made from a duration spanning the placeholder set time.
+
+**Why the live e-logbook differs from our dump**, 2026-10-29, by Claude in a subagent: the live rows copied by the side
+session against the dump, adb and afli, every differing record in one outcome
+(`$FISHYDATA/archive/2026-10-29-mar-logbook/live-vs-dump.md`, `scripts/lvd_causes.py`). Not checked by a person.
+
+- **2021's 29,964 live-only stations are not e-logbook records.**
+  - They are the Directorate's paper and Trackwell-book records: adb's feeds `TRACKWELL BAEKUR` (27,372) and `PAPPÍR`
+    (2,476), and 116 not in adb.
+  - They carry afli's ids: 29,949 have the same id, vessel and day in afli's `stofn`, so the merge holds them from afli.
+  - The dump's `ws_veidiferd` never held those feeds. 2022's 1,090 are the same.
+- **The dump-only stations of 2022-2025 are lost in the live's read, not deleted.**
+  - A trip whose `snt` falls on the last day of a month is missing from the live 98-99.5 % of the time, any other 0.1-0.4 %.
+    Checked in the main session on the dump's trips: 2022 1,541 of 1,552, 2023 1,466 of 1,493, 2024 610 of 613, 2025
+    907 of 912.
+  - The loss continues in adb's records after the dump ends: 818 of 830 month-end trips against 20 of 41,229 others.
+  - They are real trips (97-99 % landed, every vendor, 27-51 kt a year), and no copy marks them.
+  - The mechanism (a monthly read that drops the month's last day) is inferred; the build code is not reachable.
+  - The rest, a few hundred a year, are trips that never landed, from a few vessels per vendor, which look like trials.
+    `STOKKUR` 2021 holds 340 two-minute trips with test weights.
+  - Unexplained: 13-29 stations a year.
+- **2021's shared trips that differ** (2,258) are an id collision: the live holds the tour app's trips under
+  `ws_veidiferd` numbers. Only 5 trips of 2025 changed after the dump (`ws_rekjanleiki`, 2025-12-02).
+- **For fishycode:** keep the dump's month-end trips. Reading the live in place of the dump and adb would inherit
+  the loss until it is fixed upstream.
+
+**Ask h, the duration limit as a flag**, coded 2026-10-29 and run the same way: the three adapters, the merge,
+`station_window`, `voyage_gear`, `trip_reconciled` and `allocation_audit` (the last three for the first time in the
+scratch store, on the live store's AIS and links). Compared with the run before it, and the last three with the live
+store.
+
+- **The rule.** `flag_duration_limit()` (`R/duration_limit.R`, renamed from `apply_duration_limit()`) keeps the value
+  and flags it in `.duration_source`. It flags a duration above the gear's limit, a recorded duration of 0 or less
+  (afli's 35 tow times, its static hours and nights), and an e-logbook span below 0. A span of exactly 0 is not
+  flagged:
+  - 2,199 handlines and about 200 nets, lines and traps carry one time in every slot;
+  - the windows give them a typical haul, and leaving their end out turned about 190 of them into day windows (a
+    first run, flagging 0 too).
+- **Kept.** afli's impossible intervals are kept, no longer blanked (`.checks` keeps the label; none occurred).
+- **Applied where the times are read.** `judged_time_sql()` gives `station_window.R`, `voyage_gear.R`,
+  `trip_reconciled.R` and `allocation_audit.R` the times they read, and `calc_effort()` leaves out the same unless told
+  `implausible = TRUE`.
+  - Against the run before it, those times are equal on every station but the 179 fs_afladagbok sets whose end is
+    before their start. Their end is now left out, which changes 187 window rows; no window runs backwards either way.
+  - `calc_effort()` gives the same effort on every station.
+  - The sample now keeps 3,708 afli durations and 722 tow ends it had blanked, and the e-logbook's 612 flagged ends
+    (fs_afladagbok 522, adb 90). afli's overlap labels change on 975 stations, and 10 twin flags and one station type
+    move. Flagged in all: afli 3,708, fs_afladagbok 701, adb 90, aflaskeyti 54.
+- **Downstream, against the live store** (all of steps 2, 4, 6 and asks e and h):
+  - `voyage_gear`: 266 of 1,430,712 voyages change their gear.
+  - `trip_reconciled`: 3 trips change T1, 1 its landing port.
+  - The audit: 1,387 stations move from "no time of day" to "in no voyage or port call" (pre-2000, no AIS), its
+    unexplained catch falls by 110 t, and every other outcome moves by 1-5 records.
+- **The rest of the chain**, checked against the maintainer's rule that an extreme value is flagged, not corrected
+  (`AGENTS.md`). None is an extreme measurement:
+  - 10,009 afli tow starts that are no clock time, and about 930 positions off the globe, stay NA: nothing can be
+    decoded from them, and the integer stays in `raw/`.
+  - 26 e-logbook stations are dated 2027-2031 on trips landed in 2022-2023, held in both fs_afladagbok and adb. They
+    stay out of the merge, in the fate table with reason `date_after`: the date is the key that places the record.
+  - The 77,953 app placeholder set times stay NA with `t1_placeholder` (decision 157): a value the app made up.
+  - aflaskeyti's 63 hauls of duration 0 stay NA with `implausible`; its adapter is not part of this step.
 

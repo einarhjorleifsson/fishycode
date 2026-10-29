@@ -3327,8 +3327,11 @@ tables:
           - 1010.4166666666666
           - 8631.183333333332
         description: >
-          Operation duration, minutes, as reported; NA when it is above the gear's plausible
-          maximum (gear_window.dur_max_min; see .duration_source and duration_m_raw).
+          The duration the record gives as a duration, minutes (afli's tow time, its jigs' hours
+          or nights; aflaskeyti's haul length); NA for the e-logbook, whose records give times
+          (.duration_source "times"). Kept as recorded above the gear's plausible maximum, and
+          flagged in .duration_source (plan 050 ask h). The effort and any other duration are made
+          from t1-t4 by calc_effort() (plan 050, ask e).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3354,17 +3357,19 @@ tables:
           Event 4: gear retrieval ends.
       - name: .duration_source
         type: string
-        examples: [data, implausible, missing]
+        examples: [data, times, implausible, missing]
         description: >
-          "data" (duration read directly), "implausible" (above the gear's plausible maximum,
-          gear_window.dur_max_min; duration_m is then NA and the raw value is in duration_m_raw), or "missing".
+          "data" (a recorded duration), "times" (the e-logbook: none recorded, make it from t1-t4),
+          "implausible" (the duration, or the e-logbook's span of its times, above the gear's plausible
+          maximum, gear_window.dur_max_min: a flag, the values stay as recorded, and the windows and
+          voyage links leave out the end it ran to; plan 050 ask h), or "missing".
       - name: duration_m_raw
         type: number(quantity)
         units: minutes
         range: [-1061366400, 93618000]
         description: >-
-          Operation duration, minutes, exactly as the source gave it, before the plausibility
-          limit. NA where the source has none.
+          The value the plausibility limit judged, minutes: the recorded duration, or for the
+          e-logbook the span of its times (a tow t3 - t2, a set t4 - t1). NA where there is none.
       - name: effort_count
         type: number
         range: [-1, 580800]
@@ -3388,59 +3393,6 @@ tables:
         description: >
           What effort_count counts. Apart from the duration's unit, so that effort can be
           recombined (hook-hours as well as hook-days).
-      - name: effort_duration_unit
-        type: enum
-        values: [minutes, hours, days, settings]
-        description: >
-          The unit of effort_duration; settings for a seine (one per setting).
-      - name: effort_unit
-        type: string
-        examples:
-          - gear-minutes
-          - hook-days
-          - hookhours
-          - hooks
-          - hours towed
-          - jig-hours
-          - net-days
-          - netnights
-          - setting
-          - trap-hours
-          - traphours
-        description: >
-          Unit label for effort_duration: "gear-minutes", "hook-days", "net-days",
-          "jig-hours", "trap-hours", or "setting".
-        todo: |
-          - Only 11 distinct values. Is this an enum? If so change `string` to
-            `enum` and `examples` to `values`.
-      - name: effort_duration
-        type: number
-        range: [-17654396, 1800]
-        examples:
-          - 0.21160879629629628
-          - 0.8257291666666666
-          - 9.870277777777778
-          - 134.7
-          - 1280.8
-        description: >
-          Time component of effort, in the natural unit given by effort_unit.
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
-      - name: effort
-        type: number
-        range: [-11055900000, 715660]
-        examples:
-          - 0.2986111111111111
-          - 38.04333333333334
-          - 372.98333333333335
-          - 4140
-          - 42152.97777777778
-        description: >
-          effort_count x effort_duration - the combined effort measure.
-        todo: |
-          - Pick a more specific numeric type, and keep whichever of `range` and
-            `examples` is appropriate.
       - name: t2
         type: datetime
         time_zone: UTC
@@ -3622,8 +3574,7 @@ tables:
           TRUE where the recorded set time was Trackwell's placeholder, the haul start
           (t3) less 270 or 1,710 min cut to the minute, so t1 is NA here
           (curate/corrections/logbook_set_placeholder.yml, decision 157). On these
-          stations the logbook knows no soak: fs_afladagbok's static duration_m (t4 - t1),
-          effort_duration and effort, and an afli soak of 4.5 h, carry the offset.
+          stations the logbook knows no soak: an afli soak of 4.5 h carries the offset.
   - name: logbook_lid_map
     source:
       parquet: ../../fishydata/curated/logbook/lid_map.parquet

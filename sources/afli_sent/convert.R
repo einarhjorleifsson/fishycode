@@ -434,8 +434,8 @@ fishing_sample <-
          t1 = if_else(section %in% c("LINA", "NET"), logn_hefst, NA_POSIXct_),
          t3 = case_when(section %in% c("LINA", "NET") ~ drattur_hefst, section == "FAERI" ~ upphaf_veida),
          t4 = case_when(section %in% c("LINA", "NET") ~ drattur_lykur, section == "FAERI" ~ lok_veida)) |>
-  # duration_m_raw is kept; an implausible duration becomes NA (R/duration_limit.R), as in sources/afli/convert.R
-  apply_duration_limit(gear_window) |>
+  # A duration above the gear's limit is flagged and kept (R/duration_limit.R), as in sources/afli/convert.R
+  flag_duration_limit(gear_window) |>
   mutate(duration_m = if_else(duration_m <= 0, NA_real_, duration_m),
          hhmm = if_else(!is.na(hhmm) & hhmm >= 0, hhmm, NA_integer_),
          hh   = hhmm %/% 100L,

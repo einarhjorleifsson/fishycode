@@ -153,7 +153,7 @@ gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parqu
 # adb's times are fs_afladagbok's, field for field, and are read as that adapter reads them (R/logbook_effort.R):
 # fishing_start, tow_start and fishing_end are t1, t3 and t4 here, as the dictionary names them. Until plan 050
 # step 2 they were kept as read, and a towed gear's start and end sat in t1 and t4 with no duration;
-# curate/station_window.R moved them. The count is read per gear, and the effort made as afli's and fs's.
+# curate/station_window.R moved them. The count is read per gear, as afli's and fs's are.
 fishing_sample <-
   station |>
   mutate(gid_old = as.integer(gid), .keep = "unused") |>
@@ -167,14 +167,14 @@ fishing_sample <-
                                                  gear == "LHM"                    ~ n_jigs,
                                                  gear == "FPO"                    ~ n_traps)),
          effort_count_basis = if_else(is.na(effort_count), NA_character_, "recorded")) |>
-  add_effort() |>
+  add_effort_count() |>
   transmute(
     .tid, .sid,
     gid_old,                        # adb's own coding, kept verbatim
     gid, gear, target, target2,
     t1, t2, t3, t4,
     duration_m, duration_m_raw, .duration_source,
-    effort_count, effort_count_basis, effort_count_unit, effort_duration, effort_duration_unit, effort_unit, effort,
+    effort_count, effort_count_basis, effort_count_unit,
     n_lost  = NA_integer_,
     g_mesh   = NA_real_,
     g_width  = as.numeric(gear_width),

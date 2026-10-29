@@ -58,7 +58,7 @@ dbExecute(con, sprintf("CREATE VIEW fs   AS SELECT * FROM read_parquet('%s')", l
 dbExecute(con, sprintf("CREATE VIEW trip AS SELECT * FROM read_parquet('%s')", lb("trip.parquet")))
 dbExecute(con, sprintf("CREATE VIEW st   AS SELECT * FROM read_parquet('%s')", lb("station.parquet")))
 # the gear each station is fished with: the logbook's, or its landing's where that names one gear (plan 014,
-# curate/corrections/logbook_gear.R); adb stations have none of their own
+# curate/corrections/logbook_gear.R)
 dbExecute(con, sprintf("CREATE VIEW ag   AS SELECT * FROM read_parquet('%s')", lb("gear.parquet")))
 dbExecute(con, sprintf("CREATE VIEW gw   AS SELECT * FROM read_parquet('%s')",
                        fd_curated("reference", "gear_window.parquet")))
@@ -73,21 +73,23 @@ SELECT \".tid\" AS tid, schema, any_value(vid) AS vid
 FROM trip WHERE vid IS NOT NULL
 GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1")
 
-dbExecute(con, "
+dbExecute(con, sprintf("
 CREATE TABLE base AS
 SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.metier, ag.gear, ag.target,
        ag.target2,
        CAST(ag.gid_used AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
        -- adb's towed start and end were moved to t2/t3 here until plan 050 step 2; its adapter reads them as
-       -- fs_afladagbok's does now (R/logbook_effort.R).
-       f.t1, f.t2, f.t3, f.t4, f.duration_m,
+       -- fs_afladagbok's does now (R/logbook_effort.R). The end an implausible duration ran to is left out here, not
+       -- in the sample (R/duration_limit.R, plan 050 ask h).
+       f.t1, f.t2, %s AS t3, %s AS t4, %s AS duration_m,
        st.date
 FROM fs f
 JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
 JOIN st          ON st.\".sid\" = f.\".sid\" AND st.schema = f.schema
 LEFT JOIN ag     ON ag.\".sid\" = f.\".sid\" AND ag.schema = f.schema
 JOIN gw g        ON g.gid = CAST(ag.gid_used AS INTEGER)
-WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS DISTINCT FROM 'duplicate'")
+WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS DISTINCT FROM 'duplicate'",
+  judged_time_sql("t3", "f"), judged_time_sql("t4", "f"), judged_time_sql("duration_m", "f")))
 
 # Windows ----------------------------------------------------------------------------
 # The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts

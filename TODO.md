@@ -1253,7 +1253,13 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   with the track (decisions 173, 174);
 - the flow diagram's vessel row draws only ping → vessel: the vessel's curation and its links to the MMSI, the
   logbooks and the landings are missing (`docs/figures/one_flow_cascade_v3.svg`, plan 033);
-- skills for the user, later (maintainer).
+- skills for the user, later (maintainer);
+- the logbook product structured by the grammar's parts (maintainer, 2026-10-29): the gear (its own measures: "things
+  like mesh size belong to the gear"), the rigging ("things like warp", plan 020's `gear_part`, TODO 73) and the
+  sensors, summary records as a rule but at times a continuous recording. The afli GPS logger is one: `curated/logbook/sensor_gps`, 49.3 M fixes with the echosounder
+  depth (`botndypi`, filled 97-99 %, TODO 100), the headline depth and two temperatures, in no product yet (TODO 98).
+  Its depth must be joinable to the AIS fixes in the analysis, by vessel and time, where it exists; "including them in
+  the ais is not the way" (maintainer, 2026-10-29).
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
@@ -1498,7 +1504,7 @@ method so far. Two things are left:
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open · **needs: maintainer** — plan 050's ask b · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+**status:** open · **needs: maintainer** — plan 050's asks f and g · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
 TODOs 152, 153, 154
 
 Plan 050 rechecked the colleague's five issues on the store of 2026-10-28. It carries TODOs 152-154 and two defects

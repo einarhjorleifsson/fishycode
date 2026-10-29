@@ -155,6 +155,10 @@ Every script in a targets project is on one of three sides, and says which in a 
 - **Never destroy the original.** A correction adds columns; it never overwrites.
   Precedent: wacky-coordinate recovery retains `w_lon`/`w_lat` beside the
   corrected `lon`/`lat`.
+- **An extreme value is flagged, not corrected** (maintainer, 2026-10-29: "we are not correcting e.g. extreme catch
+  values. same should apply in general"). It stays as recorded with a flag, and the step that joins it to the track,
+  draws a window from it or makes an effort leaves it out. The duration limit is the model: `.duration_source`
+  `implausible`, applied by `judged_time_sql()` and `calc_effort()` (`R/duration_limit.R`, plan 050 ask h).
 - **Kennitala may be carried up to and including `curated/`** (maintainer, 2026-10-18, a general rule), under
   `$FISHYDATA` only: never in this repo, `docs/`, or anything published. What a public source prints (owners,
   addresses, phones) is kept the same way (decision 130), and the Oracle dumps take persons' tables too (decision
