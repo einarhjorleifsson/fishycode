@@ -55,9 +55,14 @@ rows:
     action: flag
     flag: placeholder
     today: t1 set to NA and t1_placeholder TRUE (curate/logbook.R); ask b would keep the value with the flag
-    evidence: counts/x08_placeholder_flag.tsv, x09 (afli 54,623, fs_afladagbok 18,412, adb 4,918 flagged)
+    evidence: >-
+      counts/x08_placeholder_flag.tsv, x09 (afli 54,623, fs_afladagbok 18,412, adb 4,918 flagged);
+      r01_placeholder_variants.tsv (Trackwell raun, exact: gillnets in port 69 %, near 9 %; longlines in port 17 %,
+      near 41 %; typed sets in port 3-9 %, near 63-67 %)
     ask: b
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: keep the value as recorded, flagged placeholder; the windows leave it out (ask b
+      answered)
 
   - id: T2
     quirk: the same placeholder a minute off (269, 271, 1,709, 1,711 min)
@@ -72,9 +77,11 @@ rows:
     action: flag
     flag: placeholder
     today: nothing (decision 206 chose it; not built)
-    evidence: counts/x09_placeholder_class_vs_flag.tsv (822 merged; fs 700, adb 122)
+    evidence: >-
+      counts/x09_placeholder_class_vs_flag.tsv (822 merged; fs 700, adb 122); r01 (gillnets in port 76 %, near 7 %;
+      longlines in port 17 %, near 40 %: as T1); r02 (mostly 271 min, 647)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-29: flag as the placeholder, as T1"
 
   - id: T3
     quirk: the placeholder with 2 to 40 whole days added
@@ -88,12 +95,14 @@ rows:
     rule: t3 - t1 = 270 + k x 1,440 min, k >= 2, within 1 min
     action: flag
     flag: placeholder
+    keep: the set day (t1's date), basis derived, since the number of days may be the skipper's
     today: nothing (TODO 164 a)
     evidence: >-
-      counts/x09_placeholder_class_vs_flag.tsv (1,626 merged; fs 1,337, adb 289); ../2026-10-29-static-set-time/
-      counts/c06_placeholder_days.tsv (the vessel near the set position at t1 on 7-13 %)
+      counts/x09_placeholder_class_vs_flag.tsv (1,626 merged; fs 1,337, adb 289); r01 (gillnets near 11 %, far 74 %,
+      in port 15 %); ../2026-10-29-static-set-time/counts/c06_placeholder_days.tsv
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: flag the time as the placeholder, and keep its day as the set day, basis derived
 
   - id: T4-marina
     quirk: the station's start is the trip's departure; the app writes no set or jig start
@@ -114,7 +123,9 @@ rows:
       counts/x02_times_port_calls.tsv (t1 within 1 h of the vessel leaving port: fs 91 %, adb 94 %); p01 (equal to
       the departure 96-100 %, a date on the rest); q01 (18,697 merged, every one a departure or a date)
     ask: c
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: flag as the trip departure; the trip window, departure to return, basis derived
+      (ask c answered)
 
   - id: T4-taktikal
     quirk: the station's start is the trip's departure
@@ -133,7 +144,7 @@ rows:
       counts/x02_times_port_calls.tsv (within 1 h of leaving port 77 %); p01 (the departure 85-90 %, a date 6-7 %);
       p12 (6,967 merged)
     ask: c
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-29: flag as the trip departure; the trip window (ask c)"
 
   - id: T10
     quirk: the station's end is the trip's return
@@ -155,7 +166,7 @@ rows:
       Marína's static t3 is recorded (98 %, near on 48 %): its haul window would keep t3 and lose t4, so it needs an
       end; reviewed with ask c
     ask: c
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-29: flag as the trip return; the trip window (ask c)"
 
   - id: T5
     quirk: the station's one time is the trip's landing, or a departure equal to it
@@ -175,7 +186,7 @@ rows:
       counts/p01_times_app_gear.tsv (the landing 52-58 %, a departure 23-34 %); x02 (on its 776 stations of 2022,
       within 1 h of reaching port 56 %); w01 (far 54-93 % against a 1-degree cell); q01; p12 (23,132 merged)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-29: flag as the landing; the day window, basis synthesised"
 
   - id: T6-app
     quirk: the static set time is the haul start or end, the trip's departure or its landing; the app writes no set
@@ -462,7 +473,8 @@ rows:
       with a time with seconds are the same
     evidence: counts/q01_t1_caught.tsv (only window a set window)
     ask: c
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: the day, basis synthesised; trip-time stations take the trip window (T4, T10)
 
   # Positions ------------------------------------------------------------------------------------------------------
 
@@ -498,7 +510,7 @@ rows:
     today: sources/fs_afladagbok/convert.R names STOKKUR and reads a point
     evidence: counts/p03_positions.tsv (23,362)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-29: a 1-degree cell centred on the value, flagged cell_1deg"
 
   - id: P3
     quirk: hundredths of a minute, and other digit forms
@@ -510,15 +522,21 @@ rows:
     field: [lat, lon]
     holds: "form: six digits ddmm.hh; four digits ddmm; seven digits ddmm.mmm; latitude and longitude exchanged on some"
     action: read_as
-    read_as: by digit count as above; an exchanged pair read back (decision 211)
+    read_as: >-
+      decode_logbook_position() in both adapters, the form from this row: six digits ddmm.hh, four ddmm, seven
+      ddmm.mmm; eight digits none, flagged; an exchanged pair read back (decision 211)
     today: >-
+      the fs adapter normalises positions to six digits itself and reads no seven- or eight-digit one: 831 merged
+      stations have no position (r04); R/logbook_position.R names TAKTIKAL for the six digits
       R/logbook_position.R names TAKTIKAL for the six digits; the exchanged pairs and four-digit longitudes beside
       six-digit latitudes not read
     evidence: >-
       counts/p03_positions.tsv (four digits 5,146, seven 789, six 609, five 240, six ending 61-99 134, eight 50);
-      q03 (the seven-digit positions decode to none on 48 % of those judged)
+      q03; r04_taktikal_forms_merged.tsv (seven digits 764 + 19, eight 32 + 16: no position in the merge)
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: one shared decoder, decode_logbook_position(), in both adapters, with the form
+      from this row
 
   - id: P3-value
     quirk: a trip whose six-digit positions end in 61-99, impossible as seconds
@@ -545,13 +563,23 @@ rows:
     field: lat
     holds: "form: dd + m.m, leading zero dropped"
     action: read_as
+    read_as: >-
+      by the digit pattern, as the track supports it (r06): a 4- or 5-digit latitude beside a 6-digit longitude, the
+      latitude by decision 211 (6631 = 66 03.1, 64312 = 64 03.12) and the longitude as seconds; beside a 4-digit
+      longitude, both by decision 211; a 4-digit latitude beside a 5-digit longitude, the latitude by decision 211 and
+      the longitude as read; 5 and 5 digits kept as read and flagged
+    flag: position_uncertain  # the 5 / 5 pattern
     today: nothing; read as ddmm and ddmm.m, far on the track (TODO 126)
     evidence: >-
       counts/q03_position_form_track.tsv (Trackwell raun five digits far 74 %, four 80 %; Jóhann Gíslason 72-80 %;
-      six digits near 88 %); p03 (Trackwell raun 5,472 and 742, Jóhann Gíslason 782 and 117); decision 211 (35-81 %)
-    note: the reading is decision 211's; test it on the track before it applies
+      six digits near 88 %); p03 (Trackwell raun 5,472 and 742, Jóhann Gíslason 782 and 117); decision 211 (35-81 %);
+      r05 (at the station's time: decision 211's latitude nearer, median 9-29 km against 45-88 km);
+      r06_short_latitudes_visit.tsv (the vessel within 2 km that day: beside a 6-digit longitude 2,276 by decision
+      211 against 864 as read, of 4,603; 5 / 5 digits 483 as read, 433 and 197 by decision 211, of 1,799)
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: by the digit pattern, as the track supports it; 5 / 5 kept as read and flagged
+      uncertain
 
   - id: P5
     quirk: seconds only at 00, 15, 30 or 45 (a quarter-minute grid, about 0.5 km)
@@ -663,13 +691,18 @@ rows:
     gear: ["*"]
     field: [z1, z2]
     holds: "unit: metres"
-    action: convert           # x 1, basis recorded; a vessel GEBCO reads as fathoms takes D1's row by vessel-period
+    action: convert           # x 1, basis recorded, for every station of the two apps
+    note: >-
+      Taktikal's 37 vessels whose depths GEBCO reads as fathoms (21 %, twice the noise of a one-unit app) keep z_unit
+      "uncertain" for a person to judge; Marína's 29 (10 %) are the noise Trackwell raun shows too (11 %)
     today: nothing; converted x 1.8288 (decision 210's fs_depth_units, not built)
     evidence: >-
       counts/q05_depth_unit_vessel.tsv (Marína 221 vessels read metres, 18 fathoms, 43 mixed; Taktikal 119, 35, 24);
-      w04
+      r03_depth_vessel_ratio.tsv (vessels' median ratio at the metres peak: Marína 231, Taktikal 121; at the fathoms
+      peak 29 and 37; Trackwell raun, which sends fathoms, 99 at the metres peak of 867); w04
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-29: metres for both apps; Taktikal's 37 fathom-reading vessels noted, z_unit uncertain
 
   - id: D3
     quirk: the unit mixed within an app

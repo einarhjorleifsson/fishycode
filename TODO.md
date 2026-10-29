@@ -1590,9 +1590,9 @@ stations), and 28 haul windows cut to nothing by a set window with the same star
 **check:** a decision on a-c; the windows and `station_event` traced before and after.
 
 ## 165. The e-logbook feed: every app's quirks found by rule, in one app profile (plan 053)
-**status:** open · **needs: maintainer** — plan 053's asks a-h (§8): the rows reviewed, flag and keep or NA, the trip's
-times as a window, decision 206's towed departure copies, stamped set times, the feed once the hold lifts, Trackwell's
-file as a witness, vendors' trials · **see:** `curate/plans/053-elogbook-feed-app-profile.md`, TODOs 103, 107, 126,
+**status:** open · **needs: maintainer** — plan 053's asks a (33 rows left) and d-h (§8): decision 206's towed
+departure copies, stamped set times, the feed once the hold lifts, Trackwell's file as a witness, vendors' trials ·
+**see:** `curate/plans/053-elogbook-feed-app-profile.md`, TODOs 103, 107, 126,
 162, 164, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
 
 The maintainer (2026-10-29): a plan for the e-logbook feed, what the apps and the Directorate send and the feed itself.
@@ -1605,7 +1605,9 @@ fathoms; the new mar's live build drops trips registered on a month's last day (
 app profile (`curate/corrections/logbook_app_profile.yml`) that `curate/` reads, values kept with per-field flags that
 the windows leave out, and a check that lists a new app or a moved share; the app names leave the adapters' code. It
 would fold in TODO 164's choices a-c, TODO 103's other patterns, TODO 107's unbuilt items and TODO 126's per-app forms.
-Step 3 drafted the same day: 45 rows in `curate/corrections/logbook_app_profile.yml`, none reviewed; ask a is that read.
+Step 3 drafted the same day: 45 rows in `curate/corrections/logbook_app_profile.yml`. Reviewed that evening: T1-T5, T10,
+W1, D2, P2-P4, each as proposed; asks b (keep and flag) and c (the trip's window) answered. The review found the fs
+adapter reads no seven- or eight-digit position (831 merged Taktikal stations have none).
 
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.
