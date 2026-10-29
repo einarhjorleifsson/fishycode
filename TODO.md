@@ -767,6 +767,9 @@ on every static voyage (about 201 k h longline and 47 k h gillnet less); built i
 Left: that build; the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as
 recorded by the maintainer's choice; the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained);
 the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
+A lead (decision 242): afli's own electronic set times on nets and lines of 2019-2020 miss the set position by the
+track on 45 % (far or in port), leaning to a set logged 1-3 h before the vessel reaches the gear: decision 157's
+departure copies, or more.
 
 **check:** decision 198's rule built and the trail's `fishing_flow` traced before and after; the gillnet set times in
 port explained or listed;
@@ -1483,7 +1486,7 @@ TODO 152, decision 240 (153 and 154 closed)
 
 Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
 gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Step 1, the comparison with the new
-mar's merged logbook, done the same day (plan 050 §6; its leads are TODOs 136, 158 and 159). Left: step 5, the tails,
+mar's merged logbook, done the same day (plan 050 §6; its leads TODOs 136, 160 and 162, decisions 241 and 242). Left: step 5, the tails,
 held for plan 051 (TODO 152); ask f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's
 build drops month-end trips); ask g done: the findings emailed to its author 2026-10-29.
 
@@ -1501,56 +1504,32 @@ Nephrops tails wait for it on their branch. For ask c: from 2025-11-19 adb write
 
 **check:** plan 051 executed or parked, with a decision record.
 
-## 158. afli's tow remarks and its tows without catch: a flag for a broken tow, and a witness for the count of trawls
-**status:** open · **see:** plan 050 §6, `$FISHYDATA/archive/2026-10-29-mar-logbook/merge-vs-merge.md` §3 and §8,
-decision 240, TODO 73
-
-From the comparison with the new mar's merge (2026-10-29, Claude, read-only). afli's `stofn.athugas`, the skipper's
-coded remark, is read nowhere (`sources/afli/note.R` reads the free text, `aths_texti`). It marks a mishap (snagged,
-torn, holed codend) on 279,000 tows, a twin trawl (codes 20, 21-34) on 65,000 and pair trawling (40, 41-54) on 1,500:
-a flag for a broken tow, and a second witness for the count of trawls that decision 240 reads from `tvo_veidarf`. The
-merge keeps afli's 153,351 hauls with no catch row (to 2020), as it should. 36 % of them are zeros where a mishap is
-logged, the rest a mix. From 1996 afli holds no tow without catch, so its effort lacks the empty tows. 564 trips have
-no haul with catch but a landed catch (19 kt): catch records lost. As `AGENTS.md` has it, these are flagged, not
-corrected.
-
-**check:** the remark read with its codes named; a flag per haul (mishap, no catch, neither); the 564 trips flagged;
-the absence of empty tows from 1996 said where the analyst reads the effort.
-
-## 159. Two e-logbook values to check against the track: the longitude's sign, and the set time of afli's 2021 nets and lines
-**status:** open · **see:** plan 050 §6, `$FISHYDATA/archive/2026-10-29-mar-logbook/merge-vs-merge.md` §4.3 and §4.7,
-TODO 126, decision 211
-
-From the same comparison. On 2,995 e-logbook stations our longitude's sign differs from the new mar's: our adapters
-turn it (`sources/fs_afladagbok/convert.R`, `curate/corrections/adb_vs_fs_afladagbok.R`), theirs does not. On 3,007
-nets and lines of 2021 that the merge takes from afli, afli's set time `t1` and the Directorate's differ by hours to
-days. The track can say which is right in each case, as it did for the position format (decision 211); the logbook
-positions themselves are never joined to it.
-
-**check:** both counted against the track, every station in one outcome, and each rule kept or changed with a decision.
-
 ## 160. The Directorate's link of trip to landing as a witness for `lid_map`
-**status:** open · **see:** `curate/link_lid_map.R`, `$FISHYDATA/raw/oracle/fs_afladagbok/ws_rekjanleiki.parquet`,
-`$FISHYDATA/archive/2026-10-29-mar-logbook/mar-package.md` §6, plan 050 §6
+**status:** open · **needs: maintainer** — the id as a witness or not, and `ops$rafn.rekjanleikanumer` dumped ·
+**see:** `curate/link_lid_map.R`, `$FISHYDATA/archive/2026-10-29-trace-id/findings.md` (§5 the proposal), plan 050 §6
 
-From the reading of the new mar (2026-10-29, Claude, read-only). The Directorate links a logbook trip to its landing
-with a traceability id (`trace_id`): in the new mar's landings from 2021 (21 k of 46 k landings in 2021, all from
-2023), and 85-92 % of its logbook trips of 2023-2026 find theirs, 57 % in 2021. fishycode builds its own link
-(`lid_map`, steps 01-09) and reads no such id. Our dump holds `ws_rekjanleiki` (trip id, change time,
-`rekjanleiki_id`): presumably the same link on the logbook side; where the landings' side sits is not checked.
+Measured 2026-10-29 by Claude (AI), read-only, not checked by a person. The trip side is in our dump,
+`fs_afladagbok.ws_rekjanleiki`, one id per trip, equal to the new mar's trip `trace_id` on all 243,149. The landing
+side is in no dump: in Oracle only `ops$rafn.rekjanleikanumer` (178,555 rows, fewer than the 200,716 landings with an
+id). It was read once from the new mar's landings parquet on S3, six columns, with the maintainer's leave. Landings
+carry the id from 2021-04, all of them from 2022-10. Of 192,395 e-logbook trips of 2021 on: 149,325 same landing,
+3,984 different, 633 only the id, 16,331 only `lid_map`, 1,646 neither, 20,476 not judged. Where they differ, the
+logged catch sides with `lid_map` 1,755 to 538: the id is made at the weighing, and names the previous trip or an
+empty auto trip when the logbook trip is late. It is better on swaps (294 trips; the weight agrees 176 to 23) and on
+step 05, `vid_date ±2` (162 of 191 contradicted; 85 to 23).
 
-**check:** the id found on both sides in our dumps, and `lid_map`'s links set against it, every trip in one outcome.
+Proposed: the id as a witness column on every link and the resolver for swaps and step 05, not a step of its own; its
+landing side dumped from the table first, never read from the S3 parquet.
 
-## 161. Trial and test records in the e-logbook: flag them
-**status:** open · **see:** `$FISHYDATA/archive/2026-10-29-mar-logbook/live-vs-dump.md` §4,
-`curate/corrections/catch_landing_contradicted.R`, `AGENTS.md` (an extreme value is flagged, not corrected)
+**check:** the maintainer's choice; if taken, the table dumped, the witness and the two resolvers built and measured,
+every trip in one outcome, in a decision.
 
-From the same reading. The dump holds a few hundred unlanded trips a year from a few vessels per software vendor, which
-look like the vendors' trials (Fishtech raun 2023: 96 trips of one vessel; Reiknistofa fiskmarkaða raun 2024-2025),
-and STOKKUR's 340 two-minute trips of 2021 with test weights, one catch line of 3,703,703 kg, which is in the merge.
-The merge holds catch lines of 1,000 t or more: afli 100 (3 flagged by `catch_flag`), fs_afladagbok 39 (11), adb 5
-(2). Many may be real pelagic sets; values of repeated digits (9,999,999; 7,999,999; 3,703,703) look like tests.
+## 162. afli's east longitudes: judged by the track
+**status:** open · **see:** decision 242, `$FISHYDATA/archive/2026-10-29-track-checks/findings.md` §1
 
-**check:** the trial trips and test values named by a rule, flagged in `curated/` and left as recorded, every one in
-one outcome.
+afli has no sign rule. On its e-logbook route of 2021-22 the track puts 19 of 442 stations at the west reading where
+afli has them east: 16 within 1° of the meridian, and 3 at 22-23° E south of 67.66° N, on land. Over all years, 436 afli
+stations lie east of 10.75° E south of 67.66° N: 35 before 2000, 66 in 2000-2009, 322 in 2010-2020 and 13 from 2021.
+None was judged (counted 2026-10-29 by Claude, not checked by a person).
 
+**check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.

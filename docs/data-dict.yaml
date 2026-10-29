@@ -3154,7 +3154,7 @@ tables:
       are those lid_map links to the trip, with the landing's own schema. Duplicate twins and catch let go (negative
       codes) are left out. A linked landing that holds none of the species is not judged here. Built
       2026-10-23 (decision 218): rule 1 87,838 rows on 8,703 trip-species pairs, 294 kt; rule 2 275 rows on 28 pairs,
-      22.3 kt. Rule 3, `landed_not_logged` (TODO 158): the trip has a linked landing that holds catch and no station
+      22.3 kt. Rule 3, `landed_not_logged` (decision 241): the trip has a linked landing that holds catch and no station
       of the trip holds any; one row per (trip, species landed), with no station (`.sid`, `sid` and `kg` NA).
     constraints:
       - assert: flag <> 'landing_contradicts' OR (witness = 'trip_landing' AND trip_kg_landed > 0 AND trip_kg_logged > 10 * trip_kg_landed AND trip_kg_logged - trip_kg_landed >= 1000)
@@ -3400,7 +3400,7 @@ tables:
         description: >
           How a towed gear is rigged where the record says (afli only: the skipper's remark,
           stofn.athugas, codes 20-34 two trawls, 40-54 a pair trawl). A twin rig counts two
-          trawls in effort_count (TODO 158).
+          trawls in effort_count (decision 241).
       - name: mishap
         type: string
         examples: [snagged, torn, codend holed, trawl lost]

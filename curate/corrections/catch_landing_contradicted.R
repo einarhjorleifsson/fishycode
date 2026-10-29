@@ -17,7 +17,7 @@
 #      it. Either flags.
 #   3. landed_not_logged: the trip has a linked landing that holds catch, and no station of the trip holds any. The
 #      catch records are lost (plan 050 §6: 564 afli trips, 19 kt); the witness is what the landing holds, species by
-#      species. Flagged, never filled in (the maintainer, 2026-10-29, TODO 158).
+#      species. Flagged, never filled in (the maintainer, 2026-10-29, decision 241).
 # The logbook's 830 (herring, Atlanto-Scandian stock) is compared as the landings' 30; catch let go (negative codes)
 # is never landed and is left out. A linked landing that holds none of the species is not judged here.
 

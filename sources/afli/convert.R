@@ -84,7 +84,7 @@ source <-
 ## The skipper's remark (stofn.athugas) ------------------------------------------
 # A code of afli's table ATHUGASEMDIR (`rafr_stofn_aths_skipstjora`). Its twenties are the rig: 0-14 names none, 20-34
 # two trawls ("Tvö troll"), 40-54 a pair trawl ("Tvílembingar", two vessels towing one trawl); the rest is the mishap,
-# 0 none. 0 is "no remark", not "one trawl" (plan 050 §6, TODO 158). Kept as recorded and named: the rig is a witness
+# 0 none. 0 is "no remark", not "one trawl" (plan 050 §6, decision 241). Kept as recorded and named: the rig is a witness
 # for the count of trawls below, the mishap a flag, never a correction.
 MISHAP <- c("snagged", "snagged and torn", "torn", "headline or fishing line broken", "fouled",
             "leg or bridle broken", "sweep or footrope broken", "codend holed", "released", "warp broken",
@@ -179,8 +179,9 @@ timing <-
 # table's own value in staging. Its basis is "recorded", or "derived" where it is made from the record's other
 # values: a longline's sets × hooks per set, and a towed gear's tvo_veidarf, a flag, 0 one gear and 1 two (plan
 # 050 §6: per vessel, afli's share flagged follows fs_afladagbok's share counted 2 or more), with the skipper's remark
-# as a second witness: two where either says two (the maintainer, 2026-10-29, TODO 158; the remark says two trawls on
-# 19,783 bottom-trawl tows with no flag and on 5,484 flagged 0).
+# as a second witness: two where either says two (the maintainer, 2026-10-29, decision 241; the remark says two trawls on
+# 19,783 bottom-trawl tows with no flag and on 5,484 flagged 0). 6 of the 19,783 have no towing record (`toga`): the
+# remark alone gives them two trawls, in the assembly below.
 twin_count <- function(flag, rig) case_when(rig %in% "twin" | flag %in% 1 ~ 2, flag %in% 0 ~ 1)
 dims <-
   bind_rows(
@@ -262,6 +263,12 @@ fishing_sample <-
   # The count (R/logbook_effort.R). The effort is made from the times, the recorded duration and the count by
   # calc_effort(), not stored.
   left_join(dims |> select(.sid, effort_count, effort_count_basis), by = ".sid") |>
+  # A twin remark on a tow with no towing record (`toga`) counts two trawls all the same (decision 241)
+  left_join(remark |> filter(rig %in% "twin") |> transmute(.sid, twin_only = TRUE), by = ".sid") |>
+  mutate(twin_only = twin_only %in% TRUE & is.na(effort_count) & gear %in% c("OTB", "OTM", "DRB"),
+         effort_count = if_else(twin_only, 2, effort_count),
+         effort_count_basis = if_else(twin_only, "derived", effort_count_basis)) |>
+  select(-twin_only) |>
   add_effort_count()
 
 

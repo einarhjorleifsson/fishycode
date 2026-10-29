@@ -487,13 +487,13 @@ a person.
   - afli's monthly summaries are the only Nephrops of 1973-1985 and nearly the only shrimp before 1975 (TODO 136,
     plan 041, parked).
   - The skipper's coded remark `stofn.athugas` is read nowhere (the notes read `aths_texti`). With it, the catchless
-    tows and the 564 trips with no catch on a haul but a landed catch (19 kt): TODO 158.
+    tows and the 564 trips with no catch on a haul but a landed catch (19 kt): TODO 158, decision 241.
   - The e-logbook's longitude sign on 2,995 stations, and the set time of 3,007 afli-route nets and lines of 2021,
-    each to be checked against the track: TODO 159.
+    each to be checked against the track: TODO 159; both rules kept, decision 242.
   - Our station date is afli's fishing date (`vedags`), theirs the first logged time, which leaves 1.32 M undated:
     `docs/output-schema.md` says so.
-  - The Directorate's trip-to-landing id (`trace_id`) as a witness for `lid_map`: TODO 160.
-  - The e-logbook's trial trips and test values (STOKKUR 2021's 3,703,703 kg line is in the merge): TODO 161.
+  - The Directorate's trip-to-landing id (`trace_id`) as a witness for `lid_map`: TODO 160 (measured; a witness for swaps and step 05, the maintainer's call).
+  - The e-logbook's trial trips and test values (STOKKUR 2021's 3,703,703 kg line is in the merge): TODO 161, closed with decision 241 (flagged already).
 - **adb's lumpfish code cannot be read back.** From 2025-11-19 adb writes MFRI's 48 (Hrognkelsi) for the Directorate's
   951 (Grásleppa).
   - adb's own `species` table maps three codes into 48: 951, 950 (Rauðmagi) and 48.

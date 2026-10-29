@@ -122,7 +122,7 @@ Gear-specific columns are `NA` where not applicable.
 | `effort_count` | dbl | The one count (plan 050 step 2): hooks, nets, jigs, traps, or the trawls or dredges of a towed gear |
 | `effort_count_basis` | chr | `"recorded"`, `"derived"` (afli's twin flag 0/1 as 1/2; a longline's sets × hooks per set), `"synthesised"` (1 for a towed gear or seine that records none), `"none"`. A count is as recorded: an e-logbook's count of trawls may be the app's value carried from the last haul, as for vid 2048's single tows of May 2026 logged as twin (plan 050, ask b) |
 | `effort_count_unit` | chr | What is counted: `"trawls"`, `"dredges"`, `"seines"`, `"hooks"`, `"nets"`, `"jigs"`, `"traps"` |
-| `rig` | chr | `"twin"` or `"pair"` where the skipper's remark says so (`afli` only: `stofn.athugas`, codes 20-34 and 40-54); a twin rig counts two trawls (TODO 158) |
+| `rig` | chr | `"twin"` or `"pair"` where the skipper's remark says so (`afli` only: `stofn.athugas`, codes 20-34 and 40-54); a twin rig counts two trawls (decision 241) |
 | `mishap` | chr | The skipper's remark on what went wrong (`afli` only): `"snagged"`, `"snagged and torn"`, `"torn"`, `"headline or fishing line broken"`, `"fouled"`, `"leg or bridle broken"`, `"sweep or footrope broken"`, `"codend holed"`, `"released"`, `"warp broken"`, `"trawl lost"`, `"winch broken"`, `"engine failure"`, `"steering failure"`. A flag: the haul and its catch stay as recorded. From 1996 afli holds no tow without catch, so afli's effort lacks the empty tows (plan 050 §6) |
 | `n_per_unit` | dbl | Hooks per set (LLS) or hooks per jig (LHM) |
 | `n_lost` | dbl | Number of lost gear pieces (`fs_afladagbok` only) |
