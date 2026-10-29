@@ -3,7 +3,7 @@
 *2026-10-29. Built, measured and written by Claude (AI) in a side session at the maintainer's request; no person has
 checked the code or the numbers. The asks were answered by the maintainer (plan 052 §7). Every number below is from
 the build in a scratch store (`$FISHYDATA` linked read-only, outputs real files; the live store untouched, checked with
-`find -newer`), and the live build of the same commit is compared with it at the end.*
+`find -newer`); the live build of 09b9211 gave the same files, row hash for row hash (the end of this record).*
 
 ## What was asked
 
@@ -23,7 +23,7 @@ out (decision 094); no time in them, and none read:
 | table | rows | stations with rows |
 |---|---:|---:|
 | `gear_part`: the netting and what is fixed to it, one row per station and part, one column per measure in SI | 15,678,761 | 5,772,723 |
-| `rigging_part`: the rig, the units and their count, hooks in all, doors, sweeps, upper bridles, ropes, wires | 13,626,199 | 6,913,790 |
+| `rigging_part`: the rig, the units and their count, hooks in all, doors, sweeps, upper bridles, ropes, wires | 13,626,197 | 6,913,790 |
 | `sensor_summary`: one row per station and reading (quantity, place, moment, mount, instrument), afli only | 17,569,309 | 5,228,806 |
 
 The targets (`_targets.R`): `gear_part_map` (`reference/gear/part_map.R`: every source column in one row, with its
@@ -163,3 +163,19 @@ import's, and the expert's corrections are labels a rule can be scored against (
   §2's unexplained headline and sweep records listed by vessel. Door areas above 40 m² (12,736 tows) may be square
   feet: unchecked.
 - The remaining sent elements (plan 037 phase 2): doors, sweeps, codend, grid and the sensors as sent.
+
+## The live build
+
+`$FISHYDATA/archive/2026-10-29-gear-rigging-sensor-build/` (`build.sh`, `build2.sh`, their logs, the fingerprints, the
+scratch scripts and logs in `scratch/`). The first build, at 4191c67, was stopped at `afli_part`: the edit giving the
+expert's layer its place landed in `sources/afli/part.R` while it ran, so `gear_part_map`'s two files carried a dirty
+stamp and `afli_part` ran an untested script (logs in `first_attempt/`; its work folder removed). Its "before"
+fingerprint was taken from the clean store before any new file and is the one compared with. The second, at 09b9211
+from a clean tree (the plan-053 session held its edits outside the tree): `gear_part_map` invalidated, nothing else
+outdated but the new targets and the two left so (the AIS catch, the allocation audit); the five built by name in 2.6
+minutes; then the same two outdated. Every file the targets record, 8,045: 8,003 the same (rows, schema and row hash),
+42 only after, the 19 new outputs and 23 raw dump files the new raw-file targets now name; none changed. The new
+tables equal the scratch build's, row hash for row hash, and are stamped with 09b9211 and `fd.dirty` false.
+`products/user_tables.R` then wrote v0: links to the three tables, and `logbook/environment.parquet`, the pivot of
+`sensor_summary`'s readings of the sea and the air, flagged values and placeholders left out, one row per station
+(4,338,522).
