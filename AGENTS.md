@@ -311,7 +311,10 @@ repos.
   lambdas are `lambda x: …`, never `x -> …`; a filter on a partition column may be estimated at about 1 row, so a
   query that joins reads the partition's own folder (`curate/ais_ping_tag.R`, `curate/port_call.R`). A window over
   every row of a year is what ran out of memory, under 1.5.6 too: where a value depends on a few columns, compute it on
-  their distinct values and join it back (decision 239).
+  their distinct values and join it back (decision 239). Through a view (`open_dataset()`), a partition filter with a
+  DOUBLE (`year == 2017`, as duckdbfs returns years) prunes no file under 2.0: filter on `as.integer()`. A DISTINCT
+  over a whole table can run away in spill inside a large query under 2.0: narrow it by a semi join first. `column`
+  is a keyword in 2.0's parser: quote it.
 - **Comments**: non-obvious reasons only; every script head states input and output.
 - **Section headers**: single-dash style only.
   ```r

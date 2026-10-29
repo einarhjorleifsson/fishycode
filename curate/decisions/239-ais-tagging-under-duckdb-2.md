@@ -5,7 +5,9 @@ The maintainer: "get rid of eusm and gebco in the code flow — that will be han
 downstream", "ices areas is definitively a ices data-call thing", and "i just can not believe that 2.0 is really the
 problem here". Run and written by Claude (AI); every number comes from its runs, and no person has checked them.
 Working files, each with the command that reruns it: `$FISHYDATA/archive/2026-10-28-duckdb2/` (`tag_form.R`,
-`tag_form.sh`, `tag_form_rep.sh`, `form_hash.R`, `check_port_call.R`, their logs, `form_hash.csv`).*
+`tag_form.sh`, `tag_form_rep.sh`, `form_hash.R`, `check_port_call.R`, their logs, `form_hash.csv`). Amended through
+the night of 2026-10-28/29: the resume's stop at `port_call` and its cause, the rebuild finished, and 2.0 against
+1.5.6, all run unattended on the maintainer's word.*
 
 ## What was found
 
@@ -148,10 +150,89 @@ So this stop is DuckDB 2.0's own, unlike the tagging's: 2 of 8 runs under 2.0, n
 - **To DuckDB.** That reprex, and one for the partition estimate (2.0: about 1 row; 1.5.6: the partition's
   55,000,000), are drafted in `curate/issues/duckdb.yml`, not sent.
 
-## Not done
+## The night of 2026-10-28: the rebuild finished under 2.0, and 2.0 against 1.5.6
 
-- **The rest of the rebuild** (TODO 150): `port_call` and the 14 targets after it, resumed under 2.0 the night of
-  2026-10-28 on the maintainer's "Yes, resume under 2.0".
-- **Whether to keep 2.0 now or wait for 2.0.1**: a battery of the heavy steps under both engines, at this machine's
-  defaults and at 4 GB and 4 threads, after the rebuild (`bench_small.sh`).
+The maintainer: "Yes, resume under 2.0", then to test 2.0 against 1.5.6 for speed, memory and robustness, with smaller
+machines in mind, to decide "if we should jump to duckdb 2.0 now, or wait a little bit longer". Run unattended
+(`night.sh`, `build_resume_4.log`, `compare_before_after.log`, `bench_small.sh` and its log).
+
+**The rebuild finished.** `port_call` and the 14 targets after it were built under 2.0 from 22:36 to 23:57 UTC with
+no stop. The fingerprint after was compared with the one taken at 13:33, before the rebuild began: every one of
+8,086 files is in one outcome, and every outcome is explained.
+
+- **The same: 7,717.**
+- **Rows or schema changed: 151.**
+  - `ping_tagged` and `ping_clean` dropped their four area columns, as planned; their rows are unchanged.
+  - Two years of `ping_union` and `ping_tagged` typed three all-empty columns as `"NULL"` (decision 235, change 3;
+    `ais_ping_union.R` writes a bare NA).
+  - Two catch files lost 3 rows, and one check gained 2.
+- **Values moved, rows and schema the same: 210.** Mostly the trail's `gid_voyage` (123 files) and the catch's `kg`
+  (80). These are TODO 139's ties: `voyage_gear` takes each voyage's gear by `arg_max(gid, n)`. Run four times,
+  that query gave four different `gid_voyage` hashes under 1.5.6, and the same four times under 2.0, equal to the
+  night's file. The 13:33 store was 1.5.6's.
+- **Two `ping_clean` files** had all their columns move: their rows changed files within the year, and every year
+  sums to the same hashes.
+- **Rewritten, only before, only after.** The md5 of 5 GeoPackages changed: they were rewritten. The 2 files only
+  before are the `.fgb` area layers, still on disk but no longer targets. The 1 only after is `depth_h3`.
+
+Rows went from 8,842,597,453 to 8,868,758,417; the difference is `depth_h3`'s 26,160,965 cells.
+
+**Target times against 2026-10-23 (1.5.6):**
+
+| target | 2.0 | 1.5.6 |
+|---|---|---|
+| `ais_trail` | 27 min 38 s | 31 min 20 s |
+| `port_call` | 5 min 27 s | 5 min 45 s |
+| `ais_voyage` | 28 min 22 s | 14 min 36 s |
+| `ais_ping_clean` | 45 min 25 s | 19 min 39 s |
+
+The rest were within a second or two either way.
+
+**The small-machine battery.** Three rounds of four tests, under each engine, at this Mac's defaults (14 threads, 19
+GiB) and at 4 GB and 4 threads, each in a fresh process (`bench_small.log`). Medians, wall time and peak, 2.0 against
+1.5.6:
+
+| test | defaults: 2.0 | defaults: 1.5.6 | 4 GB, 4 threads: 2.0 | 4 GB, 4 threads: 1.5.6 |
+|---|---|---|---|---|
+| `port_call` 2017-2018 | 72 s, 10.1 GB | 72 s, 8.1 GB | 85 s, 4.8 GB | 85 s, 4.7 GB |
+| tagging 2017, form C | 13 s, 4.2 GB | 9 s, 3.0 GB | 16 s, 2.1 GB | 12 s, 1.7 GB |
+| `ais_ping_clean`'s batch reads 2017 | 36 s, 1.6 GB | 12 s, 1.7 GB | 36 s, 1.6 GB | 18 s, 1.7 GB |
+
+Every run passed, but one of the old-query reprexes under 2.0 at the defaults.
+
+**The batch reads: a third regression in 2.0, found the same night** (`explain_inlist.R`, `cleanbatch2.R`,
+`synth/prune_reprex2.R`).
+
+- **Two causes.** `ais_ping_clean` and `ais_voyage` read each year through `duckdbfs::open_dataset()`, a view, with
+  `filter(year == yr)`. duckdbfs returns the years as doubles, so dbplyr writes `year = 2017.0`.
+  - Through a view, 2.0 does not prune the other years' files on a DOUBLE literal: one batch scanned 489,361,252
+    rows of `ping_tagged` where 1.5.6 scanned the year's 72,369,236. The synthetic data does the same (3 files read
+    against 1); straight on `read_parquet` both engines prune.
+  - The year's 15 batches took 195 s under 2.0 with the double and 34 s with an integer, against 11.4 s under
+    1.5.6 with either.
+- **The rest is slower anyway.** The remaining factor of three, at the integer, is not in DuckDB's execution: one
+  batch ran in 0.095 s under 2.0 and 0.111 s under 1.5.6. It is in handing the rows to R, not measured further.
+
+**What 2.0.0 costs and gives.**
+
+- **Robustness: three regressions**, each worked around in our code:
+  - the spill runaway in a hash aggregate (worse with fewer threads: 5 of 10 runs at 4 threads);
+  - a filter on a partition estimated at 1 row;
+  - no partition pruning through a view on a DOUBLE literal.
+- **Speed.** Light queries and results handed to R are 1.3 to 3 times slower. The large trail query is 12 % faster.
+- **Memory.** Peaks are up to 40 % higher at the defaults, and about the same at 4 GB.
+- **Determinism.** It gave the same result on `voyage_gear`'s ties, where 1.5.6 did not. That is a defect of the
+  query (TODO 139), not something to rely on.
+- **The parser** takes `column` as a keyword, so a column of that name must be quoted.
+
+
+- **Which engine from now on**, the maintainer's call, the night's numbers above. Recommended (Claude):
+  - wait for 2.0.1 (2026-11-18) for builds, R's default back to 1.5.6;
+  - keep the store as built and checked, and keep the workarounds, which cost 1.5.6 nothing;
+  - rerun `bench_small.sh` and the reprexes at 2.0.1.
+- **Years as integers in `filter(year == …)`** wherever a year comes from duckdbfs (at least `ais_ping_clean.R` and
+  `ais_voyage.R`), so that 2.0 prunes.
+- **A cast of `ais_ping_union.R`'s bare NAs** (decision 235, change 3).
+- **`products/user_tables.R` and the effort map's `grid.R`** again (TODO 150).
+- **The three DuckDB drafts** (`curate/issues/duckdb.yml`), whether and how to send them.
 - **DuckDB issues.** Neither the partition estimate nor the hang has gone to DuckDB as a reprex.

@@ -101,3 +101,25 @@ issues:
       positions to 10,062 port polygons built its index on the positions and ran out of memory; reading the year's
       folder instead gives the right estimate and the right build side. On a dataset with several files per
       partition we saw a realistic estimate, so the file count may matter.
+
+  - title: "2.0.0: through a view, a filter on a hive partition column with a DOUBLE literal no longer prunes files"
+    labels: [performance]
+    files: [prune_reprex2.R]
+    body: |
+      A view over a hive-partitioned dataset, filtered on the partition column with a DOUBLE literal, reads every
+      partition's file under 2.0.0. Under 1.5.6, and straight on `read_parquet` under either engine, it reads only
+      the matching partition. dbplyr writes an R number as a DOUBLE (`year = 2018.0`), and duckdbfs's
+      `open_dataset()` makes a view, so R code meets this as a matter of course. Synthetic positions, one file a year,
+      `hive/year=2017/data_0.parquet`, `year=2018/…` and `year=2019/…`:
+
+      ```sql
+      CREATE VIEW pings AS SELECT * FROM read_parquet('hive/*/*.parquet', hive_partitioning = true);
+      EXPLAIN ANALYZE SELECT vid, time, lon, lat FROM pings WHERE year = 2018;     -- Total Files Read: 1 (both)
+      EXPLAIN ANALYZE SELECT vid, time, lon, lat FROM pings WHERE year = 2018.0;   -- 2.0.0: 3   1.5.6: 1
+      EXPLAIN ANALYZE SELECT vid, time, lon, lat FROM read_parquet('hive/*/*.parquet', hive_partitioning = true)
+        WHERE year = 2018.0;                                                       -- 1 (both)
+      ```
+
+      On 20 years of real data a batch read scanned 489,361,252 rows where 1.5.6 scanned 72,369,236, and a year of
+      such reads took 195 s against 11 s.
+

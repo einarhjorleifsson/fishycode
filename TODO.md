@@ -1231,7 +1231,9 @@ another run:
   tie they can come from different gears.
 
 Downstream, three trail months and two catch files moved. The choice is the step's owner's: a fixed tie-break (which
-voyage, which gear), or a tie read as no decision (`ambiguous`, as `n_rng` already does for the speed range).
+voyage, which gear), or a tie read as no decision (`ambiguous`, as `n_rng` already does for the speed range). Run four
+times on 2026-10-29, `voyage_gear`'s query gave four different results under DuckDB 1.5.6 and the same under 2.0
+(decision 239); the tie stays a defect under either.
 
 **check:** each step run twice gives identical files, and the rule is written in the step's header.
 
@@ -1402,19 +1404,13 @@ Mendo's method is not recoded (the maintainer, 2026-10-28); the per-haul check r
 as not done, in a decision.
 
 ## 150. DuckDB 2.0: the complete rebuild under it
-**status:** in progress — stopped four times; the fourth, DuckDB 2.0's, worked around in `port_call.R` (decision 239) · **see:**
+**status:** in progress — rebuilt and compared under 2.0 the night of 2026-10-28 (decision 239) · **see:**
 plan 049, decisions 239, 235 and 218, `$FISHYDATA/archive/2026-10-28-duckdb2/` (`rebuild.sh`, `resume.sh`, `battery_guard.sh`, the logs and checks)
 
-Started 2026-10-28 at 13:33 UTC, decision 218's method: fingerprint (`fingerprint_before.rds`), every target
-invalidated, built one by one, fingerprint after, every file in one outcome. It stopped at `gear` (offline; it reads
-ICES's vocabularies), at `ais_ping_tag` (out of memory: 2.0 estimates a partition filter at about 1 row; decision 235)
-and again at `ais_ping_tag` 2020 (a hang). The cause of the last two was ramb's port flag, now light, and the area
-layers left the flow (plan 049, decision 239). The resume of 2026-10-28 20:00 built 21 targets through
-`ais_ping_clean`, then `port_call` ran away under 2.0 (74 GB of spill); in replays 2 of 8 runs under 2.0 did so and
-none of 8 under 1.5.6. Left: `port_call` and 14 targets after it, by `resume.sh`, never `rebuild.sh` (it would
-fingerprint the half-built store as before), with the tree clean and staying so. A schema
-`INTEGER` -> `"NULL"` is decision 235's change 3; `ping_tagged` and `ping_clean` lose four columns (decision 239). Then
-`products/user_tables.R` and the effort map's `grid.R` again.
+Started 2026-10-28 at 13:33 UTC, decision 218's method, and finished at 23:57 after four stops, each cause found
+(decisions 235, 239). The before and after are compared with every file in one outcome (decision 239). Left: which
+engine from now on (decision 239 recommends 1.5.6 until 2.0.1), and `products/user_tables.R` and the effort map's
+`grid.R` again.
 
 **check:** a decision records the rebuild's before and after under DuckDB 2.0 with every file in one outcome.
 
