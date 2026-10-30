@@ -142,3 +142,10 @@ are executed. Plans 019 and 051 are partly built, with stubs in TODOs 173 and 15
 - TODO 174: afli_sent's overlap labels depend on the row order.
 - Columns the dictionary lacked before plan 054 are not added: the vessel register's tables, `station_window`,
   `catch_by_species_station`, `gear_window` and others.
+- The dictionary entries were written by a helper agent (Claude), and checked here only by spot reads and the
+  validator: `validate-spec` gives the same 10 errors and 261 warnings as before, and 67 of the new tables' 69
+  columns pass `validate-meta` (the other 2 are DATE columns that DuckDB writes untyped). Not described yet:
+  `curated/check/trip_landing` and `check/logbook_app_profile`. The agent also found descriptions that plan 054
+  left stale, which nobody has checked: `logbook_fishing_sample.t1_placeholder`, `link_trip_reconciled.T1_ais`
+  and `T2_ais`, `reference_port_code`'s table text, and `logbook_trip.source` (no `tour`). The `ais_catch` table
+  names a file that is gone (decision 261). `afli_grasl` was added to six `schema` value lists.

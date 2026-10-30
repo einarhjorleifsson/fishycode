@@ -84,6 +84,11 @@ details: >
   build of it (plan 024, TODO 79; ranges and examples from that build, since the
   store holds neither until the logbook is rebuilt).
 
+  2026-10-30: the tables and columns of plan 054's live rebuild that this file
+  lacked (decisions 253-264) were written by Claude (AI), from the scripts that
+  write them, their decisions and the rebuilt files, and have not been checked by
+  a person.
+
 tables:
   - name: ais_voyage
     source:
@@ -2013,7 +2018,7 @@ tables:
           Year.
       - name: schema
         type: enum
-        values: [adb, afli, fs_afladagbok]
+        values: [adb, afli, fs_afladagbok, afli_grasl, aflaskeyti]
         description: >
           The logbook system.
       - name: species
@@ -2216,7 +2221,7 @@ tables:
           gear_part, rigging_part, sensor_summary, or effort_count.
       - name: schema
         type: enum
-        values: ["adb", "aflaskeyti", "afli", "fs_afladagbok"]
+        values: ["adb", "aflaskeyti", "afli", "fs_afladagbok", "afli_grasl"]
         constraints: [required]
         description: >
           The logbook source system.
@@ -2527,6 +2532,127 @@ tables:
           converted from product weights by Oracle's factors), with the same
           tonnes-to-kg rule as `catch`. `catch` is this times lods' ungutting
           factor (decision 169).
+  - name: landing_catch_detail
+    source:
+      parquet: ../../fishydata/curated/landing/catch_detail.parquet
+    description: >
+      landing_catch with what that table sums away (curate/landing.R; plan 051 step 5, decisions 257 and 262):
+      one row per landing (.lid, schema), species, gear, stock, kfteg, origin port, state, area and agf's
+      afdrif, with the weight as landed, its gutted and ungutted equivalents, the landing system's factor read
+      back, and the catch's disposition. agf wins over lods by (vid, date, hid), as in landing_catch. Summed
+      over state, area and afdrif, catch equals landing_catch's on every row (the build checks it), and
+      landing_catch and landing_landings are unchanged by it. The disposition goes on to the trip in
+      logbook_trip_landing and logbook_trip_disposition.
+    columns:
+      - name: .lid
+        type: number
+        range: [6439, 4503598207550488]
+        examples: [6439, 584797, 509453581797378, 2508623245603663, 4503598207550488]
+        description: >
+          The landing (landing_landings..lid); the key is (.lid, schema).
+      - name: schema
+        type: enum
+        values: [agf, lods]
+        description: >
+          The landing system: agf (aflagrunnur, from 2007-09-01) or lods (its predecessor, kept where agf
+          has nothing for the vessel, day and port).
+      - name: sid
+        type: number
+        range: [0, 1128]
+        examples: [0, 29, 94, 232, 1128]
+        description: >
+          Species code, as landing_catch.sid.
+      - name: gid
+        type: number
+        range: [0, 139]
+        examples: [0, 9, 19, 30, 139]
+        description: >
+          Gear code reported for the landing, as landing_catch.gid.
+      - name: stid
+        type: number
+        range: [1, 9030]
+        examples: [1, 62, 199, 2000, 9030]
+        description: >
+          Fishing stock code (veiðistofn), as landing_catch.stid.
+      - name: kfteg
+        type: number
+        range: [0, 118]
+        examples: [0, 14, 39, 55, 118]
+        description: >
+          lods only: its own raw stock code, as landing_catch.kfteg; NA for agf.
+      - name: hid_origin
+        type: number
+        range: [0, 999]
+        examples: [0, 42, 89, 135, 999]
+        description: >
+          lods only: the port an export at hid 159 was landed at (upprunahofn), as landing_catch.hid_origin;
+          NA for agf.
+      - name: state
+        type: number
+        range: [0, 97]
+        examples: [0, 12, 31, 52, 97]
+        description: >
+          agf only: the state the fish were landed in, the landing system's code (astand, ask.astand), whose
+          names reference_whole_weight_factor carries (state_name); NA for lods, which holds no state, its
+          weight being gutted where that applies (sources/aflagrunnur/convert.R, sources/lods/convert.R).
+      - name: area
+        type: string
+        examples: [IS, NE, GL, I, U]
+        description: >
+          The fishing area (veidisvaedi), in each system's own codes. agf: IS for Iceland's waters (99.4 %
+          of its rows), and other codes not decoded here. lods: its code table kvoti.veidisv, e.g. I inside the
+          Icelandic limit, U outside it, R and P the Reykjanes Ridge outside and inside, X the Norwegian zone,
+          Y the Russian zone (dump/oracle/meta/kvoti.yml). The landing system's factor depends on it.
+      - name: afdrif
+        type: enum
+        values: [V, C, H, S, A, U, I, B, F]
+        description: >
+          agf only: what became of the row's catch, as agf records it (plan 036 §2): V to processing, C
+          regional quota to processing, H VS catch, S coastal-fishing fund, A to reduction, B damaged, I to
+          farming, F to freezing, U export. Kept raw beside disposition; NA for lods.
+      - name: catch_landed
+        type: number
+        range: [-26853, 3652803]
+        examples: [-26853, 22912, 52214, 147792, 3652803]
+        description: >
+          agf only: the weight as landed, kg (magn), in the state `state` names; NA for lods.
+      - name: catch_gutted
+        type: number
+        range: [-1545000, 5199000]
+        examples: [-1545000, 5385.24, 27461.14, 88674, 5199000]
+        description: >
+          The gutted equivalent, kg: agf's magn_slaegt; lods's magn, gutted where it applies (decision 169).
+      - name: catch
+        type: number
+        range: [-1545000, 5199000]
+        examples: [-1545000, 4398.81, 15943.75, 49633.75, 5199000]
+        description: >
+          The ungutted equivalent, kg: agf's magn_oslaegt, lods's as in landing_catch. Summed over state,
+          area and afdrif it is landing_catch's catch.
+      - name: factor_landing
+        type: number
+        range: [0, 27.026986301]
+        examples: [0, 1, 1.09, 1.25, 27.026986301]
+        description: >
+          The landing system's own factor read back: catch / catch_landed where the weight as landed is
+          above 0 (agf), catch / catch_gutted where there is no weight as landed and the gutted weight is
+          above 0 (lods); NA otherwise.
+      - name: disposition
+        type: enum
+        values: [home, export, abroad, export_or_abroad, transfer, unknown]
+        description: >
+          What became of the catch (decision 262, plan 036 §3.3), by the class of the landing's port code
+          (reference_port_code.class), then agf's afdrif: "abroad" (a code of class abroad), "transfer" (class
+          transfer), "unknown" (class placeholder, or no code); "export", lods's 159 whose origin port is a
+          harbour (exported in a container, to 2013-08) or agf's afdrif U at a harbour (from 2013-09);
+          "export_or_abroad", lods's 159 with no origin port or one that is no harbour; "home", agf's other
+          afdrif, or lods, at a harbour.
+      - name: disposition_basis
+        type: enum
+        values: [recorded, derived]
+        description: >
+          "recorded" where agf's afdrif at a harbour gives the disposition, "derived" where the port code's
+          class does (lods throughout, and agf's codes that are no harbour).
   - name: landing_landings
     source:
       parquet: ../../fishydata/curated/landing/landings.parquet
@@ -3136,6 +3262,30 @@ tables:
         examples: [IS-AKR, IS-DRA, IS-HRI, IS-RHA, IS-VPN]
         description: >
           pid2 of the same witness.
+      - name: n_voyage_ais
+        type: number
+        range: [0, 72]
+        examples: [0, 1, 2, 3, 72]
+        description: >
+          How many AIS voyages hold the trip's stations by their own times (t1-t4 not at 00:00, the times
+          the app profile flags left out; duplicate twins and stations deleted in the source left out); 0
+          for none (curate/trip_reconciled.R, decision 193).
+      - name: ais_basis
+        type: enum
+        values: [stations, trip_voyage]
+        description: >
+          How the AIS witness (T1_ais, pid1_ais, T2_ais, pid2_ais) was found (decision 193): "stations",
+          the first to the last of the two or more voyages the trip's stations lie in; "trip_voyage", the
+          one voyage link_trip_voyage links to the trip; NA where there is no AIS witness. T1_basis stays
+          "reconstructed" either way: this column is the modifier.
+      - name: ais_flag
+        type: enum
+        values: [overlap]
+        description: >
+          "overlap" where the span of the trip's voyages holds another trip of the vessel (one of its
+          stations by time, or its linked voyage): the span is not used, and the linked voyage, where
+          there is one, stays the witness. Which trip the shared voyage belongs to is not judged
+          (decision 193, TODO 102). NA otherwise.
   - name: logbook_catch
     source:
       parquet: ../../fishydata/curated/logbook/catch.parquet
@@ -3230,6 +3380,15 @@ tables:
           where condition is UNGU, NA where it is GUTT or unknown
           (curate/corrections/aflaskeyti_weight.R). afli: NA (its `catch` is the whole
           weight). catch_by_species_station's catch_round fills the gaps.
+      - name: undersized_kg
+        type: number
+        range: [0, 20000]
+        examples: [0, 72, 380, 1000, 20000]
+        description: >
+          fs_afladagbok's tour app only (the Directorate's small-boat web logbook of 2020-01 to 2022-03,
+          decision 264): the part of the row's weight, kg, that the app's catch records flag undersized,
+          summed as `catch` is (sources/fs_afladagbok/convert.R). It is inside `catch`, not added to it.
+          0 on most tour rows; NA for every other station.
       - name: condition_basis
         type: enum
         values: [recorded, derived, none]
@@ -3240,6 +3399,25 @@ tables:
           afli logbook; "none" where nothing says (condition NA; taken as round by
           catch_by_species_station). NA for the other schemas: fs_afladagbok's and
           adb's condition is the source's own, and afli has none.
+      - name: species_flag
+        type: string
+        examples: [lumpfish_950_or_951]
+        description: >
+          What the species code holds, by the app profile's row K2 (curate/corrections/logbook_app_profile.yml,
+          flag_app_catch() in R/logbook_app_profile.R; decision 255): "lumpfish_950_or_951" on adb's species
+          48, which stands for both Grásleppa (951) and Rauðmagi (950). The species stays as recorded. NA
+          where no row holds, and for every schema but adb.
+      - name: species_rule
+        type: string
+        examples: [K2]
+        description: >
+          The id of the app profile's row that set species_flag; NA where none did.
+      - name: species_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with the value species_flag names: "note" keeps it, a sign for analysts
+          (K2 is a note); "flag" would leave it out. NA where no row holds.
   - name: logbook_catch_by_species_trip
     source:
       parquet: ../../fishydata/curated/logbook/catch_by_species_trip.parquet
@@ -3273,7 +3451,7 @@ tables:
           Logbook trip id.
       - name: schema
         type: enum
-        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        values: [afli, fs_afladagbok, adb, aflaskeyti, afli_grasl]
         description: >
           The logbook source of the trip: `.tid` is unique only within a schema, so the trip is (.tid,
           schema) (TODO 41). NA on a row from the landings alone, where the full join found no logbook catch
@@ -3365,7 +3543,7 @@ tables:
           and one (schema, .tid, sid_landing) for rule 3, whose `.sid` is NA.
       - name: schema
         type: enum
-        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        values: [afli, fs_afladagbok, adb, aflaskeyti, afli_grasl]
         description: >
           The logbook source system, as in logbook_station.
       - name: .tid
@@ -3421,6 +3599,85 @@ tables:
         values: [landing_contradicts, largest_landing_exceeded, landed_not_logged, repeated_digits]
         description: >
           The rule that flagged the row.
+  - name: logbook_nephrops_tails
+    source:
+      parquet: ../../fishydata/curated/logbook/nephrops_tails.parquet
+    description: >
+      Nephrops logged as tails under the whole-animal code (curate/corrections/logbook_nephrops_tails.R, its
+      declaration curate/corrections/logbook_nephrops_tails.yml; plan 050 step 5, decision 257). One row per
+      candidate station: a Nephrops (sid 40) station, duplicate twins left out, of a declared vessel in a
+      declared period, with its trip's logged and landed Nephrops and the trip's one outcome. Under the guard
+      (logged over landed below 0.55) or with no landing of Nephrops, the trip is named tails, and
+      catch_by_species_station's whole weight of the station's sid 40 is the weight as logged times the tails'
+      factor of the day from reference_whole_weight_factor (3.25; R/whole_weight.R), basis reconstructed. A
+      side table, as logbook_gear: the guard reads lid_map, which is built from the merge.
+    columns:
+      - name: .sid
+        type: number
+        range: [-1278001, 516665]
+        examples: [-1278001, -1161900, -1134366, -1048567, 516665]
+        description: >
+          The station (with schema, the key of logbook_station).
+      - name: schema
+        type: string
+        examples: [adb, afli, fs_afladagbok]
+        description: >
+          The logbook the station comes from.
+      - name: sid
+        type: number
+        examples: [40]
+        description: >
+          The species: always 40, Nephrops.
+      - name: .tid
+        type: string
+        examples: ["-1043570", "-1133978", "-1164482", "-1238871", "60663"]
+        description: >
+          The station's trip (with schema, the key of logbook_trip).
+      - name: vid
+        type: number
+        examples: [173, 1645, 1752, 2048]
+        description: >
+          The vessel, one of the declaration's.
+      - name: trip_logged
+        type: number
+        range: [1, 2620]
+        examples: [1, 150, 400, 900, 2620]
+        description: >
+          The trip's Nephrops as logged, kg: its sid-40 catch summed, duplicate twins left out.
+      - name: landing_logged
+        type: number
+        range: [1, 2620]
+        examples: [1, 150, 400, 900, 2620]
+        description: >
+          The Nephrops logged on every trip the trip's landing ends, kg (catch_by_species_trip's
+          catch_logbook by .lid), so that a landing ending two trips does not put a whole-weight trip
+          near 0.5.
+      - name: landed
+        type: number
+        range: [3.25, 9436.25]
+        examples: [3.25, 561.75, 1125.5, 1989.5, 9436.25]
+        description: >
+          The Nephrops of the trip's landing, kg (catch_by_species_trip's catch_landings); NA where the
+          trip has no landing or its landing holds no sid 40.
+      - name: ratio
+        type: number
+        range: [0.0906686815, 1.8333333333]
+        examples: [0.0907, 0.2769, 0.31, 0.3651, 1.8333]
+        description: >
+          landing_logged / landed, the test against the guard (0.55, between tails at 1/3.25 and whole at
+          1 on a log scale); NA where landed is.
+      - name: outcome
+        type: enum
+        values: [tails, tails_no_landing, whole]
+        description: >
+          The trip's outcome: "tails" where ratio is under the guard, "tails_no_landing" where there is
+          no ratio, "whole" at the guard or above (left as logged).
+      - name: condition_corrected
+        type: enum
+        values: [tails]
+        description: >
+          "tails" where the outcome is tails or tails_no_landing, the state whose factor calc_whole_weight()
+          reads; NA for whole.
   - name: logbook_fishing_sample
     source:
       parquet: ../../fishydata/curated/logbook/fishing_sample.parquet
@@ -3764,6 +4021,15 @@ tables:
           TRUE for pre-1980 records with .sid > 2,500,000 - retrospective back-entries
           rather than contemporaneous records (afli only; NA for fs_afladagbok). See
           docs/afli-backentry.qmd.
+      - name: .t1_source
+        type: string
+        examples: [synthesised]
+        description: >
+          How t1 was obtained, fs_afladagbok's tour app only (decision 264, sources/fs_afladagbok/convert.R):
+          "synthesised" where t1 is the spot time (t4, the end of fishing) less the hours (jigs, lines) or
+          nights (nets) in the sea the record gives, where that duration stands against the gear's limit
+          (R/duration_limit.R; decision 214). NA for every other station, and for a tour spot whose duration
+          is none or doubted (t1 NA).
       - name: t_shift_min
         type: number
         range: [-60, 0]
@@ -3783,6 +4049,84 @@ tables:
           (curate/corrections/aflaskeyti_local_time.R): "reconstructed" where
           t_shift_min is not 0 (moved from local time to UTC), "recorded" otherwise.
           NA for the other schemas.
+      - name: t1_flag
+        type: string
+        examples: [placeholder, trip_time, stamped, copy_departure, derived_grid]
+        description: >
+          What the recorded t1 holds, by the app profile's reviewed rows (curate/corrections/logbook_app_profile.yml,
+          flag_app_times() in R/logbook_app_profile.R; plan 053, decision 255): "placeholder", the haul start less
+          a fixed offset (rows T1, T2, T3, T2-afli, T3-afli, T20); "trip_time", the trip's departure (T4-marina,
+          T4-taktikal); "copy_departure", "copy_landing" or "copy_haul", a copy of the trip's departure or landing
+          or of the station's own t3 or t4 (T5, T6-app, T6-value, T15, T16, T17); "copy_previous", the vessel's
+          previous station's end (T7); "date", a midnight (T8); "stamped", a set time with seconds (T12);
+          "derived_grid", a whole multiple of 30 min before the haul start (T13); "equals_departure", T17's
+          note for Fishtech raun. t1 stays as recorded. Tried on the e-logbook's stations and on afli's with a
+          set time; a field's rows are tried in order and the first that holds wins. NA where none holds.
+          t1_placeholder is t1_flag == "placeholder", kept one release.
+      - name: t1_rule
+        type: string
+        examples: [T1, T4-marina, T12, T15, T2-afli]
+        description: >
+          The id of the profile's row that set t1_flag; NA where none did.
+      - name: t1_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with t1 (decision 255): "flag" leaves it out of every window, link and duration
+          (judged_time_sql(), R/duration_limit.R; calc_effort()); "note" keeps it (T13, T12 on longlines, T17's
+          Fishtech raun). NA where no row holds.
+      - name: t2_flag
+        type: string
+        examples: [date]
+        description: >
+          What the recorded t2 holds, by the same rows: "date", a midnight (T8, fs_afladagbok and adb). NA where
+          no row holds; t2 stays as recorded.
+      - name: t2_rule
+        type: string
+        examples: [T8]
+        description: >
+          The id of the profile's row that set t2_flag; NA where none did.
+      - name: t2_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with t2, as t1_action.
+      - name: t3_flag
+        type: string
+        examples: [pressed, date]
+        description: >
+          What the recorded t3 holds: "pressed", a tow's or seine set's end within 4 min of its start, t2 (T14);
+          "date", a midnight (T8). NA where no row holds; t3 stays as recorded.
+      - name: t3_rule
+        type: string
+        examples: [T14, T8]
+        description: >
+          The id of the profile's row that set t3_flag; NA where none did.
+      - name: t3_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with t3, as t1_action. A pressed record's window runs from its start to the gear's
+          95th-percentile span or the vessel's next station, basis synthesised (decision 255).
+      - name: t4_flag
+        type: string
+        examples: [trip_time, pressed, copy_landing, equals_landing, date]
+        description: >
+          What the recorded t4 holds: "trip_time", the trip's return (T10, Marína raun and FRA TAKTIKAL);
+          "pressed", a static haul's end within 4 min of its start, t3 (T14); "copy_landing", the trip's landing
+          (T18); "equals_landing", T18's note for Jóhann Gíslason raun and Fishtech raun; "date", a midnight
+          (T8). NA where no row holds; t4 stays as recorded.
+      - name: t4_rule
+        type: string
+        examples: [T10, T14, T18, T8]
+        description: >
+          The id of the profile's row that set t4_flag; NA where none did.
+      - name: t4_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with t4, as t1_action. A trip_time station's window takes the trip's departure
+          and return where its own times are flagged, basis derived (decision 255).
       - name: t1_placeholder
         type: boolean
         description: >
@@ -3888,6 +4232,162 @@ tables:
         examples: [1, 4, 9, 20, 85]
         description: >
           Trips on the landing; above 1 is a declared many-to-many (plan 014).
+  - name: logbook_trip_landing
+    source:
+      parquet: ../../fishydata/curated/logbook/trip_landing.parquet
+    description: >
+      Every landing of a logbook trip (curate/trip_landing.R, a flow table: it reads the AIS track; plan 027 §5,
+      plan 054 ask b, decision 262): the declarations' match, every row of logbook_lid_map, and the further
+      landings joined to it. A landing lid_map leaves unclaimed is judged against the vessel's latest claimed
+      landing within 7 days before it, at any port, and joined to every trip that landing ends when it is an
+      export at 159 and the claimed landing is at its origin port on its day or the day before (export), when the track
+      sees no fishing in between (track), or, where the track does not see the vessel, when the trips' logged
+      kg is nearer the two landings than the claimed one alone (weight). One row per trip and landing.
+      lid_map is not changed; curated/check/trip_landing.parquet puts every landing in one outcome.
+    columns:
+      - name: .tid
+        type: string
+        examples: ["-1000003", "100808853", "103613163", "25203827", "99999"]
+        description: >
+          Logbook trip id (with schema, the key of logbook_trip).
+      - name: schema
+        type: string
+        examples: [adb, afli, afli_grasl, aflaskeyti, fs_afladagbok]
+        description: >
+          The logbook the trip comes from.
+      - name: .lid
+        type: number
+        range: [6439, 4503597515613901]
+        examples: [6439, 483915, 959691, 2105102116333187, 4503597515613901]
+        description: >
+          The landing (landing_landings..lid; with schema_land, its key).
+      - name: schema_land
+        type: enum
+        values: [agf, lods]
+        description: >
+          The landing's system: agf or lods.
+      - name: basis
+        type: enum
+        values: [lid_map, export, track, weight]
+        description: >
+          How the landing is joined to the trip: "lid_map", the declarations' match; "export", "track" or
+          "weight", a further landing by the rules above.
+      - name: n_trips
+        type: number
+        range: [1, 28]
+        examples: [1, 2, 3, 6, 28]
+        description: >
+          Trips on the claimed landing (lid_map's n_trips): for a further landing, of the claimed landing it
+          was joined through, every one of whose trips it joins.
+      - name: disposition
+        type: enum
+        values: [home, export, abroad, export_or_abroad, transfer, unknown, mixed]
+        description: >
+          The landing's disposition, from its landing_catch_detail rows: the one disposition its kilograms
+          have, or "mixed" where they have several.
+      - name: disposition_basis
+        type: enum
+        values: [recorded, derived]
+        description: >
+          The landing's disposition basis: "recorded" only where every row's is.
+  - name: logbook_trip_disposition
+    source:
+      parquet: ../../fishydata/curated/logbook/trip_disposition.parquet
+    description: >
+      What became of each trip's catch (curate/trip_landing.R; decision 262, decision 208 f): one row per
+      logbook trip, duplicate trips left out, with the kilograms of all its landings in logbook_trip_landing,
+      the further ones included, by disposition. Where the trip has no landing, the skipper's own 159 as the
+      trip's landing port gives "export_or_abroad", basis recorded, from the logbook: the only witness for
+      afli's trips of 1973-1991. A table beside logbook_trip_landing, not on logbook_trip, which is
+      preprocessing: this is flow. Checked at the trip: kg in = kg out in every vessel-year.
+    columns:
+      - name: .tid
+        type: string
+        examples: ["-10000", "101407065", "104935307", "27108454", "99999"]
+        description: >
+          Logbook trip id (with schema, the key of logbook_trip).
+      - name: schema
+        type: string
+        examples: [adb, afli, afli_grasl, aflaskeyti, fs_afladagbok]
+        description: >
+          The logbook the trip comes from.
+      - name: vid
+        type: number
+        range: [-999, 69479]
+        examples: [-999, 1243, 2800, 6789, 69479]
+        description: >
+          Vessel identifier, from logbook_trip.
+      - name: n_landings
+        type: number
+        range: [0, 7]
+        examples: [0, 1, 2, 3, 7]
+        description: >
+          The trip's landings in logbook_trip_landing; 0 for none.
+      - name: kg_landed
+        type: number
+        range: [-711000, 4354000]
+        examples: [-711000, 1706.75, 4069.59, 12263.76829, 4354000]
+        description: >
+          The catch of the trip's landings, kg (landing_catch_detail's catch summed); NA where the trip has
+          no landing.
+      - name: kg_home
+        type: number
+        range: [-711000, 4354000]
+        examples: [-711000, 1684.247757, 3989.265873, 11540.93, 4354000]
+        description: >
+          The part of kg_landed whose disposition is "home"; NA where there is none. kg_export,
+          kg_abroad, kg_export_or_abroad, kg_transfer and kg_unknown likewise; a sum of rows that cancel
+          can leave a rounding residue near 0, and a withdrawn copy or an export's surcharge row a weight of
+          0 or less (curate/trip_landing.R).
+      - name: kg_export
+        type: number
+        range: [-7.105427358e-14, 175167.0184599409]
+        examples: [-7.105427358e-14, 6846.43, 19274.61007591, 35207.88595583, 175167.0184599409]
+        description: >
+          The part of kg_landed whose disposition is "export"; NA where there is none.
+      - name: kg_abroad
+        type: number
+        range: [0, 3448130]
+        examples: [0, 337653, 739000, 1173000, 3448130]
+        description: >
+          The part of kg_landed whose disposition is "abroad"; NA where there is none.
+      - name: kg_export_or_abroad
+        type: number
+        range: [-1.136868377e-13, 2260000]
+        examples: [-1.136868377e-13, 7218.36, 17054.97, 43577, 2260000]
+        description: >
+          The part of kg_landed whose disposition is "export_or_abroad"; NA where there is none.
+      - name: kg_transfer
+        type: number
+        range: [8000, 1579860]
+        examples: [8000, 148000, 417000, 828000, 1579860]
+        description: >
+          The part of kg_landed whose disposition is "transfer"; NA where there is none.
+      - name: kg_unknown
+        type: number
+        range: [-62.76, 1742000]
+        examples: [-62.76, 59.52380952, 142.38, 374.71, 1742000]
+        description: >
+          The part of kg_landed whose disposition is "unknown"; NA where there is none.
+      - name: disposition
+        type: enum
+        values: [home, export, abroad, export_or_abroad, transfer, unknown, mixed]
+        description: >
+          The trip's disposition: the one disposition its landings' kilograms have, or "mixed" where they
+          have several; with no landing, "export_or_abroad" where the trip's own landing port is 159; NA
+          otherwise.
+      - name: disposition_basis
+        type: enum
+        values: [recorded, derived, none]
+        description: >
+          "recorded" only where every landing row's is (or the logbook's own 159), "derived" otherwise,
+          "none" where there is no disposition.
+      - name: disposition_from
+        type: enum
+        values: [landings, logbook]
+        description: >
+          Where the disposition comes from: "landings", or "logbook" (the skipper's 159 on a trip with no
+          landing); NA where there is none.
   - name: logbook_gear
     source:
       parquet: ../../fishydata/curated/logbook/gear.parquet
@@ -3943,6 +4443,14 @@ tables:
         examples: [ARI, DES, HER, SCL, XXX]
         description: >
           Finer target of gid_used.
+      - name: gear_code
+        type: string
+        examples: [DRB_DES, GNS_GAD, LLS_DEF, OTB_DEF, SDN_DEF]
+        description: >
+          The letter twin of gid_used, XXX_YYY (general gear, target), one to each new gid, from
+          reference_gear (curate/corrections/logbook_gear.R; reference/gear/mapping.R, plan 050, decision
+          240): the code of the gear the flow uses, the landing's where gid_basis is "reconstructed". NA
+          where gid_used is (5 of 7.6 M rows in the build of 2026-10-30).
       - name: gid_basis
         type: string
         examples: [none, reconstructed, recorded]
@@ -4369,6 +4877,47 @@ tables:
         todo: |
           - Only 4 distinct values. Is this an enum? If so change `string` to
             `enum` and `examples` to `values`.
+      - name: pos1_form
+        type: string
+        examples:
+          - ddmmss
+          - decimal degrees
+          - ddmm
+          - degrees, minutes with the zero dropped (P4)
+          - ddmmss; short longitude uncertain left by the gear
+        description: >
+          fs_afladagbok and adb only: the form the start position's stored integers were read in, by the one
+          decoder both adapters use (decode_logbook_position(), R/logbook_position.R; decision 258, amending
+          211). The latitude's digit count gives it: ddmm.mmm (seven digits), ddmmss or ddmm.hh (six;
+          hundredths on the trips the app profile's rows P3 and P3-value name), ddmm.m (five), ddmm (four),
+          whole degrees (two, row P2); "degrees, minutes with the zero dropped (P4)" and "uncertain (P4)" for
+          row P4's latitudes; "exchanged (P3)" where Taktikal's latitude and longitude were read back. A
+          longitude shorter than a six-digit latitude adds "; short longitude" and its reading: right
+          (trailing digits lost), left (leading zeros lost), uncertain right or left (both valid, decided by
+          the gear; "minutes carried" where a gear other than the midwater trawl was read right although only
+          left was valid), or none,
+          with what decided it (the station's other position, the trip, the vessel's days, the gear).
+          "decimal degrees" for the tour app's spots (decision 264). NA for the other schemas and where no
+          latitude was read.
+      - name: pos2_form
+        type: string
+        examples:
+          - ddmmss
+          - ddmmss; short longitude left
+          - degrees, minutes with the zero dropped (P4)
+          - ddmm.m
+          - ddmmss; short longitude right by the trip
+        description: >
+          The same for the end position (lat2, lon2); NA where the station has none.
+      - name: record_entered
+        type: datetime
+        time_zone: UTC
+        range: [1922-04-28T00:00:00, 2026-10-15T20:38:29]
+        description: >
+          fs_afladagbok and adb only: when the record was entered, as the source stamps it (fs_afladagbok's
+          ws_veidi.skraningartimi, adb's fishing_station.registered; for the tour app, the spot's insert time,
+          snt). The app profile reads it (rows T12 and T16; decision 255). As recorded: 35 values fall before
+          2019, the earliest in 1922. NA for the other schemas.
       - name: lon1_raw
         type: number
         range: [-66064, 89.983]
@@ -4479,6 +5028,121 @@ tables:
         description: >
           For a "duplicate" twin, the .sid (same schema) of the kept record it
           repeats. NA otherwise.
+      - name: app_raw
+        type: string
+        examples: [Trackwell raun, Marína raun - GAFL AUTO, Trackwell - SeaData - Fishing Log, tour, FRA TAKTIKAL]
+        description: >
+          The app that wrote the e-logbook station, as written (curate/logbook.R, section "App"; decision 253):
+          fs_afladagbok's trip uppruni and adb's trip source, trimmed ("tour" for fs_afladagbok's tour app,
+          decision 264); on afli's electronic route, the software its sent message names
+          (staging/afli_sent/station.parquet, by .sid). NA for paper records, aflaskeyti's ERS reports and
+          afli's lumpfish logbook (afli_grasl).
+      - name: app
+        type: string
+        examples: [Trackwell raun, Marína raun, Fishing Log 2.7, Fontos raun, tour]
+        description: >
+          The app as the app profile names it (curate/corrections/logbook_app_profile.yml, vocabulary; decision
+          253), which scopes the profile's rows: for fs_afladagbok and adb, app_raw with the suffixes " - GAFL
+          AUTO" and " - Skrifstofa VES" taken off; for the afli route, the message's software and its
+          major.minor version, e.g. "Fishing Log 2.6". NA where app_raw is.
+      - name: app_suffix
+        type: string
+        examples: [GAFL AUTO, Skrifstofa VES, Skrifstofa VES - GAFL AUTO]
+        description: >
+          fs_afladagbok and adb: the suffixes taken off app_raw to make app, as written; NA where there were
+          none and for the other schemas. "FRA GAFLI - AUTO" keeps its " - AUTO" in app, a suffix the profile
+          does not name (decision 253).
+      - name: app_version
+        type: string
+        examples: [2.7.1.0, 2.6.7.0, 2.0.0.0, 1.1.20.0, 2.7.14.0]
+        description: >
+          afli's electronic route only: the sent message's whole version (staging/afli_sent), whose
+          major.minor app carries. NA for the other schemas and for afli's paper records.
+      - name: pos1_flag
+        type: string
+        examples: [saved_late, quarter_minute]
+        description: >
+          What the start position holds, by the app profile's rows (curate/corrections/logbook_app_profile.yml,
+          flag_app_positions() in R/logbook_app_profile.R; decision 255): "quarter_minute", Marína raun's
+          positions in quarter minutes (row P5); "saved_late", Trackwell raun's jigs and its static stations
+          whose set time row T12 took (row P7). The position stays as recorded. NA where no row holds.
+      - name: pos1_rule
+        type: string
+        examples: [P7, P5]
+        description: >
+          The id of the profile's row that set pos1_flag; NA where none did.
+      - name: pos1_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with the start position: "note" keeps it (P5 and P7 are notes); "flag" would
+          leave it out. NA where no row holds.
+      - name: pos2_flag
+        type: string
+        examples: [end_copy]
+        description: >
+          What the end position holds: "end_copy", the start copied (row P6-app, Reiknistofa fiskmarkaða
+          raun's every end; row P6-value, Trackwell raun's and Jóhann Gíslason raun's ends equal to their
+          start). Row P5's "quarter_minute" may also apply to an end; no end carries it in the build of
+          2026-10-30. The position stays as recorded. NA where no row holds.
+      - name: pos2_rule
+        type: string
+        examples: [P6-value, P6-app]
+        description: >
+          The id of the profile's row that set pos2_flag; NA where none did.
+      - name: pos2_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with the end position: "flag" (P6-app) leaves it out, "note" (P6-value) keeps it.
+          NA where no row holds.
+      - name: z_unit
+        type: enum
+        values: [fathoms, metres]
+        description: >
+          fs_afladagbok and adb only: the unit z1_raw and z2_raw were read in, by the app that sent them
+          (depth_by_app(), R/logbook_app_profile.R; the app profile's rows D1-D3, decision 259): "metres" for
+          Marína raun and FRA TAKTIKAL (D2: x 1, basis recorded); "fathoms" for every other app (D1, D3, and an
+          app no row names: x 1.8288, basis reconstructed, as the feed was read before, decision 022). Set on
+          every station of the two, the tour app's too, which has no depth. An "uncertain" for the vessels D2
+          and D3 note is planned and not made. NA for the other schemas.
+      - name: z1_flag
+        type: string
+        examples: [default_zero]
+        description: >
+          What the start depth holds, by the app profile's row D4 (decision 259): "default_zero", STOKKUR's
+          depth of 0 for none, read as none (z1 NA, z1_basis none; z1_raw keeps the 0). Empty in the build of
+          2026-10-30: decision 264 took STOKKUR's copies of the tour app's trips out of fs_afladagbok, and no
+          STOKKUR station is merged.
+      - name: z1_rule
+        type: string
+        examples: [D4]
+        description: >
+          The id of the profile's row that set z1_flag; NA where none did (every row in the build of
+          2026-10-30).
+      - name: z1_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with the start depth: "flag" (D4) reads it as none. NA where no row holds (every
+          row in the build of 2026-10-30).
+      - name: z2_flag
+        type: string
+        examples: [end_copy]
+        description: >
+          What the end depth holds, by the app profile's row D5 (decision 259): "end_copy", Reiknistofa
+          fiskmarkaða raun's end depth, a copy of the start, read as none (z2 NA, z2_basis none; z2_raw keeps
+          the value). NA where no row holds.
+      - name: z2_rule
+        type: string
+        examples: [D5]
+        description: >
+          The id of the profile's row that set z2_flag; NA where none did.
+      - name: z2_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with the end depth: "flag" (D5) reads it as none. NA where no row holds.
   - name: logbook_trip
     source:
       parquet: ../../fishydata/curated/logbook/trip.parquet
@@ -4599,6 +5263,17 @@ tables:
         description: >
           Source system tag within the fs_afladagbok schema; "ERS DCA (dw_aflaskeyti)"
           for aflaskeyti; NA for afli.
+      - name: tour_class
+        type: enum
+        values: [imported, landed, unlanded]
+        description: >
+          fs_afladagbok's tour app only (the Directorate's small-boat web logbook of 2020-01 to 2022-03, source
+          "tour"; sources/fs_afladagbok/convert.R, decision 264): how the tour reaches the logbook. "imported",
+          a trip the Directorate imported into ws_* as STOKKUR, whose copy is left out and which the tour
+          replaces; of the trips never imported, "landed" where the vessel landed the day before, the day or
+          the day after (landing_landings), "unlanded" where it did not. Every class is admitted; the
+          maintainer kept "unlanded" with its class visible, so an analyst can leave it out. NA for every
+          other trip.
       - name: T1_basis
         type: enum
         values: [synthesised]
@@ -4630,6 +5305,47 @@ tables:
         description: >
           For a "duplicate" trip, the .tid (same schema) of the kept trip, when all
           its stations repeat that one trip. NA otherwise.
+      - name: T1_flag
+        type: string
+        examples: [copy_station]
+        description: >
+          What the declared departure holds, by the app profile's rows T11 and T11-afli
+          (curate/corrections/logbook_app_profile.yml, flag_app_trips() in R/logbook_app_profile.R; decision
+          255): "copy_station", a copy of one of the trip's station times. T11 (fs_afladagbok, adb): Trackwell
+          raun's departure within 1 min of a tow's or seine set's t2, a haul's t3 or a jig's t1, and Fontos
+          raun's of a jig's t1. T11-afli: the afli route's departure (its sent layer's) in whole minutes,
+          within 1 min of one of the trip's static sets stamped with seconds. T1 stays as declared. NA where
+          neither holds.
+      - name: T1_rule
+        type: string
+        examples: [T11, T11-afli]
+        description: >
+          The id of the profile's row that set T1_flag; NA where none did.
+      - name: T1_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with T1: "flag" (both rows) leaves it out of every window, link and duration
+          (decision 255); in link_trip_reconciled it is no witness of the departure time, while its port
+          stands. NA where no row holds.
+      - name: T2_flag
+        type: string
+        examples: [copy_station]
+        description: >
+          What the declared landing holds, by row T11: "copy_station", the landing (not a date) within 10 min
+          of a tow's or seine set's t3 (Trackwell raun) or of a haul's or jig's t4 (Trackwell raun, Fontos
+          raun), fs_afladagbok and adb. T2 stays as declared. NA where it does not hold.
+      - name: T2_rule
+        type: string
+        examples: [T11]
+        description: >
+          The id of the profile's row that set T2_flag; NA where none did.
+      - name: T2_action
+        type: enum
+        values: [flag, note]
+        description: >
+          What the flow does with T2, as T1_action: in link_trip_reconciled a flagged landing is no witness
+          of the return time, while its port stands.
   - name: logbook_station_fate
     source:
       parquet: ../../fishydata/curated/logbook/station_fate.parquet
@@ -4670,7 +5386,7 @@ tables:
           is curate/aflaskeyti_trip.R's trip, the one the merge reads.
       - name: schema
         type: enum
-        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        values: [afli, fs_afladagbok, adb, aflaskeyti, afli_grasl]
         constraints: [primary_key]
         description: >
           The logbook source system, as in logbook_station.
@@ -4783,7 +5499,7 @@ tables:
           The staging trip id, as in logbook_trip (character); unique with schema.
       - name: schema
         type: enum
-        values: [afli, fs_afladagbok, adb, aflaskeyti]
+        values: [afli, fs_afladagbok, adb, aflaskeyti, afli_grasl]
         constraints: [primary_key]
         description: >
           The logbook source system, as in logbook_trip.
@@ -5704,6 +6420,15 @@ tables:
         description: >
           Author-defined finer-grained target/species-group code, not a standard ICES
           vocabulary.
+      - name: gear_code
+        type: string
+        examples: [AQU_CAG, GNS_LUR, LLS_LBL, OTB_DEF, SDN_DEF]
+        description: >
+          The new gid's letter twin, XXX_YYY: the general gear, then the target, one to each new gid and no
+          two alike, or the build stops (reference/gear/mapping.R; the maintainer, 2026-10-29, plan 050,
+          decision 240). gear + target2 where that pair is the gid's alone; named by the maintainer where it
+          is not or where the gid has no gear (4 GNS_LUR, 13 LLS_LBL, 21 LLS_TRK, 18 AQU_CAG, 20 AQU_MUS).
+          NA on the old codes, which are read through `map` to the new gid first.
   - name: reference_gear_part_map
     source:
       parquet: ../../fishydata/curated/reference/gear_part_map.parquet
@@ -5950,6 +6675,24 @@ tables:
             - constraints: [required, unique] # all values distinct & present
             - constraints: [primary_key] # all values distinct & present
             - constraints: [required] # all values present
+      - name: pid
+        type: string
+        examples: [IS-AKR, IS-BLO, IS-GRM, IS-SAD, IS-VET]
+        description: >
+          The standard port key of a code with a harbour polygon, from reference_port by hid
+          (reference/ports/port_code.R). NA for the 28 codes with none; their class says what they are.
+      - name: class
+        type: enum
+        values: [harbour, disposition, abroad, transfer, placeholder]
+        description: >
+          What the code stands for (reference/ports/port_code.R; decision 262, from decision 208 e): "harbour"
+          for every code with a pid, and for the places reference/ports/port_code_class.yml classes as harbours
+          without a polygon (inland places, and codes looked up by name); "disposition", 159 Gámur/Sigling,
+          exported in a container or landed abroad, its origin port saying which; "abroad", a country or a
+          sailing abroad; "transfer", moved to another vessel; "placeholder", no place (missing, various,
+          corrections, registrations). A code with neither a pid nor a class stops the build. curate/landing.R
+          reads it for the catch's disposition. The classes were drafted by Claude (AI) and are not yet
+          checked by a person (the YAML's head).
   - name: reference_port
     source:
       parquet: ../../fishydata/curated/reference/port.parquet
@@ -6276,6 +7019,149 @@ tables:
         description: >
           Why a code is declared: named by no list (0), afli's own codes (-30, -31, -34, 999, 445), codes the lists
           mean differently (278, 953, 165, 901), and the codes TODO 10 found unnamed (665, 533, 269, 1128, 954).
+  - name: reference_whole_weight_factor
+    source:
+      parquet: ../../fishydata/curated/reference/whole_weight_factor.parquet
+    description: >
+      One factor table from a weight as landed or logged to the whole (ungutted) weight
+      (reference/species/whole_weight_factor.R, from the reviewed declaration
+      reference/species/whole_weight_factor.yml; plan 051 step 3, decision 257): one row per scope, species,
+      state (or logged condition), area and period. Four scopes: `landings`, the landing system's factor per
+      species, state and period, a yearly mean for the products processed at sea, and every other species,
+      state and area agf holds, listed; `logbook`, the rows calc_whole_weight() (R/whole_weight.R) reads, each
+      copied from the landings row it reads, and the logbooks' own 1.25 as the fallback for a gutted species
+      with no landings factor; `lumpfish logbook`, afli's own lumpfish logbook's salting stages, provisional
+      (decision 263); `held`, kept and not applied. A regulated period is split by fishing year (1 September
+      to 31 August), each year's regulation on the total allowable catch its witness where it was read
+      (2000/01 to 2025/26) and prints the same factor. The declaration was drafted by Claude (AI) and is not
+      yet checked by a person (its head).
+    columns:
+      - name: scope
+        type: enum
+        values: [landings, logbook, lumpfish logbook, held]
+        description: >
+          The table's part, as above.
+      - name: kind
+        type: enum
+        values: [period, year mean, listed, fallback, held]
+        description: >
+          "period", a factor set for a period; "year mean", a product processed at sea, whose factor is set
+          per landing, as its calendar year's mean over agf's rows; "listed", a species, state and area agf
+          holds that neither covers, with its factor over every row; "fallback", the logbook's 1.25 for a
+          gutted species with no row of its own; "held", kept and not applied.
+      - name: sid
+        type: number
+        range: [1, 1026]
+        examples: [1, 22, 40, 166, 1026]
+        description: >
+          Species code; NA for any species the scope gives no row of its own (the landings' rows by state
+          alone, the logbook's fallback).
+      - name: state
+        type: string
+        examples: ["0", "1", "3", "6", "barrel"]
+        description: >
+          The landing system's state code (ask.astand) as text: 0 ungutted, 1 gutted, 3 tails, 6 roe, and so
+          on (state_name); "barrel" on one held row.
+      - name: state_name
+        type: string
+        examples: [slægt, óslægt, slitinn, hrogn, hausskorinn]
+        description: >
+          ask.astand's Icelandic name of the state (heiti); NA where the code is not in it.
+      - name: condition
+        type: string
+        examples: [GUTT, tails, stage 1, stage 4, stage unknown]
+        description: >
+          The logbook scope's logged condition the row serves (GUTT, or tails, the state a correction names:
+          logbook_nephrops_tails), and the lumpfish logbook's salting stage ("stage 1" to "stage 4", "stage
+          unknown"); NA in the landings and held scopes.
+      - name: area
+        type: string
+        examples: [IS, NE, NO, GL, RU]
+        description: >
+          The landing system's fishing area (agf's veidisvaedi): IS, Iceland's waters, on every period;
+          agf's own codes on the yearly means and listed rows; NA for the fallback, the lumpfish logbook and
+          the held rows.
+      - name: from
+        type: date
+        range: [1992-09-01, 2026-10-05]
+        description: >
+          The first day the factor holds (a yearly mean's 1 January; a listed row's first landing); NA for
+          the fallback and the lumpfish logbook's stages, which hold on any day.
+      - name: to
+        type: date
+        range: [1993-08-31, 2026-12-31]
+        description: >
+          The last day the factor holds; NA where the period is open (a key's open period is its last), and
+          for the fallback and the lumpfish logbook's stages.
+      - name: factor
+        type: number
+        range: [0, 472]
+        examples: [0, 1.087, 1.1905, 3.25, 472]
+        description: >
+          The factor that multiplies the weight in that state to the whole weight (1.1905 is 1 / 0.84 as the
+          landings round it). 0 for parts not counted as fish (liver, roe, heads, trimmings) unless a row says
+          otherwise. A yearly mean or listed row's is the ungutted over the weight as landed, summed over
+          agf's rows.
+      - name: factor_p10
+        type: number
+        range: [0, 8.2645]
+        examples: [0, 1.5069, 1.7799, 2.5839, 8.2645]
+        description: >
+          Yearly mean and listed rows only: the 10th percentile of the row-by-row factor (agf's magn_oslaegt
+          / magn); NA otherwise.
+      - name: factor_p90
+        type: number
+        range: [0, 8.2645]
+        examples: [0, 1.5277, 2.2223, 2.7946, 8.2645]
+        description: >
+          Yearly mean and listed rows only: the 90th percentile of the same; NA otherwise.
+      - name: regulation
+        type: number
+        examples: [0.8, 0.84, 0.9, 0.92, 3.25, 3.4]
+        description: >
+          The factor as the regulation prints it, where one states it (gutted = ungutted x factor, as 0.84 for
+          cod; or a multiplier, as 3.25 for Nephrops tails and 3.4 for lumpfish roe); NA otherwise.
+      - name: basis
+        type: enum
+        values: [recorded, derived]
+        description: >
+          "recorded" where a fishing year's regulation was read and prints the same factor; "derived" where
+          only the landings' rows and tables give it, a regulated period's years not read included.
+      - name: witness
+        type: string
+        examples: ["aflagrunnur rows", "kvoti.lods_i_oslaegt", "ask.studlar", "B nr. 726/2020, 7. gr.", "HV 2020-33"]
+        description: >
+          Where the factor comes from: the regulation and its article, a landing-system table
+          (kvoti.lods_i_oslaegt, ask.veidistofnar_i_oslaegt, ask.studlar), "aflagrunnur rows" for the yearly
+          means and listed rows, or the report or advice the lumpfish rows rest on (HV 2020-33, MFRI's
+          lumpfish advice of June 2020).
+      - name: provisional
+        type: boolean
+        description: >
+          TRUE for the lumpfish logbook and held scopes.
+      - name: n_rows
+        type: number
+        range: [1, 2861]
+        examples: [1, 57, 118, 189, 2861]
+        description: >
+          Yearly mean and listed rows only: agf's rows the factor is computed from; NA otherwise.
+      - name: kg
+        type: number
+        range: [1, 3001767368]
+        examples: [1, 4158, 42643, 429371, 3001767368]
+        description: >
+          Yearly mean and listed rows only: the weight as landed over those rows, kg; NA otherwise.
+      - name: read_sid
+        type: number
+        examples: [951]
+        description: >
+          Logbook scope only: the species whose landings row is read where it is not the row's own (951's
+          roe for lumpfish, sid 48, logged gutted); NA otherwise.
+      - name: note
+        type: string
+        examples: ["the species' own gutted factor", "no period: the factor over every row, with its 10-90 % range", "lumpfish logged gutted is roe", "set per landing; landed 2019-01-02 to 2019-12-27"]
+        description: >
+          The declaration's or the build's note on the row.
   - name: vessel
     source:
       parquet: ../../fishydata/curated/vessel/vessel.parquet
@@ -8287,6 +9173,25 @@ tables:
         constraints: [required]
         description: >
           The logbook source system.
+      - name: copy
+        type: enum
+        values: [afli, fs_afli]
+        description: >
+          The Oracle copy of afli's schema the note was read from, as the adapter reads the copies
+          (sources/afli/note.R): afli's whole, and fs_afli's for the paper stations afli lacks (decision 124).
+          Every note in the build of 2026-10-30 is afli's.
+      - name: vid
+        type: number
+        range: [189, 21072]
+        examples: [189, 2319, 6195, 7076, 21072]
+        description: >
+          The vessel, for the lumpsucker effort notes only (afli.grasl_sokn.skipnr), which have no station;
+          NA for every other note.
+      - name: date
+        type: date
+        range: [1977-06-28, 2015-07-31]
+        description: >
+          The day, for the lumpsucker effort notes only (afli.grasl_sokn.vedags); NA for every other note.
       - name: note_field
         type: string
         examples: ["ws_veidi.athugasemd_txt", "stofn.aths_texti", "STOFN/ATHS_TEXTI"]
@@ -8312,12 +9217,25 @@ tables:
         examples: [-1303771, -1303770, -1303675, -1303655, -1303649]
         description: >
           The station, as in the source's staging station table.
+      - name: .xid
+        type: number
+        range: [1042002, 565666001]
+        examples: [1042002, 128630002, 265419003, 393269004, 565666001]
+        description: >
+          The staged copy the note was sent on (staging_afli_sent_record): its message id x 1000 + its
+          ordinal in the message (sources/afli_sent/convert.R).
       - name: schema
         type: string
         examples: ["fs_afladagbok", "adb", "afli"]
         constraints: [required]
         description: >
           The logbook source system.
+      - name: layer
+        type: enum
+        values: ["sent"]
+        description: >
+          The layer of afli's electronic logbook the row is from (plan 037 §2): always "sent", the XML the
+          app sent.
       - name: note_field
         type: string
         examples: ["ws_veidi.athugasemd_txt", "stofn.aths_texti", "STOFN/ATHS_TEXTI"]
