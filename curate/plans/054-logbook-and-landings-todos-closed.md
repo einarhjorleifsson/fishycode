@@ -7,8 +7,8 @@ answered by the maintainer the same day (§5), each as recommended but m b (not 
 amended the same day: the logger stays in the AIS track (decision 196); TODOs 24, 34, 95, 98, 110, 139, 142 and
 151 added the same day for little cost (§7); step 0 done the same day (decision 247); step 1's studies recorded (decisions 248-251); §7's
 small step 2 changes coded the same day (95, 139, 162, 34, 24); step 2a begun, the app carried (decision 253),
-step 2 as cut done the same day (decisions 253-264), the combined scratch build and one live rebuild next (§8); nothing
-built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+step 2 as cut done the same day (decisions 253-264), the combined scratch build done and traced the same day, one live
+rebuild next (§8); nothing built on the live store · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -354,10 +354,10 @@ map's grids (decisions 220, 228).
 
 **Expected to close, with these:** 27 items: the plan's own 24, and TODOs 24, 95 and 139.
 
-## 8. Where plan 054 stands, the hand-over (updated 2026-10-30, about 18:30)
+## 8. Where plan 054 stands, the hand-over (updated 2026-10-30, about 19:45)
 
 *Written by Claude (AI) as the main session's hand-over, to resume from. Nothing has been built on the live store, and
-nothing has been pushed: 102 commits are local only. Main's tree is clean.*
+nothing has been pushed: 103 commits are local only. Main's tree is clean.*
 
 **Step 2, as cut, is done: all of it is on main, traced on scratch stores and recorded.**
 
@@ -380,13 +380,32 @@ nothing has been pushed: 102 commits are local only. Main's tree is clean.*
 - `protected_bycatch` (TODO 73).
 
 **Next, in order:**
-1. **One combined scratch build of main**, from the adapters down to the trail: the `once` check of TODO 24 by name,
-   and TODO 95's STK targets. Traced file by file against the live store: the windows, `station_event`, the fishing
-   fixes and effort, every station in one outcome. `ais_catch` and the audit are never built (decision 261). Each
-   piece has been traced alone; this traces them together.
+1. **Done (2026-10-30, about 19:45): one combined scratch build of main at 0116f0b**, traced against the live store.
+   Its README is in `$FISHYDATA/archive/2026-10-30-plan054-combined/`, with the scripts and traces.
+   - **What was built:** the 40 targets downstream of plan 054's changed scripts, plus `trip_landing` and the `once`
+     check of TODO 24. They ran on APFS clones of the live store and took about 45 minutes. Nothing was written to
+     the live store.
+   - **Where it stopped:** at the windows, the links and `trip_landing`, which read the live trail. Step 2's changes
+     reach the fixes only through `station_window` and `voyage_gear`, and `curate/ais_trail.R` is unchanged, so no
+     trail was built (the maintainer agreed). TODO 95's STK targets are left for the live build.
+   - **The accounting holds:**
+     - every staged station of the five sources is in one fate;
+     - kg in = kg out per source;
+     - every landing is in one outcome, and the kg landed equal the kg of the outcomes;
+     - there is one disposition per kept trip.
+   - **Every difference from live ties to a decision of plan 053 or 054.** Whole weight goes from 51,214.8 to
+     51,622.5 kt.
+   - **Four interactions the pieces' own traces did not show**, none against a rule:
+     - the tour app changes the station type of 332 afli stations in 2020-21, read per vessel, year and gear;
+     - tour and lumpfish trips take over 70 afli `lid_map` links;
+     - the lumpfish logbook, which logs only roe, adds 31,061 `landed_not_logged` flags;
+     - landings with no claimed trip fall to 518,637, from decision 262's 585,142.
 2. **One live rebuild, by name, on the maintainer's go:** fingerprints before and after, and no tracked edit while it
-   runs. Then `products/user_tables.R` (v0), the effort map's grids, `docs/data-dict.yaml` for the new columns, and
-   the STK page's `unify_schemas` (TODO 95).
+   runs. The build is the same 40 targets and `trip_landing`, plus the STK targets and then `ais_trail`
+   (`ais_catch` and the audit are left outdated). The trail's own counts are taken before and after, since no
+   scratch trail was built: per year, the fixes with a station, the fishing fixes under each preset, and the effort
+   hours. `afli_part` peaks at 14.5 GB on the R side. Then `products/user_tables.R` (v0), the effort map's grids,
+   `docs/data-dict.yaml` for the new columns, and the STK page's `unify_schemas` (TODO 95).
 3. **The records:** TODOs 24, 73, 81, 95, 112, 139, 141, 152, 156, 162 and 167 close as their build lands. TODO 157
    closes too if ask e is answered.
 
@@ -398,7 +417,7 @@ nothing has been pushed: 102 commits are local only. Main's tree is clean.*
 - a glance at the four port codes classed by name (decision 262).
 
 **Housekeeping:**
-- **Scratch folders**, kept until the rebuild: `/Users/einarhj/stasi/scratch-p054-{app,profile,lean,check,tour}`.
+- **Scratch folders**, kept until the rebuild: `/Users/einarhj/stasi/scratch-p054-{app,profile,lean,check,tour,combined}`.
 - **The side sessions** are archived, or archive once their last watcher ends.
 - **Their hand-over notes** are in `~/Library/Application Support/Claude/side-session-notes/local_69ea2bc4-8129-48eb-989e-62ea83716c11/`.
 - **The drafts and traces** are in `$FISHYDATA/archive/2026-10-30-plan054-*`.
