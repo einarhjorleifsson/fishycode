@@ -940,7 +940,7 @@ list(
 
   # The catch on the fixes, per catch unit and approach (plan 013 item 2, decision 100).
   tar_target(ais_catch, {
-    ais_trail; station_window; logbook; trip_landing; landing; catch_landing_contradicted
+    ais_trail; station_window; logbook; lid_map; landing; catch_landing_contradicted
     produces("curate/ais_catch.R", fd_curated("ais", "catch"))
   }, format = "file"),
 
@@ -982,7 +982,7 @@ list(
 
   tar_target(check_allocation_audit, {
     logbook; lid_map; landing; logbook_gear; gear; ais_voyage; port_call; trip_voyage; station_window; voyage_gear
-    ais_trail; ais_catch; trip_landing
+    ais_trail; ais_catch
     produces("curate/checks/allocation_audit.R",
              fd_curated("check", "allocation_audit.parquet"))
   }, format = "file"),
