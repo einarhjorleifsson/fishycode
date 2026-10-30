@@ -1,6 +1,8 @@
 # 053 — The e-logbook feed: every app's quirks found by rule, in one app profile, and the feed's seams
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
+**status:** executed — coded and traced on scratch stores 2026-10-30, steps 2 and 4-8 (decisions 253, 255, 256, 258,
+259; closed by decision 260); its build and step 9's combined trace are plan 054's rebuild A (TODO 168); asks f and g
+are TODO 169's, its leftovers TODO 170 · written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
 drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); every row reviewed by the
 maintainer, 18 the same evening and 27 on 2026-10-30 (ask a), asks b-e and h answered, f and g open (§8); step 2,
 the app carried, coded and traced on a scratch store 2026-10-30 (decision 253); nothing built ·

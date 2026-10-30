@@ -1520,35 +1520,6 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 **check:** `effort_count` read from `rigging_part`, the change accounted for; `vessel_sensor` built or declined; a
 decision record.
 
-## 165. The e-logbook feed: every app's quirks found by rule, in one app profile (plan 053)
-**status:** open — plan 053's asks f and g are TODO 169's (plan 054 ask e); steps 2, 4, 5 and 6 coded and traced 2026-10-30
-(decisions 253, 255, 256); 7 and 8 in hand; 9 is plan 054's combined build and rebuild A ·
-**see:** `curate/plans/053-elogbook-feed-app-profile.md` (§5.6: TODO 164 folded in), TODOs 103, 107, 126,
-162, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
-
-The maintainer (2026-10-29): a plan for the e-logbook feed, what the apps and the Directorate send and the feed itself.
-Measured by Claude the same day, read-only, not checked by a person (`$FISHYDATA/archive/2026-10-29-elogbook-feed/`): 42
-known quirks, 22 caught by nothing today; every station of fs_afladagbok, adb and the afli route as sent classed field
-by field, by app, against the AIS track and port calls, GEBCO, the landing and Trackwell's own copy of its hauls. The
-same equality means opposite things by app: a start equal to the departure is the departure for Marína and Taktikal, a
-real tow start for Trackwell raun (3,064, against decision 206's choice). Marína and Taktikal write metres, read as
-fathoms; the new mar's live build drops trips registered on a month's last day (3,829 of 3,875). Proposed: one reviewed
-app profile (`curate/corrections/logbook_app_profile.yml`) that `curate/` reads, values kept with per-field flags that
-the windows leave out, and a check that lists a new app or a moved share; the app names leave the adapters' code. It
-folds in TODO 164 (deleted 2026-10-30, its choices a-c decided by the review, plan 053 §5.6) and would fold in TODO
-103's other patterns, TODO 107's unbuilt items and TODO 126's per-app forms.
-Step 3 drafted the same day: 45 rows in `curate/corrections/logbook_app_profile.yml`. Reviewed that evening: T1-T5, T10,
-W1, D2, P2-P4, then T8, T11, T12, T14 and P7: 18 rows; asks b-e answered (keep and flag; the trip's window; the trip's
-ends, not the tow times, are the copies; stamped gillnet sets flagged). The review found the fs adapter reads no seven-
-or eight-digit position (831 merged Taktikal stations have none). On 2026-10-30 the other 27, so all 45 (ask a), and
-ask h (trips of a vessel-year mostly unlanded noted `unlanded_cluster`). The seconds tell which side copies: a
-whole-minute station time at the trip's time is the copy (Fishing Log 2.6, Reiknistofa), a stamped one makes the
-trip's time the copy (Fishing Log 2.7, Trackwell raun, Fontos). Decision 249 adds to the profile: T2 and T3 on the afli
-route, a 210-min offset row, T15 relabelled as 23:59 on the eve of the departure date; T12 stays Trackwell raun's.
-
-**check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
-the windows traced before and after; a decision record.
-
 ## 167. afli's lumpfish logbook as a logbook source of its own
 **status:** open · blocked by plan 051's factor table and HV 2020-33's authors' answers (`lumpfish.md` §6) · **see:**
 `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §3.8 and §7, plan 051 §5 c, TODO 157
@@ -1612,3 +1583,20 @@ The items they came from close on what fishycode does; the waits are kept here.
   `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft.
 
 **check:** each sent and its answer recorded in the plan or item it came from, or dropped by the maintainer.
+
+## 170. Plan 053's leftovers: the small pieces its steps named and did not build
+**status:** open · **needs: maintainer** — the pressed records' starts (below) · **see:** decisions 255, 258, 259 and
+260, `curate/corrections/logbook_app_profile.yml`, `R/logbook_app_profile.R`, `R/logbook_position.R`, TODO 126
+
+Plan 053 was executed on 2026-10-30 (decision 260), and its build rides plan 054's rebuild A. Left from its steps:
+- P8's 8 merged stations, whose side Trackwell's own copy contradicts, as a frozen list in `overrides/`;
+- a station-level `position_uncertain` flag (`pos1_flag`); the staged `pos1_form` says it for now (decision 258);
+- `z_unit` "uncertain" for the vessels rows D2 and D3 note (Taktikal 37, Reiknistofa 34), as a frozen list from the GEBCO
+  witness (decision 259);
+- 21 fs stations of pattern 5/4 outside P4, 19 of them against the track, for a person to judge (decision 258);
+- I4's unlanded clusters by adb's apps, once rebuild A carries adb's `source` (decision 256);
+- **for the maintainer:** 1,767 pressed records start at the trip's departure and 821 at its landing. T14 takes them
+  as written, and no reviewed row says whether such a start is a copy (decision 255).
+
+**check:** each built, or declined in a decision; the maintainer's answer on the pressed records' starts recorded in
+the profile.
