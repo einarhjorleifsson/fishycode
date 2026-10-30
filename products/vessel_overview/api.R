@@ -25,7 +25,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-22.4"
+API_VERSION <- "2026-10-30.1"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -273,8 +273,11 @@ vessel_overview_app <- function(con, www) {
       p$from <- p$to <- y
     }
     t0 <- Sys.time()
-    body <- if (endpoint == "vessels") (cache$vessels <- cache$vessels %||% answer(con, endpoint, vid, p))
-            else answer(con, endpoint, vid, p)
+    # A failed query answers with its message and the version, so the page says what failed: httpuv's own 500 has no
+    # version, which the page reads as an older service
+    body <- tryCatch(if (endpoint == "vessels") (cache$vessels <- cache$vessels %||% answer(con, endpoint, vid, p))
+                     else answer(con, endpoint, vid, p), error = function(e) e)
+    if (inherits(body, "error")) return(reply(500L, conditionMessage(body)))
     r <- reply(200L, body, "application/vnd.apache.parquet")
     r$headers$`X-Server-Ms` <- sprintf("%.0f", 1000 * as.numeric(difftime(Sys.time(), t0, units = "secs")))
     r

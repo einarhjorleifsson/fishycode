@@ -31,7 +31,7 @@ const many = (n, one, more = `${one}s`) => `${num(n)} ${n === 1 ? one : more}`;
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-22.4';
+const API = '2026-10-30.1';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
