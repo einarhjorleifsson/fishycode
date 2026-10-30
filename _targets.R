@@ -927,6 +927,14 @@ list(
   }, format = "file"),
 
   # Every link the flow makes, tested against the records' own times, every record counted (after decision 154).
+  # Each e-logbook app's profile, field by field, on every build (plan 053 step 4): the classes the reviewed rows were
+  # drawn from, the apps no row names, row I4's unlanded clusters. A check, never an input.
+  tar_target(check_logbook_app_profile, {
+    logbook; lid_map; fs_afladagbok; adb; adb_lon_sign; afli_sent; fs_afladagbok_raw; adb_raw; logbook_app_profile
+    produces("curate/checks/logbook_app_profile.R",
+             fd_curated("check", "logbook_app_profile.parquet"))
+  }, format = "file"),
+
   tar_target(check_allocation_audit, {
     logbook; lid_map; landing; logbook_gear; gear; ais_voyage; port_call; trip_voyage; station_window; voyage_gear
     ais_trail; ais_catch
