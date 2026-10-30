@@ -32,7 +32,8 @@
 #   aflaskeyti    — no lower bound; upper: <= ERS_DATE_MAX, the day after its dump
 #
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
-# keep the original recorded value, z1_basis/z2_basis says which happened.
+# keep the original recorded value, z1_basis/z2_basis says which happened: afli's by afli_depth_units.R, the
+# e-logbook's by the unit each app sends (the app profile's rows D1-D5, plan 053 step 8), with z_unit.
 # Longitude: adb's dropped west sign is fixed by curate/corrections/
 # adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis), and afli's end longitude where Oracle holds the
 # end latitude by curate/corrections/afli_end_longitude.R (lon2_raw/lon2_basis). afli's stations east of 10.75° E south
@@ -84,14 +85,6 @@ dump_day_after <- function(schema, table) {
 AFLI_DATE_MAX <- max(dump_day_after("afli", "stofn.parquet"), dump_day_after("fs_afli", "stofn.parquet"))
 ADB_DATE_MAX  <- dump_day_after("adb", "fishing_station.parquet")
 ERS_DATE_MAX  <- dump_day_after("dw", "dw_aflaskeyti.parquet")
-# curate/decisions/022-depth-unit-is-metres.md: product-wide depth is metres.
-# fs_afladagbok has no drift (curate/corrections/afli_depth_units.yml baseline) -
-# a flat conversion is enough; afli's vessel-by-vessel drift needs its own
-# correction, curate/corrections/afli_depth_units.R, run beforehand. adb is
-# fathoms too: its adapter reads the table, not the view station_v that gave
-# metres (curate/corrections/adb_station_v_positions.yml), and it is converted
-# the same way.
-FATHOM_TO_M <- 1.8288
 
 con <- dbConnect(duckdb::duckdb())
 dbExecute(con, "SET memory_limit = '8GB'")
@@ -149,13 +142,12 @@ ex(sprintf("CREATE TEMP VIEW afli_station AS
   tid_char(pqo(stg("afli", "station"))), pq(stg("afli", "depth")), pq(stg("afli", "end_longitude"))))
 stopifnot(q("SELECT count(coord_flag) AS n FROM afli_station")$n == sum(!is.na(afli_east_lon$coord_flag)))
 
-# fs_afladagbok and adb: uniformly fathoms (no drift window), so a flat conversion with
-# basis = "reconstructed"; NA stays NA, basis NA.
-fathoms_to_metres <- sprintf("REPLACE (s.z1 * %1$s AS z1, s.z2 * %1$s AS z2), s.z1 AS z1_raw, s.z2 AS z2_raw,
-  CASE WHEN s.z1 IS NOT NULL THEN 'reconstructed' END AS z1_basis,
-  CASE WHEN s.z2 IS NOT NULL THEN 'reconstructed' END AS z2_basis", dbl(FATHOM_TO_M))
+# fs_afladagbok and adb: the depth as sent, read by the app that sent it once the station knows its app (section "Depth
+# by app", below, plan 053 step 8): z1 and z2 are filled there.
+depth_as_sent <- "REPLACE (NULL::DOUBLE AS z1, NULL::DOUBLE AS z2), s.z1 AS z1_raw, s.z2 AS z2_raw,
+  NULL::VARCHAR AS z1_basis, NULL::VARCHAR AS z2_basis"
 ex(sprintf("CREATE TEMP VIEW fs_station AS SELECT s.* EXCLUDE (\".ord\") %s, s.\".ord\" FROM %s s",
-           fathoms_to_metres, tid_char(pqo(stg("fs_afladagbok", "station")))))
+           depth_as_sent, tid_char(pqo(stg("fs_afladagbok", "station")))))
 
 # adb: longitude: replace lon1/lon2 with adb_vs_fs_afladagbok.R's sign-corrected
 # value, keep lon1_raw/lon2_raw/lon1_basis/lon2_basis (never overwrite the
@@ -164,7 +156,7 @@ ex(sprintf("CREATE TEMP VIEW adb_station AS
   SELECT s.* EXCLUDE (lon1, lon2, \".ord\") %s,
          l.lon1, l.lon2, l.lon1_raw, l.lon2_raw, l.lon1_basis, l.lon2_basis, s.\".ord\"
   FROM %s s LEFT JOIN %s l ON l.\".sid\" IS NOT DISTINCT FROM s.\".sid\"",
-  fathoms_to_metres, pqo(stg("adb", "station")), pq(stg("adb", "lon_sign"))))
+  depth_as_sent, pqo(stg("adb", "station")), pq(stg("adb", "lon_sign"))))
 
 # aflaskeyti: positions swapped back, times in UTC, each weight's state, and the trips (plan 026). No depth.
 stopifnot(dup_keys(pq(stg("aflaskeyti", "coordinates")), "\".sid\"") == 0,
@@ -480,6 +472,22 @@ app_catch <- bind_cols(app_catch |> select(src, .ord),
                          flag_app_catch(profile))
 duckdb::duckdb_register(con, "app_catch", flagged(app_catch))
 
+# Depth by app -----------------------------------------------------------------
+# fs_afladagbok's and adb's depth in metres by the unit each app sends (the profile's rows D1-D5, plan 053 step 8;
+# depth_by_app(), R/logbook_app_profile.R): Marína's and Taktikal's metres as sent (D2), every other app's fathoms x
+# 1.8288 as before (D1, D3, and an app no row names, as the feed was read until now: decision 022). STOKKUR's depth of 0
+# (D4) and Reiknistofa's copied end depth (D5) are flagged and read as none. z1_raw and z2_raw keep the value as sent,
+# z_unit the unit read, z1_flag and z2_flag with their rule and action the flags. Until plan 053 every station of the
+# two was read as fathoms here, Marína's and Taktikal's metres among them (decision 210).
+app_depth <- q("SELECT k.\".sid\", k.schema, a.app, k.\"date\", k.z1_raw AS z1, k.z2_raw AS z2 FROM station_k k
+  LEFT JOIN station_app a ON a.\".sid\" IS NOT DISTINCT FROM k.\".sid\" AND a.schema IS NOT DISTINCT FROM k.schema
+  WHERE k.schema IN ('fs_afladagbok', 'adb')")
+app_depth <- bind_cols(app_depth |> select(.sid, schema),
+                       app_depth |> mutate(date = as.Date(date), gear = NA_character_, gear_class = NA_character_) |>
+                         depth_by_app(profile) |> select(-z1_raw, -z2_raw))
+stopifnot("an e-logbook station has two depth rows" = !anyDuplicated(app_depth[c(".sid", "schema")]))
+duckdb::duckdb_register(con, "app_depth", app_depth)
+
 # Station and trip fate --------------------------------------------------------
 # Every staging station in one outcome (plan 024 §4). `in_curated` is read from the stations written, `reason` from
 # the rule that dropped it. `held_by` is the tier whose kept stations hold the dropped station's vessel-day: the tiers'
@@ -662,12 +670,19 @@ write <- function(sql, table)
 write(sprintf("SELECT u.* EXCLUDE (src, \".ord\"), w.twin, w.twin_of, a.* EXCLUDE (\".tid\", schema) FROM trip_k u
   LEFT JOIN tw_trip w ON %s LEFT JOIN app_trip a ON %s ORDER BY u.src, u.\".ord\"",
   by_key("w", "u", c("\".tid\"", "schema")), by_key("a", "u", c("\".tid\"", "schema"))), "trip")
-write(sprintf("SELECT u.* EXCLUDE (src, \".ord\", grp), w.twin, w.twin_of, y.station_type, y.station_type_basis,
-                      a.app_raw, a.app, a.app_suffix, a.app_version, p.* EXCLUDE (\".sid\", schema)
+write(sprintf("SELECT u.* EXCLUDE (src, \".ord\", grp)
+                      REPLACE (CASE WHEN dp.\".sid\" IS NULL THEN u.z1 ELSE dp.z1 END AS z1,
+                               CASE WHEN dp.\".sid\" IS NULL THEN u.z2 ELSE dp.z2 END AS z2,
+                               CASE WHEN dp.\".sid\" IS NULL THEN u.z1_basis ELSE dp.z1_basis END AS z1_basis,
+                               CASE WHEN dp.\".sid\" IS NULL THEN u.z2_basis ELSE dp.z2_basis END AS z2_basis),
+                      w.twin, w.twin_of, y.station_type, y.station_type_basis,
+                      a.app_raw, a.app, a.app_suffix, a.app_version, p.* EXCLUDE (\".sid\", schema),
+                      dp.z_unit, dp.z1_flag, dp.z1_rule, dp.z1_action, dp.z2_flag, dp.z2_rule, dp.z2_action
   FROM station_k u LEFT JOIN tw_station w ON %s LEFT JOIN station_type y ON %s LEFT JOIN station_app a ON %s
-  LEFT JOIN app_pos p ON %s ORDER BY u.grp, u.\".ord\"",
+  LEFT JOIN app_pos p ON %s LEFT JOIN app_depth dp ON %s ORDER BY u.grp, u.\".ord\"",
   by_key("w", "u", c("\".sid\"", "schema")), by_key("y", "u", c("\".sid\"", "schema")),
-  by_key("a", "u", c("\".sid\"", "schema")), by_key("p", "u", c("\".sid\"", "schema"))), "station")
+  by_key("a", "u", c("\".sid\"", "schema")), by_key("p", "u", c("\".sid\"", "schema")),
+  by_key("dp", "u", c("\".sid\"", "schema"))), "station")
 write(sprintf("SELECT %s, %s, coalesce(t.t1_flag = 'placeholder', false) AS t1_placeholder FROM sample_k u
   LEFT JOIN gear_code g ON g.gid IS NOT DISTINCT FROM u.gid
   LEFT JOIN app_time t ON t.src = u.src AND t.\".ord\" = u.\".ord\"

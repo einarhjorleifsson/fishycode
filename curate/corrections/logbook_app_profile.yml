@@ -9,7 +9,7 @@ status: >-
   built on the live store
 applies_to:
   - curated/logbook/fishing_sample.parquet   # t1_flag ... t4_flag, t1_rule ... t4_rule, t1_action ... t4_action
-  - curated/logbook/station.parquet          # pos1_flag, pos2_flag with their rule and action; z_unit (step 8)
+  - curated/logbook/station.parquet          # pos1_flag, pos2_flag; z_unit, z1_flag, z2_flag; each with rule and action
   - curated/logbook/trip.parquet             # T1_flag, T2_flag with their rule and action: a copy of a station's time
   - curated/logbook/catch.parquet            # species_flag with its rule and action (K2)
   - curated/logbook/station_window.parquet   # a flagged time opens and closes no window
@@ -22,8 +22,10 @@ implementation: >-
   (curate/station_window.R, plan 053 step 6): a station with no usable time gets ramb's day window (W1); a trip_time
   station takes the trip's departure and return where its own times are flagged, basis derived (T4, T10); a pressed
   record runs from its start to the gear's 95th percentile span or the vessel's next station, basis synthesised
-  (T14). The `read_as` rows are the adapters' position decoders' (step 7), the `convert` rows and D4-D5 depth's
-  (step 8). I4 needs the landing link, built after the merge: it is listed by the check (step 4). P8's 8 merged
+  (T14). The `read_as` rows are the adapters' position decoders' (step 7). Depth (step 8): depth_by_app(), in
+  curate/logbook.R's section "Depth by app", reads D2's apps in metres and every other app in fathoms (D1, D3), and
+  flags D4's zero and D5's copied end depth as none (z1_flag, z2_flag); z_unit "uncertain" for D2's and D3's noted
+  vessels needs a frozen list from the GEBCO witness, not yet made. I4 needs the landing link, built after the merge: it is listed by the check (step 4). P8's 8 merged
   stations need Trackwell's own copy as a frozen list, not yet made
 discovered: 2026-10-29, plan 053 (from decisions 157, 158, 206, 210, 211, 242, 243 and TODOs 103, 107, 126, 164)
 decided_by: the maintainer, 2026-10-29 and 30 (plan 053 asks a-e, h); asks f and g open

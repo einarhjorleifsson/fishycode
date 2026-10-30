@@ -7,7 +7,8 @@
 #         previous station's t3 and t4, and for the positions lat1, lon1, lat2, lon2
 # Output: app_profile(): the rows by id, checked against the code; flag_app_times(): t1_flag ... t4_flag, t1_rule ...
 #         t4_rule, t1_action ... t4_action, one row per input row; flag_app_trips(): the trip's T1_* and T2_*, one row
-#         per flagged trip; flag_app_positions(): pos1_* and pos2_*, one row per input row; flag_app_catch(): species_*
+#         per flagged trip; flag_app_positions(): pos1_* and pos2_*, one row per input row; flag_app_catch(): species_*;
+#         depth_by_app(): z1, z2 in metres, z1_raw, z2_raw, z_unit, z1_basis, z2_basis, z1_* and z2_* flags
 #
 # Every value stays as recorded (AGENTS.md: an extreme value is flagged, not corrected). A field's flag says what the
 # value holds (`placeholder`, `copy_departure`, `trip_time`, ...), its rule the row's id, its action what the flow
@@ -34,7 +35,6 @@ APP_POS_ORDER <- list(pos1 = c("P5", "P7"), pos2 = c("P6-app", "P6-value", "P5")
 # The flag and note rows applied elsewhere, or not yet: app_profile() stops on any other row the code does not apply.
 APP_PROFILE_ELSEWHERE <- c(
   W1 = "the windows: ramb's day window for a station with no usable time (curate/station_window.R)",
-  D4 = "depth by app (plan 053 step 8)", D5 = "depth by app (plan 053 step 8)",
   I4 = "needs the landing link (lid_map), made after the merge: listed by the check (plan 053 step 4)",
   P8 = "needs Trackwell's own copy as a frozen list of the 8 merged stations, not yet made")
 
@@ -100,10 +100,11 @@ app_gear_class <- function(gear_class, gear) {
 app_profile <- function(path = APP_PROFILE) {
   rows <- yaml::read_yaml(path)$rows
   names(rows) <- vapply(rows, `[[`, "", "id")
-  coded <- c(setdiff(unlist(APP_TIME_ORDER), "entry"), unlist(APP_POS_ORDER), "T11", "T11-afli", "K2")
-  stopifnot("a row the code applies is missing from the profile" = all(coded %in% names(rows)),
+  coded <- c(setdiff(unlist(APP_TIME_ORDER), "entry"), unlist(APP_POS_ORDER), "T11", "T11-afli", "K2", "D4", "D5")
+  stopifnot("a row the code applies is missing from the profile" = all(c(coded, "D1", "D2", "D3") %in% names(rows)),
             "a row's id is not unique" = !anyDuplicated(names(rows)))
   acts <- vapply(rows, \(r) r$action, "")
+  if (!all(acts[c("D1", "D2", "D3")] == "convert")) stop("app_profile(): rows D1-D3 are no longer unit conversions")
   bad <- coded[!acts[coded] %in% c("flag", "note")]
   if (length(bad)) stop("app_profile(): the code applies rows that are neither flag nor note: ", toString(bad))
   open <- setdiff(names(acts)[acts %in% c("flag", "note")], c(coded, names(APP_PROFILE_ELSEWHERE)))
@@ -220,4 +221,31 @@ flag_app_catch <- function(d, profile = app_profile()) {
   tibble::tibble(species_flag   = dplyr::if_else(hit, r$flag, NA_character_),
                  species_rule   = dplyr::if_else(hit, "K2", NA_character_),
                  species_action = dplyr::if_else(hit, r$action, NA_character_))
+}
+
+# Depth by app (rows D1-D5, plan 053 step 8): the e-logbook's depth in metres by the unit the app sends. D2's apps send
+# metres (x 1, basis recorded); D1's and D3's fathoms, and so does an app no row names, as the feed has always been
+# read (decision 022; x 1.8288, basis reconstructed). D4's zero and D5's copied end depth are flagged and read as none
+# (NA, basis none). The value as sent stays in z1_raw and z2_raw. `d` needs schema, app, date, gear, gear_class, z1, z2
+# as sent; one row per input row. The vessels whose unit D2 and D3 leave uncertain (z_unit "uncertain") need a frozen
+# list from the GEBCO witness, not yet made.
+APP_FATHOM_M <- 1.8288
+depth_by_app <- function(d, profile = app_profile()) {
+  metres <- .app_scope(profile$D2, d)
+  f <- dplyr::if_else(metres, 1, APP_FATHOM_M)
+  d4 <- .app_scope(profile$D4, d) & !is.na(d$z1)
+  d5 <- .app_scope(profile$D5, d) & !is.na(d$z2)
+  basis <- \(z, none) dplyr::case_when(is.na(z) ~ NA_character_, none ~ "none", metres ~ "recorded",
+                                       .default = "reconstructed")
+  tibble::tibble(
+    z1_raw = d$z1, z2_raw = d$z2,
+    z1 = dplyr::if_else(d4, NA_real_, d$z1 * f), z2 = dplyr::if_else(d5, NA_real_, d$z2 * f),
+    z_unit = dplyr::if_else(metres, "metres", "fathoms"),
+    z1_basis = basis(d$z1, d4), z2_basis = basis(d$z2, d5),
+    z1_flag = dplyr::if_else(d4, profile$D4$flag, NA_character_),
+    z1_rule = dplyr::if_else(d4, "D4", NA_character_),
+    z1_action = dplyr::if_else(d4, profile$D4$action, NA_character_),
+    z2_flag = dplyr::if_else(d5, profile$D5$flag, NA_character_),
+    z2_rule = dplyr::if_else(d5, "D5", NA_character_),
+    z2_action = dplyr::if_else(d5, profile$D5$action, NA_character_))
 }

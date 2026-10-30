@@ -123,3 +123,19 @@ test_that("judged_time_sql() leaves out a flagged time, calc_effort() too unless
   expect_true(is.na(calc_effort(s)$effort_duration))
   expect_equal(calc_effort(s, flagged = TRUE)$effort_duration, 6)
 })
+
+test_that("depth by app: metres for Marína (D2), fathoms otherwise, STOKKUR's 0 and Reiknistofa's end as none (D4, D5)", {
+  d <- tibble::tibble(schema = "fs_afladagbok", app = c("Marína raun", "Trackwell raun", "STOKKUR",
+                                                        "Reiknistofa fiskmarkaða raun", "Skráningar.com"),
+                      date = as.Date(c("2024-01-01", "2024-01-01", "2021-01-01", "2024-08-01", "2026-10-01")),
+                      gear = NA_character_, gear_class = NA_character_, z1 = c(100L, 100L, 0L, 50L, 10L),
+                      z2 = c(NA, 120L, NA, 50L, NA))
+  z <- depth_by_app(d, p)
+  expect_equal(z$z1, c(100, 182.88, NA, 91.44, 18.288))
+  expect_equal(z$z2, c(NA, 219.456, NA, NA, NA))
+  expect_equal(z$z_unit, c("metres", "fathoms", "fathoms", "fathoms", "fathoms"))
+  expect_equal(z$z1_basis, c("recorded", "reconstructed", "none", "reconstructed", "reconstructed"))
+  expect_equal(z$z1_rule, c(NA, NA, "D4", NA, NA))
+  expect_equal(z$z2_rule, c(NA, NA, NA, "D5", NA))
+  expect_equal(z$z1_raw, c(100L, 100L, 0L, 50L, 10L))
+})
