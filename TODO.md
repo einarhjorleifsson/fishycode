@@ -45,8 +45,8 @@ and plan 001 §5 says where.
 ---
 
 ## 24. Icelandic vessels that land fish but are never heard on AIS
-**status:** open — the reasons measured and the divers' override made in plan 054's steps 1-2 (§7) · **see:** decisions
-110, 117 and 118, `curate/checks/ais_key_landings.R`
+**status:** open — every vid given a reason 2026-10-30 (decision 250); 8009's diver override and the check reading it
+in plan 054's step 2 · **see:** decisions 110, 117, 118 and 250, `curate/checks/ais_key_landings.R`
 
 `ais_key_landings`' `landed_but_no_ais` lists 308 vids (the `once` file of 2026-10-09). It audits the cascade, not
 the key (decision 053), so 53 of them are in the key and heard, and 148 are foreign. **107 Icelandic vids landed in
@@ -60,8 +60,8 @@ decision 161's units name 32 of these vids by an identifier), or a missed match.
 23 "Kafari", about 14 t on 152 landing rows, and have no hull. Mark them as divers, through an override that names the
 two or a rule (a registration that lands only with gear 23).
 
-**check:** each of the 107 has a stated reason in a check table or an override: no AIS expected, an STK unit or MMSI
-found, or a match missed; and 8008 and 8009 carry a diver class and `landed_but_no_ais` leaves them out.
+**check:** 8009 carries a diver class by override, and `landed_but_no_ais` leaves it and the landings placeholders
+out; 8008 and the 7 off-register vids with catch listed for the register's review (decision 250).
 
 ---
 
@@ -705,7 +705,8 @@ one voyage (plan 038 step 2, decision 193); station times in port calls (decisio
 **check:** each chosen fix built (or declined in a decision), and `allocation_audit.parquet` read after the rebuild.
 
 ## 102. Logbook trips that overlap another trip of the same vessel
-**status:** open · **see:** plan 031 §3.11, decisions 094 and 155, TODO 101
+**status:** open — classed and the treatments chosen 2026-10-30 (decision 250), built in plan 054's step 2f and
+rebuilds A and B; left, decision 094's open ends below · **see:** plan 031 §3.11, decisions 094, 155 and 250, TODO 101
 
 Found 2026-10-20 (plan 031 step 4), read-only: trips of one vessel and schema that overlap another by over an hour,
 twins (decision 094) left out: afli 21,220 (1.3 %, 4,092 with three or more others), fs_afladagbok 4,116 (2.7 %, mostly
@@ -720,8 +721,8 @@ Decision 094's open ends belong here too: its 6,035 same-time stations, which th
 and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), where which arrival is right is untested
 (Claude's audit of 2026-10-23, not checked by a person).
 
-**check:** a decision or correction says what the overlapping trips are, by class with counts, and how the flow
-treats each.
+**check:** decision 250's treatments built and traced in rebuild A; decision 094's same-time stations and later
+arrivals judged, or declined in a decision.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
 **status:** open — the gillnet sets in port listed 2026-10-30 (decision 249); the Trackwell draft is TODO 169's (plan
@@ -966,8 +967,8 @@ Left by the overview's session of 2026-10-22.
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
-**status:** parked (the maintainer, 2026-10-23: "park this for now"; decided in 207, checked in 211)
-· **needs: maintainer** — the logbook batch's build · **see:** decisions 207 and 211,
+**status:** open — unparked 2026-10-30 to ride plan 054's rebuild A (ask g): decision 211's representation and the
+per-app check, with plan 053's decoders (decided in 207, checked in 211) · **see:** decisions 207 and 211,
 `$FISHYDATA/archive/2026-10-todo126-ais-check/README.md`, `$FISHYDATA/archive/2026-10-afli-minutes60/README.md`,
 `dump/oracle/meta/{afli,adb,fs_afladagbok}.yml`, `curate/corrections/afli_end_three_digits.yml`, `R/logbook_position.R`,
 decision 165, TODO 115, 124, plan 040
@@ -1152,8 +1153,8 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
 catch on its trips, and the before-and-after trace recorded in a decision.
 
 ## 138. Three window and twin faults found beside TODO 137
-**status:** parked (the maintainer, 2026-10-23: "park this for now") · **needs: maintainer** — what to do with
-each · **see:**
+**status:** open — unparked 2026-10-30 to ride plan 054's rebuild A (ask g): the dummies under plan 053's window
+rule, the Marína re-entries under decision 250's twin rule, the nets' floor 0.2 kn · **see:**
 `$FISHYDATA/archive/2026-10-trip-time-stations/` ("Separate" in `draft_decision.md`), decisions 094 and 206
 
 Claude's measure, 2026-10-23, not checked by a person:
