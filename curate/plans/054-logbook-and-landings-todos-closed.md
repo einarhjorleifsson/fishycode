@@ -5,7 +5,7 @@ their own text and the code, and the cheap counts measured read-only on the stor
 answered by the maintainer the same day (§5), each as recommended but m b (not known: TODO 146 stays open on it, so
 24 items are expected to close) and q (no recommendation: yes, the size stated and asked before any download); h d
 amended the same day: the logger stays in the AIS track (decision 196); TODOs 24, 34, 95, 98, 110, 139, 142 and
-151 added the same day for little cost (§7); step 0 done the same day (decision 247); step 1's studies recorded (decisions 248-250), 151 and 98 running; §7's
+151 added the same day for little cost (§7); step 0 done the same day (decision 247); step 1's studies recorded (decisions 248-251); §7's
 small step 2 changes coded the same day (95, 139, 162, 34, 24); nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the

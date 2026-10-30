@@ -646,7 +646,9 @@ in Edge on Windows.
 
 ## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
 **status:** open (decided 2026-10-23, decision 196: re-interpolated in the flow on every build, with a gap limit
-measured first; the logger kept in the track, plan 054 ask h, amended) · **needs: maintainer** — the gap limit, from the measurement, which plan 054's step 1 makes (§7) · **see:** decisions 075 and 196, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
+measured first; the logger kept in the track, plan 054 ask h, amended; the limit 60 min, decision 251) · **needs:
+maintainer** — the next AIS batch's build, and whether a bracket may cross voyages (84,449 fixes at 60 min) · **see:**
+decisions 075, 196 and 251, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
 TODO 99
 
 The maintainer's rule (2026-10-20): logbook positions never join the AIS feed; the vessel overview's haul layer is gone.
@@ -669,11 +671,13 @@ Found 2026-10-21 (`curate/corrections/afli_coords.yml`, `origin_in_the_sent_reco
 fault is already in the XML each app sent, in every version 2008-2024 (SeaData 2.0, Trackwell 2.6, 2.7), so the XML
 cannot repair it; Trackwell is asked whether the devices' readings survive (the draft of TODO 103).
 
-**check:** the gap limit chosen from its measurement; the logger interpolated on each build's cleaned track, `sensor_gps`
-retired; no logger fix in the trail more than 5 km from a recorded ping at the same moment.
+**check:** the logger interpolated on each build's cleaned track with the 60 min limit (a gap argument in
+`rb_interpolate_track()`), `sensor_gps` retired; no logger fix in the trail more than 5 km from a recorded ping at the
+same moment (met by construction, decision 251).
 
 ## 99. The whack test does not test interpolated positions against recorded ones
-**status:** open · **see:** TODO 98, TODO 88, `curate/ais_ping_clean.R`, decision 067
+**status:** open — for the logger, met by construction once decision 196's step is built (decision 251); the generic
+flag stays proposed · **see:** TODO 98, TODO 88, `curate/ais_ping_clean.R`, decisions 067 and 251
 
 `ais_ping_clean.R` runs the impossible-step test on recorded positions only, since an interpolated (`reconstructed`)
 position was assumed to lie on the track. When the track it was drawn from differs from today's, it does not: vid
@@ -1379,7 +1383,8 @@ outcome (decision 239). 2.0.0 has three regressions, each worked around in the c
 **check:** a decision records 2.0.1 against 1.5.6 on the battery and the reprexes, and which engine builds from then on.
 
 ## 151. Global Fishing Watch's vessel tracking guide: which wishes to build, and the two measurements it asks for
-**status:** open · **needs: maintainer** — which of the four wishes to build, and in what order; the two measurements in plan 054's step 1 (§7) · **see:** decision
+**status:** open · **needs: maintainer** — which of the four wishes to build, and in what order; the two measurements
+made 2026-10-30 (decision 251) · **see:** decisions 251 and
 237, `docs/one_flow.qmd` (the wish list's four last rows), `$FISHYDATA/raw/external/gfw/vessel-tracking-guide-2026/`
 
 The guide (GFW, 2026) was read against fishycode and ramb on 2026-10-28 (decision 237), and four wishes were added to
