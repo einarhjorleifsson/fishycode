@@ -3,8 +3,8 @@
 # lacks is found by using it; the improvements, and how a data product is versioned, are the next round.
 #
 # Input:  curated/vessel/{vessel,vessel_year}.parquet, curated/landing/{landings,catch}.parquet,
-#         curated/logbook/{trip,station,fishing_sample,gear,catch,lid_map,gear_part,rigging_part,sensor_summary}.parquet,
-#         curated/link/trip_reconciled.parquet,
+#         curated/logbook/{trip,station,fishing_sample,gear,catch,lid_map,gear_part,rigging_part,sensor_summary,
+#         nephrops_tails}.parquet, curated/link/trip_reconciled.parquet,
 #         curated/ais/{trail,catch,voyage.parquet}, curated/reference/{species,gear,port}.parquet
 # Output: $FISHYDATA/products/v0/
 #           vessel/     vessel.parquet, vessel_year.parquet                       (links)
@@ -33,6 +33,7 @@
 
 source("R/paths.R")
 source("R/write_curated.R")
+source("R/whole_weight.R")
 suppressMessages({
   library(dplyr)
   library(duckdbfs)
@@ -130,10 +131,27 @@ write_product(station_user |> arrange(vid, date, t1), "logbook/station.parquet",
               c(lb("station.parquet"), lb("gear.parquet"), lb("fishing_sample.parquet"), lb("trip.parquet")))
 
 ## Catch -----------------------------------------------------------------------
+# Each row's whole weight by the one rule (R/whole_weight.R), at the landings' factor of the day (plan 051 ask a):
+# `catch_round`, its `round_basis` and `round_factor`, the factor read, with the logbook's own whole weight beside it
+# (`catch_round_logbook`). A correction may name the state (Nephrops logged as tails,
+# curate/corrections/logbook_nephrops_tails.yml). A row is one (station, species, condition), so the rule's group is
+# the row.
+factors <- duckdbfs::open_dataset(fd_curated("reference", "whole_weight_factor.parquet")) |> collect()
+tails <- open_dataset(lb("nephrops_tails.parquet")) |>
+  filter(!is.na(condition_corrected)) |> select(.sid, schema, sid, condition_corrected)
+station_day <- station |> select(.sid, schema, date)
 catch_user <- open_dataset(lb("catch.parquet")) |>
   semi_join(station, by = c(".sid", "schema")) |>
-  select(.sid, schema, sid, catch, catch_whole, condition)
-write_product(catch_user, "logbook/catch.parquet", c(lb("catch.parquet"), lb("station.parquet")))
+  left_join(tails, by = c(".sid", "schema", "sid")) |>
+  left_join(station_day, by = c(".sid", "schema")) |>
+  # the summaries are named apart from `catch`, calc_whole_weight()'s first argument
+  calc_whole_weight(by = c(".sid", "schema", "sid", "condition"), factors = factors,
+                    logged = sum(catch, na.rm = TRUE), whole_recorded = sum(catch_whole, na.rm = TRUE)) |>
+  select(.sid, schema, sid, catch = logged, catch_whole = whole_recorded, condition, catch_round = whole_weight,
+         round_basis = whole_weight_basis, round_factor = whole_weight_factor, catch_round_logbook = whole_weight_logbook)
+write_product(catch_user, "logbook/catch.parquet",
+              c(lb("catch.parquet"), lb("station.parquet"), lb("nephrops_tails.parquet"),
+                fd_curated("reference", "whole_weight_factor.parquet")))
 
 ## Environment ------------------------------------------------------------------
 # The grammar's wide environment, a pivot of sensor_summary's readings of the sea and the air (plan 052 ask c): one row

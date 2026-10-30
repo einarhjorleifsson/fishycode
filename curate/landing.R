@@ -1,7 +1,9 @@
 # Merge agf and lods into unified landing tables.
 # Side: preprocessing (landings). See plan 014.
-# Input:  staging/landing/{agf,lods}/{landings,catch}.parquet
+# Input:  staging/landing/{agf,lods}/{landings,catch,catch_detail}.parquet
 # Output: curated/landing/{landings,catch}.parquet
+#         curated/landing/catch_detail.parquet   the same catch by state and area, with the weight as landed (plan 051
+#         step 5): .lid schema sid gid stid kfteg hid_origin state area catch_landed catch_gutted catch factor_landing
 #
 # Decision rule (curate/plans/007 §2): agf wins wherever a (vid, date, hid)
 # trip exists in agf, on both presence and value - lods contributes only the
@@ -32,6 +34,12 @@
 #
 # The hid -> pid port join happens once here, not duplicated in each source
 # adapter.
+#
+# catch_detail keeps what catch sums away (plan 051 step 5): the state the fish were landed in (agf's astand; NA for
+# lods, whose weight is "gutted where it applies"), the area, the weight as landed (`catch_landed`, agf only), its
+# gutted equivalent (`catch_gutted`) and the ungutted (`catch`), so a factor can be read back (`factor_landing`, the
+# ungutted over the weight as landed, or over the gutted for lods) and re-applied. Its catch sums to catch.parquet's
+# on every row, which keeps one row per landing, species, gear and stock, the gutted weight lods's only, as before.
 
 library(tidyverse)
 library(duckdbfs)
@@ -57,7 +65,22 @@ collapse_catch <- function(catch) {
               komunr = first(komunr), .groups = "drop") |>
     rename(.lid = .tid_land)
 }
+# The same catch by state and area, from the adapters' catch_detail (plan 051 step 5), summed in DuckDB: 8 M rows by
+# nine keys take minutes in dplyr.
+detail_catch <- function(src) {
+  d <- duckdbfs::open_dataset(src)
+  for (v in c("kfteg", "hid_origin", "state")) if (!v %in% colnames(d)) d <- d |> mutate(!!v := NA_integer_)
+  if (!"catch_landed" %in% colnames(d)) d <- d |> mutate(catch_landed = NA_real_)
+  d |>
+    summarise(catch_landed = sum(catch_landed), catch_gutted = sum(catch_gutted), catch = sum(catch, na.rm = TRUE),
+              .by = c(.tid_land, schema, sid, gid, stid, kfteg, hid_origin, state, area)) |>
+    mutate(factor_landing = case_when(catch_landed > 0 ~ catch / catch_landed,
+                                      is.na(catch_landed) & catch_gutted > 0 ~ catch / catch_gutted)) |>
+    rename(.lid = .tid_land)
+}
 
+agf_detail  <- detail_catch(fd_staging("landing", "agf",  "catch_detail.parquet"))
+lods_detail <- detail_catch(fd_staging("landing", "lods", "catch_detail.parquet"))
 agf_catch  <- collapse_catch(agf_catch)
 lods_catch <- collapse_catch(lods_catch)
 
@@ -73,6 +96,17 @@ lods_only_catch     <- lods_catch |> semi_join(lods_only_lids, by = ".lid")
 
 merged_landings <- bind_rows(agf_landings, lods_only_landings)
 merged_catch    <- bind_rows(agf_catch, lods_only_catch)
+merged_detail   <- union_all(agf_detail,
+                             lods_detail |> semi_join(duckdbfs::as_dataset(lods_only_lids), by = ".lid")) |>
+  collect()
+
+# kg in = kg out: the details sum to the catch on every row of catch.parquet, compared in DuckDB
+key <- c(".lid", "schema", "sid", "gid", "stid", "kfteg", "hid_origin")
+detail_sum <- duckdbfs::as_dataset(merged_detail) |> summarise(catch_detail = sum(catch), .by = all_of(key))
+n_agree <- detail_sum |>
+  inner_join(duckdbfs::as_dataset(merged_catch |> select(all_of(key), catch)), by = key, na_matches = "na") |>
+  filter(abs(catch_detail - catch) <= 1e-6) |> count() |> pull(n)
+stopifnot(count(detail_sum) |> pull(n) == nrow(merged_catch), n_agree == nrow(merged_catch))
 
 # Summary ------------------------------------------------------------------
 cat(sprintf("agf trips:        %d\n", nrow(agf_landings)))
@@ -89,6 +123,8 @@ merged_landings <- merged_landings |>
 # Export -----------------------------------------------------------------------
 landing_inputs <- c(fd_staging("landing", "agf",  "landings.parquet"), fd_staging("landing", "agf",  "catch.parquet"),
                     fd_staging("landing", "lods", "landings.parquet"), fd_staging("landing", "lods", "catch.parquet"),
+                    fd_staging("landing", "agf", "catch_detail.parquet"), fd_staging("landing", "lods", "catch_detail.parquet"),
                     fd_curated("reference", "port.parquet"))
 merged_landings |> write_curated(fd_curated("landing", "landings.parquet"), inputs = landing_inputs)
 merged_catch    |> write_curated(fd_curated("landing", "catch.parquet"),    inputs = landing_inputs)
+merged_detail   |> write_curated(fd_curated("landing", "catch_detail.parquet"), inputs = landing_inputs)

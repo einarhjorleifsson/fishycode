@@ -8,6 +8,9 @@
 # Input:  raw/oracle/kvoti/lods_slaegt.parquet
 # Output: staging/landing/lods/landings.parquet
 #         staging/landing/lods/catch.parquet
+#         staging/landing/lods/catch_detail.parquet  the same catch by area (plan 051 step 5): the landing system's
+#                                                   factor to the ungutted weight depends on it; lods holds no state,
+#                                                   its `magn` being "gutted where it applies" (catch_gutted)
 #
 # The table, not the view lods_oslaegt on it, which drops upprunahofn and the
 # gutted weight and rounds (decision 169). Its own rules, kept here:
@@ -71,13 +74,20 @@ TONNES <- c(30L, 31L, 34L)  # Oracle's own views lods_slaegt_v and lods_slaegt_k
 
 lods <-
   duckdbfs::open_dataset(fd_raw("oracle", "kvoti", "lods_slaegt.parquet")) |>
-  select(skip_nr, hofn, upprunahofn, komunr, l_dags, fteg, kfteg, veidarf, magn, magn_oslaegt) |>
+  select(skip_nr, hofn, upprunahofn, komunr, l_dags, fteg, kfteg, veidarf, veidisvaedi, magn, magn_oslaegt) |>
   collect() |>
   mutate(kg = if_else(fteg %in% TONNES, 1000, 1)) |>
   transmute(komunr, vid = skip_nr, date = as_date(l_dags),
-            hid = hofn, hid_origin = upprunahofn, gid = veidarf, sid = fteg, kfteg,
+            hid = hofn, hid_origin = upprunahofn, gid = veidarf, sid = fteg, kfteg, area = veidisvaedi,
             stid = if_else(!is.na(kfteg) & kfteg == sid, kfteg, NA_integer_),
-            catch = magn_oslaegt * kg, catch_gutted = magn * kg) |>
+            catch = magn_oslaegt * kg, catch_gutted = magn * kg)
+
+lods_state <- lods |>
+  group_by(vid, date, hid, hid_origin, gid, sid, stid, kfteg, area) |>
+  summarise(catch = sum(catch, na.rm = TRUE), catch_gutted = sum(catch_gutted, na.rm = TRUE), .groups = "drop") |>
+  mutate(schema = SCHEMA)
+
+lods <- lods |>
   group_by(vid, date, hid, hid_origin, gid, sid, stid, kfteg) |>
   summarise(catch = sum(catch, na.rm = TRUE),
             catch_gutted = sum(catch_gutted, na.rm = TRUE),
@@ -94,5 +104,11 @@ catch <-
   lods |>
   select(.tid_land, komunr, gid, sid, stid, kfteg, hid_origin, catch, catch_gutted, schema)
 
-landings |> duckdbfs::write_dataset(fd_staging("landing", "lods", "landings.parquet"))
-catch    |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch.parquet"))
+# the ids already minted for the landings, one hash per (vid, date, hid), not one per row again
+catch_detail <- lods_state |>
+  inner_join(lods |> distinct(.tid_land, vid, date, hid), by = c("vid", "date", "hid"), relationship = "many-to-one") |>
+  select(.tid_land, gid, sid, stid, kfteg, hid_origin, area, catch, catch_gutted, schema)
+
+landings    |> duckdbfs::write_dataset(fd_staging("landing", "lods", "landings.parquet"))
+catch       |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch.parquet"))
+catch_detail |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch_detail.parquet"))

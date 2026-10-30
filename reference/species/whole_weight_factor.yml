@@ -1,0 +1,154 @@
+# whole_weight_factor.yml — the factors from a weight as landed or logged to the whole (ungutted) weight (plan 051 step 3).
+# Read by reference/species/whole_weight_factor.R, which expands it to curated/reference/whole_weight_factor.parquet.
+#
+# Drafted by Claude (AI) on 2026-10-30 from plan 051's step 1 table ($FISHYDATA/archive/2026-10-whole-weight/,
+# draft_factor_table.parquet) and the fishing years' regulations on the total allowable catch; not yet checked by a
+# person.
+#
+# `state` is the landing system's own code (ask.astand). The factor multiplies the weight in that state to the whole
+# weight: the landings' own value (1.1905 is 1 / 0.84 as the landings round it). `regulation` is the factor as a
+# regulation prints it (gutted = ungutted x factor), where one states it. `basis`: recorded where a regulation states
+# the factor, derived where only the landings' rows and the landing system's tables give it. `to` missing is open. A
+# period's `area` is the landing system's (IS, Iceland's waters) unless given.
+
+# The landings: one row per species, state and period -----------------------------------------------------------
+periods:
+  # Gutted (1). The regulations' factor article; before 1997-09-01 the landings' lods table alone.
+  - {sid: [1, 2, 3], state: 1, from: 1992-09-01, to: 1997-08-31, factor: 1.25, basis: derived,
+     witness: kvoti.lods_i_oslaegt}
+  - {sid: [1, 2, 3], state: 1, from: 1997-09-01, factor: 1.1905, regulation: 0.84, reg_group: cod_haddock_saithe,
+     basis: recorded, witness: regulation, witness_landings: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt}
+  - {sid: [4], state: 1, from: 1992-09-01, factor: 1.25, basis: derived, witness: kvoti.lods_i_oslaegt,
+     note: whiting is not in the regulations' factor article}
+  - {sid: [6], state: 1, from: 1992-09-01, factor: 1.25, regulation: 0.80, reg_group: ling, basis: recorded,
+     witness: regulation, witness_landings: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt}
+  - {sid: [7], state: 1, from: 1992-09-01, factor: 1.25, regulation: 0.80, reg_group: blue_ling, basis: recorded,
+     witness: regulation, witness_landings: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt}
+  - {sid: [9], state: 1, from: 1992-09-01, factor: 1.1111, regulation: 0.90, reg_group: wolffish, basis: recorded,
+     witness: regulation, witness_landings: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt,
+     note: the landings stored 1.11 to 1997-08-31; folded into 1.1111}
+  - {sid: [8, 14], state: 1, from: 1992-09-01, factor: 1.1111, regulation: 0.90, reg_group: tusk_monkfish,
+     basis: recorded, witness: regulation, witness_landings: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt,
+     note: the landings stored 1.11 to 1997-08-31; folded into 1.1111}
+  - {sid: [13], state: 1, from: 1992-09-01, factor: 1.1111, basis: derived, witness: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt,
+     note: spotted wolffish is not in the regulations' factor article}
+  - {sid: [10, 12, 15, 16, 93], state: 1, from: 1992-09-01, factor: 1.1111, basis: derived,
+     witness: kvoti.lods_i_oslaegt, note: not in the regulations' factor article}
+  - {sid: [17], state: 1, from: 1992-09-01, factor: 1.25, basis: derived, witness: kvoti.lods_i_oslaegt}
+  - {sid: [21, 22, 23, 24, 25, 26, 27, 28, 95], state: 1, from: 1992-09-01, to: 1997-08-31, factor: 1.09,
+     basis: derived, witness: kvoti.lods_i_oslaegt}
+  - {sid: [22, 23, 24, 25, 27, 28], state: 1, from: 1997-09-01, factor: 1.087, regulation: 0.92,
+     reg_group: flatfish, basis: recorded, witness: regulation,
+     witness_landings: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt,
+     note: Greenland halibut and the flatfish the regulations name}
+  - {sid: [21, 26, 95], state: 1, from: 1997-09-01, factor: 1.087, basis: derived,
+     witness: kvoti.lods_i_oslaegt; ask.veidistofnar_i_oslaegt,
+     note: halibut, megrim and turbot are not in the regulations' factor article; the landings take the flatfish's}
+  - {sid: [29], state: 1, from: 1997-09-01, factor: 1.087, basis: derived, witness: kvoti.lods_i_oslaegt}
+  - {sid: [5], state: 1, from: 1992-09-01, to: 2007-08-31, factor: 1.0, basis: derived, witness: kvoti.lods_i_oslaegt,
+     note: redfish is landed and counted ungutted (the regulations' article on the quota)}
+  - {sid: [5, 49], state: 1, from: 2007-09-01, factor: 1.0638, basis: derived, witness: ask.studlar,
+     note: agf's few gutted redfish and orange roughy}
+  - {sid: [19], state: 1, from: 1992-09-01, to: 2002-07-01, factor: 1.25, basis: derived, witness: kvoti.lods_i_oslaegt}
+  - {sid: [19], state: 1, from: 2002-07-02, factor: 1.0, basis: derived, witness: kvoti.lods_i_oslaegt,
+     note: argentine is landed ungutted; lods's gutted weight is the weight as landed}
+  - {sid: [61], state: 1, from: 1992-09-01, factor: 1.0, basis: derived, witness: kvoti.lods_i_oslaegt,
+     note: deep-sea redfish is landed and counted ungutted; lods's gutted weight is the weight as landed}
+  - {sid: [39, 47, 62, 161], state: 1, from: 2014-09-01, factor: 1.1111, basis: derived, witness: kvoti.lods_i_oslaegt,
+     note: "lods 1.0 (1.25 for rabbitfish) before the fishing year 2014/2015, not in this table"}
+  - {sid: [173], state: 1, from: 2014-09-01, factor: 1.25, basis: derived, witness: kvoti.lods_i_oslaegt}
+  - {sid: [951], state: 1, from: 2011-03-13, factor: 0.0, basis: derived, witness: ask.studlar,
+     note: gutted lumpfish; its roe carries the fish}
+  # Ungutted (0), whole (27) and capelin residue (95): the weight is the whole weight, any species.
+  - {sid: any, state: [0, 27, 95], from: 1992-09-01, factor: 1.0, basis: derived, witness: ask.studlar}
+  # Tails (3): Nephrops.
+  - {sid: [40], state: 3, from: 1992-09-01, factor: 3.25, regulation: 3.25, reg_group: nephrops_tails, basis: recorded,
+     witness: regulation, witness_landings: kvoti.lods_i_oslaegt; ask.studlar,
+     note: the regulation multiplies the tails by 3.25 to the whole animal}
+  # Liver (4), roe (6), heads (7), trimmings (10), Greenland halibut tails (47): not counted as fish, any species but those below.
+  - {sid: any, state: [4, 6, 7, 10, 47], from: 1992-09-01, factor: 0.0, basis: derived, witness: ask.studlar}
+  - {sid: [31], state: 6, from: 1992-09-01, factor: 1.0, basis: derived, witness: ask.studlar, note: capelin roe is capelin}
+  - {sid: [22], state: [7, 47], from: 2007-09-01, to: 2022-01-15, factor: 0.0, basis: derived, witness: ask.studlar}
+  - {sid: [22], state: [7, 47], from: 2022-01-16, factor: 1.087, basis: derived, witness: aflagrunnur rows,
+     note: "regulation nr. 1464/2021 (in force 2022-01-01) counts tails, heads and bodies as the catch; the landings change on 2022-01-16"}
+  # Lumpfish roe (6) to the whole lumpfish.
+  - {sid: [951], state: 6, from: 2007-09-01, to: 2010-03-23, factor: 3.0303, basis: derived, witness: ask.studlar,
+     note: 100/33}
+  - {sid: [951], state: 6, from: 2010-03-24, to: 2012-08-31, factor: 3.7879, basis: derived, witness: ask.studlar,
+     note: 1.25 x 100/33}
+  - {sid: [951], state: 6, from: 2012-09-01, factor: 3.4014, regulation: 3.4, reg_group: lumpfish_roe, basis: recorded,
+     witness: regulation, witness_landings: ask.studlar,
+     note: "100/29.4; the regulation prints 3.4 (first by amendment nr. 151/2012 of 2012-02-17, when the landings still took 3.7879)"}
+  # Lumpfish roe as its own species: lods kept it as roe.
+  - {sid: [949], state: [0, 1], from: 1992-09-01, factor: 1.0, basis: derived, witness: kvoti.lods_i_oslaegt,
+     note: the roe is its own species code; the logbook's gutted 949 reads this row}
+
+# The fishing years' regulations on the total allowable catch, their article on slægingarstuðlar ----------------
+# Read by Claude (AI) as web pages on 2026-10-30, not checked by a person: the URL and each article's text in
+# $FISHYDATA/archive/2026-10-30-plan054-whole-weight/regulations/. The factor as printed: gutted = ungutted x factor
+# (for the tails and the roe, whole = tails or roe x factor). The years 1996/1997 to 1999/2000 (B nr. 362/1996,
+# 414/1997, 448/1998, 516/1999) are listed in the register but no text of them is online as a web page: their periods
+# stay `derived`, on the landings' own tables. A group the year's article does not name is not recorded that year.
+regulations:
+  - {fishing_year: 2000/2001, regulation: "B nr. 496/2000", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25}}
+  - {fishing_year: 2001/2002, regulation: "B nr. 631/2001", article: "8. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2002/2003, regulation: "B nr. 603/2002", article: "8. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2003/2004, regulation: "B nr. 595/2003", article: "8. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2004/2005, regulation: "B nr. 669/2004", article: "8. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2005/2006, regulation: "B nr. 724/2005", article: "8. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2006/2007, regulation: "B nr. 644/2006", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2007/2008, regulation: "B nr. 717/2007", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2008/2009, regulation: "B nr. 742/2008", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2009/2010, regulation: "B nr. 676/2009", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2010/2011, regulation: "B nr. 662/2010", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2011/2012, regulation: "B nr. 689/2011", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80}}
+  - {fishing_year: 2012/2013, regulation: "B nr. 698/2012", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2013/2014, regulation: "B nr. 662/2013", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2014/2015, regulation: "B nr. 653/2014", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2015/2016, regulation: "B nr. 600/2015", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2016/2017, regulation: "B nr. 630/2016", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2017/2018, regulation: "B nr. 607/2017", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2018/2019, regulation: "B nr. 674/2018", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2019/2020, regulation: "B nr. 674/2019", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2020/2021, regulation: "B nr. 726/2020", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2021/2022, regulation: "B nr. 920/2021", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2022/2023, regulation: "B nr. 972/2022", article: "7. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2023/2024, regulation: "B nr. 849/2023", article: "11. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2024/2025, regulation: "B nr. 817/2024", article: "11. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+  - {fishing_year: 2025/2026, regulation: "B nr. 860/2025", article: "9. gr.", factors: {cod_haddock_saithe: 0.84, flatfish: 0.92, wolffish: 0.90, nephrops_tails: 3.25, tusk_monkfish: 0.90, ling: 0.80, blue_ling: 0.80, lumpfish_roe: 3.4}}
+
+# The products processed at sea: the landing system sets a factor per landing, so the table holds a yearly mean with its
+# 10-90 % range for each species, state and area, computed from aflagrunnur's rows (plan 051 ask d).
+year_mean_states: [2, 11, 12, 13, 15, 17, 26, 48, 50, 51, 59, 60, 61]
+
+# The logbook: which landings row each logged condition reads ----------------------------------------------------
+# The logbooks name GUTT, UNGU and RELE; UNGU and RELE are the whole weight. A correction may name another state where
+# the logbook's is wrong (`condition_corrected`, e.g. Nephrops tails, curate/corrections/logbook_nephrops_tails.yml).
+logbook:
+  - {condition: GUTT, state: 1, note: the species' own gutted factor}
+  - {condition: GUTT, sid: [48, 951], state: 6, read_sid: 951, basis: derived,
+     witness: plan 051 §1 (logged over landed per trip 0.28-0.30 on fs_afladagbok's GUTT lumpfish),
+     note: lumpfish logged gutted is roe}
+  - {condition: tails, sid: [40], state: 3}
+  # A species the landings give no gutted factor for: the logbook's own 1.25 (decision 066).
+  - {condition: GUTT, sid: any, state: 1, factor: 1.25, basis: derived, witness: decision 066, fallback: true,
+     note: the logbooks' own whole weight (fs_afladagbok's afli = magn x 1.25)}
+
+# afli's lumpfish logbook (TODO 167): roe kg by salting stage to the whole lumpfish. Provisional until HV 2020-33's
+# authors answer (TODO 169; plan 054 ask d).
+lumpfish_logbook:
+  gsi: 29.4          # fresh roe, % of the ungutted fish (HV 2020-33)
+  stages:            # grasl_stofn.teg_verkunar: fresh roe = roe at the stage / factor (HV 2020-33, Table 1)
+    - {stage: 1, factor: 1.00, name: with all fluid}
+    - {stage: 2, factor: 0.92, name: drained}
+    - {stage: 3, factor: 0.77, name: ready for salting}
+    - {stage: 4, factor: 0.81, name: salted}
+  witness: HV 2020-33
+
+# Held, not applied ------------------------------------------------------------------------------------------------
+held:
+  - {sid: [951], state: 6, from: 2010-03-24, to: 2016-12-31, factor: 4.2517, basis: derived,
+     witness: MFRI's lumpfish advice of June 2020,
+     note: MFRI's 3.4014 x 1.25 for the Directorate's 20 % roe deduction; reproduces MFRI's 2008-2019 landings}
+  - {sid: [951], state: barrel, from: 2020-06-01, factor: 472, basis: derived, witness: HV 2020-33,
+     note: "kg of ungutted fish per barrel of 105 kg salted roe; earlier 487 (2012-2014), 445 (2015-2016), 427 (2017-2020)"}
