@@ -5,7 +5,7 @@
 `$FISHYDATA/archive/2026-10-logbook-notes/README.md` §3.1 (where the summaries were found), plan 038 §7.1 and decision
 191 e (the catch units), plan 039 §2 (period 0, the landings' own vessel-months), decisions 084 and 094,
 `docs/grammar.qmd` (§ What a row covers, § The coarser unit), `$FISHYDATA/archive/2026-10-afli-summaries/` (this
-plan's script and log)
+plan's script and log), decision 266 and plan 055 (`ops$sigfus` read, §6; rule 1 on where a summary belongs)
 
 Drafted with AI assistance (Claude) on 2026-10-23, in a session started from the notes study (TODO 73). The design and
 the numbers are Claude's; no person has checked them yet. The maintainer's words of 2026-10-23: keeping the summaries
@@ -269,6 +269,17 @@ by counts and columns first (decision 159).
   - does `gomul_dragnot` say what the seine's codes stand for?
 - **The rows not loaded:** `gomul_dragnot` holds 2,792 rows, of which afli has 1,854. What are the rest?
 - **The units:** Nephrops as whole weight or tails, and tow time in minutes.
+
+**Read 2026-10-30** (decision 266; `$FISHYDATA/archive/2026-10-30-records-and-statistics/`, logs 02-05):
+- **The parts:** every cell of `gamall_humar` (year × month × square × sub-square × vessel) holds afli's kg (20,822
+  cells). Its tow time is hours; afli's rows are its rows split where the minutes passed 9,999 (§1.3 confirmed).
+- **The vessel:** none for the fleet's records (548 rows of the 1960s, 250 of the 1970s). The seine's codes are not
+  explained.
+- **The rows not loaded:** `gomul_dragnot`'s 937 rows of 1967-1970 (7.2 kt; cod, haddock and codes 24 and 55 beside
+  plaice), and one row of 1962 (0.8 t).
+- **The units:** no column says whole weight or tails, or minutes; `gomul_raekja` holds the shrimp area only, never a
+  fjord square. The fleet's Nephrops of 1960-72 equal the weighing register by year, not by month: allocated at the
+  year, quantity unknown (plan 055 ask g).
 
 ## 7. Asks
 

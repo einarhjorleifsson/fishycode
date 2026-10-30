@@ -837,6 +837,10 @@ defect), carried by plan 039 §5's witness account; 3, `link_lid_map.R` and `cat
 events (decision 163; 9,716 arrivals at another time, 7,446 landings with no logbook trip, unexplained), builds on
 plan 022 §4 (TODO 68).
 
+**Found 2026-10-30** (decision 266, plan 055 rule 2): vor's `afli_einstakra_skipa` holds 1984 as one date per vessel (a
+vessel-year); `landed_catch_pre94`'s month × port × gear crosses vor's vessel × month in 1982-90, and in 1991-93 it is
+another stream, so period 0 needs a declared precedence, the other tables witnesses.
+
 **check:** every period's landings in the same columns with a basis and a layer, and each layer's landings and
 kilograms in one outcome per period (plan 039 §9); plan 007's questions 1 and 3 answered in a decision; or the plan
 parked or abandoned in its header.
@@ -1010,8 +1014,8 @@ audit's transhipment account read after the build.
 
 ## 136. afli's monthly summaries back in the logbook, each kilogram once (plan 041)
 **status:** parked (the maintainer, 2026-10-23: "park this / put on hold") · **needs: maintainer** — the seven asks
-of plan 041 · **see:** `curate/plans/041-afli-monthly-summaries-in-the-logbook.md`, decisions 084 and 191 e, TODO 73
-and 122, `$FISHYDATA/archive/2026-10-afli-summaries/`, `$FISHYDATA/archive/2026-10-logbook-notes/` §3.1
+of plan 041 · **see:** `curate/plans/041-afli-monthly-summaries-in-the-logbook.md`, decisions 084, 191 e and 266, plan
+055, TODO 73 and 122, `$FISHYDATA/archive/2026-10-afli-summaries/`, `$FISHYDATA/archive/2026-10-logbook-notes/` §3.1
 
 afli holds 40,967 monthly summary stations (Nephrops 1960-1999, shrimp 1953-1986, Danish seine 1960-1966; 199.4 kt).
 Each is a vessel × month × square or shrimp area, dated the 15th. The adapter sets them aside in
@@ -1024,6 +1028,10 @@ they hold less: 173.0 kt kept (Claude's measure, not checked by a person). `ops$
 The comparison with the new mar's merge (2026-10-29, plan 050 §6) adds that the summaries hold the only Nephrops of
 1973-1985 (1.2-2.7 kt a year) and nearly the only shrimp before 1975, and that in 1986-1999 they repeat the hauls (the
 new mar reads them as stations, so its Nephrops of those years is counted twice).
+
+`ops$sigfus` read on 2026-10-30 (decision 266): the Nephrops summaries match it cell for cell; its seine table holds 937
+rows of 1967-1970 (7.2 kt) never loaded into afli; `staging/afli/aggregate.parquet` keeps no place for the 12,708
+shrimp summaries; the fleet's Nephrops of 1960-72 are allocated at the year and of unknown quantity (plan 055 ask g).
 
 **check:** unparked by the maintainer, the asks answered in the plan, the adapter and merge built by name, and
 `station_fate`'s account closing with the summaries in it.
@@ -1077,6 +1085,10 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   depth (`botndypi`, filled 97-99 %, TODO 100), the headline depth and two temperatures, in no product yet (TODO 98).
   Its depth must be joinable to the AIS fixes in the analysis, by vessel and time, where it exists; "including them in
   the ais is not the way" (maintainer, 2026-10-29).
+- the analyst's view of plan 055 (TODO 171) as the tables' specification: one quantity per table, the population on
+  every landed row. Found 2026-10-30 (decision 266): v0's logbook table leaves `duration_m` empty on every adb station
+  and 347,852 of 378,818 fs_afladagbok stations, the e-logbook's tow time being in `t2`/`t3` and `duration_m_raw` by
+  design; a user's catch per tow hour loses the e-logbooks.
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
@@ -1359,6 +1371,38 @@ Plan 053 was executed on 2026-10-30 (decision 260), and it was built with plan 0
 
 **check:** each built, or declined in a decision; the maintainer's answer on the pressed records' starts recorded in
 the profile.
+
+## 171. The grammar in two views, with the rules the factor table left (plan 055)
+**status:** open · **needs: maintainer** — plan 055's eight asks · **see:** `curate/plans/055-the-grammar-in-two-views.md`,
+decision 266, `docs/grammar.qmd`, `docs/one_flow.qmd`, TODOs 127 and 140,
+`$FISHYDATA/archive/2026-10-30-nephrops-shrimp-factors/`
+
+The maintainer's aim (2026-10-30): tables an analyst can use without knowing the pipeline, robust against misuse; the
+datacall a side product. The records-and-factors table was tested on Nephrops and shrimp and set aside (decision 266).
+Plan 055 writes the grammar in two parts on the project's first boundary: the analyst's view (a quantity over a cell,
+with basis, lineage and coverage) and the builders' view (today's levels and streams), joined by the link. It adds
+eight rules from the measured cases, lineage and coverage (claim, measure, gap) as properties of a source in a period,
+and the Icelandic track as the census witness from 2007. Nothing needs a rebuild.
+
+**check:** the asks answered in the plan; `docs/grammar.qmd` rewritten with both parts and a clean render; a decision
+records the revision.
+
+## 172. afli's hauls placed only by a fjord square: 228,259 with no place in curated
+**status:** open · **see:** decision 266, plan 055, `$FISHYDATA/archive/2026-10-30-records-and-statistics/` (logs
+06-09), `sources/afli/convert.R`, `raw/oracle/ops_sigfus/fj_reitir.parquet`, `docs/grammar.qmd` (§ What each field
+group covers)
+
+`afli.stofn` holds a fjord square (`fj_reitur`) and fjord sub-area (`fj_skiki`) on 284,087 hauls; nothing in
+`sources/afli/` reads them. 228,259 of them (113.9 kt, mostly the inshore shrimp of 1972-2003 in Ísafjarðardjúp,
+Húnaflói, Arnarfjörður and Axarfjörður) have no position or square in `curated/logbook/station`. `ops$sigfus.fj_reitir`
+(one row per area and fjord square) gives a square and sub-square for 216,425 of them (100.7 kt); 11,834 (13.2 kt)
+keep an area only. Proposed: the adapter stages `skiki`, `fj_reitur` and `fj_skiki` as recorded; `fj_reitir` becomes a
+reference table; the merge fills `sq` and `ssq` where the record has none, basis `derived`, with the place's
+resolution (fjord square, or area). 819 of the hauls are from 2007 on. Rides the next rebuild of the logbook chain
+after plan 054's.
+
+**check:** the 216,425 hauls with a square and sub-square in `curated/logbook/station`, the rest with their area, every
+other station unchanged, traced on a scratch store first.
 
 ## 173. Plan 019's `protected_bycatch`: fs_afladagbok's mammal and bird bycatch, parked
 **status:** parked (the plan 054 cut to what moves effort or catch, the maintainer, 2026-10-30) · **see:**
