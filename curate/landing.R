@@ -41,90 +41,92 @@
 # ungutted over the weight as landed, or over the gutted for lods) and re-applied. Its catch sums to catch.parquet's
 # on every row, which keeps one row per landing, species, gear and stock, the gutted weight lods's only, as before.
 
-library(tidyverse)
-library(duckdbfs)
+#
+# In DuckDB, lazily, every table written by COPY (write_curated_sql()): nothing is collected into R. DuckDB runs on
+# one thread here, so each sum adds its rows in the staged file's order, as R's grouped sum over the collected rows
+# did, and catch.parquet is the same to the last bit. A join matches missing keys to each other, as dplyr's joins do.
 
-agf_landings  <- duckdbfs::open_dataset(fd_staging("landing", "agf",  "landings.parquet")) |> collect()
-agf_catch     <- duckdbfs::open_dataset(fd_staging("landing", "agf",  "catch.parquet")) |> collect()
-lods_landings <- duckdbfs::open_dataset(fd_staging("landing", "lods", "landings.parquet")) |> collect()
-lods_catch    <- duckdbfs::open_dataset(fd_staging("landing", "lods", "catch.parquet")) |> collect()
+con <- duckdbfs::cached_connection()
+threads <- DBI::dbGetQuery(con, "SELECT current_setting('threads') AS n")$n
+DBI::dbExecute(con, "SET threads = 1")
+ex <- function(sql) invisible(DBI::dbExecute(con, sql))
+n_of <- function(view) DBI::dbGetQuery(con, sprintf("SELECT count(*) AS n FROM %s", view))$n
+rd <- function(...) sprintf("read_parquet('%s')", fd_staging("landing", ...))
 
-ports <- duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect()
+# .tid_land -> .lid, collapsing the per-delivery .lid out (agf only; a no-op regrouping for lods, which arrives
+# already at this grain) -------------------
+# lods only (decision 169): the port an export was landed at, the gutted weight and komunr; NULL for agf.
+ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW agf_catch AS
+  SELECT ".tid_land" AS ".lid", schema, sid, gid, stid, CAST(NULL AS INTEGER) AS kfteg,
+         CAST(NULL AS INTEGER) AS hid_origin, coalesce(sum(catch), 0) AS catch,
+         CAST(NULL AS DOUBLE) AS catch_gutted, CAST(NULL AS INTEGER) AS komunr
+  FROM %s GROUP BY ".tid_land", schema, sid, gid, stid]", rd("agf", "catch.parquet")))
+ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW lods_catch AS
+  SELECT ".tid_land" AS ".lid", schema, sid, gid, stid, kfteg, hid_origin, coalesce(sum(catch), 0) AS catch,
+         sum(catch_gutted) AS catch_gutted, first(komunr) AS komunr
+  FROM %s GROUP BY ".tid_land", schema, sid, gid, stid, kfteg, hid_origin]", rd("lods", "catch.parquet")))
+for (s in c("agf", "lods"))
+  ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW %s_landings AS
+    SELECT ".tid_land" AS ".lid", vid, date, hid, schema FROM %s]", s, rd(s, "landings.parquet")))
 
-# .tid_land -> .lid, collapsing the per-delivery .lid out (agf only; a no-op
-# regrouping for lods, which arrives already at this grain) -------------------
-collapse_catch <- function(catch) {
-  if (!"kfteg" %in% names(catch)) catch <- catch |> mutate(kfteg = NA_integer_)
-  if (!"komunr" %in% names(catch)) catch <- catch |> mutate(komunr = NA_integer_)
-  # lods only (decision 169): the port an export was landed at, and the gutted weight; NA for agf
-  if (!"hid_origin" %in% names(catch)) catch <- catch |> mutate(hid_origin = NA_integer_)
-  if (!"catch_gutted" %in% names(catch)) catch <- catch |> mutate(catch_gutted = NA_real_)
-  catch |>
-    group_by(.tid_land, schema, sid, gid, stid, kfteg, hid_origin) |>
-    summarise(catch = sum(catch, na.rm = TRUE), catch_gutted = sum(catch_gutted),
-              komunr = first(komunr), .groups = "drop") |>
-    rename(.lid = .tid_land)
-}
-# The same catch by state and area, from the adapters' catch_detail (plan 051 step 5), summed in DuckDB: 8 M rows by
-# nine keys take minutes in dplyr.
-detail_catch <- function(src) {
-  d <- duckdbfs::open_dataset(src)
-  for (v in c("kfteg", "hid_origin", "state")) if (!v %in% colnames(d)) d <- d |> mutate(!!v := NA_integer_)
-  if (!"catch_landed" %in% colnames(d)) d <- d |> mutate(catch_landed = NA_real_)
-  d |>
-    summarise(catch_landed = sum(catch_landed), catch_gutted = sum(catch_gutted), catch = sum(catch, na.rm = TRUE),
-              .by = c(.tid_land, schema, sid, gid, stid, kfteg, hid_origin, state, area)) |>
-    mutate(factor_landing = case_when(catch_landed > 0 ~ catch / catch_landed,
-                                      is.na(catch_landed) & catch_gutted > 0 ~ catch / catch_gutted)) |>
-    rename(.lid = .tid_land)
-}
-
-agf_detail  <- detail_catch(fd_staging("landing", "agf",  "catch_detail.parquet"))
-lods_detail <- detail_catch(fd_staging("landing", "lods", "catch_detail.parquet"))
-agf_catch  <- collapse_catch(agf_catch)
-lods_catch <- collapse_catch(lods_catch)
-
-agf_landings  <- agf_landings  |> rename(.lid = .tid_land)
-lods_landings <- lods_landings |> rename(.lid = .tid_land)
+# The same catch by state and area, from the adapters' catch_detail (plan 051 step 5).
+ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW agf_detail AS
+  SELECT ".tid_land" AS ".lid", schema, sid, gid, stid, CAST(NULL AS INTEGER) AS kfteg,
+         CAST(NULL AS INTEGER) AS hid_origin, state, area, sum(catch_landed) AS catch_landed,
+         sum(catch_gutted) AS catch_gutted, coalesce(sum(catch), 0) AS catch
+  FROM %s GROUP BY ".tid_land", schema, sid, gid, stid, state, area]", rd("agf", "catch_detail.parquet")))
+ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW lods_detail AS
+  SELECT ".tid_land" AS ".lid", schema, sid, gid, stid, kfteg, hid_origin, CAST(NULL AS INTEGER) AS state, area,
+         CAST(NULL AS DOUBLE) AS catch_landed, sum(catch_gutted) AS catch_gutted,
+         coalesce(sum(catch), 0) AS catch
+  FROM %s GROUP BY ".tid_land", schema, sid, gid, stid, kfteg, hid_origin, area]", rd("lods", "catch_detail.parquet")))
 
 # Precedence: agf wherever present ---------------------------------------------
-agf_vid_date_hid <- agf_landings |> distinct(vid, date, hid)
+ex(r"[CREATE OR REPLACE TEMP TABLE lods_only_lid AS
+  SELECT DISTINCT l.".lid" FROM lods_landings l
+  WHERE NOT EXISTS (SELECT 1 FROM agf_landings a WHERE a.vid IS NOT DISTINCT FROM l.vid
+                    AND a.date IS NOT DISTINCT FROM l.date AND a.hid IS NOT DISTINCT FROM l.hid)]")
+lods_only <- r"[WHERE ".lid" IN (SELECT ".lid" FROM lods_only_lid)]"
+ex(sprintf("CREATE OR REPLACE TEMP VIEW merged_landings AS
+  SELECT * FROM agf_landings UNION ALL SELECT * FROM lods_landings %s", lods_only))
+ex(sprintf("CREATE OR REPLACE TEMP VIEW merged_catch AS
+  SELECT * FROM agf_catch UNION ALL SELECT * FROM lods_catch %s", lods_only))
+ex(sprintf("CREATE OR REPLACE TEMP VIEW merged_detail AS
+  SELECT *, CASE WHEN catch_landed > 0 THEN catch / catch_landed
+                 WHEN catch_landed IS NULL AND catch_gutted > 0 THEN catch / catch_gutted END AS factor_landing
+  FROM (SELECT * FROM agf_detail UNION ALL SELECT * FROM lods_detail %s)", lods_only))
 
-lods_only_landings <- lods_landings |> anti_join(agf_vid_date_hid, by = c("vid", "date", "hid"))
-lods_only_lids      <- lods_only_landings |> distinct(.lid)
-lods_only_catch     <- lods_catch |> semi_join(lods_only_lids, by = ".lid")
-
-merged_landings <- bind_rows(agf_landings, lods_only_landings)
-merged_catch    <- bind_rows(agf_catch, lods_only_catch)
-merged_detail   <- union_all(agf_detail,
-                             lods_detail |> semi_join(duckdbfs::as_dataset(lods_only_lids), by = ".lid")) |>
-  collect()
-
-# kg in = kg out: the details sum to the catch on every row of catch.parquet, compared in DuckDB
-key <- c(".lid", "schema", "sid", "gid", "stid", "kfteg", "hid_origin")
-detail_sum <- duckdbfs::as_dataset(merged_detail) |> summarise(catch_detail = sum(catch), .by = all_of(key))
-n_agree <- detail_sum |>
-  inner_join(duckdbfs::as_dataset(merged_catch |> select(all_of(key), catch)), by = key, na_matches = "na") |>
-  filter(abs(catch_detail - catch) <= 1e-6) |> count() |> pull(n)
-stopifnot(count(detail_sum) |> pull(n) == nrow(merged_catch), n_agree == nrow(merged_catch))
+# kg in = kg out: the details sum to the catch on every row of catch.parquet
+key <- sprintf('"%s"', c(".lid", "schema", "sid", "gid", "stid", "kfteg", "hid_origin"))
+chk <- DBI::dbGetQuery(con, sprintf("
+  WITH d AS (SELECT %s, sum(catch) AS catch FROM merged_detail GROUP BY ALL)
+  SELECT (SELECT count(*) FROM d) AS n_detail, (SELECT count(*) FROM merged_catch) AS n_catch,
+         count(*) FILTER (WHERE abs(d.catch - c.catch) <= 1e-6) AS n_agree
+  FROM d JOIN merged_catch c ON %s", paste(key, collapse = ", "),
+  paste(sprintf("d.%s IS NOT DISTINCT FROM c.%s", key, key), collapse = " AND ")))
+stopifnot(chk$n_detail == chk$n_catch, chk$n_agree == chk$n_catch)
 
 # Summary ------------------------------------------------------------------
-cat(sprintf("agf trips:        %d\n", nrow(agf_landings)))
-cat(sprintf("lods-only trips:  %d\n", nrow(lods_only_landings)))
-cat(sprintf("merged trips:     %d\n", nrow(merged_landings)))
-cat(sprintf("merged catch:     %d\n", nrow(merged_catch)))
+cat(sprintf("agf trips:        %d\n", n_of("agf_landings")))
+cat(sprintf("lods-only trips:  %d\n", n_of("lods_only_lid")))
+cat(sprintf("merged trips:     %d\n", n_of("merged_landings")))
+cat(sprintf("merged catch:     %d\n", n_of("merged_catch")))
 
 # Port join ------------------------------------------------------------------
 # hid is Fiskistofa's hafnarnumer; pid is the standard port key, so landings
 # join to the same port identity as the logbooks and the AIS trail.
-merged_landings <- merged_landings |>
-  left_join(ports |> select(hid, höfn = port, pid), by = "hid")
+ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW landings_port AS
+  SELECT m.*, p.port AS "höfn", p.pid
+  FROM merged_landings m LEFT JOIN read_parquet('%s') p ON p.hid IS NOT DISTINCT FROM m.hid]",
+  fd_curated("reference", "port.parquet")))
 
 # Export -----------------------------------------------------------------------
 landing_inputs <- c(fd_staging("landing", "agf",  "landings.parquet"), fd_staging("landing", "agf",  "catch.parquet"),
                     fd_staging("landing", "lods", "landings.parquet"), fd_staging("landing", "lods", "catch.parquet"),
                     fd_staging("landing", "agf", "catch_detail.parquet"), fd_staging("landing", "lods", "catch_detail.parquet"),
                     fd_curated("reference", "port.parquet"))
-merged_landings |> write_curated(fd_curated("landing", "landings.parquet"), inputs = landing_inputs)
-merged_catch    |> write_curated(fd_curated("landing", "catch.parquet"),    inputs = landing_inputs)
-merged_detail   |> write_curated(fd_curated("landing", "catch_detail.parquet"), inputs = landing_inputs)
+write_curated_sql(con, "SELECT * FROM landings_port", fd_curated("landing", "landings.parquet"), inputs = landing_inputs)
+write_curated_sql(con, "SELECT * FROM merged_catch", fd_curated("landing", "catch.parquet"), inputs = landing_inputs)
+write_curated_sql(con, "SELECT * FROM merged_detail", fd_curated("landing", "catch_detail.parquet"),
+                  inputs = landing_inputs)
+DBI::dbExecute(con, sprintf("SET threads = %d", threads))

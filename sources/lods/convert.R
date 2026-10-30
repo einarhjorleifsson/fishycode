@@ -49,7 +49,6 @@
 # komunr itself is kept, under its own name, as an informational field only -
 # never destroy the original, but it is not part of any key here.
 
-library(tidyverse)
 
 SCHEMA <- "lods"
 
@@ -60,6 +59,12 @@ SCHEMA <- "lods"
 # intermediate integer overflow. Collision probability across ~2.2M distinct
 # groups at 52 bits is negligible (~5e-4 by the birthday bound) - far below
 # komunr's own ~51% collision rate.
+#
+# In DuckDB, lazily: the 10 M rows never enter R, only the 2.2 M (vid, date, hid)
+# keys the id is minted from (rlang::hash has no SQL twin). DuckDB runs on one
+# thread here, so each sum adds its rows in the file's order, as R's sum over the
+# collected rows did, and every total is the same to the last bit (on four
+# threads about 0.2 % differ in it).
 hash_id <- function(vid, date, hid) {
   h <- vapply(paste(vid, date, hid, sep = "|"), rlang::hash, character(1), USE.NAMES = FALSE)
   h13 <- substr(h, 1, 13)
@@ -69,46 +74,49 @@ hash_id <- function(vid, date, hid) {
   p4 <- strtoi(substr(h13, 13, 13), base = 16L)
   ((p1 * 65536 + p2) * 65536 + p3) * 16 + p4
 }
-
 TONNES <- c(30L, 31L, 34L)  # Oracle's own views lods_slaegt_v and lods_slaegt_kg_v multiply these by 1000
 
-lods <-
-  duckdbfs::open_dataset(fd_raw("oracle", "kvoti", "lods_slaegt.parquet")) |>
-  select(skip_nr, hofn, upprunahofn, komunr, l_dags, fteg, kfteg, veidarf, veidisvaedi, magn, magn_oslaegt) |>
-  collect() |>
-  mutate(kg = if_else(fteg %in% TONNES, 1000, 1)) |>
-  transmute(komunr, vid = skip_nr, date = as_date(l_dags),
-            hid = hofn, hid_origin = upprunahofn, gid = veidarf, sid = fteg, kfteg, area = veidisvaedi,
-            stid = if_else(!is.na(kfteg) & kfteg == sid, kfteg, NA_integer_),
-            catch = magn_oslaegt * kg, catch_gutted = magn * kg)
+con <- duckdbfs::cached_connection()
+threads <- DBI::dbGetQuery(con, "SELECT current_setting('threads') AS n")$n
+DBI::dbExecute(con, "SET threads = 1")
+q <- function(sql) dplyr::tbl(con, dplyr::sql(sql))
+DBI::dbExecute(con, sprintf(r"[
+  CREATE OR REPLACE TEMP VIEW lods_rows AS
+  SELECT komunr, skip_nr AS vid, CAST(l_dags AS DATE) AS date, hofn AS hid,
+         upprunahofn AS hid_origin, veidarf AS gid, fteg AS sid, kfteg, veidisvaedi AS area,
+         CASE WHEN kfteg IS NOT NULL AND kfteg = fteg THEN kfteg END AS stid,
+         magn_oslaegt * CASE WHEN fteg IN (%s) THEN 1000.0 ELSE 1.0 END AS catch,
+         magn * CASE WHEN fteg IN (%s) THEN 1000.0 ELSE 1.0 END AS catch_gutted
+  FROM read_parquet('%s')]",
+  toString(TONNES), toString(TONNES), fd_raw("oracle", "kvoti", "lods_slaegt.parquet")))
 
-lods_state <- lods |>
-  group_by(vid, date, hid, hid_origin, gid, sid, stid, kfteg, area) |>
-  summarise(catch = sum(catch, na.rm = TRUE), catch_gutted = sum(catch_gutted, na.rm = TRUE), .groups = "drop") |>
-  mutate(schema = SCHEMA)
+# One id per (vid, date, hid), minted in R from the distinct keys and joined back.
+keys <- q("SELECT DISTINCT vid, date, hid FROM lods_rows") |> dplyr::collect()
+keys$.tid_land <- hash_id(keys$vid, keys$date, keys$hid)
+duckdb::duckdb_register(con, "lods_key", keys, overwrite = TRUE)
+key_join <- "JOIN lods_key k ON k.vid IS NOT DISTINCT FROM g.vid AND k.date IS NOT DISTINCT FROM g.date
+             AND k.hid IS NOT DISTINCT FROM g.hid"
 
-lods <- lods |>
-  group_by(vid, date, hid, hid_origin, gid, sid, stid, kfteg) |>
-  summarise(catch = sum(catch, na.rm = TRUE),
-            catch_gutted = sum(catch_gutted, na.rm = TRUE),
-            komunr = min(komunr),
-            .groups = "drop") |>
-  mutate(.tid_land = hash_id(vid, date, hid), .before = "vid") |>
-  mutate(schema = SCHEMA)
+DBI::dbExecute(con, sprintf(r"[
+  CREATE OR REPLACE TEMP TABLE lods_catch AS
+  SELECT k.".tid_land", g.*, 'lods' AS schema
+  FROM (SELECT vid, date, hid, hid_origin, gid, sid, stid, kfteg, coalesce(sum(catch), 0) AS catch,
+               coalesce(sum(catch_gutted), 0) AS catch_gutted, min(komunr) AS komunr
+        FROM lods_rows GROUP BY vid, date, hid, hid_origin, gid, sid, stid, kfteg) g
+  %s]", key_join))
 
-landings <-
-  lods |>
-  distinct(.tid_land, vid, date, hid, schema)
+landings <- q(r"[SELECT DISTINCT ".tid_land", vid, date, hid, schema FROM lods_catch]")
+catch <- q(r"[SELECT ".tid_land", komunr, gid, sid, stid, kfteg, hid_origin, catch, catch_gutted, schema FROM lods_catch
+              ORDER BY vid, date, hid, hid_origin, gid, sid, stid, kfteg]")
+catch_detail <- q(sprintf(r"[
+  SELECT k.".tid_land", g.gid, g.sid, g.stid, g.kfteg, g.hid_origin, g.area, g.catch, g.catch_gutted, 'lods' AS schema
+  FROM (SELECT vid, date, hid, hid_origin, gid, sid, stid, kfteg, area, coalesce(sum(catch), 0) AS catch,
+               coalesce(sum(catch_gutted), 0) AS catch_gutted
+        FROM lods_rows GROUP BY vid, date, hid, hid_origin, gid, sid, stid, kfteg, area) g
+  %s
+  ORDER BY g.vid, g.date, g.hid, g.hid_origin, g.gid, g.sid, g.stid, g.kfteg, g.area]", key_join))
 
-catch <-
-  lods |>
-  select(.tid_land, komunr, gid, sid, stid, kfteg, hid_origin, catch, catch_gutted, schema)
-
-# the ids already minted for the landings, one hash per (vid, date, hid), not one per row again
-catch_detail <- lods_state |>
-  inner_join(lods |> distinct(.tid_land, vid, date, hid), by = c("vid", "date", "hid"), relationship = "many-to-one") |>
-  select(.tid_land, gid, sid, stid, kfteg, hid_origin, area, catch, catch_gutted, schema)
-
-landings    |> duckdbfs::write_dataset(fd_staging("landing", "lods", "landings.parquet"))
-catch       |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch.parquet"))
+landings     |> duckdbfs::write_dataset(fd_staging("landing", "lods", "landings.parquet"))
+catch        |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch.parquet"))
 catch_detail |> duckdbfs::write_dataset(fd_staging("landing", "lods", "catch_detail.parquet"))
+DBI::dbExecute(con, sprintf("SET threads = %d", threads))

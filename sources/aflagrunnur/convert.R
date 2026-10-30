@@ -14,50 +14,46 @@
 # 051 step 5), so a factor can be read back and re-applied: per landing, gear, species, stock, `state` (astand,
 # ask.astand's code) and `area` (veidisvaedi, IS for Iceland's waters), the weights `catch_landed` (magn, as landed),
 # `catch_gutted` (magn_slaegt, its gutted equivalent) and `catch` (magn_oslaegt, the ungutted equivalent). The landing
-# system's own factor is catch / catch_landed. catch.parquet is summed from the rows as before, not from catch_detail,
-# so its sums keep their order to the last bit.
-
-library(nanoparquet)
-library(tidyverse)
+# system's own factor is catch / catch_landed.
+#
+# In DuckDB, lazily: the rows never enter R. DuckDB runs on one thread here, so each sum adds its rows in the file's
+# order, as R's sum over the collected rows did, and every total is the same to the last bit; on four threads the
+# order varies, and about 0.2 % of the sums differ in it. One thread sums the 5.4 M rows in seconds. The persons'
+# columns (seljandi, kaupandi, vidtakandi, sng) are never read.
 
 SCHEMA <- "agf"
 
-aflagrunnur <-
-  read_parquet(fd_raw("oracle", "agf", "aflagrunnur.parquet")) |>
-  select(.lid = londun_id, vid = skip_numer, date = londun_hefst,
-         hid = hafnarnumer, gid = veidarfaeri, sid = fisktegund,
-         stid = veidistofn, state = astand, area = veidisvaedi,
-         catch_landed = magn, catch_gutted = magn_slaegt, catch = magn_oslaegt) |>
-  mutate(date = as_date(date))
+con <- duckdbfs::cached_connection()
+threads <- DBI::dbGetQuery(con, "SELECT current_setting('threads') AS n")$n
+DBI::dbExecute(con, "SET threads = 1")
+q <- function(sql) dplyr::tbl(con, dplyr::sql(sql))
+DBI::dbExecute(con, sprintf("
+  CREATE OR REPLACE TEMP VIEW agf_rows AS
+  SELECT londun_id AS \".lid\", skip_numer AS vid, CAST(londun_hefst AS DATE) AS date,
+         hafnarnumer AS hid, veidarfaeri AS gid, fisktegund AS sid, veidistofn AS stid, astand AS state,
+         veidisvaedi AS area, magn AS catch_landed, magn_slaegt AS catch_gutted, magn_oslaegt AS catch
+  FROM read_parquet('%s')", fd_raw("oracle", "agf", "aflagrunnur.parquet")))
 
-catch_detail <- aflagrunnur |>
-  group_by(.lid, gid, sid, stid, state, area) |>
-  summarise(catch_landed = sum(catch_landed, na.rm = TRUE), catch_gutted = sum(catch_gutted, na.rm = TRUE),
-            catch = sum(catch, na.rm = TRUE), .groups = "drop") |>
-  mutate(schema = SCHEMA)
+# A landing trip is a vessel's day at a port; its id is the lowest delivery id in it.
+DBI::dbExecute(con, "
+  CREATE OR REPLACE TEMP VIEW agf_catch AS
+  SELECT min(\".lid\") OVER (PARTITION BY date, vid, hid) AS \".tid_land\", *
+  FROM (SELECT \".lid\", vid, date, hid, gid, sid, stid, coalesce(sum(catch), 0) AS catch, 'agf' AS schema
+        FROM agf_rows GROUP BY \".lid\", vid, date, hid, gid, sid, stid)")
 
-aflagrunnur <- aflagrunnur |>
-  group_by(.lid, vid, date, hid, gid, sid, stid) |>
-  summarise(catch = sum(catch, na.rm = TRUE),
-            .groups = "drop") |>
-  group_by(date, vid, hid) |>
-  mutate(.tid_land = min(.lid),
-         .before = ".lid") |>
-  ungroup() |>
-  mutate(schema = SCHEMA)
+landings <- q('SELECT DISTINCT ".tid_land", vid, date, hid, schema FROM agf_catch ORDER BY ".tid_land", vid, date, hid')
+catch <- q('SELECT ".tid_land", ".lid", gid, sid, stid, catch, schema FROM agf_catch
+            ORDER BY ".lid", vid, date, hid, gid, sid, stid')
+catch_detail <- q('
+  SELECT t.".tid_land", d.* FROM (
+    SELECT ".lid", gid, sid, stid, state, area, coalesce(sum(catch_landed), 0) AS catch_landed,
+           coalesce(sum(catch_gutted), 0) AS catch_gutted, coalesce(sum(catch), 0) AS catch,
+           \'agf\' AS schema
+    FROM agf_rows GROUP BY ".lid", gid, sid, stid, state, area) d
+  JOIN (SELECT DISTINCT ".lid", ".tid_land" FROM agf_catch) t USING (".lid")
+  ORDER BY d.".lid", gid, sid, stid, state, area')
 
-landings <-
-  aflagrunnur |>
-  distinct(.tid_land, vid, date, hid, schema)
-
-catch <-
-  aflagrunnur |>
-  select(.tid_land, .lid, gid, sid, stid, catch, schema)
-
-catch_detail <- catch_detail |>
-  inner_join(aflagrunnur |> distinct(.lid, .tid_land), by = ".lid", relationship = "many-to-one") |>
-  relocate(.tid_land)
-
-landings    |> duckdbfs::write_dataset(fd_staging("landing", "agf", "landings.parquet"))
-catch       |> duckdbfs::write_dataset(fd_staging("landing", "agf", "catch.parquet"))
+landings     |> duckdbfs::write_dataset(fd_staging("landing", "agf", "landings.parquet"))
+catch        |> duckdbfs::write_dataset(fd_staging("landing", "agf", "catch.parquet"))
 catch_detail |> duckdbfs::write_dataset(fd_staging("landing", "agf", "catch_detail.parquet"))
+DBI::dbExecute(con, sprintf("SET threads = %d", threads))
