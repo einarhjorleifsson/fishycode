@@ -7,7 +7,7 @@ answered by the maintainer the same day (§5), each as recommended but m b (not 
 amended the same day: the logger stays in the AIS track (decision 196); TODOs 24, 34, 95, 98, 110, 139, 142 and
 151 added the same day for little cost (§7); step 0 done the same day (decision 247); step 1's studies recorded (decisions 248-251); §7's
 small step 2 changes coded the same day (95, 139, 162, 34, 24); step 2a begun, the app carried (decision 253),
-steps 2a and 2c done (decisions 253-259), 2i and 2d in a side session, the hand-over in §8; nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+steps 2a and 2c done (decisions 253-260); cut the same day to 2e and 2i, then one rebuild (§8); nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -378,15 +378,24 @@ pushed: 87 commits are local only.*
   (TODO 167).
 - It stops before the trace-id witness (TODO 160). The main session merges the branch once it is proven.
 
-**Not started, of §4 step 2:**
-- 2b: decision 214's trip-timed records;
-- 2e: plan 019's remainder (the tour app staged, its ports read as `hid` by decision 252, `protected_bycatch`);
-- 2f's rest: 101's flag for a station outside its trip, and 102's twin rule widened with the trimmed windows (decision
-  250), which takes 138's Marína re-entries with it;
-- 2g: `effort_count` from the part tables, and `vessel_sensor` (decision 253's TODO 163);
-- 2h's rest: decision 198's drift rule.
+**The cut (the maintainer, 2026-10-30).** The plan was cut to what moves effort or catch on the fixes. The
+maintainer asked what the remaining work would achieve, given how long it took. The measured gain of each item, set
+against its cost, kept two:
+- **2e:** the tour app staged, with 9,821 trips and 9.9 kt never in the logbook, filling most of the handline gap of
+  2020-21 (TODO 141). Its ports are read as `hid` (decision 252).
+- **2i:** `trip_landing` and the disposition, so a trip's later landings and its exported catch reach its fixes.
 
-Then come the combined scratch build and its trace (plan 053 step 9), and rebuild A on the maintainer's go.
+Parked in their TODOs, to reopen when an analysis needs them:
+- 2b, decision 214's trip-timed records (TODO 137);
+- 2d, the lumpfish logbook (TODO 167);
+- 2f's rest: 101's flag (TODO 101), and 102's twin rule and trimmed windows (TODO 102) with 138's Marína re-entries;
+- 2g, `effort_count` from the parts and `vessel_sensor` (TODO 163);
+- 2h, decision 198's drift rule (TODO 103);
+- `protected_bycatch` (TODO 73).
+
+The maintainer needs nothing in the live store today. So the order is 2e and 2i first, then one combined scratch build
+traced down to the trail, then one live rebuild on the maintainer's go. That rebuild takes everything on main, the
+pieces above included.
 
 **Left from the done pieces, small:**
 - P8's 8 stations, as a frozen list;

@@ -312,7 +312,7 @@ left of each is in the plan:
 
 ## 73. Plans 019 and 020: the fs_afladagbok tables, gear detail and environment
 **status:** open (asks answered 2026-10-23, decision 210; the notes classified, plan 020 §6; plan 020 executed as plan
-052, decision 247; plan 019's half in plan 054 step 2e) · **see:**
+052, decision 247; plan 019's tour app in plan 054 step 2e; `protected_bycatch` parked by the plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:**
 `curate/plans/019-fs-afladagbok-mined.md`, `curate/plans/020-gear-part-and-environment.md`
 
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
@@ -694,7 +694,8 @@ The per-vessel speed ceiling measured here (vid 1417; 132,380 steps over the ves
 **check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
 
 ## 101. Allocation errors the audit finds: the fixes chosen (decisions 155, 199)
-**status:** open · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
+**status:** open — its two `ais_catch` fixes ride plan 054's 2i; the flag for a station outside its trip's days is
+parked (plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
 
 `check_allocation_audit` tests every link the flow makes against the records' own times (decision 155). The maintainer
 chose the fixes on 2026-10-23 (decision 199); each is built as a step with a scratch build and the catch traced:
@@ -712,8 +713,8 @@ one voyage (plan 038 step 2, decision 193); station times in port calls (decisio
 **check:** each chosen fix built (or declined in a decision), and `allocation_audit.parquet` read after the rebuild.
 
 ## 102. Logbook trips that overlap another trip of the same vessel
-**status:** open — classed and the treatments chosen 2026-10-30 (decision 250), built in plan 054's step 2f and
-rebuilds A and B; left, decision 094's open ends below · **see:** plan 031 §3.11, decisions 094, 155 and 250, TODO 101
+**status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — classed and the treatments chosen 2026-10-30
+(decision 250), not built; left, decision 094's open ends below · **see:** plan 031 §3.11, decisions 094, 155 and 250, TODO 101
 
 Found 2026-10-20 (plan 031 step 4), read-only: trips of one vessel and schema that overlap another by over an hour,
 twins (decision 094) left out: afli 21,220 (1.3 %, 4,092 with three or more others), fs_afladagbok 4,116 (2.7 %, mostly
@@ -732,8 +733,8 @@ and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), whe
 arrivals judged, or declined in a decision.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
-**status:** open — the gillnet sets in port listed 2026-10-30 (decision 249); the Trackwell draft is TODO 169's (plan
-054 ask e); decision 198's rule rides plan 054's rebuild A ·
+**status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — the gillnet sets in port listed (decision 249); the
+Trackwell draft is TODO 169's; decision 198's drift rule not built ·
 **see:**
 decisions 157, 158 and 198, `curate/corrections/logbook_set_placeholder.yml`, plan 031 §3.11 and asks i-k,
 `$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/` (the draft, `trackwell.yml`, kept out of git)
@@ -1134,7 +1135,7 @@ new mar reads them as stations, so its Nephrops of those years is counted twice)
 `station_fate`'s account closing with the summaries in it.
 
 ## 137. A record's resolution by what it covers: e-logbook stations that hold a trip or a day
-**status:** open (decided 2026-10-23, decision 214) · **needs: maintainer** — the logbook batch's build · **see:**
+**status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30; decided 2026-10-23, decision 214, not built) · **see:**
 decision 214, `$FISHYDATA/archive/2026-10-trip-time-stations/` (README, `recheck/`), decisions 206, 210 and 211,
 TODO 73, 127, 138
 
@@ -1160,8 +1161,9 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
 catch on its trips, and the before-and-after trace recorded in a decision.
 
 ## 138. Three window and twin faults found beside TODO 137
-**status:** open — unparked 2026-10-30 to ride plan 054's rebuild A (ask g): the dummies under plan 053's window
-rule, the Marína re-entries under decision 250's twin rule, the nets' floor 0.2 kn (coded 2026-10-30) · **see:**
+**status:** open — the dummies under plan 053's window rule (decision 255) and the nets' floor 0.2 kn are coded and
+ride the next rebuild; the Marína re-entries, under decision 250's twin rule, are parked with TODO 102 (plan 054 cut to what matters, the maintainer, 2026-10-30) ·
+**see:**
 `$FISHYDATA/archive/2026-10-trip-time-stations/` ("Separate" in `draft_decision.md`), decisions 094 and 206
 
 Claude's measure, 2026-10-23, not checked by a person:
@@ -1501,8 +1503,8 @@ None was judged (counted 2026-10-29 by Claude, not checked by a person).
 **check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.
 
 ## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
-**status:** open — asks d and e answered 2026-10-30 through plan 054's ask h (amended the same day); built in plan
-054's rebuild A · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
+**status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — asks d and e answered 2026-10-30 through plan 054's ask
+h (amended the same day); `effort_count` from the parts and `vessel_sensor` not built · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
 140, 165
 
 Built 2026-10-29 (decision 244), not checked by a person: `curated/logbook/{gear_part,rigging_part,sensor_summary}`,
@@ -1521,7 +1523,9 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 decision record.
 
 ## 167. afli's lumpfish logbook as a logbook source of its own
-**status:** open · blocked by plan 051's factor table and HV 2020-33's authors' answers (`lumpfish.md` §6) · **see:**
+**status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) · the factor table's provisional rows are built (decision 257);
+the authors' answers (TODO 169) and a draft adapter (`$FISHYDATA/archive/2026-10-30-plan054-whole-weight/draft-change2/`)
+wait · **see:**
 `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §3.8 and §7, plan 051 §5 c, TODO 157
 
 The maintainer chose it on 2026-10-30 (option B). afli's own lumpfish logbook holds catch that no other source holds:
@@ -1538,7 +1542,7 @@ staged on the preprocessing side:
 **check:** staged and merged, every record in one outcome, the overlap with the main logbook counted; a decision.
 
 ## 168. The logbook and landings TODOs closed in one or two rebuilds (plan 054)
-**status:** open · **needs: maintainer** — parked 2026-10-30, where step 2 stood in plan 054 §8; left to the maintainer: the go
+**status:** open · **needs: maintainer** — cut 2026-10-30 to 2e and 2i, then one rebuild (plan 054 §8); left to the maintainer: the go
 for rebuild A (and B), the dump of `ops$rafn.rekjanleikanumer` before B (ask c), TODO 70's query at the next Oracle
 session (ask n; the sitting's three commands are in plan 054 §7), and nothing more for the tour app's
 ports (ask k: its codes are the landing system's own, decision 252) ·
