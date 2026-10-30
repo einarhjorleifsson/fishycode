@@ -1,8 +1,10 @@
 # 054 — The logbook and landings TODOs closed: what each needs, in one or two rebuilds, and one sitting of asks
 
 **status:** proposal — written 2026-10-30 at the maintainer's request, in a side session; the items checked against
-their own text and the code, and the cheap counts measured read-only on the store, the same day; nothing built; asks
-a-r open (§5) · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+their own text and the code, and the cheap counts measured read-only on the store, the same day; asks a-r
+answered by the maintainer the same day (§5), each as recommended but m b (not known: TODO 146 stays open on it, so
+24 items are expected to close) and q (no recommendation: yes, the size stated and asked before any download); nothing
+built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -207,17 +209,20 @@ Ordered by how many items each unblocks. The first option is the recommendation.
 
 - a. **The batching (§4):** each change on its own scratch store, then all together, then one live rebuild (A and B
   together if b and c are answered in time), or one rebuild per change. Recommended: the first. Shapes every row of §3.
+  *Answered (maintainer, 2026-10-30):* the first.
 - b. **Plan 027's four asks (81, and 112 through it):**
   - a: a flow table, `trip_landing` (recommended), not `lid_map` with a date rule.
   - b: any port, up to 7 days, until the vessel next goes fishing (recommended).
   - c: in-port landings the logbook lacks (C) joined, so the raising carries their catch (recommended).
   - d: the voyage rule for `lid_map`'s misses as a TODO of its own (recommended), not in B.
+
+  *Answered (maintainer, 2026-10-30):* all four as recommended.
 - c. **TODO 160:** the Directorate's id as a witness column on every link, and the resolver for swaps and step 05, as
   its findings propose (recommended). And the maintainer dumps `ops$rafn.rekjanleikanumer` (`run_dump`, one table)
-  before B.
+  before B. *Answered (maintainer, 2026-10-30):* as recommended; the maintainer dumps the table before B.
 - d. **The lumpfish rows (157, 167):** build plan 051's table and TODO 167's source now, the lumpfish rows marked
   provisional (basis `derived`, witness HV 2020-33), the authors' answers amending them later (recommended). Or hold
-  both for the authors.
+  both for the authors. *Answered (maintainer, 2026-10-30):* built now, the lumpfish rows provisional.
 - e. **One TODO for every outside wait** ("when contact resumes", `needs: maintainer`), recommended. It takes:
   - plan 050's ask f and plan 053's ask f (the live fs_afladagbok, and read access to `mfriops/Landings`);
   - plan 053's ask g (Trackwell's own file);
@@ -226,52 +231,65 @@ Ordered by how many items each unblocks. The first option is the recommendation.
   - plan 051 c's questions to HV 2020-33's authors.
 
   156, 165, 103 and 141 can then close on what fishycode does, and the waits are kept in one place. Or each wait stays
-  in its item.
+  in its item. *Answered (maintainer, 2026-10-30):* one TODO for every outside wait.
 - f. **TODO 102's treatment, by class:** set now, applied once step 1 counts the classes. A class over 1 % of trips,
   or one these do not fit, comes back to the maintainer. Recommended:
   - a resubmission decision 094 misses: `duplicate`, by a widened twin rule (with 138's 125 Marína re-entries);
   - a test entry: flagged, left out of the links;
   - several boats under one vid: listed for the register's review (TODO 25, 65);
   - a real overlap: kept; a fix inside both trips gets no trip and a flag (decision 191 c).
+
+  *Answered (maintainer, 2026-10-30):* as proposed, a class over 1 % or one that fits none coming back.
 - g. **Unpark 126 and 138, to ride A** (recommended):
   - 126: decision 211's representation and the per-app check, built with plan 053 step 7's decoders;
   - 138's handline dummies: under plan 053's window rule;
   - 138's Marína re-entries: under f's twin rule;
   - 138's nets: a speed floor of 0.2 kn, TODO 34's measured value.
 
-  Or both stay parked.
+  Or both stay parked. *Answered (maintainer, 2026-10-30):* both unparked, to ride A.
 - h. **Plan 052's asks d and e (163; d touches TODO 98):**
   - d: the logger taken out of the AIS union, its readings in `vessel_sensor`, recommended, as the maintainer said
     on 2026-10-29: "including them in the ais is not the way". The union's change goes to the next AIS batch, and
     `vessel_sensor` is built in A.
   - e: the 848,306 readings dated 1899-12-30 dated from the record that carried them, basis `reconstructed`, flagged
     (recommended).
+
+  *Answered (maintainer, 2026-10-30):* d and e as recommended.
 - i. **163's `g_*` columns:** kept until TODO 140 versions the product, and 163's check narrowed to `effort_count`
-  and `vessel_sensor` (recommended). Or dropped in A.
+  and `vessel_sensor` (recommended). Or dropped in A. *Answered (maintainer, 2026-10-30):* kept until TODO 140.
 - j. **TODO 141:** closed by the tour app and the remainder declared in `docs/merge.qmd` and the landings' dictionary
-  entry (recommended). Or held for the Directorate's answer.
+  entry (recommended). Or held for the Directorate's answer. *Answered (maintainer, 2026-10-30):* closed by the tour
+  app, the remainder declared.
 - k. **TODO 73's port translation:** Claude drafts the override from the codes, and the maintainer reviews it before
   A (recommended), as `stk_hid_pid.csv` was. Or the translation is parked, and 73 closes with it parked.
+  *Answered (maintainer, 2026-10-30):* Claude drafts, the maintainer reviews before A.
 - l. **TODO 111:** the page's four column tables deleted for `docs/data-dict.yaml`, and the dictionary rendered as a
-  page of the book (recommended).
+  page of the book (recommended). *Answered (maintainer, 2026-10-30):* as recommended.
 - m. **TODO 146:**
   - a: towed gear's `t3` is the start of hauling (E), as Hafriti and fs_afladagbok record it, and the grammar's table
     follows (recommended);
   - b: the protocol's cruise, and whether its A-J records exist. Only the maintainer knows.
+
+  *Answered (maintainer, 2026-10-30):* a as recommended. b is not known: TODO 146 stays open, narrowed to it.
 - n. **TODO 70:** plan 018 §3's `DUMP()` query run at the maintainer's next Oracle session (one scan of `afli.afli`).
-  Claude then records the rows.
+  Claude then records the rows. *Answered (maintainer, 2026-10-30):* yes, at the next Oracle session.
 - o. **The riders on A:**
   - decision 198's drift rule (103);
   - 139's ties: `voyage_gear` by decision 199 (kilograms, then gear code, the gear and its class from one row);
     `trip_reconciled`'s STK witness by the later return, then the lower voyage id (recommended), or read as
     `ambiguous`.
   - TODO 34's gillnet floor (with g).
+
+  *Answered (maintainer, 2026-10-30):* all three as recommended, ties broken as stated.
 - p. **The catch halves of 81 and 101:** checked on the scratch store with `ais_catch` and the audit built there,
   the live store kept without them, as decision 241 left it (recommended). Or both built live once. Or the halves left
-  open.
+  open. *Answered (maintainer, 2026-10-30):* on the scratch store only.
 - q. **TODO 62:** may Claude fetch Norway's open ERS catch messages for 2019-2025, the size stated and asked before
   the download? The Faroese half goes to e's TODO. 62 stays open either way: its check needs `ais_catch`.
-- r. **131, 135 and 136:** kept parked (recommended), since A is large enough.
+  *Answered (maintainer, 2026-10-30):* yes; Claude names the files, their source and size, and downloads only on the
+  maintainer's yes.
+- r. **131, 135 and 136:** kept parked (recommended), since A is large enough. *Answered (maintainer, 2026-10-30):*
+  kept parked.
 
 ## 6. What it changes
 
