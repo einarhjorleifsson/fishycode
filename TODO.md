@@ -106,8 +106,8 @@ delivery and supersedes it, every synthesised window carries `win_basis`, and no
 `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
 ## 34. Trawl speed ranges near the coast: ask (1) of plan 012
-**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the shapefiles; the gillnet floor answered 2026-10-30, 0.2 kn (plan 054 ask o), coded the same day in
-`reference/gear/windows.R` (gid 1-4, 22), built with its rebuild A (§7) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
+**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the shapefiles; the gillnet floor answered 2026-10-30, 0.2 kn (plan 054 ask o), built with its live rebuild the same day in
+`reference/gear/windows.R` (gid 1-4, 22; decision 265) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
 
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
 
@@ -632,7 +632,10 @@ Decision 094's open ends belong here too: its 6,035 same-time stations, which th
 and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), where which arrival is right is untested
 (Claude's audit of 2026-10-23, not checked by a person).
 
-**check:** decision 250's treatments built and traced in rebuild A; decision 094's same-time stations and later
+From TODO 138 (closed by decision 265): 125 Marína trips entered again with other catch, outside decision
+094's twin rule (Claude's count, 2026-10-23), parked with this item's twin rule.
+
+**check:** decision 250's treatments built and traced in a rebuild; decision 094's same-time stations and later
 arrivals judged, or declined in a decision.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
@@ -865,8 +868,9 @@ Left by the overview's session of 2026-10-22.
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.
 
 ## 126. The logbooks' positions: what each haul end holds (a point and its precision, a cell, or nothing), by source
-**status:** open — unparked 2026-10-30 to ride plan 054's rebuild A (ask g): decision 211's representation and the
-per-app check, with plan 053's decoders (decided in 207, checked in 211) · **see:** decisions 207 and 211,
+**status:** open — plan 053's decoders built with plan 054's live rebuild on 2026-10-30 (decisions 258, 265); left:
+decision 211's representation (no end yet carries a point, cell or none basis) and the per-app check (decided in
+207, checked in 211) · **see:** decisions 207 and 211,
 `$FISHYDATA/archive/2026-10-todo126-ais-check/README.md`, `$FISHYDATA/archive/2026-10-afli-minutes60/README.md`,
 `dump/oracle/meta/{afli,adb,fs_afladagbok}.yml`, `curate/corrections/afli_end_three_digits.yml`, `R/logbook_position.R`,
 decision 165, TODO 115, 124, plan 040
@@ -1050,21 +1054,6 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
 **check:** a scratch build, then the store's, with these records typed and windowed as decision 214 says, STOKKUR's
 catch on its trips, and the before-and-after trace recorded in a decision.
 
-## 138. Three window and twin faults found beside TODO 137
-**status:** open — the dummies under plan 053's window rule (decision 255) and the nets' floor 0.2 kn are coded and
-ride the next rebuild; the Marína re-entries, under decision 250's twin rule, are parked with TODO 102 (plan 054 cut to what matters, the maintainer, 2026-10-30) ·
-**see:**
-`$FISHYDATA/archive/2026-10-trip-time-stations/` ("Separate" in `draft_decision.md`), decisions 094 and 206
-
-Claude's measure, 2026-10-23, not checked by a person:
-- Fontos's, Trackwell raun's and Fishtech's handline landing dummies: 3,460 stations with a window under 2 min, outside
-  decision 206's 0-4 min rule (static hauls and towed gear only);
-- 125 Marína trips entered again with other catch, outside decision 094's twin rule (same t1-t4 and catch);
-- the nets' speed range starts at 0, so moored fixes pass the speed test in any net window (Marína's and Taktikal's
-  nets: 2.8-4.6 % of their catch on fixes in port).
-
-**check:** each decided (a correction, a twin rule, a speed range) or declined in a decision.
-
 ## 140. The user tables after v0: the user's feedback, the product's version, and the design
 **status:** open · **needs: maintainer** — the feedback is the maintainer's use of v0 · **see:** decision 219, TODO 102,
 plan 027
@@ -1092,7 +1081,7 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
 ## 142. Haul windows that hold steaming or a position jump: what the spread effort map shows
-**status:** open — the counts rerun after plan 054's rebuild A (§7) · **see:** decision 219, TODO 140, TODO 103,
+**status:** open — the counts to rerun on the trail of plan 054's live rebuild (decision 265) · **see:** decision 219, TODO 140, TODO 103,
 `$FISHYDATA/archive/2026-10-effort-map/` (README)
 
 Found 2026-10-24 (Claude's, read-only, not checked by a person): the effort map prototype spreads each fishing fix's
@@ -1358,13 +1347,13 @@ The items they came from close on what fishycode does; the waits are kept here.
 **status:** open · **needs: maintainer** — the pressed records' starts (below) · **see:** decisions 255, 258, 259 and
 260, `curate/corrections/logbook_app_profile.yml`, `R/logbook_app_profile.R`, `R/logbook_position.R`, TODO 126
 
-Plan 053 was executed on 2026-10-30 (decision 260), and its build rides plan 054's rebuild A. Left from its steps:
+Plan 053 was executed on 2026-10-30 (decision 260), and it was built with plan 054's live rebuild the same day (decision 265). Left from its steps:
 - P8's 8 merged stations, whose side Trackwell's own copy contradicts, as a frozen list in `overrides/`;
 - a station-level `position_uncertain` flag (`pos1_flag`); the staged `pos1_form` says it for now (decision 258);
 - `z_unit` "uncertain" for the vessels rows D2 and D3 note (Taktikal 37, Reiknistofa 34), as a frozen list from the GEBCO
   witness (decision 259);
 - 21 fs stations of pattern 5/4 outside P4, 19 of them against the track, for a person to judge (decision 258);
-- I4's unlanded clusters by adb's apps, once rebuild A carries adb's `source` (decision 256);
+- I4's unlanded clusters by adb's apps, now that the store carries adb's `source` (decisions 256, 265);
 - **for the maintainer:** 1,767 pressed records start at the trip's departure and 821 at its landing. T14 takes them
   as written, and no reviewed row says whether such a start is a copy (decision 255).
 

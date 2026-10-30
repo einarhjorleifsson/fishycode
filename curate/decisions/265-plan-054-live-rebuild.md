@@ -148,7 +148,12 @@ The build lands every coded step of plan 054. These TODOs are deleted, each reco
 - 156 (plan 050 executed: step 5 with decision 257, ask f TODO 169's);
 - 162 (decision 249);
 - 167 (decision 263; its factors provisional until TODO 169's answers);
+- 138 (the dummies under decision 255 and the nets' floor, both built; Marína's 125 re-entries moved to TODO 102,
+  parked);
 - 168 (plan 054 executed).
+
+TODOs 34, 102, 126, 142 and 170 were told that the rebuild ran. Each stays open: 34 on the shapefiles, 126 on
+decision 211's representation and its check, 142 on a decision about windows, 102 parked, 170 on its own pieces.
 
 TODO 157 stays open, on plan 051's ask e (the paper era's × 1.25) and the authors' answers. Plans 027, 036, 050 and 054
 are executed. Plans 019 and 051 are partly built, with stubs in TODOs 173 and 157.
