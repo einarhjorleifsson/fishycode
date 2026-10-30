@@ -338,6 +338,10 @@ TODO of its own and closes by its own check.
   `ALL_OBJECTS.CREATED` for its trigger and sequence, and a count of `stk.trail`;
 - the stale overview rows of `stk.trail` and `afli.sjalfvirkir_maelar`, recomputed or re-dumped (TODO 110).
 
+The sitting is three commands, from the repo root in the maintainer's own terminal (written 2026-10-30, not yet run):
+`Rscript dump/oracle/ops_rafn.R`, `Rscript dump/oracle/checks/afli.R` and `Rscript dump/oracle/checks/stk.R`. Whether
+the dump account can read `ops$rafn` is not known until then.
+
 `fs_afladagbok.takt_json_form` (TODO 110) needs a decision first, its JSON dumped whole or left out, and is not in the
 sitting until then.
 

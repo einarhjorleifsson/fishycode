@@ -1564,7 +1564,8 @@ staged on the preprocessing side:
 ## 168. The logbook and landings TODOs closed in one or two rebuilds (plan 054)
 **status:** open · **needs: maintainer** — plan 054's asks answered 2026-10-30 (§5); left to the maintainer: the go
 for rebuild A (and B), the dump of `ops$rafn.rekjanleikanumer` before B (ask c), TODO 70's query at the next Oracle
-session (ask n), and the review of the tour app's port override before A (ask k) ·
+session (ask n; the sitting's three commands are in plan 054 §7), and the review of the tour app's port
+override before A (ask k; the draft in `$FISHYDATA/archive/2026-10-30-plan054-tour-ports/`, 20 codes to look at) ·
 **see:** `curate/plans/054-logbook-and-landings-todos-closed.md`, `$FISHYDATA/archive/2026-10-30-closing-plan/`,
 plan 038 §8, TODOs 62-167 as listed in the plan's §3
 
