@@ -26,7 +26,10 @@ same dt, labels inherited; ramb's split keeps every unit in one outcome whatever
 filter. The flow's own filters, `fishing` and `fishing_flow`, are presets.
 
 Each value carries the path and basis it came from. All six steps of the flow
-belong here, effort and catch included (maintainer, 2026-10-14).
+belong here, effort and catch included (maintainer, 2026-10-14). The last of them, the catch
+spread over the fixes, is a derived product the user makes from the link with ramb's split:
+it is not data, and no step or check here builds or relies on it (maintainer, 2026-10-30,
+decision 261).
 
 It is a data product, not a picture. A map such as
 [veidar.hafogvatn.is](https://veidar.hafogvatn.is) (relative effort by gear,

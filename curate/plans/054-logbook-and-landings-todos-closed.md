@@ -298,7 +298,8 @@ Ordered by how many items each unblocks. The first option is the recommendation.
   *Answered (maintainer, 2026-10-30):* all three as recommended, ties broken as stated.
 - p. **The catch halves of 81 and 101:** checked on the scratch store with `ais_catch` and the audit built there,
   the live store kept without them, as decision 241 left it (recommended). Or both built live once. Or the halves left
-  open. *Answered (maintainer, 2026-10-30):* on the scratch store only.
+  open. *Answered (maintainer, 2026-10-30):* on the scratch store only. *Superseded the same day by decision 261:* the
+  catch on the fixes is a derived product, the user's; 81 and 101 are checked at the trip, and no `ais_catch` is built.
 - q. **TODO 62:** may Claude fetch Norway's open ERS catch messages for 2019-2025, the size stated and asked before
   the download? The Faroese half goes to e's TODO. 62 stays open either way: its check needs `ais_catch`.
   *Answered (maintainer, 2026-10-30):* yes; Claude names the files, their source and size, and downloads only on the
@@ -374,7 +375,7 @@ pushed: 87 commits are local only.*
 
 **In progress, in a side session:** "Plan 054 step 2i and 2d", on branch `claude/plan-054-link-lumpfish-6f5dd5`.
 - It takes 2i's first piece (8d4c03b, `trip_landing`) from `claude/plan-054-whole-weight-75363a`.
-- Then it does 2i's disposition, `ais_catch` on `trip_landing` with the audit on scratch, and 2d, the lumpfish adapter
+- Then it does 2i's disposition, checked at the trip (decision 261: no `ais_catch`), and 2d, the lumpfish adapter
   (TODO 167).
 - It stops before the trace-id witness (TODO 160). The main session merges the branch once it is proven.
 

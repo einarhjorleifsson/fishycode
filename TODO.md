@@ -189,8 +189,8 @@ trail's exclusive windows allow, and §8.7 passes: `docs/merge.qmd` renders agai
 target, it reads from `staging/`, and the files are not on disk. The Faroese half has no lead.
 
 **check:** a `dump/` script writes the foreign logbooks under `raw/` (`raw/oracle/<schema>/` if they are in
-Oracle, plan 018), an adapter in `sources/` stages them, and `ais_catch.R` puts
-foreign catch on the record path where a logbook exists.
+Oracle, plan 018), an adapter in `sources/` stages them, and the merge holds the foreign hauls; their catch on the
+fixes is the user's (decision 261).
 
 ## 65. A vessel registry for every ping, whatever the flag
 **status:** in progress · **needs: maintainer** — the first `allocate_vids(dry_run = FALSE)`, by decision 190's
@@ -348,8 +348,9 @@ logbook, so counted twice; 8,376 (31.2 kt) came after it fished again. Another p
 the voyage link given every landing. Nothing changed in the pipeline. Seen again in plan 031 §3.11 (2026-10-20): 4,870
 trips are matched to a landing the vessel made at a call before the trip's last station.
 
-**check:** a trip's further landings join it (plan 027 §5), and kg on the fixes, raised, equals kg landed per vessel
-and year within the ratio of vessel-years with no second landing (plan 027 §6).
+**check:** a trip's further landings join it (plan 027 §5), and the trips' catch, raised, equals kg landed per vessel
+and year within the ratio of vessel-years with no second landing (plan 027 §6), counted at the trip; the catch on the
+fixes is the user's (decision 261).
 
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
 **status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
@@ -694,8 +695,8 @@ The per-vessel speed ceiling measured here (vid 1417; 132,380 steps over the ves
 **check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
 
 ## 101. Allocation errors the audit finds: the fixes chosen (decisions 155, 199)
-**status:** open — its two `ais_catch` fixes ride plan 054's 2i; the flag for a station outside its trip's days is
-parked (plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
+**status:** open — the fixes that live in `ais_catch` are declined, the catch on the fixes being the user's (decision
+261); the flag for a station outside its trip's days is parked (plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
 
 `check_allocation_audit` tests every link the flow makes against the records' own times (decision 155). The maintainer
 chose the fixes on 2026-10-23 (decision 199); each is built as a step with a scratch build and the catch traced:
@@ -710,7 +711,8 @@ chose the fixes on 2026-10-23 (decision 199); each is built as a step with a scr
 Parked: the audit as a generic ramb tool, until plan 038's phases are built. Answered elsewhere: the trail's trip from
 one voyage (plan 038 step 2, decision 193); station times in port calls (decision 197, TODO 81).
 
-**check:** each chosen fix built (or declined in a decision), and `allocation_audit.parquet` read after the rebuild.
+**check:** each chosen fix built, or declined in a decision: decision 261 declines those in `ais_catch` (the transfer
+trips' excess there, the catch on stations with no window) and the audit read after the rebuild.
 
 ## 102. Logbook trips that overlap another trip of the same vessel
 **status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — classed and the treatments chosen 2026-10-30
