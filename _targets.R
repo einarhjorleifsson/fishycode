@@ -496,6 +496,20 @@ list(
              fd_staging("afli", "aggregate.parquet"))
   }, format = "file"),
 
+  # afli's own lumpfish logbook (grasl_sokn x grasl_stofn), a logbook source of its own at the vessel-day (TODO 167):
+  # the merge's fifth tier, its roe taken to the whole lumpfish by the factor table's provisional rows.
+  tar_target(afli_grasl_raw, fd_raw("oracle", "afli", c("grasl_sokn.parquet", "grasl_stofn.parquet")), format = "file"),
+  tar_target(afli_grasl, {
+    afli_grasl_raw; gear
+    produces("sources/afli_grasl/convert.R",
+             fd_staging("afli_grasl", "trip.parquet"),
+             fd_staging("afli_grasl", "station.parquet"),
+             fd_staging("afli_grasl", "fishing_sample.parquet"),
+             fd_staging("afli_grasl", "catch.parquet"),
+             fd_staging("afli_grasl", "record.parquet"),
+             fd_staging("afli_grasl", "vessel_year.parquet"))
+  }, format = "file"),
+
   # Correction, not part of the adapter (AGENTS.md) - a side table, joined onto
   # afli_station by curate/logbook.R, never written back into station.parquet.
   tar_target(afli_depth_units, {
@@ -771,7 +785,7 @@ list(
   tar_target(logbook, {
     afli; afli_depth_units; afli_end_longitude; afli_east_longitude_reviewed; afli_sent; fs_afladagbok; adb; adb_lon_sign
     gear; gear_window; logbook_app_profile
-    aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
+    aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight; afli_grasl
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),
              fd_curated("logbook", "station.parquet"),

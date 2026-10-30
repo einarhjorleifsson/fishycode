@@ -1,6 +1,7 @@
-# Merge afli (legacy), fs_afladagbok, adb and the ERS catch reports (aflaskeyti) into unified logbook tables.
+# Merge afli (legacy), fs_afladagbok, adb, the ERS catch reports (aflaskeyti) and afli's lumpfish logbook (afli_grasl)
+# into unified logbook tables.
 # Side: preprocessing (logbook). See plan 014.
-# Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti}/{trip,station,fishing_sample,catch}.parquet, and the side
+# Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti,afli_grasl}/{trip,station,fishing_sample,catch}.parquet, and the side
 #         tables named under "Load"; the dump stamps (fd.dumped, never the rows) of raw/oracle/{afli,fs_afli}/stofn,
 #         adb/fishing_station and dw/dw_aflaskeyti, for the date caps; curated/reference/gear.parquet (gear_code)
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet, and the fate of every staging station and trip:
@@ -13,6 +14,8 @@
 #   Tier 3 — not in afli or fs_afladagbok, present in adb from ADB_DATE_MIN on → use adb
 #   Tier 4 — in none of them, present in aflaskeyti                → use aflaskeyti (plan 026): the foreign
 #            vessels' hauls of 2014-2018, and the Icelandic vessels' hauls on vessel-days their logbook lacks
+#   Tier 5 — in none of them, present in afli_grasl                → use afli_grasl (TODO 167): afli's own lumpfish
+#            logbook of 1977-2016, a vessel's day in a square, roe kg at its salting stage
 #
 # Rationale:
 #   afli > fs_afladagbok: afli mobile-gear timing is derived from the on-bottom
@@ -30,6 +33,7 @@
 #                   its dump. From that day the tier anti-join decides which of
 #                   the two holds a vessel-day, since the dump goes on to 2025-11-28.
 #   aflaskeyti    — no lower bound; upper: <= ERS_DATE_MAX, the day after its dump
+#   afli_grasl    — no lower bound; upper: <= AFLI_DATE_MAX (afli's dump; the table ends in 2016)
 #
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
 # keep the original recorded value, z1_basis/z2_basis says which happened: afli's by afli_depth_units.R, the
@@ -123,7 +127,7 @@ ex(sprintf("CREATE TEMP VIEW fs_trip AS SELECT * FROM %s", tid_char(pqo(stg("fs_
 ex(sprintf("CREATE TEMP VIEW adb_trip AS SELECT * FROM %s", pqo(stg("adb", "trip"))))
 # aflaskeyti's trips and station keys come from curate/aflaskeyti_trip.R, not from the adapter's runs.
 ex(sprintf("CREATE TEMP VIEW ers_trip AS SELECT * FROM %s", pqo(stg("aflaskeyti", "trip_landing"))))
-for (s in c("afli", "fs_afladagbok", "adb", "aflaskeyti"))
+for (s in c("afli", "fs_afladagbok", "adb", "aflaskeyti", "afli_grasl"))
   stopifnot("a staged trip twice" =
               dup_keys(pq(stg(s, if (s == "aflaskeyti") "trip_landing" else "trip")), "\".tid\"") == 0)
 
@@ -187,16 +191,28 @@ ex(sprintf("CREATE TEMP VIEW ers_catch AS
   SELECT c.* EXCLUDE (condition, catch_whole, \".ord\"), w.condition, w.catch_whole, w.condition_basis, c.\".ord\"
   FROM %s c LEFT JOIN %s w ON w.\".sid\" IS NOT DISTINCT FROM c.\".sid\" AND w.sid IS NOT DISTINCT FROM c.sid",
   pqo(stg("aflaskeyti", "catch")), pq(stg("aflaskeyti", "weight"))))
+# afli_grasl, afli's lumpfish logbook (sources/afli_grasl/convert.R): the vessel-day as the trip, a day in a square as
+# the station, no time, no position but the square. Its depth's unit is not known: kept as recorded (z1_raw), no depth
+# in metres (basis none).
+ex(sprintf("CREATE TEMP VIEW grasl_trip AS SELECT * FROM %s", pqo(stg("afli_grasl", "trip"))))
+ex(sprintf("CREATE TEMP VIEW grasl_station AS
+  SELECT s.* EXCLUDE (\".ord\") REPLACE (NULL::DOUBLE AS z1, NULL::DOUBLE AS z2), s.z1 AS z1_raw, s.z2 AS z2_raw,
+         CASE WHEN s.z1 IS NOT NULL THEN 'none' END AS z1_basis, NULL::VARCHAR AS z2_basis, s.\".ord\"
+  FROM %s s", pqo(stg("afli_grasl", "station"))))
+ex(sprintf("CREATE TEMP VIEW grasl_sample AS SELECT * FROM %s", pqo(stg("afli_grasl", "fishing_sample"))))
+ex(sprintf("CREATE TEMP VIEW grasl_catch AS SELECT * FROM %s", pqo(stg("afli_grasl", "catch"))))
 
-# The four sources bound, as bind_rows() bound them: `src` is the source's place, 1-4, and a column one source lacks
+# The five sources bound, as bind_rows() bound them: `src` is the source's place, 1-5, and a column one source lacks
 # is NA in the others. Dates are timestamps, as afli's are.
 bound <- function(views, extra = "") paste(sprintf("SELECT %d AS src, * %s FROM %s", seq_along(views), extra, views),
                                            collapse = " UNION ALL BY NAME ")
-ex(sprintf("CREATE TEMP VIEW trip_u AS %s", bound(c("afli_trip", "fs_trip", "adb_trip", "ers_trip"))))
-ex(sprintf("CREATE TEMP VIEW station_u AS %s", bound(c("afli_station", "fs_station", "adb_station", "ers_station"),
+ex(sprintf("CREATE TEMP VIEW trip_u AS %s", bound(c("afli_trip", "fs_trip", "adb_trip", "ers_trip", "grasl_trip"))))
+ex(sprintf("CREATE TEMP VIEW station_u AS %s", bound(c("afli_station", "fs_station", "adb_station", "ers_station",
+                                                      "grasl_station"),
                                                     "REPLACE (\"date\"::TIMESTAMP AS \"date\")")))
-ex(sprintf("CREATE TEMP VIEW sample_u AS %s", bound(c("afli_sample", "fs_sample", "adb_sample", "ers_sample"))))
-ex(sprintf("CREATE TEMP VIEW catch_u AS %s", bound(c("afli_catch", "fs_catch", "adb_catch", "ers_catch"))))
+ex(sprintf("CREATE TEMP VIEW sample_u AS %s", bound(c("afli_sample", "fs_sample", "adb_sample", "ers_sample",
+                                                     "grasl_sample"))))
+ex(sprintf("CREATE TEMP VIEW catch_u AS %s", bound(c("afli_catch", "fs_catch", "adb_catch", "ers_catch", "grasl_catch"))))
 
 # Fate: every staging station and trip -----------------------------------------
 # The rows of station_fate and trip_fate, taken before any rule drops one: each station with its tier key (`vid` from
@@ -210,7 +226,8 @@ fate_catch <- Reduce(union_all, list(
     transmute(.sid, schema, condition = NA_character_, catch, catch_whole = NA_real_),
   tbl(con, sql("SELECT * FROM fs_catch")) |> select(.sid, schema, condition, catch, catch_whole),
   tbl(con, sql("SELECT * FROM adb_catch")) |> select(.sid, schema, condition, catch, catch_whole),
-  tbl(con, sql("SELECT * FROM ers_catch")) |> select(.sid, schema, condition, catch, catch_whole)))
+  tbl(con, sql("SELECT * FROM ers_catch")) |> select(.sid, schema, condition, catch, catch_whole),
+  tbl(con, sql("SELECT * FROM grasl_catch")) |> select(.sid, schema, condition, catch, catch_whole)))
 fate_catch |>
   calc_whole_weight(by = c(".sid", "schema"), kg = sum(as.numeric(catch), na.rm = TRUE)) |>
   rename(kg_whole = whole_weight, kg_whole_basis = whole_weight_basis) |>
@@ -220,7 +237,7 @@ staging_kg <- fate_catch |> summarise(staging = sum(as.numeric(catch), na.rm = T
 # Apply date bounds ------------------------------------------------------------
 # A station outside its source's bounds goes, and `.reason` keeps it with the bound it broke. An NA bound is none.
 # `st` is every staging station with its tier key, its tier (afli's own stations 1, fs_afladagbok 2, afli's read from
-# fs_afli 3, adb 4, aflaskeyti 5) and the reason it went, if it did.
+# fs_afli 3, adb 4, aflaskeyti 5, afli_grasl 6) and the reason it went, if it did.
 bounds <- function(lo, hi) sprintf("CASE WHEN \"date\" IS NULL THEN 'date_missing' WHEN \"date\" < %s THEN 'date_before'
                                      WHEN \"date\" > %s THEN 'date_after' END",
                                    if (is.na(lo)) "NULL" else sprintf("DATE '%s'", lo),
@@ -228,13 +245,14 @@ bounds <- function(lo, hi) sprintf("CASE WHEN \"date\" IS NULL THEN 'date_missin
 ex(sprintf("CREATE TEMP TABLE st AS
   SELECT s.src, s.\".ord\", s.\".sid\", s.\".tid\", s.schema, s.copy, s.\"date\", t.vid,
          CASE WHEN s.src = 1 AND s.copy = 'afli' THEN 1 WHEN s.src = 2 THEN 2
-              WHEN s.src = 1 AND s.copy = 'fs_afli' THEN 3 WHEN s.src = 3 THEN 4 WHEN s.src = 4 THEN 5 END AS tier,
-         CASE s.src WHEN 1 THEN %s WHEN 2 THEN %s WHEN 3 THEN %s WHEN 4 THEN %s END AS \".reason\"
+              WHEN s.src = 1 AND s.copy = 'fs_afli' THEN 3 WHEN s.src = 3 THEN 4 WHEN s.src = 4 THEN 5
+              WHEN s.src = 5 THEN 6 END AS tier,
+         CASE s.src WHEN 1 THEN %s WHEN 2 THEN %s WHEN 3 THEN %s WHEN 4 THEN %s WHEN 5 THEN %s END AS \".reason\"
   FROM station_u s LEFT JOIN trip_u t ON t.src = s.src AND t.\".tid\" IS NOT DISTINCT FROM s.\".tid\"",
   bounds(NA, AFLI_DATE_MAX), bounds(FS_DATE_MIN, FS_DATE_MAX), bounds(ADB_DATE_MIN, ADB_DATE_MAX),
-  bounds(NA, ERS_DATE_MAX)))
+  bounds(NA, ERS_DATE_MAX), bounds(NA, AFLI_DATE_MAX)))
 
-# Tier 1-4: afli, fs_afladagbok, fs_afli, adb, aflaskeyti ----------------------
+# Tier 1-5: afli, fs_afladagbok, fs_afli, adb, aflaskeyti, afli_grasl ----------
 # A tier keeps the stations on vessel-days no tier above it holds; the others go as `vessel_day_held`, so one rule
 # makes both. afli is tier 1, less the stations read from fs_afli. Where afli or fs_afladagbok has the vessel-day, an
 # fs_afli station is the same haul entered again (decision 123): of the 17 such stations, 14 carry the same kg as a
@@ -242,9 +260,10 @@ ex(sprintf("CREATE TEMP TABLE st AS
 # ids), so from ADB_DATE_MIN until the dump ends adb keeps only the vessel-days the dump never received, and after it
 # almost all of adb. aflaskeyti is the ERS catch reports of 2014-2018 (plan 026): no foreign vessel-day is held above;
 # of the Icelandic vessels' hauls, those on vessel-days their logbook holds are the same hauls again (4,716 of 5,050
-# within a minute), and the rest fill days nothing else holds (plan 026 §7).
+# within a minute), and the rest fill days nothing else holds (plan 026 §7). afli_grasl is afli's own lumpfish
+# logbook (TODO 167): 7 of its vessel-days of 2005-2016 are in the main logbook too, which keeps them.
 ex("CREATE TEMP TABLE held (vid INTEGER, \"date\" TIMESTAMP)")
-for (k in 1:5) {
+for (k in 1:6) {
   ex(sprintf("UPDATE st SET \".reason\" = 'vessel_day_held' WHERE tier = %d AND \".reason\" IS NULL AND EXISTS
              (SELECT 1 FROM held h WHERE h.vid IS NOT DISTINCT FROM st.vid AND h.\"date\" = st.\"date\")", k))
   ex(sprintf("INSERT INTO held SELECT DISTINCT vid, \"date\" FROM st WHERE tier = %d AND \".reason\" IS NULL", k))
@@ -342,7 +361,9 @@ duckdb::duckdb_register(con, "tw_trip", tw_trip)
 # Longlines are `operation` whatever the share (maintainer, 2026-10-09): one set a day is what a longliner
 # does, so a single record a day says nothing. Here, on the merged tables, because the tiers mix schemas
 # within a vessel-year; deleted records and duplicate twins are left out of the pattern. The share is one division
-# of two counts, as R's mean() of a logical is.
+# of two counts, as R's mean() of a logical is. afli_grasl's rows are `event`s by their form, a vessel's day in a square
+# (the grammar's trip x gear x day x rectangle), basis recorded, and stay out of the pattern: a lumpfish netter's days
+# would otherwise change the type of its other gillnet stations.
 ST_MULTI_MIN <- 0.1
 ex(sprintf("CREATE TEMP TABLE station_type AS
   WITH base AS (
@@ -355,14 +376,16 @@ ex(sprintf("CREATE TEMP TABLE station_type AS
     SELECT vid, yr, gear, count(*) FILTER (WHERE n > 1)::DOUBLE / count(*)::DOUBLE AS multi_share
     FROM (SELECT vid, yr, gear, \"date\", count(*) AS n FROM base
           WHERE NOT coalesce(eytt_deleted, false) AND NOT coalesce(twin = 'duplicate', false) AND vid IS NOT NULL
-            AND \"date\" IS NOT NULL
+            AND \"date\" IS NOT NULL AND schema IS DISTINCT FROM 'afli_grasl'
           GROUP BY ALL)
     GROUP BY ALL)
   SELECT b.\".sid\", b.schema,
-         CASE WHEN p.multi_share >= %1$s THEN 'operation'
+         CASE WHEN b.schema = 'afli_grasl' THEN 'event'
+              WHEN p.multi_share >= %1$s THEN 'operation'
               WHEN b.gear = 'LLS' AND p.multi_share IS NOT NULL THEN 'operation'
               WHEN p.multi_share IS NOT NULL THEN 'event' END AS station_type,
-         CASE WHEN p.multi_share >= %1$s THEN 'derived'
+         CASE WHEN b.schema = 'afli_grasl' THEN 'recorded'
+              WHEN p.multi_share >= %1$s THEN 'derived'
               WHEN b.gear = 'LLS' AND p.multi_share IS NOT NULL THEN 'synthesised'
               WHEN p.multi_share IS NOT NULL THEN 'derived' ELSE 'none' END AS station_type_basis
   FROM base b LEFT JOIN pattern p
@@ -588,20 +611,25 @@ cnt <- q("SELECT count(*) FILTER (WHERE kept AND src = 1) AS afli, count(*) FILT
                  count(*) FILTER (WHERE kept AND src = 2) AS fs, count(*) FILTER (WHERE kept AND src = 3) AS adb,
                  count(*) FILTER (WHERE kept AND src = 4) AS ers,
                  count(*) FILTER (WHERE src = 4 AND coalesce(\".reason\", '') IN ('', 'vessel_day_held')) AS ers_all,
+                 count(*) FILTER (WHERE kept AND src = 5) AS grasl,
+                 count(*) FILTER (WHERE src = 5 AND coalesce(\".reason\", '') IN ('', 'vessel_day_held')) AS grasl_all,
                  count(*) FILTER (WHERE kept) AS merged FROM st")
 cnt_trip <- unlist(q("SELECT count(*) FILTER (WHERE src = 1) AS \"1\", count(*) FILTER (WHERE src = 2) AS \"2\",
-                             count(*) FILTER (WHERE src = 3) AS \"3\", count(*) FILTER (WHERE src = 4) AS \"4\"
+                             count(*) FILTER (WHERE src = 3) AS \"3\", count(*) FILTER (WHERE src = 4) AS \"4\",
+                             count(*) FILTER (WHERE src = 5) AS \"5\"
                       FROM mt"))
 cat(sprintf("afli stations (filtered):   %d\n", cnt$afli))
 cat(sprintf("  of them read from fs_afli: %d of %d\n", cnt$afli_fs, cnt$afli_fs_all))
 cat(sprintf("fs-only stations:           %d\n", cnt$fs))
 cat(sprintf("adb-only stations:          %d\n", cnt$adb))
 cat(sprintf("aflaskeyti-only stations:   %d of %d\n", cnt$ers, cnt$ers_all))
+cat(sprintf("afli_grasl-only stations:   %d of %d\n", cnt$grasl, cnt$grasl_all))
 cat(sprintf("merged stations:            %d\n", cnt$merged))
 cat(sprintf("afli trips (filtered):      %d\n", cnt_trip[["1"]]))
 cat(sprintf("fs-only trips:              %d\n", cnt_trip[["2"]]))
 cat(sprintf("adb-only trips:             %d\n", cnt_trip[["3"]]))
 cat(sprintf("aflaskeyti-only trips:      %d\n", cnt_trip[["4"]]))
+cat(sprintf("afli_grasl-only trips:      %d\n", cnt_trip[["5"]]))
 cat(sprintf("merged trips:               %d\n", sum(cnt_trip)))
 cat(sprintf("merged catch:               %d\n", q("SELECT count(*) AS n FROM catch_k")$n))
 
@@ -659,7 +687,8 @@ logbook_inputs <- c(
   AFLI_EAST_LON, fd_staging("afli_sent", "station.parquet"), fd_staging("afli_sent", "trip.parquet"), APP_PROFILE,
   fd_curated("reference", "gear.parquet"), fd_curated("reference", "gear_window.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
-                  "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
+                  "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))),
+  unlist(lapply(c("trip", "station", "fishing_sample", "catch"), \(t) fd_staging("afli_grasl", paste0(t, ".parquet")))))
 by_key <- function(a, b, key) paste(sprintf("%1$s.%3$s IS NOT DISTINCT FROM %2$s.%3$s", a, b, key), collapse = " AND ")
 sample_cols <- setdiff(q("DESCRIBE SELECT * FROM sample_u")$column_name, c("src", ".ord", "n_units", "n_total"))
 sample_sel  <- sprintf("u.\"%s\"", sample_cols)

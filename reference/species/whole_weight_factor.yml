@@ -143,6 +143,7 @@ lumpfish_logbook:
     - {stage: 2, factor: 0.92, name: drained}
     - {stage: 3, factor: 0.77, name: ready for salting}
     - {stage: 4, factor: 0.81, name: salted}
+    - {stage: unknown, factor: 1.00, name: "of no stage (grasl_stofn gives none), taken as fresh"}
   witness: HV 2020-33
 
 # Held, not applied ------------------------------------------------------------------------------------------------

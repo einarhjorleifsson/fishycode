@@ -21,7 +21,9 @@
 #                = catch            no condition at all (adb bycatch rows)            basis "synthesised"
 # The factor is the table's `logbook` row for (sid, condition) on the day, in Iceland's waters: the landings' own
 # gutted factor (cod 1.1905 since 1997-09-01, the flatfish 1.087), roe's for lumpfish logged gutted, and the logbooks'
-# own 1.25 (decision 066) for a species the landings give no gutted factor. `whole_weight_factor` is the largest
+# own 1.25 (decision 066) for a species the landings give no gutted factor. afli's lumpfish logbook (TODO 167) logs
+# roe at its salting stage (condition "stage 1".."stage 4", "stage unknown"): the table's `lumpfish logbook` rows,
+# provisional, take it to the whole lumpfish. `whole_weight_factor` is the largest
 # factor read in the group. afli's weight has no state in the merge (condition NA) and stays as stored, round(GUTT x
 # 1.25) + UNGU, until plan 037 phase 1 carries afli_sent's (TODO 115).
 #
@@ -60,7 +62,7 @@ calc_whole_weight <- function(catch, by, ..., factors = NULL) {
   # The factor of the day: a row for the species first, the fallback for any species after. An open end is a far
   # date inside the join only.
   f <- factors |>
-    dplyr::filter(scope == "logbook") |>
+    dplyr::filter(scope %in% c("logbook", "lumpfish logbook")) |>
     dplyr::transmute(.fsid = sid, .fcond = condition, .from = dplyr::coalesce(from, as.Date("1900-01-01")),
                      .to = dplyr::coalesce(to, as.Date("2999-12-31")), .factor = factor) |>
     dplyr::collect()
