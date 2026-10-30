@@ -344,8 +344,8 @@ included since its dump of 2026-10-23) is parked for a person's read of the name
 own fixes (its voyage link sees only unclaimed landings). Measured 2026-10-17 (plan 027 §2-§3): of 9,955 next-day
 landings at the same port (68.8 kt), 1,246 (30.2 kt) came with the vessel in port, 490 of them (23.0 kt) also in the
 logbook, so counted twice; 8,376 (31.2 kt) came after it fished again. Another port or 2-7 days later adds 1,529
-(65.4 kt). Plan 027 proposes plan 025's `withdrawn` first, a flow table `trip_landing` read by `ais_catch.R`, and
-the voyage link given every landing. Nothing changed in the pipeline. Seen again in plan 031 §3.11 (2026-10-20): 4,870
+(65.4 kt). Plan 027 proposes plan 025's `withdrawn` first, a flow table `trip_landing`, and the voyage link given every
+landing; the catch on the fixes from it is the user's (decision 261). Nothing changed in the pipeline. Seen again in plan 031 §3.11 (2026-10-20): 4,870
 trips are matched to a landing the vessel made at a call before the trip's last station.
 
 **check:** a trip's further landings join it (plan 027 §5), and the trips' catch, raised, equals kg landed per vessel
@@ -616,8 +616,8 @@ Measured 2026-10-19, read-only:
 **Proposal.** (a) In `convert.R`, `unlink(fd_staging("ais", "stk"), recursive = TRUE)` before the write, as
 `ais_catch.R` does. (b) `targets` cannot see that edit, so with the next AIS rebuild, from a clean tree: fingerprint,
 `tar_invalidate("stk")`, then `tar_make_isolated(names = )` on the 15 targets from `stk` down (`stk_event`,
-`port_call`, `ais_voyage`, `ais_trail`, `ais_catch`, `station_event` and 8 small ones), ~75 min at their last build
-times. Only `stk` and `stk_event` should change in content; the rest is re-stamped. `once`'s `port_radius` is outdated
+`port_call`, `ais_voyage`, `ais_trail`, `station_event` and 8 small ones; `ais_catch` never, decision 261), ~75 min at
+their last build times. Only `stk` and `stk_event` should change in content; the rest is re-stamped. `once`'s `port_radius` is outdated
 already and stays frozen. (c) The STK page drops `unify_schemas`.
 
 **check:** every partition of `staging/ais/stk` is from the latest build, the writer clears what it no longer writes,

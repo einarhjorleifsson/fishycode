@@ -101,13 +101,13 @@ Cost: **rec** a record only (a decision, a doc edit); **ro** a read-only measure
 
 | TODO | closes when (its check, short) | blocked by | cost | step | expected |
 |---|---|---|---|---|---|
-| 62 | foreign logbooks 2019-2025 dumped, staged, their catch on the record path in `ais_catch` | outside: the files (Norway's open ERS for half; no lead for the rest); `ais_catch` held out | scr, live | later | open (ask q) |
+| 62 | foreign logbooks 2019-2025 dumped, staged and merged (their catch on the fixes is the user's, decision 261) | outside: the files (Norway's open ERS for half; no lead for the rest) | scr, live | later | open (ask q) |
 | 70 | the rows `TO_CHAR` rejects recorded | maintainer: plan 018 §3's query, on Oracle | rec | 0 | close (ask n) |
 | 73 | plans 019 and 020 each built, parked or abandoned | plan 020: nothing, it is built as plan 052 (decisions 244, 245; `g_*` is 163's). Plan 019: the tour app, a port override (reviewed), `protected_bycatch`; its fs depth is plan 053's D2; its `rekjanleiki` is 160's | rec, scr, live | 0, A | close with A (ask k) |
 | 75 | the ~410 lost trips and 1,854 rows before 2007-09 decided, with evidence | nothing: decision 098's rule (kept in phase 2 by decision 189), now testable against landings, since `lid_map` reads LODS from its start (decision 205) | ro, rec | 1 | close; a class that the evidence would admit goes to the maintainer |
-| 81 | a trip's further landings join it; kg on the fixes, raised, equals kg landed per vessel-year | maintainer: plan 027's asks a-d; the kg half needs `ais_catch` | scr, live | B | close with B (asks b, p) |
+| 81 | a trip's further landings join it; the trips' catch, raised, equals kg landed per vessel-year, at the trip (decision 261) | maintainer: plan 027's asks a-d | scr, live | B | close with B (asks b, p) |
 | 100 | decided whether sensor readings are a product, and which column measures what | nothing: plan 052 made the per-haul readings a product (`sensor_summary`, decision 244), with every unit in the overlay (decision 245); the logger's stream is 163's `vessel_sensor` | rec | 0 | close |
-| 101 | each chosen fix built or declined; the audit read after the rebuild | the outside-trip flag and `voyage_gear`'s tie (139) ride A; two fixes and the audit sit in `ais_catch`, held out | scr, live | A, B | close with B (asks o, p) |
+| 101 | each chosen fix built or declined; those in `ais_catch` declined (decision 261) | the outside-trip flag and `voyage_gear`'s tie (139) ride A | scr, live | A, B | close with B (asks o, p) |
 | 102 | the overlapping trips classed with counts, and each class's treatment | a read-only study, then a treatment per class | ro, scr, live | 1, A | close with A (ask f) |
 | 103 | decision 198's rule built and traced; the gillnet sets in port explained or listed; the Trackwell draft sent or dropped | the rule rides A; the draft waits for the hold on outside contact | ro, scr, live | 1, A | close with A (asks e, o) |
 | 107 | each draft decided and recorded | nothing: decision 206 decided every draft, and plan 053's review amended it (its ask d: Trackwell raun's tow starts at the departure are real); adb's empty `duration_m` is declared (§1) | rec | 0 | close; the build is 165's |
@@ -142,7 +142,7 @@ unparked). With rebuild B: 81, 101, 112, 160.
 and plan 020's half of 73.
 
 **Left open, and why:**
-- 62: the files are outside, and its check needs `ais_catch`.
+- 62: the files are outside.
 - 115: plan 037 is large, and it is a rebuild of its own (C).
 - 122: an umbrella.
 - 123: outside answers are pending, and plan 039 is large.
@@ -190,17 +190,17 @@ decision record; then the maintainer's build by name.
 - h. **Riders**: decision 198's drift rule in `R/trail_sql.R` (103); 139's tie-breaks; the nets' 0.2 kn floor (138,
   TODO 34).
 - i. **The link (B)**: plan 027's `trip_landing` (81), the disposition through it (112), the Directorate's id as a
-  witness (160), and plan 039's `withdrawn` and key if ready. With them, 101's two `ais_catch` fixes.
+  witness (160), and plan 039's `withdrawn` and key if ready. Checked at the trip; no `ais_catch` (decision 261).
 
 Then plan 051's step 6 account, and one combined scratch build of every change, traced as plan 053 step 9 says. The
 trace covers the windows, `station_event`, the fishing fixes, effort, the stations' outcomes, and kg in = kg out. The
-live rebuild then holds no surprise. The catch halves (81, 101) are checked on that scratch store, with `ais_catch` and
-the audit built there (ask p).
+live rebuild then holds no surprise. The catch is checked at the trip; the catch on the fixes is the user's, and no
+`ais_catch` is built anywhere (decision 261, superseding ask p).
 
 **Rebuild A (+B).** One live rebuild by name of the chain:
 - adapters → `landing` → `logbook` → `lid_map` → windows → trail, and the leaves;
 - fingerprints before and after;
-- `ais_catch` and `check_allocation_audit` left out;
+- `ais_catch` and `check_allocation_audit` never built (decision 261);
 - no tracked edit while it runs.
 
 If asks b and c are answered and 2i is ready, A and B are one rebuild. Otherwise A goes first, and B rebuilds the same
@@ -301,7 +301,7 @@ Ordered by how many items each unblocks. The first option is the recommendation.
   open. *Answered (maintainer, 2026-10-30):* on the scratch store only. *Superseded the same day by decision 261:* the
   catch on the fixes is a derived product, the user's; 81 and 101 are checked at the trip, and no `ais_catch` is built.
 - q. **TODO 62:** may Claude fetch Norway's open ERS catch messages for 2019-2025, the size stated and asked before
-  the download? The Faroese half goes to e's TODO. 62 stays open either way: its check needs `ais_catch`.
+  the download? The Faroese half goes to e's TODO. 62 stays open either way, until the files come.
   *Answered (maintainer, 2026-10-30):* yes; Claude names the files, their source and size, and downloads only on the
   maintainer's yes.
 - r. **131, 135 and 136:** kept parked (recommended), since A is large enough. *Answered (maintainer, 2026-10-30):*
