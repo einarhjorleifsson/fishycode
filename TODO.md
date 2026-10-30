@@ -45,7 +45,8 @@ and plan 001 §5 says where.
 ---
 
 ## 24. Icelandic vessels that land fish but are never heard on AIS
-**status:** open · **see:** decisions 110, 117 and 118, `curate/checks/ais_key_landings.R`
+**status:** open — the reasons measured and the divers' override made in plan 054's steps 1-2 (§7) · **see:** decisions
+110, 117 and 118, `curate/checks/ais_key_landings.R`
 
 `ais_key_landings`' `landed_but_no_ais` lists 308 vids (the `once` file of 2026-10-09). It audits the cascade, not
 the key (decision 053), so 53 of them are in the key and heard, and 148 are foreign. **107 Icelandic vids landed in
@@ -126,7 +127,7 @@ delivery and supersedes it, every synthesised window carries `win_basis`, and no
 `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
 ## 34. Trawl speed ranges near the coast: ask (1) of plan 012
-**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the gillnet floor's value (0.2 kn recommended, plan 012 §2m) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
+**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the shapefiles; the gillnet floor answered 2026-10-30, 0.2 kn (plan 054 ask o), built with its rebuild A (§7) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
 
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
 
@@ -596,7 +597,7 @@ Open:
 step 5 is done: fishyweb's pages in the book, fishyweb archived, plan 002 closed or redirected.
 
 ## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
-**status:** open · **needs: maintainer** — approve the fix below and when to rebuild `stk` clean · **see:** decision 185 (TODO
+**status:** open — the fix approved 2026-10-30, coded in plan 054's step 2 and built with its rebuild A (§7) · **see:** decision 185 (TODO
 69, the same defect in every output, folded in), decision 151, `docs/stk_data-inspection.qmd`
 
 Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 rows from the build of 2026-09-23 (vid 2618,
@@ -652,7 +653,7 @@ in Edge on Windows.
 
 ## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
 **status:** open (decided 2026-10-23, decision 196: re-interpolated in the flow on every build, with a gap limit
-measured first) · **needs: maintainer** — the gap limit, from the measurement · **see:** decisions 075 and 196, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
+measured first; the logger kept in the track, plan 054 ask h, amended) · **needs: maintainer** — the gap limit, from the measurement, which plan 054's step 1 makes (§7) · **see:** decisions 075 and 196, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
 TODO 99
 
 The maintainer's rule (2026-10-20): logbook positions never join the AIS feed; the vessel overview's haul layer is gone.
@@ -811,7 +812,7 @@ sit in `fishing_sample` as `t1`/`t4` but in `station_window` as `t2`/`t3` (Claud
 **check:** each draft decided and recorded (correction, flag or no action), or declined in a decision.
 
 ## 110. The Oracle dumper's open ends after the run of 2026-10-21
-**status:** open · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
+**status:** open — `--resume` fixed in plan 054's step 0, the Oracle reads at the maintainer's next sitting (§7) · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
 `dump/oracle/fs_afladagbok.R`
 
 `all.R --resume` skips a schema whose last run exited 0 with nothing failed, and `.dump_finished()` counts a
@@ -1229,7 +1230,7 @@ Claude's measure, 2026-10-23, not checked by a person:
 **check:** each decided (a correction, a twin rule, a speed range) or declined in a decision.
 
 ## 139. Two steps whose result depends on the run: ties in `trip_reconciled` and `voyage_gear`
-**status:** open · **see:** decision 218, `$FISHYDATA/archive/2026-10-23-complete-rebuild/` (`ties.R`,
+**status:** open — the tie-breaks answered 2026-10-30 (plan 054 ask o), built with its rebuild A (§7) · **see:** decision 218, `$FISHYDATA/archive/2026-10-23-complete-rebuild/` (`ties.R`,
 `trip_reconciled_runs.R`), TODO 121
 
 The complete rebuild of 2026-10-23 changed these two steps' outputs with identical inputs and code (decision 218,
@@ -1289,7 +1290,8 @@ of handline trips, of vessels that log that year; landbeitt lína has the same b
 reads it (the landing outcome of TODO 140).
 
 ## 142. Haul windows that hold steaming or a position jump: what the spread effort map shows
-**status:** open · **see:** decision 219, TODO 140, TODO 103, `$FISHYDATA/archive/2026-10-effort-map/` (README)
+**status:** open — the counts rerun after plan 054's rebuild A (§7) · **see:** decision 219, TODO 140, TODO 103,
+`$FISHYDATA/archive/2026-10-effort-map/` (README)
 
 Found 2026-10-24 (Claude's, read-only, not checked by a person): the effort map prototype spreads each fishing fix's
 hours along the line to its next fix (same vessel and voyage, gaps up to 30 min), and draws a few hauls across land
@@ -1434,7 +1436,7 @@ outcome (decision 239). 2.0.0 has three regressions, each worked around in the c
 **check:** a decision records 2.0.1 against 1.5.6 on the battery and the reprexes, and which engine builds from then on.
 
 ## 151. Global Fishing Watch's vessel tracking guide: which wishes to build, and the two measurements it asks for
-**status:** open · **needs: maintainer** — which of the four wishes to build, and in what order · **see:** decision
+**status:** open · **needs: maintainer** — which of the four wishes to build, and in what order; the two measurements in plan 054's step 1 (§7) · **see:** decision
 237, `docs/one_flow.qmd` (the wish list's four last rows), `$FISHYDATA/raw/external/gfw/vessel-tracking-guide-2026/`
 
 The guide (GFW, 2026) was read against fishycode and ramb on 2026-10-28 (decision 237), and four wishes were added to
@@ -1629,7 +1631,9 @@ person), and orders the work.
   the tour app; the merge's flags; `effort_count`; the link (plans 027 and 036, the trace id).
 - One combined scratch trace, then one live rebuild of the chain (two if the link is late).
 
-24 items are expected to close, 7 of them with no answer from the maintainer. Left open: 62, 115, 122 and 123, 146's
+24 items are expected to close, 7 of them with no answer from the maintainer, and 3 more of §7's additions (24, 95,
+139). §7 adds, for little cost: 24, 34, 95, 98, 110, 139, 142 and 151, and one Oracle sitting for every Oracle read
+the plan needs. Left open: 62, 115, 122 and 123, 146's
 cruise (ask m b), and the parked 131, 135 and 136. Ask h d was amended the same day: the logger stays in the AIS track
 (decision 196), and `vessel_sensor` is long, with no positions (plan 052 §5). Found on the way: the handline hole of 2020-09 to 2021-03 (TODO 141) is mostly the unread
 tour app (TODO 73). A tour trip lands on the vessel-day of 1,442 of the 2,091 handline landings that have no logbook

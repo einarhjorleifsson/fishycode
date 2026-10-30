@@ -4,7 +4,8 @@
 their own text and the code, and the cheap counts measured read-only on the store, the same day; asks a-r
 answered by the maintainer the same day (§5), each as recommended but m b (not known: TODO 146 stays open on it, so
 24 items are expected to close) and q (no recommendation: yes, the size stated and asked before any download); h d
-amended the same day: the logger stays in the AIS track (decision 196); nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+amended the same day: the logger stays in the AIS track (decision 196); TODOs 24, 34, 95, 98, 110, 139, 142 and
+151 added the same day for little cost (§7); nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -37,6 +38,9 @@ work so the live store is rebuilt as few times as possible; and it gathers every
 - 134: sampling.
 - 139 (ties): a rider.
 - 151's second measurement (records shorter than four ping intervals): could ride §4, but it is not needed.
+
+Of these, 24, 34, 98, 110, 139, 142 and 151 were added on 2026-10-30, with 95, because they cost little beside the
+plan's own work (§7).
 
 ## 1. What was measured (read-only, 2026-10-30)
 
@@ -203,6 +207,9 @@ If asks b and c are answered and 2i is ready, A and B are one rebuild. Otherwise
 **Later.** Rebuild C: plan 037's phases (115), with any class step 1 admits (75, 118), TODO 62's data when they come,
 and plan 039 when its outside asks are answered. The parked items stay parked.
 
+§7 adds items to steps 0, 1 and 2, to rebuild A and to the time after it, and gathers every Oracle read into one
+sitting of the maintainer's.
+
 ## 5. Asks
 
 Ordered by how many items each unblocks. The first option is the recommendation.
@@ -302,3 +309,38 @@ Nothing until §5 is answered. Then the TODO items of §3 (25 deleted as they cl
 new TODO (ask e), and plan 038 §8, which gets a pointer here. Plan 020 is marked built, and plan 036's header is brought
 up to date. Plans 050, 051 and 053 are executed through rebuild A, and plan 027 through B. Rebuild C and the parked
 items are not this plan's.
+
+## 7. Added along the way
+
+*The maintainer, 2026-10-30: "check if there is anything in the TODO's that could be handled cheaply along the way",
+then "fold them in". Each item was checked by Claude the same day, read-only, against its text, the code, the store
+and the targets graph; not checked by a person.*
+
+These items lie outside §0's scope. They are added because they cost little beside the plan's own work. Each stays a
+TODO of its own and closes by its own check.
+
+| TODO | what is added | step | expected |
+|---|---|---|---|
+| 34 | the gillnet floor, 0.2 kn (ask o), built with the riders; the item's status says so now | 0, A | stays blocked on the regulation and shoreline shapefiles |
+| 110 | `--resume` counts a schema unfinished when its overview lists as skipped an object its script no longer skips; tested on the DuckDB stand-in, no Oracle | 0 | partly; the rest at the Oracle sitting below |
+| 151 | its two measurements, which need no decision: the ping interval of each AIS stream by year, and the share of logbook records shorter than four ping intervals, by gear and year | 1 | partly; the four wishes are the maintainer's |
+| 98 | the gap limit measured (decision 196): logger fixes kept, and those over 5 km from the recorded track, at 15, 30 and 60 min; the logger stays in the track (ask h, amended) | 1 | open; the maintainer picks the limit, and its build is the next AIS batch's |
+| 24 | each of the 107 Icelandic vids that land with no AIS given a reason (no transponder expected, an STK unit or MMSI found, a match missed), from the register, the key and decision 161's units; an override marking 8008 and 8009 as divers, left out of `landed_but_no_ais` | 1, 2 | close |
+| 95 | `sources/stk/convert.R` clears `staging/ais/stk` before it writes; `stk`, `stk_event`, `port_call` and `ais_voyage` join rebuild A (the rest of `stk`'s 16 downstream targets are in it already; 38 min at their last build times); only `stk` and `stk_event` change, by vid 2618's two rows of 2006; the STK page drops `unify_schemas` | 2, A | close |
+| 139 | the tie-breaks of ask o; each step run twice on the scratch store gives identical files | 2, A | close |
+| 142 | its counts rerun on the rebuilt trail, to show what plan 053's windows and decision 198's drift rule changed | after A | open; the decision is the maintainer's |
+
+**The maintainer's next Oracle sitting**, one session for every Oracle read the plan and these items need:
+- TODO 70's `DUMP()` query on `afli.afli` (ask n);
+- `ops$rafn.rekjanleikanumer`, one table by `run_dump()` (ask c), before B;
+- decision 196's three read-only STK reads (TODOs 110 and 117): `ALL_SEQUENCES` for the trail's sequence,
+  `ALL_OBJECTS.CREATED` for its trigger and sequence, and a count of `stk.trail`;
+- the stale overview rows of `stk.trail` and `afli.sjalfvirkir_maelar`, recomputed or re-dumped (TODO 110).
+
+`fs_afladagbok.takt_json_form` (TODO 110) needs a decision first, its JSON dumped whole or left out, and is not in the
+sitting until then.
+
+**After A**, as after every rebuild: the user tables rerun (`products/user_tables.R`, decision 219), and the effort
+map's grids (decisions 220, 228).
+
+**Expected to close, with these:** 27 items: the plan's own 24, and TODOs 24, 95 and 139.
