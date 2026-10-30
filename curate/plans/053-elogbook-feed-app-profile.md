@@ -1,8 +1,9 @@
 # 053 — The e-logbook feed: every app's quirks found by rule, in one app profile, and the feed's seams
 
 **status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
-drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); 12 rows reviewed by the
-maintainer the same evening, asks b and c answered (§8); nothing built ·
+drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); 18 rows reviewed by the
+maintainer the same evening, asks b-e answered (§8), the other 27 rows' evidence in the archive's `review-sheet.md`;
+nothing built ·
 **measured** (§1-§3), by Claude in a read-only side session, not checked by a person, in counts only, every number in a
 file of `$FISHYDATA/archive/2026-10-29-elogbook-feed/` (`findings.md`; `counts/tables.md` renders the tables below from
 the count files; `counts/q00_inventory.tsv` is §1): every station of fs_afladagbok, of adb where fs_afladagbok lacks it,
@@ -175,6 +176,11 @@ fathoms, no count, and GUTT x 1.25 stored on 169,893 rows. The merge reads afli 
 - **The landing finds no app-level weight fault.** Per trip, logged over landed lies in 0.8-1.25 on 86-92 % for every
   app the merge reads from the e-logbook but STOKKUR (76 %) and Fishtech (52 %, the trial vessel); each trip's outcome
   is in `w05_weight_landing.tsv`.
+- **afli's edited layer** (decision 244, from the plan 052 build). To 2018 its edits are the domain expert's, whom the
+  maintainer trusts, and they are labels the afli route's rules can be scored against (plan 037 §1). From 2019 it is the
+  afli route's import, with mappings of its own (a square window "fitted" on 94,635 tows the apps sent without one): for
+  those years the afli route's rows read the record as the app sent it. The edits left the afli route's departure-copy
+  set times as sent (T15: unchanged on 4,243 of 4,251 merged stations to 2018, `counts/r09`).
 - **Cross-checks.** On its own population, the classes reproduce the static set-time study's. The placeholder flag
   equals `logbook_set_placeholder.yml`'s counts per schema, and every flagged station falls in the placeholder class.
   adb equals fs on 467,567 of 467,635 shared stations (decisions 022, 171).
@@ -286,7 +292,9 @@ A row may name an app, a version, a period, a gear class and a vessel list (for 
 gear class and field, into `curated/check/logbook_app_profile.parquet`, and compares them with the profile. It lists
 as news: an app or version no row names (today `Skráningar.com`), a class no row names, and a share that moves by more
 than a set margin. The witnesses (track, port calls, GEBCO, landing, Trackwell's copy) run on demand, as decision 211
-proposed for the positions (`logbook_position_forms.R`, folded in here). A check, never an input.
+proposed for the positions (`logbook_position_forms.R`, folded in here). For the afli route to 2018 it also scores
+the rows against the expert's edits (decision 244), reading the account as plan 037's scripts do and never naming it.
+A check, never an input.
 
 ### 5.5 What moves
 
@@ -295,7 +303,8 @@ proposed for the positions (`logbook_position_forms.R`, folded in here). A check
 - **Out of `sources/fs_afladagbok/convert.R` and `R/logbook_position.R`:** the names STOKKUR and TAKTIKAL. The decoder
   takes the app's form from rows P2-P4, so a new app's form is a row, not code. The forms stay read at the adapter: it
   reads its stored form, with the profile as a reference input, as it reads the gear table.
-- **From decision 206 and TODO 164:** T2, T3, T13, T14 become rows; T11 flags the trip's departure, not the tow start.
+- **From decision 206 and TODO 164:** T2, T3, T13, T14 become rows. T11 flags the trip's departure and landing, not the
+  tow start and end (ask d), and T14 closes a pressed record's window at the gear's typical maximum, not the day.
 - **Stay as they are:** the sign rule (it reads every app's convention right), `logbook_twin` (it takes every
   resubmission in the merge), the tiers, the date bounds, adb's gear read back, the merge's trips with stations only.
 
@@ -337,7 +346,11 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
    measured for it (`scripts/10_review.py`, `counts/r01`-`r06`): T1-T5, T10, W1, D2, P2-P4, each as proposed. Found in
    the review: the fs adapter reads no seven- or eight-digit position (831 merged Taktikal stations have none), and
    decision 211's reading of the short latitudes holds beside a six-digit longitude only (2,276 of 4,603 visited
-   against 864 as read; where both have five digits nothing decides). 33 rows wait.
+   against 864 as read; where both have five digits nothing decides). Then T11, T11-station, T12, P7, T14 and T8 (asks
+   d and e): the trip's departure and landing are the copies of the tow times (1,045 tow and seine ends equal to the
+   landing are near on 65-83 %); stamped gillnet sets flagged and longline sets noted; a pressed record's window closed
+   at the gear's typical maximum, the 95th percentile of recorded spans (`counts/r07`), or the next station. The other
+   27 rows' evidence is in the archive's `review-sheet.md` (`counts/r08`-`r11`).
 4. **The check**, tested to give this archive's counts on the store of 2026-10-29.
 5. **The flags** in `curate/logbook.R` after the twins, from `R/logbook_app_profile.R`; the placeholder section goes.
 6. **The windows** (`curate/station_window.R`, `judged_time_sql()`) read the flags; the fallback window.
@@ -363,14 +376,16 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
 
 ## 8. Asks
 
-- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29):* T1-T5, T10, W1, D2 and P2-P4 reviewed,
-  each as proposed (the `reviewed` field of each row); the other 33 wait.
+- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29):* 18 reviewed (the `reviewed` field of
+  each row), each as proposed but T14, closed at a typical maximum; the other 27 wait, with their evidence in the
+  archive's `review-sheet.md`.
 - b. *Answered (maintainer, 2026-10-29):* kept as recorded and flagged, the placeholder included (row T1).
 - c. *Answered (maintainer, 2026-10-29):* the trip's window, departure to return, basis `derived` (rows T4, T10); a
   station left with no usable time gets the day, basis `synthesised` (row W1).
-- d. **Decision 206's towed departure copies:** blank the tow start (206), or flag the trip's departure (T11, the track
-  near on 92-97 %)? Proposed: flag the departure.
-- e. **Trackwell raun's stamped set times** (T12; in port on 25-26 %, near on 30-35 %): flagged as weak, or as recorded?
+- d. *Answered (maintainer, 2026-10-29):* the trip's departure and landing are the copies and are flagged; the tow and
+  seine times are kept (T11), which reverses decision 206's towed dummies.
+- e. *Answered (maintainer, 2026-10-29):* stamped gillnet sets flagged, longline sets noted, their positions noted as
+  saved late (T12, P7).
 - f. **The feed, once the hold lifts:** which of §3's options; proposed 2, then 3.
 - g. **Trackwell's own file as a standing witness:** ask for a copy to date when contact resumes?
 - h. **Vendors' trials** (I4): a trip flag by rule (an app's unlanded trips concentrated on one vessel), or kept as now?
