@@ -1611,3 +1611,25 @@ staged on the preprocessing side:
 - no raising to the barrels.
 
 **check:** staged and merged, every record in one outcome, the overlap with the main logbook counted; a decision.
+
+## 168. The logbook and landings TODOs closed in one or two rebuilds (plan 054)
+**status:** open · **needs: maintainer** — plan 054's asks a-r (§5), one sitting; then the go for rebuild A (and B) ·
+**see:** `curate/plans/054-logbook-and-landings-todos-closed.md`, `$FISHYDATA/archive/2026-10-30-closing-plan/`,
+plan 038 §8, TODOs 62-167 as listed in the plan's §3
+
+The maintainer, 2026-10-30: a plan to close most of the open items about the logbooks and the landings. Plan 054
+checks 32 items against their text and the code, measures the cheap counts read-only (Claude, not checked by a
+person), and orders the work.
+- Records first: 70, 100, 107, 111 and 146.
+- Read-only studies: 75 with 118, 102 and 162.
+- Then every decided change coded and traced on a scratch store of its own: plans 050, 051 and 053; decision 214;
+  the tour app; the merge's flags; `effort_count`; the link (plans 027 and 036, the trace id).
+- One combined scratch trace, then one live rebuild of the chain (two if the link is late).
+
+25 items are expected to close, 7 of them with no answer from the maintainer. Left open: 62, 115, 122 and 123, and
+the parked 131, 135 and 136. Found on the way: the handline hole of 2020-09 to 2021-03 (TODO 141) is mostly the unread
+tour app (TODO 73). A tour trip lands on the vessel-day of 1,442 of the 2,091 handline landings that have no logbook
+trip.
+
+**check:** plan 054's asks answered in the plan; each item of its §3 closed or left open as §3 expects, with a
+decision record per step; the plan executed, parked or abandoned in its header.
