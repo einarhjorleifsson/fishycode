@@ -1,6 +1,7 @@
 # 019 — fs_afladagbok by the grammar: the tables it becomes, the tour app, and what the rest holds
 
-**status:** proposal — prototyped in scratch, nothing in the pipeline changed; §6 asks answered 2026-10-23 (decision 210) · **2026-10-15** · **see:** plan 018
+**status:** partly built — the tour app coded and traced 2026-10-30 (decision 264), built with plan 054's rebuild; the
+port translation by decision 252, `protected_bycatch` parked; §6 asks answered 2026-10-23 (decision 210) · **2026-10-15** · **see:** plan 018
 (the dump it reads), plan 014 (preprocessing side), `docs/grammar.qmd`, decisions 066, 094
 
 Drafted with AI assistance (Claude) on 2026-10-15, at the maintainer's request: format fs_afladagbok by the grammar,

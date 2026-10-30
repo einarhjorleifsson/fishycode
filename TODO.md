@@ -312,7 +312,7 @@ left of each is in the plan:
 
 ## 73. Plans 019 and 020: the fs_afladagbok tables, gear detail and environment
 **status:** open (asks answered 2026-10-23, decision 210; the notes classified, plan 020 §6; plan 020 executed as plan
-052, decision 247; plan 019's tour app in plan 054 step 2e; `protected_bycatch` parked by the plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:**
+052, decision 247; plan 019's tour app coded and traced 2026-10-30 (decision 264), closing with the next rebuild; `protected_bycatch` parked by the plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:**
 `curate/plans/019-fs-afladagbok-mined.md`, `curate/plans/020-gear-part-and-environment.md`
 
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
@@ -1227,7 +1227,8 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
 ## 141. Handline trips missing from every logbook source, September 2020 to March 2021
-**status:** open — closed by the tour app, the rest declared (plan 054 ask j); the question to the Directorate is TODO
+**status:** open — the tour app coded and traced 2026-10-30 (decision 264): the gap of 2020-09 to 2021-03 falls from
+2,091 landings with no trip to 419, the rest declared (ask j); closes with the next rebuild; the question to the Directorate is TODO
 169's ·
 **see:** decision 219, TODO 140
 
