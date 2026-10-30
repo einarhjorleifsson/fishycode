@@ -119,7 +119,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   and the annual ship register's history to 2023-12-19 (decision 132). They are a second targets project
   (`_targets_once.R`, `TAR_PROJECT=once`, `_targets.yaml`), built once, reviewed, and frozen as inputs of the
   main project. They are redone only by a decision record, and built by name, never as a whole project
-  (`tar_make_isolated(names = )`): a whole build redoes every fix whose watched files changed.
+  (`tar_make_isolated(names = )`): a whole build redoes every fix whose watched files changed. By name is not enough
+  alone: `names` also builds outdated ancestors, and on 2026-10-30 a check built so redid the key cascade (decision
+  265). In the once project `tar_make_isolated()` stops when `names` would rebuild an ancestor it does not name.
 - **flow**: the generic WGSFD one-flow, as thin callers of ramb `rb_` steps. Everything that uses the
   track (voyages, port calls, trip ↔ voyage, `T2` from AIS) is here.
 
@@ -225,12 +227,14 @@ Every script in a targets project is on one of three sides, and says which in a 
   map needs the map viewer of 2026.10.24.1 (`rb_map_*()`, plan 046), which nothing in the pipeline calls. The data on disk: every
   target of the main project was rebuilt from raw on 2026-10-28 with ramb 2026.10.28.3 (5a01d76) and DuckDB 2.0.0, and
   compared file by file with the build of 2026-10-23 under 1.5.6 (decision 239; that build is decision 218, the partial
-  rebuilds before it decisions 086-216). R's DuckDB is 1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has
+  rebuilds before it decisions 086-216). Plan 054's live rebuild of 2026-10-30 rebuilt 54 of them by name, the trail
+  included, with ramb 2026.10.28.3 and DuckDB 1.5.6 (decision 265). R's DuckDB is 1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has
   three regressions, each worked around in the code (decision 239), and its build from CRAN's source is kept at
   ~/Library/R/duckdb-2.0.0, for `R_LIBS=`. Each engine reads every file the other wrote (decisions 235, 239). The AIS
   tagging wants 2026.10.28.3, whose port flag has no windows: an older one gives the same ports at 15-23 GB a year
   (decision 239). In
-  the `once` project the STK key and its checks are the redo of 2026-10-17 (decision 128), and the register's history
+  the `once` project the STK key and its checks are the redo of 2026-10-17 (decision 128), the key cascade the
+  rebuild of 2026-10-30, equal to the key-redo refresh's base run of 2026-10-23 (decision 265), and the register's history
   the build of 2026-10-18 at e2f741f (decision 144); `port_radius` and `sensor_gps` are older. 2026.10.14.4 added the
   towing-stretch pairing (decision 092), which nothing here calls.
   `targets` does not track ramb, so a ramb change shows up in no

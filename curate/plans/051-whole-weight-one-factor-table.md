@@ -1,8 +1,10 @@
 # 051 — Whole weight across species, states, periods and databases: one factor table for the logbooks and the landings
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; steps 1-2 measured the same day; asks a, d and
+**status:** partly built — written 2026-10-29 at the maintainer's request; steps 1-2 measured the same day; asks a, d and
 e answered by the maintainer on 2026-10-30, as was c's question on afli's lumpfish logbook (TODO 167); b partly
-answered from the regulations the same day, and c's confirmations are with HV 2020-33's authors; nothing built · **measured** (§1), by Claude in two read-only side sessions the same day, in aggregates only and not checked by
+answered from the regulations the same day, and c's confirmations are with HV 2020-33's authors; the factor table built with plan 054's live rebuild on
+2026-10-30 (decisions 257, 265), the lumpfish rows provisional; left: ask e's paper era and the authors' answers
+(TODO 157) · **measured** (§1), by Claude in two read-only side sessions the same day, in aggregates only and not checked by
 a person: the landings' factors (agf, lods and the ask tables) and every logged kilogram's state
 (`$FISHYDATA/archive/2026-10-whole-weight/findings.md`); lumpfish roe and barrels against MFRI's reports and afli's
 lumpfish logbook (`lumpfish.md` there) · **assumed** (§2): the landings' factors are computed, not weighed; the states

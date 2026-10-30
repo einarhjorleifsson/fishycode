@@ -44,28 +44,6 @@ and plan 001 §5 says where.
 
 ---
 
-## 24. Icelandic vessels that land fish but are never heard on AIS
-**status:** open — every vid given a reason 2026-10-30 (decision 250); `overrides/landing_vid_class.csv` (8009 a diver,
-the nine landings placeholders) and the check reading it coded the same day; the `once` target
-`check_ais_key_landings` built by name with plan 054's rebuild A · **see:** decisions 110, 117, 118 and 250, `curate/checks/ais_key_landings.R`
-
-`ais_key_landings`' `landed_but_no_ais` lists 308 vids (the `once` file of 2026-10-09). It audits the cascade, not
-the key (decision 053), so 53 of them are in the key and heard, and 148 are foreign. **107 Icelandic vids landed in
-the AIS era with no key row and no ping from any provider in the union:** 96 registered vessels (9 with an MMSI, 67
-landing in 2013 or later) and 11 landings placeholders. A vessel name is never used to
-match, and the MMSI route is already taken, since the union takes ASTD, astdB and EMODnet by MMSI. What is left is to
-say why each has no track: no transponder (a small boat), an STK unit the key leaves without a vid (plan 022 §3;
-decision 161's units name 32 of these vids by an identifier), or a missed match.
-
-**The divers (from TODO 67):** 8009 (the register's útgerðarflokkur "Kafarar") and very likely 8008 land only with gear
-23 "Kafari", about 14 t on 152 landing rows, and have no hull. Mark them as divers, through an override that names the
-two or a rule (a registration that lands only with gear 23).
-
-**check:** 8009 carries a diver class by override, and `landed_but_no_ais` leaves it and the landings placeholders
-out; 8008 and the 7 off-register vids with catch listed for the register's review (decision 250).
-
----
-
 ## 25. The next STK key redo (`once` project): the review lists
 **status:** open · **needs: maintainer** — the go for the redo's build, once its code is in (review done 2026-10-23) ·
 **see:** decisions 128, 195 and 204; plans 009, 016 §4 step 7, 021 step 7, 022 §3 and §7; decisions 047 and 075;
@@ -310,49 +288,6 @@ left of each is in the plan:
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
-## 73. Plans 019 and 020: the fs_afladagbok tables, gear detail and environment
-**status:** open (asks answered 2026-10-23, decision 210; the notes classified, plan 020 §6; plan 020 executed as plan
-052, decision 247; plan 019's tour app coded and traced 2026-10-30 (decision 264), closing with the next rebuild; `protected_bycatch` parked by the plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:**
-`curate/plans/019-fs-afladagbok-mined.md`, `curate/plans/020-gear-part-and-environment.md`
-
-Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
-objects against the grammar (the tour app, the port translation, implausible catch, mammal and bird bycatch, the depth
-unit by app). Plan 020 keeps the gear detail and the environment that the adapters fold away, as tidy tables beside
-the fishing sample (`gear_part` prototyped for fs; to be redone on afli's `rafr_` layer, which fs thinned: the
-maintainer, 2026-10-29). For plan 020: the trawl's `gear_width` is the bridle (sweep)
-length, not a width (decision 170, left unchanged; Claude's audit of 2026-10-23, not checked by a person). From the
-metier study (plan 015 §4 a, 2026-10-23): afli's adapter reads `toga` but leaves `g_mesh` empty for OTB and OTM,
-though `toga.moskvi` holds the codend mesh on 99-100 % of bottom-trawl stations; the shrimp grid's bar spacing and
-the square-mesh window are folded away too (`tvo_veidarf`, the twin trawls, is read as the count since decision 240); fs shrimp
-trawls carry 135 mm on 34 %, and fs and adb nets a 10 mm placeholder.
-The tour app (decision 210, not built): the new mar reads 7,434 of its stations of 2020-2021 (10.3 kt) that our merge
-does not, a first outside reading to compare the build with (plan 050 §6, step 1's second round).
-The notes (plan 020 §6, Claude's study of 2026-10-23, not checked by a person;
-`$FISHYDATA/archive/2026-10-logbook-notes/`): every one classified; pumped catch logged by the receiver, the catcher's
-vid found for 98 %; afli's 40,967 summary stations are logbook records left unread. **needs: maintainer** for its asks a-d.
-Built (decision 213): the notes in staging per source, their classes in `curated/logbook/station_note`.
-The ground-name gazetteer (plan 020 §6, README §3.6; 507 tight grounds, 122 in no MFRI list, `ops$sigfus.ornefni`
-included since its dump of 2026-10-23) is parked for a person's read of the names.
-
-**check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
-
-## 81. A trip's catch landed over two days: `lid_map` claims one landing
-**status:** open — plan 027's asks answered (decision 247 b); `trip_landing` coded and traced 2026-10-30 (decision
-262), closes with the next rebuild · **see:** plan 027, plan 026 §11, plans 025 and 014,
-`curate/link_lid_map.R`, `curate/ais_catch.R`
-
-`lid_map` gives a trip one landing, and `ais_catch.R` shares every landing it leaves unclaimed, mostly on the trip's
-own fixes (its voyage link sees only unclaimed landings). Measured 2026-10-17 (plan 027 §2-§3): of 9,955 next-day
-landings at the same port (68.8 kt), 1,246 (30.2 kt) came with the vessel in port, 490 of them (23.0 kt) also in the
-logbook, so counted twice; 8,376 (31.2 kt) came after it fished again. Another port or 2-7 days later adds 1,529
-(65.4 kt). Plan 027 proposes plan 025's `withdrawn` first, a flow table `trip_landing`, and the voyage link given every
-landing; the catch on the fixes from it is the user's (decision 261). Nothing changed in the pipeline. Seen again in plan 031 §3.11 (2026-10-20): 4,870
-trips are matched to a landing the vessel made at a call before the trip's last station.
-
-**check:** a trip's further landings join it (plan 027 §5), and the trips' catch, raised, equals kg landed per vessel
-and year within the ratio of vessel-years with no second landing (plan 027 §6), counted at the trip; the catch on the
-fixes is the user's (decision 261).
-
 ## 83. The annual ship register mined whole, into the `vessel` schema's tables (plan 028)
 **status:** in progress · **needs: maintainer** — plan 028 §9's asks d (the MMSI lists `mmsi.R` does not read) and e
 (editions outside 2004-2022) · **see:**
@@ -590,41 +525,6 @@ Open:
 **check:** decision 152's proposals are decided, `check_book()` runs in `check_bookkeeping()` (plan 033 step 3), and
 step 5 is done: fishyweb's pages in the book, fishyweb archived, plan 002 closed or redirected.
 
-## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
-**status:** open — the fix coded 2026-10-30 (`sources/stk/convert.R` clears its output first), built with plan 054's
-rebuild A; the STK page drops `unify_schemas` after it (§7) · **see:** decision 185 (TODO
-69, the same defect in every output, folded in), decision 151, `docs/stk_data-inspection.qmd`
-
-Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 rows from the build of 2026-09-23 (vid 2618,
-an `I` at HFN, 2006-12-31 12:28), without the column `d2e` the rebuild of 2026-10-17 wrote into the other 27
-partitions. The key now starts that mid on 2007-06-01, so no build writes 2006 again, and `duckdbfs::write_dataset()`
-replaces only the partitions it writes. The book's STK page reads with `unify_schemas = TRUE` until this is fixed.
-
-Measured 2026-10-19, read-only:
-- **Downstream.** Only `sources/stk/event.R` reads the table (and the STK page). `stk_event.parquet` holds the stale
-  ping as an event, and it makes vid 2618's first real event (2007-06-01 05:20, `I` HFN) `io_dup`, so `io_ok` is
-  FALSE: 2 rows wrong. No further: `port_call` reads events from 2016 on (`EVENT_FROM` 2017), the frozen `port_radius`
-  2008-2025, and the ping chain reads the trail through `stk_trail()`, not this table.
-- **Other outputs.** 20 hive-partitioned datasets (1,838 files) under `staging/`, `curated/` and `raw/`. In the 10 that
-  targets write, this is the only file older than its target's last build. `convert.R` is the one writer that clears
-  nothing and takes its years from the data (`group_by(year)`, junk years such as 1936 and 2106 included). `ais_catch.R`,
-  `ais_trail.R` and `logbook_sensor_gps.R` clear the whole output; `ais_ping_clean.R` and `ais_voyage.R` clear the
-  years they write; `ais_ping_union.R` and `ais_ping_tag.R` write the feeds' years (decision 181).
-- **Mixed schemas, not stale:** `ping_union` 2025-2026 store `dt_sec`, `sid_gps` and `n_sid_gps` as INT32 (DOUBLE,
-  INT64 elsewhere); 7 `astd` months carry an extra `ship_id`. (`raw/ais/trail2/`, read by no code, is in the Trash:
-  decision 168.)
-
-**Proposal.** (a) In `convert.R`, `unlink(fd_staging("ais", "stk"), recursive = TRUE)` before the write, as
-`ais_catch.R` does. (b) `targets` cannot see that edit, so with the next AIS rebuild, from a clean tree: fingerprint,
-`tar_invalidate("stk")`, then `tar_make_isolated(names = )` on the 15 targets from `stk` down (`stk_event`,
-`port_call`, `ais_voyage`, `ais_trail`, `station_event` and 8 small ones; `ais_catch` never, decision 261), ~75 min at
-their last build times. Only `stk` and `stk_event` should change in content; the rest is re-stamped. `once`'s `port_radius` is outdated
-already and stays frozen. (c) The STK page drops `unify_schemas`.
-
-**check:** every partition of `staging/ais/stk` is from the latest build, the writer clears what it no longer writes,
-`stk_event` has no 2006 row, and the STK page no longer needs `unify_schemas`; and (TODO 69's check) no partitioned
-output under `staging/` or `curated/` holds a partition its last build did not write, its writer making sure of it.
-
 ## 96. The vessel demo: Safari, Windows, and the basis for sending it
 **status:** open · **needs: maintainer** — a Mac with Safari's remote automation on, or a person, and a Windows machine;
 and the agreement under which the folder goes · **see:** decisions 153, 236, `products/exports/vessel_demo.R`,
@@ -816,20 +716,6 @@ the columns.
 
 **check:** `docs/output-schema.md` holds no column table that `docs/data-dict.yaml` describes (done 2026-10-30); the
 book carries the dictionary as a page (`data-dict render`).
-
-## 112. The catch's disposition, code 159 'Gámur/Sigling' and agf's `afdrif`, carried to the trip (plan 036)
-**status:** open — asks answered 2026-10-23 (decision 208); the disposition coded and traced 2026-10-30 (decision
-262), closes with the next rebuild · **see:** `curate/plans/036-catch-disposition.md`,
-`$FISHYDATA/archive/2026-10-landing-disposition/`, TODO 81, plan 027, decision 031
-
-159 is not a port but what became of the catch: exported unprocessed in a container, or landed abroad (the maintainer,
-2026-10-21). LODS keeps that part as a landing of its own at 159 to 2013-08, 717 kt over 1992-2013; agf records it per
-row as `afdrif` U from 2013-09, and lacks it before. The study found no double counting: agf equals LODS's home
-landing on 4,439 of 4,447 shared vessel-days, and the logbook's catch is 1.004 times home + 159. fishycode drops
-`afdrif`, gives 159 no name, and `lid_map` leaves the 159 part off 4,073 trips (107.6 kt).
-
-**check:** the asks answered in the plan; landings, trips and their catch carry a disposition with a basis, landed kg
-unchanged, and those trips' logged over landed near 1.0; or the plan parked or abandoned in its header.
 
 ## 115. The most upstream source, value by value, through the grammar (plan 037)
 **status:** open · **see:** `curate/plans/037-the-most-upstream-source.md`, `docs/grammar.qmd`, decisions 158, 160,
@@ -1179,27 +1065,6 @@ Claude's measure, 2026-10-23, not checked by a person:
 
 **check:** each decided (a correction, a twin rule, a speed range) or declined in a decision.
 
-## 139. Two steps whose result depends on the run: ties in `trip_reconciled` and `voyage_gear`
-**status:** open — the tie-breaks answered and coded 2026-10-30 (plan 054 ask o; `curate/voyage_gear.R`,
-`curate/trip_reconciled.R`), built and run twice with its rebuild A (§7) · **see:** decision 218, `$FISHYDATA/archive/2026-10-23-complete-rebuild/` (`ties.R`,
-`trip_reconciled_runs.R`), TODO 121
-
-The complete rebuild of 2026-10-23 changed these two steps' outputs with identical inputs and code (decision 218,
-Claude's, not checked by a person). Each picks one of several equal candidates, and the database may pick another on
-another run:
-- `curate/trip_reconciled.R`'s STK witness, `row_number() … ORDER BY s.T1 DESC`: on 36 of 730,505 trips, two
-  latest-starting STK voyages disagree on the return, and 32 of those take their T2 from STK;
-- `curate/voyage_gear.R`'s `arg_max(gid, n)`: 506 of 825,075 voyages with a logbook vote tie (208 across gear
-  classes), and 8 of 185,515 in the landings vote. `gear_class`, `s1` and `s2` are separate `arg_max`es, so on a
-  tie they can come from different gears.
-
-Downstream, three trail months and two catch files moved. The choice is the step's owner's: a fixed tie-break (which
-voyage, which gear), or a tie read as no decision (`ambiguous`, as `n_rng` already does for the speed range). Run four
-times on 2026-10-29, `voyage_gear`'s query gave four different results under DuckDB 1.5.6 and the same under 2.0
-(decision 239); the tie stays a defect under either.
-
-**check:** each step run twice gives identical files, and the rule is written in the step's header.
-
 ## 140. The user tables after v0: the user's feedback, the product's version, and the design
 **status:** open · **needs: maintainer** — the feedback is the maintainer's use of v0 · **see:** decision 219, TODO 102,
 plan 027
@@ -1225,22 +1090,6 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   the ais is not the way" (maintainer, 2026-10-29).
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
-
-## 141. Handline trips missing from every logbook source, September 2020 to March 2021
-**status:** open — the tour app coded and traced 2026-10-30 (decision 264): the gap of 2020-09 to 2021-03 falls from
-2,091 landings with no trip to 419, the rest declared (ask j); closes with the next rebuild; the question to the Directorate is TODO
-169's ·
-**see:** decision 219, TODO 140
-
-Found 2026-10-24 (quick counts, read-only, Claude's): 82-93 % of handline landings from September 2020 to March 2021
-have no logbook trip, against 1-12 % a month in 2019. afli's handline stations fall from 2,854 in August 2020 to 124
-in September and 8 in December, and fs_afladagbok holds almost none until April 2021 (838, then 4,554 in May). afli,
-adb and afli_sent hold the same 8-9,000 stations a month of all gears through March 2021, so no source held fills it,
-and the merge drops none (380, all on days another source holds). Beside the hole, the summers of 2020-22 lack 12-25 %
-of handline trips, of vessels that log that year; landbeitt lína has the same bump (15-16 % in 2020-21).
-
-**check:** the missing trips are read from a source the maintainer names, or the gap is declared where the analyst
-reads it (the landing outcome of TODO 140).
 
 ## 142. Haul windows that hold steaming or a position jump: what the spread effort map shows
 **status:** open — the counts rerun after plan 054's rebuild A (§7) · **see:** decision 219, TODO 140, TODO 103,
@@ -1408,22 +1257,6 @@ Open, needing no decision:
 **check:** a decision records the two measurements, and each of the four wishes built, put in a plan, or set aside
 by the maintainer.
 
-## 152. Nephrops logged as tails, counted as whole weight
-**status:** open (coded 2026-10-29 on branch `plan-050-step5-tails`, plan 050 step 5; held for plan 051) · **see:** `curated/logbook/catch_by_species_station.parquet`, `curated/logbook/catch_flag.parquet`,
-`R/whole_weight.R`
-
-Raised 2026-10-28 by an MFRI colleague's check of the new mar (version 2026-10-27) for the Nephrops catch and CPUE
-series; measured here the same day by Claude, read-only, not checked by a person. Some vessels log Nephrops (sid 40) as
-tails. afli as read here carries a conversion to whole weight in 2007-2018 (x 3.3, the colleague says): these vessels'
-ratio is about 1 then. Nothing converts the rest, and `catch_round` gives them basis `recorded`. Per trip (one trip
-per landing, `lid_map`), logbook over landed weight in 2019-2026 has a median of 0.28 (vid 173), 0.34 (1645), 0.35
-(1752) and 0.30 (2048), 239 trips, against about 1.0 for every other vessel. vid 1645 logged tails in 2004-2006 too
-(0.28-0.30, 40 of 42 trips), outside the conversion's years. `catch_flag` flags 2 of these trips. Not looked at: other
-vessels' 55-91 trips a year in 2000-2002 with less than half the landed weight.
-
-**check:** a correction in `curate/corrections/` converts tail weight to whole weight on the trips a rule finds, with
-its own basis, or a decision declines it and the defect is declared where the analyst reads the catch.
-
 ## 155. EM4SSF's shared code: the time zone to ask its authors, and the trace to redo as the code grows
 **status:** open · **needs: maintainer** — the question to the project's WP2 authors (a) · **see:** decisions 238 and
 229, `~/stasi/em4ssf` (private, outside the repo), `raw/external/mendo2024`
@@ -1441,29 +1274,16 @@ method so far. Two things are left:
 **check:** (a) D2.1's zone for `DATE_TIME` is known, from the authors or a later D2.1; and (b) every script at the
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
-## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open — plan 050's ask f is TODO 169's (plan 054 ask e); step 5 lands with TODO 157 · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
-TODO 152, decision 240 (153 and 154 closed)
-
-Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
-gear, no stored effort, an extreme duration flagged, adb read as fs_afladagbok. Step 1, the comparison with the new
-mar's merged logbook, done the same day (plan 050 §6; its leads TODOs 136, 160 and 162, decisions 241 and 242). Left: step 5, the tails,
-held for plan 051 (TODO 152); ask f, the live `fs_afladagbok` reached and dumped as it is, so adb can go (the new mar's
-build drops month-end trips); ask g done: the findings emailed to its author 2026-10-29. His reply is read
-(decision 243); no further email and no push of fishycode for a while (maintainer, 2026-10-29).
-
-**check:** plan 050 executed or parked, with a decision record.
-
 ## 157. Whole weight: one factor table for the logbooks and the landings (plan 051)
-**status:** open — built in plan 054's rebuild A, the lumpfish rows provisional (ask d); the questions for HV 2020-33's
-authors are TODO 169's; asks a, d and e answered
-2026-10-30, b partly from the regulations (plan 051 §5) · **see:** `curate/plans/051-whole-weight-one-factor-table.md`,
+**status:** open — built in plan 054's live rebuild of 2026-10-30 (decisions 257, 265); left: the lumpfish rows,
+provisional until HV 2020-33's authors answer (TODO 169), and the paper era's × 1.25 (ask e), the maintainer's; b
+partly from the regulations (plan 051 §5) · **see:** `curate/plans/051-whole-weight-one-factor-table.md`,
 TODOs 114, 115, 152, 167, plan 050 step 5
 
 The logbooks store whole weight as gutted × 1.25 for every species, while the landings apply a factor per species,
 state and period (cod 1.25 to 1997, then 1.1905; flatfish 1.087; lumpfish roe 3.030, 3.788, then 3.401). So the same
 gutted fish is 0-15 % heavier logged than landed. Plan 051 proposes one factor table that both read. Plan 050's
-Nephrops tails wait for it on their branch. For ask c: from 2025-11-19 adb writes every lumpfish as 48, and Grásleppa
+Nephrops tails are built with it (decision 257). For ask c: from 2025-11-19 adb writes every lumpfish as 48, and Grásleppa
 (951) and Rauðmagi (950) cannot be told apart there, not even by the gear (plan 050 §6). Steps 1-2 measured
 2026-10-29 (plan 051 §1): a lumpfish barrel is 0.472 t of fish by MFRI, and barrels are only in afli's own lumpfish
 logbook (1977-2016), which no source of the product reads as catch yet (ask c).
@@ -1495,18 +1315,6 @@ author's own join by vessel and landing day, not a source value (decision 243).
 **check:** the maintainer's choice; if taken, the table dumped, the witness and the two resolvers built and measured,
 every trip in one outcome, in a decision.
 
-## 162. afli's east longitudes: judged by the track
-**status:** open — judged 2026-10-30 (decision 249): 75 sign switched, 185 east, 176 unjudged; the reviewed list
-`overrides/afli_east_longitude_reviewed.csv`, read into `coord_flag` by the merge, coded the same day; built in plan
-054's rebuild A, then the dictionary's `coord_flag` · **see:** decisions 242 and 249, `$FISHYDATA/archive/2026-10-29-track-checks/findings.md` §1
-
-afli has no sign rule. On its e-logbook route of 2021-22 the track puts 19 of 442 stations at the west reading where
-afli has them east: 16 within 1° of the meridian, and 3 at 22-23° E south of 67.66° N, on land. Over all years, 436 afli
-stations lie east of 10.75° E south of 67.66° N: 35 before 2000, 66 in 2000-2009, 322 in 2010-2020 and 13 from 2021.
-None was judged (counted 2026-10-29 by Claude, not checked by a person).
-
-**check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.
-
 ## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
 **status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — asks d and e answered 2026-10-30 through plan 054's ask
 h (amended the same day); `effort_count` from the parts and `vessel_sensor` not built · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
@@ -1527,66 +1335,20 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 **check:** `effort_count` read from `rigging_part`, the change accounted for; `vessel_sensor` built or declined; a
 decision record.
 
-## 167. afli's lumpfish logbook as a logbook source of its own
-**status:** open — coded and traced, kept by the maintainer after the cut (decision 263, 102bf8d); built with the
-next rebuild; its factors provisional until the authors answer (TODO 169) · **see:**
-`$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §3.8 and §7, plan 051 §5 c, TODO 157
-
-The maintainer chose it on 2026-10-30 (option B). afli's own lumpfish logbook holds catch that no other source holds:
-`grasl_sokn`, roe kg and fish counted per vessel-day and square, 1977-2016, and `grasl_stofn`, barrels per vessel-year
-and the salting stage. That is 36,028 vessel-days in 2005-2016 alone, and only 7 are also in the main logbook. It is
-staged on the preprocessing side:
-- roe kg with its stage, fish counted, nets and nights, per vessel-day and square;
-- the whole weight from the factor table: roe ÷ the stage's factor × 100/29.4, basis `reconstructed`, witness HV
-  2020-33;
-- the unit is the vessel-day, explicitly coarser than a fix (done-criterion 2);
-- the 15 impossible barrel records flagged, not corrected;
-- no raising to the barrels.
-
-**check:** staged and merged, every record in one outcome, the overlap with the main logbook counted; a decision.
-
-## 168. The logbook and landings TODOs closed in one or two rebuilds (plan 054)
-**status:** open · **needs: maintainer** — cut 2026-10-30 to 2e and 2i, then one rebuild (plan 054 §8); left to the maintainer: the go
-for rebuild A (and B), the dump of `ops$rafn.rekjanleikanumer` before B (ask c), TODO 70's query at the next Oracle
-session (ask n; the sitting's three commands are in plan 054 §7), and nothing more for the tour app's
-ports (ask k: its codes are the landing system's own, decision 252) ·
-**see:** `curate/plans/054-logbook-and-landings-todos-closed.md`, `$FISHYDATA/archive/2026-10-30-closing-plan/`,
-plan 038 §8, TODOs 62-167 as listed in the plan's §3
-
-The maintainer, 2026-10-30: a plan to close most of the open items about the logbooks and the landings. Plan 054
-checks 32 items against their text and the code, measures the cheap counts read-only (Claude, not checked by a
-person), and orders the work.
-- Records first: 70, 100, 107, 111 and 146.
-- Read-only studies: 75 with 118, 102 and 162.
-- Then every decided change coded and traced on a scratch store of its own: plans 050, 051 and 053; decision 214;
-  the tour app; the merge's flags; `effort_count`; the link (plans 027 and 036, the trace id).
-- One combined scratch trace, then one live rebuild of the chain (two if the link is late).
-
-24 items are expected to close, 7 of them with no answer from the maintainer, and 3 more of §7's additions (24, 95,
-139). §7 adds, for little cost: 24, 34, 95, 98, 110, 139, 142 and 151, and one Oracle sitting for every Oracle read
-the plan needs. Left open: 62, 115, 122 and 123, 146's
-cruise (ask m b), and the parked 131, 135 and 136. Ask h d was amended the same day: the logger stays in the AIS track
-(decision 196), and `vessel_sensor` is long, with no positions (plan 052 §5). Found on the way: the handline hole of 2020-09 to 2021-03 (TODO 141) is mostly the unread
-tour app (TODO 73). A tour trip lands on the vessel-day of 1,442 of the 2,091 handline landings that have no logbook
-trip.
-
-**check:** plan 054's asks answered in the plan; each item of its §3 closed or left open as §3 expects, with a
-decision record per step; the plan executed, parked or abandoned in its header.
-
 ## 169. Outside contact: the questions and requests waiting to be sent
 **status:** open · **needs: maintainer** — each is the maintainer's to send · **see:** plan 054 ask e, decision 247,
-TODOs 103, 141, 156, 157, 165
+TODOs 103, 157, 165, decisions 264 and 265
 
 One list of every question or request fishycode waits on from outside (plan 054 ask e, the maintainer, 2026-10-30).
 The items they came from close on what fishycode does; the waits are kept here.
 - **On hold since 2026-10-29**, with no contact with the new mar's author until the maintainer says:
-  - plan 050's ask f (TODO 156) and plan 053's ask f (TODO 165): the live fs_afladagbok feed, and read access to
+  - plan 050's ask f and plan 053's ask f (TODO 165): the live fs_afladagbok feed, and read access to
     `mfriops/Landings`. The feed answered by its author in the maintainer's own mail (2026-10-30): the Directorate's
     two REST services (`$FISHYDATA/archive/2026-10-30-fs-api/`). Still wanted: their token endpoint, and the code;
   - plan 053's ask g (TODO 165): Trackwell's own haul file as a standing witness.
 - **The Trackwell draft** of TODO 103 (chosen 2026-10-23): `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`, kept
   out of git; its `sent` is filled when it goes.
-- **The Directorate** (TODO 141): does it hold the small boats' logbooks of September 2020 to March 2021?
+- **The Directorate** (decision 264): does it hold the small boats' logbooks of September 2020 to March 2021?
 - **HV 2020-33's authors** (TODO 157, plan 051 c): the questions in
   `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft.
 
@@ -1608,3 +1370,24 @@ Plan 053 was executed on 2026-10-30 (decision 260), and its build rides plan 054
 
 **check:** each built, or declined in a decision; the maintainer's answer on the pressed records' starts recorded in
 the profile.
+
+## 173. Plan 019's `protected_bycatch`: fs_afladagbok's mammal and bird bycatch, parked
+**status:** parked (the plan 054 cut to what moves effort or catch, the maintainer, 2026-10-30) · **see:**
+`curate/plans/019-fs-afladagbok-mined.md` (its table list and ask 7), decisions 210 and 265
+
+Plan 019 proposes a staged table of fs_afladagbok's protected bycatch: 4,462 rows keyed by station and taxon, with
+`n`, `length_cm`, `sex` and `note`. Nothing stages or reads it. Its ask 7 (the name, and counts only or not;
+`ws_medafli` also has length and sex for whales) was answered with the others in decision 210. It moved here when
+TODO 73 closed (decision 265).
+
+**check:** staged and merged with every record in one outcome, or abandoned in plan 019's header with a decision.
+
+## 174. afli_sent's overlap labels depend on the row order
+**status:** open · **see:** decision 265, `sources/afli_sent/convert.R` (`.checks`)
+
+Found by plan 054's live rebuild (decision 265, Claude's, not checked by a person). Built twice, afli_sent's staged
+`fishing_sample` differs in `.checks` on 3,286 stations whose neighbours tie in time: "end time overlaps next" and
+"start time overlaps previous" swap with the row order, 12 of them to or from "ok". Nothing downstream reads the
+column, so no merged table changes.
+
+**check:** the labels follow a written tie-break, and the file built twice is identical.

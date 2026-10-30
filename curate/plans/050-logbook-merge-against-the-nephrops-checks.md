@@ -1,13 +1,14 @@
 # 050 — The logbook merge against a colleague's Nephrops checks: the count of trawls, the 2021 ends, tails, adb's gear in the merge, and the new mar's merge compared
 
-**status:** partly built — written 2026-10-29 at the maintainer's request; asks a and d answered the same
+**status:** executed — written 2026-10-29 at the maintainer's request; asks a and d answered the same
 day (§5), and steps 2-6 need not wait for step 1 (maintainer); step 4, `lid_map`'s pelagic set and `gear_code` coded the
 same day and run in a scratch store against the live one (§6), not yet in the live store (step 7); step 5 (ask c
 answered) coded and run the same way, then held on branch `plan-050-step5-tails`, off main, at the maintainer's word:
 its factor belongs to a review of whole weight across species, periods and databases (plan 051); step 2 (ask b
 answered) and step 6 the same day, run in the scratch store (§6); step 1's e-logbook half the same day, in a side
 session over the new mar's parquet (§6), then the whole of step 1 on the rebuilt store; asks e and h answered, f and g
-open (§5); step 7 done the same day: the store rebuilt from 93dfbdb (decision 240); step 5 held for plan 051 · **measured** (§1), by Claude the
+open (§5); step 7 done the same day: the store rebuilt from 93dfbdb (decision 240); step 5 built with plan 051 in plan 054's live rebuild on 2026-10-30, the tails at 3.25 (decisions 257,
+265); ask f is TODO 169's · **measured** (§1), by Claude the
 same day, read-only, on the store rebuilt from raw on 2026-10-28 (decision 239): the staged and merged logbook, the
 afli dump, the curated landings, adb's `trawl_and_seine_net`, and after the answers the count per source and gear and
 adb's gear code there and back; it redoes the check of 2026-10-28 (539ba46, TODOs

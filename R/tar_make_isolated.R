@@ -16,12 +16,21 @@
 #
 # It follows TAR_PROJECT (_targets.yaml): set TAR_PROJECT=once for the one-time fixes (plan 014). The
 # Rscript per target inherits the variable.
+#
+# In the once project it stops before building anything when `names` would also rebuild an outdated
+# ancestor it does not name: a one-time fix is redone only by a decision record. On 2026-10-30 a check
+# built by name redid the frozen key cascade that way (decision 265). `ancestors = TRUE` allows it.
 
-tar_make_isolated <- function(names = NULL) {
+tar_make_isolated <- function(names = NULL, ancestors = Sys.getenv("TAR_PROJECT") != "once") {
   # names is inlined into the call: tar_outdated() evaluates it in a callr process, where the variable does not exist
   o <- if (is.null(names)) targets::tar_outdated() else
     eval(bquote(targets::tar_outdated(names = tidyselect::all_of(.(names)))))
   if (!length(o)) return(invisible(cat("nothing outdated\n")))
+  more <- setdiff(o, names)
+  if (!is.null(names) && !ancestors && length(more))
+    stop("names would also rebuild ", paste(more, collapse = ", "), ". A one-time fix is redone only by a ",
+         "decision record (AGENTS.md): archive them and pass ancestors = TRUE, or build the named target alone ",
+         "with targets::tar_make(names = , shortcut = TRUE)", call. = FALSE)
   e <- targets::tar_network(targets_only = TRUE, outdated = FALSE)$edges
   e <- e[e$from %in% o & e$to %in% o, ]
   ord <- character(0)
