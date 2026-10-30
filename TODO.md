@@ -337,7 +337,8 @@ included since its dump of 2026-10-23) is parked for a person's read of the name
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
-**status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,
+**status:** open — plan 027's asks answered (decision 247 b); `trip_landing` coded and traced 2026-10-30 (decision
+262), closes with the next rebuild · **see:** plan 027, plan 026 §11, plans 025 and 014,
 `curate/link_lid_map.R`, `curate/ais_catch.R`
 
 `lid_map` gives a trip one landing, and `ais_catch.R` shares every landing it leaves unclaimed, mostly on the trip's
@@ -817,7 +818,8 @@ the columns.
 book carries the dictionary as a page (`data-dict render`).
 
 ## 112. The catch's disposition, code 159 'Gámur/Sigling' and agf's `afdrif`, carried to the trip (plan 036)
-**status:** open (asks answered 2026-10-23, decision 208: apart, joined through `trip_landing`) · **see:** `curate/plans/036-catch-disposition.md`,
+**status:** open — asks answered 2026-10-23 (decision 208); the disposition coded and traced 2026-10-30 (decision
+262), closes with the next rebuild · **see:** `curate/plans/036-catch-disposition.md`,
 `$FISHYDATA/archive/2026-10-landing-disposition/`, TODO 81, plan 027, decision 031
 
 159 is not a port but what became of the catch: exported unprocessed in a container, or landed abroad (the maintainer,
@@ -1525,9 +1527,8 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 decision record.
 
 ## 167. afli's lumpfish logbook as a logbook source of its own
-**status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) · the factor table's provisional rows are built (decision 257);
-the authors' answers (TODO 169) and a draft adapter (`$FISHYDATA/archive/2026-10-30-plan054-whole-weight/draft-change2/`)
-wait · **see:**
+**status:** open — coded and traced, kept by the maintainer after the cut (decision 263, 102bf8d); built with the
+next rebuild; its factors provisional until the authors answer (TODO 169) · **see:**
 `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §3.8 and §7, plan 051 §5 c, TODO 157
 
 The maintainer chose it on 2026-10-30 (option B). afli's own lumpfish logbook holds catch that no other source holds:

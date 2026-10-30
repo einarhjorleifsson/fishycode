@@ -1,7 +1,8 @@
 # 027 — a trip's further landings: join them to the trip, in the flow
 
-**status:** proposal — measured 2026-10-17 (read-only, on the build of 2026-10-16); nothing built; four asks open
-(TODO 81) · **2026-10-17** · **see:** TODO 81, plan 026 §11, plan 025 §3.1 and §4 (`t_weighed`, `withdrawn`), plan
+**status:** partly built — measured 2026-10-17 (read-only, on the build of 2026-10-16); its four asks answered
+2026-10-30 (decision 247 b); `trip_landing` coded and traced 2026-10-30 (decision 262), built with plan 054's rebuild;
+the catch on the fixes is the user's (decision 261) (TODO 81) · **2026-10-17** · **see:** TODO 81, plan 026 §11, plan 025 §3.1 and §4 (`t_weighed`, `withdrawn`), plan
 014 (preprocessing reads no AIS), decisions 075, 100 and 102, `curate/link_lid_map.R`, `curate/ais_catch.R`
 
 Drafted with AI assistance (Claude) on 2026-10-17, from TODO 81. The numbers below were measured by Claude (AI); a
