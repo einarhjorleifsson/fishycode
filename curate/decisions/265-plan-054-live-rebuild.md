@@ -60,7 +60,7 @@ by source as follows. The figures are for all years, after minus before (`trail_
 | `fs_afladagbok` | +639,786 | +33,845 | plan 053's feed and the tour app: 8,423 more stations and 9,821 more trips staged (decisions 253-264) |
 | `adb` | +67,312 | +881 | 2025-2026 |
 | `afli` | −129,532 | −114,678 | mostly the nets' 0.2 kn floor (decision 247 §7) |
-| no station | — | −3,301 | fixes judged by the voyage gear |
+| no station | — | −3,301 | fixes that several stations claim at once (`n_sid` > 1), mostly 2021 (below) |
 
 All fishing hours went from 9,154,305 to 9,166,895 (+0.14 %).
 
@@ -71,8 +71,25 @@ All fishing hours went from 9,154,305 to 9,166,895 (+0.14 %).
 - **Fewer afli stations.** 9,719 static-gear set windows, drawn from placeholder set times (2003-2023), are no longer
   drawn: the placeholder is flagged, not used (decision 255). The tour app changes the type of 332 afli stations
   in 2020-21 (decision 264).
-- **Not attributed:** in 2021, `fs_afladagbok` has 51,183 fewer station fixes, and fixes judged by the voyage gear lose
-  3,714 fishing hours.
+- **2021: every fs station was replaced** (explained after the build, `fs2021.R`).
+  - **Before:** 22,346 of 2021's 22,363 fs stations were the tour app's copies, which the Directorate imported into
+    ws_* as source STOKKUR from 2021-04-06. 18,861 had a date only and were drawn as day windows; 3,485 had
+    synthesised windows.
+  - **After:** decision 264 takes the copies out and stages the app's own 24,178 spots, with windows drawn from their
+    times: 10,712 jig, 4,277 haul, 1,477 set and 8,936 day windows.
+  - **January 1 to April 5,** which the copies do not cover, the fs station fixes rise from about 200 to 61,400.
+  - **From April 6** they fall from about 1,063,000 to 950,865. A day window holds every fix of its day, in port and
+    steaming too; a timed window holds only the operation's fixes. Fishing on fs fixes still rises, from 496,819
+    fixes (86,147 hours) to 560,024 (92,110 hours).
+  - **The no-station fishing fixes** are those that several stations claim at once. 1,279 vessel-days held two or more
+    of the copies' day windows (3,267 stations), so every fix of those days had several stations. The tour spots
+    leave 760 such days, so these fixes fall from 60,132 (9,220 hours) to 39,837 (5,507 hours). Most of the rest now
+    belong to a single tour spot.
+  - **Together,** fs and the no-station fixes gain 2,250 fishing hours in 2021.
+  - **Where the old windows come from:** the interval study's per-station table of the store before the rebuild
+    (`$FISHYDATA/archive/2026-10-30-plan054-ais-intervals-and-gap/counts/03_station.parquet`). The date-only windows
+    were rebuilt there as day windows from ws_veidi's dates, and laid on the same fixes. Rebuilding the 3,485
+    synthesised windows as whole days too over-counts the old side by about 17 %.
 
 ## v0, the effort map and the dictionary
 
@@ -138,7 +155,6 @@ are executed. Plans 019 and 051 are partly built, with stubs in TODOs 173 and 15
 
 ## Left
 
-- The 2021 differences above are not attributed.
 - TODO 174: afli_sent's overlap labels depend on the row order.
 - Columns the dictionary lacked before plan 054 are not added: the vessel register's tables, `station_window`,
   `catch_by_species_station`, `gear_window` and others.
