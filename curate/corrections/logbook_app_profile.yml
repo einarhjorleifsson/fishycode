@@ -2,7 +2,7 @@ id: logbook_app_profile
 title: each logbook app's habits, field by field, found by rule; values kept as recorded and flagged (plan 053)
 status: >-
   drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); 18 rows
-  reviewed by the maintainer the same evening and 10 more on 2026-10-30 (the `reviewed` field), the other 17 with their
+  reviewed by the maintainer the same evening and 16 more on 2026-10-30 (the `reviewed` field), the other 11 with their
   evidence in $FISHYDATA/archive/2026-10-29-elogbook-feed/review-sheet.md; none applies; not implemented (no
   logbook_app_profile.R yet, nothing reads this file)
 applies_to:
@@ -559,7 +559,7 @@ rows:
     action: none              # the sign rule reads both: fs adapter step 3, curate/corrections/adb_vs_fs_afladagbok.R
     evidence: counts/p03_positions.tsv; w03_sign_track.tsv (as read nearer 337,996; the mirror nearer 1)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: nothing to do; the sign rule reads every app"
 
   - id: P2
     quirk: whole degrees, rounded to the nearest degree
@@ -615,9 +615,10 @@ rows:
     holds: "form: ddmm.hh"
     action: read_as
     today: logbook_position_hundredths() (R/logbook_position.R), as now
-    evidence: decision 211; counts/p03_positions.tsv
+    evidence: >-
+      decision 211; counts/p03_positions.tsv (values ending 61-99: Taktikal 134, Marína 23, Trackwell raun 1)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: as now, by the shared decoder (P3)"
 
   - id: P4
     quirk: four- and five-digit latitudes, degrees then decimal minutes with the leading zero dropped (6631 = 66 03.1)
@@ -659,9 +660,9 @@ rows:
     action: note
     flag: quarter_minute
     today: nothing
-    evidence: counts/p03_positions.tsv (16,973 of 19,097); decision 211
+    evidence: counts/p03_positions.tsv (16,973 of the 18,387 six-digit positions; 19,097 in all); decision 211
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: noted, a precision; the value used"
 
   - id: P6-app
     quirk: the end position a copy of the start
@@ -675,9 +676,11 @@ rows:
     action: flag
     flag: end_copy            # the end position none
     today: nothing
-    evidence: counts/p03_positions.tsv (5,736 of 5,736)
+    evidence: >-
+      counts/p03_positions.tsv (5,736 of 5,736); r17 (every station of fs_afladagbok and adb: 5,265 jigs, 475 static,
+      5 seine sets)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: flagged, the end read as none; the station has one position"
 
   - id: P6-value
     quirk: the end position equal to the start
@@ -691,9 +694,13 @@ rows:
     action: note
     flag: end_copy
     today: nothing
-    evidence: counts/p03_positions.tsv (Trackwell raun 7,614, Jóhann Gíslason 357)
+    note: >-
+      one position is a jig's nature; on a tow, seine set or haul an exact copy means the end was not recorded
+    evidence: >-
+      counts/p03_positions.tsv (Trackwell raun 7,614, Jóhann Gíslason 357); r17 (Trackwell raun 1,152 tows, 3,203 seine
+      sets, 1,749 static hauls, 1,485 jigs; Jóhann Gíslason 338 jigs, 19 static)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: noted, as drafted"
 
   - id: P7
     quirk: the position saved when the record is closed, not at its times
@@ -718,16 +725,21 @@ rows:
     quirk: east sent for west (afli route, ddmm, six vessels)
     scope: value
     apps: [Fishing Log 2.6]
-    feeds: [afli_sent]
+    feeds: [afli_sent, afli]
     period: [2010-10-01, 2015-04-30]
     gear: ["*"]
     field: lon
     holds: "sign: east for west"
-    action: note              # nothing reads afli_sent; afli's edited layer has it right
+    action: note              # the sent layer, which nothing reads; the 8 merged stations flagged (the note)
+    note: >-
+      and in the merge (afli's edited layer), the 8 stations whose side Trackwell's own copy contradicts (4 east for
+      west, 4 west for east): the longitude flagged on its sign (pos_flag sign), kept as recorded
     today: afli's edited layer has 957 of the 961 merged stations on the right side
-    evidence: counts/t07_afli_route_mirror.tsv (987; witness Trackwell's own copy)
+    evidence: >-
+      counts/t07_afli_route_mirror.tsv (987: 983 sent east for west, 4 west for east; 961 and 4 merged, of which 4 and
+      4 on the sent side; witness Trackwell's own copy)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: the sent layer noted; the 8 merged longitudes flagged on their sign"
 
   # Depth -----------------------------------------------------------------------------------------------------------
 

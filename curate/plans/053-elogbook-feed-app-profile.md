@@ -2,7 +2,7 @@
 
 **status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
 drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); 18 rows reviewed by the
-maintainer the same evening and 10 more on 2026-10-30, asks b-e answered (§8), the other 17 rows' evidence in the
+maintainer the same evening and 16 more on 2026-10-30, asks b-e answered (§8), the other 11 rows' evidence in the
 archive's `review-sheet.md`; nothing built ·
 **measured** (§1-§3), by Claude in a read-only side session, not checked by a person, in counts only, every number in a
 file of `$FISHYDATA/archive/2026-10-29-elogbook-feed/` (`findings.md`; `counts/tables.md` renders the tables below from
@@ -363,8 +363,12 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
    apart, at sea more than 1 h before port on 33-38 % of the ends, so the trip's time is the copy (T11 widened to their
    jigs and hauls); Reiknistofa's start and end are the trip's stamped time cut to the minute (230 of 259 starts, 593
    of 645 ends), and Jóhann Gíslason's start lies within 1 h of leaving port on 66 %, so those are flagged; Fishtech's
-   starts and ends and Jóhann Gíslason's ends are noted, undecided. The other 17 rows' evidence is in the archive's
-   `review-sheet.md` (`counts/r08`-`r11`).
+   starts and ends and Jóhann Gíslason's ends are noted, undecided. Then the positions, P1, P3-value, P5, P6 and P8
+   (`scripts/14_batch4.py`, `counts/r17`), each as proposed: the sign rule and the hundredths as now, Marína's
+   quarter-minute grid noted, Reiknistofa's end (a copy of the start on all 5,745) flagged as none and the copies on
+   other apps noted (on jigs one position is the record's nature), the afli route's east for west noted on the sent
+   layer and the 8 merged stations whose side Trackwell's own copy contradicts flagged. The other 11 rows' evidence is
+   in the archive's `review-sheet.md` (`counts/r08`-`r11`).
 4. **The check**, tested to give this archive's counts on the store of 2026-10-29.
 5. **The flags** in `curate/logbook.R` after the twins, from `R/logbook_app_profile.R`; the placeholder section goes.
 6. **The windows** (`curate/station_window.R`, `judged_time_sql()`) read the flags; the fallback window.
@@ -390,8 +394,8 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
 
 ## 8. Asks
 
-- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29 and 30):* 28 reviewed (the `reviewed` field
-  of each row), each as proposed but T14, closed at a typical maximum; the other 17 wait, with their evidence in the
+- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29 and 30):* 34 reviewed (the `reviewed` field
+  of each row), each as proposed but T14, closed at a typical maximum; the other 11 wait, with their evidence in the
   archive's `review-sheet.md`.
 - b. *Answered (maintainer, 2026-10-29):* kept as recorded and flagged, the placeholder included (row T1).
 - c. *Answered (maintainer, 2026-10-29):* the trip's window, departure to return, basis `derived` (rows T4, T10); a
