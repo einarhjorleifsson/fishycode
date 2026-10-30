@@ -2,8 +2,11 @@
 # Side: preprocessing (fs_afladagbok). See plan 014.
 # Input:  raw/oracle/fs_afladagbok/{ws_veidiferd,ws_veidi,ws_afli,
 #           ws_dragnot_varpa,ws_plogur,ws_linanethandf,ws_gildra,ws_hringn}.parquet;
-#         curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
-# Output: staging/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet
+#         raw/oracle/fs_afladagbok/{tour,fishing_spot,catch}.parquet (the tour app, plan 019 §4);
+#         curated/reference/{dictionary,gear,gear_window,port}.parquet; curated/landing/landings.parquet (the tour
+#         trips' class); curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
+# Output: staging/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet, the tour app's trips, spots and catch
+#         among them (source "tour")
 
 # Setup -----------------------------------------------------------------------
 library(whack)     # pak::pak("einarhjorleifsson/whack")
@@ -14,6 +17,7 @@ library(duckdbfs)
 SCHEMA <- "fs_afladagbok"
 dictionary   <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet")) |> collect() |> filter(schema == SCHEMA)
 gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |> filter(version == "new")
+gear_window  <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
 # hid is the Icelandic harbour code, hid_new this schema's own code, and pid the
 # standard port key from reference/ports/ports_all.R. drop_na() is scoped so
 # that a code without a pid keeps its name rather than vanishing.
@@ -104,16 +108,118 @@ source <-
          schema) |>
   arrange(date, .sid, t1, t3, t4)
 
+# Tour app ---------------------------------------------------------------------
+# The web logbook AFLADAGBOKWWW's own tables, tour, fishing_spot and catch (2020-01 to 2022-03; plan 019 §2 item 1,
+# §4). From 2021-04-06 the Directorate imported each tour into ws_* as source STOKKUR (the tour's er_lesid set), with
+# the latitude rounded to a whole degree, one time and no hours (plan 019 §2 item 2); none before that day. The tour
+# app is the record of every trip it holds (decision 210): its ids are negated, so they never meet ws_*'s in this
+# schema, and its STOKKUR copies, the same vessel, departure and landing to the second, leave ws_*'s tables. They go
+# after the decoding above, so no other station is read differently. tour's sng and sbg name the system user.
+tour_raw  <- duckdbfs::open_dataset(fd_raw("oracle", "fs_afladagbok", "tour.parquet")) |>
+  select(id, ship_id, start_date, landing_date, landing_port_id, er_lesid) |> collect()
+tour_spot <- duckdbfs::open_dataset(fd_raw("oracle", "fs_afladagbok", "fishing_spot.parquet")) |>
+  select(id, tour_id, date_time, equipment_id, latitude, longitude, snt, longline_hooks_count, longline_mainline_count,
+         net_count, handline_mainline_count, line_hours_in_sea, net_nights_in_sea) |> collect()
+
+stokkur_copy <- trip |>
+  filter(source %in% "STOKKUR") |>
+  inner_join(tour_raw |> transmute(tour_id = id, vid = as.integer(ship_id), T1 = start_date, T2 = landing_date),
+             by = c("vid", "T1", "T2"), relationship = "one-to-one")
+stopifnot("the STOKKUR copies are not the tours the app marks imported (er_lesid)" =
+            setequal(stokkur_copy$tour_id, tour_raw$id[!is.na(tour_raw$er_lesid)]))
+trip   <- trip   |> filter(!.tid %in% stokkur_copy$.tid)
+source <- source |> filter(!.tid %in% stokkur_copy$.tid)
+
+## Trip ------------------------------------------------------------------------
+# The landing port is the landing system's place number, hid, translated as the landings translate it (decision 252);
+# the departure port is not recorded. tour_class says how each tour reaches the logbook (decision 210, as decision 189
+# classes afli's never-loaded records): "imported", the trip the Directorate imported and the tour replaces; of the
+# trips never imported, "landed" where the vessel landed the day before, the day or the day after (curated/landing), and
+# "unlanded" where it did not. Every class is admitted: the merge's own rules leave out a spot on a vessel-day another
+# source holds (vessel_day_held) or out of the dump's dates.
+landed <- duckdbfs::open_dataset(fd_curated("landing", "landings.parquet")) |>
+  filter(vid %in% !!unique(as.integer(tour_raw$ship_id)),
+         date >= !!(min(as_date(tour_raw$landing_date)) - 1), date <= !!(max(as_date(tour_raw$landing_date)) + 1)) |>
+  distinct(vid, date) |> collect()
+landed <- paste(landed$vid, landed$date)
+tour_trip <- tour_raw |>
+  transmute(.tid = -id, vid = as.integer(ship_id), T1 = start_date, hid1 = NA_integer_, pid1 = NA_character_,
+            T2 = landing_date, hid2 = as.integer(landing_port_id), n_crew = NA_integer_, source = "tour", schema = SCHEMA,
+            .day = as_date(T2),
+            tour_class = case_when(!is.na(er_lesid) ~ "imported",
+                                   paste(vid, .day - 1) %in% landed | paste(vid, .day) %in% landed |
+                                     paste(vid, .day + 1) %in% landed ~ "landed",
+                                   .default = "unlanded")) |>
+  left_join(duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> select(hid, pid2 = pid, port) |> collect(),
+            by = join_by(hid2 == hid), relationship = "many-to-one") |>
+  select(.tid, vid, T1, hid1, pid1, T2, hid2, pid2, port, n_crew, source, schema, tour_class)
+
+## Station ---------------------------------------------------------------------
+# The spot's decimal position as recorded, west negative (the profile's row P1); no end position and no depth (empty in
+# these data). record_entered is the row's insert time, a minute after the spot time at the median.
+tour_station <- tour_spot |>
+  transmute(.sid = -id, .tid = -tour_id, date = as_date(date_time), gid = as.integer(equipment_id),
+            lon1 = longitude, lat1 = latitude, lon2 = NA_real_, lat2 = NA_real_,
+            pos1_form = "decimal degrees", pos2_form = NA_character_, record_entered = snt, schema = SCHEMA)
+
+## Fishing sample --------------------------------------------------------------
+# The spot time is the end of fishing (decision 214): t4. The hours (jigs, lines) or nights (nets) in the sea are a
+# duration as recorded, as afli's are, judged by the gear's limit (R/duration_limit.R; 0 is none); where one stands,
+# t1 = t4 less it, .t1_source "synthesised". t4 is recorded apart from the duration, so a doubted duration doubts t1
+# alone. The count: the jigs, the nets, and a longline's hooks, which the app takes as the hooks of each line on most
+# spots (fewer than 100 hooks a line, where a line holds about 400: hooks x lines, "derived") and as the total on the
+# rest (2026-10-30: 1,659 and 653 of 2,312 line spots, the ratio between 60 and 200 on 33).
+tour_sample <- tour_spot |>
+  transmute(.tid = -tour_id, .sid = -id, gid = as.integer(equipment_id), t4 = date_time,
+            duration_m = coalesce(net_nights_in_sea * 24 * 60, line_hours_in_sea * 60),
+            jigs = handline_mainline_count, nets = net_count, hooks = longline_hooks_count,
+            lines = longline_mainline_count) |>
+  left_join(gear_mapping |> select(gid, gid_old = map, gear, target, target2), by = "gid") |>
+  flag_duration_limit(gear_window) |>
+  mutate(t1 = if_else(.duration_source == "data", t4 - duration_m * 60, LOGBOOK_NA_TIME),
+         .t1_source = if_else(is.na(t1), NA_character_, "synthesised"),
+         t2 = LOGBOOK_NA_TIME, t3 = LOGBOOK_NA_TIME,
+         per_line = gear %in% "LLS" & hooks < 100 * lines,
+         n_units = case_when(gear == "LHM" ~ jigs, gear %in% c("GNS", "GND") ~ nets, gear == "LLS" ~ lines),
+         effort_count = case_when(gear == "LHM"            ~ recorded_count(jigs),
+                                  gear %in% c("GNS", "GND") ~ recorded_count(nets),
+                                  per_line                  ~ recorded_count(hooks * lines),
+                                  gear == "LLS"             ~ recorded_count(hooks)),
+         effort_count_basis = case_when(is.na(effort_count) ~ NA_character_, per_line ~ "derived",
+                                        .default = "recorded"),
+         schema = SCHEMA) |>
+  add_effort_count() |>
+  select(.tid, .sid, gid, gid_old, gear, target, target2, t1, t2, t3, t4, .t1_source,
+         duration_m, duration_m_raw, .duration_source, effort_count, effort_count_basis, effort_count_unit,
+         n_units, schema)
+
+## Catch -----------------------------------------------------------------------
+# estimated_weight in kg, whole numbers throughout. The condition from the flags, as ws_afli's codes are read below:
+# released RELE, else gutted GUTT, else UNGU. undersized_kg is the part of the row's weight flagged undersized. Rows of
+# one species and condition at one spot are summed, as ws_afli's are; implausible weights stay as recorded, for
+# curated/logbook/catch_flag to flag (decision 210 item 3).
+tour_catch <- duckdbfs::open_dataset(fd_raw("oracle", "fs_afladagbok", "catch.parquet")) |>
+  select(fishing_spot_id, species_id, estimated_weight, undersized, gutted, released) |> collect() |>
+  transmute(.sid = -fishing_spot_id, sid = as.integer(species_id),
+            condition = case_when(released == 1 ~ "RELE", gutted == 1 ~ "GUTT", .default = "UNGU"),
+            kg = estimated_weight, undersized = undersized == 1) |>
+  summarise(catch = as.integer(sum(kg)), undersized_kg = sum(kg[undersized]), .by = c(.sid, sid, condition)) |>
+  mutate(catch_whole = NA_real_, schema = SCHEMA) |>
+  semi_join(tour_sample, by = ".sid") |>
+  select(.sid, sid, catch_whole, catch, condition, undersized_kg, schema) |>
+  arrange(.sid, sid)
+
 # Helper: station keys + ICES gear labels for inner-joining aux tables
 source_gear <- source |>
   select(.sid, gid) |>
+  bind_rows(tour_station |> select(.sid, gid)) |>
   left_join(gear_mapping |> select(gid, gear), by = "gid")
 
 # Station (spatial / temporal envelope) ---------------------------------------
 # Narrow table: keys, date, positions, depth. Fishing operation detail is in
-# fishing_sample; the two join on .sid.
+# fishing_sample; the two join on .sid. The tour app's spots follow ws_veidi's stations.
 station <-
-  source |>
+  bind_rows(source, tour_station) |>
   left_join(source_gear |> select(.sid, gear), by = ".sid") |>
   mutate(
     # QC flag for suspect coordinates. Does not filter — use downstream as needed.
@@ -213,10 +319,9 @@ dims <-
   mutate(effort_count_basis = if_else(is.na(effort_count), NA_character_, "recorded"))
 
 ## Duration limits -------------------------------------------------------------
-# The plausible maximum per gear is reference/gear/windows.R (gear_window.dur_max_min),
+# The plausible maximum per gear is reference/gear/windows.R (gear_window.dur_max_min, read in Setup),
 # applied by R/duration_limit.R and shared with afli. This adapter used to carry its own
 # cap table, which had drifted from afli's and kept only the capped value.
-gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
 
 ## Assemble fishing_sample -----------------------------------------------------
 fishing_sample <-
@@ -236,7 +341,8 @@ fishing_sample <-
          effort_count, effort_count_basis, effort_count_unit,
          n_units, n_lost, g_mesh, g_width, g_length, g_height,
          schema) |>
-  select(-date)
+  select(-date) |>
+  bind_rows(tour_sample)
 
 # Catch -----------------------------------------------------------------------
 catch <-
@@ -252,7 +358,10 @@ catch <-
   summarise(catch_whole = if (all(is.na(catch_whole))) NA_real_ else sum(catch_whole, na.rm = TRUE),
             catch = sum(catch, na.rm = TRUE), .groups = "drop") |>
   inner_join(fishing_sample |> select(.sid, schema), by = ".sid") |>
-  arrange(.sid, sid)
+  arrange(.sid, sid) |>
+  bind_rows(tour_catch)
+
+trip <- bind_rows(trip, tour_trip)
 
 # Export -----------------------------------------------------------------------
 trip           |> duckdbfs::write_dataset(fd_staging("fs_afladagbok", "trip.parquet"))

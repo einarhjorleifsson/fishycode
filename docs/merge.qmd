@@ -45,7 +45,8 @@ merged_catch   <- read_parquet(fd_curated("logbook", "catch.parquet"))
 counts, the timing table and its note on `t1` after `t4`, known limitation 2, and @sec-ers. On 2026-10-21: adb's
 coverage, priority and date bound (decision 160); and the times of fs_afladagbok's mobile gear, in why afli takes
 priority, the timing table and known limitation 3, measured on the build at de25239. On 2026-10-23:
-@sec-fate, what the merge keeps and drops (plan 024).*
+@sec-fate, what the merge keeps and drops (plan 024). On 2026-10-30: @sec-tour, the tour app and the handline hole of
+2020–2021 (plan 054 step 2e).*
 
 # Overview
 
@@ -56,7 +57,7 @@ adapter in `sources/`:
 | Schema | Adapter | Coverage | Character |
 |---|---|---|---|
 | **afli** | `sources/afli/convert.R` | paper 1950 – 2022; electronic 2003 – 2024 | The legacy Oracle logbook; the historical record. A negative `.sid` is an electronic logbook station (1.28 M), a positive one a paper station (5.57 M) |
-| **fs_afladagbok** | `sources/fs_afladagbok/convert.R` | 2020 – 2025-11-28 | A one-time dump of the Directorate of Fisheries' e-logbook |
+| **fs_afladagbok** | `sources/fs_afladagbok/convert.R` | 2020 – 2025-11-28 | A one-time dump of the Directorate of Fisheries' e-logbook, with its small-boat web app's own tables (the tour app, 2020-01 – 2022-03, @sec-tour) |
 | **adb** | `sources/adb/convert.R` | 2025-11-19 – present | MFRI's copy of the Directorate's logbook records in MFRI's codes, fs_afladagbok's tables field for field (decision 171), read only where the dump ends (decision 160) |
 | **aflaskeyti** | `sources/aflaskeyti/convert.R` | 2014-01 – 2018-06 | ERS catch reports exchanged with Norway and the Faroes: foreign vessels' hauls in Icelandic waters (@sec-ers) |
 
@@ -476,6 +477,73 @@ merged_station |>
   sub_missing(missing_text = "") |>
   cols_label(catch_t = "catch (t)")
 ```
+
+# Small boats: the tour app, 2020–2022 {#sec-tour}
+
+*Drafted with AI assistance (Claude), 2026-10-30, plan 054 step 2e; traced on scratch stores, not checked by a person.
+The design is plan 019 §4 and decisions 210, 214 and 252.*
+
+fs_afladagbok holds the tables of a second app, the Directorate's web logbook for small boats (`tour`,
+`fishing_spot` and `catch`, January 2020 to March 2022): 35,792 trips of 828 vessels, mostly on jigs. From 2021-04-06
+the Directorate imported each of its trips into `ws_*` as source `STOKKUR`: the latitude rounded to a whole degree, one
+time, no hours at sea and no count of gear. None of the 9,821 trips before that day was imported. The adapter now reads
+the tour app as the record of all its trips:
+
+- **The STOKKUR copies leave `ws_*`'s output:** 25,971 trips (the same vessel, departure and landing to the second as
+  a tour, and exactly the tours the app marks imported) with their 23,362 stations. Their catch is the tour's, trip for
+  trip (46.5 kt).
+- **The tour's ids are negated** (`.tid = -tour.id`, `.sid = -fishing_spot.id`), so they never meet `ws_*`'s in the
+  schema. The trip's `source` is `"tour"`, the landing port the landing system's place number, translated by
+  `curated/reference/port.parquet` as the landings are (decision 252).
+- **The spot** keeps its decimal position as recorded. Its time is the end of fishing, `t4` (decision 214). The hours
+  (jigs, lines) or nights (nets) in the sea are its `duration_m`, judged by the gear's limit as afli's are (0 is none);
+  where one stands, `t1` is `t4` less it, with `.t1_source` `"synthesised"`. The window of such a jig is `derived`.
+- **The count** is the jigs, the nets, or the hooks: a longline's hooks are read as the hooks of each line where they
+  are fewer than 100 a line (1,659 of 2,312 line spots: hooks × lines, basis `derived`), and as the total elsewhere.
+- **The catch** is `estimated_weight` in kg, the condition from the flags (released `RELE`, gutted `GUTT`, otherwise
+  `UNGU`), and `undersized_kg` the part flagged undersized (1.0 kt in all).
+- **`tour_class`** on the trip says how it reaches the logbook: `imported` (it replaces its copy), and of the trips
+  never imported, `landed` where the vessel landed the day before, that day or the day after (8,339), `unlanded`
+  where it did not (1,482). Every class is admitted; the merge's own rules apply to each spot.
+
+| Class | Trips | Spots | Kept | Held by afli | Out of the dates | Kept kt (rows under 100 t) |
+|---|---:|---:|---:|---:|---:|---:|
+| imported | 25,971 | 23,362 | 23,136 | 202 | 24 | 21.5 |
+| landed | 8,339 | 7,417 | 6,843 | 564 | 10 | 8.7 |
+| unlanded | 1,482 | 1,006 | 996 | 3 | 7 | 0.7 |
+
+The imported tours meet exactly their copies' fate, spot for spot and kilogram for kilogram, and no other station's
+fate changes. 6,669 tours hold no spot (`no_station` in `trip_fate`). The 41 spots out of the dates have a year of 0002
+or 0003 written for 2020 or 2021: kept as recorded, outside the merge's bounds. Sixteen staged catch rows hold 100 t or
+more (up to 300,000 t in one), 377 kt in all, and the merge keeps 15 of them. They stay as recorded: `catch_flag`
+flags 13 (`largest_landing_exceeded`, `landing_contradicts`, `repeated_digits`), 376 kt; the other two, 210 t on
+unlanded trips, are under its margin. Leave flagged catch out of any sum.
+
+The windows: the copies had a day window each (23,132). Their tours have 10,629 jig windows from the hours at sea,
+5,302 set and haul windows, and 8,573 day windows, where a jig's hours are none or above the gear's limit (11,530 of
+the tour's 25,498 jig spots have such hours). Four other windows in the whole logbook move, cut by a tour neighbour.
+
+## The handline hole of 2020–2021, and what is left of it
+
+From September 2020 to March 2021 the Directorate imported no tour, and 2,091 of 2,411 handline landings (87 %) had
+no logbook trip (TODO 141). With the tour app 419 have none (17 %), the level of the months around them:
+
+| Months | Handline landings | No logbook trip before | After |
+|---|---:|---:|---:|
+| 2020-01 – 2020-08 | 21,520 | 5,005 | 2,719 (12.6 %) |
+| 2020-09 – 2021-03 | 2,411 | 2,091 | 419 (17.4 %) |
+| 2021-04 – 2022-03 | 21,753 | 3,104 | 3,091 (14.2 %) |
+
+A handline landing is one with a catch row of gid 14; "no logbook trip" is no row in `lid_map`. What is left from
+September to March is declared, not filled:
+- 268 landings of a vessel that used the tour app, with no tour that day: the trip was never entered;
+- 69 with a tour that day that holds no spot;
+- 43 with logbook stations of the vessel that day or the day before, which `lid_map` did not link;
+- 18 of a vessel in the logbook with no record that day, and 15 of a vessel in no logbook source;
+- 6 whose tour's spots the merge left out (held, or out of the dates).
+
+No source read here holds these trips. The summers of 2020–2022 lack a like share (12–25 %, TODO 141), and the
+Directorate's own record of them is TODO 169's question.
 
 # Foreign vessels: the ERS catch reports, 2014–2018 {#sec-ers}
 

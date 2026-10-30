@@ -19,9 +19,9 @@
 # (curate/checks/allocation_audit.R), through judged_time_sql(), and calc_effort() (R/logbook_effort.R). There the
 # end a flagged duration made is not believed: a mobile gear's t3 (afli's is t2 + its tow time, the e-logbook's the
 # span's end), the e-logbook's static t4, and the duration itself. afli's static times are recorded apart from its
-# duration, and stand. judged_time_sql() also leaves out every time the app profile flags (`<time>_action` "flag",
-# R/logbook_app_profile.R, plan 053 step 6), the way the limit leaves out an end: a flagged time opens and closes no
-# window and links no event. A noted time is kept.
+# duration, and stand, as does the tour app's t4 (its t1 is made from the duration). judged_time_sql() also leaves
+# out every time the app profile flags (`<time>_action` "flag", R/logbook_app_profile.R, plan 053 step 6), the way
+# the limit leaves out an end: a flagged time opens and closes no window and links no event. A noted time is kept.
 
 # The rule is ramb::rb_limit_record_duration() (plan 014 phase 2), which sets the duration NA; this keeps it. Below:
 # a recorded duration of 0 or less is no duration (afli's tow times, hours and nights), so `zero_ok` is FALSE. A span
@@ -44,8 +44,10 @@ judged_time_sql <- function(col, a = "fs") {
     t1 = flagged,
     t2 = flagged,
     t3 = sprintf("(%s AND %s.gear IN ('OTB', 'OTM', 'DRB', 'SDN')) OR %s", bad, a, flagged),
-    t4 = sprintf(paste("(%s AND %s.gear IN ('LLS', 'GNS', 'GND', 'LHM', 'FPO') AND %s.schema IN ('fs_afladagbok', 'adb'))",
-                       "OR %s"), bad, a, a, flagged),
+    # The e-logbook's span runs from t1 to t4; the tour app's t1 is made from its recorded duration and is NA where
+    # that is doubted, so its recorded t4 stands (sources/fs_afladagbok/convert.R).
+    t4 = sprintf(paste("(%s AND %s.gear IN ('LLS', 'GNS', 'GND', 'LHM', 'FPO') AND %s.schema IN ('fs_afladagbok', 'adb')",
+                       "AND %s.t1 IS NOT NULL) OR %s"), bad, a, a, a, flagged),
     duration_m = bad,
     stop("judged_time_sql(): col is t1, t2, t3, t4 or duration_m"))
   sprintf("CASE WHEN %s THEN NULL ELSE %s.%s END", when, a, col)

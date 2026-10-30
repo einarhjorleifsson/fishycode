@@ -548,9 +548,13 @@ list(
                                   fd_raw("oracle", "fs_afladagbok", "ws_linanethandf.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_gildra.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_hringn.parquet"),
-                                  fd_raw("oracle", "fs_afladagbok", "ws_afli.parquet")), format = "file"),
+                                  fd_raw("oracle", "fs_afladagbok", "ws_afli.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "tour.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "fishing_spot.parquet"),
+                                  fd_raw("oracle", "fs_afladagbok", "catch.parquet")), format = "file"),
+  # The tour app's trips are classed by the vessel's landings (plan 054 step 2e), so the adapter reads `landing`.
   tar_target(fs_afladagbok, {
-    dictionary; gear; gear_window; port; fs_afladagbok_raw; logbook_app_profile
+    dictionary; gear; gear_window; port; fs_afladagbok_raw; logbook_app_profile; landing
     produces("sources/fs_afladagbok/convert.R",
              fd_staging("fs_afladagbok", "trip.parquet"),
              fd_staging("fs_afladagbok", "station.parquet"),

@@ -115,7 +115,8 @@ calc_effort <- function(sample, from = NULL, to = NULL, by_count = TRUE, unit = 
   if (!implausible) {
     bad <- sample$.duration_source %in% "implausible"
     sample$t3[bad & sample$gear %in% mobile] <- NA
-    sample$t4[bad & sample$gear %in% c("LLS", "GNS", "GND", "LHM", "FPO") & sample$schema %in% c("fs_afladagbok", "adb")] <- NA
+    sample$t4[bad & sample$gear %in% c("LLS", "GNS", "GND", "LHM", "FPO") & sample$schema %in% c("fs_afladagbok", "adb") &
+                !is.na(sample$t1)] <- NA
     sample$duration_m[bad] <- NA
   }
   if (!flagged) {

@@ -124,6 +124,17 @@ test_that("judged_time_sql() leaves out a flagged time, calc_effort() too unless
   expect_equal(calc_effort(s, flagged = TRUE)$effort_duration, 6)
 })
 
+test_that("an implausible duration doubts the e-logbook's static t4, not the tour app's (its t1 is made from it)", {
+  expect_match(judged_time_sql("t4"), "AND fs.t1 IS NOT NULL)", fixed = TRUE)
+  s <- tibble::tibble(schema = "fs_afladagbok", gear = "LHM", .duration_source = "implausible",
+                      duration_m = c(NA, 0), t1 = c(ts("2023-03-01 06:00:00"), na_t), t2 = na_t, t3 = na_t,
+                      t4 = ts("2023-03-04 12:00:00"), effort_count = 4, effort_count_unit = "jigs")
+  e <- calc_effort(s)
+  expect_true(all(is.na(e$effort_duration)))
+  expect_equal(e$t4, c(na_t, ts("2023-03-04 12:00:00")))
+  expect_equal(calc_effort(s, implausible = TRUE)$effort_duration[1], 78)
+})
+
 test_that("depth by app: metres for Marína (D2), fathoms otherwise, STOKKUR's 0 and Reiknistofa's end as none (D4, D5)", {
   d <- tibble::tibble(schema = "fs_afladagbok", app = c("Marína raun", "Trackwell raun", "STOKKUR",
                                                         "Reiknistofa fiskmarkaða raun", "Skráningar.com"),

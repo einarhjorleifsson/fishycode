@@ -7,8 +7,9 @@
 # Written by Claude (AI), 2026-10-29 (decision 244); not checked by a person.
 #
 # One layer: the e-logbook as the Directorate's dump holds it. It holds no sensor value (its depths are the station's
-# z1, z2), so sensor_summary is written empty, with its columns. The tour app (fishing_spot) is not read: its stations
-# are not in the merge (plan 019). The tables carry no time and read none (TODO 164).
+# z1, z2), so sensor_summary is written empty, with its columns. The tour app (fishing_spot) is not read: its spots are
+# in the merge since plan 054 step 2e (sources/fs_afladagbok/convert.R), its gear detail (mesh, meshes deep, lines) not
+# yet in these tables. The tables carry no time and read none (TODO 164).
 
 suppressPackageStartupMessages({
   library(DBI)
