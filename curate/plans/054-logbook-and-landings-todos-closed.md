@@ -7,7 +7,8 @@ answered by the maintainer the same day (§5), each as recommended but m b (not 
 amended the same day: the logger stays in the AIS track (decision 196); TODOs 24, 34, 95, 98, 110, 139, 142 and
 151 added the same day for little cost (§7); step 0 done the same day (decision 247); step 1's studies recorded (decisions 248-251); §7's
 small step 2 changes coded the same day (95, 139, 162, 34, 24); step 2a begun, the app carried (decision 253),
-steps 2a and 2c done (decisions 253-260); cut the same day to 2e and 2i, then one rebuild (§8); nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+step 2 as cut done the same day (decisions 253-264), the combined scratch build and one live rebuild next (§8); nothing
+built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -353,72 +354,51 @@ map's grids (decisions 220, 228).
 
 **Expected to close, with these:** 27 items: the plan's own 24, and TODOs 24, 95 and 139.
 
-## 8. Where step 2 stands, the hand-over (updated 2026-10-30, evening)
+## 8. Where plan 054 stands, the hand-over (updated 2026-10-30, about 18:30)
 
-*Written by Claude (AI) as the main session's hand-over, so the work can be resumed from here. It replaces the note
-written when the work was parked at about 14:30. Nothing has been built on the live store, and nothing has been
-pushed: 87 commits are local only.*
+*Written by Claude (AI) as the main session's hand-over, to resume from. Nothing has been built on the live store, and
+nothing has been pushed: 102 commits are local only. Main's tree is clean.*
 
-**Done and on main, each traced on a scratch store and recorded:**
+**Step 2, as cut, is done: all of it is on main, traced on scratch stores and recorded.**
 
-| piece | commit | decision |
+| piece | on main | decision |
 |---|---|---|
-| §7's small changes: the STK clear (95), the tie-breaks (139), 162's flag, the gillnet floor (34), 24's override | 7204d9a | 248-250 |
-| the Oracle sitting's three scripts | d95c746 | 247 |
-| the app on every e-logbook station | 1b70b2c | 253 |
-| the lean merge, `curate/logbook.R` in DuckDB (about a minute instead of 6-13) | ef06b5b | 254 |
-| plan 053's flags and the windows that read them, and the typical-haul fix | cfc277b, cc5daf4 | 255 |
-| the app profile's check | 57417c9 | 256 |
-| 2c: whole weight at the landings' factor of the day, the tails, `catch_detail`, the landings in lazy DuckDB | 75f5e88 (merges 51c81e1, 84a2eb6) | 257 |
-| plan 053 step 7: one position decoder, short longitudes value by value (amends 211) | 1f7f603 | 258 |
-| plan 053 step 8: depth by app | bcb9db1 | 259 |
+| §7's small changes (95, 139, 162, 34, 24) and the Oracle sitting's scripts | 7204d9a, d95c746 | 248-250, 247 |
+| plan 053: the app, the flags and windows, the check, the decoder, depth by app; then closed | 1b70b2c ... bcb9db1 | 253, 255, 256, 258-260 |
+| the lean merge (`curate/logbook.R` in DuckDB) | ef06b5b | 254 |
+| 2c, whole weight at the landings' factor of the day | 75f5e88 | 257 |
+| 2i, `trip_landing` and the disposition; 2d, afli's lumpfish logbook | 12900a4 | 262, 263 |
+| 2e, the tour app | 2ab1acb | 264 |
+| the scope: the catch on the fixes is the user's, no `ais_catch` | 7076d05 | 261 |
 
-**In progress, in a side session:** "Plan 054 step 2i and 2d", on branch `claude/plan-054-link-lumpfish-6f5dd5`.
-- It takes 2i's first piece (8d4c03b, `trip_landing`) from `claude/plan-054-whole-weight-75363a`.
-- Then it does 2i's disposition, checked at the trip (decision 261: no `ais_catch`), and 2d, the lumpfish adapter
-  (TODO 167).
-- It stops before the trace-id witness (TODO 160). The main session merges the branch once it is proven.
-
-**The cut (the maintainer, 2026-10-30).** The plan was cut to what moves effort or catch on the fixes. The
-maintainer asked what the remaining work would achieve, given how long it took. The measured gain of each item, set
-against its cost, kept two:
-- **2e:** the tour app staged, with 9,821 trips and 9.9 kt never in the logbook, filling most of the handline gap of
-  2020-21 (TODO 141). Its ports are read as `hid` (decision 252).
-- **2i:** `trip_landing` and the disposition, so a trip's later landings and its exported catch reach its fixes.
-
-Parked in their TODOs, to reopen when an analysis needs them:
+**The cut (the maintainer, 2026-10-30).** The plan was cut to what moves effort or catch on the fixes: 2e and 2i, and
+2d once it was done. Parked in their TODOs, to reopen when an analysis needs them:
 - 2b, decision 214's trip-timed records (TODO 137);
-- 2d, the lumpfish logbook (TODO 167);
 - 2f's rest: 101's flag (TODO 101), and 102's twin rule and trimmed windows (TODO 102) with 138's Marína re-entries;
 - 2g, `effort_count` from the parts and `vessel_sensor` (TODO 163);
 - 2h, decision 198's drift rule (TODO 103);
 - `protected_bycatch` (TODO 73).
 
-The maintainer needs nothing in the live store today. So the order is 2e and 2i first, then one combined scratch build
-traced down to the trail, then one live rebuild on the maintainer's go. That rebuild takes everything on main, the
-pieces above included.
+**Next, in order:**
+1. **One combined scratch build of main**, from the adapters down to the trail: the `once` check of TODO 24 by name,
+   and TODO 95's STK targets. Traced file by file against the live store: the windows, `station_event`, the fishing
+   fixes and effort, every station in one outcome. `ais_catch` and the audit are never built (decision 261). Each
+   piece has been traced alone; this traces them together.
+2. **One live rebuild, by name, on the maintainer's go:** fingerprints before and after, and no tracked edit while it
+   runs. Then `products/user_tables.R` (v0), the effort map's grids, `docs/data-dict.yaml` for the new columns, and
+   the STK page's `unify_schemas` (TODO 95).
+3. **The records:** TODOs 24, 73, 81, 95, 112, 139, 141, 152, 156, 162 and 167 close as their build lands. TODO 157
+   closes too if ask e is answered.
 
-**Left from the done pieces, small:**
-- P8's 8 stations, as a frozen list;
-- a station-level `position_uncertain` flag (the form says it for now);
-- `z_unit` "uncertain" for the vessels D2 and D3 note;
-- 21 fs stations of pattern 5/4 for a person;
-- `docs/data-dict.yaml` and v0, with rebuild A.
-
-**The maintainer's own:**
+**The maintainer's own, none blocking:**
 - the Oracle sitting: `Rscript dump/oracle/ops_rafn.R`, `Rscript dump/oracle/checks/afli.R` and
-  `Rscript dump/oracle/checks/stk.R`;
-- plan 051 ask e: were the paper era's weights converted at × 1.25? 25-30 % look unconverted, against 10-11 % in the
-  control;
-- decision 255's open point: 1,767 pressed records start at the trip's departure and 821 at its landing. T14 takes
-  them as written;
-- the go for rebuild A.
+  `Rscript dump/oracle/checks/stk.R`. The trace-id witness (TODO 160) waits for it;
+- plan 051 ask e, the paper era's × 1.25;
+- TODO 170's question on the pressed records' starts;
+- a glance at the four port codes classed by name (decision 262).
 
 **Housekeeping:**
-- **Uncommitted on main, not this session's:** `TODO.md` and plan 041 note that `ops$sigfus` was dumped on 2026-10-23.
-  They are left for whoever made them.
-- **Scratch folders**, kept until rebuild A: `/Users/einarhj/stasi/scratch-p054-app` (0.5 GB), `-profile` (1.3 GB),
-  `-lean` (4.7 GB) and `-check`.
-- **The hand-over notes** of the side sessions are in
-  `~/Library/Application Support/Claude/side-session-notes/local_69ea2bc4-8129-48eb-989e-62ea83716c11/`.
+- **Scratch folders**, kept until the rebuild: `/Users/einarhj/stasi/scratch-p054-{app,profile,lean,check,tour}`.
+- **The side sessions** are archived, or archive once their last watcher ends.
+- **Their hand-over notes** are in `~/Library/Application Support/Claude/side-session-notes/local_69ea2bc4-8129-48eb-989e-62ea83716c11/`.
 - **The drafts and traces** are in `$FISHYDATA/archive/2026-10-30-plan054-*`.
