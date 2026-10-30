@@ -2,9 +2,9 @@ id: logbook_app_profile
 title: each logbook app's habits, field by field, found by rule; values kept as recorded and flagged (plan 053)
 status: >-
   drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); 18 rows
-  reviewed by the maintainer the same evening (the `reviewed` field), the other 27 with their evidence in
-  $FISHYDATA/archive/2026-10-29-elogbook-feed/review-sheet.md; none applies; not implemented (no logbook_app_profile.R
-  yet, nothing reads this file)
+  reviewed by the maintainer the same evening and 5 more on 2026-10-30 (the `reviewed` field), the other 22 with their
+  evidence in $FISHYDATA/archive/2026-10-29-elogbook-feed/review-sheet.md; none applies; not implemented (no
+  logbook_app_profile.R yet, nothing reads this file)
 applies_to:
   - curated/logbook/fishing_sample.parquet   # t1_flag ... t4_flag, the rule's id (proposed)
   - curated/logbook/station.parquet          # pos_flag, z_unit with z1_basis, z2_flag (proposed)
@@ -202,9 +202,12 @@ rows:
     action: flag
     flag: copy_haul          # or copy_departure, copy_landing, by the equality found
     today: nothing; the set window is cut to nothing or opens at the port
-    evidence: counts/p01_times_app_gear.tsv (all classes copies); q01 (Reiknistofa 452 merged, Fishtech 208)
+    evidence: >-
+      counts/p01_times_app_gear.tsv (all classes copies); q01 (merged: Reiknistofa 452, the haul 253, the departure 169,
+      the landing 30; Fishtech 208: 94, 102, 12); r13 (Reiknistofa's set in whole minutes against a departure stamped
+      with seconds, 127 of 133)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: every set of the two apps flagged, whatever its value"
 
   - id: T6-value
     quirk: the static set time equals the haul start or end
@@ -218,9 +221,10 @@ rows:
     action: flag
     flag: copy_haul
     today: nothing; on 28 stations the haul window is cut to nothing by a set window with the same start (TODO 164)
-    evidence: counts/q01_t1_caught.tsv; w01 (near as the haul start is)
+    evidence: >-
+      counts/q01_t1_caught.tsv; w01 (Trackwell raun near 79 %, at the haul's place and time; Jóhann Gíslason far 85 %)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: flagged on every app; the set window goes, the haul window stays"
 
   - id: T7
     quirk: the static set time is the vessel's previous haul end
@@ -234,14 +238,14 @@ rows:
     action: flag
     flag: copy_previous
     note: >-
-      Trackwell raun's 98 merged resets are near on 61-66 % and may be real sets made on the spot: T7 does not take
-      them; a person decides
+      Trackwell raun's 98 merged resets are near on 61-66 % and are kept as real sets made on the spot: T7 does not
+      take them
     today: nothing
     evidence: >-
-      counts/p01_times_app_gear.tsv (Fontos 71 %); w01 (Fontos far 70 %; Trackwell raun near 61-66 %); q01 (Fontos 341
-      merged)
+      counts/p01_times_app_gear.tsv (Fontos 71 %); w01 (Fontos far 67-70 %, in port 11 %; Trackwell raun near 61-66 %);
+      q01 (Fontos 341 merged)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: Fontos's flagged; Trackwell raun's kept as resets made on the spot"
 
   - id: T8
     quirk: a time that is a date (00:00:00)
@@ -266,9 +270,12 @@ rows:
       the trip's departure copies the first tow or haul start, and its landing the last tow or seine end; the station's
       times are right
     scope: value
-    apps: [Trackwell raun, Fontos raun]
-    feeds: [fs_afladagbok, adb]
-    period: [2021-11-18, null]
+    apps: [Trackwell raun, Fontos raun]   # and on the afli route any app (Fishing Log 2.7 and 2.0), by the rule
+    feeds: [fs_afladagbok, adb, afli]
+    period: [2021-11-18, null]            # fs_afladagbok and adb; the afli route in every period
+    rule: >-
+      fs_afladagbok and adb: as the evidence says; the afli route: the trip's departure, in whole minutes, within 1 min
+      of a static set stamped with seconds (T15's other half)
     gear: ["*"]
     field: [T1, T2]           # the trip's departure and landing, not the station's times
     holds: "copy: a station's t2 or t3 (Trackwell raun), t1 (Fontos's jigs); the landing a tow's or seine set's t3"
@@ -281,11 +288,13 @@ rows:
       counts/w01_times_track.tsv (Trackwell raun tows and seine sets whose start equals the departure: near 92-97 %;
       static t3 equal to it: near 87-91 %; Fontos's jig t1 equal to it: near 65-78 %); x02 (those tow starts at sea
       72-77 %); inventory T11 (8,665 such times near); tow and seine ends equal to the landing (1,045 merged, q02):
-      near 65-83 %, in port 15-20 %, the vessel reaching port within 1 h after on 69 % (w01, x02)
+      near 65-83 %, in port 15-20 %, the vessel reaching port within 1 h after on 69 % (w01, x02); the afli route: r12
+      (Fishing Log 2.7 and 2.0, 481 sets within 1 min of the departure: seconds on 426, the departure on none, the
+      trip's first set on 473), w01 (2.7's in port 9 %, as its stamped sets 10 %)
     ask: d
     reviewed: >-
       the maintainer, 2026-10-29: the trip's departure and landing are the copies, flagged; the tow and seine times
-      kept (ask d answered; decision 206's towed dummies reversed)
+      kept (ask d answered; decision 206's towed dummies reversed). 2026-10-30: widened to the afli route (T15)
 
   - id: T11-station
     quirk: a tow start, seine set or haul start equal to the trip's departure
@@ -310,7 +319,7 @@ rows:
     gear: [static]
     field: t1
     holds: recorded
-    rule: second(t1) <> 0 and not T1-T3
+    rule: second(t1) <> 0, and not T1-T3, nor equal to the record's entry time (T16)
     action: flag              # gillnets (GNS, GND); longlines (LLS): note, the set window kept
     flag: stamped
     today: nothing
@@ -320,7 +329,8 @@ rows:
       (11,291 merged); ../2026-10-29-static-set-time/findings.md §4
     ask: e
     reviewed: >-
-      the maintainer, 2026-10-29: gillnets flagged, no set window; longlines noted, the window kept (ask e answered)
+      the maintainer, 2026-10-29: gillnets flagged, no set window; longlines noted, the window kept (ask e answered).
+      2026-10-30: a set equal to the entry time spared (T16)
 
   - id: T13
     quirk: the set computed from the haul start less a soak in half hours
@@ -368,40 +378,53 @@ rows:
       proposed, r07)
 
   - id: T15
-    quirk: the afli route's set time is the trip's departure
+    quirk: the afli route's set time, in whole minutes, is the trip's departure
     scope: value
-    apps: ["*"]               # Fishing Log 2.6 mostly; the rule needs no version
+    apps: ["*"]               # Fishing Log 2.6; the rule needs no version
     feeds: [afli]
     period: [null, null]
     gear: [static]
     field: t1
-    rule: afli's electronic stations (visir < 0), t1 equal to the trip's departure within 1 min
+    rule: afli's electronic stations (visir < 0), t1 within 1 min of the trip's departure and second(t1) = 0
     holds: "trip: departure"
     action: flag
     flag: copy_departure
+    note: >-
+      a set stamped with seconds within 1 min of the departure is kept: there the departure is the copy, cut to the
+      minute from the trip's first set (T11). afli's merged layer keeps the seconds (83,497 of its set times carry
+      them, r14)
     today: nothing (decision 157 left it as recorded)
     evidence: >-
-      counts/p01_times_app_gear.tsv (4,787 as sent, all versions); w01 (in port 96 % of the 154 judged, 2019-2024);
-      r09 (afli's edited layer left them as sent: 4,440 merged to 2018, 4,243 of the 4,251 of Fishing Log 2.6
-      unchanged; 346 from 2019, where the edited layer is the import's, decision 244)
+      counts/p01_times_app_gear.tsv (4,787 as sent, all versions); r12 (Fishing Log 2.6: 4,619, none with seconds,
+      equal to the second on 238, a minute apart on the rest); w01 (2.6's in port 96 % of the 154 judged, 2019-2024;
+      2.7's in port 9 % of 191, near 37 %); r09 (afli's edited layer left them as sent: 4,440 merged to 2018, 4,243 of
+      the 4,251 of Fishing Log 2.6 unchanged; 346 from 2019, where the edited layer is the import's, decision 244)
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-30: split by the seconds; a whole-minute set flagged, a stamped set kept with the trip's
+      departure flagged as its copy (T11)
 
   - id: T16
-    quirk: a static set time equal to the trip's departure or landing, or to the entry time, on an app that writes sets
+    quirk: a static set time equal to the trip's departure or landing on an app that writes sets
     scope: value
     apps: [Trackwell raun, Jóhann Gíslason raun, Fontos raun]
     feeds: [fs_afladagbok, adb]
     period: [null, null]
     gear: [static]
     field: t1
-    holds: "copy: departure, landing or entry time"
+    holds: "copy: departure or landing"
     action: flag
-    flag: copy_departure      # or copy_landing, copy_entry
-    today: nothing; a set window at the port or at the record's saving
-    evidence: counts/q01_t1_caught.tsv (Trackwell raun 169, 63, 76; Jóhann Gíslason 23, 1; Fontos 35, 7 merged)
+    flag: copy_departure      # or copy_landing
+    note: >-
+      a set equal to the record's entry time (Trackwell raun, 76 merged: near 71 %, in port 5 %, as typed sets) is kept
+      as recorded, and T12's stamped flag spares it
+    today: nothing; a set window at the port
+    evidence: >-
+      counts/q01_t1_caught.tsv (merged: Trackwell raun 169 departure, 63 landing, 76 entry; Jóhann Gíslason 23, 1;
+      Fontos 35, 7); w01 (in port: Trackwell raun 42 % and 25 %, Jóhann Gíslason 38 %, Fontos 17 % and 71 %); r13
+      (Jóhann Gíslason's equal to the second; Trackwell raun's and Fontos's mostly two stamps seconds apart)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: the departure and landing copies flagged; the entry-time sets kept"
 
   - id: T17
     quirk: a jig start equal to the trip's departure (the track does not say which is the copy)

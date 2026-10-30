@@ -2,8 +2,8 @@
 
 **status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
 drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); 18 rows reviewed by the
-maintainer the same evening, asks b-e answered (§8), the other 27 rows' evidence in the archive's `review-sheet.md`;
-nothing built ·
+maintainer the same evening and 5 more on 2026-10-30, asks b-e answered (§8), the other 22 rows' evidence in the
+archive's `review-sheet.md`; nothing built ·
 **measured** (§1-§3), by Claude in a read-only side session, not checked by a person, in counts only, every number in a
 file of `$FISHYDATA/archive/2026-10-29-elogbook-feed/` (`findings.md`; `counts/tables.md` renders the tables below from
 the count files; `counts/q00_inventory.tsv` is §1): every station of fs_afladagbok, of adb where fs_afladagbok lacks it,
@@ -44,7 +44,7 @@ duplicate twins out. Feeds: fs = fs_afladagbok, adb from 2025-11-19, the afli ro
 | T12 | a set time stamped with seconds: in port on a quarter | Trackwell raun | t1, 2022-2026 | nothing | 11,291 merged |
 | T13 | a set derived from the haul start in half hours | Trackwell raun; Fishing Log 2.6 | t1, 2022-2026 | nothing (decision 206: `derived`, not built) | 2,893 merged |
 | T14 | a tow or haul of 0-4 min | Trackwell raun | t2, t3, 2022-2026 | nothing (decision 206, not built) | 4,810 merged |
-| T15 | the afli route's `t1` is the departure | Fishing Log 2.6 | t1, 2003-2022 | nothing (decision 157: as recorded) | 4,787 as sent |
+| T15 | the afli route's `t1` is the departure (2.7's departure copies its stamped set instead: T11) | Fishing Log 2.6 | t1, 2003-2022 | nothing (decision 157: as recorded) | 4,787 as sent |
 | P1 | the sign convention differs by app | every app | lon, 2020-2026 | the sign rule (fs adapter step 3, `adb_vs_fs_afladagbok.R`) | 1 wrong, 337,996 right |
 | P2 | whole degrees, a 1-degree cell | STOKKUR | lat, lon, 2020-2022 | fs adapter `source == "STOKKUR"`, read as a point | 23,362 |
 | P3 | hundredths of a minute, and four digit forms | FRA TAKTIKAL | lat, lon, 2021-2023 | `R/logbook_position.R` names the app; the fs adapter reads no seven- or eight-digit position (831 merged without one) | 7,014 |
@@ -349,8 +349,16 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
    against 864 as read; where both have five digits nothing decides). Then T11, T11-station, T12, P7, T14 and T8 (asks
    d and e): the trip's departure and landing are the copies of the tow times (1,045 tow and seine ends equal to the
    landing are near on 65-83 %); stamped gillnet sets flagged and longline sets noted; a pressed record's window closed
-   at the gear's typical maximum, the 95th percentile of recorded spans (`counts/r07`), or the next station. The other
-   27 rows' evidence is in the archive's `review-sheet.md` (`counts/r08`-`r11`).
+   at the gear's typical maximum, the 95th percentile of recorded spans (`counts/r07`), or the next station. On
+   2026-10-30 T6, T7, T15 and T16 (`scripts/12_batch2.py`, `counts/r12`, `r13`), each as proposed: a set that copies
+   the haul, the departure or the landing is flagged, Reiknistofa's and Fishtech's every set, Fontos's copy of the
+   previous haul end, but not Trackwell raun's (near on 61-66 %, resets on the spot) nor a set equal to the record's
+   entry time (near on 71 %). Found in the review: on the afli route the same equality runs both ways by version, read
+   from the seconds alone. Fishing Log 2.6's sets are whole minutes at the departure (4,619, in port on 96 %), so the
+   set is the copy; 2.7's and 2.0's are stamped with seconds (426 of 481) beside a whole-minute departure, the trip's
+   first set on 473, 2.7's in port on 9 % of 191 judged, as its other stamped sets, so the departure is the copy (T11
+   widened). The
+   other 22 rows' evidence is in the archive's `review-sheet.md` (`counts/r08`-`r11`).
 4. **The check**, tested to give this archive's counts on the store of 2026-10-29.
 5. **The flags** in `curate/logbook.R` after the twins, from `R/logbook_app_profile.R`; the placeholder section goes.
 6. **The windows** (`curate/station_window.R`, `judged_time_sql()`) read the flags; the fallback window.
@@ -376,8 +384,8 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
 
 ## 8. Asks
 
-- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29):* 18 reviewed (the `reviewed` field of
-  each row), each as proposed but T14, closed at a typical maximum; the other 27 wait, with their evidence in the
+- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29 and 30):* 23 reviewed (the `reviewed` field
+  of each row), each as proposed but T14, closed at a typical maximum; the other 22 wait, with their evidence in the
   archive's `review-sheet.md`.
 - b. *Answered (maintainer, 2026-10-29):* kept as recorded and flagged, the placeholder included (row T1).
 - c. *Answered (maintainer, 2026-10-29):* the trip's window, departure to return, basis `derived` (rows T4, T10); a

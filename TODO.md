@@ -1588,7 +1588,7 @@ stations), and 28 haul windows cut to nothing by a set window with the same star
 **check:** a decision on a-c; the windows and `station_event` traced before and after.
 
 ## 165. The e-logbook feed: every app's quirks found by rule, in one app profile (plan 053)
-**status:** open · **needs: maintainer** — plan 053's asks a (27 rows left, their evidence in the archive's
+**status:** open · **needs: maintainer** — plan 053's asks a (22 rows left, their evidence in the archive's
 `review-sheet.md`) and f-h (§8): the feed once the hold lifts, Trackwell's file as a witness, vendors' trials ·
 **see:** `curate/plans/053-elogbook-feed-app-profile.md`, TODOs 103, 107, 126,
 162, 164, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
@@ -1606,7 +1606,9 @@ would fold in TODO 164's choices a-c, TODO 103's other patterns, TODO 107's unbu
 Step 3 drafted the same day: 45 rows in `curate/corrections/logbook_app_profile.yml`. Reviewed that evening: T1-T5, T10,
 W1, D2, P2-P4, then T8, T11, T12, T14 and P7: 18 rows; asks b-e answered (keep and flag; the trip's window; the trip's
 ends, not the tow times, are the copies; stamped gillnet sets flagged). The review found the fs adapter reads no seven-
-or eight-digit position (831 merged Taktikal stations have none).
+or eight-digit position (831 merged Taktikal stations have none). On 2026-10-30 T6, T7, T15 and T16: 23 rows; on the
+afli route a set at the departure is the copy in whole minutes (Fishing Log 2.6), the departure the copy where the set
+carries seconds (2.7).
 
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.
