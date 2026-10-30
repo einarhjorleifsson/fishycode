@@ -173,6 +173,14 @@ list(
     produces("reference/species/species.R", fd_curated("reference", "species.parquet"))
   }, format = "file"),
 
+  # From a weight as landed or logged to the whole weight, per species, state and period (plan 051 step 3): the
+  # landings' factors, dated by the fishing years' regulations, and the rows the logbook reads.
+  tar_target(whole_weight_factor_decl, "reference/species/whole_weight_factor.yml", format = "file"),
+  tar_target(whole_weight_factor, {
+    whole_weight_factor_decl; aflagrunnur_raw
+    produces("reference/species/whole_weight_factor.R", fd_curated("reference", "whole_weight_factor.parquet"))
+  }, format = "file"),
+
   # Port polygons are now produced by the ports_all target above, so targets can
   # see when they change. Previously this read a hand copy of kaenugardr's
   # output, which is why a corrected geometry did not propagate. This only crops
@@ -655,7 +663,8 @@ list(
     aflagrunnur_raw
     produces("sources/aflagrunnur/convert.R",
              fd_staging("landing", "agf", "landings.parquet"),
-             fd_staging("landing", "agf", "catch.parquet"))
+             fd_staging("landing", "agf", "catch.parquet"),
+             fd_staging("landing", "agf", "catch_detail.parquet"))
   }, format = "file"),
 
   tar_target(lods_raw, fd_raw("oracle", "kvoti", "lods_slaegt.parquet"), format = "file"),
@@ -663,7 +672,8 @@ list(
     lods_raw
     produces("sources/lods/convert.R",
              fd_staging("landing", "lods", "landings.parquet"),
-             fd_staging("landing", "lods", "catch.parquet"))
+             fd_staging("landing", "lods", "catch.parquet"),
+             fd_staging("landing", "lods", "catch_detail.parquet"))
   }, format = "file"),
 
   # Precedence merge of agf and lods (curate/plans/007): agf where it exists,
@@ -673,7 +683,8 @@ list(
     aflagrunnur; lods; port
     produces("curate/landing.R",
              fd_curated("landing", "landings.parquet"),
-             fd_curated("landing", "catch.parquet"))
+             fd_curated("landing", "catch.parquet"),
+             fd_curated("landing", "catch_detail.parquet"))
   }, format = "file"),
 
   tar_target(stk, {
@@ -824,8 +835,14 @@ list(
   }, format = "file"),
 
   # The catch as caught (whole weight), per (station, species): joins the trail on (.sid, schema).
+  # Nephrops logged as tails (plan 050 step 5): the guard reads the trip's landing, so after catch_by_species_trip.
+  tar_target(logbook_nephrops_tails, {
+    logbook; catch_by_species_trip
+    produces("curate/corrections/logbook_nephrops_tails.R", fd_curated("logbook", "nephrops_tails.parquet"))
+  }, format = "file"),
+
   tar_target(catch_by_species_station, {
-    logbook
+    logbook; logbook_nephrops_tails; whole_weight_factor
     produces("curate/catch_by_species_station.R",
              fd_curated("logbook", "catch_by_species_station.parquet"))
   }, format = "file"),
