@@ -51,7 +51,8 @@ The work is split in two (maintainer, 2026-10-14):
 - **fishycode** is the scripts that apply them to the Icelandic data.
 
 **Why the view is wider than Iceland** (maintainer, 2026-10-27). Putting the Icelandic
-data through a generic flow has one narrow aim, the ICES VMS datacall's delivery.
+data through a generic flow has one narrow use, the ICES VMS datacall's delivery, a side
+product (maintainer, 2026-10-30: the aim is the analyst's tables, below).
 Programming that flow, from raw data to delivery, took a broad view for two purposes:
 generic functions that others may find useful (ramb), and other data, which may be
 poorer or richer than Iceland's. Other workflows are read three ways:
@@ -97,7 +98,10 @@ cross-source evidence. **Corrections are the core of the product, not exceptions
 to it.**
 
 The deliverable is a *sweep of parquet files* an analyst opens and works with
-directly, with no pipeline knowledge required.
+directly, with no pipeline knowledge required (maintainer, 2026-10-30): a biologist after a
+quick answer for his species should not need the details, and the tables should be robust
+enough to keep him from going wrong. One quantity per table, never a sum across quantities
+(decision 266). The grammar's analyst view specifies them (plan 055, TODO 171).
 
 ## The two committed boundaries
 
