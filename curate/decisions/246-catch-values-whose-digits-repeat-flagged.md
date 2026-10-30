@@ -1,8 +1,8 @@
 # 246 — Catch values whose digits repeat are flagged: `catch_flag` rule 4, `repeated_digits`
 
 *2026-10-30. The maintainer's choice ("proceed", read as TODO 166's choice a, the proposed rule); the measurement, the
-code and every number below by Claude (AI), not checked by a person. Coded and checked on a scratch store; not built.
-Plan 053 row I4, TODO 166; decisions 216, 217 and 241.*
+code and every number below by Claude (AI), not checked by a person. Coded and checked on a scratch store, then built
+the same day on the maintainer's go ("Yes, build it"). Plan 053 row I4; closes TODO 166; decisions 216, 217 and 241.*
 
 ## Why
 
@@ -55,8 +55,37 @@ store is newer than a marker set before the run. Against the real `catch_flag` (
 - (station, species) stays unique on the 88,109 station rows, and every assert of `docs/data-dict.yaml`, rule 4's
   among them, holds on every row.
 
-## Not built
+## Built 2026-10-30
 
-The build is the one target: `tar_make_isolated(names = "catch_landing_contradicted")`. `tar_outdated()` lists it with
-`ais_catch` and `check_allocation_audit`, which were outdated before and stay out of a build unless asked (decision
-241). It waits for the maintainer's go.
+At dbece0c with a clean tree, under DuckDB 1.5.6 and ramb 2026.10.28.3. `tar_make_isolated(names =
+"catch_landing_contradicted")` built the one target in 7 s (09:06 UTC). Before the build, `tar_outdated()` listed it with
+`ais_catch` and `check_allocation_audit`. After, it lists those two, which stay out of a build unless asked (decision
+241). The run, its logs, both fingerprints and the table as it was before are in
+`$FISHYDATA/archive/2026-10-30-catch-flag-test-values/build/` (`build.sh`, `run.log`).
+
+The fingerprint taken after was compared with the one taken before (decision 241's method). Each of the 8,045 files
+falls in one outcome:
+
+- **The same: 8,044.** 8,041 by rows, schema and row hash. 3 are empty both times, with the same schema:
+  `raw/oracle/adb/diving.parquet` and the two staged `sensor_summary` files of adb and fs_afladagbok. The comparison
+  leaves no row hash for an empty file, so these were checked by hand.
+- **Rows changed: 1**, `curated/logbook/catch_flag.parquet`, from 90,924 rows to 90,926. It is stamped at dbece0c,
+  with `fd.dirty` false.
+
+Each of its rows falls in one outcome:
+
+- **The same: 90,899.**
+- **A value moved: 25** rule 2 rows, in `vessel_kg_largest` only, by at most 1.4e-16 relative. This is the order of
+  float sums: the scratch run moved 3, this one 25.
+- **Only after: 2**, the two rows of rule 4 as on the scratch store, 444,444 kg.
+- **Only before:** none.
+
+The AIS catch is out of the store (decision 241). When it is next built, `kg_flagged` takes rule 4's rows as it takes
+the others: `ais_catch.R` reads every flagged (station, species).
+
+## Left, outside this decision
+
+- **The trial clusters' 249 t that look like real catch** (STOKKUR 118.6 t, four other apps 130.4 t) are plan 053's
+  row I4: the trips noted `unlanded_cluster`, the catch kept.
+- **The 4,653 kt logged before 2007 on trips with no landing** has no landing witness. It waits for plan 038 §8 step
+  1c's range by gear and species, taken from the logbook itself.

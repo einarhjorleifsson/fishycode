@@ -1616,20 +1616,3 @@ trip's time the copy (Fishing Log 2.7, Trackwell raun, Fontos).
 
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.
-
-## 166. Test-like catch values no rule flags: `catch_flag` rule 4 for repeated digits, to build
-**status:** open · **needs: maintainer** — the go to build one target · **see:** decision 246, plan 053 row I4,
-`curate/corrections/catch_landing_contradicted.yml`, `$FISHYDATA/archive/2026-10-30-catch-flag-test-values/README.md`
-
-STOKKUR's trial trips leave 452 t that rules 1-3 do not flag. Of it, 333.3 t is one row of 333,333 kg of basking shark,
-a species no landing holds. The maintainer chose rule 4 on 2026-10-30 ("proceed"; decision 246). It flags a catch row
-of 100,000 kg or more whose digits repeat, small pelagics left out. Coded, and checked on a scratch store by Claude,
-not by a person: 2 rows and 444.4 t added, the other rows the same to the order of float sums. Left:
-- The build: `tar_make_isolated(names = "catch_landing_contradicted")`, with `ais_catch` and its audit left out
-  (decision 241).
-- Beside it, not in this item: the trial clusters' 249 t that look real stay I4's (noted, the catch kept, ask h). The
-  4,653 kt with no landing before 2007 wait for plan 038 §8 step 1c's range by gear and species, taken from the logbook
-  itself.
-
-**check:** `catch_flag` built at a clean commit and compared with the table before, every row in one outcome; decision
-246 amended with the build.
