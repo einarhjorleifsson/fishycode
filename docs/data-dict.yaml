@@ -2543,6 +2543,16 @@ tables:
       `lods_londun` alone goes back to 1915-11-21
       (59 rows, 52 vessels, 1915-1992-08-31) - not currently captured, flagged
       not fixed (curate/plans/007).
+    details: >
+      Not every landing has a logbook trip (no row in logbook_lid_map). For handline (a catch row of gid 14) the share
+      was 1-12 % a month in 2019, and 87 % from September 2020 to March 2021 (2,091 of 2,411), when the Directorate
+      imported none of the small boats' web logbook (the tour app). With the tour app staged (plan 054 step 2e,
+      docs/merge.qmd "Small boats: the tour app"), 419 of those 2,411 (17 %) have none, as in the months around them
+      (2020-01 to 08: 12.6 %; 2021-04 to 2022-03: 14.2 %). Of the 419, 268 are a vessel of the tour app with no tour
+      that day and 69 a tour with no spot; 43 have logbook stations of the vessel within a day that the link did not
+      take; 39 are of a vessel with no record that day or in no logbook source, or whose spots the merge left out. No
+      source read holds these trips: they are declared, not filled (TODO 141, plan 054 ask j). Measured on a scratch
+      build, 2026-10-30, with AI assistance (Claude), not checked by a person.
     todo: |
       - Record a `primary_key`, if present. Not `.lid` alone - see its
         description in landing_catch.

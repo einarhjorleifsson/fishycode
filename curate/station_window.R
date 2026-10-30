@@ -28,7 +28,8 @@
 #
 # win_basis says where the interval came from and is never dropped:
 #   recorded     both ends are logbook times
-#   derived      one end is a logbook time, the other comes from duration_m
+#   derived      one end is a logbook time, the other comes from duration_m (the tour app's jig: its t1, made from
+#                its spot time and its hours, .t1_source "synthesised")
 #   synthesised  an end is an assumption: the typical haul length (per gear, median
 #                of recorded t4 - t3), the set length (gear_window.set_max_min), or
 #                the whole station date
@@ -103,7 +104,8 @@ SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.metier, ag.gear, ag.target,
        CASE WHEN f.t1_flag = 'trip_time' THEN f.t1 ELSE tv.T1 END AS trip_start,
        CASE WHEN f.t4_flag = 'trip_time' THEN f.t4 ELSE tv.T2 END AS trip_end,
        coalesce(f.t3_flag = 'pressed' OR f.t4_flag = 'pressed', false) AS pressed,
-       coalesce(f.t1_flag = 'placeholder', false) AS t1_placeholder
+       coalesce(f.t1_flag = 'placeholder', false) AS t1_placeholder,
+       coalesce(f.\".t1_source\" = 'synthesised', false) AS t1_synthesised
 FROM fs f
 JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
 JOIN st          ON st.\".sid\" = f.\".sid\" AND st.schema = f.schema
@@ -172,6 +174,8 @@ sw <- ramb::rb_create_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "s
   dplyr::mutate(
     win_basis = dplyr::case_when(pressed_end & phase %in% c("tow", "haul") ~ "synthesised",
                                  trip_time & phase != "day" & win_basis == "recorded" ~ "derived",
+                                 # the tour app's jig: t4 its spot time, t1 that less its hours (.t1_source)
+                                 t1_synthesised & phase == "jig" & win_basis == "recorded" ~ "derived",
                                  .default = win_basis),
     t1 = j1, t2 = j2, t3 = j3, t4 = j4,
     n_events = dplyr::sql(n_events_sql), events = dplyr::sql(events_sql)) |>
