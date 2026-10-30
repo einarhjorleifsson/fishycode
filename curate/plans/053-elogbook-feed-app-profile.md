@@ -1,9 +1,9 @@
 # 053 — The e-logbook feed: every app's quirks found by rule, in one app profile, and the feed's seams
 
 **status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
-drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); 18 rows reviewed by the
-maintainer the same evening and 22 more on 2026-10-30, asks b-e answered (§8), the other 5 rows' evidence in the
-archive's `review-sheet.md`; nothing built ·
+drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); every row reviewed by the
+maintainer, 18 the same evening and 27 on 2026-10-30 (ask a), asks b-e and h answered, f and g open (§8); nothing
+built ·
 **measured** (§1-§3), by Claude in a read-only side session, not checked by a person, in counts only, every number in a
 file of `$FISHYDATA/archive/2026-10-29-elogbook-feed/` (`findings.md`; `counts/tables.md` renders the tables below from
 the count files; `counts/q00_inventory.tsv` is §1): every station of fs_afladagbok, of adb where fs_afladagbok lacks it,
@@ -370,8 +370,13 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
    layer and the 8 merged stations whose side Trackwell's own copy contradicts flagged. Then depth and count, D1, D3-D5,
    C1 and C2, each as proposed: fathoms for every app but Marína and Taktikal (D2), as now, with Reiknistofa's 34
    vessels whose depths GEBCO reads as metres (26 %, above the 10-11 % noise of a one-unit app) noted `z_unit`
-   uncertain; STOKKUR's 0 and Reiknistofa's copied end depth read as none; the count as now. The other 5 rows' evidence
-   is in the archive's `review-sheet.md`.
+   uncertain; STOKKUR's 0 and Reiknistofa's copied end depth read as none; the count as now. Last K1, K2, I1, I4 and U1
+   (`scripts/15_batch6.py`, `counts/r18`, `r19`), each as proposed. I4's rule (a vessel-year whose trips with no
+   landing linked are 10 or more and at least half its trips) takes 618 trips in 29 vessel-years, tests beside missed
+   links: STOKKUR's 276 of 2021 are 0 h long with catches like 333,333 and 3,703,703 kg, Trackwell raun's 160 look like
+   real trips (median 48 h). The trips are noted `unlanded_cluster` and the catch left to the catch rules: `catch_flag`
+   already flags 11,667 of STOKKUR's 12,119 t, and 452 t of test-like values it does not, a finding for its rules. The
+   evidence of every row is in the archive's `review-sheet.md`.
 4. **The check**, tested to give this archive's counts on the store of 2026-10-29.
 5. **The flags** in `curate/logbook.R` after the twins, from `R/logbook_app_profile.R`; the placeholder section goes.
 6. **The windows** (`curate/station_window.R`, `judged_time_sql()`) read the flags; the fallback window.
@@ -397,9 +402,8 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
 
 ## 8. Asks
 
-- a. **Review the rows** (needs a person). *In part (maintainer, 2026-10-29 and 30):* 40 reviewed (the `reviewed` field
-  of each row), each as proposed but T14, closed at a typical maximum; the other 5 wait, with their evidence in the
-  archive's `review-sheet.md`.
+- a. *Answered (maintainer, 2026-10-29 and 30):* all 45 rows reviewed (the `reviewed` field of each row), each as
+  proposed but T14, closed at a typical maximum; the evidence in the archive's `review-sheet.md`.
 - b. *Answered (maintainer, 2026-10-29):* kept as recorded and flagged, the placeholder included (row T1).
 - c. *Answered (maintainer, 2026-10-29):* the trip's window, departure to return, basis `derived` (rows T4, T10); a
   station left with no usable time gets the day, basis `synthesised` (row W1).
@@ -409,4 +413,5 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
   saved late (T12, P7).
 - f. **The feed, once the hold lifts:** which of §3's options; proposed 2, then 3.
 - g. **Trackwell's own file as a standing witness:** ask for a copy to date when contact resumes?
-- h. **Vendors' trials** (I4): a trip flag by rule (an app's unlanded trips concentrated on one vessel), or kept as now?
+- h. *Answered (maintainer, 2026-10-30):* a note by rule, `unlanded_cluster`, on the trips of a vessel-year whose trips
+  with no landing linked are 10 or more and at least half its trips; the catch kept (I4).

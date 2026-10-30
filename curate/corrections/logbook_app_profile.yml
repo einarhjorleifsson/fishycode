@@ -1,9 +1,9 @@
 id: logbook_app_profile
 title: each logbook app's habits, field by field, found by rule; values kept as recorded and flagged (plan 053)
 status: >-
-  drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); 18 rows
-  reviewed by the maintainer the same evening and 22 more on 2026-10-30 (the `reviewed` field), the other 5 with their
-  evidence in $FISHYDATA/archive/2026-10-29-elogbook-feed/review-sheet.md; none applies; not implemented (no
+  drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); every row
+  reviewed by the maintainer, 18 the same evening and 27 on 2026-10-30 (the `reviewed` field), the evidence in
+  $FISHYDATA/archive/2026-10-29-elogbook-feed/ (review-sheet.md); none applies; not implemented (no
   logbook_app_profile.R yet, nothing reads this file)
 applies_to:
   - curated/logbook/fishing_sample.parquet   # t1_flag ... t4_flag, the rule's id (proposed)
@@ -16,7 +16,7 @@ implementation: >-
   curate/logbook.R after the twins, curate/station_window.R and judged_time_sql() (R/duration_limit.R) reading the
   flags, the adapters' position decoders reading the `read_as` rows
 discovered: 2026-10-29, plan 053 (from decisions 157, 158, 206, 210, 211, 242, 243 and TODOs 103, 107, 126, 164)
-decided_by: nobody yet; plan 053 asks a-h
+decided_by: the maintainer, 2026-10-29 and 30 (plan 053 asks a-e, h); asks f and g open
 evidence: >-
   $FISHYDATA/archive/2026-10-29-elogbook-feed/ (findings.md; counts/tables.md renders every count file named below).
   Measured by Claude (AI) on the dumps of 2026-10-16 and the store of 2026-10-29, read-only; not checked by a person.
@@ -885,7 +885,7 @@ rows:
     action: none              # the factor is plan 051's
     evidence: counts/p09_catch_state.tsv; w05 (logged over landed in 0.8-1.25 on 86-92 % of trips; STOKKUR 76 %)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: as written; the factor is plan 051's"
 
   - id: K2
     quirk: lumpfish, Grásleppa (951) and Rauðmagi (950) both written 48
@@ -900,10 +900,10 @@ rows:
     flag: lumpfish_950_or_951
     today: nothing (plan 051 ask c)
     evidence: >-
-      counts/f07_adb_species_lumpfish.tsv (3,159 rows from 2025-11-19); f08 (fs_afladagbok 951 on 8,895 rows, 950 on
-      1,992)
+      counts/f07_adb_species_lumpfish.tsv (3,159 rows, 2,449 t from 2025-11-19); f08 (fs_afladagbok 951 on 8,895 rows,
+      950 on 1,992)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: noted; which of the two is plan 051's (ask c)"
 
   - id: I1
     quirk: a trip sent again, its stations exact copies under another trip id
@@ -917,24 +917,36 @@ rows:
     action: none              # logbook_twin flags them duplicate, as now
     evidence: counts/p14_copies_by_twin.tsv (3,865 merged duplicates; 208 more outside the merge, decision 243)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: as now, logbook_twin"
 
   - id: I4
-    quirk: a vendor's trial, trips never landed, most on one vessel
+    quirk: trips with no landing linked, clustered on one vessel in a year (a vendor's trial, a test, or a missed link)
     scope: value
-    apps: [Fishtech raun, Reiknistofa fiskmarkaða raun, Fontos raun]
-    feeds: [fs_afladagbok]
-    period: [2023-01-01, 2025-12-31]
+    apps: ["*"]
+    feeds: [fs_afladagbok, adb]
+    period: [null, null]
     gear: ["*"]
     field: trip
-    rule: proposed, an app's trips with no landing, 20 or more on one vessel within a year (to be measured)
-    holds: "default: a trial"
+    rule: >-
+      a vessel-year whose e-logbook trips with no landing linked (lid_map) are 10 or more and at least half of its
+      trips, the duplicate twins out; the label goes on those trips
+    holds: "default: a trial or test"
     action: note
-    flag: trial
+    flag: unlanded_cluster
+    note: >-
+      the catch is kept as now and placed by the catch rules, not by this label. The rule takes tests (STOKKUR's 276 of
+      2021: 0 h long, catches like 333,333 and 3,703,703 kg) beside what look like real trips whose landing was not
+      linked (Trackwell raun's 160, median 48 h). catch_flag already flags 11,667 of STOKKUR's 12,119 t; 452 t of
+      test-like values it does not (e.g. 333,333 kg of species 288), a finding for catch_flag's rules
     today: nothing, kept
-    evidence: counts/x05_unlanded_trips.tsv (Fishtech 110 of 347, 93 on one vessel; Reiknistofa 95, 48; Fontos 159, 27)
+    evidence: >-
+      counts/r10_unlanded_by_vessel_year.tsv (the rule by app); r18 (618 trips in 29 vessel-years: STOKKUR 276,
+      Trackwell raun 160, Fishtech 92, Reiknistofa 60, Fontos 15, Marína 15; their catch and length); r19 (catch_flag
+      on them); x05 (every fs trip with no landing, the merge's and not)
     ask: h
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-30: the trips noted unlanded_cluster, the catch kept; the check lists them (ask h
+      answered)
 
   # Apps no row profiles yet ---------------------------------------------------------------------------------------
 
@@ -952,7 +964,7 @@ rows:
       counts/p12_merge_twin.tsv (Skráningar.com 8 stations from 2026-09-30, t1 the departure on all 8: q01;
       Fiskistofa raun 15; GAFL BÓK 2)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: the value rows apply, and the check lists the app"
 
 related:
   - curate/plans/053-elogbook-feed-app-profile.md
