@@ -2,7 +2,7 @@ id: logbook_app_profile
 title: each logbook app's habits, field by field, found by rule; values kept as recorded and flagged (plan 053)
 status: >-
   drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); 18 rows
-  reviewed by the maintainer the same evening and 16 more on 2026-10-30 (the `reviewed` field), the other 11 with their
+  reviewed by the maintainer the same evening and 22 more on 2026-10-30 (the `reviewed` field), the other 5 with their
   evidence in $FISHYDATA/archive/2026-10-29-elogbook-feed/review-sheet.md; none applies; not implemented (no
   logbook_app_profile.R yet, nothing reads this file)
 applies_to:
@@ -758,7 +758,7 @@ rows:
       counts/t05_depth.tsv, t06 (Trackwell's own metres 1.829 times the sent value, 14,629 of 14,978 hauls); q05 (by
       GEBCO 643 vessels read fathoms, 47 metres, 177 mixed)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: fathoms, converted as now"
 
   - id: D2
     quirk: metres, read as fathoms
@@ -783,21 +783,28 @@ rows:
       the maintainer, 2026-10-29: metres for both apps; Taktikal's 37 fathom-reading vessels noted, z_unit uncertain
 
   - id: D3
-    quirk: the unit mixed within an app
+    quirk: the unit judged by vessel against GEBCO; fathoms, but Reiknistofa's vessels split above the noise
     scope: app
     apps: [Fontos raun, Reiknistofa fiskmarkaða raun, Jóhann Gíslason raun, Fishtech raun]
     feeds: [fs_afladagbok, adb]
     period: [null, null]
     gear: ["*"]
     field: [z1, z2]
-    holds: "unit: by vessel-period"
-    action: convert           # per vessel-period against GEBCO, as afli_depth_units.R; fathoms where it cannot tell
+    holds: "unit: fathoms"
+    action: convert           # x 1.8288, z1_raw kept, basis reconstructed, as now
+    note: >-
+      Reiknistofa's 34 vessels whose depths GEBCO reads as metres (26 % of 130, above the noise of a one-unit app,
+      Trackwell raun's 11 %) keep z_unit "uncertain" for a person to judge, as Taktikal's (D2); Fontos's 11 (9 %) and
+      Jóhann Gíslason's 2 are the noise
     today: converted x 1.8288
     evidence: >-
-      counts/q05_depth_unit_vessel.tsv (vessels reading fathoms, metres, mixed: Fontos 90, 16, 18; Reiknistofa 66, 24,
-      40; Jóhann Gíslason 34, 2, 21; Fishtech 6, 0, 1)
+      counts/r03_depth_vessel_ratio.tsv (vessels' median ratio at the fathoms and metres peaks: Fontos 82, 11;
+      Reiknistofa 55, 34; Jóhann Gíslason 31, 2, and 20 above 2.4, its misread positions); q05_depth_unit_vessel.tsv
+      (fathoms, metres, mixed: Fontos 90, 16, 18; Reiknistofa 66, 24, 40; Jóhann Gíslason 34, 2, 21; Fishtech 6, 0, 1)
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-30: fathoms for every app, as now; Reiknistofa's 34 metre-reading vessels noted, z_unit
+      uncertain
 
   - id: D4
     quirk: a depth of 0 for none
@@ -811,9 +818,9 @@ rows:
     action: flag
     flag: default_zero        # the depth none
     today: read as 0 m
-    evidence: counts/p05_depth.tsv (23,362 of 23,362)
+    evidence: counts/p05_depth.tsv (23,362 of 23,362, no end depth)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: flagged, the depth read as none"
 
   - id: D5
     quirk: the end depth a copy of the start
@@ -828,10 +835,10 @@ rows:
     flag: end_copy
     today: nothing
     evidence: >-
-      counts/p05_depth.tsv (5,736 of 5,736; value-level on Trackwell raun 24,877, Jóhann Gíslason 524, TRACKWELL 413,
-      kept)
+      counts/p05_depth.tsv (5,736 of 5,736; value-level on Trackwell raun 24,878 of 395,740, Jóhann Gíslason 524,
+      TRACKWELL 413, kept: a haul at one depth)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: flagged, the end depth read as none; equal end depths on other apps kept"
 
   # Count, catch, ids ----------------------------------------------------------------------------------------------
 
@@ -848,7 +855,7 @@ rows:
     evidence: >-
       counts/p06_count.tsv; x04 (midwater trawl: nothing sent in every vessel-year)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: as now, 1 with basis synthesised (decision 240)"
 
   - id: C2
     quirk: the count of trawls or dredges, per tow
@@ -864,7 +871,7 @@ rows:
       counts/x04_towed_count_vessel_year.tsv (fs bottom trawl vessel-years: always 1 167, always 2 or more 22, varying
       57)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: recorded, nothing done"
 
   - id: K1
     quirk: the catch state as the app writes it (UNGU on nearly every row for the small-boat apps)
