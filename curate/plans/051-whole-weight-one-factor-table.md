@@ -1,7 +1,8 @@
 # 051 — Whole weight across species, states, periods and databases: one factor table for the logbooks and the landings
 
-**status:** proposal — written 2026-10-29 at the maintainer's request; steps 1-2 measured the same day, nothing
-built · **measured** (§1), by Claude in two read-only side sessions the same day, in aggregates only and not checked by
+**status:** proposal — written 2026-10-29 at the maintainer's request; steps 1-2 measured the same day; asks a, d and
+e answered by the maintainer on 2026-10-30, as was c's question on afli's lumpfish logbook (TODO 167); b partly
+answered from the regulations the same day, and c's confirmations are with HV 2020-33's authors; nothing built · **measured** (§1), by Claude in two read-only side sessions the same day, in aggregates only and not checked by
 a person: the landings' factors (agf, lods and the ask tables) and every logged kilogram's state
 (`$FISHYDATA/archive/2026-10-whole-weight/findings.md`); lumpfish roe and barrels against MFRI's reports and afli's
 lumpfish logbook (`lumpfish.md` there) · **assumed** (§2): the landings' factors are computed, not weighed; the states
@@ -133,14 +134,22 @@ unaffected. Its product is not in the store since 2026-10-29 (decision 241).
 
 ## 5. Asks
 
-- a. Which factor the product's whole weight takes. Proposed: the landings' factor of the day, from the step 1
-  table, so logged and landed whole weights of the same gutted fish agree. The logbook's own × 1.25, as stored, would
-  be kept beside it. The difference is 5-15 % on gutted demersal fish since 1997 and a factor of 2.7 on lumpfish roe.
+- a. *Answered (maintainer, 2026-10-30):* the landings' factor of the day, from the step 1 table, so logged and landed
+  whole weights of the same gutted fish agree. The logbook's own × 1.25, as stored, is kept beside it. The difference
+  is 5-15 % on gutted demersal fish since 1997 and a factor of 2.7 on lumpfish roe.
 - b. *Partly answered:* the landings system's factor tables are in the dump (`ask.studlar`,
-  `ask.veidistofnar_i_oslaegt`, `kvoti.lods_i_oslaegt(_vsv)`), but they end in 2019. Asked:
-  - are they the regulation's factors, and may they be the `witness` with basis `recorded`?
-  - where are the factors in force since 2020 (agf's or the Directorate's table)?
-  - which regulation changed Greenland halibut heads and tails on 2022-01-16?
+  `ask.veidistofnar_i_oslaegt`, `kvoti.lods_i_oslaegt(_vsv)`), but they end in 2019. *Read from public sources on
+  2026-10-30 by Claude, not checked by a person* (`$FISHYDATA/archive/2026-10-whole-weight/regulations/README.md`):
+  - The factors are in each fishing year's regulation on the total allowable catch, in its article on
+    slægingarstuðlar. For 2025/2026 that is B nr. 860/2025, article 9.
+  - Every factor in that article agrees with the landings' factor: 0.84 for cod, haddock and saithe; 0.92 for the
+    flatfish; 0.90 for the wolffishes, tusk and monkfish; 0.80 for ling and blue ling; × 3.25 for Nephrops tails.
+  - Lumpfish roe is the exception: × 3.4 in the regulation, against the landings' 3.4014 (100/29.4).
+  - Greenland halibut's heads and tails: regulation nr. 1464/2021 amended nr. 468/2013 from 2022-01-01. The tails
+    must be kept, and the sum of tails, heads and bodies is the catch recorded. The landings show the change on
+    2022-01-16, which is not explained.
+  - Left to step 3: each year's regulation from 1997/98 on, to date the periods and make it the `witness`, basis
+    `recorded`.
 - c. *Answered from the reports and the dump; to be confirmed by MFRI's lumpfish assessors (questions in
   `lumpfish.md` §6).*
   - How lumpfish is logged: kg of fish (UNGU), kg of roe (GUTT), and barrels only in afli's lumpfish logbook.
@@ -155,12 +164,14 @@ unaffected. Its product is not in the store since 2026-10-29 (decision 241).
     2020-33);
   - barrels → fish 0.472 t, held but not applied.
 
-  Asked of the maintainer: whether afli's lumpfish logbook enters the product as catch (`lumpfish.md` §7; proposed
-  as a logbook source of its own at the vessel-day, not raised to the barrels, in a TODO of its own).
-- d. Scope: 49 states and 346 species-state pairs in agf. Proposed:
+  *Answered (maintainer, 2026-10-30):* afli's lumpfish logbook enters the product as catch, as a logbook source of its
+  own at the vessel-day, not raised to the barrels (`lumpfish.md` §7, option B). It is TODO 167, after the table holds
+  its rows and HV 2020-33's authors have answered.
+- d. *Answered (maintainer, 2026-10-30):* as proposed, out of agf's 49 states and 346 species-state pairs:
   - the table holds periods for ungutted, gutted, whole, roe, liver, heads, tails (Nephrops and Greenland halibut)
     and the lumpfish states;
   - the 45 products processed at sea are held as yearly means with their range, since only the landings use them;
   - the rest are listed.
-- e. *New.* afli's weights without a sent message (to 2002, and 85 % of 2003-2010) carry no state. Should step 6
-  test, against the landings per trip and species, whether they were converted at 1.25 as the sent ones were?
+- e. *Answered (maintainer, 2026-10-30):* yes. afli's weights without a sent message (to 2002, and 85 % of 2003-2010)
+  carry no state, and step 6 tests them against the landings per trip and species: were they converted at 1.25, as
+  the sent ones were? Each trip goes in one outcome: converted, not converted, or cannot tell.

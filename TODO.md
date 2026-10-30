@@ -1498,9 +1498,10 @@ build drops month-end trips); ask g done: the findings emailed to its author 202
 **check:** plan 050 executed or parked, with a decision record.
 
 ## 157. Whole weight: one factor table for the logbooks and the landings (plan 051)
-**status:** open · **needs: maintainer** — plan 051's asks a-e, and the questions for HV 2020-33's authors, James Kennedy
-and Sigurður Þór Jónsson (`$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft, not sent) · **see:**
-`curate/plans/051-whole-weight-one-factor-table.md`, TODOs 114, 115, 152, plan 050 step 5
+**status:** open · **needs: maintainer** — the questions for HV 2020-33's authors, James Kennedy and Sigurður Þór
+Jónsson (`$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft, not sent); asks a, d and e answered
+2026-10-30, b partly from the regulations (plan 051 §5) · **see:** `curate/plans/051-whole-weight-one-factor-table.md`,
+TODOs 114, 115, 152, 167, plan 050 step 5
 
 The logbooks store whole weight as gutted × 1.25 for every species, while the landings apply a factor per species,
 state and period (cod 1.25 to 1997, then 1.1905; flatfish 1.087; lumpfish roe 3.030, 3.788, then 3.401). So the same
@@ -1616,3 +1617,20 @@ trip's time the copy (Fishing Log 2.7, Trackwell raun, Fontos).
 
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.
+
+## 167. afli's lumpfish logbook as a logbook source of its own
+**status:** open · blocked by plan 051's factor table and HV 2020-33's authors' answers (`lumpfish.md` §6) · **see:**
+`$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §3.8 and §7, plan 051 §5 c, TODO 157
+
+The maintainer chose it on 2026-10-30 (option B). afli's own lumpfish logbook holds catch that no other source holds:
+`grasl_sokn`, roe kg and fish counted per vessel-day and square, 1977-2016, and `grasl_stofn`, barrels per vessel-year
+and the salting stage. That is 36,028 vessel-days in 2005-2016 alone, and only 7 are also in the main logbook. It is
+staged on the preprocessing side:
+- roe kg with its stage, fish counted, nets and nights, per vessel-day and square;
+- the whole weight from the factor table: roe ÷ the stage's factor × 100/29.4, basis `reconstructed`, witness HV
+  2020-33;
+- the unit is the vessel-day, explicitly coarser than a fix (done-criterion 2);
+- the 15 impossible barrel records flagged, not corrected;
+- no raising to the barrels.
+
+**check:** staged and merged, every record in one outcome, the overlap with the main logbook counted; a decision.
