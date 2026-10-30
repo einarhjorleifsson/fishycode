@@ -38,6 +38,15 @@ FATHOM <- 1.8288
 FOOT   <- 0.3048
 TOWNET <- "OTB,OTM,SDN"   # the gears with a net and a codend in afli's towing table
 TRAWL  <- "OTB,OTM"
+# Measured 2026-10-30 (decision 245)
+GILLNET_M <- paste(
+  "metres, read from the values: the regulation on cod gillnets (115/2006, art. 6) counts a net as 60 fathoms of",
+  "netting, some 30 fathoms (55 m) when hung at the usual half; the values are 50-67 (median 54-59), and the AIS",
+  "displacement while hauling is 0.5-1.2 times nets x length on most afli stations, not 1.8 as fathoms would give")
+DREDGE_FT <- paste(
+  "Feet by the documents (the schema's PLOG_STAERD, fs_afladagbok's comment) and by the scallop dredges, 86 % of",
+  "afli's values (8 x 8 x 2: 2.4 x 2.4 x 0.6 m; as metres a frame 8 m long, 2 m high); the sea urchin and sea",
+  "cucumber dredges of 2003 on (2-4 wide, 1 high) read as metres. No rule picks the unit per record: kept raw")
 
 nu <- function(schema, table, column, note) m(schema, table, column, "not_used", note = note)
 key <- function(schema, table, column) m(schema, table, column, "key", note = "the station's key (.sid)")
@@ -82,9 +91,11 @@ afli_toga <- bind_rows(
     min_si = 10, max_si = 10000, note = "the shrimp trawl's meshes around (the schema's STAERD)"),
   nu("afli", "toga", "gerd", "0 on every row; the shrimp trawl's type, 'obsolete' in the schema"),
   m("afli", "toga", "pl_breidd", "gear_part", "dredge", "width_m", "DRB", unit_raw = "unknown",
-    note = "empty in both layers; the sent layer's PLOG_STAERD is read instead"),
-  m("afli", "toga", "pl_lengd", "gear_part", "dredge", "length_m", "DRB", unit_raw = "unknown", note = "empty"),
-  m("afli", "toga", "pl_haed", "gear_part", "dredge", "height_m", "DRB", unit_raw = "unknown", note = "empty"),
+    note = paste("the edited layer holds 49,080 (1972-2021), rafr_ 5.", DREDGE_FT)),
+  m("afli", "toga", "pl_lengd", "gear_part", "dredge", "length_m", "DRB", unit_raw = "unknown",
+    note = "the edited layer holds 44,292, rafr_ 5; as pl_breidd"),
+  m("afli", "toga", "pl_haed", "gear_part", "dredge", "height_m", "DRB", unit_raw = "unknown",
+    note = "the edited layer holds 2,515, rafr_ 5; as pl_breidd"),
   sensor("afli", "toga", "botn_gerd", "bottom_type", "bottom", "1", NA, "observed", "code", to_si = 1,
          code_list = "bottom_type", note = "empty in both layers; the sent layer's BOTNGERD is read instead"),
   m("afli", "toga", "tvo_veidarf", "rigging_part", "rig", "n", "OTB,OTM,DRB", special = TRUE,
@@ -100,7 +111,11 @@ afli_toga <- bind_rows(
   sensor("afli", "toga", "gerd_maelis", "fitted", "gear", NA, "gear", "sounder", "text", code_list = "sounder",
          note = "the sounder's type or make as typed: the row says it was fitted"),
   m("afli", "toga", "fermetrar", "rigging_part", "door", "area_m2", TRAWL, unit_raw = "m2", to_si = 1, min_si = 0.5,
-    max_si = 40),
+    max_si = 40, note = paste(
+      "square metres by the schema (HLERAR@FERMETRAR). Above 40 (12,264 edited, 11,149 loaded rows, 27 vessels) not m2:",
+      "read so the doors weigh 44 kg per m2, against 420 elsewhere. Not square feet: none is a ft2 reading of a door",
+      "the vessel logs in m2 at the same weight; 2,649 are its area with the decimal point lost (105 for 10.5), 9,119",
+      "another number at the same weight, 435 at a weight it logs no area for, 57 the sentinel 999 (decision 245)")),
   m("afli", "toga", "efri_grandarar", "rigging_part", "upper_bridle", "length_m", TRAWL, unit_raw = "m", to_si = 1,
     min_si = 2, max_si = 1000),
   sensor("afli", "toga", "hoflinu_dypi", "depth", "gear", "1", "gear", "headline_sensor", "fathom or m, by record",
@@ -164,8 +179,8 @@ afli_lineha <- bind_rows(
     max_si = 20, type_fixed = "jig"),
   nu("afli", "lineha", "klst", "a duration: hours in the sea, the fishing sample's"),
   m("afli", "lineha", "beita", "gear_part", "bait", "type", "LLS", code_list = "bait"),
-  m("afli", "lineha", "medal_lengd_neta", "gear_part", "net", "length_m", "!LLS", unit_raw = "unknown",
-    note = "a mean net length of unknown unit: decision 210 item 2; no SI value"),
+  m("afli", "lineha", "medal_lengd_neta", "gear_part", "net", "length_m", "!LLS", unit_raw = "m", to_si = 1,
+    min_si = 20, max_si = 110, basis = "reconstructed", note = GILLNET_M),
   nu("afli", "lineha", "fj_tap_neta", "an outcome (nets lost): fishing_sample.n_lost"),
   nu("afli", "lineha", c("logn_hefst", "drattur_hefst", "drattur_lykur"), "a time (t1, t3, t4): the fishing sample's"),
   temp("afli", "lineha", "lofthiti", "air", "1", "vessel"),
@@ -236,7 +251,8 @@ afli_sent <- bind_rows(
   m("afli", "sent", "hand_baited", "gear_part", "hand_baiting", "present", "LLS", zero = "value", note = "HANDBEITT"),
   m("afli", "sent", "n_per_unit", "gear_part", "hook", "n", "LHM", unit_raw = "count", to_si = 1, min_si = 1,
     max_si = 50, note = "FAERI@FJ_KROKA, hooks per jig line"),
-  m("afli", "sent", "g_width", "gear_part", "dredge", "width_m", "DRB", unit_raw = "unknown", note = "PLOG_STAERD@BREIDD"),
+  m("afli", "sent", "g_width", "gear_part", "dredge", "width_m", "DRB", unit_raw = "unknown",
+    note = "PLOG_STAERD@BREIDD, feet by the schema; 5 records sent it, all as loaded"),
   m("afli", "sent", "g_height", "gear_part", "dredge", "height_m", "DRB", unit_raw = "unknown"),
   m("afli", "sent", "g_length", "gear_part", "dredge", "length_m", "DRB", unit_raw = "unknown"),
   sensor("afli", "sent", "bottom_type", "bottom_type", "bottom", "1", NA, "observed", "code", to_si = 1,
@@ -270,7 +286,8 @@ fs_map <- bind_rows(
   m(fs, "ws_plogur", "thyngd", "gear_part", "dredge", "weight_kg", "DRB", unit_raw = "kg", to_si = 1, min_si = 50,
     max_si = 30000, note = "10 kg on the ocean quahog dredge of 3,979 hauls: implausible"),
   m(fs, "ws_plogur", "breidd", "gear_part", "dredge", "width_m", "DRB", unit_raw = "unknown",
-    note = "feet by the comment; one vessel's constants (3 x 3 x 3, 2.5 x 3.6 x 0.2), the unit unverified"),
+    note = paste("feet by the comment; one vessel per kind, constants: 3 x 3 x 3 (ocean quahog; 3 is the app's",
+                 "default, decision 170) and 2.5 x 3.6 x 0.2 (sea urchin, metres: 0.2 ft would be 6 cm).", DREDGE_FT)),
   m(fs, "ws_plogur", "lengd", "gear_part", "dredge", "length_m", "DRB", unit_raw = "unknown"),
   m(fs, "ws_plogur", "haed", "gear_part", "dredge", "height_m", "DRB", unit_raw = "unknown"),
   m(fs, "ws_plogur", "moskvi", "gear_part", "dredge", "mesh_size_mm", "DRB", unit_raw = "mm", to_si = 1, min_si = 10,
@@ -292,8 +309,9 @@ fs_map <- bind_rows(
     min_si = 10, max_si = 1000),
   m(fs, "ws_linanethandf", "moskvi_haed", "gear_part", "net", "height_meshes", unit_raw = "meshes", to_si = 1,
     min_si = 5, max_si = 500),
-  m(fs, "ws_linanethandf", "medal_lengd_neta", "gear_part", "net", "length_m", unit_raw = "unknown",
-    note = "unit not stated (the comment's brackets are empty): decision 210 item 2"),
+  m(fs, "ws_linanethandf", "medal_lengd_neta", "gear_part", "net", "length_m", unit_raw = "m", to_si = 1,
+    min_si = 20, max_si = 110, basis = "reconstructed",
+    note = paste("the comment's unit brackets are empty;", GILLNET_M)),
   m(fs, "ws_linanethandf", "fj_faera", "rigging_part", "unit", "n", "LHM", unit_raw = "count", to_si = 1, min_si = 1,
     max_si = 20, type_fixed = "jig"),
   key(fs, "ws_gildra", "veidi_id"),
@@ -350,7 +368,8 @@ adb_map <- bind_rows(
   m("adb", "trawl_and_seine_net", "two_fg", "rigging_part", "rig", "type", TRAWL, code_list = "rig"),
   key("adb", "dredge", "fishing_station_id"),
   m("adb", "dredge", "dredge_no", "gear_part", "dredge", "type", "DRB", code_list = "dredge_type"),
-  m("adb", "dredge", "width", "gear_part", "dredge", "width_m", "DRB", unit_raw = "unknown"),
+  m("adb", "dredge", "width", "gear_part", "dredge", "width_m", "DRB", unit_raw = "unknown",
+    note = "fs_afladagbok's values (its ws_plogur.breidd)"),
   m("adb", "dredge", "length", "gear_part", "dredge", "length_m", "DRB", unit_raw = "unknown"),
   m("adb", "dredge", "height", "gear_part", "dredge", "height_m", "DRB", unit_raw = "unknown"),
   m("adb", "dredge", "weight", "gear_part", "dredge", "weight_kg", "DRB", unit_raw = "kg", to_si = 1, min_si = 50,
@@ -373,8 +392,8 @@ adb_map <- bind_rows(
     max_si = 1000, note = "0 is empty: adb writes it where fs_afladagbok holds none"),
   m("adb", "line_and_net", "net_height_meshes", "gear_part", "net", "height_meshes", unit_raw = "meshes", to_si = 1,
     min_si = 5, max_si = 500),
-  m("adb", "line_and_net", "net_length", "gear_part", "net", "length_m", unit_raw = "unknown",
-    note = "metres by adb's comment, but the values are fs_afladagbok's, whose unit is not stated: decision 210 item 2"),
+  m("adb", "line_and_net", "net_length", "gear_part", "net", "length_m", unit_raw = "m", to_si = 1, min_si = 20,
+    max_si = 110, basis = "reconstructed", note = paste("metres by adb's comment, its values fs_afladagbok's;", GILLNET_M)),
   m("adb", "line_and_net", "pole_and_lines", "rigging_part", "unit", "n", "LHM", unit_raw = "count", to_si = 1,
     min_si = 1, max_si = 20, type_fixed = "jig"),
   key("adb", "trap", "fishing_station_id"),

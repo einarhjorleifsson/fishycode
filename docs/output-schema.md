@@ -287,8 +287,11 @@ from their gear tables (adb from 2025-11-19, as the merge has it).
 gillnet mesh mm (not inches), its Danish seine rope and wire and its purse seine's length and depth fathoms.
 fs_afladagbok's and adb's headline is feet, their sweeps, rope and the purse seine's length and depth fathoms. The
 headline depth is metres or fathoms by the element the app sent, read per record from the message. A gillnet's mean
-length and a dredge's size are kept raw (`length_raw`, `unit_raw` "unknown"), with no metres, until their unit is
-measured (decision 210 item 2).
+length is metres in every source, read from the values (basis `reconstructed`: the regulation's 60 fathoms of netting
+per net hang some 55 m; decision 245). A dredge's size is kept raw (`length_raw`, `unit_raw` "unknown"), with no
+metres: the documents say feet and the scallop dredges agree, but the sea urchin and sea cucumber dredges read as metres
+(decision 245). A door area above 40 m² is flagged implausible, kept as recorded: not square feet, on some vessels the
+area with its decimal point lost (decision 245).
 
 **Flags.** A value outside its plausible range is kept and flagged `implausible`; an unknown code `unknown_code`.
 In `sensor_summary` a placeholder (a temperature of 0.0, a headline depth of 0 or 1, a sea state or wind speed of -1,

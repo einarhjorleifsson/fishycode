@@ -5053,8 +5053,8 @@ tables:
         type: enum
         values: ["fathom", "ft", "m", "unknown"]
         description: >
-          The unit the row's lengths were recorded in (m, ft, fathom), or 'unknown' (a gillnet's mean
-          length, a dredge's size: decision 210 item 2), where the metres are empty.
+          The unit the row's lengths were recorded in (m, ft, fathom), or 'unknown' (a dredge's size:
+          feet by the documents, metres on some dredges, decision 245), where the metres are empty.
       - name: basis
         type: enum
         values: ["none", "reconstructed", "recorded"]
@@ -5062,8 +5062,8 @@ tables:
         description: >
           The least certain basis of the row's values: recorded, derived (tubs x hooks per tub; the
           rig from the twin flag and the skipper's remark, decision 241), reconstructed (a column
-          whose meaning is read from its values, plan 052 ask g), or none (a raw value with no SI
-          value).
+          whose meaning or unit is read from its values, plan 052 ask g; the gillnet's length in
+          metres, decision 245), or none (a raw value with no SI value).
       - name: layer
         type: string
         examples: ["afli_sent + afli.rafr_lineha", "afli_sent + fs_afli.rafr_lineha", "adb.trawl_and_seine_net", "adb.fishing_station", "fs_afladagbok.ws_gildra"]
@@ -5238,8 +5238,8 @@ tables:
         type: enum
         values: ["fathom", "m"]
         description: >
-          The unit the row's lengths were recorded in (m, ft, fathom), or 'unknown' (a gillnet's mean
-          length, a dredge's size: decision 210 item 2), where the metres are empty.
+          The unit the row's lengths were recorded in (m, ft, fathom), or 'unknown' (a dredge's size:
+          feet by the documents, metres on some dredges, decision 245), where the metres are empty.
       - name: basis
         type: enum
         values: ["derived", "recorded"]
@@ -5247,8 +5247,8 @@ tables:
         description: >
           The least certain basis of the row's values: recorded, derived (tubs x hooks per tub; the
           rig from the twin flag and the skipper's remark, decision 241), reconstructed (a column
-          whose meaning is read from its values, plan 052 ask g), or none (a raw value with no SI
-          value).
+          whose meaning or unit is read from its values, plan 052 ask g; the gillnet's length in
+          metres, decision 245), or none (a raw value with no SI value).
       - name: layer
         type: string
         examples: ["adb.trap", "adb.trawl_and_seine_net", "afli.stofn", "fs_afladagbok.ws_gildra", "fs_afli.rafr_lineha"]

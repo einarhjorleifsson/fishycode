@@ -2,6 +2,8 @@
 # Seeded 2026-10-23 by Claude (AI) from TODO 126's AIS check (decision 211; $FISHYDATA/archive/2026-10-todo126-ais-check/),
 # decision 165 and the study of 2026-10-22 ($FISHYDATA/archive/2026-10-afli-minutes60/), on the dump of 2026-10-16;
 # not yet checked by a person. fs_afladagbok is read up to 2025-11-18, adb after (decision 160).
+# The gear, rigging and per-haul sensor columns added 2026-10-30 by Claude (AI) from reference/gear/part_map.R, whose
+# units they state (plan 052 step 1, decision 245); not checked by a person.
 $version: 0.1.0
 name: fs_afladagbok
 tables:
@@ -127,6 +129,11 @@ tables:
         label: End of fishing or towing
         time_zone: UTC
         details: As upphaf_timi; empty on every STOKKUR station.
+      - name: veidarfaeri_efni
+        label: Gear material
+        details: |
+          Read into gear_part gear.material.
+          Evidence: as typed (151 spellings).
   - name: ws_veidiferd
     details: |
       One row per trip. Holds persons' columns (skip_farsimi, utgerd_kt), which no reader of fishycode selects.
@@ -143,3 +150,245 @@ tables:
         label: Landing
         time_zone: UTC
         details: A midnight on 58,173 of 207,189 trips (dump of 2026-10-16), a day only.
+  - name: ws_dragnot_varpa
+    details: |
+      Read by sources/fs_afladagbok/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units
+      below, so a change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person
+      (decision 245). Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: hoflina_lengd
+        label: Headline length
+        type: number(quantity)
+        units: ft
+        details: |
+          Read into gear_part headline.length_m (gears OTB,OTM,SDN), plausible 3 to 3000 in SI.
+          Evidence: feet: the comment, and plan 052 §2's account (a, b).
+      - name: moskvi_staerd_poki
+        label: Codend mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part codend.mesh_size_mm (gears OTB,OTM,SDN), plausible 10 to 1000 in SI.
+      - name: tegund_skilju
+        label: Grid type
+        details: |
+          Read into gear_part grid.type (gears OTB,OTM,SDN), code list grid.
+      - name: hlerar_kg
+        label: Door weight
+        type: number(quantity)
+        units: kg
+        details: |
+          Read into rigging_part door.weight_kg (gears OTB,OTM), plausible 20 to 9000 in SI.
+      - name: grandarar_lengd
+        label: Sweep length
+        type: number(quantity)
+        units: fathom
+        details: |
+          Read into rigging_part sweep.length_m (gears OTB,OTM,SDN), plausible 2 to 1000 in SI.
+          Evidence: fathoms: the comment, and plan 052 §2's account (a, b).
+      - name: toglengd
+        label: Rope length
+        type: number(quantity)
+        units: fathom
+        details: |
+          Read into rigging_part rope.length_m (gears SDN), plausible 20 to 20000 in SI.
+      - name: moskvi_fj_ummali
+        label: Codend meshes around
+        type: number(quantity)
+        units: meshes
+        details: |
+          Read into gear_part codend.meshes_around (gears OTB,OTM,SDN), plausible 10 to 10000 in SI.
+          Evidence: the codend's: its values (median 150) are afli's codend meshes around (200), not the net's
+          (2,250), whatever the comment says.
+      - name: tvo_veidarf
+        label: Units fished at once (rig); Rig
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part rig.n (gears OTB,OTM), plausible 1 to 3 in SI; rigging_part rig.type (gears
+          OTB,OTM), code list rig.
+      - name: legggluggi
+        label: Square window fitted
+        details: |
+          Read into gear_part square_window.present (gears OTB,OTM,SDN).
+      - name: leggpoki
+        label: Codend mesh orientation
+        details: |
+          Read into gear_part codend.mesh_orientation (gears OTB,OTM,SDN), code list mesh_orientation.
+          Evidence: T0, T45, T90, in a column named for the square-mesh codend.
+  - name: ws_plogur
+    details: |
+      Read by sources/fs_afladagbok/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units
+      below, so a change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person
+      (decision 245). Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: thyngd
+        label: Dredge weight
+        type: number(quantity)
+        units: kg
+        details: |
+          Read into gear_part dredge.weight_kg (gears DRB), plausible 50 to 30000 in SI.
+          Evidence: 10 kg on the ocean quahog dredge of 3,979 hauls: implausible.
+      - name: breidd
+        label: Dredge width
+        type: number(quantity)
+        details: |
+          Read into gear_part dredge.width_m (gears DRB).
+          Evidence: feet by the comment; one vessel per kind, constants: 3 x 3 x 3 (ocean quahog; 3 is the app's
+          default, decision 170) and 2.5 x 3.6 x 0.2 (sea urchin, metres: 0.2 ft would be 6 cm). Feet by the
+          documents (the schema's PLOG_STAERD, fs_afladagbok's comment) and by the scallop dredges, 86 % of afli's
+          values (8 x 8 x 2: 2.4 x 2.4 x 0.6 m; as metres a frame 8 m long, 2 m high); the sea urchin and sea
+          cucumber dredges of 2003 on (2-4 wide, 1 high) read as metres. No rule picks the unit per record: kept raw.
+        todo: The unit is not established (plan 052 step 1, decision 245); no SI value is made.
+      - name: lengd
+        label: Dredge length
+        type: number(quantity)
+        details: |
+          Read into gear_part dredge.length_m (gears DRB).
+        todo: The unit is not established (plan 052 step 1, decision 245); no SI value is made.
+      - name: haed
+        label: Dredge height
+        type: number(quantity)
+        details: |
+          Read into gear_part dredge.height_m (gears DRB).
+        todo: The unit is not established (plan 052 step 1, decision 245); no SI value is made.
+      - name: moskvi
+        label: Dredge mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part dredge.mesh_size_mm (gears DRB), plausible 10 to 1000 in SI.
+      - name: tvo_veidarf
+        label: Units fished at once (rig); Rig
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part rig.n (gears DRB), plausible 1 to 3 in SI; rigging_part rig.type (gears DRB), code
+          list rig.
+      - name: leggpoki
+        label: Dredge mesh orientation
+        details: |
+          Read into gear_part dredge.mesh_orientation (gears DRB), code list mesh_orientation.
+      - name: gerd
+        label: Dredge type
+        type: number(id)
+        details: |
+          Read into gear_part dredge.type (gears DRB), code list dredge_type.
+  - name: ws_linanethandf
+    details: |
+      Read by sources/fs_afladagbok/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units
+      below, so a change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person
+      (decision 245). Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: fj_kroka
+        label: Hooks in all
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part hook_total.n (gears !LHM), plausible 10 to 1e+05 in SI; rigging_part hook_total.n
+          (gears LHM), every value flagged per_jig_or_total.
+          Evidence: on jigs per jig line on some records and in all on others, mixed within every app (decision 244).
+      - name: fj_dreginna_neta
+        label: Number of nets
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n (gears !LHM), plausible 1 to 500 in SI.
+      - name: moskvi_staerd
+        label: Net mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part net.mesh_size_mm, plausible 10 to 1000 in SI.
+      - name: moskvi_haed
+        label: Net height in meshes
+        type: number(quantity)
+        units: meshes
+        details: |
+          Read into gear_part net.height_meshes, plausible 5 to 500 in SI.
+      - name: medal_lengd_neta
+        label: Net length
+        type: number(quantity)
+        units: m
+        details: |
+          Read into gear_part net.length_m, plausible 20 to 110 in SI, basis reconstructed.
+          Evidence: the comment's unit brackets are empty; metres, read from the values: the regulation on cod
+          gillnets (115/2006, art. 6) counts a net as 60 fathoms of netting, some 30 fathoms (55 m) when hung at the
+          usual half; the values are 50-67 (median 54-59), and the AIS displacement while hauling is 0.5-1.2 times
+          nets x length on most afli stations, not 1.8 as fathoms would give.
+        constraints:
+          - assert: AVG(CASE WHEN medal_lengd_neta BETWEEN 20 AND 110 THEN medal_lengd_neta END) BETWEEN 45 AND 65
+            description: >-
+              A scale check, never a proof: the mean net between 20 and 110 is 61.7 (dump of 2026-10-16). Metres: the
+              regulation on cod gillnets counts a net as 60 fathoms of netting, some 30 fathoms (55 m) hung; in
+              fathoms a net would hang twice the netting the regulation counts (decision 245).
+      - name: fj_faera
+        label: Number of jigs
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n (gears LHM), plausible 1 to 20 in SI.
+  - name: ws_gildra
+    details: |
+      Read by sources/fs_afladagbok/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units
+      below, so a change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person
+      (decision 245). Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: fj_gildra
+        label: Number of traps
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n, plausible 1 to 5000 in SI.
+      - name: gerd
+        label: Trap type
+        type: number(id)
+        details: |
+          Read into gear_part trap.type, code list trap_type.
+  - name: ws_hringn
+    details: |
+      Read by sources/fs_afladagbok/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units
+      below, so a change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person
+      (decision 245). Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: lengd_notu
+        label: Seine length
+        type: number(quantity)
+        units: fathom
+        details: |
+          Read into gear_part seine.length_m, plausible 50 to 5000 in SI.
+      - name: dypt_notu
+        label: Seine height
+        type: number(quantity)
+        units: fathom
+        details: |
+          Read into gear_part seine.height_m, plausible 10 to 1000 in SI.
+      - name: moskvi_staerd
+        label: Seine mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part seine.mesh_size_mm, plausible 5 to 1000 in SI.
+      - name: tegund_notar
+        label: Seine type
+        type: number(id)
+        details: |
+          Read into gear_part seine.type, code list seine_type.
+  - name: ws_kofun
+    details: |
+      Read by sources/fs_afladagbok/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units
+      below, so a change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person
+      (decision 245). Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: fj_kafara
+        label: Number of divers
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n, plausible 1 to 20 in SI.

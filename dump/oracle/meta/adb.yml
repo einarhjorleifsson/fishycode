@@ -1,6 +1,8 @@
 # adb — what the dump's dictionary cannot say of the columns fishycode reads (plan 040; format in README.md).
 # Seeded 2026-10-22 by Claude (AI) from decisions 165, 170 and 171 and the dump of 2026-10-16, the positions' forms by
 # app added 2026-10-23 from TODO 126's AIS check (decision 211); not yet checked by a person. adb is read only from 2025-11-19 (decision 160); the claims below are tested on every row it holds.
+# The gear, rigging and per-haul sensor columns added 2026-10-30 by Claude (AI) from reference/gear/part_map.R, whose
+# units they state (plan 052 step 1, decision 245); not checked by a person.
 $version: 0.1.0
 name: adb
 tables:
@@ -127,6 +129,11 @@ tables:
       - name: fishing_end
         label: End of fishing or towing
         time_zone: UTC
+      - name: fishing_gear_material
+        label: Gear material
+        details: |
+          Read into gear_part gear.material.
+          Evidence: as typed.
   - name: trawl_and_seine_net
     details: |
       Read by sources/adb/convert.R for the bridle (decision 170). The view trawl_and_seine_net_v converts the headline
@@ -166,20 +173,104 @@ tables:
         units: fathom
         details: |
           Evidence: Oracle's comment ("fathom/ftm"); the view (x 1.8288).
+      - name: mesh_size
+        label: Codend mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part codend.mesh_size_mm (gears OTB,OTM,SDN), plausible 10 to 1000 in SI.
+      - name: mesh_type
+        label: Codend mesh orientation
+        details: |
+          Read into gear_part codend.mesh_orientation (gears OTB,OTM,SDN), code list mesh_orientation.
+      - name: grid_no
+        label: Grid type
+        details: |
+          Read into gear_part grid.type (gears OTB,OTM,SDN), code list grid.
+          Evidence: a name, not a number, despite the column's.
+      - name: square_window
+        label: Square window fitted
+        details: |
+          Read into gear_part square_window.present (gears OTB,OTM,SDN).
+          Evidence: 0 is empty: adb writes it where fs_afladagbok holds none (102 of 217,569 shared stations hold a
+          value).
+      - name: otterboard_weight
+        label: Door weight
+        type: number(quantity)
+        units: kg
+        details: |
+          Read into rigging_part door.weight_kg (gears OTB,OTM), plausible 20 to 9000 in SI.
+      - name: circumference_mesh_number
+        label: Codend meshes around
+        type: number(quantity)
+        units: meshes
+        details: |
+          Read into gear_part codend.meshes_around (gears OTB,OTM,SDN), plausible 10 to 10000 in SI.
+      - name: two_fg
+        label: Units fished at once (rig); Rig
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part rig.n (gears OTB,OTM), plausible 1 to 3 in SI; rigging_part rig.type (gears
+          OTB,OTM), code list rig.
   - name: dredge
-    definitions:
-      - name: width_m
-        label: Dredge width, m
-        expr: width * 0.3048
+    details: |
+      Read by sources/adb/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units below, so a
+      change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person (decision 245).
+      Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
     columns:
+      - name: dredge_no
+        label: Dredge type
+        type: number(id)
+        details: |
+          Read into gear_part dredge.type (gears DRB), code list dredge_type.
       - name: width
         label: Dredge width
         type: number(quantity)
-        units: ft
         details: |
+          Read into gear_part dredge.width_m (gears DRB).
+          Evidence: fs_afladagbok's values (its ws_plogur.breidd).
           Five values on the dump of 2026-10-16: 3 (5,776 rows, the app's default), 2.5, 2, 25 and 0.5. The view
-          dredge_v took a foot as 0.3042 m, a garbled 0.3048 (decision 170).
-          Evidence: fs_afladagbok's ws_plogur comments say "fet" (feet); decision 170. Oracle's comment names no unit.
+          dredge_v took a foot as 0.3042 m, a garbled 0.3048, and Oracle's comment names no unit (decision 170).
+        todo: The unit is not established (plan 052 step 1, decision 245); no SI value is made.
+      - name: length
+        label: Dredge length
+        type: number(quantity)
+        details: |
+          Read into gear_part dredge.length_m (gears DRB).
+        todo: The unit is not established (plan 052 step 1, decision 245); no SI value is made.
+      - name: height
+        label: Dredge height
+        type: number(quantity)
+        details: |
+          Read into gear_part dredge.height_m (gears DRB).
+        todo: The unit is not established (plan 052 step 1, decision 245); no SI value is made.
+      - name: weight
+        label: Dredge weight
+        type: number(quantity)
+        units: kg
+        details: |
+          Read into gear_part dredge.weight_kg (gears DRB), plausible 50 to 30000 in SI.
+          Evidence: empty: lost in the copy from fs_afladagbok.
+      - name: two_dredges
+        label: Units fished at once (rig); Rig
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part rig.n (gears DRB), plausible 1 to 3 in SI; rigging_part rig.type (gears DRB), code
+          list rig.
+      - name: mesh_size
+        label: Dredge mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part dredge.mesh_size_mm (gears DRB), plausible 10 to 1000 in SI.
+      - name: mesh_type
+        label: Dredge mesh orientation
+        details: |
+          Read into gear_part dredge.mesh_orientation (gears DRB), code list mesh_orientation.
+          Evidence: empty.
   - name: species
     details: |
       Read by reference/species/species.R (decision 182): the Directorate's species codes (id) mapped to MFRI's
@@ -197,3 +288,123 @@ tables:
         label: Species code (MFRI)
         type: number(id)
         details: Empty on 14 rows, corals and sponges among them (dump of 2026-10-16).
+  - name: line_and_net
+    details: |
+      Read by sources/adb/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units below, so a
+      change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person (decision 245).
+      Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: hooks
+        label: Hooks in all
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part hook_total.n (gears !LHM), plausible 10 to 1e+05 in SI; rigging_part hook_total.n
+          (gears LHM), every value flagged per_jig_or_total.
+          Evidence: as fs_afladagbok's fj_kroka.
+      - name: nets
+        label: Number of nets
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n (gears !LHM), plausible 1 to 500 in SI.
+      - name: mesh_size
+        label: Net mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part net.mesh_size_mm, plausible 10 to 1000 in SI.
+          Evidence: 0 is empty: adb writes it where fs_afladagbok holds none.
+      - name: net_height_meshes
+        label: Net height in meshes
+        type: number(quantity)
+        units: meshes
+        details: |
+          Read into gear_part net.height_meshes, plausible 5 to 500 in SI.
+      - name: net_length
+        label: Net length
+        type: number(quantity)
+        units: m
+        details: |
+          Read into gear_part net.length_m, plausible 20 to 110 in SI, basis reconstructed.
+          Evidence: metres by adb's comment, its values fs_afladagbok's; metres, read from the values: the regulation
+          on cod gillnets (115/2006, art. 6) counts a net as 60 fathoms of netting, some 30 fathoms (55 m) when hung
+          at the usual half; the values are 50-67 (median 54-59), and the AIS displacement while hauling is 0.5-1.2
+          times nets x length on most afli stations, not 1.8 as fathoms would give.
+        constraints:
+          - assert: AVG(CASE WHEN net_length BETWEEN 20 AND 110 THEN net_length END) BETWEEN 45 AND 65
+            description: >-
+              A scale check, never a proof: the mean net between 20 and 110 is 60.9 (dump of 2026-10-16). Metres: the
+              regulation on cod gillnets counts a net as 60 fathoms of netting, some 30 fathoms (55 m) hung; in
+              fathoms a net would hang twice the netting the regulation counts (decision 245).
+      - name: pole_and_lines
+        label: Number of jigs
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n (gears LHM), plausible 1 to 20 in SI.
+  - name: trap
+    details: |
+      Read by sources/adb/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units below, so a
+      change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person (decision 245).
+      Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: trap_no
+        label: Trap type
+        type: number(id)
+        details: |
+          Read into gear_part trap.type, code list trap_type.
+          Evidence: empty.
+      - name: number_of_traps
+        label: Number of traps
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n, plausible 1 to 5000 in SI.
+  - name: surrounding_net
+    details: |
+      Read by sources/adb/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units below, so a
+      change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person (decision 245).
+      Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: surrounding_net_no
+        label: Seine type
+        type: number(id)
+        details: |
+          Read into gear_part seine.type, code list seine_type.
+      - name: length
+        label: Seine length
+        type: number(quantity)
+        units: fathom
+        details: |
+          Read into gear_part seine.length_m, plausible 50 to 5000 in SI.
+          Evidence: fathoms, as fs_afladagbok's lengd_notu: equal on all 1,276 shared stations.
+      - name: height
+        label: Seine height
+        type: number(quantity)
+        units: fathom
+        details: |
+          Read into gear_part seine.height_m, plausible 10 to 1000 in SI.
+      - name: mesh_size
+        label: Seine mesh size
+        type: number(quantity)
+        units: mm
+        details: |
+          Read into gear_part seine.mesh_size_mm, plausible 5 to 1000 in SI.
+  - name: diving
+    details: |
+      Read by sources/adb/part.R (plan 052, decision 244). reference/gear/part_map.R applies the units below, so a
+      change goes to both; added 2026-10-30 by Claude (AI) from the map, not checked by a person (decision 245).
+      Evidence, unless a column says otherwise: plan 052 §2's measurements
+      ($FISHYDATA/archive/2026-10-29-gear-rigging-sensor/, its column map 09).
+    columns:
+      - name: divers
+        label: Number of divers
+        type: number(quantity)
+        units: count
+        details: |
+          Read into rigging_part unit.n, plausible 1 to 20 in SI.
+          Evidence: no rows.
