@@ -2,7 +2,7 @@ id: logbook_app_profile
 title: each logbook app's habits, field by field, found by rule; values kept as recorded and flagged (plan 053)
 status: >-
   drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); 18 rows
-  reviewed by the maintainer the same evening and 5 more on 2026-10-30 (the `reviewed` field), the other 22 with their
+  reviewed by the maintainer the same evening and 10 more on 2026-10-30 (the `reviewed` field), the other 17 with their
   evidence in $FISHYDATA/archive/2026-10-29-elogbook-feed/review-sheet.md; none applies; not implemented (no
   logbook_app_profile.R yet, nothing reads this file)
 applies_to:
@@ -267,8 +267,8 @@ rows:
 
   - id: T11
     quirk: >-
-      the trip's departure copies the first tow or haul start, and its landing the last tow or seine end; the station's
-      times are right
+      the trip's departure copies the first tow, haul or jig start, and its landing the last tow, seine, haul or jig
+      end; the station's times are right
     scope: value
     apps: [Trackwell raun, Fontos raun]   # and on the afli route any app (Fishing Log 2.7 and 2.0), by the rule
     feeds: [fs_afladagbok, adb, afli]
@@ -278,7 +278,9 @@ rows:
       of a static set stamped with seconds (T15's other half)
     gear: ["*"]
     field: [T1, T2]           # the trip's departure and landing, not the station's times
-    holds: "copy: a station's t2 or t3 (Trackwell raun), t1 (Fontos's jigs); the landing a tow's or seine set's t3"
+    holds: >-
+      copy: a station's t2 or t3 (Trackwell raun), a jig's t1 (both); the landing a tow's or seine set's t3, a haul's or
+      jig's t4 (both, within 10 min)
     action: flag
     flag: copy_station
     today: >-
@@ -290,25 +292,32 @@ rows:
       72-77 %); inventory T11 (8,665 such times near); tow and seine ends equal to the landing (1,045 merged, q02):
       near 65-83 %, in port 15-20 %, the vessel reaching port within 1 h after on 69 % (w01, x02); the afli route: r12
       (Fishing Log 2.7 and 2.0, 481 sets within 1 min of the departure: seconds on 426, the departure on none, the
-      trip's first set on 473), w01 (2.7's in port 9 %, as its stamped sets 10 %)
+      trip's first set on 473), w01 (2.7's in port 9 %, as its stamped sets 10 %); Trackwell raun's jig starts equal
+      to the departure (1,633): at sea 49 %, in port 8 % (x02), near 57 % against 27 % for its stamped jig starts (w01),
+      two stamps seconds apart (r15); haul and jig ends within 10 min of the landing (Trackwell raun 10,015 static and
+      18,369 jigs, Fontos 420 and 6,130 merged, q02): at sea more than 1 h before port 33-38 % (x02), Trackwell raun's
+      static ends near 68 % (w01), two stamps minutes apart (r16)
     ask: d
     reviewed: >-
       the maintainer, 2026-10-29: the trip's departure and landing are the copies, flagged; the tow and seine times
-      kept (ask d answered; decision 206's towed dummies reversed). 2026-10-30: widened to the afli route (T15)
+      kept (ask d answered; decision 206's towed dummies reversed). 2026-10-30: widened to the afli route (T15), to
+      Trackwell raun's jig starts (T17) and to both apps' haul and jig ends (T18)
 
   - id: T11-station
-    quirk: a tow start, seine set or haul start equal to the trip's departure
+    quirk: >-
+      a tow start, seine set, haul or jig start equal to the trip's departure, or a haul or jig end equal to its landing
     scope: value
     apps: [Trackwell raun, Fontos raun]
     feeds: [fs_afladagbok, adb]
     period: [2021-11-18, null]
     gear: ["*"]
-    field: [t1, t2, t3]
+    field: [t1, t2, t3, t4]
     holds: recorded
     action: none              # the departure or landing is the copy (T11)
     evidence: as T11; q02 (Trackwell raun t2 3,064, static t3 6,293 merged)
     ask: d
-    reviewed: "the maintainer, 2026-10-29: kept as recorded (ask d)"
+    reviewed: >-
+      the maintainer, 2026-10-29: kept as recorded (ask d); 2026-10-30: jig starts and haul and jig ends too (T17, T18)
 
   - id: T12
     quirk: a set time stamped with seconds; in port on a quarter, its position saved later
@@ -346,9 +355,11 @@ rows:
     flag: derived_grid
     basis: derived            # decision 206, with a precision modifier of half an hour
     today: nothing (decision 206, not built)
-    evidence: counts/q01_t1_caught.tsv (2,893 merged); w01 (near 42-50 %)
+    evidence: >-
+      counts/q01_t1_caught.tsv (2,893 merged); w01 (Trackwell raun near 45 %, in port 8 % of 2,882 judged; its typed
+      sets near 65 %, in port 7 %; the placeholder in port 69 %)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: noted, basis derived; the set window kept"
 
   - id: T14
     quirk: a tow, seine set or haul of 0-4 min, its start and end pressed together
@@ -427,58 +438,70 @@ rows:
     reviewed: "the maintainer, 2026-10-30: the departure and landing copies flagged; the entry-time sets kept"
 
   - id: T17
-    quirk: a jig start equal to the trip's departure (the track does not say which is the copy)
+    quirk: a jig start equal to the trip's departure, copied from it
     scope: value
-    apps: [Trackwell raun, Jóhann Gíslason raun, Reiknistofa fiskmarkaða raun, Fishtech raun]
+    apps: [Reiknistofa fiskmarkaða raun, Jóhann Gíslason raun, Fishtech raun]
     feeds: [fs_afladagbok, adb]
     period: [null, null]
     gear: [jig]
     field: t1
-    holds: "copy: departure (undecided)"
-    action: note
-    flag: equals_departure
+    holds: "copy: departure"
+    action: flag              # Fishtech raun: note (equals_departure), the evidence undecided
+    flag: copy_departure
+    note: Trackwell raun's and Fontos's are the other way round, the departure the copy (T11)
     today: nothing
     evidence: >-
-      counts/w01_times_track.tsv (Trackwell raun near 55-67 %, in port 16-20 %; Jóhann Gíslason far 55 %, in port
-      34 %; Reiknistofa near 40-52 %); q01 (Trackwell raun 1,631, Reiknistofa 742, Jóhann Gíslason 520, Fishtech 67
-      merged); Fontos's are T11
+      counts/q01_t1_caught.tsv (merged: Reiknistofa 742, Jóhann Gíslason 520, Fishtech 67); r15 (Reiknistofa's start
+      in whole minutes against a departure stamped with seconds, 230 of 259); x02 (Jóhann Gíslason within 1 h of leaving
+      port 66 %); w01 (Jóhann Gíslason in port 33 %, its typed starts 4 %; Fishtech near 40 %, 29 % twins)
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-30: Reiknistofa's and Jóhann Gíslason's flagged, Fishtech's noted; Trackwell raun's
+      moved to T11 (the departure the copy)
 
   - id: T18
-    quirk: a haul or jig end equal to the trip's landing or the entry time (the record closed at the haul's end)
+    quirk: a haul or jig end within 10 min of the trip's landing, copied from it
     scope: value
-    apps: [Trackwell raun, Jóhann Gíslason raun, Reiknistofa fiskmarkaða raun, Fishtech raun]
+    apps: [Reiknistofa fiskmarkaða raun, Jóhann Gíslason raun, Fishtech raun]
     feeds: [fs_afladagbok, adb]
     period: [null, null]
     gear: [static, jig]
     field: t4
-    holds: "copy: landing or entry time"
-    action: note
-    flag: equals_landing      # or equals_entry
+    holds: "copy: landing"
+    action: flag              # Jóhann Gíslason raun and Fishtech raun: note (equals_landing), the evidence undecided
+    flag: copy_landing
+    note: >-
+      Trackwell raun's and Fontos's are the other way round, the landing the copy (T11). An end equal to the record's
+      entry time (Trackwell raun 4,123 static and 12,077 jigs merged, near 80 % and 65 %, in port 1-2 %) is the record
+      closed at the haul's end and is kept as recorded
     today: nothing
     evidence: >-
-      counts/w01_times_track.tsv (Trackwell raun static near 66-86 %, jigs near 45-81 %); q02 (Trackwell raun
-      static 10,015 and 4,123, jigs 18,369 and 12,077 merged)
+      counts/x02_times_port_calls.tsv (Reiknistofa 938, Jóhann Gíslason 611, Fishtech 169); r16 (Reiknistofa's end in
+      whole minutes against a landing stamped with seconds, 593 of 645); w01 (Reiknistofa in port 22-29 %, its typed
+      ends 5 %; Jóhann Gíslason in port 28 % jigs, typed 5 %, but at sea more than 1 h before port 32 %, x02); q02
+      (Trackwell raun's entry-time ends)
     ask: a
-    reviewed: null
+    reviewed: >-
+      the maintainer, 2026-10-30: Reiknistofa's flagged, Jóhann Gíslason's and Fishtech's noted, the entry-time ends
+      kept; Trackwell raun's moved to T11 (the landing the copy)
 
   - id: T18-fontos
-    quirk: the jig end is the trip's landing, at the vessel's arrival on half
+    quirk: Fontos's jig or haul end within 10 min of the trip's landing
     scope: value
     apps: [Fontos raun]
     feeds: [fs_afladagbok, adb]
     period: [2022-05-01, null]
     gear: [jig, static]
     field: t4
-    holds: "trip: landing"
-    action: flag
-    flag: copy_landing
-    today: nothing; the jig window runs to the landing
+    holds: recorded
+    action: none              # the landing is the copy (T11, T11-station)
+    today: nothing; the jig window runs to the end
     evidence: >-
-      counts/x02_times_port_calls.tsv (t4 within 1 h of reaching port 50-51 %); q02 (6,130 jig, 420 static merged)
+      counts/x02_times_port_calls.tsv (at sea more than 1 h before port 38 % jigs, 45 % static; within 1 h of
+      reaching port 53 %, 44 %); r16 (two stamps, equal to the second on 1,919 of 5,064 jigs); q02 (6,130 jig, 420
+      static merged); its jig starts real (near 65-78 %, w01)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: the end kept, the trip's landing flagged as its copy (T11), not as drafted"
 
   - id: T19
     quirk: Trackwell raun's tows and seine sets, start and end
@@ -495,7 +518,7 @@ rows:
       the share with seconds falls from 95 % of tow starts in 2022 to 35 % in 2026, so later reviews read it by year
     evidence: counts/w01_times_track.tsv; tables.md (the tow starts with seconds, by year)
     ask: a
-    reviewed: null
+    reviewed: "the maintainer, 2026-10-30: recorded, nothing done; the check lists a moved share by year"
 
   # Windows --------------------------------------------------------------------------------------------------------
 
