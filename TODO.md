@@ -334,17 +334,6 @@ included since its dump of 2026-10-23) is parked for a person's read of the name
 
 **check:** each plan's asks are answered in the plan, and each is built, parked or abandoned in its header.
 
-## 75. Afli trips lost whole, and the rows before 2007-09 (decision 098's open ends)
-**status:** open · **see:** `curate/decisions/098-dropped-afli-hauls-not-admitted.md` ("Open"), plan 005
-
-Decision 098 did not admit the afli hauls the stofn merge dropped. It left two things open. About 410 trips are lost
-whole yet have a landing that no logbook trip took: they are the only candidates for genuinely missing records, and
-nothing proves them (in the 219 with catch on both sides, the lost catch is 0.87 of the landing, median). Before
-2007-09 no landing link reaches the rows: 1,854 rows, mostly 2004-2006, where the share absent was highest (19 % in
-2004), and whether those are copies is unknown.
-
-**check:** a decision says, for the 410 trips and the 1,854 rows, whether they are admitted, with the evidence.
-
 ## 81. A trip's catch landed over two days: `lid_map` claims one landing
 **status:** open · **needs: maintainer** — plan 027's four asks · **see:** plan 027, plan 026 §11, plans 025 and 014,
 `curate/link_lid_map.R`, `curate/ais_catch.R`
@@ -830,7 +819,7 @@ unchanged, and those trips' logged over landed near 1.0; or the plan parked or a
 
 ## 115. The most upstream source, value by value, through the grammar (plan 037)
 **status:** open · **see:** `curate/plans/037-the-most-upstream-source.md`, `docs/grammar.qmd`, decisions 158, 160,
-162, 180 and 189, TODO 110 and 118, `$FISHYDATA/archive/2026-10-plan037/`, `2026-10-xml-oracle-map/`
+162, 180, 189 and 248, TODO 110, `$FISHYDATA/archive/2026-10-plan037/`, `2026-10-xml-oracle-map/`
 
 The maintainer's principle (2026-10-21): each value from the most upstream layer that holds it, when it states its
 unit and keeps more or known precision; a resend or an in-house edit, being later and deliberate, wins. afli's
@@ -850,6 +839,11 @@ phase 1 (the precedence table, the provenance column, consumers reading the whol
   per-vessel test kept for paper records and for Fishing Log 2.6 in 2010-2012.
 - **TODO 114:** on 2.65 M afli catch items logged gutted, round(gutted × 1.25) is labelled `recorded`; the weight as
   logged and its state are in every sent item.
+
+**Phase 2 also builds decision 248's admissions:** afli's trips lost whole whose catch and species match a free
+landing, from 2007-06 (6,851 records; five near-pairs reviewed first), and records never loaded on kept trips from
+2015, by trip (1,505); with them the adapter's fs_afli stations read as fs_afladagbok's (153, 92 in the first class),
+and decision 171's line: adb's 243 stations and the 14 `TRACKWELL BAEKUR`/`PAPPÍR` trips, in afli's output or not.
 
 **check:** each phase built or declined in a decision, or the plan parked or abandoned in its header; with phase 2,
 afli's end positions, tow times, soak and closing times from the sent record (or declined), `afli_end_longitude`
@@ -887,29 +881,6 @@ class in `stk_receipt`; the three Oracle reads in the next dump run (TODO 110). 
 Plan 048 (TODO 148) builds three of them: the event rows out of the track, the per-unit screen, and no cut at 2017.
 
 **check:** each decision recorded, and what is chosen built or declined.
-
-## 118. afli's hauls in a layer but not in `afli.stofn`: loaded but never moved, and sent but never loaded
-**status:** open · **see:** plan 037 §2.1, TODO 75, decisions 098 and 189
-
-Of the records Oracle loaded, 26,695 in afli's `rafr_stofn` never moved to `afli.stofn`: 3,182 deleted, 23,513 not,
-and why is unexplained. The sent layer stages all of them, so once it is read they enter the logbook unless
-explained. Some may be a haul loaded twice; some genuinely missing hauls (as TODO 75's lost trips). Decision 098
-already ruled on these hauls (23,570 live rows absent from `stofn`): not admitted, since adding them overshoots the
-landing and most are the same hauls submitted again. Also open from decision 171: whether adb's 243 stations before
-2025-11-19 with no counterpart, and the 14 `TRACKWELL BAEKUR` and `PAPPÍR` trips decision 160 removed, are in afli's
-adapter's output (both added from Claude's audit of 2026-10-23, not checked by a person). Decision 098 holds in
-phase 2 (the maintainer, 2026-10-23, decision 189).
-
-**Sent but never loaded** (plan 037 ask f, decision 189): 14,759 records of the sent messages that Oracle's loader never
-wrote into `rafr_` (168 vessels, 2001-2022, 142.8 kt as logged), staged with `loaded = FALSE` and kept out of the
-logbook. Measured 2026-10-23 by Claude: 2,890 (31.7 kt) on a vessel-day the curated logbook holds, likely copies; about
-11,650 (111 kt) on vessel-days it lacks, and 7,771 of those with catch have the vessel's landing within 0-3 days; 10
-dated 2096-2099.
-
-**check:** each of the 23,513 in one outcome (a copy of a moved record, a missing haul, unexplained), judged by
-decision 098's rule or by a decision that overturns it; each of the 14,759 never loaded in one outcome (a copy of a
-held haul, a missing haul, unexplained) and its admission decided per class; and the sent layer stages no haul twice.
-
 
 ## 122. The logbook flow, whole: from each source to its catch on the fixes (plan 038)
 **status:** open · **see:** `curate/plans/038-the-logbook-flow-whole.md` (asks answered 2026-10-23, decision 191),
