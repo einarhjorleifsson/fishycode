@@ -165,7 +165,8 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
       substr(.git_info()$commit, 1, 7), log_root)
   exit <- stats::setNames(rep(NA_integer_, length(schema)), schema)
   for (s in schema) {
-    if (resume && .dump_finished(s, log_root, if (is.null(driver)) Sys.getenv("FD_DUMP_DRIVER", "RJDBC") else driver)) {
+    if (resume && .dump_finished(s, log_root, if (is.null(driver)) Sys.getenv("FD_DUMP_DRIVER", "RJDBC") else driver,
+                                 root)) {
       say("%s: finished in an earlier run with nothing failed - skipped", s)
       exit[[s]] <- 0L
       next
@@ -189,16 +190,43 @@ run_dump_all <- function(schema = NULL, driver = NULL, resume = FALSE, root = .r
 
 # Did the last run of schema `s` end well: exit 0, an overview with nothing failed, every written table of `driver`?
 # An object the overview lists without dumping it (`tables =`) leaves the schema unfinished: orri and ops$einarhj were
-# dumped in part until 2026-10-17, and their scripts now take the whole schema, which --resume completes.
-.dump_finished <- function(s, log_root, driver) {
+# dumped in part until 2026-10-17, and their scripts now take the whole schema, which --resume completes. So does an
+# object the overview says was skipped that the script no longer skips through `driver` (orri, uv and fs_afli after
+# decision 159 opened tables in them, TODO 110), and a script whose skips cannot be read.
+.dump_finished <- function(s, log_root, driver, root = .repo_root()) {
   log <- .dump_current(s, log_root)$log
   ov <- file.path(log_root, s, "_overview_tables.parquet")
   if (is.na(log) || !file.exists(ov)) return(FALSE)
   ex <- paste0(log, ".exit")
   if (!file.exists(ex) || !identical(suppressWarnings(as.integer(readLines(ex)[1])), 0L)) return(FALSE)
   o <- as.data.frame(nanoparquet::read_parquet(ov))
-  all(c("status", "driver") %in% names(o)) && !any(o$status %in% c("failed", "listed")) &&
-    all(o$driver[o$status %in% "written"] == driver)
+  if (!all(c("name", "status", "driver") %in% names(o)) || any(o$status %in% c("failed", "listed")) ||
+      !all(o$driver[o$status %in% "written"] == driver)) return(FALSE)
+  skips <- .dump_script_skips(s, driver, root)
+  !is.null(skips) && all(o$name[o$status %in% "skipped"] %in% skips)
+}
+
+# The objects dump/oracle/<s>.R skips now through `driver`: the `skip` of its dump_oracle_schema() call, and its
+# `skip_rjdbc` when the driver is RJDBC, as dump_oracle_schema() takes them. Read from the script's text, never run;
+# NULL when the script or its call is missing, or a skip is not a constant.
+.dump_script_skips <- function(s, driver, root = .repo_root()) {
+  f <- file.path(root, "dump", "oracle", paste0(s, ".R"))
+  if (!file.exists(f)) return(NULL)
+  exprs <- tryCatch(parse(f, keep.source = FALSE), error = function(e) NULL)
+  found <- NULL
+  walk <- function(e) {
+    if (!is.call(e) || !is.null(found)) return(invisible())
+    if (identical(e[[1]], as.name("dump_oracle_schema"))) { found <<- e; return(invisible()) }
+    for (i in seq_along(e)[-1]) if (is.call(e[[i]])) walk(e[[i]])
+  }
+  for (e in exprs) walk(e)
+  if (is.null(found)) return(NULL)
+  args <- as.list(found)
+  arg <- function(k) if (is.null(args[[k]])) character() else
+    tryCatch(as.character(eval(args[[k]], baseenv())), error = function(e) NULL)
+  skip <- arg("skip"); rjdbc <- arg("skip_rjdbc")
+  if (is.null(skip) || is.null(rjdbc)) return(NULL)
+  c(skip, if (driver == "RJDBC") rjdbc)
 }
 
 # The schemas with a dump script, in the order a full run takes them: a small one first, to fail fast; stk last.

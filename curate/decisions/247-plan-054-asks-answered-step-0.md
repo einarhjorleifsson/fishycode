@@ -74,7 +74,13 @@ In short (plan 054 §5 has each answer):
 - **TODO 70** waits for the query at the next Oracle sitting.
 - **TODO 169** holds every outside wait. TODOs 103, 141, 156, 157 and 165 point to it.
 
+- **TODO 110's `--resume`, in part.** `.dump_finished()` now reads each dump script's skips without running it
+  (`.dump_script_skips()`, `R/run_dump.R`). A schema whose overview lists as skipped an object its script no longer
+  skips through the driver is unfinished, so `all.R --resume` dumps it again; the files already written are kept, as
+  before. A script whose skips cannot be read as constants counts as unfinished too. `tests/test_run_dump.R` (70
+  checks) reads every one of the 31 scripts. On the dumps of 2026-10-30 the fix changes nothing, because orri, uv and
+  fs_afli were redone by hand. The Oracle reads of TODO 110 wait for the maintainer's sitting (plan 054 §7).
+
 ## Left
 
-Plan 054's step 0 holds one more item, TODO 110's `--resume` fix, a code change with its own test. Then come step 1's
-read-only studies, step 2's changes on scratch stores, and rebuild A, which waits for the maintainer's go.
+Step 1's read-only studies, step 2's changes on scratch stores, and rebuild A, which waits for the maintainer's go.

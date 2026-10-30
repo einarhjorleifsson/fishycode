@@ -774,13 +774,14 @@ the day (decision 083 (b): ramb needs an end or a duration); counted 2026-10-23 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
 
 ## 110. The Oracle dumper's open ends after the run of 2026-10-21
-**status:** open — `--resume` fixed in plan 054's step 0, the Oracle reads at the maintainer's next sitting (§7) · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
+**status:** open — `--resume` fixed 2026-10-30 (plan 054 step 0, decision 247); the Oracle reads at the maintainer's next
+sitting (plan 054 §7) · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
 `dump/oracle/fs_afladagbok.R`
 
-`all.R --resume` skips a schema whose last run exited 0 with nothing failed, and `.dump_finished()` counts a
-deliberately skipped object as finished: orri, uv and fs_afli were skipped although decision 159 had opened tables
-in them (done by hand with `run_dump(..., resume = TRUE)`). It should count a schema unfinished whose overview lists
-an object as skipped that its script no longer skips. And `fs_afladagbok.takt_json_form` (6,912 Taktikal JSON forms
+Fixed 2026-10-30: `.dump_finished()` reads each script's skips (`.dump_script_skips()`), so a schema whose overview
+lists as skipped an object its script no longer skips is unfinished, and `all.R --resume` dumps it again
+(`tests/test_run_dump.R`). orri, uv and fs_afli had been redone by hand; on the dumps of 2026-10-30 no overview holds a
+skip its script dropped. Left: `fs_afladagbok.takt_json_form` (6,912 Taktikal JSON forms
 with a file) is not dumped: a CLOB with NUL characters, which the NUL fallback strips from VARCHAR2 and CHAR only.
 The overview rows of `stk.trail` (20,681,877 of 303,795,653 rows) and `afli.sjalfvirkir_maelar` are still stale after
 9ef7596 (decision 164): recompute or re-dump. `simalinu` was dumped through RJDBC with `dirty = true` (decision 162):
@@ -789,7 +790,7 @@ trail's sequence, `ALL_OBJECTS.CREATED` for its trigger and sequence, a count of
 adopted on 2026-10-22, DuckDB reads both whole and kvoti has its `_data-dict.yaml`
 (`$FISHYDATA/archive/raw-oracle-redump_2026-10-22/README.md`).
 
-**check:** a test on the stand-in shows `--resume` dumping a table taken off a skip list; `takt_json_form` dumped
+**check:** `takt_json_form` dumped
 (its JSON whole) or left out in a decision; every partitioned table's overview row equals its files.
 
 ## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
