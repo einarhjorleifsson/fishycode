@@ -3,18 +3,28 @@ title: each logbook app's habits, field by field, found by rule; values kept as 
 status: >-
   drafted 2026-10-29 by Claude (AI) from plan 053's measurements, for a person's review (plan 053 ask a); every row
   reviewed by the maintainer, 18 the same evening and 27 on 2026-10-30 (the `reviewed` field), the evidence in
-  $FISHYDATA/archive/2026-10-29-elogbook-feed/ (review-sheet.md); none applies; not implemented (no
-  logbook_app_profile.R yet, nothing reads this file)
+  $FISHYDATA/archive/2026-10-29-elogbook-feed/ (review-sheet.md); four rows added from decision 249 (T2-afli, T3-afli,
+  T20) and T11's afli half split into its own row (T11-afli), 2026-10-30. The flag and note rows of the times, the
+  positions and the catch coded by Claude (AI) on 2026-10-30 (plan 054 step 2a) and traced on a scratch store; not
+  built on the live store
 applies_to:
-  - curated/logbook/fishing_sample.parquet   # t1_flag ... t4_flag, the rule's id (proposed)
-  - curated/logbook/station.parquet          # pos_flag, z_unit with z1_basis, z2_flag (proposed)
-  - curated/logbook/trip.parquet             # T1_flag: a departure that copies a station's time (proposed)
+  - curated/logbook/fishing_sample.parquet   # t1_flag ... t4_flag, t1_rule ... t4_rule, t1_action ... t4_action
+  - curated/logbook/station.parquet          # pos1_flag, pos2_flag with their rule and action; z_unit (step 8)
+  - curated/logbook/trip.parquet             # T1_flag, T2_flag with their rule and action: a copy of a station's time
+  - curated/logbook/catch.parquet            # species_flag with its rule and action (K2)
   - curated/logbook/station_window.parquet   # a flagged time opens and closes no window
 implementation: >-
-  none yet. Plan 053 steps 2 and 5-8: the app carried on every staged station (fs ws_veidiferd.uppruni, adb
-  fishing_trip.source, the afli route's message software and version), R/logbook_app_profile.R applied in
-  curate/logbook.R after the twins, curate/station_window.R and judged_time_sql() (R/duration_limit.R) reading the
-  flags, the adapters' position decoders reading the `read_as` rows
+  R/logbook_app_profile.R, applied in curate/logbook.R after the twins (plan 053 step 5): each flag and note row of
+  the times (t1-t4, the trip's T1 and T2), the positions and the catch, coded from its text, in the order of
+  APP_TIME_ORDER, first match wins. A field's `<field>_action` says what the flow does: "flag" leaves the value out of
+  every window, link and duration (judged_time_sql(), R/duration_limit.R; calc_effort(), R/logbook_effort.R), "note"
+  keeps it. A row's `note_for` names the values within its scope that are noted rather than flagged. The windows
+  (curate/station_window.R, plan 053 step 6): a station with no usable time gets ramb's day window (W1); a trip_time
+  station takes the trip's departure and return where its own times are flagged, basis derived (T4, T10); a pressed
+  record runs from its start to the gear's 95th percentile span or the vessel's next station, basis synthesised
+  (T14). The `read_as` rows are the adapters' position decoders' (step 7), the `convert` rows and D4-D5 depth's
+  (step 8). I4 needs the landing link, built after the merge: it is listed by the check (step 4). P8's 8 merged
+  stations need Trackwell's own copy as a frozen list, not yet made
 discovered: 2026-10-29, plan 053 (from decisions 157, 158, 206, 210, 211, 242, 243 and TODOs 103, 107, 126, 164)
 decided_by: the maintainer, 2026-10-29 and 30 (plan 053 asks a-e, h); asks f and g open
 evidence: >-
@@ -38,6 +48,12 @@ vocabulary:
     note = the flag is set and the value is still used (a weak sign, for analysts); read_as = the adapter reads the
     stored form this way; convert = a unit converted, the original kept, basis reconstructed; none = checked, nothing
     done, or done elsewhere as named
+  note_for: >-
+    the values within the row's scope that are noted, not flagged: by `gear` or `apps`, with the note's own `flag`
+    word where the row gives one (R/logbook_app_profile.R reads it)
+  gear: >-
+    the gear class from curated/reference/gear_window.parquet by the logbook's gid (static, jig = jigged, towed, seine =
+    the Danish seine, other), or an ICES gear code
   reviewed: null until a person has read the row's evidence and agreed its reading and action
 
 rows:
@@ -105,6 +121,63 @@ rows:
     ask: a
     reviewed: >-
       the maintainer, 2026-10-29: flag the time as the placeholder, and keep its day as the set day, basis derived
+
+  - id: T2-afli
+    quirk: T2's placeholder a minute off, on the afli route
+    scope: value
+    apps: ["*"]               # Fishing Log 2.7 mostly, Trackwell's app on the afli route
+    feeds: [afli]
+    period: [null, null]
+    gear: [static]
+    field: t1
+    holds: placeholder
+    rule: as T2
+    action: flag
+    flag: placeholder
+    today: nothing
+    evidence: >-
+      ../2026-10-30-plan054-stations-vs-track/ (decision 249: the gillnet sets in port that plan 053 did not flag, 270
+      min a minute off or plus whole days among them)
+    ask: a
+    reviewed: "decision 249 (the maintainer, 2026-10-30): T2 and T3 also apply on the afli route"
+
+  - id: T3-afli
+    quirk: T3's placeholder with whole days added, on the afli route
+    scope: value
+    apps: ["*"]
+    feeds: [afli]
+    period: [null, null]
+    gear: [static]
+    field: t1
+    holds: placeholder
+    rule: as T3
+    action: flag
+    flag: placeholder
+    keep: the set day (t1's date), basis derived, as T3
+    today: nothing
+    evidence: ../2026-10-30-plan054-stations-vs-track/ (decision 249)
+    ask: a
+    reviewed: "decision 249 (the maintainer, 2026-10-30): T2 and T3 also apply on the afli route"
+
+  - id: T20
+    quirk: a gillnet set 210 min before the haul start, or that plus whole days (a second placeholder on the afli route)
+    scope: value
+    apps: ["*"]
+    feeds: [afli]
+    period: [null, null]
+    gear: [GNS, GND]          # the population decision 249 measured; longlines not judged
+    field: t1
+    holds: placeholder
+    rule: t3 - t1 = 210 + k x 1,440 min, k >= 0, within 1 min
+    action: flag
+    flag: placeholder
+    today: nothing
+    evidence: >-
+      ../2026-10-30-plan054-stations-vs-track/ (decision 249: a 210-min soak in port on 61 % of 900 sets, 53 % with
+      whole days added, against 6-15 % for other half-hour soaks; 3,399 gillnet sets on the afli route hold the forms,
+      1,603 of them in port)
+    ask: a
+    reviewed: "decision 249 (the maintainer, 2026-10-30): a new row for the 210-min offset, +-1 min, plus whole days"
 
   - id: T4-marina
     quirk: the station's start is the trip's departure; the app writes no set or jig start
@@ -270,12 +343,13 @@ rows:
       the trip's departure copies the first tow, haul or jig start, and its landing the last tow, seine, haul or jig
       end; the station's times are right
     scope: value
-    apps: [Trackwell raun, Fontos raun]   # and on the afli route any app (Fishing Log 2.7 and 2.0), by the rule
-    feeds: [fs_afladagbok, adb, afli]
-    period: [2021-11-18, null]            # fs_afladagbok and adb; the afli route in every period
+    apps: [Trackwell raun, Fontos raun]   # the afli route's half is T11-afli
+    feeds: [fs_afladagbok, adb]
+    period: [2021-11-18, null]
     rule: >-
-      fs_afladagbok and adb: as the evidence says; the afli route: the trip's departure, in whole minutes, within 1 min
-      of a static set stamped with seconds (T15's other half)
+      the departure within 1 min of a station's time, the landing (not a date) within 10 min, as `holds` says per app
+      and gear class: Trackwell raun a tow's or seine set's t2, a haul's t3, a jig's t1, and a tow's or seine set's t3, a
+      haul's or jig's t4; Fontos raun a jig's t1, and a haul's or jig's t4
     gear: ["*"]
     field: [T1, T2]           # the trip's departure and landing, not the station's times
     holds: >-
@@ -300,8 +374,27 @@ rows:
     ask: d
     reviewed: >-
       the maintainer, 2026-10-29: the trip's departure and landing are the copies, flagged; the tow and seine times
-      kept (ask d answered; decision 206's towed dummies reversed). 2026-10-30: widened to the afli route (T15), to
-      Trackwell raun's jig starts (T17) and to both apps' haul and jig ends (T18)
+      kept (ask d answered; decision 206's towed dummies reversed). 2026-10-30: widened to the afli route (T15, now
+      T11-afli), to Trackwell raun's jig starts (T17) and to both apps' haul and jig ends (T18)
+
+  - id: T11-afli
+    quirk: the afli route's departure copies a static set stamped with seconds (T15's other half)
+    scope: value
+    apps: ["*"]               # Fishing Log 2.7 and 2.0
+    feeds: [afli]
+    period: [null, null]
+    rule: >-
+      the departure (staging/afli_sent/trip.parquet, a date on every trip) in whole minutes, within 1 min of one of
+      the trip's static sets stamped with seconds; the flag goes on the merged trip that holds the station
+    gear: [static]
+    field: T1
+    holds: "copy: a static set's t1"
+    action: flag
+    flag: copy_station
+    today: nothing; trip_reconciled reads no afli departure
+    evidence: as T11 (r12, w01)
+    ask: d
+    reviewed: "the maintainer, 2026-10-30: T11 widened to the afli route (T15)"
 
   - id: T11-station
     quirk: >-
@@ -325,11 +418,12 @@ rows:
     apps: [Trackwell raun]
     feeds: [fs_afladagbok, adb]
     period: [2021-11-18, null]
-    gear: [static]
+    gear: [GNS, GND, LLS]     # traps (FPO) were not reviewed and are left as recorded
     field: t1
     holds: recorded
     rule: second(t1) <> 0, and not T1-T3, nor equal to the record's entry time (T16)
     action: flag              # gillnets (GNS, GND); longlines (LLS): note, the set window kept
+    note_for: {gear: [LLS]}
     flag: stamped
     today: nothing
     evidence: >-
@@ -368,9 +462,9 @@ rows:
     feeds: [fs_afladagbok, adb]
     period: [null, null]
     gear: ["*"]
-    field: [t2, t3]
+    field: [t3, t4]           # the end, the copy: a tow's or seine set's t3, a haul's t4; the start is kept
     holds: "copy: the other end"
-    rule: towed and seine t3 - t2 <= 4 min; static t4 - t3 <= 4 min
+    rule: towed and seine t3 - t2 <= 4 min; static t4 - t3 <= 4 min (either way, as the archive's class)
     action: flag
     flag: pressed
     window: >-
@@ -389,14 +483,18 @@ rows:
       proposed, r07)
 
   - id: T15
-    quirk: the afli route's set time, in whole minutes, is the trip's departure
+    quirk: >-
+      the afli route's set time, in whole minutes, at 23:59 on the evening before the departure date (decision 249:
+      the departure is a date on every trip, so the copy is the date less a minute)
     scope: value
     apps: ["*"]               # Fishing Log 2.6; the rule needs no version
     feeds: [afli]
     period: [null, null]
     gear: [static]
     field: t1
-    rule: afli's electronic stations (visir < 0), t1 within 1 min of the trip's departure and second(t1) = 0
+    rule: >-
+      afli's electronic stations (visir < 0, those with an app), t1 within 1 min of the trip's departure
+      (staging/afli_sent/trip.parquet) and second(t1) = 0
     holds: "trip: departure"
     action: flag
     flag: copy_departure
@@ -447,6 +545,7 @@ rows:
     field: t1
     holds: "copy: departure"
     action: flag              # Fishtech raun: note (equals_departure), the evidence undecided
+    note_for: {apps: [Fishtech raun], flag: equals_departure}
     flag: copy_departure
     note: Trackwell raun's and Fontos's are the other way round, the departure the copy (T11)
     today: nothing
@@ -469,6 +568,7 @@ rows:
     field: t4
     holds: "copy: landing"
     action: flag              # Jóhann Gíslason raun and Fishtech raun: note (equals_landing), the evidence undecided
+    note_for: {apps: [Jóhann Gíslason raun, Fishtech raun], flag: equals_landing}
     flag: copy_landing
     note: >-
       Trackwell raun's and Fontos's are the other way round, the landing the copy (T11). An end equal to the record's

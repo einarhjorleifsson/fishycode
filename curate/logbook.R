@@ -47,7 +47,10 @@
 # plan 053 step 2), from the trip's source and the afli route's sent layer (staging/afli_sent/station.parquet).
 # Station type: station.parquet carries station_type (operation / event) and
 # station_type_basis, read per vessel, year and gear (decision 084).
-# Set times: a logbook app's placeholder t1 is NA in fishing_sample.parquet, t1_placeholder TRUE (decision 157).
+# App profile: each app's habits found by rule (curate/corrections/logbook_app_profile.yml, R/logbook_app_profile.R;
+# plan 053 steps 5 and 6), after the twins: every value as recorded, with t1_flag ... t4_flag in fishing_sample.parquet,
+# T1_flag and T2_flag in trip.parquet, pos1_flag and pos2_flag in station.parquet, species_flag in catch.parquet, each
+# with its rule and action. Until then a placeholder t1 was NA here (decision 157); t1_placeholder stays one release.
 # Fate (plan 024): one row per staging station of every source and one per staging trip, kept or dropped, and why.
 # Each date bound and tier keeps the stations it drops, so its rule is stated once; the merge checks that the account
 # adds up (kg in = kept + dropped, per source) and stops otherwise.
@@ -445,20 +448,6 @@ merged_station <- merged_station |>
   left_join(station_app, by = c(".sid", "schema"), relationship = "one-to-one")
 rm(trip_app, sent_app, station_app)
 
-# Placeholder set times --------------------------------------------------------
-# Trackwell's logbook app fills the set time with the haul start less 270 min (or 1,710 min), cut to the minute
-# (curate/corrections/logbook_set_placeholder.yml, decision 157). Such a t1 is not the skipper's: it becomes NA and
-# t1_placeholder says why; the value as recorded stays in staging/. After the twins, which compare t1 as recorded.
-# The soak and effort made from it before curate/ (fs_afladagbok's and adb's static duration_m is t4 - t1) are left
-# as they are: t1_placeholder marks them too.
-to_minute <- function(t) t - as.numeric(t) %% 60
-is_offset <- function(t1, t3, m) !is.na(t1) & !is.na(t3) &
-  (t1 == to_minute(t3 - m * 60) | t3 == to_minute(t1 + m * 60))
-merged_fishing_sample <- merged_fishing_sample |>
-  mutate(t1_placeholder = schema %in% c("afli", "fs_afladagbok", "adb") &
-           (is_offset(t1, t3, 270) | is_offset(t1, t3, 1710)),
-         t1 = if_else(t1_placeholder, NA_POSIXct_, t1))
-
 # Gear code --------------------------------------------------------------------
 # The letter twin of the new gid, one each (curated/reference/gear.parquet, plan 050): of the logbook's own gear, as
 # `gear` here is. The landing's correction carries the code of the gear it uses (curate/corrections/logbook_gear.R).
@@ -468,15 +457,87 @@ merged_fishing_sample <- merged_fishing_sample |>
   left_join(gear_code, by = "gid", relationship = "many-to-one") |>
   relocate(gear_code, .after = target2)
 
-# Station and trip fate --------------------------------------------------------
-# The sources' samples and catch are in the merged tables now, and are freed first: with them kept, the merge and its
-# fate peaked at 21 GB of a 24 GB machine (2026-10-23).
+# The sources' tables ----------------------------------------------------------
+# The sources' samples and catch are in the merged tables now, and are freed before the app profile and the fate: with
+# them kept, the merge and its fate peaked at 21 GB of a 24 GB machine (2026-10-23).
 rm(afli_fishing_sample, afli_catch, fs_fishing_sample, fs_catch, fs_only_fishing_sample, fs_only_catch,
    adb_fishing_sample, adb_catch, adb_only_fishing_sample, adb_only_catch, ers_fishing_sample, ers_catch,
    ers_only_fishing_sample, ers_only_catch, afli_depth, afli_end_lon, adb_lon_sign, fs_tier, adb_tier, ers_tier,
    afli_fs_tier, fs_only_station_vid, tw, tw_sig, st_base)
 invisible(gc())
 
+# App profile ------------------------------------------------------------------
+# Each app's habits found by rule (curate/corrections/logbook_app_profile.yml, plan 053 steps 5 and 6;
+# R/logbook_app_profile.R), after the twins, which compare the times as recorded. Every value stays as recorded:
+# t1_flag ... t4_flag say what a time holds, *_rule the row, *_action what the flow does with it ("flag": left out of
+# every window, link and duration, through judged_time_sql(); "note": kept). The rows read each station's app
+# (decision 253), its gear class (gear_window, by the logbook's own gid), its trip's departure and landing (the afli
+# route's departure from its sent layer, staging/afli_sent/trip.parquet), the record's entry time (record_entered, fs
+# and adb) and, for Fontos raun's vessels, the vessel's previous station (row T7: duplicate twins out). They are tried
+# on the e-logbook's stations and on afli's with a set time; no row applies to the others. Until plan 053 a placeholder
+# t1 was set to NA here (decision 157); t1_placeholder stays one release, as t1_flag "placeholder".
+profile <- app_profile()
+app_gear <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |>
+  select(gid, gear_class) |> collect() |> mutate(gid = as.numeric(gid))
+afli_departure <- duckdbfs::open_dataset(fd_staging("afli_sent", "station.parquet")) |> select(.sid, .tid) |>
+  inner_join(duckdbfs::open_dataset(fd_staging("afli_sent", "trip.parquet")) |> select(.tid, sent_departure = T1),
+             by = ".tid") |>
+  select(.sid, sent_departure) |> collect() |> mutate(schema = "afli")
+ap_idx <- which(merged_fishing_sample$schema %in% c("fs_afladagbok", "adb") |
+                  (merged_fishing_sample$schema %in% "afli" & !is.na(merged_fishing_sample$t1)))
+ap <- merged_fishing_sample |>
+  select(.sid, .tid, schema, gid, gear, t1, t2, t3, t4) |>
+  slice(ap_idx) |>
+  left_join(app_gear, by = "gid", relationship = "many-to-one") |>
+  left_join(merged_station |> select(.sid, schema, app, date, twin, record_entered, lat1, lon1, lat2, lon2),
+            by = c(".sid", "schema"), relationship = "one-to-one") |>
+  left_join(merged_trip |> select(.tid, schema, vid, T1, T2), by = c(".tid", "schema"), relationship = "many-to-one") |>
+  left_join(afli_departure, by = c(".sid", "schema"), relationship = "one-to-one") |>
+  mutate(gear_class = app_gear_class(gear_class, gear), date = as.Date(date),
+         departure  = if_else(schema == "afli", sent_departure, T1),
+         landing    = if_else(schema == "afli", NA_POSIXct_, T2))
+app_prev <- merged_fishing_sample |>
+  select(.sid, .tid, schema, t1, t2, t3, t4) |>
+  left_join(merged_trip |> select(.tid, schema, vid), by = c(".tid", "schema"), relationship = "many-to-one") |>
+  filter(vid %in% ap$vid[ap$app %in% "Fontos raun"]) |>
+  left_join(merged_station |> select(.sid, schema, twin), by = c(".sid", "schema"), relationship = "one-to-one") |>
+  filter(!twin %in% "duplicate") |>
+  arrange(vid, coalesce(t3, t1, t2), coalesce(t4, t3, t1, t2), .sid, schema) |>
+  mutate(prev_t3 = lag(t3), prev_t4 = lag(t4), .by = vid) |>
+  select(.sid, schema, prev_t3, prev_t4)
+ap <- ap |> left_join(app_prev, by = c(".sid", "schema"), relationship = "one-to-one")
+stopifnot("the app profile's frame is not the sample's rows" =
+            nrow(ap) == length(ap_idx) && identical(ap$.sid, merged_fishing_sample$.sid[ap_idx]))
+ap_times <- flag_app_times(ap, profile)
+for (cl in names(ap_times)) {
+  v <- rep(NA_character_, nrow(merged_fishing_sample))
+  v[ap_idx] <- ap_times[[cl]]
+  merged_fishing_sample[[cl]] <- v
+}
+merged_fishing_sample <- merged_fishing_sample |> mutate(t1_placeholder = t1_flag %in% "placeholder")
+merged_trip <- merged_trip |>
+  left_join(flag_app_trips(ap, profile), by = c(".tid", "schema"), relationship = "one-to-one")
+ap$t1_rule <- ap_times$t1_rule
+app_pos <- bind_cols(ap |> select(.sid, schema), flag_app_positions(ap, profile)) |>
+  filter(!is.na(pos1_flag) | !is.na(pos2_flag))
+merged_station <- merged_station |>
+  left_join(app_pos, by = c(".sid", "schema"), relationship = "one-to-one")
+app_catch_idx <- which(merged_catch$schema %in% "adb")
+app_catch <- merged_catch |>
+  select(.sid, schema, sid) |>
+  slice(app_catch_idx) |>
+  left_join(ap |> select(.sid, schema, app, date, gear, gear_class), by = c(".sid", "schema"),
+            relationship = "many-to-one") |>
+  flag_app_catch(profile)
+for (cl in names(app_catch)) {
+  v <- rep(NA_character_, nrow(merged_catch))
+  v[app_catch_idx] <- app_catch[[cl]]
+  merged_catch[[cl]] <- v
+}
+rm(ap, ap_idx, ap_times, app_prev, app_pos, app_catch, app_catch_idx, afli_departure, app_gear, v)
+invisible(gc())
+
+# Station and trip fate --------------------------------------------------------
 # Every staging station in one outcome (plan 024 §4). `in_curated` is read from the stations written, `reason` from
 # the rule that dropped it. `held_by` is the tier whose kept stations hold the dropped station's vessel-day: the tiers'
 # vessel-days are disjoint, so there is at most one, and a vessel-day with no vessel is never held. `day_match` sets
@@ -588,8 +649,18 @@ merged_station |> filter(!is.na(twin)) |> count(schema, twin) |>
   pivot_wider(names_from = twin, values_from = n, values_fill = 0L) |> print()
 merged_trip |> filter(!is.na(twin)) |> count(schema, twin, has_twin_of = !is.na(twin_of)) |> print()
 
-cat("\nPlaceholder set times (curate/corrections/logbook_set_placeholder.yml), t1 set to NA:\n")
-merged_fishing_sample |> filter(t1_placeholder) |> count(schema, gear) |> print()
+cat("\nApp profile (curate/corrections/logbook_app_profile.yml): the times flagged or noted, by field, rule and action:\n")
+bind_rows(lapply(c("t1", "t2", "t3", "t4"), \(f) merged_fishing_sample |>
+  filter(!is.na(.data[[paste0(f, "_rule")]])) |>
+  count(schema, field = f, rule = .data[[paste0(f, "_rule")]], flag = .data[[paste0(f, "_flag")]],
+        action = .data[[paste0(f, "_action")]]))) |> print(n = 100)
+cat("\nthe trips' departure and landing, the positions and the catch:\n")
+bind_rows(merged_trip |> filter(!is.na(T1_rule)) |> count(schema, field = "T1", rule = T1_rule, action = T1_action),
+          merged_trip |> filter(!is.na(T2_rule)) |> count(schema, field = "T2", rule = T2_rule, action = T2_action),
+          merged_station |> filter(!is.na(pos1_rule)) |> count(schema, field = "pos1", rule = pos1_rule, action = pos1_action),
+          merged_station |> filter(!is.na(pos2_rule)) |> count(schema, field = "pos2", rule = pos2_rule, action = pos2_action),
+          merged_catch |> filter(!is.na(species_rule)) |> count(schema, field = "species", rule = species_rule,
+                                                              action = species_action)) |> print(n = 50)
 
 cat("\nStation fate (station_fate.parquet), stations and kt as recorded, by schema and reason:\n")
 station_fate |>
@@ -615,7 +686,8 @@ logbook_inputs <- c(
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
   fd_staging("afli", "depth.parquet"), fd_staging("afli", "end_longitude.parquet"), fd_staging("adb", "lon_sign.parquet"),
-  AFLI_EAST_LON, fd_staging("afli_sent", "station.parquet"), fd_curated("reference", "gear.parquet"),
+  AFLI_EAST_LON, fd_staging("afli_sent", "station.parquet"), fd_staging("afli_sent", "trip.parquet"), APP_PROFILE,
+  fd_curated("reference", "gear.parquet"), fd_curated("reference", "gear_window.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
                   "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
 merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)

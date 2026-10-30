@@ -1,6 +1,10 @@
 id: logbook_set_placeholder
 title: a static-gear set time 270 or 1,710 min before the haul start is a logbook app's placeholder; t1 is set to NA and flagged
-status: applied and rebuilt 2026-10-21 at de25239 (452f83e in the published history; decision 158), the counts below exactly; nothing fills the set, since plan 035's track set failed its test (decision 158)
+status: >-
+  applied and rebuilt 2026-10-21 at de25239 (452f83e in the published history; decision 158), the counts below exactly;
+  nothing fills the set, since plan 035's track set failed its test (decision 158). Superseded, coded 2026-10-30 and not
+  built: the rule is row T1 of curate/corrections/logbook_app_profile.yml, which keeps t1 as recorded and flags it
+  (t1_flag "placeholder", plan 053 ask b); t1_placeholder stays one release. Kept as the rule's history
 applies_to:
   - curated/logbook/fishing_sample.parquet   # t1 (NA where a placeholder), t1_placeholder
 affects_rows: >-
@@ -9,7 +13,9 @@ affects_rows: >-
   By the windows' gear (the landing's, where it overrides the logbook's): static 77,191, towed 322 (318 already a day
   window), jigged 143, other 5, none 292 (281 of them duplicate twins). A test merge of curate/logbook.R into scratch
   (2026-10-20) gave these counts, changed t1 on no other row and no other column.
-implementation: curate/logbook.R, section "Placeholder set times" (after the twins, which compare t1 as recorded)
+implementation: >-
+  curate/logbook.R, section "Placeholder set times" (after the twins, which compare t1 as recorded), until 2026-10-30;
+  then R/logbook_app_profile.R, row T1, in its section "App profile"
 discovered: 2026-10-20, TODO 103 (decision 157)
 decided_by: >-
   the maintainer, 2026-10-20: set t1 to NA where it is the placeholder, with one flag column; the 270 and 1,710-min

@@ -3,7 +3,7 @@
 # Input:  a fishing_sample-shaped frame with the NEW gid and duration_m (minutes), and
 #         curated/reference/gear_window.parquet (dur_max_min per gid; reference/gear/windows.R)
 # Output: flag_duration_limit() gives the same frame with duration_m_raw and .duration_source;
-#         judged_time_sql() gives the SQL for t3, t4 or duration_m as a consumer of the times reads them
+#         judged_time_sql() gives the SQL for t1-t4 or duration_m as a consumer of the times reads them
 #
 # Replaces the cap tables that sources/afli/convert.R and sources/fs_afladagbok/convert.R
 # each carried. Those capped a long duration AT the cap, which turned an error into a
@@ -19,7 +19,9 @@
 # (curate/checks/allocation_audit.R), through judged_time_sql(), and calc_effort() (R/logbook_effort.R). There the
 # end a flagged duration made is not believed: a mobile gear's t3 (afli's is t2 + its tow time, the e-logbook's the
 # span's end), the e-logbook's static t4, and the duration itself. afli's static times are recorded apart from its
-# duration, and stand.
+# duration, and stand. judged_time_sql() also leaves out every time the app profile flags (`<time>_action` "flag",
+# R/logbook_app_profile.R, plan 053 step 6), the way the limit leaves out an end: a flagged time opens and closes no
+# window and links no event. A noted time is kept.
 
 # The rule is ramb::rb_limit_record_duration() (plan 014 phase 2), which sets the duration NA; this keeps it. Below:
 # a recorded duration of 0 or less is no duration (afli's tow times, hours and nights), so `zero_ok` is FALSE. A span
@@ -34,14 +36,17 @@ flag_duration_limit <- function(d, limits, zero_ok = FALSE) {
                                                     "implausible", .duration_source))
 }
 
-# `col` is "t3", "t4" or "duration_m"; `a` the fishing sample's alias in the query.
+# `col` is "t1", "t2", "t3", "t4" or "duration_m"; `a` the fishing sample's alias in the query.
 judged_time_sql <- function(col, a = "fs") {
   bad <- sprintf("%s.\".duration_source\" = 'implausible'", a)
+  flagged <- sprintf("%s.%s_action = 'flag'", a, col)
   when <- switch(col,
-    t3 = sprintf("%s AND %s.gear IN ('OTB', 'OTM', 'DRB', 'SDN')", bad, a),
-    t4 = sprintf("%s AND %s.gear IN ('LLS', 'GNS', 'GND', 'LHM', 'FPO') AND %s.schema IN ('fs_afladagbok', 'adb')",
-                 bad, a, a),
+    t1 = flagged,
+    t2 = flagged,
+    t3 = sprintf("(%s AND %s.gear IN ('OTB', 'OTM', 'DRB', 'SDN')) OR %s", bad, a, flagged),
+    t4 = sprintf(paste("(%s AND %s.gear IN ('LLS', 'GNS', 'GND', 'LHM', 'FPO') AND %s.schema IN ('fs_afladagbok', 'adb'))",
+                       "OR %s"), bad, a, a, flagged),
     duration_m = bad,
-    stop("judged_time_sql(): col is t3, t4 or duration_m"))
+    stop("judged_time_sql(): col is t1, t2, t3, t4 or duration_m"))
   sprintf("CASE WHEN %s THEN NULL ELSE %s.%s END", when, a, col)
 }

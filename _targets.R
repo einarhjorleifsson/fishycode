@@ -751,10 +751,12 @@ list(
   # fs_afladagbok through its dump end, then adb beyond it. With the fate of every staging station and trip (plan 024).
   # The track's judgment of afli's east longitudes, a reviewed list read into coord_flag (decision 249).
   tar_target(afli_east_longitude_reviewed, "overrides/afli_east_longitude_reviewed.csv", format = "file"),
+  # The app profile's reviewed rows (plan 053): the merge flags each app's habits by them (R/logbook_app_profile.R).
+  tar_target(logbook_app_profile, "curate/corrections/logbook_app_profile.yml", format = "file"),
 
   tar_target(logbook, {
     afli; afli_depth_units; afli_end_longitude; afli_east_longitude_reviewed; afli_sent; fs_afladagbok; adb; adb_lon_sign
-    gear
+    gear; gear_window; logbook_app_profile
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),

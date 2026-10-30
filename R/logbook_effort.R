@@ -102,11 +102,13 @@ recorded_count <- function(n) dplyr::if_else(n > 0, as.numeric(n), NA_real_)
 #   unit       "hours", "minutes" or "days"
 #   implausible  FALSE leaves out what the duration limit flagged (.duration_source "implausible"): the end it ran to
 #              and the duration, as the windows do (R/duration_limit.R); TRUE keeps them as recorded
+#   flagged    FALSE leaves out the times the app profile flags (t1_action ... t4_action "flag",
+#              R/logbook_app_profile.R), as the windows do; TRUE keeps them as recorded. A noted time is always kept
 # Where the interval's times are missing, the record's own duration (duration_m) stands in, so afli's tows and jigs
 # keep theirs. effort_duration_basis says which: "times", "recorded", or "none". A seine's setting is its row: count
 # them for settings. In memory only (difftime is not translated to SQL): collect() a lazy table first.
 calc_effort <- function(sample, from = NULL, to = NULL, by_count = TRUE, unit = c("hours", "minutes", "days"),
-                        implausible = FALSE) {
+                        implausible = FALSE, flagged = FALSE) {
   unit <- match.arg(unit)
   per_minute <- c(minutes = 1, hours = 60, days = 1440)[[unit]]
   mobile <- c("OTB", "OTM", "DRB", "SDN")
@@ -115,6 +117,12 @@ calc_effort <- function(sample, from = NULL, to = NULL, by_count = TRUE, unit = 
     sample$t3[bad & sample$gear %in% mobile] <- NA
     sample$t4[bad & sample$gear %in% c("LLS", "GNS", "GND", "LHM", "FPO") & sample$schema %in% c("fs_afladagbok", "adb")] <- NA
     sample$duration_m[bad] <- NA
+  }
+  if (!flagged) {
+    for (f in intersect(c("t1", "t2", "t3", "t4"), names(sample))) {
+      act <- sample[[paste0(f, "_action")]]
+      if (!is.null(act)) sample[[f]][act %in% "flag"] <- NA
+    }
   }
   t_from <- if (is.null(from)) dplyr::if_else(sample$gear %in% mobile, sample$t2, sample$t1) else sample[[from]]
   t_to   <- if (is.null(to))   dplyr::if_else(sample$gear %in% mobile, sample$t3, sample$t4) else sample[[to]]

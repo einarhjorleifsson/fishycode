@@ -4,8 +4,9 @@
 # Input:  curated/logbook/gear.parquet         (.sid, schema, gid_used, metier, gear, target, target2: every station;
 #                                               logbook_gear.R). `metier` (gear_target2, e.g. OTB_NEP) is the label
 #                                               the flow works from downstream; the window rules are still per gid
-#         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m)
-#         curated/logbook/trip.parquet            (.tid, schema, vid)
+#         curated/logbook/fishing_sample.parquet  (.sid, .tid, schema, gear, gid, t1..t4, duration_m, and the app
+#                                                  profile's t1_flag..t4_flag and t1_action..t4_action)
+#         curated/logbook/trip.parquet            (.tid, schema, vid, T1, T2)
 #         curated/logbook/station.parquet         (.sid, schema, date, twin)
 #         curated/reference/gear_window.parquet   (gear_class, s1, s2, set_max_min)
 # Output: curated/logbook/station_window.parquet
@@ -47,6 +48,19 @@
 # windows with the same start the shorter is cut to nothing (w_end = w_start, the
 # row kept); of twins with the same times, the one with the higher (.sid, schema). A duplicate twin, the same
 # record entered again, gets no window: its kept record stands for it (curate/corrections/logbook_twin.yml).
+#
+# The app profile (curate/corrections/logbook_app_profile.yml, plan 053 step 6): every time is read as
+# judged_time_sql() reads it, so a time the profile flags opens and closes no window (a noted one does), and a station
+# left with no usable time gets ramb's day window (row W1). Two of its rows give a window of their own:
+#   trip_time  (T4, T10) the app wrote the trip's departure and return in the station's times. Where they are flagged,
+#              the trip's departure and return stand in, the station's own value first, then the trip's T1 and T2: a
+#              jig from departure to return, a haul from its own t3 (or the departure) to the return, a tow the same.
+#              Such a window has basis derived where ramb's says recorded.
+#   pressed    (T14) a tow or haul of 0-4 min: its end is left out and the window runs from its start to the gear's 95th
+#              percentile span (span_p95_min, the e-logbook's recorded spans over 4 min, the placeholder stations'
+#              hauls out, from 100 spans; plan 053 r07), or to the vessel's next station; basis synthesised.
+# These ends enter ramb in the time slots and are not kept: the output's t1-t4, n_events and events are the judged
+# times, as the windows read them.
 
 library(DBI)
 library(duckdb)
@@ -69,27 +83,66 @@ dbExecute(con, sprintf("CREATE VIEW gw   AS SELECT * FROM read_parquet('%s')",
 # stations; they are left out and counted rather than guessed.
 dbExecute(con, "
 CREATE TABLE trip_vid AS
-SELECT \".tid\" AS tid, schema, any_value(vid) AS vid
+SELECT \".tid\" AS tid, schema, any_value(vid) AS vid, min(T1) AS T1, max(T2) AS T2
 FROM trip WHERE vid IS NOT NULL
 GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1")
 
 dbExecute(con, sprintf("
-CREATE TABLE base AS
+CREATE TABLE base0 AS
 SELECT f.\".sid\", f.schema, f.\".tid\", tv.vid, ag.metier, ag.gear, ag.target,
        ag.target2,
        CAST(ag.gid_used AS INTEGER) AS gid, g.gear_class, g.s1, g.s2, g.set_max_min,
        -- adb's towed start and end were moved to t2/t3 here until plan 050 step 2; its adapter reads them as
-       -- fs_afladagbok's does now (R/logbook_effort.R). The end an implausible duration ran to is left out here, not
-       -- in the sample (R/duration_limit.R, plan 050 ask h).
-       f.t1, f.t2, %s AS t3, %s AS t4, %s AS duration_m,
-       st.date
+       -- fs_afladagbok's does now (R/logbook_effort.R). The end an implausible duration ran to, and every time the app
+       -- profile flags, are left out here, not in the sample (R/duration_limit.R, plan 050 ask h, plan 053 step 6).
+       %s AS t1, %s AS t2, %s AS t3, %s AS t4, %s AS duration_m,
+       st.date,
+       coalesce(f.t1_flag = 'trip_time' OR f.t4_flag = 'trip_time', false) AS trip_time,
+       CASE WHEN f.t1_flag = 'trip_time' THEN f.t1 ELSE tv.T1 END AS trip_start,
+       CASE WHEN f.t4_flag = 'trip_time' THEN f.t4 ELSE tv.T2 END AS trip_end,
+       coalesce(f.t3_flag = 'pressed' OR f.t4_flag = 'pressed', false) AS pressed,
+       coalesce(f.t1_flag = 'placeholder', false) AS t1_placeholder
 FROM fs f
 JOIN trip_vid tv ON tv.tid = f.\".tid\" AND tv.schema = f.schema
 JOIN st          ON st.\".sid\" = f.\".sid\" AND st.schema = f.schema
 LEFT JOIN ag     ON ag.\".sid\" = f.\".sid\" AND ag.schema = f.schema
 JOIN gw g        ON g.gid = CAST(ag.gid_used AS INTEGER)
 WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS DISTINCT FROM 'duplicate'",
-  judged_time_sql("t3", "f"), judged_time_sql("t4", "f"), judged_time_sql("duration_m", "f")))
+  judged_time_sql("t1", "f"), judged_time_sql("t2", "f"), judged_time_sql("t3", "f"), judged_time_sql("t4", "f"),
+  judged_time_sql("duration_m", "f")))
+
+# The gear's typical maximum (row T14): the 95th percentile of the e-logbook's recorded spans over 4 min, a tow's t2 to
+# t3 and a haul's t3 to t4, the placeholder stations' hauls out, as plan 053's evidence measured it (r07).
+dbExecute(con, "
+CREATE TABLE span95 AS
+SELECT gear, round(quantile_cont(m, 0.95)) AS span_p95_min, count(*) AS n FROM (
+  SELECT gear, epoch(t3 - t2) / 60 AS m FROM base0
+  WHERE schema IN ('fs_afladagbok', 'adb') AND gear_class = 'towed' AND epoch(t3 - t2) > 240
+  UNION ALL
+  SELECT gear, epoch(t4 - t3) / 60 FROM base0
+  WHERE schema IN ('fs_afladagbok', 'adb') AND gear_class = 'static' AND epoch(t4 - t3) > 240 AND NOT t1_placeholder)
+GROUP BY gear HAVING count(*) >= 100")
+
+# The ends ramb is given for the trip-time and pressed stations (above); j1-j4 keep the judged times.
+dbExecute(con, "
+CREATE TABLE base AS
+SELECT b.* EXCLUDE (t1, t2, t3, t4, trip_start, trip_end, t1_placeholder),
+       b.t1 AS j1, b.t2 AS j2, b.t3 AS j3, b.t4 AS j4,
+       CASE WHEN b.trip_time AND b.gear_class = 'jigged' THEN coalesce(b.t1, b.trip_start) ELSE b.t1 END AS t1,
+       CASE WHEN b.trip_time AND b.gear_class = 'towed' THEN coalesce(b.t2, b.trip_start) ELSE b.t2 END AS t2,
+       CASE WHEN b.trip_time AND b.gear_class = 'towed' THEN coalesce(b.t3, b.trip_end)
+            WHEN b.trip_time AND b.gear_class = 'static' THEN coalesce(b.t3, b.trip_start)
+            WHEN b.pressed AND b.gear_class = 'towed' AND b.t3 IS NULL
+              THEN b.t2 + to_minutes(CAST(p.span_p95_min AS BIGINT))
+            ELSE b.t3 END AS t3,
+       CASE WHEN b.trip_time AND b.gear_class IN ('static', 'jigged') THEN coalesce(b.t4, b.trip_end)
+            WHEN b.pressed AND b.gear_class = 'static' AND b.t4 IS NULL
+              THEN b.t3 + to_minutes(CAST(p.span_p95_min AS BIGINT))
+            ELSE b.t4 END AS t4,
+       b.pressed AND p.span_p95_min IS NOT NULL
+         AND ((b.gear_class = 'towed' AND b.t3 IS NULL AND b.t2 IS NOT NULL)
+              OR (b.gear_class = 'static' AND b.t4 IS NULL AND b.t3 IS NOT NULL)) AS pressed_end
+FROM base0 b LEFT JOIN span95 p USING (gear)")
 
 # Windows ----------------------------------------------------------------------------
 # The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts
@@ -97,7 +150,18 @@ WHERE NOT coalesce(f.eytt_deleted, false) AND g.gear IS NOT NULL AND st.twin IS 
 # 2026.10.14.2 made the windows exclusive, decision 091). This script supplies the Icelandic base: the vessel
 # per trip, and adb's gear from the landing.
 
+# The judged times back in the slots, and the station's events counted from them, as ramb counts them.
+n_events_sql <- paste0("CAST(", paste(sprintf("CASE WHEN j%d IS NOT NULL THEN 1 ELSE 0 END", 1:4), collapse = " + "),
+                       " AS TINYINT)")
+events_sql <- paste0("concat_ws('+', ", paste(sprintf("CASE WHEN j%1$d IS NOT NULL THEN 't%1$d' END", 1:4),
+                                              collapse = ", "), ")")
 sw <- ramb::rb_create_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
+  dplyr::mutate(
+    win_basis = dplyr::case_when(pressed_end & phase %in% c("tow", "haul") ~ "synthesised",
+                                 trip_time & phase != "day" & win_basis == "recorded" ~ "derived",
+                                 .default = win_basis),
+    t1 = j1, t2 = j2, t3 = j3, t4 = j4,
+    n_events = dplyr::sql(n_events_sql), events = dplyr::sql(events_sql)) |>
   dplyr::select(.sid, schema, .tid, vid, metier, gear, target, target2, gid, gear_class, phase, w_start, w_end,
                 win_basis, win_closed_by, win_opened_by, t1, t2, t3, t4, duration_m, s1, s2, n_events, events)
 dbExecute(con, paste("CREATE TABLE station_window AS", dbplyr::sql_render(sw), "ORDER BY vid, w_start"))
@@ -122,6 +186,13 @@ print(q("
   UNION ALL
   SELECT 'a duplicate twin (its kept record has the window)', count(*) FROM st
    WHERE NOT coalesce(st.eytt_deleted, false) AND st.twin = 'duplicate'"))
+
+message("\nthe app profile's windows: trip-time stations (T4, T10) and pressed records (T14), by phase and basis")
+print(q("SELECT CASE WHEN b.trip_time THEN 'trip_time' ELSE 'pressed' END AS kind, w.phase, w.win_basis, count(*) n
+         FROM station_window w JOIN base b USING (\".sid\", schema) WHERE b.trip_time OR b.pressed
+         GROUP BY ALL ORDER BY 1, 2, 3"))
+message("\nthe gears' typical maximum (span_p95_min, row T14)")
+print(q("SELECT * FROM span95 ORDER BY gear"))
 
 message("\nwindows cut to nothing (w_end = w_start), by phase and what cut them")
 print(q("SELECT phase, coalesce(win_opened_by, win_closed_by) AS by, count(*) n FROM station_window

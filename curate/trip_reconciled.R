@@ -29,7 +29,9 @@
 #            and ais_flag is "overlap" (TODO 102).
 #   own      the logbook's times and ports. T1 from fs_afladagbok and adb only: afli's T1 is the first fishing day,
 #            not a departure. T2 from afli too (its landing day). aflaskeyti's are synthesised from the landings.
-#            adb's port 0 is a placeholder (decision 172), not a port.
+#            adb's port 0 is a placeholder (decision 172), not a port. A departure or landing the app profile flags as a
+#            copy of a station's time (T1_action, T2_action "flag": row T11, plan 053) is no witness of its time; its
+#            port stands.
 #   stk      the latest STK voyage that contains the trip (out by T1's day, in on or after T2's day, within 60 days),
 #            its out and in together. Two that leave at the same time: the later return, then the lower trailid_out,
 #            so a run gives the same witness every time (TODO 139, decision 247 o)
@@ -55,7 +57,8 @@ inputs <- c(trip = fd_curated("logbook", "trip.parquet"), voyage = fd_curated("l
             quota = fd_staging("quota_trip", "trip.parquet"), phone = fd_staging("phone_call", "call.parquet"),
             port = fd_curated("reference", "port.parquet"), station = fd_curated("logbook", "station.parquet"),
             sample = fd_curated("logbook", "fishing_sample.parquet"), ais = fd_curated("ais", "voyage.parquet"))
-dbExecute(con, sprintf("CREATE TEMP TABLE trip AS SELECT \".tid\", schema, vid, T1, T2, hid1, pid1, hid2, pid2
+dbExecute(con, sprintf("CREATE TEMP TABLE trip AS SELECT \".tid\", schema, vid, T1, T2, hid1, pid1, hid2, pid2,
+                        coalesce(T1_action = 'flag', false) AS T1_flagged, coalesce(T2_action = 'flag', false) AS T2_flagged
                         FROM read_parquet('%s') WHERE twin IS DISTINCT FROM 'duplicate'", inputs[["trip"]]))
 dbExecute(con, sprintf("CREATE TEMP TABLE port AS SELECT hid, pid FROM read_parquet('%s')", inputs[["port"]]))
 
@@ -64,12 +67,14 @@ dbExecute(con, sprintf("CREATE TEMP TABLE port AS SELECT hid, pid FROM read_parq
 # vessel's voyages do not overlap, so a time is in the last voyage to start by it, if that has not ended.
 dbExecute(con, sprintf("CREATE TEMP TABLE v AS SELECT vid, year, voyage_id, T1, T2, pid1, pid2 FROM read_parquet('%s')",
                        inputs[["ais"]]))
-# The end an implausible duration ran to is left out (R/duration_limit.R, plan 050 ask h).
-dbExecute(con, sprintf("CREATE TEMP TABLE st AS SELECT s.\".tid\", s.schema, t.vid, fs.t1, fs.t2, %s AS t3, %s AS t4
+# The end an implausible duration ran to, and every time the app profile flags, are left out (R/duration_limit.R, plan
+# 050 ask h, plan 053 step 6).
+dbExecute(con, sprintf("CREATE TEMP TABLE st AS SELECT s.\".tid\", s.schema, t.vid, %s AS t1, %s AS t2, %s AS t3, %s AS t4
   FROM read_parquet('%s') s JOIN read_parquet('%s') fs ON fs.\".sid\" = s.\".sid\" AND fs.schema = s.schema
   JOIN trip t ON t.\".tid\" = s.\".tid\" AND t.schema = s.schema
   WHERE s.twin IS DISTINCT FROM 'duplicate' AND NOT coalesce(fs.eytt_deleted, false) AND t.vid IS NOT NULL",
-  judged_time_sql("t3"), judged_time_sql("t4"), inputs[["station"]], inputs[["sample"]]))
+  judged_time_sql("t1"), judged_time_sql("t2"), judged_time_sql("t3"), judged_time_sql("t4"), inputs[["station"]],
+  inputs[["sample"]]))
 dbExecute(con, "CREATE TEMP TABLE sv AS
   WITH ev AS (SELECT * FROM (SELECT \".tid\", schema, vid, unnest([t1, t2, t3, t4]) AS ts FROM st)
               WHERE ts IS NOT NULL AND CAST(ts AS TIME) <> TIME '00:00:00')
@@ -121,10 +126,12 @@ SELECT \".tid\", schema, 'T1' AS end_, 'ais' AS witness, T1 AS time, pid1 AS pla
 WHERE ais_basis IS NOT NULL
 UNION ALL SELECT \".tid\", schema, 'T2', 'ais', T2, pid2, false FROM ais WHERE ais_basis IS NOT NULL
 UNION ALL
-SELECT t.\".tid\", t.schema, 'T1', 'own', t.T1, CASE WHEN t.schema = 'adb' THEN p.pid ELSE t.pid1 END, %s
+SELECT t.\".tid\", t.schema, 'T1', 'own', CASE WHEN t.T1_flagged THEN NULL ELSE t.T1 END,
+       CASE WHEN t.schema = 'adb' THEN p.pid ELSE t.pid1 END, %s
 FROM trip t LEFT JOIN port p ON p.hid = t.hid1 AND t.hid1 <> 0 WHERE t.schema IN ('fs_afladagbok', 'adb')
 UNION ALL
-SELECT t.\".tid\", t.schema, 'T2', 'own', t.T2, CASE WHEN t.schema = 'adb' THEN p.pid ELSE t.pid2 END, %s
+SELECT t.\".tid\", t.schema, 'T2', 'own', CASE WHEN t.T2_flagged THEN NULL ELSE t.T2 END,
+       CASE WHEN t.schema = 'adb' THEN p.pid ELSE t.pid2 END, %s
 FROM trip t LEFT JOIN port p ON p.hid = t.hid2 AND t.hid2 <> 0 WHERE t.schema IN ('fs_afladagbok', 'adb', 'afli')
 UNION ALL SELECT \".tid\", schema, 'T1', 'stk', T1, pid1, false FROM stk
 UNION ALL SELECT \".tid\", schema, 'T2', 'stk', T2, pid2, false FROM stk

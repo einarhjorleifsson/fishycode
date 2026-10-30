@@ -47,7 +47,8 @@ trip <- trip |>
 # Translate columns, join trip-level `source` for coordinate classification,
 # then convert raw integer coordinates to decimal degrees.
 # After this block `source` has: .sid .tid gid t1 t3 t4 lon1 lat1 lon2 lat2
-# z1 z2 n_lost date schema.
+# z1 z2 n_lost date record_entered schema. record_entered is the record's entry time (skraningartimi), which the app
+# profile reads (curate/corrections/logbook_app_profile.yml, rows T12 and T16).
 # t1, t3, t4 here are the dictionary's names for upphaf_timi, milli_timi, lok_timi, not yet
 # the grammar's: fishing_sample below remaps them by gear class, mobile gear taking
 # upphaf_timi as t2 and lok_timi as t3. milli_timi is empty for OTB/OTM/DRB and equals
@@ -55,8 +56,8 @@ trip <- trip |>
 source <-
   duckdbfs::open_dataset(fd_raw("oracle", "fs_afladagbok", "ws_veidi.parquet")) |> collect() |>
   wk_translate(dictionary) |>
-  rename(.sid = id) |>
-  select(-c(breytt, skraningartimi, snt, veidarfaeri_efni, athugasemd_txt)) |>
+  rename(.sid = id, record_entered = skraningartimi) |>
+  select(-c(breytt, snt, veidarfaeri_efni, athugasemd_txt)) |>
   # uppruni is not in ws_veidi; join from trip for the coordinate format and STOKKUR's cells
   left_join(trip |> select(.tid, source), by = ".tid") |>
 
@@ -122,7 +123,7 @@ source <-
     date   = as_date(coalesce(t1, t3, t4)),
     schema = SCHEMA
   ) |>
-  select(.sid, .tid, date, gid, t1, t3, t4, z1, z2, lon1, lat1, lon2, lat2, n_lost, schema) |>
+  select(.sid, .tid, date, gid, t1, t3, t4, z1, z2, lon1, lat1, lon2, lat2, n_lost, record_entered, schema) |>
   arrange(date, .sid, t1, t3, t4)
 
 # Helper: station keys + ICES gear labels for inner-joining aux tables
@@ -149,7 +150,7 @@ station <-
       .default = NA_character_
     )
   ) |>
-  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, coord_flag, schema)
+  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, coord_flag, record_entered, schema)
 
 # Aux tables ------------------------------------------------------------------
 # Each block reads one gear-specific parquet, translates columns, and

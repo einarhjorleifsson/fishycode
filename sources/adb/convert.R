@@ -30,13 +30,15 @@ trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) 
 # The table, not Oracle's view station_v: the view reads every six-digit position as ddmm.hh where the digits are
 # ddmmss (curate/corrections/adb_station_v_positions.yml). decode_logbook_position() (R/logbook_position.R) reads them
 # and turns the longitude's sign as the view did. Depth is the table's fathoms, as fs_afladagbok's; curate/logbook.R
-# converts both. Renamed to the view's names, which the dictionary holds.
+# converts both. Renamed to the view's names, which the dictionary holds. record_entered is the record's entry time
+# (`registered`), which the app profile reads (curate/corrections/logbook_app_profile.yml, rows T12 and T16).
 trip_source <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) |>
   select(trip_id = id, source) |> collect()
 
 base <-
   duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_station.parquet")) |> collect() |>
-  rename(station_id = fishing_station_id, trip_id = fishing_trip_id, gear_no = fishing_gear_no) |>
+  rename(station_id = fishing_station_id, trip_id = fishing_trip_id, gear_no = fishing_gear_no,
+         record_entered = registered) |>
   left_join(trip_source, by = "trip_id", relationship = "many-to-one") |>
   mutate(hundredths = logbook_position_hundredths(trip_id, source, latitude, longitude, latitude_end, longitude_end),
          pos1 = decode_logbook_position(latitude, longitude, hundredths),
@@ -47,7 +49,7 @@ base <-
   select(.tid, .sid, gid, date,
          t1, t3, t4,
          lon1, lat1, lon2, lat2,
-         z1, z2)
+         z1, z2, record_entered)
 
 # aux tables -------------------------------------------------------------------
 ## Each block reads one gear table's count and dimensions, as fs_afladagbok's adapter reads the same fields
@@ -146,7 +148,7 @@ gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) 
 
 station_narrow <-
   station |>
-  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, schema)
+  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, record_entered, schema)
 
 gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
 

@@ -32,7 +32,9 @@
 #                   window (lost: a station's catch enters ais_catch through its window), deleted in the source (left
 #                   out by design), or another difference (a haul over New Year, signed)
 # Duplicate twin stations and trips (decision 094) and stations deleted in the source (`eytt_deleted`) are left out
-# of the station links. A station's year is its date's, a fix's its own.
+# of the station links. A station's times are read as the windows read them (judged_time_sql(): the end an
+# implausible duration ran to and every time the app profile flags left out). A station's year is its date's, a fix's
+# its own.
 
 con <- DBI::dbConnect(duckdb::duckdb())
 f <- function(...) sprintf("read_parquet('%s')", fd_curated(...))
@@ -47,7 +49,8 @@ x("CREATE TEMP TABLE t AS SELECT \".tid\" AS tid, schema, any_value(vid) AS vid,
 x("CREATE TEMP TABLE s AS SELECT st.\".sid\" AS sid, st.\".tid\" AS tid, st.schema, st.date, coalesce(%s, %s, %s, %s) AS ts
    FROM %s st JOIN %s fs ON fs.\".sid\" = st.\".sid\" AND fs.schema = st.schema
    WHERE st.twin IS DISTINCT FROM 'duplicate' AND NOT coalesce(fs.eytt_deleted, false)",
-  tod("fs.t1"), tod("fs.t2"), tod(judged_time_sql("t3")), tod(judged_time_sql("t4")), f("logbook", "station.parquet"),
+  tod(judged_time_sql("t1")), tod(judged_time_sql("t2")), tod(judged_time_sql("t3")), tod(judged_time_sql("t4")),
+  f("logbook", "station.parquet"),
   f("logbook", "fishing_sample.parquet"))
 x("CREATE TEMP TABLE sv AS SELECT s.*, t.vid FROM s JOIN t USING (tid, schema) WHERE t.vid IS NOT NULL")
 x("CREATE TEMP TABLE v AS SELECT vid, year, voyage_id, T1, T2, pid2 FROM %s", f("ais", "voyage.parquet"))
