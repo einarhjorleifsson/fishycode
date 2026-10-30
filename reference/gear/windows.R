@@ -65,10 +65,10 @@ gear <- read_parquet(fd_curated("reference", "gear.parquet")) |>
 # that the numbers line up.
 speed <- tribble(
   ~gid, ~veidarfaeri,        ~s1,   ~s2,
-     1, "Skötuselsnet",     0.000, 2.500,
-     2, "Þorskfisknet",     0.000, 1.700,
-     3, "Grásleppunet",     0.000, 1.700,
-     4, "Rauðmaganet",      0.000, 1.700,
+     1, "Skötuselsnet",     0.200, 2.500,
+     2, "Þorskfisknet",     0.200, 1.700,
+     3, "Grásleppunet",     0.200, 1.700,
+     4, "Rauðmaganet",      0.200, 1.700,
      5, "Reknet",           0.050, 1.125,
      6, "Botnvarpa",        2.625, 4.700,
      7, "Humarvarpa",       2.375, 3.700,
@@ -83,10 +83,14 @@ speed <- tribble(
     16, "Gildra",           0.100, 2.000,
     19, "Sjóstöng",         0.125, 1.250,
     21, "Línutrekt",        0.100, 2.200,
-    22, "Grálúðunet",       0.050, 1.400,
+    22, "Grálúðunet",       0.200, 1.400,
     24, "Sláttuprammi",     0.000, 1.400,
     25, "Þaraplógur",       2.300, 4.000) |>
   mutate(gid = as.integer(gid))
+# The gillnets' floor (gid 1-4, 22) is 0.2 kn, from the recorded hauls' median speed (p01 0.16, p05 0.35 kn): a stopped
+# or moored gillnetter no longer passes the speed test, and the hauls lose 1.85 % of their fishing hours (plan 012 §2m,
+# TODO 34, decision 247 o; it was 0, and 0.05 for gid 22). Its basis is the recorded hauls, not the fleet's declaration.
+net_floor <- c(1L, 2L, 3L, 4L, 22L)
 
 # Gear codes are ICES GearType. GND (drift net) and FPO (pots) are static by the
 # shape of their recorded times (GND: t1, t3, t4 all present; FPO: rare). PS fishes
@@ -123,7 +127,9 @@ gear_window <-
     set_max_min = unname(set_max[gear]),
     set_max_basis = if_else(is.na(set_max_min), NA_character_,
                             "estimated_speed_profile_2026-09-30"),
-    s_basis = if_else(is.na(s1), NA_character_, "declared_fleet")) |>
+    s_basis = case_when(is.na(s1) ~ NA_character_,
+                        gid %in% net_floor ~ "declared_fleet_floor_recorded_hauls",
+                        .default = "declared_fleet")) |>
   select(gid, veidarfaeri, gear, target, gear_class, s1, s2, s_basis, set_max_min,
          set_max_basis, dur_max_min, veidarfaeri_speed)
 

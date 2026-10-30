@@ -45,8 +45,9 @@ and plan 001 §5 says where.
 ---
 
 ## 24. Icelandic vessels that land fish but are never heard on AIS
-**status:** open — every vid given a reason 2026-10-30 (decision 250); 8009's diver override and the check reading it
-in plan 054's step 2 · **see:** decisions 110, 117, 118 and 250, `curate/checks/ais_key_landings.R`
+**status:** open — every vid given a reason 2026-10-30 (decision 250); `overrides/landing_vid_class.csv` (8009 a diver,
+the nine landings placeholders) and the check reading it coded the same day; the `once` target
+`check_ais_key_landings` built by name with plan 054's rebuild A · **see:** decisions 110, 117, 118 and 250, `curate/checks/ais_key_landings.R`
 
 `ais_key_landings`' `landed_but_no_ais` lists 308 vids (the `once` file of 2026-10-09). It audits the cascade, not
 the key (decision 053), so 53 of them are in the key and heard, and 148 are foreign. **107 Icelandic vids landed in
@@ -127,7 +128,8 @@ delivery and supersedes it, every synthesised window carries `win_basis`, and no
 `~/stasi/fishydata_2024-2026` exceeds 1 GB.
 
 ## 34. Trawl speed ranges near the coast: ask (1) of plan 012
-**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the shapefiles; the gillnet floor answered 2026-10-30, 0.2 kn (plan 054 ask o), built with its rebuild A (§7) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
+**status:** blocked (the regulation and shoreline shapefiles, coming) · **needs: maintainer** — the shapefiles; the gillnet floor answered 2026-10-30, 0.2 kn (plan 054 ask o), coded the same day in
+`reference/gear/windows.R` (gid 1-4, 22), built with its rebuild A (§7) · **see:** `curate/plans/012-speed-range-vs-logbook-window.md` (§2e-§2m), `curate/corrections/logger_speed_placeholder.yml`, decisions 085, 093 and 201
 
 Measured: the declared speed range per trawl gear keeps 88-92 % of fixes in recorded tow windows; kW, length and age explain under 5 % of towing speed; a vessel's own range gains nothing over the gear's; shifting the gear range by last year's vessel offset gains 0.2-1 point overall and 4-12 points for the tenth of vessel-years with a large offset; the logbook gear agrees with the landings for 93-99 % of trips. Built from the plan: step 0 (the logger placeholder fix) and step 4 (the gear codes on the trail, decision 085); steps 1-2 were not taken up (decision 093).
 
@@ -587,7 +589,8 @@ Open:
 step 5 is done: fishyweb's pages in the book, fishyweb archived, plan 002 closed or redirected.
 
 ## 95. `sources/stk/convert.R` leaves a partition its new build no longer writes
-**status:** open — the fix approved 2026-10-30, coded in plan 054's step 2 and built with its rebuild A (§7) · **see:** decision 185 (TODO
+**status:** open — the fix coded 2026-10-30 (`sources/stk/convert.R` clears its output first), built with plan 054's
+rebuild A; the STK page drops `unify_schemas` after it (§7) · **see:** decision 185 (TODO
 69, the same defect in every output, folded in), decision 151, `docs/stk_data-inspection.qmd`
 
 Found 2026-10-19 (plan 033 step 2): `staging/ais/stk/year=2006/` holds 2 rows from the build of 2026-09-23 (vid 2618,
@@ -1154,7 +1157,7 @@ catch on its trips, and the before-and-after trace recorded in a decision.
 
 ## 138. Three window and twin faults found beside TODO 137
 **status:** open — unparked 2026-10-30 to ride plan 054's rebuild A (ask g): the dummies under plan 053's window
-rule, the Marína re-entries under decision 250's twin rule, the nets' floor 0.2 kn · **see:**
+rule, the Marína re-entries under decision 250's twin rule, the nets' floor 0.2 kn (coded 2026-10-30) · **see:**
 `$FISHYDATA/archive/2026-10-trip-time-stations/` ("Separate" in `draft_decision.md`), decisions 094 and 206
 
 Claude's measure, 2026-10-23, not checked by a person:
@@ -1167,7 +1170,8 @@ Claude's measure, 2026-10-23, not checked by a person:
 **check:** each decided (a correction, a twin rule, a speed range) or declined in a decision.
 
 ## 139. Two steps whose result depends on the run: ties in `trip_reconciled` and `voyage_gear`
-**status:** open — the tie-breaks answered 2026-10-30 (plan 054 ask o), built with its rebuild A (§7) · **see:** decision 218, `$FISHYDATA/archive/2026-10-23-complete-rebuild/` (`ties.R`,
+**status:** open — the tie-breaks answered and coded 2026-10-30 (plan 054 ask o; `curate/voyage_gear.R`,
+`curate/trip_reconciled.R`), built and run twice with its rebuild A (§7) · **see:** decision 218, `$FISHYDATA/archive/2026-10-23-complete-rebuild/` (`ties.R`,
 `trip_reconciled_runs.R`), TODO 121
 
 The complete rebuild of 2026-10-23 changed these two steps' outputs with identical inputs and code (decision 218,
@@ -1480,8 +1484,9 @@ author's own join by vessel and landing day, not a source value (decision 243).
 every trip in one outcome, in a decision.
 
 ## 162. afli's east longitudes: judged by the track
-**status:** open — judged 2026-10-30 (decision 249): 75 sign switched, 185 east, 176 unjudged; the flag from a reviewed
-list rides plan 054's rebuild A · **see:** decisions 242 and 249, `$FISHYDATA/archive/2026-10-29-track-checks/findings.md` §1
+**status:** open — judged 2026-10-30 (decision 249): 75 sign switched, 185 east, 176 unjudged; the reviewed list
+`overrides/afli_east_longitude_reviewed.csv`, read into `coord_flag` by the merge, coded the same day; built in plan
+054's rebuild A, then the dictionary's `coord_flag` · **see:** decisions 242 and 249, `$FISHYDATA/archive/2026-10-29-track-checks/findings.md` §1
 
 afli has no sign rule. On its e-logbook route of 2021-22 the track puts 19 of 442 stations at the west reading where
 afli has them east: 16 within 1° of the meridian, and 3 at 22-23° E south of 67.66° N, on land. Over all years, 436 afli

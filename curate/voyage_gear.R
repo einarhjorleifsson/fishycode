@@ -7,6 +7,7 @@
 #         curated/logbook/fishing_sample.parquet (.sid, schema, t1..t4: the station's own times)
 #         curated/logbook/trip.parquet           (.tid, schema, vid)
 #         curated/logbook/gear.parquet           (.sid, schema, gid_used: logbook_gear.R)
+#         curated/logbook/catch.parquet          (.sid, schema, catch: a station's kg, for the tie-break only)
 #         curated/landing/landings.parquet       (.lid, schema, vid, date)
 #         curated/landing/catch.parquet          (.lid, schema, gid, catch: agf in the new gear code, lods in the old)
 #         curated/reference/gear.parquet         (old gid -> map, the new gid)
@@ -29,6 +30,10 @@
 #              that holds most of the landed weight; landing_gap_d is the days from the voyage's end date to the
 #              first of those landings, empty for a landing within the voyage;
 #   none       neither.
+# A tie has one answer (decision 199; TODO 139, decision 247 o): the logbook's vote takes the gid on most stations, then
+# the most logged kilograms, then the lower gid; the landings' vote the most landed kilograms, then the lower gid. The
+# gid and its gear class and speed range come from that one row. With arg_max alone, a tie gave another gear from run
+# to run, and the class could come from another gear than the gid.
 # Duplicate twin stations (decision 094) and stations deleted in the source (`eytt_deleted`) are left out, as in
 # station_window.R. A landing gid of lods is mapped to the new code first, as in
 # curate/corrections/logbook_gear.R.
@@ -47,13 +52,16 @@ dbExecute(con, sprintf("CREATE TEMP TABLE v AS SELECT vid, year, voyage_id, T1, 
 dbExecute(con, sprintf("CREATE TEMP TABLE tvid AS SELECT \".tid\" AS tid, schema, any_value(vid) AS vid FROM read_parquet(%s)
   WHERE vid IS NOT NULL GROUP BY 1, 2 HAVING count(DISTINCT vid) = 1", f("logbook", "trip.parquet")))
 # The end an implausible duration ran to is left out (R/duration_limit.R, plan 050 ask h).
+dbExecute(con, sprintf("CREATE TEMP TABLE skg AS SELECT \".sid\" AS sid, schema, sum(catch) AS kg FROM read_parquet(%s)
+  GROUP BY 1, 2", f("logbook", "catch.parquet")))
 dbExecute(con, sprintf("CREATE TEMP TABLE st AS
   SELECT s.\".sid\" AS sid, s.schema, s.\".tid\" AS tid, tvid.vid, CAST(g.gid_used AS INTEGER) AS gid, fs.t1, fs.t2,
-         %s AS t3, %s AS t4
+         %s AS t3, %s AS t4, coalesce(skg.kg, 0) AS kg
   FROM read_parquet(%s) s
   JOIN read_parquet(%s) g ON g.\".sid\" = s.\".sid\" AND g.schema = s.schema
   JOIN read_parquet(%s) fs ON fs.\".sid\" = s.\".sid\" AND fs.schema = s.schema
   JOIN tvid ON tvid.tid = s.\".tid\" AND tvid.schema = s.schema
+  LEFT JOIN skg ON skg.sid = s.\".sid\" AND skg.schema = s.schema
   WHERE s.twin IS DISTINCT FROM 'duplicate' AND NOT coalesce(fs.eytt_deleted, false) AND g.gid_used IS NOT NULL",
   judged_time_sql("t3"), judged_time_sql("t4"),
   f("logbook", "station.parquet"), f("logbook", "gear.parquet"), f("logbook", "fishing_sample.parquet")))
@@ -64,21 +72,22 @@ dbExecute(con, "CREATE TEMP TABLE evt AS
   SELECT DISTINCT ev.sid, ev.schema, v.vid, v.year, v.voyage_id FROM ev ASOF JOIN v ON ev.vid = v.vid AND ev.ts >= v.T1
   WHERE ev.ts <= v.T2")
 dbExecute(con, sprintf("CREATE TEMP TABLE lbs AS
-  SELECT e.vid, e.year, e.voyage_id, st.gid FROM evt e JOIN st USING (sid, schema)
+  SELECT e.vid, e.year, e.voyage_id, st.gid, st.kg FROM evt e JOIN st USING (sid, schema)
   UNION ALL
-  SELECT tv.vid, tv.year, tv.voyage_id, st.gid FROM st
+  SELECT tv.vid, tv.year, tv.voyage_id, st.gid, st.kg FROM st
   JOIN read_parquet(%s) tv ON tv.\".tid\" = st.tid AND tv.schema = st.schema
   ANTI JOIN evt e ON e.sid = st.sid AND e.schema = st.schema", f("link", "trip_voyage.parquet")))
 
 sql <- sprintf("
   WITH w AS (SELECT CAST(gid AS INTEGER) AS gid, gear_class, s1, s2 FROM read_parquet(%s)),
-  lbg AS (SELECT l.vid, l.year, l.voyage_id, l.gid, count(*) AS n, any_value(w.gear_class) AS gear_class,
+  lbg AS (SELECT l.vid, l.year, l.voyage_id, l.gid, count(*) AS n, sum(l.kg) AS kg, any_value(w.gear_class) AS gear_class,
                  any_value(w.s1) AS s1, any_value(w.s2) AS s2,
                  coalesce(CAST(any_value(w.s1) AS VARCHAR), 'NA') || '|' || coalesce(CAST(any_value(w.s2) AS VARCHAR), 'NA') AS rng
           FROM lbs l LEFT JOIN w ON w.gid = l.gid GROUP BY l.vid, l.year, l.voyage_id, l.gid),
-  lbv AS (SELECT vid, year, voyage_id, arg_max(gid, n) AS gid, arg_max(gear_class, n) AS gear_class,
-                 arg_max(s1, n) AS s1, arg_max(s2, n) AS s2, count(DISTINCT rng) AS n_rng
-          FROM lbg GROUP BY vid, year, voyage_id),
+  lbr AS (SELECT vid, year, voyage_id, count(DISTINCT rng) AS n_rng FROM lbg GROUP BY vid, year, voyage_id),
+  lbv AS (SELECT lbg.vid, lbg.year, lbg.voyage_id, lbg.gid, lbg.gear_class, lbg.s1, lbg.s2, lbr.n_rng
+          FROM lbg JOIN lbr USING (vid, year, voyage_id)
+          QUALIFY row_number() OVER (PARTITION BY lbg.vid, lbg.year, lbg.voyage_id ORDER BY lbg.n DESC, lbg.kg DESC, lbg.gid) = 1),
   lw AS (SELECT l.vid, l.date, CASE WHEN c.schema = 'lods' THEN o.gid_new ELSE CAST(c.gid AS INTEGER) END AS gid,
                 sum(c.catch) AS kg
          FROM read_parquet(%s) l JOIN read_parquet(%s) c ON c.\".lid\" = l.\".lid\" AND c.schema = l.schema
@@ -98,7 +107,8 @@ sql <- sprintf("
           GROUP BY ALL),
   lvg AS (SELECT vid, year, voyage_id, gid, kg, CAST(NULL AS BIGINT) AS gap FROM lvw
           UNION ALL SELECT vid, year, voyage_id, gid, kg, gap FROM lva),
-  lvm AS (SELECT vid, year, voyage_id, arg_max(gid, kg) AS gid, min(gap) AS gap FROM lvg GROUP BY vid, year, voyage_id)
+  lvm AS (SELECT vid, year, voyage_id, gid, min(gap) OVER (PARTITION BY vid, year, voyage_id) AS gap FROM lvg
+          QUALIFY row_number() OVER (PARTITION BY vid, year, voyage_id ORDER BY kg DESC, gid) = 1)
   SELECT v.vid, v.year, v.voyage_id,
          CASE WHEN lbv.vid IS NOT NULL THEN lbv.gid ELSE lvm.gid END AS gid_voyage,
          CASE WHEN lbv.vid IS NOT NULL AND lbv.n_rng = 1 THEN lbv.gear_class
@@ -117,6 +127,7 @@ write_curated_sql(con, sql, fd_curated("ais", "voyage_gear.parquet"),
                   inputs = c(fd_curated("ais", "voyage.parquet"), fd_curated("link", "trip_voyage.parquet"),
                              fd_curated("logbook", "station.parquet"), fd_curated("logbook", "gear.parquet"),
                              fd_curated("logbook", "fishing_sample.parquet"), fd_curated("logbook", "trip.parquet"),
+                             fd_curated("logbook", "catch.parquet"),
                              fd_curated("landing", "landings.parquet"), fd_curated("landing", "catch.parquet"),
                              fd_curated("reference", "gear.parquet"), fd_curated("reference", "gear_window.parquet")),
                   order_by = "vid, year, voyage_id")

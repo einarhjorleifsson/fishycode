@@ -35,7 +35,10 @@
 # keep the original recorded value, z1_basis/z2_basis says which happened.
 # Longitude: adb's dropped west sign is fixed by curate/corrections/
 # adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis), and afli's end longitude where Oracle holds the
-# end latitude by curate/corrections/afli_end_longitude.R (lon2_raw/lon2_basis).
+# end latitude by curate/corrections/afli_end_longitude.R (lon2_raw/lon2_basis). afli's stations east of 10.75° E south
+# of 67.66° N carry coord_flag from overrides/afli_east_longitude_reviewed.csv, the track's judgment frozen as a reviewed
+# list (decision 249): lon_sign_switched, lon_sign_unjudged, or none where the track puts the vessel east; lon1 as
+# recorded.
 # aflaskeyti: three corrections and the trips, each a side table (plan 026): the swapped positions
 # (aflaskeyti_coordinates.R: lon1_raw, lat1_raw, lon2_raw, lat2_raw, coord_flag), the Faroese summer times
 # (aflaskeyti_local_time.R: t_shift_min, time_basis), the state of each weight (aflaskeyti_weight.R:
@@ -84,6 +87,9 @@ afli_fishing_sample <- duckdbfs::open_dataset(fd_staging("afli", "fishing_sample
 afli_catch          <- duckdbfs::open_dataset(fd_staging("afli", "catch.parquet")) |> collect()
 afli_depth          <- duckdbfs::open_dataset(fd_staging("afli", "depth.parquet")) |> collect()
 afli_end_lon        <- duckdbfs::open_dataset(fd_staging("afli", "end_longitude.parquet")) |> collect()
+AFLI_EAST_LON       <- "overrides/afli_east_longitude_reviewed.csv"
+afli_east_lon       <- read.csv(AFLI_EAST_LON, colClasses = "character") |>
+  transmute(.sid = as.numeric(.sid), coord_flag = na_if(coord_flag, ""))
 
 fs_trip           <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "trip.parquet")) |> collect()
 fs_station        <- duckdbfs::open_dataset(fd_staging("fs_afladagbok", "station.parquet")) |> collect()
@@ -117,7 +123,9 @@ afli_station <- afli_station |>
 # (curate/corrections/afli_end_longitude.R); lon2_raw/lon2_basis keep what happened.
 afli_station <- afli_station |>
   select(-lon2) |>
-  left_join(afli_end_lon, by = ".sid", relationship = "one-to-one")
+  left_join(afli_end_lon, by = ".sid", relationship = "one-to-one") |>
+  left_join(afli_east_lon, by = ".sid", relationship = "one-to-one")
+stopifnot(sum(!is.na(afli_station$coord_flag)) == sum(!is.na(afli_east_lon$coord_flag)))
 
 # fs_afladagbok and adb: uniformly fathoms (no drift window), so a flat conversion with
 # basis = "reconstructed"; NA stays NA, basis NA.
@@ -577,7 +585,7 @@ logbook_inputs <- c(
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
   fd_staging("afli", "depth.parquet"), fd_staging("afli", "end_longitude.parquet"), fd_staging("adb", "lon_sign.parquet"),
-  fd_curated("reference", "gear.parquet"),
+  AFLI_EAST_LON, fd_curated("reference", "gear.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
                   "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
 merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)

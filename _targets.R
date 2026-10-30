@@ -749,8 +749,11 @@ list(
 
   # Precedence, recorded once in curate/decisions/: afli where it exists, then
   # fs_afladagbok through its dump end, then adb beyond it. With the fate of every staging station and trip (plan 024).
+  # The track's judgment of afli's east longitudes, a reviewed list read into coord_flag (decision 249).
+  tar_target(afli_east_longitude_reviewed, "overrides/afli_east_longitude_reviewed.csv", format = "file"),
+
   tar_target(logbook, {
-    afli; afli_depth_units; afli_end_longitude; fs_afladagbok; adb; adb_lon_sign; gear
+    afli; afli_depth_units; afli_end_longitude; afli_east_longitude_reviewed; fs_afladagbok; adb; adb_lon_sign; gear
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),

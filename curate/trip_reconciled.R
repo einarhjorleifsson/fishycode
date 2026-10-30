@@ -31,7 +31,8 @@
 #            not a departure. T2 from afli too (its landing day). aflaskeyti's are synthesised from the landings.
 #            adb's port 0 is a placeholder (decision 172), not a port.
 #   stk      the latest STK voyage that contains the trip (out by T1's day, in on or after T2's day, within 60 days),
-#            its out and in together
+#            its out and in together. Two that leave at the same time: the later return, then the lower trailid_out,
+#            so a run gives the same witness every time (TODO 139, decision 247 o)
 #   quota    the record of the trip's landing (lid_map, a landing no other trip claims), its departure on or before the
 #            landing day
 #   phone    the latest valid out-call on T1's day or up to 3 days before, no later than T2's day; the latest valid
@@ -105,7 +106,7 @@ WITH stk AS (
   SELECT t.\".tid\", t.schema, s.T1, s.pid1, s.T2, s.pid2 FROM trip t
   JOIN read_parquet('%s') s ON s.vid = t.vid AND CAST(s.T1 AS DATE) <= CAST(t.T1 AS DATE)
    AND CAST(s.T2 AS DATE) >= CAST(t.T2 AS DATE) AND s.T1 >= t.T1 - INTERVAL 60 DAY
-  QUALIFY row_number() OVER (PARTITION BY t.\".tid\", t.schema ORDER BY s.T1 DESC) = 1),
+  QUALIFY row_number() OVER (PARTITION BY t.\".tid\", t.schema ORDER BY s.T1 DESC, s.T2 DESC, s.trailid_out) = 1),
 lid AS (
   SELECT m.\".tid\", m.schema, t.vid, t.T1, m.date_land, m.hid_land, m.pid_land, m.n_trips FROM read_parquet('%s') m
   JOIN trip t ON t.\".tid\" = m.\".tid\" AND t.schema = m.schema),

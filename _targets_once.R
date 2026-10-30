@@ -146,8 +146,11 @@ list(
              fd_curated("check", "ais_key_resolution.parquet"))
   }, format = "file"),
 
+  # Landing vids that are no hull, reviewed (decision 250): left out of landed_but_no_ais.
+  tar_target(landing_vid_class_overrides, "overrides/landing_vid_class.csv", format = "file"),
+
   tar_target(check_ais_key_landings, {
-    vessel_ais_key_cascade; main_vessel; main_landing
+    vessel_ais_key_cascade; main_vessel; main_landing; landing_vid_class_overrides
     produces("curate/checks/ais_key_landings.R",
              fd_curated("check", "ais_key_landings.parquet"))
   }, format = "file"),

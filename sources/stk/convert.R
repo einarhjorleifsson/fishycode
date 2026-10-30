@@ -25,6 +25,9 @@ vid <- duckdbfs::open_dataset(fd_curated("vessel", "vessel_ais_key.parquet"))
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`
 # (a STK-internal mobile ID), so we resolve to vid via a temporal interval join:
 # each mid may map to different vessels over time as transponders are reused.
+# write_dataset() replaces only the partitions it writes, and the years come from the data, so a year no build writes
+# again would stay behind (year=2006 of 2026-09-23 did, TODO 95): clear the output first, as ais_catch.R does.
+unlink(fd_staging("ais", "stk"), recursive = TRUE)
 stk_trail() |>
   # d2 is a DATE and a segment's last day runs to its end: half-open on d2 + 1, or every ping after 00:00 on
   # the last day of a period falls between two periods and is lost. An open stretch (d2_is_open) has no end: its d2

@@ -2,7 +2,7 @@
 # Side: once (vessel key). See plan 014.
 #
 # Input:  curated/vessel/vessel_ais_key_cascade.parquet (the cascade's own claims, decision 053), vessel.parquet,
-#         curated/landing/landings.parquet
+#         curated/landing/landings.parquet, overrides/landing_vid_class.csv (vids that land but are no hull)
 # Output: curated/check/ais_key_landings.parquet  - one row per vessel in question
 #
 # The maintainer's own proposal, 2026-09-22: "One way to check coverage and
@@ -43,6 +43,10 @@ lnd <-
   filter(vid >= 5)
 
 in_ais <- key |> filter(!is.na(vid)) |> distinct(vid)
+# A landing vid that is no hull needs no track (decision 250): a diver's registration, or a placeholder of the landings
+# database, each reviewed and named in overrides/. A vid with no register row is not dropped by rule: 8008 has none and
+# stays, for the register's review.
+no_hull <- read.csv("overrides/landing_vid_class.csv")$vid
 
 ## 1. landed inside the AIS era, but carries no AIS identity --------------------
 # A vessel landing fish is at sea, so it should have a track. Most of the misses
@@ -50,14 +54,12 @@ in_ais <- key |> filter(!is.na(vid)) |> distinct(vid)
 # rather than dropped, because the Icelandic ones are the finding.
 no_ais <-
   lnd |>
-  filter(last_landing >= AIS_T1, !vid %in% in_ais$vid) |>
+  filter(last_landing >= AIS_T1, !vid %in% in_ais$vid, !vid %in% no_hull) |>
   left_join(reg |> select(vid, vessel, cs, uid, mmsi, mclass, loa), by = "vid") |>
   transmute(check = "landed_but_no_ais",
             note = case_when(
               vid %in% 3700:4999 ~ "foreign vid - expected, landing into Iceland",
-              # 9999, 9908, 9928 and friends carry landings but no registry row at
-              # all: they are placeholders in the landings database, not hulls.
-              is.na(vessel)      ~ "not a registered vessel - landings placeholder",
+              is.na(vessel)      ~ "not a registered vessel - not reviewed",
               .default = "ICELANDIC vessel with landings and no AIS identity"),
             vid, vessel, cs, uid, mmsi, landings, first_landing, last_landing,
             pings = NA_integer_, mids = NA_integer_)

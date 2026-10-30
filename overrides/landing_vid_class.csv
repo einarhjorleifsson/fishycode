@@ -1,0 +1,11 @@
+vid,entity_class,reviewed_date,reason
+8009,diver,2026-10-30,"Decision 250 (TODO 24): a diver's registration, not a hull. The public register lists it among divers (útgerðarflokkur Kafarar) with no vessel type; every landing is gear 23 Kafari; no register history, logbook record, STK unit or ping. 8008 is not listed: afli holds 84 dredge stations under it (2018-2022), so it goes to the register's review."
+8007,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9908,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9910,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9911,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9922,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9927,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9928,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9938,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
+9999,landings_placeholder,2026-10-30,"Decision 250 (TODO 24): a placeholder in the landings database, not a hull; it has no register row."
