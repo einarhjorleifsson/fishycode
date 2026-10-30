@@ -1549,17 +1549,18 @@ None was judged (counted 2026-10-29 by Claude, not checked by a person).
 **check:** those from 2007 judged by the track, every station in one outcome; flagged, and corrected only by a decision.
 
 ## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
-**status:** open · **needs: maintainer** — asks d and e (the logger's positions and its readings dated 1899), after the
-set times · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
+**status:** open — asks d and e answered 2026-10-30 through plan 054's ask h (amended the same day); built in plan
+054's rebuild A · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
 140, 165
 
 Built 2026-10-29 (decision 244), not checked by a person: `curated/logbook/{gear_part,rigging_part,sensor_summary}`,
 every source column and kept station in one outcome; afli's edited layer answers before `rafr_` to 2018 and where
 the domain expert's account last changed the station (the maintainer). Units measured 2026-10-30 (decision 245): the
 gillnet's length metres; door areas above 40 m² and the dredge's size kept raw; every unit in the dump overlay. Left:
-- **`effort_count` from `rigging_part`** (51 afli stations would move, each explained in decision 244), then `g_*` out
-  a release later (decision 210 item 3).
-- **`vessel_sensor`** (`curated/vessel_sensor/`, ask h) with asks d and e, after the set times (plan 053, TODO 165).
+- **`effort_count` from `rigging_part`** (51 afli stations would move, each explained in decision 244); `g_*` kept
+  until TODO 140 versions the product (plan 054 ask i).
+- **`vessel_sensor`** (`curated/vessel_sensor/`): long, like `sensor_summary`, with no positions; the logger stays in
+  the AIS track (decision 196); the 1899 readings dated from their record, `reconstructed` (plan 052 §5, amended).
 - **Plan 052 step 1's remainder**: §2's unexplained headline and sweep records listed vessel by vessel; the dredge's
   unit per record, if a rule by species is wanted (decision 245); the ICES columns when something reads them (the
   matches are in decision 245).
@@ -1628,8 +1629,9 @@ person), and orders the work.
   the tour app; the merge's flags; `effort_count`; the link (plans 027 and 036, the trace id).
 - One combined scratch trace, then one live rebuild of the chain (two if the link is late).
 
-25 items are expected to close, 7 of them with no answer from the maintainer. Left open: 62, 115, 122 and 123, and
-the parked 131, 135 and 136. Found on the way: the handline hole of 2020-09 to 2021-03 (TODO 141) is mostly the unread
+24 items are expected to close, 7 of them with no answer from the maintainer. Left open: 62, 115, 122 and 123, 146's
+cruise (ask m b), and the parked 131, 135 and 136. Ask h d was amended the same day: the logger stays in the AIS track
+(decision 196), and `vessel_sensor` is long, with no positions (plan 052 §5). Found on the way: the handline hole of 2020-09 to 2021-03 (TODO 141) is mostly the unread
 tour app (TODO 73). A tour trip lands on the vessel-day of 1,442 of the 2,091 handline landings that have no logbook
 trip.
 

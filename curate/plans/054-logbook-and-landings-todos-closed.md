@@ -3,8 +3,8 @@
 **status:** proposal — written 2026-10-30 at the maintainer's request, in a side session; the items checked against
 their own text and the code, and the cheap counts measured read-only on the store, the same day; asks a-r
 answered by the maintainer the same day (§5), each as recommended but m b (not known: TODO 146 stays open on it, so
-24 items are expected to close) and q (no recommendation: yes, the size stated and asked before any download); nothing
-built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+24 items are expected to close) and q (no recommendation: yes, the size stated and asked before any download); h d
+amended the same day: the logger stays in the AIS track (decision 196); nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -254,7 +254,12 @@ Ordered by how many items each unblocks. The first option is the recommendation.
   - e: the 848,306 readings dated 1899-12-30 dated from the record that carried them, basis `reconstructed`, flagged
     (recommended).
 
-  *Answered (maintainer, 2026-10-30):* d and e as recommended.
+  *Answered (maintainer, 2026-10-30):* d and e as recommended. *Amended by the maintainer the same day:* d's
+  recommendation misread its quote, which was on the logger's depth readings not becoming AIS columns (plan 052's
+  opening), not on its fixes. Decision 196 keeps the logger in the track for its speed and heading, which place the
+  fishing between AIS pings. So d: the logger stays in the AIS union as decision 196 has it, nothing changes in the
+  next AIS batch, and only its other readings go into `vessel_sensor`, long, with no positions (plan 052 §5, amended).
+  e stands.
 - i. **163's `g_*` columns:** kept until TODO 140 versions the product, and 163's check narrowed to `effort_count`
   and `vessel_sensor` (recommended). Or dropped in A. *Answered (maintainer, 2026-10-30):* kept until TODO 140.
 - j. **TODO 141:** closed by the tour app and the remainder declared in `docs/merge.qmd` and the landings' dictionary

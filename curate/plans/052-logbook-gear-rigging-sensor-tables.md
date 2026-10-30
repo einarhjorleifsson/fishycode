@@ -3,7 +3,8 @@
 **status:** partly built — written 2026-10-29 at the maintainer's request; its asks answered the same evening (§7);
 `gear_part`, `rigging_part` and `sensor_summary` built the same night, independent of the set times (decision 244);
 step 1's units measured and put in the dump overlay 2026-10-30, the gillnet's length metres (decision 245);
-`vessel_sensor` waits for asks d and e · **measured** (§1-§3), by Claude
+asks d and e answered 2026-10-30 through plan 054's ask h: the logger stays in the AIS track (decision 196), and
+`vessel_sensor` is long, with no positions (§5), to be built in plan 054's rebuild A · **measured** (§1-§3), by Claude
 the same day, read-only on the dumps of 2026-10-16/17 and the store, not checked by a person: six grammars mined into
 one union of terms; afli's `rafr_` gear tables, their edited copies, and fs_afladagbok's and adb's gear tables, column
 by column; the per-haul sensor values and the logger · **assumed** (§4): the meaning of seven undocumented columns, two
@@ -404,21 +405,27 @@ per station, duplicates out, decision 094). The fourth is a stream of the vessel
   made for the user tables, not stored twice (ask c). `station.z1`/`z2` stay where they are, the `water` depth rows
   their witnesses.
 
-**`vessel_sensor`**: the vessel's sensor streams, one row per reading, `curated/vessel_sensor/` by provider and year
-(the name and home are ask h):
+**`vessel_sensor`**: the vessel's continuous sensor readings, one row per reading and quantity,
+`curated/vessel_sensor/` by provider and year (ask h). *Amended 2026-10-30 by the maintainer, through plan 054's ask h:
+long, like `sensor_summary`, so that a new sensor (a trawl monitor's warp tension, say) adds rows and codes, never a
+column; and no positions, since the logger stays in the AIS track (decision 196).*
 
-- **The AIS stores and the logger as peers.** The key is the AIS pings' (`vid`, `time`, `provider`), with
-  `provider = gps` for the logger as the union names it. The quantities every store shares use the pings' names:
-  `lon`, `lat`, `speed`, `heading`, `cog`, with `pos_basis` and `speed_basis`. The rest are columns of their own:
-  `depth_m` (`botndypi`, water depth under the vessel), `headline_depth_m`, `temperature` (`botnhiti`, place `unknown`
-  until checked), `wind_speed_ms`, `wind_direction`.
-- **What fills it today:** the logger, 2008-2023, both layers. An AIS store adds a column only when it records a
-  quantity the pings do not carry. The AIS products stay the positions' home and are unchanged by this plan.
-- **The logger's other columns:** `time_basis` (`recorded`, or `reconstructed` for the 848,306 readings whose date
-  Oracle lost, if ask e dates them), `lon_raw` and `lat_raw` (its own faulty position, kept and never used as a
-  position), `.sid_carrier` (the record that carried it), `layer`, `app`.
+- **Long.** The key is (`vid`, `time`, `provider`), with `provider = gps` for the logger as the AIS union names it, and
+  a provider of its own for each further system. Each row is one reading of one quantity: `quantity`, `place`,
+  `mount`, `instrument`, `value`, `unit`, `value_raw`, `unit_raw`, `basis`, `flag`, on `sensor_summary`'s code lists.
+  The logger's quantities: water depth under the vessel (`botndypi`), headline depth, temperature (`botnhiti`, place
+  `unknown` until checked), wind speed and direction.
+- **No position, speed or heading.** They are on the logger's fixes in the AIS track, the position interpolated on the
+  cleaned track (decision 196; the frozen `sensor_gps` until that is built). A reading takes them by joining its
+  fix: the logger's readings and fixes share one clock, so the join is exact; from mid-2020, when the logger's fixes
+  leave the track (decision 154), it takes the nearest AIS fix. The logger's own faulty position is kept as the
+  quantities `lon_raw` and `lat_raw`, never used as a position.
+- **On every row as well:** `time_basis` (`recorded`, or `reconstructed` for the 848,306 readings dated from the
+  record that carried them, ask e), `.sid_carrier` (that record), `layer`, `app`.
+- **What fills it today:** the logger, 2008-2023, both layers. An AIS store adds rows only for a quantity the pings do
+  not carry. The AIS products stay the positions' home and are unchanged by this plan.
 - **Built on the preprocessing side:** it reads no AIS. It supersedes `sensor_gps` as the home of the logger's
-  readings, whatever TODO 98 decides for its positions (ask d).
+  readings; `sensor_gps`'s positions go to decision 196's flow step.
 - **The join is the analyst's:** by vessel and time (§3), as the stores are joined to each other, shown in the user
   tables' documentation and the book. A ramb helper is not proposed: dplyr's `join_by(vid, closest())` does it.
 
@@ -503,7 +510,7 @@ catch's side with plan 036's or 038's next change, not to these tables.
 3. **fs_afladagbok and adb.** Their adapters write the same three tables from `ws_*`, the tour app and adb's tables,
    with fs's depth unit by app (decision 210 item 6).
 4. **The vessel's sensors.** `vessel_sensor` from both layers of the logger, on the preprocessing side, partitioned by
-   provider and year, with the AIS pings' names for the quantities they share; the 1899 rows as ask e decides.
+   provider and year, long and with no positions (§5, amended); the 1899 rows dated from their record (ask e).
 5. **Curated and checked.** `curate/logbook.R` binds the staged tables for the kept stations. Checks: `effort_count`
    read from `rigging_part` equals today's on every station; every placeholder and implausible value flagged and
    counted; afli's units against fs on the same vessel and day (`15`'s account, kept as a check).
@@ -523,7 +530,10 @@ the maintainer's choices among the options put, recorded here by Claude):
 - c: `sensor_summary` long; `environment` a pivot made for the user tables, not stored.
 - d and e: deferred, and with them `vessel_sensor`, so that the tables built now carry no times (the maintainer: the
   tables "should be independent of the time issue", TODO 164, since folded into TODO 165, plan 053). `sensor_gps`
-  stays as it is.
+  stays as it is. *Answered (maintainer, 2026-10-30, through plan 054's ask h, amended the same day):* d: the logger
+  stays in the AIS union as decision 196 has it, for its speed and heading, and only its other readings go into
+  `vessel_sensor`; e: dated from the record that carried them, basis `reconstructed`, flagged. With them, h: the
+  table is long, with no positions (§5). Built in plan 054's rebuild A.
 - f: a placeholder keeps its raw value with `flag = placeholder` and no SI value.
 - g: the undocumented columns used as §2 reads them, basis `reconstructed` for the meaning, the reading in the code
   list; `beitufrakast`, whose meaning is unknown, kept as recorded and flagged.
