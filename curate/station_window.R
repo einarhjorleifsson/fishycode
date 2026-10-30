@@ -58,7 +58,9 @@
 #              Such a window has basis derived where ramb's says recorded.
 #   pressed    (T14) a tow or haul of 0-4 min: its end is left out and the window runs from its start to the gear's 95th
 #              percentile span (span_p95_min, the e-logbook's recorded spans over 4 min, the placeholder stations'
-#              hauls out, from 100 spans; plan 053 r07), or to the vessel's next station; basis synthesised.
+#              hauls out, from 100 spans; plan 053 r07), or to the vessel's next station; basis synthesised. A pressed
+#              haul enters ramb as two rows, its set and its haul drawn as a jig's window and named a haul after, so
+#              its made-up end stays out of ramb's typical haul (the median recorded haul per gear).
 # These ends enter ramb in the time slots and are not kept: the output's t1-t4, n_events and events are the judged
 # times, as the windows read them.
 
@@ -125,7 +127,7 @@ GROUP BY gear HAVING count(*) >= 100")
 
 # The ends ramb is given for the trip-time and pressed stations (above); j1-j4 keep the judged times.
 dbExecute(con, "
-CREATE TABLE base AS
+CREATE TABLE base1 AS
 SELECT b.* EXCLUDE (t1, t2, t3, t4, trip_start, trip_end, t1_placeholder),
        b.t1 AS j1, b.t2 AS j2, b.t3 AS j3, b.t4 AS j4,
        CASE WHEN b.trip_time AND b.gear_class = 'jigged' THEN coalesce(b.t1, b.trip_start) ELSE b.t1 END AS t1,
@@ -143,6 +145,15 @@ SELECT b.* EXCLUDE (t1, t2, t3, t4, trip_start, trip_end, t1_placeholder),
          AND ((b.gear_class = 'towed' AND b.t3 IS NULL AND b.t2 IS NOT NULL)
               OR (b.gear_class = 'static' AND b.t4 IS NULL AND b.t3 IS NOT NULL)) AS pressed_end
 FROM base0 b LEFT JOIN span95 p USING (gear)")
+dbExecute(con, "
+CREATE TABLE base AS
+SELECT *, false AS pressed_haul FROM base1 WHERE NOT (pressed_end AND gear_class = 'static')
+UNION ALL BY NAME
+SELECT * REPLACE (CAST(NULL AS TIMESTAMP) AS t3, CAST(NULL AS TIMESTAMP) AS t4), false AS pressed_haul
+FROM base1 WHERE pressed_end AND gear_class = 'static'
+UNION ALL BY NAME
+SELECT * REPLACE ('jigged' AS gear_class, j3 AS t1, CAST(NULL AS TIMESTAMP) AS t3), true AS pressed_haul
+FROM base1 WHERE pressed_end AND gear_class = 'static'")
 
 # Windows ----------------------------------------------------------------------------
 # The rules - the phases, the typical haul (median recorded haul per gear, from 50 hauls), the one-record cuts
@@ -156,6 +167,8 @@ n_events_sql <- paste0("CAST(", paste(sprintf("CASE WHEN j%d IS NOT NULL THEN 1 
 events_sql <- paste0("concat_ws('+', ", paste(sprintf("CASE WHEN j%1$d IS NOT NULL THEN 't%1$d' END", 1:4),
                                               collapse = ", "), ")")
 sw <- ramb::rb_create_record_windows(dplyr::tbl(con, "base"), key = c(".sid", "schema"), min_hauls = 50) |>
+  dplyr::mutate(phase = dplyr::if_else(pressed_haul, "haul", phase),
+                gear_class = dplyr::if_else(pressed_haul, "static", gear_class)) |>
   dplyr::mutate(
     win_basis = dplyr::case_when(pressed_end & phase %in% c("tow", "haul") ~ "synthesised",
                                  trip_time & phase != "day" & win_basis == "recorded" ~ "derived",
@@ -189,7 +202,8 @@ print(q("
 
 message("\nthe app profile's windows: trip-time stations (T4, T10) and pressed records (T14), by phase and basis")
 print(q("SELECT CASE WHEN b.trip_time THEN 'trip_time' ELSE 'pressed' END AS kind, w.phase, w.win_basis, count(*) n
-         FROM station_window w JOIN base b USING (\".sid\", schema) WHERE b.trip_time OR b.pressed
+         FROM station_window w JOIN (SELECT DISTINCT \".sid\", schema, trip_time, pressed FROM base) b
+         USING (\".sid\", schema) WHERE b.trip_time OR b.pressed
          GROUP BY ALL ORDER BY 1, 2, 3"))
 message("\nthe gears' typical maximum (span_p95_min, row T14)")
 print(q("SELECT * FROM span95 ORDER BY gear"))
