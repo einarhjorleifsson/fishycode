@@ -1549,16 +1549,19 @@ None was judged (counted 2026-10-29 by Claude, not checked by a person).
 
 ## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
 **status:** open · **needs: maintainer** — asks d and e (the logger's positions and its readings dated 1899), after the
-set times · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decision 244, TODOs 98, 100, 140, 164
+set times · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
+140, 164
 
 Built 2026-10-29 (decision 244), not checked by a person: `curated/logbook/{gear_part,rigging_part,sensor_summary}`,
 every source column and kept station in one outcome; afli's edited layer answers before `rafr_` to 2018 and where
-the domain expert's account last changed the station (the maintainer). Left:
+the domain expert's account last changed the station (the maintainer). Units measured 2026-10-30 (decision 245): the
+gillnet's length metres; door areas above 40 m² and the dredge's size kept raw; every unit in the dump overlay. Left:
 - **`effort_count` from `rigging_part`** (51 afli stations would move, each explained in decision 244), then `g_*` out
   a release later (decision 210 item 3).
 - **`vessel_sensor`** (`curated/vessel_sensor/`, ask h) with asks d and e, after the set times (TODO 164, plan 053).
-- **Plan 052 step 1's remainder**: the units in the overlay (`dump/oracle/meta/`), ICES vocabularies as code-list
-  columns, the gillnet's length and the dredge's size measured, door areas above 40 m² (12,736; square feet?).
+- **Plan 052 step 1's remainder**: §2's unexplained headline and sweep records listed vessel by vessel; the dredge's
+  unit per record, if a rule by species is wanted (decision 245); the ICES columns when something reads them (the
+  matches are in decision 245).
 
 **check:** `effort_count` read from `rigging_part`, the change accounted for; `vessel_sensor` built or declined; a
 decision record.

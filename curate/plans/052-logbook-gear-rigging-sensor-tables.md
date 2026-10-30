@@ -2,6 +2,7 @@
 
 **status:** partly built — written 2026-10-29 at the maintainer's request; its asks answered the same evening (§7);
 `gear_part`, `rigging_part` and `sensor_summary` built the same night, independent of the set times (decision 244);
+step 1's units measured and put in the dump overlay 2026-10-30, the gillnet's length metres (decision 245);
 `vessel_sensor` waits for asks d and e · **measured** (§1-§3), by Claude
 the same day, read-only on the dumps of 2026-10-16/17 and the store, not checked by a person: six grammars mined into
 one union of terms; afli's `rafr_` gear tables, their edited copies, and fs_afladagbok's and adb's gear tables, column
@@ -530,6 +531,9 @@ the maintainer's choices among the options put, recorded here by Claude):
   edits at least done <= 2018 are [the expert's account] - i trust him". So the edited layer answers before `rafr_` on
   records to 2018 and wherever the expert's account last changed the station, `rafr_` on the afli route's import of 2019
   on (decision 244).
+- Asked 2026-10-30, step 6's ICES codes as columns of the code lists: five lists match an ICES vocabulary, nothing
+  reads them yet. The maintainer chose "Record only": the matches are in decision 245, the columns come when something
+  reads them.
 
 The asks as put:
 

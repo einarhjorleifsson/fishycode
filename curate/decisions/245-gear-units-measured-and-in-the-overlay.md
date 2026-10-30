@@ -129,7 +129,26 @@ and 261 warnings are HEAD's).
 
 ## The live build
 
-*Pending at this commit.*
+`$FISHYDATA/archive/2026-10-30-gear-units/build.sh`, from a5880c8 on a clean tree, under DuckDB 1.5.6 and ramb
+2026.10.28.3: the store fingerprinted, `gear_part_map` invalidated, the outdated targets checked to be exactly it and
+the four that read it (`afli_part`, `fs_afladagbok_part`, `adb_part`, `logbook_part`; `ais_catch` and
+`check_allocation_audit` stay outdated, as the maintainer left them on 2026-10-29), those five built by name (2 min
+40 s), the store fingerprinted again and every file compared. Of 8,045 files, 8,033 are the same and 9 hold the same
+rows and schema with values moved: `gear_part_map`, `curated/logbook/gear_part`, `check_logbook_part_column`, and each
+source's staged `gear_part` and `part_column`. The columns that moved are those the scratch build changed (`length_m`,
+`unit_raw`, `basis`, `flag`, `n_implausible`; the map's `unit_raw`, `to_si`, `min_si`, `max_si`, `basis`, `note`).
+The other 3 are empty tables, 0 rows before and after with the same schema, which `compare.R` leaves without an
+outcome (adb's `diving` dump, fs_afladagbok's and adb's staged `sensor_summary`). Afterwards nothing is outdated but
+those two. The new files equal the scratch build's row for row (the map apart from the corrected door note). The
+curated ones are stamped a5880c8, `fd.dirty` false.
+
+The plan-053 session had changed four tracked files during the build's first, read-only step (the before-fingerprint).
+The script re-checks the tree before building. The session set its files aside, HEAD's versions restored, before
+that check, and put them back after the build.
+
+The three dump dictionaries were rewritten from the overlay at a5880c8 (`rewrite_data_dict()`, the old files kept in
+the archive's `data_dict_before/`) and checked on every row (`check_data_dict()`): no error; 0 failed asserts beyond
+the expected counts. `products/v0` links `gear_part` into `curated/`, so it needs no rerun.
 
 ## What is left (TODO 163)
 
