@@ -10,7 +10,8 @@ the count files; `counts/q00_inventory.tsv` is §1): every station of fs_afladag
 and of the afli route as sent, field by field, by app, against the AIS track and port calls, GEBCO, the landing and
 Trackwell's own copy of its app's hauls · **assumed** (§4): the app string identifies the app; the witnesses'
 tolerances; Trackwell's file is the app's own; the month-end mechanism · **see:** TODOs 73, 103, 107, 126, 156,
-157, 162, 164, decisions 157, 158, 160, 165, 171, 206, 210, 211, 213, 240, 242, 243, plans 050 (§6, ask f), 051, 052,
+157, 162, 165 (TODO 164 folded in, §5.6), decisions 157, 158, 160, 165, 171, 206, 210, 211, 213, 240, 242, 243, plans
+050 (§6, ask f), 051, 052,
 `curate/corrections/logbook_set_placeholder.yml`, `R/logbook_position.R`, `sources/fs_afladagbok/convert.R`
 
 Drafted with AI assistance (Claude) on 2026-10-29; a person has not yet checked it, nor any number in it.
@@ -32,13 +33,13 @@ duplicate twins out. Feeds: fs = fs_afladagbok, adb from 2025-11-19, the afli ro
 |---|---|---|---|---|---:|
 | T1 | haul start less 270 or 1,710 min (the placeholder) | Trackwell raun; Fishing Log 2.7 | t1, 2008-2026 | `t1` NA, `t1_placeholder` (`logbook_set_placeholder.yml`) | 77,953 flagged |
 | T2 | the same, a minute off (269, 271, 1,709, 1,711) | Trackwell raun | t1, 2022-2026 | nothing (decision 206 chose it) | 823 merged |
-| T3 | the same plus 2-40 whole days | Trackwell raun | t1, 2022-2026 | nothing (TODO 164 a) | 1,626 merged |
+| T3 | the same plus 2-40 whole days | Trackwell raun | t1, 2022-2026 | nothing (TODO 164 a, now §5.6) | 1,626 merged |
 | T4 | `t1` is the trip's departure | Marína, FRA TAKTIKAL | t1, 2021-2026 | nothing: a set window, or a jig window from the port | 24,271 merged |
 | T5 | `t1` is the trip's landing | STOKKUR mostly | t1, 2020-2022 | nothing | 15,282 merged |
 | T6 | `t1` is the haul start or end | Reiknistofa, Fishtech, Jóhann Gíslason | t1, 2022-2026 | nothing: a set window cut to nothing | 1,963 merged |
 | T7 | `t1` is the vessel's previous haul end | Fontos | t1, 2023-2026 | nothing | 495 merged |
 | T8 | `t1` or `t2` a date (00:00) | TRACKWELL; Marína, Taktikal on some | t1, t2, 2019-2026 | twins ignore it; a set window at midnight | 1,520 + 1,530 merged |
-| T9 | the only times a date, landing or departure: no window but a false set window | STOKKUR, TRACKWELL, Taktikal | window, 2020-2023 | nothing (TODO 164 c) | 3,632 merged |
+| T9 | the only times a date, landing or departure: no window but a false set window | STOKKUR, TRACKWELL, Taktikal | window, 2020-2023 | nothing (TODO 164 c, now §5.6) | 3,632 merged |
 | T10 | `t4` is the trip's return | Marína, FRA TAKTIKAL | t4, 2022-2026 | nothing: the jig window is the whole trip | 20,741 within 1 h of port |
 | T11 | the trip's departure copies the first haul or tow start | Trackwell raun | departure, 2022-2026 | `trip_reconciled` takes the AIS first; decision 206 would blank the tow start | 8,665 times near |
 | T12 | a set time stamped with seconds: in port on a quarter | Trackwell raun | t1, 2022-2026 | nothing | 11,291 merged |
@@ -282,7 +283,7 @@ A row may name an app, a version, a period, a gear class and a vessel list (for 
   rule's id. `t1_placeholder` stays one release, as `t1_flag == "placeholder"`.
 - **The windows read the flags as `judged_time_sql()` reads the duration limit:** a flagged time opens and closes no
   window and makes no duration. A station left with no usable time gets the day window, basis `synthesised`, as a
-  date-only record does (TODO 164 c), or a trip window (ask c).
+  date-only record does (§5.6 c), or a trip window (ask c).
 - **The app is carried** on the staged and merged station: today it is on the trip alone (`ws_veidiferd.uppruni`,
   `fishing_trip.source`), and the afli route's version only in `staging/afli_sent`.
 
@@ -303,12 +304,16 @@ A check, never an input.
 - **Out of `sources/fs_afladagbok/convert.R` and `R/logbook_position.R`:** the names STOKKUR and TAKTIKAL. The decoder
   takes the app's form from rows P2-P4, so a new app's form is a row, not code. The forms stay read at the adapter: it
   reads its stored form, with the profile as a reference input, as it reads the gear table.
-- **From decision 206 and TODO 164:** T2, T3, T13, T14 become rows. T11 flags the trip's departure and landing, not the
-  tow start and end (ask d), and T14 closes a pressed record's window at the gear's typical maximum, not the day.
+- **From decision 206 and TODO 164 (§5.6):** T2, T3, T13, T14 become rows. T11 flags the trip's departure and
+  landing, not the tow start and end (ask d), and T14 closes a pressed record's window at the gear's typical maximum,
+  not the day.
 - **Stay as they are:** the sign rule (it reads every app's convention right), `logbook_twin` (it takes every
   resubmission in the merge), the tiers, the date bounds, adb's gear read back, the merge's trips with stations only.
 
-### 5.6 TODO 164's choices under the design
+### 5.6 TODO 164's choices, decided
+
+*Decided by the maintainer's review of the rows, 2026-10-29 and 30 (the `reviewed` field of each); TODO 164 was
+deleted on 2026-10-30 and folded into TODO 165, whose work is this plan's steps 5 and 6.* As drafted:
 
 - **a.** Rows T2 and T3: Trackwell raun's `t1` at 270 + k x 1,440 min (k >= 0, +-1 min), flagged. 2,449 merged
   stations more than today's 23,330 fs and adb.
@@ -317,6 +322,12 @@ A check, never an input.
   flags on Trackwell raun's own copies. The maintainer's earlier "left as recorded" holds for the value: it is kept and
   flagged, not opened as a set window.
 - **c.** The fallback of §5.3: the 3,632 merged stations whose only window is a false set window get the day window.
+
+As reviewed: a by T1-T3 (flagged as the placeholder; T3 keeps its day as the set day, basis `derived`); b by the
+per-app and per-value rows (T4-T8, T12, T15, T16), each value kept as recorded and flagged (ask b), not set to NA; c
+by T5, T8 and W1 (a landing or a date is flagged, and a station with no other time gets the day, basis
+`synthesised`; decision 242's 231 afli-route `TRACKWELL` stations are T8's). TODO 164's two open points beside them:
+Trackwell raun's stamped form is T12 and P7 (ask e), and the 28 haul windows cut to nothing are T6-value's.
 
 ### 5.7 Alternatives weighed
 
@@ -387,9 +398,10 @@ The profile is proposed; the value rules serve it as detectors, the witnesses as
 
 ## 7. What it changes, folds in, supersedes
 
-- **Folds in:** TODO 164 (its choices are §5.6); TODO 103's "other placeholder patterns" and the gillnet sets in port
-  (T12); TODO 107's chosen and unbuilt items (decision 206; its towed departure copies reversed by T11, ask d);
-  TODO 126's per-app forms and decision 211's proposed per-app check; decision 210's `fs_depth_units`.
+- **Folds in:** TODO 164 (deleted 2026-10-30, its choices decided in §5.6); TODO 103's "other placeholder patterns"
+  and the gillnet sets in port (T12); TODO 107's chosen and unbuilt items (decision 206; its towed departure copies
+  reversed by T11, ask d); TODO 126's per-app forms and decision 211's proposed per-app check; decision 210's
+  `fs_depth_units`.
 - **Informs:** TODO 162 (Trackwell's copy witnesses 987 afli-route longitudes, P8); plan 051 (the state by app, K1-K3;
   the factor stays its own); plan 050 ask f (§3); plan 037 (the afli route as sent has its own faults: P8, D5, T15);
   plan 052 (the gear detail is not profiled here).

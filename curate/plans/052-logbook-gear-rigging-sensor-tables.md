@@ -522,7 +522,8 @@ the maintainer's choices among the options put, recorded here by Claude):
 - b: two tables, `gear_part` and `rigging_part`, of one shape.
 - c: `sensor_summary` long; `environment` a pivot made for the user tables, not stored.
 - d and e: deferred, and with them `vessel_sensor`, so that the tables built now carry no times (the maintainer: the
-  tables "should be independent of the time issue", TODO 164). `sensor_gps` stays as it is.
+  tables "should be independent of the time issue", TODO 164, since folded into TODO 165, plan 053). `sensor_gps`
+  stays as it is.
 - f: a placeholder keeps its raw value with `flag = placeholder` and no SI value.
 - g: the undocumented columns used as §2 reads them, basis `reconstructed` for the meaning, the reading in the code
   list; `beitufrakast`, whose meaning is unknown, kept as recorded and flagged.

@@ -59,6 +59,8 @@ from it and no day window, since `ramb::rb_create_record_windows()` gives a day 
 time. For 194 of them that false set window is the only window, so their catch has no fishing window to sit on. The
 same holds for 413 STOKKUR stations (`t1` the landing) and 24 FRA TAKTIKAL ones. The rule above stands; reading it is
 TODO 164's choice (c): a station whose only time is a date or a landing gets a day window, not a set window.
+*Decided 2026-10-30:* the maintainer's review of plan 053's rows T5, T8 and W1 chose (c), basis `synthesised`; TODO 164
+is folded into TODO 165 (plan 053 §5.6), and the windows wait for its build.
 
 ## Leads
 

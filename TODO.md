@@ -773,7 +773,7 @@ the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
 A lead (decision 242): afli's own electronic set times on nets and lines of 2019-2020 miss the set position by the
 track on 45 % (far or in port), leaning to a set logged 1-3 h before the vessel reaches the gear: decision 157's
 departure copies, or more. By app, 2022-2026: only Trackwell raun writes a set time; the rest copy another time or
-a date into `t1`, and 4,798 merged stations still open a set window from it (TODO 164).
+a date into `t1`, and 4,798 merged stations still open a set window from it (plan 053, TODO 165).
 
 **check:** decision 198's rule built and the trail's `fishing_flow` traced before and after; the gillnet set times in
 port explained or listed;
@@ -1551,7 +1551,7 @@ None was judged (counted 2026-10-29 by Claude, not checked by a person).
 ## 163. The logbook's gear, rigging and sensor tables (plan 052): what is left after the build
 **status:** open · **needs: maintainer** — asks d and e (the logger's positions and its readings dated 1899), after the
 set times · **see:** `curate/plans/052-logbook-gear-rigging-sensor-tables.md`, decisions 244 and 245, TODOs 98, 100,
-140, 164
+140, 165
 
 Built 2026-10-29 (decision 244), not checked by a person: `curated/logbook/{gear_part,rigging_part,sensor_summary}`,
 every source column and kept station in one outcome; afli's edited layer answers before `rafr_` to 2018 and where
@@ -1559,7 +1559,7 @@ the domain expert's account last changed the station (the maintainer). Units mea
 gillnet's length metres; door areas above 40 m² and the dredge's size kept raw; every unit in the dump overlay. Left:
 - **`effort_count` from `rigging_part`** (51 afli stations would move, each explained in decision 244), then `g_*` out
   a release later (decision 210 item 3).
-- **`vessel_sensor`** (`curated/vessel_sensor/`, ask h) with asks d and e, after the set times (TODO 164, plan 053).
+- **`vessel_sensor`** (`curated/vessel_sensor/`, ask h) with asks d and e, after the set times (plan 053, TODO 165).
 - **Plan 052 step 1's remainder**: §2's unexplained headline and sweep records listed vessel by vessel; the dredge's
   unit per record, if a rule by species is wanted (decision 245); the ICES columns when something reads them (the
   matches are in decision 245).
@@ -1567,35 +1567,11 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 **check:** `effort_count` read from `rigging_part`, the change accounted for; `vessel_sensor` built or declined; a
 decision record.
 
-## 164. The set time by app: which `t1` opens a set window
-**status:** open · **needs: maintainer** — choices a-c · **see:** TODO 103, decisions 157, 158, 206, 211 and 242,
-`curate/corrections/logbook_set_placeholder.yml`, `$FISHYDATA/archive/2026-10-29-static-set-time/findings.md`
-
-Measured 2026-10-29 by Claude in a side session, read-only, not checked by a person: every one of the e-logbook's
-69,506 static stations of 2022-2026 in one outcome. Only Trackwell raun writes a set time, and only where it is typed
-(in port 3-10 %, near the set position 63-68 %). Every other app copies another time or a date into `t1`: Marína and
-FRA TAKTIKAL the departure, STOKKUR the landing, the afli route 00:00, Reiknistofa fiskmarkaða, Fishtech and Jóhann
-Gíslason the haul start, Fontos the previous haul's end. Trackwell's stamped form (seconds) holds most of the gillnet
-sets in port. In the merge, 29,976 stations have a `t1` that is not a set; 23,130 are blanked, and 4,798 still open a
-set window (59,635 fixes, 9,111 in port). For 631 it is the station's only window. The choices:
-
-- a. Extend `logbook_set_placeholder.yml` to 270 min + k whole days (k ≥ 0, ±1 min): 1,625 more merged Trackwell raun
-  gillnets, beside decision 206's 831.
-- b. A per-app rule: `t1` NA and flagged where the app writes no set time (3,230 merged stations of the other apps, and
-  Trackwell raun's 1,160 copies), or the maintainer's earlier "left as recorded" kept.
-- c. A station whose only time is a date or a landing (STOKKUR 445, the afli route's 231) gets a day window, not a set
-  window (decision 242, amended).
-
-Open beside them: Trackwell raun's stamped form, whose logged position fits the track hours after its times (11,228
-stations), and 28 haul windows cut to nothing by a set window with the same start.
-
-**check:** a decision on a-c; the windows and `station_event` traced before and after.
-
 ## 165. The e-logbook feed: every app's quirks found by rule, in one app profile (plan 053)
 **status:** open · **needs: maintainer** — plan 053's asks f and g (§8): the feed once the hold lifts, Trackwell's file
 as a standing witness; then steps 2 and 4-9, the build ·
-**see:** `curate/plans/053-elogbook-feed-app-profile.md`, TODOs 103, 107, 126,
-162, 164, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
+**see:** `curate/plans/053-elogbook-feed-app-profile.md` (§5.6: TODO 164 folded in), TODOs 103, 107, 126,
+162, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
 
 The maintainer (2026-10-29): a plan for the e-logbook feed, what the apps and the Directorate send and the feed itself.
 Measured by Claude the same day, read-only, not checked by a person (`$FISHYDATA/archive/2026-10-29-elogbook-feed/`): 42
@@ -1606,7 +1582,8 @@ real tow start for Trackwell raun (3,064, against decision 206's choice). Marín
 fathoms; the new mar's live build drops trips registered on a month's last day (3,829 of 3,875). Proposed: one reviewed
 app profile (`curate/corrections/logbook_app_profile.yml`) that `curate/` reads, values kept with per-field flags that
 the windows leave out, and a check that lists a new app or a moved share; the app names leave the adapters' code. It
-would fold in TODO 164's choices a-c, TODO 103's other patterns, TODO 107's unbuilt items and TODO 126's per-app forms.
+folds in TODO 164 (deleted 2026-10-30, its choices a-c decided by the review, plan 053 §5.6) and would fold in TODO
+103's other patterns, TODO 107's unbuilt items and TODO 126's per-app forms.
 Step 3 drafted the same day: 45 rows in `curate/corrections/logbook_app_profile.yml`. Reviewed that evening: T1-T5, T10,
 W1, D2, P2-P4, then T8, T11, T12, T14 and P7: 18 rows; asks b-e answered (keep and flag; the trip's window; the trip's
 ends, not the tow times, are the copies; stamped gillnet sets flagged). The review found the fs adapter reads no seven-
