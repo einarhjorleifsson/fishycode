@@ -240,6 +240,10 @@ TODOs 152-154 close into the decision record.
   and the user guides), which the maintainer's git credentials do not reach. Then a plan
   of its own: the live tables in place of the dump and adb. The live build loses month-end trips (§6), so it can replace
   the dump and adb only once that is fixed upstream; the fault is for the new mar's author (ask g).
+  *Partly answered (the maintainer's mail with the new mar's author, 2026-10-30):* no account; the feed is two REST
+  services of the Directorate, the old afli route and the new e-logbook, behind one OAuth2 client-credentials grant
+  that the build calls from Python. Their specs are kept, and they read as the `ws_*` tables and afli's `rafr_*` by
+  name (`$FISHYDATA/archive/2026-10-30-fs-api/README.md`). Missing: the token endpoint, and `mfriops/Landings`.
 - g. *Answered (maintainer, 2026-10-29):* sent. The maintainer emailed the new mar's author the same day: the five
   main findings (one source per year; effort from misread counts; catch with no state; records dropped or counted
   twice; conversions), with asks for read access to the build code and to the live e-logbook tables, and the month-end

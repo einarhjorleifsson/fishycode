@@ -1616,7 +1616,8 @@ One list of every question or request fishycode waits on from outside (plan 054 
 The items they came from close on what fishycode does; the waits are kept here.
 - **On hold since 2026-10-29**, with no contact with the new mar's author until the maintainer says:
   - plan 050's ask f (TODO 156) and plan 053's ask f (TODO 165): the live fs_afladagbok feed, and read access to
-    `mfriops/Landings`;
+    `mfriops/Landings`. The feed answered by its author in the maintainer's own mail (2026-10-30): the Directorate's
+    two REST services (`$FISHYDATA/archive/2026-10-30-fs-api/`). Still wanted: their token endpoint, and the code;
   - plan 053's ask g (TODO 165): Trackwell's own haul file as a standing witness.
 - **The Trackwell draft** of TODO 103 (chosen 2026-10-23): `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`, kept
   out of git; its `sent` is filled when it goes.

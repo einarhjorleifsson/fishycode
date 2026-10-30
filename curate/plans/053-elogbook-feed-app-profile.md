@@ -195,7 +195,7 @@ fathoms, no count, and GUTT x 1.25 stored on 169,893 rows. The merge reads afli 
 | 2019-11 to 2024-06 | fs_afladagbok's TRACKWELL where afli lacks the vessel-day | the afli route as the Directorate holds it: dates only |
 | 2021-11 to 2025-11-18 | fs_afladagbok (`ws_veidi` registered to 2025-12-12, `ws_veidiferd` to 2025-11-28) | every e-logbook app |
 | 2025-11-19 to 2026-10-15 | adb (dumped 2026-10-16; a batch every day but 2025-12-24 and 25) | every e-logbook app, in MFRI's codes |
-| live | nothing: the Directorate's `ws_*` tables are reached by no account (plan 050 ask f) | |
+| live | nothing read yet: the Directorate's REST services, known since 2026-10-30, wait on the token endpoint (plan 050 ask f) | |
 
 **The seams:**
 - **afli to the e-logbook (2021-2023).** Two copies of the same Trackwell submissions; afli first per vessel-day, on
@@ -220,7 +220,8 @@ fathoms, no count, and GUTT x 1.25 stored on 169,893 rows. The merge reads afli 
    conversions, which §5 flags.
 2. **The fs_afladagbok copy at MFRI resumed** (IT): the schema is maintained, so the cheapest way back to the dump of
    record, and adb could go.
-3. **The Directorate's live tables, dumped source-shaped** (plan 050 ask f): an account and the tables named.
+3. **The Directorate's live tables, dumped source-shaped** (plan 050 ask f): through its REST service (2026-10-30),
+   which selects by last change and carries each record's edits; the token endpoint is still missing.
 4. **The new mar's parquet**: interpreted, losing the month-end trips, and partly fishycode's since the email. Not a
    source; a reading to compare with, by date.
 
