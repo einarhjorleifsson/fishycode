@@ -43,6 +43,8 @@
 # (aflaskeyti_coordinates.R: lon1_raw, lat1_raw, lon2_raw, lat2_raw, coord_flag), the Faroese summer times
 # (aflaskeyti_local_time.R: t_shift_min, time_basis), the state of each weight (aflaskeyti_weight.R:
 # condition_basis), and the trips cut at landings in Iceland (curate/aflaskeyti_trip.R: T1_basis, T2_basis).
+# App: station.parquet carries the app that wrote each e-logbook station (app, app_suffix, app_raw, app_version;
+# plan 053 step 2), from the trip's source and the afli route's sent layer (staging/afli_sent/station.parquet).
 # Station type: station.parquet carries station_type (operation / event) and
 # station_type_basis, read per vessel, year and gear (decision 084).
 # Set times: a logbook app's placeholder t1 is NA in fishing_sample.parquet, t1_placeholder TRUE (decision 157).
@@ -415,6 +417,34 @@ station_type <- st_base |>
 merged_station <- merged_station |>
   left_join(station_type, by = c(".sid", "schema"), relationship = "one-to-one")
 
+# App --------------------------------------------------------------------------
+# The app that wrote each e-logbook station (plan 053 step 2), as the profile names it
+# (curate/corrections/logbook_app_profile.yml, vocabulary): fs_afladagbok's trip uppruni and adb's trip source, with
+# the suffixes " - GAFL AUTO" and " - Skrifstofa VES" apart in app_suffix; on the afli route the message's software
+# and its major.minor version, as the sent layer holds them (staging/afli_sent, decision 180), by .sid. app_raw is the
+# string as written, app_version the sent message's whole version. A paper record and aflaskeyti's ERS reports have
+# none.
+APP_SUFFIX <- " - (GAFL AUTO|Skrifstofa VES)"
+trip_app <- merged_trip |>
+  filter(schema %in% c("fs_afladagbok", "adb")) |>
+  transmute(.tid, schema, app_raw = str_trim(source),
+            app = str_trim(str_remove_all(app_raw, APP_SUFFIX)),
+            app_suffix = str_remove(str_extract(app_raw, str_c("(", APP_SUFFIX, ")+$")), "^ - "))
+sent_app <- duckdbfs::open_dataset(fd_staging("afli_sent", "station.parquet")) |>
+  select(.sid, app, app_version) |> collect() |>
+  filter(!is.na(app)) |>
+  transmute(.sid, schema = "afli", app_raw = app, app_version,
+            app = str_squish(str_c(str_trim(str_extract(app_raw, "[^-]+$")), " ",
+                                   coalesce(str_extract(app_version, "^[0-9]+\\.[0-9]+"), ""))))
+station_app <- bind_rows(
+  merged_station |> filter(schema %in% c("fs_afladagbok", "adb")) |> select(.sid, .tid, schema) |>
+    inner_join(trip_app, by = c(".tid", "schema"), relationship = "many-to-one") |> select(-.tid),
+  merged_station |> filter(schema == "afli") |> select(.sid, schema) |>
+    inner_join(sent_app, by = c(".sid", "schema"), relationship = "one-to-one"))
+merged_station <- merged_station |>
+  left_join(station_app, by = c(".sid", "schema"), relationship = "one-to-one")
+rm(trip_app, sent_app, station_app)
+
 # Placeholder set times --------------------------------------------------------
 # Trackwell's logbook app fills the set time with the haul start less 270 min (or 1,710 min), cut to the minute
 # (curate/corrections/logbook_set_placeholder.yml, decision 157). Such a t1 is not the skipper's: it becomes NA and
@@ -585,7 +615,7 @@ logbook_inputs <- c(
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
   fd_staging("afli", "depth.parquet"), fd_staging("afli", "end_longitude.parquet"), fd_staging("adb", "lon_sign.parquet"),
-  AFLI_EAST_LON, fd_curated("reference", "gear.parquet"),
+  AFLI_EAST_LON, fd_staging("afli_sent", "station.parquet"), fd_curated("reference", "gear.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
                   "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))))
 merged_trip           |> write_curated(fd_curated("logbook", "trip.parquet"),           inputs = logbook_inputs)

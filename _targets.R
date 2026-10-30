@@ -753,7 +753,8 @@ list(
   tar_target(afli_east_longitude_reviewed, "overrides/afli_east_longitude_reviewed.csv", format = "file"),
 
   tar_target(logbook, {
-    afli; afli_depth_units; afli_end_longitude; afli_east_longitude_reviewed; fs_afladagbok; adb; adb_lon_sign; gear
+    afli; afli_depth_units; afli_end_longitude; afli_east_longitude_reviewed; afli_sent; fs_afladagbok; adb; adb_lon_sign
+    gear
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),

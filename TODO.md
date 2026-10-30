@@ -1521,8 +1521,8 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 decision record.
 
 ## 165. The e-logbook feed: every app's quirks found by rule, in one app profile (plan 053)
-**status:** open — plan 053's asks f and g are TODO 169's (plan 054 ask e); steps 2 and 4-9 in plan 054's step 2a and
-rebuild A ·
+**status:** open — plan 053's asks f and g are TODO 169's (plan 054 ask e); step 2 coded and traced 2026-10-30 (decision
+253); steps 4-9 in plan 054's step 2a and rebuild A ·
 **see:** `curate/plans/053-elogbook-feed-app-profile.md` (§5.6: TODO 164 folded in), TODOs 103, 107, 126,
 162, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
 

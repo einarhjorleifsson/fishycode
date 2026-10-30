@@ -2,8 +2,8 @@
 
 **status:** proposal — written 2026-10-29 at the maintainer's request; measured read-only the same day; step 3's rows
 drafted the same day (`curate/corrections/logbook_app_profile.yml`, 45 rows, none applied); every row reviewed by the
-maintainer, 18 the same evening and 27 on 2026-10-30 (ask a), asks b-e and h answered, f and g open (§8); nothing
-built ·
+maintainer, 18 the same evening and 27 on 2026-10-30 (ask a), asks b-e and h answered, f and g open (§8); step 2,
+the app carried, coded and traced on a scratch store 2026-10-30 (decision 253); nothing built ·
 **measured** (§1-§3), by Claude in a read-only side session, not checked by a person, in counts only, every number in a
 file of `$FISHYDATA/archive/2026-10-29-elogbook-feed/` (`findings.md`; `counts/tables.md` renders the tables below from
 the count files; `counts/q00_inventory.tsv` is §1): every station of fs_afladagbok, of adb where fs_afladagbok lacks it,

@@ -19,11 +19,11 @@ dictionary <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet
 
 # trip -------------------------------------------------------------------------
 # trip_v's trip_id is the table's VARCHAR id, not its fishing_trip_id. Only the columns used: the table holds persons'
-# data (vessel_gsm, company_ssn).
+# data (vessel_gsm, company_ssn). `source` is the app that wrote the trip, as fs_afladagbok's uppruni (plan 053 step 2).
 trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) |>
-  select(trip_id = id, vessel_no, departure, departure_port_no, landing, landing_port_no) |> collect() |>
+  select(trip_id = id, vessel_no, departure, departure_port_no, landing, landing_port_no, source) |> collect() |>
   wk_translate(dictionary) |>
-  select(.tid, vid, T1, hid1, T2, hid2) |>
+  select(.tid, vid, T1, hid1, T2, hid2, source) |>
   mutate(schema = SCHEMA)
 
 # base -------------------------------------------------------------------------
