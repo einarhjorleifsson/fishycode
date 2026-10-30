@@ -1,7 +1,8 @@
 # Create standard summary tables
 # Side: preprocessing (fs_afladagbok). See plan 014.
 # Input:  raw/oracle/fs_afladagbok/{ws_veidiferd,ws_veidi,ws_afli,
-#           ws_dragnot_varpa,ws_plogur,ws_linanethandf,ws_gildra,ws_hringn}.parquet
+#           ws_dragnot_varpa,ws_plogur,ws_linanethandf,ws_gildra,ws_hringn}.parquet;
+#         curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
 # Output: staging/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet
 
 # Setup -----------------------------------------------------------------------
@@ -46,7 +47,7 @@ trip <- trip |>
 # Source (ws_veidi) -----------------------------------------------------------
 # Translate columns, join trip-level `source` for coordinate classification,
 # then convert raw integer coordinates to decimal degrees.
-# After this block `source` has: .sid .tid gid t1 t3 t4 lon1 lat1 lon2 lat2
+# After this block `source` has: .sid .tid gid t1 t3 t4 lon1 lat1 lon2 lat2 pos1_form pos2_form
 # z1 z2 n_lost date record_entered schema. record_entered is the record's entry time (skraningartimi), which the app
 # profile reads (curate/corrections/logbook_app_profile.yml, rows T12 and T16).
 # t1, t3, t4 here are the dictionary's names for upphaf_timi, milli_timi, lok_timi, not yet
@@ -58,58 +59,34 @@ source <-
   wk_translate(dictionary) |>
   rename(.sid = id, record_entered = skraningartimi) |>
   select(-c(breytt, snt, veidarfaeri_efni, athugasemd_txt)) |>
-  # uppruni is not in ws_veidi; join from trip for the coordinate format and STOKKUR's cells
-  left_join(trip |> select(.tid, source), by = ".tid") |>
+  # uppruni is not in ws_veidi; join from trip for the app, whose profile rows the position decoder reads
+  left_join(trip |> select(.tid, source, .vid = vid), by = ".tid") |>
 
-  ## Classify coordinate format -------------------------------------------------
-  # adb's rule, the same e-logbook (R/logbook_position.R, decision 211): a trip's six-digit positions are ddmm.hh when
-  # its app is Taktikal's or one of its four values ends in 61-99, impossible as seconds; ddmmss otherwise. Until plan
-  # 050 (2026-10-29) Marína raun was read as ddmm.hh on its app alone: its six-digit latitudes of 2024-2025 never end
-  # in 60 or above (0 of 9,269), so they are seconds.
-  mutate(coord_fmt = if_else(logbook_position_hundredths(.tid, source, y1, x1, y2, x2), "ddm", "dms")) |>
-
-  ## Convert to decimal degrees -------------------------------------------------
-  # Step 1: normalise all coordinates to 6-digit DDMMSS / DDMMmm integers.
-  # gid 9 (Flotvarpa) has mixed decimal-degree / DMS encoding that cannot be
-  # disentangled without per-source classification — skip normalisation for x.
+  ## Decode the positions ------------------------------------------------------
+  # One decoder for the e-logbook's integers, adb's too (decode_logbook_position(), R/logbook_position.R): the digit
+  # count gives the form; the app profile's rows say where an app writes its own (curate/corrections/
+  # logbook_app_profile.yml: P3, Taktikal's hundredths and exchanged pairs; P3-value, a trip with 61-99; P4, the short
+  # latitudes of 2022-23). A shorter longitude beside a six-digit latitude is read value by value, the record deciding
+  # where both readings are valid (logbook_short_longitudes(); the maintainer, 2026-10-30). Until plan 053 step 7 this
+  # adapter normalised every value to six digits itself, so it read every short longitude right-padded (wrong east of
+  # 10° W), named STOKKUR for its whole degrees, left gid 9's longitudes unscaled, and read seven- and eight-digit
+  # values as none.
+  # The form read is kept, pos1_form and pos2_form. The sign is turned by the decoder (a positive longitude is west).
+  mutate(.app = app_base_name(source), .date = as_date(coalesce(t1, t3, t4))) |>
+  (\(d) {
+    r <- logbook_position_rules(d$.app, SCHEMA, d$.date, app_profile())
+    h <- logbook_position_hundredths(d$.tid, r$hundredths, d$y1, d$x1, d$y2, d$x2)
+    s <- logbook_short_longitudes(d$.tid, d$.vid, d$.date, d$y1, d$x1, d$y2, d$x2, h,
+                                  midwater = d$gid %in% gear_mapping$gid[gear_mapping$gear %in% "OTM"])
+    p1 <- decode_logbook_position(d$y1, d$x1, h, r$short_latitude, r$exchanged, s$lon1, s$why1)
+    p2 <- decode_logbook_position(d$y2, d$x2, h, r$short_latitude, r$exchanged, s$lon2, s$why2)
+    mutate(d, lat1 = p1$lat, lon1 = p1$lon, lat2 = p2$lat, lon2 = p2$lon, pos1_form = p1$form, pos2_form = p2$form)
+  })() |>
+  # Step 3: sign correction for longitude. The decoder negated every longitude (most providers store west as
+  # positive); restore records that were already correctly negative — identified as lon > 10.75 after negation
+  # (flipped to positive) while still in Iceland latitudes (lat < 67.66).
   mutate(
-    nx1 = nchar(as.character(abs(x1))), nx2 = nchar(as.character(abs(x2))),
-    ny1 = nchar(as.character(abs(y1))), ny2 = nchar(as.character(abs(y2)))
-  ) |>
-  mutate(
-    y1 = case_when(ny1 == 6 ~ y1, ny1 == 5 ~ y1 * 10, ny1 == 4 ~ y1 * 100,
-                   ny1 == 2 & source == "STOKKUR" ~ y1 * 10000, .default = y1),
-    x1 = case_when(nx1 == 6 ~ x1, nx1 == 5 & gid != 9 ~ x1 * 10,
-                   nx1 == 4 & gid != 9 ~ x1 * 100,
-                   nx1 == 2 & source == "STOKKUR" ~ x1 * 10000, .default = x1),
-    y2 = case_when(ny2 == 6 ~ y2, ny2 == 5 ~ y2 * 10, ny2 == 4 ~ y2 * 100,
-                   ny2 == 2 & source == "STOKKUR" ~ y2 * 10000, .default = y2),
-    x2 = case_when(nx2 == 6 ~ x2, nx2 == 5 & gid != 9 ~ x2 * 10,
-                   nx2 == 4 & gid != 9 ~ x2 * 100,
-                   nx2 == 2 & source == "STOKKUR" ~ x2 * 10000, .default = x2)
-  ) |>
-  # Step 2: convert to decimal degrees.
-  # validate = FALSE required: case_when() evaluates all branches before applying
-  # conditions, so DMS-encoded values would trigger spurious DDM validation errors.
-  # Sign is NOT corrected here; that is a separate concern handled in Step 3.
-  mutate(
-    lon1 = case_when(coord_fmt == "ddm" ~ wk_convert_ddm(x1, validate = FALSE),
-                     .default = wk_convert_dms(x1, validate = FALSE)),
-    lat1 = case_when(coord_fmt == "ddm" ~ wk_convert_ddm(y1, validate = FALSE),
-                     .default = wk_convert_dms(y1, validate = FALSE)),
-    lon2 = case_when(coord_fmt == "ddm" ~ wk_convert_ddm(x2, validate = FALSE),
-                     .default = wk_convert_dms(x2, validate = FALSE)),
-    lat2 = case_when(coord_fmt == "ddm" ~ wk_convert_ddm(y2, validate = FALSE),
-                     .default = wk_convert_dms(y2, validate = FALSE))
-  ) |>
-  # Step 3: sign correction for longitude.
-  # Negate all lons (most providers store as positive), then restore records
-  # that were already correctly negative — identified as lon > 10.75 after
-  # negation (flipped to positive) while still in Iceland latitudes (lat < 67.66).
-  mutate(
-    lon1 = -lon1,
     lon1 = case_when(lon1 > 10.75 & lat1 < 67.66 ~ -lon1, .default = lon1),
-    lon2 = -lon2,
     lon2 = case_when(lon2 > 10.75 & lat2 < 67.66 ~ -lon2, .default = lon2)
   ) |>
   # Step 4: range filter — set implausible values to NA
@@ -123,7 +100,8 @@ source <-
     date   = as_date(coalesce(t1, t3, t4)),
     schema = SCHEMA
   ) |>
-  select(.sid, .tid, date, gid, t1, t3, t4, z1, z2, lon1, lat1, lon2, lat2, n_lost, record_entered, schema) |>
+  select(.sid, .tid, date, gid, t1, t3, t4, z1, z2, lon1, lat1, lon2, lat2, pos1_form, pos2_form, n_lost, record_entered,
+         schema) |>
   arrange(date, .sid, t1, t3, t4)
 
 # Helper: station keys + ICES gear labels for inner-joining aux tables
@@ -150,7 +128,7 @@ station <-
       .default = NA_character_
     )
   ) |>
-  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, coord_flag, record_entered, schema)
+  select(.sid, .tid, date, lon1, lat1, lon2, lat2, pos1_form, pos2_form, z1, z2, coord_flag, record_entered, schema)
 
 # Aux tables ------------------------------------------------------------------
 # Each block reads one gear-specific parquet, translates columns, and
@@ -287,8 +265,8 @@ catch          |> duckdbfs::write_dataset(fd_staging("fs_afladagbok", "catch.par
 # QC scratch (if FALSE) -------------------------------------------------------
 if (FALSE) {
 
-  ## Coordinate format breakdown -----------------------------------------------
-  source |> count(coord_fmt)
+  ## Position forms --------------------------------------------------------------
+  source |> count(pos1_form)
 
   ## Duration distributions by gear --------------------------------------------
   fishing_sample |>

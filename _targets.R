@@ -533,7 +533,7 @@ list(
                                   fd_raw("oracle", "fs_afladagbok", "ws_hringn.parquet"),
                                   fd_raw("oracle", "fs_afladagbok", "ws_afli.parquet")), format = "file"),
   tar_target(fs_afladagbok, {
-    dictionary; gear; gear_window; port; fs_afladagbok_raw
+    dictionary; gear; gear_window; port; fs_afladagbok_raw; logbook_app_profile
     produces("sources/fs_afladagbok/convert.R",
              fd_staging("fs_afladagbok", "trip.parquet"),
              fd_staging("fs_afladagbok", "station.parquet"),
@@ -552,7 +552,7 @@ list(
   # adb's own gear crosswalk (its code -> the new gid), read by the adapter (plan 050 step 4; by logbook_gear before)
   tar_target(adb_gear_code, fd_raw("oracle", "adb", "fishing_gear.parquet"), format = "file"),
   tar_target(adb, {
-    dictionary; gear; gear_window; adb_raw; adb_gear_code
+    dictionary; gear; gear_window; adb_raw; adb_gear_code; logbook_app_profile
     produces("sources/adb/convert.R",
              fd_staging("adb", "trip.parquet"),
              fd_staging("adb", "station.parquet"),

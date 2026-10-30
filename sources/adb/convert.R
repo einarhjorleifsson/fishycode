@@ -1,7 +1,8 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
 # Input: raw/oracle/adb/{fishing_trip,fishing_station,trawl_and_seine_net,dredge,line_and_net,trap,catch,
-#        fishing_gear}.parquet; curated/reference/{gear,gear_window}.parquet
+#        fishing_gear}.parquet; curated/reference/{gear,gear_window}.parquet;
+#        curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
 # Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
 library(whack) # pak::pak("einarhjorleifsson/whack)
@@ -29,26 +30,41 @@ trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) 
 # base -------------------------------------------------------------------------
 # The table, not Oracle's view station_v: the view reads every six-digit position as ddmm.hh where the digits are
 # ddmmss (curate/corrections/adb_station_v_positions.yml). decode_logbook_position() (R/logbook_position.R) reads them
-# and turns the longitude's sign as the view did. Depth is the table's fathoms, as fs_afladagbok's; curate/logbook.R
+# as fs_afladagbok's adapter does, with the app profile's rows P3 and P4 by the trip's app and the station's date, a
+# short longitude beside a six-digit latitude by the record (logbook_short_longitudes()), and turns the longitude's sign
+# as the view did; pos1_form and pos2_form keep the form read. Depth is the table's fathoms, as fs_afladagbok's; curate/logbook.R
 # converts both. Renamed to the view's names, which the dictionary holds. record_entered is the record's entry time
 # (`registered`), which the app profile reads (curate/corrections/logbook_app_profile.yml, rows T12 and T16).
 trip_source <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) |>
-  select(trip_id = id, source) |> collect()
+  select(trip_id = id, source, .vid = vessel_no) |> collect()
+# adb's own gear codes for the midwater trawl, which the position decoder reads where the record cannot decide a short
+# longitude (R/logbook_position.R): adb's fishing_gear maps them to the FS number, whose ICES gear is OTM
+midwater_new <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |>
+  filter(version == "new", gear == "OTM") |> collect() |> pull(gid)
+midwater_old <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_gear.parquet")) |> collect() |>
+  filter(as.integer(id) %in% midwater_new) |> distinct(gid_old = as.integer(fishing_gear_no)) |> pull(gid_old)
 
 base <-
   duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_station.parquet")) |> collect() |>
   rename(station_id = fishing_station_id, trip_id = fishing_trip_id, gear_no = fishing_gear_no,
          record_entered = registered) |>
   left_join(trip_source, by = "trip_id", relationship = "many-to-one") |>
-  mutate(hundredths = logbook_position_hundredths(trip_id, source, latitude, longitude, latitude_end, longitude_end),
-         pos1 = decode_logbook_position(latitude, longitude, hundredths),
-         pos2 = decode_logbook_position(latitude_end, longitude_end, hundredths),
-         latitude = pos1$lat, longitude = pos1$lon, latitude_end = pos2$lat, longitude_end = pos2$lon) |>
+  mutate(.app = app_base_name(source), .date = as_date(coalesce(fishing_start, tow_start, fishing_end))) |>
+  (\(d) {
+    r <- logbook_position_rules(d$.app, SCHEMA, d$.date, app_profile())
+    h <- logbook_position_hundredths(d$trip_id, r$hundredths, d$latitude, d$longitude, d$latitude_end, d$longitude_end)
+    s <- logbook_short_longitudes(d$trip_id, d$.vid, d$.date, d$latitude, d$longitude, d$latitude_end, d$longitude_end, h,
+                                  midwater = as.integer(d$gear_no) %in% midwater_old)
+    p1 <- decode_logbook_position(d$latitude, d$longitude, h, r$short_latitude, r$exchanged, s$lon1, s$why1)
+    p2 <- decode_logbook_position(d$latitude_end, d$longitude_end, h, r$short_latitude, r$exchanged, s$lon2, s$why2)
+    mutate(d, latitude = p1$lat, longitude = p1$lon, latitude_end = p2$lat, longitude_end = p2$lon,
+           pos1_form = p1$form, pos2_form = p2$form)
+  })() |>
   wk_translate(dictionary) |>
   mutate(date = as_date(coalesce(t1, t3, t4))) |>
   select(.tid, .sid, gid, date,
          t1, t3, t4,
-         lon1, lat1, lon2, lat2,
+         lon1, lat1, lon2, lat2, pos1_form, pos2_form,
          z1, z2, record_entered)
 
 # aux tables -------------------------------------------------------------------
@@ -148,7 +164,7 @@ gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) 
 
 station_narrow <-
   station |>
-  select(.sid, .tid, date, lon1, lat1, lon2, lat2, z1, z2, record_entered, schema)
+  select(.sid, .tid, date, lon1, lat1, lon2, lat2, pos1_form, pos2_form, z1, z2, record_entered, schema)
 
 gear_window <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
 

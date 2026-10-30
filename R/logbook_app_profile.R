@@ -86,6 +86,10 @@ APP_TIME_RULES <- list(
 APP_TIME_RULES[["T2-afli"]] <- APP_TIME_RULES$T2
 APP_TIME_RULES[["T3-afli"]] <- APP_TIME_RULES$T3
 
+# The app as the profile names it: the trip's uppruni (fs_afladagbok) or source (adb), trimmed, the suffixes
+# " - GAFL AUTO" and " - Skrifstofa VES" taken off (the profile's vocabulary; curate/logbook.R's section "App").
+app_base_name <- function(x) trimws(gsub(" - (GAFL AUTO|Skrifstofa VES)", "", trimws(x)))
+
 # The profile's gear class from gear_window's (towed, static, jigged, other): the Danish seine is the profile's seine.
 app_gear_class <- function(gear_class, gear) {
   dplyr::case_when(gear %in% "SDN" ~ "seine", gear_class %in% "jigged" ~ "jig", .default = gear_class)

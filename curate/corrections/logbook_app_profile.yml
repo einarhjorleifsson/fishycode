@@ -682,7 +682,7 @@ rows:
     quirk: hundredths of a minute, and other digit forms
     scope: app
     apps: [FRA TAKTIKAL]
-    feeds: [fs_afladagbok]
+    feeds: [fs_afladagbok, adb]   # adb holds copies of the app's records (read from 2025-11-19 only), read alike
     period: [2021-01-01, 2023-12-31]
     gear: ["*"]
     field: [lat, lon]
