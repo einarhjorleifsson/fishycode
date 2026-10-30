@@ -1567,7 +1567,7 @@ staged on the preprocessing side:
 **check:** staged and merged, every record in one outcome, the overlap with the main logbook counted; a decision.
 
 ## 168. The logbook and landings TODOs closed in one or two rebuilds (plan 054)
-**status:** open · **needs: maintainer** — plan 054's asks answered 2026-10-30 (§5); left to the maintainer: the go
+**status:** open · **needs: maintainer** — parked 2026-10-30, where step 2 stood in plan 054 §8; left to the maintainer: the go
 for rebuild A (and B), the dump of `ops$rafn.rekjanleikanumer` before B (ask c), TODO 70's query at the next Oracle
 session (ask n; the sitting's three commands are in plan 054 §7), and nothing more for the tour app's
 ports (ask k: its codes are the landing system's own, decision 252) ·

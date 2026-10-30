@@ -7,7 +7,7 @@ answered by the maintainer the same day (§5), each as recommended but m b (not 
 amended the same day: the logger stays in the AIS track (decision 196); TODOs 24, 34, 95, 98, 110, 139, 142 and
 151 added the same day for little cost (§7); step 0 done the same day (decision 247); step 1's studies recorded (decisions 248-251); §7's
 small step 2 changes coded the same day (95, 139, 162, 34, 24); step 2a begun, the app carried (decision 253),
-step 2's whole-weight stream in a side session; nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
+step 2's whole-weight stream in a side session; parked 2026-10-30 at about 14:30, the state in §8; nothing built · **measured** (§1), by Claude, read-only, in counts only, not checked by a person, every number in
 `$FISHYDATA/archive/2026-10-30-closing-plan/` (`measure.py`, its output `counts.txt`): the target graph, the afli east
 longitudes, the overlapping trips, the handline hole against the tour app, adb's towed times, the Nephrops tails, the
 stations outside their trip's days or without a window, the e-logbook apps; and what the code builds, by grep at
@@ -351,3 +351,58 @@ sitting until then.
 map's grids (decisions 220, 228).
 
 **Expected to close, with these:** 27 items: the plan's own 24, and TODOs 24, 95 and 139.
+
+## 8. Where step 2 stood when the work was parked, 2026-10-30 at about 14:30
+
+*Written by Claude (AI) at the maintainer's request ("report on the state so that one can resume where left off"). On
+leaving, every scratch build was stopped. Nothing was built on the live store, and nothing was pushed: 76 commits are
+local only.*
+
+**Running:** nothing. The scratch builds were killed, and their scratch folders are kept as they were:
+`/Users/einarhj/stasi/scratch-p054-app`, `scratch-p054-profile` and `scratch-p054-lean`. The sessions' hand-over notes
+are in `~/Library/Application Support/Claude/side-session-notes/local_69ea2bc4-8129-48eb-989e-62ea83716c11/`.
+
+**On main, committed:**
+- the records, decisions 247-253;
+- §7's small changes (7204d9a) and the Oracle sitting's scripts (d95c746);
+- the app carried (1b70b2c, decision 253);
+- plan 053's steps 5 and 6, the flags and the windows (cfc277b), and the typical-haul fix (cc5daf4). Both were traced
+  on scratch: `$FISHYDATA/archive/2026-10-30-plan054-step2a/trace_profile_2.txt`;
+- step 4's check (57417c9), which reproduces the archive's counts.
+
+Their decision records are not written yet. The drafts are in `archive/2026-10-30-plan054-step2a/`
+(`draft-steps5-6-the-flags-and-the-windows.md`, `draft-step4-the-check.md`).
+
+**On main, not committed:** plan 053's step 8, depth by app, by the flags session (`R/logbook_app_profile.R`,
+`curate/corrections/logbook_app_profile.yml`, `curate/logbook.R`, `tests/test_logbook_app_profile.R`). It is coded and
+unit-tested. Its scratch build was killed before it ended, so it is to be rerun with `trace_step8.R`, then committed.
+Step 7, the decoders, is not started.
+
+**Branch `claude/plan-054-whole-weight-75363a`** (worktree `.claude/worktrees/plan-054-whole-weight-75363a`):
+- **Committed:** d223d9e, plan 050's tails, and 583c462, 2c: plan 051's steps 3-5. That is the factor table from each
+  year's regulation (2000/01-2025/26 online), whole weight at the landings' factor of the day, the tails at 3.25, and
+  the landings' state in `catch_detail.parquet`. Traced on scratch: whole weight from 51,215 to 51,143 kt. The draft
+  record is in `archive/2026-10-30-plan054-whole-weight/`.
+- **Open:**
+  - **For the maintainer:** plan 051 ask e. Were afli's paper-era weights converted at × 1.25? 25-30 % of their
+    kilograms look unconverted, against 10-11 % in a control known to be converted.
+  - **The landings scripts:** they ran 16-20 min on scratch against about 3 min live, and are to be profiled.
+  - **2d, the lumpfish adapter:** drafted, not run (`draft-change2`). It edits the merge, so it waits for the lean merge.
+  - **2i, `trip_landing` and the disposition:** the trace-id witness waits for the Oracle dump.
+- **Merging:** the branch is merged into main only on the maintainer's word, before the combined build.
+
+**Branch `claude/goofy-raman-07da32`, the lean merge** (worktree `.claude/worktrees/goofy-raman-07da32`, no commits):
+- **The draft:** `scratch-p054-lean/_run/logbook_lean.R` runs the merge in 67 s at a 9.8 GB peak, against 795 s at
+  19.2 GB before (`_run/logs/*.time.txt`).
+- **Not done:** the equality of its six files with the build before (`_run/compare.R`). It must also be rebased on
+  main's `logbook.R`, step 8 included.
+
+**To resume, in order:**
+1. The lean merge: prove the six files equal, then commit.
+2. Step 8's trace, faster on the lean merge; commit it, then step 7.
+3. The main session writes the records for steps 4-6, 8 and 2c.
+4. 2i, then 2d once the lean merge is in.
+5. The branches merged on the maintainer's word, the combined scratch build and its trace, then rebuild A on the
+   maintainer's go.
+
+**The maintainer's own:** the Oracle sitting (§7's three commands), plan 051 ask e, and the go for rebuild A.
