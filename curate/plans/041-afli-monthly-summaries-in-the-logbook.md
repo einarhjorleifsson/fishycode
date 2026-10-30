@@ -17,7 +17,7 @@ apart "may have been the wrong decision"; they carry spatial information and bel
 script is `$FISHYDATA/archive/2026-10-afli-summaries/scripts/01_summaries.R`; every number below is in its log,
 `results/01_summaries.log`, by section (1a-3c). **Assumed:**
 - that rows identical in every value and consecutive in `visir` are parts of one source record (§1.3), until
-  `ops$sigfus` is dumped and read (§6);
+  `ops$sigfus` is read (§6);
 - that the summaries' weights follow the convention of afli's hauls of the same years: where both exist, the summary
   equals the hauls (§2);
 - that `toga.togtimi` on a summary is minutes (§1.2).
@@ -226,8 +226,8 @@ What each reader of the four tables does with a summary station (code read 2026-
 
 ## 4. Steps
 
-1. **Read `ops$sigfus`** once the maintainer has run its dump (`dump/oracle/ops_sigfus.R`), and check the summaries
-   against it (§6), before any code.
+1. **Read `ops$sigfus`** (dumped 2026-10-23, `raw/oracle/ops_sigfus/`), and check the summaries against it (§6),
+   before any code.
 2. **Code:**
    - the adapter stages the summaries (§3.2);
    - the merge applies the rule and the account (§3.3, §3.4);
@@ -257,8 +257,9 @@ What each reader of the four tables does with a summary station (code read 2026-
 ## 6. What `ops$sigfus` should settle
 
 `ops$sigfus` is the source: `gamall_humar` 20,949 rows, `gomul_raekja` 10,531 and `gomul_dragnot` 2,792 (catalogue of
-2025-03-31). `ops$rafn.afli_gomul_dragnot` (1,855 rows) is the seine's load copy. Not dumped yet. Read by counts and
-columns first (decision 159).
+2025-03-31). Dumped whole on 2026-10-23 (`raw/oracle/ops_sigfus/`, the same row counts), and not read yet.
+`ops$rafn.afli_gomul_dragnot` (1,855 rows) is the seine's load copy; `dump/oracle/ops_rafn.R` has not been run. Read
+by counts and columns first (decision 159).
 - **The parts:**
   - afli's Nephrops rows less the split parts' extra rows leave 21,956 records, against 20,949;
   - shrimp leaves 10,905, against 10,531.

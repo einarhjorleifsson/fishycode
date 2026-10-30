@@ -1128,8 +1128,8 @@ Each is a vessel × month × square or shrimp area, dated the 15th. The adapter 
 `staging/afli/aggregate.parquet`, which nothing reads; the maintainer (2026-10-23) wants them in the logbooks. Plan
 041 designs them as stations of type `monthly_aggregate` on a vessel-month trip with no dates. A summary leaves where
 afli's hauls of its cell hold 95 % of its kg (Nephrops 1986-1999 repeats its hauls), and stays less the hauls where
-they hold less: 173.0 kt kept (Claude's measure, not checked by a person). `ops$sigfus`, their source, is to be dumped
-and read first (plan 041 §6); its seven asks come before any code.
+they hold less: 173.0 kt kept (Claude's measure, not checked by a person). `ops$sigfus`, their source, was dumped on
+2026-10-23 and is to be read first (plan 041 §6); its seven asks come before any code.
 
 The comparison with the new mar's merge (2026-10-29, plan 050 §6) adds that the summaries hold the only Nephrops of
 1973-1985 (1.2-2.7 kt a year) and nearly the only shrimp before 1975, and that in 1986-1999 they repeat the hauls (the
