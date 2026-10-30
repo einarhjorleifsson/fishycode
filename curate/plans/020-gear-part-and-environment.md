@@ -1,7 +1,9 @@
 # 020 — Gear detail and environment as tidy tables beside the fishing sample
 
-**status:** proposal — `gear_part` prototyped for fs_afladagbok in scratch, nothing in the pipeline changed; §5 answered
-2026-10-23 (decision 210); the prototype is to be afli's `rafr_` layer, not fs_afladagbok (maintainer, 2026-10-29, §3) ·
+**status:** executed — built as plan 052 (decisions 244, 245; recorded by decision 247, 2026-10-30): `gear_part`,
+`rigging_part` and `sensor_summary`, with the environment a pivot of the last in v0; `gear_part` was prototyped for
+fs_afladagbok in scratch; §5 answered 2026-10-23 (decision 210); the prototype is to be afli's `rafr_` layer, not
+fs_afladagbok (maintainer, 2026-10-29, §3) ·
 **2026-10-15** · **see:** plan 019 (fs_afladagbok mined), plan 018 (the dumps), `docs/grammar.qmd` (field groups,
 sensor layer), decision 022 (depth in metres)
 

@@ -6,9 +6,10 @@ schemas each column is noted for, the landing link and the depth unit, and the m
 
 The merged tables are `$FISHYDATA/curated/logbook/{trip,station,fishing_sample,catch}.parquet`, written by
 `curate/logbook.R`; each source's own are `$FISHYDATA/staging/<schema>/`, written by `sources/<schema>/convert.R`.
-The column tables below were written for afli and fs_afladagbok and list fewer columns than the files hold (raw
-values, basis columns, twins, station type, set-time placeholders); `docs/data-dict.yaml` describes the columns of
-each file.
+Each file's columns are described once, in `docs/data-dict.yaml` (its tables `logbook_trip`, `logbook_station`,
+`logbook_fishing_sample` and `logbook_catch`), which `data-dict validate-meta` checks against the files. This page
+keeps what the dictionary does not hold. Its four column tables, carried over from the predecessor repository, were
+retired on 2026-10-30 at the maintainer's word (TODO 111, plan 054 ask l), with AI assistance (Claude).
 
 ---
 
@@ -51,19 +52,6 @@ One row per fishing trip (voyage). `.tid` origin differs by schema:
 - `adb`: `fishing_trip.id` (the view `trip_v`'s `trip_id`, decision 170); `aflaskeyti`: its trips are cut at landings in Iceland by `curate/aflaskeyti_trip.R`
   (plan 026).
 
-| Column | Type | Description |
-|---|---|---|
-| `.tid` | chr | Trip identifier (cast to character in the merged output) |
-| `vid` | int | Vessel identifier |
-| `T1` | datetime | Departure time (or earliest fishing date for `afli`) |
-| `hid1` | dbl | Departure harbour ID (`NA` for `afli`) |
-| `T2` | datetime | Landing date/time |
-| `hid2` | dbl | Landing harbour ID |
-| `n_crew` | int | Crew count |
-| `schema` | chr | Schema tag (`"afli"`, `"fs_afladagbok"`, `"adb"`, `"aflaskeyti"`) |
-| `port` | chr | Landing port name |
-| `source` | chr | Source system tag (within the `fs_afladagbok` and `aflaskeyti` schemas; `NA` for `afli` and `adb`) |
-
 > The trip's landing is not a column of `trip.parquet`. The landings match writes it to its own table,
 > `curated/logbook/lid_map.parquet` (`curate/link_lid_map.R`: `.tid`, `schema`, `.lid`, `match_type`, ...).
 
@@ -77,62 +65,16 @@ midnight, so widen them before using them in a `between()` join with the track.
 One row per fishing operation. Narrow spatial/temporal envelope only —
 gear and effort detail is in `fishing_sample.parquet`.
 
-> Types below are those of the **merged** `curated/logbook/` files. In the
-> per-schema `staging/<schema>/` files `.tid` is still numeric; the
-> merge casts it to character ([merge.qmd](merge.qmd)).
-
-| Column | Type | Description |
-|---|---|---|
-| `.tid` | chr | Trip identifier |
-| `.sid` | dbl | Station identifier |
-| `date` | datetime | Fishing date: afli's own (`vedags`), the e-logbook's first time. The new mar dates a station by its first logged time, which leaves 1.32 M afli stations undated (plan 050 §6) |
-| `lon1`, `lat1` | dbl | Start position (decimal degrees) |
-| `lon2`, `lat2` | dbl | End position (decimal degrees) |
-| `sq` | int | Statistical square [1–999]; `afli` only — `NA` for the other schemas |
-| `ssq` | int | Statistical sub-square [0–4]; `afli` only — `NA` for the other schemas |
-| `z1`, `z2` | dbl | Start / end depth (m), converted to metres by `curate/logbook.R` (`curate/decisions/022-depth-unit-is-metres.md`); `z1_raw`/`z2_raw` keep the recorded value and `z1_basis`/`z2_basis` say which happened |
-| `schema` | chr | Schema tag |
-| `eytt_deleted` | lgl | `TRUE` for records flagged deleted in the source (392 stations in the build of 2026-10-21; read from `fs_afli` since decision 124); `afli` only |
-| `coord_flag` | chr | Suspect-coordinate QC label — `"meridian"`, `"west"`, `"south"` (`fs_afladagbok`, see [source-schemas.md](source-schemas.md)) or `"lat_lon_swapped"` (`aflaskeyti`, `curate/corrections/aflaskeyti_coordinates.R`), else `NA`. Flags; does not filter. |
+> In the per-schema `staging/<schema>/` files `.tid` is still numeric; the merge casts it to character
+> ([merge.qmd](merge.qmd)).
 
 ---
 
 ## `fishing_sample.parquet`
 
 One row per fishing operation (1:1 with `station.parquet`; join on `.sid`).
-Gear-specific columns are `NA` where not applicable.
-
-| Column | Type | Description |
-|---|---|---|
-| `.tid` | chr | Trip identifier |
-| `.sid` | dbl | Station identifier (PK = FK to `station`) |
-| `gid` | dbl | Gear type code — "new" version; unified across schemas. For `adb`, read back from its own code through adb's crosswalk by its adapter (plan 050); the landing-corrected gear is `gid_used` in `curated/logbook/gear.parquet` |
-| `gid_old` | int | Counterpart old-version gear code; `NA` where no mapping exists. For `adb`, its own code as recorded |
-| `gear` | chr | ICES GearType code (e.g. `"OTB"`, `"LLS"`) |
-| `target2` | chr | Custom Icelandic target code |
-| `gear_code` | chr | The gear code's letter twin, `XXX_YYY` (general gear, target), one to each `gid` (plan 050) |
-| `t1` | datetime | Gear deployment starts (Event 1) |
-| `t2` | datetime | Gear deployment ends / gear on bottom (Event 2) |
-| `t3` | datetime | Gear retrieval starts (Event 3) |
-| `t4` | datetime | Gear retrieval ends (Event 4) |
-| `duration_m` | dbl | The duration the record gives as a duration (minutes), as recorded; NA for the e-logbook, whose records give times — see below |
-| `.duration_source` | chr | `"data"` (a recorded duration), `"times"` (the e-logbook: make it from `t1`-`t4`), `"missing"`, or `"implausible"` (above the gear's limit, flagged and kept; see below) |
-| `.t2_source`, `.t3_source` | chr | `"data"` or `"derived"` — whether the timestamp came from a raw column or was computed |
-| `.checks` | chr | Convert-time validation notes |
-| `effort_count` | dbl | The one count (plan 050 step 2): hooks, nets, jigs, traps, or the trawls or dredges of a towed gear |
-| `effort_count_basis` | chr | `"recorded"`, `"derived"` (afli's twin flag 0/1 as 1/2; a longline's sets × hooks per set), `"synthesised"` (1 for a towed gear or seine that records none), `"none"`. A count is as recorded: an e-logbook's count of trawls may be the app's value carried from the last haul, as for vid 2048's single tows of May 2026 logged as twin (plan 050, ask b) |
-| `effort_count_unit` | chr | What is counted: `"trawls"`, `"dredges"`, `"seines"`, `"hooks"`, `"nets"`, `"jigs"`, `"traps"` |
-| `rig` | chr | `"twin"` or `"pair"` where the skipper's remark says so (`afli` only: `stofn.athugas`, codes 20-34 and 40-54); a twin rig counts two trawls (decision 241) |
-| `mishap` | chr | The skipper's remark on what went wrong (`afli` only): `"snagged"`, `"snagged and torn"`, `"torn"`, `"headline or fishing line broken"`, `"fouled"`, `"leg or bridle broken"`, `"sweep or footrope broken"`, `"codend holed"`, `"released"`, `"warp broken"`, `"trawl lost"`, `"winch broken"`, `"engine failure"`, `"steering failure"`. A flag: the haul and its catch stay as recorded. From 1996 afli holds no tow without catch, so afli's effort lacks the empty tows (plan 050 §6) |
-| `n_per_unit` | dbl | Hooks per set (LLS) or hooks per jig (LHM) |
-| `n_lost` | dbl | Number of lost gear pieces (`fs_afladagbok` only) |
-| `g_mesh` | dbl | Mesh size |
-| `g_width` | dbl | Gear width (trawls: beam/wing span; dredge: plow width) |
-| `g_length` | dbl | Gear length (seine: rope length; gillnet: total net length) |
-| `g_height` | dbl | Gear height (dredge height; gillnet height) |
-| `back_entry` | lgl | `TRUE` for pre-1980 records with `.sid > 2,500,000` — retrospective back-entries; `FALSE` for genuine contemporaneous records and all post-1979 data. `afli` only; `NA` for the other schemas. See `afli-backentry.qmd`. |
-| `eytt_deleted` | lgl | `TRUE` for records flagged deleted in the source; `afli` only |
-| `schema` | chr | Schema tag |
+Gear-specific columns are `NA` where not applicable. A mishap is a flag: the haul and its catch stay as recorded. From
+1996 afli holds no tow without catch, so afli's effort lacks the empty tows (plan 050 §6).
 
 **`afli`-only gear-detail columns** (`NA` for the other schemas): `bottom_type`,
 `catch_nperkg`, and the SDN net dimensions `length_togle`, `length_virle`,
@@ -171,13 +113,6 @@ Notes:
 
 One row per species per station. Orphan catch records (no matching station)
 dropped via `inner_join`.
-
-| Column | Type | Description |
-|---|---|---|
-| `.sid` | dbl | Station identifier |
-| `sid` | int | Species identifier |
-| `catch` | int | Total catch, kg (summed within `.sid × sid`) |
-| `schema` | chr | Schema tag |
 
 ---
 

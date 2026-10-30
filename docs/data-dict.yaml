@@ -3450,7 +3450,7 @@ tables:
         examples: [1, 9, 18, 40, 92]
         description: >
           Counterpart old-version gear code; NA where no mapping to the new code
-          exists.
+          exists. For adb, its own code as recorded.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3474,7 +3474,9 @@ tables:
         range: [1, 25]
         examples: [1, 7, 13, 19, 25]
         description: >
-          Gear type code - the unified "new" version, consistent across schemas.
+          Gear type code - the unified "new" version, consistent across schemas. For adb,
+          read back from its own code through adb's crosswalk by its adapter (plan 050);
+          the landing-corrected gear is gid_used in logbook_gear.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -3499,6 +3501,12 @@ tables:
         examples: [ARI, ECH, KEL, SCL, XXX]
         description: >
           Custom Icelandic target-species/fishery code.
+      - name: gear_code
+        type: string
+        examples: [LHM_DEF, LLS_DEF, OTB_DEF, OTB_SHR, SDN_DEF]
+        description: >
+          The gear code's letter twin, XXX_YYY (general gear, target), one to each gid
+          (plan 050). NA on 8 of 7.3 M rows in the build of 2026-10-29.
       - name: duration_m
         type: number
         range: [-1061366400, 28800]
@@ -3568,7 +3576,9 @@ tables:
         description: >
           How effort_count was obtained: recorded; derived from the record's other values
           (afli's twin flag 0/1 as 1/2, a longline's sets x hooks per set); synthesised (1
-          for a towed gear or a seine that records no count); none.
+          for a towed gear or a seine that records no count); none. A count is as recorded:
+          an e-logbook's count of trawls may be the app's value carried from the last haul,
+          as for vid 2048's single tows of May 2026 logged as twin (plan 050, ask b).
       - name: effort_count_unit
         type: enum
         values: [trawls, dredges, seines, hooks, nets, jigs, traps]
@@ -4178,7 +4188,9 @@ tables:
         time_zone: naive
         range: [1950-02-06T00:00:00, 2026-04-08T00:00:00]
         description: >
-          Fishing date.
+          Fishing date: afli's own (vedags), the e-logbook's first time. The new mar dates
+          a station by its first logged time, which leaves 1.32 M afli stations undated
+          (plan 050 §6).
         todo: |
           - Needs a `time_zone`?
           - Specify `constraints`. Some options suggested by the data:

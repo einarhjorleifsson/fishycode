@@ -246,7 +246,7 @@ fishycode reads it; and `tilk_stk_allt` is compared with `curated/ais/voyage.par
 result recorded in a decision or a plan.
 
 ## 70. `afli.afli`: which stored values `TO_CHAR` rejects
-**status:** open · **needs: maintainer** — the query in plan 018 §3, run against Oracle · **see:**
+**status:** open · **needs: maintainer** — the query in plan 018 §3, at the next Oracle sitting (plan 054 ask n, §7) · **see:**
 `curate/plans/018-raw-oracle-dumps-as-is.md` §3, decision 109
 
 The dump reads `afli.afli` and `v_afli` whole: `TO_CHAR` fails on `visir`, which is read natively, and its values match
@@ -309,7 +309,8 @@ left of each is in the plan:
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
 ## 73. Plans 019 and 020: the fs_afladagbok tables, gear detail and environment
-**status:** open (asks answered 2026-10-23, decision 210; the notes classified, plan 020 §6) · **see:**
+**status:** open (asks answered 2026-10-23, decision 210; the notes classified, plan 020 §6; plan 020 executed as plan
+052, decision 247; plan 019's half in plan 054 step 2e) · **see:**
 `curate/plans/019-fs-afladagbok-mined.md`, `curate/plans/020-gear-part-and-environment.md`
 
 Two proposals of 2026-10-15, prototyped in scratch, with nothing in the pipeline. Plan 019 sets fs_afladagbok's 32
@@ -696,30 +697,6 @@ The per-vessel speed ceiling measured here (vid 1417; 132,380 steps over the ves
 
 **check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
 
-## 100. The logbook's sensor readings: what they measure, and whether they can time a haul
-**status:** open · **needs: maintainer** — is this worth a product, and which sensor tables to read · **see:** TODO 98,
-`curated/logbook/sensor_gps`, `raw/oracle/afli/toga.parquet`, `raw/oracle/afli/lineha.parquet`
-
-The maintainer's idea (2026-10-20): a gear sensor, such as the headline depth, shows when a trawl goes down and comes
-up, and so could check the logbook's t1-t4. Measured the same day, read-only, in the logger (`sjalfvirkir_maelar`,
-2008-2023, about 250 vessels a year): `botndypi` is the echosounder's depth under the vessel (filled 97-99 % at every
-speed, steaming too; follows GEBCO, median ratio 0.95-0.98; longliners and purse seiners have it; pelagic trawlers
-none). `hofudlinudypi` (headline depth) is next to empty: 19,264 fixes of 1-2 vessels in 2010-2013 and 2017, a copy
-of the bottom depth in 2010-2011; no longliner. Its hauls carry t2 and t3: in 2012 (about 700 hauls, pelagic) the
-headline is 71 m in the half hour before t2, 132 m between t2 and t3 and 9 m in the half hour after t3, the gear
-coming up; 2013 weaker (114, 104, 58 m); 2017 (one deep pelagic trawler, 580-680 m) no step. A test set for the
-tow windows, not a general check.
-`botnhiti` (filled 82-100 %) does not step when the gear reaches or leaves the bottom (2015 OTB: change between fixes
-across t2 or t3 the same as inside the tow, median 0; same level inside and outside), so it is not on the gear;
-the hull's sea temperature, most likely, which is not checked. So the logger cannot time a haul beyond its speed.
-
-Not yet read: the per-haul sensor values of `afli.toga` and `rafr_toga` (headline depth and temperature at the start and
-end, bottom and surface temperature, the sensor `nemi`, doors, headline length), `lineha` (bottom, surface and air
-temperature) and `fs_afladagbok.ws_veidi` (depth at start and end). They cannot time a haul either, but may tell a
-pelagic tow from a bottom one, and bottom depth and temperature per haul are environmental data in their own right.
-
-**check:** decided whether the sensor readings become a product or a QC check, and recorded which column measures what.
-
 ## 101. Allocation errors the audit finds: the fixes chosen (decisions 155, 199)
 **status:** open · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
 
@@ -758,7 +735,8 @@ and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), whe
 treats each.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
-**status:** open · **needs: maintainer** — send the Trackwell draft and record it (chosen 2026-10-23) · **see:**
+**status:** open — the Trackwell draft is TODO 169's (plan 054 ask e); decision 198's rule rides plan 054's rebuild A ·
+**see:**
 decisions 157, 158 and 198, `curate/corrections/logbook_set_placeholder.yml`, plan 031 §3.11 and asks i-k,
 `$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/` (the draft, `trackwell.yml`, kept out of git)
 
@@ -777,8 +755,7 @@ departure copies, or more. By app, 2022-2026: only Trackwell raun writes a set t
 a date into `t1`, and 4,798 merged stations still open a set window from it (plan 053, TODO 165).
 
 **check:** decision 198's rule built and the trail's `fishing_flow` traced before and after; the gillnet set times in
-port explained or listed;
-`trackwell.yml`'s `sent` filled or the draft dropped.
+port explained or listed.
 
 ## 105. A date-only haul's day window, stretched past midnight along its fishing stretch
 **status:** open · **see:** decision 092 (`rb_cut_record_stretches()`, `rb_link_record_stretches()`), decision 091 (one
@@ -795,21 +772,6 @@ Not all day windows are date-only: 994,500 afli tows (198,373 from 2007) hold a 
 the day (decision 083 (b): ramb needs an end or a duration); counted 2026-10-23 by Claude, not checked by a person.
 
 **check:** the stretch measured with the smoothed speed and against the survey tows, and built or declined in a decision.
-
-## 107. App-made fixed values left in the logbook times, static and towed gear
-**status:** open (decided 2026-10-23, decision 206) · **see:** decisions 157 and 206, TODO 103,
-`$FISHYDATA/archive/2026-10-time-offsets/`, `$FISHYDATA/archive/2026-10-time-offsets-towed/`
-
-Measured 2026-10-21 by Claude, read-only, in two side sessions (not yet checked by a person), each with a decision
-draft (not committed): after decision 158, static set times still sit on a half-hour grid computed from the haul
-start (about 32,600 stations), at 24 h (5,315) and beside the 270-min placeholder (3,023); haul lengths are rounded
-to whole hours at entry. Towed gear: the paper logbook's tow times are the skipper's rounding (42 % of starts on the
-hour), the electronic logbook holds a few app dummies. The sent XML holds the same values (TODO 115, from 108): they can be
-flagged, not recovered from it. A defect beside them: adb's `duration_m` is empty on its trawls and dredges (32,329
-OTB, 1,367 OTM, 2,174 DRB), since the adapter computes it from `tow_start`, which adb leaves empty. Its shot and haul
-sit in `fishing_sample` as `t1`/`t4` but in `station_window` as `t2`/`t3` (Claude, 2026-10-28).
-
-**check:** each draft decided and recorded (correction, flag or no action), or declined in a decision.
 
 ## 110. The Oracle dumper's open ends after the run of 2026-10-21
 **status:** open — `--resume` fixed in plan 054's step 0, the Oracle reads at the maintainer's next sitting (§7) · **see:** decision 159 ("The run of 2026-10-21"), decision 167, `R/run_dump.R`, `R/dump_oracle.R`,
@@ -831,7 +793,8 @@ adopted on 2026-10-22, DuckDB reads both whole and kvoti has its `_data-dict.yam
 (its JSON whole) or left out in a decision; every partitioned table's overview row equals its files.
 
 ## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
-**status:** open · **needs: maintainer** — whether the page's column tables go and its other sections stay ·
+**status:** open — decided 2026-10-30 (decision 247): the column tables retired, done; left, the dictionary as a page of
+the book, with its next render (TODO 94) ·
 **see:** decisions 029 and 188, item 94
 
 The curated logbook tables (`curated/logbook/{trip,station,fishing_sample,catch}.parquet`) are described column by
@@ -848,8 +811,8 @@ the duration caps, and the afli `aggregate.parquet` section. Also open: whether 
 as a page of its own (`data-dict render` writes one self-contained HTML page), so that the book's readers still see
 the columns.
 
-**check:** the maintainer has decided; `docs/output-schema.md` then holds no column table that `docs/data-dict.yaml`
-describes, or a decision says why both stay.
+**check:** `docs/output-schema.md` holds no column table that `docs/data-dict.yaml` describes (done 2026-10-30); the
+book carries the dictionary as a page (`data-dict render`).
 
 ## 112. The catch's disposition, code 159 'Gámur/Sigling' and agf's `afdrif`, carried to the trip (plan 036)
 **status:** open (asks answered 2026-10-23, decision 208: apart, joined through `trip_landing`) · **see:** `curate/plans/036-catch-disposition.md`,
@@ -1276,7 +1239,8 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
 ## 141. Handline trips missing from every logbook source, September 2020 to March 2021
-**status:** open · **needs: maintainer** — does the Directorate hold the small boats' logbooks of those months? ·
+**status:** open — closed by the tour app, the rest declared (plan 054 ask j); the question to the Directorate is TODO
+169's ·
 **see:** decision 219, TODO 140
 
 Found 2026-10-24 (quick counts, read-only, Claude's): 82-93 % of handline landings from September 2020 to March 2021
@@ -1344,7 +1308,8 @@ as built from `curated/` in fishycode, live from the `rb_` steps in ramb. None o
 and its status agrees with its index row.
 
 ## 146. The events of a fishing operation beyond `t1`-`t4`: what `t3` means, and the A to J protocol's source
-**status:** open · **needs: maintainer** — two answers · **see:** `docs/grammar.qmd` (section "Events between and
+**status:** open · **needs: maintainer** — (b) only; (a) answered 2026-10-30, towed `t3` the start of hauling, in the
+grammar (decision 247) · **see:** `docs/grammar.qmd` (section "Events between and
 around the four"), decision 230, TODO 127
 
 The maintainer, 2026-10-26, gave a cruise protocol's ten bridge actions per tow (A to J) to extend the grammar's
@@ -1487,7 +1452,7 @@ method so far. Two things are left:
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
 
 ## 156. The logbook merge against the colleague's Nephrops checks (plan 050)
-**status:** open · **needs: maintainer** — plan 050's ask f (with the new mar's author; on hold with ask g, 2026-10-29) · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
+**status:** open — plan 050's ask f is TODO 169's (plan 054 ask e); step 5 lands with TODO 157 · **see:** `curate/plans/050-logbook-merge-against-the-nephrops-checks.md`,
 TODO 152, decision 240 (153 and 154 closed)
 
 Plan 050 rechecked the colleague's five issues. Built and rebuilt on 2026-10-29 (decision 240): one count for every
@@ -1500,8 +1465,8 @@ build drops month-end trips); ask g done: the findings emailed to its author 202
 **check:** plan 050 executed or parked, with a decision record.
 
 ## 157. Whole weight: one factor table for the logbooks and the landings (plan 051)
-**status:** open · **needs: maintainer** — the questions for HV 2020-33's authors, James Kennedy and Sigurður Þór
-Jónsson (`$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft, not sent); asks a, d and e answered
+**status:** open — built in plan 054's rebuild A, the lumpfish rows provisional (ask d); the questions for HV 2020-33's
+authors are TODO 169's; asks a, d and e answered
 2026-10-30, b partly from the regulations (plan 051 §5) · **see:** `curate/plans/051-whole-weight-one-factor-table.md`,
 TODOs 114, 115, 152, 167, plan 050 step 5
 
@@ -1571,8 +1536,8 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 decision record.
 
 ## 165. The e-logbook feed: every app's quirks found by rule, in one app profile (plan 053)
-**status:** open · **needs: maintainer** — plan 053's asks f and g (§8): the feed once the hold lifts, Trackwell's file
-as a standing witness; then steps 2 and 4-9, the build ·
+**status:** open — plan 053's asks f and g are TODO 169's (plan 054 ask e); steps 2 and 4-9 in plan 054's step 2a and
+rebuild A ·
 **see:** `curate/plans/053-elogbook-feed-app-profile.md` (§5.6: TODO 164 folded in), TODOs 103, 107, 126,
 162, decisions 157, 158, 160, 171, 206, 210, 211, 242, 243, plan 050 ask f, plan 051
 
@@ -1641,3 +1606,21 @@ trip.
 
 **check:** plan 054's asks answered in the plan; each item of its §3 closed or left open as §3 expects, with a
 decision record per step; the plan executed, parked or abandoned in its header.
+
+## 169. Outside contact: the questions and requests waiting to be sent
+**status:** open · **needs: maintainer** — each is the maintainer's to send · **see:** plan 054 ask e, decision 247,
+TODOs 103, 141, 156, 157, 165
+
+One list of every question or request fishycode waits on from outside (plan 054 ask e, the maintainer, 2026-10-30).
+The items they came from close on what fishycode does; the waits are kept here.
+- **On hold since 2026-10-29**, with no contact with the new mar's author until the maintainer says:
+  - plan 050's ask f (TODO 156) and plan 053's ask f (TODO 165): the live fs_afladagbok feed, and read access to
+    `mfriops/Landings`;
+  - plan 053's ask g (TODO 165): Trackwell's own haul file as a standing witness.
+- **The Trackwell draft** of TODO 103 (chosen 2026-10-23): `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`, kept
+  out of git; its `sent` is filled when it goes.
+- **The Directorate** (TODO 141): does it hold the small boats' logbooks of September 2020 to March 2021?
+- **HV 2020-33's authors** (TODO 157, plan 051 c): the questions in
+  `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft.
+
+**check:** each sent and its answer recorded in the plan or item it came from, or dropped by the maintainer.

@@ -183,7 +183,7 @@ names them `t1` to `t4` in the order they happen. Few systems record all four:
 |---|---|---|---|---|---|---|
 | `t1` | gear enters the water | first buoy in | in the water | in the water | — | watch begins |
 | `t2` | on the bottom (or at depth): fishing starts | last buoy in: soak starts | at maximum depth | at depth, net opens | transect starts | — |
-| `t3` | off the bottom: fishing ends | first buoy out: hauling starts | ascent begins | net closes, retrieval | transect ends | — |
+| `t3` | hauling starts: the tow ends, the gear still on the bottom | first buoy out: hauling starts | ascent begins | net closes, retrieval | transect ends | — |
 | `t4` | gear out of the water | last buoy out | on deck | on deck | — | watch ends |
 
 From the events:
@@ -213,8 +213,8 @@ presses each action's button on the bridge as the action begins.
 | B | Gear out: the codend in the sea (its codline end or all of it); the gear shot | `t1` | the net shot |
 | C | Doors veered: the doors set off, the warp paid out | between `t1` and `t2` | descent |
 | D | Tow begins: all the warp out, the gear settles on the bottom; the station's start entered in Hafriti | `t2` | the tow |
-| E | Hauling begins, the tow ends; the station's end entered in Hafriti | `t3`, as recorded | warp hauled in, the gear still on the bottom |
-| F | Off the bottom: hauling stops, the vessel at towing speed on its course until the trawl deforms too much, 5 min at most | `t3`, as defined above | off-bottom tow |
+| E | Hauling begins, the tow ends; the station's end entered in Hafriti | `t3` | warp hauled in, the gear still on the bottom |
+| F | Off the bottom: hauling stops, the vessel at towing speed on its course until the trawl deforms too much, 5 min at most | between `t3` and `t4` | off-bottom tow |
 | G | Hauling resumes | between `t3` and `t4` | warp up |
 | H | Doors at the gallows | between `t3` and `t4` | the net hauled aboard |
 | I | All in: all the gear on board; the vessel back on the tow's course and towing speed for 3 to 5 min, or longer | `t4` | a run without gear |
@@ -227,10 +227,10 @@ water (a reading, not the protocol's).
 
 Three things follow for the grammar:
 
-- **For towed gear, `t3` covers two events.** The table of the four events defines it as off the bottom (F), but
-  Hafriti and the Icelandic e-logbook ([The Icelandic logbooks in the grammar](grammar_logbooks.qmd)) record the start
-  of hauling (E). Between the two the gear is still on the bottom, probably still fishing, while the vessel slows.
-  Which one `t3` means is open (TODO 146); a recorded `t3` is the start of hauling.
+- **For towed gear, `t3` is the start of hauling (E)**, as Hafriti and the Icelandic e-logbook record it ([The
+  Icelandic logbooks in the grammar](grammar_logbooks.qmd)); the maintainer, 2026-10-30 (TODO 146). Off the bottom (F)
+  falls between `t3` and `t4`. Between E and F the gear is still on the bottom, probably still fishing, while the vessel
+  slows.
 - **A and J bound the station, B to I the sample.** The vessel is busy with the station before the gear goes in and
   after it is out. Where A and J are recorded, the station's `s1` and `s2` are times of their own, wider than the
   sample's, not bounds derived from it.
