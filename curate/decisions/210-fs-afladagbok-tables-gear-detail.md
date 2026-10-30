@@ -11,7 +11,8 @@ built.*
    reached fs_afladagbok (9.9 kt, 85 % landed) are staged, flagged and each classed, then admitted per class, as decision
    189 treats afli's never-loaded records.
 2. **The port translation is a reviewed override** in `overrides/`, like `stk_hid_pid.csv`: derived once, reviewed, and
-   a new code drafted and reviewed when it appears.
+   a new code drafted and reviewed when it appears. *Superseded 2026-10-30 by decision 252: the tour app's code is the
+   landing system's place number (`hid`), translated by `curated/reference/port.parquet`; no override.*
 3. **Implausible catch is flagged against the trip's landing:** a haul's kilograms of a species above the trip's landed
    kilograms of it by a margin; with no landing, against the gear and species' own distribution. Never corrected.
 4. **Mammal and bird bycatch becomes a table, `protected_bycatch`,** one row per station and taxon, with every measure

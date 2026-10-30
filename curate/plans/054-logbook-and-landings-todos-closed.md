@@ -181,8 +181,8 @@ decision record; then the maintainer's build by name.
   and weight as landed. The tails branch's detection is merged into step 4, and its 3.3 gives way to the table's row.
 - d. **TODO 167's adapter**, after c's table.
 - e. **Plan 019's remainder (73, 141)**: the tour app staged, its spot time read as the end of fishing (decision 214);
-  its trips never in fs_afladagbok classed and admitted per class (decision 210); the port override drafted for
-  review; `protected_bycatch`.
+  its trips never in fs_afladagbok classed and admitted per class (decision 210); the tour app's port code read as `hid` (decision 252), with no
+  override; `protected_bycatch`.
 - f. **The merge's flags**: 162's east longitudes; 101's stations outside their trip; 102's twin rule widened, 138's
   Marína re-entries with it.
 - g. **163**: `effort_count` read from the part tables, so `logbook` reads them; `vessel_sensor`, a leaf.
@@ -275,7 +275,8 @@ Ordered by how many items each unblocks. The first option is the recommendation.
   app, the remainder declared.
 - k. **TODO 73's port translation:** Claude drafts the override from the codes, and the maintainer reviews it before
   A (recommended), as `stk_hid_pid.csv` was. Or the translation is parked, and 73 closes with it parked.
-  *Answered (maintainer, 2026-10-30):* Claude drafts, the maintainer reviews before A.
+  *Answered (maintainer, 2026-10-30):* Claude drafts, the maintainer reviews before A. *Superseded the same day by
+  decision 252:* the codes are the landing system's own, translated by `curated/reference/port.parquet`; no override.
 - l. **TODO 111:** the page's four column tables deleted for `docs/data-dict.yaml`, and the dictionary rendered as a
   page of the book (recommended). *Answered (maintainer, 2026-10-30):* as recommended.
 - m. **TODO 146:**
