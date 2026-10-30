@@ -1617,32 +1617,19 @@ trip's time the copy (Fishing Log 2.7, Trackwell raun, Fontos).
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.
 
-## 166. Test-like catch values no rule flags: a fourth `catch_flag` rule for repeated digits
-**status:** open · **needs: maintainer** — choose a, b or c · **see:** decisions 216, 217 and 241, plan 053 row I4,
+## 166. Test-like catch values no rule flags: `catch_flag` rule 4 for repeated digits, to build
+**status:** open · **needs: maintainer** — the go to build one target · **see:** decision 246, plan 053 row I4,
 `curate/corrections/catch_landing_contradicted.yml`, `$FISHYDATA/archive/2026-10-30-catch-flag-test-values/README.md`
 
-Measured 2026-10-30 by Claude in a side session, read-only, not checked by a person: every logbook catch row (17.0 M,
-51,031 kt) in one outcome, kg in = kg out in all 75 source-years. STOKKUR's trial trips leave 452 t unflagged: one row
-of 333,333 kg of basking shark (288, which no landing holds) and 118.6 t of ordinary-looking values. The candidates, on
-the catch no rule flags:
+STOKKUR's trial trips leave 452 t that rules 1-3 do not flag. Of it, 333.3 t is one row of 333,333 kg of basking shark,
+a species no landing holds. The maintainer chose rule 4 on 2026-10-30 ("proceed"; decision 246). It flags a catch row
+of 100,000 kg or more whose digits repeat, small pelagics left out. Coded, and checked on a scratch store by Claude,
+not by a person: 2 rows and 444.4 t added, the other rows the same to the order of float sums. Left:
+- The build: `tar_make_isolated(names = "catch_landing_contradicted")`, with `ais_catch` and its audit left out
+  (decision 241).
+- Beside it, not in this item: the trial clusters' 249 t that look real stay I4's (noted, the catch kept, ask h). The
+  4,653 kt with no landing before 2007 wait for plan 038 §8 step 1c's range by gear and species, taken from the logbook
+  itself.
 
-- **Repeated digits**: a station's value of 6 digits or more whose digits repeat (333,333; 550,550; 3,703,703) or are
-  one digit then nines (7,999,999). On linked trips the landing contradicts all 11 that are not small pelagics (10
-  beyond rule 1's margin, 111,111 kg of cod at 9.8×); the 5 small-pelagic ones (herring, mackerel) agree with it within
-  0.5-2×, and at 5 digits 97 of 100 agree. Small pelagics out, it adds 2 rows, 444.4 t: the shark and the cod.
-- **The species' largest landing by the vessel's length class**, and **the vessel's own with under 50 records**, fire
-  almost only before 1993, when the landings begin, and judge by later fisheries (Norway pout 1973-83: 19.7 kt against
-  5.5 t). From 1993 they add 1.9 t. Rule 2 already takes what the landings can judge.
-
-The choices:
-- a. Rule 4 `repeated_digits`: the value above, small pelagics (target assemblage SPF) out, on any trip; one row per
-  (station, species), the value its own witness; nothing corrected. 2 rows, 444.4 t.
-- b. As a, with "above the species' largest landing" in place of the pelagic exemption: the shark only, 333.3 t.
-- c. Neither.
-
-Left beside them: the trial clusters' 249 t that look real (STOKKUR 118.6, four other apps 130.4) stay I4's (noted,
-the catch kept, ask h); the 4,653 kt with no landing before 2007 wait for plan 038 §8 step 1c's range by gear and
-species from the logbook itself, not measured.
-
-**check:** a choice; for a or b, rule 4 in `catch_landing_contradicted.{yml,R}`, `catch_flag` traced before and after,
-every row in one outcome; a decision record.
+**check:** `catch_flag` built at a clean commit and compared with the table before, every row in one outcome; decision
+246 amended with the build.

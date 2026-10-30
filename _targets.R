@@ -833,7 +833,7 @@ list(
   # Correction (curate/corrections/catch_landing_contradicted.yml): logged catch the landings contradict, flagged,
   # never corrected (plan 038 §8 step 1c).
   tar_target(catch_landing_contradicted, {
-    logbook; lid_map; landing
+    logbook; lid_map; landing; species
     produces("curate/corrections/catch_landing_contradicted.R",
              fd_curated("logbook", "catch_flag.parquet"))
   }, format = "file"),

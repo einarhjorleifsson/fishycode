@@ -1,6 +1,6 @@
 id: catch_landing_contradicted
-title: logged catch the landings contradict (more than 10 times the trip's landing of the species, or with no landing the largest landing of the species or of the vessel, and at least 1 t more), flagged and kept on the fixes, marked
-status: built 2026-10-23, rule 1 (decision 216) and rule 2 (decision 217, with the complete rebuild of decision 218); plan 038 §8 step 1c; rule 3 (decision 241, built 2026-10-29)
+title: logged catch the landings contradict (more than 10 times the trip's landing of the species, or with no landing the largest landing of the species or of the vessel, and at least 1 t more), or whose digits repeat, flagged and kept on the fixes, marked
+status: built 2026-10-23, rule 1 (decision 216) and rule 2 (decision 217, with the complete rebuild of decision 218); plan 038 §8 step 1c; rule 3 (decision 241, built 2026-10-29); rule 4 coded and checked on a scratch store 2026-10-30, not built (decision 246)
 applies_to:
   - curated/logbook/catch_flag.parquet   # one row per flagged (station, species), or for rule 3 per (trip, species landed) with no station: the flag, never a corrected value
   - curated/ais/catch                    # kg_flagged: the flagged kilograms of each row, shared as the kilograms are
@@ -9,13 +9,15 @@ affects_rows: >-
   $FISHYDATA/archive/2026-10-todo126-ais-check/14_catch_vs_landing.R): 8,703 (trip, species) pairs, 294 kt of the
   50,954 kt logged. Their stations and the kilograms on the fixes, as built: decision 216. Rule 2, measured the same
   day ($FISHYDATA/archive/2026-10-todo126-ais-check/17*.R): 28 of the 684,246 (trip, species) pairs with no linked
-  landing, 22.3 kt of their 4,861 kt; decision 217.
+  landing, 22.3 kt of their 4,861 kt; decision 217. Rule 4, measured 2026-10-30
+  ($FISHYDATA/archive/2026-10-30-catch-flag-test-values/): 2 of the 17,026,059 catch rows, 444.4 t; decision 246.
 implementation: curate/corrections/catch_landing_contradicted.R (target catch_landing_contradicted); carried by curate/ais_catch.R
 discovered: >-
   Decision 210 (item 3) asked for implausible catch to be flagged against the trip's landing; decision 214 found its
   first cases (STOKKUR's 6 net and line stations, 23.1 kt, 11.3 kt of it on fixes); the maintainer chose the margin
   ("follow the proposal", 2026-10-23) and that flagged catch stays on the fixes, marked; and for the trips with no
-  linked landing both witnesses (2026-10-23).
+  linked landing both witnesses (2026-10-23). Plan 053's row I4 found STOKKUR's trial trips' 333,333 kg of basking
+  shark in no rule (TODO 166); the maintainer chose rule 4 ("proceed", 2026-10-30).
 
 defect: >-
   A logbook entry's kilograms of a species far above what the trip landed of it, or with no landing above what any
@@ -36,7 +38,11 @@ rule: >-
   species (a crosswalk of the logbook's codes to the landings' first), and a species no landing has ever held
   (999 among them). Rule 3 (landed_not_logged, 2026-10-29): the trip has a linked landing that holds catch and no
   station of the trip holds any; one row per (trip, species landed), with no station, the landing's kilograms as the
-  witness. The catch records are lost (564 afli trips with 19 kt, plan 050 §6); nothing is filled in.
+  witness. The catch records are lost (564 afli trips with 19 kt, plan 050 §6); nothing is filled in. Rule 4
+  (repeated_digits, 2026-10-30), per station value on any trip, where rules 1 and 2 leave its (station, species): a
+  catch row of 100,000 kg or more whose digits repeat with a period of at most half their length (333,333; 3,703,703;
+  550,550) or are one digit then nines (7,999,999); small pelagics (target assemblage SPF) left out, whose round hauls
+  of that size agree with their landings. The value is its own witness; one row per (station, species).
 
 what_it_changes: >-
   Nothing is corrected or moved. The flagged kilograms stay on the fixes they are shared over; `curated/ais/catch`
@@ -46,5 +52,6 @@ what_it_changes: >-
 related:
   - curate/decisions/216-catch-the-landing-contradicts-flagged.md
   - curate/decisions/217-catch-above-the-largest-landing-flagged.md
+  - curate/decisions/246-catch-values-whose-digits-repeat-flagged.md
   - curate/decisions/214-logbook-records-typed-by-what-they-cover.md
   - curate/plans/038-the-logbook-flow-whole.md   # §8 step 1c

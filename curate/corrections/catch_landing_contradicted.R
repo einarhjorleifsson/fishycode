@@ -1,10 +1,11 @@
 # catch_landing_contradicted.R — logged catch the landings contradict, flagged, never corrected.
 # Side: preprocessing (logbook and landings). See plan 014.
 #
-# Input:  curated/logbook/{station,catch,lid_map,trip}.parquet, curated/landing/{landings,catch}.parquet
+# Input:  curated/logbook/{station,catch,lid_map,trip}.parquet, curated/landing/{landings,catch}.parquet,
+#         curated/reference/species.parquet (rule 4's small pelagics)
 # Output: curated/logbook/catch_flag.parquet  one row per flagged (station, species): .sid, schema, .tid, sid, kg (the
 #         station's), sid_landing (the code compared), trip_kg_logged (the trip's, of sid_landing), trip_kg_landed
-#         (rules 1 and 3), species_kg_largest and vessel_kg_largest (rule 2), witness, flag; rule 3 one row per
+#         (rules 1, 3 and 4), species_kg_largest and vessel_kg_largest (rule 2), witness, flag; rule 3 one row per
 #         (trip, species landed), with no station (.sid, sid and kg NA)
 #
 # Declaration and evidence: curate/corrections/catch_landing_contradicted.yml (plan 038 §8 step 1c).
@@ -18,6 +19,11 @@
 #   3. landed_not_logged: the trip has a linked landing that holds catch, and no station of the trip holds any. The
 #      catch records are lost (plan 050 §6: 564 afli trips, 19 kt); the witness is what the landing holds, species by
 #      species. Flagged, never filled in (the maintainer, 2026-10-29, decision 241).
+# Per station value, on any trip, where rules 1 and 2 leave its (station, species):
+#   4. repeated_digits: a catch row of 100,000 kg or more whose digits repeat with a period of at most half their length
+#      (333,333; 3,703,703; 550,550) or are one digit then nines (7,999,999); the value is its own witness. Small
+#      pelagics (target assemblage SPF) are left out: their round hauls of that size agree with their landings (the
+#      maintainer, 2026-10-30, TODO 166).
 # The logbook's 830 (herring, Atlanto-Scandian stock) is compared as the landings' 30; catch let go (negative codes)
 # is never landed and is left out. A linked landing that holds none of the species is not judged here.
 
@@ -27,11 +33,17 @@ library(duckdb)
 con <- dbConnect(duckdb())
 dbExecute(con, "SET threads = 4; SET memory_limit = '6GB'")
 p <- function(...) DBI::dbQuoteString(con, ...)
+# rule 4's test of a value's digits: its shortest period, at most half its length, or one digit then nines
+dbExecute(con, "CREATE MACRO period(s) AS
+  list_min(list_filter(range(1, length(s) // 2 + 1), lambda k: substr(s, 1, length(s) - k) = substr(s, k + 1)))")
+dbExecute(con, "CREATE MACRO nines(s) AS length(s) >= 2 AND substr(s, 2) = repeat('9', length(s) - 1)")
 
 dbExecute(con, sprintf("
   CREATE TEMP TABLE sc AS
   SELECT s.\".sid\" AS sid_st, s.schema, s.\".tid\" AS tid, c.sid, CASE WHEN c.sid = 830 THEN 30 ELSE c.sid END AS sid_land,
-         sum(c.catch) AS kg
+         sum(c.catch) AS kg,
+         bool_or(CASE WHEN c.catch >= 100000 THEN period(c.catch::VARCHAR) IS NOT NULL OR nines(c.catch::VARCHAR)
+                      ELSE false END) AS digits_repeat
   FROM read_parquet(%s) c
   JOIN read_parquet(%s) s ON s.\".sid\" = c.\".sid\" AND s.schema = c.schema
   WHERE (s.twin IS NULL OR s.twin <> 'duplicate') AND c.catch > 0 AND c.sid >= 0
@@ -80,6 +92,19 @@ flag <- dbGetQuery(con, sprintf("
          tf.trip_kg_logged, tf.trip_kg_landed, tf.species_kg_largest, tf.vessel_kg_largest, tf.witness, tf.flag
   FROM sc JOIN tf USING (tid, schema, sid_land)
   ORDER BY schema, \".tid\", \".sid\", sid", p(fd_curated("logbook", "trip.parquet"))))
+# rule 4: a value whose digits repeat, where rules 1 and 2 leave its (station, species); they flag every station of a
+# (trip, species), so leaving out their stations leaves out their pairs
+digits <- dbGetQuery(con, sprintf("
+  SELECT sc.sid_st AS \".sid\", sc.schema, sc.tid AS \".tid\", sc.sid, sc.kg, sc.sid_land AS sid_landing,
+         t.kg AS trip_kg_logged, l.kg AS trip_kg_landed, NULL::DOUBLE AS species_kg_largest,
+         NULL::DOUBLE AS vessel_kg_largest, 'value' AS witness, 'repeated_digits' AS flag
+  FROM sc
+  JOIN (SELECT tid, schema, sid_land, sum(kg) AS kg FROM sc GROUP BY ALL) t USING (tid, schema, sid_land)
+  LEFT JOIN landed l USING (tid, schema, sid_land)
+  LEFT JOIN read_parquet(%s) sp ON sp.sid = sc.sid
+  WHERE sc.digits_repeat AND sp.target_assemblage IS DISTINCT FROM 'SPF'
+  ORDER BY sc.schema, sc.tid, sc.sid_st, sc.sid", p(fd_curated("reference", "species.parquet"))))
+digits <- digits[!paste(digits$.sid, digits$schema, digits$sid) %in% paste(flag$.sid, flag$schema, flag$sid), ]
 # rule 3: trips with stations (duplicate twins left out), none of which holds catch, and a linked landing that does
 lost <- dbGetQuery(con, sprintf("
   WITH st AS (SELECT DISTINCT \".tid\" AS tid, schema FROM read_parquet(%s) WHERE twin IS NULL OR twin <> 'duplicate')
@@ -90,7 +115,7 @@ lost <- dbGetQuery(con, sprintf("
   WHERE l.kg > 0 AND NOT EXISTS (SELECT 1 FROM sc WHERE sc.tid = st.tid AND sc.schema = st.schema)
   ORDER BY st.schema, st.tid, l.sid_land", p(fd_curated("logbook", "station.parquet"))))
 dbDisconnect(con, shutdown = TRUE)
-flag <- rbind(flag, lost[, names(flag)])
+flag <- rbind(flag, digits[, names(flag)], lost[, names(flag)])
 
 for (f in unique(flag$flag)) {
   g <- flag[flag$flag == f, ]
@@ -105,4 +130,5 @@ write_curated(flag, fd_curated("logbook", "catch_flag.parquet"),
                          lid_map = fd_curated("logbook", "lid_map.parquet"),
                          trip = fd_curated("logbook", "trip.parquet"),
                          landings = fd_curated("landing", "landings.parquet"),
-                         landing_catch = fd_curated("landing", "catch.parquet")))
+                         landing_catch = fd_curated("landing", "catch.parquet"),
+                         species = fd_curated("reference", "species.parquet")))
