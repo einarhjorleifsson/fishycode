@@ -724,7 +724,8 @@ and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), whe
 treats each.
 
 ## 103. Logbook set times that are a logbook app's placeholder, not the skipper's
-**status:** open — the Trackwell draft is TODO 169's (plan 054 ask e); decision 198's rule rides plan 054's rebuild A ·
+**status:** open — the gillnet sets in port listed 2026-10-30 (decision 249); the Trackwell draft is TODO 169's (plan
+054 ask e); decision 198's rule rides plan 054's rebuild A ·
 **see:**
 decisions 157, 158 and 198, `curate/corrections/logbook_set_placeholder.yml`, plan 031 §3.11 and asks i-k,
 `$FISHYDATA/archive/2026-10-todo103/`, `$FISHYDATA/archive/2026-10-plan035/` (the draft, `trackwell.yml`, kept out of git)
@@ -1478,7 +1479,8 @@ author's own join by vessel and landing day, not a source value (decision 243).
 every trip in one outcome, in a decision.
 
 ## 162. afli's east longitudes: judged by the track
-**status:** open · **see:** decision 242, `$FISHYDATA/archive/2026-10-29-track-checks/findings.md` §1
+**status:** open — judged 2026-10-30 (decision 249): 75 sign switched, 185 east, 176 unjudged; the flag from a reviewed
+list rides plan 054's rebuild A · **see:** decisions 242 and 249, `$FISHYDATA/archive/2026-10-29-track-checks/findings.md` §1
 
 afli has no sign rule. On its e-logbook route of 2021-22 the track puts 19 of 442 stations at the west reading where
 afli has them east: 16 within 1° of the meridian, and 3 at 22-23° E south of 67.66° N, on land. Over all years, 436 afli
@@ -1530,7 +1532,8 @@ ends, not the tow times, are the copies; stamped gillnet sets flagged). The revi
 or eight-digit position (831 merged Taktikal stations have none). On 2026-10-30 the other 27, so all 45 (ask a), and
 ask h (trips of a vessel-year mostly unlanded noted `unlanded_cluster`). The seconds tell which side copies: a
 whole-minute station time at the trip's time is the copy (Fishing Log 2.6, Reiknistofa), a stamped one makes the
-trip's time the copy (Fishing Log 2.7, Trackwell raun, Fontos).
+trip's time the copy (Fishing Log 2.7, Trackwell raun, Fontos). Decision 249 adds to the profile: T2 and T3 on the afli
+route, a 210-min offset row, T15 relabelled as 23:59 on the eve of the departure date; T12 stays Trackwell raun's.
 
 **check:** the asks answered in the plan; the profile, the flags and the check built, every station in one outcome,
 the windows traced before and after; a decision record.
