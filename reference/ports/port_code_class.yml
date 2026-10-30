@@ -1,0 +1,50 @@
+# port_code_class.yml — the class of every landing code that is not a harbour with a pid (decision 208 e).
+# Read by reference/ports/port_code.R, which puts it on curated/reference/port_code.parquet. A code that
+# curated/reference/port.parquet gives a pid is a harbour. Every other code a landing uses, as its port or as an
+# export's origin port, is listed here, or the build stops. A new code is classed here by hand.
+#
+# Drafted by Claude (AI) on 2026-10-30 from decision 208 e, kvoti.stadur's and ask.londunarstadir's names, and the
+# staged landings' counts (plan 054 step 2i); not yet checked by a person. The four codes decision 208 left to be
+# looked up (41, 71, 197, 200) and the origin ports 9, 10 and 102 are classed by their names, with their landings
+# counted in `note`.
+#
+# class:
+#   harbour      a place in Iceland a landing is made at; here one with no harbour polygon (so no pid)
+#   disposition  not a place but what became of the catch: 159 Gámur/Sigling, exported in a container or landed
+#                abroad (the maintainer, 2026-10-21; decision 208). Its origin port says which.
+#   abroad       landed abroad: a country, or a sailing abroad
+#   transfer     moved to another vessel
+#   placeholder  no place: missing, various, corrections, registrations
+codes:
+  - {hid: 0, class: placeholder, name: Höfn vantar, note: "port missing; once, as a LODS export's origin port"}
+  - {hid: 9, class: harbour, name: Selfoss, note: "inland; twice, as a LODS export's origin port"}
+  - {hid: 10, class: harbour, name: Hveragerði, note: "inland; once, as a LODS export's origin port"}
+  - {hid: 41, class: harbour, name: Hellissandur, note: "beside Rif (42); 9 LODS landings, 1996-10 to 1997-08, 10 t"}
+  - {hid: 71, class: harbour, name: Hnífsdalur, note: "beside Ísafjörður; 3 LODS landings, 1996, 1.7 t"}
+  - {hid: 102, class: harbour, name: Litli Árskógssandur, note: "once, as a LODS export's origin port"}
+  - {hid: 127, class: harbour, name: Egilsstaðir, note: "inland; the tour app's code (decision 252)"}
+  - {hid: 150, class: placeholder, name: Ýmsir staðir, note: various places}
+  - {hid: 155, class: transfer, name: Landanir úr ísl. skipi í ísl. skip, note: Icelandic vessel to Icelandic vessel}
+  - {hid: 159, class: disposition, name: Gámur/Sigling, note: "LODS's exports to 2013-08 (decision 169); never a pid"}
+  - {hid: 160, class: abroad, name: Skotland}
+  - {hid: 161, class: abroad, name: Þýskaland}
+  - {hid: 163, class: abroad, name: Noregur}
+  - {hid: 165, class: abroad, name: Danmörk}
+  - {hid: 166, class: abroad, name: Grænland}
+  - {hid: 167, class: abroad, name: Færeyjar}
+  - {hid: 168, class: abroad, name: Bretland}
+  - {hid: 172, class: abroad, name: Kanada}
+  - {hid: 175, class: abroad, name: Holland}
+  - {hid: 196, class: abroad, name: Erlendis / Aðrar siglingar, note: "sailings abroad; 19 LODS landings, 1993-1995"}
+  - {hid: 197, class: placeholder, name: Leiðréttingar,
+     note: "corrections; 83 LODS landings, 1993-08 to 1997-03, 7,520 t"}
+  - {hid: 198, class: abroad, name: Siglingar frystitogara, note: "freezer trawlers' sailings; 3 LODS landings, 1994"}
+  - {hid: 200, class: harbour, name: Gjögur ekki notað 82,
+     note: "Gjögur, whose code is 82 (IS-GJO); stadur says not to use it. 19 landings in agf and LODS, 2011-05 to
+            2011-08, 12.6 t. It could take 82's pid in harbour_codes.R"}
+  - {hid: 208, class: abroad, name: Írland}
+  - {hid: 300, class: transfer, name: Flutningaskip, note: a cargo vessel}
+  - {hid: 301, class: transfer, name: Landanir úr erl. skipi í ísl. skip, note: foreign vessel to Icelandic vessel}
+  - {hid: 302, class: transfer, name: Landanir úr ísl. skipi í erl. skip, note: Icelandic vessel to foreign vessel}
+  - {hid: 900, class: placeholder, name: Fiskistofa skráningar, note: the Directorate's registrations}
+  - {hid: 999, class: placeholder, name: Hafnarheiti vantar, note: port name missing}

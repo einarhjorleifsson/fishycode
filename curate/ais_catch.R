@@ -6,7 +6,7 @@
 #         curated/logbook/station.parquet           (twin)
 #         curated/logbook/trip.parquet              (.tid, vid, T1, T2, twin)
 #         curated/logbook/catch.parquet             (.sid, schema, sid = species, catch kg)
-#         curated/logbook/lid_map.parquet           (the landings that have a logbook trip)
+#         curated/logbook/trip_landing.parquet      (every landing of a logbook trip: lid_map's and the further ones)
 #         curated/logbook/catch_flag.parquet        (the catch its landing contradicts; corrections/catch_landing_contradicted)
 #         curated/landing/landings.parquet          (.lid, schema, vid, date)
 #         curated/landing/catch.parquet             (.lid, schema, sid = species, catch kg)
@@ -24,18 +24,22 @@
 #   3  a logbook trip, T1 to the day after T2: it carries no catch of its own, only catch moved up to it
 #   4  a landing with no logbook trip, linked to the voyages it ended (ramb::rb_link_trip_landings(): same day
 #      and port first, then looser, then the vessel's next landing within 14 days; plan 013 item 5): those voyages,
-#      resolution `landing_trip`. A landing it cannot link: from the vessel's previous landing to the day after it,
+#      resolution `landing_trip`. Every landing is linked, so a logbook trip's voyage goes to the trip's own landing
+#      first and is not handed on to the vessel's next landing; only the links of the landings with no logbook trip
+#      are kept (plan 027 §5 item 4). A landing it cannot link: from the vessel's previous landing to the day after it,
 #      resolution `landing`. Every landing is an event, so such a period
 #      never reaches past the vessel's last landing into another trip; only a landing with no logbook trip (most of
 #      them foreign vessels, plan 013) carries catch. Without the others, a logbook trip with no fishing fix had its
 #      catch moved into the period of an unrelated landing (11 kt in a 2023 dry run).
-# One source per trip: a trip with a logbook takes the logbook's catch, and its landing is not an event. Both
+# One source per trip: a trip with a logbook takes the logbook's catch, and its landings, the further ones that
+# trip_landing joins included (plan 027 §5 item 3), are not events. Both
 # catch columns are kilograms (measured 2026-10-14: per trip the logbook's `catch` is 0.95-0.99 of the landed weight
 # in every system; `catch_whole` is mostly empty). Duplicate twins are left out (decision 094).
 #
 # Raising is a column, not a choice (maintainer, plan 013 item 2): `raise_factor` is the trip's landed weight of the
-# species over its logged weight (lid_map's landings), on the logbook's rows, NA where there is none; the raised
-# value is kg × raise_factor. A unit's trip is that of its first station.
+# species over its logged weight, on the logbook's rows, NA where there is none; the raised
+# value is kg × raise_factor. A trip's landed weight is that of all its landings in trip_landing. A unit's trip is
+# that of its first station.
 #
 # Each approach to fishing in the trail is shared on its own (`approach`): `fishing` (the window alone) and
 # `fishing_flow` (the window, else the voyage gear's speed). Under `fishing` a landing with no logbook trip has no
@@ -66,12 +70,12 @@ n_groups <- 4L # vessels per year are shared in this many groups (vid modulo n_g
 if (!nzchar(Sys.getenv("SCATCH_YEARS"))) unlink(out_dir, recursive = TRUE)
 
 dup_s <- od("logbook", "station.parquet") |> filter(twin %in% "duplicate") |> select(.sid, schema)
-lm <- od("logbook", "lid_map.parquet") |> distinct(.lid, schema = schema_land)
+lm <- od("logbook", "trip_landing.parquet") |> distinct(.lid, schema = schema_land)
 fl <- od("logbook", "catch_flag.parquet") |> distinct(.sid, schema, sid) |> mutate(flagged = TRUE)
 inputs <- c(fd_curated("logbook", "station_window.parquet"), fd_curated("logbook", "station.parquet"),
             fd_curated("ais", "voyage.parquet"),
             fd_curated("logbook", "trip.parquet"), fd_curated("logbook", "catch.parquet"),
-            fd_curated("logbook", "lid_map.parquet"), fd_curated("landing", "landings.parquet"),
+            fd_curated("logbook", "trip_landing.parquet"), fd_curated("landing", "landings.parquet"),
             fd_curated("landing", "catch.parquet"), fd_curated("logbook", "catch_flag.parquet"))
 
 for (yr in years) {
@@ -92,14 +96,15 @@ for (yr in years) {
   # every landing is an event; December of the year before only gives the first landing its start
   ld_all <- od("landing", "landings.parquet") |> filter(date >= !!(d0 - 31), date < !!d1)
   ld <- ld_all |> anti_join(lm, by = c(".lid", "schema")) # the ones whose catch is shared
-  # the landings with no logbook trip, linked to the voyages they ended
+  # every landing linked to the voyages it ended, and the links of the landings with no logbook trip kept
   vy <- od("ais", "voyage.parquet") |>
     filter(T2 >= !!(y0 - 31 * 86400), T1 < !!y1) |>
     transmute(vkey = paste(as.character(vid), as.character(year), as.character(voyage_id)), vid, T1, T2, pid2)
-  lk <- ramb::rb_link_trip_landings(vy, ld |> select(.lid, schema, vid, date, pid), trip_key = "vkey",
+  lk <- ramb::rb_link_trip_landings(vy, ld_all |> select(.lid, schema, vid, date, pid), trip_key = "vkey",
                                     landing_key = c(".lid", "schema"), port_trip = "pid2", port_landing = "pid",
                                     since_previous_days = 14) |>
-    collect() # lazy voyages give lazy links since ramb 2026.10.27
+    collect() |> # lazy voyages give lazy links since ramb 2026.10.27
+    semi_join(ld |> select(.lid, schema) |> collect(), by = c(".lid", "schema"))
   lkv <- dplyr::copy_to(con, as.data.frame(lk[, c("vkey", ".lid", "schema")]), overwrite = TRUE,
                         name = paste0("lk_", yr))
   ev_lv <- vy |> inner_join(lkv, by = "vkey") |>
@@ -125,7 +130,7 @@ for (yr in years) {
   st <- od("logbook", "station.parquet") |> anti_join(dup_s, by = c(".sid", "schema")) |> select(.sid, schema, .tid)
   logged <- od("logbook", "catch.parquet") |> inner_join(st, by = c(".sid", "schema")) |>
     group_by(.tid, schema, species = sid) |> summarise(kg_lb = sum(catch, na.rm = TRUE), .groups = "drop")
-  landed <- od("logbook", "lid_map.parquet") |> select(.tid, schema, .lid, schema_land) |>
+  landed <- od("logbook", "trip_landing.parquet") |> distinct(.tid, schema, .lid, schema_land) |>
     inner_join(od("landing", "catch.parquet") |> select(.lid, schema_land = schema, species = sid, catch),
                by = c(".lid", "schema_land")) |>
     group_by(.tid, schema, species) |> summarise(kg_ld = sum(catch, na.rm = TRUE), .groups = "drop")

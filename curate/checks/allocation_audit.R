@@ -1,7 +1,7 @@
 # allocation_audit.R — is every link the flow makes between two records borne out by the records' own times?
 # Side: flow, check. See plan 014.
 #
-# Input:  curated/logbook/{trip,station,fishing_sample,lid_map}.parquet, curated/logbook/catch.parquet
+# Input:  curated/logbook/{trip,station,fishing_sample,lid_map,trip_landing}.parquet, curated/logbook/catch.parquet
 #         curated/ais/{voyage,port_call}.parquet, curated/link/trip_voyage.parquet
 #         curated/ais/trail/   (the fixes on a station, with the trip their voyage names)
 #         curated/ais/catch/   (the catch on the fixes)
@@ -27,7 +27,8 @@
 #   trip_landing    a trip matched to a landing (detail: lid_map's match_type): the landing against the end of the
 #                   voyage holding the trip's last timed station: on its end day (or the next) at the same port, at
 #                   another, landed before that voyage ended (a port call missed), over a day after, or no voyage
-#   catch           logged kilograms (duplicates left out) and landed kilograms of landings with no logbook trip,
+#   catch           logged kilograms (duplicates left out) and landed kilograms of landings with no logbook trip
+#                   (none in trip_landing, as ais_catch reads it: plan 027 §5),
 #                   against ais_catch's (approach fishing_flow): on fixes, on a unit with no fix, on a station with no
 #                   window (lost: a station's catch enters ais_catch through its window), deleted in the source (left
 #                   out by design), or another difference (a haul over New Year, signed)
@@ -141,7 +142,7 @@ given <- DBI::dbGetQuery(con, sprintf("
   WHERE NOT EXISTS (SELECT 1 FROM %s m WHERE m.\".lid\" = l.\".lid\" AND m.schema_land = l.schema) GROUP BY ALL",
   f("logbook", "station_window.parquet"), f("logbook", "catch.parquet"), f("logbook", "station.parquet"),
   f("logbook", "fishing_sample.parquet"), f("landing", "landings.parquet"), f("landing", "catch.parquet"),
-  f("logbook", "lid_map.parquet")))
+  f("logbook", "trip_landing.parquet")))
 placed <- DBI::dbGetQuery(con, sprintf("
   SELECT source AS schema, year, sum(kg) FILTER (WHERE catch_basis IS DISTINCT FROM 'none') AS on_fixes,
          sum(kg) FILTER (WHERE catch_basis = 'none') AS no_fix
@@ -176,6 +177,7 @@ print(res |> dplyr::summarise(amount = sum(amount), .by = c(link, outcome, ok)) 
 res |> write_curated(fd_curated("check", "allocation_audit.parquet"),
                      inputs = c(fd_curated("logbook", "trip.parquet"), fd_curated("logbook", "station.parquet"),
                                 fd_curated("logbook", "fishing_sample.parquet"), fd_curated("logbook", "lid_map.parquet"),
+                                fd_curated("logbook", "trip_landing.parquet"),
                                 fd_curated("logbook", "catch.parquet"), fd_curated("logbook", "station_window.parquet"),
                                 fd_curated("landing", "landings.parquet"),
                                 fd_curated("landing", "catch.parquet"), fd_curated("ais", "voyage.parquet"),

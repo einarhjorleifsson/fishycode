@@ -152,9 +152,12 @@ list(
   }, format = "file"),
 
   tar_target(port_code_raw, c(fd_raw("oracle", "agf", "aflagrunnur.parquet"),
-                              fd_raw("oracle", "ask", "londunarstadir.parquet")), format = "file"),
+                              fd_raw("oracle", "ask", "londunarstadir.parquet"),
+                              fd_raw("oracle", "kvoti", c("lods_slaegt.parquet", "stadur.parquet")),
+                              "reference/ports/port_code_class.yml"), format = "file"),
+  # Every code a landing uses, each with its class (decision 208 e): read by the landings' disposition.
   tar_target(port_code, {
-    port_code_raw
+    port_code_raw; port
     produces("reference/ports/port_code.R", fd_curated("reference", "port_code.parquet"))
   }, format = "file"),
 
@@ -680,7 +683,7 @@ list(
   # lods elsewhere. Also where the hid -> pid port join happens, once, for
   # both sources.
   tar_target(landing, {
-    aflagrunnur; lods; port
+    aflagrunnur; lods; port; port_code
     produces("curate/landing.R",
              fd_curated("landing", "landings.parquet"),
              fd_curated("landing", "catch.parquet"),
@@ -911,17 +914,19 @@ list(
   }, format = "file"),
 
   # Every landing of a logbook trip (plan 027 §5, decision 247 b): lid_map's, and the further landings the track, the
-  # weight or the export rule joins (decision 208), with every landing's outcome in curated/check/.
+  # weight or the export rule joins (decision 208), with every landing's outcome in curated/check/; and the trip's
+  # disposition from all its landings (decision 208 f).
   tar_target(trip_landing, {
     lid_map; landing; logbook; catch_by_species_trip; trip_voyage; ais_voyage; port_call; ais_trail
     produces("curate/trip_landing.R",
              fd_curated("logbook", "trip_landing.parquet"),
+             fd_curated("logbook", "trip_disposition.parquet"),
              fd_curated("check", "trip_landing.parquet"))
   }, format = "file"),
 
   # The catch on the fixes, per catch unit and approach (plan 013 item 2, decision 100).
   tar_target(ais_catch, {
-    ais_trail; station_window; logbook; lid_map; landing; catch_landing_contradicted
+    ais_trail; station_window; logbook; trip_landing; landing; catch_landing_contradicted
     produces("curate/ais_catch.R", fd_curated("ais", "catch"))
   }, format = "file"),
 
@@ -963,7 +968,7 @@ list(
 
   tar_target(check_allocation_audit, {
     logbook; lid_map; landing; logbook_gear; gear; ais_voyage; port_call; trip_voyage; station_window; voyage_gear
-    ais_trail; ais_catch
+    ais_trail; ais_catch; trip_landing
     produces("curate/checks/allocation_audit.R",
              fd_curated("check", "allocation_audit.parquet"))
   }, format = "file"),

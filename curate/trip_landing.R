@@ -1,12 +1,16 @@
 # trip_landing.R — every landing of a logbook trip: the declarations' match, and the further landings the track joins.
 # Side: flow (it reads the AIS track). See plan 014.
 #
-# Input:  curated/logbook/{lid_map,trip,catch_by_species_trip}.parquet, curated/landing/{landings,catch}.parquet,
-#         curated/link/trip_voyage.parquet, curated/ais/{voyage,port_call}.parquet, curated/ais/trail (fishing per voyage)
+# Input:  curated/logbook/{lid_map,trip,catch_by_species_trip}.parquet,
+#         curated/landing/{landings,catch,catch_detail}.parquet, curated/link/trip_voyage.parquet,
+#         curated/ais/{voyage,port_call}.parquet, curated/ais/trail (fishing per voyage)
 # Output: curated/logbook/trip_landing.parquet   one row per logbook trip and landing: .tid schema .lid schema_land
-#                                                basis n_trips
-#         curated/check/trip_landing.parquet     every landing in one outcome, with its kg and the claimed landing
-#                                                it was judged against
+#                                                basis n_trips disposition disposition_basis (the landing's)
+#         curated/logbook/trip_disposition.parquet  one row per logbook trip (duplicates left out): .tid schema vid
+#                                                n_landings kg_landed kg_<disposition> (six) disposition
+#                                                disposition_basis disposition_from
+#         curated/check/trip_landing.parquet     every landing in one outcome, with its kg, its disposition and the
+#                                                claimed landing it was judged against
 #
 # Plan 027 §5, as plan 054 ask b answered it (decision 247 b). lid_map gives a trip one landing. A landing lid_map
 # leaves unclaimed (U) is judged against the vessel's latest claimed landing (C) within 7 days before it, at any port:
@@ -18,6 +22,12 @@
 #   weight  the track does not see the vessel: joined if C's trips' logged kg is nearer C + U than C alone.
 # Otherwise U stays its own: `fished_between`, `weight_not_nearer`, or `no_claimed_landing` within 7 days. A joined U
 # joins every trip C ends. lid_map is not changed. The voyage rule for lid_map's own misses is a TODO of its own (ask b d).
+#
+# The disposition stops at the trip (decision 208 f). A landing's is its catch rows' (curate/landing.R): one value
+# where its kilograms have one, `mixed` where they have several; its basis `recorded` only where every row's is. A
+# trip's is its landings' kilograms by disposition, all of them, the further ones included; where it has no landing,
+# the skipper's own 159 (`export_or_abroad`, basis recorded, from the logbook), the only witness for afli's trips of
+# 1973-1991; else none.
 #
 # In DuckDB, lazily; the trail is read for four columns, one count per voyage.
 
@@ -107,6 +117,37 @@ ex(r"[CREATE OR REPLACE TEMP VIEW trip_landing AS
   FROM outcome o JOIN ctrip t ON t.lid_u = o.".lid" AND t.land_u = o.schema_land
   WHERE o.outcome IN ('export', 'track', 'weight')]")
 
+# The disposition: the landing's, then the trip's ---------------------------------------------------------------------
+DISP <- c("home", "export", "abroad", "export_or_abroad", "transfer", "unknown")
+one_of <- "CASE WHEN count(*) FILTER (WHERE kg > 0) = 1 THEN any_value(disposition) FILTER (WHERE kg > 0)
+                WHEN count(*) FILTER (WHERE kg > 0) > 1 OR count(*) > 1 THEN 'mixed' ELSE any_value(disposition) END"
+ex(sprintf(r"[CREATE OR REPLACE TEMP TABLE ldisp AS
+  SELECT ".lid", schema AS schema_land, disposition, min(disposition_basis) AS basis, sum(catch) AS kg
+  FROM %s GROUP BY ALL]", pq("landing", "catch_detail.parquet")))
+ex(sprintf(r"[CREATE OR REPLACE TEMP TABLE land_disp AS
+  SELECT ".lid", schema_land, %s AS disposition, min(basis) AS disposition_basis FROM ldisp GROUP BY ALL]", one_of))
+ex(sprintf(r"[CREATE OR REPLACE TEMP TABLE trip_disp AS
+  WITH k AS (SELECT DISTINCT ".tid", schema, ".lid", schema_land FROM trip_landing),
+  d AS (SELECT k.".tid", k.schema, l.disposition, sum(l.kg) AS kg, min(l.basis) AS basis
+        FROM k JOIN ldisp l USING (".lid", schema_land) GROUP BY ALL),
+  w AS (SELECT ".tid", schema, sum(kg) AS kg_landed, %s, %s AS disposition, min(basis) AS disposition_basis
+        FROM d GROUP BY ALL),
+  n AS (SELECT ".tid", schema, count(*) AS n_landings FROM k GROUP BY ALL),
+  t AS (SELECT ".tid", schema, any_value(vid) AS vid, bool_or(hid2 = %d) AS hid2_export FROM %s
+        WHERE twin IS DISTINCT FROM 'duplicate' GROUP BY ALL)
+  SELECT t.".tid", t.schema, t.vid, coalesce(n.n_landings, 0) AS n_landings, w.* EXCLUDE (".tid", schema, disposition,
+         disposition_basis),
+         CASE WHEN w.disposition IS NOT NULL THEN w.disposition WHEN t.hid2_export THEN 'export_or_abroad' END
+           AS disposition,
+         CASE WHEN w.disposition IS NOT NULL THEN w.disposition_basis WHEN t.hid2_export THEN 'recorded' ELSE 'none' END
+           AS disposition_basis,
+         CASE WHEN w.disposition IS NOT NULL THEN 'landings' WHEN t.hid2_export THEN 'logbook' END AS disposition_from
+  FROM t LEFT JOIN n USING (".tid", schema) LEFT JOIN w USING (".tid", schema)]",
+  paste(sprintf("sum(kg) FILTER (WHERE disposition = '%s') AS kg_%s", DISP, DISP), collapse = ", "), one_of,
+  EXPORT, pq("logbook", "trip.parquet")))
+print(DBI::dbGetQuery(con, "SELECT disposition_from, disposition, disposition_basis, count(*) AS n,
+                                   round(sum(kg_landed) / 1e6, 1) AS kt FROM trip_disp GROUP BY ALL ORDER BY ALL"))
+
 # Account: every landing in one outcome, kg in = kg out --------------------------------------------------------------
 acct <- DBI::dbGetQuery(con, "SELECT outcome, count(*) AS n, round(sum(kg) / 1e6, 1) AS kt FROM outcome GROUP BY 1 ORDER BY 1")
 print(acct)
@@ -117,8 +158,13 @@ stopifnot(tot$n_land == tot$n_out, abs(tot$kg_land - tot$kg_out) < 1)
 inputs <- c(fd_curated("logbook", "lid_map.parquet"), fd_curated("landing", "landings.parquet"),
             fd_curated("landing", "catch.parquet"), fd_curated("link", "trip_voyage.parquet"),
             fd_curated("logbook", "catch_by_species_trip.parquet"), fd_curated("ais", "voyage.parquet"),
-            fd_curated("ais", "port_call.parquet"), fd_curated("logbook", "trip.parquet"))
-write_curated_sql(con, "SELECT * FROM trip_landing", fd_curated("logbook", "trip_landing.parquet"), inputs = inputs,
-                  order_by = "schema, \".tid\", \".lid\"")
-write_curated_sql(con, "SELECT * FROM outcome", fd_curated("check", "trip_landing.parquet"), inputs = inputs,
-                  order_by = "schema_land, \".lid\"")
+            fd_curated("ais", "port_call.parquet"), fd_curated("logbook", "trip.parquet"),
+            fd_curated("landing", "catch_detail.parquet"))
+write_curated_sql(con, "SELECT tl.*, d.disposition, d.disposition_basis FROM trip_landing tl
+                        LEFT JOIN land_disp d USING (\".lid\", schema_land)",
+                  fd_curated("logbook", "trip_landing.parquet"), inputs = inputs, order_by = "schema, \".tid\", \".lid\"")
+write_curated_sql(con, "SELECT * FROM trip_disp", fd_curated("logbook", "trip_disposition.parquet"), inputs = inputs,
+                  order_by = "schema, \".tid\"")
+write_curated_sql(con, "SELECT o.*, d.disposition, d.disposition_basis FROM outcome o
+                        LEFT JOIN land_disp d USING (\".lid\", schema_land)",
+                  fd_curated("check", "trip_landing.parquet"), inputs = inputs, order_by = "schema_land, \".lid\"")

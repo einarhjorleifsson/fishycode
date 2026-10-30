@@ -14,7 +14,9 @@
 # 051 step 5), so a factor can be read back and re-applied: per landing, gear, species, stock, `state` (astand,
 # ask.astand's code) and `area` (veidisvaedi, IS for Iceland's waters), the weights `catch_landed` (magn, as landed),
 # `catch_gutted` (magn_slaegt, its gutted equivalent) and `catch` (magn_oslaegt, the ungutted equivalent). The landing
-# system's own factor is catch / catch_landed.
+# system's own factor is catch / catch_landed. And `afdrif`, what became of each row's catch, as agf records it (V to
+# processing, U exported unprocessed, and seven more; plan 036 §2): curate/landing.R reads the disposition from it
+# (decision 208).
 #
 # In DuckDB, lazily: the rows never enter R. DuckDB runs on one thread here, so each sum adds its rows in the file's
 # order, as R's sum over the collected rows did, and every total is the same to the last bit; on four threads the
@@ -31,7 +33,7 @@ DBI::dbExecute(con, sprintf("
   CREATE OR REPLACE TEMP VIEW agf_rows AS
   SELECT londun_id AS \".lid\", skip_numer AS vid, CAST(londun_hefst AS DATE) AS date,
          hafnarnumer AS hid, veidarfaeri AS gid, fisktegund AS sid, veidistofn AS stid, astand AS state,
-         veidisvaedi AS area, magn AS catch_landed, magn_slaegt AS catch_gutted, magn_oslaegt AS catch
+         veidisvaedi AS area, afdrif, magn AS catch_landed, magn_slaegt AS catch_gutted, magn_oslaegt AS catch
   FROM read_parquet('%s')", fd_raw("oracle", "agf", "aflagrunnur.parquet")))
 
 # A landing trip is a vessel's day at a port; its id is the lowest delivery id in it.
@@ -46,12 +48,12 @@ catch <- q('SELECT ".tid_land", ".lid", gid, sid, stid, catch, schema FROM agf_c
             ORDER BY ".lid", vid, date, hid, gid, sid, stid')
 catch_detail <- q('
   SELECT t.".tid_land", d.* FROM (
-    SELECT ".lid", gid, sid, stid, state, area, coalesce(sum(catch_landed), 0) AS catch_landed,
+    SELECT ".lid", gid, sid, stid, state, area, afdrif, coalesce(sum(catch_landed), 0) AS catch_landed,
            coalesce(sum(catch_gutted), 0) AS catch_gutted, coalesce(sum(catch), 0) AS catch,
            \'agf\' AS schema
-    FROM agf_rows GROUP BY ".lid", gid, sid, stid, state, area) d
+    FROM agf_rows GROUP BY ".lid", gid, sid, stid, state, area, afdrif) d
   JOIN (SELECT DISTINCT ".lid", ".tid_land" FROM agf_catch) t USING (".lid")
-  ORDER BY d.".lid", gid, sid, stid, state, area')
+  ORDER BY d.".lid", gid, sid, stid, state, area, afdrif')
 
 landings     |> duckdbfs::write_dataset(fd_staging("landing", "agf", "landings.parquet"))
 catch        |> duckdbfs::write_dataset(fd_staging("landing", "agf", "catch.parquet"))

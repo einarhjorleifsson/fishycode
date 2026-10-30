@@ -1,9 +1,11 @@
 # Merge agf and lods into unified landing tables.
 # Side: preprocessing (landings). See plan 014.
 # Input:  staging/landing/{agf,lods}/{landings,catch,catch_detail}.parquet
+#         curated/reference/port_code.parquet   each code's class (harbour, disposition, abroad, transfer, placeholder)
 # Output: curated/landing/{landings,catch}.parquet
-#         curated/landing/catch_detail.parquet   the same catch by state and area, with the weight as landed (plan 051
-#         step 5): .lid schema sid gid stid kfteg hid_origin state area catch_landed catch_gutted catch factor_landing
+#         curated/landing/catch_detail.parquet   the same catch by state, area and disposition, with the weight as
+#         landed (plan 051 step 5): .lid schema sid gid stid kfteg hid_origin state area afdrif catch_landed
+#         catch_gutted catch factor_landing disposition disposition_basis
 #
 # Decision rule (curate/plans/007 §2): agf wins wherever a (vid, date, hid)
 # trip exists in agf, on both presence and value - lods contributes only the
@@ -40,6 +42,18 @@
 # gutted equivalent (`catch_gutted`) and the ungutted (`catch`), so a factor can be read back (`factor_landing`, the
 # ungutted over the weight as landed, or over the gutted for lods) and re-applied. Its catch sums to catch.parquet's
 # on every row, which keeps one row per landing, species, gear and stock, the gutted weight lods's only, as before.
+#
+# And what became of the catch, `disposition` (decision 208, plan 036 §3.3), with its basis, agf's own `afdrif` kept
+# beside it. By the class of the landing's port code (reference/ports/port_code.R), then agf's afdrif:
+#   abroad            a code of class abroad (a country, a sailing abroad)                          derived
+#   transfer          a code of class transfer (to another vessel)                                  derived
+#   unknown           a code of class placeholder, or no code                                       derived
+#   export            LODS's 159 whose origin port is a harbour (exported in a container, to 2013-08) derived
+#   export_or_abroad  LODS's 159 with no origin port, or one that is no harbour                     derived
+#   export            agf's afdrif U at a harbour (from 2013-09)                                    recorded
+#   home              agf's other afdrif at a harbour                                               recorded
+#   home              LODS at a harbour (its exports are at 159)                                    derived
+# The 159 landing stays a landing of its own (decision 208 b); curate/trip_landing.R joins it to its trip.
 
 #
 # In DuckDB, lazily, every table written by COPY (write_curated_sql()): nothing is collected into R. DuckDB runs on
@@ -52,6 +66,7 @@ DBI::dbExecute(con, "SET threads = 1")
 ex <- function(sql) invisible(DBI::dbExecute(con, sql))
 n_of <- function(view) DBI::dbGetQuery(con, sprintf("SELECT count(*) AS n FROM %s", view))$n
 rd <- function(...) sprintf("read_parquet('%s')", fd_staging("landing", ...))
+pc <- sprintf("read_parquet('%s')", fd_curated("reference", "port_code.parquet"))
 
 # .tid_land -> .lid, collapsing the per-delivery .lid out (agf only; a no-op regrouping for lods, which arrives
 # already at this grain) -------------------
@@ -72,12 +87,12 @@ for (s in c("agf", "lods"))
 # The same catch by state and area, from the adapters' catch_detail (plan 051 step 5).
 ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW agf_detail AS
   SELECT ".tid_land" AS ".lid", schema, sid, gid, stid, CAST(NULL AS INTEGER) AS kfteg,
-         CAST(NULL AS INTEGER) AS hid_origin, state, area, sum(catch_landed) AS catch_landed,
+         CAST(NULL AS INTEGER) AS hid_origin, state, area, afdrif, sum(catch_landed) AS catch_landed,
          sum(catch_gutted) AS catch_gutted, coalesce(sum(catch), 0) AS catch
-  FROM %s GROUP BY ".tid_land", schema, sid, gid, stid, state, area]", rd("agf", "catch_detail.parquet")))
+  FROM %s GROUP BY ".tid_land", schema, sid, gid, stid, state, area, afdrif]", rd("agf", "catch_detail.parquet")))
 ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW lods_detail AS
   SELECT ".tid_land" AS ".lid", schema, sid, gid, stid, kfteg, hid_origin, CAST(NULL AS INTEGER) AS state, area,
-         CAST(NULL AS DOUBLE) AS catch_landed, sum(catch_gutted) AS catch_gutted,
+         CAST(NULL AS VARCHAR) AS afdrif, CAST(NULL AS DOUBLE) AS catch_landed, sum(catch_gutted) AS catch_gutted,
          coalesce(sum(catch), 0) AS catch
   FROM %s GROUP BY ".tid_land", schema, sid, gid, stid, kfteg, hid_origin, area]", rd("lods", "catch_detail.parquet")))
 
@@ -91,10 +106,22 @@ ex(sprintf("CREATE OR REPLACE TEMP VIEW merged_landings AS
   SELECT * FROM agf_landings UNION ALL SELECT * FROM lods_landings %s", lods_only))
 ex(sprintf("CREATE OR REPLACE TEMP VIEW merged_catch AS
   SELECT * FROM agf_catch UNION ALL SELECT * FROM lods_catch %s", lods_only))
-ex(sprintf("CREATE OR REPLACE TEMP VIEW merged_detail AS
-  SELECT *, CASE WHEN catch_landed > 0 THEN catch / catch_landed
-                 WHEN catch_landed IS NULL AND catch_gutted > 0 THEN catch / catch_gutted END AS factor_landing
-  FROM (SELECT * FROM agf_detail UNION ALL SELECT * FROM lods_detail %s)", lods_only))
+ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW merged_detail AS
+  SELECT d.*, CASE WHEN catch_landed > 0 THEN catch / catch_landed
+                   WHEN catch_landed IS NULL AND catch_gutted > 0 THEN catch / catch_gutted END AS factor_landing,
+         CASE WHEN k.class = 'abroad' THEN 'abroad'
+              WHEN k.class = 'transfer' THEN 'transfer'
+              WHEN k.class = 'placeholder' OR l.hid IS NULL THEN 'unknown'
+              WHEN k.class = 'disposition' AND o.class = 'harbour' THEN 'export'
+              WHEN k.class = 'disposition' THEN 'export_or_abroad'
+              WHEN k.class = 'harbour' AND d.afdrif = 'U' THEN 'export'
+              WHEN k.class = 'harbour' THEN 'home' END AS disposition,
+         CASE WHEN k.class = 'harbour' AND d.afdrif IS NOT NULL THEN 'recorded'
+              WHEN k.class IS NOT NULL OR l.hid IS NULL THEN 'derived' END AS disposition_basis
+  FROM (SELECT * FROM agf_detail UNION ALL SELECT * FROM lods_detail %s) d
+  LEFT JOIN merged_landings l ON l.".lid" = d.".lid" AND l.schema = d.schema
+  LEFT JOIN %s k ON k.hid = l.hid
+  LEFT JOIN %s o ON o.hid = d.hid_origin]", lods_only, pc, pc))
 
 # kg in = kg out: the details sum to the catch on every row of catch.parquet
 key <- sprintf('"%s"', c(".lid", "schema", "sid", "gid", "stid", "kfteg", "hid_origin"))
@@ -105,6 +132,11 @@ chk <- DBI::dbGetQuery(con, sprintf("
   FROM d JOIN merged_catch c ON %s", paste(key, collapse = ", "),
   paste(sprintf("d.%s IS NOT DISTINCT FROM c.%s", key, key), collapse = " AND ")))
 stopifnot(chk$n_detail == chk$n_catch, chk$n_agree == chk$n_catch)
+# every row has a disposition and a basis: a code with no class stops port_code.R before this
+disp <- DBI::dbGetQuery(con, "SELECT schema, disposition, disposition_basis, count(*) AS n, round(sum(catch) / 1e6, 1) AS kt
+                               FROM merged_detail GROUP BY ALL ORDER BY ALL")
+print(disp)
+stopifnot(!anyNA(disp$disposition), !anyNA(disp$disposition_basis))
 
 # Summary ------------------------------------------------------------------
 cat(sprintf("agf trips:        %d\n", n_of("agf_landings")))
@@ -124,7 +156,7 @@ ex(sprintf(r"[CREATE OR REPLACE TEMP VIEW landings_port AS
 landing_inputs <- c(fd_staging("landing", "agf",  "landings.parquet"), fd_staging("landing", "agf",  "catch.parquet"),
                     fd_staging("landing", "lods", "landings.parquet"), fd_staging("landing", "lods", "catch.parquet"),
                     fd_staging("landing", "agf", "catch_detail.parquet"), fd_staging("landing", "lods", "catch_detail.parquet"),
-                    fd_curated("reference", "port.parquet"))
+                    fd_curated("reference", "port.parquet"), fd_curated("reference", "port_code.parquet"))
 write_curated_sql(con, "SELECT * FROM landings_port", fd_curated("landing", "landings.parquet"), inputs = landing_inputs)
 write_curated_sql(con, "SELECT * FROM merged_catch", fd_curated("landing", "catch.parquet"), inputs = landing_inputs)
 write_curated_sql(con, "SELECT * FROM merged_detail", fd_curated("landing", "catch_detail.parquet"),
