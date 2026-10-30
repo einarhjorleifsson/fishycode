@@ -910,6 +910,15 @@ list(
              fd_curated("ais", "trail"), fd_curated("ais", "trail_match"))
   }, format = "file"),
 
+  # Every landing of a logbook trip (plan 027 §5, decision 247 b): lid_map's, and the further landings the track, the
+  # weight or the export rule joins (decision 208), with every landing's outcome in curated/check/.
+  tar_target(trip_landing, {
+    lid_map; landing; logbook; catch_by_species_trip; trip_voyage; ais_voyage; port_call; ais_trail
+    produces("curate/trip_landing.R",
+             fd_curated("logbook", "trip_landing.parquet"),
+             fd_curated("check", "trip_landing.parquet"))
+  }, format = "file"),
+
   # The catch on the fixes, per catch unit and approach (plan 013 item 2, decision 100).
   tar_target(ais_catch, {
     ais_trail; station_window; logbook; lid_map; landing; catch_landing_contradicted
