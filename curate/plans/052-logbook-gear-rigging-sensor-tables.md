@@ -426,6 +426,9 @@ column; and no positions, since the logger stays in the AIS track (decision 196)
   not carry. The AIS products stay the positions' home and are unchanged by this plan.
 - **Built on the preprocessing side:** it reads no AIS. It supersedes `sensor_gps` as the home of the logger's
   readings; `sensor_gps`'s positions go to decision 196's flow step.
+- **Note, not designed** (the maintainer, 2026-10-30): many future sensor signals will arrive as NMEA strings, which
+  must be parsed before they become rows. That parsing is the work of each source's adapter; it is not looked into
+  here.
 - **The join is the analyst's:** by vessel and time (§3), as the stores are joined to each other, shown in the user
   tables' documentation and the book. A ramb helper is not proposed: dplyr's `join_by(vid, closest())` does it.
 
