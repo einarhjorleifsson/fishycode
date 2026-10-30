@@ -595,26 +595,6 @@ The per-vessel speed ceiling measured here (vid 1417; 132,380 steps over the ves
 
 **check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
 
-## 101. Allocation errors the audit finds: the fixes chosen (decisions 155, 199)
-**status:** open — the fixes that live in `ais_catch` are declined, the catch on the fixes being the user's (decision
-261); the flag for a station outside its trip's days is parked (plan 054 cut to what matters, the maintainer, 2026-10-30) · **see:** decisions 155 and 199, `curate/checks/allocation_audit.R`, plan 038 (§5.1, §7.1), TODO 90
-
-`check_allocation_audit` tests every link the flow makes against the records' own times (decision 155). The maintainer
-chose the fixes on 2026-10-23 (decision 199); each is built as a step with a scratch build and the catch traced:
-- stations deleted in the source (352, 4,238 t) out of every sum and link, kept in `station_fate` as deleted;
-- pelagic transfer trips (2,548 trip-species landed 2-300 times their log) flagged and not raised: the excess landed
-  weight to an outcome of its own in `ais_catch`;
-- `voyage_gear` deterministic (tie-break by kilograms, then gear code; `gid` and gear class from one row; a count of
-  gear labels per voyage), with the AIS batch;
-- catch on stations with no window (57 t, 43 stations) to the vessel-day or trip unit (plan 038 §7.1);
-- a flag in the merge on stations dated outside their trip's days (3.5 % adb, 3.0 % fs_afladagbok);
-- the two landing-to-voyage rules compared in the audit (`voyage_gear`'s window + 7 days, `rb_link_trip_landings()`).
-Parked: the audit as a generic ramb tool, until plan 038's phases are built. Answered elsewhere: the trail's trip from
-one voyage (plan 038 step 2, decision 193); station times in port calls (decision 197, TODO 81).
-
-**check:** each chosen fix built, or declined in a decision: decision 261 declines those in `ais_catch` (the transfer
-trips' excess there, the catch on stations with no window) and the audit read after the rebuild.
-
 ## 102. Logbook trips that overlap another trip of the same vessel
 **status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — classed and the treatments chosen 2026-10-30
 (decision 250), not built; left, decision 094's open ends below · **see:** plan 031 §3.11, decisions 094, 155 and 250, TODO 101
@@ -634,6 +614,8 @@ and 148 resubmitted fs_afladagbok trips with a later arrival (median 6.5 h), whe
 
 From TODO 138 (closed by decision 265): 125 Marína trips entered again with other catch, outside decision
 094's twin rule (Claude's count, 2026-10-23), parked with this item's twin rule.
+From TODO 101 (closed by decision 267): the merge's flag on stations dated outside their trip's days
+(fs_afladagbok 3.0 %, adb 3.6 %), parked with this item.
 
 **check:** decision 250's treatments built and traced in a rebuild; decision 094's same-time stations and later
 arrivals judged, or declined in a decision.
@@ -697,28 +679,6 @@ adopted on 2026-10-22, DuckDB reads both whole and kvoti has its `_data-dict.yam
 
 **check:** `takt_json_form` dumped
 (its JSON whole) or left out in a decision; every partitioned table's overview row equals its files.
-
-## 111. `docs/output-schema.md`'s four column tables: retire them for `docs/data-dict.yaml`?
-**status:** open — decided 2026-10-30 (decision 247): the column tables retired, done; left, the dictionary as a page of
-the book, with its next render (TODO 94) ·
-**see:** decisions 029 and 188, item 94
-
-The curated logbook tables (`curated/logbook/{trip,station,fishing_sample,catch}.parquet`) are described column by
-column twice: in `docs/data-dict.yaml` (decision 029), which `data-dict validate-meta` checks against the files, and
-in the four column tables of the book appendix `docs/output-schema.md`, carried over from the predecessor repository
-and written for afli and fs_afladagbok. The dictionary was brought up to the build at de25239 on 2026-10-21 (all 94
-columns, the ten of plan 026 among them); the page's tables list fewer columns than the files hold. Two copies of one
-fact drift (AGENTS.md).
-
-Proposal (Claude, 2026-10-21): delete the page's four column tables, and the paragraphs above them that repeat the
-dictionary, and point to `docs/data-dict.yaml` for the columns. Keep what the dictionary does not hold: the renaming
-dictionary (`wk_translate()`), the timestamp population by schema and gear class, the effort units by gear class,
-the duration caps, and the afli `aggregate.parquet` section. Also open: whether the book should carry the dictionary
-as a page of its own (`data-dict render` writes one self-contained HTML page), so that the book's readers still see
-the columns.
-
-**check:** `docs/output-schema.md` holds no column table that `docs/data-dict.yaml` describes (done 2026-10-30); the
-book carries the dictionary as a page (`data-dict render`).
 
 ## 115. The most upstream source, value by value, through the grammar (plan 037)
 **status:** open · **see:** `curate/plans/037-the-most-upstream-source.md`, `docs/grammar.qmd`, decisions 158, 160,
@@ -839,7 +799,8 @@ plan 022 §4 (TODO 68).
 
 **Found 2026-10-30** (decision 266, plan 055 rule 2): vor's `afli_einstakra_skipa` holds 1984 as one date per vessel (a
 vessel-year); `landed_catch_pre94`'s month × port × gear crosses vor's vessel × month in 1982-90, and in 1991-93 it is
-another stream, so period 0 needs a declared precedence, the other tables witnesses.
+another stream, so period 0 needs a declared precedence, the other tables witnesses. Open from the same study
+(decision 267): what agf's area codes `NE`, `GL`, `NA` and LODS's `U` mean; a record's ICES area by polygon, not a box.
 
 **check:** every period's landings in the same columns with a basis and a layer, and each layer's landings and
 kilograms in one outcome per period (plan 039 §9); plan 007's questions 1 and 3 answered in a decision; or the plan
