@@ -505,8 +505,8 @@ list(
   tar_target(ops_sigfus, {
     ops_sigfus_raw
     produces("sources/ops_sigfus/convert.R",
-             fd_staging("ops_sigfus", paste0(c("nephrops_monthly", "shrimp_monthly", "seine_monthly", "fj_reitir"),
-                                             ".parquet")))
+             file.path(fd_staging("ops_sigfus"), paste0(c("nephrops_monthly", "shrimp_monthly", "seine_monthly",
+                                                          "fj_reitir"), ".parquet")))
   }, format = "file"),
 
   # afli's own lumpfish logbook (grasl_sokn x grasl_stofn), a logbook source of its own at the vessel-day (TODO 167):
@@ -1003,7 +1003,7 @@ list(
   tar_target(aggregate, {
     ops_sigfus; logbook; landing; species; ices_raw
     produces("curate/aggregate.R",
-             fd_curated("aggregate", paste0(c("logged_monthly", "nephrops_fleet", "ices"), ".parquet")))
+             file.path(fd_curated("aggregate"), paste0(c("logged_monthly", "nephrops_fleet", "ices"), ".parquet")))
   }, format = "file"),
 
   # The user tables: the next release's candidate (decision 219, plan 056), and its check. The written tables are its
