@@ -828,10 +828,6 @@ Left by the overview's session of 2026-10-22.
   since decision 180.
 - **Not checked in the browser pane**, which was hidden: Play, and the map's tooltip. A person should try both.
 - **On hold (maintainer):** a hexagon colour scale pinned across vessels, as the History axis is.
-- **Asked 2026-10-31, not started:** the chart's vertical band the best estimate of the fishing action (the haul's
-  `station_window` phases), the trip a bar along the top, with a plainer legend; the logbook's t1-t4 as recorded as
-  thin vertical lines, drawn only when the window is short enough (detail by zoom); a cyan basemap like the old
-  `ramb::rb_mapdeck`'s.
 
 **check:** the trip table and chart show `trip_reconciled`'s times and ports with their witness; the landing lines show
 `hid_origin`; Play and the map's tooltip tried by a person; or each declined in a decision.

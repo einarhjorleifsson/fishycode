@@ -156,10 +156,12 @@ const FILTER = new deck.DataFilterExtension({ filterSize: 1 }), FILTER2 = new de
 // the window's pings are joined in time order (maintainer, 2026-10-18), faintly, but not across a gap of more than two
 // hours, so the hourly positions of the early years still join
 const LINE_GAP = 2 * HOUR;
-// A bundle has no token: it draws Esri's light grey canvas, which needs no key. A page opened as a file sends no
-// Referer, and CARTO's and OpenStreetMap's tiles refuse it (tested 2026-10-20)
+// Mapbox Streets, its sea cyan, which shows the pings better than a grey one (maintainer, 2026-10-31: the old
+// ramb::rb_mapdeck's, mapdeck's default streets-v9; v11 is its kept successor). A bundle has no token: it draws Esri's
+// light grey canvas, which needs no key. A page opened as a file sends no Referer, and CARTO's and OpenStreetMap's tiles
+// refuse it (tested 2026-10-20)
 const TILES = TOKEN.startsWith('pk.')
-  ? [`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/256/{z}/{x}/{y}?access_token=${TOKEN}`, '© Mapbox © OpenStreetMap', 19]
+  ? [`https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}?access_token=${TOKEN}`, '© Mapbox © OpenStreetMap', 19]
   : BUNDLE ? ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
               'Tiles © Esri: Esri, HERE, Garmin, © OpenStreetMap contributors', 16] : null;
 // a basemap layer for each map: a layer belongs to one deck
@@ -223,7 +225,7 @@ function layers() {
   }));
   // fishing effort per hexagon: fixed cells, a quantity and a legend, where a heat map would only smooth (maintainer:
   // "hex-layer instead of heatmap may be better science"). The cells are regular on the Web Mercator map, sized by the
-  // zoom (hexKm) and coloured by viridis, a step per decade of hours (hexLayer)
+  // zoom (hexKm) and coloured by inferno, a step per decade of hours (hexLayer)
   if (drawn('hex') && tr.fish.length) {
     const km = hexKm();
     if (km !== S.hexKm || !S.hexDom) {   // hexagons of another size, or other points: their decades found again
@@ -335,34 +337,61 @@ const PADDING = [8, 18, null, 2];   // a fixed right margin, the same for both, 
 const inside = (arr, t, maxDur) => { for (let i = lower(arr, t - maxDur, (d) => d.a); i < arr.length && arr[i].a <= t; i++) if (arr[i].b >= t) return arr[i]; return null; };
 const tripAt = (t) => inside(S.trips, t, 120 * DAY);
 
-function drawTrips(u) {   // bands behind the speed line, one per logbook trip
-  const { ctx } = u, { left, top, width, height } = u.bbox, x0 = u.scales.x.min * 1000, x1 = u.scales.x.max * 1000;
-  ctx.save(); ctx.beginPath(); ctx.rect(left, top, width, height); ctx.clip();
-  for (let i = lower(S.trips, x0 - 120 * DAY, (d) => d.a); i < S.trips.length && S.trips[i].a <= x1; i++) {
-    const d = S.trips[i];
-    if (d.b < x0) continue;
-    const a = u.valToPos(d.a / 1000, 'x', true), b = u.valToPos(d.b / 1000, 'x', true);
-    ctx.fillStyle = S.tripSel.has(d.key) ? 'rgba(214,39,40,0.16)' : (i % 2 ? 'rgba(31,111,235,0.10)' : 'rgba(31,111,235,0.17)');
-    ctx.fillRect(a, top, Math.max(1, b - a), height);
-  }
-  ctx.restore();
-}
-// Hauls as bars at the top, from the windows the flow gives them (curate/station_window.R), not the logbook's own t1-t4,
-// so a haul with a date alone is its day, not a hairline at midnight (decision 177): setting in grey; towing, hauling or
-// jigging in green; a day in pale green. The chosen trip's in red, the chosen haul's in black. Landings are triangles at
-// the bottom.
+// The bands behind the speed line are the hauls' windows, the flow's best estimate of when the gear was at work
+// (maintainer, 2026-10-31: "what constitutes the best estimated fishing window is the most important thing to know"),
+// from curate/station_window.R, not the logbook's own t1-t4, so a haul with a date alone is its day, not a hairline at
+// midnight (decision 177): setting in grey; towing, hauling or jigging in green; a day in pale green. The chosen trip's
+// hauls are red, the chosen haul's black. The logbook trips are a bar along the top, the chosen one red; landings are
+// triangles at the bottom.
 const WIN_COLOUR = { set: '#9aa5b1', tow: '#2e7d32', haul: '#2e7d32', jig: '#2e7d32', day: '#a5d6a7', logbook: '#9aa5b1' };
-const winColour = (w) => (S.haulSel.has(w.h.key) ? '#111827' : S.tripSel.has(w.h.tkey) && w.phase !== 'set'
-  ? (w.phase === 'day' ? '#ef9a9a' : '#b71c1c') : WIN_COLOUR[w.phase] || '#9aa5b1');
-function drawMarks(u) {
+const WIN_BAND = { set:'rgba(154,165,177,0.30)', tow: 'rgba(46,125,50,0.20)', haul: 'rgba(46,125,50,0.20)',
+                   jig: 'rgba(46,125,50,0.20)', day: 'rgba(165,214,167,0.30)', logbook: 'rgba(154,165,177,0.30)' };
+const winBand = (w) => (S.haulSel.has(w.h.key) ? 'rgba(17,24,39,0.20)' : S.tripSel.has(w.h.tkey) && w.phase !== 'set'
+  ? (w.phase === 'day' ? 'rgba(239,154,154,0.30)' : 'rgba(214,39,40,0.22)') : WIN_BAND[w.phase] || WIN_BAND.logbook);
+const TRIP_BAR = 8;   // the trips' bar along the chart's top, in CSS pixels: a click on it chooses the trip
+function drawBands(u) {
   const { ctx } = u, { left, top, width, height } = u.bbox, x0 = u.scales.x.min * 1000, x1 = u.scales.x.max * 1000;
-  const px = devicePixelRatio || 1, h = 6 * px;
   ctx.save(); ctx.beginPath(); ctx.rect(left, top, width, height); ctx.clip();
   for (let i = lower(S.wins, x0 - (S.wins.maxDur || 0), (d) => d.a); i < S.wins.length && S.wins[i].a <= x1; i++) {
     const w = S.wins[i];
     if (w.b < x0) continue;
     const a = u.valToPos(w.a / 1000, 'x', true), b = u.valToPos(w.b / 1000, 'x', true);
-    ctx.fillStyle = winColour(w); ctx.fillRect(a, top + 2 * px, Math.max(px, b - a), h);
+    ctx.fillStyle = winBand(w); ctx.fillRect(a, top, Math.max(1, b - a), height);
+  }
+  ctx.restore();
+}
+// The logbook's own times, t1-t4 as recorded, as thin lines (maintainer, 2026-10-31), once the window is short enough to
+// tell them apart: drawn at T_LINES CSS pixels a haul in view or more, and named at T_NAMES. Times that coincide share
+// one line and one name; the names alternate between two rows, so a short haul's do not run into each other.
+const T_LINES = 20, T_NAMES = 80;
+function drawTimes(u, x0, x1, px) {
+  const { ctx } = u, { top, width, height } = u.bbox, hs = new Set();
+  for (let i = lower(S.wins, x0 - (S.wins.maxDur || 0), (d) => d.a); i < S.wins.length && S.wins[i].a <= x1; i++)
+    if (S.wins[i].b >= x0) hs.add(S.wins[i].h);
+  const perHaul = width / px / Math.max(hs.size, 1);
+  if (!hs.size || perHaul < T_LINES) return;
+  ctx.strokeStyle = '#334155b3'; ctx.fillStyle = '#334155'; ctx.lineWidth = px; ctx.font = `${10 * px}px system-ui`;
+  for (const h of hs) {
+    const at = new Map();
+    for (const k of ['t1', 't2', 't3', 't4']) if (h[k] != null && h[k] >= x0 && h[k] <= x1) at.set(h[k], [...(at.get(h[k]) || []), k]);
+    [...at].forEach(([t, ks], j) => {
+      const x = Math.round(u.valToPos(t / 1000, 'x', true)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, top + TRIP_BAR * px); ctx.lineTo(x, top + height); ctx.stroke();
+      if (perHaul >= T_NAMES) ctx.fillText(ks.join('·'), x + 2 * px, top + (TRIP_BAR + 10 + 11 * (j % 2)) * px);
+    });
+  }
+}
+function drawMarks(u) {
+  const { ctx } = u, { left, top, width, height } = u.bbox, x0 = u.scales.x.min * 1000, x1 = u.scales.x.max * 1000;
+  const px = devicePixelRatio || 1, h = (TRIP_BAR - 2) * px;
+  ctx.save(); ctx.beginPath(); ctx.rect(left, top, width, height); ctx.clip();
+  drawTimes(u, x0, x1, px);
+  for (let i = lower(S.trips, x0 - 120 * DAY, (d) => d.a); i < S.trips.length && S.trips[i].a <= x1; i++) {
+    const d = S.trips[i];
+    if (d.b < x0) continue;
+    const a = u.valToPos(d.a / 1000, 'x', true), b = u.valToPos(d.b / 1000, 'x', true);
+    ctx.fillStyle = S.tripSel.has(d.key) ? '#d62728' : (i % 2 ? '#1f6feb66' : '#1f6febaa');
+    ctx.fillRect(a, top + px, Math.max(px, b - a), h);
   }
   ctx.fillStyle = '#e07b00';
   for (let i = lower(S.landings, x0 - DAY, (d) => d.d); i < S.landings.length && S.landings[i].d <= x1; i++) {
@@ -424,7 +453,7 @@ function makePlot() {
     axes: [{ font: FONT }, AXIS],
     cursor: { sync: { key: SYNC.key }, drag: { x: true, y: false, setScale: false }, points: { show: false } },
     hooks: {
-      drawClear: [drawTrips], draw: [drawMarks],
+      drawClear: [drawBands], draw: [drawMarks],
       setSelect: [(u) => {
         if (u.select.width < 3) return;
         const a = u.posToVal(u.select.left, 'x') * 1000, b = u.posToVal(u.select.left + u.select.width, 'x') * 1000;
@@ -438,19 +467,23 @@ function makePlot() {
       }],
     },
   }, [tr.ts, tr.plotSpeed, tr.fishSpeed], $('plot'));
-  clickToSelect(plot);
+  clickToSelect(plot, true);
 }
 // the time under a mouse event on a chart, from the event itself: a click with no move before it leaves the chart's
 // own cursor off the chart
 const timeAt = (u, e) => u.posToVal(e.clientX - u.over.getBoundingClientRect().left, 'x') * 1000;
-// a click (not a drag) on a trip selects it
-function clickToSelect(u) {
+// a click (not a drag) on a trip selects it; on the speed chart (`hauls`) a click on a haul's band selects the haul, and
+// one on the trips' bar along the top, or between hauls, the trip
+function clickToSelect(u, hauls = false) {
   let down = null;
   u.over.addEventListener('mousedown', (e) => { down = e.clientX; });
   u.over.addEventListener('mouseup', (e) => {
     const x = down; down = null;
     if (x == null || Math.abs(e.clientX - x) > 3) return;
-    const tp = tripAt(timeAt(u, e));
+    const t = timeAt(u, e), onBar = e.clientY - u.over.getBoundingClientRect().top <= TRIP_BAR;
+    const hw = hauls && !onBar && inside(S.wins, t, S.wins.maxDur || 0);
+    if (hw) { selectHaul(hw.h, { scroll: false }).catch((err) => status(String(err))); return; }
+    const tp = tripAt(t);
     if (tp) selectTrip(tp.tid, tp.schema, { scroll: false }).catch((err) => status(String(err)));
   });
 }
@@ -601,10 +634,9 @@ function slider() {
 }
 $('wfrom').addEventListener('input', slider);
 $('wto').addEventListener('input', slider);
-// Viridis, R's default ("D"), in six steps; the hexagons' size follows the zoom (maintainer, 2026-10-18): about 12 pixels
-// from centre to corner, rounded to a step so the cells re-aggregate only when the step changes
-// The hexagons are about 6 pixels from centre to corner, half what they were (maintainer, 2026-10-22: "provide higher
-// hex-resolution at any zoom"), rounded to a step so the cells re-aggregate only when the step changes
+// The hexagons' size follows the zoom (maintainer, 2026-10-18): about 6 pixels from centre to corner, half what they
+// were (maintainer, 2026-10-22: "provide higher hex-resolution at any zoom"), rounded to a step so the cells
+// re-aggregate only when the step changes
 const HEX_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 50];
 const HEX_PX = 6;
 function hexKm(at = view) {
@@ -621,16 +653,15 @@ const fmtHours = (x) => (x < 10 ? Number(x.toPrecision(2)).toString() : Math.rou
 // the legend in hours: the ends of the scale, and each colour's range on hovering it
 // The colour is on a log scale with a step per decade (maintainer, 2026-10-18: "fishing hours should be displayed on a
 // log-scale"; 2026-10-22: "show the colour scale on a log scale"): a hexagon's colour is the decade its hours fall in,
-// 0.01-0.1, 0.1-1, 1-10 and so on, from the decade of the smallest hexagon to that of the largest, viridis across them,
-// and the legend names every bound. The steps are the vessel's own: the scale is not pinned across vessels (the
-// maintainer: "lets hold on that").
-const VIRIDIS9 = ['#440154', '#472d7b', '#3b528b', '#2c728e', '#21918c', '#28ae80', '#5ec962', '#addc30', '#fde725']
-  .map((c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
-function viridis(n) {   // n colours spread over viridis, the first dark and the last yellow
-  if (n === 1) return [VIRIDIS9[4]];
+// 0.01-0.1, 0.1-1, 1-10 and so on, from the decade of the smallest hexagon to that of the largest, inferno across them
+// (maintainer, 2026-10-31: "the hexbin should be in palette inferno", the pings' palette; viridis before), and the legend
+// names every bound. The steps are the vessel's own: the scale is not pinned across vessels (the maintainer: "lets hold
+// on that").
+function inferno(n) {   // n colours spread over inferno, the first dark and the last yellow
+  if (n === 1) return [INFERNO[4]];
   return Array.from({ length: n }, (_, k) => {
-    const x = (k / (n - 1)) * (VIRIDIS9.length - 1), i = Math.min(Math.floor(x), VIRIDIS9.length - 2), f = x - i;
-    return VIRIDIS9[i].map((v, j) => Math.round(v + (VIRIDIS9[i + 1][j] - v) * f));
+    const x = (k / (n - 1)) * (INFERNO.length - 1), i = Math.min(Math.floor(x), INFERNO.length - 2), f = x - i;
+    return INFERNO[i].map((v, j) => Math.round(v + (INFERNO[i + 1][j] - v) * f));
   });
 }
 const decades = ([lo, hi]) => { const a = Math.max(Math.log10(HEX_MIN_H), Math.floor(lo)); return [a, Math.max(a + 1, Math.ceil(hi - 1e-9))]; };
@@ -655,7 +686,7 @@ function decadesOf(n, lonAt, latAt, hoursAt, km, lat0) {
 const RANGES = new Map();
 function hexLayer(id, data, getPosition, sumHours, km, dom) {
   const key = dom.join();
-  if (!RANGES.has(key)) RANGES.set(key, viridis(dom[1] - dom[0]));
+  if (!RANGES.has(key)) RANGES.set(key, inferno(dom[1] - dom[0]));
   return new deck.HexagonLayer({
     id, data, getPosition, getColorValue: (pts) => Math.log10(Math.max(sumHours(pts), HEX_MIN_H)),
     extruded: false, radius: 1000 * km, coverage: 0.94, opacity: 0.75, pickable: true, upperPercentile: 100,
@@ -663,7 +694,7 @@ function hexLayer(id, data, getPosition, sumHours, km, dom) {
   });
 }
 const hexLegend = ([a, b], km) => {
-  const cols = viridis(b - a), at = (k) => `<span class="tick">${fmtHours(10 ** k)}</span>`;
+  const cols = inferno(b - a), at =(k) => `<span class="tick">${fmtHours(10 ** k)}</span>`;
   return `effort per ${km} km hexagon, in hours (log scale): ${at(a)}${cols.map((c, k) =>
     `<span class="sw" style="background:rgb(${c.join(',')});margin:0 2px" title="${fmtHours(10 ** (a + k))} to ${fmtHours(10 ** (a + k + 1))} hours"></span>${at(a + k + 1)}`).join('')}`;
 };
