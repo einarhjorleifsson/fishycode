@@ -284,7 +284,9 @@ left of each is in the plan:
 - 10, declared times reconciled with the track: a trip's departure and return are `rb_add_trip_time()` (the step
   planned as `rb_reconcile_time()`, decisions 173-174, built in 180); a haul's times against the track are not built
   (decision 104's ground truth; plan 031 §3.11: logbook times and the port calls disagree mostly by 1-3 h). Brought
-  up to date from Claude's audit of 2026-10-23, not checked by a person.
+  up to date from Claude's audit of 2026-10-23, not checked by a person. Proposed in plan 057 (asks a-j): each fix
+  labelled by a self-organizing map on speed, steadiness and turning, a tow's start and end from the labels, its
+  events from stacked survey tows; scoped on 2023 (both ends within 10 min on 71 % of survey tows).
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
