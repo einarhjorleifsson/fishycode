@@ -4,7 +4,7 @@
 #
 # Input:  curated/vessel/{vessel,vessel_year}.parquet, curated/landing/{landings,catch}.parquet,
 #         curated/logbook/{trip,station,fishing_sample,gear,catch,lid_map,gear_part,rigging_part,sensor_summary,
-#         nephrops_tails}.parquet, curated/link/trip_reconciled.parquet,
+#         nephrops_tails}.parquet, curated/logbook/sensor_gps/, curated/link/trip_reconciled.parquet,
 #         curated/ais/{trail,catch,voyage.parquet}, curated/reference/{species,gear,port}.parquet
 # Output: $FISHYDATA/products/v0/
 #           vessel/     vessel.parquet, vessel_year.parquet                       (links)
@@ -12,6 +12,7 @@
 #           logbook/    trip.parquet, station.parquet, catch.parquet,             (written)
 #                       environment.parquet
 #                       gear_part.parquet, rigging_part.parquet, sensor_summary.parquet (links)
+#                       sensor_gps/                                               (link)
 #           ais/        trail/, catch/, voyage.parquet                            (links)
 #           reference/  species.parquet, gear.parquet, port.parquet               (links)
 #
@@ -72,6 +73,10 @@ invisible(link_curated("ais/voyage.parquet",          "ais", "voyage.parquet"))
 invisible(link_curated("logbook/gear_part.parquet",      "logbook", "gear_part.parquet"))
 invisible(link_curated("logbook/rigging_part.parquet",   "logbook", "rigging_part.parquet"))
 invisible(link_curated("logbook/sensor_summary.parquet", "logbook", "sensor_summary.parquet"))
+# The afli GPS logger, a frozen once fix (decision 075): its own time, speed, heading, depths and temperatures, with
+# lon/lat interpolated from the AIS track of 2026-10-09 (w_lon/w_lat the logger's own, faulty). afli only, so it
+# carries .sid with no schema. Partitioned by year
+invisible(link_curated("logbook/sensor_gps",             "logbook", "sensor_gps"))
 invisible(link_curated("reference/species.parquet",   "reference", "species.parquet"))
 invisible(link_curated("reference/gear.parquet",      "reference", "gear.parquet"))
 invisible(link_curated("reference/port.parquet",      "reference", "port.parquet"))

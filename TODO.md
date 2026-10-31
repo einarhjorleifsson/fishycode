@@ -994,6 +994,9 @@ new mar reads them as stations, so its Nephrops of those years is counted twice)
 rows of 1967-1970 (7.2 kt) never loaded into afli; `staging/afli/aggregate.parquet` keeps no place for the 12,708
 shrimp summaries; the fleet's Nephrops of 1960-72 are allocated at the year and of unknown quantity (plan 055 ask g).
 
+Plan 056 §5 (TODO 175, 2026-10-31) puts the summaries in the release's `historical/` as `ops$sigfus` holds them,
+flagged where they repeat afli's hauls; this item stays parked.
+
 **check:** unparked by the maintainer, the asks answered in the plan, the adapter and merge built by name, and
 `station_fate`'s account closing with the summaries in it.
 
@@ -1043,13 +1046,17 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
 - the logbook product structured by the grammar's parts (maintainer, 2026-10-29): the gear (its own measures: "things
   like mesh size belong to the gear"), the rigging ("things like warp", plan 020's `gear_part`, TODO 73) and the
   sensors, summary records as a rule but at times a continuous recording. The afli GPS logger is one: `curated/logbook/sensor_gps`, 49.3 M fixes with the echosounder
-  depth (`botndypi`, filled 97-99 %, TODO 100), the headline depth and two temperatures, in no product yet (TODO 98).
+  depth (`botndypi`, filled 97-99 %, TODO 100), the headline depth and two temperatures, linked into v0's logbook as
+  it is on 2026-10-31 (plan 056; TODO 98).
   Its depth must be joinable to the AIS fixes in the analysis, by vessel and time, where it exists; "including them in
   the ais is not the way" (maintainer, 2026-10-29).
 - the analyst's view of plan 055 (TODO 171) as the tables' specification: one quantity per table, the population on
   every landed row. Found 2026-10-30 (decision 266): v0's logbook table leaves `duration_m` empty on every adb station
   and 347,852 of 378,818 fs_afladagbok stations, the e-logbook's tow time being in `t2`/`t3` and `duration_m_raw` by
   design; a user's catch per tow hour loses the e-logbooks.
+
+Plan 056 (TODO 175, 2026-10-31) designs the first release for a colleague: how a release is versioned and published;
+the colleague's feedback on it comes here, as the next release's list.
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
@@ -1362,6 +1369,8 @@ reference table; the merge fills `sq` and `ssq` where the record has none, basis
 resolution (fjord square, or area). 819 of the hauls are from 2007 on. Rides the next rebuild of the logbook chain
 after plan 054's.
 
+Plan 056 §3.1 (TODO 175) makes it a change before the first release of the user tables.
+
 **check:** the 216,425 hauls with a square and sub-square in `curated/logbook/station`, the rest with their area, every
 other station unchanged, traced on a scratch store first.
 
@@ -1385,3 +1394,22 @@ Found by plan 054's live rebuild (decision 265, Claude's, not checked by a perso
 column, so no merged table changes.
 
 **check:** the labels follow a written tie-break, and the file built twice is identical.
+
+## 175. The user tables as a data repository: its first release, for a colleague, with the historical aggregates
+**status:** open · **needs: maintainer** — plan 056's asks a-h, then the go for the rebuild by name of what the
+release reads · **see:** `curate/plans/056-a-first-release-of-the-user-tables.md`, decision 219, TODOs 123, 136, 140,
+171 and 172, plans 039, 041 and 055
+
+The maintainer, 2026-10-31: a preliminary release of the user tables for an MFRI colleague working on Nephrops and
+shrimp, as a test case, on a central MFRI server; the historical aggregated data too; in the target chain; a metadata
+YAML and a README; no `_part` in the names; fishycode's and ramb's commits in the release; a conventional repository,
+not an R package. Plan 056 makes the repository a directory tree of frozen releases read as parquet files, v0 the
+candidate rebuilt by targets, and publishing a step by hand behind a gate. Before the first: the inshore shrimp
+hauls placed (TODO 172), the e-logbook's tow time where a user reads it, `catch_flag` on the catch, and ramb's
+commit stamped on every curated file. The historical sources (afli's monthly summaries from `ops$sigfus`, the
+fleet's Nephrops, the old weighings, vor, `landed_catch_pre94`, ICES) go in `historical/`, one table each, apart from
+the logbook and the landings until plans 041 and 039 place them.
+
+**check:** a release published under `products/published/`, checked on the server against its manifest; its
+`meta.yml` clean under `validate-spec` and `validate-data`; a decision records how a release is versioned and
+published.
