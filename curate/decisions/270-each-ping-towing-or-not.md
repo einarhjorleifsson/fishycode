@@ -1,4 +1,4 @@
-# 270 — Each fix towing or not: a hidden-state model of the target and its look-alikes, in continuous time, decoded by LaMa; plan 058's study, and plan 057's ask k
+# 270 — Each ping towing or not: a hidden-state model of the target and its look-alikes, in continuous time, decoded by LaMa; plan 058's study, and plan 057's ask k
 
 *2026-10-31. Plan 058's study, run read-only by Claude (AI) in a session of its own at the maintainer's request, from
 the evening of 2026-10-31 (its README dates its notes 2026-11-01, a day ahead of the clock). The maintainer steered it
@@ -9,7 +9,7 @@ full account are in `$FISHYDATA/archive/2026-11-01-phase-model/` (its `README.md
 
 ## The answer
 
-**A hidden-state model labels each fix towing or not, and for static gear setting, hauling or neither.** The map is
+**A hidden-state model labels each ping towing or not, and for static gear setting, hauling or neither.** The map is
 not one of its inputs. Plan 057's ask k is answered: the sequence model is the labeller, not a check on the map's runs.
 
 - **Its states are the target and what the track mistakes for it, not the A to J letters.** The maintainer, during the
@@ -20,7 +20,7 @@ not one of its inputs. Plan 057's ask k is answered: the sequence model is the l
   straight at towing-like speed while the warp pays out) looks like towing. Only the order, a run-in before a tow and
   lasting minutes, tells them apart. Both ends within 5 min on the 2019 survey: 1.6 % with three states, 41 % with the
   run-in, 50 % with hauling added.
-- **Turning counts as part of the sequence, not as a filter on each fix.** On 2019's fully logged groundfish trawl
+- **Turning counts as part of the sequence, not as a filter on each ping.** On 2019's fully logged groundfish trawl
   voyages (the scoping's `11_speed_turn.R`), the flow's speed rule keeps 111.8 % of the logged tow hours. Adding a turn
   filter (the largest turn under 20°) brings it to 91.5 %, by cutting 15 points of real towing for 6 points outside the
   tows. In the model, a turn whose distribution has a uniform part, so that a tow may turn at the end of a line, is the
@@ -33,7 +33,7 @@ commercial tows the truth is the logged `t2` and `t3` (`t3` = `t2` + the logged 
 
 | | survey 2019 (561 tows) | survey 2026 (550) | commercial, 50 m and over (23,900) |
 |---|---|---|---|
-| the declared speed range (2.625-4.7 kn), 5-fix majority | 28.5 / 69.0 | 14.9 / 36.4 | 14.4 / 26.3 |
+| the declared speed range (2.625-4.7 kn), 5-ping majority | 28.5 / 69.0 | 14.9 / 36.4 | 14.4 / 26.3 |
 | the map (speed, spread, turn), trained out of sample | 25.1 / 65.1 | 10.4 / 31.5 | 3.5 / 11.2 |
 | fishymodel's step-and-turn HMM, per segment | 0.5 / 3.2 | 0.0 / 0.2 | not scored |
 | **the kept model (eT)** | **51.7 / 78.3** | **46.7 / 74.9** | **17.2 / 32.0** |
@@ -52,7 +52,7 @@ commercial tows the truth is the logged `t2` and `t3` (`t3` = `t2` + the logged 
 | a left-to-right chain, speed gamma and turn von Mises | the base | |
 | a robust turn (von Mises with a uniform part) | yes | the largest gain: 26 → 45 % within 5 min (2019 survey) |
 | durations (phase-type: expanded states, a soft minimum for the tow) | yes | 45 → 50 %; an Erlang tow cut long tows in two |
-| continuous time (exp(Q dt) for each fix's own gap) | yes | equal at 2 min; at every third fix (7 min) 33 → 72 % within 10 min |
+| continuous time (exp(Q dt) for each ping's own gap) | yes | equal at 2 min; at every third ping (7 min) 33 → 72 % within 10 min |
 | an outlier part, 1 %, in the emission | yes | the mixed feeds of 2026: 58 → 70 % within 10 min |
 | tempered emissions (P^0.5) | for the intervals | they hold only when tempered; on commercial runs tempering joins back-to-back tows |
 | the logged times as evidence (σ 2-5 min, gross errors ρ 10 %) | where the record is trusted | 78 → 83-85 % with synthetic logged times, but 80 → 63-69 % where a time is grossly wrong |
@@ -60,10 +60,10 @@ commercial tows the truth is the logged `t2` and `t3` (`t3` = `t2` + the logged 
 | emissions refined by EM | no | worse on every set: the phases drift from what the labels meant |
 
 **Speed is no constraint.** Parameters are fitted once per length class (seconds). LaMa's compiled forward-backward,
-with one transition matrix per fix, decodes 0.67 s per million fixes. All of 2019 at sea (24.7 M fixes), features
-included, took 0.7 min on one core and 0.4 on eight. The whole trail (319.4 M fixes at sea) extrapolates to 9 min on
+with one transition matrix per ping, decodes 0.67 s per million pings. All of 2019 at sea (24.7 M pings), features
+included, took 0.7 min on one core and 0.4 on eight. The whole trail (319.4 M pings at sea) extrapolates to 9 min on
 one core, against plan 058's budget of an hour. Of the packages, only LaMa decodes irregular `dt` with fixed
-parameters. hmmTMB took 105 s per million fixes and mhsmm smooths only by moving the parameters, so neither is needed,
+parameters. hmmTMB took 105 s per million pings and mhsmm smooths only by moving the parameters, so neither is needed,
 and nothing is recoded (decision 234).
 
 **The longline does not work yet.** The chain carries over, but hauling (1.9 ± 1.7 kn) and lying (1.1 ± 0.9 kn) have
@@ -84,7 +84,7 @@ receipt. Measured on the Icelandic feeds:
   separate time again from mid-2025.
 - **The trail's `speed` is never derived across feeds,** so the flow's speed filter is safe from the offsets. At risk is
   what is derived from consecutive merged positions (turn, spreads) in the offset months. On the 2026 survey, speed
-  derived across the feeds drops the fixes inside tows labelled towing from 95 to 58 %. With the trail's speed, the
+  derived across the feeds drops the pings inside tows labelled towing from 95 to 58 %. With the trail's speed, the
   robust turn absorbs the offset (75 against 77 % with astd aligned).
 
 The study drafts a generic test (the dt pattern first, then recording or receipt, then the offset by vessel, feed and
@@ -95,9 +95,9 @@ That goes to TODO 178. Nothing is built.
 
 | | ask | answer |
 |---|---|---|
-| a | where the model lives | the fitting in fishymodel beside its HMMs (gamma moments and a von Mises-uniform EM per phase on the labelled fixes, the chain from each gear's sequence); the apply step, if it becomes a flow step, a thin ramb step that builds exp(Q dt) per fix and calls LaMa |
+| a | where the model lives | the fitting in fishymodel beside its HMMs (gamma moments and a von Mises-uniform EM per phase on the labelled pings, the chain from each gear's sequence); the apply step, if it becomes a flow step, a thin ramb step that builds exp(Q dt) per ping and calls LaMa |
 | b | packages | LaMa adopted; hmmTMB and mhsmm not |
-| c | light supervision | yes: emissions from the fixes whose phase the trusted logged times fix; the model runs where nothing is logged (the surveys have no logbook) |
+| c | light supervision | yes: emissions from the pings whose phase the trusted logged times fix; the model runs where nothing is logged (the surveys have no logbook) |
 | d | the years | 2019 to build and the 2026 survey to test, both done; 2017-2018 and 2023 not tested |
 | e | Python or a GPU | no |
 | f | the first gears | bottom trawl, groundfish: kept; longline: not until a feature tells hauling from lying |
@@ -108,7 +108,7 @@ That goes to TODO 178. Nothing is built.
   and its filling of missing values runs past the last row of an all-NA one, such as an unknown `behaviour`. Fixed in
   fishymodel (9f13881, its main, not pushed): `prepData()` gets the coordinates alone, `behaviour` is optional, and a
   zero-mass start is added for steps of exactly zero. Its test covers the three cases.
-- **fishymodel's HMM is too slow for the trail:** fitted per segment, 0.5-0.9 ms per one-minute fix, about 8-12 h for
+- **fishymodel's HMM is too slow for the trail:** fitted per segment, 0.5-0.9 ms per one-minute ping, about 8-12 h for
   2019's track at sea, against 0.7 min for the kept model.
 
 ## Open, in the order of what they would gain

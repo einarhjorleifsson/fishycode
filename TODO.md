@@ -285,7 +285,7 @@ left of each is in the plan:
   planned as `rb_reconcile_time()`, decisions 173-174, built in 180); a haul's times against the track are not built
   (decision 104's ground truth; plan 031 §3.11: logbook times and the port calls disagree mostly by 1-3 h). Brought
   up to date from Claude's audit of 2026-10-23, not checked by a person. Proposed in plan 057: a tow's start and end
-  from each fix's label. The labeller is chosen (decision 270, plan 058's study): a hidden-state model of towing and
+  from each ping's label. The labeller is chosen (decision 270, plan 058's study): a hidden-state model of towing and
   its look-alikes, decoded by LaMa, the trail in about 9 min; not built. Next, in order: the commercial splits reviewed
   (plan 057 §4); the feeds' clocks first (TODO 178); the longline's feature.
 
@@ -1453,7 +1453,9 @@ the Icelandic feeds:
 
 The study drafts a generic first step (ramb's step 0): the dt pattern, recording or receipt, the offset by vessel,
 feed and period, then one feed preferred and the others corrected beside their original times. Also named there:
-STK's lag by delivery channel (`comsystem`), and astd's speed stamped at its interval's start, not its midpoint.
+STK's lag by delivery channel (`comsystem`), and astd's speed stamped at its interval's start, not its midpoint. Its
+`notes/2026-11-01-feed-clocks-records-draft.md` drafts the record, a plan, a correction and the TODO lines (a check
+and a correction stage right after `ais_ping_union`), unreviewed.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.

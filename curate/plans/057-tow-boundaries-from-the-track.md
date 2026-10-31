@@ -3,7 +3,7 @@
 **status:** proposal — written 2026-10-31 at the maintainer's request after a case in the vessel overview, and
 rewritten the same day after a scoping study (`$FISHYDATA/archive/2026-10-31-tow-scoping/`, §1); nothing built in the
 flow; the A to J sequence as a prior added the same day (§3.7); asks a-k (§9): a and c answered the same day, e, f and k
-by plan 058's study (decision 270: a hidden-state model labels each fix, not the map), the rest open (TODO 72) · **2026-10-31** · **see:** plan 013 items 9 and 10 (TODO 72), decisions 090,
+by plan 058's study (decision 270: a hidden-state model labels each ping, not the map), the rest open (TODO 72) · **2026-10-31** · **see:** plan 013 items 9 and 10 (TODO 72), decisions 090,
 092, 103 and 104, `curate/checks/survey_tow_times.R`, TODO 146 (the A to J protocol), plan 048 (heading and course),
 plan 053 (the app profile)
 
@@ -43,8 +43,8 @@ design are Claude's. No person has checked the numbers.
 - **The labelling model is chosen** (decision 270, plan 058's study, the same day): a hidden-state model of towing and
   its look-alikes (the run-in before the tow, hauling after it), in continuous time, decoded by LaMa, the map not one of
   its inputs. Both ends of a survey tow within 5 min for 52 % (2019) and 47 % (2026), the declared speed range 28 and
-  15 %; the whole trail in about 9 min. The maintainer, during the study: only the fixes towing (or, for static gear,
-  setting and hauling) are wanted, not the A to J letters. §3's map and §6's steps 2-3 are superseded by it; the tows
+  15 %; the whole trail in about 9 min. The maintainer, during the study: only which pings are towing (or, for static
+  gear, setting and hauling) is wanted, not the A to J letters. §3's map and §6's steps 2-3 are superseded by it; the tows
   from runs, the outcomes and the review of §4 stand.
 - **What exists:** ramb's towing stretches and their pairing with the declared tows (speed only, decision 092); their
   score on the spring survey to 2019 (±10 min, decision 104); plan 013 item 10, a haul's times against the track, not
