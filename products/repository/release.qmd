@@ -115,7 +115,7 @@ read the folder.
 no_vessel <- n1("SELECT count(*) FROM read_parquet('logbook/station.parquet')
                  WHERE vid IS NOT NULL AND vid NOT IN (SELECT vid FROM read_parquet('vessel/vessel.parquet'))")
 placed <- n1("SELECT count(*) FROM read_parquet('logbook/station.parquet') WHERE sq_basis = 'derived'")
-unplaced <- n1("SELECT count(*) FROM read_parquet('logbook/station.parquet')
+unplaced <- DBI::dbGetQuery(con, "SELECT count(*) AS n, count(area) AS with_area FROM read_parquet('logbook/station.parquet')
                 WHERE schema = 'afli' AND lon1 IS NULL AND (sq IS NULL OR sq = 0)")
 neph <- DBI::dbGetQuery(con, "SELECT count(*) AS n, median(s.duration_m) AS med
   FROM read_parquet('logbook/station.parquet') s JOIN (SELECT DISTINCT \".sid\", schema FROM
@@ -125,8 +125,9 @@ neph <- DBI::dbGetQuery(con, "SELECT count(*) AS n, median(s.duration_m) AS med
 
 - **Stations whose vessel is not in `vessel/vessel`:** `r fmt(no_vessel)`, most of them lumpfish-logbook boats of
   1980-2015.
-- **Inshore hauls with no place:** `r fmt(placed)` afli hauls are placed by their fjord square; `r fmt(unplaced)` keep
-  only their area (`area`).
+- **Hauls with no place:** `r fmt(placed)` afli hauls are placed by their fjord square (`sq_basis` "derived").
+  `r fmt(unplaced$n)` afli hauls still have neither position nor square; `r fmt(unplaced$with_area)` of them keep their
+  area (`area`), the rest have no place at all.
 - **The e-logbook's Nephrops tows:** `r fmt(neph$n)` trawl stations with Nephrops, a median tow of
   `r round(neph$med)` minutes, against afli's 5-6 hours: found, not explained.
 - **afli's monthly summaries** are not in the logbook (`aggregate/` holds them), and the landings before 1992-09 are not
