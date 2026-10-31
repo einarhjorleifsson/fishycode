@@ -176,8 +176,15 @@ Every script in a targets project is on one of three sides, and says which in a 
   (`R/check_bookkeeping.R`) verifies every rule the three `README.md` files
   assert: records indexed, index rows resolving, no finished item left in
   `TODO.md`, a plan's status agreeing with its index row and every open plan
-  named in `TODO.md`, corrections declared, and no path in *this file* that
-  does not exist. Run it before committing. It is pure base R and needs no `$FISHYDATA`.
+  named in `TODO.md`, corrections declared, no path in *this file* that
+  does not exist, and no code that reads from a temporary place. Run it before committing. It is pure base R and needs
+  no `$FISHYDATA`.
+- **Nothing a session made hangs on the session** (maintainer, 2026-10-31). Its scratchpad, scratch R library and
+  `/tmp` go when it is archived. At a session's close, `check_session_close()` (`R/check_session_close.R`) checks
+  the studies it touched under `$FISHYDATA/archive/`: their packages in R's library, no README or script pointing
+  into a temporary place, every script named in its README, every cited file there, no job running. A study's notes
+  go into its own `notes/`. Pass `studies =` the session's own folders; the default takes every study changed in two
+  days.
 - **Where a thing is written down.** `AGENTS.md` = what is true now.
   `TODO.md` = what is open, a few paragraphs each. `curate/plans/` = designs
   not yet built. `curate/decisions/` = what was chosen or found, after the

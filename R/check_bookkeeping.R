@@ -272,6 +272,17 @@ check_bookkeeping <- function(root = ".", quiet = FALSE) {
   add("every targets script names its side", noside,
       "add a `# Side: preprocessing (...)` / `once (...)` / `flow, step N` line to its header (plan 014)")
 
+  # -- 5d/6 no code points into a temporary place -------------------------------
+  # Added 2026-10-31, at the maintainer's word that a session's close is checked: a scratchpad and /tmp go when the
+  # session is archived, and a script that reads one cannot be rerun. temp_paths() lives in R/check_session_close.R,
+  # whose check_session_close() also checks the studies under $FISHYDATA at a session's close.
+  tp <- if (exists("temp_paths", mode = "function")) temp_paths else {
+    e <- new.env(); f <- p("R", "check_session_close.R")
+    if (file.exists(f)) { sys.source(f, envir = e); e$temp_paths } else function(root) "R/check_session_close.R is missing"
+  }
+  add("no repo code points into a temporary place", tp(root),
+      "write it under $FISHYDATA, or make it at run time inside the script; at a session's close run check_session_close()")
+
   # -- 6/6 the decisions index is where TODO says finished work goes ------------
   add("curate/decisions/README.md states the revision convention",
       if (!any(grepl("amend it in place", rd(p("curate/decisions/README.md")))))
