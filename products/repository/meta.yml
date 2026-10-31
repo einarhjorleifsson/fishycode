@@ -1,0 +1,185 @@
+# What the user tables' releases add to docs/data-dict.yaml (plan 056 §4.1). release_meta() (R/release.R) composes each
+# release's meta.yml: the tool drafts every table from its file, a table's description is this file's, and a column's
+# is this file's where given, else the first of the docs/data-dict.yaml tables named in `from`. A column described in
+# neither stops the build (user_tables_check). One text per column: a curated column's text is changed in
+# docs/data-dict.yaml, never copied here.
+name: fishydata_user_tables
+description: >
+  The user tables of fishydata: MFRI's logbooks, landings and vessels, merged across sources, corrected against
+  each other, and kept with the original values and the basis of every inferred one. For use inside MFRI.
+schema_version: "1.0"
+tables:
+  logbook/trip:
+    from: [link_trip_reconciled, logbook_trip, logbook_lid_map]
+    description: >
+      One row per logbook trip, duplicates left out (decision 094): its departure and return, times and ports, the
+      reconciled ones from ranked witnesses, the AIS track first (decisions 173, 174), each with its basis and
+      witness; the crew; and the landing it is linked to. Keyed by (.tid, schema).
+  logbook/station:
+    from: [logbook_station, logbook_fishing_sample, logbook_gear, logbook_trip]
+    description: >
+      One row per fishing station (a haul, a set, or a coarser record), duplicates left out: its place, depth, times,
+      gear and count, merged from every logbook source with afli first for a vessel and a day (decision 243). Keyed
+      by (.sid, schema); its trip by (.tid, schema).
+    columns:
+      sq_basis: >
+        How the statistical square (sq, ssq) is known: "recorded" where afli gives it, "derived" where an afli haul
+        with neither position nor square is placed by its fjord square through ops$sigfus.fj_reitir (TODO 172), and
+        empty in the other sources.
+      area: >
+        afli's area (skiki) as recorded: a named shrimp or inshore ground (Ísafjarðardjúp, Húnaflói, Arnarfjörður
+        ...). The only place of an inshore haul that neither a position nor its fjord square gives.
+  logbook/catch:
+    from: [logbook_catch, logbook_catch_flag]
+    description: >
+      One row per station, species and state of the catch, as logged, with its whole weight at the landings' factor
+      of the day (decision 257) and the flag of an extreme or contradicted value. Keyed by (.sid, schema, sid,
+      condition). Logged catch only: never add it to the landings or the aggregate tables.
+    columns:
+      catch_round: >
+        The whole weight (kg) by the one rule of R/whole_weight.R: the landings' factor of the day for the species
+        and the state where the weight was logged gutted or a correction names its state (the Nephrops tails, 3.25),
+        the recorded whole weight where the logbook gives one, else the weight as logged.
+      round_basis: >
+        How catch_round was made: "recorded" (logged whole, or the logbook's own whole weight), "reconstructed" (a
+        factor applied), "synthesised" (a row with no state at all, adb's bycatch).
+      round_factor: The factor catch_round read, where one was read; empty otherwise.
+      catch_round_logbook: >
+        The logbook's own whole weight beside it (decision 066): the recorded whole weight, else the gutted weight /
+        0.8, else the weight as logged.
+  logbook/landed_not_logged:
+    from: [logbook_catch_flag]
+    description: >
+      One row per trip, landed species and witness where the trip's landing holds a species its logbook does not
+      (decision 241): the flag of catch_flag that sits on no catch row. Keyed by (.tid, schema).
+  logbook/environment:
+    from: [logbook_sensor_summary]
+    description: >
+      One row per station with a reading of the sea or the air: sensor_summary's readings pivoted wide (plan 052 ask
+      c), a flagged value or a placeholder left out. Keyed by (.sid, schema).
+    columns:
+      temp1_bottom: Bottom temperature at the haul's start, degC.
+      temp2_bottom: Bottom temperature at the haul's end, degC.
+      temp1_headline: Temperature at the headline (the gear's sensor) at the start, degC.
+      temp2_headline: Temperature at the headline at the end, degC.
+      temp1_surface: Sea surface temperature at the start, degC.
+      temp2_surface: Sea surface temperature at the end, degC.
+      temp1_air: Air temperature at the start, degC.
+      wind_direction: Wind direction at the start, degrees (0-360).
+      wind_force: Wind force at the start, Beaufort (0-12).
+      wind_speed: Wind speed at the start, m/s.
+      sea_state: Sea state at the start, a code (0-8) as the source records it.
+      bottom_type: Bottom type, a code as the source records it (26 readings in all).
+  logbook/gear:
+    from: [logbook_gear_part]
+    description: >
+      The gear's measured parts, one row per station and part (plan 052; curated's gear_part). Keyed by (.sid,
+      schema, part).
+  logbook/rigging:
+    from: [logbook_rigging_part]
+    description: >
+      The rigging's parts, one row per station and part (plan 052; curated's rigging_part). Keyed by (.sid, schema,
+      part).
+  logbook/sensor_summary:
+    from: [logbook_sensor_summary]
+    description: >
+      Every per-haul sensor reading, long: one row per station, quantity, place and moment, with its unit, basis and
+      flag (plan 052).
+  logbook/sensor_gps:
+    from: [logbook_sensor_gps]
+    description: >
+      The afli GPS logger, 2007-2024, partitioned by year: one row per fix, its own time, speed, heading, depths and
+      temperatures, with lon/lat interpolated from the AIS track of 2026-10-09 (w_lon/w_lat the logger's own, faulty).
+      A frozen once fix (decision 075). afli's alone, so .sid carries no schema; join it to the AIS fixes by vid and
+      time, in the analysis.
+  aggregate/logged_monthly:
+    description: >
+      afli's monthly summaries as ops$sigfus holds them, the source they were loaded into afli from: Nephrops
+      1960-1999 by vessel, month and square; shrimp 1953-1986 by vessel, month and shrimp area; Danish seine
+      1960-1970 by the table's own boat code, month and square, with sets. Logged kg as recorded. Where afli's hauls
+      already hold a cell's kilograms the summary repeats them (repeats_hauls): never add those rows to logbook/catch.
+      Keyed by (kind, .row).
+    columns:
+      kind: The summary table it comes from, "nephrops" (gamall_humar), "shrimp" (gomul_raekja) or "seine" (gomul_dragnot).
+      .row: The row's place in its ops$sigfus table, as dumped. With kind, the key.
+      year: Year.
+      month: Month (1-12). A summary covers the month; no day is recorded.
+      vid: The vessel (skipnr) where the summary names one; empty for the seine, whose numbers are its own boat codes.
+      boat_code: The seine table's own boat code (skipnr in gomul_dragnot), never a vid; empty for the others.
+      sq: Statistical square (reitur), Nephrops and seine.
+      ssq: Sub-square (smareitur), Nephrops, where given.
+      area: The shrimp area (skiki), shrimp only.
+      svaedi: A second area code in gomul_raekja, on 48 rows; its meaning is not documented.
+      sid: Species, MFRI's code (40 Nephrops, 41 shrimp, the seine's 23 plaice and others).
+      catch: Logged kg as recorded. No column says whether Nephrops is whole or tails.
+      tow_h: The month's tow time in hours, as the source holds it (afli split rows whose minutes passed 9,999).
+      n_sets: The seine's number of sets in the month.
+      hauls_kg: The kg of the same species afli's hauls hold in the summary's cell (vessel, month and species; or month, place and species where no vessel is named).
+      repeats_hauls: >
+        TRUE where afli's hauls hold at least 95 % of the cell's kg: the summary repeats records already in
+        logbook/catch (plan 041 §3.3), so its kg must not be added to them.
+  aggregate/nephrops_fleet:
+    description: >
+      The fleet's Nephrops of 1960-1972 in gamall_humar: no vessel, by month and square. Equal to the weighed landings
+      by year, not by month: allocated at the year by a key not known, so its quantity is unknown (plan 055 ask g).
+      Keyed by .row.
+    columns:
+      .row: The row's place in gamall_humar, as dumped. The key.
+      year: Year.
+      month: Month (1-12).
+      sq: Statistical square.
+      ssq: Sub-square, where given.
+      sid: Species (40, Nephrops).
+      catch: kg as recorded; its quantity is unknown (allocated at the year).
+      tow_h: Tow time in hours, as recorded.
+      hauls_kg: The kg afli's hauls hold in the same month, square and species.
+      repeats_hauls: TRUE where afli's hauls hold at least 95 % of the cell's kg.
+  aggregate/ices:
+    description: >
+      ICES's landings statistic for Iceland (ops$einarhj.ices_landed_catch), by year, area and species, in tonnes. A
+      witness compiled from the landings from 1966, never a check on them (decision 266); a species-year above ten
+      times the landings is flagged.
+    columns:
+      year: Year.
+      area: The area code as ICES's table gives it, its padding trimmed.
+      subarea: The subarea code as given, trimmed.
+      species_code: The species' FAO 3-alpha code.
+      species: The species' English name, as given.
+      latin_name: The species' scientific name, as given.
+      landings_t: Landings, tonnes, as given.
+      source: The table's own note of where the row came from.
+      sid: MFRI's species code for species_code, from the species reference; empty where it holds none.
+      species_year_t: The species' landings that year over every area, tonnes.
+      landed_t: >
+        The landed kg of the same species and year in landing/catch, in tonnes, for the years the landings hold
+        whole; empty before.
+      flag: >
+        "exceeds_landings_10x" where species_year_t is above ten times landed_t. Its causes differ: an error of ICES's
+        (Nephrops 2018, 86 times, and several species that year), a state the landings record otherwise (lumpfish,
+        counted whole here and landed as roe), or catch the Icelandic landings do not hold. Never split a total so
+        flagged.
+  landing/landing:
+    from: [landing_landings]
+    description: >
+      One row per landing, merged from agf and LODS (plan 007). Keyed by (.lid, schema). Foreign vessels' landings in
+      Iceland are in: vessel.foreign tells them apart.
+  landing/catch:
+    from: [landing_catch]
+    description: >
+      The landing's catch, one row per landing, species and the landing system's own detail. Landed kg: never add it
+      to the logbook's catch.
+  vessel/vessel:
+    from: [vessel]
+    description: One row per vessel (vid), from every register and witness (plan 021).
+  vessel/vessel_year:
+    from: [vessel_year]
+    description: One row per vessel and year, its class, power and length, each with its basis and source.
+  reference/species:
+    from: [reference_species]
+    description: The species reference, keyed by sid, MFRI's species code, with every list's names and codes.
+  reference/gear:
+    from: [reference_gear]
+    description: The gear reference, keyed by gid, with each gear's ICES code and target.
+  reference/port:
+    from: [reference_port]
+    description: The port reference, keyed by pid.

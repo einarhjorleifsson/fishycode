@@ -64,6 +64,14 @@ digest_string <- function(x) {
   DBI::dbGetQuery(con, "SELECT md5(?) h", params = list(x))$h
 }
 
+# ramb as installed: its version and the commit remotes::install_git() recorded (RemoteSha), "none" where it was
+# installed from a working tree, as devtools::install() does; NA where ramb is not installed (plan 056 §2.3).
+.ramb_info <- function() {
+  d <- suppressWarnings(utils::packageDescription("ramb"))
+  if (!is.list(d)) return(NA_character_)
+  paste0(d$Version, "@", if (is.null(d$RemoteSha)) "none" else d$RemoteSha)
+}
+
 # The fd.* stamps, in one place so write_curated() and write_curated_sql() cannot
 # drift apart. `inputs` are hashed here, at the moment of writing.
 .curated_kv <- function(script, rows, schema_hash, inputs = character(),
@@ -82,6 +90,8 @@ digest_string <- function(x) {
     "fd.rows"         = as.character(rows),
     "fd.schema_hash"  = schema_hash,
     "fd.inputs"       = ih,
+    "fd.ramb"         = .ramb_info(),
+    "fd.duckdb"       = as.character(utils::packageVersion("duckdb")),
     "fd.geometry"     = geom,
     "fd.crs"          = crs
   )
@@ -208,6 +218,7 @@ check_sync <- function(dir = fd_curated()) {
       stamped = !is.null(m) && nrow(m) > 0,
       commit  = substr(get1("fd.commit"), 1, 8),
       dirty   = get1("fd.dirty"),
+      ramb    = sub("^(.*@.{8}).*$", "\\1", get1("fd.ramb")),
       rows    = get1("fd.rows"),
       built   = get1("fd.built"),
       at_head = identical(get1("fd.commit"), head_sha),

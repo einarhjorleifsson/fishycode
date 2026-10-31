@@ -67,8 +67,9 @@ makes it is in fishycode.
       reference/                 species, gear, port
 ```
 
-The same tree is kept locally as `$FISHYDATA/products/published/`, the folder decision 219 set aside for versioned
-releases. The server holds a copy of it (§1.3).
+The same tree is kept locally as `$FISHYDATA/published/` (`fd_published()`), the folder the restructuring set aside
+for versioned releases (decision 219 names it). The server holds a copy of it (§1.3). (Corrected in the build: the plan
+first said `products/published/`.)
 
 ### 1.2 How it is read
 
@@ -228,7 +229,7 @@ Every count is v0's of 2026-10-30 and 2026-10-31. Sizes follow the links.
 | `logbook/` | `trip` | 2,087,289 | written (decision 219) |
 | | `station` | 7,545,513 | written |
 | | `catch` | 17,184,668 | written; whole weight `catch_round` (decision 257), the Nephrops tails `reconstructed`; `flag` (§3.1) |
-| | `landed_not_logged` | 34,057 | `curated/logbook/catch_flag`'s trip-level flag, on 18,462 trips (§3.1) |
+| | `landed_not_logged` | 34,057 | `curated/logbook/catch_flag`'s trip-level flag: a trip and a landed species (§3.1) |
 | | `environment` | 4,338,522 | written |
 | | `gear` (was `gear_part`) | 15,678,761 | `curated/logbook/gear_part` (plan 052) |
 | | `rigging` (was `rigging_part`) | 13,626,197 | `curated/logbook/rigging_part` |
@@ -273,9 +274,10 @@ Every count is v0's of 2026-10-30 and 2026-10-31. Sizes follow the links.
   - **On logged catch rows, three kinds,** exactly one per (station, species): `landing_contradicts` 87,856,
     `largest_landing_exceeded` 278 and `repeated_digits` 2. They become a `flag` column on `logbook/catch`, empty
     where none, so a user can leave the flagged rows out.
-  - **On no catch row, `landed_not_logged`** (34,057 rows on 18,462 trips): a trip's landing holds catch its
-    logbook does not, with no station or species. It becomes `logbook/landed_not_logged`, keyed by trip, with its
-    witness and the trip's landed kilograms.
+  - **On no catch row, `landed_not_logged`** (34,057 rows): a trip's landing holds a species its logbook does not.
+    It has no station; its species is `sid_landing` (corrected in the build: the plan first said it had none). It
+    becomes `logbook/landed_not_logged`, keyed by trip, landed species and witness, with the trip's logged and
+    landed kilograms.
 
 ## 4. The metadata and the READMEs
 
@@ -416,7 +418,8 @@ README says which overlaps a user must not add: the summaries flagged `repeats_h
 
 **In the target chain:**
 - `sources/ops_sigfus/convert.R` stages the summaries and `fj_reitir` (preprocessing);
-- `sources/ops_einarhj/convert.R` stages Iceland's rows of `ices_landed_catch` (preprocessing);
+- ICES is read where the dump put it (`raw/oracle/ops_einarhj/ices_landed_catch.parquet`), as `AGENTS.md` allows a
+  table already in its usable form: no adapter;
 - `curate/aggregate.R` writes `curated/aggregate/`, `repeats_hauls` included: it reads the summaries and afli's
   hauls, two sources, so it is in `curate/`;
 - `products/user_tables.R` takes `curated/aggregate/` like any other curated table.
@@ -435,7 +438,7 @@ README says which overlaps a user must not add: the summaries flagged `repeats_h
   - no persons' column;
   - `validate-spec` and `validate-data` clean.
 - **`publish_release(id)`** (`R/release.R`), by hand: a build never publishes, as a frozen fix is built by name in the
-  `once` project. It copies the candidate into `$FISHYDATA/products/published/releases/<id>/` with every link
+  `once` project. It copies the candidate into `$FISHYDATA/published/releases/<id>/` with every link
   followed. It then writes the manifest and `CHANGES.md`, renders the two READMEs, updates the index, and checks it
   all. It refuses unless:
   - every curated file the release reads is stamped `fd.dirty` false (v0 as rerun on 2026-10-31 is stamped dirty,
@@ -461,7 +464,7 @@ README says which overlaps a user must not add: the summaries flagged `repeats_h
    - `R/write_curated.R`: the stamps `fd.ramb` and `fd.duckdb`, and `curated_provenance()` printing them;
    - `user_tables.R`: the names, the tow time, the `flag` column and `landed_not_logged`, the persons' check,
      `aggregate/`;
-   - the two adapters and `curate/aggregate.R`;
+   - the `ops$sigfus` adapter and `curate/aggregate.R`;
    - `R/release.R`;
    - `products/repository/`;
    - the targets and their side headers;

@@ -1411,6 +1411,6 @@ commit stamped on every curated file. afli's monthly summaries from `ops$sigfus`
 `aggregate/`, one table each, apart from the logbook until plan 041 places them; the landed tables of 1966-1993 wait
 for plan 039's period 0.
 
-**check:** a release published under `products/published/`, checked on the server against its manifest; its
+**check:** a release published under `$FISHYDATA/published/`, checked on the share against its manifest; its
 `meta.yml` clean under `validate-spec` and `validate-data`; a decision records how a release is versioned and
 published.

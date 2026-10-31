@@ -1,7 +1,8 @@
 # Merge afli (legacy), fs_afladagbok, adb, the ERS catch reports (aflaskeyti) and afli's lumpfish logbook (afli_grasl)
 # into unified logbook tables.
 # Side: preprocessing (logbook). See plan 014.
-# Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti,afli_grasl}/{trip,station,fishing_sample,catch}.parquet, and the side
+# Input:  staging/{afli,fs_afladagbok,adb,aflaskeyti,afli_grasl}/{trip,station,fishing_sample,catch}.parquet,
+#         staging/ops_sigfus/fj_reitir.parquet (the fjord squares' places), and the side
 #         tables named under "Load"; the dump stamps (fd.dumped, never the rows) of raw/oracle/{afli,fs_afli}/stofn,
 #         adb/fishing_station and dw/dw_aflaskeyti, for the date caps; curated/reference/gear.parquet (gear_code)
 # Output: curated/logbook/{trip,station,fishing_sample,catch}.parquet, and the fate of every staging station and trip:
@@ -38,6 +39,10 @@
 # Depth: z1/z2 are converted to metres (curate/decisions/022), z1_raw/z2_raw
 # keep the original recorded value, z1_basis/z2_basis says which happened: afli's by afli_depth_units.R, the
 # e-logbook's by the unit each app sends (the app profile's rows D1-D5, plan 053 step 8), with z_unit.
+# Place: an afli haul with neither position nor square takes the square and sub-square of its fjord square from
+# ops$sigfus.fj_reitir (staging/ops_sigfus/fj_reitir.parquet; TODO 172), with sq_basis "derived"; skiki, fj_reitur and
+# fj_skiki stay as recorded, so a haul fj_reitir does not place keeps its area. sq_basis is "recorded" where afli
+# gives the square, and NA in the other sources.
 # Longitude: adb's dropped west sign is fixed by curate/corrections/
 # adb_vs_fs_afladagbok.R (lon1_raw/lon2_raw/lon1_basis/lon2_basis), and afli's end longitude where Oracle holds the
 # end latitude by curate/corrections/afli_end_longitude.R (lon2_raw/lon2_basis). afli's stations east of 10.75° E south
@@ -138,12 +143,24 @@ for (s in c("afli", "fs_afladagbok", "adb", "aflaskeyti", "afli_grasl"))
 # afli: the end longitude the logbook sent, where Oracle holds the end latitude in its place
 # (curate/corrections/afli_end_longitude.R); lon2_raw/lon2_basis keep what happened.
 stopifnot(dup_keys(pq(stg("afli", "end_longitude")), "\".sid\"") == 0, dup_keys("afli_east_lon", "\".sid\"") == 0)
+# The fjord square's place, where the haul has neither position nor square. The join's condition holds only the keys
+# (a left-side predicate in ON stops the hash join); the choice is made in the CASE.
+FJ_REITIR <- fd_staging("ops_sigfus", "fj_reitir.parquet")
+stopifnot(dup_keys(pq(FJ_REITIR), "skiki, fj_reitur") == 0)
+fj_place <- "(s.sq IS NULL OR s.sq = 0) AND s.lon1 IS NULL AND f.sq IS NOT NULL"
 ex(sprintf("CREATE TEMP VIEW afli_station AS
-  SELECT s.* EXCLUDE (z1, z2, lon2, \".ord\"), d.* EXCLUDE (\".sid\"), e.* EXCLUDE (\".sid\"), o.coord_flag, s.\".ord\"
-  FROM %s s LEFT JOIN %s d ON d.\".sid\" IS NOT DISTINCT FROM s.\".sid\"
-  LEFT JOIN %s e ON e.\".sid\" IS NOT DISTINCT FROM s.\".sid\"
-  LEFT JOIN afli_east_lon o ON o.\".sid\" IS NOT DISTINCT FROM s.\".sid\"",
-  tid_char(pqo(stg("afli", "station"))), pq(stg("afli", "depth")), pq(stg("afli", "end_longitude"))))
+  SELECT s.* EXCLUDE (z1, z2, lon2, \".ord\") REPLACE (CASE WHEN %1$s THEN f.sq ELSE s.sq END AS sq,
+                                                     CASE WHEN %1$s THEN f.ssq ELSE s.ssq END AS ssq),
+         CASE WHEN %1$s THEN 'derived' WHEN s.sq IS NOT NULL AND s.sq <> 0 THEN 'recorded' END AS sq_basis,
+         d.* EXCLUDE (\".sid\"), e.* EXCLUDE (\".sid\"), o.coord_flag, s.\".ord\"
+  FROM %2$s s LEFT JOIN %3$s d ON d.\".sid\" IS NOT DISTINCT FROM s.\".sid\"
+  LEFT JOIN %4$s e ON e.\".sid\" IS NOT DISTINCT FROM s.\".sid\"
+  LEFT JOIN afli_east_lon o ON o.\".sid\" IS NOT DISTINCT FROM s.\".sid\"
+  LEFT JOIN %5$s f ON f.skiki = s.skiki AND f.fj_reitur = s.fj_reitur",
+  fj_place, tid_char(pqo(stg("afli", "station"))), pq(stg("afli", "depth")), pq(stg("afli", "end_longitude")),
+  pq(FJ_REITIR)))
+cat("afli hauls placed by their fjord square (TODO 172):",
+    q("SELECT count(*) AS n FROM afli_station WHERE sq_basis = 'derived'")$n, "\n")
 stopifnot(q("SELECT count(coord_flag) AS n FROM afli_station")$n == sum(!is.na(afli_east_lon$coord_flag)))
 
 # fs_afladagbok and adb: the depth as sent, read by the app that sent it once the station knows its app (section "Depth
@@ -684,7 +701,8 @@ logbook_inputs <- c(
     c(fd_staging(s, "trip.parquet"), fd_staging(s, "station.parquet"),
       fd_staging(s, "fishing_sample.parquet"), fd_staging(s, "catch.parquet")))),
   fd_staging("afli", "depth.parquet"), fd_staging("afli", "end_longitude.parquet"), fd_staging("adb", "lon_sign.parquet"),
-  AFLI_EAST_LON, fd_staging("afli_sent", "station.parquet"), fd_staging("afli_sent", "trip.parquet"), APP_PROFILE,
+  AFLI_EAST_LON, FJ_REITIR, fd_staging("afli_sent", "station.parquet"), fd_staging("afli_sent", "trip.parquet"),
+  APP_PROFILE,
   fd_curated("reference", "gear.parquet"), fd_curated("reference", "gear_window.parquet"),
   unlist(lapply(c("station", "fishing_sample", "catch", "trip_landing", "station_trip", "coordinates", "time",
                   "weight"), \(t) fd_staging("aflaskeyti", paste0(t, ".parquet")))),

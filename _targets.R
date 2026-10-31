@@ -23,7 +23,9 @@
 #               the port radius): a second targets project (`TAR_PROJECT=once`, see
 #               _targets.yaml), run only by decision. Their outputs re-enter here as
 #               frozen inputs (plan 014, decision 075).
-# products/ are consumers of the sweep and are run on demand, not on every build.
+# products/ are consumers of the sweep and are run on demand, not on every build; but for the user tables, the next
+# release's candidate, and their check (plan 056), which are targets. Publishing a release stays a step by hand
+# (publish_release(), R/release.R): a build never publishes.
 #
 # Each script names its layer in a `# Side:` header line - preprocessing (no AIS),
 # once, or flow - and check_bookkeeping() enforces it (plan 014).
@@ -496,6 +498,17 @@ list(
              fd_staging("afli", "aggregate.parquet"))
   }, format = "file"),
 
+  # ops$sigfus: the monthly summaries afli's aggregate stations were loaded from, and the fjord squares' places, which
+  # the merge reads to place inshore hauls (plan 056 §5, TODO 172).
+  tar_target(ops_sigfus_raw, fd_raw("oracle", "ops_sigfus", paste0(c("gamall_humar", "gomul_raekja", "gomul_dragnot",
+                                                                     "fj_reitir"), ".parquet")), format = "file"),
+  tar_target(ops_sigfus, {
+    ops_sigfus_raw
+    produces("sources/ops_sigfus/convert.R",
+             fd_staging("ops_sigfus", paste0(c("nephrops_monthly", "shrimp_monthly", "seine_monthly", "fj_reitir"),
+                                             ".parquet")))
+  }, format = "file"),
+
   # afli's own lumpfish logbook (grasl_sokn x grasl_stofn), a logbook source of its own at the vessel-day (TODO 167):
   # the merge's fifth tier, its roe taken to the whole lumpfish by the factor table's provisional rows.
   tar_target(afli_grasl_raw, fd_raw("oracle", "afli", c("grasl_sokn.parquet", "grasl_stofn.parquet")), format = "file"),
@@ -790,6 +803,7 @@ list(
     afli; afli_depth_units; afli_end_longitude; afli_east_longitude_reviewed; afli_sent; fs_afladagbok; adb; adb_lon_sign
     gear; gear_window; logbook_app_profile
     aflaskeyti; aflaskeyti_coordinates; aflaskeyti_local_time; aflaskeyti_trip; aflaskeyti_weight; afli_grasl
+    ops_sigfus
     produces("curate/logbook.R",
              fd_curated("logbook", "trip.parquet"),
              fd_curated("logbook", "station.parquet"),
@@ -982,6 +996,30 @@ list(
     logbook; lid_map; fs_afladagbok; adb; adb_lon_sign; afli_sent; fs_afladagbok_raw; adb_raw; logbook_app_profile
     produces("curate/checks/logbook_app_profile.R",
              fd_curated("check", "logbook_app_profile.parquet"))
+  }, format = "file"),
+
+  # The historical aggregates, each its own table beside the logbook (plan 056 §5). ICES is read where the dump put it.
+  tar_target(ices_raw, fd_raw("oracle", "ops_einarhj", "ices_landed_catch.parquet"), format = "file"),
+  tar_target(aggregate, {
+    ops_sigfus; logbook; landing; species; ices_raw
+    produces("curate/aggregate.R",
+             fd_curated("aggregate", paste0(c("logged_monthly", "nephrops_fleet", "ices"), ".parquet")))
+  }, format = "file"),
+
+  # The user tables: the next release's candidate (decision 219, plan 056), and its check. The written tables are its
+  # outputs; the tables it links into curated/ are their own targets' (the trail's 26 GB is never hashed twice). The
+  # AIS tables and the logger it only links are not dependencies: a link follows its file, and a build by name of the
+  # candidate would otherwise rebuild the trail, which no release reads.
+  tar_target(user_tables, {
+    logbook; logbook_part; logbook_gear; logbook_nephrops_tails; catch_landing_contradicted; lid_map; trip_reconciled
+    landing; vessel; vessel_year; species; gear; port; whole_weight_factor; aggregate
+    produces("products/user_tables.R",
+             fd_path("products", "v0", "logbook", paste0(c("trip", "station", "catch", "landed_not_logged",
+                                                            "environment"), ".parquet")))
+  }, format = "file"),
+  tar_target(user_tables_check, {
+    user_tables
+    produces("products/user_tables_check.R", fd_curated("check", "user_tables.parquet"))
   }, format = "file"),
 
   tar_target(check_allocation_audit, {

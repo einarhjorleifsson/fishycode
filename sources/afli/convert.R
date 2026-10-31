@@ -78,7 +78,7 @@ source <-
   ungroup() |>
   mutate(schema = SCHEMA) |>
   left_join(eytt_ref, by = c(".sid" = "visir")) |>
-  select(.sid, .tid, vid, gid, date, lon1, lat1, lon2, lat2, sq, ssq, z1, z2,
+  select(.sid, .tid, vid, gid, date, lon1, lat1, lon2, lat2, sq, ssq, skiki, fj_reitur, fj_skiki, z1, z2,
          T1, hid1, T2, hid2, n_crew, schema, eytt_deleted, copy)
 
 ## The skipper's remark (stofn.athugas) ------------------------------------------
@@ -112,9 +112,11 @@ trip <-
   rename(pid2 = pid)
 #trip |> count(hid2, port) |> knitr::kable()
 # Station (spatial/temporal envelope) -----------------------------------------
+# The fjord square (fj_reitur, fj_skiki) and the area (skiki) as recorded: the only place 228,259 inshore hauls of
+# 1972-2003 hold. curate/logbook.R places them by ops$sigfus.fj_reitir (TODO 172).
 station <-
   source |>
-  select(.sid, .tid, date, lon1, lat1, lon2, lat2, sq, ssq, z1, z2, schema,
+  select(.sid, .tid, date, lon1, lat1, lon2, lat2, sq, ssq, skiki, fj_reitur, fj_skiki, z1, z2, schema,
          eytt_deleted, copy)
 
 # Aux tables ------------------------------------------------------------------

@@ -1,0 +1,49 @@
+---
+title: "fishydata user tables"
+subtitle: "The repository"
+format:
+  html:
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+# Rendered by publish_release() (R/release.R) at the repository's root, from its RELEASES.md and LATEST (plan 056 §4.2).
+latest <- readLines("LATEST", warn = FALSE)[1]
+```
+
+MFRI's logbooks, landings and vessels, merged across their sources, as plain parquet files: one folder per release under
+`releases/`, each frozen when it was published and never rewritten. The newest is **`r latest`** (also in `LATEST`).
+
+**For use inside MFRI only.** The logbooks are confidential. Made by fishycode, with AI assistance (Claude).
+
+## How it is laid out
+
+- `releases/<id>/` — a release: its `README.html` (start there), `CHANGES.md`, `manifest.yml` (every file's checksum and
+  the code that made it), `meta.yml` and `meta.html` (every table and column), and the tables in `logbook/`,
+  `aggregate/`, `landing/`, `vessel/` and `reference/`.
+- `RELEASES.md` — every release, its date, code and status.
+- `LATEST` — the newest release's id.
+
+An id is the date a release was published and a running number, `YYYY.MM.DD.n`. Its schema version says whether code
+written for an older release still runs: the first number moves when a table or column is renamed, removed or changes
+its meaning.
+
+## Reading a table
+
+```r
+root <- "<this folder>"
+catch <- duckdbfs::open_dataset(file.path(root, "releases", "`r latest`", "logbook", "catch.parquet"))
+```
+
+Name the release in your code, never `LATEST`: an analysis then reads the same data years later. Cite it as the release
+and your filter: "fishydata user tables, release `r latest`; `logbook/catch`, species 40, 1986-2020".
+
+## The releases
+
+```{r}
+#| output: asis
+cat(readLines("RELEASES.md", warn = FALSE), sep = "\n")
+```

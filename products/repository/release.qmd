@@ -1,0 +1,161 @@
+---
+title: "fishydata user tables"
+subtitle: "A release's README"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+# Rendered by publish_release() (R/release.R) inside the release's own folder: every number on this page is read from
+# its manifest.yml and its files when it renders, never typed (plan 056 §4.2).
+m <- yaml::read_yaml("manifest.yml")
+meta <- yaml::read_yaml("meta.yml")
+con <- DBI::dbConnect(duckdb::duckdb())
+n1 <- function(sql) as.numeric(DBI::dbGetQuery(con, sql)[[1]])
+fmt <- function(x) format(x, big.mark = ",", scientific = FALSE, trim = TRUE)
+files <- do.call(rbind, lapply(m$files, \(f) data.frame(table = f$table, rows = f$rows)))
+rows <- tapply(files$rows, files$table, sum)
+desc <- setNames(vapply(meta$tables, \(t) sub("[.].*$", ".", gsub("\\s+", " ", t$description)), ""),
+                 vapply(meta$tables, \(t) sub("_", "/", t$name), ""))
+```
+
+## What this is
+
+Release **`r m$id`**, schema version **`r m$schema_version`**, published `r substr(m$published, 1, 10)`. A preliminary
+release of MFRI's logbooks, landings and vessels, merged across their sources, as a first trial of the product: what it
+lacks is meant to be found by using it.
+
+It was made by fishycode at commit `r substr(m$code$fishycode, 1, 7)`, with ramb `r m$code$ramb` and DuckDB
+`r m$code$duckdb`. The code and every decision behind it are in fishycode's record (`curate/decisions/`). This page and
+the release's metadata were drafted with AI assistance (Claude); the numbers on it are computed from the release's own
+files when it is rendered.
+
+**For use inside MFRI only.** The logbooks are confidential: do not pass the files, or anything at the level of a
+vessel, outside MFRI.
+
+## The approach, and why it differs from afli
+
+A user who knows afli will find other numbers here. Each difference has a reason, and a decision in fishycode's record:
+
+- **One logbook from every source.** afli, its sent layer, fs_afladagbok, adb, aflaskeyti, afli's lumpfish logbook
+  (decision 263) and the tour app (decision 264), merged with afli first for a vessel and a day (decision 243).
+- **Each record once.** A station or trip entered twice is left out (decision 094).
+- **Flagged, not corrected.** An extreme value stays as recorded, with its flag (decisions 216, 217 and 240); so does a
+  value the AIS track judges, such as afli's east longitudes (decisions 242 and 249).
+- **The gear the landing confirms** in `gid_used`, with the logbook's own beside it.
+- **Whole weight at the landings' factor of the day** in `catch_round`, with the logbook's own ×1.25 beside it and the
+  Nephrops tails at 3.25 (decision 257).
+- **A trip's departure and return from ranked witnesses**, the AIS track first, not the logbook's dates alone
+  (decisions 173 and 174).
+- **No stored effort.** The times and the count are the record; the effort is the analyst's choice (decision 240). The
+  e-logbook's tow time is in `duration_m`, its span from `t2` to `t3`, the same interval afli records.
+- **The monthly summaries apart** (`aggregate/`): afli holds them as stations, and so repeats its Nephrops of 1986-1999.
+- **Inshore hauls placed by their fjord square** where afli gives neither position nor square (`sq_basis` "derived").
+
+The e-logbook and the landings since 2020 are another story, told in fishycode's record: fs_afladagbok is the dump of
+record and is no longer fed; adb, MFRI's nightly copy, is read only from 2025-11-19 (decisions 160 and 171); and the
+landings are agf's alone from 2020-07-22.
+
+## The tables
+
+```{r}
+tab <- data.frame(table = names(rows), rows = fmt(as.numeric(rows)), what = unname(desc[names(rows)]))
+knitr::kable(tab, col.names = c("table", "rows", "what it holds"), align = "lrl")
+```
+
+Every column is described in `meta.yml` and `meta.html` beside this page.
+
+## Reading them
+
+Nothing is installed. A table is a parquet file at a path that names its release, so an analysis names its data in its
+own code. In R:
+
+```r
+root <- "<the repository's folder>"
+catch <- duckdbfs::open_dataset(file.path(root, "releases", "`r m$id`", "logbook", "catch.parquet"))
+```
+
+In Python, `duckdb.read_parquet()` or `pandas.read_parquet()` on the same path. `sensor_gps/` is partitioned by year:
+read the folder.
+
+**Citing it.** Name the release and your filter: "fishydata user tables, release `r m$id`, schema
+`r m$schema_version`, MFRI (internal); `logbook/catch`, species 40, 1986-2020".
+
+## The joins
+
+- A logbook record by `(.sid, schema)` or `(.tid, schema)`, **never by the id alone**: ids repeat across sources.
+- A landing by `(.lid, schema)`; a trip's landing is on the trip (`.lid`, `schema_land`).
+- A vessel by `vid`.
+- `sensor_gps` carries `.sid` without `schema`: it is afli's alone.
+
+## What to watch
+
+- **One quantity per table.** Logged catch (`logbook/catch`), landed catch (`landing/catch`) and the aggregates are never
+  summed together.
+- **`catch` against `catch_round`**: the weight as logged, and the whole weight, with its basis.
+- **`gid_used`** is the gear the pipeline uses; `gid` and `gid_landing` are what each source records.
+- **Flagged values stay in.** `logbook/catch.flag` names the rule; leave the flagged rows out on purpose.
+  `logbook/landed_not_logged` lists the species a trip's landing holds and its logbook does not.
+- **The landings hold foreign vessels' landings in Iceland**: `vessel/vessel.foreign` tells them apart.
+- **The aggregates overlap the logbook.** A summary with `repeats_hauls` repeats hauls already in `logbook/catch`; ICES is
+  compiled from the landings, a witness and never a check.
+- **The afli GPS logger** (`sensor_gps`): its positions are interpolated from the AIS track of 2026-10-09, and
+  `w_lon`/`w_lat` are the logger's own, faulty; from mid-2020 it writes whole degrees and whole m/s. Join it to the AIS
+  fixes by `vid` and time, in the analysis.
+
+## Known gaps
+
+```{r}
+no_vessel <- n1("SELECT count(*) FROM read_parquet('logbook/station.parquet')
+                 WHERE vid IS NOT NULL AND vid NOT IN (SELECT vid FROM read_parquet('vessel/vessel.parquet'))")
+placed <- n1("SELECT count(*) FROM read_parquet('logbook/station.parquet') WHERE sq_basis = 'derived'")
+unplaced <- n1("SELECT count(*) FROM read_parquet('logbook/station.parquet')
+                WHERE schema = 'afli' AND lon1 IS NULL AND (sq IS NULL OR sq = 0)")
+neph <- DBI::dbGetQuery(con, "SELECT count(*) AS n, median(s.duration_m) AS med
+  FROM read_parquet('logbook/station.parquet') s JOIN (SELECT DISTINCT \".sid\", schema FROM
+  read_parquet('logbook/catch.parquet') WHERE sid = 40) c USING (\".sid\", schema)
+  WHERE s.schema IN ('fs_afladagbok', 'adb') AND s.gear = 'OTB'")
+```
+
+- **Stations whose vessel is not in `vessel/vessel`:** `r fmt(no_vessel)`, most of them lumpfish-logbook boats of
+  1980-2015.
+- **Inshore hauls with no place:** `r fmt(placed)` afli hauls are placed by their fjord square; `r fmt(unplaced)` keep
+  only their area (`area`).
+- **The e-logbook's Nephrops tows:** `r fmt(neph$n)` trawl stations with Nephrops, a median tow of
+  `r round(neph$med)` minutes, against afli's 5-6 hours: found, not explained.
+- **afli's monthly summaries** are not in the logbook (`aggregate/` holds them), and the landings before 1992-09 are not
+  in the release.
+- **Overlapping trips** of one vessel are kept as recorded.
+- **Handline trips of 2020-09 to 2021-03** are held only in part: the tour app fills some, and the rest is in no
+  logbook source held (decision 264).
+
+## Where this release stands
+
+```{r}
+rb <- table(vapply(m$files, \(f) sub(":.*$", "", f$ramb_basis), ""))
+src <- do.call(rbind, lapply(m$sources, \(s) data.frame(source = s$source, first = s$first, last = s$last,
+                                                         dumped = substr(s$dumped %||% NA_character_, 1, 10))))
+knitr::kable(src, col.names = c("source", "first record", "last record", "dumped"))
+```
+
+The landings of `r paste(m$provisional$landings, collapse = " and ")` are provisional (`r m$provisional$basis`). The
+files were built at fishycode `r paste(substr(m$built_with$fishycode, 1, 7), collapse = ", ")` with ramb
+`r paste(unique(sub("^(.*@.{7}).*$", "\\1", m$built_with$ramb)), collapse = "; ")`. Each file's md5, rows and stamps
+are in `manifest.yml`, with how ramb is known for each: `r paste(sprintf("%s %s", as.numeric(rb), names(rb)), collapse = ", ")`
+(stamped: the file carries it; derived: built after that ramb's install; not used: its script calls no ramb function;
+frozen: a once fix, named by its record). What changed since the release before is in `CHANGES.md`.
+
+## A problem?
+
+Report it to fishycode's maintainer at MFRI, with the release id, the table and the rows. The next release's changes are
+listed in its `CHANGES.md`.
+
+```{r}
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
