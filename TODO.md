@@ -284,9 +284,10 @@ left of each is in the plan:
 - 10, declared times reconciled with the track: a trip's departure and return are `rb_add_trip_time()` (the step
   planned as `rb_reconcile_time()`, decisions 173-174, built in 180); a haul's times against the track are not built
   (decision 104's ground truth; plan 031 §3.11: logbook times and the port calls disagree mostly by 1-3 h). Brought
-  up to date from Claude's audit of 2026-10-23, not checked by a person. Proposed in plan 057 (asks a-j): each fix
-  labelled by a self-organizing map on speed, steadiness and turning, a tow's start and end from the labels, its
-  events from stacked survey tows; scoped on 2023 (both ends within 10 min on 71 % of survey tows).
+  up to date from Claude's audit of 2026-10-23, not checked by a person. Proposed in plan 057: a tow's start and end
+  from each fix's label. The labeller is chosen (decision 270, plan 058's study): a hidden-state model of towing and
+  its look-alikes, decoded by LaMa, the trail in about 9 min; not built. Next, in order: the commercial splits reviewed
+  (plan 057 §4); the feeds' clocks first (TODO 178); the longline's feature.
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
@@ -1437,3 +1438,22 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 
 **check:** the next release's README places every station whose vid is not in the vessel table in an outcome, and no
 lumpfish station before 1992 carries a register vid without a witness.
+
+## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived
+**status:** open · **see:** decision 270 (its section "Time is an observation"), TODO 117 (STK's receipt time),
+`curate/ais_ping_union.R`, the study `$FISHYDATA/archive/2026-11-01-phase-model/` (its sections "Harmonizing the
+feeds" and "How many clocks")
+
+The maintainer (2026-10-31): time is observed, like position, with an error of its own. Decision 270 measured it on
+the Icelandic feeds:
+- astd lies 15-90 s behind stk in October 2025 to May 2026 and 30-75 s in September 2015 to January 2016, by month;
+- STK's time was the unit's to 2010, in effect the receipt time from 2012 to 2024, and a separate time from mid-2025;
+- the trail's `speed` is never derived across feeds, so the speed filter is safe; turns and spreads in those months
+  are not.
+
+The study drafts a generic first step (ramb's step 0): the dt pattern, recording or receipt, the offset by vessel,
+feed and period, then one feed preferred and the others corrected beside their original times. Also named there:
+STK's lag by delivery channel (`comsystem`), and astd's speed stamped at its interval's start, not its midpoint.
+
+**check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
+or why not.

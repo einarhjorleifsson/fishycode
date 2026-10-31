@@ -2,22 +2,25 @@
 
 **status:** proposal — written 2026-10-31 at the maintainer's request after a case in the vessel overview, and
 rewritten the same day after a scoping study (`$FISHYDATA/archive/2026-10-31-tow-scoping/`, §1); nothing built in the
-flow; asks a-j (§9) open (TODO 72) · **2026-10-31** · **see:** plan 013 items 9 and 10 (TODO 72), decisions 090,
+flow; the A to J sequence as a prior added the same day (§3.7); asks a-k (§9): a and c answered the same day, e, f and k
+by plan 058's study (decision 270: a hidden-state model labels each fix, not the map), the rest open (TODO 72) · **2026-10-31** · **see:** plan 013 items 9 and 10 (TODO 72), decisions 090,
 092, 103 and 104, `curate/checks/survey_tow_times.R`, TODO 146 (the A to J protocol), plan 048 (heading and course),
 plan 053 (the app profile)
 
 Drafted with AI assistance (Claude) on 2026-10-31. The aim, the choice of unsupervised learning, the weight on
 direction and speed of execution, the question of what the survey's end marks (ask c), and the idea that events show
-across many tows rather than in one are the maintainer's. The scoping, the measurements, the literature search and the
+across many tows rather than in one, and the A to J sequence as a prior for each fix (§3.7), are the maintainer's. The scoping, the measurements, the literature search and the
 design are Claude's. No person has checked the numbers.
 
 **Measured** (by Claude, read-only, 2026-10-31): every number in §0, §1 and §5, in the study's scripts and results.
 **Assumed:**
 - that `channel.station.vessel_no` is the vid (6,020 of 2023's 6,029 timed samples are on a vid with a 2023 track);
-- that a survey tow's `tow_start` is the gear on the bottom (D); its `tow_end` is the start of hauling (E) in the
-  grammar (the maintainer, 2026-10-30, TODO 146), or the gear leaving the bottom (F) (the maintainer, 2026-10-31), being
-  checked (ask c); the stacked profiles fit either within a few minutes (§1.4);
+- that `channel`'s `tow_start` and `tow_end` are the start and end of the station entered in Hafriti, which the A to J
+  protocol's original puts at the gear settling on the bottom (D) and the start of hauling (E) "as is customary" (ask
+  c, answered);
 - that a pattern found on one year of four-minute fixes holds on others: §6 step 3 tests it;
+- that a gear's phases keep one order and similar speeds across its vessels within a length class (§3.7): the stacked
+  profiles of every gear (the study's `report/`) show it for the medians, not for single vessels;
 - that the literature in §2 says what its abstracts say.
 
 ## 0. Where this stands
@@ -31,6 +34,18 @@ design are Claude's. No person has checked the numbers.
   a wide 180° turn at towing speed; a stop at 19:19 that is a snag or a quick haul-back. Each logbook position is the
   vessel's own position at the logbook's minute: the times are when the skipper entered each event. The flow takes them
   as the window (`win_basis` "recorded"), so the catch is spread over the wrong fixes, and no rule flags it.
+- **Every gear stacked** (the maintainer's request, 2026-10-31): each gear's fixes around its logged times, by
+  length class, 2019 (afli's logbook, fixes every 2.3 min) and, for the handline and the purse seine, November 2025 to
+  June 2026, with the A to J protocol mapped per gear, in a report for an MFRI colleague (the study's
+  `report/gear_events.html`). The logged times agree with the track within a minute or two for the bottom trawls' D and
+  E and the static gears' E and I, and disagree for the purse seine's `t1` (after the circle), the Danish seine's `t2`
+  (mid-circle) and small gillnetters' `t1` (no set seen). These profiles are the prior of §3.7.
+- **The labelling model is chosen** (decision 270, plan 058's study, the same day): a hidden-state model of towing and
+  its look-alikes (the run-in before the tow, hauling after it), in continuous time, decoded by LaMa, the map not one of
+  its inputs. Both ends of a survey tow within 5 min for 52 % (2019) and 47 % (2026), the declared speed range 28 and
+  15 %; the whole trail in about 9 min. The maintainer, during the study: only the fixes towing (or, for static gear,
+  setting and hauling) are wanted, not the A to J letters. §3's map and §6's steps 2-3 are superseded by it; the tows
+  from runs, the outcomes and the review of §4 stand.
 - **What exists:** ramb's towing stretches and their pairing with the declared tows (speed only, decision 092); their
   score on the spring survey to 2019 (±10 min, decision 104); plan 013 item 10, a haul's times against the track, not
   built; item 9, track models, the Gaussian mixture benched on speed alone (decision 103).
@@ -91,8 +106,7 @@ each has a fix every 4 min. Median speed and turn per fix:
   7 min with the turns growing (6 to 12°); 2.6-4.0 kn and 14-17° from 9 to 13 min; speeding up from 15 min; steaming
   from 21.
 
-The track breaks at the recorded end, whether that is the start of hauling (E) or the gear leaving the bottom (F)
-(ask c): within a minute or two of it. The profiles are a
+The track breaks at the recorded end, the start of hauling (E, ask c), within a minute or two of it. The profiles are a
 template of the events of a tow (the A to J protocol, TODO 146), learned from many tows, against which one tow can be
 matched.
 
@@ -140,16 +154,21 @@ stand alone, as the flow runs at any resolution.
 ### 3.4 Events from many tows
 
 The profiles of §1.4 as templates, by gear class and vessel kind (research vessels, hired trawlers, commercial): the
-shooting, the gear taking the bottom, steady towing, the gear leaving it, hauling. Each tow's run matched to them (a
+shooting, the gear taking the bottom, steady towing, hauling and the gear leaving the bottom (E and F, almost one
+moment, ask c). Each tow's run matched to them (a
 matched filter on speed, spread and turn), placing the start and end, and the events between, each with an uncertainty
 from the match.
 
-**Events named by their letters, not by variants of `t1`-`t4`** (the maintainer, 2026-10-31, once E is settled, ask
-c): a model places an event as one of the protocol's actions A to J, which name every event, those with no `t` (C,
+**Events named by their letters, not by variants of `t1`-`t4`** (the maintainer, 2026-10-31, with E settled, ask c):
+a model places an event as one of the protocol's actions A to J, which name every event, those with no `t` (C,
 F, G, H) too. The recorded times keep their names, and the grammar's table gives each its letter (`t1` = B, `t2` = D,
 `t3` = E, `t4` = I). A recorded `t3` and a model's E are then two rows of the same event with two bases, not two
 columns (`t3`, `t3_track`). A gear that takes the vessel twice (a longline's set and haul) opens A to J twice, as the
 grammar's longline table has it.
+
+On a cruise run under the protocol itself, two of its phases are runs at towing speed on the tow's course: F to G with
+the gear off the bottom (5 min at most) and I to J with no gear (3 to 5 min or longer, the energy baseline). Speed,
+spread and turn label both towing; only the template, or the bridge's presses, can tell them from the tow.
 
 ### 3.5 What it gives
 
@@ -161,6 +180,57 @@ against the declared tow (§4).
 
 An autoencoder on windows of fixes (`torch`, a few hundred MB, not installed) only if the map plateaus on step 3's
 out-of-sample scores.
+
+### 3.7 The A to J sequence as a prior (the maintainer, 2026-10-31)
+
+"Start to think about how we could use this 'prior' generic knowledge pattern in a model that determines each
+sequential ping within the A->J framework as a guidance ... see if it would not help us getting more confidence in the
+classification algorithm."
+
+**The model.** A gear's operation is a fixed order of phases, the intervals between the protocol's letters (the
+report's table per gear). For example:
+- a bottom trawl: shooting (A to D), towing (D to E), hauling (E to I), then the next shooting or steaming;
+- a longline: setting (B to D), the soak elsewhere, the approach, hauling (E to I);
+- a handline: drifting, and moving between drifts.
+
+A hidden semi-Markov model whose hidden states are these phases, in that order (left to right, with a loop from J to
+the next A), gives each fix the probability of each phase, given the whole sequence of fixes:
+- **emissions:** per phase, the distribution of speed, its spread and the turn, by gear and length class. They are
+  taken from the fixes whose phase the logged times fix where the stack shows them right (between `t2` and `t3`:
+  towing; minutes after `t3`: hauling), and checked on the survey's Hafriti times;
+- **durations:** per phase, from the logged spans (towing) and the profiles (a trawl's shooting 10 to 20 min, its
+  hauling 5 to 15 min after E);
+- **the fix spacing:** transitions in continuous time, so that a gap of 10 min allows more change than one of 2;
+- **the logbook as evidence, not truth:** a logged time enters as an observation of its event, with an error model by
+  gear and period. The model is tight where the stack shows agreement (the trawls' D and E, the static gears' E and
+  I), wide where it does not (the purse seine's `t1`, the small gillnetters' `t1`, the new providers' stand-ins), and
+  absent where nothing is logged (a longline's D).
+
+**What it gives over the map's labels (§3.2, §3.3):**
+- the order does what the map's smoothing does by hand. A single slow fix mid-tow, or a fix at 10 kn from a mixed
+  feed (eight single survey tows of 2026 show them), cannot start hauling unless the fixes after it look like
+  hauling, then shooting;
+- handling at towing speed between tows (§1.3) sits where the sequence expects it: after E and before the next D;
+- every fix gets a probability per phase, and every event a time with an interval: the confidence asked for. Its
+  calibration is scored on the survey: of the 90 % intervals, the share that hold Hafriti's D and E;
+- one engine serves every gear, with the topology from that gear's A to J table. The map's groups can be its inputs
+  in place of raw speed and turn.
+
+**Speed.** The parameters come from the profiles, or are fitted once on a sample. Applying them is one forward-backward
+pass per vessel-year, linear in fixes (phases × phases per fix: under 100 operations), so seconds per million fixes in
+compiled code. The pooled HMM of §1.2 failed on both counts, and neither cause applies here:
+- on speed, because `moveHMM` fits by numerical optimisation over all the data;
+- on accuracy, because its states had no order.
+
+The implementation is an existing package for hidden semi-Markov models (`mhsmm`, `hsmm`) if one takes irregular
+spacing and fixed parameters. Otherwise, a small compiled forward-backward in ramb, under the outside-methods rule.
+
+**Risks:**
+- **The order differs by fishery.** Commercial tows follow each other with no steaming; the survey steams between
+  stations. So the topology is per gear, and the loop optional.
+- **Phases shorter than the spacing.** A phase shorter than the fix spacing (a trawl's shooting at 4 min) is carried
+  by its duration prior, not by its fixes.
+- **Not yet measured:** whether one model per gear and length class holds across vessels. Step 4 measures it.
 
 ## 4. Ground truth and scoring
 
@@ -186,15 +256,17 @@ The HMM is dropped from the main line (about 48 h for 2023 alone).
 
 All read-only, in a study under `$FISHYDATA/archive/`, until step 6's choice.
 
-1. **Features in DuckDB** for all of 2023, timed, equal to the scoping's R features on its 86,693 fixes.
-2. **The map trained** on a stratified 2023 sample and applied in DuckDB to all of 2023, timed; groups named by the
-   fixed rule per gear class; scored on 2023's surveys against the scoping.
-3. **Out of sample:** the 2023 map applied to 2019 (afli's era, the public survey and `channel`) and 2024, and
-   leave-one-vessel-out on 2023; scored by spacing class.
-4. **Events:** templates from stacked survey tows, by vessel kind; matched to each tow; the start and end scored; A to J
-   named with TODO 146.
-5. **The commercial picture:** every 2023 towed e-logbook record in one outcome, by app and gear, with links; the
-   maintainer reviews a sample of each class.
+1. **Features in DuckDB** for all of 2019 (ask a), timed, equal to the scoping's R features on its 86,693 fixes.
+2. **The map trained** on a stratified 2019 sample and applied in DuckDB to all of 2019, timed; groups named by the
+   fixed rule per gear class; scored on 2019's surveys.
+3. **Out of sample:** the 2019 map applied to 2017-2018, the 2026 spring survey and 2023 (a sparser feed), and
+   leave-one-vessel-out on 2019; scored by spacing class.
+4. **Events, with the A to J sequence as a prior (§3.7):** prototyped on the bottom trawls first, on the 2026 spring
+   survey (D and E from Hafriti, fixes every 2.3 min) and 2019's commercial tows; scored against the map on both ends
+   within 5 and 10 min and on the calibration of its intervals; then gear by gear with the topologies of the report's
+   tables. A to J named with TODO 146.
+5. **The commercial picture:** every 2019 towed record in one outcome, by gear, with links; the maintainer reviews a
+   sample of each class.
 6. **A decision record**, and the choice: adopt, amend or stop. Adoption is a ramb step (features, labels, runs and
    pairing, events, lazily in DuckDB; `kohonen` called for training, the outside-methods rule) and a flow plan: the
    window cascade gaining basis `track`, the fix label on the trail.
@@ -217,16 +289,17 @@ recorded lines.
 
 | | ask | recommended |
 |---|---|---|
-| a | The years | 2023 to build, 2019 and 2024 to test out of sample |
+| a | The years | **answered** (the maintainer, 2026-10-31): 2019 to build, not 2023. The track is denser (2.3 min against 4.9), and the logbook is afli's: the new providers' set times for static gears are often stand-ins. 2014 is left out (quality unknown, odd towing patterns). The handline and the purse seine, for which afli has no times, from November 2025 to June 2026. Trawls are split by target (fish, shrimp, Nephrops) and by length |
 | b | Gear in the first round | towed gear (bottom and midwater trawl, Danish seine, shrimp trawl by gear class); static later |
-| c | What `channel`'s `tow_start` and `tow_end` mark: the start the gear taking the bottom (D)? the end the start of hauling (E, the grammar's answer of 2026-10-30) or the gear leaving the bottom (F, the maintainer 2026-10-31)? | the maintainer is checking (2026-10-31); the stacked profiles fit either; the figures label it E for now |
+| c | What `channel`'s `tow_start` and `tow_end` mark: the start the gear taking the bottom (D)? the end the start of hauling (E, the grammar's answer of 2026-10-30) or the gear leaving the bottom (F)? | **answered** (the maintainer, 2026-10-31, with the protocol's original): D and E. The original enters the station's start in Hafriti at D ("veiðarfæri sest á botn") and its end at E ("hífing hefst, tog endar"), each "eins og venja er"; the grammar's table and the figures stand. The gear leaving the bottom (F) is a fine distinction: in Icelandic tows E and F are almost the same moment (the maintainer, the same day) |
 | d | The inspectors' and discard project's times | set aside as timing truth (§1.1); their tows still scored as commercial outcomes |
-| e | The neural network | the self-organizing map as the main line, `kohonen` called for training (a CRAN package: point to it, do not recode), its application our SQL |
-| f | A deeper network | only if the map plateaus out of sample; `torch` then installed |
+| e | The neural network | **answered** (decision 270): not the map. Trained out of sample it placed both ends of a 2019 survey tow within 5 min for 25 %, against 52 % for the hidden-state model, and as an emission it pulled the end 4-5 min early |
+| f | A deeper network | **answered** (decision 270): not needed; the hidden-state model decodes the trail in about 9 min, and plan 058 left the CNN and LSTM line for a plateau that did not come |
 | g | The short stop (the 19:19 case) | its own outcome, counted and linked, not decided |
 | h | The fix label beside or instead of `fishing_flow` | beside, until step 6 shows which is better |
 | i | Finer data for the A to J events | the maintainer: the cruise protocol of TODO 146 (b), a GPS logger's or the research vessels' own logs, if any are finer than AIS |
-| j | How a model's events are named and stored | by their letters A to J (the maintainer's direction, 2026-10-31, once ask c settles E), one row per event with its basis, not `t`-variant columns; the column names go to TODO 127's review |
+| j | How a model's events are named and stored | by their letters A to J (the maintainer's direction, 2026-10-31, E settled by ask c), one row per event with its basis, not `t`-variant columns; the column names go to TODO 127's review |
+| k | Whether the A to J sequence (§3.7) becomes the labelling model, with the map as one of its inputs, or stays a check on the map's runs | **answered** (decision 270, plan 058's study): it becomes the labelling model, without the map. Its states are towing and its look-alikes, not the letters A to J: a model of towing against "other" alone starts every tow 10-14 min early. Its 90 % intervals hold the survey's D and E 87-96 % of the time |
 
 ## References
 

@@ -230,7 +230,8 @@ Three things follow for the grammar:
 - **For towed gear, `t3` is the start of hauling (E)**, as Hafriti and the Icelandic e-logbook record it ([The
   Icelandic logbooks in the grammar](grammar_logbooks.qmd)); the maintainer, 2026-10-30 (TODO 146). Off the bottom (F)
   falls between `t3` and `t4`. Between E and F the gear is still on the bottom, probably still fishing, while the vessel
-  slows.
+  slows. The difference is a fine one: on Icelandic bottom trawlers E and F are almost the same moment (the
+  maintainer, 2026-10-31).
 - **A and J bound the station, B to I the sample.** The vessel is busy with the station before the gear goes in and
   after it is out. Where A and J are recorded, the station's `s1` and `s2` are times of their own, wider than the
   sample's, not bounds derived from it.
