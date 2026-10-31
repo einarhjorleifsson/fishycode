@@ -1,8 +1,8 @@
 # 056 — The user tables as a data repository: frozen releases on an MFRI server, the first for a colleague, with their README, metadata and the historical aggregates
 
-**status:** proposal — written 2026-10-31 at the maintainer's request, restructured the same day around a conventional
-data repository; measured read-only the same day; nothing built; asks a-h (§9) answered the same day, each as
-recommended after a check of the data; the share's path still to be named (TODO 175) · **2026-10-31** ·
+**status:** partly built — written 2026-10-31 at the maintainer's request, restructured the same day around a
+conventional data repository; asks a-h (§9) answered the same day; built and release 2026.10.31.1 published locally the
+same day (decision 268); the share's path, the copy and the colleague's use left (TODO 175) · **2026-10-31** ·
 **see:** decision 219 (v0), decisions 240, 257, 261 and 266, plans 039, 041 and 055, TODOs 15, 123, 136, 140, 171 and
 172, `products/user_tables.R`, `docs/data-dict.yaml`, `$FISHYDATA/archive/2026-10-30-records-and-statistics/`,
 `$FISHYDATA/archive/2026-10-30-nephrops-shrimp-factors/`

@@ -1027,8 +1027,8 @@ Left, in plan 038 §8's phase 5 beside TODO 107, a scratch build first:
 catch on its trips, and the before-and-after trace recorded in a decision.
 
 ## 140. The user tables after v0: the user's feedback, the product's version, and the design
-**status:** open · **needs: maintainer** — the feedback is the maintainer's use of v0 · **see:** decision 219, TODO 102,
-plan 027
+**status:** open · **needs: maintainer** — the feedback is the maintainer's use of v0 and the colleague's of release
+2026.10.31.1 · **see:** decisions 219 and 268, TODO 102, plan 027
 
 v0 (`$FISHYDATA/products/v0/`, decision 219) is in use by the maintainer as an end user. The next round, in this order:
 how a data product is versioned ("very important", 2026-10-24; v0's links follow every rebuild), the maintainer's
@@ -1055,8 +1055,8 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   and 347,852 of 378,818 fs_afladagbok stations, the e-logbook's tow time being in `t2`/`t3` and `duration_m_raw` by
   design; a user's catch per tow hour loses the e-logbooks.
 
-Plan 056 (TODO 175, 2026-10-31) designs the first release for a colleague: how a release is versioned and published;
-the colleague's feedback on it comes here, as the next release's list.
+How a release is versioned and published is decided and built (plan 056, decision 268): the check's first half is
+met. The colleague's feedback on release 2026.10.31.1 comes here, as the next release's list.
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
@@ -1355,25 +1355,6 @@ and the Icelandic track as the census witness from 2007. Nothing needs a rebuild
 **check:** the asks answered in the plan; `docs/grammar.qmd` rewritten with both parts and a clean render; a decision
 records the revision.
 
-## 172. afli's hauls placed only by a fjord square: 228,259 with no place in curated
-**status:** open · **see:** decision 266, plan 055, `$FISHYDATA/archive/2026-10-30-records-and-statistics/` (logs
-06-09), `sources/afli/convert.R`, `raw/oracle/ops_sigfus/fj_reitir.parquet`, `docs/grammar.qmd` (§ What each field
-group covers)
-
-`afli.stofn` holds a fjord square (`fj_reitur`) and fjord sub-area (`fj_skiki`) on 284,087 hauls; nothing in
-`sources/afli/` reads them. 228,259 of them (113.9 kt, mostly the inshore shrimp of 1972-2003 in Ísafjarðardjúp,
-Húnaflói, Arnarfjörður and Axarfjörður) have no position or square in `curated/logbook/station`. `ops$sigfus.fj_reitir`
-(one row per area and fjord square) gives a square and sub-square for 216,425 of them (100.7 kt); 11,834 (13.2 kt)
-keep an area only. Proposed: the adapter stages `skiki`, `fj_reitur` and `fj_skiki` as recorded; `fj_reitir` becomes a
-reference table; the merge fills `sq` and `ssq` where the record has none, basis `derived`, with the place's
-resolution (fjord square, or area). 819 of the hauls are from 2007 on. Rides the next rebuild of the logbook chain
-after plan 054's.
-
-Plan 056 §3.1 (TODO 175) makes it a change before the first release of the user tables.
-
-**check:** the 216,425 hauls with a square and sub-square in `curated/logbook/station`, the rest with their area, every
-other station unchanged, traced on a scratch store first.
-
 ## 173. Plan 019's `protected_bycatch`: fs_afladagbok's mammal and bird bycatch, parked
 **status:** parked (the plan 054 cut to what moves effort or catch, the maintainer, 2026-10-30) · **see:**
 `curate/plans/019-fs-afladagbok-mined.md` (its table list and ask 7), decisions 210 and 265
@@ -1396,21 +1377,16 @@ column, so no merged table changes.
 **check:** the labels follow a written tie-break, and the file built twice is identical.
 
 ## 175. The user tables as a data repository: its first release, for a colleague, with the historical aggregates
-**status:** open · **needs: maintainer** — the share's path, then the go for the rebuild by name of what the
-release reads (plan 056's asks a-h answered 2026-10-31) · **see:**
-`curate/plans/056-a-first-release-of-the-user-tables.md`, decision 219, TODOs 123, 136, 140, 171 and 172, plans 039,
-041 and 055
+**status:** in progress · **needs: maintainer** — the share's path, where the colleague reads; then the copy · **see:**
+`curate/plans/056-a-first-release-of-the-user-tables.md`, decisions 219 and 268, TODOs 123, 136, 140 and 171, plans
+039, 041 and 055
 
 The maintainer, 2026-10-31: a preliminary release of the user tables for an MFRI colleague working on Nephrops and
-shrimp, as a test case, on a central MFRI server; the historical aggregated data too; in the target chain; a metadata
-YAML and a README; no `_part` in the names; fishycode's and ramb's commits in the release; a conventional repository,
-not an R package. Plan 056 makes the repository a directory tree of frozen releases read as parquet files, v0 the
-candidate rebuilt by targets, and publishing a step by hand behind a gate. Before the first: the inshore shrimp
-hauls placed (TODO 172), the e-logbook's tow time where a user reads it, `catch_flag` on the catch, and ramb's
-commit stamped on every curated file. afli's monthly summaries from `ops$sigfus`, the fleet's Nephrops and ICES go in
-`aggregate/`, one table each, apart from the logbook until plan 041 places them; the landed tables of 1966-1993 wait
-for plan 039's period 0.
+shrimp, as a test case, on a central MFRI server, with the historical aggregated data. Plan 056 is built (decision
+268): release 2026.10.31.1 is published in `$FISHYDATA/published/releases/2026.10.31.1/` (36 files, 1.95 GB, read-only),
+with its manifest, `CHANGES.md`, `meta.yml`, `meta.html` and README, and the repository's README, `RELEASES.md` and
+`LATEST` beside it. Left: the share's path; the copy of `$FISHYDATA/published/` to it, plain copies with no links (ask
+a), checked file by file against the manifest's md5s; and the colleague's use, whose feedback goes to TODO 140. The
+scratch clone `/Users/einarhj/stasi/scratch-p056/` may be removed on the maintainer's word.
 
-**check:** a release published under `$FISHYDATA/published/`, checked on the share against its manifest; its
-`meta.yml` clean under `validate-spec` and `validate-data`; a decision records how a release is versioned and
-published.
+**check:** the release on the share, checked against its manifest there, and the colleague told where it is.
