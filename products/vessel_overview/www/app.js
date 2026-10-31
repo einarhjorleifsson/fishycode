@@ -31,7 +31,7 @@ const many = (n, one, more = `${one}s`) => `${num(n)} ${n === 1 ? one : more}`;
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-30.1';
+const API = '2026-10-31.1';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -360,26 +360,38 @@ function drawBands(u) {
   }
   ctx.restore();
 }
-// The logbook's own times, t1-t4 as recorded, as thin lines (maintainer, 2026-10-31), once the window is short enough to
-// tell them apart: drawn at T_LINES CSS pixels a haul in view or more, and named at T_NAMES. Times that coincide share
-// one line and one name; the names alternate between two rows, so a short haul's do not run into each other.
-const T_LINES = 20, T_NAMES = 80;
+// The logbook's own times, t1-t4, as thin lines (maintainer, 2026-10-31: "the grey shading shows the best 'estimated'
+// tow operation while the vertical t1->t4 show the values as reported in the logbooks"), once the window is short enough
+// to tell them apart: drawn at T_LINES CSS pixels a haul in view or more, and named at T_NAMES. Only a time the logbook
+// reports is drawn: one an adapter computed from others (afli's t3 = t2 + the tow time) is not. A time the flow flags
+// (a placeholder, a copy of the trip's departure; its action "flag", left out of every window) is drawn dashed in orange,
+// named with a "?". Times that coincide share one line and one name; the names alternate between two rows, so a short
+// haul's do not run into each other.
+const T_LINES = 20, T_NAMES = 80, T_FLAGGED = '#d9480f';
 function drawTimes(u, x0, x1, px) {
   const { ctx } = u, { top, width, height } = u.bbox, hs = new Set();
   for (let i = lower(S.wins, x0 - (S.wins.maxDur || 0), (d) => d.a); i < S.wins.length && S.wins[i].a <= x1; i++)
     if (S.wins[i].b >= x0) hs.add(S.wins[i].h);
   const perHaul = width / px / Math.max(hs.size, 1);
   if (!hs.size || perHaul < T_LINES) return;
-  ctx.strokeStyle = '#334155b3'; ctx.fillStyle = '#334155'; ctx.lineWidth = px; ctx.font = `${10 * px}px system-ui`;
+  ctx.lineWidth = px; ctx.font = `${10 * px}px system-ui`;
   for (const h of hs) {
     const at = new Map();
-    for (const k of ['t1', 't2', 't3', 't4']) if (h[k] != null && h[k] >= x0 && h[k] <= x1) at.set(h[k], [...(at.get(h[k]) || []), k]);
-    [...at].forEach(([t, ks], j) => {
+    for (const k of ['t1', 't2', 't3', 't4']) {
+      if (h[k] == null || h[k] < x0 || h[k] > x1 || h[`${k}_basis`] !== 'recorded') continue;
+      const key = `${h[k]}|${h[`${k}_action`] === 'flag'}`;
+      at.set(key, [...(at.get(key) || []), k]);
+    }
+    [...at].forEach(([key, ks], j) => {
+      const [t, flagged] = [+key.split('|')[0], key.endsWith('true')];
       const x = Math.round(u.valToPos(t / 1000, 'x', true)) + 0.5;
+      ctx.strokeStyle = flagged ? T_FLAGGED : '#334155b3'; ctx.fillStyle = flagged ? T_FLAGGED : '#334155';
+      ctx.setLineDash(flagged ? [3 * px, 3 * px] : []);
       ctx.beginPath(); ctx.moveTo(x, top + TRIP_BAR * px); ctx.lineTo(x, top + height); ctx.stroke();
-      if (perHaul >= T_NAMES) ctx.fillText(ks.join('·'), x + 2 * px, top + (TRIP_BAR + 10 + 11 * (j % 2)) * px);
+      if (perHaul >= T_NAMES) ctx.fillText(ks.join('·') + (flagged ? '?' : ''), x + 2 * px, top + (TRIP_BAR + 10 + 11 * (j % 2)) * px);
     });
   }
+  ctx.setLineDash([]);
 }
 function drawMarks(u) {
   const { ctx } = u, { left, top, width, height } = u.bbox, x0 = u.scales.x.min * 1000, x1 = u.scales.x.max * 1000;
@@ -933,6 +945,7 @@ async function loadRange(from, to) {
   S.stations = await rows(`SELECT s.".tid" AS tid, s.schema, s.".sid" AS sid, lon1, lat1, lon2, lat2, epoch_ms(date)::DOUBLE AS d0, epoch_ms(t1)::DOUBLE AS t1, epoch_ms(t2)::DOUBLE AS t2,
       epoch_ms(t3)::DOUBLE AS t3, epoch_ms(t4)::DOUBLE AS t4, coalesce(gear, '') AS gear,
       coalesce(target, '') AS target, coalesce(gear_basis, '') AS gear_basis, strftime(date, '%Y-%m-%d') AS day, z1, z2, station_type, duration_m, duration_source, effort_count, effort_count_unit,
+      t1_basis, t2_basis, t3_basis, t4_basis, t1_flag, t2_flag, t3_flag, t4_flag, t1_action, t2_action, t3_action, t4_action,
       coalesce(c.kg, 0)::DOUBLE AS kg
     FROM stations s LEFT JOIN (SELECT ".sid", schema, sum(catch) AS kg FROM station_catch GROUP BY ALL) c USING (".sid", schema)
     ORDER BY coalesce(t1, date)`);
@@ -1344,10 +1357,17 @@ function haulDuration(h) {
   if (h.t1 != null && h.t4 != null) return `${num((h.t4 - h.t1) / 60000)} min <span class="note">t1 → t4</span>${flag}`;
   return '—';
 }
+// a time the logbook does not report, or one the flow flags or notes, says so beside it
+const timeNote = (h, k) => {
+  const b = h[`${k}_basis`], f = h[`${k}_flag`], notes = [];
+  if (h[k] != null && b && b !== 'recorded') notes.push(`${b}, not in the logbook`);
+  if (f) notes.push(`${h[`${k}_action`] === 'flag' ? 'flagged' : 'noted'}: ${f}`);
+  return notes.length ? ` <span class="note">(${esc(notes.join('; '))})</span>` : '';
+};
 function haulRecord(h, species) {
   const f = [
     ['record', `haul ${esc(h.sid)} of trip ${esc(h.tid)} (${esc(h.schema)})${h.station_type ? `, ${esc(h.station_type)}` : ''}`],
-    ['logbook times', ['t1', 't2', 't3', 't4'].map((k) => `${k} ${h[k] == null ? '—' : fmt(h[k])}`).join(' · ')],
+    ['logbook times', ['t1', 't2', 't3', 't4'].map((k) => `${k} ${h[k] == null ? '—' : fmt(h[k])}${timeNote(h, k)}`).join(' · ')],
     ['windows (station_window)', h.wins.map((w) => `${esc(winText(w))} <span class="note">${esc(w.basis)}</span>`).join('<br>')],
     ['gear', `${esc(h.gear) || 'none'} ${esc(h.target)}${h.gear_basis ? ` <span class="note">(${esc(h.gear_basis)})</span>` : ''}`],
     ['duration · count', `${haulDuration(h)} · ${h.effort_count == null ? '—' : `${num(h.effort_count)} ${esc(h.effort_count_unit)}`}`],

@@ -25,7 +25,7 @@
 
 # The service's version, sent with every answer. The page carries the same string and says so plainly when they differ:
 # a server started before its code changed answers the new page wrongly. Change both together (www/app.js, API).
-API_VERSION <- "2026-10-30.1"
+API_VERSION <- "2026-10-31.1"
 
 PERSONAL <- c("national_identity_no", "national_identity_no_source", "identity_no", "address", "postal_no", "town",
               "phone", "website", "operator", "exif_copyright")
@@ -52,7 +52,8 @@ ALLOW <- list(
   trips    = c(".tid", "schema", "T1", "T2", "pid1", "pid2", "port", "n_crew", "source", "T1_basis", "T2_basis"),
   stations = c(".sid", ".tid", "schema", "date", "t1", "t2", "t3", "t4", "lon1", "lat1", "lon2", "lat2", "z1", "z2",
                "station_type", "gid", "gear", "gear_basis", "target", "duration_m", "duration_source",
-               "effort_count", "effort_count_unit"),
+               "effort_count", "effort_count_unit", "t1_basis", "t2_basis", "t3_basis", "t4_basis",
+               "t1_flag", "t2_flag", "t3_flag", "t4_flag", "t1_action", "t2_action", "t3_action", "t4_action"),
   station_catch = c(".sid", "schema", "sid", "catch", "catch_whole", "condition"),
   windows  = c(".sid", "schema", ".tid", "phase", "w_start", "w_end", "win_basis"),
   trail_years = c("year", "n", "time_first", "time_last"),
@@ -77,6 +78,14 @@ TRAIL <- function(year = NULL) sprintf("read_parquet('%s', hive_partitioning = t
                                        fd_path("curated", "ais", "trail", if (is.null(year)) "*" else sprintf("year=%d", year),
                                                "*", "*.parquet"))
 q <- function(x) paste0('"', x, '"')
+
+# A haul's t1-t4, each with its basis: "recorded" as the logbook reports it; "derived" or "synthesised" where the
+# source's adapter computed it from others of the record (afli's and aflaskeyti's t3 = t2 + the tow time; the fs spot
+# records' t1 = t4 less the hours at sea); "reconstructed" where the whole record was shifted (aflaskeyti's time_basis).
+# NULL where the time is. The flow's flag and action on each (curate/logbook.R) come beside them.
+T_BASIS <- paste(vapply(c("t1", "t2", "t3", "t4"), function(k) sprintf(
+  "CASE WHEN f.%1$s IS NULL THEN NULL WHEN f.time_basis = 'reconstructed' THEN 'reconstructed' ELSE coalesce(%2$s, 'recorded') END AS %1$s_basis",
+  k, if (k == "t4") "NULL" else sprintf("nullif(f.\".%s_source\", 'data')", k)), ""), collapse = ", ")
 
 # A time-based endpoint answers either a range of years (p$from, p$to) or the latest p$n records
 ranged <- function(p) !is.null(p$from) && !is.null(p$to)
@@ -127,11 +136,12 @@ SQL <- list(
   stations = function(vid, p) sprintf(
     "WITH t AS (%s)
      SELECT s.*, f.t1, f.t2, f.t3, f.t4, g.gid_used AS gid, g.gear, g.gid_basis AS gear_basis, g.target, f.duration_m,
-            f.\".duration_source\" AS duration_source, f.effort_count, f.effort_count_unit
+            f.\".duration_source\" AS duration_source, f.effort_count, f.effort_count_unit, %s,
+            f.t1_flag, f.t2_flag, f.t3_flag, f.t4_flag, f.t1_action, f.t2_action, f.t3_action, f.t4_action
      FROM %s s JOIN t USING (\".tid\", schema) LEFT JOIN %s f USING (\".sid\", schema) LEFT JOIN %s g USING (\".sid\", schema)
      WHERE s.twin IS NULL OR s.twin <> 'duplicate' ORDER BY s.date DESC",
-    SQL$trips(vid, p), src("curated", "logbook", "station.parquet"), src("curated", "logbook", "fishing_sample.parquet"),
-    src("curated", "logbook", "gear.parquet")),
+    SQL$trips(vid, p), T_BASIS, src("curated", "logbook", "station.parquet"),
+    src("curated", "logbook", "fishing_sample.parquet"), src("curated", "logbook", "gear.parquet")),
   station_catch = function(vid, p) sprintf(
     "WITH s AS (%s) SELECT c.* FROM %s c JOIN (SELECT \".sid\", schema FROM s) USING (\".sid\", schema)",
     SQL$stations(vid, p), src("curated", "logbook", "catch.parquet")),
