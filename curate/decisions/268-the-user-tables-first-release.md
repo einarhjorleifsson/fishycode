@@ -132,4 +132,4 @@ It is not yet on the share: the path is not decided (TODO 175).
   feedback is left.
 - **TODO 175:** the share's path and the copy are left, with the copy checked against the manifest, then the
   colleague's use.
-- **Plan 056 is partly built.** The scratch clone may be removed on the maintainer's word.
+- **Plan 056 is partly built.** The scratch clone was removed the same day, on the maintainer's word.

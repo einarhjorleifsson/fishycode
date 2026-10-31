@@ -1386,7 +1386,6 @@ shrimp, as a test case, on a central MFRI server, with the historical aggregated
 268): release 2026.10.31.1 is published in `$FISHYDATA/published/releases/2026.10.31.1/` (36 files, 1.95 GB, read-only),
 with its manifest, `CHANGES.md`, `meta.yml`, `meta.html` and README, and the repository's README, `RELEASES.md` and
 `LATEST` beside it. Left: the share's path; the copy of `$FISHYDATA/published/` to it, plain copies with no links (ask
-a), checked file by file against the manifest's md5s; and the colleague's use, whose feedback goes to TODO 140. The
-scratch clone `/Users/einarhj/stasi/scratch-p056/` may be removed on the maintainer's word.
+a), checked file by file against the manifest's md5s; and the colleague's use, whose feedback goes to TODO 140.
 
 **check:** the release on the share, checked against its manifest there, and the colleague told where it is.
