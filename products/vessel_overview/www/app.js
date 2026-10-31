@@ -110,7 +110,7 @@ const S = { vid: null, name: '', from: null, to: null, tr: null, win: [0, 0], ho
             tripSel: new Set(), haulSel: new Set(),
             // what set the window: 'preset' (a button, or the user's window carried from the last vessel), 'user' (a drag
             // or the slider), or 'choice' (a trip, haul or landing chosen); the address and the buttons follow it
-            winBy: 'preset',
+            winBy: 'preset', fitSpans: null,
             stations: [], hauls: [], wins: [], trips: [], landings: [], years: [], lanes: null, expanded: new Set(), tripPage: 0, pingPage: 0,
             history: false, about: {}, assumed: null, assumedBase: null, ready: false };
 // The user's choices (maintainer, 2026-10-18: "if one selects a new vessel - all the users selections besides the new
@@ -284,34 +284,41 @@ function getTooltip({ layer, index, object }) {
 // 2026-10-18: "if a fishing vessel, the zoom level 'start' would be the fishing events only, not steaming. could use
 // crude measure"): the 1-99% range of the fishing pings' positions, so a stray fishing flag does not widen it. With
 // fewer than 5 fishing pings, the whole track in the span.
+// Chosen hauls are framed on their own pings instead, `spans` their windows, every phase whole: a gillnet's setting is
+// rarely flagged fishing, and was left off the map (maintainer, 2026-10-31).
 const FIT_MIN_FISHING = 5;
-function fitTo(a, b, glide = false) {
+// deck.gl takes a view equal to the last one as no change, so Fit after a pan did nothing: a count makes each one new
+let fits = 0;
+function fitTo(a, b, glide = false, spans = null) {
   const tr = S.tr, i0 = lower(tr.t, a), i1 = lower(tr.t, b + 1);
-  const fishing = tr.fishCum[i1] - tr.fishCum[i0] >= FIT_MIN_FISHING;
+  let idx = [];
+  for (const [sa, sb] of spans || []) for (let i = lower(tr.t, sa), j = lower(tr.t, sb + 1); i < j; i++) if (tr.voyage_id[i] >= 0) idx.push(i);
+  const fishing = !idx.length && tr.fishCum[i1] - tr.fishCum[i0] >= FIT_MIN_FISHING;
   // the map draws voyages only, so it frames the window's voyage pings, and the harbour when there are none
   const pick = (i) => !fishing || tr.fishing[i];
-  let idx = [];
-  for (let i = i0; i < i1; i++) if (pick(i) && tr.voyage_id[i] >= 0) idx.push(i);
+  if (!idx.length) for (let i = i0; i < i1; i++) if (pick(i) && tr.voyage_id[i] >= 0) idx.push(i);
   if (!idx.length) for (let i = i0; i < i1; i++) if (pick(i)) idx.push(i);
   const xs = Float64Array.from(idx, (i) => tr.lon[i]), ys = Float64Array.from(idx, (i) => tr.lat[i]);
   if (!xs.length) return;
   xs.sort(); ys.sort();
   const q = (v, p) => v[Math.round(p * (v.length - 1))], lo = fishing ? 0.01 : 0, hi = 1 - lo;
   const x0 = q(xs, lo), x1 = q(xs, hi), y0 = q(ys, lo), y1 = q(ys, hi);
-  // a vessel in port for the whole window gives a single point: give the box a least size, about 2 km
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hx = Math.max((x1 - x0) / 2, 0.02), hy = Math.max((y1 - y0) / 2, 0.01);
+  // a vessel in port for the whole window gives a single point: give the box a least size, about 2 km. Around it a
+  // tenth of its extent on each side (maintainer, 2026-10-31: "a little buffer"), and room for the bar of choices along
+  // the map's top, which wraps on a narrow map, and the legend at its foot
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hx = Math.max(0.6 * (x1 - x0), 0.02), hy = Math.max(0.6 * (y1 - y0), 0.01);
   const { width, height } = $('map').getBoundingClientRect();
-  const pad = Math.min(40, width / 4, height / 4);   // and room for the bar of choices along the map's top
+  const pad = Math.min(30, width / 8, height / 8), bar = Math.min($('mapctl').offsetHeight + 6, height / 4), foot = Math.min(20, height / 8);
   try {
     const v = new deck.WebMercatorViewport({ width: Math.max(width, 200), height: Math.max(height, 200) })
-      .fitBounds([[cx - hx, cy - hy], [cx + hx, cy + hy]], { padding: { top: pad + 24, bottom: pad, left: pad, right: pad } });
+      .fitBounds([[cx - hx, cy - hy], [cx + hx, cy + hy]], { padding: { top: pad + bar, bottom: pad + foot, left: pad, right: pad } });
     view.zoom = Math.min(v.zoom, 11); view.latitude = v.latitude;
     // after a choice on the chart the map glides to its frame, so the eye follows where the window went
-    deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: view.zoom,
+    deckgl.setProps({ initialViewState: { longitude: v.longitude, latitude: v.latitude, zoom: view.zoom, fit: ++fits,
                                           ...(glide ? { transitionDuration: 300 } : {}) } });
   } catch (e) {
     view.zoom = 8; view.latitude = cy;
-    deckgl.setProps({ initialViewState: { longitude: cx, latitude: cy, zoom: 8 } });
+    deckgl.setProps({ initialViewState: { longitude: cx, latitude: cy, zoom: 8, fit: ++fits } });
   }
   if (drawn('hex')) render();   // the hexagons' size follows the zoom
 }
@@ -682,11 +689,17 @@ document.querySelectorAll('#mapctl [data-lay]').forEach((b) => b.addEventListene
 
 // Presets: each sets the window and centres the map on it
 function show(a, b) { if (!S.tr) return; S.winBy = 'preset'; fitTo(Math.max(a, S.tr.t0), Math.min(b, S.tr.t1)); setWindow(a, b); markPicked(); }
-// the window on what was chosen (a trip, hauls, a landing): framed on the map, and the presets no longer outlined
-function frameChoice(a, b, fa = a, fb = b) {
+// the window on what was chosen (a trip, hauls, a landing): framed on the map, and the presets no longer outlined. The
+// map's Fit frames the chosen hauls' pings again (`spans`) until the window is moved.
+function frameChoice(a, b, fa = a, fb = b, spans = null) {
   if (!S.tr) return;
-  S.winBy = 'choice'; fitTo(fa, fb); setWindow(a, b); plot.redraw(false); lanes?.redraw(false); markPicked();
+  S.winBy = 'choice'; S.fitSpans = spans; fitTo(fa, fb, false, spans); setWindow(a, b); plot.redraw(false); lanes?.redraw(false); markPicked();
 }
+// The window around a choice: a little time on either side (maintainer, 2026-10-31: "a little buffer"), the larger of
+// `least` and 15 % of its span, so a long trip or a gillnet's soak is not drawn edge to edge
+const around = (a, b, least) => { const p = Math.max(least, 0.15 * (b - a)); return [a - p, b + p]; };
+// the chosen hauls' windows to frame on the map; a date-only haul's day is framed on its fishing, as a window is
+const haulSpans = (hs) => hs.flatMap((h) => h.wins.filter((w) => w.phase !== 'day').map((w) => [w.a, w.b]));
 // The flow's voyages (curate/ais_voyage.R), oldest first; keyed by year and number, which restarts each year
 const voyages = () => S.voy || [];
 // "Last N trips" is the last N finished trips and then the current one (maintainer, 2026-10-18: "the 'last trip' should
@@ -738,7 +751,7 @@ $('last-trips').addEventListener('click', preset('last', showLastTrips));
 $('ntrips').addEventListener('change', () => { P.n = +$('ntrips').value; preset('last', showLastTrips)(); });
 $('month').addEventListener('click', preset('month', () => show(S.tr.t1 - 30 * DAY, S.tr.t1)));
 $('all').addEventListener('click', preset('range', () => show(S.tr.t0, S.tr.t1)));
-$('fit').addEventListener('click', () => S.tr && fitTo(S.win[0], S.win[1]));
+$('fit').addEventListener('click', () => S.tr && fitTo(S.win[0], S.win[1], false, S.winBy === 'choice' ? S.fitSpans : null));
 $('all-years').addEventListener('click', () => {
   if (!S.vid || !S.years.length) return;
   P.years = 'all';
@@ -778,14 +791,15 @@ async function selectTrip(tid, schema, opts = {}) {
     d = S.trips.find((x) => x.tid === tid);
     if (!d) return;
   }
+  const hadHauls = S.haulSel.size > 0;   // chosen hauls are marked in the table, which is then drawn again
   S.trip = d.tid; S.selKey = `${d.tid}|${d.schema}`; S.haul = null; S.haulOpen = false;
   S.tripSel = new Set([S.selKey]); S.haulSel = new Set();
   showTab('now');
   const [a, b] = [d.a, d.b];   // the trip and the hauls it attends, which the logbook may put outside T1-T2
-  if (!opts.keepWindow) frameChoice(a - HOUR, b + HOUR, a, b);
+  if (!opts.keepWindow) frameChoice(...around(a, b, HOUR), a, b);
   if (opts.open) { if (opts.only) S.expanded = new Set(); S.expanded.add(S.selKey); }
   const row = () => document.querySelector(`#trips tr.trip[data-key="${CSS.escape(S.selKey)}"]`);
-  if (opts.open || !row()) {   // from the chart or the History tab: the row on its page
+  if (opts.open || !row() || hadHauls) {   // from the chart or the History tab: the row on its page
     S.tripPage = Math.floor(tripRows().findIndex((r) => r.key === S.selKey) / TRIPS_PER_PAGE);
     await renderTrips();
   } else markSelected();
@@ -805,9 +819,9 @@ async function selectHaul(h, opts = {}) {
   }
   S.haul = h.key; S.haulOpen = true;
   S.tripSel = new Set(d ? [d.key] : []); S.haulSel = new Set([h.key]);
-  if (S.tr) {
-    const pad = h.dateOnly ? 0 : 30 * 6e4;
-    if (!opts.keepWindow) frameChoice(h.a - pad, h.b + pad, h.a - 2 * pad, h.b + 2 * pad);
+  if (S.tr && !opts.keepWindow) {
+    const [a, b] = around(h.a, h.b, h.dateOnly ? 0 : 30 * 6e4);
+    frameChoice(a, b, a, b, haulSpans([h]));
   }
   await renderTrips();
   if (opts.scroll) document.querySelector(`#trips tr.haul[data-key="${CSS.escape(h.key)}"]`)?.scrollIntoView({ block: 'nearest' });
@@ -820,7 +834,7 @@ function selectLanding(r) {
     const near = voyages().filter((w) => w.b >= r.d - DAY && w.b <= r.d + 2 * DAY)
       .sort((x, y) => Math.abs(x.b - r.d - 12 * HOUR) - Math.abs(y.b - r.d - 12 * HOUR))[0];
     const [a, b] = near ? [near.a, near.b] : [r.d - DAY, r.d + 2 * DAY];
-    frameChoice(a - HOUR, b + HOUR, a, b);
+    frameChoice(...around(a, b, HOUR), a, b);
   }
   markSelected();
   setHash();
@@ -847,7 +861,7 @@ async function chooseTrips(keys, anchor, keepWindow = false) {
   S.trip = an.tid; S.selKey = an.key;
   if (S.tr) {
     const a = Math.min(...ds.map((d) => d.a)), b = Math.max(...ds.map((d) => d.b));
-    if (!keepWindow) frameChoice(a - HOUR, b + HOUR, a, b);
+    if (!keepWindow) frameChoice(...around(a, b, HOUR), a, b);
   }
   await renderTrips(); setHash();
 }
@@ -861,8 +875,8 @@ async function chooseHauls(keys, anchor, keepWindow = false) {
   for (const k of ts) S.expanded.add(k);
   if (ts.length) { const d = S.tripOf.get(ts.at(-1)); S.trip = d.tid; S.selKey = d.key; }
   if (S.tr) {
-    const pad = hs.every((h) => h.dateOnly) ? 0 : 30 * 6e4, a = Math.min(...hs.map((h) => h.a)), b = Math.max(...hs.map((h) => h.b));
-    if (!keepWindow) frameChoice(a - pad, b + pad, a - 2 * pad, b + 2 * pad);
+    const [a, b] = around(Math.min(...hs.map((h) => h.a)), Math.max(...hs.map((h) => h.b)), hs.every((h) => h.dateOnly) ? 0 : 30 * 6e4);
+    if (!keepWindow) frameChoice(a, b, a, b, haulSpans(hs));
   }
   await renderTrips(); setHash();
 }
