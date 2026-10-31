@@ -1,7 +1,8 @@
 # 056 — The user tables as a data repository: frozen releases on an MFRI server, the first for a colleague, with their README, metadata and the historical aggregates
 
 **status:** proposal — written 2026-10-31 at the maintainer's request, restructured the same day around a conventional
-data repository; measured read-only the same day; nothing built; asks a-h (§9) open (TODO 175) · **2026-10-31** ·
+data repository; measured read-only the same day; nothing built; asks a-h (§9) answered the same day, each as
+recommended after a check of the data; the share's path still to be named (TODO 175) · **2026-10-31** ·
 **see:** decision 219 (v0), decisions 240, 257, 261 and 266, plans 039, 041 and 055, TODOs 15, 123, 136, 140, 171 and
 172, `products/user_tables.R`, `docs/data-dict.yaml`, `$FISHYDATA/archive/2026-10-30-records-and-statistics/`,
 `$FISHYDATA/archive/2026-10-30-nephrops-shrimp-factors/`
@@ -14,8 +15,8 @@ the numbers are Claude's. No person has checked the numbers.
 
 **Measured** (by Claude, read-only, 2026-10-31): v0's tables as rerun after decision 265's rebuild, their rows,
 columns and sizes; their Nephrops and shrimp rows by source and decade; the e-logbook's tow times; `sensor_gps` read
-through v0; the historical tables' rows and columns. The scripts are in the session's scratchpad, not kept, and the
-numbers are measured again when a release is built.
+through v0; the historical tables' rows and columns; and the data behind each ask's recommendation (§9). The scripts
+are in the session's scratchpad, not kept, and the numbers are measured again when a release is built.
 **Assumed:**
 - that the colleague reads parquet from R or Python, and has read access to a central MFRI server;
 - that the server holds a plain directory tree, readable over the network share;
@@ -48,18 +49,19 @@ A plain directory tree. Its history is its releases and their index, not a versi
 makes it is in fishycode.
 
 ```
-<root>/                          the repository, on an MFRI server (ask a)
+<root>/                          the repository, a folder on an MFRI share (ask a)
   README.html                    what the repository is, how to read a release and how to cite one
   RELEASES.md                    the index: one row per release
-  latest                         the newest release's id (a link where the share keeps links)
+  LATEST                         a text file: the newest release's id
   releases/
     2026.11.03.1/                a release, never rewritten
       README.html, README.qmd    this release: its approach, tables, joins and what to watch (§4.2)
       CHANGES.md                 what changed since the release before, and why (§2.4)
       manifest.yml               ids, checksums and provenance (§2.3)
       meta.yml                   every table and column (§4.1)
-      logbook/                   trip, station, catch, environment, gear, rigging, sensor_summary; sensor_gps/year=…/
-      historical/                the historical aggregates (§5)
+      logbook/                   trip, station, catch, landed_not_logged, environment, gear, rigging, sensor_summary;
+                                 sensor_gps/year=…/
+      aggregate/                 the historical aggregates: logged_monthly, nephrops_fleet, ices (§5)
       landing/                   landing, catch
       vessel/                    vessel, vessel_year
       reference/                 species, gear, port
@@ -84,9 +86,13 @@ these lines, and the two that cite a subset (§2.3).
 
 - **The maintainer copies the local tree to the server**, since Claude cannot reach MFRI's shares. Each copy is
   checked file by file against the manifest's md5s.
-- **Unchanged files are shared.** Each release is copied with `rsync --link-dest` against the one before, so a file
-  whose md5 did not change is a hard link and costs no space. This matters once AIS joins: 26 GB, of which 127 trail
-  months were unchanged in decision 265's rebuild. It needs hard links on the server's file system (ask a).
+- **On a share, with no links** (ask a). The repository is a folder on an MFRI share the colleague can open. A
+  macOS client generally cannot make hard links over SMB, and its symbolic links do not show on Windows. So:
+  - `LATEST` is a text file;
+  - each release is a full copy, about 1.8 GB.
+
+  Unchanged files hard-linked between releases (`rsync --link-dest`) wait for a Linux host with a shell. That matters
+  once AIS joins: 26 GB, of which 127 trail months were unchanged in decision 265's rebuild.
 - **Every release is kept** for now, at about 1.8 GB each. The rule is revisited when AIS joins.
 - **Not a backup.** The repository is not the store's backup (TODO 15).
 
@@ -155,7 +161,7 @@ So the files are the version, and the provenance explains them. Keeping them is 
   index marks the old one with the defect; it is not deleted, since someone may have used it. A release is withdrawn
   only if it holds what it must not, such as a person's data. Its folder is then deleted and its row in the index
   stays, saying why.
-- **`latest`** names the newest release, for a look. An analysis names its id.
+- **`LATEST`** names the newest release, for a look. An analysis names its id.
 - **A subset is cited as the release and the query**: "release 2026.11.03.1, `logbook/catch`, species 40, 1986-2020".
   The README gives a line of R that writes both into a result.
 - **v0 is not a release.** It is the live candidate (§6), never cited.
@@ -221,25 +227,26 @@ Every count is v0's of 2026-10-30 and 2026-10-31. Sizes follow the links.
 |---|---|---:|---|
 | `logbook/` | `trip` | 2,087,289 | written (decision 219) |
 | | `station` | 7,545,513 | written |
-| | `catch` | 17,184,668 | written; whole weight `catch_round` (decision 257), the Nephrops tails `reconstructed` |
+| | `catch` | 17,184,668 | written; whole weight `catch_round` (decision 257), the Nephrops tails `reconstructed`; `flag` (§3.1) |
+| | `landed_not_logged` | 34,057 | `curated/logbook/catch_flag`'s trip-level flag, on 18,462 trips (§3.1) |
 | | `environment` | 4,338,522 | written |
 | | `gear` (was `gear_part`) | 15,678,761 | `curated/logbook/gear_part` (plan 052) |
 | | `rigging` (was `rigging_part`) | 13,626,197 | `curated/logbook/rigging_part` |
 | | `sensor_summary` | 17,569,309 | `curated/logbook/sensor_summary` |
 | | `sensor_gps/` | 49,324,452 | `curated/logbook/sensor_gps`: the afli GPS logger, 2007-2024, by year; a frozen `once` fix (decision 075) |
-| `historical/` | §5 | | new |
+| `aggregate/` | §5 | | new |
 | `landing/` | `landing`, `catch` | | `curated/landing/` |
 | `vessel/` | `vessel`, `vessel_year` | | `curated/vessel/` |
 | `reference/` | `species`, `gear`, `port` | | `curated/reference/` |
 
-- **Size:** about 1.8 GB without `historical/`: the logbook 614 MB, the logger 1.1 GB, the landings 106 MB. The AIS
+- **Size:** about 1.8 GB without `aggregate/`: the logbook 614 MB, the logger 1.1 GB, the landings 106 MB. The AIS
   tables (26 GB) are left out of the first release (ask c).
 - **The logger** is in, at the maintainer's word (2026-10-31). Plan 052's `vessel_sensor`, its readings long and with
   no positions (TODO 163), would take its place in a later release.
 - **Names** (ask d). `_part` is dropped in the release only. In `curated/logbook/`, `gear.parquet` is each station's
   gear as the pipeline uses it (`gid_used`), so the parts keep their names there. A user then meets two tables called
   `gear`, in `logbook/` (the gear's measured parts) and `reference/` (the code list); the README names both.
-- **No person's data.** No column of v0's logbook, landing or vessel tables, nor of the historical tables in §5, holds
+- **No person's data.** No column of v0's logbook, landing or vessel tables, nor of the aggregate tables in §5, holds
   a kennitala or a person's name (column names read 2026-10-31). The build stops on a column from a list of persons'
   columns, so a later join cannot carry one in. The logbooks are confidential still: the README says the release is
   for use inside MFRI.
@@ -249,14 +256,26 @@ Every count is v0's of 2026-10-30 and 2026-10-31. Sizes follow the links.
 - **The inshore shrimp hauls placed** (TODO 172): 228,259 afli hauls (113.9 kt, mostly the inshore shrimp of
   1972-2003) have no position or square in `curated/logbook/station`. `ops$sigfus.fj_reitir` gives 216,425 of them a
   square and sub-square, basis `derived`. That needs the logbook chain rebuilt by name (step 3).
-- **The tow time on the e-logbook's towed stations** (ask e). `duration_m` is empty on every adb and fs_afladagbok
-  station: their tow time is in the times (`.duration_source` `times`), and decision 240 stores no effort. A user's
-  catch per tow hour then drops the e-logbooks, which hold Nephrops and shrimp since 2020 (170 of 171 Nephrops
+- **The tow time on the e-logbook's towed stations** (ask e, answered). `duration_m` is empty on every adb and
+  fs_afladagbok station: their tow time is in the times (`.duration_source` `times`), and decision 240 stores no effort.
+  A user's catch per tow hour then drops the e-logbooks, which hold Nephrops and shrimp since 2020 (170 of 171 Nephrops
   stations and 4,661 of 4,678 shrimp stations empty). `t2` and `t3` are both filled on 99 % of their towed stations
   (bottom and midwater trawl, Danish seine, dredge). Plan 055 §6 puts the tow time in the column a user reads.
-- **Flagged catch visible:** `curated/logbook/catch_flag` (decisions 216, 217 and 246: a flag, never a correction)
-  is not in v0. It goes on `logbook/catch` as a column, with the rule's name, so a user can leave the flagged rows
-  out (ask g).
+  - **The fill**, in the release only: `duration_m` takes the span `t2` → `t3` (`duration_m_raw`) where
+    `.duration_source` is `times`, on the mobile gears (269,011 stations). `.duration_source` says so on each row.
+  - **Implausible and missing stay empty:** 109 implausible, 1,492 missing.
+  - **The same quantity as afli's:** afli's recorded tow time is that interval on 765,100 of its 765,154 bottom-trawl
+    stations from 2008. Shrimp tows' medians run on across the change of source: afli 592 minutes in 2022, the
+    e-logbook 599 that year and 622-624 in 2024-2025.
+  - **`curated/` is unchanged:** it stores a duration only where the record gives one (decision 240).
+- **Flagged catch visible** (ask g, answered): `curated/logbook/catch_flag` (decisions 216, 217 and 246: a flag,
+  never a correction) is not in v0. Its four kinds are carried two ways:
+  - **On logged catch rows, three kinds,** exactly one per (station, species): `landing_contradicts` 87,856,
+    `largest_landing_exceeded` 278 and `repeated_digits` 2. They become a `flag` column on `logbook/catch`, empty
+    where none, so a user can leave the flagged rows out.
+  - **On no catch row, `landed_not_logged`** (34,057 rows on 18,462 trips): a trip's landing holds catch its
+    logbook does not, with no station or species. It becomes `logbook/landed_not_logged`, keyed by trip, with its
+    witness and the trip's landed kilograms.
 
 ## 4. The metadata and the READMEs
 
@@ -266,12 +285,12 @@ Every count is v0's of 2026-10-30 and 2026-10-31. Sizes follow the links.
   its description, grain and keys; each column with its description, type, unit, examples or range, and the
   vocabulary of a code or a basis.
 - **Composed, not copied.** A release column that is a curated column takes the curated column's text from
-  `docs/data-dict.yaml`. `products/repository/meta.yml` holds only what the releases add: their tables'
-  descriptions, the renamed tables, and the columns the user tables make (`T1_from`, `gid_used`, the tow time, the
-  historical tables' columns). One text per column, so the two cannot drift. The build stops on a release column
-  that has no description.
+  `docs/data-dict.yaml`. `products/repository/meta.yml` holds only what the releases add: their tables' descriptions,
+  the renamed tables, and the columns the user tables make (`T1_from`, `gid_used`, the tow time, `flag`, the aggregate
+  tables' columns). One text per column, so the two cannot drift. The build stops on a release column that has no
+  description.
 - **Checked** by the data-dict CLI: `validate-spec` clean, and `validate-data` on the release's own files.
-- **Lineage and coverage** (plan 055 §4), per table and period, go into the historical tables' entries now, and into
+- **Lineage and coverage** (plan 055 §4), per table and period, go into the aggregate tables' entries now, and into
   the others when plan 055's ask f is answered.
 
 ### 4.2 The READMEs
@@ -327,15 +346,21 @@ assistance.
    - the tow time on the e-logbooks, and effort as the analyst's choice (decision 240);
    - the landings hold foreign vessels' landings in Iceland (`vessel.foreign`), until plan 055's ask d says whose
      total is meant;
-   - the historical tables overlap the logbook in places (§5), and must not be added to it;
+   - the aggregate tables overlap the logbook in places (§5), and must not be added to it;
    - the afli GPS logger (`sensor_gps`):
      - its positions are interpolated from the AIS track of 2026-10-09;
      - `w_lon`/`w_lat` are the logger's own, and faulty (`afli_coords.yml`);
      - from mid-2020 the logger writes whole degrees and whole m/s (`logger_whole_degrees.yml`);
      - it is afli's alone, so its `.sid` carries no schema;
      - join it to the AIS fixes by `vid` and time, in the analysis.
-7. Known gaps, each with its record: the monthly summaries outside the logbook (TODO 136), overlapping trips (TODO
-   102), the handline trips of 2020-09 to 2021-03 that the tour app does not fill (declared, decision 264).
+7. Known gaps, each with its record:
+   - the monthly summaries outside the logbook (TODO 136);
+   - overlapping trips (TODO 102);
+   - the handline trips of 2020-09 to 2021-03 that the tour app does not fill (declared, decision 264);
+   - 22,588 stations (0.3 %) whose vid is not in the vessel table: 19,960 of the lumpfish logbook's of 1980-2015,
+     1,537 of afli's, 1,019 with a negative e-logbook vid, and 72 other e-logbook stations;
+   - the e-logbook's 77 Nephrops stations of 2021-2024, which tow a median 24-90 minutes against afli's 313-360 in
+     2017-2021: found 2026-10-31, not explained.
 8. How to report a problem, and where the next release's changes are listed.
 
 ## 5. The historical aggregates
@@ -362,8 +387,13 @@ So:
 They have stayed out of the user tables because the plans that would place them are parked or unbuilt: plan 041 for
 the summaries, plan 039's period 0 for the landings.
 
-**In the first release** (ask f): each source becomes one table in `historical/`, in the release's names and units,
-kept apart from `logbook/` and `landing/`, with its quantity, lineage and coverage in `meta.yml`.
+**In the first release** (ask f, answered): the logged summaries, the fleet's Nephrops and ICES, each one table in
+`aggregate/`, in the release's names and units, kept apart from `logbook/`, with its quantity, lineage and coverage
+in `meta.yml`. The folder is `aggregate/` rather than `historical/`, since ICES runs to 2019.
+- **In the vessel table:**
+  - `gamall_humar`: all but its 804 fleet rows and 2 others;
+  - `gomul_raekja`: all but 35 rows with no vessel and 8 not found;
+  - `gomul_dragnot`: none, since its numbers are the table's own boat codes.
 - `logged_monthly`: the three summary tables from `ops$sigfus`, the source afli loaded them from, so the seine's 937
   rows are in.
   - Every row but the fleet's Nephrops; the seine's boat codes as recorded, beside an empty `vid`.
@@ -371,25 +401,25 @@ kept apart from `logbook/` and `landing/`, with its quantity, lineage and covera
   - A column `repeats_hauls` flags the cells whose kilograms afli's hauls already hold. That is plan 041 §3.3's rule
     as a flag, not a drop: 2,501 cells and 22.5 kt in afli's rows, mostly the Nephrops of 1986-1999.
 - `nephrops_fleet`: the fleet's Nephrops of 1960-72, quantity unknown (plan 055 ask g).
-- `landed_monthly_6681`, `landed_monthly_8292` and `landed_port_gear_8293`: one table per source, as each partitions
-  its landed quantity. Each holds the weight as recorded and the whole weight with its factor where the source gives
-  one (the register's Nephrops tails × 3.25, decision 266).
-- `ices`: Iceland's rows of the statistic. The README says it is a witness, compiled from the landings, never a check
-  on them. It includes the 2018 Nephrops total, 86 times the landings, flagged.
+- `ices`: Iceland's rows of the statistic, Nephrops (1959-2019) and shrimp (1936-2019) among them. The README says
+  it is a witness, compiled from the landings from 1966, never a check on them. It includes the 2018 Nephrops total,
+  86 times the landings, flagged.
 
-When plan 041 or plan 039's period 0 is built, its table moves into `logbook/` or `landing/` in the next release:
-a MAJOR schema change (§2.3). The README says which overlaps a user must not add:
-- the summaries flagged `repeats_hauls`, against `logbook/catch`;
-- `landed_monthly_8292`, against `landed_port_gear_8293`;
-- `ices`, against everything.
+**The landed tables wait for plan 039's period 0:** the 1966-81 weighing register, vor to 1992-08 and
+`landed_catch_pre94`. fiskifelagid's study is parked (TODO 123). Only 1,239 of the register's 2,352 vessel numbers are
+in the vessel table, against 2,441 of `landed_catch_pre94`'s 2,456. So the register's numbers need a reading before a
+user joins them to a vessel.
+
+When plan 041 is built, the summaries move into `logbook/` in the next release: a MAJOR schema change (§2.3). The
+README says which overlaps a user must not add: the summaries flagged `repeats_hauls`, against `logbook/catch`; and
+`ices`, against everything.
 
 **In the target chain:**
 - `sources/ops_sigfus/convert.R` stages the summaries and `fj_reitir` (preprocessing);
-- `sources/fiskifelagid/convert.R` and `sources/vor/convert.R` stage the three landed tables (preprocessing), reading
-  the draft overlay of `$FISHYDATA/archive/2026-10-fiskifelagid/` (plan 039);
-- `curate/historical.R` writes `curated/historical/`, `repeats_hauls` included: it reads the summaries and afli's
+- `sources/ops_einarhj/convert.R` stages Iceland's rows of `ices_landed_catch` (preprocessing);
+- `curate/aggregate.R` writes `curated/aggregate/`, `repeats_hauls` included: it reads the summaries and afli's
   hauls, two sources, so it is in `curate/`;
-- `products/user_tables.R` takes `curated/historical/` like any other curated table.
+- `products/user_tables.R` takes `curated/aggregate/` like any other curated table.
 
 ## 6. Building and publishing
 
@@ -429,19 +459,20 @@ a MAJOR schema change (§2.3). The README says which overlaps a user must not ad
 1. The asks answered, in this plan.
 2. **Code**, nothing built:
    - `R/write_curated.R`: the stamps `fd.ramb` and `fd.duckdb`, and `curated_provenance()` printing them;
-   - `user_tables.R`: the names, the tow time, `catch_flag`, the persons' check, `historical/`;
-   - the three adapters and `curate/historical.R`;
+   - `user_tables.R`: the names, the tow time, the `flag` column and `landed_not_logged`, the persons' check,
+     `aggregate/`;
+   - the two adapters and `curate/aggregate.R`;
    - `R/release.R`;
    - `products/repository/`;
    - the targets and their side headers;
    - the tests.
-3. **TODO 172's placing** coded, and the logbook chain, the adapters and `curated/historical/` built in a scratch
+3. **TODO 172's placing** coded, and the logbook chain, the adapters and `curated/aggregate/` built in a scratch
    store and compared with the live store's (every station not placed unchanged). On the maintainer's go, built by
    name, with fingerprints before and after: every curated target the release reads, so that each of its files
    carries the new stamps. The AIS targets downstream of the logbook are left outdated, since the release does not
    read them.
 4. **The candidate** built by targets, and `user_tables_check` read: every outcome, every kilogram.
-5. **Published:** `publish_release()` writes the local tree; the maintainer copies it to the server, and the copy is
+5. **Published:** `publish_release()` writes the local tree; the maintainer copies it to the share, and the copy is
    checked against the manifest.
 6. **Recorded:** a decision on how the repository is versioned and published (TODO 140's first half), and
    `AGENTS.md`'s layout row for `products/`. The colleague's feedback goes into TODO 140 as the next release's list.
@@ -451,36 +482,41 @@ a MAJOR schema change (§2.3). The README says which overlaps a user must not ad
 - It makes no R package: the repository is read as files (§0). A reader package over it may come later.
 - It follows no outside standard to the letter (§2).
 - It does not design the user tables after v0 (TODO 140) or write plan 055's analyst view into the grammar (TODO 171).
-- It does not put the monthly summaries into the logbook (plan 041, parked) or build the landings' period 0 (plan
-  039): their tables wait in `historical/`.
+- It does not put the monthly summaries into the logbook (plan 041, parked): they wait in `aggregate/`.
+- It does not build the landings' period 0 (plan 039), so the landed tables of 1966-1993 are not in the release.
 - It does not release the AIS tables, the catch on the fixes (decision 261) or the effort map.
 - It sends nothing outside MFRI.
 
-## 9. Asks
+## 9. Asks, answered
 
-a. **The server:** which one, and which path for `<root>`? Does its file system keep links and hard links (§1.1,
-   §1.3)? The maintainer copies to it, or a terminal tab does on the maintainer's machine.
+Answered by the maintainer on 2026-10-31, each as recommended, after Claude checked the data behind each
+recommendation (read-only, the numbers in the sections named).
 
-b. **The versioning** (§2):
-   - the id `YYYY.MM.DD.n` with a schema version `MAJOR.MINOR` beside it (recommended), or a single number (`v1`,
-     `v1.1`)?
-   - `CHANGES.md`'s three causes, new data, method and correction (recommended)?
-   - releases on demand while there is one user (recommended), or a fixed rhythm from the start?
+a. **The server:** a folder on an MFRI share the colleague can open, with no links. `LATEST` is a text file and each
+   release a full copy (§1.3). The share's path is still to be named, before step 5.
 
-c. **The contents:** logbook (with `sensor_gps`), historical, landing, vessel and reference, with the AIS tables left
-   out (recommended), or AIS too?
+b. **The versioning:** the id `YYYY.MM.DD.n` with a schema version `MAJOR.MINOR` beside it; releases on demand;
+   `CHANGES.md` classing each change as new data, method or correction (§2). The check: in one week v0's trips rose
+   12.6 % (1,853,260 to 2,087,289), its stations 3.3 % and its catch rows 1.1 %. Nearly all of that came from new
+   sources read (decisions 253-264), not from new records, so the cause of a change says more than a number.
 
-d. **The names:** `gear` and `rigging` in the release, while `curated/` keeps `_part` because its `gear.parquet` is
-   taken (recommended)? Or renamed in `curated/` too, with the station's gear renamed first? And `sensor_summary` as it
-   is?
+c. **The contents:** logbook (with `sensor_gps`), aggregate, landing, vessel and reference; no AIS (§3). The check:
+   - every trip's landing is found;
+   - every species and gear in the logbook is in the reference tables;
+   - every catch row has its station;
+   - the one gap is the 22,588 stations whose vid is not in the vessel table, listed in the README (§4.2).
 
-e. **The tow time:** `duration_m` filled from `t2` to `t3` on the e-logbook's towed stations, basis `derived`
-   (recommended; plan 055 §6), or left empty with the README pointing to `calc_effort()` (decision 240)?
+d. **The names:** `gear` and `rigging` in the release; `curated/` keeps `gear_part` and `rigging_part`, since its
+   `gear.parquet` is each station's gear (`gid`, `gid_used`, `metier`, `gear_code`) (§3).
 
-f. **The historical tables:** the six tables of §5 in `historical/`, apart from the logbook and the landings
-   (recommended)? Or only the Nephrops and shrimp sources? And the name: `historical/`, or `aggregate/`?
+e. **The tow time:** filled in the release from the times, on the e-logbook's mobile gears; `curated/` unchanged
+   (§3.1).
 
-g. **Flagged catch:** `catch_flag` as a column on `logbook/catch` (recommended), or a table of its own?
+f. **The aggregate tables:** the logged summaries, the fleet's Nephrops and ICES, in `aggregate/`; the landed tables
+   wait for plan 039 (§5).
 
-h. **The candidate:** rebuilt by targets on every build, published by hand (recommended), or the whole release by
-   hand?
+g. **The flags:** a `flag` column on `logbook/catch` for the three kinds that sit on catch rows, and
+   `logbook/landed_not_logged` for the fourth (§3.1).
+
+h. **The candidate:** `products/user_tables.R` as a target, rebuilt on every build (it ran in 14 seconds on
+   2026-10-31); publishing by hand, behind the gate (§6).

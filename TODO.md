@@ -1396,9 +1396,10 @@ column, so no merged table changes.
 **check:** the labels follow a written tie-break, and the file built twice is identical.
 
 ## 175. The user tables as a data repository: its first release, for a colleague, with the historical aggregates
-**status:** open · **needs: maintainer** — plan 056's asks a-h, then the go for the rebuild by name of what the
-release reads · **see:** `curate/plans/056-a-first-release-of-the-user-tables.md`, decision 219, TODOs 123, 136, 140,
-171 and 172, plans 039, 041 and 055
+**status:** open · **needs: maintainer** — the share's path, then the go for the rebuild by name of what the
+release reads (plan 056's asks a-h answered 2026-10-31) · **see:**
+`curate/plans/056-a-first-release-of-the-user-tables.md`, decision 219, TODOs 123, 136, 140, 171 and 172, plans 039,
+041 and 055
 
 The maintainer, 2026-10-31: a preliminary release of the user tables for an MFRI colleague working on Nephrops and
 shrimp, as a test case, on a central MFRI server; the historical aggregated data too; in the target chain; a metadata
@@ -1406,9 +1407,9 @@ YAML and a README; no `_part` in the names; fishycode's and ramb's commits in th
 not an R package. Plan 056 makes the repository a directory tree of frozen releases read as parquet files, v0 the
 candidate rebuilt by targets, and publishing a step by hand behind a gate. Before the first: the inshore shrimp
 hauls placed (TODO 172), the e-logbook's tow time where a user reads it, `catch_flag` on the catch, and ramb's
-commit stamped on every curated file. The historical sources (afli's monthly summaries from `ops$sigfus`, the
-fleet's Nephrops, the old weighings, vor, `landed_catch_pre94`, ICES) go in `historical/`, one table each, apart from
-the logbook and the landings until plans 041 and 039 place them.
+commit stamped on every curated file. afli's monthly summaries from `ops$sigfus`, the fleet's Nephrops and ICES go in
+`aggregate/`, one table each, apart from the logbook until plan 041 places them; the landed tables of 1966-1993 wait
+for plan 039's period 0.
 
 **check:** a release published under `products/published/`, checked on the server against its manifest; its
 `meta.yml` clean under `validate-spec` and `validate-data`; a decision records how a release is versioned and
