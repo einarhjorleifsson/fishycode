@@ -121,7 +121,7 @@ It is not yet on the share: the path is not decided (TODO 175).
   The flag fires only where the landings hold the species that year: at first it fired on every 0.
 - **The e-logbook's tow time is afli's quantity.** afli's recorded tow time is the span `t2` → `t3` on 765,100 of its
   765,154 bottom-trawl stations from 2008, and shrimp tows' medians run on across the change of source.
-- **Listed in the release's known gaps, not explained:**
+- **Listed in the release's known gaps, not explained** (the first is explained in decision 269):
   - 22,588 stations whose vid is not in the vessel table, most of them lumpfish-logbook boats of 1980-2015;
   - the e-logbook's Nephrops tows, a median of 91 minutes against afli's 5-6 hours.
 

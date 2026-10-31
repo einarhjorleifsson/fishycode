@@ -1060,7 +1060,8 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   design; a user's catch per tow hour loses the e-logbooks.
 
 How a release is versioned and published is decided and built (plan 056, decision 268): the check's first half is
-met. The colleague's feedback on release 2026.10.31.1 comes here, as the next release's list.
+met. The colleague's feedback on release 2026.10.31.1 comes here, as the next release's list, with the vids the
+vessel table lacks (TODO 177).
 
 **check:** a decision records how a product is versioned, and the plan for the user tables is written.
 
@@ -1418,3 +1419,23 @@ keeps one line.
 
 **check:** a pilot page (Nephrops in the logbook and the landings) answers the question in a fresh context from the
 skill alone, and the maintainer has chosen a skill of its own or kb-hafro-kerfi; or the wish dropped with a decision.
+
+## 177. The old vessel numbers: the lumpfish logbook's own boat numbers until 1991, and the other vids the vessel table lacks
+**status:** open · **needs: maintainer** — the fate of the lumpfish numbers until 1991 in the next release, the rule
+for 1991, and whether anyone at MFRI holds the 1980s lumpfish boat list · **see:** decisions 263, 268 and 269, TODO 140
+
+Decision 269 found two things about release 2026.10.31.1's 22,588 stations whose vid is not in `vessel/vessel`:
+- None of them carries a number the register ever held. The register covers every hull the logbooks name.
+- The old part is the lumpfish logbook, which numbered its own boats until 1991: 20000 + x in 1980-81, x in 1982-90,
+  both in 1991. Of its 100,381 stations up to 1991, 15,669 are in the gap. Most of the rest sit silently on a hull the
+  number does not name. The merge's one-source rule left out 243 t of roe on 1,895 vessel-days of those years.
+
+For the next release (TODO 140), in the merge, with the logged number kept:
+- the lumpfish numbers up to 1991 out of `vid`, into a column of their own, and out of the one-source rule;
+- the 9 renumbered open boats through a reviewed table in `overrides/`;
+- kvoti's 39 unregistered boats into the vessel table, as a register of their own;
+- the software-test vessels and the quota entries left out, as duplicates are, and vid 0 and the divers flagged;
+- the README's gap line replaced by decision 269's breakdown.
+
+**check:** the next release's README places every station whose vid is not in the vessel table in an outcome, and no
+lumpfish station before 1992 carries a register vid without a witness.
