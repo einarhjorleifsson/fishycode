@@ -1389,3 +1389,28 @@ with its manifest, `CHANGES.md`, `meta.yml`, `meta.html` and README, and the rep
 a), checked file by file against the manifest's md5s; and the colleague's use, whose feedback goes to TODO 140.
 
 **check:** the release on the share, checked against its manifest there, and the colleague told where it is.
+
+## 176. A knowledge skill for MFRI colleagues, built from the record on kb-hafro-kerfi's pattern
+**status:** parked (a wish, the maintainer, 2026-10-31) · **needs: maintainer** — a skill of its own or pages in
+kb-hafro-kerfi (the software team's), and which confidentiality line it keeps · **see:** kb-hafro-kerfi's `SKILL.md`
+and `about.md` (the org's skill catalog), TODO 175, plan 056
+
+The aim: a colleague asks Claude on claude.ai, say "What can you tell me about Nephrops recordings of catch in both the
+logbook and landings", and is answered from what fishycode has learned of the sources, each claim stamped to its
+record line. The record cannot be handed over as it stands: 273 decisions, 61 plans and 48 corrections in the order
+things happened, superseded facts beside what replaced them (the tails' factor 3.3, then 3.25 in decision 257; the
+correction's status line still said the live store waited for a rebuild a day after the table was built there, fixed
+2026-10-31). It needs a topic layer, one page per source, species or variable, true now, built as kb-hafro-kerfi is:
+stamped claims, a hook index with a lookup, `OPEN.md` for the known unknowns, `about.md`, `gaps.md`.
+
+Tried on the Nephrops question on 2026-10-31, read-only: the record answers it (correction `logbook_nephrops_tails`,
+decisions 240 and 257, plans 050 and 051), and kb-hafro-kerfi's `afli-layers.md` holds the other half (afli's x 3.3 in
+2007-2018), not the landings' 3.25 or the tails logged since 2019. Ideas carried: pages generated from the record and
+checked as `check_bookkeeping()` checks it (every stamp resolves, none cites a superseded record); versioned with plan
+056's releases, so an answer describes the tables a colleague opens; knowledge, not data, pointing to the release for
+amounts. TODO 175's colleague (Nephrops and shrimp) is the natural first user. kb-hafro-kerfi keeps vessel numbers away
+from logbook figures (Regulation 307/2023, art. 2), stricter than plan 001 §3's three-vessel answer: a shared skill
+keeps one line.
+
+**check:** a pilot page (Nephrops in the logbook and the landings) answers the question in a fresh context from the
+skill alone, and the maintainer has chosen a skill of its own or kb-hafro-kerfi; or the wish dropped with a decision.

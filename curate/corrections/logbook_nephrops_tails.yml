@@ -1,6 +1,6 @@
 id: logbook_nephrops_tails
 title: four vessels log Nephrops as tails under the whole-animal code; their whole weight is the tail weight x 3.25
-status: implemented 2026-10-29 (plan 050 step 5), held for plan 051; its factor read from the factor table since 2026-10-30 (plan 051 step 4, plan 054 step 2c), run in a scratch store the same day; the live store waits for plan 054's rebuild A
+status: implemented 2026-10-29 (plan 050 step 5), held for plan 051; its factor read from the factor table since 2026-10-30 (plan 051 step 4, plan 054 step 2c), run in a scratch store the same day; in the live store since 2026-10-31 (nephrops_tails.parquet's fd.built, at 4627437)
 applies_to:
   - curated/logbook/nephrops_tails.parquet          # new: every Nephrops station of a declared vessel and period, its trip's outcome and factor
   - curated/logbook/catch_by_species_station.parquet # catch_round = logged x the tails' factor, round_basis reconstructed
