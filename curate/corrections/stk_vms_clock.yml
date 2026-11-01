@@ -25,5 +25,5 @@ why_it_went_unnoticed: >-
   for 30 pairs. Where both streams are heard, the whack removes many of the hour-off VMS pings as impossible jumps: the
   few it keeps are the ones that happen to fit, which made one clock look as if it flipped (decision 271's first look).
 repair: >-
-  Open (TODO 180): a lag per VMS vessel-month from the per-ping shift where it can be judged, and a flag where it cannot;
-  or leave the VMS stream's positions out of what derives across pings where the AIS stream is heard.
+  Chosen by the maintainer 2026-11-01: a lag from the per-ping shift where it can be judged, a flag where it cannot.
+  Designed in plan 060 (TODO 180), not built.

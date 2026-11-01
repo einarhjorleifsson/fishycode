@@ -1454,9 +1454,9 @@ lumpfish station before 1992 carries a register vid without a witness.
 
 
 ## 180. STK's VMS clocks: minutes to an hour off in some vessel-months, most of them not repaired
-**status:** open · **needs: maintainer** — the repair (a lag from the per-ping shift, a flag, or the VMS stream left
-out where AIS is heard) · **see:** `curate/corrections/stk_vms_clock.yml`, decision 271 ("Left"),
-`$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (README), plan 059
+**status:** open · **needs: maintainer** — plan 060's asks a-f (the maintainer chose the repair 2026-11-01: a lag
+from the scan, a flag where it cannot be judged; "plan it first") · **see:** plan 060,
+`curate/corrections/stk_vms_clock.yml`, decision 271 ("Left"), `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (README), plan 059
 
 Measured 2026-11-01 by Claude (AI), not checked by a person: each VMS ping of a vessel with an AIS stream (3.48 M)
 against its own AIS track, the shift that puts it there. Most units are on time (6,947 vessel-months, 0.8 min). 43
@@ -1465,4 +1465,7 @@ vessel-months of 14 vessels are an hour off (33-118 min, mostly 2007-2009, the c
 vessel-months its clock check could measure: 3,744 hour-off and 63,257 minute-off VMS pings are in the store unmoved.
 2.45 M VMS pings (38,203 vessel-months) have no moving AIS track to judge them by.
 
-**check:** the maintainer's choice built and in the store, the scan rerun, and a decision record.
+Plan 060 (2026-11-01): `rb_create_ping_lags(method = "track")` in ramb, the check by week then month for STK's own
+streams, `lag_basis` `track`, the lone VMS months `unmeasured`, a rebuild from the check down.
+
+**check:** plan 060 built and in the store, the scan rerun on it, and a decision record.
