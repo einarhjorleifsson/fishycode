@@ -390,14 +390,14 @@ The reload is a labelled test: its receipt lag marks the truth, and is never a f
 - zigzags judged over a window;
 - each leg's displacement against its reported speed and course.
 
-Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported (`forward`
-99.7 %, `vmask` 54 %), and 2,780 kept pings are contradicted; 63 % of the supported removals are cross-feed legs within
-0.3 nm. A prototype re-run on 2016 and 2026 (2026-10-22; `$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`):
-with the defaults it equals `ping_whacky` ping for ping; a distance floor between feeds (0.3 nm) frees 22 % (2016) and
-80 % (2026) of the false removals and loses no true one (0.5 nm: 24 % and 97 %); a two-sided forward stage does almost
-nothing. Its ramb changes, opt-in arguments `feed`, `noise_nm`, `evidence`, are uncommitted in `~/R/Pakkar/ramb_wt_whack`
-(branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer. Its §8c: the STK-ASTD
-offset on moving vessels is a time lag that varies by year, so no single floor fits every year: plan 059 aligns first.
+Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported, 2,780 kept pings
+contradicted; 63 % of the supported removals are cross-feed legs within 0.3 nm. The prototype
+(`$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`, its README §10 five decisions; ramb branch
+`whack-feed-aware-evidence`, uncommitted in `~/R/Pakkar/ramb_wt_whack`, off 2026.10.19.3) equals `ping_whacky` with
+the defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of the false removals. Plan 059 step 6
+(`$FISHYDATA/archive/2026-11-01-whack-floor-aligned/`): aligning alone frees 96 % (2026) and 57 % (2016) of that; on
+aligned pings 0.3 nm still frees 71 % and 13 % of what is left, loses no true removal, keeps 20,759 and 6,457 cross-feed
+legs within it. Recommended: 0.3 nm with the aligned times at step 8, the branch moved onto ramb 2026.11.01 first.
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
 (the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
@@ -1480,7 +1480,9 @@ pass), pushed and installed from GitHub as 2026.11.01 (2026-11-01). Step 3 is bu
 (target `check_ais_feed_clock`), equal to step 1 but at the 30-pair bound. The tag pass (§3) is a tested candidate in
 the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written: STK's time by stream and period in
 `dump/oracle/meta/stk.yml`, with assertions `check_data_dict()` tests, and astdB's speed `recorded` in the union's code.
-Next: steps 6-7, then step 8: the candidate adopted and the rebuild, which can carry TODO 179's port-call fix.
+Steps 6 and 7 are run as studies (2026-11-01): TODO 88's floor kept at 0.3 nm with the aligned times; astd's speed
+stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Next: step 8, the candidate adopted,
+the central difference built, and the rebuild, once TODO 179's and TODO 88's ramb branches are on ramb's main.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
@@ -1498,5 +1500,12 @@ vessel-year boundary in one outcome: 9,352 of the 25,871 boundaries spent in por
 `fishing_flow` puts 22,951 h on them (`fishing` 109 h). The fix drafted: keep the calls that overlap the window, merge
 a vessel's calls at one port across years and renumber them; rebuild `port_call` → `ais_voyage` → the trail and what is
 keyed on `voyage_id`.
+
+**Built and tested on a scratch store** (2026-11-01, `$FISHYDATA/archive/2026-11-01-port-call-new-year-fix/`): ramb
+branch `port-call-chunks`, 7598da0 (2026.11.01.1: `rb_create_port_calls(window = )`, `rb_merge_port_calls()`; 240
+tests pass), and fishycode branch `claude/nice-spence-7dd95d`, 0c644e4 (`curate/port_call.R`, AGENTS.md); neither
+merged, pushed or installed. 1,623,564 of 1,623,626 calls equal a run on each vessel's whole series (81 differ,
+explained); 22,988,131 of the 22,988,188 lost pings now in a port call; voyage 1 starts later in 6,183 vessel-years.
+Next: the branches merged and ramb installed, then the rebuild with plan 059's step 8.
 
 **check:** the fix built, the rebuild's fingerprints compared, no port call cut at New Year, and a decision record.

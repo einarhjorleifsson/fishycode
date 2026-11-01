@@ -3,9 +3,8 @@
 **status:** partly built — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan
 058's study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2
 built in ramb (2026.11.01, installed), step 3 built as the target `check_ais_feed_clock`, step 4 written into STK's
-dictionary overlay; the tag pass (§3) and the
-rebuild not built; asks a-h (§7) answered by the maintainer 2026-11-01, each as recommended, b amended by step 5
-(TODO 178) ·
+dictionary overlay, steps 6 and 7 run as studies; the tag pass (§3) and the rebuild not built; asks a-h (§7)
+and i answered by the maintainer 2026-11-01, each as recommended, b amended by step 5 (TODO 178) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
 whack's distance floor, §8c), TODO 117 (`stk_receipt`), plan 048 (STK's streams into the flow), plan 013 (ramb's step
 0), `curate/ais_ping_union.R`, `curate/ais_ping_tag.R`, `curate/ais_ping_clean.R`,
@@ -185,9 +184,25 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    (2026: 12.5 to 2.7 %); the duplicate flag catches 69-76 % of the late copies, but 3,500-14,300 copies a year that
    were on time are pushed apart, so a lag per vessel and month is the bulk and a copy's own lag the rest; the 2026
    survey's labels gain 4 points (both ends within 5 min, 46.7 to 50.9 %).
-6. **TODO 88 re-measured on aligned pings:** its floor kept, shrunk or dropped.
+6. **TODO 88 re-measured on aligned pings:** its floor kept, shrunk or dropped. *Run 2026-11-01
+   (`$FISHYDATA/archive/2026-11-01-whack-floor-aligned/`):* the prototype's variants on the candidate's aligned pings for
+   2016 and 2026, scored against decision 164's witness; unaligned, they equal the prototype and `ping_whacky` ping for
+   ping. The floor's gain was mostly the clock (2026: 74,510 of the 77,756 false removals it freed; 2016: 3,645 of
+   6,396). Aligned, 0.3 nm still frees 6,800 (2026) and 3,068 (2016) net of the 9,622 and 23,627 false removals left,
+   takes back no true removal, and keeps 20,759 and 6,457 cross-feed legs within the floor; 0.5 nm adds 1,141 and 466
+   for 4,326 and 1,662 more legs. Recommendation: keep the floor at 0.3 nm with the aligned times (step 8), as the
+   tolerance for what alignment leaves between streams; re-measure once STK's own stamps (TODO 117) are in.
 7. **astd's speed stamp**, the midpoint or a central difference within astd, measured on one year's effort by gear
-   before it is adopted.
+   before it is adopted. *Measured 2026-11-01 on 2019 (`$FISHYDATA/archive/2026-11-01-astd-speed-stamp/`, its README):*
+   today's forward difference against a backward and a central difference within astd and the forward one with long
+   intervals left out. Hours fishing move little: `fishing_flow` +0.01 % (backward) and −0.15 % (central), about 1 % of
+   the hours changing hands each way, ±1 % by gear but for small cells; leaving out speeds over intervals above 10 or
+   30 min costs 0.5-1 % of the hours, 3-10 % in the offshore gillnet and trawl fisheries. On the 2019 survey the stamp
+   is a timing offset of half an astd interval either side: decision 270's model places both tow ends within 5 min for
+   51.5 % today (D −3.3, E −0.8 min), 54.7 % central (D −2.7, E +0.5) and 60.8 % backward (D −1.5, E +1.6, its lag
+   cancelling the model's run-in). Recommended: the central difference within astd, the span carried beside it, no
+   flag that leaves a speed out; emodnet's derived speed (`rb_calc_speed()`, backward) on the same stamp. Agreed by the
+   maintainer (ask i, 2026-11-01): built in `curate/ais_ping_union.R` and adopted with step 8's rebuild.
 8. **The rebuild from `ais_ping_union` down**, bundled with TODO 88, plan 048 and TODO 117's `stk_receipt` (the same
    stages), clocks first.
 9. **A decision record;** AGENTS.md's Layout row for `curate/` names the check and the alignment.
@@ -200,7 +215,7 @@ Find true UTC; correct a feed's absolute time; touch the source adapters; change
 ## 7. Asks
 
 **Answered** by the maintainer, 2026-11-01, each as recommended below; b as amended after step 5 (a copy's own lag
-before the month's). h is in `AGENTS.md` under Rules.
+before the month's); i after step 7 ("Yes, central"). h is in `AGENTS.md` under Rules.
 
 | | Ask | Recommendation |
 |---|---|---|
@@ -212,3 +227,4 @@ before the month's). h is in `AGENTS.md` under Rules.
 | f | The columns | `time` harmonized, the delivered time, the lag and its basis, the stream beside (names to TODO 127) |
 | g | Where the generic step lives | ramb, step 0 of the one flow |
 | h | A rule in AGENTS.md now, before anything is built: a speed, turn or window is derived within one stream, never across streams whose clocks may differ | yes: it costs nothing and guards every new derivation |
+| i | astd's speed stamp (step 7) | the central difference within astd, the time it spans beside it; no flag that leaves a speed out; emodnet's derived speed on the same stamp |

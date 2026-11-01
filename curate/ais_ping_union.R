@@ -237,9 +237,9 @@ gps_src <- function(YR) {
 # its origin, which matters for coverage gap analysis. Then the gps feed. Every ping says
 # where its position and its speed came from (pos_basis, speed_basis): stk, astdB and gps carry
 # the source's own measured speed (astdB's is the feed's field, beside its cog and heading; plan
-# 059 step 4), astd and emodnet derive it from the distance to the next ping. `speed` is NA where
-# a value is no vessel speed (outside 0-40 kn) or the logger placeholder; `speed_raw` keeps the
-# value as given.
+# 059 step 4); astd derives it from the distance to the next ping, emodnet from the previous one
+# (rb_calc_speed(), the first ping from the next; plan 059 step 7). `speed` is NA where a value is
+# no vessel speed (outside 0-40 kn) or the logger placeholder; `speed_raw` keeps the value as given.
 SPEED_MAX <- 40
 d_for <- function(YR) {
   ais <- union(stk_src(YR)  |> mutate(provider = "stk"),
