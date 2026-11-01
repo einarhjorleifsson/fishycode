@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- The place-name explorer (plan 045 step 1, its first, read-only part; plan 044). Served by
+     products/place_names/server.R or place_names(). The gazetteer's names in a list that filters, the chosen name's
+     footprint, places and occurrences on the map, and its spellings, synonyms, parent and children beside it. Internal
+     use only: Trackwell's and the plotters' names are not public. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Place names</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  /* text a quarter larger than the vessel overview's (maintainer, 2026-11-01: "my eyes are getting old") */
+  :root { --bg: #f6f7f9; --panel: #fff; --ink: #16202a; --muted: #5d6b78; --line: #dde2e7; --accent: #1f6feb;
+          --warn: #b45309; --warnbg: #fef3c7; --bad: #b91c1c; --badbg: #fee2e2; --good: #166534; --goodbg: #dcfce7; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, sans-serif;
+         display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 7px 14px; background: var(--panel);
+           border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 19px; margin: 0 4px 0 0; }
+  #q { flex: 0 1 340px; min-width: 200px; padding: 5px 12px; border-radius: 16px; background: #f1f3f5; }
+  #q:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+  #status { margin-left: auto; color: var(--muted); font-size: 14px; text-align: right; }
+  button, select, input[type=search] { font: inherit; padding: 3px 7px; border: 1px solid var(--line);
+                                       border-radius: 6px; background: var(--panel); color: var(--ink); }
+  button { cursor: pointer; } button:hover { border-color: var(--accent); }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr) 500px; }
+  aside, #detail { overflow: auto; background: var(--panel); min-height: 0; }
+  aside { border-right: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; }
+  #detail { border-left: 1px solid var(--line); padding: 10px 14px 20px; }
+  #filters { padding: 8px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+  #filters label { display: grid; grid-template-columns: 62px 1fr; align-items: center; gap: 6px; color: var(--muted); }
+  #filters select { width: 100%; }
+  #count { color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  #count button { font-size: 13px; padding: 1px 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 3px; }
+  .chip { font-size: 13px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer;
+          user-select: none; display: inline-flex; align-items: center; gap: 4px; background: var(--panel); }
+  .chip.on { border-color: var(--ink); background: #eef1f4; font-weight: 600; }
+  .chip.off { opacity: .4; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none;
+         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18); }   /* a light colour (Paired's yellow) still shows */
+  #list { overflow: auto; flex: 1; position: relative; }   /* an item's offsetTop is then within the list */
+  .item { padding: 5px 10px; border-bottom: 1px solid #f1f3f5; cursor: pointer; }
+  .item:hover { background: #f6f8fa; }
+  .item.on { background: #eef4ff; box-shadow: inset 3px 0 0 var(--accent); }
+  .item .nm { font-weight: 600; }
+  .item .sub { color: var(--muted); font-size: 13px; }
+  .more { padding: 8px 10px; }
+  #mapwrap { position: relative; min-height: 0; }
+  #map { position: absolute; inset: 0; }
+  #mapctl { position: absolute; top: 8px; left: 8px; z-index: 2; background: #fffe; border: 1px solid var(--line);
+            border-radius: 6px; padding: 4px 8px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+            font-size: 14px; max-width: calc(100% - 60px); }
+  #m-legend { width: 100%; }
+  #m-legend:empty { display: none; }
+  h2 { font-size: 23px; margin: 0; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 16px 0 5px; }
+  .muted { color: var(--muted); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; padding: 0 7px; border-radius: 9px;
+           background: #eef1f4; margin-right: 3px; }
+  .badge.flag { background: var(--badbg); color: var(--bad); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th { text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); padding: 2px 4px; }
+  td { border-bottom: 1px solid #f1f3f5; padding: 2px 4px; vertical-align: top; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.facts td:first-child { color: var(--muted); width: 38%; }
+  tr.click { cursor: pointer; } tr.click:hover td { background: #f6f8fa; }
+  a.go { color: var(--accent); cursor: pointer; text-decoration: none; } a.go:hover { text-decoration: underline; }
+  .bars { display: flex; align-items: flex-end; gap: 1px; height: 60px; }
+  .bars > div { flex: 1; min-width: 2px; display: flex; flex-direction: column-reverse; }
+  .bars span { display: block; min-height: 1px; }
+  .barlab { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+  .empty { color: var(--muted); padding: 30px 0; text-align: center; }
+  .maplibregl-popup-content { font: 14px/1.4 system-ui, sans-serif; padding: 8px 10px; }
+  .maplibregl-popup-content table { width: auto; }
+  @media (max-width: 1200px) {
+    body { height: auto; }
+    main { grid-template-columns: 1fr; }
+    #mapwrap { height: 60vh; order: 1; } #detail { order: 2; border-left: 0; } aside { order: 3; max-height: 70vh; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Place names</h1>
+  <input id="q" type="search" placeholder="Find a name or a spelling" autocomplete="off" spellcheck="false">
+  <span id="status">loading…</span>
+</header>
+<main>
+  <aside>
+    <div id="filters">
+      <label>Class <select id="f-class"></select></label>
+      <label>Terrain <select id="f-terrain"></select></label>
+      <label>Gear <select id="f-gear"></select></label>
+      <label>Check <select id="f-outcome"></select></label>
+      <label>Level <select id="f-level"></select></label>
+      <div><div class="muted" style="margin-bottom:3px">Sources: a name used by any chosen</div><div class="chips" id="f-src"></div></div>
+      <div id="count"></div>
+    </div>
+    <div id="list"></div>
+  </aside>
+  <div id="mapwrap">
+    <div id="map"></div>
+    <div id="mapctl">
+      <label><input type="checkbox" id="m-foot" checked> footprints</label>
+      <label>coloured by <select id="m-colour"><option value="outcome">cross-check</option><option value="terrain">terrain</option>
+        <option value="level">level</option><option value="none">one colour</option></select></label>
+      <select id="m-base" title="base map"></select>
+      <div id="m-legend" class="chips" title="a click shows only those names"></div>
+    </div>
+  </div>
+  <div id="detail"><div class="empty">Choose a name from the list, the map or the search.</div></div>
+</main>
+<script src="/www/app.js"></script>
+</body>
+</html>
