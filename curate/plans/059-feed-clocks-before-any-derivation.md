@@ -139,7 +139,12 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    stream and period that `check_data_dict()` tests when a dump is adopted; astdB's `speed_basis` `recorded`, at the next
    union build.
 5. **The alignment in scratch** on 2016 and 2026: the duplicate flag's and the whack's removals before and after, against
-   decision 164's witnesses.
+   decision 164's witnesses. *Run 2026-11-01, with 2015 added (the study's README, "Step 5"):* the as-delivered run
+   equals `ping_whacky` ping for ping; aligned, the whack's false removals of STK pings fall 56 % (2015), 11 % (2016)
+   and 90 % (2026) for 0.4-1.1 % of its true ones; reversals between feeds fall to about the rate within one feed
+   (2026: 12.5 to 2.7 %); the duplicate flag catches 69-76 % of the late copies, but 3,500-14,300 copies a year that
+   were on time are pushed apart, so a lag per vessel and month is the bulk and a copy's own lag the rest; the 2026
+   survey's labels gain 4 points (both ends within 5 min, 46.7 to 50.9 %).
 6. **TODO 88 re-measured on aligned pings:** its floor kept, shrunk or dropped.
 7. **astd's speed stamp**, the midpoint or a central difference within astd, measured on one year's effort by gear
    before it is adopted.

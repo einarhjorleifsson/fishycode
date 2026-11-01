@@ -1463,7 +1463,8 @@ Plan 059 reviews the study's drafts: a standing check right after `ais_ping_unio
 receipt, the lag by vessel, stream and month, the copies the duplicate flag misses), the lag applied in the tag pass,
 the delivered time beside; ramb's step 0 for the generic part. Step 1 is run (2026-11-01, the study
 `2026-11-01-feed-clocks/`): offsets in 2014-2016 and 2025-2026, a lag per vessel and month, 266 thousand copies the
-duplicate flag misses. Next: the asks, then step 2 (ramb's step 0 functions).
+duplicate flag misses. Step 5 too: aligned, the whack's false removals fall 56-90 % in 2015 and 2026 for 0.4-1.1 % of
+its true ones; on-time copies in a late month say a copy's own lag is needed beside the month's. Next: the asks.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
