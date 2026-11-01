@@ -1452,7 +1452,7 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 lumpfish station before 1992 carries a register vid without a witness.
 
 ## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived (plan 059)
-**status:** open · **needs: maintainer** — ramb's branch `feed-clocks-step0` merged (or not) · **see:** plan 059,
+**status:** open · **see:** plan 059,
 decision 270 (its section "Time is an observation"), decision 233, TODO 88, TODO 117, plan 048,
 `curate/corrections/ais_feed_clock_offset.yml`, the studies `$FISHYDATA/archive/2026-11-01-phase-model/` and
 `2026-11-01-feed-clocks/`
@@ -1474,7 +1474,8 @@ its true ones; on-time copies in a late month say a copy's own lag is needed bes
 (maintainer, 2026-11-01, each as recommended; the rule "derive within one stream" is in AGENTS.md). Step 2 is built
 (2026-11-01, ramb's branch `feed-clocks-step0`, not merged or pushed): `rb_add_ping_stream()`, `rb_create_ping_lags()`,
 `rb_add_ping_own_lag()`, `rb_add_ping_time()`; on 2016 and 2026 they give step 1's lags and copies and step 5's aligned
-time, every difference explained (the study's "Step 2"). Next: the branch merged, then step 3, the check as a target.
+time, every difference explained (the study's "Step 2"). Merged into ramb's `main` (fast-forward, 3953894; 235 tests
+pass), pushed and installed from GitHub as 2026.11.01 (2026-11-01). Next: step 3, the check as a target.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
