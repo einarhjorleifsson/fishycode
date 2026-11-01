@@ -8,7 +8,7 @@ How to test:
 - the browser pane must be visible for anything the map draws (a hidden pane draws no frame);
 - the service first: `Rscript products/place_names/check.R`.
 
-All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px.
+All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4 added and passed the same day.
 
 ## Load
 
@@ -66,6 +66,10 @@ All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px
 - **M1** Footprints off hides every listed footprint (the chosen name's stays); on brings them back.
 - **M2** Base map: the six of ramb's `rb_map_basemaps()`; every layer, the labels and the footprints' on/off are kept
   through a change.
+- **M4** The names are legible on every base (maintainer, 2026-11-01: the broad white halo made them hard to read):
+  upright semi-bold, dark ink with a narrow soft halo on the light bases (light, voyager, ocean, none), light ink with a
+  dark halo on dark and satellite; the chosen name's halo wider; the base map's own sea names hidden, on every base
+  and after a change.
 - **M3** Zoom buttons, scale bar, pan and zoom; the address's `map=` follows.
 
 ## Layout

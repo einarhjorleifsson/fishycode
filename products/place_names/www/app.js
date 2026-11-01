@@ -59,7 +59,7 @@ const F = { class: '', terrain: '', gear: '', outcome: '', level: '', src: new S
 const OWN = new Set(['labels', 'foot', 'sel', 'ev', 'places']);   // our sources, kept through a change of base map
 let FONT = ['Open Sans Regular'];
 const empty = { type: 'FeatureCollection', features: [] };
-// the first base map is ramb's first, 'light' (Carto Positron), whose labels' font the names take
+// the first base map is ramb's first, 'light' (Carto Positron), whose glyphs the names are written in
 const map = new maplibregl.Map({ container: 'map', style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
                                  center: [-19, 65], zoom: 5, hash: 'map', attributionControl: { compact: true } });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -67,8 +67,21 @@ map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 // the style is enough to add our layers: the map's own `load` waits for tiles drawn, which a hidden tab never draws
 const mapReady = new Promise((res) => map.once('style.load', res));
 
+// The names: upright and semi-bold, unlike the base map's thin italic sea names, in dark ink with a narrow soft halo
+// (a broad white one smeared them over the footprints), the chosen name's wider; light ink with a dark halo on a dark
+// base
+const DARK_BASES = new Set(['dark', 'satellite']);
+const labelPaint = (base) => (DARK_BASES.has(base)
+  ? { 'text-color': ['case', ['get', 'chosen'], '#fdba74', '#f8fafc'], 'text-halo-color': 'rgba(15, 23, 42, 0.8)',
+      'text-halo-width': ['case', ['get', 'chosen'], 2, 1.2], 'text-halo-blur': 0.4 }
+  : { 'text-color': ['case', ['get', 'chosen'], '#9a3412', '#0f1d2b'], 'text-halo-color': 'rgba(255, 255, 255, 0.85)',
+      'text-halo-width': ['case', ['get', 'chosen'], 2, 1.1], 'text-halo-blur': 0.4 });
+// The base map's own sea names are left out: the gazetteer holds them (LMÍ's), and two of one name in two places confuse
+const baseWater = (l) => l.type === 'symbol' && /^water_?name/.test(l.id);
 function addLayers() {
-  FONT = map.getStyle().layers.find((l) => l.type === 'symbol' && l.layout?.['text-font'])?.layout['text-font'] ?? FONT;
+  const fonts = map.getStyle().layers.map((l) => l.layout?.['text-font']).filter(Array.isArray);
+  FONT = fonts.find((f) => /SemiBold|Bold/.test(f[0]) && !/Italic/.test(f[0])) ?? fonts.find((f) => !/Italic/.test(f[0])) ?? FONT;
+  for (const l of map.getStyle().layers.filter(baseWater)) map.setLayoutProperty(l.id, 'visibility', 'none');
   map.addSource('foot', { type: 'geojson', data: D.foot || empty });
   map.addSource('labels', { type: 'geojson', data: empty });
   map.addSource('sel', { type: 'geojson', data: empty });
@@ -79,14 +92,14 @@ function addLayers() {
   map.addLayer({ id: 'foot-fill', type: 'fill', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
                  paint: { 'fill-color': '#1f5f8b', 'fill-opacity': 0.04 } });
   map.addLayer({ id: 'foot-line', type: 'line', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
-                 paint: { 'line-color': '#1f5f8b', 'line-width': 0.6, 'line-opacity': 0.4 } });
+                 paint: { 'line-color': '#1f5f8b', 'line-width': 0.6, 'line-opacity': 0.25 } });
   // the chosen name's footprint, its occurrences over it, and the outlines of its own, its parent's (dashed) and its
   // children's over them
   map.addLayer({ id: 'sel-fill', type: 'fill', source: 'sel', filter: ['==', ['get', 'role'], 'self'],
                  paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.18 } });
   map.addLayer({ id: 'ev', type: 'circle', source: 'ev',
                  paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2.2, 10, 4],
-                          'circle-color': ['get', 'colour'], 'circle-opacity': 0.7,
+                          'circle-color': ['get', 'colour'], 'circle-opacity': 0.55,
                           'circle-stroke-color': '#fff', 'circle-stroke-width': 0.5 } });
   map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', filter: ['!=', ['get', 'role'], 'parent'],
                  paint: { 'line-color': ['match', ['get', 'role'], 'self', '#b45309', '#6b7280'],
@@ -107,9 +120,8 @@ function addLayers() {
                  layout: { 'text-field': ['get', 'name'], 'text-font': FONT,
                            'text-size': ['match', ['coalesce', ['get', 'level'], 4], 1, 15, 2, 13.5, 3, 12, 11],
                            'symbol-sort-key': ['+', ['*', 100000, ['coalesce', ['get', 'level'], 4]], ['-', 0, ['get', 'n']]],
-                           'text-padding': 3 },
-                 paint: { 'text-color': ['case', ['get', 'chosen'], '#b45309', '#1f3b57'], 'text-halo-color': '#fff',
-                          'text-halo-width': 1.4 } });
+                           'text-padding': 3, 'text-letter-spacing': 0.02 },
+                 paint: labelPaint('light') });
 }
 
 // the footprints of the names in the list, on or off
@@ -132,9 +144,11 @@ $('m-base').addEventListener('change', () => {
   popup?.remove();
   map.setStyle(baseStyle(b), { transformStyle: (prev, next) => {
     if (!prev) return next;
-    const own = prev.layers.filter((l) => OWN.has(l.source));
+    const own = prev.layers.filter((l) => OWN.has(l.source))
+      .map((l) => (l.id === 'labels' ? { ...l, paint: labelPaint(b.id) } : l));
+    const base = next.layers.map((l) => (baseWater(l) ? { ...l, layout: { ...l.layout, visibility: 'none' } } : l));
     const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => OWN.has(k)));
-    return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers: [...next.layers, ...own] };
+    return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers: [...base, ...own] };
   } });
 });
 
