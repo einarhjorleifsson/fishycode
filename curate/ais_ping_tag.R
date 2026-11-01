@@ -5,8 +5,9 @@
 #         curated/check/ais_feed_clock.parquet    the lag per vessel, stream and month (curate/checks/ais_feed_clock.R)
 #         raw/oracle/stk/trail                    its port event rows, to tell them from fixes
 #         staging/aux/ports.fgb                   harbour polygons (pid, hid)
-# Output: staging/ais/ping_tagged                 partitioned by year: the union's columns with `time` harmonized,
-#                                                 beside it `time_delivered`, `lag_s`, `lag_basis` and `stream`; `pid`
+# Output: staging/ais/ping_tagged                 partitioned by the year of `time`: the union's columns with `time`
+#                                                 harmonized, beside it `time_delivered`, `lag_s`, `lag_basis` and
+#                                                 `stream`; `pid`
 #
 # Two scripts, union then tag, on purpose: the union is 44 GB, and the tagging must be rerunnable
 # without redoing it (AGENTS.md, Script naming).
@@ -75,11 +76,38 @@ for (YR in years) {
     ramb::rb_flag_ping_port(ports, keep = "hid") |>
     rename(pid = port_id) |>
     compute(name = "s3", overwrite = TRUE) |>
-    # the delivered time's year, so that a ping moved across New Year stays in its partition
+    # the union's year; a ping moved across New Year changes partition below
     mutate(year = as.integer(!!YR)) |>
     duckdbfs::write_dataset(fd_staging("ais", "ping_tagged"), partitioning = "year", format = "parquet")
   n_out <- open_dataset(file.path(fd_staging("ais", "ping_tagged"), paste0("year=", YR))) |> count() |> pull(n)
   stopifnot("every row of the union in the output once" = n_out == n_in)
+  n_all <- if (YR == years[1]) n_in else n_all + n_in
   message(YR, ": ", format(n_in, big.mark = ","), " rows in and out")
   toc()
 }
+
+# A ping moved across New Year by its lag goes to the partition of its harmonised year, so that every later stage
+# agrees with `time` on its year: voyages are cut at New Year, and the trail joins a fix's voyage on year(time). 53 astd
+# pings in 2014-2026, moved back 11-63 s; the trail's count check found them (plan 059's rebuild, 2026-11-01). A ping
+# with no time stays where it is.
+tagged_dir <- fd_staging("ais", "ping_tagged")
+for (YR in years) {
+  src <- file.path(tagged_dir, paste0("year=", YR))
+  yr_of <- sprintf("coalesce(year(time), %d)", YR)
+  to <- DBI::dbGetQuery(con, sprintf("SELECT %s AS y, count(*) AS n FROM read_parquet('%s/*.parquet') WHERE %s <> %d
+                                      GROUP BY ALL ORDER BY y", yr_of, src, yr_of, YR))
+  if (!nrow(to)) next
+  for (i in seq_len(nrow(to))) {
+    dir.create(file.path(tagged_dir, paste0("year=", to$y[i])), showWarnings = FALSE)
+    x("COPY (SELECT * FROM read_parquet('%s/*.parquet') WHERE %s = %d)
+       TO '%s/year=%d/moved_from_%d.parquet' (FORMAT parquet)", src, yr_of, to$y[i], tagged_dir, to$y[i], YR)
+  }
+  old <- list.files(src, full.names = TRUE)
+  x("COPY (SELECT * FROM read_parquet('%s/*.parquet') WHERE %s = %d) TO '%s/kept.tmp' (FORMAT parquet)",
+    src, yr_of, YR, src)
+  unlink(old)
+  file.rename(file.path(src, "kept.tmp"), file.path(src, "data_0.parquet"))
+  message(YR, ": ", paste(sprintf("%d pings to %d", to$n, to$y), collapse = ", "))
+}
+n_after <- open_dataset(tagged_dir) |> count() |> pull(n)
+stopifnot("every row of the union in the output once, after the move" = n_after == n_all)
