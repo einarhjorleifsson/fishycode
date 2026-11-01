@@ -125,13 +125,19 @@ hundreds of metres.
   - **Not a mispairing.** A position paired with the previous report's stamp would give each ping a shift equal to its
     interval to the next report. It does not: correlation 0.19 for vid 975 and −0.21 for 1809, against intervals of
     14-62 min.
-  - **The clock moves.** Vid 975 was 54 min late in October and 64 in November. Vid 1809 was on time in September,
-    an hour late for 62 % of its pings in October, 38 % in November and all of them in December (69 min).
-  - **What the store holds.** The monthly lag brought 975's two months and 1809's December from 3-22 km to about
-    260 m, three times the control's residual, since the error drifts within a month. 1809's October and November
-    (3 and 0 pairs, not measurable) were not moved, so about half of its 1,012 VMS pings in those two months are an
-    hour off.
-  - **Not measured:** how many other VMS units do the same in months the check cannot measure.
+  - **The clock drifts** (as amended by the scan below): before the clean, vid 975 is 55, 66 and 73 min late from
+    October to December 2007, and vid 1809 47, 52, 61 and 70 min from September to December, 8-9 min a month. The
+    first look read `curated/ais/ping`, after the clean, and saw 1809 on time in September and partly so in October and
+    November. That was the whack's selection: it had removed most of the hour-off pings (111 of 119 in September), and
+    the few it kept fitted on time.
+  - **What the store holds.** The monthly lag brought 975's October and November and 1809's December from 3-22 km to
+    about 260 m, three times the control's residual, since the error drifts within a month. The months the check
+    could not measure were not moved.
+  - **Every VMS unit, scanned the same evening** (`$FISHYDATA/archive/2026-11-01-vms-clock-scan/`, each VMS ping of a
+    vessel with an AIS stream, before the clean). Most are on time (6,947 vessel-months, 0.8 min). 43 vessel-months
+    of 14 vessels are an hour off, mostly 2007-2009, and 251 of 40 vessels are off by minutes (−9.8 to +16.5 min),
+    mostly 2007-2013. 3,744 hour-off and 63,257 minute-off VMS pings are in the store unmoved. Declared as
+    `curate/corrections/stk_vms_clock.yml`; the repair is TODO 180's.
 - astd's 2017 `fishing_flow` hours, −7.0 %.
 - The effort map's two grids (`products.sh`) are built from the trail and are no target. They were rerun the same
   evening on the maintainer's word and finished at 19:15 (`products.log`). Their check passed: the hours, kW-hours and

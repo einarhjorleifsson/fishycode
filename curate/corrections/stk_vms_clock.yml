@@ -1,0 +1,29 @@
+id: stk_vms_clock
+title: some of STK's VMS units stamp their positions minutes to an hour before the vessel was there
+status: measured 2026-11-01 (the study $FISHYDATA/archive/2026-11-01-vms-clock-scan/); repaired only in part - plan 059's monthly lag moved the 8 VMS vessel-months its clock check could measure (decision 271), the rest NOT repaired (TODO 180)
+applies_to:
+  - staging/ais/ping_tagged, ping_clean, ping_whacky - the stream stk_vms
+  - curated/ais/ping and the trail - the kept stk_vms fixes, their windows, effort intervals and port calls
+affects_rows: of 3.48 M VMS pings of vessels with an AIS stream, an hour off in 43 vessel-months (14 vessels, 9,319 pings, 3,744 of them in the store unmoved) and off by minutes in 251 (40 vessels, 71,218 pings, 63,257 in the store); 2.45 M pings in 38,203 vessel-months could not be judged
+implementation: none yet; plan 059's tag pass moves a VMS ping only where curated/check/ais_feed_clock has 30 pairs
+discovered: 2026-11-01, decision 271 (three vessel-months the clock check moved by about an hour), then the scan
+
+defect:
+  summary: >-
+    Shifted by the right amount, a VMS unit's positions fall onto its vessel's AIS track; for most units the right
+    amount is 0-2 min (6,947 vessel-months on time), for some it is minutes, for a few about an hour. The unit's clock
+    drifts: vid 975 went from 55 to 73 min late and vid 1809 from 47 to 70 min over September-December 2007, 8-9 min a
+    month. The VMS and AIS streams of one vessel come from one STK mobile id, so the VMS track is no other hull's.
+  evidence:
+    method: "each VMS ping projected onto its vessel's moving AIS segments within 2 h (scripts/01_scan.R): the best shift, judged where the AIS track moves and the fit is within 300 m"
+    on_time_months: "judged shifts -1.0 to +3.0 min (5-95 %), median 0.8 min"
+    hour_off_months: "43 vessel-months, shifts 33-118 min, median 53; 22 of them in 2007-2009"
+    minute_scale_months: "251 vessel-months clustered within the month (IQR under 5 min), monthly shifts -9.8 to +16.5 min (10-90 %), median +4.7; mostly 2007-2013"
+    not_a_mispairing: "the shift does not follow the interval to the next VMS report (correlation 0.19 and -0.21 on vids 975 and 1809), so a position is not paired with the previous report's stamp"
+why_it_went_unnoticed: >-
+  The VMS stream is mostly where AIS is not, so there is rarely a track to hold it against, and the clock check asks
+  for 30 pairs. Where both streams are heard, the whack removes many of the hour-off VMS pings as impossible jumps: the
+  few it keeps are the ones that happen to fit, which made one clock look as if it flipped (decision 271's first look).
+repair: >-
+  Open (TODO 180): a lag per VMS vessel-month from the per-ping shift where it can be judged, and a flag where it cannot;
+  or leave the VMS stream's positions out of what derives across pings where the AIS stream is heard.

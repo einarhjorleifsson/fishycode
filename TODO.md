@@ -1452,3 +1452,17 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 **check:** the next release's README places every station whose vid is not in the vessel table in an outcome, and no
 lumpfish station before 1992 carries a register vid without a witness.
 
+
+## 180. STK's VMS clocks: minutes to an hour off in some vessel-months, most of them not repaired
+**status:** open · **needs: maintainer** — the repair (a lag from the per-ping shift, a flag, or the VMS stream left
+out where AIS is heard) · **see:** `curate/corrections/stk_vms_clock.yml`, decision 271 ("Left"),
+`$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (README), plan 059
+
+Measured 2026-11-01 by Claude (AI), not checked by a person: each VMS ping of a vessel with an AIS stream (3.48 M)
+against its own AIS track, the shift that puts it there. Most units are on time (6,947 vessel-months, 0.8 min). 43
+vessel-months of 14 vessels are an hour off (33-118 min, mostly 2007-2009, the clocks drifting 8-9 min a month), and
+251 of 40 vessels are off by minutes (−9.8 to +16.5 min, mostly 2007-2013). Plan 059's tag pass moved only the 8
+vessel-months its clock check could measure: 3,744 hour-off and 63,257 minute-off VMS pings are in the store unmoved.
+2.45 M VMS pings (38,203 vessel-months) have no moving AIS track to judge them by.
+
+**check:** the maintainer's choice built and in the store, the scan rerun, and a decision record.
