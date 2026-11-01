@@ -1,7 +1,9 @@
 # 045 — Place names, the next round: a review interface with a feedback loop, a model for placing names, and boundaries from depth, habitat and effort
 
-**status:** proposal — written 2026-10-24 at the maintainer's request, on top of the gazetteer of plan 044 (decisions
-223-226) · **2026-10-24** · **see:** plan 044 §2, §4-§6, plan 043 §3.4, decisions 220, 224-226, TODO 144
+**status:** partly built — written 2026-10-24 at the maintainer's request, on top of the gazetteer of plan 044 (decisions
+223-226); step 1's read-only part and §3.1's one name per place, as a proposal, built 2026-11-01 (decision 272); the
+review's answers wait on ask c · **2026-10-24** · **see:** plan 044 §2, §4-§6, plan 043 §3.4, decisions 220, 224-226,
+272, TODO 144
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. The methods named in §2 are leads
 from Claude's knowledge, not yet read against their sources.
@@ -90,7 +92,7 @@ Naming places from many noisy witnesses is studied under several heads:
      with most positions (a star, not a chain), then the 2022 hand readings. The single name is LMÍ's, else the
      commonest plain spelling. On the gazetteer of 2026-11-01, tried on a scratch copy: 953 keys in 423 groups of two
      or more; a sample read by Claude found the core and reading joins mostly right and the locator joins about three
-     in four. The explorer shows each group. Not built into `curated/` yet (the maintainer builds it).
+     in four. The explorer shows each group. Built 2026-11-01, with the same numbers (decision 272).
    - **Should the single name be part of the rebuild?** Claude's recommendation (2026-11-01, for the maintainer): the
      proposal yes, the decision no. The rules are cheap (10 s) and reproducible from the data, so the proposal is
      rebuilt with the gazetteer and is marked `proposed`. But a group's head and its commonest spelling can change as

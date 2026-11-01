@@ -1097,12 +1097,16 @@ done with a position jump inside a window; the counts above are rerun after it.
 ## 144. Place names: the next round (plan 045), the originals, the hazard class
 **status:** open · **needs: maintainer** — plan 043 ask a; plan 045 ask a (where MFRI's depth model lives); whether
 the effort lanes go flow-side · **see:** `curate/plans/045-place-names-review-model-boundaries.md`,
-`curate/plans/044-place-name-gazetteer.md` §2, §4-§6, `curate/plans/043-place-names-staged.md` §6, decisions 221-226
+`curate/plans/044-place-name-gazetteer.md` §2, §4-§6, `curate/plans/043-place-names-staged.md` §6, decisions 221-226,
+272
 
 Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with the tagging databases, channel and uv
 (decisions 225, 226); Claude's build, not checked by a person. A read-only explorer of it, the first step towards plan
-045's review page, is `products/place_names/` (2026-11-01); one name per place is proposed by `curate/name_group.R`
-(plan 045 §3.1), coded and tried on a scratch copy, to be built with the gazetteer. Open:
+045's review page, is `products/place_names/`, and one name per place is proposed by rule, `curate/name_group.R` (plan
+045 §3.1): both built 2026-11-01 (decision 272). Open:
+- the review of the proposed groups (953 keys in 423; the locator joins first) and a ledger of reviewed names under
+  `overrides/`, read as an input: plan 045 ask c (who reviews, and whether a reviewer's name is kept);
+- 25 of Trackwell's occurrences dated 2095 or 2099 (decision 272);
 - plan 045 (the maintainer, 2026-10-24): a review interface with a feedback loop through `overrides/`; a model for
   placing names (vague places, conflation, source reliability); MFRI's depth model for GEBCO; EUSM or better as a
   boundary aid; the effort by gear as an image of grounds and lanes (flow side). It carries the review loop and the
