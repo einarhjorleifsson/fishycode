@@ -1461,8 +1461,8 @@ lumpfish station before 1992 carries a register vid without a witness.
 
 
 ## 180. STK's VMS clocks: minutes to an hour off in some vessel-months, most of them not repaired
-**status:** open · **needs: maintainer** — plan 060's asks a-g (the maintainer chose the repair 2026-11-01: a lag
-from the scan, a flag where it cannot be judged; "plan it first") · **see:** plan 060,
+**status:** open — plan 060's asks a-h answered 2026-11-01, each as recommended (the maintainer chose the repair the
+same day: a lag from the scan, a flag where it cannot be judged; "plan it first"); step 1 under way · **see:** plan 060,
 `curate/corrections/stk_vms_clock.yml`, decision 271 ("Left"), `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (README), plan 059
 
 Measured 2026-11-01 by Claude (AI), not checked by a person: each VMS ping of a vessel with an AIS stream (3.48 M)
@@ -1474,6 +1474,6 @@ vessel-months its clock check could measure: 3,744 hour-off and 63,257 minute-of
 
 Plan 060 (2026-11-01, revised the same evening): STK's `recdate − posdate` carries the unit's drift (2007: within 1-2 min
 of the scan's shift), so each fix's own lag from its receipt, the AIS-track shift as the check; step 1 measures every
-year, backlogs and the delivery delay before any code. Held by the maintainer before any step runs.
+year, backlogs and the delivery delay before any code. Then a full rebuild of every main-project target from raw (ask h).
 
 **check:** plan 060 built and in the store, the scan rerun on it, and a decision record.

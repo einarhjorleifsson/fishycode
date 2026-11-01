@@ -4,7 +4,8 @@
 judged, a flag where it cannot; "plan it first"). Revised the same evening after the maintainer's question on `posdate`
 and `recdate`, which give a lag for every VMS fix whose `posdate` is the unit's own, with AIS or without ("Don't we need
 a plan here?"; "hold before you start executing the plan"); ramb's hardening added as §8 at the maintainer's word
-("Into plan 060") · **2026-11-01** · **see:** TODO 180, TODO 117 and
+("Into plan 060"); asks a-h answered 2026-11-01, each as recommended, h (added by Claude) a full rebuild of every
+main-project target from raw · **2026-11-01** · **see:** TODO 180, TODO 117 and
 decision 196 (`stk_receipt`), `curate/corrections/stk_vms_clock.yml`, decision 271, plan 059, `dump/oracle/meta/stk.yml`,
 the study `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (its README)
 
@@ -111,8 +112,8 @@ backlog the running median cannot separate, or a gap that the track check contra
    - the check gains the track check per vessel-week.
 
    All of it run in a scratch store on 2007, 2017 and 2019, with the scan rerun on the result.
-4. **The rebuild** from the union down, prepared as plan 059's, about 2 h. `ais_catch` and the audit are left
-   (decision 261).
+4. **The rebuild** of every target of the main project from raw (ask h, as decision 218's), prepared as plan 059's,
+   about 3.5-4 h. `ais_catch` and the audit are left (decision 261); the `once` project is not touched.
 5. **A decision record.** TODO 180 closed, `stk_vms_clock.yml` repaired, the dictionary's `lag_basis` with
    `receipt`.
 
@@ -123,6 +124,13 @@ backlog the running median cannot separate, or a gap that the track check contra
 - It does not build TODO 117's events or `U` positions (plan 048).
 
 ## 7. Asks
+
+**Answered 2026-11-01** by the maintainer, a-h each as recommended. Claude's notes on the recommendations, given with
+them: in b, a backlog's fixes are left out before the median is taken, so a flushed outage cannot become a lag (step 1
+sets the rule); in c, the on-time VMS fixes with their own `posdate` (most of 2007-2010) also move, by about a minute;
+in f, only the receipt time is built, as a side table the tag pass joins, and `recdate` is carried no further (decision
+196); in g, with `recdate` in the union a fix STK received twice is two rows, and the de-duplication keeps the earliest
+receipt and counts what it drops.
 
 - a. **The source:** STK's receipt, with the AIS track as the check (recommended), or the AIS track alone, as in the
   first version.
@@ -139,6 +147,9 @@ backlog the running median cannot separate, or a gap that the track check contra
   - items 2-4 and 6 with this plan (recommended: they guard the methods it adds and the clean it relies on);
   - items 1 and 5 next, or all of §8 now. Item 1 touches every lazy step, and item 5 is a diagnostic of its own.
   - fishycode's `union()` in any case, at the next union build.
+- h. **The rebuild** (added by Claude): every target of the main project from raw, as decision 218 (recommended: every
+  file then has one commit, one ramb and one DuckDB, and a script edit `targets` cannot see is caught; about 3.5-4 h, and
+  `lookups` and `gear` read the web), or from the union down (about 2-2.5 h).
 
 ## 8. ramb's hardening
 
