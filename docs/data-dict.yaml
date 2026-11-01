@@ -89,6 +89,12 @@ details: >
   write them, their decisions and the rebuilt files, and have not been checked by
   a person.
 
+  2026-11-01: plan 059's columns (`time` on one clock across the feeds,
+  `time_delivered`, `lag_s`, `lag_basis`, `stream`, `speed_span_s`) in `ais_ping`
+  and `ais_trail`, and the table `ais_ping_whacky` with the whack's evidence, were
+  written by Claude (AI) from the scripts, decision 271 and the rebuilt files, and
+  have not been checked by a person.
+
 tables:
   - name: ais_voyage
     source:
@@ -233,7 +239,8 @@ tables:
         time_zone: UTC
         range: [2023-01-01T00:00:01, 2023-12-31T23:59:55]
         description: >
-          Timestamp of the position fix.
+          Timestamp of the position fix, on one clock across the feeds: `time_delivered` less `lag_s`
+          (curate/ais_ping_tag.R, plan 059). Equal to `time_delivered` wherever `lag_s` is 0 or NA.
         todo: |
           - Specify `constraints`. Some options suggested by the data:
             - constraints: [required] # all values present
@@ -279,7 +286,9 @@ tables:
           - 4.625197978354074
           - 14.015197251093694
         description: >
-          Speed over ground, knots.
+          Speed over ground, knots. STK's and astdB's as the feed reports it; astd's and emodnet's derived
+          within the MMSI, a central difference stamped at the ping (the chord from its previous report to
+          its next on the WGS84 ellipsoid, `speed_span_s` the time it spans; plan 059 step 7).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -337,7 +346,8 @@ tables:
         range: [2023, 2023]
         examples: [2023]
         description: >
-          Calendar year, and the Hive partition key.
+          Calendar year of `time`, and the Hive partition key. A ping moved across New Year by its lag
+          is in the partition of its harmonised year (53 astd pings in 2014-2026; decision 271).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -364,7 +374,8 @@ tables:
         type: string
         examples: [derived, recorded]
         description: >
-          recorded (stk, gps), derived (astd, astdB, emodnet: distance over time) or placeholder.
+          recorded (stk, astdB, gps: the feed's own reading; astdB's since plan 059), derived (astd,
+          emodnet: distance over time within the MMSI) or placeholder.
       - name: dt_sec
         type: number
         examples: [2, 2627, 5295, 11104, 7679133]
@@ -389,6 +400,216 @@ tables:
         details: >
           No logger fix is left after 2020 (TODO 98's exclusion of whole-degree readings, decision 154), so
           the representative file holds none; the examples are from every partition.
+      - name: speed_span_s
+        type: number
+        examples: [2, 60, 738, 1448, 26002713]
+        description: >
+          Seconds between the MMSI's previous and next report, the interval astd's and emodnet's derived
+          `speed` spans (one side only at a track's first or last report; 0 where the MMSI has a single
+          report, and `speed` is NA). NA for a recorded speed (stk, astdB, gps). A consumer judges a
+          long span itself: no speed is left out for it (plan 059 step 7).
+      - name: time_delivered
+        type: datetime
+        time_zone: UTC
+        range: [2023-01-01T00:00:02, 2023-12-31T23:59:55]
+        description: >
+          The time as the feed delivered it, kept beside the harmonised `time` (as `w_lon`/`w_lat` beside
+          `lon`/`lat`): `time` = `time_delivered` - `lag_s`.
+      - name: lag_s
+        type: number
+        examples: [-4048, -168, 0, 18, 93]
+        description: >
+          Seconds the ping was moved: positive when its feed ran behind STK's AIS stream. 0 for a ping not
+          moved, NA when unmeasured.
+      - name: lag_basis
+        type: enum
+        values: [copy, measured, none, unmeasured]
+        description: >
+          How `lag_s` was found (ramb's rb_add_ping_own_lag() and rb_add_ping_time(), plan 059 §3):
+          `copy` an astd, astdB or emodnet ping that copies a report STK's streams also hold, moved by its
+          own gap (none is left here: a copy moved onto STK's time is a duplicate, in `ais_ping_whacky`);
+          `measured` the lag of its vessel, stream and month where curated/check/ais_feed_clock gives the
+          outcome "offset"; `none` a reference stream, an aligned unit or a vessel with one stream, not
+          moved; `unmeasured` every other ping (STK's port event rows, the logger, a unit the check could not
+          measure), not moved.
+      - name: stream
+        type: enum
+        values: [stk_ais, stk_vms, stk_unit, stk_event, astd, astdB, emodnet, gps]
+        description: >
+          The clock a ping is on: STK's three position streams told apart by the grid of their positions
+          (`stk_ais`, `stk_vms`, `stk_unit`; decision 233) and its port event rows (`stk_event`), else the
+          provider. Speeds, turns and windows are derived within one stream (AGENTS.md, Rules).
+  - name: ais_ping_whacky
+    source:
+      parquet: ../../fishydata/staging/ais/ping_whacky/year=2023/part_001.parquet
+    description: >
+      The pings `ais_ping_clean` took out, with which step took each and the whack's evidence
+      (curate/ais_ping_clean.R): `ais_ping`'s columns up to `stream` (no port call or voyage), then
+      `whack_stage` and the legs that condemned the ping. Hive-partitioned by year, several files a year.
+      `ais_ping` plus this table plus the pings with no vid equals `staging/ais/ping_tagged`, year by
+      year (the script stops otherwise).
+    details: >
+      The evidence (ramb's rb_flag_ping_impossible(evidence = TRUE), TODO 88, plan 059 step 8) is for
+      the whack's stages, `vmask`, `spike` and `forward`, and NA for the others. A leg between pings of
+      two feeds no longer than 0.3 nm (the noise floor) is never impossible. `source` names one file of
+      2023's seven.
+    columns:
+      - name: vid
+        type: number
+        examples: [1136, 1977, 2677, 2895, 3030]
+        description: >
+          As in `ais_ping`.
+      - name: mmsi
+        type: string
+        examples: ["251006110", "251126110", "251312000", "251504110", "251857840"]
+        description: >
+          As in `ais_ping`.
+      - name: time
+        type: datetime
+        time_zone: UTC
+        range: [2023-01-01T03:44:00, 2023-12-31T23:59:50]
+        description: >
+          As in `ais_ping`: on one clock across the feeds.
+      - name: lon
+        type: number
+        examples: [-124.8514, -24.4738, -23.0954, -18.3535, 28.4848]
+        description: >
+          As in `ais_ping`.
+      - name: lat
+        type: number
+        examples: [0, 64.1901, 65.9479, 66.6223, 75.9261]
+        description: >
+          As in `ais_ping`.
+      - name: speed
+        type: number
+        examples: [0, 2.51935, 3.79009, 5.86123, 30.71771]
+        description: >
+          As in `ais_ping`.
+      - name: speed_raw
+        type: number
+        examples: [0, 2.51944, 3.79011, 5.8619, 508.11325]
+        description: >
+          As in `ais_ping`.
+      - name: speed_span_s
+        type: number
+        examples: [8, 1337, 2940, 6383, 349044]
+        description: >
+          As in `ais_ping`.
+      - name: heading
+        type: number
+        examples: [0, 83.8, 177.2, 268, 359.2]
+        description: >
+          As in `ais_ping`.
+      - name: cog
+        type: number
+        examples: []
+        description: >
+          As in `ais_ping` (astdB only; none in this file).
+      - name: provider
+        type: string
+        examples: [astd, stk]
+        description: >
+          As in `ais_ping`.
+      - name: pos_basis
+        type: string
+        examples: [recorded]
+        description: >
+          As in `ais_ping`.
+      - name: speed_basis
+        type: string
+        examples: [derived, recorded]
+        description: >
+          As in `ais_ping`.
+      - name: dt_sec
+        type: number
+        examples: []
+        description: >
+          As in `ais_ping` (the logger only; none in this file).
+      - name: sid_gps
+        type: number
+        examples: []
+        description: >
+          As in `ais_ping` (the logger only; none in this file).
+      - name: n_sid_gps
+        type: number
+        examples: []
+        description: >
+          As in `ais_ping` (the logger only; none in this file).
+      - name: pid
+        type: string
+        examples: [IS-AKR, IS-GRF, IS-NJA, IS-SKA, NO-SJH]
+        description: >
+          As in `ais_ping`.
+      - name: time_delivered
+        type: datetime
+        time_zone: UTC
+        range: [2023-01-01T03:44:00, 2023-12-31T23:59:50]
+        description: >
+          As in `ais_ping`.
+      - name: lag_s
+        type: number
+        examples: [-179, -83, -29, 25, 175]
+        description: >
+          As in `ais_ping`; a `copy`'s own gap ranges wider than a month's lag.
+      - name: lag_basis
+        type: enum
+        values: [copy, measured, none, unmeasured]
+        description: >
+          As in `ais_ping`. The copies are here: moved onto STK's time, they are duplicates.
+      - name: stream
+        type: enum
+        values: [stk_ais, stk_vms, stk_unit, stk_event, astd, astdB, emodnet, gps]
+        description: >
+          As in `ais_ping`.
+      - name: year
+        type: number
+        examples: [2023]
+        description: >
+          Calendar year of `time`, and the Hive partition key.
+      - name: whack_stage
+        type: enum
+        values: [invalid, duplicate, vmask, spike, forward, tie]
+        description: >
+          The step that took the ping out, in order: `invalid` (a placeholder position), `duplicate` (a
+          lower feed's copy of a higher feed's report within 10 s and 128.6 m), the whack's `vmask`,
+          `spike` and `forward` (an impossible speed), and `tie` (a second ping at a kept ping's vessel and
+          time).
+      - name: ping_flag_side
+        type: enum
+        values: [prev, next, both, none]
+        description: >
+          Which leg to the nearest kept ping is impossible: `prev`, `next`, `both`, or `none` when neither
+          is (the flag came from the rms speed or a longer run). NA outside the whack's stages.
+      - name: ping_flag_prev_feed
+        type: string
+        examples: [astd, stk]
+        description: >
+          The feed of the nearest kept ping before it (the noise floor applies between two feeds).
+      - name: ping_flag_prev_dt_s
+        type: number
+        examples: [0, 138, 277, 435, 5382]
+        description: >
+          Seconds from the nearest kept ping before it.
+      - name: ping_flag_prev_dist_m
+        type: number
+        examples: [0, 845.595, 1152.255, 3037.471, 6560054.301]
+        description: >
+          Metres from the nearest kept ping before it.
+      - name: ping_flag_next_feed
+        type: string
+        examples: [astd, stk]
+        description: >
+          The feed of the nearest kept ping after it.
+      - name: ping_flag_next_dt_s
+        type: number
+        examples: [0, 168, 336, 517, 3600]
+        description: >
+          Seconds to the nearest kept ping after it.
+      - name: ping_flag_next_dist_m
+        type: number
+        examples: [0, 700.869, 1194.072, 3035.872, 6559462.76]
+        description: >
+          Metres to the nearest kept ping after it.
   - name: ais_port_call
     source:
       parquet: ../../fishydata/curated/ais/port_call.parquet
@@ -513,7 +734,8 @@ tables:
         time_zone: UTC
         range: [2024-06-01T00:00:04, 2024-06-30T23:59:58]
         description: >
-          Time of the fix, UTC.
+          Time of the fix, UTC, on one clock across the feeds: `time_delivered` less `lag_s` (plan 059).
+          The month partition and every window, link and effort are on this time.
       - name: lon
         type: number
         examples: [-54.3471, -23.892, -22.2534, -17.9914, 135.357]
@@ -560,8 +782,40 @@ tables:
         type: string
         examples: [derived, recorded]
         description: >
-          `recorded`, `derived` (ASTD speed is derived from distance over time) or `placeholder` (a
-          logger fix whose speed was exactly 1.000 m/s; `speed` is NA and `speed_raw` keeps the value).
+          `recorded` (stk, astdB, the logger), `derived` (astd's and emodnet's speed, a central difference
+          within the MMSI over `speed_span_s`; plan 059 step 7) or `placeholder` (a logger fix whose speed
+          was exactly 1.000 m/s; `speed` is NA and `speed_raw` keeps the value).
+      - name: speed_span_s
+        type: number
+        examples: [360, 738, 1448]
+        description: >
+          Seconds between the MMSI's previous and next report, the interval a derived speed spans; NA for
+          a recorded speed. As in `ais_ping`.
+      - name: stream
+        type: enum
+        values: [stk_ais, stk_vms, stk_unit, stk_event, astd, astdB, emodnet, gps]
+        description: >
+          The clock a fix is on (STK's three position streams by their grid, its port event rows, else the
+          provider). As in `ais_ping`.
+      - name: time_delivered
+        type: datetime
+        time_zone: UTC
+        range: [2024-06-01T00:00:04, 2024-06-30T23:59:58]
+        description: >
+          The time as the feed delivered it; `time` = `time_delivered` - `lag_s`. As in `ais_ping`.
+      - name: lag_s
+        type: number
+        examples: [-4048, -168, 0, 18, 93]
+        description: >
+          Seconds the fix was moved (positive when its feed ran behind STK's AIS stream); 0 not moved, NA
+          unmeasured. 27,458,384 fixes of 2007-2026 are moved, astd's in its offset months and 6,069 of
+          STK's VMS stream. As in `ais_ping`; the examples are from every partition.
+      - name: lag_basis
+        type: enum
+        values: [copy, measured, none, unmeasured]
+        description: >
+          How `lag_s` was found: `measured`, `none` or `unmeasured` (no `copy` reaches the trail: a copy
+          moved onto STK's time is a duplicate). As in `ais_ping`.
       - name: dt_sec
         type: number
         examples: [2, 2627, 5295, 11104, 7679133]

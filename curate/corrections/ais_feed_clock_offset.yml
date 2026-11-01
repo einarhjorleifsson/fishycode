@@ -1,6 +1,6 @@
 id: ais_feed_clock_offset
 title: astd's and stk's clocks disagree in two periods, so whatever is derived across the merged feeds sees a vessel jump back and forth along its track
-status: measured by vessel, stream and month (decision 270, plan 059 step 3); repair implemented in code 2026-11-01 and tested on 2026 in a scratch store (plan 059 step 8), NOT yet in the data - it arrives with the rebuild from ais_ping_union down
+status: repaired in the data 2026-11-01 (decision 271, plan 059 step 8's rebuild at 7216654) - measured by vessel, stream and month (decision 270, plan 059 step 3), applied in the tag pass; 27,458,384 trail fixes moved by a measured lag, the copies now duplicates
 applies_to:
   - staging/ais/ping_union
   - everything derived across consecutive pings from it - the cross-feed duplicate flag and the whack (ping_clean, ping_whacky), port_call, ais_voyage, the trail's turns and windows

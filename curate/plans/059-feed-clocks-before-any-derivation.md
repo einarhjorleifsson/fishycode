@@ -1,11 +1,11 @@
 # 059 — The feeds' clocks: the first test on every track, right after the union, and the feeds harmonized before any speed or turn is derived across them
 
-**status:** partly built — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan
+**status:** executed — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan
 058's study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2
 built in ramb (2026.11.01, installed), step 3 built as the target `check_ais_feed_clock`, step 4 written into STK's
-dictionary overlay, steps 6 and 7 run as studies, step 8's code built and tested on 2026 in a scratch store (the tag
-pass of §3, TODO 88's floor, astd's speed stamp); the rebuild not run; asks a-h (§7)
-and i answered by the maintainer 2026-11-01, each as recommended, b amended by step 5 (TODO 178) ·
+dictionary overlay, steps 6 and 7 run as studies, step 8 built and rebuilt into the store 2026-11-01 (decision 271:
+the tag pass staged and the New Year partitions fixed on the way), step 9 recorded there; asks a-h (§7)
+and i answered by the maintainer 2026-11-01, each as recommended, b amended by step 5 (TODO 178, closed by decision 271) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
 whack's distance floor, §8c), TODO 117 (`stk_receipt`), plan 048 (STK's streams into the flow), plan 013 (ramb's step
 0), `curate/ais_ping_union.R`, `curate/ais_ping_tag.R`, `curate/ais_ping_clean.R`,
@@ -219,8 +219,12 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    the trail (equal to `ping_clean`'s on all 2,651,514 fixes of March 2026 in scratch); the rebuild's scripts and set in
    `$FISHYDATA/archive/2026-11-01-plan059-rebuild/` (about 27 targets: every outdated one, `ais_ping_union` and the
    check invalidated by hand, `ais_catch` and the audit left; it also brings decision 268's logbook side into the
-   trail, whose readers were left outdated on 2026-10-31). Not run.
-9. **A decision record;** AGENTS.md's Layout row for `curate/` names the check and the alignment.
+   trail, whose readers were left outdated on 2026-10-31). *Run 2026-11-01 (decision 271):* built at 7216654 after two
+   stops, each fixed in code: the tag pass staged into tables (as one query 2014 ran out of memory), and a ping moved
+   across New Year by its lag put in its harmonised year's partition (the trail's count check found 53). Every
+   difference explained; the trail's 580,659,851 fixes equal `curated/ais/ping` in every year.
+9. **A decision record;** AGENTS.md's Layout row for `curate/` names the check and the alignment. *Done 2026-11-01:*
+   decision 271; the dictionary's `ais_ping`, `ais_trail` and `ais_ping_whacky`.
 
 ## 6. What it does not do
 

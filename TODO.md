@@ -292,8 +292,8 @@ left of each is in the plan:
   within 0-5 points, the ping spacing deciding (`2026-11-01-labels-out-of-sample/`); the dredge needs its own fit and
   still joins back-to-back hauls (16 % within 10 min; `2026-11-01-dredge-labels/`). Covariates as one set (maintainer):
   the vessel and its gear are one block, depth varies within vessels but goes with size; no `t1`, `t4` or warp is
-  logged for trawl. Next, in order: the commercial splits reviewed (plan 057 §4); the feeds' clocks (TODO 178); the
-  speed's spread tried on the trawl; the longline's feature; a year's first voyage kept out of the training labels.
+  logged for trawl. Next, in order: the commercial splits reviewed (plan 057 §4); the feeds' clocks, in the data
+  since decision 271; the speed's spread tried on the trawl; the longline's feature; a year's first voyage kept out of the training labels.
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
@@ -397,7 +397,7 @@ defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of th
 (plan 059 step 6: on aligned pings 0.3 nm still frees 71 % and 13 % of what is left, no true removal lost). In ramb
 2026.11.01.2 (ad088e3; `feed`, `noise_nm`, `evidence`; no `two_sided`, maintainer), installed, and adopted in
 `curate/ais_ping_clean.R` (plan 059 step 8): 0.3 nm between providers on the harmonized time, the evidence on
-`ping_whacky` (the prototype's §10 items 4-5, the maintainer, 2026-11-01); in the data with the rebuild.
+`ping_whacky` (the prototype's §10 items 4-5, the maintainer, 2026-11-01); in the data since 2026-11-01 (decision 271).
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
 (the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
@@ -1452,62 +1452,3 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 **check:** the next release's README places every station whose vid is not in the vessel table in an outcome, and no
 lumpfish station before 1992 carries a register vid without a witness.
 
-## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived (plan 059)
-**status:** open · **see:** plan 059,
-decision 270 (its section "Time is an observation"), decision 233, TODO 88, TODO 117, plan 048,
-`curate/corrections/ais_feed_clock_offset.yml`, the studies `$FISHYDATA/archive/2026-11-01-phase-model/` and
-`2026-11-01-feed-clocks/`
-
-The maintainer (2026-10-31): time is observed, like position, with an error of its own. Decision 270 measured it on
-the Icelandic feeds:
-- astd lies 15-90 s behind stk in October 2025 to May 2026 and 30-75 s in September 2015 to January 2016, by month;
-- STK's AIS stream is stamped at receipt in every year 2007-2024, its own units at their own time; the stream mix
-  changed about 2011, the AIS stream's meaning by a second or two in May 2025 (plan 059 §1, amending decision 270);
-- the trail's `speed` is never derived across feeds, so the speed filter is safe; turns and spreads in those months
-  are not.
-
-Plan 059: a standing check right after `ais_ping_union`, the lag applied in the tag pass, the delivered time beside;
-ramb's step 0 for the generic part. Step 1 is run (2026-11-01, the study
-`2026-11-01-feed-clocks/`): offsets in 2014-2016 and 2025-2026, a lag per vessel and month, 266 thousand copies the
-duplicate flag misses. Step 5 too: aligned, the whack's false removals fall 56-90 % in 2015 and 2026 for 0.4-1.1 % of
-its true ones; on-time copies in a late month say a copy's own lag is needed beside the month's. Asks a-h answered
-(maintainer, 2026-11-01, each as recommended; the rule "derive within one stream" is in AGENTS.md). Step 2 is built
-(2026-11-01, ramb's branch `feed-clocks-step0`, not merged or pushed): `rb_add_ping_stream()`, `rb_create_ping_lags()`,
-`rb_add_ping_own_lag()`, `rb_add_ping_time()`; on 2016 and 2026 they give step 1's lags and copies and step 5's aligned
-time, every difference explained (the study's "Step 2"); installed from GitHub as 2026.11.01 (3953894). Step 3 is built: `curated/check/ais_feed_clock`
-(target `check_ais_feed_clock`), equal to step 1 but at the 30-pair bound. The tag pass (§3) is a tested candidate in
-the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written: STK's time by stream and period in
-`dump/oracle/meta/stk.yml`, with assertions `check_data_dict()` tests, and astdB's speed `recorded` in the union's code.
-Steps 6 and 7 are run as studies (2026-11-01): TODO 88's floor kept at 0.3 nm with the aligned times; astd's speed
-stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Step 8's code is built (2026-11-01):
-the candidate as `curate/ais_ping_tag.R`, the clean with TODO 88's floor and evidence, astd's and emodnet's central
-speed, the five columns to the trail; on 2026 in a scratch store it equals the candidate and step 6's 0.3 nm run.
-Next: the rebuild, prepared in `$FISHYDATA/archive/2026-11-01-plan059-rebuild/` (its README: before.R, build.sh,
-after.R), with TODO 179's port calls and decision 268's logbook side; plan 048 and TODO 117 later.
-
-**check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
-or why not.
-
-## 179. Port calls lost at New Year: the January part of a stay begun in December becomes voyage 1
-**status:** open · **needs: maintainer** — the fix (an overlap window and a merge step in ramb, used by `port_call.R`)
-and its rebuild · **see:** `$FISHYDATA/archive/2026-11-01-voyage-year-boundary/` (README, `notes/fix_draft.md`),
-`curate/port_call.R`, `curate/ais_voyage.R`, decision 270, TODO 72
-
-`port_call.R` makes the port calls one year at a time. Year Y's run ends a December call at the vessel's first January
-ping, and year Y+1's `t_in_window` drops the call, which began in December; the pings from there to the departure
-belong to no port call and become voyage 1. Measured 2026-11-01 by Claude (AI), not checked by a person, every
-vessel-year boundary in one outcome: 9,352 of the 25,871 boundaries spent in port lost the January part; 22.9 M pings
-(3.9 % of 2007-2026, every year from 2008; 5.98 M in 2017's strike), 99.98 % in voyage 1, 99.4 % under 0.3 kn;
-`fishing_flow` puts 22,951 h on them (`fishing` 109 h). The fix drafted: keep the calls that overlap the window, merge
-a vessel's calls at one port across years and renumber them; rebuild `port_call` → `ais_voyage` → the trail and what is
-keyed on `voyage_id`.
-
-**Built and tested on a scratch store** (2026-11-01, `$FISHYDATA/archive/2026-11-01-port-call-new-year-fix/`): ramb
-branch `port-call-chunks`, 7598da0 (2026.11.01.1: `rb_create_port_calls(window = )`, `rb_merge_port_calls()`; 240
-tests pass), and fishycode branch `claude/nice-spence-7dd95d`, 0c644e4 (`curate/port_call.R`, AGENTS.md); both
-merged on 2026-11-01 (ramb's `main` fast-forwarded, pushed and installed from GitHub, RemoteSha 7598da0; fishycode
-517ddab). 1,623,564 of 1,623,626 calls equal a run on each vessel's whole series (81 differ,
-explained); 22,988,131 of the 22,988,188 lost pings now in a port call; voyage 1 starts later in 6,183 vessel-years.
-Next: the rebuild with plan 059's step 8.
-
-**check:** the fix built, the rebuild's fingerprints compared, no port call cut at New Year, and a decision record.
