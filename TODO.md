@@ -1465,7 +1465,8 @@ vessel-months of 14 vessels are an hour off (33-118 min, mostly 2007-2009, the c
 vessel-months its clock check could measure: 3,744 hour-off and 63,257 minute-off VMS pings are in the store unmoved.
 2.45 M VMS pings (38,203 vessel-months) have no moving AIS track to judge them by.
 
-Plan 060 (2026-11-01): `rb_create_ping_lags(method = "track")` in ramb, the check by week then month for STK's own
-streams, `lag_basis` `track`, the lone VMS months `unmeasured`, a rebuild from the check down.
+Plan 060 (2026-11-01, revised the same evening): STK's `recdate − posdate` carries the unit's drift (2007: within 1-2 min
+of the scan's shift), so each fix's own lag from its receipt, the AIS-track shift as the check; step 1 measures every
+year, backlogs and the delivery delay before any code. Held by the maintainer before any step runs.
 
 **check:** plan 060 built and in the store, the scan rerun on it, and a decision record.
