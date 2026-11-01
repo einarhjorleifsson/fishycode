@@ -1479,3 +1479,19 @@ pass), pushed and installed from GitHub as 2026.11.01 (2026-11-01). Next: step 3
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
+
+## 179. Port calls lost at New Year: the January part of a stay begun in December becomes voyage 1
+**status:** open · **needs: maintainer** — the fix (an overlap window and a merge step in ramb, used by `port_call.R`)
+and its rebuild · **see:** `$FISHYDATA/archive/2026-11-01-voyage-year-boundary/` (README, `notes/fix_draft.md`),
+`curate/port_call.R`, `curate/ais_voyage.R`, decision 270, TODO 72
+
+`port_call.R` makes the port calls one year at a time. Year Y's run ends a December call at the vessel's first January
+ping, and year Y+1's `t_in_window` drops the call, which began in December; the pings from there to the departure
+belong to no port call and become voyage 1. Measured 2026-11-01 by Claude (AI), not checked by a person, every
+vessel-year boundary in one outcome: 9,352 of the 25,871 boundaries spent in port lost the January part; 22.9 M pings
+(3.9 % of 2007-2026, every year from 2008; 5.98 M in 2017's strike), 99.98 % in voyage 1, 99.4 % under 0.3 kn;
+`fishing_flow` puts 22,951 h on them (`fishing` 109 h). The fix drafted: keep the calls that overlap the window, merge
+a vessel's calls at one port across years and renumber them; rebuild `port_call` → `ais_voyage` → the trail and what is
+keyed on `voyage_id`.
+
+**check:** the fix built, the rebuild's fingerprints compared, no port call cut at New Year, and a decision record.

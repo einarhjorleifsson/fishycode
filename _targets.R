@@ -771,6 +771,13 @@ list(
     produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
   }, format = "file"),
 
+  # The feeds' clocks, the first test on every track (plan 059 §2): each vessel's streams, their dt pattern, their lag
+  # against STK's AIS stream and the copies, by month. Nothing reads it yet; the tag pass will (plan 059 §3).
+  tar_target(check_ais_feed_clock, {
+    ais_ping_union; stk_trail_raw
+    produces("curate/checks/ais_feed_clock.R", fd_curated("check", "ais_feed_clock.parquet"))
+  }, format = "file"),
+
   # L2: whacky-point removal, its own stage rather than fused into trip building
   tar_target(ais_ping_clean, {
     ais_ping_tag
