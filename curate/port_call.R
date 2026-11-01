@@ -29,7 +29,7 @@
 #   tag_span         consecutive pings inside one polygon spanning at least G hours
 #   event_pair       an STK `I` then `U` at the same standard harbour, G hours or more apart, both
 #                    `io_ok` (sources/stk/event.R) and kept by step 0 (their ping is in `ping_clean`, checked
-#                    here, plan 014); only from EVENT_FROM (decision 059: events before
+#                    here, plan 014); only events from EVENT_FROM on are passed (decision 059: events before
 #                    2017 are mostly flicker and duplicate flags, so the general rules carry those years)
 # A seed is extended over the contiguous pings inside the same polygon on either side. Seeds at one
 # harbour that overlap or touch are one stay. `rule` is the strongest evidence present (event_pair >
@@ -39,9 +39,16 @@
 # The minimum stay G is one value for every port, 2 h (decision 074, plan 014): ports carry no class. Decision
 # 063 measured a global 2 h against the class rule (+0.8 % stays, the same landing coverage).
 #
-# A stay's year is the year of T_in. A year's pings are padded with the vessel's last ping of the year
-# before and first ping of the year after, so a gap over New Year is seen; a stay that ends in the next
-# year's first ping is cut there, not extended (`year_edge`).
+# A port call's year is the year of T_in. The calls are made a year at a time (the whole series at once is the
+# memory risk of decision 239). A year's pings are padded with each vessel's last ping before the year and first ping
+# after it, from whichever years hold them, and each year keeps the calls that overlap it, so a call over New Year comes
+# back from both years, each piece as far as that year's pings reach; ramb::rb_merge_port_calls() joins them (TODO 179).
+# Until then the window kept only the calls begun in the year: the January part of a call begun in December was
+# dropped, and its pings became voyage 1 (22.9 M pings of 2008-2026, $FISHYDATA/archive/2026-11-01-voyage-year-boundary/);
+# and the padding came from the neighbouring years only, so a vessel silent for a whole year lost the call its pings
+# either side make (297 calls against a run on the whole series, $FISHYDATA/archive/2026-11-01-port-call-new-year-fix/).
+# What a run by year still misses against the whole series: a piece too short to be a call in its own year (under G,
+# a call short by under G at New Year), and an STK pair whose events lie more than a year apart.
 #
 # Not here: the pass-through guard for event pairs (they must be >= G hours, so a 1-60 min transit never
 # qualifies), foreign harbours (no `einar`
@@ -91,30 +98,41 @@ r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else re
 ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
 
 
+# -- Each vessel's first and last ping of every year ---------------------------------------
+# Once, as aggregates (no window over the pings): the padding of a year is taken from here. Ties in time go by lon, lat.
+
+x(glue::glue("CREATE OR REPLACE TEMP TABLE pc_edge AS
+  SELECT vid, year::INTEGER AS year, min(struct_pack(t := time, lon := lon, lat := lat)) AS first,
+         max(struct_pack(t := time, lon := lon, lat := lat)) AS last
+  FROM read_parquet('{clean_dir}', hive_partitioning = true) WHERE pos_basis = 'recorded' GROUP BY ALL"))
+
 # -- One year ------------------------------------------------------------------------
 
 stay_year <- function(yr) {
-  # pings of the year plus the neighbouring years' boundary pings
-  part <- function(y, last) {
-    if (is.null(clean_years(y))) return(NULL)
-    glue::glue("SELECT vid, time, lon, lat FROM {clean_years(y)} WHERE pos_basis = 'recorded'",
-               if (is.na(last)) "" else " QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time{if (last) ' DESC' else ''}) = 1")
-  }
-  seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(part(yr, NA), part(yr - 1L, TRUE), part(yr + 1L, FALSE)),
-                                             collapse = "\n    UNION ALL ")))
+  # pings of the year, plus each vessel's last ping before it and first ping after it, from whichever years hold them
+  own <- if (is.null(clean_years(yr))) NULL else
+    glue::glue("SELECT vid, time, lon, lat FROM {clean_years(yr)} WHERE pos_basis = 'recorded'")
+  pad <- glue::glue("
+    SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_max(last, year) AS e FROM pc_edge WHERE year < {yr} GROUP BY vid)
+    UNION ALL
+    SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_min(first, year) AS e FROM pc_edge WHERE year > {yr} GROUP BY vid)")
+  seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(own, pad), collapse = "\n    UNION ALL ")))
   # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both ok and kept by step 0.
   # The pings are narrowed to the events' (vid, time) before the DISTINCT: over all three years' pings (165 million
   # groups) it ran away in spill under DuckDB 2.0 now and then (decision 239); the result is the same.
+  # The events of EVENT_FROM on only: the window keeps a call that overlaps the year, so a pair that arrived in December
+  # 2016 would otherwise count in 2017's run.
+  ev_from <- max(yr - 1L, EVENT_FROM)
   ev <- if (yr >= EVENT_FROM) dplyr::tbl(con, dplyr::sql(glue::glue("
     SELECT e.vid, e.time, e.io, e.hid_pid AS port_id, (e.io_ok AND c.vid IS NOT NULL) AS good
     FROM read_parquet('{event_f}') e
     LEFT JOIN (SELECT DISTINCT p.vid, p.time FROM {clean_years(yr + -1:1)} p
                SEMI JOIN read_parquet('{event_f}') k ON k.vid = p.vid AND k.time = p.time
-                 AND k.year BETWEEN {yr - 1L} AND {yr + 1L}) c USING (vid, time)
-    WHERE e.year BETWEEN {yr - 1L} AND {yr + 1L}"))) else NULL
+                 AND k.year BETWEEN {ev_from} AND {yr + 1L}) c USING (vid, time)
+    WHERE e.year BETWEEN {ev_from} AND {yr + 1L}"))) else NULL
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
   ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,
-                           events = ev, t_in_window = win) |>
+                           events = ev, window = win) |>
     collect() |>
     rename(pid = port_id)
 }
@@ -130,12 +148,11 @@ for (k in seq_along(years)) {
                   as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 }
 
+# The pieces of a call over New Year joined, and the key a ping carries (plan 014) numbered per vessel over all years
+# by T_in, so a call over New Year has one number
 out <- bind_rows(res) |>
-  arrange(vid, T_in, pid) |>
-  # the port call's key: a ping carries it, not the call's values (plan 014). Numbered here per vessel over all years,
-  # so a call over New Year keeps one number; ramb's port_call_id is numbered within each year's window and is replaced
-  mutate(port_call_id = row_number(), .by = vid) |>
-  transmute(vid, port_call_id, pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
+  ramb::rb_merge_port_calls(port_id = pid) |>
+  transmute(vid, port_call_id = as.integer(port_call_id), pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
             dur_h = as.numeric(T_out - T_in, units = "hours"),
             rule, evidence, T_in_ping, T_out_ping, T_in_ev, T_out_ev,
             basis = "reconstructed") |>
