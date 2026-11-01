@@ -1,8 +1,9 @@
 # 059 — The feeds' clocks: the first test on every track, right after the union, and the feeds harmonized before any speed or turn is derived across them
 
 **status:** proposal — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan 058's
-study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day; nothing
-built; asks a-h (§7) answered by the maintainer 2026-11-01, each as recommended, b amended by step 5 (TODO 178) ·
+study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2 built
+on a ramb branch (not merged); nothing in the flow built; asks a-h (§7) answered by the maintainer 2026-11-01, each as
+recommended, b amended by step 5 (TODO 178) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
 whack's distance floor, §8c), TODO 117 (`stk_receipt`), plan 048 (STK's streams into the flow), plan 013 (ramb's step
 0), `curate/ais_ping_union.R`, `curate/ais_ping_tag.R`, `curate/ais_ping_clean.R`,
@@ -137,7 +138,15 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    August 2025, October 2025 and December 2025 to May 2026 (10-86 s), 0-1 s between; vessels differ within some months,
    so a lag per vessel and month (ask b); the duplicate flag misses 266 thousand of astd's copies of STK's fixes, 50-76 %
    of the copies in the offset years, and in 2023-2025 some of STK's own late deliveries (−27 to −71 s).
-2. **ramb's step 0 functions** (§4), checked against step 1's numbers and on `dansk`.
+2. **ramb's step 0 functions** (§4), checked against step 1's numbers and on `dansk`. *Built 2026-11-01 on ramb's
+   branch `feed-clocks-step0`, not merged or pushed (the study's README, "Step 2"):* `rb_add_ping_stream()` (the dt
+   pattern), `rb_create_ping_lags()` (the lag per vessel, stream and period, with its outcome), `rb_add_ping_own_lag()`
+   (a copy's or a displaced ping's own lag) and `rb_add_ping_time()` (the harmonized time, the delivered time beside,
+   the lag and its basis: `copy`, `residual`, `measured`, `none`, `unmeasured`). On 2016 and 2026 the lag equals step
+   1's SQL on every unit once it runs on ramb's sphere and takes a stream's same-time pings by a fixed rule; step 1 as
+   run differs by those two alone (every outcome kept but one at the 30-pair bound). The copies are step 1's, plus
+   20 (2016) and 1,143 (2026) whose STK fix was not the nearest on its side; the aligned time is step 5's but for 1-3 s
+   where a lag rounds to another second. `dansk`: 288 pings some 39 s late and one early.
 3. **The check as a target** after `ais_ping_union`, calling them.
 4. **STK's time semantics by stream** in `dump/oracle/meta/stk.yml` (§1 item 2), with an assertion on the share equal by
    stream and period that `check_data_dict()` tests when a dump is adopted; astdB's `speed_basis` `recorded`, at the next

@@ -1449,8 +1449,8 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 lumpfish station before 1992 carries a register vid without a witness.
 
 ## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived (plan 059)
-**status:** open · **see:** plan 059, decision 270
-(its section "Time is an observation"), decision 233, TODO 88, TODO 117, plan 048,
+**status:** open · **needs: maintainer** — ramb's branch `feed-clocks-step0` merged (or not) · **see:** plan 059,
+decision 270 (its section "Time is an observation"), decision 233, TODO 88, TODO 117, plan 048,
 `curate/corrections/ais_feed_clock_offset.yml`, the studies `$FISHYDATA/archive/2026-11-01-phase-model/` and
 `2026-11-01-feed-clocks/`
 
@@ -1468,8 +1468,10 @@ the delivered time beside; ramb's step 0 for the generic part. Step 1 is run (20
 `2026-11-01-feed-clocks/`): offsets in 2014-2016 and 2025-2026, a lag per vessel and month, 266 thousand copies the
 duplicate flag misses. Step 5 too: aligned, the whack's false removals fall 56-90 % in 2015 and 2026 for 0.4-1.1 % of
 its true ones; on-time copies in a late month say a copy's own lag is needed beside the month's. Asks a-h answered
-(maintainer, 2026-11-01, each as recommended; the rule "derive within one stream" is in AGENTS.md). Next: step 2,
-ramb's step 0 functions, the copy's own lag among them.
+(maintainer, 2026-11-01, each as recommended; the rule "derive within one stream" is in AGENTS.md). Step 2 is built
+(2026-11-01, ramb's branch `feed-clocks-step0`, not merged or pushed): `rb_add_ping_stream()`, `rb_create_ping_lags()`,
+`rb_add_ping_own_lag()`, `rb_add_ping_time()`; on 2016 and 2026 they give step 1's lags and copies and step 5's aligned
+time, every difference explained (the study's "Step 2"). Next: the branch merged, then step 3, the check as a target.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
