@@ -24,10 +24,26 @@ place_names_start <- function(port = 8797) {
   e <- .place_names
   if (identical(e$port, port)) return(invisible(port))
   place_names_stop()
+  # a server already on the port: an explorer of this version (a terminal's server.R, another R session) is used as it
+  # is; an older one, or another program, is reported, never stopped
+  head <- tryCatch(curlGetHeaders(sprintf("http://127.0.0.1:%d/", port), timeout = 3), error = function(err) NULL)
+  if (!is.null(head)) {
+    v <- sub("^[^:]*:\\s*", "", trimws(grep("^x-place-names-api:", head, ignore.case = TRUE, value = TRUE)))
+    if (identical(v, e$API_VERSION)) {
+      message("using the place-name explorer already running on port ", port)
+      return(invisible(port))
+    }
+    stop("port ", port, if (length(v)) sprintf(" has an older place-name explorer (version %s): stop it", v)
+         else " is used by another program", ", or give another port: place_names(port = ...)", call. = FALSE)
+  }
   e$con <- DBI::dbConnect(duckdb::duckdb())
   invisible(DBI::dbExecute(e$con, "SET threads = 4"))
   invisible(DBI::dbExecute(e$con, "SET memory_limit = '5GB'"))
-  e$server <- httpuv::startServer("127.0.0.1", port, e$place_names_app(e$con, file.path(e$dir, "www")))
+  e$server <- tryCatch(httpuv::startServer("127.0.0.1", port, e$place_names_app(e$con, file.path(e$dir, "www"))),
+                       error = function(err) {
+                         place_names_stop()
+                         stop("could not listen on port ", port, ": ", conditionMessage(err), call. = FALSE)
+                       })
   e$port <- port
   message("place names on http://127.0.0.1:", port, ", answering while the console is idle; place_names_stop() ends it")
   invisible(port)
