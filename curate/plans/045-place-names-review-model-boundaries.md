@@ -91,8 +91,8 @@ Naming places from many noisy witnesses is studied under several heads:
      við" as "utan", a locator at the end such as "Br." or "á Breiðafirði"), keys of one core within reach of the one
      with most positions (a star, not a chain), then the 2022 hand readings. The single name is LMÍ's, else the
      commonest plain spelling. On the gazetteer of 2026-11-01, tried on a scratch copy: 953 keys in 423 groups of two
-     or more; a sample read by Claude found the core and reading joins mostly right and the locator joins about three
-     in four. The explorer shows each group. Built 2026-11-01, with the same numbers (decision 272).
+     or more; a sample read by Claude (25 per basis) found 24, 23 and 20 of 25 joins by core, reading and locator
+     plausibly right (decision 272). The explorer shows each group. Built 2026-11-01, with the same numbers (decision 272).
    - **Should the single name be part of the rebuild?** Claude's recommendation (2026-11-01, for the maintainer): the
      proposal yes, the decision no. The rules are cheap (10 s) and reproducible from the data, so the proposal is
      rebuilt with the gazetteer and is marked `proposed`. But a group's head and its commonest spelling can change as

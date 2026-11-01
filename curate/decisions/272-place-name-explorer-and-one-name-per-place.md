@@ -5,8 +5,10 @@ vessel overview"), then steered by the maintainer in its own session: the names 
 bland, "solely for looking at placenames - now just for qc purpose", a busy port, and the many versions of one name
 ("In the end we really want a single name (although the sources stay as is)"; "ok, proceed with the code, will build
 afterwards"). Merged and built at the maintainer's word ("Merge and build") by the plan 059 session: 6a63fc3, and
-`$FISHYDATA/archive/2026-11-01-place-name-build/` (its README, the build's logs, fingerprints and terrain counts).
-Built, tested and written by Claude (AI); no person has checked the numbers or the groups.*
+`$FISHYDATA/archive/2026-11-01-place-name-build/` (its README, the build's logs, fingerprints and terrain counts). The
+measures behind one name per place, and the read of the groups, are in `$FISHYDATA/archive/2026-11-01-place-name-groups/`
+(its README and four scripts, rerun on the built store). Built, tested and written by Claude (AI); no person has checked
+the numbers or the groups.*
 
 ## The explorer (plan 045 step 1, its read-only part)
 
@@ -57,16 +59,20 @@ The single name is LMÍ's, else the commonest plain spelling. Keys, spellings an
 **Built** (`curated/place_name/name_group.parquet`, 8 s):
 - 9,281 keys in 8,751 groups;
 - 953 keys share 423 groups: joined as the head 423, by core 348, by reading 125, by locator 57;
-- "Utan við Hólf" holds 14 of its 16 keys.
+- "Utan við Hólf" holds 14 of the ground's 16 spellings: "…vestur af Breiðafirði" is left apart as relative, and "Utan
+  við hólf Breiðafirði" (4 positions) is missed, its locator not marked as one.
 
 The numbers equal the scratch run made before the build. `check.R` passes on the built store.
 
-**How good, as far as read.** Claude read samples of 25 per basis while tuning the rules. This is a read, not a
-measured error rate; the review will be the measure.
-- **The core:** nearly all right: article and case forms, "Á Barðinu" for Barðið.
-- **The readings:** mostly right, as spellings mended by the hand reading (Grundafjörður as Grundarfjörður, Norðfjarðardýpi
-  as Norðfjarðardjúp). Doubtful: "Út í myrkri" as Myrkri at 36 km; "Nætursalan og utanvið Víkurál" as Nætursalan.
-- **The locators:** about three in four. Doubtful: "Gaura stöð", "Arnarfjörður, Hvesta", "Enni í Geldingafell".
+**How good, as far as read.** Claude read 25 keys per way of joining, drawn from the built groups (the study's
+`scripts/02_samples.R`, `results/samples.csv`). This is a read, not a measured error rate; the review will be the
+measure.
+- **By core:** 24 of 25 plausibly right (article and case forms). Doubtful: "Gunnar" with "GUNNI".
+- **By the hand reading:** 23 of 25, mostly spellings mended (Eyjarfjörður as Eyjafjörður, the -dýpi spellings as the
+  reading's -djúp). Doubtful: "Út í myrkri" as Myrkri at 36 km; "Digraneskantur (kverk)", a part in brackets.
+- **By a locator:** 20 of 25. Doubtful: "HLERI ST", "Austurbrúnin, Karginn", "Bulla í bjarg", "Arnarfjörður, Baulhús",
+  and "Halamið - Barðið", two names. That one is a defect: the hyphen test's Perl pattern does not count ð, þ, æ, ö or
+  an accented letter as a letter, so a hyphen after "Halamið" is not seen.
 
 **Part of the rebuild?** The maintainer's question. Claude's recommendation, in plan 045 §3.1: the proposal yes, the
 decision no.
@@ -99,5 +105,6 @@ lock (`place_name` 2 min 26 s, `name_group` 8 s). Afterwards only `ais_catch` an
 
 - The review: queues, answers and the ledger of reviewed names (plan 045 step 1, ask c).
 - A reviewer's read of the locator joins, and any group to split.
+- The hyphen test in `core_of()` to read Icelandic letters (`(*UCP)`, or the TRE pattern), and `name_group` rebuilt.
 - Trackwell's 2095 and 2099 dates.
 - The explorer's filters in its address.
