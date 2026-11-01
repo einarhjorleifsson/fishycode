@@ -75,11 +75,14 @@ day.
   dark halo on dark and satellite; the chosen name's halo wider; the base map's own sea names hidden, on every base
   and after a change.
 - **M3** Zoom buttons, scale bar, pan and zoom; the address's `map=` follows.
-- **M5** "coloured by" (maintainer, 2026-11-01: the map too bland, use ColorBrewer's colours): terrain (Dark2, a hazard
-  in Set1's red; the default), cross-check (RdYlGn's ends), level (YlGnBu) or one colour; the grey values (no terrain
-  word, one family) drawn fainter. The legend below follows the scheme; a click on a value filters the list to it and
-  sets the sidebar's filter, a second click takes it off, and a sidebar filter lights its value in the legend. The
-  colours are kept through a change of base map.
+- **M5** "coloured by" (maintainer, 2026-11-01: the map too bland, use ColorBrewer's colours; and it is solely for
+  looking at the names, for QC now): the names themselves and their footprints, by cross-check (the default: RdYlGn's
+  ends, several places in PuOr's orange), terrain (Dark2, a hazard in Set1's red), level (YlGnBu, the footprints only)
+  or one colour. A name's ink is the dark end of its colour on a light base and the light counterpart (RdYlGn's light
+  end, Set2) on a dark one; a grey value (one family, no terrain word) leaves it in plain ink, and its footprint
+  fainter. The chosen name is 4 px larger. The legend below follows the scheme; a click on a value filters the list to
+  it and sets the sidebar's filter, a second click takes it off, and a sidebar filter lights its value in the legend.
+  The colours are kept through a change of base map.
 
 ## Layout
 

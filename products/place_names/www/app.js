@@ -50,14 +50,24 @@ const TOTAL = {};
 const LABEL = Object.fromEntries(SOURCES.map(([id, l]) => [id, l]));
 const dot = (s) => `<span class="dot" style="background:${COLOUR[s] || '#999'}"></span>`;
 
-// The footprints coloured by one class of their names, each in a ColorBrewer scheme: the terrain in Dark2 (a hazard in
-// Set1's red, no terrain word grey), the cross-check in RdYlGn's ends (agreeing green, disagreeing red, several places
-// orange, one family grey), the level in YlGnBu (broad names dark). Each value's colour also marks it in the panel.
+// The map is for looking at the names (maintainer, 2026-11-01: "solely for looking at placenames", for QC now): the
+// names themselves are coloured by one of their classes, and their footprints in the same colour, quietly. Each scheme
+// is ColorBrewer's: the cross-check (the default, the QC view) in RdYlGn's ends (agreeing green, disagreeing red) with
+// PuOr's dark orange for several places; the terrain in Dark2 (a hazard in Set1's red); the level in YlGnBu (broad
+// names dark), which colours the footprints only, the names' size already saying it. A grey value (one family, no
+// terrain word) leaves a name in plain ink. `ink` darkens a colour to read as text. Each value's colour also
+// marks it in the panel. The names' ink is darker than their footprints' colour, so a name reads over its own footprint;
+// on a dark base it is the light counterpart (`inkDark`).
 const SCHEMES = {
-  terrain: { label: 'terrain', colours: { bank: '#1b9e77', deep: '#7570b3', edge: '#d95f02', ridge: '#e7298a',
-                                          hill: '#66a61e', horn: '#e6ab02', bay: '#a6761d', hazard: '#e41a1c', other: '#999999' } },
-  outcome: { label: 'cross-check', colours: { confirmed: '#1a9641', 'several places': '#fdae61', disagree: '#d7191c',
-                                              single: '#999999', text: '#cccccc' } },
+  outcome: { label: 'cross-check', names: true,
+             ink: { confirmed: '#006d2c', 'several places': '#b35806', disagree: '#b2182b' },   // Greens', PuOr's, RdBu's dark ends
+             inkDark: { confirmed: '#a6d96a', 'several places': '#fdae61', disagree: '#f46d43' },   // RdYlGn's light end
+             colours: { confirmed: '#1a9641', 'several places': '#e66101', disagree: '#d7191c', single: '#999999', text: '#cccccc' } },
+  terrain: { label: 'terrain', names: true, ink: { horn: '#a87d00' },
+             inkDark: { bank: '#66c2a5', edge: '#fc8d62', deep: '#8da0cb', ridge: '#e78ac3', hill: '#a6d854', horn: '#ffd92f',
+                        bay: '#e5c494', hazard: '#fb9a99' },   // Set2, Dark2's light twin, and Paired's light red
+             colours: { bank: '#1b9e77', deep: '#7570b3', edge: '#d95f02', ridge: '#e7298a', hill: '#66a61e', horn: '#e6ab02',
+                        bay: '#a6761d', hazard: '#e41a1c', other: '#999999' } },
   level: { label: 'level', colours: { 1: '#253494', 2: '#2c7fb8', 3: '#41b6c4', 4: '#a1dab4' } },
 };
 const ONE_COLOUR = '#1f5f8b';   // the footprints coloured by nothing
@@ -93,11 +103,20 @@ const mapReady = new Promise((res) => map.once('style.load', res));
 // (a broad white one smeared them over the footprints), the chosen name's wider; light ink with a dark halo on a dark
 // base
 const DARK_BASES = new Set(['dark', 'satellite']);
-const labelPaint = (base) => (DARK_BASES.has(base)
-  ? { 'text-color': ['case', ['get', 'chosen'], '#fdba74', '#f8fafc'], 'text-halo-color': 'rgba(15, 23, 42, 0.8)',
-      'text-halo-width': ['case', ['get', 'chosen'], 2, 1.2], 'text-halo-blur': 0.4 }
-  : { 'text-color': ['case', ['get', 'chosen'], '#9a3412', '#0f1d2b'], 'text-halo-color': 'rgba(255, 255, 255, 0.85)',
-      'text-halo-width': ['case', ['get', 'chosen'], 2, 1.1], 'text-halo-blur': 0.4 });
+let BASE = 'light';
+// a name's ink: its scheme value's colour, plain where the value is grey or the scheme colours no names
+function nameInk(sc, plain, dark) {
+  const s = SCHEMES[sc];
+  if (!s?.names) return plain;
+  const pairs = Object.entries(s.colours).filter(([v]) => !GREY.includes(v))
+    .map(([v, c]) => [v, (dark ? s.inkDark?.[v] : s.ink?.[v]) ?? c]);
+  return ['match', ['to-string', ['get', sc]], ...pairs.flat(), plain];
+}
+const labelPaint = (base, sc) => (DARK_BASES.has(base)
+  ? { 'text-color': nameInk(sc, '#f8fafc', true), 'text-halo-color': 'rgba(15, 23, 42, 0.85)',
+      'text-halo-width': ['case', ['get', 'chosen'], 2.2, 1.3], 'text-halo-blur': 0.4 }
+  : { 'text-color': nameInk(sc, '#0f1d2b', false), 'text-halo-color': 'rgba(255, 255, 255, 0.9)',
+      'text-halo-width': ['case', ['get', 'chosen'], 2.2, 1.2], 'text-halo-blur': 0.4 });
 // The base map's own sea names are left out: the gazetteer holds them (LMÍ's), and two of one name in two places confuse
 const baseWater = (l) => l.type === 'symbol' && /^water_?name/.test(l.id);
 function addLayers() {
@@ -112,9 +131,9 @@ function addLayers() {
   // every footprint of a name in the list, from its minimum zoom less one, as the effort map draws them
   const fromZoom = ['any', ['==', ['get', 'always'], true], ['<=', ['-', ['coalesce', ['get', 'min_zoom'], 11], 1], ['zoom']]];
   map.addLayer({ id: 'foot-fill', type: 'fill', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
-                 paint: { 'fill-color': schemeColour(SCHEME), 'fill-opacity': schemeOpacity(SCHEME, 0.12) } });
+                 paint: { 'fill-color': schemeColour(SCHEME), 'fill-opacity': schemeOpacity(SCHEME, 0.07) } });
   map.addLayer({ id: 'foot-line', type: 'line', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
-                 paint: { 'line-color': schemeColour(SCHEME), 'line-width': 0.7, 'line-opacity': schemeOpacity(SCHEME, 0.6) } });
+                 paint: { 'line-color': schemeColour(SCHEME), 'line-width': 0.7, 'line-opacity': schemeOpacity(SCHEME, 0.4) } });
   // the chosen name's footprint, its occurrences over it, and the outlines of its own (dark on a white casing, seen on
   // any base and over any colour), its parent's (dashed) and its children's over them
   map.addLayer({ id: 'sel-fill', type: 'fill', source: 'sel', filter: ['==', ['get', 'role'], 'self'],
@@ -143,10 +162,11 @@ function addLayers() {
                  paint: { 'circle-radius': 2.5, 'circle-color': '#1f3b57' } });
   map.addLayer({ id: 'labels', type: 'symbol', source: 'labels', filter: shown,
                  layout: { 'text-field': ['get', 'name'], 'text-font': FONT,
-                           'text-size': ['match', ['coalesce', ['get', 'level'], 4], 1, 19, 2, 17, 3, 15, 14],
+                           'text-size': ['+', ['match', ['coalesce', ['get', 'level'], 4], 1, 19, 2, 17, 3, 15, 14],
+                                         ['case', ['get', 'chosen'], 4, 0]],   // the chosen name larger
                            'symbol-sort-key': ['+', ['*', 100000, ['coalesce', ['get', 'level'], 4]], ['-', 0, ['get', 'n']]],
                            'text-padding': 3, 'text-letter-spacing': 0.02 },
-                 paint: labelPaint('light') });
+                 paint: labelPaint(BASE, SCHEME) });
 }
 
 // the footprints of the names in the list, on or off
@@ -154,7 +174,7 @@ $('m-foot').addEventListener('change', () => {
   for (const l of ['foot-fill', 'foot-line']) map.setLayoutProperty(l, 'visibility', $('m-foot').checked ? 'visible' : 'none');
 });
 // the footprints' colours: a scheme, and its legend, whose values filter the list (a second click takes the filter off)
-let SCHEME = 'terrain';
+let SCHEME = 'outcome';
 function drawLegend() {
   const sc = SCHEMES[SCHEME];
   $('m-legend').innerHTML = sc ? Object.entries(sc.colours).map(([v, c]) => `<span class="chip${F[SCHEME] === v ? ' on' : ''}"
@@ -164,8 +184,9 @@ $('m-colour').addEventListener('change', () => {
   SCHEME = $('m-colour').value;
   for (const [l, p] of [['foot-fill', 'fill'], ['foot-line', 'line']]) {
     map.setPaintProperty(l, `${p}-color`, schemeColour(SCHEME));
-    map.setPaintProperty(l, `${p}-opacity`, schemeOpacity(SCHEME, p === 'fill' ? 0.12 : 0.6));
+    map.setPaintProperty(l, `${p}-opacity`, schemeOpacity(SCHEME, p === 'fill' ? 0.07 : 0.4));
   }
+  for (const [k, v] of Object.entries(labelPaint(BASE, SCHEME))) map.setPaintProperty('labels', k, v);
   drawLegend();
 });
 $('m-legend').addEventListener('click', (e) => {
@@ -188,11 +209,12 @@ function baseStyle(b) {
 $('m-base').addEventListener('change', () => {
   const b = BASEMAPS.find((x) => x.id === $('m-base').value);
   if (!b) return;
+  BASE = b.id;
   popup?.remove();
   map.setStyle(baseStyle(b), { transformStyle: (prev, next) => {
     if (!prev) return next;
     const own = prev.layers.filter((l) => OWN.has(l.source))
-      .map((l) => (l.id === 'labels' ? { ...l, paint: labelPaint(b.id) } : l));
+      .map((l) => (l.id === 'labels' ? { ...l, paint: labelPaint(b.id, SCHEME) } : l));
     const base = next.layers.map((l) => (baseWater(l) ? { ...l, layout: { ...l.layout, visibility: 'none' } } : l));
     const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => OWN.has(k)));
     return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers: [...base, ...own] };
@@ -308,6 +330,7 @@ function drawLabels() {
   const f = [], always = S.list.length <= SHORT;
   for (const n of S.list) {
     const props = { key: n.key, name: n.name, n: n.n_positioned ?? 0, level: n.level, min_zoom: n.min_zoom,
+                    terrain: n.terrain, outcome: n.outcome,
                     chosen: n.key === S.key, always };
     if (n.label_lon != null) f.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [n.label_lon, n.label_lat] } });
     for (const p of D.places.get(n.key) ?? []) if (!p.main) f.push({ type: 'Feature', properties: props,
