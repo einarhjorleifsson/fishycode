@@ -75,6 +75,11 @@ Naming places from many noisy witnesses is studied under several heads:
      cycle rule, AGENTS.md).
    - The feedback loop: a rebuild shows the case resolved, or what it now conflicts with.
    - Built one step at a time, each click path tested before the next.
+   - **A first step, read-only (2026-11-01, Claude's build at the maintainer's request):** the place-name explorer,
+     `products/place_names/` (`place_names()`, its README and `checklist.md`). It finds a name, draws its footprint,
+     places and occurrences by source, lists its spellings, synonyms, parent and children, and filters by source,
+     class, terrain, gear, cross-check and level. No queues and no answers: it writes nothing, to `overrides/` or
+     elsewhere, while ask c is open. The review page is to grow from it.
 2. **Effort as an image** (flow side: the effort comes from the track).
    - Per gear, the grid's surface is cut at two scales: the grounds (broad) and the tow lanes and ridges (fine).
    - Measured against the names: the share of a name's positions in its best region, and whether parents and
