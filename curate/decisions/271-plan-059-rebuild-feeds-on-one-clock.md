@@ -112,8 +112,26 @@ hundreds of metres.
 ## Left
 
 - **Eight vessel-months of STK's VMS stream in 2007-2010** (6 vessels) were judged offset, and their 6,069 pings were
-  moved by the rule. Three of them are vids 975 and 1809, by −51 to −67 min. An hour points to a unit's clock or time
-  zone rather than a delivery delay, and it has not been looked into.
+  moved by the rule. Three of them are vids 975 and 1809, by −51 to −67 min. *Looked into the same evening at the
+  maintainer's word* (`scripts/vms_hour_lag.R`, `notes/vms_hour_lag.log`): the hour is a unit's clock, real and not
+  steady.
+  - **One unit, two streams.** Each vessel's VMS and AIS streams come from the same STK mobile id (101092 for vid 975,
+    101499 for 1809), so the VMS track is no other hull's.
+  - **The shift scan.** The VMS stamps were shifted by every minute from −30 to +120 and compared with the AIS track
+    interpolated at the shifted time.
+    - Vid 975, October-November: 3.0 km apart unshifted, a sharp minimum of 258 m at +57 min.
+    - Vid 1809, December: 22.3 km apart unshifted (11 kn for an hour), 264 m at +69 min.
+    - The control, vid 2677 (lag −69 s): 82 m at +1 min, 87 % of pings within 200 m.
+  - **Not a mispairing.** A position paired with the previous report's stamp would give each ping a shift equal to its
+    interval to the next report. It does not: correlation 0.19 for vid 975 and −0.21 for 1809, against intervals of
+    14-62 min.
+  - **The clock moves.** Vid 975 was 54 min late in October and 64 in November. Vid 1809 was on time in September,
+    an hour late for 62 % of its pings in October, 38 % in November and all of them in December (69 min).
+  - **What the store holds.** The monthly lag brought 975's two months and 1809's December from 3-22 km to about
+    260 m, three times the control's residual, since the error drifts within a month. 1809's October and November
+    (3 and 0 pairs, not measurable) were not moved, so about half of its 1,012 VMS pings in those two months are an
+    hour off.
+  - **Not measured:** how many other VMS units do the same in months the check cannot measure.
 - astd's 2017 `fishing_flow` hours, −7.0 %.
 - The effort map's two grids (`products.sh`) are built from the trail and are no target. They were rerun the same
   evening on the maintainer's word and finished at 19:15 (`products.log`). Their check passed: the hours, kW-hours and
