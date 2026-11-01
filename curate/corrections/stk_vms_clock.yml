@@ -14,6 +14,12 @@ defect:
     amount is 0-2 min (6,947 vessel-months on time), for some it is minutes, for a few about an hour. The unit's clock
     drifts: vid 975 went from 55 to 73 min late and vid 1809 from 47 to 70 min over September-December 2007, 8-9 min a
     month. The VMS and AIS streams of one vessel come from one STK mobile id, so the VMS track is no other hull's.
+    Month by month over every year the shift is a sawtooth, 8-12 min a month (15-25 s a day) and then back to about 0
+    (vid 1476 three times in 2013-2017, vid 2040 twice in 2019), and later steady at 1.1-1.5 min on some vessels: a
+    unit stamping from a free-running clock that is set right now and then, not from GPS time. Each vessel has its own
+    unit, so the error is per vessel. Not confirmed outside the data: the web (2026-11-01) has the rule that a VMS
+    report carries its fix time in UTC, and delays from fix to receipt (the other sign), but nothing on drifting unit
+    clocks.
   evidence:
     method: "each VMS ping projected onto its vessel's moving AIS segments within 2 h (scripts/01_scan.R): the best shift, judged where the AIS track moves and the fit is within 300 m"
     on_time_months: "judged shifts -1.0 to +3.0 min (5-95 %), median 0.8 min"

@@ -39,6 +39,12 @@ choice of repair is the maintainer's; the design and every number are Claude's.
 
   Weeks with 5 or more judged pings hold 94-96 % of these months' judged pings, and days 85-89 %. Over every year,
   7,305 vessel-months, 4,106 vessel-weeks and 3,748 vessel-days hold 10 or more judged pings.
+- **The mechanism** (script 04). Each hour-off vessel's shift, month by month over every year, is a sawtooth: it grows
+  8-12 min a month (15-25 s a day), then drops back to about 0. Vid 1476 did so three times between 2013 and 2017
+  (to 67, 114 and 98 min), and vid 2040 twice in 2019 (to 61 and 60). Several vessels then hold steady at the on-time
+  units' 1.1-1.5 min, as if the unit was replaced. So a free-running unit clock is set right from time to time, and the
+  minute-scale months are the early part of the same ramps. Vids 1976 and 2643 reach 125 and 110 min, so a ±2 h search
+  can cut the largest off. Not confirmed outside the data (the study's README, "The mechanism").
 - **The tag pass** applies a lag table through `rb_add_ping_time(lags, period = )`, one period for the whole table. A
   ping takes the unit of its delivered time.
 
@@ -55,7 +61,7 @@ choice of repair is the maintainer's; the design and every number are Claude's.
 A third method for `rb_create_ping_lags()`, `method = "track"`, generic for any stream held against a reference that
 moves. Each ping of the stream:
 - is placed on the reference's track (segments between consecutive pings of at most `max_gap_s`, moving over `kn[1]`)
-  by the shift within ±`max_lag_s` (default 2 h) that brings it nearest, projected onto each segment, so the shift is
+  by the shift within ±`max_lag_s` (default 3 h: the drifting clocks reach 125 min) that brings it nearest, projected onto each segment, so the shift is
   to the second;
 - is judged where the reference moves at the ping's own time and the fit is within `max_dist_m` (300 m).
 
@@ -116,8 +122,15 @@ trail and the user tables, about 1.5 h; `ais_catch` and the audit left (decision
 
 ## 7. Asks
 
-- a. **The period:** a week, falling back to the month (recommended: a third of the month's residual, nearly all the
-  coverage); the month alone, as for astd; or a day (finer, with 85-89 % of the judged pings).
+- a. **The lag's form:**
+  - a week, falling back to the month (recommended for a first build: a third of the month's residual, nearly all the
+    coverage, and simple);
+  - the month alone, as for astd;
+  - a day (finer, with 85-89 % of the judged pings);
+  - or a drift line per unit between resets, which is what the sawtooth is. It would fit best, but finding the resets
+    is a model of its own, a later step if the weekly residual is not small enough.
+
+  In every form, `max_lag_s` is 3 h, not 2 h, because vids 1976 and 2643 drift past 2 h.
 - b. **Which units move:** every unit `offset` by plan 059's rule (`lag_min_s` 10 s, recommended: one rule for every
   stream). This also moves the on-time VMS units onto the AIS stream's receipt clock, about 0.8 min, an estimated
   0.9 M pings. The alternative is only units beyond 3 min (the defect alone, about 70 thousand pings).
