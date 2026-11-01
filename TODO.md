@@ -289,7 +289,10 @@ left of each is in the plan:
   its look-alikes, decoded by LaMa, the trail in about 9 min; not built. Next, in order: the commercial splits reviewed
   (plan 057 §4); the feeds' clocks first (TODO 178); the longline's feature. Covariates as one set, not one at a
   time (maintainer, 2026-11-01): the vessel's length, power and age, the gear's rigging (plan 052), depth (GEBCO, its
-  global grid not yet adopted) and others; length class is the only one in the model so far.
+  global grid not yet adopted) and others; length class is the only one in the model so far. Their inventory
+  (2026-11-01, `$FISHYDATA/archive/2026-11-01-label-covariates/`): the vessel's properties and its gear are one block
+  (ρ 0.85-0.89), depth varies within vessels but goes with size (ρ 0.56-0.60), the logbook has no `t1` or `t4` for
+  trawl and no warp; and plan 058's 2019 trawl set holds 6,155 dredge hauls (`gid`, not `gid_used`, decision 270).
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
