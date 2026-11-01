@@ -1,9 +1,10 @@
 # 059 — The feeds' clocks: the first test on every track, right after the union, and the feeds harmonized before any speed or turn is derived across them
 
-**status:** proposal — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan 058's
-study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2 built
-on a ramb branch (not merged); nothing in the flow built; asks a-h (§7) answered by the maintainer 2026-11-01, each as
-recommended, b amended by step 5 (TODO 178) ·
+**status:** partly built — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan
+058's study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2
+built in ramb (2026.11.01, installed), step 3 built as the target `check_ais_feed_clock`; the tag pass (§3) and the
+rebuild not built; asks a-h (§7) answered by the maintainer 2026-11-01, each as recommended, b amended by step 5
+(TODO 178) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
 whack's distance floor, §8c), TODO 117 (`stk_receipt`), plan 048 (STK's streams into the flow), plan 013 (ramb's step
 0), `curate/ais_ping_union.R`, `curate/ais_ping_tag.R`, `curate/ais_ping_clean.R`,
@@ -147,7 +148,12 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    run differs by those two alone (every outcome kept but one at the 30-pair bound). The copies are step 1's, plus
    20 (2016) and 1,143 (2026) whose STK fix was not the nearest on its side; the aligned time is step 5's but for 1-3 s
    where a lag rounds to another second. `dansk`: 288 pings some 39 s late and one early.
-3. **The check as a target** after `ais_ping_union`, calling them.
+3. **The check as a target** after `ais_ping_union`, calling them. *Built 2026-11-01* (`curate/checks/ais_feed_clock.R`,
+   target `check_ais_feed_clock`, `curated/check/ais_feed_clock.parquet`, 467,647 vessel-stream-months 2007-2026, 3 min
+   20 s; fishycode 0c06c93, ramb 2026.11.01): every unit has an outcome; astd's offset vessel-months by year equal step
+   1's but at the 30-pair bound (646 / 647 in 2014, 1,498 / 1,497 in 2015, 387 / 388 in 2025), and its copies beyond
+   10 s step 1's plus those step 1's join could not reach (2014: 24,706 / 23,669; 2026: 91,575 / 90,445). The logger
+   keeps its outcome, "reconstructed positions", and no lag.
 4. **STK's time semantics by stream** in `dump/oracle/meta/stk.yml` (§1 item 2), with an assertion on the share equal by
    stream and period that `check_data_dict()` tests when a dump is adopted; astdB's `speed_basis` `recorded`, at the next
    union build.
