@@ -1476,8 +1476,9 @@ its true ones; on-time copies in a late month say a copy's own lag is needed bes
 `rb_add_ping_own_lag()`, `rb_add_ping_time()`; on 2016 and 2026 they give step 1's lags and copies and step 5's aligned
 time, every difference explained (the study's "Step 2"). Merged into ramb's `main` (fast-forward, 3953894; 235 tests
 pass), pushed and installed from GitHub as 2026.11.01 (2026-11-01). Step 3 is built: `curated/check/ais_feed_clock`
-(target `check_ais_feed_clock`), equal to step 1 but at the 30-pair bound. Next: step 4 (STK's time by stream in its
-overlay), the tag pass (§3), steps 6-7, then step 8's rebuild, which can carry TODO 179's port-call fix.
+(target `check_ais_feed_clock`), equal to step 1 but at the 30-pair bound. The tag pass (§3) is a tested candidate in
+the study (2026: the whack's false removals 97,535 to 9,622). Next: step 4 (STK's time by stream in its overlay), steps
+6-7, then step 8: the candidate adopted and the rebuild, which can carry TODO 179's port-call fix.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.

@@ -119,6 +119,13 @@ harmonized time. Declared as `curate/corrections/ais_feed_clock_offset.yml`, its
 **Why here.** Not earlier: a lag needs two feeds, and a source adapter reads one. Not later: every stage after it
 derives across pings (the duplicate flag, the whack's step speeds, port calls, turns, the trail's windows).
 
+*A candidate, 2026-11-01* (the study's `scripts/10_tag_pass_candidate.R`, its README "Step 3 and the tag pass"): run on
+a scratch store for 2016 and 2026 with the flow's whack unchanged after it, every row in and out once. Against the live
+run in 2026 the whack's false removals of STK pings fall from 97,535 to 9,622 for 55 true ones, the late copies are
+flagged (90,764), only 267 on-time copies come apart, and reversals between feeds fall from 12.5 to 2.4 %. To adopt it:
+the script in place of `ais_ping_tag.R`, the check among its dependencies, `ais_ping_clean.R` carrying the four new
+columns, then step 8's rebuild.
+
 ## 4. Generic, in ramb: step 0 of the one flow
 
 Before `rb_flag_ping_impossible()`, as functions any dataset can call:
