@@ -57,6 +57,13 @@ vessel overview's manner (plan 030: an R service with an allowlist, a page with 
 the viewer what serves it: the same MapLibre version, ramb's base maps (`rb_map_basemaps()`, served to the page), and
 the effort map's way of drawing names from their minimum zoom.
 
+One base is its own, not ramb's, since it is Icelandic: "Sea charts (LMÍ)", the charts of Sjómælingar Íslands (the
+Coast Guard's hydrography) as LMÍ's map viewer draws them, from the map cache of Náttúrufræðistofnun, which LMÍ joined
+in 2024 (`SEA_CHART` in `api.R`; added 2026-11-01 by Claude (AI), at the maintainer's request). Each chart scale is a
+layer, from the zoom where it is about at its own scale at 65° N; the cache's own all-scales layer switches by the
+Mercator scale and shows each chart at 2.4 times its size there. The charts carry their own names, printed: a
+gazetteer name beside the chart's is what the page is for. Not for navigation.
+
 ## Not in this version
 
 - the filters in the address (only the chosen name and the map's position are);

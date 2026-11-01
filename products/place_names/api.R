@@ -3,7 +3,8 @@
 #
 # Input:  curated/place_name/{place_name, place, synonym, variant, evidence}.parquet (curate/place_name.R,
 #         curate/place_name_evidence.R; plan 044), and name_group.parquet where it is built (curate/name_group.R, plan
-#         045 §3.1: one name for the keys of one place); ramb's rb_map_basemaps() (the base maps' addresses, one home)
+#         045 §3.1: one name for the keys of one place); ramb's rb_map_basemaps() (the base maps' addresses, one home),
+#         and LMÍ's sea charts (SEA_CHART, Icelandic, so not ramb's)
 # Output: nothing written. Each endpoint answers JSON, columns as arrays; the footprints as GeoJSON.
 #
 # - Every endpoint names its columns in ALLOW, and the answer is `SELECT <those columns>`, so nothing else leaves the
@@ -16,7 +17,29 @@
 #   and the page is never published (plan 045 §5).
 
 # The service's version, sent with every answer. The page carries the same string and says so when they differ.
-API_VERSION <- "2026-11-01.2"
+API_VERSION <- "2026-11-01.3"
+
+# The sea charts of Sjómælingar Íslands (the Coast Guard's hydrography), as LMÍ's map viewer draws them, from the map
+# cache of Náttúrufræðistofnun, which LMÍ joined in 2024: a WMS in web Mercator, one layer per chart scale, each chart
+# clipped to its frame. A base of their own, stacked, the smallest scale below, each from the zoom where the chart is
+# about at its own scale at 65° N (a MapLibre zoom z is 1:279,541,132 / 2^z at the equator), half a zoom early, to
+# three zooms on, where it is drawn at 8 times its size and its tiles are no longer worth asking. The cache's
+# all-scales layer (Sjokort_Sjomaelinga) switches by the Mercator scale, which at 65° N shows each chart at 2.4 times
+# its size.
+SEA_CHART <- local({
+  scale <- c(sjokort_2milljon = 2e6, sjokort_1milljon = 1e6, sjokort_300thusund = 3e5, sjokort_K42 = 1.6e5,
+             sjokort_100thusund = 1e5, sjokort_K44 = 7e4, sjokort_35_40_50thusund = 4e4, sjokort_15thusund = 1.5e4,
+             sjokort_10thusund = 1e4)
+  wms <- paste0("https://gis.natt.is/mapcache/sjokort/web-mercador/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap",
+                "&FORMAT=image%2Fpng&TRANSPARENT=TRUE&STYLES=&TILED=true&CRS=EPSG%3A3857&WIDTH=256&HEIGHT=256",
+                "&BBOX={bbox-epsg-3857}&LAYERS=Sjomaelingar%3A")
+  own <- log2(279541132 * cos(65 * pi / 180) / scale)
+  from <- c(0, round(own[-1] - 0.5, 1))   # the smallest from any zoom
+  list(id = "sea_chart", label = "Sea charts (LMÍ)", maxzoom = 17,
+       attribution = "Sjókort © Sjómælingar Íslands, Landhelgisgæslan; not for navigation",
+       layers = unname(Map(function(id, a, b) list(id = id, tiles = paste0(wms, id), minzoom = a, maxzoom = b),
+                           names(scale), from, round(own + 3, 1))))
+})
 
 NOT_SERVED <- c("text", "vessel", "source_key")
 
@@ -64,6 +87,12 @@ footprints_geojson <- function() {
   paste(readLines(tmp, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
 }
 
+# ramb's base maps, the sea charts before its last, 'none'
+base_maps <- function() {
+  b <- ramb::rb_map_basemaps()
+  append(b, list(SEA_CHART), after = sum(vapply(b, function(x) x$id != "none", logical(1))))
+}
+
 # HTTP ---------------------------------------------------------------------------------------------------------------
 reply <- function(status, body, type = "text/plain; charset=utf-8")
   list(status = status, headers = list(`Content-Type` = type, `Cache-Control` = "no-store",
@@ -90,7 +119,7 @@ place_names_app <- function(con, www) {
                  as_json(DBI::dbGetQuery(con, select_sql("groups", order = "ORDER BY \"group\", km")))
                else as_json(stats::setNames(rep(list(character()), length(ALLOW$groups)), ALLOW$groups)),
     footprints = footprints_geojson(),
-    basemaps = enc2utf8(as.character(jsonlite::toJSON(ramb::rb_map_basemaps(), auto_unbox = TRUE)))
+    basemaps = enc2utf8(as.character(jsonlite::toJSON(base_maps(), auto_unbox = TRUE)))
   )
   keys <- DBI::dbGetQuery(con, sprintf("SELECT key FROM %s", src("place_name")))$key
   call <- function(req) {

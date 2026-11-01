@@ -7,7 +7,7 @@ const esc = (x) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const num = (x, d = 0) => (x == null || Number.isNaN(x) ? '' : Number(x).toLocaleString('en-GB', { maximumFractionDigits: d }));
 const status = (msg) => { $('status').textContent = msg; };
 // The service's version this page was written for (api.R, API_VERSION)
-const API = '2026-11-01.2';
+const API = '2026-11-01.3';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -199,15 +199,21 @@ $('m-legend').addEventListener('click', (e) => {
   $(`f-${SCHEME}`).value = F[SCHEME];
   applyFilters();
 });
-// The base maps are ramb's (rb_map_basemaps(), as the effort map's). A raster base or none has no glyphs of its own:
-// the labels keep the previous style's, and our layers are carried over the change (as ramb's viewer does)
+// The base maps are ramb's (rb_map_basemaps(), as the effort map's), and LMÍ's sea charts (api.R, SEA_CHART). A raster
+// base or none has no glyphs of its own: the labels keep the previous style's, and our layers are carried over the
+// change (as ramb's viewer does)
 let BASEMAPS = [];
 function baseStyle(b) {
   if (b.style) return b.style;
   const layers = [{ id: 'base-bg', type: 'background', paint: { 'background-color': '#eef0f2' } }];
+  // the sea charts: a layer per chart scale, the smallest below, each over its own zooms (a hidden layer's tiles are
+  // never asked)
+  const raster = (tiles) => ({ type: 'raster', tiles: [tiles], tileSize: 256, maxzoom: b.maxzoom, attribution: b.attribution ?? '' });
+  if (b.layers) return { version: 8, sources: Object.fromEntries(b.layers.map((l) => [l.id, raster(l.tiles)])),
+                         layers: [...layers, ...b.layers.map((l) => ({ id: l.id, type: 'raster', source: l.id,
+                                                                       minzoom: l.minzoom, maxzoom: l.maxzoom }))] };
   if (!b.tiles) return { version: 8, sources: {}, layers };
-  return { version: 8, layers: [...layers, { id: 'base', type: 'raster', source: 'base' }],
-           sources: { base: { type: 'raster', tiles: [b.tiles], tileSize: 256, maxzoom: b.maxzoom, attribution: b.attribution ?? '' } } };
+  return { version: 8, layers: [...layers, { id: 'base', type: 'raster', source: 'base' }], sources: { base: raster(b.tiles) } };
 }
 $('m-base').addEventListener('change', () => {
   const b = BASEMAPS.find((x) => x.id === $('m-base').value);

@@ -8,8 +8,8 @@ How to test:
 - the browser pane must be visible for anything the map draws (a hidden pane draws no frame);
 - the service first: `Rscript products/place_names/check.R`.
 
-All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4 and M5 added and passed the same
-day.
+All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4, M5 and M6 added and passed the
+same day (M6 at 1024 px and 375 px).
 
 ## Load
 
@@ -78,8 +78,8 @@ day.
 ## The map's controls
 
 - **M1** Footprints off hides every listed footprint (the chosen name's stays); on brings them back.
-- **M2** Base map: the six of ramb's `rb_map_basemaps()`; every layer, the labels and the footprints' on/off are kept
-  through a change.
+- **M2** Base map: the six of ramb's `rb_map_basemaps()` and LMÍ's sea charts (M6); every layer, the labels and the
+  footprints' on/off are kept through a change.
 - **M4** The names are legible on every base (maintainer, 2026-11-01: the broad white halo made them hard to read):
   upright semi-bold, dark ink with a narrow soft halo on the light bases (light, voyager, ocean, none), light ink with a
   dark halo on dark and satellite; the chosen name's halo wider; the base map's own sea names hidden, on every base
@@ -93,6 +93,14 @@ day.
   fainter. The chosen name is 4 px larger. The legend below follows the scheme; a click on a value filters the list to
   it and sets the sidebar's filter, a second click takes it off, and a sidebar filter lights its value in the legend.
   The colours are kept through a change of base map.
+
+- **M6** "Sea charts (LMÍ)" (maintainer, 2026-11-01: the sea charts LMÍ serves as an optional background), before
+  "None": Sjómælingar Íslands' charts from `gis.natt.is`, the smallest scale below and each from about its own scale
+  (`api.R`, `SEA_CHART`): 1:2,000,000 at the opening view, 1:300,000 at zoom 8.5 off Reykjanes, 1:100,000 at 10.2 and
+  1:35,000-50,000 at 11.6 off Reykjavík, its harbour at 1:10,000 at 13.6; a chart three zooms past its scale is not
+  asked (four layers at 13.6, not nine). The names in dark ink on a white halo; the attribution says "not for
+  navigation". Outside a harbour chart's frame the cache answers 404, and now and then 500 at a chart's edge: in the
+  console only, nothing on the page.
 
 ## Layout
 
