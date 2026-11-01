@@ -8,7 +8,8 @@ How to test:
 - the browser pane must be visible for anything the map draws (a hidden pane draws no frame);
 - the service first: `Rscript products/place_names/check.R`.
 
-All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4 added and passed the same day.
+All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4 and M5 added and passed the same
+day.
 
 ## Load
 
@@ -52,9 +53,12 @@ All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px
   spread, footprint size, depth and slope, gear and its share, the families, the zoom it shows from, region, LMÍ.
 - **D2** Parent (with its basis) and children; spellings with counts, sources, rule, repair and reading; candidate
   synonyms with relation, letters and km; places (two or more) with positions, share, support and families.
-- **D3** The map: its footprint filled, outlined; its parent's dashed; its children's thin; its places numbered (two or
-  more); its occurrences coloured by source, a flagged position or Trackwell's picklist summary left off the map.
-- **D4** Occurrences: a chip per source with its count, bars by year, and the first 200 rows.
+- **D3** The map: its footprint outlined dark on a white casing (seen on every base); its parent's dashed; its
+  children's thin; its places numbered (two or more); its occurrences coloured by source (ColorBrewer's Paired, a pair
+  per family, the commoner light), the rarer sources drawn on top; a flagged position or Trackwell's picklist summary
+  left off the map.
+- **D4** Occurrences: a chip per source with its count, bars by year stacked by source in the sources' colours, and the
+  first 200 rows. The class, terrain, cross-check and level badges carry their footprint colour.
 - **D5** A source chip hides that source's occurrences on the map, in the table and in the bars; a second click shows
   them; the panel keeps its scroll. A newly chosen name starts with every source on.
 - **D6** An occurrence row: the map flies to it and opens its popup. A place row: the map flies to the place.
@@ -71,6 +75,11 @@ All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px
   dark halo on dark and satellite; the chosen name's halo wider; the base map's own sea names hidden, on every base
   and after a change.
 - **M3** Zoom buttons, scale bar, pan and zoom; the address's `map=` follows.
+- **M5** "coloured by" (maintainer, 2026-11-01: the map too bland, use ColorBrewer's colours): terrain (Dark2, a hazard
+  in Set1's red; the default), cross-check (RdYlGn's ends), level (YlGnBu) or one colour; the grey values (no terrain
+  word, one family) drawn fainter. The legend below follows the scheme; a click on a value filters the list to it and
+  sets the sidebar's filter, a second click takes it off, and a sidebar filter lights its value in the legend. The
+  colours are kept through a change of base map.
 
 ## Layout
 

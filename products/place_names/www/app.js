@@ -36,15 +36,37 @@ const FOLD = 'áéíóúýöäåøü', PLAIN = 'aeiouyoaaou';
 const nameKey = (s) => String(s).toLowerCase().replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae')
   .replace(/[áéíóúýöäåøü]/g, (c) => PLAIN[FOLD.indexOf(c)]).replace(/[^a-z0-9?]/g, '').replace(/([a-z])\1+/g, '$1');
 
-// The sources, in the order of plan 044's families, each with a colour on the map and in the lists
+// The sources in ColorBrewer's Paired, 12 colours for 12 sources: a light and dark pair is a family of witness, the
+// commoner source light and the rarer dark (and drawn on top), so the rarer stands out where both lie
 const SOURCES = [
-  ['trackwell', 'Trackwell hauls', '#1f77b4'], ['plotter', 'plotter marks', '#ff7f0e'], ['lmi', 'LMÍ', '#2ca02c'],
-  ['sjokort', 'sea charts', '#17becf'], ['fiskmerki', 'tag recaptures', '#d62728'], ['channel', 'channel', '#9467bd'],
-  ['oracle', 'Oracle (orri, skikar)', '#8c564b'], ['uv', 'uv closures', '#e377c2'], ['skjalfandi', 'Skjálfandi', '#bcbd22'],
-  ['qgis', 'QGIS', '#7f7f7f'], ['article', 'articles', '#aec7e8'], ['isor', 'ÍSOR', '#c49c94']];
+  ['trackwell', 'Trackwell hauls', '#a6cee3'], ['plotter', 'plotter marks', '#1f78b4'],     // the fishermen's own
+  ['lmi', 'LMÍ', '#b2df8a'], ['sjokort', 'sea charts', '#33a02c'],                       // the official maps
+  ['channel', 'channel', '#fb9a99'], ['fiskmerki', 'tag recaptures', '#e31a1c'],           // MFRI's samples
+  ['oracle', 'Oracle (orri, skikar)', '#fdbf6f'], ['uv', 'uv closures', '#ff7f00'],        // registers and regulations
+  ['skjalfandi', 'Skjálfandi', '#cab2d6'], ['qgis', 'QGIS', '#6a3d9a'],                   // areas drawn by hand
+  ['article', 'articles', '#ffff99'], ['isor', 'ÍSOR', '#b15928']];                        // text, with no position
 const COLOUR = Object.fromEntries(SOURCES.map(([id, , c]) => [id, c]));
+const TOTAL = {};
 const LABEL = Object.fromEntries(SOURCES.map(([id, l]) => [id, l]));
 const dot = (s) => `<span class="dot" style="background:${COLOUR[s] || '#999'}"></span>`;
+
+// The footprints coloured by one class of their names, each in a ColorBrewer scheme: the terrain in Dark2 (a hazard in
+// Set1's red, no terrain word grey), the cross-check in RdYlGn's ends (agreeing green, disagreeing red, several places
+// orange, one family grey), the level in YlGnBu (broad names dark). Each value's colour also marks it in the panel.
+const SCHEMES = {
+  terrain: { label: 'terrain', colours: { bank: '#1b9e77', deep: '#7570b3', edge: '#d95f02', ridge: '#e7298a',
+                                          hill: '#66a61e', horn: '#e6ab02', bay: '#a6761d', hazard: '#e41a1c', other: '#999999' } },
+  outcome: { label: 'cross-check', colours: { confirmed: '#1a9641', 'several places': '#fdae61', disagree: '#d7191c',
+                                              single: '#999999', text: '#cccccc' } },
+  level: { label: 'level', colours: { 1: '#253494', 2: '#2c7fb8', 3: '#41b6c4', 4: '#a1dab4' } },
+};
+const ONE_COLOUR = '#1f5f8b';   // the footprints coloured by nothing
+const schemeColour = (sc) => (SCHEMES[sc]
+  ? ['match', ['to-string', ['get', sc]], ...Object.entries(SCHEMES[sc].colours).flat(), '#999999'] : ONE_COLOUR);
+// a grey value (no terrain word, one family, no position) drawn fainter, so the coloured classes carry the map
+const GREY = ['other', 'single', 'text'];
+const schemeOpacity = (sc, o) => (SCHEMES[sc] ? ['match', ['to-string', ['get', sc]], GREY, o * 0.4, o] : o * 0.6);
+const swatch = (c) => `<span class="dot" style="background:${c}"></span>`;
 
 // State: the data held, the list's filters, the chosen name and its occurrences
 const D = { names: [], byKey: new Map(), children: new Map(), syn: new Map(), variants: new Map(), places: new Map(),
@@ -90,24 +112,27 @@ function addLayers() {
   // every footprint of a name in the list, from its minimum zoom less one, as the effort map draws them
   const fromZoom = ['any', ['==', ['get', 'always'], true], ['<=', ['-', ['coalesce', ['get', 'min_zoom'], 11], 1], ['zoom']]];
   map.addLayer({ id: 'foot-fill', type: 'fill', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
-                 paint: { 'fill-color': '#1f5f8b', 'fill-opacity': 0.04 } });
+                 paint: { 'fill-color': schemeColour(SCHEME), 'fill-opacity': schemeOpacity(SCHEME, 0.12) } });
   map.addLayer({ id: 'foot-line', type: 'line', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
-                 paint: { 'line-color': '#1f5f8b', 'line-width': 0.6, 'line-opacity': 0.25 } });
-  // the chosen name's footprint, its occurrences over it, and the outlines of its own, its parent's (dashed) and its
-  // children's over them
+                 paint: { 'line-color': schemeColour(SCHEME), 'line-width': 0.7, 'line-opacity': schemeOpacity(SCHEME, 0.6) } });
+  // the chosen name's footprint, its occurrences over it, and the outlines of its own (dark on a white casing, seen on
+  // any base and over any colour), its parent's (dashed) and its children's over them
   map.addLayer({ id: 'sel-fill', type: 'fill', source: 'sel', filter: ['==', ['get', 'role'], 'self'],
-                 paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.18 } });
+                 paint: { 'fill-color': '#0f172a', 'fill-opacity': 0.08 } });
   map.addLayer({ id: 'ev', type: 'circle', source: 'ev',
-                 paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2.2, 10, 4],
-                          'circle-color': ['get', 'colour'], 'circle-opacity': 0.55,
-                          'circle-stroke-color': '#fff', 'circle-stroke-width': 0.5 } });
+                 layout: { 'circle-sort-key': ['get', 'sort'] },
+                 paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2.4, 10, 4.5],
+                          'circle-color': ['get', 'colour'], 'circle-opacity': 0.85,
+                          'circle-stroke-color': 'rgba(15, 23, 42, 0.45)', 'circle-stroke-width': 0.5 } });
+  map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', filter: ['!=', ['get', 'role'], 'child'],
+                 paint: { 'line-color': '#fff', 'line-width': 4.5, 'line-opacity': 0.85 } });
   map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', filter: ['!=', ['get', 'role'], 'parent'],
-                 paint: { 'line-color': ['match', ['get', 'role'], 'self', '#b45309', '#6b7280'],
-                          'line-width': ['match', ['get', 'role'], 'self', 2, 1] } });
+                 paint: { 'line-color': ['match', ['get', 'role'], 'self', '#0f172a', '#475569'],
+                          'line-width': ['match', ['get', 'role'], 'self', 2.5, 1.2] } });
   map.addLayer({ id: 'sel-parent', type: 'line', source: 'sel', filter: ['==', ['get', 'role'], 'parent'],
-                 paint: { 'line-color': '#374151', 'line-width': 1.5, 'line-dasharray': [3, 2] } });
+                 paint: { 'line-color': '#0f172a', 'line-width': 1.8, 'line-dasharray': [3, 2] } });
   map.addLayer({ id: 'places', type: 'circle', source: 'places',
-                 paint: { 'circle-radius': 11, 'circle-color': '#fff', 'circle-stroke-color': '#b45309', 'circle-stroke-width': 2 } });
+                 paint: { 'circle-radius': 11, 'circle-color': '#fff', 'circle-stroke-color': '#0f172a', 'circle-stroke-width': 2 } });
   map.addLayer({ id: 'places-n', type: 'symbol', source: 'places',
                  layout: { 'text-field': ['to-string', ['get', 'place']], 'text-font': FONT, 'text-size': 13,
                            'text-allow-overlap': true, 'icon-allow-overlap': true } });
@@ -127,6 +152,28 @@ function addLayers() {
 // the footprints of the names in the list, on or off
 $('m-foot').addEventListener('change', () => {
   for (const l of ['foot-fill', 'foot-line']) map.setLayoutProperty(l, 'visibility', $('m-foot').checked ? 'visible' : 'none');
+});
+// the footprints' colours: a scheme, and its legend, whose values filter the list (a second click takes the filter off)
+let SCHEME = 'terrain';
+function drawLegend() {
+  const sc = SCHEMES[SCHEME];
+  $('m-legend').innerHTML = sc ? Object.entries(sc.colours).map(([v, c]) => `<span class="chip${F[SCHEME] === v ? ' on' : ''}"
+    data-v="${esc(v)}" title="only the names whose ${sc.label} is ${esc(v)}">${swatch(c)}${SCHEME === 'level' ? `level ${esc(v)}` : esc(v)}</span>`).join('') : '';
+}
+$('m-colour').addEventListener('change', () => {
+  SCHEME = $('m-colour').value;
+  for (const [l, p] of [['foot-fill', 'fill'], ['foot-line', 'line']]) {
+    map.setPaintProperty(l, `${p}-color`, schemeColour(SCHEME));
+    map.setPaintProperty(l, `${p}-opacity`, schemeOpacity(SCHEME, p === 'fill' ? 0.12 : 0.6));
+  }
+  drawLegend();
+});
+$('m-legend').addEventListener('click', (e) => {
+  const c = e.target.closest('.chip');
+  if (!c) return;
+  F[SCHEME] = F[SCHEME] === c.dataset.v ? '' : c.dataset.v;
+  $(`f-${SCHEME}`).value = F[SCHEME];
+  applyFilters();
 });
 // The base maps are ramb's (rb_map_basemaps(), as the effort map's). A raster base or none has no glyphs of its own:
 // the labels keep the previous style's, and our layers are carried over the change (as ramb's viewer does)
@@ -176,9 +223,12 @@ async function load() {
   for (const n of D.names) D.search.set(n.key, [n.key, ...(D.variants.get(n.key) ?? []).map((v) => nameKey(v.name))]);
   for (const f of foot.features) {
     const n = D.byKey.get(f.properties.key);
-    Object.assign(f.properties, { min_zoom: n?.min_zoom ?? null, size: n?.size_km ?? null, listed: true });
+    Object.assign(f.properties, { min_zoom: n?.min_zoom ?? null, size: n?.size_km ?? null, listed: true,
+                                  terrain: n?.terrain ?? null, outcome: n?.outcome ?? null, level: n?.level ?? null });
   }
   D.foot = foot;
+  // each source's occurrences in all, so the rarer sources' points are drawn over the commoner
+  for (const [src] of SOURCES) TOTAL[src] = D.names.reduce((a, n) => a + (n[`n_${src}`] ?? 0), 0);
 }
 
 // The list ------------------------------------------------------------------------------------------------------------
@@ -227,7 +277,7 @@ function applyFilters() {
     list = list.map((n, i) => [rank(n), i, n]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
   }
   S.list = list; S.shown = 300;
-  drawList(); drawLabels();
+  drawList(); drawLabels(); drawLegend();
 }
 function drawList() {
   const L = S.list;
@@ -317,7 +367,7 @@ function drawEvidence(ev) {
   const f = [];
   ev.forEach((e, i) => {
     if (e.lon != null && !e.position_flag && !e.summary && !S.evOff.has(e.source)) f.push(
-      { type: 'Feature', properties: { i, colour: COLOUR[e.source] || '#999' }, geometry: { type: 'Point', coordinates: [e.lon, e.lat] } });
+      { type: 'Feature', properties: { i, colour: COLOUR[e.source] || '#999', sort: -(TOTAL[e.source] ?? 0) }, geometry: { type: 'Point', coordinates: [e.lon, e.lat] } });
   });
   map.getSource('ev').setData({ type: 'FeatureCollection', features: f });
 }
@@ -335,7 +385,7 @@ function flyTo(n) {
 
 // The detail panel ------------------------------------------------------------------------------------------------------
 const go = (key, text) => (D.byKey.has(key) ? `<a class="go" data-key="${esc(key)}">${esc(text)}</a>` : esc(text));
-const badge = (o) => `<span class="badge ${o === 'several places' ? 'several' : esc(o)}">${esc(o)}</span>`;
+const badge = (text, colour) => `<span class="badge">${colour ? swatch(colour) : ''}${esc(text)}</span>`;
 function drawDetail(n, ev) {
   const fact = (k, v) => (v === '' || v == null ? '' : `<tr><td>${k}</td><td>${v}</td></tr>`);
   const children = (D.children.get(n.key) ?? []).slice().sort((a, b) => (b.n_positioned ?? 0) - (a.n_positioned ?? 0));
@@ -345,7 +395,8 @@ function drawDetail(n, ev) {
   const parent = n.parent_key ? D.byKey.get(n.parent_key) : null;
   let h = `<h2>${esc(n.name)}</h2>
     <div class="muted" style="margin:2px 0 6px">key <code>${esc(n.key)}</code></div>
-    <div>${badge(n.class)}${n.terrain !== 'other' ? badge(n.terrain) : ''}${badge(n.outcome)}${n.level ? badge(`level ${n.level}`) : ''}</div>
+    <div>${badge(n.class)}${n.terrain !== 'other' ? badge(n.terrain, SCHEMES.terrain.colours[n.terrain]) : ''}${
+      badge(n.outcome, SCHEMES.outcome.colours[n.outcome])}${n.level ? badge(`level ${n.level}`, SCHEMES.level.colours[n.level]) : ''}</div>
     <table class="facts" style="margin-top:8px">
     ${fact('Positions', n.n_positioned ? `${num(n.n_positioned)} (precision ${n.precision})` : 'none')}
     ${fact('Sources', n.sources.map((s) => `${dot(s)} ${esc(LABEL[s])} ${num(n[`n_${s}`])}`).join('<br>'))}
@@ -386,14 +437,17 @@ function drawOccurrences(ev) {
   for (const e of ev) by.set(e.source, (by.get(e.source) ?? 0) + 1);
   let h = `<div class="chips" title="a click shows or hides a source's occurrences">${[...by].map(([s, k]) =>
     `<span class="chip${S.evOff.has(s) ? ' off' : ''}" data-evsrc="${esc(s)}">${dot(s)} ${esc(LABEL[s] || s)} ${num(k)}</span>`).join('')}</div>`;
-  // occurrences by year, where they have a time, of the sources switched on
-  const years = ev.filter((e) => e.time && !S.evOff.has(e.source)).map((e) => +e.time.slice(0, 4));
-  if (years.length) {
-    const y0 = Math.min(...years), y1 = Math.max(...years), c = new Array(y1 - y0 + 1).fill(0);
-    for (const y of years) c[y - y0]++;
-    const mx = Math.max(...c);
-    h += `<div class="bars" style="margin-top:8px" title="occurrences by year">${c.map((k, i) =>
-      `<div style="height:${k ? Math.max(4, 100 * k / mx) : 0}%" title="${y0 + i}: ${num(k)}"></div>`).join('')}</div>
+  // occurrences by year, where they have a time, of the sources switched on, each bar stacked by source
+  const timed = ev.filter((e) => e.time && !S.evOff.has(e.source));
+  if (timed.length) {
+    const yr = (e) => +e.time.slice(0, 4);
+    const y0 = timed.reduce((a, e) => Math.min(a, yr(e)), 9999), y1 = timed.reduce((a, e) => Math.max(a, yr(e)), 0);
+    const c = Array.from({ length: y1 - y0 + 1 }, () => new Map());
+    for (const e of timed) { const m = c[yr(e) - y0]; m.set(e.source, (m.get(e.source) ?? 0) + 1); }
+    const tot = c.map((m) => [...m.values()].reduce((a, b) => a + b, 0)), mx = Math.max(...tot);
+    h += `<div class="bars" style="margin-top:8px">${c.map((m, i) =>
+      `<div style="height:${tot[i] ? Math.max(4, 100 * tot[i] / mx) : 0}%" title="${y0 + i}: ${num(tot[i])}">${
+        SOURCES.filter(([x]) => m.has(x)).map(([x]) => `<span style="flex:${m.get(x)};background:${COLOUR[x]}"></span>`).join('')}</div>`).join('')}</div>
       <div class="barlab"><span>${y0}</span><span>${y1}</span></div>`;
   }
   const on = [];
@@ -401,7 +455,7 @@ function drawOccurrences(ev) {
   const shown = on.slice(0, 200);
   h += `<table style="margin-top:8px"><tr><th>source</th><th>as written</th><th>where</th><th>time</th><th class="n">vid</th><th>gear</th></tr>
     ${shown.map((i) => [ev[i], i]).map(([e, i]) => `<tr class="click" data-i="${i}"><td>${dot(e.source)} ${esc(e.source)}</td><td>${esc(e.name)}</td>
-      <td>${esc(e.position_kind ?? '')}${e.position_flag ? ` <span class="badge disagree">${esc(e.position_flag)}</span>` : ''}${e.summary ? ' <span class="muted">summary</span>' : ''}</td>
+      <td>${esc(e.position_kind ?? '')}${e.position_flag ? ` <span class="badge flag">${esc(e.position_flag)}</span>` : ''}${e.summary ? ' <span class="muted">summary</span>' : ''}</td>
       <td>${esc(e.time ?? '')}</td><td class="n">${e.vid ?? ''}</td><td>${esc(e.gear ?? '')}</td></tr>`).join('')}</table>`;
   if (on.length > shown.length) h += `<div class="muted" style="margin-top:4px">the first ${shown.length} of ${num(on.length)} shown</div>`;
   return h;
