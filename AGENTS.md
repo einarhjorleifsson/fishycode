@@ -242,7 +242,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   2026.10.22.2 (a trip's departure and return from ranked witnesses; decisions 173, 174): so ≥ 2026.10.22.2. The effort
   map needs the map viewer of 2026.10.24.1 (`rb_map_*()`, plan 046), which nothing in the pipeline calls. The feeds' clock
   check (`curate/checks/ais_feed_clock.R`) needs the step 0 functions of 2026.11.01 (`rb_add_ping_stream()`,
-  `rb_create_ping_lags()`, `rb_add_ping_own_lag()`; plan 059), installed from GitHub on 2026-11-01. `curate/port_call.R`
+  `rb_create_ping_lags()`, `rb_add_ping_own_lag()`; plan 059), installed from GitHub on 2026-11-01, and so does the tag pass
+  (`curate/ais_ping_tag.R`, with `rb_add_ping_time()`). `curate/ais_ping_clean.R` needs `rb_flag_ping_impossible(feed = ,
+  noise_nm = , evidence = )` of 2026.11.01.2 (TODO 88; ad088e3, installed from GitHub on 2026-11-01). `curate/port_call.R`
   needs `rb_create_port_calls(window = )` and `rb_merge_port_calls()` of 2026.11.01.1 (TODO 179; 7598da0, installed
   from GitHub on 2026-11-01): an older ramb stops at `window`. The data on disk: every
   target of the main project was rebuilt from raw on 2026-10-28 with ramb 2026.10.28.3 (5a01d76) and DuckDB 2.0.0 (but for

@@ -3,7 +3,8 @@
 **status:** partly built — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan
 058's study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2
 built in ramb (2026.11.01, installed), step 3 built as the target `check_ais_feed_clock`, step 4 written into STK's
-dictionary overlay, steps 6 and 7 run as studies; the tag pass (§3) and the rebuild not built; asks a-h (§7)
+dictionary overlay, steps 6 and 7 run as studies, step 8's code built and tested on 2026 in a scratch store (the tag
+pass of §3, TODO 88's floor, astd's speed stamp); the rebuild not run; asks a-h (§7)
 and i answered by the maintainer 2026-11-01, each as recommended, b amended by step 5 (TODO 178) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
 whack's distance floor, §8c), TODO 117 (`stk_receipt`), plan 048 (STK's streams into the flow), plan 013 (ramb's step
@@ -128,7 +129,7 @@ a scratch store for 2016 and 2026 with the flow's whack unchanged after it, ever
 run in 2026 the whack's false removals of STK pings fall from 97,535 to 9,622 for 55 true ones, the late copies are
 flagged (90,764), only 267 on-time copies come apart, and reversals between feeds fall from 12.5 to 2.4 %. To adopt it:
 the script in place of `ais_ping_tag.R`, the check among its dependencies, `ais_ping_clean.R` carrying the four new
-columns, then step 8's rebuild.
+columns, then step 8's rebuild. *Adopted in the code 2026-11-01* (step 8).
 
 ## 4. Generic, in ramb: step 0 of the one flow
 
@@ -204,7 +205,17 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    flag that leaves a speed out; emodnet's derived speed (`rb_calc_speed()`, backward) on the same stamp. Agreed by the
    maintainer (ask i, 2026-11-01): built in `curate/ais_ping_union.R` and adopted with step 8's rebuild.
 8. **The rebuild from `ais_ping_union` down**, bundled with TODO 88, plan 048 and TODO 117's `stk_receipt` (the same
-   stages), clocks first.
+   stages), clocks first. *Code built 2026-11-01 (the study's README, "Step 8"):* the candidate is `curate/ais_ping_tag.R`,
+   after `check_ais_feed_clock` and STK's trail, the stream rule one function for both (`ping_stream_sql()`,
+   `R/stk_trail.R`); `ais_ping_clean.R` carries `time_delivered`, `lag_s`, `lag_basis`, `stream` and `speed_span_s`, and
+   runs the whack with `feed = provider`, 0.3 nm and its evidence on `ping_whacky` (TODO 88 §10 items 4-5, the
+   maintainer); astd's and emodnet's speed is the central difference within the MMSI, the span beside (ask i). On 2026 in
+   a scratch store, union to clean in 2 min, the live store untouched: the union's rows and recorded speeds as live, the
+   check's 14,167 units equal, the tag pass's moves the candidate's (8,931,886 by the month's lag, 113,059 copies), STK's
+   whack flags 50,306, step 6's 0.3 nm run exactly. astd's speed on 2019 equals the study's variant c to 1e-6 kn on 40.5 M
+   pings (89 track ends now one-sided, 75 at keys held twice); emodnet's 2017 speed is within 0.1 kn of the old one on
+   85 %, and its 20 MMSIs with no vessel no longer share one track. The trail does not carry the new columns. The rebuild
+   waits for the maintainer.
 9. **A decision record;** AGENTS.md's Layout row for `curate/` names the check and the alignment.
 
 ## 6. What it does not do

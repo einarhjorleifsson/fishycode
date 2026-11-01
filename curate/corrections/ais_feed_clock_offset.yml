@@ -1,10 +1,10 @@
 id: ais_feed_clock_offset
 title: astd's and stk's clocks disagree in two periods, so whatever is derived across the merged feeds sees a vessel jump back and forth along its track
-status: suspected - measured by month (decision 270), repair NOT implemented (plan 059)
+status: measured by vessel, stream and month (decision 270, plan 059 step 3); repair implemented in code 2026-11-01 and tested on 2026 in a scratch store (plan 059 step 8), NOT yet in the data - it arrives with the rebuild from ais_ping_union down
 applies_to:
   - staging/ais/ping_union
   - everything derived across consecutive pings from it - the cross-feed duplicate flag and the whack (ping_clean, ping_whacky), port_call, ais_voyage, the trail's turns and windows
-implementation: none yet - plan 059 §2 (the check) and §3 (the lag applied in curate/ais_ping_tag.R)
+implementation: curate/checks/ais_feed_clock.R (the lag per vessel, stream and month, target check_ais_feed_clock) and curate/ais_ping_tag.R (applied - a copy's own lag first, else the unit's - with time_delivered, lag_s, lag_basis and stream beside); ramb 2026.11.01's step 0
 discovered: 2026-10-31, plan 058's study ($FISHYDATA/archive/2026-11-01-phase-model/scripts/02_feed_offset.R), on the 2026 spring survey; by month 2013-2026 on 2026-11-01 (scripts/12_stk_time.R)
 
 defect:

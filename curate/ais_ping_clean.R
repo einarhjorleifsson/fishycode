@@ -1,10 +1,13 @@
 # ais_ping_clean.R — L2 of the vessel-trail model: label whacky positions, keep the rest.
 # Side: flow, step 0. See plan 014.
 #
-# Input:  staging/ais/ping_tagged   (merged pings + pid harbour tag)
+# Input:  staging/ais/ping_tagged   (merged pings on one clock + pid harbour tag; curate/ais_ping_tag.R)
 # Output: staging/ais/ping_clean    (same columns, whacky positions dropped)
 #         staging/ais/ping_whacky   (the dropped pings, same columns plus `whack_stage`: "invalid",
-#                                    "duplicate", "vmask", "spike" or "forward" - which step took them out)
+#                                    "duplicate", "vmask", "spike", "forward" or "tie" - which step took them out -
+#                                    and the whack's evidence, `ping_flag_side` and the legs to the nearest kept
+#                                    ping on each side, `ping_flag_{prev,next}_{dt_s,dist_m,feed}`: NA but for
+#                                    vmask, spike and forward)
 # Pings with no `vid` are in neither: there is no vessel to judge them against (decision 067).
 #
 # A whacky point is an implausible POSITION - mostly from stk. Not to be confused with the
@@ -19,6 +22,12 @@
 # is the unflagged pings (its contract is unchanged) and ping_whacky keeps what was taken out,
 # with the reason, so a flag can be reviewed or overruled. Before 2026-10-05 this was
 # whack_fwdbwd (lazy, in DuckDB) followed by whack_forward (in R).
+#
+# Both run on the harmonized time (plan 059 §3): astd's lag behind STK made a vessel jump back and forth along its
+# track, and the whack took STK's good pings for it (decision 164). What alignment leaves between feeds, a few hundred
+# metres, is a noise floor: a leg between two feeds no longer than NOISE_NM is never impossible (ramb 2026.11.01.2's
+# `feed`, TODO 88). On aligned pings 0.3 nm frees 6,800 (2026) and 3,068 (2016) more false removals and takes back no
+# true one (plan 059 step 6). The evidence of each whack flag is kept (the maintainer, 2026-11-01, TODO 88 §10 item 5).
 #
 # rb_flag_ping_impossible() judges each vessel independently, so the year is cut into batches of whole
 # vessels (BATCH_PINGS): exactly equivalent to doing the year at once, and what keeps R below
@@ -38,7 +47,8 @@ DUP_S    <- MIN_DT_S
 DUP_M    <- KN_MAX * 1852 / 3600 * MIN_DT_S
 DUP_K    <- 3       # neighbours compared on each side, in time order
 FEED     <- c(stk = 1, astd = 2, astdB = 3, emodnet = 4)   # priority; stk wins, as in ais_ping_trail.R
-METHOD   <- "rb_flag_ping-2026-10-14:invalid+duplicate+clean,recorded-only+tie,total-order"   # part of the completion fingerprint: a new method re-cleans every year
+NOISE_NM <- 0.3     # the whack's noise floor between feeds, nautical miles (TODO 88, plan 059 step 6)
+METHOD   <- "rb_flag_ping-2026-11-01:harmonized-time+invalid+duplicate+clean(feed-floor,evidence),recorded-only+tie,total-order"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> as.integer() |> sort()
@@ -62,7 +72,7 @@ BATCH_PINGS <- 5e6
 fingerprint <- function(yr) {
   f <- list.files(file.path(fd_staging("ais", "ping_tagged"), paste0("year=", yr)), full.names = TRUE, recursive = TRUE)
   i <- file.info(f)
-  rlang::hash(paste(basename(f), i$size, as.numeric(i$mtime), METHOD, KN_MAX, MIN_DT_S, DUP_S, DUP_M, DUP_K,
+  rlang::hash(paste(basename(f), i$size, as.numeric(i$mtime), METHOD, KN_MAX, MIN_DT_S, DUP_S, DUP_M, DUP_K, NOISE_NM,
                     paste(names(FEED), FEED, collapse = ","), collapse = ";"))
 }
 
@@ -81,8 +91,8 @@ for (yr in years) {
   # Explicit, not left to SQL: `vid %in% g` skips NA in DuckDB, but R's %in% matches NA to NA.
   base <- ais |>
     filter(year == yr, !is.na(vid)) |>
-    select(vid, mmsi, time, lon, lat, speed, speed_raw, heading, cog, provider, pos_basis, speed_basis,
-           dt_sec, sid_gps, n_sid_gps, pid, year)
+    select(vid, mmsi, time, lon, lat, speed, speed_raw, speed_span_s, heading, cog, provider, pos_basis, speed_basis,
+           dt_sec, sid_gps, n_sid_gps, pid, time_delivered, lag_s, lag_basis, stream, year)
 
   vid_n  <- base |> count(vid) |> collect() |> arrange(desc(n))
   groups <- split(vid_n$vid, cumsum(as.numeric(vid_n$n)) %/% BATCH_PINGS)
@@ -110,7 +120,8 @@ for (yr in years) {
       d0 |> filter(pos_basis == "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat") |>
         rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n_neighbours = DUP_K) |>
-        rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S),
+        rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S,
+                                feed = provider, noise_nm = NOISE_NM, evidence = TRUE),
       d0 |> filter(pos_basis != "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat")) |>
       arrange(vid, time, pos_basis != "recorded", provider != "stk", provider, lon, lat)
@@ -124,7 +135,7 @@ for (yr in years) {
     }
     rm(d0)
 
-    clean <- d |> filter(is.na(ping_flag)) |> select(-ping_flag) |> arrange(vid, time)
+    clean <- d |> filter(is.na(ping_flag)) |> select(-starts_with("ping_flag")) |> arrange(vid, time)
     whacky <- d |> filter(!is.na(ping_flag)) |> rename(whack_stage = ping_flag)
 
     # One part file per batch. Several parquet files in one hive directory is

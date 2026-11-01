@@ -12,7 +12,7 @@
 # stream and month against STK's AIS stream (plan 059 ask a), rb_add_ping_own_lag() the copies, the same report heard
 # by two streams, whose own lag comes before the month's (ask b). The logger's positions are reconstructed from the
 # track, so its lag is no clock: its outcome is "reconstructed positions" and nothing moves it (plan 059 step 2).
-# Nothing reads this table yet; the tag pass will (plan 059 §3).
+# The tag pass (curate/ais_ping_tag.R) reads the lags to harmonize the feeds (plan 059 §3).
 
 library(DBI)
 library(dplyr)
@@ -29,14 +29,6 @@ q <- function(...) dbGetQuery(con, sprintf(...))
 trail <- sprintf("read_parquet('%s/year=*/*.parquet', hive_partitioning = true)", fd_raw("oracle", "stk", "trail"))
 union_dir <- fd_staging("ais", "ping_union")
 years <- sort(as.integer(sub("year=", "", list.files(union_dir, pattern = "^year="))))
-
-# STK's grid in degrees, as stk_trail() converts the radians: the VMS grid first, since it lies on the AIS grid too
-stream_sql <- "
-  CASE WHEN u.provider <> 'stk' THEN u.provider
-       WHEN e.time IS NOT NULL THEN 'stk_event'
-       WHEN abs(u.lat * 6000 - round(u.lat * 6000)) < 0.0002 AND abs(u.lon * 6000 - round(u.lon * 6000)) < 0.0002 THEN 'stk_vms'
-       WHEN abs(u.lat * 600000 - round(u.lat * 600000)) < 0.02 AND abs(u.lon * 600000 - round(u.lon * 600000)) < 0.02 THEN 'stk_ais'
-       ELSE 'stk_unit' END"
 
 # Recording or receipt: STK's position time against its receipt time, by stream and month (plan 059 §1 item 2)
 stk_time <- q("
@@ -56,17 +48,15 @@ stk_time <- q("
 units <- vector("list", length(years))
 for (i in seq_along(years)) {
   yr <- years[i]
-  x("CREATE OR REPLACE TEMP TABLE ev AS
-     SELECT DISTINCT posdate AS time, poslon * 180 / pi() AS lon, poslat * 180 / pi() AS lat FROM %s
-     WHERE in_out_of_harbor IS NOT NULL AND posdate >= TIMESTAMP '%d-01-01' AND posdate < TIMESTAMP '%d-01-01'",
-    trail, yr, yr + 1L)
-  # the year's own folder (AGENTS.md, DuckDB 2.0); the merged track's interval before each ping for the dt pattern
+  x("CREATE OR REPLACE TEMP TABLE ev AS %s", stk_event_rows_sql(yr))
+  # the year's own folder (AGENTS.md, DuckDB 2.0); the merged track's interval before each ping for the dt pattern;
+  # the stream by ping_stream_sql() (R/stk_trail.R), the tag pass's rule
   x("CREATE OR REPLACE TEMP TABLE p AS
      SELECT *, epoch(time - lag(time) OVER (PARTITION BY vid ORDER BY time, lon, lat)) AS merged_dt_s FROM (
        SELECT u.vid, u.time, u.lon, u.lat, u.speed, %s AS stream, month(u.time) AS month
        FROM read_parquet('%s/year=%d/*.parquet') u LEFT JOIN ev e ON u.time = e.time AND u.lon = e.lon AND u.lat = e.lat
        WHERE u.vid IS NOT NULL AND u.lon IS NOT NULL AND u.lat IS NOT NULL)
-     WHERE stream <> 'stk_event'", stream_sql, union_dir, yr)
+     WHERE stream <> 'stk_event'", ping_stream_sql(), union_dir, yr)
   p <- tbl(con, "p")
 
   pattern <- rb_add_ping_stream(p, stream = stream) |>

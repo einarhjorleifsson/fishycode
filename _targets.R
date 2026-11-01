@@ -772,7 +772,7 @@ list(
   }, format = "file"),
 
   # The feeds' clocks, the first test on every track (plan 059 §2): each vessel's streams, their dt pattern, their lag
-  # against STK's AIS stream and the copies, by month. Nothing reads it yet; the tag pass will (plan 059 §3).
+  # against STK's AIS stream and the copies, by month. The tag pass applies the lags (plan 059 §3).
   tar_target(check_ais_feed_clock, {
     ais_ping_union; stk_trail_raw
     produces("curate/checks/ais_feed_clock.R", fd_curated("check", "ais_feed_clock.parquet"))
@@ -784,8 +784,9 @@ list(
     produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"))
   }, format = "file"),
 
+  # The feeds put on one clock from the check's lags, the port events told apart by STK's trail, then the port tag
   tar_target(ais_ping_tag, {
-    ais_ping_union; shapes
+    ais_ping_union; check_ais_feed_clock; stk_trail_raw; shapes
     produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
   }, format = "file"),
 

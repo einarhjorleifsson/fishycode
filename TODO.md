@@ -373,7 +373,7 @@ measured.
 before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open · **needs: maintainer** — the prototype's §10 items 4-5 (fishycode's adoption, `evidence` on the whack) ·
+**status:** open ·
 **see:** decisions 067, 069, 078, 143, 164 and 185 (TODO 38 folded in), TODO 99, plan 031 §3.7 item 12 (what the
 filter leaves near harbours: about 6,000 fixes, mostly STK port event rows)
 
@@ -393,11 +393,11 @@ The reload is a labelled test: its receipt lag marks the truth, and is never a f
 Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported, 2,780 kept pings
 contradicted; 63 % of the supported removals are cross-feed legs within 0.3 nm. The prototype
 (`$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`, its README §10 five decisions) equals `ping_whacky` with the
-defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of the false removals. Plan 059 step 6
-(`$FISHYDATA/archive/2026-11-01-whack-floor-aligned/`): aligning alone frees 96 % (2026) and 57 % (2016) of that; on
-aligned pings 0.3 nm still frees 71 % and 13 % of what is left, loses no true removal, keeps 20,759 and 6,457 cross-feed
-legs within it. Recommended: 0.3 nm with the aligned times at step 8. Merged into ramb's `main` on 2026-11-01 as
-2026.11.01.2 (ad088e3; `feed`, `noise_nm`, `evidence`), without `forward = "two_sided"` (maintainer); installed.
+defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of the false removals, mostly the clock
+(plan 059 step 6: on aligned pings 0.3 nm still frees 71 % and 13 % of what is left, no true removal lost). In ramb
+2026.11.01.2 (ad088e3; `feed`, `noise_nm`, `evidence`; no `two_sided`, maintainer), installed, and adopted in
+`curate/ais_ping_clean.R` (plan 059 step 8): 0.3 nm between providers on the harmonized time, the evidence on
+`ping_whacky` (the prototype's §10 items 4-5, the maintainer, 2026-11-01); in the data with the rebuild.
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
 (the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
@@ -1475,15 +1475,15 @@ its true ones; on-time copies in a late month say a copy's own lag is needed bes
 (maintainer, 2026-11-01, each as recommended; the rule "derive within one stream" is in AGENTS.md). Step 2 is built
 (2026-11-01, ramb's branch `feed-clocks-step0`, not merged or pushed): `rb_add_ping_stream()`, `rb_create_ping_lags()`,
 `rb_add_ping_own_lag()`, `rb_add_ping_time()`; on 2016 and 2026 they give step 1's lags and copies and step 5's aligned
-time, every difference explained (the study's "Step 2"). Merged into ramb's `main` (fast-forward, 3953894; 235 tests
-pass), pushed and installed from GitHub as 2026.11.01 (2026-11-01). Step 3 is built: `curated/check/ais_feed_clock`
+time, every difference explained (the study's "Step 2"); installed from GitHub as 2026.11.01 (3953894). Step 3 is built: `curated/check/ais_feed_clock`
 (target `check_ais_feed_clock`), equal to step 1 but at the 30-pair bound. The tag pass (§3) is a tested candidate in
 the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written: STK's time by stream and period in
 `dump/oracle/meta/stk.yml`, with assertions `check_data_dict()` tests, and astdB's speed `recorded` in the union's code.
 Steps 6 and 7 are run as studies (2026-11-01): TODO 88's floor kept at 0.3 nm with the aligned times; astd's speed
-stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Next: step 8, the candidate adopted,
-the central difference built, and the rebuild, on ramb 2026.11.01.2 (TODO 179's port calls and TODO 88's floor;
-installed from GitHub 2026-11-01, RemoteSha ad088e3).
+stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Step 8's code is built (2026-11-01):
+the candidate as `curate/ais_ping_tag.R`, the clean with TODO 88's floor and evidence, astd's and emodnet's central
+speed; on 2026 in a scratch store it equals the candidate and step 6's 0.3 nm run. Next: the rebuild from
+`ais_ping_union` down on ramb 2026.11.01.2 (ad088e3), at the maintainer's word, with TODO 179's port calls.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
