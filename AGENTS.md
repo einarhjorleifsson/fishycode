@@ -243,8 +243,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   map needs the map viewer of 2026.10.24.1 (`rb_map_*()`, plan 046), which nothing in the pipeline calls. The feeds' clock
   check (`curate/checks/ais_feed_clock.R`) needs the step 0 functions of 2026.11.01 (`rb_add_ping_stream()`,
   `rb_create_ping_lags()`, `rb_add_ping_own_lag()`; plan 059), installed from GitHub on 2026-11-01. `curate/port_call.R`
-  needs `rb_create_port_calls(window = )` and `rb_merge_port_calls()` of 2026.11.01.1 (TODO 179; merged into ramb's
-  `main` locally on 2026-11-01, not yet pushed or installed): an older ramb stops at `window`. The data on disk: every
+  needs `rb_create_port_calls(window = )` and `rb_merge_port_calls()` of 2026.11.01.1 (TODO 179; 7598da0, installed
+  from GitHub on 2026-11-01): an older ramb stops at `window`. The data on disk: every
   target of the main project was rebuilt from raw on 2026-10-28 with ramb 2026.10.28.3 (5a01d76) and DuckDB 2.0.0 (but for
   four reference tables built that morning, before its install, whose scripts call no ramb: decision 268), and
   compared file by file with the build of 2026-10-23 under 1.5.6 (decision 239; that build is decision 218, the partial
