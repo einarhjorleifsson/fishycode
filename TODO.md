@@ -287,7 +287,9 @@ left of each is in the plan:
   up to date from Claude's audit of 2026-10-23, not checked by a person. Proposed in plan 057: a tow's start and end
   from each ping's label. The labeller is chosen (decision 270, plan 058's study): a hidden-state model of towing and
   its look-alikes, decoded by LaMa, the trail in about 9 min; not built. Next, in order: the commercial splits reviewed
-  (plan 057 §4); the feeds' clocks first (TODO 178); the longline's feature.
+  (plan 057 §4); the feeds' clocks first (TODO 178); the longline's feature. Covariates as one set, not one at a
+  time (maintainer, 2026-11-01): the vessel's length, power and age, the gear's rigging (plan 052), depth (GEBCO, its
+  global grid not yet adopted) and others; length class is the only one in the model so far.
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
@@ -391,7 +393,7 @@ with the defaults it equals `ping_whacky` ping for ping; a distance floor betwee
 80 % (2026) of the false removals and loses no true one (0.5 nm: 24 % and 97 %); a two-sided forward stage does almost
 nothing. Its ramb changes, opt-in arguments `feed`, `noise_nm`, `evidence`, are uncommitted in `~/R/Pakkar/ramb_wt_whack`
 (branch `whack-feed-aware-evidence`); its README §10 holds five decisions for the maintainer. Its §8c: the STK-ASTD
-offset on moving vessels is a time lag that varies by year, so no single floor fits every year.
+offset on moving vessels is a time lag that varies by year, so no single floor fits every year: plan 059 aligns first.
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
 (the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
@@ -745,6 +747,9 @@ reaches the whack or the track); `stk_receipt` as a side table, the lag a label;
 2017; port calls for 2004 to mid-2007 from events; dwell from the commercial AIS in port, else the I → U pair; each unit's
 class in `stk_receipt`; the three Oracle reads in the next dump run (TODO 110). Each is a step of its own, scratch first.
 Plan 048 (TODO 148) builds three of them: the event rows out of the track, the per-unit screen, and no cut at 2017.
+**Recording or receipt, by stream** (plan 059 §1, 2026-11-01): the AIS stream's `posdate` is its receipt time in every
+year 2007-2024, STK's own units' their own, 3-5 s earlier; the AIS stream's changes meaning in May 2025. Plan 059 step 4
+writes it into `dump/oracle/meta/stk.yml`.
 
 **check:** each decision recorded, and what is chosen built or declined.
 
@@ -1439,23 +1444,26 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 **check:** the next release's README places every station whose vid is not in the vessel table in an outcome, and no
 lumpfish station before 1992 carries a register vid without a witness.
 
-## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived
-**status:** open · **see:** decision 270 (its section "Time is an observation"), TODO 117 (STK's receipt time),
-`curate/ais_ping_union.R`, the study `$FISHYDATA/archive/2026-11-01-phase-model/` (its sections "Harmonizing the
-feeds" and "How many clocks")
+## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived (plan 059)
+**status:** open · **needs: maintainer** — plan 059's asks a-h (the reference stream, the lag's period, where it is
+applied, align or not merge, measured or frozen, the columns, ramb, the AGENTS.md rule) · **see:** plan 059, decision 270
+(its section "Time is an observation"), decision 233, TODO 88, TODO 117, plan 048,
+`curate/corrections/ais_feed_clock_offset.yml`, the studies `$FISHYDATA/archive/2026-11-01-phase-model/` and
+`2026-11-01-feed-clocks/`
 
 The maintainer (2026-10-31): time is observed, like position, with an error of its own. Decision 270 measured it on
 the Icelandic feeds:
 - astd lies 15-90 s behind stk in October 2025 to May 2026 and 30-75 s in September 2015 to January 2016, by month;
-- STK's time was the unit's to 2010, in effect the receipt time from 2012 to 2024, and a separate time from mid-2025;
+- STK's AIS stream is stamped at receipt in every year 2007-2024, its own units at their own time; the stream mix
+  changed about 2011, the AIS stream's meaning in May 2025 (plan 059 §1, amending decision 270);
 - the trail's `speed` is never derived across feeds, so the speed filter is safe; turns and spreads in those months
   are not.
 
-The study drafts a generic first step (ramb's step 0): the dt pattern, recording or receipt, the offset by vessel,
-feed and period, then one feed preferred and the others corrected beside their original times. Also named there:
-STK's lag by delivery channel (`comsystem`), and astd's speed stamped at its interval's start, not its midpoint. Its
-`notes/2026-11-01-feed-clocks-records-draft.md` drafts the record, a plan, a correction and the TODO lines (a check
-and a correction stage right after `ais_ping_union`), unreviewed.
+Plan 059 reviews the study's drafts: a standing check right after `ais_ping_union` (the dt pattern, recording or
+receipt, the lag by vessel, stream and month, the copies the duplicate flag misses), the lag applied in the tag pass,
+the delivered time beside; ramb's step 0 for the generic part. Step 1 is run (2026-11-01, the study
+`2026-11-01-feed-clocks/`): offsets in 2014-2016 and 2025-2026, a lag per vessel and month, 266 thousand copies the
+duplicate flag misses. Next: the asks, then step 2 (ramb's step 0 functions).
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.

@@ -80,8 +80,12 @@ receipt. Measured on the Icelandic feeds:
   September 2015 to January 2016, the lag changing by month. From February 2016 to September 2025, and in June 2026,
   they agree to the second. On the 2026 survey the offset shows as a position error
   along the track, growing with speed (165 m at 2-4 kn, 452 m at 9-13 kn), and none across it.
-- **STK's time changed meaning:** the unit's own time to 2010, in effect the receipt time from 2012 to 2024, and a
-  separate time again from mid-2025.
+- **STK's time changed meaning once, in May 2025.** *Amended 2026-11-01 by Claude (AI), plan 059 §1; not checked by a
+  person.* This said the units' own time to 2010 and the receipt time from 2012, measured over the whole trail. Split
+  by STK's three streams (decision 233), it is a change of mix: the AIS stream is stamped at receipt in every year
+  2007-2024 (87-99 %), STK's own units at their own time, 3-5 s earlier, and those units were 76 % of 2007's fixes and
+  0.2 % of 2012's. Within the AIS stream the share equal falls from 99 % in April 2025 to 65 % in May, and 25-94 % by
+  month since (`$FISHYDATA/archive/2026-11-01-feed-clocks/`).
 - **The trail's `speed` is never derived across feeds,** so the flow's speed filter is safe from the offsets. At risk is
   what is derived from consecutive merged positions (turn, spreads) in the offset months. On the 2026 survey, speed
   derived across the feeds drops the pings inside tows labelled towing from 95 to 58 %. With the trail's speed, the

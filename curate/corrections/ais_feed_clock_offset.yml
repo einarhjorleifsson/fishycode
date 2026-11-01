@@ -1,0 +1,33 @@
+id: ais_feed_clock_offset
+title: astd's and stk's clocks disagree in two periods, so whatever is derived across the merged feeds sees a vessel jump back and forth along its track
+status: suspected - measured by month (decision 270), repair NOT implemented (plan 059)
+applies_to:
+  - staging/ais/ping_union
+  - everything derived across consecutive pings from it - the cross-feed duplicate flag and the whack (ping_clean, ping_whacky), port_call, ais_voyage, the trail's turns and windows
+implementation: none yet - plan 059 §2 (the check) and §3 (the lag applied in curate/ais_ping_tag.R)
+discovered: 2026-10-31, plan 058's study ($FISHYDATA/archive/2026-11-01-phase-model/scripts/02_feed_offset.R), on the 2026 spring survey; by month 2013-2026 on 2026-11-01 (scripts/12_stk_time.R)
+
+defect:
+  summary: >-
+    The lag that brings astd's track closest to stk's positions is 0 from February 2016 to September 2025 and in June
+    2026, but 30-75 s from September 2015 to January 2016 and 15-90 s from October 2025 to May 2026 (astd later).
+    Interleaved, the two feeds put a vessel back and forth along its track: speeds derived across them swing between
+    stopped and steaming, and turns read as reversals.
+  evidence:
+    along_track_2026_by_speed: "-165, -184, -328, -452 m at 2-4, 4-6, 6-9, 9-13 kn; 0 across; 85-87 s at every speed"
+    by_month: "$FISHYDATA/archive/2026-11-01-feed-clocks/results/lag_by_month_stream.csv (every vessel; plan 058's study took 15 a year)"
+    by_vessel_month: "$FISHYDATA/archive/2026-11-01-feed-clocks/results/units/ - offset in Sep 2014-Jan 2015, Mar 2015, Aug 2015-Jan 2016, some vessels Aug 2025, Oct 2025, Dec 2025-May 2026; 28.1 M astd pings in offset vessel-months"
+    towing_labels: "speed derived across feeds in 2026: pings inside tows labelled towing 95 -> 58 %"
+  copies_missed: >-
+    An astd ping that is a copy of STK's report stamped later falls outside the cross-feed duplicate flag's 10 s
+    (ais_cross_feed_duplicates) and stays in the track as a second ping off by the lag. Counted by plan 059 step 1: 266
+    thousand of astd's copies missed against 2.14 M taken, 50-76 % of the copies in 2014, 2015 and 2026, 22 % in 2025,
+    at the month's lag; and in 2023-2025 copies 27-71 s before STK's fix, STK's own late deliveries.
+why_it_went_unnoticed: >-
+  The trail's own speed is never derived across feeds (stk's recorded, astd's from its own next point), so the flow's
+  speed filter does not see it. It shows in the whack's cross-feed false removals (decision 164, TODO 88 §8c) and in
+  any turn or speed derived from the merged positions; within STK it does not show at all, since a delivery delay moves
+  posdate and recdate together.
+repair: >-
+  Plan 059: a lag per vessel, stream and month from a standing check after the union, applied in the tag pass before
+  the duplicate flag and the whack, the delivered time kept beside the harmonized one.
