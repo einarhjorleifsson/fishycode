@@ -285,15 +285,15 @@ left of each is in the plan:
   planned as `rb_reconcile_time()`, decisions 173-174, built in 180); a haul's times against the track are not built
   (decision 104's ground truth; plan 031 §3.11: logbook times and the port calls disagree mostly by 1-3 h). Brought
   up to date from Claude's audit of 2026-10-23, not checked by a person. Proposed in plan 057: a tow's start and end
-  from each ping's label. The labeller is chosen (decision 270, plan 058's study): a hidden-state model of towing and
-  its look-alikes, decoded by LaMa, the trail in about 9 min; not built. Next, in order: the commercial splits reviewed
-  (plan 057 §4); the feeds' clocks first (TODO 178); the longline's feature. Covariates as one set, not one at a
-  time (maintainer, 2026-11-01): the vessel's length, power and age, the gear's rigging (plan 052), depth (GEBCO, its
-  global grid not yet adopted) and others; length class is the only one in the model so far. Their inventory
-  (2026-11-01, `$FISHYDATA/archive/2026-11-01-label-covariates/`): the vessel's properties and its gear are one block
-  (ρ 0.85-0.89), depth varies within vessels but goes with size (ρ 0.56-0.60), the logbook has no `t1` or `t4` for
-  trawl and no warp; and plan 058's 2019 trawl set holds 6,155 dredge hauls (`gid`, not `gid_used`, decision 270).
-  Refitted on groundfish trawl alone, the under-30 m class scores best (both ends within 10 min 45.8 %, was 26.7).
+  from each ping's label. The labeller is chosen (decision 270): a hidden-state model of towing and its look-alikes,
+  decoded by LaMa; not built. Tested since (2026-11-01, by Claude, not checked by a person; studies in `$FISHYDATA/archive/`):
+  on groundfish trawl alone (`2026-11-01-label-covariates/`: decision 270's set held 6,155 dredge hauls) the under-30 m
+  class scores best, both ends within 10 min for 45.8 %; 2019's fit holds in 2017, 2018 and 2023 and on unseen vessels
+  within 0-5 points, the ping spacing deciding (`2026-11-01-labels-out-of-sample/`); the dredge needs its own fit and
+  still joins back-to-back hauls (16 % within 10 min; `2026-11-01-dredge-labels/`). Covariates as one set (maintainer):
+  the vessel and its gear are one block, depth varies within vessels but goes with size; no `t1`, `t4` or warp is
+  logged for trawl. Next, in order: the commercial splits reviewed (plan 057 §4); the feeds' clocks (TODO 178); the
+  speed's spread tried on the trawl; the longline's feature; a year's first voyage kept out of the training labels.
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 
@@ -1313,6 +1313,9 @@ gillnet's length metres; door areas above 40 m² and the dredge's size kept raw;
 - **Plan 052 step 1's remainder**: §2's unexplained headline and sweep records listed vessel by vessel; the dredge's
   unit per record, if a rule by species is wanted (decision 245); the ICES columns when something reads them (the
   matches are in decision 245).
+- **`toga.virle`'s note** in `reference/gear/part_map.R` (and so the dump overlay): "0 on every row" is `rafr_toga`'s;
+  afli's edited `toga` has 127 thousand Danish seine wires, 1976-2001, which `rigging_part` carries rightly. Reword at the
+  next touch of the map (`$FISHYDATA/archive/2026-11-01-label-covariates/`, "Warp length").
 
 **check:** `effort_count` read from `rigging_part`, the change accounted for; `vessel_sensor` built or declined; a
 decision record.
