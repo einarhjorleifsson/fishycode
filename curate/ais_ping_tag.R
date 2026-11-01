@@ -64,12 +64,17 @@ for (YR in years) {
      SELECT u.*, %s AS stream FROM read_parquet('%s/year=%d/*.parquet') u
      LEFT JOIN ev e ON u.time = e.time AND u.lon = e.lon AND u.lat = e.lat", ping_stream_sql(), union_dir, YR)
   n_in <- DBI::dbGetQuery(con, "SELECT count(*) n FROM u")$n
+  # each step into a table before the next: as one query, 2014 ran out of memory at 19 GB, and staged it takes 16 s
+  # with the same rows (2013 compared; plan 059's rebuild, 2026-11-01)
   tbl(con, "u") |>
     rb_add_ping_own_lag(reference = REFERENCE, method = "copy", streams = JUDGED) |>
+    compute(name = "s1", overwrite = TRUE) |>
     rb_add_ping_time(lags = tbl(con, "lags")) |>
     select(-lag_own_s, -lag_own_basis) |>
+    compute(name = "s2", overwrite = TRUE) |>
     ramb::rb_flag_ping_port(ports, keep = "hid") |>
     rename(pid = port_id) |>
+    compute(name = "s3", overwrite = TRUE) |>
     # the delivered time's year, so that a ping moved across New Year stays in its partition
     mutate(year = as.integer(!!YR)) |>
     duckdbfs::write_dataset(fd_staging("ais", "ping_tagged"), partitioning = "year", format = "parquet")
