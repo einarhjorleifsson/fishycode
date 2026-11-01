@@ -373,7 +373,7 @@ measured.
 before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open · **needs: maintainer** — the prototype's §10 (the floor, the forward stage, ramb's version, adoption) ·
+**status:** open · **needs: maintainer** — the prototype's §10 items 4-5 (fishycode's adoption, `evidence` on the whack) ·
 **see:** decisions 067, 069, 078, 143, 164 and 185 (TODO 38 folded in), TODO 99, plan 031 §3.7 item 12 (what the
 filter leaves near harbours: about 6,000 fixes, mostly STK port event rows)
 
@@ -392,12 +392,12 @@ The reload is a labelled test: its receipt lag marks the truth, and is never a f
 
 Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported, 2,780 kept pings
 contradicted; 63 % of the supported removals are cross-feed legs within 0.3 nm. The prototype
-(`$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`, its README §10 five decisions; ramb branch
-`whack-feed-aware-evidence`, uncommitted in `~/R/Pakkar/ramb_wt_whack`, off 2026.10.19.3) equals `ping_whacky` with
-the defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of the false removals. Plan 059 step 6
+(`$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`, its README §10 five decisions) equals `ping_whacky` with the
+defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of the false removals. Plan 059 step 6
 (`$FISHYDATA/archive/2026-11-01-whack-floor-aligned/`): aligning alone frees 96 % (2026) and 57 % (2016) of that; on
 aligned pings 0.3 nm still frees 71 % and 13 % of what is left, loses no true removal, keeps 20,759 and 6,457 cross-feed
-legs within it. Recommended: 0.3 nm with the aligned times at step 8, the branch moved onto ramb 2026.11.01 first.
+legs within it. Recommended: 0.3 nm with the aligned times at step 8. Merged into ramb's `main` on 2026-11-01 as
+2026.11.01.2 (ad088e3; `feed`, `noise_nm`, `evidence`), without `forward = "two_sided"` (maintainer); installed.
 
 The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
 (the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
@@ -1482,8 +1482,8 @@ the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written:
 `dump/oracle/meta/stk.yml`, with assertions `check_data_dict()` tests, and astdB's speed `recorded` in the union's code.
 Steps 6 and 7 are run as studies (2026-11-01): TODO 88's floor kept at 0.3 nm with the aligned times; astd's speed
 stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Next: step 8, the candidate adopted,
-the central difference built, and the rebuild, once TODO 88's ramb branch is on ramb's main and installed too (TODO
-179's is: ramb 2026.11.01.1, installed 2026-11-01).
+the central difference built, and the rebuild, on ramb 2026.11.01.2 (TODO 179's port calls and TODO 88's floor;
+installed from GitHub 2026-11-01, RemoteSha ad088e3).
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
