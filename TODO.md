@@ -1454,7 +1454,7 @@ lumpfish station before 1992 carries a register vid without a witness.
 
 
 ## 180. STK's VMS clocks: minutes to an hour off in some vessel-months, most of them not repaired
-**status:** open · **needs: maintainer** — plan 060's asks a-f (the maintainer chose the repair 2026-11-01: a lag
+**status:** open · **needs: maintainer** — plan 060's asks a-g (the maintainer chose the repair 2026-11-01: a lag
 from the scan, a flag where it cannot be judged; "plan it first") · **see:** plan 060,
 `curate/corrections/stk_vms_clock.yml`, decision 271 ("Left"), `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (README), plan 059
 
