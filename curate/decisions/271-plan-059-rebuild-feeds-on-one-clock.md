@@ -115,7 +115,8 @@ hundreds of metres.
   moved by the rule. Three of them are vids 975 and 1809, by −51 to −67 min. An hour points to a unit's clock or time
   zone rather than a delivery delay, and it has not been looked into.
 - astd's 2017 `fishing_flow` hours, −7.0 %.
-- The effort map's two grids (`products.sh`) are built from the trail and are no target. Until rerun they show the old
-  trail. The user tables (target `user_tables`) were rebuilt and link the new trail. Release 2026.10.31.1 is frozen and
-  untouched.
+- The effort map's two grids (`products.sh`) are built from the trail and are no target. They were rerun the same
+  evening on the maintainer's word and finished at 19:15 (`products.log`). Their check passed: the hours, kW-hours and
+  fixes of all 730 preset-gear-years equal the trail's (`fishing` 9,169,792 h, `fishing_flow` 11,361,216 h). The user
+  tables (target `user_tables`) were rebuilt and link the new trail. Release 2026.10.31.1 is frozen and untouched.
 - Plan 048 and TODO 117, in a later rebuild of the same stages.
