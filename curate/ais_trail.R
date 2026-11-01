@@ -19,7 +19,10 @@
 # restrict a run; a full run rewrites everything).
 #
 # Columns of `trail` (SQL in R/trail_sql.R; year and month are the partition keys, not columns in the file):
-#   the fix       vid mmsi time lon lat speed speed_raw heading cog provider pos_basis speed_basis dt_sec
+#   the fix       vid mmsi time lon lat speed speed_raw speed_span_s heading cog provider stream pos_basis speed_basis
+#                 dt_sec
+#   the clock     time_delivered lag_s lag_basis   `time` is on one clock across the feeds, the delivered time beside,
+#                 the lag and its basis (copy, measured, none, unmeasured; curate/ais_ping_tag.R, plan 059)
 #   the voyage    port_call_id (key into curated/ais/port_call.parquet, NA at sea) voyage_id (key into
 #                 curated/ais/voyage.parquet, within vid, year; `stay` and `voyage` until decision 149)
 #                 .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)

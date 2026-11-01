@@ -107,8 +107,9 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     r AS (%s),
     cl AS (SELECT vid, t1, t2 FROM read_parquet(%s) WHERE leisure AND t1 < %s AND t2 > %s),
     vy AS (SELECT vid, mclass FROM read_parquet(%s) WHERE year = %d)
-    SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.heading, r.cog, r.provider,
-           r.pos_basis, r.speed_basis, r.dt_sec, r.port_call_id, r.voyage_id,
+    SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.speed_span_s, r.heading, r.cog, r.provider,
+           r.stream, r.pos_basis, r.speed_basis, r.dt_sec, r.time_delivered, r.lag_s, r.lag_basis,
+           r.port_call_id, r.voyage_id,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
            r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier, r.gear, r.target, r.target2,
            g.gid, g.gid_landing, g.gid_used, g.gid_basis, r.gear_class,

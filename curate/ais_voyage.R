@@ -5,7 +5,7 @@
 #         curated/ais/port_call.parquet   (port calls: elapsed time at a port, plan 011 Phase 3; key (vid, port_call_id))
 # Output: curated/ais/voyage.parquet (vid, year, voyage_id, T1, T2, pid1, pid2, n_pings)
 #         curated/ais/ping           (clean pings carrying keys only: `voyage_id`, and `port_call_id` where the ping is
-#                                     in a port call)
+#                                     in a port call; the clock's columns and the speed's span carried from ping_clean)
 #
 # Voyage key is (vid, year, voyage_id), numbered 1..n per vessel per year; a voyage
 # spanning New Year is split at the boundary. The keys are ramb's names since decision 149 (`stay`, `voyage` before).
@@ -72,8 +72,8 @@ for (yr in years) {
 
   base <- ais |>
     filter(year == yr) |>
-    select(vid, mmsi, time, lon, lat, speed, speed_raw, heading, cog, provider, pos_basis, speed_basis,
-           dt_sec, sid_gps, n_sid_gps, pid, year)
+    select(vid, mmsi, time, lon, lat, speed, speed_raw, speed_span_s, heading, cog, provider, stream, pos_basis,
+           speed_basis, dt_sec, time_delivered, lag_s, lag_basis, sid_gps, n_sid_gps, pid, year)
   if (!is.null(VIDS)) base <- filter(base, vid %in% VIDS)
 
   # -- Batch the year by VESSEL ----------------------------------------------

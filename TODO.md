@@ -1466,9 +1466,8 @@ the Icelandic feeds:
 - the trail's `speed` is never derived across feeds, so the speed filter is safe; turns and spreads in those months
   are not.
 
-Plan 059 reviews the study's drafts: a standing check right after `ais_ping_union` (the dt pattern, recording or
-receipt, the lag by vessel, stream and month, the copies the duplicate flag misses), the lag applied in the tag pass,
-the delivered time beside; ramb's step 0 for the generic part. Step 1 is run (2026-11-01, the study
+Plan 059: a standing check right after `ais_ping_union`, the lag applied in the tag pass, the delivered time beside;
+ramb's step 0 for the generic part. Step 1 is run (2026-11-01, the study
 `2026-11-01-feed-clocks/`): offsets in 2014-2016 and 2025-2026, a lag per vessel and month, 266 thousand copies the
 duplicate flag misses. Step 5 too: aligned, the whack's false removals fall 56-90 % in 2015 and 2026 for 0.4-1.1 % of
 its true ones; on-time copies in a late month say a copy's own lag is needed beside the month's. Asks a-h answered
@@ -1482,8 +1481,9 @@ the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written:
 Steps 6 and 7 are run as studies (2026-11-01): TODO 88's floor kept at 0.3 nm with the aligned times; astd's speed
 stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Step 8's code is built (2026-11-01):
 the candidate as `curate/ais_ping_tag.R`, the clean with TODO 88's floor and evidence, astd's and emodnet's central
-speed; on 2026 in a scratch store it equals the candidate and step 6's 0.3 nm run. Next: the rebuild from
-`ais_ping_union` down on ramb 2026.11.01.2 (ad088e3), at the maintainer's word, with TODO 179's port calls.
+speed, the five columns to the trail; on 2026 in a scratch store it equals the candidate and step 6's 0.3 nm run.
+Next: the rebuild, prepared in `$FISHYDATA/archive/2026-11-01-plan059-rebuild/` (its README: before.R, build.sh,
+after.R), with TODO 179's port calls and decision 268's logbook side; plan 048 and TODO 117 later.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.

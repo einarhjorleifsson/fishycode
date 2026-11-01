@@ -214,8 +214,12 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    check's 14,167 units equal, the tag pass's moves the candidate's (8,931,886 by the month's lag, 113,059 copies), STK's
    whack flags 50,306, step 6's 0.3 nm run exactly. astd's speed on 2019 equals the study's variant c to 1e-6 kn on 40.5 M
    pings (89 track ends now one-sided, 75 at keys held twice); emodnet's 2017 speed is within 0.1 kn of the old one on
-   85 %, and its 20 MMSIs with no vessel no longer share one track. The trail does not carry the new columns. The rebuild
-   waits for the maintainer.
+   85 %, and its 20 MMSIs with no vessel no longer share one track. *Prepared 2026-11-01* (the maintainer: rebuild
+   now, plan 048 and TODO 117 in a later one; "Carry all five"): the five columns go through `curated/ais/ping` into
+   the trail (equal to `ping_clean`'s on all 2,651,514 fixes of March 2026 in scratch); the rebuild's scripts and set in
+   `$FISHYDATA/archive/2026-11-01-plan059-rebuild/` (about 27 targets: every outdated one, `ais_ping_union` and the
+   check invalidated by hand, `ais_catch` and the audit left; it also brings decision 268's logbook side into the
+   trail, whose readers were left outdated on 2026-10-31). Not run.
 9. **A decision record;** AGENTS.md's Layout row for `curate/` names the check and the alignment.
 
 ## 6. What it does not do
