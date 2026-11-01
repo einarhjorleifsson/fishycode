@@ -752,8 +752,9 @@ reaches the whack or the track); `stk_receipt` as a side table, the lag a label;
 class in `stk_receipt`; the three Oracle reads in the next dump run (TODO 110). Each is a step of its own, scratch first.
 Plan 048 (TODO 148) builds three of them: the event rows out of the track, the per-unit screen, and no cut at 2017.
 **Recording or receipt, by stream** (plan 059 §1, 2026-11-01): the AIS stream's `posdate` is its receipt time in every
-year 2007-2024, STK's own units' their own, 3-5 s earlier; the AIS stream's changes meaning in May 2025. Plan 059 step 4
-writes it into `dump/oracle/meta/stk.yml`.
+year 2007-2024, STK's own units' their own, 3-5 s earlier; the AIS stream's moves a second or two in May 2025, and
+three backlogs in 2026 came hours to days late. In `dump/oracle/meta/stk.yml` with assertions by stream and period (plan
+059 step 4, 2026-11-01).
 
 **check:** each decision recorded, and what is chosen built or declined.
 
@@ -1461,7 +1462,7 @@ The maintainer (2026-10-31): time is observed, like position, with an error of i
 the Icelandic feeds:
 - astd lies 15-90 s behind stk in October 2025 to May 2026 and 30-75 s in September 2015 to January 2016, by month;
 - STK's AIS stream is stamped at receipt in every year 2007-2024, its own units at their own time; the stream mix
-  changed about 2011, the AIS stream's meaning in May 2025 (plan 059 §1, amending decision 270);
+  changed about 2011, the AIS stream's meaning by a second or two in May 2025 (plan 059 §1, amending decision 270);
 - the trail's `speed` is never derived across feeds, so the speed filter is safe; turns and spreads in those months
   are not.
 
@@ -1477,8 +1478,9 @@ its true ones; on-time copies in a late month say a copy's own lag is needed bes
 time, every difference explained (the study's "Step 2"). Merged into ramb's `main` (fast-forward, 3953894; 235 tests
 pass), pushed and installed from GitHub as 2026.11.01 (2026-11-01). Step 3 is built: `curated/check/ais_feed_clock`
 (target `check_ais_feed_clock`), equal to step 1 but at the 30-pair bound. The tag pass (§3) is a tested candidate in
-the study (2026: the whack's false removals 97,535 to 9,622). Next: step 4 (STK's time by stream in its overlay), steps
-6-7, then step 8: the candidate adopted and the rebuild, which can carry TODO 179's port-call fix.
+the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written: STK's time by stream and period in
+`dump/oracle/meta/stk.yml`, with assertions `check_data_dict()` tests, and astdB's speed `recorded` in the union's code.
+Next: steps 6-7, then step 8: the candidate adopted and the rebuild, which can carry TODO 179's port-call fix.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.

@@ -235,10 +235,11 @@ gps_src <- function(YR) {
 # bind -------------------------------------------------------------------------
 # Union the four MEASURED position sources; `provider` traces each ping back to
 # its origin, which matters for coverage gap analysis. Then the gps feed. Every ping says
-# where its position and its speed came from (pos_basis, speed_basis): stk and gps carry
-# the source's own measured speed, astd, astdB and emodnet derive it from the distance to
-# the next ping. `speed` is NA where a value is no vessel speed (outside 0-40 kn) or the
-# logger placeholder; `speed_raw` keeps the value as given.
+# where its position and its speed came from (pos_basis, speed_basis): stk, astdB and gps carry
+# the source's own measured speed (astdB's is the feed's field, beside its cog and heading; plan
+# 059 step 4), astd and emodnet derive it from the distance to the next ping. `speed` is NA where
+# a value is no vessel speed (outside 0-40 kn) or the logger placeholder; `speed_raw` keeps the
+# value as given.
 SPEED_MAX <- 40
 d_for <- function(YR) {
   ais <- union(stk_src(YR)  |> mutate(provider = "stk"),
@@ -246,7 +247,7 @@ d_for <- function(YR) {
     union(astdB_src(YR) |> mutate(provider = "astdB")) |>
     union(emn |> mutate(provider = "emodnet")) |>
     mutate(speed_raw = speed, pos_basis = "recorded",
-           speed_basis = if_else(provider == "stk", "recorded", "derived"),
+           speed_basis = if_else(provider %in% c("stk", "astdB"), "recorded", "derived"),
            dt_sec = NA_real_, sid_gps = NA_real_, n_sid_gps = NA_integer_)
   g <- gps_src(YR)
   d <- if (is.null(g)) ais else union_all(ais, g)

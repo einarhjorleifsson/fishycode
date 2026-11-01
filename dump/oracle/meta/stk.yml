@@ -2,6 +2,8 @@
 # Seeded 2026-10-22 by Claude (AI) from R/stk_trail.R, decision 164 and the correction ais_invalid_position, on the
 # dump of 2026-10-16; not yet checked by a person. Oracle has no comment on the trail's columns. The trail's three
 # streams and the heading's meaning were added 2026-10-27 by Claude (AI) from data tests; not yet checked by a person.
+# The time by stream (posdate, recdate, the definitions stream and received_late, and the trail's assertions on time) was
+# added 2026-11-01 by Claude (AI) from data tests (plan 059 step 4); not yet checked by a person.
 $version: 0.1.0
 name: stk
 tables:
@@ -42,6 +44,16 @@ tables:
         expr: >-
           ABS(poslat * 343774.677078 - ROUND(poslat * 343774.677078)) < 0.0002 AND
           ABS(poslon * 343774.677078 - ROUND(poslon * 343774.677078)) < 0.0002
+      - name: stream
+        label: >-
+          STK's stream, by the position's grid (the details above), named as curate/checks/ais_feed_clock.R names them;
+          a port event row is stk_event
+        expr: >-
+          CASE WHEN in_out_of_harbor IS NOT NULL THEN 'stk_event' WHEN on_centiminute_grid THEN 'stk_vms'
+          WHEN on_ais_grid THEN 'stk_ais' ELSE 'stk_unit' END
+      - name: received_late
+        label: Received more than an hour after its position time
+        expr: posdate < recdate - interval(1, hours)
       - name: lon
         label: Longitude, decimal degrees
         expr: poslon * 180 / 3.141592653589793
@@ -60,6 +72,77 @@ tables:
           A position has its longitude apart from its latitude. Expected false on 22,733 rows (dump of 2026-10-16):
           placeholders, 6,893 at (0, 0) and 3 beside it, 15,822 with both at 56-76 degrees (mostly 2012), 15 at -1
           degree (2010). The ping union drops them before cleaning (correction ais_invalid_position).
+      # The time by stream (posdate's details). Each is an aggregate, tested by year file as check_data_dict() reads
+      # them, so it fails on a whole file; a period is the receipt's, recdate's. Each tests one stream and period, the
+      # period first and the stream by its grid, not through the definition stream: 2.6-2.8 times faster (2024's
+      # file: 38 s for these against 100 s; 3.7 s without them).
+      - assert: >-
+          AVG(CASE WHEN recdate >= '2007-01-01T00:00:00' AND recdate < '2025-05-01T00:00:00' AND
+          in_out_of_harbor IS NULL AND on_ais_grid AND NOT on_centiminute_grid
+          THEN CASE WHEN posdate = recdate THEN 1 ELSE 0 END END) >= 0.85
+        description: >-
+          STK's AIS stream gives a fix the time of its receipt: to April 2025, posdate equals recdate on 85 % or more of
+          a year file's fixes (87.0-99.3 %). Expected false on 9,738,321 rows (dump of 2026-10-16): the year file of 2009,
+          61.3 %, which the aggregate fails whole (posdate 2 s after recdate on most fixes of June and July 2009, and
+          decision 233's clock episode in September and October).
+      - assert: >-
+          AVG(CASE WHEN recdate >= '2025-05-01T00:00:00' AND NOT received_late AND
+          in_out_of_harbor IS NULL AND on_ais_grid AND NOT on_centiminute_grid
+          THEN CASE WHEN posdate = recdate THEN 1 ELSE 0 END END) < 0.95
+        description: >-
+          From May 2025 STK's AIS stream no longer gives every fix its receipt's time to the second: of the fixes
+          received within the hour, posdate equals recdate on under 95 % of a year file's (72.2 % of 2025's from May,
+          66.0 % of 2026's). Holds on every year file of the dump of 2026-10-16.
+      - assert: >-
+          AVG(CASE WHEN recdate >= '2025-05-01T00:00:00' AND NOT received_late AND
+          in_out_of_harbor IS NULL AND on_ais_grid AND NOT on_centiminute_grid
+          THEN CASE WHEN posdate <= recdate AND posdate >= recdate - interval(60, seconds) THEN 1 ELSE 0 END END) >= 0.95
+        description: >-
+          The change of May 2025 is of a second or two: of the AIS stream's fixes received within the hour, posdate lies
+          within a minute before recdate on 95 % or more of a year file's (99.9 % of 2025's from May, 98.9 % of 2026's),
+          most of the unequal 1-2 s before. Holds on every year file of the dump of 2026-10-16.
+      - assert: >-
+          AVG(CASE WHEN recdate < '2011-01-01T00:00:00' AND in_out_of_harbor IS NULL AND on_centiminute_grid
+          THEN CASE WHEN posdate = recdate THEN 1 ELSE 0 END END) < 0.5
+        description: >-
+          STK's centiminute stream gives a fix the report's own time to 2010: posdate equals recdate on under half of a
+          year file's fixes (0-38.6 %), most of the rest 1-60 minutes before it. Holds on every year file of the dump of
+          2026-10-16.
+      - assert: >-
+          AVG(CASE WHEN recdate >= '2016-01-01T00:00:00' AND recdate < '2025-05-01T00:00:00' AND
+          in_out_of_harbor IS NULL AND on_centiminute_grid THEN CASE WHEN posdate = recdate THEN 1 ELSE 0 END END) >= 0.75
+        description: >-
+          STK's centiminute stream gives a fix mostly its receipt's time from 2016 to April 2025: posdate equals recdate
+          on 75 % or more of a year file's fixes (80.7-93.5 %). Holds on every year file of the dump of 2026-10-16.
+      - assert: >-
+          AVG(CASE WHEN recdate >= '2025-05-01T00:00:00' AND NOT received_late AND in_out_of_harbor IS NULL AND
+          on_centiminute_grid THEN CASE WHEN posdate = recdate THEN 1 ELSE 0 END END) < 0.95
+        description: >-
+          From May 2025 the centiminute stream changes as the AIS stream: of the fixes received within the hour, posdate
+          equals recdate on under 95 % of a year file's (66.8 % of 2025's from May, 66.0 % of 2026's). Holds on every
+          year file of the dump of 2026-10-16.
+      - assert: >-
+          AVG(CASE WHEN in_out_of_harbor IS NULL AND NOT on_ais_grid
+          THEN CASE WHEN posdate = recdate THEN 1 ELSE 0 END END) < 0.05
+        description: >-
+          STK's own units (no grid) stamp their own time: posdate equals recdate on under 5 % of a year file's fixes
+          (0-3.6 %). Holds on every year file of the dump of 2026-10-16.
+      - assert: >-
+          AVG(CASE WHEN recdate >= '2007-01-01T00:00:00' AND NOT (
+          recdate >= '2026-01-15T00:00:00' AND recdate < '2026-01-16T00:00:00' OR
+          recdate >= '2026-05-11T00:00:00' AND recdate < '2026-05-13T00:00:00' OR
+          recdate >= '2026-10-12T00:00:00' AND recdate < '2026-10-15T00:00:00') AND
+          in_out_of_harbor IS NULL AND on_ais_grid AND NOT on_centiminute_grid
+          THEN CASE WHEN received_late THEN 1 ELSE 0 END END) < 0.01
+        description: >-
+          STK's AIS stream is received within the hour: under 1 % of a year file's fixes are received more than an hour
+          after their posdate (0-0.23 %), the days of 2026's three backlogs left out (recdate's details); with them, 19.1
+          % of 2026's. Holds on every year file of the dump of 2026-10-16: a new backlog fails it.
+      - assert: posdate <= recdate + interval(1, days)
+        description: >-
+          A report is stamped no later than its receipt, but for a clock's error. Expected false on 6,199 rows (dump of
+          2026-10-16): posdate a day or more after recdate, up to February 2106, in the year files of 2005-2017 and none
+          since.
     columns:
       - name: poslat
         label: Latitude
@@ -163,18 +246,47 @@ tables:
         label: Position time
         time_zone: UTC
         details: |
-          Iceland's clock is UTC. stk_trail() calls it time. No time-zone offset in any stream: against recdate the
-          median lag is 0 (AIS), 2.3-2.6 minutes (centiminute, 2006-2010) and 0.1 (no grid), and the negative lags lie no
-          nearer whole hours than chance (6.5 % within 2 minutes, chance 6.7 %), in summer as in winter; against ASTD at
-          the same position (moving AIS fixes, 2016, 2021, 2024) 95-99 % agree within a minute and 0.18 % or fewer sit a
-          whole hour or two off, as many ahead as behind. One clock episode: 2009-09-14 to 2009-10-05, 247 thousand AIS
-          fixes have posdate 2.8-2.9 minutes after recdate (49 % of September's AIS fixes), and the AIS stream's whack
-          rate that September is 3.64 % against 0.10-0.90 % around it. Which clock was off is not established.
-          Evidence: data tests of 2026-10-28 on the dump of 2026-10-16; decision 233.
+          Iceland's clock is UTC. stk_trail() calls it time. What it holds differs by stream (the table's details, the
+          definition stream) and period: the receipt's time, recdate's to the second, or the report's own, which the
+          delay of its delivery puts before it. Fixes, by year file (the year of recdate), dump of 2026-10-16:
+          - AIS: equal to recdate on 87-99 % of a year file's fixes from 2007 to April 2025, and 1-2 s before it on most
+            of the rest. 2009 is the exception, 61 %: posdate 2 s after recdate on most fixes of June and July, and one
+            clock episode, 2009-09-14 to 2009-10-05, when 247 thousand fixes have posdate 2.8-2.9 minutes after recdate
+            (49 % of September's) and the AIS stream's whack rate that September is 3.64 % against 0.10-0.90 % around
+            it. Which clock was off is not established. From May 2025 equal on 25-94 % by month (65 % in May), and 1-2
+            s before it on most of the rest: a change of a second or two, within a minute before receipt on 98.9-99.9 %
+            of the fixes received within the hour.
+          - Centiminute: to 2010 mostly the report's own time, 1-60 minutes before receipt (77 % of 2007's fixes, 52 %
+            of 2010's), equal on 4-39 %; equal on 42-55 % in 2011-2014 and 75-93 % from 2015 to April 2025, the rest
+            mostly 1-60 minutes before (6-22 % a year in 2015-2024). From May 2025 equal on 24-92 % by month, as the
+            AIS stream.
+          - No grid, STK's own units: their own time, equal to recdate on under 5 % of a year file's fixes, a median 3-5
+            s before it to 2011 (48 s in 2009) and 16 s to 9 minutes from 2013.
+          - The three backlogs of 2026 (recdate's details): the report's time, hours to days before receipt.
+          A posdate a day or more after recdate is a broken value: 6,199 rows in the year files of 2005-2017, up to
+          February 2106.
+          No time-zone offset in any stream: the lags with posdate after recdate lie no nearer whole hours than chance
+          (6.5 % within 2 minutes, chance 6.7 %), in summer as in winter; against ASTD at the same position (moving AIS
+          fixes, 2016, 2021, 2024) 95-99 % agree within a minute and 0.18 % or fewer sit a whole hour or two off, as many
+          ahead as behind.
+          Evidence: data tests of 2026-10-28 on the dump of 2026-10-16; decision 233; for the time by stream and period,
+          plan 059 §1 and $FISHYDATA/archive/2026-11-01-feed-clocks/ (scripts 01 and 12, 2026-11-01).
+        todo: >-
+          Not established: what posdate holds where it is not recdate in the AIS and centiminute streams from May 2025
+          (a stamp earlier in the chain, the unit's or the network's), and which clock is off on the 30,603 rows of 2026
+          stamped 1-2 hours after their receipt (recdate's details).
       - name: recdate
         label: Receipt time
         time_zone: UTC
-        details: The time STK received the report; the year partition is its year.
+        details: |
+          The time STK received the report; the year partition is its year. Within the hour of posdate on all but 0-0.23
+          % of the AIS stream's fixes of a year file from 2007, but for three backlogs in 2026, each received in a burst, of all
+          three streams: on 2026-01-15, 583 thousand fixes from 2026-01-13 to 15 (a median 20 hours late); on 2026-05-11
+          and 12, 2.1 million from 2026-04-30 to 05-05 (7.5 days); on 2026-10-12 to 14, 911 thousand, most from the days
+          before (42 hours), some from 2025-09-09. Few repeat a fix received in time (at most 6 % in a month): they are
+          first receipts, late. On the backlogs' days of January and October 30,570 rows have recdate 1-2 hours before
+          posdate, and 33 on three other days of 2026 (31 on 2026-06-02); which of the two is off is not established.
+          Evidence: $FISHYDATA/archive/2026-11-01-feed-clocks/ (script 12, 2026-11-01), dump of 2026-10-16.
   - name: stk_hafnir
     details: STK's ports, the code table of trail.harborid; stad_nr is the port's number elsewhere.
     columns:

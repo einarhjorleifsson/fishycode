@@ -2,7 +2,8 @@
 
 **status:** partly built — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan
 058's study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day, step 2
-built in ramb (2026.11.01, installed), step 3 built as the target `check_ais_feed_clock`; the tag pass (§3) and the
+built in ramb (2026.11.01, installed), step 3 built as the target `check_ais_feed_clock`, step 4 written into STK's
+dictionary overlay; the tag pass (§3) and the
 rebuild not built; asks a-h (§7) answered by the maintainer 2026-11-01, each as recommended, b amended by step 5
 (TODO 178) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
@@ -58,7 +59,11 @@ as amended in §1. No person has checked it.
      0.2 % of 2012's: that is what moved the share;
    - the centiminute (VMS) stream lies 1.4-3 min before receipt to 2010, and is mostly stamped at receipt from 2012;
    - **the change of meaning is May 2025, within the AIS and centiminute streams:** equal 99.2-99.4 % from January to
-     April 2025, 65 % in May, then 25-94 % by month to October 2026. The astd lag begins five months later.
+     April 2025, 65 % in May, then 25-94 % by month to October 2026. The astd lag begins five months later. *Step 4
+     measured its size:* where not equal, posdate lies 1-2 s before recdate on most fixes, within a minute on
+     98.9-99.9 % of those received within the hour, so the change is of a second or two, not of astd's 10-86 s. It also
+     found three backlogs in 2026, received on 2026-01-15, 05-11 and 12, and 10-12 to 14, their fixes hours to days
+     late with the report's own time (`dump/oracle/meta/stk.yml`, `recdate`).
 
    Decision 270's sentence is amended to this.
 3. **No split by delivery channel.** `comsystemid` is 100 on every row (decision 233). The test's unit is STK's stream,
@@ -163,7 +168,16 @@ check. §2 and §3 call them; until they are in ramb, the check's queries are a 
    keeps its outcome, "reconstructed positions", and no lag.
 4. **STK's time semantics by stream** in `dump/oracle/meta/stk.yml` (§1 item 2), with an assertion on the share equal by
    stream and period that `check_data_dict()` tests when a dump is adopted; astdB's `speed_basis` `recorded`, at the next
-   union build.
+   union build. *Written 2026-11-01* (the study's script 12): `posdate`'s and `recdate`'s details by stream and period,
+   the definitions `stream` and `received_late`, and nine assertions on the trail: eight on the share by stream and
+   period (aggregates, tested by year file, so one fails a whole file), each one stream and period with its period first
+   and its stream by the grid, 2.6-2.8 times faster than through `stream` (2024's file: 38 s against 100 s; 3.7 s
+   before step 4), and one row by row. `check_data_dict()` on the dump of 2026-10-16, the dictionary rewritten: every
+   check as its description expects, none news, in 8.4 min; the AIS stream's share at receipt to April 2025 fails on 2009's file
+   alone (9,738,321 rows), and a `posdate` a day or more after `recdate` on 6,199 rows. Found on the way: the change of May 2025 is of a second or
+   two (§1 item 2); 2026's three backlogs; 30,603 rows of 2026 stamped 1-2 h after their receipt, open (the overlay's
+   `todo`). astdB's `speed_basis` is `recorded` in `curate/ais_ping_union.R`; the data carry it from the next union build
+   (step 8).
 5. **The alignment in scratch** on 2016 and 2026: the duplicate flag's and the whack's removals before and after, against
    decision 164's witnesses. *Run 2026-11-01, with 2015 added (the study's README, "Step 5"):* the as-delivered run
    equals `ping_whacky` ping for ping; aligned, the whack's false removals of STK pings fall 56 % (2015), 11 % (2016)

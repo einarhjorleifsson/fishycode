@@ -85,7 +85,8 @@ receipt. Measured on the Icelandic feeds:
   by STK's three streams (decision 233), it is a change of mix: the AIS stream is stamped at receipt in every year
   2007-2024 (87-99 %), STK's own units at their own time, 3-5 s earlier, and those units were 76 % of 2007's fixes and
   0.2 % of 2012's. Within the AIS stream the share equal falls from 99 % in April 2025 to 65 % in May, and 25-94 % by
-  month since (`$FISHYDATA/archive/2026-11-01-feed-clocks/`).
+  month since (`$FISHYDATA/archive/2026-11-01-feed-clocks/`). Where not equal it lies 1-2 s before receipt: a change of
+  a second or two (plan 059 step 4, `dump/oracle/meta/stk.yml`).
 - **The trail's `speed` is never derived across feeds,** so the flow's speed filter is safe from the offsets. At risk is
   what is derived from consecutive merged positions (turn, spreads) in the offset months. On the 2026 survey, speed
   derived across the feeds drops the pings inside tows labelled towing from 95 to 58 %. With the trail's speed, the
