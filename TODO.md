@@ -1482,7 +1482,8 @@ the study (2026: the whack's false removals 97,535 to 9,622). Step 4 is written:
 `dump/oracle/meta/stk.yml`, with assertions `check_data_dict()` tests, and astdB's speed `recorded` in the union's code.
 Steps 6 and 7 are run as studies (2026-11-01): TODO 88's floor kept at 0.3 nm with the aligned times; astd's speed
 stamp a central difference within astd (ask i, the maintainer's yes, 2026-11-01). Next: step 8, the candidate adopted,
-the central difference built, and the rebuild, once TODO 179's and TODO 88's ramb branches are on ramb's main.
+the central difference built, and the rebuild, once TODO 88's ramb branch is on ramb's main too (TODO 179's was merged
+locally on 2026-11-01) and ramb is pushed and installed.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.
@@ -1503,9 +1504,9 @@ keyed on `voyage_id`.
 
 **Built and tested on a scratch store** (2026-11-01, `$FISHYDATA/archive/2026-11-01-port-call-new-year-fix/`): ramb
 branch `port-call-chunks`, 7598da0 (2026.11.01.1: `rb_create_port_calls(window = )`, `rb_merge_port_calls()`; 240
-tests pass), and fishycode branch `claude/nice-spence-7dd95d`, 0c644e4 (`curate/port_call.R`, AGENTS.md); neither
-merged, pushed or installed. 1,623,564 of 1,623,626 calls equal a run on each vessel's whole series (81 differ,
+tests pass), and fishycode branch `claude/nice-spence-7dd95d`, 0c644e4 (`curate/port_call.R`, AGENTS.md); both
+merged locally on 2026-11-01 (ramb's `main` fast-forwarded, fishycode 517ddab), not pushed; ramb not installed. 1,623,564 of 1,623,626 calls equal a run on each vessel's whole series (81 differ,
 explained); 22,988,131 of the 22,988,188 lost pings now in a port call; voyage 1 starts later in 6,183 vessel-years.
-Next: the branches merged and ramb installed, then the rebuild with plan 059's step 8.
+Next: ramb pushed and installed, then the rebuild with plan 059's step 8.
 
 **check:** the fix built, the rebuild's fingerprints compared, no port call cut at New Year, and a decision record.
