@@ -207,6 +207,11 @@ Every script in a targets project is on one of three sides, and says which in a 
   `"reconstructed"` / `"synthesised"`, or `"none"` when no source has it). `derived` =
   computed from recorded values of the same record (`t2` + duration); modifiers such as
   `capped` go in their own column. See `station_type` in `docs/grammar.qmd`.
+- **Derive within one stream** (maintainer, 2026-11-01; plan 059 ask h). A speed, turn, acceleration or window derived
+  from consecutive pings is derived within one stream (a feed, and STK's three by the position's grid, decision 233),
+  never across streams whose clocks may differ: astd ran 10-86 s behind STK's AIS stream in 2014-2016 and 2025-2026,
+  and speed derived across them dropped the survey's in-tow towing labels from 95 to 58 %. Recorded values (speed,
+  heading, course) are preferred where a stream has them. Plan 059 aligns the streams in the tag pass.
 - **Cycles are broken by a human, outside the DAG.** Cross-checks are circular
   (AIS → vid assignment → logbook activity → validates the vid assignment). A
   reviewed override in `overrides/` re-enters as an *input*, never as a computed

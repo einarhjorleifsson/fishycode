@@ -1445,8 +1445,7 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 lumpfish station before 1992 carries a register vid without a witness.
 
 ## 178. How many clocks: the first test on a track, and the feeds harmonized before any speed or turn is derived (plan 059)
-**status:** open · **needs: maintainer** — plan 059's asks a-h (the reference stream, the lag's period, where it is
-applied, align or not merge, measured or frozen, the columns, ramb, the AGENTS.md rule) · **see:** plan 059, decision 270
+**status:** open · **see:** plan 059, decision 270
 (its section "Time is an observation"), decision 233, TODO 88, TODO 117, plan 048,
 `curate/corrections/ais_feed_clock_offset.yml`, the studies `$FISHYDATA/archive/2026-11-01-phase-model/` and
 `2026-11-01-feed-clocks/`
@@ -1464,7 +1463,9 @@ receipt, the lag by vessel, stream and month, the copies the duplicate flag miss
 the delivered time beside; ramb's step 0 for the generic part. Step 1 is run (2026-11-01, the study
 `2026-11-01-feed-clocks/`): offsets in 2014-2016 and 2025-2026, a lag per vessel and month, 266 thousand copies the
 duplicate flag misses. Step 5 too: aligned, the whack's false removals fall 56-90 % in 2015 and 2026 for 0.4-1.1 % of
-its true ones; on-time copies in a late month say a copy's own lag is needed beside the month's. Next: the asks.
+its true ones; on-time copies in a late month say a copy's own lag is needed beside the month's. Asks a-h answered
+(maintainer, 2026-11-01, each as recommended; the rule "derive within one stream" is in AGENTS.md). Next: step 2,
+ramb's step 0 functions, the copy's own lag among them.
 
 **check:** a decision records the test on the Icelandic feeds and whether the trail's turns and windows are corrected,
 or why not.

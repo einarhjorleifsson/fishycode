@@ -1,7 +1,8 @@
 # 059 — The feeds' clocks: the first test on every track, right after the union, and the feeds harmonized before any speed or turn is derived across them
 
 **status:** proposal — written 2026-11-01 at the maintainer's request ("Feed clocks first"), from the drafts plan 058's
-study left, reviewed against the code and one new measurement; nothing built; asks a-h (§7) open (TODO 178) ·
+study left, reviewed against the code and one new measurement; steps 1 and 5 run as a study the same day; nothing
+built; asks a-h (§7) answered by the maintainer 2026-11-01, each as recommended, b amended by step 5 (TODO 178) ·
 **2026-11-01** · **see:** decision 270 (its section "Time is an observation"), decisions 164, 196 and 233, TODO 88 (the
 whack's distance floor, §8c), TODO 117 (`stk_receipt`), plan 048 (STK's streams into the flow), plan 013 (ramb's step
 0), `curate/ais_ping_union.R`, `curate/ais_ping_tag.R`, `curate/ais_ping_clean.R`,
@@ -102,8 +103,11 @@ having to remember.
 ## 3. The harmonizing, in the tag pass
 
 `ais_ping_tag` reads the check's lag table and writes, beside each ping:
-- `time`, harmonized: the delivered time minus the unit's lag where the outcome is "offset", else unchanged;
-- the delivered time kept beside it, with the lag and its basis (`measured`, `none`, `unmeasured`), as
+- `time`, harmonized: where the ping is a copy of a report the reference stream also holds (within 2 m, at most
+  180 s), the delivered time minus that copy's own gap; else the delivered time minus the unit's lag where the outcome
+  is "offset"; else unchanged. Step 5 showed why both: a month's lag alone pushed 3,500-14,300 copies a year that were
+  on time a minute off, and left 2,000-23,500 late ones unflagged (ask b, 2026-11-01);
+- the delivered time kept beside it, with the lag and its basis (`copy`, `measured`, `none`, `unmeasured`), as
   `w_lon`/`w_lat` stand beside `lon`/`lat` (names to TODO 127);
 - the ping's stream.
 
@@ -159,10 +163,13 @@ Find true UTC; correct a feed's absolute time; touch the source adapters; change
 
 ## 7. Asks
 
+**Answered** by the maintainer, 2026-11-01, each as recommended below; b as amended after step 5 (a copy's own lag
+before the month's). h is in `AGENTS.md` under Rules.
+
 | | Ask | Recommendation |
 |---|---|---|
 | a | The reference stream | STK's AIS stream where it sends, else the densest regular stream; a convention, recorded per row, not a claim of true UTC |
-| b | The period of one lag | a month per vessel and stream; finer where a month fits poorly (step 1 shows where) |
+| b | The period of one lag | a month per vessel and stream, overridden per ping where a copy of the same report gives that ping its own lag (step 5) |
 | c | Where the lag is applied | in `ais_ping_tag`, which rewrites every ping already, not a new 17 GB stage |
 | d | Align, or one stream per vessel and period with the others filling gaps | align and keep every ping, its stream carried, derivations within one stream |
 | e | The lag measured on every rebuild and applied by a fixed rule, or reviewed and frozen as an input (as the `once` fixes) | measured on every rebuild: new dumps bring new offsets (October 2025 on), and the check shows each unit's outcome |
