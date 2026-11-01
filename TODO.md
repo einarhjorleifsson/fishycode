@@ -293,6 +293,7 @@ left of each is in the plan:
   (2026-11-01, `$FISHYDATA/archive/2026-11-01-label-covariates/`): the vessel's properties and its gear are one block
   (ρ 0.85-0.89), depth varies within vessels but goes with size (ρ 0.56-0.60), the logbook has no `t1` or `t4` for
   trawl and no warp; and plan 058's 2019 trawl set holds 6,155 dredge hauls (`gid`, not `gid_used`, decision 270).
+  Refitted on groundfish trawl alone, the under-30 m class scores best (both ends within 10 min 45.8 %, was 26.7).
 
 **check:** each of items 4 and 6-10 is built and on the data, or plan 013 says why not, and a decision records it.
 

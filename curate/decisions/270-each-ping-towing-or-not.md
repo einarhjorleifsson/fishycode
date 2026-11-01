@@ -122,10 +122,12 @@ That goes to TODO 178. Nothing is built.
 2. The feeds' clocks tested and harmonized before any speed or turn is derived (TODO 178).
 3. D still 3-5 min early: the run-in's emission mixes the turning shoot and the straight descent.
 4. The small trawlers' 4,167 tows with no run under any method. *Amended 2026-11-01 by Claude (AI); not checked by a
-   person:* 4,094 of them are dredge hauls (Plógur, gear code DRB_DES: `gid` 6 reconstructed, `gid_used` 15), which the
-   study's selection on `gid` took for bottom trawl: 6,155 of its 2019 tows on 9 small vessels, and 1,537 of the 30-50 m
-   class's no-run tows. The trawls alone have 65 and 63 with no run. The small classes' commercial scores mix the two
-   gears (`$FISHYDATA/archive/2026-11-01-label-covariates/`, "Found on the way").
+   person:* 4,094 of them are dredge hauls (Plógur, gear code DRB_DES: the logbook's `gid` 6, the landing's 15 taken as
+   `gid_used`, basis "reconstructed", as the flow uses it), which the study's selection on `gid` took for bottom
+   trawl: 6,155 of its 2019 tows on 9 small vessels, and 1,537 of the 30-50 m class's no-run tows. Refitted and
+   scored on groundfish trawl alone, eT places both ends within 5 / 10 min for 28.7 / 45.8 % (under 30 m; this record
+   15.8 / 26.7), 20.0 / 37.6 % (30-50 m; 15.2 / 29.9) and 17.0 / 31.6 % (50 m and over, unchanged), with 65, 53 and 164
+   tows with no run (`$FISHYDATA/archive/2026-11-01-label-covariates/`, "Found on the way").
 5. The logged times' error model per gear and period, from the stacks.
 6. Out of sample in time (2017-2018, 2023 at 5 min) and by vessel.
 7. The longline's straightness feature, then the static gears.
