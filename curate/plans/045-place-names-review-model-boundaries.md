@@ -75,6 +75,28 @@ Naming places from many noisy witnesses is studied under several heads:
      cycle rule, AGENTS.md).
    - The feedback loop: a rebuild shows the case resolved, or what it now conflicts with.
    - Built one step at a time, each click path tested before the next.
+   - **A first step, read-only (2026-11-01, Claude's build at the maintainer's request):** the place-name explorer,
+     `products/place_names/` (`place_names()`, its README and `checklist.md`). It finds a name, draws its footprint,
+     places and occurrences by source, lists its spellings, synonyms, parent and children, and filters by source,
+     class, terrain, gear, cross-check and level. No queues and no answers: it writes nothing, to `overrides/` or
+     elsewhere, while ask c is open. The review page is to grow from it.
+   - **One name per place (the maintainer, 2026-11-01):** "In the end we really want a single name (although the
+     sources stay as is)". Many keys write one ground: "Utan við hólf", "Utan við hólfið á Breiðafirði", "Utan við
+     hólf Br." and 13 more are the ground outside the Breiðafjörður box. Candidate pairs within 30 km link 1,733 keys
+     and 68 % of the positions, but a transitive merge chains different places (Skálin, Skelin, Svaðan, Snaginn) and
+     joins the halves of "Barðið/Djúpkrókur". `curate/name_group.R` (target `name_group`) proposes a group per place,
+     never merging a key: a name read to its core (article and case endings, compass letters, "fyrir utan" and "utan
+     við" as "utan", a locator at the end such as "Br." or "á Breiðafirði"), keys of one core within reach of the one
+     with most positions (a star, not a chain), then the 2022 hand readings. The single name is LMÍ's, else the
+     commonest plain spelling. On the gazetteer of 2026-11-01, tried on a scratch copy: 953 keys in 423 groups of two
+     or more; a sample read by Claude found the core and reading joins mostly right and the locator joins about three
+     in four. The explorer shows each group. Not built into `curated/` yet (the maintainer builds it).
+   - **Should the single name be part of the rebuild?** Claude's recommendation (2026-11-01, for the maintainer): the
+     proposal yes, the decision no. The rules are cheap (10 s) and reproducible from the data, so the proposal is
+     rebuilt with the gazetteer and is marked `proposed`. But a group's head and its commonest spelling can change as
+     data are added, and a name in use must not change unseen. A reviewed name belongs in a ledger under `overrides/`
+     that the rebuild reads as an input and never writes, as the vid ledger is (AGENTS.md, the cycle rule): a group
+     once named keeps its name, a new key joins it by rule or waits for review. That waits on ask c.
 2. **Effort as an image** (flow side: the effort comes from the track).
    - Per gear, the grid's surface is cut at two scales: the grounds (broad) and the tow lanes and ridges (fine).
    - Measured against the names: the share of a name's positions in its best region, and whether parents and

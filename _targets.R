@@ -370,6 +370,11 @@ list(
     produces("curate/place_name.R", fd_curated("place_name", "place_name.parquet"),
              fd_curated("place_name", "synonym.parquet"))
   }, format = "file"),
+  # One name for the keys that write one place, by rule: a proposal until a person reviews it (plan 045 §3.1)
+  tar_target(name_group, {
+    place_name
+    produces("curate/name_group.R", fd_curated("place_name", "name_group.parquet"))
+  }, format = "file"),
 
   # vid -> what the hull was called, and when. The vid is the keel; mmsi, cs and
   # uid are attributes of it at a time. Consumed by ais_key.R's lifetime flag and
