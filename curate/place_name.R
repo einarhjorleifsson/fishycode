@@ -28,7 +28,8 @@
 #   says nothing of the seabed): `depth_m`, `slope_deg`, `bpi_m`.
 # - `terrain`: the class of the terrain word: hazard (festa, a wreck: "flakið", "skipið"; plan 044 §4, the maintainer:
 #   these show in the trawl effort), bank, deep, edge, ridge, hill, horn, bay, other. A "-flak" compound is a bank
-#   (Digranesflak), "flakið" a wreck.
+#   (Digranesflak), "flakið" a wreck. A hólf (a closed box) and a hólmi (an islet) are no hill: their words are read
+#   for none (146 of 534 hills were, 2026-11-01).
 # - `gear`, `gear_share`: the commonest gear of Trackwell's hauls under the name, through the logbook.
 # - `parent_key`, `parent_basis`: the broader name the key lies in, first by `footprint` (20 or more positions, 70 %
 #   in the footprint of a key with 50 or more whose r80 is over twice its own; the smallest such key), else `lexical`
@@ -68,7 +69,7 @@ name_key <- function(x) {                                   # as in place_name_e
   x <- tolower(x); x <- gsub("ð", "d", x); x <- gsub("þ", "th", x); x <- gsub("æ", "ae", x)
   x <- chartr("áéíóúýöäåøü", "aeiouyoaaou", x); x <- gsub("[^a-z0-9?]", "", x); gsub("([a-z])\\1+", "\\1", x)
 }
-terrain <- function(x) { x <- tolower(x)
+terrain <- function(x) { x <- gsub("hólf\\S*|hólm\\S*", " ", tolower(x))
   case_when(grepl("festa|festan|festu|flakið|flakinu|skipið|skipsflak|kirkjugarð|togarinn|bátsflak", x) ~ "hazard",
             grepl("kant|brún|brun|brekk|hlíð|hlid", x) ~ "edge", grepl("hrygg", x) ~ "ridge",
             grepl("hóll|hól|hæð|klakk|boði|bunga", x) ~ "hill",

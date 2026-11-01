@@ -65,6 +65,16 @@ day.
 - **D7** An occurrence point on the map: a popup with source and table, position kind and basis, time, vid, gear,
   square, LMÍ feature, ÍSOR group, uv area.
 
+## One place, one name (where `curated/place_name/name_group.parquet` is built; tested 2026-11-01 on a scratch copy)
+
+- **G1** A key of a group of two or more: "One place, one name (proposed)", the single name as a link, and each key of
+  the group with its positions, how it joined (most positions, same core, a locator dropped, the hand reading), the
+  words dropped and its distance from the head; its own row in bold.
+- **G2** On the map, the other keys' footprints dotted in purple, over the chosen name's own.
+- **G3** A key's link in the group's table opens it, with the same group.
+- **G4** In the list, "≈ <single name>" where a key's group is named otherwise, "one of N keys" where it names its group.
+- **G5** Without the table (the store before the build), no group anywhere and no error.
+
 ## The map's controls
 
 - **M1** Footprints off hides every listed footprint (the chosen name's stays); on brings them back.

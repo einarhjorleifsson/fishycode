@@ -7,7 +7,7 @@ const esc = (x) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const num = (x, d = 0) => (x == null || Number.isNaN(x) ? '' : Number(x).toLocaleString('en-GB', { maximumFractionDigits: d }));
 const status = (msg) => { $('status').textContent = msg; };
 // The service's version this page was written for (api.R, API_VERSION)
-const API = '2026-11-01.1';
+const API = '2026-11-01.2';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -80,7 +80,7 @@ const swatch = (c) => `<span class="dot" style="background:${c}"></span>`;
 
 // State: the data held, the list's filters, the chosen name and its occurrences
 const D = { names: [], byKey: new Map(), children: new Map(), syn: new Map(), variants: new Map(), places: new Map(),
-            search: new Map(), foot: null, evidence: new Map() };
+            search: new Map(), foot: null, evidence: new Map(), group: new Map(), members: new Map() };
 // evOff: the sources of the chosen name's occurrences switched off, on the map and in its table
 const S = { key: null, shown: 300, list: [], evOff: new Set() };
 // The list's filters: one value each ('' for all), and the sources as a set (empty for all)
@@ -143,13 +143,16 @@ function addLayers() {
                  paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2.4, 10, 4.5],
                           'circle-color': ['get', 'colour'], 'circle-opacity': 0.85,
                           'circle-stroke-color': 'rgba(15, 23, 42, 0.45)', 'circle-stroke-width': 0.5 } });
-  map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', filter: ['!=', ['get', 'role'], 'child'],
+  map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', filter: ['in', ['get', 'role'], ['literal', ['self', 'parent']]],
                  paint: { 'line-color': '#fff', 'line-width': 4.5, 'line-opacity': 0.85 } });
-  map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', filter: ['!=', ['get', 'role'], 'parent'],
+  map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', filter: ['in', ['get', 'role'], ['literal', ['self', 'child']]],
                  paint: { 'line-color': ['match', ['get', 'role'], 'self', '#0f172a', '#475569'],
                           'line-width': ['match', ['get', 'role'], 'self', 2.5, 1.2] } });
   map.addLayer({ id: 'sel-parent', type: 'line', source: 'sel', filter: ['==', ['get', 'role'], 'parent'],
                  paint: { 'line-color': '#0f172a', 'line-width': 1.8, 'line-dasharray': [3, 2] } });
+  // the other keys of its group (curate/name_group.R): the same place written another way, dotted
+  map.addLayer({ id: 'sel-member', type: 'line', source: 'sel', filter: ['==', ['get', 'role'], 'member'],
+                 paint: { 'line-color': '#6a3d9a', 'line-width': 2, 'line-dasharray': [0.5, 1.5] } });
   map.addLayer({ id: 'places', type: 'circle', source: 'places',
                  paint: { 'circle-radius': 11, 'circle-color': '#fff', 'circle-stroke-color': '#0f172a', 'circle-stroke-width': 2 } });
   map.addLayer({ id: 'places-n', type: 'symbol', source: 'places',
@@ -224,8 +227,8 @@ $('m-base').addEventListener('change', () => {
 // The data ------------------------------------------------------------------------------------------------------------
 async function load() {
   status('loading the gazetteer');
-  const [names, places, syn, variants, foot, bases] = await Promise.all(
-    ['names', 'places', 'synonyms', 'variants', 'footprints', 'basemaps'].map((e) => api(e)));
+  const [names, places, syn, variants, foot, bases, groups] = await Promise.all(
+    ['names', 'places', 'synonyms', 'variants', 'footprints', 'basemaps', 'groups'].map((e) => api(e)));
   BASEMAPS = bases;
   $('m-base').innerHTML = bases.map((b) => `<option value="${esc(b.id)}">${esc(b.label)}</option>`).join('');
   D.names = rows(names);
@@ -241,6 +244,11 @@ async function load() {
     if (y.key_b) (D.syn.get(y.key_b) ?? D.syn.set(y.key_b, []).get(y.key_b)).push({ ...y, other: y.key_a, other_name: y.name_a });
   }
   for (const v of rows(variants)) (D.variants.get(v.key) ?? D.variants.set(v.key, []).get(v.key)).push(v);
+  // one name for the keys of one place (curate/name_group.R), where it is built: a proposal
+  for (const g of rows(groups)) {
+    D.group.set(g.key, g);
+    (D.members.get(g.group) ?? D.members.set(g.group, []).get(g.group)).push(g);
+  }
   // what the search reads: the key, and each spelling's own key
   for (const n of D.names) D.search.set(n.key, [n.key, ...(D.variants.get(n.key) ?? []).map((v) => nameKey(v.name))]);
   for (const f of foot.features) {
@@ -301,13 +309,20 @@ function applyFilters() {
   S.list = list; S.shown = 300;
   drawList(); drawLabels(); drawLegend();
 }
+// in the list: the single name of a key's group where it differs from the key's own, else how many keys it holds
+function groupNote(n) {
+  const g = D.group.get(n.key);
+  if (!(g?.n_keys > 1)) return '';
+  return g.group_name !== n.name ? `≈ ${g.group_name}` : `one of ${g.n_keys} keys`;
+}
 function drawList() {
   const L = S.list;
   $('count').innerHTML = `<span>${num(L.length)} of ${num(D.names.length)} names</span>` +
     (filtered() ? '<button id="clear" title="every filter back to all">clear filters</button>' : '');
   const sub = (n) => [n.class !== 'name' ? n.class : '', n.terrain !== 'other' ? n.terrain : '',
                       n.n_positioned ? `${num(n.n_positioned)} positions` : 'no position',
-                      n.n_places > 1 ? `${n.n_places} places` : ''].filter(Boolean).join(' · ');
+                      n.n_places > 1 ? `${n.n_places} places` : '',
+                      groupNote(n)].filter(Boolean).join(' · ');
   $('list').innerHTML = L.slice(0, S.shown).map((n) =>
     `<div class="item${n.key === S.key ? ' on' : ''}" data-key="${esc(n.key)}"><div class="nm">${esc(n.name)}</div>
        <div class="sub">${n.sources.map(dot).join('')} ${esc(sub(n))}</div></div>`).join('') +
@@ -370,6 +385,8 @@ async function choose(key, { fly = true } = {}) {
 const mapHash = () => { const m = location.hash.match(/map=[^&]*/); return m ? `&${m[0]}` : ''; };
 
 const footOf = (key) => D.foot.features.find((f) => f.properties.key === key);
+// the keys written for the same place as this one, itself among them; none where the groups are not built
+const groupOf = (key) => (D.group.has(key) ? D.members.get(D.group.get(key).group) ?? [] : []);
 function drawSelection(n) {
   if (!map.getSource('sel')) return;
   const f = [];
@@ -377,6 +394,7 @@ function drawSelection(n) {
   add(n.key, 'self');
   if (n.parent_key) add(n.parent_key, 'parent');
   for (const c of D.children.get(n.key) ?? []) add(c.key, 'child');
+  for (const m of groupOf(n.key)) if (m.key !== n.key) add(m.key, 'member');
   map.getSource('sel').setData({ type: 'FeatureCollection', features: f });
   const pl = D.places.get(n.key) ?? [];
   map.getSource('places').setData({ type: 'FeatureCollection', features: pl.length > 1 ? pl.map((p) => (
@@ -407,6 +425,21 @@ function flyTo(n) {
 }
 
 // The detail panel ------------------------------------------------------------------------------------------------------
+// the single name proposed for the keys of one place, and each of them with how it joined
+const JOINED = { head: 'most positions', core: 'same core', locator: 'a locator dropped', reading: 'the hand reading' };
+function drawGroup(n) {
+  const g = groupOf(n.key);
+  if (g.length < 2) return '';
+  const own = D.group.get(n.key);
+  const ordered = g.slice().sort((a, b) => (D.byKey.get(b.key)?.n_positioned ?? 0) - (D.byKey.get(a.key)?.n_positioned ?? 0));
+  return `<h3>One place, one name (${esc(own.status)})</h3>
+    <div style="margin-bottom:4px"><b style="font-size:17px">${go(own.group, own.group_name)}</b>
+      <span class="muted">· ${g.length} keys written for one place, dotted on the map</span></div>
+    <table><tr><th>key's name</th><th class="n">positions</th><th>joined by</th><th>dropped</th><th class="n">km</th></tr>
+    ${ordered.map((m) => `<tr><td>${m.key === n.key ? `<b>${esc(n.name)}</b>` : go(m.key, D.byKey.get(m.key)?.name ?? m.key)}</td>
+      <td class="n">${num(D.byKey.get(m.key)?.n_positioned)}</td><td>${esc(JOINED[m.basis] ?? m.basis)}</td>
+      <td>${esc(m.locator ?? '')}</td><td class="n">${num(m.km, 1)}</td></tr>`).join('')}</table>`;
+}
 const go = (key, text) => (D.byKey.has(key) ? `<a class="go" data-key="${esc(key)}">${esc(text)}</a>` : esc(text));
 const badge = (text, colour) => `<span class="badge">${colour ? swatch(colour) : ''}${esc(text)}</span>`;
 function drawDetail(n, ev) {
@@ -434,6 +467,7 @@ function drawDetail(n, ev) {
     ${fact('Region', esc(n.region))}
     ${fact('LMÍ', n.in_lmi ? `yes${n.lmi_class ? ` (${esc(n.lmi_class)})` : ''}` : '')}
     </table>
+    ${drawGroup(n)}
     <h3>Parent and children</h3>
     <table class="facts">
     ${fact('Parent', parent ? `${go(parent.key, parent.name)} <span class="muted">(${esc(n.parent_basis)})</span>` : '<span class="muted">none</span>')}

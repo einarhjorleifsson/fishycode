@@ -2,7 +2,8 @@
 # Plan 045 step 1, its first part: read-only, no answers written. A consumer of curated/, run on demand, never a target.
 #
 # Input:  curated/place_name/{place_name, place, synonym, variant, evidence}.parquet (curate/place_name.R,
-#         curate/place_name_evidence.R; plan 044); ramb's rb_map_basemaps() (the base maps' addresses, one home)
+#         curate/place_name_evidence.R; plan 044), and name_group.parquet where it is built (curate/name_group.R, plan
+#         045 §3.1: one name for the keys of one place); ramb's rb_map_basemaps() (the base maps' addresses, one home)
 # Output: nothing written. Each endpoint answers JSON, columns as arrays; the footprints as GeoJSON.
 #
 # - Every endpoint names its columns in ALLOW, and the answer is `SELECT <those columns>`, so nothing else leaves the
@@ -15,7 +16,7 @@
 #   and the page is never published (plan 045 §5).
 
 # The service's version, sent with every answer. The page carries the same string and says so when they differ.
-API_VERSION <- "2026-11-01.1"
+API_VERSION <- "2026-11-01.2"
 
 NOT_SERVED <- c("text", "vessel", "source_key")
 
@@ -32,12 +33,14 @@ ALLOW <- list(
   synonyms = c("key_a", "name_a", "key_b", "name_b", "relation", "letters", "km", "n_a", "n_b"),
   variants = c("name", "key", "class", "rule", "repaired_to", "n", "n_positioned", "n_vessel", "sources", "reading",
                "synonym_of"),
+  groups   = c("key", "group", "group_name", "basis", "locator", "km", "n_keys", "status"),
   evidence = c("source", "source_table", "name", "name_repaired", "class", "lon", "lat", "position_basis",
                "position_kind", "time", "vid", "gid", "gear", "summary", "square_w", "square_h", "position_flag",
                "region", "lmi_feature", "isor_group", "uv_type")
 )
 
-TABLE <- c(names = "place_name", places = "place", synonyms = "synonym", variants = "variant", evidence = "evidence")
+TABLE <- c(names = "place_name", places = "place", synonyms = "synonym", variants = "variant", groups = "name_group",
+           evidence = "evidence")
 
 # Where the inputs are: fd_path(), not fd_curated(), which would create a missing directory
 src <- function(t) sprintf("read_parquet('%s')", fd_path("curated", "place_name", paste0(t, ".parquet")))
@@ -82,6 +85,10 @@ place_names_app <- function(con, www) {
     places   = as_json(DBI::dbGetQuery(con, select_sql("places", order = "ORDER BY key, place"))),
     synonyms = as_json(DBI::dbGetQuery(con, select_sql("synonyms"))),
     variants = as_json(DBI::dbGetQuery(con, select_sql("variants", order = "ORDER BY key, n DESC"))),
+    # the groups only where curate/name_group.R has run: else no rows, and the page shows no group
+    groups   = if (file.exists(fd_path("curated", "place_name", "name_group.parquet")))
+                 as_json(DBI::dbGetQuery(con, select_sql("groups", order = "ORDER BY \"group\", km")))
+               else as_json(stats::setNames(rep(list(character()), length(ALLOW$groups)), ALLOW$groups)),
     footprints = footprints_geojson(),
     basemaps = enc2utf8(as.character(jsonlite::toJSON(ramb::rb_map_basemaps(), auto_unbox = TRUE)))
   )

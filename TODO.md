@@ -1101,7 +1101,8 @@ the effort lanes go flow-side · **see:** `curate/plans/045-place-names-review-m
 
 Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with the tagging databases, channel and uv
 (decisions 225, 226); Claude's build, not checked by a person. A read-only explorer of it, the first step towards plan
-045's review page, is `products/place_names/` (2026-11-01). Open:
+045's review page, is `products/place_names/` (2026-11-01); one name per place is proposed by `curate/name_group.R`
+(plan 045 §3.1), coded and tried on a scratch copy, to be built with the gazetteer. Open:
 - plan 045 (the maintainer, 2026-10-24): a review interface with a feedback loop through `overrides/`; a model for
   placing names (vague places, conflation, source reliability); MFRI's depth model for GEBCO; EUSM or better as a
   boundary aid; the effort by gear as an image of grounds and lanes (flow side). It carries the review loop and the

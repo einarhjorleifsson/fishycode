@@ -42,7 +42,8 @@ The service reads the tables once at start (about 4 s). After a rebuild of the g
 
 ## What it serves
 
-The names, places, synonyms, spellings and footprints go to the page once, whole (2.1, 0.5, 0.1, 0.8 and 10 MB as
+The names, places, synonyms, spellings, the proposed groups of one place (`name_group.parquet`, where
+`curate/name_group.R` has run) and footprints go to the page once, whole (2.1, 0.5, 0.1, 0.8 and 10 MB as
 JSON), and the page does every filter and link itself. A name's occurrences are asked when it is chosen (up to 30,642
 rows, 0.1 s). Kept back from the occurrences: a finder's free text (it may name a person), Trackwell's own vessel name
 (the vid is served) and the source's row id.

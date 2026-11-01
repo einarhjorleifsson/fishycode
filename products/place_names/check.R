@@ -21,7 +21,9 @@ get <- function(path, query = "", method = "GET")
 
 # 1. Nothing kept back is allowlisted, and every allowlisted column exists ----------------------------------------------
 stopifnot("a column kept back is allowlisted" = !any(unlist(ALLOW) %in% NOT_SERVED))
+built <- file.exists(fd_path("curated", "place_name", "name_group.parquet"))   # the groups, once curate/name_group.R has run
 for (e in names(ALLOW)) {
+  if (e == "groups" && !built) next
   have <- DBI::dbGetQuery(con, sprintf("DESCRIBE SELECT * FROM %s", src(TABLE[[e]])))$column_name
   miss <- setdiff(ALLOW[[e]], have)
   if (length(miss)) stop(e, ": no column ", paste(miss, collapse = ", "))
@@ -32,7 +34,7 @@ pick <- DBI::dbGetQuery(con, sprintf(
   "(SELECT key, 'most occurrences' AS why FROM %1$s ORDER BY n_positioned DESC LIMIT 1)
    UNION ALL (SELECT key, 'several places' FROM %1$s WHERE n_places > 2 ORDER BY n_positioned DESC LIMIT 1)
    UNION ALL (SELECT key, 'no position' FROM %1$s WHERE n_positioned = 0 ORDER BY key LIMIT 1)", src("place_name")))
-asks <- c(as.list(c("names", "places", "synonyms", "variants")), lapply(pick$key, function(k) c("evidence", k)))
+asks <- c(as.list(c("names", "places", "synonyms", "variants", "groups")), lapply(pick$key, function(k) c("evidence", k)))
 out <- do.call(rbind, lapply(asks, function(a) {
   t1 <- Sys.time()
   r <- get(paste0("/api/", a[1]), if (length(a) > 1) paste0("key=", utils::URLencode(a[2], reserved = TRUE)) else "")
