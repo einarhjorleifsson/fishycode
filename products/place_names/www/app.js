@@ -107,9 +107,9 @@ function addLayers() {
   map.addLayer({ id: 'sel-parent', type: 'line', source: 'sel', filter: ['==', ['get', 'role'], 'parent'],
                  paint: { 'line-color': '#374151', 'line-width': 1.5, 'line-dasharray': [3, 2] } });
   map.addLayer({ id: 'places', type: 'circle', source: 'places',
-                 paint: { 'circle-radius': 9, 'circle-color': '#fff', 'circle-stroke-color': '#b45309', 'circle-stroke-width': 2 } });
+                 paint: { 'circle-radius': 11, 'circle-color': '#fff', 'circle-stroke-color': '#b45309', 'circle-stroke-width': 2 } });
   map.addLayer({ id: 'places-n', type: 'symbol', source: 'places',
-                 layout: { 'text-field': ['to-string', ['get', 'place']], 'text-font': FONT, 'text-size': 11,
+                 layout: { 'text-field': ['to-string', ['get', 'place']], 'text-font': FONT, 'text-size': 13,
                            'text-allow-overlap': true, 'icon-allow-overlap': true } });
   // the names in the list, from their minimum zoom, broad names first where labels collide; a short list (a filter's
   // or a search's) at every zoom, each with a dot
@@ -118,7 +118,7 @@ function addLayers() {
                  paint: { 'circle-radius': 2.5, 'circle-color': '#1f3b57' } });
   map.addLayer({ id: 'labels', type: 'symbol', source: 'labels', filter: shown,
                  layout: { 'text-field': ['get', 'name'], 'text-font': FONT,
-                           'text-size': ['match', ['coalesce', ['get', 'level'], 4], 1, 15, 2, 13.5, 3, 12, 11],
+                           'text-size': ['match', ['coalesce', ['get', 'level'], 4], 1, 19, 2, 17, 3, 15, 14],
                            'symbol-sort-key': ['+', ['*', 100000, ['coalesce', ['get', 'level'], 4]], ['-', 0, ['get', 'n']]],
                            'text-padding': 3, 'text-letter-spacing': 0.02 },
                  paint: labelPaint('light') });

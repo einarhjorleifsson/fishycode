@@ -74,7 +74,7 @@ All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px
 
 ## Layout
 
-- **W1** Above 1000 px: list | map | detail, each scrolling on its own.
+- **W1** Above 1200 px: list | map | detail, each scrolling on its own.
 - **W2** At 375 px: map, then detail, then the list; no side scroll.
 
 ## Not in this version
