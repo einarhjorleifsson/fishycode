@@ -1,7 +1,7 @@
 # 062 — ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence, and every method scored on planted faults
 
-**status:** partly built — steps 0-2 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
-measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 parts A and B done (the scores on the planted faults and the reload,
+**status:** partly built — steps 0-3 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
+measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 done (the scores on the planted faults and the reload, and the timing,
 `$FISHYDATA/archive/2026-11-02-plan062-step3/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
@@ -155,8 +155,10 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    measured it: of 814,218 pings of 828 vessels, 1,802 reloaded pings (164 vessels) are day-shifted copies of the live
    track. Every method catches 2-8 of them, and flags 2,776-3,014 live pings only when the reload is there: where a
    copy meets the live track, the speed rules take out the live pings. A copy rule that searches the vessel's own
-   track at a shift (a day, an hour) is a candidate for step 4a. **Left:** part C, the time and memory at 1, 10 and
-   100 M pings.
+   track at a shift (a day, an hour) is a candidate for step 4a. **Part C done 2026-11-02:** on whole vessel-years of
+   2017-2018, the lazy route grows linearly (`clean` 0.7 s per million pings, 69 s and 6.6 GB at 100 M), the same
+   flags as the data frame's, at 1.25 times its time and 0.82 times its memory at 10 M; `forward` takes 0.68 of
+   `clean`'s time, `sda` 0.81. Time does not choose between the methods; the scores do.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
