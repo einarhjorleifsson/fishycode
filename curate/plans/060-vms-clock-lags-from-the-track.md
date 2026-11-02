@@ -1,14 +1,17 @@
 # 060 — STK's VMS clocks: each fix's time from STK's own receipt where the unit's clock drifts, checked against the vessel's AIS track, the rest flagged
 
-**status:** proposal — written 2026-11-01 at the maintainer's request ("Lag from the scan": a lag where the clock can be
+**status:** executed — written 2026-11-01 at the maintainer's request ("Lag from the scan": a lag where the clock can be
 judged, a flag where it cannot; "plan it first"). Revised the same evening after the maintainer's question on `posdate`
 and `recdate`, which give a lag for every VMS fix whose `posdate` is the unit's own, with AIS or without ("Don't we need
 a plan here?"; "hold before you start executing the plan"); ramb's hardening added as §8 at the maintainer's word
 ("Into plan 060"); asks a-h answered 2026-11-01, each as recommended, h (added by Claude) a full rebuild of every
 main-project target from raw; step 1 measured 2026-11-02, and on its numbers §1's rule revised (the persistent rule)
-and STK's own units left without a receipt lag (ask d), the maintainer: "proceed" · **2026-11-01** · **see:** TODO 180, TODO 117 and
-decision 196 (`stk_receipt`), `curate/corrections/stk_vms_clock.yml`, decision 271, plan 059, `dump/oracle/meta/stk.yml`,
-the study `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (its README)
+and STK's own units left without a receipt lag (ask d), the maintainer: "proceed"; step 2 built in ramb 2026.11.02,
+step 3 at 475dc92, step 4 the full rebuild of 2026-11-02, then two rebuilds from the tag pass (ramb 2026.11.02.1, the
+copies; 2026.11.02.2 and 5f522e0, STK's outages, "Fix it, rebuild"), step 5 decision 274 (TODO 180 closed) ·
+**2026-11-01** · **see:** decision 274, TODO 182, TODO 117 and decision 196 (`stk_receipt`),
+`curate/corrections/stk_vms_clock.yml`, decision 271, plan 059, `dump/oracle/meta/stk.yml`, the study
+`$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (its README)
 
 Drafted with AI assistance (Claude) on 2026-11-01, from the study run the same evening. No person has checked it. The
 choice of repair is the maintainer's; the design and every number are Claude's.

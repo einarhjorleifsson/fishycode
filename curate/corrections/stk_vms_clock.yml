@@ -1,11 +1,11 @@
 id: stk_vms_clock
 title: some of STK's VMS units stamp their positions minutes to an hour before the vessel was there
-status: measured 2026-11-01 (the study $FISHYDATA/archive/2026-11-01-vms-clock-scan/); repaired only in part - plan 059's monthly lag moved the 8 VMS vessel-months its clock check could measure (decision 271), the rest NOT repaired (TODO 180)
+status: repaired in the data 2026-11-02 (decision 274, plan 060's rebuilds at 475dc92 and 5f522e0, ramb 2026.11.02.2) - each VMS ping's time judged from STK's receipt in the tag pass; 4,004,056 trail fixes on `receipt`, 2,989,299 moved, 491,282 by over 3 min; judged vessel-weeks off the AIS track by over 3 min 399 -> 30 of 4,084 (STK's AIS stream) and 76 -> 35 of 8,403 (astd), listed by check_ais_vms_track, not moved otherwise
 applies_to:
   - staging/ais/ping_tagged, ping_clean, ping_whacky - the stream stk_vms
   - curated/ais/ping and the trail - the kept stk_vms fixes, their windows, effort intervals and port calls
 affects_rows: of 3.48 M VMS pings of vessels with an AIS stream, an hour off in 43 vessel-months (14 vessels, 9,319 pings, 3,744 of them in the store unmoved) and off by minutes in 251 (40 vessels, 71,218 pings, 63,257 in the store); 2.45 M pings in 38,203 vessel-months could not be judged
-implementation: none yet; plan 059's tag pass moves a VMS ping only where curated/check/ais_feed_clock has 30 pairs
+implementation: curate/ais_ping_tag.R with ramb's rb_add_ping_own_lag(method = "receipt", mass_share = 0.5) of 2026.11.02.2 (lag_basis receipt), STK's receipt and unit from staging/ais/stk_receipt (curate/ais_ping_union.R), the usual lag from curate/checks/ais_feed_clock.R; the check curate/checks/ais_vms_track.R, on STK's AIS stream and astd's track
 discovered: 2026-11-01, decision 271 (three vessel-months the clock check moved by about an hour), then the scan
 
 defect:
@@ -32,4 +32,9 @@ why_it_went_unnoticed: >-
   few it keeps are the ones that happen to fit, which made one clock look as if it flipped (decision 271's first look).
 repair: >-
   Chosen by the maintainer 2026-11-01: a lag from the per-ping shift where it can be judged, a flag where it cannot.
-  Designed in plan 060 (TODO 180), not built.
+  Designed in plan 060, built and rebuilt into the store 2026-11-02 (decision 274): a unit's level from its
+  own-stamped gaps around the ping, gaps over 3 h and a receipt hour that flushes a backlog left out; the ping moved by
+  its own level only where the day and the week both depart from the stream's usual level by over 2 min, else the
+  stream's usual lag; a ping stamped at its receipt not moved; one whose unit has no level `unmeasured` or its
+  vessel-month's measured lag. STK's own units get none (plan 060 ask d). Left: STK's reports dated a day late in its
+  2026 outages (TODO 182).

@@ -95,6 +95,12 @@ details: >
   written by Claude (AI) from the scripts, decision 271 and the rebuilt files, and
   have not been checked by a person.
 
+  2026-11-02: plan 060's `receipt` among the values of `lag_basis` in `ais_ping`,
+  `ais_ping_whacky` and `ais_trail` (STK's VMS pings on one clock by their
+  receipt), and the trail's counts of moved fixes, were written by Claude (AI)
+  from the scripts, decision 274 and the rebuilt files, and have not been checked
+  by a person.
+
 tables:
   - name: ais_voyage
     source:
@@ -417,21 +423,28 @@ tables:
           `lon`/`lat`): `time` = `time_delivered` - `lag_s`.
       - name: lag_s
         type: number
-        examples: [-4048, -168, 0, 18, 93]
+        examples: [-10454, -168, -66, 0, 93, 9417]
         description: >
-          Seconds the ping was moved: positive when its feed ran behind STK's AIS stream. 0 for a ping not
-          moved, NA when unmeasured.
+          Seconds the ping was moved: positive when its time ran later than STK's AIS stream's clock (a feed
+          behind it, or a VMS unit's clock). 0 for a ping not moved, NA when unmeasured. The examples are from
+          every partition; STK's VMS stream's receipt lags reach -2.9 to +2.6 h, the units an hour or two off
+          in 2007-2009.
       - name: lag_basis
         type: enum
-        values: [copy, measured, none, unmeasured]
+        values: [copy, measured, none, receipt, unmeasured]
         description: >
-          How `lag_s` was found (ramb's rb_add_ping_own_lag() and rb_add_ping_time(), plan 059 §3):
+          How `lag_s` was found (ramb's rb_add_ping_own_lag() and rb_add_ping_time(), plans 059 §3 and 060):
           `copy` an astd, astdB or emodnet ping that copies a report STK's streams also hold, moved by its
-          own gap (none is left here: a copy moved onto STK's time is a duplicate, in `ais_ping_whacky`);
-          `measured` the lag of its vessel, stream and month where curated/check/ais_feed_clock gives the
-          outcome "offset"; `none` a reference stream, an aligned unit or a vessel with one stream, not
-          moved; `unmeasured` every other ping (STK's port event rows, the logger, a unit the check could not
-          measure), not moved.
+          own gap and by its original's receipt lag (one is left here, the copy of a VMS report its stream's
+          measured lag moved: a copy moved onto STK's time is a duplicate, in `ais_ping_whacky`); `receipt` a
+          ping of STK's VMS stream, its time judged from STK's receipt: stamped at its receipt, lag 0; else
+          the year's usual lag (about a minute), or where its unit's level departs from the usual by over 2 min
+          over the day and the week around, the usual lag less the departure (a unit's clock that drifts);
+          STK's own units get none (plan 060, decision 274); `measured` the lag of its vessel, stream and month
+          where curated/check/ais_feed_clock gives the outcome "offset"; `none` a reference stream, an aligned
+          unit or a vessel with one stream, not moved; `unmeasured` every other ping (STK's port event rows,
+          the logger, a unit the check could not measure, a VMS ping whose unit has no level: its gaps around
+          over 3 h late or in a receipt hour that flushed a backlog), not moved.
       - name: stream
         type: enum
         values: [stk_ais, stk_vms, stk_unit, stk_event, astd, astdB, emodnet, gps]
@@ -553,7 +566,7 @@ tables:
           As in `ais_ping`; a `copy`'s own gap ranges wider than a month's lag.
       - name: lag_basis
         type: enum
-        values: [copy, measured, none, unmeasured]
+        values: [copy, measured, none, receipt, unmeasured]
         description: >
           As in `ais_ping`. The copies are here: moved onto STK's time, they are duplicates.
       - name: stream
@@ -805,16 +818,18 @@ tables:
           The time as the feed delivered it; `time` = `time_delivered` - `lag_s`. As in `ais_ping`.
       - name: lag_s
         type: number
-        examples: [-4048, -168, 0, 18, 93]
+        examples: [-10454, -168, -66, 0, 93, 9417]
         description: >
-          Seconds the fix was moved (positive when its feed ran behind STK's AIS stream); 0 not moved, NA
-          unmeasured. 27,458,384 fixes of 2007-2026 are moved, astd's in its offset months and 6,069 of
-          STK's VMS stream. As in `ais_ping`; the examples are from every partition.
+          Seconds the fix was moved (positive when its time ran later than STK's AIS stream's clock); 0 not
+          moved, NA unmeasured. 30,445,921 fixes of 2007-2026 are moved: astd's in its offset months
+          (27,452,122), STK's VMS stream by its receipt (2,989,299, 491,282 of them by over 3 min) or by its
+          vessel-month's lag (4,499), and one copy. As in `ais_ping`; the examples are from every partition.
       - name: lag_basis
         type: enum
-        values: [copy, measured, none, unmeasured]
+        values: [copy, measured, none, receipt, unmeasured]
         description: >
-          How `lag_s` was found: `measured`, `none` or `unmeasured` (no `copy` reaches the trail: a copy
+          How `lag_s` was found: `measured`, `none`, `receipt` (4,004,056 fixes of STK's VMS stream) or
+          `unmeasured`, and one `copy`, of a VMS report its stream's measured lag moved (any other copy
           moved onto STK's time is a duplicate). As in `ais_ping`.
       - name: dt_sec
         type: number

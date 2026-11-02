@@ -1464,25 +1464,6 @@ For the next release (TODO 140), in the merge, with the logged number kept:
 lumpfish station before 1992 carries a register vid without a witness.
 
 
-## 180. STK's VMS clocks: minutes to an hour off in some vessel-months, most of them not repaired
-**status:** open — plan 060's asks a-h answered 2026-11-01, each as recommended (the maintainer chose the repair the
-same day: a lag from the scan, a flag where it cannot be judged; "plan it first"); step 1 measured 2026-11-02 (§1's
-persistent rule, no receipt lag for STK's own units); step 2 (ramb) under way · **see:** plan 060,
-`curate/corrections/stk_vms_clock.yml`, decision 271 ("Left"), `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (README), plan 059
-
-Measured 2026-11-01 by Claude (AI), not checked by a person: each VMS ping of a vessel with an AIS stream (3.48 M)
-against its own AIS track, the shift that puts it there. Most units are on time (6,947 vessel-months, 0.8 min). 43
-vessel-months of 14 vessels are an hour off (33-118 min, mostly 2007-2009, the clocks drifting 8-9 min a month), and
-251 of 40 vessels are off by minutes (−9.8 to +16.5 min, mostly 2007-2013). Plan 059's tag pass moved only the 8
-vessel-months its clock check could measure: 3,744 hour-off and 63,257 minute-off VMS pings are in the store unmoved.
-2.45 M VMS pings (38,203 vessel-months) have no moving AIS track to judge them by.
-
-Plan 060 (2026-11-01, revised the same evening): STK's `recdate − posdate` carries the unit's drift (2007: within 1-2 min
-of the scan's shift), so each fix's own lag from its receipt, the AIS-track shift as the check; step 1 measures every
-year, backlogs and the delivery delay before any code. Then a full rebuild of every main-project target from raw (ask h).
-
-**check:** plan 060 built and in the store, the scan rerun on it, and a decision record.
-
 ## 181. Trackwell's wrong years in the place-name gazetteer: flag the times, keep them out of the year span
 **status:** parked — the maintainer, 2026-11-02: not a priority · **see:** `sources/ornefni/trackwell_haul.R`,
 `curate/place_name_evidence.R`, `curate/place_name.R`, plan 044
@@ -1510,3 +1491,21 @@ Same kind, not traced: `tag_recapture` has a time in 0992 (Gunnólfsvík's `year
 (Rósagarður's 15); the plotter's placeholder and suspect times are set to NA in the evidence, not flagged.
 
 **check:** Halinn's `year_last` no longer 2095, the 29 rows counted as flagged in the evidence, the correction declared.
+
+## 182. STK's reports dated a day late in its outages of 2026, VMS and AIS together
+**status:** open · **see:** decision 274 ("Left"), `$FISHYDATA/archive/2026-11-02-plan060-fix/notes/verify_by_hand.R`,
+`$FISHYDATA/archive/2026-11-02-plan060-outage/`, plan 060
+
+Found 2026-11-02 by Claude (AI) while checking plan 060's receipt rule against PAME's astd; not checked by a person. In
+STK's outages of 2026 (13-15 January, 11-12 May, 11-14 October) every unit's reports came in hours to two days late,
+all at once. Some carry a time a day after their own: 6 of vid 2173's VMS reports of 15 January 10:04-13:06, and the
+AIS pings STK holds beside them, are at places astd heard the vessel 1,438-1,441 min before. 307 VMS reports of 2026
+were received over 10 min before their own time within a flushed hour (none before 2026), most likely misdated so; how
+many are, and how many of STK's AIS pings, is not measured. Both of STK's streams agree on the wrong time, so neither
+the receipt rule (which since ramb 2026.11.02.2 leaves a flushed hour out of every level) nor the STK side of
+`check_ais_vms_track` sees them; the clean takes out those that jump against astd.
+
+To do: measure them on astd's track (every flushed hour, both of STK's streams), then flag or move them, with a
+correction declared in `curate/corrections/`.
+
+**check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
