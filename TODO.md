@@ -1478,3 +1478,31 @@ of the scan's shift), so each fix's own lag from its receipt, the AIS-track shif
 year, backlogs and the delivery delay before any code. Then a full rebuild of every main-project target from raw (ask h).
 
 **check:** plan 060 built and in the store, the scan rerun on it, and a decision record.
+
+## 181. Trackwell's wrong years in the place-name gazetteer: flag the times, keep them out of the year span
+**status:** parked — the maintainer, 2026-11-02: not a priority · **see:** `sources/ornefni/trackwell_haul.R`,
+`curate/place_name_evidence.R`, `curate/place_name.R`, plan 044
+
+Found 2026-11-02 while a heat map was added to the place-name explorer; measured by Claude (AI), not checked by a
+person. Trackwell's file (`trackwell_2022-11-07.csv`) holds 29 haul starts with a wrong year, written so in the CSV: a
+source defect, not our parsing.
+- 25 after the file's own day (13 in 2099, 12 in 2095): copies of 23 hauls the file also holds dated right, equal on
+  every field but the dates (vessel, name, clock times, positions, depths). Vessel 1472's of 12-17 June 2019 (+80
+  years, 12 of them also +137 days); vessel 1578's on Halinn of 14-15 October 2011 (+84 years). All 25 right-dated
+  twins have a logbook station of the vessel at the same start minute.
+- 4 of vessel 2750 dated 2000: its hauls of 2008, each with a logbook station at the same minute in 2008.
+
+The staging flags all 29 (`time_suspect`, a start outside 2003-2022), but `place_name_evidence.R` drops the flag and
+takes `t1` as `time`, so `year_last` reads 2095 for Halinn and 2099 for Grímseyjarsvæðið, in the explorer too.
+
+The fix, drafted and reverted unbuilt: a `time_flag` in staging (`after delivery`, capped at the file's day read from
+its name rather than the literal 2022; `before 2003`); the evidence carries it and leaves flagged rows out of the
+logbook gear join and the same-day repeat match; `year_first`/`year_last` leave them out; the API serves `time_flag`
+and the explorer's year bars skip it; a correction declared (`trackwell_haul_year.yml`). Then `ornefni_trackwell_haul`
+invalidated by hand and the four targets to `name_group` rebuilt by name. Open with it: whether the 25 copies count
+once, as the evidence's own rule has it (one record entered twice is one occurrence).
+
+Same kind, not traced: `tag_recapture` has a time in 0992 (Gunnólfsvík's `year_first` 992), `uv_area` one in 0015
+(Rósagarður's 15); the plotter's placeholder and suspect times are set to NA in the evidence, not flagged.
+
+**check:** Halinn's `year_last` no longer 2095, the 29 rows counted as flagged in the evidence, the correction declared.
