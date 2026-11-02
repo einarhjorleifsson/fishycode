@@ -57,6 +57,8 @@
             font-size: 14px; max-width: calc(100% - 60px); }
   #m-legend { width: 100%; }
   #m-legend:empty { display: none; }
+  .ramp { display: inline-block; width: 64px; height: 10px; vertical-align: middle; border-radius: 2px;
+          background: linear-gradient(to right, #ffffb2, #fecc5c, #fd8d3c, #f03b20, #bd0026); }
   h2 { font-size: 23px; margin: 0; }
   h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 16px 0 5px; }
   .muted { color: var(--muted); }
@@ -107,6 +109,11 @@
     <div id="map"></div>
     <div id="mapctl">
       <label><input type="checkbox" id="m-foot" checked> footprints</label>
+      <label title="the keys written for one place drawn as one label, the name proposed for them" hidden><input
+        type="checkbox" id="m-group" checked> one name per place</label>
+      <label title="the chosen name's occurrences as a heat map, the darkest the most in one spot at this zoom"><input
+        type="checkbox" id="m-heat"> heat map</label>
+      <span id="m-heatkey" class="muted" hidden>few <i class="ramp"></i> most</span>
       <label>coloured by <select id="m-colour"><option value="outcome">cross-check</option><option value="terrain">terrain</option>
         <option value="level">level</option><option value="none">one colour</option></select></label>
       <select id="m-base" title="base map"></select>

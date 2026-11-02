@@ -82,7 +82,8 @@ const swatch = (c) => `<span class="dot" style="background:${c}"></span>`;
 const D = { names: [], byKey: new Map(), children: new Map(), syn: new Map(), variants: new Map(), places: new Map(),
             search: new Map(), foot: null, evidence: new Map(), group: new Map(), members: new Map() };
 // evOff: the sources of the chosen name's occurrences switched off, on the map and in its table
-const S = { key: null, shown: 300, list: [], evOff: new Set() };
+// ev: the occurrences on the map, as drawn (heatScale reads them)
+const S = { key: null, shown: 300, list: [], evOff: new Set(), ev: [] };
 // The list's filters: one value each ('' for all), and the sources as a set (empty for all)
 const FILTERS = [['class', 'f-class'], ['terrain', 'f-terrain'], ['gear', 'f-gear'], ['outcome', 'f-outcome'], ['level', 'f-level']];
 const F = { class: '', terrain: '', gear: '', outcome: '', level: '', src: new Set() };
@@ -138,8 +139,16 @@ function addLayers() {
   // any base and over any colour), its parent's (dashed) and its children's over them
   map.addLayer({ id: 'sel-fill', type: 'fill', source: 'sel', filter: ['==', ['get', 'role'], 'self'],
                  paint: { 'fill-color': '#0f172a', 'fill-opacity': 0.08 } });
+  // the occurrences as points, or as a heat map (the switch; heatScale), in ColorBrewer's YlOrRd
+  const heat = $('m-heat').checked;
+  $('m-heatkey').hidden = !heat;
+  map.addLayer({ id: 'ev-heat', type: 'heatmap', source: 'ev', layout: { visibility: heat ? 'visible' : 'none' },
+                 paint: { 'heatmap-radius': HEAT_R, 'heatmap-opacity': 0.85,
+                          'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(255, 255, 178, 0)',
+                                            0.08, 'rgba(255, 255, 178, 0.7)', 0.3, '#fecc5c', 0.55, '#fd8d3c',
+                                            0.8, '#f03b20', 1, '#bd0026'] } });
   map.addLayer({ id: 'ev', type: 'circle', source: 'ev',
-                 layout: { 'circle-sort-key': ['get', 'sort'] },
+                 layout: { 'circle-sort-key': ['get', 'sort'], visibility: heat ? 'none' : 'visible' },
                  paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2.4, 10, 4.5],
                           'circle-color': ['get', 'colour'], 'circle-opacity': 0.85,
                           'circle-stroke-color': 'rgba(15, 23, 42, 0.45)', 'circle-stroke-width': 0.5 } });
@@ -176,6 +185,33 @@ function addLayers() {
 $('m-foot').addEventListener('change', () => {
   for (const l of ['foot-fill', 'foot-line']) map.setLayoutProperty(l, 'visibility', $('m-foot').checked ? 'visible' : 'none');
 });
+// one name per place, or every key's own (drawLabels)
+$('m-group').addEventListener('change', () => drawLabels());
+// The chosen name's occurrences as a heat map. MapLibre's kernel gives a point alone 0.4 of its weight at its centre,
+// so a fixed intensity is all dark red for a ground of thousands and faint for a few; the intensity is set instead
+// from the most occurrences in one cell of the kernel's radius at this zoom, so the darkest is the densest spot of the
+// name at the zoom it is seen at
+const HEAT_R = 16, HEAT_K = 4;
+function heatScale() {
+  if (!map.getLayer('ev-heat') || !$('m-heat').checked) return;
+  const cell = HEAT_R / (512 * 2 ** map.getZoom()), count = new Map();   // the radius in Mercator's unit square
+  let top = 1;
+  for (const x of S.ev) {
+    const m = maplibregl.MercatorCoordinate.fromLngLat(x.geometry.coordinates);
+    const k = `${Math.floor(m.x / cell)},${Math.floor(m.y / cell)}`, c = (count.get(k) ?? 0) + 1;
+    count.set(k, c);
+    if (c > top) top = c;
+  }
+  map.setPaintProperty('ev-heat', 'heatmap-intensity', HEAT_K / top);
+}
+$('m-heat').addEventListener('change', () => {
+  $('m-heatkey').hidden = !$('m-heat').checked;
+  if (!map.getLayer('ev')) return;   // the map's layers not yet added: addLayers reads the switch
+  map.setLayoutProperty('ev', 'visibility', $('m-heat').checked ? 'none' : 'visible');
+  map.setLayoutProperty('ev-heat', 'visibility', $('m-heat').checked ? 'visible' : 'none');
+  heatScale();
+});
+map.on('zoomend', heatScale);
 // the footprints' colours: a scheme, and its legend, whose values filter the list (a second click takes the filter off)
 let SCHEME = 'outcome';
 function drawLegend() {
@@ -255,6 +291,7 @@ async function load() {
     D.group.set(g.key, g);
     (D.members.get(g.group) ?? D.members.set(g.group, []).get(g.group)).push(g);
   }
+  $('m-group').parentElement.hidden = ![...D.group.values()].some((g) => g.n_keys > 1);
   // what the search reads: the key, and each spelling's own key
   for (const n of D.names) D.search.set(n.key, [n.key, ...(D.variants.get(n.key) ?? []).map((v) => nameKey(v.name))]);
   for (const f of foot.features) {
@@ -345,17 +382,32 @@ $('q').addEventListener('keydown', (e) => { if (e.key === 'Enter' && S.list.leng
 
 // a list this short is drawn at every zoom
 const SHORT = 500;
-// the names in the list on the map: a label at each name's main place, and one at each other place of a name
+// the names in the list on the map: a label at each name's main place, and one at each other place of a name. With
+// "one name per place" on, the listed keys of a group are one label, the name proposed for them, at that name's own key
+// (else the listed key with most positions), with its other places only, from the earliest zoom of any of them, and
+// coloured by that key's values; chosen when any key of the group is; a click on it chooses that key
 function drawLabels() {
   if (!map.getSource('labels')) return;
   const f = [], always = S.list.length <= SHORT;
-  for (const n of S.list) {
-    const props = { key: n.key, name: n.name, n: n.n_positioned ?? 0, level: n.level, min_zoom: n.min_zoom,
-                    terrain: n.terrain, outcome: n.outcome,
-                    chosen: n.key === S.key, always };
+  const add = (n, props) => {
     if (n.label_lon != null) f.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [n.label_lon, n.label_lat] } });
     for (const p of D.places.get(n.key) ?? []) if (!p.main) f.push({ type: 'Feature', properties: props,
                                                                       geometry: { type: 'Point', coordinates: [p.lon, p.lat] } });
+  };
+  const props = (n) => ({ key: n.key, name: n.name, n: n.n_positioned ?? 0, level: n.level, min_zoom: n.min_zoom,
+                          terrain: n.terrain, outcome: n.outcome, chosen: n.key === S.key, always });
+  const groups = new Map();
+  for (const n of S.list) {
+    const g = $('m-group').checked ? D.group.get(n.key) : null;
+    if (g?.n_keys > 1) (groups.get(g.group) ?? groups.set(g.group, []).get(g.group)).push(n);
+    else add(n, props(n));
+  }
+  for (const [group, ns] of groups) {
+    const at = ns.find((n) => n.key === group && n.label_lon != null) ??
+      ns.filter((n) => n.label_lon != null).sort((a, b) => (b.n_positioned ?? 0) - (a.n_positioned ?? 0))[0];
+    if (at) add(at, { ...props(at), name: D.group.get(at.key).group_name, chosen: D.group.get(S.key)?.group === group,
+                      n: ns.reduce((s, n) => s + (n.n_positioned ?? 0), 0),
+                      level: Math.min(...ns.map((n) => n.level ?? 4)), min_zoom: Math.min(...ns.map((n) => n.min_zoom ?? 11)) });
   }
   map.getSource('labels').setData({ type: 'FeatureCollection', features: f });
   const listed = new Set(S.list.map((n) => n.key));
@@ -406,6 +458,7 @@ function drawSelection(n) {
   map.getSource('places').setData({ type: 'FeatureCollection', features: pl.length > 1 ? pl.map((p) => (
     { type: 'Feature', properties: { place: p.place }, geometry: { type: 'Point', coordinates: [p.lon, p.lat] } })) : [] });
   map.getSource('ev').setData(empty);
+  S.ev = [];
 }
 function drawEvidence(ev) {
   if (!map.getSource('ev')) return;
@@ -417,6 +470,8 @@ function drawEvidence(ev) {
       { type: 'Feature', properties: { i, colour: COLOUR[e.source] || '#999', sort: -(TOTAL[e.source] ?? 0) }, geometry: { type: 'Point', coordinates: [e.lon, e.lat] } });
   });
   map.getSource('ev').setData({ type: 'FeatureCollection', features: f });
+  S.ev = f;
+  heatScale();
 }
 // the name's footprint and places in view; with neither, its median
 function flyTo(n) {

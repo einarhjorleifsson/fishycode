@@ -9,7 +9,7 @@ How to test:
 - the service first: `Rscript products/place_names/check.R`.
 
 All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4, M5 and M6 added and passed the
-same day (M6 at 1024 px and 375 px).
+same day (M6 at 1024 px and 375 px); G6 and M7 added and passed on 2026-11-02, at 1024 px and 375 px.
 
 ## Load
 
@@ -73,7 +73,15 @@ same day (M6 at 1024 px and 375 px).
 - **G2** On the map, the other keys' footprints dotted in purple, over the chosen name's own.
 - **G3** A key's link in the group's table opens it, with the same group.
 - **G4** In the list, "≈ <single name>" where a key's group is named otherwise, "one of N keys" where it names its group.
-- **G5** Without the table (the store before the build), no group anywhere and no error.
+- **G5** Without the table (the store before the build), no group anywhere and no error; the "one name per place"
+  switch hidden, every key its own label (retested 2026-11-02 on a scratch copy without the table: 9,554 labels).
+- **G6** "one name per place" on the map (maintainer, 2026-11-02: use the proposed name on the map rather than the
+  versions, as a switch), on by default: the listed keys of a group are one label, the proposed name, at that name's
+  own key (else the listed key with most positions), from the earliest zoom of any of them, coloured by that key's
+  values; its other places only. `#key=utanholfbreidafirdi&map=7.02/64.626/-27.835`: one "Utan við Hólf" from zoom 6
+  where there were 14 versions (9,021 labels, 9,554 off). The label is enlarged when any key of its group is chosen,
+  even one a search has left out of the list; a click on it chooses the key it stands at. Off brings every key's own
+  label back; the state is kept through a change of base map.
 
 ## The map's controls
 
@@ -101,6 +109,13 @@ same day (M6 at 1024 px and 375 px).
   asked (four layers at 13.6, not nine). The names in dark ink on a white halo; the attribution says "not for
   navigation". Outside a harbour chart's frame the cache answers 404, and now and then 500 at a chart's edge: in the
   console only, nothing on the page.
+
+- **M7** "heat map" (maintainer, 2026-11-02: a heat map as an option), off by default: the chosen name's occurrences
+  as a heat map in ColorBrewer's YlOrRd, with a "few … most" key beside the switch, in place of the points. Its darkest
+  is the most occurrences in one cell of the kernel's radius at the zoom it is seen at, over all the name's drawn
+  occurrences: Halinn (30,639 drawn) 601 at zoom 8.1, 43 at 10.3, its core dark red and its spread yellow; a name of a
+  few points is a blob each. A source chip rescales it (Halinn without Trackwell: 335, 19). Kept through a change of
+  base map; off brings the points back. An occurrence row still flies to it and opens its popup.
 
 ## Layout
 
