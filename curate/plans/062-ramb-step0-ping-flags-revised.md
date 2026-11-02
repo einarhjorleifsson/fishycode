@@ -1,7 +1,8 @@
 # 062 — ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence, and every method scored on planted faults
 
 **status:** partly built — steps 0-2 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
-measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
+measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 part A done (the scores on the planted faults,
+`$FISHYDATA/archive/2026-11-02-plan062-step3/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273 and 275, `curate/ais_ping_clean.R`,
@@ -140,6 +141,19 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    number to watch; absolute scores, never only a ranking. The time and memory at growing size (1 M, 10 M, 100 M
    pings) as ratios. The outside rules are scored on the same sets in `me_code` (Mendo et al., iapesca) and in the
    book's appendix (the ICES data call).
+   **Part A done 2026-11-02** (by Claude; not checked by a person; `$FISHYDATA/archive/2026-11-02-plan062-step3/`):
+   every method and fishycode's chain on `dansk_planted` (ramb 378bf21, which adds a tenth fault to step 2's set: the
+   first ping after a gap moved, the anchor of a forward scan). Each configuration also runs on the tracks without
+   their wrong pings, so a good ping flagged is told as the method's own or collateral. No method flags a good
+   fishing ping of its own; every one flagged is taken beside a fault. No method is best everywhere: per 10,000 good
+   fishing pings, `clean` takes 27 at 10 s, 314 at 1 min, 368 at 6 min and 1,181 at 1 h, `forward` 49, 12, 221 and
+   984 (sda's vmask erodes good pings up to 45 steps from a fault it cannot resolve; a wrong anchor costs the
+   forward scan a stretch). Wrong pings 1 km or more off caught: `clean` 98, 88, 61, 18 %; `forward` 96, 90, 56,
+   23 %. `sequential` equals `forward` at 30 times the time; `fwdbwd` catches the fewest; every method flags the
+   truly fast stretches; no configuration flags a near copy within a feed (step 4a).
+   **Left:** part B, the reload days, unlabelled in the store: label STK's reloaded reports (receipt lag of 12 h or
+   more, from the raw trail) as decision 143 did, a day-shifted copy where the vessel's track lies within 0.05 nm
+   24 h later; part C, the time and memory at 1, 10 and 100 M pings.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
