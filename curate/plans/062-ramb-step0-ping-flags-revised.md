@@ -1,7 +1,7 @@
 # 062 — ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence, and every method scored on planted faults
 
 **status:** partly built — steps 0-2 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
-measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 part A done (the scores on the planted faults,
+measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 parts A and B done (the scores on the planted faults and the reload,
 `$FISHYDATA/archive/2026-11-02-plan062-step3/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
@@ -151,9 +151,12 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    forward scan a stretch). Wrong pings 1 km or more off caught: `clean` 98, 88, 61, 18 %; `forward` 96, 90, 56,
    23 %. `sequential` equals `forward` at 30 times the time; `fwdbwd` catches the fewest; every method flags the
    truly fast stretches; no configuration flags a near copy within a feed (step 4a).
-   **Left:** part B, the reload days, unlabelled in the store: label STK's reloaded reports (receipt lag of 12 h or
-   more, from the raw trail) as decision 143 did, a day-shifted copy where the vessel's track lies within 0.05 nm
-   24 h later; part C, the time and memory at 1, 10 and 100 M pings.
+   **Part B done 2026-11-02**, the reload of 2026-10-12 to 10-14 labelled from the raw trail's receipt as decision 143
+   measured it: of 814,218 pings of 828 vessels, 1,802 reloaded pings (164 vessels) are day-shifted copies of the live
+   track. Every method catches 2-8 of them, and flags 2,776-3,014 live pings only when the reload is there: where a
+   copy meets the live track, the speed rules take out the live pings. A copy rule that searches the vessel's own
+   track at a shift (a day, an hour) is a candidate for step 4a. **Left:** part C, the time and memory at 1, 10 and
+   100 M pings.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its

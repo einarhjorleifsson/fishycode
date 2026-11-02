@@ -1520,6 +1520,7 @@ labelled in ramb, a lazy speed per stream, ties and direction judged on evidence
 two simple tests (done 2026-11-02 on 2017, `$FISHYDATA/archive/2026-11-02-plan062-step1/`: 28,758 kept speeds used a
 bad position; ramb's lazy route gave production's labels at 1.62 times its time, the cost in joining labels back);
 planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 2026.11.02.3, not pushed); every method scored
-(on the planted faults 2026-11-02, `$FISHYDATA/archive/2026-11-02-plan062-step3/`; the reload days and timing left); one ramb release; fishycode follows; the book.
+(2026-11-02 on the planted faults and the reload, `$FISHYDATA/archive/2026-11-02-plan062-step3/`: no speed rule
+catches the day-shifted copies; timing left); one ramb release; fishycode follows; the book.
 
 **check:** plan 062 executed or parked, with a decision record.
