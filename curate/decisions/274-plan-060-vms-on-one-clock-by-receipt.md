@@ -93,6 +93,13 @@ their summed hash the same. Only 2026's trail changed: 23,562,481 → 23,562,684
 `fishing_flow` +1.0 h. The clean keeps 323 more of STK's VMS pings in 2026 (vmask 954 → 616) and 116 fewer of astd's
 (33 more duplicates of a VMS report, 74 more vmask). The effort grids pass (`products.sh`).
 
+**Stamps** (added 2026-11-02 by another Claude session; the maintainer: "Record them"). Of the 608 files this run
+wrote, 51 carry `fd.dirty = true` at 5f522e0: `ais/trail` partitions built by `curate/ais_trail.R` from 16:29:24 to
+16:37:10. In those minutes another session rendered the whole book in `docs/` (16:29:08 to about 16:37), and the
+render's intermediate files made the tree dirty. The pipeline reads none of them, so these files are what a clean tree
+gives. The other 557, from 15:29 to 16:50, are clean. Their stamps say dirty until the next build from a clean tree, as
+decision 218 left its own.
+
 ## STK's VMS stream in the store
 
 In the trail, 4,021,863 pings:
