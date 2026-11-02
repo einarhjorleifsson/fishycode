@@ -98,7 +98,7 @@ wrote, 51 carry `fd.dirty = true` at 5f522e0: `ais/trail` partitions built by `c
 16:37:10. In those minutes another session rendered the whole book in `docs/` (16:29:08 to about 16:37), and the
 render's intermediate files made the tree dirty. The pipeline reads none of them, so these files are what a clean tree
 gives. The other 557, from 15:29 to 16:50, are clean. Their stamps say dirty until the next build from a clean tree, as
-decision 218 left its own.
+decision 218 left its own. Counted by `scripts/dirty_first.R` in `$FISHYDATA/archive/2026-11-02-ping-chapter-cases/`.
 
 ## STK's VMS stream in the store
 

@@ -6,7 +6,8 @@ checked against the code. Supersedes the first version of this file (a `ping-gap
 warranted now. The maintainer's answers of the same day stand where they still apply (below). **see:** decision 273
 (EM4SSF's methods against ramb), decision 234 (the recode yardstick), plan 060 (the clocks), `docs/flow_pings.qmd`, the
 ICES flow in `~/stasi/ICES-VMS-and-Logbook-Data-Call/`, decision 232 (iapesca against ramb), decision 078 (the speed
-benchmark), `curate/issues/iapesca.yml`, iapesca 1.3 at `~/R/Pakkar/r-packages_iapesca_gitlab` (`1882892`), TODO 183
+benchmark), `curate/issues/iapesca.yml`, iapesca 1.3 at `~/R/Pakkar/r-packages_iapesca_gitlab` (`1882892`), TODO 183, the study
+`$FISHYDATA/archive/2026-11-02-ping-chapter-cases/` (its README: every measured number here, with the script that made it)
 
 Drafted with AI assistance (Claude) on 2026-11-02. No person has checked it. The choice of what to show is the
 maintainer's; the checks and the measurements are Claude's, and each is labelled.
@@ -61,7 +62,7 @@ result (kept).
 
 **C2. The ICES interval rule.** Step 1.2.4 keeps a ping only if at least five minutes have passed since the vessel's
 previous ping (`intThres <- 5`, `0_global.R` line 71; the comment says "to prevent pseudo duplicates").
-*Measured* (on ramb's example data; scratch script `ices_interval.R`, not in the repo): `dansk` holds 395,558 pings of 14
+*Measured* (on ramb's example data; `scripts/ices_interval.R` in the study): `dansk` holds 395,558 pings of 14
 vessels, a median interval of 10 s, and the rule keeps 275 of them (0.07 %).
 *Assumed:* the rule was set for a feed that reports every hour or two, as VMS does. The ICES annex calls its input VMS
 data with an average polling interval in minutes, and states no rate. Not confirmed (ask c).
