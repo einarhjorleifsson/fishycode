@@ -1509,3 +1509,11 @@ To do: measure them on astd's track (every flushed hour, both of STK's streams),
 correction declared in `curate/corrections/`.
 
 **check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
+
+## 183. The ping chapter's cases on simulated data, and no ramb change now: plan 061
+**status:** open · asks a-f answered 2026-11-02; "With ramb" and "Not yet in ramb" written; the cases next, a section at a time; `AGENTS.md`'s docs row re-stated 2026-11-02 (ask d)
+**see:** plan 061, decision 273, decision 234, plan 060, `docs/flow_pings.qmd`
+
+Found 2026-11-02 by Claude (AI) while planning the ping chapter's ramb gaps; the measurements are Claude's, not checked by a person. Checked against the code, none of ramb's four ping-level gaps warrants a change now: copies are a `distinct()`, the land flag is `rb_detect_in_polygons()`, the grid is `rb_interpolate_track()`, and the smoother is out. iapesca adds a case, one fix per vessel-second (C7), and fishycode's own `tie` step is recorded as the one ramb candidate. The ICES data call's interval rule (5 min, `intThres`) keeps 0.07 % of `dansk`'s pings; its range test keeps the store's placeholders. Next: plan 061's step 1 measures, then the sections one at a time.
+
+**check:** every case C1-C7 in `flow_pings.qmd`, or dropped with a reason in plan 061; the chapter renders cleanly.

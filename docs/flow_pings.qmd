@@ -2,8 +2,9 @@
 
 ::: {.callout-note}
 **Drafted by AI, in part.** "The tests, in order" was written by Claude (Anthropic) on 2026-10-20, on ramb's example
-data. The other sections are still a skeleton, outlined from the maintainer's direction (plan 033 §4) and the reading
-map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
+data, and "With ramb" and "Not yet in ramb" on 2026-11-02, from ramb's code and documentation (2026.11.02.2). The other
+sections are still a skeleton, outlined from the maintainer's direction (plans 033 §4 and 061) and the reading map of
+the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
 
 ```{r setup}
@@ -367,10 +368,48 @@ ggplot(miss, aes(metres, rate)) +
 
 ## With ramb
 
-- `rb_flag_ping_invalid()`, `rb_flag_ping_duplicate()`, `rb_flag_ping_impossible()`, `rb_flag_ping_port()`,
-  `rb_detect_in_polygons()`, `rb_calc_speed()`, `rb_calc_speed_smooth()`, `rb_calc_step_time()`,
-  `rb_interpolate_track()`, `rb_summarise_track()`.
+Every test in this row is a ramb function that writes a label to `ping_flag` and drops nothing. Each takes a data
+frame or a lazy DuckDB table and gives back the same kind, with the same rows, so the same call serves one vessel's day
+or a national archive. A test looks only at the pings no earlier test has labelled.
+
+| Function | Label in `ping_flag` | Arguments that matter |
+|---|---|---|
+| `rb_flag_ping_invalid()` | `invalid`: a longitude equal to its latitude, or a position off the globe. `after receipt`, when asked for: a ping stamped more than `ahead_s` after it was received | `rules`, `receipt`, `ahead_s` (60 s) |
+| `rb_flag_ping_duplicate()` | `duplicate`: the lower-priority feed's copy of a report another feed holds | `feed`, `priority`, `max_dt_s` (10 s), `kn_max` (25 kn), `n_neighbours` (3) |
+| `rb_flag_ping_impossible()` | by method: `"clean"`, the default, gives `vmask`, `spike` and `forward`; `"sda"` gives `vmask` and `spike`; `"forward"`, `"fwdbwd"` and `"sequential"` each give their own name | `method`, `kn_max` (25 kn), `min_dt_s` (10 s), `max_gap_h` (4 h), `feed` with `noise_nm` (0.3 nm), `evidence` |
+| `rb_flag_ping_port()` | none: it adds `port_id`, the port a ping lies in, so port pings stay in the trail | `ports`, `keep` |
+
+A few of these arguments carry more than their names suggest:
+
+- `min_dt_s`: a time step shorter than this counts as this many seconds. At a ping a second, 13 m of position noise
+  reads as 25 knots; counted as ten seconds, it reads as 2.5.
+- `max_gap_h`: after a longer silence the scan starts afresh, since the vessel may by then be anywhere. For `"clean"`
+  and `"forward"`.
+- `feed` with `noise_nm`: two feeds rarely agree to the metre, so a leg between two feeds no longer than the noise
+  floor is never impossible. For `"clean"`, `"sda"` and `"forward"`.
+- `evidence = TRUE`: each flagged ping keeps which leg was impossible (`ping_flag_side`), and the time, distance and
+  feed of the legs to the nearest kept ping on each side, so a flag can be reviewed or overruled.
+- `after receipt` needs the time each ping was received, which few datasets carry. A clock a second or two fast is
+  common and harmless, hence the minute's grace.
+
+Where a track is merged from several feeds, put them on one clock first. The duplicate and impossible tests warn when
+they meet two or more streams in a `stream` column with no `lag_basis` beside it, and point to ramb's step 0:
+`rb_add_ping_stream()` to tell the streams apart, then `rb_create_ping_lags()`, `rb_add_ping_own_lag()` and
+`rb_add_ping_time()`.
+
+Used in this chapter's cases: `rb_read_example()`, `rb_calc_distance()` and `rb_interpolate_track()`. Close at hand:
+`rb_calc_speed()`, `rb_calc_speed_smooth()`, `rb_calc_step_time()`, `rb_summarise_track()` and `rb_detect_in_polygons()`.
 
 ## Not yet in ramb
 
-- Interpolation that uses course and speed (cubic Hermite), and downsampling as a function.
+- **Interpolation that uses course and speed** (cubic Hermite). Between two pings, `rb_interpolate_track()` draws a
+  straight line.
+- **Downsampling as a function.** A regular series takes two steps ramb already has: a grid of times, then
+  `rb_interpolate_track()` onto it.
+
+Some steps are not ramb functions by choice, because each is a line of code or a choice of data:
+
+- copies within one feed: a `distinct()` on vessel, time and position;
+- pings on land: `rb_detect_in_polygons()` with a coastline the analyst trusts;
+- one ping per vessel and second: no rule yet chooses between two positions on evidence, so ramb leaves it to the
+  analyst for now.
