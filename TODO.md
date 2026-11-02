@@ -1515,7 +1515,8 @@ EM4SSF and iapesca. Read from the code by Claude (AI), nothing run: ramb's three
 copies of ramb's work in fishycode are the whack shims with 12 study scripts, the union's own speed (derived before the
 flags), the `tie` step and the hand batching of `ais_ping_clean.R`; direction counts only behind the 25 kn gate, and no
 flagger reads a recorded speed or course. Decided: the branches deleted, the studies archived, copies within a feed
-labelled in ramb, a lazy speed per stream, ties and direction judged on evidence by a hand-set rule. Steps: housekeeping;
+labelled in ramb, a lazy speed per stream, ties and direction judged on evidence by a hand-set rule. Steps: housekeeping
+(done 2026-11-02: the branches deleted, the studies in `$FISHYDATA/archive/2026-10-whack-studies/`);
 two simple tests (the speed before the flags, ramb's lazy route on a year); planted faults in ramb's `data-raw/`; every
 method scored; one ramb release; fishycode follows; the book.
 

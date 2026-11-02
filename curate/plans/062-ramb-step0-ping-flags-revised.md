@@ -1,8 +1,8 @@
 # 062 — ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence, and every method scored on planted faults
 
-**status:** proposal — written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
+**status:** partly built — step 0 done 2026-11-02 (ramb's branches deleted, the studies archived). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
-maintainer's answers are under "Decided", the rest under "Asks". Nothing built. **see:** TODO 88 (the whack filter),
+maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273 and 275, `curate/ais_ping_clean.R`,
 `curate/ais_ping_union.R`, ramb `R/ping.R`, `R/whack.R`, `src/whack_sda.cpp`, `~/stasi/em4ssf/me_code`
 
@@ -92,6 +92,10 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
 0. **Housekeeping, no ramb release.** Delete the three ramb branches and their worktrees. Move the 12 study scripts and
    the shims to `$FISHYDATA/archive/2026-10-whack-studies/`, with a README naming each script's decision; check what
    reads the five `curated/check/` files (here and in the old repos) before they move with it.
+   **Done 2026-11-02** (by Claude): the three branches were in `main` and their worktrees clean but for build files;
+   both are gone. The 14 scripts and the five files are in `$FISHYDATA/archive/2026-10-whack-studies/`, with a README
+   naming each script's decisions; nothing read the files but the decisions that cite them. Left for step 4: ramb's
+   `R/whack.R` still says its sda defaults follow `curate/checks/sda_tune.R`, now in that archive.
 1. **Two simple tests**, read-only, in a scratch study:
    - (i) **The speed before the flags.** On one year: the astd and emodnet pings kept whose derived speed used a
      flagged neighbour, and how far it moves when derived on kept pings only.
