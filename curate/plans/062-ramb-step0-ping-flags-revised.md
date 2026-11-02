@@ -1,14 +1,15 @@
 # 062 — ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence, and every method scored on planted faults
 
-**status:** partly built — step 0 done 2026-11-02 (ramb's branches deleted, the studies archived). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
+**status:** partly built — steps 0 and 1 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
+measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273 and 275, `curate/ais_ping_clean.R`,
 `curate/ais_ping_union.R`, ramb `R/ping.R`, `R/whack.R`, `src/whack_sda.cpp`, `~/stasi/em4ssf/me_code`
 
 Drafted with AI assistance (Claude) on 2026-11-02. The facts below were read from the code (ramb 15af6e8, fishycode
-f7f8e71) or are taken from the records cited; nothing new was run. No person has checked it. The choices are the
-maintainer's.
+f7f8e71) or are taken from the records cited; nothing was run for the draft. Steps 0 and 1 were carried out and
+measured by Claude the same evening, under "Done". No person has checked it. The choices are the maintainer's.
 
 ## What is there now
 
@@ -74,8 +75,10 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    test that ties it to Karney. Haversine would be ramb's one lazy basis, but it differs from `rb_calc_speed()`'s
    geodesic default by heading: by Claude's arithmetic, not measured, at 64° N up to 0.25 % north-south and 0.38 %
    east-west.
-2. **No derived speed on a flagged ping.** Proposed: NA with basis `none`; the neighbours' speeds skip it; a recorded
-   speed is kept as it is.
+2. **No derived speed on a flagged ping.** Proposed: NA with basis `none`; the neighbours' speeds skip a ping flagged
+   as a bad position (invalid, impossible, tie), and keep a copy (`duplicate`) in its stream: test (i) found that
+   dropping the copies moves 223,471 speeds of 2017 by a knot or more, none of them wrong before. A recorded speed is
+   kept as it is.
 3. **The method list is a promise to users.** Proposed (Claude's view, asked for by the maintainer, not yet answered):
    a method is exported only if it scores well on some kind of data (step 3). The engines of an exported method stay
    internal; a method that does not score is removed after one release of warning, not kept as an internal function
@@ -102,6 +105,18 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    - (ii) **ramb's lazy route at scale.** Production's chain on a lazy table for one year, against `ping_clean` and
      `ping_whacky`: the same labels, wall time and peak memory, in a fresh process, three repeats, as ratios to the
      production script.
+   **Done 2026-11-02** (by Claude, on 2017, the largest year and the only one with emodnet; not checked by a person;
+   `$FISHYDATA/archive/2026-11-02-plan062-step1/`):
+   - (i) The union's speed, reproduced from the positions, equals the stored one on 61,463,563 of 61,464,206 rows.
+     7,309 kept astd positions (0.02 %) and 21,449 emodnet (0.12 %) had a neighbour flagged as a bad position;
+     derived on kept positions only, 2,488 and 16,019 of them move by a knot or more, and their speeds over 25 kn
+     fall from 589 to 5 and from 377 to 4. A neighbour flagged as a copy only (935,239 astd, 2,439,489 emodnet) is
+     still a report of its own feed: dropped, it doubles the span, and 223,471 speeds move by a knot or more (ask 2).
+   - (ii) The lazy route gives all 72,370,748 rows production's label and evidence but one pair: two copies of one
+     report, alike in vessel, second, position and feed, where each route flags the other (ramb's lazy order, (time,
+     lon, lat, feed), ties on them). It takes 1.62 times production's time (median 274 s against 169 s) and 0.88 times
+     its peak memory (8.2 GB against 9.3 GB). The batches are not the cost: ramb's two passes take 123 s; joining
+     their labels back to the year by row number, a window over 72 M rows per flagger, and writing it take 155 s.
 2. **Planted faults, in ramb's `data-raw/`.** Faults planted into the clean, fishing-labelled tracks of ramb's example
    data (`dansk`, and the sets TODO 93 adds), thinned to several ping rates: a spike, a run, an out-and-back under
    `kn_max`, a time-shifted copy interleaved, lon = lat, two feeds with a clock offset, a near-copy a second later, a
@@ -129,6 +144,9 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
      more fishing pings; then the default, checked on the store before it moves.
    - (d) The method list as ask 3 decides. (e) `.rb_whack_duplicates()` without its Icelandic default. (f) The zone
      check, if ask 4 says now.
+   - (g) From test (ii): the lazy route without the join back, one pass per batch that runs every flagger of the call
+     and writes the batch's rows whole, so a lazy table costs no more than production's own batching; and a total
+     order (every column, as production sorts), so that which of two copies is flagged does not depend on the route.
    - A version, NEWS, tests, and a case for each new function in `test-etiquette.R`.
 5. **fishycode follows.** The union without its own speed (ramb's, after the clean); `ais_ping_clean.R` on ramb's
    lazy route if test (ii) holds, without its own batching or `tie`; the targets from the union down rebuilt,
@@ -138,8 +156,9 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
 ## What would change the plan
 
 - Test (i) finds no kept ping touched: the speed still moves to ramb (decided d), but the rebuild is not urgent.
+  (It found 28,758 in 2017, and the copies' case for ask 2.)
 - Test (ii) fails at scale: ramb gets one pass for the whole of step 0, collecting each batch once for every flagger,
-  instead of a pass per flagger.
+  instead of a pass per flagger. (It held, at 1.62 times production's time, the cost in the join back: step 4g.)
 - Direction adds nothing in step 3: it stays as evidence columns only.
 - `clean` fails badly on some fault or ping rate: TODO 88's candidates (a limit per vessel from its own speed, chains
   that are each consistent) come into this revision.

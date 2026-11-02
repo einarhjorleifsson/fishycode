@@ -1517,7 +1517,8 @@ flags), the `tie` step and the hand batching of `ais_ping_clean.R`; direction co
 flagger reads a recorded speed or course. Decided: the branches deleted, the studies archived, copies within a feed
 labelled in ramb, a lazy speed per stream, ties and direction judged on evidence by a hand-set rule. Steps: housekeeping
 (done 2026-11-02: the branches deleted, the studies in `$FISHYDATA/archive/2026-10-whack-studies/`);
-two simple tests (the speed before the flags, ramb's lazy route on a year); planted faults in ramb's `data-raw/`; every
-method scored; one ramb release; fishycode follows; the book.
+two simple tests (done 2026-11-02 on 2017, `$FISHYDATA/archive/2026-11-02-plan062-step1/`: 28,758 kept speeds used a
+bad position; ramb's lazy route gave production's labels at 1.62 times its time, the cost in joining labels back);
+planted faults in ramb's `data-raw/`; every method scored; one ramb release; fishycode follows; the book.
 
 **check:** plan 062 executed or parked, with a decision record.
