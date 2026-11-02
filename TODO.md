@@ -374,8 +374,8 @@ before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
 **status:** open ·
-**see:** decisions 067, 069, 078, 143, 164 and 185 (TODO 38 folded in), TODO 99, plan 031 §3.7 item 12 (what the
-filter leaves near harbours: about 6,000 fixes, mostly STK port event rows)
+**see:** decisions 067, 069, 078, 143, 164, 185 (TODO 38 folded in), TODO 99, plan 062 (direction, scores), plan 031
+§3.7 item 12 (what the filter leaves near harbours: about 6,000 fixes, mostly STK port event rows)
 
 "the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
 for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
@@ -1250,24 +1250,6 @@ Open, needing no decision:
 **check:** a decision records the two measurements, and each of the four wishes built, put in a plan, or set aside
 by the maintainer.
 
-## 155. EM4SSF's shared code: the time zone to ask its authors, and the trace to redo as the code grows
-**status:** open · **needs: maintainer** — the question to the project's WP2 authors (a) · **see:** decisions 238,
-273 and 229, `~/stasi/em4ssf` (private, outside the repo), `raw/external/mendo2024`
-
-Decision 238 traced the code EM4SSF shares privately to Mendo et al. 2024's published supplements. There is no new
-method so far. Two things are left:
-- **(a) The time zone of `DATE_TIME`.** D2.1 gives its format (ISO 8601, no offset) but not its zone (D2.1 §2.1,
-  tables 1-2). The shared R reads it in the zone of the paper's Scottish case, so trips cut by calendar day depend on
-  that choice. This was read from the code, not run. It is a question for the format's authors, through the project,
-  not a `curate/issues/` note, since the code is not public. Also for them: R step 1, renamed to D2.1's columns, still
-  names the paper's time column where the speed loop recomputes, so it stops on a second pass; the preprocessing has it.
-- **(b) The trace again as the code grows.** The repositories will change up to and at the Ancona hackathon (November
-  2026). Pull both, then trace each new or changed script by 238's method. A script with no public origin is EM4SSF's
-  own and is read under 238's rule. Fetched 2026-11-02: no change since 238; the methods mapped in decision 273.
-
-**check:** (a) D2.1's zone for `DATE_TIME` is known, from the authors or a later D2.1; and (b) every script at the
-repositories' newest commit after the hackathon has its origin in decision 238 (amended).
-
 ## 157. Whole weight: one factor table for the logbooks and the landings (plan 051)
 **status:** open — built in plan 054's live rebuild of 2026-10-30 (decisions 257, 265); left: the lumpfish rows,
 provisional until HV 2020-33's authors answer (TODO 169), and the paper era's × 1.25 (ask e), the maintainer's; b
@@ -1510,10 +1492,31 @@ correction declared in `curate/corrections/`.
 
 **check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
 
-## 183. The ping chapter's cases on simulated data, and no ramb change now: plan 061
-**status:** open · asks a-f answered 2026-11-02; "With ramb", "Not yet in ramb" and C1 written; the other cases next, a section at a time; `AGENTS.md`'s docs row re-stated 2026-11-02 (ask d)
-**see:** plan 061, decision 273, decision 234, plan 060, `docs/flow_pings.qmd`, `$FISHYDATA/archive/2026-11-02-ping-chapter-cases/`
+## 183. The ping chapter: the best approach to step 0, each rule with the fault it catches (plan 061)
+**status:** open · rewritten a second time 2026-11-02 (decision 275); "With ramb", "Not yet in ramb" and C1 written;
+C3, C5 and C7 wait for plan 062's ramb release · **see:** plan 061, plan 062, decisions 273, 275 and 234,
+`docs/flow_pings.qmd`, `$FISHYDATA/archive/2026-11-02-ping-chapter-cases/`
 
-Found 2026-11-02 by Claude (AI) while planning the ping chapter's ramb gaps; the measurements are Claude's, not checked by a person. Checked against the code, none of ramb's four ping-level gaps warrants a change now: copies are a `distinct()`, the land flag is `rb_detect_in_polygons()`, the grid is `rb_interpolate_track()`, and the smoother is out. iapesca adds a case, one fix per vessel-second (C7), and fishycode's own `tie` step is recorded as the one ramb candidate. The ICES data call's interval rule (5 min, `intThres`) keeps 0.07 % of `dansk`'s pings; its range test keeps the store's placeholders. Next: plan 061's step 1 measures, then the sections one at a time.
+Drafted 2026-11-02 by Claude (AI); the measurements are Claude's, not checked by a person. The maintainer: the book
+describes the best approach, not the EM4SSF meeting. The chapter shows step 0 in order (clocks, placeholders, copies,
+impossible positions with direction as evidence, ties on evidence), each rule on ramb's planted faults (plan 062 step 2);
+other workflows only as contrasts where a choice needs one. Mendo et al.'s speed rule and iapesca's same-second rule
+went to `me_code`. Measured so far: the ICES interval rule keeps 0.07 % of `dansk`'s pings; its range test keeps the
+store's 9,582 placeholders. Next: plan 061's step 1 measures, then the sections one at a time.
 
 **check:** every case C1-C7 in `flow_pings.qmd`, or dropped with a reason in plan 061; the chapter renders cleanly.
+
+## 184. ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence (plan 062)
+**status:** open · **needs: maintainer** — plan 062's asks 1-4 · **see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`,
+TODO 88, plan 061, decisions 067, 069, 234 and 275
+
+The maintainer, 2026-11-02: ramb's branches and the functions that detect whacky pings, against the ICES data call,
+EM4SSF and iapesca. Read from the code by Claude (AI), nothing run: ramb's three side branches are all in `main`; the
+copies of ramb's work in fishycode are the whack shims with 12 study scripts, the union's own speed (derived before the
+flags), the `tie` step and the hand batching of `ais_ping_clean.R`; direction counts only behind the 25 kn gate, and no
+flagger reads a recorded speed or course. Decided: the branches deleted, the studies archived, copies within a feed
+labelled in ramb, a lazy speed per stream, ties and direction judged on evidence by a hand-set rule. Steps: housekeeping;
+two simple tests (the speed before the flags, ramb's lazy route on a year); planted faults in ramb's `data-raw/`; every
+method scored; one ramb release; fishycode follows; the book.
+
+**check:** plan 062 executed or parked, with a decision record.
