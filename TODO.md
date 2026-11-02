@@ -1251,18 +1251,19 @@ Open, needing no decision:
 by the maintainer.
 
 ## 155. EM4SSF's shared code: the time zone to ask its authors, and the trace to redo as the code grows
-**status:** open · **needs: maintainer** — the question to the project's WP2 authors (a) · **see:** decisions 238 and
-229, `~/stasi/em4ssf` (private, outside the repo), `raw/external/mendo2024`
+**status:** open · **needs: maintainer** — the question to the project's WP2 authors (a) · **see:** decisions 238,
+273 and 229, `~/stasi/em4ssf` (private, outside the repo), `raw/external/mendo2024`
 
 Decision 238 traced the code EM4SSF shares privately to Mendo et al. 2024's published supplements. There is no new
 method so far. Two things are left:
 - **(a) The time zone of `DATE_TIME`.** D2.1 gives its format (ISO 8601, no offset) but not its zone (D2.1 §2.1,
   tables 1-2). The shared R reads it in the zone of the paper's Scottish case, so trips cut by calendar day depend on
   that choice. This was read from the code, not run. It is a question for the format's authors, through the project,
-  not a `curate/issues/` note, since the code is not public.
+  not a `curate/issues/` note, since the code is not public. Also for them: R step 1, renamed to D2.1's columns, still
+  names the paper's time column where the speed loop recomputes, so it stops on a second pass; the preprocessing has it.
 - **(b) The trace again as the code grows.** The repositories will change up to and at the Ancona hackathon (November
   2026). Pull both, then trace each new or changed script by 238's method. A script with no public origin is EM4SSF's
-  own and is read under 238's rule.
+  own and is read under 238's rule. Fetched 2026-11-02: no change since 238; the methods mapped in decision 273.
 
 **check:** (a) D2.1's zone for `DATE_TIME` is known, from the authors or a later D2.1; and (b) every script at the
 repositories' newest commit after the hackathon has its origin in decision 238 (amended).
