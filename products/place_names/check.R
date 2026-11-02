@@ -56,6 +56,11 @@ stopifnot(f$status == 200L, identical(fp$type, "FeatureCollection"),
           all(vapply(fp$features, function(x) identical(names(x$properties), "key"), logical(1))))
 cat(sprintf("footprints: %d features, %.1f MB\n", length(fp$features), nchar(f$body, "bytes") / 1e6))
 stopifnot(get("/api/basemaps")$status == 200L, get("/")$status == 200L)
+# the keys drawn aside, placed by Oracle's squares alone: keys only, each a name, the coarse grounds among them
+s <- jsonlite::fromJSON(get("/api/square_only")$body)
+keys <- DBI::dbGetQuery(con, sprintf("SELECT key FROM %s", src("place_name")))$key
+stopifnot(identical(names(s), "key"), all(s$key %in% keys), c("skaftskeidarardjup", "skerjaogrindvikurdjup") %in% s$key)
+cat(sprintf("square_only: %d keys\n", length(s$key)))
 
 # 4. What it must refuse --------------------------------------------------------------------------------------------------
 refuse <- list(c("/api/evidence", "", "GET", 404L), c("/api/evidence", "key=nosuchkey", "GET", 404L),

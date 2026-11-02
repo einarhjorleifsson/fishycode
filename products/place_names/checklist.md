@@ -9,7 +9,7 @@ How to test:
 - the service first: `Rscript products/place_names/check.R`.
 
 All items passed on 2026-11-01 (the first version), at 1400 × 850 and at 375 px; M4, M5 and M6 added and passed the
-same day (M6 at 1024 px and 375 px); G6 and M7 added and passed on 2026-11-02, at 1024 px and 375 px.
+same day (M6 at 1024 px and 375 px); G6, M7 and M8 added and passed on 2026-11-02, at 1024 px and 375 px.
 
 ## Load
 
@@ -116,6 +116,15 @@ same day (M6 at 1024 px and 375 px); G6 and M7 added and passed on 2026-11-02, a
   occurrences: Halinn (30,639 drawn) 601 at zoom 8.1, 43 at 10.3, its core dark red and its spread yellow; a name of a
   few points is a blob each. A source chip rescales it (Halinn without Trackwell: 335, 19). Kept through a change of
   base map; off brings the points back. An occurrence row still flies to it and opens its popup.
+
+- **M8** "Oracle's squares" (maintainer, 2026-11-02: the names from Oracle's squares may anchor things, but some cover
+  two areas, and Grálúðumið is not really a name: place them aside), on by default: the 1,354 names placed by Oracle's
+  squares alone (`/api/square_only`) drawn aside, 12 px grey under the other names (light ink on the dark bases), which
+  win where labels collide, their footprints a grey dashed outline with no fill; never in a group's label. Off takes
+  them off the map but for the chosen one (Grálúðumið's three places stay; 1,410 labels go). In the list "Oracle
+  squares only", in the panel a badge. `#key=skaftskeidarardjup`: the ground grey, Skeiðarárdjúp and Skaftárdjúp in
+  their colours inside its squares; a search for Skeiðarárdjúp lists both, the ground grey. A click on a grey label
+  chooses it; kept through a change of base map.
 
 ## Layout
 

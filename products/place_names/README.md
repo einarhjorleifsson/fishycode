@@ -48,6 +48,13 @@ JSON), and the page does every filter and link itself. A name's occurrences are 
 rows, 0.1 s). Kept back from the occurrences: a finder's free text (it may name a person), Trackwell's own vessel name
 (the vid is served) and the source's row id.
 
+It also sends the keys placed by Oracle's squares alone (`square_only`, 1,354 of 9,281 on 2026-11-02, a position counted
+as the gazetteer counts one): MFRI's coarse grounds (`afli_skikar`) and orri's and Breiðafjörður's names by square.
+They are anchors, not places: a coarse ground may cover two (Skaft-Skeiðarárdjúp), or be a species' ground and not a
+name at all (Grálúðumið). So the page draws them aside, grey and small under the other names, never in a group's
+label, and a switch takes them off the map (maintainer, 2026-11-02). The gazetteer itself still ranks them as any
+other name (TODO 144).
+
 ## Why its own page, not ramb's map viewer
 
 `rb_map()` (plan 046), which the effort and voyage maps use, is a map of layers with filters on them: it has no list

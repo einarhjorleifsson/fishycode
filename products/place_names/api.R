@@ -17,7 +17,7 @@
 #   and the page is never published (plan 045 §5).
 
 # The service's version, sent with every answer. The page carries the same string and says so when they differ.
-API_VERSION <- "2026-11-01.3"
+API_VERSION <- "2026-11-02.1"
 
 # The sea charts of Sjómælingar Íslands (the Coast Guard's hydrography), as LMÍ's map viewer draws them, from the map
 # cache of Náttúrufræðistofnun, which LMÍ joined in 2024: a WMS in web Mercator, one layer per chart scale, each chart
@@ -118,6 +118,13 @@ place_names_app <- function(con, www) {
     groups   = if (file.exists(fd_path("curated", "place_name", "name_group.parquet")))
                  as_json(DBI::dbGetQuery(con, select_sql("groups", order = "ORDER BY \"group\", km")))
                else as_json(stats::setNames(rep(list(character()), length(ALLOW$groups)), ALLOW$groups)),
+    # the keys placed by Oracle's squares alone, a position counted as the gazetteer counts one (curate/place_name.R,
+    # `placed`): MFRI's coarse grounds (afli_skikar), some covering two places, and orri's and Breiðafjörður's names by
+    # square. Anchors, not places: the page draws them aside (maintainer, 2026-11-02)
+    square_only = as_json(DBI::dbGetQuery(con, sprintf(
+      "SELECT key FROM %s WHERE position_basis <> 'none' AND NOT coalesce(summary, false) AND lon IS NOT NULL
+         AND lat IS NOT NULL AND position_flag IS NULL
+       GROUP BY key HAVING bool_and(source = 'oracle' AND position_kind = 'square') ORDER BY key", src("evidence")))),
     footprints = footprints_geojson(),
     basemaps = enc2utf8(as.character(jsonlite::toJSON(base_maps(), auto_unbox = TRUE)))
   )

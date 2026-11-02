@@ -7,7 +7,7 @@ const esc = (x) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const num = (x, d = 0) => (x == null || Number.isNaN(x) ? '' : Number(x).toLocaleString('en-GB', { maximumFractionDigits: d }));
 const status = (msg) => { $('status').textContent = msg; };
 // The service's version this page was written for (api.R, API_VERSION)
-const API = '2026-11-01.3';
+const API = '2026-11-02.1';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -118,6 +118,9 @@ const labelPaint = (base, sc) => (DARK_BASES.has(base)
       'text-halo-width': ['case', ['get', 'chosen'], 2.2, 1.3], 'text-halo-blur': 0.4 }
   : { 'text-color': nameInk(sc, '#0f1d2b', false), 'text-halo-color': 'rgba(255, 255, 255, 0.9)',
       'text-halo-width': ['case', ['get', 'chosen'], 2.2, 1.2], 'text-halo-blur': 0.4 });
+const asidePaint = (base) => (DARK_BASES.has(base)
+  ? { 'text-color': '#b6bec9', 'text-halo-color': 'rgba(15, 23, 42, 0.85)', 'text-halo-width': 1.1, 'text-halo-blur': 0.4 }
+  : { 'text-color': '#5b6573', 'text-halo-color': 'rgba(255, 255, 255, 0.9)', 'text-halo-width': 1.1, 'text-halo-blur': 0.4 });
 // The base map's own sea names are left out: the gazetteer holds them (LMÍ's), and two of one name in two places confuse
 const baseWater = (l) => l.type === 'symbol' && /^water_?name/.test(l.id);
 function addLayers() {
@@ -131,10 +134,15 @@ function addLayers() {
   map.addSource('places', { type: 'geojson', data: empty });
   // every footprint of a name in the list, from its minimum zoom less one, as the effort map draws them
   const fromZoom = ['any', ['==', ['get', 'always'], true], ['<=', ['-', ['coalesce', ['get', 'min_zoom'], 11], 1], ['zoom']]];
-  map.addLayer({ id: 'foot-fill', type: 'fill', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
+  const listed = (aside) => ['all', ['==', ['get', 'listed'], true], ['==', ['get', 'aside'], aside], fromZoom];
+  map.addLayer({ id: 'foot-fill', type: 'fill', source: 'foot', filter: listed(false),
                  paint: { 'fill-color': schemeColour(SCHEME), 'fill-opacity': schemeOpacity(SCHEME, 0.07) } });
-  map.addLayer({ id: 'foot-line', type: 'line', source: 'foot', filter: ['all', ['==', ['get', 'listed'], true], fromZoom],
+  map.addLayer({ id: 'foot-line', type: 'line', source: 'foot', filter: listed(false),
                  paint: { 'line-color': schemeColour(SCHEME), 'line-width': 0.7, 'line-opacity': schemeOpacity(SCHEME, 0.4) } });
+  // the footprints of the names placed by Oracle's squares alone: aside, a grey dashed outline, never a fill
+  map.addLayer({ id: 'foot-aside', type: 'line', source: 'foot', filter: listed(true),
+                 layout: { visibility: $('m-aside').checked && $('m-foot').checked ? 'visible' : 'none' },
+                 paint: { 'line-color': '#64748b', 'line-width': 1, 'line-opacity': 0.6, 'line-dasharray': [4, 3] } });
   // the chosen name's footprint, its occurrences over it, and the outlines of its own (dark on a white casing, seen on
   // any base and over any colour), its parent's (dashed) and its children's over them
   map.addLayer({ id: 'sel-fill', type: 'fill', source: 'sel', filter: ['==', ['get', 'role'], 'self'],
@@ -172,7 +180,12 @@ function addLayers() {
   const shown = ['any', ['==', ['get', 'always'], true], ['<=', ['coalesce', ['get', 'min_zoom'], 11], ['zoom']]];
   map.addLayer({ id: 'dots', type: 'circle', source: 'labels', filter: ['==', ['get', 'always'], true],
                  paint: { 'circle-radius': 2.5, 'circle-color': '#1f3b57' } });
-  map.addLayer({ id: 'labels', type: 'symbol', source: 'labels', filter: shown,
+  // the names placed by Oracle's squares alone, aside: small and grey, under the others, which win where labels collide
+  map.addLayer({ id: 'labels-aside', type: 'symbol', source: 'labels', filter: ['all', ['==', ['get', 'aside'], true], shown],
+                 layout: { 'text-field': ['get', 'name'], 'text-font': FONT, 'text-size': ['case', ['get', 'chosen'], 16, 12],
+                           'symbol-sort-key': ['-', 0, ['get', 'n']], 'text-padding': 3 },
+                 paint: asidePaint(BASE) });
+  map.addLayer({ id: 'labels', type: 'symbol', source: 'labels', filter: ['all', ['!=', ['get', 'aside'], true], shown],
                  layout: { 'text-field': ['get', 'name'], 'text-font': FONT,
                            'text-size': ['+', ['match', ['coalesce', ['get', 'level'], 4], 1, 19, 2, 17, 3, 15, 14],
                                          ['case', ['get', 'chosen'], 4, 0]],   // the chosen name larger
@@ -184,6 +197,13 @@ function addLayers() {
 // the footprints of the names in the list, on or off
 $('m-foot').addEventListener('change', () => {
   for (const l of ['foot-fill', 'foot-line']) map.setLayoutProperty(l, 'visibility', $('m-foot').checked ? 'visible' : 'none');
+  map.setLayoutProperty('foot-aside', 'visibility', $('m-foot').checked && $('m-aside').checked ? 'visible' : 'none');
+});
+// the names placed by Oracle's squares alone, aside, or not on the map at all (but the chosen one)
+$('m-aside').addEventListener('change', () => {
+  if (!map.getLayer('foot-aside')) return;   // the map's layers not yet added: addLayers reads the switch
+  map.setLayoutProperty('foot-aside', 'visibility', $('m-foot').checked && $('m-aside').checked ? 'visible' : 'none');
+  drawLabels();
 });
 // one name per place, or every key's own (drawLabels)
 $('m-group').addEventListener('change', () => drawLabels());
@@ -259,7 +279,8 @@ $('m-base').addEventListener('change', () => {
   map.setStyle(baseStyle(b), { transformStyle: (prev, next) => {
     if (!prev) return next;
     const own = prev.layers.filter((l) => OWN.has(l.source))
-      .map((l) => (l.id === 'labels' ? { ...l, paint: labelPaint(b.id, SCHEME) } : l));
+      .map((l) => (l.id === 'labels' ? { ...l, paint: labelPaint(b.id, SCHEME) }
+        : l.id === 'labels-aside' ? { ...l, paint: asidePaint(b.id) } : l));
     const base = next.layers.map((l) => (baseWater(l) ? { ...l, layout: { ...l.layout, visibility: 'none' } } : l));
     const sources = Object.fromEntries(Object.entries(prev.sources).filter(([k]) => OWN.has(k)));
     return { ...next, glyphs: next.glyphs ?? prev.glyphs, sources: { ...next.sources, ...sources }, layers: [...base, ...own] };
@@ -269,13 +290,16 @@ $('m-base').addEventListener('change', () => {
 // The data ------------------------------------------------------------------------------------------------------------
 async function load() {
   status('loading the gazetteer');
-  const [names, places, syn, variants, foot, bases, groups] = await Promise.all(
-    ['names', 'places', 'synonyms', 'variants', 'footprints', 'basemaps', 'groups'].map((e) => api(e)));
+  const [names, places, syn, variants, foot, bases, groups, squares] = await Promise.all(
+    ['names', 'places', 'synonyms', 'variants', 'footprints', 'basemaps', 'groups', 'square_only'].map((e) => api(e)));
   BASEMAPS = bases;
   $('m-base').innerHTML = bases.map((b) => `<option value="${esc(b.id)}">${esc(b.label)}</option>`).join('');
   D.names = rows(names);
+  // the names placed by Oracle's squares alone (api.R, square_only): anchors, drawn aside
+  const aside = new Set(squares.key);
   for (const n of D.names) {
     D.byKey.set(n.key, n);
+    n.aside = aside.has(n.key);
     if (n.parent_key) (D.children.get(n.parent_key) ?? D.children.set(n.parent_key, []).get(n.parent_key)).push(n);
     n.sources = SOURCES.map(([s]) => s).filter((s) => n[`n_${s}`] > 0);
   }
@@ -297,7 +321,8 @@ async function load() {
   for (const f of foot.features) {
     const n = D.byKey.get(f.properties.key);
     Object.assign(f.properties, { min_zoom: n?.min_zoom ?? null, size: n?.size_km ?? null, listed: true,
-                                  terrain: n?.terrain ?? null, outcome: n?.outcome ?? null, level: n?.level ?? null });
+                                  terrain: n?.terrain ?? null, outcome: n?.outcome ?? null, level: n?.level ?? null,
+                                  aside: n?.aside ?? false });
   }
   D.foot = foot;
   // each source's occurrences in all, so the rarer sources' points are drawn over the commoner
@@ -365,7 +390,7 @@ function drawList() {
   const sub = (n) => [n.class !== 'name' ? n.class : '', n.terrain !== 'other' ? n.terrain : '',
                       n.n_positioned ? `${num(n.n_positioned)} positions` : 'no position',
                       n.n_places > 1 ? `${n.n_places} places` : '',
-                      groupNote(n)].filter(Boolean).join(' · ');
+                      n.aside ? 'Oracle squares only' : groupNote(n)].filter(Boolean).join(' · ');
   $('list').innerHTML = L.slice(0, S.shown).map((n) =>
     `<div class="item${n.key === S.key ? ' on' : ''}" data-key="${esc(n.key)}"><div class="nm">${esc(n.name)}</div>
        <div class="sub">${n.sources.map(dot).join('')} ${esc(sub(n))}</div></div>`).join('') +
@@ -395,9 +420,12 @@ function drawLabels() {
                                                                       geometry: { type: 'Point', coordinates: [p.lon, p.lat] } });
   };
   const props = (n) => ({ key: n.key, name: n.name, n: n.n_positioned ?? 0, level: n.level, min_zoom: n.min_zoom,
-                          terrain: n.terrain, outcome: n.outcome, chosen: n.key === S.key, always });
+                          terrain: n.terrain, outcome: n.outcome, chosen: n.key === S.key, always, aside: n.aside });
   const groups = new Map();
   for (const n of S.list) {
+    // a name placed by Oracle's squares alone: its own label aside, never a group's, and only with its switch on or
+    // when chosen
+    if (n.aside) { if ($('m-aside').checked || n.key === S.key) add(n, props(n)); continue; }
     const g = $('m-group').checked ? D.group.get(n.key) : null;
     if (g?.n_keys > 1) (groups.get(g.group) ?? groups.set(g.group, []).get(g.group)).push(n);
     else add(n, props(n));
@@ -512,7 +540,7 @@ function drawDetail(n, ev) {
   const parent = n.parent_key ? D.byKey.get(n.parent_key) : null;
   let h = `<h2>${esc(n.name)}</h2>
     <div class="muted" style="margin:2px 0 6px">key <code>${esc(n.key)}</code></div>
-    <div>${badge(n.class)}${n.terrain !== 'other' ? badge(n.terrain, SCHEMES.terrain.colours[n.terrain]) : ''}${
+    <div>${badge(n.class)}${n.aside ? '<span class="badge" title="placed by Oracle\'s squares alone: an anchor, drawn aside">Oracle squares only</span>' : ''}${n.terrain !== 'other' ? badge(n.terrain, SCHEMES.terrain.colours[n.terrain]) : ''}${
       badge(n.outcome, SCHEMES.outcome.colours[n.outcome])}${n.level ? badge(`level ${n.level}`, SCHEMES.level.colours[n.level]) : ''}</div>
     <table class="facts" style="margin-top:8px">
     ${fact('Positions', n.n_positioned ? `${num(n.n_positioned)} (precision ${n.precision})` : 'none')}
@@ -612,7 +640,7 @@ map.on('click', (e) => {
   const box = [[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]];
   const hit = map.queryRenderedFeatures(box, { layers: ['ev'] })[0];
   if (hit) { evPopup(D.evidence.get(S.key)[hit.properties.i], e.lngLat); return; }
-  const lab = map.queryRenderedFeatures(box, { layers: ['labels'] })[0];
+  const lab = map.queryRenderedFeatures(box, { layers: ['labels', 'labels-aside'] })[0];
   if (lab) { choose(lab.properties.key, { fly: false }); return; }
   const fp = map.queryRenderedFeatures(e.point, { layers: ['foot-fill', 'sel-fill'] });
   if (fp.length) {
@@ -621,7 +649,7 @@ map.on('click', (e) => {
     if (k) choose(k, { fly: false });
   }
 });
-for (const l of ['ev', 'labels', 'foot-fill']) {
+for (const l of ['ev', 'labels', 'labels-aside', 'foot-fill']) {
   map.on('mouseenter', l, () => { map.getCanvas().style.cursor = 'pointer'; });
   map.on('mouseleave', l, () => { map.getCanvas().style.cursor = ''; });
 }

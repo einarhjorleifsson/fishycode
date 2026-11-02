@@ -1108,6 +1108,9 @@ Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with th
   `overrides/`, read as an input: plan 045 ask c (who reviews, and whether a reviewer's name is kept);
 - 25 of Trackwell's occurrences dated 2095 or 2099, and `name_group`'s hyphen test blind to ð, þ, æ and ö ("Halamið -
   Barðið"): both in decision 272;
+- the 1,354 names placed by Oracle's squares alone are anchors, not places (maintainer, 2026-11-02: some of
+  `afli_skikar`'s coarse grounds cover two, as Skaft-Skeiðarárdjúp; Grálúðumið is a species' ground, not a name). The
+  explorer draws them aside; the gazetteer still ranks them as names (four at level 1), the effort map's names too;
 - plan 045 (the maintainer, 2026-10-24): a review interface with a feedback loop through `overrides/`; a model for
   placing names (vague places, conflation, source reliability); MFRI's depth model for GEBCO; EUSM or better as a
   boundary aid; the effort by gear as an image of grounds and lanes (flow side). It carries the review loop and the
