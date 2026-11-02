@@ -246,7 +246,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   (`curate/ais_ping_tag.R`, with `rb_add_ping_time()`). `curate/ais_ping_clean.R` needs `rb_flag_ping_impossible(feed = ,
   noise_nm = , evidence = )` of 2026.11.01.2 (TODO 88; ad088e3, installed from GitHub on 2026-11-01). `curate/port_call.R`
   needs `rb_create_port_calls(window = )` and `rb_merge_port_calls()` of 2026.11.01.1 (TODO 179; 7598da0, installed
-  from GitHub on 2026-11-01): an older ramb stops at `window`. The data on disk: every
+  from GitHub on 2026-11-01): an older ramb stops at `window`. The tag pass, the feeds' clock check and
+  `curate/checks/ais_vms_track.R` need `rb_add_ping_own_lag(method = "receipt")` and `rb_create_ping_lags(method =
+  "track")` of 2026.11.02 (plan 060; 8bfffce, installed from GitHub on 2026-11-02). The data on disk: every
   target of the main project was rebuilt from raw on 2026-10-28 with ramb 2026.10.28.3 (5a01d76) and DuckDB 2.0.0 (but for
   four reference tables built that morning, before its install, whose scripts call no ramb: decision 268), and
   compared file by file with the build of 2026-10-23 under 1.5.6 (decision 239; that build is decision 218, the partial

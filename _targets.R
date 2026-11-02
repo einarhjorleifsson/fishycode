@@ -773,14 +773,16 @@ list(
 
   tar_target(ais_ping_union, {
     vessel_ais_key; vessel_identity; sensor_gps; stk_trail_raw; astd_staged; astd_b_staged; emodnet_raw
-    produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"))
+    produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"), fd_staging("ais", "stk_receipt"),
+             fd_staging("ais", "ping_union_copies.parquet"))
   }, format = "file"),
 
   # The feeds' clocks, the first test on every track (plan 059 §2): each vessel's streams, their dt pattern, their lag
   # against STK's AIS stream and the copies, by month. The tag pass applies the lags (plan 059 §3).
   tar_target(check_ais_feed_clock, {
     ais_ping_union; stk_trail_raw
-    produces("curate/checks/ais_feed_clock.R", fd_curated("check", "ais_feed_clock.parquet"))
+    produces("curate/checks/ais_feed_clock.R", fd_curated("check", "ais_feed_clock.parquet"),
+             fd_curated("check", "ais_feed_clock_usual.parquet"))
   }, format = "file"),
 
   # L2: whacky-point removal, its own stage rather than fused into trip building
@@ -793,6 +795,13 @@ list(
   tar_target(ais_ping_tag, {
     ais_ping_union; check_ais_feed_clock; stk_trail_raw; shapes
     produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
+  }, format = "file"),
+
+  # STK's VMS pings against their vessel's AIS track once on one clock, by vessel-week (plan 060 §3): the weeks the
+  # receipt lag leaves off the track are listed, not moved
+  tar_target(check_ais_vms_track, {
+    ais_ping_tag
+    produces("curate/checks/ais_vms_track.R", fd_curated("check", "ais_vms_track.parquet"))
   }, format = "file"),
 
   tar_target(ais_voyage, {

@@ -12,6 +12,11 @@
 #
 # Output:
 #   staging/ais/ping_union/   — Hive-partitioned parquet (by year); ~593 M rows (decision 112)
+#   staging/ais/stk_receipt/  — STK's receipt of each ping of its VMS stream: vid, time, lon, lat, the unit (`mid`, STK's
+#                               mobile id, and `n_mid`), the earliest receipt (`recdate`) and `n_rec`, the trail rows that
+#                               hold it; by year (decision 196's side table, its receipt part: plan 060 §2)
+#   staging/ais/ping_union_copies.parquet — by year and provider, the rows of the four measured feeds before and after
+#                               the de-duplication of rows equal in every column (plan 060 §8)
 #
 # All heavy lifting is done lazily in DuckDB; data never fully enter R memory.
 library(tictoc)
@@ -112,8 +117,11 @@ stk_src <- function(YR) {
                  filter(!is.na(vid)) |>
                  mutate(d2e = if_else(open, dplyr::sql("'infinity'::DATE"), d2 + 1L)),
                by = join_by(mid, time >= d1, time < d2e)) |>
-    select(vid, mmsi, time, lon, lat, speed, heading)
+    # the unit, its receipt and the event flag go to stk_receipt, never into the union (decision 196)
+    select(vid, mmsi, time, lon, lat, speed, heading, mid, recdate, io)
 }
+# STK's VMS stream, by the position's grid (a hundredth of a minute: R/stk_trail.R's rule), its event rows left out
+STK_VMS_GRID <- dplyr::sql("abs(lat * 6000 - round(lat * 6000)) < 0.0002 AND abs(lon * 6000 - round(lon * 6000)) < 0.0002")
 
 # astd -------------------------------------------------------------------------
 # ASTD is a global commercial AIS feed. The raw data cover all flags, so we
@@ -269,11 +277,17 @@ gps_src <- function(YR) {
 # the seconds it spans in `speed_span_s` (plan 059 step 7; NA for a recorded speed). `speed` is NA where a value is
 # no vessel speed (outside 0-40 kn) or the logger placeholder; `speed_raw` keeps the value as given.
 SPEED_MAX <- 40
+ais_all <- function(YR) {
+  union_all(stk_src(YR) |> select(-mid, -recdate, -io) |> mutate(provider = "stk"),
+            astd_src(YR) |> mutate(provider = "astd")) |>
+    union_all(astdB_src(YR) |> mutate(provider = "astdB")) |>
+    union_all(emn |> mutate(provider = "emodnet"))
+}
 d_for <- function(YR) {
-  ais <- union(stk_src(YR)  |> mutate(provider = "stk"),
-               astd_src(YR) |> mutate(provider = "astd")) |>
-    union(astdB_src(YR) |> mutate(provider = "astdB")) |>
-    union(emn |> mutate(provider = "emodnet")) |>
+  # a row equal in every column to another is one ping: a report delivered twice (5,827 astd copies in 2013-2019,
+  # decision 271). Until plan 060 SQL UNION did this silently; now it is explicit and counted (ping_union_copies).
+  ais <- ais_all(YR) |>
+    distinct() |>
     mutate(speed_raw = speed, pos_basis = "recorded",
            speed_basis = if_else(provider %in% c("stk", "astdB"), "recorded", "derived"),
            dt_sec = NA_real_, sid_gps = NA_real_, n_sid_gps = NA_integer_)
@@ -300,9 +314,12 @@ d_for <- function(YR) {
 partition_years <- function(dir) as.integer(sub("year=", "", list.files(dir, pattern = "^year=")))
 years <- 2007:max(partition_years(fd_raw("oracle", "stk", "trail")), partition_years(fd_staging("ais", "astd")),
                   partition_years(fd_staging("ais", "astdB")), partition_years(fd_curated("logbook", "sensor_gps")))
+unlink(fd_staging("ais", "stk_receipt"), recursive = TRUE)
+copies <- vector("list", length(years))
 for(y in 1:length(years)) {
   YR <- years[y]
   print(YR)
+  n_in <- ais_all(YR) |> filter(year(time) == YR) |> count(provider, name = "rows_in") |> collect()
   d_for(YR) |>
     mutate(year = year(time)) |>
     filter(year == YR) |>
@@ -310,7 +327,23 @@ for(y in 1:length(years)) {
     # duckdbfs::write_dataset keeps TIMESTAMP as-is; arrow::write_dataset
     # materialises through R POSIXct and re-writes as TIMESTAMPTZ.
     duckdbfs::write_dataset(fd_staging("ais", "ping_union"), partitioning = "year", format = "parquet")
+  n_out <- open_dataset(file.path(fd_staging("ais", "ping_union"), paste0("year=", YR))) |>
+    filter(provider != "gps") |> count(provider, name = "rows_out") |> collect()
+  copies[[y]] <- full_join(n_in, n_out, by = "provider") |>
+    mutate(year = YR, across(c(rows_in, rows_out), \(v) coalesce(as.numeric(v), 0)), copies = rows_in - rows_out)
+  message(YR, ": copies dropped ", paste(sprintf("%s %s", copies[[y]]$provider, format(copies[[y]]$copies, big.mark = ",")),
+                                          collapse = ", "))
+  # STK's receipt of each ping of its VMS stream (plan 060 §2): the unit and the earliest receipt
+  stk_src(YR) |>
+    filter(year(time) == YR, is.na(io), !is.na(lon), !is.na(lat), STK_VMS_GRID) |>
+    group_by(vid, time, lon, lat) |>
+    summarise(mid = min(mid), n_mid = n_distinct(mid), recdate = min(recdate), n_rec = n(), .groups = "drop") |>
+    mutate(year = YR) |>
+    duckdbfs::write_dataset(fd_staging("ais", "stk_receipt"), partitioning = "year", format = "parquet")
 }
+copies <- bind_rows(copies) |> select(year, provider, rows_in, rows_out, copies) |> arrange(year, provider)
+stopifnot("no row gained by the de-duplication" = all(copies$copies >= 0))
+write_parquet_group(copies, fd_staging("ais", "ping_union_copies.parquet"))
 
 toc()
 
