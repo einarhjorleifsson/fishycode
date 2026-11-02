@@ -1,7 +1,7 @@
 # 061 — The ping chapter's cases: flaws in approaches already in use (the ICES data call, Mendo et al., iapesca), on simulated data; no ramb change now
 
 **status:** partly built — asks a-f answered 2026-11-02 as recommended (§Answers); "With ramb" and "Not yet in ramb"
-written the same day; the cases still to measure and write. Rewritten 2026-11-02 at the maintainer's request, after the first version's four ramb items were
+written the same day, and C1 in "Invalid" (a table, not a figure); the other cases still to measure and write. Rewritten 2026-11-02 at the maintainer's request, after the first version's four ramb items were
 checked against the code. Supersedes the first version of this file (a `ping-gaps` branch of ramb): no ramb change is
 warranted now. The maintainer's answers of the same day stand where they still apply (below). **see:** decision 273
 (EM4SSF's methods against ramb), decision 234 (the recode yardstick), plan 060 (the clocks), `docs/flow_pings.qmd`, the
@@ -50,7 +50,8 @@ generated from fishycode's lessons learned, with parameters taken from the store
 **C1. Placeholders with latitude copied into longitude.** The ICES range test (1.2.3, `1_eflalo_tacsat_preprocessing.R`
 lines 121-141) rejects only latitudes beyond ±90 and longitudes beyond ±180, so it keeps these.
 *Measured on the store:* the invalid stage of `staging/ais/ping_whacky` holds 9,582 pings from 2007 to 2026, all with
-lon = lat, 783 at (0, 0) and 8,799 near 64-66°.
+lon = lat, 783 at (0, 0) and 8,799 elsewhere, 98 % of them between 62.3° and 70.1° (the range 0° to 76.4°). The first
+version said "near 64-66°", from the most common values only; 5,170 are.
 *Source, not fishycode:* in the raw STK trail (`raw/oracle/stk/trail`, 303.8 M rows) 22,733 rows have `poslon = poslat`
 in radians, 18,243 of them in 2012. Fishycode only converts units, and the dump keeps Oracle's values. So this is a
 defect of the source. Its cause is not traced (the maintainer, 2026-11-02: "not now"). The simulation shows it as an

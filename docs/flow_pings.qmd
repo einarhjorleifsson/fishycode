@@ -2,7 +2,8 @@
 
 ::: {.callout-note}
 **Drafted by AI, in part.** "The tests, in order" was written by Claude (Anthropic) on 2026-10-20, on ramb's example
-data, and "With ramb" and "Not yet in ramb" on 2026-11-02, from ramb's code and documentation (2026.11.02.2). The other
+data, and "With ramb", "Not yet in ramb" and the copied-latitude case under "Invalid" on 2026-11-02, from ramb's code
+and documentation (2026.11.02.2), the ICES data call's R scripts and counts measured on fishycode's store. The other
 sections are still a skeleton, outlined from the maintainer's direction (plans 033 §4 and 061) and the reading map of
 the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
@@ -113,6 +114,41 @@ p1 + p2
 #| tbl-cap: "The planted pings and the label each one gets. The longitude of 181 is outside the globe; the two at (0, 0) have a longitude equal to their latitude."
 day_raw |> filter(!is.na(ping_flag)) |>
   transmute(time = format(time, "%H:%M:%S"), lon, lat, ping_flag) |>
+  knitr::kable()
+```
+
+```{r}
+#| include: false
+# a fourth placeholder, the latitude copied into the longitude, as the Icelandic STK feed holds them
+true_pos <- day |> slice(2500)
+copied <- true_pos |> mutate(lon = lat, time = time + 1)
+copied_km <- rb_calc_distance(true_pos$lon, true_pos$lat, copied$lon, copied$lat) / 1000
+```
+
+Null Island at least has the decency to be obvious. Its quieter cousin copies the latitude into the longitude.
+Planted in the same day, a ping at `r sprintf("%.2f", true_pos$lat)`° N comes back at
+`r sprintf("%.2f", copied$lon)`° E, some `r format(round(copied_km, -2), big.mark = ",")` km east of where the vessel
+was. The rule that catches (0, 0) catches this one too, since the two numbers are equal.
+
+This is not only a textbook case. In the Icelandic STK feed, 22,733 of 303.8 million raw positions have a longitude
+equal to their latitude, 18,243 of them in 2012; the cause has not been traced. In the merged Icelandic track the test
+flags 9,582: 783 at (0, 0), and 8,799 elsewhere, 98 % of them between 62.3° and 70.1°, the latitudes of Icelandic
+waters (measured on fishycode's store, 2 November 2026).
+
+The ICES data call's workflow checks positions as well, in step 1.2.3 of its R scripts
+(`ices-eg/ICES-VMS-and-Logbook-Data-Call`). It removes a latitude beyond ±90° or a longitude beyond ±180°, which is
+ramb's second kind. (0, 0) and a copied latitude are both on the globe, so both pass (@tbl-invalid-ices). The test
+does what its name promises; these two are simply not what it looks for.
+
+```{r}
+#| label: tbl-invalid-ices
+#| tbl-cap: "The planted pings under two tests: the ICES data call's range test (step 1.2.3), which removes a position off the globe, and `rb_flag_ping_invalid()`, which labels it. Only the second catches the placeholders that sit on the globe."
+bind_rows(planted, copied) |>
+  mutate(planted = c("(0, 0)", "(0, 0)", "off the globe", "latitude copied into longitude"),
+         `ICES range test` = if_else(abs(lat) > 90 | abs(lon) > 180, "removed", "kept")) |>
+  rb_flag_ping_invalid() |>
+  transmute(planted, lon = round(lon, 3), lat = round(lat, 3), `ICES range test`,
+            `rb_flag_ping_invalid()` = coalesce(ping_flag, "none")) |>
   knitr::kable()
 ```
 
