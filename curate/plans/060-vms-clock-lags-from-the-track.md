@@ -5,7 +5,8 @@ judged, a flag where it cannot; "plan it first"). Revised the same evening after
 and `recdate`, which give a lag for every VMS fix whose `posdate` is the unit's own, with AIS or without ("Don't we need
 a plan here?"; "hold before you start executing the plan"); ramb's hardening added as §8 at the maintainer's word
 ("Into plan 060"); asks a-h answered 2026-11-01, each as recommended, h (added by Claude) a full rebuild of every
-main-project target from raw · **2026-11-01** · **see:** TODO 180, TODO 117 and
+main-project target from raw; step 1 measured 2026-11-02, and on its numbers §1's rule revised (the persistent rule)
+and STK's own units left without a receipt lag (ask d), the maintainer: "proceed" · **2026-11-01** · **see:** TODO 180, TODO 117 and
 decision 196 (`stk_receipt`), `curate/corrections/stk_vms_clock.yml`, decision 271, plan 059, `dump/oracle/meta/stk.yml`,
 the study `$FISHYDATA/archive/2026-11-01-vms-clock-scan/` (its README)
 
@@ -51,59 +52,84 @@ track shift now checks them, rather than being the source.
 - **Why plan 059's check misses them.** Its pairs method finds 44,135 of the 48,298 VMS vessel-months `not
   measurable`. Speed is not the cause: 74.5 % of VMS fixes report 2 kn or more.
 
-**Not yet measured** (step 1):
-- the 2007 agreement over every year: `recdate − posdate` against the scan's shift wherever both exist;
-- 2011-2015, and the minority of fixes with their own `posdate` after 2016. The scan's drifts in 2016-2019 (vids 1476
-  and 2040) fall in the period when `posdate` is mostly `recdate`, and are not yet explained;
-- backlogs. A late delivery with a right `posdate` makes a large gap and a shift of 0. How often, and whether a
-  running median of the gap per unit tells them from a drift;
-- the delivery delay (gap less shift, about 1.1-1.3 min on the 2007 control), by year;
-- the 0.57 M VMS fixes of vessels with no AIS stream that year, which the scan does not cover;
-- STK's own units (`stk_unit`, 10.2 M fixes, never measured by plan 059's check), on the same gap.
+**Measured in step 1** (2026-11-02, the study's scripts 06-09 and its README, "Plan 060 step 1"; Claude (AI), not
+checked by a person). "Ping" is a track position (the maintainer, 2026-11-01); a ping is *receipt-stamped* where
+`posdate` = `recdate`, else *own-stamped*.
+- **Every year, not only 2007.** Per vessel-month, the gap less the stream's baseline lies within 3 min of the scan's
+  shift in 40 of 42 hour-off months, 289 of 296 minute-off months and 5,042 of 5,271 on-time months.
+- **Receipt-stamped VMS pings sit on the AIS track** (median shift 0.00-0.02 min every year): they need no lag.
+- **Most VMS units stamp their own time in every year.** STK's dictionary overlay (75 % or more receipt-stamped in 2016
+  to April 2025) counts every centiminute row; of the VMS pings with a vid, 4-48 % are receipt-stamped after 2009.
+  Vids 1476 and 2040, drifting in 2013-2019, are own-stamped, the gap following the shift.
+- **The baseline** (gap − shift on the on-time vessel-months) is 1.1-1.6 min in 2007-2012 (0.5 in 2009) and 1.8-2.2 min
+  in 2013-2026.
+- **The delivery delay is not constant**: it varies by unit and by day (on-time pings' gap − shift 0.4-6 min, 10-90 %).
+  A day's median less one baseline per year puts 92-96 % of the off pings within 3 min of the track, but in 2018-2026 it
+  is 1.2-3.9 points below leaving the pings alone. Hence §1's persistent rule, which is 0.2-2.7 points below there and
+  above everywhere else (the table in the study's README).
+- **Backlogs**: leaving gaps over 3 h out of the level matters; leaving the 18 mass-delivery days out changes almost
+  nothing for the VMS stream. 2026's flushed outage leaves 16,186 own-stamped VMS pings with no level.
+- **Without an AIS track**, the receipt finds drifts over 3 min in 78, 104 and 134 vessel-months in 2007-2009, and 0-47
+  a year after.
+- **STK's own units** (`stk_unit`, scanned as the VMS stream was): their gap is delivery, not clock (3-5 s in 2007-2010,
+  3-10 min for the 6-11 units of 2016-2026). A receipt lag moves them off the track (2020: 91 % within 3 min to 36 %).
+- **Unexplained**: 2009's lower baseline and 51 s gap on every own unit; 6-21 thousand VMS pings a year in 2007-2013
+  stamped after their receipt.
 
 **Assumed:**
 - that STK's server clock (`recdate`) is right: it is the AIS stream's clock, the reference;
-- that a drift is slow (15-25 s a day) and a backlog a burst, so a running median over a day separates them;
-- that a VMS report's delivery delay is about constant within a period, so one baseline per period removes it;
+- that a drift lasts weeks (15-25 s a day) where a slow day of delivery does not, so a departure seen over a day and over
+  a week is a clock (measured on the track as above, not proven per unit);
 - that a vessel's VMS and AIS streams are one hull (one STK mobile id for vids 975 and 1809; the key's audits, plan 009).
 
 ## 1. The lag: each fix's own, from STK's receipt
 
-Each fix whose `posdate` is the unit's own gets an own lag. It is the running median of `recdate − posdate` over the
-unit's fixes within a day either side, less the stream's delivery baseline for the period. A burst of late deliveries
-moves the median little, so a right `posdate` stays put, while a drift of 15-25 s a day carries the median with it.
+*Revised on step 1's numbers (2026-11-02); the first rule, a day's median less a baseline, is in the history.*
+
+- **The unit's level** is the 25th percentile of its own-stamped gaps (`recdate − posdate`) within a day either side,
+  the gaps over 3 h (backlogs) left out: a late delivery raises the median, less the floor. The week's level is the same
+  over a week either side.
+- **The usual** of the stream and year, from its vessel-months on time against the AIS track: the usual level `L0` (the
+  level of a unit on the reference's clock) and the usual lag (about a minute: own-stamped VMS pings sit that much
+  before the AIS stream's receipt stamps).
+- **The persistent rule.** Where both the day's and the week's level depart from `L0` by more than 2 min, the unit's
+  clock is off: the ping's lag is the usual lag less the departure (day level − `L0`). Every other own-stamped ping takes
+  the usual lag. A clock drifts for weeks; a slow day of delivery does not.
+- **A receipt-stamped ping** has the receipt's time, on the reference's clock: lag 0.
+- **No level** (no gap within 3 h within a day): no own lag, `unmeasured` (§4).
+- **The VMS stream only.** STK's own units get no receipt lag (step 1, ask d).
 
 - **The cascade.** It is an own lag, so it comes first in plan 059's cascade (`rb_add_ping_own_lag()`: copy, residual,
   now receipt), before a unit's lag (`rb_add_ping_time()`).
-- **Generic.** It is a method for any feed that keeps a fix's time and its receipt: `method = "receipt"`, with the
-  receipt column, the window and the baseline. A fisheries monitoring centre usually keeps both; NAFO's VMS format
-  carries both.
-- **No lag where there is no information.** Where `posdate` equals `recdate`, the fix already has the receipt's time,
-  on the reference's clock, and gets no lag from this.
+- **Generic.** It is a method for any feed that keeps a ping's time and its receipt: `method = "receipt"`, with the
+  receipt column, the unit, the windows, the percentile, the backlog bound, the least departure and the usual level and
+  lag. A fisheries monitoring centre usually keeps both times; NAFO's VMS format carries both.
 
 ## 2. STK's receipt in the flow: decision 196's `stk_receipt`
 
 The union carries STK's `recdate` into the flow, as decision 196 decided for TODO 117: the side table `stk_receipt`,
 with the receipt time, the lag and each unit's class. Plan 060 builds that part of it, and TODO 117 keeps the rest:
-the events and the `U` positions.
+the events and the `U` positions. Step 1 adds the unit (STK's mobile id), which the level is taken over.
 
 ## 3. The check against the AIS track
 
 The study's scan becomes the independent check. After the lag, the VMS fixes in every judged vessel-week must sit on
 the AIS track within ±3 min of shift; a vessel-week that does not is listed with its outcome. The track method can go
 into ramb (`rb_create_ping_lags(method = "track")`, as the first version proposed) for feeds with no receipt time, which
-is the case for other countries without an FMC's receipt column (ask e).
+is the case for other countries without an FMC's receipt column (ask e). The same check gives §1 its usual level and
+lag per stream and year, from the vessel-months on time against the track.
 
 ## 4. The flag
 
-`lag_basis` gains `receipt`. A VMS fix keeps `unmeasured` where its `posdate` is its own but the gap cannot be read: a
-backlog the running median cannot separate, or a gap that the track check contradicts.
+`lag_basis` gains `receipt`: the ping's time judged from its receipt, by §1's rule. A VMS ping keeps `unmeasured`
+where its `posdate` is its own but its unit has no level. A vessel-week where the track check contradicts the receipt
+lag is listed by the check, not moved otherwise (step 1: 0.2-2.7 points of the judged pings in 2018-2026).
 
 ## 5. Steps
 
 1. **Measure, in the study, before any code:** every bullet under "Not yet measured". Then the method's numbers: the
    window, the baseline per period, and what share of fixes it moves. Ends in a short note in the study's README and an
-   amendment here.
+   amendment here. *Done 2026-11-02* ("Measured in step 1" above; §1 revised).
 2. **ramb:** `rb_add_ping_own_lag(method = "receipt")` with tests, the track method if ask e is yes, and the items of
    §8 that ask g keeps. A release, run on a full Icelandic year, installed from GitHub.
 3. **fishycode:**
@@ -131,6 +157,10 @@ sets the rule); in c, the on-time VMS fixes with their own `posdate` (most of 20
 in f, only the receipt time is built, as a side table the tag pass joins, and `recdate` is carried no further (decision
 196); in g, with `recdate` in the union a fix STK received twice is two rows, and the de-duplication keeps the earliest
 receipt and counts what it drops.
+
+**Step 1 (2026-11-02)** settled d by measurement: STK's own units are not off by a clock the receipt sees, and a
+receipt lag moves them off the AIS track, so they get none. It also revised b's form (§1): the 25th percentile, and
+the persistent rule over a day and a week, chosen by the maintainer on Claude's recommendation ("proceed").
 
 - a. **The source:** STK's receipt, with the AIS track as the check (recommended), or the AIS track alone, as in the
   first version.
