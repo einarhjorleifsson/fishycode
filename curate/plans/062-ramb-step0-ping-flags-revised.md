@@ -1,7 +1,7 @@
 # 062 — ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence, and every method scored on planted faults
 
-**status:** partly built — steps 0 and 1 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
-measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
+**status:** partly built — steps 0-2 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
+measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273 and 275, `curate/ais_ping_clean.R`,
@@ -9,7 +9,7 @@ plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 2
 
 Drafted with AI assistance (Claude) on 2026-11-02. The facts below were read from the code (ramb 15af6e8, fishycode
 f7f8e71) or are taken from the records cited; nothing was run for the draft. Steps 0 and 1 were carried out and
-measured by Claude the same evening, under "Done". No person has checked it. The choices are the maintainer's.
+measured by Claude the same evening, and step 2 built, under "Done". No person has checked it. The choices are the maintainer's.
 
 ## What is there now
 
@@ -123,6 +123,17 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    same-second tie at two places, a copy stamped in summer time, and a vessel truly fast. Each ping carries its fault
    (or none) and the track's fishing label; the sets are documented in ramb's data dictionary and read with
    `rb_read_example()`. The book (plan 061) and `me_code` use the same sets.
+   **Done 2026-11-02** (by Claude, ramb 69b0332, version 2026.11.02.3, not pushed; not checked by a person):
+   `rb_read_example("dansk_planted")`, 450,711 pings, made by `data-raw/planted_faults.R` with a fixed seed. The base
+   is dansk without the 369 pings a 20 kn forward scan takes out (its own faults; its recorded speed never passes
+   11.6 kn). One steaming hour of eight vessels is compressed to a true 30-40 kn. Each track is thinned to 10 s, 1 min,
+   6 min and 1 h (`vid` = vessel and rate), and the nine faults are planted two while fishing and two not per vessel
+   and rate where the track allows. The "time-shifted copy" is another day's positions (12-72 h away) stamped into
+   the track, as on vid 2350 (TODO 88); "two feeds with a clock offset" is a second feed 10-90 s late. Each ping
+   carries `fault`, `wrong` (whether step 0 should take it out), `planted_m`, `planted_s`, and the expert's `fishing`
+   at its time. Wrong pings: 1,606 at 10 s, 1,412 at 1 min, 906 at 6 min, 262 at 1 h. The script checks that the
+   detours keep both legs under 25 kn and turn under 60 degrees, and that no untouched leg passes 20 kn. TODO 93's
+   sets wait for the maintainer; the planting itself (`plant()`) takes any clean track.
 3. **Score every method and candidate** on the planted sets, and on TODO 88's reload days (the one labelled Icelandic
    set: the receipt lag marks the truth): each ping in one outcome (fault caught, fault missed, good
    ping flagged, good ping kept), by fault, ping rate and gear, with the good pings flagged *while fishing* as the
