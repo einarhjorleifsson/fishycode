@@ -16,10 +16,20 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
   labels, the place names.
 - **L3** A relief tile is a WebP image, answered in a few ms (`curl` on `/tiles/relief/{z}/{x}/{y}.webp`).
 
-## Depth (its colours by palette until plan 063 step 2)
+## Depth (plan 063 step 2)
 
-- **D1** Colours: deep, blues, etopo1 bathy, each with its legend; `depth_by=` in the address.
+- **D1** Colours: any of the viewer's palettes recolours the depth at once; the legend's bar follows.
 - **D2** The depth's checkbox: off hides the colour and leaves the shading; on brings it back.
+- **D3** Floor and cap: the colours span between them as the sliders move, their depths beside them and at the bar's
+  ends; a floor set above the cap is read the other way round.
+- **D4** Scale: log or linear respaces the colours between floor and cap.
+- **D5** Colours as bands: one flat colour per band at the charts' isobaths (10, 20, 50, 100, 200, 500, 1,000,
+  2,000 m), the legend a swatch per band with its depths; a ramp again brings the bar back.
+- **D6** Shallower than 10, 20 or 50 m: those depths drawn clear, or grey with "drawn grey"; none shows every depth.
+- **D7** Opacity: the depth's colour alone fades, the shading stays; its value in % beside it.
+- **D8** Each depth control in the address (`depth_pal`, `depth_lo`, `depth_hi`, `depth_scale`, `depth_mode`,
+  `depth_cut`, `depth_cutas`, `depth_cop`), only when away from its default; a link opens with them; a value outside a
+  control's range or options is left out.
 
 ## Relief (plan 063 step 1)
 

@@ -1553,8 +1553,8 @@ Built 2026-11-03, `products/bathymetry_map/` (`bathymetry_map()`, port 8798): th
 elevation tiles (512 px, lossless WebP to 0.1 m, zoom 0-10, each zoom warped from the source) in `depth.mbtiles`
 (547 MB, 6,501 tiles; within 0.9 m of the source at five points read by GDAL), shaded and coloured in the browser by
 ramb 2026.11.03's dem layer (MapLibre 5.24.0); the depth by cell to click from `grid.R` (0.001 by 0.0005 degrees); the
-gazetteer's names over both. Since plan 063 step 1, the depth and the relief are two layers, the relief's shading
-in the reader's hands (ramb 2026.11.03.1). Open: the rest of plan 063; ramb's changes pushed.
+gazetteer's names over both. Since plan 063 steps 1-2, the depth and the relief are two layers, the depth's colours
+and the relief's shading in the reader's hands (ramb 2026.11.03.2). Open: the rest of plan 063; ramb's changes pushed.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.

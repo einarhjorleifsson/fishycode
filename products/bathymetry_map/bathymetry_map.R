@@ -6,8 +6,8 @@
 # Input:  $FISHYDATA/products/bathymetry_map/depth.mbtiles (dem.R), left out if it is not there;
 #         grid_0010/, grid_0040.parquet and grid_0200.parquet (grid.R); the effort map's tile bounds, cell-size option
 #         and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer); ramb's map viewer
-#         (rb_map_*(), and for the depth and relief its dem layer, rb_map_tiles_mbtiles() and the relief's controls,
-#         `shade`: ramb >= 2026.11.03.1)
+#         (rb_map_*(), and for the depth and relief its dem layer, rb_map_tiles_mbtiles() and their controls,
+#         `colour` and `shade`: ramb >= 2026.11.03.2)
 # Output: bathymetry_map(), bathymetry_map_stop(); bathymetry_map_build() and depth_tile() in .bathymetry_map, for
 #         server.R; a server on 127.0.0.1:<port> in this R session, in the background
 #
@@ -66,32 +66,15 @@ depth_tile <- function(con, dir, z, x, y, px = 1) {
   if (is.null(r)) raw(0) else r
 }
 
-# The relief's colours: a palette of the viewer's over depths spaced for the shelf, shallow to deep as the grid's;
-# sea level (land and no value) clear
-RELIEF_DEPTHS <- c(5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000)
-relief_colour <- function(colors) {
-  col <- grDevices::colorRampPalette(colors)(length(RELIEF_DEPTHS))
-  stops <- unlist(lapply(rev(seq_along(RELIEF_DEPTHS)), function(i) list(-RELIEF_DEPTHS[i], col[i])), recursive = FALSE)
-  c(list("interpolate", list("linear"), list("elevation")), stops, list(-0.05, col[1], 0, "rgba(0,0,0,0)"))
-}
-relief_legend <- function(colors) {
-  col <- grDevices::colorRampPalette(colors)(length(RELIEF_DEPTHS))
-  i <- match(c(10, 50, 100, 200, 500, 1000, 2000), RELIEF_DEPTHS)
-  lapply(i, function(k) list(swatch = list(fill = col[k]), label = sprintf("%s m", format(RELIEF_DEPTHS[k], big.mark = ","))))
-}
-
-# The depth from the elevation tiles, coloured in the page; the colours chosen there (plan 063 step 2 to come)
+# The depth from the elevation tiles, coloured in the page: palette, floor and cap, scale, ramp or bands (the charts'
+# isobaths), a cut of the shallow end and opacity in the reader's hands (plan 063 step 2); the depths under 10-20 m are
+# poorly covered (the maintainer), so a cut is offered, none by default
 depth_layer <- function(file) {
-  palettes <- Filter(function(p) p$id %in% c("deep", "blues", "etopo1_bathy"), ramb::rb_map_palettes())
   ramb::rb_map_layer(
     "depth", "dem", label = "lyrDepthColour", info = "infoDepthColour", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
-    style = list(list(id = "depth-colour", type = "color-relief",
-                      paint = list("color-relief-color" = relief_colour(palettes[[1]]$colors)))),
-    variants = list(label = "reliefColours", options = lapply(palettes, function(p) list(
-      value = p$id, label = p$label, legend = relief_legend(p$colors),
-      paint = list("depth-colour" = list("color-relief-color" = relief_colour(p$colors)))
-    )))
+    style = list(list(id = "depth-colour", type = "color-relief")),
+    colour = list(palette = "deep", floor = 10, cap = 2000)
   )
 }
 
@@ -132,7 +115,6 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     gRelief = list(en = "Relief", is = "Lögun hafsbotns"),
     lyrDepthColour = list(en = "Depth (50 m)", is = "Dýpi (50 m)"),
     lyrRelief = list(en = "Shading", is = "Skygging"),
-    reliefColours = list(en = "Colours", is = "Litir"),
     infoDepthColour = list(
       en = paste("Olex's 50 m depth grid with GEBCO, as elevation tiles (Terrarium, lossless WebP, to 0.1 m, zoom 0-10),",
                  "coloured in the browser; land and cells with no value are clear. TODO 185."),
@@ -151,6 +133,12 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     shDirection = list(en = "Light from", is = "Ljós úr átt"), shAltitude = list(en = "Light height", is = "Hæð ljóss"),
     shIntensity = list(en = "Intensity", is = "Styrkur"), shShadow = list(en = "Shadow", is = "Skuggi"),
     shHighlight = list(en = "Light", is = "Birta"),
+    cScale = list(en = "Scale", is = "Kvarði"), cLog = list(en = "log", is = "lógaritmískur"),
+    cLinear = list(en = "linear", is = "línulegur"), cMode = list(en = "Colours as", is = "Litir sem"),
+    cRamp = list(en = "a ramp", is = "samfelldur kvarði"), cBands = list(en = "bands", is = "bil"),
+    cCut = list(en = "Shallower than", is = "Grynnra en"), cNone = list(en = "none", is = "ekkert"),
+    cCutAs = list(en = "drawn", is = "sýnt"), cClear = list(en = "clear", is = "gegnsætt"),
+    cGrey = list(en = "grey", is = "grátt"),
     lyrDepth = list(en = "Depth by cell", is = "Dýpi eftir reitum"),
     depthM = list(en = "Depth (m)", is = "Dýpi (m)"),
     infoDepth = list(

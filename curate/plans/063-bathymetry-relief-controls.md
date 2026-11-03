@@ -1,12 +1,15 @@
 # 063 — the bathymetry map's relief in the reader's hands: colours, depth range and bands, opacity, contours and shading
 
-**status:** partly built — step 1 built 2026-11-03 (ramb 2026.11.03.1's `shade`; the bathymetry map's depth and relief
-as two layers; its `checklist.md` passed, with the effort map's MapLibre items but M1); written 2026-11-03 at the
+**status:** partly built — steps 1 and 2 built 2026-11-03 (ramb 2026.11.03.1's `shade` and 2026.11.03.2's `colour`;
+the bathymetry map's depth and relief as two layers, each with its live controls; its `checklist.md` passed after
+each, with the effort map's MapLibre items, M1 after step 2 only). Step 2's two asks were left to the page: the cut
+offered at 10, 20 and 50 m, none by default, drawn clear or grey; the bands at the charts' isobaths (10, 20, 50, 100,
+200, 500, 1,000, 2,000 m); written 2026-11-03 at the
 maintainer's request, the day the relief was built (TODO 185, ramb 8aa21b4, fishycode 71bc39d). **see:** TODO 185, plan 046 (the viewer), `products/bathymetry_map/`, ramb `R/map.R` and
 `inst/map/index.html`
 
 Drafted with AI assistance (Claude) on 2026-11-03. What is **measured** was run or read that day, as said in each
-place; what is **assumed** is marked so. Step 1 is built; the rest is not.
+place; what is **assumed** is marked so. Steps 1 and 2 are built; the rest is not.
 
 ## What the maintainer asked (2026-11-03)
 
