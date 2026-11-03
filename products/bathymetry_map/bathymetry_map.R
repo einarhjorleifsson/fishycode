@@ -78,26 +78,47 @@ depth_layer <- function(file) {
   )
 }
 
-# Depth contours made in the browser from the same tiles, finer as the zoom deepens (plan 063 step 3): the minor and
-# the major interval from each zoom on, the major lines labelled with their depth; sea level (land, no value) left out
+# Depth contours made in the browser from the same tiles (plan 063 step 3), spaced by depth as well as by zoom (its
+# point 7: by zoom alone, Faxaflói's 20-100 m had none at zoom 8): from each zoom, the spacing kept under 50 m, from 50
+# to 200 m, from 200 to 1,000 m and deeper. maplibre-contour takes intervals by zoom only, so it makes the lines at
+# their greatest common spacing and one layer per zoom range keeps those at their depth's (a layer's filter, as a
+# filter may not read the zoom). The charts' isobaths are the major lines, heavier and labelled; sea level left out
+CONTOUR_BANDS <- c(0, 50, 200, 1000)
+CONTOUR_SPACING <- list("5" = c(25, 50, 100, 500), "7" = c(10, 50, 100, 500), "8" = c(10, 20, 100, 200),
+                        "9" = c(10, 20, 50, 200), "10" = c(5, 10, 50, 100), "11" = c(5, 10, 20, 100))
+ISOBATHS <- c(10, 20, 50, 100, 200, 500, 1000, 1500, 2000, 2500, 3000)
 contour_layer <- function(file) {
-  no_land <- list("!=", list("get", "ele"), 0)
+  ele <- list("get", "ele")
+  gcd <- function(a, b) if (b == 0) a else gcd(b, a %% b)
+  major <- list("in", ele, list("literal", as.list(ISOBATHS)))
+  # a line at its depth's spacing: over the band's top (sea level itself left out), under its bottom; and every isobath
+  # as deep as the shallowest spacing (50 m sits in a band spaced 20 m at zoom 8)
+  kept <- function(s) c(list("any"), lapply(seq_along(s), function(i) {
+    c(list("all", list(if (i == 1) ">" else ">=", ele, CONTOUR_BANDS[i])),
+      if (i < length(CONTOUR_BANDS)) list(list("<", ele, CONTOUR_BANDS[i + 1])),
+      list(list("==", list("%", ele, s[i]), 0)))
+  }), list(list("all", major, list(">=", ele, s[1]))))
+  zooms <- as.numeric(names(CONTOUR_SPACING))
+  style <- unlist(lapply(seq_along(zooms), function(k) {
+    z <- c(minzoom = zooms[k], maxzoom = if (k < length(zooms)) zooms[k + 1] else 24)
+    f <- kept(CONTOUR_SPACING[[k]])
+    list(
+      list(id = sprintf("contours-line-%d", zooms[k]), type = "line", "source-layer" = "contours",
+           minzoom = z[["minzoom"]], maxzoom = z[["maxzoom"]], filter = f,
+           paint = list("line-color" = "rgba(27,42,58,0.55)", "line-width" = list("case", major, 1.2, 0.5))),
+      list(id = sprintf("contours-label-%d", zooms[k]), type = "symbol", "source-layer" = "contours",
+           minzoom = z[["minzoom"]], maxzoom = z[["maxzoom"]], filter = list("all", f, major),
+           layout = list("symbol-placement" = "line", "text-size" = 13,
+                         "text-field" = list("concat", list("number-format", ele, structure(list(), names = character())),
+                                             " m")),
+           paint = list("text-color" = "#1b2a3a"))
+    )
+  }), recursive = FALSE)
   ramb::rb_map_layer(
     "contours", "contour", label = "lyrContours", info = "infoContours", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
-    contours = list(multiplier = -1, thresholds = list("5" = c(500, 1000), "7" = c(200, 1000), "8" = c(100, 500),
-                                                       "9" = c(50, 200), "10" = c(20, 100), "11" = c(10, 50))),
-    style = list(
-      list(id = "contours-line", type = "line", "source-layer" = "contours", filter = no_land,
-           paint = list("line-color" = "rgba(27,42,58,0.55)",
-                        "line-width" = list("match", list("get", "level"), 1, 1.2, 0.5))),
-      list(id = "contours-label", type = "symbol", "source-layer" = "contours",
-           filter = list("all", list(">", list("get", "level"), 0), no_land),
-           layout = list("symbol-placement" = "line", "text-size" = 13,
-                         "text-field" = list("concat", list("number-format", list("get", "ele"),
-                                                            structure(list(), names = character())), " m")),
-           paint = list("text-color" = "#1b2a3a"))
-    ),
+    contours = list(multiplier = -1, thresholds = lapply(CONTOUR_SPACING, function(s) Reduce(gcd, s))),
+    style = style,
     legend = list(list(swatch = list(fill = "rgba(27,42,58,0.55)"), label = "contourMinor"),
                   list(swatch = list(fill = "#1b2a3a"), label = "contourMajor"))
   )
@@ -166,14 +187,15 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     cGrey = list(en = "grey", is = "grátt"),
     lyrContours = list(en = "Contours", is = "Dýptarlínur"),
     contourMinor = list(en = "contour", is = "dýptarlína"),
-    contourMajor = list(en = "major, with its depth", is = "aðallína, með dýpi"),
+    contourMajor = list(en = "a chart isobath, with its depth", is = "jafndýpislína korta, með dýpi"),
     infoContours = list(
-      en = paste("Depth contours made in the browser from the same elevation tiles (maplibre-contour), finer as you",
-                 "zoom in: every 500 m to zoom 6, 200 m at 7, 100 m at 8, 50 m at 9, 20 m at 10, 10 m from 11; the",
-                 "major lines labelled. Plan 063."),
-      is = paste("Dýptarlínur reiknaðar í vafranum úr sömu hæðarflísum (maplibre-contour), þéttari við aðdrátt: á",
-                 "500 m að aðdrætti 6, 200 m í 7, 100 m í 8, 50 m í 9, 20 m í 10, 10 m frá 11; aðallínur merktar.",
-                 "Áætlun 063.")
+      en = paste("Depth contours made in the browser from the same elevation tiles (maplibre-contour), spaced by depth",
+                 "and zoom: denser in shallow water and as you zoom in (under 50 m every 25 m at zoom 5, every 5 m from",
+                 "10; deeper than 1,000 m every 500 m to every 100 m). The charts' isobaths heavier, labelled from",
+                 "zoom 11. Plan 063."),
+      is = paste("Dýptarlínur reiknaðar í vafranum úr sömu hæðarflísum (maplibre-contour), eftir dýpi og aðdrætti:",
+                 "þéttari á grunnu vatni og við aðdrátt (grynnra en 50 m á 25 m í aðdrætti 5, á 5 m frá 10; dýpra en",
+                 "1.000 m á 500 m til 100 m). Jafndýpislínur korta feitari, merktar frá aðdrætti 11. Áætlun 063.")
     ),
     lyrDepth = list(en = "Depth by cell", is = "Dýpi eftir reitum"),
     depthM = list(en = "Depth (m)", is = "Dýpi (m)"),

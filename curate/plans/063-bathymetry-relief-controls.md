@@ -4,7 +4,8 @@
 2026.11.03.3's contour layer; the bathymetry map's depth and relief as two layers, each with its live controls, and
 contours finer with the zoom; its `checklist.md` passed after each, with the effort map's MapLibre items, M1 after
 step 2 only). Step 3's contours show at every zoom, their depth labels only from zoom 11 (checklist K2: below it
-MapLibre places no label along `maplibre-contour`'s lines, cause not found). Step 2's two asks were left to the page: the cut
+MapLibre places no label along `maplibre-contour`'s lines, cause not found). Point 7(b), contours by depth as well
+as by zoom, built the same day. Step 2's two asks were left to the page: the cut
 offered at 10, 20 and 50 m, none by default, drawn clear or grey; the bands at the charts' isobaths (10, 20, 50, 100,
 200, 500, 1,000, 2,000 m); written 2026-11-03 at the
 maintainer's request, the day the relief was built (TODO 185, ramb 8aa21b4, fishycode 71bc39d). **see:** TODO 185, plan 046 (the viewer), `products/bathymetry_map/`, ramb `R/map.R` and
@@ -141,7 +142,9 @@ is shared.
 5. Relief computed outside the browser (5): the trial on two areas, Ísafjarðardjúp and Faxaflói, in
    `$FISHYDATA/archive/`, read-only on the grid.
 6. Named views and defaults (6).
-7. Faxaflói's three (7): contours by depth, then "Fit to view" for the depth's colours (5 takes (c)).
+7. Faxaflói's three (7): contours by depth (built 2026-11-03: the lines made at each zoom's common spacing, one layer
+   per zoom range keeping those at their depth's, the charts' isobaths always; Faxaflói has lines at zoom 8), then
+   "Fit to view" for the depth's colours (5 takes (c)).
 
 ## Asks (the maintainer)
 

@@ -33,9 +33,12 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 
 ## Contours (plan 063 step 3)
 
-- **K1** On when the map opens: lines from zoom 5, finer as the zoom deepens (500 m to zoom 6, 200 m at 7, 100 m at 8,
-  50 m at 9, 20 m at 10, 10 m from 11), made in the browser by `maplibre-contour`; no line along the coast.
-- **K2** Every major line heavier; from zoom 11 labelled along the line with its depth ("50 m"), 13 px with no halo;
+- **K1** On when the map opens: lines from zoom 5, made in the browser by `maplibre-contour`, spaced by depth and zoom
+  (plan 063 point 7; `CONTOUR_SPACING` in `bathymetry_map.R`): under 50 m every 25 m at zoom 5-6, 10 m at 7-9, 5 m from
+  10; deeper, coarser. Faxaflói (20-100 m) has lines at zoom 8 (every 10 m to 50, then 20 m); every chart isobath at
+  least as deep as the zoom's shallowest spacing is drawn (the 50 m line at zoom 8); no line along the coast.
+- **K2** The charts' isobaths (10, 20, 50, 100, 200, 500, 1,000 m and every 500 m deeper) heavier; from zoom 11
+  labelled along the line with its depth ("50 m"), 13 px with no halo;
   the legend under the layer. Below zoom 11 MapLibre places no label along these lines, filtered or not, at any
   `text-max-angle`, overlap allowed or not (2026-11-03; cause not found; point placement puts one label at a line's
   start; the plugin's `overzoom` gave 0-2): the lines themselves show at every zoom.
