@@ -78,7 +78,9 @@ ports_tiles <- function(con, file = fd_curated("reference", "port_geometry.parqu
 
 # The gazetteer's names as GeoJSON, or NULL without it: its footprints and a label at each name's median position
 # (kind label), with its minimum zoom and level, class, cross-check and candidate synonyms, and a label at each other
-# place of a name that means several. `children` is empty for none and `n_places` for one, so the popup leaves them out
+# place of a name that means several. `children` is empty for none and `n_places` for one, so the popup leaves them out.
+# The keys of one place (curate/name_group.R, plan 045 §3.1) are one name: its proposed name, `named` "proposed", on one
+# label, placed as the place-name explorer places it; the other spellings in `members`
 place_names_geojson <- function() {
   f <- fd_curated("place_name", "place_name.parquet")
   if (!file.exists(f)) return(NULL)
@@ -100,19 +102,50 @@ place_names_geojson <- function() {
                       children = ifelse(d$n_children > 0, d$n_children, NA),
                       r80 = round(d$r80_km, 1), spellings = d$n_spelling, min_zoom = d$min_zoom, level = d$level,
                       class = d$class, outcome = d$outcome, families = d$families,
-                      n_places = ifelse(d$n_places > 1, d$n_places, NA), synonyms = unname(syn_txt[d$key]))
-  foot <- sf::st_sf(props, kind = "footprint", geometry = sf::st_geometry(p))[!sf::st_is_empty(p), ]
+                      n_places = ifelse(d$n_places > 1, d$n_places, NA), synonyms = unname(syn_txt[d$key]),
+                      named = NA_character_, members = NA_character_)
   lx <- if ("label_lon" %in% names(d)) d$label_lon else d$lon      # a square-placed name is written on the sea
   ly <- if ("label_lat" %in% names(d)) d$label_lat else d$lat
   has <- !is.na(lx)
+  own <- props                                                    # each key as itself, for its other places
+  grp_file <- fd_curated("place_name", "name_group.parquet")
+  if (file.exists(grp_file)) {
+    g <- nanoparquet::read_parquet(grp_file)
+    gi <- match(d$key, g$key)
+    pos <- ifelse(is.na(d$n_positioned), 0, d$n_positioned)
+    group <- ifelse(!is.na(gi) & g$n_keys[gi] > 1, g$group[gi], NA)
+    for (gk in unique(group[!is.na(group)])) {
+      m <- which(group == gk)
+      # the label at the head, or without a position there at the member with most positions; every footprint
+      # answers with the place
+      at <- m[has[m]]
+      head <- c(at[d$key[at] == gk], at[order(-pos[at])], m[order(-pos[m])])[1]
+      x <- props[head, ]
+      x$name <- g$group_name[gi[head]]
+      x$n <- sum(pos[m])
+      x$level <- if (all(is.na(d$level[m]))) NA else min(d$level[m], na.rm = TRUE)
+      x$min_zoom <- if (all(is.na(d$min_zoom[m]))) NA else min(d$min_zoom[m], na.rm = TRUE)
+      x$named <- "proposed"
+      o <- m[order(-pos[m])]
+      o <- o[d$name[o] != x$name]
+      x$members <- if (length(o)) paste(sprintf("%s (%s)", d$name[o], format(pos[o], big.mark = ",", trim = TRUE)),
+                                        collapse = "; ") else NA
+      sy <- unlist(strsplit(own$synonyms[m][!is.na(own$synonyms[m])], "; ", fixed = TRUE))
+      sy <- unique(sy[!sub(" \\(.*$", "", sy) %in% d$name[m]])
+      x$synonyms <- if (length(sy)) paste(head(sy, 6), collapse = "; ") else NA
+      props[m, ] <- x[rep(1, length(m)), ]
+      has[setdiff(m, head)] <- FALSE
+    }
+  }
+  foot <- sf::st_sf(props, kind = "footprint", geometry = sf::st_geometry(p))[!sf::st_is_empty(p), ]
   lab <- sf::st_sf(props[has, ], kind = "label",
                    geometry = sf::st_sfc(lapply(which(has), function(i) sf::st_point(c(lx[i], ly[i]))), crs = 4326))
   # a name's other places (two bays called Hlöðuvík) get a label each, at the place's median
   pl_file <- fd_curated("place_name", "place.parquet")
   other <- if (file.exists(pl_file)) {
     pl <- nanoparquet::read_parquet(pl_file); pl <- pl[!pl$main, ]
-    i <- match(pl$key, props$key)
-    sf::st_sf(props[i, ], kind = "label", geometry = sf::st_sfc(lapply(seq_len(nrow(pl)), function(k) sf::st_point(c(pl$lon[k], pl$lat[k]))),
+    i <- match(pl$key, own$key)
+    sf::st_sf(own[i, ], kind = "label", geometry = sf::st_sfc(lapply(seq_len(nrow(pl)), function(k) sf::st_point(c(pl$lon[k], pl$lat[k]))),
                                                                 crs = 4326))
   }
   lab$place <- 1L

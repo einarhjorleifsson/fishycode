@@ -497,6 +497,17 @@
     "maxWidth": "320px",
     "fields": [
      {
+      "field": "named",
+      "label": "theName",
+      "values": {
+       "proposed": "nameProposed"
+      }
+     },
+     {
+      "field": "members",
+      "label": "alsoWritten"
+     },
+     {
       "field": "n",
       "label": "positions",
       "format": "count"
@@ -918,6 +929,18 @@
   "interpOffTip": {
    "en": "Each fishing fix's hours in the cell of the fix itself, as the track records it",
    "is": "Stundir hvers veiðipunkts í reit punktsins sjálfs, eins og ferillinn skráir hann"
+  },
+  "theName": {
+   "en": "the name",
+   "is": "nafnið"
+  },
+  "nameProposed": {
+   "en": "proposed, one for its spellings (by rule, plan 045)",
+   "is": "tillaga, eitt fyrir rithættina (eftir reglu, áætlun 045)"
+  },
+  "alsoWritten": {
+   "en": "also written",
+   "is": "einnig ritað"
   }
  }
 }

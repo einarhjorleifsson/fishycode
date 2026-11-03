@@ -41,7 +41,9 @@ How to test:
 ## Map
 
 - **M1** A click on a cell: a popup with hours and kW-hours per km² and the fixes.
-- **M2** A click on a place name: its own popup, and no cell popup under it.
+- **M2** A click on a place name: its own popup, and no cell popup under it. A place written several ways (plan 045
+  §3.1, `curate/name_group.R`) is one label, its proposed name, with "the name" and "also written" in the popup; a
+  click on any of its footprints opens the same (2026-11-03).
 - **M3** Pan or zoom: the hash follows; the histogram is resampled on idle.
 - **M4** A reload keeps the position.
 - **M5** Names checkbox: off hides the labels and footprints, on shows them; "N names" beside it.

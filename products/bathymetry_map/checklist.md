@@ -41,7 +41,8 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 
 ## Place names
 
-- **N1** The names 14-19 px by level, with no halo; a click, the name's popup.
+- **N1** The names 14-19 px by level, with no halo; a click, the name's popup. A place written several ways is one
+  label, its proposed name, with "the name" and "also written" in the popup ("9,049 names", 2026-11-03).
 - **N2** The names' checkbox off and on; `names=0` in the address.
 
 ## Base map and language
