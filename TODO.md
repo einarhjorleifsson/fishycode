@@ -1327,6 +1327,10 @@ The items they came from close on what fishycode does; the waits are kept here.
   - plan 053's ask g (TODO 165): Trackwell's own haul file as a standing witness.
 - **The Trackwell draft** of TODO 103 (chosen 2026-10-23): `$FISHYDATA/archive/2026-10-plan035/trackwell.yml`, kept
   out of git; its `sent` is filled when it goes.
+- **STK's fields, to Trackwell** (drafted 2026-11-03, decisions 164, 233, 274): each row's stream, its three times, a
+  message id, the AIS message's own fields, the MMSI as broadcast and the device register, how port events are made,
+  an operations log; a week of raw messages first. `$FISHYDATA/archive/2026-11-03-stk-fields/trackwell.yml`, out of
+  git. The same asks would serve ASTD's provider; not drafted.
 - **The Directorate** (decision 264): does it hold the small boats' logbooks of September 2020 to March 2021?
 - **HV 2020-33's authors** (TODO 157, plan 051 c): the questions in
   `$FISHYDATA/archive/2026-10-whole-weight/lumpfish.md` §6, a draft.
