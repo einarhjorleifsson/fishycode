@@ -177,7 +177,18 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    track around is no witness where copies are many. The maintainer, 2026-11-03: not the receipt time. A second
    feed as the witness instead, the pairs of a run decided together: on the reload no second feed exists (STK alone
    those days), and it catches 4 of the 1,802. With one feed and no receipt, which of two identical reports is the
-   copy is not in the data. Ask (new): an unresolved repeat kept with both its pings labelled, or both left out?
+   copy is not in the data. The maintainer: an unresolved repeat keeps both pings, labelled. Tried: the fit to the
+   neighbours still decides most reload runs, wrongly, so on one feed it should decide none.
+   **Step 0 as a cascade** (the maintainer, 2026-11-03: "if we have these variables then use this, if poorer
+   ..."), as every other step of the flow: each flag takes the best evidence the ping has, and records it as its
+   basis. Proposed from step 3's scores:
+   - Copies: a second feed that hears the vessel decides which is the copy (basis `witness`); without one, both
+     pings stay, labelled `repeat` (basis `none`). The receipt time would sit above the witness; the maintainer
+     has said no to it for now.
+   - Impossible positions: with recorded speed over ground, the rule against the vessel's own speed (basis
+     `recorded`); without it, the fixed 25 kn rule, `clean` at dense rates and `forward` at 1 min (basis `track`),
+     since the local speed from the legs alone fails where copies interleave.
+   - Where nothing can decide (coarse rates, a lone feed's copies), a label, not a removal.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
