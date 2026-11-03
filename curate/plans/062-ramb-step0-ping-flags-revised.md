@@ -218,6 +218,11 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
 Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062-step3/` (`local_speed.R`,
 `copy_rule.R`, scored by `score_planted.R` and `score_reload.R`, each a minute or a few).
 
+0. **First:** a fishycode decision record of what step 3 kept and what it tried and dropped, and why (the speed
+   rule from the legs alone, tuning, the two-legs stage alone, the fit to neighbours as a copy decider, the second-
+   feed witness untested on the reload, a state-space model with turns set aside for fishing turns, the receipt
+   time declined by the maintainer), pointing at the study for the numbers. And `~/stasi/em4ssf/me_code` TODO 5:
+   plan 062's findings as input for the November meeting, beyond the whack.
 1. **Cheap, no maintainer needed** (minutes each, in that study):
    - (a) the cascade's cost on the planted faults: `copy_rule.R` with the misfit's vote at 0 (witness only, else
      `repeat`), rerun `score_planted.R`, compare `copies_local_sog` before and after;
