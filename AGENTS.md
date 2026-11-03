@@ -251,8 +251,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   "track")` of 2026.11.02 (plan 060; 8bfffce, installed from GitHub on 2026-11-02), and the store's VMS times
   2026.11.02.2 (15af6e8, installed from GitHub on 2026-11-02): an older ramb runs, but leaves copies of moved VMS reports
   in the trail (fixed in 2026.11.02.1) and moves on-time VMS units in STK's outages (`mass_share`, decision 274). The
-  bathymetry map's relief needs the dem layer and `rb_map_tiles_mbtiles()` of 2026.11.03, whose page runs MapLibre
-  5.24.0 (TODO 185; 8aa21b4, installed from the working tree on 2026-11-03, not pushed). The data
+  bathymetry map's depth and relief need the dem layer and `rb_map_tiles_mbtiles()` of 2026.11.03, whose page runs
+  MapLibre 5.24.0 (TODO 185; 8aa21b4), and the relief's controls, `shade`, of 2026.11.03.1 (plan 063; e874ecf); both installed
+  from the working tree on 2026-11-03, not pushed. The data
   on disk: every target of the main project but `ais_catch` and `check_allocation_audit` (decision 261) was rebuilt from
   raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6, and the 19 from `ais_ping_tag` down twice more
   the same day, with 2026.11.02.1 and then at 5f522e0 with 2026.11.02.2 (plan 060, decision 274). Every curated file

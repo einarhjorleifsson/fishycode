@@ -1534,7 +1534,7 @@ What is left, in order: plan 062's "To finish" (2026-11-03).
 ## 185. A detailed depth grid, Olex 50 m with GEBCO: place names, a topography map, ramb's base map
 **status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — how
 the grid was made, from Julian Burgos · **see:** `$FISHYDATA/raw/external/bathymetry/README-provenance.txt`,
-plan 045 ask a and step 3, plan 046, TODO 144, https://github.com/einarhjorleifsson/mbtiles
+plan 063, plan 045 ask a and step 3, plan 046, TODO 144, https://github.com/einarhjorleifsson/mbtiles
 
 Source: `Olex_50mBM_GEBCO_interp.tif`, shared by Julian Burgos (MFRI) by email, 09-10-2025 as the email gives it; in
 `raw/external/bathymetry/` since 2026-11-03, its header read into the note beside it (EPSG:5325, 50 m, 4.2 GB). Julian
@@ -1552,8 +1552,8 @@ Built 2026-11-03, `products/bathymetry_map/` (`bathymetry_map()`, port 8798): th
 elevation tiles (512 px, lossless WebP to 0.1 m, zoom 0-10, each zoom warped from the source) in `depth.mbtiles`
 (547 MB, 6,501 tiles; within 0.9 m of the source at five points read by GDAL), shaded and coloured in the browser by
 ramb 2026.11.03's dem layer (MapLibre 5.24.0); the depth by cell to click from `grid.R` (0.001 by 0.0005 degrees); the
-gazetteer's names over both. Open: contours (MapLibre draws none from elevation tiles); ramb's change committed and
-pushed.
+gazetteer's names over both. Since plan 063 step 1, the depth and the relief are two layers, the relief's shading
+in the reader's hands (ramb 2026.11.03.1). Open: the rest of plan 063; ramb's changes pushed.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.

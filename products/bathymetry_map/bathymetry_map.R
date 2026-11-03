@@ -1,12 +1,13 @@
-# bathymetry_map.R — the depth grid (TODO 185) on ramb's map viewer: the seabed's relief from the 50 m grid, shaded and
-# coloured in the browser, the depth by cell to click, and the gazetteer's place names over them. bathymetry_map()
-# opens it in RStudio's Viewer (or a browser).
+# bathymetry_map.R — the depth grid (TODO 185) on ramb's map viewer: from the 50 m grid's elevation tiles, the depth
+# coloured and the relief shaded in the browser, two layers with their own controls (plan 063); the depth by cell to
+# click; the gazetteer's place names over them. bathymetry_map() opens it in RStudio's Viewer (or a browser).
 # TODO 185, plan 046.
 #
 # Input:  $FISHYDATA/products/bathymetry_map/depth.mbtiles (dem.R), left out if it is not there;
 #         grid_0010/, grid_0040.parquet and grid_0200.parquet (grid.R); the effort map's tile bounds, cell-size option
 #         and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer); ramb's map viewer
-#         (rb_map_*(), and for the relief its dem layer and rb_map_tiles_mbtiles(): ramb >= 2026.11.03)
+#         (rb_map_*(), and for the depth and relief its dem layer, rb_map_tiles_mbtiles() and the relief's controls,
+#         `shade`: ramb >= 2026.11.03.1)
 # Output: bathymetry_map(), bathymetry_map_stop(); bathymetry_map_build() and depth_tile() in .bathymetry_map, for
 #         server.R; a server on 127.0.0.1:<port> in this R session, in the background
 #
@@ -79,26 +80,33 @@ relief_legend <- function(colors) {
   lapply(i, function(k) list(swatch = list(fill = col[k]), label = sprintf("%s m", format(RELIEF_DEPTHS[k], big.mark = ","))))
 }
 
-# The seabed's relief from the elevation tiles, coloured and shaded in the page; the colours chosen there
-relief_layer <- function(file) {
+# The depth from the elevation tiles, coloured in the page; the colours chosen there (plan 063 step 2 to come)
+depth_layer <- function(file) {
   palettes <- Filter(function(p) p$id %in% c("deep", "blues", "etopo1_bathy"), ramb::rb_map_palettes())
   ramb::rb_map_layer(
-    "relief", "dem", label = "lyrRelief", info = "infoRelief", visible = TRUE,
+    "depth", "dem", label = "lyrDepthColour", info = "infoDepthColour", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
-    style = list(
-      list(id = "relief-colour", type = "color-relief",
-           paint = list("color-relief-color" = relief_colour(palettes[[1]]$colors))),
-      list(id = "relief-shade", type = "hillshade",
-           paint = list("hillshade-exaggeration" = 0.6, "hillshade-shadow-color" = "#1b2a3a"))
-    ),
+    style = list(list(id = "depth-colour", type = "color-relief",
+                      paint = list("color-relief-color" = relief_colour(palettes[[1]]$colors)))),
     variants = list(label = "reliefColours", options = lapply(palettes, function(p) list(
       value = p$id, label = p$label, legend = relief_legend(p$colors),
-      paint = list("relief-colour" = list("color-relief-color" = relief_colour(p$colors)))
+      paint = list("depth-colour" = list("color-relief-color" = relief_colour(p$colors)))
     )))
   )
 }
 
-# The map: the relief and the depth by cell, the place names as the effort map draws them, with its texts
+# The relief from the same tiles, shaded in the page, its method, light, intensity, opacity and colours in the
+# reader's hands (plan 063 step 1)
+relief_layer <- function(file) {
+  ramb::rb_map_layer(
+    "relief", "dem", label = "lyrRelief", info = "infoRelief", visible = TRUE,
+    tiles = ramb::rb_map_tiles_mbtiles(file),
+    style = list(list(id = "relief-shade", type = "hillshade")),
+    shade = list(exaggeration = 0.6, shadow = "#1b2a3a")
+  )
+}
+
+# The map: the depth and the relief, the depth by cell, the place names as the effort map draws them, with its texts
 bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
                                  json = file.path("products", "effort_map", "map.json")) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
@@ -110,7 +118,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   names_layer <- do.call(ramb::rb_map_layer, c(list(id = "names"), nm[setdiff(names(nm), "id")],
                                                list(data = place_names_geojson)))
   depth <- ramb::rb_map_layer(
-    "depth", "grid", label = "lyrDepth", info = "infoDepth", visible = FALSE, source_layer = "cells",
+    "cells", "grid", label = "lyrDepth", info = "infoDepth", visible = FALSE, source_layer = "cells",
     minzoom = 2, maxzoom = 14, opacity = 100,
     tiles = function(z, x, y, p) depth_tile(con, dir, z, x, y, px = as.numeric(if (is.null(p$px)) px$default else p$px)),
     meta = function() list(v = max(as.numeric(file.mtime(Sys.glob(vapply(LEVELS, level_file, "", dir = dir)))))),
@@ -121,14 +129,28 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   texts <- c(spec$texts[setdiff(names(spec$texts), c("title", unlist(spec$about)))], list(
     title = list(en = "Depth: Olex 50 m with GEBCO", is = "Dýpi: Olex 50 m með GEBCO"),
     gDepth = list(en = "Depth", is = "Dýpi"),
-    lyrRelief = list(en = "Seabed relief", is = "Lögun hafsbotns"),
+    gRelief = list(en = "Relief", is = "Lögun hafsbotns"),
+    lyrDepthColour = list(en = "Depth (50 m)", is = "Dýpi (50 m)"),
+    lyrRelief = list(en = "Shading", is = "Skygging"),
     reliefColours = list(en = "Colours", is = "Litir"),
-    infoRelief = list(
+    infoDepthColour = list(
       en = paste("Olex's 50 m depth grid with GEBCO, as elevation tiles (Terrarium, lossless WebP, to 0.1 m, zoom 0-10),",
-                 "shaded and coloured in the browser; land and cells with no value are clear. TODO 185."),
+                 "coloured in the browser; land and cells with no value are clear. TODO 185."),
       is = paste("50 m dýptargrunnur Olex með GEBCO sem hæðarflísar (Terrarium, WebP án taps, 0,1 m, aðdráttur 0-10),",
-                 "skyggður og litaður í vafranum; land og reitir án gildis eru gegnsæir. TODO 185.")
+                 "litaður í vafranum; land og reitir án gildis eru gegnsæir. TODO 185.")
     ),
+    infoRelief = list(
+      en = paste("The same tiles, shaded in the browser: the method, the light, the intensity, the opacity and the",
+                 "colours apply as they move. Plan 063."),
+      is = paste("Sömu flísar, skyggðar í vafranum: aðferð, ljós, styrkur, ógegnsæi og litir breytast um leið.",
+                 "Áætlun 063.")
+    ),
+    shMethod = list(en = "Shading", is = "Aðferð"), shStandard = list(en = "standard", is = "venjuleg"),
+    shBasic = list(en = "basic", is = "einföld"), shCombined = list(en = "combined", is = "blönduð"),
+    shIgor = list(en = "igor (soft)", is = "igor (mjúk)"), shMulti = list(en = "several lights", is = "mörg ljós"),
+    shDirection = list(en = "Light from", is = "Ljós úr átt"), shAltitude = list(en = "Light height", is = "Hæð ljóss"),
+    shIntensity = list(en = "Intensity", is = "Styrkur"), shShadow = list(en = "Shadow", is = "Skuggi"),
+    shHighlight = list(en = "Light", is = "Birta"),
     lyrDepth = list(en = "Depth by cell", is = "Dýpi eftir reitum"),
     depthM = list(en = "Depth (m)", is = "Dýpi (m)"),
     infoDepth = list(
@@ -141,12 +163,16 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     )
   ))
   dem <- file.path(dir, "depth.mbtiles")
-  ramb::rb_map(
-    ramb::rb_map_group("depth", "gDepth", c(if (file.exists(dem)) list(relief_layer(dem)), list(depth))),
-    ramb::rb_map_group("ref", "gRef", list(names_layer)),
+  has_dem <- file.exists(dem)
+  groups <- c(
+    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem)), list(depth)))),
+    if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem)))),
+    list(ramb::rb_map_group("ref", "gRef", list(names_layer)))
+  )
+  do.call(ramb::rb_map, c(groups, list(
     title = "title", view = list(center = center, zoom = zoom), texts = texts,
     languages = unlist(spec$languages), language = lang, locales = lapply(spec$locales, unlist), palette = "deep"
-  )
+  )))
 }
 
 })
