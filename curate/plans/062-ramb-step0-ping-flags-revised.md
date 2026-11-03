@@ -165,7 +165,11 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    88, 61, 18), out-and-backs under 25 kn included (29, 95, 79, 100 %; every other method 0), and keeps the truly fast
    stretches; it takes more fishing pings than `forward` at 1 min (1.46 % against 0.12 %) and coarser. From the legs
    alone (`local_track`) it fails where copies interleave. Neither catches the reload's copies. A candidate for step
-   4c in place of the turn features; its parameters are a first guess.
+   4c in place of the turn features; its parameters are a first guess. **Tuned 2026-11-03** on half the vessels, judged
+   on the other: thresholds hardly change the fishing cost, and the first guess stays. The cost is the interleaved
+   copies: with them taken out first (by the truth, the best a copy rule could do), the rule flags 0.02 % of fishing
+   pings at 10 s and 0.10 % at 1 min and catches every far-off fault left. So the order for step 4: copies first
+   (4a: within a feed, at a shift, the second feeds), then the speed rule against recorded speed.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
