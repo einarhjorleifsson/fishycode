@@ -170,6 +170,12 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    copies: with them taken out first (by the truth, the best a copy rule could do), the rule flags 0.02 % of fishing
    pings at 10 s and 0.10 % at 1 min and catches every far-off fault left. So the order for step 4: copies first
    (4a: within a feed, at a shift, the second feeds), then the speed rule against recorded speed.
+   **A copy rule prototyped, 2026-11-03** (`scripts/copy_rule.R` there): one report twice, told by position, recorded
+   speed and course. On the planted faults, copies first and then the speed rule catch the most at every rate (1 km
+   or more off: 100, 99.5, 88.5, 62 %) and flag 0.07, 0.22, 1.32 and 3.5 % of good fishing pings. On the reload it
+   finds the pairs but picks the live ping as the copy (8 of 1,802 copies caught, 2,612 live pings flagged): the
+   track around is no witness where copies are many. Ask (new): may the copy rule take a feed's receipt time, where
+   it has one, to decide which of two is the copy? It is the reload's answer key.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
