@@ -5,7 +5,7 @@
 contours finer with the zoom; its `checklist.md` passed after each, with the effort map's MapLibre items, M1 after
 step 2 only). Step 3's contours show at every zoom, their depth labels only from zoom 11 (checklist K2: below it
 MapLibre places no label along `maplibre-contour`'s lines, cause not found). Point 7(b), contours by depth as well
-as by zoom, built the same day. Step 2's two asks were left to the page: the cut
+as by zoom, and point 8's first part, the depth's colours following the view, built the same day. Step 2's two asks were left to the page: the cut
 offered at 10, 20 and 50 m, none by default, drawn clear or grey; the bands at the charts' isobaths (10, 20, 50, 100,
 200, 500, 1,000, 2,000 m); written 2026-11-03 at the
 maintainer's request, the day the relief was built (TODO 185, ramb 8aa21b4, fishycode 71bc39d). **see:** TODO 185, plan 046 (the viewer), `products/bathymetry_map/`, ramb `R/map.R` and
@@ -24,7 +24,9 @@ place; what is **assumed** is marked so. Steps 1-3 are built; the rest is not.
 - there are different ways to shade: look at rayshader, for code ideas, not to use the package (the maintainer, the
   same day);
 - depth and the relief's exposition are two different things; the relief (shading, angles, intensity, alpha, ...)
-  should be updated live in the page, as the depth by cell already is (the maintainer, the same day).
+  should be updated live in the page, as the depth by cell already is (the maintainer, the same day);
+- what is best should not be judged by contours, nor by two areas, alone: moving from one area to another, what is
+  used should update itself, as a choice of the reader's, following the view or not (the maintainer, the same day).
 
 ## Measured
 
@@ -127,6 +129,14 @@ the same addresses, which the browser has cached.
    contour intervals by depth as well as by zoom: the lines made at a fine interval and kept by the style's filter
    (every 10 m above 50 m, every 25 m to 200 m, coarser below, by zoom), since `maplibre-contour` takes intervals by
    zoom only; (c) step 5's texture shading first, as the shading meant for low relief.
+8. **The map adapts to the view**, the reader choosing to follow it or not (the maintainer, 2026-11-03). Built: the
+   depth's colours (ramb 2026.11.03.4's `colour$fit` and `auto`): "follow the view", on by default, fits the floor and
+   cap to the 2nd and 98th percentiles of the depths in view each time the map settles (`depth_fit()`, 15-49 ms on the
+   50 m grid); a floor or cap set by hand stops it, and a link that names them opens with it off. To follow: (a) the
+   depth's colours in equal shares of the view, as the depth by cell's "equal" stretch, from the view's quantiles (in
+   Faxaflói, fitted to 3.4-83 m, most of the bay's area lies in the ramp's dark end); (b) contour levels from the
+   view's depths, nice values near its quantiles, so the lines fall where the area is; (c) the shading's strength
+   from the view's relief; each a choice of following or not, as the colours'.
 
 ## Steps
 
@@ -144,7 +154,9 @@ is shared.
 6. Named views and defaults (6).
 7. Faxaflói's three (7): contours by depth (built 2026-11-03: the lines made at each zoom's common spacing, one layer
    per zoom range keeping those at their depth's, the charts' isobaths always; Faxaflói has lines at zoom 8), then
-   "Fit to view" for the depth's colours (5 takes (c)).
+   "Fit to view" for the depth's colours (built the same day, and following the view, 8) (5 takes (c)).
+8. The map following the view (8): the colours built 2026-11-03; then equal shares, contour levels and the shading's
+   strength.
 
 ## Asks (the maintainer)
 

@@ -28,8 +28,14 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 - **D6** Shallower than 10, 20 or 50 m: those depths drawn clear, or grey with "drawn grey"; none shows every depth.
 - **D7** Opacity: the depth's colour alone fades, the shading stays; its value in % beside it.
 - **D8** Each depth control in the address (`depth_pal`, `depth_lo`, `depth_hi`, `depth_scale`, `depth_mode`,
-  `depth_cut`, `depth_cutas`, `depth_cop`), only when away from its default; a link opens with them; a value outside a
-  control's range or options is left out.
+  `depth_cut`, `depth_cutas`, `depth_cop`, `depth_auto`), only when away from its default; a link opens with them; a
+  value outside a control's range or options is left out.
+- **D9** "Fit to view": the floor and cap at the 2nd and 98th percentiles of the depths in view (all of Iceland at
+  zoom 6 about 10-1,700 m; Faxaflói at zoom 9 about 3-83 m); over land, "no depths in view to fit to".
+- **D10** "Follow the view", on when the map opens: the floor and cap fitted when the map is drawn and each time it
+  settles after a move, silently where the view has no depth; setting the floor or cap by hand unticks it and keeps
+  them through moves; ticking it again fits at once. While it follows, the address leaves out `depth_lo` and
+  `depth_hi`; a link that names them opens with it unticked (`depth_auto=0`).
 
 ## Contours (plan 063 step 3)
 

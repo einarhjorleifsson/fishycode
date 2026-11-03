@@ -68,14 +68,32 @@ depth_tile <- function(con, dir, z, x, y, px = 1) {
 
 # The depth from the elevation tiles, coloured in the page: palette, floor and cap, scale, ramp or bands (the charts'
 # isobaths), a cut of the shallow end and opacity in the reader's hands (plan 063 step 2); the depths under 10-20 m are
-# poorly covered (the maintainer), so a cut is offered, none by default
-depth_layer <- function(file) {
+# poorly covered (the maintainer), so a cut is offered, none by default. The floor and cap follow the view (plan 063
+# point 7(a)): the 2nd and 98th percentiles of the depths in it, as the depth by cell's are fitted
+depth_layer <- function(file, con, dir) {
   ramb::rb_map_layer(
     "depth", "dem", label = "lyrDepthColour", info = "infoDepthColour", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
     style = list(list(id = "depth-colour", type = "color-relief")),
-    colour = list(palette = "deep", floor = 10, cap = 2000)
+    colour = list(palette = "deep", floor = 10, cap = 2000, fit = depth_fit(con, dir))
   )
+}
+
+# A view's floor and cap: the 2nd and 98th percentiles of grid.R's cells in its box, from the finest level that holds
+# at most 4 million of them there (a base cell is 0.001 by 0.0005 degrees; a cell of level 40 holds 16 of them, of 200,
+# 400), to two figures; NULL where the box has no sea
+depth_fit <- function(con, dir) {
+  function(west, south, east, north) {
+    base <- (east - west) / 0.001 * (north - south) / 0.0005
+    level <- if (base <= 4e6) 10 else if (base / 16 <= 4e6) 40 else 200
+    q <- DBI::dbGetQuery(con, sprintf(
+      "SELECT quantile_cont(depth, 0.02) AS lo, quantile_cont(depth, 0.98) AS hi FROM read_parquet('%s')
+       WHERE ix >= %.0f AND ix < %.0f AND iy >= %.0f AND iy < %.0f",
+      level_file(dir, level), floor(west * 1e4), ceiling(east * 1e4), floor(south * 1e4), ceiling(north * 1e4)))
+    if (!nrow(q) || is.na(q$lo)) return(NULL)
+    lo <- max(1, signif(q$lo, 2))
+    c(lo, min(10000, max(lo * 1.5, signif(q$hi, 2))))
+  }
 }
 
 # Depth contours made in the browser from the same tiles (plan 063 step 3), spaced by depth as well as by zoom (its
@@ -185,6 +203,12 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     cCut = list(en = "Shallower than", is = "Grynnra en"), cNone = list(en = "none", is = "ekkert"),
     cCutAs = list(en = "drawn", is = "sýnt"), cClear = list(en = "clear", is = "gegnsætt"),
     cGrey = list(en = "grey", is = "grátt"),
+    cFitTip = list(en = "Floor and cap at the 2nd and 98th percentiles of the depths in view",
+                   is = "Lágmark og hámark við 2. og 98. hundraðshluta dýpis í sýn"),
+    cFitNone = list(en = "no depths in view to fit to", is = "ekkert dýpi í sýn að laga að"),
+    cAuto = list(en = "follow the view", is = "fylgja sýn"),
+    cAutoTip = list(en = "Fit the floor and cap to the view each time it settles; setting either by hand stops it",
+                    is = "Laga lágmark og hámark að sýn í hvert sinn sem kortið stöðvast; handstilling stöðvar það"),
     lyrContours = list(en = "Contours", is = "Dýptarlínur"),
     contourMinor = list(en = "contour", is = "dýptarlína"),
     contourMajor = list(en = "a chart isobath, with its depth", is = "jafndýpislína korta, með dýpi"),
@@ -211,7 +235,8 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   dem <- file.path(dir, "depth.mbtiles")
   has_dem <- file.exists(dem)
   groups <- c(
-    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem), contour_layer(dem)), list(depth)))),
+    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem)),
+                                                  list(depth)))),
     if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem)))),
     list(ramb::rb_map_group("ref", "gRef", list(names_layer)))
   )
