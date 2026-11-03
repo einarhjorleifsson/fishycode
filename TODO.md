@@ -1532,14 +1532,14 @@ What is left, in order: plan 062's "To finish" (2026-11-03).
 **check:** plan 062 executed or parked, with a decision record.
 
 ## 185. A detailed depth grid, Olex 50 m with GEBCO: place names, a topography map, ramb's base map
-**status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — the
-grid's making and terms of use, from Julian Burgos · **see:** `$FISHYDATA/raw/external/bathymetry/README-provenance.txt`,
+**status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — how
+the grid was made, from Julian Burgos · **see:** `$FISHYDATA/raw/external/bathymetry/README-provenance.txt`,
 plan 045 ask a and step 3, plan 046, TODO 144, https://github.com/einarhjorleifsson/mbtiles
 
 Source: `Olex_50mBM_GEBCO_interp.tif`, shared by Julian Burgos (MFRI) by email, 09-10-2025 as the email gives it; in
-`raw/external/bathymetry/` since 2026-11-03, its header read into the note beside it (EPSG:5325, 50 m, 4.2 GB). How it
-was made and its terms of use are unknown: Olex soundings are commercial, so nothing made from it is published before
-the terms are known. GEBCO 2026 stays in `raw/aux/`.
+`raw/external/bathymetry/` since 2026-11-03, its header read into the note beside it (EPSG:5325, 50 m, 4.2 GB). Julian
+approves its use and publishing what is made from it (the maintainer, 2026-11-03); how it was made is not yet known.
+GEBCO 2026 stays in `raw/aux/`.
 
 Its uses (the maintainer, 2026-11-03):
 - outlining place names from the seabed: a candidate answer to plan 045 ask a, MFRI's depth model in place of GEBCO
@@ -1548,5 +1548,5 @@ Its uses (the maintainer, 2026-11-03):
   aid to approximate place names;
 - a base map for ramb's interactive maps (`rb_map_*()`, plan 046).
 
-**check:** the grid's making and terms in its provenance note, and each use a plan of its own or dropped by the
+**check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.
