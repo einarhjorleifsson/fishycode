@@ -22,7 +22,10 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 - **D2** The depth's checkbox: off hides the colour and leaves the shading; on brings it back.
 - **D3** Floor and cap: the colours span between them as the sliders move, their depths beside them and at the bar's
   ends; a floor set above the cap is read the other way round.
-- **D4** Scale: log or linear respaces the colours between floor and cap.
+- **D4** Scale: log or linear respaces the colours between floor and cap; "equal shares" places them at the view's
+  quantiles, each colour an equal share of the depths in view (Faxaflói at zoom 9: its 25-52 m half of the bay spread
+  over the palette's middle); following the view the quantiles follow it, not following they stay as last fitted; a
+  link with `depth_scale=equal` and a floor and cap fetches the view's quantiles and keeps the floor and cap.
 - **D5** Colours as bands: one flat colour per band at the charts' isobaths (10, 20, 50, 100, 200, 500, 1,000,
   2,000 m), the legend a swatch per band with its depths; a ramp again brings the bar back.
 - **D6** Shallower than 10, 20 or 50 m: those depths drawn clear, or grey with "drawn grey"; none shows every depth.

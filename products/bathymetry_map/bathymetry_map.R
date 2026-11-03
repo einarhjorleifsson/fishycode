@@ -79,20 +79,23 @@ depth_layer <- function(file, con, dir) {
   )
 }
 
-# A view's floor and cap: the 2nd and 98th percentiles of grid.R's cells in its box, from the finest level that holds
-# at most 4 million of them there (a base cell is 0.001 by 0.0005 degrees; a cell of level 40 holds 16 of them, of 200,
-# 400), to two figures; NULL where the box has no sea
+# A view's floor and cap, the 2nd and 98th percentiles of grid.R's cells in its box, to two figures, and 25 quantiles
+# from the one to the other, for colours in equal shares (plan 063 point 8(a)); from the finest level that holds at most
+# 4 million cells there (a base cell is 0.001 by 0.0005 degrees; a cell of level 40 holds 16 of them, of 200, 400);
+# NULL where the box has no sea
 depth_fit <- function(con, dir) {
+  probs <- seq(0.02, 0.98, length.out = 25)
   function(west, south, east, north) {
     base <- (east - west) / 0.001 * (north - south) / 0.0005
     level <- if (base <= 4e6) 10 else if (base / 16 <= 4e6) 40 else 200
     q <- DBI::dbGetQuery(con, sprintf(
-      "SELECT quantile_cont(depth, 0.02) AS lo, quantile_cont(depth, 0.98) AS hi FROM read_parquet('%s')
+      "SELECT quantile_cont(depth, [%s]) AS q FROM read_parquet('%s')
        WHERE ix >= %.0f AND ix < %.0f AND iy >= %.0f AND iy < %.0f",
-      level_file(dir, level), floor(west * 1e4), ceiling(east * 1e4), floor(south * 1e4), ceiling(north * 1e4)))
-    if (!nrow(q) || is.na(q$lo)) return(NULL)
-    lo <- max(1, signif(q$lo, 2))
-    c(lo, min(10000, max(lo * 1.5, signif(q$hi, 2))))
+      paste(probs, collapse = ", "), level_file(dir, level),
+      floor(west * 1e4), ceiling(east * 1e4), floor(south * 1e4), ceiling(north * 1e4)))$q[[1]]
+    if (is.null(q) || anyNA(q)) return(NULL)
+    lo <- max(1, signif(q[1], 2))
+    list(floor = lo, cap = min(10000, max(lo * 1.5, signif(q[length(q)], 2))), quantiles = round(q, 1))
   }
 }
 
@@ -206,7 +209,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     cFitTip = list(en = "Floor and cap at the 2nd and 98th percentiles of the depths in view",
                    is = "Lágmark og hámark við 2. og 98. hundraðshluta dýpis í sýn"),
     cFitNone = list(en = "no depths in view to fit to", is = "ekkert dýpi í sýn að laga að"),
-    cAuto = list(en = "follow the view", is = "fylgja sýn"),
+    cAuto = list(en = "follow the view", is = "fylgja sýn"), cEqual = list(en = "equal shares", is = "jafnir hlutar"),
     cAutoTip = list(en = "Fit the floor and cap to the view each time it settles; setting either by hand stops it",
                     is = "Laga lágmark og hámark að sýn í hvert sinn sem kortið stöðvast; handstilling stöðvar það"),
     lyrContours = list(en = "Contours", is = "Dýptarlínur"),
