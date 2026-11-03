@@ -149,14 +149,37 @@ contour_layer <- function(file, con, dir) {
 }
 
 # The relief from the same tiles, shaded in the page, its method, light, intensity, opacity and colours in the
-# reader's hands (plan 063 step 1)
-relief_layer <- function(file) {
+# reader's hands (plan 063 step 1); the intensity following the view (point 8(c))
+relief_layer <- function(file, con, dir) {
   ramb::rb_map_layer(
     "relief", "dem", label = "lyrRelief", info = "infoRelief", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
     style = list(list(id = "relief-shade", type = "hillshade")),
-    shade = list(exaggeration = 0.6, shadow = "#1b2a3a")
+    shade = list(exaggeration = 0.6, shadow = "#1b2a3a", fit = relief_fit(con, dir))
   )
+}
+
+# A view's shading intensity: 2 over the 90th percentile of the seabed's slope in it, in degrees, kept between 0.3 and
+# 1, so a gentle view is shaded harder. The slope from each cell's step to its east and north neighbours, on the level
+# depth_fit() reads, about a cell a screen pixel. Measured 2026-11-03 (p90): the shelf edge west at zoom 8 1.1 degrees,
+# Faxaflói at 9 1.5, all of Iceland at 6 1.8, the deep south at 7 2.4, Ísafjarðardjúp at 9 4.1; 20-60 ms
+relief_fit <- function(con, dir) {
+  function(west, south, east, north) {
+    base <- (east - west) / 0.001 * (north - south) / 0.0005
+    level <- if (base <= 4e6) 10 else if (base / 16 <= 4e6) 40 else 200
+    dx <- level * 1e-4 * 111320 * cos((south + north) / 2 * pi / 180)
+    dy <- level / 2 * 1e-4 * 110574
+    p90 <- DBI::dbGetQuery(con, sprintf(
+      "WITH c AS (SELECT ix, iy, depth FROM read_parquet('%s')
+                  WHERE ix >= %.0f AND ix < %.0f AND iy >= %.0f AND iy < %.0f)
+       SELECT quantile_cont(degrees(atan(sqrt(pow((e.depth - c.depth) / %f, 2) + pow((n.depth - c.depth) / %f, 2)))), 0.9)
+              AS p90
+       FROM c JOIN c e ON e.ix = c.ix + %d AND e.iy = c.iy JOIN c n ON n.ix = c.ix AND n.iy = c.iy + %d",
+      level_file(dir, level), floor(west * 1e4), ceiling(east * 1e4), floor(south * 1e4), ceiling(north * 1e4),
+      dx, dy, level, level / 2))$p90
+    if (!length(p90) || is.na(p90) || p90 <= 0) return(NULL)
+    list(exaggeration = min(1, max(0.3, 2 / p90)))
+  }
 }
 
 # The map: the depth and the relief, the depth by cell, the place names as the effort map draws them, with its texts
@@ -214,6 +237,9 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     cFitNone = list(en = "no depths in view to fit to", is = "ekkert dýpi í sýn að laga að"),
     cAuto = list(en = "follow the view", is = "fylgja sýn"),
     kAuto = list(en = "levels from the view", is = "dýpi lína eftir sýn"),
+    sAuto = list(en = "intensity from the view", is = "styrkur eftir sýn"),
+    sAutoTip = list(en = "The intensity fitted to the view's relief each time the map settles: stronger where the seabed is gentle; setting it by hand stops it",
+                    is = "Styrkur lagaður að landslagi sýnar í hvert sinn sem kortið stöðvast: meiri þar sem botninn er aflíðandi; handstilling stöðvar það"),
     kAutoTip = list(en = "About a dozen lines at round depths near the view's quantiles, so they fall where the area is; unticked, the fixed spacing by depth and zoom",
                     is = "Um tólf línur á sléttu dýpi nærri hundraðshlutum sýnar, þar sem flatarmálið er; án hennar föst bil eftir dýpi og aðdrætti"), cEqual = list(en = "equal shares", is = "jafnir hlutar"),
     cAutoTip = list(en = "Fit the floor and cap to the view each time it settles; setting either by hand stops it",
@@ -246,7 +272,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   groups <- c(
     list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem, con, dir)),
                                                   list(depth)))),
-    if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem)))),
+    if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem, con, dir)))),
     list(ramb::rb_map_group("ref", "gRef", list(names_layer)))
   )
   do.call(ramb::rb_map, c(groups, list(

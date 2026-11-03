@@ -5,8 +5,8 @@
 contours finer with the zoom; its `checklist.md` passed after each, with the effort map's MapLibre items, M1 after
 step 2 only). Step 3's contours show at every zoom, their depth labels only from zoom 11 (checklist K2: below it
 MapLibre places no label along `maplibre-contour`'s lines, cause not found). Point 7(b), contours by depth as well
-as by zoom, and point 8's first part, the depth's colours following the view, in equal shares if chosen, and the contour levels from the view, built the
-same day. Step 2's two asks were left to the page: the cut
+as by zoom, and point 8, the depth's colours following the view, in equal shares if chosen, the contour levels and the shading's
+intensity from the view, built the same day. Step 2's two asks were left to the page: the cut
 offered at 10, 20 and 50 m, none by default, drawn clear or grey; the bands at the charts' isobaths (10, 20, 50, 100,
 200, 500, 1,000, 2,000 m); written 2026-11-03 at the
 maintainer's request, the day the relief was built (TODO 185, ramb 8aa21b4, fishycode 71bc39d). **see:** TODO 185, plan 046 (the viewer), `products/bathymetry_map/`, ramb `R/map.R` and
@@ -141,7 +141,13 @@ the same addresses, which the browser has cached.
    2026.11.03.5): the fit gives 25 quantiles of the depths in view, and the scale "equal shares" places the palette at
    them. (b) built the same day (ramb 2026.11.03.6): "levels from the view", every other quantile rounded to a step
    that makes some 40 of the view's range, the lines made at that step; over all of Iceland its deep levels are round
-   only to 20 m (940, 1,240, 1,660), where a step by the local spacing would give 1,000, 1,250, 1,500.
+   only to 20 m (940, 1,240, 1,660), where a step by the local spacing would give 1,000, 1,250, 1,500. (c) built the
+   same day (ramb 2026.11.03.7's `shade$fit` and `auto`): "intensity from the view", 2 over the 90th percentile of the
+   seabed's slope in view, in degrees, kept between 0.3 and 1 (`relief_fit()`, 20-60 ms; p90 1.1° on the shelf edge
+   west at zoom 8, 1.5° in Faxaflói at 9, 1.8° over Iceland at 6, 2.4° in the deep south at 7, 4.1° in
+   Ísafjarðardjúp at 9, so intensity 1.00 in Faxaflói and 0.50 in Ísafjarðardjúp). At full strength Faxaflói's
+   banks get their texture, and the source's east-west stripes show more with them: step 5's texture shading may
+   serve low relief better.
 
 ## Steps
 
@@ -160,8 +166,8 @@ is shared.
 7. Faxaflói's three (7): contours by depth (built 2026-11-03: the lines made at each zoom's common spacing, one layer
    per zoom range keeping those at their depth's, the charts' isobaths always; Faxaflói has lines at zoom 8), then
    "Fit to view" for the depth's colours (built the same day, and following the view, 8) (5 takes (c)).
-8. The map following the view (8): the colours, their equal shares and the contour levels built 2026-11-03; then the
-   shading's strength.
+8. The map following the view (8): the colours, their equal shares, the contour levels and the shading's strength,
+   built 2026-11-03.
 
 ## Asks (the maintainer)
 

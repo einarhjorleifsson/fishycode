@@ -70,6 +70,11 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 - **R8** Each relief control in the address (`relief_method`, `relief_dir`, `relief_alt`, `relief_ex`, `relief_op`,
   `relief_shadow`, `relief_light`), only when away from its default; a link opens with them; a value outside a
   control's range or options is left out.
+- **R9** "Intensity from the view", on when the map opens (plan 063 point 8(c)): the intensity 2 over the 90th
+  percentile of the seabed's slope in view, between 0.3 and 1, each time the map settles (Faxaflói at zoom 9 1.00,
+  Ísafjarðardjúp at zoom 9 0.50), kept as it was over land; setting it by hand unticks it and keeps the value through
+  moves (`relief_ex=0.8&relief_auto=0` in the address); ticking it again refits at once, and the address leaves out
+  `relief_ex`.
 
 ## Depth by cell
 
