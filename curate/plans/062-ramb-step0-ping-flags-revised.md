@@ -159,6 +159,13 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    2017-2018, the lazy route grows linearly (`clean` 0.7 s per million pings, 69 s and 6.6 GB at 100 M), the same
    flags as the data frame's, at 1.25 times its time and 0.82 times its memory at 10 M; `forward` takes 0.68 of
    `clean`'s time, `sda` 0.81. Time does not choose between the methods; the scores do.
+   **A prototype, 2026-11-03** (the maintainer: leave turns out, speed alone as distance and time step): a hand-set rule
+   judging each leg against the vessel's local speed, from its recorded speed over ground (`local_sog`), with no
+   heading. On the planted faults it catches the most at every rate (1 km or more off: 99, 97, 82, 41 %; `clean` 98,
+   88, 61, 18), out-and-backs under 25 kn included (29, 95, 79, 100 %; every other method 0), and keeps the truly fast
+   stretches; it takes more fishing pings than `forward` at 1 min (1.46 % against 0.12 %) and coarser. From the legs
+   alone (`local_track`) it fails where copies interleave. Neither catches the reload's copies. A candidate for step
+   4c in place of the turn features; its parameters are a first guess.
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
