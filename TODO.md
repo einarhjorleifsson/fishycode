@@ -1548,9 +1548,10 @@ Its uses (the maintainer, 2026-11-03):
   aid to approximate place names;
 - a base map for ramb's interactive maps (`rb_map_*()`, plan 046).
 
-A first view, 2026-11-03: `products/bathymetry_map/`, the grid averaged into 0.002-degree cells (`grid.R`) as a grid
-layer of ramb's viewer with the gazetteer's names over it (`bathymetry_map()`, port 8798). ramb's viewer serves no
-raster tiles, so shading and contours wait for the topography tiles.
+A first view, 2026-11-03: `products/bathymetry_map/`, the grid averaged into cells of 0.001 by 0.0005 degrees, about
+47 by 56 m at 65 N, with coarser copies (`grid.R`), as a grid layer of ramb's viewer with the gazetteer's names over it
+(`bathymetry_map()`, port 8798); cells of 2 pixels, so the base shows from zoom 10. ramb's viewer serves no raster
+tiles, so shading and contours wait for the topography tiles.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.

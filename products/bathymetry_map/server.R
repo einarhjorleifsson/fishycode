@@ -15,6 +15,6 @@ e <- .bathymetry_map
 con <- DBI::dbConnect(duckdb::duckdb())
 invisible(DBI::dbExecute(con, "LOAD spatial"))
 
-ramb::rb_map_serve(e$bathymetry_map_build(con, e$grid), port = PORT, open = FALSE)
-cat(sprintf("bathymetry map on http://127.0.0.1:%d, reading %s\n", PORT, e$grid))
+ramb::rb_map_serve(e$bathymetry_map_build(con, e$dir), port = PORT, open = FALSE)
+cat(sprintf("bathymetry map on http://127.0.0.1:%d, reading %s\n", PORT, e$dir))
 repeat httpuv::service(100)

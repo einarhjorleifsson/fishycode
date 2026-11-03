@@ -2,8 +2,8 @@
 # page, with the gazetteer's place names over it. bathymetry_map() opens it in RStudio's Viewer (or a browser).
 # TODO 185, plan 046.
 #
-# Input:  $FISHYDATA/products/bathymetry_map/grid.parquet and grid_010.parquet (grid.R); the effort map's tile bounds,
-#         cell-size option and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer);
+# Input:  $FISHYDATA/products/bathymetry_map/grid_0010/, grid_0040.parquet and grid_0200.parquet (grid.R); the
+#         effort map's tile bounds, cell-size option and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer);
 #         ramb's map viewer (rb_map_*(), ramb >= 2026.10.24.1)
 # Output: bathymetry_map(), bathymetry_map_stop(); bathymetry_map_build() and depth_tile() in .bathymetry_map, for
 #         server.R; a server on 127.0.0.1:<port> in this R session, in the background
@@ -20,32 +20,37 @@ source("R/paths.R")
 source("R/write_curated.R")    # read_curated_sf(), for the place names
 
 .bathymetry_map <- new.env()
-.bathymetry_map$grid <- fd_path("products", "bathymetry_map", "grid.parquet")
+.bathymetry_map$dir <- fd_path("products", "bathymetry_map")
 # the effort map's tile bounds and place names, sourced rather than copied
 sys.source("products/effort_map/tiles.R", envir = .bathymetry_map)
 sys.source("products/effort_map/map.R", envir = .bathymetry_map)
 
 local(envir = .bathymetry_map, {
 
-# The cell side in thousandths of a degree: about `px` screen pixels (a tile is 512), never below the grid's 2; a
-# multiple of 10 reads the 0.01-degree copy, whose cells hold their 0.002-degree cells whole
-DEPTH_K <- c(2, 4, 10, 20, 50, 100, 200, 500, 1000)
+# The cell's longitude side in ten-thousandths of a degree, its latitude side half that: about `px` screen pixels
+# wide (a tile is 512), never below the base's 10. It is read from the coarsest level whose cells it holds whole
+DEPTH_K <- c(10, 20, 40, 80, 200, 400, 800, 2000)
+LEVELS <- c(10, 40, 200)
+level_file <- function(dir, l) {
+  if (l == 10) file.path(dir, "grid_0010", "*.parquet") else file.path(dir, sprintf("grid_%04d.parquet", l))
+}
 
 # One vector tile, layer `cells`: per cell its mean depth, in metres below sea level
-depth_tile <- function(con, grid, z, x, y, px = 1) {
-  target <- 360 / 2^z / 512 * px * 1000
-  k <- max(DEPTH_K[DEPTH_K <= max(target, 2)])
-  if (k %% 10 == 0) grid <- sub("[.]parquet$", "_010.parquet", grid)
+depth_tile <- function(con, dir, z, x, y, px = 1) {
+  target <- 360 / 2^z / 512 * px * 1e4
+  k <- max(DEPTH_K[DEPTH_K <= max(target, 10)])
+  ky <- k / 2
+  file <- level_file(dir, max(LEVELS[k %% LEVELS == 0]))
   b <- tile_bounds(z, x, y)
-  ix0 <- floor(b[["lon0"]] * 1000 / k) * k - k; ix1 <- ceiling(b[["lon1"]] * 1000 / k) * k + k
-  iy0 <- floor(b[["lat0"]] * 1000 / k) * k - k; iy1 <- ceiling(b[["lat1"]] * 1000 / k) * k + k
+  ix0 <- floor(b[["lon0"]] * 1e4 / k) * k - k; ix1 <- ceiling(b[["lon1"]] * 1e4 / k) * k + k
+  iy0 <- floor(b[["lat0"]] * 1e4 / ky) * ky - ky; iy1 <- ceiling(b[["lat1"]] * 1e4 / ky) * ky + ky
   sql <- sprintf("
     WITH c AS (
-      SELECT floor(ix / %1$d) AS cx, floor(iy / %1$d) AS cy, sum(depth * n) / sum(n) AS depth
+      SELECT floor(ix / %1$d) AS cx, floor(iy / %10$d) AS cy, sum(depth * n) / sum(n) AS depth
       FROM read_parquet('%2$s') WHERE ix >= %3$d AND ix < %4$d AND iy >= %5$d AND iy < %6$d GROUP BY ALL),
     g AS (
-      SELECT depth, cx * %1$d / 1000.0 AS lon0, (cx + 1) * %1$d / 1000.0 AS lon1,
-                    cy * %1$d / 1000.0 AS lat0, (cy + 1) * %1$d / 1000.0 AS lat1 FROM c),
+      SELECT depth, cx * %1$d / 1e4 AS lon0, (cx + 1) * %1$d / 1e4 AS lon1,
+                    cy * %10$d / 1e4 AS lat0, (cy + 1) * %10$d / 1e4 AS lat1 FROM c),
     m AS (
       SELECT depth,
              ST_MakeEnvelope(radians(lon0) * 6378137, ln(tan(pi() / 4 + radians(lat0) / 2)) * 6378137,
@@ -53,25 +58,27 @@ depth_tile <- function(con, grid, z, x, y, px = 1) {
       FROM g)
     SELECT ST_AsMVT({'geometry': ST_AsMVTGeom(env, ST_Extent(ST_TileEnvelope(%7$d, %8$d, %9$d)), 4096, 64, true),
                      'depth': CAST(depth AS FLOAT)}, 'cells', 4096) AS tile
-    FROM m", k, grid, ix0, ix1, iy0, iy1, z, x, y)
+    FROM m", k, file, ix0, ix1, iy0, iy1, z, x, y, ky)
   r <- DBI::dbGetQuery(con, sql)$tile[[1]]
   if (is.null(r)) raw(0) else r
 }
 
 # The map: the depth as a grid layer, the place names as the effort map draws them, with its texts
-bathymetry_map_build <- function(con, grid, center = c(-19, 65), zoom = 6, lang = "en",
+bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
                                  json = file.path("products", "effort_map", "map.json")) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
   px <- pick(pick(spec$layers, "effort")$filters, "px")
+  # cells of 2 pixels: at 1, a tile at zoom 6-9 is 13-14 MB (2026-11-03); the base's cells still show from zoom 10
+  px$default <- "2"
   names_layer <- do.call(ramb::rb_map_layer, c(list(id = "names"), nm[setdiff(names(nm), "id")],
                                                list(data = place_names_geojson)))
   depth <- ramb::rb_map_layer(
     "depth", "grid", label = "lyrDepth", info = "infoDepth", visible = TRUE, source_layer = "cells",
     minzoom = 2, maxzoom = 14, opacity = 100,
-    tiles = function(z, x, y, p) depth_tile(con, grid, z, x, y, px = if (is.null(p$px)) 1 else as.numeric(p$px)),
-    meta = function() list(v = as.numeric(file.mtime(grid))),
+    tiles = function(z, x, y, p) depth_tile(con, dir, z, x, y, px = as.numeric(if (is.null(p$px)) px$default else p$px)),
+    meta = function() list(v = max(as.numeric(file.mtime(Sys.glob(vapply(LEVELS, level_file, "", dir = dir)))))),
     filters = list(px, list(id = "metric", type = "metric", label = "metric")),
     metrics = list(list(field = "depth", label = "depthM")),
     popup = list(fields = list(list(field = "depth", label = "depthM", format = "value")))
@@ -83,9 +90,11 @@ bathymetry_map_build <- function(con, grid, center = c(-19, 65), zoom = 6, lang 
     depthM = list(en = "Depth (m)", is = "Dýpi (m)"),
     infoDepth = list(
       en = paste("Olex's 50 m depth grid with GEBCO filling the gaps, shared by Julian Burgos (MFRI), averaged into",
-                 "cells of 0.002 degrees, coarser at far zooms; metres below sea level. A first view (TODO 185)."),
+                 "cells of 0.001 by 0.0005 degrees (about 47 by 56 m at 65 N), coarser at far zooms; metres below sea",
+                 "level. A first view (TODO 185)."),
       is = paste("50 m dýptargrunnur Olex, GEBCO í eyðum, frá Julian Burgos (Hafrannsóknastofnun), meðaltal í reitum",
-                 "0,002 gráður, grófari fjær; metrar undir sjávarmáli. Fyrsta sýn (TODO 185).")
+                 "0,001 x 0,0005 gráður (um 47 x 56 m á 65° N), grófari fjær; metrar undir sjávarmáli. Fyrsta sýn",
+                 "(TODO 185).")
     )
   ))
   ramb::rb_map(
@@ -109,7 +118,7 @@ bathymetry_map <- function(center = c(-19, 65), zoom = 6, palette = "deep", base
   e <- .bathymetry_map
   e$con <- DBI::dbConnect(duckdb::duckdb())
   invisible(DBI::dbExecute(e$con, "LOAD spatial"))
-  m <- e$bathymetry_map_build(e$con, e$grid, center = center, zoom = zoom, lang = lang)
+  m <- e$bathymetry_map_build(e$con, e$dir, center = center, zoom = zoom, lang = lang)
   q <- list(palette = palette, base = if (base != "light") base)
   url <- ramb::rb_map_serve(m, port = port, open = viewer, query = Filter(Negate(is.null), q))
   e$port <- port
