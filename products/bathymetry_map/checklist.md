@@ -12,8 +12,8 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 
 - **L1** `/` opens at lon -19, lat 65, zoom 6; the status line reads `zoom 6.0` once the map is idle; no error in the
   console.
-- **L2** The layers, bottom up: the depth's colour, the relief's shading, the depth by cell (off), the base map's
-  labels, the place names.
+- **L2** The layers, bottom up: the depth's colour, the relief's shading, the depth by cell (off), the contours, the
+  base map's labels, the place names.
 - **L3** A relief tile is a WebP image, answered in a few ms (`curl` on `/tiles/relief/{z}/{x}/{y}.webp`).
 
 ## Depth (plan 063 step 2)
@@ -30,6 +30,16 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 - **D8** Each depth control in the address (`depth_pal`, `depth_lo`, `depth_hi`, `depth_scale`, `depth_mode`,
   `depth_cut`, `depth_cutas`, `depth_cop`), only when away from its default; a link opens with them; a value outside a
   control's range or options is left out.
+
+## Contours (plan 063 step 3)
+
+- **K1** On when the map opens: lines from zoom 5, finer as the zoom deepens (500 m to zoom 6, 200 m at 7, 100 m at 8,
+  50 m at 9, 20 m at 10, 10 m from 11), made in the browser by `maplibre-contour`; no line along the coast.
+- **K2** Every major line heavier; from zoom 11 labelled along the line with its depth ("50 m"), 13 px with no halo;
+  the legend under the layer. Below zoom 11 MapLibre places no label along these lines, filtered or not, at any
+  `text-max-angle`, overlap allowed or not (2026-11-03; cause not found; point placement puts one label at a line's
+  start; the plugin's `overzoom` gave 0-2): the lines themselves show at every zoom.
+- **K3** The contours' checkbox: off hides the lines and their labels; on brings them back; `contours=0` in the address.
 
 ## Relief (plan 063 step 1)
 
@@ -57,8 +67,8 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 
 ## Base map and language
 
-- **B1** Each of the six base maps: the depth and relief under its labels, the names over them; the relief's settings
-  kept through a change.
+- **B1** Each of the six base maps: the depth, relief and contours under its labels, the names over them; the depth's
+  and the relief's settings kept through a change.
 - **S6** IS | EN switches the relief's controls with the rest.
 
 ## From R

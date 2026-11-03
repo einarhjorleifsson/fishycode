@@ -7,7 +7,7 @@
 #         grid_0010/, grid_0040.parquet and grid_0200.parquet (grid.R); the effort map's tile bounds, cell-size option
 #         and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer); ramb's map viewer
 #         (rb_map_*(), and for the depth and relief its dem layer, rb_map_tiles_mbtiles() and their controls,
-#         `colour` and `shade`: ramb >= 2026.11.03.2)
+#         `colour` and `shade`, and its contour layer: ramb >= 2026.11.03.3)
 # Output: bathymetry_map(), bathymetry_map_stop(); bathymetry_map_build() and depth_tile() in .bathymetry_map, for
 #         server.R; a server on 127.0.0.1:<port> in this R session, in the background
 #
@@ -78,6 +78,31 @@ depth_layer <- function(file) {
   )
 }
 
+# Depth contours made in the browser from the same tiles, finer as the zoom deepens (plan 063 step 3): the minor and
+# the major interval from each zoom on, the major lines labelled with their depth; sea level (land, no value) left out
+contour_layer <- function(file) {
+  no_land <- list("!=", list("get", "ele"), 0)
+  ramb::rb_map_layer(
+    "contours", "contour", label = "lyrContours", info = "infoContours", visible = TRUE,
+    tiles = ramb::rb_map_tiles_mbtiles(file),
+    contours = list(multiplier = -1, thresholds = list("5" = c(500, 1000), "7" = c(200, 1000), "8" = c(100, 500),
+                                                       "9" = c(50, 200), "10" = c(20, 100), "11" = c(10, 50))),
+    style = list(
+      list(id = "contours-line", type = "line", "source-layer" = "contours", filter = no_land,
+           paint = list("line-color" = "rgba(27,42,58,0.55)",
+                        "line-width" = list("match", list("get", "level"), 1, 1.2, 0.5))),
+      list(id = "contours-label", type = "symbol", "source-layer" = "contours",
+           filter = list("all", list(">", list("get", "level"), 0), no_land),
+           layout = list("symbol-placement" = "line", "text-size" = 13,
+                         "text-field" = list("concat", list("number-format", list("get", "ele"),
+                                                            structure(list(), names = character())), " m")),
+           paint = list("text-color" = "#1b2a3a"))
+    ),
+    legend = list(list(swatch = list(fill = "rgba(27,42,58,0.55)"), label = "contourMinor"),
+                  list(swatch = list(fill = "#1b2a3a"), label = "contourMajor"))
+  )
+}
+
 # The relief from the same tiles, shaded in the page, its method, light, intensity, opacity and colours in the
 # reader's hands (plan 063 step 1)
 relief_layer <- function(file) {
@@ -139,6 +164,17 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     cCut = list(en = "Shallower than", is = "Grynnra en"), cNone = list(en = "none", is = "ekkert"),
     cCutAs = list(en = "drawn", is = "sýnt"), cClear = list(en = "clear", is = "gegnsætt"),
     cGrey = list(en = "grey", is = "grátt"),
+    lyrContours = list(en = "Contours", is = "Dýptarlínur"),
+    contourMinor = list(en = "contour", is = "dýptarlína"),
+    contourMajor = list(en = "major, with its depth", is = "aðallína, með dýpi"),
+    infoContours = list(
+      en = paste("Depth contours made in the browser from the same elevation tiles (maplibre-contour), finer as you",
+                 "zoom in: every 500 m to zoom 6, 200 m at 7, 100 m at 8, 50 m at 9, 20 m at 10, 10 m from 11; the",
+                 "major lines labelled. Plan 063."),
+      is = paste("Dýptarlínur reiknaðar í vafranum úr sömu hæðarflísum (maplibre-contour), þéttari við aðdrátt: á",
+                 "500 m að aðdrætti 6, 200 m í 7, 100 m í 8, 50 m í 9, 20 m í 10, 10 m frá 11; aðallínur merktar.",
+                 "Áætlun 063.")
+    ),
     lyrDepth = list(en = "Depth by cell", is = "Dýpi eftir reitum"),
     depthM = list(en = "Depth (m)", is = "Dýpi (m)"),
     infoDepth = list(
@@ -153,7 +189,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   dem <- file.path(dir, "depth.mbtiles")
   has_dem <- file.exists(dem)
   groups <- c(
-    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem)), list(depth)))),
+    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem), contour_layer(dem)), list(depth)))),
     if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem)))),
     list(ramb::rb_map_group("ref", "gRef", list(names_layer)))
   )

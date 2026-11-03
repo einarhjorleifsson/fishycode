@@ -1,15 +1,17 @@
 # 063 — the bathymetry map's relief in the reader's hands: colours, depth range and bands, opacity, contours and shading
 
-**status:** partly built — steps 1 and 2 built 2026-11-03 (ramb 2026.11.03.1's `shade` and 2026.11.03.2's `colour`;
-the bathymetry map's depth and relief as two layers, each with its live controls; its `checklist.md` passed after
-each, with the effort map's MapLibre items, M1 after step 2 only). Step 2's two asks were left to the page: the cut
+**status:** partly built — steps 1-3 built 2026-11-03 (ramb 2026.11.03.1's `shade`, 2026.11.03.2's `colour`,
+2026.11.03.3's contour layer; the bathymetry map's depth and relief as two layers, each with its live controls, and
+contours finer with the zoom; its `checklist.md` passed after each, with the effort map's MapLibre items, M1 after
+step 2 only). Step 3's contours show at every zoom, their depth labels only from zoom 11 (checklist K2: below it
+MapLibre places no label along `maplibre-contour`'s lines, cause not found). Step 2's two asks were left to the page: the cut
 offered at 10, 20 and 50 m, none by default, drawn clear or grey; the bands at the charts' isobaths (10, 20, 50, 100,
 200, 500, 1,000, 2,000 m); written 2026-11-03 at the
 maintainer's request, the day the relief was built (TODO 185, ramb 8aa21b4, fishycode 71bc39d). **see:** TODO 185, plan 046 (the viewer), `products/bathymetry_map/`, ramb `R/map.R` and
 `inst/map/index.html`
 
 Drafted with AI assistance (Claude) on 2026-11-03. What is **measured** was run or read that day, as said in each
-place; what is **assumed** is marked so. Steps 1 and 2 are built; the rest is not.
+place; what is **assumed** is marked so. Steps 1-3 are built; the rest is not.
 
 ## What the maintainer asked (2026-11-03)
 
@@ -67,11 +69,21 @@ place; what is **assumed** is marked so. Steps 1 and 2 are built; the rest is no
   stripes show in the deeper water north-west of the Westfjords (66.8 N, 25.5 W): likely in the source grid, its
   survey lines or their interpolation; not checked.
 
+- **Faxaflói, seen in the browser after step 3** (2026-11-03, at the maintainer's word that Ísafjarðardjúp's steep,
+  deep relief flatters every setting): a broad bay of 20-100 m.
+  - The default colours (log, 10 to 2,000 m) put the bay in a thin slice of the ramp, one pale green; a cap of 200 m
+    brings out its banks and troughs, but would flatten the deep: the range wants to follow the view.
+  - Contours by zoom alone miss it: at zoom 8 (100 m) the bay has none, at zoom 10 (20 m) only the 20, 40 and 60 m
+    lines.
+  - The shading shows little of its low relief, even at full intensity with several lights, while the source's
+    east-west stripes show plainly.
+
 ## Assumed
 
 - That the shallow depths are poorly covered (the maintainer's knowledge: Olex soundings sparse near shore, GEBCO
   interpolated there). Not measured: the grid carries no flag of which source a cell came from.
-- That `maplibre-contour` works with MapLibre 5.24 and with Terrarium WebP tiles from ramb's server: untested.
+- That `maplibre-contour` works with MapLibre 5.24 and with Terrarium WebP tiles from ramb's server: measured at step
+  3, it does (512 px tiles too); its line labels show only from zoom 11.
 - What rayshader's shadings do, from its documentation, not run: `sphere_shade` (colour from slope and aspect through a
   texture), `lamb_shade` (Lambertian), `ray_shade` (shadows cast by the terrain), `ambient_shade` (ambient occlusion),
   `texture_shade` (Leland Brown's texture shading), `height_shade` (colour by height). The first two MapLibre's
@@ -106,8 +118,14 @@ the same addresses, which the browser has cached.
    compared by eye with MapLibre's five methods on the same views; shade tiles (black with alpha, multiplied) for the
    whole sea only if one is clearly better, its cost in time and disk measured on the two areas first. Such a shade
    would be a layer of the Relief group, with its own opacity. Cast shadows and the sphere's colours last, if at all.
-6. **What works across areas**: a few named views as address links (a fjord, the shelf, the shelf edge, a ridge, the
-   deep), on which the maintainer compares settings; the chosen defaults written into `bathymetry_map.R`.
+6. **What works across areas**: a few named views as address links (a steep fjord, Ísafjarðardjúp; a broad shallow
+   bay, Faxaflói; the shelf edge; a ridge; the deep), on which the maintainer compares settings; the chosen defaults
+   written into `bathymetry_map.R`.
+7. **From Faxaflói** (proposed 2026-11-03): (a) "Fit to view" for the depth's colours, as the depth by cell has: the
+   floor and cap from the depths in view, which the server reads from `grid.R`'s cells for the view's box; (b)
+   contour intervals by depth as well as by zoom: the lines made at a fine interval and kept by the style's filter
+   (every 10 m above 50 m, every 25 m to 200 m, coarser below, by zoom), since `maplibre-contour` takes intervals by
+   zoom only; (c) step 5's texture shading first, as the shading meant for low relief.
 
 ## Steps
 
@@ -120,8 +138,10 @@ is shared.
 2. The depth layer's live controls (2).
 3. Contours (3).
 4. Depth planes in one colour (4).
-5. Relief computed outside the browser (5): the trial on two areas in `$FISHYDATA/archive/`, read-only on the grid.
+5. Relief computed outside the browser (5): the trial on two areas, Ísafjarðardjúp and Faxaflói, in
+   `$FISHYDATA/archive/`, read-only on the grid.
 6. Named views and defaults (6).
+7. Faxaflói's three (7): contours by depth, then "Fit to view" for the depth's colours (5 takes (c)).
 
 ## Asks (the maintainer)
 
