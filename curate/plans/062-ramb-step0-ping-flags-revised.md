@@ -174,8 +174,10 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    speed and course. On the planted faults, copies first and then the speed rule catch the most at every rate (1 km
    or more off: 100, 99.5, 88.5, 62 %) and flag 0.07, 0.22, 1.32 and 3.5 % of good fishing pings. On the reload it
    finds the pairs but picks the live ping as the copy (8 of 1,802 copies caught, 2,612 live pings flagged): the
-   track around is no witness where copies are many. Ask (new): may the copy rule take a feed's receipt time, where
-   it has one, to decide which of two is the copy? It is the reload's answer key.
+   track around is no witness where copies are many. The maintainer, 2026-11-03: not the receipt time. A second
+   feed as the witness instead, the pairs of a run decided together: on the reload no second feed exists (STK alone
+   those days), and it catches 4 of the 1,802. With one feed and no receipt, which of two identical reports is the
+   copy is not in the data. Ask (new): an unresolved repeat kept with both its pings labelled, or both left out?
 4. **The ramb release**, after steps 1-3:
    - (a) `rb_flag_ping_duplicate()` labels copies within a feed (exact, and near: within `max_dt_s` and the noise
      floor) and same-second ties. A tie keeps the position that fits the track (its legs to the neighbours, its
