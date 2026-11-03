@@ -213,6 +213,29 @@ h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/s
    fingerprints before and after, every difference explained in a decision.
 6. **The book.** `flow_pings.qmd` describes step 0 as built (plan 061); the scores go in an appendix chapter.
 
+## To finish (written 2026-11-03, to pick up later)
+
+Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062-step3/` (`local_speed.R`,
+`copy_rule.R`, scored by `score_planted.R` and `score_reload.R`, each a minute or a few).
+
+1. **Cheap, no maintainer needed** (minutes each, in that study):
+   - (a) the cascade's cost on the planted faults: `copy_rule.R` with the misfit's vote at 0 (witness only, else
+     `repeat`), rerun `score_planted.R`, compare `copies_local_sog` before and after;
+   - (b) TODO 88 brought up to date from step 3 (the reload's scores; `local_sog` is its candidate "each leg against
+     its reported speed"; fast vessels kept; the gap anchor; coarse rates), for the maintainer to close or not;
+   - (c) the 5 good fishing pings `local_sog` flags of its own (`clear_flags.R`'s way);
+   - (d) test (i)'s 643 astd rows whose reproduced speed differs.
+2. **The maintainer's:** asks 1-4 (Claude's recommendations, 2026-11-03: the union's ellipsoid formula on both routes;
+   no derived speed on a flagged ping, neighbours skip bad positions and keep copies; export `clean` and `forward`,
+   `sequential`, `fwdbwd` and `sda` alone internal after a release of warning, the recorded-speed rule opt-in; the
+   zone check later); the cascade, build or not; push ramb 69b0332 and 378bf21, then install from GitHub.
+3. **The ramb release (step 4)**, after 2: 4g (one pass per batch, rows written whole, a total order); 4a's copies
+   within a feed (same report within 2 s, same recorded speed and course) and the `repeat` label for undecided
+   pairs; 4b as asks 1-2 say; 4d as ask 3 says, with the recorded-speed rule as an opt-in method; 4e; `R/whack.R`'s
+   comment on `curate/checks/sda_tune.R` pointed at decision 067; version, NEWS, tests, `test-etiquette.R`.
+4. **fishycode follows (step 5)**, then **the book (step 6**, plan 061's C3, C5, C7), then a decision record, and
+   TODO 184 deleted.
+
 ## What would change the plan
 
 - Test (i) finds no kept ping touched: the speed still moves to ramb (decided d), but the rebuild is not urgent.

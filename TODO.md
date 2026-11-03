@@ -1523,4 +1523,6 @@ planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 202
 (2026-11-02 on the planted faults and the reload, `$FISHYDATA/archive/2026-11-02-plan062-step3/`: no speed rule
 catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb release; fishycode follows; the book.
 
+What is left, in order: plan 062's "To finish" (2026-11-03).
+
 **check:** plan 062 executed or parked, with a decision record.
