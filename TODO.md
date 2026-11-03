@@ -1095,7 +1095,7 @@ late), and which are positions the impossible-ping filter keeps. The effort is s
 done with a position jump inside a window; the counts above are rerun after it.
 
 ## 144. Place names: the next round (plan 045), the originals, the hazard class
-**status:** open · **needs: maintainer** — plan 043 ask a; plan 045 ask a (where MFRI's depth model lives); whether
+**status:** open · **needs: maintainer** — plan 043 ask a; plan 045 ask a (where MFRI's depth model lives; a candidate in TODO 185); whether
 the effort lanes go flow-side · **see:** `curate/plans/045-place-names-review-model-boundaries.md`,
 `curate/plans/044-place-name-gazetteer.md` §2, §4-§6, `curate/plans/043-place-names-staged.md` §6, decisions 221-226,
 272
@@ -1530,3 +1530,23 @@ catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb 
 What is left, in order: plan 062's "To finish" (2026-11-03).
 
 **check:** plan 062 executed or parked, with a decision record.
+
+## 185. A detailed depth grid, Olex 50 m with GEBCO: place names, a topography map, ramb's base map
+**status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — the
+grid's making and terms of use, from Julian Burgos · **see:** `$FISHYDATA/raw/external/bathymetry/README-provenance.txt`,
+plan 045 ask a and step 3, plan 046, TODO 144, https://github.com/einarhjorleifsson/mbtiles
+
+Source: `Olex_50mBM_GEBCO_interp.tif`, shared by Julian Burgos (MFRI) by email, 09-10-2025 as the email gives it; in
+`raw/external/bathymetry/` since 2026-11-03, its header read into the note beside it (EPSG:5325, 50 m, 4.2 GB). How it
+was made and its terms of use are unknown: Olex soundings are commercial, so nothing made from it is published before
+the terms are known. GEBCO 2026 stays in `raw/aux/`.
+
+Its uses (the maintainer, 2026-11-03):
+- outlining place names from the seabed: a candidate answer to plan 045 ask a, MFRI's depth model in place of GEBCO
+  for the gazetteer's depth, slope and BPI;
+- the old topography project, `einarhjorleifsson/mbtiles` (PNG tiles), redone by a more modern method; that map too an
+  aid to approximate place names;
+- a base map for ramb's interactive maps (`rb_map_*()`, plan 046).
+
+**check:** the grid's making and terms in its provenance note, and each use a plan of its own or dropped by the
+maintainer.
