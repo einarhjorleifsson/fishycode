@@ -108,7 +108,7 @@ CONTOUR_BANDS <- c(0, 50, 200, 1000)
 CONTOUR_SPACING <- list("5" = c(25, 50, 100, 500), "7" = c(10, 50, 100, 500), "8" = c(10, 20, 100, 200),
                         "9" = c(10, 20, 50, 200), "10" = c(5, 10, 50, 100), "11" = c(5, 10, 20, 100))
 ISOBATHS <- c(10, 20, 50, 100, 200, 500, 1000, 1500, 2000, 2500, 3000)
-contour_layer <- function(file) {
+contour_layer <- function(file, con, dir) {
   ele <- list("get", "ele")
   gcd <- function(a, b) if (b == 0) a else gcd(b, a %% b)
   major <- list("in", ele, list("literal", as.list(ISOBATHS)))
@@ -138,7 +138,10 @@ contour_layer <- function(file) {
   ramb::rb_map_layer(
     "contours", "contour", label = "lyrContours", info = "infoContours", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
-    contours = list(multiplier = -1, thresholds = lapply(CONTOUR_SPACING, function(s) Reduce(gcd, s))),
+    # following the view (plan 063 point 8(b)): levels from the view's quantiles, the same fit as the colours'; the
+    # spacing above when the reader unticks it
+    contours = list(multiplier = -1, thresholds = lapply(CONTOUR_SPACING, function(s) Reduce(gcd, s)),
+                    fit = depth_fit(con, dir)),
     style = style,
     legend = list(list(swatch = list(fill = "rgba(27,42,58,0.55)"), label = "contourMinor"),
                   list(swatch = list(fill = "#1b2a3a"), label = "contourMajor"))
@@ -209,7 +212,10 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     cFitTip = list(en = "Floor and cap at the 2nd and 98th percentiles of the depths in view",
                    is = "Lágmark og hámark við 2. og 98. hundraðshluta dýpis í sýn"),
     cFitNone = list(en = "no depths in view to fit to", is = "ekkert dýpi í sýn að laga að"),
-    cAuto = list(en = "follow the view", is = "fylgja sýn"), cEqual = list(en = "equal shares", is = "jafnir hlutar"),
+    cAuto = list(en = "follow the view", is = "fylgja sýn"),
+    kAuto = list(en = "levels from the view", is = "dýpi lína eftir sýn"),
+    kAutoTip = list(en = "About a dozen lines at round depths near the view's quantiles, so they fall where the area is; unticked, the fixed spacing by depth and zoom",
+                    is = "Um tólf línur á sléttu dýpi nærri hundraðshlutum sýnar, þar sem flatarmálið er; án hennar föst bil eftir dýpi og aðdrætti"), cEqual = list(en = "equal shares", is = "jafnir hlutar"),
     cAutoTip = list(en = "Fit the floor and cap to the view each time it settles; setting either by hand stops it",
                     is = "Laga lágmark og hámark að sýn í hvert sinn sem kortið stöðvast; handstilling stöðvar það"),
     lyrContours = list(en = "Contours", is = "Dýptarlínur"),
@@ -238,7 +244,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   dem <- file.path(dir, "depth.mbtiles")
   has_dem <- file.exists(dem)
   groups <- c(
-    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem)),
+    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem, con, dir)),
                                                   list(depth)))),
     if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem)))),
     list(ramb::rb_map_group("ref", "gRef", list(names_layer)))

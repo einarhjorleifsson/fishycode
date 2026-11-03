@@ -5,7 +5,8 @@
 contours finer with the zoom; its `checklist.md` passed after each, with the effort map's MapLibre items, M1 after
 step 2 only). Step 3's contours show at every zoom, their depth labels only from zoom 11 (checklist K2: below it
 MapLibre places no label along `maplibre-contour`'s lines, cause not found). Point 7(b), contours by depth as well
-as by zoom, and point 8's first part, the depth's colours following the view, in equal shares if chosen, built the same day. Step 2's two asks were left to the page: the cut
+as by zoom, and point 8's first part, the depth's colours following the view, in equal shares if chosen, and the contour levels from the view, built the
+same day. Step 2's two asks were left to the page: the cut
 offered at 10, 20 and 50 m, none by default, drawn clear or grey; the bands at the charts' isobaths (10, 20, 50, 100,
 200, 500, 1,000, 2,000 m); written 2026-11-03 at the
 maintainer's request, the day the relief was built (TODO 185, ramb 8aa21b4, fishycode 71bc39d). **see:** TODO 185, plan 046 (the viewer), `products/bathymetry_map/`, ramb `R/map.R` and
@@ -138,7 +139,9 @@ the same addresses, which the browser has cached.
    view's depths, nice values near its quantiles, so the lines fall where the area is; (c) the shading's strength
    from the view's relief; each a choice of following or not, as the colours'. (a) built the same day (ramb
    2026.11.03.5): the fit gives 25 quantiles of the depths in view, and the scale "equal shares" places the palette at
-   them.
+   them. (b) built the same day (ramb 2026.11.03.6): "levels from the view", every other quantile rounded to a step
+   that makes some 40 of the view's range, the lines made at that step; over all of Iceland its deep levels are round
+   only to 20 m (940, 1,240, 1,660), where a step by the local spacing would give 1,000, 1,250, 1,500.
 
 ## Steps
 
@@ -157,7 +160,7 @@ is shared.
 7. Faxaflói's three (7): contours by depth (built 2026-11-03: the lines made at each zoom's common spacing, one layer
    per zoom range keeping those at their depth's, the charts' isobaths always; Faxaflói has lines at zoom 8), then
    "Fit to view" for the depth's colours (built the same day, and following the view, 8) (5 takes (c)).
-8. The map following the view (8): the colours and their equal shares built 2026-11-03; then contour levels and the
+8. The map following the view (8): the colours, their equal shares and the contour levels built 2026-11-03; then the
    shading's strength.
 
 ## Asks (the maintainer)

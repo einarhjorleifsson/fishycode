@@ -52,6 +52,11 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
   `text-max-angle`, overlap allowed or not (2026-11-03; cause not found; point placement puts one label at a line's
   start; the plugin's `overzoom` gave 0-2): the lines themselves show at every zoom.
 - **K3** The contours' checkbox: off hides the lines and their labels; on brings them back; `contours=0` in the address.
+- **K4** "Levels from the view", on when the map opens: about a dozen lines at round depths near the view's quantiles,
+  made at a step of 1, 2 or 5 times a power of ten that makes some 40 of its range, refitted each time the map
+  settles (Faxaflói at zoom 9: 4, 18, 26, 30 ... 72, 84 m on a 2 m step; all of Iceland at zoom 6: 60 ... 1,660 m on
+  20 m); unticked, K1's spacing by depth and zoom, and `contours_auto=0` in the address; ticked again, the view's
+  levels.
 
 ## Relief (plan 063 step 1)
 
