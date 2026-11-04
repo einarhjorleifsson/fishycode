@@ -56,7 +56,7 @@ test (`spThres <- 20` is set in `0_global.R` and read nowhere, from a search of 
 drop pings over 25 kn; GFW's guide flags them, as ramb does. None has a speed rule ramb lacks. Course limits are a
 wish (EM4SSF D1.1 §8.1, GFW p. 73).
 
-## Decided (the maintainer, 2026-11-02; i-l on 2026-11-04)
+## Decided (the maintainer, 2026-11-02; i-m on 2026-11-04)
 
 a. **"Forks" means ramb's branches.** All three are merged: they and their worktrees are deleted (step 0).
 b. **The whack study scripts are archived**, shims and all (step 0).
@@ -78,6 +78,9 @@ k. **The method list (ask 3):** `clean` and `forward` exported, and the rule aga
    method. `sequential`, `fwdbwd` and `sda` on its own are withdrawn after one release of warning; sda's engine stays
    inside `clean`.
 l. **The zone check (ask 4):** later, not in this revision.
+m. **The cascade is built in this release** (the maintainer, 2026-11-04: "Build it"): copies decided by a second
+   feed, else both kept as repeats; impossible positions judged against the vessel's recorded speed, else by the
+   fixed limit; each flag with its basis.
 
 ## Asks
 
@@ -272,7 +275,8 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
    no derived speed on a flagged ping, neighbours skip bad positions and keep copies; export `clean` and `forward`,
    `sequential`, `fwdbwd` and `sda` alone internal after a release of warning, the recorded-speed rule opt-in; the
    zone check later); the cascade, build or not; push ramb 69b0332 and 378bf21, then install from GitHub.
-   **Asks 1-4 answered 2026-11-04**, all as recommended (Decided i-l). Left: the cascade, and the push.
+   **Asks 1-4 answered 2026-11-04**, all as recommended (Decided i-l); the cascade the same day, built (Decided m).
+   Left: the push.
 3. **The ramb release (step 4)**, after 2: 4g (one pass per batch, rows written whole, a total order); 4a's copies
    within a feed (same report within 2 s, same recorded speed and course) and the `repeat` label for undecided
    pairs; 4b as asks 1-2 say; 4d as ask 3 says, with the recorded-speed rule as an opt-in method; 4e; `R/whack.R`'s
