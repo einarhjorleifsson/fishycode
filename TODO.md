@@ -1510,8 +1510,8 @@ store's 9,582 placeholders. Next: plan 061's step 1 measures, then the sections 
 **check:** every case C1-C7 in `flow_pings.qmd`, or dropped with a reason in plan 061; the chapter renders cleanly.
 
 ## 184. ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence (plan 062)
-**status:** open · **needs: maintainer** — plan 062's asks 1-4 · **see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`,
-TODO 88, plan 061, decisions 067, 069, 234 and 275
+**status:** open · **needs: maintainer** — plan 062's cascade, build or not; pushing ramb 69b0332 and 378bf21 ·
+**see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`, TODO 88, plan 061, decisions 067, 069, 234, 275 and 276
 
 The maintainer, 2026-11-02: ramb's branches and the functions that detect whacky pings, against the ICES data call,
 EM4SSF and iapesca. Read from the code by Claude (AI), nothing run: ramb's three side branches are all in `main`; the
@@ -1527,7 +1527,7 @@ planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 202
 catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb release; fishycode follows; the book.
 
 What is left, in order: plan 062's "To finish" (2026-11-03); its items 0 and 1 done 2026-11-04 (decision 276, the
-four checks), item 2 is the maintainer's.
+four checks); of item 2, asks 1-4 answered 2026-11-04, all as recommended.
 
 **check:** plan 062 executed or parked, with a decision record.
 

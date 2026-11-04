@@ -56,7 +56,7 @@ test (`spThres <- 20` is set in `0_global.R` and read nowhere, from a search of 
 drop pings over 25 kn; GFW's guide flags them, as ramb does. None has a speed rule ramb lacks. Course limits are a
 wish (EM4SSF D1.1 §8.1, GFW p. 73).
 
-## Decided (the maintainer, 2026-11-02)
+## Decided (the maintainer, 2026-11-02; i-l on 2026-11-04)
 
 a. **"Forks" means ramb's branches.** All three are merged: they and their worktrees are deleted (step 0).
 b. **The whack study scripts are archived**, shims and all (step 0).
@@ -68,8 +68,20 @@ f. **A same-second tie is decided on evidence**: the position that fits the trac
 g. **Direction counts in the whack detection** ("should ideally take into account directional changes, etc.").
 h. **The book describes the best approach**, and EM4SSF's comparisons go to `~/stasi/em4ssf/me_code`
    (decision 275).
+i. **The speed's distance (ask 1):** the union's ellipsoid formula, on the local radii, on both routes of the new
+   speed, with a test that ties it to Karney's geodesic.
+j. **No derived speed on a flagged ping (ask 2):** NA with basis `none`. The neighbours' speeds skip a bad position
+   (invalid, impossible, tie) and keep a copy (`duplicate`) in its stream. A recorded speed is kept as it is. Open for
+   step 4b: the ask predates the `repeat` label. A repeat pair is undecided, so the rule neither skips it nor keeps it
+   as a copy.
+k. **The method list (ask 3):** `clean` and `forward` exported, and the rule against recorded speed as an opt-in
+   method. `sequential`, `fwdbwd` and `sda` on its own are withdrawn after one release of warning; sda's engine stays
+   inside `clean`.
+l. **The zone check (ask 4):** later, not in this revision.
 
 ## Asks
+
+**Answered 2026-11-04**, all four as recommended: Decided i-l.
 
 1. **The speed's distance** (the maintainer: not sure). Proposed: the union's ellipsoid formula on both routes of the
    new function, so a data frame and a lazy table give the same numbers, as ramb's compatibility policy wants, with a
@@ -260,6 +272,7 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
    no derived speed on a flagged ping, neighbours skip bad positions and keep copies; export `clean` and `forward`,
    `sequential`, `fwdbwd` and `sda` alone internal after a release of warning, the recorded-speed rule opt-in; the
    zone check later); the cascade, build or not; push ramb 69b0332 and 378bf21, then install from GitHub.
+   **Asks 1-4 answered 2026-11-04**, all as recommended (Decided i-l). Left: the cascade, and the push.
 3. **The ramb release (step 4)**, after 2: 4g (one pass per batch, rows written whole, a total order); 4a's copies
    within a feed (same report within 2 s, same recorded speed and course) and the `repeat` label for undecided
    pairs; 4b as asks 1-2 say; 4d as ask 3 says, with the recorded-speed rule as an opt-in method; 4e; `R/whack.R`'s
