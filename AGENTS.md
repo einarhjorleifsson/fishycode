@@ -262,7 +262,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   ramb's local `main` and installed from it on 2026-11-04 (`git archive` with the LFS files), not pushed: under an
   older ramb neither map starts. The depth and effort map's bundle (`products/depth_effort_map/bundle.R`) needs
   `rb_map_bundle(grids = )` of 2026.11.04.3 (decision 278; e27a478, committed to ramb's local `main` and installed
-  from it on 2026-11-04, not pushed). Plan
+  from it on 2026-11-04, not pushed). The time panel under the map, `rb_map_time()` of 2026.11.04.4 (plan 064,
+  decision 279; 10c5355, committed to ramb's local `main` and installed from it on 2026-11-04, not pushed), is used by
+  EM4SSF's case-study viewer in `me_code`, nothing in fishycode. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's
