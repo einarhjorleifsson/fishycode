@@ -1563,8 +1563,9 @@ from an empty library, 2026-11-03), copied by hand to a share. Open: the rest of
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.
 
-## 186. Every name on the nautical charts, read off their images, inshore and offshore
-**status:** parked (maintainer, 2026-11-04: six rounds read, then a hold, to proceed later) · **see:**
+## 186. Every name on the nautical charts, read off their images, inshore and offshore (incomplete)
+**status:** parked, incomplete: 1,200 of 1,929 windows read (maintainer, 2026-11-04: "We have not completed the mining
+the sea-charts - but lets put things on hold here") · **see:**
 `$FISHYDATA/archive/2026-11-04-chart-names-coast/README.md` (its "Resuming"), the pilot
 `$FISHYDATA/archive/2026-11-02-chart-names-pilot/README.md`, plan 044, TODO 144
 
