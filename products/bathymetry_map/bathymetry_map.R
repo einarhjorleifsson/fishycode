@@ -15,6 +15,7 @@
 #   source("products/bathymetry_map/bathymetry_map.R")
 #   bathymetry_map()
 #   bathymetry_map(center = c(-22.5, 66.2), zoom = 9, palette = "etopo1_bathy", lang = "is")
+#   bathymetry_map(layers = list(<rb_map_layer>), texts = list(<its labels>))   # a study's layer beside the names
 #   bathymetry_map_stop()
 #
 # The server answers while the console is idle: a map waits while R runs something else.
@@ -182,9 +183,11 @@ relief_fit <- function(con, dir) {
   }
 }
 
-# The map: the depth and the relief, the depth by cell, the place names as the effort map draws them, with its texts
+# The map: the depth and the relief, the depth by cell, the place names as the effort map draws them, with its texts;
+# `extra` layers join the names in the reference group, `extra_texts` their labels (TODO 186: the chart names read)
 bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
-                                 json = file.path("products", "effort_map", "map.json")) {
+                                 json = file.path("products", "effort_map", "map.json"), extra = list(),
+                                 extra_texts = list()) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
@@ -266,14 +269,14 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
                  "0,001 x 0,0005 gráður (um 47 x 56 m á 65° N), grófari fjær; metrar undir sjávarmáli. Fyrsta sýn",
                  "(TODO 185).")
     )
-  ))
+  ), extra_texts)
   dem <- file.path(dir, "depth.mbtiles")
   has_dem <- file.exists(dem)
   groups <- c(
     list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem, con, dir)),
                                                   list(depth)))),
     if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem, con, dir)))),
-    list(ramb::rb_map_group("ref", "gRef", list(names_layer)))
+    list(ramb::rb_map_group("ref", "gRef", c(list(names_layer), extra)))
   )
   do.call(ramb::rb_map, c(groups, list(
     title = "title", view = list(center = center, zoom = zoom), texts = texts,
@@ -284,7 +287,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
 })
 
 bathymetry_map <- function(center = c(-19, 65), zoom = 6, palette = "deep", base = "light", lang = c("en", "is"),
-                           port = 8798, viewer = TRUE) {
+                           port = 8798, viewer = TRUE, layers = list(), texts = list()) {
   lang <- match.arg(lang)
   palettes <- vapply(ramb::rb_map_palettes(), `[[`, "", "id")
   bases <- vapply(ramb::rb_map_basemaps(), `[[`, "", "id")
@@ -294,7 +297,8 @@ bathymetry_map <- function(center = c(-19, 65), zoom = 6, palette = "deep", base
   e <- .bathymetry_map
   e$con <- DBI::dbConnect(duckdb::duckdb())
   invisible(DBI::dbExecute(e$con, "LOAD spatial"))
-  m <- e$bathymetry_map_build(e$con, e$dir, center = center, zoom = zoom, lang = lang)
+  m <- e$bathymetry_map_build(e$con, e$dir, center = center, zoom = zoom, lang = lang, extra = layers,
+                              extra_texts = texts)
   q <- list(palette = palette, base = if (base != "light") base)
   url <- ramb::rb_map_serve(m, port = port, open = viewer, query = Filter(Negate(is.null), q))
   e$port <- port

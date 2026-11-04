@@ -1562,3 +1562,29 @@ from an empty library, 2026-11-03), copied by hand to a share. Open: the rest of
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.
+
+## 186. Every name on the nautical charts, read off their images, inshore and offshore
+**status:** parked (maintainer, 2026-11-04: six rounds read, then a hold, to proceed later) · **see:**
+`$FISHYDATA/archive/2026-11-04-chart-names-coast/README.md` (its "Resuming"), the pilot
+`$FISHYDATA/archive/2026-11-02-chart-names-pilot/README.md`, plan 044, TODO 144
+
+The charts of Sjómælingar Íslands (Landhelgisgæslan) are served only as images (`SEA_CHART` in
+`products/place_names/api.R`), so their names are read off them by a model. The maintainer, 2026-11-03/04: the images
+are read, Landhelgisgæslan is not asked for the names as data; every name printed, inshore (the harbour plans) as well
+as offshore, land names too, each with its kind (sea, light, land); as is, a person's check later; few tokens once the
+method is set. No API account, so Sonnet 5.5 subagents read in a Claude Code session, chosen over Haiku on the pilot's
+windows (1 of its 122 sea names and lights missed against 8).
+
+Done 2026-11-04 (Claude's reading, unchecked): all 2,642 windows fetched, 1,929 kept; 1,200 read in six rounds
+(every chart but the harbour plans, and 208 of the 255 at 1:40k), each round about 1-2 points of the weekly limit and 6-9
+of the 5-hour; merged into 5,211 names, 1,487 of them sea names (501 new to the gazetteer, 280 known only elsewhere), 153
+lights and 3,571 land names. They show on the bathymetry map as a layer of their own (the study's `06_map.R`, through
+`bathymetry_map(layers = , texts = )`). Positions are the label's cell, coarse where only an overview chart prints a name.
+
+Open: the 729 windows left, all harbour plans (about 4 rounds; nothing is read twice, `04_todo.R` lists what is
+left); a light's symbol cell in place of its label's, if wanted; the names into the gazetteer as a source flagged
+unchecked; a person's check (the parked check page in the pilot's folder, `check/` and `scripts/04_check.R`). Internal
+only until the licence is known: the charts are Landhelgisgæslan's work, served for viewing.
+
+**check:** every kept window answered and in `rounds.csv`; every name placed with its scale and zoom; the gazetteer
+carrying the chart names as a source flagged unchecked, or the item dropped by the maintainer.
