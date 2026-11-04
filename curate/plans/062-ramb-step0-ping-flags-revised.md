@@ -2,8 +2,9 @@
 
 **status:** partly built — steps 0-3 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
 measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 done (the scores on the planted faults and the reload, and the timing,
-`$FISHYDATA/archive/2026-11-02-plan062-step3/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
-that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
+`$FISHYDATA/archive/2026-11-02-plan062-step3/`); step 4 built 2026-11-04 on ramb's branch `step0-cascade`
+(2026.11.04, not merged, not pushed; `$FISHYDATA/archive/2026-11-04-plan062-step4/`). Written 2026-11-02 at the
+maintainer's request ("Ramb revisions": the forks, and the functions that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273, 275 and 276, `curate/ais_ping_clean.R`,
 `curate/ais_ping_union.R`, ramb `R/ping.R`, `R/whack.R`, `src/whack_sda.cpp`, `~/stasi/em4ssf/me_code`
@@ -223,6 +224,47 @@ m. **The cascade is built in this release** (the maintainer, 2026-11-04: "Build 
      and writes the batch's rows whole, so a lazy table costs no more than production's own batching; and a total
      order (every column, as production sorts), so that which of two copies is flagged does not depend on the route.
    - A version, NEWS, tests, and a case for each new function in `test-etiquette.R`.
+
+   **Built 2026-11-04** (by Claude, at the maintainer's "Build it", Decided m; not checked by a person): ramb
+   2026.11.04 on the branch `step0-cascade` (82b1818, 80da122), not merged into ramb's `main` and not pushed;
+   checked and scored in `$FISHYDATA/archive/2026-11-04-plan062-step4/`.
+   - (a) `rb_flag_ping_duplicate(speed = , course = )`: one report twice, told by position (20 m), recorded speed
+     (exactly) and course (0.5 degrees). In one feed within 2 s, the later is `"duplicate"`; in two feeds, the
+     lower-ranked feed's (`"duplicate"` within `max_dt_s`, else `"shifted"`); in one feed further apart, a second
+     feed decides (`"shifted"`), else both stay unflagged with `ping_repeat_dt_s`, the seconds to the other. The
+     misfit has no vote (item 1(a)). The pairs are found on a grid of 200 m cells, so a batch of millions of pings
+     never compares a vessel's pings at one speed all against all. Ties on evidence (Decided f) are not built:
+     fishycode's `tie` step stays.
+   - (b) `rb_add_ping_speed()` as asks 1-2 say (Decided i, j). The open point of j, chosen by Claude for the
+     maintainer to overrule: a repeat is an unflagged ping, so it gets a speed and is a neighbour.
+   - (c) Direction is not built (the maintainer, 2026-11-03: leave turns out). In its place the rule against
+     recorded speed, `rb_flag_ping_impossible(method = "local", speed = )`, opt-in (Decided k): `local_sog` in
+     C++. Where no ping near has a recorded speed, a leg is judged at the fixed limit: on the planted faults the
+     same engine at 25 kn caught more than `clean` and `forward` at every rate, its cost between theirs, so one
+     engine serves both (the study's `design_variants.R`). Each leg's own recorded speeds in its limit (item 1(c)'s
+     weakness at 1 h) was tried and dropped: 2 fewer good fishing pings flagged at 10 s, 6 points fewer far-off
+     faults caught at 1 h.
+   - (d) `"clean"`, `"forward"` and `"local"`; `"sda"`, `"fwdbwd"` and `"sequential"` warn once per session (class
+     `ramb_withdrawn`), to go in the next release. (e) Done, and `R/whack.R`'s comment points at decision 067.
+     (f) Later (Decided l). (g) The lazy route collects each batch whole, sorts it by every column, labels it and
+     writes it whole, each column cast back to its type; a table with a column R cannot give back (a list, a time
+     of day) still takes the join. On 2017 (72,370,748 pings) the lazy route gives production's label and evidence
+     to every ping (step 1: one pair swapped), at 1.54 times production's time (261 s against 169 s; step 1: 1.62)
+     and 1.06 times its memory. The join is gone, but each flagger call now carries every column through R: a lazy
+     table costs what production's batching does only with one pass for the whole chain, a combined call not built.
+     And production's own chain on ramb 2026.11.04 gives the live store's labels and evidence on every ping.
+   - Every flag carries `ping_flag_basis`: `"recorded"`, `"track"`, `"priority"` or `"witness"`.
+   - The checks: both engines give the prototypes' flags ping for ping on the planted faults (0 pings differ), and
+     the cascade gives step 3's prototype chain on the reload outcome for outcome. On the planted faults it parts
+     from step 3's numbers only on same-second ties at two places at 6 min and 1 h (10 and 5 pairs), where the speed
+     rule cannot tell which is wrong and the order of the pings picks (Decided f, not built). ramb's tests pass (2,513
+     expectations). On the planted faults the cascade catches 100, 99.5, 87.8 and 61.6 % of the wrong pings 1 km or
+     more off at 10 s to 1 h, against fishycode's chain today 98.4, 88.3, 60.7, 17.8, and flags 0.21, 0.84, 3.18
+     and 3.54 % of good fishing pings, against 0.25, 2.94, 3.56, 11.8; it keeps the truly fast vessels. On the
+     reload it flags 13 of the 1,802 day-shifted copies and labels 1,742 repeats; it flags more of the live track
+     than `clean` (6,679 pings against 5,069), which carries no truth. No witness decided anything on either set:
+     the planted copies sit in a second feed, and the reload days hold STK alone. The witness is tested by the unit
+     tests only.
 5. **fishycode follows.** The union without its own speed (ramb's, after the clean); `ais_ping_clean.R` on ramb's
    lazy route if test (ii) holds, without its own batching or `tie`; the targets from the union down rebuilt,
    fingerprints before and after, every difference explained in a decision.
@@ -281,6 +323,8 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
    within a feed (same report within 2 s, same recorded speed and course) and the `repeat` label for undecided
    pairs; 4b as asks 1-2 say; 4d as ask 3 says, with the recorded-speed rule as an opt-in method; 4e; `R/whack.R`'s
    comment on `curate/checks/sda_tune.R` pointed at decision 067; version, NEWS, tests, `test-etiquette.R`.
+   **Built 2026-11-04** on ramb's branch `step0-cascade` (step 4 above). Left, the maintainer's: merge it into
+   ramb's `main` (which plan 063's map work also moves) and install it; push.
 4. **fishycode follows (step 5)**, then **the book (step 6**, plan 061's C3, C5, C7), then a decision record, and
    TODO 184 deleted.
 
