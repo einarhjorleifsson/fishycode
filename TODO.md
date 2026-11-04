@@ -373,37 +373,35 @@ measured.
 before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open ·
-**see:** decisions 067, 069, 078, 143, 164, 185 (TODO 38 folded in), TODO 99, plan 062 (direction, scores), plan 031
-§3.7 item 12 (what the filter leaves near harbours: about 6,000 fixes, mostly STK port event rows)
+**status:** open; its check answered by plan 062's step 3 but for normal days · **needs: maintainer** — close it into
+TODO 184, or keep it for what is left (below) · **see:** decisions 067, 069, 078, 143, 164, 185 (TODO 38 folded in),
+276, TODO 99, plan 062, plan 031 §3.7 item 12 (about 6,000 fixes left near harbours, mostly STK port event rows)
 
 "the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
-for having this domain specific knowledge" (maintainer, 2026-10-18). The case:
-- On vid 2350, 2026-10-12, the filter removed 29 pings of a day-shifted copy of the track (TODO 87).
-- It kept a 24 kn jump between the copy and the live track, under its fixed 25 kn.
+for having this domain specific knowledge" (maintainer, 2026-10-18). The case: on vid 2350, 2026-10-12, the filter
+removed 29 pings of a day-shifted copy of the track (TODO 87) and kept a 24 kn jump between the copy and the live track. In the
+data since 2026-11-01: `clean` with a 0.3 nm floor between feeds (ramb 2026.11.01.2, decisions 164 and 271).
 
-The reload is a labelled test: its receipt lag marks the truth, and is never a filter input. Candidates:
-- a per-vessel speed limit, from the vessel's own recorded speed (99.9th percentile at sea + 3 kn; 2026-10-20: 132,380
-  steps under 25 kn but over it, 8,196 out and back, 400-800 vessels a year; vid 1417, a 7-knot boat, 132 steps). It
-  needs no voyage, so it goes in the first pass (decision 185 keeps TODO 99's measurement);
-- splitting a vessel's pings into chains that are each consistent, e.g. one per STK stream (decision 233, plan 048);
-- zigzags judged over a window;
-- each leg's displacement against its reported speed and course.
+Plan 062's step 3, 2026-11-02/03 (decision 276; the numbers in `$FISHYDATA/archive/2026-11-02-plan062-step3/`), against
+the check below, by Claude (AI), not checked by a person:
+- **The current filter on the reload's days** (labelled by receipt, decision 143): the chain catches 7 of 1,802
+  day-shifted copies and flags 3,014 live pings only when the reload is there. No speed rule catches a copy: it is a
+  consistent track.
+- **The candidates.** Each leg against its reported speed is `local_sog`, without course, local rather than a
+  per-vessel limit: on the planted faults it catches the most at every rate, out-and-backs under 25 kn included; on the
+  reload 10 of 1,802. Chains that are each consistent: not tried; the copy rule (one report twice, by position,
+  recorded speed and course) finds the reload's pairs, but on one feed cannot tell which is the copy. Zigzags over a
+  window: set aside, since fishing turns would be flagged.
+- **TODO 38's cases.** Fast vessels: every 25 kn method flags the planted 30-40 kn stretches nearly whole at 10 s and
+  1 min, `local_sog` none. The gap: a moved first ping after a gap is never caught by `forward`, and costs it a
+  stretch; the chain catches 80 % at 10 s down to 11 % at 1 h, `local_sog` 100 % down to 44 %. Sparse tracks: at 1 h
+  every method catches under half the faults 1 km or more off (the chain 18 %, `local_sog` 41 %, copies first 62 %).
+- **Recommendation** (plan 062, not decided): copies first, then the rule against recorded speed; `clean` or
+  `forward` where a track has none; step 0 as a cascade by evidence, a basis on each flag.
 
-Against ASTD/ASTDB, 2013-2026 (decision 164): 75 % of the removals a witness can test are supported, 2,780 kept pings
-contradicted; 63 % of the supported removals are cross-feed legs within 0.3 nm. The prototype
-(`$FISHYDATA/archive/2026-10-stk-trail-order/prototype/`, its README §10 five decisions) equals `ping_whacky` with the
-defaults; a floor between feeds (0.3 nm) freed 22 % (2016) and 80 % (2026) of the false removals, mostly the clock
-(plan 059 step 6: on aligned pings 0.3 nm still frees 71 % and 13 % of what is left, no true removal lost). In ramb
-2026.11.01.2 (ad088e3; `feed`, `noise_nm`, `evidence`; no `two_sided`, maintainer), installed, and adopted in
-`curate/ais_ping_clean.R` (plan 059 step 8): 0.3 nm between providers on the harmonized time, the evidence on
-`ping_whacky` (the prototype's §10 items 4-5, the maintainer, 2026-11-01); in the data since 2026-11-01 (decision 271).
-
-The filter is in ramb, so a candidate is judged by its WGSFD-wide use. **From TODO 38**, decision 067's loose ends
-(the detail in decision 185): fast vessels (84 under 12 m lose 8,433 real pings; iapesca's fast-run rule, decision
-078), the forward scan's first ping after a 4 h gap, sparse tracks, and vmask eroding good track beside a burst.
-Kept by the filter, found 2026-10-23 in the vessel overview (TODO 25's review): vid 2654's ping of 2013-09-13 05:19
-at 8.55N 180W, and vid 7438's of 2009-07-09 12:59 at 64.2333N 22.4W (rounded, speed and heading 0).
+Left, if kept: normal Icelandic days (only planted faults stand in); a lone feed's copies, labelled `repeat` while
+the receipt is declined; two pings the filter kept, found 2026-10-23 (TODO 25's review): vid 2654's of 2013-09-13
+05:19 at 8.55N 180W, and vid 7438's of 2009-07-09 12:59 at 64.2333N 22.4W (rounded, speed and heading 0).
 
 **check:** a plan with the current filter's recall and precision on the reload's days, the candidates compared on
 those days and on normal ones, and a recommendation, with a verdict on TODO 38's fast-vessel, gap and sparse cases.
@@ -1528,7 +1526,8 @@ planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 202
 (2026-11-02 on the planted faults and the reload, `$FISHYDATA/archive/2026-11-02-plan062-step3/`: no speed rule
 catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb release; fishycode follows; the book.
 
-What is left, in order: plan 062's "To finish" (2026-11-03).
+What is left, in order: plan 062's "To finish" (2026-11-03); its items 0 and 1 done 2026-11-04 (decision 276, the
+four checks), item 2 is the maintainer's.
 
 **check:** plan 062 executed or parked, with a decision record.
 

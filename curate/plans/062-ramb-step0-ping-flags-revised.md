@@ -5,7 +5,7 @@ measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in 
 `$FISHYDATA/archive/2026-11-02-plan062-step3/`). Written 2026-11-02 at the maintainer's request ("Ramb revisions": the forks, and the functions
 that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
-plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273 and 275, `curate/ais_ping_clean.R`,
+plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273, 275 and 276, `curate/ais_ping_clean.R`,
 `curate/ais_ping_union.R`, ramb `R/ping.R`, `R/whack.R`, `src/whack_sda.cpp`, `~/stasi/em4ssf/me_code`
 
 Drafted with AI assistance (Claude) on 2026-11-02. The facts below were read from the code (ramb 15af6e8, fishycode
@@ -223,6 +223,8 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
    feed witness untested on the reload, a state-space model with turns set aside for fishing turns, the receipt
    time declined by the maintainer), pointing at the study for the numbers. And `~/stasi/em4ssf/me_code` TODO 5:
    plan 062's findings as input for the November meeting, beyond the whack.
+   **Done 2026-11-04** (by Claude): decision 276; the note drafted in `me_code/notes/meeting_2026-11_plan062.md`, for
+   the maintainer to cut (me_code's TODO 5 stays open for its own runs).
 1. **Cheap, no maintainer needed** (minutes each, in that study):
    - (a) the cascade's cost on the planted faults: `copy_rule.R` with the misfit's vote at 0 (witness only, else
      `repeat`), rerun `score_planted.R`, compare `copies_local_sog` before and after;
@@ -230,6 +232,30 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
      its reported speed"; fast vessels kept; the gap anchor; coarse rates), for the maintainer to close or not;
    - (c) the 5 good fishing pings `local_sog` flags of its own (`clear_flags.R`'s way);
    - (d) test (i)'s 643 astd rows whose reproduced speed differs.
+
+   **Done 2026-11-04** (by Claude; not checked by a person; each in its study's README):
+   - (a) With the misfit's vote at 0 (`COPY_MISFIT=0`, results `*_misfit0`), the cost and the gain fall on different
+     data:
+     - On the planted faults, the shifted copies have no witness and stay as repeats. Copies + `local_sog` still
+       catch as many far-off faults (100, 99.5, 88, 64 %), but flag about three times the good fishing pings at 10 s
+       to 6 min: 0.21, 0.84 and 3.02 %, against 0.07, 0.28 and 1.32 %, about halfway back to `local_sog` alone.
+     - On the reload, the copy rule flags no live ping, where the misfit's vote took 2,669. It labels 1,750 of the
+       1,802 day-shifted copies `repeat`, and the speed rule after it does as it does alone.
+
+     So the cascade costs fishing pings where a lone feed's copies interleave with the true track. Not tried: a speed
+     rule that judges a repeat's legs against the pings that repeat nothing, without deciding the pair. With the copy
+     rule as it now stands, the 1 min figure under step 3 above is 0.28 %, not 0.22 %.
+   - (b) TODO 88 rewritten against its check from step 3, and marked `needs: maintainer`: close it into TODO 184, or
+     keep it for normal Icelandic days, a lone feed's copies and the two pings the filter kept.
+   - (c) The 5 are the same 5 pings of one vessel (EX_10) at 10 s, 1 min and 6 min. Its base track jumps 10-20 km at
+     9-19 kn while its recorded speed is mostly under 2 kn. These are dansk's own jumps, under the 20 kn that cleaned
+     the base, so the set's "good" is doubtful there. At 1 h, the one is the first fishing ping after steaming: the
+     local speed, a median over 5 pings each side (10 hours at 1 h), takes the fishing side's speed. That is a real
+     weakness at coarse rates, for step 4 if the rule is built: take the leg's own two recorded speeds too, or a
+     window in time.
+   - (d) All 643 are the first or last ping of an MMSI in 2017 (355 MMSIs), whose neighbour in the union lies in
+     December 2016 or January 2018. The union reads the month on each side; test (i)'s check read 2017 alone. The
+     union is reproduced exactly from the feed: the check's limit, not the store's.
 2. **The maintainer's:** asks 1-4 (Claude's recommendations, 2026-11-03: the union's ellipsoid formula on both routes;
    no derived speed on a flagged ping, neighbours skip bad positions and keep copies; export `clean` and `forward`,
    `sequential`, `fwdbwd` and `sda` alone internal after a release of warning, the recorded-speed rule opt-in; the
