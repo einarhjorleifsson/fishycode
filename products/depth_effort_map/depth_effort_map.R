@@ -16,7 +16,7 @@
 #
 # - The depth by cell is left out: ramb draws one grid a map, here the effort. The depth is the elevation tiles'
 #   (its colours, contours and relief), drawn under the effort.
-# - The effort as the effort map draws it (map.json: its filters, colours, opacity and popup), its palette magma.
+# - The effort as the effort map draws it (map.json: its filters and popup), in blues at 60 % over the depth.
 # Internal: vessel-level data, and the gazetteer's names from Trackwell and the plotters.
 
 source("products/bathymetry_map/bathymetry_map.R")
@@ -29,8 +29,16 @@ source("products/bathymetry_map/bathymetry_map.R")
 depth_effort_map_build <- function(con, center = c(-19, 65), zoom = 6, lang = "en") {
   e <- .bathymetry_map
   effort <- e$effort_map_layers(con, .depth_effort_map$grid)$layers
+  # the effort in blues at 60 %, over the depth's greens (Claude's choice at the maintainer's word, 2026-11-04: of six
+  # palettes at 60 and 85 %, and blues at 45, the one whose hue stays apart from the depth's and lets it show through;
+  # the effort map's own magma at 85 % hides it). The page reads the grid's opacity from its config
+  effort$effort$config$opacity <- 60L
   e$bathymetry_map_build(
-    con, e$dir, center = center, zoom = zoom, lang = lang, cells = FALSE, palette = "magma",
+    con, e$dir, center = center, zoom = zoom, lang = lang, cells = FALSE, palette = "blues",
+    # what the page opens with (the maintainer, 2026-11-04): the depth's colours in gn_yl, in equal shares of the
+    # depths in view, at 52 % opacity; the relief shaded "combined"; the place names in black
+    depth_colour = list(palette = "gn_yl", scale = "equal", opacity = 52), relief_shade = list(method = "combined"),
+    names_state = list(colour = "#000000"),
     groups = list(ramb::rb_map_group("effort", "gEffort", list(effort$effort))),
     extra = list(effort$ports),
     about = c("aboutDepthEffort", "about2"),

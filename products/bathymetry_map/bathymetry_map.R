@@ -71,13 +71,14 @@ depth_tile <- function(con, dir, z, x, y, px = 1) {
 # The depth from the elevation tiles, coloured in the page: palette, floor and cap, scale, ramp or bands (the charts'
 # isobaths), a cut of the shallow end and opacity in the reader's hands (plan 063 step 2); the depths under 10-20 m are
 # poorly covered (the maintainer), so a cut is offered, none by default. The floor and cap follow the view (plan 063
-# point 7(a)): the 2nd and 98th percentiles of the depths in it, as the depth by cell's are fitted
-depth_layer <- function(file, con, dir) {
+# point 7(a)): the 2nd and 98th percentiles of the depths in it, as the depth by cell's are fitted. `colour` changes
+# what the page opens with (a map of its own, products/depth_effort_map/)
+depth_layer <- function(file, con, dir, colour = list()) {
   ramb::rb_map_layer(
     "depth", "dem", label = "lyrDepthColour", info = "infoDepthColour", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
     style = list(list(id = "depth-colour", type = "color-relief")),
-    colour = list(palette = "deep", floor = 10, cap = 2000, fit = depth_fit(con, dir))
+    colour = utils::modifyList(list(palette = "deep", floor = 10, cap = 2000, fit = depth_fit(con, dir)), colour)
   )
 }
 
@@ -151,13 +152,14 @@ contour_layer <- function(file, con, dir) {
 }
 
 # The relief from the same tiles, shaded in the page, its method, light, intensity, opacity and colours in the
-# reader's hands (plan 063 step 1); the intensity following the view (point 8(c))
-relief_layer <- function(file, con, dir) {
+# reader's hands (plan 063 step 1); the intensity following the view (point 8(c)). `shade` changes what the page opens
+# with
+relief_layer <- function(file, con, dir, shade = list()) {
   ramb::rb_map_layer(
     "relief", "dem", label = "lyrRelief", info = "infoRelief", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
     style = list(list(id = "relief-shade", type = "hillshade")),
-    shade = list(exaggeration = 0.6, shadow = "#1b2a3a", fit = relief_fit(con, dir))
+    shade = utils::modifyList(list(exaggeration = 0.6, shadow = "#1b2a3a", fit = relief_fit(con, dir)), shade)
   )
 }
 
@@ -188,16 +190,19 @@ relief_fit <- function(con, dir) {
 # `extra` layers join the names in the reference group, `extra_texts` their labels (TODO 186: the chart names read)
 # or over this map's own. For a map that adds a grid of its own (products/depth_effort_map/): `cells = FALSE` leaves
 # out the depth by cell, as ramb draws one grid a map; `groups` go between the relief and the reference layers;
-# `palette` is the grid's when the page opens; `about` names the texts of an About section
+# `palette` is the grid's when the page opens; `about` names the texts of an About section. What the page opens with:
+# `depth_colour` over the depth's colour controls, `relief_shade` over the relief's, `names_state` the place names'
+# controls by id
 bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
                                  json = file.path("products", "effort_map", "map.json"), extra = list(),
                                  extra_texts = list(), cells = TRUE, groups = list(), palette = "deep",
-                                 about = NULL) {
+                                 about = NULL, depth_colour = list(), relief_shade = list(), names_state = list()) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
   # the names' areas off when the page opens: over the depth they read as a grid (the maintainer, 2026-11-04)
   nm$state <- lapply(nm$state, function(s) `[[<-`(s, "default", if (identical(s$id, "areas")) FALSE else s$default))
+  nm$state <- lapply(nm$state, function(s) if (is.null(names_state[[s$id]])) s else `[[<-`(s, "default", names_state[[s$id]]))
   px <- pick(pick(spec$layers, "effort")$filters, "px")
   # cells of 2 pixels: at 1, a tile at zoom 6-9 is 13-14 MB (2026-11-03); the base's cells still show from zoom 10
   px$default <- "2"
@@ -281,9 +286,10 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   dem <- file.path(dir, "depth.mbtiles")
   has_dem <- file.exists(dem)
   all <- c(
-    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem, con, dir)),
+    list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir, depth_colour),
+                                                                   contour_layer(dem, con, dir)),
                                                   if (cells) list(depth)))),
-    if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem, con, dir)))),
+    if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem, con, dir, relief_shade)))),
     groups,
     list(ramb::rb_map_group("ref", "gRef", c(list(names_layer), extra)))
   )

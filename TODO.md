@@ -1552,20 +1552,18 @@ Its uses (the maintainer, 2026-11-03):
 - a base map for ramb's interactive maps (`rb_map_*()`, plan 046).
 
 Built 2026-11-03, `products/bathymetry_map/` (`bathymetry_map()`, port 8798): the relief from `dem.R`, Terrarium
-elevation tiles (512 px, lossless WebP to 0.1 m, zoom 0-10, each zoom warped from the source) in `depth.mbtiles`
-(547 MB, 6,501 tiles; within 0.9 m of the source at five points read by GDAL), shaded and coloured in the browser by
-ramb 2026.11.03's dem layer (MapLibre 5.24.0); the depth by cell to click from `grid.R` (0.001 by 0.0005 degrees); the
-gazetteer's names over both. Since plan 063 steps 1-3, the depth and the relief are two layers, the depth's colours
-and the relief's shading in the reader's hands, with contours spaced by depth and zoom, and the colours following the
-view if the reader wants, in equal shares if chosen, and the contour levels and the shading's intensity too (ramb
-2026.11.03.6-7). Since 2026-11-04 the place names have three controls of their own, shared with the effort map:
-their areas (the faint grid of footprints, off here by default), their colour, and the zoom they appear at, −1 to +2
-(the maintainer; ramb 2026.11.04.1's `state`; the kit predates them). To share it inside
-MFRI, `kit.R` writes `exports/bathymetry_map_kit/` (2.6 GB: data, code, ramb's source and Mac binary, a README; tested
-from an empty library, 2026-11-03), copied by hand to a share; and `bundle.R` writes `exports/bathymetry_map_bundle/`
-(243 MB): the map opened from its `index.html` with no R (ramb 2026.11.04.2's `rb_map_bundle()`, decision 277). With
-the effort as one more layer: `products/depth_effort_map/` (the maintainer, 2026-11-04), served from R. Open: the rest of plan 063; contour labels under zoom
-11; ramb's changes pushed.
+elevation tiles (512 px, lossless WebP to 0.1 m, zoom 0-10, each zoom warped from the source) in `depth.mbtiles` (547
+MB, 6,501 tiles; within 0.9 m of the source at five points read by GDAL), shaded and coloured in the browser by ramb
+2026.11.03's dem layer (MapLibre 5.24.0); the depth by cell to click from `grid.R` (0.001 by 0.0005 degrees); the
+gazetteer's names over both. Plan 063 steps 1-3: the depth and the relief two layers in the reader's hands, contours
+by depth and zoom, the colours, contour levels and shading able to follow the view (ramb 2026.11.03.6-7). Since
+2026-11-04 the place names' areas, colour and zoom offset are the reader's too (ramb 2026.11.04.1's `state`; the kit
+predates them). To share it inside MFRI, `kit.R` writes `exports/bathymetry_map_kit/` (2.6 GB: data, code, ramb's
+source and Mac binary, a README; tested from an empty library, 2026-11-03), copied by hand to a share; and `bundle.R`
+writes `exports/bathymetry_map_bundle/` (243 MB): the map opened from its `index.html` with no R (ramb 2026.11.04.2's
+`rb_map_bundle()`, decision 277). With the effort as one more layer: `products/depth_effort_map/` (the maintainer,
+2026-11-04), served from R, and as a bundle with every effort filter summed in the browser (`bundle.R`, 636 MB, ramb
+2026.11.04.3, decision 278). Open: the rest of plan 063; contour labels under zoom 11; ramb's changes pushed.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.
