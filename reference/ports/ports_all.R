@@ -6,6 +6,7 @@
 #          overrides/port_pid_pinned.csv            the pid of each of them, pinned (decision 082)
 # Outputs: staging/ports/ports_all.gpkg          all features, pid_src + pid
 #          curated/reference/port_geometry.parquet  one row per port, canonical
+#          Every geometry both write is valid (GEOS).
 #
 # pid is the harbour key the logbook, landings and AIS data all join on, so it
 # must name exactly one port and keep naming it. See curate/decisions/006.
@@ -510,6 +511,25 @@ bb <- st_bbox(c(xmin = -73, ymin = 32, xmax = 60, ymax = 85), crs = 4326)
 #ports_all <- ports_all |>
 #  st_make_valid() |>
 #  st_crop(bb)
+
+# -- Valid geometry ------------------------------------------------------------
+# A feature is written as its source drew it unless GEOS finds it invalid. Ten osm
+# features were on 2026-11-04, CI-POR, JP-U64, PL-POT and RU-S7M canonical among them: rings that
+# osm draws as outer areas came through as holes lying outside the shell. The
+# clustering above already measured them repaired (`gp`), but the files kept them
+# as read, and DuckDB's ST_AsMVTGeom fails a whole vector tile that holds one, with
+# every other port in it (curate/corrections/ports_osm_invalid_geometry.yml). They
+# are repaired with the same st_make_valid() as `gp`, under GEOS (s2 off), so no
+# cluster, area or centroid changes; a valid feature is written as before.
+s2_old <- sf_use_s2(FALSE)
+geom   <- st_geometry(ports_all)
+bad    <- which(!st_is_valid(geom))
+geom[bad] <- st_make_valid(geom[bad])
+st_geometry(ports_all) <- geom
+stopifnot(all(st_is_valid(ports_all)),
+          st_dimension(geom[bad]) == 2)   # a polygon stays a polygon
+cat("repaired            ", length(bad), "\n")
+sf_use_s2(s2_old)
 
 write_sf(ports_all, fd_staging("ports", "ports_all.gpkg"), delete_dsn = TRUE)
 

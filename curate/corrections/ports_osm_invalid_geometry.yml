@@ -1,0 +1,64 @@
+id: ports_osm_invalid_geometry
+title: Ten osm port polygons were invalid, rings drawn as holes outside their shell, and a vector tile holding one failed whole
+status: repaired 2026-11-04 in reference/ports/ports_all.R and checked on a scratch build; the live ports_all is not rebuilt yet
+applies_to:
+  - staging/ports/ports_all.gpkg  (10 of 24,653 features)
+  - curated/reference/port_geometry.parquet  (4 of 18,009 ports, CI-POR, JP-U64, PL-POT, RU-S7M)
+  - staging/aux/ports.{gpkg,fgb}  (PL-POT and RU-S7M; CI-POR and JP-U64 lie outside the box shapes.R crops to)
+affects_rows: 10 of 24,653 features, all source osm; 4 of them canonical
+implementation: >-
+  reference/ports/ports_all.R, section "Valid geometry", just before the two writes: st_make_valid() under GEOS
+  (s2 off, set and restored there) on the features st_is_valid() rejects, nothing else; the script stops unless every
+  feature is then valid and every repaired one is still a polygon. Needs tar_invalidate(ports_all) and
+  tar_make_isolated(names = "ports_all") - targets cannot see a script edit.
+discovered: 2026-11-04, bundling the depth and effort map (decision 278)
+
+origin: >-
+  ramb's rb_map_bundle() skipped tiles it could not make. DuckDB's ST_AsMVTGeom stops on an invalid polygon with
+  "TopologyException: unable to assign free hole to a shell", so the served effort and depth-and-effort maps refused
+  every tile holding one of four ports (25 tiles to zoom 9, e.g. 3/3/3, 4/7/7, 4/8/5), and every other port in those
+  tiles went missing at that zoom.
+
+mechanism: >-
+  raw/ports/ports_osm.gpkg binds osmdata_sf()'s multipolygons as delivered (dump/ports/osm.R). Nine of them carry a
+  polygon whose further rings lie wholly outside its first ring, so GEOS reads them as holes outside the shell; one,
+  ES-POE (Barcelona), intersects itself. The rings are areas of the port, not enclaves: Kamień Pomorski's first ring
+  is 122 m2 and its "hole" 41,631 m2. Whether the relation's members carry the inner role in OSM or osmdata gave it
+  is not checked. ports_all.R already repaired the geometries in memory for the clustering (gp) and for add_country(),
+  but wrote them as read.
+
+detection: |
+  DuckDB: SELECT pid FROM read_parquet('curated/reference/port_geometry.parquet')
+          WHERE NOT ST_IsValid(ST_GeomFromWKB(geom))
+  sf (s2 off): which(!st_is_valid(read_sf("staging/ports/ports_all.gpkg")))
+
+effect: >-
+  Map tiles only, as far as measured. Read as written, shell minus holes, four of the ten have a negative area
+  (Abidjan's port -949,275 m2). The pids are unaffected, because the clustering measured the repaired form. Of the two
+  that reach the flow's ports (staging/aux/ports.fgb), no ping of staging/ais/ping_union (589,261,557 pings) lies in
+  either one's bounding box, nor within 0.05 degrees of Kamień Pomorski or 0.5 degrees of Berezniki, so no ping's
+  port tag depends on them.
+
+repair: >-
+  st_make_valid() with sf 1.1.3's default (GEOS valid_structure), the call the clustering already made. Every
+  repaired feature keeps its vertices, ring for ring (9 of 10; ES-POE's self-intersection drops 2 of 401 and its area
+  stays 24,039,105 m2). Each ring outside the shell becomes a polygon of its own, and ES-POE becomes one POLYGON. The
+  original stays in raw/ports/ports_osm.gpkg.
+
+verified: >-
+  Scratch build of 2026-11-04, a clone of raw/ports and staging/ports under the session's scratch FISHYDATA, against
+  the live files of 2026-11-02 (475dc92): 24,653 features and 18,009 ports as before; every attribute column
+  identical, row for row; 24,643 gpkg and 18,005 parquet geometries byte-identical, the changed ones exactly the ones
+  invalid before; DuckDB's ST_IsValid finds none invalid in either file. Each repaired area and centroid equals what
+  the clustering used (shift 0 m); against the geometry as read, the area goes from shell minus holes to shell plus
+  holes and the centroid moves 1.6 m (PL-POT), 102 m (RU-S7M), 1,038 m (JP-U64) and 1,431 m (CI-POR). With
+  ramb 2026.11.4.2's rb_map_tiles_table(), called as ports_tiles() calls it, 25 of the 35 tiles at zoom 0-9 that hold
+  one of the four failed on the old file and none on the new. Tile 3/3/3 decodes to 135 areas and 378 points, 4/7/7
+  to 14 and 44, and 4/8/5 to 1,478 and 3,418. The points equal the candidates the tiler selects; the areas are fewer
+  by exactly the polygons ST_AsMVTGeom returns empty (50, 2 and 132), none of them more than 3.6 pixels across and most
+  under 2.
+
+rebuilt: >-
+  Not yet. Rebuilding ports_all makes its 54 descendants outdated (port and shapes, then the logbook, landings,
+  ais_ping_tag, the trail and user_tables), because write_curated() stamps every file. From the effect above, none of
+  them would change in value through this repair. The maps read port_geometry.parquet directly, so they are fixed once ports_all is.
