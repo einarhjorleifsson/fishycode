@@ -1,10 +1,10 @@
 # 064 — ramb's map viewer gets a time profile: the vessel overview's space and time views, generic, for any pings
 
-**status:** proposal — written 2026-11-04 at the maintainer's request; none of its steps built. Measured by Claude the
-same day, read-only: ramb's viewer (2026.11.04.3), the vessel overview's page, and the per-vessel sizes of ramb's
-example data and of one partner's case study. Assumed, to be measured in step 1: the browser's times (§3.2) · **see:**
-plan 047 (whose step 3 this is), plan 046 and decisions 227, 277, 278 (the viewer and its bundles), plan 030 §7 and
-decision 153 (the vessel overview and its demo), TODO 145, TODO 187
+**status:** partly built — written 2026-11-04 at the maintainer's request, asks a, b, c and f answered the same day (as
+recommended); steps 1-4 built the same evening in ramb 2026.11.04.4 (`rb_map_time()`, ramb 10c5355) and tested in
+a browser, step 5's viewer built in `me_code`; left: step 5's check (the maintainer's step-through) and step 6's
+record (decision 279) · **see:** plan 047 (whose step 3 this is), plan 046 and decisions 227, 277, 278 (the viewer
+and its bundles), plan 030 §7 and decision 153 (the vessel overview and its demo), TODO 145, TODO 187, decision 279
 
 Drafted with AI assistance (Claude) on 2026-11-04; a person has not yet checked it. What §1 calls measured, Claude
 measured; the rest is proposal.
@@ -20,6 +20,15 @@ The maintainer, 2026-11-04:
 **Yes.** ramb's viewer draws pings in space. It has no time: no chart, no window, nothing linked to the map. The
 overview has both and is Iceland's. This plan builds the time side in ramb, for any pings. It is plan 047's step 3,
 taken ahead of that plan's first two steps, because a dataset that is not Iceland's needs it now.
+
+## 0. Built (2026-11-04)
+
+Asks a, b, c and f answered by the maintainer the same day, each as recommended: `rb_map_time()`; the chart under the
+map; the whole series up to 150 thousand pings, else the latest month; no play button in this round. Steps 1-4 built
+in ramb 2026.11.04.4 and step 5 in `me_code` (`viewers/cs1_time_map.R`); what was measured, chosen and left is decision
+279. Step 1's measurements, in short: a filter or a global-state paint on a source of 150 thousand points re-tiles it,
+about 0.3 s a window move; a window drawn as new data is drawn in 48-65 ms on a vessel of 103,680 pings, its pings
+and line thinned to about 5,000; uPlot draws a span within a frame.
 
 ## 1. What is at hand (measured 2026-11-04)
 
@@ -183,6 +192,11 @@ e. **The case study's viewer as a bundle** for the project's partners: the data 
 f. **A play button** (plan 047 §2.2): now, or with plan 047?
 
 ## 7. Not in this plan
+
+- The panel as an htmlwidget, so a map with its panel sits inside an R Markdown or Quarto document or RStudio's Viewer
+  with no server (the maintainer, 2026-11-04, named htmlwidgets and crosstalk). A thin wrapper over a bundle would do
+  it. crosstalk's shared data links widgets by selection and filter, on thousands of rows; the panel and the map are
+  one page, linked directly, on series of up to 150 thousand pings, so it adds nothing here.
 
 - More than one vessel on the chart at once.
 - Plan 047's step panel, accounting per step and live recomputation.
