@@ -1594,3 +1594,14 @@ only until the licence is known: the charts are Landhelgisgæslan's work, served
 
 **check:** every kept window answered and in `rounds.csv`; every name placed with its scale and zoom; the gazetteer
 carrying the chart names as a source flagged unchecked, or the item dropped by the maintainer.
+
+## 187. ramb's map viewer gets a time profile, for any pings (plan 064)
+**status:** open; a proposal, none of its steps built · **needs: maintainer** — asks a-f of plan 064 · **see:**
+`curate/plans/064-ramb-map-time-profile.md`, plan 047 (its step 3), TODO 145, plan 046
+
+The maintainer, 2026-11-04: ramb function calls that give the vessel overview's space and time views for any pings,
+so that a partner's case study (EM4SSF's CS1, kept in `me_code`) can be viewed. Plan 064 adds a time panel to ramb's
+viewer: a vessel's columns over time, marks and lanes for intervals, a span held in the browser, and a window and
+hover linked to the map, served and bundled. It is plan 047's step 3, taken first. Six steps, the first a measurement.
+
+**check:** plan 064 executed or parked, with a decision record.

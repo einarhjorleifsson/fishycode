@@ -283,3 +283,10 @@ recorded in ramb's NEWS (2026.10.25.2 to .4). None of the plan's steps is done; 
   timeline.
 - **Ask f, in part:** the layer functions' names, `rb_map_pings()` and `rb_map_track()`, are the maintainer's
   (2026-10-25). The app's own name is still open.
+
+## 9. Step 3 taken ahead (2026-11-04)
+
+Step 3, the track layer and the timeline panel linked, is planned on its own as plan 064. It comes ahead of steps 1-2,
+so that a dataset that is not Iceland's can be viewed: the maintainer asked for ramb function calls that give the
+vessel overview's space and time views for a partner's case study. When plan 064 is executed, step 3 here is done by
+it. Steps 1-2 and 4-7 are unchanged.
