@@ -339,6 +339,10 @@
      "filter": [
       "all",
       [
+       "global-state",
+       "names_areas"
+      ],
+      [
        "==",
        [
         "get",
@@ -358,7 +362,14 @@
          ],
          11
         ],
-        1
+        [
+         "+",
+         1,
+         [
+          "global-state",
+          "names_early"
+         ]
+        ]
        ],
        [
         "zoom"
@@ -376,6 +387,10 @@
      "filter": [
       "all",
       [
+       "global-state",
+       "names_areas"
+      ],
+      [
        "==",
        [
         "get",
@@ -395,7 +410,14 @@
          ],
          11
         ],
-        1
+        [
+         "+",
+         1,
+         [
+          "global-state",
+          "names_early"
+         ]
+        ]
        ],
        [
         "zoom"
@@ -424,12 +446,19 @@
       [
        "<=",
        [
-        "coalesce",
+        "-",
         [
-         "get",
-         "min_zoom"
+         "coalesce",
+         [
+          "get",
+          "min_zoom"
+         ],
+         11
         ],
-        11
+        [
+         "global-state",
+         "names_early"
+        ]
        ],
        [
         "zoom"
@@ -481,10 +510,26 @@
        3,
        15.5,
        14
-      ]
+      ],
+      "text-variable-anchor": [
+       "center",
+       "top",
+       "bottom",
+       "left",
+       "right",
+       "top-left",
+       "top-right",
+       "bottom-left",
+       "bottom-right"
+      ],
+      "text-radial-offset": 0.4,
+      "text-justify": "auto"
      },
      "paint": {
-      "text-color": "#0b3954"
+      "text-color": [
+       "global-state",
+       "names_colour"
+      ]
      }
     }
    ],
@@ -570,7 +615,64 @@
       "label": "maybe"
      }
     ]
-   }
+   },
+   "state": [
+    {
+     "id": "areas",
+     "label": "namesAreas",
+     "default": true
+    },
+    {
+     "id": "colour",
+     "label": "namesColour",
+     "options": [
+      {
+       "value": "#0b3954",
+       "label": "colDarkBlue"
+      },
+      {
+       "value": "#000000",
+       "label": "colBlack"
+      },
+      {
+       "value": "#ffffff",
+       "label": "colWhite"
+      },
+      {
+       "value": "#b2182b",
+       "label": "colRed"
+      },
+      {
+       "value": "#ffd92f",
+       "label": "colYellow"
+      }
+     ],
+     "default": "#0b3954"
+    },
+    {
+     "id": "early",
+     "label": "namesEarly",
+     "options": [
+      {
+       "value": -1,
+       "label": "earlyLater"
+      },
+      {
+       "value": 0,
+       "label": "earlyAsSet"
+      },
+      {
+       "value": 1,
+       "label": "earlyOne"
+      },
+      {
+       "value": 2,
+       "label": "earlyTwo"
+      }
+     ],
+     "default": 0
+    }
+   ]
   }
  ],
  "texts": {
@@ -729,6 +831,54 @@
   "namesN": {
    "en": "{1} names",
    "is": "{1} örnefni"
+  },
+  "namesAreas": {
+   "en": "the names' areas",
+   "is": "svæði nafnanna"
+  },
+  "namesColour": {
+   "en": "colour",
+   "is": "litur"
+  },
+  "colDarkBlue": {
+   "en": "dark blue",
+   "is": "dökkblár"
+  },
+  "colBlack": {
+   "en": "black",
+   "is": "svartur"
+  },
+  "colWhite": {
+   "en": "white",
+   "is": "hvítur"
+  },
+  "colRed": {
+   "en": "red",
+   "is": "rauður"
+  },
+  "colYellow": {
+   "en": "yellow",
+   "is": "gulur"
+  },
+  "namesEarly": {
+   "en": "names appear",
+   "is": "nöfn birtast"
+  },
+  "earlyLater": {
+   "en": "1 zoom later (−1)",
+   "is": "einu þrepi seinna (−1)"
+  },
+  "earlyAsSet": {
+   "en": "at their zoom (0)",
+   "is": "á sínu þrepi (0)"
+  },
+  "earlyOne": {
+   "en": "1 zoom earlier (+1)",
+   "is": "einu þrepi fyrr (+1)"
+  },
+  "earlyTwo": {
+   "en": "2 zooms earlier (+2)",
+   "is": "tveimur þrepum fyrr (+2)"
   },
   "lyrPorts": {
    "en": "Ports",

@@ -43,10 +43,15 @@ How to test:
 - **M1** A click on a cell: a popup with hours and kW-hours per km² and the fixes.
 - **M2** A click on a place name: its own popup, and no cell popup under it. A place written several ways (plan 045
   §3.1, `curate/name_group.R`) is one label, its proposed name, with "the name" and "also written" in the popup; a
-  click on any of its footprints opens the same (2026-11-03).
+  click on any of its footprints opens the same (2026-11-03). A name crowded at its point is moved beside it (above,
+  below, to a side or a corner), and a click on the label where it is drawn opens it (2026-11-04: Herðatré off Kópanes
+  at zoom 8, drawn above its point, which before showed only from zoom 11).
 - **M3** Pan or zoom: the hash follows; the histogram is resampled on idle.
 - **M4** A reload keeps the position.
 - **M5** Names checkbox: off hides the labels and footprints, on shows them; "N names" beside it.
+- **M6** Under the names, while they are on: "the names' areas" (ticked here, unticked on the bathymetry map),
+  "colour" and "names appear" (−1 to +2 zooms), each applied at once and kept in the address (`names_areas`,
+  `names_colour`, `names_early`); the bathymetry map's N3-N5 hold here too. Since ramb 2026.11.04.1.
 
 ## Address
 
@@ -173,3 +178,20 @@ How to test:
   address to `interp=off`, on drops it from the address again (the default); the tiles reload each way, 70,251 cells
   drawn off against 73,239 on at zoom 5 (all years); at zoom 11 on 2025's fishing west of the Westfjords, off shows the
   scattered fixes and on the tows as lines. No error in the console.
+- **2026-11-04, the place names' controls** (uncommitted, on top of 79ddcab; ramb 2026.11.04.1 by `load_all()` from its
+  working tree, not yet installed). Claude's run in the browser pane, visible; not checked by a person. M6 new and
+  passing; M5 run again and passing. The controls are the bathymetry map's N3-N5 (the maintainer, 2026-11-04), run
+  there in full; here the opening state (areas ticked, 260 footprints at zoom 8 over Faxaflói, 30 labels), +2 (77
+  labels, `names_early=2`) and back. No error in the console or the server's log.
+- **2026-11-04, crowded names moved beside their point** (uncommitted, as above). Claude's run in the browser pane,
+  visible; not checked by a person. The names' labels take the first free place of nine around their point
+  (`text-variable-anchor`, `map.json`), asked for by the maintainer after Herðatré was not seen. M2 run again and
+  passing: Herðatré at zoom 8, above its point; a click on its point opens the area under it (STANDUR), a click on
+  the label its own popup. At a 411 × 830 pane, centred on Herðatré at zoom 8, 40 labels. No error in the console or
+  the server's log.
+- **2026-11-04, the page's bundle mode** (ramb 2026.11.04.2, uncommitted; `rb_map_bundle()` for the bathymetry
+  map). Claude's run in headless Chrome, not checked by a person. The page changed for both modes (a layer's tile
+  address, the view's fits, the contour levels set once their tiles are in); here L1 (opened, the status line
+  `zoom …`; at zoom 8 over Faxaflói 374,220 cells drawn), M5 (38 labels, 270 footprints, "9,049 names") and P1
+  (ticked, the ports drawn from their tiles at zoom 12 over Reykjavík, "18,009 ports") run again and passing. No
+  error but the server's missing favicon.

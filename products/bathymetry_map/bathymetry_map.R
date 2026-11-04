@@ -7,7 +7,8 @@
 #         grid_0010/, grid_0040.parquet and grid_0200.parquet (grid.R); the effort map's tile bounds, cell-size option
 #         and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer); ramb's map viewer
 #         (rb_map_*(), and for the depth and relief its dem layer, rb_map_tiles_mbtiles() and their controls,
-#         `colour` and `shade`, and its contour layer: ramb >= 2026.11.03.3)
+#         `colour` and `shade`, and its contour layer: ramb >= 2026.11.03.3; the place names' controls, map.json's
+#         `state`: ramb >= 2026.11.04.1)
 # Output: bathymetry_map(), bathymetry_map_stop(); bathymetry_map_build() and depth_tile() in .bathymetry_map, for
 #         server.R; a server on 127.0.0.1:<port> in this R session, in the background
 #
@@ -191,6 +192,8 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
+  # the names' areas off when the page opens: over the depth they read as a grid (the maintainer, 2026-11-04)
+  nm$state <- lapply(nm$state, function(s) `[[<-`(s, "default", if (identical(s$id, "areas")) FALSE else s$default))
   px <- pick(pick(spec$layers, "effort")$filters, "px")
   # cells of 2 pixels: at 1, a tile at zoom 6-9 is 13-14 MB (2026-11-03); the base's cells still show from zoom 10
   px$default <- "2"

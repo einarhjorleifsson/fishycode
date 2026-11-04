@@ -1558,9 +1558,12 @@ ramb 2026.11.03's dem layer (MapLibre 5.24.0); the depth by cell to click from `
 gazetteer's names over both. Since plan 063 steps 1-3, the depth and the relief are two layers, the depth's colours
 and the relief's shading in the reader's hands, with contours spaced by depth and zoom, and the colours following the
 view if the reader wants, in equal shares if chosen, and the contour levels and the shading's intensity too (ramb
-2026.11.03.6-7). To share it inside
+2026.11.03.6-7). Since 2026-11-04 the place names have three controls of their own, shared with the effort map:
+their areas (the faint grid of footprints, off here by default), their colour, and the zoom they appear at, −1 to +2
+(the maintainer; ramb 2026.11.04.1's `state`; the kit predates them). To share it inside
 MFRI, `kit.R` writes `exports/bathymetry_map_kit/` (2.6 GB: data, code, ramb's source and Mac binary, a README; tested
-from an empty library, 2026-11-03), copied by hand to a share. Open: the rest of plan 063; contour labels under zoom
+from an empty library, 2026-11-03), copied by hand to a share; and `bundle.R` writes `exports/bathymetry_map_bundle/`
+(243 MB): the map opened from its `index.html` with no R (ramb 2026.11.04.2's `rb_map_bundle()`, decision 277). Open: the rest of plan 063; contour labels under zoom
 11; ramb's changes pushed.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the

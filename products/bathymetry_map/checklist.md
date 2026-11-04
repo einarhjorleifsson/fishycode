@@ -84,8 +84,22 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 ## Place names
 
 - **N1** The names 14-19 px by level, with no halo; a click, the name's popup. A place written several ways is one
-  label, its proposed name, with "the name" and "also written" in the popup ("9,049 names", 2026-11-03).
+  label, its proposed name, with "the name" and "also written" in the popup ("9,049 names", 2026-11-03). A name
+  crowded at its point is moved beside it, to the first free place of nine, and a click on the label where it is
+  drawn opens it (2026-11-04): Herðatré off Kópanes shows at zoom 8 (before, only from 11); the Westfjords at zoom 8
+  31 labels before, 39 now; kept through each base map.
 - **N2** The names' checkbox off and on; `names=0` in the address.
+- **N3** "the names' areas" unticked when the page opens, no footprint drawn and none answering a click (a click on
+  the sea inside one opens nothing); ticked, the footprints and `names_areas=1` in the address, kept through a reload,
+  each base map and the names off and on. The effort map opens with them ticked (its M6). Since ramb 2026.11.04.1.
+- **N4** "colour": dark blue (the default), black, white, red, yellow, each drawn at once; `names_colour=%23ffffff` in
+  the address for any but the default, kept through a reload, each base map and the names off and on.
+- **N5** "names appear": a zoom later (−1), at their zoom (0, the default), one or two zooms earlier (+1, +2): at zoom
+  8 over Faxaflói the farthest-out name drawn is the gazetteer's zoom 7, 8, 9, 10 (12, 27, 71, 79 labels at a
+  411 × 830 pane, names moved beside their point; 14, 30, 70, 77 at a wider pane before they were), the
+  footprints a zoom before their names; `names_early=2` in the address, and at zoom 7, 9 and 10 the farthest-out name
+  is the zoom plus 2. A value the list does not hold (`names_early=5`, `names_colour=red`, `names_areas=yes`) is
+  dropped from the address and the default taken. All three in Icelandic with the rest.
 
 ## Base map and language
 
@@ -96,3 +110,24 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 ## From R
 
 - **R** `bathymetry_map()` opens the map; `bathymetry_map_stop()` stops it.
+
+## The bundle, opened as a file (`bundle.R`, ramb's `rb_map_bundle()`, since 2026-11-04)
+
+How to test: open `exports/bathymetry_map_bundle/index.html` as a file (`file://`) in Chrome and in Firefox; headless,
+driven over the DevTools protocol and WebDriver BiDi. The browser pane shows a file outside the project only as a
+static snapshot.
+
+- **F1** `bundle.R` writes the folder: 1,683 tiles to zoom 9, about 243 MB, zipped about 174 MB, with README.md and
+  VERSION; "Left out of the bundle ...: cells".
+- **F2** It opens at lon -19, lat 65, zoom 6 with `zoom 6.0` in the status line and no console error; the layers as
+  L2 without the depth by cell; the six base maps (CARTO's three and Esri's two serve a file page) with the depth,
+  contours and names over each (B1).
+- **F3** The three fits from the view (D9-D10, K4, R9) are made in the browser from the tiles in view, near the
+  server's on the same box: Faxaflói at zoom 9 floor and cap 3.9-120 (the server's 3.8-120), the quantiles within
+  0.1 m, intensity 1.00 (1.00); Ísafjarðardjúp at 9 2.7-140 (2.7-140), 0.48 (0.47); all of Iceland at 6 4.2-1,500
+  (2.5-1,500), 0.69 (0.78), a zoom-6 pixel averaging the shallow edge (2026-11-04, a 1200 x 900 window).
+- **F4** The contours at the view's levels in Chrome and Firefox (Faxaflói at zoom 9: 13 levels, 4-122 m, within
+  2.5 s), and past zoom 9 from zoom 9's tiles.
+- **F5** The address on a file page: a control's change written (`names_colour=%23ffffff`), and a link read
+  (`names_colour`, `names_early`, `lang=is`, `depth_lo`, `depth_hi`, `depth_auto=0`, `base=ocean` and the view).
+- **F6** The names: N1-N5 as on the server; Herðatré at zoom 8; a click opens a name's popup.
