@@ -2,8 +2,8 @@
 
 **status:** partly built — steps 0-3 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
 measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 done (the scores on the planted faults and the reload, and the timing,
-`$FISHYDATA/archive/2026-11-02-plan062-step3/`); step 4 built 2026-11-04 on ramb's branch `step0-cascade`
-(2026.11.04, not merged, not pushed; `$FISHYDATA/archive/2026-11-04-plan062-step4/`). Written 2026-11-02 at the
+`$FISHYDATA/archive/2026-11-02-plan062-step3/`); step 4 built 2026-11-04 (ramb 2026.11.04, merged into
+ramb's `main` at abe207f and installed, not pushed; `$FISHYDATA/archive/2026-11-04-plan062-step4/`). Written 2026-11-02 at the
 maintainer's request ("Ramb revisions": the forks, and the functions that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273, 275 and 276, `curate/ais_ping_clean.R`,
@@ -226,8 +226,9 @@ m. **The cascade is built in this release** (the maintainer, 2026-11-04: "Build 
    - A version, NEWS, tests, and a case for each new function in `test-etiquette.R`.
 
    **Built 2026-11-04** (by Claude, at the maintainer's "Build it", Decided m; not checked by a person): ramb
-   2026.11.04 on the branch `step0-cascade` (82b1818, 80da122), not merged into ramb's `main` and not pushed;
-   checked and scored in `$FISHYDATA/archive/2026-11-04-plan062-step4/`.
+   2026.11.04, built on a branch (82b1818 to abe207f), merged into ramb's `main` and installed in R's library the same
+   day (the maintainer: "Merge and install"), not pushed; checked and scored in
+   `$FISHYDATA/archive/2026-11-04-plan062-step4/`. The installed package passes ramb's tests (2,514 expectations).
    - (a) `rb_flag_ping_duplicate(speed = , course = )`: one report twice, told by position (20 m), recorded speed
      (exactly) and course (0.5 degrees). In one feed within 2 s, the later is `"duplicate"`; in two feeds, the
      lower-ranked feed's (`"duplicate"` within `max_dt_s`, else `"shifted"`); in one feed further apart, a second
@@ -323,8 +324,8 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
    within a feed (same report within 2 s, same recorded speed and course) and the `repeat` label for undecided
    pairs; 4b as asks 1-2 say; 4d as ask 3 says, with the recorded-speed rule as an opt-in method; 4e; `R/whack.R`'s
    comment on `curate/checks/sda_tune.R` pointed at decision 067; version, NEWS, tests, `test-etiquette.R`.
-   **Built 2026-11-04** on ramb's branch `step0-cascade` (step 4 above). Left, the maintainer's: merge it into
-   ramb's `main` (which plan 063's map work also moves) and install it; push.
+   **Built 2026-11-04** (step 4 above); merged into ramb's `main` (abe207f, a fast-forward) and installed the same
+   day. Left, the maintainer's: the push.
 4. **fishycode follows (step 5)**, then **the book (step 6**, plan 061's C3, C5, C7), then a decision record, and
    TODO 184 deleted.
 

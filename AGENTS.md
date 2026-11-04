@@ -255,7 +255,11 @@ Every script in a targets project is on one of three sides, and says which in a 
   MapLibre 5.24.0 (TODO 185; 8aa21b4), and the relief's controls, `shade`, of 2026.11.03.1 (plan 063; e874ecf), and the depth's, `colour`, of
   2026.11.03.2 (plan 063; bab626d), and its contours, the contour layer of 2026.11.03.3 (plan 063; 3a92fda), and its colours following the view,
   `colour$fit` of 2026.11.03.4 (plan 063; 5ee0eb8), in equal shares, 2026.11.03.5 (plan 063; fff2315), and contour levels from the view, 2026.11.03.6 (plan 063; b2eb027), and the shading's intensity from the view,
-  `shade$fit` of 2026.11.03.7 (plan 063; 5dd8b92); all installed from the working tree on 2026-11-03, not pushed. The data
+  `shade$fit` of 2026.11.03.7 (plan 063; 5dd8b92); all installed from the working tree on 2026-11-03, not pushed. Plan
+  062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
+  `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
+  and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's
+  own chain gives the store's labels under it (plan 062 step 4). The data
   on disk: every target of the main project but `ais_catch` and `check_allocation_audit` (decision 261) was rebuilt from
   raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6, and the 19 from `ais_ping_tag` down twice more
   the same day, with 2026.11.02.1 and then at 5f522e0 with 2026.11.02.2 (plan 060, decision 274). Every curated file
