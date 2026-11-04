@@ -195,3 +195,7 @@ How to test:
   `zoom …`; at zoom 8 over Faxaflói 374,220 cells drawn), M5 (38 labels, 270 footprints, "9,049 names") and P1
   (ticked, the ports drawn from their tiles at zoom 12 over Reykjavík, "18,009 ports") run again and passing. No
   error but the server's missing favicon.
+- **2026-11-04, the layers split out** (uncommitted, on top of 5d6022d): `effort_map_layers()` makes map.json's layers
+  for `effort_map_build()` and for the depth and effort map (`products/depth_effort_map/`), whose checklist runs
+  this map's items on its page. Claude's run in headless Chrome: L1 and the config (three layers, two groups, About)
+  as before; no error but the favicon.

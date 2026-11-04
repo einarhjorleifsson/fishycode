@@ -186,9 +186,13 @@ relief_fit <- function(con, dir) {
 
 # The map: the depth and the relief, the depth by cell, the place names as the effort map draws them, with its texts;
 # `extra` layers join the names in the reference group, `extra_texts` their labels (TODO 186: the chart names read)
+# or over this map's own. For a map that adds a grid of its own (products/depth_effort_map/): `cells = FALSE` leaves
+# out the depth by cell, as ramb draws one grid a map; `groups` go between the relief and the reference layers;
+# `palette` is the grid's when the page opens; `about` names the texts of an About section
 bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
                                  json = file.path("products", "effort_map", "map.json"), extra = list(),
-                                 extra_texts = list()) {
+                                 extra_texts = list(), cells = TRUE, groups = list(), palette = "deep",
+                                 about = NULL) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
@@ -208,7 +212,7 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
     metrics = list(list(field = "depth", label = "depthM")),
     popup = list(fields = list(list(field = "depth", label = "depthM", format = "value")))
   )
-  texts <- c(spec$texts[setdiff(names(spec$texts), c("title", unlist(spec$about)))], list(
+  texts <- c(spec$texts[setdiff(names(spec$texts), c("title", setdiff(unlist(spec$about), about)))], list(
     title = list(en = "Depth: Olex 50 m with GEBCO", is = "Dýpi: Olex 50 m með GEBCO"),
     gDepth = list(en = "Depth", is = "Dýpi"),
     gRelief = list(en = "Relief", is = "Lögun hafsbotns"),
@@ -272,18 +276,21 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
                  "0,001 x 0,0005 gráður (um 47 x 56 m á 65° N), grófari fjær; metrar undir sjávarmáli. Fyrsta sýn",
                  "(TODO 185).")
     )
-  ), extra_texts)
+  ))
+  texts <- utils::modifyList(texts, extra_texts)
   dem <- file.path(dir, "depth.mbtiles")
   has_dem <- file.exists(dem)
-  groups <- c(
+  all <- c(
     list(ramb::rb_map_group("depth", "gDepth", c(if (has_dem) list(depth_layer(dem, con, dir), contour_layer(dem, con, dir)),
-                                                  list(depth)))),
+                                                  if (cells) list(depth)))),
     if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem, con, dir)))),
+    groups,
     list(ramb::rb_map_group("ref", "gRef", c(list(names_layer), extra)))
   )
-  do.call(ramb::rb_map, c(groups, list(
+  do.call(ramb::rb_map, c(all, list(
     title = "title", view = list(center = center, zoom = zoom), texts = texts,
-    languages = unlist(spec$languages), language = lang, locales = lapply(spec$locales, unlist), palette = "deep"
+    languages = unlist(spec$languages), language = lang, locales = lapply(spec$locales, unlist), palette = palette,
+    about = about
   )))
 }
 

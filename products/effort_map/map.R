@@ -9,10 +9,25 @@
 #         $FISHYDATA/curated/place_name/place_name.parquet, place.parquet and synonym.parquet (plan 044), if they are
 #         there; read_curated_sf() (R/write_curated.R)
 # Output: effort_map_build(con, grid), an rb_map for rb_map_serve(): the effort as a grid layer (its filters checked
-#         by ramb before effort_tile() sees them), the ports as tiles of their table, the place names as GeoJSON
+#         by ramb before effort_tile() sees them), the ports as tiles of their table, the place names as GeoJSON;
+#         effort_map_layers(con, grid), those layers on their own, for a map that adds them to its own
+#         (products/depth_effort_map/)
 
 # run from the fishycode root, as server.R and effort_map.R are
 effort_map_build <- function(con, grid, json = file.path("products", "effort_map", "map.json")) {
+  x <- effort_map_layers(con, grid, json)
+  spec <- x$spec
+  layers <- x$layers
+  groups <- lapply(spec$groups, function(g) ramb::rb_map_group(g$id, g$title, unname(layers[unlist(g$layers)]), g$open))
+  do.call(ramb::rb_map, c(groups, list(
+    title = spec$title, view = list(center = unlist(spec$view$center), zoom = spec$view$zoom), texts = spec$texts,
+    languages = unlist(spec$languages), language = spec$language, locales = lapply(spec$locales, unlist),
+    about = unlist(spec$about)
+  )))
+}
+
+# map.json's layers, each given its tiles or data: `spec`, and `layers` by id
+effort_map_layers <- function(con, grid, json = file.path("products", "effort_map", "map.json")) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   # the interpolation switch needs the grid of fixes alone
   if (!file.exists(fixes_grid(grid))) {
@@ -31,12 +46,7 @@ effort_map_build <- function(con, grid, json = file.path("products", "effort_map
     do.call(ramb::rb_map_layer, c(list(id = l$id), args))
   })
   names(layers) <- vapply(spec$layers, `[[`, "", "id")
-  groups <- lapply(spec$groups, function(g) ramb::rb_map_group(g$id, g$title, unname(layers[unlist(g$layers)]), g$open))
-  do.call(ramb::rb_map, c(groups, list(
-    title = spec$title, view = list(center = unlist(spec$view$center), zoom = spec$view$zoom), texts = spec$texts,
-    languages = unlist(spec$languages), language = spec$language, locales = lapply(spec$locales, unlist),
-    about = unlist(spec$about)
-  )))
+  list(spec = spec, layers = layers)
 }
 
 # The grid with each fix's hours in its own cell, beside the interpolated one

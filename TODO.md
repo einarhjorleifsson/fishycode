@@ -1563,7 +1563,8 @@ their areas (the faint grid of footprints, off here by default), their colour, a
 (the maintainer; ramb 2026.11.04.1's `state`; the kit predates them). To share it inside
 MFRI, `kit.R` writes `exports/bathymetry_map_kit/` (2.6 GB: data, code, ramb's source and Mac binary, a README; tested
 from an empty library, 2026-11-03), copied by hand to a share; and `bundle.R` writes `exports/bathymetry_map_bundle/`
-(243 MB): the map opened from its `index.html` with no R (ramb 2026.11.04.2's `rb_map_bundle()`, decision 277). Open: the rest of plan 063; contour labels under zoom
+(243 MB): the map opened from its `index.html` with no R (ramb 2026.11.04.2's `rb_map_bundle()`, decision 277). With
+the effort as one more layer: `products/depth_effort_map/` (the maintainer, 2026-11-04), served from R. Open: the rest of plan 063; contour labels under zoom
 11; ramb's changes pushed.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
