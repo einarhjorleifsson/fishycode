@@ -40,7 +40,8 @@ animation frame), or driven headless over the DevTools protocol.
 ## The bundle, opened as a file (`bundle.R`, ramb's `rb_map_bundle(grids = )`, since 2026-11-04)
 
 How to test: open `exports/depth_effort_map_bundle/index.html` as a file in Chrome and in Firefox, headless over the
-DevTools protocol and WebDriver BiDi (the browser pane shows a file outside the project only as a snapshot); as the
+DevTools protocol and WebDriver BiDi, by the scripts in `$FISHYDATA/archive/2026-11-04-map-bundles/` (the browser
+pane shows a file outside the project only as a snapshot); as the
 bathymetry map's F1-F6 for the depth (decision 277).
 
 - **G1** `bundle.R` writes the folder (about 636 MB, 457 MB zipped): the depth's tiles to zoom 9, the ports' tiles that
@@ -48,8 +49,8 @@ bathymetry map's F1-F6 for the depth (decision 277).
   ports tiles its function could not make named (four invalid port polygons, decision 278).
 - **G2** It opens at zoom 6 within 3-6 s with no error in the map or the console; a view at zoom 6-10 within 1-2 s.
 - **G3** The effort's tiles equal the server's at the same cell size (the bundle's `px` half the server's): every
-  server cell matched, h_km2 and kwh_km2 within 1.1e-7, n equal (`compare_node.mjs` and `mvt_compare.py` of
-  2026-11-04, five tiles at zoom 4-6 with gears, years and both fishing definitions).
+  server cell matched, h_km2 and kwh_km2 within 1.1e-7, n equal (`compare_node.mjs` and `mvt_compare.py` in
+  `$FISHYDATA/archive/2026-11-04-map-bundles/`: five tiles at zoom 4-6 with gears, years and both fishing definitions).
 - **G4** Each effort control redraws the cells (gear, years, fishing definition, hours or kW-hours) and is kept in
   the address; a link with `gid`, `y1`, `y2` and `preset` opens with them; a cell's popup gives its hours, kW-hours
   and fixes.

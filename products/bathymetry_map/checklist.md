@@ -114,8 +114,9 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 ## The bundle, opened as a file (`bundle.R`, ramb's `rb_map_bundle()`, since 2026-11-04)
 
 How to test: open `exports/bathymetry_map_bundle/index.html` as a file (`file://`) in Chrome and in Firefox; headless,
-driven over the DevTools protocol and WebDriver BiDi. The browser pane shows a file outside the project only as a
-static snapshot.
+driven over the DevTools protocol and WebDriver BiDi by the scripts in
+`$FISHYDATA/archive/2026-11-04-map-bundles/`. The browser pane shows a file outside the project only as a static
+snapshot.
 
 - **F1** `bundle.R` writes the folder: 1,683 tiles to zoom 9, about 243 MB, zipped about 174 MB, with README.md and
   VERSION; "Left out of the bundle ...: cells".

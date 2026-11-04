@@ -44,7 +44,8 @@ word, not pushed; the bundle was built again with the installed package.*
   the server's) and decoded cell by cell. Every server cell has its twin; hours and kW-hours per km² agree to 1.1e-7
   (float32); the fixes are equal. The cases: zoom 6 all fishing; zoom 6 flow, gear 6, 2020-2022; zoom 5, 2015-2019;
   zoom 4 flow, gears 6 and 15; zoom 6 gear 15 in 2024. The bundle has up to 122 cells more, beyond a tile's east edge,
-  in the margin MapLibre does not draw.
+  in the margin MapLibre does not draw. The scripts and their output are in
+  `$FISHYDATA/archive/2026-11-04-map-bundles/`.
 - **Speed**, headless on this Mac: the opening view ready in 3-6 s, a view at zoom 6-10 in 1-2 s, one tile in
   0.1-0.5 s; about 215 MB of blocks held after a few views.
 - **Opened as a file in Chrome and Firefox 159**, with no error in the map or the console:
