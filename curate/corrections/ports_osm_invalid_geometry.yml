@@ -1,6 +1,6 @@
 id: ports_osm_invalid_geometry
 title: Ten osm port polygons were invalid, rings drawn as holes outside their shell, and a vector tile holding one failed whole
-status: repaired 2026-11-04 in reference/ports/ports_all.R and checked on a scratch build; the live ports_all is not rebuilt yet
+status: fixed 2026-11-04 - repaired in reference/ports/ports_all.R (fb59bfe), ports_all rebuilt and checked; its other 52 descendants are left outdated
 applies_to:
   - staging/ports/ports_all.gpkg  (10 of 24,653 features)
   - curated/reference/port_geometry.parquet  (4 of 18,009 ports, CI-POR, JP-U64, PL-POT, RU-S7M)
@@ -59,6 +59,11 @@ verified: >-
   under 2.
 
 rebuilt: >-
-  Not yet. Rebuilding ports_all makes its 54 descendants outdated (port and shapes, then the logbook, landings,
-  ais_ping_tag, the trail and user_tables), because write_curated() stamps every file. From the effect above, none of
-  them would change in value through this repair. The maps read port_geometry.parquet directly, so they are fixed once ports_all is.
+  tar_invalidate(ports_all), then tar_make_isolated(names = "ports_all"), 2026-11-04 15:32 UTC, at fb59bfe on a clean
+  tree (git status empty before and after): both files are stamped fd.commit fb59bfe, fd.dirty false. The live files
+  equal the scratch build's byte for byte, so every check under verified holds for them, and it was rerun on them:
+  DuckDB finds no invalid geometry, and none of the 35 tiles fails. The maps read port_geometry.parquet directly and
+  are fixed with it. tar_outdated() now lists 54 targets: ais_catch and check_allocation_audit as before (decision
+  261), and the other 52 descendants of ports_all (port and shapes, then the logbook, landings, ais_ping_tag, the trail
+  and user_tables), because write_curated() stamps every file it writes. From the effect above, the repair changes
+  none of them in value; they are left for the next rebuild.

@@ -269,7 +269,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   own chain gives the store's labels under it (plan 062 step 4). The data
   on disk: every target of the main project but `ais_catch` and `check_allocation_audit` (decision 261) was rebuilt from
   raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6, and the 19 from `ais_ping_tag` down twice more
-  the same day, with 2026.11.02.1 and then at 5f522e0 with 2026.11.02.2 (plan 060, decision 274). Every curated file
+  the same day, with 2026.11.02.1 and then at 5f522e0 with 2026.11.02.2 (plan 060, decision 274). `ports_all` alone
+  was rebuilt on 2026-11-04 at fb59bfe, its ten invalid osm polygons repaired
+  (`curate/corrections/ports_osm_invalid_geometry.yml`), so its other 52 descendants are outdated by their stamps only:
+  the repair changes none of them in value. Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code
