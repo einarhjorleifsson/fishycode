@@ -1,13 +1,13 @@
 # 068 — ramb's `local` rule: a local speed that follows a change of speed, and each stream judged alone
 
-**status:** partly built — written 2026-11-05 at the maintainer's word ("Yes, write the plan"), from the study
+**status:** executed — written 2026-11-05 at the maintainer's word ("Yes, write the plan"), from the study
 `$FISHYDATA/archive/2026-11-05-local-allowance/` (its README), which measured plan 065's ask f; checked on five more
 datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); step 0 done
 that evening ("Yes, step 0"): the ping's own recorded speed counted on both sides chosen (§4); step 1 built the same
 evening ("Yes, step 1"): ramb 2026.11.05.10 (5a83342); step 2 built ("Yes, step 2"): ramb 2026.11.05.11 (b7109d4);
 both committed to ramb's local `main`, not installed or pushed; step 3 done ("Yes, step 3"): every number reproduced
-with ramb itself; step 4, the record, next ·
-**see:** TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
+with ramb itself; step 4, the record ("Yes, step 4"): decision 284 ·
+**see:** decision 284, TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
 Drafted with AI assistance (Claude) on 2026-11-05; a person has not yet checked it. **Measured** (by Claude, the

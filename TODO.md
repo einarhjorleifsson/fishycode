@@ -1651,7 +1651,7 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282 and 283, plan 068 (steps 0-3 done, step 4 next), plan 065
+**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 065
 §6 ask f and §7, `curate/ais_ping_clean.R`, TODO 184
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. Plan 065 built the alternatives in ramb (decision 282): each
@@ -1675,7 +1675,8 @@ Ask f measured (`$FISHYDATA/archive/2026-11-05-local-allowance/`): the margin is
 points of the planted set's catch). The local speed is: leaving a berth, the neighbours at rest outvote the moving
 ones. Taken as the larger of the medians before and after (a prototype of ramb's engine), it keeps the catch within a
 point, flags 18-35 % fewer good pings alone, 70 % fewer of CS1's false ones, and on Iceland's 40 cases 32 right of 36
-(34 with each stream judged alone) against 30. Building it, and judging each stream alone, in ramb: a plan.
+(34 with each stream judged alone) against 30. Built in ramb by plan 068 (decision 284): `local_speed`, the sided
+median `"local"`'s default, and `stream =`, opt-in; production's choice stays here.
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
