@@ -1643,29 +1643,18 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
-## 191. ramb: the forward scan's anchor after a ping it cannot resolve
-**status:** open · **see:** decision 282, plan 065 §7, `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its scripts 21-23),
-`dansk_truth`'s relocations
-
-Every forward scan keeps the first ping after a jump it does not resolve as its anchor, and flags the good pings after
-it until the vessel could have covered the jump. In Iceland's 2024 (decision 282's hand check) that is 12 of the 16
-good pings the vessels' own limits flagged where production keeps them (9 after an STK port event row at 0 kn, placed
-0.8-2 km off), and 4 of production's 12. A scan that weighs the pings after the jump (how many agree with the anchor,
-how many with the ping before it) would resolve most; `dansk_truth`'s relocations and the hand cases are the test.
-
-**check:** a rule in ramb scored on `dansk_truth` and on the 40 hand cases, every ping in one outcome, against the
-forward scan of today; or the item parked by the maintainer.
-
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decision 282, plan 065 §6 ask
-f and §7, `curate/ais_ping_clean.R`, TODO 184
+**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282 and 283, plan 065
+§6 ask f and §7, `curate/ais_ping_clean.R`, TODO 184
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. Plan 065 built the alternatives in ramb (decision 282): each
 vessel's own limits, a time flag, and their scores. Neither the planted set nor Iceland's hand cases showed the own
 limits better where it matters: they keep fast vessels (7 of production's 12 wrong flags in the hand check, 86 of 200
-drawn), and lose on STK's event rows (TODO 191, plan 048) and on slow vessels whose positions run over their recorded
-ceiling. `local`'s factor 1.5 and margin 5 kn are set by hand (ask f); a ceiling with a margin from the data is the
-same question. Moving production is its own decision, with a rebuild.
+drawn), and lose on STK's event rows (their forward scan anchored on them: decision 283's `anchor = "vote"` resolves
+most; plan 048) and on slow vessels whose positions run over their recorded ceiling. `local`'s factor 1.5 and margin
+5 kn are set by hand (ask f); a ceiling with a margin from the data is the same question. `anchor = "vote"` is a choice
+for `clean` too (3,009 of production's flags change on the hand cases' 32 vessels). Moving production is its own
+decision, with a rebuild.
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.

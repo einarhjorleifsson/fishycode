@@ -274,7 +274,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   `rb_flag_ping_impossible(limits = )`, `rb_flag_ping_time()` and `rb_add_ping_outcome()`, 2026.11.05.7 (943eee9), and
   its step 5, `rb_create_ping_limits(max_step_s = , lag = )`, 2026.11.05.8 (4b4c2bc), and the trips article (01d8825),
   all committed to ramb's local `main` and installed from it on 2026-11-05 (2026.11.05.8 at 01d8825: `git archive` with
-  the LFS files, `--preclean`), not pushed; nothing in fishycode calls them yet (decision 282). Plan
+  the LFS files, `--preclean`), not pushed; nothing in fishycode calls them yet (decision 282). The forward scan's
+  anchor decided by the pings after a jump, `rb_flag_ping_impossible(anchor = "vote")`, opt-in, is 2026.11.05.9 (plan
+  066, decision 283; e50568f, committed to ramb's local `main`), not installed or pushed; nothing in fishycode calls it. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's
