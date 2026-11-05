@@ -5,7 +5,8 @@
 datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); step 0 done
 that evening ("Yes, step 0"): the ping's own recorded speed counted on both sides chosen (§4); step 1 built the same
 evening ("Yes, step 1"): ramb 2026.11.05.10 (5a83342); step 2 built ("Yes, step 2"): ramb 2026.11.05.11 (b7109d4);
-both committed to ramb's local `main`, not installed or pushed; step 3 next ·
+both committed to ramb's local `main`, not installed or pushed; step 3 done ("Yes, step 3"): every number reproduced
+with ramb itself; step 4, the record, next ·
 **see:** TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
@@ -103,7 +104,10 @@ vote (decision 283) and the margin of 5 kn:
    20 runs equal); with `stream =` no warning on unharmonised clocks, without it the warning names `stream =`; the suite
    passes (2,977).
 3. **Score with ramb itself**: the study's 04-06 rerun with ramb's options in place of the prototype. **check:** §2's
-   numbers exactly, every ping in one outcome.
+   numbers exactly, every ping in one outcome. **Done** 2026-11-05 (the study's 16-19, on step 0's tables, which carry
+   today's way and the chosen one): `dansk_truth` equal in every cell (253 cells, 640,388 pings, every stream together
+   and each alone through `stream =`), CS1's counts, the 26 decided episodes' outcomes and Iceland's 40 cases and
+   flags on its 32 vessels all equal.
 4. **The record**: a decision here, TODO 192 updated, AGENTS.md's "Which ramb". Installed and pushed at the
    maintainer's word.
 
