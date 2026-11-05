@@ -3,8 +3,9 @@
 **status:** partly built — written 2026-11-05 at the maintainer's word ("Yes, write the plan"), from the study
 `$FISHYDATA/archive/2026-11-05-local-allowance/` (its README), which measured plan 065's ask f; checked on five more
 datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); step 0 done
-that evening ("Yes, step 0"): the ping's own recorded speed counted on both sides chosen (§4); nothing built in ramb,
-step 1 next ·
+that evening ("Yes, step 0"): the ping's own recorded speed counted on both sides chosen (§4); step 1 built the same
+evening ("Yes, step 1"): ramb 2026.11.05.10 (5a83342), committed to its local `main`, not installed or pushed; step 2
+next ·
 **see:** TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
@@ -87,7 +88,10 @@ vote (decision 283) and the margin of 5 kn:
    leaves a berth at one-minute steps (no good ping flagged under `"larger_side"`, flagged under `"both_sides"`); a
    spike and a run still caught; a constant of `local` passed in `...` (`k`) reaches the engine and is not taken for
    `kn_max`; ramb's whole suite. **check:** the suite passes; `"both_sides"` bit for bit; `"larger_side"` the prototype's
-   mode 2 on `dansk_truth`.
+   mode 2 on `dansk_truth`. **Done** 2026-11-05: ramb 2026.11.05.10 (5a83342); `...` moved after `method`, so the
+   arguments after it are named in full; flags and bases equal to the prototype's in all 20 runs (`dansk_planted` and
+   `dansk_truth`, five configurations, both ways: the study's 14-15); the default `"larger_side"`; the suite passes
+   (2,954); nothing in fishycode calls `"local"`.
 2. **Build `stream =`** for every method (the vessel's key taken with the stream inside, the limits by both, the
    evidence's legs within the stream): tests that `stream = NULL` gives today's flags, and that a stream column gives
    the flags of running each stream as its own vessel (the study's way) on `dansk_truth`, for `clean`, `forward` and
