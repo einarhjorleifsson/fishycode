@@ -1195,9 +1195,10 @@ whack filter kept the event as a ping (699,084 port calls lean on events, 13,510
 1,351,745 whacks are event rows). Then the chain from the union down is rebuilt.
 
 Decisions 282 and 283 add a reason: judged as pings, STK's event rows recording 0 kn are often placed 0.8-2 km from
-the vessel's other reports, and a speed rule's forward scan anchors on them. In Iceland's 2024 hand check (Claude's,
-not checked by a person) they were 9 of the 16 wrong flags of the rule on the vessels' own limits; `clean` catches
-most by their angle. With the events out of the track the anchor question shrinks for every rule.
+the vessel's other reports, and a speed rule's forward scan anchors on them: in Iceland's 2024 hand check, 9 of the 16
+wrong flags of the rule on the vessels' own limits; `clean` catches most by their angle. Yet the maintainer's check
+of the cases (decision 282) found 11 of the 15 event rows drawn placed right, and at a trip's start one may be the
+best position there is: out of the track, kept as events. With them out the anchor question shrinks for every rule.
 
 **check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.
@@ -1655,7 +1656,7 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. Plan 065 built the alternatives in ramb (decision 282): each
 vessel's own limits, a time flag, and their scores. Neither the planted set nor Iceland's hand cases showed the own
-limits better where it matters: they keep fast vessels (7 of production's 12 wrong flags in the hand check, 86 of 200
+limits better where it matters: they keep fast vessels (all 9 drawn good pings in the maintainer's check, 86 of 200
 drawn), and lose on STK's event rows (their forward scan anchored on them: decision 283's `anchor = "vote"` resolves
 most; plan 048) and on slow vessels whose positions run over their recorded ceiling. `local`'s factor 1.5 and margin
 5 kn are set by hand (ask f); a ceiling with a margin from the data is the same question. `anchor = "vote"` is a choice
@@ -1664,7 +1665,7 @@ decision, with a rebuild.
 
 What production costs fast vessels, over a year: in 2024 `clean` flags 10,812 pings that the rule on the own limits
 keeps, on 128 vessels whose recorded ceiling is over 25 kn (133 of 1,850 have one; the speed-ceiling study's script
-24). Of the 9 such pings in the hand check, 7 were good pings (Claude's judgement, not checked by a person).
+24). All 9 such pings in the hand check were good pings (the maintainer's check, decision 282).
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.

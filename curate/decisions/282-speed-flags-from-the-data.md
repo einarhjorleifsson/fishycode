@@ -5,7 +5,8 @@ em4ssf code and in ramb ... can we find a more robust method ... anything in the
 be able to use ... take your time", then "if you drop / filter data, you can not go easily back to check what was
 dropped", "Yes, a plan", its asks "Yes, as recommended" (the set named `dansk_truth`), and each step at the
 maintainer's word ("Start step 1", "Commit, then step 2", "Yes, step 3" to "Yes, step 6"). Built, scored and the
-Icelandic cases judged by Claude (AI) the same day, not checked by a person. ramb 2026.11.05.3-.8 (d87c781, bb6333e,
+Icelandic cases judged by Claude (AI) the same day; the 40 cases checked by the maintainer that evening (the last
+section). ramb 2026.11.05.3-.8 (d87c781, bb6333e,
 c2fc469, 3df2adc, 943eee9, 4b4c2bc; the article 01d8825), each committed to ramb's local `main` when its check
 passed, not installed, not pushed. The study and every script: `$FISHYDATA/archive/2026-11-05-speed-ceiling/`.*
 
@@ -82,3 +83,26 @@ is over 25 kn (7 of 12; 86 of the 200 drawn on such vessels).
 - **The automatic witnesses** of the hand check (another feed near, the legs against the recorded speed) proposed 8
   wrong positions, 4 of them right: a proposal, not an outcome; a check of Iceland's flags needs the hand, or a truth.
 - **ramb installed and pushed**: at the maintainer's word.
+
+## The hand check, checked by the maintainer (added 2026-11-05)
+
+That evening, at the maintainer's ask ("Can we do the Hand check here?"), the maintainer judged the 40 cases on the
+review page, each case alone with two hours either side, blind to Claude's verdict, which was shown after each answer
+(the study's scripts 19 and 25, `out/iceland_2024_sample_checked.csv`). The verdicts agree with Claude's on 29 of 40.
+The table above, on the maintainer's verdicts:
+
+| the flag of | right | wrong | two vessels | undecided |
+|---|---|---|---|---|
+| the built rule (production keeps) | 1 | 16 | 1 | 2 |
+| production (the built rule keeps) | 3 | 16 | 1 | 0 |
+
+- **Where the rules disagree, both flag mostly good pings**: confirmed, more strongly for production. All 9 drawn on
+  vessels whose ceiling is over 25 kn were good pings.
+- **Claude's reading moved most where the maintainer saw the neighbour**: B003's bad ping is an astdB report where the
+  vessel was an hour before, kept by both rules, not the case; B001's is the astd ping, not the event row beside it.
+- **Two vessels under one vid** on the two foreign vids drawn (4941 and 4426; vids 3700-4999 are not keel ids): an
+  identity question, which decision 283 left open.
+- **STK's event rows**: of the 15 drawn, 11 placed right, 3 wrong, 1 undecided, and at a trip's start one "may be the
+  best we have" (B009); beside 7 other cases the maintainer pointed out one recording 0 kn and placed off. Taking them
+  out of the track (plan 048) must keep them as events.
+- **Bad pings both rules keep**, seen beside the cases: B003's astdB report, the event rows beside B011 and B019.

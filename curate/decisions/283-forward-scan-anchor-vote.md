@@ -3,7 +3,7 @@
 *2026-11-05. TODO 191 and plan 066. The maintainer, on how to find the rule: "take your time here to think of the best
 approach, explore potential alternatives ... too much thinking -> high token cost, executing code on big data -> low
 token cost"; on plan 066: "Yes, build it" (asks b and c taken as recommended). Prototyped, scored, judged and built by
-Claude (AI) the same day, not checked by a person. ramb 2026.11.05.9 (e50568f), committed to its local `main` at the
+Claude (AI) the same day; the hand cases checked by the maintainer that evening (the last section). ramb 2026.11.05.9 (e50568f), committed to its local `main` at the
 maintainer's word ("Commit both"), not installed or pushed.
 The study and every script: `$FISHYDATA/archive/2026-11-05-forward-anchor/`.*
 
@@ -65,3 +65,17 @@ covers it, the planted relocations at 6 min (`local` misses 4 of the 10 it caugh
 - **Vessels whose reports alternate between two places** (4941, 3.3 km apart; 4426's jumps of 8-12 km): most of the
   vote's other changes cannot be judged from the track; an identity or stream question, not the scan's.
 - **ramb installed and pushed**: at the maintainer's word.
+
+## The hand cases, checked by the maintainer (added 2026-11-05)
+
+Scored again on the maintainer's verdicts of the 40 cases (decision 282's last section; the speed-ceiling study's
+script 25), right and wrong of the 36 that are neither two vessels nor undecided:
+
+| rule | today | with the vote (mode 7, as built) | the chain |
+|---|---|---|---|
+| the built rule | 17 · 19 (16 good pings flagged, 3 bad kept) | 30 · 6 (5 flagged, 1 kept) | 32 · 4 |
+| production (`clean`) | 19 · 17 (16 flagged, 1 kept) | 21 · 15 | 28 · 8 |
+
+The vote's gain holds (Claude's verdicts gave 31 · 3); production's wrong flags stay with the fast vessels, which no
+anchor rule touches. The vessels whose reports alternate between two places (4941, 4426) the maintainer read as two
+vessels under one vid.
