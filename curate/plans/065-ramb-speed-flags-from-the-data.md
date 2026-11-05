@@ -3,8 +3,8 @@
 **status:** partly built — written 2026-11-05 at the maintainer's request, its asks answered the same day as
 recommended ("Yes, as recommended"), the set named `dansk_truth`; step 1 built the same day, committed to ramb's local
 `main` as 2026.11.05.3 (d87c781), and step 2, the viewer's marks by colour and the span buttons, as 2026.11.05.4
-and .5 (bb6333e, c2fc469), and step 3, `rb_create_ping_limits()`, as 2026.11.05.6 (3df2adc), none installed or
-pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
+and .5 (bb6333e, c2fc469), and step 3, `rb_create_ping_limits()`, as 2026.11.05.6 (3df2adc), and step 4, the flags on the limits, the time
+flag and the outcomes, as 2026.11.05.7 (943eee9), none installed or pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
 generate new truth dataset where we take into account some of the issues discovered here - like different streams and
 any rounding e.g. from AIS seconds to minutes ... think about how a truth dataset with planted errors can easily be
 exposed using the interactive app") · **see:** the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its README),
@@ -193,6 +193,39 @@ Each step committed when its check passes, ramb's tests whole, nothing pushed wi
    have none under the rule. Tests: `test-ping_limits.R` (11 blocks) and an etiquette case; ramb's whole suite passes.
 4. **`rb_flag_ping_impossible(limits = )` and `rb_flag_ping_time()`**, scored on the set (every ping in one outcome,
    plan 062's way) against today's methods. **check:** the summary by clock, rate and fault; the review in the viewer.
+   **Built 2026-11-05** (ramb 2026.11.05.7, 943eee9; scripts 11-14 of the study, its `out/score_truth.csv`):
+   - `rb_flag_ping_impossible(method = "local", limits = )`, by vessel or by vessel and stream: a leg is impossible
+     when longer than 2 noise + v (max(dt, `min_dt_s`) + time error), v the recorded speed near (by `local`'s factor
+     and margin, as before) or else the vessel's ceiling (basis `"ceiling"`), of a leg's two ends the larger. Without
+     `limits` the flags are 2026.11.05.1's bit for bit on both sets; with them and no recorded speed, `flag_own()`'s.
+   - `rb_flag_ping_time()`: a ping whose step in and step out disagree with its steady recorded speed by opposite
+     amounts, while the chord past it fits, is labelled `"time"`, its error estimated (`ping_time_error_s`), the worst
+     first, and set aside as an anchor; the allowance is the grain, the noise and the speed's spread, not the clock's
+     jitter. An along-track position error reads the same, and is rare.
+   - `rb_add_ping_outcome()`: §4 item 4, plan 062's outcomes from a rule's labels, the truth and a run without the
+     wrong pings.
+
+   Scored on the set (wrong positions caught %; good pings flagged in 10,000 of the rule's own, at 1 min / 6 min):
+
+   | rule | positions | own flags | wrong times caught as times |
+   |---|---|---|---|
+   | `clean`, 25 kn | 56 / 45 | 45 / 29 | 0 / 0 |
+   | `forward`, 25 kn | 52 / 37 | 44 / 29 | 0 / 0 |
+   | `local`, recorded speed | 70 / 59 | 20 / 92 | 0 / 0 |
+   | own limits, no recorded speed | 53 / 52 | 17 / 79 | 0 / 0 |
+   | own limits, recorded speed | 65 / 64 | 15 / 112 | 0 / 0 |
+   | time flag, then own limits and recorded speed | 65 / 65 | 17 / 125 | 22 / 15 |
+
+   - The time flag is the gain: 1,572 of the 4,425 pings jittered over 10 s (`steady` 20 %; at 10 %, 1,056 for 32
+     fewer good pings flagged), its estimate within a median 2 s, and 4 of the 15 late stamps in the chain: the rest at
+     under 2 knots or a speed changing by more than 20 %, where the recorded speed is no witness to the time.
+   - The own limits are no clear gain over `local` with a recorded speed, and with none they beat the fixed 25 kn only
+     at 6 min. At 1 min their margin (the ceiling times a minute clock's grain) lets detours through (55 % caught
+     against 72 %, both rates); at 6 min the slow EX_10's recorded ceiling (7.65 kn) is under what its positions run on the true
+     track (85 of the 106 good pings flagged have a true step over it). Ask f (`local`'s constants from the data) is
+     where this goes.
+   - Reviewed in the viewer (`14_review_truth.R`): each rule's outcome a lane; a late stamp caught as a time by the time
+     flag alone; on the jittered clock the time flag's good pings flagged are all beside a fault.
 5. **Iceland's disagreements judged:** a sample of the study's 41,487 and 21,126, checked by hand in the vessel overview
    (a checked link per case), and the timing error on sparse streams settled with plan 059's lags. **check:** each
    sampled ping in one outcome, with its witness.
