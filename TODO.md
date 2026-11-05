@@ -1183,7 +1183,8 @@ into these outcomes with every voyage in one, and the counts are in plan 031 §3
 
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
 **status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); next is step 1, the scratch
-measurements · **see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196 and 233, TODOs 88 and 117
+measurements · **see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282 and 283, TODOs
+88, 117 and 192
 
 The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
 events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
@@ -1192,6 +1193,11 @@ port, and every provider's codes become NA; a generic ramb step, `rb_flag_port_e
 event by position, sequence, the cleaned track and its sending unit, so `port_call.R` no longer asks whether the
 whack filter kept the event as a ping (699,084 port calls lean on events, 13,510 on events alone; 904,187 of STK's
 1,351,745 whacks are event rows). Then the chain from the union down is rebuilt.
+
+Decisions 282 and 283 add a reason: judged as pings, STK's event rows recording 0 kn are often placed 0.8-2 km from
+the vessel's other reports, and a speed rule's forward scan anchors on them. In Iceland's 2024 hand check (Claude's,
+not checked by a person) they were 9 of the 16 wrong flags of the rule on the vessels' own limits; `clean` catches
+most by their angle. With the events out of the track the anchor question shrinks for every rule.
 
 **check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.
@@ -1655,6 +1661,10 @@ most; plan 048) and on slow vessels whose positions run over their recorded ceil
 5 kn are set by hand (ask f); a ceiling with a margin from the data is the same question. `anchor = "vote"` is a choice
 for `clean` too (3,009 of production's flags change on the hand cases' 32 vessels). Moving production is its own
 decision, with a rebuild.
+
+What production costs fast vessels, over a year: in 2024 `clean` flags 10,812 pings that the rule on the own limits
+keeps, on 128 vessels whose recorded ceiling is over 25 kn (133 of 1,850 have one; the speed-ceiling study's script
+24). Of the 9 such pings in the hand check, 7 were good pings (Claude's judgement, not checked by a person).
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
