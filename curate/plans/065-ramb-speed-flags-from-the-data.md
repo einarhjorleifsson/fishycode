@@ -3,7 +3,8 @@
 **status:** partly built — written 2026-11-05 at the maintainer's request, its asks answered the same day as
 recommended ("Yes, as recommended"), the set named `dansk_truth`; step 1 built the same day, committed to ramb's local
 `main` as 2026.11.05.3 (d87c781), and step 2, the viewer's marks by colour and the span buttons, as 2026.11.05.4
-and .5 (bb6333e, c2fc469), none installed or pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
+and .5 (bb6333e, c2fc469), and step 3, `rb_create_ping_limits()`, as 2026.11.05.6 (3df2adc), none installed or
+pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
 generate new truth dataset where we take into account some of the issues discovered here - like different streams and
 any rounding e.g. from AIS seconds to minutes ... think about how a truth dataset with planted errors can easily be
 exposed using the interactive app") · **see:** the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its README),
@@ -157,6 +158,39 @@ Each step committed when its check passes, ramb's tests whole, nothing pushed wi
    with one mark column, as before. Item 3 (a span's name from a label column) came with step 1's named table.
 3. **`rb_create_ping_limits()`**, scored on the set's per-vessel truth (ceiling, grain, time error), and on the study's
    data (its numbers reproduced). **check:** each limit's error against the truth, by clock and rate.
+   **Built 2026-11-05** (ramb 2026.11.05.6, 3df2adc): a row per vessel, or per vessel and stream (§2): the vessel's
+   ceiling on each of its streams' rows, the clock by stream, the dataset's noise, each value with its basis and the
+   count it rests on (`recorded_n`, `recorded_moving_n`, `track_n`, `time_error_n`); the noise's basis is `"rest"`,
+   `"geometry"` or `"none"` (§2's `"dataset"`: every vessel takes the dataset's). Equal to the study's `rules.R` on
+   `dansk_planted` and four other examples, but for three changes, each from a score:
+   - a thinned step's speed is the lower of the speeds from one and from two pings back: `dansk_planted`'s
+     `shifted_copy`, a copy of the track interleaved ping by ping in its stream (two transmitters on one id), jumps
+     every step, and set the track's ceiling at 61-226 times the true one on the set's 1 min tracks, now 0.90-0.95. On
+     Iceland's 2024 the vessels whose track reads over 1.5 times their recorded ceiling fall from 35 to 3 and those over
+     40 kn from 27 to 1; the median ratio falls from 0.936 to 0.919, and the share within 0.8-1.25 from 0.896 to 0.887.
+     The speed over two steps alone did worse on the set (0.91-2.35);
+   - both running medians count only where their window is whole: a stream's first step has one ping back, and its raw
+     jump set a ceiling of 226 kn in a test; at the ends the study took a report recorded once as recorded twice. 100
+     Icelandic vessels' recorded ceilings fall to what they record twice in a row (one from 16.6 to 10.2 kn);
+   - where the time error is not measured the grain stands for it, `time_error_basis` `"grain"`, and
+     `ceilings_agree` compares the two ceilings, not the recorded speeds' 99.9th percentile, which one 60 kn report
+     moved.
+
+   Scored on the set by clock and rate (108 streams of 52 tracks; a derived speed passed as none):
+   - the grain right on every stream;
+   - the recorded ceiling 0.98-1.01 of the true at 1 min (the receipt clock 0.94), 0.86-0.97 at 6 min, where the
+     vessels' top speed is a burst of three pings that neither witness sees;
+   - the track's ceiling, where no speed is recorded, 0.90-0.95 at 1 min and 0.33-0.88 at 6 min;
+   - the time error, or the grain for it, at least the true step error on every stream but one of the receipt clock's
+     12 (the slow EX_10's received stream: 17.5 s against 1 s, too few steady steps to measure);
+   - the hourly stream's measure 1,253 s against a true 0: over an hour the vessel's speed changes between reports, the
+     sparse streams of step 5.
+
+   Iceland's 2024 (as the study read it, production's invalid and duplicate pings out) lazily in 29 s: 1,850
+   vessels in 5,990 vessel-stream rows; ceilings recorded 1,526, from the track 10, the default 314; the two
+   witnesses agree for 1,235 of 1,392. The study's saved Iceland table predates its own guard of 30 moving reports
+   (`out/iceland_2024_props.csv` written 11:18, `rules.R` changed 11:21): 55 vessels with a recorded ceiling there
+   have none under the rule. Tests: `test-ping_limits.R` (11 blocks) and an etiquette case; ramb's whole suite passes.
 4. **`rb_flag_ping_impossible(limits = )` and `rb_flag_ping_time()`**, scored on the set (every ping in one outcome,
    plan 062's way) against today's methods. **check:** the summary by clock, rate and fault; the review in the viewer.
 5. **Iceland's disagreements judged:** a sample of the study's 41,487 and 21,126, checked by hand in the vessel overview

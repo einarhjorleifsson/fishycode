@@ -1644,8 +1644,9 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 190. ramb's speed flags from the data itself, and a planted set of today's clocks (plan 065)
-**status:** open; plan 065 partly built 2026-11-05: step 1, `dansk_truth` (ramb d87c781), and step 2, the viewer
-(bb6333e, c2fc469); next step 3, `rb_create_ping_limits()` · **see:**
+**status:** open; plan 065 partly built 2026-11-05: step 1, `dansk_truth` (ramb d87c781), step 2, the viewer
+(bb6333e, c2fc469), and step 3, `rb_create_ping_limits()` (3df2adc); next step 4, `rb_flag_ping_impossible(limits = )`
+and `rb_flag_ping_time()` · **see:**
 `curate/plans/065-ramb-speed-flags-from-the-data.md`, the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/`, me_code
 `checks/cs1_clock_minute.R`, plan 062, TODO 187
 
