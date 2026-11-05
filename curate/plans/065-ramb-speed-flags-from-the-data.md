@@ -4,7 +4,8 @@
 recommended ("Yes, as recommended"), the set named `dansk_truth`; step 1 built the same day, committed to ramb's local
 `main` as 2026.11.05.3 (d87c781), and step 2, the viewer's marks by colour and the span buttons, as 2026.11.05.4
 and .5 (bb6333e, c2fc469), and step 3, `rb_create_ping_limits()`, as 2026.11.05.6 (3df2adc), and step 4, the flags on the limits, the time
-flag and the outcomes, as 2026.11.05.7 (943eee9), none installed or pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
+flag and the outcomes, as 2026.11.05.7 (943eee9), and step 5, the time error's cap and lags, as 2026.11.05.8
+(4b4c2bc), with Iceland's disagreements judged by hand, none installed or pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
 generate new truth dataset where we take into account some of the issues discovered here - like different streams and
 any rounding e.g. from AIS seconds to minutes ... think about how a truth dataset with planted errors can easily be
 exposed using the interactive app") · **see:** the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its README),
@@ -213,8 +214,10 @@ Each step committed when its check passes, ramb's tests whole, nothing pushed wi
    | `forward`, 25 kn | 52 / 37 | 44 / 29 | 0 / 0 |
    | `local`, recorded speed | 70 / 59 | 20 / 92 | 0 / 0 |
    | own limits, no recorded speed | 53 / 52 | 17 / 79 | 0 / 0 |
-   | own limits, recorded speed | 65 / 64 | 15 / 112 | 0 / 0 |
-   | time flag, then own limits and recorded speed | 65 / 65 | 17 / 125 | 22 / 15 |
+   | own limits, recorded speed | 65 / 64 | 15 / 110 | 0 / 0 |
+   | time flag, then own limits and recorded speed | 65 / 65 | 17 / 122 | 22 / 15 |
+
+   (With step 5's cap on the time error's steps; before it, 112 and 125 own flags at 6 min.)
 
    - The time flag is the gain: 1,572 of the 4,425 pings jittered over 10 s (`steady` 20 %; at 10 %, 1,056 for 32
      fewer good pings flagged), its estimate within a median 2 s, and 4 of the 15 late stamps in the chain: the rest at
@@ -229,6 +232,42 @@ Each step committed when its check passes, ramb's tests whole, nothing pushed wi
 5. **Iceland's disagreements judged:** a sample of the study's 41,487 and 21,126, checked by hand in the vessel overview
    (a checked link per case), and the timing error on sparse streams settled with plan 059's lags. **check:** each
    sampled ping in one outcome, with its witness.
+   **Done 2026-11-05** (by Claude; not checked by a person; ramb 2026.11.05.8, 4b4c2bc; the study's scripts 15-23):
+   - **The time error settled.** With no cap, every Icelandic stream the recorded speed measured steps 5 minutes or
+     more (STK's AIS a median 275 s, astdB thousands), and plan 059's copies (the same report heard by astd and STK)
+     put the feeds' clocks within about 70-90 s: 213 of 219 streams read more than twice the copies' spread. The
+     measure now takes steps of at most 300 s (`max_step_s`): 6 of 34 then (none of 7 at 120 s, but the Adriatic set's
+     steps written 3 min long need 300 s), and the truth's hourly stream loses its 1,253 s. A stream whose lags are
+     measured takes their spread where it is the larger (`lag`, basis `"lag"`): astd, whose speed is derived and so has
+     no other measure, a median 72 s on 276 streams, from its copies, which production labels duplicates, so the limits
+     are measured on the judged pings and those. Even on whole seconds the measure reads 12-42 s at 1 min steps on the
+     truth (turns within a step): a margin more than the clock's error alone.
+   - **The disagreements, rerun with the built rule** (each vessel and stream's own limits, no recorded speed,
+     production's 0.3 nm floor between feeds, as the study's): 27,501 pings it flags and production keeps (42,862
+     before the copies' lags), 24,189 the reverse, 22,549 both.
+   - **The hand check.** The vessel overview shows the trail, from which production drops the pings it flags, so the
+     cases are judged on ramb's viewer with every tagged ping (`19_review_iceland.R`, 127.0.0.1:8809) and a table of each
+     case's neighbourhood within 10 min (`21_case_tables.R`), each case's overview link kept beside. Of 200 drawn from
+     each side, 20 each, every one in one outcome with its witness (`out/iceland_2024_sample_hand.csv`):
+
+     | the flag of | right | wrong | a time off | undecided |
+     |---|---|---|---|---|
+     | the built rule (production keeps) | 3 | 16 | 0 | 1 |
+     | production (the built rule keeps) | 3 | 12 | 1 | 4 |
+
+     Where they disagree, both flag mostly good pings. The built rule's 16 wrong: 12 its forward scan anchored on a bad
+     ping it kept, 9 of them an STK port event row recording 0 kn and placed 0.8-2 km from the vessel's other reports
+     of the moment (production's `clean` catches it by its angle; the local rule finds one leg impossible, not two); 2
+     a vessel steaming just over its ceiling (18.4-19 kn against 18.5); 2 astdB reports delivered late. Production's
+     12 wrong: 7 fast vessels whose own ceiling is over 25 kn, 4 anchored on a bad ping, 1 beside a VMS report a minute
+     off. Counted on all 400: 86 of production's 200 on vessels whose own ceiling is over 25 kn; at least 41 of the
+     built rule's 200 after a ping production flags and it kept (29 an event row at 0 kn). The automatic witnesses
+     (another feed near, the legs against the recorded speed) are a proposal only: of the 8 positions they called
+     wrong, 4 were right.
+   - **What it leaves**, none built here: STK's port event rows are events, not fixes, and the tag pass knows them
+     (`stk_event`); judged as fixes they cost the local rule good pings. The forward scan's anchor after a bad ping it
+     cannot resolve (§7) costs both rules. A ceiling from the recorded speed under what the vessel's positions run
+     (EX_10 on the truth, B013 and B016 here) is ask f's.
 6. **The record:** ramb's NEWS and article; a decision here; fishycode's `curate/ais_ping_clean.R` on the vessels' own
    limits is its own decision, with a rebuild (not this plan).
 
