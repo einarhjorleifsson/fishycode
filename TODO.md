@@ -1651,8 +1651,9 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 065
-§6 ask f and §7, `curate/ais_ping_clean.R`, TODO 184
+**status:** open · **needs: maintainer** — whether production moves, a rebuild; plan 069's asks a-f (the rebuild
+test) · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 069, plan 065 §6 ask f and §7,
+`curate/ais_ping_clean.R`, TODO 184
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. The alternatives are in ramb (decisions 282-284): each vessel's
 own limits, the time flag, the vote, the local speed on the larger side (`"local"`'s default) and `stream =`. `clean` at
@@ -1665,7 +1666,8 @@ The candidate against production's stored labels, year by year (`$FISHYDATA/arch
 2007 and 2018 run, the rest one command in its README): in 2018 the candidate flags 40,682 pings production keeps
 (8,715 STK event rows at 0 kn), 18,144 of them in fishing windows (about 3,200 h); production 19,621 the candidate keeps
 (9,353 on fast vessels). Next: the other years, hand samples of the candidate's own flags in fishing windows, then the
-decision and one rebuild.
+decision and one rebuild. Plan 069 (2026-11-05) proposes a rebuild test overnight: the candidate in the clean step
+and the 16 targets below it on a scratch store, every record against the live store in one outcome.
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
