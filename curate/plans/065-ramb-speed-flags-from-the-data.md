@@ -1,16 +1,12 @@
 # 065 — ramb's speed flags from the data itself: each vessel's own ceiling, its clock's error in the margin, a planted set that holds today's faults, and the viewer to review it
 
-**status:** partly built — written 2026-11-05 at the maintainer's request, its asks answered the same day as
-recommended ("Yes, as recommended"), the set named `dansk_truth`; step 1 built the same day, committed to ramb's local
-`main` as 2026.11.05.3 (d87c781), and step 2, the viewer's marks by colour and the span buttons, as 2026.11.05.4
-and .5 (bb6333e, c2fc469), and step 3, `rb_create_ping_limits()`, as 2026.11.05.6 (3df2adc), and step 4, the flags on the limits, the time
-flag and the outcomes, as 2026.11.05.7 (943eee9), and step 5, the time error's cap and lags, as 2026.11.05.8
-(4b4c2bc), with Iceland's disagreements judged by hand, none installed or pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
-generate new truth dataset where we take into account some of the issues discovered here - like different streams and
-any rounding e.g. from AIS seconds to minutes ... think about how a truth dataset with planted errors can easily be
-exposed using the interactive app") · **see:** the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its README),
-TODO 190, plans 062 (step 0, `dansk_planted`), 059 and 060 (the feeds' clocks), 064 (the time panel), decisions 067,
-280 and 281, me_code `checks/cs1_clock_minute.R`
+**status:** executed — written 2026-11-05 at the maintainer's request, its asks answered the same day as recommended
+("Yes, as recommended"), the set named `dansk_truth`; its six steps done the same day, each at the maintainer's word,
+built, scored and judged by Claude (AI), not checked by a person (ramb 2026.11.05.3-.8: d87c781, bb6333e, c2fc469,
+3df2adc, 943eee9, 4b4c2bc; the article 01d8825; none installed or pushed); recorded in decision 282 · **see:** decision
+282, the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its README), TODOs 191 and 192, plans 062 (step 0,
+`dansk_planted`), 059 and 060 (the feeds' clocks), 064 (the time panel), decisions 067, 280 and 281, me_code
+`checks/cs1_clock_minute.R`
 
 Drafted with AI assistance (Claude) on 2026-11-05; a person has not yet checked it. **Measured:** everything in §1, by
 the study (Claude). **Assumed:** that the faults of §3 are those real data have (they are what today's data showed,
@@ -270,6 +266,9 @@ Each step committed when its check passes, ramb's tests whole, nothing pushed wi
      (EX_10 on the truth, B013 and B016 here) is ask f's.
 6. **The record:** ramb's NEWS and article; a decision here; fishycode's `curate/ais_ping_clean.R` on the vessels' own
    limits is its own decision, with a rebuild (not this plan).
+   **Done 2026-11-05**: ramb's NEWS at each version; its trips article shows the limits and the time flag on `dansk`
+   (01d8825; the code run with the package loaded, not rendered: the installed ramb is older); decision 282. Production
+   is unchanged (TODO 192); the forward scan's anchor is TODO 191; the event rows go to plan 048 (TODO 148).
 
 ## 6. Asks
 

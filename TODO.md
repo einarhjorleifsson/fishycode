@@ -1643,19 +1643,29 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
-## 190. ramb's speed flags from the data itself, and a planted set of today's clocks (plan 065)
-**status:** open; plan 065 partly built 2026-11-05: step 1, `dansk_truth` (ramb d87c781), step 2, the viewer
-(bb6333e, c2fc469), step 3, `rb_create_ping_limits()` (3df2adc), step 4, the flags on the limits and the time flag
-(943eee9), and step 5, Iceland's disagreements judged by hand and the time error's cap and lags (4b4c2bc); next step
-6, the record · **see:**
-`curate/plans/065-ramb-speed-flags-from-the-data.md`, the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/`, me_code
-`checks/cs1_clock_minute.R`, plan 062, TODO 187
+## 191. ramb: the forward scan's anchor after a ping it cannot resolve
+**status:** open · **see:** decision 282, plan 065 §7, `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its scripts 21-23),
+`dansk_truth`'s relocations
 
-The maintainer, 2026-11-05: the 25 kn every speed rule uses is a guess; find a ceiling in the data itself, and a truth
-set with today's faults (streams, times rounded to the minute) that the viewer can expose. The study found it: each
-vessel's own recorded top speed, with its clock's grain and timing error and the noise in the margin, catches as much
-as 25 kn on the planted faults, keeps the fast vessels, and spares the good pings a minute clock blames. Plan 065
-builds it in ramb, with a planted set written through each clock and stream met (every row with its true position
-and time) and the time panel's changes to review it a fault at a time.
+Every forward scan keeps the first ping after a jump it does not resolve as its anchor, and flags the good pings after
+it until the vessel could have covered the jump. In Iceland's 2024 (decision 282's hand check) that is 12 of the 16
+good pings the vessels' own limits flagged where production keeps them (9 after an STK port event row at 0 kn, placed
+0.8-2 km off), and 4 of production's 12. A scan that weighs the pings after the jump (how many agree with the anchor,
+how many with the ping before it) would resolve most; `dansk_truth`'s relocations and the hand cases are the test.
 
-**check:** plan 065 executed or parked, with a decision record.
+**check:** a rule in ramb scored on `dansk_truth` and on the 40 hand cases, every ping in one outcome, against the
+forward scan of today; or the item parked by the maintainer.
+
+## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
+**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decision 282, plan 065 §6 ask
+f and §7, `curate/ais_ping_clean.R`, TODO 184
+
+Production's `ais_ping_clean.R` runs `clean` at 25 kn. Plan 065 built the alternatives in ramb (decision 282): each
+vessel's own limits, a time flag, and their scores. Neither the planted set nor Iceland's hand cases showed the own
+limits better where it matters: they keep fast vessels (7 of production's 12 wrong flags in the hand check, 86 of 200
+drawn), and lose on STK's event rows (TODO 191, plan 048) and on slow vessels whose positions run over their recorded
+ceiling. `local`'s factor 1.5 and margin 5 kn are set by hand (ask f); a ceiling with a margin from the data is the
+same question. Moving production is its own decision, with a rebuild.
+
+**check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
+item parked.
