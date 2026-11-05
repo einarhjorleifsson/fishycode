@@ -1518,7 +1518,7 @@ store's 9,582 placeholders. Next: plan 061's step 1 measures, then the sections 
 
 ## 184. ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence (plan 062)
 **status:** open; the ramb release built with the cascade, merged into ramb's `main` and installed (2026.11.04,
-abe207f) · **needs: maintainer** — pushing ramb ·
+abe207f), pushed 2026-11-05 · **needs: maintainer** — fishycode following (item 4), a rebuild ·
 **see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`, TODO 88, plan 061, decisions 067, 069, 234, 275 and 276
 
 The maintainer, 2026-11-02: ramb's branches and the functions that detect whacky pings, against the ICES data call,
@@ -1530,7 +1530,7 @@ labelled in ramb, a lazy speed per stream, ties and direction judged on evidence
 (done 2026-11-02: the branches deleted, the studies in `$FISHYDATA/archive/2026-10-whack-studies/`);
 two simple tests (done 2026-11-02 on 2017, `$FISHYDATA/archive/2026-11-02-plan062-step1/`: 28,758 kept speeds used a
 bad position; ramb's lazy route gave production's labels at 1.62 times its time, the cost in joining labels back);
-planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 2026.11.02.3, not pushed); every method scored
+planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 2026.11.02.3, pushed 2026-11-05); every method scored
 (2026-11-02 on the planted faults and the reload, `$FISHYDATA/archive/2026-11-02-plan062-step3/`: no speed rule
 catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb release; fishycode follows; the book.
 
@@ -1605,7 +1605,7 @@ carrying the chart names as a source flagged unchecked, or the item dropped by t
 ## 187. ramb's map viewer gets a time profile, for any pings (plan 064)
 **status:** open; steps 1-4 built 2026-11-04 in ramb 2026.11.04.4 (`rb_map_time()`, decision 279), the CS1 viewer in
 `me_code`; the maintainer's first look on `dansk` 2026-11-05 put the controls in the sidebar and one gap in seconds,
-none by default (ramb 2026.11.05.1, decision 280), installed, not pushed · **needs: maintainer** — step 5's
+none by default (ramb 2026.11.05.1, decision 280), installed and pushed 2026-11-05 · **needs: maintainer** — step 5's
 step-through in the CS1 viewer; asks d and e · **see:** `curate/plans/064-ramb-map-time-profile.md`, decisions 279
 and 280, plan 047 (its step 3), TODO 145, plan 046
 

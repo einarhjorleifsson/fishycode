@@ -3,7 +3,7 @@
 **status:** partly built — steps 0-3 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
 measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 done (the scores on the planted faults and the reload, and the timing,
 `$FISHYDATA/archive/2026-11-02-plan062-step3/`); step 4 built 2026-11-04 (ramb 2026.11.04, merged into
-ramb's `main` at abe207f and installed, not pushed; `$FISHYDATA/archive/2026-11-04-plan062-step4/`). Written 2026-11-02 at the
+ramb's `main` at abe207f and installed; pushed with all of ramb's `main` on 2026-11-05, b7109d4; `$FISHYDATA/archive/2026-11-04-plan062-step4/`). Written 2026-11-02 at the
 maintainer's request ("Ramb revisions": the forks, and the functions that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273, 275 and 276, `curate/ais_ping_clean.R`,
