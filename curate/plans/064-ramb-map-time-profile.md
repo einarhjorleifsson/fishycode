@@ -71,6 +71,23 @@ and line thinned to about 5,000; uPlot draws a span within a frame.
 A vessel's whole series is three times plan 047's mark (150 thousand) in the case study. So the page needs a span
 (a month, a trip, the whole) as well as a window within it.
 
+### 1.4 A whole series in the browser (measured 2026-11-05, the maintainer's "measure first")
+
+The 150,000-ping cap of decision 279 came from one crash, a tab building 454,000 points as map features in step 1's
+first design. The built page holds a span as arrays and draws at most about 5,000 pings a window. Measured in the
+built-in browser on this Mac, each page served on 127.0.0.1, ramb 2026.11.05.1:
+
+| Page and series | Pings | Sent | Load to the chart | JS heap | A window move, to the next frame |
+|---|---|---|---|---|---|
+| ramb's, the case study's largest vessel whole | 450,149 | 15.9 MB JSON, 0.6 s | 0.8 s | 171-210 MB | day to month: 78-80 ms median (the map's zoom starting); whole: 15 ms |
+| ramb's, Iceland's longest series (vid 2184, 2007-2026), lazy from the trail | 2,173,541 | 83.8 MB JSON, 6.9 s | 7.9 s | 271 MB | 30 days, 20 moves: 33 ms median, 39 ms max |
+| the vessel overview, the same vessel, "All years" | 2,173,541 | 48.4 MB parquet (15 columns), 1.3 s | 3.5 s, with trips, hauls and landings | 478 MB | its bench, 30 days, 20 moves: 17 ms median, 70 ms max |
+
+Neither page crashed. Iceland's trail has 3,069 vessels: 671 with over 150,000 pings in all, 374 over 454,000, the
+largest vessel-year 343,210. So the cap is a leftover of the dropped design, and a span need not be a memory unit: the
+whole series holds, and what grows with it is the load, through the JSON (39 bytes a ping for four columns, where the
+overview's parquet takes 22 for fifteen).
+
 ## 2. What the user gets
 
 ```r
