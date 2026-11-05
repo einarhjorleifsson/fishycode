@@ -1642,3 +1642,17 @@ method's documentation gives its original's value too. A quantity ramb returns k
 hours). Old names live one release as warning aliases; fishycode's callers follow (grep first).
 
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
+
+## 190. ramb's speed flags from the data itself, and a planted set of today's clocks (plan 065)
+**status:** open; plan 065 partly built: step 1, `dansk_truth`, ramb 2026.11.05.3 (d87c781), 2026-11-05 · **see:**
+`curate/plans/065-ramb-speed-flags-from-the-data.md`, the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/`, me_code
+`checks/cs1_clock_minute.R`, plan 062, TODO 187
+
+The maintainer, 2026-11-05: the 25 kn every speed rule uses is a guess; find a ceiling in the data itself, and a truth
+set with today's faults (streams, times rounded to the minute) that the viewer can expose. The study found it: each
+vessel's own recorded top speed, with its clock's grain and timing error and the noise in the margin, catches as much
+as 25 kn on the planted faults, keeps the fast vessels, and spares the good pings a minute clock blames. Plan 065
+builds it in ramb, with a planted set written through each clock and stream met (every row with its true position
+and time) and the time panel's changes to review it a fault at a time.
+
+**check:** plan 065 executed or parked, with a decision record.
