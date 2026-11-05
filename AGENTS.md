@@ -255,26 +255,26 @@ Every script in a targets project is on one of three sides, and says which in a 
   MapLibre 5.24.0 (TODO 185; 8aa21b4), and the relief's controls, `shade`, of 2026.11.03.1 (plan 063; e874ecf), and the depth's, `colour`, of
   2026.11.03.2 (plan 063; bab626d), and its contours, the contour layer of 2026.11.03.3 (plan 063; 3a92fda), and its colours following the view,
   `colour$fit` of 2026.11.03.4 (plan 063; 5ee0eb8), in equal shares, 2026.11.03.5 (plan 063; fff2315), and contour levels from the view, 2026.11.03.6 (plan 063; b2eb027), and the shading's intensity from the view,
-  `shade$fit` of 2026.11.03.7 (plan 063; 5dd8b92); all installed from the working tree on 2026-11-03, not pushed. The
+  `shade$fit` of 2026.11.03.7 (plan 063; 5dd8b92); all installed from the working tree on 2026-11-03, pushed on 2026-11-05. The
   place names' controls on the bathymetry and effort maps (their areas, colour and the zoom they appear at:
   `map.json`'s `state`) need `rb_map_layer(state = )` of 2026.11.04.1, and the bathymetry map's bundle
   (`products/bathymetry_map/bundle.R`) `rb_map_bundle()` of 2026.11.04.2 (decision 277), both in 05247e1, committed to
-  ramb's local `main` and installed from it on 2026-11-04 (`git archive` with the LFS files), not pushed: under an
+  ramb's local `main` and installed from it on 2026-11-04 (`git archive` with the LFS files), pushed on 2026-11-05: under an
   older ramb neither map starts. The depth and effort map's bundle (`products/depth_effort_map/bundle.R`) needs
   `rb_map_bundle(grids = )` of 2026.11.04.3 (decision 278; e27a478, committed to ramb's local `main` and installed
-  from it on 2026-11-04, not pushed). The time panel under the map, `rb_map_time()` of 2026.11.04.4 (plan 064,
-  decision 279; 10c5355, committed to ramb's local `main` and installed from it on 2026-11-04, not pushed), is used by
+  from it on 2026-11-04, pushed on 2026-11-05). The time panel under the map, `rb_map_time()` of 2026.11.04.4 (plan 064,
+  decision 279; 10c5355, committed to ramb's local `main` and installed from it on 2026-11-04, pushed on 2026-11-05), is used by
   EM4SSF's case-study viewer in `me_code`, nothing in fishycode. Its controls in the sidebar, and one gap in seconds,
   none by default, `max_gap_s` of `rb_map_track()` and `rb_map_time()` (`gap_h` before, an hour), are 2026.11.05 and
   2026.11.05.1 (decision 280; 3d7709d and f91ab3b, committed to ramb's local `main` and installed from it on
-  2026-11-05, not pushed); nothing in fishycode passes `gap_h`. Its spans, the whole series by default and a user's
+  2026-11-05, pushed the same day); nothing in fishycode passes `gap_h`. Its spans, the whole series by default and a user's
   own units (`rb_map_time(span = )`), are 2026.11.05.2 (decision 281; 5ed850b), and the example `dansk_truth` of plan 065
   step 1 is 2026.11.05.3 (d87c781), and its step 2, the time panel's marks by colour and span buttons, 2026.11.05.4 and
   .5 (bb6333e, c2fc469), its step 3, `rb_create_ping_limits()`, 2026.11.05.6 (3df2adc), and its step 4,
   `rb_flag_ping_impossible(limits = )`, `rb_flag_ping_time()` and `rb_add_ping_outcome()`, 2026.11.05.7 (943eee9), and
   its step 5, `rb_create_ping_limits(max_step_s = , lag = )`, 2026.11.05.8 (4b4c2bc), and the trips article (01d8825),
   all committed to ramb's local `main` and installed from it on 2026-11-05 (2026.11.05.8 at 01d8825: `git archive` with
-  the LFS files, `--preclean`), not pushed; nothing in fishycode calls them yet (decision 282). The forward scan's
+  the LFS files, `--preclean`), pushed the same day; nothing in fishycode calls them yet (decision 282). The forward scan's
   anchor decided by the pings after a jump, `rb_flag_ping_impossible(anchor = "vote")`, opt-in, is 2026.11.05.9 (plan
   066, decision 283; e50568f), committed to ramb's local `main`; nothing in fishycode calls it.
   `rb_flag_ping_impossible(local_speed = )`, the local speed as the larger of the medians before and after (a change of
@@ -282,11 +282,12 @@ Every script in a targets project is on one of three sides, and says which in a 
   068 step 1, decision 284; 5a83342), committed to ramb's local `main`; nothing in fishycode calls `"local"`.
   `rb_flag_ping_impossible(stream = )`, each vessel's streams judged apart, opt-in for every method, is 2026.11.05.11
   (plan 068 step 2, decision 284; b7109d4), committed to ramb's local `main`; nothing in fishycode passes it. 2026.11.05.9
-  to .11 were installed from ramb's local `main` on 2026-11-05 at the maintainer's word (2026.11.05.11 at b7109d4: `git
-  archive` with the LFS files, `--preclean`; the whole suite passes against it), not pushed. Plan
+  to .11 were installed from ramb's local `main` on 2026-11-05, then, at the maintainer's word, every commit of ramb's
+  `main` named here was pushed to GitHub (15af6e8..b7109d4, 31 commits) and ramb reinstalled from it (`RemoteSha`
+  b7109d4; the whole suite passes against it). Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
-  and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's
+  and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's
   own chain gives the store's labels under it (plan 062 step 4). The data
   on disk: every target of the main project but `ais_catch` and `check_allocation_audit` (decision 261) was rebuilt from
   raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6, and the 19 from `ais_ping_tag` down twice more
