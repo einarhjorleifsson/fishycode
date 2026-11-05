@@ -279,7 +279,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   066, decision 283; e50568f, committed to ramb's local `main`), not installed or pushed; nothing in fishycode calls it.
   `rb_flag_ping_impossible(local_speed = )`, the local speed as the larger of the medians before and after (a change of
   `"local"`'s default; `"both_sides"` the old way), with the arguments after `...` named in full, is 2026.11.05.10 (plan
-  068 step 1; 5a83342, committed to ramb's local `main`), not installed or pushed; nothing in fishycode calls `"local"`. Plan
+  068 step 1; 5a83342, committed to ramb's local `main`), not installed or pushed; nothing in fishycode calls `"local"`.
+  `rb_flag_ping_impossible(stream = )`, each vessel's streams judged apart, opt-in for every method, is 2026.11.05.11
+  (plan 068 step 2; b7109d4, committed to ramb's local `main`), not installed or pushed; nothing in fishycode passes it. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's

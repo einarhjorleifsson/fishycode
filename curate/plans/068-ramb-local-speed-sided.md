@@ -4,8 +4,8 @@
 `$FISHYDATA/archive/2026-11-05-local-allowance/` (its README), which measured plan 065's ask f; checked on five more
 datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); step 0 done
 that evening ("Yes, step 0"): the ping's own recorded speed counted on both sides chosen (§4); step 1 built the same
-evening ("Yes, step 1"): ramb 2026.11.05.10 (5a83342), committed to its local `main`, not installed or pushed; step 2
-next ·
+evening ("Yes, step 1"): ramb 2026.11.05.10 (5a83342); step 2 built ("Yes, step 2"): ramb 2026.11.05.11 (b7109d4);
+both committed to ramb's local `main`, not installed or pushed; step 3 next ·
 **see:** TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
@@ -95,7 +95,13 @@ vote (decision 283) and the margin of 5 kn:
 2. **Build `stream =`** for every method (the vessel's key taken with the stream inside, the limits by both, the
    evidence's legs within the stream): tests that `stream = NULL` gives today's flags, and that a stream column gives
    the flags of running each stream as its own vessel (the study's way) on `dansk_truth`, for `clean`, `forward` and
-   `local`. **check:** the suite passes; both equalities.
+   `local`. **check:** the suite passes; both equalities. **Done** 2026-11-05: ramb 2026.11.05.11 (b7109d4): the
+   engines take vessel and stream as their vessel, the limits keep the ping's own (by vessel, or vessel and stream),
+   the evidence's legs stay within the stream, the lazy route's batches carry it; equal to each stream run as its own
+   vessel, flags and evidence, on `dansk_truth` for all three methods (with the same limits re-keyed: limits made with
+   each stream as a vessel differ, so they are not the comparison); `stream = NULL` as before (the study's 15 again,
+   20 runs equal); with `stream =` no warning on unharmonised clocks, without it the warning names `stream =`; the suite
+   passes (2,977).
 3. **Score with ramb itself**: the study's 04-06 rerun with ramb's options in place of the prototype. **check:** §2's
    numbers exactly, every ping in one outcome.
 4. **The record**: a decision here, TODO 192 updated, AGENTS.md's "Which ramb". Installed and pushed at the
