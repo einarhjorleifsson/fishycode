@@ -1,7 +1,9 @@
 # 069 — The candidate speed rule in production's place: a rebuild test of the AIS chain, overnight, on a scratch store
 
-**status:** proposal — written 2026-11-05 for TODO 192, at the request of the session that ran decisions 282-284; asks
-a-f (§7) wait on the maintainer; nothing run, nothing in the pipeline changed · **see:** TODO 192, decisions 282, 283
+**status:** partly built — written 2026-11-05 for TODO 192, at the request of the session that ran decisions 282-284;
+asks a-f (§7) answered the same evening, each as recommended ("Yes, as recommended"); the night run set up, tried on
+2007 and started that night in `$FISHYDATA/archive/2026-11-05-speed-rule-rebuild-test/` (its README: the log, how to
+resume, the morning's checks); its results not yet read; nothing in the pipeline changed · **see:** TODO 192, decisions 282, 283
 and 284, plan 068, plan 065 §7, TODO 184 (plan 062's item 4), TODO 148 (plan 048), `curate/ais_ping_clean.R`,
 `$FISHYDATA/archive/2026-11-05-speed-rule-sweep/README.md`
 
@@ -114,7 +116,9 @@ resumes at the step that stopped. Times from 2026-11-02 and the sweep.
 1. **The sweep's other 18 years** (under an hour): `01_sweep.R 2007:2026` (done years skipped), then `02_summary.R`.
    Read-only on the live store, written into its own study.
 2. **The control** (about 20 min): production's own `curate/ais_ping_clean.R`, from the code clone, on the scratch
-   store. Its `ping_whacky` against the live one, ping by ping: equal stages, or every difference listed.
+   store. Its `ping_whacky` against the live one, ping by ping: equal stages, or every difference listed. The clone's
+   completion markers (`staging/ais/ping_clean_marks`) are deleted first: they match production's method and the
+   cloned inputs, so the script would otherwise skip every year.
 3. **The candidate's clean** (about 25-35 min): the study's copy (§2), which overwrites the control's output year by
    year.
 4. **The chain** (about 1 h): the 16 targets of §2, in order, each script from the code clone; the scratch's
@@ -151,7 +155,8 @@ Written to the study's `out/` as small tables; Icelandic data, so they stay unde
 
 ## 6. The morning's checks
 
-Written into the study's README before the start, run by Claude when the maintainer is back:
+Written into the study's README before the start (`$FISHYDATA/archive/2026-11-05-speed-rule-rebuild-test/README.md`,
+with the log's place, `logs/night.log`), run by Claude when the maintainer is back:
 
 1. The log ends in `NIGHT DONE`; else the step it stopped at, and the same command resumes.
 2. Nothing in the live `raw/`, `staging/`, `curated/` or `products/` newer than the preflight marker (`find -newer`).
