@@ -1671,5 +1671,11 @@ On a third dataset, EM4SSF's CS1 (decision 282's last section), the maintainer f
 pings: the own ceiling's 383 are its forward scan after one step the local speed from the device's speed calls
 impossible. `local`'s constants (ask f) come before the own ceiling can be a default.
 
+Ask f measured (`$FISHYDATA/archive/2026-11-05-local-allowance/`): the margin is not the lever (each 5 kn costs ~6
+points of the planted set's catch). The local speed is: leaving a berth, the neighbours at rest outvote the moving
+ones. Taken as the larger of the medians before and after (a prototype of ramb's engine), it keeps the catch within a
+point, flags 18-35 % fewer good pings alone, 70 % fewer of CS1's false ones, and on Iceland's 40 cases 32 right of 36
+(34 with each stream judged alone) against 30. Building it, and judging each stream alone, in ramb: a plan.
+
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
