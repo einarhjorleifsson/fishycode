@@ -2,7 +2,8 @@
 
 **status:** partly built — written 2026-11-05 at the maintainer's request, its asks answered the same day as
 recommended ("Yes, as recommended"), the set named `dansk_truth`; step 1 built the same day, committed to ramb's local
-`main` as 2026.11.05.3 (d87c781, not installed or pushed; `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
+`main` as 2026.11.05.3 (d87c781), and step 2, the viewer's marks by colour and the span buttons, as 2026.11.05.4
+and .5 (bb6333e, c2fc469), none installed or pushed (step 1: `data-raw/truth.R`, 160,097 rows, 3.3 MB, its test passing, reviewed in today's viewer, §5); ("Yes, a plan"; "wondering if we need also to
 generate new truth dataset where we take into account some of the issues discovered here - like different streams and
 any rounding e.g. from AIS seconds to minutes ... think about how a truth dataset with planted errors can easily be
 exposed using the interactive app") · **see:** the study `$FISHYDATA/archive/2026-11-05-speed-ceiling/` (its README),
@@ -148,6 +149,12 @@ Each step committed when its check passes, ramb's tests whole, nothing pushed wi
    and so do the gaps of step 2 (one mark colour, no legend).
 2. **The viewer's changes** (§4, 1-3), one at a time, every click path tested (plan 064's checklist). **check:** the
    review of step 1 with marks in colour, the span buttons, served and bundled.
+   **Built 2026-11-05** (ramb bb6333e, c2fc469): each mark column its own colour, row of ticks above the chart and ring
+   on the map, named in the sidebar (`marks = c(position = wrong_position, ...)`), the readout listing every mark; ‹ ›
+   beside the span list, off at either end; a vessel's own spans no longer carried to another vessel. One change at a
+   time, each checked on `dansk_truth` in a browser: rows, colours, rings, legend, readout, a vessel and a span
+   changed, the address, a change of base map, a phone's width, and a two-track bundle with no server; and on `dansk`
+   with one mark column, as before. Item 3 (a span's name from a label column) came with step 1's named table.
 3. **`rb_create_ping_limits()`**, scored on the set's per-vessel truth (ceiling, grain, time error), and on the study's
    data (its numbers reproduced). **check:** each limit's error against the truth, by clock and rate.
 4. **`rb_flag_ping_impossible(limits = )` and `rb_flag_ping_time()`**, scored on the set (every ping in one outcome,

@@ -269,7 +269,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   2026.11.05.1 (decision 280; 3d7709d and f91ab3b, committed to ramb's local `main` and installed from it on
   2026-11-05, not pushed); nothing in fishycode passes `gap_h`. Its spans, the whole series by default and a user's
   own units (`rb_map_time(span = )`), are 2026.11.05.2 (decision 281; 5ed850b), and the example `dansk_truth` of plan 065
-  step 1 is 2026.11.05.3 (d87c781), both committed to ramb's local `main`, not installed, not pushed. Plan
+  step 1 is 2026.11.05.3 (d87c781), and its step 2, the time panel's marks by colour and span buttons, 2026.11.05.4 and
+  .5 (bb6333e, c2fc469), all committed to ramb's local `main`, not installed, not pushed. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's
