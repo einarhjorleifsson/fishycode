@@ -1,9 +1,10 @@
 # 068 — ramb's `local` rule: a local speed that follows a change of speed, and each stream judged alone
 
-**status:** proposal — written 2026-11-05 at the maintainer's word ("Yes, write the plan"), from the study
+**status:** partly built — written 2026-11-05 at the maintainer's word ("Yes, write the plan"), from the study
 `$FISHYDATA/archive/2026-11-05-local-allowance/` (its README), which measured plan 065's ask f; checked on five more
-datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); nothing
-built, step 0 next ·
+datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); step 0 done
+that evening ("Yes, step 0"): the ping's own recorded speed counted on both sides chosen (§4); nothing built in ramb,
+step 1 next ·
 **see:** TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
@@ -62,23 +63,31 @@ vote (decision 283) and the margin of 5 kn:
 ## 3. Proposal
 
 - **`rb_flag_ping_impossible(local_speed = c("larger_side", "both_sides"))`**, for `method = "local"`: `"larger_side"`
-  the larger of the median of the `k` recorded speeds before and the median of the `k` after, the ping's own left out
-  (a single glitch still outvoted on its side); `"both_sides"` today's, bit for bit. The default is ask a.
+  the larger of the median of the `k` recorded speeds before and the median of the `k` after, the ping's own counted on
+  each side (step 0: one of six values, so a single glitch is still outvoted); `"both_sides"` today's, bit for bit.
+  The default is ask a.
 - **`rb_flag_ping_impossible(stream = NULL)`**, for every method: given a column, each vessel's streams are judged
   apart, so no leg, scan, vote or piece of evidence joins two streams; `limits =` keyed by vessel and stream, as
   `rb_create_ping_limits(stream = )` makes them. `NULL`, the default, judges a vessel's streams together, as today.
-- **The constants stay**: the factor 1.5, the margin 5 kn, `k` 5 (step 0 tries 3).
+- **The constants stay**: the factor 1.5, the margin 5 kn, `k` 5 (step 0: 3 did worse).
 
 ## 4. Steps
 
 0. **Two variants more** in the study's prototype, scored as its 04-06: the ping's own recorded speed counted on the
    side it would join (a glitch then excuses its own leg, the risk to measure on the planted `speed_glitch`), and `k`
    3. **check:** each variant's three tables beside §2's; the one built is the best on all three sets, or the sided
-   median stays.
+   median stays. **Done** 2026-11-05 (the study's 10-13, its README "Plan 068 step 0"): the own speed counted on both
+   sides best or tied on all three (`dansk_truth` 6 min: 50 good pings flagged alone per 10,000 against the sided rule's
+   67, the catch equal; CS1: 75 of today's 411 false flags left against 126; Iceland's cases 33 · 3 against 32 · 4),
+   no planted fault caught less; on the five datasets' 26 decided episodes it trades one good ping flagged for two of
+   dansk's four times off caught. 3 pings a side loses catch: not chosen. Found: `k = ` passed in `...` is taken for
+   `kn_max` by R's partial matching, so it never reaches the engine.
 1. **Build `local_speed`** in ramb (`src/whack_local.cpp`, the R argument passed to the engine, documentation, NEWS, a
    version): tests that `"both_sides"` gives 2026.11.05.9's flags on `dansk_planted` and `dansk_truth`; a track that
    leaves a berth at one-minute steps (no good ping flagged under `"larger_side"`, flagged under `"both_sides"`); a
-   spike and a run still caught; ramb's whole suite. **check:** the suite passes; `"both_sides"` bit for bit.
+   spike and a run still caught; a constant of `local` passed in `...` (`k`) reaches the engine and is not taken for
+   `kn_max`; ramb's whole suite. **check:** the suite passes; `"both_sides"` bit for bit; `"larger_side"` the prototype's
+   mode 2 on `dansk_truth`.
 2. **Build `stream =`** for every method (the vessel's key taken with the stream inside, the limits by both, the
    evidence's legs within the stream): tests that `stream = NULL` gives today's flags, and that a stream column gives
    the flags of running each stream as its own vessel (the study's way) on `dansk_truth`, for `clean`, `forward` and

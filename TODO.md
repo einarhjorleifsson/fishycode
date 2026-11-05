@@ -1651,7 +1651,7 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282 and 283, plan 068 (asks answered, step 0 next), plan 065
+**status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282 and 283, plan 068 (step 0 done, step 1 next), plan 065
 §6 ask f and §7, `curate/ais_ping_clean.R`, TODO 184
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. Plan 065 built the alternatives in ramb (decision 282): each
