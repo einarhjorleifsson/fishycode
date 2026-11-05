@@ -1606,3 +1606,37 @@ viewer: a vessel's columns over time, marks and lanes for intervals, a span held
 hover linked to the map, served and bundled. It is plan 047's step 3, taken first. Six steps, the first a measurement.
 
 **check:** plan 064 executed or parked, with a decision record.
+
+## 188. ramb: thin a vessel's pings, every nth or a share, on a lazy table too
+**status:** open · **see:** ramb's `AGENTS.md` (same construct out as in), TODO 187
+
+The maintainer, 2026-11-05: a lazy sample of pings to plot. `sample_frac()` has no lazy form, dbplyr's
+`slice_sample()` takes `n` only, and duckplyr's falls back to dplyr (the whole table into R). Two methods for one
+ramb function:
+
+- **every nth ping per vessel, in time:** `mutate(.i = row_number(time))` grouped by vessel, `.i %% n == 1`. It
+  sorts nothing and returns the rows in the input's order (checked on `dansk`, shuffled). `row_number()` with no
+  order is not time order on a lazy table even when the file is: on `dansk` it stepped back in time 42-45 times a
+  run, a different count each run.
+- **a share:** `random() < p` in DuckDB, about `p` of each vessel, a different sample each run.
+
+Measured on 2024's trail (33.0 M pings, 4 threads, fresh process, three runs): a scan 0.07 s, `random()` 0.12 s,
+`row_number()` unordered 0.39 s, ordered by time 0.49 s. Open: a ping with no time gets no number (dropped, or kept
+and said?), a seed for the share, and the name under ramb's verb rules.
+
+**check:** one ramb function with both methods, on data frames and lazy tables (the etiquette test), in NEWS; or
+the item parked by a decision.
+
+## 189. ramb: every duration argument in seconds, named `_s`
+**status:** open · **see:** ramb's `R/renamed.R` and compatibility policy (`AGENTS.md`), TODO 187
+
+The maintainer, 2026-11-05: a duration a user gives is in seconds, its name ending `_s`, as most already are
+(`min_dt_s`, `window_s`, `max_gap_s`, ...). `rb_map_track()`'s `gap_h` is renamed `max_gap_s` with TODO 187. Left:
+`max_gap_h` (`rb_flag_ping_impossible()`, `R/whack.R`), `min_dwell_h` (the port-call finder's `"dwell"`, and a
+column of its `min_dwell` table), `min_dur_h` and `max_dur_h` (`"jepol"`), `soak_h` (`R/record.R`, iapesca's),
+`since_previous_days` (`R/trip.R`) and `max_days` (`R/catch.R`). `_min` is not a unit suffix: in ramb it means a
+minimum (`speed_min`). Defaults are written as `4 * 3600` and the documentation gives the plain value; a ported
+method's documentation gives its original's value too. A quantity ramb returns keeps its field's unit (effort in
+hours). Old names live one release as warning aliases; fishycode's callers follow (grep first).
+
+**check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
