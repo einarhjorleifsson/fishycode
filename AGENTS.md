@@ -264,7 +264,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   `rb_map_bundle(grids = )` of 2026.11.04.3 (decision 278; e27a478, committed to ramb's local `main` and installed
   from it on 2026-11-04, not pushed). The time panel under the map, `rb_map_time()` of 2026.11.04.4 (plan 064,
   decision 279; 10c5355, committed to ramb's local `main` and installed from it on 2026-11-04, not pushed), is used by
-  EM4SSF's case-study viewer in `me_code`, nothing in fishycode. Plan
+  EM4SSF's case-study viewer in `me_code`, nothing in fishycode. Its controls in the sidebar, and one gap in seconds,
+  none by default, `max_gap_s` of `rb_map_track()` and `rb_map_time()` (`gap_h` before, an hour), are 2026.11.05 and
+  2026.11.05.1 (decision 280; 3d7709d and f91ab3b, committed to ramb's local `main` and installed from it on
+  2026-11-05, not pushed); nothing in fishycode passes `gap_h`. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, not pushed; nothing in the pipeline calls the new functions yet, and production's

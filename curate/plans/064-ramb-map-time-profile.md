@@ -2,9 +2,10 @@
 
 **status:** partly built — written 2026-11-04 at the maintainer's request, asks a, b, c and f answered the same day (as
 recommended); steps 1-4 built the same evening in ramb 2026.11.04.4 (`rb_map_time()`, ramb 10c5355) and tested in
-a browser, step 5's viewer built in `me_code`; left: step 5's check (the maintainer's step-through) and step 6's
-record (decision 279) · **see:** plan 047 (whose step 3 this is), plan 046 and decisions 227, 277, 278 (the viewer
-and its bundles), plan 030 §7 and decision 153 (the vessel overview and its demo), TODO 145, TODO 187, decision 279
+a browser, step 5's viewer built in `me_code`; the maintainer's first look on `dansk`, 2026-11-05: the controls
+in the sidebar and one gap in seconds, none by default (ramb 2026.11.05.1, decision 280); left: step 5's check (the
+maintainer's step-through in the case study's viewer) and step 6's record (decision 279) · **see:** plan 047 (whose step 3 this is), plan 046 and decisions 227, 277, 278 (the viewer
+and its bundles), plan 030 §7 and decision 153 (the vessel overview and its demo), TODO 145, TODO 187, decisions 279 and 280
 
 Drafted with AI assistance (Claude) on 2026-11-04; a person has not yet checked it. What §1 calls measured, Claude
 measured; the rest is proposal.

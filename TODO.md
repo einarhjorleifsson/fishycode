@@ -1596,9 +1596,11 @@ only until the licence is known: the charts are Landhelgisgæslan's work, served
 carrying the chart names as a source flagged unchecked, or the item dropped by the maintainer.
 
 ## 187. ramb's map viewer gets a time profile, for any pings (plan 064)
-**status:** open; steps 1-4 built 2026-11-04 in ramb 2026.11.04.4 (`rb_map_time()`, 10c5355, not installed or pushed), the CS1 viewer in
-`me_code` · **needs: maintainer** — step 5's step-through in the CS1 viewer; asks d and e · **see:**
-`curate/plans/064-ramb-map-time-profile.md`, decision 279, plan 047 (its step 3), TODO 145, plan 046
+**status:** open; steps 1-4 built 2026-11-04 in ramb 2026.11.04.4 (`rb_map_time()`, decision 279), the CS1 viewer in
+`me_code`; the maintainer's first look on `dansk` 2026-11-05 put the controls in the sidebar and one gap in seconds,
+none by default (ramb 2026.11.05.1, decision 280), installed, not pushed · **needs: maintainer** — step 5's
+step-through in the CS1 viewer; asks d and e · **see:** `curate/plans/064-ramb-map-time-profile.md`, decisions 279
+and 280, plan 047 (its step 3), TODO 145, plan 046
 
 The maintainer, 2026-11-04: ramb function calls that give the vessel overview's space and time views for any pings,
 so that a partner's case study (EM4SSF's CS1, kept in `me_code`) can be viewed. Plan 064 adds a time panel to ramb's
