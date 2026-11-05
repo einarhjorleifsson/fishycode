@@ -1667,5 +1667,9 @@ What production costs fast vessels, over a year: in 2024 `clean` flags 10,812 pi
 keeps, on 128 vessels whose recorded ceiling is over 25 kn (133 of 1,850 have one; the speed-ceiling study's script
 24). All 9 such pings in the hand check were good pings (the maintainer's check, decision 282).
 
+On a third dataset, EM4SSF's CS1 (decision 282's last section), the maintainer found every rule's extra flags good
+pings: the own ceiling's 383 are its forward scan after one step the local speed from the device's speed calls
+impossible. `local`'s constants (ask f) come before the own ceiling can be a default.
+
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.

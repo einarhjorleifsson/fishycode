@@ -106,3 +106,22 @@ The table above, on the maintainer's verdicts:
   best we have" (B009); beside 7 other cases the maintainer pointed out one recording 0 kn and placed off. Taking them
   out of the track (plan 048) must keep them as events.
 - **Bad pings both rules keep**, seen beside the cases: B003's astdB report, the event rows beside B011 and B019.
+
+## On a third dataset: EM4SSF's CS1 (added 2026-11-05)
+
+The same evening, at the maintainer's word ("Yes, prepare it", "Yes, start"), the maintainer judged where ramb
+2026.11.05.9's rules disagree on CS1, CNR-IRBIM's Italian case study shared for EM4SSF: 956,913 pings of 10 vessels on
+a clock written to the whole minute (`~/stasi/em4ssf/me_code`, `analyses/hand_check_cs1/`, f44e93c; counts only, as
+that repository's rules hold). The rules flag 116 pings (a 26 kn rule), 523 (each vessel's own ceiling with the
+device's speed), 474 (the same with the vote) and none (the time flag). Of 30 episodes drawn where they disagree, 10 a
+question:
+
+- **only a 26 kn rule flags** (52 pings): 10 of 10 good pings;
+- **only the own ceiling flags** (383): 9 good, 1 undecided. 382 of the 383 are its forward scan, after one step that
+  the local speed from the device's speed (1.5 times it, plus 5 kn) calls impossible;
+- **the vote and today's anchor part** (105): both ends good in 9, 1 undecided. The vote flags 28 good pings there
+  against today's 77.
+
+On CS1 no rule's extra flags are errors, and the time flag, whose allowance includes the clock's grain, has nothing to
+add on a minute clock. The own ceiling with the device's speed is not ready as a default (TODO 192). The 63 pings every
+rule flags were not judged (me_code TODO 6). The verdicts are the maintainer's; the cases and counts Claude's (AI).
