@@ -1679,3 +1679,24 @@ point, flags 18-35 % fewer good pings alone, 70 % fewer of CS1's false ones, and
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
+
+## 193. Place-name records: a source registry, one reading per document, one file per place (plan 067)
+**status:** open · **needs: maintainer** — where a person's decisions are kept (plan 067 ask a), and how timarit.is's text is
+had (ask c) · **see:** `curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
+plan 045 ask c, TODOs 144 and 186
+
+The maintainer, 2026-11-05, asked how to store and file place names: one YAML per name or another construct, how to
+cite the source, how to hold synonyms and cross-references, what to borrow from the data-dict, and how the sources
+already staged come in. Plan 067 proposes:
+- a source registry;
+- readings of text sources, one YAML per document, source-shaped;
+- one id per place in a ledger, and a file per place in two parts, generated and a hand overlay, as the data-dict's
+  overlay is.
+
+Its first source is timarit.is. The study searched it by the gazetteer's names and by naming phrases. A spot test of
+36 pages took the maintainer's vote on what is wanted: a name's story, its place and its extent. The text of 10 issues
+was fetched slowly at the maintainer's decision, past robots.txt. 10 documents were read into the format of §5 as a
+first trial (plan 067 §1): 149 entries, 70 with a name's origin; no person has checked them.
+
+**check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
+read and measured against the 151 Markdown records), or the plan parked.
