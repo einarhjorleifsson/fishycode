@@ -6,7 +6,7 @@
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
 Drafted with AI assistance (Claude) on 2026-11-05; a person has not yet checked it. **Measured** (by Claude, the
-study's scripts 01-06): every number in §1 and §2, on ramb's planted set `dansk_truth`, on EM4SSF's CS1 (counts only)
+study's scripts 01-09): every number in §1 and §2, on ramb's planted set `dansk_truth`, on EM4SSF's CS1 (counts only)
 and on the 32 Icelandic vessels of the 40 hand cases (2024), scored on the maintainer's verdicts where there are
 verdicts. **Assumed:** that a sided median is the change to build (two variants are tried first, step 0); that the
 hand cases, drawn where other rules disagree, stand for the rest; that the flags the new way adds beyond production's
@@ -45,6 +45,12 @@ vote (decision 283) and the margin of 5 kn:
 - **The sided local speed** keeps the catch within a point and flags 18-35 % fewer good pings alone on the planted
   set, 70 % fewer of CS1's false ones. At 6 min it flags as few good pings alone as a 10 kn margin, with 8 points
   more caught.
+- **On five more datasets, checked by the maintainer** (the study's 07-09, added 2026-11-05 at the maintainer's word,
+  "every messy dataset is messy in its own way"): every episode where the two ways part on a recorded speed was
+  judged, 32 in dansk, Italy's AIS (CNR-IRBIM), the Adriatic passive gear, Ireland's gillnets and iapesca's French
+  trawler. The sided speed is borne out in 21 (28 pings), today's in 1; 6 undecided. Its cost: 4 times off in dansk
+  that today's rule flags, as positions, and the sided one keeps; the time flag labels none of dansk's pings. Portugal's
+  GPS sets, Ireland's pots and iapesca's Danish seiner have no flag under any rule.
 - **Each stream judged alone** (the rule run with vessel and stream as its vessel) halves the good pings flagged
   beside a fault on the planted set (111 to 57 at 1 min, 517 to 280 at 6 min) for 5-7 points of catch. The catch lost
   is the planted ties (two reports of one time, one wrong, in two streams: 137 of 169 lost), which show only on legs
