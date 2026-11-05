@@ -1654,29 +1654,18 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **status:** open · **needs: maintainer** — whether production moves, a rebuild · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 065
 §6 ask f and §7, `curate/ais_ping_clean.R`, TODO 184
 
-Production's `ais_ping_clean.R` runs `clean` at 25 kn. Plan 065 built the alternatives in ramb (decision 282): each
-vessel's own limits, a time flag, and their scores. Neither the planted set nor Iceland's hand cases showed the own
-limits better where it matters: they keep fast vessels (all 9 drawn good pings in the maintainer's check, 86 of 200
-drawn), and lose on STK's event rows (their forward scan anchored on them: decision 283's `anchor = "vote"` resolves
-most; plan 048) and on slow vessels whose positions run over their recorded ceiling. `local`'s factor 1.5 and margin
-5 kn are set by hand (ask f); a ceiling with a margin from the data is the same question. `anchor = "vote"` is a choice
-for `clean` too (3,009 of production's flags change on the hand cases' 32 vessels). Moving production is its own
-decision, with a rebuild.
+Production's `ais_ping_clean.R` runs `clean` at 25 kn. The alternatives are in ramb (decisions 282-284): each vessel's
+own limits, the time flag, the vote, the local speed on the larger side (`"local"`'s default) and `stream =`. `clean` at
+25 kn flags fast vessels' good pings: in 2024, 10,812 pings the own limits keep, on 128 vessels whose recorded ceiling
+is over 25 kn (all 9 hand-checked were good). The candidate (the own limits with the recorded speed, the larger side
+and the vote) did best on Iceland's 40 maintainer-checked cases (33 right of 36, production 19), on EM4SSF's CS1 and on
+five more datasets (decision 284); STK's event rows are most of the rest (plan 048, TODO 148).
 
-What production costs fast vessels, over a year: in 2024 `clean` flags 10,812 pings that the rule on the own limits
-keeps, on 128 vessels whose recorded ceiling is over 25 kn (133 of 1,850 have one; the speed-ceiling study's script
-24). All 9 such pings in the hand check were good pings (the maintainer's check, decision 282).
-
-On a third dataset, EM4SSF's CS1 (decision 282's last section), the maintainer found every rule's extra flags good
-pings: the own ceiling's 383 are its forward scan after one step the local speed from the device's speed calls
-impossible. `local`'s constants (ask f) come before the own ceiling can be a default.
-
-Ask f measured (`$FISHYDATA/archive/2026-11-05-local-allowance/`): the margin is not the lever (each 5 kn costs ~6
-points of the planted set's catch). The local speed is: leaving a berth, the neighbours at rest outvote the moving
-ones. Taken as the larger of the medians before and after (a prototype of ramb's engine), it keeps the catch within a
-point, flags 18-35 % fewer good pings alone, 70 % fewer of CS1's false ones, and on Iceland's 40 cases 32 right of 36
-(34 with each stream judged alone) against 30. Built in ramb by plan 068 (decision 284): `local_speed`, the sided
-median `"local"`'s default, and `stream =`, opt-in; production's choice stays here.
+The candidate against production's stored labels, year by year (`$FISHYDATA/archive/2026-11-05-speed-rule-sweep/`;
+2007 and 2018 run, the rest one command in its README): in 2018 the candidate flags 40,682 pings production keeps
+(8,715 STK event rows at 0 kn), 18,144 of them in fishing windows (about 3,200 h); production 19,621 the candidate keeps
+(9,353 on fast vessels). Next: the other years, hand samples of the candidate's own flags in fishing windows, then the
+decision and one rebuild.
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
