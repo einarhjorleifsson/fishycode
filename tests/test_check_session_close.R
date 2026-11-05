@@ -26,7 +26,8 @@ put(file.path(repo, "docs", "_book", "page.js"), "var a = '/tmp/x';")
 good <- file.path(tmp, "archive", "good")
 put(file.path(good, "scripts", "01_data.R"), "suppressMessages(library(stats))", "x <- utils::head(1:3)  # notapkg::f in a comment")
 put(file.path(good, "results", "a.csv"), "x")
-put(file.path(good, "README.md"), "# Good", "`scripts/01_data.R` writes `results/a.csv`; `figures/x_<gear>.png` is a pattern.")
+put(file.path(good, "README.md"), "# Good", "`scripts/01_data.R` writes `results/a.csv`; `figures/x_<gear>.png` is a pattern.",
+    "Heavy runs take the shared lock: `lockf -k /tmp/fishycode-heavy.lock Rscript scripts/01_data.R`.")
 
 # a study that hangs on its session
 bad <- file.path(tmp, "archive", "bad")
@@ -70,4 +71,24 @@ testthat::test_that("a SQL cast in a string is not a package, and a script that 
   put(file.path(s, "README.md"), "`scripts/01_q.R` and `scripts/02_broken.R`; `scripts/NN_name.R` is a placeholder.")
   ok <- fd$check_session_close(studies = s, root = file.path(tmp, "repo", "R"), quiet = TRUE)
   testthat::expect_equal(attr(ok, "failed"), "every package a study's scripts load is in R's library")
+})
+
+testthat::test_that("the check and the shell that started it are not a running job; a job of the study is", {
+  testthat::skip_on_os("windows")
+  # the false positive of 2026-11-05: the shell running the check names the study on its command line
+  rs <- file.path(R.home("bin"), "Rscript")
+  code <- sprintf("source('%s'); ok <- check_session_close(studies = '%s', root = '%s', quiet = TRUE); cat(ok)",
+                  file.path(root, "R", "check_session_close.R"), good, file.path(tmp, "repo", "R"))
+  out <- system2("sh", c("-c", shQuote(sprintf("%s -e %s; : %s", rs, shQuote(code), good))), stdout = TRUE)
+  testthat::expect_equal(out, "TRUE")
+
+  # a job still running from the study is caught
+  system2("sh", c("-c", shQuote(sprintf("sleep 20; : %s", good))), wait = FALSE)
+  Sys.sleep(0.5)
+  ps <- system2("ps", c("ax", "-o", "pid=,ppid=,command="), stdout = TRUE)
+  job <- sub("^\\s*(\\d+).*", "\\1", ps[grepl(good, ps, fixed = TRUE)])
+  kids <- sub("^\\s*(\\d+).*", "\\1", ps[sub("^\\s*\\d+\\s+(\\d+).*", "\\1", ps) %in% job])
+  withr::defer(tools::pskill(as.integer(c(job, kids))))
+  ok <- fd$check_session_close(studies = good, root = file.path(tmp, "repo", "R"), quiet = TRUE)
+  testthat::expect_equal(attr(ok, "failed"), "no job of a study is still running")
 })

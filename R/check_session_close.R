@@ -14,6 +14,8 @@
 # no job of theirs is still running. Run it at a session's close, beside check_bookkeeping().
 
 SESSION_TEMP <- "/tmp/|/private/tmp|/var/folders/|scratchpad/"
+# The lock that parallel sessions take for heavy jobs: `lockf -k` makes it when needed, so it hangs on no session.
+SHARED_LOCK <- "/tmp/fishycode-heavy.lock"
 
 # Lines of the repo's code that point into a temporary place. Hidden and underscore folders at the top (.git, .claude's
 # worktrees, _targets) and Quarto's output are not code; the two files that carry the pattern itself are left out.
@@ -24,7 +26,7 @@ temp_paths <- function(root = ".") {
   hits <- character(0)
   for (x in f) {
     l <- readLines(file.path(root, x), warn = FALSE)
-    i <- grep(SESSION_TEMP, l)
+    i <- grep(SESSION_TEMP, gsub(SHARED_LOCK, "", l, fixed = TRUE))
     if (length(i)) hits <- c(hits, sprintf("%s:%d  %s", x, i, substr(trimws(l[i]), 1, 70)))
   }
   hits
@@ -39,6 +41,18 @@ touched_studies <- function(days = 2) {
     f <- c(file.path(x, "README.md"), list.files(file.path(x, c("scripts", "notes")), full.names = TRUE))
     any(difftime(Sys.time(), file.mtime(f), units = "days") < days, na.rm = TRUE)
   }, logical(1))]
+}
+
+# The pids of this R process and of every process above it, read from `ps -o pid=,ppid=,command=` lines.
+self_and_parents <- function(ps, pid = Sys.getpid()) {
+  pp <- setNames(sub("^\\s*\\d+\\s+(\\d+).*", "\\1", ps), sub("^\\s*(\\d+).*", "\\1", ps))
+  out <- character(0)
+  p <- as.character(pid)
+  while (!is.na(p) && p != "0" && !p %in% out) {
+    out <- c(out, p)
+    p <- unname(pp[p])
+  }
+  out
 }
 
 check_session_close <- function(studies = touched_studies(), root = ".", quiet = FALSE) {
@@ -57,8 +71,10 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
     studies <- character(0)
   }
   pkgs <- temp <- unnamed <- gone <- running <- character(0)
-  ps <- tryCatch(system2("ps", c("ax", "-o", "pid=,command="), stdout = TRUE, stderr = FALSE),
+  ps <- tryCatch(system2("ps", c("ax", "-o", "pid=,ppid=,command="), stdout = TRUE, stderr = FALSE),
                  error = function(e) character(0))
+  # the check itself and the processes that started it (the shell, Rscript) name the study on their command line too
+  ps <- ps[!sub("^\\s*(\\d+).*", "\\1", ps) %in% self_and_parents(ps)]
   for (s in studies) {
     id <- basename(s)
     sc <- list.files(file.path(s, "scripts"), "[.](R|sh|py)$", full.names = TRUE)
@@ -85,7 +101,7 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
 
     # a README or script that points into a temporary place, or wants a scratch library on R_LIBS
     for (f in c(file.path(s, "README.md"), sc)) {
-      l <- rd(f); i <- grep(paste0(SESSION_TEMP, "|R_LIBS"), l)
+      l <- rd(f); i <- grep(paste0(SESSION_TEMP, "|R_LIBS"), gsub(SHARED_LOCK, "", l, fixed = TRUE))
       if (length(i)) temp <- c(temp, sprintf("%s/%s:%d  %s", id, basename(f), i, substr(trimws(l[i]), 1, 60)))
     }
 
@@ -99,8 +115,8 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
     if (length(cited)) gone <- c(gone, sprintf("%s: %s", id, cited))
 
     # a job still running from the study
-    r <- ps[grepl(s, ps, fixed = TRUE) & !startsWith(trimws(ps), paste0(Sys.getpid(), " "))]
-    if (length(r)) running <- c(running, sprintf("%s: %s", id, substr(trimws(r), 1, 70)))
+    r <- ps[grepl(s, ps, fixed = TRUE)]
+    if (length(r)) running <- c(running, sprintf("%s: %s", id, substr(sub("^\\s*(\\d+)\\s+\\d+", "\\1", r), 1, 70)))
   }
   if (length(studies)) {
     add("every package a study's scripts load is in R's library", pkgs,
