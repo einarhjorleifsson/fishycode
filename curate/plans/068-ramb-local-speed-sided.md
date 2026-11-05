@@ -1,7 +1,9 @@
 # 068 — ramb's `local` rule: a local speed that follows a change of speed, and each stream judged alone
 
 **status:** proposal — written 2026-11-05 at the maintainer's word ("Yes, write the plan"), from the study
-`$FISHYDATA/archive/2026-11-05-local-allowance/` (its README), which measured plan 065's ask f; nothing built ·
+`$FISHYDATA/archive/2026-11-05-local-allowance/` (its README), which measured plan 065's ask f; checked on five more
+datasets by the maintainer (§2); asks a-d answered as recommended the same day ("Yes, as recommended"); nothing
+built, step 0 next ·
 **see:** TODO 192, decisions 282 (its last two sections: Iceland's 40 cases and EM4SSF's CS1, checked by the
 maintainer) and 283, plan 065 §6 ask f, plan 059 ("derive within one stream"), me_code `analyses/hand_check_cs1/`
 
@@ -94,6 +96,9 @@ b. **The names**: `local_speed = c("larger_side", "both_sides")` and `stream = N
    `rb_create_ping_limits()` and `rb_flag_ping_time()` name it), or others.
 c. **`stream =`** opt-in and for every method (recommended), or for `local` only.
 d. **Step 0** first (recommended), or the sided median built as prototyped.
+
+Answered 2026-11-05 by the maintainer, all four as recommended: the sided local speed `local`'s default, with
+`"both_sides"` for today's; the names as above; `stream =` opt-in, for every method; step 0 first.
 
 ## 6. Not in this plan
 
