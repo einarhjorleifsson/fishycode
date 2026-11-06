@@ -8,9 +8,12 @@ of the 8,460,441 event rows leave the track, and without them the speed filter f
 fixes than it flags; step 2 built 2026-11-06 at the maintainer's word (decision 289, ramb 2026.11.06, committed to its
 local `main` and installed, not pushed; `$FISHYDATA/archive/2026-11-06-plan048-step2/`): `rb_flag_port_event()` trusts
 108,339 of STK's events of 2008, 2016 and 2024 that today's tags do not and sets aside 3,089 they trust, and the unit
-test leaves what the track has judged; next is step 3, in fishycode in scratch · **2026-10-28** · **see:** decision 233
+test leaves what the track has judged; step 3 run in scratch the same day (decision 290; the code on branch
+`plan048-step3`, not merged; `$FISHYDATA/archive/2026-11-06-plan048-step3/`): with the good events only, port calls
+lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; next a hand
+check of lost and new calls, then step 4 · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
-decisions 288 (step 1) and 289 (step 2), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
+decisions 288 (step 1), 289 (step 2) and 290 (step 3), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
 
 Drafted with AI assistance (Claude) on 2026-10-28; a person has not yet checked it.
@@ -162,7 +165,10 @@ brought up to date.
    pair `rb_create_port_calls()` makes even when the earlier event is months old, so it may pass only the good events.
 3. **fishycode in scratch**: `stk_trail()` (§2.1) and its test, the union (§2.2), `event.R` as an adapter, and
    `port_call.R` calling the ramb step; port calls by rule and evidence against today's, each lost or gained call
-   in one outcome (the 13,510 that rest on events alone first).
+   in one outcome (the 13,510 that rest on events alone first). **Run 2026-11-06** (decision 290; the code on branch
+   `plan048-step3`): every year on a scratch store; the tag pass year by year (`TAG_YEARS`) for the disk. With the good
+   events only (`STAY_EVENTS`), 19,241 of 1,623,775 calls lost and 26,488 new; every lost and new call in one outcome.
+   Today 5,951 calls rest on events alone (13,510 on the build of 2026-10-23): 4,035 the same, 1,294 changed, 621 lost.
 4. **Rebuild**: fingerprints of the 19 targets (`R/fingerprint.R`) taken first; `stk`, `stk_event` and
    `ais_ping_union` invalidated by hand; `tar_make_isolated()`; no tracked edit while it runs; `tar_outdated()`
    empty after; fingerprints compared.
