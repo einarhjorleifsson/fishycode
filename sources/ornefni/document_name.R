@@ -3,6 +3,7 @@
 #
 # Input:  raw/external/ornefni/documents/Fiskimið.pdf ("Fiskimið á Skjálfanda", 2004, the appendix tables 7.1-7.3);
 #         documents/GRG-ISOR-08041.pdf, -08045.pdf, -08125.pdf (ÍSOR's "Örnefnagjöf á landgrunninu og utan þess", 2008)
+#         and -08044.pdf (ÍSOR's "Örnefni fyrr og nú á norðanverðu Atlantshafi", 2008)
 # Output: staging/ornefni/document_name.parquet - one row per entry, keyed on (`document`, `entry`)
 #
 # Read with poppler's pdftotext, the text as printed:
@@ -15,15 +16,22 @@
 #   is read into `lon`/`lat`, basis `recorded`; else the position is the description, kind `text`.
 # - ÍSOR: an entry is "Name. Description. Enska: English name." with ◊ where the author coined the name (`coined`). A
 #   line that is a name and a colon ("Völsungur:") heads the entries under it: `group`; a heading line with no full stop
-#   ("Önnur fyrirbrigði á og við Bergrisann") is `section`. Figure captions (Mynd 1) are not entries. The names' positions are on
-#   each report's map only (plan 043 ask d): kind `text`.
+#   ("Önnur fyrirbrigði á og við Bergrisann") is `section`, and so is a line ending in its figure ("Nöfn á hafsbotni
+#   (mynd 2)"). Figure captions (Mynd 1) are not entries. The names' positions are on each report's map only (plan 043
+#   ask d): kind `text`.
+# - ÍSOR 08044 begins with old names ("Gömul örnefni (mynd 1)": Íslandshaf, Dumbshaf, Hvarf …), "Name. Description."
+#   with no English name. There an entry starts where a line begins with one word and a full stop and the line before
+#   ends a sentence: a name in the text that begins a line ("Íslandsála. Á seinni tímum …") follows no full stop, and a
+#   short sentence ("Gamalt og gott nafn.") is more than one word. Its entries have no `name_en`.
 # `informant` and `recorder` name people: kept under $FISHYDATA only. The Vestmannaeyjar map has no text: not staged.
 
 library(dplyr)
 
 DIR <- fd_raw("external", "ornefni", "documents")
 SKJ <- "Fiskimið.pdf"
-ISOR <- c("GRG-ISOR-08125.pdf", "GRG-ISOR-08041.pdf", "GRG-ISOR-08045.pdf")
+ISOR <- c("GRG-ISOR-08125.pdf", "GRG-ISOR-08041.pdf", "GRG-ISOR-08045.pdf", "GRG-ISOR-08044.pdf")
+ISOR_START <- c("GRG-ISOR-08044.pdf" = "^Gömul örnefni")   # else the entries' heading "Örnefni …"
+OLD <- "^Gömul örnefni"                                     # a section of names with no English name
 squeeze <- function(x) { x <- gsub("\\s+", " ", trimws(x)); x[x %in% ""] <- NA; x }
 
 # Skjálfandi ---------------------------------------------------------------------------------------------------------
@@ -112,24 +120,28 @@ isor_entries <- function(f) {
     mutate(txt = trimws(gsub("\f", "", txt, fixed = TRUE))) |> filter(nzchar(txt), !grepl("^[0-9]{1,2}$", txt), !grepl("^Mynd [0-9]", txt))
   # two short entries can share a printed line: cut after a ◊ that has text behind it
   L <- L |> mutate(txt = strsplit(gsub("◊\\s+(?=\\S)", "◊\n", txt, perl = TRUE), "\n")) |> tidyr::unnest(txt)
-  start <- which(grepl("^Örnefni", L$txt) & !grepl("^Örnefnagjöf", L$txt))[1]
+  start <- if (f %in% names(ISOR_START)) which(grepl(ISOR_START[[f]], L$txt))[1] else
+    which(grepl("^Örnefni", L$txt) & !grepl("^Örnefnagjöf", L$txt))[1]
   stopifnot("the entries' heading" = !is.na(start))
   L <- L[start:nrow(L), ]
-  ent <- list(); cur <- NULL; group <- NA_character_; section <- NA_character_
-  done <- function(e) !is.null(e) && grepl("Enska:?\\s", e$text) && grepl("(◊|\\.)\\s*$", e$text)
+  ent <- list(); cur <- NULL; group <- NA_character_; section <- NA_character_; old <- FALSE
+  done <- function(e) !is.null(e) && (if (old) grepl("\\.\\s*$", e$text) else
+    grepl("Enska:?\\s", e$text) && grepl("(◊|\\.)\\s*$", e$text))
   para <- function(e) !is.null(e) && nchar(sub("[.:].*$", "", e$text)) > 45      # a paragraph under a heading, not an entry
   notes <- 0L
   for (i in seq_len(nrow(L))) {
     s <- L$txt[i]
     if (s == "◊" && !is.null(cur)) { cur$text <- paste(cur$text, s); next }
-    heading <- grepl("^Örnefni", s) || ((is.null(cur) || done(cur)) && !grepl("[.:]", s) && nchar(s) < 70)
+    heading <- grepl("^Örnefni", s) || grepl("\\(mynd [0-9]+\\)$", s) ||
+      ((is.null(cur) || done(cur)) && !grepl("[.:]", s) && nchar(s) < 70)
     if (heading || grepl("^[^.:]{1,40}:$", s)) {
       if (!is.null(cur)) ent[[length(ent) + 1]] <- cur
       cur <- NULL
-      if (heading) { section <- s; group <- NA_character_ } else group <- sub(":$", "", s)
+      if (heading) { section <- s; group <- NA_character_; old <- grepl(OLD, s) } else group <- sub(":$", "", s)
       next
     }
-    starts <- grepl("^[[:upper:]ÁÉÍÓÚÝÞÆÖÐ][^.:]{0,40}[.:]( |$|Enska)", s)        # "Niði.Enska:" has no space
+    starts <- if (old) grepl("^[[:upper:]ÁÉÍÓÚÝÞÆÖÐ][^ .:]+\\.\\s+\\S", s) && (is.null(cur) || done(cur)) else
+      grepl("^[[:upper:]ÁÉÍÓÚÝÞÆÖÐ][^.:]{0,40}[.:]( |$|Enska)", s)        # "Niði.Enska:" has no space
     if (is.null(cur) || (done(cur) && starts) || (para(cur) && starts)) {
       if (para(cur)) notes <- notes + 1L else if (!is.null(cur)) ent[[length(ent) + 1]] <- cur
       cur <- list(page = L$page[i], section = section, group = group, text = s)
@@ -157,8 +169,9 @@ out <- bind_rows(
          position_kind = if_else(position_basis == "recorded", "point", "text"))
 
 stopifnot("Skjálfandi: one row per number" = !anyDuplicated(skj$nr) && all(skj$nr == seq_along(skj$nr)),
-          "ÍSOR: one entry per 'Enska'" = all(table(factor(isor$document, ISOR)) == n_enska),
-          "ÍSOR: every entry has its English name" = !anyNA(isor$name_en),
+          "ÍSOR: one entry per 'Enska'" = all(table(factor(isor$document[!is.na(isor$name_en)], ISOR)) == n_enska),
+          "ÍSOR: every entry has its English name, but the old names" = !anyNA(isor$name_en[!grepl(OLD, isor$section)]),
+          "ÍSOR: an old name is one word" = !any(grepl(" ", isor$name[grepl(OLD, isor$section)])),
           !anyNA(out$name))
 print(knitr::kable(out |> group_by(document) |> summarise(entries = n(), names = n_distinct(name),
   with_position = sum(position_basis == "recorded"), coined = sum(coined, na.rm = TRUE), grouped = sum(!is.na(group))),
