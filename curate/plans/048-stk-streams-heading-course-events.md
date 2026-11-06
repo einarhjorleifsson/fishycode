@@ -12,7 +12,8 @@ test leaves what the track has judged; step 3 run in scratch the same day (decis
 `plan048-step3`, not merged; `$FISHYDATA/archive/2026-11-06-plan048-step3/`): with the good events only, port calls
 lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; steps
 3-5 revised the same day at the maintainer's word (§7): the good events back as presence in the port-call rules, the
-2017 cut kept for the pairs; next the asks of §7.5 · **2026-10-28** · **see:** decision 233
+2017 cut kept for the pairs; §7.5's asks answered the same day, each as recommended; next §7.4's step 3, the ramb
+option, at the maintainer's word · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
 decisions 288 (step 1), 289 (step 2) and 290 (step 3), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
@@ -260,13 +261,15 @@ every year, as the rows did.
 6. **Event pairs before 2017** (decision 196), after the rebuild, as a step of its own, measured against the logbook's
    own dates.
 
-### 7.5 Asks
+### 7.5 Asks, answered
 
-- **a. Which events give presence:** the good ones (recommended), or every event, as the rows did unjudged.
-- **b. Where an event's presence stands:** at its recorded position, a marker included, as the row stood (recommended;
-  the dwell rules then find its port as they found the row's), or at its port's polygon.
-- **c. The pairs before 2017:** later, as step 6 against the logbook's dates (recommended), or now.
-- **d. The THH/THO departure fix (e10e2c3):** kept (recommended: a pair needs a departure's port), or dropped.
+All answered by the maintainer on 2026-11-06, each as recommended ("Yes, as recommended").
+
+- **a. Which events give presence:** the good ones. Not chosen: every event, as the rows did unjudged.
+- **b. Where an event's presence stands:** at its recorded position, a marker included, as the row stood (the dwell
+  rules then find its port as they found the row's). Not chosen: at its port's polygon.
+- **c. The pairs before 2017:** later, as step 6 against the logbook's dates. Not chosen: now.
+- **d. The THH/THO departure fix (e10e2c3):** kept (a pair needs a departure's port). Not chosen: dropped.
 
 ## 6. Not in this plan
 
