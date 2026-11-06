@@ -286,7 +286,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   `main` named here was pushed to GitHub (15af6e8..b7109d4, 31 commits) and ramb reinstalled from it (`RemoteSha`
   b7109d4; the whole suite passes against it). `rb_flag_port_event()`, recorded port events judged as events (plan 048
   step 2, decision 289), is 2026.11.06 (b2a7264), committed to ramb's local `main` and installed from it on 2026-11-06 (`git archive`
-  with the LFS files, `--preclean`; the whole suite passes against it), not pushed; nothing in fishycode calls it yet. Plan
+  with the LFS files, `--preclean`; the whole suite passes against it), not pushed; nothing in fishycode calls it yet.
+  `rb_create_port_calls(presence = )`, good port events as pings for the dwell rules (plan 048 §7.3), is 2026.11.06.1
+  (1f720f6), committed to ramb's local `main`, not installed or pushed; nothing in fishycode passes it yet. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's

@@ -12,8 +12,8 @@ test leaves what the track has judged; step 3 run in scratch the same day (decis
 `plan048-step3`, not merged; `$FISHYDATA/archive/2026-11-06-plan048-step3/`): with the good events only, port calls
 lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; steps
 3-5 revised the same day at the maintainer's word (§7): the good events back as presence in the port-call rules, the
-2017 cut kept for the pairs; §7.5's asks answered the same day, each as recommended; next §7.4's step 3, the ramb
-option, at the maintainer's word · **2026-10-28** · **see:** decision 233
+2017 cut kept for the pairs; §7.5's asks answered the same day, each as recommended; §7.4's step 3a built the same day
+(ramb 2026.11.06.1, `rb_create_port_calls(presence = )`); next its 3b and 3c in scratch · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
 decisions 288 (step 1), 289 (step 2) and 290 (step 3), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
@@ -252,7 +252,8 @@ every year, as the rows did.
 ### 7.4 Steps 3-5, revised
 
 3. **Port calls with presence, in scratch.** (a) ramb: `presence = ` on `rb_create_port_calls()`, its tests, a
-   version, at the maintainer's word. (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
+   version, at the maintainer's word. **Done 2026-11-06** ("Yes, build it"): ramb 2026.11.06.1 (1f720f6, local `main`,
+   not installed or pushed), 16 expectations of its own, the whole suite passing (3,058). (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
    for the pairs. (c) On the scratch store, port calls only (the track is step 3's): every lost, new and changed call
    against today's in one outcome; the trips' AIS ends against the logbook's own dates where calls change (plan 069's
    witness); a hand check of what neither settles.

@@ -70,4 +70,5 @@ On a `cp -c` clone of the store, every year, from a clone of the branch:
   the port calls as pings and put back only pairs, so each gap became an STK patch, and it bundled the dropped 2017 cut.
   The maintainer: "Yes, revise the plan". Plan 048 §7: the good events back as presence in the port-call rules (a ramb
   option), the 2017 cut kept for the pairs, events before 2017 a step of their own with the logbook's dates as witness.
-  The hand check waits for that design.
+  The hand check waits for that design. §7.5's asks answered as recommended ("Yes, as recommended"), and §7.4's step
+  3a built ("Yes, build it"): ramb 2026.11.06.1 (1f720f6), `rb_create_port_calls(presence = )`, not installed or pushed.
