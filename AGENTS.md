@@ -292,7 +292,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   `--preclean`; the whole suite passes against it), not pushed; `curate/port_call.R` passes it since the merge.
   2026.11.06.2 (852c86c), a label on hover and notes on a served map (`rb_map_layer(popup = list(hover = ))`,
   `rb_map_serve(notes = )`, plan 070), is committed to ramb's local `main` and installed from it on 2026-11-06, not
-  pushed; nothing in the pipeline calls it. Plan
+  pushed; nothing in the pipeline calls it. `rb_create_voyages(method = "dwell")` cutting at every port call, a ping in
+  it or not (decision 291), is 2026.11.06.3 (ce1e464), committed to ramb's local `main` and installed from it on
+  2026-11-06 (`git archive` with the LFS files, `--preclean`; the whole suite passes, 3,157), not pushed;
+  `curate/ais_voyage.R` stops under an older ramb. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's

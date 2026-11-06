@@ -40,6 +40,11 @@
 library(duckdbfs)
 library(tidyverse)
 
+# Every port call cuts the voyages, a ping in it or not, since ramb 2026.11.06.3: under an older ramb a voyage ran
+# through each call no ping fell in, 57,389 of them once STK's event rows left the track (decision 291)
+stopifnot("ramb 2026.11.06.3 or later: every port call cuts the voyages (decision 291)" =
+            packageVersion("ramb") >= "2026.11.6.3")
+
 # -- Parameters ----------------------------------------------------------------
 
 MIN_PINGS     <- 10   # trips with fewer pings than this are dropped
