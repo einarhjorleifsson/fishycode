@@ -10,8 +10,9 @@ local `main` and installed, not pushed; `$FISHYDATA/archive/2026-11-06-plan048-s
 108,339 of STK's events of 2008, 2016 and 2024 that today's tags do not and sets aside 3,089 they trust, and the unit
 test leaves what the track has judged; step 3 run in scratch the same day (decision 290; the code on branch
 `plan048-step3`, not merged; `$FISHYDATA/archive/2026-11-06-plan048-step3/`): with the good events only, port calls
-lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; next a hand
-check of lost and new calls, then step 4 · **2026-10-28** · **see:** decision 233
+lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; steps
+3-5 revised the same day at the maintainer's word (§7): the good events back as presence in the port-call rules, the
+2017 cut kept for the pairs; next the asks of §7.5 · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
 decisions 288 (step 1), 289 (step 2) and 290 (step 3), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
@@ -169,7 +170,8 @@ brought up to date.
    `plan048-step3`): every year on a scratch store; the tag pass year by year (`TAG_YEARS`) for the disk. With the good
    events only (`STAY_EVENTS`), 19,241 of 1,623,775 calls lost and 26,488 new; every lost and new call in one outcome.
    Today 5,951 calls rest on events alone (13,510 on the build of 2026-10-23): 4,035 the same, 1,294 changed, 621 lost.
-   The good events only chosen by the maintainer the same day (the branch's default since e8006d6).
+   The good events only chosen by the maintainer the same day (the branch's default since e8006d6). **Steps 3-5
+   revised the same day: §7.**
 4. **Rebuild**: fingerprints of the 19 targets (`R/fingerprint.R`) taken first; `stk`, `stk_event` and
    `ais_ping_union` invalidated by hand; `tar_make_isolated()`; no tracked edit while it runs; `tar_outdated()`
    empty after; fingerprints compared.
@@ -208,6 +210,63 @@ All answered by the maintainer on 2026-10-28, each as recommended ("go with reco
 - **g. The 2009 clock episode** (2009-09-14 to 2009-10-05, AIS fixes 2.8-2.9 min ahead of their receipt): nothing in
   this plan, neither a label nor a correction, since which clock was off is not established. Decision 233 and
   `stk.yml` keep the finding.
+
+## 7. Steps 3-5 revised (2026-11-06)
+
+The maintainer, after step 3's run (decision 290): "I am a little bit worried that we may be going in the wrong
+direction here. what is your verdict?", then "Yes, revise the plan". Written by Claude (AI); not yet checked by a
+person.
+
+### 7.1 Why
+
+- **What stands.** Steps 1 and 2: the event rows out of the speed filter's input help it (decision 288), and events
+  judged as events by `rb_flag_port_event()` beat survival as a ping (decision 289).
+- **What went wrong in step 3's first design.** Today's port calls use STK's event rows as pings: the vessel's presence
+  in port, above all the departure rows (decision 290: nearly every lost call had event rows that leave inside its
+  span). The first design took that presence away and put back only arrival-departure pairs, a narrower kind of
+  evidence. Each gap that opened became an STK patch (THH/THO departures with no pid, e10e2c3; repeats breaking pairs;
+  departures coded for another port), the treadmill this plan set out to end. It also bundled a second change, the
+  2017 cut dropped (decision 196), which alone adds 17,062 calls and moves about 360,000 before 2017, so the 650,000
+  changed calls cannot be read. And its only yardstick was agreement with today's calls, which are no witness.
+- **Measured** (decision 290 and its study): good events only, 19,241 of 1,623,775 calls lost and 26,488 new; with the
+  THH/THO departure fix, 8,845 lost and 26,954 new.
+
+### 7.2 What is kept
+
+From the branch `plan048-step3`: `stk_trail()`'s stream, heading and course, and its test; the union without STK's
+event rows but the own-port arrivals, codes NA for every provider; the stream from the union's own columns, and the
+tag pass year by year (`TAG_YEARS`); `event.R` as STK's adapter (`mid`, `marker`, `pid_basis`, the THH/THO departure
+taking its arrival's pid); `port_call.R` judging the events with `rb_flag_port_event()`, the good ones only.
+
+### 7.3 The change: good events as presence
+
+The good events go back into the port-call rules as presence: a judged event says the vessel was there at that time,
+as the event rows did as pings, but only where `rb_flag_port_event()` passes it, never because the speed filter kept
+it. Port calls then hang neither on the speed filter (§2.3's aim) nor on pairs alone, and should move only where an
+event is judged bad or the cleaned track frees pings. Done generically, in ramb:
+`rb_create_port_calls(events = , presence = TRUE)` takes the good events' times and positions into the dwell rules
+beside the pings, and their pairs as before. The 2017 cut stays for the pairs (`EVENT_FROM`); presence counts in
+every year, as the rows did.
+
+### 7.4 Steps 3-5, revised
+
+3. **Port calls with presence, in scratch.** (a) ramb: `presence = ` on `rb_create_port_calls()`, its tests, a
+   version, at the maintainer's word. (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
+   for the pairs. (c) On the scratch store, port calls only (the track is step 3's): every lost, new and changed call
+   against today's in one outcome; the trips' AIS ends against the logbook's own dates where calls change (plan 069's
+   witness); a hand check of what neither settles.
+4. **Rebuild** as before, once the branch is merged at the maintainer's word and the scratch store deleted.
+5. **Products, docs and the record** as before.
+6. **Event pairs before 2017** (decision 196), after the rebuild, as a step of its own, measured against the logbook's
+   own dates.
+
+### 7.5 Asks
+
+- **a. Which events give presence:** the good ones (recommended), or every event, as the rows did unjudged.
+- **b. Where an event's presence stands:** at its recorded position, a marker included, as the row stood (recommended;
+  the dwell rules then find its port as they found the row's), or at its port's polygon.
+- **c. The pairs before 2017:** later, as step 6 against the logbook's dates (recommended), or now.
+- **d. The THH/THO departure fix (e10e2c3):** kept (recommended: a pair needs a departure's port), or dropped.
 
 ## 6. Not in this plan
 

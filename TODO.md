@@ -1184,9 +1184,8 @@ into these outcomes with every voyage in one, and the counts are in plan 031 §3
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
 **status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); steps 1-3 done
 2026-11-06 (decisions 288-290; ramb 2026.11.06 installed, not pushed; step 3's code on branch `plan048-step3`, not
-merged; the good events only chosen, decision 290); next a hand check of lost and new port calls, then step 4 ·
-**see:**
-`curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283 and 288-290, TODOs 88, 117 and 192
+merged; the good events only chosen, decision 290); steps 3-5 revised the same day (plan §7); next its asks a-d ·
+**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-290, TODOs 88, 117, 192
 
 The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
 events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
@@ -1196,15 +1195,8 @@ event by position, sequence, the cleaned track and its sending unit, so `port_ca
 whack filter kept the event as a ping (699,084 port calls lean on events, 13,510 on events alone; 904,187 of STK's
 1,351,745 whacks are event rows). Then the chain from the union down is rebuilt.
 
-Decisions 282 and 283 add a reason: judged as pings, STK's event rows recording 0 kn are often placed 0.8-2 km from
-the vessel's other reports, and a speed rule's forward scan anchors on them: in Iceland's 2024 hand check, 9 of the 16
-wrong flags of the rule on the vessels' own limits; `clean` catches most by their angle. Yet the maintainer's check
-of the cases (decision 282) found 11 of the 15 event rows drawn placed right, and at a trip's start one may be the
-best position there is: out of the track, kept as events. With them out the anchor question shrinks for every rule.
-
-TODO 192 waits on this (decision 287): in plan 069's rebuild test the candidate speed rule kept STK's event rows placed
-out of place, which production's angle test flags, and lost 21,600 port calls and merged trips; with the rows out of
-the track, plan 069's night runs the candidate again.
+Decisions 282 and 283: judged as pings, event rows at 0 kn placed off are a speed rule's wrong anchors. TODO 192 waits
+on this (decision 287): plan 069's candidate kept such rows and lost 21,600 port calls; with them out, its night again.
 
 Step 1 (decision 288): the switch is as sharp on either clock (`posdate` by tie-break); 4,549,650 of the 8,460,441
 event rows leave the track; rerun on 2008, 2016 and 2024 without them, production's filter frees most own-port `I` rows
@@ -1212,7 +1204,8 @@ it flagged and more fixes than it newly flags (1,266 / 11,691 / 8,501 against 61
 Step 2 (decision 289): ramb's `rb_flag_port_event()` trusts 108,339 of those years' events today's tags do not (94,610
 whose row the speed filter removed) and sets aside 3,089 they trust; its unit test leaves what the track has judged.
 Step 3 (decision 290), on a scratch store: port calls lose 19,241 and gain 26,488 of 1,623,775 with the good events
-only; the lost stood on STK's event rows used as pings. A hand check of lost and new calls comes before step 4.
+only; the lost stood on STK's event rows used as pings. Revised the same day (plan §7, the maintainer: "Yes, revise
+the plan"): the good events back as presence in the port-call rules, the 2017 cut kept for the pairs.
 
 **check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.

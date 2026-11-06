@@ -52,8 +52,22 @@ On a `cp -c` clone of the store, every year, from a clone of the branch:
 
 ## What it leaves
 
-- **A hand check** of a sample of the lost and new calls (and the moved), on a review page, at the maintainer's word.
+- **A hand check** of a sample of the lost and new calls (and the moved), on a review page: after plan 048 §7's design
+  (below).
 - **Merging the branch**: the maintainer's, after the check.
 - **The scratch store** (`/Users/einarhj/stasi/scratch-048-step3/`, 44 GB of its own; the disk at 26 GB free): delete at
   the maintainer's word, and before any live rebuild.
 - **Step 4** (the rebuild) and step 5 (products, docs, `stk.yml`, AGENTS.md).
+
+## The course changed (added 2026-11-06)
+
+- **The THH/THO departures.** At the maintainer's word ("Yes, fix and rerun") `event.R` gave a departure under a code
+  that names no port (THH, THO: `BY_POSITION`, settled 2026-10-01, plan 011), lying in no polygon, the pid of the
+  vessel's arrival just before it under the same code (e10e2c3, `pid_basis`): 65,535 departures. Rerun on the scratch
+  store, the port calls lose 8,845 of today's and gain 26,954 (`out/calls_good2.csv`); not built on.
+- **The maintainer, then:** "I am a little bit worried that we may be going in the wrong direction here. what is your
+  verdict?" Claude's: the goal stands (steps 1 and 2), but the first design took away the presence the event rows gave
+  the port calls as pings and put back only pairs, so each gap became an STK patch, and it bundled the dropped 2017 cut.
+  The maintainer: "Yes, revise the plan". Plan 048 §7: the good events back as presence in the port-call rules (a ramb
+  option), the 2017 cut kept for the pairs, events before 2017 a step of their own with the logbook's dates as witness.
+  The hand check waits for that design.
