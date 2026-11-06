@@ -1200,6 +1200,10 @@ wrong flags of the rule on the vessels' own limits; `clean` catches most by thei
 of the cases (decision 282) found 11 of the 15 event rows drawn placed right, and at a trip's start one may be the
 best position there is: out of the track, kept as events. With them out the anchor question shrinks for every rule.
 
+TODO 192 waits on this (decision 287): in plan 069's rebuild test the candidate speed rule kept STK's event rows placed
+out of place, which production's angle test flags, and lost 21,600 port calls and merged trips; with the rows out of
+the track, plan 069's night runs the candidate again.
+
 **check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.
 
@@ -1651,8 +1655,9 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** open · **needs: maintainer** — whether production moves, a rebuild; plan 069's test and hand check
-weigh against the candidate as it is · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 069, plan 065 §6 ask f and §7,
+**status:** parked — the maintainer, 2026-11-06 ("Yes, park until 048"): production's rule stays until plan 048 takes
+STK's event rows out of the track (TODO 148), then plan 069's night runs again · **see:** decisions 282, 283, 284 and
+287, plan 068 (executed), plan 069 (executed), plan 065 §6 ask f and §7,
 `curate/ais_ping_clean.R`, TODO 184
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. The alternatives are in ramb (decisions 282-284): each vessel's
@@ -1675,8 +1680,8 @@ logbook's own date puts the moved departures on production's day 4,741 times, th
 and 923); of 10 lost port calls the maintainer judged 5 production right, 3 undecided, none the candidate's. Every
 whack named is an STK report out of place that production's angle test flags and the candidate keeps (plan 048).
 
-**check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
-item parked.
+**check:** after plan 048, plan 069's night repeated with the candidate and a decision whether production's speed rule
+moves (and to what), with the rebuild it needs; or the item abandoned.
 
 ## 193. Place-name records: a source registry, one reading per document, one file per place (plan 067)
 **status:** open · **needs: maintainer** — where a person's decisions are kept (plan 067 ask a), and how timarit.is's text is
