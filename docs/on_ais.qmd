@@ -86,7 +86,7 @@ The five steps in detail:
 
 1.  **Filter to national vessels.** Each source uses a different vessel identifier. STK pings are joined against `stk_vessel_match.parquet` (mid → vid) using a temporal interval join — necessary because a `mid` can be reassigned to a different vessel over time. ASTD and ASTDB are filtered to MMSI prefix `251` (Iceland) and joined to the same vid lookup via MMSI.
 
-2.  **Harmonise schema.** Columns are aligned across sources to a common set: `vid`, `mmsi`, `time`, `lon`, `lat`, `speed`, `heading`, `cog`, `provider`. Speed is not directly available in all feeds; where absent it is derived from consecutive-ping distance and time.
+2.  **Harmonise schema.** Columns are aligned across sources to a common set: `vid`, `mmsi`, `time`, `lon`, `lat`, `speed`, `heading`, `cog`, `provider`, and STK's `stream`. Speed is not directly available in all feeds; where absent it is derived from consecutive-ping distance and time. `heading` is true heading and `cog` course over ground; a code for "not available" (511, -1, 360 or more) is NA for every provider. STK writes both quantities into one field: true heading on its AIS stream until 2010-06-09 17:40, course after and on its other streams, which `stk_trail()` splits by the stream (`ais`, `centiminute`, `ungridded`, by the position's grid). STK's port event rows are not positions and leave the union, but for an arrival inside its own port at no shared marker, which stays a fix; `curate/port_call.R` judges the events as events (`ramb::rb_flag_port_event()`) and takes the good ones back as presence (plan 048).
 
 3.  **Spatial harbour tagging.** A `ST_INTERSECTS` spatial join against a ports polygon layer appends a `pid` harbour code to each ping. Pings at sea get `pid = NA`.
 

@@ -286,20 +286,23 @@ Every script in a targets project is on one of three sides, and says which in a 
   `main` named here was pushed to GitHub (15af6e8..b7109d4, 31 commits) and ramb reinstalled from it (`RemoteSha`
   b7109d4; the whole suite passes against it). `rb_flag_port_event()`, recorded port events judged as events (plan 048
   step 2, decision 289), is 2026.11.06 (b2a7264), committed to ramb's local `main` and installed from it on 2026-11-06 (`git archive`
-  with the LFS files, `--preclean`; the whole suite passes against it), not pushed; nothing in fishycode calls it yet.
-  `rb_create_port_calls(presence = )`, good port events as pings for the dwell rules (plan 048 §7.3), is 2026.11.06.1
+  with the LFS files, `--preclean`; the whole suite passes against it), not pushed; `curate/port_call.R` calls it since
+  plan 048's merge (c3a5a97). `rb_create_port_calls(presence = )`, good port events as pings for the dwell rules (plan 048 §7.3), is 2026.11.06.1
   (1f720f6), committed to ramb's local `main` and installed from it on 2026-11-06 (`git archive` with the LFS files,
-  `--preclean`; the whole suite passes against it), not pushed; only plan 048's branch `plan048-step3` passes it. Plan
+  `--preclean`; the whole suite passes against it), not pushed; `curate/port_call.R` passes it since the merge.
+  2026.11.06.2 (852c86c), a label on hover and notes on a served map (`rb_map_layer(popup = list(hover = ))`,
+  `rb_map_serve(notes = )`, plan 070), is committed to ramb's local `main` and installed from it on 2026-11-06, not
+  pushed; nothing in the pipeline calls it. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's
   own chain gives the store's labels under it (plan 062 step 4). The data
   on disk: every target of the main project but `ais_catch` and `check_allocation_audit` (decision 261) was rebuilt from
-  raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6, and the 19 from `ais_ping_tag` down twice more
-  the same day, with 2026.11.02.1 and then at 5f522e0 with 2026.11.02.2 (plan 060, decision 274). `ports_all` alone
-  was rebuilt on 2026-11-04 at fb59bfe, its ten invalid osm polygons repaired
-  (`curate/corrections/ports_osm_invalid_geometry.yml`), so its other 52 descendants are outdated by their stamps only:
-  the repair changes none of them in value. Every curated file
+  raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6 (plan 060, decision 274); on 2026-11-06 at
+  fc45a24, with ramb 2026.11.06.2 and DuckDB 1.5.6, the 55 outdated by plan 048 or by `ports_all`'s repair of
+  2026-11-04 (`curate/corrections/ports_osm_invalid_geometry.yml`) were rebuilt (decision 291): STK's port events out
+  of the track and judged as events. Its voyages run through 57,389 port calls that no ping falls in (decision 291),
+  until ramb's voyage cut is fixed (TODO 148). Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code

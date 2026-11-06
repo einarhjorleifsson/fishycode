@@ -1,6 +1,6 @@
 # 048 — STK's streams into the flow: heading and course apart, a stream on every STK fix, and port events judged as events by a generic step
 
-**status:** proposal — written 2026-10-28 at the maintainer's request; every ask answered the same day, each as
+**status:** partly built — written 2026-10-28 at the maintainer's request; every ask answered the same day, each as
 recommended (§5); what §1 calls measured, Claude measured read-only the same day, on the dump of 2026-10-16 and the
 build of 2026-10-23 (decision 218); step 1 run 2026-11-06 at the maintainer's word, read-only on the build of
 2026-11-02 (decision 288, `$FISHYDATA/archive/2026-11-06-plan048-step1/`): the switch as sharp on either clock, 4,549,650
@@ -13,10 +13,12 @@ test leaves what the track has judged; step 3 run in scratch the same day (decis
 lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; steps
 3-5 revised the same day at the maintainer's word (§7): the good events back as presence in the port-call rules, the
 2017 cut kept for the pairs; §7.5's asks answered the same day, each as recommended; §7.4's step 3 built and run in scratch the
-same day (ramb 2026.11.06.1 installed; 1,421,991 of today's calls the same, 11,316 lost, 10,022 new); next its hand
-check · **2026-10-28** · **see:** decision 233
+same day (ramb 2026.11.06.1 installed; 1,421,991 of today's calls the same, 11,316 lost, 10,022 new); the hand check left out and the branch merged at the maintainer's word (c3a5a97);
+steps 4 and 5 the same day (decision 291, `$FISHYDATA/archive/2026-11-06-plan048-rebuild/`): the store rebuilt,
+fishing hours +0.09 %, port calls 1,628,604, but 57,389 port calls no ping falls in now lie inside a voyage (ramb's
+dwell cut, 58,207 voyages fewer); next that cut in ramb, then step 6 · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
-decisions 288 (step 1), 289 (step 2) and 290 (step 3), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
+decisions 288 (step 1), 289 (step 2), 290 (step 3) and 291 (steps 4 and 5), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
 
 Drafted with AI assistance (Claude) on 2026-10-28; a person has not yet checked it.
@@ -176,9 +178,11 @@ brought up to date.
    revised the same day: §7.**
 4. **Rebuild**: fingerprints of the 19 targets (`R/fingerprint.R`) taken first; `stk`, `stk_event` and
    `ais_ping_union` invalidated by hand; `tar_make_isolated()`; no tracked edit while it runs; `tar_outdated()`
-   empty after; fingerprints compared.
+   empty after; fingerprints compared. **Done 2026-11-06** (decision 291): 55 targets, 812 of 1,325 files changed;
+   voyages 1,428,837 → 1,370,630, since a port call no ping falls in cuts no voyage (57,389 such calls now).
 5. **Products, docs and the record**: §2.5; `stk.yml`; a decision with the account; this plan's header, its index row
-   and TODO 148.
+   and TODO 148. **Done 2026-11-06** (decision 291): the effort map's grids, the vessel overview (`course`, `stream`),
+   `on_ais.qmd`, `grammar.qmd`, `data-dict.yaml`, `stk.yml`.
 
 ## 4. Checks
 
@@ -257,12 +261,15 @@ every year, as the rows did.
    not installed or pushed), 16 expectations of its own, the whole suite passing (3,058). (b) and (c) **run 2026-11-06**
    ("Yes, go ahead"; ramb installed, the branch at 0b60ad4, decision 290): 1,421,991 of today's 1,623,775 calls the
    same, 11,316 lost, 10,022 new; a first run (79f021d) made stays of seasons from the years either side's events,
-   fixed by presence from the run year's own. Next its hand check. (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
+   fixed by presence from the run year's own. The hand check left out (the maintainer: "i think we need no
+   hand-check"). (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
    for the pairs. (c) On the scratch store, port calls only (the track is step 3's): every lost, new and changed call
    against today's in one outcome; the trips' AIS ends against the logbook's own dates where calls change (plan 069's
    witness); a hand check of what neither settles.
-4. **Rebuild** as before, once the branch is merged at the maintainer's word and the scratch store deleted.
-5. **Products, docs and the record** as before.
+4. **Rebuild** as before, once the branch is merged at the maintainer's word and the scratch store deleted. **Done
+   2026-11-06** (decision 291).
+5. **Products, docs and the record** as before. **Done 2026-11-06** (decision 291). It leaves the voyage cut: a port
+   call no ping falls in must cut the track (ramb), then a rebuild from `ais_voyage` down.
 6. **Event pairs before 2017** (decision 196), after the rebuild, as a step of its own, measured against the logbook's
    own dates.
 

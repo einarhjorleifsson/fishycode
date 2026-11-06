@@ -212,8 +212,9 @@ tables:
         todo: >-
           Not established: what the centiminute and ungridded streams are beyond their signatures, what their course
           is beyond its resolution, a fix's AIS class, and what STK wrote in the other 15,630 fixes whose AIS message
-          had no course. stk_trail() and the trail carry the field as heading, both quantities and the codes included,
-          and no stream.
+          had no course. stk_trail() splits the field (plan 048, decisions 288 and 290): heading, true heading on the AIS
+          stream before 2010-06-09 17:40:13 (the switch is as sharp on posdate as on recdate); cog, the course from then
+          and on the other two streams; a code NA in both; and stream, by the grid.
       - name: in_out_of_harbor
         label: Port event
         type: enum

@@ -399,7 +399,8 @@ What a sample produced. Its shape depends on the sample type, and each type has 
 ## The track
 
 Positions recorded continuously through the trip: AIS, VMS, a GPS logger. One row per position (`vid`, `time`, `lon`,
-`lat`, `speed`, `heading`, `provider`), no station key. The track is joined to the hierarchy by time:
+`lat`, `speed`, `heading` (true heading), `cog` (course over ground), `provider`, `stream`), no station key. A port event
+(an arrival or departure report) is no position: it is judged as an event and kept beside the track (plan 048). The track is joined to the hierarchy by time:
 
 - to a trip on `[T1, T2]`;
 - to a fishing sample on its location window `[w1, w2]`.

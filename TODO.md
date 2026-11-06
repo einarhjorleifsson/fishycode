@@ -1182,11 +1182,10 @@ or on every year once step 7 has rebuilt the port calls.
 into these outcomes with every voyage in one, and the counts are in plan 031 §3.10 or a decision.
 
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
-**status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); steps 1-3 done
-2026-11-06 (decisions 288-290; ramb 2026.11.06 installed, not pushed; step 3's code on branch `plan048-step3`, not
-merged; the good events only chosen, decision 290); steps 3-5 revised the same day (plan §7), its asks answered as recommended; §7.4's step 3 run in scratch (ramb 2026.11.06.1
-installed; 11,316 calls lost, 10,022 new); next its hand check ·
-**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-290, TODOs 88, 117, 192
+**status:** open — plan 048's steps 1-5 done 2026-11-06 (decisions 288-291; ramb 2026.11.06.1 installed, not
+pushed; merged c3a5a97, the store rebuilt at fc45a24); next: a port call no ping falls in must cut the voyages (ramb,
+`needs: maintainer` for the change and the rebuild), then step 6 ·
+**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-291, TODOs 88, 117, 192
 
 The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
 events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
@@ -1207,9 +1206,12 @@ whose row the speed filter removed) and sets aside 3,089 they trust; its unit te
 Step 3 (decision 290), on a scratch store: port calls lose 19,241 and gain 26,488 of 1,623,775 with the good events
 only; the lost stood on STK's event rows used as pings. Revised the same day (plan §7, the maintainer: "Yes, revise
 the plan"): the good events back as presence in the port-call rules, the 2017 cut kept for the pairs.
+Steps 4 and 5 (decision 291), the hand check left out at the maintainer's word: fishing hours +0.09 %, port calls
+1,623,775 → 1,628,604, voyages 1,428,837 → 1,370,630. `rb_create_voyages(method = "dwell")` cuts only at pings in a
+port call, and 57,389 calls had STK's event rows as their only pings: a voyage now runs through each.
 
-**check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
-and its status agrees with its index row.
+**check:** voyages cut at every port call and the chain rebuilt from `ais_voyage`; plan 048's step 6 done; each in a
+decision, or the plan parked or abandoned by the maintainer, and its status agrees with its index row.
 
 ## 149. ramb's set finder fails badly on pots and sparse tracks: amend it, or let the data choose
 **status:** open — next: its own ramb session, once ramb is pushed and the note to iapesca's author is sent (the

@@ -31,7 +31,7 @@ const many = (n, one, more = `${one}s`) => `${num(n)} ${n === 1 ? one : more}`;
 const DAY = 864e5, HOUR = 36e5, GAP = 30 * 6e4;
 // The service's version this page was written for (api.R, API_VERSION). A server started before its code changed sends
 // another, or none: say so plainly, rather than fail in silence.
-const API = '2026-10-31.1';
+const API = '2026-11-06.1';
 function banner(html) {
   let b = $('banner');
   if (!b) { b = document.createElement('div'); b.id = 'banner'; document.body.prepend(b); }
@@ -271,7 +271,10 @@ function getTooltip({ layer, index, object }) {
     const what = tr.fishing[i] ? 'fishing (fishing_flow)' : (tr.port_call_id[i] >= 0 ? 'in port' : 'at sea, not fishing');
     const g = gearAt(tr.t[i], tr.gear[i]);
     const gear = g.gear ? `, ${esc(g.recorded ? g.gear : gearWords(g))}` : '';
-    return { html: `${head}<b>${fmt(tr.t[i])} UTC</b><br>${num(tr.speed[i], 1)} knots, heading ${num(tr.heading[i])}°<br>` +
+    // true heading where the feed has it, else the course (plan 048: STK's heading is NA after 2010-06-09)
+    const dir = Number.isFinite(tr.heading[i]) ? `, heading ${num(tr.heading[i])}°` :
+      (Number.isFinite(tr.cog[i]) ? `, course ${num(tr.cog[i])}°` : '');
+    return { html: `${head}<b>${fmt(tr.t[i])} UTC</b><br>${num(tr.speed[i], 1)} knots${dir}<br>` +
       `${what}${gear}<br>${num(tr.lat[i], 4)} N, ${num(tr.lon[i], 4)} E` };
   }
   if (layer.id === 'hex' && object) {
@@ -1032,13 +1035,14 @@ async function loadRange(from, to) {
 }
 async function buildTrail() {
   const tbl = await conn.query(`SELECT epoch_ms(time)::DOUBLE AS t, lon::FLOAT AS lon, lat::FLOAT AS lat,
-      coalesce(speed, 0)::FLOAT AS speed, coalesce(heading, 0)::FLOAT AS heading, coalesce(voyage_id, -1)::INTEGER AS voyage_id,
+      coalesce(speed, 0)::FLOAT AS speed, coalesce(heading, 'NaN'::FLOAT)::FLOAT AS heading,
+      coalesce(cog, 'NaN'::FLOAT)::FLOAT AS cog, coalesce(voyage_id, -1)::INTEGER AS voyage_id,
       coalesce(port_call_id, -1)::INTEGER AS port_call_id, coalesce(fishing_flow, false)::INTEGER AS fishing, coalesce(gear, '') AS gear,
       coalesce("hours", 0)::FLOAT AS h, coalesce(".sid", -1)::DOUBLE AS sid, coalesce(schema, '') AS sch,
       coalesce(phase, '') AS phase
     FROM trail WHERE lon IS NOT NULL AND lat IS NOT NULL ORDER BY time`);
   const col = (k) => tbl.getChild(k).toArray();
-  const tr = { n: tbl.numRows, t: col('t'), lon: col('lon'), lat: col('lat'), speed: col('speed'), heading: col('heading'),
+  const tr = { n: tbl.numRows, t: col('t'), lon: col('lon'), lat: col('lat'), speed: col('speed'), heading: col('heading'), cog: col('cog'),
                voyage_id: col('voyage_id'), port_call_id: col('port_call_id'), fishing: col('fishing'), gear: col('gear'), h: col('h') };
   if (!tr.n) { S.tr = null; render(); return; }
   tr.t0 = tr.t[0]; tr.t1 = tr.t[tr.n - 1];
@@ -1449,13 +1453,14 @@ async function renderPings() {
   if (!S.tr) { $('pings').innerHTML = '<div class="note">No AIS in these years.</div>'; return; }
   const [a, b] = S.win, i0 = lower(S.tr.t, a), i1 = lower(S.tr.t, b + 1), total = i1 - i0;
   const P = await rows(`SELECT epoch_ms(time)::DOUBLE AS ms, strftime(time, '%Y-%m-%d %H:%M:%S') AS t, round(lat, 4)::DOUBLE AS lat,
-      round(lon, 4)::DOUBLE AS lon, round(speed, 1)::DOUBLE AS speed, round(heading)::DOUBLE AS heading, provider, voyage_id, port_call_id,
+      round(lon, 4)::DOUBLE AS lon, round(speed, 1)::DOUBLE AS speed, round(heading)::DOUBLE AS heading, round(cog)::DOUBLE AS cog,
+      provider, stream, voyage_id, port_call_id,
       gear, phase, fishing_flow::VARCHAR AS fishing, ".tid" AS tid, ".sid" AS sid
     FROM trail WHERE epoch_ms(time) BETWEEN ${a} AND ${b} ORDER BY time LIMIT ${PINGS_PER_PAGE} OFFSET ${S.pingPage * PINGS_PER_PAGE}`);
   const pages = Math.ceil(total / PINGS_PER_PAGE);
   $('pings').innerHTML = `<div class="note">${total.toLocaleString('en-GB')} pings in the window; click one to find it on the map and chart.</div>
     <div class="scroll">${table([['t', 'time (UTC)'], ['lat', 'lat', true], ['lon', 'lon', true], ['speed', 'speed', true], ['heading', 'heading', true],
-      ['provider', 'provider'], ['voyage_id', 'voyage_id', true], ['port_call_id', 'port_call_id', true], ['gear', 'gear'], ['phase', 'phase'], ['fishing', 'fishing_flow'],
+      ['cog', 'course', true], ['provider', 'provider'], ['stream', 'stream'], ['voyage_id', 'voyage_id', true], ['port_call_id', 'port_call_id', true], ['gear', 'gear'], ['phase', 'phase'], ['fishing', 'fishing_flow'],
       ['tid', '.tid'], ['sid', '.sid', true]], P, { click: true, empty: 'no ping in the window' })}</div>` +
     (pages > 1 ? `<div class="pager"><button data-d="-1" ${S.pingPage === 0 ? 'disabled' : ''}>‹ earlier</button>
       ${S.pingPage * PINGS_PER_PAGE + 1}–${Math.min(total, (S.pingPage + 1) * PINGS_PER_PAGE)} of ${total.toLocaleString('en-GB')}

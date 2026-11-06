@@ -308,8 +308,9 @@ tables:
           - 272.30000000111403
           - 357.99999959092605
         description: >
-          True heading (STK/ASTD/ASTDB); course made good where true heading is
-          unavailable.
+          True heading, degrees: STK's AIS stream to 2010-06-09 17:40, astdB's and EMODnet's own field; NA
+          elsewhere, and for a code (511, -1, 360 or more; plan 048). STK's field after the switch is its course,
+          in `cog`.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -317,8 +318,9 @@ tables:
         type: number
         examples: []
         description: >
-          Course over ground. Only populated by the ASTDB feed
-          (curate/ais_ping_union.R); NA for STK/ASTD/EmodNet pings.
+          Course over ground, degrees: STK's (its AIS stream from 2010-06-09 17:40, its centiminute and own units'
+          streams throughout), astdB's and EMODnet's; NA for astd and the logger, and for a code (360 or more;
+          plan 048).
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -450,7 +452,8 @@ tables:
         values: [stk_ais, stk_vms, stk_unit, stk_event, astd, astdB, emodnet, gps]
         description: >
           The clock a ping is on: STK's three position streams told apart by the grid of their positions
-          (`stk_ais`, `stk_vms`, `stk_unit`; decision 233) and its port event rows (`stk_event`), else the
+          (`stk_ais`, `stk_vms`, `stk_unit`; decision 233) and an STK arrival kept as a fix, inside its own port at no marker (`stk_event`; plan
+          048: STK's other port event rows are not in the track), else the
           provider. Speeds, turns and windows are derived within one stream (AGENTS.md, Rules).
   - name: ais_ping_whacky
     source:
@@ -682,8 +685,8 @@ tables:
           Every rule that fired, joined with `+`. `tag_then_gap`: two consecutive pings at the harbour 2 h
           or more apart, one inside the polygon. `gap_near_harbour`: the same with neither inside.
           `tag_span`: consecutive pings inside the polygon spanning 2 h or more. `event_pair`: an STK `I`
-          then `U` at the same harbour 2 h or more apart, both `io_ok` and kept by `ping_clean`, used from
-          2017 only.
+          then `U` at the same harbour 2 h or more apart, both judged good by `ramb::rb_flag_port_event()`, from
+          2017. Since plan 048 the good events of every year are also pings for the other rules (presence).
       - name: T_in_ping
         type: datetime
         time_zone: UTC
