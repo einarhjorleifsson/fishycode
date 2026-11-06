@@ -12,8 +12,9 @@ test leaves what the track has judged; step 3 run in scratch the same day (decis
 `plan048-step3`, not merged; `$FISHYDATA/archive/2026-11-06-plan048-step3/`): with the good events only, port calls
 lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK's event rows used as pings; steps
 3-5 revised the same day at the maintainer's word (§7): the good events back as presence in the port-call rules, the
-2017 cut kept for the pairs; §7.5's asks answered the same day, each as recommended; §7.4's step 3a built the same day
-(ramb 2026.11.06.1, `rb_create_port_calls(presence = )`); next its 3b and 3c in scratch · **2026-10-28** · **see:** decision 233
+2017 cut kept for the pairs; §7.5's asks answered the same day, each as recommended; §7.4's step 3 built and run in scratch the
+same day (ramb 2026.11.06.1 installed; 1,421,991 of today's calls the same, 11,316 lost, 10,022 new); next its hand
+check · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
 decisions 288 (step 1), 289 (step 2) and 290 (step 3), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
@@ -253,7 +254,10 @@ every year, as the rows did.
 
 3. **Port calls with presence, in scratch.** (a) ramb: `presence = ` on `rb_create_port_calls()`, its tests, a
    version, at the maintainer's word. **Done 2026-11-06** ("Yes, build it"): ramb 2026.11.06.1 (1f720f6, local `main`,
-   not installed or pushed), 16 expectations of its own, the whole suite passing (3,058). (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
+   not installed or pushed), 16 expectations of its own, the whole suite passing (3,058). (b) and (c) **run 2026-11-06**
+   ("Yes, go ahead"; ramb installed, the branch at 0b60ad4, decision 290): 1,421,991 of today's 1,623,775 calls the
+   same, 11,316 lost, 10,022 new; a first run (79f021d) made stays of seasons from the years either side's events,
+   fixed by presence from the run year's own. Next its hand check. (b) fishycode on the branch: `port_call.R` passes it, `EVENT_FROM` back at 2017
    for the pairs. (c) On the scratch store, port calls only (the track is step 3's): every lost, new and changed call
    against today's in one outcome; the trips' AIS ends against the logbook's own dates where calls change (plan 069's
    witness); a hand check of what neither settles.

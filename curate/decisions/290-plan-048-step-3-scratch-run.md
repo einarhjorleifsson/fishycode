@@ -71,4 +71,26 @@ On a `cp -c` clone of the store, every year, from a clone of the branch:
   The maintainer: "Yes, revise the plan". Plan 048 §7: the good events back as presence in the port-call rules (a ramb
   option), the 2017 cut kept for the pairs, events before 2017 a step of their own with the logbook's dates as witness.
   The hand check waits for that design. §7.5's asks answered as recommended ("Yes, as recommended"), and §7.4's step
-  3a built ("Yes, build it"): ramb 2026.11.06.1 (1f720f6), `rb_create_port_calls(presence = )`, not installed or pushed.
+  3a built ("Yes, build it"): ramb 2026.11.06.1 (1f720f6), `rb_create_port_calls(presence = )`, installed, not pushed.
+
+## Step 3c: the good events as presence (added 2026-11-06)
+
+At the maintainer's word ("Yes, go ahead"): ramb 2026.11.06.1 installed; `port_call.R` on the branch passes every good
+event as presence at its recorded position, the pairs from 2017 (79f021d). That first run was wrong: the events of the
+years either side, passed for the pairs, became presence with none of their pings around them, and made 22,005 stays
+of a median 6 months, absorbing 268,972 of today's calls. With presence from the run year's own events (0b60ad4):
+
+| against today's 1,623,775 | |
+|---|---|
+| port calls | 1,628,605 |
+| the same | 1,421,991 (88 %) |
+| changed / split / merged | 182,326 / 8,142 / 5,285 |
+| lost | 11,316 (2,194 from 2017) |
+| new | 10,022 (5,057 from 2017) |
+
+Of the changed calls one to one, the ends moved by up to 1 h on about 96 %. The lost calls: an event flagged by repeat,
+flicker or track 6,241; a good pair that presence did not rebuild 2,647 (2,404 before 2017, where pairs are withheld);
+no departure or no event at the port 1,977. The logbook's own dates witness 2017 on only: there the lost calls look like
+ordinary calls (5 of 134 judged inside a logbook trip, the unchanged calls about 5 %), so losing them is a loss. Not
+settled by counts: the flagged events of the lost calls, the pre-2017 pairs presence does not rebuild, the new pairs.
+A hand check of a sample is next, at the maintainer's word.

@@ -1184,8 +1184,8 @@ into these outcomes with every voyage in one, and the counts are in plan 031 §3
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
 **status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); steps 1-3 done
 2026-11-06 (decisions 288-290; ramb 2026.11.06 installed, not pushed; step 3's code on branch `plan048-step3`, not
-merged; the good events only chosen, decision 290); steps 3-5 revised the same day (plan §7), its asks answered as recommended; §7.4's step 3a built (ramb 2026.11.06.1); next
-3b and 3c in scratch ·
+merged; the good events only chosen, decision 290); steps 3-5 revised the same day (plan §7), its asks answered as recommended; §7.4's step 3 run in scratch (ramb 2026.11.06.1
+installed; 11,316 calls lost, 10,022 new); next its hand check ·
 **see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-290, TODOs 88, 117, 192
 
 The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
