@@ -55,8 +55,9 @@ On a `cp -c` clone of the store, every year, from a clone of the branch:
 - **A hand check** of a sample of the lost and new calls (and the moved), on a review page: after plan 048 §7's design
   (below).
 - **Merging the branch**: the maintainer's, after the check.
-- **The scratch store** (`/Users/einarhj/stasi/scratch-048-step3/`, 44 GB of its own; the disk at 26 GB free): delete at
-  the maintainer's word, and before any live rebuild.
+- **The scratch store** (`/Users/einarhj/stasi/scratch-048-step3/`, 44 GB of its own): deleted 2026-11-06 after step 3c,
+  the hand check put off ("Not now"), at the maintainer's word ("i trust you here, proceed"); the disk back to 70 GB
+  free. The study's README says how to rebuild it for the hand check (about an hour).
 - **Step 4** (the rebuild) and step 5 (products, docs, `stk.yml`, AGENTS.md).
 
 ## The course changed (added 2026-11-06)
