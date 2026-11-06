@@ -3,7 +3,7 @@
 #
 # Input:  staging/ornefni/{trackwell_haul, trackwell_area, plotter_mark, plotter_track, chart_name, lmi_name,
 #         recapture_place, recapture_reading, tag_recapture, tag_release, name_dictionary, drawn_area, fiskislod,
-#         article_record, document_name, oracle_name, channel_name, uv_area}.parquet; curated/logbook/{station_window,
+#         article_record, document_name, map_name, oracle_name, channel_name, uv_area}.parquet; curated/logbook/{station_window,
 #         gear}.parquet (the gear of Trackwell's hauls)
 # Output: curated/place_name/evidence.parquet - one row per occurrence, keyed on (`source_table`, `source_key`)
 #         curated/place_name/variant.parquet  - one row per spelling (`name`), with its key
@@ -17,7 +17,8 @@
 # lake names, the 2022 extract of the recaptures (recapture_place: the dump's tag_recapture holds them), a second hand
 # reading of a recapture, a finder's text with no name matched, or relative to one, or naming two, the fiskislóð hulls
 # (derived from the readings), the plotter's tracks (no names), and a record entered twice (an inspector's sample of a
-# Trackwell haul, a tagging group at its own channel station, a name picked from orri at orri's position). A recapture
+# Trackwell haul, a tagging group at its own channel station, a name picked from orri at orri's position, a place drawn
+# in both halves of the Vestmannaeyjar map), and the islands that map was georeferenced on (no witness). A recapture
 # is one occurrence at most. Trackwell's picklist summary (trackwell_area) is an occurrence per name
 # with `summary` TRUE: it repeats the hauls, so no count or position statistic reads it.
 #
@@ -157,6 +158,15 @@ ev_dn <- dn |>
             position_basis, position_kind, weight = 1L, isor_group = group, region = class_filled)
 account("name_dictionary", "a hand reading, a relation in variant.parquet", nrow(st("name_dictionary")))
 
+# The Vestmannaeyjar map's names, read and georeferenced (decision 286): a control island of the fit is no witness for
+# LMÍ's position, and a place drawn in both of the map's halves is one occurrence
+mn <- st("map_name")
+ev_mn <- mn |> filter(outcome == "staged") |>
+  transmute(source, source_table = "map_name", source_key = paste(half, row, sep = ":"), name, lon, lat,
+            position_basis, position_kind, weight = 1L)
+account("map_name", "a control island of the georeference (no witness)", sum(mn$outcome == "control island"))
+account("map_name", "the same place in the map's other half", sum(mn$outcome == "the same place in the other half"))
+
 # Oracle's place tables: the gazetteer, the coarse grounds, Breiðafjörður (plan 044 §4.1) ---------------------------
 on <- st("oracle_name")
 ev_on <- on |> filter(!is.na(name)) |> mutate(okey = paste(source_table, row, sep = ":"), otab = source_table) |>
@@ -174,7 +184,7 @@ ev_cn <- cn |>
             position_basis, position_kind, time = station_date, weight = 1L, square_w, square_h, channel_categories = categories)
 
 # Together, the repair and the key ----------------------------------------------------------------------------------
-ev <- bind_rows(ev_th, ev_ta, ev_pm, ev_ch, ev_lm, ev_dr, ev_rr, ev_tl, ev_ar, ev_dn, ev_on, ev_cn) |>
+ev <- bind_rows(ev_th, ev_ta, ev_pm, ev_ch, ev_lm, ev_dr, ev_rr, ev_tl, ev_ar, ev_dn, ev_mn, ev_on, ev_cn) |>
   mutate(summary = coalesce(summary, FALSE), text_lost = coalesce(text_lost, FALSE),
          lon = ifelse(position_basis == "none", NA, lon), lat = ifelse(position_basis == "none", NA, lat),
          position_flag = case_when(is.na(lon) | is.na(lat) ~ NA_character_,
@@ -392,7 +402,7 @@ outcome <- bind_rows(outcomes)
 # Check and write -----------------------------------------------------------------------------------------------------
 staged <- c(trackwell_haul = nrow(th), trackwell_area = nrow(ta), plotter_mark = nrow(pm), chart_name = nrow(ch),
             lmi_name = nrow(lm), drawn_area = nrow(dr), recapture_place = nrow(rp), recapture_reading = nrow(rr),
-            tag_recapture = nrow(tr), tag_release = nrow(tl), article_record = nrow(ar), document_name = nrow(dn),
+            tag_recapture = nrow(tr), tag_release = nrow(tl), article_record = nrow(ar), document_name = nrow(dn), map_name = nrow(mn),
             oracle_name = nrow(on), channel_name = nrow(cn), uv_area = nrow(uva))
 got <- outcome |> filter(source_table %in% names(staged)) |> group_by(source_table) |> summarise(rows = sum(rows))
 stopifnot("every staged row in one outcome" = all(got$rows == staged[got$source_table]), length(got$rows) == length(staged),
@@ -406,7 +416,7 @@ cat("spellings", nrow(variant), " keys", n_distinct(variant$key), " lost-letter 
     " with a hand reading", sum(!is.na(variant$reading)), " synonyms", sum(!is.na(variant$synonym_of)), "\n")
 
 inputs <- c(fd_path("staging", "ornefni", paste0(c("trackwell_haul", "trackwell_area", "plotter_mark", "chart_name", "lmi_name",
-  "recapture_place", "recapture_reading", "name_dictionary", "drawn_area", "article_record", "document_name",
+  "recapture_place", "recapture_reading", "name_dictionary", "drawn_area", "article_record", "document_name", "map_name",
   "oracle_name", "channel_name", "tag_recapture", "tag_release", "uv_area"), ".parquet")),
   fd_curated("logbook", "station_window.parquet"), fd_curated("logbook", "gear.parquet"))
 write_curated(ev, fd_curated("place_name", "evidence.parquet"), inputs = inputs)

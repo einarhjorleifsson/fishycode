@@ -333,6 +333,8 @@ list(
     produces("sources/ornefni/article_record.R", fd_staging("ornefni", "article_record.parquet")) }, format = "file"),
   tar_target(ornefni_document_name, { ornefni_raw
     produces("sources/ornefni/document_name.R", fd_staging("ornefni", "document_name.parquet")) }, format = "file"),
+  tar_target(ornefni_map_name, { ornefni_raw
+    produces("sources/ornefni/map_name.R", fd_staging("ornefni", "map_name.parquet")) }, format = "file"),
   # Oracle's own place tables, read where the dump put them (plan 044 §4.1)
   tar_target(ornefni_oracle_raw, c(fd_raw("oracle", "ops_sigfus", c("ornefni.parquet", "fj_reitir.parquet")),
                                    fd_raw("oracle", "orri", "ornefni.parquet"),
@@ -359,7 +361,7 @@ list(
   tar_target(place_name_evidence, {
     ornefni_trackwell_haul; ornefni_trackwell_area; ornefni_plotter_mark; ornefni_plotter_track; ornefni_chart_name
     ornefni_lmi_name; ornefni_recapture_place; ornefni_recapture_reading; ornefni_name_dictionary; ornefni_fiskislod
-    ornefni_article_record; ornefni_document_name; ornefni_oracle_name; ornefni_channel_name; ornefni_tag_recapture
+    ornefni_article_record; ornefni_document_name; ornefni_map_name; ornefni_oracle_name; ornefni_channel_name; ornefni_tag_recapture
     ornefni_tag_release; ornefni_uv_area; station_window; logbook_gear
     produces("curate/place_name_evidence.R", fd_curated("place_name", "evidence.parquet"),
              fd_curated("place_name", "variant.parquet"), fd_curated("place_name", "outcome.parquet"))

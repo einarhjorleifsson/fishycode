@@ -97,7 +97,7 @@ place_names_geojson <- function() {
   p <- read_curated_sf(f)
   d <- sf::st_drop_geometry(p)
   parent <- d$name[match(d$parent_key, d$key)]
-  src <- grep("^n_(trackwell|plotter|lmi|sjokort|fiskmerki|article|skjalfandi|isor|qgis|oracle|channel|uv)$", names(d), value = TRUE)
+  src <- grep("^n_(trackwell|plotter|lmi|sjokort|fiskmerki|article|skjalfandi|vestmannaeyjar|isor|qgis|oracle|channel|uv)$", names(d), value = TRUE)
   used <- apply(d[src], 1, function(r) paste(sprintf("%s %s", sub("^n_", "", src[r > 0]), r[r > 0]), collapse = ", "))
   syn <- fd_curated("place_name", "synonym.parquet")
   syn_txt <- if (file.exists(syn)) {

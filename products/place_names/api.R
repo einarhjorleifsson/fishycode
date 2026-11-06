@@ -44,7 +44,7 @@ SEA_CHART <- local({
 NOT_SERVED <- c("text", "vessel", "source_key")
 
 SOURCES <- c("trackwell", "plotter", "lmi", "sjokort", "fiskmerki", "channel", "oracle", "uv", "skjalfandi", "qgis",
-             "article", "isor")
+             "vestmannaeyjar", "article", "isor")
 
 ALLOW <- list(
   names = c("key", "name", "class", "n_spelling", "n_vessel", "year_first", "year_last", "in_lmi", "lmi_class", "region",

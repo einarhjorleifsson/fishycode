@@ -43,7 +43,7 @@
 #   floor(log2(3969 / size in km)), within 4-12; else 11, a fine name shown late. A child shows no earlier than its
 #   parent. `level` 1-4 bins it (≤ 5, 6-7, 8-9, ≥ 10).
 # - Cross-check (plan 044 §4.6): `families` (the independent sources with a position: trackwell, plotter, lmi, oracle,
-#   sjokort, fiskmerki, qgis, skjalfandi, channel, uv) and `n_text` (articles, ÍSOR). Two families agree when their medians lie
+#   sjokort, fiskmerki, qgis, skjalfandi, vestmannaeyjar, channel, uv) and `n_text` (articles, ÍSOR). Two families agree when their medians lie
 #   within the larger of 5 km and the key's r80, plus the mean of the two families' own r80, plus half a square for a
 #   square-placed family (15 km) or an area's (40 km): a broad area's sources sit apart inside it. `outcome`: several
 #   places (two places or more), confirmed (two or more families, all agreeing), disagree (two or more, some not: a

@@ -37,13 +37,15 @@ const nameKey = (s) => String(s).toLowerCase().replace(/ð/g, 'd').replace(/þ/g
   .replace(/[áéíóúýöäåøü]/g, (c) => PLAIN[FOLD.indexOf(c)]).replace(/[^a-z0-9?]/g, '').replace(/([a-z])\1+/g, '$1');
 
 // The sources in ColorBrewer's Paired, 12 colours for 12 sources: a light and dark pair is a family of witness, the
-// commoner source light and the rarer dark (and drawn on top), so the rarer stands out where both lie
+// commoner source light and the rarer dark (and drawn on top), so the rarer stands out where both lie. The 13th, the
+// Vestmannaeyjar map's names (decision 286), has Dark2's yellow, as on the timarit study's map
 const SOURCES = [
   ['trackwell', 'Trackwell hauls', '#a6cee3'], ['plotter', 'plotter marks', '#1f78b4'],     // the fishermen's own
   ['lmi', 'LMÍ', '#b2df8a'], ['sjokort', 'sea charts', '#33a02c'],                       // the official maps
   ['channel', 'channel', '#fb9a99'], ['fiskmerki', 'tag recaptures', '#e31a1c'],           // MFRI's samples
   ['oracle', 'Oracle (orri, skikar)', '#fdbf6f'], ['uv', 'uv closures', '#ff7f00'],        // registers and regulations
   ['skjalfandi', 'Skjálfandi', '#cab2d6'], ['qgis', 'QGIS', '#6a3d9a'],                   // areas drawn by hand
+  ['vestmannaeyjar', 'Vestmannaeyjar map', '#e6ab02'],                                    // a map read by eye
   ['article', 'articles', '#ffff99'], ['isor', 'ÍSOR', '#b15928']];                        // text, with no position
 const COLOUR = Object.fromEntries(SOURCES.map(([id, , c]) => [id, c]));
 const TOTAL = {};
