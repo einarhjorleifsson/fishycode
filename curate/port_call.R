@@ -31,11 +31,15 @@
 #                    judged as events by ramb::rb_flag_port_event() (plan 048 §2.3, decision 289), by position,
 #                    sequence, the cleaned track (no ping either side, no witness, not good) and the sending unit.
 #                    Until plan 048 an event was good if `io_ok` (sources/stk/event.R) and kept by step 0 as a ping,
-#                    and only events from 2017 on were passed (decision 059); the events of every year count now
-#                    where they pass (decision 196). Only the good events go to the pairs (STAY_EVENTS "good", the
-#                    default since decision 290): passing every event ("all", as before plan 048), a bad one between
-#                    two good ones breaks the pair, and on the scratch run of plan 048 step 3 12,868 more of today's
-#                    port calls were lost
+#                    and only events from 2017 on were passed (decision 059), as they still are for the pairs
+#                    (STAY_EVENT_FROM, plan 048 §7.4; the years before are its step 6). Only the good events go to
+#                    the pairs (STAY_EVENTS "good", the default since decision 290): passing every event ("all", as
+#                    before plan 048), a bad one between two good ones breaks the pair, and on the scratch run of
+#                    plan 048 step 3 12,868 more of today's port calls were lost
+#   presence         every good event of every year, at its recorded position (a marker included), is a ping for
+#                    the rules above (ramb::rb_create_port_calls(presence = TRUE), plan 048 §7.3): until plan 048
+#                    STK's event rows were pings of the track and the port calls stood on them; out of the track,
+#                    they stand on them again as judged events
 # A seed is extended over the contiguous pings inside the same polygon on either side. Seeds at one
 # harbour that overlap or touch are one stay. `rule` is the strongest evidence present (event_pair >
 # tag_then_gap > tag_span > gap_near_harbour); `evidence` lists all of them. Where a stay has both ping
@@ -69,6 +73,7 @@ G_H        <- as.numeric(Sys.getenv("STAY_G_H", "2"))   # a stay is at least thi
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
 EVENTS     <- Sys.getenv("STAY_EVENTS", "good")   # "good" or "all": which judged events go to the pairs (above)
+EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # the first year whose events make pairs (above)
 stopifnot("STAY_EVENTS is \"all\" or \"good\"" = EVENTS %in% c("all", "good"))
 
 con <- duckdbfs::cached_connection()
@@ -112,7 +117,7 @@ ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M)
 x(glue::glue("CREATE OR REPLACE TEMP TABLE ev_in AS
   SELECT vid, time, io, CAST(year AS INTEGER) AS year, hid_pid AS port_id,
          CASE WHEN marker THEN NULL ELSE lon END AS lon, CASE WHEN marker THEN NULL ELSE lat END AS lat,
-         CAST(mid AS VARCHAR) AS mid
+         CAST(mid AS VARCHAR) AS mid, lon AS raw_lon, lat AS raw_lat
   FROM read_parquet('{event_f}')"))
 ports_ev <- P |> transmute(port_id = pid)
 ev_years <- q("SELECT DISTINCT year FROM ev_in ORDER BY 1")$year
@@ -131,7 +136,8 @@ for (k in seq_along(ev_years)) {
     "SELECT NULL::INTEGER AS vid, NULL::TIMESTAMP AS time, NULL::DOUBLE AS lon, NULL::DOUBLE AS lat WHERE false" else
     glue::glue("SELECT vid, time, lon, lat FROM {clean_years(y + -1:1)} WHERE pos_basis = 'recorded'")))
   r <- ramb::rb_flag_port_event(e, ports = ports_ev, pings = pg, unit = mid)
-  judged[[k]] <- r[r$year == y, c("vid", "time", "io", "year", "port_id", "mid", "event_flag", "event_track_kn", "good")]
+  judged[[k]] <- r[r$year == y, c("vid", "time", "io", "year", "port_id", "mid", "event_flag", "event_track_kn", "good",
+                                  "raw_lon", "raw_lat")]
   message(sprintf("  events %d: %s judged, %s good, %s not judged, %.1f min", y, format(nrow(judged[[k]]), big.mark = ","),
                   format(sum(judged[[k]]$good, na.rm = TRUE), big.mark = ","), format(sum(is.na(judged[[k]]$good)), big.mark = ","),
                   as.numeric(difftime(Sys.time(), t0, units = "mins"))))
@@ -161,14 +167,16 @@ stay_year <- function(yr) {
     UNION ALL
     SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_min(first, year) AS e FROM pc_edge WHERE year > {yr} GROUP BY vid)")
   seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(own, pad), collapse = "\n    UNION ALL ")))
-  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both good (judged above). The
-  # events of the year and either side: the window keeps a call that overlaps the year.
+  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both good (judged above), from
+  # EVENT_FROM on (an earlier event's port is withheld, so it makes no pair); and every good event as presence, at its
+  # recorded position. The events of the year and either side: the window keeps a call that overlaps the year.
   ev <- dplyr::tbl(con, dplyr::sql(glue::glue("
-    SELECT vid, time, io, port_id, good FROM ev_judged
+    SELECT vid, time, io, CASE WHEN year >= {EVENT_FROM} THEN port_id END AS port_id, good, raw_lon AS lon, raw_lat AS lat
+    FROM ev_judged
     WHERE year BETWEEN {yr - 1L} AND {yr + 1L}{if (EVENTS == 'good') ' AND good' else ''}")))
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
   ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,
-                           events = ev, window = win) |>
+                           events = ev, presence = TRUE, window = win) |>
     collect() |>
     rename(pid = port_id)
 }
