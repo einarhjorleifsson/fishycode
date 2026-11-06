@@ -6,7 +6,7 @@ build of 2026-10-23 (decision 218); step 1 run 2026-11-06 at the maintainer's wo
 2026-11-02 (decision 288, `$FISHYDATA/archive/2026-11-06-plan048-step1/`): the switch as sharp on either clock, 4,549,650
 of the 8,460,441 event rows leave the track, and without them the speed filter frees the own-port arrivals and more
 fixes than it flags; step 2 built 2026-11-06 at the maintainer's word (decision 289, ramb 2026.11.06, committed to its
-local `main`, not installed or pushed; `$FISHYDATA/archive/2026-11-06-plan048-step2/`): `rb_flag_port_event()` trusts
+local `main` and installed, not pushed; `$FISHYDATA/archive/2026-11-06-plan048-step2/`): `rb_flag_port_event()` trusts
 108,339 of STK's events of 2008, 2016 and 2024 that today's tags do not and sets aside 3,089 they trust, and the unit
 test leaves what the track has judged; next is step 3, in fishycode in scratch · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,

@@ -2,7 +2,8 @@
 
 *2026-11-06. Plan 048 step 2, TODO 148, at the maintainer's word ("Yes, start step 2"). Built, measured and recorded
 by Claude (AI); no person has checked the counts or the code. ramb 2026.11.06 (b2a7264), committed to ramb's local
-`main`, not installed or pushed. The study, its scripts and tables: `$FISHYDATA/archive/2026-11-06-plan048-step2/` (its
+`main` and installed from it the same day at the maintainer's word ("Yes, install it"; the whole suite passes
+against the install), not pushed. The study, its scripts and tables: `$FISHYDATA/archive/2026-11-06-plan048-step2/` (its
 README).*
 
 ## What was built (ramb 2026.11.06)
@@ -54,4 +55,4 @@ row kept by the speed filter):
   repeat breaks the adjacent pair `rb_create_port_calls()` makes even when the earlier event is months old, so step 3
   may pass only the good events.
 - **No hand check** of the events trusted afresh or set aside.
-- **ramb installed and pushed**: at the maintainer's word.
+- **ramb pushed**: at the maintainer's word.

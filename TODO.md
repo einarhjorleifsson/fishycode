@@ -1183,7 +1183,7 @@ into these outcomes with every voyage in one, and the counts are in plan 031 §3
 
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
 **status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); steps 1 and 2 done
-2026-11-06 (decisions 288, 289; ramb 2026.11.06 not installed or pushed); next is step 3, fishycode in scratch ·
+2026-11-06 (decisions 288, 289; ramb 2026.11.06 installed, not pushed); next is step 3, fishycode in scratch ·
 **see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288 and 289, TODOs 88,
 117 and 192
 
