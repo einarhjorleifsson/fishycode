@@ -53,8 +53,9 @@ next fix, so a flagged ping hands its time on. What moves is the port calls, and
 
 ## What it leaves
 
-- **The scratch store**, `/Users/einarhj/stasi/scratch-192-candidate/` (about 47 GB of its own): kept until deleted at
-  the maintainer's word; it must go before any live rebuild, or it keeps the replaced files' disk.
+- **The scratch store**, `/Users/einarhj/stasi/scratch-192-candidate/` (about 47 GB of its own): deleted 2026-11-06
+  at the maintainer's word ("Yes, delete it"), the disk back to 74 GB free; the study's own files stay, and a rerun
+  after plan 048 clones the store afresh.
 - **A hybrid rule**: `clean`'s first stage (the angle) before the candidate's own limits. Not built; an option if plan
   048 does not clear the candidate's losses.
 - **The trip ends the candidate gets right**, 2,235 by the logbook's date: production's own wrong ends, not looked at.
