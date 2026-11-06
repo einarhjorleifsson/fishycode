@@ -37,6 +37,10 @@
 #             after the vessel has left, 66 % lie outside every polygon, and the test for `U` is still
 #             an open decision (plan 011 §5 c), so `U` position is reported, not judged here.
 #   marker    the position is used by MARKER_MIN_VID or more vessels' events: a port's marker, not the vessel's
+#   pid_basis where `hid_pid` comes from: "code" (the code names a port), "position" (a code that names no port, THH
+#             or THO: the polygon the event lies in), "arrival" (such a departure, in no polygon, takes the pid of the
+#             vessel's arrival just before it under the same code: a departure is sent once the vessel has left, so it
+#             lies outside the port; plan 048 step 3 found 10,370 port calls lost without it, decision 290), NA (none)
 
 library(dplyr)
 library(sf)
@@ -145,6 +149,20 @@ for (k in seq_along(years)) {
 }
 out <- bind_rows(res) |> arrange(vid, time, io)
 stopifnot(!anyDuplicated(out[c("vid", "time", "io")]))
+# a departure under a code that names no port, in no polygon: the pid of the vessel's arrival just before it, same code
+out <- out |>
+  group_by(vid) |>
+  mutate(prev_io = lag(io), prev_hid = lag(hid), prev_pid = lag(hid_pid), prev_basis = lag(resolve)) |>
+  ungroup() |>
+  mutate(inherit = io == "U" & resolve %in% "position" & is.na(hid_pid) & prev_io %in% "I" & !is.na(hid) &
+           prev_hid %in% hid & !is.na(prev_pid),
+         pid_basis = case_when(inherit ~ "arrival",
+                               is.na(hid_pid) ~ NA_character_,
+                               resolve %in% "position" ~ "position",
+                               TRUE ~ "code"),
+         hid_pid = if_else(inherit, prev_pid, hid_pid)) |>
+  select(-prev_io, -prev_hid, -prev_pid, -prev_basis, -inherit)
+message(sprintf("departures given their arrival's pid: %s", format(sum(out$pid_basis %in% "arrival"), big.mark = ",")))
 
 # -- 4. Share of each position by year (plan §4, Phase 2: report before anything consumes it) -------
 
