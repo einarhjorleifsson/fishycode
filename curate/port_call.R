@@ -32,8 +32,10 @@
 #                    sequence, the cleaned track (no ping either side, no witness, not good) and the sending unit.
 #                    Until plan 048 an event was good if `io_ok` (sources/stk/event.R) and kept by step 0 as a ping,
 #                    and only events from 2017 on were passed (decision 059); the events of every year count now
-#                    where they pass (decision 196). STAY_EVENTS: "all" passes every judged event to the pairs, so a
-#                    bad one between two good ones breaks the pair (as before plan 048); "good" only the good ones
+#                    where they pass (decision 196). Only the good events go to the pairs (STAY_EVENTS "good", the
+#                    default since decision 290): passing every event ("all", as before plan 048), a bad one between
+#                    two good ones breaks the pair, and on the scratch run of plan 048 step 3 12,868 more of today's
+#                    port calls were lost
 # A seed is extended over the contiguous pings inside the same polygon on either side. Seeds at one
 # harbour that overlap or touch are one stay. `rule` is the strongest evidence present (event_pair >
 # tag_then_gap > tag_span > gap_near_harbour); `evidence` lists all of them. Where a stay has both ping
@@ -66,7 +68,7 @@ sf::sf_use_s2(FALSE)
 G_H        <- as.numeric(Sys.getenv("STAY_G_H", "2"))   # a stay is at least this many hours, every port (decision 074; test hook)
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
-EVENTS     <- Sys.getenv("STAY_EVENTS", "all")   # "all" or "good": which judged events go to the pairs (above)
+EVENTS     <- Sys.getenv("STAY_EVENTS", "good")   # "good" or "all": which judged events go to the pairs (above)
 stopifnot("STAY_EVENTS is \"all\" or \"good\"" = EVENTS %in% c("all", "good"))
 
 con <- duckdbfs::cached_connection()
