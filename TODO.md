@@ -1182,9 +1182,10 @@ or on every year once step 7 has rebuilt the port calls.
 into these outcomes with every voyage in one, and the counts are in plan 031 §3.10 or a decision.
 
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
-**status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); next is step 1, the scratch
-measurements · **see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282 and 283, TODOs
-88, 117 and 192
+**status:** open — plan 048's asks a-g answered 2026-10-28, each as recommended (its §5); step 1, the scratch
+measurements, done 2026-11-06 (decision 288); next is step 2, `rb_flag_port_event()` in ramb, at the maintainer's word ·
+**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283 and 288, TODOs 88, 117
+and 192
 
 The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
 events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
@@ -1203,6 +1204,10 @@ best position there is: out of the track, kept as events. With them out the anch
 TODO 192 waits on this (decision 287): in plan 069's rebuild test the candidate speed rule kept STK's event rows placed
 out of place, which production's angle test flags, and lost 21,600 port calls and merged trips; with the rows out of
 the track, plan 069's night runs the candidate again.
+
+Step 1 (decision 288): the switch is as sharp on either clock (`posdate` by tie-break); 4,549,650 of the 8,460,441
+event rows leave the track; rerun on 2008, 2016 and 2024 without them, production's filter frees most own-port `I` rows
+it flagged and more fixes than it newly flags (1,266 / 11,691 / 8,501 against 619 / 391 / 134), not hand-checked.
 
 **check:** plan 048's five steps done and recorded in a decision, or the plan parked or abandoned by the maintainer,
 and its status agrees with its index row.

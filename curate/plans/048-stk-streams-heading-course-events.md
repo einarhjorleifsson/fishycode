@@ -1,10 +1,14 @@
 # 048 — STK's streams into the flow: heading and course apart, a stream on every STK fix, and port events judged as events by a generic step
 
 **status:** proposal — written 2026-10-28 at the maintainer's request; every ask answered the same day, each as
-recommended (§5); none of its steps built; what §1 calls measured, Claude measured read-only the same day, on the dump
-of 2026-10-16 and the build of 2026-10-23 (decision 218) · **2026-10-28** · **see:** decision 233 (the streams, the
-heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
-`dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision 196's build), TODO 148
+recommended (§5); what §1 calls measured, Claude measured read-only the same day, on the dump of 2026-10-16 and the
+build of 2026-10-23 (decision 218); step 1 run 2026-11-06 at the maintainer's word, read-only on the build of
+2026-11-02 (decision 288, `$FISHYDATA/archive/2026-11-06-plan048-step1/`): the switch as sharp on either clock, 4,549,650
+of the 8,460,441 event rows leave the track, and without them the speed filter frees the own-port arrivals and more
+fixes than it flags; nothing built; next is step 2, in ramb, at the maintainer's word · **2026-10-28** · **see:**
+decision 233 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and
+its study, decision 288 (step 1), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision 196's
+build), TODO 148
 
 Drafted with AI assistance (Claude) on 2026-10-28; a person has not yet checked it.
 
@@ -142,7 +146,11 @@ brought up to date.
 1. **Measure in scratch** (read-only on the store, a scratch `$FISHYDATA` for any write): the switch on `recdate` and
    on `posdate`, counting the fixes each puts on the wrong side; the union with and without the events, and the whack
    filter rerun on 2008, 2016 and 2024: pings in and out by provider and stream, whacks by stage, whacks at a stream
-   switch; the codes per provider. An account in a decision.
+   switch; the codes per provider. An account in a decision. **Done 2026-11-06** (decision 288): it also found that the
+   stream is already on every ping since plan 059 (`ping_stream_sql()`, named `stk_ais`, `stk_vms`, `stk_unit`,
+   `stk_event`), its event label taken from time and position alone (6,091 rows equal to a fix, 310 with no event of
+   the vessel), so step 3 takes the event from the dump row's own `in_out_of_harbor`; and that STK's 511 lies on every
+   stream before the switch, so a code is NA on every stream.
 2. **ramb**: `rb_flag_port_event()` with its tests, contract checks and messages (plan 013's registry); on fishydata's
    events and the cleaned track of 2008, 2016 and 2024, then on CNR's log; its unit threshold from the data. A version
    and its decision.
@@ -174,6 +182,8 @@ All answered by the maintainer on 2026-10-28, each as recommended ("go with reco
 - **a. The stream's values:** `"ais"`, `"centiminute"`, `"ungridded"`, what the data show. The docs say what each fits
   (AIS; VMS in 2006-2010; STK's own shore units). Not chosen: `"ais"`, `"vms"`, `"stk_unit"`.
 - **b. Where the switch is cut:** on `recdate` or `posdate`, whichever step 1 finds the sharper. Step 1 records which.
+  Step 1 (decision 288): equally sharp, the same rows on the wrong side at every second; Claude's tie-break is
+  `posdate`, which the union carries, true heading before 2010-06-09 17:40:13.
 - **c. Codes:** NA in the union for every provider (STK's 511 and 360.0, astdB's 511 and course of 360 or more,
   EMODnet's -1). The source tables keep them.
 - **d. Decision 196:** read as written here: an `I` inside its own port and at no shared marker stays a fix (3.90 M
