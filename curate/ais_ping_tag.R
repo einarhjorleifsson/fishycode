@@ -54,6 +54,17 @@ ports <- sf::read_sf(fd_staging("aux", "ports.fgb")) |> transmute(port_id = pid,
 union_dir <- fd_staging("ais", "ping_union")
 # every year the union wrote (decision 181)
 years <- sort(as.integer(sub("year=", "", list.files(union_dir, pattern = "^year="))))
+# TAG_YEARS (unset: the whole run, as targets runs it): a list of years tags only those, each year's folder replaced and
+# no move; "move" tags none and runs only the move across New Year below. So a run can go year by year in fresh
+# processes, each freeing its DuckDB spill: a year of 72 M rows spills about 35 GB (plan 048 step 3's scratch run,
+# which held a second union beside the live one).
+TAG_YEARS <- Sys.getenv("TAG_YEARS", "")
+TAG_ALL <- !nzchar(TAG_YEARS)
+if (!TAG_ALL && TAG_YEARS != "move") {
+  years <- intersect(years, as.integer(strsplit(TAG_YEARS, ",")[[1]]))
+  stopifnot("TAG_YEARS names years of the union" = length(years) > 0)
+}
+if (TAG_YEARS == "move") years <- integer(0)
 # the check's lags as rb_create_ping_lags() gives them: one row per vessel, stream and month, `period` its first day
 x("CREATE OR REPLACE TABLE lags AS SELECT vid, stream, make_date(CAST(year AS INT), CAST(month AS INT), 1) AS period,
      lag_s, outcome FROM read_parquet('%s')", fd_curated("check", "ais_feed_clock.parquet"))
@@ -65,8 +76,9 @@ receipt_dir <- fd_staging("ais", "stk_receipt")
 # One write, partitioned by year, into an emptied folder. A second, month-partitioned copy of the loop once wrote
 # 2009-2025 again beside it, which made the directory unreadable (Hive partition mismatch); nothing downstream filters
 # on month.
-unlink(fd_staging("ais", "ping_tagged"), recursive = TRUE)
+if (TAG_ALL) unlink(fd_staging("ais", "ping_tagged"), recursive = TRUE)
 for (YR in years) {
+  if (!TAG_ALL) unlink(file.path(fd_staging("ais", "ping_tagged"), paste0("year=", YR)), recursive = TRUE)
   tic()
   print(YR)
   # every row of the year, from the year's own folder (decision 235), the stream from the union's own columns
@@ -113,6 +125,9 @@ for (YR in years) {
 # pings in 2014-2026, moved back 11-63 s; the trail's count check found them (plan 059's rebuild, 2026-11-01). A ping
 # with no time stays where it is.
 tagged_dir <- fd_staging("ais", "ping_tagged")
+# a year's own run (TAG_YEARS a list) stops before the move, which comes last, once
+if (TAG_ALL || TAG_YEARS == "move") {
+if (TAG_YEARS == "move") years <- sort(as.integer(sub("year=", "", list.files(tagged_dir, pattern = "^year="))))
 for (YR in years) {
   src <- file.path(tagged_dir, paste0("year=", YR))
   yr_of <- sprintf("coalesce(year(time), %d)", YR)
@@ -132,4 +147,6 @@ for (YR in years) {
   message(YR, ": ", paste(sprintf("%d pings to %d", to$n, to$y), collapse = ", "))
 }
 n_after <- open_dataset(tagged_dir) |> count() |> pull(n)
-stopifnot("every row of the union in the output once, after the move" = n_after == n_all)
+if (TAG_ALL) stopifnot("every row of the union in the output once, after the move" = n_after == n_all) else
+  message("tagged after the move: ", format(n_after, big.mark = ","), " rows (the year-by-year run checks the total itself)")
+}
