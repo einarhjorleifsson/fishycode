@@ -168,10 +168,14 @@ stay_year <- function(yr) {
     SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_min(first, year) AS e FROM pc_edge WHERE year > {yr} GROUP BY vid)")
   seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(own, pad), collapse = "\n    UNION ALL ")))
   # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both good (judged above), from
-  # EVENT_FROM on (an earlier event's port is withheld, so it makes no pair); and every good event as presence, at its
-  # recorded position. The events of the year and either side: the window keeps a call that overlaps the year.
+  # EVENT_FROM on (an earlier event's port is withheld, so it makes no pair); the events of the year and either side,
+  # since the window keeps a call that overlaps the year. Presence: every good event of the year itself, at its
+  # recorded position. Only the year's own: its pings are the year's, and an event of the year either side with no
+  # pings around it made consecutive events at a home port one stay over whole seasons (plan 048 step 3c's first run,
+  # 22,005 calls of a median 6 months).
   ev <- dplyr::tbl(con, dplyr::sql(glue::glue("
-    SELECT vid, time, io, CASE WHEN year >= {EVENT_FROM} THEN port_id END AS port_id, good, raw_lon AS lon, raw_lat AS lat
+    SELECT vid, time, io, CASE WHEN year >= {EVENT_FROM} THEN port_id END AS port_id, good,
+           CASE WHEN year = {yr} THEN raw_lon END AS lon, CASE WHEN year = {yr} THEN raw_lat END AS lat
     FROM ev_judged
     WHERE year BETWEEN {yr - 1L} AND {yr + 1L}{if (EVENTS == 'good') ' AND good' else ''}")))
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
