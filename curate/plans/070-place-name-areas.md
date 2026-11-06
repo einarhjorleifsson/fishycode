@@ -326,7 +326,27 @@ Each step starts as a study under `$FISHYDATA/archive/`, and becomes a target on
      study's `18_deeps.R`): the banks' rule upside down, a relief level raised from the core's lowest point until the
      depression would take in a neighbour's heart, or reach the plane. 106 of 122 deeps get one; they hold 0.77 of
      unseen statements, against 0.71 for the trough rule and 0.67 for the density. A candidate.
-   - **Next:** the maintainer's word on the deeps; then the "-grunn" banks bounded by the adopted deeps; the places
+   - **The deeps, three rounds on the map** (the maintainer, 2026-11-06, in notes pinned on the study's map and in chat;
+     the study README has each comment and its rule). Each comment became one rule for every deep:
+     - **Names:** -djúp and -dýpi are one name; a deep's parts join it ("Skeiðarárdýpi grunnt", "fyrir
+       Berufjarðarál", KAPALL); a group takes its highest-level key's terrain word and its most-used spelling.
+     - **The place by quality, not counts:** the 30 km reach round the quality-weighted median of the sources, not
+       the gazetteer's place. Skerjadjúp moved to where the chart prints it; 716 places moved over 10 km.
+     - **The deep's shape:** no holes, no fingers (an opening of 2.5 km), one piece; never in the inshore strip; to the
+       shelf edge (the trough followed downhill to the cliff); where the shelf is narrow, the 140 m isobath shoreward;
+       a stop where it would spill into another basin near the plane; only deeps stop a deep, and a lower-level name
+       never takes a higher ground.
+     - **The check:** the deep alone holds about half of unseen statements, the deep with the name's density about two
+       thirds. The trough is the deep; the name's use reaches wider.
+     - **Open:** Jökuldjúp against Faxaflóadýpi (the maintainer's to say, the evidence in notes on the map); Kolluáll's
+       distance names; spellings no rule joins (Skerjardýpi).
+   - **The broad areas from the official charts alone, under the charts' names** (the maintainer, 2026-11-06: "try only
+     using the official map data"; "lets keep the names from the sea-chart as a rule. e.g. Faxadjúp"; the study's
+     `19_chart_deeps.R`). Each deep, channel or trench the sea charts print (TODO 186's reading) seeds a depression at
+     its label, shaped by the deep rule; a trough two chart names share is split between them. 50 of 68 chart features
+     get an area. The charts name the outer trough west of Faxaflói Faxadjúp, and Jökuldjúp its inner part. The deeps
+     may be amended where the major banks clash with them (the maintainer).
+   - **Next:** the banks from the charts, bounded by the chart deeps; then the deeps and banks reconciled; the places
      beyond a key's main one; step 3 (the terrain classes) and the targets of step 9.
 7. **Level 4:** the marks.
 8. **The views,** one step at a time, each click path tested.

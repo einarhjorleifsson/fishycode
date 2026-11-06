@@ -132,10 +132,14 @@ contour_layer <- function(file, con, dir) {
            paint = list("line-color" = "rgba(27,42,58,0.55)", "line-width" = list("case", major, 1.2, 0.5))),
       list(id = sprintf("contours-label-%d", zooms[k]), type = "symbol", "source-layer" = "contours",
            minzoom = z[["minzoom"]], maxzoom = z[["maxzoom"]], filter = list("all", f, major),
-           layout = list("symbol-placement" = "line", "text-size" = 13,
+           # along a line MapLibre fits a label only where the line bends under its 45 degrees over the label's length,
+           # and the 50 m grid's contours wiggle at screen scale: 1 label on some 30 lines at zoom 8 (2026-11-06, the
+           # maintainer: "can you add depth indicator on contour lines"); 180 degrees and a label every 200 px placed
+           # 20, with a halo to read on the depth's colours
+           layout = list("symbol-placement" = "line", "text-size" = 13, "text-max-angle" = 180, "symbol-spacing" = 200,
                          "text-field" = list("concat", list("number-format", ele, structure(list(), names = character())),
                                              " m")),
-           paint = list("text-color" = "#1b2a3a"))
+           paint = list("text-color" = "#1b2a3a", "text-halo-color" = "#ffffff", "text-halo-width" = 1.5))
     )
   }), recursive = FALSE)
   ramb::rb_map_layer(

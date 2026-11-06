@@ -1711,7 +1711,7 @@ first trial (plan 067 §1): 149 entries, 70 with a name's origin; no person has 
 read and measured against the 151 Markdown records), or the plan parked.
 
 ## 194. Place-name areas and the seabed's terrain classes, from the occurrences, the effort and the seabed (plan 070)
-**status:** open · plan 070's asks a-f answered by the maintainer (2026-11-06); steps 1, 2, 4, 5 and 6 run as studies; LMÍ's polygons dropped (vocabulary only), each source held out as the check; the areas adopted (density, groups once, a deep's trough, a "-grunn" name's shelf block) · **see:** `curate/plans/070-place-name-areas.md`,
+**status:** open · plan 070's asks a-f answered by the maintainer (2026-11-06); steps 1, 2, 4, 5 and 6 run as studies; LMÍ's polygons dropped (vocabulary only), each source held out as the check; the areas adopted (density, groups once, a deep's trough, a "-grunn" name's shelf block); the deeps redrawn from the landscape under the maintainer's three rounds of comments, a candidate · **see:** `curate/plans/070-place-name-areas.md`,
 `$FISHYDATA/archive/2026-11-06-place-name-areas/README.md`, plan 045 §2-§3, TODOs 144 and 185
 
 The maintainer, 2026-11-06, asked whether it is time to outline the names: hierarchically, the main grounds and deeps
