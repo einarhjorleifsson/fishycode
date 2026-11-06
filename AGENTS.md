@@ -304,8 +304,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6 (plan 060, decision 274); on 2026-11-06 at
   fc45a24, with ramb 2026.11.06.2 and DuckDB 1.5.6, the 55 outdated by plan 048 or by `ports_all`'s repair of
   2026-11-04 (`curate/corrections/ports_osm_invalid_geometry.yml`) were rebuilt (decision 291): STK's port events out
-  of the track and judged as events. Its voyages run through 57,389 port calls that no ping falls in (decision 291),
-  until ramb's voyage cut is fixed (TODO 148). Every curated file
+  of the track and judged as events; the 14 from `ais_voyage` down again the same day at 78729b5 with ramb 2026.11.06.3,
+  every port call cutting the voyages (decision 292). Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code

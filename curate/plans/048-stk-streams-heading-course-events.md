@@ -16,9 +16,10 @@ lose 19,241 and gain 26,488 of 1,623,775, the lost ones those that stood on STK'
 same day (ramb 2026.11.06.1 installed; 1,421,991 of today's calls the same, 11,316 lost, 10,022 new); the hand check left out and the branch merged at the maintainer's word (c3a5a97);
 steps 4 and 5 the same day (decision 291, `$FISHYDATA/archive/2026-11-06-plan048-rebuild/`): the store rebuilt,
 fishing hours +0.09 %, port calls 1,628,604, but 57,389 port calls no ping falls in now lie inside a voyage (ramb's
-dwell cut, 58,207 voyages fewer); next that cut in ramb, then step 6 · **2026-10-28** · **see:** decision 233
+dwell cut, 58,207 voyages fewer); the cut fixed in ramb 2026.11.06.3 and the chain rebuilt from `ais_voyage` the same
+day (decision 292): no port call inside a voyage, 1,414,461 voyages; next step 6 · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
-decisions 288 (step 1), 289 (step 2), 290 (step 3) and 291 (steps 4 and 5), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
+decisions 288 (step 1), 289 (step 2), 290 (step 3), 291 (steps 4 and 5) and 292 (the voyage cut), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
 196's build), TODO 148
 
 Drafted with AI assistance (Claude) on 2026-10-28; a person has not yet checked it.
@@ -269,7 +270,8 @@ every year, as the rows did.
 4. **Rebuild** as before, once the branch is merged at the maintainer's word and the scratch store deleted. **Done
    2026-11-06** (decision 291).
 5. **Products, docs and the record** as before. **Done 2026-11-06** (decision 291). It leaves the voyage cut: a port
-   call no ping falls in must cut the track (ramb), then a rebuild from `ais_voyage` down.
+   call no ping falls in must cut the track (ramb), then a rebuild from `ais_voyage` down. **Done the same day**
+   (decision 292, ramb 2026.11.06.3).
 6. **Event pairs before 2017** (decision 196), after the rebuild, as a step of its own, measured against the logbook's
    own dates.
 
