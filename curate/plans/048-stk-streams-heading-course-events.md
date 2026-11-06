@@ -169,6 +169,7 @@ brought up to date.
    `plan048-step3`): every year on a scratch store; the tag pass year by year (`TAG_YEARS`) for the disk. With the good
    events only (`STAY_EVENTS`), 19,241 of 1,623,775 calls lost and 26,488 new; every lost and new call in one outcome.
    Today 5,951 calls rest on events alone (13,510 on the build of 2026-10-23): 4,035 the same, 1,294 changed, 621 lost.
+   The good events only chosen by the maintainer the same day (the branch's default since e8006d6).
 4. **Rebuild**: fingerprints of the 19 targets (`R/fingerprint.R`) taken first; `stk`, `stk_event` and
    `ais_ping_union` invalidated by hand; `tar_make_isolated()`; no tracked edit while it runs; `tar_outdated()`
    empty after; fingerprints compared.

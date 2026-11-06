@@ -45,14 +45,15 @@ On a `cp -c` clone of the store, every year, from a clone of the branch:
 
 ## What was chosen
 
-Nothing yet. Claude's reading: `STAY_EVENTS = "good"` is the better setting (12,868 fewer lost for 2,160 more new);
-whether the lost calls were real, and the new ones are, is not settled by counts. Plan 069's 21,600 lost calls were
-judged by hand; these get the same before step 4.
+- **Only the good events go to the pairs** (`STAY_EVENTS = "good"`, the branch's default since e8006d6). The maintainer,
+  the same day: "“Good events only” is my recommended setting - should we not just proceed with that?" It loses 12,868 fewer of today's calls than every event, for 2,160 more new ones.
+- Whether the new port calls are better than today's (19,241 lost, 26,488 new) is not settled by counts. Plan 069's
+  21,600 lost calls were judged by hand; Claude recommends the same here before step 4's rebuild.
 
 ## What it leaves
 
 - **A hand check** of a sample of the lost and new calls (and the moved), on a review page, at the maintainer's word.
-- **`STAY_EVENTS`'s default** (the branch has `"all"`) and **merging the branch**: the maintainer's, after the check.
+- **Merging the branch**: the maintainer's, after the check.
 - **The scratch store** (`/Users/einarhj/stasi/scratch-048-step3/`, 44 GB of its own; the disk at 26 GB free): delete at
   the maintainer's word, and before any live rebuild.
 - **Step 4** (the rebuild) and step 5 (products, docs, `stk.yml`, AGENTS.md).
