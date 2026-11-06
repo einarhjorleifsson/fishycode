@@ -3,7 +3,9 @@
 **status:** partly built — written 2026-11-05 for TODO 192, at the request of the session that ran decisions 282-284;
 asks a-f (§7) answered the same evening, each as recommended ("Yes, as recommended"); the night run set up, tried on
 2007 and started that night in `$FISHYDATA/archive/2026-11-05-speed-rule-rebuild-test/` (its README: the log, how to
-resume, the morning's checks); its results not yet read; nothing in the pipeline changed · **see:** TODO 192, decisions 282, 283
+resume, the morning's checks); read 2026-11-06, every check passing and the control equal: fishing hours +0.007 %,
+but 21,600 port calls lost, 8,142 new, and the AIS departure or return of about 13,000 trips moved by over 6 h, mostly
+lengthening them; 30 hand cases drawn the same day for the maintainer (the study README); nothing in the pipeline changed · **see:** TODO 192, decisions 282, 283
 and 284, plan 068, plan 065 §7, TODO 184 (plan 062's item 4), TODO 148 (plan 048), `curate/ais_ping_clean.R`,
 `$FISHYDATA/archive/2026-11-05-speed-rule-sweep/README.md`
 

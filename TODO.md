@@ -1651,8 +1651,8 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** open · **needs: maintainer** — whether production moves, a rebuild; plan 069's night run read with the
-maintainer · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 069, plan 065 §6 ask f and §7,
+**status:** open · **needs: maintainer** — whether production moves, a rebuild; plan 069's 30 hand cases judged
+(127.0.0.1:8810) · **see:** decisions 282, 283 and 284, plan 068 (executed), plan 069, plan 065 §6 ask f and §7,
 `curate/ais_ping_clean.R`, TODO 184
 
 Production's `ais_ping_clean.R` runs `clean` at 25 kn. The alternatives are in ramb (decisions 282-284): each vessel's
@@ -1668,7 +1668,9 @@ The candidate against production's stored labels, year by year (`$FISHYDATA/arch
 (9,353 on fast vessels). Next: the other years, hand samples of the candidate's own flags in fishing windows, then the
 decision and one rebuild. Plan 069 (2026-11-05): a rebuild test overnight, the candidate in the clean step and the 16
 targets below it on a scratch store, every record against the live store in one outcome; asks a-f answered as
-recommended, the run started that night (`$FISHYDATA/archive/2026-11-05-speed-rule-rebuild-test/`, its README).
+recommended, the run started that night (`$FISHYDATA/archive/2026-11-05-speed-rule-rebuild-test/`, its README). Read
+2026-11-06: fishing hours +0.007 %, every year within ±0.2 %; but 21,600 port calls lost, 8,142 new, and the AIS
+departure or return of about 13,000 trips moved by over 6 h, mostly lengthening them. 30 hand cases drawn that day.
 
 **check:** a decision whether production's speed rule moves (and to what), with the rebuild it needs measured; or the
 item parked.
