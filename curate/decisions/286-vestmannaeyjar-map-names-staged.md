@@ -46,4 +46,41 @@ the checks.
 
 ## The rebuild
 
-Results follow this record's first commit.
+At 2c90f26, 2026-11-06 09:00-09:16 UTC. Each target was built alone with `targets::tar_make(names = , shortcut =
+TRUE)`, in its own R session under the heavy-job lock, because the logbook chain above the gazetteer is outdated for
+other reasons (decision 285):
+
+- `ornefni_raw`, which the new file changed;
+- the 14 staging targets;
+- `place_name_evidence`, `place_name`, `name_group`.
+
+The outputs before were kept as `cp -c` copies and compared row by row (`EXCEPT ALL`; the lesson of decision 285).
+Every difference is accounted for:
+
+- **Staging:** every table but the new `map_name` is identical, row for row.
+- **Evidence:** the 129 rows of `map_name`. Besides them, 4 tag recaptures changed:
+  - **What they are:** finders' texts that matched "Vestmannaeyjar" before. 2 of them now match "Smáeyjar", a name
+    the map brings, and 2 are no longer an occurrence (counted in `outcome`).
+  - **The effect:** Vestmannaeyjar's `n_fiskmerki` goes from 174 to 170.
+  - **Why:** the recapture matcher takes a finder's text against every name the gazetteer knows, so a new name can
+    take a text from a broader one.
+- **The gazetteer:** 9,292 → 9,384 keys, 92 added and none removed. 40 kept keys changed:
+  - 33 hold the map's names;
+  - 5 gained a spelling-synonym candidate from one (Helgusker / Helguskar, Leddin / Ledd, Pétursklakki /
+    Pétursklakkur, Pollur);
+  - Vestmannaeyjar lost the 4 recaptures;
+  - one key's lexical parent moved from Háfadjúp to Súlnasker, so their `n_children` changed and nothing else did.
+
+The map's 113 sea names: 88 are in no other source, and 25 are.
+
+## A limit found
+
+**The four homonyms drawn twice on the map, 6-12 km apart, are one place each in the gazetteer:** Einarsklakkur,
+Gvendarmið, Ólafshola, Syðri-Leira.
+
+- **Why:** `curate/place_name.R` clusters a key's positions at 30 km (plan 044), a rule made for broad grounds whose
+  positions spread wide. It puts them one place, at their median.
+- **The effect:** Syðri-Leira's median falls on Heimaey, and the base map labels it there.
+- **Where they are apart:** the timarit study's map layer shows them as two places.
+- **The way out:** a rule that keeps one source's own positions of a name apart beyond a few km. That is a change to
+  plan 044's rule, not made here.
