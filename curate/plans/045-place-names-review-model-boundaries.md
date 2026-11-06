@@ -3,7 +3,7 @@
 **status:** partly built — written 2026-10-24 at the maintainer's request, on top of the gazetteer of plan 044 (decisions
 223-226); step 1's read-only part and §3.1's one name per place, as a proposal, built 2026-11-01 (decision 272); the
 review's answers wait on ask c · **2026-10-24** · **see:** plan 044 §2, §4-§6, plan 043 §3.4, decisions 220, 224-226,
-272, TODO 144
+272, TODO 144; the boundaries from the seabed continue in plan 070 (2026-11-06)
 
 Drafted with AI assistance (Claude) on 2026-10-24; a person has not yet checked it. The methods named in §2 are leads
 from Claude's knowledge, not yet read against their sources.

@@ -1707,3 +1707,31 @@ first trial (plan 067 §1): 149 entries, 70 with a name's origin; no person has 
 
 **check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
 read and measured against the 151 Markdown records), or the plan parked.
+
+## 194. Place-name areas and the seabed's terrain classes, from the occurrences, the effort and the seabed (plan 070)
+**status:** open · plan 070's asks a-f answered by the maintainer (2026-11-06); steps 1, 2, 4, 5 and 6 run as studies; LMÍ's polygons dropped (vocabulary only), each source held out as the check; the areas adopted (density, groups once, a deep's trough, a "-grunn" name's shelf block) · **see:** `curate/plans/070-place-name-areas.md`,
+`$FISHYDATA/archive/2026-11-06-place-name-areas/README.md`, plan 045 §2-§3, TODOs 144 and 185
+
+The maintainer, 2026-11-06, asked whether it is time to outline the names: hierarchically, the main grounds and deeps
+first, the areas not exclusive. A feasibility scan on the Olex 50 m grid the same day (Claude, not checked by a person):
+- the shelf break swamps a plain BPI, but kept to the shelf, the grid tells bank names from deep names;
+- seabed regions hold few names' positions (tows lie on flanks and flat ground), so an area comes from the
+  occurrences, framed and edged by the seabed;
+- holes and mud patches show at 50 m, knolls do not.
+
+Plan 070 proposes:
+- levels 0-1 from the grid: the frame, then the troughs and the shelf's units between them;
+- levels 2-3 from the occurrences' density, with their edges pulled to seabed breaks;
+- level 4 the marks.
+
+Each step starts as a study, and becomes a target after the maintainer's review.
+- **Since:** the evidence is weighed by source quality and Trackwell's runs, not counts (the maintainer), and the
+  mobile gears' effort is a third layer, so the area step is flow-side.
+- **The terrain classes:** from the grid alone, an output of their own under `reference/geo/` (the maintainer:
+  "Include the terrain classification in this plan").
+- **Steps 1, 2 and 5** were run the same day: the frame; the troughs and rises (the watershed partition dropped, the
+  maintainer); the mobile gears' effort on a log scale. Steps 4 and 6 followed: the sources' errors, 1,196 names'
+  areas, a little closer to LMÍ's outlines than today's footprint. The chart's names (TODO 186) joined as a
+  source; their broadest scale follows an area's size, but as a prior on extent it did not help.
+
+**check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
