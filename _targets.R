@@ -774,7 +774,7 @@ list(
   # feed union as provider gps (plan 014); only recorded positions cut voyages.
 
   tar_target(ais_ping_union, {
-    vessel_ais_key; vessel_identity; sensor_gps; stk_trail_raw; astd_staged; astd_b_staged; emodnet_raw
+    vessel_ais_key; vessel_identity; sensor_gps; stk_trail_raw; stk_event; astd_staged; astd_b_staged; emodnet_raw
     produces("curate/ais_ping_union.R", fd_staging("ais", "ping_union"), fd_staging("ais", "stk_receipt"),
              fd_staging("ais", "ping_union_copies.parquet"))
   }, format = "file"),
@@ -793,9 +793,10 @@ list(
     produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"))
   }, format = "file"),
 
-  # The feeds put on one clock from the check's lags, the port events told apart by STK's trail, then the port tag
+  # The feeds put on one clock from the check's lags, STK's arrivals kept as fixes told by the union's own `io` (plan
+  # 048), then the port tag
   tar_target(ais_ping_tag, {
-    ais_ping_union; check_ais_feed_clock; stk_trail_raw; shapes
+    ais_ping_union; check_ais_feed_clock; shapes
     produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
   }, format = "file"),
 

@@ -3,6 +3,7 @@
 #
 # Inputs:
 #   raw/oracle/stk/trail, through stk_trail()   — STK AIS pings (mid-keyed, all vessels; R/stk_trail.R)
+#   staging/ais/stk_event.parquet               — STK's port events (sources/stk/event.R): which arrivals stay as fixes
 #   staging/ais/astd/                           — ASTD commercial AIS (all flags, parquet)
 #   staging/ais/astdB/                          — ASTDB commercial AIS (all flags, parquet)
 #   curated/logbook/sensor_gps/                 — AIS-corrected GPS logger positions
@@ -11,7 +12,9 @@
 #   curated/vessel/vessel_identity.parquet      — vid → MMSI over time (the MMSI-keyed feeds)
 #
 # Output:
-#   staging/ais/ping_union/   — Hive-partitioned parquet (by year); ~593 M rows (decision 112)
+#   staging/ais/ping_union/   — Hive-partitioned parquet (by year); ~585 M rows (decision 112, plan 048). Beside the
+#                               feeds' columns, STK's `stream` (stk_trail()'s, NA for the other providers, plan 048 ask
+#                               f) and `io` ("I" on an STK arrival kept as a fix, else NA)
 #   staging/ais/stk_receipt/  — STK's receipt of each ping of its VMS stream: vid, time, lon, lat, the unit (`mid`, STK's
 #                               mobile id, and `n_mid`), the earliest receipt (`recdate`) and `n_rec`, the trail rows that
 #                               hold it; by year (decision 196's side table, its receipt part: plan 060 §2)
@@ -117,8 +120,23 @@ stk_src <- function(YR) {
                  filter(!is.na(vid)) |>
                  mutate(d2e = if_else(open, dplyr::sql("'infinity'::DATE"), d2 + 1L)),
                by = join_by(mid, time >= d1, time < d2e)) |>
-    # the unit, its receipt and the event flag go to stk_receipt, never into the union (decision 196)
-    select(vid, mmsi, time, lon, lat, speed, heading, mid, recdate, io)
+    # the unit and its receipt go to stk_receipt, never into the union (decision 196)
+    select(vid, mmsi, time, lon, lat, speed, heading, cog, stream, mid, recdate, io)
+}
+# STK's port events are events, not fixes (decision 196, plan 048 §2.2): every event row leaves the union but an
+# arrival inside its own port at no marker (a position 10 or more vessels' events share): that position is the
+# vessel's, in port, and stays a fix. The events themselves go to the flow from staging/ais/stk_event.parquet, where
+# curate/port_call.R judges them with ramb::rb_flag_port_event(). Decision 288: 4,549,650 of the 8,460,441 event rows
+# leave; a row equal to a fix of the dump is the fix and stays (its own `io` is NA).
+stk_kept_arrivals <- duckdbfs::open_dataset(fd_staging("ais", "stk_event.parquet")) |>
+  filter(io == "I", io_pos == "own", !marker) |>
+  distinct(vid, time) |>
+  mutate(kept = TRUE)
+stk_fixes <- function(YR) {
+  stk_src(YR) |>
+    left_join(stk_kept_arrivals, by = c("vid", "time")) |>
+    filter(is.na(io) | (io == "I" & !is.na(kept))) |>
+    select(-kept)
 }
 # STK's VMS stream, by the position's grid (a hundredth of a minute: R/stk_trail.R's rule), its event rows left out
 STK_VMS_GRID <- dplyr::sql("abs(lat * 6000 - round(lat * 6000)) < 0.0002 AND abs(lon * 6000 - round(lon * 6000)) < 0.0002")
@@ -165,7 +183,7 @@ astd_src <- function(YR) open_dataset(fd_staging("ais", "astd")) |>
 
 # astdB ------------------------------------------------------------------------
 # ASTDB is a second commercial AIS feed. Filtered to Iceland (cc_iso3 == "ISL")
-# before joining; this provider includes COG in addition to true heading.
+# before joining; this provider includes COG in addition to true heading (its codes, 511 and 360 or more, NA below).
 astdB_src <- function(YR) open_dataset(fd_staging("ais", "astdB")) |>
   filter(year == YR) |>
   filter(cc_iso3 == "ISL") |>
@@ -261,7 +279,8 @@ gps_src <- function(YR) {
     FROM g1 GROUP BY vid, time)
   SELECT vid, NULL::VARCHAR AS mmsi, time, lon, lat, speed_kn AS speed, NULL::DOUBLE AS speed_span_s,
          CAST(heading AS DOUBLE) AS heading,
-         'gps' AS provider, NULL::INTEGER AS imo, NULL::DOUBLE AS cog, speed_kn_raw AS speed_raw,
+         'gps' AS provider, NULL::INTEGER AS imo, NULL::DOUBLE AS cog, NULL::VARCHAR AS stream, NULL::VARCHAR AS io,
+         speed_kn_raw AS speed_raw,
          'reconstructed' AS pos_basis,
          CASE WHEN speed_kn IS NULL AND speed_kn_raw IS NOT NULL THEN 'placeholder' ELSE 'recorded' END AS speed_basis,
          dt_sec, sid_gps, n_sid_gps
@@ -278,7 +297,7 @@ gps_src <- function(YR) {
 # no vessel speed (outside 0-40 kn) or the logger placeholder; `speed_raw` keeps the value as given.
 SPEED_MAX <- 40
 ais_all <- function(YR) {
-  union_all(stk_src(YR) |> select(-mid, -recdate, -io) |> mutate(provider = "stk"),
+  union_all(stk_fixes(YR) |> select(-mid, -recdate) |> mutate(provider = "stk"),
             astd_src(YR) |> mutate(provider = "astd")) |>
     union_all(astdB_src(YR) |> mutate(provider = "astdB")) |>
     union_all(emn |> mutate(provider = "emodnet"))
@@ -293,7 +312,12 @@ d_for <- function(YR) {
            dt_sec = NA_real_, sid_gps = NA_real_, n_sid_gps = NA_integer_)
   g <- gps_src(YR)
   d <- if (is.null(g)) ais else union_all(ais, g)
-  d |> mutate(speed = if_else(speed >= 0 & speed <= SPEED_MAX, speed, NA_real_))
+  # a heading or course of a full turn or more, or below 0, is a code for "not available", NA for every provider (plan
+  # 048 ask c): astdB's 511 and 360, EMODnet's -1 and 360 or more, STK's (already NA in stk_trail()), the logger's 360
+  # and more. The sources keep them.
+  d |> mutate(speed = if_else(speed >= 0 & speed <= SPEED_MAX, speed, NA_real_),
+              heading = if_else(heading >= 0 & heading < 360, heading, NA_real_),
+              cog = if_else(cog >= 0 & cog < 360, cog, NA_real_))
 }
 
 # ## add harbour -----------------------------------------------------------------

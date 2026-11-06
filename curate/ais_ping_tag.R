@@ -5,7 +5,6 @@
 #         curated/check/ais_feed_clock.parquet    the lag per vessel, stream and month (curate/checks/ais_feed_clock.R)
 #         curated/check/ais_feed_clock_usual.parquet  the usual lag of STK's own-stamped VMS pings, by year (the same)
 #         staging/ais/stk_receipt                 STK's receipt and unit of each ping of its VMS stream (the union)
-#         raw/oracle/stk/trail                    its port event rows, to tell them from fixes
 #         staging/aux/ports.fgb                   harbour polygons (pid, hid)
 # Output: staging/ais/ping_tagged                 partitioned by the year of `time`: the union's columns with `time`
 #                                                 harmonized, beside it `time_delivered`, `lag_s`, `lag_basis` and
@@ -27,7 +26,8 @@
 #               the departure (a unit's clock that drifts, up to two hours); STK's own units get none (plan 060 ask d);
 #   measured    its vessel-stream-month's lag where the check's outcome is "offset" (rb_add_ping_time());
 #   none        the reference, an aligned unit or a vessel with one stream: not moved;
-#   unmeasured  every other ping, STK's port event rows and the logger among them: not moved, flagged by its basis.
+#   unmeasured  every other ping, STK's arrivals kept as fixes (plan 048) and the logger among them: not moved, flagged by
+#               its basis.
 # The delivered time stays beside the harmonized one, as w_lon/w_lat beside lon/lat. A ping is never dropped: every row
 # of the union is in the output once. The receipt and the unit are read here and not written: no column of STK's receipt
 # is carried through the AIS layers (decision 196). Tested as the study's candidate on 2015, 2016 and 2026 (plan 059 step 5).
@@ -69,9 +69,9 @@ unlink(fd_staging("ais", "ping_tagged"), recursive = TRUE)
 for (YR in years) {
   tic()
   print(YR)
-  x("CREATE OR REPLACE TEMP TABLE ev AS %s", stk_event_rows_sql(YR))
-  # every row of the year, from the year's own folder (decision 235), the stream beside (R/stk_trail.R); a ping with no
-  # vid or no position keeps its stream and is never moved
+  # every row of the year, from the year's own folder (decision 235), the stream from the union's own columns
+  # (ping_stream_sql(), R/stk_trail.R; plan 048), which replaces the union's STK stream and io; a ping with no vid or no
+  # position keeps its stream and is never moved
   # STK's receipt and unit beside its VMS pings (no left-side condition in ON: it makes a nested loop; the stream in the
   # CASE). A year with no VMS receipts reads an empty table of the same columns.
   rcp <- if (dir.exists(file.path(receipt_dir, paste0("year=", YR)))) {
@@ -82,8 +82,7 @@ for (YR in years) {
   }
   x("CREATE OR REPLACE TEMP TABLE u AS
      SELECT u.*, CASE WHEN u.stream = 'stk_vms' THEN r.recdate END AS receipt, CASE WHEN u.stream = 'stk_vms' THEN r.mid END AS mid
-     FROM (SELECT u.*, %s AS stream FROM read_parquet('%s/year=%d/*.parquet') u
-           LEFT JOIN ev e ON u.time = e.time AND u.lon = e.lon AND u.lat = e.lat) u
+     FROM (SELECT u.* EXCLUDE (stream, io), %s AS stream FROM read_parquet('%s/year=%d/*.parquet') u) u
      LEFT JOIN %s r ON r.vid = u.vid AND r.time = u.time AND r.lon = u.lon AND r.lat = u.lat",
     ping_stream_sql(), union_dir, YR, rcp)
   n_in <- DBI::dbGetQuery(con, "SELECT count(*) n FROM u")$n

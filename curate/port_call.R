@@ -4,7 +4,7 @@
 #
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider; recorded positions only, plan 014)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
-#         staging/ais/stk_event.parquet     (STK I/U events tagged from STK alone; used from EVENT_FROM on)
+#         staging/ais/stk_event.parquet     (STK's I/U events, its adapter's: port, position, marker, unit)
 #         curated/reference/port_radius.parquet (the departure radius per port; a frozen input)
 # Output: curated/ais/port_call.parquet  one row per port call: vid, port_call_id (key, numbered per vessel by T_in), pid,
 #         T_in, T_out, ...
@@ -27,10 +27,13 @@
 #                    R_M, the second within r_out), one of them inside the polygon
 #   gap_near_harbour the same, neither inside (a vessel silent in port, never heard at the quay)
 #   tag_span         consecutive pings inside one polygon spanning at least G hours
-#   event_pair       an STK `I` then `U` at the same standard harbour, G hours or more apart, both
-#                    `io_ok` (sources/stk/event.R) and kept by step 0 (their ping is in `ping_clean`, checked
-#                    here, plan 014); only events from EVENT_FROM on are passed (decision 059: events before
-#                    2017 are mostly flicker and duplicate flags, so the general rules carry those years)
+#   event_pair       an STK `I` then `U` at the same standard harbour, G hours or more apart, both good:
+#                    judged as events by ramb::rb_flag_port_event() (plan 048 §2.3, decision 289), by position,
+#                    sequence, the cleaned track (no ping either side, no witness, not good) and the sending unit.
+#                    Until plan 048 an event was good if `io_ok` (sources/stk/event.R) and kept by step 0 as a ping,
+#                    and only events from 2017 on were passed (decision 059); the events of every year count now
+#                    where they pass (decision 196). STAY_EVENTS: "all" passes every judged event to the pairs, so a
+#                    bad one between two good ones breaks the pair (as before plan 048); "good" only the good ones
 # A seed is extended over the contiguous pings inside the same polygon on either side. Seeds at one
 # harbour that overlap or touch are one stay. `rule` is the strongest evidence present (event_pair >
 # tag_then_gap > tag_span > gap_near_harbour); `evidence` lists all of them. Where a stay has both ping
@@ -63,7 +66,8 @@ sf::sf_use_s2(FALSE)
 G_H        <- as.numeric(Sys.getenv("STAY_G_H", "2"))   # a stay is at least this many hours, every port (decision 074; test hook)
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
-EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # first year whose events are used
+EVENTS     <- Sys.getenv("STAY_EVENTS", "all")   # "all" or "good": which judged events go to the pairs (above)
+stopifnot("STAY_EVENTS is \"all\" or \"good\"" = EVENTS %in% c("all", "good"))
 
 con <- duckdbfs::cached_connection()
 duckdbfs::load_spatial()
@@ -98,6 +102,44 @@ r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else re
 ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
 
 
+# -- STK's events judged as events (plan 048 §2.3) ---------------------------------------
+# Year by year: the events of Y-1 to Y+1 and each vessel's last event before them (so the sequence test sees every
+# event's previous one, however far back), against the cleaned recorded pings of Y-1 to Y+1 (the track test); the
+# events of Y kept. A marker's position is not the vessel's and goes in as NA; the unit is the STK mobile id.
+
+x(glue::glue("CREATE OR REPLACE TEMP TABLE ev_in AS
+  SELECT vid, time, io, CAST(year AS INTEGER) AS year, hid_pid AS port_id,
+         CASE WHEN marker THEN NULL ELSE lon END AS lon, CASE WHEN marker THEN NULL ELSE lat END AS lat,
+         CAST(mid AS VARCHAR) AS mid
+  FROM read_parquet('{event_f}')"))
+ports_ev <- P |> transmute(port_id = pid)
+ev_years <- q("SELECT DISTINCT year FROM ev_in ORDER BY 1")$year
+judged <- vector("list", length(ev_years))
+for (k in seq_along(ev_years)) {
+  y <- ev_years[k]; t0 <- Sys.time()
+  e <- q(glue::glue("
+    SELECT * FROM ev_in WHERE year BETWEEN {y - 1L} AND {y + 1L}
+    UNION ALL
+    SELECT * FROM (SELECT * FROM ev_in WHERE year < {y - 1L}
+                   QUALIFY row_number() OVER (PARTITION BY vid ORDER BY time DESC, io DESC) = 1)")) |>
+    as_tibble()
+  attr(e$time, "tzone") <- "UTC"
+  # a year with no track (an event's bad time, a year before the AIS) gets no pings, so its events have no witness
+  pg <- dplyr::tbl(con, dplyr::sql(if (is.null(clean_years(y + -1:1)))
+    "SELECT NULL::INTEGER AS vid, NULL::TIMESTAMP AS time, NULL::DOUBLE AS lon, NULL::DOUBLE AS lat WHERE false" else
+    glue::glue("SELECT vid, time, lon, lat FROM {clean_years(y + -1:1)} WHERE pos_basis = 'recorded'")))
+  r <- ramb::rb_flag_port_event(e, ports = ports_ev, pings = pg, unit = mid)
+  judged[[k]] <- r[r$year == y, c("vid", "time", "io", "year", "port_id", "mid", "event_flag", "event_track_kn", "good")]
+  message(sprintf("  events %d: %s judged, %s good, %s not judged, %.1f min", y, format(nrow(judged[[k]]), big.mark = ","),
+                  format(sum(judged[[k]]$good, na.rm = TRUE), big.mark = ","), format(sum(is.na(judged[[k]]$good)), big.mark = ","),
+                  as.numeric(difftime(Sys.time(), t0, units = "mins"))))
+}
+judged <- bind_rows(judged)
+stopifnot("every event judged once" = nrow(judged) == q("SELECT count(*) AS n FROM ev_in")$n)
+duckdb::duckdb_register(con, "ev_judged", as.data.frame(judged))
+# for a reader that sources this script (a scratch run's account), the events as judged
+assign("port_event_judged", judged, envir = globalenv())
+
 # -- Each vessel's first and last ping of every year ---------------------------------------
 # Once, as aggregates (no window over the pings): the padding of a year is taken from here. Ties in time go by lon, lat.
 
@@ -117,19 +159,11 @@ stay_year <- function(yr) {
     UNION ALL
     SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_min(first, year) AS e FROM pc_edge WHERE year > {yr} GROUP BY vid)")
   seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(own, pad), collapse = "\n    UNION ALL ")))
-  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both ok and kept by step 0.
-  # The pings are narrowed to the events' (vid, time) before the DISTINCT: over all three years' pings (165 million
-  # groups) it ran away in spill under DuckDB 2.0 now and then (decision 239); the result is the same.
-  # The events of EVENT_FROM on only: the window keeps a call that overlaps the year, so a pair that arrived in December
-  # 2016 would otherwise count in 2017's run.
-  ev_from <- max(yr - 1L, EVENT_FROM)
-  ev <- if (yr >= EVENT_FROM) dplyr::tbl(con, dplyr::sql(glue::glue("
-    SELECT e.vid, e.time, e.io, e.hid_pid AS port_id, (e.io_ok AND c.vid IS NOT NULL) AS good
-    FROM read_parquet('{event_f}') e
-    LEFT JOIN (SELECT DISTINCT p.vid, p.time FROM {clean_years(yr + -1:1)} p
-               SEMI JOIN read_parquet('{event_f}') k ON k.vid = p.vid AND k.time = p.time
-                 AND k.year BETWEEN {ev_from} AND {yr + 1L}) c USING (vid, time)
-    WHERE e.year BETWEEN {ev_from} AND {yr + 1L}"))) else NULL
+  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both good (judged above). The
+  # events of the year and either side: the window keeps a call that overlaps the year.
+  ev <- dplyr::tbl(con, dplyr::sql(glue::glue("
+    SELECT vid, time, io, port_id, good FROM ev_judged
+    WHERE year BETWEEN {yr - 1L} AND {yr + 1L}{if (EVENTS == 'good') ' AND good' else ''}")))
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
   ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,
                            events = ev, window = win) |>

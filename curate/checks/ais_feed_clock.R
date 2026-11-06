@@ -59,7 +59,6 @@ usual <- vector("list", length(years))
 receipt_dir <- fd_staging("ais", "stk_receipt")
 for (i in seq_along(years)) {
   yr <- years[i]
-  x("CREATE OR REPLACE TEMP TABLE ev AS %s", stk_event_rows_sql(yr))
   # the year's own folder (AGENTS.md, DuckDB 2.0); the merged track's interval before each ping for the dt pattern;
   # the stream by ping_stream_sql() (R/stk_trail.R), the tag pass's rule
   # an own-stamped VMS ping: a receipt that is not its time (the union's stk_receipt; no left-side condition in ON)
@@ -70,7 +69,7 @@ for (i in seq_along(years)) {
      SELECT *, epoch(time - lag(time) OVER (PARTITION BY vid ORDER BY time, lon, lat)) AS merged_dt_s FROM (
        SELECT u.vid, u.time, u.lon, u.lat, u.speed, %s AS stream, month(u.time) AS month,
               coalesce(r.recdate <> u.time, false) AS own_stamped
-       FROM read_parquet('%s/year=%d/*.parquet') u LEFT JOIN ev e ON u.time = e.time AND u.lon = e.lon AND u.lat = e.lat
+       FROM read_parquet('%s/year=%d/*.parquet') u
        LEFT JOIN %s r ON r.vid = u.vid AND r.time = u.time AND r.lon = u.lon AND r.lat = u.lat
        WHERE u.vid IS NOT NULL AND u.lon IS NOT NULL AND u.lat IS NOT NULL)
      WHERE stream <> 'stk_event'", ping_stream_sql(), union_dir, yr, rcp)

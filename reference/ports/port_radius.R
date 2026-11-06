@@ -24,7 +24,9 @@
 # A ONE-TIME FIX (plan 014, decision 075): built in the `once` targets project and frozen as an input of the
 # main graph, redone only by decision. The frozen file is the stamped copy of decision 073's harbour_radius.parquet.
 # Before a redo: since plan 014 phase 3, stk_event carries neither `in_clean` nor `io_jump`; take `in_clean` from
-# staging/ais/ping_clean (provider stk) instead.
+# staging/ais/ping_clean (provider stk) instead. And since plan 048 it carries neither `io_ok` nor `io_dup` nor
+# `io_short`, and STK's event rows are no longer pings: judge the events with ramb::rb_flag_port_event(), as
+# curate/port_call.R does, and take its `good`.
 # A reviewed override (as for the harbour class, which goes: decision 074) is not built; add one when a value is
 # judged wrong.
 

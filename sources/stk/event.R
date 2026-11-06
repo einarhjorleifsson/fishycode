@@ -1,16 +1,25 @@
-# event.R — one row per STK port event (`I` in / `U` out), with tags from STK alone.
-# Side: preprocessing (stk). See plan 014.
+# event.R — STK's adapter of its port events (`I` in / `U` out): one row per event, its port and position from STK alone.
+# Side: preprocessing (stk). See plans 014 and 048.
 #
 # Input:  staging/ais/stk                  (vid, time, io, hid, lon, lat; the raw event rows)
 #         staging/aux/ports.fgb            (standard harbour polygons; source == "einar")
 #         curated/reference/stk_hid_pid.parquet   (STK code -> standard pid, with reviewed overrides)
 # Output: staging/ais/stk_event.parquet  one row per (vid, time, io)
 #
+# Plan 048 §2.3 (decision 289): the events are judged as events in the flow, by ramb::rb_flag_port_event() in
+# curate/port_call.R (position, sequence, the cleaned track, the sending unit). This script is the adapter only: the
+# STK code turned into a pid, the doubled `U` collapsed, the sending unit (`mid`, the STK mobile id; the lowest where a
+# collapsed event came from two), and a position at a marker flagged (`marker`: a position 10 or more vessels' events
+# share, so not the vessel's; its time is kept). Its sequence tests (`io_dup`, `io_short`) and their verdict (`io_ok`)
+# moved to the ramb step; `io_pos` stays, for the union, which keeps an arrival inside its own port at no marker as a
+# fix (plan 048 §2.2).
+#
 # Plan 011 §3.1, §3.3, Phase 2; plan 014 phase 3 (b). STK preprocessing: it reads STK and the port polygons only,
 # never the cleaned track, so it no longer depends on step 0. Until plan 014 it was curate/checks/stk_event.R and
 # also tested each event against its neighbours on `ping_clean` (`io_jump`, `in_clean`); that test rejected only
 # 40 of 3,400,403 events (2017+) that step 0 kept (decision 075). Which events a port call trusts is decided in the
-# flow (curate/port_call.R): `io_ok` here, and step 0 keeping the event's ping.
+# flow (curate/port_call.R), by ramb::rb_flag_port_event() since plan 048; until then `io_ok` here, and step 0 keeping
+# the event's ping.
 #
 # One row per ping, not per source row. STK ships most `U` events twice, one row with the harbour code
 # and one without (3.03 M of 4.39 M `U` pings, 2007-2025); `I` is nearly always one row. The plan's
@@ -19,17 +28,15 @@
 # Where one ping carries two different codes (`hid_conflict`) no code is chosen: `hid` is NA and
 # `hid_all` lists them.
 #
-# Tags (TRUE = a defect was found; NA = could not be judged; `io_ok` = none fired):
+# Position (NA = could not be judged):
 #   io_pos    own / other_harbour / outside — the event's position against the polygon of the harbour its
 #             code names (`hid_pid`); no_hid / no_pid where there is nothing to compare with. For a code
 #             that cannot name a harbour (`resolve = position`, THH/THO) the harbour is the event's own
 #             polygon, so such an event can only be `own` or `outside`. `pos_dist_m` is the distance to
 #             that polygon, so a reader can apply a tolerance. Only an `I` is judged by it: a `U` is sent
 #             after the vessel has left, 66 % lie outside every polygon, and the test for `U` is still
-#             an open decision (plan 011 §5 c), so `U` position is reported and never makes `io_ok` false
-#             except as `other_harbour`.
-#   io_dup    the vessel's previous event has the same `io` (I after I, U after U)
-#   io_short  `I` then `U` at the same code within SHORT_S seconds (both rows of the pair)
+#             an open decision (plan 011 §5 c), so `U` position is reported, not judged here.
+#   marker    the position is used by MARKER_MIN_VID or more vessels' events: a port's marker, not the vessel's
 
 library(dplyr)
 library(sf)
@@ -37,7 +44,7 @@ sf::sf_use_s2(FALSE)
 
 # -- Parameters ----------------------------------------------------------------
 
-SHORT_S <- 60    # I then U closer than this at one code is a flicker
+MARKER_MIN_VID <- 10   # a position this many vessels' events share is a marker (decision 196, plan 048 §1.3)
 
 con <- duckdbfs::cached_connection()
 q <- function(sql) DBI::dbGetQuery(con, sql)
@@ -57,6 +64,7 @@ x(glue::glue("
            count(DISTINCT hid)                            AS n_hid,
            string_agg(DISTINCT hid, '|' ORDER BY hid)     AS hid_all,
            min(hid)                                       AS hid_one,
+           min(mid)                                       AS mid,
            min(lon) AS lon, min(lat) AS lat,
            count(DISTINCT (lon, lat))                     AS n_pos
     FROM read_parquet('{stk_dir}', hive_partitioning = true)
@@ -66,15 +74,12 @@ x(glue::glue("
   SELECT vid, time, io, year(time) AS year, n_rows, n_pos,
          CASE WHEN n_hid = 1 THEN hid_one END             AS hid,
          hid_all, n_hid > 1                               AS hid_conflict,
-         lon, lat,
-         lag(io)    OVER w                                AS prev_io,
-         lead(io)   OVER w                                AS next_io,
-         lag(time)  OVER w                                AS prev_time,
-         lead(time) OVER w                                AS next_time,
-         lag(CASE WHEN n_hid = 1 THEN hid_one END)  OVER w AS prev_hid,
-         lead(CASE WHEN n_hid = 1 THEN hid_one END) OVER w AS next_hid
+         lon, lat, mid
   FROM g
-  WINDOW w AS (PARTITION BY vid ORDER BY time, io)
+"))
+# a marker: the positions MARKER_MIN_VID or more vessels' events share, over every year
+x(glue::glue("
+  CREATE OR REPLACE TEMP TABLE mk AS SELECT lon, lat FROM ev GROUP BY lon, lat HAVING count(DISTINCT vid) >= {MARKER_MIN_VID}
 "))
 
 # -- 2. Position against the polygon of the harbour the code names ------------------
@@ -129,42 +134,33 @@ res <- vector("list", length(years))
 
 for (k in seq_along(years)) {
   yr <- years[k]; message("stk_event ", yr)
-  d <- q(glue::glue("SELECT * FROM ev WHERE year = {yr}")) |> as_tibble()
+  d <- q(glue::glue("SELECT e.*, m.lon IS NOT NULL AS marker FROM ev e LEFT JOIN mk m USING (lon, lat) WHERE year = {yr}")) |>
+    as_tibble()
   d <- d |>
     position_year() |>
     dist_to_own() |>
-    mutate(
-      io_dup   = !is.na(prev_io) & prev_io == io,
-      io_short = (io == "I" & next_io %in% "U" & next_hid %in% hid & !is.na(hid) &
-                    as.numeric(next_time - time, units = "secs") < SHORT_S) |
-                 (io == "U" & prev_io %in% "I" & prev_hid %in% hid & !is.na(hid) &
-                    as.numeric(time - prev_time, units = "secs") < SHORT_S),
-      bad_pos  = (io == "I" & io_pos %in% c("other_harbour", "outside")) |
-                 (io == "U" & io_pos == "other_harbour"),
-      io_ok    = !bad_pos & !io_dup & !io_short) |>
-    select(vid, time, io, year, hid, hid_all, hid_conflict, n_rows, n_pos, lon, lat,
-           hid_pid, resolve, hid_status, pid_pos, io_pos, pos_dist_m,
-           io_dup, io_short, io_ok)
+    select(vid, time, io, year, mid, hid, hid_all, hid_conflict, n_rows, n_pos, lon, lat, marker,
+           hid_pid, resolve, hid_status, pid_pos, io_pos, pos_dist_m)
   res[[k]] <- d
 }
 out <- bind_rows(res) |> arrange(vid, time, io)
 stopifnot(!anyDuplicated(out[c("vid", "time", "io")]))
 
-# -- 4. Share of each tag by year (plan §4, Phase 2: report before anything consumes it) -------
+# -- 4. Share of each position by year (plan §4, Phase 2: report before anything consumes it) -------
 
 shares <- out |>
   group_by(year, io) |>
   summarise(n = n(),
             pos_own = mean(io_pos == "own"), pos_other = mean(io_pos == "other_harbour"),
             pos_outside = mean(io_pos == "outside"), pos_untested = mean(io_pos %in% c("no_hid", "no_pid")),
-            dup = mean(io_dup), short = mean(io_short), ok = mean(io_ok), .groups = "drop")
+            marker = mean(marker), .groups = "drop")
 print(shares, n = Inf, width = Inf)
 
 if (ALL) {
   # staging is source-shaped and unstamped (write_curated() is for curated/ only)
   f <- fd_staging("ais", "stk_event.parquet")
   out |> duckdbfs::write_dataset(f)
-  message(sprintf("stk_event: %s events, %.1f %% io_ok", format(nrow(out), big.mark = ","), 100 * mean(out$io_ok)))
+  message(sprintf("stk_event: %s events, %.1f %% at a marker", format(nrow(out), big.mark = ","), 100 * mean(out$marker)))
 } else {
   assign("stk_event_test", out, envir = globalenv())
   message("subset run (STK_EVENT_YEARS): nothing written")
