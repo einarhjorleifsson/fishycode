@@ -748,7 +748,8 @@ per-unit screen; port calls from `tilk_stk` for 2004 to mid-2007; the Oracle rea
 reaches the whack or the track); `stk_receipt` as a side table, the lag a label; events screened per unit, not cut at
 2017; port calls for 2004 to mid-2007 from events; dwell from the commercial AIS in port, else the I → U pair; each unit's
 class in `stk_receipt`; the three Oracle reads in the next dump run (TODO 110). Each is a step of its own, scratch first.
-Plan 048 (TODO 148) builds three of them: the event rows out of the track, the per-unit screen, and no cut at 2017.
+Plan 048 built three of them (decisions 288-294): the event rows out of the track, the per-unit screen, and no cut at
+2017.
 **Recording or receipt, by stream** (plan 059 §1, 2026-11-01): the AIS stream's `posdate` is its receipt time in every
 year 2007-2024, STK's own units' their own, 3-5 s earlier; the AIS stream's moves a second or two in May 2025, and
 three backlogs in 2026 came hours to days late. In `dump/oracle/meta/stk.yml` with assertions by stream and period (plan
@@ -1180,40 +1181,6 @@ or on every year once step 7 has rebuilt the port calls.
 
 **check:** the remaining voyages with several logbook trips, of 2010 and 2018 or of every year after step 7, are counted
 into these outcomes with every voyage in one, and the counts are in plan 031 §3.10 or a decision.
-
-## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
-**status:** open — plan 048's steps 1-5 done 2026-11-06 (decisions 288-291; merged c3a5a97, the store rebuilt at
-fc45a24), every port call cutting the voyages (decision 292, ramb 2026.11.06.3 installed, not pushed) and the short
-voyages kept (decision 293, rebuilt from `ais_voyage` at ecc5c4f); next: step 6 ·
-**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-293, TODOs 88, 117, 192
-
-The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
-events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
-Plan 048: `stk_trail()` gives `stream`, `heading` and `cog`; the union drops STK's event rows but an `I` inside its own
-port, and every provider's codes become NA; a generic ramb step, `rb_flag_port_event()`, judges any recorded port
-event by position, sequence, the cleaned track and its sending unit, so `port_call.R` no longer asks whether the
-whack filter kept the event as a ping (699,084 port calls lean on events, 13,510 on events alone; 904,187 of STK's
-1,351,745 whacks are event rows). Then the chain from the union down is rebuilt.
-
-Decisions 282 and 283: judged as pings, event rows at 0 kn placed off are a speed rule's wrong anchors. TODO 192 waits
-on this (decision 287): plan 069's candidate kept such rows and lost 21,600 port calls; with them out, its night again.
-
-Step 1 (decision 288): the switch is as sharp on either clock (`posdate` by tie-break); 4,549,650 of the 8,460,441
-event rows leave the track; rerun on 2008, 2016 and 2024 without them, production's filter frees most own-port `I` rows
-it flagged and more fixes than it newly flags (1,266 / 11,691 / 8,501 against 619 / 391 / 134), not hand-checked.
-Step 2 (decision 289): ramb's `rb_flag_port_event()` trusts 108,339 of those years' events today's tags do not (94,610
-whose row the speed filter removed) and sets aside 3,089 they trust; its unit test leaves what the track has judged.
-Step 3 (decision 290), on a scratch store: port calls lose 19,241 and gain 26,488 of 1,623,775 with the good events
-only; the lost stood on STK's event rows used as pings. Revised the same day (plan §7, the maintainer: "Yes, revise
-the plan"): the good events back as presence in the port-call rules, the 2017 cut kept for the pairs.
-Steps 4 and 5 (decision 291), the hand check left out at the maintainer's word: fishing hours +0.09 %, port calls
-1,623,775 → 1,628,604, voyages 1,428,837 → 1,370,630. `rb_create_voyages(method = "dwell")` cut only at pings in a
-port call, and 57,389 calls had STK's event rows as their only pings. ramb 2026.11.06.3 cuts at every call (decision
-292): voyages 1,414,461. The short ones are kept and labelled since decision 293: 1,601,182. For step 6: 147 pairs of
-port calls overlap (61 vessels, 91 with an event pair), and a tie then decides the next voyage's departure port.
-
-**check:** plan 048's step 6 done and recorded in a decision, or the plan parked or abandoned by the maintainer, and
-its status agrees with its index row.
 
 ## 149. ramb's set finder fails badly on pots and sparse tracks: amend it, or let the data choose
 **status:** open — next: its own ramb session, once ramb is pushed and the note to iapesca's author is sent (the
@@ -1664,7 +1631,8 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
 **status:** parked — the maintainer, 2026-11-06 ("Yes, park until 048"): production's rule stays until plan 048 takes
-STK's event rows out of the track (TODO 148), then plan 069's night runs again · **see:** decisions 282, 283, 284 and
+STK's event rows out of the track, then plan 069's night runs again; plan 048 executed 2026-11-07 (decisions 288-294),
+so its condition is met · **see:** decisions 282, 283, 284 and
 287, plan 068 (executed), plan 069 (executed), plan 065 §6 ask f and §7,
 `curate/ais_ping_clean.R`, TODO 184
 
@@ -1673,7 +1641,7 @@ own limits, the time flag, the vote, the local speed on the larger side (`"local
 25 kn flags fast vessels' good pings: in 2024, 10,812 pings the own limits keep, on 128 vessels whose recorded ceiling
 is over 25 kn (all 9 hand-checked were good). The candidate (the own limits with the recorded speed, the larger side
 and the vote) did best on Iceland's 40 maintainer-checked cases (33 right of 36, production 19), on EM4SSF's CS1 and on
-five more datasets (decision 284); STK's event rows are most of the rest (plan 048, TODO 148).
+five more datasets (decision 284); STK's event rows are most of the rest (plan 048, decisions 288-294).
 
 The candidate against production's stored labels, year by year (`$FISHYDATA/archive/2026-11-05-speed-rule-sweep/`;
 2007 and 2018 run, the rest one command in its README): in 2018 the candidate flags 40,682 pings production keeps
@@ -1749,3 +1717,29 @@ Each step starts as a study, and becomes a target after the maintainer's review.
   source; their broadest scale follows an area's size, but as a prior on extent it did not help.
 
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
+
+## 195. Port calls of one vessel that overlap, and ties in time order that change port calls between runs
+**status:** open — found by plan 048 step 6 (decision 294) · **see:** decisions 292-294,
+`$FISHYDATA/archive/2026-11-07-plan048-step6/rebuild/overlaps_after.R`, `curate/port_call.R`, ramb's
+`rb_create_port_calls()` and `rb_create_voyages()`
+
+**Overlaps.** On the store rebuilt by decision 294, 152 pairs of one vessel's port calls overlap (75 vessels, 115 pairs
+begun before 2017). `ais_voyage.R` cuts at both calls of a pair, and the voyage after it takes its departure port from
+whichever sorts first.
+- In 69 pairs, both calls rest on STK event pairs. ramb's pair guard (`pair_away_m`, decision 294) tests a ping only
+  against the latest pair begun before it, an ASOF join, so a pair inside another shields the outer one.
+- In 53 pairs, the outer call rests on an event pair and the inner one on pings.
+- In 30 pairs, the outer call rests on pings alone: pings at two ports at once, perhaps two units on one vessel (the
+  STK key, plan 009).
+- 78 pairs lie at ports 10 km or more apart, with outer calls of a median 4,200-10,200 h.
+
+**Ties.** Where pings tie in time order, port calls and the ports of the voyages after them vary between runs:
+- 24 calls differed between decision 294's read-only run and its build;
+- 14-15 voyages' departure ports differed in decision 293.
+
+A full order in ramb, with the ping's stream and position after its time, would make a rerun give the same store.
+Where the order is incomplete is not yet traced.
+
+**check:** every overlapping pair in one outcome, with a rule for each kind (the guard against every pair a ping lies
+in, an outer call cut at the inner, or the key); ramb's port calls and voyages equal between two runs on the same input;
+a rebuild from `port_call` down, recorded in a decision.

@@ -1,6 +1,6 @@
 # 048 — STK's streams into the flow: heading and course apart, a stream on every STK fix, and port events judged as events by a generic step
 
-**status:** partly built — written 2026-10-28 at the maintainer's request; every ask answered the same day, each as
+**status:** executed — written 2026-10-28 at the maintainer's request; every ask answered the same day, each as
 recommended (§5); what §1 calls measured, Claude measured read-only the same day, on the dump of 2026-10-16 and the
 build of 2026-10-23 (decision 218); step 1 run 2026-11-06 at the maintainer's word, read-only on the build of
 2026-11-02 (decision 288, `$FISHYDATA/archive/2026-11-06-plan048-step1/`): the switch as sharp on either clock, 4,549,650
@@ -17,10 +17,13 @@ same day (ramb 2026.11.06.1 installed; 1,421,991 of today's calls the same, 11,3
 steps 4 and 5 the same day (decision 291, `$FISHYDATA/archive/2026-11-06-plan048-rebuild/`): the store rebuilt,
 fishing hours +0.09 %, port calls 1,628,604, but 57,389 port calls no ping falls in now lie inside a voyage (ramb's
 dwell cut, 58,207 voyages fewer); the cut fixed in ramb 2026.11.06.3 and the chain rebuilt from `ais_voyage` the same
-day (decision 292): no port call inside a voyage, 1,414,461 voyages; next step 6 · **2026-10-28** · **see:** decision 233
+day (decision 292): no port call inside a voyage, 1,414,461 voyages; step 6 2026-11-07 at the maintainer's word
+(decision 294, `$FISHYDATA/archive/2026-11-07-plan048-step6/`): STK's event pairs in every year, with ramb 2026.11.07's
+guard (a pair over a ping 10 km from its port makes no call), the store rebuilt from `port_call` down: port calls
+1,667,466, those the logbook contradicts 19,627 → 18,459 · **2026-10-28** · **see:** decision 233
 (the streams, the heading field, the events), decision 196 (STK's I/U rows are events), decision 164 and its study,
-decisions 288 (step 1), 289 (step 2), 290 (step 3), 291 (steps 4 and 5) and 292 (the voyage cut), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
-196's build), TODO 148
+decisions 288 (step 1), 289 (step 2), 290 (step 3), 291 (steps 4 and 5), 292 (the voyage cut) and 294 (step 6), `dump/oracle/meta/stk.yml`, TODO 88 (the whack filter), TODO 117 (decision
+196's build), TODO 148 (closed by decision 294), TODO 195 (what step 6 left)
 
 Drafted with AI assistance (Claude) on 2026-10-28; a person has not yet checked it.
 
@@ -273,7 +276,11 @@ every year, as the rows did.
    call no ping falls in must cut the track (ramb), then a rebuild from `ais_voyage` down. **Done the same day**
    (decision 292, ramb 2026.11.06.3).
 6. **Event pairs before 2017** (decision 196), after the rebuild, as a step of its own, measured against the logbook's
-   own dates.
+   own dates. **Done 2026-11-07** (decision 294): lifted alone, the cut adds calls before 2017 of which
+   those merging several are 45 % contradicted; with a guard in ramb (2026.11.07, `pair_away_m`), a pair over a ping
+   more than 10 km from its port makes no call, in every year. The store rebuilt from `port_call` down: port calls
+   1,628,604 → 1,667,466, 37,675 new before 2017, 1,998 long pair-based calls of 2017-2026 split; fishing hours
+   −0.002 %. The overlapping port calls (152 pairs) and ties in time order go to TODO 195.
 
 ### 7.5 Asks, answered
 

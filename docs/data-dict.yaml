@@ -696,8 +696,9 @@ tables:
           Every rule that fired, joined with `+`. `tag_then_gap`: two consecutive pings at the harbour 2 h
           or more apart, one inside the polygon. `gap_near_harbour`: the same with neither inside.
           `tag_span`: consecutive pings inside the polygon spanning 2 h or more. `event_pair`: an STK `I`
-          then `U` at the same harbour 2 h or more apart, both judged good by `ramb::rb_flag_port_event()`, from
-          2017. Since plan 048 the good events of every year are also pings for the other rules (presence).
+          then `U` at the same harbour 2 h or more apart, both judged good by `ramb::rb_flag_port_event()`, with
+          no ping between them, not at the harbour, more than 10 km from it; from every year since decision 294
+          (2017 until then). Since plan 048 the good events of every year are also pings for the other rules (presence).
       - name: T_in_ping
         type: datetime
         time_zone: UTC
@@ -2092,7 +2093,7 @@ tables:
         type: number
         examples: [0, 94, 188, 291, 1104]
         description: >
-          Of those, port calls with an event-pair behind them (2017 on).
+          Of those, port calls with an event-pair behind them (every year since decision 294, 2017 on before).
       - name: n_trip
         type: number
         examples: [0, 61, 123, 184, 292]
