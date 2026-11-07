@@ -1630,9 +1630,9 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** parked — the maintainer, 2026-11-06 ("Yes, park until 048"): production's rule stays until plan 048 takes
-STK's event rows out of the track, then plan 069's night runs again; plan 048 executed 2026-11-07 (decisions 288-294),
-so its condition is met · **see:** decisions 282, 283, 284 and
+**status:** in progress — the maintainer, 2026-11-07 ("Yes, plan the night run"): plan 069's night again after plan 048
+(decisions 288-296), started 21:03 on a fresh scratch store (`$FISHYDATA/archive/2026-11-07-speed-rule-night-2/`);
+parked 2026-11-06 until then ("Yes, park until 048") · **see:** decisions 282, 283, 284 and
 287, plan 068 (executed), plan 069 (executed), plan 065 §6 ask f and §7,
 `curate/ais_ping_clean.R`, TODO 184
 
