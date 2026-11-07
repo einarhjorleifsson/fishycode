@@ -43,6 +43,27 @@ touched_studies <- function(days = 2) {
   }, logical(1))]
 }
 
+# The terminal tokens from the `(` at row j of sorted parse data to the `)` that closes it.
+paren_tokens <- function(pd, j) {
+  d <- 0
+  for (k in seq(j, nrow(pd))) {
+    d <- d + (pd$token[k] == "'('") - (pd$token[k] == "')'")
+    if (d == 0) break
+  }
+  pd[seq(j, k), ]
+}
+
+# The strings a for loop gives its variable v: `for (v in c("a", "b"))` gives "a" and "b".
+loop_strings <- function(pd, v) {
+  out <- character(0)
+  for (j in which(pd$token == "FOR")) {
+    if (j + 3 > nrow(pd) || pd$text[j + 2] != v || pd$token[j + 3] != "IN") next
+    t <- paren_tokens(pd, j + 1)
+    out <- c(out, gsub("^[\"']|[\"']$", "", t$text[t$token == "STR_CONST"]))
+  }
+  unique(out)
+}
+
 # The pids of this R process and of every process above it, read from `ps -o pid=,ppid=,command=` lines.
 self_and_parents <- function(ps, pid = Sys.getpid()) {
   pp <- setNames(sub("^\\s*\\d+\\s+(\\d+).*", "\\1", ps), sub("^\\s*(\\d+).*", "\\1", ps))
@@ -81,7 +102,9 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
     readme <- rd(file.path(s, "README.md"))
 
     # every package an R script loads, from R's own parser (a regular expression takes SQL's `vid::INT` in a string for
-    # a package): pkg:: and pkg:::, and the first argument of library(), require(), requireNamespace(), loadNamespace()
+    # a package): pkg:: and pkg:::, and the first argument of library(), require(), requireNamespace(), loadNamespace().
+    # A variable there (`library(p, character.only = TRUE)`, `requireNamespace(p)`) is no package: the strings of the
+    # for loop that sets it are, and a variable no loop sets is reported (2026-11-07, `run_step.R` of TODO 192's night).
     p <- character(0)
     for (f in sc[grepl("[.]R$", sc)]) {
       pd <- tryCatch(utils::getParseData(parse(f, keep.source = TRUE)), error = function(e) NULL)
@@ -91,8 +114,15 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
       for (i in which(pd$token == "SYMBOL_FUNCTION_CALL" &
                       pd$text %in% c("library", "require", "requireNamespace", "loadNamespace"))) {
         a <- pd[seq(i + 1, length.out = min(3, nrow(pd) - i)), ]
-        a <- a[a$token %in% c("SYMBOL", "STR_CONST"), "text"]
-        if (length(a)) p <- c(p, gsub("^[\"']|[\"']$", "", a[1]))
+        a <- a[a$token %in% c("SYMBOL", "STR_CONST"), ]
+        if (!nrow(a)) next
+        arg <- paren_tokens(pd, i + 1)
+        by_name <- pd$text[i] %in% c("requireNamespace", "loadNamespace") ||
+          "character.only" %in% arg$text[arg$token == "SYMBOL_SUB"]
+        if (a$token[1] == "SYMBOL" && by_name) {
+          v <- loop_strings(pd, a$text[1])
+          p <- c(p, if (length(v)) v else sprintf("(%s loads a package by the variable %s)", basename(f), a$text[1]))
+        } else p <- c(p, gsub("^[\"']|[\"']$", "", a$text[1]))
       }
     }
     p <- unique(p)

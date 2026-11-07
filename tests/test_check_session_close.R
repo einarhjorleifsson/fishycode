@@ -73,6 +73,28 @@ testthat::test_that("a SQL cast in a string is not a package, and a script that 
   testthat::expect_equal(attr(ok, "failed"), "every package a study's scripts load is in R's library")
 })
 
+testthat::test_that("a package loaded by a variable is read from the loop that sets it, not taken as a package", {
+  # the false positive of 2026-11-07: `library(p, character.only = TRUE)` read as a package named p
+  s <- file.path(tmp, "archive", "loop")
+  put(file.path(s, "scripts", "01_load.R"),
+      "for (p in c('stats', 'utils')) suppressMessages(library(p, character.only = TRUE))",
+      "for (q in c(\"tools\")) requireNamespace(q)")
+  put(file.path(s, "README.md"), "`scripts/01_load.R`")
+  ok <- fd$check_session_close(studies = s, root = file.path(tmp, "repo", "R"), quiet = TRUE)
+  testthat::expect_true(ok)
+
+  b <- file.path(tmp, "archive", "loop_bad")
+  put(file.path(b, "scripts", "01_load.R"),
+      "for (p in c('stats', 'notapkg789')) library(p, character.only = TRUE)",
+      "library(x, character.only = TRUE)")
+  put(file.path(b, "README.md"), "`scripts/01_load.R`")
+  out <- capture.output(ok <- fd$check_session_close(studies = b, root = file.path(tmp, "repo", "R")))
+  testthat::expect_equal(attr(ok, "failed"), "every package a study's scripts load is in R's library")
+  line <- grep("loop_bad:", out, value = TRUE)
+  testthat::expect_match(line, "notapkg789, [(]01_load.R loads a package by the variable x[)]")
+  testthat::expect_no_match(line, "\\bp\\b")
+})
+
 testthat::test_that("the check and the shell that started it are not a running job; a job of the study is", {
   testthat::skip_on_os("windows")
   # the false positive of 2026-11-05: the shell running the check names the study on its command line
