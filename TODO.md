@@ -1707,11 +1707,21 @@ logbook and landing codes map one to one onto pids. Measured by the TODO 195 stu
   - Snarfarahöfn and Reykjavík (79 m apart): "IS-SNA is solely pleasure crafts". IS-SNA has no logbook or landing code,
     so a record can only say Reykjavík.
   - Polygons stay as decision 058 reviewed them.
-- **adb's logbook trips carry no pid** in `curated/logbook/trip.parquet`: 37,847 trips. `trip_reconciled` joins one.
-- **fs_afladagbok drops 439 trip ends** whose app port code has no row in `port.parquet` (14 codes).
-- 7,256 voyages have no departure port, all the first of their year: 4,034 follow an open voyage (a split at New
-  Year, by design), 308 a voyage that ended at a port, and 2,914 have no voyage the year before. Counted on the store
-  of decision 294, before decision 296's rebuild.
+- **Fixed in code, not built** (d62cc07; `$FISHYDATA/archive/2026-11-07-port-codes/`, its README):
+  - adb's trips get `pid1`, `pid2` from `port.parquet` by hid in their adapter (37,847 had none); 0, the placeholder,
+    gets no pid. `trip_reconciled`'s own adb case is dropped: its values do not change.
+  - fs_afladagbok maps the app's codes through `port_code.parquet`, one row per code. The 14 codes: 3 second codes of
+    Icelandic ports, 109 abroad, 130 a placeholder, 7 countries and 2 test ports, the nine no landing uses classed in
+    `port_code_class.yml`. 406 of the 439 ends gain their hid; code 130's 33 are on STOKKUR copies, which the adapter
+    replaces by their tours.
+  - On a scratch store, only the port columns change: 38,098 logbook trips, 3 in `trip_reconciled`.
+- **Voyages with no departure port**, recounted on the store of decision 296: 7,269, all the first of their year.
+  3,991 follow an open voyage (the split at New Year), 2,143 are in the vessel's first year, 811 follow a year with no
+  voyage, and 324 follow a voyage that ended at a port, 226 of those after more than a month of silence. By design;
+  no look-back is proposed.
 
-**check:** adb's trips given their pid; the 14 codes mapped in `port.parquet` or listed as not ports; the voyages with
-no departure port recounted, each in one outcome.
+**needs: maintainer** — the word for the live rebuild (`tar_outdated()`: 42 targets down to `ais_trail`, some
+another session's) and for deleting the scratch store `/Users/einarhj/stasi/scratch-196-ports` first.
+
+**check:** after the rebuild, `curated/logbook/trip.parquet` and `trip_reconciled` as on the scratch store
+(`scripts/02_compare.R`); then the item closes with a decision record.
