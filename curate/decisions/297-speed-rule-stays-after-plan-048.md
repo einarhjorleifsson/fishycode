@@ -64,8 +64,8 @@ stronger on returns. The moved ends lie mostly in 2007-2011.
 
 ## What it leaves
 
-- **The scratch store**, `/Users/einarhj/stasi/scratch-192-candidate-2/` (about 47 GB of its own). It must be deleted
-  before any live rebuild, on the maintainer's word.
+- **The scratch store**, `/Users/einarhj/stasi/scratch-192-candidate-2/` (about 47 GB of its own): deleted 2026-11-07
+  at the maintainer's word ("Yes, delete it"), the disk back to 82 GB free. The study's own files stay.
 - **Production's own wrong flags on fast vessels.** On vessels over 25 kn it flags 97,716 pings the candidate keeps;
   in 2024, 10,812 the vessels' own limits keep, all 9 hand-checked good (TODO 192). A flagged ping hands its time on,
   so the effort barely moves; not pursued.
