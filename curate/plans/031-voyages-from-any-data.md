@@ -1,9 +1,10 @@
 # 031 — Voyages from any data: the stays the track misses, records as evidence, and several gears in a voyage
 
-**status:** proposal — measured 2026-10-19 (read-only, on the build at e2f741f); steps 1, 2 and 3 done the same day
+**status:** partly built — §4.7's short voyages kept and labelled 2026-11-07 (decision 293, the first piece built in
+fishycode); measured 2026-10-19 (read-only, on the build at e2f741f); steps 1, 2 and 3 done the same day
 (§3.6, §3.9, §3.10, with STK and ASTD apart);
 the cascade (§4.0), the other pitfalls (§3.7), outside code (§3.8) and the robustness bench (§4.8) added the same
-day; step 3's code is in ramb (2026.10.19.3, f2492db), nothing in fishycode built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
+day; step 3's code is in ramb (2026.10.19.3, f2492db), nothing else in fishycode built; the asks answered 2026-10-19 (§7; g became TODO 92); TODO 90 carries it under a wider review of
 the voyage definition; step 4 measured 2026-10-20 against decision 155's allocation audit (§3.11), asks i-k answered 2026-10-23 with the
 radius's retirement for the time budget (decision 197) ·
 **2026-10-19** · **see:** TODO 90, decisions 060, 062, 063, 074, 078, 101 and 144, plan 011 (port stays), plan 013 (ramb's
@@ -897,6 +898,7 @@ Step C of §4.0, so that every fix keeps a voyage (§3.7 items 3-6):
   of a voyage.
 - **Short voyages are kept and labelled.** A voyage of few pings keeps its fixes, its `n_pings` and a label, so a
   consumer can leave it out. None of its fixes is left without a voyage.
+  Built 2026-11-07 (decision 293): `voyage.parquet`'s `short`, a voyage of under 10 recorded pings.
 - **Open ends are flagged.** A voyage with no stay before or after it, at the start or end of a vessel's series, says
   so. Its port may come from §4.0's last tier, with that basis.
 - **Each gap at sea of 2 h or more gets a class:**

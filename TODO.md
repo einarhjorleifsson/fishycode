@@ -442,10 +442,10 @@ The threads it gathers: the STK key (TODO 25); the trail and its delivery (TODO 
 coverage (TODO 89).
 
 Step 3 done (§3.10, in ramb), step 4 measured 2026-10-20 (§3.11: a landing placing a call lifts landings with a call
-at their port from 94.1 % to 97.0 %; a logbook time at sea inside a call is mostly a disagreement of times). Open from
-step 3: ramb's defaults against the plan's choices, a short voyage by time rather than pings (thin voyages measured
-2026-10-20, `$FISHYDATA/archive/2026-10-todo98/scripts/thin_voyages.R`), the weak `gap_budget`, and gap rules that
-hold only for a feed silent in port (TODO 89's coverage model).
+at their port from 94.1 % to 97.0 %; a logbook time at sea inside a call is mostly a disagreement of times). §4.7's
+short voyages kept and labelled since decision 293. Open from step 3: ramb's defaults against the plan's choices, a
+short voyage by time rather than pings (thin voyages measured 2026-10-20, `$FISHYDATA/archive/2026-10-todo98/`), the
+weak `gap_budget`, and gap rules that hold only for a feed silent in port (TODO 89's coverage model).
 Also unflagged: `port_call.parquet`'s 13,510 event-only calls (2017-2026), which cut no voyage (decisions 060, 061),
 and Hornvík's anchorage stops, port calls since one 2 h minimum (decisions 074, 077), never marked as no trip's end
 (Claude's audit of 2026-10-23, not checked by a person).
@@ -1183,9 +1183,9 @@ into these outcomes with every voyage in one, and the counts are in plan 031 §3
 
 ## 148. STK's streams into the flow: heading and course apart, a stream, port events judged as events (plan 048)
 **status:** open — plan 048's steps 1-5 done 2026-11-06 (decisions 288-291; merged c3a5a97, the store rebuilt at
-fc45a24), and every port call cutting the voyages (decision 292, ramb 2026.11.06.3 installed, not pushed; rebuilt from
-`ais_voyage` at 78729b5); next: step 6 ·
-**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-292, TODOs 88, 117, 192
+fc45a24), every port call cutting the voyages (decision 292, ramb 2026.11.06.3 installed, not pushed) and the short
+voyages kept (decision 293, rebuilt from `ais_voyage` at ecc5c4f); next: step 6 ·
+**see:** `curate/plans/048-stk-streams-heading-course-events.md`, decisions 196, 233, 282, 283, 288-293, TODOs 88, 117, 192
 
 The maintainer, 2026-10-28: STK's heading field split into true heading and course, a stream on every STK fix, and the
 events taken as events; port calls a generic method, so their trust in STK's events must not hang on the ping filter.
@@ -1207,9 +1207,10 @@ Step 3 (decision 290), on a scratch store: port calls lose 19,241 and gain 26,48
 only; the lost stood on STK's event rows used as pings. Revised the same day (plan §7, the maintainer: "Yes, revise
 the plan"): the good events back as presence in the port-call rules, the 2017 cut kept for the pairs.
 Steps 4 and 5 (decision 291), the hand check left out at the maintainer's word: fishing hours +0.09 %, port calls
-1,623,775 → 1,628,604, voyages 1,428,837 → 1,370,630. `rb_create_voyages(method = "dwell")` cuts only at pings in a
-port call, and 57,389 calls had STK's event rows as their only pings: a voyage ran through each. ramb 2026.11.06.3
-cuts at every call (decision 292): none crossed, voyages 1,414,461 (1,428,837 before plan 048).
+1,623,775 → 1,628,604, voyages 1,428,837 → 1,370,630. `rb_create_voyages(method = "dwell")` cut only at pings in a
+port call, and 57,389 calls had STK's event rows as their only pings. ramb 2026.11.06.3 cuts at every call (decision
+292): voyages 1,414,461. The short ones are kept and labelled since decision 293: 1,601,182. For step 6: 147 pairs of
+port calls overlap (61 vessels, 91 with an event pair), and a tie then decides the next voyage's departure port.
 
 **check:** plan 048's step 6 done and recorded in a decision, or the plan parked or abandoned by the maintainer, and
 its status agrees with its index row.
