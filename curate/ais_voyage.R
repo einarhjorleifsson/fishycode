@@ -3,7 +3,7 @@
 #
 # Input:  staging/ais/ping_clean   (whacky positions already removed - L2)
 #         curated/ais/port_call.parquet   (port calls: elapsed time at a port, plan 011 Phase 3; key (vid, port_call_id))
-# Output: curated/ais/voyage.parquet (vid, year, voyage_id, T1, T2, pid1, pid2, n_pings)
+# Output: curated/ais/voyage.parquet (vid, year, voyage_id, T1, T2, pid1, pid2, n_pings, short)
 #         curated/ais/ping           (clean pings carrying keys only: `voyage_id`, and `port_call_id` where the ping is
 #                                     in a port call; the clock's columns and the speed's span carried from ping_clean)
 #
@@ -47,7 +47,12 @@ stopifnot("ramb 2026.11.06.3 or later: every port call cuts the voyages (decisio
 
 # -- Parameters ----------------------------------------------------------------
 
-MIN_PINGS     <- 10   # trips with fewer pings than this are dropped
+# Every stretch at sea between two port calls that holds a recorded ping is a voyage; one under SHORT_PINGS recorded
+# pings is kept and labelled `short` (plan 031 §4.7: "Short voyages are kept and labelled"), so a consumer can leave it
+# out. MIN_PINGS was 10 until 2026-11-07: the stretches it dropped held 8,081 logbook stations, mostly small boats'
+# day trips at STK's 10-minute reports (study $FISHYDATA/archive/2026-11-07-sea-pings-no-voyage/).
+MIN_PINGS     <- 1
+SHORT_PINGS   <- 10
 # The port-call minimum (2 h) is a parameter of curate/port_call.R, not of this script.
 EXCLUDE_EVENT_ONLY <- TRUE
 
@@ -108,13 +113,15 @@ for (yr in years) {
 
     # -- Voyages: the sea between two stays, numbered per vessel and year (ramb, plan 013 phase 2) -----
     # A ping takes the stay it falls in (the earlier of two that overlap); sea runs become voyages with
-    # the ports of the stays either side; voyages under MIN_PINGS pings are dropped after numbering.
-    # Only recorded positions cut voyages and count towards MIN_PINGS; the gps logger's reconstructed fixes
+    # the ports of the stays either side; voyages under SHORT_PINGS pings are labelled `short`.
+    # Only recorded positions cut voyages and count as pings; the gps logger's reconstructed fixes
     # get their voyage by time below, like every other ping (plan 014).
     st_g <- stays |> filter(vid %in% g)
-    v_b <- ramb::rb_create_voyages(clean |> filter(pos_basis == "recorded"), st_g, min_pings = MIN_PINGS)
+    v_b <- ramb::rb_create_voyages(clean |> filter(pos_basis == "recorded"), st_g, min_pings = MIN_PINGS,
+                                   short_pings = SHORT_PINGS)
     trips_yr_b <- v_b |>
-      transmute(vid, year = as.integer(year), voyage_id = as.integer(voyage_id), T1, T2, pid1 = port_from, pid2 = port_to, n_pings = as.integer(n_pings))
+      transmute(vid, year = as.integer(year), voyage_id = as.integer(voyage_id), T1, T2, pid1 = port_from, pid2 = port_to,
+                n_pings = as.integer(n_pings), short)
 
     out_dir <- if (is.null(VIDS)) fd_curated("ais", "ping") else fd_staging("ais", "ping_test")
 
