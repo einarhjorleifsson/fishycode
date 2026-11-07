@@ -7,7 +7,7 @@ resume, the morning's checks); read 2026-11-06, every check passing and the cont
 but 21,600 port calls lost, 8,142 new, and the AIS departure or return of about 13,000 trips moved by over 6 h, mostly
 lengthening them; hand-checked the same day by the maintainer and against the logbook's own dates, both for production
 (the study README); decision 287: production's rule stays, TODO 192 parked until plan 048 ("Yes, park until 048");
-nothing in the pipeline changed · **see:** decision 287, TODO 192, decisions 282, 283
+nothing in the pipeline changed; run again 2026-11-07 after plan 048 (`$FISHYDATA/archive/2026-11-07-speed-rule-night-2/`), the logbook's dates still for production, and decision 297: production's rule stays, TODO 192 closed ("Keep production's rule") · **see:** decisions 287 and 297, TODO 192 (closed), decisions 282, 283
 and 284, plan 068, plan 065 §7, TODO 184 (plan 062's item 4), TODO 148 (plan 048), `curate/ais_ping_clean.R`,
 `$FISHYDATA/archive/2026-11-05-speed-rule-sweep/README.md`
 

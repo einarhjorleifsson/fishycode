@@ -1629,36 +1629,6 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
-## 192. fishycode's speed rule on the vessels' own limits and the time flag, with local's constants from the data
-**status:** in progress — the maintainer, 2026-11-07 ("Yes, plan the night run"): plan 069's night again after plan 048
-(decisions 288-296), started 21:03 on a fresh scratch store (`$FISHYDATA/archive/2026-11-07-speed-rule-night-2/`);
-parked 2026-11-06 until then ("Yes, park until 048") · **see:** decisions 282, 283, 284 and
-287, plan 068 (executed), plan 069 (executed), plan 065 §6 ask f and §7,
-`curate/ais_ping_clean.R`, TODO 184
-
-Production's `ais_ping_clean.R` runs `clean` at 25 kn. The alternatives are in ramb (decisions 282-284): each vessel's
-own limits, the time flag, the vote, the local speed on the larger side (`"local"`'s default) and `stream =`. `clean` at
-25 kn flags fast vessels' good pings: in 2024, 10,812 pings the own limits keep, on 128 vessels whose recorded ceiling
-is over 25 kn (all 9 hand-checked were good). The candidate (the own limits with the recorded speed, the larger side
-and the vote) did best on Iceland's 40 maintainer-checked cases (33 right of 36, production 19), on EM4SSF's CS1 and on
-five more datasets (decision 284); STK's event rows are most of the rest (plan 048, decisions 288-294).
-
-The candidate against production's stored labels, year by year (`$FISHYDATA/archive/2026-11-05-speed-rule-sweep/`;
-2007 and 2018 run, the rest one command in its README): in 2018 the candidate flags 40,682 pings production keeps
-(8,715 STK event rows at 0 kn), 18,144 of them in fishing windows (about 3,200 h); production 19,621 the candidate keeps
-(9,353 on fast vessels). Next: the other years, hand samples of the candidate's own flags in fishing windows, then the
-decision and one rebuild. Plan 069 (2026-11-05): a rebuild test overnight, the candidate in the clean step and the 16
-targets below it on a scratch store, every record against the live store in one outcome; asks a-f answered as
-recommended, the run started that night (`$FISHYDATA/archive/2026-11-05-speed-rule-rebuild-test/`, its README). Read
-2026-11-06: fishing hours +0.007 %, every year within ±0.2 %; but 21,600 port calls lost, 8,142 new, and the AIS
-departure or return of about 13,000 trips moved by over 6 h, mostly lengthening them. The hand check that day: the
-logbook's own date puts the moved departures on production's day 4,741 times, the candidate's 1,312 (returns 9,610
-and 923); of 10 lost port calls the maintainer judged 5 production right, 3 undecided, none the candidate's. Every
-whack named is an STK report out of place that production's angle test flags and the candidate keeps (plan 048).
-
-**check:** after plan 048, plan 069's night repeated with the candidate and a decision whether production's speed rule
-moves (and to what), with the rebuild it needs; or the item abandoned.
-
 ## 193. Place-name records: a source registry, one reading per document, one file per place (plan 067)
 **status:** parked (the maintainer, 2026-11-07: "put this whole thing on hold for now") · **needs: maintainer** — where a
 person's decisions are kept (plan 067 ask a), and how timarit.is's text is had (ask c) · **see:**
