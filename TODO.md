@@ -1691,9 +1691,10 @@ whack named is an STK report out of place that production's angle test flags and
 moves (and to what), with the rebuild it needs; or the item abandoned.
 
 ## 193. Place-name records: a source registry, one reading per document, one file per place (plan 067)
-**status:** open · **needs: maintainer** — where a person's decisions are kept (plan 067 ask a), and how timarit.is's text is
-had (ask c) · **see:** `curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
-plan 045 ask c, TODOs 144 and 186
+**status:** parked (the maintainer, 2026-11-07: "put this whole thing on hold for now") · **needs: maintainer** — where a
+person's decisions are kept (plan 067 ask a), and how timarit.is's text is had (ask c) · **see:**
+`curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
+`archive/2026-11-07-aegir-early/README.md`, `archive/2026-11-07-andvari-bjarni/README.md`, plan 045 ask c, TODOs 144 and 186
 
 The maintainer, 2026-11-05, asked how to store and file place names: one YAML per name or another construct, how to
 cite the source, how to hold synonyms and cross-references, what to borrow from the data-dict, and how the sources
@@ -1707,6 +1708,15 @@ Its first source is timarit.is. The study searched it by the gazetteer's names a
 36 pages took the maintainer's vote on what is wanted: a name's story, its place and its extent. The text of 10 issues
 was fetched slowly at the maintainer's decision, past robots.txt. 10 documents were read into the format of §5 as a
 first trial (plan 067 §1): 149 entries, 70 with a name's origin; no person has checked them.
+
+2026-11-07, two studies for texts that describe the grounds plan 070 outlines, both paused, then the whole held (the
+maintainer: "We may want to mine timarit.is for the full text on some targeted journals later. this örnefni / fiskimið
+description search would then be part of that bigger plan"):
+- early Ægir by plan 070's broad chart names: 40 of 121 searched in 1905-1965, 26 with no hit (the names are mostly
+  later; old texts place grounds by landmarks); four finds describe a ground (Barðagrunn, 1917);
+- Bjarni Sæmundsson's reports in Andvari: *Fiskirannsóknir 1901* read whole, 21 finds, the West Fjords' broad grounds
+  placed against each other (Andvari 1903 p. 127).
+A page view (`/page/<id>`, allowed) carries its page's OCR text, so `/files` (disallowed) is not needed.
 
 **check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
 read and measured against the 151 Markdown records), or the plan parked.
