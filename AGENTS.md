@@ -286,22 +286,22 @@ Every script in a targets project is on one of three sides, and says which in a 
   `main` named here was pushed to GitHub (15af6e8..b7109d4, 31 commits) and ramb reinstalled from it (`RemoteSha`
   b7109d4; the whole suite passes against it). `rb_flag_port_event()`, recorded port events judged as events (plan 048
   step 2, decision 289), is 2026.11.06 (b2a7264), committed to ramb's local `main` and installed from it on 2026-11-06 (`git archive`
-  with the LFS files, `--preclean`; the whole suite passes against it), not pushed; `curate/port_call.R` calls it since
+  with the LFS files, `--preclean`; the whole suite passes against it), pushed 2026-11-07; `curate/port_call.R` calls it since
   plan 048's merge (c3a5a97). `rb_create_port_calls(presence = )`, good port events as pings for the dwell rules (plan 048 §7.3), is 2026.11.06.1
   (1f720f6), committed to ramb's local `main` and installed from it on 2026-11-06 (`git archive` with the LFS files,
-  `--preclean`; the whole suite passes against it), not pushed; `curate/port_call.R` passes it since the merge.
+  `--preclean`; the whole suite passes against it), pushed 2026-11-07; `curate/port_call.R` passes it since the merge.
   2026.11.06.2 (852c86c), a label on hover and notes on a served map (`rb_map_layer(popup = list(hover = ))`,
-  `rb_map_serve(notes = )`, plan 070), is committed to ramb's local `main` and installed from it on 2026-11-06, not
-  pushed; nothing in the pipeline calls it. `rb_create_voyages(method = "dwell")` cutting at every port call, a ping in
+  `rb_map_serve(notes = )`, plan 070), is committed to ramb's local `main` and installed from it on 2026-11-06,
+  pushed 2026-11-07; nothing in the pipeline calls it. `rb_create_voyages(method = "dwell")` cutting at every port call, a ping in
   it or not (decision 291), is 2026.11.06.3 (ce1e464), committed to ramb's local `main` and installed from it on
-  2026-11-06 (`git archive` with the LFS files, `--preclean`; the whole suite passes, 3,157), not pushed;
+  2026-11-06 (`git archive` with the LFS files, `--preclean`; the whole suite passes, 3,157), pushed 2026-11-07;
   `curate/ais_voyage.R` stops under an older ramb. `rb_create_port_calls(pair_away_m = )`, the event pairs' guard (plan
   048 step 6, decision 294), is 2026.11.07 (3a7c295), committed to ramb's local `main` and installed from it on
-  2026-11-07 (`git archive` with the LFS files, `--preclean`; the whole suite passes, 3,174), not pushed;
+  2026-11-07 (`git archive` with the LFS files, `--preclean`; the whole suite passes, 3,174), pushed 2026-11-07;
   `curate/port_call.R` stops under an older ramb. The full order of rows that tie in time in `rb_create_port_calls()`,
   `rb_flag_port_event()` and `rb_create_voyages()` (TODO 195, decision 296) is 2026.11.07.1 (6fbb540), committed to
   ramb's local `main` and installed from it on 2026-11-07 (`git archive` with the LFS files, `--preclean`; the whole
-  suite passes, 3,187), not pushed; `curate/port_call.R` stops under an older ramb. Plan
+  suite passes, 3,187), pushed 2026-11-07; `curate/port_call.R` stops under an older ramb. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's
