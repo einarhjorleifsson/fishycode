@@ -31,9 +31,12 @@
 #                    judged as events by ramb::rb_flag_port_event() (plan 048 §2.3, decision 289), by position,
 #                    sequence, the cleaned track (no ping either side, no witness, not good) and the sending unit.
 #                    Until plan 048 an event was good if `io_ok` (sources/stk/event.R) and kept by step 0 as a ping,
-#                    and only events from 2017 on were passed (decision 059), as they still are for the pairs
-#                    (STAY_EVENT_FROM, plan 048 §7.4; the years before are its step 6). Only the good events go to
-#                    the pairs (STAY_EVENTS "good", the default since decision 290): passing every event ("all", as
+#                    and only events from 2017 on were passed (decision 059); the pairs kept that cut until plan 048
+#                    step 6, which lifted it with ramb's pair guard (STAY_PAIR_AWAY_M): a pair makes no call where
+#                    a ping between its events, not at its port, lies more than 10 km from it, since the track
+#                    shows the vessel left (2007-2016: 65-81 % of the pairs the logbook contradicts, 0.1-10 % of
+#                    those a landing confirms; $FISHYDATA/archive/2026-11-07-plan048-step6/). Only the good events go
+#                    to the pairs (STAY_EVENTS "good", the default since decision 290): passing every event ("all", as
 #                    before plan 048), a bad one between two good ones breaks the pair, and on the scratch run of
 #                    plan 048 step 3 12,868 more of today's port calls were lost
 #   presence         every good event of every year, at its recorded position (a marker included), is a ping for
@@ -73,8 +76,10 @@ G_H        <- as.numeric(Sys.getenv("STAY_G_H", "2"))   # a stay is at least thi
 R_M        <- as.numeric(Sys.getenv("STAY_R_M", "2000"))   # arrival end: this close to the polygon (Phase 0: 96 % of gap ends)
 RADIUS_OUT <- Sys.getenv("STAY_RADIUS_OUT", "profile")     # "profile" = per-harbour r_out_m; "same" = R_M for every harbour (test)
 EVENTS     <- Sys.getenv("STAY_EVENTS", "good")   # "good" or "all": which judged events go to the pairs (above)
-EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "2017"))   # the first year whose events make pairs (above)
+EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "0"))   # the first year whose events make pairs (above; 2017 until plan 048 step 6)
+PAIR_AWAY_M <- as.numeric(Sys.getenv("STAY_PAIR_AWAY_M", "10000"))   # ramb's pair guard, metres (above; a test hook)
 stopifnot("STAY_EVENTS is \"all\" or \"good\"" = EVENTS %in% c("all", "good"))
+stopifnot("ramb 2026.11.07 or later: the event pairs' guard (plan 048 step 6)" = packageVersion("ramb") >= "2026.11.7")
 
 con <- duckdbfs::cached_connection()
 duckdbfs::load_spatial()
@@ -180,7 +185,7 @@ stay_year <- function(yr) {
     WHERE year BETWEEN {yr - 1L} AND {yr + 1L}{if (EVENTS == 'good') ' AND good' else ''}")))
   win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
   ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,
-                           events = ev, presence = TRUE, window = win) |>
+                           events = ev, presence = TRUE, pair_away_m = PAIR_AWAY_M, window = win) |>
     collect() |>
     rename(pid = port_id)
 }
