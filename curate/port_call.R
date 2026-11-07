@@ -51,16 +51,16 @@
 # The minimum stay G is one value for every port, 2 h (decision 074, plan 014): ports carry no class. Decision
 # 063 measured a global 2 h against the class rule (+0.8 % stays, the same landing coverage).
 #
-# A port call's year is the year of T_in. The calls are made a year at a time (the whole series at once is the
-# memory risk of decision 239). A year's pings are padded with each vessel's last ping before the year and first ping
-# after it, from whichever years hold them, and each year keeps the calls that overlap it, so a call over New Year comes
-# back from both years, each piece as far as that year's pings reach; ramb::rb_merge_port_calls() joins them (TODO 179).
-# Until then the window kept only the calls begun in the year: the January part of a call begun in December was
-# dropped, and its pings became voyage 1 (22.9 M pings of 2008-2026, $FISHYDATA/archive/2026-11-01-voyage-year-boundary/);
-# and the padding came from the neighbouring years only, so a vessel silent for a whole year lost the call its pings
-# either side make (297 calls against a run on the whole series, $FISHYDATA/archive/2026-11-01-port-call-new-year-fix/).
-# What a run by year still misses against the whole series: a piece too short to be a call in its own year (under G,
-# a call short by under G at New Year), and an STK pair whose events lie more than a year apart.
+# A port call's year is the year of T_in. The calls are made by batches of vessels, each vessel's whole series at once
+# (TODO 195): no call is cut at New Year, and every good event is presence and every pair counts, whatever its year. A
+# batch is a range of vids of about BATCH_PINGS recorded pings; the pings are sorted by vid within each file, so a batch
+# reads only its own row groups, and it stays far under a whole year's memory (decision 239).
+# Until 2026-11-07 the calls were made a year at a time, the year's pings padded with each vessel's last ping before it
+# and first ping after it, and only that year's events as presence; ramb::rb_merge_port_calls() joined the pieces at New
+# Year (TODO 179). A silence over New Year with events at another port in it then made a call at one port over that
+# port's call: 101 of the 152 pairs of one vessel's calls that overlapped ($FISHYDATA/archive/2026-11-07-port-shapes/).
+# Run by vessel, 39 pairs overlap, each an STK pair at one port over a call by pings at another under 10 km away, which
+# the guard leaves; the records side with the pair ($FISHYDATA/archive/2026-11-07-port-call-by-vessel/).
 #
 # Not here: the pass-through guard for event pairs (they must be >= G hours, so a 1-60 min transit never
 # qualifies), foreign harbours (no `einar`
@@ -79,7 +79,8 @@ EVENTS     <- Sys.getenv("STAY_EVENTS", "good")   # "good" or "all": which judge
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "0"))   # the first year whose events make pairs (above; 2017 until plan 048 step 6)
 PAIR_AWAY_M <- as.numeric(Sys.getenv("STAY_PAIR_AWAY_M", "10000"))   # ramb's pair guard, metres (above; a test hook)
 stopifnot("STAY_EVENTS is \"all\" or \"good\"" = EVENTS %in% c("all", "good"))
-stopifnot("ramb 2026.11.07 or later: the event pairs' guard (plan 048 step 6)" = packageVersion("ramb") >= "2026.11.7")
+stopifnot("ramb 2026.11.07.1 or later: the event pairs' guard (plan 048 step 6) and the full order of rows that tie in time (TODO 195)" =
+            packageVersion("ramb") >= "2026.11.7.1")
 
 con <- duckdbfs::cached_connection()
 duckdbfs::load_spatial()
@@ -107,9 +108,10 @@ ALL       <- !length(YEARS)
 P <- sf::read_sf(fd_staging("aux", "ports.fgb")) |>
   filter(source == "einar") |> select(pid) |> sf::st_make_valid()
 rad <- nanoparquet::read_parquet(fd_path("curated", "reference", "port_radius.parquet")) |> as_tibble()
-# The radius is a frozen input (decision 075) and the polygons are not: a renamed port re-mints its pid (TODO 36)
+# The radius is a frozen input (decision 075) and the polygons are not: a renamed port re-minted its pid until decision
+# 082 pinned them
 # and would silently fall back to the default radius.
-stopifnot("a frozen port radius names a pid with no polygon (TODO 36)" = all(rad$pid %in% P$pid))
+stopifnot("a frozen port radius names a pid with no polygon (decision 082)" = all(rad$pid %in% P$pid))
 r_out <- if (RADIUS_OUT == "profile") rad$r_out_m[match(P$pid, rad$pid)] else rep(R_M, nrow(P))
 ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M))
 
@@ -153,56 +155,52 @@ duckdb::duckdb_register(con, "ev_judged", as.data.frame(judged))
 # for a reader that sources this script (a scratch run's account), the events as judged
 assign("port_event_judged", judged, envir = globalenv())
 
-# -- Each vessel's first and last ping of every year ---------------------------------------
-# Once, as aggregates (no window over the pings): the padding of a year is taken from here. Ties in time go by lon, lat.
+# -- Batches of vessels over every year ------------------------------------------------------
+# STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both good (judged above), from
+# EVENT_FROM on (an earlier event's port is withheld, so it makes no pair). Presence: every good event at its recorded
+# position, a marker included. Run on the whole series, the events have the vessel's pings around them; the presence
+# of the years either side of a year alone, without their pings, made consecutive events at a home port one stay over
+# whole seasons (plan 048 step 3c's first run, 22,005 calls of a median 6 months).
 
-x(glue::glue("CREATE OR REPLACE TEMP TABLE pc_edge AS
-  SELECT vid, year::INTEGER AS year, min(struct_pack(t := time, lon := lon, lat := lat)) AS first,
-         max(struct_pack(t := time, lon := lon, lat := lat)) AS last
-  FROM read_parquet('{clean_dir}', hive_partitioning = true) WHERE pos_basis = 'recorded' GROUP BY ALL"))
-
-# -- One year ------------------------------------------------------------------------
-
-stay_year <- function(yr) {
-  # pings of the year, plus each vessel's last ping before it and first ping after it, from whichever years hold them
-  own <- if (is.null(clean_years(yr))) NULL else
-    glue::glue("SELECT vid, time, lon, lat FROM {clean_years(yr)} WHERE pos_basis = 'recorded'")
-  pad <- glue::glue("
-    SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_max(last, year) AS e FROM pc_edge WHERE year < {yr} GROUP BY vid)
+BATCH_PINGS <- as.numeric(Sys.getenv("STAY_BATCH_PINGS", "4e7"))
+vid_n <- q(glue::glue("
+  SELECT vid, sum(n) AS n FROM (
+    SELECT vid, count(*) AS n FROM read_parquet('{clean_dir}', hive_partitioning = true)
+    WHERE pos_basis = 'recorded' AND vid IS NOT NULL GROUP BY vid
     UNION ALL
-    SELECT vid, e.t AS time, e.lon, e.lat FROM (SELECT vid, arg_min(first, year) AS e FROM pc_edge WHERE year > {yr} GROUP BY vid)")
-  seq_yr <- dplyr::tbl(con, dplyr::sql(paste(c(own, pad), collapse = "\n    UNION ALL ")))
-  # STK event pairs: I then U, adjacent in the vessel's events, same standard harbour, both good (judged above), from
-  # EVENT_FROM on (an earlier event's port is withheld, so it makes no pair); the events of the year and either side,
-  # since the window keeps a call that overlaps the year. Presence: every good event of the year itself, at its
-  # recorded position. Only the year's own: its pings are the year's, and an event of the year either side with no
-  # pings around it made consecutive events at a home port one stay over whole seasons (plan 048 step 3c's first run,
-  # 22,005 calls of a median 6 months).
+    SELECT DISTINCT vid, 0 AS n FROM ev_judged WHERE vid IS NOT NULL)
+  GROUP BY vid ORDER BY vid"))
+if (!ALL) vid_n <- vid_n[vid_n$vid %in% q(glue::glue("
+  SELECT DISTINCT vid FROM {clean_years(YEARS)} WHERE vid IS NOT NULL
+  UNION SELECT DISTINCT vid FROM ev_judged WHERE year IN ({paste(YEARS, collapse = ', ')})"))$vid, ]
+batches <- lapply(split(vid_n$vid, cumsum(as.numeric(vid_n$n)) %/% BATCH_PINGS), range)
+
+stay_batch <- function(lo, hi) {
+  seq_b <- dplyr::tbl(con, dplyr::sql(glue::glue("
+    SELECT vid, time, lon, lat FROM read_parquet('{clean_dir}', hive_partitioning = true)
+    WHERE pos_basis = 'recorded' AND vid BETWEEN {lo} AND {hi}")))
   ev <- dplyr::tbl(con, dplyr::sql(glue::glue("
-    SELECT vid, time, io, CASE WHEN year >= {EVENT_FROM} THEN port_id END AS port_id, good,
-           CASE WHEN year = {yr} THEN raw_lon END AS lon, CASE WHEN year = {yr} THEN raw_lat END AS lat
+    SELECT vid, time, io, CASE WHEN year >= {EVENT_FROM} THEN port_id END AS port_id, good, raw_lon AS lon, raw_lat AS lat
     FROM ev_judged
-    WHERE year BETWEEN {yr - 1L} AND {yr + 1L}{if (EVENTS == 'good') ' AND good' else ''}")))
-  win <- as.POSIXct(c(sprintf("%d-01-01", yr), sprintf("%d-01-01", yr + 1L)), tz = "UTC")
-  ramb::rb_create_port_calls(seq_yr, ports, min_dwell_h = G_H, radius_in = R_M,
-                           events = ev, presence = TRUE, pair_away_m = PAIR_AWAY_M, window = win) |>
+    WHERE vid BETWEEN {lo} AND {hi}{if (EVENTS == 'good') ' AND good' else ''}")))
+  ramb::rb_create_port_calls(seq_b, ports, min_dwell_h = G_H, radius_in = R_M,
+                             events = ev, presence = TRUE, pair_away_m = PAIR_AWAY_M) |>
     collect() |>
     rename(pid = port_id)
 }
 
 # -- Run -----------------------------------------------------------------------------
 
-years <- if (ALL) q(glue::glue("SELECT DISTINCT year FROM read_parquet('{clean_dir}', hive_partitioning = true) ORDER BY 1"))$year else YEARS
-res <- vector("list", length(years))
-for (k in seq_along(years)) {
-  yr <- years[k]; t0 <- Sys.time(); message("port_call ", yr)
-  res[[k]] <- stay_year(yr)
-  message(sprintf("  %s port calls, %.1f min", format(nrow(res[[k]]), big.mark = ","),
-                  as.numeric(difftime(Sys.time(), t0, units = "mins"))))
+res <- vector("list", length(batches))
+for (k in seq_along(batches)) {
+  lo <- batches[[k]][1]; hi <- batches[[k]][2]; t0 <- Sys.time()
+  res[[k]] <- stay_batch(lo, hi)
+  message(sprintf("port_call batch %d/%d, vids %d-%d: %s port calls, %.1f min", k, length(batches), lo, hi,
+                  format(nrow(res[[k]]), big.mark = ","), as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 }
 
-# The pieces of a call over New Year joined, and the key a ping carries (plan 014) numbered per vessel over all years
-# by T_in, so a call over New Year has one number
+# The key a ping carries (plan 014), numbered per vessel over all years by T_in; rb_merge_port_calls() numbers it, and
+# joins nothing now that no call is cut at New Year
 out <- bind_rows(res) |>
   ramb::rb_merge_port_calls(port_id = pid) |>
   transmute(vid, port_call_id = as.integer(port_call_id), pid, year = as.integer(format(T_in, "%Y")), T_in, T_out,
@@ -221,6 +219,10 @@ if (ALL) {
                list.files(fd_staging("ais", "ping_clean"), pattern = "parquet$", recursive = TRUE, full.names = TRUE)))
   message(sprintf("port_call: %s port calls", format(nrow(out), big.mark = ",")))
 } else {
-  assign("stay_test", out, envir = globalenv())
+  # the calls that overlap the years asked for, made on the whole series of the vessels heard in them
+  y0 <- as.POSIXct(sprintf("%d-01-01", YEARS), tz = "UTC"); y1 <- as.POSIXct(sprintf("%d-01-01", YEARS + 1L), tz = "UTC")
+  t_end <- coalesce(out$T_out, as.POSIXct("2100-01-01", tz = "UTC"))   # an open end runs on (an open end is NA)
+  keep <- vapply(seq_len(nrow(out)), function(i) any(out$T_in[i] < y1 & t_end[i] >= y0), TRUE)
+  assign("stay_test", out[keep, ], envir = globalenv())
   message("subset run (STAY_YEARS): nothing written")
 }
