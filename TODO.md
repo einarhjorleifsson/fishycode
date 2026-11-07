@@ -1663,7 +1663,8 @@ moves (and to what), with the rebuild it needs; or the item abandoned.
 **status:** parked (the maintainer, 2026-11-07: "put this whole thing on hold for now") · **needs: maintainer** — where a
 person's decisions are kept (plan 067 ask a), and how timarit.is's text is had (ask c) · **see:**
 `curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
-`archive/2026-11-07-aegir-early/README.md`, `archive/2026-11-07-andvari-bjarni/README.md`, plan 045 ask c, TODOs 144 and 186
+`archive/2026-11-07-aegir-early/README.md`, `archive/2026-11-07-andvari-bjarni/README.md`,
+`archive/2026-11-07-seabed-landscape/README.md`, decision 295, plan 045 ask c, TODOs 144 and 186
 
 The maintainer, 2026-11-05, asked how to store and file place names: one YAML per name or another construct, how to
 cite the source, how to hold synonyms and cross-references, what to borrow from the data-dict, and how the sources
@@ -1684,8 +1685,11 @@ description search would then be part of that bigger plan"):
 - early Ægir by plan 070's broad chart names: 40 of 121 searched in 1905-1965, 26 with no hit (the names are mostly
   later; old texts place grounds by landmarks); four finds describe a ground (Barðagrunn, 1917);
 - Bjarni Sæmundsson's reports in Andvari: *Fiskirannsóknir 1901* read whole, 21 finds, the West Fjords' broad grounds
-  placed against each other (Andvari 1903 p. 127).
-A page view (`/page/<id>`, allowed) carries its page's OCR text, so `/files` (disallowed) is not needed.
+  placed against each other (Andvari 1903 p. 127);
+- the seabed's landscape: Trausti Einarsson 1963 and Thoroddsen 1902 read whole, 53 finds and 109 features.
+A page view (`/page/<id>`, allowed) carries its page's OCR text, so `/files` (disallowed) is not needed. Since
+decision 295 the text is kept once in `raw/external/timarit/` (62 issues with pages, 2,370 pages; the four
+studies' text moved in), fetched only by `dump/timarit/fetch.R`, read as `staging/timarit/page.parquet`.
 
 **check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
 read and measured against the 151 Markdown records), or the plan parked.

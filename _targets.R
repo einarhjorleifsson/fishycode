@@ -61,6 +61,8 @@ mbl_photo_recovered <- sort(list.files(fd_raw("external", "skipaskra"), "^mbl-ph
                             method = "radix")
 # The place names of the ornefni repo (plan 043, decision 221), every file its adapters read.
 ornefni_files <- input_files("raw", "external", "ornefni", pattern = "[.](csv|xlsx|gpx|json|shp|dbf|gpkg|pdf|md)$")
+# timarit.is's page text (decision 295): the manifest and the page files it lists
+timarit_files <- input_files("raw", "external", "timarit", pattern = "([.]txt|_manifest[.]csv)$")
 
 # produces() and frozen_input() are in R/source_script.R, shared with _targets_once.R.
 # source_script() sources with encoding = "UTF-8", which is not optional: the scripts
@@ -335,6 +337,10 @@ list(
     produces("sources/ornefni/document_name.R", fd_staging("ornefni", "document_name.parquet")) }, format = "file"),
   tar_target(ornefni_map_name, { ornefni_raw
     produces("sources/ornefni/map_name.R", fd_staging("ornefni", "map_name.parquet")) }, format = "file"),
+  # The text of timarit.is's pages, kept once by dump/timarit/fetch.R (decision 295). Nothing in the flow reads it.
+  tar_target(timarit_raw, timarit_files, format = "file"),
+  tar_target(timarit_page, { timarit_raw
+    produces("sources/timarit/page.R", fd_staging("timarit", "page.parquet")) }, format = "file"),
   # Oracle's own place tables, read where the dump put them (plan 044 §4.1)
   tar_target(ornefni_oracle_raw, c(fd_raw("oracle", "ops_sigfus", c("ornefni.parquet", "fj_reitir.parquet")),
                                    fd_raw("oracle", "orri", "ornefni.parquet"),
