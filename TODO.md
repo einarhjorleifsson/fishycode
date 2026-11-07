@@ -1722,35 +1722,23 @@ Each step starts as a study, and becomes a target after the maintainer's review.
 
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
 
-## 195. Port calls of one vessel that overlap, and ties in time order that change port calls between runs
-**status:** open — found by plan 048 step 6 (decision 294, amended); measured by a study the maintainer paused
-(`$FISHYDATA/archive/2026-11-07-port-shapes/`, its README; no plan written) · **see:** decisions 292-294,
-`curate/port_call.R`, ramb's `rb_create_port_calls()`, `rb_flag_port_event()` and `rb_create_voyages()`
+## 196. Port codes: two pairs of ports that may be one, and trip ends with no pid
+**status:** open · **needs: maintainer** — whether IS-NJA/IS-KEL and IS-SNA/IS-REY are one port each · **see:**
+decisions 007, 058, 082 and 296, `$FISHYDATA/archive/2026-11-07-port-shapes/` (its README, "The port list" and
+"Found on the way"), `reference/ports/`, `curated/reference/port.parquet`
 
-**Overlaps.** On the store of decision 294, 152 pairs of one vessel's port calls overlap (75 vessels). `ais_voyage.R`
-cuts at both calls of a pair, and the voyage after takes its departure port from whichever sorts first. Measured:
-- No good STK event pair begins inside another (0 of 58,979). Decision 294's first account, a pair shielding another
-  from the guard, was wrong.
-- 123 of the 152 outer calls cross a New Year. In 101 pairs, the outer call is held open by pings at its port either
-  side of a silence that crosses one. In 10 more, an outer event pair crosses one past a ping 10 km away.
-- In 41 pairs, an outer event pair spans an inner call under 10 km away, below the guard's distance.
-- The likely cause is `port_call.R` running one year at a time: only that year's events count as presence, and only
-  the neighbouring years' make pairs. Batches of vessels over every year, as `ais_voyage.R` runs, should remove it.
-  Not tested.
+The port list is unified (decision 007): the 157 Iceland/Faroe polygons that the port calls use never touch, and the
+logbook and landing codes map one to one onto pids. Measured by the TODO 195 study (paused, not finished):
+- **Neighbours named for each other.** IS-NJA and IS-KEL lie 0.9 km apart; the AIS says one and the record the other
+  on 7,982 trips (own record) and 8,335 (landing). IS-SNA and IS-REY lie 79 m apart: 1,237 and 1,245 trips. Decision
+  058 reviewed the polygons as separate ports. One port under two pids, or two ports a vessel moves between, is the
+  maintainer's call.
+- **adb's logbook trips carry no pid** in `curated/logbook/trip.parquet`: 37,847 trips. `trip_reconciled` joins one.
+- **fs_afladagbok drops 439 trip ends** whose app port code has no row in `port.parquet` (14 codes).
+- 7,256 voyages have no departure port, all the first of their year: 4,034 follow an open voyage (a split at New
+  Year, by design), 308 a voyage that ended at a port, and 2,914 have no voyage the year before. Counted on the store
+  of decision 294, before decision 296's rebuild.
 
-**Ties.** 24 calls differed between decision 294's read-only run and its build, each only at an end. Of the 69 ends:
-- 32 have a good event at a ping's time in another place;
-- 12 have an STK arrival and departure in the same second;
-- 25 have no such candidate.
-
-`rb_create_port_calls()` orders by vessel and time alone. `rb_flag_port_event()` breaks ties with an unordered
-`row_number()`, and `rb_create_voyages()` orders the calls' boundaries by time. The study's `ties.R` stopped before its
-10 reruns of the voyages.
-
-The study also checked the port list: it is unified (decision 007), and IS-NJA/IS-KEL and IS-SNA/IS-REY are
-candidates for one port under two pids (the maintainer's question, decision 058). It found three defects outside this
-item; see its README, "Found on the way".
-
-**check:** port calls run by vessel over every year, or another fix, with every overlapping pair in one outcome after;
-ramb's port calls and voyages equal between two runs on the same input; a rebuild from `port_call` down, recorded in a
-decision.
+**check:** the maintainer's answer on the two pairs, applied in `reference/ports/` if they are one; adb's trips given
+their pid; the 14 codes mapped in `port.parquet` or listed as not ports; the voyages with no departure port recounted,
+each in one outcome.

@@ -52,7 +52,7 @@
 # 063 measured a global 2 h against the class rule (+0.8 % stays, the same landing coverage).
 #
 # A port call's year is the year of T_in. The calls are made by batches of vessels, each vessel's whole series at once
-# (TODO 195): no call is cut at New Year, and every good event is presence and every pair counts, whatever its year. A
+# (decision 296): no call is cut at New Year, and every good event is presence and every pair counts, whatever its year. A
 # batch is a range of vids of about BATCH_PINGS recorded pings; the pings are sorted by vid within each file, so a batch
 # reads only its own row groups, and it stays far under a whole year's memory (decision 239).
 # Until 2026-11-07 the calls were made a year at a time, the year's pings padded with each vessel's last ping before it
@@ -79,7 +79,7 @@ EVENTS     <- Sys.getenv("STAY_EVENTS", "good")   # "good" or "all": which judge
 EVENT_FROM <- as.integer(Sys.getenv("STAY_EVENT_FROM", "0"))   # the first year whose events make pairs (above; 2017 until plan 048 step 6)
 PAIR_AWAY_M <- as.numeric(Sys.getenv("STAY_PAIR_AWAY_M", "10000"))   # ramb's pair guard, metres (above; a test hook)
 stopifnot("STAY_EVENTS is \"all\" or \"good\"" = EVENTS %in% c("all", "good"))
-stopifnot("ramb 2026.11.07.1 or later: the event pairs' guard (plan 048 step 6) and the full order of rows that tie in time (TODO 195)" =
+stopifnot("ramb 2026.11.07.1 or later: the event pairs' guard (plan 048 step 6) and the full order of rows that tie in time (decision 296)" =
             packageVersion("ramb") >= "2026.11.7.1")
 
 con <- duckdbfs::cached_connection()

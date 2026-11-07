@@ -298,7 +298,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   `curate/ais_voyage.R` stops under an older ramb. `rb_create_port_calls(pair_away_m = )`, the event pairs' guard (plan
   048 step 6, decision 294), is 2026.11.07 (3a7c295), committed to ramb's local `main` and installed from it on
   2026-11-07 (`git archive` with the LFS files, `--preclean`; the whole suite passes, 3,174), not pushed;
-  `curate/port_call.R` stops under an older ramb. Plan
+  `curate/port_call.R` stops under an older ramb. The full order of rows that tie in time in `rb_create_port_calls()`,
+  `rb_flag_port_event()` and `rb_create_voyages()` (TODO 195, decision 296) is 2026.11.07.1 (6fbb540), committed to
+  ramb's local `main` and installed from it on 2026-11-07 (`git archive` with the LFS files, `--preclean`; the whole
+  suite passes, 3,187), not pushed; `curate/port_call.R` stops under an older ramb. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's
@@ -310,7 +313,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   of the track and judged as events; the 14 from `ais_voyage` down again the same day at 78729b5 with ramb 2026.11.06.3,
   every port call cutting the voyages (decision 292); and again on 2026-11-07 at ecc5c4f, every stretch at sea with a
   recorded ping a voyage, one under 10 pings labelled `short` (decision 293); and the 16 from `port_call` down at
-  63912ac with ramb 2026.11.07, STK's event pairs in every year with a guard (decision 294). Every curated file
+  63912ac with ramb 2026.11.07, STK's event pairs in every year with a guard (decision 294); and again at 6c89c14 with
+  ramb 2026.11.07.1, the port calls by vessel over every year and every tie in time ordered (decision 296). Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code
