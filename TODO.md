@@ -1692,23 +1692,26 @@ Each step starts as a study, and becomes a target after the maintainer's review.
 
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
 
-## 196. Port codes: two pairs of ports that may be one, and trip ends with no pid
-**status:** open · **needs: maintainer** — whether IS-NJA/IS-KEL and IS-SNA/IS-REY are one port each · **see:**
-decisions 007, 058, 082 and 296, `$FISHYDATA/archive/2026-11-07-port-shapes/` (its README, "The port list" and
-"Found on the way"), `reference/ports/`, `curated/reference/port.parquet`
+## 196. Port codes: trip ends with no pid, and app codes with no port
+**status:** open · **see:** decisions 007, 058, 082 and 296, `$FISHYDATA/archive/2026-11-07-port-shapes/` (its README,
+"The port list" and "Found on the way"), `reference/ports/`, `curated/reference/port.parquet`
 
 The port list is unified (decision 007): the 157 Iceland/Faroe polygons that the port calls use never touch, and the
 logbook and landing codes map one to one onto pids. Measured by the TODO 195 study (paused, not finished):
-- **Neighbours named for each other.** IS-NJA and IS-KEL lie 0.9 km apart; the AIS says one and the record the other
-  on 7,982 trips (own record) and 8,335 (landing). IS-SNA and IS-REY lie 79 m apart: 1,237 and 1,245 trips. Decision
-  058 reviewed the polygons as separate ports. One port under two pids, or two ports a vessel moves between, is the
-  maintainer's call.
+- **Neighbours named for each other: four ports, not two** (the maintainer, 2026-11-07: "there are and should be
+  different ports"). The AIS says one and the record
+  the other on 7,982 trips (own record) and 8,335 (landing) for IS-NJA/IS-KEL, 1,237 and 1,245 for IS-SNA/IS-REY.
+  - Njarðvík and Keflavík (0.9 km apart): "Today the Njarðvík port is really not active, but back in time it was." The
+    AIS still puts vessels there: 4,976 port calls by 216 vessels in 2020-2024. Njarðvík has a logbook code (23) but no
+    landing port number.
+  - Snarfarahöfn and Reykjavík (79 m apart): "IS-SNA is solely pleasure crafts". IS-SNA has no logbook or landing code,
+    so a record can only say Reykjavík.
+  - Polygons stay as decision 058 reviewed them.
 - **adb's logbook trips carry no pid** in `curated/logbook/trip.parquet`: 37,847 trips. `trip_reconciled` joins one.
 - **fs_afladagbok drops 439 trip ends** whose app port code has no row in `port.parquet` (14 codes).
 - 7,256 voyages have no departure port, all the first of their year: 4,034 follow an open voyage (a split at New
   Year, by design), 308 a voyage that ended at a port, and 2,914 have no voyage the year before. Counted on the store
   of decision 294, before decision 296's rebuild.
 
-**check:** the maintainer's answer on the two pairs, applied in `reference/ports/` if they are one; adb's trips given
-their pid; the 14 codes mapped in `port.parquet` or listed as not ports; the voyages with no departure port recounted,
-each in one outcome.
+**check:** adb's trips given their pid; the 14 codes mapped in `port.parquet` or listed as not ports; the voyages with
+no departure port recounted, each in one outcome.
