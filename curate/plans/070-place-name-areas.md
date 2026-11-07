@@ -3,8 +3,9 @@
 **status:** proposal — written 2026-11-06 at the maintainer's request, with a feasibility scan the same day
 (`$FISHYDATA/archive/2026-11-06-place-name-areas/`, its README). The same day: steps 1, 2 (its partition dropped at the
 maintainer's word), 4, 5 and 6 (with its edge rule and the name groups drawn once) run as studies; the evidence's
-weights, the effort and the terrain classes added at the maintainer's word; asks a-f answered. Nothing built ·
-**2026-11-06** · **see:** plans 043 §3.4, 044 §2 and §4, 045 §2 and §3 (steps 3-4), decisions 222-226, 272 and 286,
+weights, the effort and the terrain classes added at the maintainer's word; asks a-f answered. 2026-11-07: the areas
+from the sea chart and the depth model, level by level, a milestone in the study (step 6). Nothing built ·
+**2026-11-07** · **see:** plans 043 §3.4, 044 §2 and §4, 045 §2 and §3 (steps 3-4), decisions 222-226, 272 and 286,
 TODOs 144 and 185, the effort map (decision 220)
 
 Drafted with AI assistance (Claude) on 2026-11-06; a person has not yet checked it.
@@ -346,8 +347,26 @@ Each step starts as a study under `$FISHYDATA/archive/`, and becomes a target on
      its label, shaped by the deep rule; a trough two chart names share is split between them. 50 of 68 chart features
      get an area. The charts name the outer trough west of Faxaflói Faxadjúp, and Jökuldjúp its inner part. The deeps
      may be amended where the major banks clash with them (the maintainer).
-   - **Next:** the banks from the charts, bounded by the chart deeps; then the deeps and banks reconciled; the places
-     beyond a key's main one; step 3 (the terrain classes) and the targets of step 9.
+   - **Level by level, down the charts' hierarchy** (the maintainer, 2026-11-06: "Get all the scrapable names from the
+     sea-chart at the corsest resolution ... Use the landscape mode as a first guess to anchor those. At the next zoom
+     level, we get more names. Those names should as a starter be within the names established at the coarser scale").
+     The names printed at 1:2M are anchored first; each finer level's names are then nested in the coarser areas their
+     labels fall in, a misfit flagged, not forced. Drawing every name at once, as equals, had needed caps and
+     exceptions (Hnjúkadjúp, a 1:300k near-shore deep, spilled over the shelf).
+   - **A milestone, 2026-11-07** (the study's README, from "Level by level" on; built, run and recorded by Claude (AI),
+     steered by the maintainer on the study's map; no person has checked the counts). From the sea chart and the depth
+     model alone, all seven levels (1:2M to 1:40k): 100 seabed areas, 244 bays and fjords (228 with an area), 751
+     points (119 spots, a seabed name the chart letters plainly, and 632 rocks, skerries, shoals and reefs), the four
+     -kantur names as edges and three ridges as crests no bank crosses. Rules from the maintainer's words: a broad
+     area from the coarsest chart, a spot from the finest; crossing a parent's bounds allowed; -fláki and -flak make
+     an area, -kantur an edge, -hryggur a ridge; every spaced lettering a label; each name drawn on every plane from
+     its level's own to 50 km and kept on the one that holds its labels best (zoom out and in); a name lettered on a
+     level flat takes the band between the charts' isobaths its labels lie in, split from its neighbours at the nearer
+     label (Látragrunn, 7,235 km², between the 100 and 200 m lines, as the 1:2M chart shades it). Labels at or outside
+     their own area's edge: 13 of 100, from 32 of 97 that morning.
+   - **Next:** the open items in the study's README (the bays' coves, sounds, Rauðatorgið's 5,158 km² in the 300-500 m
+     band, the straight splits between labels); then the usage layer (the fishermen's names) apart from this one;
+     step 3 (the terrain classes) and the targets of step 9.
 7. **Level 4:** the marks.
 8. **The views,** one step at a time, each click path tested.
 9. **The targets:**
