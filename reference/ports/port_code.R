@@ -5,6 +5,8 @@
 #         raw/oracle/kvoti/lods_slaegt.parquet    every hid a LODS landing uses, as its port (hofn) or as an export's
 #                                                 origin port (upprunahofn)
 #         raw/oracle/ask/londunarstadir.parquet   the landing system's port list: each hid's name and new code (id)
+#         raw/oracle/fs_afladagbok/ws_veidiferd.parquet  every new code (id) a logbook trip names as its departure or
+#                                                 landing port (upphafshofn, londunarhofn; TODO 196)
 #         raw/oracle/kvoti/stadur.parquet         Fiskistofa's place list: the names londunarstadir lacks (159's)
 #         curated/reference/port.parquet          the pid of each hid with a harbour polygon
 #         reference/ports/port_code_class.yml     the class of every other code (decision 208 e), reviewed by hand
@@ -27,7 +29,9 @@ duckdb::duckdb_register(con, "port_code_class", cls, overwrite = TRUE)
 codes <- DBI::dbGetQuery(con, sprintf(r"[
   WITH used AS (SELECT DISTINCT hafnarnumer AS hid FROM %s
                 UNION SELECT DISTINCT hofn FROM %s
-                UNION SELECT DISTINCT upprunahofn FROM %s)
+                UNION SELECT DISTINCT upprunahofn FROM %s
+                UNION SELECT l.hafnarnumer FROM %s l
+                      WHERE l.id IN (SELECT upphafshofn FROM %s UNION SELECT londunarhofn FROM %s))
   SELECT u.hid, l.id AS hid_new, coalesce(l.heiti, trim(s.heiti)) AS port, p.pid, k.class AS class_declared
   FROM used u
   LEFT JOIN %s l ON l.hafnarnumer = u.hid
@@ -37,6 +41,9 @@ codes <- DBI::dbGetQuery(con, sprintf(r"[
   WHERE u.hid IS NOT NULL ORDER BY u.hid]",
   pq(fd_raw("oracle", "agf", "aflagrunnur.parquet")), pq(fd_raw("oracle", "kvoti", "lods_slaegt.parquet")),
   pq(fd_raw("oracle", "kvoti", "lods_slaegt.parquet")), pq(fd_raw("oracle", "ask", "londunarstadir.parquet")),
+  pq(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet")),
+  pq(fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet")),
+  pq(fd_raw("oracle", "ask", "londunarstadir.parquet")),
   pq(fd_raw("oracle", "kvoti", "stadur.parquet")), pq(fd_curated("reference", "port.parquet"))))
 duckdb::duckdb_unregister(con, "port_code_class")
 
@@ -52,4 +59,5 @@ print(table(codes$class))
 write_curated(codes, fd_curated("reference", "port_code.parquet"),
               inputs = c(fd_raw("oracle", "agf", "aflagrunnur.parquet"), fd_raw("oracle", "kvoti", "lods_slaegt.parquet"),
                          fd_raw("oracle", "ask", "londunarstadir.parquet"), fd_raw("oracle", "kvoti", "stadur.parquet"),
+                         fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet"),
                          fd_curated("reference", "port.parquet"), "reference/ports/port_code_class.yml"))

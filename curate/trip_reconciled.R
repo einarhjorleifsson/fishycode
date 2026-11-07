@@ -10,7 +10,6 @@
 #         staging/stk/voyage.parquet           (STK's recorded voyages)
 #         staging/quota_trip/trip.parquet      (the quota system's trip records, keyed by landing)
 #         staging/phone_call/call.parquet      (phone notifications)
-#         curated/reference/port.parquet       (adb's port number -> pid)
 # Output: curated/link/trip_reconciled.parquet  one row per logbook trip (twins left out): .tid, schema, vid; T1, pid1,
 #         T2, pid2, each with _from, _basis, _n, _outcome (times also _day, _spread_s); each witness's own values
 #         (T1_<w>, pid1_<w>, T2_<w>, pid2_<w>); the AIS witness's n_voyage_ais, ais_basis and ais_flag
@@ -29,9 +28,9 @@
 #            and ais_flag is "overlap" (TODO 102).
 #   own      the logbook's times and ports. T1 from fs_afladagbok and adb only: afli's T1 is the first fishing day,
 #            not a departure. T2 from afli too (its landing day). aflaskeyti's are synthesised from the landings.
-#            adb's port 0 is a placeholder (decision 172), not a port. A departure or landing the app profile flags as a
-#            copy of a station's time (T1_action, T2_action "flag": row T11, plan 053) is no witness of its time; its
-#            port stands.
+#            adb's port 0 is a placeholder (decision 172), not a port: its adapter gives it no pid. A departure or
+#            landing the app profile flags as a copy of a station's time (T1_action, T2_action "flag": row T11, plan
+#            053) is no witness of its time; its port stands.
 #   stk      the latest STK voyage that contains the trip (out by T1's day, in on or after T2's day, within 60 days),
 #            its out and in together. Two that leave at the same time: the later return, then the lower trailid_out,
 #            so a run gives the same witness every time (TODO 139, decision 247 o)
@@ -55,12 +54,11 @@ con <- dbConnect(duckdb())
 inputs <- c(trip = fd_curated("logbook", "trip.parquet"), voyage = fd_curated("link", "trip_voyage.parquet"),
             lid = fd_curated("logbook", "lid_map.parquet"), stk = fd_staging("stk", "voyage.parquet"),
             quota = fd_staging("quota_trip", "trip.parquet"), phone = fd_staging("phone_call", "call.parquet"),
-            port = fd_curated("reference", "port.parquet"), station = fd_curated("logbook", "station.parquet"),
+            station = fd_curated("logbook", "station.parquet"),
             sample = fd_curated("logbook", "fishing_sample.parquet"), ais = fd_curated("ais", "voyage.parquet"))
 dbExecute(con, sprintf("CREATE TEMP TABLE trip AS SELECT \".tid\", schema, vid, T1, T2, hid1, pid1, hid2, pid2,
                         coalesce(T1_action = 'flag', false) AS T1_flagged, coalesce(T2_action = 'flag', false) AS T2_flagged
                         FROM read_parquet('%s') WHERE twin IS DISTINCT FROM 'duplicate'", inputs[["trip"]]))
-dbExecute(con, sprintf("CREATE TEMP TABLE port AS SELECT hid, pid FROM read_parquet('%s')", inputs[["port"]]))
 
 # The AIS witness: the voyages the trip's stations lie in, by their own times ----------
 # As voyage_gear.R, one step at a time: duplicate twin stations and stations deleted in the source left out; a
@@ -127,12 +125,12 @@ WHERE ais_basis IS NOT NULL
 UNION ALL SELECT \".tid\", schema, 'T2', 'ais', T2, pid2, false FROM ais WHERE ais_basis IS NOT NULL
 UNION ALL
 SELECT t.\".tid\", t.schema, 'T1', 'own', CASE WHEN t.T1_flagged THEN NULL ELSE t.T1 END,
-       CASE WHEN t.schema = 'adb' THEN p.pid ELSE t.pid1 END, %s
-FROM trip t LEFT JOIN port p ON p.hid = t.hid1 AND t.hid1 <> 0 WHERE t.schema IN ('fs_afladagbok', 'adb')
+       t.pid1, %s
+FROM trip t WHERE t.schema IN ('fs_afladagbok', 'adb')
 UNION ALL
 SELECT t.\".tid\", t.schema, 'T2', 'own', CASE WHEN t.T2_flagged THEN NULL ELSE t.T2 END,
-       CASE WHEN t.schema = 'adb' THEN p.pid ELSE t.pid2 END, %s
-FROM trip t LEFT JOIN port p ON p.hid = t.hid2 AND t.hid2 <> 0 WHERE t.schema IN ('fs_afladagbok', 'adb', 'afli')
+       t.pid2, %s
+FROM trip t WHERE t.schema IN ('fs_afladagbok', 'adb', 'afli')
 UNION ALL SELECT \".tid\", schema, 'T1', 'stk', T1, pid1, false FROM stk
 UNION ALL SELECT \".tid\", schema, 'T2', 'stk', T2, pid2, false FROM stk
 UNION ALL SELECT \".tid\", schema, 'T1', 'quota', T1, pid1, false FROM quota

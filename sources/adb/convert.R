@@ -1,7 +1,7 @@
 # Create standard summary tables
 # Side: preprocessing (adb). See plan 014.
 # Input: raw/oracle/adb/{fishing_trip,fishing_station,trawl_and_seine_net,dredge,line_and_net,trap,catch,
-#        fishing_gear}.parquet; curated/reference/{gear,gear_window}.parquet;
+#        fishing_gear}.parquet; curated/reference/{gear,gear_window,port}.parquet;
 #        curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
 # Output: staging/adb/{trip,station,fishing_sample,catch}.parquet
 
@@ -26,6 +26,15 @@ trip <- duckdbfs::open_dataset(fd_raw("oracle", "adb", "fishing_trip.parquet")) 
   wk_translate(dictionary) |>
   select(.tid, vid, T1, hid1, T2, hid2, source) |>
   mutate(schema = SCHEMA)
+# The trip's ports are the landing system's hid (decision 172), given their pid here as fs_afladagbok's are (TODO 196:
+# before, no adb trip had one, and only trip_reconciled joined it). 0 is the placeholder of the apps that send no port
+# (adb's port table reads it as Skarðsstöð), so it keeps its hid and gets no pid.
+ports <- duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> select(hid, pid, port) |> collect()
+trip <- trip |>
+  left_join(ports |> select(hid1 = hid, pid1 = pid), by = "hid1", relationship = "many-to-one") |>
+  left_join(ports |> select(hid2 = hid, pid2 = pid, port), by = "hid2", relationship = "many-to-one") |>
+  mutate(pid1 = if_else(hid1 %in% 0L, NA_character_, pid1), pid2 = if_else(hid2 %in% 0L, NA_character_, pid2)) |>
+  select(.tid, vid, T1, hid1, pid1, T2, hid2, pid2, port, source, schema)
 
 # base -------------------------------------------------------------------------
 # The table, not Oracle's view station_v: the view reads every six-digit position as ddmm.hh where the digits are

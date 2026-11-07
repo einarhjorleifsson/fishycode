@@ -3,8 +3,8 @@
 # Input:  raw/oracle/fs_afladagbok/{ws_veidiferd,ws_veidi,ws_afli,
 #           ws_dragnot_varpa,ws_plogur,ws_linanethandf,ws_gildra,ws_hringn}.parquet;
 #         raw/oracle/fs_afladagbok/{tour,fishing_spot,catch}.parquet (the tour app, plan 019 §4);
-#         curated/reference/{dictionary,gear,gear_window,port}.parquet; curated/landing/landings.parquet (the tour
-#         trips' class); curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
+#         curated/reference/{dictionary,gear,gear_window,port,port_code}.parquet; curated/landing/landings.parquet
+#         (the tour trips' class); curate/corrections/logbook_app_profile.yml (the position rows P3, P4)
 # Output: staging/fs_afladagbok/{trip,station,fishing_sample,catch}.parquet, the tour app's trips, spots and catch
 #         among them (source "tour")
 
@@ -18,13 +18,18 @@ SCHEMA <- "fs_afladagbok"
 dictionary   <- duckdbfs::open_dataset(fd_curated("reference", "dictionary.parquet")) |> collect() |> filter(schema == SCHEMA)
 gear_mapping <- duckdbfs::open_dataset(fd_curated("reference", "gear.parquet")) |> collect() |> filter(version == "new")
 gear_window  <- duckdbfs::open_dataset(fd_curated("reference", "gear_window.parquet")) |> collect()
-# hid is the Icelandic harbour code, hid_new this schema's own code, and pid the
-# standard port key from reference/ports/ports_all.R. drop_na() is scoped so
-# that a code without a pid keeps its name rather than vanishing.
+# hid is the Icelandic harbour code, hid_new this schema's own code (the landing system's id), and pid the standard
+# port key from reference/ports/ports_all.R. A hid may have more than one app code ("Borgarnes - 1"), so the codes are
+# port_code.parquet's, one row per code, and the pid and the name port.parquet's, by hid. A code without a pid keeps
+# its hid and its name rather than vanishing (TODO 196: port.parquet's one code per hid dropped 14 codes, 439 trip ends).
+port_hid <- duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect() |>
+  select(hid, pid, port_name = port)
 harbours <-
-  duckdbfs::open_dataset(fd_curated("reference", "port.parquet")) |> collect() |>
-  select(hid_new = hafnarnumer_id, port, hid, pid) |>
-  drop_na(hid_new, hid, port)
+  duckdbfs::open_dataset(fd_curated("reference", "port_code.parquet")) |> collect() |>
+  filter(!is.na(hid_new)) |>
+  left_join(port_hid, by = "hid", relationship = "many-to-one") |>
+  transmute(hid_new, port = coalesce(port_name, port), hid, pid = coalesce(pid.y, pid.x))
+stopifnot("an app code with two hids in port_code.parquet" = !anyDuplicated(harbours$hid_new))
 
 
 

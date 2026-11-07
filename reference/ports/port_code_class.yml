@@ -1,7 +1,11 @@
 # port_code_class.yml — the class of every landing code that is not a harbour with a pid (decision 208 e).
 # Read by reference/ports/port_code.R, which puts it on curated/reference/port_code.parquet. A code that
 # curated/reference/port.parquet gives a pid is a harbour. Every other code a landing uses, as its port or as an
-# export's origin port, is listed here, or the build stops. A new code is classed here by hand.
+# export's origin port, or a logbook trip (fs_afladagbok) as its departure or landing port, is listed here, or the
+# build stops. A new code is classed here by hand.
+#
+# The logbook's codes were added by Claude (AI) on 2026-11-07 (TODO 196): nine codes no landing uses, classed by
+# their names in ask.londunarstadir, with fs_afladagbok's trip ends counted in `note`; not yet checked by a person.
 #
 # Drafted by Claude (AI) on 2026-10-30 from decision 208 e, kvoti.stadur's and ask.londunarstadir's names, and the
 # staged landings' counts (plan 054 step 2i); not yet checked by a person. The four codes decision 208 left to be
@@ -16,6 +20,8 @@
 #   transfer     moved to another vessel
 #   placeholder  no place: missing, various, corrections, registrations
 codes:
+  - {hid: -300, class: placeholder, name: Fiskihöfn-3 (prófun), note: "the landing system's test port; 1 fs_afladagbok return"}
+  - {hid: -100, class: placeholder, name: Fiskihöfn-1 (prófun), note: "the landing system's test port; 9 fs_afladagbok returns"}
   - {hid: 0, class: placeholder, name: Höfn vantar, note: "port missing; once, as a LODS export's origin port"}
   - {hid: 9, class: harbour, name: Selfoss, note: "inland; twice, as a LODS export's origin port"}
   - {hid: 10, class: harbour, name: Hveragerði, note: "inland; once, as a LODS export's origin port"}
@@ -29,12 +35,17 @@ codes:
   - {hid: 160, class: abroad, name: Skotland}
   - {hid: 161, class: abroad, name: Þýskaland}
   - {hid: 163, class: abroad, name: Noregur}
+  - {hid: 164, class: abroad, name: Grimsby, note: "12 fs_afladagbok returns"}
   - {hid: 165, class: abroad, name: Danmörk}
   - {hid: 166, class: abroad, name: Grænland}
   - {hid: 167, class: abroad, name: Færeyjar}
   - {hid: 168, class: abroad, name: Bretland}
+  - {hid: 171, class: abroad, name: Finnland, note: "47 fs_afladagbok returns"}
   - {hid: 172, class: abroad, name: Kanada}
+  - {hid: 173, class: abroad, name: Bandaríkin, note: "7 fs_afladagbok returns"}
   - {hid: 175, class: abroad, name: Holland}
+  - {hid: 177, class: abroad, name: Belgía, note: "4 fs_afladagbok returns"}
+  - {hid: 185, class: abroad, name: Japan, note: "3 fs_afladagbok returns"}
   - {hid: 196, class: abroad, name: Erlendis / Aðrar siglingar, note: "sailings abroad; 19 LODS landings, 1993-1995"}
   - {hid: 197, class: placeholder, name: Leiðréttingar,
      note: "corrections; 83 LODS landings, 1993-08 to 1997-03, 7,520 t"}
@@ -42,7 +53,9 @@ codes:
   - {hid: 200, class: harbour, name: Gjögur ekki notað 82,
      note: "Gjögur, whose code is 82 (IS-GJO); stadur says not to use it. 19 landings in agf and LODS, 2011-05 to
             2011-08, 12.6 t. It could take 82's pid in harbour_codes.R"}
+  - {hid: 203, class: abroad, name: Lettland, note: "1 fs_afladagbok return"}
   - {hid: 208, class: abroad, name: Írland}
+  - {hid: 211, class: abroad, name: Dominican Republic, note: "1 fs_afladagbok return"}
   - {hid: 300, class: transfer, name: Flutningaskip, note: a cargo vessel}
   - {hid: 301, class: transfer, name: Landanir úr erl. skipi í ísl. skip, note: foreign vessel to Icelandic vessel}
   - {hid: 302, class: transfer, name: Landanir úr ísl. skipi í erl. skip, note: Icelandic vessel to foreign vessel}

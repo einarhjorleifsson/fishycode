@@ -158,8 +158,10 @@ list(
   tar_target(port_code_raw, c(fd_raw("oracle", "agf", "aflagrunnur.parquet"),
                               fd_raw("oracle", "ask", "londunarstadir.parquet"),
                               fd_raw("oracle", "kvoti", c("lods_slaegt.parquet", "stadur.parquet")),
+                              fd_raw("oracle", "fs_afladagbok", "ws_veidiferd.parquet"),
                               "reference/ports/port_code_class.yml"), format = "file"),
-  # Every code a landing uses, each with its class (decision 208 e): read by the landings' disposition.
+  # Every code a landing or a logbook trip uses, each with its class (decision 208 e): read by the landings'
+  # disposition, and by fs_afladagbok for its app codes (TODO 196).
   tar_target(port_code, {
     port_code_raw; port
     produces("reference/ports/port_code.R", fd_curated("reference", "port_code.parquet"))
@@ -582,7 +584,7 @@ list(
                                   fd_raw("oracle", "fs_afladagbok", "catch.parquet")), format = "file"),
   # The tour app's trips are classed by the vessel's landings (plan 054 step 2e), so the adapter reads `landing`.
   tar_target(fs_afladagbok, {
-    dictionary; gear; gear_window; port; fs_afladagbok_raw; logbook_app_profile; landing
+    dictionary; gear; gear_window; port; port_code; fs_afladagbok_raw; logbook_app_profile; landing
     produces("sources/fs_afladagbok/convert.R",
              fd_staging("fs_afladagbok", "trip.parquet"),
              fd_staging("fs_afladagbok", "station.parquet"),
@@ -601,7 +603,7 @@ list(
   # adb's own gear crosswalk (its code -> the new gid), read by the adapter (plan 050 step 4; by logbook_gear before)
   tar_target(adb_gear_code, fd_raw("oracle", "adb", "fishing_gear.parquet"), format = "file"),
   tar_target(adb, {
-    dictionary; gear; gear_window; adb_raw; adb_gear_code; logbook_app_profile
+    dictionary; gear; gear_window; port; adb_raw; adb_gear_code; logbook_app_profile
     produces("sources/adb/convert.R",
              fd_staging("adb", "trip.parquet"),
              fd_staging("adb", "station.parquet"),
@@ -878,7 +880,7 @@ list(
   # STK, the quota system's records, the phone calls, and for the return the landing (TODO 121, decisions 173, 174;
   # ramb::rb_add_trip_time()). The AIS witness spans the voyages the trip's stations lie in by their own times.
   tar_target(trip_reconciled, {
-    logbook; ais_voyage; trip_voyage; lid_map; stk_voyage; quota_trip; phone_call; port
+    logbook; ais_voyage; trip_voyage; lid_map; stk_voyage; quota_trip; phone_call
     produces("curate/trip_reconciled.R",
              fd_curated("link", "trip_reconciled.parquet"))
   }, format = "file"),
