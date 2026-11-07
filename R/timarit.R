@@ -59,7 +59,8 @@ timarit_parse_view <- function(html) {
   list(issue_id = if (length(iss)) as.integer(gsub("[^0-9]", "", iss)) else NA_integer_, page_ids = ids,
        title = trimws(xml2::xml_text(xml2::xml_find_first(doc, "//title"))),
        text = if (is.na(tx)) NA_character_ else gsub("﻿", "", tx),
-       menu = data.frame(article_id = xml2::xml_attr(a, "data-id"), title = trimws(xml2::xml_text(a))))
+       menu = data.frame(article_id = as.integer(xml2::xml_attr(a, "data-id")),
+                         gegnir_id = xml2::xml_attr(a, "data-gegnirid"), title = trimws(xml2::xml_text(a))))
 }
 
 # One request to a path robots.txt allows, after a random pause since the last; any status but 200 stops

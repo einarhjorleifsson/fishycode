@@ -34,6 +34,13 @@ and "Text files and a parquet".
   page (2,370 in 62 issues on the clone; Ægir 1,088, Sjómannablaðið Víkingur 484, Fiskifréttir 352, Andvari 350, Bændablaðið 56,
   Náttúrufræðingurinn 24, Fréttir 16), the text as the OCR gives it, every file's md5 checked against the manifest.
   Nothing in the flow reads it.
+- **The issues' article menus** (added the same day, at the maintainer's question: "we are keeping a track of
+  volume articles overviews, right? meaning they get stored for potential later retievals"): each issue's view, with
+  its menu, is kept once as `issue_view.html`; `sources/timarit/issue_article.R` (target `timarit_issue_article`)
+  stages the menus as `staging/timarit/issue_article.parquet`, a row per article: title, timarit.is's article id (not
+  unique within an issue: errata share one), the Gegnir record id, the issue's pages. At first 49 Andvari volumes
+  (1885-1940, 324 articles), opened for Bjarni Sæmundsson's articles. The menu gives no author and no page; the
+  volumes' contents pages, stored as pages, do.
 
 ## Not done
 
