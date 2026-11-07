@@ -1723,27 +1723,34 @@ Each step starts as a study, and becomes a target after the maintainer's review.
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
 
 ## 195. Port calls of one vessel that overlap, and ties in time order that change port calls between runs
-**status:** open — found by plan 048 step 6 (decision 294) · **see:** decisions 292-294,
-`$FISHYDATA/archive/2026-11-07-plan048-step6/rebuild/overlaps_after.R`, `curate/port_call.R`, ramb's
-`rb_create_port_calls()` and `rb_create_voyages()`
+**status:** open — found by plan 048 step 6 (decision 294, amended); measured by a study the maintainer paused
+(`$FISHYDATA/archive/2026-11-07-port-shapes/`, its README; no plan written) · **see:** decisions 292-294,
+`curate/port_call.R`, ramb's `rb_create_port_calls()`, `rb_flag_port_event()` and `rb_create_voyages()`
 
-**Overlaps.** On the store rebuilt by decision 294, 152 pairs of one vessel's port calls overlap (75 vessels, 115 pairs
-begun before 2017). `ais_voyage.R` cuts at both calls of a pair, and the voyage after it takes its departure port from
-whichever sorts first.
-- In 69 pairs, both calls rest on STK event pairs. ramb's pair guard (`pair_away_m`, decision 294) tests a ping only
-  against the latest pair begun before it, an ASOF join, so a pair inside another shields the outer one.
-- In 53 pairs, the outer call rests on an event pair and the inner one on pings.
-- In 30 pairs, the outer call rests on pings alone: pings at two ports at once, perhaps two units on one vessel (the
-  STK key, plan 009).
-- 78 pairs lie at ports 10 km or more apart, with outer calls of a median 4,200-10,200 h.
+**Overlaps.** On the store of decision 294, 152 pairs of one vessel's port calls overlap (75 vessels). `ais_voyage.R`
+cuts at both calls of a pair, and the voyage after takes its departure port from whichever sorts first. Measured:
+- No good STK event pair begins inside another (0 of 58,979). Decision 294's first account, a pair shielding another
+  from the guard, was wrong.
+- 123 of the 152 outer calls cross a New Year. In 101 pairs, the outer call is held open by pings at its port either
+  side of a silence that crosses one. In 10 more, an outer event pair crosses one past a ping 10 km away.
+- In 41 pairs, an outer event pair spans an inner call under 10 km away, below the guard's distance.
+- The likely cause is `port_call.R` running one year at a time: only that year's events count as presence, and only
+  the neighbouring years' make pairs. Batches of vessels over every year, as `ais_voyage.R` runs, should remove it.
+  Not tested.
 
-**Ties.** Where pings tie in time order, port calls and the ports of the voyages after them vary between runs:
-- 24 calls differed between decision 294's read-only run and its build;
-- 14-15 voyages' departure ports differed in decision 293.
+**Ties.** 24 calls differed between decision 294's read-only run and its build, each only at an end. Of the 69 ends:
+- 32 have a good event at a ping's time in another place;
+- 12 have an STK arrival and departure in the same second;
+- 25 have no such candidate.
 
-A full order in ramb, with the ping's stream and position after its time, would make a rerun give the same store.
-Where the order is incomplete is not yet traced.
+`rb_create_port_calls()` orders by vessel and time alone. `rb_flag_port_event()` breaks ties with an unordered
+`row_number()`, and `rb_create_voyages()` orders the calls' boundaries by time. The study's `ties.R` stopped before its
+10 reruns of the voyages.
 
-**check:** every overlapping pair in one outcome, with a rule for each kind (the guard against every pair a ping lies
-in, an outer call cut at the inner, or the key); ramb's port calls and voyages equal between two runs on the same input;
-a rebuild from `port_call` down, recorded in a decision.
+The study also checked the port list: it is unified (decision 007), and IS-NJA/IS-KEL and IS-SNA/IS-REY are
+candidates for one port under two pids (the maintainer's question, decision 058). It found three defects outside this
+item; see its README, "Found on the way".
+
+**check:** port calls run by vessel over every year, or another fix, with every overlapping pair in one outcome after;
+ramb's port calls and voyages equal between two runs on the same input; a rebuild from `port_call` down, recorded in a
+decision.

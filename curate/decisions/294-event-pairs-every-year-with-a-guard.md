@@ -2,7 +2,10 @@
 
 *2026-11-07. Plan 048 §7.4 step 6, its last, at the maintainer's word ("Yes, start step 6", then "Lift with the
 guard"). Measured, built, run and counted by Claude (AI); no person has checked the code or the counts. The study, its
-scripts and every table: `$FISHYDATA/archive/2026-11-07-plan048-step6/` (its README).*
+scripts and every table: `$FISHYDATA/archive/2026-11-07-plan048-step6/` (its README). **Amended 2026-11-07**: the cause
+of the overlapping port calls given under "What it leaves" was wrong. The TODO 195 study measured it
+(`$FISHYDATA/archive/2026-11-07-port-shapes/`, its README; paused by the maintainer, not finished); the first account is
+kept under its own heading at the end.*
 
 ## Why
 
@@ -122,16 +125,44 @@ year, so a call new before 2017 renumbers every voyage after it that year.
 ## What it leaves
 
 - **Overlapping port calls**: 152 pairs on 75 vessels, 115 of them begun before 2017 (147 before this decision).
+  Measured by the TODO 195 study:
+  - No good STK event pair begins inside another pair of the same vessel (0 of 58,979). The guard's ASOF join shields
+    nothing.
+  - 123 of the 152 outer calls cross a New Year.
+  - In 101 pairs, the outer call is held open by pings at its own port alone, either side of a silence in the track.
+    Every such silence with a ping on both sides crosses at least one New Year. In all 101, the inner call's span holds
+    good events with a position.
+  - In 51 pairs, an outer event pair spans the inner call. In 41 the inner port is under 10 km away, below the guard's
+    distance. In the other 10 a ping lies more than 10 km away between the pair's events, and every one of those pairs
+    crosses a New Year.
+  - The likely cause is `curate/port_call.R` running one year at a time. A year's pings are padded with a ping from the
+    years either side, but only that year's events count as presence, and only the neighbouring years' events make
+    pairs. So one year's run can see a long gap at a port that the next year's events would break. Batches of vessels
+    over every year, as `ais_voyage.R` runs, should remove it. Not tested.
+  - Carried to TODO 195.
+- **Ties in time order.** Port calls, and the ports of the voyages after them, vary between runs where pings tie in
+  time: 24 calls between the read-only run and the build, and 14-15 voyages' departure ports in decision 293. Each of
+  the 24 keeps its port; only an end moves. Of the 69 differing ends:
+  - 32 have a good event at a ping's time, in another place;
+  - 12 have an STK arrival and departure in the same second, at two positions;
+  - 25 have no such candidate within 6 h.
+
+  In both named causes, two rows enter `rb_create_port_calls()` as presence at one time, and its order is by vessel
+  and time alone. Carried to TODO 195.
+- **TODO 192's condition is met**: STK's event rows are out of the track (plan 048), and plan 069's night run can run
+  again. TODO 192 stays parked until the maintainer says otherwise.
+- **The contradicted calls the guard leaves before 2017** have no ping away, because the track is silent during them.
+  No rule that sees only the track can catch them.
+
+## The first account of the overlaps was wrong
+
+Kept for the reasoning. It read the calls' evidence, not the pairs' spans: an outer call can be longer than the event
+pair in it, merged with the pings' calls at its port.
+
+- **Overlapping port calls**: 152 pairs on 75 vessels, 115 of them begun before 2017 (147 before this decision).
   - In 69 pairs, both calls rest on an event pair. ramb's guard tests a ping only against the latest pair begun
     before it (an ASOF join), so a pair inside another shields the outer one.
   - In 53, the outer call rests on an event pair and the inner one on pings alone.
   - In 30, the outer call rests on pings alone.
   - 78 pairs lie at ports 10 km or more apart. The outer calls are long, a median of 4,200-10,200 h.
   - Carried to TODO 195.
-- **Ties in time order.** Port calls, and the ports of the voyages after them, vary between runs where pings tie in
-  time: 24 calls between the read-only run and the build, and 14-15 voyages' departure ports in decision 293.
-  Carried to TODO 195.
-- **TODO 192's condition is met**: STK's event rows are out of the track (plan 048), and plan 069's night run can run
-  again. TODO 192 stays parked until the maintainer says otherwise.
-- **The contradicted calls the guard leaves before 2017** have no ping away, because the track is silent during them.
-  No rule that sees only the track can catch them.
