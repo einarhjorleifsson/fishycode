@@ -1658,7 +1658,7 @@ The studies of timarit.is so far, each with its README (above), by R script or r
 - 2026-11-08, "fiskikort" at the maintainer's word: 93 pages with their neighbours and Einar Jónsson's series "Nöfn og
   nafngiftir utan fjörumarka" (Víkingur 1979-1980, the names offshore), 258 pages (`out/reading.html`).
 A page view (`/page/<id>`, allowed) carries its OCR text; `/files` (disallowed) is not needed. Since decision 295 the
-text is kept once in `raw/external/timarit/` (4,122 pages in 179 issues on 2026-11-08), fetched only by
+text is kept once in `raw/external/timarit/` (4,132 pages in 181 issues on 2026-11-08), fetched only by
 `dump/timarit/fetch.R`, read as `staging/timarit/page.parquet`.
 
 **check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
