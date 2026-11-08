@@ -1692,37 +1692,3 @@ Each step starts as a study, and becomes a target after the maintainer's review.
   source; their broadest scale follows an area's size, but as a prior on extent it did not help.
 
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
-
-## 196. Port codes: trip ends with no pid, and app codes with no port
-**status:** open · **see:** decisions 007, 058, 082 and 296, `$FISHYDATA/archive/2026-11-07-port-shapes/` (its README,
-"The port list" and "Found on the way"), `reference/ports/`, `curated/reference/port.parquet`
-
-The port list is unified (decision 007): the 157 Iceland/Faroe polygons that the port calls use never touch, and the
-logbook and landing codes map one to one onto pids. Measured by the TODO 195 study (paused, not finished):
-- **Neighbours named for each other: four ports, not two** (the maintainer, 2026-11-07: "there are and should be
-  different ports"). The AIS says one and the record
-  the other on 7,982 trips (own record) and 8,335 (landing) for IS-NJA/IS-KEL, 1,237 and 1,245 for IS-SNA/IS-REY.
-  - Njarðvík and Keflavík (0.9 km apart): "Today the Njarðvík port is really not active, but back in time it was." The
-    AIS still puts vessels there: 4,976 port calls by 216 vessels in 2020-2024. Njarðvík has a logbook code (23) but no
-    landing port number.
-  - Snarfarahöfn and Reykjavík (79 m apart): "IS-SNA is solely pleasure crafts". IS-SNA has no logbook or landing code,
-    so a record can only say Reykjavík.
-  - Polygons stay as decision 058 reviewed them.
-- **Fixed in code, not built** (d62cc07; `$FISHYDATA/archive/2026-11-07-port-codes/`, its README):
-  - adb's trips get `pid1`, `pid2` from `port.parquet` by hid in their adapter (37,847 had none); 0, the placeholder,
-    gets no pid. `trip_reconciled`'s own adb case is dropped: its values do not change.
-  - fs_afladagbok maps the app's codes through `port_code.parquet`, one row per code. The 14 codes: 3 second codes of
-    Icelandic ports, 109 abroad, 130 a placeholder, 7 countries and 2 test ports, the nine no landing uses classed in
-    `port_code_class.yml`. 406 of the 439 ends gain their hid; code 130's 33 are on STOKKUR copies, which the adapter
-    replaces by their tours.
-  - On a scratch store, only the port columns change: 38,098 logbook trips, 3 in `trip_reconciled`.
-- **Voyages with no departure port**, recounted on the store of decision 296: 7,269, all the first of their year.
-  3,991 follow an open voyage (the split at New Year), 2,143 are in the vessel's first year, 811 follow a year with no
-  voyage, and 324 follow a voyage that ended at a port, 226 of those after more than a month of silence. By design;
-  no look-back is proposed.
-
-**needs: maintainer** — the word for the live rebuild (`tar_outdated()`: 42 targets down to `ais_trail`, some
-another session's) and for deleting the scratch store `/Users/einarhj/stasi/scratch-196-ports` first.
-
-**check:** after the rebuild, `curated/logbook/trip.parquet` and `trip_reconciled` as on the scratch store
-(`scripts/02_compare.R`); then the item closes with a decision record.
