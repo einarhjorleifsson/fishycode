@@ -96,6 +96,25 @@ before plan 048 and gave 133 vessels instead of 126.
 ## What was chosen
 
 - **The rule is in the code** (faace97, b50eaea).
-- **The live store is not rebuilt yet.** The rebuild, from `ais_ping_clean` down, waits for the maintainer's word.
-- **Until then, the live store applies 25 kn to every vessel.** `tar_outdated()` does not show the change, because
-  targets cannot see a script edit.
+- **The live store is rebuilt**, at the maintainer's word ("Delete, then rebuild"). The scratch clone was deleted first.
+
+## The live rebuild
+
+- **When and with what:** 2026-11-08, 11:47-13:31, at 463efa7, with ramb 2026.11.07.1 and DuckDB 1.5.6.
+- **What it built:**
+  - `ais_ping_clean`, outdated by faace97's change to its command in `_targets.R`;
+  - the 16 targets below it, the ones the night ran;
+  - the effort map's two grids.
+- **What it left outdated:**
+  - `ais_catch` and `check_allocation_audit` (decision 261);
+  - the place-name session's `name_group`, `place_name` and `place_name_evidence`.
+- **The stamps:** all 477 curated files changed or new carry 463efa7 with a clean tree.
+- **The same as the night's.** Every curated and v0 output is the night's file for file, with four exceptions, and
+  none of them is a real difference:
+  - two 2016 ping files hold the same rows, split differently between them;
+  - `trip_landing`'s check table differs in `kg` alone, by at most 3e-16 relative;
+  - `trip_disposition` differs only in its three kg sums, where decision 298 found float noise.
+
+  The night did not keep the staging files, so the clean step's own output was not compared file for file. The
+  `curated/ais/ping` files built from it agree with the night's.
+- **The rebuild's scripts and logs:** the study's `rebuild/`. `vs_night.R` and `vs_night_four.R` hold the comparison.

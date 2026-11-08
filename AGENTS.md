@@ -316,7 +316,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   recorded ping a voyage, one under 10 pings labelled `short` (decision 293); and the 16 from `port_call` down at
   63912ac with ramb 2026.11.07, STK's event pairs in every year with a guard (decision 294); and again at 6c89c14 with
   ramb 2026.11.07.1, the port calls by vessel over every year and every tie in time ordered (decision 296); and on 2026-11-08 at 8f46429 the 34 from `port_code` down, every logbook trip end
-  with its port (decision 298). Every curated file
+  with its port (decision 298); and at 463efa7 the 17 from `ais_ping_clean` down, each vessel faster than 25 kn judged at
+  its own ceiling (decision 299). Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code
