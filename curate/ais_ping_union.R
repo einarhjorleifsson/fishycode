@@ -72,35 +72,12 @@ idy <-
   mutate(t1 = dplyr::sql("t1::TIMESTAMP"), t2 = dplyr::sql("t2::TIMESTAMP"))
 
 # The speed of a feed that has none ----------------------------------------------
-# astd and emodnet carry no speed reading, so it is derived within the feed (AGENTS.md, Rules: derive within one
-# stream): the chord from the MMSI's previous report to its next over the time between them, a central difference
-# stamped at the ping, with the time it spans beside it (`speed_span_s`) for a consumer to judge a long interval; no
-# speed is left out. Each position once, so a report delivered twice is not its own neighbour; the first and last report
-# take the one side they have. The distance is on the WGS84 ellipsoid, from the local radii of curvature at the chord's
-# mean latitude, as astd's own distance is: within 0.1 % of the geodesic for pings minutes apart, where the sphere
-# would miss recorded speed over ground by heading, whose column and gear speed windows these share (decision 080).
-# Checked against the study's variant c on 2019: equal to 1e-6 kn on 40.5 M astd pings. Plan 059 step 7 (ask
-# i, the maintainer, 2026-11-01): against astd's forward difference stamped at the interval's start, the 2019 survey's
-# tow ends both within 5 min 51.5 -> 54.7 %, hours fishing -0.15 % (`$FISHYDATA/archive/2026-11-01-astd-speed-stamp/`).
-KN <- 1.94384449   # m/s to knots
-ELLIPSOID_M <- paste0(
-  "sqrt(pow(6335439.327 / pow(1 - 0.00669437999 * pow(sin(radians((lat0 + lat1) / 2)), 2), 1.5) * radians(lat1 - lat0), 2) + ",
-  "pow(6378137.0 / sqrt(1 - 0.00669437999 * pow(sin(radians((lat0 + lat1) / 2)), 2)) * cos(radians((lat0 + lat1) / 2)) * ",
-  "radians(((lon1 - lon0 + 540) % 360) - 180), 2))")
-add_central_speed <- function(x) {
-  s <- x |>
-    filter(!is.na(lon), !is.na(lat)) |>
-    distinct(mmsi, time, lon, lat) |>
-    group_by(mmsi) |>
-    dbplyr::window_order(time, lon, lat) |>
-    mutate(t0 = coalesce(lag(time), time), lon0 = coalesce(lag(lon), lon), lat0 = coalesce(lag(lat), lat),
-           t1 = coalesce(lead(time), time), lon1 = coalesce(lead(lon), lon), lat1 = coalesce(lead(lat), lat)) |>
-    ungroup() |>
-    mutate(speed_span_s = dplyr::sql("epoch(t1 - t0)"),
-           speed = dplyr::sql(sprintf("CASE WHEN epoch(t1 - t0) > 0 THEN %s / epoch(t1 - t0) * %.8f END", ELLIPSOID_M, KN))) |>
-    select(mmsi, time, lon, lat, speed, speed_span_s)
-  left_join(x, s, by = c("mmsi", "time", "lon", "lat"))
-}
+# astd and emodnet carry no speed reading. Their speed is derived after the flags, in curate/ais_ping_clean.R, by
+# ramb::rb_add_ping_speed() (plan 062 step 5): derived here, before any flag, 28,758 kept speeds of 2017 used a bad
+# position as a neighbour (plan 062 step 1, test (i)). Here they leave with no speed: `speed`, `speed_raw` and
+# `speed_span_s` NA, `speed_basis` "none". Nothing between the union and the clean reads their speed: the clock check
+# and the tag pass read STK's AIS stream's, the clean's limits only recorded speeds.
+NO_SPEED <- dplyr::sql("CAST(NULL AS DOUBLE)")
 
 # stk --------------------------------------------------------------------------
 # STK is Iceland's domestic AIS receiver network. Pings are keyed by `mid`
@@ -144,13 +121,12 @@ STK_VMS_GRID <- dplyr::sql("abs(lat * 6000 - round(lat * 6000)) < 0.0002 AND abs
 # astd -------------------------------------------------------------------------
 # ASTD is a global commercial AIS feed. The raw data cover all flags, so we
 # filter to 9-digit MMSIs starting with "251" (Iceland's MID) before joining
-# to vid. Speed is not in the feed as a reading; it is derived within the feed (add_central_speed() above).
+# to vid. Speed is not in the feed as a reading; it is derived after the flags (curate/ais_ping_clean.R).
 # astd and astdB are hive-partitioned by `year` (astd also by `month`), and the partition IS the year of date_time_utc
-# (0 mismatches), so a year reads its own partition and the month either side, where the first and last ping of the
-# year find their neighbours. The duplicate-ping window below groups on identical timestamps, so it never reaches
-# across a month: pruning first does not change it.
+# (0 mismatches), so a year reads its own partition. Until plan 062 step 5 it also read the month either side, where
+# the first and last ping of the year found their neighbours for the speed.
 astd_src <- function(YR) open_dataset(fd_staging("ais", "astd")) |>
-  filter(year == YR | (year == YR - 1L & month == "12") | (year == YR + 1L & month == "01")) |>
+  filter(year == YR) |>
   mutate(mmsi = as.character(mmsi),
          nc = nchar(mmsi)) |>
   filter(nc == 9 & str_sub(mmsi, 1, 3) == "251") |>
@@ -174,10 +150,9 @@ astd_src <- function(YR) open_dataset(fd_staging("ais", "astd")) |>
   ungroup() |>
   filter(.degen == 0 | .n_real == 0) |>
   select(mmsi, time = date_time_utc, lon = longitude, lat = latitude, imo = imonumber) |>
-  add_central_speed() |>
-  filter(year(time) == YR) |>
   inner_join(idy, by = join_by(mmsi, between(time, t1, t2))) |>
-  select(vid, mmsi, time, lon, lat, speed, speed_span_s, imo) |>
+  mutate(speed = NO_SPEED) |>
+  select(vid, mmsi, time, lon, lat, speed, imo) |>
   # IMO numbers ≤ 0 are placeholder/null values in this feed
   mutate(imo = ifelse(imo <= 0, NA, imo))
 
@@ -209,10 +184,9 @@ astdB_src <- function(YR) open_dataset(fd_staging("ais", "astdB")) |>
 # logbook sensor data, not an AIS feed.
 
 # emodnet ----------------------------------------------------------------------
-# EmodNet snapshot: Iceland-only extract for 2017. Speed is derived within the feed, as astd's
-# (add_central_speed() above): by MMSI, the stream's identity. It was ramb::rb_calc_speed() by vid until
-# plan 059 step 8, a backward difference, which put every MMSI with no known hull into one track (vid NA);
-# its arguments were once swapped (curate/corrections/emodnet_speed_args_swapped.yml).
+# EmodNet snapshot: Iceland-only extract for 2017. Speed is derived after the flags, as astd's (curate/ais_ping_clean.R).
+# It was ramb::rb_calc_speed() by vid until plan 059 step 8, a backward difference, which put every MMSI with no known
+# hull into one track (vid NA); its arguments were once swapped (curate/corrections/emodnet_speed_args_swapped.yml).
 # Note: an additional 2019 file exists (AdditionalMMSI20190327.csv) but was
 # excluded due to parsing issues.
 emn <-
@@ -229,8 +203,8 @@ emn <-
   # POSIXct registered via as_dataset() lands as TIMESTAMPTZ in DuckDB; cast to
   # plain TIMESTAMP so the union with other sources stays type-consistent.
   mutate(time = dplyr::sql("time::TIMESTAMP")) |>
-  add_central_speed() |>
-  select(vid, mmsi, time, lon, lat, speed, speed_span_s, everything()) |>
+  mutate(speed = NO_SPEED) |>
+  select(vid, mmsi, time, lon, lat, speed, everything()) |>
   # once, not in every year's union
   compute()
 
@@ -292,8 +266,8 @@ gps_src <- function(YR) {
 # its origin, which matters for coverage gap analysis. Then the gps feed. Every ping says
 # where its position and its speed came from (pos_basis, speed_basis): stk, astdB and gps carry
 # the source's own measured speed (astdB's is the feed's field, beside its cog and heading; plan
-# 059 step 4); astd and emodnet derive it within the feed, from the previous report to the next, with
-# the seconds it spans in `speed_span_s` (plan 059 step 7; NA for a recorded speed). `speed` is NA where a value is
+# 059 step 4); astd and emodnet have none here ("none"): the clean derives it after the flags, with
+# the seconds it spans in `speed_span_s` (plan 062 step 5; NA for a recorded speed). `speed` is NA where a value is
 # no vessel speed (outside 0-40 kn) or the logger placeholder; `speed_raw` keeps the value as given.
 SPEED_MAX <- 40
 ais_all <- function(YR) {
@@ -307,8 +281,8 @@ d_for <- function(YR) {
   # decision 271). Until plan 060 SQL UNION did this silently; now it is explicit and counted (ping_union_copies).
   ais <- ais_all(YR) |>
     distinct() |>
-    mutate(speed_raw = speed, pos_basis = "recorded",
-           speed_basis = if_else(provider %in% c("stk", "astdB"), "recorded", "derived"),
+    mutate(speed_raw = speed, speed_span_s = NO_SPEED, pos_basis = "recorded",
+           speed_basis = if_else(provider %in% c("stk", "astdB"), "recorded", "none"),
            dt_sec = NA_real_, sid_gps = NA_real_, n_sid_gps = NA_integer_)
   g <- gps_src(YR)
   d <- if (is.null(g)) ais else union_all(ais, g)
