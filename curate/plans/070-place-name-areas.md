@@ -4,9 +4,10 @@
 (`$FISHYDATA/archive/2026-11-06-place-name-areas/`, its README). The same day: steps 1, 2 (its partition dropped at the
 maintainer's word), 4, 5 and 6 (with its edge rule and the name groups drawn once) run as studies; the evidence's
 weights, the effort and the terrain classes added at the maintainer's word; asks a-f answered. 2026-11-07: the areas
-from the sea chart and the depth model, level by level, a milestone in the study (step 6). Nothing built ·
-**2026-11-07** · **see:** plans 043 §3.4, 044 §2 and §4, 045 §2 and §3 (steps 3-4), decisions 222-226, 272 and 286,
-TODOs 144 and 185, the effort map (decision 220)
+from the sea chart and the depth model, level by level, a milestone in the study (step 6). 2026-11-08: the charts as
+two models that give a broad name its depth level, an older 1:750 000 chart and the current ones (§2.7, decision 300).
+Nothing built · **2026-11-08** · **see:** plans 043 §3.4, 044 §2 and §4, 045 §2 and §3 (steps 3-4), decisions 222-226,
+272, 286 and 300, TODOs 144 and 185, the effort map (decision 220)
 
 Drafted with AI assistance (Claude) on 2026-11-06; a person has not yet checked it.
 
@@ -189,6 +190,29 @@ read the depth grid alone, so what they make is a terrain classification of its 
     Nephrops and shrimp cells about twice as often as other names (0.29 and 0.31, against 0.15). Lava (hraun) names
     lie there at the base rate (0.16).
   - **The test's limits:** 34 mud names, and the region mixed with the ground. A hint, not yet a measure.
+
+### 2.7 The charts as two models: a broad name's level (2026-11-08, decision 300)
+
+The maintainer, 2026-11-08: "we have 2 'models' from the tif charts, and then we have the depth model itself that we
+have been working on so far. In the end we somehow would end up with a basis for demarcation of örnefni - at least
+the broader ones." The study: `$FISHYDATA/archive/2026-11-08-old-chart-names/`.
+
+- **What the charts say is a level.** A chart sets a broad name inside or beside a contour, and the contour's depth is
+  the chart's word on where the name's area ends. Read off the chart's own lines near the label, it is measured, not
+  assumed (decision 300): the shelf's deeps at 200 m, the grounds at 150 m on the current charts (200 m on the old,
+  which draws no 150 m line), the inshore ones at 20-100 m.
+- **Two models, one method**: model A from the older 1:750 000 chart (IS25, IS26), model B from the current charts
+  (TODO 186's names, their cyan contours). Where their labels mark the same place they give the same level (16 of
+  21). They are one agency's charts a generation apart: two witnesses of one cartographer.
+- **The line is the depth grid's**, at the chart's level, round the name's label: the old chart's lines lie 1-3 km off
+  the grid's isobaths, and the current ones are generalised to their scale.
+- **The open side needs this plan's rules.** A closed contour round a name is rare (2 of 21): a trough opens to the
+  ocean, a ground joins the coast's shelf. The frame (level 0) and the troughs either side (level 1) close it.
+- **The check**: the chart-level areas beside the areas from the depth grid alone; agreement firm, the rest to the
+  maintainer on the bathymetry map.
+
+Not yet: the open side's rule applied, and the comparison. The other sources (logbooks, Trackwell, plotters) stay a
+layer of their own, merged later (the maintainer, 2026-11-06).
 
 ## 3. Steps
 
