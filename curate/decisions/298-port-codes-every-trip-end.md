@@ -69,8 +69,8 @@ should be different ports"). Two gaps were left, both in the adapters:
 
 ## What it leaves
 
-- **The second scratch store**, `/Users/einarhj/stasi/scratch-196-before/`, waits for the maintainer's word to be
-  deleted. The first, `scratch-196-ports`, was deleted at the maintainer's word before the rebuild.
+- **Both scratch stores are deleted**, at the maintainer's word: `scratch-196-ports` before the rebuild ("Delete, then
+  rebuild"), `scratch-196-before` after the comparison ("Delete and push"), 2026-11-08. The study's own files stay.
 - **Float noise in the store's kg sums** makes a rebuilt file's fingerprint change when nothing in it did. Fingerprints
   compare these files at the bit level, so a rebuild needs a row-by-row check against a tolerance to tell noise from a
   change. Not pursued.
