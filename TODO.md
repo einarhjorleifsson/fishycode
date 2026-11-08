@@ -1634,7 +1634,8 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 person's decisions are kept (plan 067 ask a), and how timarit.is's text is had (ask c) · **see:**
 `curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
 `archive/2026-11-07-aegir-early/README.md`, `archive/2026-11-07-andvari-bjarni/README.md`,
-`archive/2026-11-07-seabed-landscape/README.md`, decision 295, plan 045 ask c, TODOs 144 and 186
+`archive/2026-11-07-seabed-landscape/README.md`, `archive/2026-11-08-fiskikort/README.md`, decision 295,
+plan 045 ask c, TODOs 144 and 186
 
 The maintainer, 2026-11-05, asked how to store and file place names: one YAML per name or another construct, how to
 cite the source, how to hold synonyms and cross-references, what to borrow from the data-dict, and how the sources
@@ -1649,18 +1650,16 @@ Its first source is timarit.is. The study searched it by the gazetteer's names a
 was fetched slowly at the maintainer's decision, past robots.txt. 10 documents were read into the format of §5 as a
 first trial (plan 067 §1): 149 entries, 70 with a name's origin; no person has checked them.
 
-2026-11-07, two studies for texts that describe the grounds plan 070 outlines, both paused, then the whole held (the
-maintainer: "We may want to mine timarit.is for the full text on some targeted journals later. this örnefni / fiskimið
-description search would then be part of that bigger plan"):
-- early Ægir by plan 070's broad chart names: 40 of 121 searched in 1905-1965, 26 with no hit (the names are mostly
-  later; old texts place grounds by landmarks); four finds describe a ground (Barðagrunn, 1917);
-- Bjarni Sæmundsson in Andvari: *Fiskirannsóknir 1901* read whole, 21 finds; then, at the maintainer's word, all 29
-  of his articles (1895-1937, 1,410 pages) scanned by R script, no model reading: 938 passages naming a ground with a
-  depth, bearing or bottom, on an excerpt page the maintainer reads (`out/excerpts.html`); 1927-1937 hold the most;
-- the seabed's landscape: Trausti Einarsson 1963 and Thoroddsen 1902 read whole, 53 finds and 109 features.
-A page view (`/page/<id>`, allowed) carries its page's OCR text, so `/files` (disallowed) is not needed. Since
-decision 295 the text is kept once in `raw/external/timarit/` (3,863 pages in 106 issues on 2026-11-08; the four
-studies' text moved in), fetched only by `dump/timarit/fetch.R`, read as `staging/timarit/page.parquet`.
+The studies of timarit.is so far, each with its README (above), by R script or read whole, none checked by a person:
+- 2026-11-07: early Ægir by plan 070's chart names (40 of 121 searched, 1905-1965; four finds, Barðagrunn 1917);
+  Bjarni Sæmundsson's 29 Andvari articles at the maintainer's word (1,410 pages; 938 passages on `out/excerpts.html`,
+  1927-1937 the most); the seabed's landscape (Trausti Einarsson 1963, Thoroddsen 1902: 53 finds, 109 features); then
+  the whole held ("this örnefni / fiskimið description search would then be part of that bigger plan");
+- 2026-11-08, "fiskikort" at the maintainer's word: 93 pages with their neighbours and Einar Jónsson's series "Nöfn og
+  nafngiftir utan fjörumarka" (Víkingur 1979-1980, the names offshore), 258 pages (`out/reading.html`).
+A page view (`/page/<id>`, allowed) carries its OCR text; `/files` (disallowed) is not needed. Since decision 295 the
+text is kept once in `raw/external/timarit/` (4,122 pages in 179 issues on 2026-11-08), fetched only by
+`dump/timarit/fetch.R`, read as `staging/timarit/page.parquet`.
 
 **check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
 read and measured against the 151 Markdown records), or the plan parked.
