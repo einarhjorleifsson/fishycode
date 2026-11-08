@@ -28,7 +28,9 @@ should be different ports"). Two gaps were left, both in the adapters:
   - two test ports.
 - **The nine codes that no landing uses** are classed in `reference/ports/port_code_class.yml`: the seven countries as
   `abroad`, the two test ports as `placeholder`. The file is a hand-kept list; these nine lines were added by Claude
-  (AI) and wait for the maintainer's look.
+  (AI) and accepted by the maintainer on 2026-11-08 ("Fine"). The file's header still says "not yet checked by
+  a person": targets watches the file, and a change to it outdates `port_code` and every target below it, so the header
+  is amended at the file's next real edit.
 - **Voyages with no departure port stay as they are**: 7,269, all the first voyage of their year. 3,991 follow a voyage
   still open at New Year, 2,143 are in the vessel's first year, 811 follow a year with no voyage, and 324 follow a
   voyage that ended at a port, 226 of them after more than a month. Carrying the old year's port forward would be a
