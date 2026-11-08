@@ -274,7 +274,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   `rb_flag_ping_impossible(limits = )`, `rb_flag_ping_time()` and `rb_add_ping_outcome()`, 2026.11.05.7 (943eee9), and
   its step 5, `rb_create_ping_limits(max_step_s = , lag = )`, 2026.11.05.8 (4b4c2bc), and the trips article (01d8825),
   all committed to ramb's local `main` and installed from it on 2026-11-05 (2026.11.05.8 at 01d8825: `git archive` with
-  the LFS files, `--preclean`), pushed the same day; nothing in fishycode calls them yet (decision 282). The forward scan's
+  the LFS files, `--preclean`), pushed the same day; nothing in fishycode called them (decision 282) until `curate/ais_ping_clean.R` took
+  `rb_create_ping_limits()` for each fast vessel's ceiling (2026-11-08, decision 297's leftover). The forward scan's
   anchor decided by the pings after a jump, `rb_flag_ping_impossible(anchor = "vote")`, opt-in, is 2026.11.05.9 (plan
   066, decision 283; e50568f), committed to ramb's local `main`; nothing in fishycode calls it.
   `rb_flag_ping_impossible(local_speed = )`, the local speed as the larger of the medians before and after (a change of

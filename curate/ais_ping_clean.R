@@ -8,7 +8,9 @@
 #                                    and the whack's evidence, `ping_flag_side` and the legs to the nearest kept
 #                                    ping on each side, `ping_flag_{prev,next}_{dt_s,dist_m,feed}`: NA but for
 #                                    vmask, spike and forward)
-# Pings with no `vid` are in neither: there is no vessel to judge them against (decision 067).
+#         staging/ais/ping_limits   (year=<y>/limits.parquet: each vessel and stream's ceiling, clock and noise, with
+#                                    their bases and counts; ramb::rb_create_ping_limits(); decision 297)
+# Pings with no `vid` are in neither ping output: there is no vessel to judge them against (decision 067).
 #
 # A whacky point is an implausible POSITION - mostly from stk. Not to be confused with the
 # "wacky coordinates" of the afli GPS loggers, which are a DDMMmm encoding fault; different
@@ -33,6 +35,12 @@
 # vessels (BATCH_PINGS): exactly equivalent to doing the year at once, and what keeps R below
 # a few GB. Splitting by time would not be equivalent - the forward scan carries the last
 # kept ping across the cut.
+#
+# A vessel faster than KN_MAX is judged at its own ceiling (the maintainer, 2026-11-08: "Build it"; decision 297's
+# leftover). The ceilings are ramb::rb_create_ping_limits()'s over the whole year, a vessel's the largest of its streams';
+# a vessel whose ceiling exceeds KN_MAX takes it as `kn_max` in the speed step, every other vessel KN_MAX. The duplicate
+# rule stays at KN_MAX. On 2024, 7,570 of 13,009 flags on 115 of 133 such vessels were their own fast steaming
+# ($FISHYDATA/archive/2026-11-08-fast-vessel-ceiling/).
 
 library(duckdbfs)
 library(tidyverse)
@@ -48,13 +56,16 @@ DUP_M    <- KN_MAX * 1852 / 3600 * MIN_DT_S
 DUP_K    <- 3       # neighbours compared on each side, in time order
 FEED     <- c(stk = 1, astd = 2, astdB = 3, emodnet = 4)   # priority; stk wins, as in ais_ping_trail.R
 NOISE_NM <- 0.3     # the whack's noise floor between feeds, nautical miles (TODO 88, plan 059 step 6)
-METHOD   <- "rb_flag_ping-2026-11-01:harmonized-time+invalid+duplicate+clean(feed-floor,evidence),recorded-only+tie,total-order"   # part of the completion fingerprint: a new method re-cleans every year
+LIM_MAX_STEP_S <- 300                           # the limits' time error on steps of at most 300 s (plan 065 step 5)
+LAG_BASES <- c("copy", "receipt", "measured")   # plan 059's lags taken as measured for the limits' clock
+METHOD   <- "rb_flag_ping-2026-11-08:harmonized-time+invalid+duplicate+clean(feed-floor,evidence,own-ceiling-over-kn_max),recorded-only+tie,total-order"   # part of the completion fingerprint: a new method re-cleans every year
 
 ais   <- open_dataset(fd_staging("ais", "ping_tagged"))
 years <- ais |> distinct(year) |> collect() |> pull(year) |> as.integer() |> sort()
 
 out    <- fd_staging("ais", "ping_clean")
 out_w  <- fd_staging("ais", "ping_whacky")
+out_l  <- fd_staging("ais", "ping_limits")
 marks  <- fd_staging("ais", "ping_clean_marks")   # completion markers, outside
 dir.create(marks, recursive = TRUE, showWarnings = FALSE)  # the dataset itself
 
@@ -73,20 +84,51 @@ fingerprint <- function(yr) {
   f <- list.files(file.path(fd_staging("ais", "ping_tagged"), paste0("year=", yr)), full.names = TRUE, recursive = TRUE)
   i <- file.info(f)
   rlang::hash(paste(basename(f), i$size, as.numeric(i$mtime), METHOD, KN_MAX, MIN_DT_S, DUP_S, DUP_M, DUP_K, NOISE_NM,
+                    LIM_MAX_STEP_S, paste(LAG_BASES, collapse = ","),
                     paste(names(FEED), FEED, collapse = ","), collapse = ";"))
 }
+
+# The limits' own connection, capped: a year's valid pings as a temporary table, measured lazily
+lcon <- DBI::dbConnect(duckdb::duckdb())
+lspill <- file.path(tempdir(), "limits_spill"); dir.create(lspill, showWarnings = FALSE)
+invisible(DBI::dbExecute(lcon, "SET threads = 4"))
+invisible(DBI::dbExecute(lcon, "SET memory_limit = '5GB'"))
+invisible(DBI::dbExecute(lcon, sprintf("SET temp_directory = '%s'", lspill)))
 
 
 for (yr in years) {
 
   ydir <- file.path(out, paste0("year=", yr))
   wdir <- file.path(out_w, paste0("year=", yr))
+  ldir <- file.path(out_l, paste0("year=", yr))
   marker <- file.path(marks, as.character(yr)); fp <- fingerprint(yr)
   if (file.exists(marker) && identical(readLines(marker, warn = FALSE)[1], fp)) {
     message("Year ", yr, " already done for this input, skipping"); next
   }
   message("Year ", yr)
-  unlink(c(ydir, wdir), recursive = TRUE)   # any partial output from a failed attempt
+  unlink(c(ydir, wdir, ldir), recursive = TRUE)   # any partial output from a failed attempt
+
+  # The limits over the whole year: every ping with a vid that is not invalid, the recorded speed, the measured lags.
+  # A vessel's ceiling is the largest of its streams'; over KN_MAX it is the vessel's own `kn_max` below.
+  t0 <- Sys.time()
+  invisible(DBI::dbExecute(lcon, sprintf("
+    CREATE OR REPLACE TEMP TABLE lp AS
+    SELECT vid, time, lon, lat, CASE WHEN speed_basis = 'recorded' THEN speed END AS speed_rec, stream,
+           CASE WHEN lag_basis IN (%s) THEN lag_s END AS lag_m
+    FROM read_parquet('%s')
+    WHERE vid IS NOT NULL AND time IS NOT NULL AND lon IS NOT NULL AND lat IS NOT NULL AND lon <> lat",
+    paste0("'", LAG_BASES, "'", collapse = ", "),
+    file.path(fd_staging("ais", "ping_tagged"), paste0("year=", yr), "*.parquet"))))
+  lim <- rb_create_ping_limits(dplyr::tbl(lcon, "lp"), stream = stream, speed = speed_rec, lag = lag_m,
+                               max_step_s = LIM_MAX_STEP_S) |>
+    collect() |> as.data.frame()
+  invisible(DBI::dbExecute(lcon, "DROP TABLE lp"))
+  write_parquet_group(lim, file.path(ldir, "limits.parquet"))
+  fast <- lim |> filter(!is.na(ceiling_kn)) |> summarise(kn = max(ceiling_kn), .by = vid) |> filter(kn > KN_MAX)
+  fast <- setNames(fast$kn, as.character(fast$vid))
+  message(sprintf("  limits: %s vessel-stream rows in %.0f s; %d vessels over %g kn",
+                  format(nrow(lim), big.mark = ","), as.numeric(difftime(Sys.time(), t0, units = "secs")),
+                  length(fast), KN_MAX))
 
   # Explicit, not left to SQL: `vid %in% g` skips NA in DuckDB, but R's %in% matches NA to NA.
   base <- ais |>
@@ -116,12 +158,17 @@ for (yr in years) {
     # equals, so without this the kept reading changed from build to build (decision 086, TODO 55).
     d0 <- base |> filter(vid %in% g) |> collect() |>
       arrange(vid, time, pos_basis != "recorded", provider != "stk", provider, lon, lat, pick(everything()))
+    # the speed step at KN_MAX for the batch's ordinary vessels, then at its own ceiling for each fast one
+    flag <- function(x, kn) x |>
+      rb_flag_ping_invalid(rules = "lon_eq_lat") |>
+      rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n_neighbours = DUP_K) |>
+      rb_flag_ping_impossible(method = "clean", kn_max = kn, min_dt_s = MIN_DT_S,
+                              feed = provider, noise_nm = NOISE_NM, evidence = TRUE)
+    rec <- d0 |> filter(pos_basis == "recorded")
+    is_fast <- as.character(rec$vid) %in% names(fast)
     d <- bind_rows(
-      d0 |> filter(pos_basis == "recorded") |>
-        rb_flag_ping_invalid(rules = "lon_eq_lat") |>
-        rb_flag_ping_duplicate(feed = provider, priority = names(FEED), max_dt_s = DUP_S, kn_max = KN_MAX, n_neighbours = DUP_K) |>
-        rb_flag_ping_impossible(method = "clean", kn_max = KN_MAX, min_dt_s = MIN_DT_S,
-                                feed = provider, noise_nm = NOISE_NM, evidence = TRUE),
+      if (any(!is_fast)) flag(rec[!is_fast, ], KN_MAX),
+      lapply(split(rec[is_fast, ], as.character(rec$vid[is_fast])), \(x) flag(x, fast[[as.character(x$vid[1])]])),
       d0 |> filter(pos_basis != "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat")) |>
       arrange(vid, time, pos_basis != "recorded", provider != "stk", provider, lon, lat)
@@ -150,6 +197,7 @@ for (yr in years) {
 
   writeLines(fp, marker)
 }
+DBI::dbDisconnect(lcon, shutdown = TRUE)
 
 # Closing count -----------------------------------------------------------------
 # Over the whole output, not this run: a skipped year counted as zero before, and the pings

@@ -800,7 +800,7 @@ list(
   # L2: whacky-point removal, its own stage rather than fused into trip building
   tar_target(ais_ping_clean, {
     ais_ping_tag
-    produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"))
+    produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"), fd_staging("ais", "ping_limits"))
   }, format = "file"),
 
   # The feeds put on one clock from the check's lags, STK's arrivals kept as fixes told by the union's own `io` (plan
