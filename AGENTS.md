@@ -305,8 +305,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   suite passes, 3,187), pushed 2026-11-07; `curate/port_call.R` stops under an older ramb. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
-  and installed from it on 2026-11-04, pushed on 2026-11-05; nothing in the pipeline calls the new functions yet, and production's
-  own chain gives the store's labels under it (plan 062 step 4). The data
+  and installed from it on 2026-11-04, pushed on 2026-11-05; production's own chain gives the store's labels under it (plan
+  062 step 4). Since plan 062 step 5 (decision 303) `curate/ais_ping_clean.R` runs that chain on ramb's lazy route and
+  derives astd's and emodnet's speed after the flags with `rb_add_ping_speed()`; the union derives none. The data
   on disk: every target of the main project but `ais_catch` and `check_allocation_audit` (decision 261) was rebuilt from
   raw on 2026-11-02 at 475dc92 with ramb 2026.11.02 and DuckDB 1.5.6 (plan 060, decision 274); on 2026-11-06 at
   fc45a24, with ramb 2026.11.06.2 and DuckDB 1.5.6, the 55 outdated by plan 048 or by `ports_all`'s repair of
@@ -317,7 +318,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   63912ac with ramb 2026.11.07, STK's event pairs in every year with a guard (decision 294); and again at 6c89c14 with
   ramb 2026.11.07.1, the port calls by vessel over every year and every tie in time ordered (decision 296); and on 2026-11-08 at 8f46429 the 34 from `port_code` down, every logbook trip end
   with its port (decision 298); and at 463efa7 the 17 from `ais_ping_clean` down, each vessel faster than 25 kn judged at
-  its own ceiling (decision 299). Every curated file
+  its own ceiling (decision 299); and at 4e9c8dc the 21 from `ais_ping_union` down, astd's and emodnet's speed derived
+  after the flags (decision 303). Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code

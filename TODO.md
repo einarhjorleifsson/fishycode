@@ -1498,8 +1498,9 @@ store's 9,582 placeholders. Next: plan 061's step 1 measures, then the sections 
 
 ## 184. ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence (plan 062)
 **status:** open; the ramb release built with the cascade, merged into ramb's `main` and installed (2026.11.04,
-abe207f), pushed 2026-11-05 · **needs: maintainer** — fishycode following (item 4), a rebuild ·
-**see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`, TODO 88, plan 061, decisions 067, 069, 234, 275 and 276
+abe207f), pushed 2026-11-05; fishycode follows since 2026-11-08 (decision 303) · **needs: maintainer** — the book
+(plan 062 step 6) · **see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`, TODO 88, plan 061, decisions 067, 069,
+234, 275, 276 and 303
 
 The maintainer, 2026-11-02: ramb's branches and the functions that detect whacky pings, against the ICES data call,
 EM4SSF and iapesca. Read from the code by Claude (AI), nothing run: ramb's three side branches are all in `main`; the
@@ -1516,8 +1517,9 @@ catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb 
 
 What is left, in order: plan 062's "To finish" (2026-11-03); its items 0 and 1 done 2026-11-04 (decision 276, the
 four checks); of item 2, asks 1-4 answered 2026-11-04, all as recommended, and the cascade to be built (Decided m);
-item 3 built, merged and installed 2026-11-04 (ramb 2026.11.04, `$FISHYDATA/archive/2026-11-04-plan062-step4/`); next,
-fishycode follows (item 4).
+item 3 built, merged and installed 2026-11-04 (ramb 2026.11.04, `$FISHYDATA/archive/2026-11-04-plan062-step4/`);
+item 4's step 5 built and the store rebuilt 2026-11-08 (decision 303): astd's and emodnet's speed after the flags,
+the clean on ramb's lazy route, every difference from the union down explained. Next, the book (step 6).
 
 **check:** plan 062 executed or parked, with a decision record.
 

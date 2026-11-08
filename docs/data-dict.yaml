@@ -304,8 +304,10 @@ tables:
           - 14.015197251093694
         description: >
           Speed over ground, knots. STK's and astdB's as the feed reports it; astd's and emodnet's derived
-          within the MMSI, a central difference stamped at the ping (the chord from its previous report to
-          its next on the WGS84 ellipsoid, `speed_span_s` the time it spans; plan 059 step 7).
+          within the MMSI after the bad positions are flagged, a central difference stamped at the ping (the
+          chord from its previous report to its next on the WGS84 ellipsoid, on the feed's own delivered
+          time, `speed_span_s` the time it spans; ramb's `rb_add_ping_speed()`, plan 062 step 5, decision
+          303). A neighbour flagged as a bad position is skipped; a copy of a report stays one.
         todo: |
           - Pick a more specific numeric type, and keep whichever of `range` and
             `examples` is appropriate.
@@ -394,7 +396,8 @@ tables:
         examples: [derived, recorded]
         description: >
           recorded (stk, astdB, gps: the feed's own reading; astdB's since plan 059), derived (astd,
-          emodnet: distance over time within the MMSI) or placeholder.
+          emodnet: distance over time within the MMSI, after the flags; decision 303), placeholder, or none
+          (an astd or emodnet ping with no other report of its MMSI in the year, or a flagged one).
       - name: dt_sec
         type: number
         examples: [2, 2627, 5295, 11104, 7679133]
@@ -423,10 +426,11 @@ tables:
         type: number
         examples: [2, 60, 738, 1448, 26002713]
         description: >
-          Seconds between the MMSI's previous and next report, the interval astd's and emodnet's derived
-          `speed` spans (one side only at a track's first or last report; 0 where the MMSI has a single
-          report, and `speed` is NA). NA for a recorded speed (stk, astdB, gps). A consumer judges a
-          long span itself: no speed is left out for it (plan 059 step 7).
+          Seconds between the MMSI's previous and next report that is not a bad position, the interval
+          astd's and emodnet's derived `speed` spans (one side only at the first or last report of the MMSI
+          in a year; NA where it has no other report, and `speed` is NA with `speed_basis` none). NA for a
+          recorded speed (stk, astdB, gps). A consumer judges a long span itself: no speed is left out for
+          it (plan 059 step 7, plan 062 step 5).
       - name: time_delivered
         type: datetime
         time_zone: UTC
@@ -811,14 +815,15 @@ tables:
         examples: [derived, recorded]
         description: >
           `recorded` (stk, astdB, the logger), `derived` (astd's and emodnet's speed, a central difference
-          within the MMSI over `speed_span_s`; plan 059 step 7) or `placeholder` (a logger fix whose speed
-          was exactly 1.000 m/s; `speed` is NA and `speed_raw` keeps the value).
+          within the MMSI over `speed_span_s`, after the flags; plan 062 step 5, decision 303),
+          `placeholder` (a logger fix whose speed was exactly 1.000 m/s; `speed` is NA and `speed_raw`
+          keeps the value) or `none` (an astd or emodnet fix with no other report of its MMSI in the year).
       - name: speed_span_s
         type: number
         examples: [360, 738, 1448]
         description: >
-          Seconds between the MMSI's previous and next report, the interval a derived speed spans; NA for
-          a recorded speed. As in `ais_ping`.
+          Seconds between the MMSI's previous and next report that is not a bad position, the interval a
+          derived speed spans; NA for a recorded speed. As in `ais_ping`.
       - name: stream
         type: enum
         values: [stk_ais, stk_vms, stk_unit, stk_event, astd, astdB, emodnet, gps]

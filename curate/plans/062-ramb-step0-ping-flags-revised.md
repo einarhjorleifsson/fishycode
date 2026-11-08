@@ -3,7 +3,9 @@
 **status:** partly built — steps 0-3 done 2026-11-02 (ramb's branches deleted, the studies archived; the two tests
 measured, `$FISHYDATA/archive/2026-11-02-plan062-step1/`; the planted faults in ramb 2026.11.02.3, `dansk_planted`); step 3 done (the scores on the planted faults and the reload, and the timing,
 `$FISHYDATA/archive/2026-11-02-plan062-step3/`); step 4 built 2026-11-04 (ramb 2026.11.04, merged into
-ramb's `main` at abe207f and installed; pushed with all of ramb's `main` on 2026-11-05, b7109d4; `$FISHYDATA/archive/2026-11-04-plan062-step4/`). Written 2026-11-02 at the
+ramb's `main` at abe207f and installed; pushed with all of ramb's `main` on 2026-11-05, b7109d4; `$FISHYDATA/archive/2026-11-04-plan062-step4/`);
+step 5 built and the store rebuilt 2026-11-08 (decision 303; `$FISHYDATA/archive/2026-11-08-plan062-step5/`); step 6,
+the book, left. Written 2026-11-02 at the
 maintainer's request ("Ramb revisions": the forks, and the functions that detect whacky pings, against the ICES data call, EM4SSF and iapesca), from a discussion the same day; the
 maintainer's answers are under "Decided", the rest under "Asks". **see:** TODO 88 (the whack filter),
 plan 061 (the ping chapter), decisions 067, 069, 078, 080, 164, 185, 232, 234, 273, 275 and 276, `curate/ais_ping_clean.R`,
@@ -269,6 +271,20 @@ m. **The cascade is built in this release** (the maintainer, 2026-11-04: "Build 
 5. **fishycode follows.** The union without its own speed (ramb's, after the clean); `ais_ping_clean.R` on ramb's
    lazy route if test (ii) holds, without its own batching or `tie`; the targets from the union down rebuilt,
    fingerprints before and after, every difference explained in a decision.
+   **Built 2026-11-08** (by Claude, at the maintainer's "Yes, as proposed" and "Delete, then rebuild"; decision 303,
+   fishycode 4e9c8dc; not checked by a person). Two points differ from the text above:
+   - the `tie` stays in fishycode, as SQL, since ramb has no tie rule (Decided f, not built);
+   - decision 299's ceilings stay a loop in R over the vessels over 25 kn, since `clean` takes one `kn_max` a call.
+
+   ramb's `rb_add_ping_speed()` runs after the flags, on the delivered time, by provider and MMSI. Each year runs in its
+   own R process. On a scratch clone from the union down, every record was compared with the live store:
+   - every label is the same but two swapped pairs of copies;
+   - 251,013 astd and emodnet speeds moved, all explained;
+   - port calls, voyages and links are the same;
+   - fishing hours rose by 0.005 %;
+   - the clean took 1.48 times as long.
+
+   The live store was then rebuilt and equals the scratch run.
 6. **The book.** `flow_pings.qmd` describes step 0 as built (plan 061); the scores go in an appendix chapter.
 
 ## To finish (written 2026-11-03, to pick up later)
@@ -328,6 +344,7 @@ Steps 0-3 are done; the prototypes are in `$FISHYDATA/archive/2026-11-02-plan062
    day. Left, the maintainer's: the push.
 4. **fishycode follows (step 5)**, then **the book (step 6**, plan 061's C3, C5, C7), then a decision record, and
    TODO 184 deleted.
+   **Step 5 done 2026-11-08** (decision 303). Left: the book, then TODO 184 deleted.
 
 ## What would change the plan
 
