@@ -1654,11 +1654,12 @@ maintainer: "We may want to mine timarit.is for the full text on some targeted j
 description search would then be part of that bigger plan"):
 - early Ægir by plan 070's broad chart names: 40 of 121 searched in 1905-1965, 26 with no hit (the names are mostly
   later; old texts place grounds by landmarks); four finds describe a ground (Barðagrunn, 1917);
-- Bjarni Sæmundsson's reports in Andvari: *Fiskirannsóknir 1901* read whole, 21 finds, the West Fjords' broad grounds
-  placed against each other (Andvari 1903 p. 127);
+- Bjarni Sæmundsson in Andvari: *Fiskirannsóknir 1901* read whole, 21 finds; then, at the maintainer's word, all 29
+  of his articles (1895-1937, 1,410 pages) scanned by R script, no model reading: 938 passages naming a ground with a
+  depth, bearing or bottom, on an excerpt page the maintainer reads (`out/excerpts.html`); 1927-1937 hold the most;
 - the seabed's landscape: Trausti Einarsson 1963 and Thoroddsen 1902 read whole, 53 finds and 109 features.
 A page view (`/page/<id>`, allowed) carries its page's OCR text, so `/files` (disallowed) is not needed. Since
-decision 295 the text is kept once in `raw/external/timarit/` (62 issues with pages, 2,370 pages; the four
+decision 295 the text is kept once in `raw/external/timarit/` (3,863 pages in 106 issues on 2026-11-08; the four
 studies' text moved in), fetched only by `dump/timarit/fetch.R`, read as `staging/timarit/page.parquet`.
 
 **check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
