@@ -91,7 +91,15 @@ before plan 048 and gave 133 vessels instead of 126.
 
 - the 551 new port calls and the changed voyages;
 - the 695 newly flagged pings;
-- 2024's 1,246 pings given back whose recorded speed is under 15 kn.
+- 2024's 1,246 pings given back whose recorded speed is under 15 kn. They were tested on 2026-11-08 at the
+  maintainer's word ("Yes, test them"), against the other receiver's track of the same vessel: STK's pings against
+  PAME's astd, astd's against STK, interpolated from a ping at most 5 min before and after. The study's
+  `scripts/03_witness_2024.R` holds the test.
+  - **The two receivers rarely hear these vessels at the same time.** Only 9,610 of the fast vessels' 840,093 other
+    kept pings have a witness, so only 9 can be judged of the 1,213 slow pings the built rule gives back (1,246 in the test, whose ceilings
+    were older).
+  - **Those 9 are all within 1 nm**, and so are all 184 pings given back that have a witness. None is a jump.
+  - The 1,204 slow pings with no witness stay unjudged.
 
 ## What was chosen
 
