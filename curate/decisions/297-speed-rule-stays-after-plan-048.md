@@ -71,5 +71,7 @@ stronger on returns. The moved ends lie mostly in 2007-2011.
   so the effort barely moves; not pursued.
 - **The trip ends the candidate gets right**, 576 by the logbook's date: production's own wrong ends, not looked at.
 - **A hybrid rule**, `clean`'s angle before the vessel's own limits (decision 287): not built.
-- **The logbook's date as a witness of the AIS trip ends**: counted twice in studies, still in no check of the
-  pipeline.
+- **The logbook's date as a witness of the AIS trip ends**: counted twice in studies, and already in the
+  pipeline. `trip_reconciled` puts each trip's AIS ends against the logbook's own (`T1_ais`, `T1_own`; `T1_outcome`
+  agree, differ or one, within 1 h or on the day), every trip in one outcome per end. This line said "still in no check
+  of the pipeline" until 2026-11-08, when Claude (AI) found it built (decisions 173, 174).

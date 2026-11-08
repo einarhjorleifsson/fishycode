@@ -735,7 +735,8 @@ for the maintainer to confirm into `overrides/`.
 which await review, and which stay `unkeyed` with a reason.
 
 ## 117. What the flow takes from STK beyond the position: events, receipt time, `U` positions
-**status:** open · **needs: maintainer** — outside only: the questions for STK (§12 decision 10) · **see:** decisions
+**status:** open · **needs: maintainer** — outside only: the questions for STK (§12 decision 10), drafted in the study's
+`notes/questions_for_stk.md` (2026-11-08), to send · **see:** decisions
 164 and 196, `$FISHYDATA/archive/2026-10-stk-trail-order/README.md` §12, decisions 059 and 075,
 `sources/stk/event.R`, `curate/port_call.R`, TODO 68, 88
 
