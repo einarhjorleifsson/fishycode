@@ -71,7 +71,7 @@ stronger on returns. The moved ends lie mostly in 2007-2011.
   so the effort barely moves; not pursued. Tested on 2024 on 2026-11-08 (`$FISHYDATA/archive/2026-11-08-fast-vessel-ceiling/`,
   by Claude (AI)): production's rule with each fast vessel's own ceiling in place of 25 kn gives back 7,570 pings on
   115 of 133 vessels, 0.8 % of theirs, mostly steaming at 25-30 kn; 1,246 of them with a recorded speed under 15 kn, not
-  checked by hand.
+  checked by hand. Built in the clean step on 2026-11-08 at the maintainer's word: decision 299.
 - **The trip ends the candidate gets right**, 576 by the logbook's date: production's own wrong ends, not looked at.
 - **A hybrid rule**, `clean`'s angle before the vessel's own limits (decision 287): not built.
 - **The logbook's date as a witness of the AIS trip ends**: counted twice in studies, and already in the
