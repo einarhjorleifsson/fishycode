@@ -168,7 +168,7 @@ for (yr in years) {
     is_fast <- as.character(rec$vid) %in% names(fast)
     d <- bind_rows(
       if (any(!is_fast)) flag(rec[!is_fast, ], KN_MAX),
-      lapply(split(rec[is_fast, ], as.character(rec$vid[is_fast])), \(x) flag(x, fast[[as.character(x$vid[1])]])),
+      unname(lapply(split(rec[is_fast, ], as.character(rec$vid[is_fast])), \(x) flag(x, fast[[as.character(x$vid[1])]]))),
       d0 |> filter(pos_basis != "recorded") |>
         rb_flag_ping_invalid(rules = "lon_eq_lat")) |>
       arrange(vid, time, pos_basis != "recorded", provider != "stk", provider, lon, lat)
