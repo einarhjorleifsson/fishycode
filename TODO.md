@@ -372,40 +372,6 @@ measured.
 **check:** a corrections entry (`.yml` and `.R`) for the reload; the trail's jumps on 2026-10-11 to 10-14 counted
 before and after; the other mass days checked for day-shifted copies.
 
-## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open; its check answered by plan 062's step 3 but for normal days · **needs: maintainer** — close it (plan 062
-executed, decision 306), or keep it for what is left (below) · **see:** decisions 067, 069, 078, 143, 164, 185 (TODO 38 folded in),
-276, TODO 99, plan 062, plan 031 §3.7 item 12 (about 6,000 fixes left near harbours, mostly STK port event rows)
-
-"the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
-for having this domain specific knowledge" (maintainer, 2026-10-18). The case: on vid 2350, 2026-10-12, the filter
-removed 29 pings of a day-shifted copy of the track (TODO 87) and kept a 24 kn jump between the copy and the live track. In the
-data since 2026-11-01: `clean` with a 0.3 nm floor between feeds (ramb 2026.11.01.2, decisions 164 and 271).
-
-Plan 062's step 3, 2026-11-02/03 (decision 276; the numbers in `$FISHYDATA/archive/2026-11-02-plan062-step3/`), against
-the check below, by Claude (AI), not checked by a person:
-- **The current filter on the reload's days** (labelled by receipt, decision 143): the chain catches 7 of 1,802
-  day-shifted copies and flags 3,014 live pings only when the reload is there. No speed rule catches a copy: it is a
-  consistent track.
-- **The candidates.** Each leg against its reported speed is `local_sog`, without course, local rather than a
-  per-vessel limit: on the planted faults it catches the most at every rate, out-and-backs under 25 kn included; on the
-  reload 10 of 1,802. Chains that are each consistent: not tried; the copy rule (one report twice, by position,
-  recorded speed and course) finds the reload's pairs, but on one feed cannot tell which is the copy. Zigzags over a
-  window: set aside, since fishing turns would be flagged.
-- **TODO 38's cases.** Fast vessels: every 25 kn method flags the planted 30-40 kn stretches nearly whole at 10 s and
-  1 min, `local_sog` none. The gap: a moved first ping after a gap is never caught by `forward`, and costs it a
-  stretch; the chain catches 80 % at 10 s down to 11 % at 1 h, `local_sog` 100 % down to 44 %. Sparse tracks: at 1 h
-  every method catches under half the faults 1 km or more off (the chain 18 %, `local_sog` 41 %, copies first 62 %).
-- **Recommendation** (plan 062, not decided): copies first, then the rule against recorded speed; `clean` or
-  `forward` where a track has none; step 0 as a cascade by evidence, a basis on each flag.
-
-Left, if kept: normal Icelandic days (only planted faults stand in); a lone feed's copies, labelled `repeat` while
-the receipt is declined; two pings the filter kept, found 2026-10-23 (TODO 25's review): vid 2654's of 2013-09-13
-05:19 at 8.55N 180W, and vid 7438's of 2009-07-09 12:59 at 64.2333N 22.4W (rounded, speed and heading 0).
-
-**check:** a plan with the current filter's recall and precision on the reload's days, the candidates compared on
-those days and on normal ones, and a recommendation, with a verdict on TODO 38's fast-vessel, gap and sparse cases.
-
 ## 89. AIS gaps at sea judged against coverage
 **status:** open · **see:** decision 143 (intervals at sea by distance offshore and provider), plan 030
 
@@ -586,7 +552,7 @@ same moment (met by construction, decision 251).
 
 ## 99. The whack test does not test interpolated positions against recorded ones
 **status:** open — for the logger, met by construction once decision 196's step is built (decision 251); the generic
-flag stays proposed · **see:** TODO 98, TODO 88, `curate/ais_ping_clean.R`, decisions 067 and 251
+flag stays proposed · **see:** TODO 98, decision 308 (TODO 88 closed), `curate/ais_ping_clean.R`, decisions 067 and 251
 
 `ais_ping_clean.R` runs the impossible-step test on recorded positions only, since an interpolated (`reconstructed`)
 position was assumed to lie on the track. When the track it was drawn from differs from today's, it does not: vid
