@@ -251,6 +251,21 @@ review, on the preprocessing side: no AIS, no effort.
 2. **Freeze the official layer:** names, feature and label positions, areas, parents, an id each, with md5s.
 3. **Measure each source** against it (§2.3).
 4. **Every key in one outcome** (§2.4).
+
+   **A first sorting, 2026-11-09**, as a study at the maintainer's word ("process all placenames and see if at least
+   some of the really bad one can not be filtered before they are ever put on a map", "Yes, apply it").
+   - The in-use study's `08_sort_names.R` puts each of the 9,384 keys in one class by rules, fitted on the
+     maintainer's 306 answers to the name:
+     - name 5,994;
+     - a direction from something 1,633 (582 from land, 397 from a place);
+     - a cut label of a name 190;
+     - for review 972 (joined, a vessel's name, a code, a bare terrain word, an area word);
+     - off 592 (garbled, digits, gear notes, a fish, a bottom note);
+     - a wreck 3.
+   - Of the 235 the maintainer judged not a name, 218 are sorted out of the names. None of the 70 judged a name falls
+     in a class that is off.
+   - Applied on the örnefni viewer: the names layer keeps the names, a layer holds those to review. The rules belong
+     in the gazetteer's build when this step is built.
 5. **Place the names in use** (§2.5), with §2.2 for the small features.
 6. **Issues by rule** (§2.6).
 7. **The layer, the cards and the issues on the örnefni map**, checked in the browser against a list of click paths.

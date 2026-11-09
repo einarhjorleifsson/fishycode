@@ -311,7 +311,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   writes the maintainer's verdicts into the in-use study under `$FISHYDATA` (internal). Its questions (`questions`, an
   answer naming another feature, `skip`, the note), 2026.11.09.1 (621209d), are committed to ramb's local `main` and
   installed from its tree on 2026-11-09 (the whole suite passes, 3,295), not pushed; the viewer's answers go to the
-  same study since. Plan
+  same study since. A verdict kept under another layer's answers (`store`), 2026.11.09.2 (ef65b0a), is committed to
+  ramb's local `main` and installed from its tree on 2026-11-09 (the whole suite passes, 3,304), not pushed; the
+  örnefni study's viewer uses it. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; production's own chain gives the store's labels under it (plan
