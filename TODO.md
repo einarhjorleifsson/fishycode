@@ -373,8 +373,8 @@ measured.
 before and after; the other mass days checked for day-shifted copies.
 
 ## 88. A whack filter that catches troubled pings without domain knowledge
-**status:** open; its check answered by plan 062's step 3 but for normal days · **needs: maintainer** — close it into
-TODO 184, or keep it for what is left (below) · **see:** decisions 067, 069, 078, 143, 164, 185 (TODO 38 folded in),
+**status:** open; its check answered by plan 062's step 3 but for normal days · **needs: maintainer** — close it (plan 062
+executed, decision 306), or keep it for what is left (below) · **see:** decisions 067, 069, 078, 143, 164, 185 (TODO 38 folded in),
 276, TODO 99, plan 062, plan 031 §3.7 item 12 (about 6,000 fixes left near harbours, mostly STK port event rows)
 
 "the current whack procedure should have picked out these troubled pings ... we may not have the luxury in other cases
@@ -1496,33 +1496,6 @@ went to `me_code`. Measured so far: the ICES interval rule keeps 0.07 % of `dans
 store's 9,582 placeholders. Next: plan 061's step 1 measures, then the sections one at a time.
 
 **check:** every case C1-C7 in `flow_pings.qmd`, or dropped with a reason in plan 061; the chapter renders cleanly.
-
-## 184. ramb's step 0 revised: copies labelled, a lazy speed after the flags, direction as evidence (plan 062)
-**status:** open; the ramb release built with the cascade, merged into ramb's `main` and installed (2026.11.04,
-abe207f), pushed 2026-11-05; fishycode follows since 2026-11-08 (decision 303) · **needs: maintainer** — the book
-(plan 062 step 6) · **see:** `curate/plans/062-ramb-step0-ping-flags-revised.md`, TODO 88, plan 061, decisions 067, 069,
-234, 275, 276 and 303
-
-The maintainer, 2026-11-02: ramb's branches and the functions that detect whacky pings, against the ICES data call,
-EM4SSF and iapesca. Read from the code by Claude (AI), nothing run: ramb's three side branches are all in `main`; the
-copies of ramb's work in fishycode are the whack shims with 12 study scripts, the union's own speed (derived before the
-flags), the `tie` step and the hand batching of `ais_ping_clean.R`; direction counts only behind the 25 kn gate, and no
-flagger reads a recorded speed or course. Decided: the branches deleted, the studies archived, copies within a feed
-labelled in ramb, a lazy speed per stream, ties and direction judged on evidence by a hand-set rule. Steps: housekeeping
-(done 2026-11-02: the branches deleted, the studies in `$FISHYDATA/archive/2026-10-whack-studies/`);
-two simple tests (done 2026-11-02 on 2017, `$FISHYDATA/archive/2026-11-02-plan062-step1/`: 28,758 kept speeds used a
-bad position; ramb's lazy route gave production's labels at 1.62 times its time, the cost in joining labels back);
-planted faults in ramb's `data-raw/` (done 2026-11-02: `dansk_planted`, ramb 2026.11.02.3, pushed 2026-11-05); every method scored
-(2026-11-02 on the planted faults and the reload, `$FISHYDATA/archive/2026-11-02-plan062-step3/`: no speed rule
-catches the day-shifted copies; the lazy route linear, 69 s at 100 M); one ramb release; fishycode follows; the book.
-
-What is left, in order: plan 062's "To finish" (2026-11-03); its items 0 and 1 done 2026-11-04 (decision 276, the
-four checks); of item 2, asks 1-4 answered 2026-11-04, all as recommended, and the cascade to be built (Decided m);
-item 3 built, merged and installed 2026-11-04 (ramb 2026.11.04, `$FISHYDATA/archive/2026-11-04-plan062-step4/`);
-item 4's step 5 built and the store rebuilt 2026-11-08 (decision 303): astd's and emodnet's speed after the flags,
-the clean on ramb's lazy route, every difference from the union down explained. Next, the book (step 6).
-
-**check:** plan 062 executed or parked, with a decision record.
 
 ## 185. A detailed depth grid, Olex 50 m with GEBCO: place names, a topography map, ramb's base map
 **status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — how
