@@ -6,7 +6,8 @@ data, and "With ramb", "Not yet in ramb" and the copied-latitude case under "Inv
 and documentation (2026.11.02.2), the ICES data call's R scripts and counts measured on fishycode's store. On
 2026-11-08 "With ramb", "Not yet in ramb" and the methods' table under "Impossible" were brought up to date with ramb
 2026.11.07.1, and "One feed, one report twice", "One vessel, one second, two places", "Time: a written time that is
-off" and "Judged against the vessel's own speed" were written on ramb's planted faults, by Claude. The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
+off" and "Judged against the vessel's own speed" were written on ramb's planted faults, and "A floor under the step,
+not a rule on the interval" and "A regular series, as a recipe" on ramb's example data, by Claude. The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
 §4 and 061) and the reading map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
 
@@ -801,6 +802,118 @@ ggplot(miss, aes(metres, rate)) +
   geom_boxplot(outlier.size = 0.3, outlier.alpha = 0.3, fill = "grey90") +
   scale_x_log10(labels = scales::label_comma(), breaks = c(1, 10, 100, 1000, 10000)) +
   labs(x = "distance from the true position (m, log)", y = "thinned to")
+```
+
+#### A floor under the step, not a rule on the interval
+
+Some workflows thin a track by rule. The ICES data call drops a ping that follows the vessel's previous one by less
+than five minutes (step 1.2.4, `intThres <- 5`, "to prevent pseudo duplicates"). The interval is taken to the previous
+ping in the data, not to the last one kept, and on times written to the minute. Run with the data call's own function,
+vmstools' `intervalTacsat()`, on ramb's example sets (@tbl-interval), it keeps almost nothing of a dense track: from a
+ping every ten seconds to one a minute, between none and a third of a percent. At six minutes it keeps most, and at ten
+minutes nearly all. The rule fits VMS that reports every hour or two; the ICES annex describes its input as VMS with an
+average polling interval in minutes and states no rate.
+
+```{r}
+#| label: tbl-interval
+#| tbl-cap: "The ICES data call's interval rule (step 1.2.4: a ping kept when at least five minutes after the vessel's previous one, times to the minute) on ramb's example sets, run with vmstools' `intervalTacsat(level = \"vessel\", fill.na = TRUE)` as the data call runs it."
+ices_interval_kept <- function(x) {
+  tacsat <- data.frame(VE_REF = x$vid, SI_DATE = format(x$time, "%d/%m/%Y"), SI_TIME = format(x$time, "%H:%M"))
+  tacsat$SI_DATIM <- as.POSIXct(paste(tacsat$SI_DATE, tacsat$SI_TIME), tz = "GMT", format = "%d/%m/%Y  %H:%M")
+  intv <- vmstools::intervalTacsat(tacsat, level = "vessel", fill.na = TRUE)$INTV
+  sum(intv >= 5, na.rm = TRUE)
+}
+map_dfr(sets, function(s) {
+  x <- std(s) |> arrange(vid, time)
+  step_s <- x |> group_by(vid) |> mutate(s = as.numeric(difftime(time, lag(time), units = "secs"))) |> pull(s)
+  tibble(set = s, pings = nrow(x), `median interval (s)` = median(step_s[step_s > 0], na.rm = TRUE),
+         kept = ices_interval_kept(x))
+}) |>
+  mutate(`kept (%)` = round(100 * kept / pings, 2)) |>
+  arrange(`median interval (s)`) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+ramb keeps every ping and puts a floor under the step instead. `min_dt_s` counts a step shorter than ten seconds as
+ten seconds when a speed is taken, so noise over a short step does not read as a dash. The copies that short steps
+may hide are the duplicate test's, and the time each ping stands for, its share of the effort, is taken from the steps
+as they are. Thinning, where it is wanted, is a separate choice, made in the open.
+
+#### A regular series, as a recipe
+
+Some methods want a position at fixed times, every minute say: a model of behaviour fitted on equal steps, or a
+comparison of tracks recorded at different rates. ramb builds no grid of its own, since the grid is two steps with what
+it has: a sequence of times for each vessel, and `rb_interpolate_track()` onto them. The effort needs no grid, since
+each ping carries the time it stands for.
+
+```{r}
+#| include: false
+# forty minutes taken out of a day of EX_3 while it steams, to stand for a gap in the recording
+gap_from <- as.POSIXct("2020-09-18 09:30:02", tz = "UTC")
+gap_to <- gap_from + 40 * 60
+holed <- day |> filter(time <= gap_from | time >= gap_to)
+```
+
+```{r}
+#| code-fold: show
+# a time each whole minute from each vessel's first ping to its last, then the positions at those times
+minute_grid <- function(track, by = "vid") {
+  track |>
+    group_by(across(all_of(by))) |>
+    summarise(time = list(seq(ceiling_date(min(time), "minute"), floor_date(max(time), "minute"), by = "1 min")),
+              .groups = "drop") |>
+    unnest(time)
+}
+every_minute <- rb_interpolate_track(minute_grid(holed), holed, by = "vid")
+
+# the same, with the track split wherever two consecutive pings lie more than 500 m apart: no position across a jump
+split_at <- function(track, metres) {
+  track |>
+    arrange(vid, time) |>
+    group_by(vid) |>
+    mutate(piece = cumsum(c(TRUE, (rb_calc_distance(lag(lon), lag(lat), lon, lat) > metres)[-1]))) |>
+    ungroup()
+}
+pieces <- split_at(holed, 500)
+every_minute_split <- rb_interpolate_track(minute_grid(pieces, c("vid", "piece")), pieces, by = c("vid", "piece"))
+```
+
+```{r}
+#| include: false
+in_gap <- every_minute |> filter(time > gap_from, time < gap_to)
+truth_at <- rb_interpolate_track(in_gap |> select(vid, time), day, by = "vid")
+gap_miss_m <- rb_calc_distance(in_gap$lon, in_gap$lat, truth_at$lon, truth_at$lat)
+split_in_gap <- every_minute_split |> filter(time > gap_from, time < gap_to)
+stopifnot(nrow(split_in_gap) == 0)
+pieces_at <- map_int(c(`10 s` = 0, `1 min` = 1, `6 min` = 6),
+                     function(m) max(split_at(if (m == 0) holed else thin(holed, m), 500)$piece))
+```
+
+A grid laid over a gap draws a straight line where the vessel may have done anything. Here forty minutes are taken
+out of the Danish day used above while the vessel steams out and back (@fig-grid). The positions the grid puts in the
+gap lie a median `r format(round(median(gap_miss_m), -2), big.mark = ",")` m and up to
+`r format(round(max(gap_miss_m), -2), big.mark = ",")` m from where the vessel was. A user who would rather have no
+position than a guessed one can split the track where consecutive pings lie further apart than a chosen distance, and
+interpolate within each piece: split at 500 m, the grid puts no position in this gap. The
+distance is a choice about the data, not a default. On this day with its gap, a 500 m split cuts the track into
+`r pieces_at[["10 s"]]` pieces at its own ten-second rate and `r pieces_at[["1 min"]]` at a ping a minute. At a ping
+every six minutes, where a vessel at 7.5 knots covers 1.4 km between pings, it cuts it into
+`r pieces_at[["6 min"]]`.
+
+```{r}
+#| label: fig-grid
+#| fig-cap: "Forty minutes taken out of a day of EX_3 (`dansk`, 18 September 2020) while it steams out and back: the pings kept (dark), the pings taken out (dashed), and the position the one-minute grid puts at each minute of the gap (blue), all at the spot the vessel left. Split at 500 m, the grid puts none there."
+#| fig-height: 4
+lv <- c("the pings kept", "the pings taken out", "a position each minute")
+ggplot() +
+  geom_path(data = day |> filter(between(time, gap_from, gap_to)), aes(lon, lat, colour = lv[2]), linetype = 2) +
+  geom_path(data = holed |> filter(between(time, gap_from - 900, gap_to + 900)) |> mutate(after = time >= gap_to),
+            aes(lon, lat, group = after, colour = lv[1]), linewidth = 0.8) +
+  geom_point(data = in_gap, aes(lon, lat, colour = lv[3]), size = 1) +
+  scale_colour_manual(values = setNames(c("grey20", "grey60", "#4F81BD"), lv), limits = lv) +
+  coord_quickmap() +
+  labs(x = NULL, y = NULL, colour = NULL) +
+  theme(legend.position = "bottom")
 ```
 
 ## Methods compared

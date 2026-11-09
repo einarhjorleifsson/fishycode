@@ -47,6 +47,9 @@ pseudo duplicates"); ramb counts a short step as `min_dt_s` long and drops nothi
 a median interval of 10 s, and the rule keeps 275 of them (0.07 %).
 *Assumed:* the rule was set for a feed that reports every hour or two, as VMS does. The ICES annex calls its input VMS
 data with an average polling interval in minutes, and states no rate.
+*Written* 2026-11-09 ("A floor under the step, not a rule on the interval"), with the data call's own
+`vmstools::intervalTacsat()` (0.77) on all eleven of ramb's example sets: 0-0.36 % kept from 10 s to 1 min, 69-100 %
+at 6 min, nearly all at 10 min (`dansk` 276 of 395,558, one more than the study's count, which dropped the first pings).
 
 **C3. Copies within one feed.** ramb labels them (plan 062 step 4a): exact copies, and near ones a second or a few
 metres apart. Contrast: the ICES exact-duplicate rule (1.2.2, lines 103-118) matches vessel, position and time, so a
@@ -72,6 +75,9 @@ measured counterpoint: over long silences the angle of `"clean"`'s first stage s
 500 m split is a user rule on top, not a default (the maintainer, 2026-11-02). Shown on a track with one long gap, with
 and without the split. iapesca's `Resample_Traj()` (`trajr` in time, on an oblique Mercator) is another recipe for the
 same grid.
+*Written* 2026-11-09 ("A regular series, as a recipe"): the recipe's code shown; forty minutes taken out of `dansk`'s
+EX_3 while it steams out and back, the grid's positions in the gap a median 4.5 km from the truth; split at 500 m, none;
+the same split cuts the day into 4 pieces at 10 s and 1 min and 55 at 6 min.
 
 **C7. One ping per vessel and second.** ramb keeps the position that fits the track (plan 062 step 4a). Contrasts, in
 a line each: iapesca's `CalcSpeed()` drops every later fix in the same second, wherever it is, in input order; the ICES
