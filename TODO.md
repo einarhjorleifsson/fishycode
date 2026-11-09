@@ -1482,21 +1482,6 @@ correction declared in `curate/corrections/`.
 
 **check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
 
-## 183. The ping chapter: the best approach to step 0, each rule with the fault it catches (plan 061)
-**status:** open · rewritten a second time 2026-11-02 (decision 275); "With ramb", "Not yet in ramb" and C1 written,
-the first two brought up to ramb 2026.11.07.1 on 2026-11-08, C3, the time flag (C8), C5, C7, C2 and C6 written, the
-scores' appendix (`docs/scores_pings.qmd`) and "Methods compared" on 2026-11-09; the skeleton sections left · **see:** plan 061, plan 062, decisions 273, 275 and 234,
-`docs/flow_pings.qmd`, `$FISHYDATA/archive/2026-11-02-ping-chapter-cases/`
-
-Drafted 2026-11-02 by Claude (AI); the measurements are Claude's, not checked by a person. The maintainer: the book
-describes the best approach, not the EM4SSF meeting. The chapter shows step 0 in order (clocks, placeholders, copies,
-impossible positions with direction as evidence, ties on evidence), each rule on ramb's planted faults (plan 062 step 2);
-other workflows only as contrasts where a choice needs one. Mendo et al.'s speed rule and iapesca's same-second rule
-went to `me_code`. Measured so far: the ICES interval rule keeps 0.07 % of `dansk`'s pings; its range test keeps the
-store's 9,582 placeholders. Next: plan 061's step 1 measures, then the sections one at a time.
-
-**check:** every case C1-C7 in `flow_pings.qmd`, or dropped with a reason in plan 061; the chapter renders cleanly.
-
 ## 185. A detailed depth grid, Olex 50 m with GEBCO: place names, a topography map, ramb's base map
 **status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — how
 the grid was made, from Julian Burgos · **see:** `$FISHYDATA/raw/external/bathymetry/README-provenance.txt`,

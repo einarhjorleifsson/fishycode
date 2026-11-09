@@ -8,8 +8,11 @@ and documentation (2026.11.02.2), the ICES data call's R scripts and counts meas
 2026.11.07.1, and "One feed, one report twice", "One vessel, one second, two places", "Time: a written time that is
 off" and "Judged against the vessel's own speed" were written on ramb's planted faults, and "A floor under the step,
 not a rule on the interval" and "A regular series, as a recipe" on ramb's example data, by Claude; on 2026-11-09
-"Methods compared" was written from the scores' appendix (@sec-scores-pings). The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
-§4 and 061) and the reading map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
+"Methods compared" was written from the scores' appendix (@sec-scores-pings), and "What if a source is missing",
+"Checking it" and "In the ICES data call" on ramb's example data and the data call's code. The first three sections
+("The problem", "What the groups say", "From ramb's articles") are still the outline's notes, from the maintainer's
+direction (plans 033 §4 and 061) and the reading map of the groups' reports (`ices_reports.yml`). Read by the
+maintainer on 2026-11-09: "it is fine".
 :::
 
 ```{r setup}
@@ -808,30 +811,45 @@ ggplot(miss, aes(metres, rate)) +
 #### A floor under the step, not a rule on the interval
 
 Some workflows thin a track by rule. The ICES data call drops a ping that follows the vessel's previous one by less
-than five minutes (step 1.2.4, `intThres <- 5`, "to prevent pseudo duplicates"). The interval is taken to the previous
-ping in the data, not to the last one kept, and on times written to the minute. Run with the data call's own function,
-vmstools' `intervalTacsat()`, on ramb's example sets (@tbl-interval), it keeps almost nothing of a dense track: from a
-ping every ten seconds to one a minute, between none and a third of a percent. At six minutes it keeps most, and at ten
-minutes nearly all. The rule fits VMS that reports every hour or two; the ICES annex describes its input as VMS with an
-average polling interval in minutes and states no rate.
+than `intThres` minutes (step 1.2.4, "to prevent pseudo duplicates"). The interval is taken to the previous ping in the
+data, not to the last one kept, and on times written to the minute, as the data call's position format holds them.
+`intThres` is one of the settings a user sets for the data at hand (in `0_global.R`), and its default is five
+minutes. The ICES annex describes its input as VMS with an average polling interval in minutes, and states no rate.
 
 ```{r}
-#| label: tbl-interval
-#| tbl-cap: "The ICES data call's interval rule (step 1.2.4: a ping kept when at least five minutes after the vessel's previous one, times to the minute) on ramb's example sets, run with vmstools' `intervalTacsat(level = \"vessel\", fill.na = TRUE)` as the data call runs it."
-ices_interval_kept <- function(x) {
+#| include: false
+ices_interval_kept <- function(x, thres) {
   tacsat <- data.frame(VE_REF = x$vid, SI_DATE = format(x$time, "%d/%m/%Y"), SI_TIME = format(x$time, "%H:%M"))
   tacsat$SI_DATIM <- as.POSIXct(paste(tacsat$SI_DATE, tacsat$SI_TIME), tz = "GMT", format = "%d/%m/%Y  %H:%M")
   intv <- vmstools::intervalTacsat(tacsat, level = "vessel", fill.na = TRUE)$INTV
-  sum(intv >= 5, na.rm = TRUE)
+  vapply(thres, function(th) sum(intv >= th, na.rm = TRUE), numeric(1))
 }
-map_dfr(sets, function(s) {
+interval_kept <- map_dfr(sets, function(s) {
   x <- std(s) |> arrange(vid, time)
   step_s <- x |> group_by(vid) |> mutate(s = as.numeric(difftime(time, lag(time), units = "secs"))) |> pull(s)
-  tibble(set = s, pings = nrow(x), `median interval (s)` = median(step_s[step_s > 0], na.rm = TRUE),
-         kept = ices_interval_kept(x))
+  k <- ices_interval_kept(x, c(1, 2, 5))
+  tibble(set = s, pings = nrow(x), median_s = median(step_s[step_s > 0], na.rm = TRUE),
+         kept_1 = k[1], kept_2 = k[2], kept_5 = k[3])
 }) |>
-  mutate(`kept (%)` = round(100 * kept / pings, 2)) |>
-  arrange(`median interval (s)`) |>
+  arrange(median_s)
+```
+
+The setting has to follow the ping rate, and the minute format sets a floor under it (@tbl-interval, run with the
+data call's own vmstools `intervalTacsat()`). Set at or below the interval between pings, the rule keeps the track:
+at one minute it keeps one ping per vessel and minute, which is all a dense track can keep with times to the minute
+(`r format(interval_kept$kept_1[interval_kept$set == "dansk"], big.mark = ",")` of the Danish
+`r format(interval_kept$pings[interval_kept$set == "dansk"], big.mark = ",")` pings, a ping every ten seconds). Set
+above it, the rule removes nearly every ping: on the tracks that report every ten seconds to every minute, the
+default of five keeps between none and a third of a percent, and two minutes hardly more. At six minutes and more
+the default keeps most.
+
+```{r}
+#| label: tbl-interval
+#| tbl-cap: "The ICES data call's interval rule (step 1.2.4: a ping kept when at least `intThres` minutes after the vessel's previous one, times to the minute) on ramb's example sets at three settings, run with vmstools' `intervalTacsat(level = \"vessel\", fill.na = TRUE)` as the data call runs it; five minutes is the data call's default."
+interval_kept |>
+  transmute(set, pings, `median interval (s)` = median_s,
+            `kept at 1 min` = kept_1, `at 2 min` = kept_2, `at 5 min (default)` = kept_5,
+            `at 5 min (%)` = round(100 * kept_5 / pings, 2)) |>
   knitr::kable(format.args = list(big.mark = ","))
 ```
 
@@ -928,16 +946,155 @@ catch for fewer good pings flagged beside a fault, and labelling copies before t
 
 ## What if a source is missing
 
-- No port list: ports unknown, so port pings stay unlabelled. Show the effect on the trips of the next chapter.
-- A sparse feed only (hourly VMS): which flags still work, and which pings can no longer be judged.
+Each test of this row needs something the data may lack. None stops for it: each falls back to what the data hold,
+and its basis says which.
+
+```{r}
+#| include: false
+# rest is not port: dansk's pings at under half a knot, in a harbour polygon or not
+in_port <- dansk |> select(vid, time, lon, lat, speed) |> rb_flag_ping_port(harbours) |>
+  mutate(rest = speed < 0.5, port = !is.na(port_id))
+rest_at_sea <- sum(in_port$rest & !in_port$port)
+rest_in_port_pct <- 100 * mean(in_port$port[in_port$rest])
+moving_in_port <- sum(!in_port$rest & in_port$port)
+# the time flag's reach: the pings it can judge at each ping rate (after the copies, as above)
+reach <- copies |> rb_flag_ping_time(limits, speed = speed) |>
+  group_by(rate_s) |> summarise(judged = 100 * mean(!is.na(ping_time_error_s)))
+reach_at <- function(r) round(reach$judged[reach$rate_s == r])
+```
+
+- **No recorded speed.** `"local"` judges at the fixed ceiling, basis `track`. It then catches none of the
+  out-and-backs and flags truly fast passages as the other methods do (@sec-scores-pings). A speed derived from the
+  positions is no witness here, since it is made of the positions being judged; `rb_add_ping_speed()` derives one
+  after the flags, for the steps further down.
+- **One feed.** The rule across feeds has nothing to compare. A report sent twice is found only with the recorded
+  speed and course, and a stretch sent again cannot be told from its original ("One feed, one report twice").
+- **A sparse feed.** The rarer the pings, the fewer can be judged. The time flag needs a ping's neighbours at a
+  steady speed within ten minutes: on `dansk_planted` it can judge `r reach_at(10)` % of the pings at ten seconds,
+  `r reach_at(60)` % at a minute, `r reach_at(360)` % at six minutes and `r reach_at(3600)` % at an hour. The speed
+  rules catch less as the rate falls, `"local"` least slowly (@sec-scores-pings).
+- **No port list.** `rb_flag_ping_port()` needs the harbours' polygons. Without them, the pings in port stay in the
+  trail unlabelled, and the trips of the next chapter have no port calls to be cut on. Rest is no stand-in for port:
+  of `dansk`'s pings at under half a knot, `r round(rest_in_port_pct)` % lie in a harbour, while
+  `r format(rest_at_sea, big.mark = ",")` lie at rest away from any harbour, and
+  `r format(moving_in_port, big.mark = ",")` pings move about inside a harbour. The workshops found mooring sites
+  from the track where no list exists (WKSSFGEO2 2023, p. 6), and iapesca falls back on a coastline downloaded through
+  `geodata` (read from its code). ramb has neither yet.
 
 ## Checking it
 
-- Pings in equal pings out across the trail and the set-aside table: a bar per dataset.
+Since every test labels and none drops, the check is a count: pings in equal pings out, each in one outcome. Here
+ramb's advised chain runs on each of its example sets: the placeholders, the copies, then `"local"` with each vessel's
+own limits and the vote, with the recorded speed where the set records speed over ground (`dansk`, `trawlsurvey`, the
+Adriatic passive gears and the Italian AIS). Every set comes out with the pings it went in with (@tbl-checking).
+
+```{r}
+#| label: tbl-checking
+#| tbl-cap: "ramb's advised chain on each of its example sets: the pings in and out, and the label each ping comes out with. With the recorded speed where the set records speed over ground; the other sets' speeds are as their sources give them, and are not used."
+over_ground <- c("dansk", "trawlsurvey", "wkssfgeo_adriatic_passive", "wkssfgeo_cnr_ais")
+pings_of <- function(s) {
+  x <- rb_read_example(s) |> collect()
+  x <- switch(s,
+    dansk = rename(x, vid = vessel_id, time = time_stamp),
+    wkssfgeo_adriatic_passive = rename(x, vid = vessel_id, time = time_stamp),
+    wkssfgeo_cnr_ais = rename(x, vid = MMSI, time = datetime, lon = longitude, lat = latitude),
+    creel = rename(x, vid = id),
+    x)
+  x |> transmute(vid = as.character(vid), time, lon, lat, speed = if ("speed" %in% names(x)) speed else NA_real_,
+                 provider = "one") |>
+    arrange(vid, time)
+}
+chain <- function(x, recorded) {
+  y <- rb_flag_ping_invalid(x)
+  if (recorded) {
+    y <- rb_flag_ping_duplicate(y, speed = speed)
+    rb_flag_ping_impossible(y, method = "local", speed = speed, limits = rb_create_ping_limits(x, speed = speed),
+                            anchor = "vote")
+  } else {
+    y <- rb_flag_ping_duplicate(y)
+    rb_flag_ping_impossible(y, method = "local", limits = rb_create_ping_limits(x), anchor = "vote")
+  }
+}
+checked <- map_dfr(sets, function(s) {
+  x <- pings_of(s)
+  y <- chain(x, s %in% over_ground)
+  stopifnot(nrow(y) == nrow(x), setequal(y$time, x$time))
+  tibble(set = s, `pings in` = nrow(x), `pings out` = nrow(y),
+         kept = sum(is.na(y$ping_flag)),
+         invalid = sum(y$ping_flag %in% "invalid"),
+         copy = sum(y$ping_flag %in% c("duplicate", "shifted")),
+         position = sum(!is.na(y$ping_flag) & !y$ping_flag %in% c("invalid", "duplicate", "shifted")))
+})
+knitr::kable(checked, format.args = list(big.mark = ","))
+```
+
+Most sets come out almost untouched, and the Danish tracks with about one ping in
+`r with(checked[checked$set == "dansk", ], format(round(kept / (invalid + copy + position) + 1, -2), big.mark = ","))`
+flagged.
 
 ## In the ICES data call
 
-- The data call drops the pings it does not keep. This book labels them instead, so totals can be traced back.
+The data call's own preprocessing (steps 1.2.1 to 1.2.5 of `1_eflalo_tacsat_preprocessing.R`) removes, in order, the
+pings outside the ICES areas, the duplicates, the positions off the globe, every ping within `intThres` minutes of the
+one before (five by default), and the pings in a harbour. It counts the rows left after each step (`remrecsTacsat`), so the totals can be
+traced; which pings went, and why, cannot. It has no test of an impossible position: a speed threshold of 20 knots is
+set (`spThres` in `0_global.R`), and none of its scripts uses it (read from the code).
+
+```{r}
+#| label: tbl-ices-steps
+#| tbl-cap: "The data call's ping steps and what this row does in their place. Each step of the data call removes; each test of ramb labels."
+tribble(
+  ~`data call step`, ~removes, ~`in ramb`,
+  "1.2.1 outside the ICES areas", "a ping outside the areas", "none: an area is looked up at delivery",
+  "1.2.2 duplicates", "the same vessel, position and minute", "`rb_flag_ping_duplicate()`: `duplicate`, `shifted`",
+  "1.2.3 not possible", "a position off the globe", "`rb_flag_ping_invalid()`: `invalid`, longitude equal to latitude too",
+  "1.2.4 pseudo duplicates", "a ping within `intThres` minutes of the one before (five by default)", "none: a floor under the step (`min_dt_s`)",
+  "1.2.5 in harbour", "a ping in a harbour polygon", "`rb_flag_ping_port()`: `port_id`, kept in the trail",
+  "(none)", "", "`rb_flag_ping_impossible()`, `rb_flag_ping_time()`"
+) |>
+  knitr::kable()
+```
+
+```{r}
+#| include: false
+# the data call's steps 1.2.2 to 1.2.5 on dansk, as its code runs them, at its default `intThres` of five minutes and
+# at one minute; 1.2.1 needs the ICES areas, which ramb lacks, and dansk_harbours stands in for its harbour list
+ices_steps <- function(thres) {
+  tacsat <- data.frame(VE_REF = dansk$vid, SI_LATI = dansk$lat, SI_LONG = dansk$lon,
+                       SI_DATE = format(dansk$time, "%d/%m/%Y"), SI_TIME = format(dansk$time, "%H:%M"))
+  tacsat$SI_DATIM <- as.POSIXct(paste(tacsat$SI_DATE, tacsat$SI_TIME), tz = "GMT", format = "%d/%m/%Y  %H:%M")
+  left <- c(total = nrow(tacsat))
+  tacsat <- tacsat[!duplicated(paste(tacsat$VE_REF, tacsat$SI_LATI, tacsat$SI_LONG, tacsat$SI_DATIM)), ]
+  left["duplicates"] <- nrow(tacsat)
+  tacsat <- tacsat[!(abs(tacsat$SI_LATI) > 90 | abs(tacsat$SI_LONG) > 180), ]
+  left["not possible"] <- nrow(tacsat)
+  tacsat$INTV <- vmstools::intervalTacsat(tacsat, level = "vessel", fill.na = TRUE)$INTV
+  tacsat <- tacsat[!is.na(tacsat$INTV) & tacsat$INTV >= thres, ]
+  left["pseudo duplicates"] <- nrow(tacsat)
+  in_harbour <- lengths(sf::st_intersects(sf::st_as_sf(tacsat, coords = c("SI_LONG", "SI_LATI"), crs = 4326),
+                                          harbours)) > 0
+  left["harbour"] <- nrow(tacsat) - sum(in_harbour)
+  left
+}
+at_default <- ices_steps(5)
+at_minute <- ices_steps(1)
+```
+
+```{r}
+#| label: tbl-ices-dansk
+#| tbl-cap: "The data call's steps 1.2.2 to 1.2.5 on the Danish tracks: the pings still there after each step, at its default `intThres` of five minutes and at one minute (step 1.2.1 left out, as it needs the ICES areas; `dansk_harbours` stands in for the data call's harbour list)."
+tibble(`after step` = c("the start", "1.2.2 duplicates", "1.2.3 not possible", "1.2.4 pseudo duplicates", "1.2.5 in harbour"),
+       `intThres = 5 (default)` = at_default, `intThres = 1` = at_minute) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+Run on the Danish tracks at its default, the data call's steps keep `r format(at_default[["harbour"]], big.mark = ",")`
+of the `r format(at_default[["total"]], big.mark = ",")` pings for its analysis and remove the rest (@tbl-ices-dansk):
+the five-minute rule keeps only the first ping after each silence of five minutes or more. That setting is wrong for
+a track that reports every ten seconds. Set to one minute, the steps keep
+`r format(at_minute[["harbour"]], big.mark = ",")`: one ping per vessel and minute, out of port. A ping a minute is as
+far as the data call can follow this track, since it writes the times to the minute. The same tracks through this row
+keep every ping, at its own time, with a label on the few that are wrong (@tbl-checking).
 
 ## With ramb
 

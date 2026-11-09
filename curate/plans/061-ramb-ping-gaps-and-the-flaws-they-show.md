@@ -1,6 +1,7 @@
 # 061 — The ping chapter: the best approach to step 0, each rule shown with the fault it catches, on planted faults
 
-**status:** partly built — rewritten a second time on 2026-11-02 at the maintainer's word: the book describes the best
+**status:** executed — every case written 2026-11-08/09, read by the maintainer ("it is fine") and closed (decision
+307); TODO 183 deleted. Rewritten a second time on 2026-11-02 at the maintainer's word: the book describes the best
 approach, not the EM4SSF meeting; the comparisons with Mendo et al. and iapesca go to `~/stasi/em4ssf/me_code`;
 the simulated data come from ramb (plan 062). "With ramb", "Not yet in ramb" and C1 written; the
 other cases still to measure and write. **see:** plan 062 (the ramb revision), decision 275, decision 273 (EM4SSF's
@@ -50,6 +51,10 @@ data with an average polling interval in minutes, and states no rate.
 *Written* 2026-11-09 ("A floor under the step, not a rule on the interval"), with the data call's own
 `vmstools::intervalTacsat()` (0.77) on all eleven of ramb's example sets: 0-0.36 % kept from 10 s to 1 min, 69-100 %
 at 6 min, nearly all at 10 min (`dansk` 276 of 395,558, one more than the study's count, which dropped the first pings).
+Revised the same day at the maintainer's word ("we should not use the 5 minute rule on the danish data - can one not
+change it?"): `intThres` is a setting of the data call (`0_global.R`), so the table shows 1, 2 and 5 minutes; at 1 it
+keeps one ping per vessel and minute (`dansk` 66,295), the floor the data call's minute format sets; above the ping rate
+it removes nearly all. "In the ICES data call" runs the steps at both 5 and 1 (139 and 55,242 of `dansk` left).
 
 **C3. Copies within one feed.** ramb labels them (plan 062 step 4a): exact copies, and near ones a second or a few
 metres apart. Contrast: the ICES exact-duplicate rule (1.2.2, lines 103-118) matches vessel, position and time, so a
@@ -124,7 +129,9 @@ uncapped (decision 232). It belongs to the effort chapter.
 5. **The scores' appendix** after plan 062 step 3. *Written* 2026-11-09: `docs/scores_pings.qmd` (appendix "Step 0
    scored on planted faults"), seven settings of the speed rule after the copies on `dansk_planted`, every ping in one
    outcome by `rb_add_ping_outcome()`, by rate, by fault and with the copy rule's one part or both; "Methods compared"
-   in the chapter written from it. Found on the way: ramb's `rb_flag_ping_impossible(feed = feed, stream = feed)` stops
+   in the chapter written from it. "What if a source is missing", "Checking it" and "In the ICES data call" written
+   the same day on ramb's example data and the data call's code (its steps 1.2.2-1.2.5 run on `dansk`: 139 of
+   395,558 pings left; its `spThres` of 20 kn set and used by no script). Found on the way: ramb's `rb_flag_ping_impossible(feed = feed, stream = feed)` stops
    (`feed` not found under `"local"`, a clash with a `stream` column under `"clean"`); the appendix passes a copy. Fixed
    in ramb 2026.11.07.2 (55d42a6), pushed and installed from GitHub on 2026-11-09.
 
