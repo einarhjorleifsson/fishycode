@@ -53,8 +53,9 @@ labelled as measured.
 - **A correction on the way**: "Not yet in ramb" first said a tie's flag depends on the input order; ramb orders a
   tie by position itself (beec122).
 - **A ramb defect found by the appendix**: one column as both `feed` and `stream` stopped
-  `rb_flag_ping_impossible()`, or judged the streams together without a word. Fixed in ramb 2026.11.07.2 (55d42a6,
-  ramb's local `main`, 2026-11-09); the appendix passes a copy of the column, which works under either version.
+  `rb_flag_ping_impossible()`, or judged the streams together without a word. Fixed in ramb 2026.11.07.2 (55d42a6),
+  pushed and installed from GitHub on 2026-11-09 at the maintainer's word ("Yes, push and install"; the whole suite
+  passes against it, 3,202); the appendix passes a copy of the column, which works under either version.
 
 ## What it leaves
 
@@ -62,4 +63,3 @@ labelled as measured.
 - TODO 88, `needs: maintainer`: closed, or kept for what is left (normal Icelandic days, a lone feed's copies, about
   6,000 fixes near harbours).
 - The chapter's three sections still in outline, and the maintainer's review of it: TODO 183 (plan 061).
-- The pushes of fishycode and ramb, and the install of ramb 2026.11.07.2: the maintainer's.

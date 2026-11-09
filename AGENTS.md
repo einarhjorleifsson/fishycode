@@ -302,7 +302,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   `curate/port_call.R` stops under an older ramb. The full order of rows that tie in time in `rb_create_port_calls()`,
   `rb_flag_port_event()` and `rb_create_voyages()` (TODO 195, decision 296) is 2026.11.07.1 (6fbb540), committed to
   ramb's local `main` and installed from it on 2026-11-07 (`git archive` with the LFS files, `--preclean`; the whole
-  suite passes, 3,187), pushed 2026-11-07; `curate/port_call.R` stops under an older ramb. Plan
+  suite passes, 3,187), pushed 2026-11-07; `curate/port_call.R` stops under an older ramb. One column as both `feed`
+  and `stream` in `rb_flag_ping_impossible()` (decision 306) is 2026.11.07.2 (55d42a6), committed to ramb's local
+  `main`, pushed and installed from GitHub on 2026-11-09 (the whole suite passes against it, 3,202); nothing in
+  fishycode passes one column as both. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; production's own chain gives the store's labels under it (plan

@@ -126,7 +126,7 @@ uncapped (decision 232). It belongs to the effort chapter.
    outcome by `rb_add_ping_outcome()`, by rate, by fault and with the copy rule's one part or both; "Methods compared"
    in the chapter written from it. Found on the way: ramb's `rb_flag_ping_impossible(feed = feed, stream = feed)` stops
    (`feed` not found under `"local"`, a clash with a `stream` column under `"clean"`); the appendix passes a copy. Fixed
-   in ramb 2026.11.07.2 (55d42a6, committed to ramb's local `main` 2026-11-09, not installed or pushed).
+   in ramb 2026.11.07.2 (55d42a6), pushed and installed from GitHub on 2026-11-09.
 
 ## Answers (2026-11-02, the maintainer: "Yes, start", taking Claude's recommendations; two revised the same day)
 
