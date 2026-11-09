@@ -4,7 +4,9 @@
 (`$FISHYDATA/archive/2026-11-09-ornefni-in-use/`, `scripts/00_inventory.R`, its log in `notes/`); the same day step 1
 run as a study at the maintainer's word ("Yes, start step 1"): the highs printed at 1:40 000 passed its rule (31
 names moved onto the grid's high in the örnefni map), and with a mend, a closed high tuned west and judged east, the
-highs printed at 1:100 000 (19 more); the deeps and skerries left at their label (§3); nothing else built ·
+highs printed at 1:100 000 (19 more); the deeps and skerries left at their label (§3). Also the same day, as studies:
+step 8, the maintainer's review, begun (a ledger and verdicts on ramb's viewer, kept in the in-use study, internal),
+and step 4, every gazetteer name sorted by rules before it reaches the map. Nothing built in the pipeline ·
 **2026-11-09** · **see:** plans 044, 045 (§2, ask c), 067 (ask a), 070 (§2.2, §2.8-§2.10), decisions 272, 286,
 300-302 and 304, the örnefni map (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODOs 144, 186, 193 and 194
 

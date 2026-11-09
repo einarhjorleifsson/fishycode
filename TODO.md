@@ -1633,7 +1633,7 @@ Each step starts as a study, and becomes a target after the maintainer's review.
 ## 197. The names in use beside the charts' names, and each small feature on the seabed (plan 071)
 **status:** open · plan 071's asks a-d and f wait on the maintainer, ask e answered (a ledger in the in-use study under `$FISHYDATA`); step
 1 run 2026-11-09 (the highs at 1:40 000 and, mended, at 1:100 000 passed; 50 names moved); step 8, the review, begun
-with Eldeyjarboði · **see:**
+with Eldeyjarboði; step 4 begun as a study, every name sorted before the map · **see:**
 `curate/plans/071-place-names-in-use-beside-the-charts.md`, `$FISHYDATA/archive/2026-11-09-ornefni-in-use/README.md`,
 the örnefni map (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), plan 070, decisions 301, 302 and 304, TODOs 144 and 194
 
@@ -1648,8 +1648,9 @@ proposes:
 
 Measured (Claude, read-only): 6,601 of the gazetteer's 8,243 names are not on the charts; 1,440 lie deeper than
 200 m, 1,071 of them outside every official area.
-Step 1's open ends (the study README): a fair witness for the deeps, since the grid shows almost none of the
-Vestmannaeyjar map's features within 150 m; the skerries, which fail with both detectors.
+Open (the in-use study's README): a fair witness for the deeps (the grid shows almost none of the Vestmannaeyjar map's
+features within 150 m); the skerries; the maintainer's three judgements on the ledger's first entry; the sorting's
+rules into the gazetteer's build (step 4); the review's 972 names to sort, on the örnefni viewer.
 
 **check:** plan 071's steps 1-7 built as studies and reviewed on the map by the maintainer, its asks answered; or the
 plan parked.
