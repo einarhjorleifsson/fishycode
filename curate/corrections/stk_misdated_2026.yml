@@ -1,0 +1,37 @@
+id: stk_misdated_2026
+title: STK's reports of 14 January 2026, 09:08-13:30, were delivered in its outage with a time a day late
+status: declared 2026-11-09, coded (curate/corrections/stk_misdated_2026.R, applied by curate/ais_ping_tag.R), not yet in the store - the tag pass and the chain below it are rebuilt at the maintainer's go
+applies_to:
+  - staging/ais/ping_tagged - STK's streams stk_ais and stk_vms, the block's reports (`time` a day earlier, `lag_s` 86400, `lag_basis` "misdated"; or "misdated_undecided", not moved)
+  - STK's port events as curate/port_call.R reads them from staging/ais/stk_event.parquet - the block's events moved back a day (168 events, 70 vessels); the event table itself unchanged
+  - every stage below them - ping_clean, ping_whacky, port calls, voyages, the trail and its links
+affects_rows: "the block holds 64,760 AIS reports (664 vessels) and 501 VMS reports (88) with a vessel; astd places 14,063 AIS and 202 VMS of them where the vessel was a day before, 121 and 1 at their own time (the live reports STK received in the same half hour)"
+implementation: "curate/corrections/stk_misdated_2026.R writes staging/ais/stk_misdated.parquet (target stk_misdated); curate/ais_ping_tag.R joins it on vid, delivered time and position (STK's three streams, the kept arrivals among them) after the clocks and before the port tag; curate/port_call.R moves the block's events back a day as it reads them. Tested 2026-11-09 on a scratch store of 2026 (tag pass only): every tagged row equal to the live store's but the block's, 62,891 AIS, 491 VMS and 74 kept arrivals moved back a day, 1,384 labelled `misdated_undecided`; every row of the correction table landed on a ping or an event"
+discovered: 2026-11-02, checking plan 060's receipt rule against PAME's astd (decision 274, "Left"); measured 2026-11-09, TODO 182, the study $FISHYDATA/archive/2026-11-09-stk-outage-misdated/
+
+defect:
+  summary: >-
+    In STK's outage of January 2026 every unit's reports came in hours late, and STK took the backlog in all at once.
+    The reports of 14 January from 09:08 to 13:30 came on 15 January between 11:08:43 and 11:30:30 with the right
+    time of day but the next day's date. STK holds no other copy of them, and its track has a hole on 14 January over
+    those hours (its hours 10-12 empty, 09 and 13 partial), while the block holds about 17,000 AIS reports an hour, as
+    a normal hour does. Both of STK's streams, AIS and VMS, carry the same wrong date, so neither is a witness for the
+    other, and the receipt rule (decision 274) leaves a flushed hour out of every unit's level and so does not see them.
+  evidence:
+    witness: "PAME's astd track of the same vessel, at the report's own time and a day before, within 500 m (the study's 02_witness.R): in January's flush 14,105 AIS and 203 VMS reports a day late, against 24 of 200,859 in ordinary hours of 8-20 January (the control)"
+    shift: "for 8,293 AIS and 122 VMS of them astd's nearest ping in space lies 1,435-1,445 min before, most at 1,440 (03_shift.R)"
+    one_block: "every late report of January was received on 15 January 11:08:43-11:30:30 and written that day from 09:08 to 13:30 (06_edges.R, 07_block_rule.R)"
+    the_hole: "STK's whole track by written hour, 14-15 January (09_hole.R): the hole of 14 January matches the block's clock times; the block's reports repeat none of STK's of the day before (08_copies.R)"
+    live_reports: "outside 0-6 min before receipt astd judges 13,712 AIS of the block late and 2 on time; inside it 351 late and 119 on time: the live reports STK received during the flush, written at their own time"
+    other_outages: "May 2026: 32 reports a day late, the control's chance rate; 2 June: none; October 2026: no astd witness (TODO 87's reload, dated a day early)"
+why_it_went_unnoticed: >-
+  Both of STK's streams agree on the wrong date, so the feeds' clock check and the VMS track check, which hold one of
+  STK's streams against the other, see nothing; the receipt rule leaves a flushed hour out. Only a feed outside STK,
+  PAME's astd, shows it, and only where it heard the vessel. The clean takes out some of the block's pings where they
+  jump against astd's live track.
+repair: >-
+  Chosen by the maintainer 2026-11-09 ("Yes, write it"): the block's reports moved back a day beside their delivered
+  time (`time` = `time_delivered` - 1 day, `lag_s` 86400, `lag_basis` "misdated"), never dropped. Inside the live zone,
+  written 0-6 min before receipt, a report is moved where astd places it a day before (basis "astd"), left where astd
+  places it at its own time (a live report), and labelled `misdated_undecided` where astd cannot judge. The block is
+  named by its receipt span and written times, which hold for this outage alone.

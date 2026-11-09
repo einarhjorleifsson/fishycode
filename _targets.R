@@ -803,10 +803,17 @@ list(
     produces("curate/ais_ping_clean.R", fd_staging("ais", "ping_clean"), fd_staging("ais", "ping_limits"))
   }, format = "file"),
 
+  # Correction (curate/corrections/stk_misdated_2026.yml): STK's reports of 14 January 2026 delivered a day late in its
+  # outage, which the tag pass moves back a day; astd from the union is the witness where a report may be live
+  tar_target(stk_misdated, {
+    ais_ping_union; stk_trail_raw; vessel_ais_key
+    produces("curate/corrections/stk_misdated_2026.R", fd_staging("ais", "stk_misdated.parquet"))
+  }, format = "file"),
+
   # The feeds put on one clock from the check's lags, STK's arrivals kept as fixes told by the union's own `io` (plan
   # 048), then the port tag
   tar_target(ais_ping_tag, {
-    ais_ping_union; check_ais_feed_clock; shapes
+    ais_ping_union; check_ais_feed_clock; shapes; stk_misdated
     produces("curate/ais_ping_tag.R", fd_staging("ais", "ping_tagged"))
   }, format = "file"),
 
@@ -942,7 +949,7 @@ list(
   # Port calls (plan 011 Phase 3; stays until decision 147): elapsed time at a port, from polygon, gap and (2017+)
   # event evidence.
   tar_target(port_call, {
-    ais_ping_clean; shapes; stk_event; port_radius
+    ais_ping_clean; shapes; stk_event; port_radius; stk_misdated
     produces("curate/port_call.R",
              fd_curated("ais", "port_call.parquet"))
   }, format = "file"),

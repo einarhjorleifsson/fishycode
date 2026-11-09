@@ -5,6 +5,7 @@
 # Input:  staging/ais/ping_clean            (cleaned pings, every provider; recorded positions only, plan 014)
 #         staging/aux/ports.fgb             (standard polygons; source == "einar", Iceland/Faroe)
 #         staging/ais/stk_event.parquet     (STK's I/U events, its adapter's: port, position, marker, unit)
+#         staging/ais/stk_misdated.parquet  (STK's reports delivered a day late: curate/corrections/stk_misdated_2026.R)
 #         curated/reference/port_radius.parquet (the departure radius per port; a frozen input)
 # Output: curated/ais/port_call.parquet  one row per port call: vid, port_call_id (key, numbered per vessel by T_in), pid,
 #         T_in, T_out, ...
@@ -97,6 +98,9 @@ clean_years <- function(ys) {
                                         "'", collapse = ", "))
 }
 event_f   <- fd_staging("ais", "stk_event.parquet")
+# STK's reports of 14 January 2026 delivered a day late (curate/corrections/stk_misdated_2026.yml): an event among them
+# is moved back a day, as the tag pass moves the pings
+misdated_f <- fd_staging("ais", "stk_misdated.parquet")
 YEARS     <- as.integer(strsplit(Sys.getenv("STAY_YEARS", ""), ",")[[1]])
 ALL       <- !length(YEARS)
 
@@ -121,11 +125,17 @@ ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M)
 # event's previous one, however far back), against the cleaned recorded pings of Y-1 to Y+1 (the track test); the
 # events of Y kept. A marker's position is not the vessel's and goes in as NA; the unit is the STK mobile id.
 
+misdated_sql <- if (file.exists(misdated_f)) {
+  glue::glue("(SELECT DISTINCT vid, time FROM read_parquet('{misdated_f}') WHERE decision = 'misdated')")
+} else {
+  "(SELECT NULL::INT AS vid, NULL::TIMESTAMP AS time WHERE false)"
+}
 x(glue::glue("CREATE OR REPLACE TEMP TABLE ev_in AS
-  SELECT vid, time, io, CAST(year AS INTEGER) AS year, hid_pid AS port_id,
-         CASE WHEN marker THEN NULL ELSE lon END AS lon, CASE WHEN marker THEN NULL ELSE lat END AS lat,
-         CAST(mid AS VARCHAR) AS mid, lon AS raw_lon, lat AS raw_lat
-  FROM read_parquet('{event_f}')"))
+  SELECT e.vid, CASE WHEN m.vid IS NOT NULL THEN e.time - INTERVAL 1 DAY ELSE e.time END AS time, e.io,
+         CAST(e.year AS INTEGER) AS year, e.hid_pid AS port_id,
+         CASE WHEN e.marker THEN NULL ELSE e.lon END AS lon, CASE WHEN e.marker THEN NULL ELSE e.lat END AS lat,
+         CAST(e.mid AS VARCHAR) AS mid, e.lon AS raw_lon, e.lat AS raw_lat
+  FROM read_parquet('{event_f}') e LEFT JOIN {misdated_sql} m ON m.vid = e.vid AND m.time = e.time"))
 ports_ev <- P |> transmute(port_id = pid)
 ev_years <- q("SELECT DISTINCT year FROM ev_in ORDER BY 1")$year
 judged <- vector("list", length(ev_years))
@@ -215,7 +225,7 @@ print(out |> count(year, rule) |> tidyr::pivot_wider(names_from = rule, values_f
 if (ALL) {
   out |> write_curated(
     fd_curated("ais", "port_call.parquet"),
-    inputs = c(fd_staging("aux", "ports.fgb"), event_f,
+    inputs = c(fd_staging("aux", "ports.fgb"), event_f, if (file.exists(misdated_f)) misdated_f,
                list.files(fd_staging("ais", "ping_clean"), pattern = "parquet$", recursive = TRUE, full.names = TRUE)))
   message(sprintf("port_call: %s port calls", format(nrow(out), big.mark = ",")))
 } else {

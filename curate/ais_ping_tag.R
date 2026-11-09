@@ -5,6 +5,7 @@
 #         curated/check/ais_feed_clock.parquet    the lag per vessel, stream and month (curate/checks/ais_feed_clock.R)
 #         curated/check/ais_feed_clock_usual.parquet  the usual lag of STK's own-stamped VMS pings, by year (the same)
 #         staging/ais/stk_receipt                 STK's receipt and unit of each ping of its VMS stream (the union)
+#         staging/ais/stk_misdated.parquet        STK's reports delivered a day late (curate/corrections/stk_misdated_2026.R)
 #         staging/aux/ports.fgb                   harbour polygons (pid, hid)
 # Output: staging/ais/ping_tagged                 partitioned by the year of `time`: the union's columns with `time`
 #                                                 harmonized, beside it `time_delivered`, `lag_s`, `lag_basis` and
@@ -27,7 +28,11 @@
 #   measured    its vessel-stream-month's lag where the check's outcome is "offset" (rb_add_ping_time());
 #   none        the reference, an aligned unit or a vessel with one stream: not moved;
 #   unmeasured  every other ping, STK's arrivals kept as fixes (plan 048) and the logger among them: not moved, flagged by
-#               its basis.
+#               its basis;
+#   misdated    a report of STK's of 14 January 2026, 09:08-13:30, delivered a day late in its outage: moved back a day
+#               (lag 86,400 s); `misdated_undecided`, one of them that may be a live report, not moved
+#               (curate/corrections/stk_misdated_2026.yml, from staging/ais/stk_misdated.parquet). It overrides the
+#               bases above.
 # The delivered time stays beside the harmonized one, as w_lon/w_lat beside lon/lat. A ping is never dropped: every row
 # of the union is in the output once. The receipt and the unit are read here and not written: no column of STK's receipt
 # is carried through the AIS layers (decision 196). Tested as the study's candidate on 2015, 2016 and 2026 (plan 059 step 5).
@@ -72,6 +77,14 @@ x("CREATE OR REPLACE TABLE lags AS SELECT vid, stream, make_date(CAST(year AS IN
 x("CREATE OR REPLACE TABLE usual AS SELECT stream, make_date(CAST(year AS INT), 1, 1) AS period, lag_s
    FROM read_parquet('%s')", fd_curated("check", "ais_feed_clock_usual.parquet"))
 receipt_dir <- fd_staging("ais", "stk_receipt")
+# the reports STK delivered a day late (curate/corrections/stk_misdated_2026.R), one row per key; none where it is absent
+misdated_file <- fd_staging("ais", "stk_misdated.parquet")
+misdated <- if (file.exists(misdated_file)) {
+  sprintf("read_parquet('%s')", misdated_file)
+} else {
+  "(SELECT NULL::INT AS vid, NULL::TIMESTAMP AS time, NULL::DOUBLE AS lon, NULL::DOUBLE AS lat, NULL::VARCHAR AS decision
+     WHERE false)"
+}
 
 # One write, partitioned by year, into an emptied folder. A second, month-partitioned copy of the loop once wrote
 # 2009-2025 again beside it, which made the directory unreadable (Hive partition mismatch); nothing downstream filters
@@ -106,7 +119,20 @@ for (YR in years) {
     compute(name = "s1", overwrite = TRUE) |>
     rb_add_ping_time(lags = tbl(con, "lags")) |>
     select(-lag_own_s, -lag_own_basis, -receipt, -mid) |>
-    compute(name = "s2", overwrite = TRUE) |>
+    compute(name = "s2", overwrite = TRUE)
+  # STK's reports of 14 January 2026 delivered a day late (curate/corrections/stk_misdated_2026.yml): moved back a day,
+  # or labelled undecided, beside the delivered time; every other ping as the clocks left it. Any of STK's streams: an
+  # arrival kept as a fix (`stk_event`, plan 048) comes from the same reports
+  x("CREATE OR REPLACE TEMP TABLE s2m AS
+     SELECT s.* REPLACE (
+              CASE WHEN m.decision = 'misdated' THEN s.time_delivered - INTERVAL 1 DAY ELSE s.time END AS time,
+              CASE WHEN m.decision = 'misdated' THEN 86400.0 ELSE s.lag_s END AS lag_s,
+              CASE WHEN m.decision = 'misdated' THEN 'misdated' WHEN m.decision = 'undecided' THEN 'misdated_undecided'
+                   ELSE s.lag_basis END AS lag_basis)
+     FROM s2 s LEFT JOIN %s m
+       ON m.vid = s.vid AND m.time = s.time_delivered AND m.lon = s.lon AND m.lat = s.lat
+          AND s.stream IN ('stk_ais', 'stk_vms', 'stk_event')", misdated)
+  tbl(con, "s2m") |>
     ramb::rb_flag_ping_port(ports, keep = "hid") |>
     rename(pid = port_id) |>
     compute(name = "s3", overwrite = TRUE) |>
