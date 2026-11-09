@@ -24,10 +24,11 @@ only for what was left, with the maintainer to close it or keep it.
   Since plan 048 (decisions 288-296), STK's event rows are out of the track and judged as events, and an event's port
   comes from its code (`pid_basis` "code"), not its position. So neither reaches the speed rule any more.
 - **A placeholder found on the way**: 866 of STK's 8.48 million port events, all departures (2007-2024), lie at
-  longitude 180°, at latitudes from 64.5° S to 69.3° N. 49 of them, on 44 vessels in 2007-2019, sit between 8.50° and
-  8.59° N, every one stamped 05:19 or midnight, vid 2654's among them. 763 of the 866 take their port from the
-  event's code and 100 from the arrival before; 3 have none. Whether the event judge (`rb_flag_port_event()`) sets
-  them aside was not checked, nor their cause at the source.
+  a longitude of 180° or beyond (521 at −181, 313 at −180; corrected by decision 311, which counts 874 out of range
+  and 138 more at 0,0), at latitudes from 64.5° S to 69.3° N. 49 of them, on 44 vessels in 2007-2019, sit between
+  8.50° and 8.59° N, every one stamped 05:19 or midnight, vid 2654's among them. 763 of the 866 take their port from
+  the event's code and 100 from the arrival before; 3 have none. Whether the event judge (`rb_flag_port_event()`) sets
+  them aside was not checked here (decision 311: it does not), nor their cause at the source.
 - **Normal Icelandic days** have no truth to score a rule against; the planted faults stand in, and the night runs
   against the live store (decisions 287, 297) compared the rules on every ping.
 - **A lone feed's copies**: labelled as pairs (`ping_repeat_dt_s`), the choice of which is the copy left undecided on

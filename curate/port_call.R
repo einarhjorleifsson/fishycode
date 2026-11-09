@@ -43,7 +43,9 @@
 #   presence         every good event of every year, at its recorded position (a marker included), is a ping for
 #                    the rules above (ramb::rb_create_port_calls(presence = TRUE), plan 048 §7.3): until plan 048
 #                    STK's event rows were pings of the track and the port calls stood on them; out of the track,
-#                    they stand on them again as judged events
+#                    they stand on them again as judged events. A placeholder position (a longitude beyond 180, a
+#                    latitude beyond 90, or 0,0) gives none: 848 good departures there cut stays in two, 786 calls on
+#                    141 vessels (decision 311)
 # A seed is extended over the contiguous pings inside the same polygon on either side. Seeds at one
 # harbour that overlap or touch are one stay. `rule` is the strongest evidence present (event_pair >
 # tag_then_gap > tag_span > gap_near_harbour); `evidence` lists all of them. Where a stay has both ping
@@ -123,7 +125,11 @@ ports <- P |> mutate(port_id = pid, radius_out = pmax(coalesce(r_out, R_M), R_M)
 # -- STK's events judged as events (plan 048 §2.3) ---------------------------------------
 # Year by year: the events of Y-1 to Y+1 and each vessel's last event before them (so the sequence test sees every
 # event's previous one, however far back), against the cleaned recorded pings of Y-1 to Y+1 (the track test); the
-# events of Y kept. A marker's position is not the vessel's and goes in as NA; the unit is the STK mobile id.
+# events of Y kept. A marker's position is not the vessel's and goes in as NA; the unit is the STK mobile id. A
+# placeholder position (a longitude beyond 180, a latitude beyond 90, or 0,0) is no place: it goes in as NA to the
+# judge and gives no presence.
+
+NOWHERE <- "(abs(e.lon) > 180 OR abs(e.lat) > 90 OR (e.lon = 0 AND e.lat = 0))"
 
 misdated_sql <- if (file.exists(misdated_f)) {
   glue::glue("(SELECT DISTINCT vid, time FROM read_parquet('{misdated_f}') WHERE decision = 'misdated')")
@@ -133,8 +139,10 @@ misdated_sql <- if (file.exists(misdated_f)) {
 x(glue::glue("CREATE OR REPLACE TEMP TABLE ev_in AS
   SELECT e.vid, CASE WHEN m.vid IS NOT NULL THEN e.time - INTERVAL 1 DAY ELSE e.time END AS time, e.io,
          CAST(e.year AS INTEGER) AS year, e.hid_pid AS port_id,
-         CASE WHEN e.marker THEN NULL ELSE e.lon END AS lon, CASE WHEN e.marker THEN NULL ELSE e.lat END AS lat,
-         CAST(e.mid AS VARCHAR) AS mid, e.lon AS raw_lon, e.lat AS raw_lat
+         CASE WHEN e.marker OR {NOWHERE} THEN NULL ELSE e.lon END AS lon,
+         CASE WHEN e.marker OR {NOWHERE} THEN NULL ELSE e.lat END AS lat,
+         CAST(e.mid AS VARCHAR) AS mid,
+         CASE WHEN {NOWHERE} THEN NULL ELSE e.lon END AS raw_lon, CASE WHEN {NOWHERE} THEN NULL ELSE e.lat END AS raw_lat
   FROM read_parquet('{event_f}') e LEFT JOIN {misdated_sql} m ON m.vid = e.vid AND m.time = e.time"))
 ports_ev <- P |> transmute(port_id = pid)
 ev_years <- q("SELECT DISTINCT year FROM ev_in ORDER BY 1")$year

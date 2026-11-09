@@ -449,8 +449,10 @@ fishing_sample <-
             upphaf_veida, lok_veida))
 
 ## Overlap QC, as in sources/afli/convert.R -----------------------------------
+# A vessel's stations that start at the same time are ordered by their end, then by .sid (unique per row): osfd sorts
+# by vessel and start only, and keeps the order it is given for ties, which the query above does not fix (TODO 174)
 fishing_sample <- fishing_sample |>
-  arrange(vid, date, t2) |>
+  arrange(vid, date, t2, t3, .sid) |>
   osfd::fd_flag_time_overlaps(t2, t3, by = vid) |>
   mutate(.impossible = .checks %in% c("start after end", "start equals end"),
          t2 = if_else(.impossible, NA, t2),

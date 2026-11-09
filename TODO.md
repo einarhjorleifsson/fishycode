@@ -1332,16 +1332,6 @@ TODO 73 closed (decision 265).
 
 **check:** staged and merged with every record in one outcome, or abandoned in plan 019's header with a decision.
 
-## 174. afli_sent's overlap labels depend on the row order
-**status:** open · **see:** decision 265, `sources/afli_sent/convert.R` (`.checks`)
-
-Found by plan 054's live rebuild (decision 265, Claude's, not checked by a person). Built twice, afli_sent's staged
-`fishing_sample` differs in `.checks` on 3,286 stations whose neighbours tie in time: "end time overlaps next" and
-"start time overlaps previous" swap with the row order, 12 of them to or from "ok". Nothing downstream reads the
-column, so no merged table changes.
-
-**check:** the labels follow a written tie-break, and the file built twice is identical.
-
 ## 175. The user tables as a data repository: its first release, for a colleague, with the historical aggregates
 **status:** in progress · **needs: maintainer** — the share's path, where the colleague reads; then the copy · **see:**
 `curate/plans/056-a-first-release-of-the-user-tables.md`, decisions 219 and 268, TODOs 123, 136, 140 and 171, plans
@@ -1453,7 +1443,8 @@ holds 32, the control's chance rate; October's has no astd witness (TODO 87's re
 (maintainer: "Yes, write it"): the block moved back a day outside the live zone, inside it by astd or labelled
 `misdated_undecided`, in the tag pass and for STK's port events in `curate/port_call.R`. On scratch every tagged row of
 2026 equals the live store's but the block's. Left: the rebuild, from `stk_hid_pid` down through the union since
-decision 310 (STK's code `A` by position), which takes in `stk_misdated` and `ais_ping_tag`.
+decision 310 (STK's code `A` by position), which takes in `stk_misdated`, `ais_ping_tag` and decision 311's
+placeholder rule.
 
 **check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
 
