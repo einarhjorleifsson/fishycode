@@ -6,6 +6,7 @@
 # Output: curated/ais/voyage.parquet (vid, year, voyage_id, T1, T2, pid1, pid2, n_pings, short)
 #         curated/ais/ping           (clean pings carrying keys only: `voyage_id`, and `port_call_id` where the ping is
 #                                     in a port call; the clock's columns and the speed's span carried from ping_clean)
+#                                     the gps logger's positions interpolated here on the cleaned track (decision 314)
 #
 # Voyage key is (vid, year, voyage_id), numbered 1..n per vessel per year; a voyage
 # spanning New Year is split at the boundary. The keys are ramb's names since decision 149 (`stay`, `voyage` before).
@@ -55,6 +56,8 @@ MIN_PINGS     <- 1
 SHORT_PINGS   <- 10
 # The port-call minimum (2 h) is a parameter of curate/port_call.R, not of this script.
 EXCLUDE_EVENT_ONLY <- TRUE
+# The gps logger's AIS bracket: at most this long, and on one voyage (decisions 196, 251 and 314)
+LOGGER_GAP_S <- 3600
 
 # Set AIS_TRIP_VIDS (comma-separated) for testing: the run then writes to staging/ais/ping_test and
 # voyage_test.parquet, never to curated/. NULL = all vessels.
@@ -132,6 +135,21 @@ for (yr in years) {
     # the port call's key as port_call.R numbered it (per vessel, over all years), not ramb's own numbering
     ping_b <- ramb::rb_add_voyages(clean, v_b, port_calls = st_g) |>
       transmute(!!!rlang::syms(names(clean)), port_call_id = as.integer(port_call_id), voyage_id = as.integer(voyage_id))
+
+    # The gps logger's positions on this build's cleaned track (decision 196, TODO 98, decision 314): a logger fix on
+    # the line between the recorded pings either side on its own voyage, in proportion to time, where they are at most
+    # LOGGER_GAP_S apart (decision 251); otherwise no position (basis "none"), its time, speed and heading kept. The
+    # frozen sensor_gps still gives the logger's fixes; its positions, interpolated once on an older track, are not used.
+    lg <- which(ping_b$provider %in% "gps")
+    if (length(lg)) {
+      trk <- ping_b[ping_b$pos_basis %in% "recorded" & !is.na(ping_b$voyage_id), c("vid", "voyage_id", "time", "lon", "lat")]
+      ev <- data.frame(.r = lg, vid = ping_b$vid[lg], voyage_id = ping_b$voyage_id[lg], time = ping_b$time[lg])
+      ip <- ramb::rb_interpolate_track(ev[!is.na(ev$voyage_id), ], trk, by = c("vid", "voyage_id"))
+      ok <- !is.na(ip$dt_sec) & ip$dt_sec <= LOGGER_GAP_S & !is.na(ip$lon) & !is.na(ip$lat)
+      ping_b$lon[lg] <- NA_real_; ping_b$lat[lg] <- NA_real_; ping_b$pos_basis[lg] <- "none"
+      ping_b$lon[ip$.r[ok]] <- ip$lon[ok]; ping_b$lat[ip$.r[ok]] <- ip$lat[ok]
+      ping_b$pos_basis[ip$.r[ok]] <- "reconstructed"
+    }
     f <- glue::glue("{out_dir}/year={yr}/part_{sprintf('%03d', i)}.parquet")
     if (is.null(VIDS)) write_curated(ping_b, f, inputs = fd_curated("ais", "port_call.parquet"))
     else write_parquet_group(ping_b, f)

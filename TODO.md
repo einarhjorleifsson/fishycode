@@ -353,35 +353,6 @@ logbook nor landing counts as fishing; this asks which gear a voyage used.
 **check:** a plan or decision on reading the gear's kind from the track, its error measured on trips whose logbook
 records the gear; or the item parked.
 
-## 87. The STK reports reloaded by hand after the crash of 2026-10-11
-**status:** open · **see:** decision 143 (the measurement), `R/stk_trail.R`, `curate/ais_ping_clean.R`
-
-The Oracle database crashed around 2026-10-11 and the reports were loaded by hand (maintainer).
-- About 904,000 STK reports were received 2026-10-12 to 10-14 with position dates 2026-10-11 to 10-13, from about
-  1,200 mobile ids.
-- Many carry a date exactly one day early, with the time of day right. Some duplicate live reports.
-- They put day-shifted copies of tracks into `curated/ais/trail`, as on vid 2350 on 2026-10-12.
-
-The fix is a declared correction in `curate/corrections/`, before the whack filter: a corrected time beside the
-original, and the duplicates flagged. The maintainer: the dump's order may help. Then the AIS chain is rebuilt, with the
-maintainer's go. Other periods with the same signature are listed (decision 164): 18 mass-delivery days 2007-2026
-(3,745,293 late pings; this reload 927,058, 1-5 days late), a re-import in 2012, stuck-date units in 2016. The dump's
-order is receipt order (20 inversions), so it adds nothing to `recdate`. Which days carry day-shifted copies is not
-measured.
-
-Measured 2026-11-09 by Claude (AI), begun ($FISHYDATA/archive/2026-11-09-stk-october-reload/): the reload fills a
-hole in STK's live AIS track at its written times (11 October 00:00 to 13 October about 12:00) and holds no more
-day-shifted copies of live reports than chance (0.65 % against 10.5 %), so "a day early" is not borne out; it holds
-13,301 exact copies and 2-10 times a normal block's reports. Next: its intervals and its fit to the track either side.
-
-**next, and the rule (maintainer, 2026-11-09):** one script: per unit, the reload's ping interval and share of
-impossible steps against the same units' of 1-7 October, and vid 2350's 2026-10-12. Intervals shorter and impossible
-steps at the normal rate: no correction (the copies are labelled by step 0), closed by a decision. Impossible steps
-clearly above: count those the clean leaves in the trail; none, closed the same way; some, a declared correction as
-`stk_misdated_2026`, for 2026 alone (`TAG_YEARS=2026`). It does not hold up decision 310's rebuild.
-
-**check:** the reload's intervals and impossible steps counted against a normal week, and TODO 87 closed by the rule.
-
 ## 89. AIS gaps at sea judged against coverage
 **status:** open · **see:** decision 143 (intervals at sea by distance offshore and provider), plan 030
 
@@ -529,55 +500,6 @@ folder's permissions.
 written in decision 153; the 2024 bundle is complete on the share (2,163 files, 2.2 GB) and loads a vessel from there
 in Edge on Windows.
 
-## 98. The afli GPS logger inside the AIS track: what is left once 2020 on is out
-**status:** open (decided 2026-10-23, decision 196: re-interpolated in the flow on every build, with a gap limit
-measured first; the logger kept in the track, plan 054 ask h, amended; the limit 60 min, decision 251) · **needs:
-maintainer** — the next AIS batch's build, and whether a bracket may cross voyages (84,449 fixes at 60 min) · **see:**
-decisions 075, 196 and 251, `curate/ais_ping_union.R`, `curate/logbook_sensor_gps.R`, `curate/corrections/logger_whole_degrees.yml`,
-TODO 99
-
-The maintainer's rule (2026-10-20): logbook positions never join the AIS feed; the vessel overview's haul layer is gone.
-`ais_ping_union.R` still joins the afli GPS logger (`provider = gps`, frozen `curated/logbook/sensor_gps`): the
-logger's time, speed and heading, with lon/lat interpolated once from the AIS track of 2026-10-09.
-
-Decided the same day: from mid-2020 the logger writes position in whole degrees and speed in whole m/s, and those
-fixes leave the track (`logger_whole_degrees.yml`; built 2026-10-20 at c7fa8c7, decision 154). That removed 4.85 M of
-the trail's 8.86 M logger fixes of 2019-2024 (and 15 of 2008) and 1,234 of its 2,071 over 5 km from the recorded
-track. Measured on the rebuilt trail (2026-10-20): 861 remain over 5 km of 21,971,181 logger fixes, all on vids 2173
-(500, 2019-2020) and 2411 (361, 2013-2020); 860 of them interpolated across a gap of over an hour.
-
-Left: the rest of the 2,095 off-track fixes (vid 2173 2019-mid 2020, vid 2411 2013-2020) come from interpolating
-across silences of the old track (no gap limit: 101,982 fixes span over 6 h). Options: take the logger out of the
-track, keeping its speed and heading in a side table by time; or redo `sensor_gps` (a once fix, by decision) on
-today's track with a gap limit. Either needs a rebuild from `ais_ping_union`. The logger's
-other readings (depth, temperature) are TODO 100. Scripts: `$FISHYDATA/archive/2026-10-todo98/`.
-
-Found 2026-10-21 (`curate/corrections/afli_coords.yml`, `origin_in_the_sent_record`): the logger's DDMMmm-as-seconds
-fault is already in the XML each app sent, in every version 2008-2024 (SeaData 2.0, Trackwell 2.6, 2.7), so the XML
-cannot repair it; Trackwell is asked whether the devices' readings survive (the draft of TODO 103).
-
-**check:** the logger interpolated on each build's cleaned track with the 60 min limit (a gap argument in
-`rb_interpolate_track()`), `sensor_gps` retired; no logger fix in the trail more than 5 km from a recorded ping at the
-same moment (met by construction, decision 251).
-
-## 99. The whack test does not test interpolated positions against recorded ones
-**status:** open — for the logger, met by construction once decision 196's step is built (decision 251); the generic
-flag stays proposed · **see:** TODO 98, decision 308 (TODO 88 closed), `curate/ais_ping_clean.R`, decisions 067 and 251
-
-`ais_ping_clean.R` runs the impossible-step test on recorded positions only, since an interpolated (`reconstructed`)
-position was assumed to lie on the track. When the track it was drawn from differs from today's, it does not: vid
-2173's logger fixes ran up to 270 km beside ASTD's. Found by a check outside the flow: each reconstructed fix against
-the recorded pings at the same moment (bracketing pings within 15 min, linear interpolation), flagged over 5 km. On
-the trail before the 2026-10-20 rebuild it flagged 2,095 of 26.8 M logger fixes, and 861 of 22.0 M after it, nothing else,
-all years in about two minutes
-(`$FISHYDATA/archive/2026-10-todo98/scripts/gps_scope.R`). Proposed: that test in the cleaning step, as a flag on
-any reconstructed position, generic for ramb (`rb_flag_ping_*`), whatever TODO 98 decides for the logger.
-
-The per-vessel speed ceiling measured here (vid 1417; 132,380 steps over the vessel's own ceiling) is now in TODO
-88 (decision 185).
-
-**check:** the cleaning step flags a reconstructed position away from the recorded track; zero such fixes on the trail.
-
 ## 102. Logbook trips that overlap another trip of the same vessel
 **status:** parked (plan 054 cut to what matters, the maintainer, 2026-10-30) — classed and the treatments chosen 2026-10-30
 (decision 250), not built; left, decision 094's open ends below · **see:** plan 031 §3.11, decisions 094, 155 and 250, TODO 101
@@ -618,7 +540,7 @@ Decided 2026-10-23 (decision 198): slow drift during a soak is not fishing on th
 on every static voyage (about 201 k h longline and 47 k h gillnet less); built in `R/trail_sql.R` with the AIS batch.
 Left: that build; the other placeholder patterns (a set copied from the departure, the haul times or 00:00), left as
 recorded by the maintainer's choice; the gillnet set times in a port call with no pattern (9-40 % of recorded sets, unexplained);
-the draft to Trackwell (now leading with the logger, TODO 98) sent or dropped.
+the draft to Trackwell (now leading with the logger, decision 314) sent or dropped.
 A lead (decision 242): afli's own electronic set times on nets and lines of 2019-2020 miss the set position by the
 track on 45 % (far or in port), leaning to a set logged 1-3 h before the vessel reaches the gear: decision 157's
 departure copies, or more. By app, 2022-2026: only Trackwell raun writes a set time; the rest copy another time or
@@ -1036,7 +958,7 @@ feedback, then a plan for the user tables. Leads for that plan, from 2026-10-24:
   like mesh size belong to the gear"), the rigging ("things like warp", plan 020's `gear_part`, TODO 73) and the
   sensors, summary records as a rule but at times a continuous recording. The afli GPS logger is one: `curated/logbook/sensor_gps`, 49.3 M fixes with the echosounder
   depth (`botndypi`, filled 97-99 %, TODO 100), the headline depth and two temperatures, linked into v0's logbook as
-  it is on 2026-10-31 (plan 056; TODO 98).
+  it is on 2026-10-31 (plan 056; decision 314).
   Its depth must be joinable to the AIS fixes in the analysis, by vessel and time, where it exists; "including them in
   the ais is not the way" (maintainer, 2026-10-29).
 - the analyst's view of plan 055 (TODO 171) as the tables' specification: one quantity per table, the population on
@@ -1434,7 +1356,7 @@ Same kind, not traced: `tag_recapture` has a time in 0992 (Gunnólfsvík's `year
 **status:** open; measured 2026-11-09, the correction declared and coded the same day, tested on a scratch store of
 2026 · **needs: maintainer** — the go for the rebuild, now from `stk_hid_pid` down with decision 310 · **see:**
 `curate/corrections/stk_misdated_2026.yml`, `$FISHYDATA/archive/2026-11-09-stk-outage-misdated/` (its README),
-decision 274 ("Left"), `$FISHYDATA/archive/2026-11-02-plan060-fix/notes/verify_by_hand.R`, plan 060, TODO 87
+decision 274 ("Left"), `$FISHYDATA/archive/2026-11-02-plan060-fix/notes/verify_by_hand.R`, plan 060, decision 313
 
 Found 2026-11-02 by Claude (AI) while checking plan 060's receipt rule against PAME's astd; not checked by a person. In
 STK's outages of 2026 (13-15 January, 11-12 May, 11-14 October) every unit's reports came in hours to two days late,
@@ -1449,7 +1371,7 @@ Measured 2026-11-09 by Claude (AI), against astd at each report's own time and a
 one block, received 2026-01-15 11:08:43-11:30:30 and written that day from 09:08 to 13:30, the reports of 14 January
 09:08-13:30 dated a day late, where STK's track has a hole (64,760 AIS and 501 VMS reports with a vessel; astd: 14,063
 AIS and 202 VMS late, 121 and 1 on time, the on-time ones live reports written 0-6 min before receipt). May's flush
-holds 32, the control's chance rate; October's has no astd witness (TODO 87's reload, a day early). The correction
+holds 32, the control's chance rate; October's has no astd witness (the reload, decision 313: no correction). The correction
 (maintainer: "Yes, write it"): the block moved back a day outside the live zone, inside it by astd or labelled
 `misdated_undecided`, in the tag pass and for STK's port events in `curate/port_call.R`. On scratch every tagged row of
 2026 equals the live store's but the block's. Left: the rebuild, from `stk_hid_pid` down through the union since

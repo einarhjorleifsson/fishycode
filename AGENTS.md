@@ -313,7 +313,8 @@ Every script in a targets project is on one of three sides, and says which in a 
   installed from its tree on 2026-11-09 (the whole suite passes, 3,295), not pushed; the viewer's answers go to the
   same study since. A verdict kept under another layer's answers (`store`), 2026.11.09.2 (ef65b0a), is committed to
   ramb's local `main` and installed from its tree on 2026-11-09 (the whole suite passes, 3,304), not pushed; the
-  örnefni study's viewer uses it. Plan
+  örnefni study's viewer uses it. 2026.11.09 to .2 were pushed to GitHub on 2026-11-09 at the maintainer's word ("Yes,
+  push and build") and ramb reinstalled from it (`RemoteSha` ef65b0a), for the rebuild of decision 310. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; production's own chain gives the store's labels under it (plan
