@@ -5,8 +5,8 @@
 data, and "With ramb", "Not yet in ramb" and the copied-latitude case under "Invalid" on 2026-11-02, from ramb's code
 and documentation (2026.11.02.2), the ICES data call's R scripts and counts measured on fishycode's store. On
 2026-11-08 "With ramb", "Not yet in ramb" and the methods' table under "Impossible" were brought up to date with ramb
-2026.11.07.1, and "One feed, one report twice", "Time: a written time that is off" and "Judged against the vessel's
-own speed" were written on ramb's planted faults, by Claude. The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
+2026.11.07.1, and "One feed, one report twice", "One vessel, one second, two places", "Time: a written time that is
+off" and "Judged against the vessel's own speed" were written on ramb's planted faults, by Claude. The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
 §4 and 061) and the reading map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
 
@@ -336,6 +336,54 @@ and 2,750 live pings as their twins or twins of other reloaded pings, and flags 
 
 Across two feeds, the same rule labels a second feed's copy stamped at another time `shifted`. That is the work of a
 clock that runs late, which putting the feeds on one clock handles first.
+
+#### One vessel, one second, two places
+
+Two reports of one vessel can carry the same second and lie apart: two feeds that disagree, or a position rebuilt
+between fixes beside one recorded. A vessel is in one place at a time, so at most one of them is right. The common
+answers decide by the order of the rows. iapesca's `CalcSpeed()` drops every later fix in the same second, wherever it
+lies. The ICES data call's duplicate rule (step 1.2.2) keeps both, since their positions differ, and its interval rule
+(step 1.2.4) then drops the later. Both keep the wrong one whenever it comes first (read from their code).
+
+```{r}
+#| include: false
+# the planted ties: a second feed reporting the same second 0.2-2 km away, that report wrong and the first one right
+tie_pings <- judged |> filter(fault %in% "tie")
+tie_pairs <- tie_pings |> group_by(vid, time) |> filter(n() == 2) |>
+  summarise(apart_m = rb_calc_distance(lon[1], lat[1], lon[2], lat[2]), .groups = "drop")
+stopifnot(2 * nrow(tie_pairs) == nrow(tie_pings))
+tie_pings <- tie_pings |> left_join(tie_pairs, by = c("vid", "time")) |> mutate(near = apart_m <= 0.3 * 1852)
+# the evidence: of the two, the position nearer the line between the vessel's pings before and after that second
+by_second <- planted |> arrange(vid, time) |> group_by(vid) |> mutate(k = dense_rank(time)) |> ungroup()
+single <- by_second |> group_by(vid, k) |> filter(n() == 1) |> ungroup()
+fit <- by_second |> filter(fault %in% "tie") |>
+  left_join(single |> transmute(vid, k = k + 1, t0 = time, lon0 = lon, lat0 = lat), by = c("vid", "k")) |>
+  left_join(single |> transmute(vid, k = k - 1, t1 = time, lon1 = lon, lat1 = lat), by = c("vid", "k")) |>
+  mutate(w = as.numeric(difftime(time, t0, units = "secs")) / as.numeric(difftime(t1, t0, units = "secs")),
+         off_m = rb_calc_distance(lon, lat, lon0 + w * (lon1 - lon0), lat0 + w * (lat1 - lat0))) |>
+  group_by(vid, time) |> mutate(fits = off_m == min(off_m)) |> ungroup()
+stopifnot(!anyNA(fit$off_m))
+```
+
+ramb has no rule for it yet. Its speed test judges two pings of one second like any other pair, in an order of its own
+by position, so which of the two it blames is not decided by which fits the track. On the planted faults it does
+well all the same. `dansk_planted` holds `r nrow(tie_pairs)` such pairs, a second feed reporting the same second
+`r round(min(tie_pairs$apart_m) / 1000, 1)` to `r round(max(tie_pairs$apart_m) / 1000, 1)` km from the first, and
+after the copies `"local"` flags `r sum(tie_pings$wrong & !is.na(tie_pings$ping_flag))` of the wrong reports and
+`r sum(!tie_pings$wrong & !is.na(tie_pings$ping_flag))` of the right ones. Most of the wrong reports it keeps lie
+within the floor of 0.3 nautical miles between feeds: of the `r sum(tie_pairs$apart_m <= 0.3 * 1852)` pairs that
+close, it catches `r sum(tie_pings$near & tie_pings$wrong & !is.na(tie_pings$ping_flag))`. The floor is there to
+forgive two feeds that disagree by that much, and a tie that close is forgiven with them.
+
+The track itself knows better. Of each pair, the position nearer the line between the vessel's pings just before and
+just after that second is the right one in `r sum(fit$fits & !fit$wrong)` of the `r nrow(tie_pairs)` planted pairs.
+A rule on that evidence, keeping the one that fits and labelling the other, is decided for ramb and not yet built.
+
+In fishycode's Icelandic store a step of its own keeps the first of a vessel's pings in a second, in a fixed order (a
+recorded position over a rebuilt one, then the national STK feed over the others), and labels the rest `tie`. It
+labels 104,253 pings over 2007-2026: 80,550 of them the GPS logger's positions rebuilt between its fixes, 19,649 from
+PAME's Arctic Ship Traffic Data (`astd`), 3,439 from STK, 564 from EMODnet and 51 from a second commercial AIS feed
+(`astdB`; measured on fishycode's store, 9 November 2026).
 
 ### Time: a written time that is off
 
@@ -842,8 +890,8 @@ and, to score a rule against planted faults, `rb_add_ping_outcome()`.
 - **Downsampling as a function.** A regular series takes two steps ramb already has: a grid of times, then
   `rb_interpolate_track()` onto it.
 - **One ping per vessel and second, decided on evidence.** Two positions stamped with the same second are judged by
-  the speed rule like any other pair, so which of them is flagged depends on the order they come in. No rule yet keeps
-  the one that fits the track.
+  the speed rule like any other pair, in an order ramb sets by position, so which of them is flagged is not decided by
+  which fits the track. No rule yet keeps the one that does ("One vessel, one second, two places").
 - **Direction as evidence.** `"local"` reads the vessel's recorded speed but not its course, and a sharp turn at a
   ping counts only in `"clean"`'s first stage, behind its speed test.
 

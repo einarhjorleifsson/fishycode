@@ -78,6 +78,10 @@ a line each: iapesca's `CalcSpeed()` drops every later fix in the same second, w
 flow keeps both when their positions differ (1.2.2) and its interval rule then drops the later (1.2.4, from reading the
 code).
 *Measured on the store:* `staging/ais/ping_whacky` holds 104,771 ties, 80,559 of them from the GPS logger.
+*Written* 2026-11-09 ("One vessel, one second, two places"), on ramb as built, which has no tie rule: its speed test
+judges a tie in an order of its own by position (not the input order); on `dansk_planted`'s 124 ties `"local"` flags
+106 wrong and 5 right reports, missing most within the 0.3 nm floor between feeds; the position nearer the line
+between its neighbours is the right one in 119 of 124. The store's count after the rebuilds: 104,253 (80,550 GPS).
 
 **C8. A written time that is off.** Added 2026-11-08 at the maintainer's word ("The time flag"), since ramb now has
 `rb_flag_ping_time()` (plan 065 step 4), between the copies and the impossible positions. *Written* the same day
