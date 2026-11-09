@@ -31,8 +31,7 @@ or a hint of a ground's boundary in its depth contours.
 - **Names: next to nothing new.** A pilot of 20 of the 154 windows (Sonnet 5.5 subagents, about 10,000 tokens a
   window) read 92 names; 81 are on the current charts at the same place, and none of the rest is a new sea name.
 - **Bottom types: none on this chart.** But the current 1:300 000 and 1:100 000 charts print them (S, St, M, h ...),
-  which TODO 186's reading left out. Read since in a session of its own
-  (`$FISHYDATA/archive/2026-11-08-chart-bottom-types/`), to be recorded there.
+  which TODO 186's reading left out. Read since in a session of its own: decision 301.
 - **The contours pair each name with a level.** In the East Fjords the chart's black contour is the 200 m line and
   each deep is set inside its own 200 m trough. But a closed contour round a name is rare (2 of 21): a trough opens to
   the ocean, a ground joins the coast's shelf. And the old line is not the grid's isobath: near Reyðarfjarðardjúp the
@@ -66,7 +65,7 @@ that level; the open side needs plan 070's rules (the shelf edge, the troughs ei
 
 ## Open
 
-- The open side's rule, and the areas set beside plan 070's depth-only ones.
+- The open side's rule, and the areas set beside plan 070's depth-only ones: decision 302.
 - Model A on all its names: about 1.4 M Sonnet tokens to read the 134 windows left; not asked for.
 - TODO 186's reading feeds model B unchecked: three fragments came in as names (DJÚP, FJARÐARÁLL, RDJÚP) and eight
   names are printed at two places.

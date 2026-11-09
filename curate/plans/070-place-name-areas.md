@@ -6,8 +6,12 @@ maintainer's word), 4, 5 and 6 (with its edge rule and the name groups drawn onc
 weights, the effort and the terrain classes added at the maintainer's word; asks a-f answered. 2026-11-07: the areas
 from the sea chart and the depth model, level by level, a milestone in the study (step 6). 2026-11-08: the charts as
 two models that give a broad name its depth level, an older 1:750 000 chart and the current ones (§2.7, decision 300).
+The same day the current charts' bottom marks and named rings read at 1:300 000-1:40 000 (§2.8, decision 301). The same
+day a broad model: the first areas' outlines moved onto the charts' isobaths, each name's parents from three
+versions as witnesses (§2.9, decision 302). 2026-11-09: the boundaries by rule, neighbours split along the trough or the
+ridge and the levels rebuilt with it, the bays drawn in one pass, no-man's land with limits (§2.10, decision 304).
 Nothing built · **2026-11-08** · **see:** plans 043 §3.4, 044 §2 and §4, 045 §2 and §3 (steps 3-4), decisions 222-226,
-272, 286 and 300, TODOs 144 and 185, the effort map (decision 220)
+272, 286 and 300-302, TODOs 144 and 185, the effort map (decision 220)
 
 Drafted with AI assistance (Claude) on 2026-11-06; a person has not yet checked it.
 
@@ -213,6 +217,52 @@ the broader ones." The study: `$FISHYDATA/archive/2026-11-08-old-chart-names/`.
 
 Not yet: the open side's rule applied, and the comparison. The other sources (logbooks, Trackwell, plotters) stay a
 layer of their own, merged later (the maintainer, 2026-11-06).
+
+### 2.8 The charts' rings and bottom marks: a small name's place (2026-11-08, decision 301)
+
+The current charts print a small shoal or mound as a closed ring (a contour or danger line), often with its name
+beside it. Read off the 1:300 000, 1:100 000 and 1:40 000 charts (`$FISHYDATA/archive/2026-11-08-chart-bottom-types/`):
+
+- **A named ring is the small name's position.** 325 rings carry a name, 319 of them TODO 186's, a median 0.5-1.6 km
+  from where TODO 186 placed the label. For a small name the ring, not the label, is the point its area grows from.
+- **A bottom mark is a point**, never an area's type. A substrate word in a name describes that small feature alone
+  (the maintainer: "we would not link substrate to such 'broad' names").
+
+Not yet: the rings set in as the small names' positions.
+
+### 2.9 A broad model and the names' parents (2026-11-08, decision 302)
+
+The maintainer: "The objective in the end is not the boundary themselves, but being able to tell 1) In which broad area
+are we, 2) what örnefni are child of another örnefni, 3) what örnefni are actually potentially child from two parents";
+"we can have a virgin child (aka Jesus) or the natural child that has two or even more parents". The study:
+`$FISHYDATA/archive/2026-11-08-old-chart-names/`.
+
+- **The broad model is the first model, lightly corrected by the charts.** Each broad name's outline moves onto the
+  chart's isobath it already runs nearest, where that line lies within 5 km, and stays the first model's elsewhere;
+  no level may cut away more than 40 % of the area. The old and the current charts choose the same level (33 of 33).
+- **What matters is membership.** A place is in a broad area with a weight; a name has no parent, one, or several,
+  among the seabed areas and among the bays apart. Several versions of the areas (the first model and the two charts'
+  corrections) are witnesses; where they disagree, the weight says so.
+- **Moving in** comes after: the open-coast bights, the bays drawn over each other, the small names as points.
+
+Not yet: the maintainer's review; nothing adopted.
+
+### 2.10 Boundaries by rule: the trough, the ridge, the bays in one pass (2026-11-09, decision 304)
+
+The maintainer: "I would use the shortest deepest "through" between them as a boundary ... between fjords, ... the
+shallowest route through them"; "The areas do not necessarily have to touch each other - you can have a "no-mans" land
+... but with limits"; and the boundaries are "our placeholder for at what zoom level a name gets "exposed" on a map".
+
+- **Two neighbours of one kind** are split along the least-cost route between the ends of their shared edge, deep water
+  cheap between rises, shallow between deeps; never taking a label from its area or more than half of one. Built into
+  the levels (the study's `23_level_fill.R`, `ROUTE=1`) and the levels rebuilt.
+- **Bays, fjords and coves** are drawn in one pass, every scale's names known: each sea cell's enclosure, siblings by
+  size, the joined water named by a label in it; no rank by a name's ending; open coves from their coast to the
+  contour. A study beside 24's bays.
+- **No-man's land** up to twice a level's gap width; wider is a finer name's or a fault (six small ones, on the outer
+  shelf).
+
+Not yet: the sibling fjords' shared water, the broad bays' mouths, a name's zoom from its area; the maintainer's review.
 
 ## 3. Steps
 
