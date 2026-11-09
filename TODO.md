@@ -369,8 +369,18 @@ maintainer's go. Other periods with the same signature are listed (decision 164)
 order is receipt order (20 inversions), so it adds nothing to `recdate`. Which days carry day-shifted copies is not
 measured.
 
-**check:** a corrections entry (`.yml` and `.R`) for the reload; the trail's jumps on 2026-10-11 to 10-14 counted
-before and after; the other mass days checked for day-shifted copies.
+Measured 2026-11-09 by Claude (AI), begun ($FISHYDATA/archive/2026-11-09-stk-october-reload/): the reload fills a
+hole in STK's live AIS track at its written times (11 October 00:00 to 13 October about 12:00) and holds no more
+day-shifted copies of live reports than chance (0.65 % against 10.5 %), so "a day early" is not borne out; it holds
+13,301 exact copies and 2-10 times a normal block's reports. Next: its intervals and its fit to the track either side.
+
+**next, and the rule (maintainer, 2026-11-09):** one script: per unit, the reload's ping interval and share of
+impossible steps against the same units' of 1-7 October, and vid 2350's 2026-10-12. Intervals shorter and impossible
+steps at the normal rate: no correction (the copies are labelled by step 0), closed by a decision. Impossible steps
+clearly above: count those the clean leaves in the trail; none, closed the same way; some, a declared correction as
+`stk_misdated_2026`, for 2026 alone (`TAG_YEARS=2026`). It does not hold up decision 310's rebuild.
+
+**check:** the reload's intervals and impossible steps counted against a normal week, and TODO 87 closed by the rule.
 
 ## 89. AIS gaps at sea judged against coverage
 **status:** open · **see:** decision 143 (intervals at sea by distance offshore and provider), plan 030
