@@ -1432,7 +1432,7 @@ Same kind, not traced: `tag_recapture` has a time in 0992 (Gunnólfsvík's `year
 
 ## 182. STK's reports dated a day late in its outages of 2026, VMS and AIS together
 **status:** open; measured 2026-11-09, the correction declared and coded the same day, tested on a scratch store of
-2026 · **needs: maintainer** — the go for the rebuild from the tag pass down · **see:**
+2026 · **needs: maintainer** — the go for the rebuild, now from `stk_hid_pid` down with decision 310 · **see:**
 `curate/corrections/stk_misdated_2026.yml`, `$FISHYDATA/archive/2026-11-09-stk-outage-misdated/` (its README),
 decision 274 ("Left"), `$FISHYDATA/archive/2026-11-02-plan060-fix/notes/verify_by_hand.R`, plan 060, TODO 87
 
@@ -1452,7 +1452,8 @@ AIS and 202 VMS late, 121 and 1 on time, the on-time ones live reports written 0
 holds 32, the control's chance rate; October's has no astd witness (TODO 87's reload, a day early). The correction
 (maintainer: "Yes, write it"): the block moved back a day outside the live zone, inside it by astd or labelled
 `misdated_undecided`, in the tag pass and for STK's port events in `curate/port_call.R`. On scratch every tagged row of
-2026 equals the live store's but the block's. Left: the rebuild from `stk_misdated` and `ais_ping_tag` down.
+2026 equals the live store's but the block's. Left: the rebuild, from `stk_hid_pid` down through the union since
+decision 310 (STK's code `A` by position), which takes in `stk_misdated` and `ais_ping_tag`.
 
 **check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
 
