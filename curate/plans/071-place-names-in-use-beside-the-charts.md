@@ -283,6 +283,18 @@ review, on the preprocessing side: no AIS, no effort.
      - This is ramb's `rb_map_serve(verdicts = )` and `rb_map_verdicts()`, 2026.11.09.
      - Step 4 reads them: "not a name" puts the key in `not_a_name`; "wrong place" leaves the name's uses within
        5 km of the point judged out of its place, kept and labelled. The ledger keeps the considered cases.
+     - **Two questions since the first session** (the maintainer: "The answers may also not be consistent - possibly
+       need to adjust the "questionare" within the popup"). The first 190 answers gave the proper name for a form
+       under all three buttons (5 right, 6 wrong place, 3 not a name) and judged the name and the place together.
+       - **The name:** a name, a form of … or another name for … (naming it, the names in view offered), not a
+         name, not sure.
+       - **The place:** right, wrong, not sure; left out for a name judged not one.
+       - **A note.**
+       - ramb 2026.11.09.1; the file is `place_name_review.csv` in the in-use study's `review/` folder (internal).
+         The first answers, `place_name_verdicts.csv` beside it (kept as they were), were carried into it by the study's
+         `07_carry_verdicts.R`: a line holding a name a form of it, three synonym lines read by hand, other lines
+         the note.
+       - Step 4 reads "a form of" and "another name for" as the names' links.
 
 ## 4. How it is checked (bookkeeping, not modelling)
 
