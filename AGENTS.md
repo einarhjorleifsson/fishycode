@@ -305,7 +305,10 @@ Every script in a targets project is on one of three sides, and says which in a 
   suite passes, 3,187), pushed 2026-11-07; `curate/port_call.R` stops under an older ramb. One column as both `feed`
   and `stream` in `rb_flag_ping_impossible()` (decision 306) is 2026.11.07.2 (55d42a6), committed to ramb's local
   `main`, pushed and installed from GitHub on 2026-11-09 (the whole suite passes against it, 3,202); nothing in
-  fishycode passes one column as both. Plan
+  fishycode passes one column as both. A reader's verdict on a map's features, `rb_map_layer(popup = list(verdict = ))`,
+  `rb_map_serve(verdicts = )` and `rb_map_verdicts()` (plan 071), is 2026.11.09 (572824f), committed to ramb's local
+  `main` and installed from its tree on 2026-11-09 (the whole suite passes, 3,260), not pushed; nothing in the pipeline calls it, only the örnefni map study's viewer, which
+  writes the maintainer's verdicts into the in-use study under `$FISHYDATA` (internal). Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; production's own chain gives the store's labels under it (plan

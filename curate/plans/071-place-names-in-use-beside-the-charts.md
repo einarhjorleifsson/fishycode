@@ -256,6 +256,34 @@ review, on the preprocessing side: no AIS, no effort.
 7. **The layer, the cards and the issues on the örnefni map**, checked in the browser against a list of click paths.
 8. **The maintainer's review on the map**, the answers into the ledger (ask e).
 
+   **Begun 2026-11-09**, ahead of steps 2-7, at the maintainer's word ("we should start to "correct" or improve
+   things. Lets start with Eldeyjarboði").
+   - **The ledger**, in the in-use study's `review/` folder under `$FISHYDATA` (internal), holds the maintainer's
+     words and choices. The in-use study's
+     `05_reviewed.R` draws each name on the grid by one of three rules:
+     - a top, the local high nearest a chosen point;
+     - a mound, the closed high holding its tops, down to the last level before it takes in another high of its own;
+     - a part, a mound's share falling to one of its tops.
+   - **The uses judged:** kept on the place; near, on its ground above the deep, placing nothing; an error across
+     the deep, kept in the data and used by nothing; a vague word's, placing nothing.
+   - **The örnefni map** reads it: a name the charts lack joins with its area, a chart name takes the review's point.
+   - **The first entry:**
+     - Eldeyjarboði, the chart's point, moved onto its 49 m high;
+     - the mound it lies on, 42 km² to 135 m, and the mound's south-west part, 30 km², drawn as areas under names in
+       use (the names are in the study, internal);
+     - a word in use for its vicinity vague;
+     - 1,172 uses across the deep errors, 1,136 of them east and south-east of the ridge and on the north-east spur.
+   - **Verdicts on the map** (the same day, the maintainer: "a yes/no marker in the popups for these "Örnefni" that
+     do not come from "sjókort" ... these answers would then be gathered and not used in the final map proper";
+     "Yes, build it").
+     - On the örnefni viewer each name in use (the gazetteer's names layer) takes a verdict in its pop-up: right,
+       wrong place or not a name, with a line of the maintainer's own.
+     - The answers are kept in the same folder, `place_name_verdicts.csv`, a row an answer, never a row changed: the name's
+       key, the place judged, the answer, the line, the time. A later answer replaces the earlier.
+     - This is ramb's `rb_map_serve(verdicts = )` and `rb_map_verdicts()`, 2026.11.09.
+     - Step 4 reads them: "not a name" puts the key in `not_a_name`; "wrong place" leaves the name's uses within
+       5 km of the point judged out of its place, kept and labelled. The ledger keeps the considered cases.
+
 ## 4. How it is checked (bookkeeping, not modelling)
 
 - Every key is in one outcome, and the outcomes sum to the gazetteer's keys.
@@ -275,7 +303,11 @@ review, on the preprocessing side: no AIS, no effort.
   (2026-11-06), and Oracle's squares are anchors (TODO 144).
 - d. **The plotter**: one person's marks, 1,136 names that only it holds, 501 of them deeper than 200 m. Proposed: each
   mark a statement, the person one witness; on the map under the plotter's name, internal only.
-- e. **Where the answers to issues are kept** (plan 045 ask c, plan 067 ask a). Only step 8 needs it.
+- e. **Where the answers to issues are kept** (plan 045 ask c, plan 067 ask a). **Answered** (the maintainer,
+  2026-11-09): a ledger, one entry per place in the maintainer's words; at first `overrides/place_names.yml`,
+  moved the same day into the in-use study (`$FISHYDATA/archive/2026-11-09-ornefni-in-use/review/`) at the
+  maintainer's word ("Yes, do it"), since its names come from Trackwell's and the plotters' marks, internal, and
+  this repo is public. Its first entry is Eldeyjarboði's (§3, step 8, begun ahead of steps 2-7).
 - f. **How a feature is marked under its text**: a dot, a small ring, or the chart's own symbol. Proposed: a dot, or
   the ring where the chart draws one.
 

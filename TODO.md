@@ -1105,8 +1105,8 @@ Staged (decision 222), curated as versions 1 and 2 (decisions 223, 224), with th
 045's review page, is `products/place_names/`, and one name per place is proposed by rule, `curate/name_group.R` (plan
 045 §3.1): both built 2026-11-01 (decision 272). Since 2026-11-03 the effort and bathymetry maps draw that name, one
 label a place, with its other spellings in the popup (`products/effort_map/map.R`). Open:
-- the review of the proposed groups (953 keys in 423; the locator joins first) and a ledger of reviewed names under
-  `overrides/`, read as an input: plan 045 ask c (who reviews, and whether a reviewer's name is kept);
+- the review of the proposed groups (953 keys in 423; the locator joins first); the ledger of reviewed names is
+  in plan 071's in-use study under `$FISHYDATA` since 2026-11-09 (plan 045 ask c in part, through plan 071);
 - 25 of Trackwell's occurrences dated 2095 or 2099, and `name_group`'s hyphen test blind to ð, þ, æ and ö ("Halamið -
   Barðið"): both in decision 272;
 - the 1,354 names placed by Oracle's squares alone are anchors, not places (maintainer, 2026-11-02: some of
@@ -1609,8 +1609,8 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
 ## 193. Place-name records: a source registry, one reading per document, one file per place (plan 067)
-**status:** parked (the maintainer, 2026-11-07: "put this whole thing on hold for now") · **needs: maintainer** — where a
-person's decisions are kept (plan 067 ask a), and how timarit.is's text is had (ask c) · **see:**
+**status:** parked (the maintainer, 2026-11-07: "put this whole thing on hold for now") · **needs: maintainer** — how
+timarit.is's text is had (ask c); where a person's decisions are kept (ask a) answered 2026-11-09: a ledger under `$FISHYDATA` (plan 071's in-use study) · **see:**
 `curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
 `archive/2026-11-07-aegir-early/README.md`, `archive/2026-11-07-andvari-bjarni/README.md`,
 `archive/2026-11-07-seabed-landscape/README.md`, `archive/2026-11-08-fiskikort/README.md`, decision 295,
@@ -1672,7 +1672,9 @@ Each step starts as a study, and becomes a target after the maintainer's review.
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
 
 ## 197. The names in use beside the charts' names, and each small feature on the seabed (plan 071)
-**status:** open · plan 071's asks a-f wait on the maintainer; step 1 run 2026-11-09 (the highs at 1:40 000 and, mended, at 1:100 000 passed; 50 names moved) · **see:**
+**status:** open · plan 071's asks a-d and f wait on the maintainer, ask e answered (a ledger in the in-use study under `$FISHYDATA`); step
+1 run 2026-11-09 (the highs at 1:40 000 and, mended, at 1:100 000 passed; 50 names moved); step 8, the review, begun
+with Eldeyjarboði · **see:**
 `curate/plans/071-place-names-in-use-beside-the-charts.md`, `$FISHYDATA/archive/2026-11-09-ornefni-in-use/README.md`,
 the örnefni map (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), plan 070, decisions 301, 302 and 304, TODOs 144 and 194
 

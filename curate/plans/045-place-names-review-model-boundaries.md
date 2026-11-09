@@ -117,6 +117,9 @@ Naming places from many noisy witnesses is studied under several heads:
   `needs: maintainer`.
 - b. **Whether MFRI has a substrate or habitat map** better than EUSM for Icelandic waters.
 - c. **Who reviews,** and whether a reviewer's name is kept with each answer (`overrides/` lives in the repo).
+  **Answered in part** (the maintainer, 2026-11-09, through plan 071): the maintainer reviews, and the decisions are
+  kept in a ledger in plan 071's in-use study under `$FISHYDATA` (internal), one entry per place in the maintainer's
+  words, read as an input. Its first entry is Eldeyjarboði's.
 
 ## 5. Not in this plan
 

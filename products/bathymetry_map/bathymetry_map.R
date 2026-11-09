@@ -252,18 +252,21 @@ relief_fit <- function(con, dir) {
 # out the depth by cell, as ramb draws one grid a map; `groups` go between the relief and the reference layers;
 # `palette` is the grid's when the page opens; `about` names the texts of an About section. What the page opens with:
 # `depth_colour` over the depth's colour controls, `relief_shade` over the relief's, `names_state` the place names'
-# controls by id; `palettes` the list offered, the short one by default; `ports` the harbours beside the place names
+# controls by id; `palettes` the list offered, the short one by default; `ports` the harbours beside the place names;
+# `names_popup` merged into the place names' popup (a study's review: ramb's `verdict`, served with
+# rb_map_serve(verdicts = ))
 bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
                                  json = file.path("products", "effort_map", "map.json"), extra = list(),
                                  extra_texts = list(), cells = TRUE, groups = list(), palette = "deep",
                                  about = NULL, depth_colour = list(), relief_shade = list(), names_state = list(),
-                                 palettes = bathymetry_palettes(), ports = TRUE) {
+                                 palettes = bathymetry_palettes(), ports = TRUE, names_popup = list()) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
   # the names' areas off when the page opens: over the depth they read as a grid (the maintainer, 2026-11-04)
   nm$state <- lapply(nm$state, function(s) `[[<-`(s, "default", if (identical(s$id, "areas")) FALSE else s$default))
   nm$state <- lapply(nm$state, function(s) if (is.null(names_state[[s$id]])) s else `[[<-`(s, "default", names_state[[s$id]]))
+  nm$popup <- utils::modifyList(nm$popup, names_popup)
   px <- pick(pick(spec$layers, "effort")$filters, "px")
   # cells of 2 pixels: at 1, a tile at zoom 6-9 is 13-14 MB (2026-11-03); the base's cells still show from zoom 10
   px$default <- "2"

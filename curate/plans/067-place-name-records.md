@@ -262,7 +262,8 @@ This widens plan 045's ask c, which is still open.
 ## 10. Asks
 
 - a. **Where a person's decisions are kept** (§7): a private repo, functions only, or a declared folder. Needed once
-  a person reviews (plan 045 ask c). `needs: maintainer`.
+  a person reviews (plan 045 ask c). **Answered** (the maintainer, 2026-11-09, through plan 071):
+  a ledger in plan 071's in-use study under `$FISHYDATA`, one entry per place (internal: not in this public repo).
 - b. **The place id:** its name (`place_id`, or a short one in the manner of `vid` and `pid`), and whether every
   `name` key gets one at seeding or only reviewed groups.
 - c. **timarit.is's text:** a person saves the issues the search finds, with the site's button, or Landsbókasafn is
