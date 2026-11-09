@@ -51,8 +51,9 @@ data with an average polling interval in minutes, and states no rate.
 **C3. Copies within one feed.** ramb labels them (plan 062 step 4a): exact copies, and near ones a second or a few
 metres apart. Contrast: the ICES exact-duplicate rule (1.2.2, lines 103-118) matches vessel, position and time, so a
 near copy passes it.
-*To measure* (step 1): the near copies on a store month, and the same-position pairs one second apart. The union's own
-count is the comparison.
+*Written* 2026-11-08 ("One feed, one report twice"), on ramb's planted near and shifted copies, with the reload's
+counts measured in plan 062's step 3 study (decision 276) as the Icelandic case, not a store month: production runs
+the copy rule without the recorded speed, so the store holds no pairs to count.
 
 **C4. Dense and sparse feeds interleaved.** Already in the chapter's duplicate section (`EX_10`, 19 July 2014). No
 change.
@@ -61,6 +62,10 @@ change.
 at the ping and the detour, the agreement with a recorded speed and course, and where a turn means nothing (legs within
 the noise, intervals too long). Shown on the planted spike, run, out-and-back under 25 kn and interleaved copy, with
 fishing turns as the ping that must stay. Was Mendo et al.'s speed rule, now `me_code`'s item 3.
+*Written* 2026-11-08 ("Judged against the vessel's own speed"), on ramb as built: direction was not built (plan 062
+step 4c), so the case is `"local"` with the recorded speed, the vessels' own limits and the vote against `"clean"` and
+`"forward"` on `dansk_planted`'s faults at four rates, with the Icelandic night runs (decisions 287, 297) as the
+measured counterpoint: over long silences the angle of `"clean"`'s first stage still earns its place.
 
 **C6. The regular grid, as a recipe.** Built from functions ramb already has: a per-vessel grid of minute times
 (`seq()`), then `rb_interpolate_track(grid, track, by = "vid", time_var = "time", value_vars = c("lon", "lat"))`. The
@@ -73,6 +78,12 @@ a line each: iapesca's `CalcSpeed()` drops every later fix in the same second, w
 flow keeps both when their positions differ (1.2.2) and its interval rule then drops the later (1.2.4, from reading the
 code).
 *Measured on the store:* `staging/ais/ping_whacky` holds 104,771 ties, 80,559 of them from the GPS logger.
+
+**C8. A written time that is off.** Added 2026-11-08 at the maintainer's word ("The time flag"), since ramb now has
+`rb_flag_ping_time()` (plan 065 step 4), between the copies and the impossible positions. *Written* the same day
+("Time: a written time that is off"), on `dansk_truth`'s four clocks of a single stream. Found there: on these slow
+tracks no speed rule blames a late ping's neighbour, so the flag's gain is the times it labels, not positions saved;
+a ping written a minute late on a clock that writes whole minutes is within the grain and is not labelled.
 
 ## What the chapter's sections will say
 

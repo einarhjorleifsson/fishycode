@@ -3,9 +3,11 @@
 ::: {.callout-note}
 **Drafted by AI, in part.** "The tests, in order" was written by Claude (Anthropic) on 2026-10-20, on ramb's example
 data, and "With ramb", "Not yet in ramb" and the copied-latitude case under "Invalid" on 2026-11-02, from ramb's code
-and documentation (2026.11.02.2), the ICES data call's R scripts and counts measured on fishycode's store. The other
-sections are still a skeleton, outlined from the maintainer's direction (plans 033 §4 and 061) and the reading map of
-the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
+and documentation (2026.11.02.2), the ICES data call's R scripts and counts measured on fishycode's store. On
+2026-11-08 "With ramb", "Not yet in ramb" and the methods' table under "Impossible" were brought up to date with ramb
+2026.11.07.1, and "One feed, one report twice", "Time: a written time that is off" and "Judged against the vessel's
+own speed" were written on ramb's planted faults, by Claude. The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
+§4 and 061) and the reading map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
 
 ```{r setup}
@@ -39,7 +41,9 @@ theme_set(theme_minimal())
 **In the diagram:** the second row, *Flag pings* (`flag_pings`). Its tests run in order, each on pings not yet flagged:
 invalid (placeholder) → duplicate (second feed) → impossible (set aside) → port (kept in the trail). The band below
 it says that **the ping rate sets how far down a track can go**: interpolate or downsample to a regular series, and
-keep the gaps and the device.
+keep the gaps and the device. ramb has since added two steps the diagram does not draw: the feeds put on one clock
+before any test, and a test for a written time that is off, between the copies and the impossible positions (see
+"With ramb").
 
 ## The problem
 
@@ -203,6 +207,245 @@ bind_rows(alone |> mutate(order = "speed test alone"),
   knitr::kable()
 ```
 
+#### One feed, one report twice
+
+A feed can also repeat itself. A report is sent again a second later, or a whole stretch of track is loaded again
+after an outage, stamped with another date. No second feed is involved, so a rule that ranks feeds cannot see it. What
+gives a copy away is that it repeats everything: the position to a few metres, the recorded speed to the last decimal,
+the course to half a degree. A vessel that passes the same spot again does not repeat its speed and course so exactly.
+Given those columns, `rb_flag_ping_duplicate(speed = speed, course = course)` looks for such pairs at any distance in
+time. Of a pair two seconds apart or less, the later ping is `duplicate`. Of a pair further apart, it says which is
+the copy only when a second feed places the vessel at one of them, and the other is then `shifted`. Without such a
+witness both pings stay unflagged, and `ping_repeat_dt_s` gives each the seconds to its twin: a label, not a guess.
+The groups dropped duplicate reports from the NEAFC data (WGSFD 2017, p. 22; WGSFD 2018, p. 60), and list duplicates
+among the cleaning steps (WKSSFGEO 2022, pp. 18-19). What counts as a duplicate is where the methods part.
+
+```{r}
+#| include: false
+# ramb's planted faults (plan 062): dansk's tracks made clean, thinned to four ping rates, each ping labelled with the
+# fault planted on it; the second feed (b) carries only planted faults
+planted <- rb_read_example("dansk_planted") |> collect() |> arrange(vid, time, .rid)
+copies <- planted |> rb_flag_ping_invalid() |>
+  rb_flag_ping_duplicate(priority = c("a", "b"), feed = feed, speed = speed, course = course)
+stopifnot(nrow(copies) == nrow(planted))
+# the ICES data call's step 1.2.2: vessel, position and time to the minute
+ices_key <- paste(planted$vid, planted$lat, planted$lon, format(planted$time, "%Y-%m-%d %H:%M"))
+ices_removed <- planted$.rid[duplicated(ices_key)]
+near <- copies |> filter(fault %in% "near_copy")
+shifted <- copies |> filter(fault %in% "shifted_copy")
+near_slow <- sum(is.na(near$ping_flag) & near$speed < 1)
+shifted_paired <- sum(!is.na(shifted$ping_repeat_dt_s))
+shifted_slow <- sum(is.na(shifted$ping_repeat_dt_s) & shifted$speed < 1)
+# each paired ping with its twin
+twins <- copies |> filter(!is.na(ping_repeat_dt_s)) |>
+  mutate(twin_time = time + ping_repeat_dt_s) |>
+  left_join(copies |> group_by(vid, twin_time = time) |>   # a second feed may report the same second
+              summarise(twin_fault = na.omit(fault)[1], .groups = "drop"), by = c("vid", "twin_time"))
+stopifnot(nrow(twins) == sum(!is.na(copies$ping_repeat_dt_s)),
+          all(paste(twins$vid, twins$twin_time) %in% paste(copies$vid, copies$time)))
+base_pairs <- twins |> filter(is.na(fault), is.na(twin_fault))
+# the speed test after the copies, with ramb's advised settings
+limits <- rb_create_ping_limits(planted, speed = speed)
+judged <- copies |> rb_flag_ping_impossible(method = "local", speed = speed, limits = limits, anchor = "vote",
+                                            feed = feed)
+spans <- judged |> filter(fault %in% "shifted_copy") |>
+  group_by(vid, fault_id, rate_s) |> summarise(a = min(time), b = max(time), .groups = "drop")
+between_copies <- judged |> filter(is.na(fault)) |>
+  inner_join(spans, by = c("vid", "rate_s"), relationship = "many-to-many") |>
+  filter(time >= a, time <= b)
+at_rate <- function(x, r) x |> filter(rate_s == r)
+```
+
+ramb's planted faults hold both kinds (@tbl-copies). In `dansk_planted`, the Danish tracks made clean and thinned to
+four ping rates, `r nrow(near)` pings are sent again a second later, one to five metres from the first, and
+`r nrow(shifted)` lie in stretches of six to twelve, copied from the same vessel's track 12 to 72 hours away. The ICES
+data call's rule (step 1.2.2) removes a ping whose vessel, position and time to the minute match another's. It removes
+none of these: a near copy's position differs by a few metres, and a shifted copy's time by half a day or more.
+
+ramb labels `r sum(near$ping_flag %in% "duplicate")` of the near copies `duplicate`. The other `r near_slow` move at
+under a knot, where the rule does not compare, since a vessel at rest repeats its position and its zero speed
+honestly; there a copy does no harm, as it adds no distance. Of the shifted copies, `r shifted_paired` are paired with
+the ping they repeat, and `r shifted_slow` of the other `r nrow(shifted) - shifted_paired` move at under a knot. None
+is decided: the planted second feed never covers them, so there is no witness. Nor would "the later of the two" do,
+since the copy is the earlier ping of its pair `r sum(shifted$ping_repeat_dt_s > 0, na.rm = TRUE)` times and the
+later `r sum(shifted$ping_repeat_dt_s < 0, na.rm = TRUE)`. The rule pairs some clean pings too:
+`r nrow(base_pairs)` pings of the clean tracks, most of them ten seconds apart at a slow and steady speed. Whether the
+Danish feed sent those twice is not known; either way they are labelled, not removed.
+
+```{r}
+#| label: tbl-copies
+#| tbl-cap: "The planted copies within one feed (`dansk_planted`, all four ping rates) under the ICES data call's duplicate rule (step 1.2.2), which removes, and `rb_flag_ping_duplicate()` with the recorded speed and course, which labels."
+copies |> filter(fault %in% c("near_copy", "shifted_copy")) |>
+  mutate(planted = if_else(fault == "near_copy", "sent again a second later", "a stretch from another day")) |>
+  group_by(planted) |>
+  summarise(pings = n(),
+            `ICES rule: removed` = sum(.rid %in% ices_removed),
+            `ramb: duplicate` = sum(ping_flag %in% "duplicate"),
+            `ramb: paired, both kept` = sum(is.na(ping_flag) & !is.na(ping_repeat_dt_s)),
+            `ramb: neither` = sum(is.na(ping_flag) & is.na(ping_repeat_dt_s))) |>
+  arrange(desc(planted)) |>
+  knitr::kable()
+```
+
+A stretch copied into the track sits between the vessel's own pings (@fig-copies). Every leg from a copy to a true
+ping is then a jump, and the speed test flags them, but it cannot tell which end is wrong either. At one ping a minute, `rb_flag_ping_impossible(method = "local")`, run after the copies with ramb's
+advised settings, flags `r sum(!is.na(at_rate(judged, 60) |> filter(fault %in% "shifted_copy") |> pull(ping_flag)))`
+of the `r nrow(at_rate(shifted, 60))` shifted copies, and
+`r sum(!is.na(at_rate(between_copies, 60)$ping_flag))` of the `r nrow(at_rate(between_copies, 60))` true pings that
+lie between them. A true ping between two copies looks as wrong as a copy. The pair label at least says where to look.
+
+```{r}
+#| label: fig-copies
+#| fig-cap: "A planted copy within one feed (`dansk_planted`, vessel EX_10 at a ping a minute, 9 October 2013): ten positions from the day before (dashed) stamped into an hour of fishing, between the vessel's own pings. Left: the tracks. Right: the implied speed of each ping against the one before it, with the 25-knot ceiling dashed; the true pings between the copies jump as far as the copies do."
+#| fig-height: 3.8
+v <- copies |> filter(vid == "EX_10_60s")
+cp <- v |> filter(fault %in% "shifted_copy", fault_id == 22)
+stopifnot(nrow(cp) == 10, all(!is.na(cp$ping_repeat_dt_s)))
+hour <- v |> filter(time >= min(cp$time) - 1800, time <= max(cp$time) + 1800, !fault %in% "shifted_copy")
+twin_t <- cp$time + cp$ping_repeat_dt_s
+before <- v |> filter(time >= min(twin_t) - 1800, time <= max(twin_t) + 1800, is.na(fault))
+lv <- c("the hour as sailed", "the day before", "copies stamped into the hour")
+cols <- setNames(c("grey40", "#4F81BD", "#C0504D"), lv)
+c1 <- ggplot() +
+  geom_path(data = hour, aes(lon, lat, colour = lv[1])) +
+  geom_path(data = before, aes(lon, lat, colour = lv[2]), linetype = 2) +
+  geom_point(data = cp, aes(lon, lat, colour = lv[3]), size = 1.8) +
+  scale_colour_manual(values = cols, limits = lv) +
+  coord_quickmap() +
+  labs(x = NULL, y = NULL, colour = NULL)
+c2 <- bind_rows(hour, cp) |> implied_kn() |> filter(!is.na(kn)) |>
+  mutate(what = if_else(fault %in% "shifted_copy", lv[3], lv[1])) |>
+  arrange(what == lv[1]) |>
+  ggplot(aes(time, kn, colour = what)) +
+  geom_point(size = 1, show.legend = FALSE) +
+  geom_hline(yintercept = 25, linetype = 2, colour = "grey50") +
+  log_kn +
+  scale_colour_manual(values = cols) +
+  scale_x_datetime(date_labels = "%H:%M") +
+  labs(x = NULL, y = "implied speed (kn, log)", colour = NULL)
+c1 + theme(legend.position = "bottom") + c2 + plot_layout(widths = c(1.2, 1))
+```
+
+Where copies are many, the speed test fails altogether. After a database crash in October 2026, reports of the
+Icelandic STK feed were loaded again by hand, many stamped exactly a day early with the time of day right. Of 1,802
+day-shifted copies, told from the time each report was received, no speed rule tried caught more than 13, and each
+took about 3,000 live pings beside them: a reloaded stretch is a consistent track of its own. ramb's copy rule found
+the pairs, with no second feed on those days to decide them. It labels 1,750 of the 1,802 copies as one of a pair,
+and 2,750 live pings as their twins or twins of other reloaded pings, and flags none (measured on fishycode's store,
+3-4 November 2026).
+
+Across two feeds, the same rule labels a second feed's copy stamped at another time `shifted`. That is the work of a
+clock that runs late, which putting the feeds on one clock handles first.
+
+### Time: a written time that is off
+
+A ping's time is an observation too, and it can be wrong while its position is right. A device writes whole minutes,
+a clock jitters, a report is written a little late. A time that is `e` seconds late makes the step into the ping `e`
+seconds too long and the step out of it `e` seconds too short, so the vessel seems to dawdle and then to dash. A
+speed rule sees only the dash, and blames the position of the next ping.
+
+ramb meets this twice. The clock's habits are the stream's, and go into each vessel's limits:
+`rb_create_ping_limits()` measures the grain a stream writes its times to and how far they stray against the
+recorded speed, and `rb_flag_ping_impossible(limits = )` allows for both. A single ping off beyond that is
+`rb_flag_ping_time()`'s. Within a stream, it takes the ping with the nearest pings on each side, where all three
+record a steady speed, and holds each step's written time against the distance over that speed. A time off by `e`
+adds `e` to one step and takes it from the other, so half the difference is the ping's error, `ping_time_error_s`
+(positive when late). Where that error is beyond what an on-time ping may show and the step past the ping fits, the
+ping is labelled `time`: its position is kept, and the speed test after it judges the step past it.
+
+```{r}
+#| include: false
+# ramb's dansk_truth: four of dansk_planted's vessels at a ping a minute and every six minutes, written through
+# several clocks, each ping with its true time and position; here the four clocks of a single stream
+truth <- rb_read_example("dansk_truth") |> collect() |>
+  filter(clock %in% c("fix", "minute_trunc", "minute_round", "jitter")) |>
+  arrange(vid, time, .rid)
+truth_limits <- rb_create_ping_limits(truth, stream = stream, speed = speed)
+truth_copies <- truth |> rb_flag_ping_invalid() |>
+  rb_flag_ping_duplicate(priority = c("a", "b"), feed = feed, speed = speed, course = course)
+speed_alone <- truth_copies |>
+  rb_flag_ping_impossible(method = "local", speed = speed, limits = truth_limits, anchor = "vote", feed = feed)
+time_first <- truth_copies |> rb_flag_ping_time(truth_limits, speed = speed) |>
+  rb_flag_ping_impossible(method = "local", speed = speed, limits = truth_limits, anchor = "vote", feed = feed)
+stopifnot(identical(speed_alone$.rid, time_first$.rid))
+time_first <- time_first |> mutate(off_s = as.numeric(difftime(time, true_time, units = "secs")))
+jit <- time_first |> filter(fault %in% "jitter")
+jit_time <- jit |> filter(ping_flag %in% "time")
+jit_1min_10s <- jit |> filter(rate_s == 60, abs(off_s) > 10)
+good_time <- time_first |> filter(expect == "keep", ping_flag %in% "time")
+beside_jitter <- time_first |> filter(clock == "jitter") |> arrange(vid, stream, time) |> group_by(vid, stream) |>
+  mutate(beside = lag(fault %in% "jitter", default = FALSE) | lead(fault %in% "jitter", default = FALSE)) |>
+  ungroup() |> filter(expect == "keep", ping_flag %in% "time")
+as_position <- function(x) sum(x$fault %in% "jitter" & !is.na(x$ping_flag) & !x$ping_flag %in% "time")
+late <- time_first |> filter(fault %in% "late_stamp")
+fast_vessels <- time_first |> filter(clock == "jitter", stream == "a") |> pull(speed) |> quantile(0.99, na.rm = TRUE)
+```
+
+ramb's `dansk_truth` puts this to the test. It holds four of the Danish vessels at a ping a minute and every six
+minutes, written by several clocks, and every ping keeps its true time beside the written one. On the clock that
+jitters, a third of the pings are written up to half a step off. `rb_flag_ping_time()` labels
+`r format(nrow(jit_time), big.mark = ",")` of the `r format(nrow(jit), big.mark = ",")` jittered pings `time`, and
+its estimate of each error lies within a median `r sprintf("%.1f", median(abs(jit_time$ping_time_error_s - jit_time$off_s)))`
+seconds of the truth (@fig-time). At a ping a minute it labels
+`r scales::percent(mean(jit_1min_10s$ping_flag %in% "time"), accuracy = 1)` of those more than ten seconds off. The
+rest it leaves alone where it cannot judge: a vessel under two knots, or changing its speed by more than a fifth, records no
+steady speed to hold the steps against. Run before the speed test, it also spares the positions of jittered pings: the speed test
+alone flags `r as_position(speed_alone)` of them as positions, and after the time flag
+`r as_position(time_first)`.
+
+```{r}
+#| label: tbl-time
+#| tbl-cap: "The time flag on `dansk_truth`'s four clocks of a single stream: the fix's own time, every time cut or rounded to its minute (one ping per track written a minute late), and a third of the pings jittered by up to half a step. A ping written off is `jitter` or a late stamp; a clock that writes whole minutes is the stream's habit, allowed for in the limits."
+time_first |>
+  mutate(clock = factor(clock, c("fix", "minute_trunc", "minute_round", "jitter")),
+         `ping rate` = if_else(rate_s == 60, "1 min", "6 min"),
+         written_off = fault %in% c("jitter", "late_stamp")) |>
+  group_by(clock, `ping rate`) |>
+  summarise(pings = n(),
+            `written off` = sum(written_off),
+            `of them labelled time` = sum(written_off & ping_flag %in% "time"),
+            `on time, labelled time` = sum(expect == "keep" & ping_flag %in% "time"),
+            .groups = "drop") |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+```{r}
+#| label: fig-time
+#| fig-cap: "The time flag on `dansk_truth`'s jittered clock. Left: half an hour of one vessel at a ping a minute; the line is its recorded speed, each point the speed implied by the step into a ping, ringed where the ping is labelled `time`. A ping written late makes the step in look slow and the step out fast. Right: every ping labelled `time` on that clock, its estimated error against the true one; the line is equality."
+#| fig-height: 3.8
+stretch <- time_first |>
+  filter(vid == "EX_10_60s_jitter", stream == "a",
+         between(time, as.POSIXct("2012-12-03 05:35", tz = "UTC"), as.POSIXct("2012-12-03 06:10", tz = "UTC"))) |>
+  implied_kn()
+t1 <- ggplot(stretch, aes(time)) +
+  geom_line(aes(y = speed), colour = "grey60") +
+  geom_point(aes(y = kn), size = 1.2) +
+  geom_point(data = stretch |> filter(ping_flag %in% "time"), aes(y = kn), shape = 21, size = 3.5,
+             colour = "#C0504D", stroke = 1) +
+  scale_x_datetime(date_labels = "%H:%M") +
+  labs(x = NULL, y = "speed (kn)")
+t2 <- time_first |> filter(clock == "jitter", ping_flag %in% "time") |>
+  mutate(ping = if_else(fault %in% "jitter", "written off", "on time")) |>
+  arrange(ping == "written off") |>
+  ggplot(aes(off_s, ping_time_error_s, colour = ping)) +
+  geom_abline(colour = "grey50", linetype = 2) +
+  geom_point(size = 0.7, alpha = 0.6, show.legend = TRUE) +
+  scale_colour_manual(values = c(`written off` = "#C0504D", `on time` = "grey50"),
+                      limits = c("written off", "on time")) +
+  labs(x = "true error (s)", y = "estimated error (s)", colour = NULL)
+t1 + t2 + plot_layout(widths = c(1.2, 1))
+```
+
+It has a cost and a blind spot. `r nrow(good_time)` pings written on time are labelled `time` across the four clocks,
+`r sum(good_time$clock == "jitter")` of them on the jittered clock, `r sum(beside_jitter$beside)` of those beside a
+jittered ping, whose error moves the step they share; their positions are kept. A clock that writes whole minutes is the stream's habit, not a ping's fault: the time flag
+labels almost none of its pings. But that hides a ping written a whole minute late on such a clock: none of the
+`r sum(late$clock == "minute_round")` late stamps there is labelled, since a minute is within the clock's grain. On
+the fix's own clock, `r sum(late$clock == "fix" & late$ping_flag %in% "time")` of
+`r sum(late$clock == "fix")` late stamps, half a step late, are labelled. On these tracks no speed rule blames the
+neighbour of a late ping either way: the vessels seldom pass `r round(fast_vessels)` knots, and a step cut in half
+only doubles the implied speed. A vessel at 13 knots would cross a ceiling of 25.
+
 ### Impossible: set aside
 
 A position the vessel cannot have reached, at the speed it would have needed, is flagged and set aside.
@@ -240,17 +483,18 @@ q1 + q2
 ```
 
 How well does the test do when the answer is known? `whacks1` is a short track made up for the purpose: 46 pings, 12
-of them deliberately misplaced. The five methods of `rb_flag_ping_impossible()` differ in how much of the
-surrounding track they consult (@tbl-whacks). On this track, the forward and sequential methods flag exactly the
-twelve. The default, `"clean"`, and `"sda"` also catch all twelve, but take four good pings with them. `"fwdbwd"`
-finds two. One small made-up track does not decide between methods; the comparison over real labelled tracks is
-@sec-validation's.
+of them deliberately misplaced. The three methods of `rb_flag_ping_impossible()` differ in how much of the
+surrounding track they consult (@tbl-whacks). On this track `"forward"` and `"local"` flag exactly the twelve. The
+default, `"clean"`, also catches all twelve, but takes four good pings with them: its first stage judges each ping
+from both sides, and a good ping beside a misplaced one can look as wrong as its neighbour. `whacks1` records no
+speed, so `"local"` judges it at the fixed 25 knots, as the others do. One small made-up track does not decide
+between methods; the comparison over real labelled tracks is @sec-validation's.
 
 ```{r}
 #| label: tbl-whacks
-#| tbl-cap: "The five methods on `whacks1`, a made-up track of 46 pings with 12 known misplacements."
+#| tbl-cap: "The three methods on `whacks1`, a made-up track of 46 pings with 12 known misplacements."
 w <- rb_read_example("whacks1") |> collect() |> mutate(vid = as.character(vid))
-map_dfr(c("clean", "sda", "forward", "fwdbwd", "sequential"), function(m) {
+map_dfr(c("clean", "forward", "local"), function(m) {
   f <- rb_flag_ping_impossible(w, method = m)
   tibble(method = m, flagged = sum(!is.na(f$ping_flag)),
          `misplaced, caught` = sum(!is.na(f$ping_flag) & f$whacks),
@@ -260,6 +504,133 @@ map_dfr(c("clean", "sda", "forward", "fwdbwd", "sequential"), function(m) {
 
 Across the whole of `dansk`, 395,558 pings, the default test flags `r format(sum(!is.na(rb_flag_ping_impossible(dansk, method = "clean")$ping_flag)), big.mark = ",")`:
 about one in two thousand. Few, but each one bends a line on a map.
+
+#### Judged against the vessel's own speed
+
+A fixed ceiling is a guess that cuts both ways. It misses a position the vessel could have reached at 25 knots but not
+at the three it was towing: a ping moved aside and back, an out-and-back that no ceiling sees. And it flags a vessel
+that truly goes faster. `method = "local"` judges each leg against the speed the vessel itself records around it: the
+larger of the median recorded speed of the five pings before and of the five after, the ping's own counted on each
+side, so a vessel leaving a berth is judged at the speed of the pings that move. A leg is impossible when it is longer
+than 1.5 times that speed plus 5 knots allows over its time step. With `limits =`, the clock's error is added to the
+step and twice the position noise to the distance, and where no recorded speed is near, the vessel's own ceiling
+stands in for 25 knots. The rule runs in two stages: a ping whose two legs both fail while the leg that skips it
+fits (`local_spike`), then a forward scan (`local_forward`), where with `anchor = "vote"` the five pings after a jump
+decide which end of it is wrong.
+
+```{r}
+#| include: false
+# the three methods on the planted faults, each after the copies as above; `judged` is "local" with ramb's advised
+# settings (the recorded speed, the vessels' own limits, the vote)
+methods <- list(
+  clean = copies |> rb_flag_ping_impossible(method = "clean", feed = feed),
+  forward = copies |> rb_flag_ping_impossible(method = "forward", feed = feed),
+  local = judged)
+# the same rules on the tracks without their wrong pings: a good ping flagged there too is the rule's own flag
+right_only <- copies |> filter(!wrong)
+alone <- list(
+  clean = right_only |> rb_flag_ping_impossible(method = "clean", feed = feed),
+  forward = right_only |> rb_flag_ping_impossible(method = "forward", feed = feed),
+  local = right_only |> rb_flag_ping_impossible(method = "local", speed = speed, limits = limits, anchor = "vote",
+                                                feed = feed))
+local_fixed <- copies |> rb_flag_ping_impossible(method = "local", feed = feed)
+as_position <- function(x) !is.na(x$ping_flag) & !x$ping_flag %in% c("invalid", "duplicate", "shifted")
+scores <- imap_dfr(methods, function(x, m) {
+  own <- alone[[m]]$.rid[as_position(alone[[m]])]
+  x |> mutate(method = m, flagged = as_position(x), own = .rid %in% own)
+})
+faults <- c(spike = "one position moved", run = "a run of 3-8 moved", detour = "out-and-back, under 25 kn",
+            first_after_gap = "first ping after a gap", fast = "fast stretch (to keep)")
+caught <- scores |> filter(fault %in% names(faults)) |>
+  group_by(method, rate_s, fault) |> summarise(value = 100 * mean(flagged), .groups = "drop")
+good <- scores |> filter(is.na(fault)) |>
+  group_by(method, rate_s) |>
+  summarise(value = 1e4 * mean(flagged), own = 1e4 * mean(flagged & own), .groups = "drop")
+pct <- function(m, f, r = c(10, 60, 360, 3600)) caught |> filter(method == m, fault == f, rate_s %in% r) |> pull(value)
+rng <- function(v) paste0(round(min(v)), "-", round(max(v)), " %")
+own10k <- function(m, r) good |> filter(method == m, rate_s %in% r) |> pull(own)
+fixed_detour <- mean(as_position(local_fixed |> filter(fault %in% "detour")))
+fixed_fast <- mean(as_position(local_fixed |> filter(fault %in% "fast", rate_s %in% c(10, 60))))
+```
+
+On ramb's planted faults the difference shows at once (@fig-local). The out-and-back on the left lies on legs of some
+15 knots, well under the ceiling, while the vessel records less than four: `"clean"` keeps it, and `"local"` flags
+it. The passage on the right is truly fast, at over 30 knots, and the vessel records it so: `"clean"` flags it, and
+`"local"` keeps every ping.
+
+```{r}
+#| label: fig-local
+#| fig-cap: "Two planted cases on vessel EX_12 at a ping a minute (`dansk_planted`), the line its recorded speed, each point the speed implied by the step into a ping, coloured by which of `\"clean\"` and `\"local\"` flags it; the ceiling of 25 knots dashed. Left: one position moved aside and back while fishing (12 December 2014). Right: a passage planted at over 30 knots (13 December 2014)."
+#| fig-height: 3.8
+pair <- methods$clean |> select(.rid, vid, time, lon, lat, speed, clean = ping_flag) |>
+  left_join(methods$local |> select(.rid, local = ping_flag), by = ".rid")
+who <- c("kept by both", "flagged by clean only", "flagged by local only", "flagged by both")
+case_panel <- function(a, b, title) {
+  d <- pair |> filter(vid == "EX_12_60s", time >= a, time <= b) |> implied_kn() |> filter(!is.na(kn)) |>
+    mutate(who = case_when(!is.na(clean) & !is.na(local) ~ who[4], !is.na(clean) ~ who[2],
+                           !is.na(local) ~ who[3], TRUE ~ who[1])) |>
+    arrange(who == who[1])
+  ggplot(d, aes(time)) +
+    geom_line(aes(y = speed), colour = "grey40") +
+    geom_hline(yintercept = 25, linetype = 2, colour = "grey50") +
+    geom_point(aes(y = kn, colour = who), size = 1.6, show.legend = TRUE) +
+    scale_colour_manual(values = setNames(c("grey60", "#E69F00", "#4F81BD", "#C0504D"), who), limits = who) +
+    scale_y_log10(breaks = c(1, 3, 10, 30, 100), labels = c("1", "3", "10", "30", "100")) +
+    scale_x_datetime(date_labels = "%H:%M") +
+    labs(x = NULL, y = "speed (kn, log)", colour = NULL, title = title)
+}
+t_detour <- as.POSIXct("2014-12-12 07:43:22", tz = "UTC")
+t_fast <- as.POSIXct("2014-12-13 17:36:18", tz = "UTC")
+stopifnot(pair |> filter(vid == "EX_12_60s", time == t_detour) |> pull(local) |> is.na() |> isFALSE())
+case_panel(t_detour - 900, t_detour + 900, "an out-and-back while fishing") +
+  case_panel(t_fast - 1200, t_fast + 1800, "a passage, truly fast") +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+Over the whole planted set the pattern holds at every ping rate (@fig-local-scores). `"local"` catches
+`r rng(pct("local", "detour"))` of the out-and-backs, where `"clean"` and `"forward"` catch at most
+`r round(max(pct("clean", "detour"), pct("forward", "detour")))` %. It catches as many single positions or more, and
+more runs and first pings after a gap. It keeps the truly fast stretches at ten seconds and a minute, which the other
+two flag almost whole (`r rng(c(pct("clean", "fast", c(10, 60)), pct("forward", "fast", c(10, 60))))`). Its own false
+flags, good pings flagged with no fault near, are
+`r sprintf("%.1f", own10k("local", 10))` and `r sprintf("%.1f", own10k("local", 60))` in 10,000 at ten seconds and a
+minute, against `r sprintf("%.1f", own10k("clean", 10))` and `r sprintf("%.1f", own10k("clean", 60))` for
+`"clean"`. The price comes at the sparse rates: at six minutes and an hour it flags
+`r sprintf("%.0f", own10k("local", 360))` and `r sprintf("%.0f", own10k("local", 3600))` in 10,000 on its own,
+against `r sprintf("%.0f", own10k("clean", 360))` and `r sprintf("%.0f", own10k("clean", 3600))` for `"clean"`, where
+the speed recorded at a ping says less about the six minutes or the hour around it; counting the good pings flagged
+beside a fault too, `"forward"` flags the fewest there. All of
+this needs the recorded speed. Without it, `"local"` judges at the fixed ceiling, catches
+`r round(100 * fixed_detour)` % of the out-and-backs and flags `r round(100 * fixed_fast)` % of the fast stretches,
+as the others do.
+
+```{r}
+#| label: fig-local-scores
+#| fig-cap: "The three methods on `dansk_planted`'s faults at four ping rates, each run after the copies: the share of each planted fault flagged, and of the fast stretches, which a filter should keep; in the last panel, the good pings flagged in 10,000, those beside a fault included. `\"local\"` with the recorded speed, the vessels' own limits and the vote; where `\"clean\"` does not show, it lies under `\"forward\"`."
+#| fig-height: 5
+rate_lab <- c(`10` = "10 s", `60` = "1 min", `360` = "6 min", `3600` = "1 h")
+bind_rows(caught |> mutate(panel = faults[fault]),
+          good |> mutate(panel = "good pings, in 10,000")) |>
+  mutate(panel = factor(panel, c(faults, "good pings, in 10,000")),
+         rate = factor(rate_lab[as.character(rate_s)], rate_lab)) |>
+  ggplot(aes(rate, value, colour = method, group = method)) +
+  geom_line() +
+  geom_point(size = 1.8) +
+  facet_wrap(~ panel, scales = "free_y", ncol = 3) +
+  scale_colour_manual(values = c(clean = "#E69F00", forward = "grey50", local = "#4F81BD")) +
+  expand_limits(y = 0) +
+  labs(x = "ping rate", y = "% flagged (in 10,000 in the last panel)", colour = NULL)
+```
+
+Planted faults sit in clean tracks, and real data are rarely so kind. On fishycode's Icelandic store the two rules
+were run side by side over 2007-2026. Read by hand, their difference came from positions out of place after hours of
+silence: `"local"` has no test of angle, and over such a gap the legs to and from a wrong position stay within what
+the vessel could have sailed, while `"clean"`'s first stage flags them by the sharp turn they make. With the worst of
+them, port-event rows the feed writes itself, taken out of the track, the trip ends the two rules still move were put
+against the logbook's own dates, and the logbook sided with `"clean"` about three to one on departures and twelve to
+one on returns. So fishycode keeps `"clean"` at 25 knots, and judges each vessel faster than that at its
+own ceiling (measured on fishycode's store, 7-8 November 2026). Which rule is best depends on the data: on a dense
+track with a recorded speed the vessel's own speed wins, and over long silences the angle still earns its place.
 
 ### Port: kept in the trail
 
@@ -404,37 +775,65 @@ ggplot(miss, aes(metres, rate)) +
 
 ## With ramb
 
-Every test in this row is a ramb function that writes a label to `ping_flag` and drops nothing. Each takes a data
-frame or a lazy DuckDB table and gives back the same kind, with the same rows, so the same call serves one vessel's day
-or a national archive. A test looks only at the pings no earlier test has labelled.
+Every test in this row is a ramb function that writes a label to `ping_flag`, and what decided it to
+`ping_flag_basis`, and drops nothing. Each takes a data frame or a lazy DuckDB table and gives back the same kind, with
+the same rows, so the same call serves one vessel's day or a national archive. A test looks only at the pings no
+earlier test has labelled, and a labelled ping is never an anchor for a later one. In the order they run:
 
-| Function | Label in `ping_flag` | Arguments that matter |
+| Function | Label in `ping_flag` (basis) | Arguments that matter |
 |---|---|---|
+| `rb_create_ping_limits()` | none: a table of each vessel's own limits, one row per vessel or per vessel and stream: the speed it is seen to reach, how far its clock's times may be off, and the dataset's noise, each with its basis and the count it rests on | `stream`, `speed`, `lag`, `max_step_s` (300 s) |
 | `rb_flag_ping_invalid()` | `invalid`: a longitude equal to its latitude, or a position off the globe. `after receipt`, when asked for: a ping stamped more than `ahead_s` after it was received | `rules`, `receipt`, `ahead_s` (60 s) |
-| `rb_flag_ping_duplicate()` | `duplicate`: the lower-priority feed's copy of a report another feed holds | `feed`, `priority`, `max_dt_s` (10 s), `kn_max` (25 kn), `n_neighbours` (3) |
-| `rb_flag_ping_impossible()` | by method: `"clean"`, the default, gives `vmask`, `spike` and `forward`; `"sda"` gives `vmask` and `spike`; `"forward"`, `"fwdbwd"` and `"sequential"` each give their own name | `method`, `kn_max` (25 kn), `min_dt_s` (10 s), `max_gap_h` (4 h), `feed` with `noise_nm` (0.3 nm), `evidence` |
+| `rb_flag_ping_duplicate()` | `duplicate`: the lower-priority feed's copy of a report another feed holds (`priority`), or the later of a report sent twice in one feed (`recorded`). `shifted`: a copy stamped at another time (`priority`, or `witness` where a second feed says which is the copy) | `feed`, `priority`, `max_dt_s` (10 s), `speed` and `course` for copies within one feed, `copy_m` (20 m), `near_s` (2 s) |
+| `rb_flag_ping_time()` | `time` (`recorded`): a ping whose written time is off, its position kept; the error in `ping_time_error_s` | `limits`, `speed`, `stream`, `max_step_s` (600 s) |
+| `rb_flag_ping_impossible()` | by method: `"clean"`, the default, gives `vmask`, `spike` and `forward`; `"forward"` gives `forward`; `"local"` gives `local_spike` and `local_forward`. With `anchor = "vote"`, an anchor found wrong is `anchor` or `local_anchor`. The basis says what the limit came from: `recorded`, `ceiling` or `track` | `method`, `speed`, `limits`, `anchor` (`"kept"`), `stream`, `kn_max` (25 kn), `min_dt_s` (10 s), `max_gap_h` (4 h), `feed` with `noise_nm` (0.3 nm), `evidence` |
 | `rb_flag_ping_port()` | none: it adds `port_id`, the port a ping lies in, so port pings stay in the trail | `ports`, `keep` |
+| `rb_add_ping_speed()` | none: after the flags, a speed derived from the pings left, within each stream (`speed_derived`), for a feed that records none | `stream` |
 
-A few of these arguments carry more than their names suggest:
+**Which method.** ramb's advice is `"local"`, given a recorded speed over ground (`speed = `): each leg is judged
+against the speed the vessel itself reports around it, so a fast vessel is not flagged for being fast, and a jump
+under 25 knots can still be caught. Take the copies out first, with `rb_flag_ping_duplicate(speed = )`: a good ping
+between two copies of a report looks as wrong as a copy. Without a recorded speed `"local"` judges at the fixed
+`kn_max`; of the other two, `"clean"` erodes good pings beside a fault it cannot resolve, and `"forward"` loses a
+stretch when the first ping after a gap is the wrong one. The evidence is ramb's planted faults
+(`rb_read_example("dansk_planted")`), scored in its documentation. `"sda"`, `"fwdbwd"` and `"sequential"` are
+withdrawn: they warn, and go in the next release.
+
+A few of the arguments carry more than their names suggest:
 
 - `min_dt_s`: a time step shorter than this counts as this many seconds. At a ping a second, 13 m of position noise
   reads as 25 knots; counted as ten seconds, it reads as 2.5.
 - `max_gap_h`: after a longer silence the scan starts afresh, since the vessel may by then be anywhere. For `"clean"`
   and `"forward"`.
 - `feed` with `noise_nm`: two feeds rarely agree to the metre, so a leg between two feeds no longer than the noise
-  floor is never impossible. For `"clean"`, `"sda"` and `"forward"`.
-- `evidence = TRUE`: each flagged ping keeps which leg was impossible (`ping_flag_side`), and the time, distance and
-  feed of the legs to the nearest kept ping on each side, so a flag can be reviewed or overruled.
+  floor is never impossible.
+- `limits`: each vessel judged by its own numbers rather than a guessed ceiling. Its ceiling stands in where no
+  recorded speed is near, its clock's error is added to each step's time, and twice the noise to each step's length.
+  For `"local"`.
+- `anchor = "vote"`: every method but `"clean"`'s first stage ends in a forward scan, which keeps the last ping it
+  kept and blames the next one it cannot reach. When the kept ping is the wrong one (a port event placed off the
+  berth, a copy stamped at another time), the good pings after it pay for it. With the vote, the five pings after the
+  jump decide which end is wrong.
+- `local_speed`: how `"local"` reads the speed around a ping. The default, `"larger_side"`, takes the larger of the
+  median before and the median after, so a vessel leaving a berth is judged at the speed of the pings that move, not
+  outvoted by those still at rest.
+- `stream`: each vessel's streams judged apart, so no leg joins two clocks that may differ. It flags fewer good pings
+  beside a fault, at a price: two reports of one time in two streams, one of them wrong, show only on a leg between
+  the streams, and are no longer caught.
+- `evidence = TRUE`: each flagged ping keeps which leg was impossible (`ping_flag_side`), the time, distance and feed
+  of the legs to the nearest kept ping on each side, and for `"local"` the speed it was judged by
+  (`ping_flag_speed_kn`), so a flag can be reviewed or overruled.
 - `after receipt` needs the time each ping was received, which few datasets carry. A clock a second or two fast is
   common and harmless, hence the minute's grace.
 
 Where a track is merged from several feeds, put them on one clock first. The duplicate and impossible tests warn when
 they meet two or more streams in a `stream` column with no `lag_basis` beside it, and point to ramb's step 0:
 `rb_add_ping_stream()` to tell the streams apart, then `rb_create_ping_lags()`, `rb_add_ping_own_lag()` and
-`rb_add_ping_time()`.
+`rb_add_ping_time()`. Or judge each stream apart, with `stream = `.
 
 Used in this chapter's cases: `rb_read_example()`, `rb_calc_distance()` and `rb_interpolate_track()`. Close at hand:
-`rb_calc_speed()`, `rb_calc_speed_smooth()`, `rb_calc_step_time()`, `rb_summarise_track()` and `rb_detect_in_polygons()`.
+`rb_calc_speed()`, `rb_calc_speed_smooth()`, `rb_calc_step_time()`, `rb_summarise_track()`, `rb_detect_in_polygons()`
+and, to score a rule against planted faults, `rb_add_ping_outcome()`.
 
 ## Not yet in ramb
 
@@ -442,10 +841,14 @@ Used in this chapter's cases: `rb_read_example()`, `rb_calc_distance()` and `rb_
   straight line.
 - **Downsampling as a function.** A regular series takes two steps ramb already has: a grid of times, then
   `rb_interpolate_track()` onto it.
+- **One ping per vessel and second, decided on evidence.** Two positions stamped with the same second are judged by
+  the speed rule like any other pair, so which of them is flagged depends on the order they come in. No rule yet keeps
+  the one that fits the track.
+- **Direction as evidence.** `"local"` reads the vessel's recorded speed but not its course, and a sharp turn at a
+  ping counts only in `"clean"`'s first stage, behind its speed test.
 
 Some steps are not ramb functions by choice, because each is a line of code or a choice of data:
 
-- copies within one feed: a `distinct()` on vessel, time and position;
-- pings on land: `rb_detect_in_polygons()` with a coastline the analyst trusts;
-- one ping per vessel and second: no rule yet chooses between two positions on evidence, so ramb leaves it to the
-  analyst for now.
+- an exact copy within one feed when no speed is recorded (the same vessel, time and position): `duplicated()` on those
+  columns gives the label. With a recorded speed, `rb_flag_ping_duplicate(speed = )` catches it;
+- pings on land: `rb_detect_in_polygons()` with a coastline the analyst trusts.

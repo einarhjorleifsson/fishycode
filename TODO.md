@@ -1483,8 +1483,9 @@ correction declared in `curate/corrections/`.
 **check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
 
 ## 183. The ping chapter: the best approach to step 0, each rule with the fault it catches (plan 061)
-**status:** open · rewritten a second time 2026-11-02 (decision 275); "With ramb", "Not yet in ramb" and C1 written;
-C3, C5 and C7 wait for plan 062's ramb release · **see:** plan 061, plan 062, decisions 273, 275 and 234,
+**status:** open · rewritten a second time 2026-11-02 (decision 275); "With ramb", "Not yet in ramb" and C1 written,
+the first two brought up to ramb 2026.11.07.1 on 2026-11-08, C3, the time flag (C8) and C5 written; C7, C2 and C6
+next · **see:** plan 061, plan 062, decisions 273, 275 and 234,
 `docs/flow_pings.qmd`, `$FISHYDATA/archive/2026-11-02-ping-chapter-cases/`
 
 Drafted 2026-11-02 by Claude (AI); the measurements are Claude's, not checked by a person. The maintainer: the book
