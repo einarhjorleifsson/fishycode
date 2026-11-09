@@ -7,7 +7,8 @@ and documentation (2026.11.02.2), the ICES data call's R scripts and counts meas
 2026-11-08 "With ramb", "Not yet in ramb" and the methods' table under "Impossible" were brought up to date with ramb
 2026.11.07.1, and "One feed, one report twice", "One vessel, one second, two places", "Time: a written time that is
 off" and "Judged against the vessel's own speed" were written on ramb's planted faults, and "A floor under the step,
-not a rule on the interval" and "A regular series, as a recipe" on ramb's example data, by Claude. The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
+not a rule on the interval" and "A regular series, as a recipe" on ramb's example data, by Claude; on 2026-11-09
+"Methods compared" was written from the scores' appendix (@sec-scores-pings). The other sections are still a skeleton, outlined from the maintainer's direction (plans 033
 §4 and 061) and the reading map of the groups' reports (`ices_reports.yml`). Reviewed by: nobody yet.
 :::
 
@@ -918,8 +919,12 @@ ggplot() +
 
 ## Methods compared
 
-- Flagging impossible pings by a speed threshold against the cleaning in ramb (`rb_flag_ping_impossible`,
-  method "clean"). Graphic: what each removes on `whacks1`.
+Every rule of this row, scored ping by ping on ramb's planted faults at four ping rates, is in @sec-scores-pings: the
+three methods, `"local"` with and without the recorded speed and with each of its settings added in turn, by ping rate
+and by fault, and the copy rule with one part or both. In short, the recorded speed is the large step: with it,
+`"local"` catches the most wrong positions at every rate and flags the fewest good pings of its own at ten seconds and
+a minute. At six minutes and an hour `"forward"` takes the fewest good pings in all. Judging each stream apart trades
+catch for fewer good pings flagged beside a fault, and labelling copies before the speed rule spares good pings.
 
 ## What if a source is missing
 

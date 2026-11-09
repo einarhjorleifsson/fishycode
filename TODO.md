@@ -1484,8 +1484,8 @@ correction declared in `curate/corrections/`.
 
 ## 183. The ping chapter: the best approach to step 0, each rule with the fault it catches (plan 061)
 **status:** open · rewritten a second time 2026-11-02 (decision 275); "With ramb", "Not yet in ramb" and C1 written,
-the first two brought up to ramb 2026.11.07.1 on 2026-11-08, C3, the time flag (C8), C5, C7, C2 and C6 written; the
-scores' appendix and the skeleton sections next · **see:** plan 061, plan 062, decisions 273, 275 and 234,
+the first two brought up to ramb 2026.11.07.1 on 2026-11-08, C3, the time flag (C8), C5, C7, C2 and C6 written, the
+scores' appendix (`docs/scores_pings.qmd`) and "Methods compared" on 2026-11-09; the skeleton sections left · **see:** plan 061, plan 062, decisions 273, 275 and 234,
 `docs/flow_pings.qmd`, `$FISHYDATA/archive/2026-11-02-ping-chapter-cases/`
 
 Drafted 2026-11-02 by Claude (AI); the measurements are Claude's, not checked by a person. The maintainer: the book

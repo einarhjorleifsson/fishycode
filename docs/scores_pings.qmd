@@ -1,0 +1,208 @@
+# Step 0 scored on planted faults {#sec-scores-pings}
+
+::: {.callout-note}
+**Drafted by AI.** Written by Claude (Anthropic) on 2026-11-09 for plan 061, on ramb's example data
+(`dansk_planted`) with ramb 2026.11.07.1. Every number is computed on this page. Reviewed by: nobody yet.
+:::
+
+```{r setup}
+#| include: false
+# quarto's R may start in a C locale; keep characters such as the degree sign intact
+invisible(Sys.setlocale("LC_CTYPE", "en_US.UTF-8"))
+library(tidyverse)
+library(ramb)
+```
+
+The ping chapter (@sec-pings) shows each rule of step 0 on a case or two. This appendix scores them all at once, ping
+by ping, on ramb's planted faults. `dansk_planted` is the Danish tracks made clean, thinned to four ping rates (ten
+seconds, a minute, six minutes and an hour), with faults planted in each vessel's track at each rate and every ping
+labelled with what was done to it. The faults are a position moved (a spike), a run of three to eight moved together,
+a position moved aside and back under 25 knots (an out-and-back), a placeholder, the first ping after a gap moved,
+copies of reports (a stretch from another day, a second feed whose clock runs late or an hour late in summer, a report
+sent again a second later), and a second feed reporting the same second elsewhere (a tie). One fast passage per
+vessel, at 30 to 40 knots, is not a fault: a filter should keep it.
+
+Every ping falls in one outcome (`rb_add_ping_outcome()`). A wrong ping is caught, caught as another kind (a copy
+flagged as a bad position), or missed. A good ping is kept, or flagged: on its own, or beside a fault. The two are told
+apart by running the same rule on the tracks without their wrong pings: a good ping flagged there too is the rule's own
+flag. Each rule runs after the placeholders and the copies (`rb_flag_ping_invalid()`, then
+`rb_flag_ping_duplicate()` with the recorded speed and course), as ramb advises.
+
+```{r}
+#| include: false
+planted <- rb_read_example("dansk_planted") |> collect() |>
+  arrange(vid, time, .rid) |>
+  mutate(stream = feed,   # each feed is a stream of its own here
+         truth = case_when(fault %in% c("shifted_copy", "clock_offset", "summer_time", "near_copy") ~ "copy",
+                           wrong ~ "flag position",
+                           TRUE ~ "keep"))
+limits <- rb_create_ping_limits(planted, speed = speed)
+copies_out <- function(x, recorded = TRUE) {
+  x <- rb_flag_ping_invalid(x)
+  if (recorded) {
+    rb_flag_ping_duplicate(x, priority = c("a", "b"), feed = feed, speed = speed, course = course)
+  } else {
+    rb_flag_ping_duplicate(x, priority = c("a", "b"), feed = feed)
+  }
+}
+rules <- list(
+  `clean` = function(x) rb_flag_ping_impossible(x, method = "clean", feed = feed),
+  `forward` = function(x) rb_flag_ping_impossible(x, method = "forward", feed = feed),
+  `local, no recorded speed` = function(x) rb_flag_ping_impossible(x, method = "local", feed = feed),
+  `local, recorded speed` = function(x) rb_flag_ping_impossible(x, method = "local", speed = speed, feed = feed),
+  `+ own limits` = function(x) {
+    rb_flag_ping_impossible(x, method = "local", speed = speed, limits = limits, feed = feed)
+  },
+  `+ the vote` = function(x) {
+    rb_flag_ping_impossible(x, method = "local", speed = speed, limits = limits, anchor = "vote", feed = feed)
+  },
+  `+ each stream apart` = function(x) {
+    rb_flag_ping_impossible(x, method = "local", speed = speed, limits = limits, anchor = "vote", feed = feed,
+                            stream = stream)
+  })
+score <- function(pre, rule) {
+  judged <- rule(pre)
+  alone <- rule(pre |> filter(truth == "keep")) |> select(.rid, alone_flag = ping_flag)
+  judged |> left_join(alone, by = ".rid") |>
+    rb_add_ping_outcome(ping_flag, truth, clean = alone_flag, name = "outcome")
+}
+pre <- copies_out(planted)
+scored <- imap_dfr(rules, function(rule, name) score(pre, rule) |> mutate(rule = name))
+# every ping in one outcome, under every rule
+stopifnot(all(count(scored, rule)$n == nrow(planted)), !anyNA(scored$outcome))
+rule_order <- names(rules)
+rate_lab <- c(`10` = "10 s", `60` = "1 min", `360` = "6 min", `3600` = "1 h")
+by_rate <- scored |>
+  group_by(rule = factor(rule, rule_order), rate = factor(rate_lab[as.character(rate_s)], rate_lab)) |>
+  summarise(caught = 100 * mean(outcome[truth == "flag position"] %in% c("caught", "caught, as copy", "caught, as time")),
+            own = 1e4 * mean(outcome[truth == "keep"] == "flagged"),
+            beside = 1e4 * mean(outcome[truth == "keep"] == "flagged, beside a fault"),
+            fishing = 1e4 * mean(outcome[truth == "keep" & fishing] != "kept"),
+            .groups = "drop")
+wide <- function(v, digits = 1) {
+  by_rate |> select(rule, rate, value = all_of(v)) |>
+    mutate(value = round(value, digits)) |>
+    pivot_wider(names_from = rate, values_from = value)
+}
+```
+
+## By ping rate
+
+The seven rules run from the fixed ceiling to ramb's advice and one step past it. `"clean"` and `"forward"` judge
+every leg at 25 knots. `"local"` without a recorded speed does too, with its own two stages. Given the recorded speed,
+it judges each leg at the speed the vessel records around it; each line after adds one setting to the one before:
+each vessel's own limits, the vote at a jump, and each feed judged as a stream apart. The line `+ the vote` is ramb's
+advice.
+
+```{r}
+#| label: tbl-scores-caught
+#| tbl-cap: "Wrong positions caught (%), by rule and ping rate: the spikes, runs, out-and-backs, placeholders, first pings after a gap and the wrong reports of a tie."
+wide("caught") |> knitr::kable()
+```
+
+```{r}
+#| label: tbl-scores-own
+#| tbl-cap: "Good pings flagged on the rule's own, in 10,000 good pings: flagged also on the tracks without their wrong pings. The fast passages count as good pings."
+wide("own") |> knitr::kable()
+```
+
+```{r}
+#| label: tbl-scores-beside
+#| tbl-cap: "Good pings flagged beside a fault, in 10,000 good pings: flagged only where the wrong pings are there."
+wide("beside") |> knitr::kable()
+```
+
+```{r}
+#| label: tbl-scores-fishing
+#| tbl-cap: "Good pings flagged while fishing, in 10,000 good fishing pings, the rule's own and beside a fault together: what a rule takes from the effort."
+wide("fishing") |> knitr::kable()
+```
+
+```{r}
+#| include: false
+at <- function(v, r, rt) by_rate |> filter(rule == r, rate == rt) |> pull(all_of(v))
+```
+
+Read together: the recorded speed is the large step. With it, `"local"` catches more at every rate and its own false
+flags fall from about `r round(at("own", "clean", "1 min"))` in 10,000 to `r round(at("own", "local, recorded speed", "1 min"), 1)`
+at a ping a minute, since a fast vessel is no longer flagged for being fast. The vessels' own limits move the catch
+by a few points either way: up from `r round(at("caught", "local, recorded speed", "10 s"))` to
+`r round(at("caught", "+ own limits", "10 s"))` % at ten seconds, down from
+`r round(at("caught", "local, recorded speed", "1 min"))` to `r round(at("caught", "+ own limits", "1 min"))` % at a
+minute, where they let more of the out-and-backs through (@tbl-scores-fault-1min). The vote adds a few points of catch at the sparse rates
+(`r round(at("caught", "+ own limits", "6 min"))` to `r round(at("caught", "+ the vote", "6 min"))` % at six minutes)
+and flags fewer good pings beside a fault. Judging each stream apart flags fewer still beside a fault, at a cost in
+catch at every rate (`r round(at("caught", "+ the vote", "1 min"))` to `r round(at("caught", "+ each stream apart", "1 min"))` %
+at a minute): the ties, two reports of one second in two feeds, show only on a leg between the feeds. At six minutes
+and an hour `"forward"` takes the fewest good pings in all, and the fewest from the fishing.
+
+## By fault
+
+```{r}
+#| include: false
+faults <- c(spike = "a position moved", run = "a run of 3-8 moved", detour = "an out-and-back under 25 kn",
+            lon_eq_lat = "a placeholder", first_after_gap = "the first ping after a gap",
+            tie = "a tie, the wrong report", shifted_copy = "a stretch from another day",
+            clock_offset = "a second feed, its clock late", summer_time = "a second feed, an hour late",
+            near_copy = "a report sent again", fast = "a fast passage (to keep)")
+by_fault <- function(r) {
+  scored |> filter(rate_s == r, fault %in% names(faults), !(fault == "tie" & truth == "keep")) |>
+    group_by(fault = factor(faults[fault], faults), rule = factor(rule, rule_order)) |>
+    summarise(flagged = round(100 * mean(!is.na(ping_flag))), .groups = "drop") |>
+    pivot_wider(names_from = rule, values_from = flagged)
+}
+```
+
+Each fault's share flagged by any label, at a ping a minute and at one every six minutes. A second feed's copies and
+a report sent again are labelled by the copy rule before any speed rule runs, so they differ little between the
+rules. A stretch from another day is only paired by it, and the speed rules catch its pings as positions. The fast
+passage is the one row where a lower share is better.
+
+```{r}
+#| label: tbl-scores-fault-1min
+#| tbl-cap: "Each planted fault flagged (%), by rule, at a ping a minute (`dansk_planted`)."
+by_fault(60) |> knitr::kable()
+```
+
+```{r}
+#| label: tbl-scores-fault-6min
+#| tbl-cap: "Each planted fault flagged (%), by rule, at a ping every six minutes (`dansk_planted`)."
+by_fault(360) |> knitr::kable()
+```
+
+## The copies first, or not
+
+```{r}
+#| include: false
+advised <- rules[["+ the vote"]]
+copies_compared <- bind_rows(
+  score(copies_out(planted, recorded = FALSE), advised) |> mutate(copies = "across feeds, at one time"),
+  score(pre, advised) |> mutate(copies = "and one report twice (speed, course)"))
+copy_kinds <- copies_compared |> filter(truth == "copy") |>
+  mutate(fault = factor(faults[fault], faults)) |>
+  count(copies, fault, outcome) |>
+  pivot_wider(names_from = outcome, values_from = n, values_fill = 0)
+good_cost <- copies_compared |> filter(truth == "keep") |>
+  group_by(copies) |>
+  summarise(`good pings flagged` = sum(outcome != "kept"), `of them fishing` = sum(outcome != "kept" & fishing))
+```
+
+The copy rule has two parts: a copy across feeds at one time, which needs only the feeds, and one report twice at any
+time, which needs the recorded speed and course. With the second part, most of the late second feed's copies are
+labelled as copies (`shifted`) rather than left to the speed rule (@tbl-scores-copies), and the speed rule then takes
+fewer good pings: `r format(good_cost[["good pings flagged"]][2], big.mark = ",")` over the four rates, against
+`r format(good_cost[["good pings flagged"]][1], big.mark = ",")` after the first part alone
+(@tbl-scores-copies-cost). A stretch copied from another day in one feed has no witness here, so its pings are
+paired and kept; the speed rule catches them as positions either way.
+
+```{r}
+#| label: tbl-scores-copies
+#| tbl-cap: "The planted copies under ramb's advised speed rule (`\"local\"` with the recorded speed, own limits and the vote), after the copy rule's first part alone or both parts, all four ping rates: each copy's outcome."
+copy_kinds |> knitr::kable(format.args = list(big.mark = ","))
+```
+
+```{r}
+#| label: tbl-scores-copies-cost
+#| tbl-cap: "Good pings flagged by the same rule, after either copy rule, all four ping rates."
+good_cost |> knitr::kable(format.args = list(big.mark = ","))
+```

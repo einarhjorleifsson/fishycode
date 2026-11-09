@@ -34,6 +34,8 @@ book:
         - wkssfgeo.qmd
   appendices:
     - grammar.qmd
+    # the scores behind the flow's chapters, on ramb's planted faults
+    - scores_pings.qmd
     # the Icelandic data: sources
     - afli-tables.qmd
     - source-schemas.md
