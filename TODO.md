@@ -1670,3 +1670,25 @@ Each step starts as a study, and becomes a target after the maintainer's review.
   source; their broadest scale follows an area's size, but as a prior on extent it did not help.
 
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
+
+## 197. The names in use beside the charts' names, and each small feature on the seabed (plan 071)
+**status:** open · plan 071's asks a-f wait on the maintainer; step 1 run 2026-11-09 (the highs at 1:40 000 and, mended, at 1:100 000 passed; 50 names moved) · **see:**
+`curate/plans/071-place-names-in-use-beside-the-charts.md`, `$FISHYDATA/archive/2026-11-09-ornefni-in-use/README.md`,
+the örnefni map (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), plan 070, decisions 301, 302 and 304, TODOs 144 and 194
+
+The maintainer, 2026-11-09, asked how the other sources' names (Trackwell, the plotter, channel, the recaptures,
+Oracle, the documents) can augment the charts' names without overwriting the boundaries, raising issues where
+warranted, and to place each name on the Olex grid, its feature (a mound, a deep) apart from its text. Plan 071
+proposes:
+- the charts' names as the official layer, frozen; every other name linked to it in one outcome, never moving it;
+- each source's error measured against the official layer, Trackwell by vessel and by place in its run;
+- issues by rule, a change to the official layer only as a rule;
+- each small feature on the grid's obvious high or low, the official names first, checked on the named rings.
+
+Measured (Claude, read-only): 6,601 of the gazetteer's 8,243 names are not on the charts; 1,440 lie deeper than
+200 m, 1,071 of them outside every official area.
+Step 1's open ends (the study README): a fair witness for the deeps, since the grid shows almost none of the
+Vestmannaeyjar map's features within 150 m; the skerries, which fail with both detectors.
+
+**check:** plan 071's steps 1-7 built as studies and reviewed on the map by the maintainer, its asks answered; or the
+plan parked.
