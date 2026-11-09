@@ -35,12 +35,13 @@ depth_effort_map_build <- function(con, center = c(-19, 65), zoom = 6, lang = "e
   effort$effort$config$opacity <- 60L
   e$bathymetry_map_build(
     con, e$dir, center = center, zoom = zoom, lang = lang, cells = FALSE, palette = "blues",
+    palettes = e$bathymetry_palettes("all"),   # the bathymetry map's short list lacks its blues and gn_yl
     # what the page opens with (the maintainer, 2026-11-04): the depth's colours in gn_yl, in equal shares of the
     # depths in view, at 52 % opacity; the relief shaded "combined"; the place names in black
     depth_colour = list(palette = "gn_yl", scale = "equal", opacity = 52), relief_shade = list(method = "combined"),
     names_state = list(colour = "#000000"),
     groups = list(ramb::rb_map_group("effort", "gEffort", list(effort$effort))),
-    extra = list(effort$ports),
+    # the ports come with the bathymetry map's reference layers since 2026-11-09 (its `ports`)
     about = c("aboutDepthEffort", "about2"),
     extra_texts = list(
       title = list(en = "Depth and fishing effort", is = "Dýpi og veiðisókn"),

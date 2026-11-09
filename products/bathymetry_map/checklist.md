@@ -13,19 +13,24 @@ it is shown (2026-11-03: over a minute hidden, 3 s once shown): time a tile from
 - **L1** `/` opens at lon -19, lat 65, zoom 6; the status line reads `zoom 6.0` once the map is idle; no error in the
   console.
 - **L2** The layers, bottom up: the depth's colour, the relief's shading, the depth by cell (off), the contours, the
-  base map's labels, the place names.
+  base map's labels, the place names, the ports (off; the effort map's ports layer, since 2026-11-09; left out where
+  `curated/reference/port_geometry.parquet` is not there, as in the kit).
 - **L3** A relief tile is a WebP image, answered in a few ms (`curl` on `/tiles/relief/{z}/{x}/{y}.webp`).
 
 ## Depth (plan 063 step 2)
 
-- **D1** Colours: any of the viewer's palettes recolours the depth at once; the legend's bar follows.
+- **D1** Colours: the depth opens with "quiet" in equal shares (since 2026-11-09); the list holds seven looks, quiet,
+  seabed, deep, chart, grey, drained and haxby (the last two of 17 stops), each recolouring the depth at once, the
+  legend's bar following; `depth_pal=drained` in a link opens with it. The depth's checkbox off (D2) is the relief
+  alone. The depth and effort map lists all eighteen palettes.
 - **D2** The depth's checkbox: off hides the colour and leaves the shading; on brings it back.
 - **D3** Floor and cap: the colours span between them as the sliders move, their depths beside them and at the bar's
   ends; a floor set above the cap is read the other way round.
 - **D4** Scale: log or linear respaces the colours between floor and cap; "equal shares" places them at the view's
   quantiles, each colour an equal share of the depths in view (Faxaflói at zoom 9: its 25-52 m half of the bay spread
   over the palette's middle); following the view the quantiles follow it, not following they stay as last fitted; a
-  link with `depth_scale=equal` and a floor and cap fetches the view's quantiles and keeps the floor and cap.
+  link with a floor and cap (equal shares being the default) fetches the view's quantiles and keeps the floor and cap;
+  `depth_scale=log` opens on the log scale.
 - **D5** Colours as bands: one flat colour per band at the charts' isobaths (10, 20, 50, 100, 200, 500, 1,000,
   2,000 m), the legend a swatch per band with its depths; a ramp again brings the bar back.
 - **D6** Shallower than 10, 20 or 50 m: those depths drawn clear, or grey with "drawn grey"; none shows every depth.

@@ -1552,7 +1552,9 @@ source and Mac binary, a README; tested from an empty library, 2026-11-03), copi
 writes `exports/bathymetry_map_bundle/` (243 MB): the map opened from its `index.html` with no R (ramb 2026.11.04.2's
 `rb_map_bundle()`, decision 277). With the effort as one more layer: `products/depth_effort_map/` (the maintainer,
 2026-11-04), served from R, and as a bundle with every effort filter summed in the browser (`bundle.R`, 636 MB, ramb
-2026.11.04.3, decision 278). Open: the rest of plan 063; contour labels under zoom 11; ramb's changes pushed.
+2026.11.04.3, decision 278). Since 2026-11-09 (decision 305) the depth opens in fishycode's quiet palette in equal
+shares, seven looks to pick, and the ports are a reference layer. Open: the rest of plan 063; contour labels under
+zoom 11; the looks moved into ramb's palettes; the bundles and the kit rebuilt with them.
 
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.

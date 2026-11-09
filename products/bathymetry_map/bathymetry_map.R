@@ -5,7 +5,8 @@
 #
 # Input:  $FISHYDATA/products/bathymetry_map/depth.mbtiles (dem.R), left out if it is not there;
 #         grid_0010/, grid_0040.parquet and grid_0200.parquet (grid.R); the effort map's tile bounds, cell-size option
-#         and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer); ramb's map viewer
+#         and place names (products/effort_map/tiles.R, map.R and map.json; plan 044's gazetteer), and its ports
+#         ($FISHYDATA/curated/reference/port_geometry.parquet, left out if it is not there); ramb's map viewer
 #         (rb_map_*(), and for the depth and relief its dem layer, rb_map_tiles_mbtiles() and their controls,
 #         `colour` and `shade`, and its contour layer: ramb >= 2026.11.03.3; the place names' controls, map.json's
 #         `state`: ramb >= 2026.11.04.1)
@@ -15,7 +16,8 @@
 # Use, from the fishycode root (an RStudio project opens there):
 #   source("products/bathymetry_map/bathymetry_map.R")
 #   bathymetry_map()
-#   bathymetry_map(center = c(-22.5, 66.2), zoom = 9, palette = "etopo1_bathy", lang = "is")
+#   bathymetry_map(center = c(-22.5, 66.2), zoom = 9, palette = "seabed", lang = "is")
+#   bathymetry_map(depth_colour = list(palette = "quiet"))     # what the depth's colour controls open with
 #   bathymetry_map(layers = list(<rb_map_layer>), texts = list(<its labels>))   # a study's layer beside the names
 #   bathymetry_map_stop()
 #
@@ -68,17 +70,71 @@ depth_tile <- function(con, dir, z, x, y, px = 1) {
   if (is.null(r)) raw(0) else r
 }
 
+# Palettes this map adds to ramb's: "quiet", pale cyan-grey to a mid grey-blue, low in chroma and stopping at mid
+# lightness (OKLab L 0.93 to 0.59 in even steps; ramb's "deep" goes 0.99 to 0.26), so the relief's shading still reads
+# through the depth's colour (the maintainer, 2026-11-09, liked the relief and contours with no colour at all; study
+# $FISHYDATA/archive/2026-11-09-seabed-colour/). Hue 200 to 245 and chroma 8 to 32 in HCL; first made from L 0.96,
+# whose shallow end sat 0.014 from the base map's landcover and read as land in Breiðafjörður, so its light end was
+# darkened, hue and chroma kept (the maintainer: "Yes, fix quiet"; 04_looks.R). The depth opens with it since
+# 2026-11-09 (the maintainer: "Yes, make default"). "seabed", the same study's look the maintainer
+# liked ("seabed guess, fading with depth"), by depth alone: sand shading into mud, seen through the water, red lost
+# first; its nine stops at even OKLab lightness, 0.84 to 0.40 (the study's 03_seabed_palette.R). A look, not a
+# substrate: the grid's roughness and hollows proved no witness of the seabed (02_marks_vs_grid.R). Two more, each for
+# a use the others lack, designed in OKLCh and measured (the study's 04_looks.R): "chart", the sea's one colour
+# convention, the nautical chart's: shallow water blue, deep water near white (L 0.70 to 0.95, hue 240), so the
+# shallows stand out and the relief reads in the deeps; it runs dark to light, as the page goes shallow to deep.
+# "grey", a ground for other layers (effort, names, marks): L 0.94 to 0.58, chroma under 0.01, so it pulls no
+# overlay's hue (by hue alone the nearest any overlay comes is 0.042 in OKLab, against 0.005 to 0.016 for the
+# others). Each palette's ends are held off the base map's land (#FAFAF8 and its landcover's green): quiet's shallow
+# end 0.037, chart's deep end 0.027, grey's shallow end 0.035. Two daring ones, from tidyterra 1.3.0's palettes (the
+# study's 05_daring.R), each resampled to 17 stops at even steps along its path in OKLab, its whitest stops (L over
+# 0.92) dropped first so the shallowest water stays off the land (0.124 and 0.165): "drained", the seabed as land, as
+# if the sea were drained: gmt_globe_hypso, the land palette of the widest span (0 to 10,000 m), the deeps its green
+# lowland, the banks its ochre and brown hills, the shallowest its grey rock; "haxby", marine geology's multibeam
+# palette (Haxby's, as GMT and GRASS carry it), orange shallows through green and cyan to deep blue. Both lean on hue,
+# so a colour-blind reader parts their neighbours less well (0.023 and 0.024 at the smallest). All belong in ramb's
+# rb_map_palettes() when ramb's viewer is next opened
+BATHY_PALETTES <- list(
+  list(id = "quiet", label = "quiet", source = "fishycode, HCL",
+       colors = c("#DFECEE", "#CBE0E3", "#B9D2D8", "#A9C4CE", "#99B7C4", "#8AA9BB", "#7D9BB0", "#708DA7", "#657E9E")),
+  list(id = "seabed", label = "seabed (sand to deep water)", source = "fishycode, sand and mud through water",
+       colors = c("#D8CAA2", "#B2BEA9", "#9AADA1", "#869D96", "#738C8B", "#5F7D81", "#4B6D78", "#3C5C6D", "#2E4C61")),
+  list(id = "chart", label = "chart (shallow blue, deep white)", source = "fishycode, OKLCh, after the nautical chart",
+       colors = c("#60A7D6", "#75B0D9", "#87B9DC", "#99C2DF", "#AACBE3", "#BAD4E7", "#CADDEB", "#D8E6F1", "#E5F0F8")),
+  list(id = "grey", label = "grey (under other layers)", source = "fishycode, OKLCh",
+       colors = c("#E7EAED", "#D8DBDE", "#CACDD0", "#BBBFC2", "#ADB1B5", "#9FA3A7", "#91959A", "#84888C", "#767B80")),
+  list(id = "drained", label = "drained (the seabed as land)", source = "tidyterra gmt_globe_hypso, resampled",
+       colors = c("#CCCCCC", "#C1ACAC", "#B68C8C", "#AC6B6B", "#9F5E45", "#9B6F05", "#A48F18", "#C7A224", "#E6B858",
+                  "#F7D09A", "#E7E0AA", "#B0E28D", "#6DD474", "#35BF5B", "#37A041", "#378325", "#336600")),
+  list(id = "haxby", label = "haxby (multibeam)", source = "tidyterra grass haxby, resampled",
+       colors = c("#FFBA85", "#FFA44C", "#FFB955", "#F9D568", "#ECEF7F", "#C6FDA4", "#99F0AC", "#7EECD0", "#6BEBFD",
+                  "#52D7FF", "#37C1FF", "#2CAAFE", "#2893FD", "#287BF6", "#2865DE", "#274FC6", "#2539AF"))
+)
+# The map offers a short list, seven looks to pick between (the maintainer, 2026-11-09: "the user can select between
+# certain limited preset options", "5 base options", "make that actually two daring ones"): quiet (the default),
+# seabed, ramb's deep, chart and grey, and the daring drained and haxby; the depth's checkbox off leaves the relief
+# alone, the look the maintainer first liked. A map of its own that wants other palettes (products/depth_effort_map/)
+# passes "all": ramb's twelve and these
+bathymetry_palettes <- function(which = c("short", "all")) {
+  all <- c(ramb::rb_map_palettes(), BATHY_PALETTES)
+  if (match.arg(which) == "all") return(all)
+  all[match(c("quiet", "seabed", "deep", "chart", "grey", "drained", "haxby"), vapply(all, `[[`, "", "id"))]
+}
+
 # The depth from the elevation tiles, coloured in the page: palette, floor and cap, scale, ramp or bands (the charts'
 # isobaths), a cut of the shallow end and opacity in the reader's hands (plan 063 step 2); the depths under 10-20 m are
 # poorly covered (the maintainer), so a cut is offered, none by default. The floor and cap follow the view (plan 063
-# point 7(a)): the 2nd and 98th percentiles of the depths in it, as the depth by cell's are fitted. `colour` changes
-# what the page opens with (a map of its own, products/depth_effort_map/)
+# point 7(a)): the 2nd and 98th percentiles of the depths in it, as the depth by cell's are fitted. It opens with the
+# quiet palette in equal shares (2026-11-09: on a log scale Faxaflói's 40-75 m took the palette's two darkest steps
+# and read as one tone; in equal shares its plateau, channels and rim part). `colour` changes what the page opens with
+# (a map of its own, products/depth_effort_map/)
 depth_layer <- function(file, con, dir, colour = list()) {
   ramb::rb_map_layer(
     "depth", "dem", label = "lyrDepthColour", info = "infoDepthColour", visible = TRUE,
     tiles = ramb::rb_map_tiles_mbtiles(file),
     style = list(list(id = "depth-colour", type = "color-relief")),
-    colour = utils::modifyList(list(palette = "deep", floor = 10, cap = 2000, fit = depth_fit(con, dir)), colour)
+    colour = utils::modifyList(list(palette = "quiet", scale = "equal", floor = 10, cap = 2000,
+                                    fit = depth_fit(con, dir)), colour)
   )
 }
 
@@ -196,11 +252,12 @@ relief_fit <- function(con, dir) {
 # out the depth by cell, as ramb draws one grid a map; `groups` go between the relief and the reference layers;
 # `palette` is the grid's when the page opens; `about` names the texts of an About section. What the page opens with:
 # `depth_colour` over the depth's colour controls, `relief_shade` over the relief's, `names_state` the place names'
-# controls by id
+# controls by id; `palettes` the list offered, the short one by default; `ports` the harbours beside the place names
 bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang = "en",
                                  json = file.path("products", "effort_map", "map.json"), extra = list(),
                                  extra_texts = list(), cells = TRUE, groups = list(), palette = "deep",
-                                 about = NULL, depth_colour = list(), relief_shade = list(), names_state = list()) {
+                                 about = NULL, depth_colour = list(), relief_shade = list(), names_state = list(),
+                                 palettes = bathymetry_palettes(), ports = TRUE) {
   spec <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   pick <- function(x, id) Filter(function(l) identical(l$id, id), x)[[1]]
   nm <- pick(spec$layers, "names")
@@ -212,6 +269,15 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
   px$default <- "2"
   names_layer <- do.call(ramb::rb_map_layer, c(list(id = "names"), nm[setdiff(names(nm), "id")],
                                                list(data = place_names_geojson)))
+  # the harbours: the effort map's ports layer as its map.json has it, off when the page opens (the maintainer,
+  # 2026-11-09: "if we should put the harbours as an additional reference layer"); left out where the ports' table is
+  # not there, as in the kit. fd_path(), since fd_curated() would make the folder
+  ports_file <- fd_path("curated", "reference", "port_geometry.parquet")
+  ports_layer <- if (ports && file.exists(ports_file)) {
+    po <- pick(spec$layers, "ports")
+    list(do.call(ramb::rb_map_layer, c(list(id = "ports"), po[setdiff(names(po), "id")],
+                                       list(tiles = ports_tiles(con, ports_file)))))
+  }
   depth <- ramb::rb_map_layer(
     "cells", "grid", label = "lyrDepth", info = "infoDepth", visible = FALSE, source_layer = "cells",
     minzoom = 2, maxzoom = 14, opacity = 100,
@@ -295,21 +361,21 @@ bathymetry_map_build <- function(con, dir, center = c(-19, 65), zoom = 6, lang =
                                                   if (cells) list(depth)))),
     if (has_dem) list(ramb::rb_map_group("relief", "gRelief", list(relief_layer(dem, con, dir, relief_shade)))),
     groups,
-    list(ramb::rb_map_group("ref", "gRef", c(list(names_layer), extra)))
+    list(ramb::rb_map_group("ref", "gRef", c(list(names_layer), ports_layer, extra)))
   )
   do.call(ramb::rb_map, c(all, list(
     title = "title", view = list(center = center, zoom = zoom), texts = texts,
     languages = unlist(spec$languages), language = lang, locales = lapply(spec$locales, unlist), palette = palette,
-    about = about
+    palettes = palettes, about = about
   )))
 }
 
 })
 
 bathymetry_map <- function(center = c(-19, 65), zoom = 6, palette = "deep", base = "light", lang = c("en", "is"),
-                           port = 8798, viewer = TRUE, layers = list(), texts = list()) {
+                           port = 8798, viewer = TRUE, layers = list(), texts = list(), depth_colour = list()) {
   lang <- match.arg(lang)
-  palettes <- vapply(ramb::rb_map_palettes(), `[[`, "", "id")
+  palettes <- vapply(.bathymetry_map$bathymetry_palettes(), `[[`, "", "id")
   bases <- vapply(ramb::rb_map_basemaps(), `[[`, "", "id")
   if (!palette %in% palettes) stop("palette is one of ", paste(palettes, collapse = ", "), call. = FALSE)
   if (!base %in% bases) stop("base is one of ", paste(bases, collapse = ", "), call. = FALSE)
@@ -318,7 +384,7 @@ bathymetry_map <- function(center = c(-19, 65), zoom = 6, palette = "deep", base
   e$con <- DBI::dbConnect(duckdb::duckdb())
   invisible(DBI::dbExecute(e$con, "LOAD spatial"))
   m <- e$bathymetry_map_build(e$con, e$dir, center = center, zoom = zoom, lang = lang, extra = layers,
-                              extra_texts = texts)
+                              extra_texts = texts, depth_colour = depth_colour)
   q <- list(palette = palette, base = if (base != "light") base)
   url <- ramb::rb_map_serve(m, port = port, open = viewer, query = Filter(Negate(is.null), q))
   e$port <- port
