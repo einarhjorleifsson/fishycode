@@ -4,7 +4,7 @@
 package"), the name changed to rebelrebel and asks a-j answered the same day, then the names made singular again, ask k (the
 discrete palette, Okabe-Ito) and ask l (past eight values) answered, and §3.9 (nested choosers, `choose`) added at
 the maintainer's word; step 1 (the move) built the same evening at the maintainer's word ("proceed to the next step")
-in `~/R/Pakkar/rebelrebel` (github.com/einarhjorleifsson/rebelrebel; both renamed from ribellibre 2026-11-10), committed as a0ae669 at the
+in `~/R/Pakkar/rebelrebel` (github.com/einarhjorleifsson/rebelrebel; both renamed from ribellibre 2026-11-10), committed as 3e4548f at the
 maintainer's word ("lets commit first"), not pushed; ask m answered (`rr_text()`) · **see:** plans 046 (the viewer), 063 (the bathymetry map's depth and relief), 064 (the time panel), decisions
 220, 228, 277-281 (the effort map, its tiles, bundles and time panel), TODO 185 (the depth grid), TODO 198
 
@@ -36,7 +36,7 @@ it: maps on MapLibre for marine data. A web search for "rebel rebel" finds Bowie
 
 ## 0. Built (2026-11-10)
 
-**Step 1, the move,** in `~/R/Pakkar/rebelrebel`, commit a0ae669 (not pushed), by its `dev/move_from_ramb.R` and the edits after it: ramb's map
+**Step 1, the move,** in `~/R/Pakkar/rebelrebel`, by `dev/move_from_ramb.R` (kept in `$FISHYDATA/archive/2026-11-10-rebelrebel-step1/`, out of the package since 2026-11-10) and the edits after it: ramb's map
 viewer as of ramb 2026.11.09.4 (09182bc), under §4's names, its behaviour unchanged.
 - **The code,** split by subject (`R/map.R`, `palettes.R`, `notes.R`, `bundle.R`, `tiles.R`, `quick.R`, `time.R`,
   `serve.R`); ramb's DuckDB helpers copied into `R/duckdb.R`, and its example reader into `R/example.R`
@@ -65,11 +65,11 @@ viewer as of ramb 2026.11.09.4 (09182bc), under §4's names, its behaviour uncha
   ports drawn, MapLibre and maplibre-contour from `/vendor/`, no error in the console.
 - **A figure from the page, the must:** the example seabed's bundle (250 tiles, 8.9 MB, written in 4.2 s), opened from
   its file by headless Chrome (chromote 0.5.1) at 300/96 device pixels to each CSS pixel, gave a PNG of 2,009 × 1,419
-  pixels, 17.0 × 12.0 cm at 300 dpi, its text and lines sharp, in 1.9 s (`dev/measure_figure.R`). Left for step 4: the
+  pixels, 17.0 × 12.0 cm at 300 dpi, its text and lines sharp, in 1.9 s (`dev/measure_figure.R` in `$FISHYDATA/archive/2026-11-10-rebelrebel-step1/`). Left for step 4: the
   page's controls are in the shot, which the print layout hides. That bundle drew no contour lines: the gap known
   since 2026-11-09, a bundle's contour tile lost where a neighbouring tile lies outside the grid, unchanged by the move.
 - **Speed, ramb against rebelrebel:** fishycode's effort map served by each (ports 8833 and 8832), four fresh views each
-  at 1280 × 800 in headless Chrome, twice (`dev/measure_speed.R`), was the same within a run's noise. A view of 4 grid
+  at 1280 × 800 in headless Chrome, twice (`dev/measure_speed.R`, the same folder), was the same within a run's noise. A view of 4 grid
   tiles was idle after 1.7-2.0 s, of 9 tiles after 2.3-2.4 s, of 6 tiles at zoom 8 after 4.0-4.1 s; the grid's last
   tile came 1.3-1.4, 1.9-2.0 and 3.5-3.6 s after the jump, while the base map's tiles (from the internet) were done in
   0.1-0.3 s and the place names' (served by R, small) in 0.04-0.12 s. The grid's tiles take 0.2-0.6 s each and arrive
@@ -199,6 +199,52 @@ CRAN packages whose names start with rr checked on 2026-11-10, none exports an `
 mapgl's verb, and leaflet's in camel case. Not `layer_`: ggvis, the pipe's ggplot2, used it, but ggplot2 exports
 `layer_data()`, `layer_scales()` and `layer_grob()`. Whether any other package on CRAN exports `rr_` names is unchecked
 (step 0).
+
+### 3.1a One function for what repeats
+
+The maintainer, 2026-11-10, on the layer functions sharing one internal function: "that should be a design rule for
+the package. I.e. anything that is a repeat in 1+ "function flow" gets a function. If not of general use, they will be
+hidden." So a step that two functions take (reading the data in, a column's colours, a layer's legend, the query that
+joins rows into lines) is one function, called by both; exported only when a user would call it, else internal
+(`.rr_` and no help page). Built so far: `.rr_mark()` (every mark's layer), `.rr_colour_by()` (a column's colours and
+legend), `.rr_runs_sql()` (rows joined into lines, for `rr_path()` and the quick look's track). A copy found is a
+fault, mended when found.
+
+### 3.1b Generic, not fishing
+
+The maintainer, 2026-11-10, on `rr_path()` checked on vessels and survey tows: "are we not here moving away from
+rebelrebel being a generic package independent of the fishycode/fishydata/ramb stuff". The rule: rebelrebel speaks of
+maps and data (rows, groups, time, features, points, lines, areas), never of vessels, pings, trips or hauls; it takes
+no default from one field's columns (a `vid`); it depends on neither ramb nor fishycode. A convenience for vessel
+tracks (a vessel's pings coloured by speed, its trips as the lists) is ramb's, a thin wrapper over rebelrebel's
+functions (§4). Found on 2026-11-10 and to be mended:
+- **the quick look's machinery** (`R/quick.R`, from ramb), which the layer functions build on: its `vid` default
+  for a group, "pings" in its names and messages. The layer functions do not use the default; the machinery is
+  renamed and the default dropped when ramb's `rb_map_pings()` and `rb_map_track()` become wrappers (step 5).
+- **the time panel** (`rr_time()`, `R/time.R` and the page): its config's `vessels`, the page's "Vessel" list and
+  "pings" become the group's own column name and "rows", with `rr_time()`'s turn in step 4.
+- **the examples:** all five are fisheries data (`dansk`, its harbours and relief, the survey's pings and tows). Open
+  marine data of other kinds join them (a drifter's or a float's track, a tagged animal's, oceanographic stations, a
+  protected area), with vortur or before; and the articles show them first.
+- **comments citing fishycode's plan** in the code's headers: provenance, kept until the plan's design is written
+  into rebelrebel's own documentation (step 6), then pointed there.
+
+Mended the same evening, before rebelrebel's first push (the maintainer: "make sure we are not having any
+fishycode/fishydata stuff in rebelrebel. we agree to keep those in ramb"; "rebelrebel should be considered in the same
+context as leaflet/mapview/tmap"; "rebelrebel will be both a generic space and time"):
+- every mention of fishycode, its plans and its bathymetry map reworded or removed (40 in 20 files); the `dev/`
+  scripts moved out, to `$FISHYDATA/archive/2026-11-10-rebelrebel-step1/`; the README written as a general mapping
+  package's;
+- the vessel functions `.rr_pings()` and `.rr_track()` removed (they come back as ramb's wrappers, step 5), their
+  tests with them (six blocks, now `rr_point()`'s and `rr_path()`'s), and the quick look's machinery renamed in its
+  words; no `vid` default for a group;
+- the time panel generic in space and time: `rr_time()` takes `col` and `by` from the call or the map (a path's
+  group and time), no `speed` default; lane and span tables by `start` and `end`, or as named, no longer by ramb's
+  `T_in`/`T_out`, `T1`/`T2`, `w_start`/`w_end`; the page's "Vessel" list named by the group's column ("Group" where
+  there is none), "rows" for "pings"; its help in those words. Left: the config's `vessels` key, inside.
+- the unpushed history rewritten so no commit message or tree holds fishycode's traces (step 1 is now 3e4548f, step
+  1b 3921261); step 2's first part (the layer functions, the colours, the generic time panel) committed as 34497b4,
+  2026.11.10.2: 697 tests pass, R CMD check with no error.
 
 ### 3.2 Layer functions are nouns, singular, ggplot2's where ggplot2 has one
 
@@ -525,15 +571,19 @@ a transect may have a picture or a video of the seabed: a camera on the gear, a 
 | `rb_map_palettes()`, `rb_map_basemaps()` | `rr_palettes()`, `rr_basemaps()` | palettes gain `type` |
 | `rb_map_notes()`, `rb_map_notes_add()`, `rb_map_verdicts()` | `rr_notes()`, `rr_notes_add()`, `rr_verdicts()` | |
 | `rb_map_time()` | `rr_time()` | ask h |
-| `rb_map_pings()`, `rb_map_track()` | `rr_point()` and `rr_path()`; `rr_view()` for the quick look | their arguments carried, below |
+| `rb_map_pings()`, `rb_map_track()`, `rb_map_time()` | stay in ramb as wrappers over `rr_point()`, `rr_path()` and `rr_time()` | below |
 | `inst/map/index.html` | `engine/` | MapLibre and maplibre-contour vendored, so a bundle draws offline (at sea) |
 | `dansk_relief` | rebelrebel's examples, then vortur | ask i |
 | the maps article | rebelrebel's articles | |
 
-- **Every map function leaves ramb** (the maintainer, 2026-11-10: "my thinking is that these where also going to be
-  part of rebelrebel", of `rb_map_pings()` and `rb_map_track()`). Pings are any track's (vessels, drifters, tagged
-  animals), so rebelrebel has no functions of their own: what the two do becomes arguments of `rr_point()` and
-  `rr_path()`, and `rr_view()` draws a table of pings as a track and its points.
+- **What a map does lives in rebelrebel; what is a vessel's stays in ramb, as wrappers** (the maintainer, 2026-11-10:
+  first "my thinking is that these where also going to be part of rebelrebel", of `rb_map_pings()` and
+  `rb_map_track()`; then, with §3.1b, "for the fishycode/fishydata issue we just create those functions in ramb, but
+  those functions are just a wrapper around rebelrebel"). rebelrebel has no pings of its own: what the two draw is
+  `rr_point()` and `rr_path()` with arguments, and `rr_view()` draws a table of rows as a path and its points. ramb's
+  `rb_map_pings()`, `rb_map_track()` and `rb_map_time()` stay, for good, as thin wrappers that give rebelrebel's
+  functions a vessel's defaults (the vessel column as `group`, its pings coloured by speed or behaviour, its trips as
+  the `choose` lists, the time panel by vessel) and hold no map code of their own. What each passes on:
   - `rb_map_track()`: a line per vessel (`by`) is `group`; broken at a silence longer than `max_gap_s` seconds, the
     same name; coloured by a column whose runs of one value cut the line (`col`) is `colour`, cutting the line where
     the value changes; the map's lists from the data's groups (`choose`) are `rr_map(choose = )`. Its `by` defaults to
@@ -541,9 +591,9 @@ a transect may have a picture or a video of the seabed: a camera on the gear, a 
   - `rb_map_pings()`: colour by a column or a choice of columns (`col`) is `colour`; `discrete` is the column's type
     (§3.5), overridden by `palette`; the radius in metres with a largest size in pixels (`radius`, `radius_max`) is
     `size`, its unit settled in step 2; `popup`, `time`, `title` and `port` are rebelrebel's own.
-- **ramb keeps every `rb_map_*()` one release as an alias** that warns once and calls rebelrebel (`by` passed on as
-  `group`), then has no map functions; ramb takes rebelrebel in Suggests for that release. rebelrebel does not depend
-  on ramb.
+- **ramb's other `rb_map_*()`** (`rb_map()`, `rb_map_layer()`, `rb_map_serve()` and the rest, which are no vessel's)
+  are aliases for one release that warn once and call rebelrebel, then go. ramb takes rebelrebel in Suggests (in
+  Imports if the wrappers are many); rebelrebel never depends on ramb.
 - **DuckDB's helpers** (`.rb_con_for()`, `.rb_scope()`, `.rb_hold()`, `.rb_name()`): rebelrebel gets its own copy, a
   hundred-odd lines; ramb's flow keeps its own.
 - **rebelrebel's dependencies:** Imports DBI, duckdb, jsonlite, httpuv, rlang; Suggests sf, dbplyr, png, chromote,
@@ -566,7 +616,7 @@ reported before the next.
 1a. **The depth default, measured** (§3.10; the maintainer, 2026-11-10: "Yes, depth first"): the online sources, their
    formats, speed and resolution, in four regions; the default chosen from the table, and a decision record.
 1b. **EMODnet's base layer the default** (ask o), its own commit after step 1's; built the same evening (rebelrebel
-   2026.11.10.1, commit 216a39a, not pushed: 672 tests pass, the page checked in a browser), with a darkened EMODnet
+   2026.11.10.1, commit 3921261, not pushed: 672 tests pass, the page checked in a browser), with a darkened EMODnet
    added at the maintainer's word ("oooh, i like the dark map", of Carto's Dark Matter, whose sea is flat): first in `rr_basemaps()`
    (`tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png`, attribution to the EMODnet Bathymetry
    Consortium, CC BY), Esri's Ocean kept. And the list holds only base maps that show the sea floor (the maintainer,
@@ -590,8 +640,9 @@ reported before the next.
 4. **The one call, media and the outputs:** `rr_view()`; the video panel and its link to a track's time (§3.12); printing in an R session and in Quarto; `rr_save()` with the print
    layout. Check: `rr_view()` on each example table draws the right mark; a Quarto article renders with maps in it;
    one figure at a journal's page width looked at by the maintainer.
-5. **ramb's side:** every `rb_map_*()` an alias for one release, then removed; the maps article, and the maps in
-   ramb's other articles, replaced by pointers to rebelrebel; NEWS; then fishycode's maps and EM4SSF's viewer, one at a time.
+5. **ramb's side:** `rb_map_pings()`, `rb_map_track()` and `rb_map_time()` rewritten as wrappers over rebelrebel, kept;
+   the other `rb_map_*()` aliases for one release, then removed; the maps article, and the maps in ramb's other
+   articles, show the wrappers and point to rebelrebel for the rest; NEWS; then fishycode's maps and EM4SSF's viewer, one at a time.
 6. **The articles:** a first map in five lines from a parquet file; the three doors; colours; the seabed; cells;
    figures; and the names side by side with ggplot2, tmap, leaflet and mapview. R-universe first; CRAN once the
    examples fit its size limit.
