@@ -625,6 +625,14 @@ vignettes/articles"; "All our function flow will work in within the RStudio View
   the Viewer pane (`rstudioapi::viewer()`, as now), elsewhere in the browser; the pipe, the popups' rows, the time
   panel, the choices and the base maps all as in a browser. Positron's Viewer the same, as it opens the same address.
   Checked at each step that adds to the page: a map of each layer function, printed in RStudio, clicked.
+- **Code to the tidyverse's style, by a tool** (the maintainer, 2026-11-10, "do not act on this now": "posit/rstudio
+  has i think a package that checks if a function / package is in conformity with "tidyverse" ... i think we used it
+  in ramb"). It is Posit's **air** (posit-dev/air, a formatter, not the CRAN package of that name): ramb formats with
+  `air format .` from `~/.local/bin/air` and a committed `air.toml` (line width 80, indent 2, persistent line breaks;
+  ramb's AGENTS.md). rebelrebel has no `air.toml`, and its lines run to 120. To do: an `air.toml` and one commit of
+  formatting alone, so later diffs carry none; the width settled then (80 as ramb, or 120 as the code now). air
+  formats; it does not judge a function's design. r-lib's **lintr** checks against the same style guide (not
+  installed here); whether a linter earns its place is weighed when air is in.
 - **When:** the `.Rproj` settings and `_pkgdown.yml` with a site build in CI next (step 1c); `knit_print()` and the
   Viewer checks with step 4's outputs; the articles with step 6.
 
@@ -654,6 +662,13 @@ now." Design, to be measured and built later in step 2:
 - **Measured before chosen:** on `dansk` and a year of fishycode's trail, a tile's bytes and time at zooms 6, 9, 12
   and 14, thinned and not, against §2's budgets; and a look at a busy harbour and a track, thinned and not, to see
   that nothing that shows is lost.
+- **The default sizes, looked at** (the maintainer, 2026-11-10, "do not act on this now": "analyze visually what
+  should be the default pixel value"). Built as 2 to 8 pixels across, from the zoom at which most points lie two
+  pixels apart; chosen by reasoning, not by eye. To do: the same views drawn at a few least sizes (1, 1.5, 2, 3) and
+  most sizes (6, 8, 10, 12), on dense pings (`dansk`, a year of the trail), a sparse track (the trawl survey) and
+  scattered stations, at an overview, along a track and close in, on the light and the dark base map; the
+  maintainer picks from the pictures. With it the start zoom's rule (most points two pixels apart) and the outline's
+  (from 3 pixels across).
 - **Measured and built (2026-11-10, rebelrebel 2026.11.10.6; study `archive/2026-11-10-rebelrebel-points/` under
   `$FISHYDATA`, internal).** The busiest tile of a year of the trail (2024, 32.8 million pings) at zoom 6 is 245 MB
   and 8.9 s whole, 8.7 MB and 0.9 s thinned at one point a pixel and gear class, 2.8 MB at two pixels; at zoom 14, a
