@@ -559,6 +559,33 @@ a transect may have a picture or a video of the seabed: a camera on the gear, a 
   with step 4, after `rr_time()` has settled into the layer functions. Checked on a planted example: a short open
   clip with a start time, along a few of `dansk`'s pings.
 
+### 3.13 Space, depth and time: x, y, z and t
+
+The maintainer, 2026-11-10: "rebelrebel will be both a generic space and time", then "on space and time. in the
+ocean we also have depth. i.e. we will have a generic xyz-time dimension (aka sf, terra cube models)." So rebelrebel's
+data have four dimensions, any of them absent: longitude, latitude, depth (or height), and time, as sf's XYZ(M)
+geometries and the data cubes of stars and terra hold them. Not built yet; the design, to be measured as it comes:
+
+- **One word for each, in every function:** `lon`, `lat`, `z` (depth or height: `z_is = "depth"`, positive down, by
+  default at sea, or `"height"`) and `time`. A column of depth is a value like any other (`colour = depth`); `z` is
+  the dimension a view is drawn along.
+- **Rows with a depth** (a CTD cast's samples, a glider's dives, a tag's depths, a gear's depth along a tow): on the
+  map as now, coloured by depth if asked; under the map, the time panel draws depth against time, depth downward (a
+  dive profile), linked to the map as the panel is now; and a section, depth against distance along a path (a
+  transect, a glider's line), linked to the map the same way.
+- **Data cubes** (a model's temperature at each depth level and time step; stars or terra objects, NetCDF or Zarr, a
+  long parquet table of lon, lat, z, t and value): a grid of cells (`rr_grid()`) whose depth level and time step the
+  reader picks in the page, by a slider each, the cells fetched for the step chosen (one tile per step, cut by
+  DuckDB, cached); a time step played as a sequence; at a point clicked, the column of values over depth and over
+  time beside the map.
+- **sf with Z and M:** a point's or a line's Z is its depth (or height) and M its time where they are given, read
+  without the user naming them.
+- **3D:** a perspective view of the seabed (MapLibre's terrain, from the depth tiles of §3.10) with the rows at their
+  depth beneath the surface is looked at, not promised: MapLibre draws no point at a depth of its own, so it needs a
+  custom layer (deck.gl's, or three.js), measured for its speed before any choice.
+- **When:** depth and time in the time panel, and the section along a path, with step 4 (the panel's turn); cubes
+  with step 3 (`rr_grid()`); 3D after step 6, if at all.
+
 ## 4. What moves, what stays
 
 | ramb now | rebelrebel | Notes |
