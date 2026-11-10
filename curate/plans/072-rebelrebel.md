@@ -287,7 +287,8 @@ The words:
   is a column's name and not a colour stops with a message to write it bare.
 - **Several columns are a choice in the page:** `colour = c(behaviour, speed)` offers both under "Colour by", the first
   shown (ramb's `variants`); `fill = c(hours, kwh)` on a grid is its metric control.
-- **`popup = c(vessel_id, time, speed)`** (tidyselect; the first as its title, `TRUE` for every column carried);
+- **`popup = c(vessel_id, time, speed)`** (tidyselect; the first as its title, `TRUE` for every column, as a table:
+  §3.11);
   **`hover = vessel_id`** a label beside the pointer.
 - **`choose = c(gear, year)`**: which rows the reader shows, a list or a range per column (§3.9). Filtering before
   the map is dplyr's, in the pipe before it.
@@ -463,6 +464,55 @@ the server provides relative to what maplibre "likes"".
   planet, drew nothing in 10 minutes), and whether a coarser step than 0.1 m in deep water shrinks the tiles without
   the terraces dem.R saw on gentle slopes.
 
+### 3.11 What a click shows: the row as a table
+
+The maintainer, 2026-11-10, on the map of the survey's tows: "when we click on the tow-station we should get a
+formatted "table" with all the variables in the dataset. aka what we have in mapview. so put this in as part of the
+plan." (Not to be built yet.) mapview's click shows every column of the feature as a two-column table (leafpop's
+`popupTable()`); ramb's popup now shows a title and the fields named one by one.
+
+- **By default a click shows the row:** every column, a line each, name and value, the title the first column or the
+  one `popup` names; `rr_view()` and every layer function alike. `popup = c(id, time, speed)` keeps those, in that
+  order; `popup = FALSE` none.
+- **Formatted:** numbers in the page's language (decimal mark, thousands, digits to the column's precision), dates and
+  times as ISO with their zone (UTC), logicals as yes/no, missing values as a dash, long text wrapped, the geometry left
+  out. A column's description and unit, where the data have a dictionary (as rebelrebel's examples do), become its
+  label and a tooltip: `speed (knots)`. Values that are codes show their labels where a lookup is given (ramb's
+  `values` of a popup field, kept).
+- **Fetched on the click, not carried in the tiles:** the tile carries the feature's key alone; a click asks the
+  server for that row (`/row/<layer>/<key>`), which DuckDB reads from the layer's table. So the tiles stay small and
+  fast however many columns the table has, the row is whole however long its text, and §2's guard holds (only the
+  key leaves DuckDB until a reader clicks, and the server answers only the layer's own columns). A bundle, which has
+  no server, writes the rows beside its tiles, by tile, with a guard on size.
+- **The same for a grid's cell** (its sums by the filters in force) and for a time panel's ping.
+- **Built in step 2,** with the layer functions; checked by a click on a tow of `trawlsurveytows` and on a ping of
+  `dansk`, served and bundled, and by the size of a bundle of `dansk` with and without its rows.
+
+### 3.12 Media in a row: links, pictures, underwater video
+
+The maintainer, 2026-11-10: "Be prepared / plan that we may have a link to a underwater video." A station, a tow or
+a transect may have a picture or a video of the seabed: a camera on the gear, a drop camera, a towed sledge, an ROV.
+
+- **A column that holds links is shown as one** in the row's table (§3.11): a web address, or a file under a folder the
+  map names. Which columns are media is said once, `media = c(video, photo)`, or found by the values (an address
+  ending .mp4, .webm, .jpg, .png, or a YouTube or Vimeo address), said in a message.
+- **A picture shows in the table,** small, and large on a click.
+- **A video opens in a panel beside the map,** not in the popup, which is too small to watch in: a player with its
+  own controls (MP4 with H.264, or WebM, which every browser plays; a YouTube or Vimeo address in their own player,
+  their terms and their cookies with it). The feature it belongs to stays marked on the map.
+- **A video along a track is linked to it in time:** given the video's start time (a column, or `media_start`), playing
+  it moves a mark along the track and the time panel's window follows (§3.3's `rr_time()`, which already links time
+  and map), and a click on the track or the panel seeks the video to that moment. So a towed camera's film is read
+  with its position, depth and speed beside it.
+- **Served files:** the server answers a media file only if a row of the layer names it, from under the folder the map
+  names (an allowlist, as for the rows), with byte ranges, so a long video seeks without being sent whole.
+- **In a bundle,** web addresses stay links; local files are copied only when asked and under a size guard, else
+  left as links to where they lie, with a note in the bundle. Footage may be internal: confidential or personal
+  material must not leave MFRI without an agreed basis, so nothing is copied by default.
+- **When:** links and pictures in the row's table with step 2 (§3.11); the video panel and its link to a track's time
+  with step 4, after `rr_time()` has settled into the layer functions. Checked on a planted example: a short open
+  clip with a start time, along a few of `dansk`'s pings.
+
 ## 4. What moves, what stays
 
 | ramb now | rebelrebel | Notes |
@@ -515,7 +565,9 @@ reported before the next.
    runs on rebelrebel with only the names changed (scratch library).
 1a. **The depth default, measured** (§3.10; the maintainer, 2026-11-10: "Yes, depth first"): the online sources, their
    formats, speed and resolution, in four regions; the default chosen from the table, and a decision record.
-1b. **EMODnet's base layer the default** (ask o), its own commit after step 1's: first in `rr_basemaps()`
+1b. **EMODnet's base layer the default** (ask o), its own commit after step 1's; built the same evening (rebelrebel
+   2026.11.10.1, commit 216a39a, not pushed: 672 tests pass, the page checked in a browser), with a darkened EMODnet
+   added at the maintainer's word ("oooh, i like the dark map", of Carto's Dark Matter, whose sea is flat): first in `rr_basemaps()`
    (`tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png`, attribution to the EMODnet Bathymetry
    Consortium, CC BY), Esri's Ocean kept. And the list holds only base maps that show the sea floor (the maintainer,
    2026-11-10: "The Base map should only include those that show something of substance at sea"): EMODnet's base layer,
@@ -526,7 +578,8 @@ reported before the next.
    of §3.10 open on it; a test that the first base map may be a picture.
 2. **The layer functions** on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
-   `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, popups, hover and `choose`. Measured: a tile's time
+   `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
+   and `choose`. Measured: a tile's time
    by rows and zoom on `dansk` (395,558 pings) and on one year of fishycode's trail (scratch), to set the points' zoom
    and the GeoJSON switch. Check: the maps article's points layer, 50 lines now, in about five; a test holds every
    layer function to §3.4's order.
@@ -534,7 +587,7 @@ reported before the next.
    count; `choose`), `rr_relief()` and `rr_contour()` with the settled defaults. The speed work of §2 that step 1's
    measurements call for. Check: fishycode's effort grid through `rr_grid()`, its cell sums equal to `grid.R`'s, its
    tiles inside the budget.
-4. **The one call and the outputs:** `rr_view()`; printing in an R session and in Quarto; `rr_save()` with the print
+4. **The one call, media and the outputs:** `rr_view()`; the video panel and its link to a track's time (§3.12); printing in an R session and in Quarto; `rr_save()` with the print
    layout. Check: `rr_view()` on each example table draws the right mark; a Quarto article renders with maps in it;
    one figure at a journal's page width looked at by the maintainer.
 5. **ramb's side:** every `rb_map_*()` an alias for one release, then removed; the maps article, and the maps in
