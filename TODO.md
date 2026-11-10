@@ -1578,3 +1578,19 @@ rules into the gazetteer's build (step 4); the review's 972 names to sort, on th
 
 **check:** plan 071's steps 1-7 built as studies and reviewed on the map by the maintainer, its asks answered; or the
 plan parked.
+
+## 198. rebelrebel: ramb's map viewer as its own package, for the marine environment (plan 072)
+**status:** open; plan 072 written 2026-11-10, the name changed from ribellibre the same day; step 1 (the move) built
+the same evening in `~/R/Pakkar/rebelrebel` and committed (a0ae669, not pushed); step 1a (the depth default) measured, study
+`$FISHYDATA/archive/2026-11-10-depth-sources/` · **needs: maintainer** — the word to push rebelrebel · step 1b next,
+EMODnet's base layer the default and only base maps that show the sea floor (ask o) · **see:** `curate/plans/072-rebelrebel.md`, plans 046, 063 and 064, decisions 220, 228,
+277-281
+
+The maintainer, 2026-11-10: a general mapping package on MapLibre, marine first, intuitive; names after ggplot2's
+geoms, tinyplot and tmap; one argument vocabulary; Set 1 for discrete values, viridis for continuous, the settled depth
+looks; parquet and DuckDB by default; layers in the native pipe; fast and responsive; both leaflet's level and
+mapview's; nested choosers, `rr_map(choose = c(vid, tid))`. Plan 072 proposes three doors to one map (`rr_view()`, the `rr_` layer
+functions, `rr_layer()`), the names and their order, speed budgets, and six steps from moving ramb's viewer to the articles.
+
+**check:** plan 072's asks answered and its steps built in rebelrebel, with ramb's aliases and fishycode's maps moved;
+or the plan parked.
