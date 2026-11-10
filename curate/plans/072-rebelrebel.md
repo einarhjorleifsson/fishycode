@@ -604,6 +604,57 @@ geometries and the data cubes of stars and terra hold them. Not built yet; the d
 - **When:** depth and time in the time panel, and the section along a path, with step 4 (the panel's turn); cubes
   with step 3 (`rr_grid()`); 3D after step 6, if at all.
 
+### 3.14 The maintainer's tools: RStudio, a pkgdown site, articles, the Viewer
+
+The maintainer, 2026-11-10: "Make sure the package maintainer can use things like pkgdown::build_site() - or whatever
+functional approach superseeded it. Same applies to all other RStudio stuff"; "Expect that we will be writing
+vignettes/articles"; "All our function flow will work in within the RStudio View".
+
+- **The usual tools work, unchanged:** RStudio's Build pane (the project's package build settings, which RStudio wrote
+  into `rebelrebel.Rproj` when the project was opened, committed), `devtools::document()`, `test()`, `check()`, and
+  `pkgdown::build_site()` (pkgdown 2.2.1 is current; nothing has replaced it; altdoc, on Quarto, is the alternative)
+  with a `_pkgdown.yml` grouping the reference by door (the one call, the layers, the expert's, outputs, data). The
+  site is built on GitHub by an Actions workflow beside R CMD check and published on GitHub Pages (a `gh-pages`
+  branch), not as ramb's, which is built locally and copied to heima.hafro.is/~einarhj/ramb.
+- **Articles,** in `vignettes/articles/` (built by pkgdown, not shipped as CRAN vignettes: they draw maps and read
+  data), in Quarto or R Markdown. A map in an article is the map itself, interactive: printed in a knitted document it
+  is written as a bundle beside the page and shown in an iframe (a `knit_print()` method), so the article needs no R
+  server once built; a guard on its size, and a figure (`rr_save()`) where a still is better. The first articles show
+  non-fishing data first (§3.1b).
+- **Every function flow works in RStudio's Viewer:** a map printed at the console is served on 127.0.0.1 and opened in
+  the Viewer pane (`rstudioapi::viewer()`, as now), elsewhere in the browser; the pipe, the popups' rows, the time
+  panel, the choices and the base maps all as in a browser. Positron's Viewer the same, as it opens the same address.
+  Checked at each step that adds to the page: a map of each layer function, printed in RStudio, clicked.
+- **When:** the `.Rproj` settings and `_pkgdown.yml` with a site build in CI next (step 1c); `knit_print()` and the
+  Viewer checks with step 4's outputs; the articles with step 6.
+
+### 3.15 Dense points: a default thinning, and a size that follows the zoom
+
+The maintainer, 2026-11-10, on a zoom-7 tile of `dansk`'s 395,558 pings weighing 5.8 MB (and 1.2-3 MB at zoom 10):
+"this is a very dense ping rate. For data like these we should have some default thinning. And we should also start
+here to think about how we dynamically take into account "optimum" point radius, possibly with some minimum / maximum
+pixel size as user moves in and out. And at the lower level of function call, a (dynamic) default should be
+"overridable" by the user. check how mapdeck does it." Then: "put this part of the plan somewhere, not not execute
+now." Design, to be measured and built later in step 2:
+
+- **How mapdeck does it** (0.3.6, `add_scatterplot()`, deck.gl's ScatterplotLayer underneath): `radius` in metres on
+  the ground (default 1, a column allowed), `radius_min_pixels` (default 1: a point never vanishes zoomed out) and
+  `radius_max_pixels` (no limit by default: a point never swamps the view zoomed in). It does not thin: deck.gl gets
+  the data whole and its graphics card draws every point, which is mapdeck's speed and its limit.
+- **Size, by default from the data:** a point's size on the ground (metres), set from how close the points lie (a
+  typical distance between neighbours), so it grows as the reader zooms in, held between a least and a most size in
+  pixels (1 and 8 to start); in MapLibre, `circle-radius` interpolated exponentially (base 2) over the zoom, clamped
+  at the two ends, as ramb's quick look did with `radius` and `radius_max`. **Overridable at every level:** a fixed
+  size in pixels (`size = 6`, as now), the bounds alone, a size on the ground, or a column (bubbles); the words
+  settled when built, kept to `size` and as few others as can be (§3.4).
+- **Thinning, by default:** in each tile, one point for each screen pixel (and colour class), the tile's points
+  being placed on a grid of 4,096 to a side anyway, so what is dropped could not be seen; none at the layer's deepest
+  zoom, so every point can be clicked there. Deterministic, the same points every time. `thin = FALSE` keeps all.
+  Below the zoom where even a thinned tile is too heavy, the same rows as cells (§3.6).
+- **Measured before chosen:** on `dansk` and a year of fishycode's trail, a tile's bytes and time at zooms 6, 9, 12
+  and 14, thinned and not, against §2's budgets; and a look at a busy harbour and a track, thinned and not, to see
+  that nothing that shows is lost.
+
 ## 4. What moves, what stays
 
 | ramb now | rebelrebel | Notes |
@@ -671,10 +722,16 @@ reported before the next.
    one choice that is not a map, for a figure on white. The page now opens on the first base map's `style` (a vector style), so it
    learns to open on a picture base map, and place names from a labels-only layer go over it. Check: the four regions
    of §3.10 open on it; a test that the first base map may be a picture.
+1c. **The maintainer's tools** (§3.14): the `.Rproj` build settings, `_pkgdown.yml`, the site built and published by
+   GitHub Actions; checked by `pkgdown::build_site()` locally and in CI. Built 2026-11-10 at the maintainer's word
+   ("Go for 1c"): `_pkgdown.yml` (the reference grouped by door: start a map, layers, time, MapLibre's own terms,
+   colours and base maps, show and share, what readers write, example data; the site's address in DESCRIPTION),
+   `pkgdown::check_pkgdown()` with no problem, the site built locally with every example run, and
+   `.github/workflows/pkgdown.yaml` building it on GitHub and publishing it on the `gh-pages` branch.
 2. **The layer functions** (progress, 2026-11-10: the six marks, colours, `rr_map(data)` and sections built and
    pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
    3eb8dfc, §3.11; left: the
-   linked lists, and the measured default for big point sets) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   linked lists, and the measured default for big point sets, §3.15) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
