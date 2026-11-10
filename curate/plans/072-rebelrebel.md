@@ -448,8 +448,8 @@ rr_map(pings, choose = c(vid, tid)) |>
   text is, a fraction, a date or a time a range; a factor (DuckDB's ENUM) a list. A number declared an id is coloured
   as categories too and written whole. The examples' ids are now integers (`data-raw/integer_ids.R`); ramb's
   `data-raw/DATASET.R`, where they were made, still writes doubles: to mend there, or in vortur when the example data
-  move. Open: whether an undeclared integer is coloured as categories too (it is a gradient now, as a count or a depth
-  in whole metres wants). A range's handles move over its values where it has at most 64 (years, days), else over bins between `pretty()`
+  move. Colour keeps a gradient for an integer the dictionary does not declare (a count, a depth in whole metres): the
+  maintainer, asked, "No, keep gradient"; only a declared id or code is coloured as categories. A range's handles move over its values where it has at most 64 (years, days), else over bins between `pretty()`
   breaks; the combinations carry a range by its bin, so ranges and lists are linked by the same counts (a vessel
   chosen, the days' range spans its days); ‹ and › step one value at a time over the values with rows, or move the
   window by its width ("years one at a time"); the address holds `day=2019-03-01..2019-03-03`, snapped to the bins it
