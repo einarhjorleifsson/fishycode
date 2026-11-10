@@ -5,7 +5,8 @@ package"), the name changed to rebelrebel and asks a-j answered the same day, th
 discrete palette, Okabe-Ito) and ask l (past eight values) answered, and §3.9 (nested choosers, `choose`) added at
 the maintainer's word; step 1 (the move) built the same evening at the maintainer's word ("proceed to the next step")
 in `~/R/Pakkar/rebelrebel` (github.com/einarhjorleifsson/rebelrebel; both renamed from ribellibre 2026-11-10), committed as 3e4548f at the
-maintainer's word ("lets commit first"), not pushed; ask m answered (`rr_text()`) · **see:** plans 046 (the viewer), 063 (the bathymetry map's depth and relief), 064 (the time panel), decisions
+maintainer's word ("lets commit first"), pushed on 2026-11-10 with step 2's first part (34497b4) at the maintainer's word
+("lets do all things here, commit and push"), the repository public from then; ask m answered (`rr_text()`) · **see:** plans 046 (the viewer), 063 (the bathymetry map's depth and relief), 064 (the time panel), decisions
 220, 228, 277-281 (the effort map, its tiles, bundles and time panel), TODO 185 (the depth grid), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-10; a person has not yet checked it. What §0 and §1 call measured, Claude
@@ -643,7 +644,7 @@ reported before the next.
 1a. **The depth default, measured** (§3.10; the maintainer, 2026-11-10: "Yes, depth first"): the online sources, their
    formats, speed and resolution, in four regions; the default chosen from the table, and a decision record.
 1b. **EMODnet's base layer the default** (ask o), its own commit after step 1's; built the same evening (rebelrebel
-   2026.11.10.1, commit 3921261, not pushed: 672 tests pass, the page checked in a browser), with a darkened EMODnet
+   2026.11.10.1, commit 3921261, pushed: 672 tests pass, the page checked in a browser), with a darkened EMODnet
    added at the maintainer's word ("oooh, i like the dark map", of Carto's Dark Matter, whose sea is flat): first in `rr_basemaps()`
    (`tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png`, attribution to the EMODnet Bathymetry
    Consortium, CC BY), Esri's Ocean kept. And the list holds only base maps that show the sea floor (the maintainer,
