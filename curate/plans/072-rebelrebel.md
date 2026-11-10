@@ -439,12 +439,17 @@ rr_map(pings, choose = c(vid, tid)) |>
   `choose = c(gear, year)`, once a gear is chosen the years' range spans only the years it fished, and the other way
   round. The order in `choose` is the lists' order on the page. "all" heads each list, and ‹ and › step through it.
 - **A number, a date or a time is a range** on a two-handled slider, as `limits`; a list of its values instead (years
-  one at a time) is an option settled in step 2. **Built 2026-11-10 (rebelrebel 2026.11.10.7):** the type decides, as
-  for colour: a number, a date or a time is a range, text, a factor or a logical a list. The maintainer was asked
-  whether a numeric id (`vid`) should stay a list (the type, whole numbers as lists, or lists unless the call asks) and
-  sent other work instead; built as written here, one switch to change. A numeric id is a list once it is text
-  (`as.character(as.integer(vid))`: DuckDB writes a double as `1131.0`); ramb's vessel wrappers will do that (step 5).
-  A range's handles move over its values where it has at most 64 (years, days), else over bins between `pretty()`
+  one at a time) is an option settled in step 2. **Built 2026-11-10 (rebelrebel 2026.11.10.7, the rule .8):** first as
+  written here, every number a range; then the maintainer: "I think the data-dict package would classify vid as
+  "enum". at minimum a vid should be specified as an integer in the parquet files. And integers in that sense should
+  possibly by default be considered similarly as character vectors" (and on factors: frowned on in the tidyverse until
+  forcats). So: where the data's dictionary gives a type it decides (`number(id)`, `enum`, `string`, `boolean` a list;
+  `number`, `number(quantity)`, `date`, `datetime` a range), else the storage: a whole number (an integer) a list as
+  text is, a fraction, a date or a time a range; a factor (DuckDB's ENUM) a list. A number declared an id is coloured
+  as categories too and written whole. The examples' ids are now integers (`data-raw/integer_ids.R`); ramb's
+  `data-raw/DATASET.R`, where they were made, still writes doubles: to mend there, or in vortur when the example data
+  move. Open: whether an undeclared integer is coloured as categories too (it is a gradient now, as a count or a depth
+  in whole metres wants). A range's handles move over its values where it has at most 64 (years, days), else over bins between `pretty()`
   breaks; the combinations carry a range by its bin, so ranges and lists are linked by the same counts (a vessel
   chosen, the days' range spans its days); ‹ and › step one value at a time over the values with rows, or move the
   window by its width ("years one at a time"); the address holds `day=2019-03-01..2019-03-03`, snapped to the bins it
@@ -678,7 +683,7 @@ now." Design, to be measured and built later in step 2:
   most sizes (6, 8, 10, 12), on dense pings (`dansk`, a year of the trail), a sparse track (the trawl survey) and
   scattered stations, at an overview, along a track and close in, on the light and the dark base map; the
   maintainer picks from the pictures. With it the start zoom's rule (most points two pixels apart) and the outline's
-  (from 3 pixels across).
+  (from 3 pixels across). The maintainer, again: "2 pixels as default may not be "visually" the optimum".
 - **Measured and built (2026-11-10, rebelrebel 2026.11.10.6; study `archive/2026-11-10-rebelrebel-points/` under
   `$FISHYDATA`, internal).** The busiest tile of a year of the trail (2024, 32.8 million pings) at zoom 6 is 245 MB
   and 8.9 s whole, 8.7 MB and 0.9 s thinned at one point a pixel and gear class, 2.8 MB at two pixels; at zoom 14, a
