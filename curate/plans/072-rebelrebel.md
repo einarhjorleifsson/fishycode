@@ -654,6 +654,18 @@ now." Design, to be measured and built later in step 2:
 - **Measured before chosen:** on `dansk` and a year of fishycode's trail, a tile's bytes and time at zooms 6, 9, 12
   and 14, thinned and not, against §2's budgets; and a look at a busy harbour and a track, thinned and not, to see
   that nothing that shows is lost.
+- **Measured and built (2026-11-10, rebelrebel 2026.11.10.6; study `archive/2026-11-10-rebelrebel-points/` under
+  `$FISHYDATA`, internal).** The busiest tile of a year of the trail (2024, 32.8 million pings) at zoom 6 is 245 MB
+  and 8.9 s whole, 8.7 MB and 0.9 s thinned at one point a pixel and gear class, 2.8 MB at two pixels; at zoom 14, a
+  port's 1.87 million pings stacked on 155,225 spots, 51 MB whole. `dansk`'s busiest zoom-6 tile, 3.7 MB whole, is
+  82 kB thinned. Thinned at a pixel, the trail's busiest tiles meet §2's 100 ms at zooms 12 and 14, not at 6 and 9
+  (875 and 199 ms): further out is §3.6's cells, step 3. The median tiles are under 25 kB at every zoom. Thinned and
+  whole look the same at three views of `dansk`. Built: `thin = TRUE` by default, one point a pixel and each colour
+  class (a number's in eight), each value a `choose` list picks and a time panel's group by the hour; from the
+  layer's deepest zoom only points on one spot of the tile's grid are dropped (the harbour tile's 1.87 million to
+  155,225), so every point that can be told apart can be clicked; and a size of 2 to 8 pixels across, from the zoom
+  at which most points lie two pixels apart, doubling with each zoom in. Not measured: `rr_point()` end to end on the
+  trail, whose row table copies every column with `popup = TRUE`.
 
 ### 3.16 Cells: a square grid or H3 hexagons, and any measure in them
 
@@ -752,8 +764,8 @@ reported before the next.
 2. **The layer functions** (progress, 2026-11-10: the six marks, colours, `rr_map(data)` and sections built and
    pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
    3eb8dfc, §3.11; the linked lists after it, 2026.11.10.4, §3.9, checked in headless Chrome against the data's
-   counts; `choose` on one layer, its lists under its name, 2026.11.10.5; left: a number, date or time as a range
-   (§3.9), and the measured default for big point sets, §3.15) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   counts; `choose` on one layer, its lists under its name, 2026.11.10.5; thinning and a size that follows the zoom,
+   measured and built, 2026.11.10.6, §3.15; left: a number, date or time as a range (§3.9)) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
