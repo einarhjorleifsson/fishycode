@@ -439,7 +439,17 @@ rr_map(pings, choose = c(vid, tid)) |>
   `choose = c(gear, year)`, once a gear is chosen the years' range spans only the years it fished, and the other way
   round. The order in `choose` is the lists' order on the page. "all" heads each list, and ‹ and › step through it.
 - **A number, a date or a time is a range** on a two-handled slider, as `limits`; a list of its values instead (years
-  one at a time) is an option settled in step 2.
+  one at a time) is an option settled in step 2. **Built 2026-11-10 (rebelrebel 2026.11.10.7):** the type decides, as
+  for colour: a number, a date or a time is a range, text, a factor or a logical a list. The maintainer was asked
+  whether a numeric id (`vid`) should stay a list (the type, whole numbers as lists, or lists unless the call asks) and
+  sent other work instead; built as written here, one switch to change. A numeric id is a list once it is text
+  (`as.character(as.integer(vid))`: DuckDB writes a double as `1131.0`); ramb's vessel wrappers will do that (step 5).
+  A range's handles move over its values where it has at most 64 (years, days), else over bins between `pretty()`
+  breaks; the combinations carry a range by its bin, so ranges and lists are linked by the same counts (a vessel
+  chosen, the days' range spans its days); ‹ and › step one value at a time over the values with rows, or move the
+  window by its width ("years one at a time"); the address holds `day=2019-03-01..2019-03-03`, snapped to the bins it
+  covers. A path is split by a range's bins, each run carrying its bin's start. A range slid does not move the view.
+  Checked in headless Chrome against the trawl survey's own counts (ten checks).
 - **The map's, or a layer's.** On `rr_map()` a choice drives every layer that has the column, and the time panel (the
   chosen vessel, its span the chosen trip). On a layer (`rr_grid(effort, choose = c(gear, year))`) it drives that layer
   alone, its controls under its name in the sidebar. Layers without the column (depth, areas) stay as they are.
@@ -780,7 +790,8 @@ reported before the next.
    pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
    3eb8dfc, §3.11; the linked lists after it, 2026.11.10.4, §3.9, checked in headless Chrome against the data's
    counts; `choose` on one layer, its lists under its name, 2026.11.10.5; thinning and a size that follows the zoom,
-   measured and built, 2026.11.10.6, §3.15; left: a number, date or time as a range (§3.9)) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   measured and built, 2026.11.10.6, §3.15; a number, a date or a time as a range, 2026.11.10.7, §3.9; left: the
+   size at which small data go to the page whole (GeoJSON, §3.6), and the article's points layer in about five lines) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
