@@ -534,6 +534,23 @@ plan." (Not to be built yet.) mapview's click shows every column of the feature 
 - **The same for a grid's cell** (its sums by the filters in force) and for a time panel's ping.
 - **Built in step 2,** with the layer functions; checked by a click on a tow of `trawlsurveytows` and on a ping of
   `dansk`, served and bundled, and by the size of a bundle of `dansk` with and without its rows.
+- **Built 2026-11-10** (rebelrebel, after 34497b4): the rows numbered (`rr_row`) in a table DuckDB holds for the
+  session, the tiles carrying the number and the title only; `/row/<layer>/<n>` answers the columns `popup` names,
+  each with its kind; the page draws them as a table, a whole number as it is (an id is not "1,131"), a fraction to
+  six significant digits in the page's language, yes and no, a dash where missing, a web address a link, a picture's
+  address the picture (loaded lazily), a video's a link. The maintainer: "we do not want to get overly fancy if it
+  cost speed of execution". Measured: a click's row in 2-3 ms from the survey's 8,918 rows served, and a row read in
+  under 1 ms from `dansk`'s 395,558. A bundle writes a layer's rows whole beside its tiles, under a guard of 2 million
+  values (beyond it a click shows the title alone), not by tile as first planned.
+- **Labels, units and codes, built the same evening** at the maintainer's word ("clarify", then "Yes, now"): every
+  layer function takes `labels` (a column's name as the popup shows it) and `codes` (a coded column's labels, a named
+  vector or a table of code and label) after `popup`. By default they come from the data: a data frame's column
+  attributes (`label`, as haven and labelled set it; `units`), or a parquet file's own dictionary (an entry of
+  data-dict.tidyverse.org's format in its metadata under a key ending `data_dict`, as the examples hold it), read once
+  when the layer is built. The page shows a column's label with its unit beside it, its description on the pointer's
+  rest, and a code with its label ("6 · longline"); a path's popup fields take them too. The survey's popup reads
+  "speed (knots) 7.5", "heading (degrees) 43.4". A path ordered by a number (a sequence, a distance) as well as by a
+  time, as §3.2 said.
 
 ### 3.12 Media in a row: links, pictures, underwater video
 
@@ -654,7 +671,10 @@ reported before the next.
    one choice that is not a map, for a figure on white. The page now opens on the first base map's `style` (a vector style), so it
    learns to open on a picture base map, and place names from a labels-only layer go over it. Check: the four regions
    of §3.10 open on it; a test that the first base map may be a picture.
-2. **The layer functions** on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+2. **The layer functions** (progress, 2026-11-10: the six marks, colours, `rr_map(data)` and sections built and
+   pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
+   3eb8dfc, §3.11; left: the
+   linked lists, and the measured default for big point sets) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
