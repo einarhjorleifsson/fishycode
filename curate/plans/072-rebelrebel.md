@@ -752,8 +752,8 @@ reported before the next.
 2. **The layer functions** (progress, 2026-11-10: the six marks, colours, `rr_map(data)` and sections built and
    pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
    3eb8dfc, §3.11; the linked lists after it, 2026.11.10.4, §3.9, checked in headless Chrome against the data's
-   counts; left: a number, date or time as a range (§3.9), `choose` on one layer, and the measured default for big
-   point sets, §3.15) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   counts; `choose` on one layer, its lists under its name, 2026.11.10.5; left: a number, date or time as a range
+   (§3.9), and the measured default for big point sets, §3.15) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
