@@ -655,6 +655,27 @@ now." Design, to be measured and built later in step 2:
   and 14, thinned and not, against §2's budgets; and a look at a busy harbour and a track, thinned and not, to see
   that nothing that shows is lost.
 
+### 3.16 Cells: a square grid or H3 hexagons, and any measure in them
+
+The maintainer, 2026-11-10, while step 2 was being built ("do not act on this now, add to plan"): "grid vs h3 hex
+approach when it comes to gridding. the h3 hex a approach should not only be counts, but other metrics like
+"duration", "catch in kg", "surface area ratio", ....". Design, for step 3's `rr_grid()`:
+
+- **Two kinds of cell, one function:** squares in degrees (c-squares, ICES rectangles, a size that halves as the
+  reader zooms in, as fishycode's effort map does now) or H3's hexagons, a resolution for each zoom; `cell =` names
+  the kind and its size. To be weighed when built, by measurement: H3's cells are near equal in area wherever they
+  lie, where a square in degrees shrinks towards the pole, which matters for any measure per area; hexagons have to
+  reach the page as polygons, squares can be drawn from their corner.
+- **Any measure, not counts:** a cell carries what the rows add up to, whatever the column: hours (duration), kg of
+  catch, kW-hours, rows, vessels. `fun` sums, averages, counts or counts distinct, one quantity per layer; a measure
+  that is a ratio is made from its sums cell by cell, never by averaging ratios: the swept area ratio (the
+  maintainer's "surface area ratio", ICES's SAR) is the swept area summed over the cell's area, so the cell's area is
+  part of what the function knows.
+- **The same for both kinds:** the colour, the legend, the choices (§3.9) and the row table on a click (§3.11) do not
+  ask which kind of cell they draw.
+- **Measured before chosen:** a tile's bytes and time at a few zooms, squares and hexagons, on `dansk` and a year of
+  fishycode's trail, and the sums the same both ways over a region (kg in = kg out).
+
 ## 4. What moves, what stays
 
 | ramb now | rebelrebel | Notes |
@@ -730,16 +751,17 @@ reported before the next.
    `.github/workflows/pkgdown.yaml` building it on GitHub and publishing it on the `gh-pages` branch.
 2. **The layer functions** (progress, 2026-11-10: the six marks, colours, `rr_map(data)` and sections built and
    pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
-   3eb8dfc, §3.11; left: the
-   linked lists, and the measured default for big point sets, §3.15) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   3eb8dfc, §3.11; the linked lists after it, 2026.11.10.4, §3.9, checked in headless Chrome against the data's
+   counts; left: a number, date or time as a range (§3.9), `choose` on one layer, and the measured default for big
+   point sets, §3.15) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
    by rows and zoom on `dansk` (395,558 pings) and on one year of fishycode's trail (scratch), to set the points' zoom
    and the GeoJSON switch. Check: the maps article's points layer, 50 lines now, in about five; a test holds every
    layer function to §3.4's order.
-3. **Cells and the seabed:** `rr_grid()` (rows that are cells, or rows summed at the zoom's size; `fun` sum, mean or
-   count; `choose`), `rr_relief()` and `rr_contour()` with the settled defaults. The speed work of §2 that step 1's
+3. **Cells and the seabed:** `rr_grid()` (rows that are cells, or rows summed at the zoom's size, in squares or H3's
+   hexagons, any measure, §3.16; `fun` sum, mean or count; `choose`), `rr_relief()` and `rr_contour()` with the settled defaults. The speed work of §2 that step 1's
    measurements call for. Check: fishycode's effort grid through `rr_grid()`, its cell sums equal to `grid.R`'s, its
    tiles inside the budget.
 4. **The one call, media and the outputs:** `rr_view()`; the video panel and its link to a track's time (§3.12); printing in an R session and in Quarto; `rr_save()` with the print
