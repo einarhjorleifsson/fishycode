@@ -826,9 +826,18 @@ reported before the next.
    counts; `choose` on one layer, its lists under its name, 2026.11.10.5; thinning and a size that follows the zoom,
    measured and built, 2026.11.10.6, §3.15; a number, a date or a time as a range, 2026.11.10.7, §3.9; a layer sent
    whole as GeoJSON on asking (`whole = TRUE`), measured against tiles on fishydata's layers (equal to about 5 MB) and
-   built with four faults mended, 2026.11.11, uncommitted (study `$FISHYDATA/archive/2026-11-11-rebelrebel-whole/`);
-   left: whether `whole` switches by size on its own (proposed at about 5 MB, not decided), the bundles' tiles as
-   one PMTiles file (a patch, the maintainer's questions first), and the article's points layer in about five lines) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   built with four faults mended, 2026.11.11, committed as 1ed7a84 (study
+   `$FISHYDATA/archive/2026-11-11-rebelrebel-whole/`); the check of the article's points layer, 2026-11-11 at the
+   maintainer's word ("Article check"; study `$FISHYDATA/archive/2026-11-11-rebelrebel-article-points/`): the
+   article's 55 lines of `rb_map_layer()` drawn by five of `rr_point()`, both colourings with their legends, the count
+   and a click's row equal to the data's, its points also zoomed out where the article's needed `minzoom = 10`, served
+   and as a bundle, 17 checks in headless Chrome; it found two faults in `rr_bundle()`, mended as 2026.11.11.1, committed as 0aebef6:
+   a layer function's map could not be bundled (no `maxzoom`: now the page's 14; `dansk`'s points 4,292 tiles and
+   90 MB, 751 and 53 MB to zoom 12), and a bundle's first click waited a minute for its row (the rows an object literal
+   keyed by number, 65-71 s for Chrome to read, an array 0.1 s; rows 100,000 and on keyed `1e+05`); the points' size
+   left to §3.15's look by eye (a hairline at zoom 11, where the article drew 2 to 5 pixels); left: whether `whole`
+   switches by size on its own (proposed at about 5 MB, not decided), and the bundles' tiles as one PMTiles file (a
+   patch, the maintainer's questions first)) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
