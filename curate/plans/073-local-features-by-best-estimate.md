@@ -1,9 +1,10 @@
 # 073 — Local seabed features by best estimate: features found on the seabed, every source's statements linked to them, a name proposed for each, judged by a person feature by feature
 
-**status:** proposal — written 2026-11-11 at the maintainer's request, with a read-only count the same day
+**status:** partly built — written 2026-11-11 at the maintainer's request, with a read-only count the same day
 (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 00-04, their logs in `notes/`); the same day a confidence in each
 name and place, coloured on the map, and a category for each feature (a mound, a wreck), added at the maintainer's
-word (§2.2, §2.8); nothing built ·
+word (§2.2, §2.8); steps 1-7 run as a study the same day at the maintainer's word (decision 315): no linking rule passed,
+so a name's place stays its statements' centre and the seabed's feature is a candidate; step 8 is the maintainer's ·
 **2026-11-11** · **see:** plans 044, 070, 071 (§2.2-§2.5, steps 1, 4 and 8), decisions 221-224, 272, 301, 302, 304 and
 309, the örnefni map and in-use studies (`$FISHYDATA/archive/2026-11-08-ornefni-map/`,
 `$FISHYDATA/archive/2026-11-09-ornefni-in-use/`), TODOs 144, 186 and 197
@@ -331,6 +332,16 @@ The örnefni map reads them. They become targets after the review, on the prepro
 
 Each step is a script in the study (`$FISHYDATA/archive/2026-11-11-local-features/`), with its log in `notes/`. The
 chain runs over all the waters at once; the review goes in an order.
+
+**Run 2026-11-11** (decision 315; the study README by script). Steps 1-7 were run with asks a-h as proposed:
+- step 1: interpolation found by its texture at 50 m, GEBCO's type for what it rests on; sounded not split from Olex's
+  own gridding;
+- step 2: a merge tree over the whole grid (559,124 features of 2 m or more), better than the same on a smoothed grid;
+- step 3: about 27,000 statement units; 30 lost and 22 short forms take a full name from a spelling near them;
+- steps 4-5: no linking rule passed on 270 witnessed names (8 gained, 8 lost at the best), so the place stays the
+  statements' centre and the feature is a candidate (§2.9);
+- step 6: 5,571 proposals; the place's confidence comes out in order on the witnesses (14, 51, 87 and 96 %);
+- step 7: a rebelrebel bundle in the study, internal.
 
 1. **The coverage mask** (§2.3).
 2. **The feature inventory** (§2.4): the detectors prototyped and scored; ÍSOR's and the charts' features joined.

@@ -1597,7 +1597,8 @@ functions, `rr_layer()`), the names and their order, speed budgets, and six step
 or the plan parked.
 
 ## 199. Local seabed features by best estimate: mounds and the other local kinds, a name proposed for each (plan 073)
-**status:** open · **needs: maintainer** — plan 073's asks a-h; nothing built · **see:**
+**status:** open · **needs: maintainer** — plan 073's asks a-h (taken as proposed for the first run); steps 1-7 run as a study
+2026-11-11 (decision 315), step 8 the maintainer's review on the study's map · **see:**
 `curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
 decision 309, TODOs 186 and 197
 
