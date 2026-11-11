@@ -391,7 +391,8 @@ The words:
   only for drawing (tiles) are a cache beside them, rebuilt from the data: for the docs (step 1c's articles).
 - Small data may go to the page whole (GeoJSON) and large as tiles, the same map either way: equal in a browser to
   about 5 MB of GeoJSON, measured on fishydata's layers (2026-11-11, study `$FISHYDATA/archive/2026-11-11-rebelrebel-whole/`);
-  `whole = TRUE` built; whether it switches by size on its own is not decided.
+  by default (`whole = NULL`) whole when its GeoJSON is at most 5 MB, else tiles (2026.11.11.4, the maintainer: "Build
+  it"); `TRUE` and `FALSE` decide where given.
 - Points: below the zoom where a points tile meets the budget, the same rows are drawn as cells, unless
   `minzoom` says otherwise (step 2 measures the zoom by row count and extent).
 
@@ -863,9 +864,12 @@ reported before the next.
    elevation images alike, replacing a file a tile (dansk's points 13 files where there were 4,302, the Olex grid's
    12 where 623); opened from its folder the page reads an archive whole (for 90-141 MB of tiles, 1-2 s later and
    300-650 MB more of Chrome's memory than a file a tile; `rr_bundle()` says so over 100 MB), from a web host by range
-   requests into the same file, equal to a file a tile; the day's 25 and 17 browser checks pass on it; left: whether
-   `whole` switches by size on its own (proposed at about 5 MB, not decided)) on `rr_layer()`, and `choose` with its
-   linked lists (§3.9): `rr_point()`,
+   requests into the same file, equal to a file a tile; the day's 25 and 17 browser checks pass on it; and a layer
+   whole by default when its GeoJSON is at most 5 MB, else tiles, 2026-11-11 at the maintainer's word ("Build it"),
+   built as 2026.11.11.4, committed as d21a368: with R kept busy 15 s, the survey's points settled at a new view in 0.6-0.8 s
+   whole and 14.5-14.6 s as tiles, the 23 `choose` checks pass on the default, and a fault mended (once a whole layer
+   had been served, `rr_stop()` stopped on its missing table); step 2's build is done, its maps article's own check
+   above) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
