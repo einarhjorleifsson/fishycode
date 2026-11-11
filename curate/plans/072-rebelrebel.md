@@ -669,6 +669,27 @@ vignettes/articles"; "All our function flow will work in within the RStudio View
   the Viewer pane (`rstudioapi::viewer()`, as now), elsewhere in the browser; the pipe, the popups' rows, the time
   panel, the choices and the base maps all as in a browser. Positron's Viewer the same, as it opens the same address.
   Checked at each step that adds to the page: a map of each layer function, printed in RStudio, clicked.
+- **A map is shown by printing it** (the maintainer, 2026-11-11: "once m is generated, typing m in the console should
+  produce a map in the view automatically, rather than having to go through rr_serve. The former is more natural for
+  the user"). `print.rr_map()` already does so at an interactive console: it calls `rr_serve()`, which opens RStudio's
+  Viewer, else the browser. Claude checked this only in a simulated interactive Rscript session: the server started,
+  but no Viewer could open there. The maintainer had used `rr_serve(m)` because no help page shows printing. To do:
+  every example and article shows a map as `m`, and `rr_serve()` is kept for its arguments (`port`, `query`, `notes`,
+  `verdicts`). Printing also writes DuckDB's progress bar into the console ("DuckDB progress: 62%"); it is to be
+  silenced. Check: in RStudio, by the maintainer, `m` opens the Viewer.
+- **Every help example shows something** (the maintainer, 2026-11-11: "make sure that the examples in the roxygen
+  files show something for the user"). Found the same day: `rr_point()`'s example drew no point. The map opens fitted
+  to `dansk` at zoom 4, and the example set `minzoom = 9`, so nothing showed until the reader zoomed in five levels.
+  The page did not say why. `minzoom` was dropped from the example, since thinning (§3.15) makes it unneeded
+  (rebelrebel baa53d9, not pushed). Of the 15 help pages with examples, none shows a map by printing it:
+  `rr_point()`'s three, `rr_path()`'s and `rr_time()`'s end in `format()`, which writes the layers as text, and
+  `rr_serve()`'s calls `rr_serve(m)` inside `if (interactive())`. To do:
+  - each example that makes a map prints it, so that run by hand (`example(rr_point)`) it opens, while R CMD check,
+    not interactive, prints its text;
+  - its opening view shows its features;
+  - it is checked in headless Chrome (a feature drawn on the opening view);
+  - whether pkgdown's reference pages can show the map through the `knit_print()` method above is to be measured.
+  Asked, not answered: whether the sidebar should grey out a layer below its `minzoom` and say "from zoom 9".
 - **Code to the tidyverse's style, by a tool** (the maintainer, 2026-11-10, "do not act on this now": "posit/rstudio
   has i think a package that checks if a function / package is in conformity with "tidyverse" ... i think we used it
   in ramb"). It is Posit's **air** (posit-dev/air, a formatter, not the CRAN package of that name): ramb formats with
@@ -678,7 +699,8 @@ vignettes/articles"; "All our function flow will work in within the RStudio View
   formats; it does not judge a function's design. r-lib's **lintr** checks against the same style guide (not
   installed here); whether a linter earns its place is weighed when air is in.
 - **When:** the `.Rproj` settings and `_pkgdown.yml` with a site build in CI next (step 1c); `knit_print()` and the
-  Viewer checks with step 4's outputs; the articles with step 6.
+  Viewer checks with step 4's outputs; the articles with step 6. Printing and the examples that show something are
+  taken up in the maintainer's "RAMB interactive dashboard" session (the maintainer, 2026-11-11), ahead of step 4.
 
 ### 3.15 Dense points: a default thinning, and a size that follows the zoom
 
