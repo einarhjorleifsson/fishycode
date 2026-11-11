@@ -90,6 +90,45 @@ the sample read wrong, keep apart:
 Joined: 304 groups into 140. The proposals fall to 8,312, each card listing its spellings, so a join can be judged.
 Orkustofnun's licence titles were dropped from the statements: they are not place names.
 
+## Amended 2026-11-11: wider joins, strays, track records and outlines
+
+Each at the maintainer's word, as he read the map (scripts 46-49 in the study; the names are in it, internal).
+- **Joins widened to 10 km.** Two more rules:
+  - a bare feature word with its article names the one compound nearby that ends in it;
+  - a one-word name that is the end of a one-word compound is its short form, unless the dropped front is a modifier
+    (pínu-, næst-, innri-).
+
+  Guards added on reading the samples: folded side words and superlatives, feature and part words in folded form
+  (botn, mynni, brún), and a whole name never taken as a bare word. Two printed names stay apart only when each has
+  3 units or more; a misreading of one joins it. The joins now build on each other: 705 groups into 309. Testing every
+  pair took over 15 minutes, so the costly tests now run only on the pairs a cheap test lets through: under 2 minutes.
+- **Places are cut at 6 km**, scoring as 3 km did (script 44), so one name over a ground stays one place.
+- **Strays.** A name is established by the maintainer's review, then the chart layer (a chart name's area at 3 km, its
+  position at 5 km), then a named ring, then a main place of medium confidence. A near miss is another place of the
+  name 3 to 30 km from its anchor, without support of its own (3 families and 5 units); for a chart anchor, only places
+  holding the chart's own spelling, whatever their support, since "Synonyms are a different matter". Such a place is a
+  stray: a likely wrong record, kept, counted and drawn apart. Beyond 30 km a place is another feature of the name
+  ("Two or more features far apart having the same name are of course likely true"). The result: 390 strays, 411 other
+  features of a name.
+- **Each unit's track record** (script 49): its statements on established names and the share that are strays.
+
+  | sources | stray share |
+  |---|---|
+  | Trackwell | 30 % |
+  | the plotter, channel, LMÍ 2017, Oracle | 13-15 % |
+  | LMÍ 2022 | 8 % |
+  | ÍSOR and the tag recaptures | 6 % |
+  | the charts | 4 % |
+
+  18 Trackwell vessels are suspect. A unit's support is weighted by its record, and a suspect unit stays out of a
+  centre where others stand. One round only.
+- **Outlines** (script 48). The extent is the smallest feature up the nesting whose ellipse holds half of the place's
+  statements, else the candidate. The boundary is the cells strictly above its saddle joined to its peak; a first run
+  took the saddle cell too, and each outline spilled into its parent. 2,779 outlines. ÍSOR's outlines are whole
+  edifices at 1:100 000, a median of 95 km², so their overlap is only a background check: a median of 0.23 for the rule,
+  0 for the candidate alone. The run's "clipped" flag was wrong for every outline (fixed in the script, not rerun).
+- Calibration on the main places: 58 / 84 / 89 % within the witness's radius (low, medium, high).
+
 ## What this does not do
 
 Nothing is in the pipeline and nothing is reviewed. Not built: the review's answers (step 8, the maintainer's), the

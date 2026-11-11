@@ -345,7 +345,10 @@ chain runs over all the waters at once; the review goes in an order.
 - the same day, better centres: a name's units clustered at 3 km, Trackwell at its stamps (35 % of witnessed names
   within the witness's radius against 30 %), each name split into its places, 8,698 proposals (decision 315, amended);
 - then §2.5's spellings: places of names near in place and letters joined (abbreviations, typos, the same feature),
-  guarded; 8,312 proposals, each listing its spellings (decision 315, amended).
+  guarded; 8,312 proposals, each listing its spellings (decision 315, amended);
+- then joins to 10 km, strays (a near miss of an established place) and other features of a name (farther than
+  30 km), each unit's track record as its weight (§2.3 measured), and outlines at the saddle, their extent from the
+  statements (§2.4; decision 315, amended).
 
 1. **The coverage mask** (§2.3).
 2. **The feature inventory** (§2.4): the detectors prototyped and scored; ÍSOR's and the charts' features joined.
