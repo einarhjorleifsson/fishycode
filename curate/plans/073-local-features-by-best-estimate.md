@@ -341,7 +341,9 @@ chain runs over all the waters at once; the review goes in an order.
 - steps 4-5: no linking rule passed on 270 witnessed names (8 gained, 8 lost at the best), so the place stays the
   statements' centre and the feature is a candidate (§2.9);
 - step 6: 5,571 proposals; the place's confidence comes out in order on the witnesses (14, 51, 87 and 96 %);
-- step 7: a rebelrebel bundle in the study, internal.
+- step 7: a rebelrebel map in the study, internal, served from R over the Olex tiles;
+- the same day, better centres: a name's units clustered at 3 km, Trackwell at its stamps (35 % of witnessed names
+  within the witness's radius against 30 %), each name split into its places, 8,698 proposals (decision 315, amended).
 
 1. **The coverage mask** (§2.3).
 2. **The feature inventory** (§2.4): the detectors prototyped and scored; ÍSOR's and the charts' features joined.

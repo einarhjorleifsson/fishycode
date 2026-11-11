@@ -48,6 +48,25 @@ judge feature by feature. Each step was run as a study, alternatives scored on w
   Served on 127.0.0.1 for the check. rebelrebel 2026.11.11.4's `rr_segment()` calls `ST_MakeLine` without loading
   DuckDB's spatial extension, so the line from a name to its candidate is left out (plan 072).
 
+## Amended 2026-11-11: better centres
+
+At the maintainer's word ("go with better centres first"; scripts 44-46 in the study). The lever script 42 named.
+- **Eight ways of taking a name's centre** were scored on the held-out witnesses, at each witness's precision:
+  - the old one (the median of the best class present), with Trackwell at its runs' medians or at their stamps (a
+    run's first haul);
+  - a name's units clustered in space at 3, 6 and 12 km, the cluster with most support taken.
+- **The best: clusters cut at 3 km, Trackwell at its stamps.** 35.0 % of witnessed names within the witness's radius
+  against 30.2 %, the median distance 2.2 km against 3.7. Choosing the best cluster every time would give 36.8 %, so the
+  rest of the misses have no cluster near the witness. The stamps alone changed nothing.
+- **Splitting the precise class** into marks (the plotter, the Vestmannaeyjar map) and labels (charts, LMÍ 2017, ÍSOR)
+  in any order of trust did no better than one class.
+- **Moving to a feature still gains nothing** from the better centres (R2: 8 gained, 10 lost).
+- **So each name group is split into its places**, one proposal each, the one with most support its main place, the
+  others places where the name is also used (plan 073 §2.4's homonym). A coarse unit counts as support for the nearest
+  place within 10 km, never in its centre. 8,973 groups give 12,713 places; 8,698 proposals once land and bay names are
+  left out; 1,005 names have two places or more, mostly the broad -grunn and -djúp.
+- **Calibration** (the main places): within the witness's radius 58 % of low, 82 % of medium and 88 % of high.
+
 ## What this does not do
 
 Nothing is in the pipeline and nothing is reviewed. Not built: the review's answers (step 8, the maintainer's), the
