@@ -77,7 +77,9 @@ anything that is rugged hraun"; and his glossary: horn a corner (elbow), kantur 
 sure, but most like the end of something", oddi a point, hali a tail, tota "as in tongue, tail". **Amended the same
 evening** with his words on the lows: kriki a corner (of a depth), pollur a pool (local), hola and gat a hole, dalur a
 valley, botn "the deepest part", gjá "like a narrrow steep channel", gil "a canyon (on a small scale)", garður a fence,
-slóð "like a track", flói "normally a wide area, not a fjord", sund "something between two landmarks", krókur a hook or
+slóð "like a track", flói "normally a wide area, not a fjord", sund "something between two landmarks", whose first part
+names "area at the end of the journey" (Grímseyjarsund, from the mainland to Grímsey; Grænlandssund; Viðeyjarsund), so a
+-sund lies between the mainland and the place its first part names; krókur a hook or
 corner, eyri "normally a land based feature, some thing that protrudes from something", djúp a large deep fjord
 (Ísafjarðardjúp) or a subsurface "fjord", "not really a steep thing, just a deep thing relative to the adjacent
 grunnur", áll "normally something narrow, but Kolluáll is certainly not". Kept in the study's
