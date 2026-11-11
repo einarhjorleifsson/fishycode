@@ -62,6 +62,26 @@ overlapping sea-charts). So redraw the mound"; "Can you add ÍSOR polygons to ma
   1:100 000: 675 ridges, 614 seamounts, 18 volcanic systems), read with sf's spherical geometry off since some of their
   rings cross themselves.
 
+## Amended 2026-11-11 evening: the coast, ÍSOR as context, a combination, the chart labels
+
+At the maintainer's word: "forget trying to draw anything at the coast, it is mostly failures"; ÍSOR's polygons "demark
+volcanic systems - those are often broader than the actual placename"; "a combination rule for mounds, perimeter relief
+jump and perimeter area elbow"; "the angle of the name gives you a hint of the rough shape"; a name "split into "two
+lines" gives an indication of the placename height".
+- **No outline at the coast:** a mound reaching land gets none under any rule. 431 of the 767 chart names of highs are
+  coastal, so 206 chart-name mounds remain in the areas.
+- **ÍSOR as context:** a mound is no longer named by an ÍSOR polygon holding it; the smallest one holding its top is given
+  as its system. Elsewhere 3,506 mounds, 59 named (a chart name 5, a statement 54); 233 on Kolbeinseyjarhryggur.
+- **Four combinations of the relief jump and the area elbow** were scored on 45 offshore names with his rule's outline and
+  on his reviewed mound. The level halfway in depth between the two feet holds up on both: a median overlap of 0.52 and
+  0.61 over half on his rule's outlines, 0.69 on his mound. Each rule alone fails one witness. The areas take his rule,
+  else the halfway level.
+- **The chart labels as a witness:** read from the chart reading's windows by macOS's text recognizer, turned in 15°
+  steps; 231 of 240 offshore labels found, 23 on two lines, 173 level. The angle beats chance for no rule. The length
+  agrees best with the halfway level: a median of 0.86 of the label, 65 % within twice it.
+- The maintainer asked whether to restart with a plan; a plan 074 built on what held up was proposed and, at his word,
+  not yet drafted.
+
 ## What this does not do
 
 Nothing is reviewed and nothing is in the pipeline. The mound rule's threshold rests on one reviewed mound. Ridges of
