@@ -348,7 +348,9 @@ chain runs over all the waters at once; the review goes in an order.
   guarded; 8,312 proposals, each listing its spellings (decision 315, amended);
 - then joins to 10 km, strays (a near miss of an established place) and other features of a name (farther than
   30 km), each unit's track record as its weight (§2.3 measured), and outlines at the saddle, their extent from the
-  statements (§2.4; decision 315, amended).
+  statements (§2.4; decision 315, amended);
+- the maintainer, on a first look the same day: "this looks way off in a lot of cases ... an utter failure"; to be
+  picked up later, first by asking which parts are off (decision 315).
 
 1. **The coverage mask** (§2.3).
 2. **The feature inventory** (§2.4): the detectors prototyped and scored; ÍSOR's and the charts' features joined.

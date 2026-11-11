@@ -129,6 +129,16 @@ Each at the maintainer's word, as he read the map (scripts 46-49 in the study; t
   0 for the candidate alone. The run's "clipped" flag was wrong for every outline (fixed in the script, not rerun).
 - Calibration on the main places: 58 / 84 / 89 % within the witness's radius (low, medium, high).
 
+## The maintainer's verdict, 2026-11-11
+
+On a first look at the map: "this looks way off in a lot of cases. so i would consider this trial an utter failure."
+Then: "lets pick this up at a later stage". Not yet said is which parts are off: the outlines, or the names and places
+too. Claude's reading, not checked: the outlines hang on the link from a name to its candidate feature, the link that
+failed its own test (no rule passed 3:1), and the extent rule judged by an ellipse of the feature's moments, not its
+contour. Three ways were offered for later: record the trial as failed and keep only what he judges sound; diagnose
+from 3-5 of his cases, one table each; outlines only where trusted (an isolated, high feature with its statements
+tight round it), tested on the witnesses before anything is drawn.
+
 ## What this does not do
 
 Nothing is in the pipeline and nothing is reviewed. Not built: the review's answers (step 8, the maintainer's), the
