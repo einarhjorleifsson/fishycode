@@ -67,6 +67,29 @@ At the maintainer's word ("go with better centres first"; scripts 44-46 in the s
   left out; 1,005 names have two places or more, mostly the broad -grunn and -djúp.
 - **Calibration** (the main places): within the witness's radius 58 % of low, 82 % of medium and 88 % of high.
 
+## Amended 2026-11-11: spellings near in place
+
+At the maintainer's word (two points on one mound spelt differently, a short form and the full name; script 47; the
+names themselves are in the study, internal).
+Places of different name groups within 2 km are joined by three rules:
+- **abbreviation:** each token of the short form begins a part of the other (the maintainer's "G-HOLL" for Gullhóll), or
+  one cut token of 4 letters or more begins it;
+- **spelling:** Levenshtein 1 or 2 on the folded letters, the rarer form 2 units or fewer;
+- **same feature:** the same candidate, Jaro-Winkler 0.9 and Levenshtein 3 or less.
+
+The letter tests catch 69 % of the 1,862 pairs in the maintainer's name dictionary whose reading differs from the
+name as written (18 % before the cut-token rule and the lost letter read as one letter). The guards, each added when
+the sample read wrong, keep apart:
+- names whose categories differ;
+- two printed names;
+- names differing in a side or size word (eystri/vestri, a single A/V/N/S, dýpri/dýpra);
+- names whose numbers differ;
+- a feature and its part (a -grunn and its -grunnskantur);
+- a name and the same name with words added (a name and the name followed by "(utarlega)").
+
+Joined: 304 groups into 140. The proposals fall to 8,312, each card listing its spellings, so a join can be judged.
+Orkustofnun's licence titles were dropped from the statements: they are not place names.
+
 ## What this does not do
 
 Nothing is in the pipeline and nothing is reviewed. Not built: the review's answers (step 8, the maintainer's), the
