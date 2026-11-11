@@ -45,6 +45,23 @@ checked the counts. Studies: `$FISHYDATA/archive/2026-11-11-local-features/` (sc
 - **Two rebelrebel defects** (plan 072). `rr_segment()` calls `ST_MakeLine` without DuckDB's spatial extension. A tiled
   layer refuses a column both coloured and in its pop-up ("Duplicate struct entry name"); worked round with copies.
 
+## Amended 2026-11-11: Fuglasker and ÍSOR's polygons
+
+At the maintainer's word: "Fuglasker and Fuglask are the same thing (end of latter was hidden, most likely because
+overlapping sea-charts). So redraw the mound"; "Can you add ÍSOR polygons to map".
+- **Fuglask folded into Fuglasker** (`01_names.R` reads the maintainer's forms). Its area, drawn from the cut label's
+  position, lay south of the skerries and held neither, so it was dropped.
+- **Fuglasker redrawn by his rule as his review drew Eldeyjarboðagrunn.** It starts from the children's highest top
+  (Geirfuglasker, 13 m), goes down until every child's top is in (107 m, 78 km²), then on to the last level before
+  another high rising 40 m (141 m, 115 km²). The skerries stand above water, so they are holes in the grid; a child is
+  held when its nearest top under water is, and the outline's holes are filled.
+- Two faults were met on the way and mended. The parent step searched the children's tops within a ring's 0.5 km, and
+  the skerries had none; it now searches 1.5 km. It also started from the deeper top and stopped on touching the
+  second, mid-flank.
+- **ÍSOR's volcanic features on the chart map:** Iceland's polygons at 1:100 000 and 1:250 000, 1,325 drawn (1,307 at
+  1:100 000: 675 ridges, 614 seamounts, 18 volcanic systems), read with sf's spherical geometry off since some of their
+  rings cross themselves.
+
 ## What this does not do
 
 Nothing is reviewed and nothing is in the pipeline. The mound rule's threshold rests on one reviewed mound. Ridges of
