@@ -384,8 +384,14 @@ The words:
 - `data` takes **a parquet file, folder or glob** (opened by DuckDB, nothing read into R), **a lazy DuckDB table**, a
   **data frame**, tibble or data.table (copied into DuckDB), or an **sf object** (geometry as WKB). One table given
   four ways gives the same tiles, byte for byte: a test.
-- Small data may go to the page whole (GeoJSON) and large as tiles, the same map either way; the size it switches at
-  is measured (step 2).
+- **A grid** (`rr_relief()`, `rr_contour()`, `rr_tiles_dem()`) takes **a raster file** (a GeoTIFF, a Cloud Optimized
+  GeoTIFF when large, or any grid GDAL reads) or **a terra raster**, read where it is by terra and GDAL (terra in
+  Suggests); or a data frame of cells, or a lazy table of at most 10 million. Rows go through DuckDB, grids through
+  GDAL (§3.10, 2026-11-11). So a user's `data/curated` holds parquet for rows and a GeoTIFF for a grid, and files made
+  only for drawing (tiles) are a cache beside them, rebuilt from the data: for the docs (step 1c's articles).
+- Small data may go to the page whole (GeoJSON) and large as tiles, the same map either way: equal in a browser to
+  about 5 MB of GeoJSON, measured on fishydata's layers (2026-11-11, study `$FISHYDATA/archive/2026-11-11-rebelrebel-whole/`);
+  `whole = TRUE` built; whether it switches by size on its own is not decided.
 - Points: below the zoom where a points tile meets the budget, the same rows are drawn as cells, unless
   `minzoom` says otherwise (step 2 measures the zoom by row count and extent).
 
@@ -485,8 +491,31 @@ should work is that the user can supply his own depth model. Default would be to
 the speed of access is just as important as the resolution. The speed is also then partly dependent on the format that
 the server provides relative to what maplibre "likes"".
 
-- **The user's own model** works now: a grid in any table DuckDB reads (`rr_tiles_dem()`, as `dansk_relief`), or an
-  MBTiles file of elevation images (`rr_tiles_mbtiles()`, as fishycode's Olex grid). `rr_relief(x)` takes either.
+- **The user's own model** works now: a GeoTIFF or any grid GDAL reads, a terra raster, or a data frame of cells
+  (`rr_tiles_dem()`, as `dansk_relief`), or an MBTiles file of elevation images (`rr_tiles_mbtiles()`, as
+  fishycode's Olex grid). `rr_relief(x)` takes either.
+- **A grid is read as a GeoTIFF, through terra** (built 2026-11-11, rebelrebel 2026.11.11, uncommitted; the
+  maintainer: "would the rr not have a raster package as suggest to read .tiff files", "would it then not be best
+  that we assume that the user uses geotiff", "Yes, build it"). Measured first on the Olex grid (study
+  `$FISHYDATA/archive/2026-11-11-rebelrebel-tif-parquet/`, internal for its Olex tiles):
+  - The DuckDB table of lon/lat cells it replaces was a resampled copy: 0.24 m from the source on average at zoom 8,
+    against 0.07 m for the GeoTIFF warped directly; up to 38 m against 5.5 m on steep slopes.
+  - That table took 22 s and 7-8 GB before the first tile, against about 1.4 s and 0.5 GB for a GeoTIFF; per tile at
+    zooms 6-8 the two were equal, about 0.1 s.
+  - A Cloud Optimized GeoTIFF is lossless (every cell equal) and here 4.7 times smaller; its overviews speed zooms
+    0-3 18-34 times, but cost the table's accuracy at zoom 8. So overviews are read only where a pixel spans eight
+    cells or more: the file opened a second time with GDAL's `OVERVIEW_LEVEL=NONE`, as terra hands the warp utility's
+    own `-ovr` no further (found by the rebuilt function's first runs, which matched the COG's 0.25 m to every digit;
+    after the fix 0.069 m, as the GeoTIFF as delivered).
+  - Checked in headless Chrome, served and as a bundle (25 checks): the page's fit equals R's reckoning of its rule
+    from the same tiles, and no fit is asked of R. A bundle's contours at a grid's edge were mended on the way (a tile
+    beyond the grid now level, as served: 6 line pieces had become 74).
+
+  `rr_tiles_dem()` now takes a raster file's path, a `SpatRaster`, or a data frame (a lazy table of at most 10 million
+  rows, read into R); terra is in Suggests. Its tiles carry `fit = "page"`: the colours, contours and shading are fitted
+  to the view in the page from the tiles in view, served or bundled, so R only makes tiles (the maintainer: "we do not
+  want this construct to depend on R processes too much once the stuff is rendered"). Its zooms stop at 8 by default
+  (study `$FISHYDATA/archive/2026-11-11-rebelrebel-dem-zoom/`: "yes on 8").
 - **The default is online,** with no download and no key: `rr_relief()` with no data draws it.
 - **What MapLibre likes:** elevation values as Terrarium or Terrain-RGB images in web-mercator tiles, fetched by the
   browser straight from a fast host, with no R in the path; or a PMTiles archive or a Cloud-Optimized GeoTIFF read in
@@ -795,8 +824,11 @@ reported before the next.
    pushed as 34497b4; the row as a table on a click, with links, pictures, labels, units and codes, built the same evening and pushed as
    3eb8dfc, §3.11; the linked lists after it, 2026.11.10.4, §3.9, checked in headless Chrome against the data's
    counts; `choose` on one layer, its lists under its name, 2026.11.10.5; thinning and a size that follows the zoom,
-   measured and built, 2026.11.10.6, §3.15; a number, a date or a time as a range, 2026.11.10.7, §3.9; left: the
-   size at which small data go to the page whole (GeoJSON, §3.6), and the article's points layer in about five lines) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   measured and built, 2026.11.10.6, §3.15; a number, a date or a time as a range, 2026.11.10.7, §3.9; a layer sent
+   whole as GeoJSON on asking (`whole = TRUE`), measured against tiles on fishydata's layers (equal to about 5 MB) and
+   built with four faults mended, 2026.11.11, uncommitted (study `$FISHYDATA/archive/2026-11-11-rebelrebel-whole/`);
+   left: whether `whole` switches by size on its own (proposed at about 5 MB, not decided), the bundles' tiles as
+   one PMTiles file (a patch, the maintainer's questions first), and the article's points layer in about five lines) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
