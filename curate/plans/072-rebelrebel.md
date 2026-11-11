@@ -857,9 +857,15 @@ reported before the next.
    a layer function's map could not be bundled (no `maxzoom`: now the page's 14; `dansk`'s points 4,292 tiles and
    90 MB, 751 and 53 MB to zoom 12), and a bundle's first click waited a minute for its row (the rows an object literal
    keyed by number, 65-71 s for Chrome to read, an array 0.1 s; rows 100,000 and on keyed `1e+05`); the points' size
-   left to §3.15's look by eye (a hairline at zoom 11, where the article drew 2 to 5 pixels); left: whether `whole`
-   switches by size on its own (proposed at about 5 MB, not decided), and the bundles' tiles as one PMTiles file (a
-   patch, the maintainer's questions first)) on `rr_layer()`, and `choose` with its linked lists (§3.9): `rr_point()`,
+   left to §3.15's look by eye (a hairline at zoom 11, where the article drew 2 to 5 pixels); a bundle's tiles as one
+   PMTiles archive a layer, 2026-11-11 at the maintainer's word ("lets go with your recommendation"; study
+   `$FISHYDATA/archive/2026-11-11-rebelrebel-pmtiles/`), built as 2026.11.11.3, committed as f2e0c6a: vector tiles and
+   elevation images alike, replacing a file a tile (dansk's points 13 files where there were 4,302, the Olex grid's
+   12 where 623); opened from its folder the page reads an archive whole (for 90-141 MB of tiles, 1-2 s later and
+   300-650 MB more of Chrome's memory than a file a tile; `rr_bundle()` says so over 100 MB), from a web host by range
+   requests into the same file, equal to a file a tile; the day's 25 and 17 browser checks pass on it; left: whether
+   `whole` switches by size on its own (proposed at about 5 MB, not decided)) on `rr_layer()`, and `choose` with its
+   linked lists (§3.9): `rr_point()`,
    `rr_path()`, `rr_line()`, `rr_segment()`, `rr_polygon()`,
    `rr_text()`, with §3.4's vocabulary, §3.5's colours and legends, the row as a table on a click (§3.11), hover
    and `choose`. Measured: a tile's time
