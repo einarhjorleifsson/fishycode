@@ -10,6 +10,9 @@ and step 4, every gazetteer name sorted by rules before it reaches the map. Noth
 **2026-11-09** · **see:** plans 044, 045 (§2, ask c), 067 (ask a), 070 (§2.2, §2.8-§2.10), decisions 272, 286,
 300-302 and 304, the örnefni map (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODOs 144, 186, 193 and 194
 
+Since 2026-11-11 plan 073 takes §2.2 and §2.5 for every local feature the other way round, feature first, with one
+review answer per feature in place of step 8's entry per name.
+
 Drafted with AI assistance (Claude) on 2026-11-09; a person has not yet checked it.
 
 **Measured** (by Claude, 2026-11-09): the counts in §1, by key, on the gazetteer as built 2026-11-06 and the örnefni

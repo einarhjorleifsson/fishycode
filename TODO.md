@@ -1595,3 +1595,26 @@ functions, `rr_layer()`), the names and their order, speed budgets, and six step
 
 **check:** plan 072's asks answered and its steps built in rebelrebel, with ramb's aliases and fishycode's maps moved;
 or the plan parked.
+
+## 199. Local seabed features by best estimate: mounds and the other local kinds, a name proposed for each (plan 073)
+**status:** open · **needs: maintainer** — plan 073's asks a-h; nothing built · **see:**
+`curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
+decision 309, TODOs 186 and 197
+
+The maintainer, 2026-11-11: the broad grounds and deeps are done from the charts; next the names the charts lack, the
+mounds on Reykjaneshryggur and Kolbeinseyjarhryggur first and every local kind beside them, from all the raw at hand
+(vernd_i_hafi included), each named and placed by best estimate for a person to judge, not by editing each raw point.
+Plan 073 proposes:
+- a feature inventory from the 50 m grid where it is sounded, and from ÍSOR's mapped features;
+- every source's statements cleaned beside the text (encoding, lost letters, short forms, spellings, synonyms, land
+  references), linked to features by fixed rules, with classes and alternatives;
+- a category for each feature (a mound, a wreck, a snag ...) from the code lists, with its witnesses;
+- a confidence in each name and in each place, counted from listed criteria, calibrated on independent witnesses and
+  coloured on the rebelrebel map; one review answer per feature.
+
+Measured (Claude, read-only): two in three of the names deeper than 200 m on the ridges carry no feature word; ÍSOR maps
+1,600 volcanic features there; the plotter's "?" are lost in its ASCII exports, not misread, and 101 of 572 are recovered
+by match.
+
+**check:** plan 073's asks answered and its steps built as studies and reviewed on the map by the maintainer; or the
+plan parked.
