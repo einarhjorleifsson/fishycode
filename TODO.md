@@ -1599,7 +1599,8 @@ or the plan parked.
 ## 199. Local seabed features by best estimate: mounds and the other local kinds, a name proposed for each (plan 073)
 **status:** open · **needs: maintainer** — plan 073's asks a-h (taken as proposed for the first run); steps 1-7 run as a study
 2026-11-11 (decision 315); the maintainer judged the trial "an utter failure" on a first look (way off in many cases);
-to be picked up later, first: which parts are off · **see:**
+to be picked up later, first: which parts are off; trial 2 and the chart names' mounds the same day (decision 316),
+for the maintainer to judge on the chart map (port 4813) · **see:**
 `curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
 decision 309, TODOs 186 and 197
 

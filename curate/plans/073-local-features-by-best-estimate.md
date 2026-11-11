@@ -350,7 +350,10 @@ chain runs over all the waters at once; the review goes in an order.
   30 km), each unit's track record as its weight (§2.3 measured), and outlines at the saddle, their extent from the
   statements (§2.4; decision 315, amended);
 - the maintainer, on a first look the same day: "this looks way off in a lot of cases ... an utter failure"; to be
-  picked up later, first by asking which parts are off (decision 315).
+  picked up later, first by asking which parts are off (decision 315);
+- trial 2 the same day (decision 316): Trackwell and the chart names' forms and derivatives out; the sea-chart model on
+  a map over the charts; the chart names' mounds outlined by the maintainer's own mound rule (else the area elbow) and
+  added to the örnefni map's areas; mounds elsewhere, Kolbeinseyjarhryggur included.
 
 1. **The coverage mask** (§2.3).
 2. **The feature inventory** (§2.4): the detectors prototyped and scored; ÍSOR's and the charts' features joined.
