@@ -1602,7 +1602,8 @@ or the plan parked.
 to be picked up later, first: which parts are off; trial 2 and the chart names' mounds the same day (decision 316),
 for the maintainer to judge on the chart map (port 4813); a plan 074 proposed (the chart names as anchor, the Olex landscape
 for shape, the main grounds and deeps kept as the base, an interactive review); the extent by relative relief and the
-names' endings measured that evening (decision 317); plan 074 drafted at his word the same night, its asks a-h his ·
+names' endings measured that evening (decision 317); plan 074 drafted at his word the same night, its asks a-h his;
+its step 1 built overnight as a study (decision 318), for him to judge on the map ·
 **see:** `curate/plans/074-named-features-anchored-on-the-chart.md`,
 `curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
 decision 309, TODOs 186 and 197

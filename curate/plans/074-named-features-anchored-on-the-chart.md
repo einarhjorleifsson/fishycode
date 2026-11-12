@@ -1,7 +1,9 @@
 # 074 — Named seabed features anchored on the chart: each name's class, its whole drawn on the landscape of its kind, its parts on the whole's outline, judged by a person on the map
 
-**status:** proposal — written 2026-11-11 at the maintainer's word ("Yes, draft it"), from what held up in plan 073's
-trials and the measurements of decision 317; nothing of it is built · **2026-11-11** · **see:** plan 073 (and its
+**status:** partly built — written 2026-11-11 at the maintainer's word ("Yes, draft it"), from what held up in plan 073's
+trials and the measurements of decision 317; step 1 built as a study the same night (decision 318): the lettering at
+every chart scale as the marker (§3 amended: "anything but a midpoint", every zoom), the rules tried and compared, the
+one isobath out holding best so far; not yet judged by the maintainer · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -82,6 +84,13 @@ change class region by region if its ending means another thing there (step 3 me
   with its nearest candidate shown.
 - **Confidence:** how many rules and scales agree on the chosen outline (their overlap), the label's distance from the
   feature's top, and whether the ring and the reviewed mound agree.
+
+**Amended 2026-11-12 (decision 318).** The label's middle is not the anchor: the anchor is every lettering of the name at
+every chart scale it is printed at, the boxes of its letters (the maintainer: "anything but a midpoint"; "you have to
+check every zoom level for every placename"). All names lettered at a scale compete for the seabed at once; the cut is the
+charts' standard isobath one level beyond the first holding eight tenths of the lettering; a knoll is its own ground to
+its key saddle; a high and a low overlapping are parted by the Olex curvature. The candidates of this section, scale
+chosen by the label, were tried first and dropped.
 
 ## 4. The parts on their whole's outline
 
