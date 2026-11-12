@@ -3,7 +3,9 @@
 **status:** partly built — written 2026-11-11 at the maintainer's word ("Yes, draft it"), from what held up in plan 073's
 trials and the measurements of decision 317; step 1 built as a study the same night (decision 318): the lettering at
 every chart scale as the marker (§3 amended: "anything but a midpoint", every zoom), the rules tried and compared, the
-one isobath out holding best so far; not yet judged by the maintainer · **2026-11-11** · **see:** plan 073 (and its
+one isobath out holding best so far; on 2026-11-12, at his word, the letter boxes first (decision 319): each name's box,
+axis and angle at each chart scale read again and judged by him on a map of their own, the outlines redrawn from the
+boxes he accepts; none judged yet · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -147,7 +149,9 @@ the question for Julian Burgos.
 
 ## 9. Steps
 
-1. **The wholes**: §3 for every chart name of a landform whole; written as proposals with their candidates, the chosen
+1. **The wholes**, the letter boxes first (the maintainer, 2026-11-12: "focus first and foremost on getting the bbox of each
+   örnefni at each 1:xxxx ... The boundary of areas would then come later"; decision 319): each name's box, axis and angle
+   at each chart scale judged on a map of one scale at a time; then §3 for every chart name of a landform whole; written as proposals with their candidates, the chosen
    outline and its confidence, beside the örnefni map's areas; a layer on the chart map (port 4813). *Check:* every
    name in one outcome (drawn, no candidate, left for review); the rings and the reviewed mound scored.
 2. **The first review round** on the wholes, in the region the maintainer picks (ask b).
