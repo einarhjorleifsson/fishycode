@@ -53,4 +53,4 @@ the baselines `out/*_before_osm.*`). Nothing downstream of `ports_all` was rebui
   into step 6, where every anchor becomes a site with its basis.
 - The five Danish splits: one harbour or two, for the maintainer at the review map.
 - OSM's small landings (plan 075 §2.1, step 5) are being fetched into `raw/ports/landings_osm_20261114/`, in the port
-  fetch's plain way; they enter the build at step 6.
+  fetch's plain way, from VK's Overpass mirror while overpass-api.de refuses this machine; they enter the build at step 6.

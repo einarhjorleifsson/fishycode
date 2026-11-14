@@ -211,7 +211,9 @@ as the other served maps are.
    answer, the fetch waits, at most 30 minutes between tries, for up to a day. A first try, one query per cell and tag
    group in a store with a manifest, stopped at 16 answers when overpass-api.de refused connections from this machine;
    the maintainer: "drop any clever stuff, use what (has) worked, even though it takes time" (its answers are in the
-   study, `out/landings_osm_first_try/`). First the countries of the EM4SSF hackathon (the maintainer: Denmark, France,
+   study, `out/landings_osm_first_try/`). The fetch of 2026-11-14 runs on VK's public Overpass mirror
+   (`OVERPASS_URL=https://maps.mail.ru/osm/tools/overpass/api/interpreter`; the maintainer: "Use the mirror"), whose data
+   were minutes old (`osm_base` in each answer). First the countries of the EM4SSF hackathon (the maintainer: Denmark, France,
    Portugal, Spain, Greece and Iceland; Italy added, CS1 and the host, on a check of the case studies and partners): 46
    cells. The pilot over Portugal and Denmark is §4.2.
    **Why Overpass:** it fetches the small-landing tags alone. Overture Maps' OSM-derived infrastructure (GeoParquet,

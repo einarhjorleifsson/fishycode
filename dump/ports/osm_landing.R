@@ -9,7 +9,10 @@
 # 10 s); each answer saved, and checked whole, before it is read. When Overpass does not answer, the fetch waits and tries
 # again, at most every 30 minutes, for up to a day, rather than stop. Rerun with the same LANDING_DATE to resume: a cell
 # whose answer is saved is not fetched again, and a box added to REGION fetches only its new cells. LANDING_CELLS
-# (comma-separated cell names) fetches only those, and writes no gpkg.
+# (comma-separated cell names) fetches only those, and writes no gpkg. OVERPASS_URL names the server: overpass-api.de by
+# default; VK's public mirror, https://maps.mail.ru/osm/tools/overpass/api/interpreter, answered the fetch of 2026-11-14
+# while overpass-api.de refused connections from this machine (the maintainer: "Use the mirror"). Each answer's
+# osm_base says how fresh the server's data were.
 #
 # The tags: slipways (leisure=slipway, the boat-ramp symbol); piers and quays, and breakwaters and groynes as context
 # (man_made); seamark small-craft facilities and moorings. Measured on a pilot (study archive/2026-11-14-port-layer, plan
@@ -22,6 +25,7 @@
 source("R/osm_fetch.R")   # run from the repository's root; targets would source R/ itself
 
 DATE <- Sys.getenv("LANDING_DATE", format(Sys.time(), "%Y%m%d", tz = "UTC"))
+URL <- Sys.getenv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 # xmin, ymin, xmax, ymax
 REGION <- list(denmark = c(7.9, 54.5, 15.3, 57.8), france = c(-5.3, 41.3, 9.6, 51.2), portugal = c(-9.6, 36.9, -6.1, 42.2),
                azores = c(-31.5, 36.8, -24.8, 39.8), madeira = c(-17.4, 32.3, -16.2, 33.2), spain = c(-9.4, 35.9, 4.4, 43.8),
@@ -40,7 +44,7 @@ for (t in names(cells)) {
   if (!file.exists(gz)) {
     message(sprintf("fetching %s (%d of %d)", t, match(t, names(cells)), length(cells)))
     xml <- file.path(dir, paste0(t, ".osm"))
-    osm_fetch(osmdata::opq_string(q), xml, patience_h = 24, wait_max_s = 1800)
+    osm_fetch(osmdata::opq_string(q), xml, url = URL, patience_h = 24, wait_max_s = 1800)
     R.utils::gzip(xml, destname = gz)
     osm_pause()
   }
