@@ -30,11 +30,6 @@ port_map_build <- function() {
   names(pts)[names(pts) == "X"] <- "lon"
   names(pts)[names(pts) == "Y"] <- "lat"
 
-  # OpenStreetMap's standard tiles as the background, and no EMODnet base map (the maintainer, 2026-11-14)
-  osm <- list(id = "osm", label = "OpenStreetMap", maxzoom = 19, attribution = "© OpenStreetMap contributors",
-              tiles = "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
-  bases <- c(list(osm), Filter(\(b) !startsWith(b$id, "emodnet"), rebelrebel::rr_basemaps()))
-
   m <- rebelrebel::rr_map(ly[ly$geom_type == "area", ], title = "Global port layer (plan 075)") |>
     rebelrebel::rr_polygon(colour = "#333333", fill = anchor_source, opacity = 0.4,
                            popup = c(pid, pid_acronym, name, iso, basis, lists, n_lists, n_features, anchor_source, anchor_key),
@@ -49,10 +44,18 @@ port_map_build <- function() {
     rebelrebel::rr_point(data = gfw_far, colour = "#999999", size = 2, popup = c(key, name, kind, reason),
                          name = "GFW anchorages away from any port", visible = FALSE, minzoom = 6)
   # rebelrebel 2026.11.12.2's rr_map(data) keeps only the title, `choose` and `sections` until the first layer, and drops
-  # `basemaps` and `view`: they are set on the built map
-  m$config$basemaps <- bases
+  # `basemaps` and `view`, and each layer added sets the base maps again: they are set on the built map, after its last
+  # layer (a caller that adds layers sets them again)
+  m$config$basemaps <- port_map_bases()
   m$config$view <- list(center = list(5, 55), zoom = 4)
   m
+}
+
+# OpenStreetMap's standard tiles as the background, and no EMODnet base map (the maintainer, 2026-11-14)
+port_map_bases <- function() {
+  osm <- list(id = "osm", label = "OpenStreetMap", maxzoom = 19, attribution = "© OpenStreetMap contributors",
+              tiles = "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+  c(list(osm), Filter(\(b) !startsWith(b$id, "emodnet"), rebelrebel::rr_basemaps()))
 }
 
 port_map <- function(port = as.integer(Sys.getenv("PORT_MAP_PORT", "8818")), open = interactive()) {
