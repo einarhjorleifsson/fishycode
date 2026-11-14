@@ -1627,17 +1627,18 @@ by match.
 **check:** plan 073's asks answered and its steps built as studies and reviewed on the map by the maintainer; or the
 plan parked.
 
-## 200. One global port layer: every list weighed as evidence, each port anchored once, a numeric id (plan 075)
-**status:** open · **needs: maintainer** — plan 075's step 5 (the switch and its rebuild) and asks e-j · **see:**
-`curate/plans/075-one-global-port-layer.md`, decision 320, decisions 005, 006, 068, 082; TODO 92
+## 200. One table of potential landing sites, ports a subset by basis, a numeric id (plan 075)
+**status:** open · **needs: maintainer** — plan 075's asks e-i, k and l, then steps 5-7 (OSM's small landings, the sites, the
+track's evidence) and step 8 (the switch and its rebuild) · **see:** `curate/plans/075-one-global-port-layer.md`, decisions
+320, 321, 005, 006, 068, 082; TODO 92
 
-The maintainer, 2026-11-14: "Review what has been done and propose a plan to do it properly. Execute the plan. [...] In the
-end we should have only one non-ambiguous global harbour shapefile." The review (plan 075 §1) found the build counts 24,653
-of 192,089 raw features, makes 15,176 of its 18,009 ports from one list alone, groups at 300 m where lists place a port
-0.3-2 km apart, keeps a point though an area exists for 1,900 ports, and lets displaced points (vmstools' Falconara)
-make ports. Plan 075's steps 1-4 are built (decision 320): 14,398 ports beside `ports_all`, every feature in one outcome,
-an integer pid from a ledger (Iceland's landing codes as given, others from 1000), the review map on port 8818. Left: the
-switch of the flow to the layer and its pid, with its rebuild; the asks e-j.
+The maintainer, 2026-11-14: "Review what has been done and propose a plan to do it properly. Execute the plan." Plan 075's
+steps 1-4 are built as a port layer (decision 320): 14,925 ports beside `ports_all` since OSM's five port tags (decision
+321), every feature in one outcome, an integer pid from a ledger (Iceland's landing codes as given, others from 1000), the
+review map on port 8818. Revised the same day at his word: "one parquet table of potential landings site, the port layer
+is just a sub-set of those", with OSM's slipways, piers and quays, and no list (marta, jeppe) taken as ground truth. Left:
+the asks; OSM's small landings fetched (running for the hackathon's countries; the pilot is plan 075 §4.2); every anchor
+a site with its basis; the track's stops as evidence in the flow; the switch.
 
-**check:** the flow reads the layer and its integer pid (step 5), `ports_all` retired and its descendants rebuilt at the
-maintainer's word; or the item parked.
+**check:** the flow reads the table's ports and their integer pid (step 8), `ports_all` retired and its descendants
+rebuilt at the maintainer's word; or the item parked.

@@ -1,7 +1,7 @@
 # port_accounting.R — every port list's every feature in one outcome, counted (plan 075 §2.4).
 # Side: preprocessing (ports). See plan 014.
 #
-# Input:  raw/ports/* (each list's raw rows, counted as port_feature.R reads them),
+# Input:  raw/ports/* (each list's raw rows, counted as port_feature.R reads them; OSM's two fetches as their union),
 #         curated/reference/port_feature.parquet and port_layer.parquet (reference/ports/port_layer.R),
 #         overrides/port_pid_pinned.csv
 # Output: curated/check/port_accounting.parquet - one row per list, outcome and reason group: the features counted, with
@@ -19,12 +19,14 @@ library(sf)
 library(dplyr)
 
 sf_use_s2(FALSE)
+osm_keys <- function(f) { o <- read_sf(f); paste0(as.character(st_geometry_type(o)), "/", o$osm_id) }
 raw_n <- c(
   einar    = nrow(read_sf(fd_staging("ports", "ports_iceland_faroe.gpkg"))),
   jeppe    = nrow(read_sf(fd_raw("ports", "havnepolygoner3.gpkg"))),
   maksims  = nrow(read_sf(fd_raw("ports", "maksims", "harbours.shp"))),
   emodnet  = nrow(read_sf(fd_raw("ports", "ports_emodnet.gpkg"))),
-  osm      = nrow(read_sf(fd_raw("ports", "ports_osm.gpkg"))),
+  # OSM's two fetches overlap: one row per object, keyed by geometry type and id (port_feature.R)
+  osm      = length(union(osm_keys(fd_raw("ports", "ports_osm.gpkg")), osm_keys(fd_raw("ports", "ports_osm_20261114.gpkg")))),
   vmstools = nrow(read_sf(fd_raw("ports", "ports_vmstools.gpkg"))),
   gfw      = nrow(read_sf(fd_raw("ports", "ports_gfw_named_anchorages_v2_pipe_v3_202601.gpkg"))),
   gisco    = nrow(read_sf(fd_raw("ports", "ports_giscoR.gpkg"))),

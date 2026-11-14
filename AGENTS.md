@@ -143,7 +143,7 @@ Every script in a targets project is on one of three sides, and says which in a 
 - The flow runs at any data resolution and never stops for a missing table: the output's shape is the same,
   its content and basis depend on the data (plan 013, decided item 9). `docs/one_flow.qmd` describes the flow
   and what exists where (ramb, fishycode, outside code).
-- **The global port layer** (plan 075, decision 320): `curated/reference/port_layer.parquet`, one row per port with an
+- **The global port layer** (plan 075, decisions 320, 321): `curated/reference/port_layer.parquet`, one row per port with an
   integer `pid` from the port ledger (`R/allocate_ports.R`: Iceland's landing codes as given, every other port from 1000,
   never reused), and `port_feature.parquet`, every feature of the nine port lists and UN/LOCODE in one outcome
   (`reference/ports/port_layer.R`, checked by `curate/checks/port_accounting.R`). It is built beside `ports_all`; the

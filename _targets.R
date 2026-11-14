@@ -148,6 +148,7 @@ list(
   # and the accounting. Beside ports_all until the switch of plan 075 step 5; nothing reads them yet.
   tar_target(port_lists_raw, c(fd_raw("ports", "havnepolygoner3.gpkg"), fd_raw("ports", "maksims", "harbours.shp"),
                                fd_raw("ports", "ports_emodnet.gpkg"), fd_raw("ports", "ports_osm.gpkg"),
+                               fd_raw("ports", "ports_osm_20261114.gpkg"),
                                fd_raw("ports", "ports_vmstools.gpkg"),
                                fd_raw("ports", "ports_gfw_named_anchorages_v2_pipe_v3_202601.gpkg"),
                                fd_raw("ports", "ports_giscoR.gpkg"), fd_raw("ports", "marta", "landings_portos_Einer.xlsx"),

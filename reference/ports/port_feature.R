@@ -5,7 +5,8 @@
 #         raw/ports/havnepolygoner3.gpkg               jeppe: DTU Aqua's harbour polygons (WKSSFGEO 2021)
 #         raw/ports/maksims/harbours.shp               maksims: circles with a size class and a UN/LOCODE
 #         raw/ports/ports_emodnet.gpkg                 EMODnet's port locations (dump/ports/emodnet.R)
-#         raw/ports/ports_osm.gpkg                     OSM's harbour=* features (dump/ports/osm.R)
+#         raw/ports/ports_osm.gpkg                     OSM's harbour=* features, worldwide (the fetch of 2026-09)
+#         raw/ports/ports_osm_20261114.gpkg            OSM's five port tags, Greenland to the Mediterranean (dump/ports/osm.R)
 #         raw/ports/ports_vmstools.gpkg                vmstools 0.77's harbours (dump/ports/vmstools.R)
 #         raw/ports/ports_gfw_named_anchorages_v2_pipe_v3_202601.gpkg  GFW's named anchorages (dump/ports/gfw.R)
 #         raw/ports/ports_giscoR.gpkg                  GISCO's ports (dump/ports/gisco.R)
@@ -65,8 +66,23 @@ L$emodnet <- std(em, "emodnet", em$gml_id, coalesce(em$portname, em$port), em$co
                  ifelse(grepl("^[A-Z]{2}[A-Z0-9]{3}$", em$port_id), substr(em$port_id, 3, 5), NA),
                  kind = paste0("from ", em$source))
 
-o <- read_sf(fd_raw("ports", "ports_osm.gpkg"))
-L$osm <- std(o, "osm", paste0(as.character(st_geometry_type(o)), "/", o$osm_id), o$name, kind = o$harbour)
+# OSM in two fetches (dump/ports/osm.R): harbour=* worldwide (2026-09), and five tags over Greenland, Iceland, the Faroes,
+# Europe and the Mediterranean and Black Seas (2026-11-14). One row per OSM object, keyed as before by geometry type and
+# id: the newer fetch's where both hold it, else the older's, labelled so.
+osm_key <- function(o) paste0(as.character(st_geometry_type(o)), "/", o$osm_id)
+osm_tags <- function(o) {
+  v <- function(k) if (k %in% names(o)) as.character(o[[k]]) else rep(NA_character_, nrow(o))
+  tg <- cbind(ifelse(is.na(v("harbour")), NA, paste0("harbour=", v("harbour"))),
+              ifelse(v("landuse") %in% "harbour", "landuse=harbour", NA), ifelse(v("leisure") %in% "marina", "leisure=marina", NA),
+              ifelse(v("industrial") %in% "port", "industrial=port", NA),
+              ifelse(v("seamark_type") %in% "harbour", "seamark:type=harbour", NA))
+  apply(tg, 1, \(r) paste(r[!is.na(r)], collapse = "; "))
+}
+o_old <- read_sf(fd_raw("ports", "ports_osm.gpkg"))
+o_new <- read_sf(fd_raw("ports", "ports_osm_20261114.gpkg"))
+o_old <- o_old[!osm_key(o_old) %in% osm_key(o_new), ]
+L$osm <- rbind(std(o_new, "osm", osm_key(o_new), o_new$name, kind = paste0(osm_tags(o_new), "; fetched 2026-11-14")),
+               std(o_old, "osm", osm_key(o_old), o_old$name, kind = paste0(osm_tags(o_old), "; fetched 2026-09 only")))
 
 v <- read_sf(fd_raw("ports", "ports_vmstools.gpkg"))
 L$vmstools <- std(v, "vmstools", seq_len(nrow(v)), v$harbour, kind = "point")
@@ -90,6 +106,8 @@ u_geom <- st_sfc(lapply(seq_len(nrow(unlocode)), \(i) if (is.na(unlocode$lon[i])
   st_point(c(unlocode$lon[i], unlocode$lat[i]))), crs = 4326)
 L$unlocode <- std(st_sf(geom = u_geom), "unlocode", dedup(paste0(unlocode$country, unlocode$location)), unlocode$name,
                   unlocode$country, unlocode$location, kind = paste0("status ", unlocode$status, "; ", unlocode$function_desc))
+# The EU's location list (DG MARE's MDR, R/mdr_location.R) is not read here: the maintainer held it out on 2026-11-14,
+# after its test as a witness (plan 075), until its copies and the name rule are reviewed.
 
 n_raw <- vapply(L, nrow, 1L)
 feat <- bind_rows(lapply(L, \(x) { if (!"hid" %in% names(x)) x$hid <- NA_integer_; x }))
@@ -144,11 +162,11 @@ feat$area_m2 <- NA_real_
 ar <- which(feat$gtype %in% "area")
 feat$area_m2[ar] <- as.numeric(st_area(st_transform(st_geometry(feat)[ar], "+proj=cea")))
 
-# Country and coast: Natural Earth 10 m; GFW's anchorages and UN/LOCODE keep their own country only
+# Country and coast: Natural Earth 10 m; GFW's anchorages and UN/LOCODE (and the MDR, in a test) keep their own country only
 countries <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf") |> select(iso_a2, name) |> st_make_valid()
 countries$iso_a2[countries$name == "Norway"] <- "NO"
 countries$iso_a2[countries$name == "France"] <- "FR"
-need <- which(feat$has_pos & !feat$source %in% c("gfw", "unlocode"))
+need <- which(feat$has_pos & !feat$source %in% c("gfw", "unlocode", "mdr"))
 rp <- st_as_sf(st_drop_geometry(feat)[need, c("lon", "lat")], coords = c("lon", "lat"), crs = 4326)
 feat$iso_geo <- feat$iso_src
 feat$iso_geo[need] <- countries$iso_a2[st_nearest_feature(rp, countries)]

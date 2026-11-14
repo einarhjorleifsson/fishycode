@@ -18,10 +18,14 @@
 # overlap, because a touching feature joins.
 #
 # A port needs evidence beyond its anchor's list: a feature of a second list, a UN/LOCODE location of its name within
-# R_NAME (or of a member's code), or, for a GFW dock area, GFW's own label beside its AIS stops (ask a, answered
-# 2026-11-14). A reviewed anchor (einar) needs none. A port without it is dissolved and its features flagged. Copies are
-# not witnesses: EMODnet's points "from GISCO" lie within 10 m of GISCO's, and a vmstools point within 10 m of a
-# UN/LOCODE location counts as UN/LOCODE's. A disagreeing feature is flagged where it lies, never moved.
+# R_NAME (or of a member's code), an entry of the EU's location list (the MDR, where the feature table holds it: a study's
+# test, since the maintainer held it out of the build on 2026-11-14; of a member's code, within R_NEAR with no name
+# disagreeing, or of its name within R_NAME), or, for a GFW dock area, GFW's own label beside its AIS stops (ask a,
+# answered 2026-11-14). A reviewed anchor (einar) needs none. A port without it is dissolved and its features flagged.
+# Copies are not witnesses: EMODnet's points "from GISCO" lie within 10 m of GISCO's, a vmstools point, or an MDR
+# position, within 10 m of a UN/LOCODE location counts as UN/LOCODE's, and an MDR position within 10 m of another list's
+# point counts as that list's (2,293 of vmstools' 3,839 harbours, "EU Lot 2 project" in its help, lie within 10 m of an
+# MDR position, most at 0 m). A disagreeing feature is flagged where it lies, never moved.
 #
 # Every feature ends in one outcome: chosen (a port's anchor), witness (another list), duplicate (the anchor's own list, or
 # a copy), flagged (with its reason). A GFW dock anchorage takes its dock area's outcome.
@@ -36,8 +40,21 @@ COPY_M <- 10     # metres: a copy, not a witness
 RANK <- c(einar = 1, jeppe = 2, gfw_dock = 3, osm = 4, gisco = 5, maksims = 6, vmstools = 7, emodnet = 8, marta = 9)
 REVIEWED <- "einar"
 HOME <- c(einar = "IS|FO")   # in these countries only this list anchors a port
+# A test: PORT_LAYER_HOLD_OUT names a list held out as truth (plan 075 §4; the maintainer, 2026-11-14: the Icelandic case "as a
+# test against the web mined data"). Its features make no port and it rules no country; the layer goes to the study folder
+# (PORT_LAYER_TEST_DIR), never to curated/.
+# PORT_LAYER_FEATURES, also a test, reads another feature table (a study's) in place of staging's; PORT_LAYER_TEST_TAG
+# names the run's files (by default "without_<list>").
+HOLD_OUT <- Sys.getenv("PORT_LAYER_HOLD_OUT", "")
+if (nzchar(HOLD_OUT)) {
+  RANK <- RANK[names(RANK) != HOLD_OUT]
+  HOME <- HOME[names(HOME) != HOLD_OUT]
+}
+FEATURES <- Sys.getenv("PORT_LAYER_FEATURES", fd_staging("ports", "port_feature.gpkg"))
+TEST <- nzchar(HOLD_OUT) || FEATURES != fd_staging("ports", "port_feature.gpkg")
+TAG <- Sys.getenv("PORT_LAYER_TEST_TAG", paste0("without_", HOLD_OUT))
 
-feat <- read_sf(fd_staging("ports", "port_feature.gpkg"))
+feat <- read_sf(FEATURES)
 feat$id <- seq_len(nrow(feat))
 d <- st_drop_geometry(feat)
 
@@ -67,6 +84,22 @@ vm_copy <- vm[nn$nn.dists[, 1] <= COPY_M]
 d$family <- ifelse(d$source %in% c("gfw", "gfw_dock"), "gfw", d$source)
 d$family[vm_copy] <- "unlocode"          # a copied coordinate is UN/LOCODE's evidence, not a second list's
 d$family[!is.na(d$copy_of)] <- "gisco"
+# the MDR took most UN/LOCODE positions as they were: an MDR position within COPY_M of its code's UN/LOCODE location
+md <- which(d$source == "mdr" & d$has_pos & !is.na(d$locode))
+uk <- match(paste0(d$iso_src[md], d$locode[md]), sub("_[0-9]+$", "", d$feature_key[ul]))
+md <- md[!is.na(uk)]; uk <- uk[!is.na(uk)]
+if (length(md)) {
+  md_m <- geosphere::distHaversine(cbind(d$lon[md], d$lat[md]), cbind(d$lon[ul][uk], d$lat[ul][uk]))
+  d$family[md[md_m <= COPY_M]] <- "unlocode"
+}
+# and an MDR position within COPY_M of another list's point is that list's (vmstools' harbours share the MDR's positions)
+md <- which(d$source == "mdr" & d$has_pos & d$family == "mdr")
+pt <- which(!d$source %in% c("mdr", "gfw") & d$has_pos & d$gtype %in% "point")
+if (length(md) && length(pt)) {
+  nn <- RANN::nn2(xyz(d$lon[pt], d$lat[pt]), xyz(d$lon[md], d$lat[md]), k = 1)
+  cp_ <- nn$nn.dists[, 1] <= COPY_M
+  d$family[md[cp_]] <- d$family[pt[nn$nn.idx[cp_, 1]]]
+}
 
 maker <- d$source %in% names(RANK) & d$has_pos & is.na(d$copy_of)
 mk <- which(maker)
@@ -120,20 +153,29 @@ for (f in ord) {
 # Witness-only lists --------------------------------------------------------------------------------------------------
 A <- which(anchor)
 xa <- xyz(d$lon[A], d$lat[A])
-# GFW anchorages away from a dock: the nearest anchor within R_NEAR (distance to the anchor's geometry)
-nd <- which(d$source == "gfw" & is.na(d$part_of) & d$has_pos)
-cand <- RANN::nn2(xa, xyz(d$lon[nd], d$lat[nd]), k = min(10, length(A)))
-nd_pts <- st_as_sf(d[nd, c("lon", "lat")], coords = c("lon", "lat"), crs = 4326)
-best <- rep(NA_integer_, length(nd)); bdist <- rep(NA_real_, length(nd))
-near_any <- which(cand$nn.dists[, 1] <= R_NEAR + 50000)   # an area anchor's point may lie far from its edge
-sf_use_s2(TRUE)
-for (k in seq_len(ncol(cand$nn.idx))) {
-  a <- A[cand$nn.idx[near_any, k]]
-  dk <- as.numeric(st_distance(st_geometry(nd_pts)[near_any], st_geometry(feat)[a], by_element = TRUE))
-  better <- dk <= R_NEAR & (is.na(bdist[near_any]) | dk < bdist[near_any])
-  best[near_any[better]] <- a[better]; bdist[near_any[better]] <- dk[better]
+# the nearest anchor within R_NEAR of each row (distance to the anchor's geometry); with `names`, never one whose name
+# disagrees
+near_anchor <- function(rows, names = FALSE) {
+  if (!length(rows)) return(list(port = integer(), dist = numeric()))
+  cand <-RANN::nn2(xa, xyz(d$lon[rows], d$lat[rows]), k = min(10, length(A)))
+  pts <- st_as_sf(d[rows, c("lon", "lat")], coords = c("lon", "lat"), crs = 4326)
+  best <- rep(NA_integer_, length(rows)); bdist <- rep(NA_real_, length(rows))
+  near_any <- which(cand$nn.dists[, 1] <= R_NEAR + 50000)   # an area anchor's point may lie far from its edge
+  sf_use_s2(TRUE)
+  for (k in seq_len(ncol(cand$nn.idx))) {
+    a <- A[cand$nn.idx[near_any, k]]
+    dk <- as.numeric(st_distance(st_geometry(pts)[near_any], st_geometry(feat)[a], by_element = TRUE))
+    ok <- if (names) !(named(d$k2[rows[near_any]]) & named(d$k2[a])) | same_name(d$k2[rows[near_any]], d$k2[a]) else TRUE
+    better <- dk <= R_NEAR & ok & (is.na(bdist[near_any]) | dk < bdist[near_any])
+    best[near_any[better]] <- a[better]; bdist[near_any[better]] <- dk[better]
+  }
+  sf_use_s2(FALSE)
+  list(port = best, dist = bdist)
 }
-sf_use_s2(FALSE)
+# GFW anchorages away from a dock: the nearest anchor within R_NEAR
+nd <- which(d$source == "gfw" & is.na(d$part_of) & d$has_pos)
+na_ <- near_anchor(nd)
+best <- na_$port; bdist <- na_$dist
 port[nd] <- best; dist_to[nd] <- bdist
 how[nd] <- ifelse(is.na(best), "not a dock, no port within 1 km", "GFW anchorage within 1 km")
 # UN/LOCODE: by a member's code, else by its name within R_NAME
@@ -153,7 +195,30 @@ for (k in seq_len(ncol(cand$nn.idx))) {
 }
 how[uc][is.na(port[uc]) & !d$has_pos[uc]] <- "no position"
 how[uc][is.na(port[uc]) & d$has_pos[uc]] <- "no port of its name or code within 5 km"
+# The EU's location list (MDR): by a member's code (never a witness's, so nothing chains), else the nearest anchor within
+# R_NEAR whose name does not disagree, else an anchor of its name within R_NAME
+mc <- which(d$source == "mdr")
+mem <- which(!is.na(port) & !is.na(d$locode) & !d$source %in% c("unlocode", "mdr"))
+code_port <- tapply(port[mem], paste0(d$iso_src[mem], d$locode[mem]), \(p) p[1])
+port[mc] <- unname(code_port[sub("_[0-9]+$", "", d$feature_key[mc])])
+how[mc] <- ifelse(is.na(port[mc]), NA, "same code")
+mn <- mc[is.na(port[mc]) & d$has_pos[mc]]
+na_ <- near_anchor(mn, names = TRUE)
+port[mn] <- na_$port; dist_to[mn] <- na_$dist
+how[mn] <- ifelse(is.na(na_$port), NA, "within 1 km")
+mn <- mn[is.na(port[mn])]
+if (length(mn)) cand <- RANN::nn2(xa, xyz(d$lon[mn], d$lat[mn]), k = min(10, length(A)))
+for (k in seq_len(if (length(mn)) ncol(cand$nn.idx) else 0)) {
+  a <- A[cand$nn.idx[, k]]
+  dk <- geosphere::distHaversine(cbind(d$lon[mn], d$lat[mn]), cbind(d$lon[a], d$lat[a]))
+  ok <- is.na(port[mn]) & dk <= R_NAME & same_name(d$k2[mn], d$k2[a])
+  port[mn[ok]] <- a[ok]; dist_to[mn[ok]] <- dk[ok]; how[mn[ok]] <- "same name within 5 km"
+}
+how[mc][is.na(port[mc]) & d$has_pos[mc]] <- "no port of its code, none within 1 km, none of its name within 5 km"
+cpm <- mc[d$family[mc] != "mdr"]
+how[cpm] <- paste0(how[cpm], " (its position is ", d$family[cpm], "'s)")
 how[!d$has_pos & is.na(how)] <- ifelse(d$pos_out_of_range[!d$has_pos & is.na(how)], "position out of range", "no position")
+if (nzchar(HOLD_OUT)) how[d$source == HOLD_OUT] <- "held out as truth (a test)"
 
 # A port needs evidence beyond its anchor's list -----------------------------------------------------------------------
 on <- which(!is.na(port))
@@ -235,8 +300,8 @@ layer <- st_sf(ports, geom = st_geometry(feat)[ports$anchor_id])
 # Every feature, one outcome; einar whole; no two areas overlap
 stopifnot(
   "one anchor per port" = setequal(which(anchor), ports$anchor_id),
-  "every einar harbour is a port of its own" = setequal(ports$anchor_key[ports$anchor_source == "einar"],
-                                                        d$feature_key[d$source == "einar"]),
+  "every einar harbour is a port of its own" = HOLD_OUT == "einar" ||
+    setequal(ports$anchor_key[ports$anchor_source == "einar"], d$feature_key[d$source == "einar"]),
   "port keys unique" = !anyDuplicated(ports$port_key))
 areas <- layer[layer$geom_type == "area", ]
 ov <- st_overlaps(st_transform(areas, 3035))
@@ -256,6 +321,15 @@ cat("outcomes\n"); print(table(d$source, d$outcome))
 feat_out <- st_sf(d |> select(source, feature_key, derived, part_of, name, iso_src, iso_geo, locode, kind, gtype, repaired,
                               family, outcome, reason, port_key, pid, dist_m, lon, lat, d_coast_km),
                   geom = st_geometry(feat))
-inputs <- c(fd_staging("ports", "port_feature.gpkg"), "overrides/port_pid_pinned.csv", port_ledger_files())
-write_curated(layer |> select(-anchor_id), fd_curated("reference", "port_layer.parquet"), inputs = inputs)
-write_curated(feat_out, fd_curated("reference", "port_feature.parquet"), inputs = inputs)
+if (TEST) {
+  dir <- Sys.getenv("PORT_LAYER_TEST_DIR")
+  stopifnot("a test writes to a folder of its own, never curated/" = nzchar(dir), !grepl("/curated/", dir), nzchar(TAG),
+            TAG != "without_")
+  dir.create(dir, showWarnings = FALSE, recursive = TRUE)
+  saveRDS(layer, file.path(dir, paste0("port_layer_", TAG, ".rds")))
+  saveRDS(feat_out, file.path(dir, paste0("port_feature_", TAG, ".rds")))
+} else {
+  inputs <- c(FEATURES, "overrides/port_pid_pinned.csv", port_ledger_files())
+  write_curated(layer |> select(-anchor_id), fd_curated("reference", "port_layer.parquet"), inputs = inputs)
+  write_curated(feat_out, fd_curated("reference", "port_feature.parquet"), inputs = inputs)
+}
