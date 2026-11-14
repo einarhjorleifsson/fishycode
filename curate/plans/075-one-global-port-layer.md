@@ -203,13 +203,17 @@ as the other served maps are.
 3. The ledger's first batch, at the maintainer's answers to asks b and c (§2.3). Built.
 4. The review map (§2.5) and `curate/issues/vmstools.yml`. Built. Rebuilt on OSM's five port tags (ask j) with the
    ledger's second batch, 2026-11-14 (decision 321).
-5. **OSM's small landings** (§2.1). Started 2026-11-14: `dump/ports/osm_landing.R` keeps a store that grows,
-   `raw/ports/landings_osm/` (one answer per 5-degree cell and tag group, `<cell>__<group>__<date>.osm.gz`, never
-   overwritten, and `_manifest.csv`), read by `read_landings_osm()` (`R/osm_fetch.R`). A rerun fetches only what the store
-   lacks: new places, a new tag group, or answers older than a refresh date (the maintainer: "such that it can easily be
-   restarted to pick up more data at a later stage"). First the countries of the EM4SSF hackathon (the maintainer:
-   Denmark, France, Portugal, Spain, Greece and Iceland; Italy added, CS1 and the host, on a check of the case studies
-   and partners): 46 cells, 138 answers, fetching since 2026-11-14 19:23. The pilot over Portugal and Denmark is §4.2.
+5. **OSM's small landings** (§2.1). Started 2026-11-14: `dump/ports/osm_landing.R`, the port fetch's plain way
+   (`dump/ports/osm.R`): one Overpass query per 5-degree cell for every small-landing tag at once, each answer kept as
+   delivered in `raw/ports/landings_osm_<date>/<cell>.osm.gz` and the features of all in `raw/ports/landings_osm_<date>.gpkg`.
+   A rerun with the same date fetches only the cells it lacks, so a box added to its region fetches only its new cells
+   (the maintainer: "such that it can easily be restarted to pick up more data at a later stage"). When Overpass does not
+   answer, the fetch waits, at most 30 minutes between tries, for up to a day. A first try, one query per cell and tag
+   group in a store with a manifest, stopped at 16 answers when overpass-api.de refused connections from this machine;
+   the maintainer: "drop any clever stuff, use what (has) worked, even though it takes time" (its answers are in the
+   study, `out/landings_osm_first_try/`). First the countries of the EM4SSF hackathon (the maintainer: Denmark, France,
+   Portugal, Spain, Greece and Iceland; Italy added, CS1 and the host, on a check of the case studies and partners): 46
+   cells. The pilot over Portugal and Denmark is §4.2.
    **Why Overpass:** it fetches the small-landing tags alone. Overture Maps' OSM-derived infrastructure (GeoParquet,
    queried in place by DuckDB) keeps piers and breakwaters but drops slipways, groynes and moorings (Denmark: 4 slipways
    against Overpass's 963; study `scripts/overture_dk.R`), and a whole country's OSM extract (Geofabrik's PBF) is more
