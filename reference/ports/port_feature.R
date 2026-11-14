@@ -15,7 +15,8 @@
 #
 # Nothing is dropped: an unnamed OSM feature, a GFW anchorage away from a dock, a UN/LOCODE row or a marta row with no
 # position each keep a row, and port_layer.R places every row in one outcome. A geometry is kept as drawn; one that GEOS
-# finds invalid is repaired with st_make_valid() and flagged `repaired` (curate/corrections/ports_osm_invalid_geometry.yml).
+# finds invalid is repaired with st_make_valid() and flagged `repaired` (curate/corrections/ports_osm_invalid_geometry.yml),
+# and one beyond the globe's range is kept as given with `has_pos` FALSE and `pos_out_of_range` TRUE.
 #
 # GFW's dock anchorages are also bound into areas, rows of their own with source `gfw_dock` and `derived` TRUE: 500 m of
 # true ground around each, unioned by label and country and split into connected pieces. A piece's key is the smallest
@@ -136,6 +137,9 @@ pt <- matrix(NA_real_, nrow(feat), 2)
 pt[feat$has_pos, ] <- suppressWarnings(st_coordinates(st_point_on_surface(st_geometry(feat)[feat$has_pos])))[, 1:2]
 feat$lon <- pt[, 1]
 feat$lat <- pt[, 2]
+# a position beyond the globe's range (one GFW anchorage at longitude 1001) is no place: kept as given, judged as none
+feat$pos_out_of_range <- feat$has_pos & (abs(feat$lon) > 180 | abs(feat$lat) > 90)
+feat$has_pos[feat$pos_out_of_range] <- FALSE
 feat$area_m2 <- NA_real_
 ar <- which(feat$gtype %in% "area")
 feat$area_m2[ar] <- as.numeric(st_area(st_transform(st_geometry(feat)[ar], "+proj=cea")))
@@ -156,7 +160,7 @@ feat$d_coast_km <- NA_real_
 feat$d_coast_km[need] <- round(as.numeric(st_distance(rp3, coast[st_nearest_feature(rp3, coast), ], by_element = TRUE)) / 1000, 2)
 
 feat <- feat |>
-  select(source, feature_key, derived, part_of, name, name_key, iso_src, iso_geo, locode, kind, hid, has_pos, gtype, repaired,
+  select(source, feature_key, derived, part_of, name, name_key, iso_src, iso_geo, locode, kind, hid, has_pos, pos_out_of_range, gtype, repaired,
          lon, lat, area_m2, on_land, d_coast_km, geom) |>
   arrange(source, feature_key)
 

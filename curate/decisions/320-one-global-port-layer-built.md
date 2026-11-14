@@ -83,7 +83,16 @@ The review map is `products/port_map/` (`port_map()`, or `Rscript products/port_
   `view` without a word; `port_map_build()` sets them on the built map. The map opens on OpenStreetMap's tiles, with no
   EMODnet base map, and a port's hover shows its name alone (the maintainer, 2026-11-14).
 - `dump/ports/osm.R` fetched only the `harbour=*` key. OSM's port areas are mostly `landuse=harbour`, `industrial=port`,
-  `seamark:type=harbour` and `leisure=marina`, none of them read.
+  `seamark:type=harbour` and `leisure=marina`, none of them read. It costs a port the maintainer pointed to: Numana, CS1's
+  third harbour and its HDBSCAN site 4 (13.626 E 43.509 N), is no port in the layer. Within 4 km lie only UN/LOCODE's
+  ITNUM and vmstools' NUMANA, 1.05 km off, on one coordinate (vmstools copied UN/LOCODE's), so one witness: both flagged.
+  GFW has no anchorage there, GISCO no point. OSM has the harbour (Overpass, 2026-11-14): a `leisure=marina` node "Porto
+  di Numana" (also `seamark:type=harbour`) and a `landuse=harbour` relation "Porto Turistico di Numana", neither with a
+  `harbour=*` key. Worldwide (taginfo, 2026-11-14) OSM holds 5,429 `harbour=*` features, and 31,961 `leisure=marina`,
+  25,382 `seamark:type=harbour`, 5,414 `industrial=port` and 2,570 `landuse=harbour`, overlapping.
+- One GFW anchorage (POINTE NOIRE, s2id 8efe7543) lies at longitude 1001. `port_feature.R` now keeps such a position as
+  given with `has_pos` FALSE and `pos_out_of_range` TRUE, and the layer flags it "position out of range"; the ports did not
+  change (rebuilt and fingerprinted, 2026-11-14).
 
 ## Open
 

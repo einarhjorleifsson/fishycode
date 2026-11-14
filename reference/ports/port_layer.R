@@ -121,7 +121,7 @@ for (f in ord) {
 A <- which(anchor)
 xa <- xyz(d$lon[A], d$lat[A])
 # GFW anchorages away from a dock: the nearest anchor within R_NEAR (distance to the anchor's geometry)
-nd <- which(d$source == "gfw" & is.na(d$part_of))
+nd <- which(d$source == "gfw" & is.na(d$part_of) & d$has_pos)
 cand <- RANN::nn2(xa, xyz(d$lon[nd], d$lat[nd]), k = min(10, length(A)))
 nd_pts <- st_as_sf(d[nd, c("lon", "lat")], coords = c("lon", "lat"), crs = 4326)
 best <- rep(NA_integer_, length(nd)); bdist <- rep(NA_real_, length(nd))
@@ -153,7 +153,7 @@ for (k in seq_len(ncol(cand$nn.idx))) {
 }
 how[uc][is.na(port[uc]) & !d$has_pos[uc]] <- "no position"
 how[uc][is.na(port[uc]) & d$has_pos[uc]] <- "no port of its name or code within 5 km"
-how[d$source == "marta" & !d$has_pos] <- "no position"
+how[!d$has_pos & is.na(how)] <- ifelse(d$pos_out_of_range[!d$has_pos & is.na(how)], "position out of range", "no position")
 
 # A port needs evidence beyond its anchor's list -----------------------------------------------------------------------
 on <- which(!is.na(port))
