@@ -5,6 +5,10 @@ applies_to:
   - staging/ports/ports_all.gpkg  (10 of 24,653 features)
   - curated/reference/port_geometry.parquet  (4 of 18,009 ports, CI-POR, JP-U64, PL-POT, RU-S7M)
   - staging/aux/ports.{gpkg,fgb}  (PL-POT and RU-S7M; CI-POR and JP-U64 lie outside the box shapes.R crops to)
+  - >-
+    staging/ports/port_feature.gpkg and curated/reference/port_feature.parquet  (11 osm features flagged `repaired`, the
+    10 above and one unnamed multipolygon the old build left out; plan 075, decision 320, where
+    reference/ports/port_feature.R makes the same st_make_valid() repair under GEOS on every feature GEOS rejects)
 affects_rows: 10 of 24,653 features, all source osm; 4 of them canonical
 implementation: >-
   reference/ports/ports_all.R, section "Valid geometry", just before the two writes: st_make_valid() under GEOS

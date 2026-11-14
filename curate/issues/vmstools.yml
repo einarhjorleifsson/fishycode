@@ -1,0 +1,49 @@
+# Issues for vmstools (https://github.com/nielshintzen/vmstools), found while building one global port layer from nine
+# port lists (plan 075, decision 320). Drafted 2026-11-14 by Claude (AI) for the maintainer of fishycode; not checked by
+# a person and not sent. The positions are vmstools 0.77's `data("harbours")` as dumped by dump/ports/vmstools.R
+# (raw/ports/ports_vmstools.gpkg, 3,839 points); the witnesses are the other lists in curated/reference/port_feature.parquet.
+
+repository: nielshintzen/vmstools
+version: vmstools 0.77, data("harbours")
+environment: R 4.x, sf; positions compared on the sphere (geosphere::distHaversine)
+sent: no
+sent_how: ""
+
+issues:
+  - title: "Some harbours in `data(harbours)` lie hundreds of kilometres from the port they name"
+    labels: [data]
+    body: |
+      A handful of points in `harbours` lie far from the port their name gives, in open sea or far inland, while other
+      port lists (GISCO, EMODnet, Global Fishing Watch's named anchorages, OpenStreetMap, DTU Aqua's harbour polygons,
+      UN/LOCODE) agree on a place where the port is. Several look like a slipped digit or sign. A VMS ping is then never
+      "in harbour" at the real port, and a ping at the wrong place may be. Each case below has no feature of any other
+      list within 1 km and none of its name within 5 km.
+
+      | harbour (row) | vmstools lon, lat | where it lies (Natural Earth 10 m) | the port elsewhere (lists that agree) | km apart |
+      |---|---|---|---|---|
+      | POZZALLO (2729) | 9.3333, 44.8167 | 50 km inland | 14.8283, 36.7171 (GISCO, GFW) | 1,013 |
+      | GENOVA (1121) | 12.7000, 37.9500 | 15 km inland | 8.9165, 44.4140 (GISCO, UN/LOCODE) | 786 |
+      | CATTOLICA (643) | 13.4000, 37.4333 | 9 km inland | 12.7333, 43.9667 (UN/LOCODE) | 729 |
+      | FALCONARA MARITTIMA (967) | 13.4000, 38.6167 | 21 km at sea; 38.6167 looks like 43.6167 | 13.4859, 43.6085 (GISCO) | 556 |
+      | LA MADDALENA (1797) | 9.0136, 39.1431 | on the coast, 2 degrees south | 9.3869, 41.1828 (GFW, GISCO, OSM) | 229 |
+      | GIARDINI (1131) | 16.8500, 39.1000 | 20 km inland | 15.2902, 37.8440, Giardini-Naxos (GFW, GISCO) | 195 |
+      | BARROW (287) | -3.0667, 52.9667 | 26 km inland; 52.9667 looks like 54.1 | -3.2265, 54.0963, Barrow-in-Furness (GFW, GISCO, DTU Aqua) | 126 |
+      | Pärnu (2523) | 22.4680, 58.3833 | 13 km inland; 22.468 looks like 24.468 | 24.4701, 58.3749 (GFW, GISCO, DTU Aqua, EMODnet) | 117 |
+      | Stranraer (3358) | -5.0333, 55.9167 | 2 km inland; 55.9167 looks like 54.9167 | -5.0255, 54.9115 (GISCO, DTU Aqua) | 112 |
+      | PESCARA (2557) | 13.2667, 42.7500 | 55 km inland | 14.2267, 42.4673 (GFW, GISCO) | 85 |
+      | CANVEY ISLAND (576) | -0.5667, 51.5167 | 71 km inland; the longitude's sign is flipped | 0.5667, 51.5167 (UN/LOCODE) | 79 |
+      | Howth (1434) | -6.0669, 53.7928 | 12 km at sea; 53.7928 looks like 53.3928 | -6.0684, 53.3923 (GFW, GISCO, DTU Aqua) | 45 |
+      | TUNØ (3564) | 10.2721, 55.5694 | 2 km inland | 10.4531, 55.9487 (GISCO, DTU Aqua) | 44 |
+      | TUBORG HAVN/HELLERUP (3559) | 12.3516, 55.4356 | 3 km at sea | 12.5815, 55.7259 (GISCO) | 35 |
+      | Lochmaddy (2000) | -7.1558, 57.8958 | 6 km at sea; 57.8958 looks like 57.5958 | -7.1638, 57.6026 (GFW, GISCO) | 33 |
+
+      ```r
+      library(vmstools)
+      data(harbours)
+      harbours[c(2729, 1121, 643, 967, 1797, 1131, 287, 2523, 3358, 2557, 576, 1434, 3564, 3559, 2000), ]
+      ```
+
+      Not listed: points whose name is shared by several places (Djupvik, Björkö, "Strandby (Langeland)", "Assens
+      (Mariager Fjord)"), where another list's place of the same name is a different port. Of the 3,839 points, 170 have
+      no other list within 1 km nor a feature of their name within 5 km, while a feature of their name lies over 20 km
+      off in the same country. Name matching makes false witnesses, so only the cases above are put forward.

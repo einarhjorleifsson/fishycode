@@ -83,6 +83,8 @@ mmsi_list_files <- input_files("raw", "mmsi", pattern = "[.]xlsx$")
 # graph, so a new allocation shows in tar_outdated(). Empty until the first allocation; the crosswalk builds without it.
 vid_ledger_files <- sort(list.files(fd_path("curated", "vessel", "vid_ledger"), "^batch_.*[.]parquet$",
                                     full.names = TRUE), method = "radix")
+# The port ledger (plan 075 §2.3), likewise: one file per allocation by allocate_ports() (R/allocate_ports.R).
+port_ledger_list <- port_ledger_files()
 
 list(
 
@@ -140,6 +142,30 @@ list(
     produces("reference/ports/ports_all.R",
              fd_staging("ports", "ports_all.gpkg"),
              fd_curated("reference", "port_geometry.parquet"))
+  }, format = "file"),
+
+  # One global port layer (plan 075): every list's feature in one table, the cascade that places each in one outcome,
+  # and the accounting. Beside ports_all until the switch of plan 075 step 5; nothing reads them yet.
+  tar_target(port_lists_raw, c(fd_raw("ports", "havnepolygoner3.gpkg"), fd_raw("ports", "maksims", "harbours.shp"),
+                               fd_raw("ports", "ports_emodnet.gpkg"), fd_raw("ports", "ports_osm.gpkg"),
+                               fd_raw("ports", "ports_vmstools.gpkg"),
+                               fd_raw("ports", "ports_gfw_named_anchorages_v2_pipe_v3_202601.gpkg"),
+                               fd_raw("ports", "ports_giscoR.gpkg"), fd_raw("ports", "marta", "landings_portos_Einer.xlsx"),
+                               fd_raw("ports", "unlocode.parquet")), format = "file"),
+  tar_target(port_feature, {
+    ports_iceland; port_lists_raw
+    produces("reference/ports/port_feature.R", fd_staging("ports", "port_feature.gpkg"))
+  }, format = "file"),
+  tar_target(port_ledger, port_ledger_list, format = "file"),
+  tar_target(port_layer, {
+    port_feature; port_pid_pinned; port_ledger
+    produces("reference/ports/port_layer.R",
+             fd_curated("reference", "port_layer.parquet"),
+             fd_curated("reference", "port_feature.parquet"))
+  }, format = "file"),
+  tar_target(check_port_accounting, {
+    port_layer; port_lists_raw
+    produces("curate/checks/port_accounting.R", fd_curated("check", "port_accounting.parquet"))
   }, format = "file"),
 
   # harbour_codes.R reads the pids from staging/ports/ports_all.gpkg; without the edge

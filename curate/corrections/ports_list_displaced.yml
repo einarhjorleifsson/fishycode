@@ -1,0 +1,37 @@
+id: ports_list_displaced
+title: Port-list features lying far from the port they name, with no other list near them; flagged in place, never moved
+status: flagged 2026-11-14 - reference/ports/port_layer.R (plan 075, decision 320) labels them, none is corrected; the clear vmstools cases are drafted for its maintainers in curate/issues/vmstools.yml, not sent
+applies_to:
+  - curated/reference/port_feature.parquet  (reason "displaced: ..."; 170 vmstools, and features of OSM, GISCO, jeppe and marta)
+  - curated/reference/port_layer.parquet  (none of them anchors a port)
+affects_rows: 170 of vmstools' 3,839 points flagged displaced on 2026-11-14; the count for every list is in curated/check/port_accounting.parquet
+implementation: >-
+  reference/ports/port_layer.R, after the cascade: a feature that anchors a port no second list witnesses is flagged
+  `unwitnessed`; it is `displaced` when, besides, a feature of another list whose name agrees (common harbour words
+  stripped, Jaro-Winkler >= 0.9 or one name the start of the other) lies over 20 km off in the same country. The feature
+  keeps its position and its row; it makes no port.
+discovered: 2026-11-14, comparing EM4SSF's case study 1 (Ancona) ports with fishycode's global set; measured in plan 075 §1
+
+origin: >-
+  The old build (reference/ports/ports_all.R) let any feature alone within 300 m make a port: vmstools' FALCONARA
+  MARITTIMA at 13.40 E 38.62 N, 21 km at sea north of Sicily (43.6167 read as 38.6167), became the port IT-FAC, 556 km
+  from Falconara. Of vmstools' 3,839 points, 844 have no feature of another list within 5 km.
+
+mechanism: >-
+  A list placed a port at the wrong coordinates: a slipped digit or sign (Falconara, Barrow, Stranraer, Howth, Canvey
+  Island's longitude) or the wrong place of the name (POZZALLO in Piedmont, GENOVA and CATTOLICA in Sicily). Name matching
+  alone makes false witnesses (places of one name: Djupvik, Björkö, Strandby), so `displaced` is a flag for review, not a
+  verdict.
+
+detection: |
+  DuckDB: SELECT source, count(*) FROM read_parquet('curated/reference/port_feature.parquet')
+          WHERE reason LIKE 'displaced%' GROUP BY source
+
+effect: >-
+  None on built data: no displaced point anchors a port, and none of the old build's pids made from one (IT-FAC and 58
+  others) is among the 152 pids of curated/ais/port_call.parquet or in the Icelandic port codes (plan 075 §1). In the
+  old build they were ports, and the effort and bathymetry maps showed them.
+
+repair: >-
+  None in the data, by the rule that an extreme value is flagged, not corrected. The features stay where their list put
+  them, with their reason; the map products/port_map/ shows them in the layer "Flagged".

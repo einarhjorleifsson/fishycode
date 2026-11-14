@@ -1626,3 +1626,18 @@ by match.
 
 **check:** plan 073's asks answered and its steps built as studies and reviewed on the map by the maintainer; or the
 plan parked.
+
+## 200. One global port layer: every list weighed as evidence, each port anchored once, a numeric id (plan 075)
+**status:** open · **needs: maintainer** — plan 075's step 5 (the switch and its rebuild) and asks e-j · **see:**
+`curate/plans/075-one-global-port-layer.md`, decision 320, decisions 005, 006, 068, 082; TODO 92
+
+The maintainer, 2026-11-14: "Review what has been done and propose a plan to do it properly. Execute the plan. [...] In the
+end we should have only one non-ambiguous global harbour shapefile." The review (plan 075 §1) found the build counts 24,653
+of 192,089 raw features, makes 15,176 of its 18,009 ports from one list alone, groups at 300 m where lists place a port
+0.3-2 km apart, keeps a point though an area exists for 1,900 ports, and lets displaced points (vmstools' Falconara)
+make ports. Plan 075's steps 1-4 are built (decision 320): 14,398 ports beside `ports_all`, every feature in one outcome,
+an integer pid from a ledger (Iceland's landing codes as given, others from 1000), the review map on port 8818. Left: the
+switch of the flow to the layer and its pid, with its rebuild; the asks e-j.
+
+**check:** the flow reads the layer and its integer pid (step 5), `ports_all` retired and its descendants rebuilt at the
+maintainer's word; or the item parked.
