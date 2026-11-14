@@ -15,7 +15,6 @@ port_map_build <- function() {
   # default 7, close vertices of GFW's 500 m circles collapse and the ring turns invalid (a TopologyException at Cannes)
   dg <- options(digits = 15); on.exit(options(dg), add = TRUE)
   ly <- read_curated_sf(fd_curated("reference", "port_layer.parquet"))
-  ly$label <- paste0(ly$pid, " ", ly$name)
   f <- as.data.frame(nanoparquet::read_parquet(fd_curated("reference", "port_feature.parquet")))
   f$geom <- NULL
   f <- f[!is.na(f$lon), ]
@@ -31,20 +30,29 @@ port_map_build <- function() {
   names(pts)[names(pts) == "X"] <- "lon"
   names(pts)[names(pts) == "Y"] <- "lat"
 
-  rebelrebel::rr_map(ly[ly$geom_type == "area", ], title = "Global port layer (plan 075)",
-                     view = list(center = c(5, 55), zoom = 4)) |>
+  # OpenStreetMap's standard tiles as the background, and no EMODnet base map (the maintainer, 2026-11-14)
+  osm <- list(id = "osm", label = "OpenStreetMap", maxzoom = 19, attribution = "© OpenStreetMap contributors",
+              tiles = "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+  bases <- c(list(osm), Filter(\(b) !startsWith(b$id, "emodnet"), rebelrebel::rr_basemaps()))
+
+  m <- rebelrebel::rr_map(ly[ly$geom_type == "area", ], title = "Global port layer (plan 075)") |>
     rebelrebel::rr_polygon(colour = "#333333", fill = anchor_source, opacity = 0.4,
                            popup = c(pid, pid_acronym, name, iso, basis, lists, n_lists, n_features, anchor_source, anchor_key),
-                           hover = label, choose = c(basis, anchor_source), name = "Ports: areas") |>
+                           hover = name, choose = c(basis, anchor_source), name = "Ports: areas") |>
     rebelrebel::rr_point(data = pts, colour = anchor_source, size = 6,
                          popup = c(pid, pid_acronym, name, iso, basis, lists, n_lists, n_features, anchor_source, anchor_key),
-                         hover = label, choose = c(basis, anchor_source), name = "Ports: points") |>
+                         hover = name, choose = c(basis, anchor_source), name = "Ports: points") |>
     rebelrebel::rr_point(data = joined, colour = source, size = 4, popup = c(key, name, kind, outcome, reason, pid, port_key, dist_m),
                          hover = name, choose = c(source, outcome), name = "Witnesses and duplicates", minzoom = 6) |>
     rebelrebel::rr_point(data = flagged, colour = reason_group, size = 5, popup = c(key, name, kind, reason, iso_geo),
                          hover = name, choose = c(source, reason_group), name = "Flagged") |>
     rebelrebel::rr_point(data = gfw_far, colour = "#999999", size = 2, popup = c(key, name, kind, reason),
                          name = "GFW anchorages away from any port", visible = FALSE, minzoom = 6)
+  # rebelrebel 2026.11.12.2's rr_map(data) keeps only the title, `choose` and `sections` until the first layer, and drops
+  # `basemaps` and `view`: they are set on the built map
+  m$config$basemaps <- bases
+  m$config$view <- list(center = list(5, 55), zoom = 4)
+  m
 }
 
 port_map <- function(port = as.integer(Sys.getenv("PORT_MAP_PORT", "8818")), open = interactive()) {

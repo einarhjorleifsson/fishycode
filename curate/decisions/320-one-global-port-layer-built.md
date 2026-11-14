@@ -78,7 +78,10 @@ The review map is `products/port_map/` (`port_map()`, or `Rscript products/port_
   touch). Only two einar harbours never merge.
 - rebelrebel 2026.11.12.2 passes an sf layer to DuckDB as WKT written at R's `digits` (7 significant digits). Close
   vertices of GFW's 500 m circles collapse, the ring turns invalid, and the tiler stops with a TopologyException (Cannes,
-  7.058 E 43.518 N). `port_map_build()` sets `digits` to 15 while it builds; the fix belongs in rebelrebel.
+  7.058 E 43.518 N). `port_map_build()` sets `digits` to 15 while it builds; the fix belongs in rebelrebel. Its
+  `rr_map(data)` also keeps only the title, `choose` and `sections` until the first layer, and drops `basemaps` and
+  `view` without a word; `port_map_build()` sets them on the built map. The map opens on OpenStreetMap's tiles, with no
+  EMODnet base map, and a port's hover shows its name alone (the maintainer, 2026-11-14).
 - `dump/ports/osm.R` fetched only the `harbour=*` key. OSM's port areas are mostly `landuse=harbour`, `industrial=port`,
   `seamark:type=harbour` and `leisure=marina`, none of them read.
 
