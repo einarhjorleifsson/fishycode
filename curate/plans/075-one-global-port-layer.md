@@ -215,7 +215,13 @@ as the other served maps are.
    (`OVERPASS_URL=https://maps.mail.ru/osm/tools/overpass/api/interpreter`; the maintainer: "Use the mirror"), whose data
    were minutes old (`osm_base` in each answer). First the countries of the EM4SSF hackathon (the maintainer: Denmark, France,
    Portugal, Spain, Greece and Iceland; Italy added, CS1 and the host, on a check of the case studies and partners): 46
-   cells. The pilot over Portugal and Denmark is §4.2.
+   cells. **Fetched** 2026-11-14 21:40 to 2026-11-15 00:17 UTC: every cell answered whole (79 timeouts on the mirror, each
+   retried), 26 MB of gzipped answers and 390,576 features in `raw/ports/landings_osm_20261114.gpkg` (80 MB): piers
+   247,782, moorings 58,141, groynes 35,203, slipways 20,895, breakwaters 17,525, small-craft facilities 6,172, quays
+   4,858. A cell is fetched whole, so 234,713 lie beyond the ten countries' boxes (the Low Countries, Germany, Britain, the
+   Baltic, the Adriatic's east, North Africa) and many inland, on lakes and rivers. Inside the boxes: France 75,649, Italy
+   38,194, Denmark 28,201 (the pilot 28,204), Spain 16,759, Greece 7,911, Portugal 4,088, the Canaries 1,290, Iceland 707
+   (39 slipways), the Azores 418, Madeira 301. The pilot over Portugal and Denmark is §4.2.
    **Why Overpass:** it fetches the small-landing tags alone. Overture Maps' OSM-derived infrastructure (GeoParquet,
    queried in place by DuckDB) keeps piers and breakwaters but drops slipways, groynes and moorings (Denmark: 4 slipways
    against Overpass's 963; study `scripts/overture_dk.R`), and a whole country's OSM extract (Geofabrik's PBF) is more
