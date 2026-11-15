@@ -5,12 +5,15 @@ trials and the measurements of decision 317; step 1 built as a study the same ni
 every chart scale as the marker (§3 amended: "anything but a midpoint", every zoom), the rules tried and compared, the
 one isobath out holding best so far; on 2026-11-12, at his word, the letter boxes first (decision 319): each name's box,
 axis and angle at each chart scale read again and judged by him on a map of their own, the outlines redrawn from the
-boxes he accepts; none judged yet · **2026-11-11** · **see:** plan 073 (and its
+boxes he accepts; by 2026-11-15 the lettering read at all nine chart scales and reproduced box for box by fresh reads,
+by the same day all nine frozen; step 1 revised 2026-11-15 at his word ("Yes, revise"): the lettering alone,
+reviewed by Claude's look and then cards, the place a step of its own (1c) · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
 
-Drafted with AI assistance (Claude) on 2026-11-11; a person has not yet checked it.
+Drafted with AI assistance (Claude) on 2026-11-11, and step 1 revised with it on 2026-11-15; a person has not yet checked
+it.
 
 **Measured** (by Claude, 2026-11-11, decision 317; no person has checked the counts):
 - on the chart's labels as the only judge, the extent by relative relief at 16-32 km fits best for every kind: highs on
@@ -138,7 +141,9 @@ the question for Julian Burgos.
 
 ## 8. The review: interactive, on the map
 
-- **Where:** on rebelrebel's viewer, one verdict per proposal (its `rr_serve(verdicts = )`, plan 071's machinery):
+- **The lettering (step 1):** cards on what Claude's look at the candidates leaves open, one question a card (step 1),
+  never a whole chart's boxes for verdicts.
+- **Where (the outlines):** on rebelrebel's viewer, one verdict per proposal (its `rr_serve(verdicts = )`, plan 071's machinery):
   accept; another nesting level; wrong feature; split; merge; another name; a note. The answers go into a ledger under
   `$FISHYDATA` (internal), which re-enters as anchors: a cycle broken by a person, as the record's rule asks.
 - **What first:** where the rules disagree most, so each answer tells the most; where all rules and witnesses agree,
@@ -149,11 +154,104 @@ the question for Julian Burgos.
 
 ## 9. Steps
 
-1. **The wholes**, the letter boxes first (the maintainer, 2026-11-12: "focus first and foremost on getting the bbox of each
-   örnefni at each 1:xxxx ... The boundary of areas would then come later"; decision 319): each name's box, axis and angle
-   at each chart scale judged on a map of one scale at a time; then §3 for every chart name of a landform whole; written as proposals with their candidates, the chosen
-   outline and its confidence, beside the örnefni map's areas; a layer on the chart map (port 4813). *Check:* every
-   name in one outcome (drawn, no candidate, left for review); the rings and the reviewed mound scored.
+1. **The lettering** (the maintainer, 2026-11-12: "focus first and foremost on getting the bbox of each örnefni at each
+   1:xxxx ... The boundary of areas would then come later", decision 319; 2026-11-15: "I think we are mixing two things
+   here: 1) The digitization of the names, 2) The precise location ... Think we should stick with that now"): each name's
+   box, angle, axis and text at each chart scale, and every text in one outcome; no outline, and no place beyond the box
+   (the place is step 1c). Built as the study `$FISHYDATA/archive/2026-11-11-named-features/`.
+   - **Read** (done 2026-11-14): all nine chart layers (1:2 000 000, 1:1 000 000, 1:300 000, K42 1:160 000, 1:100 000,
+     K44 1:70 000, the approaches 1:35 000-1:50 000, the harbour plans 1:15 000 and 1:10 000). Each is stitched into one
+     picture by its coordinates, read by the recognizer in overlapping tiles turned in 5-degree steps, and its spaced
+     lettering chained; every listed name is in one outcome; one frozen set of scripts reads all charts. Read again from
+     scratch, top down and bottom up (2026-11-14/15): the same box for every name on every chart, in either order and
+     against the day's reads. The exception is 1:1 000 000, whose fresh mosaic took in six more windows: the same names, some
+     boxes moved.
+   - **The read's own rules** (the study's `read_rules.R`, one copy used by the freeze, the candidates, the checks and the
+     map since 2026-11-15):
+     - a chart's note or abbreviation read in no list (digits or punctuation, under four letters, short capitals, the charts'
+       margin words);
+     - a piece of a name (a small first letter);
+     - for lettering no name matched: the charts' notes and legends, and grey chains that do not end as the charts' names end
+       and read as no words (K42's grey random capitals).
+     They are outcomes of the read and leave the frozen table, unless the maintainer judged the box. 1:300 000 was frozen
+     again with them (17 boxes left out, all notes or pieces).
+   - **Review, chart by chart, broadest first:** the checks sort each chart's boxes (29) and list its candidates (36: a box
+     doubted, a listed name not found, a spelling, a name dropped by a rule, lettering with no name). Claude looks at every
+     candidate first, on crops, and settles what the witnesses settle. What is left goes to the maintainer as cards (34,
+     35: one question a card, answered blind, Claude's view shown after), never a whole chart's boxes. 2,440 candidates
+     wait after the read's rules settled 2,273 of 4,713 (1:100 000 727, K42 388, K44 202, 1:35 000-1:50 000 265, 1:15 000
+     88, 1:10 000 770).
+   - **Accepted:** a box judged right, on a card or on the map, or by Claude's look where the crops settle it (said so in the
+     frozen table's outcome); a box he saw on a map and left unmarked, if it passes the
+     read's rules. 1:300 000's "IS.Sir" and "YS.Sh" passed by silence before those rules were mended. A box he never saw is
+     "not judged", never accepted by silence (28 with the reviewed read as its third argument).
+   - **Spelling:** each chart's own print is kept (the maintainer, 2026-11-13: "Keep each chart's own print"; "I suggest we
+     keep account of the different spelling"), with the forms at the other scales beside it when the charts are joined.
+   - **Frozen** per chart once every box is judged or accepted (28):
+     - 1:2 000 000 (round 4, 2026-11-12; round 5, 2026-11-15, from the fresh read, 233 kept, Íslands-Færeyjahryggur boxed);
+     - 1:1 000 000 (round 2, 2026-11-15, from the fresh read);
+     - 1:300 000 (round 1, 2026-11-12, and again with the read's rules; round 2, 2026-11-15, from the fresh read, 1,032 kept);
+     - 1:100 000 (round 2, 2026-11-15): not reviewed whole, so a box with no answer is "the checks confident, not
+       judged" (3,100), and its doubted land names are kept as read, "not checked" (392; the maintainer: "Keep, marked
+       unchecked"); of 71 names found lettered but not boxed, 31 boxed (13 from the read's own letters, 18 drawn by hand along
+       their letters), the rest already boxed or fragments, 2 for a card (4,018 kept);
+     - K42 (round 1, 2026-11-15, 561 kept): answered nothing by him, so its verdicts are Claude's look (84 candidates) or the
+       witnesses' (48 boxes at sea, the same name in natt.is, the place-name map or a frozen chart); its 16 names lettered but not
+       boxed boxed (4 from the read's letters, 11 by hand, 1 already part); 2 for cards;
+     - K44 (round 1, 2026-11-15, 252 kept): the old Danish sheet, its leading-line texts and margin views left out; 55 candidates
+       looked at, its 5 names lettered but not boxed drawn by hand, 1 for a card;
+     - the approaches 1:35 000-1:50 000 (round 1, 2026-11-15, 1,212 kept): 76 candidates looked at, 65 boxes settled by the
+       witnesses, its 6 names lettered but not boxed boxed (4 by hand), 1 for a card;
+     - the harbour plans 1:15 000 (round 1, 2026-11-15, 56 kept) and 1:10 000 (round 1, 2026-11-15, 509 kept): 17 and 191
+       candidates looked at, 16 and 152 boxes settled by the witnesses, none lettered but not boxed, none for a card; the
+       plans' legend heading over their lists of quay names ("Nöfn á bryggjum") added to the read's note words.
+     Every chart scale is frozen. The five items left for a card answered by the maintainer the same day (Líney,
+     Króksfjarðaráll and Áll boxed, "Store" joined to the line under it as Store Örfersey-Dyb, 1:100 000's printed J Ö R Ð U R
+     boxed as part of Breiðafjörður, "a hic-up by the cartographer"); none left for a card.
+     The read's all-capitals rule refined the same day: a short all-capitals word is a note unless it has an Icelandic
+     letter or is a word of the charts' own names (9 of 10 real names it had taken kept, none of 11 notes).
+   *Check:* on every chart, every text and every listed name in one outcome; every frozen box judged, or accepted by the
+   rule above; the fresh reads equal to the frozen ones, except where the mosaic differs.
+1b. **The lettering into the pipeline** (the maintainer, 2026-11-12: "is this table in the end not something that will have a
+   home in fishydata, aka like staged -> curated approach we have been using?"; "yes, write the promotion step into plan
+   074"), chart by chart once each is frozen: the rules have held since the fresh reads of 2026-11-15 (they changed each
+   round before), so 1:2 000 000, 1:1 000 000 and 1:300 000 may go first. Built so far as a study,
+   `$FISHYDATA/archive/2026-11-11-named-features/` (scripts 18-39, 53); then, by the project's layers:
+   - **raw**: the chart windows (the WMS images of gis.natt.is, 1024 px at twice print scale, on the grid from 30 W and
+     68 N) under `raw/external/sjokort/<series>/`, fetched by a script in `dump/`, with a provenance note: one home, where
+     they now sit in two studies (the chart-names-coast study's `img/` and this study's `out/scale/<series>/windows/`).
+   - **once**: a chart's read (the mosaic, the recognizer in 5-degree turns, the spaced lettering, the matching, the
+     marks). The recognizer is macOS's own (Vision), slow and not the same on every machine, so the read is made once
+     per chart, reviewed by the maintainer, and frozen as an input; nothing after it needs a Mac.
+   - **staging** (source-shaped, one chart at a time): `staging/sjokort/<series>/` with the labels (the box along its own
+     direction, the angle, the axis, the text read, how alike, where the name came from: listed at that chart, known
+     elsewhere, spaced lettering, read in no list), the position marks (crosses, lights' stars, linked or not), and every
+     text read in one outcome.
+   - **curated** (merged-shaped): one table, one row a label a chart (the name twice where two charts letter it, the
+     `chart` variable saying which), each with the nearest label of the same name on every other chart (its row, the
+     distance, the angle difference), the boxes never merged; under `curated/reference/` (a `chart_names` table and its
+     marks), written by `write_curated()` with the geometry as WKB and its CRS stamped. The study's
+     `25_labels_all_charts.R` is its prototype.
+   - **overrides/**: the maintainer's verdicts per chart (on the boxes, the unmatched texts, the marks) as the reviewed
+     input that re-enters the build: a cycle broken by a person. The chart names are public (Landhelgisgæslan's charts),
+     so the public repo holds them; a note naming an internal source stays under `$FISHYDATA`.
+   *Check:* every chart's labels, texts and marks in one outcome in staging; every curated row traceable to its chart's
+   frozen read and to the verdicts it passed; `check_bookkeeping()` and the provenance stamps as for any curated table.
+   *Built 2026-11-15, the lighter step* (the maintainer: "I thought as long as we did have a list of all the örnefni, with
+   coordinates and writing angle we would then just need to build a single file from those"; decision 323): the windows in
+   `raw/external/sjokort/` (`dump/sjokort/`), and `curated/reference/chart_names.parquet` (target `chart_names`) built
+   from the nine frozen tables, 8,207 labels, equal to them row for row. Staging from the read and the verdicts as
+   `overrides/` wait until the freeze itself is wanted in the pipeline.
+1c. **The place**, after step 1 (the maintainer, 2026-11-15: the digitization of the names and "the precise location"
+   are two things): where each named feature is, apart from where its name is lettered. A chart letters a name 6-8 mm
+   beside its feature on its own paper, so Díönuboði's labels lie 12.7 km, 2.4 km and 0.8 km from its shoal at 1:2 000 000,
+   1:300 000 and 1:100 000.
+   - The point names (a rock, shoal, skerry, island, stack) anchored to their feature. A prototype is the study's 54:
+     natt.is's islet or point of the name, else the shallowest top on the Olex grid, with the harbour plans keeping their
+     labels; built 2026-11-15 and parked. The soundings the charts print are a witness still to be read.
+   - The wholes' outlines by §3, moved here from step 1.
+   - The Reykjaneshryggur naming trial (2026-11-14, the study's 43-52, with the other sources' names) belongs here too, as
+     a trial, not as step 1.
 2. **The first review round** on the wholes, in the region the maintainer picks (ask b).
 3. **The vocabulary**: each name's class (§2) by ending and region; the families (§4).
 4. **The parts**: each ending's signature, region by region; the parts placed on their wholes. *Check:* every part in one

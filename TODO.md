@@ -1604,8 +1604,8 @@ for the maintainer to judge on the chart map (port 4813); a plan 074 proposed (t
 for shape, the main grounds and deeps kept as the base, an interactive review); the extent by relative relief and the
 names' endings measured that evening (decision 317); plan 074 drafted at his word the same night, its asks a-h his;
 its step 1 built overnight as a study (decision 318); the letter boxes first at his word 2026-11-12, on a map of one
-chart scale at a time for his verdicts (decision 319); by 2026-11-15 every chart read, three frozen, step 1 revised to the
-lettering alone ·
+chart scale at a time for his verdicts (decision 319); by 2026-11-15 every chart read and all nine frozen (the lettering alone, step 1 revised), and in
+one curated table, `chart_names` (step 1b, decision 323) ·
 **see:** `curate/plans/074-named-features-anchored-on-the-chart.md`,
 `curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
 decision 309, TODOs 186 and 197

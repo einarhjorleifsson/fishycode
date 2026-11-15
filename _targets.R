@@ -334,6 +334,18 @@ list(
     produces("sources/mbl/photo.R", fd_staging("mbl", "photo.parquet"))
   }, format = "file"),
 
+  # The names lettered on the sea charts (plan 074 step 1b): each chart's lettering read, reviewed and frozen in the
+  # named-features study (archive/2026-11-11-named-features, its 28_freeze_scale.R), a frozen input the build reads and
+  # never makes (the read needs a Mac; its review is the maintainer's); one table of every label kept, a row a chart's
+  # label. Nothing in the flow reads it yet.
+  tar_target(chart_names_frozen, unlist(lapply(c("sjokort_2milljon", "sjokort_1milljon", "sjokort_300thusund", "sjokort_K42",
+                                                 "sjokort_100thusund", "sjokort_K44", "sjokort_35_40_50thusund",
+                                                 "sjokort_15thusund", "sjokort_10thusund"), function(s)
+    c(frozen_input("archive", "2026-11-11-named-features", "out", "frozen", s, "labels.gpkg"),
+      frozen_input("archive", "2026-11-11-named-features", "out", "frozen", s, "outcome.csv")))), format = "file"),
+  tar_target(chart_names, { chart_names_frozen
+    produces("reference/chart_names.R", fd_curated("reference", "chart_names.parquet")) }, format = "file"),
+
   # The place names of fishing grounds, one source-shaped table per dataset of the ornefni repo (plan 043). Nothing in
   # the flow reads them; curate/place_name_evidence.R does.
   tar_target(ornefni_raw, ornefni_files, format = "file"),
