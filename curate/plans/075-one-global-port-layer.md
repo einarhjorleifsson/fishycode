@@ -245,6 +245,12 @@ as the other served maps are.
 8. **The switch**, at the maintainer's word (ask g): `shapes.R`, `harbour_codes.R`, `port_call.R`, `sources/stk/event.R`,
    `stk_hid_pid.R`, `products/exports/wgsfd_harbours.R`, the maps and the frozen `port_radius` read the table's ports
    (or the cut the maintainer chooses) and their number, `ports_all` retires, and the descendants are rebuilt.
+   **Found 2026-11-15, before the test of the switch on the pings was run:** the flow's port calls read einar's 157
+   polygons alone (`curate/port_call.R`: `filter(source == "einar")`), and the voyages, trips and trail follow the port
+   calls. einar's polygons are the same in both layers, so the switch changes no port call; it changes only the `pid`
+   label on pings abroad (292 pids on 691,341 pings, §1), which nothing downstream decides on. The flow's gain from a
+   global layer is port calls abroad, TODO 92 (40,117 vessel-days at foreign ports, at least 1,833 landings abroad): a
+   change to `port_call.R`, tested against the landings abroad, not a switch. Steps 7 and 8 are parked until then.
 
 ## 4. Measured
 

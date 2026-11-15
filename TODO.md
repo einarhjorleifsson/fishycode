@@ -1604,7 +1604,8 @@ for the maintainer to judge on the chart map (port 4813); a plan 074 proposed (t
 for shape, the main grounds and deeps kept as the base, an interactive review); the extent by relative relief and the
 names' endings measured that evening (decision 317); plan 074 drafted at his word the same night, its asks a-h his;
 its step 1 built overnight as a study (decision 318); the letter boxes first at his word 2026-11-12, on a map of one
-chart scale at a time for his verdicts (decision 319) ·
+chart scale at a time for his verdicts (decision 319); by 2026-11-15 every chart read, three frozen, step 1 revised to the
+lettering alone ·
 **see:** `curate/plans/074-named-features-anchored-on-the-chart.md`,
 `curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
 decision 309, TODOs 186 and 197
@@ -1635,8 +1636,10 @@ The maintainer, 2026-11-14: "Review what has been done and propose a plan to do 
 the same day: "one parquet table of potential landings site, the port layer is just a sub-set of those". Built as
 `curated/reference/landing_site.parquet` (decision 322): 168,351 sites by basis, OSM's small landings among them, 14,929
 of them ports (reviewed or witnessed), every feature in one outcome, an integer pid from a ledger (Iceland's landing
-codes as given, others from 1000), the review map on port 8818. Left: the asks; the track's stops as evidence in the
-flow; the switch; the port layer's four old files, kept for the study's scripts.
+codes as given, others from 1000), the review map on port 8818. Stopped there on 2026-11-15 (the maintainer: "dug
+ourselves into a deep hole"): the switch would change no port call, since the flow's port calls read einar's polygons
+alone; the layer's use in the flow is TODO 92's port calls abroad. Parked: steps 7-8, asks e-i and k, Strendur and
+Norðskáli, names with a comma, the MDR, the port layer's four old files (kept for the study's scripts).
 
 **check:** the flow reads the table's ports and their integer pid (step 8), `ports_all` retired and its descendants
 rebuilt at the maintainer's word; or the item parked.
