@@ -1,12 +1,14 @@
-# allocate_ports.R — the port ledger: which number (pid) each port has, given once and never moved (plan 075 §2.3).
+# allocate_ports.R — the port ledger: which number (pid) each landing site has, given once and never moved (plan 075 §2.3;
+# named when the sites were ports, before step 6).
 #
 # Input:  curated/reference/port_ledger/ (the ledger, one stamped parquet per allocation),
-#         curated/reference/port_layer.parquet and port_feature.parquet (reference/ports/port_layer.R),
+#         curated/reference/landing_site.parquet and landing_site_feature.parquet (reference/ports/landing_site.R),
 #         staging/ports/ports_all.gpkg (the old build's acronyms, read for the alias where it still exists)
 # Output: read_port_ledger() the ledger as one table; port_ledger_files() its files, for targets and write_curated();
 #         allocate_ports() a new batch file in the ledger
 #
-# A port is known to the ledger by its anchor's key, `<source>:<feature_key>` (einar:IS-REY, gfw_dock:<s2id>, gisco:NLRTM). The
+# A site is known to the ledger by its anchor's key, `<source>:<feature_key>` (einar:IS-REY, gfw_dock:<s2id>, gisco:NLRTM,
+# osm_landing:POINT/123), in the column `port_key` (the tables' `site_key`). Every site has a number, a port or not. The
 # layer reads the ledger as an input, as the vessel crosswalk reads the vid ledger: which port a feature anchors follows
 # from the lists and is rebuilt with them, but which number a port has depends on earlier builds, and a target cannot
 # read its own output. So the numbering lives outside the graph, and allocate_ports() - run by hand, as allocate_vids()
@@ -46,22 +48,22 @@ read_port_ledger <- function(dir = port_ledger_dir()) {
   led
 }
 
-allocate_ports <- function(layer = fd_curated("reference", "port_layer.parquet"),
-                           features = fd_curated("reference", "port_feature.parquet"),
+allocate_ports <- function(layer = fd_curated("reference", "landing_site.parquet"),
+                           features = fd_curated("reference", "landing_site_feature.parquet"),
                            old = fd_staging("ports", "ports_all.gpkg"),
                            dir = port_ledger_dir(), first = 1000L, dry_run = TRUE) {
   led <- read_port_ledger(dir)
   ly <- as.data.frame(nanoparquet::read_parquet(layer))
-  if (!all(c("port_key", "anchor_source", "hid", "iso", "name") %in% names(ly))) stop("not a port layer: ", layer)
-  todo <- ly[!ly$port_key %in% led$port_key, ]
+  if (!all(c("site_key", "anchor_source", "hid", "iso", "name") %in% names(ly))) stop("not a landing site table: ", layer)
+  todo <- ly[!ly$site_key %in% led$port_key, ]
   if (!nrow(todo)) { message("allocate_ports: nothing unallocated"); return(invisible(led[0, ])) }
 
   # Inheritance: a new port whose members hold exactly one ledger key that no current port holds
-  fe <- as.data.frame(nanoparquet::read_parquet(features))[, c("source", "feature_key", "port_key")]
+  fe <- as.data.frame(nanoparquet::read_parquet(features))[, c("source", "feature_key", "site_key")]
   fe$key <- paste0(fe$source, ":", fe$feature_key)
-  fe <- fe[fe$port_key %in% todo$port_key & fe$key %in% led$port_key & !fe$key %in% ly$port_key, ]
-  one <- tapply(fe$key, fe$port_key, function(k) if (length(unique(k)) == 1) k[1] else NA_character_)
-  inh_key <- unname(one[todo$port_key])
+  fe <- fe[fe$site_key %in% todo$site_key & fe$key %in% led$port_key & !fe$key %in% ly$site_key, ]
+  one <- tapply(fe$key, fe$site_key, function(k) if (length(unique(k)) == 1) k[1] else NA_character_)
+  inh_key <- unname(one[todo$site_key])
   inh_pid <- led$pid[match(inh_key, led$port_key)]
   dup <- duplicated(inh_pid) & !is.na(inh_pid)            # a number is inherited once: the first port in order keeps it
   inh_pid[dup] <- NA; inh_key[dup] <- NA
@@ -75,7 +77,7 @@ allocate_ports <- function(layer = fd_curated("reference", "port_layer.parquet")
   # The rest from `first` up: einar's uncoded harbours first (Iceland, then the Faroes, by name), then by country and name
   rest <- which(!given & is.na(inh_pid))
   o <- order(todo$anchor_source[rest] != "einar", todo$iso[rest] != "IS", todo$iso[rest], todo$name[rest],
-             todo$port_key[rest], method = "radix")
+             todo$site_key[rest], method = "radix")
   nxt <- max(c(first - 1L, led$pid[led$pid >= first]))
   pid <- rep(NA_integer_, nrow(todo))
   pid[given] <- as.integer(todo$hid[given])
@@ -84,27 +86,30 @@ allocate_ports <- function(layer = fd_curated("reference", "port_layer.parquet")
   basis <- ifelse(given, "given", ifelse(!is.na(inh_pid), "inherited", "new"))
 
   # The old build's acronym, as an alias: the canonical pid of the old group holding the anchor (within 300 m), where
-  # the group maps to one new port and the port to one group. einar's pinned acronyms are the layer's own.
+  # the group maps to one new port and the port to one group. einar's pinned acronyms are the layer's own. A small
+  # landing's site takes none: the old build read no small landings.
   acr <- rep(NA_character_, nrow(todo))
   if (file.exists(old) && file.exists(layer)) {
     s2 <- sf::sf_use_s2(FALSE); on.exit(sf::sf_use_s2(s2), add = TRUE)
     lg <- read_curated_sf(layer)
-    lg <- lg[match(todo$port_key, lg$port_key), ]
+    lg <- lg[match(todo$site_key, lg$site_key), ]
+    lg$keep <- lg$anchor_source != "osm_landing"
+    lg <- lg[lg$keep, ]
     og <- sf::read_sf(old)
     og <- og[og$canonical, "pid"]
     hit <- sf::st_intersects(sf::st_buffer(sf::st_transform(lg, 3035), 300), sf::st_transform(og, 3035))
     single <- which(lengths(hit) == 1)
-    cand <- data.frame(i = single, acr = og$pid[unlist(hit[single])])
+    cand <- data.frame(i = which(todo$anchor_source != "osm_landing")[single], acr = og$pid[unlist(hit[single])])
     cand <- cand[!cand$acr %in% cand$acr[duplicated(cand$acr)], ]
     acr[cand$i] <- cand$acr
   }
   acr[todo$anchor_source == "einar"] <- NA
 
   stamp <- format(Sys.time(), "%Y%m%dT%H%M%S", tz = "UTC")
-  add <- data.frame(pid = as.integer(pid), port_key = todo$port_key, pid_acronym = acr, basis = basis,
+  add <- data.frame(pid = as.integer(pid), port_key = todo$site_key, pid_acronym = acr, basis = basis,
                     from_key = inh_key, name = todo$name, iso = todo$iso, allocated = Sys.Date(), batch = stamp)
   nv <- add$pid[add$basis == "new"]
-  message(sprintf("allocate_ports: %s ports: %s given (Iceland's codes), %s new (%s), %s inherited, %s with an old acronym%s",
+  message(sprintf("allocate_ports: %s sites: %s given (Iceland's codes), %s new (%s), %s inherited, %s with an old acronym%s",
                   format(nrow(add), big.mark = ","), sum(add$basis == "given"), format(length(nv), big.mark = ","),
                   if (length(nv)) paste(range(nv), collapse = "-") else "none", sum(add$basis == "inherited"),
                   format(sum(!is.na(add$pid_acronym)), big.mark = ","), if (dry_run) " - dry run, nothing written" else ""))
@@ -113,7 +118,7 @@ allocate_ports <- function(layer = fd_curated("reference", "port_layer.parquet")
   f <- file.path(dir, paste0("batch_", stamp, ".parquet"))
   if (file.exists(f)) stop("ledger batch exists already: ", f)
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
-  write_curated(add, f, inputs = c(port_layer = layer, port_feature = features), script = "R/allocate_ports.R")
+  write_curated(add, f, inputs = c(landing_site = layer, landing_site_feature = features), script = "R/allocate_ports.R")
   read_port_ledger(dir)   # read back as one ledger, which checks the new file against the old ones
   invisible(add)
 }

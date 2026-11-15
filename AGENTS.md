@@ -143,10 +143,12 @@ Every script in a targets project is on one of three sides, and says which in a 
 - The flow runs at any data resolution and never stops for a missing table: the output's shape is the same,
   its content and basis depend on the data (plan 013, decided item 9). `docs/one_flow.qmd` describes the flow
   and what exists where (ramb, fishycode, outside code).
-- **The global port layer** (plan 075, decisions 320, 321): `curated/reference/port_layer.parquet`, one row per port with an
-  integer `pid` from the port ledger (`R/allocate_ports.R`: Iceland's landing codes as given, every other port from 1000,
-  never reused), and `port_feature.parquet`, every feature of the nine port lists and UN/LOCODE in one outcome
-  (`reference/ports/port_layer.R`, checked by `curate/checks/port_accounting.R`). It is built beside `ports_all`; the
+- **The landing sites** (plan 075, decisions 320-322): `curated/reference/landing_site.parquet`, one row per potential
+  landing site with its `basis` (reviewed, witnessed, one list, structure, context; a port is a site reviewed or
+  witnessed) and an integer `pid` from the port ledger (`R/allocate_ports.R`: Iceland's landing codes as given, every
+  other site from 1000, never reused), and `landing_site_feature.parquet`, every feature of the nine port lists,
+  UN/LOCODE and OSM's small landings in one outcome (`reference/ports/landing_site.R`, checked by
+  `curate/checks/landing_site_accounting.R`). It is built beside `ports_all`; the
   flow reads `ports_all`'s acronyms until plan 075's switch, at the maintainer's word.
 - **One fix, one record** (maintainer, decision 090): an assignment puts a fix in at most one logbook record and one
   phase of it. `trail_match` holds candidates, not assignments. The windows and `station_event` keep it since

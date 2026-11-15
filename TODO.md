@@ -1628,17 +1628,15 @@ by match.
 plan parked.
 
 ## 200. One table of potential landing sites, ports a subset by basis, a numeric id (plan 075)
-**status:** open · **needs: maintainer** — plan 075's asks e-i, k and l, then steps 5-7 (OSM's small landings, the sites, the
-track's evidence) and step 8 (the switch and its rebuild) · **see:** `curate/plans/075-one-global-port-layer.md`, decisions
-320, 321, 005, 006, 068, 082; TODO 92
+**status:** open · **needs: maintainer** — plan 075's asks e-i and k, step 7 (the track's evidence) and step 8 (the switch
+and its rebuild) · **see:** `curate/plans/075-one-global-port-layer.md`, decisions 320-322, 005, 006, 068, 082; TODO 92
 
-The maintainer, 2026-11-14: "Review what has been done and propose a plan to do it properly. Execute the plan." Plan 075's
-steps 1-4 are built as a port layer (decision 320): 14,925 ports beside `ports_all` since OSM's five port tags (decision
-321), every feature in one outcome, an integer pid from a ledger (Iceland's landing codes as given, others from 1000), the
-review map on port 8818. Revised the same day at his word: "one parquet table of potential landings site, the port layer
-is just a sub-set of those", with OSM's slipways, piers and quays, and no list (marta, jeppe) taken as ground truth. Left:
-the asks; OSM's small landings fetched (running for the hackathon's countries; the pilot is plan 075 §4.2); every anchor
-a site with its basis; the track's stops as evidence in the flow; the switch.
+The maintainer, 2026-11-14: "Review what has been done and propose a plan to do it properly. Execute the plan." Revised
+the same day: "one parquet table of potential landings site, the port layer is just a sub-set of those". Built as
+`curated/reference/landing_site.parquet` (decision 322): 168,351 sites by basis, OSM's small landings among them, 14,929
+of them ports (reviewed or witnessed), every feature in one outcome, an integer pid from a ledger (Iceland's landing
+codes as given, others from 1000), the review map on port 8818. Left: the asks; the track's stops as evidence in the
+flow; the switch; the port layer's four old files, kept for the study's scripts.
 
 **check:** the flow reads the table's ports and their integer pid (step 8), `ports_all` retired and its descendants
 rebuilt at the maintainer's word; or the item parked.

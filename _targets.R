@@ -144,29 +144,29 @@ list(
              fd_curated("reference", "port_geometry.parquet"))
   }, format = "file"),
 
-  # One global port layer (plan 075): every list's feature in one table, the cascade that places each in one outcome,
-  # and the accounting. Beside ports_all until the switch of plan 075 step 5; nothing reads them yet.
+  # One table of potential landing sites (plan 075): every list's feature in one table, the cascade that places each in
+  # one outcome, and the accounting. Beside ports_all until the switch of plan 075 step 8; nothing reads them yet.
   tar_target(port_lists_raw, c(fd_raw("ports", "havnepolygoner3.gpkg"), fd_raw("ports", "maksims", "harbours.shp"),
                                fd_raw("ports", "ports_emodnet.gpkg"), fd_raw("ports", "ports_osm.gpkg"),
-                               fd_raw("ports", "ports_osm_20261114.gpkg"),
+                               fd_raw("ports", "ports_osm_20261114.gpkg"), fd_raw("ports", "landings_osm_20261114.gpkg"),
                                fd_raw("ports", "ports_vmstools.gpkg"),
                                fd_raw("ports", "ports_gfw_named_anchorages_v2_pipe_v3_202601.gpkg"),
                                fd_raw("ports", "ports_giscoR.gpkg"), fd_raw("ports", "marta", "landings_portos_Einer.xlsx"),
                                fd_raw("ports", "unlocode.parquet")), format = "file"),
-  tar_target(port_feature, {
+  tar_target(landing_site_feature, {
     ports_iceland; port_lists_raw
-    produces("reference/ports/port_feature.R", fd_staging("ports", "port_feature.gpkg"))
+    produces("reference/ports/landing_site_feature.R", fd_staging("ports", "landing_site_feature.gpkg"))
   }, format = "file"),
   tar_target(port_ledger, port_ledger_list, format = "file"),
-  tar_target(port_layer, {
-    port_feature; port_pid_pinned; port_ledger
-    produces("reference/ports/port_layer.R",
-             fd_curated("reference", "port_layer.parquet"),
-             fd_curated("reference", "port_feature.parquet"))
+  tar_target(landing_site, {
+    landing_site_feature; port_pid_pinned; port_ledger
+    produces("reference/ports/landing_site.R",
+             fd_curated("reference", "landing_site.parquet"),
+             fd_curated("reference", "landing_site_feature.parquet"))
   }, format = "file"),
-  tar_target(check_port_accounting, {
-    port_layer; port_lists_raw
-    produces("curate/checks/port_accounting.R", fd_curated("check", "port_accounting.parquet"))
+  tar_target(check_landing_site_accounting, {
+    landing_site; port_lists_raw
+    produces("curate/checks/landing_site_accounting.R", fd_curated("check", "landing_site_accounting.parquet"))
   }, format = "file"),
 
   # harbour_codes.R reads the pids from staging/ports/ports_all.gpkg; without the edge

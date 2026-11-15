@@ -1,4 +1,5 @@
-# port_feature.R — every feature of every port list, one row each, in one standard table (plan 075 §2.1).
+# landing_site_feature.R — every feature of every port list and OSM's small landings, one row each, in one standard
+# table (plan 075 §2.1; port_feature.R until step 6).
 # Side: preprocessing (ports). See plan 014.
 #
 # Input:  staging/ports/ports_iceland_faroe.gpkg       einar: the Iceland/Faroe harbours, reviewed (curate/corrections/ports_iceland.R)
@@ -7,24 +8,30 @@
 #         raw/ports/ports_emodnet.gpkg                 EMODnet's port locations (dump/ports/emodnet.R)
 #         raw/ports/ports_osm.gpkg                     OSM's harbour=* features, worldwide (the fetch of 2026-09)
 #         raw/ports/ports_osm_20261114.gpkg            OSM's five port tags, Greenland to the Mediterranean (dump/ports/osm.R)
+#         raw/ports/landings_osm_20261114.gpkg         OSM's small landings over the EM4SSF countries' cells (dump/ports/osm_landing.R)
 #         raw/ports/ports_vmstools.gpkg                vmstools 0.77's harbours (dump/ports/vmstools.R)
 #         raw/ports/ports_gfw_named_anchorages_v2_pipe_v3_202601.gpkg  GFW's named anchorages (dump/ports/gfw.R)
 #         raw/ports/ports_giscoR.gpkg                  GISCO's ports (dump/ports/gisco.R)
 #         raw/ports/marta/landings_portos_Einer.xlsx   marta: Portuguese landing sites
 #         raw/ports/unlocode.parquet                   UN/LOCODE's port-function locations (dump/ports/unlocode.R)
-# Output: staging/ports/port_feature.gpkg              one row per raw feature, and one per GFW dock area
+# Output: staging/ports/landing_site_feature.gpkg      one row per raw feature, and one per GFW dock area
 #
 # Nothing is dropped: an unnamed OSM feature, a GFW anchorage away from a dock, a UN/LOCODE row or a marta row with no
-# position each keep a row, and port_layer.R places every row in one outcome. A geometry is kept as drawn; one that GEOS
+# position each keep a row, and landing_site.R places every row in one outcome. A geometry is kept as drawn; one that GEOS
 # finds invalid is repaired with st_make_valid() and flagged `repaired` (curate/corrections/ports_osm_invalid_geometry.yml),
 # and one beyond the globe's range is kept as given with `has_pos` FALSE and `pos_out_of_range` TRUE.
 #
 # GFW's dock anchorages are also bound into areas, rows of their own with source `gfw_dock` and `derived` TRUE: 500 m of
 # true ground around each, unioned by label and country and split into connected pieces. A piece's key is the smallest
 # s2id among its anchorages, so a GFW refresh keeps it while that anchorage exists; each dock anchorage names its piece in
-# `part_of`. The countries and the coast are Natural Earth's 10 m (rnaturalearthhires): `iso_geo` is the nearest
-# country, `on_land` and `d_coast_km` describe a feature and judge nothing (plan 075 §1: islands are missing at 10 m,
-# and river and lake ports lie far inland).
+# `part_of`. The countries and the coast are Natural Earth's 10 m (rnaturalearthhires): `iso_geo` is the country a
+# feature lies in, else the nearest, `on_land` and `d_coast_km` describe a feature and judge nothing (plan 075 §1:
+# islands are missing at 10 m, and river and lake ports lie far inland).
+#
+# OSM's small landings (plan 075 §2.1, step 6) are a list of their own, `osm_landing`, keyed as OSM's port tags are (the
+# geometry type and the OSM id): slipways, piers, quays, seamark small-craft facilities and moorings, and breakwaters and
+# groynes as context. `kind` holds their tags (a pier's `pier=*`, a facility's category, `access=*`). An object that also
+# carries a port tag is in both lists, under the same key.
 
 library(sf)
 library(dplyr)
@@ -106,6 +113,13 @@ u_geom <- st_sfc(lapply(seq_len(nrow(unlocode)), \(i) if (is.na(unlocode$lon[i])
   st_point(c(unlocode$lon[i], unlocode$lat[i]))), crs = 4326)
 L$unlocode <- std(st_sf(geom = u_geom), "unlocode", dedup(paste0(unlocode$country, unlocode$location)), unlocode$name,
                   unlocode$country, unlocode$location, kind = paste0("status ", unlocode$status, "; ", unlocode$function_desc))
+# OSM's small landings: every tag the fetch asked for, and the pier type, the facility's category and the access
+lt <- read_sf(fd_raw("ports", "landings_osm_20261114.gpkg"))
+tag <- function(k, label = k) { v <- if (k %in% names(lt)) as.character(lt[[k]]) else rep(NA_character_, nrow(lt)); ifelse(is.na(v), NA, paste0(label, "=", v)) }
+lk <- cbind(tag("leisure"), tag("man_made"), tag("pier"), tag("seamark:type"),
+            tag("seamark:small_craft_facility:category", "category"), tag("access"))
+L$osm_landing <- std(lt, "osm_landing", osm_key(lt), lt$name,
+                     kind = apply(lk, 1, \(r) paste(r[!is.na(r)], collapse = "; ")))
 # The EU's location list (DG MARE's MDR, R/mdr_location.R) is not read here: the maintainer held it out on 2026-11-14,
 # after its test as a witness (plan 075), until its copies and the name rule are reviewed.
 
@@ -169,13 +183,22 @@ countries$iso_a2[countries$name == "France"] <- "FR"
 need <- which(feat$has_pos & !feat$source %in% c("gfw", "unlocode", "mdr"))
 rp <- st_as_sf(st_drop_geometry(feat)[need, c("lon", "lat")], coords = c("lon", "lat"), crs = 4326)
 feat$iso_geo <- feat$iso_src
-feat$iso_geo[need] <- countries$iso_a2[st_nearest_feature(rp, countries)]
+# the country a point lies in, else the nearest (the nearest alone took long for the small landings' 390,576 points)
+inside <- st_intersects(rp, countries)
 feat$on_land <- NA
-feat$on_land[need] <- lengths(st_intersects(rp, countries)) > 0
+feat$on_land[need] <- lengths(inside) > 0
+iso <- countries$iso_a2[vapply(inside, \(i) if (length(i)) i[1] else NA_integer_, 1L)]
+off <- which(is.na(iso))
+iso[off] <- countries$iso_a2[st_nearest_feature(rp[off, ], countries)]
+feat$iso_geo[need] <- iso
 coast <- st_transform(rnaturalearthhires::coastline10, "+proj=eqearth")
 rp3 <- st_transform(rp, "+proj=eqearth")
 feat$d_coast_km <- NA_real_
-feat$d_coast_km[need] <- round(as.numeric(st_distance(rp3, coast[st_nearest_feature(rp3, coast), ], by_element = TRUE)) / 1000, 2)
+# by coastline line, not by point: coast[nearest, ] copies a long line once per point (24 GB for the small landings)
+near_c <- st_nearest_feature(rp3, coast)
+dc <- numeric(length(near_c))
+for (k in unique(near_c)) { w <- which(near_c == k); dc[w] <- as.numeric(st_distance(rp3[w, ], coast[k, ])) }
+feat$d_coast_km[need] <- round(dc / 1000, 2)
 
 feat <- feat |>
   select(source, feature_key, derived, part_of, name, name_key, iso_src, iso_geo, locode, kind, hid, has_pos, pos_out_of_range, gtype, repaired,
@@ -189,5 +212,6 @@ stopifnot("every raw row has a feature" = all(n_out[names(n_raw)] == n_raw),
 cat("features\n"); print(table(feat$source, feat$gtype, useNA = "ifany"))
 cat("repaired", length(bad), "\n")
 
-# staging is not stamped (write_curated() writes curated/ only); the stamped table is port_layer.R's port_feature.parquet
-write_sf(feat, fd_staging("ports", "port_feature.gpkg"), delete_dsn = TRUE)
+# staging is not stamped (write_curated() writes curated/ only); the stamped table is landing_site.R's
+# landing_site_feature.parquet
+write_sf(feat, fd_staging("ports", "landing_site_feature.gpkg"), delete_dsn = TRUE)

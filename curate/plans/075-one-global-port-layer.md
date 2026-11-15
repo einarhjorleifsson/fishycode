@@ -1,6 +1,6 @@
 # 075 — One table of potential landing sites: every list's features weighed as evidence, ports a subset by basis, a number that never moves
 
-**status:** partly built — steps 1-4 built 2026-11-14 as a port layer (decision 320), rebuilt on OSM's five port tags (decision 321): `port_feature`, `port_layer`, the ledger's first batch, `check_port_accounting` and the review map; revised the same day to one table of potential landing sites (steps 5-7, not built); step 8, the switch, waits for the maintainer. Written 2026-11-14 at the maintainer's word ("Review what has been done and propose a plan to do it
+**status:** partly built — steps 1-4 built 2026-11-14 as a port layer (decision 320), rebuilt on OSM's five port tags (decision 321); revised the same day to one table of potential landing sites; steps 5 and 6 built 2026-11-15 (decision 322): OSM's small landings fetched, `landing_site_feature`, `landing_site`, the ledger's third batch, `check_landing_site_accounting` and the review map by basis; step 7 (the track's evidence) not built; step 8, the switch, waits for the maintainer. Written 2026-11-14 at the maintainer's word ("Review what has been done and propose a plan to do it
 properly. Execute the plan."), with his notes of the same day: a numeric id because an acronym cannot be changed later,
 einar rules the shapes in Iceland and the Faroes, and other people's local lists are known by name but weighed by measure,
 since they "may have been constructed from a very narrow viewpoint" · **2026-11-14** · **see:** decisions 005, 006, 007,
@@ -70,9 +70,9 @@ splits a group holding several einar harbours, and lets the best priority be the
 
 ## 2. The proposal
 
-### 2.1 Every feature, one row (target `port_feature`)
+### 2.1 Every feature, one row (target `landing_site_feature`, `port_feature` until step 6)
 
-`reference/ports/port_feature.R` reads every list and writes `staging/ports/port_feature.gpkg`: one row per raw feature,
+`reference/ports/landing_site_feature.R` reads every list and writes `staging/ports/landing_site_feature.gpkg`: one row per raw feature,
 with nothing dropped. Its columns are `source`, `feature_key` (the list's own key: einar's `pid_bootstrap`, OSM's type and
 id, GFW's `s2id`, GISCO's code, and so on), `name`, `name_key`, `iso_src` (the list's own country), `iso_geo` (where it
 lies), `locode`, `kind` (the list's own type: OSM's tags, GFW's dock flag and label source, UN/LOCODE's status), `gtype`
@@ -86,9 +86,9 @@ ground, unioned by label, split into connected pieces), each a feature of its ow
 `man_made=breakwater` and `groyne` as context. Each row's `kind` is its tag (a pier's `pier=*` too). They are fetched as the
 port tags are, over the same region and with the same care (§3 step 5).
 
-### 2.2 The sites (the cascade; target `port_layer`, to become `landing_site`)
+### 2.2 The sites (the cascade; target `landing_site`, `port_layer` until step 6)
 
-`reference/ports/port_layer.R` places every feature in one outcome, in rank order, as built (decision 320):
+`reference/ports/landing_site.R` places every feature in one outcome, in rank order, as built (decision 320):
 
 1. **Ranks.** Each list's rank comes from §1's measurements, areas before points: einar (reviewed, and it rules Iceland
    and the Faroes: the maintainer), jeppe, GFW dock areas, OSM's port tags, GISCO, maksims (the circle's centre), vmstools,
@@ -99,16 +99,19 @@ port tags are, over the same region and with the same care (§3 step 5).
    site. It joins anchors only, never a witness, so nothing chains. A feature joins an anchor of its own list only by the
    same name or by touching (OSM's parts excepted): two einar harbours never merge. Small landings are not grouped among
    themselves here: a landing place's several jetties stay several sites, grouped later in the processing (ask m,
-   answered). A breakwater or groyne anchors nothing (ask l): coast protection is common (16 of them within 1 km at
-   Lønstrup, §4.2). Iceland and the Faroes are no exception (ask n, answered): einar ranks first there as everywhere, and
-   a feature that joins no einar harbour anchors a site of its own basis.
+   answered). A small landing is no witness: one beside a single list's feature does not make a port, since piers stand
+   on every shore; at a port list's site it is `joined`. A breakwater or groyne alone anchors a site of the basis
+   `context` (ask l, answered 2026-11-15: labelled, not ruled). In Iceland and the Faroes only einar anchors a site: a
+   feature there that joins no einar harbour is flagged `home list has no site here` (ask n, the rule set aside on
+   2026-11-14 and reinstated by the maintainer on 2026-11-15, decision 322).
 3. **Every anchor is a site, with its basis.** Revised: a site no second list witnesses is no longer dissolved. Its basis
    says what stands behind it, strongest first:
    - `reviewed`: an einar harbour;
    - `witnessed`: two families of evidence, as built (a second list; UN/LOCODE's name within `R_name` or a member's code;
      GFW's anchorages within `R_near`; GFW's own label for its dock area);
    - `one list`: a single list's feature (marta, jeppe, vmstools, OSM's port tags, GISCO, maksims, EMODnet);
-   - `structure`: OSM's small landings alone, with their kind.
+   - `structure`: OSM's small landings alone, with their kind;
+   - `context`: a breakwater or groyne alone.
    A **port** is a site whose basis is `reviewed` or `witnessed` (ask a, answered): today's 14,925 (decision 321). A user takes another
    cut where the question needs one. A later basis, `tracked` (vessels stop there), comes from the flow, not from here
    (§2.6).
@@ -116,10 +119,13 @@ port tags are, over the same region and with the same care (§3 step 5).
    Anchors' areas never overlap, because a touching feature joins. The site's name follows the same cascade: einar's, else
    the first named member by rank.
 5. **Outcomes.** Every feature ends `chosen` (the anchor), `witness` (another list), `duplicate` (the anchor's own list, or
-   a copy within 10 m, or EMODnet from GISCO) or `flagged`. Revised: `flagged` is kept for defects, never for weak
+   a copy within 10 m, or EMODnet from GISCO, or a small landing that is also an OSM port feature), `joined` (a small
+   landing at a port list's site) or `flagged`. Revised: `flagged` is kept for defects, never for weak
    evidence: `displaced` (a single list's feature, with a feature of another list of its name over 20 km off in the same
-   country), `no position`, `position out of range`, a copy whose original is flagged, and GFW's anchorages away from a dock with no site within 1 km. A disagreeing feature keeps its position; it is
-   never moved.
+   country), `no position`, `position out of range`, a copy whose original is flagged, GFW's anchorages away from a dock
+   with no port list's site within 1 km, and `home list has no site here`. A disagreeing feature keeps its position; it
+   is never moved. A displaced anchor is flagged and the cascade run again without it, so the features that had joined it
+   find their own place (three passes in the build of decision 322).
 
 It writes, by `write_curated()`, one row per site (its number, the acronym where it has one, name, country, geometry,
 `geom_basis`, `basis`, the lists and kinds that agree, how many features) and every feature with its outcome, reason and
@@ -143,7 +149,7 @@ anchors the same site on another feature (a list refreshed, a better list added)
 one of its members' keys holds a number no current site holds. A number is never reused, and a site that dissolves (an OSM
 feature deleted) keeps its row, marked retired. The acronym stays beside it as `pid_acronym`: einar's pinned one (decision
 082), and for other ports the one the old build gave their anchor's group, as an alias only, where the group maps to one
-port. The first batch (2026-11-14) numbered the 14,398 ports, the second the 723 new keys of OSM's five port tags (537 new numbers, 186 inherited; decision 321); the sites of the revision are numbered in later batches.
+port. The first batch (2026-11-14) numbered the 14,398 ports, the second the 723 new keys of OSM's five port tags (537 new numbers, 186 inherited; decision 321), the third the sites of the revision (153,539 new numbers, 7 inherited; 123 of them retired at once when einar's rule in Iceland and the Faroes returned; decision 322).
 
 **Iceland's codes across the schemas** (measured 2026-11-14, at the maintainer's word "check though first for
 inconsistencies across different schemas"). Eight lists hold them: `kvoti.stadur` (161), `afli.stadur` and
@@ -165,9 +171,9 @@ inconsistencies across different schemas"). Eight lists hold them: `kvoti.stadur
 The codes einar carries are kept as they are; 102, 153 and 200 stay codes without a pid, as `port_code_class.yml` has
 them. Which harbour 76 is, and whether 102 and 200 take their place's pid, are the maintainer's.
 
-### 2.4 The check (target `check_port_accounting`)
+### 2.4 The check (target `check_landing_site_accounting`, `check_port_accounting` until step 6)
 
-`curate/checks/port_accounting.R` writes `curated/check/port_accounting.parquet`, one row per list and outcome with
+`curate/checks/landing_site_accounting.R` writes `curated/check/landing_site_accounting.parquet`, one row per list and outcome with
 counts, and stops unless:
 - every raw row is in exactly one outcome;
 - every site has exactly one `chosen` feature, and its basis agrees with its members (a `witnessed` site has two
@@ -230,9 +236,10 @@ as the other served maps are.
    `staging/ais` holds 205 GB and `curated/ais` 46 GB; today's whole feature table, 192,089 features with GFW's areas,
    is 28 MB of parquet, and Denmark's 28,204 small landings 1.9 MB of gzipped XML. The countries above will be tens of
    MB, Europe perhaps 100-200 MB: storage is no limit; the pace of the fetch is set by Overpass's load alone.
-6. **The sites** (§2.2-2.4): every anchor a site with its basis; `osm_landing` in `port_feature`; the outcome `unwitnessed`
-   retired; the check and the map by basis; the ledger numbering the new sites; the files renamed (ask o). Asks l, m and n
-   first.
+6. **The sites** (§2.2-2.4): every anchor a site with its basis; `osm_landing` in the feature table; the outcome
+   `unwitnessed` retired; the check and the map by basis; the ledger numbering the new sites; the files renamed (ask o).
+   **Built 2026-11-15** (decision 322): 168,351 sites (reviewed 157, witnessed 14,772, one list 13,542, structure 109,098,
+   context 30,782), 14,929 of them ports, 14,924 of decision 321's under the same key and number.
 7. **The track's evidence** (§2.6), in the flow: stops by vessel at each site, and stops at no site, against the
    `structure` and `one list` sites. Its own plan when it starts.
 8. **The switch**, at the maintainer's word (ask g): `shapes.R`, `harbour_codes.R`, `port_call.R`, `sources/stk/event.R`,
@@ -328,10 +335,15 @@ k. **The EU's location list (the MDR) as a witness.** DG MARE's Master Data Regi
    out by the maintainer, 2026-11-14**: the build does not read it until the copies and the name rule are reviewed. Under
    the revision it would be a list of named landing places like the others.
 l. **Which small landings anchor a site.** Proposed: slipways, piers, quays, small-craft facilities and moorings anchor;
-   breakwaters and groynes only join a site (coast protection, §4.2).
+   breakwaters and groynes only join a site (coast protection, §4.2). **Answered 2026-11-15: labelled, not ruled**: a
+   breakwater or groyne alone anchors a site of the basis `context`, and a user leaves those out by a filter.
 m. **One landing place, one site.** The radius within which small landings of one place form one site. **Answered
    2026-11-14: decided later in the processing**; the table keeps each one.
 n. **Iceland and the Faroes.** einar rules their shapes: does a small landing there that joins no einar harbour become a
    `structure` site, or stay flagged `home list has no port here`? **Answered 2026-11-14: the rule is abandoned here**;
-   any list's feature there that joins no einar harbour anchors a site of its own basis.
-o. **The names.** **Answered 2026-11-14, left to Claude: `landing_site`** (§2.2), at step 6.
+   any list's feature there that joins no einar harbour anchors a site of its own basis. **Reversed 2026-11-15** (the
+   maintainer: "I think we have to reinstall the einar-one rule for Iceland and the Faroes"), after the build without it
+   gave the two countries GISCO's Höfn beside einar's Hornafjörður, single GFW dock anchorages and unnamed OSM port
+   areas in the Faroes, and 75 small landings (decision 322).
+o. **The names.** **Answered 2026-11-14, left to Claude: `landing_site`** (§2.2); renamed at step 6 (decision 322). The
+   ledger keeps its name (`port_ledger`, `allocate_ports()`, its key column `port_key`): its files are never rewritten.

@@ -1,4 +1,4 @@
-# server.R — the port layer's review map from a terminal, served until the process is stopped (plan 075 §2.5).
+# server.R — the landing sites' review map from a terminal, served until the process is stopped (plan 075 §2.5).
 #
 # Input:  products/port_map/port_map.R and what it reads
 # Output: none; http://127.0.0.1:<port> answers until the process is stopped
