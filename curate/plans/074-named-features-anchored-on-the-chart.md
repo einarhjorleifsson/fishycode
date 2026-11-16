@@ -616,7 +616,17 @@ m. The aids: the List of Lights as their source (position, characteristic, kind)
    Kind: the List's parts and OSM's types agree in every joined pair. Labels: a chart's lettering lies a median 2-4 mm
    from its aid on its own chart (367 m on the 1:100 000), a label's place. So the working answer holds with one
    refinement: position Vegagerðin's geometry where it has the light, else the List; the List for characteristic, kind,
-   height, range and number; IS 50V, OSM, Wikidata as checks; the charts' letterings the labels. Still the maintainer's.
+   height, range and number; IS 50V, OSM, Wikidata as checks; the charts' letterings the labels.
+   *Settled* (the maintainer, 2026-11-16: "Proceed with m"); fishycode's aid list takes its best witnesses so. Proceeded
+   with in the study's 98: each light of the names map linked to its aid, so that it has a position apart from its label.
+   Of the map's 128 lights, 118 link by their own letterings (12 of them lettered for 2-3 aids, the most lettered taken),
+   5 by an aid of their name within 3 km; 5 link to none, the nearest aid of their name 7-29 km off (namesakes elsewhere,
+   or a light the List no longer holds). From the label's place to the aid's position: a median 872 m, 84 over 500 m, 43
+   over 1 km. 37 aids are lettered only in another feature's name (an island, a point, a shoal: Engey, Grímsey, Hrísey,
+   Helgasker's buoy): the feature keeps the name, the aid its position. In the names editor the same day (the maintainer:
+   "Yes, in the editor"): the aids at their positions from the curated aid list, a dot each by kind, a line from each to its
+   light's name; 618 aids, 110 linked to a name; the 119 only a chart shows have no position and no dot. The names map
+   (71) still draws a light at its label.
 n. A large bay's outer limit: the baseline's segment across its mouth?
 
 Asked on 2026-11-16, with the curated lists (step 9):

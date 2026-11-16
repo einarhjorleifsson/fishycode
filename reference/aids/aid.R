@@ -37,7 +37,7 @@
 # characteristics (char_differ) or numbers (number_differ) of joined records disagreeing, joined records farther apart than
 # their digits allow (position_differ), a witness of a list the place lacks within D that found no partner of that list
 # elsewhere (ambiguous).
-# Best witness (ask m, dug into by the study's 96): position Vegagerðin's geometry (the List's own position before its
+# Best witness (ask m, dug into by the study's 96, settled by the maintainer 2026-11-16): position Vegagerðin's geometry (the List's own position before its
 # rounding: nearer IS 50V than the List at 58 of 95 lighthouses), the List at 1/100 minute, IS 50V, the List at 1/10, OSM,
 # Wikidata, a chart's label; characteristic, height, range and number the List, Vegagerðin, OSM (IS 50V for the number),
 # Wikidata, the charts' characteristic last; name the List, Vegagerðin, IS 50V, OSM, Wikidata, the chart.
