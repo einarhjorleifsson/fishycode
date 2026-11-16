@@ -475,6 +475,16 @@ the question for Julian Burgos.
      volcanic ridges; of Kolbeinseyjarhryggur's, 206 craters along 189 of 223 km, 20 seamounts. A ridge's guide: the extent of
      its volcanic features; its mounds the seamounts and crater clusters (plan 073's mounds), some named (Eldeyjarboði,
      Steinahóll, Gullhóll on the one, Stóragrunn, Hóllinn on the other).
+     Reykjaneshryggur's eleven volcanic systems and their mounds, worked through on 2026-11-16 (the study's 117-126; by Claude,
+     AI, for the maintainer's review). ÍSOR's 121 craters there lie on 66 of the depth model's mounds (94 craters; the other
+     27 on no mound of their own). The systems take the maintainer's better names: Fagurhólar, Steinahólar and Gullhólar,
+     Grjóthryggur, and Fuglaskerin (the charts' Fuglasker tops lie inside it). Claude proposed names for the four he left
+     open: a plural of the charts' Brandur names for Stóri-Brandur, Boðagrunn (his own name for its mound), Langagrunn for
+     the bank as a whole, and Bátafjöll (charted inside it) for the Eldey system. Njörður and
+     Reykjanes keep ÍSOR's. Of the 66 crater mounds, 9 carry a top the charts name or a name he decided (Boðagrunn), and 47
+     have no proposal, mostly deep and little fished. 11 names from the fishermen's logbook app are ranked as leads for
+     unnamed mounds, kept in the study only (internal). The maintainer on those names: "in principle useless", because most tows run beside the
+     systems; the exceptions are names whose use lies inside ÍSOR's outlines (Langagrunn, Stuttagrunn).
    - **The bays** (measured): Landhelgisgæslan's baseline encloses 1,491 of the 1,693 names at sea, a coastal belt, but its
      segments close the large bays between named points (Faxaflói Skálasnagi-Geirfugladrangur, Breiðafjörður Bjargtangar-
      Skálasnagi, Húnaflói Ásbúðarrif-Horn, Skagafjörður Siglunes-Ásbúðarrif, Eyjafjörður Flatey-Siglunes). A large bay's guide:
@@ -644,7 +654,11 @@ the question for Julian Burgos.
        possible not limits our nameplace mining for the main Iceland island either - possibly use something like a 1 km
        inward buffer from the shoreline"): IS 50V holds 35,282 names on the mainland within 1 km of the shore, 7,745 on
        islets and 8,684 at sea (Breiðafjörður 13,059 in all), about six times the charts' letterings; which bearers the
-       names map takes, and from which zoom (LMÍ's display scale offers one), is his.
+       names map takes, and from which zoom (LMÍ's display scale offers one), is his. A list of Breiðafjörður's names at sea
+       found by a side session ("Örnefni í sjó á Breiðafirði", 2007, for Breiðafjarðarnefnd: 468 names placed by GPS, never
+       entered in IS 50V) linked as a witness ("Yes, link it"): 164 on an islet IS 50V names the same, 129 on one it names
+       otherwise (27 a spelling, 16 a qualifier, 86 another name, most a feature at the islet), 1 on one it leaves nameless,
+       174 at sea (96 with no IS 50V namesake within 500 m); the charts letter 67 of the 468 within 1 km.
    - **Bottom type** (sediment): the charts' bottom marks (decision 301, at 1:300 000, 1:100 000 and 1:40 000), ÍSOR's 3,444 grab
      samples (their Folk class; their shares measured in 1,634) and 530 cores, ÍSOR's substrate map (68 polygons over 766,000
      km², 18 of them generalised to 1:1 000 000; refetched 2026-11-16 with its geometry, which the server's query withholds),
