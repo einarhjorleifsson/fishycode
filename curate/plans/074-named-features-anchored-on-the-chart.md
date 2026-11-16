@@ -9,7 +9,7 @@ boxes he accepts; by 2026-11-15 the lettering read at all nine chart scales and 
 by the same day all nine frozen; step 1 revised 2026-11-15 at his word ("Yes, revise"): the lettering alone,
 reviewed by Claude's look and then cards, the place a step of its own (1c); the aim revised 2026-11-15 at his word ("Yes,
 revise the plan and start"): one best place a name, steady as the map zooms, shown at zooms chosen for our users, the
-outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved · **2026-11-11** · **see:** plan 073 (and its
+outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it, the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -327,7 +327,7 @@ the question for Julian Burgos.
    Seyðisfjörður 11.6, Hafnarfjörður 4.2. The box is the union of the letterings' and the water's: 62 fjords come in
    earlier, most by half a zoom to one and a half (Seyðisfjörður 10.2 to 9.0).
 4. **The best place** of each feature, one for every zoom: a point name's anchor (1c, a harbour plan's label where one
-   letters it); an areal name's finest lettering (ask i), level unless a chart turns it (then its angle the feature's own axis on the depth model at the scale
+   letters it; an island's or a skerry's above water LMÍ's position since 2026-11-16, step 9); an areal name's finest lettering (ask i), level unless a chart turns it (then its angle the feature's own axis on the depth model at the scale
    of its extent (the maintainer's word), the charts' lettering angles a witness. A lettering more than 12 mm from the
    chosen place on its own chart is listed for the maintainer.
    *Begun 2026-11-15* (the study's 69): the axis of the depth model across a feature's box agrees with the charts' turned
@@ -537,6 +537,23 @@ the question for Julian Burgos.
      timarit.is may add rows, not this plan's job), and all text is UTF-8 (the maintainer). The charts' wreck symbols wait (the
      maintainer, 2026-11-16: "mining the sea-charts again for any wreck information waits for now"). The conflicts are
      listed, not resolved (the maintainer, 2026-11-16: "for now we are not going to resolve conflicts").
+     Depth and the date sunk, the same day (the maintainer: "Be careful with units"; the date sunk "as a common variable if
+     possible"). Two depths, one column each: the seabed at the wreck and the least depth over it. A text depth is read only
+     where its unit is written (metres or fathoms) and a depth word or fathoms say it is a depth, the text, unit and pattern
+     beside it. UKHO's two fields and OpenStreetMap's tags are read by their documentation. A number whose unit is stated
+     nowhere is listed, not read. Háskóli Íslands' depth column states its unit nowhere. It is read in metres, measured
+     against the witnesses and the depth model (the maintainer: "Yes, metres", then "Test HI's depth unit"). Against another
+     witness's metres, 18 of 25 pairs agree within 25 %. Against the Olex depth model within 500 m of each position, 33 of its
+     41 depths fit only as metres, 6 either way, 1 neither (metres within 1 km) and 1 only as fathoms; that one is flagged and
+     left out, not converted. The test's controls of known unit fall where they should: 12 of 12 fathom depths, and UKHO's
+     metres as metres or either way in 172 of 185. Of 1,611 records, 407 depths read, 22 ambiguous and 89 not depths (torpedo
+     sinkings, "U 99 M TUNDURSK"; a length); 315 places have a seabed depth, 35 a least depth. The date
+     sunk is ISO 8601 truncated to what is known (day, month or year), with its precision and basis and the year for sorting.
+     In comments it is read only beside a word of loss, in the diving map's prose only within that sentence. 626 records read
+     (493 to the day), 40 ambiguous (no year, a decade, a range, an uncertain year, malformed); 289 places have a date.
+     Witnesses are compared at their common precision: 6 places differ (5 in the year, 1 by a day). Places now 67 with several
+     witnesses, 526 with one, 32 in conflict (27 crowded, 6 dates, 2 names, 2 a list twice); records 152 seen by several
+     lists, 526 by one, 66 in conflict.
      The wreck list stays a standalone script in the study, outside fishycode's targets flow (the maintainer, 2026-11-16: "we
      do not at this moment really want this to be part of the huge rebuild / target flow"). When it moves, as everything
      else in fishycode: the lists as delivered in raw/external/ (done, dump/), each staged as delivered with the common columns
@@ -569,6 +586,65 @@ the question for Julian Burgos.
      independent witness of position. Every descriptive field kept (25,039), all text UTF-8, 28 checks hold. The
      maintainer, the same day: "no more fetching" (NGA's Pub. 115 stays unfetched); "wave buoys may help explain gap in
      the effort maps" (a first table, the study's 95, then "do later"); ask m dug into (below); ask p answered (below).
+   - **Islands and skerries, LMÍ first; the aids apart from the names** (revised 2026-11-16 at the maintainer's word:
+     "Islands and skerries - Here we should be using LMÍ and official lists as the source of truth, not the sea-charts. If
+     only because the LMÍ names are already tied to coordinates. We will use the sea-charts as witness, and if there are
+     conflicts we raise a flag in the data"; "if a placename is already in LMÍ we should should use the coordinates for
+     those. What we though should do is keep a list of what types light, beacon types are associated with each feature. And
+     if e.g. a beacon location is offhore we should not really put a proper nameplace to those"; "Ergo Lights and beacons
+     are separate from örnefni"). His answers the same day: the features above water only (LMÍ's bearers eyja, eyjaklasi,
+     hólmi, sker, drangur; a boði, flös or grunn stays chart-led, as the banks); LMÍ's spelling the name, the chart's kept
+     beside it as a variant, flagged where they differ; a chart's island or skerry with no LMÍ name near it kept at the
+     chart's place, flagged chart_only; built in the study first. So:
+     - An island list from witnesses, as the wrecks and aids: natt.is's IS 50V names of those bearers (raw/external/is50v,
+       on IS 50V's coast polygons by the study's 42) the source of truth, each name with its position and its polygon;
+       the official lists that name islands as more witnesses (Landhelgisgæslan's named baseline points); the charts'
+       letterings and anchors witnesses. A chart feature and an LMÍ name are one island when their names agree (the same
+       key, or a variant of `notes/name_variants.csv`) and the LMÍ name is the nearest of that name. Its position and
+       spelling are LMÍ's; the chart's spelling, place and distance kept beside. Flags, never a join or a drop:
+       `spelling_differs`; `far_from_chart` (the chart's place more than 12 mm at its scale from LMÍ's, step 4's listing
+       rule); `lmi_other_name` (an LMÍ island or skerry of another name at the chart's anchor: Gróttutangi on the charts,
+       Grótta in LMÍ); `chart_only`. LMÍ's names that no chart letters are in the list too (`lmi_only`); whether the map
+       shows them, and from which zoom (LMÍ's display scale, birtingarkvardi, offers one), is the maintainer's. A name whose
+       only source in LMÍ is Hafrannsóknastofnun's delivery (V202005002) is a witness, not the truth: weighted as Trackwell,
+       at his word of 2026-11-14.
+     - The aids apart: a light, buoy or beacon is no örnefni. The names map loses its light names (the study's 84 entities,
+       sort "light"); the aids are a layer of their own at their positions from fishycode's curated aid list, by their own
+       names. Each örnefni feature carries the aids that stand on it, a long table (feature, aid, its kind: lighthouse,
+       light, beacon, buoy, leading light, radar beacon; how linked: within the feature's IS 50V polygon, at its point,
+       or lettered in its name by the charts). An aid on no named feature (offshore, a harbour mole, a buoy) gives no
+       place name: it is listed, its name the aid's alone.
+     - The charts show the aids too (the maintainer, the same day: "keep a note that the light and beacons are on the
+       sea-chart, you may even think of including the lon-lat list estimated from the sea-chart scanning. could act as an
+       accuracy test downstream"): each aid keeps, beside its official position, every chart's estimate of it from the
+       scanning (its lettering's and printed characteristic's place on each chart, as the study's 84 and 97 read them;
+       a light symbol's where one is read), with the chart's scale and the distance in metres and in chart mm. Kept as a
+       test of the charts' georeference and of the reading, chart by chart, downstream; never a position.
+     - *Built in the study the same afternoon* (its 110, 111 and 112, by Claude; no person has checked the counts). No
+       distance decides a join (a 12 mm cut, tried first, split one bay's skerries at 12.1-12.7 mm): the names agree and
+       the chart's anchor lies on the LMÍ island or on no other islet; on another islet the chart names that islet, flagged.
+       6,091 LMÍ names in scope in 6,063 islands; of the charts' 926 island, skerry and light features 639 joined; 809
+       islands shown, 572 at LMÍ's place, 39 in LMÍ's spelling; 5,438 LMÍ islands no chart names, listed, not shown (the
+       maintainer's call). An island group keeps the chart's place where the chart names it among its islands (45). The
+       names map lost its 128 light names (20 back as the island they alone name); of the 737 aids in Iceland 104 stand on a
+       named island, 33 are lettered with a named feature's name, 600 give no place name (176 offshore). The charts' labels
+       of the aids lie a median 6-12 mm from the aids on every sheet. Found on the way: most flagged far_from_chart lie in
+       one bay on the 1:35 000-1:50 000 sheet, 480-640 m off, a shift of that sheet in the georeference by the look of it.
+       The submerged ones measured, not decided (the maintainer's word): against the depth model LMÍ's point lies shallower
+       than the chart's label in 149 of 166 pairs, and shallower than the depth model's top found from the label alone in
+       60 of 72; the chart's position there is its label's (its rock symbols not read), so the test leans against it.
+     - *The same evening* (the study's 113-115, by Claude; no person has checked the counts). On the map of the submerged
+       ones the maintainer found LMÍ "pretty much spot on for location of these screrries and things", one place left to
+       judge (Gerpisfles and Mávastapar, both LMÍ's). IS 50V's names fetched whole, every bearer (fishycode's
+       `dump/natt/ornefni.R`, 200,674) and linked to IS 50V's islets ("Yes, link them"): of the 3,212 islets the six bearers
+       left nameless, 1,305 are named one way or another (part of a named island, group or chain 1,090; a landform 145, the
+       islet itself at high water; an island name missed 40; named parts 26; things on it 4), 609 lie under water names
+       only, 1,298 have none within 50 m. A direction, not yet built (the maintainer: "I think we may have to forget the
+       difference between the sea and terrestrial stuff, at least when it comes to Breiðafjörður. We should similarily
+       possible not limits our nameplace mining for the main Iceland island either - possibly use something like a 1 km
+       inward buffer from the shoreline"): IS 50V holds 35,282 names on the mainland within 1 km of the shore, 7,745 on
+       islets and 8,684 at sea (Breiðafjörður 13,059 in all), about six times the charts' letterings; which bearers the
+       names map takes, and from which zoom (LMÍ's display scale offers one), is his.
    - **Bottom type** (sediment): the charts' bottom marks (decision 301, at 1:300 000, 1:100 000 and 1:40 000), ÍSOR's 3,444 grab
      samples (their Folk class; their shares measured in 1,634) and 530 cores, ÍSOR's substrate map (68 polygons over 766,000
      km², 18 of them generalised to 1:1 000 000; refetched 2026-11-16 with its geometry, which the server's query withholds),
@@ -628,12 +704,26 @@ m. The aids: the List of Lights as their source (position, characteristic, kind)
    light's name; 618 aids, 110 linked to a name; the 119 only a chart shows have no position and no dot. The names map
    (71) still draws a light at its label.
 n. A large bay's outer limit: the baseline's segment across its mouth?
+   *On a map, not decided* (2026-11-16, the maintainer: "take [the fjord model] up at the same time"; the study's 107 and 108,
+   port 4842, by Claude, AI, no person has checked it): the baseline closes 35,799 km2 into pockets, a cut from each of its 31
+   offshore points to the main land closing the water behind; each pocket held by its largest name lettered in it, two shared
+   by large bays of their own (three behind Glettinganes-Langanes; Breiðafjörður with Rauðasandsbugur); the fjords nested with
+   their water by rays (76). The fjord model with its 80 km reach cap lifted, so that a bay is judged as a fjord is, puts the
+   wide bays' mouths well inside the baseline: at 60 % 23-34 % of the three largest pockets, at 50 % 31-51 %, while two
+   narrower bays' water at 50 % runs out past it. No one threshold meets the baseline. The south coast's bights lie mostly
+   outside it. 9 of the 20 held pockets of 100 km2 or more pass the law of the sea's semicircle test. A third way, closing
+   lines between each bay's named headlands (the study's 109), ran once, unchecked. Closed there (the maintainer, 2026-11-16:
+   "I think this exercise was a bit futile"); ask n stays open.
 
 Asked on 2026-11-16, with the curated lists (step 9):
 
-o. *Decided in part* (the maintainer, 2026-11-16): the conflicts listed, not resolved ("for now we are not going to resolve
+o. *Settled* (the maintainer, 2026-11-16): the conflicts listed, not resolved ("for now we are not going to resolve
    conflicts"); the internal witnesses in, the plotter added the same day, internal like Háskóli Íslands' list; the charts'
-   wreck symbols wait. Still asked: The wreck list's witnesses: every list above with the charts' wreck symbols, and the
+   wreck symbols wait. The distance without a knife edge ("Do we really need to do this here - as long as we flag a potential
+   issue. I hate knife edge decisions, at least on this one"): records join at 500 m, mutual nearest; two places whose
+   witnesses are each other's nearest but lie apart within 1 km, or within the two records' coordinate digits, are flagged
+   as maybe one wreck, on both places, never joined, their outcomes unchanged. On the prototype: 29 pairs on 42 places, their
+   names agreeing in 6, differing in 3, one side or both unnamed in 20; none beyond 1 km by the digits. Asked: The wreck list's witnesses: every list above with the charts' wreck symbols, and the
    internal ones (Háskóli Íslands' list, the plotters') kept as internal witnesses; which distance makes two records one wreck
    (500 m, or each witness's own precision)? Measured on the prototype with the plotter: 500 m gives 625 places, 31 in
    conflict; 1 km, 602 and 51 (29 more joins, 7 with the plotter; 6 confirmed by names, 3 contradicted, 20 with a name on one
