@@ -562,11 +562,13 @@ the question for Julian Burgos.
      attached to an aid by characteristic within 5 mm of their box (261) or by name within 10 mm (350); 120 stand alone,
      289 with no aid within 20 mm are readings, not aids. 2,422 records, each in one outcome (1,376 several witnesses, 466
      one, 125 conflict, 3 copies, 452 not aids); 801 places, 737 in Iceland (304 several witnesses, 409 one, 24 in
-     conflict). The 25 conflicts are listed: 20 positions farther apart than their digits allow (Mjóeyri 1.6 km, Málmey
-     1.05 km, Miðleiðarsker and Skarfaklettur 440 m between IS 50V and OSM on one side, the List on the other), 7
-     characteristics (Sauðanes Fl W 15s in the List, 20s in Vegagerðin and OSM), 2 lists holding one light twice. Most
-     "several witnesses" are one official record seen through copies of several dates; IS 50V is the one independent
-     witness of position. Every descriptive field kept (25,039), all text UTF-8, 28 checks hold.
+     conflict). The 25 conflicts are listed: 20 positions farther apart than their digits allow (OSM's Mjóeyri 1.6 km
+     and Miðleiðarsker and Skarfaklettur 440 m from the List, Vegagerðin and IS 50V; IS 50V's Málmey 1.05 km from all the
+     others), 7 characteristics (Sauðanes Fl W 15s in the List, 20s in Vegagerðin and OSM), 2 lists holding one light
+     twice. Most "several witnesses" are one official record seen through copies of several dates; IS 50V is the one
+     independent witness of position. Every descriptive field kept (25,039), all text UTF-8, 28 checks hold. The
+     maintainer, the same day: "no more fetching" (NGA's Pub. 115 stays unfetched); "wave buoys may help explain gap in
+     the effort maps" (a first table, the study's 95, then "do later"); ask m dug into (below); ask p answered (below).
    - **Bottom type** (sediment): the charts' bottom marks (decision 301, at 1:300 000, 1:100 000 and 1:40 000), ÍSOR's 3,444 grab
      samples (their Folk class; their shares measured in 1,634) and 530 cores, ÍSOR's substrate map (68 polygons over 766,000
      km², 18 of them generalised to 1:1 000 000; refetched 2026-11-16 with its geometry, which the server's query withholds),
@@ -603,6 +605,18 @@ k. A trough shared by several names: split by their lines (a Voronoi of the line
 l. The grounds' limits: the bottom type first (ÍSOR's substrate map and grab samples; EMODnet's finer maps hold no Iceland), or the depth
    model's relief first, the bottom as a check?
 m. The aids: the List of Lights as their source (position, characteristic, kind), the charts' letterings their labels?
+   *Dug into* (2026-11-16, the maintainer: "m - not sure, can you dig in"; the study's 96, by Claude, no person has checked
+   it): the witnesses against each other. Position: where the List (1/100 minute), Vegagerðin and IS 50V hold one
+   lighthouse (95), Vegagerðin's geometry lies nearer IS 50V than the List in 58, the List in 20, the same in 17 (medians
+   4.3 m and 7.5 m): its finer digits are the List's position before rounding. The List agrees with IS 50V within 25 m at
+   89 of the 95; where witnesses part, the odd one is OSM (NGA's 2010 positions: a digit at Mjóeyri, 440 m at
+   Miðleiðarsker and Skarfaklettur, twelve lights 100-300 m off, harbour lights most) or IS 50V (Málmey 1.05 km).
+   Characteristic: Vegagerðin agrees with the List in 100 of 101, OSM in 221 of 227, Wikidata in 26 of 27, the charts'
+   printed characteristics in 45 of 59 within 5 mm of a List light (the rest fragments of the read or older editions).
+   Kind: the List's parts and OSM's types agree in every joined pair. Labels: a chart's lettering lies a median 2-4 mm
+   from its aid on its own chart (367 m on the 1:100 000), a label's place. So the working answer holds with one
+   refinement: position Vegagerðin's geometry where it has the light, else the List; the List for characteristic, kind,
+   height, range and number; IS 50V, OSM, Wikidata as checks; the charts' letterings the labels. Still the maintainer's.
 n. A large bay's outer limit: the baseline's segment across its mouth?
 
 Asked on 2026-11-16, with the curated lists (step 9):
@@ -619,6 +633,25 @@ p. *Decided for now* (the maintainer, 2026-11-16: "we do not at this moment real
    target flow"): the wreck list stays a standalone script in the study (its 91 and 92), outside fishycode's targets flow.
    Asked: The curated lists in fishycode's reference/ as tables of their own (as plan 075's landing sites), built before the
    names use them; or first within this study?
+   *Answered again* (the maintainer, 2026-11-16, of the aid list: "p - this whole process should go into the flow: raw ->
+   staged -> out or curated"): every curated list, the wrecks' and the aids' alike, goes raw -> staging -> curated in
+   fishycode's layers. A sketch, on plan 075's landing sites: each list staged by its own script in sources/<source>/ to
+   staging/<source>/ (the List of Lights' PDF read in R, as the study's 86 does in Python; Vegagerðin's lights and wave
+   buoys; OSM's seamarks; IS 50V's lighthouses; Wikidata's lighthouses), the charts' printed characteristics frozen in the
+   study first and read as a frozen input, as chart_names is (only the names are frozen now); the join, the outcomes and
+   the best witnesses in reference/aids/aid.R to curated/reference/aid.parquet with its records, pairs and descriptions
+   beside (write_curated, stamped); the accounting (the study's 94) in curate/checks/aid_accounting.R; the machinery both
+   lists share (mutual nearest across lists, places, outcomes, best witness, the long descriptions) once, in R/.
+   *Settled* (the maintainer, 2026-11-16: "Standalone in layers"): standalone scripts in those layers, run by hand, outside
+   the targets flow and its rebuild. The aid list built so the same day (by Claude; no person has checked it):
+   `sources/{vitaskra/aid.R, vegagerdin/light.R, osm/seamark.R, is50v/lighthouse.R, wikidata/lighthouse.R, sjokort/aid_label.R}`
+   to staging/, `reference/aids/aid.R` to `curated/reference/{aid,aid_record,aid_pair,aid_description}.parquet` and
+   `curated/check/aid_join_rules.parquet`, `curate/checks/aid_accounting.R` (24 checks hold) to
+   `curated/check/{aid_accounting,aid_conflict}.parquet`; the shared machinery `R/curated_list.R` and
+   `R/light_characteristic.R`, tested by `tests/test_curated_list.R`; the charts' printed characteristics and 84's aid
+   letterings frozen by the study's 97. The R reading of the List of Lights gives 86's table field for field; the curated
+   tables give the prototype's record for record (outcome, kind, attachment, aid, every attribute). The wreck list is its
+   own session's to move; `R/curated_list.R` is there for it.
 
 Asked on 2026-11-11, for the outlines (now a later step):
 
