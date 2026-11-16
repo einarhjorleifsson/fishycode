@@ -1605,7 +1605,8 @@ for shape, the main grounds and deeps kept as the base, an interactive review); 
 names' endings measured that evening (decision 317); plan 074 drafted at his word the same night, its asks a-h his;
 its step 1 built overnight as a study (decision 318); the letter boxes first at his word 2026-11-12, on a map of one
 chart scale at a time for his verdicts (decision 319); by 2026-11-15 every chart read and all nine frozen (the lettering alone, step 1 revised), and in
-one curated table, `chart_names` (step 1b, decision 323) ·
+one curated table, `chart_names` (step 1b, decision 323); the aim revised the same day: one best
+place a name, steady as the map zooms, its angle the landscape's, shown at zooms of our choosing ·
 **see:** `curate/plans/074-named-features-anchored-on-the-chart.md`,
 `curate/plans/073-local-features-by-best-estimate.md`, `$FISHYDATA/archive/2026-11-11-local-features/README.md`, plan 071,
 decision 309, TODOs 186 and 197
