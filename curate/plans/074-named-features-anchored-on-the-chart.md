@@ -9,7 +9,7 @@ boxes he accepts; by 2026-11-15 the lettering read at all nine chart scales and 
 by the same day all nine frozen; step 1 revised 2026-11-15 at his word ("Yes, revise"): the lettering alone,
 reviewed by Claude's look and then cards, the place a step of its own (1c); the aim revised 2026-11-15 at his word ("Yes,
 revise the plan and start"): one best place a name, steady as the map zooms, shown at zooms chosen for our users, the
-outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved · **2026-11-11** · **see:** plan 073 (and its
+outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved; amended 2026-11-17 at his word: asks k, l and n parked for another plan, the harbours and the bottom type out of this plan, the wreck list into fishycode, the submerged rocks at LMÍ's position, the ridge's volcanic systems by ÍSOR's names with his as synonyms; step 11 extended to the whole coast the same day · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -327,7 +327,7 @@ the question for Julian Burgos.
    Seyðisfjörður 11.6, Hafnarfjörður 4.2. The box is the union of the letterings' and the water's: 62 fjords come in
    earlier, most by half a zoom to one and a half (Seyðisfjörður 10.2 to 9.0).
 4. **The best place** of each feature, one for every zoom: a point name's anchor (1c, a harbour plan's label where one
-   letters it; an island's or a skerry's above water LMÍ's position since 2026-11-16, step 9); an areal name's finest lettering (ask i), level unless a chart turns it (then its angle the feature's own axis on the depth model at the scale
+   letters it; an island's or a skerry's above water LMÍ's position since 2026-11-16, a submerged rock's since 2026-11-17, step 9); an areal name's finest lettering (ask i), level unless a chart turns it (then its angle the feature's own axis on the depth model at the scale
    of its extent (the maintainer's word), the charts' lettering angles a witness. A lettering more than 12 mm from the
    chosen place on its own chart is listed for the maintainer.
    *Begun 2026-11-15* (the study's 69): the axis of the depth model across a feature's box agrees with the charts' turned
@@ -466,6 +466,9 @@ the question for Julian Burgos.
    Vegagerðin and the List of Lights, the national map service's layers at sea, ÍSOR's seabed, EMODnet Geology, Veðurstofan,
    GEBCO, GSFML, the USGS, the drill holes), mined by the study's 89 and 90. The order his: the deeps first, the ridges' and the
    fjords' and bays' limits, then the grounds between them.
+   *Amended 2026-11-17* (the maintainer: "8.k - park, do it in a another plan", and the same for l and n): the deeps' split
+   (ask k), the grounds' limits (ask l) and the large bays' outer limits (ask n) are parked for another plan (TODO 201); the
+   measurements below are kept for it. The ridges and the positions stay in this plan.
    - **The deeps** (measured): ÍSOR's 28 troughs (BGR's in EMODnet are the same) hold 33 of the 64 deep names (half a name's
      line or more within); 24 troughs carry a name, 5 several (the north system, 8,244 km2: Húnaflóaáll, Reykjarfjarðaráll,
      Húnaflóadjúp, Skagafjarðardjúp, Eyjafjarðaráll, Fjallsdjúp); a trough split among its names by their lines (a Voronoi of
@@ -477,11 +480,13 @@ the question for Julian Burgos.
      Steinahóll, Gullhóll on the one, Stóragrunn, Hóllinn on the other).
      Reykjaneshryggur's eleven volcanic systems and their mounds, worked through on 2026-11-16 (the study's 117-126; by Claude,
      AI, for the maintainer's review). ÍSOR's 121 craters there lie on 66 of the depth model's mounds (94 craters; the other
-     27 on no mound of their own). The systems take the maintainer's better names: Fagurhólar, Steinahólar and Gullhólar,
-     Grjóthryggur, and Fuglaskerin (the charts' Fuglasker tops lie inside it). Claude proposed names for the four he left
-     open: a plural of the charts' Brandur names for Stóri-Brandur, Boðagrunn (his own name for its mound), Langagrunn for
-     the bank as a whole, and Bátafjöll (charted inside it) for the Eldey system. Njörður and
-     Reykjanes keep ÍSOR's. Of the 66 crater mounds, 9 carry a top the charts name or a name he decided (Boðagrunn), and 47
+     27 on no mound of their own). The systems first took the maintainer's better names (Fagurhólar, Steinahólar and Gullhólar,
+     Grjóthryggur, Fuglaskerin), and Claude proposed names for the four he left open. *Amended 2026-11-17* (the maintainer:
+     "suggest we use the ÍSOR names for the volcanic areas - with my suggestion as synonyms"): the eleven systems take
+     ÍSOR's names (Njörður, Fagurhóll, Steinahóll, Gullhóll, Stóri-Brandur, Eldeyjarboði, Grjóthryggur, Langagrunn,
+     Geirfuglasker, Eldey, Reykjanes), his better names their synonyms (Fagurhólar, Steinahólar, Gullhólar, Fuglaskerin;
+     Grjóthryggur is ÍSOR's own). Claude's four proposals are dropped; Boðagrunn stays his name for its mound.
+     Of the 66 crater mounds, 9 carry a top the charts name or a name he decided (Boðagrunn), and 47
      have no proposal, mostly deep and little fished. 11 names from the fishermen's logbook app are ranked as leads for
      unnamed mounds, kept in the study only (internal). The maintainer on those names: "in principle useless", because most tows run beside the
      systems; the exceptions are names whose use lies inside ÍSOR's outlines (Langagrunn, Stuttagrunn).
@@ -564,13 +569,16 @@ the question for Julian Burgos.
      Witnesses are compared at their common precision: 6 places differ (5 in the year, 1 by a day). Places now 67 with several
      witnesses, 526 with one, 32 in conflict (27 crowded, 6 dates, 2 names, 2 a list twice); records 152 seen by several
      lists, 526 by one, 66 in conflict.
-     The wreck list stays a standalone script in the study, outside fishycode's targets flow (the maintainer, 2026-11-16: "we
-     do not at this moment really want this to be part of the huge rebuild / target flow"). When it moves, as everything
-     else in fishycode: the lists as delivered in raw/external/ (done, dump/), each staged as delivered with the common columns
+     The wreck list stays outside fishycode's targets flow (the maintainer, 2026-11-16: "we do not at this moment really
+     want this to be part of the huge rebuild / target flow"). *Amended 2026-11-17* (the maintainer: "9 - wrecks go to
+     fishycode"): it moves into fishycode's layers as the aids did, standalone scripts run by hand outside the targets flow
+     (ask p), the internal lists and every attribute taken from them kept internal; not moved yet. As everything else in
+     fishycode: the lists as delivered in raw/external/ (done, dump/), each staged as delivered with the common columns
      (`staging/<list>/wreck.parquet`, sources/), then the join and the best witnesses into `curated/reference/wreck.parquet`,
      its records and descriptions beside (reference/wrecks/), checked by `curate/checks/wreck_accounting.R`, as plan 075's
      landing sites (ask p).
-   - **Harbours**: plan 075's landing sites (curated/reference/landing_site.parquet, its ports a subset by basis) with
+   - **Harbours**, *out of this plan* (the maintainer, 2026-11-17: "9 - harbour, leave out of this plan"); as drafted:
+     plan 075's landing sites (curated/reference/landing_site.parquet, its ports a subset by basis) with
      Vegagerðin's 83 harbours, the charts' harbour plans and names, and the List of Lights' harbour lights as more witnesses.
    - **Aids** (lights, buoys, beacons, leading marks, radar beacons): the List of Lights in force (546, its positions exact to a
      hundredth of a minute in 514; the study's 86), Vegagerðin's 101 national lights, the charts' letterings of lights and
@@ -603,7 +611,8 @@ the question for Julian Burgos.
      those. What we though should do is keep a list of what types light, beacon types are associated with each feature. And
      if e.g. a beacon location is offhore we should not really put a proper nameplace to those"; "Ergo Lights and beacons
      are separate from örnefni"). His answers the same day: the features above water only (LMÍ's bearers eyja, eyjaklasi,
-     hólmi, sker, drangur; a boði, flös or grunn stays chart-led, as the banks); LMÍ's spelling the name, the chart's kept
+     hólmi, sker, drangur; a boði, flös or grunn stays chart-led, as the banks; a submerged rock at LMÍ's position since
+     2026-11-17, below); LMÍ's spelling the name, the chart's kept
      beside it as a variant, flagged where they differ; a chart's island or skerry with no LMÍ name near it kept at the
      chart's place, flagged chart_only; built in the study first. So:
      - An island list from witnesses, as the wrecks and aids: natt.is's IS 50V names of those bearers (raw/external/is50v,
@@ -643,6 +652,10 @@ the question for Julian Burgos.
        The submerged ones measured, not decided (the maintainer's word): against the depth model LMÍ's point lies shallower
        than the chart's label in 149 of 166 pairs, and shallower than the depth model's top found from the label alone in
        60 of 72; the chart's position there is its label's (its rock symbols not read), so the test leans against it.
+       *Decided 2026-11-17* (the maintainer: "Submerged rocks - position from LMÍ"): a submerged rock's position is LMÍ's
+       where LMÍ has its name, the chart's label a witness, flagged where they part, as the islands above water. Taken
+       as the names 112 measured (the charts' point names of rocks, shoals and reefs; Claude's reading of "submerged
+       rocks"); a bank lettered as an area stays chart-led. Not built yet.
      - *The same evening* (the study's 113-115, by Claude; no person has checked the counts). On the map of the submerged
        ones the maintainer found LMÍ "pretty much spot on for location of these screrries and things", one place left to
        judge (Gerpisfles and Mávastapar, both LMÍ's). IS 50V's names fetched whole, every bearer (fishycode's
@@ -659,7 +672,8 @@ the question for Julian Burgos.
        entered in IS 50V) linked as a witness ("Yes, link it"): 164 on an islet IS 50V names the same, 129 on one it names
        otherwise (27 a spelling, 16 a qualifier, 86 another name, most a feature at the islet), 1 on one it leaves nameless,
        174 at sea (96 with no IS 50V namesake within 500 m); the charts letter 67 of the 468 within 1 km.
-   - **Bottom type** (sediment): the charts' bottom marks (decision 301, at 1:300 000, 1:100 000 and 1:40 000), ÍSOR's 3,444 grab
+   - **Bottom type** (sediment), *out of this plan* (the maintainer, 2026-11-17: "9 - bottom type: leave out of this plan";
+     with ask l, TODO 201); as drafted: the charts' bottom marks (decision 301, at 1:300 000, 1:100 000 and 1:40 000), ÍSOR's 3,444 grab
      samples (their Folk class; their shares measured in 1,634) and 530 cores, ÍSOR's substrate map (68 polygons over 766,000
      km², 18 of them generalised to 1:1 000 000; refetched 2026-11-16 with its geometry, which the server's query withholds),
      EMODnet's substrate at 1:1 000 000 (14 polygons for Iceland over 1.53 million km²; its 1:250 000 and 1:50 000 maps hold
@@ -733,6 +747,22 @@ the question for Julian Burgos.
      Its 2,508 names already on the map were the 2 km rule alone; 127 fixed and rerun on 2026-11-17 against the charts' names
      only (the map file now holds LMÍ's too): 2,687 on the map, 193 of them by a box beyond 2 km; the counts above corrected.
 
+   *The whole coast* (the maintainer, 2026-11-17: "Extend now", the pilot's choices standing; built by Claude the same
+   morning, the study's 128-130 under a switch for the region, no person has checked the counts). Every name of 127's
+   51,711 in one outcome, 21 checks holding: 29,189 things on the land left out (19,858 on_it, 9,331 fields and the land's
+   waters by the step's words), 2,187 one name with 2,152 chart features, 247 copies with no other witness, 20,088 shown as
+   19,958 names of LMÍ's own (islands 5,808, the land's 8,209, the sea's 5,941). Three findings, fixed: a name whose area
+   or line gives no place takes its record's point (5, flagged); a chart name joined by LMÍ's second name only keeps its
+   own name, LMÍ's first name beside it, flagged (33: another name, not a spelling, in most), so 44 take LMÍ's spelling;
+   names at one point with another flagged (11; 2 never drawn). LMÍ's source (heimild, in full) and its kind are fields
+   of their own on every LMÍ name and joined chart name (the maintainer, the same morning: "Can we actually include the
+   source of the names as a variable"). Against the map before, names drawn by zoom 13 1,882 to 6,640, by zoom 15 2,100
+   to 17,968; a screen of 1280 x 800 px holds at most 90 names at zoom 13 and 110 at zoom 15 (37 and 25 before), a median
+   of 3 and 2; the most crowded screens in Breiðafjörður, where the coast run draws as the pilot did. 4,650 of LMÍ's names
+   wait for room, a median 0.58 zooms. No chart name gone or new; 1,322 start later (a median 1.53 zooms, nearly all those
+   whose extent is now LMÍ's); 16 turned names slid along their lines, up to 26 km. Offshore, LMÍ's sea names include 20
+   fishing grounds and 2 seas over 50 km across, shown from low zooms. The map's file of names is now 22 MB.
+
 ## 10. Asks
 
 Asked on 2026-11-15, with the aim revised (both settled, the maintainer, 2026-11-16: "Plan asks: i and j settled"):
@@ -748,9 +778,9 @@ j. *Settled*: rule e (step 5), the display zoom apart from the traffic jam (step
 
 Asked on 2026-11-16, with the new sources (step 8):
 
-k. A trough shared by several names: split by their lines (a Voronoi of the lines within it), or by the maintainer's hand on the
+k. *Parked for another plan* (the maintainer, 2026-11-17: "park, do it in another plan"; TODO 201). Asked: A trough shared by several names: split by their lines (a Voronoi of the lines within it), or by the maintainer's hand on the
    map?
-l. The grounds' limits: the bottom type first (ÍSOR's substrate map and grab samples; EMODnet's finer maps hold no Iceland), or the depth
+l. *Parked for another plan* (the maintainer, 2026-11-17: "park, do it in another plan"; TODO 201). Asked: The grounds' limits: the bottom type first (ÍSOR's substrate map and grab samples; EMODnet's finer maps hold no Iceland), or the depth
    model's relief first, the bottom as a check?
 m. The aids: the List of Lights as their source (position, characteristic, kind), the charts' letterings their labels?
    *Dug into* (2026-11-16, the maintainer: "m - not sure, can you dig in"; the study's 96, by Claude, no person has checked
@@ -775,7 +805,7 @@ m. The aids: the List of Lights as their source (position, characteristic, kind)
    "Yes, in the editor"): the aids at their positions from the curated aid list, a dot each by kind, a line from each to its
    light's name; 618 aids, 110 linked to a name; the 119 only a chart shows have no position and no dot. The names map
    (71) still draws a light at its label.
-n. A large bay's outer limit: the baseline's segment across its mouth?
+n. *Parked for another plan* (the maintainer, 2026-11-17: "park, do it in another plan"; TODO 201). Asked: A large bay's outer limit: the baseline's segment across its mouth?
    *On a map, not decided* (2026-11-16, the maintainer: "take [the fjord model] up at the same time"; the study's 107 and 108,
    port 4842, by Claude, AI, no person has checked it): the baseline closes 35,799 km2 into pockets, a cut from each of its 31
    offshore points to the main land closing the water behind; each pocket held by its largest name lettered in it, two shared
@@ -855,4 +885,6 @@ h. The review page: the chart map (port 4813) with verdicts, or a page of its ow
 ## 11. Not in this plan
 
 Mounds without a name (the mounds elsewhere stay a layer, re-thresholded in step 6); Trackwell in any role; a name's
-history (plan 067's records); publishing outside MFRI.
+history (plan 067's records); publishing outside MFRI. Since 2026-11-17 (the maintainer): the deeps' split, the grounds'
+limits and the large bays' outer limits (asks k, l and n) and the bottom type, parked for another plan (TODO 201); the
+harbours (plan 075's landing sites).

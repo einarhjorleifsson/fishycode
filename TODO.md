@@ -1644,3 +1644,20 @@ Norðskáli, names with a comma, the MDR, the port layer's four old files (kept 
 
 **check:** the flow reads the table's ports and their integer pid (step 8), `ports_all` retired and its descendants
 rebuilt at the maintainer's word; or the item parked.
+
+## 201. The seabed's limits: troughs shared by names, the grounds' limits, the bays' outer limits, the bottom type
+**status:** parked — the maintainer, 2026-11-17: "park, do it in another plan" (plan 074's asks k, l and n), and the
+bottom type left out of plan 074 · **see:** `curate/plans/074-named-features-anchored-on-the-chart.md` (step 8's
+measurements, asks k, l and n, step 9's bottom type), `$FISHYDATA/archive/2026-11-11-named-features/README.md` (ask k's
+maps, the bottom type's prototype, ask n with the fjord model), TODO 199
+
+Plan 074 step 8 measured guides from the new sources for where the names' features end. The maintainer parked three of
+them, and the bottom type, for a plan of their own:
+- k: a trough shared by several deep names (5 of ÍSOR's 28), split by the names' lines or by hand; ÍSOR's troughs
+  accepted as a first go;
+- l: the grounds' limits, the bottom type first or the relief first, once the bottom's witnesses are merged and curated
+  (a prototype in the study);
+- n: a large bay's outer limit (the baseline's segment across its mouth?), with the fjord model;
+- the bottom type as a curated list from several witnesses (the charts' marks, ÍSOR's samples and map, EMODnet).
+
+**check:** a plan written for them at the maintainer's word, or the item dropped.
