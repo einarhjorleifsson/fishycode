@@ -2,7 +2,9 @@
 
 **status:** proposal — written 2026-11-17 at the maintainer's word (rebelrebel is not an editor; editing pages are built
 ad hoc on its foundation, so that each one smoke-tests its engine; the foundation made right now rather than later), from
-the names editor's smoke test and a survey of every map page in fishycode, its studies and EM4SSF · **see:** plan 072
+the names editor's smoke test and a survey of every map page in fishycode, its studies and EM4SSF; asks a-c, e and f
+answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
+order, articles first), ask d open · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -263,7 +265,8 @@ a. **The line** (§2): answered in the maintainer's words of 2026-11-17 (an engi
 b. **Start zooms at whole zooms only** (§3.1): answered by the maintainer, 2026-11-17 ("Why are we not just using
    that"), and measured in §1.3 and §1.4; fractional starts through the global state not built (the editor's Héraðsflói
    names, due at 7.47-7.77, show from 8).
-c. **Turned names** (§1.5): (1) at their point with MapLibre's one upright box, recommended as the robust way: nothing
+c. **Turned names** (§1.5): answered 2026-11-17, "At its point" (as recommended). Asked: (1) at their point with
+   MapLibre's one upright box, recommended as the robust way: nothing
    estimated, nothing new to break, 90 of 842 names hidden against 71; (2) on lines of their own cut to zoom 16, letters
    checked one by one: 19 more names in the 32 views (20 more of the 191 turned), exact in place and angle, at the price
    of the width estimate and the lines' making (some 60 lines); (3) overlaps allowed where a start zoom is given (the
@@ -271,12 +274,19 @@ c. **Turned names** (§1.5): (1) at their point with MapLibre's one upright box,
    `overlap = TRUE` (MapLibre's `text-allow-overlap`) is offered whichever is chosen.
 d. **A text layer whole up to 10 MB** (the 5 MB line kept for other layers): recommended, so the names' 5.2 MB stay
    in one source; not measured beyond the names.
-e. **The seam as §3.3 and §3.4, and which of §3.6 now.** Recommended: the seam as proposed; of §3.6, the base map by
-   address and `rr_map(data)` keeping its settings (faults), the rest later.
-f. **The order of §4.** Recommended as written, articles first.
+e. **The seam as §3.3 and §3.4, and which of §3.6 now:** answered 2026-11-17, the seam "As proposed", and of §3.6 all
+   four asked: the base map faults (a base map by address opens the page, `rr_map(data)` keeps its settings), layer
+   order by a call, rings and outlines, and search over a layer (recommended were the base map faults alone, the rest
+   later). The seabed's layer functions stay plan 072's step 3.
+f. **The order of §4:** answered 2026-11-17, "Yes, in that order" (as recommended): articles first, each step committed
+   to rebelrebel's local `main` with its tests, `devtools::check()` and `pkgdown`, not pushed. Step 6 is the names
+   session's (its prototype, on hold until steps 1-5 land); §3.6's four come in step 7.
 
 ## 6. Not in this plan
 
 Editing of any kind in rebelrebel; MapLibre 6 (ES modules); fractional start zooms; the Python host; the steps of plan
 072 not named here; the Icelandic examples (landings, logbooks and AIS, warts and all), which need their own mining
-first (vortur, plan 072's seeds): until then the articles use the current public examples.
+first: until then the articles use the current public examples. The maintainer, 2026-11-17: "we are actually going to
+feed the icelandic dataset into ramb and rebelrebel is going to use those datasets" (so not vortur, as plan 072's
+seeds had it). rebelrebel's code depends on neither ramb nor fishycode (plan 072 §3.1b); its articles would read ramb's
+datasets with ramb in `Suggests`, to be settled when the set exists.
