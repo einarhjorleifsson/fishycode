@@ -64,6 +64,19 @@ testthat::test_that("no study and no $FISHYDATA is reported, not passed", {
   testthat::expect_equal(attr(ok, "failed"), "the studies")
 })
 
+testthat::test_that("a study with no README fails that check alone, with its hint", {
+  # decision 325: a study is kept as its record, and 40 of 194 had no README on 2026-11-17
+  s <- file.path(tmp, "archive", "no_readme")
+  put(file.path(s, "scripts", "01_run.R"), "x <- stats::median(1)")
+  put(file.path(s, "notes", "01_run.log"), "done")
+  out <- capture.output(ok <- fd$check_session_close(studies = c(good, s), root = file.path(tmp, "repo", "R")))
+  testthat::expect_equal(attr(ok, "failed"), "every study has a README")
+  testthat::expect_true(any(grepl("^\\s+no_readme\\s*$", out)))
+  testthat::expect_true(any(grepl("-> +write README[.]md: what was asked", out)))
+  put(file.path(s, "README.md"), "# Run", "`scripts/01_run.R`; its log is `notes/01_run.log`.")
+  testthat::expect_true(fd$check_session_close(studies = c(good, s), root = file.path(tmp, "repo", "R"), quiet = TRUE))
+})
+
 testthat::test_that("a SQL cast in a string is not a package, and a script that does not parse is reported", {
   s <- file.path(tmp, "archive", "sql")
   put(file.path(s, "scripts", "01_q.R"), "q <- 'SELECT vid::INT, NULL::VARCHAR FROM t'", "x <- stats::median(1)")

@@ -188,10 +188,17 @@ Every script in a targets project is on one of three sides, and says which in a 
   no `$FISHYDATA`.
 - **Nothing a session made hangs on the session** (maintainer, 2026-10-31). Its scratchpad, scratch R library and
   `/tmp` go when it is archived. At a session's close, `check_session_close()` (`R/check_session_close.R`) checks
-  the studies it touched under `$FISHYDATA/archive/`: their packages in R's library, no README or script pointing
-  into a temporary place, every script named in its README, every cited file there, no job running. A study's notes
-  go into its own `notes/`. Pass `studies =` the session's own folders; the default takes every study changed in two
-  days.
+  the studies it touched under `$FISHYDATA/archive/`: a README, their packages in R's library, no README or script
+  pointing into a temporary place, every script named in its README, every cited file there, no job running. A study's
+  notes go into its own `notes/`. Pass `studies =` the session's own folders; the default takes every study changed in
+  two days.
+- **A study is kept as its record, not to be rerun** (maintainer, 2026-11-17, decision 325: "What is not important is
+  being able to rerun things, more importantly is a bookeeping of what was tried, what worked, what not."). A study
+  under `$FISHYDATA/archive/` keeps its README (what was asked, what was tried, what worked and what did not), its
+  scripts, notes, logs and the small tables its numbers come from. Its bulk data (scratch stores, `before/` copies,
+  large parquet) is deleted when the work closes, once nothing reads it (an open `TODO.md` item, an issue's reprex,
+  another study's scripts, fishycode's code), listed with path, bytes and date in `deleted_<date>.csv` and noted at
+  the end of the README. `check_session_close()` fails a study with no README.
 - **Where a thing is written down.** `AGENTS.md` = what is true now.
   `TODO.md` = what is open, a few paragraphs each. `curate/plans/` = designs
   not yet built. `curate/decisions/` = what was chosen or found, after the

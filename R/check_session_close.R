@@ -9,9 +9,13 @@
 # scoping study told its reader to set R_LIBS to a scratch library.
 #
 # Two parts. `temp_paths()` reads the repo's code alone, in base R with no $FISHYDATA, so check_bookkeeping() runs it.
-# `check_session_close()` adds the studies: every package their scripts load is in R's library, no README or script
-# points into a temporary place or a scratch library, the README names every script, every file it cites exists, and
-# no job of theirs is still running. Run it at a session's close, beside check_bookkeeping().
+# `check_session_close()` adds the studies: each has a README, every package their scripts load is in R's library, no
+# README or script points into a temporary place or a scratch library, the README names every script, every file it
+# cites exists, and no job of theirs is still running. Run it at a session's close, beside check_bookkeeping().
+#
+# The README is the study: the maintainer, 2026-11-17, "What is not important is being able to rerun things, more
+# importantly is a bookeeping of what was tried, what worked, what not." (decision 325). A study's bulk data may go when
+# its work closes; its README, scripts, notes, logs and small tables stay. 40 of 194 studies had none that day.
 
 SESSION_TEMP <- "/tmp/|/private/tmp|/var/folders/|scratchpad/"
 # The lock that parallel sessions take for heavy jobs: `lockf -k` makes it when needed, so it hangs on no session.
@@ -91,7 +95,7 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
     add("the studies", "SKIPPED - $FISHYDATA not set, and no study given", "pass `studies =` the study folders")
     studies <- character(0)
   }
-  pkgs <- temp <- unnamed <- gone <- running <- character(0)
+  noreadme <- pkgs <- temp <- unnamed <- gone <- running <- character(0)
   ps <- tryCatch(system2("ps", c("ax", "-o", "pid=,ppid=,command="), stdout = TRUE, stderr = FALSE),
                  error = function(e) character(0))
   # the check itself and the processes that started it (the shell, Rscript) name the study on their command line too
@@ -100,6 +104,7 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
     id <- basename(s)
     sc <- list.files(file.path(s, "scripts"), "[.](R|sh|py)$", full.names = TRUE)
     readme <- rd(file.path(s, "README.md"))
+    if (!file.exists(file.path(s, "README.md"))) noreadme <- c(noreadme, id)
 
     # every package an R script loads, from R's own parser (a regular expression takes SQL's `vid::INT` in a string for
     # a package): pkg:: and pkg:::, and the first argument of library(), require(), requireNamespace(), loadNamespace().
@@ -135,10 +140,10 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
       if (length(i)) temp <- c(temp, sprintf("%s/%s:%d  %s", id, basename(f), i, substr(trimws(l[i]), 1, 60)))
     }
 
-    # the README names every script, and every file it cites under the study exists
+    # the README names every script, and every file it cites under the study exists (with no README, only that is said)
     txt <- paste(readme, collapse = "\n")
     nm <- basename(sc)[!vapply(sub("[.][A-Za-z]+$", "", basename(sc)), grepl, logical(1), x = txt, fixed = TRUE)]
-    if (length(nm)) unnamed <- c(unnamed, sprintf("%s: %s", id, paste(nm, collapse = ", ")))
+    if (length(nm) && !id %in% noreadme) unnamed <- c(unnamed, sprintf("%s: %s", id, paste(nm, collapse = ", ")))
     cited <- unique(unlist(regmatches(txt, gregexpr(
       "(scripts|results|figures|report|notes)/[A-Za-z0-9_./-]*[A-Za-z0-9_-][.][A-Za-z0-9]+", txt))))
     cited <- cited[!file.exists(file.path(s, cited)) & !grepl("NN|XX|YYYY", basename(cited))]   # a placeholder, not a file
@@ -149,6 +154,8 @@ check_session_close <- function(studies = touched_studies(), root = ".", quiet =
     if (length(r)) running <- c(running, sprintf("%s: %s", id, substr(sub("^\\s*(\\d+)\\s+\\d+", "\\1", r), 1, 70)))
   }
   if (length(studies)) {
+    add("every study has a README", noreadme,
+        "write README.md: what was asked and tried, what worked and what not, every script by name (decision 325)")
     add("every package a study's scripts load is in R's library", pkgs,
         "install it in R's library, not a scratch R_LIBS, and say so in the study's README")
     add("no study README or script points into a temporary place", temp,
