@@ -9,7 +9,7 @@ boxes he accepts; by 2026-11-15 the lettering read at all nine chart scales and 
 by the same day all nine frozen; step 1 revised 2026-11-15 at his word ("Yes, revise"): the lettering alone,
 reviewed by Claude's look and then cards, the place a step of its own (1c); the aim revised 2026-11-15 at his word ("Yes,
 revise the plan and start"): one best place a name, steady as the map zooms, shown at zooms chosen for our users, the
-outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it, the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved · **2026-11-11** · **see:** plan 073 (and its
+outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -674,6 +674,64 @@ the question for Julian Burgos.
    And, an idea for later (the maintainer, 2026-11-15: "Report the hand ranking as an idea to pursue later"): hand ranks
    the Natural Earth way, a rank of 1-3 set in the names editor for the names that matter at zooms 5-7, discrete isolation
    spacing them (the study's 83 and 81's `RANK`), the names not ranked below them on their box.
+11. **LMÍ's names on the names map** (drafted 2026-11-16 at the maintainer's word: "Plan which of LMÍ's names go on the
+   names map next? - Yes, plan it"; his direction the same evening: "I think we may have to forget the difference between
+   the sea and terrestrial stuff, at least when it comes to Breiðafjörður. We should similarily possible not limits our
+   nameplace mining for the main Iceland island either - possibly use something like a 1 km inward buffer from the
+   shoreline"; and of the skerries' positions: "By a spot check it looks like the LMÍ is pretty much spot on").
+   *Measured* (the study's 127, by Claude; no person has checked the counts): IS 50V's whole name set (200,674 names, 217
+   bearers; fishycode's `dump/natt/ornefni.R`) holds 51,711 names at sea (8,684), on islets (7,745) and on the mainland
+   within 1 km of the shore (35,282). By kind (the study's 115 classes): island 7,043, landform 15,770 (nes, tangi, höfði,
+   klettur, rif, eyri ...), on it 19,858 (farms, ruins, fields, hills, streams: things on the land), water 9,040 (vík,
+   vogur, sund, fiskimið ...). The names map holds 2,687 of them already (a feature of the same name within 2 km, or its box
+   holding the name; corrected 2026-11-17, below); 49,024 are new, 9,986 of them in Breiðafjörður. The other way: of the
+   names map's 2,113 names at sea and on islands, 1,500 have an LMÍ name of the same within 2 km. The two deliveries the maintainer counts as copies
+   (Hafrannsóknastofnun's V202005002, Trackwell's V202005003) hold 485, nearly all at sea; 87 cite the sea charts. LMÍ's
+   display scale (birtingarkvardi) is 1:10 000 for three in four, 1:25 000-1:50 000 for a quarter, coarser for about 1,000
+   (most of them water names); LMÍ's size class (ornefnaflokkur: Lítið, Mið, Stórt) marks 1,426 new water names Mið and
+   39 Stórt. Geometry: 29,439 areas (a median 190 m across), 8,571 lines, 13,701 points; 2,894 new names span 1 km or more
+   (1,540 of them water). The new names crowd: a median 5 per 10 km square, the 90th percentile 176, the thickest 989.
+   *Settled as proposed* (asks q-t, the maintainer the same night: "Yes, as proposed"); the pilot built, below:
+   - **Which names**: by kind, island, water and the shore's landforms at first; the things on the land (farms, ruins,
+     fields, hills, streams, 19,451 new) left out or a later layer (ask q). The two deliveries left out as copies unless
+     another witness holds the name. A pilot region first, Breiðafjörður (ask r), then the whole coast.
+   - **One name, one feature**: an LMÍ name and a chart feature of the same name within 2 km, or inside the feature's box,
+     are one; the names map keeps one name. Its place as now (an island's LMÍ's; an areal sea name the charts' rule), its
+     extent LMÍ's area or line where LMÍ has one (ask s); the spelling LMÍ's with the chart's print kept, flagged, as the
+     islands are.
+   - **When a name shows**: rule e (step 5) on LMÍ's own extent, its area's or line's; an islet's name by the islet's area;
+     a point with no extent from LMÍ's display scale (1:10 000 from about zoom 14, 1:25 000-1:50 000 from 12-13), moved
+     earlier by LMÍ's size class (Mið, Stórt). The charts' names placed first in the traffic jam (81), LMÍ's after; no
+     name dropped when zooming in.
+   - **How it looks**: LMÍ's names drawn as the charts' are, by kind, or apart in a lighter style and a layer of their own
+     in the editor (ask t).
+   - **Every name in one outcome**: shown from a zoom; already the chart's feature (one name); a copy left out; a kind left
+     out; outside the pilot. The witnesses' disagreements flagged, never undone.
+   *Assumed*: that LMÍ's areas and lines bound the features they name well enough for rule e; that a 2 km namesake is the
+   same feature (measured for the islands, 110: a namesake moved 2-4 km was flagged). *Check*: in the pilot, names a
+   screen at zooms 11-15 and the names 81 holds back, against the map today.
+   *The pilot built* the same night (the study's 128-130; the names map's 71, 81 and the editor 75 take it by a switch,
+   without which the map is as before, byte for byte). Built by Claude while the maintainer slept; no person has checked
+   the counts, and each choice below is his to correct.
+   - Every name in one outcome, 21 checks holding (the study's 129). Of 127's 51,711 names, 10,572 lie in the pilot's
+     box. 4,034 are left out as things on the land: 2,819 of 115's class on_it, and 1,215 fields, ponds, streams and
+     the like that 115 had sorted as landforms or waters. Leaving those out too is Claude's reading of this step's
+     words ("fields ... streams"). 537 are one name with 521 chart features. 5 are copies with no other witness. 5,996
+     are shown, as 5,947 names of LMÍ's own (records of one name within 300 m, or on one islet, one feature).
+   - Of the 521 joined chart features, 22 take LMÍ's spelling and one keeps the maintainer's. 473 take LMÍ's area or
+     line as their extent, so 240 of them start later, a median 1.33 zooms. LMÍ's area is the feature's own, and a
+     chart's box is about twice its lettering. A headland's LMÍ area is often only its tip (flagged).
+   - LMÍ's names are drawn by kind as the charts' names are, in a layer of their own in the editor. They are placed
+     after every chart name, none overlapping in the box at zooms 9-15. Among themselves LMÍ's islands are no tier
+     (Claude's choice: more names drawn at zooms 12-14 and shorter long waits than with the tier).
+   - *Measured* in the box against the map before: names drawn by zoom 13, 1,439 (494 before); by zoom 15, 4,983
+     (589). A screen of 1280 x 800 px holds at most 88 names at zoom 13 and 92 at zoom 15 (39 and 11 before), a median
+     of 11 and 4. 1,886 of LMÍ's names wait for room, a median 0.62 zooms.
+   - Elsewhere one long name slid 25 km along its line, because 81 weighs the others' extents when it slides a name.
+   - Seven alternatives were measured one at a time, each named in the study's README.
+   - Found: 68's boxes are in EPSG:5325 and 127 tested them in EPSG:3057, so 127's "box holding the name" never held.
+     Its 2,508 names already on the map were the 2 km rule alone; 127 fixed and rerun on 2026-11-17 against the charts' names
+     only (the map file now holds LMÍ's too): 2,687 on the map, 193 of them by a box beyond 2 km; the counts above corrected.
 
 ## 10. Asks
 
@@ -766,6 +824,18 @@ p. *Decided for now* (the maintainer, 2026-11-16: "we do not at this moment real
    letterings frozen by the study's 97. The R reading of the List of Lights gives 86's table field for field; the curated
    tables give the prototype's record for record (outcome, kind, attachment, aid, every attribute). The wreck list is its
    own session's to move; `R/curated_list.R` is there for it.
+
+Asked on 2026-11-16, with LMÍ's names (step 11); all four settled as proposed the same night (the maintainer: "Yes, as
+proposed"):
+
+q. *Settled as proposed*: island, water and the shore's landforms; the things on the land left out for now. Asked: Which of LMÍ's names go on the names map: island, water and the shore's landforms (the proposal), the things on the land
+   too (farms, ruins, fields, hills, streams: 19,451 new near the shore; 19,458 before the fix of 2026-11-17), or a list of bearers?
+r. *Settled as proposed*: Breiðafjörður first. Asked: A pilot first, Breiðafjörður (10,008 new names; 9,986 after the fix of 2026-11-17), then the whole coast?
+s. *Settled as proposed*: the chart's place, LMÍ's extent. Asked: Where a chart's sea name and an LMÍ area or line of the same name meet: the chart's place with LMÍ's extent (the
+   proposal), or LMÍ's place too?
+t. *Settled as proposed* (both offered: drawn by kind as the charts' are, and a layer of their own in the editor to show or
+   hide). Asked: LMÍ's names drawn as the charts' are, by kind, or apart: a lighter style and a layer of their own in the
+   editor?
 
 Asked on 2026-11-11, for the outlines (now a later step):
 
