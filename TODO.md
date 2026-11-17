@@ -1352,34 +1352,6 @@ Same kind, not traced: `tag_recapture` has a time in 0992 (Gunnólfsvík's `year
 
 **check:** Halinn's `year_last` no longer 2095, the 29 rows counted as flagged in the evidence, the correction declared.
 
-## 182. STK's reports dated a day late in its outages of 2026, VMS and AIS together
-**status:** open; measured 2026-11-09, the correction declared and coded the same day, tested on a scratch store of
-2026 · **needs: maintainer** — the go for the rebuild, now from `stk_hid_pid` down with decision 310 · **see:**
-`curate/corrections/stk_misdated_2026.yml`, `$FISHYDATA/archive/2026-11-09-stk-outage-misdated/` (its README),
-decision 274 ("Left"), `$FISHYDATA/archive/2026-11-02-plan060-fix/notes/verify_by_hand.R`, plan 060, decision 313
-
-Found 2026-11-02 by Claude (AI) while checking plan 060's receipt rule against PAME's astd; not checked by a person. In
-STK's outages of 2026 (13-15 January, 11-12 May, 11-14 October) every unit's reports came in hours to two days late,
-all at once. Some carry a time a day after their own: 6 of vid 2173's VMS reports of 15 January 10:04-13:06, and the
-AIS pings STK holds beside them, are at places astd heard the vessel 1,438-1,441 min before. 307 VMS reports of 2026
-were received over 10 min before their own time within a flushed hour (none before 2026), most likely misdated so; how
-many are, and how many of STK's AIS pings, is not measured. Both of STK's streams agree on the wrong time, so neither
-the receipt rule (which since ramb 2026.11.02.2 leaves a flushed hour out of every level) nor the STK side of
-`check_ais_vms_track` sees them; the clean takes out those that jump against astd.
-
-Measured 2026-11-09 by Claude (AI), against astd at each report's own time and a day before: the late reports are
-one block, received 2026-01-15 11:08:43-11:30:30 and written that day from 09:08 to 13:30, the reports of 14 January
-09:08-13:30 dated a day late, where STK's track has a hole (64,760 AIS and 501 VMS reports with a vessel; astd: 14,063
-AIS and 202 VMS late, 121 and 1 on time, the on-time ones live reports written 0-6 min before receipt). May's flush
-holds 32, the control's chance rate; October's has no astd witness (the reload, decision 313: no correction). The correction
-(maintainer: "Yes, write it"): the block moved back a day outside the live zone, inside it by astd or labelled
-`misdated_undecided`, in the tag pass and for STK's port events in `curate/port_call.R`. On scratch every tagged row of
-2026 equals the live store's but the block's. Left: the rebuild, from `stk_hid_pid` down through the union since
-decision 310 (STK's code `A` by position), which takes in `stk_misdated`, `ais_ping_tag` and decision 311's
-placeholder rule.
-
-**check:** the misdated reports of 2026's outages counted on astd's track, and flagged or moved in the store.
-
 ## 185. A detailed depth grid, Olex 50 m with GEBCO: place names, a topography map, ramb's base map
 **status:** parked (maintainer, 2026-11-03: recorded as a plan only, no heavy work now) · **needs: maintainer** — how
 the grid was made, from Julian Burgos · **see:** `$FISHYDATA/raw/external/bathymetry/README-provenance.txt`,
@@ -1585,7 +1557,7 @@ the same evening in `~/R/Pakkar/rebelrebel` and committed (3e4548f); step 1a (th
 `$FISHYDATA/archive/2026-11-10-depth-sources/` · step 1b committed (3921261: EMODnet's sea floor the default, a dark one beside
 it) · step 2's first part committed (34497b4: the layer functions, colours, a generic time panel); rebelrebel pushed and
 public since 2026-11-10 · step 2 under way (the row on a click, linked lists) · plan 076 (2026-11-17, partly built):
-**needs: maintainer** (its ask d; a-c, e and f answered the same evening; step 1 built, 4698bc2; steps 2-5 to build), rebelrebel as the foundation of pages built on it, which edit while it views · **see:**
+**needs: maintainer** (its ask d; a-c, e and f answered the same evening; steps 1 and 2 built, 4698bc2 and 0b8f6d3; steps 3-5 to build), rebelrebel as the foundation of pages built on it, which edit while it views · **see:**
 `curate/plans/072-rebelrebel.md`, `curate/plans/076-rebelrebel-foundation.md`, plans 046, 063 and 064, decisions 220, 228,
 277-281
 

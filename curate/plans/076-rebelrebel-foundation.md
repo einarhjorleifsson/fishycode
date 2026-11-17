@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d open; step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -267,7 +267,17 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    maintainer: "Question is if we should entertain the .Rmd construct at all"; it costs no code, the same
    `knit_print()` serving both, and one test).
 2. **The engine's guards and MapLibre 5.24.1** (§3.5). Check: a browser test with a forced lost index; the names
-   editor's click path, on a copy, no failure in 100 tries of §1.3's pattern.
+   editor's click path, on a copy, no failure in 100 tries of §1.3's pattern. **Built 2026-11-17** (rebelrebel
+   2026.11.17.1, 0b8f6d3): every query of the page through one guard, `query()`; one click dispatcher and one pointer
+   check a frame in place of the layers' own MapLibre handlers (which queried unguarded); a whole layer healed by its own
+   data sent again (`setData(source.serialize().data)`), which cured 6 of 6 in the reproduction where MapLibre's
+   `refreshTiles()` cured none; a tiled layer by its tiles fetched again (not reproduced on tiles, so untested). MapLibre
+   5.24.1, checked against npm's integrity hash. Browser tests: a forced lost index and a real click (the popup opens,
+   the data sent once, no error on the page), and a served map's note pin, hover label and pointer. R CMD check 0 errors,
+   0 warnings, 0 notes. The names editor's own click path is not rebuilt here: its fractional starts go with step 6.
+   Learnt on the way: Quarto renders an article's R in a process of its own, which loads the *installed* rebelrebel,
+   so a local `pkgdown::build_site()` needs the package installed first (GitHub Actions installs it); and the site's
+   deploy keeps old files (`clean: false`), so map folders of earlier builds stay on the published site (a follow-up).
 3. **Labels** (§3.1) with an article on labels from the package's current public examples (the harbours' and the
    survey stations' ids), and, for names with angles and start zooms, which those lack, a small public set (Natural
    Earth's marine areas, public domain; checked before use). Check: the article's map, and the names' 25,880 drawn by
