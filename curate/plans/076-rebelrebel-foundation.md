@@ -1,10 +1,12 @@
 # 076 — rebelrebel as a foundation: what a page built on it needs, and the faults such pages found
 
-**status:** proposal — written 2026-11-17 at the maintainer's word (rebelrebel is not an editor; editing pages are built
+**status:** partly built — written 2026-11-17 at the maintainer's word (rebelrebel is not an editor; editing pages are built
 ad hoc on its foundation, so that each one smoke-tests its engine; the foundation made right now rather than later), from
 the names editor's smoke test and a survey of every map page in fishycode, its studies and EM4SSF; asks a-c, e and f
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
-order, articles first), ask d open · **see:** plan 072
+order, articles first), ask d open; step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
+Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
+mended) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -200,6 +202,13 @@ The script is put into the page (and a bundle) and called once the layers are dr
 
 Seven things, documented in one article; the page needs nothing else of rebelrebel's.
 
+**A page with no R** (the maintainer, 2026-11-17: "it would be really nice if the product created in rebelrebel could be
+saved as an "entity" so that the construct can be run by another user withour any R. We have already done some such
+constructs in fishycode"): that entity is `rr_bundle()`, a folder that opens with a double click on any system (moved
+from ramb; fishycode's bathymetry and depth-effort maps, decisions 277 and 278). A page's script goes into its bundle
+too; only its routes need R, so `rr.route()` is `null` there, and a page that takes a reader's input in a bundle keeps it
+in the browser and hands it over as a file (a small `rr.save(name, text)` beside the seven, proposed with step 5).
+
 ### 3.4 The server: a page's routes, and serving from `Rscript`
 
 - `rr_serve(map, routes = list(edit = function(req) ...))`: each answered under `/x/<name>` (so no route of the page's
@@ -243,7 +252,20 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
 
 1. **Maps in articles** (§3.7) and a first article, a map in five lines from an example file, the map live in the
    rendered page. Check: `pkgdown::build_site()` builds it locally, the map pans and answers a click in the built site
-   (headless Chrome), and the site's size with and without it.
+   (headless Chrome), and the site's size with and without it. **Built 2026-11-17** (rebelrebel 2026.11.17, 4698bc2):
+   `knit_print()` writes each printed map as a bundle and an htmltools dependency, shown in an iframe whose small
+   locator script finds the dependency's folder (pkgdown's `articles/<name>_files/libs/`, Quarto's `<doc>_files/libs/`,
+   R Markdown's `<doc>_files/`), MapLibre one copy a document (1.3 MB); a self-contained page says where the map went.
+   The maintainer, the same night: the articles are Quarto ("we are using quarto for the documents"); "Get started"
+   (`vignettes/articles/rebelrebel.qmd`) has three maps of the survey's pings and tows, 2.9-3.1 MB each, the article
+   10 MB, the site 17 MB. In headless Chrome every point drawn (8,918), each map fitted to its frame. The article found
+   three faults, mended: a map from data opened at a zoom from its extent's width alone (3 for Iceland in any frame),
+   now the extent fitted to the frame (4.6-4.8 in the article); `rr_map()` with no data stopped, now a map whose layers
+   bring their own; duckdb's notice of its extension folder printed into documents. Browser tests (chromote; skipped
+   on CRAN and without Chrome) render an R Markdown and a Quarto document; R CMD check 0 errors, 0 warnings, 1 note (an
+   example line, as before); the pkgdown workflow sets Quarto up. Open: whether R Markdown is kept at all (the
+   maintainer: "Question is if we should entertain the .Rmd construct at all"; it costs no code, the same
+   `knit_print()` serving both, and one test).
 2. **The engine's guards and MapLibre 5.24.1** (§3.5). Check: a browser test with a forced lost index; the names
    editor's click path, on a copy, no failure in 100 tries of §1.3's pattern.
 3. **Labels** (§3.1) with an article on labels from the package's current public examples (the harbours' and the
