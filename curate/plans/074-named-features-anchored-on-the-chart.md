@@ -486,6 +486,13 @@ the question for Julian Burgos.
      ÍSOR's names (Njörður, Fagurhóll, Steinahóll, Gullhóll, Stóri-Brandur, Eldeyjarboði, Grjóthryggur, Langagrunn,
      Geirfuglasker, Eldey, Reykjanes), his better names their synonyms (Fagurhólar, Steinahólar, Gullhólar, Fuglaskerin;
      Grjóthryggur is ÍSOR's own). Claude's four proposals are dropped; Boðagrunn stays his name for its mound.
+     *Built the same evening* (the maintainer: "I am not seeing things like Steinahóll ... aka the stuff from ÍSOR"; the
+     study's 131, by Claude, no person has checked the counts): every record of ÍSOR's five named seabed layers in one outcome
+     (2,825: 2,348 numbered labels, 400 sites named as descriptions, 15 land lavas' edges under the sea and 5 named by their
+     volcanic district, both by ÍSOR's own fields, 35 a witness on a chart or LMÍ name); 22 on the names map, the 18 volcanic
+     areas as wholes (11 with a chart name inside, flagged), a line and three craters, in a layer of their own, his names
+     their synonyms. ÍSOR's map reaches Kolbeinseyjarhryggur and the Jan Mayen ridge, but names features there only by
+     number; the names SW of Jan Mayen are Orkustofnun's, on the map through LMÍ.
      Of the 66 crater mounds, 9 carry a top the charts name or a name he decided (Boðagrunn), and 47
      have no proposal, mostly deep and little fished. 11 names from the fishermen's logbook app are ranked as leads for
      unnamed mounds, kept in the study only (internal). The maintainer on those names: "in principle useless", because most tows run beside the
