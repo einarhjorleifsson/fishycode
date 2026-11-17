@@ -1584,7 +1584,9 @@ plan parked.
 the same evening in `~/R/Pakkar/rebelrebel` and committed (3e4548f); step 1a (the depth default) measured, study
 `$FISHYDATA/archive/2026-11-10-depth-sources/` · step 1b committed (3921261: EMODnet's sea floor the default, a dark one beside
 it) · step 2's first part committed (34497b4: the layer functions, colours, a generic time panel); rebelrebel pushed and
-public since 2026-11-10 · step 2 under way (the row on a click, linked lists) · **see:** `curate/plans/072-rebelrebel.md`, plans 046, 063 and 064, decisions 220, 228,
+public since 2026-11-10 · step 2 under way (the row on a click, linked lists) · plan 076 (2026-11-17, proposal):
+**needs: maintainer** (its asks c-f), rebelrebel as the foundation of pages built on it, which edit while it views · **see:**
+`curate/plans/072-rebelrebel.md`, `curate/plans/076-rebelrebel-foundation.md`, plans 046, 063 and 064, decisions 220, 228,
 277-281
 
 The maintainer, 2026-11-10: a general mapping package on MapLibre, marine first, intuitive; names after ggplot2's

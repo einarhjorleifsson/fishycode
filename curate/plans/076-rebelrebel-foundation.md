@@ -1,0 +1,282 @@
+# 076 — rebelrebel as a foundation: what a page built on it needs, and the faults such pages found
+
+**status:** proposal — written 2026-11-17 at the maintainer's word (rebelrebel is not an editor; editing pages are built
+ad hoc on its foundation, so that each one smoke-tests its engine; the foundation made right now rather than later), from
+the names editor's smoke test and a survey of every map page in fishycode, its studies and EM4SSF · **see:** plan 072
+(rebelrebel), plan 074 step 7 (the names editor), TODO 198
+
+Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
+(scripts, logs and tables in `$FISHYDATA/archive/2026-11-17-rebelrebel-foundation/`); §2-§5 are proposal.
+
+The maintainer, 2026-11-17:
+- On the names editor, rebelrebel should not be an editor ("concur"); "the edits is something that gets build ad-hoc on
+  top of that. That way we always will check the engine of rebelrebel ... acting our own smoke-tester of rebelrebel when
+  we cook something ad hoc".
+- "MapLibre judges a zoom condition in a layer's filter at whole zooms only - Why are we not just using that. We have to
+  think of rebelrebel being robust, no only fancy."
+- "If you want to know what we want rebel rebel to do - check also the stuff we have been playing around with in
+  fishycode and em4ssf."
+- "we really need good articles for the user - articles are also a good feedback mechanism, it acts as feed-back lopp: If
+  you can not create easy intuative code for the user to create a map, you need to back to the the package structure."
+  And: "I love building and checking things in pckdown and devtools, so use those."
+- "everything has to be platform independent - linux, mac and windose".
+- "I think the articles should show at lest some of the simple maps in the rendered version of the article. the
+  rstudio leaflet package does, so should we."
+- "we are going to feed the rebelrebel package with some good examples from our icelandic landings / logbooks and ais.
+  for the time being we use the current public stuff, in part because the selection of good examples from the icleandic
+  dataset requires some deep mining on its own", warts and all: the issues people have with VMS and AIS data, around
+  which EM4SSF and WGSFD revolve.
+
+## 1. What is at hand (measured 2026-11-17)
+
+### 1.1 The names editor
+
+`$FISHYDATA/archive/2026-11-11-named-features/scripts/75_name_editor.{R,html}` (163 and 632 lines; internal) is a page and a
+server of its own. From rebelrebel it takes `rr_tiles_mbtiles()`, the vendor folder by `system.file()` and
+`rebelrebel:::.rr_terrarium_png()`; its depth colours copy rebelrebel's palettes by value, its contours repeat the
+engine's maplibre-contour set-up, and its server answers eleven routes of its own (the names, LMÍ's names, the aids, an
+area by key, the letterings by key, depth tiles, an edit by POST, the edits). Four of the smoke test's nine faults were
+viewer plumbing (the study's README, "The names editor smoke-tested"): the names rebuilt at every request (12-17 s, the
+tiles and contours queued behind them); MapLibre's index lost after the names were sent again (§1.3); a click's fetch
+landing on a later selection; a search with no ranking and no count. The other five were the editor's own.
+
+### 1.2 Every other map page
+
+Read on 2026-11-17 (Claude, two read-only surveys): fishycode's seven products, some 30 map scripts in 15 studies, and
+EM4SSF's three viewers and five R Markdown maps.
+- **Built on:** four products and about half the studies' scripts still on ramb's `rb_map_*()` (through
+  `bathymetry_map_build()`), one product, the newer studies and one EM4SSF viewer on rebelrebel; four pages written by
+  hand (MapLibre 4.7 or 5.24, deck.gl, Leaflet) with their own httpuv servers; EM4SSF's R Markdown maps in leaflet.
+- **What they did by hand, again and again** (the pieces a foundation would hold once):
+  - *Reaching into the built map:* the map's lists edited (`m$config`, `mp$layers$<id>$config`) in over twenty
+    scripts, often in two copies ("the page reads this copy"); `rebelrebel:::.rr_map_verdict_spec()` in four; EM4SSF's
+    hand check guessing the layer ids rebelrebel makes (`"pings_2"`). What they set: a style (a halo, a ring of fixed
+    size, an outline only, one colour), which base map opens, the order of layers and groups, the seabed's starting look.
+  - *Labels:* italic for water, an angle, a priority and a start zoom by filter, written by hand in five pages; contour
+    labels along lines in three.
+  - *Maps merged:* one built map's groups, layers, texts and palettes added to another's in five scripts.
+  - *Servers:* a second httpuv server for local raster tiles (three), a JSON service of the page's own (three), a loop
+    to keep an `Rscript` serving (the names editor, EM4SSF's harbours), `NO_SERVE=1` to build without serving (eight).
+  - *Pages written by hand:* a search box, the URL hash, keys, a selection drawn by sending data again.
+- **Faults noted in their comments, still open in rebelrebel:** `rr_map(data)` drops `basemaps` and `view`; a base map
+  given as a tile address cannot open the page; a base map without glyphs leaves names unwritten; GeoJSON layers
+  without a count drawn in their order of arrival (an 8 MB coast over the names); `rr_segment()` calling `ST_MakeLine`
+  without the spatial extension loaded; a tiled layer refused when its colour column is also in its popup.
+
+### 1.3 MapLibre's lost index: its own fault, and the editor's fractional starts trigger it
+
+The error the editor met, "Out of bounds. Index requested n=0", is MapLibre's: a tile reloaded while an earlier reload
+of it is still being parsed loses its raw data, and `queryRenderedFeatures()` then throws on that tile until it is
+loaded again. MapLibre fixed it in 6.0.0 (maplibre-gl-js pull 7765, June 2026) and a second path in 6.3.0 (issue 8064,
+August 2026); 5.24.1 (2026-11-11, the last of 5.x) carries only fixes to how attributions are cleaned. rebelrebel stays
+on 5.x, since 6.x loads only as ES modules, which a bundle opened from its folder cannot (plan 072, 2026-11-11).
+
+Reproduced in headless Chrome on a bare page of MapLibre 5.24.0 (4,000 points drawn as circles and as turned text):
+- **Data sent again, six ways** (once, twice at once, five times at once, with a jump, while tiles load, the editor's
+  pattern), 30 times each, on 5.24.0 and 5.24.1: no failure in 360.
+- **A filter reading the map's zoom from MapLibre's global state** (the editor's way to show a name from a fractional
+  zoom, the state set at each 0.02 of a zoom), the data sent during an animated zoom: the text layer's query failed in
+  13 of 100 trials (4 of 40 in a first run), the circles' never; an animated zoom alone, no failure in 100. **The same
+  with a plain filter on `["zoom"]`** (whole zooms): no failure in 100, with the data sent during the zoom or not.
+- Sending the data once more cured every failure (17 of 17).
+
+So the trigger is a filter that changes as the map zooms: every step reloads the layer's tiles, and data sent meanwhile
+collide with them. Whole zooms take the trigger away; a guard in the engine (§3.5) is the backstop for any page that
+reloads tiles quickly.
+
+### 1.4 Start zooms at whole zooms
+
+Of the 25,880 names on the names map, 22,987 (88.8 %) start at a fraction of a zoom (script 81's start, which places no
+two names on one another). Drawn from the first whole zoom at or above it, as MapLibre's filter on `["zoom"]` does, a
+name shows 0.48 of a zoom later on average (median 0.48; 10,456 more than half a zoom later). No overlap is added: the
+names drawn at a whole zoom are those 81 placed apart there, and zooming in only spreads them. Four names are never drawn
+(no room), as now.
+
+### 1.5 Turned names
+
+908 names (3.5 %) are turned (an angle of half a degree or more). MapLibre gives a turned name at a point one collision
+box, upright, round the whole turned text, so it hides neighbours its letters do not touch; the editor draws each
+turned name on a short line of its own for each whole zoom (MapLibre then checks it letter by letter), cut to zoom 4 so
+that a line never crosses a tile's edge. Measured in headless Chrome at whole zooms on the names, in the editor's style
+(8 places round Iceland at zooms 6, 8, 10 and 12, 1280 × 800; names counted by key, each once):
+
+| Turned names drawn | names drawn | turned names drawn | hidden by MapLibre's collision |
+|---|---|---|---|
+| with overlaps allowed (all due) | 842 | 191 | none |
+| at their point, one upright box | 752 | 163 | 90 (10.7 %) |
+| on lines of their own, cut to zoom 16 | 771 | 183 | 71 (8.4 %) |
+| on lines of their own, cut to zoom 4 (the editor's) | 769 | 183 | 73 (8.7 %) |
+
+- The gain of the lines is at zooms 8 and 10 (219 against 209 of 242 at zoom 8, 307 against 301 of 355 at zoom 10);
+  at zoom 12 every name is drawn either way. No name was drawn twice.
+- **Even on lines, MapLibre hides 8 % of the names script 81 placed apart:** its text boxes (padding, spacing) are
+  larger than 81's reckoning. That is the names study's to settle (81's measure of a name), not rebelrebel's.
+- **The editor's cut at zoom 4 misplaces turned names when zoomed in** (15 turned names, each at the view's centre): the
+  lines' ends snap to the zoom-4 tile's grid, so at zooms 12, 14 and 16 a name is drawn 4, 17 and 69 pixels from its
+  place on average (up to 100) and turned up to 4°, 14° and 20° off; at zoom 16 only 5 of the 15 are drawn. Cut to zoom
+  16 (a source buffer of 512 pixels keeps every line whole in its tile), each is within 0.02 pixels and 0.2° at every
+  zoom. A fault of the live editor, reported to the names study.
+- The lines' length comes from an estimate of a name's width (characters times a width per size, plus 15 %); a name
+  longer than its line is not drawn, so the estimate is a thing that can break with another font.
+
+### 1.6 What rebelrebel has now, for these asks
+
+- `rr_text()` writes a column at points: a colour (by a column too), one size, a white halo; no angle, priority, start
+  zoom by row, offset or font face; text on lines is not placed along them.
+- A layer sent whole is read once, when the map is built or served: the editor's first fault cannot arise for a
+  rebelrebel layer. A click's row is fetched into the clicked popup's own box, so a late answer lands in a closed box,
+  never on the next feature: the editor's seventh fault is already guarded for rebelrebel's popup.
+- The server's routes are fixed (the page, its config, tiles, whole data, a row, a fit, the time panel, and opt-in
+  notes and verdicts); a page cannot add its own. Nothing runs a page's own script.
+- `rr_layer(state = )` puts a reader's control in MapLibre's global state, changed by a click, never as the map zooms.
+- Plan 072 §3.4 promised `id` on every layer function and `...` passed to `rr_layer()` (MapLibre's paint and layout);
+  neither is built (`...` takes only `color`).
+- No article in rebelrebel yet (its site has the reference only; the maps article is ramb's), and a map printed in an
+  article has nowhere to go (no `knit_print()`). R CMD check runs on macOS, Windows and Ubuntu on GitHub Actions.
+- The names' label layer (name, start, angle, priority, size, kind, offset and key) is 5.2 MB of GeoJSON: just over
+  the 5 MB line, so it would go as tiles by default.
+
+## 2. The line between rebelrebel and a page built on it (proposal)
+
+- **rebelrebel views.** What any viewer of any data may want is rebelrebel's: labels with angles and start zooms, a
+  layer's id, MapLibre's paint and layout on any layer, the order of layers and base maps, a guarded click, a server
+  that keeps serving from `Rscript`, a page's own routes and script.
+- **A page edits.** Its panel, its edits, its ledger and its routes are the page's, in its study or project.
+- **The rule:** a page uses rebelrebel's documented surface only: its exported R functions, and in the browser the
+  `rr` object (§3.3). `:::`, edits of a built map's lists, rebelrebel's DOM and its vendor folder are faults of that
+  surface: mended in rebelrebel with a test and a line in an article, never worked round in the page.
+
+## 3. What rebelrebel would provide (proposal)
+
+Each item lands with tests (`devtools::test()`), a clean `devtools::check()`, and an article or a section of one, built
+by `pkgdown::build_site()`; an article whose code is long or awkward sends the item back to its design. Nothing in R
+calls a shell or a fixed path, files are written as UTF-8 on every platform, and a change is done when GitHub Actions
+pass on macOS, Windows and Ubuntu (at the next push the maintainer asks for).
+
+### 3.1 Labels: `rr_text()`
+
+```r
+rr_map() |>
+  rr_text(names, label = name, minzoom = z0, angle = rot, priority = size_km,
+          size = px, fontface = face, offset = c(0, dy))
+```
+
+- **`minzoom` a number or a column:** each row drawn from the first whole zoom at or above its value (a filter on
+  `["zoom"]`, as MapLibre judges it). Fractional starts through the global state are not built (§1.3, §1.4; ask b).
+- **`angle`**, degrees, counter-clockwise as ggplot2's `geom_text(angle = )`; a number or a column. How a turned label
+  meets its neighbours: ask c. **`overlap`**, `FALSE` by default (MapLibre's `text-allow-overlap`).
+- **`priority`**, a number or a column: higher placed first where labels meet (MapLibre's `symbol-sort-key`,
+  reversed). Within a tile only, as MapLibre places; said in the help.
+- **`size`** by a column (pixels), **`fontface`** (`"plain"`, `"italic"`, `"bold"`, `"bold.italic"`, ggplot2's word) as
+  a value or a column, **`offset`** in text heights (`c(x, y)`, numbers or columns; tmap's `xmod`/`ymod`).
+- **Lines:** text on a line is written along it (MapLibre's `line-center`), as the editor's long names.
+- Whole by default for a text layer up to 10 MB (labels are few and their placement is surer in one source; ask d).
+
+### 3.2 Ids and MapLibre's own terms on every layer function (plan 072 §3.4, unbuilt)
+
+`id = "names"` on every layer function (else made from `name`, as now), and `...` passed to the layer's style as
+MapLibre's paint and layout (`"circle-stroke-width" = 2`, `"text-halo-width" = 0`). With them the twenty scripts that
+edit `m$config` and the four `:::` calls have a documented way.
+
+### 3.3 The seam: a page's own script
+
+```r
+rr_map() |> rr_text(names, label = name, id = "names") |> rr_script("editor.js", css = "editor.css")
+```
+
+The script is put into the page (and a bundle) and called once the layers are drawn, given one object, `rr`:
+
+| `rr.` | gives |
+|---|---|
+| `map` | MapLibre's map |
+| `layer(id)` | a layer's MapLibre style ids and source |
+| `on("click", id, fn)` | a click on the layer's features: `fn({feature, lngLat, row})`, `row()` the clicked row, answered as `null` when a newer click came |
+| `setData(id, geojson)` | a whole layer's data sent again, at most once a frame, with the guard of §3.5 |
+| `filter(id, key, expr)` | an expression of the page's, ANDed with the engine's own (`choose`); `null` removes it |
+| `panel(title)` | a box in the sidebar, the page's to fill |
+| `route(name)` | the address of the page's own route (§3.4); `null` in a bundle |
+
+Seven things, documented in one article; the page needs nothing else of rebelrebel's.
+
+### 3.4 The server: a page's routes, and serving from `Rscript`
+
+- `rr_serve(map, routes = list(edit = function(req) ...))`: each answered under `/x/<name>` (so no route of the page's
+  can take one of the engine's), given the method, the rest of the path, the query and the body (JSON read); a list or
+  data frame returned is sent as JSON, `NULL` as not found, an error as its message. Writes (POST) are answered only for a
+  page opened from this computer, as notes and verdicts are.
+- `rr_serve(wait = !interactive())`: from `Rscript` the server keeps serving until stopped, as `shiny::runApp()`
+  does; no loop by hand.
+
+### 3.5 The engine's guards
+
+- **One click and one hover:** the engine queries its clickable layers itself, top first, each in a guard; a layer
+  whose index is lost is sent its data again (a whole layer) or its tiles are refreshed, and the click is tried once
+  more when the map is idle. Tested in the browser by a forced failure; the reproduction of §1.3 kept in the study.
+- **Data sent again at most once a frame** (`rr.setData()`), so a page cannot set off reloads in quick succession.
+- **MapLibre 5.24.1** in place of 5.24.0 (attributions cleaned; same interface).
+
+### 3.6 Smaller gaps the survey found (each its own ask, e)
+
+- A base map given as a tile address (a WMS's too) may open the page; `rr_map(data)` keeps `basemaps` and `view`.
+- Layer order by a call (`rr_map(order = )`), not by the order sections are first named.
+- A point's ring and an area's outline alone, as arguments (`stroke`, `fill = NA`).
+- A search over a layer's text column (`search = name`): whole matches first, then beginnings, then any, nearest the
+  view first, counted.
+- The seabed as layer functions (`rr_relief()`, `rr_contour()`, plan 072 step 3) with a starting look, so no map is
+  merged into another by hand.
+
+### 3.7 Maps in articles
+
+The maintainer, 2026-11-17: "I think the articles should show at lest some of the simple maps in the rendered version
+of the article. the rstudio leaflet package does, so should we." `knit_print()` for a map: in R Markdown and Quarto a
+map printed in a chunk is written as a bundle beside the article and shown live in an iframe, so `pkgdown::build_site()`
+builds articles whose maps pan, zoom and answer clicks, as leaflet's do (plan 072 §3.14). leaflet writes its data into
+the page itself; a bundle keeps it in files beside it, so a site's size grows with its maps' data: the articles' maps
+use small open data, one copy of MapLibre for the whole site, and a guard on a bundle's size (measured in step 1).
+First, since every other item's article needs it.
+
+## 4. Steps
+
+Each committed in rebelrebel's local `main` on its own, with its tests and article; pushed only at the maintainer's word.
+
+1. **Maps in articles** (§3.7) and a first article, a map in five lines from an example file, the map live in the
+   rendered page. Check: `pkgdown::build_site()` builds it locally, the map pans and answers a click in the built site
+   (headless Chrome), and the site's size with and without it.
+2. **The engine's guards and MapLibre 5.24.1** (§3.5). Check: a browser test with a forced lost index; the names
+   editor's click path, on a copy, no failure in 100 tries of §1.3's pattern.
+3. **Labels** (§3.1) with an article on labels from the package's current public examples (the harbours' and the
+   survey stations' ids), and, for names with angles and start zooms, which those lack, a small public set (Natural
+   Earth's marine areas, public domain; checked before use). Check: the article's map, and the names' 25,880 drawn by
+   `rr_text()` with the counts of §1.5 met.
+4. **Ids and MapLibre's terms** (§3.2). Check: EM4SSF's hand check and three of the studies' scripts rewritten
+   without `m$config` (on copies).
+5. **The seam** (§3.3, §3.4) with an article, "A page of your own": a script and a route that keep a list of the
+   features a reader marks, on the same open data. Check: the article's code short and plain.
+6. **The smoke test:** the names map rebuilt on rebelrebel in its study (the names session's prototype, on hold),
+   its editing ad hoc on the seam; every engine fault it finds mended in rebelrebel with a test.
+7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time.
+
+## 5. Asks
+
+a. **The line** (§2): answered in the maintainer's words of 2026-11-17 (an engine fault found by a page is fixed in
+   rebelrebel with a test, never worked round in the page); §2 writes it out.
+b. **Start zooms at whole zooms only** (§3.1): answered by the maintainer, 2026-11-17 ("Why are we not just using
+   that"), and measured in §1.3 and §1.4; fractional starts through the global state not built (the editor's Héraðsflói
+   names, due at 7.47-7.77, show from 8).
+c. **Turned names** (§1.5): (1) at their point with MapLibre's one upright box, recommended as the robust way: nothing
+   estimated, nothing new to break, 90 of 842 names hidden against 71; (2) on lines of their own cut to zoom 16, letters
+   checked one by one: 19 more names in the 32 views (20 more of the 191 turned), exact in place and angle, at the price
+   of the width estimate and the lines' making (some 60 lines); (3) overlaps allowed where a start zoom is given (the
+   data's placement trusted): every name due drawn, words over words where 81's reckoning and MapLibre's differ.
+   `overlap = TRUE` (MapLibre's `text-allow-overlap`) is offered whichever is chosen.
+d. **A text layer whole up to 10 MB** (the 5 MB line kept for other layers): recommended, so the names' 5.2 MB stay
+   in one source; not measured beyond the names.
+e. **The seam as §3.3 and §3.4, and which of §3.6 now.** Recommended: the seam as proposed; of §3.6, the base map by
+   address and `rr_map(data)` keeping its settings (faults), the rest later.
+f. **The order of §4.** Recommended as written, articles first.
+
+## 6. Not in this plan
+
+Editing of any kind in rebelrebel; MapLibre 6 (ES modules); fractional start zooms; the Python host; the steps of plan
+072 not named here; the Icelandic examples (landings, logbooks and AIS, warts and all), which need their own mining
+first (vortur, plan 072's seeds): until then the articles use the current public examples.
