@@ -1,6 +1,6 @@
 id: stk_misdated_2026
 title: STK's reports of 14 January 2026, 09:08-13:30, were delivered in its outage with a time a day late
-status: declared 2026-11-09, coded (curate/corrections/stk_misdated_2026.R, applied by curate/ais_ping_tag.R), not yet in the store - the tag pass and the chain below it are rebuilt at the maintainer's go
+status: declared 2026-11-09, coded (curate/corrections/stk_misdated_2026.R, applied by curate/ais_ping_tag.R), in the store since 2026-11-17 (decision 326, 62,891 AIS, 491 VMS and 74 kept arrivals moved back a day, 1,384 undecided)
 applies_to:
   - staging/ais/ping_tagged - STK's streams stk_ais and stk_vms, the block's reports (`time` a day earlier, `lag_s` 86400, `lag_basis` "misdated"; or "misdated_undecided", not moved)
   - STK's port events as curate/port_call.R reads them from staging/ais/stk_event.parquet - the block's events moved back a day (168 events, 70 vessels); the event table itself unchanged
