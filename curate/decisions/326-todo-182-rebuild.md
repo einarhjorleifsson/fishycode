@@ -40,5 +40,6 @@ the stamp reads `@none`; its changes since 2026.11.09.2 are in the map viewer on
 
 ## Left
 
-- `~/stasi/scratch-182/` (2 GiB), TODO 182's scratch store, is still on disk.
+- `~/stasi/scratch-182/`, TODO 182's scratch store: deleted 2026-11-18 at the maintainer's word ("Yes, delete it"),
+  its file list in `$FISHYDATA/archive/2026-11-09-stk-outage-misdated/deleted_2026-11-18.csv`.
 - `check_sync()` will list the 405 dirty stamps; they stay as written.
