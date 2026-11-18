@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d on 2026-11-18 (one 5 MB line for every layer, as now); step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 built 2026-11-18 (the base map by address, 61032f1; layer order, f95a77c; rings and outlines, 6e35c87; search, b2b7e03); R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`), and 2026.11.18.4 (83b4fb6) the same way later that day ("Install now"; the editor on 4836 and the names map on 4849 had stopped by then), and 2026.11.18.8 (b2b7e03) once step 7 was built ("Install for all I care"; the editor on 4836 was running and still answered after, keeping 2026.11.18.4 until restarted) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 built 2026-11-18 (the base map by address, 61032f1; layer order, f95a77c; rings and outlines, 6e35c87; search, b2b7e03); R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`), and 2026.11.18.4 (83b4fb6) the same way later that day ("Install now"; the editor on 4836 and the names map on 4849 had stopped by then), and 2026.11.18.8 (b2b7e03) once step 7 was built ("Install for all I care"; the editor on 4836 was running and still answered after, keeping 2026.11.18.4 until restarted), and 2026.11.18.9 (891c363) after the feature ids (the editor's process was gone right after that install: it had answered after the one before; its log is with the session that started it, so whether the install broke it is not known) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -323,7 +323,8 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    reported with it: `popup = <a variable of names>` quiet (tidyselect warned), and a line in `rr_basemaps()`'s
    help (a style on the map's own routes given by a relative address: localhost and 127.0.0.1 are two origins).
    Reported, not built (the names session records them for the maintainer): a per-row end zoom in `rr_text()`, a
-   documented key on each feature for a script, a base map of several tile sources by zoom band.
+   documented key on each feature for a script (built after step 7: 2026.11.18.9, 891c363), a base map of several tile
+   sources by zoom band.
 7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time. Begun 2026-11-18 at the maintainer's word
    ("Yes, start step 7"), the base map first: (1) *a base map by address opens the page* (2026.11.18.5, 61032f1):
    found mended already, by 96de711 on 2026-11-12 (`setBase()` wrote `glyphs: undefined`, which MapLibre refused, so
@@ -347,6 +348,17 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    goes there, at zoom 10 or nearer (a text's own start zoom), turns the layer on and shows the row as a click would.
    The texts and places are read on the first search from `/search/<id>` or the bundle; more than 500,000 rows take
    none. Step 7 is built; what the names session finds next comes back as faults of step 6.
+   After it, the maintainer asked whether rebelrebel builds what MapLibre already has. A pass through the engine found
+   MapLibre's feature state unused: the features had no ids, so pages sent a layer's data again to show a selection.
+   Built at his word ("Feature ids"), 2026.11.18.9 (891c363): every layer function's feature carries `rr_row`, given to
+   MapLibre as the source's `promoteId` (`rr_layer(key = )` for a layer of one's own); a script sets a state with
+   `rr.state()`, which a style reads as `feature-state`, and its states are set again when a style is made again
+   whole (MapLibre drops its own then; a base map switch, by MapLibre's diff, keeps them); "A page of your own" rings
+   the marked positions so. Found too, not built: the engine's own `ResizeObserver` on the map, which MapLibre 5 has
+   (kept until a background tab is tested); the guarded query and the pointer's query a frame, there for MapLibre
+   5's lost index (they go with MapLibre 6); the search, which MapLibre's geocoder plugin could do at a library's
+   cost (kept). Proposed, not built: a base map's tiles from a tile function, served and bundled as a layer's, in
+   place of the second httpuv server three studies start for Close's charts.
 
 ## 5. Asks
 
