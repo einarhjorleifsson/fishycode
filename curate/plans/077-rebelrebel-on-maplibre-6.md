@@ -1,6 +1,6 @@
 # 077 — rebelrebel on MapLibre 6: the library repackaged, so a page opened from its folder still draws
 
-**status:** partly built — steps 1 and 2 built 2026-11-18 at the maintainer's word ("start the MapLibre 6 plan"; asks b and c as recommended): ogis 2026.11.18.11, a9e450e, on the local `main`, not pushed while CI's failure on Linux and Windows for 905b520 (the rename's push) is unread; Safari and step 3 open. Written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
+**status:** partly built — steps 1 and 2 built 2026-11-18 at the maintainer's word ("start the MapLibre 6 plan"; asks b and c as recommended): ogis 2026.11.18.11, a9e450e; pushed with two test fixes (70c62d8) once CI's failure on Linux and Windows for 905b520 was read (a flaky label test, and Chrome's temporary folder that --as-cran noted), CI then passing on Ubuntu, Windows and macOS and the site live on MapLibre 6; Safari and step 3 open. Written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
 (plan 076, after step 7). **Measured** (in a copy of rebelrebel 2026.11.18.9 in a scratch folder, on macOS, headless
 Chrome and headless Firefox 160): MapLibre 6.19.0 repackaged as a classic script opens from a folder (`file://`) in
 both; the whole test suite passes on it; label-heavy maps are as fast as on 5.24. Ask a answered the same day ("Rename first"): rebelrebel was renamed ogis, `rr_` `og_` (ogis 2026.11.18.10, e8b4780); this plan is built in the new names. **Assumed, not measured:** Safari;
@@ -109,7 +109,13 @@ its folder in Chrome (4 checks); `tools/firefox-check.R` drew it in Firefox 160 
 lines). Beside 5.24.1 at the same views, crossing transparent lines, a label at zoom 16 from tiles to 14 and contours
 past their elevation tiles' zoom look the same. R CMD check 0/0/0 on macOS. Not pushed: CI failed on Ubuntu and
 Windows for the rename's push (905b520, macOS passing), its log readable only signed in; the cause is read before
-this goes up. Open: Safari by the maintainer; step 3.
+this goes up. Read (pasted by the maintainer): one failure on Ubuntu, `test-text.R` asking which labels were drawn a
+fixed 0.3 s after `map.loaded()`, before MapLibre had placed and faded in "Delta" (from zoom 10, as tiles); and a note,
+a `com.google.Chrome.*` folder left in the system's temporary folder. Mended in 70c62d8: the test waits for MapLibre's
+`idle` event, and during a test run Chrome's temporary folder is inside R's own. Pushed 905b520..70c62d8 at the
+maintainer's word ("Yes, push"): R CMD check passed on Ubuntu, Windows and macOS (the `file://` test with them), pkgdown
+published the site, whose maps load MapLibre 6.19.0 as repackaged (a live map drew 3,969 positions in view within a
+second, in headless Chrome). Open: Safari by the maintainer; step 3.
 
 ## 5. Asks
 
