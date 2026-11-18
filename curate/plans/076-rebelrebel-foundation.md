@@ -4,7 +4,7 @@
 ad hoc on its foundation, so that each one smoke-tests its engine; the foundation made right now rather than later), from
 the names editor's smoke test and a survey of every map page in fishycode, its studies and EM4SSF; asks a-c, e and f
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
-order, articles first), ask d open; step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
+order, articles first), ask d on 2026-11-18 (one 5 MB line for every layer, as now); step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
 mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's, step 7 open; R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
@@ -174,7 +174,8 @@ rr_map() |>
 - **`size`** by a column (pixels), **`fontface`** (`"plain"`, `"italic"`, `"bold"`, `"bold.italic"`, ggplot2's word) as
   a value or a column, **`offset`** in text heights (`c(x, y)`, numbers or columns; tmap's `xmod`/`ymod`).
 - **Lines:** text on a line is written along it (MapLibre's `line-center`), as the editor's long names.
-- Whole by default for a text layer up to 10 MB (labels are few and their placement is surer in one source; ask d).
+- Whole or as tiles by the one 5 MB line every layer has (ask d: no line of its own for text); a page that sends a
+  text layer new data (`rr.setData()`) gives `whole = TRUE`.
 
 ### 3.2 Ids and MapLibre's own terms on every layer function (plan 072 §3.4, unbuilt)
 
@@ -328,8 +329,12 @@ c. **Turned names** (§1.5): answered 2026-11-17, "At its point" (as recommended
    of the width estimate and the lines' making (some 60 lines); (3) overlaps allowed where a start zoom is given (the
    data's placement trusted): every name due drawn, words over words where 81's reckoning and MapLibre's differ.
    `overlap = TRUE` (MapLibre's `text-allow-overlap`) is offered whichever is chosen.
-d. **A text layer whole up to 10 MB** (the 5 MB line kept for other layers): recommended, so the names' 5.2 MB stay
-   in one source; not measured beyond the names.
+d. **A text layer whole up to 10 MB** (the 5 MB line kept for other layers): answered 2026-11-18, "Keep one line":
+   one 5 MB line for every layer, as now, nothing built. Recommended at first, so the names' 5.2 MB stay in one
+   source; then measured on the names (the study's finding 5): 615 drawn as tiles, 616 whole, at the same 32 views,
+   the bundle 40 MB against 7 MB (true of any large layer, not of text). A line of its own for text added a rule with
+   nothing to show for it on screen, measured on one text layer only, so the recommendation turned to one line; the
+   names map gives `whole = TRUE`, which `rr.setData()` needs anyway.
 e. **The seam as §3.3 and §3.4, and which of §3.6 now:** answered 2026-11-17, the seam "As proposed", and of §3.6 all
    four asked: the base map faults (a base map by address opens the page, `rr_map(data)` keeps its settings), layer
    order by a call, rings and outlines, and search over a layer (recommended were the base map faults alone, the rest

@@ -1557,7 +1557,7 @@ the same evening in `~/R/Pakkar/rebelrebel` and committed (3e4548f); step 1a (th
 `$FISHYDATA/archive/2026-11-10-depth-sources/` · step 1b committed (3921261: EMODnet's sea floor the default, a dark one beside
 it) · step 2's first part committed (34497b4: the layer functions, colours, a generic time panel); rebelrebel pushed and
 public since 2026-11-10 · step 2 under way (the row on a click, linked lists) · plan 076 (2026-11-17, partly built):
-**needs: maintainer** (its ask d; a-c, e and f answered the same evening; steps 1-5 built in rebelrebel 2026.11.17-2026.11.18.2, 4698bc2..5b0aa95, not pushed; step 6, the names map on the seam, the names session's; step 7, §3.6's four gaps, to build), rebelrebel as the foundation of pages built on it, which edit while it views · **see:**
+(its asks a-f answered, d on 2026-11-18: one 5 MB line for every layer; steps 1-5 built in rebelrebel 2026.11.17-2026.11.18.2, 4698bc2..5b0aa95, not pushed; step 6, the names map on the seam, the names session's; step 7, §3.6's four gaps, to build), rebelrebel as the foundation of pages built on it, which edit while it views · **see:**
 `curate/plans/072-rebelrebel.md`, `curate/plans/076-rebelrebel-foundation.md`, plans 046, 063 and 064, decisions 220, 228,
 277-281
 
