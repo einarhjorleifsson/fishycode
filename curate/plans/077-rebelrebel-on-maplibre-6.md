@@ -1,6 +1,6 @@
 # 077 — rebelrebel on MapLibre 6: the library repackaged, so a page opened from its folder still draws
 
-**status:** partly built — steps 1 and 2 built 2026-11-18 at the maintainer's word ("start the MapLibre 6 plan"; asks b and c as recommended): ogis 2026.11.18.11, a9e450e; pushed with two test fixes (70c62d8) once CI's failure on Linux and Windows for 905b520 was read (a flaky label test, and Chrome's temporary folder that --as-cran noted), CI then passing on Ubuntu, Windows and macOS and the site live on MapLibre 6; Safari and step 3 open. Written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
+**status:** partly built — steps 1 and 2 built 2026-11-18 at the maintainer's word ("start the MapLibre 6 plan"; asks b and c as recommended): ogis 2026.11.18.11, a9e450e; pushed with two test fixes (70c62d8) once CI's failure on Linux and Windows for 905b520 was read (a flaky label test, and Chrome's temporary folder that --as-cran noted), CI then passing on Ubuntu, Windows and macOS and the site live on MapLibre 6; step 3 done the same day (ogis 2026.11.18.11 installed in R's library at the maintainer's word, "Yes, install": its knit, script and `file://` tests pass against it); Safari open. Written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
 (plan 076, after step 7). **Measured** (in a copy of rebelrebel 2026.11.18.9 in a scratch folder, on macOS, headless
 Chrome and headless Firefox 160): MapLibre 6.19.0 repackaged as a classic script opens from a folder (`file://`) in
 both; the whole test suite passes on it; label-heavy maps are as fast as on 5.24. Ask a answered the same day ("Rename first"): rebelrebel was renamed ogis, `rr_` `og_` (ogis 2026.11.18.10, e8b4780); this plan is built in the new names. **Assumed, not measured:** Safari;
@@ -115,7 +115,8 @@ a `com.google.Chrome.*` folder left in the system's temporary folder. Mended in 
 `idle` event, and during a test run Chrome's temporary folder is inside R's own. Pushed 905b520..70c62d8 at the
 maintainer's word ("Yes, push"): R CMD check passed on Ubuntu, Windows and macOS (the `file://` test with them), pkgdown
 published the site, whose maps load MapLibre 6.19.0 as repackaged (a live map drew 3,969 positions in view within a
-second, in headless Chrome). Open: Safari by the maintainer; step 3.
+second, in headless Chrome). Step 3: installed in R's library from a built tarball (`R CMD INSTALL --preclean`), 79
+checks of the tests that need the installed package passing against it. Open: Safari by the maintainer.
 
 ## 5. Asks
 
