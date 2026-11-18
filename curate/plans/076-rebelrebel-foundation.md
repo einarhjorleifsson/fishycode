@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d open; step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's, step 7 open; installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's, step 7 open; R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -263,9 +263,10 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    now the extent fitted to the frame (4.6-4.8 in the article); `rr_map()` with no data stopped, now a map whose layers
    bring their own; duckdb's notice of its extension folder printed into documents. Browser tests (chromote; skipped
    on CRAN and without Chrome) render an R Markdown and a Quarto document; R CMD check 0 errors, 0 warnings, 1 note (an
-   example line, as before); the pkgdown workflow sets Quarto up. Open: whether R Markdown is kept at all (the
+   example line, as before); the pkgdown workflow sets Quarto up. Whether R Markdown is kept at all (the
    maintainer: "Question is if we should entertain the .Rmd construct at all"; it costs no code, the same
-   `knit_print()` serving both, and one test).
+   `knit_print()` serving both, and one test): answered 2026-11-18, kept ("If it cost no code, keep rather than
+   drop"): maps keep working in R Markdown, its test stays, the articles are Quarto.
 2. **The engine's guards and MapLibre 5.24.1** (§3.5). Check: a browser test with a forced lost index; the names
    editor's click path, on a copy, no failure in 100 tries of §1.3's pattern. **Built 2026-11-17** (rebelrebel
    2026.11.17.1, 0b8f6d3): every query of the page through one guard, `query()`; one click dispatcher and one pointer
