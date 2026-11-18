@@ -61,6 +61,14 @@ guard's two tests; `query()` stays as the one place that leaves out layers not o
   relief is a hillshade layer and the depth a color-relief, neither of which does. The hillshade's own shadow and
   highlight already draw over the colours.
 
+- **The page's own fonts** (`font-faces`, 6.7): started on Claude's proposal, not from a need, and dropped at the
+  maintainer's word ("Drop it") before anything was committed. A trial showed it could work (a font handed to MapLibre
+  as a blob loads over http and from a folder), and Noto Sans in all eight subsets was vendored (32 files, 649 KB of
+  WOFF2, nearly 1 MB as scripts in every bundle). Wiring it into the engine broke the map's first style. The
+  maintainer's question, who decided this and why it mattered, had the plain answer that it did not: labels already
+  draw in the base map's fonts, or the browser's on a picture alone, and nothing the package or the names map does
+  needed more. Reverted to f2a6509; label, bundle and order tests pass on it (100 checks).
+
 ## Open
 
-The page's own fonts (`font-faces`, 6.7), plan 077 §3.6.
+Nothing of plan 077 §3.6.
