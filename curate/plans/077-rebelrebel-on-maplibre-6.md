@@ -1,6 +1,6 @@
 # 077 — rebelrebel on MapLibre 6: the library repackaged, so a page opened from its folder still draws
 
-**status:** proposal — written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
+**status:** partly built — steps 1 and 2 built 2026-11-18 at the maintainer's word ("start the MapLibre 6 plan"; asks b and c as recommended): ogis 2026.11.18.11, a9e450e, on the local `main`, not pushed while CI's failure on Linux and Windows for 905b520 (the rename's push) is unread; Safari and step 3 open. Written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
 (plan 076, after step 7). **Measured** (in a copy of rebelrebel 2026.11.18.9 in a scratch folder, on macOS, headless
 Chrome and headless Firefox 160): MapLibre 6.19.0 repackaged as a classic script opens from a folder (`file://`) in
 both; the whole test suite passes on it; label-heavy maps are as fast as on 5.24. Ask a answered the same day ("Rename first"): rebelrebel was renamed ogis, `rr_` `og_` (ogis 2026.11.18.10, e8b4780); this plan is built in the new names. **Assumed, not measured:** Safari;
@@ -98,6 +98,19 @@ relief over depth, the page's own fonts.
 2. The `file://` test; `tools/firefox-check.R` run; Safari by the maintainer.
 3. Installed, at the maintainer's word; the pages built on it (the names map) started again on it.
 
+### 4.1 Built (2026-11-18)
+
+Steps 1 and 2 in ogis 2026.11.18.11 (a9e450e). `tools/vendor-maplibre.R` takes the npm tarball checked against the
+registry's SHA-512 (a `file()` connection hashed to another digest; the raw bytes match the registry and `shasum`) and
+writes the two classic scripts; its output equals the trial's but for a comment line (`substring()`'s default end at
+character 1,000,000 first cut the export list off: it now stops if the list names nothing). The engine loads the
+worker's script first; `inst/COPYRIGHTS` says what was changed in MapLibre's code. `test-file.R` opens a bundle from
+its folder in Chrome (4 checks); `tools/firefox-check.R` drew it in Firefox 160 (271 areas, 119 labels, 32 contour
+lines). Beside 5.24.1 at the same views, crossing transparent lines, a label at zoom 16 from tiles to 14 and contours
+past their elevation tiles' zoom look the same. R CMD check 0/0/0 on macOS. Not pushed: CI failed on Ubuntu and
+Windows for the rename's push (905b520, macOS passing), its log readable only signed in; the cause is read before
+this goes up. Open: Safari by the maintainer; step 3.
+
 ## 5. Asks
 
 a. **The order, with the rename to ogis (`og_`).** The maintainer is considering renaming the package. Recommended: the
@@ -105,8 +118,8 @@ a. **The order, with the rename to ogis (`og_`).** The maintainer is considering
    the suite before and after shows it, and MapLibre 6 is then measured against a renamed baseline. **Answered 2026-11-18,
    "Rename first"; done the same day: ogis 2026.11.18.10 (e8b4780), checked 0/0/0, its site's 13 article maps drawn.**
 b. **Pin, or follow.** Recommended: a pinned version, updated by running the script on purpose, not the latest at
-   each build.
-c. **Firefox in the suite, or by hand.** Recommended: by hand (§3.3).
+   each build. **Taken as recommended, 2026-11-18: 6.19.0 pinned.**
+c. **Firefox in the suite, or by hand.** Recommended: by hand (§3.3). **Taken as recommended, 2026-11-18.**
 
 ## 6. Not in this plan
 
