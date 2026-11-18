@@ -352,7 +352,7 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    none. Step 7 is built; what the names session finds next comes back as faults of step 6.
    After it, the maintainer asked whether rebelrebel builds what MapLibre already has. A pass through the engine found
    MapLibre's feature state unused: the features had no ids, so pages sent a layer's data again to show a selection.
-   Built at his word ("Feature ids"), 2026.11.18.9 (891c363): every layer function's feature carries `rr_row`, given to
+   Built at the maintainer's word ("Feature ids"), 2026.11.18.9 (891c363): every layer function's feature carries `rr_row`, given to
    MapLibre as the source's `promoteId` (`rr_layer(key = )` for a layer of one's own); a script sets a state with
    `rr.state()`, which a style reads as `feature-state`, and its states are set again when a style is made again
    whole (MapLibre drops its own then; a base map switch, by MapLibre's diff, keeps them); "A page of your own" rings
