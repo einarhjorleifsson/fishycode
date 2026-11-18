@@ -3,7 +3,7 @@
 **status:** proposal — written 2026-11-18 at the maintainer's word ("Yes, write the plan"), after a trial the same day
 (plan 076, after step 7). **Measured** (in a copy of rebelrebel 2026.11.18.9 in a scratch folder, on macOS, headless
 Chrome and headless Firefox 160): MapLibre 6.19.0 repackaged as a classic script opens from a folder (`file://`) in
-both; the whole test suite passes on it; label-heavy maps are as fast as on 5.24. **Assumed, not measured:** Safari;
+both; the whole test suite passes on it; label-heavy maps are as fast as on 5.24. Ask a answered the same day ("Rename first"): rebelrebel was renamed ogis, `rr_` `og_` (ogis 2026.11.18.10, e8b4780); this plan is built in the new names. **Assumed, not measured:** Safari;
 Chrome and Firefox on Windows and Linux (CI runs the suite on all three, but over http); that 6.x has done with the
 lost index of plan 076 §1.3; that later 6.x releases keep the module's shape the repackaging relies on · **see:** plans
 072, 076
@@ -102,7 +102,8 @@ relief over depth, the page's own fonts.
 
 a. **The order, with the rename to ogis (`og_`).** The maintainer is considering renaming the package. Recommended: the
    rename first, while nothing else is in flight, then this plan in the new names; a rename changes no behaviour, so
-   the suite before and after shows it, and MapLibre 6 is then measured against a renamed baseline.
+   the suite before and after shows it, and MapLibre 6 is then measured against a renamed baseline. **Answered 2026-11-18,
+   "Rename first"; done the same day: ogis 2026.11.18.10 (e8b4780), checked 0/0/0, its site's 13 article maps drawn.**
 b. **Pin, or follow.** Recommended: a pinned version, updated by running the script on purpose, not the latest at
    each build.
 c. **Firefox in the suite, or by hand.** Recommended: by hand (§3.3).

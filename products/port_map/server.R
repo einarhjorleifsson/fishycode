@@ -11,6 +11,6 @@ source("R/write_curated.R")    # read_curated_sf()
 source("products/port_map/port_map.R")
 
 PORT <- as.integer(Sys.getenv("PORT_MAP_PORT", "8818"))
-rebelrebel::rr_serve(port_map_build(), port = PORT, open = FALSE)
+ogis::og_serve(port_map_build(), port = PORT, open = FALSE)
 cat(sprintf("port map on http://127.0.0.1:%d\n", PORT))
 repeat httpuv::service(100)
