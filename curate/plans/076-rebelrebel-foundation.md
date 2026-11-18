@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d on 2026-11-18 (one 5 MB line for every layer, as now); step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 under way (2026-11-18: the base map by address, 61032f1; layer order, f95a77c); R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`), and 2026.11.18.4 (83b4fb6) the same way later that day ("Install now"; the editor on 4836 and the names map on 4849 had stopped by then) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 built 2026-11-18 (the base map by address, 61032f1; layer order, f95a77c; rings and outlines, 6e35c87; search, b2b7e03); R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`), and 2026.11.18.4 (83b4fb6) the same way later that day ("Install now"; the editor on 4836 and the names map on 4849 had stopped by then), and 2026.11.18.8 (b2b7e03) once step 7 was built ("Install for all I care"; the editor on 4836 was running and still answered after, keeping 2026.11.18.4 until restarted) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -337,6 +337,16 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    the names", met again by item 1's test). Found on the way, not built: a route of `rr_serve()` answers JSON or
    text, never a picture (a raw vector is sent as JSON), so a page's own raster tiles still need a server of their
    own; the help said otherwise and now does not.
+   (3) *rings and outlines as arguments* (2026.11.18.7, 6e35c87): `rr_point(stroke = )`, each point a hollow ring of
+   its colour (its legend rings, a choice of colour columns painting the rings), and `rr_polygon(fill = NA)`, an
+   area's outline alone, its fill kept clear so a click inside still shows the row; "Get started" rings the fast
+   positions by `stroke` (they took four MapLibre properties) and draws the Danish harbours' outlines over the depths.
+   (4) *search over a layer's column* (2026.11.18.8, b2b7e03): `search = name` on the five layer functions built
+   on one row a feature; a *Find* box above the sidebar's boxes, ranked as the names editor's (whole, beginning, any;
+   case and accents aside; nearest the view's centre first; counted when not all 40 are listed); a click or Enter
+   goes there, at zoom 10 or nearer (a text's own start zoom), turns the layer on and shows the row as a click would.
+   The texts and places are read on the first search from `/search/<id>` or the bundle; more than 500,000 rows take
+   none. Step 7 is built; what the names session finds next comes back as faults of step 6.
 
 ## 5. Asks
 
