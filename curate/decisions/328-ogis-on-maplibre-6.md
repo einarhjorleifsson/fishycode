@@ -1,6 +1,6 @@
 # 328 — ogis on MapLibre 6.19: the library repackaged, so a bundle opened from its folder draws; plan 077 executed
 
-*2026-11-18. Plan 077, at the maintainer's word ("start the MapLibre 6 plan", "Yes, push", "Yes, install"); its asks
+*2026-11-18; amended the same day, the lost-index guard removed. Plan 077, at the maintainer's word ("start the MapLibre 6 plan", "Yes, push", "Yes, install"); its asks
 b and c taken as recommended. Built, checked and measured by Claude (AI); Safari checked by the maintainer ("Safari
 draws the maps fine"). The trial before it is recorded in plan 076, after step 7.*
 
@@ -39,7 +39,16 @@ purpose.
 
 A bundle carries 0.6 MB more (the worker in a file of its own).
 
+## The guard removed (the same day)
+
+At the maintainer's word ("Remove the lost-index guard"), plan 076's reproduction rerun first (data sent during an
+animated zoom, a filter reading the zoom from MapLibre's global state; 200 trials each): 9 failures on 5.24.1, none on
+6.19.0; the zoom alone, none on either (`$FISHYDATA/archive/2026-11-17-rebelrebel-foundation/`, its addendum). So the
+engine's guard went (ogis 2026.11.18.12, f2a6509): `heal()`, the retry in `query()` and the click's second try, and the
+guard's two tests; `query()` stays as the one place that leaves out layers not on the map. R CMD check `--as-cran`
+0/0/0 (macOS).
+
 ## Open
 
-MapLibre 6's new features, each its own if wanted (plan 077 §3.6): the guard's removal after a reproduction, OKLCh
-ramps for the depth looks, blend modes for relief, the page's own fonts.
+MapLibre 6's other new features, each its own if wanted (plan 077 §3.6): OKLCh ramps for the depth looks, blend
+modes for relief, the page's own fonts.
