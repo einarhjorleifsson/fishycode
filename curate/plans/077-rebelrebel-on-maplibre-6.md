@@ -89,6 +89,7 @@ A bundle 0.6 MB larger; one script to run per MapLibre update; one line in the e
 
 **The guard: done 2026-11-18 (decision 328, amended):** the reproduction failed 9 times in 200 on 5.24.1 and never in 200
 on 6.19.0, and the guard went in ogis 2026.11.18.12 (f2a6509).
+**OKLCh ramps: tried and reverted; blend modes for relief: not possible in 6.19** (decision 328, amended). Fonts open.
 
 The guard dropped once plan 076 §1.3's reproduction (a filter on the zoom from MapLibre's global state, data sent
 during an animated zoom) shows no failure on 6. Then, as wanted: OKLCh ramps for the depth looks, blend modes for

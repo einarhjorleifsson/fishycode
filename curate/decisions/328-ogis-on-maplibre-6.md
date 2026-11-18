@@ -48,7 +48,19 @@ engine's guard went (ogis 2026.11.18.12, f2a6509): `heal()`, the retry in `query
 guard's two tests; `query()` stays as the one place that leaves out layers not on the map. R CMD check `--as-cran`
 0/0/0 (macOS).
 
+## Two of MapLibre 6's new features weighed, and left (the same day)
+
+- **Colour ramps mixed in OKLab** (`interpolate-oklab`, 6.19; OKLab rather than OKLCh, whose hue is undefined near
+  grey): built and tried in the engine for the depth looks and the grid, then reverted at the maintainer's word
+  ("Revert it"). The seven depth looks, mixed in sRGB and in OKLab at one view, differed in 0-8 % of their pixels by
+  less than a shade step (their 17 stops were already even OKLab steps), so the choice fell to the maintainer's measures:
+  plain `interpolate` is less code, MapLibre's oldest and cheapest colour mix, and works on any version, where
+  `interpolate-oklab` is new in 6.19. A palette of one's own with few colours, if it ever needs it, is resampled in
+  OKLab once, in R.
+- **Blend modes for relief**: not possible in 6.19. Only raster, line and fill layers blend (`*-layer-blend`); the
+  relief is a hillshade layer and the depth a color-relief, neither of which does. The hillshade's own shadow and
+  highlight already draw over the colours.
+
 ## Open
 
-MapLibre 6's other new features, each its own if wanted (plan 077 §3.6): OKLCh ramps for the depth looks, blend
-modes for relief, the page's own fonts.
+The page's own fonts (`font-faces`, 6.7), plan 077 §3.6.
