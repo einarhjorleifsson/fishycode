@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d on 2026-11-18 (one 5 MB line for every layer, as now); step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 open; R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`), and 2026.11.18.4 (83b4fb6) the same way later that day ("Install now"; the editor on 4836 and the names map on 4849 had stopped by then) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 under way (2026-11-18: the base map by address, 61032f1; layer order, f95a77c); R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`), and 2026.11.18.4 (83b4fb6) the same way later that day ("Install now"; the editor on 4836 and the names map on 4849 had stopped by then) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -324,7 +324,19 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    help (a style on the map's own routes given by a relative address: localhost and 127.0.0.1 are two origins).
    Reported, not built (the names session records them for the maintainer): a per-row end zoom in `rr_text()`, a
    documented key on each feature for a script, a base map of several tile sources by zoom band.
-7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time.
+7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time. Begun 2026-11-18 at the maintainer's word
+   ("Yes, start step 7"), the base map first: (1) *a base map by address opens the page* (2026.11.18.5, 61032f1):
+   found mended already, by 96de711 on 2026-11-12 (`setBase()` wrote `glyphs: undefined`, which MapLibre refused, so
+   a page opening on a picture by address never loaded a style; reproduced on d21a368), minutes after the names
+   study's scripts were written round it; now tested offline in the page (a `{z}/{x}/{y}` and a WMS address, the
+   switch between them, the address), `rr_basemaps()`'s help on how such an address is written, and "Get started"
+   opening on GEBCO's WMS. Its other half, `rr_map(data)` keeping `basemaps` and `view`, was mended in step 3.
+   (2) *layer order by a call* (2026.11.18.6, f95a77c): `rr_map(order = )`, ids from the lowest drawn up, the
+   sidebar keeping its own order; a piped map now draws in the order added whatever the boxes (it drew by box,
+   against its docs); and the page keeps the map's order whatever order its data arrive in (§1.2's "8 MB coast over
+   the names", met again by item 1's test). Found on the way, not built: a route of `rr_serve()` answers JSON or
+   text, never a picture (a raw vector is sent as JSON), so a page's own raster tiles still need a server of their
+   own; the help said otherwise and now does not.
 
 ## 5. Asks
 
