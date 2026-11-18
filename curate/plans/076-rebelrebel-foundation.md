@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d open; step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -281,7 +281,16 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
 3. **Labels** (§3.1) with an article on labels from the package's current public examples (the harbours' and the
    survey stations' ids), and, for names with angles and start zooms, which those lack, a small public set (Natural
    Earth's marine areas, public domain; checked before use). Check: the article's map, and the names' 25,880 drawn by
-   `rr_text()` with the counts of §1.5 met.
+   `rr_text()` with the counts of §1.5 met. **Built 2026-11-18** (rebelrebel 2026.11.18, 86d13a9): `minzoom` (a column: a filter on
+   `["zoom"]`), `angle`, `priority`, `size`, `fontface` (each face in the base style's own fonts, read in the page: Carto's
+   are Montserrat Medium, Regular Italic, SemiBold and SemiBold Italic) and `offset` (a column's values matched by a key
+   the rows carry), each a value or a column; `overlap`; text on lines along them. In the browser, whole and as tiles and
+   past the tiles' deepest zoom, a row due at 5.4 shows from 6 and at 15.5 from 16. The names' 25,880 through
+   `rr_text()`: built in 0.2 s, and MapLibre hid 10.3 % of those due at the 32 views (rebelrebel's frame), against 10.7 %
+   with the editor's style (study, result 5). The article "Labels" uses the package's examples (the harbours' ids
+   inside them, the tows' along them, the survey positions turned to their heading, by start zoom and priority), so no
+   Natural Earth set was needed; it found that `rr_map(view = )` and `basemaps` were dropped for a layer function's map
+   (a §3.6 fault, mended here).
 4. **Ids and MapLibre's terms** (§3.2). Check: EM4SSF's hand check and three of the studies' scripts rewritten
    without `m$config` (on copies).
 5. **The seam** (§3.3, §3.4) with an article, "A page of your own": a script and a route that keep a list of the
