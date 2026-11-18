@@ -324,7 +324,9 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    be reached (404): the name, then a path and a query as written, 2026.11.18.4 (83b4fb6), with two smaller ones
    reported with it: `popup = <a variable of names>` quiet (tidyselect warned), and a line in `rr_basemaps()`'s
    help (a style on the map's own routes given by a relative address: localhost and 127.0.0.1 are two origins).
-   Reported, not built (the names session records them for the maintainer): a per-row end zoom in `rr_text()`, a
+   Reported, not built (the names session records them for the maintainer): a per-row end zoom in `rr_text()` (built
+   2026-11-18 as `og_text(endzoom = )`, ogis 2026.11.18.13, 802c2fa, with a fault it found: a whole layer's `minzoom`
+   as a number drew at every zoom), a
    documented key on each feature for a script (built after step 7: 2026.11.18.9, 891c363), a base map of several tile
    sources by zoom band.
 7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time. Begun 2026-11-18 at the maintainer's word
