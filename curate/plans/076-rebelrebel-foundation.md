@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d open; step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's, step 7 open · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -292,9 +292,23 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    Natural Earth set was needed; it found that `rr_map(view = )` and `basemaps` were dropped for a layer function's map
    (a §3.6 fault, mended here).
 4. **Ids and MapLibre's terms** (§3.2). Check: EM4SSF's hand check and three of the studies' scripts rewritten
-   without `m$config` (on copies).
+   without `m$config` (on copies). **Built 2026-11-18** (rebelrebel 2026.11.18.1, 5fe2c0a): `id` on every layer function (checked,
+   free in the map), and MapLibre's paint and layout by their names in `...`, each put on the layer's styles of its kind
+   as paint or layout as MapLibre has it (a ring of fixed size, an outline alone, a text without halo); "Get started"
+   rings the positions over 12 knots that way. Not done: the rewrites on copies. EM4SSF's hand check is built on ramb's
+   `rb_map_*()`, whose move onto rebelrebel is plan 072's step 5; its styling (a cyan ring of fixed size over chosen
+   points, a grey track, ids not guessed) is held by a test on the package's examples instead.
 5. **The seam** (§3.3, §3.4) with an article, "A page of your own": a script and a route that keep a list of the
-   features a reader marks, on the same open data. Check: the article's code short and plain.
+   features a reader marks, on the same open data. Check: the article's code short and plain. **Built 2026-11-18** (rebelrebel 2026.11.18.2, 5b0aa95), with two
+   changes to §3.3-§3.4 as proposed: (a) `rr.route(name)` became `rr.fetch(name, init)`, beside `rr.served` and
+   `rr.save()`, since a page's writes must carry the guard the notes' do (a header and the page's origin), which a bare
+   address would leave to each script; (b) `rr_serve(wait = )` is `FALSE` by default, not `!interactive()`: on by
+   default it hung the package's own test of a real server, as it would any script, test or document that serves a map
+   and goes on, so a script run by `Rscript` gives `wait = TRUE`. Tests: the routes as httpuv calls them; in the browser,
+   a script's click reading its row and posting to its route, its filter and new data holding, the same map in a bundle
+   running the script with no server; a child `Rscript` serving with `wait = TRUE`. The article's map keeps a list of
+   marked positions, handed to the reader as a file in the bundle. The whole suite 1,028 tests; R CMD check 0/0/0; the
+   site, three articles, 25 MB, every map drawn.
 6. **The smoke test:** the names map rebuilt on rebelrebel in its study (the names session's prototype, on hold),
    its editing ad hoc on the seam; every engine fault it finds mended in rebelrebel with a test.
 7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time.
