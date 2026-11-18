@@ -6,7 +6,7 @@ the names editor's smoke test and a survey of every map page in fishycode, its s
 answered the same evening (turned names at their point, the seam as proposed, all four of §3.6's gaps, the steps in
 order, articles first), ask d on 2026-11-18 (one 5 MB line for every layer, as now); step 1 built the same night (rebelrebel 2026.11.17, 4698bc2, not pushed: maps live in
 Quarto and R Markdown documents and pkgdown articles, the article "Get started" in Quarto, three faults it found
-mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's, step 7 open; R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`) · **see:** plan 072
+mended); step 2 built (2026.11.17.1, 0b8f6d3: the guarded click, MapLibre 5.24.1); step 3 built 2026-11-18 (2026.11.18, 86d13a9: labels); steps 4 and 5 the same night (5fe2c0a: `id` and MapLibre's terms; 5b0aa95: the seam, `rr_script()` and the map's own routes); step 6 the names session's (two engine faults it found mended 2026-11-18: `rr_add_layer()`, 2026.11.18.3, 16ba1f4; `rr.fetch()`'s path and query, 2026.11.18.4, 83b4fb6), step 7 open; R Markdown kept (2026-11-18, it costs no code); installed in R's library on 2026-11-18 at the maintainer's word ("Install, then names map": 2026.11.18.2 from the local `main`, 5b0aa95, `R CMD INSTALL --preclean` of a built tarball; not pushed, so no `RemoteSha`) · **see:** plan 072
 (rebelrebel), plan 074 step 7 (the names editor), TODO 198
 
 Drafted with AI assistance (Claude) on 2026-11-17; a person has not yet checked it. What §1 calls measured, Claude measured
@@ -312,7 +312,18 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    marked positions, handed to the reader as a file in the bundle. The whole suite 1,028 tests; R CMD check 0/0/0; the
    site, three articles, 25 MB, every map drawn.
 6. **The smoke test:** the names map rebuilt on rebelrebel in its study (the names session's prototype, on hold),
-   its editing ad hoc on the seam; every engine fault it finds mended in rebelrebel with a test.
+   its editing ad hoc on the seam; every engine fault it finds mended in rebelrebel with a test. **Faults found and
+   mended, 2026-11-18** (rebelrebel's local `main`, not pushed; R CMD check 0/0/0, the whole suite 1,077 tests, the
+   two that need the installed version run against a scratch install): (1) a piped map took no `rr_layer()` (the
+   names map's sea floor: a dem and a contour layer from an MBTiles file), and a map of `rr_section()`s takes no
+   layer function; approved by the maintainer ("Add rr_layer to the pipe"): `rr_add_layer(map, layer, section)`,
+   2026.11.18.3 (16ba1f4), its test with the page, a section in "Get started" (the Danish depths under the harbours).
+   (2) `rr.fetch()` encoded the whole name, so a route's `path` and `query`, which `rr_serve()` documents, could not
+   be reached (404): the name, then a path and a query as written, 2026.11.18.4 (83b4fb6), with two smaller ones
+   reported with it: `popup = <a variable of names>` quiet (tidyselect warned), and a line in `rr_basemaps()`'s
+   help (a style on the map's own routes given by a relative address: localhost and 127.0.0.1 are two origins).
+   Reported, not built (the names session records them for the maintainer): a per-row end zoom in `rr_text()`, a
+   documented key on each feature for a script, a base map of several tile sources by zoom band.
 7. **The smaller gaps** of §3.6 that the maintainer takes, one at a time.
 
 ## 5. Asks
