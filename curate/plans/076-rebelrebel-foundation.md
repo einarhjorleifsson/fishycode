@@ -73,7 +73,9 @@ The error the editor met, "Out of bounds. Index requested n=0", is MapLibre's: a
 of it is still being parsed loses its raw data, and `queryRenderedFeatures()` then throws on that tile until it is
 loaded again. MapLibre fixed it in 6.0.0 (maplibre-gl-js pull 7765, June 2026) and a second path in 6.3.0 (issue 8064,
 August 2026); 5.24.1 (2026-11-11, the last of 5.x) carries only fixes to how attributions are cleaned. rebelrebel stays
-on 5.x, since 6.x loads only as ES modules, which a bundle opened from its folder cannot (plan 072, 2026-11-11).
+on 5.x, since 6.x loads only as ES modules, which a bundle opened from its folder cannot (plan 072, 2026-11-11). A trial
+on 2026-11-18 (below, after step 7) found that this holds only for the library loaded as published: repackaged as a
+classic script, 6.19 opens from a folder in Chrome and Firefox.
 
 Reproduced in headless Chrome on a bare page of MapLibre 5.24.0 (4,000 points drawn as circles and as turned text):
 - **Data sent again, six ways** (once, twice at once, five times at once, with a jump, while tiles load, the editor's
@@ -359,6 +361,19 @@ Each committed in rebelrebel's local `main` on its own, with its tests and artic
    5's lost index (they go with MapLibre 6); the search, which MapLibre's geocoder plugin could do at a library's
    cost (kept). Proposed, not built: a base map's tiles from a tile function, served and bundled as a layer's, in
    place of the second httpuv server three studies start for Close's charts.
+   **A trial of MapLibre 6** (2026-11-18, at the maintainer's word, "Yes, run the trial"; in a copy of rebelrebel in a
+   scratch folder, nothing of the package changed). 6.19.0 is published only as ES modules (`maplibre-gl.mjs` and a
+   worker of its own, `maplibre-gl-worker.mjs`); 5.24.1 still ships the classic `maplibre-gl.js`. The module has no
+   imports, ends in one `export {...}` list and reads `import.meta.url` in two places (its worker's address when
+   served), so a 40-line text transform makes it a classic script (`window.maplibregl`), with no Node or bundler; its
+   worker's code goes in a classic script of its own, handed to `setWorkerUrl()` as a blob, which 6.17.0 (#8912) made
+   work on a page opened from a file. Results: a bundle of depths, contours, outlined areas, labels and search opened
+   from its folder (`file://`) drew in headless Chrome and in headless Firefox 160 (driven over WebDriver BiDi); the
+   whole suite passed on it, 1,222 checks with none failed, and the knit and Rscript tests installed (75); the engine
+   changed by one line (the worker's script loaded before MapLibre). Speed the same at this size: 8,918 turned labels
+   open in 0.44 s on 5.24 and 0.47 s on 6.19, five zoom steps 1.69 and 1.68 s. A bundle carries 0.6 MB more. Not
+   tried: Safari (its automation needs a security setting changed), and whether 6 has done with the lost index (the
+   guard stays until that is shown).
 
 ## 5. Asks
 
@@ -390,7 +405,7 @@ f. **The order of §4:** answered 2026-11-17, "Yes, in that order" (as recommend
 
 ## 6. Not in this plan
 
-Editing of any kind in rebelrebel; MapLibre 6 (ES modules); fractional start zooms; the Python host; the steps of plan
+Editing of any kind in rebelrebel; MapLibre 6 (tried 2026-11-18, after step 7; a move is a plan of its own); fractional start zooms; the Python host; the steps of plan
 072 not named here; the Icelandic examples (landings, logbooks and AIS, warts and all), which need their own mining
 first: until then the articles use the current public examples. The maintainer, 2026-11-17: "we are actually going to
 feed the icelandic dataset into ramb and rebelrebel is going to use those datasets" (so not vortur, as plan 072's
