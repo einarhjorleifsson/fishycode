@@ -1705,11 +1705,13 @@ scratchpad and deleted; their scripts are archived. Build each from a committed 
 dictionary in the Parquet metadata), internal only. Plan 078 (2026-11-19) puts the effort, with `depth.mbtiles`, in
 an internal R package, ogisdata, on MFRI's share that sets their variables when it loads, so no one writes
 `.Renviron`; the effort file is its step 1. Built 2026-11-19 (plan 078 §4.1): `products/effort_map/cells.R` writes
-`$FISHYDATA/products/effort_map/cells.parquet`, and ogisdata 2026.11.19 carries it, checked and installed on this Mac. The place names: not now (the maintainer, 2026-11-19: "placenames - not
-now"), neither built nor in ogisdata.
+`$FISHYDATA/products/effort_map/cells.parquet`, and ogisdata 2026.11.19 carries it, checked and installed on this Mac. The place names: not now at first (the maintainer, 2026-11-19: "placenames - not
+now"), then in, the same day ("I think the örnefni product should become part of the ogisdata"): plan 078 §3.9, from plan
+074's `marine_feature` (decision 332), not the gazetteer; §3.8 the rule for every file; asks i-k answered
+(`og_names(angle)`, every wreck in, flagged, all three types), steps 5-7 open.
 
-**check:** the effort file built from a committed script, and ogisdata built and installed from the share; or the
-item dropped.
+**check:** the effort and the names files built from committed scripts, and ogisdata built and installed from the share;
+or the item dropped.
 
 ## 206. The trail rebuilt for decision 331, then the effort grids, `cells.parquet` and ogisdata
 **status:** open · **needs: maintainer** — the rebuild, later on 2026-11-19 (the maintainer: "do things up to the

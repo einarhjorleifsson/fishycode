@@ -9,7 +9,10 @@ same day, after a trial the same morning; asks a and b answered the same day ("c
 "placenames - not now", so the depth model and the effort alone); §3.3 revised the
 same day at the maintainer's word: ogisdata a package folder of its own, whose `data-raw/` copies the files in from
 `$FISHYDATA`; ask e answered the same day: installed as mardata is, from its folder on the share (osmx's README, §3.4);
-a demo script added the same day at the maintainer's word, its three maps drawn on this Mac (§3.7; an ogis fault
+amended the same day at the maintainer's word ("I think the örnefni product should become part of the ogisdata"; "Yes,
+amend 078"): §3.8 the rule for what goes in, §3.9 the place names from plan 074's `marine_feature` as a third file, steps
+5-7, asks i-k (ask b answered again; i-k answered the same day: `og_names(angle)`, every wreck in, the internal
+flagged, all three types); a demo script added the same day at the maintainer's word, its three maps drawn on this Mac (§3.7; an ogis fault
 first recorded there was none, the page not yet finished opening); asks c, d, f, g and h answered the same day (the
 0.005° grid; everyone at the institute reads the share; ogis's error as it is; `~/R/Pakkar/ogisdata`; R's `demo/`),
 and what g's "code only" meant set out in §3.3 at the maintainer's question. **Measured** (by Claude, 2026-11-19, on the maintainer's Mac,
@@ -20,7 +23,8 @@ about 2 GB free while it installs · **see:** TODO 204, TODO 205, decision 330,
 `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/report.md` §3 and §5, osmx's README
 (https://github.com/einarhjorleifsson/osmx)
 
-Drafted with AI assistance (Claude) on 2026-11-19; a person has not yet checked it. What §2 calls measured, Claude
+Drafted with AI assistance (Claude) on 2026-11-19, and amended with it the same day (§3.8, §3.9); a person has not yet
+checked it. What §2 calls measured, Claude
 measured.
 
 ## 1. Why
@@ -81,6 +85,7 @@ Two files in `inst/extdata/`, as fishycode's products write them: `depth.mbtiles
 `products/bathymetry_map/dem.R`) and the effort for `og_cells()` (built by TODO 205, with its data dictionary in the
 Parquet metadata). No code beyond §3.2, no compiled code, no copy of ogis. The place names for `og_names()` are left
 out for now (ask b); they would come in as a third file, read the same way through `OGIS_NAMES`.
+Since 2026-11-19 they come in, from plan 074's `marine_feature` (§3.9), and every file is held to §3.8's rule.
 
 ### 3.2 How ogis finds them
 
@@ -238,6 +243,48 @@ day: at that view the labelled lines (10, 25, 50, 100, 200 and 1,000 m) and the 
 over the effort when `og_contour()` comes after `og_cells()`. Over dense effort the finer lines are hard to see in the
 default colour; `og_contour(colour = )` lightens them.
 
+### 3.8 What may go in: the rule for filling ogisdata
+
+Amended 2026-11-19 at the maintainer's word ("I think the örnefni product should become part of the ogisdata - question
+is how we should in general deal with populating the ogisdata product"; of the proposal, "Yes, amend 078"). The way the
+two files came in becomes the rule for every file:
+
+1. **Only fishycode's products.** A file is under `$FISHYDATA/products/<name>/`, written by a committed script in
+   fishycode's `products/`. ogisdata shapes nothing and ogis learns nothing of it (§3.2).
+2. **A file for an ogis reader, shaped for it in fishycode.** `depth.mbtiles` for `og_relief()` and `og_contour()`,
+   `cells.parquet` for `og_cells()`, `names.parquet` for `og_names()` (§3.9): the product script picks the columns its
+   reader takes and writes the data dictionary into the file; a curated table is not copied as it is.
+3. **A file that cannot show it is sound is refused** by `data-raw/files.R`: a Parquet file without its `fd.*` stamps
+   or data dictionary, or built from a dirty tree (`fd.dirty` true, unless every dirty file is named as not read by its
+   script, as in §4.1), or written by another script than its row names; a file whose accounting check, named in its
+   row, has a failed row or is older than the file. Today the effort alone is held to the stamps.
+4. **A row, not code.** `files.R`'s table of files (file, variable, source, script, check, about) is the one place a
+   file is added; its copying, provenance, version and NEWS are the same for every row.
+5. **Filled on purpose.** When a product changed for a reason (a rebuild, a review round), the maintainer runs
+   `files.R`, the tests and copies the folder to the share (step 3); never on a schedule.
+6. **What belongs.** What MFRI's staff map often and should not need a path for. Internal to MFRI is fine (§3.5);
+   persons' data never; nothing an outside owner has not agreed to have spread through the institute.
+
+### 3.9 The place names: marine_feature as a third file
+
+Ask b answered again, 2026-11-19 (the maintainer: "I think the örnefni product should become part of the ogisdata"):
+the place names come in, not the gazetteer of plan 044 that ask b had in mind (1.9 MB, Trackwell's among its sources)
+but plan 074 step 12's `marine_feature` (decision 332: the names of the charts, LMÍ and ÍSOR, the aids and the wrecks,
+no Trackwell).
+
+- **The file**: a script `products/marine_feature/names.R` writes `$FISHYDATA/products/marine_feature/names.parquet`
+  from `curated/reference/marine_feature.parquet`, in `og_names()`'s columns: `name`; `label_lon`, `label_lat` (its
+  place); the area as its geometry where marine_name_extent has one (an LMÍ or ÍSOR area), else its point; `min_zoom`
+  (`z_rule`); `level` 1-4 (Claude's proposal, measured when built: by the extent, at 50, 10 and 1 km, an aid or wreck 4);
+  `n` (its priority); `angle` (ask i: yes); `type` and `kind`, so that a person filters; `internal` (ask j); and
+  what a click shows (the source, the bases, the synonyms), with the data dictionary and the `fd.*` stamps (§3.8). Its
+  rows: every name, aid and wreck of marine_feature, 27,305 (asks j, k). Its check:
+  `curate/checks/marine_feature_accounting.R` (all holding, decision 332).
+- **ogisdata**: a third row in `files.R` (`names.parquet`, `OGIS_NAMES`), `.onLoad` setting `OGIS_NAMES` as it sets the
+  others, a path function `names_file()`, a test that `og_names()` reads it with no path, a line in the README and demo.
+- **ogis**: `og_names()` writes every name level; it takes an `angle` column (ask i), so the 907 names turned on the
+  map (the troughs, the long grounds) are turned there too.
+
 ## 4. Steps
 
 1. **The effort file**, TODO 205: from a committed script in `products/`, with its dictionary: the 0.005° grid, the
@@ -249,6 +296,12 @@ default colour; `og_contour(colour = )` lightens them.
    a Windows machine at MFRI, one map of each kind drawn, the install's time recorded.
 4. **Its README sent to colleagues**, with the install line and one map script; the kit of TODO 185 then retired or
    kept, at the maintainer's word.
+5. **The rule in `files.R`** (§3.8): its table with a check column, every Parquet file held to the stamps and its
+   check, the depth model to its metadata; ogisdata's tests pass, the two files as before.
+6. **The names file** (§3.9): `products/marine_feature/names.R`, its rows as asks j and k say, read by `og_names()` from
+   its path with no error; ogis's `og_names(angle)` first (ask i), with a test.
+7. **The names in ogisdata** (§3.9): the third row, `OGIS_NAMES`, `names_file()`, a test, a version; then steps 3 and
+   4 again with the new version.
 
 ### 4.1 Built (2026-11-19)
 
@@ -302,3 +355,14 @@ g. **Where its source lives.** Answered 2026-11-19: `~/R/Pakkar/ogisdata`, besid
    "code only" meant, thinking the files were to be in the package: they are, and only its git leaves them out (§3.3).
 h. **The demo's form.** Answered 2026-11-19: "go with R demo/", R's own `demo/` (§3.7), not osmx's R Markdown
    template.
+
+i. **`og_names()` to turn a name.** Answered 2026-11-19: "Yes, add angle", as Claude recommended: ogis's `og_names()`
+   takes an `angle` column as `og_text()` does, with a test, so the 907 names turned in marine_feature are turned in
+   ogisdata's maps too. Asked: should it, or do they lie level?
+j. **The internal wrecks.** Answered 2026-11-19: "Hold on - all wrecks go in" (his first answer, to leave them out as
+   Claude had recommended, withdrawn the same minute): all 625 wrecks, the 122 known only from internal lists or taking
+   an attribute from one (a private plotter's marks, the university's list) among them, each keeping its `internal`
+   flag, so a map or a copy can still drop them by that one filter.
+k. **Which rows.** Answered 2026-11-19: "All three types", as Claude recommended: the names, the aids and the wrecks,
+   each of its own `type` for a person to filter, marine_feature's 27,305 rows; an aid's name from zoom 10, a wreck's
+   from 13 (decision 332).
