@@ -2,7 +2,7 @@
 
 **status:** partly built — steps 1 and 2 built 2026-11-19 at the maintainer's word ("Yes, build"; §4.1): the effort
 file and ogisdata 2026.11.19 in `~/R/Pakkar/ogisdata`, checked, installed into an empty library and its demo's maps
-drawn on this Mac, nothing committed yet; step 3 the maintainer's, who copies the folder to the institute's computer
+drawn on this Mac; committed (79b33a4; ogisdata 0f8912f) and ogisdata 2026.11.19.1 made from the effort rebuilt at that commit (899a38a); step 3 the maintainer's, who copies the folder to the institute's computer
 ("i will need to copy the package to the institute computer, you can not do that"), and step 4. Written
 2026-11-19 at the maintainer's word ("Yes, write it"), from the maintainer's idea of the
 same day, after a trial the same morning; asks a and b answered the same day ("call the package ogisdata";
@@ -265,9 +265,11 @@ build").
   demo's three maps, built from the installed demo file and served, drew in the app's browser from the install's own
   files: the depth with relief and contours off the Westfjords; the effort, every gear, 2007-2026; bottom trawl,
   2015-2024, its controls at that filter. The tarball, the check folder and the test library were deleted after.
-- **Not done.** Nothing committed, in fishycode or ogisdata. The effort file's stamp says `fd.dirty` true (`cells.R`
-  was not yet committed): once both are committed, `cells.R` and `data-raw/files.R` rerun (seconds) give a clean
-  stamp and 2026.11.19.1. Steps 3 and 4.
+- **Committed** at the maintainer's word ("Yes, commit"): fishycode 79b33a4, ogisdata 0f8912f (2026.11.19). Then
+  `cells.R` and `data-raw/files.R` rerun, which made ogisdata 2026.11.19.1 (899a38a), its tests passing against a fresh
+  install: the effort built at 79b33a4, the version to copy to the share. Its stamp still says `fd.dirty` true:
+  `.git_info()` counts an untracked file, and the tree held one, `products/exports/ramb_example_iceland_map.R`, of
+  another session's work, which `cells.R` does not read; NEWS.md says so. Steps 3 and 4 remain.
 
 ## 5. Asks
 

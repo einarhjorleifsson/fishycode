@@ -1689,7 +1689,7 @@ Found on the way, not changed (each small, each for a test first):
 **check:** a plan written at the maintainer's word, or the route declined here; the five faults fixed or dropped.
 
 ## 205. The files `OGIS_CELLS` and `OGIS_NAMES` name, built as fishycode products, and ogisdata, the package that carries them (plan 078)
-**status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 built 2026-11-19, not committed) ·
+**status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 built 2026-11-19; ogisdata 2026.11.19.1 the version to copy) ·
 **see:** `curate/plans/078-ogis-data-package.md`, decision 330,
 `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/trials/effort/export.R` and `trials/names/export.R`
 
