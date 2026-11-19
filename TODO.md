@@ -1693,8 +1693,8 @@ Found by the census map (decision 329's, `products/exports/ramb_example_iceland_
 **check:** a plan written at the maintainer's word, or the route declined here; the eight faults fixed or dropped.
 
 ## 205. The files `OGIS_CELLS` and `OGIS_NAMES` name, built as fishycode products, and ogisdata, the package that carries them (plan 078)
-**status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 built 2026-11-19; the version to copy is the one after TODO 206, whose cells carry the gear that 3 % of
-2026.11.19.1's hours lack, decision 331) ·
+**status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 and 5-7 built 2026-11-19; the version to copy is 2026.11.19.3: the place names added, its cells
+2026.11.19.2's, which carry the gear that 3 % of 2026.11.19.1's hours lacked, decision 331; ogis 2026.11.19.1 to turn them) ·
 **see:** `curate/plans/078-ogis-data-package.md`, decision 330,
 `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/trials/effort/export.R` and `trials/names/export.R`
 
@@ -1708,7 +1708,8 @@ an internal R package, ogisdata, on MFRI's share that sets their variables when 
 `$FISHYDATA/products/effort_map/cells.parquet`, and ogisdata 2026.11.19 carries it, checked and installed on this Mac. The place names: not now at first (the maintainer, 2026-11-19: "placenames - not
 now"), then in, the same day ("I think the örnefni product should become part of the ogisdata"): plan 078 §3.9, from plan
 074's `marine_feature` (decision 332), not the gazetteer; §3.8 the rule for every file; asks i-k answered
-(`og_names(angle)`, every wreck in, flagged, all three types), steps 5-7 open.
+(`og_names(angle)`, every wreck in, flagged, all three types); steps 5-7 built (§4.2), ogisdata 2026.11.19.3
+carrying them.
 
 **check:** the effort and the names files built from committed scripts, and ogisdata built and installed from the share;
 or the item dropped.

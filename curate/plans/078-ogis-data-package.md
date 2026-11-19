@@ -12,7 +12,7 @@ same day at the maintainer's word: ogisdata a package folder of its own, whose `
 amended the same day at the maintainer's word ("I think the örnefni product should become part of the ogisdata"; "Yes,
 amend 078"): §3.8 the rule for what goes in, §3.9 the place names from plan 074's `marine_feature` as a third file, steps
 5-7, asks i-k (ask b answered again; i-k answered the same day: `og_names(angle)`, every wreck in, the internal
-flagged, all three types); a demo script added the same day at the maintainer's word, its three maps drawn on this Mac (§3.7; an ogis fault
+flagged, all three types); steps 5-7 built the same day, ogisdata 2026.11.19.3 with the place names (§4.2); a demo script added the same day at the maintainer's word, its three maps drawn on this Mac (§3.7; an ogis fault
 first recorded there was none, the page not yet finished opening); asks c, d, f, g and h answered the same day (the
 0.005° grid; everyone at the institute reads the share; ogis's error as it is; `~/R/Pakkar/ogisdata`; R's `demo/`),
 and what g's "code only" meant set out in §3.3 at the maintainer's question. **Measured** (by Claude, 2026-11-19, on the maintainer's Mac,
@@ -329,6 +329,39 @@ build").
   install: the effort built at 79b33a4, the version to copy to the share. Its stamp still says `fd.dirty` true:
   `.git_info()` counts an untracked file, and the tree held one, `products/exports/ramb_example_iceland_map.R`, of
   another session's work, which `cells.R` does not read; NEWS.md says so. Steps 3 and 4 remain.
+
+### 4.2 Steps 5-7 built (2026-11-19)
+
+By Claude, on the maintainer's Mac, at the maintainer's word ("Build steps 5-7 of plan 078"); no person has checked it.
+
+- **Step 5.** `data-raw/files.R` holds every file to §3.8 from one table of files (file, variable, source, script,
+  check, about): a Parquet file its stamps, its dictionary and its own script; a file built from a dirty tree is refused
+  unless the stamps name the dirty files and none is its script, its folder or fishycode's `R/`; a row's accounting check
+  all "ok" and made on the same input (an input's md5 in both files' `fd.inputs`); an MBTiles file its metadata and
+  tiles. A file unchanged since the last run keeps its row. One refused, nothing is copied. `files.csv` gains `check`.
+  To make the dirty-tree test possible, fishycode's `write_curated()` stamps gain `fd.dirty_files` (the dirty paths,
+  only when the tree is dirty): parallel sessions leave the tree dirty most of the time.
+- **Step 6.** ogis 2026.11.19.1: `og_names()` takes an `angle` column, counter-clockwise as `og_text()`'s, a missing one
+  level (ask i), with a test; the whole suite passes (1,592, 2 skipped). In ogis's tree, not committed, not installed
+  into R's library. `products/marine_feature/names.R` writes `$FISHYDATA/products/marine_feature/names.parquet`, 27,305
+  rows (26,912 named; 17,417 with an LMÍ or ÍSOR area; all 625 wrecks, 122 flagged `internal`; levels 1-4: 56, 357,
+  3,842 names and the rest), 1.9 MB, GeoParquet with the dictionary and stamps. A nameless aid or wreck (158, 235) is a
+  row with no name, which `og_names()` leaves undrawn and unfound (tried).
+- **Step 7, the code.** ogisdata: `OGIS_NAMES` set by `.onLoad`, `names_file()`, `files()` with `check`, the startup
+  line naming the names' build, two tests (the three variables; the names' rows by type, internal only on wrecks),
+  README, demo (a names map), `DESCRIPTION`. Tried from a copy of the folder with the names put in by hand, installed
+  with ogis 2026.11.19.1 into an empty library: the 14 tests pass; the demo's names map, served, drew 27,305 labels and
+  17,417 areas, the turned names turned (Djúpáll, Vesturálkantur, the fjords).
+- **Step 7, the version: made** at the maintainer's word ("Yes, commit and finish"). Run first, `files.R` refused
+  `names.parquet` as the rule says it should: built while its own code was uncommitted. With that code committed
+  (fishycode 121d314), `names.R` rebuilt it (stamped dirty by another session's files and the records alone) and
+  `files.R` made ogisdata 2026.11.19.3: the names new, the depth model and the effort kept unchanged, each listed so in
+  NEWS (`files.R` amended for that: a kept file is not checked again, so its line no longer describes its tree).
+  Installed with ogis 2026.11.19.1 into an empty library (885 MB): the 14 tests pass, the startup line names the names'
+  build. R CMD check not rerun. Step 3 (the share) is the maintainer's, with 2026.11.19.3; ogis 2026.11.19.1 is in its
+  tree only, so on another computer the names are drawn level until it is installed there.
+- Seen on the way, not changed: the trial map's attribution read EMODnet's over MFRI's depth model, the fault TODO 204
+  already lists (`og_relief()` drops the MBTiles' attribution).
 
 ## 5. Asks
 
