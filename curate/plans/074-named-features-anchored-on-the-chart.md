@@ -9,7 +9,7 @@ boxes he accepts; by 2026-11-15 the lettering read at all nine chart scales and 
 by the same day all nine frozen; step 1 revised 2026-11-15 at his word ("Yes, revise"): the lettering alone,
 reviewed by Claude's look and then cards, the place a step of its own (1c); the aim revised 2026-11-15 at his word ("Yes,
 revise the plan and start"): one best place a name, steady as the map zooms, shown at zooms chosen for our users, the
-outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved; amended 2026-11-17 at his word: asks k, l and n parked for another plan, the harbours and the bottom type out of this plan, the wreck list into fishycode, the submerged rocks at LMÍ's position, the ridge's volcanic systems by ÍSOR's names with his as synonyms; step 11 extended to the whole coast the same day; step 12 drafted 2026-11-19 at his word: the names of the charts, LMÍ and ÍSOR as one curated table in fishycode and the wreck list beside it, Trackwell left out · **2026-11-11** · **see:** plan 073 (and its
+outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved; amended 2026-11-17 at his word: asks k, l and n parked for another plan, the harbours and the bottom type out of this plan, the wreck list into fishycode, the submerged rocks at LMÍ's position, the ridge's volcanic systems by ÍSOR's names with his as synonyms; step 11 extended to the whole coast the same day; step 12 drafted 2026-11-19 at his word: one curated table of what the map shows, the names of the charts, LMÍ and ÍSOR, the wrecks and the aids, told apart by type, Trackwell left out · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -769,59 +769,82 @@ the question for Julian Burgos.
    wait for room, a median 0.58 zooms. No chart name gone or new; 1,322 start later (a median 1.53 zooms, nearly all those
    whose extent is now LMÍ's); 16 turned names slid along their lines, up to 26 km. Offshore, LMÍ's sea names include 20
    fishing grounds and 2 seas over 50 km across, shown from low zooms. The map's file of names is now 22 MB.
-12. **One set of names, and the wrecks, into fishycode** (drafted 2026-11-19 at the maintainer's word: "My thinking is that we build
-   one complete set that take the seachart mined data, the ISOR data and the LMÍ data forward. Leaving behind for now the data
-   from trackwell"; of the proposal, "Yes, amend plan 074"). The names map of steps 2-7 and 11 (the study's 71, with 79,
-   81, 115 and 127-131) becomes one curated table in fishycode, from three public sources alone: the charts' letterings
-   (`curated/reference/chart_names.parquet`), LMÍ's names (IS 50V's whole name set, `raw/external/is50v/ornefni_all/`,
-   fetched by `dump/natt/ornefni.R`) and ÍSOR's seabed map (`raw/external/isor/`). Trackwell, the plotters and plan 044's
-   gazetteer (`curate/place_name.R`) are read in no role. LMÍ's records that only copy Trackwell's or
-   Hafrannsóknastofnun's 2020 deliveries stay out as copies (step 11).
-   *Measured* (Claude, 2026-11-19, on the study's `out/place_map/names.geojson` of 2026-11-17; no person has checked the
-   counts): 25,880 names, 5,900 of them the charts', 19,958 LMÍ's and 22 ÍSOR's; 104 placed or timed by the maintainer's
-   hand (`notes/name_edits.csv`, 131 rows). None of the names scripts (71, 75, 127, 128, 131, 132) reads Trackwell's
-   tables; 127 and 128 name Trackwell's delivery only to leave its copies out.
-   - **Version 1 frozen first**: the study's rules as they stand on 2026-11-19, no rule changed while the set moves. A
+12. **One table of what the map shows: the names, the wrecks, the lights and beacons** (drafted 2026-11-19 at the
+   maintainer's word: "My thinking is that we build one complete set that take the seachart mined data, the ISOR data and
+   the LMÍ data forward. Leaving behind for now the data from trackwell"; of the proposal, "Yes, amend plan 074"; then "I
+   think the wrecks should be part of this "build""; "hold on what happens to lights and beacons"; "i am wandering if
+   names, wrecks and lights and beacons should not be all in one single dartaframe, seperable by filter on a variable
+   name"; of the proposal, "Yes, amend step 12 that way"). Three lists, each built in fishycode's layers with its own
+   records, outcomes and checks, and one curated table that binds what they share: one row a thing on the map, told apart
+   by `type` (name, wreck, aid) and `kind`. A buoy and the skerry it marks are two rows, never one name (step 9, "Ergo
+   Lights and beacons are separate from örnefni").
+   *Measured* (Claude; no person has checked the counts): on the study's `out/place_map/names.geojson` of 2026-11-17,
+   25,880 names, 5,900 of them the charts', 19,958 LMÍ's and 22 ÍSOR's, 104 placed or timed by the maintainer's hand
+   (`notes/name_edits.csv`, 131 rows), and none of the names scripts (71, 75, 127, 128, 131, 132) reading Trackwell's
+   tables (127 and 128 name its delivery only to leave its copies out); the wreck list (the study's 91, 2026-11-16), 1,611
+   records in one outcome, 625 places; the aids (fishycode's aid list, the study's 111), 737 in Iceland, 104 on a named
+   island, 33 lettered with a named feature's name, 176 offshore, 424 on the coast, and 76 named features listing the aids
+   on them.
+   - **Version 1 frozen first**: the study's rules as they stand on 2026-11-19, no rule changed while the lists move. A
      later round changes the product and is measured against version 1.
    - **Settled before the freeze** (asks u-w): the land names; the duplicates and misreads the smoke test found
      (2026-11-17); the page kept. The submerged rocks at LMÍ's position (decided 2026-11-17, not built) are built into
      version 1.
-   - **The layers**, as the aid list's (ask p): LMÍ's names staged by an adapter of their own in `sources/is50v/` (the
-     gazetteer's `sources/ornefni/lmi_name.R` holds only the 2022 polygons), ÍSOR's map by one in `sources/isor/`, the
-     charts' letterings as now (`chart_names`). The join, the outcomes, the place, the angle and the zoom a name
-     deserves in one standalone script in `reference/`, run by hand outside the targets flow, to one table in
-     `curated/reference/` (its name ask x) by `write_curated()`, the geometry as WKB. The accounting in
+   - **The names**, from three public sources alone: the charts' letterings (`curated/reference/chart_names.parquet`),
+     LMÍ's names (IS 50V's whole name set, `raw/external/is50v/ornefni_all/`, fetched by `dump/natt/ornefni.R`) and ÍSOR's
+     seabed map (`raw/external/isor/`). Trackwell, the plotters and plan 044's gazetteer (`curate/place_name.R`) are read
+     in no role; LMÍ's records that only copy Trackwell's or Hafrannsóknastofnun's 2020 deliveries stay out as copies
+     (step 11). LMÍ's names staged by an adapter of their own in `sources/is50v/` (the gazetteer's
+     `sources/ornefni/lmi_name.R` holds only the 2022 polygons), ÍSOR's map by one in `sources/isor/`, the charts'
+     letterings as now. The join, the outcomes, the place, the angle and the zoom a name deserves in one standalone
+     script in `reference/`, run by hand outside the targets flow, as the aid list's (ask p), its accounting in
      `curate/checks/`: every chart lettering, LMÍ record and ÍSOR record in one outcome (129's and 131's checks carried
      over). 79's lines and 81's deserved zoom come along in the language they are written in, unless a reason to port
-     them shows.
-   - **One row a feature**: its id; its name and synonyms (LMÍ's spelling with the chart's print kept, ÍSOR's name with
-     the maintainer's); each source's own id (the chart feature, LMÍ's uuid, ÍSOR's record); its kind; one place and one
-     angle, each with its basis (a chart's lettering, 1c's anchor, LMÍ's position, ÍSOR's area, the maintainer's hand);
-     the zoom it deserves (`z_rule`) with its basis; its holder; its extent where a source gives one (LMÍ's area or line,
-     ÍSOR's area). Its letterings stay in `chart_names`, linked by key. LMÍ's source (heimild) comes with each LMÍ name,
-     as LMÍ publishes it on the web (the maintainer, 2026-11-19: "the LMÍ data was obtained from source on the web").
+     them shows. A name's letterings stay in `chart_names`, linked by key; LMÍ's source (heimild) comes with each LMÍ
+     name, as LMÍ publishes it on the web (the maintainer, 2026-11-19: "the LMÍ data was obtained from source on the
+     web").
+   - **The wrecks**: step 9's wreck list (the study's 91 and 92) moved into the layers as the aid list was: each list
+     staged by its own script in `sources/<source>/`, the join, the outcomes and the best witnesses in
+     `reference/wrecks/wreck.R` to `curated/reference/wreck.parquet` with its records, pairs and descriptions beside,
+     the accounting in `curate/checks/wreck_accounting.R`, the shared machinery `R/curated_list.R`. Its witnesses as ask
+     o settled them: Landhelgisgæslan's list, UKHO's, OpenStreetMap's, the diving map and the internal ones, their owners
+     named under `$FISHYDATA` only, never in this repo. Trackwell's names are no witness here either (the study found one
+     wreck name in them, with no position for the wreck). The conflicts listed, not resolved (ask o); the charts' wreck
+     symbols still wait.
+   - **The lights and beacons**: the aid list as built on 2026-11-16 (`reference/aids/aid.R`, its tables unchanged). The
+     study's 111 moves into the build: which named feature each aid stands on, and every aid in Iceland in one outcome
+     (on a named island, lettered with a named feature's name, offshore, on the coast).
+   - **The one table**, written after the three lists by a standalone script in `reference/`, to `curated/reference/`
+     (its name ask x) by `write_curated()`, the geometry as WKB. One row a name's feature, a wreck's place or an aid:
+     - `id`, `type`, `kind` (a name's island, water, land and the rest; an aid's light, beacon, buoy; a wreck);
+     - its name and synonyms (LMÍ's spelling with the chart's print kept, ÍSOR's name with the maintainer's), empty where
+       a wreck has none;
+     - one place and one angle, each with its basis (a chart's lettering, 1c's anchor, LMÍ's position, ÍSOR's area, an
+       aid's or a wreck's best witness, the maintainer's hand);
+     - the zoom it deserves (`z_rule`) with its basis;
+     - `holder`, the name a name lies within, and `on_feature`, the named feature an aid stands on or a wreck lies in;
+     - its extent where a source gives one (LMÍ's area or line, ÍSOR's area);
+     - its sources, each with its own id (the chart feature, LMÍ's uuid, ÍSOR's record, the aid's and the wreck's own);
+     - `internal`, a wreck known only from internal lists or taking an attribute from them, so that a copy shared outside
+       drops it by one filter.
+     What only one list has (a light's characteristic, height, range and number; a wreck's year sunk, depth and
+     witnesses; a name's letterings and LMÍ's heimild) stays in that list's own tables, joined by `id`.
    - **The traffic jam stays with the page** (step 7, 2026-11-15): which name gives way when two collide depends on the
-     screen, so the table carries the zoom a name deserves and the page the zoom it is drawn from.
+     screen, so the table carries the zoom each row deserves and the page the zoom it is drawn from. Place names, aids'
+     names and wrecks' names compete in one ranking by type and kind (ask y).
    - **The maintainer's edits** re-enter as a reviewed input in `overrides/`, as step 1b's verdicts would: the cycle
      broken by a person. Checked when moved that they name no internal source.
-   - **One page** reads the table (ask w), so the rule that lays the edits on lives once (71, 75 and 132 each hold it now).
-   - **The wrecks in the same build** (the maintainer, 2026-11-19: "I think the wrecks should be part of this "build""):
-     step 9's wreck list (the study's 91 and 92) moved into fishycode's layers as the aid list was (ask p): each list
-     staged by its own script in `sources/<source>/`, the join, the outcomes and the best witnesses in
-     `reference/wrecks/wreck.R` to `curated/reference/wreck.parquet` with its records, pairs and descriptions beside, the
-     accounting in `curate/checks/wreck_accounting.R`, the shared machinery `R/curated_list.R`. A table of its own beside
-     the names, built in the same run; on the page as the aids are, a dot at each place (its name: ask y). Its witnesses as
-     ask o settled them: Landhelgisgæslan's list, UKHO's, OpenStreetMap's, the diving map and the internal ones, flagged
-     `internal`, their owners named under `$FISHYDATA` only, never in this repo. Trackwell's names are no witness here
-     either (the study found one wreck name in them, with no position for the wreck). The conflicts listed, not resolved
-     (ask o); the charts' wreck symbols still wait.
-   - **Left apart**: the aid list (built in fishycode 2026-11-16) stays its own table, as now; the outlines, the
-     vocabulary and the parts (step 10); Trackwell's names, until the maintainer brings them back.
-   *Assumed*: that the study's names map is the set to carry forward, as it stands but for asks u-w. *Check*: the table
-   equal to the study's map for every name, place, angle and deserved zoom, but for what asks u-w change, each difference
-   listed; the wreck tables equal to the study's 91 record for record (outcome, place, attributes), as the aid list's
-   were; every source record in one outcome; `check_bookkeeping()` and the stamps as for any curated table; the page
-   drawing from the tables as it drew from the study.
+   - **One page** reads the one table (ask w), with one search across the types, so the rule that lays the edits on lives
+     once (71, 75 and 132 each hold it now).
+   - **Left apart**: the outlines, the vocabulary and the parts (step 10); Trackwell's names, until the maintainer brings
+     them back.
+   *Assumed*: that the study's names map, wreck list and links of the aids are the sets to carry forward, as they stand
+   but for asks u-w. *Check*: every row of the one table traced to its list's row and every list's row in the table or in
+   an outcome that says why not; the names equal to the study's map for every name, place, angle and deserved zoom, but
+   for what asks u-w change, each difference listed; the wreck tables equal to the study's 91 record for record (outcome,
+   place, attributes), as the aid list's were; the aids' links equal to 111's `out/aids/feature_aid.csv`; every source
+   record in one outcome; `check_bookkeeping()` and the stamps as for any curated table; the page drawing from the one
+   table as it drew from the study.
 
 ## 10. Asks
 
@@ -936,9 +959,10 @@ v. The duplicates and misreads the smoke test found: Faxabanki twice (the chart'
    Skerjafjörður twice (chart features 508 and 693, 3.5 km apart), "Reykjane" (chart 2359, a lettering cut short?),
    Faxagaröur and Sudurgaröur (ð read as ö). Each corrected by the maintainer's hand as an override, or left flagged?
 w. The page kept: the names editor (75) or the names map on rebelrebel, now ogis (132)?
-x. The table's name: `named_feature` (the plan's own word), or another?
-y. A wreck on the page: its name drawn beside its dot, as a name of the kind "wreck" from a fine zoom, or shown only on a
-   click?
+x. The one table's name: one that holds a nameless wreck too (`sea_feature`, `map_feature`), or another? (`named_feature`,
+   offered first, no longer fits once the wrecks and the aids are rows.)
+y. The ranking on the screen across the types: a place name before an aid's name or a wreck's where they collide, an
+   aid's name from zoom 10 as the editor has it, a wreck's name from a fine zoom; or a wreck's name shown only on a click?
 
 Asked on 2026-11-11, for the outlines (now a later step):
 
