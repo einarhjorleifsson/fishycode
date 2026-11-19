@@ -31,11 +31,15 @@
     system2("git", c(...), stdout = TRUE, stderr = FALSE),
     warning = function(e) NA_character_, error = function(e) NA_character_)
   sha   <- g("rev-parse", "HEAD")
-  dirty <- length(g("status", "--porcelain")) > 0
+  st    <- g("status", "--porcelain")
+  dirty <- length(st) > 0 && !all(is.na(st))
   repo  <- g("rev-parse", "--show-toplevel")
   list(repo   = if (length(repo)) basename(repo[1]) else NA_character_,
        commit = if (length(sha)) sha[1] else NA_character_,
-       dirty  = if (is.na(dirty)) NA else dirty)
+       dirty  = if (is.na(dirty)) NA else dirty,
+       # the paths that made it dirty (porcelain's, a rename's new name), so a reader can tell whether the script or
+       # what it sources was among them: parallel sessions leave the tree dirty most of the time (plan 078 §3.8)
+       dirty_files = if (isTRUE(dirty)) sub("^.* -> ", "", substring(st[!is.na(st)], 4)) else character())
 }
 
 # The script currently being source()d, which is how targets runs everything
@@ -85,6 +89,7 @@ digest_string <- function(x) {
     "fd.repo"         = g$repo,
     "fd.commit"       = g$commit,
     "fd.dirty"        = tolower(as.character(g$dirty)),
+    "fd.dirty_files"  = if (length(g$dirty_files)) paste(utils::head(g$dirty_files, 200), collapse = ";") else NA_character_,
     "fd.script"       = script,
     "fd.built"        = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
     "fd.rows"         = as.character(rows),
