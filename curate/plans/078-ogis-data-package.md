@@ -5,8 +5,8 @@ same day, after a trial the same morning; asks a and b answered the same day ("c
 "placenames - not now", so the depth model and the effort alone); §3.3 revised the
 same day at the maintainer's word: ogisdata a package folder of its own, whose `data-raw/` copies the files in from
 `$FISHYDATA`; ask e answered the same day: installed as mardata is, from its folder on the share (osmx's README, §3.4);
-a demo script added the same day at the maintainer's word, its maps tried on this Mac, which found an ogis fault
-(§3.7); nothing built; asks c, d, f, g and h need the maintainer. **Measured** (by Claude, 2026-11-19, on the maintainer's Mac,
+a demo script added the same day at the maintainer's word, its three maps drawn on this Mac (§3.7; an ogis fault
+first recorded there was none, the page not yet finished opening); nothing built; asks c, d, f, g and h need the maintainer. **Measured** (by Claude, 2026-11-19, on the maintainer's Mac,
 R 4.5.2, ogis 2026.11.18.17): a throwaway package holding fishycode's `depth.mbtiles` builds, installs and is found by
 ogis with no path (§2). **Assumed, not measured:** installing ogisdata from the share over MFRI's network, about 0.93
 GB, five times mardata (174 MB installed); Windows, though mardata installs there the same way; that colleagues have
@@ -200,11 +200,17 @@ files()
 **Tried 2026-11-19** (by Claude, on the maintainer's Mac, ogis 2026.11.18.17): maps 1-3 built from these calls in
 0.9 s, `OGIS_DEPTH` from `.Renviron` and `OGIS_CELLS` naming an effort file written by decision 330's trial script
 to the session's scratchpad (381 MB, 2007-2026, 21 gears; deleted after), as `library(ogisdata)` would set them, and
-served. Maps 1 and 2 drew in the app's browser: the depth with its relief over the EMODnet base map; the effort over
-it, every gear, 2007-2026. **Map 3 did not:** its page asked for no effort tile, drew nothing, and its controls showed
-"all" and no years, though its configuration starts at gear 6 and 2015-2024. The same choices given in map 2's
-address (`?cells_gid=6&cells_year_from=2015&cells_year_to=2024`) drew bottom trawl, 2015-2024. So `og_cells(filter =
-)` fails on a served map: an ogis fault, fixed in ogis with a test before step 2, since the demo shows it.
+served. All three drew in the app's browser: the depth with its relief over the EMODnet base map; the effort over it,
+every gear, 2007-2026; and bottom trawl, 2015-2024. **Map 3 was first recorded here as an ogis fault, wrongly.**
+Screenshots 5 and 10 s after it opened showed no map and its controls at "all" with no years, and this plan said
+`og_cells(filter = )` failed on a served map (commit e427649). A side session the same day found no fault: ogis's own
+example with `filter`, as a data frame and as Parquet, an 8-million-row file of the same shape, and map 3 itself on
+the real effort file all opened at their filter and drew, in headless Chrome and the app's browser. The page sets its
+controls only after `/meta` and MapLibre's first frame, and the screenshots came before both. Checked again here the
+same day: map 3 alone had not drawn 10 s after it opened and had drawn bottom trawl, 2015-2024, by 20 s. Nothing in
+ogis needs fixing for the demo; the side session added a browser test of `og_cells(filter = )` on a served map as a
+guard (ogis 2026.11.19, cf66ca5, pushed), and suggests, not built, that the page set its controls as soon as `/meta`
+arrives, so a page still loading shows its starting choices.
 
 **The contours** (the maintainer, the same day: "the one with nice breaks and labels and then fine lines in
 between") are `og_contour()`'s defaults, the charts' isobaths labelled and finer lines between. They show in full only
@@ -219,7 +225,7 @@ default colour; `og_contour(colour = )` lightens them.
    by ask c.
 2. **The package**, §3.2-3.3 and §3.7: `~/R/Pakkar/ogisdata` with `data-raw/files.R`, the demo, its tests and the
    script in `tools/` that copies it to the share; the tests pass from a temporary library on this Mac, and the
-   demo's three maps draw. Needs ogis's `og_cells(filter = )` fixed first (§3.7).
+   demo's three maps draw.
 3. **From the share**, by the maintainer or a colleague: `remotes::install_local("R:/R/Pakkar/ogisdata", force =
    TRUE)` into an empty library on a Windows machine at MFRI, one map of each kind drawn, the install's time
    recorded.
