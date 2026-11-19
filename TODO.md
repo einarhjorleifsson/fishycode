@@ -1635,3 +1635,65 @@ them, and the bottom type, for a plan of their own:
 - the bottom type as a curated list from several witnesses (the charts' marks, ÍSOR's samples and map, EMODnet).
 
 **check:** a plan written for them at the maintainer's word, or the item dropped.
+
+## 202. The Icelandic census for ramb's and ogis's examples: review it, where it lives, and the basis for releasing it
+**status:** open · **needs: maintainer** — the review of Claude's choices, where the set lives, and whether and on what
+basis to release · **see:** decision 329, `$FISHYDATA/exports/ramb_example_iceland/README.md` (the report),
+`products/exports/ramb_example_iceland.R`, `$FISHYDATA/archive/2026-11-18-ramb-example-iceland/` (the measurements),
+TODO 93
+
+The census is built (Q3 2017, the north-west, two tiers and the unmatched MMSIs, landings by species, 87.0 MB),
+tested with ramb and ogis, and not released. Open:
+- the review: the area (20.5-26.0 W, 64.8-67.2 N), the quarter, the national districts (ÍS, ST, BA, SH, DA), the
+  window's cap (31 days) and margin (12 h), `mmsi_kind`, the GPS loggers and the flow's links left out;
+- where it lives: ramb's `inst/extdata` (every install takes 87 MB through LFS) or a data repository of its own;
+- stable ids across versions: the key kept as a ledger instead of a seeded draw (decision 329, not built);
+- the anonymity: a track matches public AIS and the measures narrow the register to a hull, so the logbook's hauls
+  become attributable; coarsen the hauls' places or the catch, or rest on an agreement alone;
+- the basis: MFRI's, Fiskistofa's (logbooks, landings), STK's and the 2017 EMODnet extract's terms (PAME's as the
+  maintainer stated), the harbour lists' licences (OpenStreetMap's ODbL), IS 50V's citation;
+- then, at the maintainer's word: the tables where they are to live, with their dictionary entries and sources, rebuilt
+  from a committed script (the present stamps read `fca550a-dirty`), and ramb's and ogis's examples moved onto them.
+
+**check:** the set released with its basis recorded and the examples moved onto it, or the release declined and the
+item closed in decision 329.
+
+## 203. ogis: a vessel id with a comma is refused by the effort's cells
+**status:** open · **needs: nothing** — a small ogis fix with its test · **see:** decision 330, ogis `R/serve.R`
+(`.og_map_query()`), its `AGENTS.md` (State)
+
+A filter's values reach the server as one query value split at commas, so a vessel id holding a comma names two
+vessels and its cells tile is refused (as one with a space was until ogis 2026.11.18.17). Encode each value (or send
+them as repeated keys) in the page and read them back the same way in the server, served and bundled alike.
+
+**check:** a served `og_cells()` map with a vessel id `"a,b"` draws its cells; a test that failed before.
+
+## 204. The Icelandic depth model from an in-house S3 bucket (option C), and five small ogis faults the study found
+**status:** open · **needs: maintainer** — whether to write the plan, and the request to MFRI's IT · **see:** decision
+330, `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/report.md` (§4.4, §4.7, §5)
+
+The study recommends one PMTiles archive of the Olex grid's elevation tiles (zooms 0-10, lossless WebP at 0.1 m, 543
+MB; or 0-9, about 170 MB) in a bucket readable from MFRI's network only, and in ogis a dem or contour layer from a tile
+address (`https://…/{z}/{x}/{y}.webp` or `pmtiles://…`; about 50 lines of R, 30 of the page's JavaScript, a range
+server in R for the tests). A plan would cover that addition, the request to IT, a fishycode script that builds and
+versions the archive, where the address lives (not hard-coded in ogis), and the public question with the data's owner.
+Found on the way, not changed (each small, each for a test first):
+- a map with no layer function fails in the page (`og_map(view, basemaps) |> og_script() |> og_serve()`);
+- `og_tiles_dem()` on a `/vsicurl/` or `/vsis3/` path warns from `normalizePath()` and mangles its `source` key;
+- `og_tiles_dem()` writes full-precision PNG, 2.2 times lossless WebP at 0.1 m;
+- picture base maps are fixed at 256-px tiles;
+- a picture as the first base map logs MapLibre's "Unable to perform style diff" (harmless).
+
+**check:** a plan written at the maintainer's word, or the route declined here; the five faults fixed or dropped.
+
+## 205. The files `OGIS_CELLS` and `OGIS_NAMES` name, built as fishycode products
+**status:** open · **needs: maintainer** — the go-ahead, and which effort presets and grid · **see:** decision 330,
+`$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/trials/effort/export.R` and `trials/names/export.R`
+
+ogis's `og_cells()` and `og_names()` read, with no argument, the files `OGIS_CELLS` and `OGIS_NAMES` name in
+`.Renviron`, as `og_relief()` reads `OGIS_DEPTH` (fishycode's `depth.mbtiles`). Only trials of the two files exist
+(the effort's 0.005° grid, `fishing` preset, 381 MB; the curated place names, 1.9 MB GeoParquet), written to a
+scratchpad and deleted; their scripts are archived. Build each from a committed script in `products/` (with its data
+dictionary in the Parquet metadata), internal only, and say in its README how a colleague sets the variable.
+
+**check:** both files built from committed scripts and named in the maintainer's `.Renviron`; or the item dropped.
