@@ -1677,7 +1677,7 @@ MB; or 0-9, about 170 MB) in a bucket readable from MFRI's network only, and in 
 address (`https://…/{z}/{x}/{y}.webp` or `pmtiles://…`; about 50 lines of R, 30 of the page's JavaScript, a range
 server in R for the tests). A plan would cover that addition, the request to IT, a fishycode script that builds and
 versions the archive, where the address lives (not hard-coded in ogis), and the public question with the data's owner.
-Plan 078 (2026-11-19) takes the depth to R users first, in ogisdata, an internal package with the effort and names; this
+Plan 078 (2026-11-19) takes the depth to R users first, in ogisdata, an internal package with the effort; this
 route stays the one for pages with no R behind them, and the depth may then leave the package (its §3.6).
 Found on the way, not changed (each small, each for a test first):
 - a map with no layer function fails in the page (`og_map(view, basemaps) |> og_script() |> og_serve()`);
@@ -1689,7 +1689,7 @@ Found on the way, not changed (each small, each for a test first):
 **check:** a plan written at the maintainer's word, or the route declined here; the five faults fixed or dropped.
 
 ## 205. The files `OGIS_CELLS` and `OGIS_NAMES` name, built as fishycode products, and ogisdata, the package that carries them (plan 078)
-**status:** open · **needs: maintainer** — the go-ahead, which effort presets and grid, and plan 078's asks b-g ·
+**status:** open · **needs: maintainer** — the go-ahead, which effort presets and grid, and plan 078's asks c, d, f-h ·
 **see:** `curate/plans/078-ogis-data-package.md`, decision 330,
 `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/trials/effort/export.R` and `trials/names/export.R`
 
@@ -1697,9 +1697,10 @@ ogis's `og_cells()` and `og_names()` read, with no argument, the files `OGIS_CEL
 `.Renviron`, as `og_relief()` reads `OGIS_DEPTH` (fishycode's `depth.mbtiles`). Only trials of the two files exist
 (the effort's 0.005° grid, `fishing` preset, 381 MB; the curated place names, 1.9 MB GeoParquet), written to a
 scratchpad and deleted; their scripts are archived. Build each from a committed script in `products/` (with its data
-dictionary in the Parquet metadata), internal only. Plan 078 (2026-11-19) puts them, with `depth.mbtiles`, in an
-internal R package, ogisdata, on MFRI's share that sets the three variables when it loads, so no one writes `.Renviron`;
-these files are its step 1.
+dictionary in the Parquet metadata), internal only. Plan 078 (2026-11-19) puts the effort, with `depth.mbtiles`, in
+an internal R package, ogisdata, on MFRI's share that sets their variables when it loads, so no one writes
+`.Renviron`; the effort file is its step 1. The place names: not now (the maintainer, 2026-11-19: "placenames - not
+now"), neither built nor in ogisdata.
 
-**check:** both files built from committed scripts, and ogisdata built and installed from the share; or
-the item dropped.
+**check:** the effort file built from a committed script, and ogisdata built and installed from the share; or the
+item dropped.

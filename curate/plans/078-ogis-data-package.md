@@ -1,14 +1,18 @@
-# 078 — ogisdata: an internal R package with the depth model, the effort and the place names, so an ogis map needs no path
+# 078 — ogisdata: an internal R package with the depth model and the effort, so an ogis map needs no path
 
 **status:** proposal — written 2026-11-19 at the maintainer's word ("Yes, write it"), from the maintainer's idea of the
-same day, after a trial the same morning; ask a answered the same day ("call the package ogisdata"); §3.3 revised the
+same day, after a trial the same morning; asks a and b answered the same day ("call the package ogisdata";
+"placenames - not now", so the depth model and the effort alone); §3.3 revised the
 same day at the maintainer's word: ogisdata a package folder of its own, whose `data-raw/` copies the files in from
-`$FISHYDATA`; nothing built; asks b-g need the maintainer. **Measured** (by Claude, 2026-11-19, on
-the maintainer's Mac, R 4.5.2, ogis 2026.11.18.17): a throwaway package holding fishycode's `depth.mbtiles` builds,
-installs and is found by ogis with no path (§2). **Assumed, not measured:** installing from MFRI's share over its
-network; Windows (a package of R code alone installs without Rtools; a `file:` repository on a UNC path); that
-colleagues have about 1 GB free; that the share can limit who reads it · **see:** TODO 204, TODO 205, decision 330,
-`$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/report.md` §3 and §5
+`$FISHYDATA`; ask e answered the same day: installed as mardata is, from its folder on the share (osmx's README, §3.4);
+a demo script added the same day at the maintainer's word, its maps tried on this Mac, which found an ogis fault
+(§3.7); nothing built; asks c, d, f, g and h need the maintainer. **Measured** (by Claude, 2026-11-19, on the maintainer's Mac,
+R 4.5.2, ogis 2026.11.18.17): a throwaway package holding fishycode's `depth.mbtiles` builds, installs and is found by
+ogis with no path (§2). **Assumed, not measured:** installing ogisdata from the share over MFRI's network, about 0.93
+GB, five times mardata (174 MB installed); Windows, though mardata installs there the same way; that colleagues have
+about 2 GB free while it installs; that the share can limit who reads it · **see:** TODO 204, TODO 205, decision 330,
+`$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/report.md` §3 and §5, osmx's README
+(https://github.com/einarhjorleifsson/osmx)
 
 Drafted with AI assistance (Claude) on 2026-11-19; a person has not yet checked it. What §2 calls measured, Claude
 measured.
@@ -36,8 +40,11 @@ for three reasons it did not weigh:
 The two routes do not compete: the package is for R users now; the bucket, if it comes, is for pages with no R behind
 them, and the package can then hand ogis the depth's address in place of its file (§3.6).
 
-A precedent: the bathymetry map's kit (TODO 185, `products/bathymetry_map/kit.R`) already went to colleagues through a
-share, 2.6 GB with its own copy of the map's code and ramb. The package carries data only.
+Two precedents. **mardata**, MFRI's data package behind the survey dashboard of osmx, not public, is installed inside
+MFRI's firewall from its folder on the share: `remotes::install_local("R:/R/Pakkar/mardata", force = TRUE)` (osmx's
+README); on the maintainer's Mac it is 174 MB installed, from `/Volumes/u2/reikn/R/Pakkar/mardata`, the same folder
+mounted. And the bathymetry map's kit (TODO 185, `products/bathymetry_map/kit.R`) went to colleagues through a share,
+2.6 GB with its own copy of the map's code and ramb. ogisdata carries data only, and goes the way mardata goes.
 
 ## 2. Measured: the trial (2026-11-19)
 
@@ -56,23 +63,24 @@ scratchpad.
 | a tile at zoom 5 over Iceland, the installed package made read-only | read, 202,840 bytes (ogis opens MBTiles read-only) |
 
 The files the package would hold, by size: the depth model 547 MB; the effort, as the trial of decision 330 wrote it
-for `og_cells()` (the 0.005° grid, the `fishing` preset, gear, year and cell, no vessel), 381 MB; the place names 1.9
-MB. About 0.93 GB in all, in every library it is installed in. Not measured: how long that takes from the share.
+for `og_cells()` (the 0.005° grid, the `fishing` preset, gear, year and cell, no vessel), 381 MB. About 0.93 GB in
+all, in every library it is installed in (the place names, 1.9 MB, are left out for now: ask b). Not measured: how
+long that takes from the share.
 
 ## 3. Design
 
 ### 3.1 What it holds
 
-Three files in `inst/extdata/`, as fishycode's products write them: `depth.mbtiles` (from
-`products/bathymetry_map/dem.R`), the effort for `og_cells()` and the place names for `og_names()` (both built by
-TODO 205, each with its data dictionary in the Parquet metadata). No code beyond §3.2, no compiled code, no copy of
-ogis.
+Two files in `inst/extdata/`, as fishycode's products write them: `depth.mbtiles` (from
+`products/bathymetry_map/dem.R`) and the effort for `og_cells()` (built by TODO 205, with its data dictionary in the
+Parquet metadata). No code beyond §3.2, no compiled code, no copy of ogis. The place names for `og_names()` are left
+out for now (ask b); they would come in as a third file, read the same way through `OGIS_NAMES`.
 
 ### 3.2 How ogis finds them
 
-- **`.onLoad` sets the three variables, each only when it is empty**, so a person's own `.Renviron` still wins. ogis
+- **`.onLoad` sets `OGIS_DEPTH` and `OGIS_CELLS`, each only when it is empty**, so a person's own `.Renviron` still wins. ogis
   reads them at each call (`Sys.getenv()`), so a script needs one line, `library(ogisdata)`, and no path.
-- **Three path functions** (`depth_file()`, `cells_file()`, `names_file()`) for an explicit call
+- **Two path functions** (`depth_file()`, `cells_file()`) for an explicit call
   (`og_relief(ogisdata::depth_file())`) and for use outside ogis: the effort opened with DuckDB, say.
 - **`files()`**: one row a file, with its bytes, md5, the date it was built and the fishycode commit it was built
   from (the Parquet files' `fd.*` stamps; the depth model's from its build). A map's maker can then say which effort
@@ -87,35 +95,41 @@ ogisdata is a package folder of its own, beside ogis (`~/R/Pakkar/ogisdata`, ask
 copy the files in from `$FISHYDATA` (the maintainer, 2026-11-19: a `data-raw` folder whose scripts "copies" the data
 from fishydata to ogisdata), as usethis lays out a package's data:
 
-- **`data-raw/files.R` copies the three files as they are**, a clone on APFS so no second copy on disk, and writes
+- **`data-raw/files.R` copies the two files as they are**, a clone on APFS so no second copy on disk, and writes
   their provenance to `inst/extdata/files.csv`, which `files()` reads. For the Parquet files that is their `fd.*`
   stamps; for each file, its bytes and md5.
-- **It makes nothing.** The effort and names files are built by fishycode's `products/` scripts (TODO 205); a change
-  to what is in them is made there.
+- **It makes nothing.** The effort file is built by a fishycode `products/` script (TODO 205); a change to what is
+  in it is made there.
 - **It bumps the version** in `DESCRIPTION` (`YYYY.MM.DD`, `.1` for a second build in a day, as ogis) and adds a NEWS
   line naming the files' builds.
 
 Then `R CMD build`, the package's tests (§2's checks from a temporary library: the variables set, a person's own
-kept, each file read through ogis, skipped where ogis is absent), and the tarball into the share's repository by a
-script in `tools/` (§3.4). `data-raw/` and `tools/` are in `.Rbuildignore`; `inst/extdata/` is in `.gitignore`, so
-the folder's git holds code only. Rerun after each rebuild of the products it carries.
+kept, each file read through ogis, skipped where ogis is absent), and the filled folder, without `.git`, copied to
+the share by a script in `tools/` (§3.4). `data-raw/` and `tools/` are in `.Rbuildignore`; `inst/extdata/` is in
+`.gitignore`, so the folder's git holds code only. Rerun after each rebuild of the products it carries.
 
 ### 3.4 How colleagues get it
 
-The tarballs in a package repository on MFRI's share (`src/contrib/`, indexed by `tools::write_PACKAGES()`), so:
+As mardata (the maintainer, 2026-11-19, pointing to osmx's README): the package's folder on the share, beside
+mardata's, and inside MFRI's firewall a colleague installs it with
 
-- the first install is `install.packages("ogisdata", repos = <the share>)`;
-- `update.packages()` finds a new version;
-- a tarball there can still be installed by its path, `remotes::install_local()` or
-  `install.packages(<file>, repos = NULL)`, as the maintainer first proposed;
-- the repository can hold ogis's own tarball too, so one line installs or updates both (ogis's packages from CRAN).
+```r
+remotes::install_local("R:/R/Pakkar/ogisdata", force = TRUE)
+```
+
+- **The first install and every update are the same line.** `force = TRUE` installs again whatever version is in
+  the library; the startup line (§3.2) shows which one a person has, and the README names the latest.
+- **remotes builds the package from the folder first**, so the 0.93 GB are read from the share and written twice on
+  local disk (the tarball, then the library). If that proves slow on Windows (step 3), a built tarball beside the
+  folder is installed by the same function and skips the build.
+- **ogis itself** is installed as its own README says.
 
 Each install copies about 0.93 GB into the person's library, and again after each R minor version (a new library).
 
 ### 3.5 What stays internal
 
-The depth model, the effort and the place names are internal (ogis's rules). The package's tarballs live on MFRI's
-share alone: never GitHub, r-universe or a public host, and a bundle made from it (`og_bundle()` copies its tiles) is
+The depth model and the effort are internal (ogis's rules). The filled package lives on MFRI's share alone, inside
+its firewall: never GitHub, r-universe or a public host, and a bundle made from it (`og_bundle()` copies its tiles) is
 internal too. Its source folder's git holds code only, with no public remote (ask g).
 The effort is summed over vessels, but at 0.005° a cell may hold one vessel's fishing; who may read the share is ask
 d, under MFRI's gagnastefna.
@@ -123,17 +137,92 @@ d, under MFRI's gagnastefna.
 ### 3.6 With the bucket later
 
 If TODO 204's bucket is built and ogis gains its tile address, the depth model may leave the package: `.onLoad` sets
-its address instead, and the package shrinks to the effort and the names. Nothing in §3.2 needs to change for a
+its address instead, and the package shrinks to the effort. Nothing in §3.2 needs to change for a
 script.
+
+### 3.7 A demo script
+
+The maintainer, 2026-11-19: "a demo script that shows how to plot the depth and the effort map via ogis within the
+ogisdata package". It is `demo/maps.R` (listed in `demo/00Index`), so a colleague runs it with
+`demo("maps", package = "ogisdata")`, or copies it to edit, as its head says. Each map is served when it is printed at
+the console and opens in RStudio's Viewer or a browser (ogis's `print()`); the choices in a call can be changed again
+in the page's sidebar.
+
+```r
+# The depth model and the fishing effort on ogis maps, from ogisdata.
+#
+# Run it:   demo("maps", package = "ogisdata")
+# Copy it:  file.copy(system.file("demo", "maps.R", package = "ogisdata"), "maps.R")
+#
+# A map opens in RStudio's Viewer or a browser when it is printed at the console. Every choice
+# made in a call (colours, gear, years) can be changed again in the page's sidebar.
+
+library(ogis)
+library(ogisdata)   # tells ogis where the depth model and the effort are: no path below
+
+iceland    <- list(bounds = c(-30, 62, -8, 68.5))
+westfjords <- list(center = c(-24, 66.4), zoom = 7.5)
+
+# 1. The depth: colour, shading and contours. The contours are the charts' isobaths (10, 25, 50,
+#    100, 150, 200, 300, 400, 500, 1000 m and deeper), heavier and labelled, with finer lines
+#    between them that close up as you zoom in. The map opens off the Westfjords, where both
+#    show; over all of Iceland only the 500 m lines do.
+og_map(title = "Depth", view = westfjords) |>
+  og_relief() |>
+  og_contour()
+# the same contours, spelled out:
+#   og_contour(major = c(10, 25, 50, 100, 150, 200, 300, 400, 500, 1000, 1500, 2000, 2500,
+#                        3000, 4000, 5000),
+#              minor = TRUE,    # the finer lines between
+#              labels = TRUE)   # the depth on each heavier line
+
+# 2. The fishing effort over the depth, the contours on top: hours per km², every gear and year
+og_map(title = "Fishing effort", view = iceland) |>
+  og_relief() |>
+  og_cells(name = "Fishing effort") |>
+  og_contour()
+
+# 3. One gear and a span of years when the page opens: bottom trawl, 2015-2024
+trawl <- og_map(title = "Bottom trawl, 2015-2024", view = iceland) |>
+  og_relief() |>
+  og_cells(name = "Fishing effort", filter = list(gid = 6, year = c(2015, 2024))) |>
+  og_contour()
+trawl
+
+# 4. The files the maps were drawn from, and when fishycode built them
+files()
+
+# 5. A map as a folder that opens from its index.html, with no R. It carries the data, so it
+#    stays inside MFRI.
+# og_bundle(trawl, "bottom_trawl_map")
+```
+
+**Tried 2026-11-19** (by Claude, on the maintainer's Mac, ogis 2026.11.18.17): maps 1-3 built from these calls in
+0.9 s, `OGIS_DEPTH` from `.Renviron` and `OGIS_CELLS` naming an effort file written by decision 330's trial script
+to the session's scratchpad (381 MB, 2007-2026, 21 gears; deleted after), as `library(ogisdata)` would set them, and
+served. Maps 1 and 2 drew in the app's browser: the depth with its relief over the EMODnet base map; the effort over
+it, every gear, 2007-2026. **Map 3 did not:** its page asked for no effort tile, drew nothing, and its controls showed
+"all" and no years, though its configuration starts at gear 6 and 2015-2024. The same choices given in map 2's
+address (`?cells_gid=6&cells_year_from=2015&cells_year_to=2024`) drew bottom trawl, 2015-2024. So `og_cells(filter =
+)` fails on a served map: an ogis fault, fixed in ogis with a test before step 2, since the demo shows it.
+
+**The contours** (the maintainer, the same day: "the one with nice breaks and labels and then fine lines in
+between") are `og_contour()`'s defaults, the charts' isobaths labelled and finer lines between. They show in full only
+from zoom 5 on the shelf, so map 1 opens off the Westfjords at zoom 7.5, and all three maps carry them. Tried the same
+day: at that view the labelled lines (10, 25, 50, 100, 200 and 1,000 m) and the finer ones drew over the relief, and
+over the effort when `og_contour()` comes after `og_cells()`. Over dense effort the finer lines are hard to see in the
+default colour; `og_contour(colour = )` lightens them.
 
 ## 4. Steps
 
-1. **The files**, TODO 205: the effort and the place names from committed scripts in `products/`, with their
-   dictionaries, the preset and grid by ask c.
-2. **The package**, §3.2-3.3: `~/R/Pakkar/ogisdata` with `data-raw/files.R`, its tests and the publishing script in
-   `tools/`; the tests pass from a temporary library on this Mac.
-3. **From the share**, by the maintainer or a colleague: installed from the repository into an empty library on a
-   Windows machine at MFRI, one map of each kind drawn, the time recorded.
+1. **The effort file**, TODO 205: from a committed script in `products/`, with its dictionary, the preset and grid
+   by ask c.
+2. **The package**, §3.2-3.3 and §3.7: `~/R/Pakkar/ogisdata` with `data-raw/files.R`, the demo, its tests and the
+   script in `tools/` that copies it to the share; the tests pass from a temporary library on this Mac, and the
+   demo's three maps draw. Needs ogis's `og_cells(filter = )` fixed first (§3.7).
+3. **From the share**, by the maintainer or a colleague: `remotes::install_local("R:/R/Pakkar/ogisdata", force =
+   TRUE)` into an empty library on a Windows machine at MFRI, one map of each kind drawn, the install's time
+   recorded.
 4. **Its README sent to colleagues**, with the install line and one map script; the kit of TODO 185 then retired or
    kept, at the maintainer's word.
 
@@ -142,14 +231,18 @@ script.
 a. **The name.** Answered 2026-11-19: "call the package ogisdata". Claude had proposed a name not starting with `og`,
    so it is not taken for part of ogis; its README and `DESCRIPTION` therefore say it is MFRI's, internal, and not
    part of the public ogis.
-b. **The place names in it too?** Claude recommends yes: 1.9 MB, and `og_names()` reads them the same way.
+b. **The place names in it too?** Answered 2026-11-19: "placenames - not now". They stay out; Claude had
+   recommended them (1.9 MB, read by `og_names()` the same way), and they can come in later as a third file.
 c. **Which effort** (TODO 205's ask): the trial's 0.005° grid with the `fishing` preset alone (381 MB), or more
    presets or the finer grid (`grid.parquet`, 5.1 GB as the effort map's base, too large here).
-d. **The share and who reads it**: its path, whether it can be limited to staff who need the effort, and whether
-   the depth model's owner agrees to its spreading this way inside MFRI.
-e. **A repository on the share** (§3.4), or tarballs installed by path alone. Claude recommends the repository: the
-   effort is rebuilt often, and `update.packages()` then reaches everyone.
+d. **Who reads the share.** Its place is given by e (`R:/R/Pakkar/ogisdata`). Left: whether the folder can be limited
+   to staff who need the effort, and whether the depth model's owner agrees to its spreading this way inside MFRI.
+e. **How colleagues install it.** Answered 2026-11-19: as mardata, `remotes::install_local()` from its folder on the
+   share (osmx's README). Claude had recommended a package repository on the share, so that `update.packages()`
+   finds new versions; with mardata's way an update is the same line again.
 f. **ogis's error for a missing variable** says to set it in `.Renviron`. Should it also say "or load a package that
    sets it"? Claude recommends no change: the package's README carries the `library()` line.
 g. **Where its source lives.** Claude proposes `~/R/Pakkar/ogisdata`, beside ogis and ramb, a git repository of code
    only, with no remote, or a private one if MFRI has a place for it.
+h. **The demo's form.** Claude proposes R's own `demo/` (§3.7). The other way is osmx's: an R Markdown template
+   (File > New File > R Markdown > From Template), which opens as a document of the user's own.
