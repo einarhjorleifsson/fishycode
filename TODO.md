@@ -1714,23 +1714,3 @@ carrying them.
 
 **check:** the effort and the names files built from committed scripts, and ogisdata built and installed from the share;
 or the item dropped.
-
-## 206. The trail rebuilt for decision 331, then the effort grids, `cells.parquet` and ogisdata
-**status:** open · **needs: maintainer** — the rebuild, later on 2026-11-19 (the maintainer: "do things up to the
-rebuild - that will be done later today") · **see:** decision 331, `R/trail_sql.R`, TODO 205
-
-`R/trail_sql.R` fills the gear of a fix that several stations claim where they all have the same (decision 331);
-`targets` cannot see the edit. Before it: a clean tree (an untracked file stamps every file written `fd.dirty`), no
-other session editing fishycode while it runs, the machine kept awake, the heavy-job lock. Fingerprint first, then
-`targets::tar_invalidate(ais_trail)` and `tar_make_isolated(names = c("ais_trail", "trip_landing",
-"check_trail_agreement", "check_survey_tow_times", "check_trail_sid_coverage"))`: the trail and every target after it
-but `ais_catch` and `check_allocation_audit` (decision 261). Not `setdiff(tar_outdated(), …)`: the place-name
-sessions' 17 targets are outdated too (documents added to `raw/external/ornefni/` on 2026-11-12 to 16), left out on
-purpose by decision 326. Nothing else changes, so the targets after the trail should rebuild to the same content.
-ramb is 2026.11.18.1, the trail was built under 2026.11.09.4: the functions the five reach (`R/record.R`, `effort.R`,
-`stretch.R`) are the same in both (checked 2026-11-19); the record says so. Then `products/effort_map/grid.R` (and
-`grid.R fixes`), `products/effort_map/cells.R`, ogisdata's `source("data-raw/files.R")` (a new version and a NEWS
-line) and `devtools::test()` there; the copy to `R:/R/Pakkar/ogisdata` is TODO 205's.
-
-**check:** every trail file rebuilt and stamped clean (135 of 233 carry `fd.dirty` now, from decision 326's build),
-its rows and every column but the six gear columns as before; `cells.parquet`'s hours with no `gid` down from 281,037 to about 840; ogisdata carrying it.

@@ -328,7 +328,7 @@ Every script in a targets project is on one of three sides, and says which in a 
   same study since. A verdict kept under another layer's answers (`store`), 2026.11.09.2 (ef65b0a), is committed to
   ramb's local `main` and installed from its tree on 2026-11-09 (the whole suite passes, 3,304), not pushed; the
   örnefni study's viewer uses it. 2026.11.09 to .2 were pushed to GitHub on 2026-11-09 at the maintainer's word ("Yes,
-  push and build") and ramb reinstalled from it (`RemoteSha` ef65b0a), for the rebuild of decision 310. 2026.11.09.3 and .4 (3eb4425, 09182bc, the map viewer only), pushed, were installed from ramb's tree on 2026-11-10, so the stamp reads `2026.11.09.4@none`; decision 326's rebuild ran under it. Plan
+  push and build") and ramb reinstalled from it (`RemoteSha` ef65b0a), for the rebuild of decision 310. 2026.11.09.3 and .4 (3eb4425, 09182bc, the map viewer only), pushed, were installed from ramb's tree on 2026-11-10, so the stamp reads `2026.11.09.4@none`; decision 326's rebuild ran under it. 2026.11.18 and .18.1 (eda610d, ea05430: the trip and voyage steps, `rb_flag_ping_clock_jump()`), installed from ramb's tree, are what decision 331's rebuild ran under; nothing it ran changed. Plan
   062's cascade of step 0 is 2026.11.04 (abe207f: `rb_flag_ping_impossible(method = "local")`, the copy rule of
   `rb_flag_ping_duplicate(speed = )`, `ping_flag_basis` on every flag, `rb_add_ping_speed()`), merged into ramb's `main`
   and installed from it on 2026-11-04, pushed on 2026-11-05; production's own chain gives the store's labels under it (plan
@@ -345,7 +345,9 @@ Every script in a targets project is on one of three sides, and says which in a 
   ramb 2026.11.07.1, the port calls by vessel over every year and every tie in time ordered (decision 296); and on 2026-11-08 at 8f46429 the 34 from `port_code` down, every logbook trip end
   with its port (decision 298); and at 463efa7 the 17 from `ais_ping_clean` down, each vessel faster than 25 kn judged at
   its own ceiling (decision 299); and at 4e9c8dc the 21 from `ais_ping_union` down, astd's and emodnet's speed derived
-  after the flags (decision 303); and on 2026-11-17 at c2f1362 with ramb 2026.11.09.4 the 42 from `stk_hid_pid` and `afli_sent` down, decisions 310-314 and TODO 182's correction, then the effort grids (decision 326). Every curated file
+  after the flags (decision 303); and on 2026-11-17 at c2f1362 with ramb 2026.11.09.4 the 42 from `stk_hid_pid` and `afli_sent` down, decisions 310-314 and TODO 182's correction, then the effort grids (decision 326); and on 2026-11-19 at 82ab83c with ramb
+  2026.11.18.1 `ais_trail` and the four targets after it, the gear of a fix several stations claim, then the effort grids and
+  `cells.parquet` (decision 331). Every curated file
   carries ramb's commit, `fd.ramb`. The rebuilds before are decisions 086-271: the last complete one, 2026-10-28 under
   DuckDB 2.0.0, compared file by file with 1.5.6's of 2026-10-23 (decisions 218, 239). R's DuckDB is
   1.5.6 again since 2026-10-29, until 2.0.1 (TODO 150): 2.0.0 has three regressions, each worked around in the code

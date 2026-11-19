@@ -67,6 +67,6 @@ if (chk$rows != n || abs(chk$h_out - chk$h_in) > 1e-6 * chk$h_in) {
   stop("cells.R: the file written is not the grid's fishing cells", call. = FALSE)
 }
 invisible(file.rename(tmp, out))
-# the hours with no gear: fixes whose stations have different gears (decision 331), about 840 h
+# the hours with no gear: fixes whose stations have two or more gears (decision 331), 968 h at its rebuild
 cat(sprintf("%s: %s rows, %.0f MB, %s hours, %s of them with no gear\n", out, format(n, big.mark = ","),
             file.size(out) / 1e6, format(round(chk$h_out), big.mark = ","), format(round(chk$h_na), big.mark = ",")))
