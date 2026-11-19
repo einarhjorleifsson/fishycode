@@ -1689,7 +1689,8 @@ Found on the way, not changed (each small, each for a test first):
 **check:** a plan written at the maintainer's word, or the route declined here; the five faults fixed or dropped.
 
 ## 205. The files `OGIS_CELLS` and `OGIS_NAMES` name, built as fishycode products, and ogisdata, the package that carries them (plan 078)
-**status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 built 2026-11-19; ogisdata 2026.11.19.1 the version to copy) ·
+**status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 built 2026-11-19; the version to copy is the one after TODO 206, whose cells carry the gear that 3 % of
+2026.11.19.1's hours lack, decision 331) ·
 **see:** `curate/plans/078-ogis-data-package.md`, decision 330,
 `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/trials/effort/export.R` and `trials/names/export.R`
 
@@ -1705,3 +1706,16 @@ now"), neither built nor in ogisdata.
 
 **check:** the effort file built from a committed script, and ogisdata built and installed from the share; or the
 item dropped.
+
+## 206. The trail rebuilt for decision 331, then the effort grids, `cells.parquet` and ogisdata
+**status:** open · **needs: maintainer** — the rebuild, later on 2026-11-19 (the maintainer: "do things up to the
+rebuild - that will be done later today") · **see:** decision 331, `R/trail_sql.R`, TODO 205
+
+`R/trail_sql.R` fills the gear of a fix that several stations claim where they all have the same (decision 331);
+`targets` cannot see the edit. Fingerprint first, then `targets::tar_invalidate(ais_trail)` and
+`tar_make_isolated(names = setdiff(targets::tar_outdated(), c("ais_catch", "check_allocation_audit")))`; nothing else
+changes, so the targets after the trail should rebuild to the same content. Then `products/effort_map/grid.R` (and
+`grid.R fixes`), `products/effort_map/cells.R`, and ogisdata's `data-raw/files.R` with a new version.
+
+**check:** every trail file rebuilt and stamped clean, its rows and every column but the six gear columns as before;
+`cells.parquet`'s hours with no `gid` down from 281,037 to about 840; ogisdata carrying it.

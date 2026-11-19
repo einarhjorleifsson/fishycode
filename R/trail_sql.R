@@ -27,7 +27,12 @@
 #
 # The station's gear codes come from curated/logbook/gear.parquet under the names they have there (TODO 34,
 # question 3): `gid` the logbook's, `gid_landing` the landing's, `gid_used` the one the windows use, `gid_basis`.
-# Like every station column they are filled only when one station claims the fix.
+# Like every station column they are filled when one station claims the fix. The gear columns (these four, and the
+# window's `gear` and `gear_class`) are also filled when several stations claim it and all have the same value: the
+# gear is known though the station is not (`.sid` NA, `n_sid` above 1). Nearly all such fixes are in day windows,
+# several date-only hauls of a vessel on one day; 99.7 % of them agree on `gid_used` (decision 331). `gid_basis` is
+# then theirs, or `reconstructed` when one station's gear is recorded and another's taken from the landing. The
+# station's own columns (`.tid`, `metier`, `target`, `s1`, `s2`, `phase`, ...) stay NA.
 #
 # Plan 013 items 1 and 3 (decisions 099, 101): every approach to fishing is a column of its own, and the effort is
 # on every fix. `fishing` (above) is the window alone. `fishing_flow` is the cascade: the window where a station's
@@ -95,6 +100,8 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
                             ping_speed_min = "s1_voyage", ping_speed_max = "s2_voyage", name = "fishing_flow") |>
     ramb::rb_add_effort(by = "voyage_id", max_interval_s = max_interval_s) |>
     ramb::rb_add_record(m, key = c(".sid", "schema"), carry = c(carry[1:6], "s1", "s2", "win_basis", "events"))
+  # a gear column of a fix that several stations claim: their value when all have the same, else NA
+  same <- function(x) sprintf("CASE WHEN count(DISTINCT %1$s) = 1 AND count(%1$s) = count(*) THEN any_value(%1$s) END", x)
   sprintf("
     WITH v AS (
       SELECT vid, year, voyage_id, count(*) AS n_tid_voyage,
@@ -105,14 +112,27 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     e AS (SELECT vid, time, array_to_string(list_sort(list_distinct(list(event))), '+') AS nearest_event
           FROM read_parquet(%s) WHERE time >= %s AND time < %s GROUP BY vid, time),
     r AS (%s),
+    ga AS (
+      SELECT m.vid, m.time, %s AS gid, %s AS gid_landing, %s AS gid_used,
+             CASE WHEN %s IS NOT NULL
+                  THEN CASE WHEN count(DISTINCT g.gid_basis) = 1 THEN any_value(g.gid_basis) ELSE 'reconstructed' END
+             END AS gid_basis,
+             %s AS gear, %s AS gear_class
+      FROM read_parquet(%s) m LEFT JOIN g ON g.\".sid\" = m.\".sid\" AND g.schema = m.schema
+      GROUP BY m.vid, m.time HAVING count(*) > 1),
     cl AS (SELECT vid, t1, t2 FROM read_parquet(%s) WHERE leisure AND t1 < %s AND t2 > %s),
     vy AS (SELECT vid, mclass FROM read_parquet(%s) WHERE year = %d)
     SELECT r.vid, r.mmsi, r.time, r.lon, r.lat, r.speed, r.speed_raw, r.speed_span_s, r.heading, r.cog, r.provider,
            r.stream, r.pos_basis, r.speed_basis, r.dt_sec, r.time_delivered, r.lag_s, r.lag_basis,
            r.port_call_id, r.voyage_id,
            v.tid_v AS \".tid_voyage\", v.schema_v AS schema_voyage, coalesce(v.n_tid_voyage, 0) AS n_tid_voyage,
-           r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier, r.gear, r.target, r.target2,
-           g.gid, g.gid_landing, g.gid_used, g.gid_basis, r.gear_class,
+           r.n_records AS n_sid, r.\".sid\", r.schema, r.\".tid\", r.metier,
+           CASE WHEN r.\".sid\" IS NULL THEN ga.gear ELSE r.gear END AS gear, r.target, r.target2,
+           CASE WHEN r.\".sid\" IS NULL THEN ga.gid ELSE g.gid END AS gid,
+           CASE WHEN r.\".sid\" IS NULL THEN ga.gid_landing ELSE g.gid_landing END AS gid_landing,
+           CASE WHEN r.\".sid\" IS NULL THEN ga.gid_used ELSE g.gid_used END AS gid_used,
+           CASE WHEN r.\".sid\" IS NULL THEN ga.gid_basis ELSE g.gid_basis END AS gid_basis,
+           CASE WHEN r.\".sid\" IS NULL THEN ga.gear_class ELSE r.gear_class END AS gear_class,
            r.s1, r.s2, r.phase, r.phase_frac, r.win_basis, r.events, e.nearest_event, r.fishing,
            r.gid_voyage, r.s1_voyage, r.s2_voyage, r.gear_voyage_basis, r.fishing_flow, r.fishing_flow_basis,
            r.hours, r.kw_hours, r.interval_flag, r.effort_basis, r.kw_basis, r.sid_gps, r.n_sid_gps,
@@ -129,7 +149,11 @@ trail_month_sql <- function(con, year, month, kind = c("wide", "match"), matches
     FROM r LEFT JOIN v ON v.vid = r.vid AND v.voyage_id = r.voyage_id
            LEFT JOIN vy ON vy.vid = r.vid
            LEFT JOIN g ON g.\".sid\" = r.\".sid\" AND g.schema = r.schema
+           LEFT JOIN ga ON ga.vid = r.vid AND ga.time = r.time
            LEFT JOIN e ON e.vid = r.vid AND e.time = r.time
     WHERE r.time >= %s AND r.time < %s",
-    tvf, year, gf, sef, t0, t1, rend(r), vcf, t1, t0, vyf, year, t0, t1)
+    tvf, year, gf, sef, t0, t1, rend(r),
+    same("g.gid"), same("g.gid_landing"), same("g.gid_used"), same("g.gid_used"), same("m.gear"), same("m.gear_class"),
+    shQuote(matches, type = "sh"),
+    vcf, t1, t0, vyf, year, t0, t1)
 }

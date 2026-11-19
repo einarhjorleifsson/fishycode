@@ -60,11 +60,13 @@ invisible(DBI::dbExecute(con, sprintf(
 # The hours are the grid's, or nothing is replaced
 chk <- DBI::dbGetQuery(con, sprintf(
   "SELECT (SELECT count(*) FROM read_parquet(%1$s)) AS rows,
-          (SELECT sum(h) FROM read_parquet(%1$s)) AS h_out, (SELECT sum(h) FROM (%2$s)) AS h_in", q(tmp), sql))
+          (SELECT sum(h) FROM read_parquet(%1$s)) AS h_out, (SELECT sum(h) FROM (%2$s)) AS h_in,
+          (SELECT coalesce(sum(h), 0) FROM read_parquet(%1$s) WHERE gid IS NULL) AS h_na", q(tmp), sql))
 if (chk$rows != n || abs(chk$h_out - chk$h_in) > 1e-6 * chk$h_in) {
   unlink(tmp)
   stop("cells.R: the file written is not the grid's fishing cells", call. = FALSE)
 }
 invisible(file.rename(tmp, out))
-cat(sprintf("%s: %s rows, %.0f MB, %s hours\n", out, format(n, big.mark = ","), file.size(out) / 1e6,
-            format(round(chk$h_out), big.mark = ",")))
+# the hours with no gear: fixes whose stations have different gears (decision 331), about 840 h
+cat(sprintf("%s: %s rows, %.0f MB, %s hours, %s of them with no gear\n", out, format(n, big.mark = ","),
+            file.size(out) / 1e6, format(round(chk$h_out), big.mark = ","), format(round(chk$h_na), big.mark = ",")))

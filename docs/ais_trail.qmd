@@ -65,6 +65,7 @@ The columns added to the pings (the voyage columns come from the AIS voyage, the
 | n_sid | number of station windows that contain the fix (0 = none) |
 | `.sid`, `schema`, `.tid` | the station and trip — filled **only** when `n_sid == 1` |
 | `gear`, `gear_class`, `target`, `target2` | gear of the station (ICES code, class), its ICES target assemblage (`target`, e.g. `CRU`) and the finer Icelandic target (`target2`, e.g. `NEP`); an adb station's own gear is read from its old code through adb's own crosswalk (plan 034) |
+| `gid`, `gid_landing`, `gid_used`, `gid_basis` | the station's gear codes (decision 085): the logbook's, the landing's, the one the windows use, and how it was obtained. These and `gear`, `gear_class` are also filled when `n_sid > 1` and every station claiming the fix has the same value: the gear is known though the station is not (decision 331) |
 | `s1`, `s2` | the speed range (knots) of the gear class that `fishing` is tested against; NA for a gear with no range |
 | `phase`, `phase_frac` | `tow`, `haul`, `set`, `jig` or `day`; how far through the window the fix is (0–1) |
 | `win_basis` | how the window was drawn (`recorded`, `derived`, `capped`, ...) |

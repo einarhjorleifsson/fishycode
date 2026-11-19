@@ -27,7 +27,8 @@
 #                 curated/ais/voyage.parquet, within vid, year; `stay` and `voyage` until decision 149)
 #                 .tid_voyage schema_voyage n_tid_voyage   the logbook trip of the voyage (only when exactly one)
 #   the station   n_sid .sid schema .tid metier gear target target2 gid gid_landing gid_used gid_basis gear_class s1 s2
-#                 phase phase_frac win_basis events nearest_event fishing (on the ±10 min median speed, decision 093)
+#                 phase phase_frac win_basis events nearest_event fishing (on the ±10 min median speed, decision 093);
+#                 filled when one station claims the fix, the gear columns also when several do and agree (decision 331)
 #   the voyage    gid_voyage s1_voyage s2_voyage gear_voyage_basis   the voyage's gear (voyage_gear.R)
 #   approaches    fishing_flow fishing_flow_basis   the window, else the voyage gear's speed range (plan 013 item 3)
 #   effort        hours kw_hours interval_flag effort_basis kw_basis   on every fix, whatever the approach (plan 013
