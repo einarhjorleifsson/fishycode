@@ -9,7 +9,7 @@ boxes he accepts; by 2026-11-15 the lettering read at all nine chart scales and 
 by the same day all nine frozen; step 1 revised 2026-11-15 at his word ("Yes, revise"): the lettering alone,
 reviewed by Claude's look and then cards, the place a step of its own (1c); the aim revised 2026-11-15 at his word ("Yes,
 revise the plan and start"): one best place a name, steady as the map zooms, shown at zooms chosen for our users, the
-outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved; amended 2026-11-17 at his word: asks k, l and n parked for another plan, the harbours and the bottom type out of this plan, the wreck list into fishycode, the submerged rocks at LMÍ's position, the ridge's volcanic systems by ÍSOR's names with his as synonyms; step 11 extended to the whole coast the same day; step 12 drafted 2026-11-19 at his word: one curated table of what the map shows, the names of the charts, LMÍ and ÍSOR, the wrecks and the aids, told apart by type, Trackwell left out · **2026-11-11** · **see:** plan 073 (and its
+outlines a later step if wanted; step 7 revised 2026-11-15, night, at his word: the display zoom and the traffic jam apart; step 8 added 2026-11-16 at his word: guides from the new sources; step 9 the same day: curated lists from several witnesses (wrecks, harbours, aids, bottom type), revised the same day at his word: the islands and skerries above water from LMÍ, the charts their witnesses, and the aids apart from the names, each feature listing the aids on it; step 11 drafted the same night: LMÍ's names on the names map (its Breiðafjörður pilot built the same night), the wreck list built as a prototype in the study the same day, a plotter's marks added to it, and at his word kept standalone, outside the targets flow, its conflicts listed, not resolved; amended 2026-11-17 at his word: asks k, l and n parked for another plan, the harbours and the bottom type out of this plan, the wreck list into fishycode, the submerged rocks at LMÍ's position, the ridge's volcanic systems by ÍSOR's names with his as synonyms; step 11 extended to the whole coast the same day; step 12 drafted 2026-11-19 at his word: one curated table of what the map shows, the names of the charts, LMÍ and ÍSOR, the wrecks and the aids, told apart by type, Trackwell left out; asks u-y settled the same day: the table `marine_feature`, the page 132 on ogis · **2026-11-11** · **see:** plan 073 (and its
 decisions 315, 316, 317), plans 070 and 071, decisions 300, 302 and 304 (the main grounds and deeps), the local-features
 study (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 56-70, its `notes/part_endings_glossary.md`) and the
 örnefni map study (`$FISHYDATA/archive/2026-11-08-ornefni-map/`), TODO 199
@@ -787,9 +787,11 @@ the question for Julian Burgos.
    on them.
    - **Version 1 frozen first**: the study's rules as they stand on 2026-11-19, no rule changed while the lists move. A
      later round changes the product and is measured against version 1.
-   - **Settled before the freeze** (asks u-w): the land names; the duplicates and misreads the smoke test found
-     (2026-11-17); the page kept. The submerged rocks at LMÍ's position (decided 2026-11-17, not built) are built into
-     version 1.
+   - **Settled before the freeze** (asks u-w, the maintainer, 2026-11-19): the sea, the islands and LMÍ's shore
+     landforms within 1 km of the shore, as now, the page's "names on land" switch hiding LMÍ's shore names too (u); the
+     three misreads corrected in `overrides/` ("Reykjane", Faxagaröur and Sudurgaröur), the two duplicates (Faxabanki,
+     Skerjafjörður) kept with both witnesses' places and flagged, for his hand later (v); the page 132, on ogis (w). The
+     submerged rocks at LMÍ's position (decided 2026-11-17, not built) are built into version 1.
    - **The names**, from three public sources alone: the charts' letterings (`curated/reference/chart_names.parquet`),
      LMÍ's names (IS 50V's whole name set, `raw/external/is50v/ornefni_all/`, fetched by `dump/natt/ornefni.R`) and ÍSOR's
      seabed map (`raw/external/isor/`). Trackwell, the plotters and plan 044's gazetteer (`curate/place_name.R`) are read
@@ -814,8 +816,8 @@ the question for Julian Burgos.
    - **The lights and beacons**: the aid list as built on 2026-11-16 (`reference/aids/aid.R`, its tables unchanged). The
      study's 111 moves into the build: which named feature each aid stands on, and every aid in Iceland in one outcome
      (on a named island, lettered with a named feature's name, offshore, on the coast).
-   - **The one table**, written after the three lists by a standalone script in `reference/`, to `curated/reference/`
-     (its name ask x) by `write_curated()`, the geometry as WKB. One row a name's feature, a wreck's place or an aid:
+   - **The one table**, written after the three lists by a standalone script in `reference/`, to
+     `curated/reference/marine_feature.parquet` (ask x) by `write_curated()`, the geometry as WKB. One row a name's feature, a wreck's place or an aid:
      - `id`, `type`, `kind` (a name's island, water, land and the rest; an aid's light, beacon, buoy; a wreck);
      - its name and synonyms (LMÍ's spelling with the chart's print kept, ÍSOR's name with the maintainer's), empty where
        a wreck has none;
@@ -831,11 +833,14 @@ the question for Julian Burgos.
      witnesses; a name's letterings and LMÍ's heimild) stays in that list's own tables, joined by `id`.
    - **The traffic jam stays with the page** (step 7, 2026-11-15): which name gives way when two collide depends on the
      screen, so the table carries the zoom each row deserves and the page the zoom it is drawn from. Place names, aids'
-     names and wrecks' names compete in one ranking by type and kind (ask y).
+     names and wrecks' names compete in one ranking (ask y): a place name wins a collision, an aid's name shows from zoom
+     10, a wreck's name from a fine zoom, its dot always.
    - **The maintainer's edits** re-enter as a reviewed input in `overrides/`, as step 1b's verdicts would: the cycle
      broken by a person. Checked when moved that they name no internal source.
-   - **One page** reads the one table (ask w), with one search across the types, so the rule that lays the edits on lives
-     once (71, 75 and 132 each hold it now).
+   - **One page**, 132 on ogis (ask w): its rebelrebel calls moved to ogis's `og_` functions, the gaps it listed in the
+     package (the study's README, 2026-11-18) filled in ogis with a test each, the page in fishycode's `products/` as the
+     port map on ogis is. It reads the one table, with one search across the types, so the rule that lays the edits on
+     lives once (71, 75 and 132 each hold it now); 75 is retired once 132 draws from the table.
    - **Left apart**: the outlines, the vocabulary and the parts (step 10); Trackwell's names, until the maintainer brings
      them back.
    *Assumed*: that the study's names map, wreck list and links of the aids are the sets to carry forward, as they stand
@@ -950,19 +955,26 @@ t. *Settled as proposed* (both offered: drawn by kind as the charts' are, and a 
    hide). Asked: LMÍ's names drawn as the charts' are, by kind, or apart: a lighter style and a layer of their own in the
    editor?
 
-Asked on 2026-11-19, with the one set (step 12):
+Asked on 2026-11-19, with the one set (step 12); all five settled the same day (the maintainer, choosing among the
+options offered, and naming the table himself):
 
-u. The land names: the set as the names map has it, the sea, the islands and the shore's landforms within 1 km of the
-   shore (LMÍ's 8,209 names of the land shown, its 29,189 things on the land left out), or the sea and the islands only?
-   And should the page's "names on land" switch hide LMÍ's shore names too (the smoke test, 2026-11-17)?
-v. The duplicates and misreads the smoke test found: Faxabanki twice (the chart's and LMÍ's fishing ground, 11 km apart),
-   Skerjafjörður twice (chart features 508 and 693, 3.5 km apart), "Reykjane" (chart 2359, a lettering cut short?),
-   Faxagaröur and Sudurgaröur (ð read as ö). Each corrected by the maintainer's hand as an override, or left flagged?
-w. The page kept: the names editor (75) or the names map on rebelrebel, now ogis (132)?
-x. The one table's name: one that holds a nameless wreck too (`sea_feature`, `map_feature`), or another? (`named_feature`,
+u. *Settled*: as now, the switch hiding LMÍ's shore names too ("As now; switch hides them"). Asked: The land names: the
+   set as the names map has it, the sea, the islands and the shore's landforms within 1 km of the shore (LMÍ's 8,209
+   names of the land shown, its 29,189 things on the land left out), or the sea and the islands only? And should the
+   page's "names on land" switch hide LMÍ's shore names too (the smoke test, 2026-11-17)?
+v. *Settled*: the misreads corrected, the duplicates flagged ("Fix misreads, flag duplicates"). Asked: The duplicates
+   and misreads the smoke test found: Faxabanki twice (the chart's and LMÍ's fishing ground, 11 km apart), Skerjafjörður
+   twice (chart features 508 and 693, 3.5 km apart), "Reykjane" (chart 2359, a lettering cut short?), Faxagaröur and
+   Sudurgaröur (ð read as ö). Each corrected by the maintainer's hand as an override, or left flagged?
+w. *Settled*: 132, on ogis ("132, on ogis"). Asked: The page kept: the names editor (75) or the names map on rebelrebel,
+   now ogis (132)?
+x. *Settled*: `marine_feature`, the maintainer's own name (offered: `sea_feature`, `map_feature`). Asked: The one
+   table's name: one that holds a nameless wreck too (`sea_feature`, `map_feature`), or another? (`named_feature`,
    offered first, no longer fits once the wrecks and the aids are rows.)
-y. The ranking on the screen across the types: a place name before an aid's name or a wreck's where they collide, an
-   aid's name from zoom 10 as the editor has it, a wreck's name from a fine zoom; or a wreck's name shown only on a click?
+y. *Settled*: places first, aids' names from zoom 10, wrecks' from a fine zoom ("Places first; aids z10; wrecks fine").
+   Asked: The ranking on the screen across the types: a place name before an aid's name or a wreck's where they collide,
+   an aid's name from zoom 10 as the editor has it, a wreck's name from a fine zoom; or a wreck's name shown only on a
+   click?
 
 Asked on 2026-11-11, for the outlines (now a later step):
 
