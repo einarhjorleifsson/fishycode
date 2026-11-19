@@ -54,6 +54,17 @@ test_that("records of two lists join when each is the other's nearest, and place
   expect_equal(fd$cl_best(1:3, c(NA, NA, NA), li, c("b", "a")), c(NA, "none"))
 })
 
+test_that("the best witness is one record, its other values taken with it", {
+  li <- c("a", "b", "a", "b", "c"); v <- c(NA, 20, 30, 40, 50)               # a depth by list, its unit beside
+  u <- c(NA, "fm", "m", "m", "m")
+  expect_equal(fd$cl_best_which(1:5, v, li, c("b", "a")), 2)                 # b first; of b's two the first
+  expect_equal(fd$cl_best_which(c(4, 2), v, li, c("b", "a")), 2)             # ties by record, not by the order of ix
+  expect_equal(fd$cl_best_which(1:5, v, li, c("a", "b")), 3)                 # a's first record has no value
+  k <- fd$cl_best_which(1:5, v, li, c("c")); expect_equal(c(v[k], u[k]), c("50", "m"))
+  expect_true(is.na(fd$cl_best_which(1:5, v, li, c("d"))))                   # no list of the order: none
+  expect_equal(fd$cl_best(1:5, v, li, c("b", "a")), c("20", "b"))
+})
+
 test_that("the digits of a position give its resolution", {
   expect_equal(fd$cl_digits_min(64 + 9.9 / 60, -(22 + 41.53 / 60)), 0.01)
   expect_equal(fd$cl_digits_min(64 + 9.9 / 60, -(22 + 41.5 / 60)), 0.1)

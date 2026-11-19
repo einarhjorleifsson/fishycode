@@ -1,7 +1,8 @@
-# curated_list.R — the machinery of a curated list from several witnesses (plan 074 step 9: the aids, and to come the wrecks,
-# harbours and bottom type; first written in the named-features study's 91_wrecks.R and 93_aids.R). Each list is staged as
-# delivered; its records are joined across lists, the joined sets are places, every record is put in one outcome, and each
-# attribute of a place is taken from its best witness with its basis beside it (the maintainer, 2026-11-16).
+# curated_list.R — the machinery of a curated list from several witnesses (plan 074 steps 9 and 12: the aids and the wrecks,
+# and to come the harbours and bottom type; first written in the named-features study's 91_wrecks.R and 93_aids.R). Each
+# list is staged as delivered; its records are joined across lists, the joined sets are places, every record is put in one
+# outcome, and each attribute of a place is taken from its best witness with its basis beside it (the maintainer,
+# 2026-11-16).
 #
 # cl_blank(x)                  trimmed text, "" and "NA"-like values as NA
 # cl_digits_min(lat, lon)      the resolution of a position's digits in minutes of arc: the coarsest of 1, 0.1, 0.01, 0.001
@@ -20,6 +21,8 @@
 #                              record (its smallest member), NA for records not members
 # cl_best(ix, value, list, order)  the value of the first record of `ix` (in the order of `order`'s lists, then of ix) whose
 #                              value is not NA: c(value, its list), or c(NA, "none")
+# cl_best_which(ix, value, list, order)  that record itself, its index, or NA: for the attributes that come with a value
+#                              from the same record (a depth's unit, a date's precision)
 # cl_long(rid, df)             a data frame of descriptive fields as long rows (rid, field, text), the empty left out
 # cl_utf8(df)                  every character column valid UTF-8 and marked so; stops naming the column otherwise
 
@@ -73,9 +76,14 @@ cl_places <- function(n, pr, joined, members) {
   pl <- rep(NA_integer_, n); pl[members] <- vapply(members, find, integer(1)); pl
 }
 
+cl_best_which <- function(ix, value, list, order) {
+  ix <- ix[!is.na(value[ix]) & list[ix] %in% order]; if (!length(ix)) return(NA_integer_)
+  ix[order(match(list[ix], order), ix)][1]
+}
+
 cl_best <- function(ix, value, list, order) {
-  ix <- ix[!is.na(value[ix]) & list[ix] %in% order]; if (!length(ix)) return(c(NA_character_, "none"))
-  ix <- ix[order(match(list[ix], order), ix)]; c(as.character(value[ix[1]]), list[ix[1]])
+  k <- cl_best_which(ix, value, list, order); if (is.na(k)) return(c(NA_character_, "none"))
+  c(as.character(value[k]), list[k])
 }
 
 cl_long <- function(rid, df) { stopifnot(length(rid) == nrow(df))

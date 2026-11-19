@@ -1,0 +1,26 @@
+/* The names map's panel and marker (132_names_map.js), as 75's page had them. Written by Claude (AI), 2026-11-18. */
+.nm { font-size: 14px; }
+.nm-q { width: 100%; box-sizing: border-box; font-size: 15px; padding: 6px 8px; border: 1px solid #b9b9b9; border-radius: 4px; }
+.nm-hits { list-style: none; margin: 4px 0 8px; padding: 0; max-height: 180px; overflow-y: auto; }
+.nm-hits li { padding: 3px 6px; cursor: pointer; border-radius: 3px; }
+.nm-hits li:hover { background: #eef3f9; }
+.nm-hits li.nm-muted { cursor: default; }
+.nm-sel { border-top: 1px solid #d9d9d9; margin-top: 8px; padding-top: 8px; }
+.nm-sel[hidden] { display: none; }
+.nm-name { font-size: 20px; font-style: italic; color: #c0141b; margin: 0 0 2px; }
+.nm-muted { color: #5a5a5a; font-size: 13px; }
+.nm-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+.nm button { font-size: 13px; padding: 3px 8px; border: 1px solid #9e9e9e; background: #f6f6f6; border-radius: 4px; cursor: pointer; }
+.nm button.nm-primary { background: #08519c; color: #fff; border-color: #08519c; }
+.nm button:disabled { opacity: .45; cursor: default; }
+.nm-rot { flex: 1; }
+.nm-angle { width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.nm-lets { list-style: none; padding: 0; margin: 6px 0; font-size: 13px; }
+.nm-lets li { display: flex; gap: 6px; align-items: baseline; padding: 1px 0; cursor: pointer; }
+.nm-lets i { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
+.nm-status { min-height: 1.4em; font-size: 13px; color: #08519c; }
+.nm kbd { font-size: 12px; border: 1px solid #bbb; border-radius: 3px; padding: 0 4px; background: #f4f4f4; }
+.nm-lbl { font: italic 15px/1 system-ui, sans-serif; color: #c0141b; white-space: nowrap; cursor: move; padding: 2px 4px;
+          text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; outline: 2px dashed #08519c; outline-offset: 2px; background: rgba(255,255,255,.35); }
+.nm-lbl.isle { font-style: normal; color: #1a1a1a; }
+.nm-lbl.land { font-style: normal; color: #4a4a4a; }

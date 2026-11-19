@@ -1,0 +1,132 @@
+"feature","name","lon","lat","rot","angle_deg","z0","comp_z0","action","at","by","comp_lon","comp_lat"
+5378,"Digranesflak",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T17:57:21Z","the maintainer",-13.84344,66.02726
+5378,"Digranesflak",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T17:57:23Z","the maintainer",-13.84344,66.02726
+4707,"Hornafjarðardjúp",-14.86844,63.79504,62,152,NA,NA,"turn","2026-11-15T17:58:57Z","the maintainer",-14.86844,63.79504
+5823,"Breiðamerkurdjúp",-15.707689,63.653663,56,146,NA,NA,"move","2026-11-15T17:59:15Z","the maintainer",-15.86382,63.76678
+4674,"Stokksnesgrunn",-14.507917,63.869316,0,90,NA,NA,"move","2026-11-15T17:59:43Z","the maintainer",-14.80248,63.94417
+5847,"Mýragrunn",-15.231614,63.671677,0,90,NA,NA,"move","2026-11-15T17:59:51Z","the maintainer",-15.26579,63.76766
+5905,"Lónsdjúp",-14.112093,63.941003,60,150,NA,NA,"move","2026-11-15T18:00:01Z","the maintainer",-14.15543,63.99804
+5078,"Papagrunn",-13.768098,64.081384,0,90,NA,NA,"move","2026-11-15T18:00:09Z","the maintainer",-13.84396,64.19336
+5057,"Berufjarðaráll",-13.389965,64.194782,71,161,NA,NA,"move and turn","2026-11-15T18:00:30Z","the maintainer",-13.56159,64.30268
+5898,"Breiðdalsgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:00:47Z","the maintainer",-13.22099,64.34954
+5898,"Breiðdalsgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:00:48Z","the maintainer",-13.22099,64.34954
+5068,"Hvalbaksgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:01:04Z","the maintainer",-13.33091,64.5627
+5068,"Hvalbaksgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:01:06Z","the maintainer",-13.33091,64.5627
+5291,"Skrúðsgrunn",-12.784438,64.765262,0,90,NA,NA,"move","2026-11-15T18:01:45Z","the maintainer",-12.9549,64.80425
+4701,"Berufjörður",-14.245792,64.677135,20,110,NA,NA,"move and turn","2026-11-15T18:02:17Z","the maintainer",-14.3987,64.7358
+290,"Breiðdalsvík",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:02:58Z","the maintainer",-13.9893,64.7683
+290,"Breiðdalsvík",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:03:00Z","the maintainer",-13.9893,64.7683
+5900,"Hola",-12.818596,64.652202,0,90,NA,NA,"move","2026-11-15T18:03:09Z","the maintainer",-12.79095,64.67762
+5919,"Norðfjarðardjúp",-12.092268,65.12618,0,90,NA,NA,"move","2026-11-15T18:03:16Z","the maintainer",-12.9781,65.11519
+5919,"Norðfjarðardjúp",-11.924405,65.127538,0,90,NA,NA,"move","2026-11-15T18:03:23Z","the maintainer",-12.9781,65.11519
+5912,"Gerpisgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:03:57Z","the maintainer",-13.20244,64.98844
+5913,"Glettinganesgrunn",-12.663072,65.481718,0,90,NA,NA,"move","2026-11-15T18:04:19Z","the maintainer",-13.13814,65.46754
+5915,"Héraðsflóadjúp",-13.337651,65.816038,0,90,NA,NA,"move and turn","2026-11-15T18:04:48Z","the maintainer",-13.44461,65.84643
+5925,"Vopnafjarðargrunn",-13.042508,66.172609,0,90,NA,NA,"move","2026-11-15T18:04:56Z","the maintainer",-13.05534,66.27308
+5378,"Digranesflak",-13.76695,66.062169,0,90,NA,NA,"move","2026-11-15T18:05:01Z","the maintainer",-13.84344,66.02726
+5927,"Bakkaflóadjúp",-13.776635,66.311787,-33,57,NA,NA,"move and turn","2026-11-15T18:05:18Z","the maintainer",-14.43016,66.26706
+5917,"Langanesgrunn",-14.003139,66.576722,-53,37,NA,NA,"move and turn","2026-11-15T18:05:46Z","the maintainer",-14.12012,66.53921
+5384,"Þistilfjörður",-15.367675,66.453481,-60,30,NA,NA,"move and turn","2026-11-15T18:06:13Z","the maintainer",-15.34578,66.35419
+5889,"Rifsbanki",-15.461711,67.066388,0,90,NA,NA,"move","2026-11-15T18:06:24Z","the maintainer",-15.91084,67.13611
+5893,"Sléttugrunn",-16.750969,66.801448,0,90,NA,NA,"move","2026-11-15T18:06:36Z","the maintainer",-16.84538,66.83055
+4215,"Skjálfandadjúp",-17.663663,66.489624,77,167,NA,NA,"move and turn","2026-11-15T18:06:51Z","the maintainer",-17.53712,66.38233
+4110,"Grímseyjarsund",-17.98908,66.34684,0,90,NA,NA,"move","2026-11-15T18:07:18Z","the maintainer",-17.88784,66.33922
+3973,"Eyjafjarðaráll",-18.77638,66.447713,69,159,NA,NA,"move and turn","2026-11-15T18:07:29Z","the maintainer",-18.71217,66.34759
+3594,"Skagagrunn",-20.144112,66.468677,0,90,NA,NA,"move","2026-11-15T18:07:43Z","the maintainer",-20.1506,66.38927
+3533,"Húnaflóaáll",-20.584999,66.518919,-76,14,NA,NA,"move","2026-11-15T18:08:05Z","the maintainer",-20.67601,66.48236
+5953,"Reykjarfjarðaráll",-21.010141,66.623265,-53,37,NA,NA,"move and turn","2026-11-15T18:08:20Z","the maintainer",-20.99421,66.57952
+5793,"Hornbanki",-21.395258,66.765475,0,90,NA,NA,"move","2026-11-15T18:08:30Z","the maintainer",-21.4841,66.7934
+5814,"Strandagrunn",-21.404588,66.895786,0,90,NA,NA,"move","2026-11-15T18:08:38Z","the maintainer",-21.49271,66.86805
+404,"Steingrímsfjörður",-21.451978,65.666066,0,90,NA,NA,"move","2026-11-15T18:08:55Z","the maintainer",-21.54221,65.6641
+3287,"Hrútafjarðaráll",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:09:21Z","the maintainer",-21.14908,65.50468
+3287,"Hrútafjarðaráll",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:09:23Z","the maintainer",-21.14908,65.50468
+3287,"Hrútafjarðaráll",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:09:25Z","the maintainer",-21.14908,65.50468
+3458,"Húnafjörður",-20.475732,65.66391,0,90,NA,NA,"move","2026-11-15T18:11:34Z","the maintainer",-20.45347,65.63319
+2864,"Horngrunn",-22.632421,66.548699,28,118,NA,NA,"move and turn","2026-11-15T18:12:10Z","the maintainer",-22.61848,66.52579
+2942,"Lónafjörður",-22.548509,66.290395,-45,45,NA,NA,"move","2026-11-15T18:12:33Z","the maintainer",-22.51463,66.30097
+2836,"Hesteyrarfjörður",-22.852439,66.321347,-76,14,NA,NA,"move","2026-11-15T18:12:41Z","the maintainer",-22.84595,66.33122
+2868,"Hrafnsfjörður",-22.51587,66.254287,0,90,NA,NA,"move","2026-11-15T18:12:50Z","the maintainer",-22.39627,66.26824
+2103,"Álftafjörður",-22.990837,66.0117,-55,35,NA,NA,"move","2026-11-15T18:13:04Z","the maintainer",-23.03468,65.98692
+3056,"Skötufjörður",-22.797813,65.986141,-89,1,NA,NA,"move and turn","2026-11-15T18:13:21Z","the maintainer",-22.81881,65.93059
+2716,"Biskupsvík",-22.479991,65.973734,0,90,NA,NA,"move","2026-11-15T18:13:35Z","the maintainer",-22.49356,65.97468
+2258,"Önundarfjörður",-23.644332,66.07687,32,122,NA,NA,"move and turn","2026-11-15T18:14:18Z","the maintainer",-23.6709,66.0799
+1847,"Borgarfjörður",-23.246946,65.76348,-36,54,NA,NA,"move and turn","2026-11-15T18:14:36Z","the maintainer",-23.22291,65.77014
+1884,"Geirþjófsfjörður",-23.384163,65.664371,-4,86,NA,NA,"move and turn","2026-11-15T18:14:49Z","the maintainer",-23.33821,65.6724
+1880,"Fossfjörður",-23.527573,65.635611,-70,20,NA,NA,"move","2026-11-15T18:15:00Z","the maintainer",-23.52888,65.62902
+2071,"Suðurfirðir",-23.547966,65.695297,53,143,NA,NA,"move","2026-11-15T18:15:06Z","the maintainer",-23.52538,65.67973
+2092,"Arnarfjörður",-23.752956,65.766246,19,109,NA,NA,"move and turn","2026-11-15T18:15:46Z","the maintainer",-23.83954,65.79693
+5636,"Bjarneyjaáll",-23.35272,65.18783,-32,58,NA,NA,"turn","2026-11-15T18:16:10Z","the maintainer",-23.35272,65.18783
+1994,"Nesbrún",-24.025582,64.928248,-49,41,NA,NA,"move and turn","2026-11-15T18:17:47Z","the maintainer",-24.00715,64.94758
+5718,"Faxaflói",-23.317035,64.473772,0,90,NA,NA,"move","2026-11-15T18:18:02Z","the maintainer",-23.61568,64.56646
+1791,"Suðurkantar",-24.31342,63.77763,-64,26,NA,NA,"turn","2026-11-15T18:18:21Z","the maintainer",-24.31342,63.77763
+5716,"Reykjaneshryggur",-25.509426,62.535893,-55,35,NA,NA,"move and turn","2026-11-15T18:18:45Z","the maintainer",-24.55839,63.16649
+5716,"Reykjaneshryggur",-25.509426,62.535893,-52,38,NA,NA,"turn","2026-11-15T18:18:54Z","the maintainer",-24.55839,63.16649
+5770,"Grindavíkurdjúp",-22.436786,63.313024,-83,7,NA,NA,"move","2026-11-15T18:19:10Z","the maintainer",-22.33172,63.46222
+1793,"Skerjadjúp",-23.391035,63.335939,-56,34,NA,NA,"move and turn","2026-11-15T18:19:31Z","the maintainer",-23.22539,63.46395
+3139,"Eyrarbakkabugur",-21.071128,63.662063,0,90,NA,NA,"move","2026-11-15T18:19:42Z","the maintainer",-21.21597,63.69205
+5781,"Selvogsbanki",-21.300274,63.377053,0,90,NA,NA,"move","2026-11-15T18:19:50Z","the maintainer",-21.30543,63.34863
+5403,"Reykjanesgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:20:04Z","the maintainer",-22.85863,63.56857
+5403,"Reykjanesgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:20:05Z","the maintainer",-22.85863,63.56857
+5403,"Reykjanesgrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:20:27Z","the maintainer",-22.85863,63.56857
+3658,"Háfadjúp",-19.93324,63.35305,65,155,NA,NA,"move and turn","2026-11-15T18:21:19Z","the maintainer",-19.85137,63.32971
+4025,"Kötlugrunn",-18.358636,63.275087,0,90,NA,NA,"move","2026-11-15T18:21:36Z","the maintainer",-18.49168,63.27128
+5858,"Skaftárdjúp",-17.830625,63.358044,-75,15,NA,NA,"move and turn","2026-11-15T18:21:49Z","the maintainer",-17.82956,63.40511
+5851,"Öræfagrunn",-16.275192,63.526831,0,90,NA,NA,"move","2026-11-15T18:22:09Z","the maintainer",-16.3252,63.6959
+5844,"Meðallandsbugur",-17.337813,63.675346,-19,71,NA,NA,"move and turn","2026-11-15T18:36:10Z","the maintainer",-17.32349,63.66076
+5846,"Mýrabugur",-15.525554,64.128554,-16,74,NA,NA,"move","2026-11-15T18:36:28Z","the maintainer",-15.75403,64.12223
+3658,"Háfadjúp",-19.902129,63.334634,65,155,NA,NA,"move","2026-11-15T18:37:08Z","the maintainer",-19.85137,63.32971
+1788,"Sökkubani",-24.187808,63.275894,0,90,NA,NA,"move","2026-11-15T18:37:41Z","the maintainer",-24.23212,63.27468
+1789,"Stóri Brandur",-24.039187,63.348715,0,90,NA,NA,"move","2026-11-15T18:38:04Z","the maintainer",-24.01644,63.3463
+1787,"Litli Brandur",-24.131077,63.334785,0,90,NA,NA,"move","2026-11-15T18:38:10Z","the maintainer",-24.12358,63.34032
+1792,"Grjóthryggur",-23.676669,63.543868,-63,27,NA,NA,"move","2026-11-15T18:38:42Z","the maintainer",-23.67818,63.53453
+1794,"Langagrunn",-23.434754,63.636819,-57,33,NA,NA,"move","2026-11-15T18:38:57Z","the maintainer",-23.44809,63.63285
+1790,"Stuttagrunn",-23.32154,63.633252,-53,37,NA,NA,"move","2026-11-15T18:39:07Z","the maintainer",-23.2978,63.63639
+1781,"Bátafjöll",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:39:29Z","the maintainer",-23.09258,63.66899
+1781,"Bátafjöll",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:39:31Z","the maintainer",-23.09258,63.66899
+2343,"Kletturinn",-22.891262,63.780558,0,90,NA,NA,"move","2026-11-15T18:39:53Z","the maintainer",-22.90443,63.78079
+5401,"Húllið",-22.821594,63.78181,30,120,NA,NA,"move","2026-11-15T18:40:08Z","the maintainer",-22.83103,63.78048
+91,"Straumsvík",-22.049802,64.053184,0,90,NA,NA,"move","2026-11-15T18:40:39Z","the maintainer",-22.04409,64.04478
+87,"Hafnarfjörður",-22.035293,64.072341,0,90,NA,NA,"move","2026-11-15T18:40:47Z","the maintainer",-22.04912,64.07266
+2364,"Borgarfjörður",-22.04166,64.47244,-61,29,NA,NA,"turn","2026-11-15T18:41:15Z","the maintainer",-22.04166,64.47244
+3203,"Bitrufjörður",-21.318408,65.492267,-42,48,NA,NA,"move and turn","2026-11-15T18:41:47Z","the maintainer",-21.34862,65.47488
+3936,"Siglufjörður",-18.908531,66.200327,62,152,NA,NA,"move","2026-11-15T18:42:03Z","the maintainer",-18.9203,66.2087
+3834,"Héðinsfjörður",-18.73796,66.16913,-62,28,NA,NA,"turn","2026-11-15T18:42:13Z","the maintainer",-18.73796,66.16913
+5406,"Ólafsfjörður",-18.589191,66.102548,-37,53,NA,NA,"move","2026-11-15T18:42:19Z","the maintainer",-18.59218,66.10289
+5380,"Reyðarfjörður",-13.768057,64.965835,20,110,NA,NA,"move and turn","2026-11-15T18:43:24Z","the maintainer",-14.18517,65.03636
+5337,"Viðfjörður",-13.610626,65.109325,-66,24,NA,NA,"move","2026-11-15T18:43:37Z","the maintainer",-13.61734,65.1041
+5174,"Hellisfjörður",-13.643343,65.117439,-33,57,NA,NA,"move and turn","2026-11-15T18:43:46Z","the maintainer",-13.64624,65.11764
+5250,"Norðfjörður",-13.664048,65.13954,0,90,NA,NA,"move","2026-11-15T18:43:54Z","the maintainer",-13.6958,65.14041
+5381,"Seyðisfjarðarflói",-13.596493,65.332118,86,176,NA,NA,"move and turn","2026-11-15T18:44:23Z","the maintainer",-13.60894,65.31506
+5378,"Digranesflak",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T18:44:56Z","the maintainer",-13.84344,66.02726
+5898,"Breiðdalsgrunn",-13.135924,64.49736,0,90,NA,NA,"move","2026-11-15T18:45:20Z","the maintainer",-13.22099,64.34954
+5068,"Hvalbaksgrunn",-13.115172,64.286078,0,90,NA,NA,"move","2026-11-15T18:45:32Z","the maintainer",-13.33091,64.5627
+5261,"Reyðarfjarðardjúp",-12.732548,64.848861,15,105,NA,NA,"move and turn","2026-11-15T18:46:18Z","the maintainer",-13.04266,64.87507
+5898,"Breiðdalsgrunn",-13.160598,64.492828,0,90,NA,NA,"move","2026-11-15T18:46:37Z","the maintainer",-13.22099,64.34954
+2887,"Ísafjörður",-22.400324,65.946557,-90,0,NA,NA,"move and turn","2026-11-15T18:48:36Z","the maintainer",-22.42171,65.86559
+3038,"Seyðisfjörður",-22.903644,66.015954,-89,1,NA,NA,"move and turn","2026-11-15T18:49:25Z","the maintainer",-22.92081,65.9988
+5763,"Kögurgrunn",-23.939173,66.753327,0,90,NA,NA,"move","2026-11-15T18:49:41Z","the maintainer",-24.05806,66.80234
+3586,"Reykjarfjörður",-21.412554,65.973186,-4,86,NA,NA,"move and turn","2026-11-15T18:50:16Z","the maintainer",-21.63146,65.95826
+3964,"Skagafjarðaráll",-19.85075,66.038401,80,170,NA,NA,"move","2026-11-15T20:05:35Z","the maintainer",-19.8655,66.09784
+5806,"Skagafjörður",-19.7631,66.105672,77,167,NA,NA,"move and turn","2026-11-15T20:05:54Z","the maintainer",-19.72696,66.00708
+3972,"Málmeyjaráll",-19.628383,66.045217,83,173,NA,NA,"move and turn","2026-11-15T20:06:36Z","the maintainer",-19.5478,65.9475
+3818,"Fljótagrunn",-19.335665,66.206289,-66,24,NA,NA,"move and turn","2026-11-15T20:07:15Z","the maintainer",-19.05635,66.33941
+3962,"Haganesdjúp",-19.05627,66.27803,-60,30,NA,NA,"move and turn","2026-11-15T20:07:26Z","the maintainer",-18.95877,66.30333
+5871,"Eyjafjörður",-18.342375,66.000954,65,155,NA,NA,"move","2026-11-15T20:07:35Z","the maintainer",-18.40102,65.99821
+5861,"Skeiðarárdjúp",-16.894558,63.457862,59,149,NA,NA,"move","2026-11-15T20:20:30Z","the maintainer",-16.77442,63.33398
+3687,"Reynisdjúp",-18.803249,63.264714,87,177,NA,NA,"move","2026-11-15T20:20:49Z","the maintainer",-18.8624,63.21049
+2536,"Syðrahraun",-22.404619,64.207989,0,90,NA,NA,"move","2026-11-15T20:38:55Z","the maintainer",-22.61559,64.18551
+2547,"Vestrahraun",-22.71318,64.258261,-74,16,NA,NA,"move and turn","2026-11-15T20:54:59Z","the maintainer",-22.81806,64.2859
+5905,"Reyðarfjarðarflak",-12.44491,64.70272,23,113,NA,NA,"turn","2026-11-15T20:55:41Z","the maintainer",-12.44491,64.70272
+5918,"Seyðisfjarðardjúp",-12.318831,65.355125,0,90,NA,NA,"move","2026-11-15T20:56:00Z","the maintainer",-12.31769,65.36581
+5793,"Húnaflóadjúp",-20.039666,66.846438,-28,62,NA,NA,"move and turn","2026-11-15T21:05:05Z","the maintainer",-20.05922,66.86663
+5812,"Strandagrunn",NA,NA,NA,NA,NA,NA,"revert","2026-11-15T21:05:49Z","the maintainer",-21.36841,66.89616
+3117,"Hafnaráll",-22.770398,66.53003,29,119,NA,NA,"move","2026-11-15T21:06:38Z","the maintainer",-22.90882,66.56274
+5743,"Nesdjúp",-24.859018,66.04889,-29,61,NA,NA,"move","2026-11-15T21:07:22Z","the maintainer",-24.53944,66.11649
+3532,"Hryggur",-21.031777,65.903976,-90,0,NA,NA,"move and turn","2026-11-16T06:22:21Z","the maintainer",-21.04588,65.89977
+3505,"Byrgisvíkurpollur",-21.062067,65.931441,-50,40,NA,NA,"move and turn","2026-11-16T06:22:45Z","the maintainer",-21.08055,65.92447
+2009,"Patreksfjörður",-24.081826,65.617183,55,145,NA,NA,"move","2026-11-16T06:25:09Z","the maintainer",-24.01189,65.64793
+2334,"Dýrafjörður",-23.740104,65.939755,39,129,NA,NA,"move","2026-11-16T06:25:30Z","the maintainer",-23.63358,65.93409
+2092,"Arnarfjörður",-23.847816,65.797376,40,130,NA,NA,"move and turn","2026-11-16T06:26:09Z","the maintainer",-23.84748,65.78026
+1810,"Eldeyjarbanki",-23.794983,63.827359,-71,19,NA,NA,"move","2026-11-17T21:43:25Z","the maintainer",-23.98381,63.6475
+1810,"Eldeyjarbanki",-23.598776,63.817817,0,90,NA,NA,"move and turn","2026-11-17T21:43:57Z","the maintainer",-23.98381,63.6475
+1809,"Faxabanki",-24.145378,63.577584,0,90,NA,NA,"move","2026-11-17T21:44:05Z","the maintainer",-24.12946,63.65806
