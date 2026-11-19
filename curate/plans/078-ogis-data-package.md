@@ -135,10 +135,13 @@ remotes::install_local("R:/R/Pakkar/ogisdata", force = TRUE)
 - **remotes builds the package from the folder first**, so the 0.93 GB are read from the share and written twice on
   local disk (the tarball, then the library). If that proves slow on Windows (step 3), a built tarball beside the
   folder is installed by the same function and skips the build.
-- **ogis itself** from GitHub, `remotes::install_github("einarhjorleifsson/ogis")` (ogisdata's README since
-  2026-11-19, at the maintainer's word: "Yes, update README"). ogis's own README installs with `install_git(git =
-  "external")`, which needs Git and Git LFS, for its example data; without them only `og_example()` fails, which
-  ogisdata does not use. The note to colleagues (step 4) gives the same three lines.
+- **ogis itself** from a clone on GitHub, `remotes::install_git("https://github.com/einarhjorleifsson/ogis", git =
+  "external", force = TRUE)`, as ogis's own README says, so its example data (Git LFS) come with it; this needs Git
+  with Git LFS (Git for Windows has both). Colleagues found `install_github()`'s ogis wanting: its example data are
+  LFS pointers, which `og_example()` stops on. `force = TRUE` installs over such an install, which remotes skips as the
+  same commit (tested 2026-11-19). The example data stay in LFS, and both READMEs give this line (the maintainer,
+  2026-11-19: "Keep LFS", "just change the install instructions - that applies also the README in ogisdata"). The note
+  to colleagues (step 4) gives the same three lines.
 
 Each install copies about 0.93 GB into the person's library, and again after each R minor version (a new library).
 
