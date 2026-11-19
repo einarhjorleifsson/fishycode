@@ -1668,7 +1668,7 @@ them as repeated keys) in the page and read them back the same way in the server
 
 **check:** a served `og_cells()` map with a vessel id `"a,b"` draws its cells; a test that failed before.
 
-## 204. The Icelandic depth model from an in-house S3 bucket (option C), and five small ogis faults the study found
+## 204. The Icelandic depth model from an in-house S3 bucket (option C), and eight small ogis faults found on the way
 **status:** open · **needs: maintainer** — whether to write the plan, and the request to MFRI's IT · **see:** decision
 330, `$FISHYDATA/archive/2026-11-18-depth-model-in-ogis/report.md` (§4.4, §4.7, §5)
 
@@ -1685,8 +1685,12 @@ Found on the way, not changed (each small, each for a test first):
 - `og_tiles_dem()` writes full-precision PNG, 2.2 times lossless WebP at 0.1 m;
 - picture base maps are fixed at 256-px tiles;
 - a picture as the first base map logs MapLibre's "Unable to perform style diff" (harmless).
+Found by the census map (decision 329's, `products/exports/ramb_example_iceland_map.R`, 2026-11-19), not changed:
+- `og_segment()` takes `lon`, `lat` as strings but `lon_end`, `lat_end` as bare names;
+- one invalid polygon stops a map (`ST_ReducePrecision`'s TopologyException; the script runs `ST_MakeValid` first);
+- `og_relief()` and `og_contour()` drop the MBTiles' attribution.
 
-**check:** a plan written at the maintainer's word, or the route declined here; the five faults fixed or dropped.
+**check:** a plan written at the maintainer's word, or the route declined here; the eight faults fixed or dropped.
 
 ## 205. The files `OGIS_CELLS` and `OGIS_NAMES` name, built as fishycode products, and ogisdata, the package that carries them (plan 078)
 **status:** open · **needs: maintainer** — plan 078's step 3: the folder copied to `R:/R/Pakkar/ogisdata` and installed from it on Windows (steps 1-2 built 2026-11-19; the version to copy is the one after TODO 206, whose cells carry the gear that 3 % of
