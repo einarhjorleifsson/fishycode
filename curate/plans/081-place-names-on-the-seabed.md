@@ -2,7 +2,7 @@
 
 **status:** partly built — step 1 (the troughs and the deeps) built 2026-11-20 at the maintainer's word ("Yes, start step 1";
 decision 338), reviewed and closed by version 2 the same day; step 2 (the moraines) built the same day at his word ("Start
-step 2"; decision 340), reviewed the same day, five adopted; written 2026-11-20 at the maintainer's word ("So review the plan from scratch - think we have plenty
+step 2"; decision 340), reviewed the same day, five adopted, closed by version 3; step 3 next; written 2026-11-20 at the maintainer's word ("So review the plan from scratch - think we have plenty
 of things to work from now"), revised the same night after a dig on ÍSOR's troughs and moraines, the effort and the texts
 already read ("You may even have now enough to make your own proposal. Care to dig in a bit. Take you time"), and set on
 its goal ("the goal of this plan is that you come up with the best proposal to a placename. We would then go through that
@@ -271,7 +271,7 @@ trough's own skippers' names elsewhere. Each is what §4 would have proposed; ea
 1. *Built 2026-11-20 (decision 338): `reference/names/place_name_proposal.R`, its check, the review mode; reviewed the same day, all 28 of ÍSOR's troughs decided; closed by version 2, frozen and carried by ogisdata 2026.11.20. The 72 deeps on no trough wait for step 5.* **The troughs and the deeps**, over all Iceland: a proposal for every deep name (17 of 25 already agree, §2.2); the
    unnamed troughs with the skippers' names; the deeps' thalwegs toward their fjords; reviewed.
 2. *Built 2026-11-20 (decision 340): the step 2 section of `reference/names/place_name_proposal.R`, its checks, the review
-   mode's moraines; reviewed the same day, five adopted, the rest set aside for now.* **The moraines and the ridge, edge, toe and tip names**: the proposals from the moraines' concentration and the grammar;
+   mode's moraines; reviewed the same day, five adopted, the rest set aside for now; closed by version 3, frozen and carried by ogisdata 2026.11.20.1.* **The moraines and the ridge, edge, toe and tip names**: the proposals from the moraines' concentration and the grammar;
    reviewed.
 3. **The banks' anatomy**: each bank's outline (§4.1), its parts placed in it (§4.2); reviewed.
 4. **The volcanic ridges** (Reykjaneshryggur, the Kolbeinsey Ridge) on the links of decision 334.

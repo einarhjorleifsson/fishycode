@@ -124,7 +124,21 @@ He asked why moraines 41, 68 and 69 found no name (study script 08):
 - **68** (trough 14) carries Seyðisfjarðardýpi at 7 % and Glettinganesflak at 3 %.
 - **41** (trough 8) carries Víkuráll at 2 %, and no chart or LMÍ name lies within 5 km.
 
+## Step 2 closed: version 3 frozen and shipped, the same day
+
+His word: "Yes, close step 2 first". Done by Claude, as step 1 was closed (decision 338):
+
+- Step 2 was committed (ec824f7). The names, the proposals, the map's table and `names.parquet` were rebuilt from that
+  commit, the tree dirty only with another session's notes and export script. Every check holds.
+- **Version 3 frozen** into `curated/reference/place_names/v3/`: 11 files with their md5s, the names' eight and the
+  proposals (081.2).
+- **ogisdata 2026.11.20.1**: `files.R`, under a UTF-8 locale, took `names.parquet` (27,338 rows) under plan 078's rule.
+  Installed, its 20 tests pass. Not committed in ogisdata (its tree holds the other session's 2026.11.19.4 and 2026.11.20),
+  and not copied to the share, which is the maintainer's.
+- **Version 4** begins (`VERSION <- 4L`), measured against version 3: all 27,338 rows the same.
+
 ## What is next
 
-The maintainer's review of step 2 on the names page: the rest set aside for now. After it, step 3, the banks' anatomy (their edges, tips and horns,
+Plan 081 step 3, the banks' anatomy, the east coast first (§8 f). Many of step 2's names wait there, Táin's area among
+them. The rest of step 2's proposals stay set aside, with no verdict. After it, step 3, the banks' anatomy (their edges, tips and horns,
 where 85 of these names wait). TODO 206.

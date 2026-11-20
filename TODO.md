@@ -1681,7 +1681,7 @@ the east coast (decision 337); plan 080 executed (versions 1 and 2; decisions 33
 step 1 built 2026-11-20 (decision 338): the deeps' proposals and a review mode on the names page (port 8822, Review the
 proposals); his review of the troughs done 2026-11-20 (all 28 of ÍSOR's troughs decided, 11 of one name each accepted whole together; a shared trough split by its shape); step 1 closed the same day: version 2 frozen, carried by ogisdata 2026.11.20, version 3 built from then on; step 2 (the
 moraines) built the same day (decision 340), five adopted by him (Brjálaði hryggurinn, Suðurkantar, Norðurkantur, Táin's
-outer edge, Ostahryggur), the rest set aside for now; **needs: maintainer** — step 3 (the banks) or the rest of step 2; the 72 deeps on no ÍSOR trough wait for step 5; Reykjaneshryggur's open items (decision
+outer edge, Ostahryggur), the rest set aside for now; step 2 closed the same day: version 3 frozen, carried by ogisdata 2026.11.20.1, version 4 built from then on; **needs: maintainer** — step 3 (the banks); the 72 deeps on no ÍSOR trough wait for step 5; Reykjaneshryggur's open items (decision
 336: Litlibanki on the flank, Litli hóll, the LMÍ areas, Trackwell's 14 candidates) folded into the steps · **see:**
 `curate/plans/081-place-names-on-the-seabed.md`, `curate/plans/080-place-names-in-versions.md`, decisions 332-340, plan
 078 §3.9, TODOs 144, 181, 193, 194, 197, 199 and 201

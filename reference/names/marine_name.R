@@ -112,7 +112,7 @@ INPUTS <- c(if (file.exists(fd_curated("reference", "place_name_proposal.parquet
                                      "marine_name_variant.csv", "marine_name_include.csv")), fd_curated("reference", "seabed_feature.parquet"),
             fd_curated("reference", "place_name_region.parquet"), fd_raw("external", "bathymetry", "Olex_50mBM_GEBCO_interp.tif"),
             fd_curated("reference", "marine_name_candidate.parquet"))
-VERSION <- 3L   # version 2 frozen 2026-11-20 (plan 081 step 1 closed, decision 338); the edits since make version 3
+VERSION <- 4L   # version 3 frozen 2026-11-20 (plan 081 step 2 closed, decision 340; version 2 closed step 1, decision 338); the edits since make version 4
 `%||%` <- function(a, b) if (is.null(a)) b else a
 ROCK <- c("boði", "sker", "skerjaklasi", "rif", "drangur", "klettur", "steinn", "stapi", "flös", "flaga", "hlein", "grynning")
 uuids <- function(x) strsplit(ifelse(is.na(x), "", x), "\\s+")
