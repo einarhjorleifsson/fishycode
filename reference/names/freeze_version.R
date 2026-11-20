@@ -5,6 +5,8 @@
 # Input:  curated/reference/{marine_name,marine_name_source,marine_name_record,marine_name_extent,marine_name_pair,
 #         marine_feature,marine_feature_link}.parquet (those present) and products/marine_feature/names.parquet, the
 #         version they hold: their `version` column (version 1, built before the column, has none and is version 1)
+#         and the proposals the version was reviewed on, curated/reference/place_name_proposal{,_evidence,_shape}.parquet
+#         (plan 081, decision 338; those present), copied beside them with their own version ("081.1", a step of plan 081)
 # Output: curated/reference/place_names/v<N>/ - the files, byte for byte, and manifest.csv (file, bytes, md5, the file's
 #         fd.built, fd.commit and fd.dirty), README.md (the version, when frozen, by which commit)
 #
@@ -18,6 +20,8 @@ FILES <- c(file.path(fd_curated("reference"), paste0(c("marine_name", "marine_na
                         "marine_feature", "marine_feature_link"), ".parquet")),
            fd_path("products", "marine_feature", "names.parquet"))
 FILES <- FILES[file.exists(FILES)]
+PROP <- file.path(fd_curated("reference"), paste0(c("place_name_proposal", "place_name_proposal_evidence", "place_name_proposal_shape"), ".parquet"))
+PROP <- PROP[file.exists(PROP)]
 
 con <- DBI::dbConnect(duckdb::duckdb()); on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 q <- function(x) DBI::dbQuoteString(con, x)
@@ -41,10 +45,14 @@ N <- main
 dir <- fd_path("curated", "reference", "place_names", paste0("v", N))   # fd_path: fd_curated() would create it
 if (dir.exists(dir)) stop("version ", N, " is frozen already: ", dir)
 dir.create(dir, recursive = TRUE)
-man <- do.call(rbind, lapply(FILES, function(f) { kv <- kv_of(f)
+pver <- function(f) { cols <- DBI::dbGetQuery(con, sprintf("DESCRIBE SELECT * FROM read_parquet(%s)", q(f)))$column_name
+  if ("version" %in% cols) paste(DBI::dbGetQuery(con, sprintf("SELECT DISTINCT version FROM read_parquet(%s)", q(f)))$version, collapse = ",") else NA_character_ }
+ALL <- c(FILES, PROP)
+man <- do.call(rbind, lapply(ALL, function(f) { kv <- kv_of(f)
   data.frame(file = basename(f), from = sub(paste0("^", fd_path(), "/?"), "", f), bytes = file.size(f), md5 = unname(tools::md5sum(f)),
+             version = if (f %in% PROP) pver(f) else as.character(v[[f]]),
              built = kv("fd.built"), commit = kv("fd.commit"), dirty = kv("fd.dirty")) }))
-stopifnot(file.copy(FILES, file.path(dir, basename(FILES)), copy.date = TRUE))
+stopifnot(file.copy(ALL, file.path(dir, basename(ALL)), copy.date = TRUE))
 stopifnot(identical(unname(tools::md5sum(file.path(dir, man$file))), man$md5))
 write.csv(man, file.path(dir, "manifest.csv"), row.names = FALSE, fileEncoding = "UTF-8")
 g <- .git_info()
@@ -52,6 +60,7 @@ writeLines(c(sprintf("# Place names, version %d", N), "",
              sprintf("Frozen %s by fishycode's reference/names/freeze_version.R at %s%s (plan 080 ask b, decision 333).",
                      format(Sys.time(), "%Y-%m-%d %H:%M UTC", tz = "UTC"), substr(g$commit, 1, 7), if (isTRUE(g$dirty)) ", the tree dirty" else ""),
              "The files as they were written, byte for byte; manifest.csv holds each file's md5 and its own build stamps.",
+             if (length(PROP)) "With them the proposals it was reviewed on (place_name_proposal*, their own version a step of plan 081).",
              "Never rewritten: a fix enters the next version."), file.path(dir, "README.md"))
 cat(sprintf("version %d frozen in %s: %d files, %.1f MB\n", N, dir, nrow(man), sum(man$bytes) / 1e6))
-print(man[c("file", "bytes", "built", "commit")])
+print(man[c("file", "bytes", "version", "built", "commit")])

@@ -267,7 +267,7 @@ trough's own skippers' names elsewhere. Each is what §4 would have proposed; ea
 
 ## 7. Order of work
 
-1. *Built 2026-11-20 (decision 338): `reference/names/place_name_proposal.R`, its check, the review mode; his review next.* **The troughs and the deeps**, over all Iceland: a proposal for every deep name (17 of 25 already agree, §2.2); the
+1. *Built 2026-11-20 (decision 338): `reference/names/place_name_proposal.R`, its check, the review mode; reviewed the same day, all 28 of ÍSOR's troughs decided; closed by version 2, frozen and carried by ogisdata 2026.11.20. The 72 deeps on no trough wait for step 5.* **The troughs and the deeps**, over all Iceland: a proposal for every deep name (17 of 25 already agree, §2.2); the
    unnamed troughs with the skippers' names; the deeps' thalwegs toward their fjords; reviewed.
 2. **The moraines and the ridge, edge, toe and tip names**: the proposals from the moraines' concentration and the grammar;
    reviewed.

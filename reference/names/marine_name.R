@@ -112,7 +112,7 @@ INPUTS <- c(if (file.exists(fd_curated("reference", "place_name_proposal.parquet
                                      "marine_name_variant.csv", "marine_name_include.csv")), fd_curated("reference", "seabed_feature.parquet"),
             fd_curated("reference", "place_name_region.parquet"), fd_raw("external", "bathymetry", "Olex_50mBM_GEBCO_interp.tif"),
             fd_curated("reference", "marine_name_candidate.parquet"))
-VERSION <- 2L
+VERSION <- 3L   # version 2 frozen 2026-11-20 (plan 081 step 1 closed, decision 338); the edits since make version 3
 `%||%` <- function(a, b) if (is.null(a)) b else a
 ROCK <- c("boði", "sker", "skerjaklasi", "rif", "drangur", "klettur", "steinn", "stapi", "flös", "flaga", "hlein", "grynning")
 uuids <- function(x) strsplit(ifelse(is.na(x), "", x), "\\s+")
@@ -579,14 +579,9 @@ his_join <- hj$link_to; his_join_gone <- hj$feature
 NAME_RANK <- c(lmi = 1, chart = 2, isor = 3)
 # An area's long axis as the map shows it (Web Mercator): the principal direction of points spread evenly inside it; the
 # label at its centre (or a point inside when the centre falls outside), turned clockwise as MapLibre turns text, -90 to 90
-along_axis <- function(f) {
-  a <- st_transform(xt[xt$feature == f, ], 3857); s <- st_coordinates(st_sample(a, 600, type = "regular"))
-  e <- eigen(cov(s[, 1:2]))$vectors[, 1]; deg <- atan2(e[2], e[1]) * 180 / pi    # counter-clockwise from east
-  deg <- ((deg + 90) %% 180) - 90
-  ctr <- suppressWarnings(st_centroid(a)); if (!st_intersects(ctr, a, sparse = FALSE)[1, 1]) ctr <- suppressWarnings(st_point_on_surface(a))
-  ll <- st_coordinates(st_transform(ctr, 4326))[1, ]
-  c(lon = unname(ll[1]), lat = unname(ll[2]), rotate = round(-deg, 1))
-}
+# (by axis_of() below since version 3: st_sample(type = "regular") offsets its grid at random, so the angle moved by a
+# few tenths of a degree from build to build, decision 338)
+along_axis <- function(f) axis_of(xt[xt$feature == f, ])[c("lon", "lat", "rotate")]
 # the same for any area, its points the centres of a regular grid of about 600 cells inside it (no random offset: the same
 # letters every build)
 axis_of <- function(g) {

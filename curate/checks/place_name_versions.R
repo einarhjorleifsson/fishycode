@@ -95,10 +95,10 @@ for (col in names(what)) { j <- which(what[[col]]); if (!length(j)) next
                             after = as.character(if (col == "label") sprintf("%.6f %.6f", n$label_lon[j], n$label_lat[j]) else n[[switch(col, angle = "rotate_deg", zoom = "z_rule", extent = "extent_km", col)]][j]),
                             why = why_of(col, ids)) }
 gone <- old$id[!cmp$in_now]
-rows$gone <- data.frame(id = gone, outcome = "gone", what = "row", before = old$name[match(gone, old$id)],
-                        after = ifelse(gone %in% hj_gone, hj_kept[match(gone, hj_gone)], one$kept_id[match(gone, one$gone)]),
-                        why = ifelse(gone %in% hj_gone, "joined by the maintainer into the row kept, its synonym",
-                                     ifelse(gone %in% one$gone, "joined into the row kept: one thing from two sources", NA)))
+rows$gone <- data.frame(id = gone, outcome = rep("gone", length(gone)), what = rep("row", length(gone)), before = old$name[match(gone, old$id)],
+                        after = as.character(ifelse(gone %in% hj_gone, hj_kept[match(gone, hj_gone)], one$kept_id[match(gone, one$gone)])),
+                        why = as.character(ifelse(gone %in% hj_gone, "joined by the maintainer into the row kept, its synonym",
+                                     ifelse(gone %in% one$gone, "joined into the row kept: one thing from two sources", NA))))
 new <- setdiff(now$id, old$id)
 rows$new <- data.frame(id = new, outcome = rep("new", length(new)), what = rep("row", length(new)),
                        before = rep(NA_character_, length(new)), after = now$name[match(new, now$id)],

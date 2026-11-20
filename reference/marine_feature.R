@@ -39,7 +39,7 @@ for (f in c("R/paths.R", "R/write_curated.R")) source(f)   # standalone: not tar
 TRIAL <- Sys.getenv("TRIAL") == "1"
 WRECK_Z <- 13; AID_Z <- 10
 V1 <- fd_path("archive", "2026-11-11-named-features", "out", "frozen", "names_v1")
-VERSION <- 2L
+VERSION <- 3L   # version 2 frozen 2026-11-20 (decision 338)
 REF <- function(f) fd_curated("reference", f)
 WRECK <- if (TRIAL) fd_path("archive", "2026-11-11-named-features", "out", "wrecks", "wreck.parquet") else REF("wreck.parquet")
 OUT <- if (TRIAL) fd_curated("scratch", "marine_feature_trial") else fd_curated("reference")

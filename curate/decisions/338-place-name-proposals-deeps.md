@@ -400,8 +400,36 @@ part's holder, not its whole's area. Lóndjúp's area (LMÍ's, 21.7 km²) lies w
 inside Skerjadjúp's; Fjallsdjúp's (29.4 km²) lies 54 % south of Skagafjarðardjúp's, beyond the trough's end toward
 Skagafjörður, as Bjarneyjaráll's (56 km²) lies 54 % beyond Kolluáll's, into Breiðafjörður.
 
+## Step 1 closed: version 2 frozen and shipped, the same day
+
+His word: "Yes, close step 1". Done by Claude in this order:
+
+- **Committed**, 7c6f996 (not pushed). Then the names, the proposals and the map's table were rebuilt from that commit
+  (`marine_name.R`, `place_name_proposal.R`, `marine_feature.R`, `products/marine_feature/names.R`), so their stamps name
+  it. The tree was dirty only with another session's notes and an untracked export script, none of the names' code. All
+  checks pass: 10, 37, 3, 13 and 7.
+- **Version 2 frozen** by `reference/names/freeze_version.R` into `curated/reference/place_names/v2/`, 11 files with their
+  md5s in its manifest. Eight are the names' own: `marine_name` with its source, record, extent and pair tables,
+  `marine_feature` with its links, and `names.parquet`. The other three are the proposals it was reviewed on,
+  `place_name_proposal` with its evidence and shapes (their version "081.1"), which the script now copies beside them.
+- **ogisdata 2026.11.20**: `data-raw/files.R` took `names.parquet` under plan 078's rule (its stamps, its own code
+  committed, `marine_feature_accounting` holding on the same input): 27,336 rows, 2.3 MB. Installed, its 20 tests pass
+  on the installed package. Not committed in ogisdata, whose tree holds another session's uncommitted 2026.11.19.4, and
+  not copied to the share, which is the maintainer's.
+  - Found on the way: `files.R`, run by Rscript with no locale set ("C"; ogisdata has no `.Renviron` as fishycode has),
+    wrote `files.csv` cut at its first non-ASCII letter, "LM" of LMÍ, and two tests failed. Run again under
+    en_US.UTF-8 the file is whole. `files.R` now stops unless its locale is UTF-8.
+- **Version 3** begins: `VERSION <- 3L` in `marine_name.R` and `marine_feature.R`. The names from now on are version 3,
+  measured against the frozen version 2 by `place_name_versions.R`: of 27,336 rows 27,335 the same, 1 changed, none gone
+  or new.
+  - The one change: Grjóthryggur's angle, -65.1° to -65.0°. Its letters run along ÍSOR's area by `along_axis()`, whose
+    points came from `st_sample(type = "regular")`. That grid has a random offset, so the angle moved a few tenths of a
+    degree from build to build. `along_axis()` now calls `axis_of()`, whose grid is fixed. Grjóthryggur is the only row
+    it places.
+  - Also found: the check stopped when no row was gone, the first time it met that case. Its table of gone rows now
+    holds zero rows.
+
 ## What is next
 
-The troughs are done. The 72 deeps on no ÍSOR trough and no decided deep await step 5 (the depth model's outlines); step 1
-is closed by its version (frozen, measured, shipped in ogisdata) and a commit; next is plan 081 step 2, the moraines.
-TODO 206.
+Step 1 is closed. The 72 deeps on no ÍSOR trough and no decided deep await step 5 (the depth model's outlines). Next is
+plan 081 step 2, the moraines, whose proposals will be version "081.2". TODO 206.
