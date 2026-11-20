@@ -1,6 +1,6 @@
 # 070 — Place-name areas and the seabed's terrain classes: a hierarchy of overlapping areas, from the names' own occurrences, framed and edged by the seabed
 
-**status:** proposal — written 2026-11-06 at the maintainer's request, with a feasibility scan the same day
+**status:** parked — 2026-11-19 at the maintainer's word (plan 080 ask d, decision 333): its areas carried to plan 080's version 6; written 2026-11-06 at the maintainer's request, with a feasibility scan the same day
 (`$FISHYDATA/archive/2026-11-06-place-name-areas/`, its README). The same day: steps 1, 2 (its partition dropped at the
 maintainer's word), 4, 5 and 6 (with its edge rule and the name groups drawn once) run as studies; the evidence's
 weights, the effort and the terrain classes added at the maintainer's word; asks a-f answered. 2026-11-07: the areas

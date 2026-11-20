@@ -1,6 +1,6 @@
 # 071 — The names in use beside the charts' names: every other source's names linked to the official layer, each small feature placed on the seabed, and issues raised, never a boundary moved
 
-**status:** proposal — written 2026-11-09 at the maintainer's request, with a read-only count the same day
+**status:** parked — 2026-11-19 at the maintainer's word (plan 080 ask d, decision 333): its linking of the names in use carried to plan 080's version 5; written 2026-11-09 at the maintainer's request, with a read-only count the same day
 (`$FISHYDATA/archive/2026-11-09-ornefni-in-use/`, `scripts/00_inventory.R`, its log in `notes/`); the same day step 1
 run as a study at the maintainer's word ("Yes, start step 1"): the highs printed at 1:40 000 passed its rule (31
 names moved onto the grid's high in the örnefni map), and with a mend, a closed high tuned west and judged east, the

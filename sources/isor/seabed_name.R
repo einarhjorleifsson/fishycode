@@ -7,7 +7,8 @@
 #         (dump/isor/hafsbotn.R: kort.isor.is's hafsbotn layers, as delivered)
 # Output: staging/isor/seabed_name.parquet - one row per record with a geometry (2,825): `kind` (area, point, line,
 #         landslide, geothermal), `layer` (the file), `rid` (the record's number in that kind order, the named-features
-#         study's 131 key), `name`, `references` (References_ or Reference), and every attribute of its layer as delivered;
+#         study's 131 key), `name`, `references` (References_ or Reference), and every attribute of its layer as delivered
+#         (one whose name clashes with these, case aside, prefixed `isor_`: ÍSOR's `Name` is `isor_Name`);
 #         WKB `geometry`, WGS 84
 #
 # Source-shaped. Records with an empty geometry are left out and counted, as the study's 131 left them out.
@@ -32,8 +33,13 @@ parts <- lapply(names(LAYERS), function(k) {
   a <- as.data.frame(sf::st_drop_geometry(g))
   ref <- if ("References_" %in% names(a)) a$References_ else if ("Reference" %in% names(a)) a$Reference else NA_character_
   a[] <- lapply(a, as.character)
-  sf::st_sf(tibble(kind = k, layer = LAYERS[[k]], name = trimws(coalesce(a$Name, "")), references = coalesce(as.character(ref), "")),
-            a, geometry = sf::st_geometry(g))
+  nm_isor <- a$Name
+  clash <- tolower(names(a)) %in% c("kind", "layer", "rid", "name", "references", "geometry")   # DuckDB's names ignore case
+  names(a)[clash] <- paste0("isor_", names(a)[clash])
+  # bind_cols: sf::st_sf(tibble, a, geometry =) kept the first data frame alone, so until 2026-11-19 the layers' attributes
+  # never reached staging though this header promised them (found when plan 080 §5.2a wanted Morpho_T)
+  sf::st_sf(dplyr::bind_cols(tibble(kind = k, layer = LAYERS[[k]], name = trimws(coalesce(nm_isor, "")), references = coalesce(as.character(ref), "")),
+                             a), geometry = sf::st_geometry(g))
 })
 d <- do.call(dplyr::bind_rows, parts)
 d <- sf::st_sf(d, sf_column_name = "geometry") |> mutate(rid = row_number(), .after = layer) |> relocate(geometry, .after = last_col())

@@ -1388,33 +1388,6 @@ zoom 11; the looks moved into ramb's palettes; the bundles and the kit rebuilt w
 **check:** how the grid was made in its provenance note, and each use a plan of its own or dropped by the
 maintainer.
 
-## 186. Every name on the nautical charts, read off their images, inshore and offshore (incomplete)
-**status:** parked, incomplete: 1,200 of 1,929 windows read (maintainer, 2026-11-04: "We have not completed the mining
-the sea-charts - but lets put things on hold here") · **see:**
-`$FISHYDATA/archive/2026-11-04-chart-names-coast/README.md` (its "Resuming"), the pilot
-`$FISHYDATA/archive/2026-11-02-chart-names-pilot/README.md`, plan 044, TODO 144
-
-The charts of Sjómælingar Íslands (Landhelgisgæslan) are served only as images (`SEA_CHART` in
-`products/place_names/api.R`), so their names are read off them by a model. The maintainer, 2026-11-03/04: the images
-are read, Landhelgisgæslan is not asked for the names as data; every name printed, inshore (the harbour plans) as well
-as offshore, land names too, each with its kind (sea, light, land); as is, a person's check later; few tokens once the
-method is set. No API account, so Sonnet 5.5 subagents read in a Claude Code session, chosen over Haiku on the pilot's
-windows (1 of its 122 sea names and lights missed against 8).
-
-Done 2026-11-04 (Claude's reading, unchecked): all 2,642 windows fetched, 1,929 kept; 1,200 read in six rounds
-(every chart but the harbour plans, and 208 of the 255 at 1:40k), each round about 1-2 points of the weekly limit and 6-9
-of the 5-hour; merged into 5,211 names, 1,487 of them sea names (501 new to the gazetteer, 280 known only elsewhere), 153
-lights and 3,571 land names. They show on the bathymetry map as a layer of their own (the study's `06_map.R`, through
-`bathymetry_map(layers = , texts = )`). Positions are the label's cell, coarse where only an overview chart prints a name.
-
-Open: the 729 windows left, all harbour plans (about 4 rounds; nothing is read twice, `04_todo.R` lists what is
-left); a light's symbol cell in place of its label's, if wanted; the names into the gazetteer as a source flagged
-unchecked; a person's check (the parked check page in the pilot's folder, `check/` and `scripts/04_check.R`). Internal
-only until the licence is known: the charts are Landhelgisgæslan's work, served for viewing.
-
-**check:** every kept window answered and in `rounds.csv`; every name placed with its scale and zoom; the gazetteer
-carrying the chart names as a source flagged unchecked, or the item dropped by the maintainer.
-
 ## 187. ramb's map viewer gets a time profile, for any pings (plan 064)
 **status:** open; steps 1-4 built 2026-11-04 in ramb 2026.11.04.4 (`rb_map_time()`, decision 279), the CS1 viewer in
 `me_code`; the maintainer's first look on `dansk` 2026-11-05 put the controls in the sidebar and one gap in seconds,
@@ -1463,43 +1436,30 @@ hours). Old names live one release as warning aliases; fishycode's callers follo
 
 **check:** no exported duration argument in ramb outside seconds; fishycode's callers migrated; NEWS.
 
-## 193. Place-name records: a source registry, one reading per document, one file per place (plan 067)
-**status:** parked (the maintainer, 2026-11-07: "put this whole thing on hold for now") · **needs: maintainer** — how
-timarit.is's text is had (ask c); where a person's decisions are kept (ask a) answered 2026-11-09: a ledger under `$FISHYDATA` (plan 071's in-use study) · **see:**
-`curate/plans/067-place-name-records.md`, `$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md`,
-`archive/2026-11-07-aegir-early/README.md`, `archive/2026-11-07-andvari-bjarni/README.md`,
-`archive/2026-11-07-seabed-landscape/README.md`, `archive/2026-11-08-fiskikort/README.md`, decision 295,
-plan 045 ask c, TODOs 144 and 186
+## 193. Place-name records: each name with its original source(s), a registry, the attestations (plan 067)
+**status:** open · plan 067 revised 2026-11-20 at the maintainer's word ("Yes, revise plan 067"; decision 339), after
+decision 338's question on Orkustofnun's names; the registry and the heimild table in this repo (ask e, "Yes, in the
+repo"); parked 2026-11-07 and 2026-11-19 (decision 333) before · **needs: maintainer** — LMÍ's register of case numbers
+(ask f), timarit.is's text (ask c) · **see:** `curate/plans/067-place-name-records.md`, decisions 285, 333, 336, 338 and 339, plan 081, TODO 206,
+`$FISHYDATA/archive/2026-11-05-timarit-ornefni/README.md` and the timarit.is studies of 2026-11-07 and 2026-11-08
 
-The maintainer, 2026-11-05, asked how to store and file place names: one YAML per name or another construct, how to
-cite the source, how to hold synonyms and cross-references, what to borrow from the data-dict, and how the sources
-already staged come in. Plan 067 proposes:
-- a source registry;
-- readings of text sources, one YAML per document, source-shaped;
-- one id per place in a ledger, and a file per place in two parts, generated and a hand overlay, as the data-dict's
-  overlay is.
+The maintainer, 2026-11-20: "When we say LMÍ we could be more specific, because LMÍ is really the "gathering point" ...
+I would in the end like that each Örnefni has the original source(s) if at all possible", with a fixed set of fields per
+name, "Or at miminum a data.frame". Measured (plan 067 §0.1): LMÍ's records linked to the names list number 22,311, every
+one with a heimild, 4,396 strings; 8,932 records name only a case number; about 2,300 are traced to an original
+(the charts, LMÍ's general map, Trackwell's and Hafrannsóknastofnun's 2020 deliveries, ÍSOR's reports of 2008).
 
-Its first source is timarit.is. The study searched it by the gazetteer's names and by naming phrases. A spot test of
-36 pages took the maintainer's vote on what is wanted: a name's story, its place and its extent. The text of 10 issues
-was fetched slowly at the maintainer's decision, past robots.txt. 10 documents were read into the format of §5 as a
-first trial (plan 067 §1): 149 entries, 70 with a name's origin; no person has checked them.
+The revised plan: a carrier is not a source; a registry of sources and deliveries; LMÍ's heimild resolved by a table
+(stated, traced, unknown); one generated attestation table per name and record, with its original and the carriers
+between (the data.frame); a name's YAML an export only. Sea names of plan 081's scope first. The draft's readings of text
+sources (one YAML per document, a first trial of 149 entries from 10 documents) and timarit.is's text (decision 295:
+`raw/external/timarit/`) stand.
 
-The studies of timarit.is so far, each with its README (above), by R script or read whole, none checked by a person:
-- 2026-11-07: early Ægir by plan 070's chart names (40 of 121 searched, 1905-1965; four finds, Barðagrunn 1917);
-  Bjarni Sæmundsson's 29 Andvari articles at the maintainer's word (1,410 pages; 938 passages on `out/excerpts.html`,
-  1927-1937 the most); the seabed's landscape (Trausti Einarsson 1963, Thoroddsen 1902: 53 finds, 109 features); then
-  the whole held ("this örnefni / fiskimið description search would then be part of that bigger plan");
-- 2026-11-08, "fiskikort" at the maintainer's word: 93 pages with their neighbours and Einar Jónsson's series "Nöfn og
-  nafngiftir utan fjörumarka" (Víkingur 1979-1980, the names offshore), 258 pages (`out/reading.html`).
-A page view (`/page/<id>`, allowed) carries its OCR text; `/files` (disallowed) is not needed. Since decision 295 the
-text is kept once in `raw/external/timarit/` (4,132 pages in 181 issues on 2026-11-08), fetched only by
-`dump/timarit/fetch.R`, read as `staging/timarit/page.parquet`.
-
-**check:** asks a and c answered; plan 067's steps 1-2 built (the registry, the reading format, the two 2002 articles
-read and measured against the 151 Markdown records), or the plan parked.
+**check:** ask f answered; plan 067 §0.4 steps 1-3 built (the registry, the heimild table, the attestations for
+plan 081's names, each with its check), or the plan parked again.
 
 ## 194. Place-name areas and the seabed's terrain classes, from the occurrences, the effort and the seabed (plan 070)
-**status:** open · plan 070's asks a-f answered by the maintainer (2026-11-06); steps 1, 2, 4, 5 and 6 run as studies; LMÍ's polygons dropped (vocabulary only), each source held out as the check; the areas adopted (density, groups once, a deep's trough, a "-grunn" name's shelf block); the deeps redrawn from the landscape under the maintainer's three rounds of comments, a candidate; 2026-11-07, a milestone: every level's areas, bays, spots, edges and ridges from the sea chart and the depth model alone (plan 070 step 6) · **see:** `curate/plans/070-place-name-areas.md`,
+**status:** parked — the maintainer, 2026-11-19 (plan 080 ask d, decision 333): plan 070's areas carried to plan 080's version 6 (TODO 206); until then: plan 070's asks a-f answered by the maintainer (2026-11-06); steps 1, 2, 4, 5 and 6 run as studies; LMÍ's polygons dropped (vocabulary only), each source held out as the check; the areas adopted (density, groups once, a deep's trough, a "-grunn" name's shelf block); the deeps redrawn from the landscape under the maintainer's three rounds of comments, a candidate; 2026-11-07, a milestone: every level's areas, bays, spots, edges and ridges from the sea chart and the depth model alone (plan 070 step 6) · **see:** `curate/plans/070-place-name-areas.md`,
 `$FISHYDATA/archive/2026-11-06-place-name-areas/README.md`, plan 045 §2-§3, TODOs 144 and 185
 
 The maintainer, 2026-11-06, asked whether it is time to outline the names: hierarchically, the main grounds and deeps
@@ -1527,7 +1487,7 @@ Each step starts as a study, and becomes a target after the maintainer's review.
 **check:** asks a-c answered, and plan 070's steps 1-2 built as studies and reviewed; or the plan parked.
 
 ## 197. The names in use beside the charts' names, and each small feature on the seabed (plan 071)
-**status:** open · plan 071's asks a-d and f wait on the maintainer, ask e answered (a ledger in the in-use study under `$FISHYDATA`); step
+**status:** parked — the maintainer, 2026-11-19 (plan 080 ask d, decision 333): plan 071's linking of the names in use carried to plan 080's version 5 (TODO 206); until then: plan 071's asks a-d and f wait on the maintainer, ask e answered (a ledger in the in-use study under `$FISHYDATA`); step
 1 run 2026-11-09 (the highs at 1:40 000 and, mended, at 1:100 000 passed; 50 names moved); step 8, the review, begun
 with Eldeyjarboði; step 4 begun as a study, every name sorted before the map · **see:**
 `curate/plans/071-place-names-in-use-beside-the-charts.md`, `$FISHYDATA/archive/2026-11-09-ornefni-in-use/README.md`,
@@ -1572,7 +1532,7 @@ functions, `rr_layer()`), the names and their order, speed budgets, and six step
 or the plan parked.
 
 ## 199. Local seabed features by best estimate: mounds and the other local kinds, a name proposed for each (plan 073)
-**status:** open · **needs: maintainer** — plan 073's asks a-h (taken as proposed for the first run); steps 1-7 run as a study
+**status:** parked — the maintainer, 2026-11-19 (plan 080 ask d, decision 333): plans 073 and 074 folded into plan 080 (TODO 206), plan 074 executed with version 1, plan 073's inventory and names carried to its versions 3 and 4; until then: plan 073's asks a-h (taken as proposed for the first run); steps 1-7 run as a study
 2026-11-11 (decision 315); the maintainer judged the trial "an utter failure" on a first look (way off in many cases);
 to be picked up later, first: which parts are off; trial 2 and the chart names' mounds the same day (decision 316),
 for the maintainer to judge on the chart map (port 4813); a plan 074 proposed (the chart names as anchor, the Olex landscape
@@ -1714,3 +1674,24 @@ carrying them.
 
 **check:** the effort and the names files built from committed scripts, and ogisdata built and installed from the share;
 or the item dropped.
+
+## 206. The place names: Claude's best proposal for each name from every witness, reviewed against the records (plan 081)
+**status:** open · plan 081 adopted 2026-11-20, its ten recommendations answered as made, the banks' outlines first on
+the east coast (decision 337); plan 080 executed (versions 1 and 2; decisions 332-336), its forward design superseded;
+step 1 built 2026-11-20 (decision 338): the deeps' proposals and a review mode on the names page (port 8822, Review the
+proposals); his review of the troughs done 2026-11-20 (all 28 of ÍSOR's troughs decided, 11 of one name each accepted whole together; a shared trough split by its shape); **needs:
+maintainer** — step 2 (the moraines); the 74 deeps on no ÍSOR trough wait for step 5; Reykjaneshryggur's open items (decision
+336: Litlibanki on the flank, Litli hóll, the LMÍ areas, Trackwell's 14 candidates) folded into the steps · **see:**
+`curate/plans/081-place-names-on-the-seabed.md`, `curate/plans/080-place-names-in-versions.md`, decisions 332-337, plan
+078 §3.9, TODOs 144, 181, 193, 194, 197, 199 and 201
+
+The maintainer, 2026-11-20: "the goal of this plan is that you come up with the best proposal to a placename. We would
+then go through that against other records in an interactive review." For every name: its kind (a seabed feature, a
+ground, a point thing), the thing, its extent, its whole and parts, its forms, and every record's outcome, made by rule
+from the seabed (ÍSOR's and the depth model's elements, a bank's anatomy), the names' grammar, the skippers' names by
+concentration, the effort's footprint, the charts, LMÍ's names (sources traced) and the articles; feature class by feature
+class over all Iceland, each reviewed by region.
+
+**check:** plan 081's steps built in turn (troughs and deeps, moraines, banks, volcanic ridges, the depth model's outlines
+and grounds), each a frozen version reviewed by the maintainer and carried by ogisdata; or the plan parked.
+

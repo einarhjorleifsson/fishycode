@@ -1,6 +1,6 @@
 # 073 — Local seabed features by best estimate: features found on the seabed, every source's statements linked to them, a name proposed for each, judged by a person feature by feature
 
-**status:** partly built — written 2026-11-11 at the maintainer's request, with a read-only count the same day
+**status:** parked — 2026-11-19 at the maintainer's word (plan 080 ask d, decision 333): its feature inventory and its names carried to plan 080's versions 3 and 4; written 2026-11-11 at the maintainer's request, with a read-only count the same day
 (`$FISHYDATA/archive/2026-11-11-local-features/`, scripts 00-04, their logs in `notes/`); the same day a confidence in each
 name and place, coloured on the map, and a category for each feature (a mound, a wreck), added at the maintainer's
 word (§2.2, §2.8); steps 1-7 run as a study the same day at the maintainer's word (decision 315): no linking rule passed,

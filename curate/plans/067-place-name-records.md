@@ -1,23 +1,122 @@
 # 067 — Place-name records: a source registry, one reading per document, one file per place, and the links between them
 
-**status:** proposal — written 2026-11-05 at the maintainer's request, with the timarit.is study
-(`$FISHYDATA/archive/2026-11-05-timarit-ornefni/`, its README) · **2026-11-05** · **see:** plans 043, 044, 045 (§3
-step 1's ledger, ask c), decisions 221-226 and 272, TODOs 144 and 186, the data-dict overlays of plan 040
-(`dump/oracle/meta/`, `R/data_dict.R`), the vid ledger (`R/allocate_vids.R`)
+**status:** proposal — revised 2026-11-20 at the maintainer's word ("Yes, revise plan 067"; decision 339): each name with
+its original source(s), LMÍ a carrier, not a source, and a fixed set of fields per name (§0); ask e answered (in the repo); parked 2026-11-07 and 2026-11-19 (plan 080
+ask d, decision 333); written 2026-11-05 at the maintainer's request, with the timarit.is study
+(`$FISHYDATA/archive/2026-11-05-timarit-ornefni/`, its README) · **2026-11-05, revised 2026-11-20** · **see:** plans 043,
+044, 045 (§3 step 1's ledger, ask c), 080, 081, decisions 221-226, 272, 285, 333, 336 and 338, TODOs 144, 186 and 206, the
+data-dict overlays of plan 040 (`dump/oracle/meta/`, `R/data_dict.R`), the vid ledger (`R/allocate_vids.R`)
 
-Drafted with AI assistance (Claude) on 2026-11-05; a person has not yet checked it. **Measured** (by Claude,
-2026-11-05): the counts in §1. **Assumed:**
+Drafted with AI assistance (Claude) on 2026-11-05 and revised by Claude on 2026-11-20; a person has not yet checked it.
+**Measured** (by Claude): the counts in §1 (2026-11-05) and §0.1 (2026-11-20). **Assumed:**
 - that a document read once into a structured file is worth more than its names alone. One article read for the plan
   (§1) says so; no reading has been made or checked yet;
 - that SKOS and the Linked Places Format (§5) fit. They are leads from Claude's knowledge and have not been read
   against their specifications;
-- that a person will fetch the issue text of the pages the search finds (§8, ask c).
+- that a person will fetch the issue text of the pages the search finds (§8, ask c);
+- (2026-11-20) that LMÍ keeps a register of its case numbers (who delivered what, and when) and would share it (ask f).
+  The numbers' form (V, a year and month, a serial) suggests one; none has been seen.
 
 The maintainer, 2026-11-05: "think about how best to store / file Örnefni - a yaml construct is one posibility. We may
 need to think about if each ornefni should have a yaml (or whatever construct) and then also how to refer to the
 original source, how to refer to synonyms, how to do crossreferencing. possibly something from the data-dict construct
 could be borrowed, although that deals with metadata. you also should contemplate how we incorporate other sources like
 those we have already scraped when it comes to örnefni."
+
+## 0. The revision of 2026-11-20
+
+The maintainer, 2026-11-20, after decision 338's question on Orkustofnun's names: "This is all related to original
+sourcing. When we say LMÍ we could be more specific, because LMÍ is really the "gathering point". Care to think a little
+here. Say this because I would in the end like that each Örnefni has the original source(s) if at all possible. Which then
+also begs the quiestion if we are using some kind of a standard template (yaml, ... whatever) of fields we report for each
+örnefni." And: "Or at miminum a data.frame". Since the draft of 2026-11-05, plan 080 built the names list
+(`curated/reference/marine_name.parquet`, 25,910 rows, a stable `id` its ledger cites) with its links to the records
+(`marine_name_source.parquet`), and plan 081 the proposals. What the list lacks is the original source behind a record.
+
+### 0.1 What is at hand (measured 2026-11-20)
+
+- **The names' links:** 30,304 in `marine_name_source`: the charts' letterings 7,932 (5,898 names), LMÍ's records 22,312
+  (22,146 names), ÍSOR's records 57 (52 names), the maintainer's own 3.
+- **LMÍ's source field** (`heimild`, IS 50V's `source_ref`): every one of the 22,311 LMÍ records linked to a name has one,
+  4,396 strings in all, entered 1994-2026 (most from 2010). IS 50V has no other field naming a source (`owner` LMÍ,
+  `dataset` the release, for all).
+  - 8,932 records (329 strings) carry a bare case number (`V201404005`, `L10060007`, `202512-0010`) and name nothing;
+  - 13,379 records (4,067 strings) name something: a source ("Aðalkort 1 útg. 1984", "Atlaskort", "Kort LMÍ"), a deliverer
+    and its case number ("Landhelgisgæslan V201412010", "Orkustofnun V201404005"), or a collection and its collector
+    ("V201608003: Breiðafjörður - örnefnasöfnun ...").
+- **Traced so far** (decisions 336, 338): the Coast Guard's V201412010/011 are the charts' names
+  (93 % of their sea names the charts' own); "Aðalkort" is LMÍ's general map 1:250 000 by sheet and edition; V202005002
+  Trackwell's log names of 2020; V202005003 Hafrannsóknastofnun's of 2020; Orkustofnun's V201404005 the names of ÍSOR's
+  reports of 2008 (65 of its 70 records, attached since decision 338) with Orkustofnun's geometry. About 2,300 of the
+  22,311 records.
+- **Readings already staged:** ÍSOR's four reports of 2008 (145 entries) and the Fiskimið list (271) in
+  `staging/ornefni/document_name.parquet`; Bjarni Sæmundsson's statements on the deeps (203, plan 081's study); the 151
+  Markdown records; the gazetteer's evidence (536,249 occurrences, decisions 223-226).
+- **Three tables already pair a name with what a record says of it**, each its own shape: `marine_name_source` (the names
+  list), the gazetteer's `evidence.parquet`, plan 081's `place_name_proposal_evidence.parquet`.
+
+### 0.2 The design, revised
+
+1. **A carrier is not a source.** A record holds a name as a carrier received it; the source is where the name was first
+   written or said. Each attestation records its chain: the original, the carriers it passed through, the record. For
+   example: ÍSOR's GRG-ISOR-08045 p. 5 → Orkustofnun's delivery to LMÍ, 2014 (V201404005) → IS 50V record. Where the
+   original is not known the chain ends at the carrier and says so (`original: unknown`), never guessed.
+2. **The source registry** (§4, kept): one entry per original source and one per carrier's delivery (`kind: delivery`,
+   with what it carried). Its kinds: a chart (by series and edition), a map (a general-map sheet by edition), a report, an
+   article, a log (Trackwell's), a collection (a place-name collection), a delivery, a person's own record (the
+   maintainer's). CSL's bibliographic fields as §4 has them; `terms` public or internal; `staged`.
+3. **LMÍ's heimild resolved by a table:** each heimild string, or its case number where it has one, to the registry
+   keys of its delivery and, where known, its original, with a `basis`: `stated` (the string names it), `traced` (found,
+   with the evidence cited: a decision, a study), or `unknown`. Hand-kept; its home is ask e. Its check: every LMÍ record
+   linked to a name in one outcome (an original, a delivery only, unresolved), the unresolved listed by count.
+4. **The attestations, the data.frame:** `curated/reference/place_name_attestation.parquet`, generated, one row per name
+   and source record: `id` (the names list's), `record` (the carrier's record id), `source` (the original's registry
+   key, or `unknown`), `via` (the carriers in order), `spelling`, `place` or `extent` as the record gives it, `date` (the
+   record's, the source's), `says` (what the source states: a report's description, a statement of Bjarni's, a
+   lettering's scale), `role` (as `marine_name_source` has it), `basis`. Built from what is staged: `marine_name_source`,
+   the heimild table, `document_name`, plan 081's readings of Bjarni, the gazetteer's evidence for the names it shares.
+   The names list keeps the decisions (the name, its thing, its extent, its synonyms); the attestations are the evidence.
+5. **The template:** a name's record is its row in the names list and its attestations. The YAML per name of §6 becomes
+   an export only, written from the tables by a function (`place_name_record(id)`), never stored or edited: one record,
+   no second copy to drift.
+6. **Scope first:** the sea names plan 081 reviews, step by step, and the deliveries already traced; then the case
+   numbers, the most records first, as LMÍ's register allows (ask f).
+
+### 0.3 What of the draft of 2026-11-05 stands
+
+- §4 (the registry) and §5 (a text source read into one YAML per document) stand.
+- §6's place id: for the sea names, the names list's `id` (ask b, revised); the gazetteer's place ids for the plotters'
+  and skippers' names (plan 045) stay as §6 drafts them, joined to the names list by `links`, later.
+- §6's place file is the export of §0.2 point 5.
+- §9's steps are replaced by §0.4; its timarit.is step is §0.4 step 6.
+
+### 0.4 Steps
+
+1. **The registry**, seeded: the sources staged now (from the adapters' headers), the charts by series, LMÍ's general-map
+   sheets by edition, ÍSOR's reports of 2008, Bjarni's Andvari articles, Trackwell's and Hafrannsóknastofnun's 2020
+   deliveries, the Coast Guard's of 2014, Orkustofnun's of 2014; its check (every key used, every source cited
+   registered).
+2. **The heimild table** for the deliveries traced and every heimild string that names its source; its check.
+3. **The attestations** for the sea names in plan 081's scope; the names page shows a name's attestations with their
+   chains.
+4. **The export** `place_name_record(id)`: a name's fields and attestations as YAML (or a list), on demand.
+5. **The case numbers**, the most records first: with LMÍ's register if had (ask f), else listed unresolved.
+6. **The readings of text sources** (§5) and timarit.is (§9 step 3, ask c), each document a registry entry.
+
+### 0.5 Asks of the revision
+
+- e. **The heimild table's and the registry's home.** **Answered** (the maintainer, 2026-11-20: "Yes, in the repo";
+  decision 339): in this repo, as recommended below. *Recommended:* both in this repo (`reference/names/` for the
+  registry, `overrides/` for the table), holding only what LMÍ and the sources publish: deliverers, case numbers,
+  published works and their authors as citations. Collectors and informants named in a heimild string stay out of the
+  repo (AGENTS.md: what a public source prints of persons is kept under `$FISHYDATA`, decision 130): the table keys those
+  strings by their case number, and the string itself is read from IS 50V. *Alternative:* both under `$FISHYDATA`, as
+  plan 071's ledger is; simpler for persons, but the registry would then not be citable from the book.
+- f. **LMÍ's register of case numbers.** *Recommended:* the maintainer asks LMÍ for it (who delivered what, and when):
+  8,932 records name nothing but the number. *Alternative:* resolve from the strings alone and leave the bare numbers
+  `unknown`. `needs: maintainer`.
+- b. (revised) **The place id** for the sea names: the names list's `id` (*recommended*: its ledger already cites it, and
+  a row joined or renamed keeps it); a new `place_id` only for the gazetteer's places.
 
 ## 1. What is at hand (measured 2026-11-05)
 
@@ -239,7 +338,7 @@ This widens plan 045's ask c, which is still open.
   name's use in a year, though not a description.
 - Such mentions are kept only from pages that were read, never from snippets alone.
 
-## 9. Proposed steps
+## 9. Proposed steps (2026-11-05; replaced by §0.4)
 
 1. **The registry** and its check, seeded for every source staged now.
 2. **The reading format** (schema 0.1), its adapter and a pilot on the two 2002 articles, their text saved by a
@@ -259,7 +358,7 @@ This widens plan 045's ask c, which is still open.
    - plan 045's review page writes the overlay.
 6. **An export** in the Linked Places Format, internal, if ask d says so.
 
-## 10. Asks
+## 10. Asks (2026-11-05; e and f, and b revised, in §0.5)
 
 - a. **Where a person's decisions are kept** (§7): a private repo, functions only, or a declared folder. Needed once
   a person reviews (plan 045 ask c). **Answered** (the maintainer, 2026-11-09, through plan 071):

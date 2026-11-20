@@ -24,3 +24,13 @@
           text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; outline: 2px dashed #08519c; outline-offset: 2px; background: rgba(255,255,255,.35); }
 .nm-lbl.isle { font-style: normal; color: #1a1a1a; }
 .nm-lbl.land { font-style: normal; color: #4a4a4a; }
+.nm-newname, .nm-why { flex: 1; min-width: 0; font-size: 14px; padding: 4px 6px; border: 1px solid #b9b9b9; border-radius: 4px; }
+.nm-pin { width: 14px; height: 14px; border-radius: 50%; border: 3px solid #08519c; background: rgba(255,255,255,.6); box-sizing: border-box; cursor: move; }
+.nm-prop { border-top: 1px solid #d9d9d9; margin-top: 8px; padding-top: 8px; }
+.nm-prop[hidden] { display: none; }
+.nm-prop-name { color: #1a9850; }
+.nm-ev { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+.nm-ev th { text-align: left; font-weight: 600; color: #5a5a5a; border-bottom: 1px solid #d9d9d9; padding: 2px 4px; }
+.nm-ev td { vertical-align: top; padding: 2px 4px; border-bottom: 1px solid #f0f0f0; }
+.nm-ev tr.nm-ev-chosen td:first-child { font-weight: 700; color: #1a9850; }
+.nm-prop-why { flex: 1; min-width: 0; font-size: 14px; padding: 4px 6px; border: 1px solid #b9b9b9; border-radius: 4px; }

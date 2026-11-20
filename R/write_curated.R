@@ -103,8 +103,11 @@ digest_string <- function(x) {
   kv[!is.na(kv)]
 }
 
-write_curated <- function(d, path, inputs = character(), script = NULL) {
+# `stamps`: more KV metadata, named "fd.<key>" (e.g. c("fd.version" = "2"), a place-name version, plan 080 ask b).
+write_curated <- function(d, path, inputs = character(), script = NULL, stamps = character()) {
   stopifnot(is.data.frame(d))
+  if (length(stamps) && (is.null(names(stamps)) || !all(startsWith(names(stamps), "fd."))))
+    stop("write_curated(): `stamps` are named fd.<key>", call. = FALSE)
   if (!grepl("/curated/", path, fixed = TRUE))
     stop("write_curated() writes under curated/ only; got: ", path, call. = FALSE)
 
@@ -121,8 +124,8 @@ write_curated <- function(d, path, inputs = character(), script = NULL) {
     d[[geom]] <- wkb
   }
 
-  kv <- .curated_kv(script %||% .calling_script(), nrow(d), .schema_hash(d), inputs,
-                    geom = geom, crs = crs)
+  kv <- c(.curated_kv(script %||% .calling_script(), nrow(d), .schema_hash(d), inputs,
+                      geom = geom, crs = crs), stamps)
 
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   con <- DBI::dbConnect(duckdb::duckdb())

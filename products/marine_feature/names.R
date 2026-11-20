@@ -8,7 +8,8 @@
 #         $FISHYDATA/curated/reference/marine_name_extent.parquet (reference/names/marine_name.R: LMÍ's and ÍSOR's areas)
 # Output: $FISHYDATA/products/marine_feature/names.parquet (GeoParquet), one row per row of marine_feature (27,305):
 #         name (empty for a nameless aid or wreck, which og_names() then leaves undrawn and unfound); label_lon, label_lat
-#         (its place); geometry (a name's area or line, LMÍ's or ÍSOR's, where one is known); min_zoom (the zoom it
+#         (where its name is drawn; since version 2 apart from where the thing is, `lon`, `lat`, plan 080 §5.2); geometry (a
+#         name's area or line, LMÍ's or ÍSOR's, where one is known); point_kind (a dot at the thing); min_zoom (the zoom it
 #         deserves); level 1-4 and n (its rank and, within it, its extent); angle (degrees counter-clockwise from level,
 #         og_text()'s); type, kind and the rest a click shows; KV metadata `data_dict` and the fd.* stamps
 #
@@ -32,23 +33,27 @@ stopifnot(file.exists(mf_path), file.exists(ex_path))
 dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 
 mf <- st_drop_geometry(read_curated_sf(mf_path))
+sf_path <- fd_path("curated", "reference", "seabed_feature.parquet")
+sfx <- as.data.frame(nanoparquet::read_parquet(sf_path))
+mf$on_seabed <- ifelse(is.na(mf$seabed_id), NA_character_, paste0("ÍSOR's ", sfx$kind[match(mf$seabed_id, sfx$seabed_id)], " ",
+                                                                   sfx$label[match(mf$seabed_id, sfx$seabed_id)], " (", mf$seabed_link, ")"))
 ex <- read_curated_sf(ex_path)
 
 # A name's area: its LMÍ or ÍSOR extents (areas and lines), one geometry a name ------------------------------------------
-ar <- ex[ex$what == "extent", ] |> mutate(id = paste0("name:", feature)) |> group_by(id) |>
+ar <- ex[ex$what == "extent" & (!"used" %in% names(ex) | ex$used), ] |> mutate(id = paste0("name:", feature)) |> group_by(id) |>
   summarise(geometry = st_union(geometry), .groups = "drop")
 geom <- st_geometry(ar)[match(mf$id, ar$id)]
 
 d <- mf |> transmute(
-  name = na_if(name, ""), label_lon = round(lon, 6), label_lat = round(lat, 6),
+  name = na_if(name, ""), label_lon = round(label_lon, 6), label_lat = round(label_lat, 6), lon = round(lon, 6), lat = round(lat, 6),
   min_zoom = z_rule,
   level = case_when(type != "name" ~ 4L, is.na(extent_km) ~ 4L, extent_km >= 50 ~ 1L, extent_km >= 10 ~ 2L,
                     extent_km >= 1 ~ 3L, TRUE ~ 4L),
   n = if_else(type == "name", round(-priority, 3), 0),
   angle = round(-rotate_deg, 2),
-  type, kind, source = src, class, synonyms,
+  type, kind, source = src, class, synonyms, name_source, name_basis, point_kind,
   extent_km = round(extent_km, 3), lies_in = mf$name[match(holder, mf$id)], on_feature = mf$name[match(on_feature, mf$id)],
-  place_basis, zoom_basis = z_rule_basis, internal, flags, id)
+  place_basis, label_basis, on_seabed, zoom_basis = z_rule_basis, internal, flags, id, version)
 
 # The dictionary: the page's labels for what a click shows --------------------------------------------------------------
 dict <- paste(
@@ -59,14 +64,22 @@ dict <- paste(
   "  - {name: source, label: Source, values: {chart: the sea charts, lmi: LMÍ (IS 50V), isor: ÍSOR's seabed map, aid: the aid list, wreck: the wreck list}}",
   "  - {name: class, label: Class}",
   "  - {name: synonyms, label: Also called}",
+  "  - {name: name_source, label: As the source spells it}",
+  "  - {name: name_basis, label: Name from}",
+  "  - {name: point_kind, label: A point (a dot at the thing)}",
+  "  - {name: lon, label: The thing's longitude}",
+  "  - {name: lat, label: The thing's latitude}",
   "  - {name: extent_km, label: Extent, units: km}",
   "  - {name: lies_in, label: Lies in}",
   "  - {name: on_feature, label: On}",
-  "  - {name: place_basis, label: Placed by}",
+  "  - {name: place_basis, label: The thing placed by}",
+  "  - {name: label_basis, label: The name placed by}",
+  "  - {name: on_seabed, label: On ÍSOR's feature}",
   "  - {name: zoom_basis, label: Shown from}",
   "  - {name: internal, label: Known from internal lists only}",
   "  - {name: flags, label: Flags}",
   "  - {name: id, label: Id in marine_feature}",
+  "  - {name: version, label: Version of the place names}",
   sep = "\n")
 
 # Write: GeoParquet by DuckDB's spatial extension, the stamps and the dictionary in its metadata ------------------------
@@ -82,7 +95,7 @@ sql <- "SELECT * EXCLUDE (wkb), CASE WHEN wkb IS NULL THEN NULL ELSE ST_GeomFrom
 ds <- DBI::dbGetQuery(con, sprintf("DESCRIBE %s", sql))
 kv <- c(.curated_kv("products/marine_feature/names.R", nrow(d),
                     substr(digest_string(paste(ds$column_name, ds$column_type, collapse = "|")), 1, 16),
-                    inputs = c(mf_path, ex_path)),
+                    inputs = c(mf_path, ex_path, sf_path)),
         data_dict = dict)
 meta <- paste(sprintf("%s: %s", q(names(kv)), q(unname(kv))), collapse = ", ")
 tmp <- paste0(out, ".partial")

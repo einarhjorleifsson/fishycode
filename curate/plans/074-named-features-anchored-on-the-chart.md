@@ -1,6 +1,6 @@
 # 074 — The sea-chart names on a map you zoom through: each name read from every chart, one best place for it, shown at zooms of our own choosing
 
-**status:** partly built — written 2026-11-11 at the maintainer's word ("Yes, draft it"), from what held up in plan 073's
+**status:** executed — 2026-11-19 at the maintainer's word (plan 080 ask d, decision 333): version 1 its product (step 12), its step 10 and known faults carried to plan 080; written 2026-11-11 at the maintainer's word ("Yes, draft it"), from what held up in plan 073's
 trials and the measurements of decision 317; step 1 built as a study the same night (decision 318): the lettering at
 every chart scale as the marker (§3 amended: "anything but a midpoint", every zoom), the rules tried and compared, the
 one isobath out holding best so far; on 2026-11-12, at his word, the letter boxes first (decision 319): each name's box,

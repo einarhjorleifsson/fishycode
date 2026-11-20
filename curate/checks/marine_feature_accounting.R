@@ -29,6 +29,11 @@ pq <- function(p) as.data.frame(nanoparquet::read_parquet(p))
 mf <- pq(file.path(DIR, "marine_feature.parquet")); ln <- pq(file.path(DIR, "marine_feature_link.parquet"))
 nm <- pq(REF("marine_name.parquet")); aid <- pq(REF("aid.parquet")); wr <- pq(WRECK)
 fa <- read.csv(file.path(V1, "feature_aid.csv"), encoding = "UTF-8")
+# version 2: a link to a name joined into another goes to the row kept (reference/marine_feature.R)
+if (file.exists(REF("marine_name_pair.parquet"))) {
+  jn <- pq(REF("marine_name_pair.parquet")); jn <- jn[jn$outcome == "one thing", ]; jn$gone <- ifelse(jn$kept == jn$id_a, jn$id_b, jn$id_a)
+  fa$feature <- ifelse(fa$feature %in% jn$gone, jn$kept[match(fa$feature, jn$gone)], fa$feature)
+}
 
 acc <- data.frame(check = character(), verdict = character(), n = integer())
 ok <- function(what, cond, n = NA_integer_) { cond <- isTRUE(all(cond))
@@ -42,13 +47,18 @@ ok("types and kinds from their sets, the rank by type",
      ((mf$type == "name" & mf$kind %in% c("water", "land", "isle")) | (mf$type == "wreck" & mf$kind == "wreck") |
       (mf$type == "aid" & mf$kind %in% unique(aid$kind))), nrow(mf))
 n <- mf[mf$type == "name", ]; k <- match(n$list_id, as.character(nm$id))
-ok("a name's place, angle and zoom those of marine_name",
-   !anyNA(k) & n$lon == nm$lon[k] & n$lat == nm$lat[k] & n$rotate_deg == nm$rotate_deg[k] & n$z_rule == nm$z_rule[k], nrow(n))
+ok("a name's place, label, angle and zoom those of marine_name",
+   !anyNA(k) & n$lon == nm$lon[k] & n$lat == nm$lat[k] & n$label_lon == nm$label_lon[k] & n$label_lat == nm$label_lat[k] &
+     n$rotate_deg == nm$rotate_deg[k] & n$z_rule == nm$z_rule[k] & n$name == nm$name[k], nrow(n))
+ok("an aid's and a wreck's label at the thing, a dot each", all(mf$label_lon[mf$type != "name"] == mf$lon[mf$type != "name"] &
+   mf$label_lat[mf$type != "name"] == mf$lat[mf$type != "name"] & mf$point_kind[mf$type != "name"]), sum(mf$type != "name"))
+ok("one version in the table, marine_name's", length(unique(mf$version)) == 1 && all(mf$version == nm$version[1]), nrow(mf))
 ok("an aid's zoom 10, a wreck's one zoom", all(mf$z_rule[mf$type == "aid"] == 10) && length(unique(mf$z_rule[mf$type == "wreck"])) == 1,
    sum(mf$type != "name"))
-ok("a holder only on a name, a name's row", is.na(mf$holder[mf$type != "name"]) & (is.na(mf$holder) | mf$holder %in% mf$id[mf$type == "name"]), nrow(mf))
+# row by row (until 2026-11-19 the two tests were of unequal lengths, recycled)
+ok("a holder only on a name, a name's row", (mf$type == "name" | is.na(mf$holder)) & (is.na(mf$holder) | mf$holder %in% mf$id[mf$type == "name"]), nrow(mf))
 ok("an on_feature only on an aid or a wreck, a name's row",
-   is.na(mf$on_feature[mf$type == "name"]) & (is.na(mf$on_feature) | mf$on_feature %in% mf$id[mf$type == "name"]), nrow(mf))
+   (mf$type != "name" | is.na(mf$on_feature)) & (is.na(mf$on_feature) | mf$on_feature %in% mf$id[mf$type == "name"]), nrow(mf))
 fl <- fa[!is.na(fa$feature) & fa$feature %in% nm$id, ]
 a <- mf[mf$type == "aid", ]
 ok("an aid's on_feature one of its 111 links to a feature of the list",
