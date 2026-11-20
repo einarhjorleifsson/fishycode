@@ -49,6 +49,12 @@ linked_area <- paste0("name:", nm$id[grepl("linked by the maintainer", nm$extent
 proposed <- paste0("name:", nm$id[grepl("Claude's proposal, accepted by the maintainer", nm$extent_basis)])   # plan 081: an accepted proposal
 held_on <- paste0("name:", nm$id[grepl("^its holder .* joined into ", ifelse(is.na(nm$holder_note), "", nm$holder_note))])   # a holder joined away
 his_part <- paste0("name:", nm$id[grepl("^a part of it, by the maintainer", ifelse(is.na(nm$holder_note), "", nm$holder_note))])   # his `part of`
+prop_part <- paste0("name:", nm$id[grepl("^a part of it, by Claude's proposal accepted", ifelse(is.na(nm$holder_note), "", nm$holder_note))])   # step 3's accepted part
+# his latest verdict on a name's proposal a reject: the name back to its own source's place, area and letters (decision 341,
+# Paradísarhola leaving ÍSOR's trough 11)
+vd <- ed[ed$action %in% c("accept proposal", "reject proposal"), ]; vd <- vd[order(vd$at), ]; vd <- vd[!duplicated(vd$link_to, fromLast = TRUE), ]
+prop_rej <- paste0("name:", sub("^deep:", "", vd$link_to[vd$action == "reject proposal" & grepl("^deep:[0-9]+$", vd$link_to)]))
+REJ <- "the maintainer rejected Claude's proposal: back to its own source's (decision 341)"
 
 d_m <- function(a, b, c, e) sqrt(((a - c) * 111320 * cos(b * pi / 180))^2 + ((b - e) * 110570)^2)
 ne <- function(a, b) (is.na(a) != is.na(b)) | (!is.na(a) & !is.na(b) & a != b)
@@ -64,17 +70,23 @@ why_of <- function(col, id) {
   switch(col,
     name = case_when(id %in% ren ~ "the maintainer's rename", id %in% joined_into ~ "one thing from two sources: the name by ask g's order"),
     label = case_when(id %in% prop_axis ~ "Claude's proposal accepted: the letters inside its area or on its line, along it (decision 338)",
+                      id %in% prop_rej ~ REJ,
                       id %in% hand_label ~ "the maintainer's move on the page", id %in% pinned_pk ~ "the maintainer's pin: a point kind's label follows its thing",
                       id %in% isor_axis ~ "ÍSOR's area the primary source: the label inside it along its axis", id %in% hand_back ~ "the maintainer's place back on the page",
                       id %in% crater_pk ~ "linked to ÍSOR's crater: a point kind's label follows its thing"),
     angle = case_when(id %in% prop_axis ~ "Claude's proposal accepted: the letters along its area's long axis or its line (decision 338)",
+                      id %in% prop_rej ~ REJ,
                       id %in% hand_label ~ "the maintainer's turn on the page", id %in% isor_axis ~ "ÍSOR's area the primary source: the label along its axis",
                       id %in% hand_back ~ "the maintainer's place back on the page"),
     zoom = case_when(id %in% hand_zoom ~ "the maintainer's zoom on the page",
-                     id %in% prop_zoom ~ "Claude's proposal accepted: rule e on its area's or line's length along its axis (decision 338)"),
+                     id %in% prop_zoom ~ "Claude's proposal accepted: rule e on its area's or line's length along its axis (decision 338)",
+                     id %in% prop_rej ~ REJ),
     holder = case_when(id %in% held_on ~ "its holder joined into the row kept (one thing from two sources, or the maintainer's join; decision 338)",
-                       id %in% his_part ~ "the maintainer's part of: its whole his"),
+                       id %in% his_part ~ "the maintainer's part of: its whole his",
+                       id %in% prop_part ~ "Claude's proposal accepted: its bank its whole (plan 081 step 3)"),
     on_feature = case_when(old$on_feature[match(id, old$id)] %in% one$gone ~ "the feature it lay on joined into another (one thing from two sources)",
+                           old$on_feature[match(id, old$id)] %in% hj_gone & now$on_feature[match(id, now$id)] %in% hj_kept ~
+                             "the feature it lay on joined by the maintainer into another (his join)",
                            now$on_feature[match(id, now$id)] %in% paste0("name:", nm$id[nm$brought_in]) ~ "it lies in the area of a name brought in (version 2)",
                            old$on_feature[match(id, old$id)] %in% linked_area | now$on_feature[match(id, now$id)] %in% linked_area ~
                              "the area it lay or lies in is now ÍSOR's, linked by the maintainer",
@@ -82,7 +94,8 @@ why_of <- function(col, id) {
                              "the area it lay or lies in is now Claude's proposal's, accepted by the maintainer"),
     extent = case_when(id %in% joined_into ~ "one thing from two sources: its extent from the row joined into it",
                        id %in% linked_area ~ "linked by the maintainer to ÍSOR's area: its extent ÍSOR's, LMÍ's set aside",
-                       id %in% proposed ~ "Claude's proposal, accepted by the maintainer: its extent the proposal's (plan 081)"),
+                       id %in% proposed ~ "Claude's proposal, accepted by the maintainer: its extent the proposal's (plan 081)",
+                       id %in% prop_rej ~ REJ),
     flags = ifelse(grepl("version 2[),]", now$flags[match(id, now$id)]), "a flag of version 2's (one thing, whole and part, doubtful)",
             ifelse(grepl("in ÍSOR's report of 2008", now$flags[match(id, now$id)]), "spelt otherwise in ÍSOR's reports of 2008 (decision 338)", NA)),
     NA_character_)

@@ -3,7 +3,8 @@
 # parts never overlapping, decision 338), every proposal's
 # witnesses counted from its evidence, its thing inside its extent, every verdict on a proposal that exists. Step 2: every
 # water name of ours of the grammar's ridge, edge, toe and tip endings in one proposal, each on one of ÍSOR's moraines or
-# none, none off the shelf on one.
+# none, none off the shelf on one. Step 3: every bank of the east on its piece (a piece one bank's, or shared and flagged),
+# every part's whole a bank, every witness counted.
 # Side: preprocessing (sea-chart names). Standalone, run by hand after reference/names/place_name_proposal.R.
 #
 # Input:  curated/reference/place_name_proposal{,_evidence,_shape}.parquet, marine_name.parquet, seabed_feature.parquet,
@@ -34,7 +35,7 @@ rs <- ed[ed$action %in% c("rest", "unrest"), ]; rs <- rs[order(rs$at), ]
 rs <- rs[!duplicated(rs$feature, fromLast = TRUE) & rs$action == "rest", ]          # a name he gives the rest of a trough
 deeps <- nm$id[(grepl("(djúp|djúpið|dýpi|dýpið|áll|állinn|renna|rennan)$", low(nm$name)) | over_trough | nm$id %in% rs$feature) & !is.na(nm$lon)]
 ok("every deep of ours (a name ending -djúp, -dýpi, -áll, -renna, his own over a trough, or one he gives a trough's rest) in one proposal", setequal(p$name_id[p$class == "deep" & !is.na(p$name_id)], deeps) &&
-   !anyDuplicated(p$name_id[!is.na(p$name_id)]), length(deeps))
+   !anyDuplicated(p$name_id[p$class == "deep" & !is.na(p$name_id)]), length(deeps))
 troughs <- sub("isor:landform:trough:", "", sfx$seabed_id[sfx$kind == "trough"])
 d1 <- p[p$class == "deep", ]
 ok(sprintf("every one of ÍSOR's %d troughs in one outcome: taken by a deep, or a proposal of its own (a shared trough's part no name takes, one each)", length(troughs)),
@@ -76,6 +77,17 @@ shelf <- st_make_valid(read_curated_sf(REF("seabed_feature.parquet"))[sfx$kind =
 o2 <- on2[!is.na(on2$name_id), ]; q2 <- nm[match(o2$name_id, nm$id), ]
 off <- lengths(st_intersects(st_as_sf(q2, coords = c("lon", "lat"), crs = 4326), shelf)) == 0
 ok("no name of ours off the shelf (beyond ÍSOR's shelf break) on a moraine", !off, nrow(o2))
+# step 3: the banks (the east first)
+p3 <- p[p$class == "bank", ]; b3 <- p3[p3$kind == "bank", ]; s3 <- p3[p3$kind != "bank", ]
+ok("a name in one proposal of each class (a step 2 name off the moraines may be a step 3 part)", !anyDuplicated(paste(p$class, p$name_id)[!is.na(p$name_id)]), sum(!is.na(p$name_id)))
+ok("every step 3 bank has its piece as its extent and element; a piece taken by one bank, or by several each flagged as sharing it",
+   all(b3$key %in% sh$key[sh$what == "extent"]) && all(b3$element == paste0("bank:east:piece:", b3$piece)) &&
+   all(vapply(split(b3, b3$piece), function(x) nrow(x) == 1 || all(!is.na(x$shared_with)), TRUE)), nrow(b3))
+ok("every step 3 part or shoal's whole a step 3 bank taking a piece, or none (flagged)", all(s3$whole_id[!is.na(s3$whole_id)] %in% b3$name_id) &&
+   all(grepl("no whole found", s3$flags[is.na(s3$whole_id)])), nrow(s3))
+cnt3 <- ev |> filter(grepl("^agrees", outcome), !is.na(candidate)) |> distinct(key, candidate, group) |> count(key, candidate, name = "n")
+chk3 <- p3 |> left_join(cnt3, by = c("key", "candidate")) |> mutate(n = coalesce(n, 0L))
+ok("a step 3 proposal's witnesses agreeing counted from its evidence on its candidate (a piece, or its whole)", chk3$n == chk3$n_agree, nrow(chk3))
 ok("every proposal placed, with a basis", !is.na(p$lon) & !is.na(p$lat) & !is.na(p$place_basis), nrow(p))
 vd <- ed[ed$action %in% c("accept proposal", "reject proposal"), ]
 ok("every verdict on a proposal that exists", all(vd$link_to %in% p$key), nrow(vd))

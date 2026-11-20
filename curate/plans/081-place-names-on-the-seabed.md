@@ -2,7 +2,7 @@
 
 **status:** partly built — step 1 (the troughs and the deeps) built 2026-11-20 at the maintainer's word ("Yes, start step 1";
 decision 338), reviewed and closed by version 2 the same day; step 2 (the moraines) built the same day at his word ("Start
-step 2"; decision 340), reviewed the same day, five adopted, closed by version 3; step 3 next; written 2026-11-20 at the maintainer's word ("So review the plan from scratch - think we have plenty
+step 2"; decision 340), reviewed the same day, five adopted, closed by version 3; step 3 on the east coast built the same day (decision 341), then revised at his word to the coarsest level over the whole shelf first (§4.6: deeps, grounds and the outer band, with a no-man's land rule); written 2026-11-20 at the maintainer's word ("So review the plan from scratch - think we have plenty
 of things to work from now"), revised the same night after a dig on ÍSOR's troughs and moraines, the effort and the texts
 already read ("You may even have now enough to make your own proposal. Care to dig in a bit. Take you time"), and set on
 its goal ("the goal of this plan is that you come up with the best proposal to a placename. We would then go through that
@@ -242,6 +242,74 @@ independent witnesses agreeing; a copy counts with its source, never twice. Ties
 flagged for the review, not decided. Bookkeeping, not a model (AGENTS.md: every record in one outcome, no agreement rate a
 pass).
 
+### 4.6 The coarsest level: deeps, grounds and the outer band (revised 2026-11-20, at the maintainer's word)
+
+The maintainer, the evening of 2026-11-20, after step 3 was tried on the east (decision 341):
+- "We want to start with the most simplistic model, and then dig in. The rules we use should be general, applicable as much
+  as possible to the whole are".
+- "Objectives are: 1) Create robust rule to come up with "outer" area placenames and their boundaries, 2) augment the ÍSOR
+  science stuff, that only has focused on the deeps, volcanos, moraines, ... and ignored the gounds."
+- Before that: "the basic concept is still clear: deeps, grounds and the outer band model", "with a no-man's land rule"; "the
+  first level for carving out the area within / or just beyond the ÍSOR shelf break. I.e. the coarsets level to think about
+  the landscape model of the whole of the Icelandic slope and shelf. As an aid to make the most simple model to explain the
+  placenames."
+
+So the coarsest level of the landscape model covers the shelf inside ÍSOR's shelf break, and the outer band just beyond it,
+with no gap. Its parts:
+- **the deeps:** ÍSOR's troughs as step 1 decided them;
+- **the grounds:** what lies between the deeps, cut by each deep's line to its fjord, carried on to the land and out of the
+  shelf (his "you could always extrapolates these a bit"), and numbered;
+- **the outer band:** where the bottom trawl concentrates along the shelf break.
+
+Each finer name then has its place in it:
+- a deep's names in the deep;
+- the banks (-grunn, -banki) a level inside the grounds, and their parts inside them;
+- the edge names in the band.
+
+The rules are general, the same on every coast. A coast is measured, not given a number of its own.
+
+**The no-man's land rule** is what three elements settle for what is neither (his):
+- "What depth to use as a general rule of deep vs ground", where there is no trough;
+- "How do we make a boundary between inshore offshore";
+- the outer band, "on the boundary of the ÍSOR shelf break that should get a "special treatement"".
+
+Measured on the east (study `2026-11-20-proposal-banks/`, scripts 08-10; Claude's):
+- **The cover.** Seven grounds and the deeps cover the shelf with no gap, and every chart bank lies in one ground.
+- **Deep against ground.** The troughs are not "deeper than 200 m": 16 % of the deeps lie shallower, and 19 % of the
+  grounds deeper.
+- **The inshore boundary.** Fjords and inlets as units, or a 20 m line, each hold about a quarter of the charts'
+  letterings.
+- **The band.** The bottom trawl's density peaks at 56 hours a km² just inside the break. It stays at half that from 2 km
+  outside to 4 km inside, with the same profile over the sea open to the trawl. The skippers name its stretches after the
+  bank or deep behind them.
+
+**Assumed:**
+- that ÍSOR's shelf break and troughs, and the deeps' lines, are as good on the other coasts as on the east;
+- that the band's width found on the east holds elsewhere. It is measured per coast.
+
+**Revised the same evening, over the whole shelf** (his word; the study's scripts 11-13):
+- **No band at the coarsest level.** "the coarsest rule does not need to include the outer bound, it could be just deep and
+  grounds"; "There is really not something "trawl ridge"". The bottom trawl's ridge at the break is the fishery's and the
+  regulations', not a feature. If a band comes back, it is wider in the south-west, west and north-west than in the east.
+- **The ridges are elements of their own.** "They are an element of their own, even on a global model, this separates the
+  American and the Eurasian tectonic plates." "A grunn should at least not be able to "spill over" the Reykjaneshryggur."
+  - Each ridge's crest is traced through ÍSOR's craters ("You see this Tjörnesgrunn - Kobeinsey fracture by just following
+    the ISOR craters"), carried on to the land and out of the shelf.
+  - Its area is ÍSOR's volcanic systems along it, and a corridor along the crest as wide as the craters' spacing.
+  - The two crests cut the shelf into two sides, the two plates. No ground lies on both.
+- **Land and sea are one landscape** (his, the same evening): the Reykjanes Ridge runs ashore, the boundary runs east across
+  the south, north to about Tjörnes, then west offshore to the Kolbeinsey Ridge. The oldest parts, the north-west and the
+  east, are carved by the glaciers; the mounds on the ridge through Iceland, on land and at sea, are post-glacial. So
+  the deeps-and-grounds rule is a glacial landscape's, and the ridges a volcanic one's.
+- **The lines.** Jökuldjúp's runs to Snæfellsjökull at his word ("Jökuldjúp -> Snæfellsjökkul"); Kolluáll has none ("no
+  idea").
+- **A common coarse rule** for the coasts the ridge and the hotspot left alone ("Find a common corse rule for a landscape
+  model"), as tried: ÍSOR's troughs the deeps. Each deep's line runs up its own trough to its head, then on to the mainland's
+  coast, and out of the shelf, with no name needed; its name is a witness. The grounds are the pieces between, a piece as large
+  as the smallest named one standing (decision 341). Adopted at his word: "Yes, keep them".
+- **A deep split by a ridge.** "here is a natural way to split Skjálfandadjúp and Paradísarholan, follow the ISOR volcano
+  ridge" (step 1 split ÍSOR's trough 11 by a parallel); entered at his word, the crest's segment across it (decision 341).
+
 ## 5. The interactive review
 
 On the names page (port 8822), a review mode: a name chosen shows Claude's proposal (its thing, extent and parts drawn) and
@@ -273,7 +341,14 @@ trough's own skippers' names elsewhere. Each is what §4 would have proposed; ea
 2. *Built 2026-11-20 (decision 340): the step 2 section of `reference/names/place_name_proposal.R`, its checks, the review
    mode's moraines; reviewed the same day, five adopted, the rest set aside for now; closed by version 3, frozen and carried by ogisdata 2026.11.20.1.* **The moraines and the ridge, edge, toe and tip names**: the proposals from the moraines' concentration and the grammar;
    reviewed.
-3. **The banks' anatomy**: each bank's outline (§4.1), its parts placed in it (§4.2); reviewed.
+3. *The east built 2026-11-20 (decision 341): the deeps' lines carried on and reviewed, the banks' outlines and their parts; revised the same evening at the maintainer's word (§4.6).* **The coarsest level over the whole shelf** (§4.6): deeps, grounds and the outer band, with a no-man's land rule, by general rules. On every coast:
+   - the deeps' lines drawn and reviewed;
+   - the grounds numbered;
+   - the band measured from the bottom trawl;
+   - the rule's three elements settled.
+
+   A layer of grounds and the band beside ÍSOR's own (objective 2). Then **the banks' anatomy** a level below, inside the
+   grounds: each bank's outline (§4.1), its parts placed in it (§4.2); reviewed.
 4. **The volcanic ridges** (Reykjaneshryggur, the Kolbeinsey Ridge) on the links of decision 334.
 5. **The depth model's own outlines** where ÍSOR has none, and **the grounds** from the effort; the rest of the names.
 

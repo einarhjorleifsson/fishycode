@@ -1,7 +1,8 @@
 # place_name_proposal.R — Claude's best proposal for each place name, from every witness at once (plan 081, decision 337:
 # "the goal of this plan is that you come up with the best proposal to a placename. We would then go through that against
 # other records in an interactive review"). Step 1 (plan 081 §7): the deeps over all Iceland, on ÍSOR's troughs; step 2: the
-# ridge, edge, toe and tip names on ÍSOR's moraines (its rules in its own section below).
+# ridge, edge, toe and tip names on ÍSOR's moraines; step 3: the east coast's banks and their parts (each step's rules in its
+# own section below).
 # Side: preprocessing (sea-chart names). Standalone, run by hand after reference/names/marine_name.R, outside the targets flow;
 # marine_name.R reads its accepted proposals back (the maintainer's `accept proposal` rows).
 #
@@ -61,8 +62,9 @@ DEMF <- fd_raw("external", "bathymetry", "Olex_50mBM_GEBCO_interp.tif"); COAST <
 BJ <- fd_path("archive", "2026-11-20-proposal-deeps", "out", "bjarni_deep_readings.csv")
 INPUTS <- c(REF("marine_name.parquet"), REF("seabed_feature.parquet"), TW, IS, file.path(V1, "letterings.csv"), file.path(V1, "chart_join.csv"),
             DEMF, COAST, EF, if (file.exists(BJ)) BJ,
-            if (file.exists(fd_path("archive", "2026-11-20-proposal-moraines", "out", "text_moraine_readings.csv"))) fd_path("archive", "2026-11-20-proposal-moraines", "out", "text_moraine_readings.csv"))
-VERSION <- "081.2"   # step 2 (the moraines) added; 081.1, step 1 alone, frozen with the names' version 2
+            if (file.exists(fd_path("archive", "2026-11-20-proposal-moraines", "out", "text_moraine_readings.csv"))) fd_path("archive", "2026-11-20-proposal-moraines", "out", "text_moraine_readings.csv"),
+            if (file.exists(fd_path("archive", "2026-11-20-proposal-banks", "out", "bank_pieces_extended.geojson"))) fd_path("archive", "2026-11-20-proposal-banks", "out", "bank_pieces_extended.geojson"))
+VERSION <- "081.3"   # step 3 (the east's banks) added; 081.2 frozen with the names' version 3, 081.1 with version 2
 fold <- function(x) gsub("(.)\\1+", "\\1", gsub("[^a-z0-9]", "", tolower(iconv(x, "UTF-8", "ASCII//TRANSLIT"))))
 low <- function(x) gsub("[^a-zþæöðáéíóúý]", "", tolower(x))
 
@@ -87,9 +89,10 @@ dp$forms <- lapply(seq_len(nrow(dp)), function(i) { al <- c(dp$name[i], if (!is.
 # a name he made by accepting a proposal for a trough no name took (the page's `new` row over the trough, citing the key)
 # keeps that proposal's key, so his verdict stays on it
 ed0 <- read.csv(EF, encoding = "UTF-8"); if (!"link_to" %in% names(ed0)) ed0$link_to <- NA_character_
-mk <- ed0[ed0$action == "new" & grepl("^isor:landform:trough:", coalesce(ed0$link_to, "")) & grepl("\\(deep:trough:[0-9]+\\)", coalesce(ed0$why, "")), ]
-made <- data.frame(name_id = nm$id[match(mk$link_to, ifelse(nm$src == "maintainer", nm$seabed_members, NA))],
-                   key = sub(".*\\((deep:trough:[0-9]+)\\).*", "\\1", mk$why))
+# (or for a part of a trough no name took, deep:trough:<t>:<part>: the name takes that part; decision 341, Ytra Skjálfandadjúp)
+mk <- ed0[ed0$action == "new" & grepl("^isor:landform:trough:", coalesce(ed0$link_to, "")) & grepl("\\(deep:trough:[0-9]+(:[a-z0-9.]+)?\\)", coalesce(ed0$why, "")), ]
+made <- data.frame(name_id = nm$id[match(paste(mk$link_to, mk$name), ifelse(nm$src == "maintainer", paste(nm$seabed_members, nm$name_source), NA))],   # the name as he gave it, before any rename
+                   key = sub(".*\\((deep:trough:[0-9]+(:[a-z0-9.]+)?)\\).*", "\\1", mk$why))
 made <- made[!is.na(made$name_id), ]
 key_of <- function(id) ifelse(id %in% made$name_id, made$key[match(id, made$name_id)], paste0("deep:", id))
 message(sprintf("deeps: %d names (%s)", nrow(dp), paste(names(table(dp$src)), table(dp$src), collapse = ", ")))
@@ -203,6 +206,7 @@ P <- dp |> transmute(name_id = id, name, src, root, k, lon0 = lon, lat0 = lat, f
   left_join(pick, by = "name_id") |> mutate(trough = ifelse(is.na(trough) | n_agree == 0, "none", trough))
 P$n_agree[is.na(P$n_agree)] <- 0L
 hr <- match(P$name_id, rest0$feature); P$trough[!is.na(hr)] <- sub("^isor:landform:trough:", "", rest0$link_to[hr[!is.na(hr)]])   # his rest: the name on that trough
+mm <- match(P$name_id, made$name_id); P$trough[!is.na(mm)] <- sub("^deep:trough:([0-9]+).*", "\\1", made$key[mm[!is.na(mm)]])   # a name he made from a trough's proposal: on it
 
 # The thing and the extent ---------------------------------------------------------------------------------------------
 # A trough one name takes: its thing the deepest 200 m cell within the trough's largest inscribed circle, its extent the
@@ -310,7 +314,9 @@ place_in <- function(jj, pg, tt, what) { q <- deepest_in(st_sf(geometry = pg)); 
   P$place_basis[jj] <<- sprintf("the deepest 200 m cell within the largest circle inside ÍSOR's trough %s%s, %.0f m (Claude's proposal, plan 081 step 1)", tt, what, q[3])
   bb <- st_bbox(st_transform(pg, 3057)); P$extent_km[jj] <<- round(max(bb$xmax - bb$xmin, bb$ymax - bb$ymin) / 1000, 3); q }
 for (tt in setdiff(unique(P$trough), "none")) { g <- tr[tr$t == tt, ]; ii <- which(P$trough == tt); nk <- unique(P$k[ii])
-  if (length(nk) == 1) { jj <- ii; place_in(jj, st_transform(st_geometry(g), 4326), tt, "")
+  # a lone name takes the trough whole, unless his limit keeps it to a part: then the trough is divided as a shared one is,
+  # the part outside every name's limits a proposal of its own (decision 341: Skjálfandadjúp kept south of the ridge)
+  if (length(nk) == 1 && !any(his_limit$feature %in% P$name_id[ii])) { jj <- ii; place_in(jj, st_transform(st_geometry(g), 4326), tt, "")
     P$extent_basis[jj] <- sprintf("ÍSOR's trough %s", tt)
     shapes[[length(shapes) + 1]] <- st_sf(key = key_of(P$name_id[jj]), what = "extent", basis = paste0("ÍSOR's trough (isor:landform:trough:", tt, ") (Claude's proposal)"),
                                           geometry = rep(st_transform(st_geometry(g), 4326), length(jj)))
@@ -351,6 +357,9 @@ for (tt in setdiff(unique(P$trough), "none")) { g <- tr[tr$t == tt, ]; ii <- whi
   for (kk in nk) own[own %in% kk & !kept(kk)] <- NA
   for (kk in nk) { rows <- ii[P$k[ii] == kk]; r <- which(his_rest$feature %in% P$name_id[rows] & his_rest$link_to %in% paste0("isor:landform:trough:", tt))
     if (length(r)) own[is.na(own) & kept(kk)] <- kk }
+  # a name he made by accepting a part no name took takes that part's cells no other name holds
+  for (kk in nk) { kp <- unique(key_of(P$name_id[ii[P$k[ii] == kk]])); kp <- kp[grepl(paste0("^deep:trough:", tt, ":"), kp)]
+    for (x in kp) own[is.na(own) & cl$part == sub(paste0("^deep:trough:", tt, ":"), "", x)] <- kk }
   arms <- paste(sprintf("%s %.0f km", tp$arms$part, tp$arms$length), collapse = ", ")
   for (kk in nk) { jj <- ii[P$k[ii] == kk]; P$split[jj] <- TRUE; P$shared_with[jj] <- paste(unique(P$name[ii][P$k[ii] != kk]), collapse = "; ")
     ev_k <- cm[cm$k == kk, , drop = FALSE]
@@ -441,7 +450,8 @@ P <- P |> mutate(key = key_of(name_id),
   flags = trimws(paste0(
     ifelse(trough == "none", "no ÍSOR trough proposed: awaits the depth model's outline (step 5); ", ""),
     ifelse(trough != "none" & n_agree == 1, "one witness only; ", ""), ifelse(n_against > 0 & n_agree > 0, paste0("against it: ", against, "; "), ""),
-    ifelse(coalesce(tie, FALSE), "a tie between troughs; ", ""), ifelse(split, paste0("shares its trough with ", shared_with, ", split by the trough's own shape; "), ""), ifelse(is.na(part_note), "", paste0(part_note, "; ")),
+    ifelse(coalesce(tie, FALSE), "a tie between troughs; ", ""), ifelse(split & nzchar(coalesce(shared_with, "")), paste0("shares its trough with ", shared_with, ", split by the trough's own shape; "),
+      ifelse(split, "kept to a part of its trough by the maintainer's limit; ", "")), ifelse(is.na(part_note), "", paste0(part_note, "; ")),
     ifelse(k %in% dup$k, "another row of the same name; ", ""))))
 P$flags[P$flags == ""] <- NA_character_
 U <- bind_rows(U)
@@ -682,19 +692,181 @@ message(sprintf("step 2: %d proposals (names of ours %d, the skippers' %d); on a
   nrow(out2), nrow(n2), nrow(O2), sum(out2$moraine != "none"), sum(out2$moraine == "none"), sum(P2$moraine == "none" & P2$step4),
   paste(table(factor(pmin(out2$n_agree, 3), 0:3)), collapse = "/")))
 out <- bind_rows(out |> mutate(moraine = NA_character_), out2)
+
+# Step 3: the banks, the east coast first (plan 081 §7 step 3, §8 f) ---------------------------------------------------------
+# The rules (Claude's, measured on the east and taken at his word, "Yes, build them"; study 2026-11-20-proposal-banks):
+# - the outlines are the study's pieces: the sea under 200 m, less the deeps as step 1 decided them, cut by each deep's line to
+#   its fjord carried on to the land and to 200 m (his "you could always extrapolates these a bit"), Norðfjarðardjúp's line
+#   dropped at his word ("Drop it"), the two pieces several banks share left whole ("Leave them for now"); read from the
+#   study (out/bank_pieces_extended.geojson), the rule to move into this build when it is taken to the other coasts;
+# - a name of step 3 is a water name of ours ending -grunn or -banki (a bank), or -flak, -fláki, -halli, -tota, -kantur (a part),
+#   lettered or placed in a piece, or a part whose root names a bank there; LMÍ's shallower than 20 m (coastal) not;
+# - in each piece the bank the charts letter at the coarsest scale takes it (several at that scale share it, flagged); a bank
+#   lettered only finer is a shoal in it, a part of the bank that takes it; a piece whose names are lettered at 1:100 000 or
+#   finer only (a spot, plan 070) is a piece no chart bank takes, a proposal of its own;
+# - a bank's witnesses on each piece: the charts (a lettering in it), LMÍ (a record in it; a copy with its source), the skippers
+#   (the piece holding most of its tows, two vessels or more there); its thing stays where the names have it, its extent the piece;
+# - a part's or shoal's whole: the bank its root names (the grammar: Hvalbaks-halli, Hvalbaks-grunn), else the bank whose
+#   piece holds its lettering (in a shared piece the bank lettered nearest it, flagged), else the skippers' piece's bank.
+`%||%` <- function(a, b) if (is.null(a)) b else a
+BKF <- fd_path("archive", "2026-11-20-proposal-banks", "out", "bank_pieces_extended.geojson")
+out3 <- NULL; E3 <- NULL; S3 <- NULL
+if (file.exists(BKF)) {
+  pcs <- st_read(BKF, quiet = TRUE); pcs3 <- st_transform(pcs, 3057)
+  # the east's pieces are those closed by lines: a piece open at the study's box (beyond the outermost lines, Sléttugrunn's in
+  # the north, Mýragrunn's and Öræfagrunn's in the south) waits for its own coast
+  BOX3 <- st_bbox(c(xmin = -16.6, xmax = -9.0, ymin = 63.5, ymax = 67.7), crs = 4326)          # the study's box (its script 03)
+  edge <- st_transform(st_cast(st_as_sfc(BOX3), "LINESTRING"), 3057); open <- lengths(st_is_within_distance(pcs3, edge, 1000)) > 0
+  pcs <- pcs[!open, ]; pcs3 <- pcs3[!open, ]
+  piece_at3 <- function(lon, lat) { out <- rep(NA_integer_, length(lon)); ok <- !is.na(lon) & !is.na(lat); if (!any(ok)) return(out)
+    p <- st_transform(st_as_sf(data.frame(lon = lon[ok], lat = lat[ok]), coords = 1:2, crs = 4326), 3057); h <- st_intersects(p, pcs3)
+    v <- vapply(h, function(z) if (length(z)) pcs$piece[z[1]] else NA_integer_, 1L)
+    if (any(m <- is.na(v))) { j <- st_nearest_feature(p[m, ], pcs3); d <- as.numeric(st_distance(p[m, ], pcs3[j, ], by_element = TRUE)); v[m] <- ifelse(d <= 2000, pcs$piece[j], NA_integer_) }
+    out[ok] <- v; out }
+  scale_n <- function(ch) { n <- suppressWarnings(as.numeric(sub("^sjokort_([0-9]+).*", "\\1", ch))); ifelse(grepl("milljon", ch), n * 1e6, ifelse(grepl("thusund", ch), n * 1e3, NA_real_)) }
+  END3 <- c(bank = "(grunn|grunnið|banki|bankinn)$", flat = "(flak|flakið|fláki|flákinn)$", slope = "(halli|hallinn)$", tip = "(tota|totan)$", edge = "(kantur|kanturinn|kantar|kantarnir)$")
+  b3 <- nm[nm$kind == "water" & !is.na(nm$lon) & !nm$id %in% dp$id, ]; b3$f <- low(b3$name); b3$end <- NA_character_
+  for (e in names(END3)) b3$end[is.na(b3$end) & grepl(END3[[e]], b3$f)] <- e
+  b3 <- b3[!is.na(b3$end), ]; b3$root <- sub("(grunnið|grunn|bankinn|banki|flakið|flak|flákinn|fláki|hallinn|halli|totan|tota|kanturinn|kantur|kantarnir|kantar)$", "", b3$f)
+  z3 <- -terra::extract(dem, terra::vect(st_transform(st_as_sf(b3, coords = c("lon", "lat"), crs = 4326), terra::crs(dem))))[, 2]
+  b3 <- b3[!(b3$src == "lmi" & !is.na(z3) & z3 < 20), ]                                        # LMÍ's coastal ones
+  lt3 <- read.csv(file.path(V1, "letterings.csv"), encoding = "UTF-8"); lt3 <- lt3[lt3$feature %in% b3$id, ]; lt3$piece <- piece_at3(lt3$lon, lt3$lat); lt3$scale <- scale_n(lt3$chart)
+  b3$own_piece <- piece_at3(b3$lon, b3$lat)
+  b3$pieces <- lapply(b3$id, function(i) unique(na.omit(c(lt3$piece[lt3$feature == i], if (!any(lt3$feature == i)) b3$own_piece[b3$id == i]))))
+  b3$coarsest <- vapply(b3$id, function(i) { s <- lt3$scale[lt3$feature == i]; if (length(s)) max(s, na.rm = TRUE) else 0 }, 0)
+  banks <- b3[b3$end == "bank" & lengths(b3$pieces) > 0, ]
+  # the east's parts: in a piece, or off them with a root that names a bank in one
+  parts <- b3[b3$end != "bank" & (lengths(b3$pieces) > 0 | b3$root %in% banks$root[banks$src == "chart"]), ]
+  # in each piece, the bank lettered at the coarsest scale takes it
+  pc_names <- unique(unlist(banks$pieces)); take <- list()
+  for (k in pc_names) { cb <- banks[vapply(banks$pieces, function(x) k %in% x, TRUE) & banks$src == "chart", ]
+    mx <- if (nrow(cb)) max(cb$coarsest) else 0; take[[as.character(k)]] <- if (mx > 1e5) cb$id[cb$coarsest == mx] else integer() }
+  taker_of <- function(k) take[[as.character(k)]] %||% integer()
+  tw3 <- twa[!twa$k %in% ignored, c("k", "vid", "lon", "lat")]
+  lr3 <- bind_rows(
+    do.call(rbind, lapply(which(b3$src == "chart"), function(i) { u <- strsplit(coalesce(cj$uuids[match(b3$id[i], cj$feature)], ""), "\\s+")[[1]]
+      s <- st0[st0$uuid %in% u, ]; if (nrow(s)) data.frame(name_id = b3$id[i], rec = s$uuid, source_ref = s$source_ref, lon = s$lon, lat = s$lat) })),
+    do.call(rbind, lapply(which(b3$src == "lmi"), function(i) { s <- st0[st0$id == b3$id[i], ]
+      if (nrow(s)) data.frame(name_id = b3$id[i], rec = s$uuid, source_ref = s$source_ref, lon = s$lon, lat = s$lat) })))
+  if (nrow(lr3)) { lr3$piece <- piece_at3(lr3$lon, lr3$lat); lr3$group <- lmi_group(lr3$source_ref) }
+  ev3 <- list(); add3 <- function(key, d, cand, group, member, outcome, value = NA_character_, detail = NA_character_)
+    ev3[[length(ev3) + 1]] <<- data.frame(key = key, name_id = d, candidate = cand, group = group, member = member, outcome = outcome, value = value, detail = detail)
+  sk_top <- function(fk) { t <- tw3[tw3$k %in% fk, ]; if (!nrow(t)) return(NULL); t$piece <- piece_at3(t$lon, t$lat)
+    s <- t |> filter(!is.na(piece)) |> group_by(piece) |> summarise(n = n(), v = n_distinct(vid), .groups = "drop") |> filter(v >= 2) |> arrange(desc(n))
+    list(n = nrow(t), on = s, top = if (nrow(s)) s$piece[1] else NA_integer_) }
+  rows3 <- list()
+  # the banks: their witnesses on each piece
+  for (i in which(banks$id %in% unlist(take))) { d <- banks$id[i]; key <- paste0("bank:", d); l <- lt3[lt3$feature == d, ]; lm <- lr3[lr3$name_id %in% d, ]   # the banks taking a piece
+    fk <- unique(c(fold(banks$name[i]), if (!is.na(banks$synonyms[i])) fold(trimws(strsplit(banks$synonyms[i], "[;,]")[[1]])))); sk <- sk_top(fk)
+    cand <- unique(na.omit(c(banks$pieces[[i]], lm$piece, if (!is.null(sk)) sk$top)))
+    for (k in cand) { lab <- paste("piece", k)
+      if (nrow(l)) add3(key, d, lab, "charts", "the charts' letterings", if (any(l$piece %in% k)) "agrees" else "disagrees", sprintf("%d of %d scales in it", sum(l$piece %in% k), nrow(l)),
+                        paste(sprintf("%s: %s", sub("sjokort_", "", l$chart), coalesce(as.character(l$piece), "none")), collapse = "; "))
+      for (j in seq_len(nrow(lm))) { o <- if (lm$piece[j] %in% k) "agrees" else "disagrees"
+        add3(key, d, lab, lm$group[j], paste0("LMÍ: ", lm$source_ref[j]), if (lm$group[j] == "LMÍ") o else paste0(o, " (a copy of the ", lm$group[j], ")"), NA, lm$rec[j]) }
+      if (!is.null(sk)) { s <- sk$on[sk$on$piece == k, ]
+        add3(key, d, lab, "skippers", "the skippers' tows", if (is.na(sk$top)) "silent (fewer than two vessels in any piece)" else if (sk$top == k) "agrees" else "disagrees",
+             sprintf("%.0f %% of its %d tows in it, %d vessels", 100 * coalesce(s$n[1], 0L) / sk$n, sk$n, coalesce(s$v[1], 0L))) } } }
+  # the parts and shoals: their witnesses on each candidate whole
+  whole_near <- function(k, lon, lat) { w <- taker_of(k); if (length(w) <= 1) return(w)
+    dk <- vapply(w, function(x) { q <- lt3[lt3$feature == x, ]; if (!nrow(q)) q <- banks[banks$id == x, c("lon", "lat")]
+      min(sqrt(((q$lon - lon) * 111.32 * cos(lat * pi / 180))^2 + ((q$lat - lat) * 110.57)^2)) }, 0); w[which.min(dk)] }
+  sub_of <- bind_rows(parts, banks[!banks$id %in% unlist(take), ])                         # parts, and banks that take no piece (shoals)
+  in_shared <- vapply(seq_len(nrow(sub_of)), function(i) { l <- lt3$piece[lt3$feature == sub_of$id[i]]; k <- unique(na.omit(c(l, if (!length(l)) sub_of$own_piece[i])))
+    any(vapply(k, function(x) length(taker_of(x)) > 1, TRUE)) }, TRUE); names(in_shared) <- sub_of$id
+  for (i in seq_len(nrow(sub_of))) { d <- sub_of$id[i]; key <- paste0("bank:", d); l <- lt3[lt3$feature == d, ]
+    by_root <- banks$id[banks$root == sub_of$root[i] & banks$id != d & banks$id %in% unlist(take)]
+    pk <- unique(na.omit(c(l$piece, if (!nrow(l)) sub_of$own_piece[i])))
+    by_piece <- unique(unlist(lapply(pk, function(k) whole_near(k, sub_of$lon[i], sub_of$lat[i]))))
+    sk <- sk_top(fold(sub_of$name[i])); by_sk <- if (!is.null(sk) && !is.na(sk$top)) whole_near(sk$top, sub_of$lon[i], sub_of$lat[i]) else integer()
+    cand <- unique(c(by_root, by_piece, by_sk)); cand <- cand[cand != d]
+    for (w in cand) { lab <- nm$name[match(w, nm$id)]
+      if (sub_of$end[i] != "bank" || length(by_root)) add3(key, d, lab, "the grammar", "its root and ending", if (w %in% by_root) "agrees" else if (length(by_root)) "disagrees" else "silent",
+                                                          paste0(sub_of$root[i], "-", sub_of$end[i]))
+      if (nrow(l) || length(pk)) add3(key, d, lab, "charts", if (nrow(l)) "the charts' letterings" else "its place",
+                                     if (!length(pk)) "silent (its lettering lies in no piece: off the shelf or beyond the east)" else if (w %in% by_piece) "agrees" else "disagrees",
+                                     if (length(pk)) sprintf("in piece %s", paste(pk, collapse = ", ")) else "in no piece")
+      if (!is.null(sk)) add3(key, d, lab, "skippers", "the skippers' tows", if (is.na(sk$top)) "silent (fewer than two vessels in any piece)" else if (w %in% by_sk) "agrees" else "disagrees",
+                             sprintf("its %d tows' piece %s", sk$n, coalesce(as.character(sk$top), "none"))) } }
+  E3 <- bind_rows(ev3)
+  g3 <- E3 |> mutate(ag = grepl("^agrees", outcome), dis = grepl("^disagrees", outcome)) |> group_by(key, name_id, candidate, group) |>
+    summarise(ag = any(ag), dis = any(dis), .groups = "drop") |> group_by(key, name_id, candidate) |>
+    summarise(agree = paste(sort(group[ag]), collapse = ", "), n_agree = sum(ag), against = paste(sort(group[dis & !ag]), collapse = ", "), n_against = sum(dis & !ag), .groups = "drop")
+  pk3 <- g3 |> group_by(key) |> arrange(desc(n_agree), n_against, .by_group = TRUE) |>
+    mutate(tie = n() > 1 & n_agree[1] == dplyr::nth(n_agree, 2, default = -1L) & n_against[1] == dplyr::nth(n_against, 2, default = -1L)) |> slice_head(n = 1) |> ungroup()
+  S3 <- list(); all3 <- bind_rows(banks, sub_of[!sub_of$id %in% banks$id, ])
+  for (i in seq_len(nrow(all3))) { d <- all3$id[i]; key <- paste0("bank:", d); q <- pk3[pk3$key == key, ]; is_whole <- d %in% unlist(take)
+    k <- if (is_whole && nrow(q)) as.integer(sub("piece ", "", q$candidate)) else NA_integer_
+    if (is_whole && !is.na(k) && !d %in% taker_of(k)) { k <- all3$pieces[[i]][vapply(all3$pieces[[i]], function(x) d %in% taker_of(x), TRUE)][1] }
+    shared <- if (is_whole) setdiff(taker_of(k), d) else integer()
+    w <- if (!is_whole && nrow(q) && q$n_agree > 0) nm$id[match(q$candidate, nm$name)] else NA_real_
+    pg <- if (is_whole) pcs[pcs$piece == k, ] else NULL
+    plon <- all3$lon[i]; plat <- all3$lat[i]; pbas <- "its place as the names have it (the bank's or part's thing kept, plan 081 step 3)"
+    if (is_whole && !st_intersects(st_transform(st_sfc(st_point(c(plon, plat)), crs = 4326), 3057), st_transform(st_geometry(pg), 3057), sparse = FALSE)[1, 1]) {   # its place outside its piece: the charts' coarsest lettering in it
+      l <- lt3[lt3$feature == d & lt3$piece %in% k, ]; l <- l[order(-l$scale), ][1, ]
+      dk <- as.numeric(st_distance(st_transform(st_sfc(st_point(c(plon, plat)), crs = 4326), 3057), st_transform(st_geometry(pg), 3057))) / 1000
+      plon <- l$lon; plat <- l$lat; pbas <- sprintf("the charts' 1:%s lettering in its piece (its place as the names have it lies %.1f km outside it; plan 081 step 3)", format(l$scale, big.mark = " ", scientific = FALSE), dk) }
+    rows3[[i]] <- data.frame(key = key, name_id = d, name = all3$name[i], src = all3$src[i], forms = fold(all3$name[i]),
+      kind = if (is_whole) "bank" else if (all3$end[i] == "bank") "shoal" else all3$end[i], piece = k, candidate = if (is_whole) paste("piece", k) else coalesce(q$candidate[1], NA_character_),
+      whole_id = w, whole = if (!is.na(w)) nm$name[match(w, nm$id)] else NA_character_, lon = plon, lat = plat, place_basis = pbas,
+      extent_km = if (is_whole) { b <- st_bbox(st_transform(pg, 3057)); round(max(b$xmax - b$xmin, b$ymax - b$ymin) / 1000, 3) } else NA_real_,
+      extent_basis = if (is_whole) sprintf("the east's piece %d, the sea under 200 m between the deeps' lines (%.0f km2; Claude's proposal, plan 081 step 3)", k, pg$area_km2) else NA_character_,
+      agree = coalesce(q$agree[1], ""), n_agree = coalesce(q$n_agree[1], 0L), against = coalesce(q$against[1], ""), n_against = coalesce(q$n_against[1], 0L), tie = coalesce(q$tie[1], FALSE),
+      shared_with = if (length(shared)) paste(nm$name[match(shared, nm$id)], collapse = "; ") else NA_character_, coarsest = all3$coarsest[i])
+    if (is_whole) S3[[length(S3) + 1]] <- st_sf(key = key, what = "extent", basis = sprintf("the east's piece %d (Claude's proposal, plan 081 step 3)", k), geometry = st_geometry(pg)) }
+  P3 <- bind_rows(rows3)
+  # the pieces holding a name of step 3 that no chart bank takes: a proposal each, named by the skippers' most concentrated
+  # name in it of a bank's or part's ending (two vessels or more), else unnamed
+  free <- setdiff(unique(unlist(b3$pieces)), as.integer(names(take)[lengths(take) > 0]))
+  for (k in free) { pg <- pcs[pcs$piece == k, ]; key <- paste0("bank:piece:", k)
+    t <- tw3; t$f <- low(twa$name[match(t$k, twa$k)]); t <- t[grepl("(grunn|banki|flak|fláki|kantur|halli|tota)$", t$f), ]; t$piece <- piece_at3(t$lon, t$lat)
+    s <- t |> group_by(k) |> summarise(on = sum(piece %in% k), v = n_distinct(vid[piece %in% k]), n = n(), .groups = "drop") |> filter(v >= 2) |> mutate(share = on / n) |> arrange(desc(share))
+    nmk <- if (nrow(s)) twa$name[match(s$k[1], twa$k)] else NA_character_
+    if (nrow(s)) add3(key, NA_real_, paste("piece", k), "skippers", "the skippers' tows", "agrees", sprintf("%.0f %% of its %d tows in it, %d vessels", 100 * s$share[1], s$n[1], s$v[1]), nmk)
+    holds <- b3$name[vapply(b3$pieces, function(x) k %in% x, TRUE)]
+    q <- st_coordinates(suppressWarnings(st_point_on_surface(st_geometry(pg)))); b <- st_bbox(st_transform(pg, 3057))
+    P3 <- bind_rows(P3, data.frame(key = key, name_id = NA_real_, name = nmk, src = "skippers", forms = if (nrow(s)) s$k[1] else NA_character_, kind = "bank", piece = k, candidate = paste("piece", k),
+      whole_id = NA_real_, whole = NA_character_, lon = q[1], lat = q[2], place_basis = "a point inside the piece (no chart bank takes it)",
+      extent_km = round(max(b$xmax - b$xmin, b$ymax - b$ymin) / 1000, 3), extent_basis = sprintf("the east's piece %d, the sea under 200 m between the deeps' lines (%.0f km2)", k, pg$area_km2),
+      agree = if (nrow(s)) "skippers" else "", n_agree = as.integer(nrow(s) > 0), against = "", n_against = 0L, tie = FALSE,
+      shared_with = NA_character_, coarsest = 0, holds = paste(holds, collapse = "; ")))
+    S3[[length(S3) + 1]] <- st_sf(key = key, what = "extent", basis = sprintf("the east's piece %d (no chart bank takes it)", k), geometry = st_geometry(pg)) }
+  E3 <- bind_rows(ev3)
+  if (!"holds" %in% names(P3)) P3$holds <- NA_character_
+  P3$flags <- trimws(paste0(
+    ifelse(is.na(P3$name_id), paste0("a piece no chart bank takes (its names lettered at 1:100 000 or finer only: ", coalesce(P3$holds, ""), ")", ifelse(is.na(P3$name), ", and no skippers' name", ""), "; "), ""),
+    ifelse(!is.na(P3$shared_with), paste0("shares its piece with ", P3$shared_with, ": left whole for now at his word, to be split; "), ""),
+    ifelse(P3$kind != "bank" & is.na(P3$whole), "no whole found; ", ""), ifelse(!is.na(P3$name_id) & P3$n_agree == 1, "one witness only; ", ""),
+    ifelse(P3$n_against > 0 & P3$n_agree > 0, paste0("against it: ", P3$against, "; "), ""), ifelse(P3$tie, "a tie; ", ""),
+    ifelse(P3$kind == "shoal", "a bank the charts letter finer than the piece's own: a shoal in it; ", ""),
+    ifelse(P3$kind != "bank" & coalesce(unname(in_shared[as.character(P3$name_id)]), FALSE), "its piece is shared: the bank lettered nearest it; ", "")))
+  P3$flags[P3$flags == ""] <- NA_character_
+  out3 <- P3 |> transmute(key, step = 3L, class = "bank", name_id, name = coalesce(name, "(unnamed)"), src, forms, kind,
+    element = ifelse(kind == "bank", paste0("bank:east:piece:", piece), NA_character_), trough = NA_character_, part = NA_character_, moraine = NA_character_,
+    piece, candidate, whole, whole_id, lon, lat, place_basis, extent_km, extent_basis, agree, n_agree, against, n_against, shared_with, flags, version = VERSION)
+  S3 <- do.call(rbind, S3)
+  stopifnot(!anyDuplicated(out3$key), all(E3$key %in% out3$key), all(S3$key %in% out3$key))
+  message(sprintf("step 3 (the east's banks): %d proposals: banks taking a piece %d (shared %d), shoals %d, parts %d, pieces no chart bank takes %d; witnesses agreeing 0/1/2/3+: %s",
+    nrow(out3), sum(out3$kind == "bank" & !is.na(out3$name_id)), sum(!is.na(out3$shared_with)), sum(out3$kind == "shoal"), sum(!out3$kind %in% c("bank", "shoal")),
+    sum(is.na(out3$name_id)), paste(table(factor(pmin(out3$n_agree, 3), 0:3)), collapse = "/")))
+  out <- bind_rows(out, out3)
+}
 vd <- ed |> filter(action %in% c("accept proposal", "reject proposal")) |> arrange(at) |> group_by(link_to) |> slice_tail(n = 1) |> ungroup()
 if (!all(vd$link_to %in% out$key)) stop("verdicts on proposals that are not proposals now: ", paste(setdiff(vd$link_to, out$key), collapse = ", "))
 out$verdict <- ifelse(out$key %in% vd$link_to, paste0(sub(" proposal", "ed", vd$action[match(out$key, vd$link_to)]), " by the maintainer, ", vd$at[match(out$key, vd$link_to)]), NA_character_)
-out <- out |> select(key, step, class, name_id, name, src, forms, kind, element, trough, part, moraine, lon, lat, place_basis, extent_km, extent_basis, agree, n_agree, against, n_against, shared_with, flags, verdict, version)
+for (cc in c("piece", "candidate", "whole", "whole_id")) if (!cc %in% names(out)) out[[cc]] <- NA
+out <- out |> select(key, step, class, name_id, name, src, forms, kind, element, trough, part, moraine, piece, candidate, whole, whole_id, lon, lat, place_basis, extent_km, extent_basis, agree, n_agree, against, n_against, shared_with, flags, verdict, version)
 if (!"key" %in% names(E)) E$key <- NA_character_
 if (!"part" %in% names(E)) E$part <- NA_character_
 E$key <- ifelse(is.na(E$key), key_of(E$name_id), E$key)
 E <- E |> mutate(element = ifelse(trough == "none", NA_character_, paste0("isor:landform:trough:", trough)), version = VERSION) |>
   select(key, name_id, element, trough, part, group, member, outcome, value, detail, version)
 E <- bind_rows(E |> mutate(moraine = NA_character_), E2 |> mutate(element = ifelse(moraine == "none", NA_character_, paste0("isor:landform:moraine:", moraine)),
-  trough = NA_character_, part = NA_character_, version = VERSION)) |> select(key, name_id, element, trough, part, moraine, group, member, outcome, value, detail, version)
-S <- rbind(do.call(rbind, shapes), do.call(rbind, S2)); S$version <- VERSION
-stopifnot(!anyDuplicated(out$key), all(E$key %in% out$key), all(S$key %in% out$key), nrow(out) == nrow(dp) + nrow(U) + nrow(UP) + nrow(out2),
+  trough = NA_character_, part = NA_character_, version = VERSION))
+E <- bind_rows(E |> mutate(candidate = NA_character_), if (!is.null(E3)) E3 |> mutate(element = NA_character_, trough = NA_character_, part = NA_character_, moraine = NA_character_, version = VERSION)) |>
+  select(key, name_id, element, trough, part, moraine, candidate, group, member, outcome, value, detail, version)
+S <- rbind(do.call(rbind, shapes), do.call(rbind, S2), S3); S$version <- VERSION
+stopifnot(!anyDuplicated(out$key), all(E$key %in% out$key), all(S$key %in% out$key), nrow(out) == nrow(dp) + nrow(U) + nrow(UP) + nrow(out2) + if (is.null(out3)) 0L else nrow(out3),
           setequal(Reduce(union, list(P$trough[P$trough != "none"], U$trough, UP$trough)), tr$t))
 pt <- st_as_sf(out, coords = c("lon", "lat"), crs = 4326, remove = FALSE)
 write_curated(pt, REF("place_name_proposal.parquet"), inputs = INPUTS, script = "reference/names/place_name_proposal.R", stamps = c("fd.version" = VERSION))

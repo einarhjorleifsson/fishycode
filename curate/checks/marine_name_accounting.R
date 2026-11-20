@@ -120,8 +120,13 @@ ok("every link to a feature of the list and to a record that exists",
    src$id %in% nm$id & paste(src$source, src$source_id) %in% paste(rec$source, rec$source_id), nrow(src))
 hold <- nm$holder[!is.na(nm$holder)]
 ok("a holder is a feature of the list", hold %in% nm$id, length(hold))
-ok("the duplicates flagged both ways (overrides)", nm$possible_duplicate[match(dup$feature_a, nm$id)] == dup$feature_b &
-   nm$possible_duplicate[match(dup$feature_b, nm$id)] == dup$feature_a & sum(!is.na(nm$possible_duplicate)) == 2 * nrow(dup), nrow(dup))
+# a flagged pair he settled by joining a row of it away (decision 341: Faxabanki into Eldeyjarbanki) is no longer flagged
+ej <- read.csv("overrides/marine_name_edits.csv", encoding = "UTF-8"); ej <- ej[ej$action %in% c("join", "unjoin"), ]; ej <- ej[order(ej$at), ]
+joined_away <- ej$feature[!duplicated(ej$feature, fromLast = TRUE) & ej$action == "join"]
+live <- dup$feature_a %in% nm$id & dup$feature_b %in% nm$id; settled <- !live & (dup$feature_a %in% joined_away | dup$feature_b %in% joined_away)
+ok("the duplicates flagged both ways (overrides), or settled by his join", (live & coalesce(nm$possible_duplicate[match(dup$feature_a, nm$id)] == dup$feature_b &
+   nm$possible_duplicate[match(dup$feature_b, nm$id)] == dup$feature_a, FALSE)) | settled, nrow(dup))
+ok("no other row flagged a duplicate", sum(!is.na(nm$possible_duplicate)) == 2 * sum(live), sum(!is.na(nm$possible_duplicate)))
 ok("the extents' features are in the list", ex$feature %in% nm$id, nrow(ex))
 isor_f <- unique(ex$feature[ex$what == "extent" & ex$basis == "ÍSOR's"])
 ok("no row uses an LMÍ area where it has ÍSOR's; every area set aside says why",

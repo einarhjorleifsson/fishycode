@@ -292,16 +292,18 @@ async function showProposal(args, fly = true) {
   const p = r.p; prop = p;
   $(".nm-prop").hidden = false; $(".nm-prop-name").textContent = p.name;
   $(".nm-prop-q").textContent = r.q ? `(${r.q} of ${r.n} in the queue)` : "";
-  const where = p.class === "moraine" ? (p.moraine === "none" ? "no ÍSOR moraine proposed" : `on ÍSOR's moraine ${p.moraine}`)
+  const where = p.class === "bank" ? (p.kind === "bank" ? `its outline the east's piece ${p.piece}` + (p.shared_with ? ` (shared with ${p.shared_with})` : "") : p.whole ? `a part of ${p.whole}` : "no whole found")
+    : p.class === "moraine" ? (p.moraine === "none" ? "no ÍSOR moraine proposed" : `on ÍSOR's moraine ${p.moraine}`)
     : p.trough === "none" ? "no ÍSOR trough proposed" : `on ÍSOR's trough ${p.trough}` + (p.part ? `, its part ${p.part}` : "");
-  $(".nm-prop-info").innerHTML = [`${p.class === "moraine" ? "a " + p.kind + " name" : "a deep"} (step ${p.step})`, where,
+  const what = p.class === "bank" ? (p.kind === "bank" ? "a bank" : `a ${p.kind} (a part of a bank)`) : p.class === "moraine" ? "a " + p.kind + " name" : "a deep";
+  $(".nm-prop-info").innerHTML = [`${what} (step ${p.step})`, where,
     p.place_basis, p.extent_basis ? "its extent: " + p.extent_basis : "",
     `witnesses agreeing: ${p.n_agree ? p.n_agree + " (" + p.agree + ")" : "none"}` + (p.against ? `; against: ${p.against}` : ""),
     p.flags ? "to look at: " + p.flags : "", p.forms ? "forms: " + p.forms : "", p.verdict ? "verdict: " + p.verdict : "", p.key]
     .filter(Boolean).map(esc).join("<br>");
   const tb = $(".nm-ev tbody"); tb.innerHTML = "";
   // a candidate is a trough, or a part of a shared trough (by its shape, decision 338); in step 2 a moraine
-  const cand = e => e.moraine ? (e.moraine === "none" ? "none" : "moraine " + e.moraine) : e.trough + (e.part ? " · " + e.part : ""), mine = cand(p);
+  const cand = e => e.candidate ? e.candidate : e.moraine ? (e.moraine === "none" ? "none" : "moraine " + e.moraine) : e.trough + (e.part ? " · " + e.part : ""), mine = cand(p);
   const ev = (r.ev || []).slice().sort((a, b) => (cand(a) === mine ? 0 : 1) - (cand(b) === mine ? 0 : 1) || cand(a).localeCompare(cand(b)));
   for (const e of ev) {
     const tr = document.createElement("tr"); if (cand(e) === mine) tr.className = "nm-ev-chosen";

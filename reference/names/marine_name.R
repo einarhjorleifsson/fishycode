@@ -713,9 +713,15 @@ if (nrow(pa)) {
     if (is.na(i)) stop("an accepted proposal for a name not in the list: ", q$name[r])
     if (!nm$id[i] %in% fjord_ids) { nm$lon[i] <- q$lon[r]; nm$lat[i] <- q$lat[r]
       nm$place_basis[i] <- paste0("Claude's proposal, accepted by the maintainer ", pa$at[r], ": ", q$place_basis[r]) }
-    nm$seabed_id[i] <- q$element[r]; nm$seabed_link[i] <- paste0("Claude's proposal, accepted by the maintainer, ", pa$at[r]); nm$seabed_km[i] <- NA_real_
+    if (startsWith(q$element[r], "isor:")) {                                                  # a seabed link only to ÍSOR's (step 3's banks: a piece)
+      nm$seabed_id[i] <- q$element[r]; nm$seabed_link[i] <- paste0("Claude's proposal, accepted by the maintainer, ", pa$at[r]); nm$seabed_km[i] <- NA_real_ }
     nm$extent_km[i] <- q$extent_km[r]; nm$extent_basis[i] <- paste0(q$extent_basis[r], " (Claude's proposal, accepted by the maintainer)")
     accepted_prop <- rbind(accepted_prop, data.frame(feature = nm$id[i], key = q$key[r])) }
+  # step 3's parts and shoals: the bank the proposal names is their holder, unless his own `part of` says otherwise
+  for (r in which(!is.na(q$name_id) & is.na(q$element) & !is.na(q$whole_id))) { i <- match(q$name_id[r], nm$id); w <- match(q$whole_id[r], nm$id)
+    if (is.na(i) || is.na(w)) stop("an accepted part whose name or whole is not in the list: ", q$name[r])
+    if (grepl("^a part of it, by the maintainer", coalesce(nm$holder_note[i], ""))) next
+    nm$holder[i] <- nm$id[w]; nm$holder_name[i] <- nm$name[w]; nm$holder_note[i] <- paste0("a part of it, by Claude's proposal accepted by the maintainer, ", pa$at[r]) }
   fjord_acc <- accepted_prop[accepted_prop$feature %in% fjord_ids, ]
   if (nrow(fjord_acc)) {
     lx0 <- st_read(file.path(V1, "lmi_extent.geojson"), quiet = TRUE); lx0$feature <- as.integer(sub("^c", "", lx0$id))
@@ -745,6 +751,8 @@ if (nrow(pa)) {
     # so its letters and zoom stay where they were (the maintainer, 2026-11-20: "moraine 229 is the outer edge of Táin"; "not
     # sure what to do about Táin, because the full area is bigger than the moraine"); its area waits for step 3
     if (line && !prp$kind[match(accepted_prop$key[r], prp$key)] %in% c("ridge", "edge")) next
+    # a bank sharing its piece with others (step 3, "Leave them for now"): its letters and zoom stay until the piece is split
+    if (prp$class[match(accepted_prop$key[r], prp$key)] %in% "bank" && !is.na(prp$shared_with[match(accepted_prop$key[r], prp$key)])) next
     ax <- if (line) axis_line(g) else axis_of(g); ze <- rule_e(ax[["len_m"]], ax[["lat"]], nchar(nm$name[i]))
     nm$z_rule_computed[i] <- ze[["z"]]
     nm$z_rule_basis[i] <- if (line) "rule e on its accepted line's length along its direction (decision 338, plan 081 step 2)" else "rule e on its accepted area's length along its long axis (decision 338)"
