@@ -1,4 +1,4 @@
-# light_characteristic.R — a light's characteristic read one way, from any list or a chart's reading (plan 074 step 9, the
+# light_characteristic.R — a light's characteristic read one way, from any list or a chart's reading (plan 082, the
 # aids; first written in the named-features study's 93_aids.R).
 #
 # light_char_parse(x)   one row per string: rhythm (F, Fl, LFl, Q, VQ, UQ, IQ, Iso, Oc, Mo, with "Al." for alternating,

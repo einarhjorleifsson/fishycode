@@ -1,6 +1,6 @@
-# wreck_accounting.R — the wreck list's bookkeeping: every record of every list in one outcome, counted (plan 074 steps 9 and
+# wreck_accounting.R — the wreck list's bookkeeping: every record of every list in one outcome, counted (plan 082; plan 074 step
 # 12; the named-features study's 92_wrecks_check.R).
-# Side: preprocessing (wrecks). Standalone, run by hand after reference/wrecks/wreck.R, outside the targets flow (plan 074 ask p).
+# Side: preprocessing (wrecks). Standalone, run by hand after reference/wrecks/wreck.R, outside the targets flow (plan 082 ask p).
 #
 # Input:  raw/external/isor/vindorka_a_hafi_Infrastructure__*.geojson, raw/external/wreck_hi/unzipped/thekkt_skipsflok.shp,
 #         raw/external/emodnet_human_activities/wwshipwrecks.geojson, raw/external/osm_wrecks/, the plotter's exports in

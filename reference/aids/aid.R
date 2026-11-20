@@ -1,7 +1,7 @@
 # aid.R — the curated list of aids to navigation (lights and leading lights, buoys, sea and leading marks, radar beacons) from
 # several witnesses: every record of every list in one outcome, each attribute of an aid from its best witness with its basis
-# beside it (plan 074 step 9; the named-features study's 93_aids.R and 96_aids_witnesses.R, the prototype and its measurement).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p, the maintainer, 2026-11-16:
+# beside it (plan 082; the named-features study's 93_aids.R and 96_aids_witnesses.R, the prototype and its measurement).
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p, the maintainer, 2026-11-16:
 # "this whole process should go into the flow: raw -> staged -> out or curated"; "Standalone in layers").
 #
 # Input:  staging/vitaskra/aid.parquet (sources/vitaskra/aid.R: the List of Lights in force, 546 aids)
@@ -22,7 +22,7 @@
 #         curated/reference/aid_description.parquet - every descriptive field of every record, one row a field, as delivered
 #         curated/check/aid_join_rules.parquet - the join's alternatives measured, the Admiralty number as the test
 #
-# The join (plan 074 step 9, measured on the prototype): two witness records of two position lists are one aid when they share
+# The join (plan 082, measured on the prototype): two witness records of two position lists are one aid when they share
 # an Admiralty number that each list gives to one record only (within 2 km); the rest when each is the other's nearest record
 # of that list of the same kind, their characteristics not disagreeing, numbers not differing, within D = 100 m (ISN93).
 # Places are the connected sets. The alternatives (nearest alone, by kind, by kind and characteristic, widened by the

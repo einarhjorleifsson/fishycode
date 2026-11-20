@@ -1,5 +1,5 @@
 # OpenStreetMap's wrecks round Iceland (32 W to 6 W, 59 N to 70 N): every node, way or relation tagged seamark:type=wreck
-# (OpenSeaMap's charted wrecks) or historic=wreck, one Overpass query, as delivered. A witness for plan 074 step 9's curated
+# (OpenSeaMap's charted wrecks) or historic=wreck, one Overpass query, as delivered. A witness for plan 082's curated
 # wreck list (the maintainer, 2026-11-16: "these wreck list can by matched against any of the other wreck list we have in
 # already gathered datasource. This way we have more than one witness").
 # Output: $FISHYDATA/raw/external/osm_wrecks/wrecks_<YYYYMMDD>.osm.gz (XML, ways and relations with their centre) and
@@ -19,7 +19,7 @@ x <- xml2::read_xml(xml)
 n <- length(xml2::xml_find_all(x, "/osm/node|/osm/way|/osm/relation"))
 base <- xml2::xml_attr(xml2::xml_find_first(x, "/osm/meta"), "osm_base")
 R.utils::gzip(xml, destname = gz)
-note <- c("# OpenStreetMap's wrecks round Iceland, fetched by dump/osm/wrecks.R (plan 074 step 9).",
+note <- c("# OpenStreetMap's wrecks round Iceland, fetched by dump/osm/wrecks.R (plan 082).",
           paste0("# Fetched ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), ". Box: 32 W to 6 W, 59 N to 70 N. Data © OpenStreetMap contributors, ODbL."),
           "", paste0("## ", basename(gz)), paste0("server: ", URL), paste0("query: ", q), paste0("osm_base: ", base),
           paste0("objects: ", n), paste0("bytes: ", file.size(gz)), paste0("sha256: ", digest::digest(gz, algo = "sha256", file = TRUE)))

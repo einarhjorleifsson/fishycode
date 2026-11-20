@@ -1,5 +1,5 @@
-# Wikidata's lighthouses round Iceland, the query's answer as delivered (plan 074 step 9, the aids).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/aids/aid.R reads it.
+# Wikidata's lighthouses round Iceland, the query's answer as delivered (plan 082, the aids).
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/aids/aid.R reads it.
 #
 # Input:  raw/external/wikidata_lighthouses/lighthouses_<YYYYMMDD>.csv, the latest (dump/wikidata/lighthouses.R)
 # Output: staging/wikidata/lighthouse.parquet - one row per row of the answer (one per combination of an item's values: an

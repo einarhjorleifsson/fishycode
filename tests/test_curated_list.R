@@ -1,5 +1,5 @@
 # test_curated_list.R — the curated lists' shared machinery (R/curated_list.R) and the light characteristics
-# (R/light_characteristic.R) on made-up records (plan 074 step 9).
+# (R/light_characteristic.R) on made-up records (plan 082).
 #
 # Input:  the functions in R/; no data, no $FISHYDATA
 # Output: nothing kept

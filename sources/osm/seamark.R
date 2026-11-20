@@ -1,5 +1,5 @@
-# OpenStreetMap's seamarks round Iceland, as fetched: one row per object and one per tag (plan 074 step 9, the aids).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/aids/aid.R reads it.
+# OpenStreetMap's seamarks round Iceland, as fetched: one row per object and one per tag (plan 082, the aids).
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/aids/aid.R reads it.
 #
 # Input:  raw/external/osm_seamarks/seamarks_<YYYYMMDD>.osm.gz, the latest (dump/osm/seamarks.R: every object tagged
 #         seamark:type, man_made=lighthouse or man_made=beacon in the box 32 W to 6 W, 59 N to 70 N)

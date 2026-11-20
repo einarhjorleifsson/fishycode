@@ -1,7 +1,7 @@
 # wreck.R — the curated list of wrecks from several witnesses: every record of every wreck list in one outcome, each attribute
-# of a wreck from its best witness with its basis beside it (plan 074 steps 9 and 12; the named-features study's 91_wrecks.R
+# of a wreck from its best witness with its basis beside it (plan 082; plan 074 step 12; the named-features study's 91_wrecks.R
 # and 92_wrecks_check.R, the prototype and its check, moved into the layers as the aid list was).
-# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 074 ask p, the maintainer, 2026-11-16:
+# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 082 ask p, the maintainer, 2026-11-16:
 # "we do not at this moment really want this to be part of the huge rebuild / target flow"; "Standalone in layers").
 #
 # Input:  staging/isor/wreck.parquet (sources/isor/wreck.R: ÍSOR's four layers, Landhelgisgæslan's list 279, SKFI's 18,
@@ -54,7 +54,7 @@
 #         Copies: a mark within 1 m of another list's record is copied from it; an own mark within 50 m of an icon-310 mark
 #         whose name agrees (or with none) re-marks it; a mark's other states (the same TimeZero guid; a 2022 waypoint by its
 #         position and time) are copies of its latest state, which is the witness.
-# Not a witness: Trackwell's ground names (one names a wreck, with no position for the wreck; plan 074 step 9).
+# Not a witness: Trackwell's ground names (one names a wreck, with no position for the wreck; plan 082).
 #
 # The join (ask o): two records of two lists are one wreck when each is the other's nearest record of that list and they lie
 # within D m (500), in ISN93 (EPSG:3057); wrecks are the connected sets. A wreck is in conflict when it holds two records of
@@ -210,7 +210,7 @@ dt_all <- function(S) {
   inside <- vapply(seq_len(nrow(a)), function(i) any(a$start <= a$start[i] & a$end >= a$end[i] &
     (a$end - a$start > a$end[i] - a$start[i] | (a$end - a$start == a$end[i] - a$start[i] & a$rank < a$rank[i]))), logical(1))
   a <- a[!inside, ]; a[order(a$start), ] }
-DT_MALFORMED <- paste0(LOSS, ".{0,12}[0-9]{6,}")   # "s?kkt 13.0701978"
+DT_MALFORMED <- paste0(LOSS, ".{0,12}[0-9]{6,}")   # a loss word, then six digits or more with no date's separators
 # one row a text; mode "comment" (a loss word needed, the whole comment), "prose" (a loss word's sentence), "field" (the
 # field is the loss date)
 date_read <- function(x, mode = c("comment", "prose", "field")) { mode <- match.arg(mode)
@@ -403,7 +403,7 @@ HI_Z_UNIT <- "m"
 HI_Z_BASIS <- "measured against the witnesses and the depth model (99_hi_depth_unit.R)"
 # HI's records whose Z fits the depth model only as fathoms (99's outcome within 500 m; curate/checks/wreck_accounting.R
 # checks the two agree): flagged and
-# left out, not converted. 886: 180, the model 309-347 m within 500 m (180 fm = 329 m), the plotter's 185-7 fm there.
+# left out, not converted. 886: the model 309-347 m within 500 m, its depth fitting only as fathoms; the plotter's mark there agrees.
 HI_Z_NOT_METRES <- "886"
 blank_na <- function(n) rep(NA_character_, n)
 src <- rbind(   # in the order of rec

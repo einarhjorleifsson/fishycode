@@ -1,6 +1,6 @@
 # OpenStreetMap's wrecks round Iceland, as fetched: one row per object and one per tag (plan 074 step 12, the wrecks; the
 # named-features study's 91_wrecks.R).
-# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/wrecks/wreck.R
+# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/wrecks/wreck.R
 # reads its output.
 #
 # Input:  raw/external/osm_wrecks/wrecks_<YYYYMMDD>.osm.gz, the latest (dump/osm/wrecks.R: every object tagged

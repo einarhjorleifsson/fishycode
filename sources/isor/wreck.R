@@ -1,7 +1,7 @@
 # ÍSOR's offshore wind map, its Infrastructure service (vindorka_a_hafi/Infrastructure): the four point layers of wrecks and
 # diving sites, one row per point as the layers deliver them (plan 074 step 12, the wrecks; the named-features study's
 # 91_wrecks.R).
-# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/wrecks/wreck.R
+# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/wrecks/wreck.R
 # reads its output.
 #
 # Input:  raw/external/isor/vindorka_a_hafi_Infrastructure__{0,1,2,3}_*.geojson (dump/isor/hafsbotn.R; WGS 84)

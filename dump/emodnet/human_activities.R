@@ -1,6 +1,6 @@
 # EMODnet Human Activities' worldwide wrecks round Iceland (32 W to 6 W, 59 N to 70 N): the UK Hydrographic Office's wrecks
 # and obstructions, a subset served by EMODnet (layer emodnet:wwshipwrecks, Open Government Licence v3). A witness for plan
-# 074 step 9's curated wreck list (the maintainer, 2026-11-16: "these wreck list can by matched against any of the other wreck
+# plan 082's curated wreck list (the maintainer, 2026-11-16: "these wreck list can by matched against any of the other wreck
 # list we have in already gathered datasource. This way we have more than one witness"). Its other wreck layer,
 # emodnet:heritageshipwrecks (France, Ireland, England, the Mediterranean), has none in the box (counted 2026-11-16).
 # Input: https://ows.emodnet-humanactivities.eu/wfs (WFS 2.0.0 GetFeature, GeoJSON, bbox in EPSG:4326, one request).
@@ -17,7 +17,7 @@ f <- file.path(out_dir, "wwshipwrecks.geojson")
 writeLines(get(paste0(W, "&outputFormat=application/json", BBOX)), f, useBytes = TRUE)
 g <- sf::read_sf(f)
 stopifnot(nrow(g) == n)
-note <- c("# EMODnet Human Activities' worldwide wrecks (UKHO) round Iceland, fetched by dump/emodnet/human_activities.R (plan 074 step 9).",
+note <- c("# EMODnet Human Activities' worldwide wrecks (UKHO) round Iceland, fetched by dump/emodnet/human_activities.R (plan 082).",
           paste0("# Fetched ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), ". Box: 32 W to 6 W, 59 N to 70 N."),
           "# Terms: UK Hydrographic Office, Open Government Licence v3 (https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/); not for navigation.",
           "", "## wwshipwrecks.geojson", paste0("request: ", W, "&outputFormat=application/json", BBOX, " (one request)"),

@@ -1,5 +1,5 @@
-# Vegagerðin's national lights and its wave buoys, one row per feature as the layers deliver them (plan 074 step 9, the aids).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/aids/aid.R reads it.
+# Vegagerðin's national lights and its wave buoys, one row per feature as the layers deliver them (plan 082, the aids).
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/aids/aid.R reads it.
 #
 # Input:  raw/external/vegagerdin/vitar_2024_1.geojson, dufl_2024_1.geojson (dump/vegagerdin/fetch.R; ISN93, EPSG:3057)
 # Output: staging/vegagerdin/light.parquet - one row per light: every attribute as delivered (NR, ADMR the Admiralty number,

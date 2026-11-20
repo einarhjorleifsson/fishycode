@@ -1,6 +1,6 @@
 # The List of Lights in force (Vitaskrá, Landhelgisgæslan and Vegagerðin), one row per aid as the list gives it (plan 074 step
 # 9, the aids; the named-features study's 86_vitaskra.py, the same reading in R).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p, the maintainer, 2026-11-16:
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p, the maintainer, 2026-11-16:
 # "Standalone in layers"); reference/aids/aid.R reads its output.
 #
 # Input:  raw/external/vegagerdin/Vitaskra_i_gildi.pdf (dump/vegagerdin/fetch.R), read by pdftotext -layout (poppler)

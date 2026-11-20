@@ -1,6 +1,6 @@
-# aid_accounting.R — the aid list's bookkeeping: every record of every list in one outcome, counted (plan 074 step 9; the
+# aid_accounting.R — the aid list's bookkeeping: every record of every list in one outcome, counted (plan 082; the
 # named-features study's 94_aids_check.R).
-# Side: preprocessing (aids). Standalone, run by hand after reference/aids/aid.R, outside the targets flow (plan 074 ask p).
+# Side: preprocessing (aids). Standalone, run by hand after reference/aids/aid.R, outside the targets flow (plan 082 ask p).
 #
 # Input:  raw/external/vegagerdin/{Vitaskra_i_gildi.pdf,vitar_2024_1.geojson,dufl_2024_1.geojson}, raw/external/osm_seamarks/,
 #         raw/external/natt_lighthouses/, raw/external/wikidata_lighthouses/ (each list counted again from raw), the study's

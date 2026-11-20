@@ -1,5 +1,5 @@
-# LMÍ's lighthouses, the IS 50V structures of class 6510 (viti), one row per point as delivered (plan 074 step 9, the aids).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/aids/aid.R reads it.
+# LMÍ's lighthouses, the IS 50V structures of class 6510 (viti), one row per point as delivered (plan 082, the aids).
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/aids/aid.R reads it.
 #
 # Input:  raw/external/natt_lighthouses/IS_50V__mannvirki_punktar_6510.geojson (dump/natt/lighthouses.R; WGS 84)
 # Output: staging/is50v/lighthouse.parquet - one row per point: every attribute as delivered (objectid, uuid, mannvirki, virkni,

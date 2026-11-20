@@ -1,6 +1,6 @@
 # The UK Hydrographic Office's wrecks round Iceland as EMODnet Human Activities serves them (layer emodnet:wwshipwrecks), one
 # row per wreck as delivered (plan 074 step 12, the wrecks; the named-features study's 91_wrecks.R).
-# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/wrecks/wreck.R
+# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/wrecks/wreck.R
 # reads its output.
 #
 # Input:  raw/external/emodnet_human_activities/wwshipwrecks.geojson (dump/emodnet/human_activities.R: the box 32 W to 6 W,

@@ -1,6 +1,6 @@
 # A skipper's TimeZero plotter (internal): the three exports the wreck list reads, every object and waypoint as delivered
 # (plan 074 step 12, the wrecks; the named-features study's 91_wrecks.R).
-# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/wrecks/wreck.R
+# Side: preprocessing (wrecks). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/wrecks/wreck.R
 # reads its output.
 #
 # Input:  raw/external/ornefni/fra_gudmundi-a-bjarna/GS_nofn-og-flok_2022-10-18/{Nöfn, Nöfn og flök}/UserObjects.json (the

@@ -2,7 +2,7 @@
 # Iceland, the Faroes, Denmark, Norway or the United Kingdom with a coordinate in the box, with its labels and descriptions
 # (Icelandic, English), its Admiralty (P3562), NGA (P3563) and ARLHS (P2980) numbers, focal height (P2923), light
 # characteristic (P1030), range (P2929) and inception (P571). One SPARQL query, as delivered: one row per combination of
-# values (an item with two characteristics is two rows); the staging folds them. A witness for plan 074 step 9's curated list
+# values (an item with two characteristics is two rows); the staging folds them. A witness for plan 082's curated list
 # of aids to navigation, and the only open list met that carries the Admiralty and NGA numbers beside a position (NGA's own
 # list, Pub. 115, was under maintenance on 2026-11-16). Wikidata gathers from other lists, so it is a weak witness of position.
 # Output: $FISHYDATA/raw/external/wikidata_lighthouses/lighthouses_<YYYYMMDD>.csv and README-provenance.txt.
@@ -30,7 +30,7 @@ httr2::request("https://query.wikidata.org/sparql") |> httr2::req_url_query(quer
   httr2::req_timeout(300) |> httr2::req_perform(path = f)
 x <- utils::read.csv(f, encoding = "UTF-8", check.names = FALSE)
 stopifnot(identical(names(x)[1:2], c("item", "coord")))            # an answer, not the endpoint's error text
-note <- c("# Wikidata's lighthouses round Iceland, fetched by dump/wikidata/lighthouses.R (plan 074 step 9, the aids).",
+note <- c("# Wikidata's lighthouses round Iceland, fetched by dump/wikidata/lighthouses.R (plan 082, the aids).",
           paste0("# Fetched ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), ". Box: 32 W to 6 W, 59 N to 70 N. Wikidata, CC0."),
           "", paste0("## ", basename(f)), "server: https://query.wikidata.org/sparql (Accept: text/csv)", "query:", q,
           paste0("rows: ", nrow(x), "; items: ", length(unique(x$item))), paste0("bytes: ", file.size(f)),

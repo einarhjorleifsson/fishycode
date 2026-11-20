@@ -1,6 +1,6 @@
 # The sea charts' witnesses of the aids that are not names: the light characteristics printed on the nine frozen charts, and
-# the letterings the twin rule makes an aid's name (plan 074 step 9, the aids).
-# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 074 ask p); reference/aids/aid.R reads it.
+# the letterings the twin rule makes an aid's name (plan 082, the aids).
+# Side: preprocessing (aids). Standalone, run by hand outside the targets flow (plan 082 ask p); reference/aids/aid.R reads it.
 #
 # Input:  $FISHYDATA/archive/2026-11-11-named-features/out/frozen/aids/light_characteristics.gpkg (layer characteristic) and
 #         aid_letterings.csv, frozen there by its 97_freeze_aid_labels.R: the charts' read is the study's, an input the build
