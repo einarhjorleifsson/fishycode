@@ -157,9 +157,9 @@ diff$why <- case_when(
   grepl("place", diff$what) & !is.na(nm$pinned_at[match(diff$id, nm$id)]) & nm$point_kind[match(diff$id, nm$id)] ~
     "the maintainer's pin: a point kind's label follows its thing (version 2)",
   grepl("place|angle|zoom", diff$what) & !grepl("name|gone", diff$what) &
-    (grepl("^inside its accepted area", coalesce(nm$label_basis[match(diff$id, nm$id)], "")) |
-     grepl("accepted area", coalesce(nm$z_rule_basis[match(diff$id, nm$id)], ""))) ~
-    "Claude's proposal accepted: the letters inside its area along its long axis, the zoom by rule e on it (decision 338)",
+    (grepl("^inside its accepted area|^on its accepted line", coalesce(nm$label_basis[match(diff$id, nm$id)], "")) |
+     grepl("accepted area|accepted line", coalesce(nm$z_rule_basis[match(diff$id, nm$id)], ""))) ~
+    "Claude's proposal accepted: the letters inside its area or on its line along its axis, the zoom by rule e on it (decision 338)",
   diff$what == "name" & diff$id %in% rdg$feature ~ "the reading corrected (overrides)",
   diff$what == "zoom" & !is.na(diff$zoom_edited_at) ~ "the maintainer's zoom edit",
   !is.na(diff$edited_at) & diff$edited_at != coalesce(na_if(diff$edited_v1, ""), "") ~ "the maintainer's edit made after version 1 was written",

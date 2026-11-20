@@ -45,7 +45,7 @@ body.innerHTML = `
     <p class="nm-muted">Claude's proposal <span class="nm-prop-q"></span></p>
     <p class="nm-name nm-prop-name"></p>
     <div class="nm-muted nm-prop-info"></div>
-    <table class="nm-ev"><thead><tr><th>trough</th><th>witness</th><th>says</th><th></th></tr></thead><tbody></tbody></table>
+    <table class="nm-ev"><thead><tr><th>candidate</th><th>witness</th><th>says</th><th></th></tr></thead><tbody></tbody></table>
     <div class="nm-row"><input class="nm-prop-why" type="text" placeholder="why (optional)" maxlength="300" autocomplete="off"></div>
     <div class="nm-row"><button class="nm-prop-accept nm-primary" title="its thing and extent at the next build (a row accept proposal)">Accept</button>
       <button class="nm-prop-reject" title="a row reject proposal">Reject</button><button class="nm-prop-prev">Previous</button><button class="nm-prop-next">Next</button>
@@ -82,7 +82,8 @@ function addOwn() {
   map.addLayer({ id: "nm-links", type: "line", source: "nm-links", paint: { "line-color": "#555", "line-width": 1, "line-dasharray": [2, 2] } }, below);
   map.addLayer({ id: "nm-prop-fill", type: "fill", source: "nm-prop", filter: ["==", ["get", "what"], "extent"], paint: { "fill-color": "#1a9850", "fill-opacity": 0.14 } }, below);
   map.addLayer({ id: "nm-prop-line", type: "line", source: "nm-prop", filter: ["!=", ["get", "what"], "thing"],
-    paint: { "line-color": ["match", ["get", "what"], "thalweg", "#542788", "#1a9850"], "line-width": 2.6, "line-dasharray": ["match", ["get", "what"], "thalweg", ["literal", [2, 1.5]], ["literal", [1, 0]]] } }, below);
+    paint: { "line-color": ["match", ["get", "what"], "thalweg", "#542788", "spread", "#f46d43", "#1a9850"], "line-width": ["match", ["get", "what"], "spread", 1.8, 3.2],
+      "line-dasharray": ["match", ["get", "what"], "thalweg", ["literal", [2, 1.5]], ["literal", [1, 0]]] } }, below);
   map.addLayer({ id: "nm-prop-thing", type: "circle", source: "nm-prop", filter: ["==", ["get", "what"], "thing"],
     paint: { "circle-radius": 7, "circle-color": "#1a9850", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
   map.addLayer({ id: "nm-pinned-dot", type: "circle", source: "nm-pinned", paint: { "circle-radius": 3.5, "circle-color": "#1a1a1a" } });
@@ -291,14 +292,16 @@ async function showProposal(args, fly = true) {
   const p = r.p; prop = p;
   $(".nm-prop").hidden = false; $(".nm-prop-name").textContent = p.name;
   $(".nm-prop-q").textContent = r.q ? `(${r.q} of ${r.n} in the queue)` : "";
-  $(".nm-prop-info").innerHTML = [`a deep (step ${p.step})`, p.trough === "none" ? "no ÍSOR trough proposed" : `on ÍSOR's trough ${p.trough}` + (p.part ? `, its part ${p.part}` : ""),
+  const where = p.class === "moraine" ? (p.moraine === "none" ? "no ÍSOR moraine proposed" : `on ÍSOR's moraine ${p.moraine}`)
+    : p.trough === "none" ? "no ÍSOR trough proposed" : `on ÍSOR's trough ${p.trough}` + (p.part ? `, its part ${p.part}` : "");
+  $(".nm-prop-info").innerHTML = [`${p.class === "moraine" ? "a " + p.kind + " name" : "a deep"} (step ${p.step})`, where,
     p.place_basis, p.extent_basis ? "its extent: " + p.extent_basis : "",
     `witnesses agreeing: ${p.n_agree ? p.n_agree + " (" + p.agree + ")" : "none"}` + (p.against ? `; against: ${p.against}` : ""),
     p.flags ? "to look at: " + p.flags : "", p.forms ? "forms: " + p.forms : "", p.verdict ? "verdict: " + p.verdict : "", p.key]
     .filter(Boolean).map(esc).join("<br>");
   const tb = $(".nm-ev tbody"); tb.innerHTML = "";
-  // a candidate is a trough, or a part of a shared trough (by its shape, decision 338)
-  const cand = e => e.trough + (e.part ? " · " + e.part : ""), mine = cand(p);
+  // a candidate is a trough, or a part of a shared trough (by its shape, decision 338); in step 2 a moraine
+  const cand = e => e.moraine ? (e.moraine === "none" ? "none" : "moraine " + e.moraine) : e.trough + (e.part ? " · " + e.part : ""), mine = cand(p);
   const ev = (r.ev || []).slice().sort((a, b) => (cand(a) === mine ? 0 : 1) - (cand(b) === mine ? 0 : 1) || cand(a).localeCompare(cand(b)));
   for (const e of ev) {
     const tr = document.createElement("tr"); if (cand(e) === mine) tr.className = "nm-ev-chosen";
@@ -332,7 +335,7 @@ async function propVerdict(action) {
 }
 $(".nm-prop-accept").addEventListener("click", () => propVerdict("accept proposal"));
 $(".nm-prop-reject").addEventListener("click", () => propVerdict("reject proposal"));
-for (const L of ["proposals", "prop_extents"]) og.on("click", L, async ({ row }) => {
+for (const L of ["proposals", "prop_extents", "prop_moraines"]) og.on("click", L, async ({ row }) => {
   lastCraterClick = Date.now();
   const r = await row(); if (!r) return;
   const key = r.find(c => c.name === "key")?.value;

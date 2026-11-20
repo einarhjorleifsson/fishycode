@@ -1,7 +1,9 @@
 # place_name_proposal_accounting.R — the proposals' bookkeeping (plan 081, decision 337): every name of the step's class in
 # one proposal, every one of ÍSOR's troughs in one outcome (taken by a name, or a proposal of its own; a shared trough's
 # parts never overlapping, decision 338), every proposal's
-# witnesses counted from its evidence, its thing inside its extent, every verdict on a proposal that exists.
+# witnesses counted from its evidence, its thing inside its extent, every verdict on a proposal that exists. Step 2: every
+# water name of ours of the grammar's ridge, edge, toe and tip endings in one proposal, each on one of ÍSOR's moraines or
+# none, none off the shelf on one.
 # Side: preprocessing (sea-chart names). Standalone, run by hand after reference/names/place_name_proposal.R.
 #
 # Input:  curated/reference/place_name_proposal{,_evidence,_shape}.parquet, marine_name.parquet, seabed_feature.parquet,
@@ -34,10 +36,11 @@ deeps <- nm$id[(grepl("(djúp|djúpið|dýpi|dýpið|áll|állinn|renna|rennan)$
 ok("every deep of ours (a name ending -djúp, -dýpi, -áll, -renna, his own over a trough, or one he gives a trough's rest) in one proposal", setequal(p$name_id[p$class == "deep" & !is.na(p$name_id)], deeps) &&
    !anyDuplicated(p$name_id[!is.na(p$name_id)]), length(deeps))
 troughs <- sub("isor:landform:trough:", "", sfx$seabed_id[sfx$kind == "trough"])
+d1 <- p[p$class == "deep", ]
 ok(sprintf("every one of ÍSOR's %d troughs in one outcome: taken by a deep, or a proposal of its own (a shared trough's part no name takes, one each)", length(troughs)),
-   setequal(unique(p$trough[p$trough != "none"]), troughs) && all(!duplicated(paste(p$trough, p$part)[is.na(p$name_id)])), length(troughs))
+   setequal(unique(d1$trough[d1$trough != "none"]), troughs) && all(!duplicated(paste(d1$trough, d1$part)[is.na(d1$name_id)])), length(troughs))
 ok("keys unique; every evidence row and shape on a proposal", !anyDuplicated(p$key) && all(ev$key %in% p$key) && all(sh$key %in% p$key), nrow(p))
-on <- p[p$trough != "none", ]
+on <- d1[d1$trough != "none", ]
 ok("every proposal on a trough has its extent, and its element the trough", all(on$key %in% sh$key[sh$what == "extent"]) &&
    all(on$element == paste0("isor:landform:trough:", on$trough)), nrow(on))
 ex <- sh[sh$what == "extent", ]; pp <- pr[match(ex$key, pr$key), ]
@@ -52,6 +55,27 @@ for (tt in spl) { e <- st_transform(ex[ex$key %in% p$key[p$trough == tt & !is.na
   e <- e[!duplicated(e$nm), ]                                                           # a name's rows of two sources share one part
   if (nrow(e) > 1) for (i in 1:(nrow(e) - 1)) for (j in (i + 1):nrow(e)) ov <- ov + sum(as.numeric(st_area(st_intersection(st_buffer(st_geometry(e)[i], -100), st_buffer(st_geometry(e)[j], -100))))) }
 ok(sprintf("a shared trough's parts never overlap, a name's rows of two sources sharing one (%d shared troughs)", length(spl)), ov == 0, length(spl))
+# step 2: the moraines and the ridge, edge, toe and tip names
+G2 <- c("hryggur", "hryggurinn", "hrygg", "hryggnum", "hryggjar", "hryggir", "hryggirnir", "hryggjum", "kambur", "kamburinn", "kamb", "kambi", "kambinum",
+  "kantur", "kanturinn", "kant", "kanti", "kantinum", "kantinn", "kantar", "kantarnir", "köntum", "brún", "brúnin", "brúnina", "brúninni", "brúnir",
+  "tá", "táin", "tána", "tánni", "tær", "tota", "totan", "totu", "totunni", "horn", "hornið", "horni", "horninu", "hornin", "hæll", "hællinn", "hæl", "hælnum",
+  "hali", "halinn", "hala", "halanum", "halli", "hallinn", "halla", "hallanum", "rani", "raninn", "rana", "haft", "haftið", "hafti", "fótur", "fóturinn", "fót", "fæti", "fætinum")
+gram <- vapply(strsplit(gsub("[^a-zþæöðáéíóúý ]", " ", tolower(nm$name)), " +"), function(w) any(grepl(paste0("(", paste(G2, collapse = "|"), ")$"), w[nzchar(w)])), TRUE)
+st2 <- nm$id[nm$kind == "water" & !is.na(nm$lon) & gram & !nm$id %in% deeps]
+p2 <- p[p$class == "moraine", ]
+ok("every water name of ours of step 2's endings (not a deep) in one proposal; the skippers' own keyed by their spelling", setequal(p2$name_id[!is.na(p2$name_id)], st2) &&
+   all(grepl("^moraine:skippers:", p2$key[is.na(p2$name_id)])), length(st2))
+moraines <- sub("isor:landform:moraine:", "", sfx$seabed_id[sfx$kind == "moraine"])
+on2 <- p2[p2$moraine != "none", ]
+ok("every step 2 proposal on one of ÍSOR's moraines or none; on one, its element the moraine and its extent drawn",
+   all(p2$moraine %in% c(moraines, "none")) && all(on2$element == paste0("isor:landform:moraine:", on2$moraine)) && all(on2$key %in% sh$key[sh$what == "extent"]), nrow(p2))
+cnt2 <- ev |> filter(grepl("^agrees", outcome), !is.na(moraine)) |> distinct(key, moraine, group) |> count(key, moraine, name = "n")
+chk2 <- on2 |> left_join(cnt2, by = c("key", "moraine")) |> mutate(n = coalesce(n, 0L))
+ok("a step 2 proposal's witnesses agreeing counted from its evidence on its moraine (a copy with its source)", chk2$n == chk2$n_agree, nrow(chk2))
+shelf <- st_make_valid(read_curated_sf(REF("seabed_feature.parquet"))[sfx$kind == "shelf break", ])
+o2 <- on2[!is.na(on2$name_id), ]; q2 <- nm[match(o2$name_id, nm$id), ]
+off <- lengths(st_intersects(st_as_sf(q2, coords = c("lon", "lat"), crs = 4326), shelf)) == 0
+ok("no name of ours off the shelf (beyond ÍSOR's shelf break) on a moraine", !off, nrow(o2))
 ok("every proposal placed, with a basis", !is.na(p$lon) & !is.na(p$lat) & !is.na(p$place_basis), nrow(p))
 vd <- ed[ed$action %in% c("accept proposal", "reject proposal"), ]
 ok("every verdict on a proposal that exists", all(vd$link_to %in% p$key), nrow(vd))

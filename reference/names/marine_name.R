@@ -471,9 +471,12 @@ if (nrow(nw)) {
   # its extent: one line (a moraine: the maintainer, 2026-11-20, "moraine 155 is what captains call "Brjálaði Hryggurinn"")
   # the line itself, its length the size; else the hull of the features' own shapes, widened by 500 m
   sfg <- read_curated_sf(fd_curated("reference", "seabed_feature.parquet"))
-  one_line <- vapply(mem, function(m) length(m) == 1 && as.character(st_geometry_type(sfg[match(m, sfg$seabed_id), ])) %in% c("LINESTRING", "MULTILINESTRING"), logical(1))
+  # (several lines, the lines themselves, their size the longer side of their box: the maintainer, 2026-11-20, "moraine 220 as
+  # well as 221 are a good placeholder for Ostahryggur")
+  all_line <- vapply(mem, function(m) all(as.character(st_geometry_type(sfg[match(m, sfg$seabed_id), ])) %in% c("LINESTRING", "MULTILINESTRING")), logical(1))
+  one_line <- all_line & lengths(mem) == 1
   hulls <- lapply(seq_along(mem), function(i) { g <- st_union(st_transform(sfg[match(mem[[i]], sfg$seabed_id), ], 3057))
-    if (one_line[i]) g else st_buffer(st_convex_hull(g), 500) })
+    if (all_line[i]) g else st_buffer(st_convex_hull(g), 500) })
   ext <- vapply(seq_along(hulls), function(i) if (one_line[i]) as.numeric(st_length(hulls[[i]])) / 1000 else {
     b <- st_bbox(hulls[[i]]); max(b[["xmax"]] - b[["xmin"]], b[["ymax"]] - b[["ymin"]]) / 1000 }, 0)
   rows <- nm[rep(which(li)[1], nrow(nw)), ]
@@ -484,7 +487,7 @@ if (nrow(nw)) {
     lon0 = nw$lon, lat0 = nw$lat, lon = nw$lon, lat = nw$lat, label_lon = nw$lon, label_lat = nw$lat,
     place_basis = "the middle of the ÍSOR features it names (the maintainer's name)", place_basis_computed = place_basis, label_basis = place_basis,
     rotate0 = 0, rotate_deg = 0, rotate_basis = "level", extent_km = round(ext, 3),
-    extent_basis = ifelse(one_line, "the ÍSOR line it names: its length", "the hull of the ÍSOR features it names"),
+    extent_basis = ifelse(one_line, "the ÍSOR line it names: its length", ifelse(all_line, "the ÍSOR lines it names: the longer side of their box", "the hull of the ÍSOR features it names")),
     z_rule = round(vapply(ext, function(e) like2(e, nm$z_rule), 0), 2), z_rule_v1 = NA_real_,
     z_rule_basis = "the median zoom of LMÍ's sea names of its extent within 25 %, else its ten nearest in extent (his own name)",
     size = vapply(ext, function(e) like2(e, nm$size), 0), priority = -round(ext, 3), label_dy = 0, n_letterings = 0L, legend_entry = FALSE,
@@ -493,7 +496,7 @@ if (nrow(nw)) {
   stopifnot(!any(rows$id %in% nm$id))
   nm <- bind_rows(nm, rows)
   own_hull <- st_sf(feature = rows$id, what = "extent",
-                    basis = ifelse(one_line, "the maintainer's: the ÍSOR line it names", "the maintainer's: the hull of the ÍSOR features it names"),
+                    basis = ifelse(one_line, "the maintainer's: the ÍSOR line it names", ifelse(all_line, "the maintainer's: the ÍSOR lines it names", "the maintainer's: the hull of the ÍSOR features it names")),
                     z_line = NA_real_, geometry = st_transform(do.call(c, hulls), 4326))
 }
 nm <- lay_names(nm)
@@ -595,6 +598,16 @@ axis_of <- function(g) {
 # rule e (the named-features study's 71_place_map.R, his "e it is, keep it as the zoom rule"): a name shows from the zoom where
 # its label, about 7.5 px a letter at 13 px, is half its feature's length (OVERSHOOT 2), whole zooms 4-16; the size 16 px for a
 # feature of 20 km or more, 14 for 5 km or more, else 13. The length in Mercator metres (the map's own)
+# the same for a line (an accepted moraine, plan 081 step 2): its direction the principal one of its points 100 m apart, its
+# letters at the point midway along it, its length along that direction
+axis_line <- function(g) {
+  a <- st_line_merge(st_cast(st_union(st_transform(st_geometry(g), 3857)), "MULTILINESTRING")); s <- st_coordinates(st_segmentize(a, 100))[, 1:2]
+  e <- eigen(cov(s))$vectors[, 1]; deg <- ((atan2(e[2], e[1]) * 180 / pi + 90) %% 180) - 90
+  pcs <- st_cast(a, "LINESTRING")                                                         # several pieces: the point of them nearest their middle
+  mid <- if (length(pcs) == 1) st_line_sample(pcs, sample = 0.5) else st_sfc(st_point(s[which.min((s[, 1] - mean(s[, 1]))^2 + (s[, 2] - mean(s[, 2]))^2), ]), crs = 3857)
+  ll <- st_coordinates(st_transform(mid, 4326))[1, ]
+  c(lon = unname(ll[1]), lat = unname(ll[2]), rotate = round(-deg, 1), len_m = diff(range(s %*% e)))
+}
 rule_e <- function(len_m, lat, n) { true_km <- len_m * cos(lat * pi / 180) / 1000; size <- ifelse(true_km >= 20, 16, ifelse(true_km >= 5, 14, 13))
   c(z = round(min(max(log2(156543.03 * max(4, n) * 7.5 * size / 13 / max(len_m, 50)) - log2(2), 4), 16), 2), size = size) }
 nm$joined_from <- NA_character_
@@ -695,7 +708,8 @@ if (nrow(pa)) {
   # a fjord (LMÍ's feature fjörður) keeps its own place and area, its area joined with its part of the trough, the fjord's
   # floor (decision 338)
   fjord_ids <- unique(as.integer(c(cj$feature[grepl("fjörður", coalesce(cj$bearers, ""))], lf$feature[grepl("fjörður", coalesce(lf$bearers, ""))])))
-  for (r in which(!is.na(q$name_id) & q$trough != "none")) { i <- match(q$name_id[r], nm$id)
+  # (step 2's on a moraine likewise: the thing the moraine's middle, its extent the moraine, a line)
+  for (r in which(!is.na(q$name_id) & !is.na(q$element))) { i <- match(q$name_id[r], nm$id)
     if (is.na(i)) stop("an accepted proposal for a name not in the list: ", q$name[r])
     if (!nm$id[i] %in% fjord_ids) { nm$lon[i] <- q$lon[r]; nm$lat[i] <- q$lat[r]
       nm$place_basis[i] <- paste0("Claude's proposal, accepted by the maintainer ", pa$at[r], ": ", q$place_basis[r]) }
@@ -726,14 +740,21 @@ if (nrow(pa)) {
   for (r in seq_len(nrow(accepted_prop))) { i <- match(accepted_prop$feature[r], nm$id)
     g <- if (!is.null(fa[[as.character(nm$id[i])]])) fa[[as.character(nm$id[i])]] else st_geometry(s2[s2$key == accepted_prop$key[r], ])
     if (!length(g)) next
-    ax <- axis_of(g); ze <- rule_e(ax[["len_m"]], ax[["lat"]], nchar(nm$name[i]))
-    nm$z_rule_computed[i] <- ze[["z"]]; nm$z_rule_basis[i] <- "rule e on its accepted area's length along its long axis (decision 338)"
+    line <- all(as.character(st_geometry_type(g)) %in% c("LINESTRING", "MULTILINESTRING"))
+    # a moraine is a ridge's or an edge's thing; of a toe, tip, horn, heel, foot or tail it marks the outer edge (plan 081 §4.2),
+    # so its letters and zoom stay where they were (the maintainer, 2026-11-20: "moraine 229 is the outer edge of Táin"; "not
+    # sure what to do about Táin, because the full area is bigger than the moraine"); its area waits for step 3
+    if (line && !prp$kind[match(accepted_prop$key[r], prp$key)] %in% c("ridge", "edge")) next
+    ax <- if (line) axis_line(g) else axis_of(g); ze <- rule_e(ax[["len_m"]], ax[["lat"]], nchar(nm$name[i]))
+    nm$z_rule_computed[i] <- ze[["z"]]
+    nm$z_rule_basis[i] <- if (line) "rule e on its accepted line's length along its direction (decision 338, plan 081 step 2)" else "rule e on its accepted area's length along its long axis (decision 338)"
     if (is.na(nm$zoom_edited_at[i])) { nm$z_rule[i] <- ze[["z"]]; nm$size[i] <- ze[["size"]] }
     if (!is.na(nm$edited_at[i]) && nm$edited_at[i] > LETTERS_RESET) next
-    nm$label_lon[i] <- ax[["lon"]]; nm$label_lat[i] <- ax[["lat"]]; nm$label_basis[i] <- "inside its accepted area, along its long axis"
-    nm$rotate_deg[i] <- ax[["rotate"]]; nm$rotate_basis[i] <- "its accepted area's long axis" }
+    nm$label_lon[i] <- ax[["lon"]]; nm$label_lat[i] <- ax[["lat"]]
+    nm$label_basis[i] <- if (line) "on its accepted line, midway, along it" else "inside its accepted area, along its long axis"
+    nm$rotate_deg[i] <- ax[["rotate"]]; nm$rotate_basis[i] <- if (line) "its accepted line's direction" else "its accepted area's long axis" }
 }
-message(sprintf("Claude's proposals: %d accepted (%d placed on a trough), %d rejected", nrow(pa), nrow(accepted_prop), sum(pv$action == "reject proposal")))
+message(sprintf("Claude's proposals: %d accepted (%d placed on a trough or moraine), %d rejected", nrow(pa), nrow(accepted_prop), sum(pv$action == "reject proposal")))
 # his links and unlinks: the latest of a feature
 linked_area <- data.frame(feature = integer(), seabed_id = character()); linked_line <- linked_area
 deepest_in <- function(g) {   # the deepest 200 m cell within the outline's largest inscribed circle (plan 081 step 1's rule):

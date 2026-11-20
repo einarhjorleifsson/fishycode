@@ -176,33 +176,41 @@ troughs <- sfx[sfx$kind == "trough", LF_COLS]
 moraines <- sfx[sfx$kind == "moraine", LF_COLS]
 
 # Claude's proposals (plan 081, decision 337): each name's best proposal, its evidence and its shapes; the review mode -----
-# reads them (reference/names/place_name_proposal.R; step 1, the deeps). Absent the table, no proposal layers
+# reads them (reference/names/place_name_proposal.R; step 1, the deeps; step 2, the moraines). Absent the table, no proposal layers
 pp <- if (file.exists(REF("place_name_proposal.parquet"))) read_curated_sf(REF("place_name_proposal.parquet")) else NULL
 if (!is.null(pp)) {
   pev <- pq("place_name_proposal_evidence.parquet"); psh <- read_curated_sf(REF("place_name_proposal_shape.parquet"))
   pp <- pp |> mutate(name = coalesce(name, "(unnamed)"), verdict = chr(verdict), flags = chr(flags),
                      status = case_when(grepl("^accepted", verdict) ~ "accepted", grepl("^rejected", verdict) ~ "rejected",
-                                        trough == "none" ~ "no trough yet (step 5)", nzchar(flags) ~ "flagged", TRUE ~ "proposed"),
+                                        class == "deep" & trough == "none" ~ "no trough yet (step 5)",
+                                        class == "moraine" & moraine == "none" ~ "no moraine (a later step)", nzchar(flags) ~ "flagged", TRUE ~ "proposed"),
                      witnesses = ifelse(n_agree > 0, paste0(n_agree, ": ", agree), "none"))
-  PROP_COL <- c(proposed = "#1a9850", flagged = "#f46d43", "no trough yet (step 5)" = "#9e9e9e", accepted = "#2166ac", rejected = "#7b3294")
+  PROP_COL <- c(proposed = "#1a9850", flagged = "#f46d43", "no trough yet (step 5)" = "#9e9e9e", "no moraine (a later step)" = "#c7c7c7",
+                accepted = "#2166ac", rejected = "#7b3294")
   pext <- psh[psh$what == "extent", ] |> mutate(name = pp$name[match(key, pp$key)], status = pp$status[match(key, pp$key)])
+  is_line <- as.character(st_geometry_type(pext)) %in% c("LINESTRING", "MULTILINESTRING")
+  pmor <- pext[is_line, ]; pext <- pext[!is_line, ]                                      # step 2's extents are ÍSOR's moraines, lines
   pthw <- psh[psh$what == "thalweg", ] |> mutate(name = pp$name[match(key, pp$key)])
-  # the review's queue: the flagged first, then the proposed, then those awaiting a trough; each by trough, then name
-  queue <- st_drop_geometry(pp) |> mutate(o = match(status, c("flagged", "proposed", "no trough yet (step 5)", "accepted", "rejected")),
-                                         tn = suppressWarnings(as.integer(trough))) |>
-    arrange(o, tn, name) |> transmute(key, name, status, lon, lat)
+  # the review's queue: the latest step first; in it the flagged first, then the proposed, then those awaiting an element;
+  # each by trough or moraine, then name
+  queue <- st_drop_geometry(pp) |> mutate(o = match(status, c("flagged", "proposed", "no trough yet (step 5)", "no moraine (a later step)", "accepted", "rejected")),
+                                         tn = suppressWarnings(coalesce(as.integer(trough), as.integer(moraine)))) |>
+    arrange(desc(step), o, tn, name) |> transmute(key, name, status, lon, lat)
 }
 prop_layers <- function(m) if (is.null(pp)) m else m |>
   og_polygon(pext, colour = "#1a1a1a", fill = status, palette = PROP_COL, opacity = 0.10, linewidth = 1.2, hover = name,
              popup = c(name, status, basis, key), visible = FALSE, id = "prop_extents", name = "Proposed extents",
-             section = "Claude's proposals", info = "Each proposal's extent: an ÍSOR trough, or its part where several deeps share it; a click opens the proposal.") |>
+             section = "Claude's proposals", info = "Each deep's proposed extent: an ÍSOR trough, or its part where several deeps share it; a click opens the proposal.") |>
+  og_line(pmor, colour = status, palette = PROP_COL, linewidth = 3, hover = name, popup = c(name, status, basis, key), visible = FALSE, legend = FALSE,
+          id = "prop_moraines", name = "Proposed moraines", section = "Claude's proposals",
+          info = "Step 2: each ridge, edge, toe or tip name's proposed moraine, one of ÍSOR's; a click opens the proposal.") |>
   og_line(pthw, colour = "#542788", linewidth = 1.4, hover = name, popup = c(name, basis), visible = FALSE, legend = FALSE,
           id = "prop_thalwegs", name = "The deeps' thalwegs (untried)", section = "Claude's proposals",
           info = "The deepest route from a deep toward the fjord or bay it is named for (plan 081 §4.1; for step 3's banks).") |>
   og_point(pp, colour = status, palette = PROP_COL, size = c(6, 12), hover = name, choose = status,
-           popup = c(name, status, witnesses, against, flags, place_basis, key), id = "proposals", name = "Proposals (step 1: the deeps)",
+           popup = c(name, status, witnesses, against, flags, place_basis, key), id = "proposals", name = "Proposals (step 1 the deeps, step 2 the moraines)",
            section = "Claude's proposals",
-           info = "Claude's best proposal for each deep: where its thing is, by its witnesses (the charts, LMÍ, the skippers, Bjarni). A click opens it with its evidence, Accept and Reject.")
+           info = "Claude's best proposal for each name: where its thing is, by its witnesses (the charts, LMÍ, the skippers, the texts, his word). A click opens it with its evidence, Accept and Reject.")
 lf_areas <- sfx[sfx$kind %in% c("channel", "meltwater channel"), LF_COLS]
 lf_lines <- sfx[sfx$kind %in% c("canal", "glacial streamline", "gravity streamline"), LF_COLS]
 LF_AREA_COL <- c(channel = "#35978f", "meltwater channel" = "#80cdc1")
@@ -423,7 +431,7 @@ routes <- list(
   proposal = function(req) { if (is.null(pp)) return(NULL)
     key <- as.character(arg(req, "key") %||% ""); i <- if (nzchar(key)) match(key, pp$key) else match(as.numeric(arg(req, "name_id") %||% NA), pp$name_id)
     if (is.na(i)) return(NULL)
-    p <- st_drop_geometry(pp[i, ]); e <- pev[pev$key == p$key, intersect(c("trough", "part", "group", "member", "outcome", "value", "detail"), names(pev))]
+    p <- st_drop_geometry(pp[i, ]); e <- pev[pev$key == p$key, intersect(c("trough", "part", "moraine", "group", "member", "outcome", "value", "detail"), names(pev))]
     list(p = as.list(p), ev = e, q = match(p$key, queue$key), n = nrow(queue)) },
   proposal_shape = function(req) { if (is.null(pp)) return('{"type":"FeatureCollection","features":[]}')
     s <- psh[psh$key == as.character(arg(req, "key") %||% ""), c("what", "basis")]
@@ -450,10 +458,11 @@ routes <- list(
       # a trough no name of ours takes: his Accept also writes the name as his own over the trough (a row `new`), once
       if (x$action == "accept proposal" && is.na(pp$name_id[j]) && pp$name[j] != "(unnamed)") {
         ed0 <- if (file.exists(EF)) read.csv(EF, encoding = "UTF-8") else data.frame(action = character(), link_to = character())
-        if (!any(ed0$action == "new" & ed0$link_to %in% pp$element[j]))
+        if (!any(ed0$action == "new" & ed0$link_to %in% pp$element[j] & ed0$name %in% pp$name[j]))
           append_row(data.frame(feature = NA_integer_, name = pp$name[j], lon = round(pp$lon[j], 6), lat = round(pp$lat[j], 6), action = "new", at = row$at,
                                 by = "the maintainer", link_to = pp$element[j],
-                                why = sprintf("the skippers' name of ÍSOR's trough %s, Claude's proposal accepted (%s)", pp$trough[j], pp$key[j]))) }
+                                why = sprintf("the skippers' name of ÍSOR's %s, Claude's proposal accepted (%s)",
+                                              if (pp$class[j] == "moraine") paste("moraine", pp$moraine[j]) else paste("trough", pp$trough[j]), pp$key[j]))) }
       pp$verdict[j] <<- paste0(sub(" proposal", "ed", x$action), " by the maintainer, ", row$at); pp$status[j] <<- sub(" proposal", "ed", x$action)
       queue$status[match(pp$key[j], queue$key)] <<- pp$status[j]
       return(list(ok = TRUE, at = row$at, verdict = pp$verdict[j]))

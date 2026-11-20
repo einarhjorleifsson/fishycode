@@ -42,8 +42,8 @@ hand_label <- paste0("name:", nm$id[newer(nm$edited_at, pn$edited_at[mp])])
 hand_zoom <- paste0("name:", nm$id[newer(nm$zoom_edited_at, pn$zoom_edited_at[mp])])
 hand_back <- paste0("name:", nm$id[!is.na(pn$edited_at[mp]) & is.na(nm$edited_at)])   # moved by hand in the version before, placed back since
 isor_axis <- paste0("name:", nm$id[nm$label_basis %in% "inside ÍSOR's area, along its axis"])
-prop_axis <- paste0("name:", nm$id[grepl("^inside its accepted area", ifelse(is.na(nm$label_basis), "", nm$label_basis))])   # decision 338: an accepted name's letters
-prop_zoom <- paste0("name:", nm$id[grepl("accepted area", ifelse(is.na(nm$z_rule_basis), "", nm$z_rule_basis))])   # and its zoom, rule e on its area
+prop_axis <- paste0("name:", nm$id[grepl("^inside its accepted area|^on its accepted line", ifelse(is.na(nm$label_basis), "", nm$label_basis))])   # decision 338: an accepted name's letters
+prop_zoom <- paste0("name:", nm$id[grepl("accepted area|accepted line", ifelse(is.na(nm$z_rule_basis), "", nm$z_rule_basis))])   # and its zoom, rule e on its area
 crater_pk <- paste0("name:", nm$id[grepl("linked", nm$place_basis) & nm$point_kind & is.na(nm$edited_at)])
 linked_area <- paste0("name:", nm$id[grepl("linked by the maintainer", nm$extent_basis)])   # an area he linked is its extent
 proposed <- paste0("name:", nm$id[grepl("Claude's proposal, accepted by the maintainer", nm$extent_basis)])   # plan 081: an accepted proposal
@@ -63,15 +63,15 @@ what <- data.frame(
 why_of <- function(col, id) {
   switch(col,
     name = case_when(id %in% ren ~ "the maintainer's rename", id %in% joined_into ~ "one thing from two sources: the name by ask g's order"),
-    label = case_when(id %in% prop_axis ~ "Claude's proposal accepted: the letters inside its area, along its long axis (decision 338)",
+    label = case_when(id %in% prop_axis ~ "Claude's proposal accepted: the letters inside its area or on its line, along it (decision 338)",
                       id %in% hand_label ~ "the maintainer's move on the page", id %in% pinned_pk ~ "the maintainer's pin: a point kind's label follows its thing",
                       id %in% isor_axis ~ "ÍSOR's area the primary source: the label inside it along its axis", id %in% hand_back ~ "the maintainer's place back on the page",
                       id %in% crater_pk ~ "linked to ÍSOR's crater: a point kind's label follows its thing"),
-    angle = case_when(id %in% prop_axis ~ "Claude's proposal accepted: the letters along its area's long axis (decision 338)",
+    angle = case_when(id %in% prop_axis ~ "Claude's proposal accepted: the letters along its area's long axis or its line (decision 338)",
                       id %in% hand_label ~ "the maintainer's turn on the page", id %in% isor_axis ~ "ÍSOR's area the primary source: the label along its axis",
                       id %in% hand_back ~ "the maintainer's place back on the page"),
     zoom = case_when(id %in% hand_zoom ~ "the maintainer's zoom on the page",
-                     id %in% prop_zoom ~ "Claude's proposal accepted: rule e on its area's length along its long axis (decision 338)"),
+                     id %in% prop_zoom ~ "Claude's proposal accepted: rule e on its area's or line's length along its axis (decision 338)"),
     holder = case_when(id %in% held_on ~ "its holder joined into the row kept (one thing from two sources, or the maintainer's join; decision 338)",
                        id %in% his_part ~ "the maintainer's part of: its whole his"),
     on_feature = case_when(old$on_feature[match(id, old$id)] %in% one$gone ~ "the feature it lay on joined into another (one thing from two sources)",
