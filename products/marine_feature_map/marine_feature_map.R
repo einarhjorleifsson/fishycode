@@ -212,6 +212,23 @@ prop_layers <- function(m) if (is.null(pp)) m else m |>
            popup = c(name, status, witnesses, against, flags, place_basis, key), id = "proposals", name = "Proposals (1 the deeps, 2 the moraines, 3 the east's banks)",
            section = "Claude's proposals",
            info = "Claude's best proposal for each name: where its thing is, by its witnesses (the charts, LMÍ, the skippers, the texts, his word). A click opens it with its evidence, Accept and Reject.")
+# The landscape frame (plan 081 §7 step 3, decision 342; reference/seabed/landscape_frame.R): the deeps, the grounds between
+# them and the two ridges, with the deeps' arms' lines and the crests, for the maintainer's review coast by coast
+frame_el <- if (file.exists(REF("landscape_element.parquet"))) read_curated_sf(REF("landscape_element.parquet")) else NULL
+frame_ln <- if (file.exists(REF("landscape_line.parquet"))) read_curated_sf(REF("landscape_line.parquet")) else NULL
+frame_layers <- function(m) if (is.null(frame_el) || is.null(frame_ln)) m else {
+  FR_COL <- c("a ground, the west plate" = "#fdb863", "a ground, the east plate" = "#b2abd2", "a deep" = "#4393c3", "a ridge" = "#8c510a")
+  fx <- frame_el |> mutate(what = case_when(kind == "deep" ~ "a deep", kind == "ridge" ~ "a ridge", side == "west" ~ "a ground, the west plate", TRUE ~ "a ground, the east plate"),
+                     banks = chr(banks), side = chr(side))
+  fg <- suppressWarnings(st_point_on_surface(fx[fx$kind == "ground", ])) |> mutate(no = sub("ground ", "", label))
+  m |> og_polygon(fx, colour = "#1a1a1a", fill = what, palette = FR_COL, opacity = 0.18, linewidth = 0.8, hover = label,
+                  popup = c(label, what, km2, banks, basis), visible = FALSE, id = "frame_elements", name = "The frame: deeps, grounds and ridges",
+                  section = "The landscape frame", info = "The coarsest level (plan 081 §4.6): ÍSOR's troughs the deeps, the two ridges by ÍSOR's craters, the grounds between the deeps' lines, each standing where a name belongs to it (a chart bank, the skippers' name, an LMÍ area); a click gives its basis and the charts' banks in it.") |>
+    og_line(select(frame_ln, -lon, -lat), colour = kind,   # (ogis takes a table with lon and lat for points) palette = c("a deep's arm" = "#542788", "a ridge's crest" = "#8c510a"), linewidth = 1.6, hover = line,
+            popup = c(line, kind, trough, arm, depth_m, head_km, km), visible = FALSE, id = "frame_lines", name = "The frame: the deeps' lines and the crests",
+            section = "The landscape frame", info = "Each arm of a deep (by the trough's own shape) up to its head and on to the mainland's coast, and out of the shelf; no name used. Trough 16's not drawn (his word).") |>
+    og_text(fg, label = no, minzoom = 5, size = 15, colour = "#67000d", overlap = TRUE, visible = FALSE, id = "frame_numbers", name = "The grounds' numbers",
+            section = "The landscape frame") }
 lf_areas <- sfx[sfx$kind %in% c("channel", "meltwater channel"), LF_COLS]
 lf_lines <- sfx[sfx$kind %in% c("canal", "glacial streamline", "gravity streamline"), LF_COLS]
 LF_AREA_COL <- c(channel = "#35978f", "meltwater channel" = "#80cdc1")
@@ -336,6 +353,7 @@ m <- og_map(title = sprintf("Marine features, version %d (plan 080)", VERSION), 
           visible = FALSE, id = "isor_streamlines", name = "ÍSOR's streamlines and canals", section = "Landforms",
           info = "ÍSOR's glacial and gravity streamlines and its canals along the shelf edge.") |>
   prop_layers() |>
+  frame_layers() |>
   og_point(twc[!twc$outcome %in% TW_CAND, ], colour = outcome, palette = TW_COL, size = c(3, 7), hover = name, visible = FALSE,
            popup = c(name, spellings, tows, vessels, share, outcome, place_basis, key), id = "tw_others",
            name = "Trackwell's other names", section = "Trackwell", choose = outcome,

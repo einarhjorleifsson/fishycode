@@ -97,7 +97,7 @@
 
 suppressPackageStartupMessages({ library(dplyr); library(sf) })
 sf_use_s2(FALSE)
-for (f in c("R/paths.R", "R/write_curated.R")) source(f)   # standalone: not targets'
+for (f in c("R/paths.R", "R/write_curated.R", "R/trough_shape.R")) source(f)   # standalone: not targets'
 
 V1 <- fd_path("archive", "2026-11-11-named-features", "out", "frozen", "names_v1")
 man <- read.csv(file.path(V1, "manifest.csv"))
@@ -765,13 +765,7 @@ if (nrow(pa)) {
 message(sprintf("Claude's proposals: %d accepted (%d placed on a trough or moraine), %d rejected", nrow(pa), nrow(accepted_prop), sum(pv$action == "reject proposal")))
 # his links and unlinks: the latest of a feature
 linked_area <- data.frame(feature = integer(), seabed_id = character()); linked_line <- linked_area
-deepest_in <- function(g) {   # the deepest 200 m cell within the outline's largest inscribed circle (plan 081 step 1's rule):
-  # deep, central, away from a trough's mouth on the slope
-  dm4 <- terra::aggregate(terra::rast(fd_raw("external", "bathymetry", "Olex_50mBM_GEBCO_interp.tif")), 4)
-  g3 <- st_union(st_transform(st_geometry(g), 3057)); a <- st_intersection(st_inscribed_circle(g3, dTolerance = 50)[1], g3)
-  v <- terra::vect(st_transform(a, terra::crs(dm4))); z <- terra::mask(terra::crop(dm4, v, snap = "out"), v, touches = FALSE); c <- which.min(terra::values(z))
-  p <- st_coordinates(st_transform(st_sfc(st_point(terra::xyFromCell(z, c)[1, ]), crs = terra::crs(dm4)), 4326))
-  c(p[1], p[2], -terra::values(z)[c]) }
+dem4_mn <- terra::aggregate(terra::rast(fd_raw("external", "bathymetry", "Olex_50mBM_GEBCO_interp.tif")), 4)   # for deepest_in() (R/trough_shape.R)
 hl <- ed |> filter(action %in% c("link", "unlink")) |> arrange(at) |> group_by(feature) |> slice_tail(n = 1) |> ungroup()
 if (nrow(hl)) {
   k <- match(hl$feature, nm$id)
@@ -788,7 +782,7 @@ if (nrow(hl)) {
         linked_area <- rbind(linked_area, data.frame(feature = nm$id[i], seabed_id = hl$link_to[r]))
         bb <- st_bbox(st_transform(sfx[j, ], 3057)); nm$extent_km[i] <- round(max(bb$xmax - bb$xmin, bb$ymax - bb$ymin) / 1000, 3)
         nm$extent_basis[i] <- sprintf("ÍSOR's %s (%s), linked by the maintainer: the longer side of its box", sfx$kind[j], hl$link_to[r])
-        if (sfx$kind[j] == "trough") { q <- deepest_in(sfx[j, ])
+        if (sfx$kind[j] == "trough") { q <- deepest_in(sfx[j, ], dem4_mn)
           nm$lon[i] <- q[1]; nm$lat[i] <- q[2]
           nm$place_basis[i] <- sprintf("the deepest point within the largest circle inside ÍSOR's trough (%s), %.0f m on the depth model's 200 m cells, linked by the maintainer", hl$link_to[r], q[3]) }
       }

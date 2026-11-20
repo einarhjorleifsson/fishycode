@@ -2,7 +2,7 @@
 
 **status:** partly built — step 1 (the troughs and the deeps) built 2026-11-20 at the maintainer's word ("Yes, start step 1";
 decision 338), reviewed and closed by version 2 the same day; step 2 (the moraines) built the same day at his word ("Start
-step 2"; decision 340), reviewed the same day, five adopted, closed by version 3; step 3 on the east coast built the same day (decision 341), then re-based at his word on the coarsest level over the whole shelf (§4.6: the deeps, their lines drawn with no name, the grounds between, the two ridges elements of their own), its rule adopted ("Yes, keep them") and its weak points tested the same night; the plan revised with them ("Yes, revise the plan"): step 3 is now the frame's build, then the banks' anatomy by two rules (§4.1, §7); written 2026-11-20 at the maintainer's word ("So review the plan from scratch - think we have plenty
+step 2"; decision 340), reviewed the same day, five adopted, closed by version 3; step 3 on the east coast built the same day (decision 341), then re-based at his word on the coarsest level over the whole shelf (§4.6: the deeps, their lines drawn with no name, the grounds between, the two ridges elements of their own), its rule adopted ("Yes, keep them") and its weak points tested the same night; the plan revised with them ("Yes, revise the plan"): step 3 is now the frame's build, then the banks' anatomy by two rules (§4.1, §7); the frame built the same night at his word ("Start the frame's build", "Yes, finish the frame"; decision 342), its review next; written 2026-11-20 at the maintainer's word ("So review the plan from scratch - think we have plenty
 of things to work from now"), revised the same night after a dig on ÍSOR's troughs and moraines, the effort and the texts
 already read ("You may even have now enough to make your own proposal. Care to dig in a bit. Take you time"), and set on
 its goal ("the goal of this plan is that you come up with the best proposal to a placename. We would then go through that
@@ -370,7 +370,7 @@ trough's own skippers' names elsewhere. Each is what §4 would have proposed; ea
    reviewed.
 3. *The east built 2026-11-20 (decision 341); re-based the same evening on the coarsest level over the whole shelf (§4.6),
    its rule adopted and its weak points tested.* **The frame, then the banks**:
-   - **The frame into the build**: a script in `reference/` writing the deeps' lines, the ridges and the grounds as a curated
+   - *Built 2026-11-20 (decision 342): `reference/seabed/landscape_frame.R`, its check (19 hold), the names page's "The landscape frame"; 32 grounds; Iceland the one void (his word).* **The frame into the build**: a script in `reference/` writing the deeps' lines, the ridges and the grounds as a curated
      layer beside ÍSOR's own (objective 2). It comes with an accounting check: every cell of the shelf in one element, every
      chart bank in one ground or a ridge. The troughs' parts by their shape; a piece standing where a source names a place
      in it, tried first. Reviewed by him coast by coast, the coasts the ridge and the hotspot left alone first.

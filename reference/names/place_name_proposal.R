@@ -54,7 +54,7 @@
 
 suppressPackageStartupMessages({ library(dplyr); library(sf) })
 sf_use_s2(FALSE)
-for (f in c("R/paths.R", "R/write_curated.R")) source(f)   # standalone: not targets'
+for (f in c("R/paths.R", "R/write_curated.R", "R/trough_shape.R")) source(f)   # standalone: not targets'
 REF <- function(f) fd_curated("reference", f)
 V1 <- fd_path("archive", "2026-11-11-named-features", "out", "frozen", "names_v1")
 TW <- fd_staging("ornefni", "trackwell_haul.parquet"); IS <- fd_staging("is50v", "name.parquet"); EF <- "overrides/marine_name_edits.csv"
@@ -102,13 +102,7 @@ sfx <- read_curated_sf(REF("seabed_feature.parquet"))
 tr <- st_transform(sfx[sfx$kind == "trough", ], 3057); tr$t <- sub("isor:landform:trough:", "", tr$seabed_id)
 dem <- terra::rast(DEMF); dem4 <- terra::aggregate(dem, 4)              # 200 m cells
 z_of <- function(g) { v <- terra::vect(st_transform(g, terra::crs(dem4))); z <- -terra::values(terra::mask(terra::crop(dem4, v), v), mat = FALSE); z[is.finite(z)] }
-# a deep's place: the deepest 200 m cell (its centre inside) within the outline's largest inscribed circle: deep, central, and
-# away from a trough's mouth on the slope, where the deepest cell of the whole outline lies for 16 of 40 (Claude's choice of
-# three tried, 2026-11-20: the deepest cell anywhere, the circle's centre, this; the circle is the outline's own, no distance chosen)
-deepest_in <- function(g) { g3 <- st_union(st_transform(st_geometry(g), 3057)); ic <- st_inscribed_circle(g3, dTolerance = 50)[1]
-  a <- st_intersection(ic, g3); v <- terra::vect(st_transform(a, terra::crs(dem4)))
-  r <- terra::mask(terra::crop(dem4, v, snap = "out"), v, touches = FALSE); c <- which.min(terra::values(r))
-  p <- st_coordinates(st_transform(st_sfc(st_point(terra::xyFromCell(r, c)[1, ]), crs = terra::crs(dem4)), 4326)); c(p[1], p[2], -terra::values(r)[c]) }
+# a deep's place: deepest_in(), the deepest 200 m cell within the outline's largest inscribed circle (R/trough_shape.R)
 tz <- lapply(seq_len(nrow(tr)), function(i) z_of(tr[i, ]))
 tr$z05 <- vapply(tz, quantile, 0, 0.05); tr$z95 <- vapply(tz, quantile, 0, 0.95); tr$zmax <- vapply(tz, max, 0)
 in_trough <- function(lon, lat) { if (!length(lon)) return(character()); p <- st_transform(st_as_sf(data.frame(lon, lat), coords = c("lon", "lat"), crs = 4326), 3057)
@@ -223,61 +217,12 @@ mm <- match(P$name_id, made$name_id); P$trough[!is.na(mm)] <- sub("^deep:trough:
 # segments to the trough's outline; his `rest` rows give a name every cell of the trough (link_to) no other name holds,
 # within the name's own limits; `unlimit` and `unrest` undo. A name whose proposal he rejected leaves its trough (decision 338).
 dem20 <- terra::aggregate(dem, 20)                                          # 1 km cells
-NB <- cbind(c(-1, -1, -1, 0, 0, 1, 1, 1), c(-1, 0, 1, -1, 1, -1, 0, 1))
-flood <- function(ord, key, rc, idx, nr, nc) {   # cells reached in `ord`; a set is led by its cell of largest `key`; a lesser set ends where it meets
-  par <- seq_along(key); lead <- seq_along(key); seen <- logical(length(key)); lab <- rep(NA_integer_, length(key))
-  ends <- data.frame(tip = integer(), meet = integer(), into = integer())
-  find <- function(i) { while (par[i] != i) { par[i] <<- par[par[i]]; i <- par[i] }; i }
-  for (i in ord) { seen[i] <- TRUE
-    rr <- rc[i, 1] + NB[, 1]; cc <- rc[i, 2] + NB[, 2]; ok <- rr >= 1 & rr <= nr & cc >= 1 & cc <= nc
-    nb <- idx[(rr[ok] - 1) * nc + cc[ok]]; nb <- nb[!is.na(nb)]; nb <- nb[seen[nb]]
-    for (j in nb) { a <- find(i); b <- find(j); if (a == b) next
-      la <- lead[a]; lb <- lead[b]
-      if (key[la] < key[lb] || (key[la] == key[lb] && la == i)) { t0 <- a; a <- b; b <- t0; t0 <- la; la <- lb; lb <- t0 }   # a tie: the cell just reached joins
-      if (lb != i) ends[nrow(ends) + 1, ] <- list(lb, i, la)
-      par[b] <- a; lead[a] <- la }
-    lab[i] <- lead[find(i)] }
-  list(lab = lab, ends = ends) }
-trough_parts <- function(g) {
-  g5 <- terra::vect(st_transform(st_geometry(g), terra::crs(dem20)))
-  v <- terra::mask(terra::crop(dem20, terra::ext(g5) + 3000, snap = "out"), g5, touches = FALSE)
-  cells <- which(!is.na(terra::values(v, mat = FALSE))); z <- -terra::values(v, mat = FALSE)[cells]
-  nr <- terra::nrow(v); nc <- terra::ncol(v); rc <- terra::rowColFromCell(v, cells)
-  idx <- rep(NA_integer_, terra::ncell(v)); idx[cells] <- seq_along(cells)
-  root <- which.max(z); mk <- v; mk[!is.na(mk)] <- 1; mk[cells[root]] <- 0
-  dist <- terra::values(terra::gridDist(mk, target = 0), mat = FALSE)[cells] / 1000; dist[!is.finite(dist)] <- NA
-  reach <- which(!is.na(dist)); main <- reach[which.max(dist[reach])]
-  fl <- flood(reach[order(-dist[reach])], ifelse(is.na(dist), -Inf, dist), rc, idx, nr, nc)
-  br <- fl$ends; br$length <- dist[br$tip] - dist[br$meet]; br <- br[order(-br$length), ]
-  # an arm: a branch longer than the trough is half wide near where it joins (the largest distance to the outline's edge
-  # among the cells within one branch length of the junction, not its own): a shorter one is a bump on the body it joins.
-  # Tried against the largest drop in the sorted lengths, which a 500 m shift of the grid flipped for trough 10 (decision 338)
-  xy0 <- terra::xyFromCell(v, cells); out0 <- v; out0[] <- 1; out0[cells] <- NA
-  dt <- terra::values(terra::distance(out0), mat = FALSE)[cells] / 1000
-  br$half <- NA_real_
-  for (i in which(br$length > 1)) { d <- sqrt((xy0[, 1] - xy0[br$meet[i], 1])^2 + (xy0[, 2] - xy0[br$meet[i], 2])^2) / 1000
-    br$half[i] <- max(dt[d <= br$length[i] & fl$lab != br$tip[i]]) }
-  arms <- br$tip[!is.na(br$half) & br$length > br$half]; n_arm <- length(arms)
-  keep <- c(main, arms); up <- setNames(br$into, br$tip)
-  top <- function(b) { while (!(b %in% keep)) b <- up[[as.character(b)]]; b }
-  arm <- rep(NA_integer_, length(cells)); arm[reach] <- vapply(fl$lab[reach], top, 1L)
-  xy <- terra::xyFromCell(v, cells)
-  if (length(miss <- which(is.na(arm)))) { r0 <- reach[vapply(miss, function(m) which.min((xy[reach, 1] - xy[m, 1])^2 + (xy[reach, 2] - xy[m, 2])^2), 1L)]; arm[miss] <- arm[r0]; dist[miss] <- dist[r0] }
-  ll <- st_coordinates(st_transform(st_as_sf(data.frame(x = xy[, 1], y = xy[, 2]), coords = 1:2, crs = terra::crs(dem20)), 4326))
-  lab <- setNames(paste0("b", rank(ll[keep, 1], ties.method = "first")), keep)            # the arms by their tips, west to east
-  part <- unname(lab[as.character(arm)])
-  onm <- arms[vapply(br$into[match(arms, br$tip)], top, 1L) == main]   # the arms meeting the main line
-  cuts <- c(-Inf, sort(dist[br$meet[match(onm, br$tip)]]), Inf); m <- arm == main
-  if (length(cuts) > 2) part[m] <- paste0(lab[as.character(main)], ".", findInterval(dist[m], cuts))
-  cl <- data.frame(cell = cells, lon = ll[, 1], lat = ll[, 2], x = xy[, 1], y = xy[, 2], z = z, part = part)
-  list(v = v, idx = idx, cells = cl, arms = data.frame(tip = keep, part = unname(lab), length = c(dist[main], br$length[match(keep[-1], br$tip)])), n_arm = n_arm) }
+# a trough's shape: trough_parts(), its arms and its main line's parts, and trough_cells_poly() (R/trough_shape.R)
 part_at <- function(tp, lon, lat) { out <- rep(NA_character_, length(lon)); ok <- !is.na(lon) & !is.na(lat); if (!any(ok)) return(out)
   p <- st_coordinates(st_transform(st_as_sf(data.frame(lon = lon[ok], lat = lat[ok]), coords = 1:2, crs = 4326), terra::crs(dem20)))
   a <- tp$idx[terra::cellFromXY(tp$v, p)]; out[ok] <- ifelse(is.na(a), NA_character_, tp$cells$part[a]); out }
 part_near <- function(tp, lon, lat) vapply(seq_along(lon), function(i)
   tp$cells$part[which.min((tp$cells$lon - lon[i])^2 * cos(lat[i] * pi / 180)^2 + (tp$cells$lat - lat[i])^2)], "")
-cells_poly <- function(tp, keep) { r <- tp$v; r[] <- NA; r[tp$cells$cell[keep]] <- 1
-  st_union(st_make_valid(st_as_sf(terra::as.polygons(r, dissolve = TRUE)))) |> st_transform(4326) }
 scale_of <- function(ch) { n <- suppressWarnings(as.numeric(sub("^sjokort_([0-9]+).*", "\\1", ch))); ifelse(grepl("milljon", ch), n * 1e6, ifelse(grepl("thusund", ch), n * 1e3, NA)) }
 cut_side <- function(tp, g, r, tt) {   # the cells on the side of his ÍSOR line holding his point
   ln <- sfx[sfx$seabed_id %in% r$link_to, ]; if (nrow(ln) != 1) stop("his limit of ", r$name, " by ", r$link_to, ": no such ÍSOR feature")
@@ -310,7 +255,7 @@ vd0 <- ed |> filter(action %in% c("accept proposal", "reject proposal")) |> arra
 rj <- which(key_of(P$name_id) %in% vd0$link_to[vd0$action == "reject proposal"] & P$trough != "none")
 P$part_note[rj] <- paste0("off ÍSOR's trough ", P$trough[rj], ": the maintainer rejected its proposal"); P$trough[rj] <- "none"
 P$agree[rj] <- ""; P$n_agree[rj] <- 0L; P$against[rj] <- ""; P$n_against[rj] <- 0L; P$tie[rj] <- FALSE
-place_in <- function(jj, pg, tt, what) { q <- deepest_in(st_sf(geometry = pg)); P$lon[jj] <<- q[1]; P$lat[jj] <<- q[2]
+place_in <- function(jj, pg, tt, what) { q <- deepest_in(st_sf(geometry = pg), dem4); P$lon[jj] <<- q[1]; P$lat[jj] <<- q[2]
   P$place_basis[jj] <<- sprintf("the deepest 200 m cell within the largest circle inside ÍSOR's trough %s%s, %.0f m (Claude's proposal, plan 081 step 1)", tt, what, q[3])
   bb <- st_bbox(st_transform(pg, 3057)); P$extent_km[jj] <<- round(max(bb$xmax - bb$xmin, bb$ymax - bb$ymin) / 1000, 3); q }
 for (tt in setdiff(unique(P$trough), "none")) { g <- tr[tr$t == tt, ]; ii <- which(P$trough == tt); nk <- unique(P$k[ii])
@@ -321,7 +266,7 @@ for (tt in setdiff(unique(P$trough), "none")) { g <- tr[tr$t == tt, ]; ii <- whi
     shapes[[length(shapes) + 1]] <- st_sf(key = key_of(P$name_id[jj]), what = "extent", basis = paste0("ÍSOR's trough (isor:landform:trough:", tt, ") (Claude's proposal)"),
                                           geometry = rep(st_transform(st_geometry(g), 4326), length(jj)))
     next }
-  tp <- trough_parts(g); cl <- tp$cells
+  tp <- trough_parts(g, dem20); cl <- tp$cells
   # each name's witnesses on the parts
   cm <- list()
   for (kk in nk) { rows <- ii[P$k[ii] == kk]; ids <- P$name_id[rows]; fm <- strsplit(P$forms[rows[1]], "; ")[[1]]
@@ -373,7 +318,7 @@ for (tt in setdiff(unique(P$trough), "none")) { g <- tr[tr$t == tt, ]; ii <- whi
       P$part_note[jj] <- paste0("off ÍSOR's trough ", tt, ": its witnesses hold no part of it that a name with more witnesses does not",
         if (length(hold)) paste0("; its lettering lies in ", paste(unique(P$name[P$k %in% hold]), collapse = ", "), "'s part (a part of it?)") else "")
       next }
-    pg <- cells_poly(tp, mine); a0 <- asg[asg$k == kk, ]
+    pg <- trough_cells_poly(tp, mine); a0 <- asg[asg$k == kk, ]
     P$part[jj] <- if (nrow(a0)) a0$part else "his division"
     his <- any(his_limit$feature %in% P$name_id[jj]) || any(his_rest$feature %in% P$name_id[jj]) || (nrow(a0) && any(cl$part[mine] != a0$part))
     q <- place_in(jj, pg, tt, if (length(mine) == nrow(cl)) "" else ", in its part")
@@ -389,7 +334,7 @@ for (tt in setdiff(unique(P$trough), "none")) { g <- tr[tr$t == tt, ]; ii <- whi
     shapes[[length(shapes) + 1]] <- st_sf(key = key_of(P$name_id[jj]), what = "extent",
       basis = paste0("ÍSOR's trough (isor:landform:trough:", tt, "), its part by the trough's own shape", if (his) ", as the maintainer divided it" else "", " (Claude's proposal)"),
       geometry = rep(pg, length(jj))) }
-  for (pp in sort(unique(cl$part[is.na(own)]))) { mine <- which(is.na(own) & cl$part == pp); pg <- cells_poly(tp, mine); q <- deepest_in(st_sf(geometry = pg))
+  for (pp in sort(unique(cl$part[is.na(own)]))) { mine <- which(is.na(own) & cl$part == pp); pg <- trough_cells_poly(tp, mine); q <- deepest_in(st_sf(geometry = pg), dem4)
     bb <- st_bbox(st_transform(pg, 3057))
     UP[[length(UP) + 1]] <- data.frame(key = paste0("deep:trough:", tt, ":", pp), name_id = NA_real_, name = NA_character_, src = "none", trough = tt, part = pp,
       lon = q[1], lat = q[2], place_basis = sprintf("the deepest 200 m cell within the largest circle inside its part, %.0f m (Claude's proposal, plan 081 step 1)", q[3]),
@@ -406,7 +351,7 @@ twa <- as.data.frame(nanoparquet::read_parquet(TW)) |>
   mutate(k = fold(name), lon = (lon1 + lon2) / 2, lat = (lat1 + lat2) / 2)
 twa$trough <- in_trough(twa$lon, twa$lat); all_k <- twa |> count(k, name = "n_all")
 U <- list()
-for (tt in setdiff(tr$t, c(P$trough, UP$trough))) { g <- tr[tr$t == tt, ]; q <- deepest_in(g)
+for (tt in setdiff(tr$t, c(P$trough, UP$trough))) { g <- tr[tr$t == tt, ]; q <- deepest_in(g, dem4)
   s <- twa |> filter(trough == tt, !k %in% ignored) |> group_by(k) |> summarise(name = names(sort(table(name), decreasing = TRUE))[1], n = n(), v = n_distinct(vid), .groups = "drop") |>
     left_join(all_k, by = "k") |> mutate(share = n / n_all) |> filter(v >= 2) |> arrange(desc(share)) |> slice_head(n = 1)
   bb <- st_bbox(g)
