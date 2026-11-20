@@ -189,9 +189,28 @@ Open:
 
   Chart 15 (1:2 000 000, 2011) letters Eldeyjarbanki alone. Whether the 1972 first editions had Faxabanki is not known here.
 
+## The weak points tested, and plan 081 revised (the same night)
+
+At his word ("Yes, run tests 1-3"), with his objectives for the rule: "as few "exception" as possible" and "easy to explain
+to a layman, like a vessel captain". Study scripts 16-17.
+- **The bank level is two rules, not one, and not a regional matter.** Of 24 pairs of neighbouring chart banks in one
+  ground, 11 have a sag or a trough between them, where the frame's rule applies again. 13 share one platform, parted
+  only by what each is named for. Both kinds occur on every coast.
+- **The frame is robust.** Six variants changed no chart bank's grouping: the floor at its second and third rank, the
+  ridges' corridor halved and doubled, the outer troughs with no landward line, trough 10's lines from its shape. Three of
+  its parts can go: the names in the troughs' parts, the outer troughs' exception, and the floor (fragile: it moves with
+  one piece). In its place, a piece stands where a source names a place in it.
+
+Plan 081 revised at his word ("Yes, revise the plan"):
+- §4.6 states the rule as adopted, with his objectives and the tests.
+- §4.1 gives a bank's outline by the two rules.
+- §7 makes step 3 the frame's build: a curated layer with its check, the grounds as proposals in place of the 21 east
+  pieces, then the banks. Step 4 is the ridges' finer parts. Step 5 drops "the grounds from the effort".
+- §8 e and f are marked overtaken.
+
 ## What is next
 
-- The outer troughs' lines; the inshore boundary.
+- The frame into the build (plan 081 §7 step 3), then his review coast by coast; the inshore boundary.
 - The inshore boundary, and the depth rule where there is no trough.
 - Then the grounds and the ridges into the build in place of the east's pieces, and the banks' anatomy as the level below.
 - Step 3's 21 east proposals stand on the pieces until then. Their two shared pieces are to be split later, by a line from
